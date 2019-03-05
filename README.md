@@ -21,7 +21,7 @@ Simply run `make` in the top folder.
 Organisation
 ============
 
-* The `CoqExamples//dijkstra.v` folder contains our Coq implementation
+* The `CoqExamples/dijkstra.v` folder contains our Coq implementation
   of specification monads, Dijkstra monads and the examples from the paper.
 
 * The `Categories/` folder contains a copy of
