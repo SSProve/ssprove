@@ -1,1 +1,34 @@
--Q Cheesy
+-Q theories Mon
+theories/Base.v
+
+-arg -allow-sprop
+theories/sprop/SPropBase.v
+theories/sprop/WellFounded.v
+theories/sprop/SPropMonadicStructures.v
+theories/sprop/Monoid.v
+theories/sprop/SpecificationMonads.v
+theories/sprop/MonadExamples.v
+theories/sprop/DijkstraMonadExamples.v
+theories/sprop/DirectedContainers.v
+
+theories/SRelation/SRelation_Definitions.v
+theories/SRelation/SRelation_Operators.v
+theories/SRelation/SRelation_Operators_Properties.v
+theories/SRelation/SRelations.v
+
+theories/SRelation/SRelationClasses.v
+theories/SRelation/SMorphisms.v
+theories/SRelation/SMorphisms_Prop.v
+theories/SRelation/SMorphisms_Relations.v
+theories/SRelation/SRelationPairs.v
+
+theories/SM/dlist.v
+theories/SM/SMSyntax.v
+theories/SM/SMDenotations.v
+theories/SM/MonadTransformer.v
+theories/SM/SMMonadExamples.v
+theories/SM/SMDenotationsMonotonic.v
+theories/SM/MonadTransformerMonotonic.v
+
+theories/dijkstra_updated.v
+theories/README.v
