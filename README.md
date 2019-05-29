@@ -11,12 +11,12 @@ Coq development for the paper:
 
 This development requires the `master` branch of Coq here:
 https://github.com/coq/coq/commits/master
-(in particular the following commit is known to work: 6960da47)
+(in particular the following commit is known to work: 1c2cfc1f)
 
 It also requires the equations plugin, `master` branch (only for the
 General recursion examples at the end of DijkstraMonadExamples.v;
 comment out if not needed): https://github.com/mattam82/Coq-Equations
-(in particular the following commit is known to work: 6feef06e)
+(in particular the following commit is known to work: 20bc9b26)
 
 These are already installed in our Docker image.
 
