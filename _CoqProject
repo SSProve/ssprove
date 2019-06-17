@@ -33,4 +33,9 @@ theories/SM/MonadTransformerMonotonic.v
 theories/dijkstra_updated.v
 theories/README.v
 
-theories/sprop/RelativeMonads.v
+theories/Relational/Rel.v
+theories/Relational/RelativeMonads.v
+theories/Relational/RelativeMonadExamples.v
+theories/Relational/GenericRulesSimple.v
+theories/Relational/GenericRulesComplex.v
+theories/Relational/RelationalState.v
