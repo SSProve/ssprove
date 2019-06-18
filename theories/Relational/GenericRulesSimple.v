@@ -100,3 +100,91 @@ Section RelationalProgramLogicFromRelativeMonadZero.
   Qed.
 
 End RelationalProgramLogicFromRelativeMonadZero.
+
+  Notation "θ ⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ _ θ _ _ c1 c2 w) (at level 85).
+
+Section GoingPractical.
+  Context (M1 M2 : Monad) (M12 := compPair M1 M2).
+  Context (W : RelationalSpecMonad0) `{BindMonotonicRelationalSpecMonad0 W}
+          (θ : RelationalEffectObservation0 M1 M2 W).
+
+  Lemma gp_ret_rule {A B a b w} :
+    Spr1 (relmon_unit W ⟨A , B⟩) ⟨a,b⟩ ≤ w ->
+    θ ⊨ ret a ≈ ret b [{ w }].
+  Proof. apply weaken_rule2 ; apply ret_rule2. Qed.
+
+  Lemma gp_seq_rule
+        {A1 A2 B1 B2}
+        {m1 : M1 A1} {m2 : M2 A2} {wm}
+        {f1 : A1 -> M1 B1} {f2 : A2 -> M2 B2}
+        {wf : OrdCat⦅Jprod ⟨A1,A2⟩ ; W ⟨B1, B2⟩⦆} {w} :
+    θ ⊨ m1 ≈ m2 [{ wm }] ->
+    (forall a1 a2, θ ⊨ f1 a1 ≈ f2 a2 [{ Spr1 wf ⟨a1, a2⟩ }]) ->
+    Spr1 (relmon_bind W wf) wm ≤ w ->
+    θ ⊨ bind m1 f1 ≈ bind m2 f2 [{ w }].
+  Proof. move=> ? ? ; apply weaken_rule2 ; apply seq_rule=> //. Qed.
+
+  Definition skip {M:Monad} : M unit := ret tt.
+  Notation "m1 ;; m2" := (bind m1 (fun=> m2)) (at level 65).
+
+  Lemma apply_left {A B1 B2} {m1 : M1 A} {c1 : M1 B1} {c2 : M2 B2} {w1 w2 w} :
+    θ ⊨ m1 ≈ skip [{ w1 }] ->
+    θ ⊨ c1 ≈ c2 [{ w2 }] ->
+    Spr1 (relmon_bind W (OrdCat_cst w2)) w1 ≤ w ->
+    θ ⊨ m1 ;; c1 ≈ c2 [{ w }].
+  Proof.
+    move=> H1 H2 ; apply weaken_rule2.
+    enough (c2 = skip ;; c2) as ->.
+    apply seq_rule=> //.
+    rewrite /bind monad_law1 //.
+  Qed.
+
+  Program Definition OrdCat_lift {A B} (f : A -> dfst B) : OrdCat⦅discr A; B⦆ :=
+    Sexists _ f _.
+  Next Obligation. move=> ? ? H0 ; induction H0; sreflexivity. Qed.
+
+  Program Definition OrdCat_lift' {A1 A2 B} (f : A1 -> A2 -> dfst B) : OrdCat⦅Jprod ⟨A1, A2⟩; B⦆ :=
+    Sexists _ (fun a => f (nfst a) (nsnd a)) _.
+  Next Obligation. move=> ? ? H0 ; induction H0; sreflexivity. Qed.
+
+  Lemma apply_left_tot {A1 A2} {c1 : M1 A1} {c2 : M2 A2} {w1 w2 w} :
+    θ ⊨ c1 ≈ skip [{ w1 }] ->
+    (forall a1, θ ⊨ ret a1 ≈ c2 [{ w2 a1 }]) ->
+    Spr1 (relmon_bind W (OrdCat_lift' (fun a=>fun=> w2 a))) w1 ≤ w ->
+    θ ⊨ c1 ≈ c2 [{ w }].
+  Proof.
+    move=> H1 H2 ; apply weaken_rule2.
+    enough (c2 = skip ;; c2) as ->.
+    enough (c1 = bind c1 ret) as ->.
+    apply seq_rule=> // ? ?; eapply weaken_rule2; [apply H2| cbv ;intuition].
+    rewrite /bind monad_law2 //.
+    rewrite /bind monad_law1 //.
+  Qed.
+
+  Lemma apply_right {A B1 B2} {m2 : M2 A} {c1 : M1 B1} {c2 : M2 B2} {w1 w2 w} :
+    θ ⊨ skip ≈ m2 [{ w1 }] ->
+    θ ⊨ c1 ≈ c2 [{ w2 }] ->
+    Spr1 (relmon_bind W (OrdCat_cst w2)) w1 ≤ w ->
+    θ ⊨ c1 ≈ m2 ;; c2 [{ w }].
+  Proof.
+    move=> H1 H2 ; apply weaken_rule2.
+    enough (c1 = skip ;; c1) as ->.
+    apply seq_rule=> //.
+    rewrite /bind monad_law1 //.
+  Qed.
+
+  Lemma apply_right_tot {A1 A2} {c1 : M1 A1} {c2 : M2 A2} {w1 w2 w} :
+    θ ⊨ skip ≈ c2 [{ w1 }] ->
+    (forall a2, θ ⊨ c1 ≈ ret a2 [{ w2 a2 }]) ->
+    Spr1 (relmon_bind W (OrdCat_lift' (fun=>w2))) w1 ≤ w ->
+    θ ⊨ c1 ≈ c2 [{ w }].
+  Proof.
+    move=> H1 H2 ; apply weaken_rule2.
+    enough (c1 = skip ;; c1) as ->.
+    enough (c2 = bind c2 ret) as ->.
+    apply seq_rule=> // ? ?; eapply weaken_rule2.
+    rewrite /bind monad_law2 //.
+    rewrite /bind monad_law1 //.
+  Qed.
+
+End GoingPractical.

@@ -46,11 +46,13 @@ Section OrdCat.
     {| ff_invmap _ _ f := Spr1 f |}.
   Next Obligation. cbv ; intuition. Qed.
 
-End OrdCat.
+  Definition extract_ord {A : OrdCat} := Spr1 (dsnd A).
+  Definition extract_ord_preord A : PreOrder (@extract_ord A) := Spr2 (dsnd A).
+  Global Existing Instance extract_ord_preord.
 
-Definition extract_ord {A : OrdCat} := Spr1 (dsnd A).
-Definition extract_ord_preord A : PreOrder (@extract_ord A) := Spr2 (dsnd A).
-Existing Instance extract_ord_preord.
+  Program Definition OrdCat_cst {A B} (b:dfst B) : OrdCat⦅A; B⦆ := ⦑fun=> b⦒.
+  Next Obligation. cbv; intuition. Qed.
+End OrdCat.
 
 Notation " x ≤ y " := (extract_ord x y).
 

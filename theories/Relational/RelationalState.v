@@ -92,9 +92,6 @@ Section RelationalState.
   Let write1 (l:loc1) (v:val) : M1 unit := fun s => ⟨tt, upd eql1 l v s⟩.
   Let read2 (l:loc2) : M2 val := fun s => ⟨s l, s⟩.
   Let write2 (l:loc2) (v:val) : M2 unit := fun s => ⟨tt, upd eql2 l v s⟩.
-  Let skip1 : M1 unit := ret tt.
-  Let skip2 : M2 unit := ret tt.
-
   Let S1 := loc1 -> val.
   Let S2 := loc2 -> val.
 
@@ -110,31 +107,31 @@ Section RelationalState.
   Next Obligation. intuition. Qed.
 
   Lemma read1_rule (l1 : loc1) :
-    ⊨ read1 l1 ≈ skip2 [{ fromPrePost (fun s1 s2 => sUnit)
+    ⊨ read1 l1 ≈ skip [{ fromPrePost (fun s1 s2 => sUnit)
                                      (fun v s1 s1' _ s2 s2' =>
                                         s1 ≡ s1' s/\ s2 ≡ s2' s/\ v ≡ s1 l1) }].
   Proof. cbv ; intuition. Qed.
 
   Lemma read2_rule (l2 : loc2) :
-    ⊨ skip1 ≈ read2 l2 [{ fromPrePost (fun s1 s2 => sUnit)
+    ⊨ skip ≈ read2 l2 [{ fromPrePost (fun s1 s2 => sUnit)
                                      (fun _ s1 s1' v s2 s2' =>
                                         s1 ≡ s1' s/\ s2 ≡ s2' s/\ v ≡ s2 l2) }].
   Proof. cbv ; intuition. Qed.
 
   Lemma write1_rule (l1:loc1) (v:val) :
-    ⊨ write1 l1 v ≈ skip2 [{
-                              fromPrePost (fun s1 s2 => sUnit)
-                                          (fun _ s1 s1' _ s2 s2' =>
-                                             s1' ≡ upd eql1 l1 v s1 s/\ s2 ≡ s2')
-                          }].
+    ⊨ write1 l1 v ≈ skip [{
+                             fromPrePost (fun s1 s2 => sUnit)
+                                         (fun _ s1 s1' _ s2 s2' =>
+                                            s1' ≡ upd eql1 l1 v s1 s/\ s2 ≡ s2')
+                         }].
   Proof. cbv ; intuition. Qed.
 
   Lemma write2_rule (l2:loc2) (v:val) :
-    ⊨ skip1 ≈ write2 l2 v [{
-                              fromPrePost (fun s1 s2 => sUnit)
-                                          (fun _ s1 s1' _ s2 s2' =>
-                                             s1' ≡ s1 s/\ s2' ≡ upd eql2 l2 v s2)
-                          }].
+    ⊨ skip ≈ write2 l2 v [{
+                             fromPrePost (fun s1 s2 => sUnit)
+                                         (fun _ s1 s1' _ s2 s2' =>
+                                            s1' ≡ s1 s/\ s2' ≡ upd eql2 l2 v s2)
+                         }].
   Proof. cbv ; intuition. Qed.
 
 End RelationalState.
@@ -195,12 +192,59 @@ Section NonInterference.
 
 End NonInterference.
 
+Import SPropNotations.
+
+
+
+Lemma get_left_rule {A} {a:A} :
+  θStNI nat ⊨ get _ ≈ ret a [{ fromPrePostNI (fun s1 s2 => sUnit)
+                              (fun v s1 s1' x s2 s2' => x ≡ a s/\
+                                 s1 ≡ s1' s/\ s2 ≡ s2' s/\ v ≡ s1) }].
+Proof. cbv ; intuition. Qed.
+
+Lemma get_right_rule {A} {a:A} :
+  θStNI nat ⊨ ret a ≈ get _
+        [{fromPrePostNI (fun s1 s2 => sUnit)
+                        (fun x s1 s1' v s2 s2' => x ≡ a s/\
+                           s1 ≡ s1' s/\ s2 ≡ s2' s/\ v ≡ s2) }].
+Proof. cbv ; intuition. Qed.
+
+Lemma put_left_rule (v:nat) {A} {a:A} :
+  θStNI _ ⊨ put _ v ≈ ret a
+        [{fromPrePostNI (fun s1 s2 => sUnit)
+                        (fun _ s1 s1' x s2 s2' => x ≡ a s/\
+                           s1' ≡ v s/\ s2 ≡ s2')
+                        }].
+Proof. cbv ; intuition. Qed.
+
+Lemma put_right_rule (v:nat) {A} {a:A} :
+  θStNI _ ⊨ ret a ≈ put _ v
+        [{fromPrePostNI (fun s1 s2 => sUnit)
+                        (fun x s1 s1' _ s2 s2' => x ≡ a s/\
+                           s1' ≡ s1 s/\ s2' ≡ v)
+                        }].
+Proof. cbv ; intuition. Qed.
+
 Let prog := bind (put _ 21) (fun _ => ret 42).
 
-Import SPropNotations.
 Import FunctionalExtensionality.
 
-Lemma prog_satisfies_NI (H : BindMonotonicRelationalSpecMonad0 (RelSt (nat × nat))) : NI _ prog.
+Lemma prog_satisfies_NI `{BindMonotonicRelationalSpecMonad0 (RelSt (nat × nat))} : NI _ prog.
+  unfold NI.
+  unfold prog.
+  - eapply gp_seq_rule=> //.
+    + eapply apply_left_tot=> //.
+      apply put_left_rule.
+      move=> ? ; apply put_right_rule.
+      sreflexivity.
+    + move=> ? ? ; apply gp_ret_rule. cbv.
+      instantiate (1 := ⦑fun _ a =>⦑fun a0 => a0 ⟨ ⟨ 42, 42 ⟩, a ⟩⦒⦒).
+      intuition.
+    + cbv ; intuition.
+      Unshelve. all: cbv ; intuition.
+Qed.
+
+Lemma prog_satisfies_NI `{BindMonotonicRelationalSpecMonad0 (RelSt (nat × nat))} : NI _ prog.
   unfold NI.
   unfold prog.
   eapply weaken_rule2.
