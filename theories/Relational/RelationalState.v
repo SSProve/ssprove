@@ -237,11 +237,11 @@ Lemma prog_satisfies_NI `{BindMonotonicRelationalSpecMonad0 (RelSt (nat × nat))
       apply put_left_rule.
       move=> ? ; apply put_right_rule.
       sreflexivity.
-    + move=> ? ? ; apply gp_ret_rule. cbv.
-      instantiate (1 := ⦑fun _ a =>⦑fun a0 => a0 ⟨ ⟨ 42, 42 ⟩, a ⟩⦒⦒).
+    + move=> ? ? ; apply gp_ret_rule.
+      unshelve instantiate (1 := ⦑fun=> ?[x]⦒)=> /=.
+      3:match goal with | [|-?x ≤ ?y] => unify x y end ; sreflexivity.
       intuition.
     + cbv ; intuition.
-      Unshelve. all: cbv ; intuition.
 Qed.
 
 Lemma prog_satisfies_NI `{BindMonotonicRelationalSpecMonad0 (RelSt (nat × nat))} : NI _ prog.
