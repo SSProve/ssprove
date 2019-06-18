@@ -138,3 +138,80 @@ Section RelationalState.
   Proof. cbv ; intuition. Qed.
 
 End RelationalState.
+
+Section SimpleState.
+
+  Variable St : Type.
+
+  Program Definition State : Monad :=
+    (* Using the monotonic transformer is overkill here
+       (we could probably use the plain one)*)
+    (* ST_T St (DiscreteMonad Identity) _ _ _ *)
+    @mkMonad (fun X => St -> (X × St))
+             (fun X x s => ⟨x, s⟩)
+             (fun X Y c f s => let '(npair x s') := c s in f x s') _ _ _.
+
+  (* The get and put operations *)
+  Definition get : State St := fun s => ⟨s,s⟩.
+  Definition put : St -> State unit := fun s => fun _ => ⟨tt, s⟩.
+End SimpleState.
+
+Notation "θ ⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ _ θ _ _ c1 c2 w) (at level 85).
+
+
+Section NonInterference.
+  Import SPropNotations.
+  Import FunctionalExtensionality.
+
+  Variable St : Type.
+
+  Program Definition θStNI : RelationalEffectObservation0 (State St) (State St) (RelSt (St × St)) :=
+    mkRelMonMorph _ _ _ _
+                  (fun A =>
+                     ⦑fun m12 s0 =>
+                        ⦑fun post =>
+                           let r1 := nfst m12 (nfst s0) in
+                           let r2 := nsnd m12 (nsnd s0) in
+                           post ⟨ ⟨nfst r1, nfst r2⟩, ⟨nsnd r1, nsnd r2⟩⟩⦒⦒)
+                  _ _.
+  Next Obligation.
+    intuition.
+  Qed.
+  Next Obligation.
+    destruct H. assumption.
+  Qed.
+
+  Program Definition fromPrePostNI {A1 A2} {S1 S2}
+          (pre : S1 -> S2 -> SProp)
+          (post : A1 -> S1 -> S1 -> A2 -> S2 -> S2 -> SProp)
+    : dfst (RelSt (S1 × S2) ⟨A1,A2⟩) :=
+    fun s0=> ⦑fun p => pre (nfst s0) (nsnd s0) s/\
+                 forall a1 a2 s, post a1 (nfst s0) (nfst s) a2 (nsnd s0) (nsnd s)
+                            -> p ⟨⟨a1,a2⟩, s⟩⦒.
+  Next Obligation. intuition. Qed.
+
+
+  Definition NI {A : Type} (c : State St A) := θStNI ⊨ c ≈ c [{ fromPrePostNI (fun s1 s2 => sUnit) (fun i s1 s1' i' s2 s2' => i ≡ i')}].
+
+End NonInterference.
+
+Let prog := bind (put _ 21) (fun _ => ret 42).
+
+Import SPropNotations.
+Import FunctionalExtensionality.
+
+Lemma prog_satisfies_NI (H : BindMonotonicRelationalSpecMonad0 (RelSt (nat × nat))) : NI _ prog.
+  unfold NI.
+  unfold prog.
+  eapply weaken_rule2.
+  - apply (seq_rule _ _ (RelSt (nat × nat))).
+    + unfold semantic_judgement. sreflexivity.
+      (* cbv. intros si post. intro. apply H0. sreflexivity. *)
+    + intros [] [].
+      admit.
+  - admit.
+  (* cbv. *)
+  (* intros [n0 n1] a [[] H]. *)
+  (* apply H. *)
+  (* reflexivity. *)
+Admitted.

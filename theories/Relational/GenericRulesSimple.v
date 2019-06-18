@@ -84,4 +84,19 @@ Section RelationalProgramLogicFromRelativeMonadZero.
     apply (rsm0_bind_monotonic (θ ⟨B1, B2⟩ ∙ fmap Jprod (to_prod f1 f2)) wf) ; move=> [? ?] ; apply Hf.
     eapply (Spr2 (relmon_bind W _) _ _)=> //.
   Qed.
+
+  Lemma weaken_rule2 {A B} {c1 : M1 A} {c2 : M2 B} {w w'} :
+    ⊨ c1 ≈ c2 [{ w }] -> w ≤ w' -> ⊨ c1 ≈ c2 [{ w' }].
+  Proof. rewrite /semantic_judgement. move=> ? ? ; estransitivity ; eassumption.
+  Qed.
+
+  Lemma ret_rule2 {A B} {a : A} {b : B} :
+    ⊨ ret a ≈ ret b [{ Spr1 (relmon_unit W ⟨A , B⟩) ⟨a,b⟩ }].
+  Proof.
+    rewrite /semantic_judgement.
+    cbv.
+    rewrite <- (rmm_law1 _ _ M12 W θ ⟨A , B⟩).
+    sreflexivity.
+  Qed.
+
 End RelationalProgramLogicFromRelativeMonadZero.
