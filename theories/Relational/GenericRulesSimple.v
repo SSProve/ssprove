@@ -186,5 +186,11 @@ Section GoingPractical.
     rewrite /bind monad_law2 //.
     rewrite /bind monad_law1 //.
   Qed.
+  (*
+    Questions :
+    0) We should never unfold the semantic judgement but insead use rules derived from the basic principles (can we automate these rule derivation)
+    1) We need not to be constrained by the returned spec of the rules but maybe we can wrap rules in a tactical trying to do as little weakening as possible
+    2) for asynchronous rules for axiom, better putting them against ret * rather than skip (can we obtain these rppofs from just a unary proof rule ?)
+   *)
 
 End GoingPractical.

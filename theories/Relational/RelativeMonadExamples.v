@@ -270,6 +270,16 @@ Section OrderedMonadAsRMonad.
   (* Global Instance : BindMonotonicRelationalSpecMonad0 ordmonad_to_relmon. *)
 End OrderedMonadAsRMonad.
 
+Section RelationalSpecMonadZeroFromOrderedMonad.
+  Context (M:OrderedMonad).
+
+  Definition ordmonad_to_relspecmon0 := relativeMonad_precomposition typeCat_prod (ordmonad_to_relmon M).
+
+  Global Instance : BindMonotonicRelationalSpecMonad0 ordmonad_to_relspecmon0.
+  Proof. cbv. move=> ? ? ? ? ? ?  ; apply omon_bind=> //. sreflexivity. Qed.
+End RelationalSpecMonadZeroFromOrderedMonad.
+
+
 (* Section MonadMorphismAsRMonMorphism. *)
 (*   Context {M0 W0 : OrderedMonad} (θ : MonotonicMonadMorphism M0 W0). *)
 (*   Let M := ordmonad_to_relmon M0. *)
