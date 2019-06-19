@@ -28,9 +28,7 @@ Section RelationalState.
   End StateSig.
 
   Definition RelSt (S:Type): RelationalSpecMonad0 :=
-    relativeMonad_precomposition
-      typeCat_prod
-      (ordmonad_to_relmon (STCont S)).
+    ordmonad_to_relspecmon0 (STCont S).
 
 
   Context (loc1 loc2 val : Type) (loc:=(loc1+loc2)%type) (S := loc -> val).
@@ -229,11 +227,13 @@ Let prog := bind (put _ 21) (fun _ => ret 42).
 
 Import FunctionalExtensionality.
 
-Lemma prog_satisfies_NI `{BindMonotonicRelationalSpecMonad0 (RelSt (nat × nat))} : NI _ prog.
+Lemma prog_satisfies_NI : NI _ prog.
   unfold NI.
   unfold prog.
   - eapply gp_seq_rule=> //.
-    + eapply apply_left_tot=> //.
+    typeclasses eauto.
+    + eapply apply_left_tot.
+      typeclasses eauto.
       apply put_left_rule.
       move=> ? ; apply put_right_rule.
       sreflexivity.
@@ -244,7 +244,7 @@ Lemma prog_satisfies_NI `{BindMonotonicRelationalSpecMonad0 (RelSt (nat × nat))
     + cbv ; intuition.
 Qed.
 
-Lemma prog_satisfies_NI `{BindMonotonicRelationalSpecMonad0 (RelSt (nat × nat))} : NI _ prog.
+Lemma prog_satisfies_NI' `{BindMonotonicRelationalSpecMonad0 (RelSt (nat × nat))} : NI _ prog.
   unfold NI.
   unfold prog.
   eapply weaken_rule2.
