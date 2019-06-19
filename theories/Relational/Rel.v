@@ -7,8 +7,8 @@ From Mon.sprop Require Import SPropBase.
 Set Primitive Projections.
 Set Universe Polymorphism.
 
-Section Rel.
 
+Section Rel.
   Notation πl := (fun x => nfst (dfst x)).
   Notation πr := (fun x => nsnd (dfst x)).
   Notation πw := (fun x => dsnd x).
@@ -93,3 +93,28 @@ Section Rel.
   (* Definition g := λ² x ∈ Hi nat | Lo nat R=> Lo nat → λ² y ∈ Lo nat | Lo nat → y. *)
 
 End Rel.
+
+Module RelNotations.
+  Notation πl := (fun x => nfst (dfst x)).
+  Notation πr := (fun x => nsnd (dfst x)).
+  Notation πw := (fun x => dsnd x).
+  Notation "⦑ x , y ⦒" := (dpair _ (npair x y) _).
+  Notation "⦑ x , y | w ⦒" := (dpair _ (npair x y) w).
+  Notation "⦑ x , y | w | Y ⦒" := (dpair (fun p => πw Y (nfst p) (nsnd p)) (npair x y) w).
+  Notation "⟬ X ⟭" := (points X).
+  Notation "X R=> Y" := (ArrRel X Y) (at level 60).
+  Notation "X R==> Y" := (arrRel X Y) (at level 60).
+
+  Notation "[< t | Y >]" :=
+    (ltac:(let tl :=
+               let t := (eval cbn in (fun x y w => πl (t ⦑x, y| w⦒))) in
+               match t with | fun x y w => @?P x =>  P end
+           in
+           let tr :=
+               let t := (eval cbn in (fun x y w => πr (t ⦑x, y| w⦒))) in
+               match t with | fun x y w => @?P y =>  P end
+           in
+           let tw := eval cbn in (fun x y w => πw (t ⦑x, y| w⦒)) in
+           exact (dpair (fun p => forall xl xr xw, πw Y (nfst p xl) (nsnd p xr)) ⟨tl, tr⟩ tw))).
+  Notation "f @R x" := (applyRel f x) (at level 85).
+End RelNotations.

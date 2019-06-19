@@ -3,7 +3,7 @@ From Coq Require FunctionalExtensionality.
 From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures.
-From Mon.Relational Require Import RelativeMonads RelativeMonadExamples.
+From Mon.Relational Require Import RelativeMonads RelativeMonadExamples Rel.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
@@ -111,18 +111,18 @@ Section RelationalProgramLogicFromRelativeMonad.
   (* Notation "⊨ c1 ≈ c2 [{ w1 , w2 , w }]" := *)
   (*   (Spr1 (θ1 _) c1 ≤ w1 s/\ Spr1 (θ2 _) c2 ≤ w2 s/\ Spr1 (θW ⟨_,_⟩) ⟨c1,c2⟩ ≤ w). *)
 
-  Notation " Γ ⊫ c1 ≈ c2 [{ w1 , w2 , w }]" :=
-    ((forall γ1 : nfst Γ, Spr1 (θ1 _) (c1 γ1) ≤ Spr1 w1 γ1) s/\
-    (forall γ2 : nsnd Γ, Spr1 (θ2 _) (c2 γ2) ≤ Spr1 w2 γ2) s/\
-    (forall γ : typeCat_prod Γ, Spr1 (θW ⟨_,_⟩) ⟨c1 (nfst γ), c2 (nsnd γ)⟩ ≤ Spr1 w γ)) (at level 85).
+  Import RelNotations.
 
-  Program Definition OrdCat_cst {A B} (b:dfst B) : OrdCat⦅A; B⦆ := ⦑fun=> b⦒.
-  Next Obligation. cbv; intuition. Qed.
+  Notation " Γ ⊫ c1 ≈ c2 [{ w1 , w2 , w }]" :=
+    ((forall γ1 : πl Γ, Spr1 (θ1 _) (c1 γ1) ≤ Spr1 w1 γ1) s/\
+    (forall γ2 : πr Γ, Spr1 (θ2 _) (c2 γ2) ≤ Spr1 w2 γ2) s/\
+    (forall γ : ⟬Γ⟭, Spr1 (θW ⟨_,_⟩) ⟨c1 (πl γ), c2 (πr γ)⟩ ≤ Spr1 w (dfst γ)))
+      (at level 85).
 
   Notation "⋅⊫ c1 ≈ c2 [{ w1 , w2 , w }]" :=
-    (⟨unit,unit⟩ ⊫ (fun=> c1) ≈ (fun=> c2) [{ @OrdCat_cst (discr unit) _ w1,
-                                        @OrdCat_cst (discr unit) _ w2,
-                                        @OrdCat_cst (discr (unit × unit)) _ w}]).
+    (Hi unit ⊫ (fun=> c1) ≈ (fun=> c2) [{ @OrdCat_cst (discr unit) _ w1,
+                                    @OrdCat_cst (discr unit) _ w2,
+                                    @OrdCat_cst (discr (unit × unit)) _ w}]).
 
   Check (fun A B (c1 : M1 A) (c2: M2 B) (w1:dfst (W1 A)) (w2:dfst (W2 B)) (w3:dfst (W0 ⟨A,B⟩)) => ⋅⊫ c1 ≈ c2 [{ w1, w2, w3 }] ).
 
@@ -135,7 +135,7 @@ Section RelationalProgramLogicFromRelativeMonad.
         (* {wf : A1 × A2 -> W ⟨B1, B2⟩} *)
         {wf : OrdCat⦅Jprod ⟨A1,A2⟩ ; W0 ⟨B1, B2⟩⦆} :
     ⋅⊫ m1 ≈ m2 [{ wm1, wm2, wm }] ->
-    (⟨A1,A2⟩ ⊫ f1 ≈ f2 [{ wf1, wf2,  wf }]) ->
+    (⦑A1,A2|fun=>fun=>unit|TyRel⦒ ⊫ f1 ≈ f2 [{ wf1, wf2,  wf }]) ->
     ⋅⊫ bind m1 f1 ≈ bind m2 f2 [{ Spr1 (relmon_bind W1 wf1) wm1,
                                   Spr1 (relmon_bind W2 wf2) wm2,
                                   Spr1 (actW _ _ _ _ wf1 wf2 wf) wm }].
@@ -156,8 +156,34 @@ Section RelationalProgramLogicFromRelativeMonad.
                     _ _ _ _).
     move=> ? ; apply Hf1.
     move=> ? ; apply Hf2.
-    move=> ? ; apply Hf.
+    move=> [? ?] /=; eapply (Hf ⦑ _ , _ | tt⦒).
     eapply (Spr2 (actW _ _ _ _ _ _ _))=> //.
-    apply (Hm ⟨tt,tt⟩).
+    apply (Hm ⦑tt,tt|I⦒).
   Qed.
+
+  Definition supp (R : Rel) : OrdCat := discr (πr R × πl R).
+
+  Program Definition if_on_W {Γ : Rel} {X : TypeCatSq}
+             (b : dfst (supp Γ) -> bool)
+             (wtrue : OrdCat⦅supp Γ; W0 X⦆)
+             (wfalse : OrdCat⦅supp Γ; W0 X⦆) : OrdCat⦅supp Γ; W0 X⦆ :=
+    ⦑fun γ => if b γ then Spr1 wtrue γ else Spr1 wfalse γ⦒.
+  Next Obligation.
+    cbv ; intuition. induction H. destruct b.
+    apply (Spr2 wtrue)=> //.
+    apply (Spr2 wfalse)=> //.
+  Qed.
+
+  Notation "⟪ x ↦ w ⟫" := (⦑fun=> unit, fun=> unit| (fun xl xr _ _ _ => (fun x => w) ⟨xr, xl⟩)⦒)
+                            (x ident).
+
+  Definition relSig (r:Rel) (r' : r R==> TyRel) : Rel :=
+    @mkRel {al:πl r ⫳ πl r' al} {al:πr r ⫳ πr r' al}
+          (fun bl br =>
+                 { w: r (dfst bl) (dfst br) ⫳ πw r' _ _ w (dsnd bl) (dsnd br)}).
+  Check fun Γ (b : dfst (supp Γ) -> bool) => relSig Γ ⟪γ ↦ b γ = true <: Type⟫.
+
+  (* Lemma ident : type. *)
+  (* relSig Γ ⟪γ ↦ b γ = true⟫ ⊫ c1 ≈ c2 [{ w1 , w2 , wtrue }]  *)
+
 End RelationalProgramLogicFromRelativeMonad.

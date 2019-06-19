@@ -403,12 +403,17 @@ Section RelativeMonadToFunctor.
   Qed.
 End RelativeMonadToFunctor.
 
-Section RMonadAsMonad.
-  Context {C:category} (M0 : relativeMonad (functor_id C)) (M := rmon_to_functor M0).
+Section RmonadUnit.
+  Context {I C:category} {J:functor I C}
+          (M0 : relativeMonad J) (M := rmon_to_functor M0).
 
-  Program Definition rmon_id_unit : natTrans (functor_id C) M :=
+  Program Definition rmon_unit : natTrans J M :=
     mkNatTrans _ _ (relmon_unit M0) _.
   Next Obligation. rewrite (relmon_law2 M0) ; reflexivity. Qed.
+End RmonadUnit.
+
+Section RMonadAsMonad.
+  Context {C:category} (M0 : relativeMonad (functor_id C)) (M := rmon_to_functor M0).
 
   Program Definition rmon_id_mult : natTrans (functor_comp M M) M :=
     mkNatTrans _ _ (fun=> relmon_bind M0 (Id _)) _.
@@ -417,7 +422,7 @@ Section RMonadAsMonad.
     reflexivity.
   Qed.
 
-  Notation η := (rmon_id_unit _).
+  Notation η := (@rmon_unit C C (functor_id C) _ _).
   Notation μ := (rmon_id_mult _).
 
   Lemma rmon_id_law1 {A} : μ ∙ (fmap M η) ∼ Id (M A).
@@ -579,7 +584,7 @@ Section RightModule.
 
   Cumulative Record rightModuleStructure :=
     mkRightModule
-      { rm_bind : forall {X Y}, C⦅J X ; M Y⦆ -> D⦅F X ; F Y⦆
+      { rm_bind :> forall {X Y}, C⦅J X ; M Y⦆ -> D⦅F X ; F Y⦆
       ; rm_bind_proper : forall {X Y}, Proper (sim C ==> sim D) (@rm_bind X Y)
       ; rm_law1 : forall {X}, rm_bind (relmon_unit M X) ∼ Id (F X)
       ; rm_law2 : forall {X Y Z} (f : C⦅J X ; M Y⦆) (g:C⦅J Y; M Z⦆),
@@ -612,7 +617,7 @@ Section RightModuleId.
     rewrite -(rm_law3 rmF) cat_law1 rm_law2_id rm_law3 rm_law1 cat_law1 ; reflexivity.
   Qed.
 
-  Notation η := (rmon_id_unit M _).
+  Notation η := (@rmon_unit C C (functor_id C) _ _).
   Notation μ := (rmon_id_mult M).
   Notation α := (right_module_nattrans _).
 
@@ -624,30 +629,60 @@ Section RightModuleId.
 
 End RightModuleId.
 
-(* Monad morphisms yield right modules, generalized to relative monads *)
+(* Monad morphisms yield right modules, generalizing the codomain
+   to a relative monads *)
 Section RelativeMonadMorphismToRightModule.
-  Context {I C D:category} {J:functor I C} (M0 : relativeMonad J)
-          {J':functor C D} (W0 : relativeMonad J')
-          (W1 := relativeMonad_precomposition J W0)
-          (θ : relativeMonadMorphism J' (natIso_id _) M0 W1).
+  Context {C D:category} {M0 : relativeMonad (functor_id C)}
+          {J:functor C D} (W0 : relativeMonad J) {phi}
+          (θ : relativeMonadMorphism J phi M0 W0).
 
   Let W := rmon_to_functor W0.
 
   Program Definition rmon_morph_right_module : rightModuleStructure M0 W :=
-    mkRightModule (fun _ _ f => relmon_bind W0 (θ _ ∙ fmap J' f)) _ _ _ _.
-  Next Obligation. cbv ; intuition; rewrite H; reflexivity. Qed.
+    mkRightModule (fun _ _ f => relmon_bind W0 (θ _ ∙ fmap J f∙ phi _)) _ _ _ _.
+  Next Obligation. cbv ; intuition ; rewrite H; reflexivity. Qed.
   Next Obligation.
-    rewrite (rmm_law1 _ _ _ _ θ) ; cbv ; rewrite -(functor_law1 _ _ J' _).
-    move: (functor_law1 _ _ W (J X)) => /= -> ; reflexivity.
+    rewrite (rmm_law1 _ _ _ _ θ) ; cbv .
+    rewrite -cat_law3 (ni_leftinv _ _ phi) -(functor_law1 _ _ J _).
+    move: (functor_law1 _ _ W X) => /= -> ; reflexivity.
   Qed.
   Next Obligation.
     rewrite functor_law2 cat_law3 (rmm_law2 _ _ _ _ θ) ; cbv.
-    rewrite cat_law2 -!cat_law3 relmon_law3 ; reflexivity.
+    rewrite -!cat_law3 relmon_law3 ; reflexivity.
   Qed.
   Next Obligation.
-    rewrite -relmon_law3 functor_law2 !cat_law3 relmon_law2 ; reflexivity.
+    rewrite -relmon_law3 functor_law2 !cat_law3 relmon_law2.
+    rewrite -cat_law3 -(ni_natural _ _ phi) cat_law3 ; reflexivity.
   Qed.
 End RelativeMonadMorphismToRightModule.
+
+(* Taking phi = natIso_id _ would make the following go through *)
+(* Another solution is to ask that J is full and faithful *)
+(* Section RelativeMonadMorphismToRightModule. *)
+(*   Context {I C D:category} {J:functor I C} {M0 : relativeMonad J} *)
+(*           {J':functor C D} (W0 : relativeMonad J') *)
+(*           phi *)
+(*           (W1 := relativeMonad_precomposition J W0) *)
+(*           (θ : relativeMonadMorphism J' phi M0 W1). *)
+
+(*   Let W := rmon_to_functor W0. *)
+
+(*   Program Definition rmon_morph_right_module : rightModuleStructure M0 W := *)
+(*     mkRightModule (fun _ _ f => relmon_bind W0 (θ _ ∙ fmap J' f∙ phi _)) _ _ _ _. *)
+(*   Next Obligation. cbv ; intuition ; rewrite H; reflexivity. Qed. *)
+(*   Next Obligation.   *)
+(*     rewrite (rmm_law1 _ _ _ _ θ) ; cbv . *)
+(*     rewrite -cat_law3 (ni_leftinv _ _ phi) -(functor_law1 _ _ J' _). *)
+(*     move: (functor_law1 _ _ W (J X)) => /= -> ; reflexivity. *)
+(*   Qed. *)
+(*   Next Obligation. *)
+(*     rewrite functor_law2 cat_law3 (rmm_law2 _ _ _ _ θ) ; cbv. *)
+(*     rewrite -!cat_law3 relmon_law3 ; reflexivity. *)
+(*   Qed. *)
+(*   Next Obligation. *)
+(*     rewrite -relmon_law3 functor_law2 !cat_law3 relmon_law2. ; reflexivity. *)
+(*   Qed. *)
+(* End RelativeMonadMorphismToRightModule. *)
 
 
 Section RightModuleHomomorphism.
@@ -723,7 +758,7 @@ Section FreeRightModule.
     Context (σ : natTrans JM F) `{!rightModuleHomomorphism free_right_module rmF σ}.
 
     Definition homomorphism_to_point : natTrans J F :=
-      natTrans_comp (iso_to_natTrans_inv (functor_unit_left _)) (natTrans_comp (natTrans_whisker_right J (rmon_id_unit M)) σ).
+      natTrans_comp (iso_to_natTrans_inv (functor_unit_left _)) (natTrans_comp (natTrans_whisker_right J (rmon_unit M)) σ).
 
   End HomomorphismToPoint.
 

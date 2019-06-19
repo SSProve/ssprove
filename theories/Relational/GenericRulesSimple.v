@@ -13,19 +13,21 @@ Section RelationalProgramLogicFromBimodule.
   Context (W : functor TypeCatSq OrdCat) (rmW : rightModuleStructure M12 W).
   Context (η : natTrans Jprod W) (σ := point_to_homomorphism Jprod rmW η).
 
-  Notation "⊨ c1 ≈ c2 [{ w }]" := (Spr1 (σ ⟨_,_⟩) ⟨c1,c2⟩ ≤ w).
+  Definition mod_semantic_judgement {A1 A2} c1 c2 w :=
+    Spr1 (σ ⟨A1,A2⟩) ⟨c1,c2⟩ ≤ w.
+
+  Notation "⊨ c1 ≈ c2 [{ w }]" := (@mod_semantic_judgement _ _ c1 c2 w).
 
   Check (fun A B (c1 : M1 A) (c2: M2 B) w => ⊨ c1 ≈ c2 [{ w }] ).
 
-  (* Notation "⊢ c1 ≈ c2 [{ w }]" := (Spr1 (σ ⟨_,_⟩) ⟨c1,c2⟩ ≤ w). *)
-
   Lemma weaken_rule {A B} {c1 : M1 A} {c2 : M2 B} {w w'} :
     ⊨ c1 ≈ c2 [{ w }] -> w ≤ w' -> ⊨ c1 ≈ c2 [{ w' }].
-  Proof. move=> ? ? ; estransitivity ; eassumption. Qed.
+  Proof. move=> ? ? ; rewrite /mod_semantic_judgement ; estransitivity ; eassumption. Qed.
 
   Lemma ret_rule {A B} {a : A} {b : B} :
     ⊨ ret a ≈ ret b [{ Spr1 (η ⟨A,B⟩) ⟨a,b⟩ }].
   Proof.
+    rewrite /mod_semantic_judgement.
     move: (point_to_homomorphism_to_point Jprod rmW η ⟨A, B⟩ ⟨a,b⟩) => /= ->.
     sreflexivity.
   Qed.
@@ -39,6 +41,7 @@ Section RelationalProgramLogicFromBimodule.
     ⊨ m1 ≈ m2 [{ w }] -> forall (f1 : A1 -> M1 B1) (f2 : A2 -> M2 B2),
       ⊨ bind m1 f1 ≈ bind m2 f2 [{ bindW f1 f2 w }].
   Proof.
+    rewrite /mod_semantic_judgement.
     move=> H f1 f2.
     pose (rm_homo _ rmW σ (to_prod f1 f2) ⟨m1, m2⟩) as t.
     move: t => /= ->. unfold bindW.
@@ -190,7 +193,57 @@ Section GoingPractical.
     Questions :
     0) We should never unfold the semantic judgement but insead use rules derived from the basic principles (can we automate these rule derivation)
     1) We need not to be constrained by the returned spec of the rules but maybe we can wrap rules in a tactical trying to do as little weakening as possible
-    2) for asynchronous rules for axiom, better putting them against ret * rather than skip (can we obtain these rppofs from just a unary proof rule ?)
+    2) for asynchronous rules for axiom, better putting them against ret * rather than skip (can we obtain these proofs from just a unary proof rule ?)
    *)
+
+  Let Wmod := rmon_morph_right_module W θ.
+  Let mod_semantic_judgement' {A1 A2} :=
+    @mod_semantic_judgement M1 M2 _ Wmod (rmon_unit W) A1 A2.
+
+  Import SPropNotations.
+  Lemma to_mod_semantic_judgement {A1 A2} {c1:M1 A1} {c2:M2 A2} w :
+    θ ⊨ c1 ≈ c2 [{ w }] -> mod_semantic_judgement' c1 c2 w.
+  Proof.
+    rewrite /mod_semantic_judgement'; unfold mod_semantic_judgement.
+    unfold semantic_judgement.
+    enough (θ ⟨ A1, A2 ⟩ ∼ point_to_homomorphism Jprod Wmod (rmon_unit W) ⟨ A1, A2 ⟩) as -> => //.
+    cbv=> ? ; epose (relmon_law2 W) as t ; cbv in t ; rewrite t=> //.
+  Qed.
+
+  Lemma from_mod_semantic_judgement {A1 A2} {c1:M1 A1} {c2:M2 A2} w :
+    mod_semantic_judgement' c1 c2 w -> θ ⊨ c1 ≈ c2 [{ w }].
+  Proof.
+    rewrite /mod_semantic_judgement'; unfold mod_semantic_judgement.
+    unfold semantic_judgement.
+    enough (θ ⟨ A1, A2 ⟩ ∼ point_to_homomorphism Jprod Wmod (rmon_unit W) ⟨ A1, A2 ⟩) as -> => //.
+    cbv=> ? ; epose (relmon_law2 W) as t ; cbv in t ; rewrite t=> //.
+  Qed.
+
+  Let act {A1 A2 B1 B2} := @bindW _ _ _ Wmod A1 A2 B1 B2.
+  Lemma cont_to_spec {A1 A2 B1 B2}
+        {m1 : M1 A1} {m2 : M2 A2} {w w'} :
+    θ ⊨ m1 ≈ m2 [{ w }] -> forall (f1 : A1 -> M1 B1) (f2 : A2 -> M2 B2),
+      act f1 f2 w ≤ w' ->
+      θ ⊨ bind m1 f1 ≈ bind m2 f2 [{ w' }].
+  Proof.
+    move=> ? ? ?; apply weaken_rule2 ; rewrite /act.
+    apply from_mod_semantic_judgement.
+    apply bind_act_rule; apply to_mod_semantic_judgement=> //.
+  Qed.
+
+  (* This rule "shows" completeness of the simple rules *)
+  Lemma to_spec {A1 A2} {m1 : M1 A1} {m2 : M2 A2} {w} :
+    Spr1 (θ ⟨_,_⟩) ⟨m1, m2⟩ ≤ w -> θ ⊨ m1 ≈ m2 [{ w }].
+  Proof.
+    enough (m1 = skip ;; m1) as ->.
+    enough (m2 = skip ;; m2) as ->.
+    enough (Spr1 (θ ⟨_,_⟩) ⟨skip ;; m1, skip ;; m2⟩ = act (fun=> m1) (fun=> m2) (Spr1 (rmon_unit W ⟨_,_⟩) ⟨tt,tt⟩)) as ->.
+    apply cont_to_spec.
+    rewrite /skip ; apply ret_rule2.
+    move: (rmm_law2 _ _ _ _ θ _ _ (to_prod (fun=> m1) (fun=> m2)) ⟨skip,skip⟩)
+    => /= ->.
+    move: (rmm_law1 _ _ _ _ θ ⟨_,_⟩ ⟨tt,tt⟩) => /= -> //.
+    all:rewrite /bind monad_law1 //.
+  Qed.
 
 End GoingPractical.
