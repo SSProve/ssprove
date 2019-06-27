@@ -182,6 +182,34 @@ Section NonInterference.
                         }].
   Proof. cbv ; intuition. Qed.
 
+  Lemma put_put_rule (l1 l2:loc) (v1 v2:nat) :
+    ⊨ put l1 v1 ≈ put l2 v2
+      [{ fromPrePost' (fun s1 s2 => sUnit)
+                      (fun x s1 s1' _ s2 s2' =>    s1' ≡ upd _ eql l1 v1 s1
+                                              s/\ s2' ≡ upd _ eql l2 v2 s2)
+      }].
+  Proof.
+    rewrite <- (monad_law1 unit (fun _ => put l1 v1)).
+    rewrite <- (monad_law2 (put l2 v2)).
+    eapply gp_seq_rule.
+    - typeclasses eauto.
+    - apply put_right_rule.
+    - move=> a1 []. eapply weaken_rule2.
+      + apply put_left_rule.
+      + unshelve instantiate (1 := ⦑fun=> ?[x]⦒)=> /=.
+        3:match goal with | [|-?x ≤ ?y] => unify x y end ; sreflexivity.
+        intuition.
+    - cbv; intuition. apply q. cbv; intuition.
+      apply SPropAxioms.funext_sprop.
+      intros b.
+      move: (f_sEqual2 _ _ q3 (sEq_refl b)) (f_sEqual2 _ _ q1 (sEq_refl b)).
+      intros. destruct f_sEqual0. assumption.
+      apply SPropAxioms.funext_sprop.
+      intros b.
+      move: (f_sEqual2 _ _ q0 (sEq_refl b)) (f_sEqual2 _ _ q2 (sEq_refl b)).
+      intros. destruct f_sEqual0. assumption.
+  Qed.
+
   Let prog := bind (get LOW) (fun n => ret n).
 
   Lemma prog_satisfies_NI : NI prog.
@@ -204,6 +232,57 @@ Section NonInterference.
         destruct q0. destruct p1. destruct q3.
         move=> [] [] [] [].
         split; assumption.
+  Qed.
+
+  (* General version of the previous program *)
+  Let prog2 {B} (f : nat -> B) := bind (get LOW) (fun n => ret (f n)).
+
+  Lemma prog2_satisfies_NI : forall {B} (f : nat -> B), NI (prog2 f).
+    move=> B f.
+    unfold NI.
+    unfold prog2.
+    - eapply gp_seq_rule=> //.
+      typeclasses eauto.
+      + eapply apply_left_tot.
+        typeclasses eauto.
+        apply get_left_rule.
+        move=> ? ; apply get_right_rule.
+        sreflexivity.
+      + move=> ? ? ; apply gp_ret_rule.
+        unshelve instantiate (1 := ⦑fun y => let (v1, v2) := (nfst y, nsnd y) in ?[x]⦒)=> /=.
+        3:match goal with | [|-?x ≤ ?y] => unify x y end ; sreflexivity.
+        intuition.
+      + cbv; intuition.
+        apply q. intros H.
+        move: (f_sEqual2 _ _ q4 (sEq_refl false)) (f_sEqual2 _ _ q1 (sEq_refl false)) (f_sEqual2 _ _ q5 (sEq_refl false)) (f_sEqual2 _ _ q2 (sEq_refl false)).
+        destruct q0. destruct p1. destruct q3.
+        move=> [] [] [] [].
+        destruct H.
+        split; sreflexivity.
+  Qed.
+
+  Let prog3 := bind (get LOW) (fun n => put HIGH n).
+
+  Lemma prog3_satisfies_NI : NI prog3.
+    unfold NI.
+    unfold prog3.
+    - eapply gp_seq_rule=> //.
+      typeclasses eauto.
+      + eapply apply_left_tot.
+        typeclasses eauto.
+        apply get_left_rule.
+        move=> ? ; apply get_right_rule.
+        sreflexivity.
+      + move=> ? ?. eapply weaken_rule2. apply put_put_rule.
+        unshelve instantiate (1 := ⦑fun y => let (v1, v2) := (nfst y, nsnd y) in ?[x]⦒)=> /=.
+        3:match goal with | [|-?x ≤ ?y] => unify x y end ; sreflexivity.
+        intuition.
+      + cbv; intuition.
+        apply q. intros H.
+        move: (f_sEqual2 _ _ p2 (sEq_refl false)) (f_sEqual2 _ _ q6 (sEq_refl false)) (f_sEqual2 _ _ q4 (sEq_refl false)) (f_sEqual2 _ _ q1 (sEq_refl false)) (f_sEqual2 _ _ q5 (sEq_refl false)) (f_sEqual2 _ _ q2 (sEq_refl false)).
+        destruct q0. destruct p1. destruct q3. destruct a5. destruct a6.
+        move=> [] [] [] [] [] [].
+        intuition.
   Qed.
 End NonInterference.
 
