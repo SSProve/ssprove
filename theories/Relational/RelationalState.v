@@ -30,23 +30,7 @@ Section RelationalState.
   Definition RelSt (S:Type): RelationalSpecMonad0 :=
     ordmonad_to_relspecmon0 (STCont S).
 
-
   Context (loc1 loc2 val : Type) (loc:=(loc1+loc2)%type) (S := loc -> val).
-  (* Context (eql : loc -> loc -> bool) (eql_spec : forall l1 l2, reflect (l1 = l2) (eql l1 l2) ). *)
-
-
-  (* Let M1 := FSt loc1 val. *)
-  (* Let M2 := FSt loc2 val. *)
-
-  (* Definition inj_st {loc0} (inj : loc0 -> loc)  (s:StS loc0 val) : St S (StOp loc0 val s) := *)
-  (*   match s as s0 return St S (StOp loc0 val s0) with *)
-  (*   | StGet _ _ l => fun store => ⟨store (inj l), store⟩ *)
-  (*   | StPut _ _ l v => fun store => ⟨tt, fun l' => if eql (inj l) l' then v else store l'⟩ *)
-  (*   end. *)
-
-  (* Let morph1 := from_free (inj_st inl). *)
-  (* Let morph2 := from_free (inj_st inr). *)
-
   Let M1 := St (loc1 -> val).
   Let M2 := St (loc2 -> val).
 
@@ -149,7 +133,7 @@ Section NonInterference.
 
   Let fromPrePost' {A B} pre post := @fromPrePost loc loc val eql eql_spec eql eql_spec A B pre post.
 
-  Definition NI {A : Type} (c : St (loc -> val) A) := ⊨ c ≈ c [{ fromPrePost' (fun s1 s2 => sUnit) (fun i s1 s1' i' s2 s2' => s1 false ≡ s2 false -> s1' false ≡ s2' false s/\ i ≡ i')}].
+  Definition NI {A : Type} (c : St (loc -> val) A) := ⊨ c ≈ c [{ fromPrePost' (fun s1 s2 => s1 false ≡ s2 false) (fun i s1 s1' i' s2 s2' =>  s1' false ≡ s2' false s/\ i ≡ i')}].
 
   Let put (l:loc) (v:val) : St (loc -> val) unit := fun s => ⟨tt, upd _ eql l v s⟩.
   Let get (l:loc) : St (loc -> val) val := fun s => ⟨s l, s⟩.
@@ -210,6 +194,14 @@ Section NonInterference.
       intros. destruct f_sEqual0. assumption.
   Qed.
 
+  Lemma get_get_rule (l1 l2:loc) :
+    ⊨ get l1 ≈ get l2
+      [{ fromPrePost' (fun s1 s2 => sUnit)
+                      (fun x1 s1 s1' x2 s2 s2' =>    s1' ≡ s1 s/\ x1 ≡ s1 l1
+                                                s/\ s2' ≡ s2 s/\ x2 ≡ s2 l2)
+      }].
+  Proof. cbv; intuition. Qed.
+
   Let prog := bind (get LOW) (fun n => ret n).
 
   Lemma prog_satisfies_NI : NI prog.
@@ -227,7 +219,7 @@ Section NonInterference.
         3:match goal with | [|-?x ≤ ?y] => unify x y end ; sreflexivity.
         intuition.
       + cbv; intuition.
-        apply q. intros H.
+        apply q.
         move: (f_sEqual2 _ _ q4 (sEq_refl false)) (f_sEqual2 _ _ q1 (sEq_refl false)) (f_sEqual2 _ _ q5 (sEq_refl false)) (f_sEqual2 _ _ q2 (sEq_refl false)).
         destruct q0. destruct p1. destruct q3.
         move=> [] [] [] [].
@@ -253,12 +245,13 @@ Section NonInterference.
         3:match goal with | [|-?x ≤ ?y] => unify x y end ; sreflexivity.
         intuition.
       + cbv; intuition.
-        apply q. intros H.
+        apply q.
         move: (f_sEqual2 _ _ q4 (sEq_refl false)) (f_sEqual2 _ _ q1 (sEq_refl false)) (f_sEqual2 _ _ q5 (sEq_refl false)) (f_sEqual2 _ _ q2 (sEq_refl false)).
         destruct q0. destruct p1. destruct q3.
         move=> [] [] [] [].
-        destruct H.
-        split; sreflexivity.
+        cbv; intuition.
+        destruct p.
+        sreflexivity.
   Qed.
 
   Let prog3 := bind (get LOW) (fun n => put HIGH n).
@@ -278,163 +271,39 @@ Section NonInterference.
         3:match goal with | [|-?x ≤ ?y] => unify x y end ; sreflexivity.
         intuition.
       + cbv; intuition.
-        apply q. intros H.
+        apply q.
         move: (f_sEqual2 _ _ p2 (sEq_refl false)) (f_sEqual2 _ _ q6 (sEq_refl false)) (f_sEqual2 _ _ q4 (sEq_refl false)) (f_sEqual2 _ _ q1 (sEq_refl false)) (f_sEqual2 _ _ q5 (sEq_refl false)) (f_sEqual2 _ _ q2 (sEq_refl false)).
         destruct q0. destruct p1. destruct q3. destruct a5. destruct a6.
         move=> [] [] [] [] [] [].
         intuition.
   Qed.
+
+  Require Import Coq.Arith.PeanoNat.
+
+  Let prog4 := bind (get HIGH) (fun h => if Nat.eqb h 1 then put LOW 1 else put LOW 1).
+  Lemma prog4_satisfies_NI : NI prog4.
+    unfold NI.
+    unfold prog4.
+    eapply gp_seq_rule.
+    - typeclasses eauto.
+    - apply get_get_rule.
+    - move=> a1 a2.
+      eapply weaken_rule2.
+      + remember (Nat.eqb a1 1) as H1.
+        remember (Nat.eqb a2 1) as H2.
+        destruct H1; destruct H2; apply put_put_rule.
+      + instantiate (1 := ⦑fun y => let '(npair v1 v2) := y in ?[x]⦒)=> /=.
+        sreflexivity.
+    - cbv; intuition.
+      apply q.
+      cbv; intuition.
+      move: (f_sEqual2 _ _ p1 (sEq_refl false)) => H1.
+      move: (f_sEqual2 _ _ q3 (sEq_refl false)) => H2.
+      destruct H1.
+      symmetry. assumption.
+      destruct a3. destruct a4. reflexivity.
+      Unshelve.
+      cbv ; intros; assumption.
+  Qed.
+
 End NonInterference.
-
-(*   Lemma prog_satisfies_NI : NI prog. *)
-(*     unfold NI. *)
-(*     unfold prog. *)
-(*     - eapply gp_seq_rule=> //. *)
-(*       typeclasses eauto. *)
-(*       + eapply apply_left_tot.  *)
-(*         typeclasses eauto. *)
-(*         apply get_left_rule. *)
-(*         move=> ? ; apply get_right_rule. *)
-(*         sreflexivity. *)
-(*       + move=> a1 a2. *)
-(*         eapply apply_left_tot. *)
-(*         typeclasses eauto. *)
-(*         ++ apply put_left_rule. *)
-(*         ++ move=> a0. apply put_right_rule. *)
-(*            Unshelve. *)
-(*            cbv. *)
-(*            refine (Sexists _ (fun nn mm => ⦑fun=> ?[x]⦒) _). *)
-(*            cbv; intuition. intros x y heq s0 n w. *)
-(*            destruct heq. *)
-(*            apply w. *)
-(*         ++ cbv; intuition. *)
-(*            destruct a4. destruct p0. destruct a5. *)
-(*            destruct a6. destruct p1. *)
-(*            unshelve instantiate (1 := (fun nn mm => ⦑fun=> ?[x]⦒)). *)
-(*         3:match goal with | [|-?x ≤ ?y] => unify x y end ; sreflexivity.  *)
-(*         intuition. *)
-(*       + cbv; intuition. *)
-(*         apply q. intros H.  *)
-(*         move: (eta_reduce q4 false) (eta_reduce q1 false) => ? ?. *)
-(*         move: (eta_reduce q5 false) (eta_reduce q2 false) => ? ?. *)
-(*         split. *)
-(*         ++ transitivity (s (inl false)). *)
-(*            symmetry. *)
-(*            assumption. *)
-(*            transitivity (a (inl false)). *)
-(*            symmetry; assumption. *)
-(*            symmetry. *)
-(*            transitivity (s (inr false)). *)
-(*            symmetry; assumption. *)
-(*            transitivity (a (inr false)). *)
-(*            symmetry; assumption. symmetry; assumption. *)
-(*         ++ transitivity a1. assumption. transitivity (a (inl false)). assumption. *)
-(*            symmetry. transitivity (s (inr false)). assumption. *)
-(*            transitivity (a (inr false)). *)
-(*            symmetry; assumption. symmetry; assumption. *)
-(*   Qed. *)
-(* End NonInterference. *)
-
-(*   Lemma prog_satisfies_NI : NI prog. *)
-(*     unfold NI. *)
-(*     unfold prog. *)
-(*     - eapply gp_seq_rule=> //. *)
-(*       typeclasses eauto. *)
-(*       + eapply apply_left_tot.  *)
-(*         typeclasses eauto. *)
-(*         apply get_left_rule. *)
-(*         move=> ? ; apply get_right_rule. *)
-(*         sreflexivity. *)
-(*       + move=> ? ? ; apply gp_ret_rule. *)
-(*         unshelve instantiate (1 := ⦑fun=> ?[x]⦒)=> /=. *)
-(*         3:match goal with | [|-?x ≤ ?y] => unify x y end ; sreflexivity.  *)
-(*         intuition. *)
-(*       + cbv; intuition. *)
-(*         apply q. intros H.  *)
-(*         move: (eta_reduce q4 false) (eta_reduce q1 false) => ? ?. *)
-(*         move: (eta_reduce q5 false) (eta_reduce q2 false) => ? ?. *)
-(*         split. *)
-(*         ++ transitivity (s (inl false)). *)
-(*            symmetry. *)
-(*            assumption. *)
-(*            transitivity (a (inl false)). *)
-(*            symmetry; assumption. *)
-(*            symmetry. *)
-(*            transitivity (s (inr false)). *)
-(*            symmetry; assumption. *)
-(*            transitivity (a (inr false)). *)
-(*            symmetry; assumption. symmetry; assumption. *)
-(*         ++ transitivity a1. assumption. transitivity (a (inl false)). assumption. *)
-(*            symmetry. transitivity (s (inr false)). assumption. *)
-(*            transitivity (a (inr false)). *)
-(*            symmetry; assumption. symmetry; assumption. *)
-(*   Qed. *)
-
-
-(* Import SPropNotations. *)
-
-(* Lemma get_left_rule {A} {a:A} : *)
-(*   θStNI nat ⊨ get _ ≈ ret a [{ fromPrePostNI (fun s1 s2 => sUnit) *)
-(*                               (fun v s1 s1' x s2 s2' => x ≡ a s/\ *)
-(*                                  s1 ≡ s1' s/\ s2 ≡ s2' s/\ v ≡ s1) }]. *)
-(* Proof. cbv ; intuition. Qed. *)
-
-(* Lemma get_right_rule {A} {a:A} : *)
-(*   θStNI nat ⊨ ret a ≈ get _ *)
-(*         [{fromPrePostNI (fun s1 s2 => sUnit) *)
-(*                         (fun x s1 s1' v s2 s2' => x ≡ a s/\ *)
-(*                            s1 ≡ s1' s/\ s2 ≡ s2' s/\ v ≡ s2) }]. *)
-(* Proof. cbv ; intuition. Qed. *)
-
-(* Lemma put_left_rule (v:nat) {A} {a:A} : *)
-(*   θStNI _ ⊨ put _ v ≈ ret a *)
-(*         [{fromPrePostNI (fun s1 s2 => sUnit) *)
-(*                         (fun _ s1 s1' x s2 s2' => x ≡ a s/\ *)
-(*                            s1' ≡ v s/\ s2 ≡ s2') *)
-(*                         }]. *)
-(* Proof. cbv ; intuition. Qed. *)
-
-(* Lemma put_right_rule (v:nat) {A} {a:A} : *)
-(*   θStNI _ ⊨ ret a ≈ put _ v *)
-(*         [{fromPrePostNI (fun s1 s2 => sUnit) *)
-(*                         (fun x s1 s1' _ s2 s2' => x ≡ a s/\ *)
-(*                            s1' ≡ s1 s/\ s2' ≡ v) *)
-(*                         }]. *)
-(* Proof. cbv ; intuition. Qed. *)
-
-(* Let prog := bind (put _ 21) (fun _ => ret 42). *)
-
-(* Import FunctionalExtensionality. *)
-
-(* Lemma prog_satisfies_NI : NI _ prog. *)
-(*   unfold NI. *)
-(*   unfold prog. *)
-(*   - eapply gp_seq_rule=> //. *)
-(*     typeclasses eauto. *)
-(*     + eapply apply_left_tot.  *)
-(*       typeclasses eauto. *)
-(*       apply put_left_rule. *)
-(*       move=> ? ; apply put_right_rule. *)
-(*       sreflexivity. *)
-(*     + move=> ? ? ; apply gp_ret_rule. *)
-(*       unshelve instantiate (1 := ⦑fun=> ?[x]⦒)=> /=. *)
-(*       3:match goal with | [|-?x ≤ ?y] => unify x y end ; sreflexivity.  *)
-(*       intuition. *)
-(*     + cbv ; intuition. *)
-(* Qed. *)
-
-(* Lemma prog_satisfies_NI' `{BindMonotonicRelationalSpecMonad0 (RelSt (nat × nat))} : NI _ prog. *)
-(*   unfold NI. *)
-(*   unfold prog. *)
-(*   eapply weaken_rule2. *)
-(*   - apply (seq_rule _ _ (RelSt (nat × nat))). *)
-(*     + unfold semantic_judgement. sreflexivity. *)
-(*       (* cbv. intros si post. intro. apply H0. sreflexivity. *) *)
-(*     + intros [] []. *)
-(*       admit. *)
-(*   - admit. *)
-(*   (* cbv. *) *)
-(*   (* intros [n0 n1] a [[] H]. *) *)
-(*   (* apply H. *) *)
-(*   (* reflexivity. *) *)
-(* Admitted. *)
