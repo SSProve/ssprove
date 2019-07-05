@@ -307,3 +307,68 @@ Section NonInterference.
   Qed.
 
 End NonInterference.
+
+Section ProductState.
+  Import SPropNotations.
+
+  Let loc := bool.
+  Let HIGH := true.
+  Let LOW := false.
+  Let val := nat.
+  Let eql := Bool.eqb.
+  Let eql_spec := Bool.eqb_spec.
+
+  Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ _ (θSt loc loc val) _ _ c1 c2 w) (at level 85).
+
+  Let fromPrePost' {A B} pre post := @fromPrePost loc loc val eql eql_spec eql eql_spec A B pre post.
+
+  Let put (l:loc) (v:val) : St (loc -> val) unit := fun s => ⟨tt, upd _ eql l v s⟩.
+  Let get (l:loc) : St (loc -> val) val := fun s => ⟨s l, s⟩.
+
+  Let St0 A := St (loc -> val) A.
+  Let StProd A1 A2 := St (loc + loc -> val) (A1 × A2).
+  Notation "m1 ;; m2" := (bind m1 (fun=> m2)) (at level 65).
+  Let eqll : (loc+loc) -> (loc+loc) -> bool.
+  Proof. move=> [l1|l1] [l2|l2]. 1,4:exact (eql l1 l2). all:exact false. Qed.
+  Let put' (l:loc+loc) (v:val) : StProd unit unit := fun s => ⟨⟨tt,tt⟩, upd _ eqll l v s⟩.
+  Let get' (l:loc+loc) : StProd val unit := fun s => ⟨⟨s l, tt⟩, s⟩.
+
+  Inductive st_rel {A1 A2} : St0 A1 -> St0 A2 -> StProd A1 A2 -> SProp :=
+  | srRet : forall a1 a2, st_rel (ret a1) (ret a2) (ret ⟨a1,a2⟩)
+  | srPutLeft : forall l v m1 m2 mrel,
+      st_rel m1 m2 mrel -> st_rel (put l v ;; m1) m2 (put' (inl l) v ;; mrel)
+  | srPutRight : forall l v m1 m2 mrel,
+      st_rel m1 m2 mrel -> st_rel m1 (put l v ;; m2) (put' (inr l) v ;; mrel)
+  | srGetLeft  : forall l m1 m2 mrel,
+      (forall v, st_rel (m1 v) m2 (mrel ⟨v,tt⟩)) -> st_rel (bind (get l) m1) m2 (bind (get' (inl l)) mrel)
+  | srGetRight  : forall l m1 m2 mrel,
+      (forall v, st_rel m1 (m2 v) (mrel ⟨v,tt⟩)) -> st_rel m1 (bind (get l) m2) (bind (get' (inr l)) mrel)
+  (* | srBind : forall {B1 B2} m1 m2 (mrel:StProd B1 B2) f1 f2 frel, *)
+  (*     @st_rel _ _ m1 m2 mrel -> *)
+  (*     (forall a1 a2, st_rel (f1 a1) (f2 a2) (frel ⟨a1,a2⟩)) -> *)
+  (*     st_rel (bind m1 f1) (bind m2 f2) (bind mrel frel) *)
+  .
+
+  Let prog := bind (get LOW) (fun n => ret n).
+
+
+  Ltac cleanup_st_rel :=
+    match goal with [|- st_rel _ _ ?x] => let h := fresh "h" in set (h := x) ; simpl in h ; unfold h ; clear h end.
+
+  Ltac GetRight :=
+    apply srGetRight=> ? ; instantiate (1:= fun '(npair v _)=> _) ; cleanup_st_rel. (* ; simpl. *)
+  Ltac GetLeft :=
+    apply srGetLeft=> ? ; instantiate (1:= fun '(npair v _)=> _); cleanup_st_rel.
+
+  Definition prog_coupling : { c : StProd _ _ ≫ st_rel prog prog c }.
+  Proof.
+    eexists. unfold prog. GetRight. GetLeft. apply srRet.
+  Defined.
+
+  Goal forall s, s (inl false) = s (inr false) ->
+            let c := Spr1 prog_coupling in
+            let '(npair ⟨i1,i2⟩ s') := c s in
+            s' (inl false) = s' (inr false) /\ i1 = i2.
+  Proof. move=> s H ; simpl ; split. assumption. by []. Qed.
+
+End ProductState.
