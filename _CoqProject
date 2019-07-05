@@ -39,3 +39,4 @@ theories/Relational/RelativeMonadExamples.v
 theories/Relational/GenericRulesSimple.v
 theories/Relational/GenericRulesComplex.v
 theories/Relational/RelationalState.v
+theories/Relational/EnrichedSetting.v

@@ -3,7 +3,7 @@ From Coq Require FunctionalExtensionality.
 From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms SRelationPairs.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures.
-From Mon.Relational Require Import RelativeMonads.
+From Mon.Relational Require Import RelativeMonads EnrichedSetting.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
@@ -18,6 +18,30 @@ Section TypeCat.
                _ _ _ _.
   Next Obligation. constructor ; cbv ; intuition ; etransitivity ; eauto. Qed.
   Next Obligation. cbv ; intuition. rewrite H0. apply H. Qed.
+
+  Import SPropNotations.
+  (* TypeCat × TypeCat *)
+  Definition TypeCatSq := prod_cat TypeCat TypeCat.
+
+  (* Functor × : TypeCat × TypeCat → TypeCat *)
+  Program Definition typeCat_prod : functor TypeCatSq TypeCat :=
+    mkFunctor (fun A => nfst A × nsnd A)
+              (fun _ _ f p => ⟨nfst f (nfst p), nsnd f (nsnd p)⟩)
+              _ _ _.
+  Next Obligation. cbv ; intuition ; f_equal=> //. Qed.
+
+  Program Definition TypeCat_cc : cartesian_category :=
+    mkCartesianCategory
+      TypeCat
+      unit
+      (mkNatTrans _ _ (fun _ _ => tt) _)
+      typeCat_prod
+      (mkNatTrans _ _ (fun=>nfst) _)
+      (mkNatTrans _ _ (fun=>nsnd) _)
+      (fun X A B f g x => ⟨f x, g x⟩)
+      _ _ _ _ _.
+  Next Obligation. cbv ; intuition. rewrite H H0=> //. Qed.
+  Next Obligation. destruct (f x)=> //. Qed.
 End TypeCat.
 
 Section OrdCat.
@@ -105,16 +129,6 @@ End MonadAsRMonad.
 
 Section RelationalSpecMonad.
 
-  Import SPropNotations.
-  (* TypeCat × TypeCat *)
-  Definition TypeCatSq := prod_cat TypeCat TypeCat.
-
-  (* Functor × : TypeCat × TypeCat → TypeCat *)
-  Program Definition typeCat_prod : functor TypeCatSq TypeCat :=
-    mkFunctor (fun A => nfst A × nsnd A)
-              (fun _ _ f p => ⟨nfst f (nfst p), nsnd f (nsnd p)⟩)
-              _ _ _.
-  Next Obligation. cbv ; intuition ; f_equal=> //. Qed.
 
   Definition Jprod := functor_comp typeCat_prod discr.
 
@@ -127,6 +141,8 @@ Section RelationalSpecMonad.
       (*   f1 ≼ f2 -> relmon_bind W f1 ≼ relmon_bind W f2. *)
 
   Context (M1 M2 : Monad).
+  Import SPropNotations.
+
   Let idxid := (prod_functor (functor_id TypeCat) (functor_id TypeCat)).
   Program Definition idxid_iso_id : natIso idxid (functor_id TypeCatSq) :=
     mkNatIso _ _ (fun=> Id _) (fun=> Id _) _ _ _.
@@ -166,8 +182,6 @@ Section RelationalSpecMonad.
 
   Definition RelationalEffectObservation (W:RelationalSpecMonad) : Type :=
     relativeMonadMorphism J (natIso_sym (functor_unit_left _)) compPair W.
-
-
 
   Program Definition πord1 {A B} : OrdCat⦅Jprod ⟨A, B⟩ ; discr A⦆ := ⦑ nfst ⦒.
   Next Obligation. intuition. Qed.

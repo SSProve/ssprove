@@ -3,6 +3,7 @@ From Coq Require FunctionalExtensionality.
 From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase.
+From Mon.Relational Require Import RelativeMonads EnrichedSetting.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
@@ -118,3 +119,50 @@ Module RelNotations.
            exact (dpair (fun p => forall xl xr xw, πw Y (nfst p xl) (nsnd p xr)) ⟨tl, tr⟩ tw))).
   Notation "f @R x" := (applyRel f x) (at level 85).
 End RelNotations.
+
+Section RelCat.
+  Import RelNotations.
+
+  Program Definition RelCat :=
+    mkCategory Rel arrRel (fun _ _ f1 f2 => f1 = f2) _ idRel
+               (fun _ _ _ f g => compRel g f) _ _ _ _.
+  Next Obligation. cbv ; intuition. induction H. induction H0=> //. Qed.
+
+  Definition rel_one : Rel := ⦑unit, unit| fun _ _ => unit⦒.
+  Definition to_rel_one X : RelCat⦅X;rel_one⦆ :=
+    dpair _ ⟨fun=> tt, fun=> tt⟩ (fun _ _ _=> tt).
+
+  Definition rel_prod (X Y : Rel) : Rel :=
+    ⦑πl X × πl Y, πr X × πr Y |
+     fun p1 p2 => X (nfst p1) (nfst p2) × Y (nsnd p1) (nsnd p2)|TyRel⦒.
+
+  Definition rel_prod_fmap {X1 X2 Y1 Y2} (f1:RelCat⦅X1;Y1⦆) (f2:RelCat⦅X2;Y2⦆)
+    : RelCat⦅rel_prod X1 X2; rel_prod Y1 Y2⦆.
+  Proof.
+    cbv.
+    unshelve eexists.
+    split ; move=> [p1 p2] ; constructor.
+    exact (πl f1 p1).
+    exact (πl f2 p2).
+    exact (πr f1 p1).
+    exact (πr f2 p2).
+    move=> [xl1 xl2] [yl1 yl2] [w1 w2] ; constructor.
+    exact (πw f1 xl1 yl1 w1).
+    exact (πw f2 xl2 yl2 w2).
+  Defined.
+  (*       := *)
+  (*   dpair _ ⟨fun p=>⟨πl f1 (nfst p), πl f2 (nsnd p)⟩, *)
+  (*                fun p => ⟨πr f1 (nfst p), πr f2 (nsnd p)⟩ ⟩ *)
+  (*         (fun p1 p2 pw => ⟨πw f1 (nfst p1) (nfst p2) (nfst pw), *)
+  (*                        πw f1 (nsnd p1) (nsnd p2) (nsnd pw)⟩). *)
+
+
+  (* Program Definition RelCatCart : cartesian_category := *)
+  (*   mkCartesianCategory *)
+  (*     RelCat *)
+  (*     rel_one *)
+  (*     (mkNatTrans to_rel_one _) *)
+
+  (*   term. *)
+
+End RelCat.

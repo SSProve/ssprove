@@ -115,13 +115,18 @@ Section ProductCat.
   Next Obligation. split ; apply cat_law3. Qed.
 End ProductCat.
 
-Section DiagonalFunctor.
-  Context (C:category).
+Section FunctorToProdCat.
+  Context {I C1 C2} (F1 : functor I C1) (F2 : functor I C2).
 
-  Program Definition diagonal_functor : functor C (prod_cat C C) :=
-    mkFunctor (fun A => ⟨A, A⟩) (fun _ _ f => ⟨f, f⟩) _ _ _.
-  Solve All Obligations with cbv ; intuition.
-End DiagonalFunctor.
+  Program Definition functor_to_prod_cat : functor I (prod_cat C1 C2) :=
+    mkFunctor (fun A => ⟨F1 A, F2 A⟩) (fun _ _ f => ⟨fmap F1 f, fmap F2 f⟩) _ _ _.
+  Next Obligation. cbv ; intuition ; rewrite H ; reflexivity. Qed.
+  Next Obligation. split ; apply functor_law1. Qed.
+  Next Obligation. split ; apply functor_law2. Qed.
+End FunctorToProdCat.
+
+Definition diagonal_functor (C:category) :=
+  functor_to_prod_cat (functor_id C) (functor_id C).
 
 Section ProjectionsFunctors.
   Context (C D : category).

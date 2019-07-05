@@ -183,7 +183,35 @@ Section RelationalProgramLogicFromRelativeMonad.
                  { w: r (dfst bl) (dfst br) ⫳ πw r' _ _ w (dsnd bl) (dsnd br)}).
   Check fun Γ (b : dfst (supp Γ) -> bool) => relSig Γ ⟪γ ↦ b γ = true <: Type⟫.
 
-  (* Lemma ident : type. *)
-  (* relSig Γ ⟪γ ↦ b γ = true⟫ ⊫ c1 ≈ c2 [{ w1 , w2 , wtrue }]  *)
+  Definition weaken {X Y} (f : X -> Y) {A : X -> Type} (x':{x:X ⫳ A x}) : Y :=
+    f (dfst x').
+
+  Notation "↑ x" := (@weaken _ _ x _) (at level 90).
+
+  (* Import EqNotations. *)
+  (* From Coq Require Import Logic.EqdepFacts. *)
+  (* Axiom K  : forall (U:Type), Streicher_K_ U. *)
+
+  (* Program Definition ordSig (X:OrdCat) (A : dfst X -> OrdCat) : OrdCat := *)
+  (*   dpair _ {x:dfst X ⫳ dfst (A x)} ⦑fun p1 p2 => dfst p1 ≤ dfst p2 s/\ *)
+  (*                                     forall (H : dfst p1 = dfst p2), *)
+  (*                                       rew H in dsnd p1 ≤ dsnd p2⦒. *)
+  (* Next Obligation. *)
+  (*   constructor; cbv ; intuition. *)
+  (*   revert H ; apply K ; intuition. *)
+  (*   estransitivity ; eassumption. *)
+
+  (*   induction H. *)
+  (*   dependent elimination H. *)
+
+  (* Program Definition weakenOrdCat {X Y A} (f : OrdCat⦅X; Y⦆) *)
+  (*   : OrdCat⦅ordSig X A;Y⦆ := *)
+  (*   f (dfst x'). *)
+
+
+  (* Lemma complex_if_rule {A} Γ b (c1 : _ -> M1 (nfst A)) (c2: _ -> M2 (nsnd A)) w1 w2 wtrue wfalse : *)
+  (*   relSig Γ ⟪γ ↦ b γ = true <: Type⟫ ⊫ ↑c1 ≈ ↑c2 [{ ↑w1 , ↑w2 , wtrue }] -> *)
+  (*   relSig Γ ⟪γ ↦ b γ = false <: Type⟫ ⊫ ↑c1 ≈ ↑c2 [{ ↑w1 , ↑w2 , wfalse }] -> *)
+  (*   Γ ⊫ c1 ≈ c2 [{ w1 , w2 , if_on_W b wtrue wfalse }]. *)
 
 End RelationalProgramLogicFromRelativeMonad.
