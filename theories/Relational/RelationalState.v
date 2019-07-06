@@ -1,5 +1,6 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-From Coq Require FunctionalExtensionality.
+From Coq Require FunctionalExtensionality Arith.PeanoNat.
+
 From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads.
@@ -133,7 +134,13 @@ Section NonInterference.
 
   Let fromPrePost' {A B} pre post := @fromPrePost loc loc val eql eql_spec eql eql_spec A B pre post.
 
-  Definition NI {A : Type} (c : St (loc -> val) A) := ⊨ c ≈ c [{ fromPrePost' (fun s1 s2 => s1 false ≡ s2 false) (fun i s1 s1' i' s2 s2' =>  s1' false ≡ s2' false s/\ i ≡ i')}].
+  Definition NI_pre_post {A:Type} :=
+    fromPrePost'
+      (fun s1 s2 => s1 false ≡ s2 false)
+      (fun (i:A) s1 s1' (i':A) s2 s2' =>  s1' false ≡ s2' false s/\ i ≡ i').
+
+  Definition NI {A : Type} (c : St (loc -> val) A) :=
+      ⊨ c ≈ c [{ NI_pre_post }].
 
   Let put (l:loc) (v:val) : St (loc -> val) unit := fun s => ⟨tt, upd _ eql l v s⟩.
   Let get (l:loc) : St (loc -> val) val := fun s => ⟨s l, s⟩.
@@ -278,10 +285,11 @@ Section NonInterference.
         intuition.
   Qed.
 
-  Require Import Coq.Arith.PeanoNat.
+  Import Coq.Arith.PeanoNat.
 
   Let prog4 := bind (get HIGH) (fun h => if Nat.eqb h 1 then put LOW 1 else put LOW 1).
   Lemma prog4_satisfies_NI : NI prog4.
+  Proof.
     unfold NI.
     unfold prog4.
     eapply gp_seq_rule.
@@ -326,10 +334,11 @@ Section ProductState.
   Let get (l:loc) : St (loc -> val) val := fun s => ⟨s l, s⟩.
 
   Let St0 A := St (loc -> val) A.
-  Let StProd A1 A2 := St (loc + loc -> val) (A1 × A2).
+  Let S12 := loc + loc -> val.
+  Let StProd A1 A2 := St S12 (A1 × A2).
   Notation "m1 ;; m2" := (bind m1 (fun=> m2)) (at level 65).
   Let eqll : (loc+loc) -> (loc+loc) -> bool.
-  Proof. move=> [l1|l1] [l2|l2]. 1,4:exact (eql l1 l2). all:exact false. Qed.
+  Proof. move=> [l1|l1] [l2|l2]. 1,4:exact (eql l1 l2). all:exact false. Defined.
   Let put' (l:loc+loc) (v:val) : StProd unit unit := fun s => ⟨⟨tt,tt⟩, upd _ eqll l v s⟩.
   Let get' (l:loc+loc) : StProd val unit := fun s => ⟨⟨s l, tt⟩, s⟩.
 
@@ -349,26 +358,71 @@ Section ProductState.
   (*     st_rel (bind m1 f1) (bind m2 f2) (bind mrel frel) *)
   .
 
-  Let prog := bind (get LOW) (fun n => ret n).
+  Definition coupling {A1 A2} c1 c2 := { c : StProd A1 A2 ≫ st_rel c1 c2 c}.
 
+  Program Definition θSt12 {A1 A2} : StProd A1 A2 -> dfst (RelSt S12 ⟨A1,A2⟩) :=
+    fun c s => ⦑ fun post => post (c s)⦒.
+  Next Obligation. move: H0 ; apply H. Qed.
 
   Ltac cleanup_st_rel :=
     match goal with [|- st_rel _ _ ?x] => let h := fresh "h" in set (h := x) ; simpl in h ; unfold h ; clear h end.
 
   Ltac GetRight :=
-    apply srGetRight=> ? ; instantiate (1:= fun '(npair v _)=> _) ; cleanup_st_rel. (* ; simpl. *)
+    apply srGetRight=> ? ; instantiate (1:= fun '(npair v _)=> _) ; cleanup_st_rel.
   Ltac GetLeft :=
     apply srGetLeft=> ? ; instantiate (1:= fun '(npair v _)=> _); cleanup_st_rel.
 
-  Definition prog_coupling : { c : StProd _ _ ≫ st_rel prog prog c }.
+  Let prog := bind (get LOW) (fun n => ret n).
+
+  Definition prog_coupling : coupling prog prog.
   Proof.
     eexists. unfold prog. GetRight. GetLeft. apply srRet.
   Defined.
+
+  Goal forall (c:= Spr1 prog_coupling), θSt12 c ≤ NI_pre_post.
+  Proof. cbv ; intuition. Qed.
 
   Goal forall s, s (inl false) = s (inr false) ->
             let c := Spr1 prog_coupling in
             let '(npair ⟨i1,i2⟩ s') := c s in
             s' (inl false) = s' (inr false) /\ i1 = i2.
   Proof. move=> s H ; simpl ; split. assumption. by []. Qed.
+
+  Let prog2 {B} (f : nat -> B) := bind (get LOW) (fun n => ret (f n)).
+
+  Definition prog2_coupling {B} (f:nat -> B) : coupling (prog2 f) (prog2 f).
+  Proof.
+    eexists. unfold prog2. GetLeft. GetRight. apply srRet.
+  Defined.
+
+  Goal forall {B} (f:nat -> B) (c:= Spr1 (prog2_coupling f)),
+      θSt12 c ≤ NI_pre_post.
+  Proof. cbv ; intuition. apply q ; intuition. induction p=> //. Qed.
+
+  Let prog3 := bind (get LOW) (fun n => put HIGH n).
+  Definition prog3_coupling : coupling prog3 prog3.
+  Proof.
+    eexists ; unfold prog3.
+    GetLeft. GetRight. apply srPutLeft. apply srPutRight. apply srRet.
+  Defined.
+
+  Goal forall (c:=Spr1 (prog3_coupling)), θSt12 c ≤ NI_pre_post.
+  Proof. cbv ; intuition. Qed.
+
+  Import Coq.Arith.PeanoNat.
+
+  Let prog4 := bind (get HIGH) (fun h => if Nat.eqb h 1 then put LOW 1 else put LOW 1).
+
+  Definition prog4_coupling : coupling prog4 prog4.
+  Proof.
+    eexists ; unfold prog4.
+    GetRight. GetLeft.
+    match goal with | [|- st_rel (if ?b then _ else _) _ _] => destruct b end;
+    match goal with | [|- st_rel _ (if ?b then _ else _) _] => destruct b end;
+    apply srPutRight ; apply srPutLeft ; apply srRet.
+  Defined.
+
+  Goal forall (c:=Spr1 prog4_coupling), θSt12 c ≤ NI_pre_post.
+  Proof. cbv ; intuition. Qed.
 
 End ProductState.
