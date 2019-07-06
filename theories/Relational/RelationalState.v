@@ -314,6 +314,46 @@ Section NonInterference.
       cbv ; intros; assumption.
   Qed.
 
+  Let prog5 := bind (get HIGH) (fun h => if Nat.eqb h 1 then put LOW h else put LOW 1).
+  Lemma prog5_satisfies_NI : NI prog5.
+  Proof.
+    unfold NI.
+    unfold prog5.
+    eapply gp_seq_rule.
+    - typeclasses eauto.
+    - apply get_get_rule.
+    - move=> a1 a2.
+      eapply weaken_rule2.
+      + remember (Nat.eqb a1 1) as H1.
+        remember (Nat.eqb a2 1) as H2.
+        destruct H1; destruct H2; symmetry in HeqH2; symmetry in HeqH1.
+        Focus 4.
+        apply put_put_rule.
+        apply (Nat.eqb_eq a1 1) in HeqH1.
+        apply (Nat.eqb_eq a2 1) in HeqH2.
+        induction HeqH1.
+        induction HeqH2.
+        apply put_put_rule.
+        apply (Nat.eqb_eq a1 1) in HeqH1.
+        induction HeqH1.
+        apply put_put_rule.
+        apply (Nat.eqb_eq a2 1) in HeqH2.
+        induction HeqH2.
+        apply put_put_rule.
+      + instantiate (1 := ⦑fun y => let '(npair v1 v2) := y in ?[x]⦒)=> /=.
+        sreflexivity.
+    - cbv; intuition.
+      apply q.
+      cbv; intuition.
+      move: (f_sEqual2 _ _ p1 (sEq_refl false)) => H1.
+      move: (f_sEqual2 _ _ q3 (sEq_refl false)) => H2.
+      destruct H1.
+      symmetry. assumption.
+      destruct a3. destruct a4. reflexivity.
+      Unshelve.
+      cbv ; intros; assumption.
+  Qed.
+
 End NonInterference.
 
 Section ProductState.
@@ -337,6 +377,7 @@ Section ProductState.
   Let S12 := loc + loc -> val.
   Let StProd A1 A2 := St S12 (A1 × A2).
   Notation "m1 ;; m2" := (bind m1 (fun=> m2)) (at level 65).
+
   Let eqll : (loc+loc) -> (loc+loc) -> bool.
   Proof. move=> [l1|l1] [l2|l2]. 1,4:exact (eql l1 l2). all:exact false. Defined.
   Let put' (l:loc+loc) (v:val) : StProd unit unit := fun s => ⟨⟨tt,tt⟩, upd _ eqll l v s⟩.
@@ -442,7 +483,8 @@ Section ProductState.
 
   Goal forall {B} (f:nat -> B) (c:= Spr1 (prog2_coupling f)),
       θSt12 c ≤ NI_pre_post.
-  Proof. cbv ; intuition. apply q ; intuition. induction p=> //. Qed.
+  Proof. cbv ; intuition.
+         apply q ; intuition. induction p=> //. Qed.
 
   Let prog3 := bind (get LOW) (fun n => put HIGH n).
   Definition prog3_coupling : coupling prog3 prog3.
@@ -464,10 +506,24 @@ Section ProductState.
     GetRight. GetLeft.
     match goal with | [|- st_rel (if ?b then _ else _) _ _] => destruct b end;
     match goal with | [|- st_rel _ (if ?b then _ else _) _] => destruct b end;
-    apply srPutRight ; apply srPutLeft ; apply srRet.
+    apply srPutRight; apply srPutLeft; apply srRet.
   Defined.
 
   Goal forall (c:=Spr1 prog4_coupling), θSt12 c ≤ NI_pre_post.
+  Proof. cbv ; intuition. Qed.
+
+  Let prog5 := bind (get HIGH) (fun h => if Nat.eqb h 1 then put LOW h else put LOW 1).
+
+  Definition prog5_coupling : coupling prog5 prog5.
+  Proof.
+    eexists ; unfold prog5.
+    GetRight. GetLeft.
+    match goal with | [|- st_rel (if ?b then _ else _) _ _] => destruct b end;
+    match goal with | [|- st_rel _ (if ?b then _ else _) _] => destruct b end.
+    admit.
+  Admitted.
+
+  Goal forall (c:=Spr1 prog5_coupling), θSt12 c ≤ NI_pre_post.
   Proof. cbv ; intuition. Qed.
 
 End ProductState.
