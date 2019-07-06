@@ -364,6 +364,51 @@ Section ProductState.
     fun c s => ⦑ fun post => post (c s)⦒.
   Next Obligation. move: H0 ; apply H. Qed.
 
+  Import SPropAxioms.
+  Lemma coupling_soundness {A1 A2} c1 c2 (c:StProd A1 A2) :
+    st_rel c1 c2 c -> forall w, θSt12 c ≤ w -> ⊨ c1 ≈ c2 [{ w }].
+  Proof.
+    induction 1=> w.
+    - apply weaken_rule2. apply ret_rule2.
+    - move=> Hw ; simple refine (apply_left _ _ _ _ (w1:=θSt12 (put' (inl l) v)) (w2:= θSt12 mrel) _ (IHst_rel _ _) _)=> //=.
+      eapply weaken_rule2. apply put_left_rule.
+      cbv ; intuition; destruct a1 ; destruct a2.
+      match goal with [H : a0 ⟨_, ?s0⟩ |- _ ] => enough (s ≡ s0) as Hs ; [induction Hs ; apply H|] end.
+      apply funext_sprop; move=> [l'|l'].
+      induction (f_sEqual2 _ _ q0 (sEq_refl l'))=> //.
+      induction (f_sEqual2 _ _ q (sEq_refl l'))=>//.
+    - move=> Hw ; simple refine (apply_right _ _ _ _ (w1:=θSt12 (put' (inr l) v)) (w2:= θSt12 mrel) _ (IHst_rel _ _) _)=> //=.
+      eapply weaken_rule2. apply put_right_rule.
+      cbv ; intuition; destruct a1 ; destruct a2.
+      match goal with [H : a0 ⟨_, ?s0⟩ |- _ ] => enough (s ≡ s0) as Hs ; [induction Hs ; apply H|] end.
+      apply funext_sprop; move=> [l'|l'].
+      induction (f_sEqual2 _ _ q0 (sEq_refl l'))=> //.
+      induction (f_sEqual2 _ _ q (sEq_refl l'))=>//.
+    - apply weaken_rule2.
+      assert (m2 = skip ;; m2) as -> by (rewrite /bind monad_law1 //).
+      eapply gp_seq_rule ; [typeclasses eauto|..].
+      apply get_left_rule.
+      instantiate (1:= ⦑fun '⟨a1, a2⟩ => _⦒); move=> /= ? ?; apply H; sreflexivity.
+      cbv ; intuition.
+      induction q.
+      enough (a ≡ s0) as Hs ; [induction Hs ; apply H0|].
+      apply funext_sprop; move=> [l'|l'].
+      induction (f_sEqual2 _ _ q1 (sEq_refl l'))=> //.
+      induction (f_sEqual2 _ _ q0 (sEq_refl l'))=>//.
+    - apply weaken_rule2.
+      assert (m1 = skip ;; m1) as -> by (rewrite /bind monad_law1 //).
+      eapply gp_seq_rule; [typeclasses eauto|..].
+      apply get_right_rule.
+      instantiate (1:= ⦑fun '⟨a1, a2⟩ => _⦒); move=> /= ? ?; apply H; sreflexivity.
+      cbv ; intuition.
+      induction q.
+      enough (a ≡ s0) as Hs ; [induction Hs ; apply H0|].
+      apply funext_sprop; move=> [l'|l'].
+      induction (f_sEqual2 _ _ q1 (sEq_refl l'))=> //.
+      induction (f_sEqual2 _ _ q0 (sEq_refl l'))=>//.
+      Unshelve. all:cbv ; intuition; destruct y; inversion H0; auto.
+  Qed.
+
   Ltac cleanup_st_rel :=
     match goal with [|- st_rel _ _ ?x] => let h := fresh "h" in set (h := x) ; simpl in h ; unfold h ; clear h end.
 
