@@ -140,7 +140,104 @@ Section NonInterference.
       (fun (i:A) s1 s1' (i':A) s2 s2' =>  s1' false ≡ s2' false s/\ i ≡ i').
 
   Definition NI {A : Type} (c : St (loc -> val) A) :=
-      ⊨ c ≈ c [{ NI_pre_post }].
+    ⊨ c ≈ c [{ NI_pre_post }].
+
+
+  Program Definition if_add_pre_true {A1 A2}
+          (w : dfst (RelSt ((loc + loc) -> val) ⟨A1,A2⟩))
+          (b : bool)
+    : dfst (RelSt ((loc + loc) -> val) ⟨A1,A2⟩) :=
+    fun s0=> ⦑fun p => b ≡ true s/\ Spr1 (w s0) p ⦒.
+  Next Obligation. cbv; intuition. Qed.
+
+  Lemma if_add_pre_true_true {A1 A2} (w : dfst (RelSt ((loc + loc) -> val) ⟨A1,A2⟩)) :
+    if_add_pre_true w true = w.
+  Proof. cbv; intuition. extensionality s0.
+         apply Ssig_eq.
+         cbv; intuition.
+         extensionality p.
+         apply SPropAxioms.sprop_ext.
+         constructor.
+         cbv; intuition.
+  Qed.
+
+  Program Definition if_add_pre_false {A1 A2}
+          (w : dfst (RelSt ((loc + loc) -> val) ⟨A1,A2⟩))
+          (b : bool)
+    : dfst (RelSt ((loc + loc) -> val) ⟨A1,A2⟩) :=
+    fun s0=> ⦑fun p => b ≡ false s/\ Spr1 (w s0) p ⦒.
+  Next Obligation. cbv; intuition. Qed.
+  Lemma if_add_pre_false_false {A1 A2} (w : dfst (RelSt ((loc + loc) -> val) ⟨A1,A2⟩)) :
+    if_add_pre_false w false = w.
+  Proof. cbv; intuition. extensionality s0.
+         Check w s0.
+         apply Ssig_eq.
+         cbv; intuition.
+         extensionality p.
+         apply SPropAxioms.sprop_ext.
+         constructor.
+         cbv; intuition.
+  Qed.
+
+  Lemma if_pre_rule {A1 A2} {m1 : St (loc -> val) A1} {m2 : St (loc -> val) A2} (b : bool) {w} :
+    ⊨ m1 ≈ m2 [{ if b then if_add_pre_true w b else if_add_pre_false w b }]
+    -> ⊨ m1 ≈ m2 [{ w }].
+  Proof. intros H. destruct b eqn:Heqb; subst.
+         all: eapply weaken_rule2; [apply H | cbv; intuition].
+  Qed.
+
+  Lemma if_rule_left {A1 A2} {m1 m1' : St (loc -> val) A1} {m2 : St (loc -> val) A2} {b : bool} {w} :
+    ⊨ m1 ≈ m2 [{ if_add_pre_true w b }]
+    -> ⊨ m1' ≈ m2 [{ if_add_pre_false w b }]
+    -> ⊨ if b then m1 else m1' ≈ m2 [{ w }].
+  Proof. intros H1 H2. destruct b eqn:Heqb; subst.
+         - eapply weaken_rule2; [apply H1 | cbv; intuition].
+         - eapply weaken_rule2; [apply H2 | cbv; intuition].
+  Qed.
+
+  Lemma if_rule_left' {A1 A2} {m1 m1' : St (loc -> val) A1} {m2 : St (loc -> val) A2} {b : bool} {w} :
+    (b = false -> ⊨ m1' ≈ m2 [{ w }])
+    -> (b = true -> ⊨ m1 ≈ m2 [{ w }])
+    -> ⊨ if b then m1 else m1' ≈ m2 [{ w }].
+  Proof. intros H1 H2. destruct b eqn:Heqb; subst; cbv; intuition.
+  Qed.
+
+  Lemma if_rule_right {A1 A2} {m1 : St (loc -> val) A1} {m2 m2' : St (loc -> val) A2} {b : bool} {w} :
+    ⊨ m1 ≈ m2 [{ if_add_pre_true w b }]
+    -> ⊨ m1 ≈ m2' [{ if_add_pre_false w b }]
+    -> ⊨ m1 ≈ if b then m2 else m2' [{ w }].
+  Proof. intros H1 H2. destruct b eqn:Heqb; subst.
+         - eapply weaken_rule2; [apply H1 | cbv; intuition].
+         - eapply weaken_rule2; [apply H2 | cbv; intuition].
+  Qed.
+
+  Lemma if_rule_right' {A1 A2} {m1 : St (loc -> val) A1} {m2 m2' : St (loc -> val) A2} {b : bool} {w} :
+    (b = false -> ⊨ m1 ≈ m2' [{ w }])
+    -> (b = true -> ⊨ m1 ≈ m2 [{ w }])
+    -> ⊨  m1 ≈ if b then m2 else m2' [{ w }].
+  Proof. intros H1 H2. destruct b eqn:Heqb; subst; cbv; intuition.
+  Qed.
+
+  Lemma if_rule {A1 A2} {m1: St (loc -> val) A1} {m2 : St (loc -> val) A2} {w w'} (b:bool) :
+      (if b then ⊨ m1 ≈ m2 [{ w }] else ⊨ m1 ≈ m2 [{ w' }])
+      -> ⊨ m1 ≈ m2 [{ if b then w else w' }].
+  Proof. destruct b=> //. Qed.
+
+  Lemma if_move_true {A1 A2} {m1: St (loc -> val) A1} {m2 : St (loc -> val) A2} {w} (b:bool) :
+      (b = true -> ⊨ m1 ≈ m2 [{ w }])
+      -> ⊨ m1 ≈ m2 [{ if_add_pre_true w b }].
+  Proof. destruct b=> //.
+         - cbv; intuition.
+         - cbv; intuition. inversion p.
+  Qed.
+
+  Lemma if_move_false {A1 A2} {m1: St (loc -> val) A1} {m2 : St (loc -> val) A2} {w} (b:bool) :
+      (b = false -> ⊨ m1 ≈ m2 [{ w }])
+      -> ⊨ m1 ≈ m2 [{ if_add_pre_false w b }].
+  Proof. destruct b=> //.
+         - cbv; intuition. inversion p.
+         - cbv; intuition.
+  Qed.
 
   Let put (l:loc) (v:val) : St (loc -> val) unit := fun s => ⟨tt, upd _ eql l v s⟩.
   Let get (l:loc) : St (loc -> val) val := fun s => ⟨s l, s⟩.
@@ -327,8 +424,7 @@ Section NonInterference.
       + remember (Nat.eqb a1 1) as H1.
         remember (Nat.eqb a2 1) as H2.
         destruct H1; destruct H2; symmetry in HeqH2; symmetry in HeqH1.
-        Focus 4.
-        apply put_put_rule.
+        4: apply put_put_rule.
         apply (Nat.eqb_eq a1 1) in HeqH1.
         apply (Nat.eqb_eq a2 1) in HeqH2.
         induction HeqH1.
@@ -354,6 +450,28 @@ Section NonInterference.
       cbv ; intros; assumption.
   Qed.
 
+  Lemma prog5_satisfies_NI2 : NI prog5.
+  Proof.
+    unfold NI. unfold prog5.
+    eapply gp_seq_rule.
+    - typeclasses eauto.
+    - apply get_get_rule.
+    - intros a1 a2.
+      eapply weaken_rule2.
+      apply if_rule_left'; intros Heqa1; apply if_rule_right'; intros Heqa2; subst; try (apply (Nat.eqb_eq _ 1) in Heqa1); try (apply (Nat.eqb_eq _ 1) in Heqa2); subst; apply put_put_rule.
+      instantiate (1 := ⦑fun y => let '(npair v1 v2) := y in ?[x]⦒)=> /=.
+      sreflexivity.
+    - cbv; intuition.
+      apply q.
+      cbv; intuition.
+      move: (f_sEqual2 _ _ p1 (sEq_refl false)) => H1.
+      move: (f_sEqual2 _ _ q3 (sEq_refl false)) => H2.
+      destruct H1.
+      symmetry. assumption.
+      destruct a3. destruct a4. reflexivity.
+      Unshelve.
+      cbv ; intros; assumption.
+  Qed.
 End NonInterference.
 
 Section ProductState.
