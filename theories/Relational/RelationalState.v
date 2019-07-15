@@ -515,20 +515,16 @@ Section ProductState.
   Let prog5 := bind (get HIGH) (fun h => if Nat.eqb h 1 then put LOW h else put LOW 1).
 
   (* with Definition/Qed it was opaque *)
-  Program Definition prog5_coupling : coupling prog5 prog5.
+  Definition prog5_coupling : coupling prog5 prog5.
   Proof.
     eexists ; unfold prog5.
     GetRight. GetLeft.
-    match goal with | [|- st_rel (if ?b then _ else _) _ _] => destruct b eqn:Hb1 end;
-      match goal with | [|- st_rel _ (if ?b then _ else _) _] => destruct b eqn:Hb2 end.
-    4: apply srPutLeft; apply srPutRight; apply srRet.
-    - apply (Nat.eqb_eq _ 1) in Hb1. apply (Nat.eqb_eq _ 1) in Hb2.
-      induction Hb1. induction Hb2.
-      apply srPutLeft; apply srPutRight; apply srRet.
-    - apply (Nat.eqb_eq _ 1) in Hb1. induction Hb1.
-      apply srPutLeft; apply srPutRight; apply srRet.
-    - apply (Nat.eqb_eq _ 1) in Hb2. induction Hb2.
-      apply srPutLeft; apply srPutRight; apply srRet.
+    match goal with | [|- st_rel (if ?b then _ else _) _ _] =>
+                      destruct b eqn:Hb1 ; try apply (Nat.eqb_eq _ 1) in Hb1 end;
+      match goal with | [|- st_rel _ (if ?b then _ else _) _] =>
+                        destruct b eqn:Hb2 ; try apply (Nat.eqb_eq _ 1) in Hb2
+      end;
+    cycle 3; subst ; apply srPutLeft; apply srPutRight; apply srRet.
   Defined.
 
   Print prog5_coupling.
