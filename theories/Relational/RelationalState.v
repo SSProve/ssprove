@@ -236,6 +236,7 @@ Section NonInterference.
     unfold prog.
     - apply_seq=> //.
       + eapply apply_left_tot.
+        typeclasses eauto.
         apply get_left_rule.
         move=> ? ; apply get_right_rule.
         sreflexivity.

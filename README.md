@@ -9,11 +9,13 @@ publicly available at https://gitlab.inria.fr/kmaillar/dijkstra-monads-for-all
 The prerequisite are inherited from that developement, namely:
 - It requires the `master` branch of Coq available from:
   https://github.com/coq/coq/commits/master
-  (in particular the following commit is known to work: 1c2cfc1f)
+  (in particular the following commit is known to work: d501690a7d767d4a542867c5b6a65a722fa8c4c1)
 - It also requires the equations plugin, `master` branch (only for the
   General recursion examples at the end of DijkstraMonadExamples.v;
   comment out if not needed): https://github.com/mattam82/Coq-Equations
-  (in particular the following commit is known to work: 20bc9b26)
+  (in particular the following commit is known to work: 710f039ced8b6c016dd5954dad241888189e0d48)
+- For examples based on probabilities, it requires the math-comp-analysis
+  library (version 0.2.2) that can be obtained through opam.
  
 
 # Step-by-step Guide

@@ -136,7 +136,9 @@ Section GoingPractical.
   Import SPropNotations.
   Program Definition extend_to_Jprod {A1 A2 B1 B2} (wf0 : A1 × A2 -> dfst (W ⟨B1,B2⟩)) : OrdCat⦅Jprod ⟨A1,A2⟩ ; W ⟨B1, B2⟩⦆ :=
     ⦑wf0⦒.
-  Next Obligation. cbv ; intuition. destruct y; induction H ; sreflexivity. Qed.
+  Next Obligation.
+    cbv ; intuition. destruct y; subst_sEq ; sreflexivity.
+  Qed.
 
 
   Definition skip {M:Monad} : M unit := ret tt.
