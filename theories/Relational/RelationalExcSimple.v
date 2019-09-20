@@ -77,6 +77,30 @@ Section Exceptions.
     cbv in Hlr ; move: (Hlr e1 e2 post pexc H) ; destruct (cerr1 e1) ; destruct (cerr2 e2)=> //=.
   Qed.
 
+  Definition ExcProd A1 A2 := Exn unit (A1 × A2).
+
+  Definition throw {E A} (e:E) : Exn E A :=
+    @opr (ExnS E) (@ExnAr _) _ (Raise e) (@False_rect _).
+
+  Inductive exc_rel {A1 A2} : Exc1 A1 -> Exc2 A2 -> ExcProd A1 A2 -> SProp :=
+  | erRet : forall a1 a2, exc_rel (ret a1) (ret a2) (ret ⟨a1,a2⟩)
+  | erRaiseLeft : forall e1 c2, exc_rel (throw e1) c2 (throw tt)
+  | erRaiseRight : forall c1 e2, exc_rel c1 (throw e2) (throw tt)
+  | erCatch : forall c1 c2 cerr1 cerr2 c cerr,
+      exc_rel c1 c2 c ->
+      (forall e1 e2, exc_rel (cerr1 e1) (cerr2 e2) (cerr tt)) ->
+      (forall e1 a2, exc_rel (cerr1 e1) (ret a2) (cerr tt)) ->
+      (forall a1 e2, exc_rel (ret a1) (cerr2 e2) (cerr tt)) ->
+      exc_rel (catch c1 cerr1) (catch c2 cerr2) (catch c cerr).
+  (* The product of catch is a bit crazy : it requires the
+  exceptional branch of the product program to be at the
+  same time the product of 3 different pair of programs...
+  In order to do anything usable, the product should probably have access to
+  some more memory cells than the individual programs so that it can
+  track the exceptional status of each "projections"... but that looks a bit
+  like a hack to get what you would have in the full setting.
+  *)
+
 End Exceptions.
 
 

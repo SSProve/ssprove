@@ -12,7 +12,7 @@ Section TypeCat.
   Program Definition TypeCat : category :=
     mkCategory Type
                (fun A B => A -> B)
-               (fun _ _ f g => forall x, f x = g x) _
+               (fun _ _ f g => f =1 g) _
                (fun A a => a)
                (fun _ _ _ f g x => f (g x))
                _ _ _ _.
@@ -41,7 +41,7 @@ Section TypeCat.
       (fun X A B f g x => ⟨f x, g x⟩)
       _ _ _ _ _.
   Next Obligation. cbv ; intuition. rewrite H H0=> //. Qed.
-  Next Obligation. destruct (f x)=> //. Qed.
+  Next Obligation. move=> a; case: (f a)=> //. Qed.
 End TypeCat.
 
 Section OrdCat.
@@ -120,9 +120,9 @@ Section MonadAsRMonad.
   Program Definition monad_to_relmon : relativeMonad (functor_id TypeCat) :=
     mkRelativeMonad M (fun A => @ret M A) (fun A B f => bind^~ f) _ _ _ _.
   Next Obligation. cbv ; intuition; rewrite (funext H) //. Qed.
-  Next Obligation. rewrite /bind monad_law2 //. Qed.
-  Next Obligation. rewrite /bind monad_law1 //. Qed.
-  Next Obligation. rewrite /bind monad_law3 //. Qed.
+  Next Obligation. move=> ?; rewrite /bind monad_law2 //. Qed.
+  Next Obligation. move=> ?; rewrite /bind monad_law1 //. Qed.
+  Next Obligation. move=> ?; rewrite /bind monad_law3 //. Qed.
 End MonadAsRMonad.
 
 
@@ -281,7 +281,12 @@ Section OrderedMonadAsRMonad.
   Next Obligation. rewrite /bind monad_law3 //. Qed.
 
   (* We would like to derive such an instance but the types don't match exactly, the def of the typeclass should be generalized to some extent *)
-  (* Global Instance : BindMonotonicRelationalSpecMonad0 ordmonad_to_relmon. *)
+  Class BindMonotonicUnaryRelationalSpecMonad (W : relativeMonad discr) : SProp :=
+    ursm_bind_monotonic :
+      forall {A B}, SProper (ordcat_hom_ord s==> ordcat_hom_ord) (@relmon_bind _ _ _ W A B).
+
+  Global Instance : BindMonotonicUnaryRelationalSpecMonad ordmonad_to_relmon.
+  Proof. cbv=> * ; apply omon_bind=> //; sreflexivity. Qed.
 End OrderedMonadAsRMonad.
 
 Section RelationalSpecMonadZeroFromOrderedMonad.

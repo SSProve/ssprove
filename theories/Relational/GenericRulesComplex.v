@@ -114,10 +114,19 @@ Section RelationalProgramLogicFromRelativeMonad.
   Import RelNotations.
 
   Notation " Γ ⊫ c1 ≈ c2 [{ w1 , w2 , w }]" :=
-    ((forall γ1 : πl Γ, Spr1 (θ1 _) (c1 γ1) ≤ Spr1 w1 γ1) s/\
+    ((forall γ1 : πl Γ, @Spr1 _ _ (θ1 _) (c1 γ1) ≤ Spr1 w1 γ1) s/\
     (forall γ2 : πr Γ, Spr1 (θ2 _) (c2 γ2) ≤ Spr1 w2 γ2) s/\
     (forall γ : ⟬Γ⟭, Spr1 (θW ⟨_,_⟩) ⟨c1 (πl γ), c2 (πr γ)⟩ ≤ Spr1 w (dfst γ)))
       (at level 85).
+
+  Check fun
+        {Γ1 Γ2} {Γr:Γ1 -> Γ2 -> Type} (Γ := ⦑Γ1,Γ2|Γr⦒)
+        {A1 A2}
+        {m1 : Γ1 -> M1 A1} {m2 : Γ2 -> M2 A2}
+        {wm1 : OrdCat⦅discr Γ1; W1 A1⦆}
+        {wm2 : OrdCat⦅discr Γ2; W2 A2⦆}
+        {wm : OrdCat⦅discr (Γ1 × Γ2); W0 ⟨A1,A2⟩⦆} =>
+      Γ ⊫ m1 ≈ m2 [{ wm1, wm2, wm}].
 
   Notation "⋅⊫ c1 ≈ c2 [{ w1 , w2 , w }]" :=
     (Hi unit ⊫ (fun=> c1) ≈ (fun=> c2) [{ @OrdCat_cst (discr unit) _ w1,
@@ -160,6 +169,66 @@ Section RelationalProgramLogicFromRelativeMonad.
     eapply (Spr2 (actW _ _ _ _ _ _ _))=> //.
     apply (Hm ⦑tt,tt|I⦒).
   Qed.
+
+  Definition extend (r1 r2:Rel) : Rel :=
+    @mkRel (πl r1 × πl r2) (πr r1 × πr r2) (fun bl br => r1 (nfst bl) (nfst br) × r2 (nsnd bl) (nsnd br)).
+
+
+  Section StrongBind.
+    Context {M:Monad} {Γ A B:Type} (m:Γ -> M A) (f : Γ × A -> M B).
+    Definition bindS (γ : Γ) : M B :=
+      bind (m γ) (fun a => f ⟨γ,a⟩).
+  End StrongBind.
+
+  Section OrdCatProd.
+    Context (O1 O2 : OrdCat).
+    Definition prod_order : srelation (dfst O1 × dfst O2) :=
+      fun o o' => nfst o ≤ nfst o' s/\ nsnd o ≤ nsnd o'.
+    Global Instance prod_order_preorder : SRelationClasses.PreOrder prod_order.
+    Proof. constructor ; cbv ; intuition ; estransitivity ; eassumption. Qed.
+    Program Definition ordcat_prod  : OrdCat :=
+      dpair _ (dfst O1 × dfst O2) ⦑prod_order⦒.
+    Next Obligation. typeclasses eauto. Defined.
+  End OrdCatProd.
+
+  Section StrongBindSpec.
+    Context {W:relativeMonad discr}
+            `{BindMonotonicUnaryRelationalSpecMonad W}
+            (Γ:OrdCat) {A B:Type}  (f : OrdCat⦅ordcat_prod Γ (discr A); W B⦆).
+    Program Definition bind_specS : OrdCat⦅ordcat_prod Γ (W A); W B⦆ :=
+      ⦑fun '(npair γ m) =>
+         let f' : OrdCat⦅discr A;W B⦆ := ⦑fun a => Spr1 f ⟨γ,a⟩⦒ in
+         Spr1 (relmon_bind W f') m⦒.
+    Next Obligation. cbv ; intuition ; subst_sEq ; sreflexivity. Qed.
+    Next Obligation.
+      cbv ; intuition.
+      estransitivity.
+      move: q ; apply (Spr2 (relmon_bind W ⦑ fun a : A => Spr1 f ⟨ nfst, a ⟩ ⦒)).
+      apply ursm_bind_monotonic=> ? /= ; apply (Spr2 f)=> /= ; split=> //.
+    Qed.
+  End StrongBindSpec.
+
+  (* Do we need an extension to dependent product ? *)
+
+
+  (* Lemma full_seq_rule_with_ctx *)
+  (*       {Γ1 Γ2} {Γr:Γ1 -> Γ2 -> Type} (Γ := ⦑Γ1,Γ2|Γr⦒) *)
+  (*       {A1 A2 B1 B2} *)
+  (*       {m1 : Γ1 -> M1 A1} {m2 : Γ2 -> M2 A2} *)
+  (*       {wm1 : OrdCat⦅discr Γ1; W1 A1⦆} *)
+  (*       {wm2 : OrdCat⦅discr Γ2; W2 A2⦆} *)
+  (*       {wm : OrdCat⦅discr (Γ1 × Γ2); W0 ⟨A1,A2⟩⦆} *)
+  (*       (Γ':=extend Γ ⦑A1,A2|fun=>fun=>unit|TyRel⦒) *)
+  (*       {f1 : Γ1 × A1 -> M1 B1} {f2 : Γ2 × A2 -> M2 B2} *)
+  (*       {wf1 : OrdCat⦅discr (Γ1 × A1); W1 B1⦆} *)
+  (*       {wf2:OrdCat⦅discr (Γ2 × A2);W2 B2⦆} *)
+  (*       {wf : OrdCat⦅Jprod ⟨Γ1×A1,Γ2×A2⟩ ; W0 ⟨B1, B2⟩⦆} : *)
+  (*   Γ ⊫ m1 ≈ m2 [{ wm1, wm2, wm }] -> *)
+  (*   Γ' ⊫ f1 ≈ f2 [{ wf1, wf2,  wf }] -> *)
+  (*   Γ ⊫ bind m1 f1 ≈ bind m2 f2 [{ Spr1 (relmon_bind W1 wf1) wm1, *)
+  (*                                  Spr1 (relmon_bind W2 wf2) wm2, *)
+  (*                                  Spr1 (actW _ _ _ _ wf1 wf2 wf) wm }]. *)
+
 
   Definition supp (R : Rel) : OrdCat := discr (πr R × πl R).
 
