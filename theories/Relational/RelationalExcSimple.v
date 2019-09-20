@@ -3,15 +3,15 @@ From Coq Require FunctionalExtensionality.
 From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads.
-From Mon.SM Require Import SMMonadExamples.
-From Mon.Relational Require Import RelativeMonads RelativeMonadExamples GenericRulesSimple.
+From Mon.SM Require Import SMMonadExamples. 
+From Relational Require Import RelativeMonads RelativeMonadExamples GenericRulesSimple.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
 
 Section Exceptions.
   Context (E1 E2 : Type) (Exc1 := Exn E1) (Exc2 := Exn E2).
-
+  
   Definition RelExc : RelationalSpecMonad0 :=
     ordmonad_to_relspecmon0 (ExnSpec unit).
 
@@ -33,7 +33,7 @@ Section Exceptions.
   Qed.
   Next Obligation. induction H=> //. Qed.
   Next Obligation.
-    apply Ssig_eq=> /= ;
+    apply Ssig_eq=> /= ; 
     extensionality post ; extensionality pexc.
     move:x => [[?|[?] ?] [?|[?] ?]] //=.
     match goal with [|- match ?d with _ => _ end = _ ] => destruct d as [?|[]]=> // end.
@@ -106,7 +106,7 @@ End Exceptions.
 
 Section ExcCollapse.
   Context (E1 E2 E : Type) (Exc1 := Exn E1) (Exc2 := Exn E2).
-
+  
   Definition WExc : RelationalSpecMonad0 :=
     ordmonad_to_relspecmon0 (ExnSpec E).
 
@@ -133,3 +133,4 @@ Section ExcCollapse.
     reflexivity.
   Qed.
 End ExcCollapse.
+

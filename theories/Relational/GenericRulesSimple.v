@@ -3,17 +3,19 @@ From Coq Require FunctionalExtensionality.
 From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures.
-From Mon.Relational Require Import RelativeMonads RelativeMonadExamples.
+From Relational Require Import Category RelativeMonads RelativeMonadExamples.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
+
+(* We introduce relational program logic rules starting from abstract algebraic structure *)
 
 Section RelationalProgramLogicFromBimodule.
   Context (M1 M2 : Monad) (M12 := compPair M1 M2).
   Context (W : functor TypeCatSq OrdCat) (rmW : rightModuleStructure M12 W).
   Context (η : natTrans Jprod W) (σ := point_to_homomorphism Jprod rmW η).
 
-  Definition mod_semantic_judgement {A1 A2} c1 c2 w :=
+  Definition mod_semantic_judgement {A1 A2} c1 c2 w := 
     Spr1 (σ ⟨A1,A2⟩) ⟨c1,c2⟩ ≤ w.
 
   Notation "⊨ c1 ≈ c2 [{ w }]" := (@mod_semantic_judgement _ _ c1 c2 w).
@@ -59,14 +61,16 @@ Section RelationalProgramLogicFromBimodule.
     (forall n, ⊨ m1 n ≈ m2 n [{ w n }] -> ⊨ m1 (S n) ≈ m2 (S n) [{ wsuc n (w n) }]) ->
     forall n, ⊨ m1 n ≈ m2 n [{ w n }].
   Proof. induction n => //=. apply H0=> //. Qed.
-
+    
 End RelationalProgramLogicFromBimodule.
+
+(* Generic rules for the simple framework [Section 2.4]*)
 
 Section RelationalProgramLogicFromRelativeMonadZero.
   Context (M1 M2 : Monad) (M12 := compPair M1 M2).
   Context (W : RelationalSpecMonad0) `{BindMonotonicRelationalSpecMonad0 W}
           (θ : RelationalEffectObservation0 M1 M2 W).
-
+  
   Definition semantic_judgement A1 A2 c1 c2 w := Spr1 (θ ⟨A1,A2⟩) ⟨c1,c2⟩ ≤ w.
   Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ c1 c2 w).
 
@@ -87,7 +91,7 @@ Section RelationalProgramLogicFromRelativeMonadZero.
     apply (rsm0_bind_monotonic (θ ⟨B1, B2⟩ ∙ fmap Jprod (to_prod f1 f2)) wf) ; move=> [? ?] ; apply Hf.
     eapply (Spr2 (relmon_bind W _) _ _)=> //.
   Qed.
-
+  
   Lemma weaken_rule2 {A B} {c1 : M1 A} {c2 : M2 B} {w w'} :
     ⊨ c1 ≈ c2 [{ w }] -> w ≤ w' -> ⊨ c1 ≈ c2 [{ w' }].
   Proof. rewrite /semantic_judgement. move=> ? ? ; estransitivity ; eassumption.
@@ -106,17 +110,19 @@ End RelationalProgramLogicFromRelativeMonadZero.
 
   Notation "θ ⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ _ θ _ _ c1 c2 w) (at level 85).
 
+(* Tailored rules derived from the generic ones *)
+
 Section GoingPractical.
   Context (M1 M2 : Monad) (M12 := compPair M1 M2).
   Context (W : RelationalSpecMonad0) `{BindMonotonicRelationalSpecMonad0 W}
           (θ : RelationalEffectObservation0 M1 M2 W).
-
+  
   Lemma gp_ret_rule {A B a b w} :
     Spr1 (relmon_unit W ⟨A , B⟩) ⟨a,b⟩ ≤ w ->
     θ ⊨ ret a ≈ ret b [{ w }].
   Proof. apply weaken_rule2 ; apply ret_rule2. Qed.
 
-  Lemma gp_seq_rule
+  Lemma gp_seq_rule 
         {A1 A2 B1 B2}
         {m1 : M1 A1} {m2 : M2 A2} {wm}
         {f1 : A1 -> M1 B1} {f2 : A2 -> M2 B2}
@@ -127,9 +133,15 @@ Section GoingPractical.
     θ ⊨ bind m1 f1 ≈ bind m2 f2 [{ w }].
   Proof. move=> ? ? ; apply weaken_rule2 ; apply seq_rule=> //. Qed.
 
+  Import SPropNotations.
+  Program Definition extend_to_Jprod {A1 A2 B1 B2} (wf0 : A1 × A2 -> dfst (W ⟨B1,B2⟩)) : OrdCat⦅Jprod ⟨A1,A2⟩ ; W ⟨B1, B2⟩⦆ :=
+    ⦑wf0⦒.
+  Next Obligation. cbv ; intuition. destruct y; induction H ; sreflexivity. Qed.
+
+
   Definition skip {M:Monad} : M unit := ret tt.
   Notation "m1 ;; m2" := (bind m1 (fun=> m2)) (at level 65).
-
+  
   Lemma apply_left {A B1 B2} {m1 : M1 A} {c1 : M1 B1} {c2 : M2 B2} {w1 w2 w} :
     θ ⊨ m1 ≈ skip [{ w1 }] ->
     θ ⊨ c1 ≈ c2 [{ w2 }] ->
@@ -138,18 +150,18 @@ Section GoingPractical.
   Proof.
     move=> H1 H2 ; apply weaken_rule2.
     enough (c2 = skip ;; c2) as ->.
-    apply seq_rule=> //.
+    apply seq_rule=> //. 
     rewrite /bind monad_law1 //.
   Qed.
 
   Program Definition OrdCat_lift {A B} (f : A -> dfst B) : OrdCat⦅discr A; B⦆ :=
     Sexists _ f _.
   Next Obligation. move=> ? ? H0 ; induction H0; sreflexivity. Qed.
-
+  
   Program Definition OrdCat_lift' {A1 A2 B} (f : A1 -> A2 -> dfst B) : OrdCat⦅Jprod ⟨A1, A2⟩; B⦆ :=
     Sexists _ (fun a => f (nfst a) (nsnd a)) _.
   Next Obligation. move=> ? ? H0 ; induction H0; sreflexivity. Qed.
-
+  
   Lemma apply_left_tot {A1 A2} {c1 : M1 A1} {c2 : M2 A2} {w1 w2 w} :
     θ ⊨ c1 ≈ skip [{ w1 }] ->
     (forall a1, θ ⊨ ret a1 ≈ c2 [{ w2 a1 }]) ->
@@ -172,7 +184,7 @@ Section GoingPractical.
   Proof.
     move=> H1 H2 ; apply weaken_rule2.
     enough (c1 = skip ;; c1) as ->.
-    apply seq_rule=> //.
+    apply seq_rule=> //. 
     rewrite /bind monad_law1 //.
   Qed.
 
@@ -185,26 +197,20 @@ Section GoingPractical.
     move=> H1 H2 ; apply weaken_rule2.
     enough (c1 = skip ;; c1) as ->.
     enough (c2 = bind c2 ret) as ->.
-    apply seq_rule=> // ? ?; eapply weaken_rule2.
+    apply seq_rule=> // ? ?; eapply weaken_rule2. 
     rewrite /bind monad_law2 //.
     rewrite /bind monad_law1 //.
   Qed.
-  (*
-    Questions :
-    0) We should never unfold the semantic judgement but insead use rules derived from the basic principles (can we automate these rule derivation)
-    1) We need not to be constrained by the returned spec of the rules but maybe we can wrap rules in a tactical trying to do as little weakening as possible
-    2) for asynchronous rules for axiom, better putting them against ret * rather than skip (can we obtain these proofs from just a unary proof rule ?)
-   *)
 
   Let Wmod := rmon_morph_right_module W θ.
-  Let mod_semantic_judgement' {A1 A2} :=
+  Let mod_semantic_judgement' {A1 A2} := 
     @mod_semantic_judgement M1 M2 _ Wmod (rmon_unit W) A1 A2.
 
   Import SPropNotations.
   Lemma to_mod_semantic_judgement {A1 A2} {c1:M1 A1} {c2:M2 A2} w :
     θ ⊨ c1 ≈ c2 [{ w }] -> mod_semantic_judgement' c1 c2 w.
   Proof.
-    rewrite /mod_semantic_judgement'; unfold mod_semantic_judgement.
+    rewrite /mod_semantic_judgement'; unfold mod_semantic_judgement. 
     unfold semantic_judgement.
     enough (θ ⟨ A1, A2 ⟩ ∼ point_to_homomorphism Jprod Wmod (rmon_unit W) ⟨ A1, A2 ⟩) as -> => //.
     cbv=> ? ; epose (relmon_law2 W) as t ; cbv in t ; rewrite t=> //.
@@ -213,7 +219,7 @@ Section GoingPractical.
   Lemma from_mod_semantic_judgement {A1 A2} {c1:M1 A1} {c2:M2 A2} w :
     mod_semantic_judgement' c1 c2 w -> θ ⊨ c1 ≈ c2 [{ w }].
   Proof.
-    rewrite /mod_semantic_judgement'; unfold mod_semantic_judgement.
+    rewrite /mod_semantic_judgement'; unfold mod_semantic_judgement. 
     unfold semantic_judgement.
     enough (θ ⟨ A1, A2 ⟩ ∼ point_to_homomorphism Jprod Wmod (rmon_unit W) ⟨ A1, A2 ⟩) as -> => //.
     cbv=> ? ; epose (relmon_law2 W) as t ; cbv in t ; rewrite t=> //.
@@ -231,7 +237,10 @@ Section GoingPractical.
     apply bind_act_rule; apply to_mod_semantic_judgement=> //.
   Qed.
 
-  (* This rule "shows" completeness of the simple rules *)
+  (* This rule "shows" completeness of the simple rules using already defined rules
+     (and not unfolding the judgement which would be trivial,
+     a safer approach would consist in defining an inductive for ⊢)
+     assuming the bimodules rules, so not achieving much *)
   Lemma to_spec {A1 A2} {m1 : M1 A1} {m2 : M2 A2} {w} :
     Spr1 (θ ⟨_,_⟩) ⟨m1, m2⟩ ≤ w -> θ ⊨ m1 ≈ m2 [{ w }].
   Proof.
@@ -247,3 +256,6 @@ Section GoingPractical.
   Qed.
 
 End GoingPractical.
+
+Ltac apply_seq :=
+    refine (gp_seq_rule _ _ _ _ (wf:=extend_to_Jprod _ (fun '⟨a1, a2⟩ => _)) _ _ _).

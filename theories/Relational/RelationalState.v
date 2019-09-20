@@ -1,24 +1,29 @@
+(*********************************************************)
+(**       Relational reasoning on state                 **)
+(*********************************************************)
+
 From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require FunctionalExtensionality Arith.PeanoNat.
 
 From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads.
-From Mon.SM Require Import SMMonadExamples.
-From Mon.Relational Require Import RelativeMonads RelativeMonadExamples GenericRulesSimple.
+From Mon.SM Require Import SMMonadExamples. 
+From Relational Require Import RelativeMonads RelativeMonadExamples GenericRulesSimple.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
 
-
+(* Relational state constructions *)
 Section RelationalState.
+  (* Free monad on state signature *)
   Section StateSig.
     Context (loc val : Type).
 
     Inductive StS :=
     | StGet : loc -> StS
     | StPut : loc -> val -> StS.
-
+    
     Definition StOp (s:StS) :=
       match s with
       | StGet l => val
@@ -28,9 +33,11 @@ Section RelationalState.
     Definition FSt := Free StOp.
   End StateSig.
 
+  (* Simple relational specification monad based backward predicate transformers *)
   Definition RelSt (S:Type): RelationalSpecMonad0 :=
     ordmonad_to_relspecmon0 (STCont S).
 
+  (* Computational monads for state on two different sets of locations *)
   Context (loc1 loc2 val : Type) (loc:=(loc1+loc2)%type) (S := loc -> val).
   Let M1 := St (loc1 -> val).
   Let M2 := St (loc2 -> val).
@@ -44,6 +51,7 @@ Section RelationalState.
   Let res1 (s0:S) := fun l1 => s0 (inl l1).
   Let res2 (s0:S) := fun l2 => s0 (inr l2).
 
+  (* Relational effect observation M1, M2 -> RelSt S *)
   Import SPropNotations.
   Import FunctionalExtensionality.
   Program Definition θSt : RelationalEffectObservation0 M1 M2 (RelSt S) :=
@@ -64,7 +72,7 @@ Section RelationalState.
   Qed.
 
   Definition upd {loc} (eql : loc -> loc -> bool) (l:loc) (v:val) (s :loc -> val) :=
-    fun l' => if eql l l' then v else s l'.
+    fun l' => if eql l l' then v else s l'. 
 
   Context (eql1 : loc1 -> loc1 -> bool)
           (eql1_spec : forall l1 l2, reflect (l1 = l2) (eql1 l1 l2) ).
@@ -78,8 +86,10 @@ Section RelationalState.
   Let S1 := loc1 -> val.
   Let S2 := loc2 -> val.
 
+  (* Semantic judgement notation for θSt above *)
   Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ _ θSt _ _ c1 c2 w).
 
+  (* Translation from pre-/postconditions to backward predicate transformers *)
   Program Definition fromPrePost {A1 A2}
           (pre : S1 -> S2 -> SProp)
           (post : A1 -> S1 -> S1 -> A2 -> S2 -> S2 -> SProp)
@@ -89,6 +99,7 @@ Section RelationalState.
                             -> p ⟨⟨a1,a2⟩, s⟩⦒.
   Next Obligation. intuition. Qed.
 
+  (* Example rules *)
   Lemma read1_rule (l1 : loc1) :
     ⊨ read1 l1 ≈ skip [{ fromPrePost (fun s1 s2 => sUnit)
                                      (fun v s1 s1' _ s2 s2' =>
@@ -119,10 +130,12 @@ Section RelationalState.
 
 End RelationalState.
 
+(* Noninterference property and examples *)
 Section NonInterference.
   Import SPropNotations.
   Import FunctionalExtensionality.
 
+  (* Noninterference builds on a state monad with two locations *)
   Let loc := bool.
   Let HIGH := true.
   Let LOW := false.
@@ -130,118 +143,26 @@ Section NonInterference.
   Let eql := Bool.eqb.
   Let eql_spec := Bool.eqb_spec.
 
+  (* Semantic judgement for noninterference *)
   Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ _ (θSt loc loc val) _ _ c1 c2 w) (at level 85).
 
+  (* Translation from pre-/postconditions, fixing parameters *)
   Let fromPrePost' {A B} pre post := @fromPrePost loc loc val eql eql_spec eql eql_spec A B pre post.
 
+  (* Noninterference property written in term of pre-/postconditions *)
   Definition NI_pre_post {A:Type} :=
     fromPrePost'
       (fun s1 s2 => s1 false ≡ s2 false)
       (fun (i:A) s1 s1' (i':A) s2 s2' =>  s1' false ≡ s2' false s/\ i ≡ i').
-
+  
+  (* Noninterference property *)
   Definition NI {A : Type} (c : St (loc -> val) A) :=
-    ⊨ c ≈ c [{ NI_pre_post }].
-
-
-  Program Definition if_add_pre_true {A1 A2}
-          (w : dfst (RelSt ((loc + loc) -> val) ⟨A1,A2⟩))
-          (b : bool)
-    : dfst (RelSt ((loc + loc) -> val) ⟨A1,A2⟩) :=
-    fun s0=> ⦑fun p => b ≡ true s/\ Spr1 (w s0) p ⦒.
-  Next Obligation. cbv; intuition. Qed.
-
-  Lemma if_add_pre_true_true {A1 A2} (w : dfst (RelSt ((loc + loc) -> val) ⟨A1,A2⟩)) :
-    if_add_pre_true w true = w.
-  Proof. cbv; intuition. extensionality s0.
-         apply Ssig_eq.
-         cbv; intuition.
-         extensionality p.
-         apply SPropAxioms.sprop_ext.
-         constructor.
-         cbv; intuition.
-  Qed.
-
-  Program Definition if_add_pre_false {A1 A2}
-          (w : dfst (RelSt ((loc + loc) -> val) ⟨A1,A2⟩))
-          (b : bool)
-    : dfst (RelSt ((loc + loc) -> val) ⟨A1,A2⟩) :=
-    fun s0=> ⦑fun p => b ≡ false s/\ Spr1 (w s0) p ⦒.
-  Next Obligation. cbv; intuition. Qed.
-  Lemma if_add_pre_false_false {A1 A2} (w : dfst (RelSt ((loc + loc) -> val) ⟨A1,A2⟩)) :
-    if_add_pre_false w false = w.
-  Proof. cbv; intuition. extensionality s0.
-         Check w s0.
-         apply Ssig_eq.
-         cbv; intuition.
-         extensionality p.
-         apply SPropAxioms.sprop_ext.
-         constructor.
-         cbv; intuition.
-  Qed.
-
-  Lemma if_pre_rule {A1 A2} {m1 : St (loc -> val) A1} {m2 : St (loc -> val) A2} (b : bool) {w} :
-    ⊨ m1 ≈ m2 [{ if b then if_add_pre_true w b else if_add_pre_false w b }]
-    -> ⊨ m1 ≈ m2 [{ w }].
-  Proof. intros H. destruct b eqn:Heqb; subst.
-         all: eapply weaken_rule2; [apply H | cbv; intuition].
-  Qed.
-
-  Lemma if_rule_left {A1 A2} {m1 m1' : St (loc -> val) A1} {m2 : St (loc -> val) A2} {b : bool} {w} :
-    ⊨ m1 ≈ m2 [{ if_add_pre_true w b }]
-    -> ⊨ m1' ≈ m2 [{ if_add_pre_false w b }]
-    -> ⊨ if b then m1 else m1' ≈ m2 [{ w }].
-  Proof. intros H1 H2. destruct b eqn:Heqb; subst.
-         - eapply weaken_rule2; [apply H1 | cbv; intuition].
-         - eapply weaken_rule2; [apply H2 | cbv; intuition].
-  Qed.
-
-  Lemma if_rule_left' {A1 A2} {m1 m1' : St (loc -> val) A1} {m2 : St (loc -> val) A2} {b : bool} {w} :
-    (b = false -> ⊨ m1' ≈ m2 [{ w }])
-    -> (b = true -> ⊨ m1 ≈ m2 [{ w }])
-    -> ⊨ if b then m1 else m1' ≈ m2 [{ w }].
-  Proof. intros H1 H2. destruct b eqn:Heqb; subst; cbv; intuition.
-  Qed.
-
-  Lemma if_rule_right {A1 A2} {m1 : St (loc -> val) A1} {m2 m2' : St (loc -> val) A2} {b : bool} {w} :
-    ⊨ m1 ≈ m2 [{ if_add_pre_true w b }]
-    -> ⊨ m1 ≈ m2' [{ if_add_pre_false w b }]
-    -> ⊨ m1 ≈ if b then m2 else m2' [{ w }].
-  Proof. intros H1 H2. destruct b eqn:Heqb; subst.
-         - eapply weaken_rule2; [apply H1 | cbv; intuition].
-         - eapply weaken_rule2; [apply H2 | cbv; intuition].
-  Qed.
-
-  Lemma if_rule_right' {A1 A2} {m1 : St (loc -> val) A1} {m2 m2' : St (loc -> val) A2} {b : bool} {w} :
-    (b = false -> ⊨ m1 ≈ m2' [{ w }])
-    -> (b = true -> ⊨ m1 ≈ m2 [{ w }])
-    -> ⊨  m1 ≈ if b then m2 else m2' [{ w }].
-  Proof. intros H1 H2. destruct b eqn:Heqb; subst; cbv; intuition.
-  Qed.
-
-  Lemma if_rule {A1 A2} {m1: St (loc -> val) A1} {m2 : St (loc -> val) A2} {w w'} (b:bool) :
-      (if b then ⊨ m1 ≈ m2 [{ w }] else ⊨ m1 ≈ m2 [{ w' }])
-      -> ⊨ m1 ≈ m2 [{ if b then w else w' }].
-  Proof. destruct b=> //. Qed.
-
-  Lemma if_move_true {A1 A2} {m1: St (loc -> val) A1} {m2 : St (loc -> val) A2} {w} (b:bool) :
-      (b = true -> ⊨ m1 ≈ m2 [{ w }])
-      -> ⊨ m1 ≈ m2 [{ if_add_pre_true w b }].
-  Proof. destruct b=> //.
-         - cbv; intuition.
-         - cbv; intuition. inversion p.
-  Qed.
-
-  Lemma if_move_false {A1 A2} {m1: St (loc -> val) A1} {m2 : St (loc -> val) A2} {w} (b:bool) :
-      (b = false -> ⊨ m1 ≈ m2 [{ w }])
-      -> ⊨ m1 ≈ m2 [{ if_add_pre_false w b }].
-  Proof. destruct b=> //.
-         - cbv; intuition. inversion p.
-         - cbv; intuition.
-  Qed.
+      ⊨ c ≈ c [{ NI_pre_post }].
 
   Let put (l:loc) (v:val) : St (loc -> val) unit := fun s => ⟨tt, upd _ eql l v s⟩.
   Let get (l:loc) : St (loc -> val) val := fun s => ⟨s l, s⟩.
 
+  (* Effect specific rules for state *)
   Lemma get_left_rule {A} {l:loc} {a:A} :
     ⊨ get l ≈ ret a [{ fromPrePost' (fun s1 s2 => sUnit)
                               (fun v s1 s1' x s2 s2' => x ≡ a s/\
@@ -277,25 +198,17 @@ Section NonInterference.
                                               s/\ s2' ≡ upd _ eql l2 v2 s2)
       }].
   Proof.
-    rewrite <- (monad_law1 unit (fun _ => put l1 v1)).
+    rewrite <- (monad_law1 tt (fun _ => put l1 v1)).
     rewrite <- (monad_law2 (put l2 v2)).
-    eapply gp_seq_rule.
-    - typeclasses eauto.
+    apply_seq.
     - apply put_right_rule.
-    - move=> a1 []. eapply weaken_rule2.
-      + apply put_left_rule.
-      + unshelve instantiate (1 := ⦑fun=> ?[x]⦒)=> /=.
-        3:match goal with | [|-?x ≤ ?y] => unify x y end ; sreflexivity.
-        intuition.
-    - cbv; intuition. apply q. cbv; intuition.
-      apply SPropAxioms.funext_sprop.
-      intros b.
-      move: (f_sEqual2 _ _ q3 (sEq_refl b)) (f_sEqual2 _ _ q1 (sEq_refl b)).
-      intros. destruct f_sEqual0. assumption.
-      apply SPropAxioms.funext_sprop.
-      intros b.
-      move: (f_sEqual2 _ _ q0 (sEq_refl b)) (f_sEqual2 _ _ q2 (sEq_refl b)).
-      intros. destruct f_sEqual0. assumption.
+    - move=> [] [] /=; apply put_left_rule.
+    - cbv; intuition; apply q.
+      cbv; intuition; apply SPropAxioms.funext_sprop=> [] b /=.
+      elim: (f_sEqual2 _ _ q1 (sEq_refl b)).
+      exact: (f_sEqual2 _ _ q3 (sEq_refl b)).
+      elim: (f_sEqual2 _ _ q2 (sEq_refl b)).
+      exact: (f_sEqual2 _ _ q0 (sEq_refl b)).
   Qed.
 
   Lemma get_get_rule (l1 l2:loc) :
@@ -304,182 +217,109 @@ Section NonInterference.
                       (fun x1 s1 s1' x2 s2 s2' =>    s1' ≡ s1 s/\ x1 ≡ s1 l1
                                                 s/\ s2' ≡ s2 s/\ x2 ≡ s2 l2)
       }].
-  Proof. cbv; intuition. Qed.
+  Proof.
+    rewrite <- (monad_law1 tt (fun=> get l1)).
+    rewrite <- (monad_law2 (get l2)).
+    apply_seq.
+    - apply get_right_rule.
+    - move => a1 a2 /=; apply get_left_rule.
+    - cbv ; intuition; apply q.
+      cbv ; intuition; try by subst_sEq=> //.
+      elim: (sEq_sym q3); ssymmetry ; apply (f_sEqual2 _ _ q2)=> //.
+  Qed.
 
+  (* Examples of noninterferent programs with their proofs *)
   Let prog := bind (get LOW) (fun n => ret n).
 
   Lemma prog_satisfies_NI : NI prog.
     unfold NI.
     unfold prog.
-    - eapply gp_seq_rule=> //.
-      typeclasses eauto.
+    - apply_seq=> //.
       + eapply apply_left_tot.
-        typeclasses eauto.
         apply get_left_rule.
         move=> ? ; apply get_right_rule.
         sreflexivity.
-      + move=> ? ? ; apply gp_ret_rule.
-        unshelve instantiate (1 := ⦑fun=> ?[x]⦒)=> /=.
-        3:match goal with | [|-?x ≤ ?y] => unify x y end ; sreflexivity.
-        intuition.
-      + cbv; intuition.
-        apply q.
-        move: (f_sEqual2 _ _ q4 (sEq_refl false)) (f_sEqual2 _ _ q1 (sEq_refl false)) (f_sEqual2 _ _ q5 (sEq_refl false)) (f_sEqual2 _ _ q2 (sEq_refl false)).
-        destruct q0. destruct p1. destruct q3.
-        move=> [] [] [] [].
-        split; assumption.
+      + move=> ? ? /=; refine (ret_rule2 _ _ _ _).
+      + cbv; intuition; apply q.
+        let k x := exact (f_sEqual2 _ _ x (sEq_refl false)) in
+        move: (q0) (p1) (q3) ltac:(k q4) ltac:(k q1) ltac:(k q5) ltac:(k q2) p.
+        move=> [] [] [] [] [] [] [] //.
   Qed.
 
-  (* General version of the previous program *)
   Let prog2 {B} (f : nat -> B) := bind (get LOW) (fun n => ret (f n)).
 
   Lemma prog2_satisfies_NI : forall {B} (f : nat -> B), NI (prog2 f).
     move=> B f.
     unfold NI.
     unfold prog2.
-    - eapply gp_seq_rule=> //.
-      typeclasses eauto.
-      + eapply apply_left_tot.
-        typeclasses eauto.
-        apply get_left_rule.
-        move=> ? ; apply get_right_rule.
-        sreflexivity.
-      + move=> ? ? ; apply gp_ret_rule.
-        unshelve instantiate (1 := ⦑fun y => let (v1, v2) := (nfst y, nsnd y) in ?[x]⦒)=> /=.
-        3:match goal with | [|-?x ≤ ?y] => unify x y end ; sreflexivity.
-        intuition.
+    - apply_seq=> //.
+      + apply get_get_rule.
+      + move=> ? ? /= ; refine (ret_rule2 _ _ _ _).
       + cbv; intuition.
-        apply q.
-        move: (f_sEqual2 _ _ q4 (sEq_refl false)) (f_sEqual2 _ _ q1 (sEq_refl false)) (f_sEqual2 _ _ q5 (sEq_refl false)) (f_sEqual2 _ _ q2 (sEq_refl false)).
-        destruct q0. destruct p1. destruct q3.
-        move=> [] [] [] [].
-        cbv; intuition.
-        destruct p.
-        sreflexivity.
+        apply q; split.
+        move: (f_sEqual2 _ _ q1 (sEq_refl false))
+              (f_sEqual2 _ _ p0 (sEq_refl false)) p=> [] [] //.
+        elim: (sEq_sym q0); elim: (sEq_sym q2) ; elim: p=> //.
   Qed.
 
   Let prog3 := bind (get LOW) (fun n => put HIGH n).
 
   Lemma prog3_satisfies_NI : NI prog3.
-    unfold NI.
-    unfold prog3.
-    - eapply gp_seq_rule=> //.
-      typeclasses eauto.
-      + eapply apply_left_tot.
-        typeclasses eauto.
-        apply get_left_rule.
-        move=> ? ; apply get_right_rule.
-        sreflexivity.
-      + move=> ? ?. eapply weaken_rule2. apply put_put_rule.
-        unshelve instantiate (1 := ⦑fun y => let (v1, v2) := (nfst y, nsnd y) in ?[x]⦒)=> /=.
-        3:match goal with | [|-?x ≤ ?y] => unify x y end ; sreflexivity.
-        intuition.
-      + cbv; intuition.
-        apply q.
-        move: (f_sEqual2 _ _ p2 (sEq_refl false)) (f_sEqual2 _ _ q6 (sEq_refl false)) (f_sEqual2 _ _ q4 (sEq_refl false)) (f_sEqual2 _ _ q1 (sEq_refl false)) (f_sEqual2 _ _ q5 (sEq_refl false)) (f_sEqual2 _ _ q2 (sEq_refl false)).
-        destruct q0. destruct p1. destruct q3. destruct a5. destruct a6.
-        move=> [] [] [] [] [] [].
-        intuition.
+    rewrite /NI /prog3.
+    - apply_seq=> //.
+      + apply get_get_rule.
+      + move=> ? ? /=. apply put_put_rule.
+      + cbv; intuition; apply q.
+        let k x := exact (f_sEqual2 _ _ x (sEq_refl false)) in
+        move: a3 a4 q0 q2 ltac:(k q1) ltac:(k p0) ltac:(k p1) ltac:(k q3) p.
+        repeat elim=> //=.
   Qed.
 
-  Import Coq.Arith.PeanoNat.
-
   Let prog4 := bind (get HIGH) (fun h => if Nat.eqb h 1 then put LOW 1 else put LOW 1).
+
   Lemma prog4_satisfies_NI : NI prog4.
   Proof.
     unfold NI.
     unfold prog4.
-    eapply gp_seq_rule.
-    - typeclasses eauto.
-    - apply get_get_rule.
-    - move=> a1 a2.
-      eapply weaken_rule2.
-      + remember (Nat.eqb a1 1) as H1.
-        remember (Nat.eqb a2 1) as H2.
-        destruct H1; destruct H2; apply put_put_rule.
-      + instantiate (1 := ⦑fun y => let '(npair v1 v2) := y in ?[x]⦒)=> /=.
-        sreflexivity.
-    - cbv; intuition.
-      apply q.
-      cbv; intuition.
-      move: (f_sEqual2 _ _ p1 (sEq_refl false)) => H1.
-      move: (f_sEqual2 _ _ q3 (sEq_refl false)) => H2.
-      destruct H1.
-      symmetry. assumption.
-      destruct a3. destruct a4. reflexivity.
-      Unshelve.
-      cbv ; intros; assumption.
+    apply_seq => //. apply get_get_rule.
+    - move=> a1 a2 /=.
+      destruct (Nat.eqb a1 1); destruct (Nat.eqb a2 1); apply put_put_rule.
+    - cbv; intuition; apply q; destruct a3, a4; intuition.
+      move: (f_sEqual2 _ _ q3 (sEq_refl false))
+              (f_sEqual2 _ _ p1 (sEq_refl false)) => [] [] //.
   Qed.
 
   Let prog5 := bind (get HIGH) (fun h => if Nat.eqb h 1 then put LOW h else put LOW 1).
+
   Lemma prog5_satisfies_NI : NI prog5.
   Proof.
-    unfold NI.
-    unfold prog5.
-    eapply gp_seq_rule.
-    - typeclasses eauto.
-    - apply get_get_rule.
-    - move=> a1 a2.
-      eapply weaken_rule2.
-      + remember (Nat.eqb a1 1) as H1.
-        remember (Nat.eqb a2 1) as H2.
-        destruct H1; destruct H2; symmetry in HeqH2; symmetry in HeqH1.
-        4: apply put_put_rule.
-        apply (Nat.eqb_eq a1 1) in HeqH1.
-        apply (Nat.eqb_eq a2 1) in HeqH2.
-        induction HeqH1.
-        induction HeqH2.
-        apply put_put_rule.
-        apply (Nat.eqb_eq a1 1) in HeqH1.
-        induction HeqH1.
-        apply put_put_rule.
-        apply (Nat.eqb_eq a2 1) in HeqH2.
-        induction HeqH2.
-        apply put_put_rule.
-      + instantiate (1 := ⦑fun y => let '(npair v1 v2) := y in ?[x]⦒)=> /=.
-        sreflexivity.
-    - cbv; intuition.
-      apply q.
-      cbv; intuition.
-      move: (f_sEqual2 _ _ p1 (sEq_refl false)) => H1.
-      move: (f_sEqual2 _ _ q3 (sEq_refl false)) => H2.
-      destruct H1.
-      symmetry. assumption.
-      destruct a3. destruct a4. reflexivity.
-      Unshelve.
-      cbv ; intros; assumption.
+    Import Coq.Arith.PeanoNat.
+    rewrite /NI /prog5.
+    apply_seq => //. apply get_get_rule.
+    - move => a1 a2 /=.
+      remember (Nat.eqb a1 1) as H1.
+      remember (Nat.eqb a2 1) as H2.
+      destruct H1, H2; symmetry in HeqH2; symmetry in HeqH1.
+      apply (Nat.eqb_eq a1 1) in HeqH1; apply (Nat.eqb_eq a2 1) in HeqH2.
+      4: apply put_put_rule.
+      + rewrite HeqH1; rewrite HeqH2; apply put_put_rule.
+      + apply (Nat.eqb_eq a1 1) in HeqH1; rewrite HeqH1; apply put_put_rule.
+      + apply (Nat.eqb_eq a2 1) in HeqH2; rewrite HeqH2; apply put_put_rule.
+    - cbv; intuition; apply q; destruct a3, a4; intuition.
+      move: (f_sEqual2 _ _ q3 (sEq_refl false))
+              (f_sEqual2 _ _ p1 (sEq_refl false)) => [] [] //.
   Qed.
 
-  Lemma prog5_satisfies_NI2 : NI prog5.
-  Proof.
-    unfold NI. unfold prog5.
-    eapply gp_seq_rule.
-    - typeclasses eauto.
-    - apply get_get_rule.
-    - intros a1 a2.
-      eapply weaken_rule2.
-      apply if_rule_left'; intros Heqa1; apply if_rule_right'; intros Heqa2; subst; try (apply (Nat.eqb_eq _ 1) in Heqa1); try (apply (Nat.eqb_eq _ 1) in Heqa2); subst; apply put_put_rule.
-      instantiate (1 := ⦑fun y => let '(npair v1 v2) := y in ?[x]⦒)=> /=.
-      sreflexivity.
-    - cbv; intuition.
-      apply q.
-      cbv; intuition.
-      move: (f_sEqual2 _ _ p1 (sEq_refl false)) => H1.
-      move: (f_sEqual2 _ _ q3 (sEq_refl false)) => H2.
-      destruct H1.
-      symmetry. assumption.
-      destruct a3. destruct a4. reflexivity.
-      Unshelve.
-      cbv ; intros; assumption.
-  Qed.
 End NonInterference.
 
+(* Exploration of product programs for state *)
 Section ProductState.
   Import SPropNotations.
 
+  (* It builds again on programs with two locations *)
   Let loc := bool.
-  Let HIGH := true.
-  Let LOW := false.
+  Let HIGH := true. (* private information *)
+  Let LOW := false. (* public information *)
   Let val := nat.
   Let eql := Bool.eqb.
   Let eql_spec := Bool.eqb_spec.
@@ -491,8 +331,10 @@ Section ProductState.
   Let put (l:loc) (v:val) : St (loc -> val) unit := fun s => ⟨tt, upd _ eql l v s⟩.
   Let get (l:loc) : St (loc -> val) val := fun s => ⟨s l, s⟩.
 
-  Let St0 A := St (loc -> val) A.
+  Let St0 A := St (loc -> val) A.  
   Let S12 := loc + loc -> val.
+
+  (* Product program relative monad *)
   Let StProd A1 A2 := St S12 (A1 × A2).
   Notation "m1 ;; m2" := (bind m1 (fun=> m2)) (at level 65).
 
@@ -501,6 +343,7 @@ Section ProductState.
   Let put' (l:loc+loc) (v:val) : StProd unit unit := fun s => ⟨⟨tt,tt⟩, upd _ eqll l v s⟩.
   Let get' (l:loc+loc) : StProd val unit := fun s => ⟨⟨s l, tt⟩, s⟩.
 
+  (* Inductive definition of the relation c_1 x c_2 ~> c *)
   Inductive st_rel {A1 A2} : St0 A1 -> St0 A2 -> StProd A1 A2 -> SProp :=
   | srRet : forall a1 a2, st_rel (ret a1) (ret a2) (ret ⟨a1,a2⟩)
   | srPutLeft : forall l v m1 m2 mrel,
@@ -510,33 +353,53 @@ Section ProductState.
   | srGetLeft  : forall l m1 m2 mrel,
       (forall v, st_rel (m1 v) m2 (mrel ⟨v,tt⟩)) -> st_rel (bind (get l) m1) m2 (bind (get' (inl l)) mrel)
   | srGetRight  : forall l m1 m2 mrel,
-      (forall v, st_rel m1 (m2 v) (mrel ⟨v,tt⟩)) -> st_rel m1 (bind (get l) m2) (bind (get' (inr l)) mrel)
-  (* | srBind : forall {B1 B2} m1 m2 (mrel:StProd B1 B2) f1 f2 frel, *)
-  (*     @st_rel _ _ m1 m2 mrel -> *)
-  (*     (forall a1 a2, st_rel (f1 a1) (f2 a2) (frel ⟨a1,a2⟩)) -> *)
-  (*     st_rel (bind m1 f1) (bind m2 f2) (bind mrel frel) *)
-  .
+      (forall v, st_rel m1 (m2 v) (mrel ⟨v,tt⟩)) -> st_rel m1 (bind (get l) m2) (bind (get' (inr l)) mrel).
 
+  Definition srBind {A1 A2 B1 B2 : Type} (m1 : St0 A1) (m2 : St0 A2) (mrel:StProd A1 A2) (f1 : A1 -> St0 B1) (f2 : A2 -> St0 B2) (frel : A1 × A2 -> StProd B1 B2) (m : @st_rel A1 A2 m1 m2 mrel) (f : forall a1 a2, st_rel (f1 a1) (f2 a2) (frel ⟨a1,a2⟩)) : @st_rel B1 B2 (bind m1 f1) (bind m2 f2) (bind mrel frel).
+    induction m.
+    - simpl.
+      exact (f a1 a2).
+    - unfold bind. rewrite (monad_law3 (put l v) (fun=> m1) f1).
+      rewrite (monad_law3 (put' (inl l) v) (fun=> mrel) frel).
+      apply (srPutLeft l v (bind m1 f1) (bind m2 f2)).
+      apply IHm.
+    - unfold bind. rewrite (monad_law3 (put l v) (fun=> m2) f2).
+      rewrite (monad_law3 (put' (inr l) v) (fun=> mrel) frel).
+      apply (srPutRight l v (bind m1 f1) (bind m2 f2)).
+      apply IHm.
+    - unfold bind. rewrite (monad_law3 (get l) m1 f1).
+      rewrite (monad_law3 (get' (inl l)) mrel frel).
+      apply srGetLeft.
+      assumption.
+    - unfold bind. rewrite (monad_law3 (get l) m2 f2).
+      rewrite (monad_law3 (get' (inr l)) mrel frel).
+      apply srGetRight.
+      assumption.
+  Qed.
+
+  (* A coupling is a product program together with a proof that the relation above holds *)
   Definition coupling {A1 A2} c1 c2 := { c : StProd A1 A2 ≫ st_rel c1 c2 c}.
 
-  Program Definition θSt12 {A1 A2} : StProd A1 A2 -> dfst (RelSt S12 ⟨A1,A2⟩) :=
+  (* Effect observation for the product programs *)
+  Program Definition ζSt {A1 A2} : StProd A1 A2 -> dfst (RelSt S12 ⟨A1,A2⟩) :=
     fun c s => ⦑ fun post => post (c s)⦒.
   Next Obligation. move: H0 ; apply H. Qed.
 
+  (* Soundness theorem for product programs *)
   Import SPropAxioms.
   Lemma coupling_soundness {A1 A2} c1 c2 (c:StProd A1 A2) :
-    st_rel c1 c2 c -> forall w, θSt12 c ≤ w -> ⊨ c1 ≈ c2 [{ w }].
+    st_rel c1 c2 c -> forall w, ζSt c ≤ w -> ⊨ c1 ≈ c2 [{ w }].
   Proof.
     induction 1=> w.
     - apply weaken_rule2. apply ret_rule2.
-    - move=> Hw ; simple refine (apply_left _ _ _ _ (w1:=θSt12 (put' (inl l) v)) (w2:= θSt12 mrel) _ (IHst_rel _ _) _)=> //=.
+    - move=> Hw ; simple refine (apply_left _ _ _ _ (w1:=ζSt (put' (inl l) v)) (w2:= ζSt mrel) _ (IHst_rel _ _) _)=> //=.
       eapply weaken_rule2. apply put_left_rule.
       cbv ; intuition; destruct a1 ; destruct a2.
       match goal with [H : a0 ⟨_, ?s0⟩ |- _ ] => enough (s ≡ s0) as Hs ; [induction Hs ; apply H|] end.
       apply funext_sprop; move=> [l'|l'].
       induction (f_sEqual2 _ _ q0 (sEq_refl l'))=> //.
       induction (f_sEqual2 _ _ q (sEq_refl l'))=>//.
-    - move=> Hw ; simple refine (apply_right _ _ _ _ (w1:=θSt12 (put' (inr l) v)) (w2:= θSt12 mrel) _ (IHst_rel _ _) _)=> //=.
+    - move=> Hw ; simple refine (apply_right _ _ _ _ (w1:=ζSt (put' (inr l) v)) (w2:= ζSt mrel) _ (IHst_rel _ _) _)=> //=.
       eapply weaken_rule2. apply put_right_rule.
       cbv ; intuition; destruct a1 ; destruct a2.
       match goal with [H : a0 ⟨_, ?s0⟩ |- _ ] => enough (s ≡ s0) as Hs ; [induction Hs ; apply H|] end.
@@ -545,9 +408,9 @@ Section ProductState.
       induction (f_sEqual2 _ _ q (sEq_refl l'))=>//.
     - apply weaken_rule2.
       assert (m2 = skip ;; m2) as -> by (rewrite /bind monad_law1 //).
-      eapply gp_seq_rule ; [typeclasses eauto|..].
+      apply_seq.
       apply get_left_rule.
-      instantiate (1:= ⦑fun '⟨a1, a2⟩ => _⦒); move=> /= ? ?; apply H; sreflexivity.
+      move=> /= ? ?; apply H; sreflexivity.
       cbv ; intuition.
       induction q.
       enough (a ≡ s0) as Hs ; [induction Hs ; apply H0|].
@@ -556,9 +419,9 @@ Section ProductState.
       induction (f_sEqual2 _ _ q0 (sEq_refl l'))=>//.
     - apply weaken_rule2.
       assert (m1 = skip ;; m1) as -> by (rewrite /bind monad_law1 //).
-      eapply gp_seq_rule; [typeclasses eauto|..].
+      apply_seq.
       apply get_right_rule.
-      instantiate (1:= ⦑fun '⟨a1, a2⟩ => _⦒); move=> /= ? ?; apply H; sreflexivity.
+      move=> /= ? ?; apply H; sreflexivity.
       cbv ; intuition.
       induction q.
       enough (a ≡ s0) as Hs ; [induction Hs ; apply H0|].
@@ -572,38 +435,40 @@ Section ProductState.
     match goal with [|- st_rel _ _ ?x] => let h := fresh "h" in set (h := x) ; simpl in h ; unfold h ; clear h end.
 
   Ltac GetRight :=
-    apply srGetRight=> ? ; instantiate (1:= fun '(npair v _)=> _) ; cleanup_st_rel.
+    apply srGetRight=> ? ; instantiate (1:= fun '(npair v _)=> _) ; cleanup_st_rel. 
   Ltac GetLeft :=
     apply srGetLeft=> ? ; instantiate (1:= fun '(npair v _)=> _); cleanup_st_rel.
 
+  (* Examples for showing noninterference using product programs *
+   * i.e. public outputs of the program cannot depend on its private inputs *)
   Let prog := bind (get LOW) (fun n => ret n).
 
-  Definition prog_coupling : coupling prog prog.
+  Definition prog_coupling : coupling prog prog. 
   Proof.
     eexists. unfold prog. GetRight. GetLeft. apply srRet.
   Defined.
 
-  Goal forall (c:= Spr1 prog_coupling), θSt12 c ≤ NI_pre_post.
+  Goal forall (c:= Spr1 prog_coupling), ζSt c ≤ NI_pre_post.
   Proof. cbv ; intuition. Qed.
-
+  
   Goal forall s, s (inl false) = s (inr false) ->
             let c := Spr1 prog_coupling in
-            let '(npair ⟨i1,i2⟩ s') := c s in
+            let '(npair ⟨i1,i2⟩ s') := c s in 
             s' (inl false) = s' (inr false) /\ i1 = i2.
   Proof. move=> s H ; simpl ; split. assumption. by []. Qed.
 
   Let prog2 {B} (f : nat -> B) := bind (get LOW) (fun n => ret (f n)).
-
+  
   Definition prog2_coupling {B} (f:nat -> B) : coupling (prog2 f) (prog2 f).
   Proof.
     eexists. unfold prog2. GetLeft. GetRight. apply srRet.
   Defined.
 
   Goal forall {B} (f:nat -> B) (c:= Spr1 (prog2_coupling f)),
-      θSt12 c ≤ NI_pre_post.
-  Proof. cbv ; intuition.
+      ζSt c ≤ NI_pre_post.
+  Proof. cbv ; intuition. 
          apply q ; intuition. induction p=> //. Qed.
-
+  
   Let prog3 := bind (get LOW) (fun n => put HIGH n).
   Definition prog3_coupling : coupling prog3 prog3.
   Proof.
@@ -611,7 +476,7 @@ Section ProductState.
     GetLeft. GetRight. apply srPutLeft. apply srPutRight. apply srRet.
   Defined.
 
-  Goal forall (c:=Spr1 (prog3_coupling)), θSt12 c ≤ NI_pre_post.
+  Goal forall (c:=Spr1 (prog3_coupling)), ζSt c ≤ NI_pre_post.
   Proof. cbv ; intuition. Qed.
 
   Import Coq.Arith.PeanoNat.
@@ -627,7 +492,7 @@ Section ProductState.
     apply srPutRight; apply srPutLeft; apply srRet.
   Defined.
 
-  Goal forall (c:=Spr1 prog4_coupling), θSt12 c ≤ NI_pre_post.
+  Goal forall (c:=Spr1 prog4_coupling), ζSt c ≤ NI_pre_post.
   Proof. cbv ; intuition. Qed.
 
   Let prog5 := bind (get HIGH) (fun h => if Nat.eqb h 1 then put LOW h else put LOW 1).
@@ -647,6 +512,6 @@ Section ProductState.
 
   Print prog5_coupling.
 
-  Goal forall (c:=Spr1 prog5_coupling), θSt12 c ≤ NI_pre_post.
+  Goal forall (c:=Spr1 prog5_coupling), ζSt c ≤ NI_pre_post.
   Proof. cbv ; intuition. Qed.
 End ProductState.

@@ -4,10 +4,13 @@ From Mon Require Export Base.
 From Coq.Relations Require Import Relation_Definitions.
 From Coq.Classes Require Import RelationClasses Morphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures.
-From Mon.Relational Require Import RelativeMonads.
+From Relational Require Import Category RelativeMonads.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
+
+(* This file introduces a notion of relative monad enriched over a cartesian closed category *)
+(* This development is not used yet in the POC framework *)
 
 Section CartesianCategory.
   Reserved Notation "A ⨰ B" (at level 65).

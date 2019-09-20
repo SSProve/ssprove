@@ -3,11 +3,12 @@ From Coq Require FunctionalExtensionality.
 From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase.
-From Mon.Relational Require Import RelativeMonads EnrichedSetting.
+From Relational Require Import Category RelativeMonads EnrichedSetting.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
 
+(* This file defines most components of the relational dependent type theory as embedded in coq *)
 
 Section Rel.
   Notation πl := (fun x => nfst (dfst x)).
@@ -150,19 +151,5 @@ Section RelCat.
     exact (πw f1 xl1 yl1 w1).
     exact (πw f2 xl2 yl2 w2).
   Defined.
-  (*       := *)
-  (*   dpair _ ⟨fun p=>⟨πl f1 (nfst p), πl f2 (nsnd p)⟩, *)
-  (*                fun p => ⟨πr f1 (nfst p), πr f2 (nsnd p)⟩ ⟩ *)
-  (*         (fun p1 p2 pw => ⟨πw f1 (nfst p1) (nfst p2) (nfst pw), *)
-  (*                        πw f1 (nsnd p1) (nsnd p2) (nsnd pw)⟩). *)
-
-
-  (* Program Definition RelCatCart : cartesian_category := *)
-  (*   mkCartesianCategory *)
-  (*     RelCat *)
-  (*     rel_one *)
-  (*     (mkNatTrans to_rel_one _) *)
-
-  (*   term. *)
 
 End RelCat.

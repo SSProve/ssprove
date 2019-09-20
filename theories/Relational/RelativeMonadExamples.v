@@ -3,16 +3,25 @@ From Coq Require FunctionalExtensionality.
 From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms SRelationPairs.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures.
-From Mon.Relational Require Import RelativeMonads EnrichedSetting.
+From Relational Require Import Category RelativeMonads EnrichedSetting.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
 
+
+(** This files instantiates the categorical definitions of RelativeMonads.v *)
+(** We first define the category of types and poset *)
+(** Then we introduce the functors over which relative monads are taken
+    to derive our notions of relational specification monads
+    and relational effect observation *)
+
 Section TypeCat.
+
+  (* The category of types *)
   Program Definition TypeCat : category :=
     mkCategory Type
                (fun A B => A -> B)
-               (fun _ _ f g => f =1 g) _
+               (fun _ _ f g => forall x, f x = g x) _
                (fun A a => a)
                (fun _ _ _ f g x => f (g x))
                _ _ _ _.
@@ -41,11 +50,12 @@ Section TypeCat.
       (fun X A B f g x => ⟨f x, g x⟩)
       _ _ _ _ _.
   Next Obligation. cbv ; intuition. rewrite H H0=> //. Qed.
-  Next Obligation. move=> a; case: (f a)=> //. Qed.
+  Next Obligation. destruct (f x)=> //. Qed.
 End TypeCat.
 
 Section OrdCat.
   Import SPropNotations.
+  (* Category of preordered types *)
   Program Definition OrdCat : category :=
     mkCategory {A : Type ⫳ { R : srelation A ≫ PreOrder R } }
                (fun A B => {f : dfst A -> dfst B ≫ SProper (Spr1 (dsnd A) s==> Spr1 (dsnd B)) f})
@@ -113,16 +123,16 @@ Lemma funext {A B} {f g : forall a:A, B a} : (forall a, f a = g a) -> f = g.
 Proof. intros H ; extensionality a ; apply H. Qed.
 
 
-
 Section MonadAsRMonad.
   Context (M:Monad).
 
+  (* Transforming a standard monad to a relative monad on the identity functor *)
   Program Definition monad_to_relmon : relativeMonad (functor_id TypeCat) :=
     mkRelativeMonad M (fun A => @ret M A) (fun A B f => bind^~ f) _ _ _ _.
   Next Obligation. cbv ; intuition; rewrite (funext H) //. Qed.
-  Next Obligation. move=> ?; rewrite /bind monad_law2 //. Qed.
-  Next Obligation. move=> ?; rewrite /bind monad_law1 //. Qed.
-  Next Obligation. move=> ?; rewrite /bind monad_law3 //. Qed.
+  Next Obligation. rewrite /bind monad_law2 //. Qed.
+  Next Obligation. rewrite /bind monad_law1 //. Qed.
+  Next Obligation. rewrite /bind monad_law3 //. Qed.
 End MonadAsRMonad.
 
 
@@ -132,6 +142,7 @@ Section RelationalSpecMonad.
 
   Definition Jprod := functor_comp typeCat_prod discr.
 
+  (* Simple relational specification  monad *)
   Definition RelationalSpecMonad0 : Type := relativeMonad Jprod.
 
   Class BindMonotonicRelationalSpecMonad0 (W : RelationalSpecMonad0) : SProp :=
@@ -158,6 +169,9 @@ Section RelationalSpecMonad.
   Definition RelationalEffectObservation0 (W:RelationalSpecMonad0) : Type :=
     relativeMonadMorphism Jprod (natIso_sym (functor_unit_left _)) compPair W.
 
+  Definition mkREO0 (W:RelationalSpecMonad0) θ pf1 pf2
+    : RelationalEffectObservation0 W
+    := @mkRelMonMorph _ _ _ _ _ _ _ _ _ θ pf1 pf2.
 
   (* Changing this Let to Definition breaks RSM_from_RSM0 below... *)
   Definition OrdCatTr := prod_cat (prod_cat OrdCat OrdCat) OrdCat.
@@ -174,6 +188,8 @@ Section RelationalSpecMonad.
               _ _ _.
   Next Obligation. cbv ; intuition ; f_equal ; auto. Qed.
 
+  (* Full relational specification  monad *)
+  (* With respect to the paper we take a slightly different encoding *)
   Definition RelationalSpecMonad : Type := relativeMonad J.
 
   Class BindMonotonicRelationalSpecMonad (W : RelationalSpecMonad) : SProp :=
@@ -193,6 +209,7 @@ Section RelationalSpecMonad.
   Lemma Ssig_rew {A P} {x y : A} {Hx Hy} : x = y -> Sexists P x Hx = Sexists P y Hy.
   Proof. move=> ? ; apply Ssig_eq=> //. Qed.
 
+  (* Any simple relational specification monad yield a full relational specification monad *)
   Program Definition RSM_from_RSM0 (W : RelationalSpecMonad0) : RelationalSpecMonad :=
     mkRelativeMonad
       (fun A => ⟨⟨W ⟨nfst A, unit⟩, W ⟨unit, nsnd A⟩⟩, W A⟩)
@@ -266,6 +283,7 @@ Section OrderedMonadAsRMonad.
   Context (M:OrderedMonad).
 
   Import SPropNotations.
+  (* Any unary specification monad in the sense of [Dijkstra monads for All] give raise to a relative monad *)
   Program Definition ordmonad_to_relmon : relativeMonad discr :=
     mkRelativeMonad (fun A => dpair _ (M A) ⦑@omon_rel M A⦒)
                     (fun A => ⦑@ret M A⦒)
@@ -281,12 +299,7 @@ Section OrderedMonadAsRMonad.
   Next Obligation. rewrite /bind monad_law3 //. Qed.
 
   (* We would like to derive such an instance but the types don't match exactly, the def of the typeclass should be generalized to some extent *)
-  Class BindMonotonicUnaryRelationalSpecMonad (W : relativeMonad discr) : SProp :=
-    ursm_bind_monotonic :
-      forall {A B}, SProper (ordcat_hom_ord s==> ordcat_hom_ord) (@relmon_bind _ _ _ W A B).
-
-  Global Instance : BindMonotonicUnaryRelationalSpecMonad ordmonad_to_relmon.
-  Proof. cbv=> * ; apply omon_bind=> //; sreflexivity. Qed.
+  (* Global Instance : BindMonotonicRelationalSpecMonad0 ordmonad_to_relmon. *)
 End OrderedMonadAsRMonad.
 
 Section RelationalSpecMonadZeroFromOrderedMonad.
@@ -298,31 +311,6 @@ Section RelationalSpecMonadZeroFromOrderedMonad.
   Proof. cbv. move=> ? ? ? ? ? ?  ; apply omon_bind=> //. sreflexivity. Qed.
 End RelationalSpecMonadZeroFromOrderedMonad.
 
-
-(* Section MonadMorphismAsRMonMorphism. *)
-(*   Context {M0 W0 : OrderedMonad} (θ : MonotonicMonadMorphism M0 W0). *)
-(*   Let M := ordmonad_to_relmon M0. *)
-(*   Let W := ordmonad_to_relmon W0. *)
-
-(*   Import SPropNotations. *)
-(*   Program Definition monotonicmmorph_to_rmmorph : *)
-(*     relativeMonadMorphism (functor_id _) (natIso_sym (functor_unit_right _)) M W := *)
-(*     mkRelMonMorph _ _ _ _ (fun A => ⦑θ A⦒) _ _. *)
-(*   Next Obligation. cbv ; intros; apply monmon_monotonic=> //. Qed. *)
-(*   Next Obligation. apply mon_morph_ret. Qed. *)
-(*   Next Obligation. apply mon_morph_bind. Qed. *)
-
-(* End MonadMorphismAsRMonMorphism. *)
-
-(* Section DiscrMonadAsRMonad. *)
-(*   Context (M0:Monad) (M:=monad_to_relmon M0) *)
-(*           (OM := ordmonad_to_relmon (DiscreteMonad M0)). *)
-
-(*   Program Definition discr_rmmorph *)
-(*     : relativeMonadMorphism discr (natIso_sym (functor_unit_left _)) M OM := *)
-(*     mkRelMonMorph _ _ _ _ (fun A => Id (OM A)) _ _. *)
-(* End DiscrMonadAsRMonad. *)
-
 Section MonadMorphismAsRMonMorphism.
   Context {M0:Monad} {W0:OrderedMonad} (θ0:MonadMorphism M0 W0).
   Let M := monad_to_relmon M0.
@@ -330,6 +318,7 @@ Section MonadMorphismAsRMonMorphism.
   Let θ := from_discrete_monad_monotonic θ0.
 
   Import SPropNotations.
+  (* morphisms of monads also transfer to relativeMonad morphisms *)
   Program Definition mmorph_to_rmmorph :
     relativeMonadMorphism discr (natIso_sym (functor_unit_left _)) M W :=
     mkRelMonMorph discr _ M W (fun (A:TypeCat) => ⦑θ A⦒) _ _.
