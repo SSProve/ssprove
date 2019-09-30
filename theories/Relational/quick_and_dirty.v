@@ -5,8 +5,6 @@ From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads.
 From Relational Require Import Category RelativeMonads (* RelativeMonadExamples *) Rel.
 
-
-
 Definition M1 := Exn unit.
 Definition M2 := Identity.
 Definition W1 := ExnSpec unit.
@@ -38,7 +36,11 @@ Qed.
 Import RelNotations.
 
 Definition extends (Γ : Rel) (A1 A2 : Type) : Rel :=
- mkRel (πl Γ × A1) (πr Γ × A2) (fun γa1 γa2 => Γ (nfst γa1) (nfst γa2)).
+  mkRel (πl Γ × A1) (πr Γ × A2) (fun γa1 γa2 => Γ (nfst γa1) (nfst γa2)).
+
+Definition extendsLow (Γ : Rel) (A : Type) : Rel :=
+  mkRel (πl Γ × A) (πr Γ × A) (fun γa1 γa2 =>
+                                 Γ (nfst γa1) (nfst γa2) × (nsnd γa1 = nsnd γa2)).
 
 Check (fun Γ (γ : ⟬Γ⟭) => πl γ) .
 
@@ -171,3 +173,34 @@ Inductive valid :
             (catchStr m1 merr) (catch_spec_str wm1 wmerr)
             m2 wm2
             (rel_catch_spec_str wmrel wmerr).
+
+From Coq Require Import Lists.List.
+
+Notation "m1 ;; m2" := (bind m1 (fun=> m2)) (at level 65).
+
+Definition prog1 {A} (l : list A) (pred : A -> bool) : M1 bool :=
+  let fix aux (l : list A) : M1 unit :=
+      match l with
+      | nil => ret tt
+      | x :: l => if pred x then (raise tt ;; ret tt) else aux l
+      end
+  in catch (aux l ;; ret false) (fun => ret true).
+
+Definition prog2 {A} (l : list A) (pred : A -> bool) : M2 bool :=
+  let fix aux (l : list A) : M2 bool :=
+      match l with
+      | nil => ret false
+      | x :: l => if pred x then ret true else aux l
+      end
+  in aux l.
+
+Program Definition prog1_prog2_spec : Wrel bool bool :=
+  ⦑ fun p => forall b, p ⟨some b, b⟩ ⦒.
+Next Obligation.
+  cbv; intuition.
+Qed.
+
+Definition emptyctx := mkRel unit unit (fun _ _ => unit).
+
+Lemma prog1_prog2_equiv {A} : valid (extendsLow (extendsLow emptyctx (list A)) (A -> bool))
+                                    bool bool prog1 _ prog2 _ prog1_prog2_spec.
