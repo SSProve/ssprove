@@ -94,11 +94,11 @@ Section Rel.
 
   (* Definition g := λ² x ∈ Hi nat | Lo nat R=> Lo nat → λ² y ∈ Lo nat | Lo nat → y. *)
 
+  Definition EmptyCtx : Rel := mkRel unit unit (fun _ _ => unit).
+  Definition ConsCtx (Γ : Rel) (X : Rel) :=
+    mkRel (πl Γ × πl X) (πr Γ × πr X) (fun γx1 γx2 => Γ (nfst γx1) (nfst γx2) × X (nsnd γx1) (nsnd γx2)).
 End Rel.
 
-Definition EmptyCtx : Rel := mkRel unit unit (fun _ _ => unit).
-Definition ConsCtx (Γ : Rel) (X : Rel) :=
-  mkRel (πl Γ × πl X) (πr Γ × πr X) (fun γx1 γx2 => Γ (nfst γx1) (nfst γx2) × X (nsnd γx1) (nsnd γx2)).
 
 Module RelNotations.
   Notation πl := (fun x => nfst (dfst x)).
