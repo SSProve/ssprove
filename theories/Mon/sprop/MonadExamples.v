@@ -126,6 +126,11 @@ Section Exceptions.
 
   Definition Exn := @Free ExnS ExnAr.
   Definition raise : E -> Exn False := fun e => op _ (Raise e).
+  Definition catch {A} (m : Exn A) (merr : E -> Exn A) : Exn A :=
+    match m with
+    | retFree _ a => m
+    | @opr _ _ _ (Raise e) _ => merr e
+    end.
 End Exceptions.
 
 Section NonDeterminismSet.
