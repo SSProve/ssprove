@@ -96,6 +96,10 @@ Section Rel.
 
 End Rel.
 
+Definition EmptyCtx : Rel := mkRel unit unit (fun _ _ => unit).
+Definition ConsCtx (Γ : Rel) (X : Rel) :=
+  mkRel (πl Γ × πl X) (πr Γ × πr X) (fun γx1 γx2 => Γ (nfst γx1) (nfst γx2) × X (nsnd γx1) (nsnd γx2)).
+
 Module RelNotations.
   Notation πl := (fun x => nfst (dfst x)).
   Notation πr := (fun x => nsnd (dfst x)).
@@ -119,6 +123,9 @@ Module RelNotations.
            let tw := eval cbn in (fun x y w => πw (t ⦑x, y| w⦒)) in
            exact (dpair (fun p => forall xl xr xw, πw Y (nfst p xl) (nsnd p xr)) ⟨tl, tr⟩ tw))).
   Notation "f @R x" := (applyRel f x) (at level 85).
+
+  Notation " Γ ,∘ X " := (ConsCtx Γ (Hi X)) (at level 100).
+  Notation " Γ ,∙ X " := (ConsCtx Γ (Lo X)) (at level 100).
 End RelNotations.
 
 Section RelCat.
