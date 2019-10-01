@@ -186,6 +186,18 @@ Definition rel_extend_bool_eq
                 (* (dpair _ γ (mk_point (rel_is_false b @R γ) (eq_trans (πw bs)) H) H tt) *)
   ) eq_refl.
 
+Definition subst_nil {Γ A} : Γ -> Γ × list A := fun γ => ⟨γ, nil⟩.
+Definition rel_subst_nil {Γ A} : ⟬Γ⟭ -> ⟬Γ ,∙ list A⟭ :=
+  fun γ => mk_point (Γ ,∙ list A) (subst_nil (πl γ)) (subst_nil (πr γ))
+                 ⟨πw γ, eq_refl⟩.
+Definition subst_cons {Γ A} : Γ × A × list A -> Γ × list A :=
+  fun γal => ⟨nfst (nfst γal), cons (nsnd (nfst γal)) (nsnd γal)⟩.
+Program Definition rel_subst_cons {Γ A} : ⟬Γ,∙A,∙list A⟭ -> ⟬Γ ,∙ list A⟭ :=
+  fun γ => mk_point (Γ ,∙ list A) (subst_cons (πl γ)) (subst_cons (πr γ))
+                 ⟨nfst (nfst (πw γ)), eq_refl⟩.
+Next Obligation. move: γ=> [? [[?]]] /= -> -> //. Qed.
+
+
 Inductive valid :
   forall (Γ : Rel) A1 A2,
     (πl Γ -> M1 A1) -> (πl Γ -> W1 A1) ->
@@ -234,13 +246,18 @@ Inductive valid :
           (extend_bool_eq (πr b) m2_true m2_false)
           (extend_bool_eq (πr b) wm2_true wm2_false)
           (rel_extend_bool_eq b wmrel_true wmrel_false).
-
-(* | ValidBoolElim : *)
-(*     (b : Γ R=> Hi bool), *)
-(*     valid (dep_extend Γ (rel_is_true b)) A1 A2 m1 wm1 m2 wm2 wmrel -> *)
-(*     valid (dep_extend Γ (rel_is_false b)) A1 A2 m1 wm1 m2 wm2 wmrel -> *)
-(*     valid Γ A1 A2 *)
-(*           (fun γ1 => if b γ as then )m1 wm1 m2 wm2 wmrel *)
+(* | ValidListElim : *)
+(*     forall Γ A A1 A2 m1 wm1 m2 wm2 wmrel, *)
+(*       valid Γ A1 A2 *)
+(*             (m1 \o subst_nil) (wm1 \o subst_nil) *)
+(*             (m2 \o subst_nil) (wm2 \o subst_nil) *)
+(*             (wmrel \o rel_subst_nil) -> *)
+(*       (valid (Γ,∙ list A) A1 A2 m1 wm1 m2 wm2 wmrel -> *)
+(*        valid (Γ,∙ A ,∙ list A) A1 A2 *)
+(*              (m1 \o subst_cons) (wm1 \o subst_cons) *)
+(*              (m2 \o subst_cons) (wm2 \o subst_cons) *)
+(*              (wmrel \o rel_subst_cons)) -> *)
+(*       valid (Γ,∙ list A) A1 A2 m1 wm1 m2 wm2 wmrel. *)
 
 
 From Coq Require Import Lists.List.
