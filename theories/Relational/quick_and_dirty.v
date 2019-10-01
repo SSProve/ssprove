@@ -280,19 +280,19 @@ Definition prog2 {A} (l : list A) (pred : A -> bool) : M2 bool :=
       end
   in aux l.
 
-Definition prog1' {A} (lp : list A × (A -> bool)) :=
-  prog1 (nfst lp) (nsnd lp).
+Definition prog1' {A} (lp : unit × list A × (A -> bool)) :=
+  prog1 (nsnd (nfst lp)) (nsnd lp).
 
-Definition prog2' {A} (lp : list A × (A -> bool)) :=
-  prog2 (nfst lp) (nsnd lp).
+Definition prog2' {A} (lp : unit × list A × (A -> bool)) :=
+  prog2 (nsnd (nfst lp)) (nsnd lp).
 
-Program Definition prog1_spec : MonoContSProp (option bool) :=
-  ⦑ fun p => forall b, p (some b) ⦒.
+Program Definition prog1_spec : W1 bool :=
+  ⦑ fun p _ => forall b, p b ⦒.
 Next Obligation.
   cbv; intuition.
 Qed.
 
-Program Definition prog2_spec : MonoContSProp bool :=
+Program Definition prog2_spec : W2 bool :=
   ⦑ fun p => forall b, p b ⦒.
 Next Obligation.
   cbv; intuition.
@@ -304,6 +304,8 @@ Next Obligation.
   cbv; intuition.
 Qed.
 
-Lemma prog1_prog2_equiv {A} : valid ((EmptyCtx ,∘ (list A)) ,∘ (A -> bool))
-                                    bool bool prog1' prog1_spec prog2' prog2_spec
-                                    prog1_prog2_spec.
+Lemma prog1_prog2_equiv {A} : valid ((EmptyCtx ,∙ (list A)) ,∙ (A -> bool))
+                                    bool bool prog1' (fun => prog1_spec) prog2' (fun => prog2_spec)
+                                    (fun => prog1_prog2_spec).
+Proof.
+Admitted.
