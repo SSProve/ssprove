@@ -194,13 +194,30 @@ Definition prog2 {A} (l : list A) (pred : A -> bool) : M2 bool :=
       end
   in aux l.
 
+Definition prog1' {A} (lp : list A × (A -> bool)) :=
+  prog1 (nfst lp) (nsnd lp).
+
+Definition prog2' {A} (lp : list A × (A -> bool)) :=
+  prog2 (nfst lp) (nsnd lp).
+
+Program Definition prog1_spec : MonoContSProp (option bool) :=
+  ⦑ fun p => forall b, p (some b) ⦒.
+Next Obligation.
+  cbv; intuition.
+Qed.
+
+Program Definition prog2_spec : MonoContSProp bool :=
+  ⦑ fun p => forall b, p b ⦒.
+Next Obligation.
+  cbv; intuition.
+Qed.
+
 Program Definition prog1_prog2_spec : Wrel bool bool :=
   ⦑ fun p => forall b, p ⟨some b, b⟩ ⦒.
 Next Obligation.
   cbv; intuition.
 Qed.
 
-Definition emptyctx := mkRel unit unit (fun _ _ => unit).
-
-Lemma prog1_prog2_equiv {A} : valid (extendsLow (extendsLow emptyctx (list A)) (A -> bool))
-                                    bool bool prog1 _ prog2 _ prog1_prog2_spec.
+Lemma prog1_prog2_equiv {A} : valid ((EmptyCtx ,∘ (list A)) ,∘ (A -> bool))
+                                    bool bool prog1' prog1_spec prog2' prog2_spec
+                                    prog1_prog2_spec.
