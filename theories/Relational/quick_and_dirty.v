@@ -122,7 +122,6 @@ Next Obligation.
   apply: (wmerr _)∙2=> ?; apply: Hp.
 Qed.
 
-
 Program Definition rel_catch_spec_str
         {Γ A1 A2} (wmrel : ⟬Γ⟭ -> Wrel A1 A2)
            (wmerr : πl Γ × unit -> W1 A1) (* (wmerr_rel : unit -> Wrel A1 A2) *)
@@ -203,10 +202,8 @@ Inductive valid :
     (πl Γ -> M1 A1) -> (πl Γ -> W1 A1) ->
     (πr Γ -> M2 A2) -> (πr Γ -> W2 A2) ->
     (⟬Γ⟭ -> Wrel A1 A2) -> Type :=
-
 | ValidRet : forall Γ A1 A2 a1 a2,
     valid Γ A1 A2  (ret \o a1)  (ret \o a1) (ret \o a2) (ret \o a2) (fun γ => retWrel (a1 (πl γ)) (a2 (πr γ)))
-
 | ValidBind :
     forall Γ A1 A2 B1 B2 m1 wm1 m2 wm2 wmrel f1 wf1 f2 wf2 wfrel,
     valid Γ A1 A2 m1 wm1 m2 wm2 wmrel ->
@@ -220,7 +217,6 @@ Inductive valid :
       valid Γ A1 A2 m1 wm1 m2 wm2 wmrel ->
       wm1 ⩿ wm1' -> wm2 ⩿ wm2' -> wmrel ⩿ wmrel' ->
       valid Γ A1 A2 m1 wm1' m2 wm2' wmrel'
-
 | ValidRaise :
     forall Γ A2 a2,
       valid Γ False A2 (fun=> raise tt) (fun=> raise_spec) (fun=> ret a2) (fun=> ret a2)
@@ -304,8 +300,15 @@ Next Obligation.
   cbv; intuition.
 Qed.
 
-Lemma prog1_prog2_equiv {A} : valid ((EmptyCtx ,∙ (list A)) ,∙ (A -> bool))
+Lemma prog1_prog2_equiv {A} : valid (EmptyCtx ,∙ (list A) ,∙ (A -> bool))
                                     bool bool prog1' (fun => prog1_spec) prog2' (fun => prog2_spec)
                                     (fun => prog1_prog2_spec).
 Proof.
+  eapply ValidWeaken.
+  assert (prog1' = catchStr (fun lp => (fix aux (l : list A) : M1 unit :=
+           match l with
+           | nil => ret tt
+           | x :: l0 => if nsnd lp x then raise tt;; ret tt else aux l0
+           end) (nsnd (nfst lp));; ret false) (fun => ret true)) as -> by reflexivity.
+  apply: ValidCatch.
 Admitted.
