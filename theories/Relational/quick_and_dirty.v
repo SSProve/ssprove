@@ -5,6 +5,8 @@ From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads.
 From Relational Require Import Category RelativeMonads (* RelativeMonadExamples *) Rel.
 
+Set Universe Polymorphism.
+
 Definition M1 := Exn unit.
 Definition M2 := Identity.
 Definition W1 := ExnSpec unit.
@@ -137,6 +139,52 @@ Next Obligation.
   apply: (wmerr _)∙2=> ?; apply: Hp.
 Qed.
 
+Definition extend_bool_eq
+           {Γ A} (b: Γ -> bool)
+           (m_true : { γ:Γ ⫳ b γ = true } -> A)
+           (m_false: { γ:Γ ⫳ b γ = false } -> A)
+           (γ : Γ) : A :=
+  (if b γ as b0 return b γ = b0 -> A
+   then fun H => m_true (dpair _ γ H)
+   else fun H => m_false (dpair _ γ H)) eq_refl.
+
+Definition dep_extend (Γ : Rel) (b : Γ R==> TyRel) : Rel :=
+  mkRel {γl : πl Γ ⫳ πl b γl}
+        {γr : πr Γ ⫳ πr b γr}
+        (fun γbl γbr =>
+           { γw : Γ (dfst γbl) (dfst γbr)
+           ⫳ πw b (dfst γbl) (dfst γbr) γw (dsnd γbl) (dsnd γbr)  } ).
+
+Definition mk_point (R : Rel) (xl : πl R) (xr : πr R) (xw : R xl xr) : ⟬R⟭ :=
+  dpair _ ⟨xl, xr⟩ xw.
+
+Definition rel_is_bool (b0 : bool) {Γ} (b : Γ R==> Lo bool) : Γ R==> TyRel :=
+  mk_point (Γ R=> TyRel) (fun γl => πl b γl = b0) (fun γr => πr b γr = b0)
+           (fun γl γr γw b_eql b_eqr => unit).
+
+Let rel_is_true {Γ} := @rel_is_bool true Γ.
+Let rel_is_false {Γ} := @rel_is_bool false Γ.
+
+Definition rel_extend_bool_eq
+           {Γ A} (b: Γ R==> Lo bool)
+           (m_true : ⟬dep_extend Γ (rel_is_true b)⟭ -> A)
+           (m_false: ⟬dep_extend Γ (rel_is_false b)⟭ -> A)
+           (γ : ⟬Γ⟭) : A :=
+  let bs := b @R γ in
+  (if πr bs as b0 return πr bs = b0 -> A
+   then fun H => m_true
+                (mk_point (dep_extend Γ (rel_is_true b))
+                          (dpair _ (πl γ) (eq_trans (πw bs) H))
+                          (dpair _ (πr γ) H)
+                          (dpair _ (πw γ) tt))
+                (* (dpair _ γ (mk_point (rel_is_true b @R γ) (eq_trans (πw bs) H) H tt)) *)
+   else fun H => m_false
+                (mk_point (dep_extend Γ (rel_is_false b))
+                          (dpair _ (πl γ) (eq_trans (πw bs) H))
+                          (dpair _ (πr γ) H)
+                          (dpair _ (πw γ) tt))
+                (* (dpair _ γ (mk_point (rel_is_false b @R γ) (eq_trans (πw bs)) H) H tt) *)
+  ) eq_refl.
 
 Inductive valid :
   forall (Γ : Rel) A1 A2,
@@ -145,7 +193,7 @@ Inductive valid :
     (⟬Γ⟭ -> Wrel A1 A2) -> Type :=
 
 | ValidRet : forall Γ A1 A2 a1 a2,
-    valid Γ A1 A2 (fun=>ret a1) (fun=>ret a1) (fun=>ret a2) (fun=>ret a2) (fun=>retWrel a1 a2)
+    valid Γ A1 A2  (ret \o a1)  (ret \o a1) (ret \o a2) (ret \o a2) (fun γ => retWrel (a1 (πl γ)) (a2 (πr γ)))
 
 | ValidBind :
     forall Γ A1 A2 B1 B2 m1 wm1 m2 wm2 wmrel f1 wf1 f2 wf2 wfrel,
@@ -172,7 +220,28 @@ Inductive valid :
       valid Γ A1 A2
             (catchStr m1 merr) (catch_spec_str wm1 wmerr)
             m2 wm2
-            (rel_catch_spec_str wmrel wmerr).
+            (rel_catch_spec_str wmrel wmerr)
+
+| ValidBoolElim :
+    forall Γ (b : Γ R==> Lo bool) A1 A2
+      m1_true wm1_true m2_true wm2_true wmrel_true
+      m1_false wm1_false m2_false wm2_false wmrel_false ,
+    valid (dep_extend Γ (rel_is_true b)) A1 A2 m1_true wm1_true m2_true wm2_true wmrel_true ->
+    valid (dep_extend Γ (rel_is_false b)) A1 A2 m1_false wm1_false m2_false wm2_false wmrel_false ->
+    valid Γ A1 A2
+          (extend_bool_eq (πl b) m1_true m1_false)
+          (extend_bool_eq (πl b) wm1_true wm1_false)
+          (extend_bool_eq (πr b) m2_true m2_false)
+          (extend_bool_eq (πr b) wm2_true wm2_false)
+          (rel_extend_bool_eq b wmrel_true wmrel_false).
+
+(* | ValidBoolElim : *)
+(*     (b : Γ R=> Hi bool), *)
+(*     valid (dep_extend Γ (rel_is_true b)) A1 A2 m1 wm1 m2 wm2 wmrel -> *)
+(*     valid (dep_extend Γ (rel_is_false b)) A1 A2 m1 wm1 m2 wm2 wmrel -> *)
+(*     valid Γ A1 A2 *)
+(*           (fun γ1 => if b γ as then )m1 wm1 m2 wm2 wmrel *)
+
 
 From Coq Require Import Lists.List.
 

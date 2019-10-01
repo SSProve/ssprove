@@ -34,6 +34,9 @@ Section Rel.
   (* Universes *)
   Definition TyRel : Rel := @mkRel Type Type (fun A B => A -> B -> Type).
 
+  (* Up to size issues, we have ⟬TyRel⟭ = Rel *)
+
+
   Definition ArrRel (X Y : Rel) : Rel :=
     ⦑ πl X -> πl Y, πr X -> πr Y
     | fun fl fr => forall xl xr, X xl xr -> Y (fl xl) (fr xr) | TyRel ⦒.
@@ -122,7 +125,7 @@ Module RelNotations.
            in
            let tw := eval cbn in (fun x y w => πw (t ⦑x, y| w⦒)) in
            exact (dpair (fun p => forall xl xr xw, πw Y (nfst p xl) (nsnd p xr)) ⟨tl, tr⟩ tw))).
-  Notation "f @R x" := (applyRel f x) (at level 85).
+  Notation "f @R x" := (applyRel _ _ f x) (at level 85).
 
   Notation " Γ ,∘ X " := (ConsCtx Γ (Hi X)) (at level 100).
   Notation " Γ ,∙ X " := (ConsCtx Γ (Lo X)) (at level 100).
