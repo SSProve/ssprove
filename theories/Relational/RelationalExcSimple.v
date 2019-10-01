@@ -3,7 +3,7 @@ From Coq Require FunctionalExtensionality.
 From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads.
-From Mon.SM Require Import SMMonadExamples. 
+(* From Mon.SM Require Import SMMonadExamples.  *)
 From Relational Require Import RelativeMonads RelativeMonadExamples GenericRulesSimple.
 
 Set Primitive Projections.
@@ -29,9 +29,9 @@ Section Exceptions.
                            | ⟨raiseP _, _⟩ | ⟨_, raiseP _⟩ => pexc tt
                            end⦒⦒) _ _.
   Next Obligation.
-    move: m12 H1=> [[?|[?] ?] [?|[?] ?]] /= ; [apply H|..] ; apply H0.
+    move=> ? ? H ? ? H'; move: m12=> [[?|[?] ?] [?|[?] ?]] /= ; [apply H|..] ; apply H'.
   Qed.
-  Next Obligation. induction H=> //. Qed.
+  Next Obligation. induction 1 ; sreflexivity. Qed.
   Next Obligation.
     apply Ssig_eq=> /= ; 
     extensionality post ; extensionality pexc.
@@ -40,7 +40,7 @@ Section Exceptions.
   Qed.
 
   Program Definition fail_spec {A} : dfst (RelExc A) := ⦑fun _ pexc => pexc tt⦒.
-  Next Obligation. intuition. Qed.
+  Next Obligation. cbv; intuition. Qed.
 
   Lemma raise_l_rule e1 {A2} (a2:A2) :
     θExc ⊨ raise e1 ≈ ret a2 [{ fail_spec }].
@@ -59,7 +59,7 @@ Section Exceptions.
   Program Definition catch_spec {A} (w werr: dfst (RelExc A)) : dfst (RelExc A):=
     ⦑fun post pexc => Spr1 w post (fun _ => Spr1 werr post pexc) ⦒.
   Next Obligation.
-    move:H1. apply (Spr2 w)=> // _ /=. exact (Spr2 werr x y H x0 y0 H0).
+    move=> ? ? ? ? ? ?; apply: w∙2=> //; move=> ? ; apply: werr∙2 => //.
   Qed.
 
   Lemma catch_rule {A1 A2} (c1 : Exc1 A1) cerr1 (c2:Exc2 A2) cerr2 w werr :
@@ -70,7 +70,7 @@ Section Exceptions.
     θExc ⊨ catch c1 cerr1 ≈ catch c2 cerr2 [{ catch_spec w werr }].
   Proof.
     move: c1 c2=> [a1|[e1] ?] [a2|[e2] ?] H0 Hl Hr Hlr //=.
-    cbv in H0 |- * ; intuition.
+    cbv in H0 |- *; intuition; apply: H0; eassumption.
     all:cbv in H0 ; move=> post pexc H ; apply H0 in H.
     cbv in Hr ; move: (Hr a1 e2 post pexc H) ; destruct (cerr2 e2)=> //=.
     cbv in Hl ; move: (Hl e1 a2 post pexc H) ; destruct (cerr1 e1)=> //=.

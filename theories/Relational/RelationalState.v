@@ -8,7 +8,7 @@ From Coq Require FunctionalExtensionality Arith.PeanoNat.
 From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads.
-From Mon.SM Require Import SMMonadExamples. 
+(* From Mon.SM Require Import SMMonadExamples.  *)
 From Relational Require Import RelativeMonads RelativeMonadExamples GenericRulesSimple.
 
 Set Primitive Projections.
@@ -57,18 +57,18 @@ Section RelationalState.
   Program Definition θSt : RelationalEffectObservation0 M1 M2 (RelSt S) :=
     mkRelMonMorph _ _ _ _
                   (fun A =>
-                     ⦑fun m12 s0 =>
-                        ⦑fun post =>
+                     ⦑fun m12 =>
+                        ⦑fun post s0 =>
                            let r1 := nfst m12 (res1 s0) in
                            let r2 := nsnd m12 (res2 s0) in
-                           post ⟨ ⟨nfst r1, nfst r2⟩, merge (nsnd r1) (nsnd r2)⟩⦒⦒)
+                           post ⟨nfst r1, nfst r2⟩ (merge (nsnd r1) (nsnd r2))⦒⦒)
                   _ _.
-  Next Obligation. move: H0 ; apply H. Qed.
-  Next Obligation. induction H=> //. Qed.
+  Next Obligation. cbv; intuition. Qed.
+  Next Obligation. cbv ; intuition; induction H=> //. Qed.
   Next Obligation.
-    extensionality s0. apply Ssig_eq=> /=.
-    congr (@^~ ⟨_,_⟩).
-    extensionality p ; extensionality l ; destruct l=> //.
+    apply Ssig_eq=> /=.
+    extensionality post ; extensionality s0; f_equal.
+    extensionality l ; destruct l=> //.
   Qed.
 
   Definition upd {loc} (eql : loc -> loc -> bool) (l:loc) (v:val) (s :loc -> val) :=
@@ -94,10 +94,10 @@ Section RelationalState.
           (pre : S1 -> S2 -> SProp)
           (post : A1 -> S1 -> S1 -> A2 -> S2 -> S2 -> SProp)
     : dfst (RelSt S ⟨A1,A2⟩) :=
-    fun s0=> ⦑fun p => pre (res1 s0) (res2 s0) s/\
+    ⦑fun p s0 => pre (res1 s0) (res2 s0) s/\
                  forall a1 a2 s, post a1 (res1 s0) (res1 s) a2 (res2 s0) (res2 s)
-                            -> p ⟨⟨a1,a2⟩, s⟩⦒.
-  Next Obligation. intuition. Qed.
+                            -> p ⟨a1,a2⟩ s⦒.
+  Next Obligation. cbv ; intuition. Qed.
 
   (* Example rules *)
   Lemma read1_rule (l1 : loc1) :
@@ -147,7 +147,7 @@ Section NonInterference.
   Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ _ (θSt loc loc val) _ _ c1 c2 w) (at level 85).
 
   (* Translation from pre-/postconditions, fixing parameters *)
-  Let fromPrePost' {A B} pre post := @fromPrePost loc loc val eql eql_spec eql eql_spec A B pre post.
+  Let fromPrePost' {A B} pre post := @fromPrePost loc loc val (* eql eql_spec eql eql_spec *) A B pre post.
 
   (* Noninterference property written in term of pre-/postconditions *)
   Definition NI_pre_post {A:Type} :=
@@ -327,7 +327,7 @@ Section ProductState.
 
   Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ _ (θSt loc loc val) _ _ c1 c2 w) (at level 85).
 
-  Let fromPrePost' {A B} pre post := @fromPrePost loc loc val eql eql_spec eql eql_spec A B pre post.
+  Let fromPrePost' {A B} pre post := @fromPrePost loc loc val (* eql eql_spec eql eql_spec *) A B pre post.
 
   Let put (l:loc) (v:val) : St (loc -> val) unit := fun s => ⟨tt, upd _ eql l v s⟩.
   Let get (l:loc) : St (loc -> val) val := fun s => ⟨s l, s⟩.
@@ -383,8 +383,8 @@ Section ProductState.
 
   (* Effect observation for the product programs *)
   Program Definition ζSt {A1 A2} : StProd A1 A2 -> dfst (RelSt S12 ⟨A1,A2⟩) :=
-    fun c s => ⦑ fun post => post (c s)⦒.
-  Next Obligation. move: H0 ; apply H. Qed.
+    fun c => ⦑ fun post s => let r := c s in post (nfst r) (nsnd r)⦒.
+  Next Obligation. cbv; intuition. Qed.
 
   (* Soundness theorem for product programs *)
   Import SPropAxioms.
@@ -396,17 +396,17 @@ Section ProductState.
     - move=> Hw ; simple refine (apply_left _ _ _ _ (w1:=ζSt (put' (inl l) v)) (w2:= ζSt mrel) _ (IHst_rel _ _) _)=> //=.
       eapply weaken_rule2. apply put_left_rule.
       cbv ; intuition; destruct a1 ; destruct a2.
-      match goal with [H : a0 ⟨_, ?s0⟩ |- _ ] => enough (s ≡ s0) as Hs ; [induction Hs ; apply H|] end.
+      match goal with [H : a _ ?s0 |- _ ] => enough (s ≡ s0) as Hs ; [induction Hs ; apply H|] end.
       apply funext_sprop; move=> [l'|l'].
       induction (f_sEqual2 _ _ q0 (sEq_refl l'))=> //.
-      induction (f_sEqual2 _ _ q (sEq_refl l'))=>//.
+      induction (f_sEqual2 _ _ q (sEq_refl l'))=>//. sreflexivity.
     - move=> Hw ; simple refine (apply_right _ _ _ _ (w1:=ζSt (put' (inr l) v)) (w2:= ζSt mrel) _ (IHst_rel _ _) _)=> //=.
       eapply weaken_rule2. apply put_right_rule.
       cbv ; intuition; destruct a1 ; destruct a2.
-      match goal with [H : a0 ⟨_, ?s0⟩ |- _ ] => enough (s ≡ s0) as Hs ; [induction Hs ; apply H|] end.
+      match goal with [H : a _ ?s0 |- _ ] => enough (s ≡ s0) as Hs ; [induction Hs ; apply H|] end.
       apply funext_sprop; move=> [l'|l'].
       induction (f_sEqual2 _ _ q0 (sEq_refl l'))=> //.
-      induction (f_sEqual2 _ _ q (sEq_refl l'))=>//.
+      induction (f_sEqual2 _ _ q (sEq_refl l'))=>//. sreflexivity.
     - apply weaken_rule2.
       assert (m2 = skip ;; m2) as -> by (rewrite /bind monad_law1 //).
       apply_seq.
@@ -414,7 +414,7 @@ Section ProductState.
       move=> /= ? ?; apply H; sreflexivity.
       cbv ; intuition.
       induction q.
-      enough (a ≡ s0) as Hs ; [induction Hs ; apply H0|].
+      enough (a0 ≡ s0) as Hs ; [induction Hs ; apply H0|].
       apply funext_sprop; move=> [l'|l'].
       induction (f_sEqual2 _ _ q1 (sEq_refl l'))=> //.
       induction (f_sEqual2 _ _ q0 (sEq_refl l'))=>//.
@@ -425,11 +425,10 @@ Section ProductState.
       move=> /= ? ?; apply H; sreflexivity.
       cbv ; intuition.
       induction q.
-      enough (a ≡ s0) as Hs ; [induction Hs ; apply H0|].
+      enough (a0 ≡ s0) as Hs ; [induction Hs ; apply H0|].
       apply funext_sprop; move=> [l'|l'].
       induction (f_sEqual2 _ _ q1 (sEq_refl l'))=> //.
       induction (f_sEqual2 _ _ q0 (sEq_refl l'))=>//.
-      Unshelve. all:cbv ; intuition; destruct y; inversion H0; auto.
   Qed.
 
   Ltac cleanup_st_rel :=

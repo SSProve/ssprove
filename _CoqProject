@@ -25,16 +25,16 @@ theories/Mon/sprop/DijkstraMonadExamples.v
 theories/Mon/sprop/DirectedContainers.v
 theories/Mon/sprop/WeightedComputations.v
 
-theories/Mon/SM/dlist.v
-theories/Mon/SM/SMSyntax.v
-theories/Mon/SM/SMDenotations.v
-theories/Mon/SM/MonadTransformer.v
-theories/Mon/SM/SMMonadExamples.v
-theories/Mon/SM/SMDenotationsMonotonic.v
-theories/Mon/SM/MonadTransformerMonotonic.v
+# theories/Mon/SM/dlist.v
+# theories/Mon/SM/SMSyntax.v
+# theories/Mon/SM/SMDenotations.v
+# theories/Mon/SM/MonadTransformer.v
+# theories/Mon/SM/SMMonadExamples.v
+# theories/Mon/SM/SMDenotationsMonotonic.v
+# theories/Mon/SM/MonadTransformerMonotonic.v
 
-theories/Mon/dijkstra_updated.v
-theories/Mon/README.v
+# theories/Mon/dijkstra_updated.v
+# theories/Mon/README.v
 
 theories/Relational/Category.v
 theories/Relational/Rel.v

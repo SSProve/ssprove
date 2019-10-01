@@ -3,7 +3,7 @@ From Coq Require FunctionalExtensionality.
 From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads.
-From Mon.SM Require Import SMMonadExamples.
+(* From Mon.SM Require Import SMMonadExamples.  *)
 From Relational Require Import RelativeMonads RelativeMonadExamples GenericRulesSimple.
 
 Set Primitive Projections.

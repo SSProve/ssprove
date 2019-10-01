@@ -9,7 +9,6 @@ From mathcomp Require Import all_ssreflect all_algebra reals distr.
 From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads Monoid DijkstraMonadExamples.
-From Mon.SM Require Import SMMonadExamples.
 From Relational Require Import RelativeMonads RelativeMonadExamples GenericRulesSimple Commutativity.
 
 From Mon.sprop Require Import  FiniteProbabilities.

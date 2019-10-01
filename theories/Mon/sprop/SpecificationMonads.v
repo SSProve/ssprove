@@ -73,6 +73,8 @@ Section MonoContSProp.
 
 End MonoContSProp.
 
+Definition STCont S := @MonoCont (S -> SProp) (pointwise_srelation S SProp_op_order) _.
+
 
 Section PrePostSpec.
   Import SPropNotations.
@@ -131,7 +133,7 @@ Section ExceptionSpec.
   Definition ExnSpec_rel A : srelation (ExnSpecU A) :=
     fun m1 m2 => ((A -> SProp) ⇢ ((E -> SProp) ⇢ SProp_op_order)) (Spr1 m1) (Spr1 m2).
 
-  Instance ExnSpec_order A : PreOrder (@ExnSpec_rel A).
+  Global Instance ExnSpec_order A : PreOrder (@ExnSpec_rel A).
   Proof. constructor ; cbv ; intuition. Qed.
 
   Program Definition ExnSpec : OrderedMonad :=
