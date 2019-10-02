@@ -264,7 +264,6 @@ Axiom ValidSubst : forall Γ Δ A1 A2 m1 wm1 m2 wm2 wmrel (σ: Δ R==> Γ),
           (wmrel \o applyRel _ _ σ) ->
     valid Γ A1 A2 m1 wm1 m2 wm2 wmrel.
 
-
 Section ExcPure.
   From Coq Require Import Lists.List.
   From Coq Require Import FunctionalExtensionality.
@@ -287,11 +286,11 @@ Section ExcPure.
         end
     in aux l.
 
-  Definition prog1' {A} (lp : unit × list A × (A -> bool)) :=
-    prog1 (nsnd (nfst lp)) (nsnd lp).
+  Definition prog1' {A} (lp : unit × (A -> bool) × list A) :=
+    prog1 (nsnd lp) (nsnd (nfst lp)).
 
-  Definition prog2' {A} (lp : unit × list A × (A -> bool)) :=
-    prog2 (nsnd (nfst lp)) (nsnd lp).
+  Definition prog2' {A} (lp : unit × (A -> bool) × list A) :=
+    prog2 (nsnd lp) (nsnd (nfst lp)).
 
   Program Definition prog1_spec : W1 bool :=
     ⦑ fun p _ => forall b, p b ⦒.
@@ -327,11 +326,10 @@ Section ExcPure.
   Proof.
     rewrite /bindStr /bind /ret.
     extensionality γ.
-    rewrite monad_law2.
-    reflexivity.
+    rewrite monad_law2 => //.
   Qed.
 
-  Lemma prog1_prog2_equiv {A} : valid (EmptyCtx ,∙ (list A) ,∙ (A -> bool))
+  Lemma prog1_prog2_equiv {A} : valid (EmptyCtx ,∙ (A -> bool) ,∙ (list A))
                                       bool bool prog1' (fun => prog1_spec) prog2' (fun => prog2_spec)
                                       (fun => prog1_prog2_spec).
   Proof.
@@ -343,5 +341,6 @@ Section ExcPure.
     intro_bindStr ltac:(eval unfold t in t) t.
     clear t.
     apply: ValidBind.
+    apply ValidListElim.
   Admitted.
 End ExcPure.
