@@ -197,51 +197,51 @@ Program Definition rel_subst_cons {Γ A} : ⟬Γ,∙A,∙list A⟭ -> ⟬Γ ,∙
 Next Obligation. move: γ=> [? [[?]]] /= -> -> //. Qed.
 
 
-Inductive valid :
-  forall (Γ : Rel) A1 A2,
-    (πl Γ -> M1 A1) -> (πl Γ -> W1 A1) ->
-    (πr Γ -> M2 A2) -> (πr Γ -> W2 A2) ->
-    (⟬Γ⟭ -> Wrel A1 A2) -> Type :=
-| ValidRet : forall Γ A1 A2 a1 a2,
-    valid Γ A1 A2  (ret \o a1)  (ret \o a1) (ret \o a2) (ret \o a2) (fun γ => retWrel (a1 (πl γ)) (a2 (πr γ)))
-| ValidBind :
-    forall Γ A1 A2 B1 B2 m1 wm1 m2 wm2 wmrel f1 wf1 f2 wf2 wfrel,
-    valid Γ A1 A2 m1 wm1 m2 wm2 wmrel ->
-    valid (extends Γ A1 A2) B1 B2 f1 wf1 f2 wf2 wfrel ->
-    valid Γ B1 B2
-          (bindStr m1 f1) (bindStr wm1 wf1)
-          (bindStr m2 f2) (bindStr wm2 wf2)
-          (bindWrelStrong wm1 wm2 wmrel wf1 wf2 wfrel)
-| ValidWeaken :
-    forall Γ A1 A2 m1 wm1 wm1' m2 wm2 wm2' wmrel wmrel',
-      valid Γ A1 A2 m1 wm1 m2 wm2 wmrel ->
-      wm1 ⩿ wm1' -> wm2 ⩿ wm2' -> wmrel ⩿ wmrel' ->
-      valid Γ A1 A2 m1 wm1' m2 wm2' wmrel'
-| ValidRaise :
-    forall Γ A2 a2,
-      valid Γ False A2 (fun=> raise tt) (fun=> raise_spec) (fun=> ret a2) (fun=> ret a2)
-            (fun=> rel_raise_spec a2)
-| ValidCatch :
-    forall Γ A1 A2 m1 wm1 m2 wm2 wmrel merr wmerr wmerr_rel,
-      valid Γ A1 A2 m1 wm1 m2 wm2 wmrel ->
-      valid (extends Γ unit A2) A1 A2 merr wmerr (fun γa2 => ret (nsnd γa2)) (fun γa2 => ret (nsnd γa2)) wmerr_rel ->
-      valid Γ A1 A2
-            (catchStr m1 merr) (catch_spec_str wm1 wmerr)
-            m2 wm2
-            (rel_catch_spec_str wmrel wmerr)
+(* Inductive valid : *)
+(*   forall (Γ : Rel) A1 A2, *)
+(*     (πl Γ -> M1 A1) -> (πl Γ -> W1 A1) -> *)
+(*     (πr Γ -> M2 A2) -> (πr Γ -> W2 A2) -> *)
+(*     (⟬Γ⟭ -> Wrel A1 A2) -> Type := *)
+(* | ValidRet : forall Γ A1 A2 a1 a2, *)
+(*     valid Γ A1 A2  (ret \o a1)  (ret \o a1) (ret \o a2) (ret \o a2) (fun γ => retWrel (a1 (πl γ)) (a2 (πr γ))) *)
+(* | ValidBind : *)
+(*     forall Γ A1 A2 B1 B2 m1 wm1 m2 wm2 wmrel f1 wf1 f2 wf2 wfrel, *)
+(*     valid Γ A1 A2 m1 wm1 m2 wm2 wmrel -> *)
+(*     valid (extends Γ A1 A2) B1 B2 f1 wf1 f2 wf2 wfrel -> *)
+(*     valid Γ B1 B2 *)
+(*           (bindStr m1 f1) (bindStr wm1 wf1) *)
+(*           (bindStr m2 f2) (bindStr wm2 wf2) *)
+(*           (bindWrelStrong wm1 wm2 wmrel wf1 wf2 wfrel) *)
+(* | ValidWeaken : *)
+(*     forall Γ A1 A2 m1 wm1 wm1' m2 wm2 wm2' wmrel wmrel', *)
+(*       valid Γ A1 A2 m1 wm1 m2 wm2 wmrel -> *)
+(*       wm1 ⩿ wm1' -> wm2 ⩿ wm2' -> wmrel ⩿ wmrel' -> *)
+(*       valid Γ A1 A2 m1 wm1' m2 wm2' wmrel' *)
+(* | ValidRaise : *)
+(*     forall Γ A2 a2, *)
+(*       valid Γ False A2 (fun=> raise tt) (fun=> raise_spec) (fun=> ret a2) (fun=> ret a2) *)
+(*             (fun=> rel_raise_spec a2) *)
+(* | ValidCatch : *)
+(*     forall Γ A1 A2 m1 wm1 m2 wm2 wmrel merr wmerr wmerr_rel, *)
+(*       valid Γ A1 A2 m1 wm1 m2 wm2 wmrel -> *)
+(*       valid (extends Γ unit A2) A1 A2 merr wmerr (fun γa2 => ret (nsnd γa2)) (fun γa2 => ret (nsnd γa2)) wmerr_rel -> *)
+(*       valid Γ A1 A2 *)
+(*             (catchStr m1 merr) (catch_spec_str wm1 wmerr) *)
+(*             m2 wm2 *)
+(*             (rel_catch_spec_str wmrel wmerr) *)
 
-| ValidBoolElim :
-    forall Γ (b : Γ R==> Lo bool) A1 A2
-      m1_true wm1_true m2_true wm2_true wmrel_true
-      m1_false wm1_false m2_false wm2_false wmrel_false ,
-    valid (dep_extend Γ (rel_is_true b)) A1 A2 m1_true wm1_true m2_true wm2_true wmrel_true ->
-    valid (dep_extend Γ (rel_is_false b)) A1 A2 m1_false wm1_false m2_false wm2_false wmrel_false ->
-    valid Γ A1 A2
-          (extend_bool_eq (πl b) m1_true m1_false)
-          (extend_bool_eq (πl b) wm1_true wm1_false)
-          (extend_bool_eq (πr b) m2_true m2_false)
-          (extend_bool_eq (πr b) wm2_true wm2_false)
-          (rel_extend_bool_eq b wmrel_true wmrel_false).
+(* | ValidBoolElim : *)
+(*     forall Γ (b : Γ R==> Lo bool) A1 A2 *)
+(*       m1_true wm1_true m2_true wm2_true wmrel_true *)
+(*       m1_false wm1_false m2_false wm2_false wmrel_false , *)
+(*     valid (dep_extend Γ (rel_is_true b)) A1 A2 m1_true wm1_true m2_true wm2_true wmrel_true -> *)
+(*     valid (dep_extend Γ (rel_is_false b)) A1 A2 m1_false wm1_false m2_false wm2_false wmrel_false -> *)
+(*     valid Γ A1 A2 *)
+(*           (extend_bool_eq (πl b) m1_true m1_false) *)
+(*           (extend_bool_eq (πl b) wm1_true wm1_false) *)
+(*           (extend_bool_eq (πr b) m2_true m2_false) *)
+(*           (extend_bool_eq (πr b) wm2_true wm2_false) *)
+(*           (rel_extend_bool_eq b wmrel_true wmrel_false). *)
 (* | ValidListElim : *)
 (*     forall Γ A A1 A2 m1 wm1 m2 wm2 wmrel, *)
 (*       valid Γ A1 A2 *)
@@ -254,6 +254,66 @@ Inductive valid :
 (*              (m2 \o subst_cons) (wm2 \o subst_cons) *)
 (*              (wmrel \o rel_subst_cons)) -> *)
 (*       valid (Γ,∙ list A) A1 A2 m1 wm1 m2 wm2 wmrel. *)
+
+Axiom valid : forall (Γ : Rel) A1 A2, (πl Γ -> M1 A1) -> (πl Γ -> W1 A1) -> (πr Γ -> M2 A2) -> (πr Γ -> W2 A2) -> (⟬Γ⟭ -> Wrel A1 A2) -> Type.
+
+Axiom ValidRet : forall Γ A1 A2 a1 a2,
+    valid Γ A1 A2  (ret \o a1)  (ret \o a1) (ret \o a2) (ret \o a2) (fun γ => retWrel (a1 (πl γ)) (a2 (πr γ))).
+
+Axiom ValidBind :
+    forall Γ A1 A2 B1 B2 m1 wm1 m2 wm2 wmrel f1 wf1 f2 wf2 wfrel,
+    valid Γ A1 A2 m1 wm1 m2 wm2 wmrel ->
+    valid (extends Γ A1 A2) B1 B2 f1 wf1 f2 wf2 wfrel ->
+    valid Γ B1 B2
+          (bindStr m1 f1) (bindStr wm1 wf1)
+          (bindStr m2 f2) (bindStr wm2 wf2)
+          (bindWrelStrong wm1 wm2 wmrel wf1 wf2 wfrel).
+
+Axiom ValidWeaken :
+    forall Γ A1 A2 m1 wm1 wm1' m2 wm2 wm2' wmrel wmrel',
+      valid Γ A1 A2 m1 wm1 m2 wm2 wmrel ->
+      wm1 ⩿ wm1' -> wm2 ⩿ wm2' -> wmrel ⩿ wmrel' ->
+      valid Γ A1 A2 m1 wm1' m2 wm2' wmrel'.
+
+Axiom ValidRaise :
+    forall Γ A2 a2,
+      valid Γ False A2 (fun=> raise tt) (fun=> raise_spec) (fun=> ret a2) (fun=> ret a2)
+            (fun=> rel_raise_spec a2).
+
+Axiom ValidCatch :
+    forall Γ A1 A2 m1 wm1 m2 wm2 wmrel merr wmerr wmerr_rel,
+      valid Γ A1 A2 m1 wm1 m2 wm2 wmrel ->
+      valid (extends Γ unit A2) A1 A2 merr wmerr (fun γa2 => ret (nsnd γa2)) (fun γa2 => ret (nsnd γa2)) wmerr_rel ->
+      valid Γ A1 A2
+            (catchStr m1 merr) (catch_spec_str wm1 wmerr)
+            m2 wm2
+            (rel_catch_spec_str wmrel wmerr).
+
+Axiom ValidBoolElim :
+    forall Γ (b : Γ R==> Lo bool) A1 A2
+      m1_true wm1_true m2_true wm2_true wmrel_true
+      m1_false wm1_false m2_false wm2_false wmrel_false ,
+    valid (dep_extend Γ (rel_is_true b)) A1 A2 m1_true wm1_true m2_true wm2_true wmrel_true ->
+    valid (dep_extend Γ (rel_is_false b)) A1 A2 m1_false wm1_false m2_false wm2_false wmrel_false ->
+    valid Γ A1 A2
+          (extend_bool_eq (πl b) m1_true m1_false)
+          (extend_bool_eq (πl b) wm1_true wm1_false)
+          (extend_bool_eq (πr b) m2_true m2_false)
+          (extend_bool_eq (πr b) wm2_true wm2_false)
+          (rel_extend_bool_eq b wmrel_true wmrel_false).
+
+Axiom ValidListElim :
+    forall Γ A A1 A2 m1 wm1 m2 wm2 wmrel,
+      valid Γ A1 A2
+            (m1 \o subst_nil) (wm1 \o subst_nil)
+            (m2 \o subst_nil) (wm2 \o subst_nil)
+            (wmrel \o rel_subst_nil) ->
+      (valid (Γ,∙ list A) A1 A2 m1 wm1 m2 wm2 wmrel ->
+       valid (Γ,∙ A ,∙ list A) A1 A2
+             (m1 \o subst_cons) (wm1 \o subst_cons)
+             (m2 \o subst_cons) (wm2 \o subst_cons)
+             (wmrel \o rel_subst_cons)) ->
+      valid (Γ,∙ list A) A1 A2 m1 wm1 m2 wm2 wmrel.
 
 
 From Coq Require Import Lists.List.
