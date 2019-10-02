@@ -329,9 +329,8 @@ Section ExcPure.
     rewrite monad_law2 => //.
   Qed.
 
-  Lemma prog1_prog2_equiv {A} : valid (EmptyCtx ,∙ (A -> bool) ,∙ (list A))
-                                      bool bool prog1' (fun => prog1_spec) prog2' (fun => prog2_spec)
-                                      (fun => prog1_prog2_spec).
+  Lemma prog1_prog2_equiv {A} : valid (EmptyCtx ,∙ (A -> bool) ,∙ (list A)) bool bool prog1' (fun => prog1_spec)
+                                      prog2' (fun => prog2_spec) (fun => prog1_prog2_spec).
   Proof.
     eapply ValidWeaken.
     - intro_catchStr ltac:(eval unfold prog1', prog1 in (@prog1' A)) (@prog1' A).
@@ -344,12 +343,11 @@ Section ExcPure.
         2: { apply ValidRet. }
         apply ValidListElim.
         admit.
-        move => IH; admit.
-      + set Γ := extends _ _ _.
-        apply ValidRet.
-    - move => H1 H2 H3 H4. admit.
-    - move => H1 H2 H3. admit.
-    - move => H1 H2 H3. admit.
+        move => IH. admit.
+      + apply ValidRet.
+    - cbv; intuition. admit.
+    - cbv; intuition. admit.
+    - cbv; intuition. admit.
       Unshelve. all: admit.
   Admitted.
 End ExcPure.
