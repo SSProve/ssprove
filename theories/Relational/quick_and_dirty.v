@@ -360,15 +360,19 @@ Next Obligation.
   cbv; intuition.
 Qed.
 
+
+Ltac intro_catchStr t x :=
+  match t with
+  | fun H => catch (@?t1 H) (@?t2 H) =>
+    change x with (catchStr t1 (fun H => t2 (nfst H) (nsnd H)))
+  end.
+
+
 Lemma prog1_prog2_equiv {A} : valid (EmptyCtx ,∙ (list A) ,∙ (A -> bool))
                                     bool bool prog1' (fun => prog1_spec) prog2' (fun => prog2_spec)
                                     (fun => prog1_prog2_spec).
 Proof.
   eapply ValidWeaken.
-  assert (prog1' = catchStr (fun lp => (fix aux (l : list A) : M1 unit :=
-           match l with
-           | nil => ret tt
-           | x :: l0 => if nsnd lp x then raise tt;; ret tt else aux l0
-           end) (nsnd (nfst lp));; ret false) (fun => ret true)) as -> by reflexivity.
+  intro_catchStr ltac:(eval unfold prog1', prog1 in (@prog1' A)) (@prog1' A).
   apply: ValidCatch.
 Admitted.
