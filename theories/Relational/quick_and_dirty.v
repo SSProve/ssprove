@@ -341,12 +341,12 @@ Section ExcPure.
         intro_bindStr ltac:(eval unfold t in t) t.
         clear t.
         apply: ValidBind.
-        2: { rewrite /extends. admit. }
+        2: { apply ValidRet. }
         apply ValidListElim.
         admit.
         move => IH; admit.
       + set Γ := extends _ _ _.
-        admit.
+        apply ValidRet.
     - move => H1 H2 H3 H4. admit.
     - move => H1 H2 H3. admit.
     - move => H1 H2 H3. admit.
