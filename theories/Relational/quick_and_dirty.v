@@ -329,6 +329,8 @@ Section ExcPure.
     rewrite monad_law2 => //.
   Qed.
 
+  Arguments ret: simpl never.
+
   Lemma prog1_prog2_equiv {A} : valid (EmptyCtx ,∙ (A -> bool) ,∙ (list A)) bool bool prog1' (fun => prog1_spec)
                                       prog2' (fun => prog2_spec) (fun => prog1_prog2_spec).
   Proof.
@@ -341,9 +343,17 @@ Section ExcPure.
         clear t.
         apply: ValidBind.
         2: { apply ValidRet. }
+        (* refine (ValidListElim _ _ _ _ _ (fun '(npair x y) => _) _ (fun x => _) (fun x => _) _ _). *)
         apply ValidListElim.
+        rewrite /prog2' /prog2.
+        change (?t \o ?t') with (fun l => t (t' l)).
+        simpl.
         admit.
-        move => IH. admit.
+        move => IH.
+        rewrite /prog2' /prog2.
+        change (?t \o ?t') with (fun l => t (t' l)).
+        simpl.
+        admit.
       + apply ValidRet.
     - cbv; intuition. admit.
     - cbv; intuition. admit.
@@ -351,3 +361,11 @@ Section ExcPure.
       Unshelve. all: admit.
   Admitted.
 End ExcPure.
+
+(*
+Ltac intro_extend_bool_eq t x :=
+  match t with
+  | fun H => if @?b0 then ?t1 else ?t2 =>
+    change x with (extend_bool_eq (fun γ => b0) t1 else t2)
+  end.
+*)
