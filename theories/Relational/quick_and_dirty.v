@@ -334,13 +334,20 @@ Section ExcPure.
                                       (fun => prog1_prog2_spec).
   Proof.
     eapply ValidWeaken.
-    intro_catchStr ltac:(eval unfold prog1', prog1 in (@prog1' A)) (@prog1' A).
-    apply: ValidCatch.
-    rewrite (bindStr_law prog2').
-    set t := fun _ => _.
-    intro_bindStr ltac:(eval unfold t in t) t.
-    clear t.
-    apply: ValidBind.
-    apply ValidListElim.
+    - intro_catchStr ltac:(eval unfold prog1', prog1 in (@prog1' A)) (@prog1' A).
+      apply: ValidCatch.
+      + rewrite (bindStr_law prog2').
+        set t := fun _ => _.
+        intro_bindStr ltac:(eval unfold t in t) t.
+        clear t.
+        apply: ValidBind.
+        2: { admit. }
+        apply ValidListElim.
+        admit.
+        move => IH; admit.
+      + admit.
+    - admit.
+    - admit.
+    - admit.
   Admitted.
 End ExcPure.
