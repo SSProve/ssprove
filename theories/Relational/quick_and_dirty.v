@@ -256,6 +256,13 @@ Axiom ValidListElim :
              (wmrel \o rel_subst_cons)) ->
       valid (Γ,∙ list A) A1 A2 m1 wm1 m2 wm2 wmrel.
 
+(* Might be needed to apply list elimination *)
+Axiom ValidSubst : forall Γ Δ A1 A2 m1 wm1 m2 wm2 wmrel,
+    Γ R==> Δ ->
+    valid Δ A1 A2  m1 wm1 m2 wm2 wmrel ->
+    valid Γ A1 A2  m1 wm1 m2 wm2 wmrel.
+
+
 Section ExcPure.
   From Coq Require Import Lists.List.
   From Coq Require Import FunctionalExtensionality.
