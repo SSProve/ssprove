@@ -257,10 +257,12 @@ Axiom ValidListElim :
       valid (Γ,∙ list A) A1 A2 m1 wm1 m2 wm2 wmrel.
 
 (* Might be needed to apply list elimination *)
-Axiom ValidSubst : forall Γ Δ A1 A2 m1 wm1 m2 wm2 wmrel,
-    Γ R==> Δ ->
-    valid Δ A1 A2  m1 wm1 m2 wm2 wmrel ->
-    valid Γ A1 A2  m1 wm1 m2 wm2 wmrel.
+Axiom ValidSubst : forall Γ Δ A1 A2 m1 wm1 m2 wm2 wmrel (σ: Δ R==> Γ),
+    valid Δ A1 A2
+          (m1 \o πl σ) (wm1 \o πl σ)
+          (m2 \o πr σ) (wm2 \o πr σ)
+          (wmrel \o applyRel _ _ σ) ->
+    valid Γ A1 A2 m1 wm1 m2 wm2 wmrel.
 
 
 Section ExcPure.
