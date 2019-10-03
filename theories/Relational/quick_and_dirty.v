@@ -360,11 +360,8 @@ Section ExcPure.
         all: rewrite /prog2' /prog2; change (?t \o ?t') with (fun l => t (t' l)); simpl.
         admit.
         move => IH.
-        set (ifelse _ := if _ then _ else _).
-        intro_extend_bool_eq ltac:(eval unfold ifelse in ifelse) ifelse.
-        clear ifelse.
-        set (ifelse _ := if _ then _ else _).
-        intro_extend_bool_eq ltac:(eval unfold ifelse in ifelse) ifelse.
+        do 2 (set (ifelse _ := if _ then _ else _); intro_extend_bool_eq ltac:(eval unfold ifelse in ifelse) ifelse;
+              clear ifelse).
         admit.
       + apply ValidRet.
     - cbv; intuition. admit.
