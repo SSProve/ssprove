@@ -321,12 +321,17 @@ Section ExcPure.
       change x with (bindStr t1 (fun H => t2 (nfst H) (nsnd H)))
     end.
 
+  Ltac destruct_bool := extensionality x; cbv;
+                        match goal with | [|- context c [if ?b0 then _ else _]] => destruct b0 end;
+                        reflexivity.
+
   Ltac intro_extend_bool_eq t x :=
     match t with
     | fun H => match @?b0 H with
             | true => @?t1 H
             | false => @?t2 H
-            end => replace x with (extend_bool_eq b0 (fun '(dpair _ γ  _) => t1 γ) (fun '(dpair _ γ _) => t2 γ))
+            end => replace x with (extend_bool_eq b0 (fun '(dpair _ γ  _) => t1 γ) (fun '(dpair _ γ _) => t2 γ)) by
+                  destruct_bool
     end.
 
   Lemma bindStr_law {M: Monad} {A} {Γ} (m : Γ -> M A) : m = bindStr m (fun γ => ret (nsnd γ)).
@@ -355,10 +360,11 @@ Section ExcPure.
         all: rewrite /prog2' /prog2; change (?t \o ?t') with (fun l => t (t' l)); simpl.
         admit.
         move => IH.
-        set ifelse := (fun => if _ then _ else _).
+        set (ifelse _ := if _ then _ else _).
         intro_extend_bool_eq ltac:(eval unfold ifelse in ifelse) ifelse.
-        2 : { extensionality x; cbv; match goal with | [|- context c [if ?b0 then _ else _]] => destruct b0 end;
-              reflexivity. }
+        clear ifelse.
+        set (ifelse _ := if _ then _ else _).
+        intro_extend_bool_eq ltac:(eval unfold ifelse in ifelse) ifelse.
         admit.
       + apply ValidRet.
     - cbv; intuition. admit.
