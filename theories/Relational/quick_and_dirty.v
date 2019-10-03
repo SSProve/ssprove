@@ -1,9 +1,11 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-From Coq Require FunctionalExtensionality.
+From Coq Require Import FunctionalExtensionality.
+From Coq Require Import Lists.List.
 From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads.
 From Relational Require Import Category RelativeMonads (* RelativeMonadExamples *) Rel.
+
 
 Set Universe Polymorphism.
 
@@ -265,9 +267,6 @@ Axiom ValidSubst : forall Γ Δ A1 A2 m1 wm1 m2 wm2 wmrel (σ: Δ R==> Γ),
     valid Γ A1 A2 m1 wm1 m2 wm2 wmrel.
 
 Section ExcPure.
-  From Coq Require Import Lists.List.
-  From Coq Require Import FunctionalExtensionality.
-
   Notation "m1 ;; m2" := (bind m1 (fun=> m2)) (at level 65).
 
   Definition prog1 {A} (l : list A) (pred : A -> bool) : M1 bool :=
@@ -322,6 +321,14 @@ Section ExcPure.
       change x with (bindStr t1 (fun H => t2 (nfst H) (nsnd H)))
     end.
 
+  Ltac intro_extend_bool_eq t x :=
+    match t with
+    | fun H => match @?b0 H with
+            | true => @?t1 H
+            | false => @?t2 H
+            end => replace x with (extend_bool_eq b0 (fun '(dpair _ γ  _) => t1 γ) (fun '(dpair _ γ _) => t2 γ))
+    end.
+
   Lemma bindStr_law {M: Monad} {A} {Γ} (m : Γ -> M A) : m = bindStr m (fun γ => ret (nsnd γ)).
   Proof.
     rewrite /bindStr /bind /ret.
@@ -345,14 +352,13 @@ Section ExcPure.
         2: { apply ValidRet. }
         (* refine (ValidListElim _ _ _ _ _ (fun '(npair x y) => _) _ (fun x => _) (fun x => _) _ _). *)
         apply ValidListElim.
-        rewrite /prog2' /prog2.
-        change (?t \o ?t') with (fun l => t (t' l)).
-        simpl.
+        all: rewrite /prog2' /prog2; change (?t \o ?t') with (fun l => t (t' l)); simpl.
         admit.
         move => IH.
-        rewrite /prog2' /prog2.
-        change (?t \o ?t') with (fun l => t (t' l)).
-        simpl.
+        set ifelse := (fun => if _ then _ else _).
+        intro_extend_bool_eq ltac:(eval unfold ifelse in ifelse) ifelse.
+        2 : { extensionality x; cbv; match goal with | [|- context c [if ?b0 then _ else _]] => destruct b0 end;
+              reflexivity. }
         admit.
       + apply ValidRet.
     - cbv; intuition. admit.
@@ -362,10 +368,3 @@ Section ExcPure.
   Admitted.
 End ExcPure.
 
-(*
-Ltac intro_extend_bool_eq t x :=
-  match t with
-  | fun H => if @?b0 then ?t1 else ?t2 =>
-    change x with (extend_bool_eq (fun γ => b0) t1 else t2)
-  end.
-*)
