@@ -149,6 +149,16 @@ Definition extend_bool_eq
    then fun H => m_true (dpair _ γ H)
    else fun H => m_false (dpair _ γ H)) eq_refl.
 
+(*
+Section BoolEq.
+  Context {A: Type}.
+  Notation "'ebe' b t f" :=
+    (fun γ => (if b γ as b0 return b γ = b0 -> A
+            then fun H => t (dpair _ γ H)
+            else fun H => f (dpair _ γ H)) eq_refl) (at level 100).
+End BoolEq.
+*)
+
 Definition dep_extend (Γ : Rel) (b : Γ R==> TyRel) : Rel :=
   mkRel {γl : πl Γ ⫳ πl b γl}
         {γr : πr Γ ⫳ πr b γr}
@@ -350,16 +360,16 @@ Section ExcPure.
     valid Γ bool bool prog1' (fun => prog1_spec)
           prog2' (fun => prog2_spec) (fun => prog1_prog2_spec).
   Proof.
-    eapply ValidWeaken.
+    apply: ValidWeaken.
     - intro_catchStr ltac:(eval unfold prog1', prog1 in (@prog1' A)) (@prog1' A).
       apply: ValidCatch.
       + rewrite (bindStr_law prog2').
-        set t := fun _ => _.
+        set t := fun => _.
         intro_bindStr ltac:(eval unfold t in t) t.
         clear t.
         apply: ValidBind.
         2: apply ValidRet.
-        refine (ValidListElim _ _ _ _ _ (fun '(npair x y) => _) _ (fun x => _) (fun x => _) _ _).
+        refine (ValidListElim _ _ _ _ _ (fun '(npair x _) => _) _ (fun x => _) (fun x => _) _ _).
         all: rewrite /prog2' /prog2; change (?t \o ?t') with (fun l => t (t' l)); simpl.
         * apply: ValidWeaken; first by apply: ValidRet.
           all: move => /= ? ?; sreflexivity.
@@ -368,10 +378,10 @@ Section ExcPure.
                 intro_extend_bool_eq ltac:(eval unfold ifelse in ifelse) ifelse;
                 clear ifelse).
           apply: ValidWeaken.
-          set b := (fun => _).
+          set b := fun => _.
           set Γ' := EmptyCtx ,∙ (A -> bool) ,∙ A ,∙ (list A).
           (* refine (ValidBoolElim _ (mk_point (Γ' R=> Lo bool) b b _) _ _ _ _ _ _ _ _ _ _ _ _). *)
-          1: admit.
+          by admit.
           all: sreflexivity.
       + apply ValidRet.
     - cbv; intuition.
@@ -379,4 +389,3 @@ Section ExcPure.
     - cbv; intuition.
   Admitted.
 End ExcPure.
-
