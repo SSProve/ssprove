@@ -343,8 +343,12 @@ Section ExcPure.
 
   Arguments ret: simpl never.
 
-  Lemma prog1_prog2_equiv {A} : valid (EmptyCtx ,∙ (A -> bool) ,∙ (list A)) bool bool prog1' (fun => prog1_spec)
-                                      prog2' (fun => prog2_spec) (fun => prog1_prog2_spec).
+  Context {A:Type}.
+  Let Γ := EmptyCtx ,∙ (A -> bool) ,∙ (list A).
+
+  Lemma prog1_prog2_equiv :
+    valid Γ bool bool prog1' (fun => prog1_spec)
+          prog2' (fun => prog2_spec) (fun => prog1_prog2_spec).
   Proof.
     eapply ValidWeaken.
     - intro_catchStr ltac:(eval unfold prog1', prog1 in (@prog1' A)) (@prog1' A).
@@ -355,13 +359,19 @@ Section ExcPure.
         clear t.
         apply: ValidBind.
         2: { apply ValidRet. }
-        (* refine (ValidListElim _ _ _ _ _ (fun '(npair x y) => _) _ (fun x => _) (fun x => _) _ _). *)
-        apply ValidListElim.
+        refine (ValidListElim _ _ _ _ _ (fun '(npair x y) => _) _ (fun x => _) (fun x => _) _ _).
+        (* apply ValidListElim. *)
         all: rewrite /prog2' /prog2; change (?t \o ?t') with (fun l => t (t' l)); simpl.
-        admit.
-        move => IH.
-        do 2 (set (ifelse _ := if _ then _ else _); intro_extend_bool_eq ltac:(eval unfold ifelse in ifelse) ifelse;
-              clear ifelse).
+        * apply: ValidWeaken ; first by apply: ValidRet.
+          all:move=> /= ?; try (move=> ?); sreflexivity.
+        * move => IH.
+          do 2 (set (ifelse _ := if _ then _ else _);
+                intro_extend_bool_eq ltac:(eval unfold ifelse in ifelse) ifelse;
+                clear ifelse).
+          apply: ValidWeaken.
+          set b := (fun=> _).
+          set Γ' := EmptyCtx ,∙ (A -> bool) ,∙ A ,∙ (list A).
+          (* refine (ValidBoolElim _ (mk_point (Γ' R=> Lo bool) b b _) _ _ _ _ _ _ _ _ _ _ _ _). *)
         admit.
       + apply ValidRet.
     - cbv; intuition. admit.
