@@ -358,26 +358,25 @@ Section ExcPure.
         intro_bindStr ltac:(eval unfold t in t) t.
         clear t.
         apply: ValidBind.
-        2: { apply ValidRet. }
+        2: apply ValidRet.
         refine (ValidListElim _ _ _ _ _ (fun '(npair x y) => _) _ (fun x => _) (fun x => _) _ _).
-        (* apply ValidListElim. *)
         all: rewrite /prog2' /prog2; change (?t \o ?t') with (fun l => t (t' l)); simpl.
-        * apply: ValidWeaken ; first by apply: ValidRet.
-          all:move=> /= ?; try (move=> ?); sreflexivity.
+        * apply: ValidWeaken; first by apply: ValidRet.
+          all: move => /= ? ?; sreflexivity.
         * move => IH.
           do 2 (set (ifelse _ := if _ then _ else _);
                 intro_extend_bool_eq ltac:(eval unfold ifelse in ifelse) ifelse;
                 clear ifelse).
           apply: ValidWeaken.
-          set b := (fun=> _).
+          set b := (fun => _).
           set Γ' := EmptyCtx ,∙ (A -> bool) ,∙ A ,∙ (list A).
           (* refine (ValidBoolElim _ (mk_point (Γ' R=> Lo bool) b b _) _ _ _ _ _ _ _ _ _ _ _ _). *)
-        admit.
+          1: admit.
+          all: sreflexivity.
       + apply ValidRet.
-    - cbv; intuition. admit.
-    - cbv; intuition. admit.
-    - cbv; intuition. admit.
-      Unshelve. all: admit.
+    - cbv; intuition.
+    - cbv; intuition.
+    - cbv; intuition.
   Admitted.
 End ExcPure.
 
