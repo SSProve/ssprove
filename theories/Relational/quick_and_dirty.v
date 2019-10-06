@@ -352,9 +352,11 @@ Section ExcPure.
   Qed.
 
   Arguments ret: simpl never.
+  Arguments raise: simpl never.
 
   Context {A:Type}.
-  Let Γ := EmptyCtx ,∙ (A -> bool) ,∙ (list A).
+  Definition Γ := EmptyCtx ,∙ (A -> bool) ,∙ (list A).
+  Definition Γ' := EmptyCtx ,∙ (A -> bool) ,∙ A,∙ (list A).
 
   Lemma prog1_prog2_equiv :
     valid Γ bool bool prog1' (fun => prog1_spec)
@@ -377,15 +379,22 @@ Section ExcPure.
           do 2 (set (ifelse _ := if _ then _ else _);
                 intro_extend_bool_eq ltac:(eval unfold ifelse in ifelse) ifelse;
                 clear ifelse).
-          apply: ValidWeaken.
           set b := fun => _.
-          set Γ' := EmptyCtx ,∙ (A -> bool) ,∙ A ,∙ (list A).
-          (* refine (ValidBoolElim _ (mk_point (Γ' R=> Lo bool) b b _) _ _ _ _ _ _ _ _ _ _ _ _). *)
-          by admit.
-          all: sreflexivity.
+          have br : (Γ' R=> Lo bool) b b by
+              move=> [[[[]] ?] ? ?] [[[[]] ?] ? ?] /= [[[[] ->] ->] ->] //.
+          apply: ValidWeaken.
+          eapply (ValidBoolElim Γ' (mk_point (Γ' R=> Lo bool) b b br)) ; simpl.
+          (* Need to prove a simple lemma about raising at any type instead of just  at False *)
+          admit.
+            (* Problem : we need to apply the IH obtained from list induction but the context changed... Kripke-style quantification needed on context in the rule for list induction ? *)
+          admit.
+          all: admit.
+          (* all: sreflexivity. *)
       + apply ValidRet.
     - cbv; intuition.
     - cbv; intuition.
     - cbv; intuition.
+      Unshelve.
+      all: admit.
   Admitted.
 End ExcPure.
