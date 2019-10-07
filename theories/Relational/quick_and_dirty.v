@@ -372,7 +372,7 @@ Section ExcPure.
         apply: ValidBind.
         2: apply ValidRet.
         refine (ValidListElim _ _ _ _ _ (fun '(npair x _) => _) _ (fun x => _) (fun x => _) _ _).
-        all: rewrite /prog2' /prog2; change (?t \o ?t') with (fun l => t (t' l)); simpl.
+        all: rewrite /prog2' /prog2; change (?t \o ?t') with (fun l => t (t' l)) => /=.
         * apply: ValidWeaken; first by apply: ValidRet.
           all: move => /= ? ?; sreflexivity.
         * move => IH.
@@ -380,10 +380,9 @@ Section ExcPure.
                 intro_extend_bool_eq ltac:(eval unfold ifelse in ifelse) ifelse;
                 clear ifelse).
           set b := fun => _.
-          have br : (Γ' R=> Lo bool) b b by
-              move=> [[[[]] ?] ? ?] [[[[]] ?] ? ?] /= [[[[] ->] ->] ->] //.
+          have br: (Γ' R=> Lo bool) b b by move => [[[[]]]] ? ? ? [[[[]]]] ? ? ? /= [[[[]]]] -> -> -> //.
           apply: ValidWeaken.
-          eapply (ValidBoolElim Γ' (mk_point (Γ' R=> Lo bool) b b br)) ; simpl.
+          eapply (ValidBoolElim Γ' (mk_point (Γ' R=> Lo bool) b b br)) => /=.
           (* Need to prove a simple lemma about raising at any type instead of just  at False *)
           admit.
             (* Problem : we need to apply the IH obtained from list induction but the context changed... Kripke-style quantification needed on context in the rule for list induction ? *)
