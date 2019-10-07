@@ -149,16 +149,6 @@ Definition extend_bool_eq
    then fun H => m_true (dpair _ γ H)
    else fun H => m_false (dpair _ γ H)) eq_refl.
 
-(*
-Section BoolEq.
-  Context {A: Type}.
-  Notation "'ebe' b t f" :=
-    (fun γ => (if b γ as b0 return b γ = b0 -> A
-            then fun H => t (dpair _ γ H)
-            else fun H => f (dpair _ γ H)) eq_refl) (at level 100).
-End BoolEq.
-*)
-
 Definition dep_extend (Γ : Rel) (b : Γ R==> TyRel) : Rel :=
   mkRel {γl : πl Γ ⫳ πl b γl}
         {γr : πr Γ ⫳ πr b γr}
@@ -278,6 +268,9 @@ Axiom ValidSubst : forall Γ Δ A1 A2 m1 wm1 m2 wm2 wmrel (σ: Δ R==> Γ),
 
 Section ExcPure.
   Notation "m1 ;; m2" := (bind m1 (fun=> m2)) (at level 65).
+  Arguments ret: simpl never.
+  Arguments raise: simpl never.
+  Arguments bind: simpl never.
 
   Definition prog1 {A} (l : list A) (pred : A -> bool) : M1 bool :=
     let fix aux (l : list A) : M1 unit :=
@@ -351,8 +344,11 @@ Section ExcPure.
     rewrite monad_law2 => //.
   Qed.
 
-  Arguments ret: simpl never.
-  Arguments raise: simpl never.
+  Lemma valid_raise_anytype : forall Γ A1 A2 a2 q rs rrs, valid Γ A1 A2 (fun => bind (raise tt) (fun => ret q)) (fun=> rs)
+                                                           (fun=> ret a2) (fun=> ret a2) (fun=> rrs).
+  Proof.
+    intros.
+  Admitted.
 
   Context {A:Type}.
   Definition Γ := EmptyCtx ,∙ (A -> bool) ,∙ (list A).
@@ -383,9 +379,10 @@ Section ExcPure.
           have br: (Γ' R=> Lo bool) b b by move => [[[[]]]] ? ? ? [[[[]]]] ? ? ? /= [[[[]]]] -> -> -> //.
           apply: ValidWeaken.
           eapply (ValidBoolElim Γ' (mk_point (Γ' R=> Lo bool) b b br)) => /=.
-          (* Need to prove a simple lemma about raising at any type instead of just  at False *)
-          admit.
-            (* Problem : we need to apply the IH obtained from list induction but the context changed... Kripke-style quantification needed on context in the rule for list induction ? *)
+          apply valid_raise_anytype.
+          (* Problem : we need to apply the IH obtained from list induction but the context changed... Kripke-style quantification needed on context in the rule for list induction ? *)
+          match goal with [|- context c [valid ?q _ _ _ _ _ _ _]] => eapply (ValidSubst q Γ) end;
+            change (?t \o ?t') with (fun l => t (t' l)) => /=.
           admit.
           all: admit.
           (* all: sreflexivity. *)
