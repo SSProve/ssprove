@@ -354,11 +354,15 @@ Section ExcPure.
     clear t.
     set w := ret a2.
     change w with (bind w id).
-    set x := fun => bind _ _.
-    intro_bindStr ltac:(eval unfold x in x) x.
+    set y := fun => bind w id.
+    intro_bindStr ltac:(eval unfold y in y) y.
     eapply ValidWeaken.
-    apply ValidBind.
-    all: admit.
+    - apply ValidBind.
+      + apply ValidRaise.
+      + apply ValidRet.
+    - admit.
+    - cbv; intuition.
+    - admit.
   Admitted.
 
   Context {A:Type}.
