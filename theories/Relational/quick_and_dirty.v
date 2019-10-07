@@ -344,10 +344,21 @@ Section ExcPure.
     rewrite monad_law2 => //.
   Qed.
 
-  Lemma valid_raise_anytype : forall Γ A1 A2 a2 q rs rrs, valid Γ A1 A2 (fun => bind (raise tt) (fun => ret q)) (fun=> rs)
-                                                           (fun=> ret a2) (fun=> ret a2) (fun=> rrs).
+  Lemma valid_raise_anytype : forall Γ A1 A2 a1 a2 w1 wrel,
+      valid Γ A1 A2 (fun => bind (raise tt) (fun => ret a1)) (fun => w1 a1)
+            (fun=> ret a2) (fun => ret a2) (fun => wrel a1 a2).
   Proof.
     intros.
+    set t := fun => _;
+    intro_bindStr ltac:(eval unfold t in t) t;
+    clear t.
+    set w := ret a2.
+    change w with (bind w id).
+    set x := fun => bind _ _.
+    intro_bindStr ltac:(eval unfold x in x) x.
+    eapply ValidWeaken.
+    apply ValidBind.
+    all: admit.
   Admitted.
 
   Context {A:Type}.
