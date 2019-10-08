@@ -247,11 +247,11 @@ Axiom ValidBoolElim :
 
 Axiom ValidListElim :
   forall Γ Γ' A A1 A2 m1 wm1 m2 wm2 wmrel,
-      (Γ R==> Γ' -> valid Γ' A1 A2
+      valid Γ' A1 A2
             (m1 \o subst_nil) (wm1 \o subst_nil)
             (m2 \o subst_nil) (wm2 \o subst_nil)
-            (wmrel \o rel_subst_nil)) ->
-      (valid (Γ',∙ list A) A1 A2 m1 wm1 m2 wm2 wmrel ->
+            (wmrel \o rel_subst_nil) ->
+      (Γ R==> Γ' -> valid (Γ',∙ list A) A1 A2 m1 wm1 m2 wm2 wmrel ->
        valid (Γ',∙ A ,∙ list A) A1 A2
              (m1 \o subst_cons) (wm1 \o subst_cons)
              (m2 \o subst_cons) (wm2 \o subst_cons)
@@ -384,9 +384,9 @@ Section ExcPure.
         2: apply ValidRet.
         refine (ValidListElim _ _ _ _ _ _ (fun '(npair x _) => _) _ (fun x => _) (fun x => _) _ _).
         all: rewrite /prog2' /prog2; change (?t \o ?t') with (fun l => t (t' l)) => /=.
-        * move => ?. apply: ValidWeaken; first by apply: ValidRet.
+        * apply: ValidWeaken; first by apply: ValidRet.
           all: move => /= ? ?; sreflexivity.
-        * move => IH.
+        * move => GG IH.
           do 2 (set (ifelse _ := if _ then _ else _);
                 intro_extend_bool_eq ltac:(eval unfold ifelse in ifelse) ifelse;
                 clear ifelse).
@@ -395,7 +395,8 @@ Section ExcPure.
           apply: ValidWeaken.
           eapply (ValidBoolElim Γ' (mk_point (Γ' R=> Lo bool) b b br)) => /=.
           apply valid_raise_anytype.
-          (* Problem : we need to apply the IH obtained from list induction but the context changed... Kripke-style quantification needed on context in the rule for list induction ? *)
+          (* Problem : we need to apply the IH obtained from list induction but the context changed...
+             Kripke-style quantification needed on context in the rule for list induction ? *)
           admit.
           all: admit.
           (* all: sreflexivity. *)
