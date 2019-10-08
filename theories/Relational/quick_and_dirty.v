@@ -149,6 +149,12 @@ Definition extend_bool_eq
    then fun H => m_true (dpair _ γ H)
    else fun H => m_false (dpair _ γ H)) eq_refl.
 
+Lemma trivial_extend_bool_eq {Γ A} (b: Γ -> bool) (a:Γ -> A) :
+  a = extend_bool_eq b (fun γ' => a (dfst γ')) (fun γ' => a (dfst γ')).
+Proof.
+  extensionality γ; rewrite /extend_bool_eq /=; case: (b _)=> //.
+Qed.
+
 Definition dep_extend (Γ : Rel) (b : Γ R==> TyRel) : Rel :=
   mkRel {γl : πl Γ ⫳ πl b γl}
         {γr : πr Γ ⫳ πr b γr}
@@ -186,6 +192,15 @@ Definition rel_extend_bool_eq
                           (dpair _ (πw γ) tt))
                 (* (dpair _ γ (mk_point (rel_is_false b @R γ) (eq_trans (πw bs)) H) H tt) *)
   ) eq_refl.
+
+Definition dep_extend_proj1 {Γ} {R : Γ R==> TyRel} : ⟬dep_extend Γ R⟭ -> ⟬Γ⟭ :=
+  fun γ' => mk_point Γ (dfst (πl γ')) (dfst (πr γ')) (dfst (πw γ')).
+
+Lemma trivial_rel_extend_bool_eq {Γ A} (b: Γ R==> Lo bool) (a: ⟬Γ⟭ -> A):
+  a = rel_extend_bool_eq b (a \o dep_extend_proj1) (a \o dep_extend_proj1).
+Proof.
+  extensionality γ ; cbv; case: (nsnd _)=> //.
+Qed.
 
 Definition subst_nil {Γ A} : Γ -> Γ × list A := fun γ => ⟨γ, nil⟩.
 Definition rel_subst_nil {Γ A} : ⟬Γ⟭ -> ⟬Γ ,∙ list A⟭ :=
@@ -254,11 +269,12 @@ Axiom ValidListElim :
             (m1 \o subst_nil) (wm1 \o subst_nil)
             (m2 \o subst_nil) (wm2 \o subst_nil)
             (wmrel \o rel_subst_nil) ->
-      ((forall Γ' (σ: Γ' R==> Γ) (s := ctx_subst_extend σ),
-           valid (Γ',∙ list A) A1 A2
-                 (m1 \o πl s) (wm1 \o πl s)
-                 (m2 \o πr s) (wm2 \o πr s)
-                 (wmrel \o applyRel _ _ s)) ->
+      (valid (Γ,∙ list A) A1 A2 m1 wm1 m2 wm2 wmrel
+       (* (forall Γ' (σ: Γ' R==> Γ) (s := ctx_subst_extend σ), *)
+       (*     valid (Γ',∙ list A) A1 A2 *)
+       (*           (m1 \o πl s) (wm1 \o πl s) *)
+       (*           (m2 \o πr s) (wm2 \o πr s) *)
+       (*           (wmrel \o applyRel _ _ s)) *) ->
        valid (Γ,∙ A ,∙ list A) A1 A2
              (m1 \o subst_cons) (wm1 \o subst_cons)
              (m2 \o subst_cons) (wm2 \o subst_cons)
@@ -267,11 +283,11 @@ Axiom ValidListElim :
 
 (* Might be needed to apply list elimination *)
 Axiom ValidSubst : forall Γ Δ A1 A2 m1 wm1 m2 wm2 wmrel (σ: Δ R==> Γ),
+    valid Γ A1 A2 m1 wm1 m2 wm2 wmrel ->
     valid Δ A1 A2
           (m1 \o πl σ) (wm1 \o πl σ)
           (m2 \o πr σ) (wm2 \o πr σ)
-          (wmrel \o applyRel _ _ σ) ->
-    valid Γ A1 A2 m1 wm1 m2 wm2 wmrel.
+          (wmrel \o applyRel _ _ σ).
 
 Section ExcPure.
   Notation "m1 ;; m2" := (bind m1 (fun=> m2)) (at level 65).
@@ -408,14 +424,42 @@ Section ExcPure.
                 clear ifelse).
           set b := fun => _.
           have br: (Γ' R=> Lo bool) b b by move => [[[[]]]] ? ? ? [[[[]]]] ? ? ? /= [[[[]]]] -> -> -> //.
-          apply: ValidWeaken.
-          eapply (ValidBoolElim Γ' (mk_point (Γ' R=> Lo bool) b b br)) => /=.
+          set bb := mk_point (Γ' R=> Lo bool) b b br.
+          (** Something seems to be wrong here already with the specs !! *)
+          rewrite (trivial_extend_bool_eq b (fun=> ret tt))
+                  (trivial_extend_bool_eq b (fun=> ret false))
+                  (trivial_rel_extend_bool_eq bb (fun=> retWrel tt false)).
+          eapply (ValidBoolElim Γ' bb) => /=.
           apply valid_raise_anytype.
           (* Problem : we need to apply the IH obtained from list induction but the context changed...
              Kripke-style quantification needed on context in the rule for list induction ? *)
+          set Γ'' := dep_extend _ _.
+          have @σ : Γ'' R==> Γ.
+          simple refine (mk_point (Γ'' R=> Γ) _ _ _).
+          move=> [[[γ _] l] _] ; refine ⟨γ,l⟩.
+          move=> [[[γ _] l] _] ; refine ⟨γ,l⟩.
+          move=> /= ? ? [[[γ _] l] _]; refine ⟨γ,l⟩.
+          simpl in σ.
+          apply (ValidSubst _ _ _ _ _ _ _ _ _ σ) in IH.
+          apply IH.
+          move=> /= ? ? ? ?; cbv ; set b0 := nsnd _ _ ; case E : b0; last by assumption.
+          (* I think that case should not happen, we went wrong somewhere... *)
           admit.
-          all: admit.
-          (* all: sreflexivity. *)
+          move=> /= ? ? ?; cbv ; set b0 := nsnd _ _ ; case E : b0; last by assumption.
+          (* I think that case should not happen, we went wrong somewhere... *)
+          admit.
+          move=> /= ? ? ?; cbv ; set b0 := nsnd _ _ ; case E : b0; last by assumption.
+          (* I think that case should not happen, we went wrong somewhere... *)
+          admit.
+          (* cbv. *)
+          (* move=> /= ? ? ?; unfold extend_bool_eq=> /=; case E : (b _). *)
+          (* set b0 := nsnd _ _; case E: b0. *)
+          (* cbv. *)
+          (* simpl. *)
+          (* apply IH. *)
+          (* admit. *)
+          (* all: admit. *)
+          (* (* all: sreflexivity. *) *)
       + apply ValidRet.
     - cbv; intuition.
     - cbv; intuition.
