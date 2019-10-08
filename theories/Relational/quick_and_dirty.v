@@ -197,6 +197,9 @@ Program Definition rel_subst_cons {Γ A} : ⟬Γ,∙A,∙list A⟭ -> ⟬Γ ,∙
   fun γ => mk_point (Γ ,∙ list A) (subst_cons (πl γ)) (subst_cons (πr γ))
                  ⟨nfst (nfst (πw γ)), eq_refl⟩.
 Next Obligation. move: γ=> [? [[?]]] /= -> -> //. Qed.
+Definition ctx_subst_extend {A : Type} {Γ' Γ} {σ: Γ' R==> Γ} : (Γ' ,∙ A) R==> (Γ ,∙ A) :=
+  mk_point ((Γ' ,∙ A) R=> (Γ ,∙ A)) (fun e => ⟨(πl σ) (nfst e), nsnd e⟩)
+           (fun e => ⟨(πr σ) (nfst e), nsnd e⟩) (fun xl xr X => ⟨(πw σ) (nfst xl) (nfst xr) (nfst X), nsnd X⟩).
 
 Axiom valid : forall (Γ : Rel) A1 A2, (πl Γ -> M1 A1) -> (πl Γ -> W1 A1) -> (πr Γ -> M2 A2) -> (πr Γ -> W2 A2) -> (⟬Γ⟭ -> Wrel A1 A2) -> Type.
 
@@ -246,17 +249,21 @@ Axiom ValidBoolElim :
           (rel_extend_bool_eq b wmrel_true wmrel_false).
 
 Axiom ValidListElim :
-  forall Γ Γ' A A1 A2 m1 wm1 m2 wm2 wmrel,
-      valid Γ' A1 A2
+  forall Γ A A1 A2 m1 wm1 m2 wm2 wmrel,
+      valid Γ A1 A2
             (m1 \o subst_nil) (wm1 \o subst_nil)
             (m2 \o subst_nil) (wm2 \o subst_nil)
             (wmrel \o rel_subst_nil) ->
-      (Γ R==> Γ' -> valid (Γ',∙ list A) A1 A2 m1 wm1 m2 wm2 wmrel ->
-       valid (Γ',∙ A ,∙ list A) A1 A2
+      ((forall Γ' (σ: Γ' R==> Γ),
+           valid (Γ',∙ list A) A1 A2
+                 (m1 \o ctx_subst_extend) (wm1 \o ctx_subst_extend)
+                 (m2 \o ctx_subst_extend) (wm2 \o ctx_subst_extend)
+                 wmrel) ->
+       valid (Γ,∙ A ,∙ list A) A1 A2
              (m1 \o subst_cons) (wm1 \o subst_cons)
              (m2 \o subst_cons) (wm2 \o subst_cons)
              (wmrel \o rel_subst_cons)) ->
-      valid (Γ',∙ list A) A1 A2 m1 wm1 m2 wm2 wmrel.
+      valid (Γ,∙ list A) A1 A2 m1 wm1 m2 wm2 wmrel.
 
 (* Might be needed to apply list elimination *)
 Axiom ValidSubst : forall Γ Δ A1 A2 m1 wm1 m2 wm2 wmrel (σ: Δ R==> Γ),
