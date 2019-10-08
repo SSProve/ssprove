@@ -628,78 +628,102 @@ Section Adjunctions.
 
    Import StrongestPostcondition.
 
+   Definition sp2pred A (sp:ForwardPredTransformer A) : PredOM A :=
+     fun r => Spr1 sp sUnit r.
 
-  Definition sp2pp A (sp:ForwardPredTransformer A) : PPSpecMonad A :=
-    let post := fun x => forall (pre : SProp), pre -> Spr1 sp pre x in
-    let pre := s∃ pre, (forall x, post x -> Spr1 sp pre x) s/\ pre in
-    ⟨pre, post⟩.
+   Program Definition pred2sp A (post : PredOM A) : ForwardPredTransformer A :=
+     ⦑fun pre r => @mkOver _ (pre s/\ post r) _⦒.
+   Next Obligation. destruct H ; assumption. Qed.
+   Next Obligation. destruct H0; split ; auto. Qed.
 
-  Program Definition pp2sp0 A (pp : PPSpecMonad A) : ForwardPredTransformer A :=
-    let sp pre x := pre s/\ (nfst pp -> nsnd pp x) in
-    Sexists _ (fun pre x => @mkOver _ (sp pre x) _) _.
-  Next Obligation. destruct H ; assumption. Qed.
-  Next Obligation. move: H0 => [Hpre Hpost] ; split ; auto. Qed.
+   Import FunctionalExtensionality.
+   Lemma sp2pred2sp_id : forall A (sp : ForwardPredTransformer A),
+       pred2sp (sp2pred sp) = sp.
+   Proof.
+     move=> A sp. apply Ssig_eq. extensionality p. extensionality r.
+     apply SPropOver_eq. split; cbv.
+     move=> [Hp]. apply (sp∙2). trivial.
+     move=> H; split. exact (over H). move:H ;apply (sp∙2)=> //.
+   Qed.
 
-  Program Definition pp2sp A (pp : PPSpecMonad A) : ForwardPredTransformer A :=
-    let sp pre x : SProp :=
-        forall (sp: ForwardPredTransformer A),
-          (forall x pre', pre' s/\ nsnd pp x -> Spr1 sp pre' x) ->
-              Spr1 sp pre x in
-    Sexists _ (fun pre x => @mkOver _ (sp pre x) _) _.
-  Next Obligation.
-    move: (H (pp2sp0 pp)) => H0.
-    apply (fun f => over (H0 f)).
-    cbv ; intuition.
-  Qed.
-  Next Obligation.
-    move: (H0 sp H1). apply (Spr2 sp). assumption.
-  Qed.
+   Lemma pred2sp2pred_id : forall A (p : PredOM A), sp2pred (pred2sp p) = p.
+   Proof.
+     move=> A p; rewrite /sp2pred /pred2sp /= ; extensionality r.
+     apply SPropAxioms.sprop_ext; do 2 split; move=> // [_ ?] //.
+   Qed.
 
-  Lemma pp2sp01 A (pp:PPSpecMonad A) :
-    pp2sp pp ≤[ForwardPredTransformer] pp2sp0 pp.
-  Proof.
-    cbv.
-    move=> p x H.
-    move: (H (pp2sp0 pp)) => H0.
-    apply H0.
-    cbv ; intuition.
-  Qed.
+  (** Previous convoluted definition that's secretly "equivalent" to the one above *)
+  (*  Definition sp2pp A (sp:ForwardPredTransformer A) : PPSpecMonad A := *)
+  (*    let post := fun x => forall (pre : SProp), pre -> Spr1 sp pre x in *)
+  (*    let pre := s∃ pre, (forall x, post x -> Spr1 sp pre x) s/\ pre in *)
+  (*    ⟨pre, post⟩. *)
 
-  Lemma sp2pp_pp2sp_loop A (pp:PPSpecMonad A) :
-    sp2pp (pp2sp pp) ≤[PPSpecMonad] pp.
-  Proof.
-    cbv.
-    split.
-    - move=> ?; exists sUnit;split.
-      move=> ? H ? ?; apply H.
-      all:intuition.
-    - move=> x H.
-      simple refine (_ (H sUnit stt (pp2sp0 ⟨sUnit, nsnd pp⟩) _)); cbv ; intuition.
-  Qed.
+  (* Program Definition pp2sp0 A (pp : PPSpecMonad A) : ForwardPredTransformer A := *)
+  (*   let sp pre x := pre s/\ (nfst pp -> nsnd pp x) in *)
+  (*   Sexists _ (fun pre x => @mkOver _ (sp pre x) _) _. *)
+  (* Next Obligation. destruct H ; assumption. Qed. *)
+  (* Next Obligation. move: H0 => [Hpre Hpost] ; split ; auto. Qed. *)
 
-  Lemma pp2sp_sp2pp_loop A (sp:ForwardPredTransformer A) :
-    sp ≤[ForwardPredTransformer] pp2sp (sp2pp sp).
-  Proof.
-    cbv.
-    intuition.
-    specialize (H0 x).
-    apply H0.
-    split. exact (over H).
-    intros ; move: H ; apply (Spr2 sp) ; intuition.
-  Qed.
+  (* Program Definition pp2sp A (pp : PPSpecMonad A) : ForwardPredTransformer A := *)
+  (*   let sp pre x : SProp := *)
+  (*       forall (sp: ForwardPredTransformer A), *)
+  (*         (forall x pre', pre' s/\ nsnd pp x -> Spr1 sp pre' x) -> *)
+  (*             Spr1 sp pre x in *)
+  (*   Sexists _ (fun pre x => @mkOver _ (sp pre x) _) _. *)
+  (* Next Obligation. *)
+  (*   move: (H (pp2sp0 pp)) => H0. *)
+  (*   apply (fun f => over (H0 f)).  *)
+  (*   cbv ; intuition. *)
+  (* Qed. *)
+  (* Next Obligation. *)
+  (*   move: (H0 sp H1). apply (Spr2 sp). assumption. *)
+  (* Qed. *)
 
-  Lemma sp_pp_adjunction A pp (sp : ForwardPredTransformer A) :
-    sp2pp sp ≤[PPSpecMonad] pp s<-> sp ≤[ForwardPredTransformer] pp2sp pp.
-  Proof.
-    cbv ; split.
-    - dintuition. apply H0.
-      split. exact (over H).
-      apply q. intros ; move:H ; apply (Spr2 sp) ; intuition.
-    - dintuition.
-      exists sUnit. split ; intuition.
-      apply H1 ; constructor.
-      simple refine (_ (H sUnit x (H0 sUnit stt)(pp2sp0 ⟨sUnit, nsnd pp⟩) _)); cbv ; intuition.
-  Qed.
+  (* Lemma pp2sp01 A (pp:PPSpecMonad A) : *)
+  (*   pp2sp pp ≤[ForwardPredTransformer] pp2sp0 pp. *)
+  (* Proof. *)
+  (*   cbv. *)
+  (*   move=> p x H. *)
+  (*   move: (H (pp2sp0 pp)) => H0. *)
+  (*   apply H0. *)
+  (*   cbv ; intuition. *)
+  (* Qed. *)
+
+  (* Lemma sp2pp_pp2sp_loop A (pp:PPSpecMonad A) : *)
+  (*   sp2pp (pp2sp pp) ≤[PPSpecMonad] pp. *)
+  (* Proof. *)
+  (*   cbv. *)
+  (*   split. *)
+  (*   - move=> ?; exists sUnit;split. *)
+  (*     move=> ? H ? ?; apply H. *)
+  (*     all:intuition. *)
+  (*   - move=> x H. *)
+  (*     simple refine (_ (H sUnit stt (pp2sp0 ⟨sUnit, nsnd pp⟩) _)); cbv ; intuition. *)
+  (* Qed. *)
+
+  (* Lemma pp2sp_sp2pp_loop A (sp:ForwardPredTransformer A) : *)
+  (*   sp ≤[ForwardPredTransformer] pp2sp (sp2pp sp). *)
+  (* Proof. *)
+  (*   cbv. *)
+  (*   intuition. *)
+  (*   specialize (H0 x). *)
+  (*   apply H0. *)
+  (*   split. exact (over H). *)
+  (*   intros ; move: H ; apply (Spr2 sp) ; intuition. *)
+  (* Qed. *)
+
+  (* Lemma sp_pp_adjunction A pp (sp : ForwardPredTransformer A) : *)
+  (*   sp2pp sp ≤[PPSpecMonad] pp s<-> sp ≤[ForwardPredTransformer] pp2sp pp. *)
+  (* Proof. *)
+  (*   cbv ; split. *)
+  (*   - dintuition. apply H0. *)
+  (*     split. exact (over H). *)
+  (*     apply q. intros ; move:H ; apply (Spr2 sp) ; intuition. *)
+  (*   - dintuition. *)
+  (*     exists sUnit. split ; intuition. *)
+  (*     apply H1 ; constructor. *)
+  (*     simple refine (_ (H sUnit x (H0 sUnit stt)(pp2sp0 ⟨sUnit, nsnd pp⟩) _)); cbv ; intuition. *)
+  (* Qed. *)
 
   Program Definition sp2mr A (sp : ForwardPredTransformer A)
     : MRSpec A :=
