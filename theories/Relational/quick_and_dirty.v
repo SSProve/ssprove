@@ -197,7 +197,7 @@ Program Definition rel_subst_cons {Γ A} : ⟬Γ,∙A,∙list A⟭ -> ⟬Γ ,∙
   fun γ => mk_point (Γ ,∙ list A) (subst_cons (πl γ)) (subst_cons (πr γ))
                  ⟨nfst (nfst (πw γ)), eq_refl⟩.
 Next Obligation. move: γ=> [? [[?]]] /= -> -> //. Qed.
-Definition ctx_subst_extend {A : Type} {Γ' Γ} {σ: Γ' R==> Γ} : (Γ' ,∙ A) R==> (Γ ,∙ A) :=
+Definition ctx_subst_extend {A Γ' Γ} (σ: Γ' R==> Γ) : (Γ' ,∙ A) R==> (Γ ,∙ A) :=
   mk_point ((Γ' ,∙ A) R=> (Γ ,∙ A)) (fun e => ⟨(πl σ) (nfst e), nsnd e⟩)
            (fun e => ⟨(πr σ) (nfst e), nsnd e⟩) (fun xl xr X => ⟨(πw σ) (nfst xl) (nfst xr) (nfst X), nsnd X⟩).
 
@@ -254,11 +254,11 @@ Axiom ValidListElim :
             (m1 \o subst_nil) (wm1 \o subst_nil)
             (m2 \o subst_nil) (wm2 \o subst_nil)
             (wmrel \o rel_subst_nil) ->
-      ((forall Γ' (σ: Γ' R==> Γ),
+      ((forall Γ' (σ: Γ' R==> Γ) (s := ctx_subst_extend σ),
            valid (Γ',∙ list A) A1 A2
-                 (m1 \o ctx_subst_extend) (wm1 \o ctx_subst_extend)
-                 (m2 \o ctx_subst_extend) (wm2 \o ctx_subst_extend)
-                 wmrel) ->
+                 (m1 \o πl s) (wm1 \o πl s)
+                 (m2 \o πr s) (wm2 \o πr s)
+                 (wmrel \o applyRel _ _ s)) ->
        valid (Γ,∙ A ,∙ list A) A1 A2
              (m1 \o subst_cons) (wm1 \o subst_cons)
              (m2 \o subst_cons) (wm2 \o subst_cons)
@@ -351,9 +351,19 @@ Section ExcPure.
     rewrite monad_law2 => //.
   Qed.
 
-  Lemma valid_raise_anytype : forall Γ A1 A2 a1 a2 w1 wrel,
-      valid Γ A1 A2 (fun => bind (raise tt) (fun => ret a1)) (fun => w1 a1)
-            (fun=> ret a2) (fun => ret a2) (fun => wrel a1 a2).
+  Program Definition raise_general_spec {A1} : W1 A1 := ⦑ fun p perr => perr tt ⦒.
+  Next Obligation.
+    cbv; intuition.
+  Qed.
+
+  Program Definition rel_raise_general_spec {A1 A2} (a2 : A2) : Wrel A1 A2 := ⦑ fun p => p ⟨None, a2⟩ ⦒.
+  Next Obligation.
+    cbv; intuition.
+  Qed.
+
+  Lemma valid_raise_anytype : forall Γ A1 A2 a1 a2,
+      valid Γ A1 A2 (fun => bind (raise tt) (fun => ret a1)) (fun => raise_general_spec)
+            (fun=> ret a2) (fun => ret a2) (fun => rel_raise_general_spec a2).
   Proof.
     intros.
     set t := fun => _;
@@ -367,10 +377,10 @@ Section ExcPure.
     - apply ValidBind.
       + apply ValidRaise.
       + apply ValidRet.
-    - admit.
     - cbv; intuition.
-    - admit.
-  Admitted.
+    - cbv; intuition.
+    - cbv; intuition.
+  Qed.
 
   Context {A:Type}.
   Definition Γ := EmptyCtx ,∙ (A -> bool) ,∙ (list A).
@@ -389,12 +399,11 @@ Section ExcPure.
         clear t.
         apply: ValidBind.
         2: apply ValidRet.
-        refine (ValidListElim _ _ _ _ _ _ (fun '(npair x _) => _) _ (fun x => _) (fun x => _) _ _).
-        all: rewrite /prog2' /prog2; change (?t \o ?t') with (fun l => t (t' l)) => /=.
+        refine (ValidListElim _ _ _ _ _ (fun '(npair x _) => _) _ (fun x => _) (fun x => _) _ _).
+        all: rewrite /prog2' /prog2; try intro IH; change (?t \o ?t') with (fun l => t (t' l)) => /=.
         * apply: ValidWeaken; first by apply: ValidRet.
           all: move => /= ? ?; sreflexivity.
-        * move => GG IH.
-          do 2 (set (ifelse _ := if _ then _ else _);
+        * do 2 (set (ifelse _ := if _ then _ else _);
                 intro_extend_bool_eq ltac:(eval unfold ifelse in ifelse) ifelse;
                 clear ifelse).
           set b := fun => _.
