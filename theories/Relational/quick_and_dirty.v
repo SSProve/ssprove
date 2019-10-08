@@ -246,17 +246,17 @@ Axiom ValidBoolElim :
           (rel_extend_bool_eq b wmrel_true wmrel_false).
 
 Axiom ValidListElim :
-    forall Γ A A1 A2 m1 wm1 m2 wm2 wmrel,
-      valid Γ A1 A2
+  forall Γ Γ' A A1 A2 m1 wm1 m2 wm2 wmrel,
+      (Γ R==> Γ' -> valid Γ' A1 A2
             (m1 \o subst_nil) (wm1 \o subst_nil)
             (m2 \o subst_nil) (wm2 \o subst_nil)
-            (wmrel \o rel_subst_nil) ->
-      (valid (Γ,∙ list A) A1 A2 m1 wm1 m2 wm2 wmrel ->
-       valid (Γ,∙ A ,∙ list A) A1 A2
+            (wmrel \o rel_subst_nil)) ->
+      (valid (Γ',∙ list A) A1 A2 m1 wm1 m2 wm2 wmrel ->
+       valid (Γ',∙ A ,∙ list A) A1 A2
              (m1 \o subst_cons) (wm1 \o subst_cons)
              (m2 \o subst_cons) (wm2 \o subst_cons)
              (wmrel \o rel_subst_cons)) ->
-      valid (Γ,∙ list A) A1 A2 m1 wm1 m2 wm2 wmrel.
+      valid (Γ',∙ list A) A1 A2 m1 wm1 m2 wm2 wmrel.
 
 (* Might be needed to apply list elimination *)
 Axiom ValidSubst : forall Γ Δ A1 A2 m1 wm1 m2 wm2 wmrel (σ: Δ R==> Γ),
@@ -382,9 +382,9 @@ Section ExcPure.
         clear t.
         apply: ValidBind.
         2: apply ValidRet.
-        refine (ValidListElim _ _ _ _ _ (fun '(npair x _) => _) _ (fun x => _) (fun x => _) _ _).
+        refine (ValidListElim _ _ _ _ _ _ (fun '(npair x _) => _) _ (fun x => _) (fun x => _) _ _).
         all: rewrite /prog2' /prog2; change (?t \o ?t') with (fun l => t (t' l)) => /=.
-        * apply: ValidWeaken; first by apply: ValidRet.
+        * move => ?. apply: ValidWeaken; first by apply: ValidRet.
           all: move => /= ? ?; sreflexivity.
         * move => IH.
           do 2 (set (ifelse _ := if _ then _ else _);
@@ -396,8 +396,6 @@ Section ExcPure.
           eapply (ValidBoolElim Γ' (mk_point (Γ' R=> Lo bool) b b br)) => /=.
           apply valid_raise_anytype.
           (* Problem : we need to apply the IH obtained from list induction but the context changed... Kripke-style quantification needed on context in the rule for list induction ? *)
-          match goal with [|- context c [valid ?q _ _ _ _ _ _ _]] => eapply (ValidSubst q Γ) end;
-            change (?t \o ?t') with (fun l => t (t' l)) => /=.
           admit.
           all: admit.
           (* all: sreflexivity. *)
