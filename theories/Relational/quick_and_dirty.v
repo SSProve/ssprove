@@ -250,19 +250,6 @@ Axiom ValidCatch :
             m2 wm2
             (rel_catch_spec_str wmrel wmerr).
 
-Axiom ValidBoolElim :
-    forall Γ (b : Γ R==> Lo bool) A1 A2
-      m1_true wm1_true m2_true wm2_true wmrel_true
-      m1_false wm1_false m2_false wm2_false wmrel_false ,
-    valid (dep_extend Γ (rel_is_true b)) A1 A2 m1_true wm1_true m2_true wm2_true wmrel_true ->
-    valid (dep_extend Γ (rel_is_false b)) A1 A2 m1_false wm1_false m2_false wm2_false wmrel_false ->
-    valid Γ A1 A2
-          (extend_bool_eq (πl b) m1_true m1_false)
-          (extend_bool_eq (πl b) wm1_true wm1_false)
-          (extend_bool_eq (πr b) m2_true m2_false)
-          (extend_bool_eq (πr b) wm2_true wm2_false)
-          (rel_extend_bool_eq b wmrel_true wmrel_false).
-
 Axiom ValidListElim :
   forall Γ A A1 A2 m1 wm1 m2 wm2 wmrel,
       valid Γ A1 A2
@@ -288,6 +275,75 @@ Axiom ValidSubst : forall Γ Δ A1 A2 m1 wm1 m2 wm2 wmrel (σ: Δ R==> Γ),
           (m1 \o πl σ) (wm1 \o πl σ)
           (m2 \o πr σ) (wm2 \o πr σ)
           (wmrel \o applyRel _ _ σ).
+
+Definition subst_true {Γ} : Γ -> Γ × bool := fun γ => ⟨γ, true⟩.
+Definition rel_subst_true {Γ} : ⟬Γ⟭ -> ⟬Γ,∙bool ⟭ :=
+  applyRel _ _ (mk_point (Γ R=> (Γ,∙bool)) subst_true subst_true (fun _ _ γ => ⟨γ, erefl⟩)).
+Definition subst_false {Γ} : Γ -> Γ × bool := fun γ => ⟨γ, false⟩.
+Definition rel_subst_false {Γ} : ⟬Γ⟭ -> ⟬Γ,∙bool ⟭ :=
+  applyRel _ _ (mk_point (Γ R=> (Γ,∙bool)) subst_false subst_false (fun _ _ γ => ⟨γ, erefl⟩)).
+
+Axiom ValidBoolElim :
+  forall Γ A1 A2 m1 wm1 m2 wm2 wmrel,
+    valid Γ A1 A2 (m1 \o subst_true) (wm1 \o subst_true) (m2 \o subst_true) (wm2 \o subst_true) (wmrel \o rel_subst_true) ->
+    valid Γ A1 A2 (m1 \o subst_false) (wm1 \o subst_false) (m2 \o subst_false) (wm2 \o subst_false) (wmrel \o rel_subst_false) ->
+    valid (Γ ,∙ bool) A1 A2 m1 wm1 m2 wm2 wmrel.
+
+    (* forall Γ (b : Γ R==> Lo bool) A1 A2 *)
+    (*   m1_true wm1_true m2_true wm2_true wmrel_true *)
+    (*   m1_false wm1_false m2_false wm2_false wmrel_false , *)
+    (* valid (dep_extend Γ (rel_is_true b)) A1 A2 m1_true wm1_true m2_true wm2_true wmrel_true -> *)
+    (* valid (dep_extend Γ (rel_is_false b)) A1 A2 m1_false wm1_false m2_false wm2_false wmrel_false -> *)
+    (* valid Γ A1 A2 *)
+    (*       (extend_bool_eq (πl b) m1_true m1_false) *)
+    (*       (extend_bool_eq (πl b) wm1_true wm1_false) *)
+    (*       (extend_bool_eq (πr b) m2_true m2_false) *)
+    (*       (extend_bool_eq (πr b) wm2_true wm2_false) *)
+    (*       (rel_extend_bool_eq b wmrel_true wmrel_false). *)
+
+Definition ifp {Γ A} (b : Γ -> bool) (mtrue mfalse : Γ -> A) : Γ -> A :=
+  fun γ => if b γ then mtrue γ else mfalse γ.
+Definition rel_ifp {Γ A} (b : Γ R==> Lo bool) (mtrue mfalse : ⟬Γ⟭ -> A) : ⟬Γ⟭ -> A :=
+  fun γ => if πl (b @R γ) then mtrue γ else mfalse γ.
+
+Definition extend_proj1' {Γ A} : ⟬Γ,∙A⟭ -> ⟬Γ⟭ :=
+  applyRel _ _ (mk_point ((Γ,∙A) R=> Γ) nfst nfst (fun _ _ => nfst)).
+
+Definition extend_proj2 {Γ A} : (Γ,∙A) R==> Lo A :=
+  mk_point ((Γ,∙A) R=> Lo A) nsnd nsnd (fun _ _ => nsnd).
+Definition extend_proj2' {Γ A} : ⟬Γ,∙A⟭ -> ⟬Lo A⟭ :=
+  applyRel _ _ extend_proj2.
+
+Lemma valid_bool_elim_extended :
+    forall Γ (b : Γ R==> Lo bool) A1 A2
+      m1_true wm1_true m2_true wm2_true wmrel_true
+      m1_false wm1_false m2_false wm2_false wmrel_false ,
+    valid Γ A1 A2 m1_true wm1_true m2_true wm2_true wmrel_true ->
+    valid  Γ A1 A2 m1_false wm1_false m2_false wm2_false wmrel_false ->
+    valid Γ A1 A2
+          (ifp (πl b) m1_true m1_false)
+          (ifp (πl b) wm1_true wm1_false)
+          (ifp (πr b) m2_true m2_false)
+          (ifp (πr b) wm2_true wm2_false)
+          (rel_ifp b wmrel_true wmrel_false).
+Proof.
+  move=> Γ b A1 A2 m1_true wm1_true m2_true wm2_true wmrel_true
+      m1_false wm1_false m2_false wm2_false wmrel_false vtrue vfalse.
+  set s := mk_point (Γ R=> (Γ,∙bool)) (fun γ => ⟨γ, πl b γ⟩) (fun γ => ⟨γ, πr b γ⟩)
+                    (fun xr xl γ => ⟨γ, πw b xr xl γ⟩).
+  rewrite {1 2}/ifp.
+  change (fun _ => if ?t _ then ?t1 _ else ?t2 _ ) with
+      (ifp nsnd (t1 \o nfst) (t2 \o nfst) \o πl s).
+  rewrite {3 4}/ifp.
+  change (fun _ => if ?t _ then ?t1 _ else ?t2 _ ) with
+      (ifp nsnd (t1 \o nfst) (t2 \o nfst) \o πr s).
+  change (rel_ifp _ _ _) with
+      ((rel_ifp extend_proj2 (wmrel_true \o extend_proj1') (wmrel_false \o extend_proj1')) \o applyRel _ _ s).
+  apply (ValidSubst (Γ,∙bool) Γ _ _ _ _ _ _ _ s) .
+  apply ValidBoolElim.
+  apply vtrue.
+  apply vfalse.
+Qed.
 
 Section ExcPure.
   Notation "m1 ;; m2" := (bind m1 (fun=> m2)) (at level 65).
@@ -402,6 +458,15 @@ Section ExcPure.
   Definition Γ := EmptyCtx ,∙ (A -> bool) ,∙ (list A).
   Definition Γ' := EmptyCtx ,∙ (A -> bool) ,∙ A,∙ (list A).
 
+
+  Definition b : πl Γ' -> bool :=
+    fun h => nsnd (nfst (nfst h)) (nsnd (nfst h)).
+  Lemma br : (Γ' R=> Lo bool) b b.
+  Proof.
+    move => [[[[]]]] ? ? ? [[[[]]]] ? ? ? /= [[[[]]]] -> -> -> //.
+  Qed.
+  Definition bb : Γ' R==> Lo bool := mk_point (Γ' R=> Lo bool) b b br.
+
   Lemma prog1_prog2_equiv :
     valid Γ bool bool prog1' (fun => prog1_spec)
           prog2' (fun => prog2_spec) (fun => prog1_prog2_spec).
@@ -415,34 +480,39 @@ Section ExcPure.
         clear t.
         apply: ValidBind.
         2: apply ValidRet.
-        refine (ValidListElim _ _ _ _ _ (fun '(npair x _) => _) _ (fun x => _) (fun x => _) _ _).
+        (* KM : I have a problem with the context when eliminating on bool below
+        so I plugged in directly the needed code here. It may be the case that
+        we should actually provide the full spec at this point: this should not
+        be that surprising since we do an induction and need an invariant (cf
+        the point we are stuck below) *)
+        refine (ValidListElim (EmptyCtx,∙A -> bool) _ _ _
+                              _ (fun γ => match nsnd γ with nil => _ | cons x xs =>  if nsnd (nfst γ) x then _ else _ end)
+                              _ (fun γ => match nsnd γ with | nil => _ | cons x xs => if nsnd (nfst γ) x then _ else _ end)
+                              (fun γ => match nsnd (πl γ) with nil => _ | cons x xs => if nsnd (nfst (πl γ)) x then _ else _ end) _ _).
         all: rewrite /prog2' /prog2; try intro IH; change (?t \o ?t') with (fun l => t (t' l)) => /=.
         * apply: ValidWeaken; first by apply: ValidRet.
           all: move => /= ? ?; sreflexivity.
-        * do 2 (set (ifelse _ := if _ then _ else _);
-                intro_extend_bool_eq ltac:(eval unfold ifelse in ifelse) ifelse;
-                clear ifelse).
-          set b := fun => _.
-          have br: (Γ' R=> Lo bool) b b by move => [[[[]]]] ? ? ? [[[[]]]] ? ? ? /= [[[[]]]] -> -> -> //.
-          set bb := mk_point (Γ' R=> Lo bool) b b br.
-          (** Something seems to be wrong here already with the specs !! *)
-          rewrite (trivial_extend_bool_eq b (fun=> ret tt))
-                  (trivial_extend_bool_eq b (fun=> ret false))
-                  (trivial_rel_extend_bool_eq bb (fun=> retWrel tt false)).
-          eapply (ValidBoolElim Γ' bb) => /=.
+        * apply: (valid_bool_elim_extended _ bb).
+          (* refine (valid_bool_elim_extended _ bb _ _ _ *)
+          (*                                  _ _ _ _ _ _ _ _ _ _ _). *)
           apply valid_raise_anytype.
-          (* Problem : we need to apply the IH obtained from list induction but the context changed...
-             Kripke-style quantification needed on context in the rule for list induction ? *)
-          set Γ'' := dep_extend _ _.
-          have @σ : Γ'' R==> Γ.
-          simple refine (mk_point (Γ'' R=> Γ) _ _ _).
-          move=> [[[γ _] l] _] ; refine ⟨γ,l⟩.
-          move=> [[[γ _] l] _] ; refine ⟨γ,l⟩.
-          move=> /= ? ? [[[γ _] l] _]; refine ⟨γ,l⟩.
+          have @σ : Γ' R==> Γ by
+              simple refine (mk_point (Γ' R=> Γ) _ _ _);
+              [move=> [[γ _] l] ; refine ⟨γ,l⟩ |
+               move=> [[γ _] l] ; refine ⟨γ,l⟩ |
+               move=> /= ? ? [[γ _] l]; refine ⟨γ,l⟩].
           simpl in σ.
           apply (ValidSubst _ _ _ _ _ _ _ _ _ σ) in IH.
-          apply IH.
-          move=> /= ? ? ? ?; cbv ; set b0 := nsnd _ _ ; case E : b0; last by assumption.
+          apply: ValidWeaken; first by apply IH.
+
+          (* Now we need to tie the knot at the level of specs (3 times!)*)
+          move=> /= ? ? ? Hinv; cbv.
+          case El : (nsnd _)=> [| x xs] ; [| case Eb : (nsnd _ _) ].
+          (* Now we need to find a solution to the evar in Hinv
+             that makes the 3 following sub-goals go through
+           *)
+          Abort.
+
           (* I think that case should not happen, we went wrong somewhere... *)
           admit.
           move=> /= ? ? ?; cbv ; set b0 := nsnd _ _ ; case E : b0; last by assumption.
