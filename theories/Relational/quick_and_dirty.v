@@ -489,79 +489,36 @@ Section ExcPure.
   Lemma prog1_prog2_equiv :
     valid Γ bool bool prog1' (fun => prog1_spec)
           prog2' (fun => prog2_spec) (fun => prog1_prog2_spec).
-  Proof.
+  Proof with (try (cbv ; intuition)).
     apply: ValidWeaken.
-    - intro_catchStr ltac:(eval unfold prog1', prog1 in (@prog1' A)) (@prog1' A).
-      apply: ValidCatch.
-      + rewrite (bindStr_law prog2').
-        set t := fun => _.
-        intro_bindStr ltac:(eval unfold t in t) t.
-        clear t.
-        apply: ValidBind.
-        2: apply ValidRet.
-        (* KM : I have a problem with the context when eliminating on bool below
-        so I plugged in directly the needed code here. It may be the case that
-        we should actually provide the full spec at this point: this should not
-        be that surprising since we do an induction and need an invariant (cf
-        the point we are stuck below) *)
-        refine (ValidListElim (EmptyCtx,∙A -> bool) _ _ _
-                              _ (fun=> null_wp1)
-                              _ (fun=> null_wp2)
-                              (fun=> rel_invariant) _ _).
-        (* refine (ValidListElim (EmptyCtx,∙A -> bool) _ _ _ *)
-        (*                       _ (fun γ => match nsnd γ with nil => _ | cons x xs =>  if nsnd (nfst γ) x then _ else _ end) *)
-        (*                       _ (fun γ => match nsnd γ with | nil => _ | cons x xs => if nsnd (nfst γ) x then _ else _ end) *)
-        (*                       (fun γ => match nsnd (πl γ) with nil => _ | cons x xs => if nsnd (nfst (πl γ)) x then _ else _ end) _ _). *)
-        all: rewrite /prog2' /prog2; try intro IH; change (?t \o ?t') with (fun l => t (t' l)) => /=.
-        * apply: ValidWeaken; first by apply: ValidRet.
-          all:cbv; intuition.
-        * rewrite (trivial_ifp b (fun=> null_wp1))
-                  (trivial_ifp b (fun=> null_wp2))
-                  (trivial_rel_ifp bb (fun=> rel_invariant)).
-          apply: (valid_bool_elim_extended _ bb).
-          (* refine (valid_bool_elim_extended _ bb _ _ _ *)
-          (*                                  _ _ _ _ _ _ _ _ _ _ _). *)
-          apply: ValidWeaken.
-          apply valid_raise_anytype.
-          1-3:cbv; intuition.
+    intro_catchStr ltac:(eval unfold prog1', prog1 in (@prog1' A)) (@prog1' A).
+    apply: ValidCatch; last by apply ValidRet.
+    {
+      rewrite (bindStr_law prog2').
+      set t := fun => _; intro_bindStr ltac:(eval unfold t in t) t; clear t.
+      apply: ValidBind; last by apply ValidRet.
+      refine (ValidListElim (EmptyCtx,∙A -> bool) _ _ _
+                            _ (fun=> null_wp1)
+                            _ (fun=> null_wp2)
+                            (fun=> rel_invariant) _ _).
+      all: rewrite /prog2' /prog2 /comp.
+      * apply: ValidWeaken; first by apply: ValidRet...
+      * move=> IH /= ;
+        rewrite (trivial_ifp b (fun=> null_wp1))
+                (trivial_ifp b (fun=> null_wp2))
+                (trivial_rel_ifp bb (fun=> rel_invariant)).
+        apply: (valid_bool_elim_extended _ bb).
+        apply: ValidWeaken; first by apply valid_raise_anytype...
 
-          have @σ : Γ' R==> Γ by
-              simple refine (mk_point (Γ' R=> Γ) _ _ _);
-              [move=> [[γ _] l] ; refine ⟨γ,l⟩ |
-               move=> [[γ _] l] ; refine ⟨γ,l⟩ |
-               move=> /= ? ? [[γ _] l]; refine ⟨γ,l⟩].
-          simpl in σ.
-          apply (ValidSubst _ _ _ _ _ _ _ _ _ σ) in IH.
-          apply: ValidWeaken; first by apply IH.
-          1-3:cbv ; intuition.
-          (* (* Now we need to tie the knot at the level of specs (3 times!)*) *)
-          (* move=> /= ? ? ? Hinv; cbv. *)
-          (* case El : (nsnd _)=> [| x xs] ; [| case Eb : (nsnd _ _) ]. *)
-          (* (* Now we need to find a solution to the evar in Hinv *)
-          (*    that makes the 3 following sub-goals go through *)
-          (*  *) *)
-          (* Abort. *)
-
-          (* (* I think that case should not happen, we went wrong somewhere... *) *)
-          (* admit. *)
-          (* move=> /= ? ? ?; cbv ; set b0 := nsnd _ _ ; case E : b0; last by assumption. *)
-          (* (* I think that case should not happen, we went wrong somewhere... *) *)
-          (* admit. *)
-          (* move=> /= ? ? ?; cbv ; set b0 := nsnd _ _ ; case E : b0; last by assumption. *)
-          (* (* I think that case should not happen, we went wrong somewhere... *) *)
-          (* admit. *)
-          (* (* cbv. *) *)
-          (* (* move=> /= ? ? ?; unfold extend_bool_eq=> /=; case E : (b _). *) *)
-          (* (* set b0 := nsnd _ _; case E: b0. *) *)
-          (* (* cbv. *) *)
-          (* (* simpl. *) *)
-          (* (* apply IH. *) *)
-          (* (* admit. *) *)
-          (* (* all: admit. *) *)
-          (* (* (* all: sreflexivity. *) *) *)
-      + apply ValidRet.
-    - cbv; intuition.
-    - cbv; intuition.
-    - cbv; intuition.
+        have @σ : Γ' R==> Γ by
+            simple refine (mk_point (Γ' R=> Γ) _ _ _);
+            [move=> [[γ _] l] ; refine ⟨γ,l⟩ |
+              move=> [[γ _] l] ; refine ⟨γ,l⟩ |
+              move=> /= ? ? [[γ _] l]; refine ⟨γ,l⟩].
+        simpl in σ.
+        apply (ValidSubst _ _ _ _ _ _ _ _ _ σ) in IH.
+        apply: ValidWeaken; first by apply IH...
+    }
+    all:cbv; intuition.
   Qed.
 End ExcPure.
