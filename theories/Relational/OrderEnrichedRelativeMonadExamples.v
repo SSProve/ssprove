@@ -168,11 +168,18 @@ Section RelationalSpecMonad.
              : TypeCatSq⦅ ⟨A1,A2⟩ ; compPair ⟨B1, B2⟩⦆ := ⟨f1 , f2⟩.
 
   Definition RelationalEffectObservation0 (W:RelationalSpecMonad0) : Type :=
+    relativeMonadMorphism Jprod (natIso_sym (ord_functor_unit_left _)) compPair W.
+
+  Definition RelationalLaxEffectObservation0 (W:RelationalSpecMonad0) : Type :=
     relativeLaxMonadMorphism Jprod (natIso_sym (ord_functor_unit_left _)) compPair W.
 
   Definition mkREO0 (W:RelationalSpecMonad0) θ pf1 pf2
     : RelationalEffectObservation0 W
     := @mkRelMonMorph _ _ _ _ _ _ _ _ _ θ pf1 pf2.
+
+  Definition mkRLEO0 (W:RelationalSpecMonad0) θ pf1 pf2
+    : RelationalLaxEffectObservation0 W
+    := @mkRelLaxMonMorph _ _ _ _ _ _ _ _ _ θ pf1 pf2.
 
   (* Changing this Let to Definition breaks RSM_from_RSM0 below... *)
   Definition OrdCatTr := prod_cat (prod_cat OrdCat OrdCat) OrdCat.
@@ -300,12 +307,14 @@ Section MonadMorphismAsRMonMorphism.
   Import FunctionalExtensionality.
   (* morphisms of monads also transfer to relativeMonad morphisms *)
   Program Definition mmorph_to_rmmorph :
-    relativeLaxMonadMorphism discr (natIso_sym (ord_functor_unit_left _)) M W :=
+    relativeMonadMorphism discr (natIso_sym (ord_functor_unit_left _)) M W :=
     mkRelMonMorph discr _ M W (fun (A:TypeCat) => ⦑θ A⦒) _ _.
   Next Obligation. cbv ; intros ; induction H ; sreflexivity. Qed.
-  Next Obligation. rewrite mon_morph_ret; sreflexivity. Qed.
   Next Obligation.
-    rewrite mon_morph_bind; apply omon_bind; last move=> ? /= ; sreflexivity.
+    apply Ssig_eq=> /=; extensionality a=> /=; rewrite mon_morph_ret //.
+  Qed.
+  Next Obligation.
+    apply Ssig_eq ; extensionality a ; rewrite /= mon_morph_bind //.
   Qed.
 
 End MonadMorphismAsRMonMorphism.

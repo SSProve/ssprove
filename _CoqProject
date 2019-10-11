@@ -49,6 +49,7 @@ theories/Relational/Commutativity.v
 theories/Relational/RelationalIO.v
 
 theories/Relational/OrderEnrichedCategory.v
+theories/Relational/OrderEnrichedRelativeMonadExamples.v
 
 
 # theories/Mon/sprop/FiniteProbabilities.v

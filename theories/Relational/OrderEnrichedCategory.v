@@ -384,14 +384,30 @@ Section RelativeLaxMonadMorphism.
   Notation η := ord_relmon_unit.
   Notation rbind := ord_relmon_bind.
 
-  Cumulative Record relativeLaxMonadMorphism :=
+  Cumulative Record relativeMonadMorphism :=
     mkRelMonMorph
+      { rmm_map :> forall {A}, D2⦅J12 (M1 A); M2 A⦆
+      ; rmm_law1 : forall A, rmm_map ∙ ofmap J12 (η M1 A) = η M2 A ∙ psi _
+      ; rmm_law2 : forall A B (f : D1⦅J1 A; M1 B⦆),
+          rmm_map ∙ ofmap J12 (rbind M1 f) =
+                  rbind M2 (rmm_map ∙ ofmap J12 f ∙ phi _) ∙ rmm_map
+      }.
+
+  Cumulative Record relativeLaxMonadMorphism :=
+    mkRelLaxMonMorph
       { rlmm_map :> forall {A}, D2⦅J12 (M1 A); M2 A⦆
       ; rlmm_law1 : forall A, rlmm_map ∙ ofmap J12 (η M1 A) ⪷ η M2 A ∙ psi _
       ; rlmm_law2 : forall A B (f : D1⦅J1 A; M1 B⦆),
           rlmm_map ∙ ofmap J12 (rbind M1 f) ⪷
                   rbind M2 (rlmm_map ∙ ofmap J12 f ∙ phi _) ∙ rlmm_map
       }.
+
+  Program Definition relativeMonadMorphism_to_lax
+          (θ : relativeMonadMorphism) : relativeLaxMonadMorphism
+    := mkRelLaxMonMorph θ _ _.
+  Next Obligation. rewrite rmm_law1; sreflexivity. Qed.
+  Next Obligation. rewrite rmm_law2; sreflexivity. Qed.
+  Coercion relativeMonadMorphism_to_lax : relativeMonadMorphism >-> relativeLaxMonadMorphism.
 End RelativeLaxMonadMorphism.
 
 Section RelativeMonadToFunctor.
@@ -522,17 +538,29 @@ Section RelativeMonadPrecomposition.
     Context {C1 C2 : ord_category} {JC1 : ord_functor I' C1} {JC2 : ord_functor I' C2}.
     Context {M1 : ord_relativeMonad JC1} {M2 : ord_relativeMonad JC2}
             {JC12 : ord_functor C1 C2} (phi : natIso _ _)
-            (θ : relativeLaxMonadMorphism JC12 phi M1 M2).
+            (θ : relativeMonadMorphism JC12 phi M1 M2)
+            (θl : relativeLaxMonadMorphism JC12 phi M1 M2).
 
     Program Definition relativeMonad_precomposition_morph
-      : relativeLaxMonadMorphism JC12
-                                 (natIso_comp (natIso_whisker_left phi J)
-                                              (ord_functor_assoc _ _ _))
+      : relativeMonadMorphism JC12
+                              (natIso_comp (natIso_whisker_left phi J)
+                                           (ord_functor_assoc _ _ _))
                               (J* M1) (J* M2) :=
       mkRelMonMorph _ _ _ _ (fun A => θ (J A)) _ _.
+    Next Obligation. rewrite ord_cat_law2 ; apply: rmm_law1. Qed.
+    Next Obligation. rewrite ord_cat_law1 ; apply: rmm_law2. Qed.
+
+
+    Program Definition relativeMonad_precomposition_lax_morph
+      : relativeLaxMonadMorphism JC12
+                              (natIso_comp (natIso_whisker_left phi J)
+                                           (ord_functor_assoc _ _ _))
+                              (J* M1) (J* M2) :=
+      mkRelLaxMonMorph _ _ _ _ (fun A => θl (J A)) _ _.
     Next Obligation. rewrite ord_cat_law2 ; apply: rlmm_law1. Qed.
     Next Obligation. rewrite ord_cat_law1 ; apply: rlmm_law2. Qed.
   End OnMorphism.
+
 
   (* TODO : show the functorial laws *)
 End RelativeMonadPrecomposition.
