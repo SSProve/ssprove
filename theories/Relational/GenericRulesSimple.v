@@ -72,7 +72,7 @@ Notation "wm ≫= wf" := (Spr1 (ord_relmon_bind _ wf) wm) (at level 50).
 Section RelationalProgramLogicFromRelativeMonadZero.
   Context (M1 M2 : Monad) (M12 := compPair M1 M2).
   Context (W : RelationalSpecMonad0)
-          (θ : RelationalEffectObservation0 M1 M2 W).
+          (θ : RelationalLaxEffectObservation0 M1 M2 W).
 
   Definition semantic_judgement A1 A2 c1 c2 w := Spr1 (θ ⟨A1,A2⟩) ⟨c1,c2⟩ ≤ w.
   Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ c1 c2 w).
@@ -116,7 +116,7 @@ Notation "θ ⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ _ θ _ _ c1 c2 w)
 
 Section GoingPractical.
   Context (M1 M2 : Monad) (M12 := compPair M1 M2).
-  Context (W : RelationalSpecMonad0) (θ : RelationalEffectObservation0 M1 M2 W).
+  Context (W : RelationalSpecMonad0) (θ : RelationalLaxEffectObservation0 M1 M2 W).
 
   Lemma gp_ret_rule {A B a b w} :
     Spr1 (ord_relmon_unit W ⟨A , B⟩) ⟨a,b⟩ ≤ w ->

@@ -9,7 +9,8 @@ From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads.
 (* From Mon.SM Require Import SMMonadExamples.  *)
-From Relational Require Import RelativeMonads RelativeMonadExamples GenericRulesSimple.
+(* From Relational Require Import RelativeMonads RelativeMonadExamples GenericRulesSimple. *)
+From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples GenericRulesSimple.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
@@ -23,7 +24,7 @@ Section RelationalState.
     Inductive StS :=
     | StGet : loc -> StS
     | StPut : loc -> val -> StS.
-    
+
     Definition StOp (s:StS) :=
       match s with
       | StGet l => val
@@ -66,13 +67,13 @@ Section RelationalState.
   Next Obligation. cbv; intuition. Qed.
   Next Obligation. cbv ; intuition; induction H=> //. Qed.
   Next Obligation.
-    apply Ssig_eq=> /=.
+    apply Ssig_eq=> /=; extensionality x; apply Ssig_eq=> /=.
     extensionality post ; extensionality s0; f_equal.
     extensionality l ; destruct l=> //.
   Qed.
 
   Definition upd {loc} (eql : loc -> loc -> bool) (l:loc) (v:val) (s :loc -> val) :=
-    fun l' => if eql l l' then v else s l'. 
+    fun l' => if eql l l' then v else s l'.
 
   Context (eql1 : loc1 -> loc1 -> bool)
           (eql1_spec : forall l1 l2, reflect (l1 = l2) (eql1 l1 l2) ).
@@ -154,7 +155,7 @@ Section NonInterference.
     fromPrePost'
       (fun s1 s2 => s1 false ≡ s2 false)
       (fun (i:A) s1 s1' (i':A) s2 s2' =>  s1' false ≡ s2' false s/\ i ≡ i').
-  
+
   (* Noninterference property *)
   Definition NI {A : Type} (c : St (loc -> val) A) :=
       ⊨ c ≈ c [{ NI_pre_post }].
@@ -236,7 +237,6 @@ Section NonInterference.
     unfold prog.
     - apply_seq=> //.
       + eapply apply_left_tot.
-        typeclasses eauto.
         apply get_left_rule.
         move=> ? ; apply get_right_rule.
         sreflexivity.
@@ -332,7 +332,7 @@ Section ProductState.
   Let put (l:loc) (v:val) : St (loc -> val) unit := fun s => ⟨tt, upd _ eql l v s⟩.
   Let get (l:loc) : St (loc -> val) val := fun s => ⟨s l, s⟩.
 
-  Let St0 A := St (loc -> val) A.  
+  Let St0 A := St (loc -> val) A.
   Let S12 := loc + loc -> val.
 
   (* Product program relative monad *)
@@ -435,7 +435,7 @@ Section ProductState.
     match goal with [|- st_rel _ _ ?x] => let h := fresh "h" in set (h := x) ; simpl in h ; unfold h ; clear h end.
 
   Ltac GetRight :=
-    apply srGetRight=> ? ; instantiate (1:= fun '(npair v _)=> _) ; cleanup_st_rel. 
+    apply srGetRight=> ? ; instantiate (1:= fun '(npair v _)=> _) ; cleanup_st_rel.
   Ltac GetLeft :=
     apply srGetLeft=> ? ; instantiate (1:= fun '(npair v _)=> _); cleanup_st_rel.
 
@@ -443,22 +443,22 @@ Section ProductState.
    * i.e. public outputs of the program cannot depend on its private inputs *)
   Let prog := bind (get LOW) (fun n => ret n).
 
-  Definition prog_coupling : coupling prog prog. 
+  Definition prog_coupling : coupling prog prog.
   Proof.
     eexists. unfold prog. GetRight. GetLeft. apply srRet.
   Defined.
 
   Goal forall (c:= Spr1 prog_coupling), ζSt c ≤ NI_pre_post.
   Proof. cbv ; intuition. Qed.
-  
+
   Goal forall s, s (inl false) = s (inr false) ->
             let c := Spr1 prog_coupling in
-            let '(npair ⟨i1,i2⟩ s') := c s in 
+            let '(npair ⟨i1,i2⟩ s') := c s in
             s' (inl false) = s' (inr false) /\ i1 = i2.
   Proof. move=> s H ; simpl ; split. assumption. by []. Qed.
 
   Let prog2 {B} (f : nat -> B) := bind (get LOW) (fun n => ret (f n)).
-  
+
   Definition prog2_coupling {B} (f:nat -> B) : coupling (prog2 f) (prog2 f).
   Proof.
     eexists. unfold prog2. GetLeft. GetRight. apply srRet.
@@ -466,9 +466,9 @@ Section ProductState.
 
   Goal forall {B} (f:nat -> B) (c:= Spr1 (prog2_coupling f)),
       ζSt c ≤ NI_pre_post.
-  Proof. cbv ; intuition. 
+  Proof. cbv ; intuition.
          apply q ; intuition. induction p=> //. Qed.
-  
+
   Let prog3 := bind (get LOW) (fun n => put HIGH n).
   Definition prog3_coupling : coupling prog3 prog3.
   Proof.
