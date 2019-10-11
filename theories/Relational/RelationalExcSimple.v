@@ -4,14 +4,14 @@ From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads.
 (* From Mon.SM Require Import SMMonadExamples.  *)
-From Relational Require Import RelativeMonads RelativeMonadExamples GenericRulesSimple.
+From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples GenericRulesSimple.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
 
 Section Exceptions.
   Context (E1 E2 : Type) (Exc1 := Exn E1) (Exc2 := Exn E2).
-  
+
   Definition RelExc : RelationalSpecMonad0 :=
     ordmonad_to_relspecmon0 (ExnSpec unit).
 
@@ -33,7 +33,7 @@ Section Exceptions.
   Qed.
   Next Obligation. induction 1 ; sreflexivity. Qed.
   Next Obligation.
-    apply Ssig_eq=> /= ; 
+    apply Ssig_eq=> /= ; extensionality x; apply Ssig_eq => /=.
     extensionality post ; extensionality pexc.
     move:x => [[?|[?] ?] [?|[?] ?]] //=.
     match goal with [|- match ?d with _ => _ end = _ ] => destruct d as [?|[]]=> // end.
@@ -106,7 +106,7 @@ End Exceptions.
 
 Section ExcCollapse.
   Context (E1 E2 E : Type) (Exc1 := Exn E1) (Exc2 := Exn E2).
-  
+
   Definition WExc : RelationalSpecMonad0 :=
     ordmonad_to_relspecmon0 (ExnSpec E).
 
@@ -123,11 +123,13 @@ Section ExcCollapse.
   Lemma collapse : forall pexc e1 e2, ϕ1 pexc e1 = ϕ2 pexc e2.
   Proof.
     move=> pexc e1 e2.
-    epose (rmm_law2 _ _ _ _ θExc ⟨_,_⟩ ⟨_,_⟩ ⟨fun (x:False) => ret x, fun (x:unit) => raise e2⟩ ⟨raise e1, ret tt⟩) as e.
+    epose (rmm_law2 _ _ _ _ θExc ⟨_,_⟩ ⟨_,_⟩ ⟨fun (x:False) => ret x, fun (x:unit) => raise e2⟩) as e.
+    apply (f_equal (fun h => h∙1 ⟨raise e1, ret tt⟩)) in e.
     apply (f_equal (fun h => Spr1 h (fun=> sUnit) pexc)) in e.
     cbv in e; rewrite H1 in e; rewrite -e ; clear e.
 
-    epose (rmm_law2 _ _ _ _ θExc ⟨_,_⟩ ⟨_,_⟩ ⟨fun=> raise e1,fun (x:False)=> ret x⟩ ⟨ret tt, raise e2⟩) as e.
+    epose (rmm_law2 _ _ _ _ θExc ⟨_,_⟩ ⟨_,_⟩ ⟨fun=> raise e1,fun (x:False)=> ret x⟩ ) as e.
+    apply (f_equal (fun h => h∙1 ⟨ret tt, raise e2⟩)) in e.
     apply (f_equal (fun h => Spr1 h (fun=> sUnit) pexc)) in e.
     cbv in e; rewrite H2 in e; rewrite -e ; clear e.
     reflexivity.
