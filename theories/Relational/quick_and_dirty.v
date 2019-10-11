@@ -4,7 +4,7 @@ From Coq Require Import Lists.List.
 From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads.
-From Relational Require Import Category RelativeMonads (* RelativeMonadExamples *) Rel.
+From Relational Require Import Category RelativeMonads Rel.
 
 
 Set Universe Polymorphism.
@@ -238,19 +238,13 @@ Axiom ValidListElim :
             (m1 \o subst_nil) (wm1 \o subst_nil)
             (m2 \o subst_nil) (wm2 \o subst_nil)
             (wmrel \o rel_subst_nil) ->
-      (valid (Γ,∙ list A) A1 A2 m1 wm1 m2 wm2 wmrel
-       (* (forall Γ' (σ: Γ' R==> Γ) (s := ctx_subst_extend σ), *)
-       (*     valid (Γ',∙ list A) A1 A2 *)
-       (*           (m1 \o πl s) (wm1 \o πl s) *)
-       (*           (m2 \o πr s) (wm2 \o πr s) *)
-       (*           (wmrel \o applyRel _ _ s)) *) ->
+      (valid (Γ,∙ list A) A1 A2 m1 wm1 m2 wm2 wmrel ->
        valid (Γ,∙ A ,∙ list A) A1 A2
              (m1 \o subst_cons) (wm1 \o subst_cons)
              (m2 \o subst_cons) (wm2 \o subst_cons)
              (wmrel \o rel_subst_cons)) ->
       valid (Γ,∙ list A) A1 A2 m1 wm1 m2 wm2 wmrel.
 
-(* Might be needed to apply list elimination *)
 Axiom ValidSubst : forall Γ Δ A1 A2 m1 wm1 m2 wm2 wmrel (σ: Δ R==> Γ),
     valid Γ A1 A2 m1 wm1 m2 wm2 wmrel ->
     valid Δ A1 A2
@@ -267,21 +261,11 @@ Definition rel_subst_false {Γ} : ⟬Γ⟭ -> ⟬Γ,∙bool ⟭ :=
 
 Axiom ValidBoolElim :
   forall Γ A1 A2 m1 wm1 m2 wm2 wmrel,
-    valid Γ A1 A2 (m1 \o subst_true) (wm1 \o subst_true) (m2 \o subst_true) (wm2 \o subst_true) (wmrel \o rel_subst_true) ->
-    valid Γ A1 A2 (m1 \o subst_false) (wm1 \o subst_false) (m2 \o subst_false) (wm2 \o subst_false) (wmrel \o rel_subst_false) ->
+    valid Γ A1 A2 (m1 \o subst_true) (wm1 \o subst_true)
+          (m2 \o subst_true) (wm2 \o subst_true) (wmrel \o rel_subst_true) ->
+    valid Γ A1 A2 (m1 \o subst_false) (wm1 \o subst_false)
+          (m2 \o subst_false) (wm2 \o subst_false) (wmrel \o rel_subst_false) ->
     valid (Γ ,∙ bool) A1 A2 m1 wm1 m2 wm2 wmrel.
-
-    (* forall Γ (b : Γ R==> Lo bool) A1 A2 *)
-    (*   m1_true wm1_true m2_true wm2_true wmrel_true *)
-    (*   m1_false wm1_false m2_false wm2_false wmrel_false , *)
-    (* valid (dep_extend Γ (rel_is_true b)) A1 A2 m1_true wm1_true m2_true wm2_true wmrel_true -> *)
-    (* valid (dep_extend Γ (rel_is_false b)) A1 A2 m1_false wm1_false m2_false wm2_false wmrel_false -> *)
-    (* valid Γ A1 A2 *)
-    (*       (extend_bool_eq (πl b) m1_true m1_false) *)
-    (*       (extend_bool_eq (πl b) wm1_true wm1_false) *)
-    (*       (extend_bool_eq (πr b) m2_true m2_false) *)
-    (*       (extend_bool_eq (πr b) wm2_true wm2_false) *)
-    (*       (rel_extend_bool_eq b wmrel_true wmrel_false). *)
 
 Definition ifp {Γ A} (b : Γ -> bool) (mtrue mfalse : Γ -> A) : Γ -> A :=
   fun γ => if b γ then mtrue γ else mfalse γ.
@@ -334,14 +318,80 @@ Proof. extensionality γ; rewrite /ifp /=; case: (b _)=> //. Qed.
 Lemma trivial_rel_ifp {Γ A} (b: Γ R==> Lo bool) (a:⟬Γ⟭ -> A) : a = rel_ifp b a a.
 Proof. extensionality γ; cbv. case: (πl b _)=> //. Qed.
 
+Ltac intro_catchStr t x :=
+  match t with
+  | fun H => catch (@?t1 H) (@?t2 H) =>
+    change x with (catchStr t1 (fun H => t2 (nfst H) (nsnd H)))
+  end.
+
+Ltac intro_bindStr t x :=
+  match t with
+  | fun H => bind (@?t1 H) (@?t2 H) =>
+    change x with (bindStr t1 (fun H => t2 (nfst H) (nsnd H)))
+  end.
+
+Lemma bindStr_law {M: Monad} {A} {Γ} (m : Γ -> M A) : m = bindStr m (fun γ => ret (nsnd γ)).
+Proof.
+  rewrite /bindStr /bind /ret.
+  extensionality γ.
+  rewrite monad_law2 => //.
+Qed.
+
+Program Definition raise_general_spec {A1} : W1 A1 := ⦑ fun p perr => perr tt ⦒.
+Next Obligation.
+  cbv; intuition.
+Qed.
+
+Program Definition rel_raise_general_spec {A1 A2} (a2 : A2) : Wrel A1 A2 := ⦑ fun p => p ⟨None, a2⟩ ⦒.
+Next Obligation.
+  cbv; intuition.
+Qed.
+
+Lemma valid_raise_anytype : forall Γ A1 A2 a1 a2,
+    valid Γ A1 A2 (fun => bind (raise tt) (fun => ret a1)) (fun => raise_general_spec)
+          (fun=> ret a2) (fun => ret a2) (fun => rel_raise_general_spec a2).
+Proof.
+  intros.
+  set t := fun => _;
+                 intro_bindStr ltac:(eval unfold t in t) t;
+                 clear t.
+  set w := ret a2.
+  change w with (bind w id).
+  set y := fun => bind w id.
+  intro_bindStr ltac:(eval unfold y in y) y.
+  eapply ValidWeaken.
+  - apply ValidBind.
+    + apply ValidRaise.
+    + apply ValidRet.
+  - cbv; intuition.
+  - cbv; intuition.
+  - cbv; intuition.
+Qed.
+
+Program Definition null_wp1 {A} : W1 A :=
+  ⦑fun (p : A -> SProp) pexc => (forall a, p a) s/\ pexc tt⦒.
+Next Obligation. cbv ; intuition. Qed.
+
+Program Definition null_wp2 {A} : W2 A :=
+  ⦑fun (p : A -> SProp) => forall a, p a⦒.
+Next Obligation. cbv ; intuition. Qed.
+
+Program Definition rel_invariant : Wrel unit bool :=
+  ⦑fun post => post ⟨None, true⟩ s/\ post ⟨Some tt, false⟩⦒.
+Next Obligation. cbv; intuition. Qed.
+
 Section ExcPure.
   Notation "m1 ;; m2" := (bind m1 (fun=> m2)) (at level 65).
   Arguments ret: simpl never.
   Arguments raise: simpl never.
   Arguments bind: simpl never.
+  Context {A:Type}.
+  Definition Γ := EmptyCtx ,∙ (A -> bool) ,∙ (list A).
+  Definition Γ' := EmptyCtx ,∙ (A -> bool) ,∙ A,∙ (list A).
 
   Definition prog1 {A} (l : list A) (pred : A -> bool) : M1 bool :=
-    let fix aux (l : list A) : M1 unit (* (fun p pexc => (exists x \in l, pred x => pexc tt) /\ ((forall x \in l, ~~ pred x) => p tt)) *) :=
+    let fix aux (l : list A) : M1 unit (* (fun p pexc => (exists x \in l,
+                                          pred x => pexc tt) /\ ((forall x \in l, ~~ pred x) => p tt)) *) :=
         match l with
         | nil => ret tt
         | x :: l => if pred x then (raise tt ;; ret tt) else aux l
@@ -380,74 +430,6 @@ Section ExcPure.
     cbv; intuition.
   Qed.
 
-  Ltac intro_catchStr t x :=
-    match t with
-    | fun H => catch (@?t1 H) (@?t2 H) =>
-      change x with (catchStr t1 (fun H => t2 (nfst H) (nsnd H)))
-    end.
-
-  Ltac intro_bindStr t x :=
-    match t with
-    | fun H => bind (@?t1 H) (@?t2 H) =>
-      change x with (bindStr t1 (fun H => t2 (nfst H) (nsnd H)))
-    end.
-
-  Ltac destruct_bool := extensionality x; cbv;
-                        match goal with | [|- context c [if ?b0 then _ else _]] => destruct b0 end;
-                        reflexivity.
-
-  Ltac intro_extend_bool_eq t x :=
-    match t with
-    | fun H => match @?b0 H with
-            | true => @?t1 H
-            | false => @?t2 H
-            end => replace x with (extend_bool_eq b0 (fun '(dpair _ γ  _) => t1 γ) (fun '(dpair _ γ _) => t2 γ)) by
-                  destruct_bool
-    end.
-
-  Lemma bindStr_law {M: Monad} {A} {Γ} (m : Γ -> M A) : m = bindStr m (fun γ => ret (nsnd γ)).
-  Proof.
-    rewrite /bindStr /bind /ret.
-    extensionality γ.
-    rewrite monad_law2 => //.
-  Qed.
-
-  Program Definition raise_general_spec {A1} : W1 A1 := ⦑ fun p perr => perr tt ⦒.
-  Next Obligation.
-    cbv; intuition.
-  Qed.
-
-  Program Definition rel_raise_general_spec {A1 A2} (a2 : A2) : Wrel A1 A2 := ⦑ fun p => p ⟨None, a2⟩ ⦒.
-  Next Obligation.
-    cbv; intuition.
-  Qed.
-
-  Lemma valid_raise_anytype : forall Γ A1 A2 a1 a2,
-      valid Γ A1 A2 (fun => bind (raise tt) (fun => ret a1)) (fun => raise_general_spec)
-            (fun=> ret a2) (fun => ret a2) (fun => rel_raise_general_spec a2).
-  Proof.
-    intros.
-    set t := fun => _;
-    intro_bindStr ltac:(eval unfold t in t) t;
-    clear t.
-    set w := ret a2.
-    change w with (bind w id).
-    set y := fun => bind w id.
-    intro_bindStr ltac:(eval unfold y in y) y.
-    eapply ValidWeaken.
-    - apply ValidBind.
-      + apply ValidRaise.
-      + apply ValidRet.
-    - cbv; intuition.
-    - cbv; intuition.
-    - cbv; intuition.
-  Qed.
-
-  Context {A:Type}.
-  Definition Γ := EmptyCtx ,∙ (A -> bool) ,∙ (list A).
-  Definition Γ' := EmptyCtx ,∙ (A -> bool) ,∙ A,∙ (list A).
-
-
   Definition b : πl Γ' -> bool :=
     fun h => nsnd (nfst (nfst h)) (nsnd (nfst h)).
   Lemma br : (Γ' R=> Lo bool) b b.
@@ -455,18 +437,6 @@ Section ExcPure.
     move => [[[[]]]] ? ? ? [[[[]]]] ? ? ? /= [[[[]]]] -> -> -> //.
   Qed.
   Definition bb : Γ' R==> Lo bool := mk_point (Γ' R=> Lo bool) b b br.
-
-  Program Definition null_wp1 {A} : W1 A :=
-    ⦑fun (p : A -> SProp) pexc => (forall a, p a) s/\ pexc tt⦒.
-  Next Obligation. cbv ; intuition. Qed.
-
-  Program Definition null_wp2 {A} : W2 A :=
-    ⦑fun (p : A -> SProp) => forall a, p a⦒.
-  Next Obligation. cbv ; intuition. Qed.
-
-  Program Definition rel_invariant : Wrel unit bool :=
-    ⦑fun post => post ⟨None, true⟩ s/\ post ⟨Some tt, false⟩⦒.
-  Next Obligation. cbv; intuition. Qed.
 
   Lemma prog1_prog2_equiv :
     valid Γ bool bool prog1' (fun => prog1_spec)
@@ -486,17 +456,17 @@ Section ExcPure.
       all: rewrite /prog2' /prog2 /comp.
       * apply: ValidWeaken; first by apply: ValidRet...
       * move=> IH /= ;
-        rewrite (trivial_ifp b (fun=> null_wp1))
-                (trivial_ifp b (fun=> null_wp2))
-                (trivial_rel_ifp bb (fun=> rel_invariant)).
+                rewrite (trivial_ifp b (fun=> null_wp1))
+                        (trivial_ifp b (fun=> null_wp2))
+                        (trivial_rel_ifp bb (fun=> rel_invariant)).
         apply: (valid_bool_elim_extended _ bb).
         apply: ValidWeaken; first by apply valid_raise_anytype...
 
         have @σ : Γ' R==> Γ by
             simple refine (mk_point (Γ' R=> Γ) _ _ _);
-            [move=> [[γ _] l] ; refine ⟨γ,l⟩ |
-              move=> [[γ _] l] ; refine ⟨γ,l⟩ |
-              move=> /= ? ? [[γ _] l]; refine ⟨γ,l⟩].
+          [move=> [[γ _] l] ; refine ⟨γ,l⟩ |
+           move=> [[γ _] l] ; refine ⟨γ,l⟩ |
+           move=> /= ? ? [[γ _] l]; refine ⟨γ,l⟩].
         simpl in σ.
         apply (ValidSubst _ _ _ _ _ _ _ _ _ σ) in IH.
         apply: ValidWeaken; first by apply IH...
