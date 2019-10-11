@@ -9,7 +9,7 @@ From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads Monoid DijkstraMonadExamples.
 (* From Mon.SM Require Import SMMonadExamples.  *)
-From Relational Require Import RelativeMonads RelativeMonadExamples GenericRulesSimple Commutativity.
+From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples GenericRulesSimple Commutativity.
 
 Set Primitive Projections.
 Set Universe Polymorphism.

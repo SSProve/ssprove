@@ -4,7 +4,8 @@ From Coq Require FunctionalExtensionality.
 From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads DijkstraMonadExamples.
-From Relational Require Import RelativeMonads RelativeMonadExamples.
+From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
+
 
 Section Commutations.
   Context {M:Monad}.
@@ -108,8 +109,12 @@ Section CommuteEffectObs.
              (fun '⟨A1,A2⟩ => ⦑fun '⟨c1,c2⟩ => bind (θ1 A1 c1) (fun a1=> bind (θ2 A2 c2)
                                                (fun a2=> ret ⟨a1,a2⟩))⦒) _ _.
   Next Obligation. elim: H ; sreflexivity. Qed.
-  Next Obligation. do 2 rewrite mon_morph_ret /bind monad_law1; done. Qed.
   Next Obligation.
+    apply Ssig_eq=> /= ; extensionality a=> /=.
+    now do 2 rewrite mon_morph_ret /bind monad_law1.
+  Qed.
+  Next Obligation.
+    apply Ssig_eq=> /= ; extensionality x=> /=.
     rewrite mon_morph_bind {1 2}/bind monad_law3; repeat rewrite -/bind.
     under eq_bind => a.
       under eq_bind => b.

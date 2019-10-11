@@ -129,6 +129,9 @@ End OrdProduct.
 Import SPropNotations.
 Definition sfunext {A B} {f g : forall x : A, B x}: (forall x : A, f x ≡ g x) -> f ≡ g :=
   SPropAxioms.funext_sprop _ _ _ _.
+From Coq Require Import FunctionalExtensionality.
+Definition funext {A B} {f g : forall x : A, B x}: (forall x : A, f x = g x) -> f = g.
+Proof. move=> h ; extensionality x ; apply h. Qed.
 
 Section MonadAsRMonad.
   Context (M:Monad).
