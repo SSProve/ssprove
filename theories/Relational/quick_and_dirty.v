@@ -39,17 +39,6 @@ Qed.
 
 Import RelNotations.
 
-Definition extends (Γ : Rel) (A1 A2 : Type) : Rel :=
-  mkRel (πl Γ × A1) (πr Γ × A2) (fun γa1 γa2 => Γ (nfst γa1) (nfst γa2)).
-
-Definition extendsLow (Γ : Rel) (A : Type) : Rel :=
-  mkRel (πl Γ × A) (πr Γ × A) (fun γa1 γa2 =>
-                                 Γ (nfst γa1) (nfst γa2) × (nsnd γa1 = nsnd γa2)).
-
-Check (fun Γ (γ : ⟬Γ⟭) => πl γ) .
-
-Definition extend_point {Γ A1 A2} (γ : ⟬Γ⟭) (a1:A1) (a2:A2) : ⟬extends Γ A1 A2⟭.
-Proof. exists ⟨⟨πl γ, a1⟩, ⟨πr γ, a2⟩⟩. exact: πw γ. Defined.
 
 Program Definition bindWrelStrong
         {Γ A1 A2 B1 B2}
@@ -71,13 +60,6 @@ Next Obligation.
     [apply: (wfrel _)∙2| apply: (wf2 _)∙2]; move=> ? ; apply: Hp.
 Qed.
 
-Section StrongBind.
-  Context {M:Monad}.
-  Context {Γ A B} (m : Γ -> M A) (f : Γ × A -> M B).
-
-  Definition bindStr (γ : Γ) : M B :=
-    bind (m γ) (fun a => f ⟨γ,a⟩).
-End StrongBind.
 
 
 Notation "x ⩿ y" := (pointwise_srelation _ (@omon_rel _ _) x y) (at level 70).

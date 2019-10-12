@@ -610,3 +610,88 @@ Section RelativeMonadPostcomposition.
     rewrite invert_comp ff_retraction ord_relmon_law3 ord_functor_law2 //.
   Qed.
 End RelativeMonadPostcomposition.
+
+(* From Equations Require Import Equations. *)
+
+(* Section IdNatIso. *)
+(*   Import EqNotations. *)
+
+(*   Lemma rew_comp (C : ord_category) X Y Y' Z (f : C⦅X;Y⦆) (g : C⦅Y;Z⦆) (H : Y = Y') : *)
+(*     g ∙ f = rew [fun y=> C⦅y;_⦆] H in g ∙ rew H in f. *)
+(*   Proof. dependent elimination H=> //. Qed. *)
+
+(*   Lemma rew_target (C : ord_category) X Y Z Z' (f : C⦅X;Y⦆) (g : C⦅Y;Z⦆) (H : Z = Z') : *)
+(*     rew H in g ∙ f = rew H in (g ∙ f). *)
+(*   Proof. dependent elimination H=> //. Qed. *)
+
+(*   Context {I C D} {JC: ord_functor I C} {JD: ord_functor I D} *)
+(*           (F : ord_functor C D) *)
+(*           (JCF := ord_functor_comp JC F) *)
+(*           (Hobj : forall x: I, JD x = JCF x) *)
+(*           (Hmap : forall x y (f : I⦅x;y⦆), *)
+(*               rew [fun x' => D⦅x'; _⦆](Hobj x) in *)
+(*                 rew [fun y' => D⦅_; y'⦆] (Hobj y) in *)
+(*                 ofmap JD f = ofmap JCF f). *)
+
+
+(*   Goal natIso JD (ord_functor_comp JC F). *)
+(*     unshelve econstructor. *)
+(*     move=> A ; rewrite -(Hobj A); apply Id. *)
+(*     move=> A ; rewrite -(Hobj A); apply Id. *)
+(*     move=> A B f /=. *)
+(*     rewrite [ofmap _ (ofmap _ _)]/(ofmap JCF f) -Hmap. *)
+(*     set H1 := Hobj A. *)
+(*     set H2 := Hobj B. *)
+(*     move: H1 H2 => H2 H1. *)
+(*     rewrite -rew_comp rew_target ord_cat_law2 ord_cat_law1 //. *)
+(*     move=> ? /=. *)
+(*     set H := (Hobj _). *)
+(*     move: H => H. *)
+
+(*     (* KM : This is totally getting out of hand !!!! *) *)
+
+(* End IdNatIso. *)
+
+Section RelativeMonadLifting.
+
+  Section LiftingDatum.
+    Context {I C D} {JC: ord_functor I C} {JD: ord_functor I D}
+            (F : ord_functor C D)
+            (JCF := ord_functor_comp JC F)
+            (ϕ : natIso JD JCF)
+            (MC:ord_relativeMonad JC)
+            (MD:ord_relativeMonad JD).
+
+    Let uMC := rmon_to_ord_functor MC.
+    Let uMCF := ord_functor_comp uMC F.
+    Let uMD := rmon_to_ord_functor MD.
+
+    Definition lifts_object := natIso uMD uMCF.
+    Definition lifts_ret (ψ : lifts_object):=
+      forall (x:I), ofmap F (ord_relmon_unit MC x) ∙ ϕ _ = ψ _ ∙ ord_relmon_unit MD x.
+    Definition lifts_bind (ψ : lifts_object):=
+      forall (x y:I) (f: C⦅JC x; MC y⦆),
+        ni_inv ψ _ ∙ ofmap F (ord_relmon_bind MC f) ∙ ψ _ =
+        ord_relmon_bind MD (ni_inv ψ _ ∙ ofmap F f ∙ ϕ _).
+  End LiftingDatum.
+
+  Arguments lifts_ret {_ _ _ _ _ _} _ { _ _} _.
+  Arguments lifts_bind {_ _ _ _ _ _} _ {_ _} _.
+
+  Section LiftingOf.
+    Context {I C D} (JC: ord_functor I C) {JD: ord_functor I D}
+            (F : ord_functor C D)
+            (JCF := ord_functor_comp JC F)
+            (ϕ : natIso JD JCF)
+            (MD:ord_relativeMonad JD).
+
+    Record lifting_of :=
+      mkLiftingOf {
+          lifting_carrier :> ord_relativeMonad JC ;
+          lifting_obj : lifts_object F lifting_carrier MD;
+          lifting_ret : lifts_ret ϕ lifting_obj ;
+          lifting_bind : lifts_bind ϕ lifting_obj ;
+        }.
+
+  End LiftingOf.
+End RelativeMonadLifting.

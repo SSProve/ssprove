@@ -56,6 +56,14 @@ Notation "f <$> m" := (@map _ _ _ f m) (at level 60).
 Ltac intro_map :=
   change (bind ?a (fun x => ret (?f x))) with (f <$> a).
 
+Section StrongBind.
+  Context {M:Monad}.
+  Context {Γ A B} (m : Γ -> M A) (f : Γ × A -> M B).
+
+  Definition bindStr (γ : Γ) : M B :=
+    bind (m γ) (fun a => f ⟨γ,a⟩).
+End StrongBind.
+
 Section MapLemmas.
   Context (M : Monad).
   Import FunctionalExtensionality.

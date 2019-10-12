@@ -100,6 +100,13 @@ Section Rel.
   Definition EmptyCtx : Rel := mkRel unit unit (fun _ _ => unit).
   Definition ConsCtx (Γ : Rel) (X : Rel) :=
     mkRel (πl Γ × πl X) (πr Γ × πr X) (fun γx1 γx2 => Γ (nfst γx1) (nfst γx2) × X (nsnd γx1) (nsnd γx2)).
+
+  Definition extends (Γ : Rel) (A1 A2 : Type) : Rel :=
+    mkRel (πl Γ × A1) (πr Γ × A2) (fun γa1 γa2 => Γ (nfst γa1) (nfst γa2)).
+
+  Definition extend_point {Γ A1 A2} (γ : ⟬Γ⟭) (a1:A1) (a2:A2)
+    : ⟬extends Γ A1 A2⟭.
+  Proof. exists ⟨⟨πl γ, a1⟩, ⟨πr γ, a2⟩⟩. exact: πw γ. Defined.
 End Rel.
 
 

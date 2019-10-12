@@ -67,7 +67,6 @@ Set Universe Polymorphism.
 
 (* Generic rules for the simple framework [Section 2.4]*)
 
-Notation "wm ≫= wf" := (Spr1 (ord_relmon_bind _ wf) wm) (at level 50).
 
 Section RelationalProgramLogicFromRelativeMonadZero.
   Context (M1 M2 : Monad) (M12 := compPair M1 M2).

@@ -3,7 +3,7 @@ From Coq Require FunctionalExtensionality.
 From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms SRelationPairs.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures.
-From Relational Require Import OrderEnrichedCategory.
+From Relational Require Import OrderEnrichedCategory Rel.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
@@ -184,27 +184,58 @@ Section RelationalSpecMonad.
     : RelationalLaxEffectObservation0 W
     := @mkRelLaxMonMorph _ _ _ _ _ _ _ _ _ θ pf1 pf2.
 
+
+  Definition unarySpecMonad := ord_relativeMonad discr.
+  Definition discr2 := prod_functor discr discr.
+  Definition unarySpecPair (W1 W2 : unarySpecMonad)
+    : ord_relativeMonad discr2 :=
+      product_rmon W1 W2.
+
   (* Changing this Let to Definition breaks RSM_from_RSM0 below... *)
-  Definition OrdCatTr := prod_cat (prod_cat OrdCat OrdCat) OrdCat.
-
-  (* Definition ordcattr_hom_ord {X Y} : (srelation (OrdCatTr⦅X;Y⦆)) := *)
-  (*   prod_rel (prod_rel ordcat_hom_ord ordcat_hom_ord) ordcat_hom_ord. *)
-
+  Definition OrdCatSq := prod_cat OrdCat OrdCat.
+  Definition OrdCatTr := prod_cat OrdCatSq OrdCat.
 
   Program Definition J : ord_functor TypeCatSq OrdCatTr :=
     mkOrdFunctor (fun A => ⟨⟨discr (nfst A), discr (nsnd A)⟩, Jprod A⟩)
-              (fun _ _ f => ⟨⟨ofmap discr (nfst f),
-                           ofmap discr (nsnd f)⟩,
-                          ofmap Jprod f⟩)
-              _ _ _.
+                 (fun _ _ f => ⟨⟨ofmap discr (nfst f),
+                              ofmap discr (nsnd f)⟩,
+                             ofmap Jprod f⟩) _ _ _.
   Next Obligation. cbv ; intuition ; f_equiv ; auto. Qed.
+
+  Definition ordcatTr2Sq : ord_functor OrdCatTr OrdCatSq :=
+    left_proj_functor _ _.
+
+  Program Definition discr2_iso_J_proj
+    : natIso discr2 (ord_functor_comp J ordcatTr2Sq) :=
+    mkNatIso _ _ (fun A => Id (discr2 A)) (fun A => Id (discr2 A)) _ _ _.
+
 
   (* Full relational specification  monad *)
   (* With respect to the paper we take a slightly different encoding *)
-  Definition RelationalSpecMonad : Type := ord_relativeMonad J.
+  Definition preRelationalSpecMonad : Type := ord_relativeMonad J.
 
-  Definition RelationalEffectObservation (W:RelationalSpecMonad) : Type :=
+  Record RelationalSpecMonad  :=
+    mkRSM {
+        rsm_left : unarySpecMonad ;
+        rsm_right : unarySpecMonad ;
+        rsm_rel : lifting_of
+                    J ordcatTr2Sq discr2_iso_J_proj
+                    (unarySpecPair rsm_left rsm_right)
+      }.
+
+  Definition preRelationalEffectObservation (W:preRelationalSpecMonad) : Type :=
+    relativeMonadMorphism J (natIso_sym (ord_functor_unit_left _)) compPair W.
+
+  Definition preRelationalLaxEffectObservation (W:preRelationalSpecMonad) : Type :=
     relativeLaxMonadMorphism J (natIso_sym (ord_functor_unit_left _)) compPair W.
+
+  Definition mkpreREO (W:preRelationalSpecMonad) θ pf1 pf2
+    : preRelationalEffectObservation W
+    := @mkRelMonMorph _ _ _ _ _ _ _ _ _ θ pf1 pf2.
+
+  Definition mkpreRLEO (W:preRelationalSpecMonad) θ pf1 pf2
+    : preRelationalLaxEffectObservation W
+    := @mkRelLaxMonMorph _ _ _ _ _ _ _ _ _ θ pf1 pf2.
 
   Program Definition πord1 {A B} : OrdCat⦅Jprod ⟨A, B⟩ ; discr A⦆ := ⦑ nfst ⦒.
   Next Obligation. intuition. Qed.
@@ -219,7 +250,7 @@ Section RelationalSpecMonad.
 
   Import FunctionalExtensionality.
   (* Any simple relational specification monad yield a full relational specification monad *)
-  Program Definition RSM_from_RSM0 (W : RelationalSpecMonad0) : RelationalSpecMonad :=
+  Program Definition RSM_from_RSM0 (W : RelationalSpecMonad0) : preRelationalSpecMonad :=
     mkOrdRelativeMonad
       (fun A => ⟨⟨W ⟨nfst A, unit⟩, W ⟨unit, nsnd A⟩⟩, W A⟩)
                     (fun A => ⟨⟨⦑fun a => Spr1 (ord_relmon_unit W ⟨nfst A, unit⟩) ⟨a,tt⟩⦒,
@@ -267,6 +298,7 @@ Section RelationalSpecMonad.
       extensionality x; move: s => /(f_equal Spr1) /(equal_f ^~ x) s; apply s.
     - rewrite ord_relmon_law3=> //.
   Qed.
+
 End RelationalSpecMonad.
 
 Arguments to_prod {_ _ _ _ _ _} _ _.
@@ -321,3 +353,5 @@ Section MonadMorphismAsRMonMorphism.
   Qed.
 
 End MonadMorphismAsRMonMorphism.
+
+Notation "wm ≫= wf" := (Spr1 (ord_relmon_bind _ wf) wm) (at level 50).
