@@ -37,16 +37,16 @@ Section IOs.
     | Read _ => ⦑fun p h => forall i, p i ⟨ inl i :: nfst h, nsnd h ⟩⦒
     | Write o => ⦑fun p h => p tt ⟨ inr o :: nfst h, nsnd h ⟩⦒
     end.
-  Next Obligation. apply H; apply H0. Qed.
-  Next Obligation. apply H; apply H0. Qed.
+  Next Obligation. move=> ? ? H ? H0 ?; apply H ; apply H0. Qed.
+  Next Obligation. move=> ? ? H ? H0 ; apply H; apply H0. Qed.
 
   Program Definition wop2 (s:IOS O2) : Wun (IOAr I2 s) :=
     match s with
     | Read _ => ⦑fun p h => forall i, p i ⟨ nfst h, inl i :: nsnd h ⟩⦒
     | Write o => ⦑fun p h => p tt ⟨ nfst h, inr o :: nsnd h ⟩⦒
     end.
-  Next Obligation. apply H; apply H0. Qed.
-  Next Obligation. apply H; apply H0. Qed.
+  Next Obligation. move=> ? ? H ? H0 ?; apply H ; apply H0. Qed.
+  Next Obligation. move=> ? ? H ? H0 ; apply H; apply H0. Qed.
 
   Import FunctionalExtensionality.
   Lemma io1_io2_commutation : forall s1 s2, commute (wop1 s1) (wop2 s2).

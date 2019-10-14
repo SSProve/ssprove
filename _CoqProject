@@ -16,7 +16,7 @@ theories/Mon/SRelation/SMorphisms_Prop.v
 theories/Mon/SRelation/SMorphisms_Relations.v
 theories/Mon/SRelation/SRelationPairs.v
 
-theories/Mon/sprop/WellFounded.v
+#theories/Mon/sprop/WellFounded.v
 theories/Mon/sprop/SPropMonadicStructures.v
 theories/Mon/sprop/Monoid.v
 theories/Mon/sprop/SpecificationMonads.v
@@ -52,5 +52,5 @@ theories/Relational/OrderEnrichedCategory.v
 theories/Relational/OrderEnrichedRelativeMonadExamples.v
 
 
-# theories/Mon/sprop/FiniteProbabilities.v
-# theories/Relational/RelationalFinProb.v
+theories/Mon/sprop/FiniteProbabilities.v
+theories/Relational/RelationalFinProb.v

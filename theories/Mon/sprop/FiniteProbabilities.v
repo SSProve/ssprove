@@ -89,6 +89,7 @@ Section FinProb.
   Program Definition wopProb (p:ProbS) : WI (ProbAr p) :=
     ⦑fun f => barycentric_sum p (f true) (f false) ⦒.
   Next Obligation.
+    move=> ? ? H.
    rewrite /Irel /=; apply:its_true_anyway.
    rewrite ler_add // ler_pmul //; try by apply since_its_true, H.
    by rewrite (I_ge0 (negI p)).

@@ -108,7 +108,7 @@ Section CommuteEffectObs.
       mkREO0 M1 M2 Wrel
              (fun '⟨A1,A2⟩ => ⦑fun '⟨c1,c2⟩ => bind (θ1 A1 c1) (fun a1=> bind (θ2 A2 c2)
                                                (fun a2=> ret ⟨a1,a2⟩))⦒) _ _.
-  Next Obligation. elim: H ; sreflexivity. Qed.
+  Next Obligation. move=> ? ? H ; induction H; sreflexivity. Qed.
   Next Obligation.
     apply Ssig_eq=> /= ; extensionality a=> /=.
     now do 2 rewrite mon_morph_ret /bind monad_law1.

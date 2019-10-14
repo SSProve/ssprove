@@ -9,7 +9,7 @@ From mathcomp Require Import all_ssreflect all_algebra reals distr.
 From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads Monoid DijkstraMonadExamples.
-From Relational Require Import RelativeMonads RelativeMonadExamples GenericRulesSimple Commutativity.
+From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples GenericRulesSimple Commutativity.
 
 From Mon.sprop Require Import  FiniteProbabilities.
 
@@ -42,6 +42,7 @@ Section RelFinProb.
   Program Definition toss1_spec {A2} (a2:A2) (p:unit_interval R) : dfst (Wrel ⟨bool,A2⟩) :=
     ⦑fun post => barycentric_sum R p (post ⟨true,a2⟩) (post ⟨false, a2⟩)⦒.
   Next Obligation.
+    move=> ? ? H.
     rewrite /Irel /=; apply:its_true_anyway.
     rewrite ler_add // ler_pmul //; try by apply since_its_true, H.
     by rewrite (I_ge0 _ (negI _ p)).
@@ -50,6 +51,7 @@ Section RelFinProb.
   Program Definition toss2_spec {A1} (a1:A1) (p:unit_interval R) : dfst (Wrel ⟨A1,bool⟩) :=
     ⦑fun post => barycentric_sum R p (post ⟨a1,true⟩) (post ⟨a1,false⟩)⦒.
   Next Obligation.
+    move=> ? ? H.
     rewrite /Irel /=; apply:its_true_anyway.
     rewrite ler_add // ler_pmul //; try by apply since_its_true, H.
     by rewrite (I_ge0 _ (negI _ p)).
