@@ -214,13 +214,60 @@ Section RelationalSpecMonad.
   (* With respect to the paper we take a slightly different encoding *)
   Definition preRelationalSpecMonad : Type := ord_relativeMonad J.
 
+
+  Record rsm_components (W1 W2 : unarySpecMonad) :=
+    mkRSMComponents
+      { rsmc_carrier :> TypeCatSq -> OrdCat
+      ; rsmc_return : forall A, OrdCat⦅Jprod A; rsmc_carrier A⦆
+      ; rsmc_act: forall {A1 A2 B1 B2},
+            OrdCat⦅discr A1;W1 B1⦆ -> OrdCat⦅discr A2;W2 B2⦆ ->
+            OrdCat⦅Jprod ⟨A1,A2⟩; rsmc_carrier ⟨B1,B2⟩⦆ -> OrdCat⦅rsmc_carrier ⟨A1,A2⟩; rsmc_carrier ⟨B1,B2⟩⦆
+      ; rsmc_act_proper :
+          forall {A1 A2 B1 B2},
+            SProper (ord_cat_le _ s==> ord_cat_le _ s==> ord_cat_le _ s==> ord_cat_le _) (@rsmc_act A1 A2 B1 B2)
+      (* Usual question: should the equations be stated pointwise or not ? *)
+      (* ; rsmc_law1 : *)
+      (*     forall A1 A2 (w : dfst (rsmc_carrier ⟨A1,A2⟩)), *)
+      (*       (rsmc_act (ord_relmon_unit W1 A1) *)
+      (*                 (ord_relmon_unit W2 A2) *)
+      (*                 (rsmc_return ⟨A1,A2⟩))∙1 w = w *)
+      (* ; rsmc_law2 : *)
+      (*     forall A1 A2 B1 B2 f1 f2 (f: OrdCat⦅Jprod ⟨A1,A2⟩; rsmc_carrier ⟨B1,B2⟩⦆) a12, *)
+      (*         (rsmc_act f1 f2 f0)∙1  ((rsmc_return _)∙1 a12) = f∙1 a12 *)
+      (* ; rsmc_law3 : *)
+      (*     forall A1 A2 B1 B2 C1 C2 w f1 f2 f g1 g2 g, *)
+      (*       (@rsmc_act A1 A2 C1 C2 *)
+      (*             (ord_relmon_bind W1 g1 ∙ f1) *)
+      (*             (ord_relmon_bind W2 g2 ∙ f2) *)
+      (*             (@rsmc_act B1 B2 C1 C2 g1 g2 g ∙ f))∙1 w *)
+      (*       = (@rsmc_act B1 B2 C1 C2 g1 g2 g)∙1 *)
+      (*            ( (@rsmc_act A1 A2 B1 B2 f1 f2 f)∙1 w ) *)
+
+      (* point-free equations *)
+      ; rsmc_law1 : forall A1 A2,
+          rsmc_act (ord_relmon_unit W1 A1) (ord_relmon_unit W2 A2)
+                   (rsmc_return ⟨A1,A2⟩) = Id _
+      ; rsmc_law2 :
+          forall A1 A2 B1 B2 f1 f2 (f: OrdCat⦅Jprod ⟨A1,A2⟩; rsmc_carrier ⟨B1,B2⟩⦆),
+              rsmc_act f1 f2 f ∙ rsmc_return _ = f
+      ; rsmc_law3 :
+          forall A1 A2 B1 B2 C1 C2 f1 f2 f g1 g2 g,
+            @rsmc_act A1 A2 C1 C2
+                  (ord_relmon_bind W1 g1 ∙ f1)
+                  (ord_relmon_bind W2 g2 ∙ f2)
+                  (@rsmc_act B1 B2 C1 C2 g1 g2 g ∙ f)
+            = (@rsmc_act B1 B2 C1 C2 g1 g2 g)
+                 ∙ (@rsmc_act A1 A2 B1 B2 f1 f2 f)
+      }.
+
   Record RelationalSpecMonad  :=
     mkRSM {
         rsm_left : unarySpecMonad ;
         rsm_right : unarySpecMonad ;
-        rsm_rel : lifting_of
-                    J ordcatTr2Sq discr2_iso_J_proj
-                    (unarySpecPair rsm_left rsm_right)
+        rsm_rel : rsm_components rsm_left rsm_right
+        (* rsm_rel : lifting_of *)
+        (*             J ordcatTr2Sq discr2_iso_J_proj *)
+        (*             (unarySpecPair rsm_left rsm_right) *)
       }.
 
   Definition preRelationalEffectObservation (W:preRelationalSpecMonad) : Type :=

@@ -27,31 +27,38 @@ Section RelationalProgramLogicFromRelativeMonad.
   Let θ1 := mmorph_to_rmmorph θ10.
   Let θ2 := mmorph_to_rmmorph θ20.
 
+  Import SPropNotations.
+
+  Context (Wrel0 : rsm_components W1 W2).
+  Notation W0 := (rsmc_carrier _ _ Wrel0).
+  Notation η := (rsmc_return _ _ Wrel0).
+  Notation actW := (rsmc_act _ _ Wrel0).
+
 
   (* Now, we want a relational lifting of W1 × W2 *)
-  Context (W0 : TypeCatSq -> OrdCat) (η : forall A, OrdCat⦅Jprod A;W0 A⦆)
-          (actW : forall {A1 A2 B1 B2},
-              OrdCat⦅discr A1;W1 B1⦆ ->
-              OrdCat⦅discr A2;W2 B2⦆ ->
-              OrdCat⦅Jprod ⟨A1,A2⟩; W0 ⟨B1,B2⟩⦆ ->
-              OrdCat⦅W0 ⟨A1,A2⟩; W0 ⟨B1,B2⟩⦆).
-  Context (actW_proper : forall {A1 A2 B1 B2},
-              SProper (ord_cat_le _ s==> ord_cat_le _ s==> ord_cat_le _ s==> ord_cat_le _) (@actW A1 A2 B1 B2)).
-  Context (HW_law1 : forall A1 A2, actW _ _ _ _
-                                 (ord_relmon_unit W1 A1)
-                                 (ord_relmon_unit W2 A2)
-                                 (η ⟨A1,A2⟩) = Id _).
-  Context (HW_law2 : forall A1 A2 B1 B2 f1 f2 f,
-              actW A1 A2 B1 B2 f1 f2 f ∙ η _ = f).
-  Context (HW_law3 : forall A1 A2 B1 B2 C1 C2 f1 f2 f g1 g2 g,
-              actW A1 A2 C1 C2
-                   (ord_relmon_bind W1 g1 ∙ f1)
-                   (ord_relmon_bind W2 g2 ∙ f2)
-                   (actW B1 B2 C1 C2 g1 g2 g ∙ f)
-                   = (actW B1 B2 C1 C2 g1 g2 g) ∙ (actW A1 A2 B1 B2 f1 f2 f)).
-  Context (actW_mon : forall A1 A2 B1 B2 f1 f1' f2 f2' f f',
-              f1 ⪷ f1' -> f2 ⪷ f2' -> f ⪷ f' ->
-              actW A1 A2 B1 B2 f1 f2 f ⪷ actW A1 A2 B1 B2 f1' f2' f').
+  (* Context (W0 : TypeCatSq -> OrdCat) (η : forall A, OrdCat⦅Jprod A;W0 A⦆) *)
+  (*         (actW : forall {A1 A2 B1 B2}, *)
+  (*             OrdCat⦅discr A1;W1 B1⦆ -> *)
+  (*             OrdCat⦅discr A2;W2 B2⦆ -> *)
+  (*             OrdCat⦅Jprod ⟨A1,A2⟩; W0 ⟨B1,B2⟩⦆ -> *)
+  (*             OrdCat⦅W0 ⟨A1,A2⟩; W0 ⟨B1,B2⟩⦆). *)
+  (* Context (actW_proper : forall {A1 A2 B1 B2}, *)
+  (*             SProper (ord_cat_le _ s==> ord_cat_le _ s==> ord_cat_le _ s==> ord_cat_le _) (@actW A1 A2 B1 B2)). *)
+  (* Context (HW_law1 : forall A1 A2, actW _ _ _ _ *)
+  (*                                (ord_relmon_unit W1 A1) *)
+  (*                                (ord_relmon_unit W2 A2) *)
+  (*                                (η ⟨A1,A2⟩) = Id _). *)
+  (* Context (HW_law2 : forall A1 A2 B1 B2 f1 f2 f, *)
+  (*             actW A1 A2 B1 B2 f1 f2 f ∙ η _ = f). *)
+  (* Context (HW_law3 : forall A1 A2 B1 B2 C1 C2 f1 f2 f g1 g2 g, *)
+  (*             actW A1 A2 C1 C2 *)
+  (*                  (ord_relmon_bind W1 g1 ∙ f1) *)
+  (*                  (ord_relmon_bind W2 g2 ∙ f2) *)
+  (*                  (actW B1 B2 C1 C2 g1 g2 g ∙ f) *)
+  (*                  = (actW B1 B2 C1 C2 g1 g2 g) ∙ (actW A1 A2 B1 B2 f1 f2 f)). *)
+  (* Context (actW_mon : forall A1 A2 B1 B2 f1 f1' f2 f2' f f', *)
+  (*             f1 ⪷ f1' -> f2 ⪷ f2' -> f ⪷ f' -> *)
+  (*             actW A1 A2 B1 B2 f1 f2 f ⪷ actW A1 A2 B1 B2 f1' f2' f'). *)
   Import SPropNotations.
 
   (* We show that we can define the sur-approximation of this coq-development from that data *)
@@ -63,28 +70,38 @@ Section RelationalProgramLogicFromRelativeMonad.
                     (fun A B f =>
                        ⟨⟨ord_relmon_bind W1 (nfst (nfst f)),
                          ord_relmon_bind W2 (nsnd (nfst f))⟩,
-                       actW _ _ _ _ (nfst (nfst f)) (nsnd (nfst f)) (nsnd f)⟩)
+                       actW(nfst (nfst f)) (nsnd (nfst f)) (nsnd f)⟩)
                     _ _ _ _.
   Next Obligation.
     cbv ; intuition.
     1-2:apply omon_bind; [sreflexivity| cbv=> ? ; auto].
-    apply: actW_mon=> ?; [apply p0| apply q0| apply q].
+    apply: rsmc_act_proper=> ?; [apply p0| apply q0| apply q].
   Qed.
   Next Obligation.
-    f_equal ; [f_equal|]; rewrite ?HW_law1 //;
+    f_equal ; [f_equal|]; rewrite /actW ?rsmc_law1 //;
       apply Ssig_eq ;apply: funext=> a /=; apply: monad_law2.
   Qed.
   Next Obligation.
     move: f => [[f1 f2] frel].
     f_equal ; [f_equal|] ; apply Ssig_eq.
     1-2:apply: funext=> a /=; apply: monad_law1.
-    apply (f_equal Spr1). apply: HW_law2.
+    apply (f_equal Spr1). apply: rsmc_law2.
   Qed.
   Next Obligation.
     f_equal ; [f_equal|] ; apply Ssig_eq.
     1-2: apply: funext=> a /=; rewrite /bind monad_law3 //.
-    apply (f_equal Spr1). apply: HW_law3.
+    apply (f_equal Spr1). apply: rsmc_law3.
   Qed.
+
+  (* Record reo_components *)
+  (*        (M12 : ord_relativeMonad discr2) *)
+  (*        (W1 W2 : unarySpecMonad) *)
+  (*        (θ1 : ) *)
+  (*   := *)
+  (*   mkREOComponents *)
+  (*     { reoc_carrier : forall {A}, OrdCat⦅Jprod (M12 A);W0 A⦆ *)
+  (*     ; *)
+  (*     } *)
 
   Context (θW : forall {A}, OrdCat⦅Jprod (M12 A);W0 A⦆).
   Context (HθW_law1 : forall {A},
@@ -92,7 +109,7 @@ Section RelationalProgramLogicFromRelativeMonad.
                  = η A).
   Context (HθW_law2 : forall {A B} (f:TypeCatSq⦅A;M12 B⦆),
               θW _ ∙ ofmap Jprod (ord_relmon_bind M12 f)
-                 = actW _ _ _ _
+                 = actW
                          (θ1 _ ∙ ofmap discr (nfst f))
                          (θ2 _ ∙ ofmap discr (nsnd f))
                          (θW _ ∙ ofmap Jprod f) ∙ θW _).
@@ -131,7 +148,6 @@ Section RelationalProgramLogicFromRelativeMonad.
   (* And we prove the rule for binding computations *)
 
   Import SPropNotations.
-  Arguments actW {_ _ _ _} _ _ _.
   Lemma full_seq_rule {A1 A2 B1 B2}
         {m1 : M1 A1} {m2 : M2 A2} {wm1 wm2 wm}
         {f1 : A1 -> M1 B1} {f2 : A2 -> M2 B2}
@@ -153,11 +169,7 @@ Section RelationalProgramLogicFromRelativeMonad.
     move: (f_equal (fun h => h ⟨m1, m2⟩) H12) => /= -> //=.
     estransitivity.
     simpl in Hf1.
-    refine (actW_mon A1 A2 B1 B2
-                    (θ1 _ ∙ ofmap discr f1) wf1
-                    (θ2 _ ∙ ofmap discr f2) wf2
-                    (θW _ ∙ ofmap Jprod (to_prod f1 f2)) wf
-                    _ _ _ _).
+    apply: rsmc_act_proper.
     move=> ? ; apply Hf1.
     move=> ? ; apply Hf2.
     move=> [? ?] /=; eapply (Hf ⦑ _ , _ | tt⦒).
