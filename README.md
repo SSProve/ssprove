@@ -9,8 +9,13 @@ publicly available at https://gitlab.inria.fr/kmaillar/dijkstra-monads-for-all
 The prerequisite are inherited from that developement, namely:
 - It requires Coq version 8.10.0
 
+
 - For examples based on probabilities, it requires the math-comp-analysis
-  library (version 0.2.2) that can be obtained through opam.
+  library (version 0.2.2) that can be obtained through opam. Be sure to add
+  the coq-released repo before:
+
+    opam repo add coq-released https://coq.inria.fr/opam/released
+
 
 
 # Step-by-step Guide
