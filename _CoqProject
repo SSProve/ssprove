@@ -47,6 +47,7 @@ theories/Relational/RelationalExcSimple.v
 theories/Relational/EnrichedSetting.v
 theories/Relational/Commutativity.v
 theories/Relational/RelationalIO.v
+theories/Relational/Imp.v
 
 theories/Relational/OrderEnrichedCategory.v
 theories/Relational/OrderEnrichedRelativeMonadExamples.v
