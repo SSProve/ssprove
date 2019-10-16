@@ -108,6 +108,18 @@ Section RelationalProgramLogicFromRelativeMonadZero.
     apply: (rlmm_law1 _ _ M12 W θ ⟨A , B⟩ ⟨a,b⟩).
   Qed.
 
+  Lemma if_rule {A1 A2} {m1: M1 A1} {m2 : M2 A2} {w w'} (b:bool) :
+      (if b then ⊨ m1 ≈ m2 [{ w }] else ⊨ m1 ≈ m2 [{ w' }])
+      -> ⊨ m1 ≈ m2 [{ if b then w else w' }].
+  Proof. destruct b=> //. Qed.
+
+  Lemma nat_rect_rule {A1 A2} {m1: nat -> M1 A1} {m2 : nat -> M2 A2} {w0 wsuc}
+        (w := nat_rect (fun=> dfst (W ⟨A1, A2⟩)) w0 wsuc) :
+    ⊨ m1 0 ≈ m2 0 [{ w0 }] ->
+    (forall n, ⊨ m1 n ≈ m2 n [{ w n }] -> ⊨ m1 (S n) ≈ m2 (S n) [{ wsuc n (w n) }]) ->
+    forall n, ⊨ m1 n ≈ m2 n [{ w n }].
+  Proof. induction n => //=. apply H0=> //. Qed.
+
 End RelationalProgramLogicFromRelativeMonadZero.
 
 Notation "θ ⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ _ θ _ _ c1 c2 w) (at level 85).
