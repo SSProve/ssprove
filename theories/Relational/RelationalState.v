@@ -289,7 +289,7 @@ Section NonInterference.
               (f_sEqual2 _ _ p1 (sEq_refl false)) => [] [] //.
   Qed.
 
-  Let prog5 := bind (get HIGH) (fun h => if Nat.eqb h 1 then put LOW h else put LOW 1).
+  Definition prog5 := bind (get HIGH) (fun h => if Nat.eqb h 1 then put LOW h else put LOW 1).
 
   Lemma prog5_satisfies_NI : NI prog5.
   Proof.
