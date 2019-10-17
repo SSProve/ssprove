@@ -9,17 +9,17 @@ From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadE
 Set Primitive Projections.
 Set Universe Polymorphism.
 
-Section Exceptions.
-  Context (E1 E2 : Type) (Exc1 := Exn E1) (Exc2 := Exn E2).
+Section Erreptions.
+  Context (E1 E2 : Type) (Err1 := Exn E1) (Err2 := Exn E2).
 
-  Definition RelExc : RelationalSpecMonad0 :=
+  Definition RelErr : RelationalSpecMonad0 :=
     ordmonad_to_relspecmon0 (ExnSpec unit).
 
   Notation "'raiseP' e" := (@opr _ _ _ (Raise e) _) (at level 60).
   Import SPropNotations.
 
   Import FunctionalExtensionality.
-  Program Definition θExc : RelationalEffectObservation0 Exc1 Exc2 RelExc :=
+  Program Definition θErr : RelationalEffectObservation0 Err1 Err2 RelErr :=
     mkRelMonMorph _ _ _ _
                   (fun A =>
                      ⦑fun m12 =>
@@ -39,15 +39,15 @@ Section Exceptions.
     match goal with [|- match ?d with _ => _ end = _ ] => destruct d as [?|[]]=> // end.
   Qed.
 
-  Program Definition fail_spec {A} : dfst (RelExc A) := ⦑fun _ pexc => pexc tt⦒.
+  Program Definition fail_spec {A} : dfst (RelErr A) := ⦑fun _ pexc => pexc tt⦒.
   Next Obligation. cbv; intuition. Qed.
 
   Lemma raise_l_rule e1 {A2} (a2:A2) :
-    θExc ⊨ raise e1 ≈ ret a2 [{ fail_spec }].
+    θErr ⊨ raise e1 ≈ ret a2 [{ fail_spec }].
   Proof. cbv ; intuition. Qed.
 
   Lemma raise_r_rule e2 {A1} (a1:A1) :
-    θExc ⊨ ret a1 ≈ raise e2 [{ fail_spec }].
+    θErr ⊨ ret a1 ≈ raise e2 [{ fail_spec }].
   Proof. cbv ; intuition. Qed.
 
   Definition catch {E A} (c : Exn E A) (cerr : E -> Exn E A) : Exn E A :=
@@ -56,18 +56,18 @@ Section Exceptions.
     | raiseP e => cerr e
     end.
 
-  Program Definition catch_spec {A} (w werr: dfst (RelExc A)) : dfst (RelExc A):=
+  Program Definition catch_spec {A} (w werr: dfst (RelErr A)) : dfst (RelErr A):=
     ⦑fun post pexc => Spr1 w post (fun _ => Spr1 werr post pexc) ⦒.
   Next Obligation.
     move=> ? ? ? ? ? ?; apply: w∙2=> //; move=> ? ; apply: werr∙2 => //.
   Qed.
 
-  Lemma catch_rule {A1 A2} (c1 : Exc1 A1) cerr1 (c2:Exc2 A2) cerr2 w werr :
-    θExc ⊨ c1 ≈ c2 [{ w }] ->
-    (forall e1 a2, θExc ⊨ cerr1 e1 ≈ ret a2 [{ werr }]) ->
-    (forall a1 e2, θExc ⊨ ret a1 ≈ cerr2 e2 [{ werr }]) ->
-    (forall e1 e2, θExc ⊨ cerr1 e1 ≈ cerr2 e2 [{ werr }]) ->
-    θExc ⊨ catch c1 cerr1 ≈ catch c2 cerr2 [{ catch_spec w werr }].
+  Lemma catch_rule {A1 A2} (c1 : Err1 A1) cerr1 (c2:Err2 A2) cerr2 w werr :
+    θErr ⊨ c1 ≈ c2 [{ w }] ->
+    (forall e1 a2, θErr ⊨ cerr1 e1 ≈ ret a2 [{ werr }]) ->
+    (forall a1 e2, θErr ⊨ ret a1 ≈ cerr2 e2 [{ werr }]) ->
+    (forall e1 e2, θErr ⊨ cerr1 e1 ≈ cerr2 e2 [{ werr }]) ->
+    θErr ⊨ catch c1 cerr1 ≈ catch c2 cerr2 [{ catch_spec w werr }].
   Proof.
     move: c1 c2=> [a1|[e1] ?] [a2|[e2] ?] H0 Hl Hr Hlr //=.
     cbv in H0 |- *; intuition; apply: H0; eassumption.
@@ -77,12 +77,12 @@ Section Exceptions.
     cbv in Hlr ; move: (Hlr e1 e2 post pexc H) ; destruct (cerr1 e1) ; destruct (cerr2 e2)=> //=.
   Qed.
 
-  Definition ExcProd A1 A2 := Exn unit (A1 × A2).
+  Definition ErrProd A1 A2 := Exn unit (A1 × A2).
 
   Definition throw {E A} (e:E) : Exn E A :=
     @opr (ExnS E) (@ExnAr _) _ (Raise e) (@False_rect _).
 
-  Inductive exc_rel {A1 A2} : Exc1 A1 -> Exc2 A2 -> ExcProd A1 A2 -> SProp :=
+  Inductive exc_rel {A1 A2} : Err1 A1 -> Err2 A2 -> ErrProd A1 A2 -> SProp :=
   | erRet : forall a1 a2, exc_rel (ret a1) (ret a2) (ret ⟨a1,a2⟩)
   | erRaiseLeft : forall e1 c2, exc_rel (throw e1) c2 (throw tt)
   | erRaiseRight : forall c1 e2, exc_rel c1 (throw e2) (throw tt)
@@ -101,38 +101,38 @@ Section Exceptions.
   like a hack to get what you would have in the full setting.
   *)
 
-End Exceptions.
+End Erreptions.
 
 
-Section ExcCollapse.
-  Context (E1 E2 E : Type) (Exc1 := Exn E1) (Exc2 := Exn E2).
+Section ErrCollapse.
+  Context (E1 E2 E : Type) (Err1 := Exn E1) (Err2 := Exn E2).
 
-  Definition WExc : RelationalSpecMonad0 :=
+  Definition WErr : RelationalSpecMonad0 :=
     ordmonad_to_relspecmon0 (ExnSpec E).
 
-  Context (θExc : RelationalEffectObservation0 Exc1 Exc2 WExc).
+  Context (θErr : RelationalEffectObservation0 Err1 Err2 WErr).
   Context (ϕ1 : (E -> SProp) -> E1 -> SProp)
           (H1 : forall A2 (a2:A2) post e1 pexc,
-              Spr1 (Spr1 (θExc ⟨_,_⟩) ⟨raise e1, ret a2⟩) post pexc = ϕ1 pexc e1)
+              Spr1 (Spr1 (θErr ⟨_,_⟩) ⟨raise e1, ret a2⟩) post pexc = ϕ1 pexc e1)
           (ϕ2 : (E -> SProp) -> E2 -> SProp)
           (H2 : forall A1 (a1:A1) post e2 pexc,
-              Spr1 (Spr1 (θExc ⟨_,_⟩) ⟨ret a1, raise e2⟩) post pexc = ϕ2 pexc e2).
+              Spr1 (Spr1 (θErr ⟨_,_⟩) ⟨ret a1, raise e2⟩) post pexc = ϕ2 pexc e2).
 
   Import SPropNotations.
-  (*θExc applied to ⟨raise e1, raise e2⟩ does not depend on e1 or e2 *)
+  (*θErr applied to ⟨raise e1, raise e2⟩ does not depend on e1 or e2 *)
   Lemma collapse : forall pexc e1 e2, ϕ1 pexc e1 = ϕ2 pexc e2.
   Proof.
     move=> pexc e1 e2.
-    epose (rmm_law2 _ _ _ _ θExc ⟨_,_⟩ ⟨_,_⟩ ⟨fun (x:False) => ret x, fun (x:unit) => raise e2⟩) as e.
+    epose (rmm_law2 _ _ _ _ θErr ⟨_,_⟩ ⟨_,_⟩ ⟨fun (x:False) => ret x, fun (x:unit) => raise e2⟩) as e.
     apply (f_equal (fun h => h∙1 ⟨raise e1, ret tt⟩)) in e.
     apply (f_equal (fun h => Spr1 h (fun=> sUnit) pexc)) in e.
     cbv in e; rewrite H1 in e; rewrite -e ; clear e.
 
-    epose (rmm_law2 _ _ _ _ θExc ⟨_,_⟩ ⟨_,_⟩ ⟨fun=> raise e1,fun (x:False)=> ret x⟩ ) as e.
+    epose (rmm_law2 _ _ _ _ θErr ⟨_,_⟩ ⟨_,_⟩ ⟨fun=> raise e1,fun (x:False)=> ret x⟩ ) as e.
     apply (f_equal (fun h => h∙1 ⟨ret tt, raise e2⟩)) in e.
     apply (f_equal (fun h => Spr1 h (fun=> sUnit) pexc)) in e.
     cbv in e; rewrite H2 in e; rewrite -e ; clear e.
     reflexivity.
   Qed.
-End ExcCollapse.
+End ErrCollapse.
 
