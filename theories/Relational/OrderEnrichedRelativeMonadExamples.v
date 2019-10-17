@@ -137,8 +137,10 @@ Section MonadAsRMonad.
   Context (M:Monad).
   Import FunctionalExtensionality.
 
+  Definition rMonad := ord_relativeMonad (ord_functor_id TypeCat).
+
   (* Transforming a standard monad to a relative monad on the identity functor *)
-  Program Definition monad_to_relmon : ord_relativeMonad (ord_functor_id TypeCat) :=
+  Program Definition monad_to_relmon : rMonad :=
     mkOrdRelativeMonad M (fun A => @ret M A) (fun A B f => bind^~ f) _ _ _ _.
   Next Obligation. cbv ; intuition. induction (sfunext H)=> //. Qed.
   Next Obligation. extensionality c ; rewrite /bind monad_law2 //. Qed.
@@ -155,19 +157,23 @@ Section RelationalSpecMonad.
   Definition RelationalSpecMonad0 : Type := ord_relativeMonad Jprod.
 
 
-  Context (M1 M2 : Monad).
+
   Import SPropNotations.
 
   Let idxid := (prod_functor (ord_functor_id TypeCat) (ord_functor_id TypeCat)).
   Program Definition idxid_iso_id : natIso idxid (ord_functor_id TypeCatSq) :=
     mkNatIso _ _ (fun=> Id _) (fun=> Id _) _ _ _.
 
-  Definition compPair : ord_relativeMonad (ord_functor_id TypeCatSq) :=
-    rmon_transp_natIso
-      (product_rmon (monad_to_relmon M1) (monad_to_relmon M2))
-      idxid_iso_id.
+  Definition compPairRMonad (M1 M2 : rMonad): ord_relativeMonad (ord_functor_id TypeCatSq) :=
+    rmon_transp_natIso (product_rmon M1 M2) idxid_iso_id.
 
-  Definition to_prod {A1 A2 B1 B2} (f1 : A1 -> M1 B1) (f2 : A2 -> M2 B2)
+  Context (M01 M02 : Monad).
+  Let M1 := monad_to_relmon M01.
+  Let M2 := monad_to_relmon M02.
+
+  Definition compPair := compPairRMonad M1 M2.
+
+  Definition to_prod {A1 A2 B1 B2} (f1 : A1 -> M01 B1) (f2 : A2 -> M02 B2)
              : TypeCatSq⦅ ⟨A1,A2⟩ ; compPair ⟨B1, B2⟩⦆ := ⟨f1 , f2⟩.
 
   Definition RelationalEffectObservation0 (W:RelationalSpecMonad0) : Type :=
@@ -350,6 +356,34 @@ End RelationalSpecMonad.
 
 Arguments to_prod {_ _ _ _ _ _} _ _.
 
+Section RelationalEffectObservation.
+
+  Definition unaryEffectObs M W := relativeMonadMorphism discr (natIso_sym (ord_functor_unit_left _)) M W.
+
+  Context {M1 M2 : rMonad} (M12 := compPairRMonad M1 M2).
+  Context {W1 W2 : unarySpecMonad}.
+  Context (θ1 : unaryEffectObs M1 W1) (θ2 : unaryEffectObs M2 W2).
+  Context (Wrel : rsm_components W1 W2).
+  Notation W := (rsmc_carrier _ _ Wrel).
+  Notation η := (rsmc_return _ _ Wrel).
+  Notation actW := (rsmc_act _ _ Wrel).
+
+
+  Record reo_components
+    :=
+    mkREOComponents
+      { reoc_carrier : forall {A}, OrdCat⦅Jprod (M12 A);W A⦆
+      ; reoc_law1 : forall {A}, reoc_carrier ∙ ofmap Jprod (ord_relmon_unit M12 A) = η A
+      ; reoc_law2 : forall {A B} (f:TypeCatSq⦅A;M12 B⦆),
+          reoc_carrier ∙ ofmap Jprod (ord_relmon_bind M12 f)
+          = actW (θ1 _ ∙ ofmap discr (nfst f))
+                 (θ2 _ ∙ ofmap discr (nsnd f))
+                 (reoc_carrier ∙ ofmap Jprod f) ∙ reoc_carrier
+      }.
+
+End RelationalEffectObservation.
+
+
 Section OrderedMonadAsRMonad.
   Context (M:OrderedMonad).
 
@@ -388,8 +422,8 @@ Section MonadMorphismAsRMonMorphism.
   Import SPropNotations.
   Import FunctionalExtensionality.
   (* morphisms of monads also transfer to relativeMonad morphisms *)
-  Program Definition mmorph_to_rmmorph :
-    relativeMonadMorphism discr (natIso_sym (ord_functor_unit_left _)) M W :=
+
+  Program Definition mmorph_to_rmmorph : unaryEffectObs M W :=
     mkRelMonMorph discr _ M W (fun (A:TypeCat) => ⦑θ A⦒) _ _.
   Next Obligation. cbv ; intros ; induction H ; sreflexivity. Qed.
   Next Obligation.

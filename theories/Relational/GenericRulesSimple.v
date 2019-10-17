@@ -69,7 +69,8 @@ Set Universe Polymorphism.
 
 
 Section RelationalProgramLogicFromRelativeMonadZero.
-  Context (M1 M2 : Monad) (M12 := compPair M1 M2).
+  Context (M1 M2 : Monad)
+          (M12 := compPair M1 M2).
   Context (W : RelationalSpecMonad0)
           (θ : RelationalLaxEffectObservation0 M1 M2 W).
 

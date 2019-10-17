@@ -18,47 +18,23 @@ Section RelationalProgramLogicFromRelativeMonad.
 
   (* Basic setup for each side: computational monad, unary specification monad
   and an effect observation relating these *)
-  Context (M1 M2 : Monad) (W10 W20 : OrderedMonad)
+
+  Context (W10 W20 : OrderedMonad).
+  Let W1 := ordmonad_to_relmon W10.
+  Let W2 := ordmonad_to_relmon W20.
+
+  Context (M1 M2 : Monad)
           (θ10 : MonadMorphism M1 W10) (θ20 : MonadMorphism M2 W20).
 
   Let M12 := compPair M1 M2.
-  Let W1 := ordmonad_to_relmon W10.
-  Let W2 := ordmonad_to_relmon W20.
   Let θ1 := mmorph_to_rmmorph θ10.
   Let θ2 := mmorph_to_rmmorph θ20.
 
-  Import SPropNotations.
+  Context (Wrel : rsm_components W1 W2).
+  Notation W0 := (rsmc_carrier _ _ Wrel).
+  Notation η := (rsmc_return _ _ Wrel).
+  Notation actW := (rsmc_act _ _ Wrel).
 
-  Context (Wrel0 : rsm_components W1 W2).
-  Notation W0 := (rsmc_carrier _ _ Wrel0).
-  Notation η := (rsmc_return _ _ Wrel0).
-  Notation actW := (rsmc_act _ _ Wrel0).
-
-
-  (* Now, we want a relational lifting of W1 × W2 *)
-  (* Context (W0 : TypeCatSq -> OrdCat) (η : forall A, OrdCat⦅Jprod A;W0 A⦆) *)
-  (*         (actW : forall {A1 A2 B1 B2}, *)
-  (*             OrdCat⦅discr A1;W1 B1⦆ -> *)
-  (*             OrdCat⦅discr A2;W2 B2⦆ -> *)
-  (*             OrdCat⦅Jprod ⟨A1,A2⟩; W0 ⟨B1,B2⟩⦆ -> *)
-  (*             OrdCat⦅W0 ⟨A1,A2⟩; W0 ⟨B1,B2⟩⦆). *)
-  (* Context (actW_proper : forall {A1 A2 B1 B2}, *)
-  (*             SProper (ord_cat_le _ s==> ord_cat_le _ s==> ord_cat_le _ s==> ord_cat_le _) (@actW A1 A2 B1 B2)). *)
-  (* Context (HW_law1 : forall A1 A2, actW _ _ _ _ *)
-  (*                                (ord_relmon_unit W1 A1) *)
-  (*                                (ord_relmon_unit W2 A2) *)
-  (*                                (η ⟨A1,A2⟩) = Id _). *)
-  (* Context (HW_law2 : forall A1 A2 B1 B2 f1 f2 f, *)
-  (*             actW A1 A2 B1 B2 f1 f2 f ∙ η _ = f). *)
-  (* Context (HW_law3 : forall A1 A2 B1 B2 C1 C2 f1 f2 f g1 g2 g, *)
-  (*             actW A1 A2 C1 C2 *)
-  (*                  (ord_relmon_bind W1 g1 ∙ f1) *)
-  (*                  (ord_relmon_bind W2 g2 ∙ f2) *)
-  (*                  (actW B1 B2 C1 C2 g1 g2 g ∙ f) *)
-  (*                  = (actW B1 B2 C1 C2 g1 g2 g) ∙ (actW A1 A2 B1 B2 f1 f2 f)). *)
-  (* Context (actW_mon : forall A1 A2 B1 B2 f1 f1' f2 f2' f f', *)
-  (*             f1 ⪷ f1' -> f2 ⪷ f2' -> f ⪷ f' -> *)
-  (*             actW A1 A2 B1 B2 f1 f2 f ⪷ actW A1 A2 B1 B2 f1' f2' f'). *)
   Import SPropNotations.
 
   (* We show that we can define the sur-approximation of this coq-development from that data *)
@@ -93,49 +69,33 @@ Section RelationalProgramLogicFromRelativeMonad.
     apply (f_equal Spr1). apply: rsmc_law3.
   Qed.
 
-  (* Record reo_components *)
-  (*        (M12 : ord_relativeMonad discr2) *)
-  (*        (W1 W2 : unarySpecMonad) *)
-  (*        (θ1 : ) *)
-  (*   := *)
-  (*   mkREOComponents *)
-  (*     { reoc_carrier : forall {A}, OrdCat⦅Jprod (M12 A);W0 A⦆ *)
-  (*     ; *)
-  (*     } *)
 
-  Context (θW : forall {A}, OrdCat⦅Jprod (M12 A);W0 A⦆).
-  Context (HθW_law1 : forall {A},
-              θW _ ∙ ofmap Jprod (ord_relmon_unit M12 A)
-                 = η A).
-  Context (HθW_law2 : forall {A B} (f:TypeCatSq⦅A;M12 B⦆),
-              θW _ ∙ ofmap Jprod (ord_relmon_bind M12 f)
-                 = actW
-                         (θ1 _ ∙ ofmap discr (nfst f))
-                         (θ2 _ ∙ ofmap discr (nsnd f))
-                         (θW _ ∙ ofmap Jprod f) ∙ θW _).
+  Context (θrc : reo_components θ1 θ2 Wrel).
+  Notation θW := (@reoc_carrier _ _ _ _ _ _ _ θrc ⟨_,_⟩).
+
 
   Program Definition θ : preRelationalEffectObservation M1 M2 W :=
-    mkpreREO M1 M2 W (fun A => ⟨⟨θ1 (nfst A), θ2 (nsnd A)⟩, θW A⟩) _ _.
+    mkpreREO M1 M2 W (fun A => ⟨⟨θ1 (nfst A), θ2 (nsnd A)⟩, θW⟩) _ _.
   Next Obligation.
     f_equal ; [f_equal|]; apply Ssig_eq ; apply: (f_equal Spr1).
     apply (rmm_law1 _ _ _ _ θ1).
     apply (rmm_law1 _ _ _ _ θ2).
-    apply HθW_law1.
+    apply: reoc_law1.
   Qed.
   Next Obligation.
     f_equal ; [f_equal|]; apply Ssig_eq ; apply: (f_equal Spr1).
     apply (rmm_law2 _ _ _ _ θ1).
     apply (rmm_law2 _ _ _ _ θ2).
-    apply: HθW_law2.
+    apply (reoc_law2 θ1 θ2).
   Qed.
 
 
   Import RelNotations.
 
   Notation " Γ ⊫ c1 ≈ c2 [{ w1 , w2 , w }]" :=
-    ((forall γ1 : πl Γ, Spr1 (θ1 _) (c1 γ1) ≤ Spr1 w1 γ1) s/\
-    (forall γ2 : πr Γ, Spr1 (θ2 _) (c2 γ2) ≤ Spr1 w2 γ2) s/\
-    (forall γ : ⟬Γ⟭, Spr1 (θW ⟨_,_⟩) ⟨c1 (πl γ), c2 (πr γ)⟩ ≤ Spr1 w (dfst γ)))
+    ((forall γ1 : πl Γ, (θ1 _)∙1 (c1 γ1) ≤ Spr1 w1 γ1) s/\
+    (forall γ2 : πr Γ, (θ2 _)∙1 (c2 γ2) ≤ Spr1 w2 γ2) s/\
+    (forall γ : ⟬Γ⟭, θW∙1 ⟨c1 (πl γ), c2 (πr γ)⟩ ≤ Spr1 w (dfst γ)))
       (at level 85).
 
   Notation "⋅⊫ c1 ≈ c2 [{ w1 , w2 , w }]" :=
