@@ -228,6 +228,44 @@ Section RelationalProgramLogicFromRelativeMonad.
     set γ' := (σ @R γ); exact: (H γ').
   Qed.
 
+  Definition subst_true {Γ} : Γ -> Γ × bool := fun γ => ⟨γ, true⟩.
+  Definition rel_subst_true {Γ} : ⟬Γ⟭ -> ⟬Γ,∙bool ⟭ :=
+    applyRel _ _ (mk_point (Γ R=> (Γ,∙bool)) subst_true subst_true (fun _ _ γ => ⟨γ, erefl⟩)).
+  Definition subst_false {Γ} : Γ -> Γ × bool := fun γ => ⟨γ, false⟩.
+  Definition rel_subst_false {Γ} : ⟬Γ⟭ -> ⟬Γ,∙bool ⟭ :=
+    applyRel _ _ (mk_point (Γ R=> (Γ,∙bool)) subst_false subst_false (fun _ _ γ => ⟨γ, erefl⟩)).
+
+  Definition extend_Lo {Γ A} (γ:⟬Γ⟭) (a1 a2 : A) (H : a1 = a2) : ⟬Γ,∙A⟭ :=
+    mk_point (Γ,∙A) ⟨πl γ,a1⟩ ⟨πr γ, a2⟩ ⟨πw γ, H⟩.
+
+  Lemma ValidBoolElim Γ A1 A2 m1 wm1 m2 wm2 wmrel:
+    valid Γ A1 A2 (m1 \o subst_true) (wm1 \o subst_true)
+          (m2 \o subst_true) (wm2 \o subst_true) (wmrel \o rel_subst_true) ->
+    valid Γ A1 A2 (m1 \o subst_false) (wm1 \o subst_false)
+          (m2 \o subst_false) (wm2 \o subst_false) (wmrel \o rel_subst_false) ->
+      valid (Γ ,∙ bool) A1 A2 m1 wm1 m2 wm2 wmrel.
+  Proof.
+    move=> [[Ht1 Ht2] Ht] [[Hf1 Hf2] Hf]; split; [split|].
+    move=> [γ []]; [apply Ht1| apply Hf1].
+    move=> [γ []]; [apply Ht2| apply Hf2].
+    move=> [[[γ1 []] [γ2 b2]] [γ b]] /= ;
+    pattern b2, b;
+    match goal with
+    | [|- ?g _ _] =>
+      refine (match b as Hb in _ = b' return g b' Hb with | erefl => _ end)
+    end;
+    set γ' := mk_point _ γ1 γ2 γ.
+    exact: (Ht γ').
+    exact: (Hf γ').
+  Qed.
+    (* rewrite /rel_subst_true /extend_Lo /mk_point /subst_true /applyRel /=. *)
+    (* trivial. *)
+    (* simpl. *)
+    (* unfold rel_subst_true, extend_Lo. *)
+    (* simpl. *)
+    (* apply Ht. *)
+    (* set γ0 := ⦑ _ ⦒. *)
+
   (* Definition bindStrongRSM {Γ A1 A2 B1 B2} *)
   (*            (wm1 : πl Γ -> W1 A1) *)
   (*            (wm2 : πr Γ -> W2 A2) *)

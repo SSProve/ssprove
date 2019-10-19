@@ -144,8 +144,6 @@ Definition dep_extend (Γ : Rel) (b : Γ R==> TyRel) : Rel :=
            { γw : Γ (dfst γbl) (dfst γbr)
            ⫳ πw b (dfst γbl) (dfst γbr) γw (dsnd γbl) (dsnd γbr)  } ).
 
-Definition mk_point (R : Rel) (xl : πl R) (xr : πr R) (xw : R xl xr) : ⟬R⟭ :=
-  dpair _ ⟨xl, xr⟩ xw.
 
 Definition rel_is_bool (b0 : bool) {Γ} (b : Γ R==> Lo bool) : Γ R==> TyRel :=
   mk_point (Γ R=> TyRel) (fun γl => πl b γl = b0) (fun γr => πr b γr = b0)

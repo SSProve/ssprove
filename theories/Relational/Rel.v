@@ -107,6 +107,9 @@ Section Rel.
   Definition extend_point {Γ A1 A2} (γ : ⟬Γ⟭) (a1:A1) (a2:A2)
     : ⟬extends Γ A1 A2⟭.
   Proof. exists ⟨⟨πl γ, a1⟩, ⟨πr γ, a2⟩⟩. exact: πw γ. Defined.
+
+  Definition mk_point (R : Rel) (xl : πl R) (xr : πr R) (xw : R xl xr) : ⟬R⟭ :=
+    dpair _ ⟨xl, xr⟩ xw.
 End Rel.
 
 
