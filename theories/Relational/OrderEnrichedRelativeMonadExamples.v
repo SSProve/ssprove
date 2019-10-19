@@ -98,19 +98,8 @@ Section OrdCat.
   Next Obligation. cbv; intuition. Qed.
 End OrdCat.
 
+(* Re-exporting the notation *)
 Notation " x ≤ y " := (extract_ord x y).
-
-(* Section OrdCatSelfEnrichment. *)
-(*   Context {A B : OrdCat}. *)
-
-(*   Definition ordcat_hom_ord : srelation (OrdCat⦅A;B⦆) := *)
-(*     fun f1 f2 => forall a, Spr1 f1 a ≤ Spr1 f2 a. *)
-
-(*   Global Instance ordcat_hom_ord_preord : PreOrder ordcat_hom_ord. *)
-(*   Proof. constructor ; cbv ; intuition. estransitivity ; eauto. Qed. *)
-(* End OrdCatSelfEnrichment. *)
-
-(* Notation "f1 ≼ f2" := (ordcat_hom_ord f1 f2) (at level 65). *)
 
 
 Section OrdProduct.
@@ -133,11 +122,17 @@ From Coq Require Import FunctionalExtensionality.
 Definition funext {A B} {f g : forall x : A, B x}: (forall x : A, f x = g x) -> f = g.
 Proof. move=> h ; extensionality x ; apply h. Qed.
 
+
+
+(** Embedding of the monads from the unary setting into relative monads *)
+
+Definition rMonad := ord_relativeMonad (ord_functor_id TypeCat).
+Definition unarySpecMonad := ord_relativeMonad discr.
+Definition unaryEffectObs M W := relativeMonadMorphism discr (natIso_sym (ord_functor_unit_left _)) M W.
+
 Section MonadAsRMonad.
   Context (M:Monad).
   Import FunctionalExtensionality.
-
-  Definition rMonad := ord_relativeMonad (ord_functor_id TypeCat).
 
   (* Transforming a standard monad to a relative monad on the identity functor *)
   Program Definition monad_to_relmon : rMonad :=
@@ -148,14 +143,65 @@ Section MonadAsRMonad.
   Next Obligation. extensionality c ; rewrite /bind monad_law3 //. Qed.
 End MonadAsRMonad.
 
+Section OrderedMonadAsRMonad.
+  Context (M:OrderedMonad).
 
-Section RelationalSpecMonad.
+  Import SPropNotations.
+  Import FunctionalExtensionality.
+  (* Any unary specification monad in the sense of [Dijkstra monads for All] give raise to a relative monad *)
+  Program Definition ordmonad_to_relmon : unarySpecMonad :=
+    mkOrdRelativeMonad (fun A => dpair _ (M A) ⦑@omon_rel M A⦒)
+                       (fun A => ⦑@ret M A⦒)
+                       (fun A B f => ⦑bind^~ (Spr1 f)⦒) _ _ _ _.
+  Next Obligation. typeclasses eauto. Qed.
+  Next Obligation. cbv ; intuition ; induction H ; sreflexivity. Qed.
+  Next Obligation.
+    cbv ; intuition. apply omon_bind=> //= ? ; apply (Spr2 f); sreflexivity.
+  Qed.
+  Next Obligation. cbv ; intuition. apply omon_bind=> //. sreflexivity. Qed.
+  Next Obligation. apply Ssig_eq; extensionality x ; rewrite /= /bind monad_law2 //. Qed.
+  Next Obligation. apply Ssig_eq; extensionality x ; rewrite /= /bind monad_law1 //. Qed.
+  Next Obligation. apply Ssig_eq; extensionality x ; rewrite /= /bind monad_law3 //. Qed.
+
+End OrderedMonadAsRMonad.
+
+Section MonadMorphismAsRMonMorphism.
+  Context {M0:Monad} {W0:OrderedMonad} (θ0:MonadMorphism M0 W0).
+  Let M := monad_to_relmon M0.
+  Let W := ordmonad_to_relmon W0.
+  Let θ := from_discrete_monad_monotonic θ0.
+
+  Import SPropNotations.
+  Import FunctionalExtensionality.
+  (* morphisms of monads also transfer to relativeMonad morphisms *)
+
+  Program Definition mmorph_to_rmmorph : unaryEffectObs M W :=
+    mkRelMonMorph discr _ M W (fun (A:TypeCat) => ⦑θ A⦒) _ _.
+  Next Obligation. cbv ; intros ; induction H ; sreflexivity. Qed.
+  Next Obligation.
+    apply Ssig_eq=> /=; extensionality a=> /=; rewrite mon_morph_ret //.
+  Qed.
+  Next Obligation.
+    apply Ssig_eq ; extensionality a ; rewrite /= mon_morph_bind //.
+  Qed.
+
+End MonadMorphismAsRMonMorphism.
+
+
+
+
+
+
+
+(** Specialization of relative monads for the simple setting *)
+
+
+Section SimpleRelationalSpecMonad.
 
   Definition Jprod := ord_functor_comp typeCat_prod discr.
 
   (* Simple relational specification  monad *)
   Definition RelationalSpecMonad0 : Type := ord_relativeMonad Jprod.
-
 
 
   Import SPropNotations.
@@ -191,7 +237,28 @@ Section RelationalSpecMonad.
     := @mkRelLaxMonMorph _ _ _ _ _ _ _ _ _ θ pf1 pf2.
 
 
-  Definition unarySpecMonad := ord_relativeMonad discr.
+End SimpleRelationalSpecMonad.
+
+(* Any unary specification monad yield a simple relational spec monad
+   when precomposing with the product functor *)
+Section RelationalSpecMonadZeroFromOrderedMonad.
+  Context (M:OrderedMonad).
+
+  Definition ordmonad_to_relspecmon0 := relativeMonad_precomposition typeCat_prod (ordmonad_to_relmon M).
+
+End RelationalSpecMonadZeroFromOrderedMonad.
+
+
+Notation "wm ≫= wf" := (Spr1 (ord_relmon_bind _ wf) wm) (at level 50).
+
+
+
+(** Specialization of relative monads for the full setting *)
+(* A direct definition using the lifting condition is difficult to use with
+intensional equality, so we encode exactly the components we need *)
+
+
+Section NaiveDefinition.
   Definition discr2 := prod_functor discr discr.
   Definition unarySpecPair (W1 W2 : unarySpecMonad)
     : ord_relativeMonad discr2 :=
@@ -216,9 +283,107 @@ Section RelationalSpecMonad.
     mkNatIso _ _ (fun A => Id (discr2 A)) (fun A => Id (discr2 A)) _ _ _.
 
 
-  (* Full relational specification  monad *)
-  (* With respect to the paper we take a slightly different encoding *)
   Definition preRelationalSpecMonad : Type := ord_relativeMonad J.
+
+  (* Relational specification monads are pre-relational specification monads
+   satisfying a lifting condition ensuring that the first and second components
+   define unary spec monads *)
+
+
+  (* Record RelationalSpecMonad  := *)
+  (*   mkRSM { *)
+  (*       rsm_left : unarySpecMonad ; *)
+  (*       rsm_right : unarySpecMonad ; *)
+  (*       rsm_rel : lifting_of *)
+  (*                   J ordcatTr2Sq discr2_iso_J_proj *)
+  (*                   (unarySpecPair rsm_left rsm_right) *)
+  (*     }. *)
+
+
+
+  (* Context (M01 M02 : Monad). *)
+  (* Notation compPair := (compPair M01 M02). *)
+
+  (* Definition preRelationalEffectObservation (W:preRelationalSpecMonad) : Type := *)
+  (*   relativeMonadMorphism J (natIso_sym (ord_functor_unit_left _)) compPair W. *)
+
+  (* Definition preRelationalLaxEffectObservation (W:preRelationalSpecMonad) : Type := *)
+  (*   relativeLaxMonadMorphism J (natIso_sym (ord_functor_unit_left _)) compPair W. *)
+
+  (* Definition mkpreREO (W:preRelationalSpecMonad) θ pf1 pf2 *)
+  (*   : preRelationalEffectObservation W *)
+  (*   := @mkRelMonMorph _ _ _ _ _ _ _ _ _ θ pf1 pf2. *)
+
+  (* Definition mkpreRLEO (W:preRelationalSpecMonad) θ pf1 pf2 *)
+  (*   : preRelationalLaxEffectObservation W *)
+  (*   := @mkRelLaxMonMorph _ _ _ _ _ _ _ _ _ θ pf1 pf2. *)
+
+  (* Program Definition πord1 {A B} : OrdCat⦅Jprod ⟨A, B⟩ ; discr A⦆ := ⦑ nfst ⦒. *)
+  (* Next Obligation. intuition. Qed. *)
+
+  (* Program Definition πord2 {A B} : OrdCat⦅Jprod ⟨A, B⟩ ; discr B⦆ := ⦑ nsnd ⦒. *)
+  (* Next Obligation. intuition. Qed. *)
+
+
+  (* Lemma Ssig_rew {A P} {x y : A} {Hx Hy} *)
+  (*   : x = y -> Sexists P x Hx = Sexists P y Hy. *)
+  (* Proof. move=> ? ; apply Ssig_eq=> //. Qed. *)
+
+  (* Import FunctionalExtensionality. *)
+  (* (* Any simple relational specification monad yield a full relational specification monad *) *)
+  (* Program Definition RSM_from_RSM0 (W : RelationalSpecMonad0) : preRelationalSpecMonad := *)
+  (*   mkOrdRelativeMonad *)
+  (*     (fun A => ⟨⟨W ⟨nfst A, unit⟩, W ⟨unit, nsnd A⟩⟩, W A⟩) *)
+  (*                   (fun A => ⟨⟨⦑fun a => Spr1 (ord_relmon_unit W ⟨nfst A, unit⟩) ⟨a,tt⟩⦒, *)
+  (*                            ⦑fun a => Spr1 (ord_relmon_unit W ⟨unit, nsnd A⟩) ⟨tt, a⟩⦒⟩, *)
+  (*                           ord_relmon_unit W A⟩) *)
+  (*                   (fun A B f => *)
+  (*                      ⟨⟨ ord_relmon_bind W (nfst (nfst f) ∙ πord1), *)
+  (*                        ord_relmon_bind W (nsnd (nfst f) ∙ πord2)⟩, *)
+  (*                       ord_relmon_bind W (nsnd f)⟩) *)
+  (*                   _ _ _ _. *)
+  (* Next Obligation. cbv ; intuition. induction H. sreflexivity. Qed. *)
+  (* Next Obligation. cbv ; intuition. induction H. sreflexivity. Qed. *)
+  (* Next Obligation. *)
+  (*   cbv ; intuition; *)
+  (*     apply (ord_relmon_bind_proper W ⟨_,_⟩ _ _ _)=> ?; *)
+  (*     [apply p0| apply q0| apply q]. *)
+  (* Qed. *)
+  (* Next Obligation. *)
+  (*   intuition. *)
+  (*   f_equal;[f_equal|]; apply: Ssig_eq=> /=. *)
+  (*   1,2: set f := ⦑_⦒; have -> : f = ord_relmon_unit W ⟨_,_⟩. *)
+  (*   all: try by rewrite ord_relmon_law1. *)
+  (*   apply Ssig_eq; extensionality x; move: x=> [? []] //. *)
+  (*   apply Ssig_eq; extensionality x; move: x=> [[] ?] //. *)
+  (* Qed. *)
+  (* Next Obligation. *)
+  (*   intuition. *)
+  (*   f_equal;[f_equal|]; apply: Ssig_eq=> /=. *)
+  (*   - extensionality x; set f := ⦑_⦒. *)
+  (*     move: (ord_relmon_law2 W ⟨_,unit⟩ _ f)=> /(f_equal Spr1) /(equal_f ^~ ⟨_, _⟩)//=. *)
+  (*   - extensionality x; set f := ⦑_⦒. *)
+  (*     move: (ord_relmon_law2 W ⟨unit,_⟩ _ f)=> /(f_equal Spr1) /(equal_f ^~ ⟨_, _⟩)//=. *)
+  (*   - move: (ord_relmon_law2 W _ _ nsnd) => /(f_equal Spr1) //. *)
+  (* Qed. *)
+  (* Next Obligation. *)
+  (*   intuition ; cbv. *)
+  (*   f_equal;[f_equal|]; apply: Ssig_eq=> /=. (* ; extensionality x. *) *)
+  (*   - epose (ord_relmon_law3 W ⟨ _, unit⟩ ⟨_, unit⟩ _ *)
+  (*                      ⦑fun x1 => Spr1 nfst1 (Base.nfst x1) ⦒ *)
+  (*                      ⦑fun x0 => Spr1 nfst (Base.nfst x0)⦒) as s. *)
+  (*     extensionality x; move: s => /(f_equal Spr1) /(equal_f ^~ x) s; apply s. *)
+  (*   - epose (ord_relmon_law3 W ⟨unit, _⟩ ⟨unit, _⟩ _ *)
+  (*                      ⦑fun x1 => Spr1 nsnd1 (Base.nsnd x1) ⦒ *)
+  (*                      ⦑fun x0 => Spr1 nsnd2 (Base.nsnd x0)⦒) as s. *)
+  (*     extensionality x; move: s => /(f_equal Spr1) /(equal_f ^~ x) s; apply s. *)
+  (*   - rewrite ord_relmon_law3=> //. *)
+  (* Qed. *)
+
+End NaiveDefinition.
+
+
+Section RelationalSpecMonad.
 
 
   Record rsm_components (W1 W2 : unarySpecMonad) :=
@@ -271,168 +436,135 @@ Section RelationalSpecMonad.
         rsm_left : unarySpecMonad ;
         rsm_right : unarySpecMonad ;
         rsm_rel : rsm_components rsm_left rsm_right
-        (* rsm_rel : lifting_of *)
-        (*             J ordcatTr2Sq discr2_iso_J_proj *)
-        (*             (unarySpecPair rsm_left rsm_right) *)
       }.
 
-  Definition preRelationalEffectObservation (W:preRelationalSpecMonad) : Type :=
-    relativeMonadMorphism J (natIso_sym (ord_functor_unit_left _)) compPair W.
-
-  Definition preRelationalLaxEffectObservation (W:preRelationalSpecMonad) : Type :=
-    relativeLaxMonadMorphism J (natIso_sym (ord_functor_unit_left _)) compPair W.
-
-  Definition mkpreREO (W:preRelationalSpecMonad) θ pf1 pf2
-    : preRelationalEffectObservation W
-    := @mkRelMonMorph _ _ _ _ _ _ _ _ _ θ pf1 pf2.
-
-  Definition mkpreRLEO (W:preRelationalSpecMonad) θ pf1 pf2
-    : preRelationalLaxEffectObservation W
-    := @mkRelLaxMonMorph _ _ _ _ _ _ _ _ _ θ pf1 pf2.
-
-  Program Definition πord1 {A B} : OrdCat⦅Jprod ⟨A, B⟩ ; discr A⦆ := ⦑ nfst ⦒.
-  Next Obligation. intuition. Qed.
-
-  Program Definition πord2 {A B} : OrdCat⦅Jprod ⟨A, B⟩ ; discr B⦆ := ⦑ nsnd ⦒.
-  Next Obligation. intuition. Qed.
-
-
-  Lemma Ssig_rew {A P} {x y : A} {Hx Hy}
-    : x = y -> Sexists P x Hx = Sexists P y Hy.
-  Proof. move=> ? ; apply Ssig_eq=> //. Qed.
-
-  Import FunctionalExtensionality.
-  (* Any simple relational specification monad yield a full relational specification monad *)
-  Program Definition RSM_from_RSM0 (W : RelationalSpecMonad0) : preRelationalSpecMonad :=
-    mkOrdRelativeMonad
-      (fun A => ⟨⟨W ⟨nfst A, unit⟩, W ⟨unit, nsnd A⟩⟩, W A⟩)
-                    (fun A => ⟨⟨⦑fun a => Spr1 (ord_relmon_unit W ⟨nfst A, unit⟩) ⟨a,tt⟩⦒,
-                             ⦑fun a => Spr1 (ord_relmon_unit W ⟨unit, nsnd A⟩) ⟨tt, a⟩⦒⟩,
-                            ord_relmon_unit W A⟩)
-                    (fun A B f =>
-                       ⟨⟨ ord_relmon_bind W (nfst (nfst f) ∙ πord1),
-                         ord_relmon_bind W (nsnd (nfst f) ∙ πord2)⟩,
-                        ord_relmon_bind W (nsnd f)⟩)
-                    _ _ _ _.
-  Next Obligation. cbv ; intuition. induction H. sreflexivity. Qed.
-  Next Obligation. cbv ; intuition. induction H. sreflexivity. Qed.
-  Next Obligation.
-    cbv ; intuition;
-      apply (ord_relmon_bind_proper W ⟨_,_⟩ _ _ _)=> ?;
-      [apply p0| apply q0| apply q].
-  Qed.
-  Next Obligation.
-    intuition.
-    f_equal;[f_equal|]; apply: Ssig_eq=> /=.
-    1,2: set f := ⦑_⦒; have -> : f = ord_relmon_unit W ⟨_,_⟩.
-    all: try by rewrite ord_relmon_law1.
-    apply Ssig_eq; extensionality x; move: x=> [? []] //.
-    apply Ssig_eq; extensionality x; move: x=> [[] ?] //.
-  Qed.
-  Next Obligation.
-    intuition.
-    f_equal;[f_equal|]; apply: Ssig_eq=> /=.
-    - extensionality x; set f := ⦑_⦒.
-      move: (ord_relmon_law2 W ⟨_,unit⟩ _ f)=> /(f_equal Spr1) /(equal_f ^~ ⟨_, _⟩)//=.
-    - extensionality x; set f := ⦑_⦒.
-      move: (ord_relmon_law2 W ⟨unit,_⟩ _ f)=> /(f_equal Spr1) /(equal_f ^~ ⟨_, _⟩)//=.
-    - move: (ord_relmon_law2 W _ _ nsnd) => /(f_equal Spr1) //.
-  Qed.
-  Next Obligation.
-    intuition ; cbv.
-    f_equal;[f_equal|]; apply: Ssig_eq=> /=. (* ; extensionality x. *)
-    - epose (ord_relmon_law3 W ⟨ _, unit⟩ ⟨_, unit⟩ _
-                       ⦑fun x1 => Spr1 nfst1 (Base.nfst x1) ⦒
-                       ⦑fun x0 => Spr1 nfst (Base.nfst x0)⦒) as s.
-      extensionality x; move: s => /(f_equal Spr1) /(equal_f ^~ x) s; apply s.
-    - epose (ord_relmon_law3 W ⟨unit, _⟩ ⟨unit, _⟩ _
-                       ⦑fun x1 => Spr1 nsnd1 (Base.nsnd x1) ⦒
-                       ⦑fun x0 => Spr1 nsnd2 (Base.nsnd x0)⦒) as s.
-      extensionality x; move: s => /(f_equal Spr1) /(equal_f ^~ x) s; apply s.
-    - rewrite ord_relmon_law3=> //.
-  Qed.
 
 End RelationalSpecMonad.
 
+Arguments rsmc_carrier {_ _} _ _.
+Arguments rsmc_return {_ _} _ _.
+Arguments rsmc_act {_ _} _ {_ _ _ _} _ _ _.
+
 Arguments to_prod {_ _ _ _ _ _} _ _.
+
 
 Section RelationalEffectObservation.
 
-  Definition unaryEffectObs M W := relativeMonadMorphism discr (natIso_sym (ord_functor_unit_left _)) M W.
 
-  Context {M1 M2 : rMonad} (M12 := compPairRMonad M1 M2).
-  Context {W1 W2 : unarySpecMonad}.
-  Context (θ1 : unaryEffectObs M1 W1) (θ2 : unaryEffectObs M2 W2).
-  Context (Wrel : rsm_components W1 W2).
-  Notation W := (rsmc_carrier _ _ Wrel).
-  Notation η := (rsmc_return _ _ Wrel).
-  Notation actW := (rsmc_act _ _ Wrel).
+  Context (M1 M2 : rMonad) (M12 := compPairRMonad M1 M2).
+
+  Section RelationalEffectObservationComponents.
+    Context {W1 W2 : unarySpecMonad}.
+    Context (Wrel : rsm_components W1 W2).
+    Context (θ1 : unaryEffectObs M1 W1) (θ2 : unaryEffectObs M2 W2).
+    Notation W := (rsmc_carrier Wrel).
+    Notation η := (rsmc_return Wrel).
+    Notation actW := (rsmc_act Wrel).
 
 
-  Record reo_components
-    :=
-    mkREOComponents
-      { reoc_carrier : forall {A}, OrdCat⦅Jprod (M12 A);W A⦆
-      ; reoc_law1 : forall {A}, reoc_carrier ∙ ofmap Jprod (ord_relmon_unit M12 A) = η A
-      ; reoc_law2 : forall {A B} (f:TypeCatSq⦅A;M12 B⦆),
-          reoc_carrier ∙ ofmap Jprod (ord_relmon_bind M12 f)
-          = actW (θ1 _ ∙ ofmap discr (nfst f))
-                 (θ2 _ ∙ ofmap discr (nsnd f))
-                 (reoc_carrier ∙ ofmap Jprod f) ∙ reoc_carrier
+    Record reo_components
+      :=
+      mkREOComponents
+        { reoc_carrier : forall {A}, OrdCat⦅Jprod (M12 A);W A⦆
+        ; reoc_law1 : forall {A}, reoc_carrier ∙ ofmap Jprod (ord_relmon_unit M12 A) = η A
+        ; reoc_law2 : forall {A B} (f:TypeCatSq⦅A;M12 B⦆),
+            reoc_carrier ∙ ofmap Jprod (ord_relmon_bind M12 f)
+            = actW (θ1 _ ∙ ofmap discr (nfst f))
+                  (θ2 _ ∙ ofmap discr (nsnd f))
+                  (reoc_carrier ∙ ofmap Jprod f) ∙ reoc_carrier
+        }.
+  End RelationalEffectObservationComponents.
+
+  Context (W : RelationalSpecMonad).
+  Record relationalEffectObservation :=
+    mkREO
+      { reo_left : unaryEffectObs M1 (rsm_left W)
+      ; reo_right : unaryEffectObs M2 (rsm_right W)
+      ; reo_rel : reo_components (rsm_rel W) reo_left reo_right
       }.
 
 End RelationalEffectObservation.
 
+Arguments reo_left {_ _ _} _.
+Arguments reo_right {_ _ _} _.
+Arguments reo_rel {_ _ _} _.
 
-Section OrderedMonadAsRMonad.
-  Context (M:OrderedMonad).
+(** The definition that we use provides an instance of the naive def *)
+Section ToNaiveDefinitions.
+  Context (W : RelationalSpecMonad).
 
-  Import SPropNotations.
-  Import FunctionalExtensionality.
-  (* Any unary specification monad in the sense of [Dijkstra monads for All] give raise to a relative monad *)
-  Program Definition ordmonad_to_relmon : ord_relativeMonad discr :=
-    mkOrdRelativeMonad (fun A => dpair _ (M A) ⦑@omon_rel M A⦒)
-                       (fun A => ⦑@ret M A⦒)
-                       (fun A B f => ⦑bind^~ (Spr1 f)⦒) _ _ _ _.
-  Next Obligation. typeclasses eauto. Qed.
-  Next Obligation. cbv ; intuition ; induction H ; sreflexivity. Qed.
-  Next Obligation.
-    cbv ; intuition. apply omon_bind=> //= ? ; apply (Spr2 f); sreflexivity.
-  Qed.
-  Next Obligation. cbv ; intuition. apply omon_bind=> //. sreflexivity. Qed.
-  Next Obligation. apply Ssig_eq; extensionality x ; rewrite /= /bind monad_law2 //. Qed.
-  Next Obligation. apply Ssig_eq; extensionality x ; rewrite /= /bind monad_law1 //. Qed.
-  Next Obligation. apply Ssig_eq; extensionality x ; rewrite /= /bind monad_law3 //. Qed.
+  Notation W1 := (rsm_left W).
+  Notation W2 := (rsm_right W).
 
-End OrderedMonadAsRMonad.
+  Context {M1 M2 : rMonad}
+          (θ : relationalEffectObservation M1 M2 W).
 
-Section RelationalSpecMonadZeroFromOrderedMonad.
-  Context (M:OrderedMonad).
+  Notation M12 := (compPair M1 M2).
+  Notation θ1 := (reo_left θ).
+  Notation θ2 := (reo_right θ).
 
-  Definition ordmonad_to_relspecmon0 := relativeMonad_precomposition typeCat_prod (ordmonad_to_relmon M).
 
-End RelationalSpecMonadZeroFromOrderedMonad.
-
-Section MonadMorphismAsRMonMorphism.
-  Context {M0:Monad} {W0:OrderedMonad} (θ0:MonadMorphism M0 W0).
-  Let M := monad_to_relmon M0.
-  Let W := ordmonad_to_relmon W0.
-  Let θ := from_discrete_monad_monotonic θ0.
+  Notation Wrel := (rsm_rel W).
+  Notation W0 := (rsmc_carrier Wrel).
+  Notation η := (rsmc_return Wrel).
+  Notation actW := (rsmc_act Wrel).
 
   Import SPropNotations.
-  Import FunctionalExtensionality.
-  (* morphisms of monads also transfer to relativeMonad morphisms *)
 
-  Program Definition mmorph_to_rmmorph : unaryEffectObs M W :=
-    mkRelMonMorph discr _ M W (fun (A:TypeCat) => ⦑θ A⦒) _ _.
-  Next Obligation. cbv ; intros ; induction H ; sreflexivity. Qed.
+  (* We show that we can define the sur-approximation of this coq-development from that data *)
+  Local Ltac feq_npair := repeat (congr npair).
+
+  Program Definition W' : preRelationalSpecMonad :=
+    mkOrdRelativeMonad (fun A => ⟨⟨W1 (nfst A), W2 (nsnd A)⟩, W0 A⟩)
+                    (fun A => ⟨⟨ord_relmon_unit W1 (nfst A), ord_relmon_unit W2 (nsnd A)⟩,
+                           η A⟩)
+                    (fun A B f =>
+                       ⟨⟨ord_relmon_bind W1 (nfst (nfst f)),
+                         ord_relmon_bind W2 (nsnd (nfst f))⟩,
+                       actW(nfst (nfst f)) (nsnd (nfst f)) (nsnd f)⟩)
+                    _ _ _ _.
   Next Obligation.
-    apply Ssig_eq=> /=; extensionality a=> /=; rewrite mon_morph_ret //.
+    cbv ; intuition; last
+        (apply: rsmc_act_proper=> ?; [apply p0| apply q0| apply q]) ;
+      [apply: (ord_relmon_bind_proper W1)|
+       apply: (ord_relmon_bind_proper W2)] ; cbv=> ? ; auto.
   Qed.
   Next Obligation.
-    apply Ssig_eq ; extensionality a ; rewrite /= mon_morph_bind //.
+    feq_npair ;[apply: (ord_relmon_law1 W1)| apply: (ord_relmon_law1 W2)|];
+    rewrite /actW ?rsmc_law1 //.
+  Qed.
+  Next Obligation.
+    move: f => [[f1 f2] frel].
+    unshelve feq_npair.
+    apply: (ord_relmon_law2 W1).
+    apply: (ord_relmon_law2 W2).
+    apply Ssig_eq, (f_equal Spr1), rsmc_law2.
+  Qed.
+  Next Obligation.
+    unshelve feq_npair.
+    apply: (ord_relmon_law3 W1).
+    apply: (ord_relmon_law3 W2).
+    apply Ssig_eq, (f_equal Spr1), rsmc_law3.
   Qed.
 
-End MonadMorphismAsRMonMorphism.
 
-Notation "wm ≫= wf" := (Spr1 (ord_relmon_bind _ wf) wm) (at level 50).
+  (* Context (θrc : reo_components θ1 θ2 Wrel). *)
+  (* Notation θW := (@reoc_carrier _ _ _ _ _ _ _ θrc ⟨_,_⟩). *)
+
+
+  (* Program Definition θ : preRelationalEffectObservation M1 M2 W := *)
+  (*   mkpreREO M1 M2 W (fun A => ⟨⟨θ1 (nfst A), θ2 (nsnd A)⟩, θW⟩) _ _. *)
+  (* Next Obligation. *)
+  (*   f_equal ; [f_equal|]; apply Ssig_eq ; apply: (f_equal Spr1). *)
+  (*   apply (rmm_law1 _ _ _ _ θ1). *)
+  (*   apply (rmm_law1 _ _ _ _ θ2). *)
+  (*   apply: reoc_law1. *)
+  (* Qed. *)
+  (* Next Obligation. *)
+  (*   f_equal ; [f_equal|]; apply Ssig_eq ; apply: (f_equal Spr1). *)
+  (*   apply (rmm_law2 _ _ _ _ θ1). *)
+  (*   apply (rmm_law2 _ _ _ _ θ2). *)
+  (*   apply (reoc_law2 θ1 θ2). *)
+  (* Qed. *)
+
+End ToNaiveDefinitions.

@@ -8,7 +8,6 @@ From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadE
 Set Primitive Projections.
 Set Universe Polymorphism.
 
-From Coq Require Import RelationClasses Morphisms.
 
 (* In this file we verify the correctness of the bind rule in the full setting *)
 
@@ -19,77 +18,29 @@ Section RelationalProgramLogicFromRelativeMonad.
   (* Basic setup for each side: computational monad, unary specification monad
   and an effect observation relating these *)
 
-  Context (W10 W20 : OrderedMonad).
-  Let W1 := ordmonad_to_relmon W10.
-  Let W2 := ordmonad_to_relmon W20.
 
-  Context (M1 M2 : Monad)
-          (θ10 : MonadMorphism M1 W10) (θ20 : MonadMorphism M2 W20).
+  Context (M01 M02 : Monad).
+  Definition M1 := (monad_to_relmon M01).
+  Definition M2 := (monad_to_relmon M02).
 
-  Let M12 := compPair M1 M2.
-  Let θ1 := mmorph_to_rmmorph θ10.
-  Let θ2 := mmorph_to_rmmorph θ20.
+  Context (W : RelationalSpecMonad)
+          (θ : relationalEffectObservation M1 M2 W).
 
-  Context (Wrel : rsm_components W1 W2).
-  Notation W0 := (rsmc_carrier _ _ Wrel).
-  Notation η := (rsmc_return _ _ Wrel).
-  Notation actW := (rsmc_act _ _ Wrel).
-
-  Import SPropNotations.
-
-  (* We show that we can define the sur-approximation of this coq-development from that data *)
-
-  Program Definition W : preRelationalSpecMonad :=
-    mkOrdRelativeMonad (fun A => ⟨⟨W1 (nfst A), W2 (nsnd A)⟩, W0 A⟩)
-                    (fun A => ⟨⟨ord_relmon_unit W1 (nfst A), ord_relmon_unit W2 (nsnd A)⟩,
-                           η A⟩)
-                    (fun A B f =>
-                       ⟨⟨ord_relmon_bind W1 (nfst (nfst f)),
-                         ord_relmon_bind W2 (nsnd (nfst f))⟩,
-                       actW(nfst (nfst f)) (nsnd (nfst f)) (nsnd f)⟩)
-                    _ _ _ _.
-  Next Obligation.
-    cbv ; intuition.
-    1-2:apply omon_bind; [sreflexivity| cbv=> ? ; auto].
-    apply: rsmc_act_proper=> ?; [apply p0| apply q0| apply q].
-  Qed.
-  Next Obligation.
-    f_equal ; [f_equal|]; rewrite /actW ?rsmc_law1 //;
-      apply Ssig_eq ;apply: funext=> a /=; apply: monad_law2.
-  Qed.
-  Next Obligation.
-    move: f => [[f1 f2] frel].
-    f_equal ; [f_equal|] ; apply Ssig_eq.
-    1-2:apply: funext=> a /=; apply: monad_law1.
-    apply (f_equal Spr1). apply: rsmc_law2.
-  Qed.
-  Next Obligation.
-    f_equal ; [f_equal|] ; apply Ssig_eq.
-    1-2: apply: funext=> a /=; rewrite /bind monad_law3 //.
-    apply (f_equal Spr1). apply: rsmc_law3.
-  Qed.
+  Notation W1 := (rsm_left W).
+  Notation W2 := (rsm_right W).
+  Notation M12 := (compPair M01 M02).
+  Notation θ1 := (reo_left θ).
+  Notation θ2 := (reo_right θ).
+  Notation Wrel := (rsm_rel W).
+  Notation W0 := (rsmc_carrier Wrel).
+  Notation η := (rsmc_return Wrel).
+  Notation actW := (rsmc_act Wrel).
 
 
-  Context (θrc : reo_components θ1 θ2 Wrel).
+  Notation θrc := (reo_rel θ).
   Notation θW := (@reoc_carrier _ _ _ _ _ _ _ θrc ⟨_,_⟩).
 
-
-  Program Definition θ : preRelationalEffectObservation M1 M2 W :=
-    mkpreREO M1 M2 W (fun A => ⟨⟨θ1 (nfst A), θ2 (nsnd A)⟩, θW⟩) _ _.
-  Next Obligation.
-    f_equal ; [f_equal|]; apply Ssig_eq ; apply: (f_equal Spr1).
-    apply (rmm_law1 _ _ _ _ θ1).
-    apply (rmm_law1 _ _ _ _ θ2).
-    apply: reoc_law1.
-  Qed.
-  Next Obligation.
-    f_equal ; [f_equal|]; apply Ssig_eq ; apply: (f_equal Spr1).
-    apply (rmm_law2 _ _ _ _ θ1).
-    apply (rmm_law2 _ _ _ _ θ2).
-    apply (reoc_law2 θ1 θ2).
-  Qed.
-
-
+  Import SPropNotations.
   Import RelNotations.
 
   Notation " Γ ⊫ c1 ≈ c2 [{ w1 , w2 , w }]" :=
@@ -105,9 +56,19 @@ Section RelationalProgramLogicFromRelativeMonad.
 
   Check (fun A B (c1 : M1 A) (c2: M2 B) (w1:dfst (W1 A)) (w2:dfst (W2 B)) (w3:dfst (W0 ⟨A,B⟩)) => ⋅⊫ c1 ≈ c2 [{ w1, w2, w3 }] ).
 
+
+  Lemma equal_f {A B} (x:A) (f g : forall x:A, B x) : f = g -> f x = g x.
+  Proof. move=> ? ; f_equal=> //. Qed.
+
+  Lemma ordCat_helper {A B} (f g : OrdCat⦅A;B⦆) : f ⪷ g -> forall (x y:dfst A), x ≤ y -> f∙1 x ≤ g∙1 y.
+  Proof.
+    move=> Hfg x y Hxy; estransitivity.
+    apply: (f∙2); exact: Hxy.
+    apply: Hfg.
+  Qed.
+
   (* And we prove the rule for binding computations *)
 
-  Import SPropNotations.
   Lemma full_seq_rule {A1 A2 B1 B2}
         {m1 : M1 A1} {m2 : M2 A2} {wm1 wm2 wm}
         {f1 : A1 -> M1 B1} {f2 : A2 -> M2 B2}
@@ -120,24 +81,37 @@ Section RelationalProgramLogicFromRelativeMonad.
                                   (actW wf1 wf2 wf)∙1 wm }].
   Proof.
     intros [[Hm1 Hm2] Hm] [[Hf1 Hf2] Hf].
-    move: (rmm_law2 _ _ M12 W θ _ _ (to_prod f1 f2))=> /= [[H1 H2] H12].
-    intuition.
-    move: (f_equal (fun h => h m1) H1)=> /= ->.
-    apply omon_bind=> //; apply (Hm1 tt).
-    move: (f_equal (fun h => h m2) H2)=> /= ->.
-    apply omon_bind=> //; apply (Hm2 tt).
-    move: (f_equal (fun h => h ⟨m1, m2⟩) H12) => /= -> //=.
-    estransitivity.
-    simpl in Hf1.
-    apply: rsmc_act_proper.
-    move=> ? ; apply Hf1.
-    move=> ? ; apply Hf2.
-    move=> [? ?] /=; eapply (Hf ⦑ _ , _ | tt⦒).
-    eapply (Spr2 (actW _ _ _))=> //.
-    apply (Hm ⦑tt,tt|I⦒).
+    split;[split|]=> ?.
+    - move: (rmm_law2 _ _ _ _ θ1 _ _ f1)=> /(f_equal (fun f=> f∙1 m1)) /= ->.
+      apply: ordCat_helper; last by apply: Hm1.
+      apply: (ord_relmon_bind_proper W1); apply: Hf1.
+    - move: (rmm_law2 _ _ _ _ θ2 _ _ f2)=> /(f_equal (fun f=> f∙1 m2)) /= ->.
+      apply: ordCat_helper; last by apply: Hm2.
+      apply: (ord_relmon_bind_proper W2); apply: Hf2.
+    - move: (reoc_law2 _ _ _ _ _ θrc (to_prod f1 f2))
+        => /(f_equal (fun f=> f∙1 ⟨m1,m2⟩)) /= ->; estransitivity.
+      apply: rsmc_act_proper;
+        [apply: Hf1| apply: Hf2| move=> [? ?] /=; eapply (Hf ⦑ _ , _ | tt⦒)].
+      eapply ((actW _ _ _)∙2)=> //; apply (Hm ⦑tt,tt|I⦒).
   Qed.
 
-  Import RelNotations.
+
+    (* move: (rmm_law2 _ _ M12 (W' W) θ _ _ (to_prod f1 f2))=> /= [[H1 H2] H12]. *)
+    (* intuition. *)
+    (* move: (f_equal (fun h => h m1) H1)=> /= ->. *)
+    (* apply omon_bind=> //; apply (Hm1 tt). *)
+    (* move: (f_equal (fun h => h m2) H2)=> /= ->. *)
+    (* apply omon_bind=> //; apply (Hm2 tt). *)
+    (* move: (f_equal (fun h => h ⟨m1, m2⟩) H12) => /= -> //=. *)
+    (* estransitivity. *)
+    (* simpl in Hf1. *)
+    (* apply: rsmc_act_proper. *)
+    (* move=> ? ; apply Hf1. *)
+    (* move=> ? ; apply Hf2. *)
+    (* move=> [? ?] /=; eapply (Hf ⦑ _ , _ | tt⦒). *)
+    (* eapply (Spr2 (actW _ _ _))=> //. *)
+    (* apply (Hm ⦑tt,tt|I⦒). *)
+
 
   (* Definition bindStrongRSM {Γ A1 A2 B1 B2} *)
   (*            (wm1 : πl Γ -> W1 A1) *)
@@ -147,6 +121,17 @@ Section RelationalProgramLogicFromRelativeMonad.
   (*            (wf2 : πr Γ × A2 -> W2 B2) *)
   (*            (wfrel : ⟬extends Γ A1 A2⟭ -> W B1 B2) *)
   (* : ⟬Γ⟭ -> Wrel B1 B2 *)
+
+  (* Definition to_ordProd (Γ : ) *)
+  (*            (c1 : OrdCat⦅πl Γ;M1 A1⦆) *)
+  (*            (c2 : OrdCat⦅πr Γ;M2 A2⦆) *)
+  (*            OrdCat⦅⟬Γ⟭; Jprod ⟨M1 A1, M2 A2⟩⦆ *)
+
+
+  (* Notation " Γ ⊫ c1 ≈ c2 [{ w1 , w2 , w }]" := *)
+  (*   ((θ1 _ ∙ c1 ⪷ w1) s/\ (θ2 _ ∙ c2 ⪷ w2) s/\ *)
+  (*    (orall γ : ⟬Γ⟭, θW∙1 ⟨c1 (πl γ), c2 (πr γ)⟩ ≤ w∙1 (dfst γ))) *)
+  (*     (at level 85). *)
 
 
 End RelationalProgramLogicFromRelativeMonad.
