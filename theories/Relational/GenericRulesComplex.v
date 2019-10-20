@@ -197,6 +197,12 @@ Section RelationalProgramLogicFromRelativeMonad.
   Ltac destruct_valid :=
     unshelve econstructor; [split=> /= γ|move=> /= γl γr γw]; constructor.
 
+  Tactic Notation "destruct_valid_pat"
+         simple_intropattern(γl)
+         simple_intropattern(γr)
+         simple_intropattern(γw) :=
+    unshelve econstructor; [split=> /= [γl|γr]|move=> /= γl γr γw]; constructor.
+
   Lemma ValidRet Γ A1 A2 (a1: _ -> A1) (a2 : _ -> A2) :
     Γ ⊫ ret \o a1 ≈ ret \o a2 [{retW \o a1, retW \o a2, (fun γ => retWrel (a1 (πl γ)) (a2 (πr γ)))}].
   Proof.
@@ -331,11 +337,6 @@ Section RelationalProgramLogicFromRelativeMonad.
                πw A γl γr γw al ar ->
                πw B γl γr γw (fl γl al) (fr γr ar)).
 
-  Tactic Notation "destruct_valid_pat"
-         simple_intropattern(γl)
-         simple_intropattern(γr)
-         simple_intropattern(γw) :=
-    unshelve econstructor; [split=> /= [γl|γr]|move=> /= γl γr γw]; constructor.
 
   Lemma ValidListElim Γ A A1 A2 (m1: _ -> M1 A1) wm1 (m2: _ -> M2 A2) wm2 wmrel :
     Γ ⊫ m1 \o subst_nil ≈ m2 \o subst_nil
@@ -349,33 +350,29 @@ Section RelationalProgramLogicFromRelativeMonad.
     (Γ,∙ list A) ⊫ m1 ≈ m2 [{ wm1, wm2, wmrel}].
   Proof.
     move=> [[/= Hnil1 Hnil2] Hnil] [[/= Hcons1 Hcons2] Hcons].
-    (* destruct_valid_pat [γl ll] [γr lr] [γw lw]. *)
     destruct_valid.
-    - move: γ => [?] ; elim.
-      + apply: (unbox (Hnil1 _)).
-      + move=> ? ? ?; apply: (unbox (Hcons1 ⟨⟨_, _⟩, _⟩ (box _)))=> //.
-    - move: γ => [?] ; elim.
-      + apply: (unbox (Hnil2 _)).
-      + move=> ? ? ?; apply: (unbox (Hcons2 ⟨⟨_, _⟩, _⟩ (box _)))=> //.
-    - match goal with
+    - move: γ => [?] ; elim=> [|? ? ?]; apply unbox;
+                              by [apply: Hnil1|apply: (Hcons1 ⟨⟨_, _⟩, _⟩)].
+    - move: γ => [?] ; elim=> [|? ? ?]; apply unbox;
+                              by [apply: Hnil2|apply: (Hcons2 ⟨⟨_, _⟩, _⟩)].
+    - (* Strenghening the inductive invariant *)
+      match goal with
       | [|- ?G ] =>
         enough ((θ1 _ )∙1 (m1 γl) ≤ wm1 γl s/\
                 (θ2 _ )∙1 (m2 γr) ≤ wm2 γr s/\ G) as [[]]=> //
       end.
       move: γl γr γw=> [γl ll] [γr lr] [/= γw] ;
                         elim: ll lr=> [|xl xls /(fun f => f xls erefl) [[? ?] ?]];
+      (* Dependent pattern matching on the equality xl :: xls = lr *)
       match goal with
       | [|- forall lr lw, @?G lr lw ] =>
         refine (fun lr lw => match lw as Heq in _ = l return G l Heq with
                           | erefl => _ end)
-      end; split; try split.
-      apply: (unbox (Hnil1 _)).
-      apply: (unbox (Hnil2 _)).
-      apply: (unbox (Hnil _ _ _)).
-
-      apply: (unbox (Hcons1 ⟨⟨_, _⟩, _⟩ (box _)))=> //.
-      apply: (unbox (Hcons2 ⟨⟨_, _⟩, _⟩ (box _)))=> //.
-      apply: (unbox (Hcons ⟨⟨γl, xl⟩, xls⟩ ⟨⟨γr, xl⟩, xls⟩ ⟨⟨γw, erefl⟩, erefl⟩ (box _) (box _) (box _)))=> //.
+      end; split; try split; apply unbox;
+        by [apply: Hnil1 | apply: Hnil2 | apply: Hnil|
+            apply: (Hcons1 ⟨⟨_, _⟩, _⟩) |
+            apply: (Hcons2 ⟨⟨_, _⟩, _⟩) |
+            apply: (Hcons ⟨⟨γl, xl⟩, xls⟩ ⟨⟨γr, xl⟩, xls⟩ ⟨⟨γw, erefl⟩, erefl⟩)].
   Qed.
 
 

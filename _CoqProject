@@ -37,11 +37,12 @@ theories/Mon/sprop/WeightedComputations.v
 # theories/Mon/README.v
 
 theories/Relational/Category.v
+theories/Relational/OrderEnrichedCategory.v
+theories/Relational/OrderEnrichedRelativeMonadExamples.v
 theories/Relational/Rel.v
 theories/Relational/RelativeMonads.v
 theories/Relational/RelativeMonadExamples.v
 theories/Relational/GenericRulesSimple.v
-theories/Relational/GenericRulesComplex.v
 theories/Relational/RelationalState.v
 theories/Relational/RelationalExcSimple.v
 theories/Relational/EnrichedSetting.v
@@ -51,8 +52,8 @@ theories/Relational/RelationalNDD.v
 theories/Relational/RelationalNDA.v
 theories/Relational/Imp.v
 
-theories/Relational/OrderEnrichedCategory.v
-theories/Relational/OrderEnrichedRelativeMonadExamples.v
+theories/Relational/GenericRulesComplex.v
+theories/Relational/RelationalExcFull.v
 
 
 theories/Mon/sprop/FiniteProbabilities.v
