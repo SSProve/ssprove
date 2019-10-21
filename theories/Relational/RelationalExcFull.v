@@ -70,13 +70,19 @@ Definition Wrel : RelationalSpecMonad := mkRSM W1 W2 Wrc.
 
 
 
+Definition θ01_helper {A} (m : M01 A) (p: A -> SProp) (pexc: unit -> SProp)
+  : SProp :=
+  match m with
+  | retFree _ a => p a
+  | opr _ => pexc tt
+  end.
 
 Program Definition θ01 : MonadMorphism M01 W01 :=
-  @mkMorphism M01 W01 (fun A m => ⦑fun p pexc =>
-                                  match m with
-                                  | retFree _ a1 => p a1
-                                  | opr _ => pexc tt
-                                  end⦒) _ _.
+  @mkMorphism M01 W01 (fun A m => ⦑θ01_helper m⦒(* ⦑fun p pexc => *)
+                               (*    match m with *)
+                               (*    | retFree _ a1 => p a1 *)
+                               (*    | opr _ => pexc tt *)
+                               (*    end⦒ *)) _ _.
 Next Obligation.
   move=> ? ? H ? ? Hexc; move: m=> [?|? ?]; [apply: H| apply: Hexc].
 Qed.
@@ -108,3 +114,107 @@ Qed.
 
 Definition θ : relationalEffectObservation M1 M2 Wrel :=
   mkREO _ _ Wrel θ1 θ2 θrc.
+
+
+(** FIXME: Copy-paste from GenericRulesComplex *)
+Let valid := valid M01 M02 Wrel θ.
+Let mk_progSpec := mk_progSpec M01 M02 Wrel.
+
+Notation " Γ ⊫ c1 ≈ c2 [{ w1 , w2 , w }] " :=
+  (valid Γ _ _ (mk_progSpec Γ _ _ c1 w1 c2 w2 w))
+      (at level 85).
+
+Ltac destruct_valid :=
+  unshelve econstructor; [split=> /= γ|move=> /= γl γr γw]; constructor.
+(** FIXME: Copy-paste from GenericRulesComplex *)
+
+Program Definition raise_spec {Γ} : Γ --> W1 False :=
+  fun=>⦑fun p pexc => pexc tt⦒.
+Next Obligation. cbv ; intuition. Qed.
+
+Program Definition rel_raise_spec {Γ A2} (a2: πr Γ -> A2) : ⟬Γ⟭ --> Wrc ⟨False, A2⟩ :=
+  fun γ => ⦑fun p => p ⟨None, a2 (πr γ)⟩⦒.
+Next Obligation. cbv ; intuition. Qed.
+
+Lemma ValidRaise Γ A2 (a2: _ -> A2) :
+  Γ ⊫ fun=> raise tt ≈ ret \o a2 [{raise_spec, retW \o a2, rel_raise_spec a2}].
+Proof. destruct_valid; cbv ; intuition. Qed.
+
+
+Definition catchStr {Γ E A} (m : Γ -> Exn E A) (merr : Γ × E -> Exn E A)
+  : Γ -> Exn E A := fun γ => catch (m γ) (fun e => merr ⟨γ,e⟩).
+
+(* Program Definition catch_spec {A1} (w:W1 A1) (werr : unit -> W1 A1) : W1 A1 := *)
+(*   ⦑fun p pexc => w∙1 p (fun u => (werr u)∙1 p pexc)⦒. *)
+(* Next Obligation. *)
+(*   cbv ; intuition. *)
+(*   move: H1; apply: w∙2=> // ?; apply (werr _)∙2 => //. *)
+(* Qed. *)
+
+Program Definition catch_spec_str {Γ A1} (w:Γ --> W1 A1)
+        (werr : Γ × unit --> W1 A1) : Γ --> W1 A1 :=
+  fun γ => ⦑fun p pexc => (w γ)∙1 p (fun u => (werr ⟨γ,u⟩)∙1 p pexc)⦒.
+Next Obligation.
+  cbv ; intuition.
+  move: H1; apply: (w _)∙2=> // ?; apply (werr _)∙2 => //.
+Qed.
+
+(* Program Definition rel_catch_spec {A1 A2} (wmrel : Wrel A1 A2) *)
+(*            (wmerr : unit -> W1 A1) (* (wmerr_rel : unit -> Wrel A1 A2) *) *)
+(*   : Wrel A1 A2 := *)
+(*   ⦑fun p => wmrel∙1 (fun ae12 => match nfst ae12 with *)
+(*                            | Some a1 => p ⟨Some a1, nsnd ae12⟩ *)
+(*                            | None => (wmerr tt)∙1 (fun a1 => p ⟨Some a1, nsnd ae12⟩) *)
+(*                                               (fun u => p ⟨None, nsnd ae12⟩) *)
+(*                            end)⦒. *)
+
+(* Next Obligation. *)
+(*   cbv. move=> p1 p2 Hp ; apply: (wmrel)∙2=> [[[?|] ?]] ; first by apply: Hp. *)
+(*   apply: (wmerr _)∙2=> ?; apply: Hp. *)
+(* Qed. *)
+
+Program Definition rel_catch_spec_str
+        {Γ A1 A2} (wmrel : ⟬Γ⟭ --> Wrc ⟨A1, A2⟩)
+        (wmerr_rel : ⟬extends Γ unit A2⟭ --> Wrc ⟨A1, A2⟩)
+        (* (wmerr : πl Γ × unit --> W1 A1) *)
+  : ⟬Γ⟭ --> Wrc ⟨A1, A2⟩ :=
+  fun γ =>
+    ⦑fun p =>
+       let k ae12 :=
+           match nfst ae12 with
+           | Some a1 => p ⟨Some a1, nsnd ae12⟩
+           | None =>
+             (wmerr_rel (extend_point γ tt (nsnd ae12)))∙1 p
+             (* (wmerr ⟨πl γ, tt⟩)∙1 (fun a1 => p ⟨Some a1, nsnd ae12⟩) *)
+             (*                          (fun u => p ⟨None, nsnd ae12⟩) *)
+           end
+       in
+       (wmrel γ)∙1 k⦒.
+Next Obligation.
+  cbv. move=> p1 p2 Hp ; apply: (wmrel _)∙2=> [[[?|] ?]] ; first by apply: Hp.
+  apply: (wmerr_rel _)∙2=> ?; apply: Hp.
+Qed.
+
+
+Lemma ValidCatch Γ A1 A2 (m1 : _ -> M1 A1) wm1
+      (m2: _ -> M2 A2) wm2 wmrel merr wmerr wmerr_rel:
+  Γ ⊫ m1 ≈ m2 [{wm1, wm2, wmrel}] ->
+  extends Γ unit A2 ⊫ merr ≈ ret \o nsnd [{wmerr, retW \o nsnd, wmerr_rel}] ->
+  Γ ⊫ catchStr m1 merr ≈ m2
+    [{catch_spec_str wm1 wmerr, wm2, rel_catch_spec_str wmrel wmerr_rel}].
+Proof.
+  move=> [[/= H1 H2] H] [[/= He1 He2] He]; destruct_valid.
+  - move=> p pexc /=.
+    move: (unbox (H1 γ)); unfold θ01_helper, catchStr.
+    move: (m1 γ) => [?|[[]]?] /=; first apply.
+    set pexc' := (pexc in SProp_op_order _ (_ _ pexc)).
+    move=> /(fun f => f p pexc') Htt.
+    estransitivity; [apply: (unbox (He1 ⟨γ, tt⟩)) | exact Htt].
+  - apply: (unbox (H2 _)).
+  - move=> p /=.
+    move: (unbox (H γl γr γw)); unfold θ01_helper, catchStr.
+    move: (m1 γl) => [?|[[]]?] /=; first apply.
+    set p' := (p in SProp_op_order _ (_ p)).
+    move=> /(fun f => f p') Htt.
+    estransitivity; last exact Htt; apply: (unbox (He _ _ _)).
+Qed.
