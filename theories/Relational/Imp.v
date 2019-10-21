@@ -78,18 +78,24 @@ Section ImpMonad.
 
   Eval cbv in (Wun bool).
 
-  Program Definition WungetL {A : Type} (k : S -> Wun A) : Wun A := ⦑fun post s0 => Spr1 (k (nfst s0)) post s0⦒.
-  Next Obligation. cbv. intros x y H [sl sr] H'.
-                   destruct (k sl). cbv in Spr2. apply (Spr2 x y); intuition.
-  Qed.
+  Program Definition WungetL {A : Type} (k : S -> Wun A) : Wun A :=
+    ⦑fun post s0 => Spr1 (k (nfst s0)) post s0⦒.
+  Next Obligation. cbv; intros x y H [sl sr]; apply: (k _)∙2=> //. Qed.
 
-  Program Definition WungetR {A : Type} (k : S -> Wun A) : Wun A := ⦑fun post s0 => Spr1 (k (nsnd s0)) post s0⦒.
-  Next Obligation. cbv.  intros x y H [sl sr] H'. destruct (k sr). cbv in Spr2.  apply (Spr2 x y); intuition. Qed.
+  Program Definition WungetR {A : Type} (k : S -> Wun A) : Wun A :=
+    ⦑fun post s0 => Spr1 (k (nsnd s0)) post s0⦒.
+  Next Obligation. cbv; intros x y H [sl sr]; apply: (k _)∙2=> //. Qed.
 
-  Program Definition WunsetL {A : Type} (s : S) (k : Wun A) : Wun A := ⦑fun post s0 => Spr1 k post (npair s (nsnd s0))⦒.
-  Next Obligation. cbv. intros x y H s0 H''. destruct k. cbv in Spr2. apply (Spr2 x y); intuition.  Qed.
-  Program Definition WunsetR {A : Type} (s : S) (k : Wun A) : Wun A := ⦑fun post s0 => Spr1 k post (npair (nfst s0) s)⦒.
-  Next Obligation. cbv. intros x y H s0 H''. destruct k. cbv in Spr2. apply (Spr2 x y); intuition.  Qed.
+  Program Definition WunsetL {A : Type} (s : S) (k : Wun A) : Wun A :=
+    ⦑fun post s0 => Spr1 k post (npair s (nsnd s0))⦒.
+  Next Obligation. cbv; intros x y H s0; apply: k∙2=> //. Qed.
+
+  Program Definition WunsetR {A : Type} (s : S) (k : Wun A) : Wun A :=
+    ⦑fun post s0 => Spr1 k post (npair (nfst s0) s)⦒.
+  Next Obligation. cbv; intros x y H s0; apply: k∙2=> //. Qed.
+
+  Definition loop (w0 : Wun bool) (wcont : Wun bool) : Wun bool :=
+    bind w0 (fun b => if b then wcont else @ret Wun bool false).
 
   Fixpoint θunL (A : Type) (c: Imp A) {struct c} : Wun A :=
       match c with
@@ -97,8 +103,7 @@ Section ImpMonad.
       | ImpGet k => WungetL (fun s => θunL (k s))
       | ImpSet s k => WunsetL s (θunL k)
       | ImpDoWhile body k =>
-        let loop (wcont : Wun bool) : Wun bool := @bind Wun _ _ (θunL body) (fun b => if b then wcont else @ret Wun bool false) in
-            (@bind Wun _ _ (ffixun loop) (fun _ => (θunL k)))
+        bind (ffixun (loop (θunL body))) (fun _ => (θunL k))
       end.
 
   Fixpoint θunR (A : Type) (c: Imp A) {struct c} : Wun A :=
@@ -107,8 +112,7 @@ Section ImpMonad.
       | ImpGet k => WungetR (fun s => θunR (k s))
       | ImpSet s k => WunsetR s (θunR k)
       | ImpDoWhile body k =>
-        let loop (wcont : Wun bool) : Wun bool := @bind Wun _ _ (θunR body) (fun b => if b then wcont else @ret Wun bool false) in
-            (@bind Wun _ _ (ffixun loop) (fun _ => (θunR k)))
+        bind (ffixun (loop (θunR body))) (fun _ => (θunR k))
       end.
 
   Program Definition θunL_mm : MonadMorphism Imp_monad Wun := @mkMorphism Imp_monad _ θunL _ _.
@@ -162,7 +166,6 @@ Section ImpMonad.
     s∀ (c : omega_chain A) v, sup_seq (Spr1 c) v -> sup_seq (apply_seq _ (Spr1 c) f) (f v).
 
 
-  Definition loop (w0 : Wun bool) (wcont : Wun bool) : Wun bool := @bind Wun _ _ w0 (fun b => if b then wcont else @ret Wun bool false).
 
   Definition preorder_from_type (A : Type) : {R : srelation (Wun A) ≫ PreOrder R}.
     econstructor.
