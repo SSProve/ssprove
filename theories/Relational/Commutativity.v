@@ -16,9 +16,10 @@ Section Commutations.
 
   Definition swap {A B} (ab : A × B) : B × A := ⟨nsnd ab, nfst ab⟩.
 
+  Import FunctionalExtensionality.
   Lemma eq_bind {A B} (m : M A) :
     forall (f1 f2 : A -> M B), (forall a, f1 a = f2 a) -> bind m f1 = bind m f2.
-  Proof. move=> ? ? /funext -> //. Qed.
+  Proof. move=> ? ? /functional_extensionality -> //. Qed.
 
   Lemma map_ret {A B} (f : A -> B) (a : A) : f <$> ret a = @ret M _ (f a).
   Proof. rewrite /map /bind monad_law1 //. Qed.

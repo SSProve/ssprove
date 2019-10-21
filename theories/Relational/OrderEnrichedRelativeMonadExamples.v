@@ -93,14 +93,25 @@ Section OrdCat.
     {| ff_invmap _ _ f := Spr1 f |}.
   Next Obligation. cbv ; intuition. Qed.
 
+  Notation " X --> Y " := (X -> dfst Y) (at level 99).
+
+  Program Definition to_discr {X Y} (f : X --> Y) : OrdCat⦅discr X; Y⦆ := ⦑f⦒.
+  Next Obligation. move=> ? ?; induction 1; sreflexivity. Qed.
+
 
   Program Definition OrdCat_cst {A B} (b:dfst B) : OrdCat⦅A; B⦆ := ⦑fun=> b⦒.
   Next Obligation. cbv; intuition. Qed.
+
+  Lemma ordCat_helper {A B} (f g : OrdCat⦅A;B⦆) :
+    f ⪷ g -> forall (x y:dfst A), x ≤ y -> f∙1 x ≤ g∙1 y.
+  Proof.
+    move=> Hfg x y Hxy; estransitivity;[apply: (f∙2); exact: Hxy| apply: Hfg].
+  Qed.
 End OrdCat.
 
 (* Re-exporting the notation *)
 Notation " x ≤ y " := (extract_ord x y).
-
+Notation " X --> Y " := (X -> dfst Y) (at level 99).
 
 Section OrdProduct.
   Context {A B} (relA : srelation A) (relB : srelation B)
@@ -113,14 +124,6 @@ Section OrdProduct.
   Global Instance : PreOrder prod_rel.
   Proof. constructor ; cbv ; intuition ; estransitivity ; eassumption. Qed.
 End OrdProduct.
-
-(** FunctionalExtensionality **)
-Import SPropNotations.
-Definition sfunext {A B} {f g : forall x : A, B x}: (forall x : A, f x ≡ g x) -> f ≡ g :=
-  SPropAxioms.funext_sprop _ _ _ _.
-From Coq Require Import FunctionalExtensionality.
-Definition funext {A B} {f g : forall x : A, B x}: (forall x : A, f x = g x) -> f = g.
-Proof. move=> h ; extensionality x ; apply h. Qed.
 
 
 
@@ -137,7 +140,7 @@ Section MonadAsRMonad.
   (* Transforming a standard monad to a relative monad on the identity functor *)
   Program Definition monad_to_relmon : rMonad :=
     mkOrdRelativeMonad M (fun A => @ret M A) (fun A B f => bind^~ f) _ _ _ _.
-  Next Obligation. cbv ; intuition. induction (sfunext H)=> //. Qed.
+  Next Obligation. cbv ; intuition. induction (SPropAxioms.funext_sprop _ _ _ _ H)=> //. Qed.
   Next Obligation. extensionality c ; rewrite /bind monad_law2 //. Qed.
   Next Obligation. extensionality c ; rewrite /bind monad_law1 //. Qed.
   Next Obligation. extensionality c ; rewrite /bind monad_law3 //. Qed.
@@ -396,25 +399,6 @@ Section RelationalSpecMonad.
       ; rsmc_act_proper :
           forall {A1 A2 B1 B2},
             SProper (ord_cat_le _ s==> ord_cat_le _ s==> ord_cat_le _ s==> ord_cat_le _) (@rsmc_act A1 A2 B1 B2)
-      (* Usual question: should the equations be stated pointwise or not ? *)
-      (* ; rsmc_law1 : *)
-      (*     forall A1 A2 (w : dfst (rsmc_carrier ⟨A1,A2⟩)), *)
-      (*       (rsmc_act (ord_relmon_unit W1 A1) *)
-      (*                 (ord_relmon_unit W2 A2) *)
-      (*                 (rsmc_return ⟨A1,A2⟩))∙1 w = w *)
-      (* ; rsmc_law2 : *)
-      (*     forall A1 A2 B1 B2 f1 f2 (f: OrdCat⦅Jprod ⟨A1,A2⟩; rsmc_carrier ⟨B1,B2⟩⦆) a12, *)
-      (*         (rsmc_act f1 f2 f0)∙1  ((rsmc_return _)∙1 a12) = f∙1 a12 *)
-      (* ; rsmc_law3 : *)
-      (*     forall A1 A2 B1 B2 C1 C2 w f1 f2 f g1 g2 g, *)
-      (*       (@rsmc_act A1 A2 C1 C2 *)
-      (*             (ord_relmon_bind W1 g1 ∙ f1) *)
-      (*             (ord_relmon_bind W2 g2 ∙ f2) *)
-      (*             (@rsmc_act B1 B2 C1 C2 g1 g2 g ∙ f))∙1 w *)
-      (*       = (@rsmc_act B1 B2 C1 C2 g1 g2 g)∙1 *)
-      (*            ( (@rsmc_act A1 A2 B1 B2 f1 f2 f)∙1 w ) *)
-
-      (* point-free equations *)
       ; rsmc_law1 : forall A1 A2,
           rsmc_act (ord_relmon_unit W1 A1) (ord_relmon_unit W2 A2)
                    (rsmc_return ⟨A1,A2⟩) = Id _
