@@ -375,7 +375,47 @@ Section RelationalProgramLogicFromRelativeMonad.
             apply: (Hcons ⟨⟨γl, xl⟩, xls⟩ ⟨⟨γr, xl⟩, xls⟩ ⟨⟨γw, erefl⟩, erefl⟩)].
   Qed.
 
+  Definition prodl {A B} (f: A -> B) {Γ} : Γ×A -> Γ×B :=
+    fun γa => ⟨nfst γa, f (nsnd γa)⟩.
 
+  Program Definition rel_prodl {A B} (f: A -> B) {Γ} : ⟬Γ,∙A⟭ -> ⟬Γ,∙B⟭ :=
+    fun γa =>
+      mk_point (Γ,∙B) (prodl f (πl γa)) (prodl f (πr γa))
+                  ⟨nfst (πw γa), _⟩.
+  Next Obligation. rewrite (nsnd (πw γa)) //. Defined.
+
+  Notation subst_inl := (prodl inl).
+  Notation rel_subst_inl := (rel_prodl inl).
+  Notation subst_inr := (prodl inr).
+  Notation rel_subst_inr := (rel_prodl inr).
+
+  (* Definition subst_inl {X Y} := prodl (@inl X Y). *)
+  (* Definition rel_subst_inl := rel_prodl inl. *)
+  (* Definition subst_inr := prodl inr. *)
+  (* Definition rel_subst_inr := rel_prodl inr. *)
+
+
+  Lemma ValidSumElim Γ X Y A1 A2 (m1: _ -> M1 A1) wm1 (m2: _ -> M2 A2) wm2 wmrel:
+    (Γ,∙ X) ⊫ m1 \o subst_inl ≈ m2 \o subst_inl
+     [{wm1 \o subst_inl, wm2 \o subst_inl, wmrel \o rel_subst_inl}] ->
+    (Γ,∙ Y) ⊫ m1 \o subst_inr ≈ m2 \o subst_inr
+     [{wm1 \o subst_inr, wm2 \o subst_inr, wmrel \o rel_subst_inr}] ->
+    (Γ,∙ (X+Y)%type) ⊫ m1 ≈ m2 [{ wm1, wm2, wmrel}].
+  Proof.
+    move=> [[/= HL1 HL2] HL] [[/= HR1 HR2] HR].
+    destruct_valid_pat [γl xyl] [γr xyr] [γw xyw].
+    - case: xyl=> [x|y]; apply unbox; [apply: (HL1 ⟨_, _⟩)| apply: (HR1 ⟨_, _⟩)].
+    - case: xyr=> [x|y]; apply unbox; [apply: (HL2 ⟨_, _⟩)| apply: (HR2 ⟨_, _⟩)].
+    - simpl in γw, xyw.
+      case: xyl xyr xyw=> [x|y];
+      match goal with
+      | [|- forall xyr xyw, @?G xyr xyw ] =>
+        refine (fun xyr xyw => match xyw as Heq in _ = xy return G xy Heq with
+                          | erefl => _ end)
+      end; apply unbox;
+      [apply: (HL ⟨_,_⟩ ⟨_,_⟩ ⟨_,erefl⟩)|
+      apply: (HR ⟨_,_⟩ ⟨_,_⟩ ⟨_,erefl⟩)].
+  Qed.
 
   (* Definition valid {Γ A1 A2} (c : progSpec Γ A1 A2) : Rel := *)
   (*   mkRel (Box (forall γ1 : πl Γ, (θ1 _)∙1 (prog1 c γ1) ≤  spec1 c γ1)) *)
