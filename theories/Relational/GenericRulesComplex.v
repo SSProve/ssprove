@@ -101,8 +101,6 @@ Section RelationalProgramLogicFromRelativeMonad.
   Definition retWrel {A1 A2} : A1 -> A2 --> Wrel ⟨A1,A2⟩ :=
     fun a1 a2 => (rsmc_return Wrel ⟨A1,A2⟩)∙1 ⟨a1, a2⟩.
 
-  Definition retW {W : unarySpecMonad} {A} : A --> W A := (ord_relmon_unit W A)∙1.
-
   Ltac destruct_valid :=
     unshelve econstructor; [split=> /= γ|move=> /= γl γr γw]; constructor.
 
@@ -124,10 +122,6 @@ Section RelationalProgramLogicFromRelativeMonad.
       => /(f_equal (fun f=> f∙1 ⟨a1 γl, a2 γr⟩)) /= ->.
       sreflexivity.
   Qed.
-
-  Definition bindWStr {W : unarySpecMonad} {Γ A B}
-             (wm: Γ --> W A) (wf : Γ × A --> W B) : Γ --> W B :=
-    fun γ => (ord_relmon_bind W (to_discr (fun a => wf⟨γ, a⟩)))∙1 (wm γ).
 
   Lemma ValidBind
         Γ A1 A2 B1 B2 m1 wm1 m2 wm2 wmrel

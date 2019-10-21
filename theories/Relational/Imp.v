@@ -94,8 +94,8 @@ Section ImpMonad.
     ⦑fun post s0 => Spr1 k post (npair (nfst s0) s)⦒.
   Next Obligation. cbv; intros x y H s0; apply: k∙2=> //. Qed.
 
-  Definition loop (w0 : Wun bool) (wcont : Wun bool) : Wun bool :=
-    bind w0 (fun b => if b then wcont else @ret Wun bool false).
+  Definition loop (w0 : Wun bool) (wcont : Wun unit) : Wun unit :=
+    bind w0 (fun b => if b then wcont else ret tt).
 
   Fixpoint θunL (A : Type) (c: Imp A) {struct c} : Wun A :=
       match c with
@@ -151,7 +151,11 @@ Section ImpMonad.
 
   Definition omega_seq (A : ordType) := nat -> dfst A.
 
-  Definition omega_chain (A : ordType) := { c : omega_seq A ≫ forall (n : nat), c n ≤ c (n + 1) }.
+  Definition omega_chain (A : ordType) :=
+    { c : omega_seq A ≫ forall (n : nat), c n ≤ c (1 + n) }.
+
+  Definition underlying_seq {A} (c : omega_chain A) : nat -> _ := c∙1.
+  Coercion underlying_seq : omega_chain >-> Funclass.
 
   Definition upper_seq (A : ordType) (c : omega_seq A) (v : dfst A) : SProp :=
     s∀ n, c n ≤ v.
@@ -159,13 +163,147 @@ Section ImpMonad.
   Definition sup_seq (A : ordType) (c : omega_seq A) (v : dfst A) : SProp :=
     upper_seq c v s/\ s∀ v', upper_seq c v' -> v ≤ v'.
 
-  Definition apply_seq (A B : ordType) (c : omega_seq A) (f : dfst A -> dfst B) : omega_seq B := fun n => f (c n).
+  Definition apply_seq {A B} (c : omega_seq A) (f : OrdCat⦅A;B⦆) : omega_seq B
+    := fun n => f∙1 (c n).
+
+  Definition omega_continuous {A B} (f : OrdCat⦅A;B⦆) :=
+    s∀ (c : omega_chain A) v, sup_seq c v -> sup_seq (apply_seq c f) (f∙1 v).
+
+  Definition W' := ordmonad_to_relmon Wun.
+  Program Definition sup_Wun {A} (c : omega_chain (W' A)) : Wun A :=
+    ⦑fun p s => forall n, (c n)∙1 p s ⦒.
+  Next Obligation. move=> ? ? H ? f n; move: (f n); apply: (c n)∙2=> //. Qed.
+
+  Lemma sup_seq_Wun {A} (c : omega_chain (W' A)) : sup_seq c (sup_Wun c).
+  Proof. cbv; intuition. Qed.
+
+  Program Definition loop' (w0:Wun bool) : OrdCat⦅W' unit;W' unit⦆ :=
+    ⦑loop w0⦒.
+  Next Obligation. move=> ? ?  H ? ?; apply: w0∙2=> -[] //; sreflexivity. Qed.
+
+  Program Definition cst_omega_chain {A} (a:dfst A) : omega_chain A := ⦑fun=> a⦒.
+  Next Obligation. sreflexivity. Qed.
+
+  (* Lemma sup_Wun_ret {A} (a:A) : *)
+  (*   sup_Wun (cst_omega_chain (@retW W' _ a)) (retW a). *)
+  (* Proof. *)
+  Definition omega_continuous_Wun {A} (w:Wun A) : SProp :=
+    forall (c:nat -> _ -> _ -> SProp), (forall n p s, c (1+n) p s -> c n p s) ->
+                             forall s, (w∙1 (fun x s => forall n, c n x s) s s<-> forall n, w∙1 (c n) s).
+
+  Lemma loop_omega_continuous (w0:Wun bool) (Hw0 : omega_continuous_Wun w0) (loop := loop' w0) :
+    forall (c : omega_chain (W' unit)), sup_seq (apply_seq c loop) (loop∙1 (sup_Wun c)).
+  Proof.
+    move=> c; split ; first (move=> ? ? ?; apply: w0∙2=> -[]; cbv; intuition).
+    move=> w /ltac:(cbv) Hwsup p s Hw. cbv.
+    set p' := fun b => _.
+    enough (p' = fun b s=> forall n, if b then (c∙1 n)∙1 p s else @^~ tt p s) as ->.
+    - apply Hw0; first (move=> ? [] ? //=; apply: (c∙2)).
+      move=> n; move: (Hwsup n p s Hw); apply: w0∙2=> -[] ; sreflexivity.
+    - extensionality b; extensionality s'.
+      apply SPropAxioms.sprop_ext;do 2 split; unfold p'.
+      destruct b; intuition.
+      destruct b=> // /(fun f=> f 0) //.
+  Qed.
+
+  Program Definition botW A : dfst (W' A) := ⦑fun p s => sUnit⦒.
+  Next Obligation. cbv; intuition. Qed.
+
+  Lemma botW_smallest A (w : dfst (W' A)) : botW A ≤ w.
+  Proof. done. Qed.
+
+  Fixpoint iter {A} (f:OrdCat⦅W' A; W' A⦆) (n:nat) : dfst (W' A) :=
+    match n with
+    | 0 => botW A
+    | Datatypes.S n => f∙1 (iter f n)
+    end.
+
+  Program Definition iter_chain {A} (f:OrdCat⦅W' A; W' A⦆) : omega_chain (W' A)
+    := ⦑iter f⦒.
+  Next Obligation.
+    elim: n=> [|/= ? IH]; first apply botW_smallest.
+    apply: (f∙2)=> //.
+  Qed.
+
+  Definition kleene_fix {A} (f:OrdCat⦅W' A; W' A⦆) : dfst (W' A) :=
+    sup_Wun (iter_chain f).
+
+  Notation "x ≊ y" := (x ≤ y s/\ y ≤ x) (at level 70).
+
+  Program Definition apply_seq' {A B} (c:omega_chain A) (f:OrdCat⦅A;B⦆)
+    : omega_chain B := ⦑apply_seq c f⦒.
+  Next Obligation. apply: f∙2; apply: c∙2. Qed.
+
+  Definition sup_W' {A} (c:omega_chain (W' A)) : dfst (W' A) :=
+    sup_Wun c.
+
+  Lemma kleene_fix_fixpoint {A} (f:OrdCat⦅W' A; W' A⦆)
+        (Hcont : forall c, f∙1 (sup_W' c) ≊ sup_W' (apply_seq' c f)) :
+    f∙1 (kleene_fix f) ≊ kleene_fix f.
+  Proof.
+    move: (Hcont (iter_chain f))=> [H1 H2].
+    split; unfold kleene_fix; estransitivity.
+    apply H1. move=> ? ? H n; apply: (H (1+n)).
+    unfold sup_W' in H2. 2:apply H2.
+    move=> ? ? H [|n]=> //. apply: (H n).
+  Qed.
+
+  Lemma kleene_fix_smallest_fixpoint {A} (f:OrdCat⦅W' A; W' A⦆)
+        (wfix: dfst (W' A))
+        (Hfix : f∙1 wfix = wfix) : kleene_fix f ≤ wfix.
+  Proof.
+    move=> p s Hw n; elim: n p s Hw => [//|n IH] p s.
+    rewrite -Hfix. apply: f∙2=> ? ?. apply: IH.
+  Qed.
+
+  Definition preserves_omega_cont {A} (f:OrdCat⦅W' A; W' A⦆) :=
+    forall w, omega_continuous_Wun w -> omega_continuous_Wun (f∙1 w).
+
+  Lemma iter_omega_continuous_Wun {A} (f:OrdCat⦅W' A; W' A⦆)
+        (Hf : preserves_omega_cont f) : forall n, omega_continuous_Wun (iter f n).
+  Proof. elim=> [//|n IH]; apply Hf=> //. Qed.
+
+  Lemma kleene_fix_omega_cont {A} (f:OrdCat⦅W' A; W' A⦆)
+        (Hf : preserves_omega_cont f) :
+    omega_continuous_Wun (kleene_fix f).
+  Proof.
+    move=> c Hc ?; split.
+    move=> x n; move: x; apply: (kleene_fix _)∙2=> ? ? //.
+    move=> Hfix. unfold kleene_fix, sup_Wun=> /= k.
+    apply (iter_omega_continuous_Wun Hf)=> // n.
+    apply: (Hfix n k).
+  Qed.
 
 
-  Definition omega_continuous {A : ordType} (f : dfst A -> dfst A) :=
-    s∀ (c : omega_chain A) v, sup_seq (Spr1 c) v -> sup_seq (apply_seq _ (Spr1 c) f) (f v).
+  Lemma retW_omega_cont_Wun {A} (a:A) : omega_continuous_Wun (@retW W' _ a).
+  Proof. cbv; intuition. Qed.
+
+  Lemma bindW_omega_cont_Wun {A B} (w: dfst (W' A)) (f : A --> W' B):
+    omega_continuous_Wun w ->
+    (forall (a:A), omega_continuous_Wun (f a)) ->
+    omega_continuous_Wun (w ≫= to_discr f).
+  Proof.
+    move=> Hw Hf c Hc s; split.
+    move=> H n; move: H; apply w∙2=> ? ?; apply: ((to_discr f)∙1 _)∙2=> ? ? //.
+    unshelve epose (Hw (fun n a=> (f a)∙1 (c n)) _ s) as Hw'.
+    move=> ? ? ? /= ; apply (f _)∙2=> ? ?; apply: Hc=> //.
+    move=> H; apply Hw' in H; move: H. apply: w∙2=> a s0 /=.
+    move: (Hf a c Hc s0)=> []//.
+  Qed.
+
+  Lemma loop_preserves_omega_cont w0 (Hw0 : omega_continuous_Wun w0):
+    preserves_omega_cont (loop' w0).
+  Proof.
+    move=> w Hwcont c Hc ?; split.
+    - move=> H k; move: H; unfold loop', loop=> /=.
+      apply w0∙2=> -[] ? //=; apply w∙2=> -[] ? //.
+    - move=> H. unfold loop', loop=> /=.
+      apply bindW_omega_cont_Wun=> //.
+      move=> [] //=.
+  Qed.
 
 
+    (* Lemma kleene_vs_tarski {A} (f:OrdCat⦅W' A; W' A⦆) : kleene_fix f = ffixun (f∙1). *)
 
   Definition preorder_from_type (A : Type) : {R : srelation (Wun A) ≫ PreOrder R}.
     econstructor.

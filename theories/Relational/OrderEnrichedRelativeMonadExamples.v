@@ -133,6 +133,16 @@ Definition rMonad := ord_relativeMonad (ord_functor_id TypeCat).
 Definition unarySpecMonad := ord_relativeMonad discr.
 Definition unaryEffectObs M W := relativeMonadMorphism discr (natIso_sym (ord_functor_unit_left _)) M W.
 
+
+Section UnarySpecMonadOps.
+  Import SPropNotations.
+  Definition retW {W : unarySpecMonad} {A} : A --> W A := (ord_relmon_unit W A)∙1.
+  Definition bindWStr {W : unarySpecMonad} {Γ A B}
+              (wm: Γ --> W A) (wf : Γ × A --> W B) : Γ --> W B :=
+    fun γ => (ord_relmon_bind W (to_discr (fun a => wf⟨γ, a⟩)))∙1 (wm γ).
+End UnarySpecMonadOps.
+
+
 Section MonadAsRMonad.
   Context (M:Monad).
   Import FunctionalExtensionality.
