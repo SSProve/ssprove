@@ -4,7 +4,7 @@ From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads.
 (* From Mon.SM Require Import SMMonadExamples.  *)
-From Relational Require Import RelativeMonads RelativeMonadExamples GenericRulesSimple.
+From Relational Require Import RelativeMonads OrderEnrichedCategory OrderEnrichedRelativeMonadExamples GenericRulesSimple Commutativity.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
@@ -19,6 +19,17 @@ Section ImpMonad.
   | ImpSet : S -> Imp A -> Imp A
   | ImpDoWhile : Imp bool -> Imp A -> Imp A.
 
+  Fixpoint Imp_bind {A B : Type} (m : Imp A) (f : A -> Imp B) {struct m} : Imp B :=
+    match m with
+    | ImpRet v => f v
+    | ImpGet k => ImpGet (fun s => Imp_bind (k s) f)
+    | ImpSet s k => ImpSet s (Imp_bind k f)
+    | ImpDoWhile c k => ImpDoWhile c (Imp_bind k f)
+    end.
+
+  Program Definition Imp_monad : Monad := @mkMonad Imp ImpRet (@Imp_bind) _ _ _.
+  Next Obligation. admit. Admitted.
+  Next Obligation. admit. Admitted.
 
   Definition WrelSt := ordmonad_to_relspecmon0 (STCont (S×S)).
 
@@ -36,51 +47,50 @@ Section ImpMonad.
 
   Definition do_while (body : Imp bool) : Imp unit := ImpDoWhile body (ImpRet tt).
 
-  (* Program Definition OrdCat_prodlift {A1 A2 B} (f : A1 -> A2 -> dfst B) *)
-  (*   : OrdCat⦅Jprod ⟨A1,A2⟩; B⦆ := *)
-  (*   Sexists _ (fun '(npair a1 a2) => f a1 a2) _. *)
-  (* Next Obligation. induction H; sreflexivity. Qed. *)
+  Program Definition OrdCat_prodlift {A1 A2 B} (f : A1 -> A2 -> dfst B)
+    : OrdCat⦅Jprod ⟨A1,A2⟩; B⦆ :=
+    Sexists _ (fun '(npair a1 a2) => f a1 a2) _.
+  Next Obligation. intros [? ?] [? ?] eq; inversion eq. sreflexivity. Qed.
 
-  (* Fixpoint θ1 {A} (c: Imp A) {struct c} : W ⟨A,one⟩ := *)
-  (*   fun s0 => *)
-  (*     match c with *)
-  (*     | ImpRet a => Spr1 (relmon_unit WrelSt ⟨A,one⟩) ⟨a,tt⟩ s0 *)
-  (*     | ImpGet k => θ1 (k (nfst s0)) s0 *)
-  (*     | ImpSet s k => θ1 k ⟨s, nsnd s0⟩ *)
-  (*     | ImpDoWhile body k => *)
-  (*       let loop (wcont : W ⟨bool,one⟩) : W ⟨bool,one⟩ := *)
-  (*           let cont := *)
-  (*               OrdCat_prodlift (fun b 'tt => *)
-  (*                              if b then wcont *)
-  (*                              else Spr1 (relmon_unit WrelSt ⟨bool,one⟩) ⟨false,tt⟩ *)
-  (*                           ) in *)
-  (*           Spr1 (relmon_bind WrelSt cont) (θ1 body) *)
-  (*       in *)
-  (*       Spr1 (relmon_bind WrelSt (OrdCat_cst (θ1 k))) (ffix loop) s0 *)
-  (*     end. *)
+  Eval cbv in W ⟨one,one⟩.
 
-  (* Fixpoint θ2 {A} (c: Imp A) {struct c} : W ⟨one, A⟩ := *)
-  (*   fun s0 => *)
-  (*     match c with *)
-  (*     | ImpRet a => Spr1 (relmon_unit WrelSt ⟨one,A⟩) ⟨tt, a⟩ s0 *)
-  (*     | ImpGet k => θ2 (k (nsnd s0)) s0 *)
-  (*     | ImpSet s k => θ2 k ⟨nfst s0, s⟩ *)
-  (*     | ImpDoWhile body k => *)
-  (*       let loop (wcont : W ⟨one,bool⟩) : W ⟨one,bool⟩ := *)
-  (*           let cont := *)
-  (*               OrdCat_prodlift (fun 'tt b => *)
-  (*                              if b then wcont *)
-  (*                              else Spr1 (relmon_unit WrelSt ⟨one,bool⟩) ⟨tt,false⟩ *)
-  (*                           ) in *)
-  (*           Spr1 (relmon_bind WrelSt cont) (θ2 body) *)
-  (*       in *)
-  (*       Spr1 (relmon_bind WrelSt (OrdCat_cst (θ2 k))) (ffix loop) s0 *)
-  (*     end. *)
+  Definition Wun := STCont S.
 
-  (* Let rret {A1 A2} (a1:A1) (a2:A2) : W ⟨A1,A2⟩ :=  *)
-  (*   Spr1 (relmon_unit WrelSt ⟨A1,A2⟩) ⟨a1, a2⟩. *)
+  Eval cbv in (Wun bool).
 
-  (* Let rbind {A B} : W A -> (nfst A -> nsnd A -> W B) -> W B := *)
-  (*   fun wm wf => Spr1 (relmon_bind WrelSt (OrdCat_prodlift wf)) wm. *)
+  Let R := (@omon_rel Wun).
+
+  Program Definition ffixun {A} (f : Wun A -> Wun A) : Wun A := ⦑fun post s0 => forall w, R (f w) w -> Spr1 w post s0 ⦒.
+  Next Obligation.
+    cbv; intuition.
+    move: (H0 w H1). apply (Spr2 w x y H a)=> //.
+  Qed.
+
+  Eval cbv in (Wun bool).
+
+  Program Definition Wunget {A : Type} (k : S -> Wun A) : Wun A := ⦑fun post s0 => Spr1 (k s0) post s0⦒.
+  Next Obligation. cbv.  intros x y H s H'. destruct (k s). cbv in Spr2.  apply (Spr2 x y); intuition. Qed.
+
+  Program Definition Wunset {A : Type} (s : S) (k : Wun A) : Wun A := ⦑fun post _ => Spr1 k post s⦒.
+  Next Obligation. cbv. intros x y H s0 H''. destruct k. cbv in Spr2. apply (Spr2 x y); intuition.  Qed.
+
+  Fixpoint θun (A : Type) (c: Imp A) {struct c} : Wun A :=
+      match c with
+      | ImpRet a => @ret Wun _ a
+      | ImpGet k => Wunget (fun s => θun (k s))
+      | ImpSet s k => Wunset s (θun k)
+      | ImpDoWhile body k =>
+        let loop (wcont : Wun bool) : Wun bool := @bind Wun _ _ (θun body) (fun b => if b then wcont else @ret Wun bool false) in
+            (@bind Wun _ _ (ffixun loop) (fun _ => (θun k)))
+      end.
+
+  Program Definition θun_mm : MonadMorphism Imp_monad Wun := @mkMorphism Imp_monad _ θun _ _.
+  Next Obligation. admit. Admitted.
+
+  Let M1 := Imp_monad.
+  Let M2 := Imp_monad.
+
+  Program Definition θrel := commute_effObs Wun M1 M2 θun_mm θun_mm _.
+  Next Obligation. admit. Admitted.
 
 End ImpMonad.
