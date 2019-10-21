@@ -27,9 +27,19 @@ Section ImpMonad.
     | ImpDoWhile c k => ImpDoWhile c (Imp_bind k f)
     end.
 
+  Import FunctionalExtensionality.
   Program Definition Imp_monad : Monad := @mkMonad Imp ImpRet (@Imp_bind) _ _ _.
-  Next Obligation. admit. Admitted.
-  Next Obligation. admit. Admitted.
+  Next Obligation.
+    move: c.
+    refine (fix IH (c: Imp A) {struct c} := _).
+    case:c => //= [?|? ?|? ?]; f_equal; first extensionality s; apply: IH.
+  Qed.
+  Next Obligation.
+    move: c.
+    refine (fix IH (c: Imp A) {struct c} := _).
+    case:c => //= [?|? ?|? ?]; f_equal; first extensionality s; apply: IH.
+  Qed.
+
 
   Definition WrelSt := ordmonad_to_relspecmon0 (STCont (S×S)).
 
@@ -85,7 +95,11 @@ Section ImpMonad.
       end.
 
   Program Definition θun_mm : MonadMorphism Imp_monad Wun := @mkMorphism Imp_monad _ θun _ _.
-  Next Obligation. admit. Admitted.
+  Next Obligation.
+    move: m.
+    refine (fix IH (m: Imp A) {struct m} := _).
+    case:m => //= [?|? ?|? ?] ;unfold MonoCont_bind ; apply Ssig_eq; extensionality k=> /=; extensionality s0; rewrite IH //.
+  Qed.
 
   Let M1 := Imp_monad.
   Let M2 := Imp_monad.
