@@ -160,7 +160,7 @@ Section ImpMonad.
   Let M1 := Imp_monad.
   Let M2 := Imp_monad.
 
-  Program Definition θrel := commute_effObs Wun M1 M2 θunL_mm θunR_mm _.
+  Program Definition θPart := commute_effObs Wun M1 M2 θunL_mm θunR_mm _.
   Next Obligation. admit.
     (* move: c1 c2. *)
     (* refine (fix IH1 (c1: Imp A1) {struct c1} := _). *)
@@ -175,7 +175,24 @@ Section ImpMonad.
     (*   unfold commute. simpl. unfold MonoCont_bind. simpl. *)
   Admitted.
 
-  Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ _ θrel _ _ c1 c2 w).
+  Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ _ θPart _ _ c1 c2 w).
+
+  (* Translation from pre-/postconditions to backward predicate transformers *)
+  Program Definition fromPrePost {A1 A2}
+          (pre : S -> S -> SProp)
+          (post : A1 -> S -> S -> A2 -> S -> S -> SProp)
+    : dfst (Wrel Wun ⟨A1,A2⟩) :=
+    ⦑fun p s0 => pre (nfst s0) (nsnd s0) s/\
+                 forall a1 a2 s, post a1 (nfst s0) (nfst s) a2 (nsnd s0) (nsnd s)
+                            -> p ⟨a1,a2⟩ s⦒.
+  Next Obligation. cbv ; intuition. Qed.
+
+  Lemma do_while_rule (inv : bool -> bool -> S -> S -> SProp)
+        (body1 body2 : Imp bool) :
+        ⊨ body1 ≈ body2 [{ fromPrePost (inv true true) (fun b1 _ s1 b2 _ s2 => b1 ≡ b2 s/\ inv b1 b2 s1 s2) }] ->
+        ⊨ do_while body1 ≈ do_while body2 [{ fromPrePost (inv true true) (fun 'tt _ s1 'tt _ s2 => inv false false s1 s2) }].
+    admit.
+  Admitted.
 
   Definition omega_seq (A : ordType) := nat -> dfst A.
 
