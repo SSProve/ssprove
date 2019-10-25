@@ -15,7 +15,7 @@ Set Primitive Projections.
 Set Universe Polymorphism.
 
 Section IOs.
-  Context (I1 I2 O1 O2 : Type).
+  Context {I1 I2 O1 O2 : Type}.
 
   Let M1 := IO I1 O1.
   Let M2 := IO I2 O2.
@@ -110,19 +110,83 @@ Section IOs.
         ⦃ fun a1' h1 h1' _ h2 h2' =>
             h1' ≡ h1 s/\ a1' ≡ a1 s/\ h2' ≡ inr o2 :: h2 ⦄.
   Proof. cbv; move=> ? ? ? ? [_ Hpost] ; by apply: Hpost. Qed.
-
-
-
-  (* An alternative for later: using update monads instead of state *)
-
-  (* Let Es1 := listMonoid (I1 + O1). *)
-  (* Let Es2 := listMonoid (I2 + O2). *)
-  (* Let Es12 := prodMonoid Es1 Es2.  *)
-  (* Let XEs := multAction Es12. *)
-  (* Let Wunary := UpdSpec XEs. *)
-
-
-  (* Definition Wrel : RelationalSpecMonad0 := *)
-  (*   relativeMonad_precomposition typeCat_prod (ordmonad_to_relmon Wunary). *)
-
 End IOs.
+
+Section NI_IO.
+  Section IOHigh.
+    Context {Inp Oup : Type}.
+
+    Inductive IOS : Type := ReadLow : IOS | ReadHigh : IOS | Write : Oup -> IOS.
+    Definition IOAr (op : IOS) : Type :=
+      match op with
+      | ReadLow => Inp
+      | ReadHigh => Inp
+      | Write _ => unit
+      end.
+
+    Definition IO := @Free IOS IOAr.
+
+    Definition readLow : IO Inp := op _ ReadLow.
+    Definition readHigh : IO Inp := op _ ReadHigh.
+    Definition write (o:Oup) : IO unit := op _ (Write o).
+  End IOHigh.
+  Context {I1 I2 O1 O2 : Type}.
+
+  Import SPropNotations.
+  Import List.
+  Import ListNotations.
+
+  Let M1 := @IO I1 O1.
+  Let M2 := @IO I2 O2.
+
+  Let Es1 := list (I1+O1).
+  Let Es2 := list (I2+O2).
+  Let Es12 := Es1 × Es2.
+  Let carrier := Es12 -> SProp.
+
+  Definition Wun' :=
+    @MonoCont carrier (@Pred_op_order _) (@Pred_op_order_prorder _).
+
+  Program Definition wop1' (s:IOS) : Wun' (IOAr s) :=
+    match s with
+    | ReadLow => ⦑fun p h => forall i, p i ⟨ inl i :: nfst h, nsnd h ⟩⦒
+    | ReadHigh => ⦑fun p h => forall i, p i ⟨ inl i :: nfst h, nsnd h ⟩⦒
+    | Write o => ⦑fun p h => p tt ⟨ inr o :: nfst h, nsnd h ⟩⦒
+    end.
+  Next Obligation. move=> ? ? H ? H0 ?; apply H ; apply H0. Qed.
+  Next Obligation. move=> ? ? H ? H0 ?; apply H ; apply H0. Qed.
+  Next Obligation. move=> ? ? H ? H0 ; apply H; apply H0. Qed.
+
+  Program Definition wop2' (s:IOS) : Wun' (IOAr s) :=
+    match s with
+    | ReadLow => ⦑fun p h => forall i, p i ⟨ nfst h, inl i :: nsnd h ⟩⦒
+    | ReadHigh => ⦑fun p h => forall i, p i ⟨ nfst h, inl i :: nsnd h ⟩⦒
+    | Write o => ⦑fun p h => p tt ⟨ nfst h, inr o :: nsnd h ⟩⦒
+    end.
+  Next Obligation. move=> ? ? H ? H0 ?; apply H ; apply H0. Qed.
+  Next Obligation. move=> ? ? H ? H0 ?; apply H ; apply H0. Qed.
+  Next Obligation. move=> ? ? H ? H0 ; apply H; apply H0. Qed.
+
+  Import FunctionalExtensionality.
+  Lemma io1_io2_commutation' : forall s1 s2, commute (wop1' s1) (wop2' s2).
+  Proof.
+    move=> [||o1] [||o2] //=.
+    all: cbv; apply Ssig_eq=> /=; extensionality k; extensionality h.
+    all: apply SPropAxioms.sprop_ext; do 2 split => //.
+  Qed.
+
+  Let Wrel := Wrel Wun'.
+
+  Definition θIO' :=
+    commute_effObs Wun M1 M2 _ _
+                   (fromFreeCommute Wun wop1' wop2' io1_io2_commutation').
+
+  Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ _ θIO' _ _ c1 c2 w).
+
+  Let read_high1 := @readHigh I1 O1.
+  Let read_high2 := @readHigh I2 O2.
+  Let read_low1 := @readLow I1 O1.
+  Let read_low2 := @readLow I2 O2.
+  Let write1 := @write I1 O1.
+  Let write2 := @write I2 O2.
+End NI_IO.
