@@ -3,13 +3,16 @@
 (*********************************************************)
 
 From Coq Require Import ssreflect ssrfun ssrbool.
-From Coq Require FunctionalExtensionality Arith.PeanoNat List.
+From Coq Require Import FunctionalExtensionality Arith.PeanoNat List.
 
 From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads Monoid DijkstraMonadExamples.
 (* From Mon.SM Require Import SMMonadExamples.  *)
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples GenericRulesSimple Commutativity.
+
+Import SPropNotations.
+Import ListNotations.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
@@ -27,10 +30,6 @@ Section IOs.
 
   Definition Wun :=
     @MonoCont carrier (@Pred_op_order _) (@Pred_op_order_prorder _).
-
-  Import SPropNotations.
-  Import List.
-  Import ListNotations.
 
   Program Definition wop1 (s:IOS O1) : Wun (IOAr I1 s) :=
     match s with
@@ -130,22 +129,9 @@ Section NI_IO.
     Definition readHigh : IO Inp := op _ ReadHigh.
     Definition write (o:Oup) : IO unit := op _ (Write o).
   End IOHigh.
-  Context {I1 O1 : Type}.
+  Context {I1 O1 I2 O2 : Type}.
 
-  Import SPropNotations.
-  Import List.
-  Import ListNotations.
-
-  Let M := @IO I1 O1.
-
-  Let Es1 := list (I1+O1).
-  Let Es12 := Es1 × Es1.
-  Let carrier := Es12 -> SProp.
-
-  Definition Wun' :=
-    @MonoCont carrier (@Pred_op_order _) (@Pred_op_order_prorder _).
-
-  Program Definition wop1' (s:IOS) : Wun' (IOAr s) :=
+  Program Definition wop1' (s:IOS) : @Wun I1 I2 O1 O2 (IOAr s) :=
     match s with
     | ReadLow => ⦑fun p h => forall i, p i ⟨ inl i :: nfst h, nsnd h ⟩⦒
     | ReadHigh => ⦑fun p h => forall i, p i ⟨ inl i :: nfst h, nsnd h ⟩⦒
@@ -155,7 +141,7 @@ Section NI_IO.
   Next Obligation. move=> ? ? H ? H0 ?; apply H ; apply H0. Qed.
   Next Obligation. move=> ? ? H ? H0 ; apply H; apply H0. Qed.
 
-  Program Definition wop2' (s:IOS) : Wun' (IOAr s) :=
+  Program Definition wop2' (s:IOS) : @Wun I1 I2 O1 O2 (IOAr s) :=
     match s with
     | ReadLow => ⦑fun p h => forall i, p i ⟨ nfst h, inl i :: nsnd h ⟩⦒
     | ReadHigh => ⦑fun p h => forall i, p i ⟨ nfst h, inl i :: nsnd h ⟩⦒
@@ -165,7 +151,6 @@ Section NI_IO.
   Next Obligation. move=> ? ? H ? H0 ?; apply H ; apply H0. Qed.
   Next Obligation. move=> ? ? H ? H0 ; apply H; apply H0. Qed.
 
-  Import FunctionalExtensionality.
   Lemma io1_io2_commutation' : forall s1 s2, commute (wop1' s1) (wop2' s2).
   Proof.
     move=> [||o1] [||o2] //=.
@@ -173,11 +158,22 @@ Section NI_IO.
     all: apply SPropAxioms.sprop_ext; do 2 split => //.
   Qed.
 
-  Let Wrel := Wrel Wun'.
+  Let M1 := @IO I1 O1.
+  Let M2 := @IO I2 O2.
+  Let Wrel := Wrel (@Wun I1 I2 O1 O2).
 
   Definition θIO' :=
-    commute_effObs Wun' M M _ _
-                   (fromFreeCommute Wun' wop1' wop2' io1_io2_commutation').
+    commute_effObs Wun M1 M2 _ _
+                   (fromFreeCommute Wun wop1' wop2' io1_io2_commutation').
+End NI_IO.
+
+Section NI_Examples.
+  (* For the purpose of examples, let's just have one type of inputs and outputs *)
+  Context (Ty : Type).
+  Let θIO' := @θIO' Ty Ty Ty Ty.
+  Let readHigh := @readHigh Ty Ty.
+  Let readLow := @readLow Ty Ty.
+  Let write := @write Ty Ty.
 
   Notation "⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
     (semantic_judgement _ _ _ θIO' _ _ c1 c2 (fromPrePost pre post)).
@@ -188,5 +184,5 @@ Section NI_IO.
       c ≈ c
       ⦃ fun a1 h1 h1' a2 h2 h2' => h1' ≡ h2' s/\ a1 ≡ a2 ⦄.
 
-  Let prog1 := bind (@readHigh I1 I1) (@write I1 I1).
-End NI_IO.
+  Let prog1 := bind readHigh write.
+End NI_Examples.
