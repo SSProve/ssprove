@@ -130,18 +130,16 @@ Section NI_IO.
     Definition readHigh : IO Inp := op _ ReadHigh.
     Definition write (o:Oup) : IO unit := op _ (Write o).
   End IOHigh.
-  Context {I1 I2 O1 O2 : Type}.
+  Context {I1 O1 : Type}.
 
   Import SPropNotations.
   Import List.
   Import ListNotations.
 
-  Let M1 := @IO I1 O1.
-  Let M2 := @IO I2 O2.
+  Let M := @IO I1 O1.
 
   Let Es1 := list (I1+O1).
-  Let Es2 := list (I2+O2).
-  Let Es12 := Es1 × Es2.
+  Let Es12 := Es1 × Es1.
   Let carrier := Es12 -> SProp.
 
   Definition Wun' :=
@@ -178,15 +176,17 @@ Section NI_IO.
   Let Wrel := Wrel Wun'.
 
   Definition θIO' :=
-    commute_effObs Wun M1 M2 _ _
-                   (fromFreeCommute Wun wop1' wop2' io1_io2_commutation').
+    commute_effObs Wun' M M _ _
+                   (fromFreeCommute Wun' wop1' wop2' io1_io2_commutation').
 
-  Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ _ θIO' _ _ c1 c2 w).
+  Notation "⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
+    (semantic_judgement _ _ _ θIO' _ _ c1 c2 (fromPrePost pre post)).
 
-  Let read_high1 := @readHigh I1 O1.
-  Let read_high2 := @readHigh I2 O2.
-  Let read_low1 := @readLow I1 O1.
-  Let read_low2 := @readLow I2 O2.
-  Let write1 := @write I1 O1.
-  Let write2 := @write I2 O2.
+  (* Noninterference property *)
+  Definition NI {A : Type} (c : IO A) :=
+    ⊨ ⦃ fun h1 h2 => h1 ≡ h2 ⦄
+      c ≈ c
+      ⦃ fun a1 h1 h1' a2 h2 h2' => h1' ≡ h2' s/\ a1 ≡ a2 ⦄.
+
+  Let prog1 := bind (@readHigh I1 I1) (@write I1 I1).
 End NI_IO.
