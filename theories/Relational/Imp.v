@@ -6,6 +6,14 @@ From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples Spe
 (* From Mon.SM Require Import SMMonadExamples.  *)
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples GenericRulesSimple Commutativity.
 
+From Equations Require Import Equations.
+
+(* Show Obligation Tactic. *)
+(* by default Equations set the obligation tactic to
+Tactics.program_simplify; Tactics.equations_simpl; try Tactics.program_solve_wf
+*)
+Obligation Tactic := Tactics.program_simpl.
+
 Set Primitive Projections.
 Set Universe Polymorphism.
 Set Implicit Arguments.
@@ -517,9 +525,9 @@ Section ImpMonad.
   (* Local Ltac mytac' thm := *)
   (*   let k := fresh "k" in myext k ; mymatch' thm k. *)
 
-  From Equations Require Import Equations.
 
-  Derive Signature for Imp.
+  (* Does not derive the signatures, see issues #246, #249 on Equations bug tracker *)
+  (* Derive Signature for Imp. *)
 
   Inductive size_tree : Type :=
   | STBase
