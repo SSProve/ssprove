@@ -229,7 +229,7 @@ Section NI_IO.
         readLow ≈ readLow
         ⦃ fun i1 h1 h1' i2 h2 h2' =>
             h1' ≡ InpPub i1 :: [] s/\ h2' ≡ InpPub i2 :: [] ⦄.
-  Proof. cbv. Admitted.
+  Proof. cbv; move => ? ? H ? ?; apply H; split. all: sreflexivity. Qed.
 
   Lemma readHigh_left_rule {A2} : forall (a2:A2),
       ⊨ ⦃ ttrue ⦄
@@ -245,6 +245,13 @@ Section NI_IO.
             h1' ≡  [] s/\ a1' ≡ a1 s/\ h2' ≡ InpPriv i2 :: [] ⦄.
   Proof. cbv; move=> ? ? ? [_ Hpost] ?; by apply: Hpost. Qed.
 
+  Lemma readHigh_readHigh_rule :
+      ⊨ ⦃ ttrue ⦄
+        readHigh ≈ readHigh
+        ⦃ fun i1 h1 h1' i2 h2 h2' =>
+            h1' ≡ InpPriv i1 :: [] s/\ h2' ≡ InpPriv i2 :: [] ⦄.
+  Proof. cbv; move => ? ? H ? ?; apply H; split. all: sreflexivity. Qed.
+
   Lemma write_left_rule {A2}: forall (o1 : O1) (a2:A2),
       ⊨ ⦃ ttrue ⦄
         write o1 ≈ ret a2
@@ -258,6 +265,13 @@ Section NI_IO.
         ⦃ fun a1' h1 h1' _ h2 h2' =>
             h1' ≡ [] s/\ a1' ≡ a1 s/\ h2' ≡ Out o2 :: [] ⦄.
   Proof. cbv; move=> ? ? ? ? [_ Hpost] ; by apply: Hpost. Qed.
+
+  Lemma write_write_rule : forall (o1 : O1) (o2 : O2),
+      ⊨ ⦃ ttrue ⦄
+        write o1 ≈ write o2
+        ⦃ fun _ h1 h1' _ h2 h2' =>
+            h1' ≡ Out o1 :: [] s/\ h2' ≡ Out o2 :: [] ⦄.
+  Proof. cbv; move => ? ? ? ? H; apply H; split. all: sreflexivity. Qed.
 End NI_IO.
 
 Section NI_Examples.
@@ -296,7 +310,7 @@ Section NI_Examples.
     rewrite /NI /prog1.
     apply_seq => //.
     - apply readLow_readLow_rule.
-    - admit.
+    - move => ? ?. admit.
     - admit.
  Admitted.
 End NI_Examples.
