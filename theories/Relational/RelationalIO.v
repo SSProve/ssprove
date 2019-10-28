@@ -233,13 +233,14 @@ Section NI_IO.
 End NI_IO.
 
 Section NI_Examples.
-  (* For the purpose of examples, let's just have nat inputs and outputs *)
-  Let θIO' := @θIO' nat nat nat nat nat nat.
-  Let Wun' := @Wun' nat nat nat nat nat nat.
-  Let readHigh := @readHigh nat nat nat.
-  Let readLow := @readLow nat nat nat.
-  Let write := @write nat nat nat.
-  Let IOTriple := @IOTriple nat nat nat.
+  (* For the purpose of examples, let's just have one type of inputs and outputs *)
+  Context (Ty := nat).
+  Let θIO' := @θIO' Ty Ty Ty Ty Ty Ty.
+  Let Wun' := @Wun' Ty Ty Ty Ty Ty Ty.
+  Let readHigh := @readHigh Ty Ty Ty.
+  Let readLow := @readLow Ty Ty Ty.
+  Let write := @write Ty Ty Ty.
+  Let IOTriple := @IOTriple Ty Ty Ty.
 
   Notation "⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
     (semantic_judgement _ _ _ θIO' _ _ c1 c2 (fromPrePost' pre post)).
@@ -265,14 +266,21 @@ Section NI_Examples.
            | H:_ ≡ _ |- _ => induction (sEq_sym H); clear H
            end.
 
+  Ltac apply_seq' :=
+    (match goal with | [|- _ ⊨ _ ≈ _ [{ ?z }]] => is_evar z end ;
+     refine (seq_rule _ _ _ _ (wf:=extend_to_Jprod _ (fun '⟨a1, a2⟩ => _)) _ _)
+     => /= [| ? ?]) +
+    apply_seq=> /= [|? ?|].
+
   Ltac hammer :=
     repeat lazymatch goal with
-           | |- context c [_ ⊨ bind _ _ ≈ bind _ _ [{ _ }]] => intros; simpl; apply_seq => //
-           | |- context c [_ ⊨ readLow ≈ readLow [{ _ }]] => intros; simpl; apply readLow_readLow_rule
-           | |- context c [_ ⊨ readHigh ≈ readHigh [{ _ }]] => intros; simpl;
-                                                             apply readHigh_readHigh_rule
-           | |- context c [_ ⊨ write _ ≈ write _ [{ _ }]] => intros; simpl; apply write_write_rule
+           | |- context c [_ ⊨ bind _ _ ≈ bind _ _ [{ _ }]] => apply_seq'
+           | |- context c [_ ⊨ readLow ≈ readLow [{ _ }]] => apply readLow_readLow_rule
+           | |- context c [_ ⊨ readHigh ≈ readHigh [{ _ }]] => apply readHigh_readHigh_rule
+           | |- context c [_ ⊨ write _ ≈ write _ [{ _ }]] => apply write_write_rule
            end.
+
+  Arguments bind : simpl never.
 
   (* Trivial example *)
   Let prog1 := bind readLow write.
@@ -289,4 +297,20 @@ Section NI_Examples.
     rewrite /NI /prog2.
     hammer.
   Admitted.
+
+
+  Let prog3 := bind readLow (fun n => bind readLow (fun m => write (n + m))).
+  Lemma NI_prog3 : NI prog3.
+  Proof.
+    rewrite /NI /prog3; hammer.
+    (* hammer correspond does the following calls *)
+    (* apply_seq' => /= [|? ?|]. *)
+    (* apply readLow_readLow_rule. *)
+    (* apply_seq' => /= [|? ?]. *)
+    (* apply readLow_readLow_rule. *)
+    (* apply: write_write_rule. *)
+    cbv -[filter ni_pred app Nat.add]; intuition=> //; apply q; subst_sEq'=> //=.
+    move=> ? ? ; subst_sEq=> //.
+  Qed.
+
 End NI_Examples.
