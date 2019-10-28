@@ -310,7 +310,8 @@ Section NI_Examples.
     rewrite /NI /prog1.
     apply_seq => //.
     - apply readLow_readLow_rule.
-    - move => ? ?; cbv; apply write_write_rule.
-    - cbv; intuition => //; apply q. admit.
+    - move => ? ?; simpl; apply write_write_rule.
+    - cbv -[filter ni_pred app]; intuition => //; apply q.
+      admit.
  Admitted.
 End NI_Examples.
