@@ -233,14 +233,13 @@ Section NI_IO.
 End NI_IO.
 
 Section NI_Examples.
-  (* For the purpose of examples, let's just have one type of inputs and outputs *)
-  Context (Ty : Type).
-  Let θIO' := @θIO' Ty Ty Ty Ty Ty Ty.
-  Let Wun' := @Wun' Ty Ty Ty Ty Ty Ty.
-  Let readHigh := @readHigh Ty Ty Ty.
-  Let readLow := @readLow Ty Ty Ty.
-  Let write := @write Ty Ty Ty.
-  Let IOTriple := @IOTriple Ty Ty Ty.
+  (* For the purpose of examples, let's just have nat inputs and outputs *)
+  Let θIO' := @θIO' nat nat nat nat nat nat.
+  Let Wun' := @Wun' nat nat nat nat nat nat.
+  Let readHigh := @readHigh nat nat nat.
+  Let readLow := @readLow nat nat nat.
+  Let write := @write nat nat nat.
+  Let IOTriple := @IOTriple nat nat nat.
 
   Notation "⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
     (semantic_judgement _ _ _ θIO' _ _ c1 c2 (fromPrePost' pre post)).
@@ -261,20 +260,33 @@ Section NI_Examples.
       c ≈ c
       ⦃ fun a1 h1 h1' a2 h2 h2' => ni_pred h1' h2' ⦄.
 
-  Let prog1 := bind readLow write.
-
-  Ltac hammer_NI :=
-    repeat multimatch goal with
+  Ltac subst_sEq' :=
+    repeat match goal with
            | H:_ ≡ _ |- _ => induction (sEq_sym H); clear H
-           | |- context c [_ ⊨ bind _ _ ≈ bind _ _ [{ _ }]] => apply_seq => //
-           | |- context c [_ ⊨ readLow ≈ readLow [{ _ }]] => simpl; apply readLow_readLow_rule
-           | |- context c [_ ⊨ readHigh ≈ readHigh [{ _ }]] => simpl; apply readHigh_readHigh_rule
+           end.
+
+  Ltac hammer :=
+    repeat lazymatch goal with
+           | |- context c [_ ⊨ bind _ _ ≈ bind _ _ [{ _ }]] => intros; simpl; apply_seq => //
+           | |- context c [_ ⊨ readLow ≈ readLow [{ _ }]] => intros; simpl; apply readLow_readLow_rule
+           | |- context c [_ ⊨ readHigh ≈ readHigh [{ _ }]] => intros; simpl;
+                                                             apply readHigh_readHigh_rule
            | |- context c [_ ⊨ write _ ≈ write _ [{ _ }]] => intros; simpl; apply write_write_rule
            end.
 
+  (* Trivial example *)
+  Let prog1 := bind readLow write.
   Lemma NI_prog1 : NI prog1.
   Proof.
     rewrite /NI /prog1.
-    hammer_NI. cbv -[filter ni_pred app]; intuition => //; apply q; hammer_NI => //=.
+    hammer. cbv -[filter ni_pred app]; intuition => //; apply q; subst_sEq' => //=.
   Qed.
+
+  (* Branching on secrets *)
+  Let prog2 := bind readHigh (fun h => if Nat.eqb h 1 then write 10 else write 20).
+  Lemma NI_prog2 : NI prog2.
+  Proof.
+    rewrite /NI /prog2.
+    hammer.
+  Admitted.
 End NI_Examples.
