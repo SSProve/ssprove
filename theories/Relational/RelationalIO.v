@@ -210,20 +210,6 @@ Section NI_IO.
 
   Let ttrue : Es1 -> Es2 -> SProp := fun _ _ => sUnit.
 
-  Lemma readLow_left_rule {A2} : forall (a2:A2),
-      ⊨ ⦃ ttrue ⦄
-        readLow ≈ ret a2
-        ⦃ fun i1 h1 h1' a2' h2 h2' =>
-            h1' ≡ InpPub i1 :: [] s/\ a2' ≡ a2 s/\ h2' ≡ [] ⦄.
-  Proof. cbv; move=> ? ? ? [_ Hpost] ?; by apply: Hpost. Qed.
-
-  Lemma readLow_right_rule {A1} : forall (a1:A1),
-      ⊨ ⦃ ttrue ⦄
-        ret a1 ≈ readLow
-        ⦃ fun a1' h1 h1' i2 h2 h2' =>
-            h1' ≡ [] s/\ a1' ≡ a1 s/\ h2' ≡ InpPub i2 :: [] ⦄.
-  Proof. cbv; move=> ? ? ? [_ Hpost] ?; by apply: Hpost. Qed.
-
   Lemma readLow_readLow_rule :
       ⊨ ⦃ ttrue ⦄
         readLow ≈ readLow
@@ -231,40 +217,12 @@ Section NI_IO.
             h1' ≡ InpPub i1 :: [] s/\ h2' ≡ InpPub i2 :: [] ⦄.
   Proof. cbv; move => ? ? H ? ?; apply H; split; sreflexivity. Qed.
 
-  Lemma readHigh_left_rule {A2} : forall (a2:A2),
-      ⊨ ⦃ ttrue ⦄
-        readHigh ≈ ret a2
-        ⦃ fun i1 h1 h1' a2' h2 h2' =>
-            h1' ≡ InpPriv i1 :: [] s/\ a2' ≡ a2 s/\ h2' ≡ [] ⦄.
-  Proof. cbv; move=> ? ? ? [_ Hpost] ?; by apply: Hpost. Qed.
-
-  Lemma readHigh_right_rule {A1} : forall (a1:A1),
-      ⊨ ⦃ ttrue ⦄
-        ret a1 ≈ readHigh
-        ⦃ fun a1' h1 h1' i2 h2 h2' =>
-            h1' ≡  [] s/\ a1' ≡ a1 s/\ h2' ≡ InpPriv i2 :: [] ⦄.
-  Proof. cbv; move=> ? ? ? [_ Hpost] ?; by apply: Hpost. Qed.
-
   Lemma readHigh_readHigh_rule :
       ⊨ ⦃ ttrue ⦄
         readHigh ≈ readHigh
         ⦃ fun i1 h1 h1' i2 h2 h2' =>
             h1' ≡ InpPriv i1 :: [] s/\ h2' ≡ InpPriv i2 :: [] ⦄.
   Proof. cbv; move => ? ? H ? ?; apply H; split; sreflexivity. Qed.
-
-  Lemma write_left_rule {A2}: forall (o1 : O1) (a2:A2),
-      ⊨ ⦃ ttrue ⦄
-        write o1 ≈ ret a2
-        ⦃ fun _ h1 h1' a2' h2 h2' =>
-            h1' ≡ Out o1 :: [] s/\ a2' ≡ a2 s/\ h2' ≡ [] ⦄.
-  Proof. cbv; move=> ? ? ? ? [_ Hpost] ; by apply: Hpost. Qed.
-
-  Lemma write_right_rule {A1}: forall (a1 : A1) (o2:O2),
-      ⊨ ⦃ ttrue ⦄
-        ret a1 ≈ write o2
-        ⦃ fun a1' h1 h1' _ h2 h2' =>
-            h1' ≡ [] s/\ a1' ≡ a1 s/\ h2' ≡ Out o2 :: [] ⦄.
-  Proof. cbv; move=> ? ? ? ? [_ Hpost] ; by apply: Hpost. Qed.
 
   Lemma write_write_rule : forall (o1 : O1) (o2 : O2),
       ⊨ ⦃ ttrue ⦄
@@ -305,17 +263,18 @@ Section NI_Examples.
 
   Let prog1 := bind readLow write.
 
-  Ltac subst_sEq' :=
-    try repeat match goal with
-              | H:_ ≡ _ |- _ => induction (sEq_sym H); clear H
-              end.
+  Ltac hammer_NI :=
+    repeat multimatch goal with
+           | H:_ ≡ _ |- _ => induction (sEq_sym H); clear H
+           | |- context c [_ ⊨ bind _ _ ≈ bind _ _ [{ _ }]] => apply_seq => //
+           | |- context c [_ ⊨ readLow ≈ readLow [{ _ }]] => simpl; apply readLow_readLow_rule
+           | |- context c [_ ⊨ readHigh ≈ readHigh [{ _ }]] => simpl; apply readHigh_readHigh_rule
+           | |- context c [_ ⊨ write _ ≈ write _ [{ _ }]] => intros; simpl; apply write_write_rule
+           end.
 
   Lemma NI_prog1 : NI prog1.
   Proof.
     rewrite /NI /prog1.
-    apply_seq => //.
-    - apply readLow_readLow_rule.
-    - move => ? ?; simpl; apply write_write_rule.
-    - cbv -[filter ni_pred app]; intuition => //; apply q. subst_sEq' => //=.
+    hammer_NI. cbv -[filter ni_pred app]; intuition => //; apply q; hammer_NI => //=.
   Qed.
 End NI_Examples.
