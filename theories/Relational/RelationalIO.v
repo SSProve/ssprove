@@ -2,7 +2,7 @@
 (**       Relational reasoning on IO                    **)
 (*********************************************************)
 
-From Coq Require Import ssreflect ssrfun ssrbool.
+From Coq Require Import ssreflect ssrfun ssrbool Program.Basics.
 From Coq Require Import FunctionalExtensionality Arith.PeanoNat List.
 
 From Mon Require Export Base.
@@ -143,6 +143,8 @@ Section NI_IO.
                                                | _ => false
                                                end.
 
+    Definition isNotPrivInp := compose negb isPrivInp.
+
     Definition isOut (i : IOTriple) : bool := match i with
                                            | Out _ => true
                                            | _ => false
@@ -222,12 +224,12 @@ Section NI_IO.
             h1' ≡ [] s/\ a1' ≡ a1 s/\ h2' ≡ InpPub i2 :: [] ⦄.
   Proof. cbv; move=> ? ? ? [_ Hpost] ?; by apply: Hpost. Qed.
 
-  Lemma readLow_readLow_rule {A2} : forall (a2:A2),
+  Lemma readLow_readLow_rule :
       ⊨ ⦃ ttrue ⦄
-        readLow ≈ ret a2
-        ⦃ fun i1 h1 h1' a2' h2 h2' =>
-            h1' ≡ InpPub i1 :: [] s/\ a2' ≡ a2 s/\ h2' ≡ [] ⦄.
-  Proof. cbv; move=> ? ? ? [_ Hpost] ?; by apply: Hpost. Qed.
+        readLow ≈ readLow
+        ⦃ fun i1 h1 h1' i2 h2 h2' =>
+            h1' ≡ InpPub i1 :: [] s/\ h2' ≡ InpPub i2 :: [] ⦄.
+  Proof. cbv. Admitted.
 
   Lemma readHigh_left_rule {A2} : forall (a2:A2),
       ⊨ ⦃ ttrue ⦄
@@ -271,11 +273,21 @@ Section NI_Examples.
   Notation "⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
     (semantic_judgement _ _ _ θIO' _ _ c1 c2 (fromPrePost' pre post)).
 
+  Fixpoint ni_pred (fp1 fp2 : list IOTriple) : SProp :=
+    let fix aux fp1 fp2 :=
+        match (fp1, fp2) with
+        | ([], []) => sUnit
+        | (InpPub i1 :: fp1, InpPub i2 :: fp2) => i1 ≡ i2 -> aux fp1 fp2
+        | (Out o1 :: fp1, Out o2 :: fp2) => o1 ≡ o2 -> aux fp1 fp2
+        | (_, _) => sEmpty
+        end in
+    aux (filter isNotPrivInp fp1) (filter isNotPrivInp fp2).
+
   (* Noninterference property *)
   Definition NI {A : Type} (c : IO A) :=
     ⊨ ⦃ fun h1 h2 => filter isPubInp h1 ≡ filter isPubInp h2 ⦄
       c ≈ c
-      ⦃ fun a1 h1 h1' a2 h2 h2' => filter isPubInp h1' ≡ filter isPubInp h2' ⦄.
+      ⦃ fun a1 h1 h1' a2 h2 h2' => ni_pred h1' h2' ⦄.
 
   Let prog1 := bind readLow write.
 
@@ -283,5 +295,8 @@ Section NI_Examples.
   Proof.
     rewrite /NI /prog1.
     apply_seq => //.
+    - apply readLow_readLow_rule.
+    - admit.
+    - admit.
  Admitted.
 End NI_Examples.
