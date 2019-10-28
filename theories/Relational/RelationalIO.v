@@ -132,24 +132,38 @@ Section NI_IO.
     Inductive IOTriple : Type := InpPub : IPub -> IOTriple
                                | InpPriv : IPriv -> IOTriple
                                | Out : Oup -> IOTriple.
+
+    Definition isPubInp (i : IOTriple) : bool := match i with
+                                              | InpPub _ => true
+                                              | _ => false
+                                              end.
+
+    Definition isPrivInp (i : IOTriple) : bool := match i with
+                                               | InpPriv _ => true
+                                               | _ => false
+                                               end.
+
+    Definition isOut (i : IOTriple) : bool := match i with
+                                           | Out _ => true
+                                           | _ => false
+                                           end.
   End IOHigh.
 
   Context {IPub1 IPriv1 O1 IPub2 IPriv2 O2 : Type}.
   Notation "i1 ⊕ i2 ⊕ o" := (@IOTriple i1 i2 o) (at level 65, i2 at next level).
 
-  Let Es1 := list (IPub1 ⊕ IPriv1 ⊕ O1).
-  Let Es2 := list (IPub2 ⊕ IPriv2 ⊕ O2).
-  Let Es12 := Es1 × Es2.
-  Let carrier := Es12 -> SProp.
+  Let Es1 := listMonoid (IPub1 ⊕ IPriv1 ⊕ O1).
+  Let Es2 := listMonoid (IPub2 ⊕ IPriv2 ⊕ O2).
+  Let Es12 := prodMonoid Es1 Es2.
+  Let XEs := multAction Es12.
 
-  Definition Wun' :=
-    @MonoCont carrier (@Pred_op_order _) (@Pred_op_order_prorder _).
+  Definition Wun' := UpdSpec XEs.
 
   Program Definition wop1' (s:IOS) : Wun' (IOAr s) :=
     match s with
-    | ReadLow => ⦑fun p h => forall i, p i ⟨ InpPub i :: nfst h, nsnd h ⟩⦒
-    | ReadHigh => ⦑fun p h => forall i, p i ⟨ InpPriv i :: nfst h, nsnd h ⟩⦒
-    | Write o => ⦑fun p h => p tt ⟨ Out o :: nfst h, nsnd h ⟩⦒
+    | ReadLow => ⦑fun p h => forall i, p i ⟨ InpPub i :: [], [] ⟩⦒
+    | ReadHigh => ⦑fun p h => forall i, p i ⟨ InpPriv i :: [], [] ⟩⦒
+    | Write o => ⦑fun p h => p tt ⟨ Out o :: [], [] ⟩⦒
     end.
   Next Obligation. move=> ? ? H ? H0 ?; apply H ; apply H0. Qed.
   Next Obligation. move=> ? ? H ? H0 ?; apply H ; apply H0. Qed.
@@ -157,9 +171,9 @@ Section NI_IO.
 
   Program Definition wop2' (s:IOS) : Wun' (IOAr s) :=
     match s with
-    | ReadLow => ⦑fun p h => forall i, p i ⟨ nfst h, InpPub i :: nsnd h ⟩⦒
-    | ReadHigh => ⦑fun p h => forall i, p i ⟨ nfst h, InpPriv i :: nsnd h ⟩⦒
-    | Write o => ⦑fun p h => p tt ⟨ nfst h, Out o :: nsnd h ⟩⦒
+    | ReadLow => ⦑fun p h => forall i, p i ⟨ [], InpPub i :: [] ⟩⦒
+    | ReadHigh => ⦑fun p h => forall i, p i ⟨ [], InpPriv i :: [] ⟩⦒
+    | Write o => ⦑fun p h => p tt ⟨ [], Out o :: [] ⟩⦒
     end.
   Next Obligation. move=> ? ? H ? H0 ?; apply H ; apply H0. Qed.
   Next Obligation. move=> ? ? H ? H0 ?; apply H ; apply H0. Qed.
@@ -188,6 +202,60 @@ Section NI_IO.
                  forall a1 a2 h', post a1 (nfst h) (nfst h') a2 (nsnd h) (nsnd h')
                             -> p ⟨a1, a2⟩ h'⦒.
   Next Obligation. split; case: H0 => // ? Hy *; apply H, Hy=> //. Qed.
+
+  Notation "⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
+    (semantic_judgement _ _ _ θIO' _ _ c1 c2 (fromPrePost' pre post)).
+
+  Let ttrue : Es1 -> Es2 -> SProp := fun _ _ => sUnit.
+
+  Lemma readLow_left_rule {A2} : forall (a2:A2),
+      ⊨ ⦃ ttrue ⦄
+        readLow ≈ ret a2
+        ⦃ fun i1 h1 h1' a2' h2 h2' =>
+            h1' ≡ InpPub i1 :: [] s/\ a2' ≡ a2 s/\ h2' ≡ [] ⦄.
+  Proof. cbv; move=> ? ? ? [_ Hpost] ?; by apply: Hpost. Qed.
+
+  Lemma readLow_right_rule {A1} : forall (a1:A1),
+      ⊨ ⦃ ttrue ⦄
+        ret a1 ≈ readLow
+        ⦃ fun a1' h1 h1' i2 h2 h2' =>
+            h1' ≡ [] s/\ a1' ≡ a1 s/\ h2' ≡ InpPub i2 :: [] ⦄.
+  Proof. cbv; move=> ? ? ? [_ Hpost] ?; by apply: Hpost. Qed.
+
+  Lemma readLow_readLow_rule {A2} : forall (a2:A2),
+      ⊨ ⦃ ttrue ⦄
+        readLow ≈ ret a2
+        ⦃ fun i1 h1 h1' a2' h2 h2' =>
+            h1' ≡ InpPub i1 :: [] s/\ a2' ≡ a2 s/\ h2' ≡ [] ⦄.
+  Proof. cbv; move=> ? ? ? [_ Hpost] ?; by apply: Hpost. Qed.
+
+  Lemma readHigh_left_rule {A2} : forall (a2:A2),
+      ⊨ ⦃ ttrue ⦄
+        readHigh ≈ ret a2
+        ⦃ fun i1 h1 h1' a2' h2 h2' =>
+            h1' ≡ InpPriv i1 :: [] s/\ a2' ≡ a2 s/\ h2' ≡ [] ⦄.
+  Proof. cbv; move=> ? ? ? [_ Hpost] ?; by apply: Hpost. Qed.
+
+  Lemma readHigh_right_rule {A1} : forall (a1:A1),
+      ⊨ ⦃ ttrue ⦄
+        ret a1 ≈ readHigh
+        ⦃ fun a1' h1 h1' i2 h2 h2' =>
+            h1' ≡  [] s/\ a1' ≡ a1 s/\ h2' ≡ InpPriv i2 :: [] ⦄.
+  Proof. cbv; move=> ? ? ? [_ Hpost] ?; by apply: Hpost. Qed.
+
+  Lemma write_left_rule {A2}: forall (o1 : O1) (a2:A2),
+      ⊨ ⦃ ttrue ⦄
+        write o1 ≈ ret a2
+        ⦃ fun _ h1 h1' a2' h2 h2' =>
+            h1' ≡ Out o1 :: [] s/\ a2' ≡ a2 s/\ h2' ≡ [] ⦄.
+  Proof. cbv; move=> ? ? ? ? [_ Hpost] ; by apply: Hpost. Qed.
+
+  Lemma write_right_rule {A1}: forall (a1 : A1) (o2:O2),
+      ⊨ ⦃ ttrue ⦄
+        ret a1 ≈ write o2
+        ⦃ fun a1' h1 h1' _ h2 h2' =>
+            h1' ≡ [] s/\ a1' ≡ a1 s/\ h2' ≡ Out o2 :: [] ⦄.
+  Proof. cbv; move=> ? ? ? ? [_ Hpost] ; by apply: Hpost. Qed.
 End NI_IO.
 
 Section NI_Examples.
@@ -203,26 +271,17 @@ Section NI_Examples.
   Notation "⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
     (semantic_judgement _ _ _ θIO' _ _ c1 c2 (fromPrePost' pre post)).
 
-  Definition isPubInp (i : IOTriple) : bool := match i with
-                                           | InpPub _ => true
-                                           | _ => false
-                                           end.
-
-  Definition isPrivInp (i : IOTriple) : bool := match i with
-                                            | InpPriv _ => true
-                                            | _ => false
-                                            end.
-
-  Definition isOut (i : IOTriple) : bool := match i with
-                                        | Out _ => true
-                                        | _ => false
-                                        end.
-
   (* Noninterference property *)
   Definition NI {A : Type} (c : IO A) :=
     ⊨ ⦃ fun h1 h2 => filter isPubInp h1 ≡ filter isPubInp h2 ⦄
       c ≈ c
-      ⦃ fun a1 h1 h1' a2 h2 h2' => h1' ≡ h2' s/\ a1 ≡ a2 ⦄.
+      ⦃ fun a1 h1 h1' a2 h2 h2' => filter isPubInp h1' ≡ filter isPubInp h2' ⦄.
 
-  Let prog1 := bind readHigh write.
+  Let prog1 := bind readLow write.
+
+  Lemma NI_prog1 : NI prog1.
+  Proof.
+    rewrite /NI /prog1.
+    apply_seq => //.
+ Admitted.
 End NI_Examples.
