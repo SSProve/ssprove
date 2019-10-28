@@ -229,7 +229,7 @@ Section NI_IO.
         readLow ≈ readLow
         ⦃ fun i1 h1 h1' i2 h2 h2' =>
             h1' ≡ InpPub i1 :: [] s/\ h2' ≡ InpPub i2 :: [] ⦄.
-  Proof. cbv; move => ? ? H ? ?; apply H; split. all: sreflexivity. Qed.
+  Proof. cbv; move => ? ? H ? ?; apply H; split; sreflexivity. Qed.
 
   Lemma readHigh_left_rule {A2} : forall (a2:A2),
       ⊨ ⦃ ttrue ⦄
@@ -250,7 +250,7 @@ Section NI_IO.
         readHigh ≈ readHigh
         ⦃ fun i1 h1 h1' i2 h2 h2' =>
             h1' ≡ InpPriv i1 :: [] s/\ h2' ≡ InpPriv i2 :: [] ⦄.
-  Proof. cbv; move => ? ? H ? ?; apply H; split. all: sreflexivity. Qed.
+  Proof. cbv; move => ? ? H ? ?; apply H; split; sreflexivity. Qed.
 
   Lemma write_left_rule {A2}: forall (o1 : O1) (a2:A2),
       ⊨ ⦃ ttrue ⦄
@@ -271,7 +271,7 @@ Section NI_IO.
         write o1 ≈ write o2
         ⦃ fun _ h1 h1' _ h2 h2' =>
             h1' ≡ Out o1 :: [] s/\ h2' ≡ Out o2 :: [] ⦄.
-  Proof. cbv; move => ? ? ? ? H; apply H; split. all: sreflexivity. Qed.
+  Proof. cbv; move => ? ? ? ? H; apply H; split; sreflexivity. Qed.
 End NI_IO.
 
 Section NI_Examples.
@@ -292,10 +292,10 @@ Section NI_Examples.
         match (fp1, fp2) with
         | ([], []) => sUnit
         | (InpPub i1 :: fp1, InpPub i2 :: fp2) => i1 ≡ i2 -> aux fp1 fp2
-        | (Out o1 :: fp1, Out o2 :: fp2) => o1 ≡ o2 -> aux fp1 fp2
+        | (Out o1 :: fp1, Out o2 :: fp2) => o1 ≡ o2 s/\ aux fp1 fp2
         | (_, _) => sEmpty
         end in
-    aux (filter isNotPrivInp fp1) (filter isNotPrivInp fp2).
+    aux (filter isNotPrivInp (rev fp1)) (filter isNotPrivInp (rev fp2)).
 
   (* Noninterference property *)
   Definition NI {A : Type} (c : IO A) :=
@@ -305,13 +305,17 @@ Section NI_Examples.
 
   Let prog1 := bind readLow write.
 
+  Ltac subst_sEq' :=
+    try repeat match goal with
+              | H:_ ≡ _ |- _ => induction (sEq_sym H); clear H
+              end.
+
   Lemma NI_prog1 : NI prog1.
   Proof.
     rewrite /NI /prog1.
     apply_seq => //.
     - apply readLow_readLow_rule.
     - move => ? ?; simpl; apply write_write_rule.
-    - cbv -[filter ni_pred app]; intuition => //; apply q.
-      admit.
- Admitted.
+    - cbv -[filter ni_pred app]; intuition => //; apply q. subst_sEq' => //=.
+  Qed.
 End NI_Examples.
