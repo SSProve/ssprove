@@ -290,8 +290,7 @@ Section NI_Examples.
   Let prog1 := bind readLow write.
   Lemma NI_prog1 : NI prog1.
   Proof.
-    rewrite /NI /prog1; hammer.
-    auto_prepost_sEq.
+    rewrite /NI /prog1; hammer; auto_prepost_sEq.
   Qed.
 
   (* Branching on secrets *)
@@ -315,6 +314,7 @@ Section NI_Examples.
     (* The conclusion is false *)
   Abort.
 
+  (* Although we branch on secret, the output is the same in both branches *)
   Let prog2' := bind readHigh (fun h => if Nat.eqb h 3 then write 127 else write 127).
   Lemma NI_prog2' : NI prog2'.
   Proof.
@@ -325,23 +325,24 @@ Section NI_Examples.
   Let prog3 := bind readLow (fun n => bind readLow (fun m => write (n + m))).
   Lemma NI_prog3 : NI prog3.
   Proof.
-    rewrite /NI /prog3; hammer.
-    auto_prepost_sEq; move => ? ?; subst_sEq => //.
+    rewrite /NI /prog3; hammer; auto_prepost_sEq; move => ? ?; subst_sEq => //.
   Qed.
 
+  (* An example with functional extensionality *)
   Let prog4 f := bind readLow (fun n => write (f n)).
   Lemma NI_prog4 f : NI (prog4 f).
   Proof.
-    rewrite /NI /prog4; hammer.
-    auto_prepost_sEq; split. f_equiv; assumption. done.
+    rewrite /NI /prog4; hammer; auto_prepost_sEq; split. f_equiv; assumption. done.
   Qed.
 
+  (* Public writes depend only on public reads; we say nothing about ret in the NI condition *)
   Let prog5 := bind readHigh ret.
   Lemma NI_prog5 : NI prog5.
   Proof.
     rewrite /NI /prog5; hammer. apply ret_rule2. auto_prepost_sEq.
   Qed.
 
+  (* Turns out to be trivial *)
   Let prog6 := bind readHigh (fun => write 23).
   Lemma NI_prog6 : NI prog6.
   Proof.
