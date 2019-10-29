@@ -268,8 +268,7 @@ Section NI_Examples.
 
   Ltac auto_prepost_sEq :=
     let H := fresh "H" in
-    move => ? [? ?] [? H]; split => //; simpl; intuition;
-                                                         apply H; subst_sEq' => //=.
+    move => ? [? ?] [? H]; split => //; simpl; intuition; apply H; subst_sEq' => //=.
 
   Ltac apply_seq' :=
     (match goal with | [|- _ ⊨ _ ≈ _ [{ ?z }]] => is_evar z end ;
@@ -292,9 +291,7 @@ Section NI_Examples.
   Lemma NI_prog1 : NI prog1.
   Proof.
     rewrite /NI /prog1; hammer.
-    cbv -[app filter rev ni_pred]; move => ? [? ?] [? H]; split => //.
-    move => ? ? ? [? ?]; split => //.
-    move => ? ? ? [? ?]; apply H; subst_sEq' => //=.
+    auto_prepost_sEq.
   Qed.
 
   (* Branching on secrets *)
@@ -311,7 +308,7 @@ Section NI_Examples.
                                                 (fun _ _ h1 _ _ h2 =>
                                                    s∃ n1 n2, h1 ≡ [Out n1] s/\ h2 ≡ [Out n2])) _ _);
     try apply write_write_rule;
-    cbv -[app filter rev]; intuition; apply q; subst_sEq'; do 2 eexists; dintuition.
+    auto_prepost_sEq; do 2 eexists; dintuition.
     cbv -[app filter rev ni_pred]; intuition; apply q.
     move: H => [? [? [? ?]]]; subst_sEq'.
     simpl.
@@ -322,37 +319,32 @@ Section NI_Examples.
   Lemma NI_prog2' : NI prog2'.
   Proof.
     rewrite /NI /prog2'; hammer.
-    set b1 := (_ =? _); set b2 := (_ =? _); case: b1 b2 => [] []; hammer.
-    auto_prepost_sEq.
+    set b1 := (_ =? _); set b2 := (_ =? _); case: b1 b2 => [] []; hammer. auto_prepost_sEq.
   Qed.
 
   Let prog3 := bind readLow (fun n => bind readLow (fun m => write (n + m))).
   Lemma NI_prog3 : NI prog3.
   Proof.
     rewrite /NI /prog3; hammer.
-    cbv -[filter ni_pred app Nat.add]; intuition; apply q; subst_sEq' => //=.
-    move => ? ?; subst_sEq => //.
+    auto_prepost_sEq; move => ? ?; subst_sEq => //.
   Qed.
 
   Let prog4 f := bind readLow (fun n => write (f n)).
   Lemma NI_prog4 f : NI (prog4 f).
   Proof.
     rewrite /NI /prog4; hammer.
-    cbv -[filter ni_pred app]; intuition; apply q; subst_sEq' => //=.
-    split. f_equiv; assumption. done.
+    auto_prepost_sEq; split. f_equiv; assumption. done.
   Qed.
 
   Let prog5 := bind readHigh ret.
   Lemma NI_prog5 : NI prog5.
   Proof.
-    rewrite /NI /prog5; hammer. apply ret_rule2.
-    cbv -[filter ni_pred app]; intuition; apply q; subst_sEq' => //=.
+    rewrite /NI /prog5; hammer. apply ret_rule2. auto_prepost_sEq.
   Qed.
 
   Let prog6 := bind readHigh (fun => write 23).
   Lemma NI_prog6 : NI prog6.
   Proof.
-    rewrite /NI /prog6; hammer.
-    cbv -[filter ni_pred app]; intuition; apply q; subst_sEq' => //=.
+    rewrite /NI /prog6; hammer; auto_prepost_sEq.
   Qed.
 End NI_Examples.
