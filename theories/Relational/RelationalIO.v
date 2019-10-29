@@ -266,7 +266,9 @@ Section NI_Examples.
            | H:_ ≡ _ |- _ => induction (sEq_sym H); clear H
            end.
 
-  Ltac auto_prepost_sEq := move => ? [? ?] [? H]; split => //; simpl; intuition;
+  Ltac auto_prepost_sEq :=
+    let H := fresh "H" in
+    move => ? [? ?] [? H]; split => //; simpl; intuition;
                                                          apply H; subst_sEq' => //=.
 
   Ltac apply_seq' :=
