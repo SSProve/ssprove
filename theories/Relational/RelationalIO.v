@@ -286,8 +286,9 @@ Section NI_Examples.
   Let prog1 := bind readLow write.
   Lemma NI_prog1 : NI prog1.
   Proof.
-    rewrite /NI /prog1.
-    hammer. cbv -[filter ni_pred app]; intuition => //; apply q; subst_sEq' => //=.
+    rewrite /NI /prog1; hammer.
+    cbv; move => ? [? ?] [? H]; split. tauto. move => ? ? ? [? ?]; split. tauto.
+    move => ? ? ? [? ?]; apply H; subst_sEq' => //=.
   Qed.
 
   (* Branching on secrets *)
@@ -323,7 +324,7 @@ Section NI_Examples.
   Lemma NI_prog3 : NI prog3.
   Proof.
     rewrite /NI /prog3; hammer.
-    cbv -[filter ni_pred app Nat.add]; intuition => //; apply q; subst_sEq' => //=.
+    cbv -[filter ni_pred app Nat.add]; intuition; apply q; subst_sEq' => //=.
     move => ? ?; subst_sEq => //.
   Qed.
 
@@ -331,7 +332,7 @@ Section NI_Examples.
   Lemma NI_prog4 f : NI (prog4 f).
   Proof.
     rewrite /NI /prog4; hammer.
-    cbv -[filter ni_pred app]; intuition => //; apply q; subst_sEq' => //=.
+    cbv -[filter ni_pred app]; intuition; apply q; subst_sEq' => //=.
     split. f_equiv; assumption. done.
   Qed.
 
@@ -339,13 +340,13 @@ Section NI_Examples.
   Lemma NI_prog5 : NI prog5.
   Proof.
     rewrite /NI /prog5; hammer. apply ret_rule2.
-    cbv -[filter ni_pred app]; intuition => //; apply q; subst_sEq' => //=.
+    cbv -[filter ni_pred app]; intuition; apply q; subst_sEq' => //=.
   Qed.
 
   Let prog6 := bind readHigh (fun => write 23).
   Lemma NI_prog6 : NI prog6.
   Proof.
     rewrite /NI /prog6; hammer.
-    cbv -[filter ni_pred app]; intuition => //; apply q; subst_sEq' => //=.
+    cbv -[filter ni_pred app]; intuition; apply q; subst_sEq' => //=.
   Qed.
 End NI_Examples.
