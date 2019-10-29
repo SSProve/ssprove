@@ -291,7 +291,7 @@ Section NI_Examples.
   Qed.
 
   (* Branching on secrets *)
-  Let prog2 := bind readHigh (fun h => if Nat.eqb h 1 then write 10 else write 20).
+  Let prog2 := bind readHigh (fun h => if Nat.eqb h 3 then write 7 else write 13).
   Lemma NI_prog2 : NI prog2.
   Proof.
     rewrite /NI /prog2.
@@ -311,7 +311,7 @@ Section NI_Examples.
     (* The conclusion is false *)
   Abort.
 
-  Let prog2' := bind readHigh (fun h => if Nat.eqb h 1 then write 10 else write 10).
+  Let prog2' := bind readHigh (fun h => if Nat.eqb h 3 then write 127 else write 127).
   Lemma NI_prog2' : NI prog2'.
   Proof.
     rewrite /NI /prog2'; hammer.
@@ -331,7 +331,21 @@ Section NI_Examples.
   Lemma NI_prog4 f : NI (prog4 f).
   Proof.
     rewrite /NI /prog4; hammer.
-    cbv -[filter ni_pred app Nat.add]; intuition => //; apply q; subst_sEq' => //=.
+    cbv -[filter ni_pred app]; intuition => //; apply q; subst_sEq' => //=.
     split. f_equiv; assumption. done.
+  Qed.
+
+  Let prog5 := bind readHigh ret.
+  Lemma NI_prog5 : NI prog5.
+  Proof.
+    rewrite /NI /prog5; hammer. apply ret_rule2.
+    cbv -[filter ni_pred app]; intuition => //; apply q; subst_sEq' => //=.
+  Qed.
+
+  Let prog6 := bind readHigh (fun => write 23).
+  Lemma NI_prog6 : NI prog6.
+  Proof.
+    rewrite /NI /prog6; hammer.
+    cbv -[filter ni_pred app]; intuition => //; apply q; subst_sEq' => //=.
   Qed.
 End NI_Examples.
