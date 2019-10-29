@@ -266,6 +266,9 @@ Section NI_Examples.
            | H:_ ≡ _ |- _ => induction (sEq_sym H); clear H
            end.
 
+  Ltac auto_prepost_sEq := move => ? [? ?] [? H]; split => //; simpl; intuition;
+                                                         apply H; subst_sEq' => //=.
+
   Ltac apply_seq' :=
     (match goal with | [|- _ ⊨ _ ≈ _ [{ ?z }]] => is_evar z end ;
      refine (seq_rule _ _ _ _ (wf:=extend_to_Jprod _ (fun '⟨a1, a2⟩ => _)) _ _)
@@ -287,7 +290,8 @@ Section NI_Examples.
   Lemma NI_prog1 : NI prog1.
   Proof.
     rewrite /NI /prog1; hammer.
-    cbv; move => ? [? ?] [? H]; split. tauto. move => ? ? ? [? ?]; split. tauto.
+    cbv -[app filter rev ni_pred]; move => ? [? ?] [? H]; split => //.
+    move => ? ? ? [? ?]; split => //.
     move => ? ? ? [? ?]; apply H; subst_sEq' => //=.
   Qed.
 
@@ -317,7 +321,7 @@ Section NI_Examples.
   Proof.
     rewrite /NI /prog2'; hammer.
     set b1 := (_ =? _); set b2 := (_ =? _); case: b1 b2 => [] []; hammer.
-    cbv -[app filter rev ni_pred]; intuition; apply q; subst_sEq' => //=.
+    auto_prepost_sEq.
   Qed.
 
   Let prog3 := bind readLow (fun n => bind readLow (fun m => write (n + m))).
