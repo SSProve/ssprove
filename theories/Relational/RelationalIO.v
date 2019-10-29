@@ -298,15 +298,17 @@ Section NI_Examples.
     hammer.
     set b1 := (_ =? _); set b2 := (_ =? _).
     case: b1 b2 => [] [];
-    refine (weaken_rule2 _ _ _ _ (w':=fromPrePost' (fun _ _ => sUnit)
-                                                   (fun _ _ h1 _ _ h2 =>
-                                                   s∃ n1 n2, h1 ≡ [Out n1] s/\ h2 ≡ [Out n2])) _ _); try apply write_write_rule;
+                    refine (weaken_rule2 _ _ _ _
+                                         (w':=fromPrePost'
+                                                (fun _ _ => sUnit)
+                                                (fun _ _ h1 _ _ h2 =>
+                                                   s∃ n1 n2, h1 ≡ [Out n1] s/\ h2 ≡ [Out n2])) _ _);
+    try apply write_write_rule;
     cbv -[app filter rev]; intuition; apply q; subst_sEq'; do 2 eexists; dintuition.
     cbv -[app filter rev ni_pred]; intuition; apply q.
     move: H => [? [? [? ?]]]; subst_sEq'.
     simpl.
-  (* Admitted. *)
-  (* This shouldn't be admitted, it's false.. *)
+    (* The conclusion is false *)
   Abort.
 
   Let prog2' := bind readHigh (fun h => if Nat.eqb h 1 then write 10 else write 10).
@@ -314,22 +316,22 @@ Section NI_Examples.
   Proof.
     rewrite /NI /prog2'; hammer.
     set b1 := (_ =? _); set b2 := (_ =? _); case: b1 b2 => [] []; hammer.
-    cbv -[app filter rev ni_pred]; intuition; apply q;subst_sEq'.
-    simpl. done.
+    cbv -[app filter rev ni_pred]; intuition; apply q; subst_sEq' => //=.
   Qed.
 
   Let prog3 := bind readLow (fun n => bind readLow (fun m => write (n + m))).
   Lemma NI_prog3 : NI prog3.
   Proof.
     rewrite /NI /prog3; hammer.
-    (* hammer correspond does the following calls *)
-    (* apply_seq' => /= [|? ?|]. *)
-    (* apply readLow_readLow_rule. *)
-    (* apply_seq' => /= [|? ?]. *)
-    (* apply readLow_readLow_rule. *)
-    (* apply: write_write_rule. *)
-    cbv -[filter ni_pred app Nat.add]; intuition=> //; apply q; subst_sEq'=> //=.
-    move=> ? ? ; subst_sEq=> //.
+    cbv -[filter ni_pred app Nat.add]; intuition => //; apply q; subst_sEq' => //=.
+    move => ? ?; subst_sEq => //.
   Qed.
 
+  Let prog4 f := bind readLow (fun n => write (f n)).
+  Lemma NI_prog4 f : NI (prog4 f).
+  Proof.
+    rewrite /NI /prog4; hammer.
+    cbv -[filter ni_pred app Nat.add]; intuition => //; apply q; subst_sEq' => //=.
+    split. f_equiv; assumption. done.
+  Qed.
 End NI_Examples.
