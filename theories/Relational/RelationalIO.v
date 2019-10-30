@@ -362,4 +362,20 @@ Section NI_Examples.
     rewrite /NI /prog7; hammer; induction fuel. apply ret_rule2.
     hammer. 3,4: auto_prepost_sEq.
   Admitted.
+
+  (* Two equivalent ways of summing numbers upto n *)
+  Let prog8 (n : nat) := let fix sumTo sum n :=
+                           match n with
+                           | O => ret sum
+                           | S n => sumTo (sum + n) n
+                           end in
+                       bind readHigh (fun h => if Nat.eqb h 7
+                                            then sumTo O n
+                                            else ret ((n * (n - 1)) / 2)).
+  Lemma NI_prog8 n : NI (prog8 n).
+  Proof.
+    rewrite /NI /prog8; hammer; induction n.
+    set b1 := (_ =? _); set b2 := (_ =? _). case: b1 b2 => [] []. apply ret_rule2.
+    all: try simpl; try apply ret_rule2. 2,3: auto_prepost_sEq.
+  Admitted.
 End NI_Examples.
