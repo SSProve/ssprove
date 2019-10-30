@@ -285,6 +285,7 @@ Section NI_Examples.
            end.
 
   Arguments bind : simpl never.
+  Arguments ret : simpl never.
 
   (* Trivial example *)
   Let prog1 := bind readLow write.
@@ -348,4 +349,17 @@ Section NI_Examples.
   Proof.
     rewrite /NI /prog6; hammer; auto_prepost_sEq.
   Qed.
+
+  (* Read fuel numbers and output the sum *)
+  Let prog7 (fuel: nat) := let fix readN sum fuel :=
+                          match fuel with
+                          | O => ret sum
+                          | S fuel => bind readLow (fun m => readN (sum + m) fuel)
+                          end in
+                         bind (readN O fuel) write.
+  Lemma NI_prog7 fuel : NI (prog7 fuel).
+  Proof.
+    rewrite /NI /prog7; hammer; induction fuel. apply ret_rule2.
+    hammer. 3,4: auto_prepost_sEq.
+  Admitted.
 End NI_Examples.
