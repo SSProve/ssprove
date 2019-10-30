@@ -255,6 +255,11 @@ Section NI_Examples.
         end in
     aux (filter isNotPrivInp (rev fp1)) (filter isNotPrivInp (rev fp2)).
 
+  Lemma ni_pred_id : forall fp, ni_pred fp fp = sUnit.
+  Proof.
+    rewrite /ni_pred. destruct fp. all: simpl. reflexivity. admit.
+  Admitted.
+
   (* Noninterference property *)
   Definition NI {A : Type} (c : IO A) :=
     ⊨ ⦃ fun h1 h2 => filter isPubInp h1 ≡ filter isPubInp h2 ⦄
@@ -295,7 +300,7 @@ Section NI_Examples.
   Qed.
 
   (* Branching on secrets *)
-  Let prog2 := bind readHigh (fun h => if Nat.eqb h 3 then write 7 else write 13).
+  Let prog2 := bind readHigh (fun h => if h =? 3 then write 7 else write 13).
   Lemma NI_prog2 : NI prog2.
   Proof.
     rewrite /NI /prog2.
@@ -316,7 +321,7 @@ Section NI_Examples.
   Abort.
 
   (* Although we branch on secret, the output is the same in both branches *)
-  Let prog2' := bind readHigh (fun h => if Nat.eqb h 3 then write 127 else write 127).
+  Let prog2' := bind readHigh (fun h => if h =? 3 then write 127 else write 127).
   Lemma NI_prog2' : NI prog2'.
   Proof.
     rewrite /NI /prog2'; hammer.
@@ -351,16 +356,19 @@ Section NI_Examples.
   Qed.
 
   (* Read fuel numbers and output the sum *)
-  Let prog7 (fuel: nat) := let fix readN sum fuel :=
-                          match fuel with
-                          | O => ret sum
-                          | S fuel => bind readLow (fun m => readN (sum + m) fuel)
-                          end in
-                         bind (readN O fuel) write.
-  Lemma NI_prog7 fuel : NI (prog7 fuel).
+  Let prog7 (sum fuel: nat) := let fix readN sum fuel :=
+                                 match fuel with
+                                 | O => ret sum
+                                 | S fuel => bind readLow (fun m => readN (sum + m) fuel)
+                                 end in
+                         bind (readN sum fuel) write.
+  Lemma NI_prog7 : forall sum fuel, NI (prog7 sum fuel).
   Proof.
-    rewrite /NI /prog7; hammer; induction fuel. apply ret_rule2.
-    hammer. 3,4: auto_prepost_sEq.
+    rewrite /NI /prog7 => sum fuel; hammer; induction fuel.
+    - apply ret_rule2.
+    - admit.
+    - admit.
+    - admit.
   Admitted.
 
   (* Two equivalent ways of summing numbers upto n *)
@@ -369,13 +377,13 @@ Section NI_Examples.
                            | O => ret sum
                            | S n => sumTo (sum + n) n
                            end in
-                       bind readHigh (fun h => if Nat.eqb h 7
+                       bind readHigh (fun h => if h =? 7
                                             then sumTo O n
                                             else ret ((n * (n - 1)) / 2)).
-  Lemma NI_prog8 n : NI (prog8 n).
+  Lemma NI_prog8 : forall n, NI (prog8 n).
   Proof.
-    rewrite /NI /prog8; hammer; induction n.
-    set b1 := (_ =? _); set b2 := (_ =? _). case: b1 b2 => [] []. apply ret_rule2.
-    all: try simpl; try apply ret_rule2. 2,3: auto_prepost_sEq.
+    rewrite /NI /prog8 => n; hammer; induction n.
+    set b1 := (_ =? _); set b2 := (_ =? _). case: b1 b2 => [] [].
+    all: try simpl; try apply ret_rule2.
   Admitted.
 End NI_Examples.
