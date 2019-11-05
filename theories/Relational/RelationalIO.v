@@ -336,8 +336,7 @@ Section NI_Examples.
     rewrite /NI /prog4 => f; hammer; auto_prepost_sEq; split. f_equiv; assumption. done.
   Qed.
 
-  (* P
-ublic writes depend only on public reads; we say nothing about ret in the NI condition *)
+  (* Public writes depend only on public reads; we say nothing about ret in the NI condition *)
   Let prog5 := bind readHigh ret.
   Lemma NI_prog5 : NI prog5.
   Proof.
@@ -368,10 +367,11 @@ ublic writes depend only on public reads; we say nothing about ret in the NI con
     end.
   Lemma aux_readN : forall m n fuel, ⊨ ⦃ fun _ _ => sUnit ⦄
                                   readN m fuel ≈ readN n fuel
-                                  ⦃ fun i1 _ h1 i2 _ h2 => pubInpSum h1 ≡ i1 s/\ pubInpSum h2 ≡ i2 ⦄.
+                                  ⦃ fun i1 _ h1 i2 _ h2 => pubInpSum h1 + m ≡ i1 s/\ pubInpSum h2 + n ≡ i2 ⦄.
   Proof.
     move => m n fuel; hammer; elim: fuel m n => [| fuel IH] m n.
-    apply gp_ret_rule.
+    apply gp_ret_rule. cbv; intuition. simpl; hammer. apply IH.
+    move => ? ? H. split => //=; intuition. induction H.
   Admitted.
 
   (* Read fuel numbers and write the sum *)
@@ -381,11 +381,11 @@ ublic writes depend only on public reads; we say nothing about ret in the NI con
   Proof.
     rewrite /NI /prog7 => sum fuel; hammer; elim: fuel sum => [| fuel IH] sum.
     apply ret_rule2. simpl; hammer. apply aux_readN.
-    move => ? [? ?] H. simpl in H. split => //. simpl; intuition.
+    move => ? [? ?] ?. split => //=; intuition.
   Admitted.
 
   (* Two equivalent ways of summing numbers upto n *)
-  Fixpoint sumTo (sum n : nat) : IO nat :=
+  Fixpoint sumTo sum n : @IO nat nat nat nat :=
     match n with
     | O => ret sum
     | S n => sumTo (sum + n) n
