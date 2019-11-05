@@ -350,14 +350,10 @@ Section NI_Examples.
     rewrite /NI /prog6; hammer; auto_prepost_sEq.
   Qed.
 
-  Let pubInpSum iot := let addPubInp (a b : IOTriple) := match (a, b) with
-                                                         | (InpPub a, InpPub b) => InpPub (a + b)
-                                                         | _ => InpPub O
-                                                         end in
-                       match fold_right addPubInp (InpPub O) (filter isPubInp iot) with
-                       | InpPub x => x
-                       | _ => O
-                       end.
+  Fixpoint pubInpSum (iot : list IOTriple) := match iot with
+                                              | InpPub a :: rest => a + pubInpSum rest
+                                              | _ => O
+                                              end.
 
   (* Read fuel numbers and return the sum *)
   Fixpoint readN sum fuel :=
@@ -367,12 +363,14 @@ Section NI_Examples.
     end.
   Lemma aux_readN : forall m n fuel, ⊨ ⦃ fun _ _ => sUnit ⦄
                                   readN m fuel ≈ readN n fuel
-                                  ⦃ fun i1 _ h1 i2 _ h2 => pubInpSum h1 + m ≡ i1 s/\ pubInpSum h2 + n ≡ i2 ⦄.
+                                  ⦃ fun i1 _ h1 i2 _ h2 => m + pubInpSum (rev h1) ≡ i1 s/\
+                                                        n + pubInpSum (rev h2) ≡ i2 ⦄.
   Proof.
     move => m n fuel; hammer; elim: fuel m n => [| fuel IH] m n.
-    apply gp_ret_rule. cbv; intuition. simpl; hammer. apply IH.
-    move => ? ? H. split => //=; intuition. induction H.
-  Admitted.
+    apply gp_ret_rule. cbv -[Nat.add]; intuition; apply q. rewrite 2!Nat.add_0_r //.
+    simpl; hammer. apply IH. move => ? ? H; induction H; split => //=; intuition.
+    apply q; induction p1, q1 => /=; subst_sEq'. rewrite 2!rev_app_distr /= 2!Nat.add_assoc //.
+  Qed.
 
   (* Read fuel numbers and write the sum *)
   Let prog7 (sum fuel : nat) := bind (readN sum fuel) write.
