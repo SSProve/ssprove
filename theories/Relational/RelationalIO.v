@@ -255,16 +255,11 @@ Section NI_Examples.
         end in
     aux (filter isNotPrivInp (rev fp1)) (filter isNotPrivInp (rev fp2)).
 
-  Lemma ni_pred_id : forall fp, ni_pred fp fp = sUnit.
-  Proof.
-    rewrite /ni_pred. destruct fp. all: simpl. reflexivity. admit.
-  Admitted.
-
   (* Noninterference property *)
   Definition NI {A : Type} (c : IO A) :=
     ⊨ ⦃ fun h1 h2 => filter isPubInp h1 ≡ filter isPubInp h2 ⦄
       c ≈ c
-      ⦃ fun a1 h1 h1' a2 h2 h2' => ni_pred h1' h2' ⦄.
+      ⦃ fun _ _ h1' _ _ h2' => ni_pred h1' h2' ⦄.
 
   Ltac subst_sEq' :=
     repeat match goal with
@@ -336,12 +331,13 @@ Section NI_Examples.
 
   (* An example with functional extensionality *)
   Let prog4 f := bind readLow (fun n => write (f n)).
-  Lemma NI_prog4 f : NI (prog4 f).
+  Lemma NI_prog4 : forall f, NI (prog4 f).
   Proof.
-    rewrite /NI /prog4; hammer; auto_prepost_sEq; split. f_equiv; assumption. done.
+    rewrite /NI /prog4 => f; hammer; auto_prepost_sEq; split. f_equiv; assumption. done.
   Qed.
 
-  (* Public writes depend only on public reads; we say nothing about ret in the NI condition *)
+  (* P
+ublic writes depend only on public reads; we say nothing about ret in the NI condition *)
   Let prog5 := bind readHigh ret.
   Lemma NI_prog5 : NI prog5.
   Proof.
@@ -355,34 +351,49 @@ Section NI_Examples.
     rewrite /NI /prog6; hammer; auto_prepost_sEq.
   Qed.
 
-  (* Read fuel numbers and output the sum *)
-  Let prog7 (sum fuel: nat) := let fix readN sum fuel :=
-                                 match fuel with
-                                 | O => ret sum
-                                 | S fuel => bind readLow (fun m => readN (sum + m) fuel)
-                                 end in
-                         bind (readN sum fuel) write.
+  Let pubInpSum iot := let addPubInp (a b : IOTriple) := match (a, b) with
+                                                         | (InpPub a, InpPub b) => InpPub (a + b)
+                                                         | _ => InpPub O
+                                                         end in
+                       match fold_right addPubInp (InpPub O) (filter isPubInp iot) with
+                       | InpPub x => x
+                       | _ => O
+                       end.
+
+  (* Read fuel numbers and return the sum *)
+  Fixpoint readN sum fuel :=
+    match fuel with
+    | O => ret sum
+    | S fuel => bind readLow (fun m => readN (sum + m) fuel)
+    end.
+  Lemma aux_readN : forall m n fuel, ⊨ ⦃ fun _ _ => sUnit ⦄
+                                  readN m fuel ≈ readN n fuel
+                                  ⦃ fun i1 _ h1 i2 _ h2 => pubInpSum h1 ≡ i1 s/\ pubInpSum h2 ≡ i2 ⦄.
+  Proof.
+    move => m n fuel; hammer; elim: fuel m n => [| fuel IH] m n.
+    apply gp_ret_rule.
+  Admitted.
+
+  (* Read fuel numbers and write the sum *)
+  Let prog7 (sum fuel : nat) := bind (readN sum fuel) write.
+
   Lemma NI_prog7 : forall sum fuel, NI (prog7 sum fuel).
   Proof.
-    rewrite /NI /prog7 => sum fuel; hammer; induction fuel.
-    - apply ret_rule2.
-    - admit.
-    - admit.
-    - admit.
+    rewrite /NI /prog7 => sum fuel; hammer; elim: fuel sum => [| fuel IH] sum.
+    apply ret_rule2. simpl; hammer. apply aux_readN.
+    move => ? [? ?] H. simpl in H. split => //. simpl; intuition.
   Admitted.
 
   (* Two equivalent ways of summing numbers upto n *)
-  Let prog8 (n : nat) := let fix sumTo sum n :=
-                           match n with
-                           | O => ret sum
-                           | S n => sumTo (sum + n) n
-                           end in
-                       bind readHigh (fun h => if h =? 7
-                                            then sumTo O n
-                                            else ret ((n * (n - 1)) / 2)).
+  Fixpoint sumTo (sum n : nat) : IO nat :=
+    match n with
+    | O => ret sum
+    | S n => sumTo (sum + n) n
+    end.
+  Let prog8 (n : nat) := bind readHigh (fun h => if h =? 7 then sumTo O n else ret ((n * (n - 1)) / 2)).
   Lemma NI_prog8 : forall n, NI (prog8 n).
   Proof.
-    rewrite /NI /prog8 => n; hammer; induction n.
+    rewrite /NI /prog8 => n; hammer; elim: n => [|n].
     set b1 := (_ =? _); set b2 := (_ =? _). case: b1 b2 => [] [].
     all: try simpl; try apply ret_rule2.
   Admitted.
