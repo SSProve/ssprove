@@ -245,7 +245,7 @@ Section NI_Examples.
   Notation "⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
     (semantic_judgement _ _ _ θIO' _ _ c1 c2 (fromPrePost' pre post)).
 
-  Fixpoint ni_pred (fp1 fp2 : list IOTriple) : SProp :=
+  Definition ni_pred (fp1 fp2 : list IOTriple) : SProp :=
     let fix aux fp1 fp2 :=
         match (fp1, fp2) with
         | ([], []) => sUnit
@@ -350,6 +350,14 @@ Section NI_Examples.
     rewrite /NI /prog6; hammer; auto_prepost_sEq.
   Qed.
 
+  (* Next, set up for prog7 *)
+  Arguments ni_pred : simpl never.
+
+  Lemma aux_ni_pred : forall h1 h2 a1 a2, ni_pred h1 h2 -> ni_pred (h1 ++ [InpPub a1]) (h2 ++ [InpPub a2]).
+  Proof.
+    rewrite {2} /ni_pred => h1 h2 a1 a2 H; rewrite 2!rev_app_distr //=.
+  Qed.
+
   Fixpoint pubInpSum (iot : list IOTriple) := match iot with
                                               | InpPub a :: rest => a + pubInpSum rest
                                               | _ => O
@@ -364,12 +372,14 @@ Section NI_Examples.
   Lemma aux_readN : forall m n fuel, ⊨ ⦃ fun _ _ => sUnit ⦄
                                   readN m fuel ≈ readN n fuel
                                   ⦃ fun i1 _ h1 i2 _ h2 => m + pubInpSum (rev h1) ≡ i1 s/\
-                                                        n + pubInpSum (rev h2) ≡ i2 ⦄.
+                                                        n + pubInpSum (rev h2) ≡ i2 s/\
+                                                        ni_pred h1 h2 ⦄.
   Proof.
     move => m n fuel; hammer; elim: fuel m n => [| fuel IH] m n.
     apply gp_ret_rule. cbv -[Nat.add]; intuition; apply q; rewrite 2!Nat.add_0_r //.
     simpl; hammer. apply IH. move => ? ? H; induction H; split => //=; intuition.
-    apply q; induction p1, q1 => /=; subst_sEq'. rewrite 2!rev_app_distr /= 2!Nat.add_assoc //.
+    apply q; induction p2, q2 => /=; subst_sEq'. rewrite 2!rev_app_distr /= 2!Nat.add_assoc //.
+    split => //. by apply aux_ni_pred.
   Qed.
 
   (* Read fuel numbers and write the sum *)
@@ -377,12 +387,12 @@ Section NI_Examples.
 
   Lemma NI_prog7 : forall sum fuel, NI (prog7 sum fuel).
   Proof.
-    rewrite /NI /prog7 => sum fuel; hammer; elim: fuel sum => [| fuel ?] sum.
-    apply ret_rule2. simpl; hammer. apply aux_readN.
-    - move => ? [? ?] H; simpl in H. split => /=; intuition.
-      induction (sEq_sym p), (sEq_sym q); clear p q. admit.
-    - cbv; intuition; subst_sEq'; apply q => //.
-    - admit.
+    rewrite /NI /prog7 => sum fuel; hammer. apply aux_readN.
+    move => ? [? ?] H; simpl in H. split => /=; intuition. apply q.
+    induction (sEq_sym p0), (sEq_sym q2). subst_sEq => /=; clear h'0 a0 a3.
+    destruct h' as [h1' h2'] => /=.
+    enough (forall a1 a2 h1 h2, ni_pred h1 h2 -> a1 = a2 -> ni_pred ([Out a1] ++ h1) ([Out a2] ++ h2)).
+    apply H => //. f_equal. induction h1' => /=. move: q0. rewrite /ni_pred => /=. destruct h2' => //=.
   Admitted.
 
   (* Two equivalent ways of summing numbers upto n *)
