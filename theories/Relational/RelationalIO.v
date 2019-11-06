@@ -367,7 +367,7 @@ Section NI_Examples.
                                                         n + pubInpSum (rev h2) ≡ i2 ⦄.
   Proof.
     move => m n fuel; hammer; elim: fuel m n => [| fuel IH] m n.
-    apply gp_ret_rule. cbv -[Nat.add]; intuition; apply q. rewrite 2!Nat.add_0_r //.
+    apply gp_ret_rule. cbv -[Nat.add]; intuition; apply q; rewrite 2!Nat.add_0_r //.
     simpl; hammer. apply IH. move => ? ? H; induction H; split => //=; intuition.
     apply q; induction p1, q1 => /=; subst_sEq'. rewrite 2!rev_app_distr /= 2!Nat.add_assoc //.
   Qed.
@@ -377,9 +377,12 @@ Section NI_Examples.
 
   Lemma NI_prog7 : forall sum fuel, NI (prog7 sum fuel).
   Proof.
-    rewrite /NI /prog7 => sum fuel; hammer; elim: fuel sum => [| fuel IH] sum.
+    rewrite /NI /prog7 => sum fuel; hammer; elim: fuel sum => [| fuel ?] sum.
     apply ret_rule2. simpl; hammer. apply aux_readN.
-    move => ? [? ?] ?. split => //=; intuition.
+    - move => ? [? ?] H; simpl in H. split => /=; intuition.
+      induction (sEq_sym p), (sEq_sym q); clear p q. admit.
+    - cbv; intuition; subst_sEq'; apply q => //.
+    - admit.
   Admitted.
 
   (* Two equivalent ways of summing numbers upto n *)
