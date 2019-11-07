@@ -131,3 +131,98 @@ Section CommuteEffectObs.
   Qed.
 
 End CommuteEffectObs.
+
+Section ConverseCommute.
+  Context (M1 M2 : Monad).
+  Context (W : OrderedMonad).
+  Let Wrel := relativeMonad_precomposition typeCat_prod (ordmonad_to_relmon W).
+
+  Context (θ : RelationalEffectObservation0 M1 M2 Wrel).
+
+  Let θapp (A B : Type) := Spr1 (θ ⟨A , B⟩).
+
+  Definition unitt : Type := unit.
+
+  Require Import Coq.Logic.FunctionalExtensionality.
+
+  Lemma θret (A B : Type) (a : A) (b : B) : θapp A B ⟨ ret a, ret b ⟩ = ret ⟨ a, b ⟩.
+    move: (rmm_law1 _ _ _ _ θ ⟨A,B⟩) => /(f_equal Spr1) e.
+    apply (equal_f e ⟨a, b ⟩).
+  Qed.
+
+  Lemma θbind (A1 A2 B1 B2 : Type) (m1 : M1 A1) (f1 : A1 -> M1 B1) (m2 : M2 A2) (f2 : A2 -> M2 B2) : θapp B1 B2 ⟨ bind m1 f1 ,  bind m2 f2 ⟩ = bind (θapp A1 A2 ⟨m1, m2⟩) (fun p => θapp B1 B2 ⟨ f1 (nfst p), f2 (nsnd p) ⟩).
+    move: (rmm_law2 _ _ _ _ θ ⟨A1,A2⟩ ⟨B1, B2⟩ (⟨f1, f2⟩)) => /(f_equal Spr1) e.
+    apply (equal_f e ⟨m1, m2⟩).
+  Qed.
+
+  Lemma bind_comm : forall (M : Monad) A1 A2 A3 (f : A1 -> A2) (m : M A1) (k : A2 -> M A3), bind (f <$> m) k = bind m (fun a => k (f a)).
+    move=> M A1 A2 A3 f m k //=.
+    rewrite /bind (monad_law3 m).
+    f_equal; extensionality a; rewrite (monad_law1); reflexivity.
+  Qed.
+
+  Program Definition effobs_from_releffobs1 : MonadMorphism M1 W := @mkMorphism _ _ (fun A v => nfst <$> θapp A unitt ⟨ v, ret tt ⟩) _ _.
+  Next Obligation.
+    rewrite /map θret.
+    rewrite /bind /ret monad_law1. reflexivity.
+  Qed.
+  Next Obligation.
+    rewrite bind_comm.
+    rewrite <- (monad_law2 (ret tt)) at 1.
+    rewrite θbind //.
+    rewrite /map /bind monad_law3. f_equal; extensionality a; destruct a as [a []].
+    reflexivity.
+  Qed.
+
+  Let θ1 := effobs_from_releffobs1.
+
+  Program Definition effobs_from_releffobs2 : MonadMorphism M2 W := @mkMorphism _ _ (fun A v => nsnd <$> θapp unitt A ⟨ ret tt, v ⟩) _ _.
+  Next Obligation.
+    rewrite /map θret.
+    rewrite /bind /ret monad_law1. reflexivity.
+  Qed.
+  Next Obligation.
+    rewrite bind_comm.
+    rewrite <- (monad_law2 (ret tt)) at 1.
+    rewrite θbind //.
+    rewrite /map /bind monad_law3. f_equal; extensionality a; destruct a as [[] a]. reflexivity.
+  Qed.
+
+  Let θ2 := effobs_from_releffobs2.
+
+  Lemma releffobs_eq_effobs1 : forall A1 A2 c1 c2, θapp A1 A2 ⟨c1, c2⟩ = bind (θ1 A1 c1) (fun a : A1 => bind (θ2 A2 c2) (fun b : A2 => ret ⟨ a, b ⟩)).
+    move=> A1 A //= c1 c2.
+    rewrite <- (monad_law2 c1) at 1.
+    rewrite <- (monad_law1 tt (fun _ => c2)) at 1.
+    rewrite θbind /=. rewrite bind_comm.
+    f_equal; extensionality a; destruct a as [a1 []].
+    rewrite bind_comm //=.
+    rewrite <- (monad_law2 c2) at 1. rewrite <- (monad_law1 tt (fun _ => monad_ret M1 a1)).
+    rewrite θbind. f_equal; extensionality b; destruct b as [[] a2].
+    apply θret.
+  Qed.
+
+  Lemma releffobs_eq_effobs2 : forall A1 A2 c1 c2, θapp A1 A2 ⟨c1, c2⟩ = bind (θ2 A2 c2) (fun b : A2 => bind (θ1 A1 c1) (fun a : A1 => ret ⟨ a, b ⟩)).
+    move=> A1 A2 //= c1 c2.
+    rewrite <- (monad_law2 c2) at 1.
+    rewrite <- (monad_law1 tt (fun _ => c1)) at 1.
+    rewrite θbind /=. rewrite bind_comm.
+    f_equal; extensionality a; destruct a as [[] a2].
+    rewrite bind_comm //=.
+    rewrite <- (monad_law2 c1) at 1. rewrite <- (monad_law1 tt (fun _ => monad_ret M2 a2)).
+    rewrite θbind. f_equal; extensionality b; destruct b as [a1 []].
+    apply θret.
+  Qed.
+
+  Lemma effobs12_commute : forall A1 A2 c1 c2, commute (θ1 A1 c1) (θ2 A2 c2).
+    move=> A1 A2 c1 c2. unfold commute.
+    rewrite /commute -releffobs_eq_effobs1 -releffobs_eq_effobs2. reflexivity.
+  Qed.
+
+  Let θ' : RelationalEffectObservation0 M1 M2 Wrel := commute_effObs _ _ _ θ1 θ2 effobs12_commute.
+
+  Theorem converse_to_commute_effObs : forall A1 A2 c1 c2,
+      Spr1 (θ ⟨ A1, A2 ⟩) ⟨ c1, c2 ⟩  = Spr1 (θ' ⟨ A1, A2 ⟩) ⟨ c1, c2 ⟩.
+    move=> A1 A2 //= c1 c2. apply releffobs_eq_effobs1.
+  Qed.
+End ConverseCommute.
