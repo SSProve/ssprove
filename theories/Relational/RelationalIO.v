@@ -127,7 +127,7 @@ Section NI_IO.
 
     Definition readLow : IO IPub := op _ ReadLow.
     Definition readHigh : IO IPriv := op _ ReadHigh.
-    Definition write (o:Oup) : IO unit := op _ (Write o).
+    Definition write (o : Oup) : IO unit := op _ (Write o).
 
     Inductive IOTriple : Type := InpPub : IPub -> IOTriple
                                | InpPriv : IPriv -> IOTriple
@@ -245,10 +245,10 @@ Section NI_Examples.
   Notation "⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
     (semantic_judgement _ _ _ θIO' _ _ c1 c2 (fromPrePost' pre post)).
 
-  Definition ni_pred (fp1 fp2 : list IOTriple) : SProp :=
+  Definition ni_pred {A : Type} (fp1 fp2 : list IOTriple) (a1 a2 : A) : SProp :=
     let fix aux fp1 fp2 :=
         match (fp1, fp2) with
-        | ([], []) => sUnit
+        | ([], []) => a1 ≡ a2 -> sUnit
         | (InpPub i1 :: fp1, InpPub i2 :: fp2) => i1 ≡ i2 -> aux fp1 fp2
         | (Out o1 :: fp1, Out o2 :: fp2) => o1 ≡ o2 s/\ aux fp1 fp2
         | (_, _) => sEmpty
@@ -259,7 +259,7 @@ Section NI_Examples.
   Definition NI {A : Type} (c : IO A) :=
     ⊨ ⦃ fun h1 h2 => filter isPubInp h1 ≡ filter isPubInp h2 ⦄
       c ≈ c
-      ⦃ fun _ _ h1' _ _ h2' => ni_pred h1' h2' ⦄.
+      ⦃ fun a1 _ h1' a2 _ h2' => ni_pred h1' h2' a1 a2 ⦄.
 
   Ltac subst_sEq' :=
     repeat match goal with
@@ -353,11 +353,6 @@ Section NI_Examples.
   (* Next, set up for prog7 *)
   Arguments ni_pred : simpl never.
 
-  Lemma aux_ni_pred : forall h1 h2 a1 a2, ni_pred h1 h2 -> ni_pred (h1 ++ [InpPub a1]) (h2 ++ [InpPub a2]).
-  Proof.
-    rewrite {2} /ni_pred => h1 h2 a1 a2 H; rewrite 2!rev_app_distr //=.
-  Qed.
-
   Fixpoint pubInpSum (iot : list IOTriple) := match iot with
                                               | InpPub a :: rest => a + pubInpSum rest
                                               | _ => O
@@ -369,30 +364,34 @@ Section NI_Examples.
     | O => ret sum
     | S fuel => bind readLow (fun m => readN (sum + m) fuel)
     end.
-  Lemma aux_readN : forall m n fuel, ⊨ ⦃ fun _ _ => sUnit ⦄
-                                  readN m fuel ≈ readN n fuel
-                                  ⦃ fun i1 _ h1 i2 _ h2 => m + pubInpSum (rev h1) ≡ i1 s/\
-                                                        n + pubInpSum (rev h2) ≡ i2 s/\
-                                                        ni_pred h1 h2 ⦄.
+  Lemma lemma1 : forall K A k1 k2 (c : K -> IO A) post, ⊨ ⦃ fun _ _ => sUnit ⦄ c k1 ≈ c k1 ⦃ post ⦄ ->
+                                                  ⊨ ⦃ fun _ _ => k1 ≡ k2 ⦄ c k1 ≈ c k2 ⦃ post ⦄.
   Proof.
-    move => m n fuel; hammer; elim: fuel m n => [| fuel IH] m n.
-    apply gp_ret_rule. cbv -[Nat.add]; intuition; apply q; rewrite 2!Nat.add_0_r //.
-    simpl; hammer. apply IH. move => ? ? H; induction H; split => //=; intuition.
-    apply q; induction p2, q2 => /=; subst_sEq'. rewrite 2!rev_app_distr /= 2!Nat.add_assoc //.
-    split => //. by apply aux_ni_pred.
+    move => K A k1 k2 c post. rewrite /semantic_judgement /fromPrePost'.
+    Print "_ ≤ _". rewrite /extract_ord. simpl. rewrite /WUpd_rel.
+    rewrite /cod_rel. simpl. rewrite /pointwise_srelation /SProp_op_order.
+    intros H p a. rewrite /s_impl /flip. intros [Heq Helse]. destruct Heq.
+    apply H. cbv; intuition.
   Qed.
 
+  Lemma aux_readN : forall m n fuel, ⊨ ⦃ fun _ _ => sUnit ⦄
+                                  readN m fuel ≈ readN n fuel
+                                  ⦃ fun a1 _ h1 a2 _ h2 => m ≡ n -> ni_pred h1 h2 a1 a2 ⦄.
+  Proof.
+    move => m n fuel; hammer; elim: fuel m n => [| fuel IH] m n.
+    apply gp_ret_rule. cbv -[Nat.add]; intuition.
+    simpl; hammer. apply IH. move => ? ? H. induction H => //=; intuition.
+    apply q. destruct h', h'0; simpl in *. subst_sEq' => /=.
+  Admitted.
   (* Read fuel numbers and write the sum *)
   Let prog7 (sum fuel : nat) := bind (readN sum fuel) write.
 
   Lemma NI_prog7 : forall sum fuel, NI (prog7 sum fuel).
   Proof.
     rewrite /NI /prog7 => sum fuel; hammer. apply aux_readN.
-    move => ? [? ?] H; simpl in H. split => /=; intuition. apply q.
-    induction (sEq_sym p0), (sEq_sym q2). subst_sEq => /=; clear h'0 a0 a3.
-    destruct h' as [h1' h2'] => /=.
-    enough (forall a1 a2 h1 h2, ni_pred h1 h2 -> a1 = a2 -> ni_pred ([Out a1] ++ h1) ([Out a2] ++ h2)).
-    apply H => //. f_equal. induction h1' => /=. move: q0. rewrite /ni_pred => /=. destruct h2' => //=.
+    move => a [b c] H; simpl in H. simpl; intuition. apply q.
+    destruct h'0, h'. simpl in *. subst_sEq' => /=.
+    destruct a0, a3.
   Admitted.
 
   (* Two equivalent ways of summing numbers upto n *)
