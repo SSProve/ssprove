@@ -257,12 +257,12 @@ Section NI_Examples.
 
   Lemma aux_ni_pred : forall h1 h2 a1 a2 p, ni_pred h1 h2 p -> ni_pred (h1 ++ [InpPub a1]) (h2 ++ [InpPub a2]) p.
   Proof.
-    rewrite {2} /ni_pred => h1 h2 a1 a2 H; rewrite 2!rev_app_distr //=.
+    rewrite {2} /ni_pred => ? ? ? ? ? ?; rewrite 2!rev_app_distr //=.
   Qed.
 
   Lemma aux_ni_pred2 : forall h1 h2 a1 a2, ni_pred h1 h2 (a1 ≡ a2) -> ni_pred (Out a1 :: h1) (Out a2 :: h2) sUnit.
   Proof.
-    rewrite {2} /ni_pred => h1 h2 a1 a2 H => /=.
+    rewrite {2} /ni_pred => ? ? ? ? ? /=.
   Admitted.
 
   (* Noninterference property *)
@@ -393,7 +393,8 @@ Section NI_Examples.
     move => a [b c] H; simpl in H. simpl; intuition; apply q.
     destruct h'0, h'; simpl in *; subst_sEq' => /=.
     destruct a0, a3; simpl in *. replace (tt ≡ tt) with sUnit. apply aux_ni_pred2 => //=.
-  Admitted.
+    apply SPropAxioms.sprop_ext => //.
+  Qed.
 
   (* Two equivalent ways of summing numbers upto n *)
   Fixpoint sumTo sum n : @IO nat nat nat nat :=
