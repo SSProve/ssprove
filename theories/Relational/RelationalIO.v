@@ -263,9 +263,17 @@ Section NI_Examples.
     rewrite {2} /ni_pred => ? ? ? ? ? ?; rewrite 2!rev_app_distr //.
   Qed.
 
+  Lemma filter_distr : forall {A} (f : A -> bool) (a b : list A), filter f (a ++ b) = filter f a ++ filter f b.
+  Proof.
+    rewrite /filter => ? f a b.
+  Admitted.
+
   Lemma aux_ni_pred2 : forall h1 h2 a1 a2, ni_pred h1 h2 (a1 ≡ a2) -> ni_pred (Out a1 :: h1) (Out a2 :: h2) sUnit.
   Proof.
-    move => h1 h2 ? ? ?; destruct h1, h2 => //=.
+    move => h1 h2 a1 a2; destruct h1, h2 => //=. all: rewrite /ni_pred /= !filter_distr /= => H.
+    - admit.
+    - admit.
+    - admit.
   Admitted.
 
   (* Noninterference property *)
@@ -390,9 +398,8 @@ Section NI_Examples.
   Lemma NI_prog7 : forall sum fuel, NI (prog7 sum fuel).
   Proof.
     rewrite /NI /prog7 => sum fuel; hammer. apply aux_readN.
-    move => a [b c] H; simpl in H. simpl; intuition; apply q.
-    destruct h'0, h'; simpl in *; subst_sEq' => /=.
-    destruct a0, a3; simpl in *. replace (tt ≡ tt) with sUnit.
+    move => a [b c] H; simpl in *. intuition; apply q.
+    subst_sEq' => /=. destruct a0, a3; simpl in *. replace (tt ≡ tt) with sUnit.
       by apply aux_ni_pred2 => //=. apply SPropAxioms.sprop_ext => //.
   Qed.
 End NI_Examples.
