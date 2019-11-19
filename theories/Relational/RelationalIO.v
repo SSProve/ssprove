@@ -271,9 +271,12 @@ Section NI_Examples.
 
   Lemma aux_ni_pred2 : forall h1 h2 a1 a2, ni_pred h1 h2 (a1 ≡ a2) -> ni_pred (Out a1 :: h1) (Out a2 :: h2) sUnit.
   Proof.
-    move => h1 h2 a1 a2; destruct h1, h2 => //=.
-    all: rewrite /ni_pred /= !filter_distr /= => H; destruct isNotPrivInp => //=.
-  Admitted.
+    move=> ? ? ? ? ; rewrite /ni_pred /= !filter_distr -/ni_pred /=.
+    set h1 := filter _ _. set h2:= filter _ _.
+    elim: h1 h2 => [|[?|?|?] h1 IH] [|[?|?|?] h2] //=.
+    move=> H /H /IH //.
+    move=> [? /IH]; split=> //.
+  Qed.
 
   (* Noninterference property *)
   Definition NI {A : Type} (c : IO A) :=
