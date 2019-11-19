@@ -258,12 +258,12 @@ Section NI_Examples.
 
   Lemma aux_ni_pred : forall h1 h2 a1 a2 p, ni_pred h1 h2 p -> ni_pred (h1 ++ [InpPub a1]) (h2 ++ [InpPub a2]) p.
   Proof.
-    rewrite {2} /ni_pred => ? ? ? ? ? ?; rewrite 2!rev_app_distr //=.
+    rewrite {2} /ni_pred => ? ? ? ? ? ?; rewrite 2!rev_app_distr //.
   Qed.
 
   Lemma aux_ni_pred2 : forall h1 h2 a1 a2, ni_pred h1 h2 (a1 ≡ a2) -> ni_pred (Out a1 :: h1) (Out a2 :: h2) sUnit.
   Proof.
-    rewrite {2} /ni_pred => ? ? ? ? ? /=.
+    move => ? ? ? ? H.
   Admitted.
 
   (* Noninterference property *)
@@ -373,16 +373,14 @@ Section NI_Examples.
     | S fuel => bind readLow (fun m => readN (sum + m) fuel)
     end.
 
-  Lemma aux_readN : forall m n fuel, ⊨ ⦃ fun _ _ => m ≡ n ⦄
+  Lemma aux_readN : forall m n fuel, ⊨ ⦃ fun _ _ => sUnit ⦄
                                   readN m fuel ≈ readN n fuel
-                                  ⦃ fun a1 _ h1 a2 _ h2 => ni_pred h1 h2 (a1 ≡ a2) ⦄.
+                                  ⦃ fun a1 _ h1 a2 _ h2 => m ≡ n -> ni_pred h1 h2 (a1 ≡ a2) ⦄.
   Proof.
     move => m n fuel; hammer; elim: fuel m n => [| fuel IH] m n.
     apply gp_ret_rule. by cbv; intuition.
-    simpl; hammer. by apply IH. move => ? ? H. induction H => //=; intuition.
-    destruct h'; simpl in *.
-    2: { apply q; destruct h'; simpl in *. subst_sEq' => /=; apply aux_ni_pred, H. }
-    subst_sEq'; f_sEqual => //=.
+    simpl; hammer. by apply IH. move => ? ? /= [[] H]. intuition. subst_sEq'.
+    apply H => /= mnEq; induction mnEq. apply aux_ni_pred, H0; f_sEqual => //=.
   Admitted.
 
   (* Read fuel numbers and write the sum *)
