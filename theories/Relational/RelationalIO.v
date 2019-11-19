@@ -265,17 +265,16 @@ Section NI_Examples.
 
   Lemma filter_distr : forall {A} (f : A -> bool) (a b : list A), filter f (a ++ b) = filter f a ++ filter f b.
   Proof.
-    move => ? f a b; induction a => /=. by reflexivity. destruct f.
+    move => ? f a ?; induction a => /=. by reflexivity. destruct f.
     rewrite IHa; by reflexivity. by exact IHa.
   Qed.
 
   Lemma aux_ni_pred2 : forall h1 h2 a1 a2, ni_pred h1 h2 (a1 ≡ a2) -> ni_pred (Out a1 :: h1) (Out a2 :: h2) sUnit.
   Proof.
-    move=> ? ? ? ? ; rewrite /ni_pred /= !filter_distr -/ni_pred /=.
-    set h1 := filter _ _. set h2:= filter _ _.
+    move=> ? ? ? ? ; rewrite /ni_pred /= !filter_distr /=.
+    set h1 := filter _ _; set h2:= filter _ _.
     elim: h1 h2 => [|[?|?|?] h1 IH] [|[?|?|?] h2] //=.
-    move=> H /H /IH //.
-    move=> [? /IH]; split=> //.
+    by move=> H /H /IH //. by move=> [? /IH]; split=> //.
   Qed.
 
   (* Noninterference property *)
@@ -311,14 +310,14 @@ Section NI_Examples.
   Arguments ret : simpl never.
 
   (* Trivial example *)
-  Let prog1 := bind readLow write.
+  Definition prog1 := bind readLow write.
   Lemma NI_prog1 : NI prog1.
   Proof.
     rewrite /NI /prog1; hammer; auto_prepost_sEq.
   Qed.
 
   (* Branching on secrets *)
-  Let prog2 := bind readHigh (fun h => if h =? 3 then write 7 else write 13).
+  Definition prog2 := bind readHigh (fun h => if h =? 3 then write 7 else write 13).
   Lemma NI_prog2 : NI prog2.
   Proof.
     rewrite /NI /prog2.
@@ -339,21 +338,21 @@ Section NI_Examples.
   Abort.
 
   (* Although we branch on secret, the output is the same in both branches *)
-  Let prog2' := bind readHigh (fun h => if h =? 3 then write 127 else write 127).
+  Definition prog2' := bind readHigh (fun h => if h =? 3 then write 127 else write 127).
   Lemma NI_prog2' : NI prog2'.
   Proof.
     rewrite /NI /prog2'; hammer.
     set b1 := (_ =? _); set b2 := (_ =? _); case: b1 b2 => [] []; hammer. auto_prepost_sEq.
   Qed.
 
-  Let prog3 := bind readLow (fun n => bind readLow (fun m => write (n + m))).
+  Definition prog3 := bind readLow (fun n => bind readLow (fun m => write (n + m))).
   Lemma NI_prog3 : NI prog3.
   Proof.
     rewrite /NI /prog3; hammer; auto_prepost_sEq; move => ? ?; subst_sEq => //.
   Qed.
 
   (* An example with functional extensionality *)
-  Let prog4 f := bind readLow (fun n => write (f n)).
+  Definition prog4 f := bind readLow (fun n => write (f n)).
   Lemma NI_prog4 : forall f, NI (prog4 f).
   Proof.
     rewrite /NI /prog4 => f; hammer; auto_prepost_sEq; split. f_equiv; assumption.
@@ -361,15 +360,15 @@ Section NI_Examples.
   Qed.
 
   (* Public writes depend only on public reads, but return values differ *)
-  Let prog5 := bind readHigh ret.
+  Definition prog5 := bind readHigh ret.
   Lemma NI_prog5 : NI prog5.
   Proof.
     rewrite /NI /prog5; hammer. apply ret_rule2; auto_prepost_sEq.
-    (* The conclusion is false *)
+    move => ? ? H; induction H => /=; intuition; subst_sEq'. apply q => //=.
   Abort.
 
   (* Turns out to be trivial *)
-  Let prog6 := bind readHigh (fun => write 23).
+  Definition prog6 := bind readHigh (fun => write 23).
   Lemma NI_prog6 : NI prog6.
   Proof.
     rewrite /NI /prog6; hammer; auto_prepost_sEq.
@@ -396,12 +395,12 @@ Section NI_Examples.
   Qed.
 
   (* Read fuel numbers and write the sum *)
-  Let prog7 (sum fuel : nat) := bind (readN sum fuel) write.
+  Definition prog7 (sum fuel : nat) := bind (readN sum fuel) write.
   Lemma NI_prog7 : forall sum fuel, NI (prog7 sum fuel).
   Proof.
     rewrite /NI /prog7 => sum fuel; hammer. apply aux_readN.
-    move => a [b c] H; simpl in *. intuition; apply q.
-    subst_sEq' => /=. destruct a0, a3; simpl in *. replace (tt ≡ tt) with sUnit.
+    move => ? [? ?] H; simpl in *. intuition; apply q.
+    subst_sEq' => /=. replace (tt ≡ tt) with sUnit.
       by apply aux_ni_pred2 => //=. apply SPropAxioms.sprop_ext => //.
   Qed.
 End NI_Examples.
