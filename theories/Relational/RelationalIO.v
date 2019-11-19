@@ -7,9 +7,10 @@ From Coq Require Import FunctionalExtensionality Arith.PeanoNat List.
 
 From Mon Require Export Base.
 From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
-From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads Monoid DijkstraMonadExamples.
-(* From Mon.SM Require Import SMMonadExamples.  *)
-From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples GenericRulesSimple Commutativity.
+From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads
+     Monoid DijkstraMonadExamples.
+From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples
+     GenericRulesSimple Commutativity.
 
 Import SPropNotations.
 Import ListNotations.
@@ -269,7 +270,7 @@ Section NI_Examples.
   Definition NI {A : Type} (c : IO A) :=
     ⊨ ⦃ fun h1 h2 => filter isPubInp h1 ≡ filter isPubInp h2 ⦄
       c ≈ c
-      ⦃ fun a1 _ h1' a2 _ h2' => ni_pred h1' h2' (a1 ≡ a2) ⦄.
+      ⦃ fun _ _ h1' _ _ h2' => ni_pred h1' h2' sUnit ⦄.
 
   Ltac subst_sEq' :=
     repeat match goal with
@@ -301,7 +302,7 @@ Section NI_Examples.
   Let prog1 := bind readLow write.
   Lemma NI_prog1 : NI prog1.
   Proof.
-    rewrite /NI /prog1; hammer; auto_prepost_sEq; destruct a0, a3 => //=.
+    rewrite /NI /prog1; hammer; auto_prepost_sEq.
   Qed.
 
   (* Branching on secrets *)
@@ -331,28 +332,27 @@ Section NI_Examples.
   Proof.
     rewrite /NI /prog2'; hammer.
     set b1 := (_ =? _); set b2 := (_ =? _); case: b1 b2 => [] []; hammer. auto_prepost_sEq.
-    destruct a0, a3 => //=.
   Qed.
 
   Let prog3 := bind readLow (fun n => bind readLow (fun m => write (n + m))).
   Lemma NI_prog3 : NI prog3.
   Proof.
     rewrite /NI /prog3; hammer; auto_prepost_sEq; move => ? ?; subst_sEq => //.
-    destruct a4, a5 => //=.
   Qed.
 
   (* An example with functional extensionality *)
   Let prog4 f := bind readLow (fun n => write (f n)).
   Lemma NI_prog4 : forall f, NI (prog4 f).
   Proof.
-    rewrite /NI /prog4 => f; hammer; auto_prepost_sEq; split. f_equiv; assumption. destruct a0, a3 => //=.
+    rewrite /NI /prog4 => f; hammer; auto_prepost_sEq; split. f_equiv; assumption.
+    destruct a0, a3 => //=.
   Qed.
 
   (* Public writes depend only on public reads, but return values differ *)
   Let prog5 := bind readHigh ret.
   Lemma NI_prog5 : NI prog5.
   Proof.
-    rewrite /NI /prog5; hammer. apply ret_rule2; auto_prepost_sEq; rewrite /ni_pred => //=.
+    rewrite /NI /prog5; hammer. apply ret_rule2; auto_prepost_sEq.
     (* The conclusion is false *)
   Abort.
 
@@ -360,7 +360,7 @@ Section NI_Examples.
   Let prog6 := bind readHigh (fun => write 23).
   Lemma NI_prog6 : NI prog6.
   Proof.
-    rewrite /NI /prog6; hammer; auto_prepost_sEq. destruct a0, a3 => //=.
+    rewrite /NI /prog6; hammer; auto_prepost_sEq.
   Qed.
 
   (* Next, set up for prog7 *)
@@ -378,11 +378,11 @@ Section NI_Examples.
                                   ⦃ fun a1 _ h1 a2 _ h2 => ni_pred h1 h2 (a1 ≡ a2) ⦄.
   Proof.
     move => m n fuel; hammer; elim: fuel m n => [| fuel IH] m n.
-    apply gp_ret_rule. cbv -[Nat.add]; intuition.
-    simpl; hammer. apply IH. move => ? ? H. induction H => //=; intuition.
+    apply gp_ret_rule. by cbv; intuition.
+    simpl; hammer. by apply IH. move => ? ? H. induction H => //=; intuition.
     destruct h'; simpl in *.
     2: { apply q; destruct h'; simpl in *. subst_sEq' => /=; apply aux_ni_pred, H. }
-    induction p; f_sEqual => //=.
+    subst_sEq'; f_sEqual => //=.
   Admitted.
 
   (* Read fuel numbers and write the sum *)
