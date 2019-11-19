@@ -265,15 +265,14 @@ Section NI_Examples.
 
   Lemma filter_distr : forall {A} (f : A -> bool) (a b : list A), filter f (a ++ b) = filter f a ++ filter f b.
   Proof.
-    rewrite /filter => ? f a b.
-  Admitted.
+    move => ? f a b; induction a => /=. by reflexivity. destruct f.
+    rewrite IHa; by reflexivity. by exact IHa.
+  Qed.
 
   Lemma aux_ni_pred2 : forall h1 h2 a1 a2, ni_pred h1 h2 (a1 ≡ a2) -> ni_pred (Out a1 :: h1) (Out a2 :: h2) sUnit.
   Proof.
-    move => h1 h2 a1 a2; destruct h1, h2 => //=. all: rewrite /ni_pred /= !filter_distr /= => H.
-    - admit.
-    - admit.
-    - admit.
+    move => h1 h2 a1 a2; destruct h1, h2 => //=.
+    all: rewrite /ni_pred /= !filter_distr /= => H; destruct isNotPrivInp => //=.
   Admitted.
 
   (* Noninterference property *)
