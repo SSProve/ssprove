@@ -246,24 +246,26 @@ Section NI_Examples.
   Notation "⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
     (semantic_judgement _ _ _ θIO' _ _ c1 c2 (fromPrePost' pre post)).
 
-  Definition ni_pred (fp1 fp2 : list IOTriple) (p : SProp) : SProp :=
-    let fix aux fp1 fp2 :=
-        match (fp1, fp2) with
-        | ([], []) => p
-        | (InpPub i1 :: fp1, InpPub i2 :: fp2) => i1 ≡ i2 -> aux fp1 fp2
-        | (Out o1 :: fp1, Out o2 :: fp2) => o1 ≡ o2 s/\ aux fp1 fp2
-        | (_, _) => sEmpty
-        end in
-    aux (filter isNotPrivInp (rev fp1)) (filter isNotPrivInp (rev fp2)).
+  Fixpoint aux (fp1 fp2 : list IOTriple) (p : SProp) :=
+    match (fp1, fp2) with
+    | ([], []) => p
+    | (InpPub i1 :: fp1, InpPub i2 :: fp2) => i1 ≡ i2 -> aux fp1 fp2 p
+    | (Out o1 :: fp1, Out o2 :: fp2) => o1 ≡ o2 s/\ aux fp1 fp2 p
+    | (_, _) => sEmpty
+    end.
 
-  Lemma aux_ni_pred : forall h1 h2 a1 a2 p, ni_pred h1 h2 p -> ni_pred (h1 ++ [InpPub a1]) (h2 ++ [InpPub a2]) p.
+  Definition ni_pred (fp1 fp2 : list IOTriple) (p : SProp) : SProp :=
+    aux (filter isNotPrivInp (rev fp1)) (filter isNotPrivInp (rev fp2)) p.
+
+  Lemma aux_ni_pred : forall h1 h2 a1 a2 p, (a1 ≡ a2 -> ni_pred h1 h2 p)
+                                       -> ni_pred (h1 ++ [InpPub a1]) (h2 ++ [InpPub a2]) p.
   Proof.
     rewrite {2} /ni_pred => ? ? ? ? ? ?; rewrite 2!rev_app_distr //.
   Qed.
 
   Lemma aux_ni_pred2 : forall h1 h2 a1 a2, ni_pred h1 h2 (a1 ≡ a2) -> ni_pred (Out a1 :: h1) (Out a2 :: h2) sUnit.
   Proof.
-    move => ? ? ? ? H.
+    move => h1 h2 ? ? ?; destruct h1, h2 => //=.
   Admitted.
 
   (* Noninterference property *)
@@ -380,8 +382,8 @@ Section NI_Examples.
     move => m n fuel; hammer; elim: fuel m n => [| fuel IH] m n.
     apply gp_ret_rule. by cbv; intuition.
     simpl; hammer. by apply IH. move => ? ? /= [[] H]. intuition. subst_sEq'.
-    apply H => /= mnEq; induction mnEq. apply aux_ni_pred, H0; f_sEqual => //=.
-  Admitted.
+    apply H => /= mnEq; induction mnEq. apply aux_ni_pred => ?; apply H0; f_sEqual => //=.
+  Qed.
 
   (* Read fuel numbers and write the sum *)
   Let prog7 (sum fuel : nat) := bind (readN sum fuel) write.
@@ -390,21 +392,7 @@ Section NI_Examples.
     rewrite /NI /prog7 => sum fuel; hammer. apply aux_readN.
     move => a [b c] H; simpl in H. simpl; intuition; apply q.
     destruct h'0, h'; simpl in *; subst_sEq' => /=.
-    destruct a0, a3; simpl in *. replace (tt ≡ tt) with sUnit. apply aux_ni_pred2 => //=.
-    apply SPropAxioms.sprop_ext => //.
+    destruct a0, a3; simpl in *. replace (tt ≡ tt) with sUnit.
+      by apply aux_ni_pred2 => //=. apply SPropAxioms.sprop_ext => //.
   Qed.
-
-  (* Two equivalent ways of summing numbers upto n *)
-  Fixpoint sumTo sum n : @IO nat nat nat nat :=
-    match n with
-    | O => ret sum
-    | S n => sumTo (sum + n) n
-    end.
-  Let prog8 (n : nat) := bind readHigh (fun h => if h =? 7 then sumTo O n else ret ((n * (n - 1)) / 2)).
-  Lemma NI_prog8 : forall n, NI (prog8 n).
-  Proof.
-    rewrite /NI /prog8 => n; hammer; elim: n => [|n].
-    set b1 := (_ =? _); set b2 := (_ =? _). case: b1 b2 => [] [].
-    all: try simpl; try apply ret_rule2.
-  Admitted.
 End NI_Examples.
