@@ -249,6 +249,9 @@ Section NI_Examples.
   Fixpoint aux (fp1 fp2 : list IOTriple) (p : SProp) :=
     match (fp1, fp2) with
     | ([], []) => p
+    (* alt: could filer them here too, instead of in ni_pred *)
+    (* | (InpPriv i1 :: fp1, fp2) *)
+    (* | (fp1, InpPriv i2 :: fp2) => aux fp1 fp2 p *)
     | (InpPub i1 :: fp1, InpPub i2 :: fp2) => i1 ≡ i2 -> aux fp1 fp2 p
     | (Out o1 :: fp1, Out o2 :: fp2) => o1 ≡ o2 s/\ aux fp1 fp2 p
     | (_, _) => sEmpty
@@ -256,6 +259,28 @@ Section NI_Examples.
 
   Definition ni_pred (fp1 fp2 : list IOTriple) (p : SProp) : SProp :=
     aux (filter isNotPrivInp (rev fp1)) (filter isNotPrivInp (rev fp2)) p.
+
+  (*
+     How does this compare to? It seems equivalent!?
+     pub-inputs fp1 =list pub-inputs pf2 ==> pub pf1 =list pub pf2
+
+     fp1 = InpPriv password1; InpPub 42; InpPub 41; OutPub 42 -- breaks determinacy
+     fp2 = InpPriv password2; InpPub 42; OutPub password2
+     fp3 = InpPriv password2; InpPub 42; OutPub 42 -- leaks secret with respect to fp2
+
+     fp1 = InpPriv password1; InpPub 41; InpPub 41; OutPub 42
+     fp3 = InpPriv password2; InpPub 43; OutPub 42
+
+     fp1 = InpPriv password1; InpPub 41;
+     fp3 = InpPriv password2; InpPub 41;
+
+     fp1 = InpPriv password1; InpPriv 42
+     fp2 = InpPriv password2;
+
+     Determinacy:
+     P ~> t1 /\ P ~> t2 ==> t1 = t2 \/ (exists m i1 i2, m :: Input i1 <: t1
+                                                     /\ m :: Input i2 <: t2)
+   *)
 
   Lemma aux_ni_pred : forall h1 h2 a1 a2 p, (a1 ≡ a2 -> ni_pred h1 h2 p)
                                        -> ni_pred (h1 ++ [InpPub a1]) (h2 ++ [InpPub a2]) p.
@@ -282,6 +307,19 @@ Section NI_Examples.
     ⊨ ⦃ fun h1 h2 => filter isPubInp h1 ≡ filter isPubInp h2 ⦄
       c ≈ c
       ⦃ fun _ _ h1' _ _ h2' => ni_pred h1' h2' sUnit ⦄.
+
+  (* Is NI equivalent to the following? (Seems quite close) *)
+  (* Definition NI2 {A : Type} (c : IO A) := *)
+  (*   ⊨ ⦃ ttrue ⦄ *)
+  (*     c ≈ c *)
+  (*     ⦃ fun _ h1 h1' _ h2 h2' => ni_pred (h1' ++ h1) (h2' ++ h2) sUnit ⦄. *)
+
+  (* Is NI equivalent to the following? (Seems quite close; and probably equiv to NI2?)*)
+  (* Definition NI3 {A : Type} (c : IO A) := *)
+  (*   ⊨ ⦃ ttrue ⦄ *)
+  (*     c ≈ c *)
+  (*     ⦃ fun _ _ h1' _ _ h2' => filter isPubInp h1 ≡ filter isPubInp h2 -> *)
+  (*                              ni_pred h1' h2' sUnit ⦄. *)
 
   Ltac subst_sEq' :=
     repeat match goal with
@@ -333,7 +371,7 @@ Section NI_Examples.
     auto_prepost_sEq; do 2 eexists; dintuition.
     cbv -[app filter rev ni_pred]; intuition; apply q.
     move: H => [? [? [? ?]]]; subst_sEq'.
-    simpl.
+    cbv. intuition.
     (* The conclusion is false *)
   Abort.
 
@@ -365,7 +403,7 @@ Section NI_Examples.
   Proof.
     rewrite /NI /prog5; hammer. apply ret_rule2; auto_prepost_sEq.
     move => ? ? H; induction H => /=; intuition; subst_sEq'. apply q => //=.
-  Abort.
+  Qed.
 
   (* Turns out to be trivial *)
   Definition prog6 := bind readHigh (fun => write 23).
@@ -373,6 +411,19 @@ Section NI_Examples.
   Proof.
     rewrite /NI /prog6; hammer; auto_prepost_sEq.
   Qed.
+
+  Definition prog_declasify f := bind readHigh (fun n => write (f n)).
+  Lemma NI_prog_declasify : forall f,
+    ⊨ ⦃ fun _ _ => sUnit ⦄
+      (prog_declasify f) ≈ (prog_declasify f)
+      ⦃ fun _ _ h1' _ _ h2' =>
+          s∃ i1 i2 o1 o2, h1' ≡ [InpPriv i1; Out o1] s/\
+                          h2' ≡ [InpPriv i2; Out o2] s/\
+                          (f i1 ≡ f i2 -> o1 ≡ o2) ⦄.
+  Proof.
+  Admitted.
+  (* More on declassification:
+     https://www.cse.chalmers.se/~andrei/sabelfeld-sands-jcs07.pdf *)
 
   (* Next, set up for prog7 *)
   Arguments ni_pred : simpl never.
