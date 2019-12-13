@@ -529,6 +529,7 @@ Section ImpMonad.
   (* Does not derive the signatures, see issues #246, #249 on Equations bug tracker *)
   (* Derive Signature for Imp. *)
 
+
   Inductive size_tree : Type :=
   | STBase
   | STBound : (S -> size_tree) -> size_tree
@@ -539,10 +540,11 @@ Section ImpMonad.
   Derive NoConfusionHom for size_tree.
   Derive Subterm for size_tree.
   Next Obligation.
-    apply Transitive_Closure.Acc_clos_trans.
+    move=> a ; apply Transitive_Closure.Acc_clos_trans.
     elim: a=> [|k IH|k IH|k1 IH1 k2 IH2];
                constructor=> ? x ;dependent elimination x=> //.
   Qed.
+
 
   Fixpoint sizeImp {A:Type} (c:Imp A) {struct c} : size_tree :=
     match c with
@@ -573,14 +575,21 @@ Section ImpMonad.
   (*   move=> Heq' ; exact (IH1 _ body Heq + IH2 _ k Heq'). *)
   (* Defined. *)
 
-   Equations test {A} (c:Imp A): nat by wf (sizeImp c) size_tree_subterm :=
+  (* From Equations.Prop Require Import Tactics. *)
+
+  Obligation Tactic := Tactics.equations_simpl.
+
+   Equations? test {A} (c:Imp A): nat by wf (sizeImp c) size_tree_subterm :=
      test (ImpRet _) := 1;
      test (ImpGet k) := let f s := test (k s) in 2;
      test (ImpSet k) := test k;
      test (ImpDoWhile body k) := test body + test k.
-   Next Obligation.
-     constructor. apply: size_tree_direct_subterm_1_1.
-   Qed.
+   Proof.
+    constructor; apply: size_tree_direct_subterm_1_1.
+   Defined.
+
+
+   Obligation Tactic := idtac.
 
   Ltac mymatch thm k :=
     match goal with
@@ -658,12 +667,11 @@ Section ImpMonad.
     Unshelve. all: repeat constructor; apply: size_tree_direct_subterm_1_1.
   Qed.
 
-  From Equations Require Import Tactics.
-
   Obligation Tactic := Tactics.equations_simpl.
+
   Program Definition θun_mm : MonadMorphism Imp_monad W0 :=
     @mkMorphism Imp_monad _ θun _ _.
-  Next Obligation. done. Qed.
+  Next Obligation. do 2 constructor. Qed.
   Next Obligation.
     move: m.
     refine (fix IH (m:Imp A) {struct m} := _).

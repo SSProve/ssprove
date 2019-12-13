@@ -7,7 +7,7 @@ the paper **[Dijkstra Monads for All](https://arxiv.org/abs/1903.01237)**,
 publicly available at https://gitlab.inria.fr/kmaillar/dijkstra-monads-for-all
 
 The prerequisite are inherited from that developement, namely:
-- It requires Coq version 8.10.0
+- It requires Coq version 8.10.2, equations 1.2.1
 
 
 - For examples based on probabilities, it requires the math-comp-analysis
