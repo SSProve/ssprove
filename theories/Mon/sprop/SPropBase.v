@@ -1,7 +1,10 @@
 (*From Coq Require Export Logic.StrictProp.*)
 (*we try not using sprop this time*)
+(*we redefine the logical connectives by replacing SProp with
+Prop. The name are kept the same*)
 From Coq Require PeanoNat.
 From Mon Require Import Base.
+From mathcomp Require Import ssreflect.
 (* Conflicts with Coq.Utf8 and provides the same things *)
 
 Set Primitive Projections.
@@ -48,41 +51,86 @@ Definition All {A} (P : A -> SProp) : SProp := forall (x:A), P x.
 *)
 
 (** Conjunction *)
-Definition 
+Definition sand (P Q : Prop) : Prop := P /\ Q .
 
+(*old sprop and connective 
 Inductive sand (P Q : SProp) : SProp := | spair : P -> Q -> sand P Q.
 
 
 Hint Constructors sand : core.
+*)
 
 (** Implication *)
 
+Definition s_impl (P Q : Prop) := P -> Q.
+(* old sprop implication connective 
 Definition s_impl (P Q : SProp) := P -> Q.
-
+*)
 
 (** Disjunction *)
 
+Definition sor (P Q : Prop) : Prop := P \/ Q.
+(* old sprop disjunction connective 
 Inductive sor (P Q : SProp) : SProp :=
 | sor_introl : P -> sor P Q
 | sor_intror : Q -> sor P Q.
 
 Hint Constructors sor : core.
-
+*)
 
 (** If and only if *)
 
+Definition siff (P Q : Prop) := P <-> Q.
+(* old sprop iff connective 
 Definition siff (P Q:SProp) := sand (P -> Q) (Q -> P).
+*)
 
 (** Negation *)
 
+Definition snot (P : Prop) : Prop := ~ P.
+(* old sprop negation
 Definition snot (P:SProp) : SProp := P -> sEmpty.
+*)
 
 (** Well-founded order on natural number *)
 
-Inductive Sle : nat -> nat -> SProp :=
+About le. Print le.
+(*the standard definition of le is a bit different from the sprop variant*)
+
+Inductive Sle : nat -> nat -> Prop :=
 | SleZ : forall n, Sle 0 n
 | SleS : forall n m, Sle n m -> Sle (S n) (S m).
 
+Lemma Sle_refl : forall m , Sle m m.
+Proof.
+elim.
+  constructor.
+move=> n H. constructor. assumption.
+Qed.
+
+Lemma Sle_rightmon : forall n m , Sle n m -> Sle n (S m).
+Proof. 
+move=> n m. elim.
+  by move=> n0 ; constructor.
+move=> n0 m0 H1 H2. constructor. assumption.
+Qed.
+
+Lemma Sle_iff_le : forall m n : nat, Sle m n <-> m <= n.
+Proof.
+intros m n ; split.
+-  elim.
+     by move=> n0 ; apply le_0_n.
+   clear n m. move=> n m. move=> _ H. apply le_n_S. assumption.
+-  elim.
+     apply Sle_refl.
+   move=> m0 LE SLE. apply Sle_rightmon. assumption.
+Qed.
+
+(* old sprop less or equal connective 
+Inductive Sle : nat -> nat -> SProp :=
+| SleZ : forall n, Sle 0 n
+| SleS : forall n m, Sle n m -> Sle (S n) (S m).
+*)
 
 Module SPropNotations.
   Notation "x ≡ y" := (@sEq _ x y) (at level 70, no associativity).
