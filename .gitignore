@@ -17,3 +17,6 @@
 **/*.cut
 Makefile.coq
 Makefile.coq.conf
+
+**/\#*
+**/\.\#*

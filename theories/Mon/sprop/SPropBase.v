@@ -1,4 +1,5 @@
-From Coq Require Export Logic.StrictProp.
+(*From Coq Require Export Logic.StrictProp.*)
+(*we try not using sprop this time*)
 From Coq Require PeanoNat.
 From Mon Require Import Base.
 (* Conflicts with Coq.Utf8 and provides the same things *)
@@ -10,6 +11,7 @@ Set Primitive Projections.
 (**           This file uses SProp crucially                        *)
 (**                                                                 *)
 (********************************************************************)
+(*hopefully not*)
 
 (* Create HintDb sprop discriminated. *)
 
@@ -17,24 +19,36 @@ Set Primitive Projections.
 
 (** Equality in SProp *)
 
+About eq. Print eq.
+Definition sEq {A} (x:A) : A -> Prop :=
+  fun y => x = y.
+(* old sprop equality type :
 Inductive sEq {A} (x:A) : A -> SProp :=
   | sEq_refl : sEq x x.
 Arguments sEq_refl {_} _.
-
+*)
 
 
 (** Existential quantification over SProp *)
 
+Definition Ex {A} (P : A -> Prop)  : Prop :=
+  ex P.
+(* old sprop existential quantifier 
 Inductive Ex {A} (P : A -> SProp)  : SProp :=
   | ExIntro : forall x, P x -> Ex P.
 
 Arguments ExIntro {_} _ _.
+*)
 
 (** Universal quantifier over SProp *)
+Definition All {A} (P : A -> Prop) : Prop := forall (x : A) , P x.
 
+(* old sprop universal quantifier
 Definition All {A} (P : A -> SProp) : SProp := forall (x:A), P x.
+*)
 
 (** Conjunction *)
+Definition 
 
 Inductive sand (P Q : SProp) : SProp := | spair : P -> Q -> sand P Q.
 
