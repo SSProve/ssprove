@@ -132,9 +132,15 @@ Inductive Sle : nat -> nat -> SProp :=
 | SleS : forall n m, Sle n m -> Sle (S n) (S m).
 *)
 
+
 Module SPropNotations.
   Notation "x ≡ y" := (@sEq _ x y) (at level 70, no associativity).
-  Notation "{ x : A ≫ P }" := (@Ssig A (fun x => P)) (x at level 99).
+(*the following comes from Logic.StrictProp , coq 8.10 *)
+(*Record Ssig {A:Type} (P:A->SProp) := Sexists { Spr1 : A; Spr2 : P Spr1 }.*)
+Print sigT.
+  Notation "{ x : A ≫ P }" := (@sigT A (fun x => P)) (x at level 99).
+(*old sprop notation 
+  Notation "{ x : A ≫ P }" := (@Ssig A (fun x => P)) (x at level 99). *)
   Notation "s∃ x .. y , p" :=
     (Ex (fun x => .. (Ex (fun y => p )) .. ))
       (at level 200, x binder, y binder, right associativity).
@@ -150,16 +156,25 @@ Module SPropNotations.
   Notation "n s<= m" := (Sle n m) (at level 70).
   Notation "n s< m" := (Sle (S n)  m) (at level 70).
 
-  Notation "⦑ t ⦒" := (Sexists _ t _).
+(*the following comes from Logic.StrictProp , coq 8.10 *)
+(*Record Ssig {A:Type} (P:A->SProp) := Sexists { Spr1 : A; Spr2 : P Spr1 }.*)
+Print sigT.
+  Notation "⦑ t ⦒" := (existT _ t _).
+(* old notation 
+  Notation "⦑ t ⦒" := (Sexists _ t _). *)
+Print sigT.
+  Notation " x ∙1" := (let (w,_) := x in w) (at level 2).
+  Notation " x ∙2" := (let (_,e) := x in e) (at level 2).
+(* old notations
   Notation " x ∙1" := (Spr1 x) (at level 2).
-  Notation " x ∙2" := (Spr2 x) (at level 2).
+  Notation " x ∙2" := (Spr2 x) (at level 2). *)
 End SPropNotations.
 
 
 Section sEqLemmas.
   Import SPropNotations.
   Definition sEq_sym {A} {x y : A} (H : x ≡ y) : y ≡ x.
-    induction H. constructor.
+    compute in H. rewrite H. compute. reflexivity.
   Defined.
 
   Definition sEq_trans {A} {x y z : A} (H1 : x ≡ y) (H2 : y ≡ z) : x ≡ z.
@@ -175,17 +190,21 @@ Section sEqLemmas.
   Definition f_sEqual2 {A B} (f1 f2 : A -> B) {x y} (Hf : f1 ≡ f2) (H : x ≡ y) : f1 x ≡ f2 y.
   Proof. induction Hf ; induction H ; constructor. Qed.
 
-  Lemma sEq_to_eq_elim {A} {a a' : A} {p:SProp} :
+  Lemma sEq_to_eq_elim {A} {a a' : A} {p:Prop} :
     (a = a' -> p) -> a ≡ a' -> p.
   Proof.
     intros f H. revert f. induction H. intros f ; apply f ; reflexivity.
   Qed.
 
-  Lemma sEq_to_eq_depelim A  (p:forall a a', a ≡ a' -> SProp) :
+  Lemma sEq_to_eq_depelim A  (p:forall a a', a ≡ a' -> Prop) :
     (forall a a' (H : a = a'), p a a' (eq_to_sEq H)) ->
     forall (a a' : A) (H:a ≡ a'), p a a' H.
   Proof.
-    intros f a a' H. generalize (f a a'). induction H.
+    intros f a a' H. compute in H. Set Printing All. 
+    compute in p. pose ff := (f _ _ H). compute in ff.
+
+apply (f a a' H).
+generalize (f a a'). induction H.
     intros f' ; apply (f' eq_refl).
   Qed.
 End sEqLemmas.
