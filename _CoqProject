@@ -8,3 +8,12 @@ theories/Mon/SRelation/SRelation_Definitions.v
 theories/Mon/SRelation/SRelation_Operators.v
 theories/Mon/SRelation/SRelation_Operators_Properties.v
 theories/Mon/SRelation/SRelations.v
+
+theories/Mon/SRelation/SRelationClasses.v
+theories/Mon/SRelation/SMorphisms.v
+theories/Mon/SRelation/SMorphisms_Prop.v
+theories/Mon/SRelation/SMorphisms_Relations.v
+theories/Mon/SRelation/SRelationPairs.v
+
+
+#theories/Mon/sprop/SPropMonadicStructures.v

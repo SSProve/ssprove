@@ -28,7 +28,11 @@ Set Primitive Projections.
 
 (** sprop sigma types*)
 Module Redefined_sprop_constructs.
-
+(*not all redefinitions SProp -> Prop are provided in this module
+planning to put them all here
+*)
+Definition sEmpty := False.
+Definition sUnit := True.
 Definition SProp := Prop.
 Definition Ssig := sig.
 Arguments Ssig {A} P.
@@ -52,6 +56,9 @@ Export Redefined_sprop_constructs.
 About eq. Print eq.
 Definition sEq {A} (x:A) : A -> Prop :=
   fun y => x = y.
+Definition sEq_refl {A:Type} := @eq_refl A.
+
+
 (* old sprop equality type :
 Inductive sEq {A} (x:A) : A -> SProp :=
   | sEq_refl : sEq x x.

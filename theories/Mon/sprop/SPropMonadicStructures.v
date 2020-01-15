@@ -113,8 +113,10 @@ Section DiscreteMonad.
   Import SPropNotations.
   Program Definition DiscreteMonad (M:Monad) : OrderedMonad :=
     @mkOrderedMonad M (fun A x y => x ≡ y) _ _.
-  Next Obligation.
-    constructor. intuition. move=> ? ? ? H ; induction H ; by [].
+  Next Obligation. compute. move=> x y Exy x0 y0 pe_x0y0.
+    rewrite Exy. 
+    (* constructor.*)
+    intuition. move=> ? ? ? H ; induction H ; by [].
   Qed.
   Next Obligation.
     move=> ? ? ? f g H ;enough (f ≡ g) ; subst_sEq. constructor.
