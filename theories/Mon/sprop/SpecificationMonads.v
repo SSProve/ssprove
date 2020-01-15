@@ -36,10 +36,16 @@ Section MonotoneContinuationsMonad.
     intros a ; apply (Spr2 (f a)) ; assumption.
   Qed.
 
+About MonoContCarrier. Print MonoContCarrier.
   Program Definition MonoContU : Monad :=
     @mkMonad MonoContCarrier MonoCont_ret MonoCont_bind _ _ _.
-  Next Obligation. Print MonoContCarrier.
-    
+  Next Obligation. apply Ssig_eq. compute.
+    rewrite -FunctionalExtensionality.eta_expansion. reflexivity.
+  Qed.    
+  Next Obligation. apply Ssig_eq. compute. reflexivity. Qed.
+  Next Obligation. apply Ssig_eq. simpl. reflexivity. Qed.
+
+
 
   Program Definition MonoCont_order A : srelation (MonoContU A) :=
     fun m1 m2 => pointwise_srelation (A -> R) Rrel (Spr1 m1) (Spr1 m2).
@@ -52,11 +58,15 @@ Section MonotoneContinuationsMonad.
   Program Definition MonoCont : OrderedMonad :=
     @mkOrderedMonad MonoContU MonoCont_order _ _.
   Next Obligation.
-    cbv ; intuition.
+    compute. intros. Locate "≼". Print Rrel. Search _ PreOrder.
+    
+
+ 
     repeat lazymatch goal with | [H : Ssig _ |- _] => destruct H end.
     match goal with
     |[|- Rrel (?X ?F) (?Y ?G)] => stransitivity (X G) ; auto
     end.
+  
   Qed.
 
 End MonotoneContinuationsMonad.
