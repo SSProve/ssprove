@@ -29,6 +29,7 @@ Set Primitive Projections.
 (** sprop sigma types*)
 Module Redefined_sprop_constructs.
 
+Definition SProp := Prop.
 Definition Ssig := sig.
 Arguments Ssig {A} P.
 Definition Sexists := exist.

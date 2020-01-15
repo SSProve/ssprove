@@ -4,3 +4,5 @@ theories/Mon/Base.v
 
 theories/Mon/sprop/SPropBase.v
 
+theories/Mon/SRelation/SRelation_Definitions.v
+theories/Mon/SRelation/SRelation_Operators.v
