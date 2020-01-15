@@ -88,6 +88,14 @@ Section MonoidExamples.
     move=> ? ; move: mf mg Hf Hg => [?|] [?|] Hf Hg /= ; try by apply Hf.
     all: eapply (sEq_trans (Hf _)); apply Hg.
   Qed.
+  Next Obligation. destruct m as [f [m e]]. compute. f_equal.
+    apply ax_proof_irrel.
+  Qed.
+  Next Obligation. destruct m as [f [m e]]. compute. f_equal.
+    apply ax_proof_irrel.
+  Qed.
+  Next Obligation. compute. f_equal. apply ax_proof_irrel. Qed.
+
 End MonoidExamples.
 
 Section ActionExamples.
@@ -179,7 +187,7 @@ Section MonoidStrictification.
        Spr1 mx ≡ Spr1 my -> mx ≡ my.
   Proof.
     intros A P [mx ?] [my ?] H. simpl in H.
-    induction H. reflexivity.
+    induction H. compute. f_equal. apply ax_proof_irrel.
   Qed.
 
   Import SPropAxioms.
@@ -194,6 +202,9 @@ Section MonoidStrictification.
     apply (sEq_trans He).
     rewrite monoid_law2 //.
    Qed.
+  Next Obligation. compute. destruct m. f_equal. apply ax_proof_irrel. Qed.
+  Next Obligation. compute. destruct m. f_equal. apply ax_proof_irrel. Qed.
+  Next Obligation. compute. f_equal. apply ax_proof_irrel. Qed.
 
 End MonoidStrictification.
 

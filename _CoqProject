@@ -16,4 +16,5 @@ theories/Mon/SRelation/SMorphisms_Relations.v
 theories/Mon/SRelation/SRelationPairs.v
 
 
-#theories/Mon/sprop/SPropMonadicStructures.v
+theories/Mon/sprop/SPropMonadicStructures.v
+theories/Mon/sprop/Monoid.v

@@ -38,6 +38,8 @@ Section MonotoneContinuationsMonad.
 
   Program Definition MonoContU : Monad :=
     @mkMonad MonoContCarrier MonoCont_ret MonoCont_bind _ _ _.
+  Next Obligation. Print MonoContCarrier.
+    
 
   Program Definition MonoCont_order A : srelation (MonoContU A) :=
     fun m1 m2 => pointwise_srelation (A -> R) Rrel (Spr1 m1) (Spr1 m2).

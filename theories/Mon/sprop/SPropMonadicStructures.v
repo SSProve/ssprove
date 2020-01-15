@@ -114,13 +114,8 @@ Section DiscreteMonad.
   Program Definition DiscreteMonad (M:Monad) : OrderedMonad :=
     @mkOrderedMonad M (fun A x y => x ≡ y) _ _.
   Next Obligation. compute. move=> x y Exy x0 y0 pe_x0y0.
-    rewrite Exy. 
-    (* constructor.*)
-    intuition. move=> ? ? ? H ; induction H ; by [].
-  Qed.
-  Next Obligation.
-    move=> ? ? ? f g H ;enough (f ≡ g) ; subst_sEq. constructor.
-    apply SPropAxioms.funext_sprop=> ? ; apply H.
+    rewrite Exy. apply FunctionalExtensionality in pe_x0y0.
+    rewrite pe_x0y0. reflexivity.
   Qed.
 End DiscreteMonad.
 
@@ -458,7 +453,45 @@ Section OfMorphism.
   Next Obligation. apply eq_above_Ssig ; cbv ; by rewrite monad_law1. Qed.
   Next Obligation. apply eq_above_Ssig ; cbv ; by rewrite monad_law2. Qed.
   Next Obligation. apply eq_above_Ssig ; cbv ; by rewrite monad_law3. Qed.
-  Next Obligation. constructor=> //. Qed.
+(*in the remaining obligations one use proof_irrelevance, which implies
+that equality of sigma types is equivalent to equality of carriers members*)
+  Next Obligation. destruct m as (m,e). Print Dθ_wkn.
+    compute. About exist.
+    have hintUnif :
+(Dθ_wkn_obligation_1
+       (exist (fun m0 : M A => θ A m0 ≤ w) m e)
+       ((let (PreOrder_Reflexive, _) := omon_order W A in
+         PreOrder_Reflexive) w)) = e. apply ax_proof_irrel.
+    rewrite hintUnif. reflexivity.
+Qed.
+  Next Obligation. compute.
+  have hintUnif : 
+(Dθ_wkn_obligation_1 m
+       ((let (_, PreOrder_Transitive) := omon_order W A in
+         PreOrder_Transitive) w1 w2 w3 H12 H23))
+=
+(Dθ_wkn_obligation_1
+       (exist (fun m0 : M A => θ A m0 ≤ w2)
+          (let (w, _) := m in w) (Dθ_wkn_obligation_1 m H12))
+       H23). apply ax_proof_irrel. rewrite hintUnif. reflexivity.
+Qed.
+  Next Obligation. compute.
+have hintUnif :
+(Dθ_wkn_obligation_1
+       (exist (fun m0 : M B => θ B m0 ≤ monad_bind wm wf)
+          (monad_bind (let (w, _) := m in w)
+             (fun a : A => let (w, _) := f a in w))
+          (Dθ_bind_obligation_1 m f)) (omon_bind Hm Hf))
+=
+(Dθ_bind_obligation_1
+       (exist (fun m0 : M A => θ A m0 ≤ wm')
+          (let (w, _) := m in w) (Dθ_wkn_obligation_1 m Hm))
+       (fun a : A =>
+        exist (fun m0 : M B => θ B m0 ≤ wf' a)
+          (let (w, _) := f a in w)
+          (Dθ_wkn_obligation_1 (f a) (Hf a)))).
+apply ax_proof_irrel. rewrite hintUnif. reflexivity.
+Qed.
 
   Program Definition lift {A} (m : M A) : Dθ A (θ A m) := Sexists _ m _.
   Next Obligation. sreflexivity. Qed.
@@ -476,8 +509,10 @@ Section OfRelation.
   Definition Drel_carrier A (w : W A) :=
     { m : M A ≫ R A m w }.
 
-  Program Definition Drel_ret A (a : A): Drel_carrier (ret a) :=
-    Sexists _ (ret a) (mrel_ret R a).
+
+  Definition Drel_ret A (a : A): Drel_carrier (ret a) :=
+    let initCand := (Sexists _ (@ret M A a) (mrel_ret R a)) in
+    initCand.
 
   Program Definition Drel_bind A B (wm : W A) (wf : A -> W B)
           (m : Drel_carrier wm) (f : forall a, Drel_carrier (wf a)):
@@ -496,6 +531,9 @@ Section OfRelation.
   Next Obligation. apply eq_above_Ssig ; cbv ; rewrite !monad_law1 //. Qed.
   Next Obligation. apply eq_above_Ssig ; cbv ; rewrite !monad_law2 //. Qed.
   Next Obligation. apply eq_above_Ssig ; cbv ; rewrite !monad_law3 //. Qed.
-  Next Obligation. constructor=> //. Qed.
-
+  Next Obligation. compute. destruct m as (m,bla). f_equal.
+    apply ax_proof_irrel.
+  Qed.
+  Next Obligation. compute. f_equal. apply ax_proof_irrel. Qed.
+  Next Obligation. compute. f_equal. apply ax_proof_irrel. Qed.
 End OfRelation.

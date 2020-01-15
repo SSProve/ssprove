@@ -11,6 +11,8 @@ From Coq Require ClassicalFacts.
 Locate proof_irrelevance.
 
 Axiom ax_proof_irrel : ClassicalFacts.proof_irrelevance.
+Axiom FunctionalExtensionality :
+  (forall A B (f g : A -> B), (forall x, f x = g x) -> f = g).
 
 
 Set Primitive Projections.
