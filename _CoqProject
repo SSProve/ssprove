@@ -6,3 +6,5 @@ theories/Mon/sprop/SPropBase.v
 
 theories/Mon/SRelation/SRelation_Definitions.v
 theories/Mon/SRelation/SRelation_Operators.v
+theories/Mon/SRelation/SRelation_Operators_Properties.v
+theories/Mon/SRelation/SRelations.v
