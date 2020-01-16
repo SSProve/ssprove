@@ -57,16 +57,14 @@ About MonoContCarrier. Print MonoContCarrier.
 
   Program Definition MonoCont : OrderedMonad :=
     @mkOrderedMonad MonoContU MonoCont_order _ _.
-  Next Obligation.
-    compute. intros. Locate "≼". Print Rrel. Search _ PreOrder.
-    
-
- 
-    repeat lazymatch goal with | [H : Ssig _ |- _] => destruct H end.
-    match goal with
-    |[|- Rrel (?X ?F) (?Y ?G)] => stransitivity (X G) ; auto
-    end.
-  
+  Next Obligation. cbv. intuition. Locate "≼".
+    destruct x as [fx ex]. destruct y as [fy ey].
+    destruct H as (Hrefl , Htrans). unfold Transitive in Htrans.
+    pose lleft := (fun a0 : A => (let (w, _) := x0 a0 in w) a).
+    pose rright := (fun a0 : A => (let (w, _) := y0 a0 in w) a).
+    apply: (Htrans (fx lleft) (fy lleft) (fy rright)).
+     by apply: (H0 lleft).
+    apply ey. intro a0. compute. apply H1.
   Qed.
 
 End MonotoneContinuationsMonad.
@@ -82,6 +80,10 @@ Section MonoContSProp.
             (fun pre w => Sexists _ (fun p => pre s/\ Spr1 w p) _)
             _ _ _. 
   Solve All Obligations with cbv ; intuition ; try (eapply (Spr2 w) ; eauto).
+  Next Obligation. compute. split ; intuition.
+    apply H ; trivial.
+    apply H. split ; assumption.
+  Qed.
 
 End MonoContSProp.
 
@@ -112,7 +114,7 @@ Section PrePostSpec.
       apply Hpre. eapply (Spr2 w _) ; eauto.
       cbv ; intuition. cbv ; intuition.
       cbv ; intuition.
-      destruct (H a q). apply s ; assumption.
+      destruct (H a H2). apply H3 ; assumption.
    Qed.
   End Ran.
 End PrePostSpec.
@@ -141,18 +143,32 @@ Section ExceptionSpec.
 
   Program Definition ExnSpecU : Monad :=
     @mkMonad ExnSpecCarrier ExnSpec_ret ExnSpec_bind _ _ _.
+  Next Obligation. compute.
+    apply Ssig_eq. compute.
+    rewrite -FunctionalExtensionality.eta_expansion.
+    reflexivity.
+  Qed.        
+  Next Obligation. compute. apply Ssig_eq ; compute.
+    rewrite -FunctionalExtensionality.eta_expansion.
+    reflexivity.
+  Qed.
+  Next Obligation. compute. apply Ssig_eq ; compute. reflexivity. Qed.
 
+    
   Definition ExnSpec_rel A : srelation (ExnSpecU A) :=
     fun m1 m2 => ((A -> SProp) ⇢ ((E -> SProp) ⇢ SProp_op_order)) (Spr1 m1) (Spr1 m2).
 
   Global Instance ExnSpec_order A : PreOrder (@ExnSpec_rel A).
-  Proof. constructor ; cbv ; intuition. Qed.
+  Proof. constructor ; cbv ; intuition. apply H. apply H0.
+    assumption.
+  Qed.
 
   Program Definition ExnSpec : OrderedMonad :=
     @mkOrderedMonad ExnSpecU ExnSpec_rel _ _.
   Next Obligation.
-    cbv; move=> ? y H ? ? ? ? ? H1 ; apply H.
+    cbv; move=> ? y H ? ? G ? ? H1 ; apply H.
     move: H1 ; apply (Spr2 y) ; cbv ; intuition.
+    apply G. assumption.
   Qed.
 End ExceptionSpec.
 
@@ -196,7 +212,7 @@ Section UpdateSpecMonad.
   Definition WUpd_rel A : srelation (WUpd A) :=
     fun m1 m2 => forall p, cod_rel (Spr1 m1 p) (Spr1 m2 p).
   Instance WUpd_ord A : PreOrder (@WUpd_rel A).
-  Proof. constructor ; cbv ; intuition. Qed.
+  Proof. constructor ; cbv ; intuition. apply H. apply H0. assumption. Qed.
 
   (* We do not prove the monadic laws since they would
    rely on funext. Instead we let them be proved on a case
@@ -247,7 +263,10 @@ Section UpdateSpecMonad.
               (fun pre w => Sexists _ (fun p x => pre s/\ Spr1 w p x) _)
               _ _ _. 
     Solve All Obligations with cbv ; intuition ; try (eapply (Spr2 w) ; eauto).
-
+    Next Obligation. compute. split ; intuition.
+      all: apply H ; trivial. split ; trivial.
+    Qed.
+      
   End AssertAssume.
 
   Global Instance UpdSpec_aa A : aa (@omon_rel UpdSpec A).
@@ -281,9 +300,12 @@ Section MonotonicRelations.
   Definition MR X := { r : MR_base X ≫ SProper (@MR_base_rel X) r }.
 
   Program Definition retMR A a : MR A :=
-    Sexists _ (fun pre post => Sexists _ (pre -> Spr1 (post a)) _) _.
+    Sexists _
+            (fun pre (post : A -> SPropAssuming pre)  =>
+              Sexists _ (pre -> Spr1 (post a)) _)
+            _.
   Next Obligation. cbv ; intuition. Qed.
-  Next Obligation. cbv ; intuition. Qed.
+  Next Obligation. cbv ; intuition. apply Hpost. assumption. Qed.
 
   Program Definition bindMR A B (m:MR A) (f: A -> MR B) : MR B :=
       Sexists _ (fun pre post =>
@@ -292,9 +314,9 @@ Section MonotonicRelations.
     split ; move=> ? //=.
     match goal with | [|- _ ?X] => apply (Spr2 X) ;assumption end.
   Qed.
-  Next Obligation.
-    cbv ; intuition.
-    match goal with | [|- ?X ?Y] => apply (Spr2 Y) ; assumption end.
+  Next Obligation. destruct m as [r propr]. simpl.
+    destruct (r pre (fun a : A => ⦑ ((f a) ∙1 pre post) ∙1 ⦒)).
+    compute. compute in s. assumption.
   Qed.
   Next Obligation.
     cbv ; intuition.
@@ -307,13 +329,11 @@ Section MonotonicRelations.
 
   Program Definition MR_monad : Monad :=
     @mkMonad MR retMR bindMR _ _ _.
-  Next Obligation.
-    apply Ssig_eq ; extensionality pre ; extensionality post ; apply Ssig_eq ; apply sprop_ext.
-    do 2 split ; cbv.
-    move=> ?; match goal with
-               | [|- _ ?X] => apply (Spr2 X) ; assumption 
-              end.
-    move=> ? ? //=.
+  Next Obligation. 
+    apply Ssig_eq ; extensionality pre ; extensionality post ; apply Ssig_eq.
+    simpl. destruct ((f a) ∙1 pre post) as [q eq]. compute.
+    compute in eq. destruct eq as [eq1 eq2]. apply sprop_ext. apply box.
+    split ; assumption.
   Qed.
   Next Obligation.
     apply Ssig_eq ; extensionality pre ; extensionality post ; apply Ssig_eq ; apply sprop_ext.
@@ -322,6 +342,7 @@ Section MonotonicRelations.
     move=> ? ? ; apply (Spr2 (post _)) ; assumption.
     apply (Spr2 c) => //=.
   Qed.
+  Next Obligation. 
 
   Definition MR_rel X : srelation (MR X) :=
     fun w1 w2 => forall pre post, Spr1 (Spr1 w2 pre post) -> Spr1 (Spr1 w1 pre post).  
