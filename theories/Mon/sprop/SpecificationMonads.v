@@ -282,6 +282,7 @@ End UpdateSpecMonad.
 
 (* Fat monotone relation-based specification monad *)
 Section MonotonicRelations.
+(*--------------------a forgotten section ----------------
   Import SPropNotations.
   Import SPropAxioms.
 
@@ -342,7 +343,9 @@ Section MonotonicRelations.
     move=> ? ? ; apply (Spr2 (post _)) ; assumption.
     apply (Spr2 c) => //=.
   Qed.
-  Next Obligation. 
+  Next Obligation.
+    
+  Qed.
 
   Definition MR_rel X : srelation (MR X) :=
     fun w1 w2 => forall pre post, Spr1 (Spr1 w2 pre post) -> Spr1 (Spr1 w1 pre post).  
@@ -360,13 +363,14 @@ Section MonotonicRelations.
     move:H1 ; apply (Spr2 y); auto.
   Qed.
 
+------------end of forgotten section *)
 End MonotonicRelations.
-
 
 
 From Coq Require FunctionalExtensionality.
 
 Section Pred.
+(*-----------------------a forgotten section
   Import SPropNotations.
   Import SPropAxioms.
   Import FunctionalExtensionality.
@@ -400,6 +404,7 @@ Section Pred.
   Next Obligation.
     cbv=> ? ? ? ? ? ? ? [a [? ?]]; exists a ; split ; auto. 
   Qed.
+-------------------end of forgotten section *)
 End Pred.
 
 Module PrePost.
@@ -422,25 +427,25 @@ Module PrePost.
 
   Next Obligation.
     apply nprod_eq =>//= ; [|extensionality y] ; apply sprop_ext => //=.
-    dintuition ; subst_sEq ; assumption.
+    dintuition ; subst_sEq. compute. intuition. rewrite H0. assumption.
     do 2 split.
     intros [? []]; subst_sEq ; assumption.
     eexists ; split ; [| eassumption] ; reflexivity.
   Qed.
-
   Next Obligation.
     apply nprod_eq =>//= ; [|extensionality y] ;
       apply sprop_ext => //= ; try by dintuition.
+    compute. apply box. intuition.
     do 2 split.
     move=> [? [? ?]] ; subst_sEq ; eassumption.
     move=> ? ; eexists ; split. eassumption. reflexivity.
   Qed.
-
   Next Obligation.
     apply nprod_eq =>//= ; [|extensionality y] ; apply sprop_ext => //=.
-    - dintuition. eapply q ; eexists ; split ; eassumption.
-      destruct (q x H) ; assumption.
-      destruct H as [?[n ?]]. destruct (q _ n) ; auto.
+    compute. apply box. intuition. apply H1. exists x. intuition.
+    apply H1. assumption.
+    destruct H as [x0 [pf_nsnd_f pf_nsnd_c]].
+    apply (H1 x0 pf_nsnd_f). assumption.
     - do 2 split.
     intros [? [[? []]]] ; eexists ; split ; [|eexists;split] ;eassumption.
     intros [? [? [? []]]] ; eexists ; split ; [eexists; split|] ; eassumption.
@@ -455,7 +460,7 @@ Module PrePost.
     @mkOrderedMonad PP_monad PP_rel _ _.
   Next Obligation.
     cbv ; dintuition. destruct (H x0) ; auto.
-    destruct H0 as [x1 []]. destruct (H x1) ; eexists ; split ; auto.
+    destruct H2 as [x1 []]. destruct (H x1) ; eexists ; split ; auto.
     auto.
   Qed.
 
@@ -509,6 +514,7 @@ End PrePost.
 
 
 Module  StrongestPostcondition.
+(*---------------------------------- a forgotten module
   Import SPropNotations.
   Import SPropAxioms.
   Import FunctionalExtensionality.
@@ -586,10 +592,11 @@ Module  StrongestPostcondition.
     cbv; move=> ? ? ? ? f H ? ? [x H0].
     exists x. move : (H _ _ _ H0) ; eapply (Spr2 (f x)) ; auto.
   Qed.
-
+-------------------end of forgotten module*)
 End StrongestPostcondition.
 
 Section Adjunctions.
+(*----------------------------a forgotten section
   Import PrePost.
   Import SPropNotations.
 
@@ -789,11 +796,12 @@ Section Adjunctions.
     move: (H _ _ H1) => [? Hpost].
     apply Hpost ; assumption.
   Qed.
-
+-------------------------end of forgotten section*)
 End Adjunctions.
 
 
 Section WpSpRightKanExtension.
+(*-----------------------------a forgotten section
   Let MonoCont := @MonoCont SProp (SProp_op_order) _.
   Import PrePost.
   Import StrongestPostcondition.
@@ -825,6 +833,6 @@ Section WpSpRightKanExtension.
       refine (H1 _ (fun a => Spr1 (w' a) p) _ a).
       cbv ; apply Hw'.
    Qed.
-
+---------------------------end of forgotten section*)
 End WpSpRightKanExtension.
 

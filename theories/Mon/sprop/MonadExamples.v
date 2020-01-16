@@ -128,7 +128,7 @@ Section Exceptions.
   Definition raise : E -> Exn False := fun e => op _ (Raise e).
   Definition catch {A} (m : Exn A) (merr : E -> Exn A) : Exn A :=
     match m with
-    | retFree _ a => m
+    | retFree a => m
     | @opr _ _ _ (Raise e) _ => merr e
     end.
 End Exceptions.
@@ -143,12 +143,12 @@ Section NonDeterminismSet.
   Next Obligation.
     extensionality y; apply sprop_ext; do 2 split.
     + intros [x [eq H]]; induction eq=> //.
-    + intro; exists a; intuition.
+    + intro; exists a; intuition. compute. intuition.
   Qed.
   Next Obligation.
     extensionality y; apply sprop_ext; do 2 split.
     + intros [x [H eq]]. induction eq=> //.
-    + intro. exists y. intuition.
+    + intro. exists y. intuition. compute. intuition.
   Qed.
   Next Obligation.
     extensionality y; apply sprop_ext; do 2 split.
