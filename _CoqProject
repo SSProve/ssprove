@@ -19,5 +19,4 @@ theories/Mon/SRelation/SRelationPairs.v
 theories/Mon/sprop/SPropMonadicStructures.v
 theories/Mon/sprop/Monoid.v
 theories/Mon/sprop/SpecificationMonads.v 
-
-
+theories/Mon/sprop/MonadExamples.v
