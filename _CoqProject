@@ -31,4 +31,13 @@ theories/Relational/EnrichedSetting.v
 theories/Relational/Rel.v
 theories/Relational/OrderEnrichedRelativeMonadExamples.v
 
+#pick a file below to make progress
 
+#theories/Relational/Commutativity.v
+#theories/Relational/RelationalIO.v
+#theories/Relational/RelationalNDD.v
+#theories/Relational/RelationalNDA.v
+#theories/Relational/GenericRulesSimple.v
+#theories/Relational/RelationalState.v
+#theories/Relational/RelationalExcSimple.v
+#theories/Relational/RelativeMonadExamples.v

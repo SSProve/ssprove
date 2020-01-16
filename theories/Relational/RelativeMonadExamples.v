@@ -97,7 +97,9 @@ Section OrdCatSelfEnrichment.
     fun f1 f2 => forall a, Spr1 f1 a ≤ Spr1 f2 a.
 
   Global Instance ordcat_hom_ord_preord : PreOrder ordcat_hom_ord.
-  Proof. constructor ; cbv ; intuition. estransitivity ; eauto. Qed.
+  Proof. constructor ; cbv ; intuition. estransitivity ; eauto.
+  apply H. apply H0.
+  Qed.
 End OrdCatSelfEnrichment.
 
 Notation "f1 ≼ f2" := (ordcat_hom_ord f1 f2) (at level 65).
