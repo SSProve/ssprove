@@ -40,7 +40,9 @@ Section TypeCat.
     mkOrdFunctor (fun A => nfst A × nsnd A)
               (fun _ _ f p => ⟨nfst f (nfst p), nsnd f (nsnd p)⟩)
               _ _ _.
-  Next Obligation. cbv ; intuition; f_equiv; auto. Qed.
+  Next Obligation. cbv ; intuition; f_equiv; auto. all: compute. 
+    rewrite H0. reflexivity. rewrite H1. reflexivity.
+  Qed.
 
   (* Program Definition TypeCat_cc : cartesian_category := *)
   (*   mkCartesianCategory *)
@@ -73,12 +75,26 @@ Section OrdCat.
       (fun A => ⦑id⦒)
       (fun _ _ _ f g => ⦑f∙1 \o g∙1⦒)
       _ _ _ _.
-  Next Obligation. constructor ; cbv ; intuition ; estransitivity ; eauto. Qed.
+  Next Obligation. constructor.
+    intuition.
+    unfold Transitive. intros f g h. intros H G x.
+    pose Hx := (H x). pose GX := (G x). estransitivity.
+    apply Hx. apply GX.
+  Qed.
   Next Obligation. cbv ; intuition. Qed.
   Next Obligation. cbv ; intuition; apply f∙2; apply g∙2 => //. Qed.
   Next Obligation.
     cbv ; intuition; estransitivity; first (apply: x∙2; apply: H0).
     apply: H.
+  Qed.
+  Next Obligation. apply Ssig_eq ; compute. Search _ "eta".
+    rewrite -FunctionalExtensionality.eta_expansion. reflexivity.
+  Qed.
+  Next Obligation. apply Ssig_eq ; compute.
+    rewrite -FunctionalExtensionality.eta_expansion. reflexivity.
+  Qed.
+  Next Obligation.
+    apply Ssig_eq ; compute. reflexivity.
   Qed.
 
   Program Definition discr : ord_functor TypeCat OrdCat :=
@@ -88,6 +104,8 @@ Section OrdCat.
   Next Obligation. intuition. Qed.
   Next Obligation. intuition. Qed.
   Next Obligation. cbv ; intuition. Qed.
+  Next Obligation. apply Ssig_eq. reflexivity. Qed.
+  Next Obligation. apply Ssig_eq. compute. reflexivity. Qed.
 
   Program Definition discr_ff : ff_struct discr :=
     {| ff_invmap _ _ f := Spr1 f |}.
@@ -96,7 +114,7 @@ Section OrdCat.
   Notation " X --> Y " := (X -> dfst Y) (at level 99).
 
   Program Definition to_discr {X Y} (f : X --> Y) : OrdCat⦅discr X; Y⦆ := ⦑f⦒.
-  Next Obligation. move=> ? ?; induction 1; sreflexivity. Qed.
+  Next Obligation. apply Ssig_eq. compute. reflexivity. Qed.
 
 
   Program Definition OrdCat_cst {A B} (b:dfst B) : OrdCat⦅A; B⦆ := ⦑fun=> b⦒.
@@ -106,6 +124,10 @@ Section OrdCat.
     f ⪷ g -> forall (x y:dfst A), x ≤ y -> f∙1 x ≤ g∙1 y.
   Proof.
     move=> Hfg x y Hxy; estransitivity;[apply: (f∙2); exact: Hxy| apply: Hfg].
+  Qed.
+  Next Obligation. compute. intros x y. intros Exy ; rewrite Exy.
+    destruct Y as [A eA]. destruct eA as [R poR].
+    destruct poR. apply PreOrder_Reflexive.
   Qed.
 End OrdCat.
 
@@ -286,7 +308,17 @@ Section NaiveDefinition.
                  (fun _ _ f => ⟨⟨ofmap discr (nfst f),
                               ofmap discr (nsnd f)⟩,
                              ofmap Jprod f⟩) _ _ _.
-  Next Obligation. cbv ; intuition ; f_equiv ; auto. Qed.
+  Next Obligation. cbv ; intuition ; f_equiv ; auto.
+    all: compute. apply H0. apply H1.
+  Qed.
+  Next Obligation.
+    apply nprod_eq ; simpl. apply nprod_eq ; simpl.
+    all : compute ; f_equal ; apply ax_proof_irrel.
+  Qed.
+  Next Obligation.
+    apply nprod_eq ; simpl. apply nprod_eq ; simpl.
+    all: compute ; f_equal ; apply ax_proof_irrel.
+  Qed.
 
   Definition ordcatTr2Sq : ord_functor OrdCatTr OrdCatSq :=
     left_proj_functor _ _.
@@ -294,7 +326,16 @@ Section NaiveDefinition.
   Program Definition discr2_iso_J_proj
     : natIso discr2 (ord_functor_comp J ordcatTr2Sq) :=
     mkNatIso _ _ (fun A => Id (discr2 A)) (fun A => Id (discr2 A)) _ _ _.
-
+  Next Obligation.
+    apply nprod_eq ; simpl. f_equal. apply ax_proof_irrel.
+    apply f_equal. apply ax_proof_irrel.
+  Qed.
+  Next Obligation.
+    apply nprod_eq ; simpl ; f_equal. all: apply ax_proof_irrel.
+  Qed.
+  Next Obligation.
+    apply nprod_eq ; simpl ; f_equal. all: apply ax_proof_irrel.
+  Qed.
 
   Definition preRelationalSpecMonad : Type := ord_relativeMonad J.
 
@@ -518,11 +559,12 @@ Section ToNaiveDefinitions.
                        actW(nfst (nfst f)) (nsnd (nfst f)) (nsnd f)⟩)
                     _ _ _ _.
   Next Obligation.
-    cbv ; intuition; last
-        (apply: rsmc_act_proper=> ?; [apply p0| apply q0| apply q]) ;
-      [apply: (ord_relmon_bind_proper W1)|
-       apply: (ord_relmon_bind_proper W2)] ; cbv=> ? ; auto.
+    cbv ; intuition ; last first.
+    apply: rsmc_act_proper=> ?; [apply H| apply H2| apply H1].
+      apply (ord_relmon_bind_proper W2). compute. assumption.
+      apply: (ord_relmon_bind_proper W1). compute. assumption.
   Qed.
+
   Next Obligation.
     feq_npair ;[apply: (ord_relmon_law1 W1)| apply: (ord_relmon_law1 W2)|];
     rewrite /actW ?rsmc_law1 //.
