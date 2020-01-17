@@ -20,7 +20,7 @@ theories/Mon/sprop/SPropMonadicStructures.v
 theories/Mon/sprop/Monoid.v
 theories/Mon/sprop/SpecificationMonads.v 
 theories/Mon/sprop/MonadExamples.v
-#theories/Mon/sprop/DijkstraMonadExamples.v
+theories/Mon/sprop/DijkstraMonadExamples.v
 #theories/Mon/sprop/DirectedContainers.v
 #theories/Mon/sprop/WeightedComputations.v
 

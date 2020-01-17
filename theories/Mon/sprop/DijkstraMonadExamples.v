@@ -54,7 +54,12 @@ Section UpdateMonadEffectObservation.
   Next Obligation.
     move=> ? ? H ? ; apply H.
   Qed.
-
+  Next Obligation.
+    compute. f_equal. apply ax_proof_irrel.
+  Qed.
+  Next Obligation.
+    apply Ssig_eq ; simpl. reflexivity.
+  Qed.
 End UpdateMonadEffectObservation.
 
 
@@ -90,6 +95,8 @@ Section Option.
 
   Definition morWpPart := mor PartAlg. 
 
+  Section commenting_strongestPostconditions.
+(*
   Import StrongestPostcondition.
   Let SP := ForwardPredTransformer.
 
@@ -157,7 +164,9 @@ Section Option.
   Next Obligation. cbv ; split. cbv in H. assumption. intuition. Qed.
 
 End Option.
-
+*)
+End commenting_strongestPostconditions.
+End Option.
 
 Section FreeMonadEffectObservation.
 
@@ -169,7 +178,7 @@ Section FreeMonadEffectObservation.
 
   Fixpoint OpSpec_mor A (m : Free A) : W A :=
     match m with
-    | retFree _ a => ret a
+    | retFree a => ret a
     | @opr _ _ _ s k => bind (OpContSpecs s) (fun ps => OpSpec_mor (k ps))
     end.
 
