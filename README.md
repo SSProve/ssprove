@@ -1,38 +1,35 @@
-# The next 700 relational program logics
+# CheesyCrypt
 
-# Prerequisites
+## Prerequisites
 
-The development for this paper is based on the coq development accompanying
-the paper **[Dijkstra Monads for All](https://arxiv.org/abs/1903.01237)**,
-publicly available at https://gitlab.inria.fr/kmaillar/dijkstra-monads-for-all
+- coq.8.10.dev
+- coq-equations.1.2.1+8.10
+- coq-mathcomp-analysis.0.2.3
+- coq-itree.dev
 
-The prerequisite are inherited from that developement, namely:
-- It requires Coq version 8.10.2, equations 1.2.1
+Get it from the following sources:
 
+```
+$ opam repo add coq-released https://coq.inria.fr/opam/released
+$ opam repo add coq-core-dev https://coq.inria.fr/opam/core-dev
+$ opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
+```
 
-- For examples based on probabilities, it requires the math-comp-analysis
-  library (version 0.2.2) that can be obtained through opam. Be sure to add
-  the coq-released repo before:
-
-    opam repo add coq-released https://coq.inria.fr/opam/released
-
-
-
-# Step-by-step Guide
+## Step-by-step Guide
 
 Run `make` from this directory to compile all the coq files
 (this step is needed for the walkthrough). It should succeed
 displaying only warnings and coq terms.
 
-# Organisation of the directories
+## Organisation of the directories
 
 - theories/           : root of all the Coq files
-- theories/Mon        : external development coming from "Dijkstra monads for all"
-- theories/Relational : development for this paper
+- theories/Mon        : external development coming from "Dijkstra Monads For All"
+- theories/Relational : external development coming from "The Next 700 Relational Program Logics"
+- theories/Crypt      : this paper
 
-# Content of the files
+### Notes
 
-## In theories/Relational:
 - Category.v: Basic category theory (categories, functors,...)
 
 - RelativeMonads.v: Categorical definitions of relative monads and a few constructions on these
@@ -40,7 +37,7 @@ displaying only warnings and coq terms.
 - RelativeMonadExamples.v: Concrete instances of categories and relative
   monads to obtain the simple relational specification monads and
   the full relational specification monads
-  
+
 - Rel.v: Main definitions for the relational dependent type theory
 
 - GenericRulesSimple.v: pure and monadic relational rules in the simpler setting
@@ -50,27 +47,26 @@ displaying only warnings and coq terms.
 
 - RelationalState.v: specialization to stateful computations with examples
   of non interference
-  
+
 - RelationalIO.v: simple relational program logic for IO
-  
+
 - RelationalFinProb.v: relational program logic for (independent) finite probabilities
 
 - RelationalExcSimple.v: specialization to computations raising exceptions
 
 - GenericRulesComplex.v: pure and monadic relational rules in the full setting
 
-
-# Axioms and assumptions
+## Axioms and assumptions
 
 Most of the development uses the recent SProp feature of Coq (instead of relying on UIP axiom).
 
 The functional extensionality axiom from Coq's standard library is used
-extensively in the development, as well as two variations of it with 
-respect to SProp (that can be found in `theories/sprop/SPropBase.v`, module `SPropAxioms`). 
-This module also defines the axiom of propositional extensionality 
+extensively in the development, as well as two variations of it with
+respect to SProp (that can be found in `theories/sprop/SPropBase.v`, module `SPropAxioms`).
+This module also defines the axiom of propositional extensionality
 for strict propositions.
 
-The use of these axioms can be checked for instance at the end of 
+The use of these axioms can be checked for instance at the end of
 `theories/README.v` using `Print Assumptions term.`.
 
 No proof in the developement is admitted.
