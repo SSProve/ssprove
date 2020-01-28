@@ -1,8 +1,7 @@
-# CheezyCrypt
+# CheesyCrypt
 
-# Prerequisites
+## Prerequisites
 
-- coq 8.9
+- coq 8.10
 - coq-mathcomp-analysis
-<!-- - coq-paco -->
 - coq-itree
