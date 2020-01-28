@@ -16,5 +16,6 @@
 **/*.vrb
 **/*.cut
 Makefile.coq
+Makefile.conf
 Makefile.coq.conf
 *.cache
