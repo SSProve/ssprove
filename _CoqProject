@@ -50,5 +50,5 @@ theories/Relational/RelationalExcFull.v
 theories/Mon/sprop/FiniteProbabilities.v
 theories/Relational/RelationalFinProb.v
 
-#theories/Crypt/Crypt.v
+theories/Crypt/Crypt.v
 theories/Crypt/ChoiceAsOrd.v
