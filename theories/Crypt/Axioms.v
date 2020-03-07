@@ -9,3 +9,4 @@ Parameter  (absord : R -> R -> bool).
 Parameter (unlock_absord : absord = (fun x y : R => x <= y)).
 
 From Coq Require Export Logic.ProofIrrelevance.
+From Coq Require Export FunctionalExtensionality.
