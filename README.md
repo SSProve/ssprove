@@ -2,6 +2,7 @@
 
 ## Prerequisites
 
+- ocaml.4.09.0
 - coq.8.10.dev
 - coq-equations.1.2.1+8.10
 - coq-mathcomp-analysis.0.2.3
