@@ -53,5 +53,6 @@ theories/Relational/RelationalFinProb.v
 theories/Crypt/Crypt.v
 theories/Crypt/ChoiceAsOrd.v
 theories/Crypt/Axioms.v
+theories/Crypt/RelativeMonadMorph_prod.v
 theories/Crypt/only_prob/SubDistr.v
 theories/Crypt/only_prob/FreeProbProg.v
