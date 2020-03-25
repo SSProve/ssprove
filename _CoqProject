@@ -56,4 +56,3 @@ theories/Crypt/Axioms.v
 theories/Crypt/RelativeMonadMorph_prod.v
 theories/Crypt/only_prob/SubDistr.v
 theories/Crypt/only_prob/FreeProbProg.v
-theories/Crypt/only_prob/SubDistr_intoOrdCat.v
