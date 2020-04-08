@@ -55,5 +55,6 @@ theories/Crypt/Axioms.v
 theories/Crypt/RelativeMonadMorph_prod.v
 theories/Crypt/only_prob/SubDistr.v
 theories/Crypt/only_prob/FreeProbProg.v
+theories/Crypt/only_prob/Theta_dens.v
 
 theories/Crypt/only_prob/Couplings.v
