@@ -35,7 +35,7 @@ planning to put them all here
 *)
 Definition sEmpty := False.
 Definition sUnit := True.
-Definition SProp := Prop.
+(*Definition SProp := Prop.*) (*This is no longer accepted by coq*)
 Definition Ssig := sig.
 Arguments Ssig {A} P.
 Definition Sexists := exist.
