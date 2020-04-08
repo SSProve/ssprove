@@ -13,11 +13,11 @@ Set Primitive Projections.
 (***************************************************************)
 
 
-Definition SProp_order : srelation SProp := s_impl.
+Definition SProp_order : srelation Prop := s_impl.
 Instance SProp_order_preorder : PreOrder SProp_order.
 Proof. constructor ; cbv ; intuition. Qed.
 
-Definition SProp_op_order : srelation SProp := Basics.flip s_impl.
+Definition SProp_op_order : srelation Prop := Basics.flip s_impl.
 Instance SProp_op_order_preorder : PreOrder SProp_op_order.
 Proof. unfold SProp_op_order. typeclasses eauto. Qed.
 
@@ -25,7 +25,7 @@ Instance pointwise_preorder A {B} (R:srelation B) `{PreOrder _ R} :
   PreOrder (pointwise_srelation A R).
 Proof. constructor ; cbv ; intuition ; stransitivity (y a) ; auto. Qed.
 
-Definition Pred_op_order A : srelation (A -> SProp) :=
+Definition Pred_op_order A : srelation (A -> Prop) :=
   pointwise_srelation A SProp_op_order.
 Instance Pred_op_order_prorder A : PreOrder (@Pred_op_order A).
 Proof. unfold Pred_op_order ; typeclasses eauto. Qed.
@@ -161,8 +161,8 @@ Section AssertAssumeStructure.
   Import SPropNotations.
   Class aa :=
     mkAa
-      { assert_p : SProp -> A -> A
-      ; assume_p : SProp -> A -> A
+      { assert_p : Prop -> A -> A
+      ; assume_p : Prop -> A -> A
       ; aa_assert_stronger : forall p x, assert_p p x ≤ x
       ; aa_assume_weaker : forall p x, x ≤ assume_p p x
       ; aa_assert_assume_adjoint : forall p x1 x2,
@@ -314,7 +314,7 @@ Record OrderedMonadUnder (M:OrderedMonad) :=
 
 Record MonadRelation (M W : Monad) : Type :=
   mkMonadRelation
-    { mrel      :> forall A, M A -> W A -> SProp
+    { mrel      :> forall A, M A -> W A -> Prop
     ; mrel_ret  : forall A (a:A), mrel (ret a) (ret a)
     ; mrel_bind : forall A B m w (f : A -> M B)  g,
         mrel m w -> (forall a, mrel (f a) (g a)) -> mrel (bind m f) (bind w g)

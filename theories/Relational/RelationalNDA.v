@@ -18,7 +18,7 @@ Section NDAs.
   Let M1 := NDSet.
   Let M2 := NDSet.
 
-  Let Wun := @MonoContSProp.
+  Let Wun := @MonoContProp.
 
   Import SPropNotations.
   Import FunctionalExtensionality.

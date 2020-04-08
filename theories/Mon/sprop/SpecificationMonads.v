@@ -69,8 +69,8 @@ About MonoContCarrier. Print MonoContCarrier.
 
 End MonotoneContinuationsMonad.
 
-Section MonoContSProp.
-  Definition MonoContSProp := @MonoCont SProp (SProp_op_order) _.
+Section MonoContProp.
+  Definition MonoContSProp := @MonoCont Prop (SProp_op_order) _.
   Import SPropNotations.
 
   Global Program Instance MonoContSProp_aa A : aa (@omon_rel MonoContSProp A)
@@ -85,23 +85,23 @@ Section MonoContSProp.
     apply H. split ; assumption.
   Qed.
 
-End MonoContSProp.
+End MonoContProp.
 
-Definition STCont S := @MonoCont (S -> SProp) (pointwise_srelation S SProp_op_order) _.
+Definition STCont S := @MonoCont (S -> Prop) (pointwise_srelation S SProp_op_order) _.
 
 
 Section PrePostSpec.
   Import SPropNotations.
 
   (* Generic pre-/post-conditions for the W^Pure specification monad. *)
-  Program Definition PrePostSpec {A} (P : SProp) (Q : A -> SProp) :
+  Program Definition PrePostSpec {A} (P : Prop) (Q : A -> Prop) :
     MonoContSProp A :=
-    Sexists _ (fun (Z : A -> SProp) => P s/\ forall a, Q a -> Z a) _.
+    Sexists _ (fun (Z : A -> Prop) => P s/\ forall a, Q a -> Z a) _.
   Next Obligation. cbv ; intuition eauto. Qed.
 
   Section Ran.
     Context (B C : Type) (w : MonoContSProp C)
-            (pre : SProp) (post : B -> SProp).
+            (pre : Prop) (post : B -> Prop).
     Context (Hpre : Spr1 w (fun _ => sUnit) -> pre).
 
     Definition MonoContAlongPrePost_ran : ran w (PrePostSpec pre post).
@@ -124,7 +124,7 @@ Section ExceptionSpec.
   Import SPropNotations.
   
   Definition ExnSpecCarrier : Type -> Type :=
-    fun X => { f : (X -> SProp) -> (E -> SProp) -> SProp
+    fun X => { f : (X -> Prop) -> (E -> Prop) -> Prop
           ≫ SProper ((X ⇢ SProp_op_order) s==> (E ⇢ SProp_op_order) s==> SProp_op_order) f}.
 
   Program Definition ExnSpec_ret : forall A, A -> ExnSpecCarrier A :=
@@ -156,7 +156,7 @@ Section ExceptionSpec.
 
     
   Definition ExnSpec_rel A : srelation (ExnSpecU A) :=
-    fun m1 m2 => ((A -> SProp) ⇢ ((E -> SProp) ⇢ SProp_op_order)) (Spr1 m1) (Spr1 m2).
+    fun m1 m2 => ((A -> Prop) ⇢ ((E -> Prop) ⇢ SProp_op_order)) (Spr1 m1) (Spr1 m2).
 
   Global Instance ExnSpec_order A : PreOrder (@ExnSpec_rel A).
   Proof. constructor ; cbv ; intuition. apply H. apply H0.
@@ -179,9 +179,9 @@ End ExceptionSpec.
 Section UpdateSpecMonad.
   Context (M : monoid) (X : monoid_action M).
 
-  Definition dom_rel A : srelation (A -> M -> SProp) :=
+  Definition dom_rel A : srelation (A -> M -> Prop) :=
     pointwise_srelation A (pointwise_srelation M SProp_op_order).
-  Definition cod_rel : srelation (X -> SProp) :=
+  Definition cod_rel : srelation (X -> Prop) :=
     pointwise_srelation X SProp_op_order.
 
   Instance dom_rel_ord A : PreOrder (@dom_rel A).
@@ -192,7 +192,7 @@ Section UpdateSpecMonad.
   Import SPropNotations.
 
   Definition WUpd A :=
-    { f : (A -> M -> SProp) -> X -> SProp ≫
+    { f : (A -> M -> Prop) -> X -> Prop ≫
       SProper (@dom_rel A s==> cod_rel) f}. 
   Program Definition retWUpd A (a : A) : WUpd A :=
     Sexists _ (fun p xx => p a (e M)) _.
@@ -286,15 +286,15 @@ Section MonotonicRelations.
   Import SPropNotations.
   Import SPropAxioms.
 
-  Definition SPropAssuming (pre : SProp) :=
-    { q : SProp ≫ q s<-> (pre -> q) }.
+  Definition SPropAssuming (pre : Prop) :=
+    { q : Prop ≫ q s<-> (pre -> q) }.
 
   Definition MR_base X := 
-    forall (pre:SProp), (X -> SPropAssuming pre) -> SPropAssuming pre.
+    forall (pre:Prop), (X -> SPropAssuming pre) -> SPropAssuming pre.
 
   Definition MR_base_rel X : srelation (MR_base X) :=
     fun r1 r2 =>
-    forall (pre1 pre2:SProp) (Hpre : pre1 -> pre2) (post1 : X -> SPropAssuming pre1)
+    forall (pre1 pre2:Prop) (Hpre : pre1 -> pre2) (post1 : X -> SPropAssuming pre1)
       (post2 : X -> SPropAssuming pre2)
       (Hpost : forall x, Spr1 (post2 x) -> Spr1 (post1 x)), Spr1 (r2 pre2 post2) -> Spr1 (r1 pre1 post1).
 
@@ -375,7 +375,7 @@ Section Pred.
   Import SPropAxioms.
   Import FunctionalExtensionality.
 
-  Definition Pred X := X -> SProp.
+  Definition Pred X := X -> Prop.
   Definition Pred_ret : forall A, A -> Pred A := fun _ x y => y ≡ x.
   Definition Pred_bind 
     : forall A B, Pred A -> (A -> Pred B) -> Pred B :=
@@ -412,7 +412,7 @@ Module PrePost.
   Import SPropAxioms.
   Import FunctionalExtensionality.
 
-  Definition PP X := SProp  × (X -> SProp).
+  Definition PP X := Prop  × (X -> Prop).
 
   Definition PP_ret : forall A, A -> PP A := fun _ x => ⟨ sUnit, fun y => y ≡ x ⟩.
 
@@ -519,10 +519,10 @@ Module  StrongestPostcondition.
   Import SPropAxioms.
   Import FunctionalExtensionality.
 
-  Record SPropOver (p:SProp) := mkOver { base :> SProp ; over : base -> p }.
+  Record SPropOver (p:Prop) := mkOver { base :> Prop ; over : base -> p }.
 
   Definition SP X := { f : forall p:SProp, X -> SPropOver p ≫
-                       forall (p1 p2 : SProp) x, (p1 -> p2) -> f p1 x -> f p2 x}.
+                       forall (p1 p2 : Prop) x, (p1 -> p2) -> f p1 x -> f p2 x}.
 
   Program Definition SP_ret A (a:A) : SP A :=
     Sexists _ (fun p y => @mkOver _ (p s/\ a ≡ y) _) _.
@@ -541,7 +541,7 @@ Module  StrongestPostcondition.
     exists x0 ; apply (Spr2 (f x0) _ _ _ (Spr2 m _ _ x0 H)) ; assumption.
   Qed.
 
-  Lemma trivial_eq (p:SProp) {A} (x:A) : p = (p s/\ x ≡ x).
+  Lemma trivial_eq (p:Prop) {A} (x:A) : p = (p s/\ x ≡ x).
   Proof. apply sprop_ext ; split ; dintuition. Qed.
 
   Lemma SPropOver_eq p (q1 q2 : SPropOver p) :
@@ -611,7 +611,7 @@ Section Adjunctions.
     move=> A post pp ; cbv ; split ; intuition.
   Qed.
 
-  Let MonoCont := MonoContSProp.
+  Let MonoCont := MonoContProp.
 
   Definition wp2pp A (w : MonoCont A) : PPSpecMonad A :=
     ⟨Spr1 w (fun _ => sUnit), fun x =>  forall p, Spr1 w p -> p x⟩.
@@ -641,13 +641,13 @@ Section Adjunctions.
     move: H2 ; apply (Spr2 w). cbv ; auto.
   Qed.
 
-  Program Definition assuming (pre : SProp) A (post : A -> SProp) (x:A) :
+  Program Definition assuming (pre : Prop) A (post : A -> Prop) (x:A) :
     SPropAssuming pre :=
     Sexists _ (pre -> post x) _.
   Next Obligation. cbv ; intuition. Qed.
 
   Program Definition mr2wp A (mr:MRSpec A) : MonoCont A :=
-    Sexists _ (fun p => s∃ (pre:SProp), Spr1 (Spr1 mr pre (assuming pre p)) s/\ pre) _.
+    Sexists _ (fun p => s∃ (pre:Prop), Spr1 (Spr1 mr pre (assuming pre p)) s/\ pre) _.
   Next Obligation.
     cbv ; intuition.
     move: H0 => [pre [Hmr ?]] ; exists pre ; intuition.
@@ -694,7 +694,7 @@ Section Adjunctions.
 
   (** Previous convoluted definition that's secretly "equivalent" to the one above *)
   (*  Definition sp2pp A (sp:ForwardPredTransformer A) : PPSpecMonad A := *)
-  (*    let post := fun x => forall (pre : SProp), pre -> Spr1 sp pre x in *)
+  (*    let post := fun x => forall (pre : Prop), pre -> Spr1 sp pre x in *)
   (*    let pre := s∃ pre, (forall x, post x -> Spr1 sp pre x) s/\ pre in *)
   (*    ⟨pre, post⟩. *)
 
@@ -705,7 +705,7 @@ Section Adjunctions.
   (* Next Obligation. move: H0 => [Hpre Hpost] ; split ; auto. Qed. *)
 
   (* Program Definition pp2sp A (pp : PPSpecMonad A) : ForwardPredTransformer A := *)
-  (*   let sp pre x : SProp := *)
+  (*   let sp pre x : Prop := *)
   (*       forall (sp: ForwardPredTransformer A), *)
   (*         (forall x pre', pre' s/\ nsnd pp x -> Spr1 sp pre' x) -> *)
   (*             Spr1 sp pre x in *)
@@ -802,18 +802,18 @@ End Adjunctions.
 
 Section WpSpRightKanExtension.
 (*-----------------------------a forgotten section
-  Let MonoCont := @MonoCont SProp (SProp_op_order) _.
+  Let MonoCont := @MonoCont Prop (SProp_op_order) _.
   Import PrePost.
   Import StrongestPostcondition.
   Import SPropNotations.
   
-  Definition ppwp_pairing A (pp : PPSpecMonad A) (w : MonoCont A) : SProp :=
+  Definition ppwp_pairing A (pp : PPSpecMonad A) (w : MonoCont A) : Prop :=
     nfst pp -> Spr1 w (nsnd pp).
 
-  Definition ppsp_pairing A (pp : PPSpecMonad A) (sp : ForwardPredTransformer A) : SProp :=
+  Definition ppsp_pairing A (pp : PPSpecMonad A) (sp : ForwardPredTransformer A) : Prop :=
     forall a, Spr1 sp (nfst pp) a -> nsnd pp a.
 
-  Definition wpsp_pairing A (wp: MonoCont A) (sp:ForwardPredTransformer A) : SProp :=
+  Definition wpsp_pairing A (wp: MonoCont A) (sp:ForwardPredTransformer A) : Prop :=
     (forall pre post, let pp := ⟨pre, post⟩ in ppwp_pairing pp wp -> ppsp_pairing pp sp) s/\
     (forall pre post, let pp := ⟨pre, post⟩ in ppsp_pairing pp sp -> ppwp_pairing pp wp).
 

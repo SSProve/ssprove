@@ -24,7 +24,7 @@ Section Erreptions.
                   (fun A =>
                      ⦑fun m12 =>
                         ⦑fun post pexc =>
-                           match m12 return SProp with
+                           match m12 return Prop with
                            | ⟨retFree _ a1,retFree _ a2⟩ => post ⟨a1, a2⟩
                            | ⟨raiseP _, _⟩ | ⟨_, raiseP _⟩ => pexc tt
                            end⦒⦒) _ _.
@@ -82,7 +82,7 @@ Section Erreptions.
   Definition throw {E A} (e:E) : Exn E A :=
     @opr (ExnS E) (@ExnAr _) _ (Raise e) (@False_rect _).
 
-  Inductive exc_rel {A1 A2} : Err1 A1 -> Err2 A2 -> ErrProd A1 A2 -> SProp :=
+  Inductive exc_rel {A1 A2} : Err1 A1 -> Err2 A2 -> ErrProd A1 A2 -> Prop :=
   | erRet : forall a1 a2, exc_rel (ret a1) (ret a2) (ret ⟨a1,a2⟩)
   | erRaiseLeft : forall e1 c2, exc_rel (throw e1) c2 (throw tt)
   | erRaiseRight : forall c1 e2, exc_rel c1 (throw e2) (throw tt)
@@ -111,10 +111,10 @@ Section ErrCollapse.
     ordmonad_to_relspecmon0 (ExnSpec E).
 
   Context (θErr : RelationalEffectObservation0 Err1 Err2 WErr).
-  Context (ϕ1 : (E -> SProp) -> E1 -> SProp)
+  Context (ϕ1 : (E -> Prop) -> E1 -> Prop)
           (H1 : forall A2 (a2:A2) post e1 pexc,
               Spr1 (Spr1 (θErr ⟨_,_⟩) ⟨raise e1, ret a2⟩) post pexc = ϕ1 pexc e1)
-          (ϕ2 : (E -> SProp) -> E2 -> SProp)
+          (ϕ2 : (E -> Prop) -> E2 -> Prop)
           (H2 : forall A1 (a1:A1) post e2 pexc,
               Spr1 (Spr1 (θErr ⟨_,_⟩) ⟨ret a1, raise e2⟩) post pexc = ϕ2 pexc e2).
 

@@ -1,6 +1,6 @@
 (*From Coq Require Export Logic.StrictProp.*)
 (*we try not using sprop this time*)
-(*we redefine the logical connectives by replacing SProp with
+(*we redefine the logical connectives by replacing Prop with
 Prop. The name are kept the same*)
 From Coq Require PeanoNat.
 From Mon Require Import Base.
@@ -19,23 +19,23 @@ Set Primitive Projections.
 
 (********************************************************************)
 (**                                                                 *)
-(**           This file uses SProp crucially                        *)
+(**           This file uses Prop crucially                        *)
 (**                                                                 *)
 (********************************************************************)
 (*hopefully not*)
 
 (* Create HintDb sprop discriminated. *)
 
-(** SProp type formers and notations not present in the stdlib *)
+(** Prop type formers and notations not present in the stdlib *)
 
 (** sprop sigma types*)
 Module Redefined_sprop_constructs.
-(*not all redefinitions SProp -> Prop are provided in this module
+(*not all redefinitions Prop -> Prop are provided in this module
 planning to put them all here
 *)
 Definition sEmpty := False.
 Definition sUnit := True.
-(*Definition SProp := Prop.*) (*This is no longer accepted by coq*)
+(*Definition Prop := Prop.*) (*This is no longer accepted by coq*)
 Definition Ssig := sig.
 Arguments Ssig {A} P.
 Definition Sexists := exist.
@@ -53,7 +53,7 @@ Record Box (A:Prop) : Prop := box { unbox : A }.
 End Redefined_sprop_constructs.
 Export Redefined_sprop_constructs.
 
-(** Equality in SProp *)
+(** Equality in Prop *)
 
 About eq. Print eq.
 Definition sEq {A} (x:A) : A -> Prop :=
@@ -62,35 +62,35 @@ Definition sEq_refl {A:Type} := @eq_refl A.
 
 
 (* old sprop equality type :
-Inductive sEq {A} (x:A) : A -> SProp :=
+Inductive sEq {A} (x:A) : A -> Prop :=
   | sEq_refl : sEq x x.
 Arguments sEq_refl {_} _.
 *)
 
 
-(** Existential quantification over SProp *)
+(** Existential quantification over Prop *)
 
 Definition Ex {A} (P : A -> Prop)  : Prop :=
   ex P.
 (* old sprop existential quantifier 
-Inductive Ex {A} (P : A -> SProp)  : SProp :=
+Inductive Ex {A} (P : A -> Prop)  : Prop :=
   | ExIntro : forall x, P x -> Ex P.
 
 Arguments ExIntro {_} _ _.
 *)
 
-(** Universal quantifier over SProp *)
+(** Universal quantifier over Prop *)
 Definition All {A} (P : A -> Prop) : Prop := forall (x : A) , P x.
 
 (* old sprop universal quantifier
-Definition All {A} (P : A -> SProp) : SProp := forall (x:A), P x.
+Definition All {A} (P : A -> Prop) : Prop := forall (x:A), P x.
 *)
 
 (** Conjunction *)
 Definition sand (P Q : Prop) : Prop := P /\ Q .
 
 (*old sprop and connective 
-Inductive sand (P Q : SProp) : SProp := | spair : P -> Q -> sand P Q.
+Inductive sand (P Q : Prop) : Prop := | spair : P -> Q -> sand P Q.
 
 
 Hint Constructors sand : core.
@@ -100,14 +100,14 @@ Hint Constructors sand : core.
 
 Definition s_impl (P Q : Prop) := P -> Q.
 (* old sprop implication connective 
-Definition s_impl (P Q : SProp) := P -> Q.
+Definition s_impl (P Q : Prop) := P -> Q.
 *)
 
 (** Disjunction *)
 
 Definition sor (P Q : Prop) : Prop := P \/ Q.
 (* old sprop disjunction connective 
-Inductive sor (P Q : SProp) : SProp :=
+Inductive sor (P Q : Prop) : Prop :=
 | sor_introl : P -> sor P Q
 | sor_intror : Q -> sor P Q.
 
@@ -118,14 +118,14 @@ Hint Constructors sor : core.
 
 Definition siff (P Q : Prop) := P <-> Q.
 (* old sprop iff connective 
-Definition siff (P Q:SProp) := sand (P -> Q) (Q -> P).
+Definition siff (P Q:Prop) := sand (P -> Q) (Q -> P).
 *)
 
 (** Negation *)
 
 Definition snot (P : Prop) : Prop := ~ P.
 (* old sprop negation
-Definition snot (P:SProp) : SProp := P -> sEmpty.
+Definition snot (P:Prop) : Prop := P -> sEmpty.
 *)
 
 (** Well-founded order on natural number *)
@@ -163,7 +163,7 @@ intros m n ; split.
 Qed.
 
 (* old sprop less or equal connective 
-Inductive Sle : nat -> nat -> SProp :=
+Inductive Sle : nat -> nat -> Prop :=
 | SleZ : forall n, Sle 0 n
 | SleS : forall n m, Sle n m -> Sle (S n) (S m).
 *)
@@ -172,7 +172,7 @@ Inductive Sle : nat -> nat -> SProp :=
 Module SPropNotations.
   Notation "x ≡ y" := (@sEq _ x y) (at level 70, no associativity).
 (*the following comes from Logic.StrictProp , coq 8.10 *)
-(*Record Ssig {A:Type} (P:A->SProp) := Sexists { Spr1 : A; Spr2 : P Spr1 }.*)
+(*Record Ssig {A:Type} (P:A->Prop) := Sexists { Spr1 : A; Spr2 : P Spr1 }.*)
 
   Notation "{ x : A ≫ P }" := (@Ssig A (fun x => P)) (x at level 99).
   Notation "s∃ x .. y , p" :=
@@ -373,7 +373,7 @@ Section SPropExamplesAndCounterExamples.
     (* But trying directly, it fails (P is accepted in Type though...) *)
     exists P. intros. Fail reflexivity.
     Restart.
-    (* However it works if we wrap the SProp (but that's quite unconvenient) *)
+    (* However it works if we wrap the Prop (but that's quite unconvenient) *)
     exists (Box P); intros [?] [?].
     have hintUnif : unbox0 = unbox1.
       by apply ax_proof_irrel.

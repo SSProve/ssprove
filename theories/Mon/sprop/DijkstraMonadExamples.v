@@ -72,7 +72,7 @@ Section Option.
   Next Obligation. move: c => [?|] //=. Qed.
 
   Program Definition TotAlg : OrderedAlgebra Opt :=
-    let alg := @mkMonadAlgebra Opt SProp
+    let alg := @mkMonadAlgebra Opt Prop
                                (fun c => match c with
                                       | Some p => p
                                       | None => sEmpty end) _ _ in
@@ -84,7 +84,7 @@ Section Option.
   Definition morWpTot := mor TotAlg. 
   
   Program Definition PartAlg : OrderedAlgebra Opt :=
-    let alg := @mkMonadAlgebra Opt SProp
+    let alg := @mkMonadAlgebra Opt Prop
                                (fun c => match c with
                                       | Some p => p
                                       | None => sUnit end) _ _ in
@@ -355,7 +355,7 @@ End SumOfTheories.
 
 (*   Context (DBase : Dijkstra W) *)
 (*           (perform_s : forall s, DBase (P s) (OpSpecs s)) *)
-(*           (intro_assume:forall A (pre:SProp) (w:W A), *)
+(*           (intro_assume:forall A (pre:Prop) (w:W A), *)
 (*               (pre -> DBase A w) -> DBase A (assume_p pre w)). *)
 
 (*   Context (Dom:Type) (prec : Dom -> Dom -> Prop) `{WellFounded _ prec} *)
@@ -459,9 +459,9 @@ End SumOfTheories.
 
 (* End GeneralRecursion. *)
 
-(* Section NatLtSProp. *)
+(* Section NatLtProp. *)
 
-(*   Inductive leS : nat -> nat -> SProp := *)
+(*   Inductive leS : nat -> nat -> Prop := *)
 (*   | leSZ : forall n, leS 0 n *)
 (*   | leSS : forall n m, leS n m -> leS (S n) (S m). *)
 
@@ -476,7 +476,7 @@ End SumOfTheories.
 (*     apply Le.le_n_S ; apply IHm. inversion H ; assumption. *)
 (*   Qed. *)
 
-(*   Goal forall (p:SProp), Squash (Box p) -> p. *)
+(*   Goal forall (p:Prop), Squash (Box p) -> p. *)
 (*   Proof. move=> p [[H]] ; exact H. Qed. *)
 
 (*   Lemma sq_le_to_leS : forall m n, Squash (le n m) -> leS n m.  *)
@@ -491,7 +491,7 @@ End SumOfTheories.
 (*     constructor. apply Le.le_Sn_le ; assumption. *)
 (*   Qed. *)
 
-(* End NatLtSProp. *)
+(* End NatLtProp. *)
 
 (* Section EmptySignature. *)
 
@@ -514,13 +514,13 @@ End SumOfTheories.
 (* (****************************************************************************) *)
 
 (* (* TODO : there seems to be something funny to encode non-decidable partial maps *)
-(*    from A to B using A -> { p : SProp & p -> B } *)
+(*    from A to B using A -> { p : Prop & p -> B } *)
 (*    This looks a bit like a Dijkstra monad, or maybe a graded monad (since the precondition *)
 (*    does not look like a spec monad but rather a monoid) *)
 (*  *) *)
 
 (* Section Pure. *)
-(*   Let W := MonoContSProp. *)
+(*   Let W := MonoContProp. *)
 (*   Import SPropNotations. *)
 (*   Import FunctionalExtensionality. *)
 
@@ -613,7 +613,7 @@ End SumOfTheories.
 (*     cbv in Hm |- * ; apply Hm=> //. *)
 (*   Qed. *)
 
-(*   Program Definition pure_intro_assume A (pre:SProp) w (f : pre -> Pure A w) *)
+(*   Program Definition pure_intro_assume A (pre:Prop) w (f : pre -> Pure A w) *)
 (*     : Pure A (assume_p pre w) := *)
 (*     ⦑fun p Hpre => Spr1 (f _) p _⦒. *)
 (*   Next Obligation. destruct Hpre ; assumption. Qed. *)
@@ -626,7 +626,7 @@ End SumOfTheories.
 (* (****************************************************************************) *)
 
 (* Section Fibonnacci. *)
-(*   Let W := MonoContSProp. *)
+(*   Let W := MonoContProp. *)
 (*   Definition fib_trivial_inv : W nat := PrePostSpec sUnit (fun _ => sUnit). *)
 (*   Let GenRecNatNat := *)
 (*     GenRecExt (EmptyOpSpecs W) lt (fun _ => fib_trivial_inv). *)

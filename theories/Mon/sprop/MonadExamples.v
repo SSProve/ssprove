@@ -137,7 +137,7 @@ Section NonDeterminismSet.
   Import SPropNotations FunctionalExtensionality SPropAxioms.
 
   Program Definition NDSet : Monad :=
-    @mkMonad (fun X => X -> SProp)
+    @mkMonad (fun X => X -> Prop)
              (fun X x => fun x' => x ≡ x')
              (fun X Y c f => fun y => s∃ x, c x s/\ f x y) _ _ _.
   Next Obligation.

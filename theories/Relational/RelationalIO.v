@@ -27,7 +27,7 @@ Section IOs.
   Let Es1 := list (I1+O1).
   Let Es2 := list (I2+O2).
   Let Es12 := Es1 × Es2.
-  Let carrier := Es12 -> SProp.
+  Let carrier := Es12 -> Prop.
 
   Definition Wun :=
     @MonoCont carrier (@Pred_op_order _) (@Pred_op_order_prorder _).
@@ -65,8 +65,8 @@ Section IOs.
   Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ _ θIO _ _ c1 c2 w).
 
   Program Definition fromPrePost {A1 A2}
-          (pre : Es1 -> Es2 -> SProp)
-          (post : A1 -> Es1 -> Es1 -> A2 -> Es2 -> Es2 -> SProp)
+          (pre : Es1 -> Es2 -> Prop)
+          (post : A1 -> Es1 -> Es1 -> A2 -> Es2 -> Es2 -> Prop)
     : dfst (Wrel ⟨A1,A2⟩) :=
     ⦑fun p h => pre (nfst h) (nsnd h) s/\
                  forall a1 a2 h', post a1 (nfst h) (nfst h') a2 (nsnd h) (nsnd h')
@@ -81,7 +81,7 @@ Section IOs.
   Let read2 := read I2 O2.
   Let write2 := @write I2 O2.
 
-  Let ttrue : Es1 -> Es2 -> SProp := fun _ _ => sUnit.
+  Let ttrue : Es1 -> Es2 -> Prop := fun _ _ => sUnit.
 
   Lemma read1_rule {A2} : forall (a2:A2),
       ⊨ ⦃ ttrue ⦄
@@ -198,8 +198,8 @@ Section NI_IO.
                    (fromFreeCommute Wun' wop1' wop2' io1_io2_commutation').
 
   Program Definition fromPrePost' {A1 A2}
-          (pre : Es1 -> Es2 -> SProp)
-          (post : A1 -> Es1 -> Es1 -> A2 -> Es2 -> Es2 -> SProp)
+          (pre : Es1 -> Es2 -> Prop)
+          (post : A1 -> Es1 -> Es1 -> A2 -> Es2 -> Es2 -> Prop)
     : dfst (Wrel ⟨A1,A2⟩) :=
     ⦑fun p h => pre (nfst h) (nsnd h) s/\
                  forall a1 a2 h', post a1 (nfst h) (nfst h') a2 (nsnd h) (nsnd h')
@@ -209,7 +209,7 @@ Section NI_IO.
   Notation "⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
     (semantic_judgement _ _ _ θIO' _ _ c1 c2 (fromPrePost' pre post)).
 
-  Let ttrue : Es1 -> Es2 -> SProp := fun _ _ => sUnit.
+  Let ttrue : Es1 -> Es2 -> Prop := fun _ _ => sUnit.
 
   Lemma readLow_readLow_rule :
       ⊨ ⦃ ttrue ⦄
@@ -246,7 +246,7 @@ Section NI_Examples.
   Notation "⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
     (semantic_judgement _ _ _ θIO' _ _ c1 c2 (fromPrePost' pre post)).
 
-  Fixpoint aux (fp1 fp2 : list IOTriple) (p : SProp) :=
+  Fixpoint aux (fp1 fp2 : list IOTriple) (p : Prop) :=
     match (fp1, fp2) with
     | ([], []) => p
     (* alt: could filer them here too, instead of in ni_pred *)
@@ -257,7 +257,7 @@ Section NI_Examples.
     | (_, _) => sEmpty
     end.
 
-  Definition ni_pred (fp1 fp2 : list IOTriple) (p : SProp) : SProp :=
+  Definition ni_pred (fp1 fp2 : list IOTriple) (p : Prop) : Prop :=
     aux (filter isNotPrivInp (rev fp1)) (filter isNotPrivInp (rev fp2)) p.
 
   (*

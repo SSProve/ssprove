@@ -91,8 +91,8 @@ Section RelationalState.
 
   (* Translation from pre-/postconditions to backward predicate transformers *)
   Program Definition fromPrePost {A1 A2}
-          (pre : S1 -> S2 -> SProp)
-          (post : A1 -> S1 -> S1 -> A2 -> S2 -> S2 -> SProp)
+          (pre : S1 -> S2 -> Prop)
+          (post : A1 -> S1 -> S1 -> A2 -> S2 -> S2 -> Prop)
     : dfst (RelSt S ⟨A1,A2⟩) :=
     ⦑fun p s0 => pre (res1 s0) (res2 s0) s/\
                  forall a1 a2 s, post a1 (res1 s0) (res1 s) a2 (res2 s0) (res2 s)
@@ -344,7 +344,7 @@ Section ProductState.
   Let get' (l:loc+loc) : StProd val unit := fun s => ⟨⟨s l, tt⟩, s⟩.
 
   (* Inductive definition of the relation c_1 x c_2 ~> c *)
-  Inductive st_rel {A1 A2} : St0 A1 -> St0 A2 -> StProd A1 A2 -> SProp :=
+  Inductive st_rel {A1 A2} : St0 A1 -> St0 A2 -> StProd A1 A2 -> Prop :=
   | srRet : forall a1 a2, st_rel (ret a1) (ret a2) (ret ⟨a1,a2⟩)
   | srPutLeft : forall l v m1 m2 mrel,
       st_rel m1 m2 mrel -> st_rel (put l v ;; m1) m2 (put' (inl l) v ;; mrel)

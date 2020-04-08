@@ -183,7 +183,7 @@ Section MonoidStrictification.
   Lemma embed_project_id : forall m, project (embed m) = m.
   Proof. intro. cbv. rewrite monoid_law2 //. Qed.
 
-  Lemma Ssig_sEq : forall (A : Type) (P : A -> SProp) (mx my : {x : A ≫ P x}),
+  Lemma Ssig_sEq : forall (A : Type) (P : A -> Prop) (mx my : {x : A ≫ P x}),
        Spr1 mx ≡ Spr1 my -> mx ≡ my.
   Proof.
     intros A P [mx ?] [my ?] H. simpl in H.

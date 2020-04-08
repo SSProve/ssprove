@@ -147,7 +147,7 @@ Section RelationalSpecMonad.
   (* Simple relational specification  monad *)
   Definition RelationalSpecMonad0 : Type := relativeMonad Jprod.
 
-  Class BindMonotonicRelationalSpecMonad0 (W : RelationalSpecMonad0) : SProp :=
+  Class BindMonotonicRelationalSpecMonad0 (W : RelationalSpecMonad0) : Prop :=
     rsm0_bind_monotonic :
       forall {A B}, SProper (ordcat_hom_ord s==> ordcat_hom_ord) (@relmon_bind _ _ _ W A B).
       (* forall {A B} (f1 f2 : OrdCat⦅Jprod A; W B⦆), *)
@@ -194,7 +194,7 @@ Section RelationalSpecMonad.
   (* With respect to the paper we take a slightly different encoding *)
   Definition RelationalSpecMonad : Type := relativeMonad J.
 
-  Class BindMonotonicRelationalSpecMonad (W : RelationalSpecMonad) : SProp :=
+  Class BindMonotonicRelationalSpecMonad (W : RelationalSpecMonad) : Prop :=
     rsm_bind_monotonic :
       forall {A B}, SProper (ordcattr_hom_ord s==> ordcattr_hom_ord) (@relmon_bind _ _ _ W A B).
 
