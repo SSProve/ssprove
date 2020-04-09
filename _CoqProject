@@ -30,7 +30,7 @@ theories/Relational/OrderEnrichedRelativeMonadExamples.v
 theories/Relational/Rel.v
 theories/Relational/RelativeMonads.v
 #theories/Relational/RelativeMonadExamples.v
-#theories/Relational/GenericRulesSimple.v
+theories/Relational/GenericRulesSimple.v
 #theories/Relational/RelationalState.v
 #theories/Relational/RelationalExcSimple.v
 theories/Relational/EnrichedSetting.v

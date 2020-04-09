@@ -150,7 +150,8 @@ Section GoingPractical.
   Program Definition extend_to_Jprod {A1 A2 B1 B2} (wf0 : A1 × A2 -> dfst (W ⟨B1,B2⟩)) : OrdCat⦅Jprod ⟨A1,A2⟩ ; W ⟨B1, B2⟩⦆ :=
     ⦑wf0⦒.
   Next Obligation.
-    cbv ; intuition. destruct y; subst_sEq ; sreflexivity.
+    cbv ; intuition. move: y H => [a1 a2] [Ha1 Ha2]. rewrite Ha1 Ha2.
+    sreflexivity.
   Qed.
 
 
