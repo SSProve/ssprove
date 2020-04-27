@@ -42,7 +42,7 @@ theories/Relational/RelationalNDD.v
 theories/Relational/RelationalNDA.v
 
 # needs equations
-theories/Relational/Imp.v
+# theories/Relational/Imp.v
 
 theories/Relational/GenericRulesComplex.v
 theories/Relational/RelationalExcFull.v
@@ -60,4 +60,5 @@ theories/Crypt/only_prob/FreeProbProg.v
 theories/Crypt/only_prob/Couplings.v
 theories/Crypt/only_prob/Theta_dens.v
 theories/Crypt/only_prob/wTheta_ex.v
+theories/Crypt/only_prob/Theta_exCP.v
 theories/Crypt/LaxComp.v
