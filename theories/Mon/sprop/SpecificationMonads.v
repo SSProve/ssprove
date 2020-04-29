@@ -1,6 +1,6 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 From Mon Require Export Base.
-From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
+From Coq Require Import Relation_Definitions Morphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures Monoid.
 
 Set Implicit Arguments.
@@ -18,11 +18,11 @@ Set Universe Polymorphism.
 Section MonotoneContinuationsMonad.
   Import SPropNotations.
 
-  Context {R: Type} (Rrel : srelation R) `{PreOrder _ Rrel}.
+  Context {R: Type} (Rrel : relation R) `{PreOrder _ Rrel}.
   Notation "x ≼ y" := (Rrel x y) (at level 70).
 
   Definition MonoContCarrier (X: Type) : Type :=
-    { f : (X -> R) -> R ≫ SProper (pointwise_srelation X Rrel s==> Rrel) f}.
+    { f : (X -> R) -> R ≫ Proper (pointwise_relation X Rrel ==> Rrel) f}.
 
   Program Definition MonoCont_ret A (a:A) : MonoContCarrier A :=
     Sexists _ (fun k => k a) _.
@@ -47,8 +47,8 @@ About MonoContCarrier. Print MonoContCarrier.
 
 
 
-  Program Definition MonoCont_order A : srelation (MonoContU A) :=
-    fun m1 m2 => pointwise_srelation (A -> R) Rrel (Spr1 m1) (Spr1 m2).
+  Program Definition MonoCont_order A : relation (MonoContU A) :=
+    fun m1 m2 => pointwise_relation (A -> R) Rrel (Spr1 m1) (Spr1 m2).
   Instance MonoCont_order_preorder A : PreOrder (@MonoCont_order A).
   Proof.
     constructor ; cbv ; intuition ;
@@ -87,7 +87,7 @@ Section MonoContProp.
 
 End MonoContProp.
 
-Definition STCont S := @MonoCont (S -> Prop) (pointwise_srelation S SProp_op_order) _.
+Definition STCont S := @MonoCont (S -> Prop) (pointwise_relation S SProp_op_order) _.
 
 
 Section PrePostSpec.
@@ -125,7 +125,7 @@ Section ExceptionSpec.
   
   Definition ExnSpecCarrier : Type -> Type :=
     fun X => { f : (X -> Prop) -> (E -> Prop) -> Prop
-          ≫ SProper ((X ⇢ SProp_op_order) s==> (E ⇢ SProp_op_order) s==> SProp_op_order) f}.
+          ≫ Proper ((pointwise_relation X SProp_op_order) ==> (pointwise_relation E SProp_op_order) ==> SProp_op_order) f}.
 
   Program Definition ExnSpec_ret : forall A, A -> ExnSpecCarrier A :=
     fun A a => ⦑ fun p pexc => p a ⦒.
@@ -155,8 +155,8 @@ Section ExceptionSpec.
   Next Obligation. compute. apply Ssig_eq ; compute. reflexivity. Qed.
 
     
-  Definition ExnSpec_rel A : srelation (ExnSpecU A) :=
-    fun m1 m2 => ((A -> Prop) ⇢ ((E -> Prop) ⇢ SProp_op_order)) (Spr1 m1) (Spr1 m2).
+  Definition ExnSpec_rel A : relation (ExnSpecU A) :=
+    fun m1 m2 => (pointwise_relation (A -> Prop) (pointwise_relation (E -> Prop) SProp_op_order)) (Spr1 m1) (Spr1 m2).
 
   Global Instance ExnSpec_order A : PreOrder (@ExnSpec_rel A).
   Proof. constructor ; cbv ; intuition. apply H. apply H0.
@@ -179,10 +179,10 @@ End ExceptionSpec.
 Section UpdateSpecMonad.
   Context (M : monoid) (X : monoid_action M).
 
-  Definition dom_rel A : srelation (A -> M -> Prop) :=
-    pointwise_srelation A (pointwise_srelation M SProp_op_order).
-  Definition cod_rel : srelation (X -> Prop) :=
-    pointwise_srelation X SProp_op_order.
+  Definition dom_rel A : relation (A -> M -> Prop) :=
+    pointwise_relation A (pointwise_relation M SProp_op_order).
+  Definition cod_rel : relation (X -> Prop) :=
+    pointwise_relation X SProp_op_order.
 
   Instance dom_rel_ord A : PreOrder (@dom_rel A).
   Proof. constructor ; cbv ; intuition. Qed.
@@ -193,7 +193,7 @@ Section UpdateSpecMonad.
 
   Definition WUpd A :=
     { f : (A -> M -> Prop) -> X -> Prop ≫
-      SProper (@dom_rel A s==> cod_rel) f}. 
+      Proper (@dom_rel A ==> cod_rel) f}. 
   Program Definition retWUpd A (a : A) : WUpd A :=
     Sexists _ (fun p xx => p a (e M)) _.
   Next Obligation. move=> ? ? H ? ; apply H. Qed.
@@ -209,7 +209,7 @@ Section UpdateSpecMonad.
     move=> ? ? H ? ; apply (Spr2 wm)=> a m ; apply (Spr2 (wf a))=> ? ? ; apply H.
   Qed.
 
-  Definition WUpd_rel A : srelation (WUpd A) :=
+  Definition WUpd_rel A : relation (WUpd A) :=
     fun m1 m2 => forall p, cod_rel (Spr1 m1 p) (Spr1 m2 p).
   Instance WUpd_ord A : PreOrder (@WUpd_rel A).
   Proof. constructor ; cbv ; intuition. apply H. apply H0. assumption. Qed.
@@ -451,7 +451,7 @@ Module PrePost.
     intros [? [? [? []]]] ; eexists ; split ; [eexists; split|] ; eassumption.
   Qed.
 
-  Program Definition PP_rel A : srelation (PP A) :=
+  Program Definition PP_rel A : relation (PP A) :=
     fun m1 m2 => (nfst m2 -> nfst m1) s/\ forall x, nsnd m1 x -> nsnd m2 x.
   Instance PP_rel_preorder A : PreOrder (@PP_rel A).
   Proof. constructor ; cbv ; dintuition. Qed.

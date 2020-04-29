@@ -1,7 +1,7 @@
 From Coq Require Import ssreflect ssrfun FunctionalExtensionality.
 From Mon Require Export Base.
 From Mon Require Import sprop.SPropBase.
-From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
+From Coq Require Import Relation_Definitions Morphisms.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -13,20 +13,20 @@ Set Primitive Projections.
 (***************************************************************)
 
 
-Definition SProp_order : srelation Prop := s_impl.
+Definition SProp_order : relation Prop := s_impl.
 Instance SProp_order_preorder : PreOrder SProp_order.
 Proof. constructor ; cbv ; intuition. Qed.
 
-Definition SProp_op_order : srelation Prop := Basics.flip s_impl.
+Definition SProp_op_order : relation Prop := Basics.flip s_impl.
 Instance SProp_op_order_preorder : PreOrder SProp_op_order.
 Proof. unfold SProp_op_order. typeclasses eauto. Qed.
 
-Instance pointwise_preorder A {B} (R:srelation B) `{PreOrder _ R} :
-  PreOrder (pointwise_srelation A R).
-Proof. constructor ; cbv ; intuition ; stransitivity (y a) ; auto. Qed.
+Instance pointwise_preorder A {B} (R:relation B) `{PreOrder _ R} :
+  PreOrder (pointwise_relation A R).
+Proof. constructor ; cbv ; intuition ; transitivity (y a) ; auto. Qed.
 
-Definition Pred_op_order A : srelation (A -> Prop) :=
-  pointwise_srelation A SProp_op_order.
+Definition Pred_op_order A : relation (A -> Prop) :=
+  pointwise_relation A SProp_op_order.
 Instance Pred_op_order_prorder A : PreOrder (@Pred_op_order A).
 Proof. unfold Pred_op_order ; typeclasses eauto. Qed.
 
@@ -99,10 +99,10 @@ End MapLemmas.
 Record OrderedMonad : Type :=
   mkOrderedMonad
     { omon_monad :> Monad
-      ; omon_rel : forall A, srelation (omon_monad A)
+      ; omon_rel : forall A, relation (omon_monad A)
       ; omon_order : forall A, PreOrder (@omon_rel A)
       ; omon_bind  : forall A B,
-          SProper (@omon_rel A s==> pointwise_srelation A (@omon_rel B) s==> @omon_rel B) bind
+          Proper (@omon_rel A ==> pointwise_relation A (@omon_rel B) ==> @omon_rel B) bind
     }.
 
 Existing Instance omon_order.
@@ -113,7 +113,12 @@ Section DiscreteMonad.
   Import SPropNotations.
   Program Definition DiscreteMonad (M:Monad) : OrderedMonad :=
     @mkOrderedMonad M (fun A x y => x ≡ y) _ _.
-  Next Obligation. compute. move=> x y Exy x0 y0 pe_x0y0.
+  Next Obligation.
+    constructor. by cbv.
+    cbv. move=> *. etransitivity ; by eassumption.
+  Qed.
+  Next Obligation.
+    compute. move=> x y Exy x0 y0 pe_x0y0.
     rewrite Exy. apply FunctionalExtensionality in pe_x0y0.
     rewrite pe_x0y0. reflexivity.
   Qed.
@@ -134,10 +139,10 @@ Record MonadAlgebra (M : Monad) : Type :=
 Record OrderedAlgebra (M : Monad) : Type :=
   mkOrderedAlgebra
     { oalg_alg     :> MonadAlgebra M
-    ; oalg_rel     : srelation (malg_carrier oalg_alg)
+    ; oalg_rel     : relation (malg_carrier oalg_alg)
     ; oalg_order   : PreOrder oalg_rel
-    ; oalg_mono    : forall A, SProper
-                            (pointwise_srelation A oalg_rel s==> pointwise_srelation (M A) oalg_rel)
+    ; oalg_mono    : forall A, Proper
+                            (pointwise_relation A oalg_rel ==> pointwise_relation (M A) oalg_rel)
                             (fun k m => oalg_alg (map k m))}.
 
 Section OrderedMonadAlgebra.
@@ -146,16 +151,16 @@ Section OrderedMonadAlgebra.
   Record OrderedMonadAlgebra : Type :=
     mkOrderedMonadAlgebra
       { omalg_alg     :> MonadAlgebra OM
-      ; omalg_rel     : srelation (malg_carrier omalg_alg)
+      ; omalg_rel     : relation (malg_carrier omalg_alg)
       ; omalg_order   : PreOrder omalg_rel
-      ; omalg_mono    : forall A, SProper
-                              (pointwise_srelation A omalg_rel s==> (@omon_rel OM A) s==> omalg_rel)
+      ; omalg_mono    : forall A, Proper
+                              (pointwise_relation A omalg_rel ==> (@omon_rel OM A) ==> omalg_rel)
                               (fun k m => omalg_alg (map k m))}.
 
 End OrderedMonadAlgebra.
 
 Section AssertAssumeStructure.
-  Context A (rel : srelation A) `{PreOrder _ rel}.
+  Context A (rel : relation A) `{PreOrder _ rel}.
 
   Notation "x ≤ y" := (rel x y).
   Import SPropNotations.
@@ -202,9 +207,9 @@ Section KanExtensionMonotonic.
   Definition ran_mono : forall b, Spr1 Hran b ≤ Spr1 Hran' b.
   Proof.
     move:Hran Hran' => [w [H1 H2]] [w' [H1' H2']] b /=.
-    apply H2'. stransitivity f ; [|assumption].
-    stransitivity (bind p w).
-    apply omon_bind ; [assumption|sreflexivity].
+    apply H2'. transitivity f ; [|assumption].
+    transitivity (bind p w).
+    apply omon_bind ; [assumption|reflexivity].
     assumption.
   Qed.
 End KanExtensionMonotonic.
@@ -218,13 +223,13 @@ Section KanExtensionIsoStable.
   Next Obligation.
     destruct Hf as [Hf1 Hf2] ; destruct Hp as [Hp1 Hp2] ; destruct (Spr2 Hran) as [Hran1 Hran2].
     split.
-    stransitivity (bind p (Spr1 Hran)).
-    apply omon_bind. assumption.  move=> //= ?. sreflexivity.
-    stransitivity f ; assumption.
+    transitivity (bind p (Spr1 Hran)).
+    apply omon_bind. assumption.  move=> //= ?. reflexivity.
+    transitivity f ; assumption.
     move=> w' Hw'. apply Hran2.
-    stransitivity (bind p' w'). apply omon_bind. assumption.
-    move=> //= ? ; sreflexivity.
-    stransitivity f' ; assumption.
+    transitivity (bind p' w'). apply omon_bind. assumption.
+    move=> //= ? ; reflexivity.
+    transitivity f' ; assumption.
   Qed.
 End KanExtensionIsoStable.
 
@@ -252,13 +257,13 @@ Next Obligation. rewrite !mon_morph_bind //. Qed.
 Section MonadMorphismRefinement.
   Context {M : Monad} {W : OrderedMonad} (ϕ ψ : MonadMorphism M W).
   Definition monad_morph_refines :=
-    forall A, pointwise_srelation (M A) (@omon_rel W A) (ϕ A) (ψ A).
+    forall A, pointwise_relation (M A) (@omon_rel W A) (ϕ A) (ψ A).
 End MonadMorphismRefinement.
 
 Instance mon_morph_refines_preorder M W : PreOrder (@monad_morph_refines M W). 
 Proof.
   constructor ; cbv ; intuition. 
-  stransitivity (y A a) ; auto.
+  transitivity (y A a) ; auto.
 Qed.
 
 Section MonadMorphismNatural.
@@ -279,7 +284,7 @@ Record MonotonicMonadMorphism (M W : OrderedMonad) : Type :=
   mkMonMorphism
     { monmon_morph :> MonadMorphism M W
     ; monmon_monotonic : forall A,
-          SProper (@omon_rel M A s==> @omon_rel W A) (monmon_morph A)
+          Proper (@omon_rel M A ==> @omon_rel W A) (monmon_morph A)
     }.
 
 Program Definition identity_monmon M : MonotonicMonadMorphism M M :=
@@ -325,7 +330,7 @@ Section MonadIdeal.
   Record MonadIdeal : Type :=
     mkMonadIdeal
       { mid_rel :> MonadRelation M W
-      ; mid_upper_closed : forall A, SProper (pointwise_srelation (M A) (@omon_rel W A s==> SProp_order)) (@mid_rel A)
+      ; mid_upper_closed : forall A, Proper (pointwise_relation (M A) (@omon_rel W A ==> SProp_order)) (@mid_rel A)
       }.
 End MonadIdeal.
 
@@ -333,7 +338,7 @@ Section MonadMorphismToIdeal.
   Context (M : Monad) (W:OrderedMonad) (θ : MonadMorphism M W).
   Program Definition relation_from_mmorph : MonadRelation M W :=
     @mkMonadRelation _ _ (fun A m w => θ A m ≤ w) _ _.
-  Next Obligation. rewrite mon_morph_ret. sreflexivity. Qed.
+  Next Obligation. rewrite mon_morph_ret. reflexivity. Qed.
   Next Obligation.
     rewrite mon_morph_bind.
     apply omon_bind; [|move=> ?] ; auto.
@@ -341,7 +346,7 @@ Section MonadMorphismToIdeal.
 
   Program Definition ideal_from_mmorph : MonadIdeal M W :=
     @mkMonadIdeal _ _ relation_from_mmorph _.
-  Next Obligation. cbv ; intuition ; estransitivity ; eassumption. Qed.
+  Next Obligation. cbv ; intuition ; etransitivity ; eassumption. Qed.
     
 End MonadMorphismToIdeal.
 
@@ -429,7 +434,7 @@ Section OfMorphism.
   Program Definition Dθ_ret A (a : A): Dθ_carrier (ret a) :=
     Sexists _ (ret a) _.
   Next Obligation.
-    rewrite mon_morph_ret ; sreflexivity.
+    rewrite mon_morph_ret ; reflexivity.
   Qed.
 
   Program Definition Dθ_bind A B (w : W A) (f : A -> W B)
@@ -444,7 +449,7 @@ Section OfMorphism.
   Program Definition Dθ_wkn A (w w' : W A) (d: Dθ_carrier w) (H : w ≤[W] w') : Dθ_carrier w' :=
     Sexists _ (Spr1 d) _.
   Next Obligation.
-    stransitivity w. exact (Spr2 d). assumption.
+    transitivity w. exact (Spr2 d). assumption.
   Qed.
 
   Program Definition Dθ : Dijkstra W :=
@@ -494,7 +499,7 @@ apply ax_proof_irrel. rewrite hintUnif. reflexivity.
 Qed.
 
   Program Definition lift {A} (m : M A) : Dθ A (θ A m) := Sexists _ m _.
-  Next Obligation. sreflexivity. Qed.
+  Next Obligation. reflexivity. Qed.
 
 End OfMorphism.
 

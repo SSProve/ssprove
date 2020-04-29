@@ -1,7 +1,7 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require FunctionalExtensionality.
 From Mon Require Export Base.
-From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
+From Coq Require Import Relation_Definitions Morphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures.
 (* From Relational Require Import Category RelativeMonads RelativeMonadExamples. *)
 From Relational Require Import  OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
@@ -89,9 +89,9 @@ Section RelationalProgramLogicFromRelativeMonadZero.
     ⊨ bind m1 f1 ≈ bind m2 f2 [{ wm ≫= wf }].
   Proof.
     intros Hm Hf.
-    rewrite /semantic_judgement; estransitivity.
+    rewrite /semantic_judgement; etransitivity.
     apply: (rlmm_law2 _ _ M12 W θ _ _ (to_prod f1 f2) ⟨m1, m2⟩).
-    set f12 := ((θ _ ∙ _) ∙ _); estransitivity.
+    set f12 := ((θ _ ∙ _) ∙ _); etransitivity.
     2: apply: (ord_relmon_bind_proper W _ _ f12); move=> [? ?] ; apply Hf.
     apply: ((ord_relmon_bind W f12)∙2 _ _); apply: Hm.
   Qed.
@@ -99,7 +99,7 @@ Section RelationalProgramLogicFromRelativeMonadZero.
   Lemma weaken_rule2 {A B} {c1 : M1 A} {c2 : M2 B} {w w'} :
     ⊨ c1 ≈ c2 [{ w }] -> w ≤ w' -> ⊨ c1 ≈ c2 [{ w' }].
   Proof.
-    rewrite /semantic_judgement. move=> ? ? ; estransitivity ; eassumption.
+    rewrite /semantic_judgement. move=> ? ? ; etransitivity ; eassumption.
   Qed.
 
   Lemma ret_rule2 {A B} {a : A} {b : B} :
@@ -151,7 +151,7 @@ Section GoingPractical.
     ⦑wf0⦒.
   Next Obligation.
     cbv ; intuition. move: y H => [a1 a2] [Ha1 Ha2]. rewrite Ha1 Ha2.
-    sreflexivity.
+    reflexivity.
   Qed.
 
 
@@ -172,11 +172,11 @@ Section GoingPractical.
 
   Program Definition OrdCat_lift {A B} (f : A -> dfst B) : OrdCat⦅discr A; B⦆ :=
     Sexists _ f _.
-  Next Obligation. move=> ? ? H0 ; induction H0; sreflexivity. Qed.
+  Next Obligation. move=> ? ? H0 ; induction H0; reflexivity. Qed.
 
   Program Definition OrdCat_lift' {A1 A2 B} (f : A1 -> A2 -> dfst B) : OrdCat⦅Jprod ⟨A1, A2⟩; B⦆ :=
     Sexists _ (fun a => f (nfst a) (nsnd a)) _.
-  Next Obligation. move=> ? ? H0 ; induction H0; sreflexivity. Qed.
+  Next Obligation. move=> ? ? H0 ; induction H0; reflexivity. Qed.
 
   Lemma apply_left_tot {A1 A2} {c1 : M1 A1} {c2 : M2 A2} {w1 w2 w} :
     θ ⊨ c1 ≈ skip [{ w1 }] ->

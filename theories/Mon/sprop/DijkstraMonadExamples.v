@@ -1,6 +1,6 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 From Mon Require Export Base.
-From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
+From Coq Require Import Relation_Definitions Morphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures Monoid SpecificationMonads MonadExamples.
 
 Set Implicit Arguments.
@@ -196,7 +196,7 @@ Section FreeMonadEffectObservation.
   Program Definition cont_perform : forall s, OpSpecWP (P s) (@OpContSpecs s) :=
     fun s => Sexists _ (@opr _ _ _ s (@retFree _ _ _)) _.
   Next Obligation.
-    cbv ; rewrite monad_law2 ; sreflexivity.
+    cbv ; rewrite monad_law2 ; reflexivity.
   Qed.
 
   Inductive ObsFree A : W A -> Type :=
@@ -210,7 +210,7 @@ Section FreeMonadEffectObservation.
   Proof.
     destruct m as [[|] H].
     exact (OFRet H).
-    apply (OFOp H)=> a. exists (f a). sreflexivity.
+    apply (OFOp H)=> a. exists (f a). reflexivity.
   Defined.
 
   Context (OpPartialRan : forall s C (w : W C) w0,
@@ -243,19 +243,19 @@ Section FreeDijkstraMonads.
       (forall x:P s, FreeD (Spr1 w' x)) -> FreeD w.
 
   Definition fd_dret A (a:A) : FreeD (ret a) :=
-    @FDRet _ a (ret a) ltac:(sreflexivity).
+    @FDRet _ a (ret a) ltac:(reflexivity).
   
   Definition fd_weaken A {w1 w2} (m : @FreeD A w1) (Hw : w1 ≤ w2)
     : FreeD w2.
   Proof.
     revert w2 Hw ; induction m=> w2 Hw.
-    simple refine (@FDRet _ a _ _). estransitivity ; eassumption.
+    simple refine (@FDRet _ a _ _). etransitivity ; eassumption.
     simple refine (@FDop _ s _ _ (fun x => _)).
     apply (OpPartialRan (w0:=Spr1 w')).
-    destruct w' as [? [? ?]] ; estransitivity ; eassumption.
+    destruct w' as [? [? ?]] ; etransitivity ; eassumption.
     simpl.
     apply (X x).
-    apply ran_mono. assumption. sreflexivity.
+    apply ran_mono. assumption. reflexivity.
   Defined.
 
   Definition fd_bind A B wm wf (m:@FreeD A wm) (f:forall a, @FreeD B (wf a))
@@ -263,11 +263,11 @@ Section FreeDijkstraMonads.
   Proof.
     revert wf f; induction m => wf0 f0.
     apply (fd_weaken (f0 a)). rewrite -monad_law1;
-                               apply omon_bind; [assumption| sreflexivity].
+                               apply omon_bind; [assumption| reflexivity].
     simple refine (@FDop _ s  _ _ (fun x => _)).
     apply (OpPartialRan (w0:=fun x => bind (Spr1 w' x) wf0)).
     rewrite /bind -monad_law3.
-    apply omon_bind ; [|sreflexivity].
+    apply omon_bind ; [|reflexivity].
     destruct w' as [? [? ?]] ; assumption.
 
 
@@ -277,7 +277,7 @@ Section FreeDijkstraMonads.
     | [|- _≤ Spr1 ?X _] => destruct X as [w'' [H1 H2]]
     end ; simpl in *.
     apply (H2 (fun x => bind (Spr1 w' x) wf0)).
-    rewrite /bind -monad_law3. apply omon_bind ; [|sreflexivity].
+    rewrite /bind -monad_law3. apply omon_bind ; [|reflexivity].
     destruct w' as [? [? ?]] ; assumption.
   Defined.
 
