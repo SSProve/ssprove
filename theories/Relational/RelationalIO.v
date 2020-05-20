@@ -321,14 +321,14 @@ Section NI_Examples.
   (*     ⦃ fun _ _ h1' _ _ h2' => filter isPubInp h1 = filter isPubInp h2 -> *)
   (*                              ni_pred h1' h2' True ⦄. *)
 
-  Ltac subst_eq' :=
+  Ltac subst' :=
     repeat match goal with
            | H:_ = _ |- _ => induction (eq_sym H); clear H
            end.
 
   Ltac auto_prepost_eq :=
     let H := fresh "H" in
-    move => ? [? ?] [? H]; split => //; simpl; intuition; apply H; subst_eq' => //=.
+    move => ? [? ?] [? H]; split => //; simpl; intuition; apply H; subst' => //=.
 
   Ltac apply_seq' :=
     (match goal with | [|- _ ⊨ _ ≈ _ [{ ?z }]] => is_evar z end ;
@@ -366,11 +366,11 @@ Section NI_Examples.
                                          (w':=fromPrePost'
                                                 (fun _ _ => True)
                                                 (fun _ _ h1 _ _ h2 =>
-                                                   s∃ n1 n2, h1 = [Out n1] s/\ h2 = [Out n2])) _ _);
+                                                   exists n1 n2, h1 = [Out n1] s/\ h2 = [Out n2])) _ _);
     try apply write_write_rule;
     auto_prepost_eq; do 2 eexists; dintuition.
     cbv -[app filter rev ni_pred]; intuition; apply q.
-    move: H => [? [? [? ?]]]; subst_eq'.
+    move: H => [? [? [? ?]]]; subst'.
     cbv. intuition.
     (* The conclusion is false *)
   Abort.
@@ -386,7 +386,7 @@ Section NI_Examples.
   Definition prog3 := bind readLow (fun n => bind readLow (fun m => write (n + m))).
   Lemma NI_prog3 : NI prog3.
   Proof.
-    rewrite /NI /prog3; hammer; auto_prepost_eq; move => ? ?; subst_eq => //.
+    rewrite /NI /prog3; hammer; auto_prepost_eq; move => ? ?; subst => //.
   Qed.
 
   (* An example with functional extensionality *)
@@ -402,7 +402,7 @@ Section NI_Examples.
   Lemma NI_prog5 : NI prog5.
   Proof.
     rewrite /NI /prog5; hammer. apply ret_rule2; auto_prepost_eq.
-    move => ? ? H; induction H => /=; intuition; subst_eq'. apply q => //=.
+    move => ? ? H; induction H => /=; intuition; subst'. apply q => //=.
   Qed.
 
   (* Turns out to be trivial *)
@@ -417,7 +417,7 @@ Section NI_Examples.
     ⊨ ⦃ fun _ _ => True ⦄
       (prog_declasify f) ≈ (prog_declasify f)
       ⦃ fun _ _ h1' _ _ h2' => 
-          s∃ i1 i2 o1 o2, h1' = [InpPriv i1; Out o1] s/\
+          exists i1 i2 o1 o2, h1' = [InpPriv i1; Out o1] s/\
                           h2' = [InpPriv i2; Out o2] s/\
                           (f i1 = f i2 -> o1 = o2) ⦄.
   Proof.
@@ -441,7 +441,7 @@ Section NI_Examples.
   Proof.
     move => m n fuel; hammer; elim: fuel m n => [| fuel IH] m n.
     apply gp_ret_rule. by cbv; intuition.
-    simpl; hammer. by apply IH. move => ? ? /= [[] H]. intuition. subst_eq'.
+    simpl; hammer. by apply IH. move => ? ? /= [[] H]. intuition. subst'.
     apply H => /= mnEq; induction mnEq. apply aux_ni_pred => ?; apply H0; f_equal => //=.
   Qed.
 
@@ -451,7 +451,7 @@ Section NI_Examples.
   Proof.
     rewrite /NI /prog7 => sum fuel; hammer. apply aux_readN.
     move => ? [? ?] H; simpl in *. intuition; apply q.
-    subst_eq' => /=. replace (tt = tt) with True.
+    subst' => /=. replace (tt = tt) with True.
       by apply aux_ni_pred2 => //=. apply SPropAxioms.sprop_ext => //.
   Qed.
 End NI_Examples.

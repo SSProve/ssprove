@@ -152,7 +152,7 @@ Section Option.
 
   Lemma part_pairing A m : wpsp_pairing (morWpPart A m) (morSpPart A m).
   Proof.
-    cbv ; destruct m as [?|]; split ; try intuition ; subst_eq ; intuition.
+    cbv ; destruct m as [?|]; split ; try intuition ; subst ; intuition.
   Qed.
     
 

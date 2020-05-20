@@ -35,31 +35,6 @@ Definition eq {A} (x:A) : A -> Prop :=
 Definition eq_refl {A:Type} := @eq_refl A.
 
 
-(* old sprop equality type :
-Inductive eq {A} (x:A) : A -> Prop :=
-  | eq_refl : eq x x.
-Arguments eq_refl {_} _.
-*)
-
-
-(** Existential quantification over Prop *)
-
-Definition Ex {A} (P : A -> Prop)  : Prop :=
-  ex P.
-(* old sprop existential quantifier 
-Inductive Ex {A} (P : A -> Prop)  : Prop :=
-  | ExIntro : forall x, P x -> Ex P.
-
-Arguments ExIntro {_} _ _.
-*)
-
-(** Universal quantifier over Prop *)
-Definition All {A} (P : A -> Prop) : Prop := forall (x : A) , P x.
-
-(* old sprop universal quantifier
-Definition All {A} (P : A -> Prop) : Prop := forall (x:A), P x.
-*)
-
 (** Conjunction *)
 Definition sand (P Q : Prop) : Prop := P /\ Q .
 
@@ -144,17 +119,7 @@ Inductive Sle : nat -> nat -> Prop :=
 
 
 Module SPropNotations.
-  (* Notation "x = y" := (@eq _ x y) (at level 70, no associativity). *)
-(*the following comes from Logic.StrictProp , coq 8.10 *)
-(*Record sig {A:Type} (P:A->Prop) := exist { proj1_sig : A; proj2_sig : P proj1_sig }.*)
-
   Notation "{ x : A ≫ P }" := (@sig A (fun x => P)) (x at level 99).
-  Notation "s∃ x .. y , p" :=
-    (Ex (fun x => .. (Ex (fun y => p )) .. ))
-      (at level 200, x binder, y binder, right associativity).
-  Notation "s∀ x .. y , p" :=
-    (forall x, .. (forall y, p) ..)
-      (at level 200, x binder, y binder, right associativity, only parsing).
   Notation "p s/\ q" := (sand p q) (at level 80).
   Notation "(s->)" := (s_impl) (only parsing).
   Notation "p s\/ q" := (sor p q) (at level 85).
@@ -175,30 +140,6 @@ Section eqLemmas.
 
   Import SPropNotations.
 
-  (* Lemma eq_to_eq {A} {x y: A} (H : x = y) : x = y. *)
-  (* compute in H. assumption. Qed. *)
-
-  (* Definition eq_sym {A} {x y : A} (H : x = y) : y = x. *)
-  (*   compute in H. rewrite H. compute. reflexivity. *)
-  (* Defined. *)
-
-  (* Definition eq_trans {A} {x y z : A} (H1 : x = y) (H2 : y = z) : x = z. *)
-  (*   induction H1 ; exact H2. *)
-  (* Defined. *)
-
-  (* Lemma eq_to_eq {A} {x y: A} (H : x = y) : x = y. *)
-  (* Proof. induction H ; reflexivity. Defined. *)
-
-(*
-Coercion eq_to_eq : eq >-> eq.
-Coercion eq_to_eq : eq >-> eq.
-*)
-
-  Definition f_equal {A B} (f : A -> B) {x y} (H : x = y) : f x = f y.
-  Proof. induction H ; constructor. Qed.
-
-  Definition f_equal2 {A B} (f1 f2 : A -> B) {x y} (Hf : f1 = f2) (H : x = y) : f1 x = f2 y.
-  Proof. induction Hf ; induction H ; constructor. Qed.
 
   Lemma eq_to_eq_elim {A} {a a' : A} {p:Prop} :
     (a = a' -> p) -> a = a' -> p.
@@ -216,12 +157,6 @@ Coercion eq_to_eq : eq >-> eq.
   
 End eqLemmas.
 
-
-(* as a naive substitute to subst *)
-Ltac subst_eq :=
-  try repeat match goal with
-      | [ H : eq _ _ |- _] => induction H ; clear H
-      end.
 
 Section sigLemmas.
 

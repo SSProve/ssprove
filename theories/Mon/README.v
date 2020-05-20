@@ -259,7 +259,7 @@ Section IOObservations.
   Program Definition θOptimisticRead : MonadMorphism IO MonoContSProp :=
     @OpSpecEffObs IOop IOop_arity MonoContSProp
                   (fun op => match op with
-                          | Read _ => ⦑ fun p => s∃ i, p i ⦒
+                          | Read _ => ⦑ fun p => exists i, p i ⦒
                           | Write _ => ⦑ fun _ => True ⦒
                           end).
   Next Obligation. destruct H0 as [? ?] ; eexists ; apply H ; eassumption. Qed.

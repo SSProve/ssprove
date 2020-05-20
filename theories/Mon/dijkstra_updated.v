@@ -188,7 +188,7 @@ Section NonDeterminism.
     Definition guardA (b : bool) : Angelic unit _ :=
       ifTE b (dret tt) failA.
 
-    Lemma or_Exists A (P : A -> SProp) xs : or (List.map P xs) -> s∃ x (H:In x xs), P x.
+    Lemma or_Exists A (P : A -> SProp) xs : or (List.map P xs) -> exists x (H:In x xs), P x.
       induction xs => //=.
       move=> [H|H].
       exists a ; eexists; [left ; reflexivity | assumption].
@@ -196,7 +196,7 @@ Section NonDeterminism.
     Qed.
 
     Lemma Angelic_soundness {A} (P : A -> SProp) (Q : AngelicSpec A) (c : Angelic A Q) :
-      proj1_sig Q P -> s∃ x (H:In x (underlying c)), P x.
+      proj1_sig Q P -> exists x (H:In x (underlying c)), P x.
     Proof.
       destruct Q ; destruct c as [? H]; simpl in *.
       move=> ? ; apply or_Exists. rewrite <- concat_map_nil.
@@ -204,7 +204,7 @@ Section NonDeterminism.
     Qed.
 
     Lemma Angelic_soundness2 {A} (P : A -> SProp) (c : Angelic A (PostAngelic P))
-      : s∃ x (H:In x (underlying c)), P x.
+      : exists x (H:In x (underlying c)), P x.
     Proof.
       apply Angelic_soundness. simpl. auto.
     Qed.
@@ -350,7 +350,7 @@ Section FreeMonad.
         ⦑ fun (post : P s × trace -> SProp) =>
             match t return SProp with
             | nil => False
-            | (existT _ s' p) :: t => s∃ (e : s = s'),
+            | (existT _ s' p) :: t => exists (e : s = s'),
                   post ⟨rew <- [P] e in p, t⟩
             end⦒.
     Next Obligation.

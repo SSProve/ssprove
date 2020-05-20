@@ -224,7 +224,7 @@ Section NonInterference.
     - apply get_right_rule.
     - move => a1 a2 /=; apply get_left_rule.
     - cbv ; intuition; apply q.
-      cbv ; intuition; try by subst_eq=> //.
+      cbv ; intuition; try by subst=> //.
       elim: (eq_sym q3); ssymmetry ; apply (f_equal2 _ _ q2)=> //.
   Qed.
 

@@ -69,7 +69,7 @@ Section Cost.
   Definition CostS := nat.
   Definition CostAr : CostS -> Type := fun _ => unit.
   Program Definition CostSpecs : forall (s:CostS), CostSpec (CostAr s) :=
-    fun n => ⦑fun post => ⦑ fun n' => s∃ (H : Box (n s<= n')), proj1_sig (post tt) (@monus n' n (unbox H)) ⦒ ⦒.
+    fun n => ⦑fun post => ⦑ fun n' => exists (H : Box (n s<= n')), proj1_sig (post tt) (@monus n' n (unbox H)) ⦒ ⦒.
   Next Obligation.
     move: H0 => [[H'] p].
     unshelve eexists.
@@ -84,7 +84,7 @@ Section Cost.
 
   Program Definition costs {A} n (pre : SProp) (post : A -> SProp)
     : CostSpec A :=
-    ⦑ fun post' => ⦑fun n0 => pre s/\ s∃ (H : Box (n s<= n0)), forall a, post a -> proj1_sig (post' a) (@monus n0 n (unbox H))⦒⦒.
+    ⦑ fun post' => ⦑fun n0 => pre s/\ exists (H : Box (n s<= n0)), forall a, post a -> proj1_sig (post' a) (@monus n0 n (unbox H))⦒⦒.
   Next Obligation.
     move: H0 => [? [[H']] p] ; split ; [assumption|].
     unshelve eexists.

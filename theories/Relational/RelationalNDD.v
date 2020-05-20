@@ -23,7 +23,7 @@ Section NDDs.
   Import SPropNotations.
   Import FunctionalExtensionality.
 
-  Program Definition θNDD12 : MonadMorphism NDSet Wun := @mkMorphism M1 Wun (fun _ P => ⦑fun p => s∀ x, P x -> p x⦒) _ _.
+  Program Definition θNDD12 : MonadMorphism NDSet Wun := @mkMorphism M1 Wun (fun _ P => ⦑fun p => forall x, P x -> p x⦒) _ _.
   Next Obligation. cbv; intuition. Qed.
   Next Obligation. cbv; intuition. apply sig_eq; simpl; extensionality p; apply SPropAxioms.sprop_ext; firstorder. destruct H0; assumption. Qed.
   Next Obligation. cbv; intuition. apply sig_eq; simpl; extensionality p; apply SPropAxioms.sprop_ext; firstorder. Qed.

@@ -120,7 +120,7 @@ Section unarySpecStateOmegaCpo.
   Proof. reflexivity. Defined.
 
   Program Definition tarksi_fix (f : dfst (WSt A) --> WSt A) : dfst (WSt A) :=
-    ⦑fun post s0 => s∃ w, f w ≤ w s/\ w∙1 post s0⦒.
+    ⦑fun post s0 => exists w, f w ≤ w s/\ w∙1 post s0⦒.
   Next Obligation.
     move=> ? ? H ? [w0 [? H']]; exists w0; split=> //; move: H'; apply: (w0∙2)=> //.
   Qed.
@@ -154,7 +154,7 @@ Section PropOmegaCpo.
   Next Obligation. move=> H' n; exact (H n H'). Qed.
 
   (* Global Program Instance prop_ωCpo : ωCpo prop_ordType := *)
-  (*   Build_ωCpo False (fun c => s∃ n, c n) _ _ _. *)
+  (*   Build_ωCpo False (fun c => exists n, c n) _ _ _. *)
   (* Next Obligation. move=> [] //. Qed. *)
   (* Next Obligation. move=> H; eexists; apply H. Qed. *)
   (* Next Obligation. move=> [n H']; exact (H n H'). Qed. *)
@@ -250,7 +250,7 @@ Section ImpMonad.
   Definition W0' := ordmonad_to_relmon W0.
 
   (* Program Definition tarksi_fix' {A} (f : dfst (W0' A) --> W0' A) : dfst (W0' A) := *)
-  (*   ⦑fun post s0 => s∃ w, f w ≤ w s/\ w∙1 post s0⦒. *)
+  (*   ⦑fun post s0 => exists w, f w ≤ w s/\ w∙1 post s0⦒. *)
   (* Next Obligation. *)
   (*   move=> ? ? H ? [w0 [? H']]; exists w0; split=> //; move: H'; apply: (w0∙2)=> //. *)
   (* Qed. *)

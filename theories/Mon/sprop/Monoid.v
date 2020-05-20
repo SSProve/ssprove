@@ -78,21 +78,20 @@ Section MonoidExamples.
 
   Import SPropNotations.
   Program Definition overwriteMonoid (X:Type) : monoid :=
-    @mkMonoid { f : X -> X ≫ s∃ (m: optionMonoid X), forall x, Some (f x) = m⋅(Some x)}
+    @mkMonoid { f : X -> X ≫ exists (m: optionMonoid X), forall x, Some (f x) = m⋅(Some x)}
               (exist _ id _)
               (fun f g => exist _ (proj1_sig f \o proj1_sig g) _) _ _ _.
   Next Obligation. exists None. move=> ? //. Qed.
   Next Obligation.
-    (* move: f g => [? [mf Hf]] [? [mg Hg]]. *)
-    move: H0 H => [mf Hf] [mg Hg].
+    move: H1 H2 H H0 => mf Hf mg Hg.
     exists (@monoid_mult (optionMonoid X) mf mg).
     move=> ? ; move: mf mg Hf Hg => [?|] [?|] Hf Hg /= ; try by apply Hf.
     all: eapply (eq_trans (Hf _)); apply Hg.
   Qed.
-  Next Obligation. destruct H as [? ?]. compute. f_equal.
+  Next Obligation.  compute. f_equal.
     apply ax_proof_irrel.
   Qed.
-  Next Obligation. destruct H as [? ?]. compute. f_equal.
+  Next Obligation. compute. f_equal.
     apply ax_proof_irrel.
   Qed.
   Next Obligation. compute. f_equal. apply ax_proof_irrel. Qed.
@@ -160,7 +159,7 @@ Section MonoidStrictification.
   Context (M : monoid).
   Import SPropNotations.
 
-  Definition SM := { f : M -> M ≫ s∃ m, forall m', f m' = m ⋅ m'}.
+  Definition SM := { f : M -> M ≫ exists m, forall m', f m' = m ⋅ m'}.
   Program Definition se : SM := exist _ id _.
   Next Obligation.
     exists (e M). intros ; rewrite monoid_law1 //.

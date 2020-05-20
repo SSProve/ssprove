@@ -379,7 +379,7 @@ Section Pred.
   Definition Pred_ret : forall A, A -> Pred A := fun _ x y => y = x.
   Definition Pred_bind 
     : forall A B, Pred A -> (A -> Pred B) -> Pred B :=
-    fun A B m f y => s∃ x, m x s/\ (f x) y.
+    fun A B m f y => exists x, m x s/\ (f x) y.
 
   Program Definition PredM : Monad :=
     @mkMonad Pred Pred_ret Pred_bind _ _ _.
@@ -420,14 +420,14 @@ Module PrePost.
     : forall A B, PP A -> (A -> PP B) -> PP B :=
     fun A B m f =>
       ⟨ (nfst m s/\ forall x, nsnd m x -> nfst (f x)),
-        fun y => s∃ x, nsnd m x s/\ nsnd (f x) y ⟩.
+        fun y => exists x, nsnd m x s/\ nsnd (f x) y ⟩.
 
   Program Definition PP_monad : Monad :=
     @mkMonad PP PP_ret PP_bind _ _ _.
 
   Next Obligation.
     apply nprod_eq =>//= ; [|extensionality y] ; apply sprop_ext => //=.
-    dintuition ; subst_eq. compute. intuition. rewrite H0. assumption.
+    dintuition ; subst. compute. intuition. rewrite H0. assumption.
     do 2 split.
     intros [? []]. subst. assumption.
     eexists ; split ; [| eassumption] ; reflexivity.
@@ -530,7 +530,7 @@ Module  StrongestPostcondition.
   Next Obligation. destruct H0 ; split ; auto. Qed.
 
   Program Definition SP_bind A B (m:SP A) (f : A -> SP B) : SP B :=
-    exist _ (fun p y => @mkOver _ (s∃ x, proj1_sig (f x) (proj1_sig m p x) y) _) _.
+    exist _ (fun p y => @mkOver _ (exists x, proj1_sig (f x) (proj1_sig m p x) y) _) _.
   Next Obligation.
     destruct H as [x0 H0].
     exact (@over _ (proj1_sig m p x0) (@over _ (proj1_sig (f _) _ _) H0)).
@@ -559,14 +559,14 @@ Module  StrongestPostcondition.
   Next Obligation.
     apply sig_eq ; extensionality p ; extensionality y ; apply SPropOver_eq ;
       simpl ; split.
-    intros [x H] ; move: (over H) => [_?] ; subst_eq ;
+    intros [x H] ; move: (over H) => [_?] ; subst ;
       move: H ; apply (proj2_sig (f a)) ; intuition.
     intros H ; exists a; rewrite <- trivial_eq ; assumption.
   Qed.
 
   Next Obligation.
     apply sig_eq ; extensionality p ; extensionality y ; apply SPropOver_eq ;  simpl ; split.
-    intros [? []] ; subst_eq ; assumption.
+    intros [? []] ; subst ; assumption.
     intros H ; eexists ; intuition ; eassumption.
   Qed.
 
@@ -647,7 +647,7 @@ Section Adjunctions.
   Next Obligation. cbv ; intuition. Qed.
 
   Program Definition mr2wp A (mr:MRSpec A) : MonoCont A :=
-    exist _ (fun p => s∃ (pre:Prop), proj1_sig (proj1_sig mr pre (assuming pre p)) s/\ pre) _.
+    exist _ (fun p => exists (pre:Prop), proj1_sig (proj1_sig mr pre (assuming pre p)) s/\ pre) _.
   Next Obligation.
     cbv ; intuition.
     move: H0 => [pre [Hmr ?]] ; exists pre ; intuition.
@@ -695,7 +695,7 @@ Section Adjunctions.
   (** Previous convoluted definition that's secretly "equivalent" to the one above *)
   (*  Definition sp2pp A (sp:ForwardPredTransformer A) : PPSpecMonad A := *)
   (*    let post := fun x => forall (pre : Prop), pre -> proj1_sig sp pre x in *)
-  (*    let pre := s∃ pre, (forall x, post x -> proj1_sig sp pre x) s/\ pre in *)
+  (*    let pre := exists pre, (forall x, post x -> proj1_sig sp pre x) s/\ pre in *)
   (*    ⟨pre, post⟩. *)
 
   (* Program Definition pp2sp0 A (pp : PPSpecMonad A) : ForwardPredTransformer A := *)
