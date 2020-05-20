@@ -69,7 +69,7 @@ Section OrdCat.
   Next Obligation. cbv ; intuition. rewrite H0. apply H. Qed.
 
   Program Definition discr : functor TypeCat OrdCat :=
-    mkFunctor (fun A => dpair _ A ⦑sEq⦒)
+    mkFunctor (fun A => dpair _ A ⦑eq⦒)
               (fun _ _ f => ⦑ f ⦒)
               _ _ _.
   Next Obligation. intuition. Qed.

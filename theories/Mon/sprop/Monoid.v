@@ -78,7 +78,7 @@ Section MonoidExamples.
 
   Import SPropNotations.
   Program Definition overwriteMonoid (X:Type) : monoid :=
-    @mkMonoid { f : X -> X ≫ s∃ (m: optionMonoid X), forall x, Some (f x) ≡ m⋅(Some x)}
+    @mkMonoid { f : X -> X ≫ s∃ (m: optionMonoid X), forall x, Some (f x) = m⋅(Some x)}
               (exist _ id _)
               (fun f g => exist _ (proj1_sig f \o proj1_sig g) _) _ _ _.
   Next Obligation. exists None. move=> ? //. Qed.
@@ -160,7 +160,7 @@ Section MonoidStrictification.
   Context (M : monoid).
   Import SPropNotations.
 
-  Definition SM := { f : M -> M ≫ s∃ m, forall m', f m' ≡ m ⋅ m'}.
+  Definition SM := { f : M -> M ≫ s∃ m, forall m', f m' = m ⋅ m'}.
   Program Definition se : SM := exist _ id _.
   Next Obligation.
     exists (e M). intros ; rewrite monoid_law1 //.
@@ -184,23 +184,23 @@ Section MonoidStrictification.
   Lemma embed_project_id : forall m, project (embed m) = m.
   Proof. intro. cbv. rewrite monoid_law2 //. Qed.
 
-  Lemma sig_sEq : forall (A : Type) (P : A -> Prop) (mx my : {x : A ≫ P x}),
-       proj1_sig mx ≡ proj1_sig my -> mx ≡ my.
+  Lemma sig_eq : forall (A : Type) (P : A -> Prop) (mx my : {x : A ≫ P x}),
+       proj1_sig mx = proj1_sig my -> mx = my.
   Proof.
     intros A P [mx ?] [my ?] H. simpl in H.
     induction H. compute. f_equal. apply ax_proof_irrel.
   Qed.
 
   Import SPropAxioms.
-  Lemma project_embed_id : forall sm, embed (project sm) ≡ sm.
+  Lemma project_embed_id : forall sm, embed (project sm) = sm.
   Proof.
-    intro sm. apply sig_sEq ; funext m0.
+    intro sm. apply sig_eq ; funext m0.
     cbv. move: (proj2_sig sm) => [m Hm].
     pose (H0 := Hm m0).
-    apply sEq_sym in H0.
-    unshelve eapply (sEq_trans _ H0).
+    apply eq_sym in H0.
+    unshelve eapply (eq_trans _ H0).
     f_equiv. pose (He := Hm (e M)).
-    apply (sEq_trans He).
+    apply (eq_trans He).
     rewrite monoid_law2 //.
    Qed.
   Next Obligation. compute. destruct m. f_equal. apply ax_proof_irrel. Qed.

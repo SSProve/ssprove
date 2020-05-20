@@ -17,7 +17,7 @@ Section RelatorOverAMonad.
      heterogeneous relations *)
   Definition rel A B := A -> B -> SProp.
   Notation "A ⇸ B" := (rel A B) (at level 50).
-  Definition IdRel A : srelation A := sEq.
+  Definition IdRel A : srelation A := eq.
   Definition CompRel {A1 A2 A3} (R : A1 ⇸ A2) (S: A2 ⇸ A3) : A1 ⇸ A3 :=
     fun a1 a3 => s∃ a2, R a1 a2 s/\ S a2 a3.
   Notation "R # S" := (CompRel R S) (at level 60).

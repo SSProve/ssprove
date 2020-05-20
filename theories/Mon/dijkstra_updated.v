@@ -212,12 +212,12 @@ Section NonDeterminism.
   End Angelic.
 
   Program Definition test_angelic
-    : Angelic nat (PostAngelic (fun x => x ≡ 5)) :=
+    : Angelic nat (PostAngelic (fun x => x = 5)) :=
     wkn (chooseA (2 :: 3 :: 5 :: nil)) _.
   Next Obligation. do 2 right ; left ; apply H=> //. Qed.
 
   Program Definition pytriples : Angelic (nat * nat * nat)%type
-                                         (PostAngelic (fun (t:nat * nat * nat) => let '(x,y,z) := t in x*x + y*y ≡ z*z)) :=
+                                         (PostAngelic (fun (t:nat * nat * nat) => let '(x,y,z) := t in x*x + y*y = z*z)) :=
     let c :=
         (let l := 1 :: 2 :: 3 :: 4 :: 5 :: nil in
          x <- chooseA l ;
@@ -305,7 +305,7 @@ Section NonDeterminism.
   Defined.
 
   Program Definition pytriplesD : Demonic (nat * nat * nat)%type
-                                  (PostDemonic (fun (t:nat * nat * nat) => match t with (x,y,z) => sEq (x*x + y*y) (z*z) end)) :=
+                                  (PostDemonic (fun (t:nat * nat * nat) => match t with (x,y,z) => eq (x*x + y*y) (z*z) end)) :=
     let c := (let l := 1 :: 2 :: 3 :: 4 :: 5 :: nil in
            x <- pick_from l ;
            y <- pick_from l ;

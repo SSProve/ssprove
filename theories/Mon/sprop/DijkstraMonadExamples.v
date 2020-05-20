@@ -152,7 +152,7 @@ Section Option.
 
   Lemma part_pairing A m : wpsp_pairing (morWpPart A m) (morSpPart A m).
   Proof.
-    cbv ; destruct m as [?|]; split ; try intuition ; subst_sEq ; intuition.
+    cbv ; destruct m as [?|]; split ; try intuition ; subst_eq ; intuition.
   Qed.
     
 
@@ -560,7 +560,7 @@ End SumOfTheories.
 (*     intros. *)
 (*     refine (match Ha as H0 in _ = a0 return *)
 (*                   forall (H:a' = a0), *)
-(*                     proj1_sig (f a) p0 Hp = proj1_sig (f a0) p0 (eq_sind (fun a => proj1_sig (wf a) p0) Hp' H) *)
+(*                     proj1_sig (f a) p0 Hp = proj1_sig (f a0) p0 (eq_ind (fun a => proj1_sig (wf a) p0) Hp' H) *)
 (*             with *)
 (*             | eq_refl => _ *)
 (*             end eq_refl). *)
@@ -576,7 +576,7 @@ End SumOfTheories.
 (*   Next Obligation. apply (proj2_sig m)=> //. Qed. *)
 
 (*   Lemma sprop_app_irr' *)
-(*     : forall {p:SProp} {Z : Type} (f : p -> Z) (x1 x2 : p), f x1 ≡ f x2. *)
+(*     : forall {p:SProp} {Z : Type} (f : p -> Z) (x1 x2 : p), f x1 = f x2. *)
 (*   Proof. reflexivity. Defined. *)
 
 (*   Import SPropAxioms. *)
@@ -592,16 +592,16 @@ End SumOfTheories.
 (*   Next Obligation. hnf ; reflexivity. Qed. *)
 (*   Next Obligation. *)
 (*     cbv. *)
-(*     apply Monoid.sig_sEq. *)
+(*     apply Monoid.sig_eq. *)
 (*     simpl ;  funext p ; funext_s Hpre. *)
-(*     assert (forall a a' p Hp Hp' (Ha:a ≡ a'), proj1_sig (f a) p Hp ≡ proj1_sig (f a') p Hp'). *)
+(*     assert (forall a a' p Hp Hp' (Ha:a = a'), proj1_sig (f a) p Hp = proj1_sig (f a') p Hp'). *)
 (*     intros. *)
-(*     refine (match Ha as H0 in _ ≡ a0 return *)
-(*                   forall (H:a' ≡ a0), *)
-(*                     proj1_sig (f a) p0 Hp ≡ proj1_sig (f a0) p0 (sEq_sind _ _ (fun a _ => proj1_sig (wf a) p0) Hp' _ H) *)
+(*     refine (match Ha as H0 in _ = a0 return *)
+(*                   forall (H:a' = a0), *)
+(*                     proj1_sig (f a) p0 Hp = proj1_sig (f a0) p0 (eq_sind _ _ (fun a _ => proj1_sig (wf a) p0) Hp' _ H) *)
 (*             with *)
-(*             | sEq_refl _ => _ *)
-(*             end (sEq_refl _)). *)
+(*             | eq_refl _ => _ *)
+(*             end (eq_refl _)). *)
 (*     intros. apply sprop_app_irr'. *)
 (*     apply H. *)
 (*     epose (proj2_sig m (fun a : A => proj1_sig (wf' a) p) _ _ _ _). *)

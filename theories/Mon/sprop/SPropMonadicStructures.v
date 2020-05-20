@@ -112,7 +112,7 @@ Notation "x ≤ y" := (@omon_rel _ _ x y) (at level 70).
 Section DiscreteMonad.
   Import SPropNotations.
   Program Definition DiscreteMonad (M:Monad) : OrderedMonad :=
-    @mkOrderedMonad M (fun A x y => x ≡ y) _ _.
+    @mkOrderedMonad M (fun A x y => x = y) _ _.
   Next Obligation.
     constructor. by cbv.
     cbv. move=> *. etransitivity ; by eassumption.
@@ -397,7 +397,7 @@ Record Dijkstra (W : OrderedMonad) : Type := mkDM
   ; dm_law5 : forall A w1 w2 w3 (m:@dm_tyop A w1) (H12 :w1 ≤ w2) (H23 :w2 ≤ w3),
       dm_wkn m (transitivity H12 H23) = dm_wkn (dm_wkn m H12) H23
   ; dm_law6 : forall A B wm wm' wf wf' (m:@dm_tyop A wm) (f : forall (a:A), @dm_tyop B (wf a)) (Hm : wm ≤ wm') (Hf : forall a, wf a ≤ wf' a),
-       (dm_wkn (dm_bind m f) (omon_bind Hm Hf) ≡ dm_bind (dm_wkn m Hm) (fun a => dm_wkn (f a) (Hf a)))
+       (dm_wkn (dm_bind m f) (omon_bind Hm Hf) = dm_bind (dm_wkn m Hm) (fun a => dm_wkn (f a) (Hf a)))
   }.
 
 Definition dret {W} {D : Dijkstra W} {A} := @dm_ret W D A.

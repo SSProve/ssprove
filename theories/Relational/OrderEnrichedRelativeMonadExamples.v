@@ -17,14 +17,14 @@ Section TypeCat.
   Record strictSet :=
     mkStrictSet
       { sSet_carrier :> Type
-      ; is_strict : forall (x y : sSet_carrier), x ≡ y -> x = y
+      ; is_strict : forall (x y : sSet_carrier), x = y -> x = y
       }.
 
   (* The category of types *)
   Program Definition TypeCat : ord_category :=
     mkOrdCategory Type (* strictSet *)
                (fun A B => A -> B)
-               (fun _ _ f g => forall x, f x ≡ g x) _
+               (fun _ _ f g => forall x, f x = g x) _
                (fun A a => a)
                (fun _ _ _ f g x => f (g x))
                _ _ _ _.
@@ -97,7 +97,7 @@ Section OrdCat.
   Qed.
 
   Program Definition discr : ord_functor TypeCat OrdCat :=
-    mkOrdFunctor (fun A => dpair _ A ⦑sEq⦒)
+    mkOrdFunctor (fun A => dpair _ A ⦑eq⦒)
                  (fun _ _ f => ⦑ f ⦒)
               _ _ _.
   Next Obligation. intuition. Qed.

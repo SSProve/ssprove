@@ -703,7 +703,7 @@ Section ImpMonad.
 
   Lemma do_while_rule (inv : bool -> bool -> S -> S -> SProp)
         (body1 body2 : Imp bool) :
-        ⊨ body1 ≈ body2 [{ fromPrePost (inv true true) (fun b1 _ s1 b2 _ s2 => b1 ≡ b2 s/\ inv b1 b2 s1 s2) }] ->
+        ⊨ body1 ≈ body2 [{ fromPrePost (inv true true) (fun b1 _ s1 b2 _ s2 => b1 = b2 s/\ inv b1 b2 s1 s2) }] ->
         ⊨ do_while body1 ≈ do_while body2 [{ fromPrePost (inv true true) (fun 'tt _ s1 'tt _ s2 => inv false false s1 s2) }].
   Proof.
     admit.

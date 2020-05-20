@@ -17,25 +17,10 @@ Axiom FunctionalExtensionality :
 
 Set Primitive Projections.
 
-(********************************************************************)
-(**                                                                 *)
-(**           This file uses Prop crucially                        *)
-(**                                                                 *)
-(********************************************************************)
-(*hopefully not*)
-
-(* Create HintDb sprop discriminated. *)
-
-(** Prop type formers and notations not present in the stdlib *)
-
-(** sprop sigma types*)
 Module Redefined_sprop_constructs.
 (*not all redefinitions Prop -> Prop are provided in this module
 planning to put them all here
 *)
-(*Definition Prop := Prop.*) (*This is no longer accepted by coq*)
-Definition eq_sind := eq_ind.
-Arguments eq_sind {A}.
 
 Record Box (A:Prop) : Prop := box { unbox : A }.
 
@@ -45,15 +30,15 @@ Export Redefined_sprop_constructs.
 (** Equality in Prop *)
 
 About eq. Print eq.
-Definition sEq {A} (x:A) : A -> Prop :=
+Definition eq {A} (x:A) : A -> Prop :=
   fun y => x = y.
-Definition sEq_refl {A:Type} := @eq_refl A.
+Definition eq_refl {A:Type} := @eq_refl A.
 
 
 (* old sprop equality type :
-Inductive sEq {A} (x:A) : A -> Prop :=
-  | sEq_refl : sEq x x.
-Arguments sEq_refl {_} _.
+Inductive eq {A} (x:A) : A -> Prop :=
+  | eq_refl : eq x x.
+Arguments eq_refl {_} _.
 *)
 
 
@@ -159,7 +144,7 @@ Inductive Sle : nat -> nat -> Prop :=
 
 
 Module SPropNotations.
-  Notation "x ≡ y" := (@sEq _ x y) (at level 70, no associativity).
+  (* Notation "x = y" := (@eq _ x y) (at level 70, no associativity). *)
 (*the following comes from Logic.StrictProp , coq 8.10 *)
 (*Record sig {A:Type} (P:A->Prop) := exist { proj1_sig : A; proj2_sig : P proj1_sig }.*)
 
@@ -186,65 +171,56 @@ Module SPropNotations.
 End SPropNotations.
 
 
-Section sEqLemmas.
+Section eqLemmas.
 
   Import SPropNotations.
 
-  Lemma sEq_to_eq {A} {x y: A} (H : x ≡ y) : x = y.
-  compute in H. assumption. Qed.
+  (* Lemma eq_to_eq {A} {x y: A} (H : x = y) : x = y. *)
+  (* compute in H. assumption. Qed. *)
 
-  Definition sEq_sym {A} {x y : A} (H : x ≡ y) : y ≡ x.
-    compute in H. rewrite H. compute. reflexivity.
-  Defined.
+  (* Definition eq_sym {A} {x y : A} (H : x = y) : y = x. *)
+  (*   compute in H. rewrite H. compute. reflexivity. *)
+  (* Defined. *)
 
-  Definition sEq_trans {A} {x y z : A} (H1 : x ≡ y) (H2 : y ≡ z) : x ≡ z.
-    induction H1 ; exact H2.
-  Defined.
+  (* Definition eq_trans {A} {x y z : A} (H1 : x = y) (H2 : y = z) : x = z. *)
+  (*   induction H1 ; exact H2. *)
+  (* Defined. *)
 
-  Lemma eq_to_sEq {A} {x y: A} (H : x = y) : x ≡ y.
-  Proof. induction H ; reflexivity. Defined.
+  (* Lemma eq_to_eq {A} {x y: A} (H : x = y) : x = y. *)
+  (* Proof. induction H ; reflexivity. Defined. *)
 
 (*
-Coercion sEq_to_eq : sEq >-> eq.
-Coercion eq_to_sEq : eq >-> sEq.
+Coercion eq_to_eq : eq >-> eq.
+Coercion eq_to_eq : eq >-> eq.
 *)
 
-  Definition f_sEqual {A B} (f : A -> B) {x y} (H : x ≡ y) : f x ≡ f y.
+  Definition f_equal {A B} (f : A -> B) {x y} (H : x = y) : f x = f y.
   Proof. induction H ; constructor. Qed.
 
-  Definition f_sEqual2 {A B} (f1 f2 : A -> B) {x y} (Hf : f1 ≡ f2) (H : x ≡ y) : f1 x ≡ f2 y.
+  Definition f_equal2 {A B} (f1 f2 : A -> B) {x y} (Hf : f1 = f2) (H : x = y) : f1 x = f2 y.
   Proof. induction Hf ; induction H ; constructor. Qed.
 
-  Lemma sEq_to_eq_elim {A} {a a' : A} {p:Prop} :
-    (a = a' -> p) -> a ≡ a' -> p.
+  Lemma eq_to_eq_elim {A} {a a' : A} {p:Prop} :
+    (a = a' -> p) -> a = a' -> p.
   Proof.
     intros f H. revert f. induction H. intros f ; apply f ; reflexivity.
   Qed.
 
-  Lemma sEq_to_eq_depelim A  (p:forall a a', a ≡ a' -> Prop) :
-    (forall a a' (H : a = a'), p a a' (eq_to_sEq H)) ->
-    forall (a a' : A) (H:a ≡ a'), p a a' H.
+  Lemma eq_to_eq_depelim A  (p:forall a a', a = a' -> Prop) :
+    (forall a a' (H : a = a'), p a a' H) ->
+    forall (a a' : A) (H:a = a'), p a a' H.
   Proof.
     intros f a a' H.
-    have hintUnif :eq_to_sEq H = H.
-      compute in H. compute. destruct H. reflexivity.
-    rewrite -hintUnif. apply f.
+    apply f.
   Qed.
   
-End sEqLemmas.
+End eqLemmas.
 
-About sEq.
-Ltac f_sEqual :=
-    match goal with
-    | [|- sEq (?f1 ?x1) (?f2 ?x2)] =>
-      apply (@f_sEqual2 _ _ f1 f2 x1 x2) ; [f_sEqual|]
-    | [|- sEq _ _] => try constructor
-    end.
 
 (* as a naive substitute to subst *)
-Ltac subst_sEq :=
+Ltac subst_eq :=
   try repeat match goal with
-      | [ H : sEq _ _ |- _] => induction H ; clear H
+      | [ H : eq _ _ |- _] => induction H ; clear H
       end.
 
 Section sigLemmas.
@@ -262,7 +238,7 @@ Section sigLemmas.
   Lemma transport_sig :
     forall {A B} (F : B -> A -> Prop) {x y} h z,
       eq_rect x (fun x => sig (fun b => F b x)) z y h
-      = exist _ (proj1_sig z) (@eq_sind A x (F (proj1_sig z)) (proj2_sig z) y h).
+      = exist _ (proj1_sig z) (@eq_ind A x (F (proj1_sig z)) (proj2_sig z) y h).
   Proof.
     intros.
     dependent inversion h. compute. destruct z. reflexivity.
@@ -325,19 +301,19 @@ Module SPropAxioms.
     it should be provable from the non-dependent
     one as in the standard library *)
   Axiom funext_sprop : forall (A : Type) (B : A -> Type) (f g : forall x : A, B x),
-      (forall x : A, f x ≡ g x) -> f ≡ g.
+      (forall x : A, f x = g x) -> f = g.
 
   Tactic Notation "funext" simple_intropattern(x) :=
     match goal with
-      [ |- ?X ≡ ?Y ] => apply (@funext_sprop _ _ X Y) ; intros x
+      [ |- ?X = ?Y ] => apply (@funext_sprop _ _ X Y) ; intros x
     end.
 
   Axiom funext_sprop' : forall (A : Prop) (B : A -> Type) (f g : forall x : A, B x),
-      (forall x : A, f x ≡ g x) -> f ≡ g.
+      (forall x : A, f x = g x) -> f = g.
 
   Tactic Notation "funext_s" simple_intropattern(x) :=
     match goal with
-      [ |- ?X ≡ ?Y ] => apply (@funext_sprop' _ _ X Y) ; intros x
+      [ |- ?X = ?Y ] => apply (@funext_sprop' _ _ X Y) ; intros x
     end.
 End SPropAxioms.
 

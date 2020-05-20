@@ -422,7 +422,7 @@ Section DemonicNonDeterminism.
   Program Definition pytriplesD
     : Demonic (nat * nat * nat)%type
               (PostDemonic (fun (t:nat * nat * nat) =>
-                              match t with (x,y,z) => sEq (x*x + y*y) (z*z) end)) :=
+                              match t with (x,y,z) => eq (x*x + y*y) (z*z) end)) :=
     let c := (let l := 1 :: 2 :: 3 :: 4 :: 5 :: nil in
            x <- pick_from l ;
            y <- pick_from l ;

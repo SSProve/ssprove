@@ -376,7 +376,7 @@ Section Pred.
   Import FunctionalExtensionality.
 
   Definition Pred X := X -> Prop.
-  Definition Pred_ret : forall A, A -> Pred A := fun _ x y => y ≡ x.
+  Definition Pred_ret : forall A, A -> Pred A := fun _ x y => y = x.
   Definition Pred_bind 
     : forall A B, Pred A -> (A -> Pred B) -> Pred B :=
     fun A B m f y => s∃ x, m x s/\ (f x) y.
@@ -414,7 +414,7 @@ Module PrePost.
 
   Definition PP X := Prop  × (X -> Prop).
 
-  Definition PP_ret : forall A, A -> PP A := fun _ x => ⟨ True, fun y => y ≡ x ⟩.
+  Definition PP_ret : forall A, A -> PP A := fun _ x => ⟨ True, fun y => y = x ⟩.
 
   Definition PP_bind
     : forall A B, PP A -> (A -> PP B) -> PP B :=
@@ -427,9 +427,9 @@ Module PrePost.
 
   Next Obligation.
     apply nprod_eq =>//= ; [|extensionality y] ; apply sprop_ext => //=.
-    dintuition ; subst_sEq. compute. intuition. rewrite H0. assumption.
+    dintuition ; subst_eq. compute. intuition. rewrite H0. assumption.
     do 2 split.
-    intros [? []]; subst_sEq ; assumption.
+    intros [? []]. subst. assumption.
     eexists ; split ; [| eassumption] ; reflexivity.
   Qed.
   Next Obligation.
@@ -437,7 +437,7 @@ Module PrePost.
       apply sprop_ext => //= ; try by dintuition.
     compute. apply box. intuition.
     do 2 split.
-    move=> [? [? ?]] ; subst_sEq ; eassumption.
+    move=> [? [? ?]] ; subst ; eassumption.
     move=> ? ; eexists ; split. eassumption. reflexivity.
   Qed.
   Next Obligation.
@@ -525,7 +525,7 @@ Module  StrongestPostcondition.
                        forall (p1 p2 : Prop) x, (p1 -> p2) -> f p1 x -> f p2 x}.
 
   Program Definition SP_ret A (a:A) : SP A :=
-    exist _ (fun p y => @mkOver _ (p s/\ a ≡ y) _) _.
+    exist _ (fun p y => @mkOver _ (p s/\ a = y) _) _.
   Next Obligation. destruct H ; assumption. Qed.
   Next Obligation. destruct H0 ; split ; auto. Qed.
 
@@ -541,7 +541,7 @@ Module  StrongestPostcondition.
     exists x0 ; apply (proj2_sig (f x0) _ _ _ (proj2_sig m _ _ x0 H)) ; assumption.
   Qed.
 
-  Lemma trivial_eq (p:Prop) {A} (x:A) : p = (p s/\ x ≡ x).
+  Lemma trivial_eq (p:Prop) {A} (x:A) : p = (p s/\ x = x).
   Proof. apply sprop_ext ; split ; dintuition. Qed.
 
   Lemma SPropOver_eq p (q1 q2 : SPropOver p) :
@@ -559,14 +559,14 @@ Module  StrongestPostcondition.
   Next Obligation.
     apply sig_eq ; extensionality p ; extensionality y ; apply SPropOver_eq ;
       simpl ; split.
-    intros [x H] ; move: (over H) => [_?] ; subst_sEq ;
+    intros [x H] ; move: (over H) => [_?] ; subst_eq ;
       move: H ; apply (proj2_sig (f a)) ; intuition.
     intros H ; exists a; rewrite <- trivial_eq ; assumption.
   Qed.
 
   Next Obligation.
     apply sig_eq ; extensionality p ; extensionality y ; apply SPropOver_eq ;  simpl ; split.
-    intros [? []] ; subst_sEq ; assumption.
+    intros [? []] ; subst_eq ; assumption.
     intros H ; eexists ; intuition ; eassumption.
   Qed.
 
