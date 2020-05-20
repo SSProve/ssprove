@@ -14,8 +14,8 @@ Section ExtNat.
   Definition extNat_rel : srelation extNat :=
     fun en1 en2 =>
       match en1, en2 return SProp with
-      | _, None => sUnit
-      | None, Some _ => sEmpty
+      | _, None => True
+      | None, Some _ => False
       | Some n1, Some n2 => n1 s<= n2
       end.
   Global Instance extNat_order : PreOrder extNat_rel.
@@ -45,7 +45,7 @@ Section Cost.
     match n with
     | 0 => match m with
           | 0 => fun=> 0
-          | S _ => fun H => ltac:(enough sEmpty as [] ; inversion H)
+          | S _ => fun H => ltac:(enough False as [] ; inversion H)
           end
     | S n =>
       match m with
@@ -58,10 +58,10 @@ Section Cost.
       @monus n2 n1 H12 s<= @monus n3 n1 H13.
   Proof.
     induction n3.
-    move=> [|?] [|?] //= H H' ; enough sEmpty as [] ;
+    move=> [|?] [|?] //= H H' ; enough False as [] ;
             [inversion H | inversion H'].
     move=> [|?] [|?] //= H H'.
-    enough sEmpty as []; inversion H.
+    enough False as []; inversion H.
     move=> H''; inversion H; inversion H'; inversion H''.
     apply IHn3; subst; assumption.
   Qed.
@@ -96,7 +96,7 @@ Section Cost.
     move: H0 => [? [H0 p]]; split=> //; exists H0 ; move=> a0 Ha ; move: (p a0 Ha); apply H.
   Qed.
 
-  Program Definition tick (n:nat) : CostD unit (costs n sUnit (fun _ => sUnit)) :=
+  Program Definition tick (n:nat) : CostD unit (costs n True (fun _ => True)) :=
     dm_wkn (cont_perform CostSpecs n) _.
   Next Obligation.
     simpl in *. intuition.
@@ -104,7 +104,7 @@ Section Cost.
   Qed.
 End Cost.
 
-(* Definition fib_opt (n:nat) : CostD nat  (costs n sUnit (fun _ => sUnit)). *)
+(* Definition fib_opt (n:nat) : CostD nat  (costs n True (fun _ => True)). *)
 (* Proof. *)
 (*   refine ((fix fib_aux (n:nat) {struct n} : nat × nat := *)
 (*              wkn (x <- tick 1 ; *)

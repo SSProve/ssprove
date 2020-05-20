@@ -81,7 +81,7 @@ Arguments put' [St].
 
 (* A toy stateful program, from Swamy et al., 2013. *)
 Program Definition incr : PrePost nat
-                          (fun _ => sUnit)
+                          (fun _ => True)
                           (fun s0 s1 => s0 s< s1) :=
   wkn (x <- get' ; put' (S x)) _.
 Next Obligation. simpl. apply H. constructor. apply sle_refl. Qed.
@@ -139,7 +139,7 @@ Section NonDeterminism.
     
     Fixpoint or (xs : list SProp) : SProp :=
       match xs with
-      | nil => sEmpty
+      | nil => False
       | P :: Ps => P s\/ or Ps
       end.
 
@@ -233,7 +233,7 @@ Section NonDeterminism.
 
     Fixpoint and (xs : list SProp) : SProp :=
       match xs with
-      | nil => sUnit
+      | nil => True
       | P :: Ps => P s/\ and Ps
       end.
 
@@ -349,7 +349,7 @@ Section FreeMonad.
       fun (t : trace) =>
         ⦑ fun (post : P s × trace -> SProp) =>
             match t return SProp with
-            | nil => sEmpty
+            | nil => False
             | (existT _ s' p) :: t => s∃ (e : s = s'),
                   post ⟨rew <- [P] e in p, t⟩
             end⦒.
@@ -765,7 +765,7 @@ Next Obligation. cbv ; intuition. Qed.
 
 Program Definition div (i j : Z) :
   PrePostOp exn_op exn_ty (exn_spec (Squash (j = 0%Z)))
-            sUnit (fun n => Squash (j <> 0%Z /\ n = Z.div i j)) :=
+            True (fun n => Squash (j <> 0%Z /\ n = Z.div i j)) :=
   match Z.eq_dec j 0 with
   | left e => throw'' (squash e)
   | right _ => wkn (dret (Z.div i j)) _
@@ -773,8 +773,8 @@ Program Definition div (i j : Z) :
 Next Obligation. simpl in *. apply H. constructor. intuition eauto. Qed.
 
 Program Definition try_div (i j : Z) :
-  PrePostOp exn_op exn_ty (exn_spec sEmpty)
-            sUnit (fun (n : option Z) => sUnit) :=
+  PrePostOp exn_op exn_ty (exn_spec False)
+            True (fun (n : option Z) => True) :=
 
   handle (div i j)
          (fun a => wkn (dret (Some a)) _)
@@ -832,7 +832,7 @@ Section ConstantChoiceHandler.
   Definition choice_spec (op : choice_op) : SProp × (choice_ty op -> SProp) :=
     match op with
     (* Specify that 'choice' always returns 'true' *)
-    | choice => ⟨sUnit, fun b => Squash (b = true)⟩
+    | choice => ⟨True, fun b => Squash (b = true)⟩
     end.
 
   Variable S' : Type.
@@ -980,7 +980,7 @@ Section ForState.
       (at level 0, i ident).
 
   Program Definition sum :=
-    For i from 0 to 5 using PrePostWP nat (fun _ => sUnit) (fun s0 s1 => s0 s<= s1) do
+    For i from 0 to 5 using PrePostWP nat (fun _ => True) (fun s0 s1 => s0 s<= s1) do
         s0 <- get' ; put' (s0 + i)
         done.
   Next Obligation. simpl in *. intuition. apply q.

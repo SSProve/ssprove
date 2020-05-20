@@ -89,7 +89,7 @@ Section unarySpecStateOmegaCpo.
   Import SPropNotations.
   Definition WSt  := ordmonad_to_relmon (STCont S0).
 
-  Program Definition botWSt : dfst (WSt A) := ⦑fun p s => sUnit⦒.
+  Program Definition botWSt : dfst (WSt A) := ⦑fun p s => True⦒.
   Next Obligation. done. Qed.
 
   Program Definition supWSt (c : ωchain (WSt A)) : dfst (WSt A) :=
@@ -148,13 +148,13 @@ Section PropOmegaCpo.
   Next Obligation. typeclasses eauto. Defined.
 
   Global Program Instance prop_ωCpo : ωCpo prop_op_oT :=
-    Build_ωCpo sUnit (fun c => forall n, c n) _ _ _.
+    Build_ωCpo True (fun c => forall n, c n) _ _ _.
   Next Obligation. done. Qed.
   Next Obligation. apply. Qed.
   Next Obligation. move=> H' n; exact (H n H'). Qed.
 
   (* Global Program Instance prop_ωCpo : ωCpo prop_ordType := *)
-  (*   Build_ωCpo sEmpty (fun c => s∃ n, c n) _ _ _. *)
+  (*   Build_ωCpo False (fun c => s∃ n, c n) _ _ _. *)
   (* Next Obligation. move=> [] //. Qed. *)
   (* Next Obligation. move=> H; eexists; apply H. Qed. *)
   (* Next Obligation. move=> [n H']; exact (H n H'). Qed. *)

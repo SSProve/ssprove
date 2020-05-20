@@ -158,7 +158,7 @@ Section NonDeterminismSet.
       eexists ; split ; [eexists;split|]; eassumption.
   Qed.
 
-  Definition pick_set : NDSet bool := fun b => sUnit.
+  Definition pick_set : NDSet bool := fun b => True.
 End NonDeterminismSet.
 
 Section NonDeterminismList.

@@ -102,7 +102,7 @@ Section PrePostSpec.
   Section Ran.
     Context (B C : Type) (w : MonoContSProp C)
             (pre : Prop) (post : B -> Prop).
-    Context (Hpre : Spr1 w (fun _ => sUnit) -> pre).
+    Context (Hpre : Spr1 w (fun _ => True) -> pre).
 
     Definition MonoContAlongPrePost_ran : ran w (PrePostSpec pre post).
     Proof.
@@ -414,7 +414,7 @@ Module PrePost.
 
   Definition PP X := Prop  × (X -> Prop).
 
-  Definition PP_ret : forall A, A -> PP A := fun _ x => ⟨ sUnit, fun y => y ≡ x ⟩.
+  Definition PP_ret : forall A, A -> PP A := fun _ x => ⟨ True, fun y => y ≡ x ⟩.
 
   Definition PP_bind
     : forall A B, PP A -> (A -> PP B) -> PP B :=
@@ -601,7 +601,7 @@ Section Adjunctions.
   Import SPropNotations.
 
   Definition pred2pp A (post:PredOM A) : PPSpecMonad A :=
-    ⟨sUnit, post⟩.
+    ⟨True, post⟩.
   Definition pp2pred A (pp:PPSpecMonad A) : PredOM A :=
     fun a => nsnd pp a.
 
@@ -614,7 +614,7 @@ Section Adjunctions.
   Let MonoCont := MonoContProp.
 
   Definition wp2pp A (w : MonoCont A) : PPSpecMonad A :=
-    ⟨Spr1 w (fun _ => sUnit), fun x =>  forall p, Spr1 w p -> p x⟩.
+    ⟨Spr1 w (fun _ => True), fun x =>  forall p, Spr1 w p -> p x⟩.
   Program Definition pp2wp A (pp : PPSpecMonad A) : MonoCont A :=
     Sexists _ (fun post => nfst pp s/\ (forall x, nsnd pp x -> post x)) _.
   Next Obligation. cbv ; intuition. Qed.
@@ -669,7 +669,7 @@ Section Adjunctions.
    Import StrongestPostcondition.
 
    Definition sp2pred A (sp:ForwardPredTransformer A) : PredOM A :=
-     fun r => Spr1 sp sUnit r.
+     fun r => Spr1 sp True r.
 
    Program Definition pred2sp A (post : PredOM A) : ForwardPredTransformer A :=
      ⦑fun pre r => @mkOver _ (pre s/\ post r) _⦒.
@@ -734,11 +734,11 @@ Section Adjunctions.
   (* Proof. *)
   (*   cbv. *)
   (*   split. *)
-  (*   - move=> ?; exists sUnit;split. *)
+  (*   - move=> ?; exists True;split. *)
   (*     move=> ? H ? ?; apply H. *)
   (*     all:intuition. *)
   (*   - move=> x H. *)
-  (*     simple refine (_ (H sUnit stt (pp2sp0 ⟨sUnit, nsnd pp⟩) _)); cbv ; intuition. *)
+  (*     simple refine (_ (H True stt (pp2sp0 ⟨True, nsnd pp⟩) _)); cbv ; intuition. *)
   (* Qed. *)
 
   (* Lemma pp2sp_sp2pp_loop A (sp:ForwardPredTransformer A) : *)
@@ -760,9 +760,9 @@ Section Adjunctions.
   (*     split. exact (over H). *)
   (*     apply q. intros ; move:H ; apply (Spr2 sp) ; intuition. *)
   (*   - dintuition. *)
-  (*     exists sUnit. split ; intuition. *)
+  (*     exists True. split ; intuition. *)
   (*     apply H1 ; constructor. *)
-  (*     simple refine (_ (H sUnit x (H0 sUnit stt)(pp2sp0 ⟨sUnit, nsnd pp⟩) _)); cbv ; intuition. *)
+  (*     simple refine (_ (H True x (H0 True stt)(pp2sp0 ⟨True, nsnd pp⟩) _)); cbv ; intuition. *)
   (* Qed. *)
 
   Program Definition sp2mr A (sp : ForwardPredTransformer A)

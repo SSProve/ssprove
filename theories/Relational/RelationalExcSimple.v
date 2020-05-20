@@ -125,12 +125,12 @@ Section ErrCollapse.
     move=> pexc e1 e2.
     epose (rmm_law2 _ _ _ _ θErr ⟨_,_⟩ ⟨_,_⟩ ⟨fun (x:False) => ret x, fun (x:unit) => raise e2⟩) as e.
     apply (f_equal (fun h => h∙1 ⟨raise e1, ret tt⟩)) in e.
-    apply (f_equal (fun h => Spr1 h (fun=> sUnit) pexc)) in e.
+    apply (f_equal (fun h => Spr1 h (fun=> True) pexc)) in e.
     cbv in e; rewrite H1 in e; rewrite -e ; clear e.
 
     epose (rmm_law2 _ _ _ _ θErr ⟨_,_⟩ ⟨_,_⟩ ⟨fun=> raise e1,fun (x:False)=> ret x⟩ ) as e.
     apply (f_equal (fun h => h∙1 ⟨ret tt, raise e2⟩)) in e.
-    apply (f_equal (fun h => Spr1 h (fun=> sUnit) pexc)) in e.
+    apply (f_equal (fun h => Spr1 h (fun=> True) pexc)) in e.
     cbv in e; rewrite H2 in e; rewrite -e ; clear e.
     reflexivity.
   Qed.

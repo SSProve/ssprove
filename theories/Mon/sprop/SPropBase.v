@@ -33,8 +33,6 @@ Module Redefined_sprop_constructs.
 (*not all redefinitions Prop -> Prop are provided in this module
 planning to put them all here
 *)
-Definition sEmpty := False.
-Definition sUnit := True.
 (*Definition Prop := Prop.*) (*This is no longer accepted by coq*)
 Definition Ssig := sig.
 Arguments Ssig {A} P.
@@ -125,7 +123,7 @@ Definition siff (P Q:Prop) := sand (P -> Q) (Q -> P).
 
 Definition snot (P : Prop) : Prop := ~ P.
 (* old sprop negation
-Definition snot (P:Prop) : Prop := P -> sEmpty.
+Definition snot (P:Prop) : Prop := P -> False.
 *)
 
 (** Well-founded order on natural number *)

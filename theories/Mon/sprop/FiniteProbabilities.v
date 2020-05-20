@@ -16,7 +16,7 @@ Section FinProb.
   Context (R:realType).
 
   Import SPropNotations.
-  Definition is_true_sprop (b:bool) : SProp := if b then sUnit else sEmpty.
+  Definition is_true_sprop (b:bool) : SProp := if b then True else False.
   Notation "⟦ b ⟧" := (is_true_sprop b).
 
   Definition unit_interval := { r : R ≫ ⟦0 <= r <= 1⟧}.

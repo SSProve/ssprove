@@ -81,7 +81,7 @@ Section IOs.
   Let read2 := read I2 O2.
   Let write2 := @write I2 O2.
 
-  Let ttrue : Es1 -> Es2 -> Prop := fun _ _ => sUnit.
+  Let ttrue : Es1 -> Es2 -> Prop := fun _ _ => True.
 
   Lemma read1_rule {A2} : forall (a2:A2),
       ⊨ ⦃ ttrue ⦄
@@ -209,7 +209,7 @@ Section NI_IO.
   Notation "⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
     (semantic_judgement _ _ _ θIO' _ _ c1 c2 (fromPrePost' pre post)).
 
-  Let ttrue : Es1 -> Es2 -> Prop := fun _ _ => sUnit.
+  Let ttrue : Es1 -> Es2 -> Prop := fun _ _ => True.
 
   Lemma readLow_readLow_rule :
       ⊨ ⦃ ttrue ⦄
@@ -254,7 +254,7 @@ Section NI_Examples.
     (* | (fp1, InpPriv i2 :: fp2) => aux fp1 fp2 p *)
     | (InpPub i1 :: fp1, InpPub i2 :: fp2) => i1 ≡ i2 -> aux fp1 fp2 p
     | (Out o1 :: fp1, Out o2 :: fp2) => o1 ≡ o2 s/\ aux fp1 fp2 p
-    | (_, _) => sEmpty
+    | (_, _) => False
     end.
 
   Definition ni_pred (fp1 fp2 : list IOTriple) (p : Prop) : Prop :=
@@ -294,7 +294,7 @@ Section NI_Examples.
     rewrite IHa; by reflexivity. by exact IHa.
   Qed.
 
-  Lemma aux_ni_pred2 : forall h1 h2 a1 a2, ni_pred h1 h2 (a1 ≡ a2) -> ni_pred (Out a1 :: h1) (Out a2 :: h2) sUnit.
+  Lemma aux_ni_pred2 : forall h1 h2 a1 a2, ni_pred h1 h2 (a1 ≡ a2) -> ni_pred (Out a1 :: h1) (Out a2 :: h2) True.
   Proof.
     move=> ? ? ? ? ; rewrite /ni_pred /= !filter_distr /=.
     set h1 := filter _ _; set h2:= filter _ _.
@@ -306,20 +306,20 @@ Section NI_Examples.
   Definition NI {A : Type} (c : IO A) :=
     ⊨ ⦃ fun h1 h2 => filter isPubInp h1 ≡ filter isPubInp h2 ⦄
       c ≈ c
-      ⦃ fun _ _ h1' _ _ h2' => ni_pred h1' h2' sUnit ⦄.
+      ⦃ fun _ _ h1' _ _ h2' => ni_pred h1' h2' True ⦄.
 
   (* Is NI equivalent to the following? (Seems quite close) *)
   (* Definition NI2 {A : Type} (c : IO A) := *)
   (*   ⊨ ⦃ ttrue ⦄ *)
   (*     c ≈ c *)
-  (*     ⦃ fun _ h1 h1' _ h2 h2' => ni_pred (h1' ++ h1) (h2' ++ h2) sUnit ⦄. *)
+  (*     ⦃ fun _ h1 h1' _ h2 h2' => ni_pred (h1' ++ h1) (h2' ++ h2) True ⦄. *)
 
   (* Is NI equivalent to the following? (Seems quite close; and probably equiv to NI2?)*)
   (* Definition NI3 {A : Type} (c : IO A) := *)
   (*   ⊨ ⦃ ttrue ⦄ *)
   (*     c ≈ c *)
   (*     ⦃ fun _ _ h1' _ _ h2' => filter isPubInp h1 ≡ filter isPubInp h2 -> *)
-  (*                              ni_pred h1' h2' sUnit ⦄. *)
+  (*                              ni_pred h1' h2' True ⦄. *)
 
   Ltac subst_sEq' :=
     repeat match goal with
@@ -364,7 +364,7 @@ Section NI_Examples.
     case: b1 b2 => [] [];
                     refine (weaken_rule2 _ _ _ _
                                          (w':=fromPrePost'
-                                                (fun _ _ => sUnit)
+                                                (fun _ _ => True)
                                                 (fun _ _ h1 _ _ h2 =>
                                                    s∃ n1 n2, h1 ≡ [Out n1] s/\ h2 ≡ [Out n2])) _ _);
     try apply write_write_rule;
@@ -414,7 +414,7 @@ Section NI_Examples.
 
   Definition prog_declasify f := bind readHigh (fun n => write (f n)).
   Lemma NI_prog_declasify : forall f,
-    ⊨ ⦃ fun _ _ => sUnit ⦄
+    ⊨ ⦃ fun _ _ => True ⦄
       (prog_declasify f) ≈ (prog_declasify f)
       ⦃ fun _ _ h1' _ _ h2' => 
           s∃ i1 i2 o1 o2, h1' ≡ [InpPriv i1; Out o1] s/\
@@ -435,7 +435,7 @@ Section NI_Examples.
     | S fuel => bind readLow (fun m => readN (sum + m) fuel)
     end.
 
-  Lemma aux_readN : forall m n fuel, ⊨ ⦃ fun _ _ => sUnit ⦄
+  Lemma aux_readN : forall m n fuel, ⊨ ⦃ fun _ _ => True ⦄
                                   readN m fuel ≈ readN n fuel
                                   ⦃ fun a1 _ h1 a2 _ h2 => m ≡ n -> ni_pred h1 h2 (a1 ≡ a2) ⦄.
   Proof.
@@ -451,7 +451,7 @@ Section NI_Examples.
   Proof.
     rewrite /NI /prog7 => sum fuel; hammer. apply aux_readN.
     move => ? [? ?] H; simpl in *. intuition; apply q.
-    subst_sEq' => /=. replace (tt ≡ tt) with sUnit.
+    subst_sEq' => /=. replace (tt ≡ tt) with True.
       by apply aux_ni_pred2 => //=. apply SPropAxioms.sprop_ext => //.
   Qed.
 End NI_Examples.

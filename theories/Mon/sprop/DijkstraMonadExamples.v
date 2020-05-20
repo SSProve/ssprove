@@ -75,7 +75,7 @@ Section Option.
     let alg := @mkMonadAlgebra Opt Prop
                                (fun c => match c with
                                       | Some p => p
-                                      | None => sEmpty end) _ _ in
+                                      | None => False end) _ _ in
     @mkOrderedAlgebra _ alg SProp_op_order _ _.
   Next Obligation. move: m => [?|] //=. Qed.
   Next Obligation. typeclasses eauto. Qed.
@@ -87,7 +87,7 @@ Section Option.
     let alg := @mkMonadAlgebra Opt Prop
                                (fun c => match c with
                                       | Some p => p
-                                      | None => sUnit end) _ _ in
+                                      | None => True end) _ _ in
     @mkOrderedAlgebra _ alg SProp_op_order _ _.
   Next Obligation. move: m => [?|] //=. Qed.
   Next Obligation. typeclasses eauto. Qed.
@@ -133,7 +133,7 @@ Section Option.
   Program Definition morSpPart : MonadMorphism Opt SP :=
     @mkMorphism Opt SP (fun A c => match c with
                              | Some a => ret a
-                             | None => Sexists _ (fun pre a => @mkOver _ sEmpty _) _
+                             | None => Sexists _ (fun pre a => @mkOver _ False _) _
                              end) _ _.
   Next Obligation. destruct H. Qed.
   Next Obligation.
@@ -159,7 +159,7 @@ Section Option.
   Program Definition ranTotDiv A B (f : B -> Opt A)  w
     (H : morWpTot A (bind (None : Opt B) f) ≤ w) :
     ran w (morWpTot B None) :=
-    Sexists _ (fun _ => Sexists _ (fun _ => sEmpty) _) _.
+    Sexists _ (fun _ => Sexists _ (fun _ => False) _) _.
   Next Obligation. cbv ; intuition. Qed.
   Next Obligation. cbv ; split. cbv in H. assumption. intuition. Qed.
 
@@ -471,7 +471,7 @@ End SumOfTheories.
 (*   Lemma leS_to_le : forall m n, leS n m -> le n m. *)
 (*   Proof. *)
 (*     induction m. move=> [|n H] //=. *)
-(*     assert (HF:sEmpty) by inversion H ; inversion HF. *)
+(*     assert (HF:False) by inversion H ; inversion HF. *)
 (*     move=> [?|n H]. exact (PeanoNat.Nat.le_0_l _). *)
 (*     apply Le.le_n_S ; apply IHm. inversion H ; assumption. *)
 (*   Qed. *)
@@ -627,7 +627,7 @@ End SumOfTheories.
 
 (* Section Fibonnacci. *)
 (*   Let W := MonoContProp. *)
-(*   Definition fib_trivial_inv : W nat := PrePostSpec sUnit (fun _ => sUnit). *)
+(*   Definition fib_trivial_inv : W nat := PrePostSpec True (fun _ => True). *)
 (*   Let GenRecNatNat := *)
 (*     GenRecExt (EmptyOpSpecs W) lt (fun _ => fib_trivial_inv). *)
 (*   Let call {n0} (n:nat) : GenRecNatNat n0 nat _ := call _ _ _ n. *)
@@ -648,14 +648,14 @@ End SumOfTheories.
 (*     apply leS_to_le. apply (sq_le_to_leS H). *)
 (*   Qed. *)
 (*   Next Obligation. *)
-(*     unshelve eapply (ran_iso (@MonoContAlongPrePost_ran _ _ w (Squash (S d <= d0)) (fun _ => sUnit)  _)). *)
+(*     unshelve eapply (ran_iso (@MonoContAlongPrePost_ran _ _ w (Squash (S d <= d0)) (fun _ => True)  _)). *)
 (*     cbv in H. *)
 (*     move=> Hw ; destruct (H _ Hw) ; assumption. *)
 (*     split ; sreflexivity. *)
 (*     cbv ; intuition. *)
 (*   Qed. *)
 
-(*   Program Definition fib' n := Spr1 (@fib n) (fun _ => sUnit) _. *)
+(*   Program Definition fib' n := Spr1 (@fib n) (fun _ => True) _. *)
 (*   Next Obligation. intuition. Qed. *)
 
 (*   (* Goal exists x, x = Spr1 (fib' 2). *) *)

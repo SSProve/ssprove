@@ -143,7 +143,7 @@ Section NonDeterminism.
     
     Fixpoint or (xs : list SProp) : SProp :=
       match xs with
-      | nil => sEmpty
+      | nil => False
       | P :: Ps => P s\/ or Ps
       end.
 
@@ -185,7 +185,7 @@ Section NonDeterminism.
 
     Fixpoint and (xs : list SProp) : SProp :=
       match xs with
-      | nil => sUnit
+      | nil => True
       | P :: Ps => P s/\ and Ps
       end.
 
@@ -260,7 +260,7 @@ Section IOObservations.
     @OpSpecEffObs IOop IOop_arity MonoContSProp
                   (fun op => match op with
                           | Read _ => ⦑ fun p => s∃ i, p i ⦒
-                          | Write _ => ⦑ fun _ => sUnit ⦒
+                          | Write _ => ⦑ fun _ => True ⦒
                           end).
   Next Obligation. destruct H0 as [? ?] ; eexists ; apply H ; eassumption. Qed.
   Next Obligation. assumption. Qed.
@@ -374,7 +374,7 @@ Arguments put' [S].
 
 (* A toy stateful program, from Swamy et al., 2013. *)
 Program Definition incr : PrePost nat
-                          (fun _ => sUnit)
+                          (fun _ => True)
                           (fun s0 s1 => s0 s< s1) :=
   wkn (x <- get' ; put' (S x)) _.
 Next Obligation. simpl. apply H. constructor. apply sle_refl. Qed.
