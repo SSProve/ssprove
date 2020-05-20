@@ -25,7 +25,7 @@ Section UpdateRelationalSpecMonad.
   Import SPropNotations.
 
   Definition WUpd A B :=
-    { f : (A × B -> M1 × M2 -> SProp) -> X1 × X2 -> SProp ≫
+    { f : (A × B -> M1 × M2 -> SProp) -> X1 × X2 -> SProp |
       SProper (@dom_rel A B s==> cod_rel) f}. 
   Program Definition retWUpd A B (ab : A × B) : WUpd A B:=
     exist _ (fun p xx => p ab ⟨e M1, e M2⟩) _.

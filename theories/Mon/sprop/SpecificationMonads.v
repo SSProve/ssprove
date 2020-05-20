@@ -22,7 +22,7 @@ Section MonotoneContinuationsMonad.
   Notation "x ≼ y" := (Rrel x y) (at level 70).
 
   Definition MonoContCarrier (X: Type) : Type :=
-    { f : (X -> R) -> R ≫ Proper (pointwise_relation X Rrel ==> Rrel) f}.
+    { f : (X -> R) -> R | Proper (pointwise_relation X Rrel ==> Rrel) f}.
 
   Program Definition MonoCont_ret A (a:A) : MonoContCarrier A :=
     exist _ (fun k => k a) _.
@@ -125,7 +125,7 @@ Section ExceptionSpec.
   
   Definition ExnSpecCarrier : Type -> Type :=
     fun X => { f : (X -> Prop) -> (E -> Prop) -> Prop
-          ≫ Proper ((pointwise_relation X SProp_op_order) ==> (pointwise_relation E SProp_op_order) ==> SProp_op_order) f}.
+          | Proper ((pointwise_relation X SProp_op_order) ==> (pointwise_relation E SProp_op_order) ==> SProp_op_order) f}.
 
   Program Definition ExnSpec_ret : forall A, A -> ExnSpecCarrier A :=
     fun A a => ⦑ fun p pexc => p a ⦒.
@@ -192,7 +192,7 @@ Section UpdateSpecMonad.
   Import SPropNotations.
 
   Definition WUpd A :=
-    { f : (A -> M -> Prop) -> X -> Prop ≫
+    { f : (A -> M -> Prop) -> X -> Prop |
       Proper (@dom_rel A ==> cod_rel) f}. 
   Program Definition retWUpd A (a : A) : WUpd A :=
     exist _ (fun p xx => p a (e M)) _.
@@ -287,7 +287,7 @@ Section MonotonicRelations.
   Import SPropAxioms.
 
   Definition SPropAssuming (pre : Prop) :=
-    { q : Prop ≫ q s<-> (pre -> q) }.
+    { q : Prop | q s<-> (pre -> q) }.
 
   Definition MR_base X := 
     forall (pre:Prop), (X -> SPropAssuming pre) -> SPropAssuming pre.
@@ -298,7 +298,7 @@ Section MonotonicRelations.
       (post2 : X -> SPropAssuming pre2)
       (Hpost : forall x, proj1_sig (post2 x) -> proj1_sig (post1 x)), proj1_sig (r2 pre2 post2) -> proj1_sig (r1 pre1 post1).
 
-  Definition MR X := { r : MR_base X ≫ SProper (@MR_base_rel X) r }.
+  Definition MR X := { r : MR_base X | SProper (@MR_base_rel X) r }.
 
   Program Definition retMR A a : MR A :=
     exist _
@@ -521,7 +521,7 @@ Module  StrongestPostcondition.
 
   Record SPropOver (p:Prop) := mkOver { base :> Prop ; over : base -> p }.
 
-  Definition SP X := { f : forall p:SProp, X -> SPropOver p ≫
+  Definition SP X := { f : forall p:SProp, X -> SPropOver p |
                        forall (p1 p2 : Prop) x, (p1 -> p2) -> f p1 x -> f p2 x}.
 
   Program Definition SP_ret A (a:A) : SP A :=

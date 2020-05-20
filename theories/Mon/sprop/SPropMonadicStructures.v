@@ -186,13 +186,13 @@ Section KleisliKanExtension.
 
   (* Right Kan extension of f along p *)
   Definition ran :=
-    { ext : B -> W C ≫
+    { ext : B -> W C |
       bind p ext  ≤[W] f s/\
       forall (w' : B -> W C), bind p w' ≤[W] f -> forall b, w' b ≤[W] ext b
     }.
 
   Definition lan :=
-    { ext : B -> W C ≫
+    { ext : B -> W C |
       f ≤ bind p ext s/\
       forall (w' : B -> W C), f ≤ bind p w' -> forall b, w' b ≤ ext b
     }.
@@ -429,7 +429,7 @@ Section OfMorphism.
   Variable θ : MonadMorphism M W.
 
   Definition Dθ_carrier A (w : W A) : Type :=
-    { m : M A ≫ θ A m ≤ w }.
+    { m : M A | θ A m ≤ w }.
 
   Program Definition Dθ_ret A (a : A): Dθ_carrier (ret a) :=
     exist _ (ret a) _.
@@ -512,7 +512,7 @@ Section OfRelation.
   Import SPropNotations.
 
   Definition Drel_carrier A (w : W A) :=
-    { m : M A ≫ R A m w }.
+    { m : M A | R A m w }.
 
 
   Definition Drel_ret A (a : A): Drel_carrier (ret a) :=

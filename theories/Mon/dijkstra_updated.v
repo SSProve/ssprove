@@ -484,7 +484,7 @@ Section Exceptions.
 
     Definition ExnSpecCarrier : Type -> Type :=
       fun X => { f : (X -> SProp) -> SProp -> SProp
-            ≫ SProper ((X ⇢ SProp_op_order) s==> SProp_op_order s==> SProp_op_order) f}.
+            | SProper ((X ⇢ SProp_op_order) s==> SProp_op_order s==> SProp_op_order) f}.
 
     Program Definition ExnSpec_ret : forall A, A -> ExnSpecCarrier A :=
       fun A a => ⦑ fun p pexc => p a ⦒.
@@ -945,7 +945,7 @@ Section DijkstraMonadPolymorphic.
     Context (start len : nat) (inv : W unit)
             (Hinv : bind inv (fun _ => inv) ≤ inv).
 
-    Let bounded_nat := { i : nat ≫ Squash (start <= i < start + len) }.
+    Let bounded_nat := { i : nat | Squash (start <= i < start + len) }.
 
     Program Fixpoint bseq (len' : nat) (Hlen : len' <= len) : list bounded_nat :=
       match len' with

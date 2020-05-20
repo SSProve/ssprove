@@ -27,14 +27,6 @@ Record Box (A:Prop) : Prop := box { unbox : A }.
 End Redefined_sprop_constructs.
 Export Redefined_sprop_constructs.
 
-(** Equality in Prop *)
-
-About eq. Print eq.
-Definition eq {A} (x:A) : A -> Prop :=
-  fun y => x = y.
-Definition eq_refl {A:Type} := @eq_refl A.
-
-
 (** Conjunction *)
 Definition sand (P Q : Prop) : Prop := P /\ Q .
 
@@ -119,7 +111,6 @@ Inductive Sle : nat -> nat -> Prop :=
 
 
 Module SPropNotations.
-  Notation "{ x : A ≫ P }" := (@sig A (fun x => P)) (x at level 99).
   Notation "p s/\ q" := (sand p q) (at level 80).
   Notation "(s->)" := (s_impl) (only parsing).
   Notation "p s\/ q" := (sor p q) (at level 85).
@@ -253,38 +244,3 @@ Module SPropAxioms.
 End SPropAxioms.
 
 (** A few surprises (actually makes sense, but still...) *)
-
-Section SPropExamplesAndCounterExamples.
-
-  (* As indicated in the ceps/37 there is no cumulativity *)
-  Goal Prop -> Type.
-  Proof.
-    intro x ; exact x. (* Universe inconsistency *)
-    Restart.
-    intro x ; exact (Box x). (* But it works if wrapped (as it should) *)
-  Qed.
-
-  (* A dependent pair of a type and a proof it's a subsingleton *)
-  Record hprop := { ty : Type ; is_hprop : forall (x y : ty), x = y}.
-
-  (* SProps should be subsingleton (definitionally) *)
-  Definition sprop_to_hprop (P : Prop) : hprop.
-  Proof.
-    (* But trying directly, it fails (P is accepted in Type though...) *)
-    exists P. intros. Fail reflexivity.
-    Restart.
-    (* However it works if we wrap the Prop (but that's quite unconvenient) *)
-    exists (Box P); intros [?] [?].
-    have hintUnif : unbox0 = unbox1.
-      by apply ax_proof_irrel.
-    rewrite hintUnif. reflexivity.
-  Qed.
-
-  (* Here the problem is more visible, P is in SProp, not in Type so the equality is not well formed *)
-  Fail Fail Check forall (P : Prop) (x y : P), x = y.
-
-  (* The goal does not typecheck, but Coq still allows me to try to prove it ??? *)
-  Goal forall (P : Prop) (x y : P), x = y. Proof. admit. Fail Fail Admitted.
-  Abort All.
-  
-End SPropExamplesAndCounterExamples.

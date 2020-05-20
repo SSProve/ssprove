@@ -78,7 +78,7 @@ Section MonoidExamples.
 
   Import SPropNotations.
   Program Definition overwriteMonoid (X:Type) : monoid :=
-    @mkMonoid { f : X -> X ≫ exists (m: optionMonoid X), forall x, Some (f x) = m⋅(Some x)}
+    @mkMonoid { f : X -> X | exists (m: optionMonoid X), forall x, Some (f x) = m⋅(Some x)}
               (exist _ id _)
               (fun f g => exist _ (proj1_sig f \o proj1_sig g) _) _ _ _.
   Next Obligation. exists None. move=> ? //. Qed.
@@ -159,7 +159,7 @@ Section MonoidStrictification.
   Context (M : monoid).
   Import SPropNotations.
 
-  Definition SM := { f : M -> M ≫ exists m, forall m', f m' = m ⋅ m'}.
+  Definition SM := { f : M -> M | exists m, forall m', f m' = m ⋅ m'}.
   Program Definition se : SM := exist _ id _.
   Next Obligation.
     exists (e M). intros ; rewrite monoid_law1 //.
@@ -183,7 +183,7 @@ Section MonoidStrictification.
   Lemma embed_project_id : forall m, project (embed m) = m.
   Proof. intro. cbv. rewrite monoid_law2 //. Qed.
 
-  Lemma sig_eq : forall (A : Type) (P : A -> Prop) (mx my : {x : A ≫ P x}),
+  Lemma sig_eq : forall (A : Type) (P : A -> Prop) (mx my : {x : A | P x}),
        proj1_sig mx = proj1_sig my -> mx = my.
   Proof.
     intros A P [mx ?] [my ?] H. simpl in H.

@@ -19,7 +19,7 @@ Section FinProb.
   Definition is_true_sprop (b:bool) : SProp := if b then True else False.
   Notation "⟦ b ⟧" := (is_true_sprop b).
 
-  Definition unit_interval := { r : R ≫ ⟦0 <= r <= 1⟧}.
+  Definition unit_interval := { r : R | ⟦0 <= r <= 1⟧}.
   Let I := unit_interval.
 
 

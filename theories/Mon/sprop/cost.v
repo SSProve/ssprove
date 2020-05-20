@@ -28,7 +28,7 @@ End ExtNat.
 
 Section ExtNatSProp.
   Import SPropNotations.
-  Definition extNat' := { p : nat -> SProp ≫ SProper (Sle s==> SProp_order) p }.
+  Definition extNat' := { p : nat -> SProp | SProper (Sle s==> SProp_order) p }.
   Definition extNat'_rel : srelation extNat' :=
     fun n1 n2 => pointwise_srelation nat SProp_order (proj1_sig n1) (proj1_sig n2).
   

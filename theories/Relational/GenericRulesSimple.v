@@ -86,7 +86,7 @@ Section RelationalProgramLogicFromRelativeMonadZero.
         {f1 : A1 -> M1 B1} {f2 : A2 -> M2 B2}
         {wf : OrdCat⦅Jprod ⟨A1,A2⟩ ; W ⟨B1, B2⟩⦆} :
     ⊨ m1 ≈ m2 [{ wm }] -> (forall a1 a2, ⊨ f1 a1 ≈ f2 a2 [{ wf∙1 ⟨a1, a2⟩ }]) ->
-    ⊨ bind m1 f1 ≈ bind m2 f2 [{ wm ≫= wf }].
+    ⊨ bind m1 f1 ≈ bind m2 f2 [{ wm |= wf }].
   Proof.
     intros Hm Hf.
     rewrite /semantic_judgement; etransitivity.
@@ -142,7 +142,7 @@ Section GoingPractical.
         {wf : OrdCat⦅Jprod ⟨A1,A2⟩ ; W ⟨B1, B2⟩⦆} {w} :
     θ ⊨ m1 ≈ m2 [{ wm }] ->
     (forall a1 a2, θ ⊨ f1 a1 ≈ f2 a2 [{ proj1_sig wf ⟨a1, a2⟩ }]) ->
-    wm ≫= wf ≤ w ->
+    wm |= wf ≤ w ->
     θ ⊨ bind m1 f1 ≈ bind m2 f2 [{ w }].
   Proof. move=> ? ? ; apply weaken_rule2 ; apply seq_rule=> //. Qed.
 
@@ -161,7 +161,7 @@ Section GoingPractical.
   Lemma apply_left {A B1 B2} {m1 : M1 A} {c1 : M1 B1} {c2 : M2 B2} {w1 w2 w} :
     θ ⊨ m1 ≈ skip [{ w1 }] ->
     θ ⊨ c1 ≈ c2 [{ w2 }] ->
-    w1 ≫= OrdCat_cst w2 ≤ w ->
+    w1 |= OrdCat_cst w2 ≤ w ->
     θ ⊨ m1 ;; c1 ≈ c2 [{ w }].
   Proof.
     move=> H1 H2 ; apply weaken_rule2.
@@ -181,7 +181,7 @@ Section GoingPractical.
   Lemma apply_left_tot {A1 A2} {c1 : M1 A1} {c2 : M2 A2} {w1 w2 w} :
     θ ⊨ c1 ≈ skip [{ w1 }] ->
     (forall a1, θ ⊨ ret a1 ≈ c2 [{ w2 a1 }]) ->
-    w1 ≫= OrdCat_lift' (fun a _ => w2 a) ≤ w ->
+    w1 |= OrdCat_lift' (fun a _ => w2 a) ≤ w ->
     θ ⊨ c1 ≈ c2 [{ w }].
   Proof.
     move=> H1 H2 ; apply weaken_rule2.
@@ -195,7 +195,7 @@ Section GoingPractical.
   Lemma apply_right {A B1 B2} {m2 : M2 A} {c1 : M1 B1} {c2 : M2 B2} {w1 w2 w} :
     θ ⊨ skip ≈ m2 [{ w1 }] ->
     θ ⊨ c1 ≈ c2 [{ w2 }] ->
-    w1 ≫= OrdCat_cst w2 ≤ w ->
+    w1 |= OrdCat_cst w2 ≤ w ->
     θ ⊨ c1 ≈ m2 ;; c2 [{ w }].
   Proof.
     move=> H1 H2 ; apply weaken_rule2.
@@ -207,7 +207,7 @@ Section GoingPractical.
   Lemma apply_right_tot {A1 A2} {c1 : M1 A1} {c2 : M2 A2} {w1 w2 w} :
     θ ⊨ skip ≈ c2 [{ w1 }] ->
     (forall a2, θ ⊨ c1 ≈ ret a2 [{ w2 a2 }]) ->
-    w1 ≫= OrdCat_lift' (fun=>w2) ≤ w ->
+    w1 |= OrdCat_lift' (fun=>w2) ≤ w ->
     θ ⊨ c1 ≈ c2 [{ w }].
   Proof.
     move=> H1 H2 ; apply weaken_rule2.

@@ -22,7 +22,7 @@ Section OmegaCpo.
   Context (A:ordType).
   Import SPropNotations.
 
-  Definition ωchain := { c : nat --> A ≫ forall n, c n ≤ c (S n)}.
+  Definition ωchain := { c : nat --> A | forall n, c n ≤ c (S n)}.
   Definition underlying_seq (c:ωchain) : nat --> A := c∙1.
   Coercion underlying_seq : ωchain >-> Funclass.
 
@@ -304,7 +304,7 @@ Section ImpMonad.
   Proof. cbv; intuition. Qed.
 
   Lemma bindW_omega_cont {S0 A B} (w: dfst (WSt S0 A)) (f : A --> WSt S0 B):
-    WSt_ωcont w -> (forall (a:A), WSt_ωcont (f a)) -> WSt_ωcont (w ≫= to_discr f).
+    WSt_ωcont w -> (forall (a:A), WSt_ωcont (f a)) -> WSt_ωcont (w |= to_discr f).
   Proof.
     move=> Hw Hf c /=.
     unshelve epose (cw := ⦑fun n a => (f a)∙1 (c n)⦒:ωchain (WSt_dom S0 A)).

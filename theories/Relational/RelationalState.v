@@ -378,7 +378,7 @@ Section ProductState.
   Qed.
 
   (* A coupling is a product program together with a proof that the relation above holds *)
-  Definition coupling {A1 A2} c1 c2 := { c : StProd A1 A2 ≫ st_rel c1 c2 c}.
+  Definition coupling {A1 A2} c1 c2 := { c : StProd A1 A2 | st_rel c1 c2 c}.
 
   (* Effect observation for the product programs *)
   Program Definition ζSt {A1 A2} : StProd A1 A2 -> dfst (RelSt S12 ⟨A1,A2⟩) :=

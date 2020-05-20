@@ -525,8 +525,8 @@ End SumOfTheories.
 (*   Import FunctionalExtensionality. *)
 
 (*   Definition Pure_car A (w:W A) : Type := *)
-(*     { f : forall p, proj1_sig w p -> { a : A ≫ p a } *)
-(*     ≫ forall p p' (H : Pred_op_order p' p) Hwp Hwp', *)
+(*     { f : forall p, proj1_sig w p -> { a : A | p a } *)
+(*     | forall p p' (H : Pred_op_order p' p) Hwp Hwp', *)
 (*           Squash (proj1_sig (f p Hwp) = proj1_sig (f p' Hwp')) }. *)
 
 (*   Program Definition Pure_ret A (a:A) : Pure_car (ret a) := *)

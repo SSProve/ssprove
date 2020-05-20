@@ -60,7 +60,7 @@ End TypeCat.
 Section OrdCat.
   Import SPropNotations.
   (* Category of preordered types *)
-  Definition ordType := {A : Type ⫳ { R : relation A ≫ PreOrder R } }.
+  Definition ordType := {A : Type ⫳ { R : relation A | PreOrder R } }.
   Definition extract_ord {A : ordType} := proj1_sig (dsnd A).
   Definition extract_ord_preord A : PreOrder (@extract_ord A) := proj2_sig (dsnd A).
   Global Existing Instance extract_ord_preord.
@@ -69,7 +69,7 @@ Section OrdCat.
   Program Definition OrdCat : ord_category :=
     mkOrdCategory
       ordType
-      (fun A B => {f : dfst A -> dfst B ≫ Proper (extract_ord ==> extract_ord) f})
+      (fun A B => {f : dfst A -> dfst B | Proper (extract_ord ==> extract_ord) f})
       (fun _ _ f g => forall x, f∙1 x ≤ g∙1 x) _
       (fun A => ⦑id⦒)
       (fun _ _ _ f g => ⦑f∙1 \o g∙1⦒)
@@ -283,7 +283,7 @@ Section RelationalSpecMonadZeroFromOrderedMonad.
 End RelationalSpecMonadZeroFromOrderedMonad.
 
 
-Notation "wm ≫= wf" := (proj1_sig (ord_relmon_bind _ wf) wm) (at level 50).
+Notation "wm |= wf" := (proj1_sig (ord_relmon_bind _ wf) wm) (at level 50).
 
 
 

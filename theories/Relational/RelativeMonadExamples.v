@@ -57,8 +57,8 @@ Section OrdCat.
   Import SPropNotations.
   (* Category of preordered types *)
   Program Definition OrdCat : category :=
-    mkCategory {A : Type ⫳ { R : srelation A ≫ PreOrder R } }
-               (fun A B => {f : dfst A -> dfst B ≫ SProper (proj1_sig (dsnd A) s==> proj1_sig (dsnd B)) f})
+    mkCategory {A : Type ⫳ { R : srelation A | PreOrder R } }
+               (fun A B => {f : dfst A -> dfst B | SProper (proj1_sig (dsnd A) s==> proj1_sig (dsnd B)) f})
                (fun _ _ f g => forall x, proj1_sig f x = proj1_sig g x) _
                (fun A => ⦑id⦒)
                (fun _ _ _ f g => ⦑fun x => proj1_sig f (proj1_sig g x)⦒)
