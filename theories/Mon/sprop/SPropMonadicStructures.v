@@ -204,7 +204,7 @@ Section KanExtensionMonotonic.
   Context (f : W C) (p : W B) (Hran:ran f p).
   Context (f':W C) (p':W B) (Hran':ran f' p').
   Context (Hf : f ≤ f') (Hp : p' ≤ p).
-  Definition ran_mono : forall b, Spr1 Hran b ≤ Spr1 Hran' b.
+  Definition ran_mono : forall b, proj1_sig Hran b ≤ proj1_sig Hran' b.
   Proof.
     move:Hran Hran' => [w [H1 H2]] [w' [H1' H2']] b /=.
     apply H2'. transitivity f ; [|assumption].
@@ -219,11 +219,11 @@ Section KanExtensionIsoStable.
   Import SPropNotations.
   Notation "w ≅ w'" := (w ≤ w' s/\ w' ≤ w) (at level 65).
   Context (Hran:ran f p) (f':W C) (p':W B) (Hf : f ≅ f') (Hp : p ≅ p').
-  Program Definition ran_iso : ran f' p' := exist _ (Spr1 Hran) _.
+  Program Definition ran_iso : ran f' p' := exist _ (proj1_sig Hran) _.
   Next Obligation.
-    destruct Hf as [Hf1 Hf2] ; destruct Hp as [Hp1 Hp2] ; destruct (Spr2 Hran) as [Hran1 Hran2].
+    destruct Hf as [Hf1 Hf2] ; destruct Hp as [Hp1 Hp2] ; destruct (proj2_sig Hran) as [Hran1 Hran2].
     split.
-    transitivity (bind p (Spr1 Hran)).
+    transitivity (bind p (proj1_sig Hran)).
     apply omon_bind. assumption.  move=> //= ?. reflexivity.
     transitivity f ; assumption.
     move=> w' Hw'. apply Hran2.
@@ -440,16 +440,16 @@ Section OfMorphism.
   Program Definition Dθ_bind A B (w : W A) (f : A -> W B)
           (d : Dθ_carrier w) (g : forall a, Dθ_carrier (f a)) :
     Dθ_carrier (bind w f) :=
-    exist _ (bind (Spr1 d) (fun a => Spr1 ( g a))) _.
+    exist _ (bind (proj1_sig d) (fun a => proj1_sig ( g a))) _.
   Next Obligation.
     rewrite mon_morph_bind.
-    apply (omon_bind (Spr2 d) (fun a => Spr2 (g a))).
+    apply (omon_bind (proj2_sig d) (fun a => proj2_sig (g a))).
   Qed.
 
   Program Definition Dθ_wkn A (w w' : W A) (d: Dθ_carrier w) (H : w ≤[W] w') : Dθ_carrier w' :=
-    exist _ (Spr1 d) _.
+    exist _ (proj1_sig d) _.
   Next Obligation.
-    transitivity w. exact (Spr2 d). assumption.
+    transitivity w. exact (proj2_sig d). assumption.
   Qed.
 
   Program Definition Dθ : Dijkstra W :=
@@ -522,14 +522,14 @@ Section OfRelation.
   Program Definition Drel_bind A B (wm : W A) (wf : A -> W B)
           (m : Drel_carrier wm) (f : forall a, Drel_carrier (wf a)):
     Drel_carrier (bind wm wf) :=
-    exist _ (bind (Spr1 m) (fun a => Spr1 (f a))) _.
+    exist _ (bind (proj1_sig m) (fun a => proj1_sig (f a))) _.
   Next Obligation.
-    apply mrel_bind ; [exact (Spr2 m)| intros a ; apply (Spr2 (f a))].
+    apply mrel_bind ; [exact (proj2_sig m)| intros a ; apply (proj2_sig (f a))].
   Qed.
 
   Program Definition Drel_wkn A (w w' : W A) (m : Drel_carrier w) (Hww' : w ≤[W] w')
     : Drel_carrier w' :=
-    exist _ (Spr1 m) (mid_upper_closed Hww' (Spr2 m)).
+    exist _ (proj1_sig m) (mid_upper_closed Hww' (proj2_sig m)).
 
   Program Definition Drel : Dijkstra W :=
     @mkDM W Drel_carrier Drel_ret Drel_bind Drel_wkn _ _ _ _ _ _.

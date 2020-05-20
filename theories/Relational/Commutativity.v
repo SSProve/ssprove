@@ -139,19 +139,19 @@ Section ConverseCommute.
 
   Context (θ : RelationalEffectObservation0 M1 M2 Wrel).
 
-  Let θapp (A B : Type) := Spr1 (θ ⟨A , B⟩).
+  Let θapp (A B : Type) := proj1_sig (θ ⟨A , B⟩).
 
   Definition unitt : Type := unit.
 
   Require Import Coq.Logic.FunctionalExtensionality.
 
   Lemma θret (A B : Type) (a : A) (b : B) : θapp A B ⟨ ret a, ret b ⟩ = ret ⟨ a, b ⟩.
-    move: (rmm_law1 _ _ _ _ θ ⟨A,B⟩) => /(f_equal Spr1) e.
+    move: (rmm_law1 _ _ _ _ θ ⟨A,B⟩) => /(f_equal proj1_sig) e.
     apply (equal_f e ⟨a, b ⟩).
   Qed.
 
   Lemma θbind (A1 A2 B1 B2 : Type) (m1 : M1 A1) (f1 : A1 -> M1 B1) (m2 : M2 A2) (f2 : A2 -> M2 B2) : θapp B1 B2 ⟨ bind m1 f1 ,  bind m2 f2 ⟩ = bind (θapp A1 A2 ⟨m1, m2⟩) (fun p => θapp B1 B2 ⟨ f1 (nfst p), f2 (nsnd p) ⟩).
-    move: (rmm_law2 _ _ _ _ θ ⟨A1,A2⟩ ⟨B1, B2⟩ (⟨f1, f2⟩)) => /(f_equal Spr1) e.
+    move: (rmm_law2 _ _ _ _ θ ⟨A1,A2⟩ ⟨B1, B2⟩ (⟨f1, f2⟩)) => /(f_equal proj1_sig) e.
     apply (equal_f e ⟨m1, m2⟩).
   Qed.
 
@@ -222,7 +222,7 @@ Section ConverseCommute.
   Let θ' : RelationalEffectObservation0 M1 M2 Wrel := commute_effObs _ _ _ θ1 θ2 effobs12_commute.
 
   Theorem converse_to_commute_effObs : forall A1 A2 c1 c2,
-      Spr1 (θ ⟨ A1, A2 ⟩) ⟨ c1, c2 ⟩  = Spr1 (θ' ⟨ A1, A2 ⟩) ⟨ c1, c2 ⟩.
+      proj1_sig (θ ⟨ A1, A2 ⟩) ⟨ c1, c2 ⟩  = proj1_sig (θ' ⟨ A1, A2 ⟩) ⟨ c1, c2 ⟩.
     move=> A1 A2 //= c1 c2. apply releffobs_eq_effobs1.
   Qed.
 End ConverseCommute.

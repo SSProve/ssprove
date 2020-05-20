@@ -34,11 +34,6 @@ Module Redefined_sprop_constructs.
 planning to put them all here
 *)
 (*Definition Prop := Prop.*) (*This is no longer accepted by coq*)
-Definition Spr1 {A : Type} {P : A -> Prop} (inst : sig P) :=
-  (let (w,_) := inst in w).
-Definition Spr2 {A : Type} {P : A -> Prop} (inst : sig P)
-: P (Spr1 inst ). destruct inst. simpl. assumption. Defined.
-About eq_ind.
 Definition eq_sind := eq_ind.
 Arguments eq_sind {A}.
 
@@ -166,7 +161,7 @@ Inductive Sle : nat -> nat -> Prop :=
 Module SPropNotations.
   Notation "x ≡ y" := (@sEq _ x y) (at level 70, no associativity).
 (*the following comes from Logic.StrictProp , coq 8.10 *)
-(*Record sig {A:Type} (P:A->Prop) := exist { Spr1 : A; Spr2 : P Spr1 }.*)
+(*Record sig {A:Type} (P:A->Prop) := exist { proj1_sig : A; proj2_sig : P proj1_sig }.*)
 
   Notation "{ x : A ≫ P }" := (@sig A (fun x => P)) (x at level 99).
   Notation "s∃ x .. y , p" :=
@@ -186,8 +181,8 @@ Module SPropNotations.
 
   Notation "⦑ t ⦒" := (exist _ t _).
 
-  Notation " x ∙1" := (Spr1 x) (at level 2).
-  Notation " x ∙2" := (Spr2 x) (at level 2).
+  Notation " x ∙1" := (proj1_sig x) (at level 2).
+  Notation " x ∙2" := (proj2_sig x) (at level 2).
 End SPropNotations.
 
 
@@ -255,7 +250,7 @@ Ltac subst_sEq :=
 Section sigLemmas.
 
   Lemma sig_eq {A} (P : A -> Prop) :
-    forall (mx my : sig P), Spr1 mx = Spr1 my -> mx = my.
+    forall (mx my : sig P), proj1_sig mx = proj1_sig my -> mx = my.
   Proof.
     intros [cx ex] [cy ey]. simpl.
     induction 1.
@@ -267,7 +262,7 @@ Section sigLemmas.
   Lemma transport_sig :
     forall {A B} (F : B -> A -> Prop) {x y} h z,
       eq_rect x (fun x => sig (fun b => F b x)) z y h
-      = exist _ (Spr1 z) (@eq_sind A x (F (Spr1 z)) (Spr2 z) y h).
+      = exist _ (proj1_sig z) (@eq_sind A x (F (proj1_sig z)) (proj2_sig z) y h).
   Proof.
     intros.
     dependent inversion h. compute. destruct z. reflexivity.
@@ -276,7 +271,7 @@ Section sigLemmas.
   Lemma eq_above_sig {A B} (F : B -> A -> Prop)
         (G := fun x => sig (fun b => F b x)) {x1 x2 : A} {h : x1 = x2}
         {z1 : G x1} {z2 : G x2} :
-    Spr1 z1 = Spr1 z2 -> z1 =⟨ h ⟩ z2.
+    proj1_sig z1 = proj1_sig z2 -> z1 =⟨ h ⟩ z2.
   Proof.
     intro Hz.
     unfold eq_above.

@@ -357,7 +357,7 @@ Section DijkstraState.
      computation on states satisfies the usual semantics of a Hoare
      triple.  *)
   Lemma soundness P Q : forall (c : PrePost P Q) s,
-      P s -> Q s (nsnd (Spr1 c s)).
+      P s -> Q s (nsnd (proj1_sig c s)).
   Proof. 
     move=> [f H] /= s pre_ok.
     cbv in H ; apply H.
@@ -780,8 +780,8 @@ Section Exceptions.
     ExcSpec Q_exn' B
     :=
       fun P Q Q_exn wp_ret wp_exn =>
-        ⦑fun post => P s/\ (forall a, Q a -> Spr1 (wp_ret a) post)
-                  s/\ (Q_exn -> Spr1 wp_exn post)⦒.
+        ⦑fun post => P s/\ (forall a, Q a -> proj1_sig (wp_ret a) post)
+                  s/\ (Q_exn -> proj1_sig wp_exn post)⦒.
   Next Obligation.
     destruct H0 as [[]] ; intuition.
   Qed.

@@ -447,11 +447,11 @@ Section ProductState.
     eexists. unfold prog. GetRight. GetLeft. apply srRet.
   Defined.
 
-  Goal forall (c:= Spr1 prog_coupling), ζSt c ≤ NI_pre_post.
+  Goal forall (c:= proj1_sig prog_coupling), ζSt c ≤ NI_pre_post.
   Proof. cbv ; intuition. Qed.
 
   Goal forall s, s (inl false) = s (inr false) ->
-            let c := Spr1 prog_coupling in
+            let c := proj1_sig prog_coupling in
             let '(npair ⟨i1,i2⟩ s') := c s in
             s' (inl false) = s' (inr false) /\ i1 = i2.
   Proof. move=> s H ; simpl ; split. assumption. by []. Qed.
@@ -463,7 +463,7 @@ Section ProductState.
     eexists. unfold prog2. GetLeft. GetRight. apply srRet.
   Defined.
 
-  Goal forall {B} (f:nat -> B) (c:= Spr1 (prog2_coupling f)),
+  Goal forall {B} (f:nat -> B) (c:= proj1_sig (prog2_coupling f)),
       ζSt c ≤ NI_pre_post.
   Proof. cbv ; intuition.
          apply q ; intuition. induction p=> //. Qed.
@@ -475,7 +475,7 @@ Section ProductState.
     GetLeft. GetRight. apply srPutLeft. apply srPutRight. apply srRet.
   Defined.
 
-  Goal forall (c:=Spr1 (prog3_coupling)), ζSt c ≤ NI_pre_post.
+  Goal forall (c:=proj1_sig (prog3_coupling)), ζSt c ≤ NI_pre_post.
   Proof. cbv ; intuition. Qed.
 
   Import Coq.Arith.PeanoNat.
@@ -491,7 +491,7 @@ Section ProductState.
     apply srPutRight; apply srPutLeft; apply srRet.
   Defined.
 
-  Goal forall (c:=Spr1 prog4_coupling), ζSt c ≤ NI_pre_post.
+  Goal forall (c:=proj1_sig prog4_coupling), ζSt c ≤ NI_pre_post.
   Proof. cbv ; intuition. Qed.
 
   Let prog5 := bind (get HIGH) (fun h => if Nat.eqb h 1 then put LOW h else put LOW 1).
@@ -511,6 +511,6 @@ Section ProductState.
 
   Print prog5_coupling.
 
-  Goal forall (c:=Spr1 prog5_coupling), ζSt c ≤ NI_pre_post.
+  Goal forall (c:=proj1_sig prog5_coupling), ζSt c ≤ NI_pre_post.
   Proof. cbv ; intuition. Qed.
 End ProductState.

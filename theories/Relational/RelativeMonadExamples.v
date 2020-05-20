@@ -58,14 +58,14 @@ Section OrdCat.
   (* Category of preordered types *)
   Program Definition OrdCat : category :=
     mkCategory {A : Type ⫳ { R : srelation A ≫ PreOrder R } }
-               (fun A B => {f : dfst A -> dfst B ≫ SProper (Spr1 (dsnd A) s==> Spr1 (dsnd B)) f})
-               (fun _ _ f g => forall x, Spr1 f x = Spr1 g x) _
+               (fun A B => {f : dfst A -> dfst B ≫ SProper (proj1_sig (dsnd A) s==> proj1_sig (dsnd B)) f})
+               (fun _ _ f g => forall x, proj1_sig f x = proj1_sig g x) _
                (fun A => ⦑id⦒)
-               (fun _ _ _ f g => ⦑fun x => Spr1 f (Spr1 g x)⦒)
+               (fun _ _ _ f g => ⦑fun x => proj1_sig f (proj1_sig g x)⦒)
                _ _ _ _.
   Next Obligation. constructor ; cbv ; intuition ; etransitivity ; eauto. Qed.
   Next Obligation. cbv ; intuition. Qed.
-  Next Obligation. cbv ; intuition; apply (Spr2 f); apply (Spr2 g)=> //. Qed.
+  Next Obligation. cbv ; intuition; apply (proj2_sig f); apply (proj2_sig g)=> //. Qed.
   Next Obligation. cbv ; intuition. rewrite H0. apply H. Qed.
 
   Program Definition discr : functor TypeCat OrdCat :=
@@ -77,11 +77,11 @@ Section OrdCat.
   Next Obligation. cbv ; intuition. Qed.
 
   Program Definition discr_ff : ff_struct discr :=
-    {| ff_invmap _ _ f := Spr1 f |}.
+    {| ff_invmap _ _ f := proj1_sig f |}.
   Next Obligation. cbv ; intuition. Qed.
 
-  Definition extract_ord {A : OrdCat} := Spr1 (dsnd A).
-  Definition extract_ord_preord A : PreOrder (@extract_ord A) := Spr2 (dsnd A).
+  Definition extract_ord {A : OrdCat} := proj1_sig (dsnd A).
+  Definition extract_ord_preord A : PreOrder (@extract_ord A) := proj2_sig (dsnd A).
   Global Existing Instance extract_ord_preord.
 
   Program Definition OrdCat_cst {A B} (b:dfst B) : OrdCat⦅A; B⦆ := ⦑fun=> b⦒.
@@ -94,7 +94,7 @@ Section OrdCatSelfEnrichment.
   Context {A B : OrdCat}.
 
   Definition ordcat_hom_ord : srelation (OrdCat⦅A;B⦆) :=
-    fun f1 f2 => forall a, Spr1 f1 a ≤ Spr1 f2 a.
+    fun f1 f2 => forall a, proj1_sig f1 a ≤ proj1_sig f2 a.
 
   Global Instance ordcat_hom_ord_preord : PreOrder ordcat_hom_ord.
   Proof. constructor ; cbv ; intuition. estransitivity ; eauto.
@@ -215,8 +215,8 @@ Section RelationalSpecMonad.
   Program Definition RSM_from_RSM0 (W : RelationalSpecMonad0) : RelationalSpecMonad :=
     mkRelativeMonad
       (fun A => ⟨⟨W ⟨nfst A, unit⟩, W ⟨unit, nsnd A⟩⟩, W A⟩)
-                    (fun A => ⟨⟨⦑fun a => Spr1 (relmon_unit W ⟨nfst A, unit⟩) ⟨a,tt⟩⦒,
-                             ⦑fun a => Spr1 (relmon_unit W ⟨unit, nsnd A⟩) ⟨tt, a⟩⦒⟩,
+                    (fun A => ⟨⟨⦑fun a => proj1_sig (relmon_unit W ⟨nfst A, unit⟩) ⟨a,tt⟩⦒,
+                             ⦑fun a => proj1_sig (relmon_unit W ⟨unit, nsnd A⟩) ⟨tt, a⟩⦒⟩,
                             relmon_unit W A⟩)
                     (fun A B f =>
                        ⟨⟨ relmon_bind W (nfst (nfst f) ∙ πord1),
@@ -230,12 +230,12 @@ Section RelationalSpecMonad.
     (* Beware, tricky script ! f_equal, rewrite, apply behave strangely *)
     - apply funext in H.
       apply (f_equal (fun f (x:nfst × unit) => f (Base.nfst x))) in H.
-      apply equal_f; apply (f_equal Spr1) ; f_equal.
+      apply equal_f; apply (f_equal proj1_sig) ; f_equal.
       simple refine (sig_eq _ _ _ _)=> //. 
     
     - apply funext in H2.
       apply (f_equal (fun f (x:unit × nsnd) => f (Base.nsnd x))) in H2.
-      apply equal_f; apply (f_equal Spr1) ; f_equal.
+      apply equal_f; apply (f_equal proj1_sig) ; f_equal.
       simple refine (sig_eq _ _ _ _)=> //. 
     
     - enough (nsnd1 = Base.nsnd y) as -> ; move=> //.
@@ -266,13 +266,13 @@ Section RelationalSpecMonad.
     intuition ; cbv.
     
     - epose (relmon_law3 W ⟨ _, unit⟩ ⟨_, unit⟩ _
-                       ⦑fun x1 => Spr1 nfst1 (Base.nfst x1) ⦒
-                       ⦑fun x0 => Spr1 nfst (Base.nfst x0)⦒) as s.
+                       ⦑fun x1 => proj1_sig nfst1 (Base.nfst x1) ⦒
+                       ⦑fun x0 => proj1_sig nfst (Base.nfst x0)⦒) as s.
       cbv in s ;  erewrite (s x) => //.
 
     - epose (relmon_law3 W ⟨unit, _⟩ ⟨unit, _⟩ _
-                       ⦑fun x1 => Spr1 nsnd1 (Base.nsnd x1) ⦒
-                       ⦑fun x0 => Spr1 nsnd2 (Base.nsnd x0)⦒) as s.
+                       ⦑fun x1 => proj1_sig nsnd1 (Base.nsnd x1) ⦒
+                       ⦑fun x0 => proj1_sig nsnd2 (Base.nsnd x0)⦒) as s.
       cbv in s ;  erewrite (s x) => //.
 
     - rewrite relmon_law3=> //.
@@ -289,11 +289,11 @@ Section OrderedMonadAsRMonad.
   Program Definition ordmonad_to_relmon : relativeMonad discr :=
     mkRelativeMonad (fun A => dpair _ (M A) ⦑@omon_rel M A⦒)
                     (fun A => ⦑@ret M A⦒)
-                    (fun A B f => ⦑bind^~ (Spr1 f)⦒) _ _ _ _.
+                    (fun A B f => ⦑bind^~ (proj1_sig f)⦒) _ _ _ _.
   Next Obligation. typeclasses eauto. Qed.
   Next Obligation. cbv ; intuition ; induction H ; sreflexivity. Qed.
   Next Obligation.
-    cbv ; intuition. apply omon_bind=> //= ? ; apply (Spr2 f); sreflexivity.
+    cbv ; intuition. apply omon_bind=> //= ? ; apply (proj2_sig f); sreflexivity.
   Qed.
   Next Obligation. cbv ; intuition ; rewrite (funext H)=> //. Qed.
   Next Obligation. rewrite /bind monad_law2 //. Qed.

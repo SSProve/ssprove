@@ -30,7 +30,7 @@ Section ExtNatSProp.
   Import SPropNotations.
   Definition extNat' := { p : nat -> SProp ≫ SProper (Sle s==> SProp_order) p }.
   Definition extNat'_rel : srelation extNat' :=
-    fun n1 n2 => pointwise_srelation nat SProp_order (Spr1 n1) (Spr1 n2).
+    fun n1 n2 => pointwise_srelation nat SProp_order (proj1_sig n1) (proj1_sig n2).
   
   Global Instance extNat'_order : PreOrder extNat'_rel.
   Proof. constructor ; cbv ; intuition. Qed.
@@ -69,12 +69,12 @@ Section Cost.
   Definition CostS := nat.
   Definition CostAr : CostS -> Type := fun _ => unit.
   Program Definition CostSpecs : forall (s:CostS), CostSpec (CostAr s) :=
-    fun n => ⦑fun post => ⦑ fun n' => s∃ (H : Box (n s<= n')), Spr1 (post tt) (@monus n' n (unbox H)) ⦒ ⦒.
+    fun n => ⦑fun post => ⦑ fun n' => s∃ (H : Box (n s<= n')), proj1_sig (post tt) (@monus n' n (unbox H)) ⦒ ⦒.
   Next Obligation.
     move: H0 => [[H'] p].
     unshelve eexists.
     constructor ; estransitivity ; eassumption.
-    move: p ; apply (Spr2 (post tt)) ; apply monus_mon ; assumption.
+    move: p ; apply (proj2_sig (post tt)) ; apply monus_mon ; assumption.
   Qed.
   Next Obligation.
     move: H0 => [H0 p] ; exists H0 ; move: p; apply H.
@@ -84,13 +84,13 @@ Section Cost.
 
   Program Definition costs {A} n (pre : SProp) (post : A -> SProp)
     : CostSpec A :=
-    ⦑ fun post' => ⦑fun n0 => pre s/\ s∃ (H : Box (n s<= n0)), forall a, post a -> Spr1 (post' a) (@monus n0 n (unbox H))⦒⦒.
+    ⦑ fun post' => ⦑fun n0 => pre s/\ s∃ (H : Box (n s<= n0)), forall a, post a -> proj1_sig (post' a) (@monus n0 n (unbox H))⦒⦒.
   Next Obligation.
     move: H0 => [? [[H']] p] ; split ; [assumption|].
     unshelve eexists.
     constructor ; estransitivity ; eassumption.
     move=> a Ha.
-    move: (p a Ha) ; apply (Spr2 (post' a)) ; apply monus_mon ; assumption.
+    move: (p a Ha) ; apply (proj2_sig (post' a)) ; apply monus_mon ; assumption.
   Qed.
   Next Obligation.
     move: H0 => [? [H0 p]]; split=> //; exists H0 ; move=> a0 Ha ; move: (p a0 Ha); apply H.

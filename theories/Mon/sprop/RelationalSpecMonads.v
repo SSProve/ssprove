@@ -37,19 +37,19 @@ Section UpdateRelationalSpecMonad.
           (wm : WUpd A1 B1) (wf : A1 × B1 -> WUpd A2 B2)
     : WUpd A2 B2 :=
     exist _
-            (fun p xx => Spr1 wm (fun ab mm => Spr1 (wf ab)
+            (fun p xx => proj1_sig wm (fun ab mm => proj1_sig (wf ab)
                                               (fun ab mm' => p ab
                                                            ⟨nfst mm' ⋅ nfst mm, nsnd mm' ⋅ nsnd mm⟩) 
                                               ⟨nfst mm ⧕ nfst xx ,
                                                nsnd mm ⧕ nsnd xx⟩) xx) _.
   Next Obligation.
-    move=> ? ? H ? ; apply (Spr2 wm).
-    cbv ; intros ab mm ; apply (Spr2 (wf ab)).
+    move=> ? ? H ? ; apply (proj2_sig wm).
+    cbv ; intros ab mm ; apply (proj2_sig (wf ab)).
     cbv ; intros ? ? ; apply H.
   Qed.
 
   Definition WUpd_rel A B : srelation (WUpd A B) :=
-    fun m1 m2 => forall p, cod_rel (Spr1 m1 p) (Spr1 m2 p).
+    fun m1 m2 => forall p, cod_rel (proj1_sig m1 p) (proj1_sig m2 p).
   Instance WUpd_ord A B : PreOrder (@WUpd_rel A B).
   Proof. constructor ; cbv ; intuition. Qed.
 
@@ -61,7 +61,7 @@ Section UpdateRelationalSpecMonad.
     @mkRSM WUpd retWUpd bindWUpd pf1 pf2 pf3 WUpd_rel WUpd_ord _.
   Next Obligation.
     cbv ; move=> x ? Hm ? ? Hf ? ? H. move: (Hm _ _ H).
-    apply (Spr2 x) => ? ? ; apply Hf.
+    apply (proj2_sig x) => ? ? ; apply Hf.
   Qed.
 
   Import FunctionalExtensionality.

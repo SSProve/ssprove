@@ -13,7 +13,7 @@ Proof.
   clearbody H.
                  
     
-  Goal forall A P (x:@sig A P) (f :forall (p:SProp) (H:p), Type), f _ (Spr2 x).
+  Goal forall A P (x:@sig A P) (f :forall (p:SProp) (H:p), Type), f _ (proj2_sig x).
 Proof.
   intros.
   destruct x.

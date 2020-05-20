@@ -196,7 +196,7 @@ Section NonDeterminism.
     Qed.
 
     Lemma Angelic_soundness {A} (P : A -> SProp) (Q : AngelicSpec A) (c : Angelic A Q) :
-      Spr1 Q P -> s∃ x (H:In x (underlying c)), P x.
+      proj1_sig Q P -> s∃ x (H:In x (underlying c)), P x.
     Proof.
       destruct Q ; destruct c as [? H]; simpl in *.
       move=> ? ; apply or_Exists. rewrite <- concat_map_nil.
@@ -493,17 +493,17 @@ Section Exceptions.
     Program Definition ExnSpec_bind :
       forall A B, ExnSpecCarrier A -> (A -> ExnSpecCarrier B) -> ExnSpecCarrier B :=
       fun A B m f =>
-        ⦑ fun p pexc => Spr1 m (fun a => Spr1 (f a) p pexc) pexc ⦒.
+        ⦑ fun p pexc => proj1_sig m (fun a => proj1_sig (f a) p pexc) pexc ⦒.
     Next Obligation.
-      eapply (Spr2 m) ; try eassumption.
-      move=> /= ? ; apply (Spr2 (f _)) ; assumption.
+      eapply (proj2_sig m) ; try eassumption.
+      move=> /= ? ; apply (proj2_sig (f _)) ; assumption.
     Qed.
 
     Program Definition ExnSpecU : Monad :=
       @mkMonad ExnSpecCarrier ExnSpec_ret ExnSpec_bind _ _ _.
 
     Definition ExnSpec_rel A : srelation (ExnSpecU A) :=
-      fun m1 m2 => ((A -> SProp) ⇢ (SProp ⇢ SProp_op_order)) (Spr1 m1) (Spr1 m2).
+      fun m1 m2 => ((A -> SProp) ⇢ (SProp ⇢ SProp_op_order)) (proj1_sig m1) (proj1_sig m2).
 
     Instance ExnSpec_order A : PreOrder (ExnSpec_rel A).
     Proof. constructor ; cbv ; intuition. Qed.
@@ -511,7 +511,7 @@ Section Exceptions.
     Program Definition ExnSpec : OrderedMonad :=
       @mkOrderedMonad ExnSpecU ExnSpec_rel _ _.
     Next Obligation.
-      apply H. move: H1 ; apply (Spr2 y) ; cbv ; intuition.
+      apply H. move: H1 ; apply (proj2_sig y) ; cbv ; intuition.
     Qed.
 
     Program Definition ExnObservation_U A : Exc A -> ExnSpec A :=
@@ -578,8 +578,8 @@ Section Exceptions.
     ExcSpec Q_exn' B
     :=
       fun P Q Q_exn wp_ret wp_exn =>
-        ⦑fun post => P s/\ (forall a, Q a -> Spr1 (wp_ret a) post)
-                  s/\ (Q_exn -> Spr1 wp_exn post)⦒.
+        ⦑fun post => P s/\ (forall a, Q a -> proj1_sig (wp_ret a) post)
+                  s/\ (Q_exn -> proj1_sig wp_exn post)⦒.
   Next Obligation.
     destruct H0 as [[]] ; intuition.
   Qed.
@@ -691,7 +691,7 @@ Section Handler.
     destruct M as [comp comp_ok].
     exists ((fix handle (m:Free P A) : Free P' B :=
               match m with
-              | retFree _ a => Spr1 (Hret a)
+              | retFree _ a => proj1_sig (Hret a)
               | @opr _ _ _ s k => Hops s (fun p => handle (k p))
               end) comp).
     simpl.
@@ -960,7 +960,7 @@ Section DijkstraMonadPolymorphic.
     Program Definition for_inv (f : forall i, Squash (start <= i < start + len) -> D unit inv)
       : D unit inv :=
       foldD_inv bounded_nat unit (fun _ _ => inv) inv _ (wkn (dret tt) Hinv0)
-                (fun i _ => f (Spr1 i) (Spr2 i)) (bseq len _).
+                (fun i _ => f (proj1_sig i) (proj2_sig i)) (bseq len _).
   End For.
 
   Notation "'For' i 'from' start 'to' endc 'using' inv 'do' c 'done'" :=

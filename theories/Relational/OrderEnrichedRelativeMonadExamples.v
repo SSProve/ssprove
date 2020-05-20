@@ -61,8 +61,8 @@ Section OrdCat.
   Import SPropNotations.
   (* Category of preordered types *)
   Definition ordType := {A : Type ⫳ { R : relation A ≫ PreOrder R } }.
-  Definition extract_ord {A : ordType} := Spr1 (dsnd A).
-  Definition extract_ord_preord A : PreOrder (@extract_ord A) := Spr2 (dsnd A).
+  Definition extract_ord {A : ordType} := proj1_sig (dsnd A).
+  Definition extract_ord_preord A : PreOrder (@extract_ord A) := proj2_sig (dsnd A).
   Global Existing Instance extract_ord_preord.
   Notation " x ≤ y " := (extract_ord x y).
 
@@ -107,7 +107,7 @@ Section OrdCat.
   Next Obligation. apply sig_eq. compute. reflexivity. Qed.
 
   Program Definition discr_ff : ff_struct discr :=
-    {| ff_invmap _ _ f := Spr1 f |}.
+    {| ff_invmap _ _ f := proj1_sig f |}.
   Next Obligation. cbv ; intuition. Qed.
 
   Notation " X ---> Y " := (X -> dfst Y) (at level 99).
@@ -186,7 +186,7 @@ Section OrderedMonadAsRMonad.
   Program Definition ordmonad_to_relmon : unarySpecMonad :=
     mkOrdRelativeMonad (fun A => dpair _ (M A) ⦑@omon_rel M A⦒)
                        (fun A => ⦑@ret M A⦒)
-                       (fun A B f => ⦑bind^~ (Spr1 f)⦒) _ _ _ _.
+                       (fun A B f => ⦑bind^~ (proj1_sig f)⦒) _ _ _ _.
   Next Obligation. typeclasses eauto. Qed.
   Next Obligation. cbv ; intuition ; induction H ; reflexivity. Qed.
   Next Obligation.
@@ -283,7 +283,7 @@ Section RelationalSpecMonadZeroFromOrderedMonad.
 End RelationalSpecMonadZeroFromOrderedMonad.
 
 
-Notation "wm ≫= wf" := (Spr1 (ord_relmon_bind _ wf) wm) (at level 50).
+Notation "wm ≫= wf" := (proj1_sig (ord_relmon_bind _ wf) wm) (at level 50).
 
 
 
@@ -386,8 +386,8 @@ Section NaiveDefinition.
   (* Program Definition RSM_from_RSM0 (W : RelationalSpecMonad0) : preRelationalSpecMonad := *)
   (*   mkOrdRelativeMonad *)
   (*     (fun A => ⟨⟨W ⟨nfst A, unit⟩, W ⟨unit, nsnd A⟩⟩, W A⟩) *)
-  (*                   (fun A => ⟨⟨⦑fun a => Spr1 (ord_relmon_unit W ⟨nfst A, unit⟩) ⟨a,tt⟩⦒, *)
-  (*                            ⦑fun a => Spr1 (ord_relmon_unit W ⟨unit, nsnd A⟩) ⟨tt, a⟩⦒⟩, *)
+  (*                   (fun A => ⟨⟨⦑fun a => proj1_sig (ord_relmon_unit W ⟨nfst A, unit⟩) ⟨a,tt⟩⦒, *)
+  (*                            ⦑fun a => proj1_sig (ord_relmon_unit W ⟨unit, nsnd A⟩) ⟨tt, a⟩⦒⟩, *)
   (*                           ord_relmon_unit W A⟩) *)
   (*                   (fun A B f => *)
   (*                      ⟨⟨ ord_relmon_bind W (nfst (nfst f) ∙ πord1), *)
@@ -413,22 +413,22 @@ Section NaiveDefinition.
   (*   intuition. *)
   (*   f_equal;[f_equal|]; apply: sig_eq=> /=. *)
   (*   - extensionality x; set f := ⦑_⦒. *)
-  (*     move: (ord_relmon_law2 W ⟨_,unit⟩ _ f)=> /(f_equal Spr1) /(equal_f ^~ ⟨_, _⟩)//=. *)
+  (*     move: (ord_relmon_law2 W ⟨_,unit⟩ _ f)=> /(f_equal proj1_sig) /(equal_f ^~ ⟨_, _⟩)//=. *)
   (*   - extensionality x; set f := ⦑_⦒. *)
-  (*     move: (ord_relmon_law2 W ⟨unit,_⟩ _ f)=> /(f_equal Spr1) /(equal_f ^~ ⟨_, _⟩)//=. *)
-  (*   - move: (ord_relmon_law2 W _ _ nsnd) => /(f_equal Spr1) //. *)
+  (*     move: (ord_relmon_law2 W ⟨unit,_⟩ _ f)=> /(f_equal proj1_sig) /(equal_f ^~ ⟨_, _⟩)//=. *)
+  (*   - move: (ord_relmon_law2 W _ _ nsnd) => /(f_equal proj1_sig) //. *)
   (* Qed. *)
   (* Next Obligation. *)
   (*   intuition ; cbv. *)
   (*   f_equal;[f_equal|]; apply: sig_eq=> /=. (* ; extensionality x. *) *)
   (*   - epose (ord_relmon_law3 W ⟨ _, unit⟩ ⟨_, unit⟩ _ *)
-  (*                      ⦑fun x1 => Spr1 nfst1 (Base.nfst x1) ⦒ *)
-  (*                      ⦑fun x0 => Spr1 nfst (Base.nfst x0)⦒) as s. *)
-  (*     extensionality x; move: s => /(f_equal Spr1) /(equal_f ^~ x) s; apply s. *)
+  (*                      ⦑fun x1 => proj1_sig nfst1 (Base.nfst x1) ⦒ *)
+  (*                      ⦑fun x0 => proj1_sig nfst (Base.nfst x0)⦒) as s. *)
+  (*     extensionality x; move: s => /(f_equal proj1_sig) /(equal_f ^~ x) s; apply s. *)
   (*   - epose (ord_relmon_law3 W ⟨unit, _⟩ ⟨unit, _⟩ _ *)
-  (*                      ⦑fun x1 => Spr1 nsnd1 (Base.nsnd x1) ⦒ *)
-  (*                      ⦑fun x0 => Spr1 nsnd2 (Base.nsnd x0)⦒) as s. *)
-  (*     extensionality x; move: s => /(f_equal Spr1) /(equal_f ^~ x) s; apply s. *)
+  (*                      ⦑fun x1 => proj1_sig nsnd1 (Base.nsnd x1) ⦒ *)
+  (*                      ⦑fun x0 => proj1_sig nsnd2 (Base.nsnd x0)⦒) as s. *)
+  (*     extensionality x; move: s => /(f_equal proj1_sig) /(equal_f ^~ x) s; apply s. *)
   (*   - rewrite ord_relmon_law3=> //. *)
   (* Qed. *)
 
@@ -572,13 +572,13 @@ Section ToNaiveDefinitions.
     unshelve feq_npair.
     apply: (ord_relmon_law2 W1).
     apply: (ord_relmon_law2 W2).
-    apply sig_eq, (f_equal Spr1), rsmc_law2.
+    apply sig_eq, f_equal, rsmc_law2.
   Qed.
   Next Obligation.
     unshelve feq_npair.
     apply: (ord_relmon_law3 W1).
     apply: (ord_relmon_law3 W2).
-    apply sig_eq, (f_equal Spr1), rsmc_law3.
+    apply sig_eq, f_equal, rsmc_law3.
   Qed.
 
 
@@ -589,13 +589,13 @@ Section ToNaiveDefinitions.
   (* Program Definition θ : preRelationalEffectObservation M1 M2 W := *)
   (*   mkpreREO M1 M2 W (fun A => ⟨⟨θ1 (nfst A), θ2 (nsnd A)⟩, θW⟩) _ _. *)
   (* Next Obligation. *)
-  (*   f_equal ; [f_equal|]; apply sig_eq ; apply: (f_equal Spr1). *)
+  (*   f_equal ; [f_equal|]; apply sig_eq ; apply: (f_equal proj1_sig). *)
   (*   apply (rmm_law1 _ _ _ _ θ1). *)
   (*   apply (rmm_law1 _ _ _ _ θ2). *)
   (*   apply: reoc_law1. *)
   (* Qed. *)
   (* Next Obligation. *)
-  (*   f_equal ; [f_equal|]; apply sig_eq ; apply: (f_equal Spr1). *)
+  (*   f_equal ; [f_equal|]; apply sig_eq ; apply: (f_equal proj1_sig). *)
   (*   apply (rmm_law2 _ _ _ _ θ1). *)
   (*   apply (rmm_law2 _ _ _ _ θ2). *)
   (*   apply (reoc_law2 θ1 θ2). *)

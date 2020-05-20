@@ -39,7 +39,7 @@ Section Algebra.
 
   Definition D_wp := @Dθ _ _ mor.
 
-  Definition underlying {A spec} : D_wp A spec -> M A := Spr1.
+  Definition underlying {A spec} : D_wp A spec -> M A := @proj1_sig _ _.
 
 End Algebra.
 
@@ -240,7 +240,7 @@ Section FreeDijkstraMonads.
   Inductive FreeD (A:Type) : W A -> Type :=
   | FDRet : forall (a:A) (w:W A), ret a ≤ w -> FreeD w
   | FDop : forall s w (w':ran w (OpSpecs s)),
-      (forall x:P s, FreeD (Spr1 w' x)) -> FreeD w.
+      (forall x:P s, FreeD (proj1_sig w' x)) -> FreeD w.
 
   Definition fd_dret A (a:A) : FreeD (ret a) :=
     @FDRet _ a (ret a) ltac:(reflexivity).
@@ -251,7 +251,7 @@ Section FreeDijkstraMonads.
     revert w2 Hw ; induction m=> w2 Hw.
     simple refine (@FDRet _ a _ _). etransitivity ; eassumption.
     simple refine (@FDop _ s _ _ (fun x => _)).
-    apply (OpPartialRan (w0:=Spr1 w')).
+    apply (OpPartialRan (w0:=proj1_sig w')).
     destruct w' as [? [? ?]] ; etransitivity ; eassumption.
     simpl.
     apply (X x).
@@ -265,7 +265,7 @@ Section FreeDijkstraMonads.
     apply (fd_weaken (f0 a)). rewrite -monad_law1;
                                apply omon_bind; [assumption| reflexivity].
     simple refine (@FDop _ s  _ _ (fun x => _)).
-    apply (OpPartialRan (w0:=fun x => bind (Spr1 w' x) wf0)).
+    apply (OpPartialRan (w0:=fun x => bind (proj1_sig w' x) wf0)).
     rewrite /bind -monad_law3.
     apply omon_bind ; [|reflexivity].
     destruct w' as [? [? ?]] ; assumption.
@@ -274,9 +274,9 @@ Section FreeDijkstraMonads.
     simpl.
     apply (fd_weaken (X x wf0 f0)).
     match goal with
-    | [|- _≤ Spr1 ?X _] => destruct X as [w'' [H1 H2]]
+    | [|- _≤ proj1_sig ?X _] => destruct X as [w'' [H1 H2]]
     end ; simpl in *.
-    apply (H2 (fun x => bind (Spr1 w' x) wf0)).
+    apply (H2 (fun x => bind (proj1_sig w' x) wf0)).
     rewrite /bind -monad_law3. apply omon_bind ; [|reflexivity].
     destruct w' as [? [? ?]] ; assumption.
   Defined.
@@ -405,17 +405,17 @@ End SumOfTheories.
 (*     eval (exist _ (retFree _ z) _) := wkn (dm_ret DBase z) _ ; *)
 (*     eval (exist _ (@opr _ _ _ (inl s) k) w) := *)
 (*       wkn (dm_bind (perform_s s) *)
-(*                     (fun ps => @eval _ (Spr1 (Hran_s w) ps) d (exist _ (k ps) _))) _ ; *)
+(*                     (fun ps => @eval _ (proj1_sig (Hran_s w) ps) d (exist _ (k ps) _))) _ ; *)
         
 
 (*     eval (exist _ (@opr _ _ _ (inr d') k) w) := *)
 (*       let m (pre : Squash (prec d' d)) := @eval _ _ d' (f d') in *)
-(*       wkn (dm_bind (intro_assume m) (fun ps => @eval C (Spr1 (Hran_inv w) ps) d (exist _ (k ps) _))) _. *)
+(*       wkn (dm_bind (intro_assume m) (fun ps => @eval C (proj1_sig (Hran_inv w) ps) d (exist _ (k ps) _))) _. *)
 (*   Next Obligation. *)
 (*     match goal with *)
-(*     | [|- context [Spr1 ?T]] => *)
+(*     | [|- context [proj1_sig ?T]] => *)
 (*       let H0 := fresh "H" in *)
-(*       move: (Spr2 T) => /= [_ H0] ; apply (H0 _ w ps) *)
+(*       move: (proj2_sig T) => /= [_ H0] ; apply (H0 _ w ps) *)
 (*     end. *)
 (*   Qed. *)
 (*   Next Obligation. *)
@@ -423,16 +423,16 @@ End SumOfTheories.
 (*   Qed. *)
 (*   Next Obligation. *)
 (*     match goal with *)
-(*     | [|- context [Spr1 ?T]] => *)
+(*     | [|- context [proj1_sig ?T]] => *)
 (*       let H0 := fresh "H" in *)
-(*       move: (Spr2 T) => /= [H0 _] ; apply H0 *)
+(*       move: (proj2_sig T) => /= [H0 _] ; apply H0 *)
 (*     end. *)
 (*   Qed. *)
 (*   Next Obligation. *)
 (*     match goal with *)
-(*     | [|- context [Spr1 ?T]] => *)
+(*     | [|- context [proj1_sig ?T]] => *)
 (*       let H0 := fresh "H" in *)
-(*       move: (Spr2 T) => /= [_ H0] ; apply (H0 _ w ps) *)
+(*       move: (proj2_sig T) => /= [_ H0] ; apply (H0 _ w ps) *)
 (*     end. *)
 (*   Qed. *)
 (*   Next Obligation. *)
@@ -440,9 +440,9 @@ End SumOfTheories.
 (*   Qed. *)
 (*   Next Obligation. *)
 (*     match goal with *)
-(*     | [|- context [Spr1 ?T]] => *)
+(*     | [|- context [proj1_sig ?T]] => *)
 (*       let H0 := fresh "H" in *)
-(*       move: (Spr2 T) => /= [H0 _] ; apply H0 *)
+(*       move: (proj2_sig T) => /= [H0 _] ; apply H0 *)
 (*     end. *)
 (*   Qed. *)
 
@@ -525,9 +525,9 @@ End SumOfTheories.
 (*   Import FunctionalExtensionality. *)
 
 (*   Definition Pure_car A (w:W A) : Type := *)
-(*     { f : forall p, Spr1 w p -> { a : A ≫ p a } *)
+(*     { f : forall p, proj1_sig w p -> { a : A ≫ p a } *)
 (*     ≫ forall p p' (H : Pred_op_order p' p) Hwp Hwp', *)
-(*           Squash (Spr1 (f p Hwp) = Spr1 (f p' Hwp')) }. *)
+(*           Squash (proj1_sig (f p Hwp) = proj1_sig (f p' Hwp')) }. *)
 
 (*   Program Definition Pure_ret A (a:A) : Pure_car (ret a) := *)
 (*     ⦑fun p Hpre => exist _ a Hpre⦒. *)
@@ -541,26 +541,26 @@ End SumOfTheories.
 (*   Program Definition Pure_bind A B wm wf (m:@Pure_car A wm) *)
 (*           (f: forall a, @Pure_car B (wf a)) : @Pure_car B (bind wm wf) := *)
 (*     ⦑fun p Hpre => *)
-(*       let m0 := Spr1 m _ Hpre in  *)
-(*       Spr1 (f (Spr1 m0)) p (Spr2 m0)⦒. *)
+(*       let m0 := proj1_sig m _ Hpre in  *)
+(*       proj1_sig (f (proj1_sig m0)) p (proj2_sig m0)⦒. *)
 (*   Next Obligation. *)
-(*     unshelve epose (Hm := Spr2 m _ _ _ Hwp Hwp'). *)
+(*     unshelve epose (Hm := proj2_sig m _ _ _ Hwp Hwp'). *)
 (*     cbv ; intuition. *)
 (*     destruct Hm as [Hm]. *)
-(*     unshelve epose (Hf := Spr2 (f (Spr1 (Spr1 m (fun a : A => Spr1 (wf a) p) Hwp))) p p' H _ _). *)
-(*     exact (Spr2 (Spr1 m (fun a : A => Spr1 (wf a) p) Hwp)). *)
-(*     unshelve eapply (Spr2 (wf _) _ _). *)
+(*     unshelve epose (Hf := proj2_sig (f (proj1_sig (proj1_sig m (fun a : A => proj1_sig (wf a) p) Hwp))) p p' H _ _). *)
+(*     exact (proj2_sig (proj1_sig m (fun a : A => proj1_sig (wf a) p) Hwp)). *)
+(*     unshelve eapply (proj2_sig (wf _) _ _). *)
 (*     exact p. *)
 (*     exact H. *)
-(*     exact (Spr2 (Spr1 m (fun a : A => Spr1 (wf a) p) Hwp)). *)
+(*     exact (proj2_sig (proj1_sig m (fun a : A => proj1_sig (wf a) p) Hwp)). *)
 (*     destruct Hf as [Hf]. *)
 (*     constructor. *)
 (*     rewrite Hf. *)
-(*     assert (forall a a' p Hp Hp' (Ha:a = a'), Spr1 (f a) p Hp = Spr1 (f a') p Hp'). *)
+(*     assert (forall a a' p Hp Hp' (Ha:a = a'), proj1_sig (f a) p Hp = proj1_sig (f a') p Hp'). *)
 (*     intros. *)
 (*     refine (match Ha as H0 in _ = a0 return *)
 (*                   forall (H:a' = a0), *)
-(*                     Spr1 (f a) p0 Hp = Spr1 (f a0) p0 (eq_sind (fun a => Spr1 (wf a) p0) Hp' H) *)
+(*                     proj1_sig (f a) p0 Hp = proj1_sig (f a0) p0 (eq_sind (fun a => proj1_sig (wf a) p0) Hp' H) *)
 (*             with *)
 (*             | eq_refl => _ *)
 (*             end eq_refl). *)
@@ -572,8 +572,8 @@ End SumOfTheories.
 
 (*   Program Definition Pure_wkn A w w' (m:@Pure_car A w) (Hww':w ≤ w') *)
 (*     : @Pure_car A w' *)
-(*     := ⦑fun p Hpre => Spr1 m p (Hww' p Hpre)⦒. *)
-(*   Next Obligation. apply (Spr2 m)=> //. Qed. *)
+(*     := ⦑fun p Hpre => proj1_sig m p (Hww' p Hpre)⦒. *)
+(*   Next Obligation. apply (proj2_sig m)=> //. Qed. *)
 
 (*   Lemma sprop_app_irr' *)
 (*     : forall {p:SProp} {Z : Type} (f : p -> Z) (x1 x2 : p), f x1 ≡ f x2. *)
@@ -594,17 +594,17 @@ End SumOfTheories.
 (*     cbv. *)
 (*     apply Monoid.sig_sEq. *)
 (*     simpl ;  funext p ; funext_s Hpre. *)
-(*     assert (forall a a' p Hp Hp' (Ha:a ≡ a'), Spr1 (f a) p Hp ≡ Spr1 (f a') p Hp'). *)
+(*     assert (forall a a' p Hp Hp' (Ha:a ≡ a'), proj1_sig (f a) p Hp ≡ proj1_sig (f a') p Hp'). *)
 (*     intros. *)
 (*     refine (match Ha as H0 in _ ≡ a0 return *)
 (*                   forall (H:a' ≡ a0), *)
-(*                     Spr1 (f a) p0 Hp ≡ Spr1 (f a0) p0 (sEq_sind _ _ (fun a _ => Spr1 (wf a) p0) Hp' _ H) *)
+(*                     proj1_sig (f a) p0 Hp ≡ proj1_sig (f a0) p0 (sEq_sind _ _ (fun a _ => proj1_sig (wf a) p0) Hp' _ H) *)
 (*             with *)
 (*             | sEq_refl _ => _ *)
 (*             end (sEq_refl _)). *)
 (*     intros. apply sprop_app_irr'. *)
 (*     apply H. *)
-(*     epose (Spr2 m (fun a : A => Spr1 (wf' a) p) _ _ _ _). *)
+(*     epose (proj2_sig m (fun a : A => proj1_sig (wf' a) p) _ _ _ _). *)
 (*     destruct s as [s]. *)
 (*     rewrite s. *)
 (*     reflexivity. *)
@@ -615,10 +615,10 @@ End SumOfTheories.
 
 (*   Program Definition pure_intro_assume A (pre:Prop) w (f : pre -> Pure A w) *)
 (*     : Pure A (assume_p pre w) := *)
-(*     ⦑fun p Hpre => Spr1 (f _) p _⦒. *)
+(*     ⦑fun p Hpre => proj1_sig (f _) p _⦒. *)
 (*   Next Obligation. destruct Hpre ; assumption. Qed. *)
 (*   Next Obligation. destruct Hpre ; assumption. Qed. *)
-(*   Next Obligation. apply (Spr2 (f _))=> //. Qed. *)
+(*   Next Obligation. apply (proj2_sig (f _))=> //. Qed. *)
 (* End Pure. *)
 
 (* (****************************************************************************) *)
@@ -655,10 +655,10 @@ End SumOfTheories.
 (*     cbv ; intuition. *)
 (*   Qed. *)
 
-(*   Program Definition fib' n := Spr1 (@fib n) (fun _ => True) _. *)
+(*   Program Definition fib' n := proj1_sig (@fib n) (fun _ => True) _. *)
 (*   Next Obligation. intuition. Qed. *)
 
-(*   (* Goal exists x, x = Spr1 (fib' 2). *) *)
+(*   (* Goal exists x, x = proj1_sig (fib' 2). *) *)
 (*   (* Proof. *) *)
 (*   (*   eexists. *) *)
 (*   (*   rewrite /fib' /fib /ffix. *) *)
@@ -667,7 +667,7 @@ End SumOfTheories.
 (*   (*   reflexivity. *) *)
 (*   (* Qed. *) *)
 
-(*   (* Goal exists x, x = Spr1 (fib' 0). *) *)
+(*   (* Goal exists x, x = proj1_sig (fib' 0). *) *)
 (*   (* Proof. *) *)
 (*   (*   eexists. *) *)
 (*   (*   rewrite /fib' /fib /ffix. *) *)
@@ -676,7 +676,7 @@ End SumOfTheories.
 (*   (*   reflexivity. *) *)
 (*   (* Qed. *) *)
 
-(*   (* Goal exists x, x = Spr1 (fib' 3). *) *)
+(*   (* Goal exists x, x = proj1_sig (fib' 3). *) *)
 (*   (* Proof. *) *)
 (*   (*   eexists. *) *)
 (*   (*   rewrite /fib' /fib /ffix. *) *)

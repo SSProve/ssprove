@@ -57,7 +57,7 @@ Section Erreptions.
     end.
 
   Program Definition catch_spec {A} (w werr: dfst (RelErr A)) : dfst (RelErr A):=
-    ⦑fun post pexc => Spr1 w post (fun _ => Spr1 werr post pexc) ⦒.
+    ⦑fun post pexc => proj1_sig w post (fun _ => proj1_sig werr post pexc) ⦒.
   Next Obligation.
     move=> ? ? ? ? ? ?; apply: w∙2=> //; move=> ? ; apply: werr∙2 => //.
   Qed.
@@ -113,10 +113,10 @@ Section ErrCollapse.
   Context (θErr : RelationalEffectObservation0 Err1 Err2 WErr).
   Context (ϕ1 : (E -> Prop) -> E1 -> Prop)
           (H1 : forall A2 (a2:A2) post e1 pexc,
-              Spr1 (Spr1 (θErr ⟨_,_⟩) ⟨raise e1, ret a2⟩) post pexc = ϕ1 pexc e1)
+              proj1_sig (proj1_sig (θErr ⟨_,_⟩) ⟨raise e1, ret a2⟩) post pexc = ϕ1 pexc e1)
           (ϕ2 : (E -> Prop) -> E2 -> Prop)
           (H2 : forall A1 (a1:A1) post e2 pexc,
-              Spr1 (Spr1 (θErr ⟨_,_⟩) ⟨ret a1, raise e2⟩) post pexc = ϕ2 pexc e2).
+              proj1_sig (proj1_sig (θErr ⟨_,_⟩) ⟨ret a1, raise e2⟩) post pexc = ϕ2 pexc e2).
 
   Import SPropNotations.
   (*θErr applied to ⟨raise e1, raise e2⟩ does not depend on e1 or e2 *)
@@ -125,12 +125,12 @@ Section ErrCollapse.
     move=> pexc e1 e2.
     epose (rmm_law2 _ _ _ _ θErr ⟨_,_⟩ ⟨_,_⟩ ⟨fun (x:False) => ret x, fun (x:unit) => raise e2⟩) as e.
     apply (f_equal (fun h => h∙1 ⟨raise e1, ret tt⟩)) in e.
-    apply (f_equal (fun h => Spr1 h (fun=> True) pexc)) in e.
+    apply (f_equal (fun h => proj1_sig h (fun=> True) pexc)) in e.
     cbv in e; rewrite H1 in e; rewrite -e ; clear e.
 
     epose (rmm_law2 _ _ _ _ θErr ⟨_,_⟩ ⟨_,_⟩ ⟨fun=> raise e1,fun (x:False)=> ret x⟩ ) as e.
     apply (f_equal (fun h => h∙1 ⟨ret tt, raise e2⟩)) in e.
-    apply (f_equal (fun h => Spr1 h (fun=> True) pexc)) in e.
+    apply (f_equal (fun h => proj1_sig h (fun=> True) pexc)) in e.
     cbv in e; rewrite H2 in e; rewrite -e ; clear e.
     reflexivity.
   Qed.
