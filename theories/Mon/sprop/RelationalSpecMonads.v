@@ -28,7 +28,7 @@ Section UpdateRelationalSpecMonad.
     { f : (A × B -> M1 × M2 -> SProp) -> X1 × X2 -> SProp ≫
       SProper (@dom_rel A B s==> cod_rel) f}. 
   Program Definition retWUpd A B (ab : A × B) : WUpd A B:=
-    Sexists _ (fun p xx => p ab ⟨e M1, e M2⟩) _.
+    exist _ (fun p xx => p ab ⟨e M1, e M2⟩) _.
   Next Obligation.
    move=> ? ? H ? ; apply H.
   Qed.
@@ -36,7 +36,7 @@ Section UpdateRelationalSpecMonad.
   Program Definition bindWUpd A1 B1 A2 B2
           (wm : WUpd A1 B1) (wf : A1 × B1 -> WUpd A2 B2)
     : WUpd A2 B2 :=
-    Sexists _
+    exist _
             (fun p xx => Spr1 wm (fun ab mm => Spr1 (wf ab)
                                               (fun ab mm' => p ab
                                                            ⟨nfst mm' ⋅ nfst mm, nsnd mm' ⋅ nsnd mm⟩) 
@@ -68,20 +68,20 @@ Section UpdateRelationalSpecMonad.
 
   Program Definition UpdRelSpec := UpdRelSpecFromLaws _ _ _.
   Next Obligation.
-    apply Ssig_eq. extensionality p0 ; extensionality xx.
+    apply sig_eq. extensionality p0 ; extensionality xx.
     cbv. f_equal.
     extensionality ab ; extensionality mm' ; rewrite !monoid_law2 //.
     rewrite !monact_unit //.
   Qed.
 
   Next Obligation.
-    apply Ssig_eq. extensionality p.
+    apply sig_eq. extensionality p.
     cbv. extensionality ab ; f_equal. extensionality ab0 ; extensionality mm'.
     rewrite !monoid_law1 //.
   Qed.
 
   Next Obligation.
-    apply Ssig_eq; extensionality p ; extensionality xx.
+    apply sig_eq; extensionality p ; extensionality xx.
     cbv.
     let t :=
         f_equal ; [let Hab := fresh "ab" in
@@ -150,7 +150,7 @@ Section UpdateRelationalEffectObservation.
 
   Program Definition UpdateREO : RelationalEffectObservation MM W :=
     @mkREO _ _ (fun A B ff =>
-                  Sexists _
+                  exist _
                           (fun p xx =>
                              let yy := apply_prod (dfst ff) xx in
                              let yl := nfst yy in

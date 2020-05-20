@@ -219,7 +219,7 @@ Section KanExtensionIsoStable.
   Import SPropNotations.
   Notation "w ≅ w'" := (w ≤ w' s/\ w' ≤ w) (at level 65).
   Context (Hran:ran f p) (f':W C) (p':W B) (Hf : f ≅ f') (Hp : p ≅ p').
-  Program Definition ran_iso : ran f' p' := Sexists _ (Spr1 Hran) _.
+  Program Definition ran_iso : ran f' p' := exist _ (Spr1 Hran) _.
   Next Obligation.
     destruct Hf as [Hf1 Hf2] ; destruct Hp as [Hp1 Hp2] ; destruct (Spr2 Hran) as [Hran1 Hran2].
     split.
@@ -432,7 +432,7 @@ Section OfMorphism.
     { m : M A ≫ θ A m ≤ w }.
 
   Program Definition Dθ_ret A (a : A): Dθ_carrier (ret a) :=
-    Sexists _ (ret a) _.
+    exist _ (ret a) _.
   Next Obligation.
     rewrite mon_morph_ret ; reflexivity.
   Qed.
@@ -440,14 +440,14 @@ Section OfMorphism.
   Program Definition Dθ_bind A B (w : W A) (f : A -> W B)
           (d : Dθ_carrier w) (g : forall a, Dθ_carrier (f a)) :
     Dθ_carrier (bind w f) :=
-    Sexists _ (bind (Spr1 d) (fun a => Spr1 ( g a))) _.
+    exist _ (bind (Spr1 d) (fun a => Spr1 ( g a))) _.
   Next Obligation.
     rewrite mon_morph_bind.
     apply (omon_bind (Spr2 d) (fun a => Spr2 (g a))).
   Qed.
 
   Program Definition Dθ_wkn A (w w' : W A) (d: Dθ_carrier w) (H : w ≤[W] w') : Dθ_carrier w' :=
-    Sexists _ (Spr1 d) _.
+    exist _ (Spr1 d) _.
   Next Obligation.
     transitivity w. exact (Spr2 d). assumption.
   Qed.
@@ -455,9 +455,9 @@ Section OfMorphism.
   Program Definition Dθ : Dijkstra W :=
     @mkDM W Dθ_carrier Dθ_ret Dθ_bind Dθ_wkn _ _ _ _ _ _.
   (* Anomaly when trying to factorize *)
-  Next Obligation. apply eq_above_Ssig ; cbv ; by rewrite monad_law1. Qed.
-  Next Obligation. apply eq_above_Ssig ; cbv ; by rewrite monad_law2. Qed.
-  Next Obligation. apply eq_above_Ssig ; cbv ; by rewrite monad_law3. Qed.
+  Next Obligation. apply eq_above_sig ; cbv ; by rewrite monad_law1. Qed.
+  Next Obligation. apply eq_above_sig ; cbv ; by rewrite monad_law2. Qed.
+  Next Obligation. apply eq_above_sig ; cbv ; by rewrite monad_law3. Qed.
 (*in the remaining obligations one use proof_irrelevance, which implies
 that equality of sigma types is equivalent to equality of carriers members*)
   Next Obligation. destruct m as (m,e). Print Dθ_wkn.
@@ -498,7 +498,7 @@ have hintUnif :
 apply ax_proof_irrel. rewrite hintUnif. reflexivity.
 Qed.
 
-  Program Definition lift {A} (m : M A) : Dθ A (θ A m) := Sexists _ m _.
+  Program Definition lift {A} (m : M A) : Dθ A (θ A m) := exist _ m _.
   Next Obligation. reflexivity. Qed.
 
 End OfMorphism.
@@ -516,26 +516,26 @@ Section OfRelation.
 
 
   Definition Drel_ret A (a : A): Drel_carrier (ret a) :=
-    let initCand := (Sexists _ (@ret M A a) (mrel_ret R a)) in
+    let initCand := (exist _ (@ret M A a) (mrel_ret R a)) in
     initCand.
 
   Program Definition Drel_bind A B (wm : W A) (wf : A -> W B)
           (m : Drel_carrier wm) (f : forall a, Drel_carrier (wf a)):
     Drel_carrier (bind wm wf) :=
-    Sexists _ (bind (Spr1 m) (fun a => Spr1 (f a))) _.
+    exist _ (bind (Spr1 m) (fun a => Spr1 (f a))) _.
   Next Obligation.
     apply mrel_bind ; [exact (Spr2 m)| intros a ; apply (Spr2 (f a))].
   Qed.
 
   Program Definition Drel_wkn A (w w' : W A) (m : Drel_carrier w) (Hww' : w ≤[W] w')
     : Drel_carrier w' :=
-    Sexists _ (Spr1 m) (mid_upper_closed Hww' (Spr2 m)).
+    exist _ (Spr1 m) (mid_upper_closed Hww' (Spr2 m)).
 
   Program Definition Drel : Dijkstra W :=
     @mkDM W Drel_carrier Drel_ret Drel_bind Drel_wkn _ _ _ _ _ _.
-  Next Obligation. apply eq_above_Ssig ; cbv ; rewrite !monad_law1 //. Qed.
-  Next Obligation. apply eq_above_Ssig ; cbv ; rewrite !monad_law2 //. Qed.
-  Next Obligation. apply eq_above_Ssig ; cbv ; rewrite !monad_law3 //. Qed.
+  Next Obligation. apply eq_above_sig ; cbv ; rewrite !monad_law1 //. Qed.
+  Next Obligation. apply eq_above_sig ; cbv ; rewrite !monad_law2 //. Qed.
+  Next Obligation. apply eq_above_sig ; cbv ; rewrite !monad_law3 //. Qed.
   Next Obligation. compute. destruct m as (m,bla). f_equal.
     apply ax_proof_irrel.
   Qed.

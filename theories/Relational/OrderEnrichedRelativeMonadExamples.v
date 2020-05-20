@@ -81,19 +81,19 @@ Section OrdCat.
     apply Hx. apply GX.
   Qed.
   Next Obligation. cbv ; intuition. Qed.
-  Next Obligation. cbv ; intuition; apply f∙2; apply g∙2 => //. Qed.
+  Next Obligation. cbv ; intuition. apply H3; apply H2 => //. Qed.
   Next Obligation.
     cbv ; intuition; etransitivity; first (apply: x∙2; apply: H0).
     apply: H.
   Qed.
-  Next Obligation. apply Ssig_eq ; compute. Search _ "eta".
+  Next Obligation. apply sig_eq ; compute. Search _ "eta".
     rewrite -FunctionalExtensionality.eta_expansion. reflexivity.
   Qed.
-  Next Obligation. apply Ssig_eq ; compute.
+  Next Obligation. apply sig_eq ; compute.
     rewrite -FunctionalExtensionality.eta_expansion. reflexivity.
   Qed.
   Next Obligation.
-    apply Ssig_eq ; compute. reflexivity.
+    apply sig_eq ; compute. reflexivity.
   Qed.
 
   Program Definition discr : ord_functor TypeCat OrdCat :=
@@ -103,8 +103,8 @@ Section OrdCat.
   Next Obligation. intuition. Qed.
   Next Obligation. intuition. Qed.
   Next Obligation. cbv ; intuition. Qed.
-  Next Obligation. apply Ssig_eq. reflexivity. Qed.
-  Next Obligation. apply Ssig_eq. compute. reflexivity. Qed.
+  Next Obligation. apply sig_eq. reflexivity. Qed.
+  Next Obligation. apply sig_eq. compute. reflexivity. Qed.
 
   Program Definition discr_ff : ff_struct discr :=
     {| ff_invmap _ _ f := Spr1 f |}.
@@ -113,7 +113,7 @@ Section OrdCat.
   Notation " X ---> Y " := (X -> dfst Y) (at level 99).
 
   Program Definition to_discr {X Y} (f : X ---> Y) : OrdCat⦅discr X; Y⦆ := ⦑f⦒.
-  Next Obligation. apply Ssig_eq. compute. reflexivity. Qed.
+  Next Obligation. apply sig_eq. compute. reflexivity. Qed.
 
 
   Program Definition OrdCat_cst {A B} (b:dfst B) : OrdCat⦅A; B⦆ := ⦑fun=> b⦒.
@@ -190,12 +190,12 @@ Section OrderedMonadAsRMonad.
   Next Obligation. typeclasses eauto. Qed.
   Next Obligation. cbv ; intuition ; induction H ; reflexivity. Qed.
   Next Obligation.
-    cbv ; intuition. apply omon_bind=> //= ? ; apply (Spr2 f); reflexivity.
+    cbv ; intuition. apply omon_bind=> //= ?. apply H; reflexivity.
   Qed.
   Next Obligation. cbv ; intuition. apply omon_bind=> //. reflexivity. Qed.
-  Next Obligation. apply Ssig_eq; extensionality x ; rewrite /= /bind monad_law2 //. Qed.
-  Next Obligation. apply Ssig_eq; extensionality x ; rewrite /= /bind monad_law1 //. Qed.
-  Next Obligation. apply Ssig_eq; extensionality x ; rewrite /= /bind monad_law3 //. Qed.
+  Next Obligation. apply sig_eq; extensionality x ; rewrite /= /bind monad_law2 //. Qed.
+  Next Obligation. apply sig_eq; extensionality x ; rewrite /= /bind monad_law1 //. Qed.
+  Next Obligation. apply sig_eq; extensionality x ; rewrite /= /bind monad_law3 //. Qed.
 
 End OrderedMonadAsRMonad.
 
@@ -213,10 +213,10 @@ Section MonadMorphismAsRMonMorphism.
     mkRelMonMorph discr _ M W (fun (A:TypeCat) => ⦑θ A⦒) _ _.
   Next Obligation. cbv ; intros ; induction H ; reflexivity. Qed.
   Next Obligation.
-    apply Ssig_eq=> /=; extensionality a=> /=; rewrite mon_morph_ret //.
+    apply sig_eq=> /=; extensionality a=> /=; rewrite mon_morph_ret //.
   Qed.
   Next Obligation.
-    apply Ssig_eq ; extensionality a ; rewrite /= mon_morph_bind //.
+    apply sig_eq ; extensionality a ; rewrite /= mon_morph_bind //.
   Qed.
 
 End MonadMorphismAsRMonMorphism.
@@ -377,9 +377,9 @@ Section NaiveDefinition.
   (* Next Obligation. intuition. Qed. *)
 
 
-  (* Lemma Ssig_rew {A P} {x y : A} {Hx Hy} *)
-  (*   : x = y -> Sexists P x Hx = Sexists P y Hy. *)
-  (* Proof. move=> ? ; apply Ssig_eq=> //. Qed. *)
+  (* Lemma sig_rew {A P} {x y : A} {Hx Hy} *)
+  (*   : x = y -> exist P x Hx = exist P y Hy. *)
+  (* Proof. move=> ? ; apply sig_eq=> //. Qed. *)
 
   (* Import FunctionalExtensionality. *)
   (* (* Any simple relational specification monad yield a full relational specification monad *) *)
@@ -403,15 +403,15 @@ Section NaiveDefinition.
   (* Qed. *)
   (* Next Obligation. *)
   (*   intuition. *)
-  (*   f_equal;[f_equal|]; apply: Ssig_eq=> /=. *)
+  (*   f_equal;[f_equal|]; apply: sig_eq=> /=. *)
   (*   1,2: set f := ⦑_⦒; have -> : f = ord_relmon_unit W ⟨_,_⟩. *)
   (*   all: try by rewrite ord_relmon_law1. *)
-  (*   apply Ssig_eq; extensionality x; move: x=> [? []] //. *)
-  (*   apply Ssig_eq; extensionality x; move: x=> [[] ?] //. *)
+  (*   apply sig_eq; extensionality x; move: x=> [? []] //. *)
+  (*   apply sig_eq; extensionality x; move: x=> [[] ?] //. *)
   (* Qed. *)
   (* Next Obligation. *)
   (*   intuition. *)
-  (*   f_equal;[f_equal|]; apply: Ssig_eq=> /=. *)
+  (*   f_equal;[f_equal|]; apply: sig_eq=> /=. *)
   (*   - extensionality x; set f := ⦑_⦒. *)
   (*     move: (ord_relmon_law2 W ⟨_,unit⟩ _ f)=> /(f_equal Spr1) /(equal_f ^~ ⟨_, _⟩)//=. *)
   (*   - extensionality x; set f := ⦑_⦒. *)
@@ -420,7 +420,7 @@ Section NaiveDefinition.
   (* Qed. *)
   (* Next Obligation. *)
   (*   intuition ; cbv. *)
-  (*   f_equal;[f_equal|]; apply: Ssig_eq=> /=. (* ; extensionality x. *) *)
+  (*   f_equal;[f_equal|]; apply: sig_eq=> /=. (* ; extensionality x. *) *)
   (*   - epose (ord_relmon_law3 W ⟨ _, unit⟩ ⟨_, unit⟩ _ *)
   (*                      ⦑fun x1 => Spr1 nfst1 (Base.nfst x1) ⦒ *)
   (*                      ⦑fun x0 => Spr1 nfst (Base.nfst x0)⦒) as s. *)
@@ -572,13 +572,13 @@ Section ToNaiveDefinitions.
     unshelve feq_npair.
     apply: (ord_relmon_law2 W1).
     apply: (ord_relmon_law2 W2).
-    apply Ssig_eq, (f_equal Spr1), rsmc_law2.
+    apply sig_eq, (f_equal Spr1), rsmc_law2.
   Qed.
   Next Obligation.
     unshelve feq_npair.
     apply: (ord_relmon_law3 W1).
     apply: (ord_relmon_law3 W2).
-    apply Ssig_eq, (f_equal Spr1), rsmc_law3.
+    apply sig_eq, (f_equal Spr1), rsmc_law3.
   Qed.
 
 
@@ -589,13 +589,13 @@ Section ToNaiveDefinitions.
   (* Program Definition θ : preRelationalEffectObservation M1 M2 W := *)
   (*   mkpreREO M1 M2 W (fun A => ⟨⟨θ1 (nfst A), θ2 (nsnd A)⟩, θW⟩) _ _. *)
   (* Next Obligation. *)
-  (*   f_equal ; [f_equal|]; apply Ssig_eq ; apply: (f_equal Spr1). *)
+  (*   f_equal ; [f_equal|]; apply sig_eq ; apply: (f_equal Spr1). *)
   (*   apply (rmm_law1 _ _ _ _ θ1). *)
   (*   apply (rmm_law1 _ _ _ _ θ2). *)
   (*   apply: reoc_law1. *)
   (* Qed. *)
   (* Next Obligation. *)
-  (*   f_equal ; [f_equal|]; apply Ssig_eq ; apply: (f_equal Spr1). *)
+  (*   f_equal ; [f_equal|]; apply sig_eq ; apply: (f_equal Spr1). *)
   (*   apply (rmm_law2 _ _ _ _ θ1). *)
   (*   apply (rmm_law2 _ _ _ _ θ2). *)
   (*   apply (reoc_law2 θ1 θ2). *)

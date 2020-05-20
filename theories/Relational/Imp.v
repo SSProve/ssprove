@@ -105,7 +105,7 @@ Section unarySpecStateOmegaCpo.
   Require Import FunctionalExtensionality.
   Lemma antisym_WSt: antisym (WSt A).
   Proof.
-    move=> w1 w2 H1 H2; apply Ssig_eq; extensionality p; extensionality s;
+    move=> w1 w2 H1 H2; apply sig_eq; extensionality p; extensionality s;
             apply SPropAxioms.sprop_ext; do 2 split; [apply: H2| apply: H1].
   Qed.
 
@@ -416,7 +416,7 @@ Section ImpMonad.
         (c: A -> ωchain (WSt S0 B)) :
     bind w (@ωsup _ _ \o c) = ωsup (bind_chain w c).
   Proof.
-    cbv. apply Ssig_eq; extensionality k; extensionality s=> /=.
+    cbv. apply sig_eq; extensionality k; extensionality s=> /=.
     unshelve epose (cw := ⦑fun n a => ((c a) ∙1 n) ∙1 k⦒ : ωchain (WSt_dom S0 A)).
     move=> ? ?; apply: (c _)∙2.
     move: (Hwcont cw)=> /= -> //.
@@ -431,7 +431,7 @@ Section ImpMonad.
     move=> Hbot Hind; unfold commute, kleene_fix.
     rewrite bind_sup'.
     rewrite bind_cont_sup=> //.
-    f_equal; apply Ssig_eq; extensionality n.
+    f_equal; apply sig_eq; extensionality n.
     elim: n=> [|n IH]; [apply Hbot| apply Hind; apply IH].
   Qed.
 
@@ -443,7 +443,7 @@ Section ImpMonad.
   Qed.
 
   Ltac myext0 k s :=
-    cbv -[θun iter_chain loop]=> /=; apply Ssig_eq; extensionality k; extensionality s.
+    cbv -[θun iter_chain loop]=> /=; apply sig_eq; extensionality k; extensionality s.
 
   Fixpoint commute_bot {A B: Type} (c:Imp A) {struct c} :
     commute (θun c) (@botWSt _ B).
@@ -676,7 +676,7 @@ Section ImpMonad.
     move: m.
     refine (fix IH (m:Imp A) {struct m} := _).
     case: m=> [a|k|s k|body k] /=;
-      unfold MonoCont_bind ; apply Ssig_eq; extensionality k'=> /=; extensionality s0; rewrite ?IH; try reflexivity.
+      unfold MonoCont_bind ; apply sig_eq; extensionality k'=> /=; extensionality s0; rewrite ?IH; try reflexivity.
   Qed.
 
   Definition θunL_mm : MonadMorphism Imp_monad Wun :=

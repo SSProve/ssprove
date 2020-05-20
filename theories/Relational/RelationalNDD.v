@@ -25,17 +25,17 @@ Section NDDs.
 
   Program Definition θNDD12 : MonadMorphism NDSet Wun := @mkMorphism M1 Wun (fun _ P => ⦑fun p => s∀ x, P x -> p x⦒) _ _.
   Next Obligation. cbv; intuition. Qed.
-  Next Obligation. cbv; intuition. apply Ssig_eq; simpl; extensionality p; apply SPropAxioms.sprop_ext; firstorder. destruct H0; assumption. Qed.
-  Next Obligation. cbv; intuition. apply Ssig_eq; simpl; extensionality p; apply SPropAxioms.sprop_ext; firstorder. Qed.
+  Next Obligation. cbv; intuition. apply sig_eq; simpl; extensionality p; apply SPropAxioms.sprop_ext; firstorder. destruct H0; assumption. Qed.
+  Next Obligation. cbv; intuition. apply sig_eq; simpl; extensionality p; apply SPropAxioms.sprop_ext; firstorder. Qed.
 
   Program Definition θforallrel :=
     commute_effObs Wun M1 M2 θNDD12 θNDD12 _.
   Next Obligation.
-    cbv; intuition; apply Ssig_eq; simpl; extensionality p; apply SPropAxioms.sprop_ext; firstorder. Qed.
+    cbv; intuition; apply sig_eq; simpl; extensionality p; apply SPropAxioms.sprop_ext; firstorder. Qed.
 
   Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ _ θforallrel _ _ c1 c2 w).
 
-  Program Definition demonic_left_rule_w {A2 : Type} (a2:A2) : dfst (Commutativity.Wrel Wun ⟨ bool, A2 ⟩). apply (Sexists _ (fun post => post ⟨true, a2⟩ s/\ post ⟨false, a2⟩)). cbv; intuition.
+  Program Definition demonic_left_rule_w {A2 : Type} (a2:A2) : dfst (Commutativity.Wrel Wun ⟨ bool, A2 ⟩). apply (exist _ (fun post => post ⟨true, a2⟩ s/\ post ⟨false, a2⟩)). cbv; intuition.
   Defined.
 
   Lemma demonic_left_rule {A2 : Set} (a2:A2) :

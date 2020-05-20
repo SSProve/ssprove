@@ -171,11 +171,11 @@ Section GoingPractical.
   Qed.
 
   Program Definition OrdCat_lift {A B} (f : A -> dfst B) : OrdCat⦅discr A; B⦆ :=
-    Sexists _ f _.
+    exist _ f _.
   Next Obligation. move=> ? ? H0 ; induction H0; reflexivity. Qed.
 
   Program Definition OrdCat_lift' {A1 A2 B} (f : A1 -> A2 -> dfst B) : OrdCat⦅Jprod ⟨A1, A2⟩; B⦆ :=
-    Sexists _ (fun a => f (nfst a) (nsnd a)) _.
+    exist _ (fun a => f (nfst a) (nsnd a)) _.
   Next Obligation. move=> ? ? H0 ; induction H0; reflexivity. Qed.
 
   Lemma apply_left_tot {A1 A2} {c1 : M1 A1} {c2 : M2 A2} {w1 w2 w} :

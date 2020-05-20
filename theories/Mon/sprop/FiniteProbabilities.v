@@ -99,37 +99,37 @@ Section FinProb.
 
   Lemma mulIDl : left_distributive mulI addI.
   Proof.
-    move=> ? ? ? ; apply Ssig_eq=> /=.
+    move=> ? ? ? ; apply sig_eq=> /=.
     by rewrite -mulrA [in t in (_ * t)]mulrC mulrA mulrDl.
   Qed.
 
   Lemma mulIDr : right_distributive mulI addI.
   Proof.
-    move=> ? ? ? ; apply Ssig_eq=> /=; by rewrite mulrA mulrDr.
+    move=> ? ? ? ; apply sig_eq=> /=; by rewrite mulrA mulrDr.
   Qed.
 
   Lemma addIX p1 p2 p3 p4 :
     addI (addI p1 p2) (addI p3 p4) = addI (addI p1 p3) (addI p2 p4).
   Proof.
-    apply Ssig_eq => /=;
+    apply sig_eq => /=;
       by rewrite -2!mulrDl -2!addrA
                  [in t in _+t]addrA (addrC (p2∙1) (p3∙1)) !addrA.
   Qed.
 
   Lemma addIC : commutative addI.
-  Proof. move=> ? ? ; apply Ssig_eq => /= ; by rewrite addrC. Qed.
+  Proof. move=> ? ? ; apply sig_eq => /= ; by rewrite addrC. Qed.
 
   Lemma mulIC : commutative mulI.
-  Proof. move=> ? ? ; apply Ssig_eq => /= ; by rewrite mulrC. Qed.
+  Proof. move=> ? ? ; apply sig_eq => /= ; by rewrite mulrC. Qed.
 
   Lemma mulIA : associative mulI.
-  Proof. move=> ? ? ? ; apply Ssig_eq => /= ; by rewrite mulrA. Qed.
+  Proof. move=> ? ? ? ; apply sig_eq => /= ; by rewrite mulrA. Qed.
 
   Import FunctionalExtensionality.
   Lemma self_commute (p1 p2 : ProbS) : commute (wopProb p1) (wopProb p2).
   Proof.
-    rewrite /commute /wopProb; apply Ssig_eq=> /=.
-    extensionality k; apply Ssig_eq=> /=.
+    rewrite /commute /wopProb; apply sig_eq=> /=.
+    extensionality k; apply sig_eq=> /=.
     rewrite !mulrDr !mulrA.
     do 2 rewrite [((1 - _)* _)as t in t * _]mulrC.
     rewrite 2![(p1∙1 * _)as t in t * _]mulrC.

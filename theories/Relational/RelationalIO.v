@@ -52,7 +52,7 @@ Section IOs.
   Lemma io1_io2_commutation : forall s1 s2, commute (wop1 s1) (wop2 s2).
   Proof.
     move=> [|o1] [|o2] //=.
-    cbv; apply Ssig_eq=> /=; extensionality k; extensionality h.
+    cbv; apply sig_eq=> /=; extensionality k; extensionality h.
     apply SPropAxioms.sprop_ext; do 2 split; done.
   Qed.
 
@@ -185,7 +185,7 @@ Section NI_IO.
   Lemma io1_io2_commutation' : forall s1 s2, commute (wop1' s1) (wop2' s2).
   Proof.
     move=> [||o1] [||o2] //=.
-    all: cbv; apply Ssig_eq=> /=; extensionality k; extensionality h.
+    all: cbv; apply sig_eq=> /=; extensionality k; extensionality h.
     all: apply SPropAxioms.sprop_ext; do 2 split => //.
   Qed.
 

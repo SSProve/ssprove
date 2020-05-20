@@ -111,11 +111,11 @@ Section CommuteEffectObs.
                                                (fun a2=> ret ⟨a1,a2⟩))⦒) _ _.
   Next Obligation. move=> ? ? H ; induction H; sreflexivity. Qed.
   Next Obligation.
-    apply Ssig_eq=> /= ; extensionality a=> /=.
+    apply sig_eq=> /= ; extensionality a=> /=.
     now do 2 rewrite mon_morph_ret /bind monad_law1.
   Qed.
   Next Obligation.
-    apply Ssig_eq=> /= ; extensionality x=> /=.
+    apply sig_eq=> /= ; extensionality x=> /=.
     rewrite mon_morph_bind {1 2}/bind monad_law3; repeat rewrite -/bind.
     under eq_bind => a.
       under eq_bind => b.

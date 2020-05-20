@@ -22,7 +22,7 @@ Section Algebra.
   Definition WPSpecMonad := @MonoCont _ (@oalg_rel _ alg) _.
 
   Program Definition mor_underlying X (m:M X) : WPSpecMonad X :=
-    Sexists _ (fun post => alg (bind m (fun x => ret (post x)))) _.
+    exist _ (fun post => alg (bind m (fun x => ret (post x)))) _.
   Next Obligation.
     move=> ? ? H. apply oalg_mono ; assumption.
   Qed.
@@ -31,10 +31,10 @@ Section Algebra.
   Program Definition mor : MonadMorphism M WPSpecMonad :=
     @mkMorphism _ _ mor_underlying _ _.
   Next Obligation.
-    apply Ssig_eq; extensionality post; cbv ; rewrite monad_law1 malg_ret //.
+    apply sig_eq; extensionality post; cbv ; rewrite monad_law1 malg_ret //.
   Qed.
   Next Obligation.
-    apply Ssig_eq ; extensionality post; cbv; rewrite monad_law3 malg_bind //.
+    apply sig_eq ; extensionality post; cbv; rewrite monad_law3 malg_bind //.
   Defined.
 
   Definition D_wp := @Dθ _ _ mor.
@@ -50,7 +50,7 @@ Section UpdateMonadEffectObservation.
   Let WUpdX := UpdSpec X.
 
   Program Definition UpdEffObs : MonadMorphism UpdX WUpdX :=
-    @mkMorphism _ _ (fun A m => Sexists _ (fun p x => let mx := m x in p (nfst mx) (nsnd mx)) _) _ _.
+    @mkMorphism _ _ (fun A m => exist _ (fun p x => let mx := m x in p (nfst mx) (nsnd mx)) _) _ _.
   Next Obligation.
     move=> ? ? H ? ; apply H.
   Qed.
@@ -58,7 +58,7 @@ Section UpdateMonadEffectObservation.
     compute. f_equal. apply ax_proof_irrel.
   Qed.
   Next Obligation.
-    apply Ssig_eq ; simpl. reflexivity.
+    apply sig_eq ; simpl. reflexivity.
   Qed.
 End UpdateMonadEffectObservation.
 
@@ -108,7 +108,7 @@ Section Option.
     Program Definition θSP A (m : Opt A) : SP A :=
       match m with
       | Some a => ret a
-      | None => Sexists _ (fun pre a => @mkOver _ pre _) _
+      | None => exist _ (fun pre a => @mkOver _ pre _) _
       end.
 
     Lemma θSP_ret A (a:A) : θSP (ret a) = ret a.
@@ -133,7 +133,7 @@ Section Option.
   Program Definition morSpPart : MonadMorphism Opt SP :=
     @mkMorphism Opt SP (fun A c => match c with
                              | Some a => ret a
-                             | None => Sexists _ (fun pre a => @mkOver _ False _) _
+                             | None => exist _ (fun pre a => @mkOver _ False _) _
                              end) _ _.
   Next Obligation. destruct H. Qed.
   Next Obligation.
@@ -142,7 +142,7 @@ Section Option.
     change SP_ret with (@monad_ret SP).
     erewrite monad_law1.
     move:(f a) => [?|] //=.
-    apply Ssig_eq=> //=.
+    apply sig_eq=> //=.
     extensionality pre ; extensionality y.
     apply SPropOver_eq.
     split.
@@ -159,7 +159,7 @@ Section Option.
   Program Definition ranTotDiv A B (f : B -> Opt A)  w
     (H : morWpTot A (bind (None : Opt B) f) ≤ w) :
     ran w (morWpTot B None) :=
-    Sexists _ (fun _ => Sexists _ (fun _ => False) _) _.
+    exist _ (fun _ => exist _ (fun _ => False) _) _.
   Next Obligation. cbv ; intuition. Qed.
   Next Obligation. cbv ; split. cbv in H. assumption. intuition. Qed.
 
@@ -194,7 +194,7 @@ Section FreeMonadEffectObservation.
   Definition OpSpecWP : Dijkstra W := Dθ OpSpecEffObs.
 
   Program Definition cont_perform : forall s, OpSpecWP (P s) (@OpContSpecs s) :=
-    fun s => Sexists _ (@opr _ _ _ s (@retFree _ _ _)) _.
+    fun s => exist _ (@opr _ _ _ s (@retFree _ _ _)) _.
   Next Obligation.
     cbv ; rewrite monad_law2 ; reflexivity.
   Qed.
@@ -402,15 +402,15 @@ End SumOfTheories.
 (*     by wf (d, to_tele c) *)
 (*           (Subterm.lexprod Dom _ prec GenRec_measure) *)
 (*     := *)
-(*     eval (Sexists _ (retFree _ z) _) := wkn (dm_ret DBase z) _ ; *)
-(*     eval (Sexists _ (@opr _ _ _ (inl s) k) w) := *)
+(*     eval (exist _ (retFree _ z) _) := wkn (dm_ret DBase z) _ ; *)
+(*     eval (exist _ (@opr _ _ _ (inl s) k) w) := *)
 (*       wkn (dm_bind (perform_s s) *)
-(*                     (fun ps => @eval _ (Spr1 (Hran_s w) ps) d (Sexists _ (k ps) _))) _ ; *)
+(*                     (fun ps => @eval _ (Spr1 (Hran_s w) ps) d (exist _ (k ps) _))) _ ; *)
         
 
-(*     eval (Sexists _ (@opr _ _ _ (inr d') k) w) := *)
+(*     eval (exist _ (@opr _ _ _ (inr d') k) w) := *)
 (*       let m (pre : Squash (prec d' d)) := @eval _ _ d' (f d') in *)
-(*       wkn (dm_bind (intro_assume m) (fun ps => @eval C (Spr1 (Hran_inv w) ps) d (Sexists _ (k ps) _))) _. *)
+(*       wkn (dm_bind (intro_assume m) (fun ps => @eval C (Spr1 (Hran_inv w) ps) d (exist _ (k ps) _))) _. *)
 (*   Next Obligation. *)
 (*     match goal with *)
 (*     | [|- context [Spr1 ?T]] => *)
@@ -530,7 +530,7 @@ End SumOfTheories.
 (*           Squash (Spr1 (f p Hwp) = Spr1 (f p' Hwp')) }. *)
 
 (*   Program Definition Pure_ret A (a:A) : Pure_car (ret a) := *)
-(*     ⦑fun p Hpre => Sexists _ a Hpre⦒. *)
+(*     ⦑fun p Hpre => exist _ a Hpre⦒. *)
 (*   Next Obligation. constructor ; reflexivity. Qed. *)
 
 (*   Import EqNotations. *)
@@ -592,7 +592,7 @@ End SumOfTheories.
 (*   Next Obligation. hnf ; reflexivity. Qed. *)
 (*   Next Obligation. *)
 (*     cbv. *)
-(*     apply Monoid.Ssig_sEq. *)
+(*     apply Monoid.sig_sEq. *)
 (*     simpl ;  funext p ; funext_s Hpre. *)
 (*     assert (forall a a' p Hp Hp' (Ha:a ≡ a'), Spr1 (f a) p Hp ≡ Spr1 (f a') p Hp'). *)
 (*     intros. *)

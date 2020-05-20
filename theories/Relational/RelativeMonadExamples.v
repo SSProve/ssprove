@@ -208,8 +208,8 @@ Section RelationalSpecMonad.
   Next Obligation. intuition. Qed. 
 
 
-  Lemma Ssig_rew {A P} {x y : A} {Hx Hy} : x = y -> Sexists P x Hx = Sexists P y Hy.
-  Proof. move=> ? ; apply Ssig_eq=> //. Qed.
+  Lemma sig_rew {A P} {x y : A} {Hx Hy} : x = y -> exist P x Hx = exist P y Hy.
+  Proof. move=> ? ; apply sig_eq=> //. Qed.
 
   (* Any simple relational specification monad yield a full relational specification monad *)
   Program Definition RSM_from_RSM0 (W : RelationalSpecMonad0) : RelationalSpecMonad :=
@@ -231,15 +231,15 @@ Section RelationalSpecMonad.
     - apply funext in H.
       apply (f_equal (fun f (x:nfst × unit) => f (Base.nfst x))) in H.
       apply equal_f; apply (f_equal Spr1) ; f_equal.
-      simple refine (Ssig_eq _ _ _ _)=> //. 
+      simple refine (sig_eq _ _ _ _)=> //. 
     
     - apply funext in H2.
       apply (f_equal (fun f (x:unit × nsnd) => f (Base.nsnd x))) in H2.
       apply equal_f; apply (f_equal Spr1) ; f_equal.
-      simple refine (Ssig_eq _ _ _ _)=> //. 
+      simple refine (sig_eq _ _ _ _)=> //. 
     
     - enough (nsnd1 = Base.nsnd y) as -> ; move=> //.
-      refine (Ssig_eq _ _ _ _) ; exact (funext H1).
+      refine (sig_eq _ _ _ _) ; exact (funext H1).
   Qed.
   Next Obligation.
     intuition.
@@ -248,14 +248,14 @@ Section RelationalSpecMonad.
        enough (⦑ t ⦒ = relmon_unit W ⟨nfst, unit ⟩) as ->
       end.
       rewrite relmon_law1 => //.
-      refine (Ssig_eq _ _ _ _) ; extensionality x0 ; destruct x0 as [? []]=> //.
+      refine (sig_eq _ _ _ _) ; extensionality x0 ; destruct x0 as [? []]=> //.
 
     - match goal with
       |[|- context c [⦑ ?t ⦒]] =>
        enough (⦑ t ⦒ = relmon_unit W ⟨unit,nsnd ⟩) as ->
       end.
       rewrite relmon_law1 => //.
-      refine (Ssig_eq _ _ _ _) ; extensionality x0 ; destruct x0 as [[] ?]=> //.
+      refine (sig_eq _ _ _ _) ; extensionality x0 ; destruct x0 as [[] ?]=> //.
 
     - rewrite relmon_law1=> //.
   Qed.

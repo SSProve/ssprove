@@ -33,7 +33,7 @@ Section Erreptions.
   Qed.
   Next Obligation. induction 1 ; sreflexivity. Qed.
   Next Obligation.
-    apply Ssig_eq=> /= ; extensionality x; apply Ssig_eq => /=.
+    apply sig_eq=> /= ; extensionality x; apply sig_eq => /=.
     extensionality post ; extensionality pexc.
     move:x => [[?|[?] ?] [?|[?] ?]] //=.
     match goal with [|- match ?d with _ => _ end = _ ] => destruct d as [?|[]]=> // end.

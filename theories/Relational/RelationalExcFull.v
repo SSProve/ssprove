@@ -60,8 +60,8 @@ Module ExcId.
     apply: w∙2=> -[[?|] ?] /=; [apply: H2| apply: H1].
   Qed.
   Next Obligation.
-    apply Ssig_eq=> /=.
-    extensionality wm. apply Ssig_eq. extensionality p=> /=.
+    apply sig_eq=> /=.
+    extensionality wm. apply sig_eq. extensionality p=> /=.
     f_equal. extensionality a; move: a => [[?|] ?] //=.
   Qed.
 
@@ -86,7 +86,7 @@ Module ExcId.
     move=> ? ? H ? ? Hexc; move: m=> [?|? ?]; [apply: H| apply: Hexc].
   Qed.
   Next Obligation.
-    apply Ssig_eq. extensionality p. extensionality pexc=> /=.
+    apply sig_eq. extensionality p. extensionality pexc=> /=.
     move: m =>[?|? ?] //=.
   Qed.
 
@@ -108,7 +108,7 @@ Module ExcId.
                       in to_discr f) _ _.
   Next Obligation. move: m12 => [[?|? ?] ?] ? ?; apply. Qed.
   Next Obligation.
-    apply Ssig_eq; extensionality m12; move: m12 => [[?|??]?] //=.
+    apply sig_eq; extensionality m12; move: m12 => [[?|??]?] //=.
   Qed.
 
   Definition θ : relationalEffectObservation M1 M2 Wrel :=
@@ -254,8 +254,8 @@ Module ExcExc.
     apply: w∙2=> -[[?|?] [?|?]] //= ; [apply: H2 | apply: H | apply: H1].
   Qed.
   Next Obligation.
-    apply Ssig_eq=> /=.
-    extensionality wm. apply Ssig_eq. extensionality p=> /=.
+    apply sig_eq=> /=.
+    extensionality wm. apply sig_eq. extensionality p=> /=.
     f_equal. extensionality a; move: a => [[?|?] [?|?]] //=.
   Qed.
 

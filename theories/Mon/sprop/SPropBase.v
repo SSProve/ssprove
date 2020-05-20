@@ -34,13 +34,9 @@ Module Redefined_sprop_constructs.
 planning to put them all here
 *)
 (*Definition Prop := Prop.*) (*This is no longer accepted by coq*)
-Definition Ssig := sig.
-Arguments Ssig {A} P.
-Definition Sexists := exist.
-Arguments Sexists {A} P x e.
-Definition Spr1 {A : Type} {P : A -> Prop} (inst : Ssig P) :=
+Definition Spr1 {A : Type} {P : A -> Prop} (inst : sig P) :=
   (let (w,_) := inst in w).
-Definition Spr2 {A : Type} {P : A -> Prop} (inst : Ssig P)
+Definition Spr2 {A : Type} {P : A -> Prop} (inst : sig P)
 : P (Spr1 inst ). destruct inst. simpl. assumption. Defined.
 About eq_ind.
 Definition eq_sind := eq_ind.
@@ -170,9 +166,9 @@ Inductive Sle : nat -> nat -> Prop :=
 Module SPropNotations.
   Notation "x ≡ y" := (@sEq _ x y) (at level 70, no associativity).
 (*the following comes from Logic.StrictProp , coq 8.10 *)
-(*Record Ssig {A:Type} (P:A->Prop) := Sexists { Spr1 : A; Spr2 : P Spr1 }.*)
+(*Record sig {A:Type} (P:A->Prop) := exist { Spr1 : A; Spr2 : P Spr1 }.*)
 
-  Notation "{ x : A ≫ P }" := (@Ssig A (fun x => P)) (x at level 99).
+  Notation "{ x : A ≫ P }" := (@sig A (fun x => P)) (x at level 99).
   Notation "s∃ x .. y , p" :=
     (Ex (fun x => .. (Ex (fun y => p )) .. ))
       (at level 200, x binder, y binder, right associativity).
@@ -188,7 +184,7 @@ Module SPropNotations.
   Notation "n s<= m" := (Sle n m) (at level 70).
   Notation "n s< m" := (Sle (S n)  m) (at level 70).
 
-  Notation "⦑ t ⦒" := (Sexists _ t _).
+  Notation "⦑ t ⦒" := (exist _ t _).
 
   Notation " x ∙1" := (Spr1 x) (at level 2).
   Notation " x ∙2" := (Spr2 x) (at level 2).
@@ -256,10 +252,10 @@ Ltac subst_sEq :=
       | [ H : sEq _ _ |- _] => induction H ; clear H
       end.
 
-Section SsigLemmas.
+Section sigLemmas.
 
-  Lemma Ssig_eq {A} (P : A -> Prop) :
-    forall (mx my : Ssig P), Spr1 mx = Spr1 my -> mx = my.
+  Lemma sig_eq {A} (P : A -> Prop) :
+    forall (mx my : sig P), Spr1 mx = Spr1 my -> mx = my.
   Proof.
     intros [cx ex] [cy ey]. simpl.
     induction 1.
@@ -268,29 +264,29 @@ Section SsigLemmas.
     rewrite hintUnif. reflexivity.
   Defined.
 
-  Lemma transport_Ssig :
+  Lemma transport_sig :
     forall {A B} (F : B -> A -> Prop) {x y} h z,
-      eq_rect x (fun x => Ssig (fun b => F b x)) z y h
-      = Sexists _ (Spr1 z) (@eq_sind A x (F (Spr1 z)) (Spr2 z) y h).
+      eq_rect x (fun x => sig (fun b => F b x)) z y h
+      = exist _ (Spr1 z) (@eq_sind A x (F (Spr1 z)) (Spr2 z) y h).
   Proof.
     intros.
     dependent inversion h. compute. destruct z. reflexivity.
   Qed.
 
-  Lemma eq_above_Ssig {A B} (F : B -> A -> Prop)
-        (G := fun x => Ssig (fun b => F b x)) {x1 x2 : A} {h : x1 = x2}
+  Lemma eq_above_sig {A B} (F : B -> A -> Prop)
+        (G := fun x => sig (fun b => F b x)) {x1 x2 : A} {h : x1 = x2}
         {z1 : G x1} {z2 : G x2} :
     Spr1 z1 = Spr1 z2 -> z1 =⟨ h ⟩ z2.
   Proof.
     intro Hz.
     unfold eq_above.
     unfold G.
-    rewrite (transport_Ssig F h z1).
-    apply Ssig_eq.
+    rewrite (transport_sig F h z1).
+    apply sig_eq.
     assumption.
   Qed.
 
-End SsigLemmas.
+End sigLemmas.
 
 Section SleLemmas.
   Import SPropNotations.

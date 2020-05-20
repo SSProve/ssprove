@@ -66,7 +66,7 @@ Section RelationalState.
   Next Obligation. cbv; intuition. Qed.
   Next Obligation. cbv ; intuition; induction H=> //. Qed.
   Next Obligation.
-    apply Ssig_eq=> /=; extensionality x; apply Ssig_eq=> /=.
+    apply sig_eq=> /=; extensionality x; apply sig_eq=> /=.
     extensionality post ; extensionality s0; f_equal.
     extensionality l ; destruct l=> //.
   Qed.
