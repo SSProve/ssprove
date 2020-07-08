@@ -287,7 +287,7 @@ Section MonotonicRelations.
   Import SPropAxioms.
 
   Definition SPropAssuming (pre : Prop) :=
-    { q : Prop | q s<-> (pre -> q) }.
+    { q : Prop | q <-> (pre -> q) }.
 
   Definition MR_base X := 
     forall (pre:Prop), (X -> SPropAssuming pre) -> SPropAssuming pre.
@@ -545,7 +545,7 @@ Module  StrongestPostcondition.
   Proof. apply sprop_ext ; split ; dintuition. Qed.
 
   Lemma SPropOver_eq p (q1 q2 : SPropOver p) :
-    (base q1 s<-> base q2) -> q1 = q2.
+    (base q1 <-> base q2) -> q1 = q2.
   Proof.
     intros .
     assert (H0 : base q1 = base q2) by (apply sprop_ext ; constructor ; assumption).
@@ -606,7 +606,7 @@ Section Adjunctions.
     fun a => nsnd pp a.
 
   Lemma pred_pp_adjunction : forall A post (pp : PPSpecMonad A),
-   pred2pp post ≤[PPSpecMonad] pp  s<-> post ≤[PredOM] pp2pred pp.
+   pred2pp post ≤[PPSpecMonad] pp  <-> post ≤[PredOM] pp2pred pp.
   Proof.
     move=> A post pp ; cbv ; split ; intuition.
   Qed.
@@ -620,7 +620,7 @@ Section Adjunctions.
   Next Obligation. cbv ; intuition. Qed.
 
   Lemma wp_pp_adjunction : forall A pp (w : MonoCont A),
-   pp ≤[PPSpecMonad] wp2pp w s<-> pp2wp pp ≤[MonoCont] w.
+   pp ≤[PPSpecMonad] wp2pp w <-> pp2wp pp ≤[MonoCont] w.
   Proof.
     intros A pp w ; cbv ; split.
     - move=> [Hpre Hpost] a H1 ; split.
@@ -655,7 +655,7 @@ Section Adjunctions.
   Qed.
 
   Lemma wp_mr_adjunction : forall A (w : MonoCont A) r,
-   w ≤ mr2wp r s<-> wp2mr w ≤ r.
+   w ≤ mr2wp r <-> wp2mr w ≤ r.
   Proof.
    cbv ; intuition. 
    apply H. exists pre ; intuition.
@@ -753,7 +753,7 @@ Section Adjunctions.
   (* Qed. *)
 
   (* Lemma sp_pp_adjunction A pp (sp : ForwardPredTransformer A) : *)
-  (*   sp2pp sp ≤[PPSpecMonad] pp s<-> sp ≤[ForwardPredTransformer] pp2sp pp. *)
+  (*   sp2pp sp ≤[PPSpecMonad] pp <-> sp ≤[ForwardPredTransformer] pp2sp pp. *)
   (* Proof. *)
   (*   cbv ; split. *)
   (*   - dintuition. apply H0. *)
@@ -789,7 +789,7 @@ Section Adjunctions.
   Qed.
 
   Lemma sp_mr_adjunction A (sp : ForwardPredTransformer A) (mr:MRSpec A) :
-     sp2mr sp ≤ mr s<-> sp  ≤ mr2sp mr.
+     sp2mr sp ≤ mr <-> sp  ≤ mr2sp mr.
   Proof.
     cbv ; intuition.
     exact (over H0).

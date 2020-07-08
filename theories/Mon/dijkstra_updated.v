@@ -82,7 +82,7 @@ Arguments put' [St].
 (* A toy stateful program, from Swamy et al., 2013. *)
 Program Definition incr : PrePost nat
                           (fun _ => True)
-                          (fun s0 s1 => s0 s< s1) :=
+                          (fun s0 s1 => s0 < s1) :=
   wkn (x <- get' ; put' (S x)) _.
 Next Obligation. simpl. apply H. constructor. apply sle_refl. Qed.
 
@@ -298,7 +298,7 @@ Section NonDeterminism.
 
   End Demonic.
 
-  Definition test_demonic : Demonic nat (PostDemonic (fun x => 1 s< x s/\ x s< 6)).
+  Definition test_demonic : Demonic nat (PostDemonic (fun x => 1 < x s/\ x < 6)).
     apply (wkn (chooseD (2 :: 3 :: 5 :: nil))).
     intros Q H. simpl. simpl in H.
     intuition ltac:(try (apply H ; do 8 constructor)).
@@ -980,7 +980,7 @@ Section ForState.
       (at level 0, i ident).
 
   Program Definition sum :=
-    For i from 0 to 5 using PrePostWP nat (fun _ => True) (fun s0 s1 => s0 s<= s1) do
+    For i from 0 to 5 using PrePostWP nat (fun _ => True) (fun s0 s1 => s0 <= s1) do
         s0 <- get' ; put' (s0 + i)
         done.
   Next Obligation. simpl in *. intuition. apply q.

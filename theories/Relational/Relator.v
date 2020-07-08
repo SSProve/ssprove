@@ -24,7 +24,7 @@ Section RelatorOverAMonad.
 
   Definition subRel {A1 A2} (R S : A1 ⇸ A2) :=
     forall a1 a2, R a1 a2 -> S a1 a2.
-  Definition rel_equiv {A1 A2} (R S : A1 ⇸ A2) := forall a1 a2, R a1 a2 s<-> S a1 a2.
+  Definition rel_equiv {A1 A2} (R S : A1 ⇸ A2) := forall a1 a2, R a1 a2 <-> S a1 a2.
   Notation "R ≅ S" := (rel_equiv R S) (at level 60).
   Notation "R ⊂ S" := (subRel R S) (at level 65).
 

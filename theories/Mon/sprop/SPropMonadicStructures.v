@@ -13,11 +13,11 @@ Set Primitive Projections.
 (***************************************************************)
 
 
-Definition SProp_order : relation Prop := s_impl.
+Definition SProp_order : relation Prop := fun x y => (x -> y).
 Instance SProp_order_preorder : PreOrder SProp_order.
 Proof. constructor ; cbv ; intuition. Qed.
 
-Definition SProp_op_order : relation Prop := Basics.flip s_impl.
+Definition SProp_op_order : relation Prop := Basics.flip SProp_order.
 Instance SProp_op_order_preorder : PreOrder SProp_op_order.
 Proof. unfold SProp_op_order. typeclasses eauto. Qed.
 
@@ -171,7 +171,7 @@ Section AssertAssumeStructure.
       ; aa_assert_stronger : forall p x, assert_p p x ≤ x
       ; aa_assume_weaker : forall p x, x ≤ assume_p p x
       ; aa_assert_assume_adjoint : forall p x1 x2,
-          assert_p p x1 ≤ x2 s<-> x1 ≤ assume_p p x2
+          assert_p p x1 ≤ x2 <-> x1 ≤ assume_p p x2
       }.
 
 End AssertAssumeStructure.

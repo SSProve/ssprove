@@ -16,7 +16,7 @@ Section ExtNat.
       match en1, en2 return SProp with
       | _, None => True
       | None, Some _ => False
-      | Some n1, Some n2 => n1 s<= n2
+      | Some n1, Some n2 => n1 <= n2
       end.
   Global Instance extNat_order : PreOrder extNat_rel.
   Proof.
@@ -41,7 +41,7 @@ Section Cost.
 
   Import SPropNotations.
 
-  Fixpoint monus (n m : nat) {struct n} : m s<= n -> nat :=
+  Fixpoint monus (n m : nat) {struct n} : m <= n -> nat :=
     match n with
     | 0 => match m with
           | 0 => fun=> 0
@@ -54,8 +54,8 @@ Section Cost.
       end
     end.
 
-  Lemma monus_mon n3 : forall n2 n1 H12 (H23 : n2 s<= n3) H13,
-      @monus n2 n1 H12 s<= @monus n3 n1 H13.
+  Lemma monus_mon n3 : forall n2 n1 H12 (H23 : n2 <= n3) H13,
+      @monus n2 n1 H12 <= @monus n3 n1 H13.
   Proof.
     induction n3.
     move=> [|?] [|?] //= H H' ; enough False as [] ;
@@ -69,7 +69,7 @@ Section Cost.
   Definition CostS := nat.
   Definition CostAr : CostS -> Type := fun _ => unit.
   Program Definition CostSpecs : forall (s:CostS), CostSpec (CostAr s) :=
-    fun n => ⦑fun post => ⦑ fun n' => exists (H : Box (n s<= n')), proj1_sig (post tt) (@monus n' n (unbox H)) ⦒ ⦒.
+    fun n => ⦑fun post => ⦑ fun n' => exists (H : Box (n <= n')), proj1_sig (post tt) (@monus n' n (unbox H)) ⦒ ⦒.
   Next Obligation.
     move: H0 => [[H'] p].
     unshelve eexists.
@@ -84,7 +84,7 @@ Section Cost.
 
   Program Definition costs {A} n (pre : SProp) (post : A -> SProp)
     : CostSpec A :=
-    ⦑ fun post' => ⦑fun n0 => pre s/\ exists (H : Box (n s<= n0)), forall a, post a -> proj1_sig (post' a) (@monus n0 n (unbox H))⦒⦒.
+    ⦑ fun post' => ⦑fun n0 => pre s/\ exists (H : Box (n <= n0)), forall a, post a -> proj1_sig (post' a) (@monus n0 n (unbox H))⦒⦒.
   Next Obligation.
     move: H0 => [? [[H']] p] ; split ; [assumption|].
     unshelve eexists.

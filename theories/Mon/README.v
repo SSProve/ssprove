@@ -375,7 +375,7 @@ Arguments put' [S].
 (* A toy stateful program, from Swamy et al., 2013. *)
 Program Definition incr : PrePost nat
                           (fun _ => True)
-                          (fun s0 s1 => s0 s< s1) :=
+                          (fun s0 s1 => s0 < s1) :=
   wkn (x <- get' ; put' (S x)) _.
 Next Obligation. simpl. apply H. constructor. apply sle_refl. Qed.
 
@@ -412,7 +412,7 @@ Section DemonicNonDeterminism.
     ifTE b (dret tt) failD.
 
   Program Definition test_demonic
-    : Demonic nat (PostDemonic (fun x => 1 s< x s/\ x s< 6))
+    : Demonic nat (PostDemonic (fun x => 1 < x s/\ x < 6))
     := wkn (chooseD (2 :: 3 :: 5 :: nil)) _.
   Next Obligation.
     simpl in *.

@@ -143,7 +143,7 @@ End FinProb.
 
 (* Inductive sreflect (P : SProp) : bool -> Type := *)
 (* | SReflectT : P -> sreflect P true *)
-(* | SReflectF : s~ P -> sreflect P false. *)
+(* | SReflectF : ~ P -> sreflect P false. *)
 
 (* Lemma andSP (b1 b2 : bool) : sreflect (⟦b1⟧ s/\ ⟦b2⟧) (b1 && b2). *)
 (* Proof. case: b1; case: b2 => /=; first left=> //=; right=> [[[] []]]. Qed. *)

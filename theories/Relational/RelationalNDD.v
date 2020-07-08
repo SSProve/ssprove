@@ -43,7 +43,7 @@ Section NDDs.
   Proof. cbv ; intuition. destruct H0; destruct x; assumption. Qed.
 
   Lemma demonicInterpretationExplicitFormula A1 A2 c1 c2 (post : A1 × A2 -> Prop):
-    ((θforallrel ⟨A1, A2⟩)∙1 ⟨c1,c2⟩)∙1 post s<-> forall a1 a2, c1 a1 -> c2 a2 -> post ⟨a1,a2⟩.
+    ((θforallrel ⟨A1, A2⟩)∙1 ⟨c1,c2⟩)∙1 post <-> forall a1 a2, c1 a1 -> c2 a2 -> post ⟨a1,a2⟩.
   Proof. cbv; intuition. Qed.
 
 End NDDs.
