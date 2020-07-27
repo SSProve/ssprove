@@ -1,5 +1,5 @@
 From Coq Require Import ssreflect ssrfun ssrbool List.
-From Coq Require FunctionalExtensionality.
+From Coq Require Import FunctionalExtensionality.
 From Mon Require Export Base.
 From Coq Require Import Relation_Definitions Morphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures.
@@ -193,7 +193,7 @@ Section MonoidStrictification.
   Import SPropAxioms.
   Lemma project_embed_id : forall sm, embed (project sm) = sm.
   Proof.
-    intro sm. apply sig_eq ; funext m0.
+    intro sm. apply sig_eq ; extensionality m0.
     cbv. move: (proj2_sig sm) => [m Hm].
     pose (H0 := Hm m0).
     apply eq_sym in H0.

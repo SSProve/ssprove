@@ -11,9 +11,6 @@ From Coq Require ClassicalFacts.
 Locate proof_irrelevance.
 
 Axiom ax_proof_irrel : ClassicalFacts.proof_irrelevance.
-Axiom FunctionalExtensionality :
-  (forall A B (f g : A -> B), (forall x, f x = g x) -> f = g).
-
 
 Set Primitive Projections.
 
@@ -28,22 +25,16 @@ End Redefined_sprop_constructs.
 Export Redefined_sprop_constructs.
 
 (** Conjunction *)
-Definition sand (P Q : Prop) : Prop := P /\ Q .
-
-(** Disjunction *)
-Definition sor (P Q : Prop) : Prop := P \/ Q.
+Definition sand := and.
 
 Module SPropNotations.
-  Notation "p s/\ q" := (sand p q) (at level 80).
-  Notation "p s\/ q" := (sor p q) (at level 85).
+  Notation "p s/\ q" := (and p q) (at level 80).
 
   Notation "⦑ t ⦒" := (exist _ t _).
 
   Notation " x ∙1" := (proj1_sig x) (at level 2).
   Notation " x ∙2" := (proj2_sig x) (at level 2).
 End SPropNotations.
-
-
 
 Section sigLemmas.
 
@@ -86,27 +77,5 @@ Module SPropAxioms.
   Import SPropNotations.
 
   Axiom sprop_ext : forall {p q : Prop}, p = q <-> Box (sand (p -> q) (q -> p)).
-
-
-  (** Functional Extensionality *)
-  (* Taking the dependent variant as axiom,
-    it should be provable from the non-dependent
-    one as in the standard library *)
-  Axiom funext_sprop : forall (A : Type) (B : A -> Type) (f g : forall x : A, B x),
-      (forall x : A, f x = g x) -> f = g.
-
-  Tactic Notation "funext" simple_intropattern(x) :=
-    match goal with
-      [ |- ?X = ?Y ] => apply (@funext_sprop _ _ X Y) ; intros x
-    end.
-
-  Axiom funext_sprop' : forall (A : Prop) (B : A -> Type) (f g : forall x : A, B x),
-      (forall x : A, f x = g x) -> f = g.
-
-  Tactic Notation "funext_s" simple_intropattern(x) :=
-    match goal with
-      [ |- ?X = ?Y ] => apply (@funext_sprop' _ _ X Y) ; intros x
-    end.
 End SPropAxioms.
 
-(** A few surprises (actually makes sense, but still...) *)

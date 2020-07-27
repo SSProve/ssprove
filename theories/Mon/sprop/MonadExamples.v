@@ -143,12 +143,12 @@ Section NonDeterminismSet.
   Next Obligation.
     extensionality y; apply sprop_ext; do 2 split.
     + intros [x [eq H]]; induction eq=> //.
-    + intro; exists a; intuition. compute. intuition.
+    + intro; exists a; intuition. 
   Qed.
   Next Obligation.
     extensionality y; apply sprop_ext; do 2 split.
     + intros [x [H eq]]. induction eq=> //.
-    + intro. exists y. intuition. compute. intuition.
+    + intro. exists y. intuition.
   Qed.
   Next Obligation.
     extensionality y; apply sprop_ext; do 2 split.

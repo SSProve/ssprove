@@ -1,5 +1,5 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-From Coq Require FunctionalExtensionality.
+From Coq Require Import FunctionalExtensionality.
 From Mon Require Export Base.
 From Coq Require Import Relation_Definitions Morphisms RelationPairs.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures.
@@ -171,7 +171,7 @@ Section MonadAsRMonad.
   (* Transforming a standard monad to a relative monad on the identity functor *)
   Program Definition monad_to_relmon : rMonad :=
     mkOrdRelativeMonad M (fun A => @ret M A) (fun A B f => bind^~ f) _ _ _ _.
-  Next Obligation. cbv ; intuition. induction (SPropAxioms.funext_sprop _ _ _ _ H)=> //. Qed.
+  Next Obligation. cbv ; intuition. induction (@functional_extensionality_dep _ _ _ _ H)=> //. Qed.
   Next Obligation. extensionality c ; rewrite /bind monad_law2 //. Qed.
   Next Obligation. extensionality c ; rewrite /bind monad_law1 //. Qed.
   Next Obligation. extensionality c ; rewrite /bind monad_law3 //. Qed.

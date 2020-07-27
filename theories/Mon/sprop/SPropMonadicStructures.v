@@ -119,7 +119,7 @@ Section DiscreteMonad.
   Qed.
   Next Obligation.
     compute. move=> x y Exy x0 y0 pe_x0y0.
-    rewrite Exy. apply FunctionalExtensionality in pe_x0y0.
+    rewrite Exy. apply functional_extensionality in pe_x0y0.
     rewrite pe_x0y0. reflexivity.
   Qed.
 End DiscreteMonad.
@@ -187,13 +187,13 @@ Section KleisliKanExtension.
   (* Right Kan extension of f along p *)
   Definition ran :=
     { ext : B -> W C |
-      bind p ext  ≤[W] f s/\
+      bind p ext  ≤[W] f /\
       forall (w' : B -> W C), bind p w' ≤[W] f -> forall b, w' b ≤[W] ext b
     }.
 
   Definition lan :=
     { ext : B -> W C |
-      f ≤ bind p ext s/\
+      f ≤ bind p ext /\
       forall (w' : B -> W C), f ≤ bind p w' -> forall b, w' b ≤ ext b
     }.
 
@@ -217,10 +217,13 @@ End KanExtensionMonotonic.
 Section KanExtensionIsoStable.
   Context (W:OrderedMonad) (B C : Type) (f : W C) (p : W B).
   Import SPropNotations.
-  Notation "w ≅ w'" := (w ≤ w' s/\ w' ≤ w) (at level 65).
+  Notation "w ≅ w'" := (w ≤ w' /\ w' ≤ w) (at level 65).
   Context (Hran:ran f p) (f':W C) (p':W B) (Hf : f ≅ f') (Hp : p ≅ p').
-  Program Definition ran_iso : ran f' p' := exist _ (proj1_sig Hran) _.
-  Next Obligation.
+  Definition ran_iso : ran f' p'.
+    constructor 1 with (x:=proj1_sig Hran).
+    (* TL: this is such an ugly fix.
+     * Program Definition ... := exist _ (proj1_sig Hran) _.
+     * was hanging. *)
     destruct Hf as [Hf1 Hf2] ; destruct Hp as [Hp1 Hp2] ; destruct (proj2_sig Hran) as [Hran1 Hran2].
     split.
     transitivity (bind p (proj1_sig Hran)).
@@ -230,7 +233,7 @@ Section KanExtensionIsoStable.
     transitivity (bind p' w'). apply omon_bind. assumption.
     move=> //= ? ; reflexivity.
     transitivity f' ; assumption.
-  Qed.
+  Defined.
 End KanExtensionIsoStable.
 
 (***************************************************************)
