@@ -66,4 +66,5 @@ theories/Crypt/only_prob/Rules.v
 theories/Crypt/OrderEnrichedRelativeAdjunctions.v
 theories/Crypt/OrderEnrichedRelativeAdjunctionsExamples.v
 theories/Crypt/OrderEnrichedNatTrans.v
+theories/Crypt/only_prob/UniformDistr.v
 theories/Crypt/only_prob/otp.v
