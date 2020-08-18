@@ -355,14 +355,14 @@ End FunctorCompAssoc.
 (**     underlying functor, monads as relative monads   **)
 (*********************************************************)
 Section RelativeMonad.
+  
   Context {C D : ord_category} {J : ord_functor C D}.
-
 
   Cumulative Record ord_relativeMonad :=
     mkOrdRelativeMonad
       { ord_relmonObj :> C -> D
       ; ord_relmon_unit : forall A, D⦅J A; ord_relmonObj A⦆
-      ; ord_relmon_bind : forall {A B}, D⦅J A; ord_relmonObj B⦆ -> D⦅ord_relmonObj A; ord_relmonObj B⦆
+      ; ord_relmon_bind : forall {A B}, D⦅J A; ord_relmonObj B⦆ -> D⦅ord_relmonObj A; ord_relmonObj B⦆                
       ; ord_relmon_bind_proper : forall A B,
           SProper (@ord_cat_le D (J A) (ord_relmonObj B) s==> ord_cat_le D) ord_relmon_bind
       ; ord_relmon_law1 : forall A, ord_relmon_bind (ord_relmon_unit A) = Id _
@@ -372,6 +372,7 @@ Section RelativeMonad.
           ord_relmon_bind (ord_relmon_bind f ∙ g) = ord_relmon_bind f ∙ ord_relmon_bind g
       }.
   Global Existing Instance ord_relmon_bind_proper.
+  
 End RelativeMonad.
 
 Arguments ord_relativeMonad {_ _} J.
