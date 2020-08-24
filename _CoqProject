@@ -70,6 +70,6 @@ theories/Crypt/OrderEnrichedNatTrans.v
 theories/Crypt/only_prob/UniformDistrLemmas.v
 theories/Crypt/only_prob/UniformDistr.v
 theories/Crypt/only_prob/otp.v
+theories/Crypt/only_prob/Packages.v
 theories/Crypt/only_prob/AsymEnc.v
-theories/Crypt/only_prob/DDH.v
 theories/Crypt/only_prob/Elgamal.v
