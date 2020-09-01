@@ -2,6 +2,8 @@
 **/*\#
 **/.\#*
 **/*.vo
+**/*.vok
+**/*.vos
 **/*.glob
 **/.coqdeps.d
 **/*.aux
@@ -17,6 +19,7 @@
 **/*.nav
 **/*.vrb
 **/*.cut
+.Makefile.d
 Makefile.coq
 Makefile.conf
 Makefile.coq.conf
