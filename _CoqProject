@@ -5,6 +5,10 @@
 theories/Mon/Base.v
 theories/Mon/sprop/SPropBase.v
 theories/Mon/sprop/SPropMonadicStructures.v
+theories/Mon/sprop/Monoid.v
+theories/Mon/sprop/MonadExamples.v
+theories/Mon/sprop/SpecificationMonads.v
+theories/Mon/sprop/DijkstraMonadExamples.v
 
 theories/Relational/RelativeMonads.v
 theories/Relational/Category.v
@@ -13,7 +17,7 @@ theories/Relational/Rel.v
 theories/Relational/OrderEnrichedCategory.v
 theories/Relational/OrderEnrichedRelativeMonadExamples.v
 #theories/Relational/RelativeMonadExamples.v
-#theories/Relational/GenericRulesSimple.v
+theories/Relational/GenericRulesSimple.v
 #theories/Relational/RelationalState.v
 #theories/Relational/RelationalExcSimple.v
 #theories/Relational/Commutativity.v
@@ -23,21 +27,41 @@ theories/Relational/OrderEnrichedRelativeMonadExamples.v
 
 # needs equations
 #theories/Relational/Imp.v
-
 #theories/Relational/GenericRulesComplex.v
 #theories/Relational/RelationalExcFull.v
-
 #theories/Mon/sprop/FiniteProbabilities.v
 #theories/Relational/RelationalFinProb.v
 
-#theories/Crypt/Crypt.v
-# what is this SPropPlug??
-theories/Crypt/SPropPlug.v
-theories/Crypt/ChoiceAsOrd.v
-theories/Crypt/Axioms.v
-theories/Crypt/RelativeMonadMorph_prod.v
-theories/Crypt/only_prob/SubDistr.v
-theories/Crypt/only_prob/FreeProbProg.v
-theories/Crypt/only_prob/Theta_dens.v
+# #theories/Crypt/Crypt.v
+# # what is this SPropPlug??
+# theories/Crypt/SPropPlug.v
+# theories/Crypt/ChoiceAsOrd.v
+# theories/Crypt/Axioms.v
+# theories/Crypt/RelativeMonadMorph_prod.v
+# theories/Crypt/only_prob/SubDistr.v
+# theories/Crypt/only_prob/FreeProbProg.v
+# theories/Crypt/only_prob/Theta_dens.v
+# #theories/Crypt/only_prob/Couplings.v
 
+#theories/Crypt/Crypt.v
+#theories/Crypt/ChoiceAsOrd.v
+#theories/Crypt/Axioms.v
+#theories/Crypt/RelativeMonadMorph_prod.v
+#theories/Crypt/only_prob/SubDistr.v
+#theories/Crypt/only_prob/FreeProbProg.v
 #theories/Crypt/only_prob/Couplings.v
+#theories/Crypt/only_prob/Theta_dens.v
+#theories/Crypt/only_prob/wTheta_ex.v
+#theories/Crypt/only_prob/Theta_exCP.v
+#theories/Crypt/LaxComp.v
+#theories/Crypt/only_prob/Rules.v
+#theories/Crypt/OrderEnrichedRelativeAdjunctions.v
+#theories/Crypt/OrderEnrichedRelativeAdjunctionsExamples.v
+#theories/Crypt/OrderEnrichedNatTrans.v
+#theories/Crypt/only_prob/UniformDistrLemmas.v
+#theories/Crypt/only_prob/UniformDistr.v
+#theories/Crypt/only_prob/otp.v
+#theories/Crypt/only_prob/Packages.v
+#theories/Crypt/only_prob/AsymEnc.v
+#theories/Crypt/only_prob/Elgamal.v
+#theories/Crypt/only_prob/SSep.v
