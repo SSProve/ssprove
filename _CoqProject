@@ -75,3 +75,4 @@ theories/Crypt/only_prob/AsymEnc.v
 theories/Crypt/only_prob/Elgamal.v
 theories/Crypt/only_prob/SSep.v
 theories/Crypt/LaxFunctorsAndTransf.v
+theories/Crypt/LaxMorphismOfRelAdjunctions.v
