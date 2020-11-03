@@ -9,9 +9,10 @@ theories/Mon/sprop/Monoid.v
 theories/Mon/sprop/MonadExamples.v
 theories/Mon/sprop/SpecificationMonads.v
 theories/Mon/sprop/DijkstraMonadExamples.v
+theories/Mon/sprop/FiniteProbabilities.v
 
-theories/Relational/RelativeMonads.v
 theories/Relational/Category.v
+theories/Relational/RelativeMonads.v
 theories/Relational/EnrichedSetting.v
 theories/Relational/Rel.v
 theories/Relational/OrderEnrichedCategory.v
@@ -20,7 +21,7 @@ theories/Relational/OrderEnrichedRelativeMonadExamples.v
 theories/Relational/GenericRulesSimple.v
 #theories/Relational/RelationalState.v
 #theories/Relational/RelationalExcSimple.v
-#theories/Relational/Commutativity.v
+theories/Relational/Commutativity.v
 #theories/Relational/RelationalIO.v
 #theories/Relational/RelationalNDD.v
 #theories/Relational/RelationalNDA.v
@@ -29,7 +30,6 @@ theories/Relational/GenericRulesSimple.v
 #theories/Relational/Imp.v
 #theories/Relational/GenericRulesComplex.v
 #theories/Relational/RelationalExcFull.v
-#theories/Mon/sprop/FiniteProbabilities.v
 #theories/Relational/RelationalFinProb.v
 
 # #theories/Crypt/Crypt.v

@@ -109,7 +109,7 @@ Section CommuteEffectObs.
       mkREO0 M1 M2 Wrel
              (fun '⟨A1,A2⟩ => ⦑fun '⟨c1,c2⟩ => bind (θ1 A1 c1) (fun a1=> bind (θ2 A2 c2)
                                                (fun a2=> ret ⟨a1,a2⟩))⦒) _ _.
-  Next Obligation. move=> ? ? H ; induction H; sreflexivity. Qed.
+  Next Obligation. move=> ? ? H ; induction H; reflexivity. Qed.
   Next Obligation.
     apply sig_eq=> /= ; extensionality a=> /=.
     now do 2 rewrite mon_morph_ret /bind monad_law1.
@@ -146,12 +146,13 @@ Section ConverseCommute.
   Require Import Coq.Logic.FunctionalExtensionality.
 
   Lemma θret (A B : Type) (a : A) (b : B) : θapp A B ⟨ ret a, ret b ⟩ = ret ⟨ a, b ⟩.
-    move: (rmm_law1 _ _ _ _ θ ⟨A,B⟩) => /(f_equal proj1_sig) e.
+
+    move: (rmm_law1 _ _ _ _ θ ⟨A,B⟩) => /(f_equal sval) e.
     apply (equal_f e ⟨a, b ⟩).
   Qed.
 
   Lemma θbind (A1 A2 B1 B2 : Type) (m1 : M1 A1) (f1 : A1 -> M1 B1) (m2 : M2 A2) (f2 : A2 -> M2 B2) : θapp B1 B2 ⟨ bind m1 f1 ,  bind m2 f2 ⟩ = bind (θapp A1 A2 ⟨m1, m2⟩) (fun p => θapp B1 B2 ⟨ f1 (nfst p), f2 (nsnd p) ⟩).
-    move: (rmm_law2 _ _ _ _ θ ⟨A1,A2⟩ ⟨B1, B2⟩ (⟨f1, f2⟩)) => /(f_equal proj1_sig) e.
+    move: (rmm_law2 _ _ _ _ θ ⟨A1,A2⟩ ⟨B1, B2⟩ (⟨f1, f2⟩)) => /(f_equal sval) e.
     apply (equal_f e ⟨m1, m2⟩).
   Qed.
 
