@@ -49,8 +49,8 @@ theories/Relational/Commutativity.v
 #theories/Crypt/RelativeMonadMorph_prod.v
 #theories/Crypt/only_prob/SubDistr.v
 #theories/Crypt/only_prob/FreeProbProg.v
-#theories/Crypt/only_prob/Couplings.v
-#theories/Crypt/only_prob/Theta_dens.v
+theories/Crypt/only_prob/Couplings.v
+theories/Crypt/only_prob/Theta_dens.v
 #theories/Crypt/only_prob/wTheta_ex.v
 #theories/Crypt/only_prob/Theta_exCP.v
 #theories/Crypt/LaxComp.v
