@@ -58,9 +58,12 @@ Section FinProb.
   Program Definition mulI (x y:I) : I := ⦑x∙1 * y∙1⦒.
   Next Obligation.
     rewrite mulr_ge0 //=.
-    (* rewrite -(mul1r 1) ler_pmul //=.   *)
-  (* Qed. *)
-  Admitted.
+    (* move: (@mul1r R 1) => <-. *)
+    (* Unset Printing Notations. *)
+    (* Set Printing Implicit. *)
+    rewrite -{3}(mul1r 1).
+    rewrite ler_pmul //=.
+  Qed.
 
   Program Definition negI (x:I) : I := ⦑1 - x∙1⦒.
   Next Obligation.
@@ -76,22 +79,20 @@ Section FinProb.
     ⦑p∙1 * x∙1 + (1-p∙1) * y∙1⦒.
   Next Obligation.
     set p' : I := negI p; change (1-p∙1) with p'∙1.
-    (* apply: its_true_anyway. *)
     rewrite addr_ge0 ?mulr_ge0 //.
     have: (1 = p∙1*1 + (1 - p∙1)*1) by rewrite !mulr1 addrA [_+1]addrC addrK.
-    (* move=> -> ; by rewrite ler_add // ler_pmul // (I_ge0 (negI p)). *)
-  (* Qed. *)
-    Admitted.
+    move=> heq; rewrite [X in _ <= X]heq.
+    by rewrite ler_add // ler_pmul // (I_ge0 (negI p)).
+  Qed.
 
   Program Definition wopProb (p:ProbS) : WI (ProbAr p) :=
     ⦑fun f => barycentric_sum p (f true) (f false) ⦒.
   Next Obligation.
-  (*   move=> ? ? H. *)
-  (*  rewrite /Irel /=; apply:its_true_anyway. *)
-  (*  rewrite ler_add // ler_pmul //; try by apply since_its_true, H. *)
-  (*  by rewrite (I_ge0 (negI p)). *)
-  (* Qed. *)
-  Admitted.
+    move=> ? ? H.
+   rewrite /Irel /=.
+   rewrite ler_add // ler_pmul //; try by apply H.
+   by rewrite (I_ge0 (negI p)).
+  Qed.
 
   Definition θProb := OpSpecEffObs wopProb.
 
