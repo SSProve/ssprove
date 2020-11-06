@@ -37,7 +37,7 @@ theories/Relational/Commutativity.v
 # theories/Crypt/SPropPlug.v
 theories/Crypt/ChoiceAsOrd.v
 theories/Crypt/Axioms.v
-# theories/Crypt/RelativeMonadMorph_prod.v
+theories/Crypt/RelativeMonadMorph_prod.v
 # theories/Crypt/only_prob/SubDistr.v
 # theories/Crypt/only_prob/FreeProbProg.v
 # theories/Crypt/only_prob/Theta_dens.v
