@@ -17,24 +17,10 @@ theories/Relational/EnrichedSetting.v
 theories/Relational/Rel.v
 theories/Relational/OrderEnrichedCategory.v
 theories/Relational/OrderEnrichedRelativeMonadExamples.v
-#theories/Relational/RelativeMonadExamples.v
 theories/Relational/GenericRulesSimple.v
-#theories/Relational/RelationalState.v
-#theories/Relational/RelationalExcSimple.v
 theories/Relational/Commutativity.v
-#theories/Relational/RelationalIO.v
-#theories/Relational/RelationalNDD.v
-#theories/Relational/RelationalNDA.v
 
-# needs equations
-#theories/Relational/Imp.v
-#theories/Relational/GenericRulesComplex.v
-#theories/Relational/RelationalExcFull.v
-#theories/Relational/RelationalFinProb.v
 
-# #theories/Crypt/Crypt.v
-# # what is this SPropPlug??
-# theories/Crypt/SPropPlug.v
 theories/Crypt/ChoiceAsOrd.v
 theories/Crypt/Axioms.v
 theories/Crypt/RelativeMonadMorph_prod.v
