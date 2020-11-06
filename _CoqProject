@@ -43,3 +43,4 @@ theories/Crypt/only_prob/FreeProbProg.v
 theories/Crypt/only_prob/Couplings.v
 theories/Crypt/only_prob/Theta_dens.v
 theories/Crypt/only_prob/Theta_exCP.v
+theories/Crypt/LaxComp.v
