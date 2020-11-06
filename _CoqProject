@@ -20,7 +20,7 @@ theories/Relational/OrderEnrichedRelativeMonadExamples.v
 theories/Relational/GenericRulesSimple.v
 theories/Relational/Commutativity.v
 
-
+#categorical semantics
 theories/Crypt/ChoiceAsOrd.v
 theories/Crypt/Axioms.v
 theories/Crypt/RelativeMonadMorph_prod.v
@@ -41,6 +41,7 @@ theories/Crypt/UniversalFreeMap.v
 theories/Crypt/StateTransformingLaxMorph.v
 theories/Crypt/StateTransfThetaDens.v
 
+#Crypto
 theories/Crypt/only_prob/UniformDistrLemmas.v
 theories/Crypt/only_prob/UniformDistr.v
 theories/Crypt/only_prob/otp.v
