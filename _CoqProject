@@ -49,3 +49,4 @@ theories/Crypt/OrderEnrichedRelativeAdjunctions.v
 theories/Crypt/OrderEnrichedRelativeAdjunctionsExamples.v
 theories/Crypt/LaxFunctorsAndTransf.v
 theories/Crypt/LaxMorphismOfRelAdjunctions.v
+theories/Crypt/TransformingLaxMorph.v
