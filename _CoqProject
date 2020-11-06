@@ -47,3 +47,4 @@ theories/Crypt/LaxComp.v
 theories/Crypt/only_prob/Rules.v
 theories/Crypt/OrderEnrichedRelativeAdjunctions.v
 theories/Crypt/OrderEnrichedRelativeAdjunctionsExamples.v
+theories/Crypt/LaxFunctorsAndTransf.v
