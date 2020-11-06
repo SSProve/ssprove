@@ -52,3 +52,4 @@ theories/Crypt/LaxMorphismOfRelAdjunctions.v
 theories/Crypt/TransformingLaxMorph.v
 theories/Crypt/only_prob/ThetaDex.v
 theories/Crypt/UniversalFreeMap.v
+theories/Crypt/StateTransformingLaxMorph.v
