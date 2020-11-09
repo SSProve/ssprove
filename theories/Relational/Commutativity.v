@@ -2,7 +2,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require FunctionalExtensionality.
 
 From Mon Require Export Base.
-From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
+From Coq Require Import Relation_Definitions Morphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads DijkstraMonadExamples.
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 
@@ -109,13 +109,13 @@ Section CommuteEffectObs.
       mkREO0 M1 M2 Wrel
              (fun '⟨A1,A2⟩ => ⦑fun '⟨c1,c2⟩ => bind (θ1 A1 c1) (fun a1=> bind (θ2 A2 c2)
                                                (fun a2=> ret ⟨a1,a2⟩))⦒) _ _.
-  Next Obligation. move=> ? ? H ; induction H; sreflexivity. Qed.
+  Next Obligation. move=> ? ? H ; induction H; reflexivity. Qed.
   Next Obligation.
-    apply Ssig_eq=> /= ; extensionality a=> /=.
+    apply sig_eq=> /= ; extensionality a=> /=.
     now do 2 rewrite mon_morph_ret /bind monad_law1.
   Qed.
   Next Obligation.
-    apply Ssig_eq=> /= ; extensionality x=> /=.
+    apply sig_eq=> /= ; extensionality x=> /=.
     rewrite mon_morph_bind {1 2}/bind monad_law3; repeat rewrite -/bind.
     under eq_bind => a.
       under eq_bind => b.
@@ -139,19 +139,20 @@ Section ConverseCommute.
 
   Context (θ : RelationalEffectObservation0 M1 M2 Wrel).
 
-  Let θapp (A B : Type) := Spr1 (θ ⟨A , B⟩).
+  Let θapp (A B : Type) := proj1_sig (θ ⟨A , B⟩).
 
   Definition unitt : Type := unit.
 
   Require Import Coq.Logic.FunctionalExtensionality.
 
   Lemma θret (A B : Type) (a : A) (b : B) : θapp A B ⟨ ret a, ret b ⟩ = ret ⟨ a, b ⟩.
-    move: (rmm_law1 _ _ _ _ θ ⟨A,B⟩) => /(f_equal Spr1) e.
+
+    move: (rmm_law1 _ _ _ _ θ ⟨A,B⟩) => /(f_equal sval) e.
     apply (equal_f e ⟨a, b ⟩).
   Qed.
 
   Lemma θbind (A1 A2 B1 B2 : Type) (m1 : M1 A1) (f1 : A1 -> M1 B1) (m2 : M2 A2) (f2 : A2 -> M2 B2) : θapp B1 B2 ⟨ bind m1 f1 ,  bind m2 f2 ⟩ = bind (θapp A1 A2 ⟨m1, m2⟩) (fun p => θapp B1 B2 ⟨ f1 (nfst p), f2 (nsnd p) ⟩).
-    move: (rmm_law2 _ _ _ _ θ ⟨A1,A2⟩ ⟨B1, B2⟩ (⟨f1, f2⟩)) => /(f_equal Spr1) e.
+    move: (rmm_law2 _ _ _ _ θ ⟨A1,A2⟩ ⟨B1, B2⟩ (⟨f1, f2⟩)) => /(f_equal sval) e.
     apply (equal_f e ⟨m1, m2⟩).
   Qed.
 
@@ -175,7 +176,7 @@ Section ConverseCommute.
   Qed.
 
   Let θ1 := effobs_from_releffobs1.
-
+  
   Program Definition effobs_from_releffobs2 : MonadMorphism M2 W := @mkMorphism _ _ (fun A v => nsnd <$> θapp unitt A ⟨ ret tt, v ⟩) _ _.
   Next Obligation.
     rewrite /map θret.
@@ -222,7 +223,7 @@ Section ConverseCommute.
   Let θ' : RelationalEffectObservation0 M1 M2 Wrel := commute_effObs _ _ _ θ1 θ2 effobs12_commute.
 
   Theorem converse_to_commute_effObs : forall A1 A2 c1 c2,
-      Spr1 (θ ⟨ A1, A2 ⟩) ⟨ c1, c2 ⟩  = Spr1 (θ' ⟨ A1, A2 ⟩) ⟨ c1, c2 ⟩.
+      proj1_sig (θ ⟨ A1, A2 ⟩) ⟨ c1, c2 ⟩  = proj1_sig (θ' ⟨ A1, A2 ⟩) ⟨ c1, c2 ⟩.
     move=> A1 A2 //= c1 c2. apply releffobs_eq_effobs1.
   Qed.
 End ConverseCommute.

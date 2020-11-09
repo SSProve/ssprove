@@ -28,7 +28,7 @@ Section CartesianCategory.
       ; cc_one : cc_cat
       ; cc_into_one : natTrans (functor_id cc_cat) (functor_const cc_one)
       ; cc_prod : functor (prod_cat cc_cat cc_cat) cc_cat
-        where "A ⨰ B" := (cc_prod ⟨A,B⟩)
+        where "A ⨰ B" := (cc_prod ⟨A,B⟩) 
       ; cc_projl : natTrans cc_prod (left_proj_functor _ _)
       ; cc_projr : natTrans cc_prod (right_proj_functor _ _)
       ; cc_prod_into : forall {X A B},

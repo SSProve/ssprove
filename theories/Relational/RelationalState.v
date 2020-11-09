@@ -66,7 +66,7 @@ Section RelationalState.
   Next Obligation. cbv; intuition. Qed.
   Next Obligation. cbv ; intuition; induction H=> //. Qed.
   Next Obligation.
-    apply Ssig_eq=> /=; extensionality x; apply Ssig_eq=> /=.
+    apply sig_eq=> /=; extensionality x; apply sig_eq=> /=.
     extensionality post ; extensionality s0; f_equal.
     extensionality l ; destruct l=> //.
   Qed.
@@ -91,8 +91,8 @@ Section RelationalState.
 
   (* Translation from pre-/postconditions to backward predicate transformers *)
   Program Definition fromPrePost {A1 A2}
-          (pre : S1 -> S2 -> SProp)
-          (post : A1 -> S1 -> S1 -> A2 -> S2 -> S2 -> SProp)
+          (pre : S1 -> S2 -> Prop)
+          (post : A1 -> S1 -> S1 -> A2 -> S2 -> S2 -> Prop)
     : dfst (RelSt S ⟨A1,A2⟩) :=
     ⦑fun p s0 => pre (res1 s0) (res2 s0) s/\
                  forall a1 a2 s, post a1 (res1 s0) (res1 s) a2 (res2 s0) (res2 s)
@@ -101,30 +101,30 @@ Section RelationalState.
 
   (* Example rules *)
   Lemma read1_rule (l1 : loc1) :
-    ⊨ read1 l1 ≈ skip [{ fromPrePost (fun s1 s2 => sUnit)
+    ⊨ read1 l1 ≈ skip [{ fromPrePost (fun s1 s2 => True)
                                      (fun v s1 s1' _ s2 s2' =>
-                                        s1 ≡ s1' s/\ s2 ≡ s2' s/\ v ≡ s1 l1) }].
+                                        s1 = s1' s/\ s2 = s2' s/\ v = s1 l1) }].
   Proof. cbv ; intuition. Qed.
 
   Lemma read2_rule (l2 : loc2) :
-    ⊨ skip ≈ read2 l2 [{ fromPrePost (fun s1 s2 => sUnit)
+    ⊨ skip ≈ read2 l2 [{ fromPrePost (fun s1 s2 => True)
                                      (fun _ s1 s1' v s2 s2' =>
-                                        s1 ≡ s1' s/\ s2 ≡ s2' s/\ v ≡ s2 l2) }].
+                                        s1 = s1' s/\ s2 = s2' s/\ v = s2 l2) }].
   Proof. cbv ; intuition. Qed.
 
   Lemma write1_rule (l1:loc1) (v:val) :
     ⊨ write1 l1 v ≈ skip [{
-                             fromPrePost (fun s1 s2 => sUnit)
+                             fromPrePost (fun s1 s2 => True)
                                          (fun _ s1 s1' _ s2 s2' =>
-                                            s1' ≡ upd eql1 l1 v s1 s/\ s2 ≡ s2')
+                                            s1' = upd eql1 l1 v s1 s/\ s2 = s2')
                          }].
   Proof. cbv ; intuition. Qed.
 
   Lemma write2_rule (l2:loc2) (v:val) :
     ⊨ skip ≈ write2 l2 v [{
-                             fromPrePost (fun s1 s2 => sUnit)
+                             fromPrePost (fun s1 s2 => True)
                                          (fun _ s1 s1' _ s2 s2' =>
-                                            s1' ≡ s1 s/\ s2' ≡ upd eql2 l2 v s2)
+                                            s1' = s1 s/\ s2' = upd eql2 l2 v s2)
                          }].
   Proof. cbv ; intuition. Qed.
 
@@ -152,8 +152,8 @@ Section NonInterference.
   (* Noninterference property written in term of pre-/postconditions *)
   Definition NI_pre_post {A:Type} :=
     fromPrePost'
-      (fun s1 s2 => s1 false ≡ s2 false)
-      (fun (i:A) s1 s1' (i':A) s2 s2' =>  s1' false ≡ s2' false s/\ i ≡ i').
+      (fun s1 s2 => s1 false = s2 false)
+      (fun (i:A) s1 s1' (i':A) s2 s2' =>  s1' false = s2' false s/\ i = i').
 
   (* Noninterference property *)
   Definition NI {A : Type} (c : St (loc -> val) A) :=
@@ -164,38 +164,38 @@ Section NonInterference.
 
   (* Effect specific rules for state *)
   Lemma get_left_rule {A} {l:loc} {a:A} :
-    ⊨ get l ≈ ret a [{ fromPrePost' (fun s1 s2 => sUnit)
-                              (fun v s1 s1' x s2 s2' => x ≡ a s/\
-                                 s1 ≡ s1' s/\ s2 ≡ s2' s/\ v ≡ s1 l) }].
+    ⊨ get l ≈ ret a [{ fromPrePost' (fun s1 s2 => True)
+                              (fun v s1 s1' x s2 s2' => x = a s/\
+                                 s1 = s1' s/\ s2 = s2' s/\ v = s1 l) }].
   Proof. cbv ; intuition. Qed.
 
   Lemma get_right_rule {A} {l:loc} {a:A} :
-    ⊨ ret a ≈ get l [{fromPrePost' (fun s1 s2 => sUnit)
-                        (fun x s1 s1' v s2 s2' => x ≡ a s/\
-                           s1 ≡ s1' s/\ s2 ≡ s2' s/\ v ≡ s2 l) }].
+    ⊨ ret a ≈ get l [{fromPrePost' (fun s1 s2 => True)
+                        (fun x s1 s1' v s2 s2' => x = a s/\
+                           s1 = s1' s/\ s2 = s2' s/\ v = s2 l) }].
   Proof. cbv ; intuition. Qed.
 
   Lemma put_left_rule (l:loc) (v:nat) {A} {a:A} :
     ⊨ put l v ≈ ret a
-        [{fromPrePost' (fun s1 s2 => sUnit)
-                        (fun _ s1 s1' x s2 s2' => x ≡ a s/\
-                           s1' ≡ upd _ eql l v s1 s/\ s2 ≡ s2')
+        [{fromPrePost' (fun s1 s2 => True)
+                        (fun _ s1 s1' x s2 s2' => x = a s/\
+                           s1' = upd _ eql l v s1 s/\ s2 = s2')
                         }].
   Proof. cbv ; intuition. Qed.
 
   Lemma put_right_rule (l:loc) (v:nat) {A} {a:A} :
     ⊨ ret a ≈ put l v
-        [{fromPrePost' (fun s1 s2 => sUnit)
-                        (fun x s1 s1' _ s2 s2' => x ≡ a s/\
-                           s1' ≡ s1 s/\ s2' ≡ upd _ eql l v s2)
+        [{fromPrePost' (fun s1 s2 => True)
+                        (fun x s1 s1' _ s2 s2' => x = a s/\
+                           s1' = s1 s/\ s2' = upd _ eql l v s2)
                         }].
   Proof. cbv ; intuition. Qed.
 
   Lemma put_put_rule (l1 l2:loc) (v1 v2:nat) :
     ⊨ put l1 v1 ≈ put l2 v2
-      [{ fromPrePost' (fun s1 s2 => sUnit)
-                      (fun x s1 s1' _ s2 s2' =>    s1' ≡ upd _ eql l1 v1 s1
-                                              s/\ s2' ≡ upd _ eql l2 v2 s2)
+      [{ fromPrePost' (fun s1 s2 => True)
+                      (fun x s1 s1' _ s2 s2' =>    s1' = upd _ eql l1 v1 s1
+                                              s/\ s2' = upd _ eql l2 v2 s2)
       }].
   Proof.
     rewrite <- (monad_law1 tt (fun _ => put l1 v1)).
@@ -205,17 +205,17 @@ Section NonInterference.
     - move=> [] [] /=; apply put_left_rule.
     - cbv; intuition; apply q.
       cbv; intuition; apply SPropAxioms.funext_sprop=> [] b /=.
-      elim: (f_sEqual2 _ _ q1 (sEq_refl b)).
-      exact: (f_sEqual2 _ _ q3 (sEq_refl b)).
-      elim: (f_sEqual2 _ _ q2 (sEq_refl b)).
-      exact: (f_sEqual2 _ _ q0 (sEq_refl b)).
+      elim: (f_equal2 _ _ q1 (eq_refl b)).
+      exact: (f_equal2 _ _ q3 (eq_refl b)).
+      elim: (f_equal2 _ _ q2 (eq_refl b)).
+      exact: (f_equal2 _ _ q0 (eq_refl b)).
   Qed.
 
   Lemma get_get_rule (l1 l2:loc) :
     ⊨ get l1 ≈ get l2
-      [{ fromPrePost' (fun s1 s2 => sUnit)
-                      (fun x1 s1 s1' x2 s2 s2' =>    s1' ≡ s1 s/\ x1 ≡ s1 l1
-                                                s/\ s2' ≡ s2 s/\ x2 ≡ s2 l2)
+      [{ fromPrePost' (fun s1 s2 => True)
+                      (fun x1 s1 s1' x2 s2 s2' =>    s1' = s1 s/\ x1 = s1 l1
+                                                s/\ s2' = s2 s/\ x2 = s2 l2)
       }].
   Proof.
     rewrite <- (monad_law1 tt (fun=> get l1)).
@@ -224,8 +224,8 @@ Section NonInterference.
     - apply get_right_rule.
     - move => a1 a2 /=; apply get_left_rule.
     - cbv ; intuition; apply q.
-      cbv ; intuition; try by subst_sEq=> //.
-      elim: (sEq_sym q3); ssymmetry ; apply (f_sEqual2 _ _ q2)=> //.
+      cbv ; intuition; try by subst=> //.
+      elim: (eq_sym q3); ssymmetry ; apply (f_equal2 _ _ q2)=> //.
   Qed.
 
   (* Examples of noninterferent programs with their proofs *)
@@ -241,7 +241,7 @@ Section NonInterference.
         sreflexivity.
       + move=> ? ? /=; refine (ret_rule2 _ _ _ _).
       + cbv; intuition; apply q.
-        let k x := exact (f_sEqual2 _ _ x (sEq_refl false)) in
+        let k x := exact (f_equal2 _ _ x (eq_refl false)) in
         move: (q0) (p1) (q3) ltac:(k q4) ltac:(k q1) ltac:(k q5) ltac:(k q2) p.
         move=> [] [] [] [] [] [] [] //.
   Qed.
@@ -257,9 +257,9 @@ Section NonInterference.
       + move=> ? ? /= ; refine (ret_rule2 _ _ _ _).
       + cbv; intuition.
         apply q; split.
-        move: (f_sEqual2 _ _ q1 (sEq_refl false))
-              (f_sEqual2 _ _ p0 (sEq_refl false)) p=> [] [] //.
-        elim: (sEq_sym q0); elim: (sEq_sym q2) ; elim: p=> //.
+        move: (f_equal2 _ _ q1 (eq_refl false))
+              (f_equal2 _ _ p0 (eq_refl false)) p=> [] [] //.
+        elim: (eq_sym q0); elim: (eq_sym q2) ; elim: p=> //.
   Qed.
 
   Let prog3 := bind (get LOW) (fun n => put HIGH n).
@@ -270,7 +270,7 @@ Section NonInterference.
       + apply get_get_rule.
       + move=> ? ? /=. apply put_put_rule.
       + cbv; intuition; apply q.
-        let k x := exact (f_sEqual2 _ _ x (sEq_refl false)) in
+        let k x := exact (f_equal2 _ _ x (eq_refl false)) in
         move: a3 a4 q0 q2 ltac:(k q1) ltac:(k p0) ltac:(k p1) ltac:(k q3) p.
         repeat elim=> //=.
   Qed.
@@ -285,8 +285,8 @@ Section NonInterference.
     - move=> a1 a2 /=.
       destruct (Nat.eqb a1 1); destruct (Nat.eqb a2 1); apply put_put_rule.
     - cbv; intuition; apply q; destruct a3, a4; intuition.
-      move: (f_sEqual2 _ _ q3 (sEq_refl false))
-              (f_sEqual2 _ _ p1 (sEq_refl false)) => [] [] //.
+      move: (f_equal2 _ _ q3 (eq_refl false))
+              (f_equal2 _ _ p1 (eq_refl false)) => [] [] //.
   Qed.
 
   Definition prog5 := bind (get HIGH) (fun h => if Nat.eqb h 1 then put LOW h else put LOW 1).
@@ -306,8 +306,8 @@ Section NonInterference.
       + apply (Nat.eqb_eq a1 1) in HeqH1; rewrite HeqH1; apply put_put_rule.
       + apply (Nat.eqb_eq a2 1) in HeqH2; rewrite HeqH2; apply put_put_rule.
     - cbv; intuition; apply q; destruct a3, a4; intuition.
-      move: (f_sEqual2 _ _ q3 (sEq_refl false))
-              (f_sEqual2 _ _ p1 (sEq_refl false)) => [] [] //.
+      move: (f_equal2 _ _ q3 (eq_refl false))
+              (f_equal2 _ _ p1 (eq_refl false)) => [] [] //.
   Qed.
 
 End NonInterference.
@@ -344,7 +344,7 @@ Section ProductState.
   Let get' (l:loc+loc) : StProd val unit := fun s => ⟨⟨s l, tt⟩, s⟩.
 
   (* Inductive definition of the relation c_1 x c_2 ~> c *)
-  Inductive st_rel {A1 A2} : St0 A1 -> St0 A2 -> StProd A1 A2 -> SProp :=
+  Inductive st_rel {A1 A2} : St0 A1 -> St0 A2 -> StProd A1 A2 -> Prop :=
   | srRet : forall a1 a2, st_rel (ret a1) (ret a2) (ret ⟨a1,a2⟩)
   | srPutLeft : forall l v m1 m2 mrel,
       st_rel m1 m2 mrel -> st_rel (put l v ;; m1) m2 (put' (inl l) v ;; mrel)
@@ -378,7 +378,7 @@ Section ProductState.
   Qed.
 
   (* A coupling is a product program together with a proof that the relation above holds *)
-  Definition coupling {A1 A2} c1 c2 := { c : StProd A1 A2 ≫ st_rel c1 c2 c}.
+  Definition coupling {A1 A2} c1 c2 := { c : StProd A1 A2 | st_rel c1 c2 c}.
 
   (* Effect observation for the product programs *)
   Program Definition ζSt {A1 A2} : StProd A1 A2 -> dfst (RelSt S12 ⟨A1,A2⟩) :=
@@ -395,17 +395,17 @@ Section ProductState.
     - move=> Hw ; simple refine (apply_left _ _ _ _ (w1:=ζSt (put' (inl l) v)) (w2:= ζSt mrel) _ (IHst_rel _ _) _)=> //=.
       eapply weaken_rule2. apply put_left_rule.
       cbv ; intuition; destruct a1 ; destruct a2.
-      match goal with [H : a _ ?s0 |- _ ] => enough (s ≡ s0) as Hs ; [induction Hs ; apply H|] end.
+      match goal with [H : a _ ?s0 |- _ ] => enough (s = s0) as Hs ; [induction Hs ; apply H|] end.
       apply funext_sprop; move=> [l'|l'].
-      induction (f_sEqual2 _ _ q0 (sEq_refl l'))=> //.
-      induction (f_sEqual2 _ _ q (sEq_refl l'))=>//. sreflexivity.
+      induction (f_equal2 _ _ q0 (eq_refl l'))=> //.
+      induction (f_equal2 _ _ q (eq_refl l'))=>//. sreflexivity.
     - move=> Hw ; simple refine (apply_right _ _ _ _ (w1:=ζSt (put' (inr l) v)) (w2:= ζSt mrel) _ (IHst_rel _ _) _)=> //=.
       eapply weaken_rule2. apply put_right_rule.
       cbv ; intuition; destruct a1 ; destruct a2.
-      match goal with [H : a _ ?s0 |- _ ] => enough (s ≡ s0) as Hs ; [induction Hs ; apply H|] end.
+      match goal with [H : a _ ?s0 |- _ ] => enough (s = s0) as Hs ; [induction Hs ; apply H|] end.
       apply funext_sprop; move=> [l'|l'].
-      induction (f_sEqual2 _ _ q0 (sEq_refl l'))=> //.
-      induction (f_sEqual2 _ _ q (sEq_refl l'))=>//. sreflexivity.
+      induction (f_equal2 _ _ q0 (eq_refl l'))=> //.
+      induction (f_equal2 _ _ q (eq_refl l'))=>//. sreflexivity.
     - apply weaken_rule2.
       assert (m2 = skip ;; m2) as -> by (rewrite /bind monad_law1 //).
       apply_seq.
@@ -413,10 +413,10 @@ Section ProductState.
       move=> /= ? ?; apply H; sreflexivity.
       cbv ; intuition.
       induction q.
-      enough (a0 ≡ s0) as Hs ; [induction Hs ; apply H0|].
+      enough (a0 = s0) as Hs ; [induction Hs ; apply H0|].
       apply funext_sprop; move=> [l'|l'].
-      induction (f_sEqual2 _ _ q1 (sEq_refl l'))=> //.
-      induction (f_sEqual2 _ _ q0 (sEq_refl l'))=>//.
+      induction (f_equal2 _ _ q1 (eq_refl l'))=> //.
+      induction (f_equal2 _ _ q0 (eq_refl l'))=>//.
     - apply weaken_rule2.
       assert (m1 = skip ;; m1) as -> by (rewrite /bind monad_law1 //).
       apply_seq.
@@ -424,10 +424,10 @@ Section ProductState.
       move=> /= ? ?; apply H; sreflexivity.
       cbv ; intuition.
       induction q.
-      enough (a0 ≡ s0) as Hs ; [induction Hs ; apply H0|].
+      enough (a0 = s0) as Hs ; [induction Hs ; apply H0|].
       apply funext_sprop; move=> [l'|l'].
-      induction (f_sEqual2 _ _ q1 (sEq_refl l'))=> //.
-      induction (f_sEqual2 _ _ q0 (sEq_refl l'))=>//.
+      induction (f_equal2 _ _ q1 (eq_refl l'))=> //.
+      induction (f_equal2 _ _ q0 (eq_refl l'))=>//.
   Qed.
 
   Ltac cleanup_st_rel :=
@@ -447,11 +447,11 @@ Section ProductState.
     eexists. unfold prog. GetRight. GetLeft. apply srRet.
   Defined.
 
-  Goal forall (c:= Spr1 prog_coupling), ζSt c ≤ NI_pre_post.
+  Goal forall (c:= proj1_sig prog_coupling), ζSt c ≤ NI_pre_post.
   Proof. cbv ; intuition. Qed.
 
   Goal forall s, s (inl false) = s (inr false) ->
-            let c := Spr1 prog_coupling in
+            let c := proj1_sig prog_coupling in
             let '(npair ⟨i1,i2⟩ s') := c s in
             s' (inl false) = s' (inr false) /\ i1 = i2.
   Proof. move=> s H ; simpl ; split. assumption. by []. Qed.
@@ -463,7 +463,7 @@ Section ProductState.
     eexists. unfold prog2. GetLeft. GetRight. apply srRet.
   Defined.
 
-  Goal forall {B} (f:nat -> B) (c:= Spr1 (prog2_coupling f)),
+  Goal forall {B} (f:nat -> B) (c:= proj1_sig (prog2_coupling f)),
       ζSt c ≤ NI_pre_post.
   Proof. cbv ; intuition.
          apply q ; intuition. induction p=> //. Qed.
@@ -475,7 +475,7 @@ Section ProductState.
     GetLeft. GetRight. apply srPutLeft. apply srPutRight. apply srRet.
   Defined.
 
-  Goal forall (c:=Spr1 (prog3_coupling)), ζSt c ≤ NI_pre_post.
+  Goal forall (c:=proj1_sig (prog3_coupling)), ζSt c ≤ NI_pre_post.
   Proof. cbv ; intuition. Qed.
 
   Import Coq.Arith.PeanoNat.
@@ -491,7 +491,7 @@ Section ProductState.
     apply srPutRight; apply srPutLeft; apply srRet.
   Defined.
 
-  Goal forall (c:=Spr1 prog4_coupling), ζSt c ≤ NI_pre_post.
+  Goal forall (c:=proj1_sig prog4_coupling), ζSt c ≤ NI_pre_post.
   Proof. cbv ; intuition. Qed.
 
   Let prog5 := bind (get HIGH) (fun h => if Nat.eqb h 1 then put LOW h else put LOW 1).
@@ -511,6 +511,6 @@ Section ProductState.
 
   Print prog5_coupling.
 
-  Goal forall (c:=Spr1 prog5_coupling), ζSt c ≤ NI_pre_post.
+  Goal forall (c:=proj1_sig prog5_coupling), ζSt c ≤ NI_pre_post.
   Proof. cbv ; intuition. Qed.
 End ProductState.

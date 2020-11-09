@@ -2,7 +2,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require FunctionalExtensionality.
 From Mon Require Export Base.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures.
-From Mon.SRelation Require Import SRelationClasses SMorphisms.
+From Coq Require Import RelationClasses Morphisms Relation_Definitions.
 
 
 Set Primitive Projections.
@@ -21,14 +21,14 @@ Section Category.
     mkOrdCategory
       { Obj :> Type
       ; Hom : Obj -> Obj -> Type
-      ; ord_cat_le : forall {A B}, srelation (Hom A B)
+      ; ord_cat_le : forall {A B}, relation (Hom A B)
       where "f ⪷ g" := (ord_cat_le f g)
       ; ord_cat_le_preorder : forall A B, PreOrder (@ord_cat_le A B)
       ; Id : forall A, Hom A A
       ; Comp : forall {A B C}, Hom B C -> Hom A B -> Hom A C
         where "f ∙ g" := (Comp f g)
       ; Comp_proper : forall {A B C},
-          SProper (@ord_cat_le B C s==> @ord_cat_le A B s==> @ord_cat_le A C) Comp
+          Proper (@ord_cat_le B C ==> @ord_cat_le A B ==> @ord_cat_le A C) Comp
       ; ord_cat_law1 : forall A B (f : Hom A B), Id _ ∙ f = f
       ; ord_cat_law2 : forall A B (f : Hom A B), f ∙ Id _ = f
       ; ord_cat_law3 : forall A B C D (f : Hom A B) (g : Hom B C) (h : Hom C D),
@@ -57,7 +57,7 @@ Section Functor.
     mkOrdFunctor
       { ofmapObj :> C -> D
       ; ofmap : forall {A B}, C⦅A;B⦆ -> D⦅ofmapObj A;ofmapObj B⦆
-      ; ofmap_proper : forall A B, SProper (@ord_cat_le C A B s==> @ord_cat_le D _ _) ofmap
+      ; ofmap_proper : forall A B, Proper (@ord_cat_le C A B ==> @ord_cat_le D _ _) ofmap
       ; ord_functor_law1 : forall A, ofmap (Id A) = Id _
       ; ord_functor_law2 : forall (X Y Z: C) (g : C⦅X;Y⦆) (f:C⦅Y;Z⦆),
           ofmap (f ∙ g) = (ofmap f) ∙ (ofmap g)
@@ -106,7 +106,7 @@ Section ProductCat.
                   (fun _ _ _ f g => ⟨nfst f ∙ nfst g, nsnd f ∙ nsnd g⟩)
                   _ _ _ _.
   Next Obligation.
-    constructor ; cbv ; intuition ; estransitivity ; eassumption.
+    constructor ; cbv ; intuition ; etransitivity ; eassumption.
   Qed.
   Next Obligation.
     cbv ; intuition; apply Comp_proper=> //.
@@ -355,16 +355,16 @@ End FunctorCompAssoc.
 (**     underlying functor, monads as relative monads   **)
 (*********************************************************)
 Section RelativeMonad.
-  
   Context {C D : ord_category} {J : ord_functor C D}.
+
 
   Cumulative Record ord_relativeMonad :=
     mkOrdRelativeMonad
       { ord_relmonObj :> C -> D
       ; ord_relmon_unit : forall A, D⦅J A; ord_relmonObj A⦆
-      ; ord_relmon_bind : forall {A B}, D⦅J A; ord_relmonObj B⦆ -> D⦅ord_relmonObj A; ord_relmonObj B⦆                
+      ; ord_relmon_bind : forall {A B}, D⦅J A; ord_relmonObj B⦆ -> D⦅ord_relmonObj A; ord_relmonObj B⦆
       ; ord_relmon_bind_proper : forall A B,
-          SProper (@ord_cat_le D (J A) (ord_relmonObj B) s==> ord_cat_le D) ord_relmon_bind
+          Proper (@ord_cat_le D (J A) (ord_relmonObj B) ==> ord_cat_le D) ord_relmon_bind
       ; ord_relmon_law1 : forall A, ord_relmon_bind (ord_relmon_unit A) = Id _
       ; ord_relmon_law2 : forall A B (f : D⦅J A; ord_relmonObj B⦆),
           ord_relmon_bind f ∙ ord_relmon_unit A = f
@@ -372,7 +372,6 @@ Section RelativeMonad.
           ord_relmon_bind (ord_relmon_bind f ∙ g) = ord_relmon_bind f ∙ ord_relmon_bind g
       }.
   Global Existing Instance ord_relmon_bind_proper.
-  
 End RelativeMonad.
 
 Arguments ord_relativeMonad {_ _} J.
@@ -406,8 +405,8 @@ Section RelativeLaxMonadMorphism.
   Program Definition relativeMonadMorphism_to_lax
           (θ : relativeMonadMorphism) : relativeLaxMonadMorphism
     := mkRelLaxMonMorph θ _ _.
-  Next Obligation. rewrite rmm_law1; sreflexivity. Qed.
-  Next Obligation. rewrite rmm_law2; sreflexivity. Qed.
+  Next Obligation. rewrite rmm_law1; reflexivity. Qed.
+  Next Obligation. rewrite rmm_law2; reflexivity. Qed.
   Coercion relativeMonadMorphism_to_lax : relativeMonadMorphism >-> relativeLaxMonadMorphism.
 End RelativeLaxMonadMorphism.
 
@@ -418,7 +417,7 @@ Section RelativeMonadToFunctor.
     mkOrdFunctor M (fun A B f => ord_relmon_bind M (ord_relmon_unit M _ ∙ ofmap J f)) _ _ _.
   Next Obligation.
     cbv ; intuition.
-    apply ord_relmon_bind_proper, Comp_proper; [sreflexivity| apply ofmap_proper; assumption].
+    apply ord_relmon_bind_proper, Comp_proper; [reflexivity| apply ofmap_proper; assumption].
   Qed.
   Next Obligation. rewrite ord_functor_law1 ord_cat_law2 ord_relmon_law1 //. Qed.
   Next Obligation.
@@ -472,7 +471,7 @@ Section RelativeMonadIso.
                     (fun A B f => ord_relmon_bind M (f ∙ phi A))
                     _ _ _ _.
   Next Obligation.
-    cbv ; intuition; apply: ord_relmon_bind_proper; apply: Comp_proper=> //; sreflexivity. Qed.
+    cbv ; intuition; apply: ord_relmon_bind_proper; apply: Comp_proper=> //; reflexivity. Qed.
   Next Obligation.
     rewrite -ord_cat_law3 ni_leftinv ord_cat_law2 ord_relmon_law1 //.
   Qed.
@@ -576,7 +575,7 @@ Section FullyFaithfulFunctor.
 
   Record ff_struct :=
     { ff_invmap :> forall {X Y}, D⦅F X;F Y⦆ -> C⦅X;Y⦆
-    ; ff_inv_proper : forall {X Y}, SProper (ord_cat_le D s==> ord_cat_le C) (@ff_invmap X Y)
+    ; ff_inv_proper : forall {X Y}, Proper (ord_cat_le D ==> ord_cat_le C) (@ff_invmap X Y)
     ; ff_section : forall {X Y} (f : D⦅F X;F Y⦆), ofmap F (ff_invmap f) = f
     ; ff_retraction : forall {X Y} (f : C⦅X;Y⦆), ff_invmap (ofmap F f) = f
     }.

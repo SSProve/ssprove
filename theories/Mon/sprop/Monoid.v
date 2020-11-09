@@ -1,7 +1,7 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-From Coq Require FunctionalExtensionality.
+From Coq Require Import ssreflect ssrfun ssrbool List.
+From Coq Require Import FunctionalExtensionality.
 From Mon Require Export Base.
-From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
+From Coq Require Import Relation_Definitions Morphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures.
 
 Set Implicit Arguments.
@@ -27,7 +27,7 @@ End Monoid.
 Notation "x ⋅ y" := (monoid_mult x y) (at level 55).
 
 Section MonoidAction.
-
+  
   Record monoid_action (M : monoid) :=
     mkAction
       { monact_carrier :> Type
@@ -78,16 +78,24 @@ Section MonoidExamples.
 
   Import SPropNotations.
   Program Definition overwriteMonoid (X:Type) : monoid :=
-    @mkMonoid { f : X -> X ≫ s∃ (m: optionMonoid X), forall x, Some (f x) ≡ m⋅(Some x)}
-              (Sexists _ id _)
-              (fun f g => Sexists _ (Spr1 f \o Spr1 g) _) _ _ _.
+    @mkMonoid { f : X -> X | exists (m: optionMonoid X), forall x, Some (f x) = m⋅(Some x)}
+              (exist _ id _)
+              (fun f g => exist _ (proj1_sig f \o proj1_sig g) _) _ _ _.
   Next Obligation. exists None. move=> ? //. Qed.
   Next Obligation.
-    move: f g => [? [mf Hf]] [? [mg Hg]].
+    move: H1 H2 H H0 => mf Hf mg Hg.
     exists (@monoid_mult (optionMonoid X) mf mg).
     move=> ? ; move: mf mg Hf Hg => [?|] [?|] Hf Hg /= ; try by apply Hf.
-    all: eapply (sEq_trans (Hf _)); apply Hg.
+    all: eapply (eq_trans (Hf _)); apply Hg.
   Qed.
+  Next Obligation.  compute. f_equal.
+    apply ax_proof_irrel.
+  Qed.
+  Next Obligation. compute. f_equal.
+    apply ax_proof_irrel.
+  Qed.
+  Next Obligation. compute. f_equal. apply ax_proof_irrel. Qed.
+
 End MonoidExamples.
 
 Section ActionExamples.
@@ -100,7 +108,7 @@ Section ActionExamples.
     @mkAction M unit (fun _ x => x) _ _.
 
   Program Definition endAction (X:Type) : monoid_action (endMonoid X) :=
-    @mkAction _ X (fun f x => f x) _ _.
+    @mkAction _ X (fun f x => f x) _ _. 
 
   Program Definition unitAction (X:Type) : monoid_action unitMonoid :=
    @mkAction _ X (fun _ x => x) _ _.
@@ -142,7 +150,7 @@ Section ActionExamples.
 
   Program Definition overwriteAction (X:Type)
     : monoid_action (overwriteMonoid X) :=
-    @mkAction _ X (fun f x => Spr1 f x) _ _.
+    @mkAction _ X (fun f x => proj1_sig f x) _ _.
 End ActionExamples.
 
 Section MonoidStrictification.
@@ -151,14 +159,14 @@ Section MonoidStrictification.
   Context (M : monoid).
   Import SPropNotations.
 
-  Definition SM := { f : M -> M ≫ s∃ m, forall m', f m' ≡ m ⋅ m'}.
-  Program Definition se : SM := Sexists _ id _.
+  Definition SM := { f : M -> M | exists m, forall m', f m' = m ⋅ m'}.
+  Program Definition se : SM := exist _ id _.
   Next Obligation.
     exists (e M). intros ; rewrite monoid_law1 //.
   Qed.
 
   Program Definition smult (sm1 sm2 : SM) : SM :=
-    Sexists _ (Spr1 sm1 \o Spr1 sm2) _.
+    exist _ (proj1_sig sm1 \o proj1_sig sm2) _.
   Next Obligation.
     move:sm1 sm2=> [? [m1 H1]] [? [m2 H2]].
     exists (m1 ⋅ m2) ; move=> m /=.
@@ -167,33 +175,36 @@ Section MonoidStrictification.
 
   Program Definition strict_monoid := @mkMonoid SM se smult _ _ _.
 
-  Program Definition embed (m:M) : SM := Sexists _ (monoid_mult m) _.
+  Program Definition embed (m:M) : SM := exist _ (monoid_mult m) _.
   Next Obligation. exists m ; move=> ? //. Qed.
 
-  Definition project (sm : SM) : M := Spr1 sm (e M).
+  Definition project (sm : SM) : M := proj1_sig sm (e M).
 
   Lemma embed_project_id : forall m, project (embed m) = m.
   Proof. intro. cbv. rewrite monoid_law2 //. Qed.
 
-  Lemma Ssig_sEq : forall (A : Type) (P : A -> SProp) (mx my : {x : A ≫ P x}),
-       Spr1 mx ≡ Spr1 my -> mx ≡ my.
+  Lemma sig_eq : forall (A : Type) (P : A -> Prop) (mx my : {x : A | P x}),
+       proj1_sig mx = proj1_sig my -> mx = my.
   Proof.
     intros A P [mx ?] [my ?] H. simpl in H.
-    induction H. reflexivity.
+    induction H. compute. f_equal. apply ax_proof_irrel.
   Qed.
 
   Import SPropAxioms.
-  Lemma project_embed_id : forall sm, embed (project sm) ≡ sm.
+  Lemma project_embed_id : forall sm, embed (project sm) = sm.
   Proof.
-    intro sm. apply Ssig_sEq ; funext m0.
-    cbv. move: (Spr2 sm) => [m Hm].
+    intro sm. apply sig_eq ; extensionality m0.
+    cbv. move: (proj2_sig sm) => [m Hm].
     pose (H0 := Hm m0).
-    apply sEq_sym in H0.
-    unshelve eapply (sEq_trans _ H0).
+    apply eq_sym in H0.
+    unshelve eapply (eq_trans _ H0).
     f_equiv. pose (He := Hm (e M)).
-    apply (sEq_trans He).
+    apply (eq_trans He).
     rewrite monoid_law2 //.
    Qed.
+  Next Obligation. compute. destruct m. f_equal. apply ax_proof_irrel. Qed.
+  Next Obligation. compute. destruct m. f_equal. apply ax_proof_irrel. Qed.
+  Next Obligation. compute. f_equal. apply ax_proof_irrel. Qed.
 
 End MonoidStrictification.
 

@@ -1,6 +1,6 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 From Mon Require Export Base.
-From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
+From Coq Require Import Relation_Definitions Morphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures Monoid SpecificationMonads MonadExamples.
 
 Set Implicit Arguments.
@@ -22,7 +22,7 @@ Section Algebra.
   Definition WPSpecMonad := @MonoCont _ (@oalg_rel _ alg) _.
 
   Program Definition mor_underlying X (m:M X) : WPSpecMonad X :=
-    Sexists _ (fun post => alg (bind m (fun x => ret (post x)))) _.
+    exist _ (fun post => alg (bind m (fun x => ret (post x)))) _.
   Next Obligation.
     move=> ? ? H. apply oalg_mono ; assumption.
   Qed.
@@ -31,15 +31,15 @@ Section Algebra.
   Program Definition mor : MonadMorphism M WPSpecMonad :=
     @mkMorphism _ _ mor_underlying _ _.
   Next Obligation.
-    apply Ssig_eq; extensionality post; cbv ; rewrite monad_law1 malg_ret //.
+    apply sig_eq; extensionality post; cbv ; rewrite monad_law1 malg_ret //.
   Qed.
   Next Obligation.
-    apply Ssig_eq ; extensionality post; cbv; rewrite monad_law3 malg_bind //.
+    apply sig_eq ; extensionality post; cbv; rewrite monad_law3 malg_bind //.
   Defined.
 
   Definition D_wp := @Dθ _ _ mor.
 
-  Definition underlying {A spec} : D_wp A spec -> M A := Spr1.
+  Definition underlying {A spec} : D_wp A spec -> M A := @proj1_sig _ _.
 
 End Algebra.
 
@@ -50,11 +50,16 @@ Section UpdateMonadEffectObservation.
   Let WUpdX := UpdSpec X.
 
   Program Definition UpdEffObs : MonadMorphism UpdX WUpdX :=
-    @mkMorphism _ _ (fun A m => Sexists _ (fun p x => let mx := m x in p (nfst mx) (nsnd mx)) _) _ _.
+    @mkMorphism _ _ (fun A m => exist _ (fun p x => let mx := m x in p (nfst mx) (nsnd mx)) _) _ _.
   Next Obligation.
     move=> ? ? H ? ; apply H.
   Qed.
-
+  Next Obligation.
+    compute. f_equal. apply ax_proof_irrel.
+  Qed.
+  Next Obligation.
+    apply sig_eq ; simpl. reflexivity.
+  Qed.
 End UpdateMonadEffectObservation.
 
 
@@ -67,29 +72,31 @@ Section Option.
   Next Obligation. move: c => [?|] //=. Qed.
 
   Program Definition TotAlg : OrderedAlgebra Opt :=
-    let alg := @mkMonadAlgebra Opt SProp
+    let alg := @mkMonadAlgebra Opt Prop
                                (fun c => match c with
                                       | Some p => p
-                                      | None => sEmpty end) _ _ in
+                                      | None => False end) _ _ in
     @mkOrderedAlgebra _ alg SProp_op_order _ _.
   Next Obligation. move: m => [?|] //=. Qed.
   Next Obligation. typeclasses eauto. Qed.
   Next Obligation. move=> ? ? ? [?|] //= ; intuition. Qed.
 
-  Definition morWpTot := mor TotAlg.
-
+  Definition morWpTot := mor TotAlg. 
+  
   Program Definition PartAlg : OrderedAlgebra Opt :=
-    let alg := @mkMonadAlgebra Opt SProp
+    let alg := @mkMonadAlgebra Opt Prop
                                (fun c => match c with
                                       | Some p => p
-                                      | None => sUnit end) _ _ in
+                                      | None => True end) _ _ in
     @mkOrderedAlgebra _ alg SProp_op_order _ _.
   Next Obligation. move: m => [?|] //=. Qed.
   Next Obligation. typeclasses eauto. Qed.
   Next Obligation. move=> ? ? ? [?|] //= ; intuition. Qed.
 
-  Definition morWpPart := mor PartAlg.
+  Definition morWpPart := mor PartAlg. 
 
+  Section commenting_strongestPostconditions.
+(*
   Import StrongestPostcondition.
   Let SP := ForwardPredTransformer.
 
@@ -101,7 +108,7 @@ Section Option.
     Program Definition θSP A (m : Opt A) : SP A :=
       match m with
       | Some a => ret a
-      | None => Sexists _ (fun pre a => @mkOver _ pre _) _
+      | None => exist _ (fun pre a => @mkOver _ pre _) _
       end.
 
     Lemma θSP_ret A (a:A) : θSP (ret a) = ret a.
@@ -126,7 +133,7 @@ Section Option.
   Program Definition morSpPart : MonadMorphism Opt SP :=
     @mkMorphism Opt SP (fun A c => match c with
                              | Some a => ret a
-                             | None => Sexists _ (fun pre a => @mkOver _ sEmpty _) _
+                             | None => exist _ (fun pre a => @mkOver _ False _) _
                              end) _ _.
   Next Obligation. destruct H. Qed.
   Next Obligation.
@@ -135,7 +142,7 @@ Section Option.
     change SP_ret with (@monad_ret SP).
     erewrite monad_law1.
     move:(f a) => [?|] //=.
-    apply Ssig_eq=> //=.
+    apply sig_eq=> //=.
     extensionality pre ; extensionality y.
     apply SPropOver_eq.
     split.
@@ -145,19 +152,21 @@ Section Option.
 
   Lemma part_pairing A m : wpsp_pairing (morWpPart A m) (morSpPart A m).
   Proof.
-    cbv ; destruct m as [?|]; split ; try intuition ; subst_sEq ; intuition.
+    cbv ; destruct m as [?|]; split ; try intuition ; subst ; intuition.
   Qed.
-
+    
 
   Program Definition ranTotDiv A B (f : B -> Opt A)  w
     (H : morWpTot A (bind (None : Opt B) f) ≤ w) :
     ran w (morWpTot B None) :=
-    Sexists _ (fun _ => Sexists _ (fun _ => sEmpty) _) _.
+    exist _ (fun _ => exist _ (fun _ => False) _) _.
   Next Obligation. cbv ; intuition. Qed.
   Next Obligation. cbv ; split. cbv in H. assumption. intuition. Qed.
 
 End Option.
-
+*)
+End commenting_strongestPostconditions.
+End Option.
 
 Section FreeMonadEffectObservation.
 
@@ -169,7 +178,7 @@ Section FreeMonadEffectObservation.
 
   Fixpoint OpSpec_mor A (m : Free A) : W A :=
     match m with
-    | retFree _ a => ret a
+    | retFree a => ret a
     | @opr _ _ _ s k => bind (OpContSpecs s) (fun ps => OpSpec_mor (k ps))
     end.
 
@@ -185,9 +194,9 @@ Section FreeMonadEffectObservation.
   Definition OpSpecWP : Dijkstra W := Dθ OpSpecEffObs.
 
   Program Definition cont_perform : forall s, OpSpecWP (P s) (@OpContSpecs s) :=
-    fun s => Sexists _ (@opr _ _ _ s (@retFree _ _ _)) _.
+    fun s => exist _ (@opr _ _ _ s (@retFree _ _ _)) _.
   Next Obligation.
-    cbv ; rewrite monad_law2 ; sreflexivity.
+    cbv ; rewrite monad_law2 ; reflexivity.
   Qed.
 
   Inductive ObsFree A : W A -> Type :=
@@ -197,16 +206,16 @@ Section FreeMonadEffectObservation.
       (forall x : P s, OpSpecWP A (w' x)) ->
       ObsFree w.
 
-  Definition observeθ A w (m:OpSpecWP A w) : ObsFree w.
+  Definition observeθ A w (m:OpSpecWP A w) : ObsFree w. 
   Proof.
     destruct m as [[|] H].
     exact (OFRet H).
-    apply (OFOp H)=> a. exists (f a). sreflexivity.
+    apply (OFOp H)=> a. exists (f a). reflexivity.
   Defined.
 
   Context (OpPartialRan : forall s C (w : W C) w0,
               bind (OpContSpecs s) w0 ≤ w -> ran w (OpContSpecs s)).
-  Definition observeRan A w (m:OpSpecWP A w) : ObsFree w.
+  Definition observeRan A w (m:OpSpecWP A w) : ObsFree w. 
   Proof.
     destruct m as [[|] H] ; simpl in H.
     exact (OFRet H).
@@ -231,22 +240,22 @@ Section FreeDijkstraMonads.
   Inductive FreeD (A:Type) : W A -> Type :=
   | FDRet : forall (a:A) (w:W A), ret a ≤ w -> FreeD w
   | FDop : forall s w (w':ran w (OpSpecs s)),
-      (forall x:P s, FreeD (Spr1 w' x)) -> FreeD w.
+      (forall x:P s, FreeD (proj1_sig w' x)) -> FreeD w.
 
   Definition fd_dret A (a:A) : FreeD (ret a) :=
-    @FDRet _ a (ret a) ltac:(sreflexivity).
-
+    @FDRet _ a (ret a) ltac:(reflexivity).
+  
   Definition fd_weaken A {w1 w2} (m : @FreeD A w1) (Hw : w1 ≤ w2)
     : FreeD w2.
   Proof.
     revert w2 Hw ; induction m=> w2 Hw.
-    simple refine (@FDRet _ a _ _). estransitivity ; eassumption.
+    simple refine (@FDRet _ a _ _). etransitivity ; eassumption.
     simple refine (@FDop _ s _ _ (fun x => _)).
-    apply (OpPartialRan (w0:=Spr1 w')).
-    destruct w' as [? [? ?]] ; estransitivity ; eassumption.
+    apply (OpPartialRan (w0:=proj1_sig w')).
+    destruct w' as [? [? ?]] ; etransitivity ; eassumption.
     simpl.
     apply (X x).
-    apply ran_mono. assumption. sreflexivity.
+    apply ran_mono. assumption. reflexivity.
   Defined.
 
   Definition fd_bind A B wm wf (m:@FreeD A wm) (f:forall a, @FreeD B (wf a))
@@ -254,21 +263,21 @@ Section FreeDijkstraMonads.
   Proof.
     revert wf f; induction m => wf0 f0.
     apply (fd_weaken (f0 a)). rewrite -monad_law1;
-                               apply omon_bind; [assumption| sreflexivity].
+                               apply omon_bind; [assumption| reflexivity].
     simple refine (@FDop _ s  _ _ (fun x => _)).
-    apply (OpPartialRan (w0:=fun x => bind (Spr1 w' x) wf0)).
+    apply (OpPartialRan (w0:=fun x => bind (proj1_sig w' x) wf0)).
     rewrite /bind -monad_law3.
-    apply omon_bind ; [|sreflexivity].
+    apply omon_bind ; [|reflexivity].
     destruct w' as [? [? ?]] ; assumption.
 
 
     simpl.
     apply (fd_weaken (X x wf0 f0)).
     match goal with
-    | [|- _≤ Spr1 ?X _] => destruct X as [w'' [H1 H2]]
+    | [|- _≤ proj1_sig ?X _] => destruct X as [w'' [H1 H2]]
     end ; simpl in *.
-    apply (H2 (fun x => bind (Spr1 w' x) wf0)).
-    rewrite /bind -monad_law3. apply omon_bind ; [|sreflexivity].
+    apply (H2 (fun x => bind (proj1_sig w' x) wf0)).
+    rewrite /bind -monad_law3. apply omon_bind ; [|reflexivity].
     destruct w' as [? [? ?]] ; assumption.
   Defined.
 
@@ -346,7 +355,7 @@ End SumOfTheories.
 
 (*   Context (DBase : Dijkstra W) *)
 (*           (perform_s : forall s, DBase (P s) (OpSpecs s)) *)
-(*           (intro_assume:forall A (pre:SProp) (w:W A), *)
+(*           (intro_assume:forall A (pre:Prop) (w:W A), *)
 (*               (pre -> DBase A w) -> DBase A (assume_p pre w)). *)
 
 (*   Context (Dom:Type) (prec : Dom -> Dom -> Prop) `{WellFounded _ prec} *)
@@ -354,7 +363,7 @@ End SumOfTheories.
 (*   Context (Cod : Dom -> Type) (inv : forall d:Dom, W (Cod d)). *)
 
 (*   Definition inv' d0 d := assume_p (Squash (prec d d0)) (inv d). *)
-
+  
 (*   Context (Hran_inv : forall d0 d C (w : W C) w0, *)
 (*               bind (inv' d0 d) w0 ≤ w -> *)
 (*               ran w (inv' d0 d)). *)
@@ -393,20 +402,20 @@ End SumOfTheories.
 (*     by wf (d, to_tele c) *)
 (*           (Subterm.lexprod Dom _ prec GenRec_measure) *)
 (*     := *)
-(*     eval (Sexists _ (retFree _ z) _) := wkn (dm_ret DBase z) _ ; *)
-(*     eval (Sexists _ (@opr _ _ _ (inl s) k) w) := *)
+(*     eval (exist _ (retFree _ z) _) := wkn (dm_ret DBase z) _ ; *)
+(*     eval (exist _ (@opr _ _ _ (inl s) k) w) := *)
 (*       wkn (dm_bind (perform_s s) *)
-(*                     (fun ps => @eval _ (Spr1 (Hran_s w) ps) d (Sexists _ (k ps) _))) _ ; *)
+(*                     (fun ps => @eval _ (proj1_sig (Hran_s w) ps) d (exist _ (k ps) _))) _ ; *)
+        
 
-
-(*     eval (Sexists _ (@opr _ _ _ (inr d') k) w) := *)
+(*     eval (exist _ (@opr _ _ _ (inr d') k) w) := *)
 (*       let m (pre : Squash (prec d' d)) := @eval _ _ d' (f d') in *)
-(*       wkn (dm_bind (intro_assume m) (fun ps => @eval C (Spr1 (Hran_inv w) ps) d (Sexists _ (k ps) _))) _. *)
+(*       wkn (dm_bind (intro_assume m) (fun ps => @eval C (proj1_sig (Hran_inv w) ps) d (exist _ (k ps) _))) _. *)
 (*   Next Obligation. *)
 (*     match goal with *)
-(*     | [|- context [Spr1 ?T]] => *)
+(*     | [|- context [proj1_sig ?T]] => *)
 (*       let H0 := fresh "H" in *)
-(*       move: (Spr2 T) => /= [_ H0] ; apply (H0 _ w ps) *)
+(*       move: (proj2_sig T) => /= [_ H0] ; apply (H0 _ w ps) *)
 (*     end. *)
 (*   Qed. *)
 (*   Next Obligation. *)
@@ -414,16 +423,16 @@ End SumOfTheories.
 (*   Qed. *)
 (*   Next Obligation. *)
 (*     match goal with *)
-(*     | [|- context [Spr1 ?T]] => *)
+(*     | [|- context [proj1_sig ?T]] => *)
 (*       let H0 := fresh "H" in *)
-(*       move: (Spr2 T) => /= [H0 _] ; apply H0 *)
+(*       move: (proj2_sig T) => /= [H0 _] ; apply H0 *)
 (*     end. *)
 (*   Qed. *)
 (*   Next Obligation. *)
 (*     match goal with *)
-(*     | [|- context [Spr1 ?T]] => *)
+(*     | [|- context [proj1_sig ?T]] => *)
 (*       let H0 := fresh "H" in *)
-(*       move: (Spr2 T) => /= [_ H0] ; apply (H0 _ w ps) *)
+(*       move: (proj2_sig T) => /= [_ H0] ; apply (H0 _ w ps) *)
 (*     end. *)
 (*   Qed. *)
 (*   Next Obligation. *)
@@ -431,9 +440,9 @@ End SumOfTheories.
 (*   Qed. *)
 (*   Next Obligation. *)
 (*     match goal with *)
-(*     | [|- context [Spr1 ?T]] => *)
+(*     | [|- context [proj1_sig ?T]] => *)
 (*       let H0 := fresh "H" in *)
-(*       move: (Spr2 T) => /= [H0 _] ; apply H0 *)
+(*       move: (proj2_sig T) => /= [H0 _] ; apply H0 *)
 (*     end. *)
 (*   Qed. *)
 
@@ -450,9 +459,9 @@ End SumOfTheories.
 
 (* End GeneralRecursion. *)
 
-(* Section NatLtSProp. *)
+(* Section NatLtProp. *)
 
-(*   Inductive leS : nat -> nat -> SProp := *)
+(*   Inductive leS : nat -> nat -> Prop := *)
 (*   | leSZ : forall n, leS 0 n *)
 (*   | leSS : forall n m, leS n m -> leS (S n) (S m). *)
 
@@ -462,12 +471,12 @@ End SumOfTheories.
 (*   Lemma leS_to_le : forall m n, leS n m -> le n m. *)
 (*   Proof. *)
 (*     induction m. move=> [|n H] //=. *)
-(*     assert (HF:sEmpty) by inversion H ; inversion HF. *)
+(*     assert (HF:False) by inversion H ; inversion HF. *)
 (*     move=> [?|n H]. exact (PeanoNat.Nat.le_0_l _). *)
 (*     apply Le.le_n_S ; apply IHm. inversion H ; assumption. *)
 (*   Qed. *)
 
-(*   Goal forall (p:SProp), Squash (Box p) -> p. *)
+(*   Goal forall (p:Prop), Squash (Box p) -> p. *)
 (*   Proof. move=> p [[H]] ; exact H. Qed. *)
 
 (*   Lemma sq_le_to_leS : forall m n, Squash (le n m) -> leS n m.  *)
@@ -482,7 +491,7 @@ End SumOfTheories.
 (*     constructor. apply Le.le_Sn_le ; assumption. *)
 (*   Qed. *)
 
-(* End NatLtSProp. *)
+(* End NatLtProp. *)
 
 (* Section EmptySignature. *)
 
@@ -505,23 +514,23 @@ End SumOfTheories.
 (* (****************************************************************************) *)
 
 (* (* TODO : there seems to be something funny to encode non-decidable partial maps *)
-(*    from A to B using A -> { p : SProp & p -> B } *)
+(*    from A to B using A -> { p : Prop & p -> B } *)
 (*    This looks a bit like a Dijkstra monad, or maybe a graded monad (since the precondition *)
 (*    does not look like a spec monad but rather a monoid) *)
 (*  *) *)
 
 (* Section Pure. *)
-(*   Let W := MonoContSProp. *)
+(*   Let W := MonoContProp. *)
 (*   Import SPropNotations. *)
 (*   Import FunctionalExtensionality. *)
 
 (*   Definition Pure_car A (w:W A) : Type := *)
-(*     { f : forall p, Spr1 w p -> { a : A ≫ p a } *)
-(*     ≫ forall p p' (H : Pred_op_order p' p) Hwp Hwp', *)
-(*           Squash (Spr1 (f p Hwp) = Spr1 (f p' Hwp')) }. *)
+(*     { f : forall p, proj1_sig w p -> { a : A | p a } *)
+(*     | forall p p' (H : Pred_op_order p' p) Hwp Hwp', *)
+(*           Squash (proj1_sig (f p Hwp) = proj1_sig (f p' Hwp')) }. *)
 
 (*   Program Definition Pure_ret A (a:A) : Pure_car (ret a) := *)
-(*     ⦑fun p Hpre => Sexists _ a Hpre⦒. *)
+(*     ⦑fun p Hpre => exist _ a Hpre⦒. *)
 (*   Next Obligation. constructor ; reflexivity. Qed. *)
 
 (*   Import EqNotations. *)
@@ -532,46 +541,46 @@ End SumOfTheories.
 (*   Program Definition Pure_bind A B wm wf (m:@Pure_car A wm) *)
 (*           (f: forall a, @Pure_car B (wf a)) : @Pure_car B (bind wm wf) := *)
 (*     ⦑fun p Hpre => *)
-(*       let m0 := Spr1 m _ Hpre in  *)
-(*       Spr1 (f (Spr1 m0)) p (Spr2 m0)⦒. *)
+(*       let m0 := proj1_sig m _ Hpre in  *)
+(*       proj1_sig (f (proj1_sig m0)) p (proj2_sig m0)⦒. *)
 (*   Next Obligation. *)
-(*     unshelve epose (Hm := Spr2 m _ _ _ Hwp Hwp'). *)
+(*     unshelve epose (Hm := proj2_sig m _ _ _ Hwp Hwp'). *)
 (*     cbv ; intuition. *)
 (*     destruct Hm as [Hm]. *)
-(*     unshelve epose (Hf := Spr2 (f (Spr1 (Spr1 m (fun a : A => Spr1 (wf a) p) Hwp))) p p' H _ _). *)
-(*     exact (Spr2 (Spr1 m (fun a : A => Spr1 (wf a) p) Hwp)). *)
-(*     unshelve eapply (Spr2 (wf _) _ _). *)
+(*     unshelve epose (Hf := proj2_sig (f (proj1_sig (proj1_sig m (fun a : A => proj1_sig (wf a) p) Hwp))) p p' H _ _). *)
+(*     exact (proj2_sig (proj1_sig m (fun a : A => proj1_sig (wf a) p) Hwp)). *)
+(*     unshelve eapply (proj2_sig (wf _) _ _). *)
 (*     exact p. *)
 (*     exact H. *)
-(*     exact (Spr2 (Spr1 m (fun a : A => Spr1 (wf a) p) Hwp)). *)
+(*     exact (proj2_sig (proj1_sig m (fun a : A => proj1_sig (wf a) p) Hwp)). *)
 (*     destruct Hf as [Hf]. *)
 (*     constructor. *)
 (*     rewrite Hf. *)
-(*     assert (forall a a' p Hp Hp' (Ha:a = a'), Spr1 (f a) p Hp = Spr1 (f a') p Hp'). *)
+(*     assert (forall a a' p Hp Hp' (Ha:a = a'), proj1_sig (f a) p Hp = proj1_sig (f a') p Hp'). *)
 (*     intros. *)
 (*     refine (match Ha as H0 in _ = a0 return *)
 (*                   forall (H:a' = a0), *)
-(*                     Spr1 (f a) p0 Hp = Spr1 (f a0) p0 (eq_sind (fun a => Spr1 (wf a) p0) Hp' H) *)
+(*                     proj1_sig (f a) p0 Hp = proj1_sig (f a0) p0 (eq_ind (fun a => proj1_sig (wf a) p0) Hp' H) *)
 (*             with *)
 (*             | eq_refl => _ *)
 (*             end eq_refl). *)
 (*     intros. apply sprop_app_irr. *)
-
+    
 (*     erewrite (H0 _ _ p' _ _ Hm). *)
 (*     reflexivity. *)
 (*   Qed. *)
 
 (*   Program Definition Pure_wkn A w w' (m:@Pure_car A w) (Hww':w ≤ w') *)
 (*     : @Pure_car A w' *)
-(*     := ⦑fun p Hpre => Spr1 m p (Hww' p Hpre)⦒. *)
-(*   Next Obligation. apply (Spr2 m)=> //. Qed. *)
+(*     := ⦑fun p Hpre => proj1_sig m p (Hww' p Hpre)⦒. *)
+(*   Next Obligation. apply (proj2_sig m)=> //. Qed. *)
 
 (*   Lemma sprop_app_irr' *)
-(*     : forall {p:SProp} {Z : Type} (f : p -> Z) (x1 x2 : p), f x1 ≡ f x2. *)
+(*     : forall {p:SProp} {Z : Type} (f : p -> Z) (x1 x2 : p), f x1 = f x2. *)
 (*   Proof. reflexivity. Defined. *)
 
 (*   Import SPropAxioms. *)
-
+  
 (*   Program Definition Pure : Dijkstra W := *)
 (*     {| dm_tyop := Pure_car *)
 (*     ; dm_ret := Pure_ret *)
@@ -583,19 +592,19 @@ End SumOfTheories.
 (*   Next Obligation. hnf ; reflexivity. Qed. *)
 (*   Next Obligation. *)
 (*     cbv. *)
-(*     apply Monoid.Ssig_sEq. *)
+(*     apply Monoid.sig_eq. *)
 (*     simpl ;  funext p ; funext_s Hpre. *)
-(*     assert (forall a a' p Hp Hp' (Ha:a ≡ a'), Spr1 (f a) p Hp ≡ Spr1 (f a') p Hp'). *)
+(*     assert (forall a a' p Hp Hp' (Ha:a = a'), proj1_sig (f a) p Hp = proj1_sig (f a') p Hp'). *)
 (*     intros. *)
-(*     refine (match Ha as H0 in _ ≡ a0 return *)
-(*                   forall (H:a' ≡ a0), *)
-(*                     Spr1 (f a) p0 Hp ≡ Spr1 (f a0) p0 (sEq_sind _ _ (fun a _ => Spr1 (wf a) p0) Hp' _ H) *)
+(*     refine (match Ha as H0 in _ = a0 return *)
+(*                   forall (H:a' = a0), *)
+(*                     proj1_sig (f a) p0 Hp = proj1_sig (f a0) p0 (eq_sind _ _ (fun a _ => proj1_sig (wf a) p0) Hp' _ H) *)
 (*             with *)
-(*             | sEq_refl _ => _ *)
-(*             end (sEq_refl _)). *)
+(*             | eq_refl _ => _ *)
+(*             end (eq_refl _)). *)
 (*     intros. apply sprop_app_irr'. *)
 (*     apply H. *)
-(*     epose (Spr2 m (fun a : A => Spr1 (wf' a) p) _ _ _ _). *)
+(*     epose (proj2_sig m (fun a : A => proj1_sig (wf' a) p) _ _ _ _). *)
 (*     destruct s as [s]. *)
 (*     rewrite s. *)
 (*     reflexivity. *)
@@ -604,12 +613,12 @@ End SumOfTheories.
 (*     cbv in Hm |- * ; apply Hm=> //. *)
 (*   Qed. *)
 
-(*   Program Definition pure_intro_assume A (pre:SProp) w (f : pre -> Pure A w) *)
+(*   Program Definition pure_intro_assume A (pre:Prop) w (f : pre -> Pure A w) *)
 (*     : Pure A (assume_p pre w) := *)
-(*     ⦑fun p Hpre => Spr1 (f _) p _⦒. *)
+(*     ⦑fun p Hpre => proj1_sig (f _) p _⦒. *)
 (*   Next Obligation. destruct Hpre ; assumption. Qed. *)
 (*   Next Obligation. destruct Hpre ; assumption. Qed. *)
-(*   Next Obligation. apply (Spr2 (f _))=> //. Qed. *)
+(*   Next Obligation. apply (proj2_sig (f _))=> //. Qed. *)
 (* End Pure. *)
 
 (* (****************************************************************************) *)
@@ -617,8 +626,8 @@ End SumOfTheories.
 (* (****************************************************************************) *)
 
 (* Section Fibonnacci. *)
-(*   Let W := MonoContSProp. *)
-(*   Definition fib_trivial_inv : W nat := PrePostSpec sUnit (fun _ => sUnit). *)
+(*   Let W := MonoContProp. *)
+(*   Definition fib_trivial_inv : W nat := PrePostSpec True (fun _ => True). *)
 (*   Let GenRecNatNat := *)
 (*     GenRecExt (EmptyOpSpecs W) lt (fun _ => fib_trivial_inv). *)
 (*   Let call {n0} (n:nat) : GenRecNatNat n0 nat _ := call _ _ _ n. *)
@@ -639,17 +648,17 @@ End SumOfTheories.
 (*     apply leS_to_le. apply (sq_le_to_leS H). *)
 (*   Qed. *)
 (*   Next Obligation. *)
-(*     unshelve eapply (ran_iso (@MonoContAlongPrePost_ran _ _ w (Squash (S d <= d0)) (fun _ => sUnit)  _)). *)
+(*     unshelve eapply (ran_iso (@MonoContAlongPrePost_ran _ _ w (Squash (S d <= d0)) (fun _ => True)  _)). *)
 (*     cbv in H. *)
 (*     move=> Hw ; destruct (H _ Hw) ; assumption. *)
 (*     split ; sreflexivity. *)
 (*     cbv ; intuition. *)
 (*   Qed. *)
 
-(*   Program Definition fib' n := Spr1 (@fib n) (fun _ => sUnit) _. *)
+(*   Program Definition fib' n := proj1_sig (@fib n) (fun _ => True) _. *)
 (*   Next Obligation. intuition. Qed. *)
 
-(*   (* Goal exists x, x = Spr1 (fib' 2). *) *)
+(*   (* Goal exists x, x = proj1_sig (fib' 2). *) *)
 (*   (* Proof. *) *)
 (*   (*   eexists. *) *)
 (*   (*   rewrite /fib' /fib /ffix. *) *)
@@ -658,7 +667,7 @@ End SumOfTheories.
 (*   (*   reflexivity. *) *)
 (*   (* Qed. *) *)
 
-(*   (* Goal exists x, x = Spr1 (fib' 0). *) *)
+(*   (* Goal exists x, x = proj1_sig (fib' 0). *) *)
 (*   (* Proof. *) *)
 (*   (*   eexists. *) *)
 (*   (*   rewrite /fib' /fib /ffix. *) *)
@@ -667,7 +676,7 @@ End SumOfTheories.
 (*   (*   reflexivity. *) *)
 (*   (* Qed. *) *)
 
-(*   (* Goal exists x, x = Spr1 (fib' 3). *) *)
+(*   (* Goal exists x, x = proj1_sig (fib' 3). *) *)
 (*   (* Proof. *) *)
 (*   (*   eexists. *) *)
 (*   (*   rewrite /fib' /fib /ffix. *) *)

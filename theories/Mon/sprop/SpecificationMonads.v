@@ -1,6 +1,6 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 From Mon Require Export Base.
-From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
+From Coq Require Import Relation_Definitions Morphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures Monoid.
 
 Set Implicit Arguments.
@@ -18,89 +18,103 @@ Set Universe Polymorphism.
 Section MonotoneContinuationsMonad.
   Import SPropNotations.
 
-  Context {R: Type} (Rrel : srelation R) `{PreOrder _ Rrel}.
+  Context {R: Type} (Rrel : relation R) `{PreOrder _ Rrel}.
   Notation "x ≼ y" := (Rrel x y) (at level 70).
 
   Definition MonoContCarrier (X: Type) : Type :=
-    { f : (X -> R) -> R ≫ SProper (pointwise_srelation X Rrel s==> Rrel) f}.
+    { f : (X -> R) -> R | Proper (pointwise_relation X Rrel ==> Rrel) f}.
 
   Program Definition MonoCont_ret A (a:A) : MonoContCarrier A :=
-    Sexists _ (fun k => k a) _.
+    exist _ (fun k => k a) _.
   Next Obligation. cbv; auto. Qed.
 
   Program Definition MonoCont_bind A B (m : MonoContCarrier A)
           (f : A -> MonoContCarrier B) : MonoContCarrier B :=
-    Sexists _ (fun k => Spr1 m (fun a => Spr1 (f a) k)) _.
+    exist _ (fun k => proj1_sig m (fun a => proj1_sig (f a) k)) _.
   Next Obligation.
-    cbv ; intuition. apply (Spr2 m).
-    intros a ; apply (Spr2 (f a)) ; assumption.
+    cbv ; intuition. apply (proj2_sig m).
+    intros a ; apply (proj2_sig (f a)) ; assumption.
   Qed.
 
+About MonoContCarrier. Print MonoContCarrier.
   Program Definition MonoContU : Monad :=
     @mkMonad MonoContCarrier MonoCont_ret MonoCont_bind _ _ _.
+  Next Obligation. apply sig_eq. compute.
+    rewrite -FunctionalExtensionality.eta_expansion. reflexivity.
+  Qed.    
+  Next Obligation. apply sig_eq. compute. reflexivity. Qed.
+  Next Obligation. apply sig_eq. simpl. reflexivity. Qed.
 
-  Program Definition MonoCont_order A : srelation (MonoContU A) :=
-    fun m1 m2 => pointwise_srelation (A -> R) Rrel (Spr1 m1) (Spr1 m2).
+
+
+  Program Definition MonoCont_order A : relation (MonoContU A) :=
+    fun m1 m2 => pointwise_relation (A -> R) Rrel (proj1_sig m1) (proj1_sig m2).
   Instance MonoCont_order_preorder A : PreOrder (@MonoCont_order A).
   Proof.
     constructor ; cbv ; intuition ;
-      eauto using PreOrder_Transitive.
+      eauto using PreOrder_Transitive. 
   Qed.
 
   Program Definition MonoCont : OrderedMonad :=
     @mkOrderedMonad MonoContU MonoCont_order _ _.
-  Next Obligation.
-    cbv ; intuition.
-    repeat lazymatch goal with | [H : Ssig _ |- _] => destruct H end.
-    match goal with
-    |[|- Rrel (?X ?F) (?Y ?G)] => stransitivity (X G) ; auto
-    end.
+  Next Obligation. cbv. intuition. Locate "≼".
+    destruct x as [fx ex]. destruct y as [fy ey].
+    destruct H as (Hrefl , Htrans). unfold Transitive in Htrans.
+    pose lleft := (fun a0 : A => (let (w, _) := x0 a0 in w) a).
+    pose rright := (fun a0 : A => (let (w, _) := y0 a0 in w) a).
+    apply: (Htrans (fx lleft) (fy lleft) (fy rright)).
+     by apply: (H0 lleft).
+    apply ey. intro a0. compute. apply H1.
   Qed.
 
 End MonotoneContinuationsMonad.
 
-Section MonoContSProp.
-  Definition MonoContSProp := @MonoCont SProp (SProp_op_order) _.
+Section MonoContProp.
+  Definition MonoContSProp := @MonoCont Prop (SProp_op_order) _.
   Import SPropNotations.
 
   Global Program Instance MonoContSProp_aa A : aa (@omon_rel MonoContSProp A)
     :=
       @mkAa _ _
-            (fun pre w => Sexists _ (fun p => pre -> Spr1 w p) _)
-            (fun pre w => Sexists _ (fun p => pre s/\ Spr1 w p) _)
-            _ _ _.
-  Solve All Obligations with cbv ; intuition ; try (eapply (Spr2 w) ; eauto).
+            (fun pre w => exist _ (fun p => pre -> proj1_sig w p) _)
+            (fun pre w => exist _ (fun p => pre s/\ proj1_sig w p) _)
+            _ _ _. 
+  Solve All Obligations with cbv ; intuition ; try (eapply (proj2_sig w) ; eauto).
+  Next Obligation. compute. split ; intuition.
+    apply H ; trivial.
+    apply H. split ; assumption.
+  Qed.
 
-End MonoContSProp.
+End MonoContProp.
 
-Definition STCont S := @MonoCont (S -> SProp) (pointwise_srelation S SProp_op_order) _.
+Definition STCont S := @MonoCont (S -> Prop) (pointwise_relation S SProp_op_order) _.
 
 
 Section PrePostSpec.
   Import SPropNotations.
 
   (* Generic pre-/post-conditions for the W^Pure specification monad. *)
-  Program Definition PrePostSpec {A} (P : SProp) (Q : A -> SProp) :
+  Program Definition PrePostSpec {A} (P : Prop) (Q : A -> Prop) :
     MonoContSProp A :=
-    Sexists _ (fun (Z : A -> SProp) => P s/\ forall a, Q a -> Z a) _.
+    exist _ (fun (Z : A -> Prop) => P s/\ forall a, Q a -> Z a) _.
   Next Obligation. cbv ; intuition eauto. Qed.
 
   Section Ran.
     Context (B C : Type) (w : MonoContSProp C)
-            (pre : SProp) (post : B -> SProp).
-    Context (Hpre : Spr1 w (fun _ => sUnit) -> pre).
+            (pre : Prop) (post : B -> Prop).
+    Context (Hpre : proj1_sig w (fun _ => True) -> pre).
 
     Definition MonoContAlongPrePost_ran : ran w (PrePostSpec pre post).
     Proof.
       unshelve econstructor.
-      refine (fun b => Sexists _ (fun p => post b s/\ Spr1 w p) _).
-      cbv ; intuition ; eapply (Spr2 w _) ; eauto.
+      refine (fun b => exist _ (fun p => post b s/\ proj1_sig w p) _).
+      cbv ; intuition ; eapply (proj2_sig w _) ; eauto.
       split.
       cbv. intros ; split.
-      apply Hpre. eapply (Spr2 w _) ; eauto.
+      apply Hpre. eapply (proj2_sig w _) ; eauto.
       cbv ; intuition. cbv ; intuition.
       cbv ; intuition.
-      destruct (H a q). apply s ; assumption.
+      destruct (H a H2). apply H3 ; assumption.
    Qed.
   End Ran.
 End PrePostSpec.
@@ -108,10 +122,10 @@ End PrePostSpec.
 Section ExceptionSpec.
   Context (E:Type).
   Import SPropNotations.
-
+  
   Definition ExnSpecCarrier : Type -> Type :=
-    fun X => { f : (X -> SProp) -> (E -> SProp) -> SProp
-          ≫ SProper ((X ⇢ SProp_op_order) s==> (E ⇢ SProp_op_order) s==> SProp_op_order) f}.
+    fun X => { f : (X -> Prop) -> (E -> Prop) -> Prop
+          | Proper ((pointwise_relation X SProp_op_order) ==> (pointwise_relation E SProp_op_order) ==> SProp_op_order) f}.
 
   Program Definition ExnSpec_ret : forall A, A -> ExnSpecCarrier A :=
     fun A a => ⦑ fun p pexc => p a ⦒.
@@ -120,27 +134,41 @@ Section ExceptionSpec.
   Program Definition ExnSpec_bind :
     forall A B, ExnSpecCarrier A -> (A -> ExnSpecCarrier B) -> ExnSpecCarrier B :=
     fun A B m f =>
-      ⦑ fun p pexc => Spr1 m (fun a => Spr1 (f a) p pexc) pexc ⦒.
+      ⦑ fun p pexc => proj1_sig m (fun a => proj1_sig (f a) p pexc) pexc ⦒.
   Next Obligation.
     move=> ? ? ? ? ? ?.
-    eapply (Spr2 m) ; try eassumption.
-    move=> /= ? ; apply (Spr2 (f _)) ; assumption.
+    eapply (proj2_sig m) ; try eassumption.
+    move=> /= ? ; apply (proj2_sig (f _)) ; assumption.
   Qed.
 
   Program Definition ExnSpecU : Monad :=
     @mkMonad ExnSpecCarrier ExnSpec_ret ExnSpec_bind _ _ _.
+  Next Obligation. compute.
+    apply sig_eq. compute.
+    rewrite -FunctionalExtensionality.eta_expansion.
+    reflexivity.
+  Qed.        
+  Next Obligation. compute. apply sig_eq ; compute.
+    rewrite -FunctionalExtensionality.eta_expansion.
+    reflexivity.
+  Qed.
+  Next Obligation. compute. apply sig_eq ; compute. reflexivity. Qed.
 
-  Definition ExnSpec_rel A : srelation (ExnSpecU A) :=
-    fun m1 m2 => ((A -> SProp) ⇢ ((E -> SProp) ⇢ SProp_op_order)) (Spr1 m1) (Spr1 m2).
+    
+  Definition ExnSpec_rel A : relation (ExnSpecU A) :=
+    fun m1 m2 => (pointwise_relation (A -> Prop) (pointwise_relation (E -> Prop) SProp_op_order)) (proj1_sig m1) (proj1_sig m2).
 
   Global Instance ExnSpec_order A : PreOrder (@ExnSpec_rel A).
-  Proof. constructor ; cbv ; intuition. Qed.
+  Proof. constructor ; cbv ; intuition. apply H. apply H0.
+    assumption.
+  Qed.
 
   Program Definition ExnSpec : OrderedMonad :=
     @mkOrderedMonad ExnSpecU ExnSpec_rel _ _.
   Next Obligation.
-    cbv; move=> ? y H ? ? ? ? ? H1 ; apply H.
-    move: H1 ; apply (Spr2 y) ; cbv ; intuition.
+    cbv; move=> ? y H ? ? G ? ? H1 ; apply H.
+    move: H1 ; apply (proj2_sig y) ; cbv ; intuition.
+    apply G. assumption.
   Qed.
 End ExceptionSpec.
 
@@ -151,10 +179,10 @@ End ExceptionSpec.
 Section UpdateSpecMonad.
   Context (M : monoid) (X : monoid_action M).
 
-  Definition dom_rel A : srelation (A -> M -> SProp) :=
-    pointwise_srelation A (pointwise_srelation M SProp_op_order).
-  Definition cod_rel : srelation (X -> SProp) :=
-    pointwise_srelation X SProp_op_order.
+  Definition dom_rel A : relation (A -> M -> Prop) :=
+    pointwise_relation A (pointwise_relation M SProp_op_order).
+  Definition cod_rel : relation (X -> Prop) :=
+    pointwise_relation X SProp_op_order.
 
   Instance dom_rel_ord A : PreOrder (@dom_rel A).
   Proof. constructor ; cbv ; intuition. Qed.
@@ -164,27 +192,27 @@ Section UpdateSpecMonad.
   Import SPropNotations.
 
   Definition WUpd A :=
-    { f : (A -> M -> SProp) -> X -> SProp ≫
-      SProper (@dom_rel A s==> cod_rel) f}.
+    { f : (A -> M -> Prop) -> X -> Prop |
+      Proper (@dom_rel A ==> cod_rel) f}. 
   Program Definition retWUpd A (a : A) : WUpd A :=
-    Sexists _ (fun p xx => p a (e M)) _.
+    exist _ (fun p xx => p a (e M)) _.
   Next Obligation. move=> ? ? H ? ; apply H. Qed.
 
   Program Definition bindWUpd A1 A2
           (wm : WUpd A1) (wf : A1 -> WUpd A2)
     : WUpd A2 :=
-    Sexists _
-            (fun p x => Spr1 wm (fun a m => Spr1 (wf a)
-                                              (fun a m' => p a (m'⋅m))
+    exist _
+            (fun p x => proj1_sig wm (fun a m => proj1_sig (wf a)
+                                              (fun a m' => p a (m'⋅m)) 
                                               (m ⧕  x)) x) _.
   Next Obligation.
-    move=> ? ? H ? ; apply (Spr2 wm)=> a m ; apply (Spr2 (wf a))=> ? ? ; apply H.
+    move=> ? ? H ? ; apply (proj2_sig wm)=> a m ; apply (proj2_sig (wf a))=> ? ? ; apply H.
   Qed.
 
-  Definition WUpd_rel A : srelation (WUpd A) :=
-    fun m1 m2 => forall p, cod_rel (Spr1 m1 p) (Spr1 m2 p).
+  Definition WUpd_rel A : relation (WUpd A) :=
+    fun m1 m2 => forall p, cod_rel (proj1_sig m1 p) (proj1_sig m2 p).
   Instance WUpd_ord A : PreOrder (@WUpd_rel A).
-  Proof. constructor ; cbv ; intuition. Qed.
+  Proof. constructor ; cbv ; intuition. apply H. apply H0. assumption. Qed.
 
   (* We do not prove the monadic laws since they would
    rely on funext. Instead we let them be proved on a case
@@ -195,27 +223,27 @@ Section UpdateSpecMonad.
     @mkOrderedMonad upd_spec_monad WUpd_rel WUpd_ord _.
   Next Obligation.
     cbv ; move=> x ? Hm ? ? Hf ? ? H. move: (Hm _ _ H).
-    apply (Spr2 x) => ? ? ; apply Hf.
+    apply (proj2_sig x) => ? ? ; apply Hf.
   Qed.
 
   Import FunctionalExtensionality.
 
   Program Definition UpdSpec := UpdSpecFromLaws _ _ _.
   Next Obligation.
-    apply Ssig_eq. extensionality p0 ; extensionality x.
+    apply sig_eq. extensionality p0 ; extensionality x.
     cbv. f_equal.
     extensionality a0 ; extensionality m' ; rewrite !monoid_law2 //.
     rewrite !monact_unit //.
   Qed.
 
   Next Obligation.
-    apply Ssig_eq. extensionality p.
+    apply sig_eq. extensionality p.
     cbv. extensionality a ; f_equal. extensionality a0 ; extensionality m'.
     rewrite !monoid_law1 //.
   Qed.
 
   Next Obligation.
-    apply Ssig_eq; extensionality p ; extensionality x.
+    apply sig_eq; extensionality p ; extensionality x.
     cbv.
     let t :=
         f_equal ; [let Hab := fresh "ab" in
@@ -231,11 +259,14 @@ Section UpdateSpecMonad.
     Global Program Instance UpdSpecFromLaws_aa A : aa (@omon_rel UpdSpec A)
       :=
         @mkAa _ _
-              (fun pre w => Sexists _ (fun p x => pre -> Spr1 w p x) _)
-              (fun pre w => Sexists _ (fun p x => pre s/\ Spr1 w p x) _)
-              _ _ _.
-    Solve All Obligations with cbv ; intuition ; try (eapply (Spr2 w) ; eauto).
-
+              (fun pre w => exist _ (fun p x => pre -> proj1_sig w p x) _)
+              (fun pre w => exist _ (fun p x => pre s/\ proj1_sig w p x) _)
+              _ _ _. 
+    Solve All Obligations with cbv ; intuition ; try (eapply (proj2_sig w) ; eauto).
+    Next Obligation. compute. split ; intuition.
+      all: apply H ; trivial. split ; trivial.
+    Qed.
+      
   End AssertAssume.
 
   Global Instance UpdSpec_aa A : aa (@omon_rel UpdSpec A).
@@ -251,68 +282,73 @@ End UpdateSpecMonad.
 
 (* Fat monotone relation-based specification monad *)
 Section MonotonicRelations.
+(*--------------------a forgotten section ----------------
   Import SPropNotations.
   Import SPropAxioms.
 
-  Definition SPropAssuming (pre : SProp) :=
-    { q : SProp ≫ q s<-> (pre -> q) }.
+  Definition SPropAssuming (pre : Prop) :=
+    { q : Prop | q <-> (pre -> q) }.
 
-  Definition MR_base X :=
-    forall (pre:SProp), (X -> SPropAssuming pre) -> SPropAssuming pre.
+  Definition MR_base X := 
+    forall (pre:Prop), (X -> SPropAssuming pre) -> SPropAssuming pre.
 
   Definition MR_base_rel X : srelation (MR_base X) :=
     fun r1 r2 =>
-    forall (pre1 pre2:SProp) (Hpre : pre1 -> pre2) (post1 : X -> SPropAssuming pre1)
+    forall (pre1 pre2:Prop) (Hpre : pre1 -> pre2) (post1 : X -> SPropAssuming pre1)
       (post2 : X -> SPropAssuming pre2)
-      (Hpost : forall x, Spr1 (post2 x) -> Spr1 (post1 x)), Spr1 (r2 pre2 post2) -> Spr1 (r1 pre1 post1).
+      (Hpost : forall x, proj1_sig (post2 x) -> proj1_sig (post1 x)), proj1_sig (r2 pre2 post2) -> proj1_sig (r1 pre1 post1).
 
-  Definition MR X := { r : MR_base X ≫ SProper (@MR_base_rel X) r }.
+  Definition MR X := { r : MR_base X | SProper (@MR_base_rel X) r }.
 
   Program Definition retMR A a : MR A :=
-    Sexists _ (fun pre post => Sexists _ (pre -> Spr1 (post a)) _) _.
+    exist _
+            (fun pre (post : A -> SPropAssuming pre)  =>
+              exist _ (pre -> proj1_sig (post a)) _)
+            _.
   Next Obligation. cbv ; intuition. Qed.
-  Next Obligation. cbv ; intuition. Qed.
+  Next Obligation. cbv ; intuition. apply Hpost. assumption. Qed.
 
   Program Definition bindMR A B (m:MR A) (f: A -> MR B) : MR B :=
-      Sexists _ (fun pre post =>
-                   Sexists _ (Spr1 (Spr1 m pre (fun a => Sexists _ (Spr1 (Spr1 (f a) pre post)) _))) _) _.
+      exist _ (fun pre post =>
+                   exist _ (proj1_sig (proj1_sig m pre (fun a => exist _ (proj1_sig (proj1_sig (f a) pre post)) _))) _) _.
   Next Obligation.
     split ; move=> ? //=.
-    match goal with | [|- _ ?X] => apply (Spr2 X) ;assumption end.
+    match goal with | [|- _ ?X] => apply (proj2_sig X) ;assumption end.
+  Qed.
+  Next Obligation. destruct m as [r propr]. simpl.
+    destruct (r pre (fun a : A => ⦑ ((f a) ∙1 pre post) ∙1 ⦒)).
+    compute. compute in s. assumption.
   Qed.
   Next Obligation.
     cbv ; intuition.
-    match goal with | [|- ?X ?Y] => apply (Spr2 Y) ; assumption end.
-  Qed.
-  Next Obligation.
-    cbv ; intuition.
-    simple refine (Spr2 m _ _ _ _ _ _ H).
+    simple refine (proj2_sig m _ _ _ _ _ _ H).
     assumption.
-    cbv ; move=> a. apply (Spr2 (f a)). assumption. auto.
+    cbv ; move=> a. apply (proj2_sig (f a)). assumption. auto.
   Qed.
 
   Import FunctionalExtensionality.
 
   Program Definition MR_monad : Monad :=
     @mkMonad MR retMR bindMR _ _ _.
-  Next Obligation.
-    apply Ssig_eq ; extensionality pre ; extensionality post ; apply Ssig_eq ; apply sprop_ext.
-    do 2 split ; cbv.
-    move=> ?; match goal with
-               | [|- _ ?X] => apply (Spr2 X) ; assumption
-              end.
-    move=> ? ? //=.
+  Next Obligation. 
+    apply sig_eq ; extensionality pre ; extensionality post ; apply sig_eq.
+    simpl. destruct ((f a) ∙1 pre post) as [q eq]. compute.
+    compute in eq. destruct eq as [eq1 eq2]. apply sprop_ext. apply box.
+    split ; assumption.
   Qed.
   Next Obligation.
-    apply Ssig_eq ; extensionality pre ; extensionality post ; apply Ssig_eq ; apply sprop_ext.
+    apply sig_eq ; extensionality pre ; extensionality post ; apply sig_eq ; apply sprop_ext.
     do 2 split ; cbv.
-    apply (Spr2 c) => //=.
-    move=> ? ? ; apply (Spr2 (post _)) ; assumption.
-    apply (Spr2 c) => //=.
+    apply (proj2_sig c) => //=.
+    move=> ? ? ; apply (proj2_sig (post _)) ; assumption.
+    apply (proj2_sig c) => //=.
+  Qed.
+  Next Obligation.
+    
   Qed.
 
   Definition MR_rel X : srelation (MR X) :=
-    fun w1 w2 => forall pre post, Spr1 (Spr1 w2 pre post) -> Spr1 (Spr1 w1 pre post).
+    fun w1 w2 => forall pre post, proj1_sig (proj1_sig w2 pre post) -> proj1_sig (proj1_sig w1 pre post).  
 
   Instance MR_preorder X : PreOrder (@MR_rel X).
   Proof.
@@ -324,25 +360,26 @@ Section MonotonicRelations.
   Next Obligation.
     cbv ; intuition.
     simple refine (H _ _ _).
-    move:H1 ; apply (Spr2 y); auto.
+    move:H1 ; apply (proj2_sig y); auto.
   Qed.
 
+------------end of forgotten section *)
 End MonotonicRelations.
-
 
 
 From Coq Require FunctionalExtensionality.
 
 Section Pred.
+(*-----------------------a forgotten section
   Import SPropNotations.
   Import SPropAxioms.
   Import FunctionalExtensionality.
 
-  Definition Pred X := X -> SProp.
-  Definition Pred_ret : forall A, A -> Pred A := fun _ x y => y ≡ x.
-  Definition Pred_bind
+  Definition Pred X := X -> Prop.
+  Definition Pred_ret : forall A, A -> Pred A := fun _ x y => y = x.
+  Definition Pred_bind 
     : forall A B, Pred A -> (A -> Pred B) -> Pred B :=
-    fun A B m f y => s∃ x, m x s/\ (f x) y.
+    fun A B m f y => exists x, m x s/\ (f x) y.
 
   Program Definition PredM : Monad :=
     @mkMonad Pred Pred_ret Pred_bind _ _ _.
@@ -358,15 +395,16 @@ Section Pred.
   Qed.
   Next Obligation.
     cbv ; extensionality y ; apply sprop_ext ; do 2 constructor.
-    move=> [? [[? [? ?]] ?]] ; eexists ; split ; [|eexists; split] ; eassumption.
-    move=> [? [? [? [? ?]]]] ; eexists ; split ; [eexists; split|] ; eassumption.
+    move=> [? [[? [? ?]] ?]] ; eexists ; split ; [|eexists; split] ; eassumption. 
+    move=> [? [? [? [? ?]]]] ; eexists ; split ; [eexists; split|] ; eassumption. 
   Qed.
-
+    
   Program Definition PredOM : OrderedMonad :=
     @mkOrderedMonad PredM (fun X => X ⇢ SProp_order) _ _.
   Next Obligation.
-    cbv=> ? ? ? ? ? ? ? [a [? ?]]; exists a ; split ; auto.
+    cbv=> ? ? ? ? ? ? ? [a [? ?]]; exists a ; split ; auto. 
   Qed.
+-------------------end of forgotten section *)
 End Pred.
 
 Module PrePost.
@@ -374,46 +412,46 @@ Module PrePost.
   Import SPropAxioms.
   Import FunctionalExtensionality.
 
-  Definition PP X := SProp  × (X -> SProp).
+  Definition PP X := Prop  × (X -> Prop).
 
-  Definition PP_ret : forall A, A -> PP A := fun _ x => ⟨ sUnit, fun y => y ≡ x ⟩.
+  Definition PP_ret : forall A, A -> PP A := fun _ x => ⟨ True, fun y => y = x ⟩.
 
   Definition PP_bind
     : forall A B, PP A -> (A -> PP B) -> PP B :=
     fun A B m f =>
       ⟨ (nfst m s/\ forall x, nsnd m x -> nfst (f x)),
-        fun y => s∃ x, nsnd m x s/\ nsnd (f x) y ⟩.
+        fun y => exists x, nsnd m x s/\ nsnd (f x) y ⟩.
 
   Program Definition PP_monad : Monad :=
     @mkMonad PP PP_ret PP_bind _ _ _.
 
   Next Obligation.
     apply nprod_eq =>//= ; [|extensionality y] ; apply sprop_ext => //=.
-    dintuition ; subst_sEq ; assumption.
+    dintuition ; subst. compute. intuition. rewrite H0. assumption.
     do 2 split.
-    intros [? []]; subst_sEq ; assumption.
+    intros [? []]. subst. assumption.
     eexists ; split ; [| eassumption] ; reflexivity.
   Qed.
-
   Next Obligation.
     apply nprod_eq =>//= ; [|extensionality y] ;
       apply sprop_ext => //= ; try by dintuition.
+    compute. apply box. intuition.
     do 2 split.
-    move=> [? [? ?]] ; subst_sEq ; eassumption.
+    move=> [? [? ?]] ; subst ; eassumption.
     move=> ? ; eexists ; split. eassumption. reflexivity.
   Qed.
-
   Next Obligation.
     apply nprod_eq =>//= ; [|extensionality y] ; apply sprop_ext => //=.
-    - dintuition. eapply q ; eexists ; split ; eassumption.
-      destruct (q x H) ; assumption.
-      destruct H as [?[n ?]]. destruct (q _ n) ; auto.
+    compute. apply box. intuition. apply H1. exists x. intuition.
+    apply H1. assumption.
+    destruct H as [x0 [pf_nsnd_f pf_nsnd_c]].
+    apply (H1 x0 pf_nsnd_f). assumption.
     - do 2 split.
     intros [? [[? []]]] ; eexists ; split ; [|eexists;split] ;eassumption.
     intros [? [? [? []]]] ; eexists ; split ; [eexists; split|] ; eassumption.
   Qed.
 
-  Program Definition PP_rel A : srelation (PP A) :=
+  Program Definition PP_rel A : relation (PP A) :=
     fun m1 m2 => (nfst m2 -> nfst m1) s/\ forall x, nsnd m1 x -> nsnd m2 x.
   Instance PP_rel_preorder A : PreOrder (@PP_rel A).
   Proof. constructor ; cbv ; dintuition. Qed.
@@ -422,7 +460,7 @@ Module PrePost.
     @mkOrderedMonad PP_monad PP_rel _ _.
   Next Obligation.
     cbv ; dintuition. destruct (H x0) ; auto.
-    destruct H0 as [x1 []]. destruct (H x1) ; eexists ; split ; auto.
+    destruct H2 as [x1 []]. destruct (H x1) ; eexists ; split ; auto.
     auto.
   Qed.
 
@@ -433,7 +471,7 @@ Module PrePost.
           |         /
           w' <=   /
           |     /  Ran_w w'
-          v   /
+          v   / 
           B <
    *)
 
@@ -457,7 +495,7 @@ Module PrePost.
     Qed.
 
     Program Definition PPSpecRan : ran w' w :=
-      Sexists _ PPSpec_ran _.
+      exist _ PPSpec_ran _.
     Next Obligation.
       split ; [exact PPSpec_ran_valid | exact PPSpec_ran_universal].
     Qed.
@@ -468,7 +506,7 @@ Module PrePost.
       @mkAa _ _
             (fun pre w => ⟨pre -> nfst w, nsnd w⟩)
             (fun pre w => ⟨pre s/\ nfst w, nsnd w⟩)
-            _ _ _.
+            _ _ _. 
   Solve All Obligations with cbv ; intuition.
 
 End PrePost.
@@ -476,37 +514,38 @@ End PrePost.
 
 
 Module  StrongestPostcondition.
+(*---------------------------------- a forgotten module
   Import SPropNotations.
   Import SPropAxioms.
   Import FunctionalExtensionality.
 
-  Record SPropOver (p:SProp) := mkOver { base :> SProp ; over : base -> p }.
+  Record SPropOver (p:Prop) := mkOver { base :> Prop ; over : base -> p }.
 
-  Definition SP X := { f : forall p:SProp, X -> SPropOver p ≫
-                       forall (p1 p2 : SProp) x, (p1 -> p2) -> f p1 x -> f p2 x}.
+  Definition SP X := { f : forall p:SProp, X -> SPropOver p |
+                       forall (p1 p2 : Prop) x, (p1 -> p2) -> f p1 x -> f p2 x}.
 
   Program Definition SP_ret A (a:A) : SP A :=
-    Sexists _ (fun p y => @mkOver _ (p s/\ a ≡ y) _) _.
+    exist _ (fun p y => @mkOver _ (p s/\ a = y) _) _.
   Next Obligation. destruct H ; assumption. Qed.
   Next Obligation. destruct H0 ; split ; auto. Qed.
 
   Program Definition SP_bind A B (m:SP A) (f : A -> SP B) : SP B :=
-    Sexists _ (fun p y => @mkOver _ (s∃ x, Spr1 (f x) (Spr1 m p x) y) _) _.
+    exist _ (fun p y => @mkOver _ (exists x, proj1_sig (f x) (proj1_sig m p x) y) _) _.
   Next Obligation.
     destruct H as [x0 H0].
-    exact (@over _ (Spr1 m p x0) (@over _ (Spr1 (f _) _ _) H0)).
+    exact (@over _ (proj1_sig m p x0) (@over _ (proj1_sig (f _) _ _) H0)).
   Qed.
 
   Next Obligation.
     destruct H0 as [x0 H1].
-    exists x0 ; apply (Spr2 (f x0) _ _ _ (Spr2 m _ _ x0 H)) ; assumption.
+    exists x0 ; apply (proj2_sig (f x0) _ _ _ (proj2_sig m _ _ x0 H)) ; assumption.
   Qed.
 
-  Lemma trivial_eq (p:SProp) {A} (x:A) : p = (p s/\ x ≡ x).
+  Lemma trivial_eq (p:Prop) {A} (x:A) : p = (p s/\ x = x).
   Proof. apply sprop_ext ; split ; dintuition. Qed.
 
   Lemma SPropOver_eq p (q1 q2 : SPropOver p) :
-    (base q1 s<-> base q2) -> q1 = q2.
+    (base q1 <-> base q2) -> q1 = q2.
   Proof.
     intros .
     assert (H0 : base q1 = base q2) by (apply sprop_ext ; constructor ; assumption).
@@ -518,32 +557,32 @@ Module  StrongestPostcondition.
   Program Definition SP_monad : Monad := @mkMonad SP SP_ret SP_bind _ _ _.
 
   Next Obligation.
-    apply Ssig_eq ; extensionality p ; extensionality y ; apply SPropOver_eq ;
+    apply sig_eq ; extensionality p ; extensionality y ; apply SPropOver_eq ;
       simpl ; split.
-    intros [x H] ; move: (over H) => [_?] ; subst_sEq ;
-      move: H ; apply (Spr2 (f a)) ; intuition.
+    intros [x H] ; move: (over H) => [_?] ; subst ;
+      move: H ; apply (proj2_sig (f a)) ; intuition.
     intros H ; exists a; rewrite <- trivial_eq ; assumption.
   Qed.
 
   Next Obligation.
-    apply Ssig_eq ; extensionality p ; extensionality y ; apply SPropOver_eq ;  simpl ; split.
-    intros [? []] ; subst_sEq ; assumption.
+    apply sig_eq ; extensionality p ; extensionality y ; apply SPropOver_eq ;  simpl ; split.
+    intros [? []] ; subst ; assumption.
     intros H ; eexists ; intuition ; eassumption.
   Qed.
 
   Next Obligation.
-    apply Ssig_eq ; extensionality p ; extensionality y ; apply SPropOver_eq ;  simpl ; split.
+    apply sig_eq ; extensionality p ; extensionality y ; apply SPropOver_eq ;  simpl ; split.
 
     intros [x0 H].
     move: (over H) => [x1 H1]; exists x1 ; exists x0; move: H.
-    apply (Spr2 (g x0)) => ? //=.
+    apply (proj2_sig (g x0)) => ? //=.
 
-    intros [x0 [x1 H]] ; exists x1 ; move: H ; apply (Spr2 (g x1)) => ?.
+    intros [x0 [x1 H]] ; exists x1 ; move: H ; apply (proj2_sig (g x1)) => ?.
     exists x0 ; assumption.
   Qed.
 
   Definition SP_rel A : srelation (SP A) :=
-    fun m1 m2 => forall p x, Spr1 m1 p x -> Spr1 m2 p x.
+    fun m1 m2 => forall p x, proj1_sig m1 p x -> proj1_sig m2 p x.
   Instance SP_rel_preorder A : PreOrder (@SP_rel A).
   Proof. constructor ; cbv ; intuition. Qed.
 
@@ -551,40 +590,41 @@ Module  StrongestPostcondition.
     @mkOrderedMonad SP_monad SP_rel _ _.
   Next Obligation.
     cbv; move=> ? ? ? ? f H ? ? [x H0].
-    exists x. move : (H _ _ _ H0) ; eapply (Spr2 (f x)) ; auto.
+    exists x. move : (H _ _ _ H0) ; eapply (proj2_sig (f x)) ; auto.
   Qed.
-
+-------------------end of forgotten module*)
 End StrongestPostcondition.
 
 Section Adjunctions.
+(*----------------------------a forgotten section
   Import PrePost.
   Import SPropNotations.
 
   Definition pred2pp A (post:PredOM A) : PPSpecMonad A :=
-    ⟨sUnit, post⟩.
+    ⟨True, post⟩.
   Definition pp2pred A (pp:PPSpecMonad A) : PredOM A :=
     fun a => nsnd pp a.
 
   Lemma pred_pp_adjunction : forall A post (pp : PPSpecMonad A),
-   pred2pp post ≤[PPSpecMonad] pp  s<-> post ≤[PredOM] pp2pred pp.
+   pred2pp post ≤[PPSpecMonad] pp  <-> post ≤[PredOM] pp2pred pp.
   Proof.
     move=> A post pp ; cbv ; split ; intuition.
   Qed.
 
-  Let MonoCont := MonoContSProp.
+  Let MonoCont := MonoContProp.
 
   Definition wp2pp A (w : MonoCont A) : PPSpecMonad A :=
-    ⟨Spr1 w (fun _ => sUnit), fun x =>  forall p, Spr1 w p -> p x⟩.
+    ⟨proj1_sig w (fun _ => True), fun x =>  forall p, proj1_sig w p -> p x⟩.
   Program Definition pp2wp A (pp : PPSpecMonad A) : MonoCont A :=
-    Sexists _ (fun post => nfst pp s/\ (forall x, nsnd pp x -> post x)) _.
+    exist _ (fun post => nfst pp s/\ (forall x, nsnd pp x -> post x)) _.
   Next Obligation. cbv ; intuition. Qed.
 
   Lemma wp_pp_adjunction : forall A pp (w : MonoCont A),
-   pp ≤[PPSpecMonad] wp2pp w s<-> pp2wp pp ≤[MonoCont] w.
+   pp ≤[PPSpecMonad] wp2pp w <-> pp2wp pp ≤[MonoCont] w.
   Proof.
     intros A pp w ; cbv ; split.
     - move=> [Hpre Hpost] a H1 ; split.
-      apply Hpre. move:H1. apply (Spr2 w). cbv ; dintuition.
+      apply Hpre. move:H1. apply (proj2_sig w). cbv ; dintuition.
       intros ; apply Hpost ; assumption.
     - intros Hpp ; split.
       move=> H1 ; move: (Hpp _ H1) ; dintuition.
@@ -594,42 +634,42 @@ Section Adjunctions.
 
 
   Program Definition wp2mr A (w : MonoCont A) : MRSpec A :=
-    Sexists _ (fun pre post => Sexists _ (pre -> Spr1 w (fun a => Spr1 (post a))) _ ) _.
+    exist _ (fun pre post => exist _ (pre -> proj1_sig w (fun a => proj1_sig (post a))) _ ) _.
   Next Obligation. cbv ; intuition. Qed.
   Next Obligation.
     cbv ; intuition.
-    move: H2 ; apply (Spr2 w). cbv ; auto.
+    move: H2 ; apply (proj2_sig w). cbv ; auto.
   Qed.
 
-  Program Definition assuming (pre : SProp) A (post : A -> SProp) (x:A) :
+  Program Definition assuming (pre : Prop) A (post : A -> Prop) (x:A) :
     SPropAssuming pre :=
-    Sexists _ (pre -> post x) _.
+    exist _ (pre -> post x) _.
   Next Obligation. cbv ; intuition. Qed.
 
   Program Definition mr2wp A (mr:MRSpec A) : MonoCont A :=
-    Sexists _ (fun p => s∃ (pre:SProp), Spr1 (Spr1 mr pre (assuming pre p)) s/\ pre) _.
+    exist _ (fun p => exists (pre:Prop), proj1_sig (proj1_sig mr pre (assuming pre p)) s/\ pre) _.
   Next Obligation.
     cbv ; intuition.
     move: H0 => [pre [Hmr ?]] ; exists pre ; intuition.
-    move: Hmr ; apply (Spr2 mr) ; cbv ; auto.
+    move: Hmr ; apply (proj2_sig mr) ; cbv ; auto.
   Qed.
 
   Lemma wp_mr_adjunction : forall A (w : MonoCont A) r,
-   w ≤ mr2wp r s<-> wp2mr w ≤ r.
+   w ≤ mr2wp r <-> wp2mr w ≤ r.
   Proof.
-   cbv ; intuition.
+   cbv ; intuition. 
    apply H. exists pre ; intuition.
-   move: H0 ; apply (Spr2 r) ; auto.
+   move: H0 ; apply (proj2_sig r) ; auto.
 
    move: H0 => [pre [Hr Hpre]].
-   move: (H _ _ Hr Hpre). apply (Spr2 w). auto.
+   move: (H _ _ Hr Hpre). apply (proj2_sig w). auto.
   Qed.
 
 
    Import StrongestPostcondition.
 
    Definition sp2pred A (sp:ForwardPredTransformer A) : PredOM A :=
-     fun r => Spr1 sp sUnit r.
+     fun r => proj1_sig sp True r.
 
    Program Definition pred2sp A (post : PredOM A) : ForwardPredTransformer A :=
      ⦑fun pre r => @mkOver _ (pre s/\ post r) _⦒.
@@ -640,7 +680,7 @@ Section Adjunctions.
    Lemma sp2pred2sp_id : forall A (sp : ForwardPredTransformer A),
        pred2sp (sp2pred sp) = sp.
    Proof.
-     move=> A sp. apply Ssig_eq. extensionality p. extensionality r.
+     move=> A sp. apply sig_eq. extensionality p. extensionality r.
      apply SPropOver_eq. split; cbv.
      move=> [Hp]. apply (sp∙2). trivial.
      move=> H; split. exact (over H). move:H ;apply (sp∙2)=> //.
@@ -654,29 +694,29 @@ Section Adjunctions.
 
   (** Previous convoluted definition that's secretly "equivalent" to the one above *)
   (*  Definition sp2pp A (sp:ForwardPredTransformer A) : PPSpecMonad A := *)
-  (*    let post := fun x => forall (pre : SProp), pre -> Spr1 sp pre x in *)
-  (*    let pre := s∃ pre, (forall x, post x -> Spr1 sp pre x) s/\ pre in *)
+  (*    let post := fun x => forall (pre : Prop), pre -> proj1_sig sp pre x in *)
+  (*    let pre := exists pre, (forall x, post x -> proj1_sig sp pre x) s/\ pre in *)
   (*    ⟨pre, post⟩. *)
 
   (* Program Definition pp2sp0 A (pp : PPSpecMonad A) : ForwardPredTransformer A := *)
   (*   let sp pre x := pre s/\ (nfst pp -> nsnd pp x) in *)
-  (*   Sexists _ (fun pre x => @mkOver _ (sp pre x) _) _. *)
+  (*   exist _ (fun pre x => @mkOver _ (sp pre x) _) _. *)
   (* Next Obligation. destruct H ; assumption. Qed. *)
   (* Next Obligation. move: H0 => [Hpre Hpost] ; split ; auto. Qed. *)
 
   (* Program Definition pp2sp A (pp : PPSpecMonad A) : ForwardPredTransformer A := *)
-  (*   let sp pre x : SProp := *)
+  (*   let sp pre x : Prop := *)
   (*       forall (sp: ForwardPredTransformer A), *)
-  (*         (forall x pre', pre' s/\ nsnd pp x -> Spr1 sp pre' x) -> *)
-  (*             Spr1 sp pre x in *)
-  (*   Sexists _ (fun pre x => @mkOver _ (sp pre x) _) _. *)
+  (*         (forall x pre', pre' s/\ nsnd pp x -> proj1_sig sp pre' x) -> *)
+  (*             proj1_sig sp pre x in *)
+  (*   exist _ (fun pre x => @mkOver _ (sp pre x) _) _. *)
   (* Next Obligation. *)
   (*   move: (H (pp2sp0 pp)) => H0. *)
   (*   apply (fun f => over (H0 f)).  *)
   (*   cbv ; intuition. *)
   (* Qed. *)
   (* Next Obligation. *)
-  (*   move: (H0 sp H1). apply (Spr2 sp). assumption. *)
+  (*   move: (H0 sp H1). apply (proj2_sig sp). assumption. *)
   (* Qed. *)
 
   (* Lemma pp2sp01 A (pp:PPSpecMonad A) : *)
@@ -694,11 +734,11 @@ Section Adjunctions.
   (* Proof. *)
   (*   cbv. *)
   (*   split. *)
-  (*   - move=> ?; exists sUnit;split. *)
+  (*   - move=> ?; exists True;split. *)
   (*     move=> ? H ? ?; apply H. *)
   (*     all:intuition. *)
   (*   - move=> x H. *)
-  (*     simple refine (_ (H sUnit stt (pp2sp0 ⟨sUnit, nsnd pp⟩) _)); cbv ; intuition. *)
+  (*     simple refine (_ (H True stt (pp2sp0 ⟨True, nsnd pp⟩) _)); cbv ; intuition. *)
   (* Qed. *)
 
   (* Lemma pp2sp_sp2pp_loop A (sp:ForwardPredTransformer A) : *)
@@ -709,70 +749,71 @@ Section Adjunctions.
   (*   specialize (H0 x). *)
   (*   apply H0. *)
   (*   split. exact (over H). *)
-  (*   intros ; move: H ; apply (Spr2 sp) ; intuition. *)
+  (*   intros ; move: H ; apply (proj2_sig sp) ; intuition. *)
   (* Qed. *)
 
   (* Lemma sp_pp_adjunction A pp (sp : ForwardPredTransformer A) : *)
-  (*   sp2pp sp ≤[PPSpecMonad] pp s<-> sp ≤[ForwardPredTransformer] pp2sp pp. *)
+  (*   sp2pp sp ≤[PPSpecMonad] pp <-> sp ≤[ForwardPredTransformer] pp2sp pp. *)
   (* Proof. *)
   (*   cbv ; split. *)
   (*   - dintuition. apply H0. *)
   (*     split. exact (over H). *)
-  (*     apply q. intros ; move:H ; apply (Spr2 sp) ; intuition. *)
+  (*     apply q. intros ; move:H ; apply (proj2_sig sp) ; intuition. *)
   (*   - dintuition. *)
-  (*     exists sUnit. split ; intuition. *)
+  (*     exists True. split ; intuition. *)
   (*     apply H1 ; constructor. *)
-  (*     simple refine (_ (H sUnit x (H0 sUnit stt)(pp2sp0 ⟨sUnit, nsnd pp⟩) _)); cbv ; intuition. *)
+  (*     simple refine (_ (H True x (H0 True stt)(pp2sp0 ⟨True, nsnd pp⟩) _)); cbv ; intuition. *)
   (* Qed. *)
 
   Program Definition sp2mr A (sp : ForwardPredTransformer A)
     : MRSpec A :=
-    Sexists _ (fun pre post => Sexists _ (forall a, Spr1 sp pre a -> Spr1 (post a)) _) _.
+    exist _ (fun pre post => exist _ (forall a, proj1_sig sp pre a -> proj1_sig (post a)) _) _.
   Next Obligation.
     cbv ; intuition.
-    apply (Spr2 (post a)).
+    apply (proj2_sig (post a)).
     auto.
   Qed.
   Next Obligation.
     cbv ; intuition.
-    apply Hpost. apply H. move: H0 ; apply (Spr2 sp) ; auto.
+    apply Hpost. apply H. move: H0 ; apply (proj2_sig sp) ; auto.
   Qed.
 
   Program Definition mr2sp A (mr : MRSpec A)
     : ForwardPredTransformer A :=
-    Sexists _ (fun pre a => @mkOver _ (pre s/\ forall post, Spr1 (Spr1 mr pre post) -> Spr1 (post a)) _)_.
+    exist _ (fun pre a => @mkOver _ (pre s/\ forall post, proj1_sig (proj1_sig mr pre post) -> proj1_sig (post a)) _)_.
   Next Obligation. destruct H ; assumption. Qed.
   Next Obligation.
     move: H0 => [Hpre Hmr] ; split ; [auto|].
-    move=> post Hpost. simple refine (Hmr (fun a => Sexists _ (Spr1 (post a)) _) _). cbv ; intuition.
-    move: Hpost ; apply (Spr2 mr) ; cbv ; intuition.
+    move=> post Hpost. simple refine (Hmr (fun a => exist _ (proj1_sig (post a)) _) _). cbv ; intuition.
+    move: Hpost ; apply (proj2_sig mr) ; cbv ; intuition.
   Qed.
 
   Lemma sp_mr_adjunction A (sp : ForwardPredTransformer A) (mr:MRSpec A) :
-     sp2mr sp ≤ mr s<-> sp  ≤ mr2sp mr.
+     sp2mr sp ≤ mr <-> sp  ≤ mr2sp mr.
   Proof.
     cbv ; intuition.
     exact (over H0).
     move: (H _ _ H1) => [? Hpost].
     apply Hpost ; assumption.
   Qed.
-
+-------------------------end of forgotten section*)
 End Adjunctions.
 
 
 Section WpSpRightKanExtension.
-  Let MonoCont := @MonoCont SProp (SProp_op_order) _.
+(*-----------------------------a forgotten section
+  Let MonoCont := @MonoCont Prop (SProp_op_order) _.
   Import PrePost.
   Import StrongestPostcondition.
   Import SPropNotations.
+  
+  Definition ppwp_pairing A (pp : PPSpecMonad A) (w : MonoCont A) : Prop :=
+    nfst pp -> proj1_sig w (nsnd pp).
 
-  Definition ppwp_pairing A (pp : PPSpecMonad A) (w : MonoCont A) : SProp :=
-    nfst pp -> Spr1 w (nsnd pp).
+  Definition ppsp_pairing A (pp : PPSpecMonad A) (sp : ForwardPredTransformer A) : Prop :=
+    forall a, proj1_sig sp (nfst pp) a -> nsnd pp a.
 
-  Definition ppsp_pairing A (pp : PPSpecMonad A) (sp : ForwardPredTransformer A) : SProp :=
-    forall a, Spr1 sp (nfst pp) a -> nsnd pp a.
-
-  Definition wpsp_pairing A (wp: MonoCont A) (sp:ForwardPredTransformer A) : SProp :=
+  Definition wpsp_pairing A (wp: MonoCont A) (sp:ForwardPredTransformer A) : Prop :=
     (forall pre post, let pp := ⟨pre, post⟩ in ppwp_pairing pp wp -> ppsp_pairing pp sp) s/\
     (forall pre post, let pp := ⟨pre, post⟩ in ppsp_pairing pp sp -> ppwp_pairing pp wp).
 
@@ -781,16 +822,17 @@ Section WpSpRightKanExtension.
   Context (Hadj : forall A m, wpsp_pairing (θwp A m) (θsp A m)).
 
   Program Definition wp_ran A B (w: MonoCont B) (m: M A) : ran w (θwp A m) :=
-    Sexists _ (fun a => Sexists _ (fun p => Spr1 (θsp A m) (Spr1 w p) a) _) _.
+    exist _ (fun a => exist _ (fun p => proj1_sig (θsp A m) (proj1_sig w p) a) _) _.
   Next Obligation.
-    cbv. move=> ? ? H ; apply (Spr2 (θsp A m)) ; apply (Spr2 w)=> //=.
+    cbv. move=> ? ? H ; apply (proj2_sig (θsp A m)) ; apply (proj2_sig w)=> //=.
   Qed.
   Next Obligation.
     move: (Hadj m) ; move => [H1 H2]; cbv ; split.
     - move=> p ; apply H2 => //=.
     - move=> w' Hw' a p.
-      refine (H1 _ (fun a => Spr1 (w' a) p) _ a).
+      refine (H1 _ (fun a => proj1_sig (w' a) p) _ a).
       cbv ; apply Hw'.
    Qed.
-
+---------------------------end of forgotten section*)
 End WpSpRightKanExtension.
+

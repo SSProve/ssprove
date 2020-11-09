@@ -13,6 +13,8 @@ From Coq Require Export FunctionalExtensionality.
 
 (*now an equivalence between SProp and Prop. An equivalence of
 truth collections.*)
+
+(*
 Parameter (Prop2SProp : Prop -> SProp).
 Parameter (SProp2Prop : SProp -> Prop).
 
@@ -28,6 +30,7 @@ Axiom (SProp2Prop_truthMorphism_leftRight :
 forall Q' : SProp, Q' -> SProp2Prop Q').
 Axiom (SProp2Prop_truthMorphism_rightLeft :
 forall Q' : SProp, SProp2Prop Q' -> Q').
+*)
 
 (* The following are not axioms per se, but come from boolp using axioms *)
 Local Definition func (A B : Type) (R : A -> B -> Prop) :

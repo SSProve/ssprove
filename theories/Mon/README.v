@@ -126,7 +126,7 @@ Section EffectObservationFromMonadTransformer.
 
   Let M := T (DiscreteMonad Identity).
   Let W := T (MonoContSProp).
-
+  
   Definition effect_observation_from_monad_transformer :
     MonotonicMonadMorphism M W
     := mt_map T (from_discrete_monad_monotonic (ret_mmorph MonoContSProp)).
@@ -140,10 +140,10 @@ End EffectObservationFromMonadTransformer.
 Section NonDeterminism.
 
   Section Angelic.
-
+    
     Fixpoint or (xs : list SProp) : SProp :=
       match xs with
-      | nil => sEmpty
+      | nil => False
       | P :: Ps => P s\/ or Ps
       end.
 
@@ -185,7 +185,7 @@ Section NonDeterminism.
 
     Fixpoint and (xs : list SProp) : SProp :=
       match xs with
-      | nil => sUnit
+      | nil => True
       | P :: Ps => P s/\ and Ps
       end.
 
@@ -218,7 +218,7 @@ Section NonDeterminism.
       move: H0 ; induction a ; constructor ; intuition.
     Qed.
 
-
+    
     Definition DemonicEffectObs : MonadMorphism ListM MonoContSProp
       := mor Demonic_oalg.
 
@@ -259,8 +259,8 @@ Section IOObservations.
   Program Definition θOptimisticRead : MonadMorphism IO MonoContSProp :=
     @OpSpecEffObs IOop IOop_arity MonoContSProp
                   (fun op => match op with
-                          | Read _ => ⦑ fun p => s∃ i, p i ⦒
-                          | Write _ => ⦑ fun _ => sUnit ⦒
+                          | Read _ => ⦑ fun p => exists i, p i ⦒
+                          | Write _ => ⦑ fun _ => True ⦒
                           end).
   Next Obligation. destruct H0 as [? ?] ; eexists ; apply H ; eassumption. Qed.
   Next Obligation. assumption. Qed.
@@ -320,7 +320,7 @@ End IOObservations.
 Section DijkstraState.
 
   Context (S : Type).
-
+  
   Let State := St S.
 
   (* Weakest preconditions for specifying stateful operations *)
@@ -357,8 +357,8 @@ Section DijkstraState.
      computation on states satisfies the usual semantics of a Hoare
      triple.  *)
   Lemma soundness P Q : forall (c : PrePost P Q) s,
-      P s -> Q s (nsnd (Spr1 c s)).
-  Proof.
+      P s -> Q s (nsnd (proj1_sig c s)).
+  Proof. 
     move=> [f H] /= s pre_ok.
     cbv in H ; apply H.
     cbv; intuition.
@@ -374,8 +374,8 @@ Arguments put' [S].
 
 (* A toy stateful program, from Swamy et al., 2013. *)
 Program Definition incr : PrePost nat
-                          (fun _ => sUnit)
-                          (fun s0 s1 => s0 s< s1) :=
+                          (fun _ => True)
+                          (fun s0 s1 => s0 < s1) :=
   wkn (x <- get' ; put' (S x)) _.
 Next Obligation. simpl. apply H. constructor. apply sle_refl. Qed.
 
@@ -412,7 +412,7 @@ Section DemonicNonDeterminism.
     ifTE b (dret tt) failD.
 
   Program Definition test_demonic
-    : Demonic nat (PostDemonic (fun x => 1 s< x s/\ x s< 6))
+    : Demonic nat (PostDemonic (fun x => 1 < x s/\ x < 6))
     := wkn (chooseD (2 :: 3 :: 5 :: nil)) _.
   Next Obligation.
     simpl in *.
@@ -422,7 +422,7 @@ Section DemonicNonDeterminism.
   Program Definition pytriplesD
     : Demonic (nat * nat * nat)%type
               (PostDemonic (fun (t:nat * nat * nat) =>
-                              match t with (x,y,z) => sEq (x*x + y*y) (z*z) end)) :=
+                              match t with (x,y,z) => eq (x*x + y*y) (z*z) end)) :=
     let c := (let l := 1 :: 2 :: 3 :: 4 :: 5 :: nil in
            x <- pick_from l ;
            y <- pick_from l ;
@@ -468,7 +468,7 @@ Section IO.
   Variables oup1 oup2 : Oup.
 
   Program Definition print_sequence_spec : IOSpec unit :=
-    fun history => ⦑fun post => post ⟨tt, existT _ (Write oup2) tt :: existT _ (Write oup1) tt :: history⟩⦒.
+    fun history => ⦑fun post => post ⟨tt, existT _ (Write oup2) tt :: existT _ (Write oup1) tt :: history⟩⦒. 
   Next Obligation. move: H0 ; simpl; intuition. Qed.
 
   Program Definition print_sequence : IO unit print_sequence_spec :=
@@ -502,7 +502,7 @@ End IO.
 
 Section StateTMW.
   (* Slightly specializing the state transformer ST_T *)
-
+  
   Variable M : Monad.
   Variable W : OrderedMonad.
   Variable mm : MonadMorphism M W.
@@ -564,7 +564,7 @@ Section IOST.
   (* Let M := @Free IOSTop IOSTop_arity. *)
   (* Let W := @IOSpec Inp Oup. *)
   (* Import MonadTransformerMonotonic. *)
-
+  
   (* Let mm : MonadMorphism M W := @OpSpecEffObs _ _ _ (IOSpec _ _). *)
 
   Definition IOST := DStateT _ _ (θHistST Inp Oup) St.
@@ -593,7 +593,7 @@ Section IOST.
     intros s history.
     exists (fun post => forall i, post ⟨ ⟨ tt , s ⟩ , (existT _ (Write (s + i + 1)) tt :: existT _ (Read Oup) i :: history) ⟩).
     simpl. eauto.
-  Defined.
+  Defined.       
 
   Program Definition do_io_then_roll_back_state : IOST unit do_io_then_roll_back_state_spec :=
     (wkn (x <- getIOST; y <- readIOST; w <- putIOST (x + y); z <- getIOST; w <- writeIOST (z + 1); putIOST x) _).
@@ -672,7 +672,7 @@ Check CMonad.
 Check CMonadUnder.
 
 (* We can map monadic relations to monadic relations *)
-Check CMonadIdeal.
+Check CMonadIdeal. 
 
 (* If C is covariant, mapping monad morphisms to monad morphisms *)
 Check CMonadMorph.
@@ -780,8 +780,8 @@ Section Exceptions.
     ExcSpec Q_exn' B
     :=
       fun P Q Q_exn wp_ret wp_exn =>
-        ⦑fun post => P s/\ (forall a, Q a -> Spr1 (wp_ret a) post)
-                  s/\ (Q_exn -> Spr1 wp_exn post)⦒.
+        ⦑fun post => P s/\ (forall a, Q a -> proj1_sig (wp_ret a) post)
+                  s/\ (Q_exn -> proj1_sig wp_exn post)⦒.
   Next Obligation.
     destruct H0 as [[]] ; intuition.
   Qed.
@@ -798,7 +798,7 @@ Program Definition catch {Q_exn Q_exn'} {A B} {P Q} {wp_success: A -> ExcSpec Q_
     | ⦑ Some a ⦒ => wkn (N_ret a) _
     | ⦑ None ⦒ => wkn N_exn _
     end.
-Next Obligation.
+Next Obligation. 
   destruct H as [[? H0] ?] ; apply H0.
   apply wildcard'; cbv ; intuition.
 Qed.

@@ -1,6 +1,6 @@
 # CheesyCrypt
 
-## Prerequisites
+## Prerequisites (obsolete?)
 
 - ocaml.4.09.0
 - coq.8.10.dev
@@ -57,7 +57,7 @@ displaying only warnings and coq terms.
 
 - GenericRulesComplex.v: pure and monadic relational rules in the full setting
 
-## Axioms and assumptions
+## Axioms and assumptions (obsolete?)
 
 Most of the development uses the recent SProp feature of Coq (instead of relying on UIP axiom).
 

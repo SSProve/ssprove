@@ -22,7 +22,7 @@ Section OmegaCpo.
   Context (A:ordType).
   Import SPropNotations.
 
-  Definition ωchain := { c : nat --> A ≫ forall n, c n ≤ c (S n)}.
+  Definition ωchain := { c : nat --> A | forall n, c n ≤ c (S n)}.
   Definition underlying_seq (c:ωchain) : nat --> A := c∙1.
   Coercion underlying_seq : ωchain >-> Funclass.
 
@@ -89,7 +89,7 @@ Section unarySpecStateOmegaCpo.
   Import SPropNotations.
   Definition WSt  := ordmonad_to_relmon (STCont S0).
 
-  Program Definition botWSt : dfst (WSt A) := ⦑fun p s => sUnit⦒.
+  Program Definition botWSt : dfst (WSt A) := ⦑fun p s => True⦒.
   Next Obligation. done. Qed.
 
   Program Definition supWSt (c : ωchain (WSt A)) : dfst (WSt A) :=
@@ -105,7 +105,7 @@ Section unarySpecStateOmegaCpo.
   Require Import FunctionalExtensionality.
   Lemma antisym_WSt: antisym (WSt A).
   Proof.
-    move=> w1 w2 H1 H2; apply Ssig_eq; extensionality p; extensionality s;
+    move=> w1 w2 H1 H2; apply sig_eq; extensionality p; extensionality s;
             apply SPropAxioms.sprop_ext; do 2 split; [apply: H2| apply: H1].
   Qed.
 
@@ -120,7 +120,7 @@ Section unarySpecStateOmegaCpo.
   Proof. reflexivity. Defined.
 
   Program Definition tarksi_fix (f : dfst (WSt A) --> WSt A) : dfst (WSt A) :=
-    ⦑fun post s0 => s∃ w, f w ≤ w s/\ w∙1 post s0⦒.
+    ⦑fun post s0 => exists w, f w ≤ w s/\ w∙1 post s0⦒.
   Next Obligation.
     move=> ? ? H ? [w0 [? H']]; exists w0; split=> //; move: H'; apply: (w0∙2)=> //.
   Qed.
@@ -148,13 +148,13 @@ Section PropOmegaCpo.
   Next Obligation. typeclasses eauto. Defined.
 
   Global Program Instance prop_ωCpo : ωCpo prop_op_oT :=
-    Build_ωCpo sUnit (fun c => forall n, c n) _ _ _.
+    Build_ωCpo True (fun c => forall n, c n) _ _ _.
   Next Obligation. done. Qed.
   Next Obligation. apply. Qed.
   Next Obligation. move=> H' n; exact (H n H'). Qed.
 
   (* Global Program Instance prop_ωCpo : ωCpo prop_ordType := *)
-  (*   Build_ωCpo sEmpty (fun c => s∃ n, c n) _ _ _. *)
+  (*   Build_ωCpo False (fun c => exists n, c n) _ _ _. *)
   (* Next Obligation. move=> [] //. Qed. *)
   (* Next Obligation. move=> H; eexists; apply H. Qed. *)
   (* Next Obligation. move=> [n H']; exact (H n H'). Qed. *)
@@ -250,7 +250,7 @@ Section ImpMonad.
   Definition W0' := ordmonad_to_relmon W0.
 
   (* Program Definition tarksi_fix' {A} (f : dfst (W0' A) --> W0' A) : dfst (W0' A) := *)
-  (*   ⦑fun post s0 => s∃ w, f w ≤ w s/\ w∙1 post s0⦒. *)
+  (*   ⦑fun post s0 => exists w, f w ≤ w s/\ w∙1 post s0⦒. *)
   (* Next Obligation. *)
   (*   move=> ? ? H ? [w0 [? H']]; exists w0; split=> //; move: H'; apply: (w0∙2)=> //. *)
   (* Qed. *)
@@ -304,7 +304,7 @@ Section ImpMonad.
   Proof. cbv; intuition. Qed.
 
   Lemma bindW_omega_cont {S0 A B} (w: dfst (WSt S0 A)) (f : A --> WSt S0 B):
-    WSt_ωcont w -> (forall (a:A), WSt_ωcont (f a)) -> WSt_ωcont (w ≫= to_discr f).
+    WSt_ωcont w -> (forall (a:A), WSt_ωcont (f a)) -> WSt_ωcont (w |= to_discr f).
   Proof.
     move=> Hw Hf c /=.
     unshelve epose (cw := ⦑fun n a => (f a)∙1 (c n)⦒:ωchain (WSt_dom S0 A)).
@@ -416,7 +416,7 @@ Section ImpMonad.
         (c: A -> ωchain (WSt S0 B)) :
     bind w (@ωsup _ _ \o c) = ωsup (bind_chain w c).
   Proof.
-    cbv. apply Ssig_eq; extensionality k; extensionality s=> /=.
+    cbv. apply sig_eq; extensionality k; extensionality s=> /=.
     unshelve epose (cw := ⦑fun n a => ((c a) ∙1 n) ∙1 k⦒ : ωchain (WSt_dom S0 A)).
     move=> ? ?; apply: (c _)∙2.
     move: (Hwcont cw)=> /= -> //.
@@ -431,7 +431,7 @@ Section ImpMonad.
     move=> Hbot Hind; unfold commute, kleene_fix.
     rewrite bind_sup'.
     rewrite bind_cont_sup=> //.
-    f_equal; apply Ssig_eq; extensionality n.
+    f_equal; apply sig_eq; extensionality n.
     elim: n=> [|n IH]; [apply Hbot| apply Hind; apply IH].
   Qed.
 
@@ -443,7 +443,7 @@ Section ImpMonad.
   Qed.
 
   Ltac myext0 k s :=
-    cbv -[θun iter_chain loop]=> /=; apply Ssig_eq; extensionality k; extensionality s.
+    cbv -[θun iter_chain loop]=> /=; apply sig_eq; extensionality k; extensionality s.
 
   Fixpoint commute_bot {A B: Type} (c:Imp A) {struct c} :
     commute (θun c) (@botWSt _ B).
@@ -676,7 +676,7 @@ Section ImpMonad.
     move: m.
     refine (fix IH (m:Imp A) {struct m} := _).
     case: m=> [a|k|s k|body k] /=;
-      unfold MonoCont_bind ; apply Ssig_eq; extensionality k'=> /=; extensionality s0; rewrite ?IH; try reflexivity.
+      unfold MonoCont_bind ; apply sig_eq; extensionality k'=> /=; extensionality s0; rewrite ?IH; try reflexivity.
   Qed.
 
   Definition θunL_mm : MonadMorphism Imp_monad Wun :=
@@ -703,7 +703,7 @@ Section ImpMonad.
 
   Lemma do_while_rule (inv : bool -> bool -> S -> S -> SProp)
         (body1 body2 : Imp bool) :
-        ⊨ body1 ≈ body2 [{ fromPrePost (inv true true) (fun b1 _ s1 b2 _ s2 => b1 ≡ b2 s/\ inv b1 b2 s1 s2) }] ->
+        ⊨ body1 ≈ body2 [{ fromPrePost (inv true true) (fun b1 _ s1 b2 _ s2 => b1 = b2 s/\ inv b1 b2 s1 s2) }] ->
         ⊨ do_while body1 ≈ do_while body2 [{ fromPrePost (inv true true) (fun 'tt _ s1 'tt _ s2 => inv false false s1 s2) }].
   Proof.
     admit.

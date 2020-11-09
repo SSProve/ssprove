@@ -65,7 +65,7 @@ Section State.
      triple.  *)
   Lemma soundness P Q : forall (c : PrePost P Q) s,
       P s -> Q s (nsnd (underlying c s)).
-  Proof.
+  Proof. 
     move=> [f H] /= s pre_ok.
     move: (H (fun _ => Q s) s).
     cbv; intuition.
@@ -81,8 +81,8 @@ Arguments put' [St].
 
 (* A toy stateful program, from Swamy et al., 2013. *)
 Program Definition incr : PrePost nat
-                          (fun _ => sUnit)
-                          (fun s0 s1 => s0 s< s1) :=
+                          (fun _ => True)
+                          (fun s0 s1 => s0 < s1) :=
   wkn (x <- get' ; put' (S x)) _.
 Next Obligation. simpl. apply H. constructor. apply sle_refl. Qed.
 
@@ -136,10 +136,10 @@ Section NonDeterminism.
   Definition pick : ListM bool := true :: false :: nil.
 
   Section Angelic.
-
+    
     Fixpoint or (xs : list SProp) : SProp :=
       match xs with
-      | nil => sEmpty
+      | nil => False
       | P :: Ps => P s\/ or Ps
       end.
 
@@ -188,7 +188,7 @@ Section NonDeterminism.
     Definition guardA (b : bool) : Angelic unit _ :=
       ifTE b (dret tt) failA.
 
-    Lemma or_Exists A (P : A -> SProp) xs : or (List.map P xs) -> s∃ x (H:In x xs), P x.
+    Lemma or_Exists A (P : A -> SProp) xs : or (List.map P xs) -> exists x (H:In x xs), P x.
       induction xs => //=.
       move=> [H|H].
       exists a ; eexists; [left ; reflexivity | assumption].
@@ -196,7 +196,7 @@ Section NonDeterminism.
     Qed.
 
     Lemma Angelic_soundness {A} (P : A -> SProp) (Q : AngelicSpec A) (c : Angelic A Q) :
-      Spr1 Q P -> s∃ x (H:In x (underlying c)), P x.
+      proj1_sig Q P -> exists x (H:In x (underlying c)), P x.
     Proof.
       destruct Q ; destruct c as [? H]; simpl in *.
       move=> ? ; apply or_Exists. rewrite <- concat_map_nil.
@@ -204,7 +204,7 @@ Section NonDeterminism.
     Qed.
 
     Lemma Angelic_soundness2 {A} (P : A -> SProp) (c : Angelic A (PostAngelic P))
-      : s∃ x (H:In x (underlying c)), P x.
+      : exists x (H:In x (underlying c)), P x.
     Proof.
       apply Angelic_soundness. simpl. auto.
     Qed.
@@ -212,12 +212,12 @@ Section NonDeterminism.
   End Angelic.
 
   Program Definition test_angelic
-    : Angelic nat (PostAngelic (fun x => x ≡ 5)) :=
+    : Angelic nat (PostAngelic (fun x => x = 5)) :=
     wkn (chooseA (2 :: 3 :: 5 :: nil)) _.
   Next Obligation. do 2 right ; left ; apply H=> //. Qed.
 
   Program Definition pytriples : Angelic (nat * nat * nat)%type
-                                         (PostAngelic (fun (t:nat * nat * nat) => let '(x,y,z) := t in x*x + y*y ≡ z*z)) :=
+                                         (PostAngelic (fun (t:nat * nat * nat) => let '(x,y,z) := t in x*x + y*y = z*z)) :=
     let c :=
         (let l := 1 :: 2 :: 3 :: 4 :: 5 :: nil in
          x <- chooseA l ;
@@ -233,7 +233,7 @@ Section NonDeterminism.
 
     Fixpoint and (xs : list SProp) : SProp :=
       match xs with
-      | nil => sUnit
+      | nil => True
       | P :: Ps => P s/\ and Ps
       end.
 
@@ -298,14 +298,14 @@ Section NonDeterminism.
 
   End Demonic.
 
-  Definition test_demonic : Demonic nat (PostDemonic (fun x => 1 s< x s/\ x s< 6)).
+  Definition test_demonic : Demonic nat (PostDemonic (fun x => 1 < x s/\ x < 6)).
     apply (wkn (chooseD (2 :: 3 :: 5 :: nil))).
     intros Q H. simpl. simpl in H.
     intuition ltac:(try (apply H ; do 8 constructor)).
   Defined.
 
   Program Definition pytriplesD : Demonic (nat * nat * nat)%type
-                                  (PostDemonic (fun (t:nat * nat * nat) => match t with (x,y,z) => sEq (x*x + y*y) (z*z) end)) :=
+                                  (PostDemonic (fun (t:nat * nat * nat) => match t with (x,y,z) => eq (x*x + y*y) (z*z) end)) :=
     let c := (let l := 1 :: 2 :: 3 :: 4 :: 5 :: nil in
            x <- pick_from l ;
            y <- pick_from l ;
@@ -339,7 +339,7 @@ Section FreeMonad.
 
     Definition opHist s : FreeHist (P s) _ :=
       @cont_perform S P _ HistSpec s.
-
+    
   End History.
 
   Section Future.
@@ -349,8 +349,8 @@ Section FreeMonad.
       fun (t : trace) =>
         ⦑ fun (post : P s × trace -> SProp) =>
             match t return SProp with
-            | nil => sEmpty
-            | (existT _ s' p) :: t => s∃ (e : s = s'),
+            | nil => False
+            | (existT _ s' p) :: t => exists (e : s = s'),
                   post ⟨rew <- [P] e in p, t⟩
             end⦒.
     Next Obligation.
@@ -429,7 +429,7 @@ Section IO.
   Variables oup1 oup2 : Oup.
 
   Program Definition print_sequence_spec : IOSpec unit :=
-    fun history => ⦑fun post => post ⟨tt, existT _ (write oup2) tt :: existT _ (write oup1) tt :: history⟩⦒.
+    fun history => ⦑fun post => post ⟨tt, existT _ (write oup2) tt :: existT _ (write oup1) tt :: history⟩⦒. 
   Next Obligation. move: H0 ; simpl; intuition. Qed.
 
   Program Definition print_sequence : IO unit print_sequence_spec :=
@@ -484,7 +484,7 @@ Section Exceptions.
 
     Definition ExnSpecCarrier : Type -> Type :=
       fun X => { f : (X -> SProp) -> SProp -> SProp
-            ≫ SProper ((X ⇢ SProp_op_order) s==> SProp_op_order s==> SProp_op_order) f}.
+            | SProper ((X ⇢ SProp_op_order) s==> SProp_op_order s==> SProp_op_order) f}.
 
     Program Definition ExnSpec_ret : forall A, A -> ExnSpecCarrier A :=
       fun A a => ⦑ fun p pexc => p a ⦒.
@@ -493,17 +493,17 @@ Section Exceptions.
     Program Definition ExnSpec_bind :
       forall A B, ExnSpecCarrier A -> (A -> ExnSpecCarrier B) -> ExnSpecCarrier B :=
       fun A B m f =>
-        ⦑ fun p pexc => Spr1 m (fun a => Spr1 (f a) p pexc) pexc ⦒.
+        ⦑ fun p pexc => proj1_sig m (fun a => proj1_sig (f a) p pexc) pexc ⦒.
     Next Obligation.
-      eapply (Spr2 m) ; try eassumption.
-      move=> /= ? ; apply (Spr2 (f _)) ; assumption.
+      eapply (proj2_sig m) ; try eassumption.
+      move=> /= ? ; apply (proj2_sig (f _)) ; assumption.
     Qed.
 
     Program Definition ExnSpecU : Monad :=
       @mkMonad ExnSpecCarrier ExnSpec_ret ExnSpec_bind _ _ _.
 
     Definition ExnSpec_rel A : srelation (ExnSpecU A) :=
-      fun m1 m2 => ((A -> SProp) ⇢ (SProp ⇢ SProp_op_order)) (Spr1 m1) (Spr1 m2).
+      fun m1 m2 => ((A -> SProp) ⇢ (SProp ⇢ SProp_op_order)) (proj1_sig m1) (proj1_sig m2).
 
     Instance ExnSpec_order A : PreOrder (ExnSpec_rel A).
     Proof. constructor ; cbv ; intuition. Qed.
@@ -511,7 +511,7 @@ Section Exceptions.
     Program Definition ExnSpec : OrderedMonad :=
       @mkOrderedMonad ExnSpecU ExnSpec_rel _ _.
     Next Obligation.
-      apply H. move: H1 ; apply (Spr2 y) ; cbv ; intuition.
+      apply H. move: H1 ; apply (proj2_sig y) ; cbv ; intuition.
     Qed.
 
     Program Definition ExnObservation_U A : Exc A -> ExnSpec A :=
@@ -578,8 +578,8 @@ Section Exceptions.
     ExcSpec Q_exn' B
     :=
       fun P Q Q_exn wp_ret wp_exn =>
-        ⦑fun post => P s/\ (forall a, Q a -> Spr1 (wp_ret a) post)
-                  s/\ (Q_exn -> Spr1 wp_exn post)⦒.
+        ⦑fun post => P s/\ (forall a, Q a -> proj1_sig (wp_ret a) post)
+                  s/\ (Q_exn -> proj1_sig wp_exn post)⦒.
   Next Obligation.
     destruct H0 as [[]] ; intuition.
   Qed.
@@ -596,7 +596,7 @@ Program Definition catch {Q_exn Q_exn'} {A B} {P Q} {wp_success: A -> ExcSpec Q_
     | ⦑ Some a ⦒ => wkn (N_ret a) _
     | ⦑ None ⦒ => wkn N_exn _
     end.
-Next Obligation.
+Next Obligation. 
   destruct H as [[? H0] ?] ; apply H0.
   apply wildcard'; cbv ; intuition.
 Qed.
@@ -691,7 +691,7 @@ Section Handler.
     destruct M as [comp comp_ok].
     exists ((fix handle (m:Free P A) : Free P' B :=
               match m with
-              | retFree _ a => Spr1 (Hret a)
+              | retFree _ a => proj1_sig (Hret a)
               | @opr _ _ _ s k => Hops s (fun p => handle (k p))
               end) comp).
     simpl.
@@ -765,7 +765,7 @@ Next Obligation. cbv ; intuition. Qed.
 
 Program Definition div (i j : Z) :
   PrePostOp exn_op exn_ty (exn_spec (Squash (j = 0%Z)))
-            sUnit (fun n => Squash (j <> 0%Z /\ n = Z.div i j)) :=
+            True (fun n => Squash (j <> 0%Z /\ n = Z.div i j)) :=
   match Z.eq_dec j 0 with
   | left e => throw'' (squash e)
   | right _ => wkn (dret (Z.div i j)) _
@@ -773,8 +773,8 @@ Program Definition div (i j : Z) :
 Next Obligation. simpl in *. apply H. constructor. intuition eauto. Qed.
 
 Program Definition try_div (i j : Z) :
-  PrePostOp exn_op exn_ty (exn_spec sEmpty)
-            sUnit (fun (n : option Z) => sUnit) :=
+  PrePostOp exn_op exn_ty (exn_spec False)
+            True (fun (n : option Z) => True) :=
 
   handle (div i j)
          (fun a => wkn (dret (Some a)) _)
@@ -832,7 +832,7 @@ Section ConstantChoiceHandler.
   Definition choice_spec (op : choice_op) : SProp × (choice_ty op -> SProp) :=
     match op with
     (* Specify that 'choice' always returns 'true' *)
-    | choice => ⟨sUnit, fun b => Squash (b = true)⟩
+    | choice => ⟨True, fun b => Squash (b = true)⟩
     end.
 
   Variable S' : Type.
@@ -889,7 +889,7 @@ End ConstantChoiceHandler.
 Section DijkstraMonadPolymorphic.
   Context W (D:Dijkstra W).
   Import ListNotations.
-
+  
   Section ListMap.
     Fixpoint list_mapW {A B} (w : A -> W B) (l : list A) : W (list B) :=
       match l with
@@ -945,7 +945,7 @@ Section DijkstraMonadPolymorphic.
     Context (start len : nat) (inv : W unit)
             (Hinv : bind inv (fun _ => inv) ≤ inv).
 
-    Let bounded_nat := { i : nat ≫ Squash (start <= i < start + len) }.
+    Let bounded_nat := { i : nat | Squash (start <= i < start + len) }.
 
     Program Fixpoint bseq (len' : nat) (Hlen : len' <= len) : list bounded_nat :=
       match len' with
@@ -960,7 +960,7 @@ Section DijkstraMonadPolymorphic.
     Program Definition for_inv (f : forall i, Squash (start <= i < start + len) -> D unit inv)
       : D unit inv :=
       foldD_inv bounded_nat unit (fun _ _ => inv) inv _ (wkn (dret tt) Hinv0)
-                (fun i _ => f (Spr1 i) (Spr2 i)) (bseq len _).
+                (fun i _ => f (proj1_sig i) (proj2_sig i)) (bseq len _).
   End For.
 
   Notation "'For' i 'from' start 'to' endc 'using' inv 'do' c 'done'" :=
@@ -980,7 +980,7 @@ Section ForState.
       (at level 0, i ident).
 
   Program Definition sum :=
-    For i from 0 to 5 using PrePostWP nat (fun _ => sUnit) (fun s0 s1 => s0 s<= s1) do
+    For i from 0 to 5 using PrePostWP nat (fun _ => True) (fun s0 s1 => s0 <= s1) do
         s0 <- get' ; put' (s0 + i)
         done.
   Next Obligation. simpl in *. intuition. apply q.
@@ -990,3 +990,4 @@ Section ForState.
     apply H; rewrite // Nat.add_comm ; apply sle_lower.
   Qed.
 End ForState.
+

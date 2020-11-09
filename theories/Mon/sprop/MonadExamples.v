@@ -1,6 +1,6 @@
 From Coq Require Import ssreflect ssrfun ssrbool List.
 From Mon Require Export Base.
-From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
+From Coq Require Import Relation_Definitions Morphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures Monoid.
 
 Set Implicit Arguments.
@@ -54,7 +54,7 @@ Section Update.
     extensionality x; rewrite monoid_law1 //.
   Qed.
   Next Obligation.
-    extensionality x. rewrite - !monact_mult !monoid_law3 //.
+    extensionality x. rewrite - !monact_mult !monoid_law3 //. 
   Qed.
 End Update.
 
@@ -128,7 +128,7 @@ Section Exceptions.
   Definition raise : E -> Exn False := fun e => op _ (Raise e).
   Definition catch {A} (m : Exn A) (merr : E -> Exn A) : Exn A :=
     match m with
-    | retFree _ a => m
+    | retFree a => m
     | @opr _ _ _ (Raise e) _ => merr e
     end.
 End Exceptions.
@@ -137,13 +137,13 @@ Section NonDeterminismSet.
   Import SPropNotations FunctionalExtensionality SPropAxioms.
 
   Program Definition NDSet : Monad :=
-    @mkMonad (fun X => X -> SProp)
-             (fun X x => fun x' => x ≡ x')
-             (fun X Y c f => fun y => s∃ x, c x s/\ f x y) _ _ _.
+    @mkMonad (fun X => X -> Prop)
+             (fun X x => fun x' => x = x')
+             (fun X Y c f => fun y => exists x, c x s/\ f x y) _ _ _.
   Next Obligation.
     extensionality y; apply sprop_ext; do 2 split.
     + intros [x [eq H]]; induction eq=> //.
-    + intro; exists a; intuition.
+    + intro; exists a; intuition. 
   Qed.
   Next Obligation.
     extensionality y; apply sprop_ext; do 2 split.
@@ -158,7 +158,7 @@ Section NonDeterminismSet.
       eexists ; split ; [eexists;split|]; eassumption.
   Qed.
 
-  Definition pick_set : NDSet bool := fun b => sUnit.
+  Definition pick_set : NDSet bool := fun b => True.
 End NonDeterminismSet.
 
 Section NonDeterminismList.
@@ -197,8 +197,8 @@ Section IO.
     | Write _ => unit
     end.
 
-  Definition IO := @Free IOS IOAr.
+  Definition IO := @Free IOS IOAr. 
 
-  Definition read : IO Inp := op _ Read.
+  Definition read : IO Inp := op _ Read. 
   Definition write (o:Oup) : IO unit := op _ (Write o).
 End IO.

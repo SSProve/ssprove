@@ -1,7 +1,7 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require FunctionalExtensionality.
 From Mon Require Export Base.
-From Mon.SRelation Require Import SRelation_Definitions SMorphisms.
+From Coq Require Import Relation_Definitions Morphisms.
 From Mon.sprop Require Import SPropBase.
 From Relational Require Import Category RelativeMonads EnrichedSetting.
 
@@ -35,7 +35,7 @@ Section Rel.
   Definition TyRel : Rel := @mkRel Type Type (fun A B => A -> B -> Type).
 
   (* Up to size issues, we have ⟬TyRel⟭ = Rel *)
-
+  
 
   Definition ArrRel (X Y : Rel) : Rel :=
     ⦑ πl X -> πl Y, πr X -> πr Y
