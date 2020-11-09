@@ -8,6 +8,7 @@ From Relational Require Import  OrderEnrichedCategory OrderEnrichedRelativeMonad
 
 Set Primitive Projections.
 Set Universe Polymorphism.
+Set Polymorphic Inductive Cumulativity.
 
 (* We introduce relational program logic rules starting from abstract algebraic structure *)
 
@@ -154,6 +155,11 @@ Section GoingPractical.
     reflexivity.
   Qed.
 
+  (* The standard unit doesn't behave well so I redefine it.
+    This is probably not the right place for it.
+    TODO MOVE
+  *)
+  Inductive unit := tt.
 
   Definition skip {M:Monad} : M unit := ret tt.
   Notation "m1 ;; m2" := (bind m1 (fun=> m2)) (at level 65).

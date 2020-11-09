@@ -8,7 +8,6 @@ From mathcomp Require Import ssreflect.
 (* Conflicts with Coq.Utf8 and provides the same things *)
 
 From Coq Require ClassicalFacts.
-Locate proof_irrelevance.
 
 Axiom ax_proof_irrel : ClassicalFacts.proof_irrelevance.
 

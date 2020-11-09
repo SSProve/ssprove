@@ -176,7 +176,7 @@ Section ConverseCommute.
   Qed.
 
   Let θ1 := effobs_from_releffobs1.
-  
+
   Program Definition effobs_from_releffobs2 : MonadMorphism M2 W := @mkMorphism _ _ (fun A v => nsnd <$> θapp unitt A ⟨ ret tt, v ⟩) _ _.
   Next Obligation.
     rewrite /map θret.
@@ -191,15 +191,23 @@ Section ConverseCommute.
 
   Let θ2 := effobs_from_releffobs2.
 
-  Lemma releffobs_eq_effobs1 : forall A1 A2 c1 c2, θapp A1 A2 ⟨c1, c2⟩ = bind (θ1 A1 c1) (fun a : A1 => bind (θ2 A2 c2) (fun b : A2 => ret ⟨ a, b ⟩)).
+  Lemma releffobs_eq_effobs1 :
+    forall A1 A2 c1 c2,
+      θapp A1 A2 ⟨c1, c2⟩ =
+      bind (θ1 A1 c1) (fun a : A1 => bind (θ2 A2 c2) (fun b : A2 => ret ⟨ a, b ⟩)).
+  Proof.
     move=> A1 A //= c1 c2.
     rewrite <- (monad_law2 c1) at 1.
     rewrite <- (monad_law1 tt (fun _ => c2)) at 1.
     rewrite θbind /=. rewrite bind_comm.
-    f_equal; extensionality a; destruct a as [a1 []].
+    apply (f_equal (bind (θapp A1 unit ⟨ c1, monad_ret M2 tt ⟩))).
+    extensionality a. destruct a as [a1 []].
     rewrite bind_comm //=.
-    rewrite <- (monad_law2 c2) at 1. rewrite <- (monad_law1 tt (fun _ => monad_ret M1 a1)).
-    rewrite θbind. f_equal; extensionality b; destruct b as [[] a2].
+    rewrite <- (monad_law2 c2) at 1.
+    rewrite <- (monad_law1 tt (fun _ => monad_ret M1 a1)).
+    rewrite θbind.
+    apply (f_equal (bind (θapp unit A ⟨ monad_ret M1 tt, c2 ⟩))).
+    extensionality b. destruct b as [[] a2].
     apply θret.
   Qed.
 
@@ -208,10 +216,12 @@ Section ConverseCommute.
     rewrite <- (monad_law2 c2) at 1.
     rewrite <- (monad_law1 tt (fun _ => c1)) at 1.
     rewrite θbind /=. rewrite bind_comm.
-    f_equal; extensionality a; destruct a as [[] a2].
+    congr bind.
+    extensionality a. destruct a as [[] a2].
     rewrite bind_comm //=.
     rewrite <- (monad_law2 c1) at 1. rewrite <- (monad_law1 tt (fun _ => monad_ret M2 a2)).
-    rewrite θbind. f_equal; extensionality b; destruct b as [a1 []].
+    rewrite θbind.
+    congr bind. extensionality b. destruct b as [a1 []].
     apply θret.
   Qed.
 

@@ -7,6 +7,7 @@ From Coq Require Import RelationClasses Morphisms Relation_Definitions.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
+Set Polymorphic Inductive Cumulativity.
 
 
 (*********************************************************)

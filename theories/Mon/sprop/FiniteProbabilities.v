@@ -8,6 +8,7 @@ From mathcomp Require Import all_ssreflect all_algebra reals distr.
 From Relational Require Import Commutativity.
 
 Import GRing.Theory Num.Theory.
+Import mc_1_10.Num.Theory.
 
 Local Open Scope ring_scope.
 

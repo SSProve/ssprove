@@ -3,10 +3,12 @@
 ## Prerequisites (obsolete?)
 
 - ocaml.4.09.0
-- coq.8.10.dev
-- coq-equations.1.2.1+8.10
-- coq-mathcomp-analysis.0.2.3
-- coq-itree.dev
+- coq.8.12.0
+- coq-equations.1.2.3
+- coq-mathcomp-analysis.0.3.2
+
+(Note: ocaml version is irrelevant, and 4.09 is expressly not recommended for
+Coq)
 
 Get it from the following sources:
 
@@ -15,6 +17,8 @@ $ opam repo add coq-released https://coq.inria.fr/opam/released
 $ opam repo add coq-core-dev https://coq.inria.fr/opam/core-dev
 $ opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
 ```
+
+(Note: coq-released should be enough)
 
 ## Step-by-step Guide
 

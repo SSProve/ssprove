@@ -7,7 +7,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 Set Primitive Projections.
-
+Set Universe Polymorphism.
 
 (* The identity monad *)
 Program Definition Identity : Monad :=
@@ -54,7 +54,7 @@ Section Update.
     extensionality x; rewrite monoid_law1 //.
   Qed.
   Next Obligation.
-    extensionality x. rewrite - !monact_mult !monoid_law3 //. 
+    extensionality x. rewrite - !monact_mult !monoid_law3 //.
   Qed.
 End Update.
 
@@ -143,7 +143,7 @@ Section NonDeterminismSet.
   Next Obligation.
     extensionality y; apply sprop_ext; do 2 split.
     + intros [x [eq H]]; induction eq=> //.
-    + intro; exists a; intuition. 
+    + intro; exists a; intuition.
   Qed.
   Next Obligation.
     extensionality y; apply sprop_ext; do 2 split.
@@ -197,8 +197,8 @@ Section IO.
     | Write _ => unit
     end.
 
-  Definition IO := @Free IOS IOAr. 
+  Definition IO := @Free IOS IOAr.
 
-  Definition read : IO Inp := op _ Read. 
+  Definition read : IO Inp := op _ Read.
   Definition write (o:Oup) : IO unit := op _ (Write o).
 End IO.

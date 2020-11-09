@@ -7,6 +7,7 @@ From Relational Require Import OrderEnrichedCategory Rel.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
+Set Polymorphic Inductive Cumulativity.
 
 
 (** This files is an order-enriched alternative to RelativeMonadExamples.v *)
@@ -86,7 +87,7 @@ Section OrdCat.
     cbv ; intuition; etransitivity; first (apply: x∙2; apply: H0).
     apply: H.
   Qed.
-  Next Obligation. apply sig_eq ; compute. Search _ "eta".
+  Next Obligation. apply sig_eq ; compute.
     rewrite -FunctionalExtensionality.eta_expansion. reflexivity.
   Qed.
   Next Obligation. apply sig_eq ; compute.

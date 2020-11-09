@@ -509,8 +509,6 @@ Section ProductState.
     cycle 3; subst ; apply srPutLeft; apply srPutRight; apply srRet.
   Defined.
 
-  Print prog5_coupling.
-
   Goal forall (c:=proj1_sig prog5_coupling), ζSt c ≤ NI_pre_post.
   Proof. cbv ; intuition. Qed.
 End ProductState.

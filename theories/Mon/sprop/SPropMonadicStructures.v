@@ -7,6 +7,8 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 Set Primitive Projections.
+Set Universe Polymorphism.
+Set Polymorphic Inductive Cumulativity.
 
 (***************************************************************)
 (* Preorder srelations                                         *)
@@ -69,7 +71,7 @@ Section MapLemmas.
   Import FunctionalExtensionality.
   Lemma map_id : forall A (m : M A), id <$> m = m.
   Proof. intros ; rewrite /map /id /= /bind monad_law2 //. Qed.
-    
+
   Lemma map_functorial : forall A B C (f : A -> B) (g : B -> C) (m : M A),
       g <$> (f <$> m) = (fun x => g (f x)) <$> m.
   Proof.
@@ -263,9 +265,9 @@ Section MonadMorphismRefinement.
     forall A, pointwise_relation (M A) (@omon_rel W A) (ϕ A) (ψ A).
 End MonadMorphismRefinement.
 
-Instance mon_morph_refines_preorder M W : PreOrder (@monad_morph_refines M W). 
+Instance mon_morph_refines_preorder M W : PreOrder (@monad_morph_refines M W).
 Proof.
-  constructor ; cbv ; intuition. 
+  constructor ; cbv ; intuition.
   transitivity (y A a) ; auto.
 Qed.
 
@@ -350,7 +352,7 @@ Section MonadMorphismToIdeal.
   Program Definition ideal_from_mmorph : MonadIdeal M W :=
     @mkMonadIdeal _ _ relation_from_mmorph _.
   Next Obligation. cbv ; intuition ; etransitivity ; eassumption. Qed.
-    
+
 End MonadMorphismToIdeal.
 
 (***************************************************************)
@@ -371,7 +373,7 @@ Record OrderedMonadTransformer :=
         mt_map θ23 _ (mt_map θ12 A m)  = mt_map (comp_monmon θ12 θ23) A m
     ; mt_natural_lift :
         forall (M1 M2 : OrderedMonad) (θ : MonotonicMonadMorphism M1 M2) A m,
-          mt_map θ  _(mu_lift (mt_monad M1) A m) 
+          mt_map θ  _(mu_lift (mt_monad M1) A m)
         = mu_lift (mt_monad M2) _ (θ A m)
     }.
 
@@ -388,7 +390,7 @@ Record Dijkstra (W : OrderedMonad) : Type := mkDM
       dm_tyop (bind w f)
   ; dm_wkn : forall {A} {w w' : W A}, dm_tyop w -> w ≤[W] w' -> dm_tyop w'
   ; dm_law1 : forall A B (a : A) (f : A -> W B) (g : forall a, dm_tyop (f a)),
-      dm_bind (dm_ret a) g =⟨monad_law1 a f⟩ g a 
+      dm_bind (dm_ret a) g =⟨monad_law1 a f⟩ g a
   ; dm_law2 : forall A c m ,
       dm_bind m (@dm_ret A) =⟨monad_law2 c⟩  m
   ; dm_law3 : forall A B C c f g (m : dm_tyop c)
@@ -464,7 +466,7 @@ Section OfMorphism.
 (*in the remaining obligations one use proof_irrelevance, which implies
 that equality of sigma types is equivalent to equality of carriers members*)
   Next Obligation. destruct m as (m,e). Print Dθ_wkn.
-    compute. About exist.
+    compute.
     have hintUnif :
 (Dθ_wkn_obligation_1
        (exist (fun m0 : M A => θ A m0 ≤ w) m e)
@@ -473,7 +475,7 @@ that equality of sigma types is equivalent to equality of carriers members*)
     rewrite hintUnif. reflexivity.
 Qed.
   Next Obligation. compute.
-  have hintUnif : 
+  have hintUnif :
 (Dθ_wkn_obligation_1 m
        ((let (_, PreOrder_Transitive) := omon_order W A in
          PreOrder_Transitive) w1 w2 w3 H12 H23))
