@@ -21,6 +21,7 @@
 **/*.cut
 .Makefile.d
 Makefile.coq
+.Makefile.coq.d
 Makefile.conf
 Makefile.coq.conf
 *.cache
