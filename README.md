@@ -1,24 +1,20 @@
 # CheesyCrypt
 
-## Prerequisites (obsolete?)
+## Prerequisites
 
-- ocaml.4.09.0
-- coq.8.12.0
-- coq-equations.1.2.3
-- coq-mathcomp-analysis.0.3.2
+- Coq `8.12.0`
+- Equations `1.2.3`
+- Mathcomp analysis `0.3.2`
 
-(Note: ocaml version is irrelevant, and 4.09 is expressly not recommended for
-Coq)
+(Note: You of course need to have ocaml installed as well. It seems
+4.07.1+flambda is recommended, and then anything beyond 4.10 with flambda.)
 
-Get it from the following sources:
+You can get them from `opam`.
 
 ```
-$ opam repo add coq-released https://coq.inria.fr/opam/released
-$ opam repo add coq-core-dev https://coq.inria.fr/opam/core-dev
-$ opam repo add coq-extra-dev https://coq.inria.fr/opam/extra-dev
+opam repo add coq-released https://coq.inria.fr/opam/released
+opam install coq-equations.1.2.3 coq-mathcomp-analysis.0.3.2
 ```
-
-(Note: coq-released should be enough)
 
 ## Step-by-step Guide
 
