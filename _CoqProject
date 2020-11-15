@@ -40,6 +40,7 @@ theories/Crypt/only_prob/ThetaDex.v
 theories/Crypt/UniversalFreeMap.v
 theories/Crypt/StateTransformingLaxMorph.v
 theories/Crypt/StateTransfThetaDens.v
+theories/Crypt/LiftStateful.v
 
 #Crypto
 theories/Crypt/only_prob/UniformDistrLemmas.v
