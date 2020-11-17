@@ -20,6 +20,8 @@ theories/Relational/OrderEnrichedRelativeMonadExamples.v
 theories/Relational/GenericRulesSimple.v
 theories/Relational/Commutativity.v
 
+theories/Crypt/Prelude.v
+
 #categorical semantics
 theories/Crypt/ChoiceAsOrd.v
 theories/Crypt/Axioms.v
