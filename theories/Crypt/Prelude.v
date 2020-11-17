@@ -4,7 +4,7 @@
 
 (* Simple products *)
 
-Notation "x × y" := (prod x y ) (at level 80, right associativity).
+(* Notation "x × y" := (prod x y) (at level 80, right associativity). *)
 
 
 (* Dependent sums *)
