@@ -43,6 +43,7 @@ theories/Crypt/UniversalFreeMap.v
 theories/Crypt/StateTransformingLaxMorph.v
 theories/Crypt/StateTransfThetaDens.v
 theories/Crypt/LiftStateful.v
+theories/Crypt/InitialRelativeMonad.v
 
 #Crypto
 theories/Crypt/only_prob/UniformDistrLemmas.v
