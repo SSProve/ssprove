@@ -8,7 +8,9 @@ Parameter (R:realType).
 Parameter  (absord : R -> R -> bool). 
 Parameter (unlock_absord : absord = (fun x y : R => x <= y)).
 
-From Coq Require Export Logic.ProofIrrelevance.
+(* From Coq Require Export Logic.ProofIrrelevance. *)
+(* We can instead obtain proof_irrelevance from boolp in mathcomp: *)
+Definition proof_irrelevance : forall (P:Prop) (p1 p2:P), p1 = p2 := Prop_irrelevance.
 From Coq Require Export FunctionalExtensionality.
 
 (*now an equivalence between SProp and Prop. An equivalence of
