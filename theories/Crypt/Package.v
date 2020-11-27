@@ -1754,6 +1754,66 @@ Module PackageTheory (π : ProbRulesParam).
 
   Section ID.
 
+    Definition preid_prog {L I} (o : opsig) (h : o \in I) :
+      ident * pointed_vprogram L I :=
+      (let '(n, (So, To)) := o in
+      λ h, (n, (So ; To ; λ s, opr (n, (So, To)) h s (λ x, ret x)))) h.
+
+    Equations? map_interface (I : seq opsig) {A} (f : ∀ x, x \in I → A) : seq A :=
+      map_interface (a :: I') f := f a _ :: map_interface I' (λ x h, f x _) ;
+      map_interface [::] f := [::].
+    Proof.
+      - rewrite in_cons. apply/orP. left. apply/eqP. reflexivity.
+      - rewrite in_cons. apply/orP. right. auto.
+    Qed.
+
+    Notation "[ 'interface' e | h # x ∈ I ]" := (map_interface I (λ x h, e)).
+
+    Definition preid L I : {fmap ident -> pointed_vprogram L I} :=
+      mkfmap [interface preid_prog x h | h # x ∈ I].
+
+    Lemma fset_ext :
+      ∀ (A : ordType) (s1 s2 : {fset A}),
+        (∀ x, x \in s1 ↔ x \in s2) →
+        s1 = s2.
+    Proof.
+      intros A s1 s2 h.
+      apply/eqP. rewrite eqEfsubset.
+      apply/andP. split.
+      - apply fsubset_ext. intros. eapply h. auto.
+      - apply fsubset_ext. intros. eapply h. auto.
+    Qed.
+
+    (* Maybe specialise even further to producing packages *)
+    Lemma get_map_interface_Some_inv :
+      ∀ {A} (I : seq opsig) (f : ∀ x, x \in I → nat * A) n (x : A),
+        getm_def (map_interface I f) n = Some x →
+        ∃ y h, getm_def I n = Some y ∧ (n, x) = f (n, y) h.
+    Proof.
+      cbn. intros A I f n x e.
+      induction I in n, x, f, e |- *.
+      - simp map_interface in e. cbn in e. discriminate.
+      - simp map_interface in e. cbn in e. cbn.
+        destruct eqn eqn:e1.
+        + noconf e. move: e1 => /eqP e1. subst.
+          cbn.
+    Abort.
+
+    Lemma export_id :
+      ∀ L I, export_interface (preid L I) = I.
+    Proof.
+      intros L I. apply fset_ext.
+      cbn. intros [n [S T]].
+      unfold export_interface. rewrite in_fset.
+      split.
+      - move/getmP => h. rewrite mapmE in h.
+        unfold preid in h. rewrite mkfmapE in h.
+        destruct getm_def as [[? [? f]]|] eqn:e. 2: discriminate.
+        simpl in h. noconf h.
+    Abort.
+
+    Definition id L I := mkpack (preid L I).
+
     Definition make_proxy (op : opsig) : ident * pointed_program :=
       let '(n, (So, To)) := op in
       (n, (So ; To ; λ s, _opr (n, (So, To)) s (λ k, _ret k))).
