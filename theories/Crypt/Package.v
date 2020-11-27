@@ -507,35 +507,35 @@ Module PackageTheory (π : ProbRulesParam).
       exact ((k v) ∙2).
     Defined.
 
-    Fixpoint bindrFree_ {A B : choiceType}
+    Fixpoint bind_ {A B : choiceType}
       (c : raw_program A) (k : TypeCat ⦅ choice_incl A ; raw_program B ⦆ ) :
       raw_program B :=
       match c with
       | _ret a => k a
-      | _opr o x k'  => _opr o x (λ p, bindrFree_ (k' p) k)
-      | _getr l k' => _getr l (λ v, bindrFree_ (k' v) k)
-      | _putr l v k' => _putr l v (bindrFree_ k' k)
-      | _sampler op k' => _sampler op (λ a, bindrFree_ (k' a) k)
+      | _opr o x k'  => _opr o x (λ p, bind_ (k' p) k)
+      | _getr l k' => _getr l (λ v, bind_ (k' v) k)
+      | _putr l v k' => _putr l v (bind_ k' k)
+      | _sampler op k' => _sampler op (λ a, bind_ (k' a) k)
       end.
 
-    Lemma bindFree_valid :
+    Lemma bind_valid :
       ∀ A B c k,
         valid_program c →
         (∀ x, valid_program (k x)) →
-        valid_program (@bindrFree_ A B c k).
+        valid_program (@bind_ A B c k).
     Proof.
       intros A B c k hc hk.
       induction c in hc |- *.
       all: solve [ cbn ; cbn in hc ; intuition auto ].
     Qed.
 
-    Definition bindrFree {A B : choiceType} (c : program A)
+    Definition bind {A B : choiceType} (c : program A)
       (k : TypeCat ⦅ choice_incl A ; program B ⦆ ) :
       program B.
     Proof.
-      exists (bindrFree_ (c ∙1) (λ x, (k x) ∙1)).
+      exists (bind_ (c ∙1) (λ x, (k x) ∙1)).
       destruct c as [c h]. cbn.
-      apply bindFree_valid.
+      apply bind_valid.
       - auto.
       - intro x. exact ((k x) ∙2).
     Defined.
@@ -545,7 +545,7 @@ Module PackageTheory (π : ProbRulesParam).
     Program Definition rFree : ord_relativeMonad choice_incl :=
       @mkOrdRelativeMonad ord_choiceType TypeCat choice_incl program _ _ _ _ _ _.
     Next Obligation. apply ret. auto. Defined.
-    Next Obligation. eapply bindrFree. all: eauto. Defined.
+    Next Obligation. eapply bind. all: eauto. Defined.
     Next Obligation.
       f_equal. apply functional_extensionality. auto.
     Qed.
@@ -595,10 +595,10 @@ Module PackageTheory (π : ProbRulesParam).
   End FreeModule.
 
   Arguments _ret [A] _.
-    Arguments _opr [A] _ _.
-    Arguments _getr [A] _.
-    Arguments _putr [A] _.
-    Arguments _sampler [A] _ _.
+  Arguments _opr [A] _ _.
+  Arguments _getr [A] _.
+  Arguments _putr [A] _.
+  Arguments _sampler [A] _ _.
 
   Arguments ret [Loc] [import] [A] _.
   Arguments opr [Loc] [import] [A] _ _.
@@ -748,8 +748,8 @@ Module PackageTheory (π : ProbRulesParam).
     Lemma commuteBindLocations :
       ∀ {A B : choiceType} (h : fsubset locs1 locs2)
         (v : program locs1 I A) (f : A → program locs1 I B),
-        bindrFree _ _ (injectLocations h v) (fun w => injectLocations h (f w)) =
-        injectLocations h (bindrFree _ _ v f).
+        bind _ _ (injectLocations h v) (fun w => injectLocations h (f w)) =
+        injectLocations h (bind _ _ v f).
     Proof.
       intros A B h v f.
       apply program_ext. cbn. reflexivity.
@@ -762,12 +762,10 @@ Module PackageTheory (π : ProbRulesParam).
     Definition pointed_program :=
       ∑ (S T : chUniverse), S → raw_program T.
 
-    (* Used to be ∀ (o : opsig), src o → raw_program (tgt o) *)
     (* Can't use opsig as index because maps aren't dependent. *)
     Definition raw_package :=
       {fmap ident -> pointed_program}.
 
-    (* Used to be ∀ (o : opsig), o \in E → ∀ (x : src o), valid_program L I (p o x) *)
     Definition valid_package L I (E : Interface) (p : raw_package) :=
       ∀ o, o \in E →
         let '(id, (src, tgt)) := o in
@@ -788,30 +786,7 @@ Module PackageTheory (π : ProbRulesParam).
       pack : opackage locs import export
     }.
 
-  (* Problem when performing the parallel composition on raw packages.
-    (export implictly implements)
-    (fmap union is left-biased)
-
-  pack P :
-    export foo
-    implement bar
-
-  pack Q :
-    implement foo
-    export bar
-
-  P || Q =
-    P.foo
-    P.bar (* This should be Q.bar *)
-  *)
-
   Section Link.
-
-  (* For package union, we can have it raw, but then
-  for proper packages we can just first filter
-  both sides so that they only implement their
-  interface. This is easier than deciding on the
-  proof of \in E1 :|: E2 *)
 
     Definition cast_fun {So To St Tt : chUniverse}
       (hS : St = So) (hT : Tt = To) (f : St → raw_program Tt) :
@@ -871,25 +846,25 @@ Module PackageTheory (π : ProbRulesParam).
       cbn. subst. cbn. reflexivity.
     Qed.
 
-    Fixpoint opackage_compose_ {A} (v : raw_program A) (p : raw_package) :
+    Fixpoint raw_program_link {A} (v : raw_program A) (p : raw_package) :
       raw_program A :=
       match v with
       | _ret a => _ret a
       | _opr o a k =>
         match lookup_op p o with
-        | Some f => bindrFree_ (f a) (λ x, opackage_compose_ (k x) p)
-        | None => _opr o a (λ x, opackage_compose_ (k x) p) (* Should not happen in practice *)
+        | Some f => bind_ (f a) (λ x, raw_program_link (k x) p)
+        | None => _opr o a (λ x, raw_program_link (k x) p) (* Should not happen in practice *)
         end
-      | _getr l k => _getr l (λ x, opackage_compose_ (k x) p)
-      | _putr l v k => _putr l v (opackage_compose_ k p)
-      | _sampler op k => _sampler op (λ x, opackage_compose_ (k x) p)
+      | _getr l k => _getr l (λ x, raw_program_link (k x) p)
+      | _putr l v k => _putr l v (raw_program_link k p)
+      | _sampler op k => _sampler op (λ x, raw_program_link (k x) p)
       end.
 
-    Lemma opackage_compose_valid :
+    Lemma raw_program_link_valid :
       ∀ A L Im Ir (v : raw_program A) p,
         valid_program L Im v →
         valid_package L Ir Im p →
-        valid_program L Ir (opackage_compose_ v p).
+        valid_program L Ir (raw_program_link v p).
     Proof.
       intros A L Im Ir v p hv hp.
       induction v in hv |- *.
@@ -898,45 +873,44 @@ Module PackageTheory (π : ProbRulesParam).
       eapply lookup_op_valid in hp as hf. 2: intuition eauto.
       destruct hf as [f [ef hf]].
       rewrite ef.
-      apply bindFree_valid.
+      apply bind_valid.
       - intuition auto.
       - intuition auto.
     Qed.
 
-    Definition opackage_compose {A L Im Ir}
+    Definition program_link {A L Im Ir}
       (v : program L Im A) (p : opackage L Ir Im) :
       program L Ir A.
     Proof.
-      exists (opackage_compose_ (v ∙1) (p ∙1)).
+      exists (raw_program_link (v ∙1) (p ∙1)).
       destruct v as [v hv], p as [p hp]. cbn.
-      eapply opackage_compose_valid. all: eauto.
+      eapply raw_program_link_valid. all: eauto.
     Defined.
 
-    (* Used to be λ o x, opackage_compose_ (p1 o x) p2 *)
-    Definition full_opackage_compose_ (p1 p2 : raw_package) : raw_package :=
+    Definition raw_link (p1 p2 : raw_package) : raw_package :=
       @mapm _ pointed_program _
-        (λ '(So ; To ; f), (So ; To ; λ x, opackage_compose_ (f x) p2)) p1.
+        (λ '(So ; To ; f), (So ; To ; λ x, raw_program_link (f x) p2)) p1.
 
-    Definition full_opackage_compose {L I E I'}
+    Definition olink {L I E I'}
       (p1 : opackage L I E) (p2 : opackage L I' I) : opackage L I' E.
     Proof.
-      exists (full_opackage_compose_ p1 ∙1 p2 ∙1).
+      exists (raw_link p1 ∙1 p2 ∙1).
       destruct p1 as [p1 h1], p2 as [p2 h2]. cbn.
       intros [n [So To]] ho.
-      unfold full_opackage_compose_. rewrite mapmE.
+      unfold raw_link. rewrite mapmE.
       specialize (h1 _ ho) as h1'. cbn in h1'.
       destruct h1' as [f [ef hf]]. rewrite ef. cbn.
       eexists. split. 1: reflexivity.
       intro x.
-      eapply opackage_compose_valid. all: eauto.
+      eapply raw_program_link_valid. all: eauto.
     Defined.
 
-    Lemma bindrFree_assoc :
+    Lemma bind_assoc :
       ∀ {A B C : choiceType} (v : raw_program A)
         (k1 : TypeCat ⦅ choice_incl A ; raw_program B ⦆)
         (k2 : TypeCat ⦅ choice_incl B ; raw_program C ⦆),
-        bindrFree_ (bindrFree_ v k1) k2 =
-        bindrFree_ v (λ x, bindrFree_ (k1 x) k2).
+        bind_ (bind_ v k1) k2 =
+        bind_ v (λ x, bind_ (k1 x) k2).
     Proof.
       intros A B C v k1 k2.
       induction v in k1, k2 |- *.
@@ -947,18 +921,18 @@ Module PackageTheory (π : ProbRulesParam).
       - cbn. f_equal. extensionality z. auto.
     Qed.
 
-    Lemma opackage_compose_bindrFree :
+    Lemma raw_program_link_bind :
       ∀ {A B : choiceType} (v : raw_program A)
         (k : TypeCat ⦅ choice_incl A ; raw_program B ⦆)
         (p : raw_package),
-        opackage_compose_ (bindrFree_ v k) p =
-        bindrFree_ (opackage_compose_ v p) (λ x, opackage_compose_ (k x) p).
+        raw_program_link (bind_ v k) p =
+        bind_ (raw_program_link v p) (λ x, raw_program_link (k x) p).
     Proof.
       intros A B v k p.
       induction v.
       - cbn. reflexivity.
       - cbn. destruct lookup_op.
-        + rewrite bindrFree_assoc. f_equal.
+        + rewrite bind_assoc. f_equal.
           apply functional_extensionality. auto.
         + cbn. f_equal. apply functional_extensionality. auto.
       - cbn. f_equal. apply functional_extensionality. auto.
@@ -984,19 +958,19 @@ Module PackageTheory (π : ProbRulesParam).
       | _sampler op k => ∀ x, provides p (k x)
       end.
 
-    Lemma opackage_compose_assoc_ :
+    Lemma raw_program_link_assoc :
       ∀ A (v : raw_program A) f g,
         provides f v →
-        opackage_compose_ (opackage_compose_ v f) g =
-        opackage_compose_ v (full_opackage_compose_ f g).
+        raw_program_link (raw_program_link v f) g =
+        raw_program_link v (raw_link f g).
     Proof.
       intros A v f g h.
       induction v in f, g, h |- *.
       - cbn. reflexivity.
-      - cbn. unfold full_opackage_compose_ in *.
+      - cbn. unfold raw_link in *.
         rewrite lookup_op_map. cbn in h.
         destruct lookup_op eqn:e. 2: exfalso ; auto.
-        cbn. rewrite opackage_compose_bindrFree. f_equal.
+        cbn. rewrite raw_program_link_bind. f_equal.
         apply functional_extensionality. auto.
       - cbn. f_equal. apply functional_extensionality. auto.
       - cbn. f_equal. auto.
@@ -1031,17 +1005,17 @@ Module PackageTheory (π : ProbRulesParam).
       - cbn. cbn in hv. intuition auto.
     Qed.
 
-    Lemma opackage_compose_assoc :
+    Lemma program_link_assoc :
       ∀ {A L Im Ir Il}
         (v : program L Im A)
         (f : opackage L Ir Im)
         (g : opackage L Il Ir),
-        opackage_compose (opackage_compose v f) g =
-        opackage_compose v (full_opackage_compose f g).
+        program_link (program_link v f) g =
+        program_link v (olink f g).
     Proof.
       intros A L Im Ir Il [v hv] [f hf] [g hg].
       apply program_ext. cbn.
-      apply opackage_compose_assoc_.
+      apply raw_program_link_assoc.
       eapply valid_provides. all: eauto.
     Qed.
 
@@ -1083,13 +1057,13 @@ Module PackageTheory (π : ProbRulesParam).
       eapply valid_package_inject_locations. all: eauto.
     Defined.
 
-    Definition opackage_compose' {A L1 L2 I M}
+    Definition program_link' {A L1 L2 I M}
       (v : program L1 M A) (p : opackage L2 I M) :
       program (L1 :|: L2) I A.
     Proof.
-      exists (opackage_compose_ (v ∙1) (p ∙1)).
+      exists (raw_program_link (v ∙1) (p ∙1)).
       destruct v as [v hv], p as [p hp]. cbn.
-      eapply opackage_compose_valid.
+      eapply raw_program_link_valid.
       - eapply valid_injectLocations. 2: eauto.
         apply fsubsetUl.
       - eapply valid_package_inject_locations. 2: eauto.
@@ -1127,10 +1101,10 @@ Module PackageTheory (π : ProbRulesParam).
       ∀ L1 L2 I M E p1 p2,
         valid_package L1 M E p1 →
         valid_package L2 I M p2 →
-        valid_package (L1 :|: L2) I E (full_opackage_compose_ (trim E p1) p2).
+        valid_package (L1 :|: L2) I E (raw_link (trim E p1) p2).
     Proof.
       intros L1 L2 I M E p1 p2 h1 h2.
-      intros [n [So To]] ho. unfold full_opackage_compose_.
+      intros [n [So To]] ho. unfold raw_link.
       rewrite mapmE.
       specialize (h1 _ ho) as h1'. cbn in h1'.
       destruct h1' as [f [ef hf]].
@@ -1138,7 +1112,7 @@ Module PackageTheory (π : ProbRulesParam).
       cbn.
       eexists. split. 1: reflexivity.
       intro x.
-      eapply opackage_compose_valid.
+      eapply raw_program_link_valid.
       - eapply valid_injectLocations.
         + apply fsubsetUl.
         + eapply hf.
@@ -1148,11 +1122,11 @@ Module PackageTheory (π : ProbRulesParam).
     Qed.
 
     (* Sequential composition p1 ∘ p2 *)
-    (* link_ is full_opackage_compose_ *)
+    (* link_ is raw_link *)
     Definition link {I M E} (p1 : package M E) (p2 : package I M) : package I E.
     Proof.
       exists (p1.π1 :|: p2.π1).
-      exists (full_opackage_compose_ (trim E (p1.π2 ∙1)) (p2.π2 ∙1)).
+      exists (raw_link (trim E (p1.π2 ∙1)) (p2.π2 ∙1)).
       destruct p1 as [l1 [p1 h1]], p2 as [l2 [p2 h2]]. cbn.
       eapply link_valid. all: eauto.
     Defined.
@@ -1161,7 +1135,7 @@ Module PackageTheory (π : ProbRulesParam).
       (h : fsubset M1 M2) : package I E.
     Proof.
       exists (p1.π1 :|: p2.π1).
-      exists (full_opackage_compose_ (trim E (p1.π2 ∙1)) (p2.π2 ∙1)).
+      exists (raw_link (trim E (p1.π2 ∙1)) (p2.π2 ∙1)).
       destruct p1 as [l1 [p1 h1]], p2 as [l2 [p2 h2]]. cbn.
       eapply link_valid.
       - eauto.
@@ -1182,14 +1156,14 @@ Module PackageTheory (π : ProbRulesParam).
     Qed.
 
     (* Technical lemma before proving assoc *)
-    Lemma full_opackage_compose_trim_commut :
+    Lemma raw_link_trim_commut :
       ∀ E p1 p2,
-        full_opackage_compose_ (trim E p1) p2 =
-        trim E (full_opackage_compose_ p1 p2).
+        raw_link (trim E p1) p2 =
+        trim E (raw_link p1 p2).
     Proof.
       intros E p1 p2.
       apply eq_fmap. intro n.
-      unfold full_opackage_compose_. unfold trim.
+      unfold raw_link. unfold trim.
       repeat rewrite ?filtermE ?mapmE.
       destruct (p1 n) as [[S1 [T1 f1]]|] eqn:e. 2: reflexivity.
       cbn.
@@ -1233,10 +1207,10 @@ Module PackageTheory (π : ProbRulesParam).
         subst. rewrite e1. cbn. reflexivity.
     Qed.
 
-    Lemma opackage_compose_trim_right :
+    Lemma raw_program_link_trim_right :
       ∀ A L E (v : raw_program A) p,
         valid_program L E v →
-        opackage_compose_ v (trim E p) = opackage_compose_ v p.
+        raw_program_link v (trim E p) = raw_program_link v p.
     Proof.
       intros A L E v p h.
       induction v in p, h |- *.
@@ -1271,15 +1245,15 @@ Module PackageTheory (π : ProbRulesParam).
       intuition auto.
     Qed.
 
-    Lemma full_opackage_compose_trim_right :
+    Lemma raw_link_trim_right :
       ∀ L I E p1 p2,
         valid_package L I E p1 →
-        full_opackage_compose_ (trim E p1) (trim I p2) =
-        full_opackage_compose_ (trim E p1) p2.
+        raw_link (trim E p1) (trim I p2) =
+        raw_link (trim E p1) p2.
     Proof.
       intros L I E p1 p2 h.
       apply eq_fmap. intro n.
-      unfold full_opackage_compose_.
+      unfold raw_link.
       rewrite !mapmE.
       destruct (trim E p1 n) as [[S1 [T1 f1]]|] eqn:e.
       2:{ rewrite e. reflexivity. }
@@ -1290,7 +1264,7 @@ Module PackageTheory (π : ProbRulesParam).
       specialize (h _ he). cbn in h.
       destruct h as [f [ef h]].
       rewrite ef in e. noconf e.
-      eapply opackage_compose_trim_right.
+      eapply raw_program_link_trim_right.
       apply h.
     Qed.
 
@@ -1298,15 +1272,15 @@ Module PackageTheory (π : ProbRulesParam).
       ∀ L1 L2 E M1 M2 p1 p2 p3,
         valid_package L1 M1 E p1 →
         valid_package L2 M2 M1 p2 →
-        full_opackage_compose_ (trim E p1) (full_opackage_compose_ (trim M1 p2) p3) =1
-        full_opackage_compose_ (trim E (full_opackage_compose_ (trim E p1) p2)) p3.
+        raw_link (trim E p1) (raw_link (trim M1 p2) p3) =1
+        raw_link (trim E (raw_link (trim E p1) p2)) p3.
     Proof.
       intros L1 L2 E M1 M2 p1 p2 p3 h1 h2.
-      rewrite (full_opackage_compose_trim_commut M1).
-      rewrite (full_opackage_compose_trim_commut _ _ p2).
+      rewrite (raw_link_trim_commut M1).
+      rewrite (raw_link_trim_commut _ _ p2).
       rewrite trim_invol.
-      erewrite full_opackage_compose_trim_right. 2: eauto.
-      unfold full_opackage_compose_. unfold trim.
+      erewrite raw_link_trim_right. 2: eauto.
+      unfold raw_link. unfold trim.
       intro n. repeat rewrite ?filtermE ?mapmE.
       destruct (p1 n) as [[S1 [T1 f1]]|] eqn:e. 2: reflexivity.
       cbn.
@@ -1315,7 +1289,7 @@ Module PackageTheory (π : ProbRulesParam).
       rewrite e1. cbn.
       f_equal. f_equal. f_equal.
       extensionality x.
-      rewrite opackage_compose_assoc_.
+      rewrite raw_program_link_assoc.
       + reflexivity.
       + specialize (h1 _ e1). cbn in h1.
         destruct h1 as [g [eg hg]].
@@ -1349,7 +1323,7 @@ Module PackageTheory (π : ProbRulesParam).
       - exact (locs p1 :|: locs p2).
       - exact (import p2).
       - exact (export p1).
-      - exists (full_opackage_compose_ (trim (export p1) ((pack p1) ∙1)) ((pack p2) ∙1)).
+      - exists (raw_link (trim (export p1) ((pack p1) ∙1)) ((pack p2) ∙1)).
         destruct p1 as [L1 I1 E1 [p1 h1]], p2 as [L2 I2 E2 [p2 h2]].
         cbn in h. subst. cbn.
         eapply link_valid. all: eauto.
@@ -1402,8 +1376,8 @@ Module PackageTheory (π : ProbRulesParam).
 
   Section Par.
 
-    (* Because p1 and p2 might implement more than prescribed by their
-       interface and in particular overlap, we trim them first.
+    (** Because p1 and p2 might implement more than prescribed by their
+        interface and in particular overlap, we trim them first.
     *)
     Definition raw_par (E1 E2 : Interface) (p1 p2 : raw_package) :=
       unionm (trim E1 p1) (trim E2 p2).
@@ -1619,23 +1593,23 @@ Module PackageTheory (π : ProbRulesParam).
         + rewrite e2. simpl. reflexivity.
     Qed.
 
-    Lemma full_opackage_compose_unionm :
+    Lemma raw_link_unionm :
       ∀ p1 p2 p3,
-        full_opackage_compose_ (unionm p1 p2) p3 =
-        unionm (full_opackage_compose_ p1 p3) (full_opackage_compose_ p2 p3).
+        raw_link (unionm p1 p2) p3 =
+        unionm (raw_link p1 p3) (raw_link p2 p3).
     Proof.
       intros p1 p2 p3.
       apply eq_fmap. intro n.
-      rewrite unionmE. unfold full_opackage_compose_ at 1.
+      rewrite unionmE. unfold raw_link at 1.
       rewrite mapmE. rewrite unionmE.
-      unfold full_opackage_compose_ at 1.
+      unfold raw_link at 1.
       rewrite mapmE.
       destruct (p1 n) as [[S1 [T1 f1]]|] eqn:e1.
       - simpl. reflexivity.
       - simpl. destruct (p2 n) as [[S2 [T2 f2]]|] eqn:e2.
-        + simpl. unfold full_opackage_compose_.
+        + simpl. unfold raw_link.
           rewrite mapmE. rewrite e2. simpl. reflexivity.
-        + simpl. unfold full_opackage_compose_.
+        + simpl. unfold raw_link.
           rewrite mapmE. rewrite e2. simpl. reflexivity.
     Qed.
 
@@ -1649,12 +1623,12 @@ Module PackageTheory (π : ProbRulesParam).
       destruct (p1 n) as [[S1 [T1 f1]]|] eqn:e1. all: reflexivity.
     Qed.
 
-    Lemma opackage_compose_raw_par_left :
+    Lemma raw_program_link_raw_par_left :
       ∀ A I L L' E1 E2 (v : raw_program A) p1 p2,
         valid_program L E1 v →
         valid_package L' I E1 p1 →
-        opackage_compose_ v (raw_par E1 E2 p1 p2) =
-        opackage_compose_ v p1.
+        raw_program_link v (raw_par E1 E2 p1 p2) =
+        raw_program_link v p1.
     Proof.
       intros A I L L' E1 E2 v p1 p2 hv h.
       induction v in hv |- *.
@@ -1694,12 +1668,12 @@ Module PackageTheory (π : ProbRulesParam).
       ∀ {E1 E2 E3 L L' I} p1 p2 p3,
         valid_package L E2 E1 p1 →
         valid_package L' I E2 p2 →
-        full_opackage_compose_ (trim E1 p1) (raw_par E2 E3 p2 p3) =
-        full_opackage_compose_ (trim E1 p1) p2.
+        raw_link (trim E1 p1) (raw_par E2 E3 p2 p3) =
+        raw_link (trim E1 p1) p2.
     Proof.
       intros E1 E2 E3 L L' I p1 p2 p3 h1 h2.
       apply eq_fmap. intro n.
-      unfold full_opackage_compose_. rewrite !mapmE.
+      unfold raw_link. rewrite !mapmE.
       destruct (trim E1 p1 n) as [[S1 [T1 f1]]|] eqn:e1.
       - rewrite e1. simpl. f_equal. f_equal. f_equal.
         apply trim_get_inv in e1 as e2.
@@ -1707,7 +1681,7 @@ Module PackageTheory (π : ProbRulesParam).
         specialize (h1 _ hh). cbn in h1.
         destruct h1 as [f [ef hf]].
         rewrite ef in e2. noconf e2.
-        extensionality x. eapply opackage_compose_raw_par_left. all: eauto.
+        extensionality x. eapply raw_program_link_raw_par_left. all: eauto.
       - rewrite e1. simpl. reflexivity.
     Qed.
 
@@ -1716,8 +1690,8 @@ Module PackageTheory (π : ProbRulesParam).
         parable E2 E3 →
         valid_package L E3 E1 p1 →
         valid_package L' I E3 p3 →
-        full_opackage_compose_ (trim E1 p1) (raw_par E2 E3 p2 p3) =
-        full_opackage_compose_ (trim E1 p1) p3.
+        raw_link (trim E1 p1) (raw_par E2 E3 p2 p3) =
+        raw_link (trim E1 p1) p3.
     Proof.
       intros E1 E2 E3 L L' I p1 p2 p3 hE h1 h2.
       rewrite raw_par_commut. 2: auto.
@@ -1739,10 +1713,10 @@ Module PackageTheory (π : ProbRulesParam).
       - cbn. rewrite !fsetUA. f_equal. rewrite fsetUC. rewrite fsetUA. f_equal.
         apply fsetUC.
       - simpl. unfold raw_par.
-        rewrite <- full_opackage_compose_trim_commut. rewrite trim_invol.
-        rewrite <- full_opackage_compose_trim_commut. rewrite trim_invol.
+        rewrite <- raw_link_trim_commut. rewrite trim_invol.
+        rewrite <- raw_link_trim_commut. rewrite trim_invol.
         rewrite trim_raw_par. unfold raw_par.
-        rewrite full_opackage_compose_unionm.
+        rewrite raw_link_unionm.
         erewrite <- import_raw_par_left. 2-3: eauto.
         erewrite <- (import_raw_par_right p2 _ p4). 2-4: eauto.
         intro. reflexivity.
@@ -1751,8 +1725,10 @@ Module PackageTheory (π : ProbRulesParam).
   End Par.
 
   Section ID.
+
     Definition make_proxy (op : opsig) : ident * pointed_program :=
-      let '(n, (So, To)) := op in (n, (So ; To; fun s => _opr (n, (So, To)) s (fun k => _ret k))).
+      let '(n, (So, To)) := op in
+      (n, (So ; To ; λ s, _opr (n, (So, To)) s (λ k, _ret k))).
 
     Definition ID (i : Interface) : package i i.
     Proof.
