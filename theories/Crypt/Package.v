@@ -1799,6 +1799,23 @@ Module PackageTheory (π : ProbRulesParam).
         apply bool_irrelevance.
   Qed.
 
+  Lemma getm_def_map_interface_None :
+    ∀ A (I : seq opsig) (f : ∀ x, x \in I → A) n,
+      getm_def [interface (ide x, f x h) | h # x ∈ I] n = None →
+      getm_def I n = None.
+  Proof.
+    cbn. intros A I f n e.
+    induction I in f, n, e |- *.
+    - simp map_interface in e. auto.
+    - simp map_interface in e. cbn in e.
+      destruct eqn eqn:e1. 1: discriminate.
+      replace (ide a) with a.1 in e1.
+      2:{ destruct a as [? [? ?]]. cbn. reflexivity. }
+      cbn. rewrite e1.
+      specialize IHI with (1 := e).
+      auto.
+  Qed.
+
   Definition funmkpack {L I} {E : Interface}
     (f : ∀ (o : opsig), o \in E → src o → program L I (tgt o)) :
     opackage L I E.
@@ -1824,7 +1841,8 @@ Module PackageTheory (π : ProbRulesParam).
         - Change o \in E by getm_def E o.1 = Some (So, To).
       *)
       give_up.
-    - exfalso. (* Need another inversion lemma *)
+    - exfalso. apply getm_def_map_interface_None in e.
+      (* Need a contraduction with get and in *)
   Abort.
 
   Section ID.
