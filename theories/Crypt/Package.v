@@ -1724,16 +1724,46 @@ Module PackageTheory (π : ProbRulesParam).
 
   End Par.
 
+  (** Package builder
+
+    The same way we have constructors for program, we provide constructors
+    for packages that are correct by construction.
+  *)
+  Definition pointed_vprogram L I :=
+    ∑ (S T : chUniverse), S → program L I T.
+
+  Definition export_interface {L I} (p : {fmap ident -> pointed_vprogram L I})
+    : Interface :=
+    fset (mapm (λ '(So ; To ; f), (So, To)) p).
+
+  Definition mkpack {L I} (p : {fmap ident -> pointed_vprogram L I}) :
+    opackage L I (export_interface p).
+  Proof.
+    exists (@mapm _ (pointed_vprogram L I) pointed_program
+      (λ '(So ; To ; f), (So ; To ; λ x, (f x) ∙1)) p).
+    intros [n [So To]] ho.
+    rewrite mapmE. unfold export_interface in ho.
+    rewrite in_fset in ho.
+    move: ho => /getmP ho. rewrite mapmE in ho.
+    destruct (p n) as [[S [T f]]|] eqn:e.
+    2:{ rewrite e in ho. cbn in ho. discriminate. }
+    rewrite e in ho. cbn in ho. noconf ho.
+    exists (λ x, (f x) ∙1). simpl. intuition auto.
+    exact ((f x) ∙2).
+  Defined.
+
   Section ID.
 
     Definition make_proxy (op : opsig) : ident * pointed_program :=
       let '(n, (So, To)) := op in
       (n, (So ; To ; λ s, _opr (n, (So, To)) s (λ k, _ret k))).
 
-    Definition ID (i : Interface) : package i i.
+    Definition ID (I : Interface) : package I I.
     Proof.
       exists fset0.
-      exists (mkfmap [seq make_proxy x | x <- i]).
+      exists (mkfmap [seq make_proxy x | x <- I]).
+      intros [n [So To]] ho.
+      rewrite mkfmapE.
     Admitted.
 
   End ID.
