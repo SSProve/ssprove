@@ -1811,6 +1811,9 @@ Module PackageTheory (π : ProbRulesParam).
       auto.
   Qed.
 
+  (* Definition opin (o : opsig) (E : Interface) :=
+    getm_def E (ide o) = Some (chsrc o, chtgt o). *)
+
   Definition funmkpack {L I} {E : Interface}
     (f : ∀ (o : opsig), o \in E → src o → program L I (tgt o)) :
     opackage L I E.
@@ -1834,6 +1837,9 @@ Module PackageTheory (π : ProbRulesParam).
         - Have interface not support overloading by construction (using maps).
         - Add requirement that E should be overloading-free.
         - Change o \in E by getm_def E o.1 = Some (So, To).
+          This last option sounds great, but if there is overloading, we
+          will produce in some cases arguments that can't be fed to f
+          (the definition of foo above doesn't type check anymore).
       *)
       give_up.
     - exfalso. apply getm_def_map_interface_None in e.
