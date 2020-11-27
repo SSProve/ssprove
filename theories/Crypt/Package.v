@@ -388,7 +388,7 @@ Module PackageTheory (π : ProbRulesParam).
   Definition Interface := {fset opsig}.
 
   Definition ide (v : opsig) : ident :=
-    let '(n, (s, t)) := v in n.
+    let '(n, _) := v in n.
 
   Definition chsrc (v : opsig) : chUniverse :=
       let '(n, (s, t)) := v in s.
@@ -1778,8 +1778,7 @@ Module PackageTheory (π : ProbRulesParam).
     - simp map_interface in e. discriminate.
     - simp map_interface in e. cbn in e.
       destruct eqn eqn:e1.
-      + noconf e. cbn. replace (ide a) with a.1 in e1.
-        2:{ destruct a as [? [? ?]]. cbn. reflexivity. }
+      + noconf e. cbn.
         rewrite e1. move: e1 => /eqP e1. subst.
         exists a.2. unshelve eexists.
         { destruct a. cbn. rewrite in_cons.
@@ -1788,9 +1787,7 @@ Module PackageTheory (π : ProbRulesParam).
         split. 1: reflexivity.
         destruct a. cbn. f_equal.
         apply bool_irrelevance.
-      + replace (ide a) with a.1 in e1.
-        2:{ destruct a as [? [? ?]]. cbn. reflexivity. }
-        cbn. rewrite e1.
+      + cbn. rewrite e1.
         specialize IHI with (1 := e).
         destruct IHI as [z [h [h1 h2]]].
         exists z. unshelve eexists.
@@ -1809,8 +1806,6 @@ Module PackageTheory (π : ProbRulesParam).
     - simp map_interface in e. auto.
     - simp map_interface in e. cbn in e.
       destruct eqn eqn:e1. 1: discriminate.
-      replace (ide a) with a.1 in e1.
-      2:{ destruct a as [? [? ?]]. cbn. reflexivity. }
       cbn. rewrite e1.
       specialize IHI with (1 := e).
       auto.
