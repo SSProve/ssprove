@@ -1811,6 +1811,20 @@ Module PackageTheory (π : ProbRulesParam).
     intros [n [So To]] ho.
     rewrite mapmE. subst bar foo.
     rewrite mkfmapE.
+    destruct getm_def eqn:e.
+    - apply getm_def_map_interface_Some in e as h.
+      destruct h as [[S T] [h [h1 h2]]]. subst. cbn.
+      (* Here we don't have enough to conclude that S = So
+        because there might be overloading in E.
+        In case of overloading, then this is not possible to prove this
+        theorem.
+        Several solutions:
+        - Have interface not support overloading by construction (using maps).
+        - Add requirement that E should be overloading-free.
+        - Change o \in E by getm_def E o.1 = Some (So, To).
+      *)
+      give_up.
+    - exfalso. (* Need another inversion lemma *)
   Abort.
 
   Section ID.
