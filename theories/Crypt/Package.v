@@ -1752,14 +1752,8 @@ Module PackageTheory (π : ProbRulesParam).
     exact ((f x) ∙2).
   Defined.
 
-  Section ID.
-
-    Definition preid_prog {L I} (o : opsig) (h : o \in I) :
-      ident * pointed_vprogram L I :=
-      (let '(n, (So, To)) := o in
-      λ h, (n, (So ; To ; λ s, opr (n, (So, To)) h s (λ x, ret x)))) h.
-
-    Equations? map_interface (I : seq opsig) {A} (f : ∀ x, x \in I → A) : seq A :=
+  (* Alternative from a function *)
+  Equations? map_interface (I : seq opsig) {A} (f : ∀ x, x \in I → A) : seq A :=
       map_interface (a :: I') f := f a _ :: map_interface I' (λ x h, f x _) ;
       map_interface [::] f := [::].
     Proof.
@@ -1767,7 +1761,28 @@ Module PackageTheory (π : ProbRulesParam).
       - rewrite in_cons. apply/orP. right. auto.
     Qed.
 
-    Notation "[ 'interface' e | h # x ∈ I ]" := (map_interface I (λ x h, e)).
+  Notation "[ 'interface' e | h # x ∈ I ]" := (map_interface I (λ x h, e)).
+
+  Definition funmkpack {L I} {E : Interface}
+    (f : ∀ (o : opsig), o \in E → src o → program L I (tgt o)) :
+    opackage L I E.
+  Proof.
+    pose foo : seq (nat * pointed_vprogram L I) :=
+      [interface (ide o, (chsrc o ; chtgt o ; f o h)) | h # o ∈ E].
+    pose bar := mkfmap foo.
+    exists (@mapm _ (pointed_vprogram L I) pointed_program
+      (λ '(So ; To ; f), (So ; To ; λ x, (f x) ∙1)) bar).
+    intros [n [So To]] ho.
+    rewrite mapmE. subst bar foo.
+    rewrite mkfmapE.
+  Abort.
+
+  Section ID.
+
+    Definition preid_prog {L I} (o : opsig) (h : o \in I) :
+      ident * pointed_vprogram L I :=
+      (let '(n, (So, To)) := o in
+      λ h, (n, (So ; To ; λ s, opr (n, (So, To)) h s (λ x, ret x)))) h.
 
     Definition preid L I : {fmap ident -> pointed_vprogram L I} :=
       mkfmap [interface preid_prog x h | h # x ∈ I].
