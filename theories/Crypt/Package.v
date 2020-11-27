@@ -1763,6 +1763,42 @@ Module PackageTheory (π : ProbRulesParam).
 
   Notation "[ 'interface' e | h # x ∈ I ]" := (map_interface I (λ x h, e)).
 
+  (* Lemma getm_def_map_interface :
+    ∀ A I (f : ∀ x, x \in I → A) n,
+      getm_def [interface (ide x, f x h) | h # x ∈ I] n =
+      omap (λ x, f (n, x) _) (getm_def I n). *)
+
+  Lemma getm_def_map_interface_Some :
+    ∀ A (I : seq opsig) (f : ∀ x, x \in I → A) n y,
+      getm_def [interface (ide x, f x h) | h # x ∈ I] n = Some y →
+      ∃ z h, getm_def I n = Some z ∧ y = f (n, z) h.
+  Proof.
+    cbn. intros A I f n y e.
+    induction I in f, n, y, e |- *.
+    - simp map_interface in e. discriminate.
+    - simp map_interface in e. cbn in e.
+      destruct eqn eqn:e1.
+      + noconf e. cbn. replace (ide a) with a.1 in e1.
+        2:{ destruct a as [? [? ?]]. cbn. reflexivity. }
+        rewrite e1. move: e1 => /eqP e1. subst.
+        exists a.2. unshelve eexists.
+        { destruct a. cbn. rewrite in_cons.
+          apply/orP. left. apply/eqP. reflexivity.
+        }
+        split. 1: reflexivity.
+        destruct a. cbn. f_equal.
+        apply bool_irrelevance.
+      + replace (ide a) with a.1 in e1.
+        2:{ destruct a as [? [? ?]]. cbn. reflexivity. }
+        cbn. rewrite e1.
+        specialize IHI with (1 := e).
+        destruct IHI as [z [h [h1 h2]]].
+        exists z. unshelve eexists.
+        { rewrite in_cons. apply/orP. right. auto. }
+        intuition auto. subst. f_equal.
+        apply bool_irrelevance.
+  Qed.
+
   Definition funmkpack {L I} {E : Interface}
     (f : ∀ (o : opsig), o \in E → src o → program L I (tgt o)) :
     opackage L I E.
