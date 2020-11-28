@@ -1923,6 +1923,39 @@ Module PackageTheory (π : ProbRulesParam).
 
   End ID.
 
+  (* Notations for packages *)
+
+  Notation "'val' f # s ⇒ t" := ((f, (s,t))) (at level 0) : interface_scope.
+
+  Notation "[ 'interface' ]" :=
+    fset0
+    (at level 0, format "[ interface ]")
+    : interface_scope.
+
+Notation "[ 'interface' x1 ]" := (fset (x1 :: [::]))
+  (at level 0, format "[ interface x1 ]") : interface_scope.
+
+  Notation "[ 'interface' x1 ; x2 ; .. ; xn ]" :=
+    (fset (x1 :: x2 :: .. [:: xn] ..))
+    (at level 0, format "[ interface '[' x1 ; '/' x2 ; '/' .. ; '/' xn ']' ]")
+    : interface_scope.
+
+  Section NotationExamples.
+
+    Open Scope interface_scope.
+
+    Let I0 : Interface :=
+      [interface val 3 # chNat ⇒ chNat].
+
+    Let I1 : Interface :=
+      [interface
+        val 0 # chBool ⇒ chBool ;
+        val 1 # chNat ⇒ chUnit ;
+        val 2 # chUnit ⇒ chBool
+      ].
+
+  End NotationExamples.
+
   End PackageModule.
 
   Section Games.
