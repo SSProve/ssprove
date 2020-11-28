@@ -1811,10 +1811,17 @@ Module PackageTheory (π : ProbRulesParam).
       auto.
   Qed.
 
-  (* Definition opin (o : opsig) (E : Interface) :=
-    getm_def E (ide o) = Some (chsrc o, chtgt o). *)
+  (** Since the type of interfaces allows for overloading,
+      we define the predicate [flat] on them, stating that they only export
+      each symbol once.
+  *)
+  Definition flat (I : Interface) :=
+    ∀ n u1 u2,
+      (n, u1) \in I →
+      (n, u2) \in I →
+      u1 = u2.
 
-  Definition funmkpack {L I} {E : Interface}
+  Definition funmkpack {L I} {E : Interface} (hE : flat E)
     (f : ∀ (o : opsig), o \in E → src o → program L I (tgt o)) :
     opackage L I E.
   Proof.
@@ -1829,22 +1836,13 @@ Module PackageTheory (π : ProbRulesParam).
     destruct getm_def eqn:e.
     - apply getm_def_map_interface_Some in e as h.
       destruct h as [[S T] [h [h1 h2]]]. subst. cbn.
-      (* Here we don't have enough to conclude that S = So
-        because there might be overloading in E.
-        In case of overloading, then this is not possible to prove this
-        theorem.
-        Several solutions:
-        - Have interface not support overloading by construction (using maps).
-        - Add requirement that E should be overloading-free.
-        - Change o \in E by getm_def E o.1 = Some (So, To).
-          This last option sounds great, but if there is overloading, we
-          will produce in some cases arguments that can't be fed to f
-          (the definition of foo above doesn't type check anymore).
-      *)
-      give_up.
+      specialize (hE _ _ _ h ho). noconf hE.
+      eexists. split. 1: reflexivity.
+      intro x. cbn.
+      exact ((f (n, (So, To)) h x) ∙2).
     - exfalso. apply getm_def_map_interface_None in e.
       (* Need a contraduction with get and in *)
-  Abort.
+  Admitted.
 
   Section ID.
 
