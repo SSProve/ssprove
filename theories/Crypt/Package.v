@@ -1932,12 +1932,28 @@ Module PackageTheory (π : ProbRulesParam).
     (at level 0, format "[ interface ]")
     : interface_scope.
 
-Notation "[ 'interface' x1 ]" := (fset (x1 :: [::]))
-  (at level 0, format "[ interface x1 ]") : interface_scope.
+  Notation "[ 'interface' x1 ]" := (fset (x1 :: [::]))
+    (at level 0, format "[ interface x1 ]") : interface_scope.
 
   Notation "[ 'interface' x1 ; x2 ; .. ; xn ]" :=
     (fset (x1 :: x2 :: .. [:: xn] ..))
     (at level 0, format "[ interface '[' x1 ; '/' x2 ; '/' .. ; '/' xn ']' ]")
+    : interface_scope.
+
+  Notation "'def' f ▸ x ∶ A ↦ B { e }" :=
+    ((f, (A ; B ; λ x, e))) (at level 0) : interface_scope.
+
+  Notation "[ 'package' ]" :=
+    (mkfmap [::])
+    (at level 0, format "[ package ]")
+    : interface_scope.
+
+  Notation "[ 'package' x1 ]" := (mkfmap (x1 :: [::]))
+    (at level 0, format "[ package x1 ]") : interface_scope.
+
+  Notation "[ 'package' x1 ; x2 ; .. ; xn ]" :=
+    (mkfmap (x1 :: x2 :: .. [:: xn] ..))
+    (at level 0, format "[ package '[' x1 ; '/' x2 ; '/' .. ; '/' xn ']' ]")
     : interface_scope.
 
   Section NotationExamples.
@@ -1953,6 +1969,13 @@ Notation "[ 'interface' x1 ]" := (fset (x1 :: [::]))
         val 1 # chNat ⇒ chUnit ;
         val 2 # chUnit ⇒ chBool
       ].
+
+    (* Let p1 : opackage fset0 I0 :=
+      [package
+        def 3 ▸ x ∶ chNat ↦ chNat {
+          ret x
+        }
+      ]. *)
 
   End NotationExamples.
 
