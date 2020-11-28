@@ -1863,6 +1863,14 @@ Module PackageTheory (π : ProbRulesParam).
 
   Section ID.
 
+    Definition ID (I : Interface) (h : flat I) : package I I.
+    Proof.
+      exists fset0.
+      eapply funmkpack. 1: auto.
+      intros o ho x.
+      exact (opr o ho x (λ x, ret x)).
+    Defined.
+
     Definition preid_prog {L I} (o : opsig) (h : o \in I) :
       ident * pointed_vprogram L I :=
       (let '(n, (So, To)) := o in
@@ -1912,18 +1920,6 @@ Module PackageTheory (π : ProbRulesParam).
     Abort.
 
     Definition id L I := mkpack (preid L I).
-
-    Definition make_proxy (op : opsig) : ident * pointed_program :=
-      let '(n, (So, To)) := op in
-      (n, (So ; To ; λ s, _opr (n, (So, To)) s (λ k, _ret k))).
-
-    Definition ID (I : Interface) : package I I.
-    Proof.
-      exists fset0.
-      exists (mkfmap [seq make_proxy x | x <- I]).
-      intros [n [So To]] ho.
-      rewrite mkfmapE.
-    Admitted.
 
   End ID.
 
