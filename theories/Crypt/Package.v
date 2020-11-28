@@ -1821,6 +1821,22 @@ Module PackageTheory (π : ProbRulesParam).
       (n, u2) \in I →
       u1 = u2.
 
+  Lemma in_getm_def_None :
+    ∀ {A : eqType} n (x : A) (s : seq (nat * A)),
+      (n,x) \in s →
+      getm_def s n = None →
+      False.
+  Proof.
+    intros A n x s h1 h2.
+    induction s as [| [m a] s ih] in n, x, h1, h2 |- *.
+    - inversion h1.
+    - cbn in h2. rewrite in_cons in h1.
+      destruct eqn eqn:e.
+      + discriminate.
+      + cbn in h1. rewrite e in h1. cbn in h1.
+        eapply ih. all: eauto.
+  Qed.
+
   Definition funmkpack {L I} {E : Interface} (hE : flat E)
     (f : ∀ (o : opsig), o \in E → src o → program L I (tgt o)) :
     opackage L I E.
@@ -1841,8 +1857,9 @@ Module PackageTheory (π : ProbRulesParam).
       intro x. cbn.
       exact ((f (n, (So, To)) h x) ∙2).
     - exfalso. apply getm_def_map_interface_None in e.
-      (* Need a contraduction with get and in *)
-  Admitted.
+      eapply in_getm_def_None. 2: eauto.
+      exact ho.
+  Qed.
 
   Section ID.
 
