@@ -1753,6 +1753,7 @@ Module PackageTheory (π : ProbRulesParam).
   Defined.
 
   (* Alternative from a function *)
+
   Equations? map_interface (I : seq opsig) {A} (f : ∀ x, x \in I → A) : seq A :=
       map_interface (a :: I') f := f a _ :: map_interface I' (λ x h, f x _) ;
       map_interface [::] f := [::].
@@ -1762,11 +1763,6 @@ Module PackageTheory (π : ProbRulesParam).
     Qed.
 
   Notation "[ 'interface' e | h # x ∈ I ]" := (map_interface I (λ x h, e)).
-
-  (* Lemma getm_def_map_interface :
-    ∀ A I (f : ∀ x, x \in I → A) n,
-      getm_def [interface (ide x, f x h) | h # x ∈ I] n =
-      omap (λ x, f (n, x) _) (getm_def I n). *)
 
   Lemma getm_def_map_interface_Some :
     ∀ A (I : seq opsig) (f : ∀ x, x \in I → A) n y,
@@ -1925,6 +1921,14 @@ Module PackageTheory (π : ProbRulesParam).
 
   (* Notations for packages *)
 
+  Declare Custom Entry pack_type.
+
+  Notation " 'nat' " := (chNat) (in custom pack_type at level 2).
+  Notation " 'bool' " := (chBool) (in custom pack_type at level 2).
+  Notation " 'zero' " := (chZero) (in custom pack_type at level 2).
+  Notation " 'unit' " := (chUnit) (in custom pack_type at level 2).
+  Notation " x × y " := (chProd x y) (in custom pack_type at level 2).
+
   Declare Custom Entry interface.
 
   Notation "[ 'interface' ]" :=
@@ -1947,13 +1951,10 @@ Module PackageTheory (π : ProbRulesParam).
 
   Notation " 'val' { f } : A → B" :=
     (f, (A, B))
-    (in custom interface at level 0, f constr).
+    (in custom interface at level 0,
+    f constr, A custom pack_type, B custom pack_type).
 
-  Notation " 'nat' " := (chNat) (in custom interface at level 2).
-  Notation " 'bool' " := (chBool) (in custom interface at level 2).
-  Notation " 'zero' " := (chZero) (in custom interface at level 2).
-  Notation " 'unit' " := (chUnit) (in custom interface at level 2).
-  Notation " x × y " := (chProd x y) (in custom interface at level 2).
+  Declare Custom Entry package.
 
   Notation "[ 'package' ]" :=
     (mkfmap [::])
@@ -1962,16 +1963,23 @@ Module PackageTheory (π : ProbRulesParam).
 
   Notation "[ 'package' x1 ]" :=
     (mkfmap (x1 :: [::]))
-    (at level 0, format "[ package x1 ]")
+    (at level 0, x1 custom package at level 2, format "[ package x1 ]")
     : package_scope.
 
   Notation "[ 'package' x1 ; x2 ; .. ; xn ]" :=
     (mkfmap (x1 :: x2 :: .. [:: xn] ..))
-    (at level 0, format "[ package '[' x1 ; '/' x2 ; '/' .. ; '/' xn ']' ]")
+    (at level 0,
+    x1 custom package at level 2,
+    x2 custom package at level 2,
+    xn custom package at level 2,
+    format "[ package '[' x1 ; '/' x2 ; '/' .. ; '/' xn ']' ]")
     : package_scope.
 
-    Notation "'def' f ▸ x ∶ A ↦ B { e }" :=
-      ((f, (A ; B ; λ x, e))) (at level 0) : package_scope.
+  Notation " 'def' { f } ( x : A ) : B { e }" :=
+    ((f, (A ; B ; λ x, e)))
+    (in custom package at level 0,
+    f constr, e constr, x ident, A custom pack_type, B custom pack_type)
+    : package_scope.
 
   Section NotationExamples.
 
@@ -1992,12 +2000,12 @@ Module PackageTheory (π : ProbRulesParam).
         val { 4 } : bool × bool → bool
       ].
 
-    (* Let p1 : opackage fset0 I0 :=
+    Let p1 : {fmap ident -> pointed_vprogram fset0 I0} :=
       [package
-        def 3 ▸ x ∶ chNat ↦ chNat {
+        def { 3 } (x : nat) : nat {
           ret x
         }
-      ]. *)
+      ].
 
   End NotationExamples.
 
