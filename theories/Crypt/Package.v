@@ -1957,17 +1957,17 @@ Module PackageTheory (π : ProbRulesParam).
   Declare Custom Entry package.
 
   Notation "[ 'package' ]" :=
-    (mkfmap [::])
+    (mkpack (mkfmap [::]))
     (at level 0, format "[ package ]")
     : package_scope.
 
   Notation "[ 'package' x1 ]" :=
-    (mkfmap (x1 :: [::]))
+    (mkpack (mkfmap (x1 :: [::])))
     (at level 0, x1 custom package at level 2, format "[ package x1 ]")
     : package_scope.
 
   Notation "[ 'package' x1 ; x2 ; .. ; xn ]" :=
-    (mkfmap (x1 :: x2 :: .. [:: xn] ..))
+    (mkpack (mkfmap (x1 :: x2 :: .. [:: xn] ..)))
     (at level 0,
     x1 custom package at level 2,
     x2 custom package at level 2,
@@ -1976,7 +1976,7 @@ Module PackageTheory (π : ProbRulesParam).
     : package_scope.
 
   Notation " 'def' { f } ( x : A ) : B { e }" :=
-    ((f, (A ; B ; λ x, e)))
+    ((f, (A ; B ; λ (x : chElement A), (e : program _ _ (chElement B)))))
     (in custom package at level 0,
     f constr, e constr, x ident, A custom pack_type, B custom pack_type)
     : package_scope.
@@ -2000,10 +2000,30 @@ Module PackageTheory (π : ProbRulesParam).
         val { 4 } : bool × bool → bool
       ].
 
-    Let p1 : {fmap ident -> pointed_vprogram fset0 I0} :=
+    Let p0 : opackage fset0 [interface] I0 :=
       [package
         def { 3 } (x : nat) : nat {
           ret x
+        }
+      ].
+
+    Let p1 : opackage fset0 [interface] I1 :=
+      [package
+        def { 0 } (z : bool) : bool {
+          ret z
+        } ;
+        def { 1 } (y : nat) : unit {
+          ret Datatypes.tt
+        } ;
+        def { 2 } (u : unit) : bool {
+          ret false
+        }
+      ].
+
+    Let p2 : opackage fset0 [interface] I2 :=
+      [package
+        def { 4 } (x : bool × bool) : bool {
+          let '(u,v) := x in ret v
         }
       ].
 
