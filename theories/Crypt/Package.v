@@ -1933,7 +1933,7 @@ Module PackageTheory (π : ProbRulesParam).
 
   Notation "[ 'interface' ]" :=
     fset0
-    (at level 0, format "[ interface ]")
+    (at level 0, format "[ interface ]", only parsing)
     : package_scope.
 
   Notation "[ 'interface' x1 ]" := (fset (x1 :: [::]))
@@ -1958,7 +1958,7 @@ Module PackageTheory (π : ProbRulesParam).
 
   Notation "[ 'package' ]" :=
     (mkpack (mkfmap [::]))
-    (at level 0, format "[ package ]")
+    (at level 0, format "[ package ]", only parsing)
     : package_scope.
 
   Notation "[ 'package' x1 ]" :=
