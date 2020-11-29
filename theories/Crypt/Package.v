@@ -1925,49 +1925,71 @@ Module PackageTheory (π : ProbRulesParam).
 
   (* Notations for packages *)
 
-  Notation "'val' f # s ⇒ t" := ((f, (s,t))) (at level 0) : interface_scope.
+  Declare Custom Entry interface.
 
   Notation "[ 'interface' ]" :=
     fset0
     (at level 0, format "[ interface ]")
-    : interface_scope.
+    : package_scope.
 
   Notation "[ 'interface' x1 ]" := (fset (x1 :: [::]))
-    (at level 0, format "[ interface x1 ]") : interface_scope.
+    (at level 0, x1 custom interface at level 2, format "[ interface x1 ]")
+    : package_scope.
 
   Notation "[ 'interface' x1 ; x2 ; .. ; xn ]" :=
     (fset (x1 :: x2 :: .. [:: xn] ..))
-    (at level 0, format "[ interface '[' x1 ; '/' x2 ; '/' .. ; '/' xn ']' ]")
-    : interface_scope.
+    (at level 0,
+    x1 custom interface at level 2,
+    x2 custom interface at level 2,
+    xn custom interface at level 2,
+    format "[ interface '[' x1 ; '/' x2 ; '/' .. ; '/' xn ']' ]")
+    : package_scope.
 
-  Notation "'def' f ▸ x ∶ A ↦ B { e }" :=
-    ((f, (A ; B ; λ x, e))) (at level 0) : interface_scope.
+  Notation " 'val' { f } : A → B" :=
+    (f, (A, B))
+    (in custom interface at level 0, f constr).
+
+  Notation " 'nat' " := (chNat) (in custom interface at level 2).
+  Notation " 'bool' " := (chBool) (in custom interface at level 2).
+  Notation " 'zero' " := (chZero) (in custom interface at level 2).
+  Notation " 'unit' " := (chUnit) (in custom interface at level 2).
+  Notation " x × y " := (chProd x y) (in custom interface at level 2).
 
   Notation "[ 'package' ]" :=
     (mkfmap [::])
     (at level 0, format "[ package ]")
-    : interface_scope.
+    : package_scope.
 
-  Notation "[ 'package' x1 ]" := (mkfmap (x1 :: [::]))
-    (at level 0, format "[ package x1 ]") : interface_scope.
+  Notation "[ 'package' x1 ]" :=
+    (mkfmap (x1 :: [::]))
+    (at level 0, format "[ package x1 ]")
+    : package_scope.
 
   Notation "[ 'package' x1 ; x2 ; .. ; xn ]" :=
     (mkfmap (x1 :: x2 :: .. [:: xn] ..))
     (at level 0, format "[ package '[' x1 ; '/' x2 ; '/' .. ; '/' xn ']' ]")
-    : interface_scope.
+    : package_scope.
+
+    Notation "'def' f ▸ x ∶ A ↦ B { e }" :=
+      ((f, (A ; B ; λ x, e))) (at level 0) : package_scope.
 
   Section NotationExamples.
 
-    Open Scope interface_scope.
+    Open Scope package_scope.
 
     Let I0 : Interface :=
-      [interface val 3 # chNat ⇒ chNat].
+      [interface val { 3 } : nat → nat].
 
     Let I1 : Interface :=
       [interface
-        val 0 # chBool ⇒ chBool ;
-        val 1 # chNat ⇒ chUnit ;
-        val 2 # chUnit ⇒ chBool
+        val { 0 } : bool → bool ;
+        val { 1 } : nat → unit ;
+        val { 2 } : unit → bool
+      ].
+
+    Let I2 : Interface :=
+      [interface
+        val { 4 } : bool × bool → bool
       ].
 
     (* Let p1 : opackage fset0 I0 :=
