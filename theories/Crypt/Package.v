@@ -1972,11 +1972,16 @@ Module PackageTheory (π : ProbRulesParam).
     x1 custom package at level 2,
     x2 custom package at level 2,
     xn custom package at level 2,
-    format "[ package '[' x1  ; '/' x2  ; '/' ..  ; '/' xn  ']'  ]")
+    format "[ package  '[' x1  ; '/' x2  ; '/' ..  ; '/' xn  ']' ]")
     : package_scope.
 
-  Notation " 'def' { f } ( x : A )  : B  { e }" :=
-    ((f, (A ; B ; λ (x : chElement A), (e : program _ _ (chElement B)))))
+  Definition mkdef {L I} (A B : chUniverse) (f : A → program L I B)
+    : pointed_vprogram L I :=
+    (A ; B ; f).
+
+  Notation " 'def' { f }  ( x : A )  : B  {  e  }" :=
+    (* ((f, (A ; B ; λ (x : chElement A), (e : program _ _ (chElement B))))) *)
+    ((f, mkdef A B (λ x, e)))
     (in custom package at level 0,
     f constr, e constr, x ident, A custom pack_type, B custom pack_type)
     : package_scope.
@@ -2007,7 +2012,6 @@ Module PackageTheory (π : ProbRulesParam).
         }
       ].
 
-    (* Maybe printing doesn't work because of the cast *)
     Let p1 : opackage fset0 [interface] I1 :=
       [package
         def { 0 } (z : bool) : bool {
