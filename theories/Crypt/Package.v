@@ -1949,7 +1949,7 @@ Module PackageTheory (π : ProbRulesParam).
     format "[ interface  '[' x1  ;  '/' x2  ;  '/' ..  ;  '/' xn ']'  ]")
     : package_scope.
 
-  Notation " 'val' { f }  : A → B" :=
+  Notation " 'val' #[ f ]  : A → B" :=
     (f, (A, B))
     (in custom interface at level 0,
     f constr, A custom pack_type, B custom pack_type).
@@ -1972,18 +1972,19 @@ Module PackageTheory (π : ProbRulesParam).
     x1 custom package at level 2,
     x2 custom package at level 2,
     xn custom package at level 2,
-    format "[ package  '[' x1  ; '/' x2  ; '/' ..  ; '/' xn  ']' ]")
+    format "[ package  '[' x1  ;  '/' x2  ;  '/' ..  ;  '/' xn  ']' ]")
     : package_scope.
 
   Definition mkdef {L I} (A B : chUniverse) (f : A → program L I B)
     : pointed_vprogram L I :=
     (A ; B ; f).
 
-  Notation " 'def' { f }  ( x : A )  : B  {  e  }" :=
+  Notation " 'def' #[ f ] ( x : A ) : B { e }" :=
     (* ((f, (A ; B ; λ (x : chElement A), (e : program _ _ (chElement B))))) *)
     ((f, mkdef A B (λ x, e)))
     (in custom package at level 0,
-    f constr, e constr, x ident, A custom pack_type, B custom pack_type)
+    f constr, e constr, x ident, A custom pack_type, B custom pack_type,
+    format "def  #[ f ]  ( x : A )  :  B  { '[' '/'  e  '/' ']' }")
     : package_scope.
 
   Section NotationExamples.
@@ -1991,43 +1992,43 @@ Module PackageTheory (π : ProbRulesParam).
     Open Scope package_scope.
 
     Let I0 : Interface :=
-      [interface val { 3 } : nat → nat].
+      [interface val #[3] : nat → nat].
 
     Let I1 : Interface :=
       [interface
-        val { 0 } : bool → bool ;
-        val { 1 } : nat → unit ;
-        val { 2 } : unit → bool
+        val #[0] : bool → bool ;
+        val #[1] : nat → unit ;
+        val #[2] : unit → bool
       ].
 
     Let I2 : Interface :=
       [interface
-        val { 4 } : bool × bool → bool
+        val #[4] : bool × bool → bool
       ].
 
     Let p0 : opackage fset0 [interface] I0 :=
       [package
-        def { 3 } (x : nat) : nat {
+        def #[3] (x : nat) : nat {
           ret x
         }
       ].
 
     Let p1 : opackage fset0 [interface] I1 :=
       [package
-        def { 0 } (z : bool) : bool {
+        def #[0] (z : bool) : bool {
           ret z
         } ;
-        def { 1 } (y : nat) : unit {
+        def #[1] (y : nat) : unit {
           ret Datatypes.tt
         } ;
-        def { 2 } (u : unit) : bool {
+        def #[2] (u : unit) : bool {
           ret false
         }
       ].
 
     Let p2 : opackage fset0 [interface] I2 :=
       [package
-        def { 4 } (x : bool × bool) : bool {
+        def #[4] (x : bool × bool) : bool {
           let '(u,v) := x in ret v
         }
       ].
