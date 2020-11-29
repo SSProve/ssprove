@@ -1937,7 +1937,7 @@ Module PackageTheory (π : ProbRulesParam).
     : package_scope.
 
   Notation "[ 'interface' x1 ]" := (fset (x1 :: [::]))
-    (at level 0, x1 custom interface at level 2, format "[ interface x1 ]")
+    (at level 0, x1 custom interface at level 2, format "[ interface  x1  ]")
     : package_scope.
 
   Notation "[ 'interface' x1 ; x2 ; .. ; xn ]" :=
@@ -1946,10 +1946,10 @@ Module PackageTheory (π : ProbRulesParam).
     x1 custom interface at level 2,
     x2 custom interface at level 2,
     xn custom interface at level 2,
-    format "[ interface '[' x1 ; '/' x2 ; '/' .. ; '/' xn ']' ]")
+    format "[ interface  '[' x1  ;  '/' x2  ;  '/' ..  ;  '/' xn ']'  ]")
     : package_scope.
 
-  Notation " 'val' { f } : A → B" :=
+  Notation " 'val' { f }  : A → B" :=
     (f, (A, B))
     (in custom interface at level 0,
     f constr, A custom pack_type, B custom pack_type).
@@ -1963,7 +1963,7 @@ Module PackageTheory (π : ProbRulesParam).
 
   Notation "[ 'package' x1 ]" :=
     (mkpack (mkfmap (x1 :: [::])))
-    (at level 0, x1 custom package at level 2, format "[ package x1 ]")
+    (at level 0, x1 custom package at level 2, format "[ package  x1  ]")
     : package_scope.
 
   Notation "[ 'package' x1 ; x2 ; .. ; xn ]" :=
@@ -1972,10 +1972,10 @@ Module PackageTheory (π : ProbRulesParam).
     x1 custom package at level 2,
     x2 custom package at level 2,
     xn custom package at level 2,
-    format "[ package '[' x1 ; '/' x2 ; '/' .. ; '/' xn ']' ]")
+    format "[ package '[' x1  ; '/' x2  ; '/' ..  ; '/' xn  ']'  ]")
     : package_scope.
 
-  Notation " 'def' { f } ( x : A ) : B { e }" :=
+  Notation " 'def' { f } ( x : A )  : B  { e }" :=
     ((f, (A ; B ; λ (x : chElement A), (e : program _ _ (chElement B)))))
     (in custom package at level 0,
     f constr, e constr, x ident, A custom pack_type, B custom pack_type)
@@ -2007,6 +2007,7 @@ Module PackageTheory (π : ProbRulesParam).
         }
       ].
 
+    (* Maybe printing doesn't work because of the cast *)
     Let p1 : opackage fset0 [interface] I1 :=
       [package
         def { 0 } (z : bool) : bool {
