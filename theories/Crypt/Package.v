@@ -1952,11 +1952,11 @@ Module PackageTheory (π : ProbRulesParam).
     format "[ interface  '[' x1  ;  '/' x2  ;  '/' ..  ;  '/' xn ']'  ]")
     : package_scope.
 
-  Notation " 'val' #[ f ] : A → B" :=
+  Notation "'val' #[ f ] : A → B" :=
     (f, (A, B))
     (in custom interface at level 0,
     f constr, A custom pack_type, B custom pack_type,
-    format " val  #[ f ]  :  A  →  B").
+    format "val  #[ f ]  :  A  →  B").
 
   Declare Custom Entry package.
 
@@ -1989,6 +1989,51 @@ Module PackageTheory (π : ProbRulesParam).
     (in custom package at level 0,
     f constr, e constr, x ident, A custom pack_type, B custom pack_type,
     format "def  #[ f ]  ( x : A )  :  B  { '[' '/'  e  '/' ']' }")
+    : package_scope.
+
+  Notation "x ← c1 ;; c2" :=
+    (bind c1 (λ x, c2))
+    (at level 100, c1 at next level, right associativity,
+    format "x  ←  c1  ;;  '/' c2")
+    : package_scope.
+
+  Notation "' p ← c1 ;; c2" :=
+    (bind c1 (λ x, let p := x in c2))
+    (at level 100, p pattern, c1 at next level, right associativity,
+    format "' p  ←  c1  ;;  '/' c2")
+    : package_scope.
+
+  Notation "e1 ;; e2" :=
+    (_ ← e1%pack ;; e2%pack)%pack
+    (at level 100, right associativity,
+    format "e1  ;;  '/' e2")
+    : package_scope.
+
+  Notation "'put' n ':=' u ;; c" :=
+    (putr n _ u c)
+    (at level 100, u at next level, right associativity,
+    format "put  n  :=  u  ;;  '/' c")
+    : package_scope.
+
+  Notation "x ← 'get' n ;; c" :=
+    (getr n _ (λ x, c))
+    (at level 100, n at next level, right associativity,
+    format "x  ←  get  n  ;;  '/' c")
+    : package_scope.
+
+  Declare Custom Entry pack_op.
+
+  Notation "#[ f ] : A → B" :=
+    (f, (A, B))
+    (in custom pack_op at level 0,
+    f constr, A custom pack_type, B custom pack_type,
+    format "#[ f ]  :  A  →  B").
+
+  Notation "x ← 'op' [ o ] n ;; c" :=
+    (opr o _ n (λ x, c))
+    (at level 100, n at next level, o custom pack_op at level 2,
+    right associativity,
+    format "x  ←  op  [  o  ]  n  ;;  '/' c")
     : package_scope.
 
   Section NotationExamples.
@@ -2082,51 +2127,7 @@ Module PackageTheory (π : ProbRulesParam).
       ]
     |}.
 
-    Notation "x ← c1 ;; c2" :=
-      (bind c1 (λ x, c2))
-      (at level 100, c1 at next level, right associativity,
-      format "x  ←  c1  ;;  '/' c2")
-      : package_scope.
-
-    Notation "' p ← c1 ;; c2" :=
-      (bind c1 (λ x, let p := x in c2))
-      (at level 100, p pattern, c1 at next level, right associativity,
-      format "' p  ←  c1  ;;  '/' c2")
-      : package_scope.
-
-    Notation "e1 ;; e2" :=
-      (_ ← e1%pack ;; e2%pack)%pack
-      (at level 100, right associativity,
-      format "e1  ;;  '/' e2")
-      : package_scope.
-
-    Notation "'put' n ':=' u ;; c" :=
-      (putr n _ u c)
-      (at level 100, u at next level, right associativity,
-      format "put  n  :=  u  ;;  '/' c")
-      : package_scope.
-
-    Notation "x ← 'get' n ;; c" :=
-      (getr n _ (λ x, c))
-      (at level 100, n at next level, right associativity,
-      format "x  ←  get  n  ;;  '/' c")
-      : package_scope.
-
-    Declare Custom Entry pack_op.
-
-    Notation " #[ f ] : A → B" :=
-      (f, (A, B))
-      (in custom pack_op at level 0,
-      f constr, A custom pack_type, B custom pack_type,
-      format " #[ f ]  :  A  →  B").
-
-    Notation "x ← 'op' [ o ] n ;; c" :=
-      (opr o _ n (λ x, c))
-      (at level 100, n at next level, o custom pack_op at level 2,
-      right associativity,
-      format "x  ←  op  [  o  ]  n  ;;  '/' c")
-      : package_scope.
-
+    (* The exact same definition but using the notations for the monad. *)
     #[program] Definition btest' : bundle := {|
       locs := [fset 0] ;
       import := [interface val #[0] : nat → nat] ;
