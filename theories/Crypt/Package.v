@@ -2112,10 +2112,19 @@ Module PackageTheory (π : ProbRulesParam).
       format "x  ←  get  n  ;;  '/' c")
       : package_scope.
 
-    Notation "x ← 'op' #[ o ] n ;; c" :=
+    Declare Custom Entry pack_op.
+
+    Notation " #[ f ] : A → B" :=
+      (f, (A, B))
+      (in custom pack_op at level 0,
+      f constr, A custom pack_type, B custom pack_type,
+      format " #[ f ]  :  A  →  B").
+
+    Notation "x ← 'op' [ o ] n ;; c" :=
       (opr o _ n (λ x, c))
-      (at level 100, n, o at next level, right associativity,
-      format "x  ←  op  #[  o  ]  n  ;;  '/' c")
+      (at level 100, n at next level, o custom pack_op at level 2,
+      right associativity,
+      format "x  ←  op  [  o  ]  n  ;;  '/' c")
       : package_scope.
 
     #[program] Definition btest' : bundle := {|
@@ -2132,7 +2141,7 @@ Module PackageTheory (π : ProbRulesParam).
         } ;
         def #[1] (x : nat) : nat {
           n ← get 0 ;;
-          m ← op #[ (0, (chNat, chNat)) ] n ;;
+          m ← op [ #[ 0 ] : nat → nat ] n ;;
           put 0 := m ;;
           ret m
         }
