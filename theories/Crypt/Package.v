@@ -1921,6 +1921,9 @@ Module PackageTheory (π : ProbRulesParam).
 
   (* Notations for packages *)
 
+  Declare Scope package_scope.
+  Delimit Scope package_scope with pack.
+
   Declare Custom Entry pack_type.
 
   Notation " 'nat' " := (chNat) (in custom pack_type at level 2).
@@ -1949,10 +1952,11 @@ Module PackageTheory (π : ProbRulesParam).
     format "[ interface  '[' x1  ;  '/' x2  ;  '/' ..  ;  '/' xn ']'  ]")
     : package_scope.
 
-  Notation " 'val' #[ f ]  : A → B" :=
+  Notation " 'val' #[ f ] : A → B" :=
     (f, (A, B))
     (in custom interface at level 0,
-    f constr, A custom pack_type, B custom pack_type).
+    f constr, A custom pack_type, B custom pack_type,
+    format " val  #[ f ]  :  A  →  B").
 
   Declare Custom Entry package.
 
@@ -2032,6 +2036,108 @@ Module PackageTheory (π : ProbRulesParam).
           let '(u,v) := x in ret v
         }
       ].
+
+    Let b1 : bundle := {|
+      locs := fset0 ;
+      import := [interface] ;
+      export := _ ;
+      pack := p1
+    |}.
+
+    Ltac in_fset_auto :=
+      rewrite in_fset ; auto.
+
+    Ltac package_obtac :=
+      Tactics.program_simplify ;
+      CoreTactics.equations_simpl ;
+      try Tactics.program_solve_wf ;
+      try in_fset_auto.
+
+    Obligation Tactic := package_obtac.
+
+    (** Note that because fsets are locked, ordering the export interface
+        differently would not work.
+
+        The program attribute is there to infer automatically the proofs
+        corresponding to opr/putr/getr.
+    *)
+    #[program] Definition btest : bundle := {|
+      locs := [fset 0] ;
+      import := [interface val #[0] : nat → nat] ;
+      export := [interface
+        val #[1] : nat → nat ;
+        val #[2] : unit → unit
+      ] ;
+      pack := [package
+        def #[2] (_ : unit) : unit {
+          putr 0 _ 0 (ret Datatypes.tt)
+        } ;
+        def #[1] (x : nat) : nat {
+          getr 0 _ (λ n,
+            opr (0, (chNat, chNat)) _ n (λ m,
+              putr 0 _ m (ret m)
+            )
+          )
+        }
+      ]
+    |}.
+
+    Notation "x ← c1 ;; c2" :=
+      (bind c1 (λ x, c2))
+      (at level 100, c1 at next level, right associativity,
+      format "x  ←  c1  ;;  '/' c2")
+      : package_scope.
+
+    Notation "' p ← c1 ;; c2" :=
+      (bind c1 (λ x, let p := x in c2))
+      (at level 100, p pattern, c1 at next level, right associativity,
+      format "' p  ←  c1  ;;  '/' c2")
+      : package_scope.
+
+    Notation "e1 ;; e2" :=
+      (_ ← e1%pack ;; e2%pack)%pack
+      (at level 100, right associativity,
+      format "e1  ;;  '/' e2")
+      : package_scope.
+
+    Notation "'put' n ':=' u ;; c" :=
+      (putr n _ u c)
+      (at level 100, u at next level, right associativity,
+      format "put  n  :=  u  ;;  '/' c")
+      : package_scope.
+
+    Notation "x ← 'get' n ;; c" :=
+      (getr n _ (λ x, c))
+      (at level 100, n at next level, right associativity,
+      format "x  ←  get  n  ;;  '/' c")
+      : package_scope.
+
+    Notation "x ← 'op' #[ o ] n ;; c" :=
+      (opr o _ n (λ x, c))
+      (at level 100, n, o at next level, right associativity,
+      format "x  ←  op  #[  o  ]  n  ;;  '/' c")
+      : package_scope.
+
+    #[program] Definition btest' : bundle := {|
+      locs := [fset 0] ;
+      import := [interface val #[0] : nat → nat] ;
+      export := [interface
+        val #[1] : nat → nat ;
+        val #[2] : unit → unit
+      ] ;
+      pack := [package
+        def #[2] (_ : unit) : unit {
+          put 0 := 0 ;;
+          ret Datatypes.tt
+        } ;
+        def #[1] (x : nat) : nat {
+          n ← get 0 ;;
+          m ← op #[ (0, (chNat, chNat)) ] n ;;
+          put 0 := m ;;
+          ret m
+        }
+      ]
+    |}.
 
   End NotationExamples.
 
