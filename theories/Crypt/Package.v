@@ -2211,10 +2211,10 @@ Module PackageTheory (π : ProbRulesParam).
     Defined.
     From Crypt Require Import FreeProbProg.
 
-    Definition FreeTranslate {B : choiceType} {locs : {fset Location}} (v : raw_program B)
-               (v_is_valid : valid_program locs Game_import v)
+    Definition FreeTranslate {B : choiceType} {locs : {fset Location}} (p : program locs Game_import B)
       : rFreeF (iops_StP (makeHeap_cT locs)) (iar_StP (makeHeap_cT locs)) B.
     Proof.
+      destruct p as [v v_is_valid].
       induction v.
       - apply FreeProbProg.retrFree. exact x.
       - inversion v_is_valid as [Habs _].
@@ -2234,24 +2234,112 @@ Module PackageTheory (π : ProbRulesParam).
         apply v_is_valid.
     Defined.
 
-    Definition Pr (P : package Game_import A_export) : SDistr (bool_choiceType).
+    Let getLocations {I E} (P : package I E) : {fset Location} :=
+      let '(locs; PP) := P in locs.
+
+    Definition get_op {I E : Interface} (P : package I E)
+               (op : opsig) (Hin : op \in E) (arg : src op) : program (getLocations P) I (tgt op).
     Proof.
-      destruct P as [locs [PP PP_is_valid]].
-      destruct (lookup_op PP RUN) eqn:eq_PP0.
-      - pose V := FreeTranslate (r Datatypes.tt).
-        pose (lookup_op_valid locs Game_import A_export PP RUN PP_is_valid RUN_in_A_export).
-        assert (valid_program locs Game_import (r Datatypes.tt)).
-        { destruct e. inversion H. symmetry in eq_PP0. induction eq_PP0.
-          inversion H0. apply H1. }
-        pose V' := (V locs H).
-        pose STDIST := thetaFstd _ V'.
-        simpl in STDIST.
-        pose SSDIST := STDIST prob_handler emptym.
-        refine (SDistr_bind _ _ (fun '(b, _) => SDistr_unit _ b) SSDIST).
+      destruct P as [L [PP PP_is_valid]].
+      (* ER: I wonder if there's a more natural way of doing this *)
+      remember (lookup_op PP op) as o.
+      pose (lookup_op_valid L I E PP op PP_is_valid Hin) as e.
+      destruct o.
+      - exists (r arg).
+        destruct e as [f [Hf1 Hf2]].
+        rewrite Hf1 in Heqo. inversion Heqo. apply Hf2.
       - assert False.
-        { pose (lookup_op_valid locs Game_import A_export PP RUN PP_is_valid RUN_in_A_export).
-          destruct e. inversion H. symmetry in eq_PP0. destruct eq_PP0. discriminate. }
+        { destruct e as [f [Hf1 Hf2]]. rewrite Hf1 in Heqo. discriminate. }
         contradiction.
     Defined.
+
+    Definition Pr (P : package Game_import A_export) : SDistr (bool_choiceType).
+    Proof.
+      pose STDIST := thetaFstd _ (FreeTranslate (get_op P RUN RUN_in_A_export Datatypes.tt)).
+      simpl in STDIST.
+      pose SSDIST := STDIST prob_handler emptym.
+      refine (SDistr_bind _ _ (fun '(b, _) => SDistr_unit _ b) SSDIST).
+    Defined.
+
+    Section semantic_judgement.
+      Context (locsl : {fset Location}).
+      Context (locsr : {fset Location}).
+      (* morphism *)
+      Let θ  := @thetaFstdex probE rel_choiceTypes chEmb (makeHeap_cT locsl) (makeHeap_cT locsr) prob_handler.
+      (* spec monad *)
+      Let WrelSt  := (rlmm_codomain θ).
+
+
+      Definition semantic_judgement (A1 A2 : ord_choiceType)
+                 (c1 : FrStP (makeHeap_cT locsl) A1) (c2 : FrStP (makeHeap_cT locsr) A2)
+                 (w  : Base.dfst (WrelSt ⟨ A1, A2 ⟩)) : Prop :=
+        (θ ⟨A1,A2⟩)∙1 ⟨c1,c2⟩ ≤ w.
+
+      Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ c1 c2 w).
+
+      Definition fromPrePost {A1 A2 : ord_choiceType}
+                 (pre : (makeHeap_cT locsl * makeHeap_cT locsr) -> Prop)
+                 (post : (A1 * makeHeap_cT locsl) -> (A2 * makeHeap_cT locsr) -> Prop)
+        :  Base.dfst (WrelSt ⟨ A1, A2 ⟩).
+      Proof.
+        simpl.
+        unshelve econstructor.
+        + move=> [is1 is2]. unshelve econstructor.
+          ++ move=> myPost.
+             exact (  pre (is1,is2) /\
+                      forall as1 as2, (post as1 as2) -> myPost (as1, as2)).
+          ++ move => x y Hxy [H1 H2].
+             split.
+             +++ assumption.
+             +++ move => as1 as2 post12. apply: Hxy. by apply: H2.
+        + move => x y Heq π.
+            by rewrite Heq.
+      Defined.
+
+    End semantic_judgement.
+
+    Notation "⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
+      (semantic_judgement _ _ _ _ c1 c2 (@fromPrePost _ _ _ _ pre post)).
+
+    Import Num.Theory.
+    Open Scope ring_scope.
+    Open Scope real_scope.
+
+    Definition GamePair (Game_export : Interface) := bool -> Game_Type Game_export.
+
+    Definition Advantage { Game_export : Interface } (G : GamePair Game_export)
+               (A : Adversary4Game Game_export) : R :=
+      `| (Pr (link A (G false)) true) - (Pr (link A (G true)) true)|.
+
+    Definition AdvantageE { Game_export : Interface }
+      : Game_Type Game_export -> Game_Type Game_export -> Adversary4Game Game_export -> R
+      := fun G0 G1 A => `| (Pr (link A G0) true) - (Pr (link A G1) true)|.
+
+    Notation "ϵ( GP )" := (fun A => AdvantageE (GP false) (GP true) A) (at level 90).
+    Notation " G0 ≈[ R ] G1 " := (AdvantageE G0 G1 = R) (at level 50).
+
+    (* ER: How do we connect the package theory with the RHL?
+           Something along the following lines should hold? *)
+    Definition prove_relational {export : Interface}
+               (P1 : package Game_import export)
+               (P2 : package Game_import export)
+               (I : makeHeap_cT (getLocations P1) * makeHeap_cT (getLocations P2) -> Prop)
+               (Hempty : I (emptym, emptym))
+               (H : forall (op : opsig) (Hin : op \in export) (arg : src op),
+                   ⊨ ⦃ fun '(s1, s2) => I (s1, s2) ⦄
+                     (FreeTranslate (get_op P1 op Hin arg))
+                     ≈
+                     (FreeTranslate (get_op P2 op Hin arg))
+                     ⦃ fun '(b1, s1) '(b2, s2) => I (s1, s2) /\ b1 = b2  ⦄)
+      : P1 ≈[ fun A => 0 ] P2.
+    Proof.
+      destruct P1 as [locs1 pp1].
+      destruct P2 as [locs2 pp2].
+      unfold getLocations in I, H.
+      extensionality A.
+      unfold semantic_judgement in H.
+      unfold AdvantageE, Pr.
+      admit.
+    Admitted.
   End Games.
 End PackageTheory.
