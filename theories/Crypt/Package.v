@@ -1869,56 +1869,6 @@ Module PackageTheory (π : ProbRulesParam).
       exact ho.
   Qed.
 
-  Section ID.
-
-    Definition ID (I : Interface) (h : flat I) : package I I.
-    Proof.
-      exists fset0.
-      eapply funmkpack. 1: auto.
-      intros o ho x.
-      exact (opr o ho x (λ x, ret x)).
-    Defined.
-
-    Definition preid_prog {L I} (o : opsig) (h : o \in I) :
-      ident * pointed_vprogram L I :=
-      (let '(n, (So, To)) := o in
-      λ h, (n, (So ; To ; λ s, opr (n, (So, To)) h s (λ x, ret x)))) h.
-
-    Definition preid L I : {fmap ident -> pointed_vprogram L I} :=
-      mkfmap [interface preid_prog x h | h # x ∈ I].
-
-    (* Maybe specialise even further to producing packages *)
-    Lemma get_map_interface_Some_inv :
-      ∀ {A} (I : seq opsig) (f : ∀ x, x \in I → nat * A) n (x : A),
-        getm_def (map_interface I f) n = Some x →
-        ∃ y h, getm_def I n = Some y ∧ (n, x) = f (n, y) h.
-    Proof.
-      cbn. intros A I f n x e.
-      induction I in n, x, f, e |- *.
-      - simp map_interface in e. cbn in e. discriminate.
-      - simp map_interface in e. cbn in e. cbn.
-        destruct eqn eqn:e1.
-        + noconf e. move: e1 => /eqP e1. subst.
-          cbn.
-    Abort.
-
-    Lemma export_id :
-      ∀ L I, export_interface (preid L I) = I.
-    Proof.
-      intros L I. apply fset_ext.
-      cbn. intros [n [S T]].
-      unfold export_interface. rewrite in_fset.
-      split.
-      - move/getmP => h. rewrite mapmE in h.
-        unfold preid in h. rewrite mkfmapE in h.
-        destruct getm_def as [[? [? f]]|] eqn:e. 2: discriminate.
-        simpl in h. noconf h.
-    Abort.
-
-    Definition id L I := mkpack (preid L I).
-
-  End ID.
-
   (* Notations for packages *)
 
   Declare Scope package_scope.
@@ -2150,6 +2100,20 @@ Module PackageTheory (π : ProbRulesParam).
     |}.
 
   End NotationExamples.
+
+  Section ID.
+
+    Definition ID (I : Interface) (h : flat I) : package I I :=
+      (fset0 ; funmkpack h (λ o ho x, opr o ho x (λ x, ret x))).
+
+    Definition idb (I : Interface) (h : flat I) : bundle := {|
+      locs := fset0 ;
+      import := I ;
+      export := I ;
+      pack := funmkpack h (λ o ho x, opr o ho x (λ x, ret x))
+    |}.
+
+  End ID.
 
   End PackageModule.
 
