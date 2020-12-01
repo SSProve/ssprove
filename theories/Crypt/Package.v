@@ -2113,29 +2113,36 @@ Module PackageTheory (π : ProbRulesParam).
       pack := funmkpack h (λ o ho x, opr o ho x (λ x, ret x))
     |}.
 
+    Definition optrim {L I E} (p : opackage L I E) : opackage L I E.
+    Proof.
+      exists (trim E (p ∙1)).
+      destruct p as [p h]. cbn.
+      apply valid_trim. auto.
+    Defined.
+
+    Definition ptrim {I E} (p : package I E) : package I E :=
+      (p.π1 ; optrim (p.π2)).
+
+    Definition btrim (b : bundle) : bundle := {|
+      locs := locs b ;
+      import := import b ;
+      export := export b ;
+      pack := optrim (pack b)
+    |}.
+
     Lemma link_id :
       ∀ I E (p : package I E) h,
-        link p (ID I h) = p.
+        link p (ID I h) = ptrim p.
     Proof.
       intros I E [L [p hp]] h.
       apply package_ext.
       - cbn. rewrite fsetU0. reflexivity.
       - simpl. intro n. unfold raw_link.
         rewrite mapmE. destruct (trim E p n) as [[S [T f]]|] eqn:e.
-        + rewrite e. simpl.
-          apply trim_get_inv in e. destruct e as [e hn].
-          rewrite e. admit.
-        + rewrite e. simpl. unfold trim in e.
-          rewrite filtermE in e. destruct (p n) as [[S [T f]]|] eqn:e1.
-          1:{
-            rewrite e1 in e. cbn in e.
-            destruct ((n, (S, T)) \in E) eqn:e2.
-            - rewrite e2 in e. discriminate.
-            - (* In fact there is no hope of proving it because we
-                trim before linking.
-              *)
-              give_up.
-          }
+        + rewrite e. simpl. f_equal. f_equal. f_equal.
+          apply functional_extensionality. intro x.
+          admit.
+        + rewrite e. simpl. reflexivity.
     Abort.
 
   End ID.
