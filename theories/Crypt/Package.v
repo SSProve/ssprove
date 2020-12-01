@@ -48,6 +48,34 @@ Proof.
   rewrite x_in_s2 in H. by [].
 Qed.
 
+Lemma fsubset_ext :
+  ∀ (A : ordType) (s1 s2 : {fset A}),
+    (∀ x, x \in s1 → x \in s2) →
+    fsubset s1 s2.
+Proof.
+  intros A s1 s2 h.
+  cbn. apply/eqP. pose proof (eq_fset (s1 :|: s2) s2) as [h1 h2].
+  forward h1.
+  { intro x. rewrite in_fsetU.
+    destruct (x \in s1) eqn:e.
+    - cbn. symmetry. apply h. auto.
+    - cbn. reflexivity.
+  }
+  rewrite h1. reflexivity.
+Qed.
+
+Lemma fset_ext :
+  ∀ (A : ordType) (s1 s2 : {fset A}),
+    (∀ x, x \in s1 ↔ x \in s2) →
+    s1 = s2.
+Proof.
+  intros A s1 s2 h.
+  apply/eqP. rewrite eqEfsubset.
+  apply/andP. split.
+  - apply fsubset_ext. intros. eapply h. auto.
+  - apply fsubset_ext. intros. eapply h. auto.
+Qed.
+
 (* Basic structure *)
 
 Inductive chUniverse :=
@@ -1462,22 +1490,6 @@ Module PackageTheory (π : ProbRulesParam).
         apply valid_par. all: auto.
     Defined.
 
-    Lemma fsubset_ext :
-      ∀ (A : ordType) (s1 s2 : {fset A}),
-        (∀ x, x \in s1 → x \in s2) →
-        fsubset s1 s2.
-    Proof.
-      intros A s1 s2 h.
-      cbn. apply/eqP. pose proof (eq_fset (s1 :|: s2) s2) as [h1 h2].
-      forward h1.
-      { intro x. rewrite in_fsetU.
-        destruct (x \in s1) eqn:e.
-        - cbn. symmetry. apply h. auto.
-        - cbn. reflexivity.
-      }
-      rewrite h1. reflexivity.
-    Qed.
-
     Lemma trim_domm_subset :
       ∀ E p,
         fsubset (domm (trim E p)) (idents E).
@@ -1874,18 +1886,6 @@ Module PackageTheory (π : ProbRulesParam).
 
     Definition preid L I : {fmap ident -> pointed_vprogram L I} :=
       mkfmap [interface preid_prog x h | h # x ∈ I].
-
-    Lemma fset_ext :
-      ∀ (A : ordType) (s1 s2 : {fset A}),
-        (∀ x, x \in s1 ↔ x \in s2) →
-        s1 = s2.
-    Proof.
-      intros A s1 s2 h.
-      apply/eqP. rewrite eqEfsubset.
-      apply/andP. split.
-      - apply fsubset_ext. intros. eapply h. auto.
-      - apply fsubset_ext. intros. eapply h. auto.
-    Qed.
 
     (* Maybe specialise even further to producing packages *)
     Lemma get_map_interface_Some_inv :
