@@ -2113,6 +2113,9 @@ Module PackageTheory (π : ProbRulesParam).
       pack := funmkpack h (λ o ho x, opr o ho x (λ x, ret x))
     |}.
 
+    Definition raw_id I h :=
+      (ID I h).π2 ∙1.
+
     Definition optrim {L I E} (p : opackage L I E) : opackage L I E.
     Proof.
       exists (trim E (p ∙1)).
@@ -2130,6 +2133,87 @@ Module PackageTheory (π : ProbRulesParam).
       pack := optrim (pack b)
     |}.
 
+    Lemma raw_idE :
+      ∀ I h n,
+        raw_id I h n =
+        omap (λ '(So,To), (So ; To ; λ x, _opr (n,(So,To)) x (λ y, _ret y))) (getm_def I n).
+    Proof.
+      intros I h n.
+      unfold raw_id. simpl.
+      rewrite mapmE. rewrite mkfmapE.
+      destruct getm_def eqn:e.
+      - apply getm_def_map_interface_Some in e as h1.
+        destruct h1 as [[S T] [hn [h1 h2]]]. subst. cbn.
+        rewrite h1. cbn. reflexivity.
+      - apply getm_def_map_interface_None in e.
+        rewrite e. reflexivity.
+    Qed.
+
+    Lemma getm_def_in :
+      ∀ {A : eqType} n (x : A) (s : seq (nat_eqType * A)),
+        getm_def s n = Some x →
+        (n,x) \in s.
+    Proof.
+      simpl. intros A n x s h.
+      induction s as [| [m a] s ih] in n, x, h |- *.
+      - inversion h.
+      - cbn in h. rewrite in_cons. apply/orP.
+        destruct eqn eqn:e.
+        + noconf h. move: e => /eqP e. subst.
+          left. apply/eqP. reflexivity.
+        + right. eapply ih. auto.
+    Qed.
+
+    Lemma lookup_op_raw_id :
+      ∀ I h o,
+        lookup_op (raw_id I h) o =
+        if o \in I
+        then Some (λ x, _opr o x (λ y, _ret y))
+        else None.
+    Proof.
+      intros I h [n [S T]].
+      unfold lookup_op. rewrite raw_idE.
+      destruct getm_def as [[So To]|] eqn:e.
+      - cbn. apply getm_def_in in e as h1.
+        destruct chUniverse_eqP.
+        2:{
+          destruct ((n, (S, T)) \in I) eqn:e1.
+          2:{ rewrite e1. reflexivity. }
+          specialize (h _ _ _ h1 e1). noconf h. congruence.
+        }
+        destruct chUniverse_eqP.
+        2:{
+          destruct ((n, (S, T)) \in I) eqn:e1.
+          2:{ rewrite e1. reflexivity. }
+          specialize (h _ _ _ h1 e1). noconf h. congruence.
+        }
+        subst. rewrite h1. reflexivity.
+      - cbn. destruct ((n, (S, T)) \in I) eqn:e1.
+        1:{
+          exfalso. eapply in_getm_def_None. 2: eauto.
+          exact e1.
+        }
+        rewrite e1. reflexivity.
+    Qed.
+
+    Lemma raw_program_link_id :
+      ∀ A (v : raw_program A) L I h,
+        valid_program L I v →
+        raw_program_link v (raw_id I h) = v.
+    Proof.
+      intros A v L I h hv.
+      induction v in hv |- *.
+      - cbn. reflexivity.
+      - simpl. cbn in hv. destruct hv as [ho hv].
+        rewrite lookup_op_raw_id. rewrite ho. simpl. f_equal.
+        extensionality z. intuition auto.
+      - simpl. cbn in hv. f_equal. apply functional_extensionality.
+        intuition auto.
+      - simpl. cbn in hv. f_equal. intuition auto.
+      - simpl. cbn in hv. f_equal. apply functional_extensionality.
+        intuition auto.
+    Qed.
+
     Lemma link_id :
       ∀ I E (p : package I E) h,
         link p (ID I h) = ptrim p.
@@ -2141,9 +2225,14 @@ Module PackageTheory (π : ProbRulesParam).
         rewrite mapmE. destruct (trim E p n) as [[S [T f]]|] eqn:e.
         + rewrite e. simpl. f_equal. f_equal. f_equal.
           apply functional_extensionality. intro x.
-          admit.
+          apply trim_get_inv in e. destruct e as [e ho].
+          specialize (hp _ ho). cbn in hp.
+          destruct hp as [g [eg hg]].
+          rewrite e in eg. noconf eg. cbn in hg.
+          eapply raw_program_link_id. eauto.
         + rewrite e. simpl. reflexivity.
-    Abort.
+      Unshelve. auto.
+    Qed.
 
   End ID.
 
