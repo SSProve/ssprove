@@ -1867,7 +1867,7 @@ Module PackageTheory (π : ProbRulesParam).
     - exfalso. apply getm_def_map_interface_None in e.
       eapply in_getm_def_None. 2: eauto.
       exact ho.
-  Qed.
+  Defined.
 
   (* Notations for packages *)
 
@@ -2112,6 +2112,31 @@ Module PackageTheory (π : ProbRulesParam).
       export := I ;
       pack := funmkpack h (λ o ho x, opr o ho x (λ x, ret x))
     |}.
+
+    Lemma link_id :
+      ∀ I E (p : package I E) h,
+        link p (ID I h) = p.
+    Proof.
+      intros I E [L [p hp]] h.
+      apply package_ext.
+      - cbn. rewrite fsetU0. reflexivity.
+      - simpl. intro n. unfold raw_link.
+        rewrite mapmE. destruct (trim E p n) as [[S [T f]]|] eqn:e.
+        + rewrite e. simpl.
+          apply trim_get_inv in e. destruct e as [e hn].
+          rewrite e. admit.
+        + rewrite e. simpl. unfold trim in e.
+          rewrite filtermE in e. destruct (p n) as [[S [T f]]|] eqn:e1.
+          1:{
+            rewrite e1 in e. cbn in e.
+            destruct ((n, (S, T)) \in E) eqn:e2.
+            - rewrite e2 in e. discriminate.
+            - (* In fact there is no hope of proving it because we
+                trim before linking.
+              *)
+              give_up.
+          }
+    Abort.
 
   End ID.
 
