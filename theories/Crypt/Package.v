@@ -568,6 +568,83 @@ Module PackageTheory (π : ProbRulesParam).
       - intro x. exact ((k x) ∙2).
     Defined.
 
+    Lemma prove_program :
+      ∀ {A} (P : program A → Type) p q,
+        P p →
+        p ∙1 = q ∙1 →
+        P q.
+    Proof.
+      intros A P p q h e.
+      apply program_ext in e. subst. auto.
+    Defined.
+
+    Lemma program_rect :
+      ∀ (A : choiceType) (P : program A → Type),
+        (∀ x : A, P (ret x)) →
+        (∀ (o : opsig) (h : o \in import) (x : src o) (k : tgt o → program A),
+          (∀ s : tgt o, P (k s)) → P (opr o h x k)
+        ) →
+        (∀ (l : Location) (h : l \in Loc) (k : Value → program A),
+          (∀ s : Value, P (k s)) → P (getr l h k)
+        ) →
+        (∀ (l : Location) (h : l \in Loc) (v : Value) (k : program A),
+          P k → P (putr l h v k)
+        ) →
+        (∀ (op : Op) (k : Arit op → program A),
+          (∀ s : Arit op, P (k s)) → P (sampler op k)
+        ) →
+        ∀ p : program A, P p.
+    Proof.
+      intros A P hret hop hget hput hsamp.
+      intros [p h]. revert p h. fix aux 1.
+      intros p h. destruct p.
+      - eapply prove_program. 1: eapply hret.
+        reflexivity.
+      - cbn in h.
+        eapply prove_program.
+        + unshelve eapply hop.
+          5:{
+            intro s. unshelve eapply aux.
+            - eapply (k s).
+            - destruct h as [ho hk]. auto.
+          }
+          * destruct h as [ho hk]. auto.
+          * auto.
+        + reflexivity.
+      - cbn in h.
+        eapply prove_program.
+        + unshelve eapply hget.
+          4:{
+            intro s. unshelve eapply aux.
+            - eapply (k s).
+            - destruct h as [ho hk]. auto.
+          }
+          * auto.
+          * destruct h as [ho hk]. auto.
+        + reflexivity.
+      - cbn in h.
+        eapply prove_program.
+        + unshelve eapply hput.
+          5:{
+            unshelve eapply aux.
+            - eapply p.
+            - destruct h as [ho hk]. auto.
+          }
+          * auto.
+          * destruct h as [ho hk]. auto.
+          * auto.
+        + reflexivity.
+      - cbn in h.
+        eapply prove_program.
+        + unshelve eapply hsamp.
+          3:{
+            intro s. unshelve eapply aux.
+            - eapply (k s).
+            - auto.
+          }
+        + reflexivity.
+    Defined.
+
     Import SPropAxioms. Import FunctionalExtensionality.
 
     Program Definition rFree : ord_relativeMonad choice_incl :=
@@ -2299,6 +2376,8 @@ Module PackageTheory (π : ProbRulesParam).
     Definition FreeTranslate {B : choiceType} {locs : {fset Location}} (p : program locs Game_import B)
       : rFreeF (iops_StP (makeHeap_cT locs)) (iar_StP (makeHeap_cT locs)) B.
     Proof.
+      (* TW: Exe you can use the following if you want. *)
+      (* induction p using program_rect. *)
       destruct p as [v h].
       induction v in h |- *.
       - apply FreeProbProg.retrFree. auto.
