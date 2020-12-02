@@ -2092,7 +2092,7 @@ Module PackageTheory (π : ProbRulesParam).
         } ;
         def #[1] (x : nat) : nat {
           n ← get 0 ;;
-          m ← op [ #[ 0 ] : nat → nat ] n ;;
+          m ← op [ #[0] : nat → nat ] n ;;
           put 0 := m ;;
           ret m
         }
@@ -2299,43 +2299,58 @@ Module PackageTheory (π : ProbRulesParam).
     Definition FreeTranslate {B : choiceType} {locs : {fset Location}} (p : program locs Game_import B)
       : rFreeF (iops_StP (makeHeap_cT locs)) (iar_StP (makeHeap_cT locs)) B.
     Proof.
-      destruct p as [v v_is_valid].
-      induction v.
-      - apply FreeProbProg.retrFree. exact x.
-      - inversion v_is_valid as [Habs _].
-        apply (fromEmpty Habs).
+      destruct p as [v h].
+      induction v in h |- *.
+      - apply FreeProbProg.retrFree. auto.
+      - cbn in h. destruct h as [ho h].
+        apply (fromEmpty ho).
       - apply (FreeProbProg.ropr _ _ _ (inl (inl (gett _)))).
-        inversion v_is_valid as [Hin Hk].
+        destruct h as [Hin Hk].
         move => s0. apply (X (getFromMap s0 l Hin)).
         apply Hk.
       - apply (FreeProbProg.ropr _ _ _ (inl (inl (gett (makeHeap_cT locs))))).
-        simpl. move => s0. inversion v_is_valid as [Hin Hk].
+        simpl. move => s0. destruct h as [Hin Hk].
         apply (FreeProbProg.ropr _ _ _ (inl (inr (putt (makeHeap_cT locs) (setFromMap s0 l Hin v))))).
         move => s1.
         apply IHv.
         exact Hk.
       - apply (FreeProbProg.ropr _ _ _ (inr op)).
-        move => s0. apply (X s0). simpl in v_is_valid.
-        apply v_is_valid.
+        move => s0. apply (X s0). simpl in h.
+        apply h.
     Defined.
 
     Let getLocations {I E} (P : package I E) : {fset Location} :=
       let '(locs; PP) := P in locs.
 
-    Definition get_op {I E : Interface} (P : package I E)
-               (op : opsig) (Hin : op \in E) (arg : src op) : program (getLocations P) I (tgt op).
+    Definition get_op {I E : Interface} (p : package I E)
+      (o : opsig) (ho : o \in E) (arg : src o) :
+      program (p.π1) I (tgt o).
     Proof.
-      destruct P as [L [PP PP_is_valid]].
-      (* ER: I wonder if there's a more natural way of doing this *)
-      remember (lookup_op PP op) as o.
-      pose (lookup_op_valid L I E PP op PP_is_valid Hin) as e.
-      destruct o.
-      - exists (r arg).
-        destruct e as [f [Hf1 Hf2]].
-        rewrite Hf1 in Heqo. inversion Heqo. apply Hf2.
-      - assert False.
-        { destruct e as [f [Hf1 Hf2]]. rewrite Hf1 in Heqo. discriminate. }
-        contradiction.
+      (* TW: I transformed this definition so that it computes directly. *)
+      destruct (lookup_op (p.π2 ∙1) o) as [f|] eqn:e.
+      2:{
+        (* TW: Done several times, I should make a lemma. *)
+        exfalso.
+        destruct p as [L [p hp]].
+        destruct o as [n [S T]].
+        cbn - [lookup_op] in e.
+        specialize (hp _ ho). cbn in hp. destruct hp as [f [ef hf]].
+        cbn in e. destruct (p n) as [[St [Tt g]]|] eqn:e2.
+        2: discriminate.
+        destruct chUniverse_eqP.
+        2:{ noconf ef. congruence. }
+        destruct chUniverse_eqP.
+        2:{ noconf ef. congruence. }
+        discriminate.
+      }
+      exists (f arg).
+      destruct p as [L [p hp]].
+      destruct o as [n [S T]].
+      cbn - [lookup_op] in *.
+      eapply lookup_op_valid in hp. 2: eauto.
+      cbn - [lookup_op] in hp. destruct hp as [g [eg hg]].
+      rewrite e in eg. noconf eg.
+      eapply hg.
     Defined.
 
     Definition Pr (P : package Game_import A_export) : SDistr (bool_choiceType).
