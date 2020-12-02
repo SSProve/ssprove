@@ -2384,16 +2384,16 @@ Module PackageTheory (π : ProbRulesParam).
       Proof.
         simpl.
         unshelve econstructor.
-        + move=> [is1 is2]. unshelve econstructor.
-          ++ move=> myPost.
+        - move=> [is1 is2]. unshelve econstructor.
+          + move=> myPost.
              exact (  pre (is1,is2) /\
                       forall as1 as2, (post as1 as2) -> myPost (as1, as2)).
-          ++ move => x y Hxy [H1 H2].
-             split.
-             +++ assumption.
-             +++ move => as1 as2 post12. apply: Hxy. by apply: H2.
-        + move => x y Heq π.
-            by rewrite Heq.
+          + move => x y Hxy [H1 H2].
+            split.
+            * assumption.
+            * move => as1 as2 post12. apply: Hxy. by apply: H2.
+        - move => x y Heq π.
+          by rewrite Heq.
       Defined.
 
     End semantic_judgement.
