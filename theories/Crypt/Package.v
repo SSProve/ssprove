@@ -2373,6 +2373,11 @@ Module PackageTheory (π : ProbRulesParam).
     Defined.
     From Crypt Require Import FreeProbProg.
 
+    Ltac assert_goal :=
+      match goal with
+      | |- ?G => assert (G)
+      end.
+
     Definition FreeTranslate {B : choiceType} {locs : {fset Location}} (p : program locs Game_import B)
       : rFreeF (iops_StP (makeHeap_cT locs)) (iar_StP (makeHeap_cT locs)) B.
     Proof.
@@ -2384,9 +2389,12 @@ Module PackageTheory (π : ProbRulesParam).
       - cbn in h. destruct h as [ho h].
         apply (fromEmpty ho).
       - apply (FreeProbProg.ropr _ _ _ (inl (inl (gett _)))).
-        destruct h as [Hin Hk].
-        move => s0. apply (X (getFromMap s0 l Hin)).
-        apply Hk.
+        assert_goal.
+        { destruct h as [Hin Hk].
+          move => s0. apply (X (getFromMap s0 l Hin)).
+          apply Hk.
+        }
+        abstract assumption.
       - apply (FreeProbProg.ropr _ _ _ (inl (inl (gett (makeHeap_cT locs))))).
         simpl. move => s0. destruct h as [Hin Hk].
         apply (FreeProbProg.ropr _ _ _ (inl (inr (putt (makeHeap_cT locs) (setFromMap s0 l Hin v))))).
@@ -2612,6 +2620,11 @@ Module PackageTheory (π : ProbRulesParam).
       - cbn. unfold SubDistr.SDistr_obligation_2.
         rewrite !SDistr_assoc. admit.
       - unfold Pr_raw_program.
+        cbn - [thetaFstd FreeTranslate raw_program_link].
+        cbn - [thetaFstd FreeTranslate].
+        (* unfold FreeTranslate at 1.
+        cbn - [thetaFstd FreeTranslate]. *)
+        cbn - [thetaFstd].
         (* ER: this is nice, I would like to step a bit with raw_program_link and
                FreeTranslate *)
         simpl.
