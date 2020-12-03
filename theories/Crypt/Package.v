@@ -2373,9 +2373,22 @@ Module PackageTheory (π : ProbRulesParam).
     Defined.
     From Crypt Require Import FreeProbProg.
 
-    Ltac assert_goal :=
+    Ltac revert_last :=
       match goal with
-      | |- ?G => assert (G)
+      | h : _ |- _ => revert h
+      end.
+
+    Ltac revert_all :=
+      repeat revert_last.
+
+    Ltac abstract_goal :=
+      revert_all ;
+      let h := fresh "h" in
+      match goal with
+      | |- ?G => assert (G) as h ; [
+          idtac
+        | abstract (apply h)
+        ]
       end.
 
     Definition FreeTranslate {B : choiceType} {locs : {fset Location}} (p : program locs Game_import B)
@@ -2389,12 +2402,10 @@ Module PackageTheory (π : ProbRulesParam).
       - cbn in h. destruct h as [ho h].
         apply (fromEmpty ho).
       - apply (FreeProbProg.ropr _ _ _ (inl (inl (gett _)))).
-        assert_goal.
-        { destruct h as [Hin Hk].
-          move => s0. apply (X (getFromMap s0 l Hin)).
-          apply Hk.
-        }
-        abstract assumption.
+        abstract_goal.
+        intros ? ? ? ? ? ? ? [hin hk].
+        move => s0. apply (X (getFromMap s0 l hin)).
+        apply hk.
       - apply (FreeProbProg.ropr _ _ _ (inl (inl (gett (makeHeap_cT locs))))).
         simpl. move => s0. destruct h as [Hin Hk].
         apply (FreeProbProg.ropr _ _ _ (inl (inr (putt (makeHeap_cT locs) (setFromMap s0 l Hin v))))).
