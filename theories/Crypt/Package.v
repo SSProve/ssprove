@@ -2393,18 +2393,21 @@ Module PackageTheory (π : ProbRulesParam).
         ]
       end.
 
+    Arguments retrFree {_ _ _} _.
+    Arguments ropr {_ _ _} _ _.
+
     Set Equations Transparent.
 
     Equations? FreeTranslate' {B : choiceType} {locs : {fset Location}}
       (p : raw_program B) (h : valid_program locs Game_import p)
     : rFreeF (iops_StP (makeHeap_cT locs)) (iar_StP (makeHeap_cT locs)) B :=
       FreeTranslate' p h with p := {
-      | _ret x := retrFree _ _ _ _ ;
+      | _ret x := retrFree _ ;
       | _opr o x k := False_rect _ _ ;
-      | _getr l k := ropr _ _ _ (inl (inl (gett _))) (λ s, let v := getFromMap s l in FreeTranslate' (k v) _) ;
+      | _getr l k := ropr (inl (inl (gett _))) (λ s, let v := getFromMap s l in FreeTranslate' (k v) _) ;
       | _putr l v k :=
-        ropr _ _ _ (inl (inl (gett (makeHeap_cT locs)))) (λ s, ropr _ _ _ (inl (inr (putt (makeHeap_cT locs) (setFromMap s l _ v)))) (λ s', FreeTranslate' k _)) ;
-      | _sampler op k := ropr _ _ _ (inr op) (λ s, FreeTranslate' (k s) _)
+        ropr (inl (inl (gett (makeHeap_cT locs)))) (λ s, ropr (inl (inr (putt (makeHeap_cT locs) (setFromMap s l _ v)))) (λ s', FreeTranslate' k _)) ;
+      | _sampler op k := ropr (inr op) (λ s, FreeTranslate' (k s) _)
       }.
     Proof.
       - destruct h as [hin _]. eapply fromEmpty. exact hin.
