@@ -2599,6 +2599,9 @@ Module PackageTheory (π : ProbRulesParam).
     Notation "ϵ( GP )" := (fun A => AdvantageE (GP false) (GP true) A) (at level 90).
     Notation " G0 ≈[ R ] G1 " := (AdvantageE G0 G1 = R) (at level 50).
 
+    Ltac fold_FreeTranslate :=
+      change (FreeTranslate' ?p ?h) with (FreeTranslate (exist _ p h)).
+
     Lemma some_lemma_for_prove_relational {export : Interface} {B}
                (P1 : package Game_import export)
                (P2 : package Game_import export)
@@ -2633,6 +2636,7 @@ Module PackageTheory (π : ProbRulesParam).
         cbn - [thetaFstd FreeTranslate raw_program_link].
         cbn - [thetaFstd FreeTranslate].
         cbn - [thetaFstd].
+        fold_FreeTranslate.
         (** TW: I think this is much better now. It's still big but somewhat
             less than before.
          *)
