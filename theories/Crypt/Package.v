@@ -2382,7 +2382,7 @@ Module PackageTheory (π : ProbRulesParam).
       repeat revert_last.
 
     Ltac abstract_goal :=
-      revert_all ;
+      (* revert_all ; *)
       let h := fresh "h" in
       match goal with
       | |- ?G => assert (G) as h ; [
@@ -2403,7 +2403,7 @@ Module PackageTheory (π : ProbRulesParam).
         apply (fromEmpty ho).
       - apply (FreeProbProg.ropr _ _ _ (inl (inl (gett _)))).
         abstract_goal.
-        intros ? ? ? ? ? ? ? [hin hk].
+        destruct h as [hin hk].
         move => s0. apply (X (getFromMap s0 l hin)).
         apply hk.
       - apply (FreeProbProg.ropr _ _ _ (inl (inl (gett (makeHeap_cT locs))))).
@@ -2633,23 +2633,23 @@ Module PackageTheory (π : ProbRulesParam).
       - unfold Pr_raw_program.
         cbn - [thetaFstd FreeTranslate raw_program_link].
         cbn - [thetaFstd FreeTranslate].
-        (* unfold FreeTranslate at 1.
-        cbn - [thetaFstd FreeTranslate]. *)
         cbn - [thetaFstd].
+        (* TW: For some reason, abstract does not work as I want it. *)
+        (** The following is a quick fix to abstract away these terms here.
+            I would like to find a better solution so that this is not
+            necessary.
+        *)
+        lazymatch goal with
+        | |- context [ FreeTranslate_subproof ?a ?b ?c ] =>
+          set (foo := FreeTranslate_subproof a b c) ; clearbody foo
+        end.
+        lazymatch goal with
+        | |- context [ FreeTranslate_subproof ?a ?b ?c ] =>
+          set (bar := FreeTranslate_subproof a b c) ; clearbody bar
+        end.
         (* ER: this is nice, I would like to step a bit with raw_program_link and
                FreeTranslate *)
         simpl.
-        (* ER: at this point there's a lot of noise, but it seems that
-               FreeTranslate is bugging, let's destruct the terms? *)
-        destruct (raw_program_link_valid B L2 export Game_import
-                          (_getr l k) P2a
-                          (valid_injectLocations B fset0 L2 (_getr l k)
-                                                 (fsub0set (T:=nat_ordType) L2) A_is_valid) P2b).
-        destruct (raw_program_link_valid B L1 export Game_import
-                          (_getr l k) P1a
-                          (valid_injectLocations B fset0 L1 (_getr l k)
-                                                 (fsub0set (T:=nat_ordType) L1) A_is_valid) P1b).
-        (* ER: too much noise *)
         admit.
       - unfold Pr_raw_program.
         simpl (FreeTranslate ⦑ raw_program_link (_putr l v A) ((L1; ⦑ P1a ⦒).π2) ∙1 ⦒).
