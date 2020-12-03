@@ -2391,31 +2391,30 @@ Module PackageTheory (π : ProbRulesParam).
         ]
       end.
 
-    Definition FreeTranslate {B : choiceType} {locs : {fset Location}} (p : program locs Game_import B)
-      : rFreeF (iops_StP (makeHeap_cT locs)) (iar_StP (makeHeap_cT locs)) B.
+    Set Equations Transparent.
+
+    Equations? FreeTranslate' {B : choiceType} {locs : {fset Location}}
+      (p : raw_program B) (h : valid_program locs Game_import p)
+    : rFreeF (iops_StP (makeHeap_cT locs)) (iar_StP (makeHeap_cT locs)) B :=
+      FreeTranslate' p h with p := {
+      | _ret x := retrFree _ _ _ _ ;
+      | _opr o x k := False_rect _ _ ;
+      | _getr l k := ropr _ _ _ (inl (inl (gett _))) (λ s, let v := getFromMap s l _ in FreeTranslate' (k v) _) ;
+      | _putr l v k :=
+        ropr _ _ _ (inl (inl (gett (makeHeap_cT locs)))) (λ s, ropr _ _ _ (inl (inr (putt (makeHeap_cT locs) (setFromMap s l _ v)))) (λ s', FreeTranslate' k _)) ;
+      | _sampler op k := ropr _ _ _ (inr op) (λ s, FreeTranslate' (k s) _)
+      }.
     Proof.
-      (* TW: Exe you can use the following if you want. *)
-      (* induction p using program_rect. *)
-      destruct p as [v h].
-      induction v in h |- *.
-      - apply FreeProbProg.retrFree. auto.
-      - cbn in h. destruct h as [ho h].
-        apply (fromEmpty ho).
-      - apply (FreeProbProg.ropr _ _ _ (inl (inl (gett _)))).
-        abstract_goal.
-        destruct h as [hin hk].
-        move => s0. apply (X (getFromMap s0 l hin)).
-        apply hk.
-      - apply (FreeProbProg.ropr _ _ _ (inl (inl (gett (makeHeap_cT locs))))).
-        simpl. move => s0. destruct h as [Hin Hk].
-        apply (FreeProbProg.ropr _ _ _ (inl (inr (putt (makeHeap_cT locs) (setFromMap s0 l Hin v))))).
-        move => s1.
-        apply IHv.
-        exact Hk.
-      - apply (FreeProbProg.ropr _ _ _ (inr op)).
-        move => s0. apply (X s0). simpl in h.
-        apply h.
+      - destruct h as [hin _]. eapply fromEmpty. exact hin.
+      - cbn in h. intuition auto.
+      - cbn in h. destruct h as [ho h]. apply h.
+      - cbn in h. intuition auto.
+      - cbn in h. destruct h as [ho h]. apply h.
     Defined.
+
+    Definition FreeTranslate {B locs} (p : program locs Game_import B) :=
+      let '(exist p h) := p in
+      FreeTranslate' p h.
 
     Let getLocations {I E} (P : package I E) : {fset Location} :=
       let '(locs; PP) := P in locs.
@@ -2634,19 +2633,9 @@ Module PackageTheory (π : ProbRulesParam).
         cbn - [thetaFstd FreeTranslate raw_program_link].
         cbn - [thetaFstd FreeTranslate].
         cbn - [thetaFstd].
-        (* TW: For some reason, abstract does not work as I want it. *)
-        (** The following is a quick fix to abstract away these terms here.
-            I would like to find a better solution so that this is not
-            necessary.
-        *)
-        lazymatch goal with
-        | |- context [ FreeTranslate_subproof ?a ?b ?c ] =>
-          set (foo := FreeTranslate_subproof a b c) ; clearbody foo
-        end.
-        lazymatch goal with
-        | |- context [ FreeTranslate_subproof ?a ?b ?c ] =>
-          set (bar := FreeTranslate_subproof a b c) ; clearbody bar
-        end.
+        (** TW: I think this is much better now. It's still big but somewhat
+            less than before.
+         *)
         (* ER: this is nice, I would like to step a bit with raw_program_link and
                FreeTranslate *)
         simpl.
