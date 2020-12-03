@@ -2356,6 +2356,8 @@ Module PackageTheory (π : ProbRulesParam).
       + exact 0.
     Defined.
 
+    Arguments getFromMap {_} _ _ {_}.
+
     Definition setFromMap
                {locs : {fset Location}}
                (map : {fmap {x : Location | x \in locs} → Value})
@@ -2399,7 +2401,7 @@ Module PackageTheory (π : ProbRulesParam).
       FreeTranslate' p h with p := {
       | _ret x := retrFree _ _ _ _ ;
       | _opr o x k := False_rect _ _ ;
-      | _getr l k := ropr _ _ _ (inl (inl (gett _))) (λ s, let v := getFromMap s l _ in FreeTranslate' (k v) _) ;
+      | _getr l k := ropr _ _ _ (inl (inl (gett _))) (λ s, let v := getFromMap s l in FreeTranslate' (k v) _) ;
       | _putr l v k :=
         ropr _ _ _ (inl (inl (gett (makeHeap_cT locs)))) (λ s, ropr _ _ _ (inl (inr (putt (makeHeap_cT locs) (setFromMap s l _ v)))) (λ s', FreeTranslate' k _)) ;
       | _sampler op k := ropr _ _ _ (inr op) (λ s, FreeTranslate' (k s) _)
@@ -2633,16 +2635,12 @@ Module PackageTheory (π : ProbRulesParam).
       - cbn. unfold SubDistr.SDistr_obligation_2.
         rewrite !SDistr_assoc. admit.
       - unfold Pr_raw_program.
-        cbn - [thetaFstd FreeTranslate raw_program_link].
-        cbn - [thetaFstd FreeTranslate].
-        cbn - [thetaFstd].
-        fold_FreeTranslate.
-        (** TW: I think this is much better now. It's still big but somewhat
-            less than before.
-         *)
+        cbn - [thetaFstd]. fold_FreeTranslate.
+        (* TW: I think this is much better now. *)
         (* ER: this is nice, I would like to step a bit with raw_program_link and
                FreeTranslate *)
         simpl.
+        (* TW: Now it gets big because of thetaFstd *)
         admit.
       - unfold Pr_raw_program.
         simpl (FreeTranslate ⦑ raw_program_link (_putr l v A) ((L1; ⦑ P1a ⦒).π2) ∙1 ⦒).
