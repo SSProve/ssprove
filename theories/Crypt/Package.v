@@ -2401,6 +2401,90 @@ Module PackageTheory (π : ProbRulesParam).
     Let getLocations {I E} (P : package I E) : {fset Location} :=
       let '(locs; PP) := P in locs.
 
+    Definition get_raw_package_op {L} {I E : Interface} (p : raw_package)
+               (hp : valid_package L I E p)
+               (o : opsig) (ho : o \in E) (arg : src o) : program L I (tgt o).
+    Proof.
+      (* ER: updated using the same order as TW below *)
+      destruct (lookup_op p o) as [f|] eqn:e.
+      2:{
+        (* TW: Done several times, I should make a lemma. *)
+        exfalso.
+        destruct o as [n [S T]].
+        cbn - [lookup_op] in e.
+        specialize (hp _ ho). cbn in hp. destruct hp as [f [ef hf]].
+        cbn in e. destruct (p n) as [[St [Tt g]]|] eqn:e2.
+        2: discriminate.
+        destruct chUniverse_eqP.
+        2:{ noconf ef. congruence. }
+        destruct chUniverse_eqP.
+        2:{ noconf ef. congruence. }
+        discriminate.
+      }
+      exists (f arg).
+      destruct o as [n [S T]].
+      cbn - [lookup_op] in *.
+      eapply lookup_op_valid in hp. 2: eauto.
+      cbn - [lookup_op] in hp. destruct hp as [g [eg hg]].
+      rewrite e in eg. noconf eg.
+      eapply hg.
+    Defined.
+
+    Definition get_opackage_op {L} {I E : Interface} (P : opackage L I E)
+               (op : opsig) (Hin : op \in E) (arg : src op) : program L I (tgt op).
+    Proof.
+      exact (get_raw_package_op (projT1 P) (projT2 P) op Hin arg).
+    Defined.
+
+    Definition get_package_op {I E : Interface} (P : package I E)
+               (op : opsig) (Hin : op \in E) (arg : src op)
+      : program (getLocations P) I (tgt op) :=
+      let (L, PP) as s return (program (getLocations s) I (tgt op)) := P in
+      get_opackage_op PP op Hin arg.
+
+    Definition Pr_raw_program {L} {B}
+               (p : raw_program B)
+               (p_is_valid : valid_program L Game_import p)
+      : makeHeap_cT L -> SDistr (F_choice_prod_obj ⟨ B , makeHeap_cT L ⟩).
+    Proof.
+      move => s0.
+      pose STDIST := thetaFstd B (FreeTranslate (exist _ p p_is_valid)) s0.
+      exact (STDIST prob_handler).
+    Defined.
+
+    Definition Pr_raw_func_program {L} {A} {B}
+               (p : A -> raw_program B)
+               (p_is_valid : forall a, valid_program L Game_import (p a))
+      : A -> makeHeap_cT L -> SDistr (F_choice_prod_obj ⟨ B , makeHeap_cT L ⟩).
+    Proof.
+      move => a s0.
+      exact (Pr_raw_program (p a) (p_is_valid a) s0).
+    Defined.
+
+    Definition Pr_raw_package_op  {E : Interface} {L}
+               (p : raw_package)
+               (p_is_valid : valid_package L Game_import E p)
+               (op : opsig) (Hin : op \in E) (arg : src op)
+      : makeHeap_cT L -> SDistr (F_choice_prod_obj ⟨ tgt op , makeHeap_cT L ⟩).
+    Proof.
+      move => s0.
+      pose (get_raw_package_op p p_is_valid op Hin arg) as f.
+      exact (Pr_raw_program (f∙1) (f∙2) s0).
+    Defined.
+
+    Definition Pr_op  {E : Interface} (P : package Game_import E)
+               (op : opsig) (Hin : op \in E) (arg : src op)
+      : makeHeap_cT (getLocations P) -> SDistr (F_choice_prod_obj ⟨ tgt op , makeHeap_cT (getLocations P) ⟩).
+    Proof.
+      move => s0.
+      destruct P as [L [PP PP_is_valid]].
+      exact (Pr_raw_package_op PP PP_is_valid op Hin arg s0).
+    Defined.
+
+    Definition Pr (P : package Game_import A_export) : SDistr (bool_choiceType) :=
+      SDistr_bind _ _ (fun '(b, _) => SDistr_unit _ b)
+                      (Pr_op P RUN RUN_in_A_export Datatypes.tt emptym).
+
     Definition get_op {I E : Interface} (p : package I E)
       (o : opsig) (ho : o \in E) (arg : src o) :
       program (p.π1) I (tgt o).
@@ -2432,13 +2516,13 @@ Module PackageTheory (π : ProbRulesParam).
       eapply hg.
     Defined.
 
-    Definition Pr (P : package Game_import A_export) : SDistr (bool_choiceType).
-    Proof.
-      pose STDIST := thetaFstd _ (FreeTranslate (get_op P RUN RUN_in_A_export Datatypes.tt)).
-      simpl in STDIST.
-      pose SSDIST := STDIST prob_handler emptym.
-      refine (SDistr_bind _ _ (fun '(b, _) => SDistr_unit _ b) SSDIST).
-    Defined.
+    (* Definition Pr (P : package Game_import A_export) : SDistr (bool_choiceType). *)
+    (* Proof. *)
+    (*   pose STDIST := thetaFstd _ (FreeTranslate (get_op P RUN RUN_in_A_export Datatypes.tt)). *)
+    (*   simpl in STDIST. *)
+    (*   pose SSDIST := STDIST prob_handler emptym. *)
+    (*   refine (SDistr_bind _ _ (fun '(b, _) => SDistr_unit _ b) SSDIST). *)
+    (* Defined. *)
 
     Section semantic_judgement.
       Context (locsl : {fset Location}).
@@ -2496,6 +2580,65 @@ Module PackageTheory (π : ProbRulesParam).
 
     Notation "ϵ( GP )" := (fun A => AdvantageE (GP false) (GP true) A) (at level 90).
     Notation " G0 ≈[ R ] G1 " := (AdvantageE G0 G1 = R) (at level 50).
+
+    Lemma some_lemma_for_prove_relational {export : Interface} {B}
+               (P1 : package Game_import export)
+               (P2 : package Game_import export)
+               (I : makeHeap_cT (getLocations P1) * makeHeap_cT (getLocations P2) -> Prop)
+               (Hempty : I (emptym, emptym))
+               (H : forall (op : opsig) (Hin : op \in export) (arg : src op),
+                   ⊨ ⦃ fun '(s1, s2) => I (s1, s2) ⦄
+                     (FreeTranslate (get_package_op P1 op Hin arg))
+                     ≈
+                     (FreeTranslate (get_package_op P2 op Hin arg))
+                     ⦃ fun '(b1, s1) '(b2, s2) => I (s1, s2) /\ b1 = b2 ⦄)
+               (A : raw_program B)
+               (A_is_valid : valid_program fset0 export A)
+               (s1 : makeHeap_cT (P1.π1)) (s2 : makeHeap_cT (P2.π1)) (Hs1s2 : I (s1, s2))
+      : dmargin fst (Pr_raw_program (raw_program_link A (P1.π2 ∙1))
+                                    (raw_program_link_valid _ _ _ _ _ _ (valid_injectLocations _ fset0 P1.π1 A (fsub0set P1.π1) A_is_valid) (P1.π2 ∙2)) s1) =
+        dmargin fst (Pr_raw_program (raw_program_link A (P2.π2 ∙1))
+                                    (raw_program_link_valid _ _ _ _ _ _ (valid_injectLocations _ fset0 P2.π1 A (fsub0set P2.π1) A_is_valid) (P2.π2 ∙2)) s2).
+      (* ER: for the proof we should have extra information about the second
+         component (preserves I), but let's see how the thing behaves so far *)
+    Proof.
+      destruct P1 as [L1 [P1a P1b]].
+      destruct P2 as [L2 [P2a P2b]].
+      induction A; intros.
+      - cbn. unfold SubDistr.SDistr_obligation_2.
+        rewrite !SDistr_rightneutral.
+        apply distr_ext. move => x0.
+        rewrite !dlet_unit. reflexivity.
+      - cbn. unfold SubDistr.SDistr_obligation_2.
+        rewrite !SDistr_assoc. admit.
+      - unfold Pr_raw_program.
+        (* ER: this is nice, I would like to step a bit with raw_program_link and
+               FreeTranslate *)
+        simpl.
+        (* ER: at this point there's a lot of noise, but it seems that
+               FreeTranslate is bugging, let's destruct the terms? *)
+        destruct (raw_program_link_valid B L2 export Game_import
+                          (_getr l k) P2a
+                          (valid_injectLocations B fset0 L2 (_getr l k)
+                                                 (fsub0set (T:=nat_ordType) L2) A_is_valid) P2b).
+        destruct (raw_program_link_valid B L1 export Game_import
+                          (_getr l k) P1a
+                          (valid_injectLocations B fset0 L1 (_getr l k)
+                                                 (fsub0set (T:=nat_ordType) L1) A_is_valid) P1b).
+        (* ER: too much noise *)
+        admit.
+      - unfold Pr_raw_program.
+        simpl (FreeTranslate ⦑ raw_program_link (_putr l v A) ((L1; ⦑ P1a ⦒).π2) ∙1 ⦒).
+        simpl (thetaFstd B (ropr _ _ _ _ _)).
+        destruct (raw_program_link_valid B L1 export Game_import
+                         (_putr l v A) P1a
+                         (valid_injectLocations B fset0 L1 (_putr l v A)
+                                                (fsub0set (T:=nat_ordType) L1) A_is_valid) P1b).
+        admit.
+      - unfold Pr_raw_program in *.
+        simpl (FreeTranslate _).
+        simpl (thetaFstd).
+    Admitted.
 
     (* ER: How do we connect the package theory with the RHL?
            Something along the following lines should hold? *)
