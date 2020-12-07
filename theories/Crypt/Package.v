@@ -2647,11 +2647,12 @@ Module PackageTheory (π : ProbRulesParam).
         admit.
       - unfold Pr_raw_program.
         simpl (FreeTranslate ⦑ raw_program_link (_putr l v A) ((L1; ⦑ P1a ⦒).π2) ∙1 ⦒).
-        simpl (thetaFstd B (ropr _ _ _ _ _)).
-        destruct (raw_program_link_valid B L1 export Game_import
-                         (_putr l v A) P1a
-                         (valid_injectLocations B fset0 L1 (_putr l v A)
-                                                (fsub0set (T:=nat_ordType) L1) A_is_valid) P1b).
+        (* PGH: the next two commands break compilation; commented out for now *)
+        (* simpl (thetaFstd B (ropr _ _ _ _ _)). *)
+        (* destruct (raw_program_link_valid B L1 export Game_import *)
+        (*                  (_putr l v A) P1a *)
+        (*                  (valid_injectLocations B fset0 L1 (_putr l v A) *)
+        (*                                         (fsub0set (T:=nat_ordType) L1) A_is_valid) P1b). *)
         admit.
       - unfold Pr_raw_program in *.
         simpl (FreeTranslate _).
