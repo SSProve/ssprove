@@ -27,6 +27,7 @@ From Crypt Require Import pkg_preamble.
 From Crypt Require Import pkg_chUniverse.
 From Crypt Require Import pkg_core_definition.
 From Crypt Require Import pkg_free_module.
+From Crypt Require Import pkg_laws.
 
 
 
@@ -37,6 +38,8 @@ Module PackageTheory (π : ProbRulesParam).
   Import PKG_TH.
   Module PKG_FM := (FreeModule π).
   Import PKG_FM.
+  Module PKG_LAWS := (PackageLaws π).
+  Import PKG_LAWS.
 
 
   Section Games.

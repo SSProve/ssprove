@@ -62,4 +62,5 @@ theories/Crypt/package/pkg_preamble.v
 theories/Crypt/package/pkg_chUniverse.v
 theories/Crypt/package/pkg_core_definition.v
 theories/Crypt/package/pkg_free_module.v
+theories/Crypt/package/pkg_laws.v
 theories/Crypt/Package.v
