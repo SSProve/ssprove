@@ -33,6 +33,7 @@ theories/Crypt/only_prob/Theta_dens.v
 theories/Crypt/only_prob/Theta_exCP.v
 theories/Crypt/LaxComp.v
 theories/Crypt/only_prob/Rules.v
+theories/Crypt/only_prob/RulesStateProb.v
 theories/Crypt/OrderEnrichedRelativeAdjunctions.v
 theories/Crypt/OrderEnrichedRelativeAdjunctionsExamples.v
 theories/Crypt/LaxFunctorsAndTransf.v
