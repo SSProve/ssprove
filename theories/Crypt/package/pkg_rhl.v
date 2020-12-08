@@ -31,12 +31,8 @@ From Crypt Require Import pkg_laws.
 
 Module PackageRHL (π : ProbRulesParam).
 
-  Export π.
-  Module PKG_TH := (CorePackageTheory π).
-  Import PKG_TH.
-  Module PKG_LAWS := (PackageLaws π).
-  Import PKG_LAWS.
-
+  Import π.
+  Include (PackageLaws π).
 
   Section Games.
     Definition Game_import : Interface := fset0.

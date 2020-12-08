@@ -18,13 +18,16 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
-Open Scope fset.
-Open Scope fset_scope.
-Open Scope type_scope.
+Local Open Scope fset.
+Local Open Scope fset_scope.
+Local Open Scope type_scope.
 
 
 From Crypt Require Import pkg_preamble.
 From Crypt Require Import pkg_chUniverse.
+
+Declare Scope package_scope.
+Delimit Scope package_scope with pack.
 
 Definition ident := nat.
 
@@ -41,7 +44,7 @@ Definition Value := nat_choiceType.
 
 Module CorePackageTheory (π : ProbRulesParam).
 
-  Export π.
+  Import π.
 
   Definition Interface := {fset opsig}.
 
@@ -493,34 +496,32 @@ Module CorePackageTheory (π : ProbRulesParam).
 
   End commuteBindLocations.
 
-  Section PackageModule.
+  Definition pointed_program :=
+    ∑ (S T : chUniverse), S → raw_program T.
 
-    Definition pointed_program :=
-      ∑ (S T : chUniverse), S → raw_program T.
+  (* Can't use opsig as index because maps aren't dependent. *)
+  Definition raw_package :=
+    {fmap ident -> pointed_program}.
 
-    (* Can't use opsig as index because maps aren't dependent. *)
-    Definition raw_package :=
-      {fmap ident -> pointed_program}.
+  Definition valid_package L I (E : Interface) (p : raw_package) :=
+    ∀ o, o \in E →
+      let '(id, (src, tgt)) := o in
+      ∃ (f : src → raw_program tgt),
+        p id = Some (src ; tgt ; f) ∧ ∀ x, valid_program L I (f x).
 
-    Definition valid_package L I (E : Interface) (p : raw_package) :=
-      ∀ o, o \in E →
-        let '(id, (src, tgt)) := o in
-        ∃ (f : src → raw_program tgt),
-          p id = Some (src ; tgt ; f) ∧ ∀ x, valid_program L I (f x).
+  (* Open packages *)
+  Definition opackage L I E :=
+    { p : raw_package | valid_package L I E p }.
 
-    (* Open packages *)
-    Definition opackage L I E :=
-      { p : raw_package | valid_package L I E p }.
+  Definition package I E :=
+    ∑ L, opackage L I E.
 
-    Definition package I E :=
-      ∑ L, opackage L I E.
-
-    Record bundle := mkbundle {
-      locs : {fset Location} ;
-      import : Interface ;
-      export : Interface ;
-      pack : opackage locs import export
-    }.
+  Record bundle := mkbundle {
+    locs : {fset Location} ;
+    import : Interface ;
+    export : Interface ;
+    pack : opackage locs import export
+  }.
 
 
   Section Link.
@@ -1109,7 +1110,8 @@ Module CorePackageTheory (π : ProbRulesParam).
 
   End Link.
 
-  Notation "p1 ∘ p2" := (link p1 p2) (right associativity, at level 80).
+  Notation "p1 ∘ p2" := (link p1 p2) (right associativity, at level 80) : package_scope.
+  Section PackageModule.
 
   Section Par.
 
