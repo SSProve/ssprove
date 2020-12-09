@@ -1,3 +1,9 @@
+(*
+  This file connects packages to the relational Hoare logic and provides basic crypto-style
+  reasoning notions.
+ *)
+
+
 From Coq Require Import Utf8.
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
@@ -6,9 +12,13 @@ From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings Rules
   StateTransfThetaDens StateTransformingLaxMorph
-  pkg_chUniverse pkg_laws.
+  pkg_chUniverse pkg_notation.
 Require Equations.Prop.DepElim.
 From Equations Require Import Equations.
+
+(* Must come after importing Equations.Equations, god knows why. *)
+From Crypt Require Import FreeProbProg.
+
 
 Set Equations With UIP.
 
@@ -22,7 +32,7 @@ Set Primitive Projections.
 Module PackageRHL (π : ProbRulesParam).
 
   Import π.
-  Include (PackageLaws π).
+  Include (PackageNotation π).
 
   Local Open Scope fset.
   Local Open Scope fset_scope.
@@ -87,7 +97,6 @@ Module PackageRHL (π : ProbRulesParam).
       move: H. move /eqP. move /eqP => H.
       discriminate.
     Defined.
-    From Crypt Require Import FreeProbProg.
 
     Ltac revert_last :=
       match goal with

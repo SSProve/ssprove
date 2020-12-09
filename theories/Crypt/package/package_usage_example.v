@@ -9,13 +9,14 @@ Set Default Goal Selector "!".
 Set Primitive Projections.
 
 
-Module PackageTheory (π : ProbRulesParam).
+Module NotationExamples (π : ProbRulesParam).
 
   Import π.
   Module M := (Package_Make π).
   Import M.
 
-  Open Scope pack.
+    Local Open Scope package_scope.
+
     Let I0 : Interface :=
       [interface val #[3] : nat → nat].
 
@@ -124,4 +125,5 @@ Module PackageTheory (π : ProbRulesParam).
         }
       ]
     |}.
-End PackageTheory.
+
+End NotationExamples.

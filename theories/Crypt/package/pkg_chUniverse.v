@@ -1,5 +1,5 @@
 (*
-  [pkg_chUniverse.v] defines an inductive type [chUniverse] and a total order on that type, which
+  This file defines an inductive type [chUniverse] and a total order on that type, which
   is then used to show that [chUniverse] forms a [choiceType].
  *)
 
