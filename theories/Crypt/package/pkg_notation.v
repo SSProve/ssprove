@@ -4,18 +4,10 @@
 
 
 From Coq Require Import Utf8.
-From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
-From mathcomp Require Import ssreflect eqtype choice seq ssrfun ssrbool ssrnat.
+From mathcomp Require Import choice seq.
 From extructures Require Import ord fset fmap.
-From Mon Require Import SPropBase.
-From Crypt Require Import Prelude Axioms ChoiceAsOrd Rules StateTransformingLaxMorph
+From Crypt Require Import Prelude Axioms ChoiceAsOrd Rules
      pkg_chUniverse pkg_core_definition pkg_composition.
-From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
-
-Set Equations With UIP.
-
-Import SPropNotations.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
