@@ -1,12 +1,12 @@
 From Coq Require Import Utf8.
-From Relational Require Import OrderEnrichedCategory
-  OrderEnrichedRelativeMonadExamples GenericRulesSimple.
+From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
-  choice reals distr realsum seq all_algebra.
-From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings Rules
-  StateTransfThetaDens StateTransformingLaxMorph FreeProbProg.
+  choice reals distr seq all_algebra.
 From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
+From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings Rules
+  StateTransfThetaDens StateTransformingLaxMorph
+  pkg_chUniverse pkg_laws.
 Require Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
@@ -18,21 +18,16 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
-Open Scope fset.
-Open Scope fset_scope.
-Open Scope type_scope.
-
-
-From Crypt Require Import pkg_preamble.
-From Crypt Require Import pkg_chUniverse.
-From Crypt Require Import pkg_core_definition.
-From Crypt Require Import pkg_laws.
-
 
 Module PackageRHL (π : ProbRulesParam).
 
   Import π.
   Include (PackageLaws π).
+
+  Local Open Scope fset.
+  Local Open Scope fset_scope.
+  Local Open Scope type_scope.
+
 
   Section Games.
     Definition Game_import : Interface := fset0.

@@ -1,14 +1,21 @@
+(*
+  This file defines "packages" of stateful probabilistic computation.
+  It should not be directly required but instead used via Package.v.
+
+  * raw_package (computational part of a package without validity conditions)
+  
+  
+ *)
+
 From Coq Require Import Utf8.
-From Relational Require Import OrderEnrichedCategory
-  OrderEnrichedRelativeMonadExamples GenericRulesSimple.
-From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
-  choice reals distr realsum seq all_algebra.
-From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings Rules
-  StateTransfThetaDens StateTransformingLaxMorph FreeProbProg.
+From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
+From mathcomp Require Import ssreflect eqtype choice seq ssrfun ssrbool.
 From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
-Require Equations.Prop.DepElim.
+From Crypt Require Import Prelude Axioms ChoiceAsOrd Rules StateTransformingLaxMorph
+     pkg_chUniverse.
 From Equations Require Import Equations.
+Require Equations.Prop.DepElim.
 
 Set Equations With UIP.
 
@@ -18,33 +25,33 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
-Local Open Scope fset.
-Local Open Scope fset_scope.
-Local Open Scope type_scope.
 
-
-From Crypt Require Import pkg_preamble.
-From Crypt Require Import pkg_chUniverse.
+(* General definitions *)
 
 Declare Scope package_scope.
 Delimit Scope package_scope with pack.
 
-Definition ident := nat.
-
-(* Signature of an operation, including the identifier *)
-Definition opsig := ident * (chUniverse * chUniverse).
-(* Record opsig := mkop {
-  ident : nat ;
-  src : chUniverse ;
-  tgt : chUniverse
-}. *)
-
-Definition Location := nat.
-Definition Value := nat_choiceType.
 
 Module CorePackageTheory (π : ProbRulesParam).
 
+  Local Open Scope fset.
+  Local Open Scope fset_scope.
+  Local Open Scope type_scope.
+
   Import π.
+
+  Definition ident := nat.
+
+  (* Signature of an operation, including the identifier *)
+  Definition opsig := ident * (chUniverse * chUniverse).
+  (* Record opsig := mkop {
+  ident : nat ;
+  src : chUniverse ;
+  tgt : chUniverse
+  }. *)
+
+  Definition Location := nat.
+  Definition Value := nat_choiceType.
 
   Definition Interface := {fset opsig}.
 
@@ -52,7 +59,7 @@ Module CorePackageTheory (π : ProbRulesParam).
     let '(n, _) := v in n.
 
   Definition chsrc (v : opsig) : chUniverse :=
-      let '(n, (s, t)) := v in s.
+    let '(n, (s, t)) := v in s.
 
   Definition src (v : opsig) : choiceType :=
     chsrc v.
@@ -1111,7 +1118,36 @@ Module CorePackageTheory (π : ProbRulesParam).
   End Link.
 
   Notation "p1 ∘ p2" := (link p1 p2) (right associativity, at level 80) : package_scope.
-  Section PackageModule.
+
+
+  Section fset_par_facts.
+
+    Fact disjoint_in_both {T : ordType} (s1 s2 : {fset T}) :
+      fdisjoint s1 s2 → ∀ x, x \in s1 → x \in s2 → False.
+    Proof.
+      move => Hdisjoint x x_in_s1 x_in_s2.
+      assert (x \notin s2) as H by exact (fdisjointP s1 s2 Hdisjoint x x_in_s1).
+      rewrite x_in_s2 in H. by [].
+    Qed.
+
+    Lemma fsubset_ext :
+      ∀ (A : ordType) (s1 s2 : {fset A}),
+        (∀ x, x \in s1 → x \in s2) →
+        fsubset s1 s2.
+    Proof.
+      intros A s1 s2 h.
+      cbn. apply/eqP. pose proof (eq_fset (s1 :|: s2) s2) as [h1 h2].
+      forward h1.
+      { intro x. rewrite in_fsetU.
+        destruct (x \in s1) eqn:e.
+        - cbn. symmetry. apply h. auto.
+        - cbn. reflexivity.
+      }
+      rewrite h1. reflexivity.
+    Qed.
+
+  End fset_par_facts.
+
 
   Section Par.
 
@@ -1446,7 +1482,5 @@ Module CorePackageTheory (π : ProbRulesParam).
     Qed.
 
   End Par.
-
-  End PackageModule.
 
 End CorePackageTheory.

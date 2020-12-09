@@ -58,9 +58,9 @@ theories/Crypt/only_prob/Interfaces.v
 theories/Crypt/only_prob/SetPackagesTheory.v
 theories/Crypt/only_prob/SetPackagesFTNv.v
 theories/Crypt/only_prob/SetPackagesExample.v
-theories/Crypt/package/pkg_preamble.v
 theories/Crypt/package/pkg_chUniverse.v
 theories/Crypt/package/pkg_core_definition.v
 theories/Crypt/package/pkg_laws.v
 theories/Crypt/package/pkg_rhl.v
 theories/Crypt/Package.v
+theories/Crypt/package/package_usage_example.v
