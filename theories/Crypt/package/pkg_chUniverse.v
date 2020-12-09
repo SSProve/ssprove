@@ -7,8 +7,10 @@
 From Coq Require Import Utf8.
 From Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples GenericRulesSimple.
+Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr realsum seq all_algebra.
+Set Warnings "+ambiguous-paths,+notation-overridden,+notation-incompatible-format".
 From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings Rules
   StateTransfThetaDens StateTransformingLaxMorph FreeProbProg.
 From extructures Require Import ord fset fmap.
