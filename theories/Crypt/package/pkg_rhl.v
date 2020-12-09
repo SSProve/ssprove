@@ -9,7 +9,7 @@ From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadE
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr seq all_algebra.
-Set Warnings "+ambiguous-paths,+notation-overridden,+notation-incompatible-format".
+Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings Rules

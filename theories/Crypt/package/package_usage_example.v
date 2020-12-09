@@ -6,7 +6,7 @@
 From Coq Require Import Utf8.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
-Set Warnings "+ambiguous-paths,+notation-overridden,+notation-incompatible-format".
+Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From Crypt Require Import Rules Package.
 
