@@ -12,7 +12,7 @@ From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
-From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings Rules
+From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings RulesStateProb
   StateTransfThetaDens StateTransformingLaxMorph
   pkg_chUniverse pkg_notation.
 Require Equations.Prop.DepElim.
@@ -31,7 +31,7 @@ Set Default Goal Selector "!".
 Set Primitive Projections.
 
 
-Module PackageRHL (π : ProbRulesParam).
+Module PackageRHL (π : RulesParam).
 
   Import π.
   Include (PackageNotation π).

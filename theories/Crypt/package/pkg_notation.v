@@ -6,7 +6,7 @@
 From Coq Require Import Utf8.
 From mathcomp Require Import choice seq.
 From extructures Require Import ord fset fmap.
-From Crypt Require Import Prelude Axioms ChoiceAsOrd Rules
+From Crypt Require Import Prelude Axioms ChoiceAsOrd RulesStateProb
      pkg_chUniverse pkg_core_definition pkg_composition.
 
 Set Bullet Behavior "Strict Subproofs".
@@ -14,7 +14,7 @@ Set Default Goal Selector "!".
 Set Primitive Projections.
 
 
-Module PackageNotation (π : ProbRulesParam).
+Module PackageNotation (π : RulesParam).
 
   Include (PackageComposition π).
 

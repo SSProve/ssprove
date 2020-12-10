@@ -6,7 +6,7 @@
   
   
  *)
-
+ 
 From Coq Require Import Utf8.
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
@@ -14,7 +14,7 @@ From mathcomp Require Import ssreflect eqtype choice seq ssrfun ssrbool.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
-From Crypt Require Import Prelude Axioms ChoiceAsOrd Rules StateTransformingLaxMorph
+From Crypt Require Import Prelude Axioms ChoiceAsOrd RulesStateProb StateTransformingLaxMorph
      pkg_chUniverse.
 From Equations Require Import Equations.
 Require Equations.Prop.DepElim.
@@ -28,13 +28,13 @@ Set Default Goal Selector "!".
 Set Primitive Projections.
 
 
-(* General definitions *)
+(* General definitions *) 
 
 Declare Scope package_scope.
 Delimit Scope package_scope with pack.
 
 
-Module CorePackageTheory (π : ProbRulesParam).
+Module CorePackageTheory (π : RulesParam).
 
   Local Open Scope fset.
   Local Open Scope fset_scope.

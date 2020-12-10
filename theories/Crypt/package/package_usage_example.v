@@ -8,7 +8,7 @@ Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-forma
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
-From Crypt Require Import Rules Package.
+From Crypt Require Import RulesStateProb Package.
 
 
 Set Bullet Behavior "Strict Subproofs".
@@ -16,7 +16,7 @@ Set Default Goal Selector "!".
 Set Primitive Projections.
 
 
-Module NotationExamples (π : ProbRulesParam).
+Module NotationExamples (π : RulesParam).
 
   Import π.
   Module M := (Package_Make π).
