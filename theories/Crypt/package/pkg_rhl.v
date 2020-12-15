@@ -111,10 +111,11 @@ Module PackageRHL (π : RulesParam).
       repr' p h with p := {
       | _ret x := retrFree _ ;
       | _opr o x k := False_rect _ _ ;
-      | _getr l k := ropr (inl (inl (gett _))) (λ s, let v := get_heap s l in repr' (k v) _) ;
+      | _getr l k := bindrFree _ _ (ropr (inl (inl (gett _))) (fun s => retrFree (get_heap s l))) (λ v, repr' (k v) _) ;
       | _putr l v k :=
-        ropr (inl (inl (gett heap_choiceType))) (λ s, ropr (inl (inr (putt heap_choiceType (set_heap s l v)))) (λ s', repr' k _)) ;
-      | _sampler op k := ropr (inr op) (λ s, repr' (k s) _)
+        bindrFree _ _
+        (ropr (inl (inl (gett heap_choiceType))) (λ s, ropr (inl (inr (putt heap_choiceType (set_heap s l v)))) (fun s => retrFree tt))) (λ s', repr' k _) ;
+      | _sampler op k := bindrFree _ _ (ropr (inr op) (fun v => retrFree v)) (λ s, repr' (k s) _)
       }.
     Proof.
       - destruct h as [hin _]. eapply fromEmpty. exact hin.
@@ -147,6 +148,16 @@ Module PackageRHL (π : RulesParam).
         apply IHp1.
       - cbn. f_equal. extensionality s.
         apply H.
+    Qed.
+
+    Lemma repr_ext {B L1 L2} (p1 : program L1 Game_import B) (p2 : program L2 Game_import B)
+          (H : p1.π1 = p2.π1)
+      : repr p1 = repr p2.
+    Proof.
+      unfold repr.
+      destruct p1. destruct p2.
+      apply repr'_ext.
+      exact H.
     Qed.
 
     Lemma repr_bind {B C} {L}
@@ -214,6 +225,16 @@ Module PackageRHL (π : RulesParam).
       rewrite e in eg. noconf eg.
       eapply hg.
     Defined.
+
+    Lemma get_raw_package_op_link {L} {I E} {o : opsig}
+          (hin : o \in E) (arg : src o) (p1 p2 : raw_package)
+          (hp1 : valid_package L I E p1)
+          (hpl : valid_package L I E (raw_link p1 p2))
+          : (get_raw_package_op (raw_link p1 p2) hpl o hin arg) ∙1 =
+            raw_program_link ((get_raw_package_op p1 hp1 o hin arg) ∙1) p2.
+    Proof.
+      admit.
+    Admitted.
 
     Definition get_opackage_op {L} {I E : Interface} (P : opackage L I E)
                (op : opsig) (Hin : op \in E) (arg : src op) : program L I (tgt op).
@@ -318,18 +339,140 @@ Module PackageRHL (π : RulesParam).
     Notation "ϵ( GP )" := (fun A => AdvantageE (GP false) (GP true) A) (at level 90).
     Notation " G0 ≈[ R ] G1 " := (AdvantageE G0 G1 = R) (at level 50).
 
-   
+    Lemma rhl_repr_change_all {B1 B2 : choiceType} {L1 L2 L1' L2'}
+          {pre : heap_choiceType * heap_choiceType -> Prop}
+          {post : (B1 * heap_choiceType) -> (B2 * heap_choiceType) -> Prop}
+          {r1 r1' : raw_program B1} {r2 r2' : raw_program B2}
+          {hr11 : valid_program L1 Game_import r1}
+          {hr12 : valid_program L2 Game_import r1'}
+          {hr21 : valid_program L1' Game_import r2}
+          {hr22 : valid_program L2' Game_import r2'}
+          (Hr1 : r1 = r1') (Hr2 : r2 = r2')
+          (H : ⊨ ⦃ pre ⦄ repr (exist _ r1 hr11) ≈ repr (exist _ r2 hr21) ⦃ post ⦄)
+      : ⊨ ⦃ pre ⦄ repr (exist _ r1' hr12) ≈ repr (exist _ r2' hr22) ⦃ post ⦄.
+    Proof.
+      unfold repr in *.
+      induction Hr1. induction Hr2.
+      assert (repr' r1 hr11 = repr' r1 hr12) as Hr1.
+      { apply repr'_ext. reflexivity. }
+      assert (repr' r2 hr21 = repr' r2 hr22) as Hr2.
+      { apply repr'_ext. reflexivity. }
+      rewrite -Hr1 -Hr2. assumption.
+    Qed.
+
+    Definition INV (L : {fset Location}) (I : heap_choiceType * heap_choiceType -> Prop) :=
+      forall s1 s2, (I (s1, s2) -> forall l, l \in L -> get_heap s1 l = get_heap s2 l) /\
+               (I (s1, s2) -> forall l v, l \in L -> I (set_heap s1 l v, set_heap s2 l v)).
+
+    Lemma get_case {L LA} (I : heap_choiceType * heap_choiceType -> Prop)
+      (HINV : INV LA I) {l : Location} (Hin : l \in LA)
+      (hp : [eta valid_program L Game_import] (_getr l [eta _ret (A:=Value)])):
+      ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄
+            repr (locs := L) (exist _ (_getr l [eta _ret (A:=Value)]) hp)
+          ≈ repr (locs := L) (exist _ (_getr l [eta _ret (A:=Value)]) hp)
+          ⦃ fun '(b1, s1) '(b2, s2) => b1 = b2 /\ I (s1, s2) ⦄.
+    Proof.
+      cbn. intros [s1 s2].
+      rewrite /SpecificationMonads.MonoCont_bind /=.
+      rewrite /SpecificationMonads.MonoCont_order /SPropMonadicStructures.SProp_op_order
+              /Morphisms.pointwise_relation /Basics.flip /SPropMonadicStructures.SProp_order /=.
+      intuition.
+      assert (get_heap s1 l = get_heap s2 l) as Hv.
+      { unfold INV in HINV.
+        destruct hp as [hp _].
+        specialize (HINV s1 s2). destruct HINV as [HINV _].
+        specialize (HINV H0 _ Hin).
+        assumption.
+      }
+      simpl (repr'_obligation_1 Value (get_heap s1 l), s1).
+      exists (SDistr_unit _ ((repr'_obligation_1 Value (get_heap s1 l), s1),
+                        (repr'_obligation_1 Value (get_heap s2 l), s2))).
+      split.
+      + apply SDistr_unit_F_choice_prod_coupling.
+        reflexivity.
+      + intros [b1 s3] [b2 s4].
+        intros Hd.
+        apply H1.
+        unfold SDistr_unit in Hd.
+        rewrite dunit1E in Hd.
+        unfold repr'_obligation_1 in Hd.
+        assert (((get_heap s1 l, s1, (get_heap s2 l, s2)) = (b1, s3, (b2, s4)))) as Heqs.
+        { destruct ((get_heap s1 l, s1, (get_heap s2 l, s2)) == (b1, s3, (b2, s4))) eqn:Heqd.
+          + move: Heqd. move /eqP => Heqd. assumption.
+          + rewrite Heqd in Hd. simpl in Hd.
+            rewrite mc_1_10.Num.Theory.ltrr in Hd.
+            move: Hd. move /eqP /eqP => Hd. discriminate. }
+        inversion Heqs.
+        all: rewrite -H3 -H5.
+        intuition.
+    Qed.
+
+    Lemma put_case {L LA} (I : heap_choiceType * heap_choiceType -> Prop)
+      (HINV : INV LA I) {l : Location} {v : Value} (Hin : l \in LA)
+      (hp : [eta valid_program L Game_import] (_putr l v (_ret tt))):
+      ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄
+            repr (locs := L) (exist _ (_putr l v (_ret tt)) hp)
+          ≈ repr (locs := L) (exist _ (_putr l v (_ret tt)) hp)
+          ⦃ fun '(b1, s1) '(b2, s2) => b1 = b2 /\ I (s1, s2) ⦄.
+    Proof.
+      cbn. intros [s1 s2].
+      rewrite /SpecificationMonads.MonoCont_bind /=.
+      rewrite /SpecificationMonads.MonoCont_order /SPropMonadicStructures.SProp_op_order
+              /Morphisms.pointwise_relation /Basics.flip /SPropMonadicStructures.SProp_order /=.
+      intuition.
+      exists (SDistr_unit _ ((repr'_obligation_1 unit_choiceType tt, set_heap s1 l v),
+                        (repr'_obligation_1 unit_choiceType tt, set_heap s2 l v))).
+      split.
+      + apply SDistr_unit_F_choice_prod_coupling.
+        reflexivity.
+      + intros [b1 s3] [b2 s4].
+        intros Hd.
+        apply H1.
+        unfold SDistr_unit in Hd.
+        rewrite dunit1E in Hd.
+        unfold repr'_obligation_1 in Hd.
+        assert ((tt, set_heap s1 l v, (tt, set_heap s2 l v)) = (b1, s3, (b2, s4))) as Heqs.
+        { destruct ((tt, set_heap s1 l v, (tt, set_heap s2 l v)) == (b1, s3, (b2, s4))) eqn:Heqd.
+          + move: Heqd. move /eqP => Heqd. assumption.
+          + rewrite Heqd in Hd. simpl in Hd.
+            rewrite mc_1_10.Num.Theory.ltrr in Hd.
+            move: Hd. move /eqP /eqP => Hd. discriminate. }
+        inversion Heqs.
+        split.
+        1: reflexivity.
+        specialize (HINV s1 s2). destruct HINV as [_ HINV].
+        specialize (HINV H0 l v Hin).
+        assumption.
+    Qed.
+
+    Lemma sampler_case {L LA} (I : heap_choiceType * heap_choiceType -> Prop)
+      (HINV : INV LA I) {op}
+      (hp : [eta valid_program L Game_import] (_sampler op [eta _ret (A:=Arit op)])):
+      ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄
+            repr (locs := L) (exist _ (_sampler op [eta _ret (A:=Arit op)]) hp)
+          ≈ repr (locs := L) (exist _ (_sampler op [eta _ret (A:=Arit op)]) hp)
+          ⦃ fun '(b1, s1) '(b2, s2) => b1 = b2 /\ I (s1, s2) ⦄.
+    Proof.
+      cbn - [semantic_judgement].
+    Admitted.
+
+    Definition eq_up_to_inv {L1 L2} {E}
+               (I : heap_choiceType * heap_choiceType → Prop)
+               (P1 : opackage L1 Game_import E) (P2 : opackage L2 Game_import E) :=
+      forall  (id : ident) (S T : chUniverse)
+         (hin : (id, (S, T)) \in E)
+         (f : S → raw_program T) (g : S → raw_program T)
+         (Hf : P1.π1 id = Some (S; T; f)) (hpf : forall x, valid_program L1 Game_import (f x))
+         (Hg : P2.π1 id = Some (S; T; g)) (hpg : forall x, valid_program L2 Game_import (g x))
+         (arg : S),
+         ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄ repr (exist _ (f arg) (hpf arg)) ≈ repr (exist _ (g arg) (hpg arg)) ⦃ λ '(b1, s0) '(b2, s3), b1 = b2 /\ I (s0, s3) ⦄.
+
     Lemma some_lemma_for_prove_relational {export : Interface} {B} {L1 L2 LA}
                (P1 : opackage L1 Game_import export)
                (P2 : opackage L2 Game_import export)
                (I : heap_choiceType * heap_choiceType -> Prop)
-               (Hempty : I (emptym, emptym))
-               (H : forall (op : opsig) (Hin : op \in export) (arg : src op),
-                   ⊨ ⦃ fun '(s1, s2) => I (s1, s2) ⦄
-                     (repr (get_opackage_op P1 op Hin arg))
-                     ≈
-                     (repr (get_opackage_op P2 op Hin arg))
-                     ⦃ fun '(b1, s1) '(b2, s2) => I (s1, s2) /\ b1 = b2 ⦄)
+               (HINV : INV LA I) (Hempty : I (emptym, emptym))
+               (H : eq_up_to_inv I P1 P2)
                (A : program LA export B)
                (s1 : heap_choiceType) (s2 : heap_choiceType) (Hs1s2 : I (s1, s2))
       :
@@ -339,8 +482,8 @@ Module PackageRHL (π : RulesParam).
           repr (program_link (injectLocations (fsubsetUl LA (L1 :|: L2)) A) (opackage_inject_locations (fsubset_trans (fsubsetUr L1 L2) (fsubsetUr LA (L1 :|: L2))) P2))
           ⦃ fun '(b1, s1) '(b2, s2) => b1 = b2 /\ I (s1, s2) ⦄.
     Proof.
-      destruct P1 as [P1a P1b].
-      destruct P2 as [P2a P2b].
+      destruct P1 as [P1a P1b] eqn:HP1.
+      destruct P2 as [P2a P2b] eqn:HP2.
       destruct A as [A hA].
       induction A; intros.
       - cbn - [semantic_judgement].
@@ -348,69 +491,195 @@ Module PackageRHL (π : RulesParam).
         eapply weaken_rule.
         + apply ret_rule.
         + cbv. intuition.
-      - destruct (lookup_op P1a o) eqn:lookup_op1.
-        2: { pose (P1b o) as Hbot. destruct hA as [hA1 hA2].
-             specialize (Hbot hA1). admit. }
-        cbn - [semantic_judgement].
+      - cbn in hA. destruct hA as [hA1 hA2].
+        pose foo := (P1b o hA1).
+        destruct o as [id [S T]].
+        destruct foo as [f [K1 K2]].
+        cbn - [semantic_judgement lookup_op].
         fold_repr.
-        admit.
-      - unfold program_link. unfold injectLocations. unfold opackage_inject_locations.
-        simpl (raw_program_link _). unfold "∙1".
-         match goal with
-        | |- ⊨ ⦃ _ ⦄ repr ⦑ _getr ?l ?k ⦒ ≈ _ ⦃ _ ⦄ =>
-          eassert (⦑ _getr l k ⦒ =
-                   bind _ _ ⦑ _getr l (fun x : Value => _ret x) ⦒ (fun v => ⦑ k v ⦒)) as Hl
-        end.
-        { apply program_ext. cbn. reflexivity. }
-        rewrite Hl.
-        rewrite repr_bind.
+        assert (lookup_op P1a (id, (S, T)) = Some f).
+          { cbn. rewrite K1.
+            destruct (chUniverse_eqP S S), (chUniverse_eqP T T). all: try contradiction.
+            noconf e. noconf e0. reflexivity. }
         match goal with
-        | |- ⊨ ⦃ _ ⦄ _ ≈ repr ⦑ _getr ?l ?k ⦒ ⦃ _ ⦄ =>
-          eassert (⦑ _getr l k ⦒ =
-                   bind _ _ ⦑ _getr l (fun x : Value => _ret x) ⦒ (fun v => ⦑ k v ⦒)) as Hr
+        | |- ⊨ ⦃ _ ⦄ repr ⦑ ?w ⦒ ≈ _ ⦃ _ ⦄ =>
+          eassert (⦑ w ⦒ =
+                  bind (LA :|: (L1 :|: L2)) Game_import ⦑ f x ⦒ (λ x0 : T, ⦑ raw_program_link (k x0) P1a ⦒ )) as Hl
         end.
-        { apply program_ext. cbn. reflexivity. }
-        rewrite Hr.
-        rewrite repr_bind.
-        eapply weaken_rule.
-        + eapply bind_rule.
-          ++ admit.
-          ++ intros a1 a2. admit.
-        + admit.
-      - admit.
-      - unfold program_link. unfold injectLocations. unfold opackage_inject_locations.
-        simpl (raw_program_link _). unfold "∙1".
-         match goal with
-        | |- ⊨ ⦃ _ ⦄ repr ⦑ _sampler ?l ?k ⦒ ≈ _ ⦃ _ ⦄ =>
-          eassert (⦑ _sampler l k ⦒ =
-                   bind _ _ ⦑ _sampler l (fun x : Arit l => _ret x) ⦒ (fun v => ⦑ k v ⦒)) as Hl
-        end.
-        { apply program_ext. cbn. reflexivity. }
+        { apply program_ext. cbn - [lookup_op]. rewrite H1. reflexivity. }
         rewrite Hl.
-        rewrite repr_bind.
+        Unshelve.
+        2: { rewrite H1.
+             eapply (valid_injectLocations _ (LA :|: L1)).
+             1: { apply fsetUS. apply fsubsetUl. }
+             apply bind_valid.
+             - eapply (valid_injectLocations _ L1).
+               + apply fsubsetUr.
+               + apply K2.
+             - intros x0.
+               eapply raw_program_link_valid.
+               + eapply (valid_injectLocations _ LA).
+                 ++  apply fsubsetUl.
+                 ++ apply hA2.
+               + eapply (valid_package_inject_locations).
+                 ++ apply fsubsetUr.
+                 ++ apply P1b. }
+        2: { cbn.
+             eapply (valid_injectLocations _ (LA :|: L1)).
+             1: { apply fsetUS. apply fsubsetUl. }
+             eapply valid_injectLocations.
+             + apply fsubsetUr.
+             + apply K2. }
+        2: { cbn.
+             eapply (valid_injectLocations _ (LA :|: L1)).
+             1: { apply fsetUS. apply fsubsetUl. }
+               eapply raw_program_link_valid.
+               + eapply (valid_injectLocations _ LA).
+                 ++  apply fsubsetUl.
+                 ++ apply hA2.
+               + eapply (valid_package_inject_locations).
+                 ++ apply fsubsetUr.
+                 ++ apply P1b. }
+        pose foo2 := (P2b (id, (S, T)) hA1).
+        destruct foo2 as [f2 [K12 K22]].
+        cbn - [semantic_judgement lookup_op bind].
+        assert (lookup_op P2a (id, (S, T)) = Some f2) as H2.
+        { cbn. rewrite K12.
+          destruct (chUniverse_eqP S S), (chUniverse_eqP T T). all: try contradiction.
+          noconf e. noconf e0. reflexivity. }
+        fold_repr.
         match goal with
-        | |- ⊨ ⦃ _ ⦄ _ ≈ repr ⦑ _sampler ?l ?k ⦒ ⦃ _ ⦄ =>
-          eassert (⦑ _sampler l k ⦒ =
-                   bind _ _ ⦑ _sampler l (fun x : Arit l => _ret x) ⦒ (fun v => ⦑ k v ⦒)) as Hr
+        | |- ⊨ ⦃ _ ⦄ _ ≈ repr ⦑ ?w ⦒ ⦃ _ ⦄ =>
+          eassert (⦑ w ⦒ =
+                  bind (LA :|: (L1 :|: L2)) Game_import ⦑ f2 x ⦒ (λ x0 : T, ⦑ raw_program_link (k x0) P2a ⦒ )) as Hr
         end.
-        { apply program_ext. cbn. reflexivity. }
+        { apply program_ext. cbn - [lookup_op]. rewrite H2. reflexivity. }
         rewrite Hr.
-        rewrite repr_bind.
-
-        admit.
+        Unshelve.
+        2: { rewrite H2.
+             eapply (valid_injectLocations _ (LA :|: L2)).
+             1: { apply fsetUS. apply fsubsetUr. }
+             apply bind_valid.
+             - eapply (valid_injectLocations _ L2).
+               + apply fsubsetUr.
+               + apply K22.
+             - intros x0.
+               eapply raw_program_link_valid.
+               + eapply (valid_injectLocations _ LA).
+                 ++  apply fsubsetUl.
+                 ++ apply hA2.
+               + eapply (valid_package_inject_locations).
+                 ++ apply fsubsetUr.
+                 ++ apply P2b. }
+        2: { cbn.
+             eapply (valid_injectLocations _ (LA :|: L2)).
+             1: { apply fsetUS. apply fsubsetUr. }
+             eapply valid_injectLocations.
+             + apply fsubsetUr.
+             + apply K22. }
+        2: { cbn.
+             eapply (valid_injectLocations _ (LA :|: L2)).
+             1: { apply fsetUS. apply fsubsetUr. }
+               eapply raw_program_link_valid.
+               + eapply (valid_injectLocations _ LA).
+                 ++  apply fsubsetUl.
+                 ++ apply hA2.
+               + eapply (valid_package_inject_locations).
+                 ++ apply fsubsetUr.
+                 ++ apply P2b. }
+        rewrite !repr_bind.
+        eapply bind_rule_pp.
+        + unfold eq_up_to_inv in H.
+          specialize (H id S T hA1 f f2 K1 K2 K12 K22 x).
+          unfold repr in H. unfold repr.
+          eapply rhl_repr_change_all.
+          1: reflexivity. 1: reflexivity.
+          exact H.
+        + intros a1 a2.
+          apply pre_hypothesis_rule.
+          intros st1 st2 [Heqa Ist1st2].
+          induction Heqa.
+          specialize (H0 a1 (hA2 a1)).
+          apply (pre_weaken_rule  (λ '(s1, s2), I (s1, s2))).
+          2: { intros st0 st3.
+               cbn. intros [Heqst0 Heqst3].
+               rewrite Heqst0 Heqst3. assumption. }
+          cbn -[semantic_judgement] in H0.
+          change (repr' ?p ?h) with (repr (exist _ p h)) in H0.
+          eapply rhl_repr_change_all.
+          1: reflexivity. 1: reflexivity. exact H0.
+      - unfold program_link. unfold injectLocations. unfold opackage_inject_locations.
+        cbn - [semantic_judgement bindrFree].
+        destruct hA as [hA1 hA2].
+        eapply bind_rule_pp.
+        + eapply (@get_case _ LA).
+          ++ assumption.
+          ++ exact hA1.
+          Unshelve.
+          * exact LA.
+          * cbn. auto.
+        + intros a1 a2.
+          simpl (λ '(s0, s3), (λ '(b1, s4) '(b2, s5), b1 = b2 s/\ I (s4, s5)) (a1, s0) (a2, s3)).
+          apply pre_hypothesis_rule.
+          intros st1 st2 [Heqa Ist1st2].
+          induction Heqa.
+          specialize (H0 a1 (hA2 a1)).
+          apply (pre_weaken_rule  (λ '(s1, s2), I (s1, s2))).
+          2: { intros st0 st3.
+               cbn. intros [Heqst0 Heqst3].
+               rewrite Heqst0 Heqst3. assumption. }
+          cbn -[semantic_judgement] in H0.
+          change (repr' ?p ?h) with (repr (exist _ p h)) in H0.
+          eapply rhl_repr_change_all.
+          1: reflexivity. 1: reflexivity. exact H0.
+      - unfold program_link. unfold injectLocations. unfold opackage_inject_locations.
+        cbn - [semantic_judgement bindrFree].
+        destruct hA as [hA1 hA2].
+        eapply bind_rule_pp.
+        + eapply (@put_case _ LA).
+          ++ assumption.
+          ++ exact hA1.
+          Unshelve.
+          * exact LA.
+          * cbn. auto.
+        + intros a1 a2.
+          simpl (λ '(s0, s3), (λ '(b1, s4) '(b2, s5), b1 = b2 s/\ I (s4, s5)) (a1, s0) (a2, s3)).
+          apply pre_hypothesis_rule.
+          intros st1 st2 [Heqa Ist1st2].
+          induction Heqa.
+          specialize (IHA hA2).
+          apply (pre_weaken_rule  (λ '(s1, s2), I (s1, s2))).
+          2: { intros st0 st3.
+               cbn. intros [Heqst0 Heqst3].
+               rewrite Heqst0 Heqst3. assumption. }
+          cbn -[semantic_judgement] in IHA.
+          change (repr' ?p ?h) with (repr (exist _ p h)) in IHA.
+          eapply rhl_repr_change_all.
+          1: reflexivity. 1: reflexivity. exact IHA.
+      - unfold program_link. unfold injectLocations. unfold opackage_inject_locations.
+        cbn - [bindrFree semantic_judgement].
+        eapply bind_rule_pp.
+        + eapply (@sampler_case LA LA).
+          ++ assumption.
+          Unshelve.
+          1: { cbn. auto. }
+        + intros a1 a2.
+          simpl (λ '(s0, s3), (λ '(b1, s4) '(b2, s5), b1 = b2 s/\ I (s4, s5)) (a1, s0) (a2, s3)).
+          apply pre_hypothesis_rule.
+          intros st1 st2 [Heqa Ist1st2].
+          induction Heqa.
+          cbn in hA. pose (hA a1) as hAa1.
+          specialize (H0 a1 hAa1).
+          apply (pre_weaken_rule  (λ '(s1, s2), I (s1, s2))).
+          2: { intros st0 st3.
+               cbn. intros [Heqst0 Heqst3].
+               rewrite Heqst0 Heqst3. assumption. }
+          cbn -[semantic_judgement] in H0.
+          change (repr' ?p ?h) with (repr (exist _ p h)) in H0.
+          eapply rhl_repr_change_all.
+          1: reflexivity. 1: reflexivity. exact H0.
+    (* ER : No goals remaining, but won't qed *)
     Admitted.
-
-    Lemma get_raw_package_op_link {L} {I E} {o : opsig}
-          (hin : o \in E) (arg : src o) (p1 p2 : raw_package)
-          (hp1 : valid_package L I E p1)
-          (hpl : valid_package L I E (raw_link p1 p2))
-          : (get_raw_package_op (raw_link p1 p2) hpl o hin arg) ∙1 =
-            raw_program_link ((get_raw_package_op p1 hp1 o hin arg) ∙1) p2.
-    Proof.
-      admit.
-    Admitted.
-
-
 
     (* ER: How do we connect the package theory with the RHL?
            Something along the following lines should hold? *)
@@ -419,12 +688,7 @@ Module PackageRHL (π : RulesParam).
                (P2 : opackage L2 Game_import export)
                (I : heap_choiceType * heap_choiceType -> Prop)
                (Hempty : I (emptym, emptym))
-               (H : forall (op : opsig) (Hin : op \in export) (arg : src op),
-                   ⊨ ⦃ fun '(s1, s2) => I (s1, s2) ⦄
-                     (repr (get_opackage_op P1 op Hin arg))
-                     ≈
-                     (repr (get_opackage_op P2 op Hin arg))
-                     ⦃ fun '(b1, s1) '(b2, s2) => I (s1, s2) /\ b1 = b2  ⦄)
+               (H : eq_up_to_inv I P1 P2)
       : (L1; P1) ≈[ fun A => 0 ] (L2; P2).
     Proof.
       extensionality A.
@@ -432,7 +696,13 @@ Module PackageRHL (π : RulesParam).
       unfold AdvantageE, Pr.
       pose r' := get_package_op A RUN RUN_in_A_export.
       pose r := r' tt.
-      pose Hlemma := (some_lemma_for_prove_relational _ _ _ Hempty H r emptym emptym Hempty).
+      (* ER: from linking we should get the fact that A.π1 is disjoint from L1 and L2,
+             and then from that conclude that we are invariant on A.π1 *)
+      assert (INV A.π1 I) as HINV.
+      { destruct A.
+        cbn.  unfold INV.
+        intros s1 s2. admit. }
+      pose Hlemma := (some_lemma_for_prove_relational _ _ _ HINV Hempty H r emptym emptym Hempty).
       assert (∀ x y : tgt RUN * heap_choiceType,
                  (let '(b1, s1) := x in λ '(b2, s2), b1 = b2 s/\ I (s1, s2)) y → (fst x == true) ↔ (fst y == true)) as Ha.
       { intros [b1 s1] [b2 s2]. simpl.
@@ -465,11 +735,10 @@ Module PackageRHL (π : RulesParam).
         apply repr'_ext.
         erewrite (get_raw_package_op_link RUN_in_A_export tt (trim A_export ((LA; ⦑ A ⦒).π2) ∙1) (P1 ∙1) _ _).
         apply f_equal2. 2: { reflexivity. }
-                                                                                                              admit.
+        admit.
       }
       unfold lhs in H0.
       rewrite H0.
-
       pose _rhs' := (thetaFstd _ (repr (program_link
             (injectLocations (fsubsetUl (T:=nat_ordType) (getLocations A) (L1 :|: L2)) r)
             (opackage_inject_locations
@@ -485,7 +754,8 @@ Module PackageRHL (π : RulesParam).
       { unfold lhs', rhs', _rhs'. simpl.
         unfold Pr_raw_package_op. unfold Pr_raw_program.
         unfold thetaFstd. simpl. apply f_equal2. 2: { reflexivity. }
-        apply f_equal. apply f_equal.  admit. }
+        apply f_equal. apply f_equal.
+        apply repr'_ext. cbn. admit. }
       unfold lhs' in H0'.
       rewrite H0'.
       unfold rhs', _rhs', rhs, _rhs.
@@ -518,6 +788,7 @@ Module PackageRHL (π : RulesParam).
       rewrite Hzero.
       reflexivity.
       Unshelve.
+      - admit.
     Admitted.
   End Games.
 
