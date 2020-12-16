@@ -21,6 +21,7 @@
     bool
     zero
     unit
+    option A
     A × B
     where A and B follow again the same syntax.
 
@@ -96,18 +97,22 @@ Module PackageNotation (π : RulesParam).
 
   Declare Custom Entry pack_type.
 
-  (* The `custom entry` engine does not allow a name to be a symbol without it being a symbol in
-  the global grammar. As a workaround, we define dummy aliases for the names we want to
-  re-interpret in the custom entry. *)
+  (** The `custom entry` engine does not allow a name to be a symbol without
+      it being a symbol in the global grammar. As a workaround, we define
+      dummy aliases for the names we want to re-interpret in the custom
+      entry.
+  *)
   Notation " 'nat' " := nat (at level 2).
   Notation " 'bool' " := bool (at level 2).
   (* Notation " 'zero' " := zero (at level 2). *)
   Notation " 'unit' " := unit (at level 2).
+  Notation " 'option' " := option (at level 2).
 
   Notation " 'nat' " := (chNat) (in custom pack_type at level 2).
   Notation " 'bool' " := (chBool) (in custom pack_type at level 2).
   Notation " 'zero' " := (chZero) (in custom pack_type at level 2).
   Notation " 'unit' " := (chUnit) (in custom pack_type at level 2).
+  Notation " 'option' x " := (chOption x) (in custom pack_type at level 2).
 
   Notation " x × y " := (chProd x y) (in custom pack_type at level 2).
 

@@ -108,12 +108,12 @@ Module NotationExamples (π : RulesParam).
     import := [interface val #[0] : nat → nat] ;
     export := [interface
       val #[1] : nat → nat ;
-      val #[2] : unit → unit
+      val #[2] : unit → option unit
     ] ;
     pack := [package
-      def #[2] (_ : unit) : unit {
+      def #[2] (_ : unit) : option unit {
         put 0 := 0 ;;
-        ret Datatypes.tt
+        ret (Some Datatypes.tt)
       } ;
       def #[1] (x : nat) : nat {
         n ← get 0 ;;
