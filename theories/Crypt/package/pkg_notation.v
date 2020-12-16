@@ -1,17 +1,90 @@
-(*
-  This file provides user friendly syntax for packages.
- *)
+(** Package notations
+
+  In this module we define a functor to export user-friendly notations for
+  packages and package programs.
+  The user doesn't need to instantiate the functor here, and should only rely
+  on the Package functor which exports the notations as well.
+
+  Scope of the notations: package_scope
+  delimited with %pack.
+
+  Please look at package_usage_example.v for examples of how to use those.
+
+  - Notation for choice types in the choice universe
+
+    This module provides a specific notation for inhabiting the choice
+    universe, but only in certain positions that will be described in the
+    following notations.
+    These types can be described using a syntax closer to the usual Coq
+    syntax:
+    nat
+    bool
+    zero
+    unit
+    A × B
+    where A and B follow again the same syntax.
+
+  - Sequence notation for interfaces
+
+    An interface can be provided using the following sequence notation:
+    [interface d1 ; ... ; dn]
+    where d1 to dn are prototypes or function signatures of the form
+    val #[n] : S → T
+    where S and T are both given using the type syntax above
+    and n is a natural number used as an identifier.
+
+  - Sequence notation for packages
+
+    A package can bve provided using the following sequence notation;
+    [package d1 ; ... dn]
+    where d1 to dn are function declarations of the form
+    def #[n] (x : A) : B {
+      e
+    }
+    where n is a natural number used as an identifier, A and B are types
+    following the syntax above and e is a regular Coq expression which has
+    x of type (chElement A) in scope.
+
+  - Notation for the program monad
+
+    Additionally we provide some useful notations for writing programs.
+    All notations with a binder (x ← ...) can be instantiated with patterns
+    instead of new identifiers (e.g. '(x,y) ← ...).
+
+    - Bind:
+      x ← c ;; k
+      corresponds to binding c to x and continuing with k, an expression
+      that may contain x.
+
+      In case k doesn't mention x, we provide a special notation
+      c ;; k
+
+    - Managing state:
+      put n := u ;; c
+      x ← get n ;; c
+      correspond respectively to updating and reading the state location n.
+
+    - Sampling:
+      x ← sample o ;; c
+      obtains x from sampling o and continues with c (which may mention x).
+
+    - Imported operators:
+      x ← op [ o ] n ;; c
+      will apply imported operator o to argument n, store the result in x and
+      continue with c.
+      o is given of the form
+      #[ f ] : A → B
+      which is the same as declarations in interfaces.
+      For instance one can write
+      n ← op [ #[0] : nat → nat ] n ;; ret n
+**)
 
 
 From Coq Require Import Utf8.
 From mathcomp Require Import choice seq.
 From extructures Require Import ord fset fmap.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd RulesStateProb
-     pkg_chUniverse pkg_core_definition pkg_composition.
-
-Set Bullet Behavior "Strict Subproofs".
-Set Default Goal Selector "!".
-Set Primitive Projections.
+  pkg_chUniverse pkg_core_definition pkg_composition.
 
 
 Module PackageNotation (π : RulesParam).
