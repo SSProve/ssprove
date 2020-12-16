@@ -144,5 +144,4 @@ Module PackageNotation (π : RulesParam).
     format "x  ←  op  [  o  ]  n  ;;  '/' c")
     : package_scope.
 
-
 End PackageNotation.

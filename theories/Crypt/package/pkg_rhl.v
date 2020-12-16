@@ -14,7 +14,7 @@ From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings RulesStateProb
   StateTransfThetaDens StateTransformingLaxMorph
-  pkg_chUniverse pkg_notation.
+  pkg_chUniverse pkg_notation pkg_tactics.
 Require Equations.Prop.DepElim.
 From Equations Require Import Equations.
 

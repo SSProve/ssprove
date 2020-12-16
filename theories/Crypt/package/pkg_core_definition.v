@@ -3,10 +3,10 @@
   It should not be directly required but instead used via Package.v.
 
   * raw_package (computational part of a package without validity conditions)
-  
-  
+
+
  *)
- 
+
 From Coq Require Import Utf8.
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
@@ -28,7 +28,7 @@ Set Default Goal Selector "!".
 Set Primitive Projections.
 
 
-(* General definitions *) 
+(* General definitions *)
 
 Declare Scope package_scope.
 Delimit Scope package_scope with pack.
@@ -531,6 +531,5 @@ Module CorePackageTheory (π : RulesParam).
     export : Interface ;
     pack : opackage locs import export
   }.
-
 
 End CorePackageTheory.

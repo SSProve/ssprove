@@ -73,15 +73,6 @@ Module NotationExamples (π : RulesParam).
     pack := p1
   |}.
 
-  Ltac in_fset_auto :=
-    rewrite in_fset ; auto.
-
-  Ltac package_obtac :=
-    Tactics.program_simplify ;
-    CoreTactics.equations_simpl ;
-    try Tactics.program_solve_wf ;
-    try in_fset_auto.
-
   Obligation Tactic := package_obtac.
 
   (** Note that because fsets are locked, ordering the export interface
