@@ -68,6 +68,11 @@
     - Sampling:
       x ← sample o ;; c
       obtains x from sampling o and continues with c (which may mention x).
+      Alternatively one can use the synonymous notation
+      x <$ o ;; c
+      from easycrypt.
+      It will only be used for parsing, and will still print as
+      x ← sample o ;; c.
 
     - Imported operators:
       x ← op [ o ] n ;; c
@@ -226,6 +231,12 @@ Module PackageNotation (π : RulesParam).
     (sampler o (λ x, c))
     (at level 100, o at next level, right associativity,
     format "x  ←  sample  o  ;;  '/' c")
+    : package_scope.
+
+  Notation "x <$ o ;; c" :=
+    (x ← sample o ;; c)%pack
+    (at level 100, o at next level, right associativity,
+    format "x  <$  o  ;;  '/' c", only parsing)
     : package_scope.
 
 End PackageNotation.
