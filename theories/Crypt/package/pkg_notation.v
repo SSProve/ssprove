@@ -144,4 +144,10 @@ Module PackageNotation (π : RulesParam).
     format "x  ←  op  [  o  ]  n  ;;  '/' c")
     : package_scope.
 
+  Notation "x ← 'sample' o ;; c" :=
+    (sampler o (λ x, c))
+    (at level 100, o at next level, right associativity,
+    format "x  ←  sample  o  ;;  '/' c")
+    : package_scope.
+
 End PackageNotation.
