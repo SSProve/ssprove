@@ -38,6 +38,8 @@ Module PackageNotation (π : ProbRulesParam).
 
   Notation " x × y " := (chProd x y) (in custom pack_type at level 2).
 
+  Notation "( x )" := x (in custom pack_type, x at level 2).
+
   Declare Custom Entry interface.
 
   Notation "[ 'interface' ]" :=
