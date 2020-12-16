@@ -467,6 +467,41 @@ Module PackageRHL (π : RulesParam).
          (arg : S),
          ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄ repr (exist _ (f arg) (hpf arg)) ≈ repr (exist _ (g arg) (hpg arg)) ⦃ λ '(b1, s0) '(b2, s3), b1 = b2 /\ I (s0, s3) ⦄.
 
+    (* TODO MOVE *)
+    Lemma program_rewrite_valid :
+      ∀ {A B L I} {x : A}
+        (p : A → raw_program B) (h : valid_program L I (p x)) {y},
+          x = y →
+          valid_program L I (p y).
+    Proof.
+      intros A B L I x p h y e.
+      subst. auto.
+    Qed.
+
+    (* TODO MOVE *)
+    Lemma program_rewrite :
+      ∀ {A B L I} {x : A}
+        (p : A → raw_program B) (h : valid_program L I (p x)) {y} (e : x = y),
+          exist _ (p x) h = exist _ (p y) (program_rewrite_valid p h e).
+    Proof.
+      intros A B L I x p h y e.
+      apply program_ext. cbn. subst. reflexivity.
+    Qed.
+
+    (* Ltac rewrite_prog e :=
+      lazymatch type of e with
+      | ?x = ?y =>
+        match goal with
+        | |- context [ exist _ ?p ?h ] =>
+          match p with
+          | context C[ x ] =>
+            let q := λ y, context C[y] in
+            rewrite (program_rewrite q h e)
+          end
+        end
+      | _ => fail "rewrite_prog: argument should be an equality"
+      end. *)
+
     Lemma some_lemma_for_prove_relational {export : Interface} {B} {L1 L2 LA}
                (P1 : opackage L1 Game_import export)
                (P2 : opackage L2 Game_import export)
@@ -498,9 +533,20 @@ Module PackageRHL (π : RulesParam).
         cbn - [semantic_judgement lookup_op].
         fold_repr.
         assert (lookup_op P1a (id, (S, T)) = Some f).
-          { cbn. rewrite K1.
-            destruct (chUniverse_eqP S S), (chUniverse_eqP T T). all: try contradiction.
-            noconf e. noconf e0. reflexivity. }
+        { cbn. rewrite K1.
+          destruct (chUniverse_eqP S S), (chUniverse_eqP T T).
+          all: try contradiction.
+          noconf e. noconf e0. reflexivity.
+        }
+        (* TW: The following works *)
+        (* erewrite (program_rewrite (λ y, match y with
+        | Some f0 => bind_ (f0 x) (λ x0 : T, raw_program_link (k x0) P1a)
+        | None => _opr (id, (S, T)) x (λ x0 : T, raw_program_link (k x0) P1a)
+        end) _ H1). *)
+        (* If we want to obtain bind and not bind_ then
+          we have to define some tactics to fold these guys.
+          This will be a rewrite and not a fold because of the proof.
+        *)
         match goal with
         | |- ⊨ ⦃ _ ⦄ repr ⦑ ?w ⦒ ≈ _ ⦃ _ ⦄ =>
           eassert (⦑ w ⦒ =
