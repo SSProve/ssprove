@@ -37,7 +37,10 @@ Inductive chUniverse :=
 | chUnit
 | chNat
 | chBool
-| chProd (A B : chUniverse).
+| chProd (A B : chUniverse)
+| chOption (A : chUniverse).
+
+Derive NoConfusion NoConfusionHom EqDec for chUniverse.
 
 Fixpoint chElement (U : chUniverse) : choiceType :=
   match U with
@@ -46,6 +49,7 @@ Fixpoint chElement (U : chUniverse) : choiceType :=
   | chNat => nat_choiceType
   | chBool => bool_choiceType
   | chProd U1 U2 => prod_choiceType (chElement U1) (chElement U2)
+  | chOption U => option_choiceType (chElement U)
   end.
 
 Coercion chElement : chUniverse >-> choiceType.
@@ -59,6 +63,7 @@ Section chUniverseTypes.
     | chUnit , chUnit => true
     | chBool , chBool => true
     | chProd a b , chProd a' b' => chUniverse_test a a' && chUniverse_test b b'
+    | chOption a, chOption a' => chUniverse_test a a'
     | _ , _ => false
     end.
 
@@ -68,16 +73,21 @@ Section chUniverseTypes.
   Lemma chUniverse_eqP : Equality.axiom chUniverse_eq.
   Proof.
     move=> x y.
-    induction x as [ | | | | x1 ih1 x2 ih2] in y |- *.
-    all: destruct y as [ | | | | y1 y2].
+    induction x as [ | | | | x1 ih1 x2 ih2 | x1 ih1] in y |- *.
+    all: destruct y as [ | | | | y1 y2 | y1].
     all: simpl.
     all: try solve [ right ; discriminate ].
     all: try solve [ left ; reflexivity ].
-    destruct (ih1 y1), (ih2 y2).
-    all: simpl.
-    all: subst.
-    all: try solve [ right ; congruence ].
-    left. reflexivity.
+    1: { destruct (ih1 y1), (ih2 y2).
+         all: simpl.
+         all: subst.
+         all: try solve [ right ; congruence ].
+         left. reflexivity. }
+    1: { destruct (ih1 y1).
+         all: subst.
+         1: { left. reflexivity. }
+         1: { right. congruence. }
+    }
   Qed.
 
   Lemma chUniverse_refl :
@@ -108,10 +118,16 @@ Section chUniverseTypes.
   | chNat, chBool => false
   | chNat, chNat => false
   | chNat, _ => true
+  | chProd _ _, chZero => false
+  | chProd _ _, chUnit => false
+  | chProd _ _, chBool => false
+  | chProd _ _, chNat => false
   | chProd u1 u2, chProd w1 w2 =>
     (chUniverse_lt u1 w1) ||
     (chUniverse_eq u1 w1 && chUniverse_lt u2 w2)
-  | chProd _ _, _ => false
+  | chProd _ _, _ => true
+  | chOption u, chOption w => chUniverse_lt u w
+  | chOption _, _ => false
   end.
 
 
@@ -121,16 +137,18 @@ Section chUniverseTypes.
   Lemma chUniverse_lt_transitive : transitive (T:=chUniverse) chUniverse_lt.
   Proof.
     intros v u w h1 h2.
-    induction u as [ | | | | u1 ih1 u2 ih2] in v, w, h1, h2 |- *.
+    induction u as [ | | | | u1 ih1 u2 ih2 | u ih] in v, w, h1, h2 |- *.
     - destruct w. all: try reflexivity.
       destruct v. all: discriminate.
     - destruct v. all: try discriminate.
       + destruct w. all: try discriminate.
-        reflexivity.
+        all: reflexivity.
       + destruct w. all: try discriminate.
         all: reflexivity.
       + destruct w. all: try discriminate.
-        reflexivity.
+        all: reflexivity.
+      + destruct w. all: try discriminate.
+        all: reflexivity.
     - destruct w. all: try reflexivity.
       + destruct v. all: discriminate.
       + destruct v. all: discriminate.
@@ -138,11 +156,13 @@ Section chUniverseTypes.
       + destruct v. all: discriminate.
     - destruct v. all: try discriminate.
       + destruct w. all: try discriminate.
-        reflexivity.
+        all: reflexivity.
       + destruct w. all: try discriminate.
-        reflexivity.
+        all: reflexivity.
+      + destruct w. all: try discriminate.
+        all: reflexivity.
     - destruct w. all: try discriminate; destruct v; try discriminate.
-      simpl.
+      all: try reflexivity; simpl.
       apply/orP.
       simpl in h1, h2.
       move: h1. move/orP => h1.
@@ -161,13 +181,15 @@ Section chUniverseTypes.
         right. apply/andP. split.
         * apply/eqP. reflexivity.
         * apply (ih2 v2). all: auto.
+    - destruct w. all: try discriminate; destruct v; try discriminate.
+      apply (ih v). all: assumption.
   Qed.
 
   Lemma chUniverse_lt_areflexive :
     ∀ x, ~~ chUniverse_lt x x.
   Proof.
     intros x.
-    induction x as [ | | | | x1 ih1 x2 ih2] in |- *.
+    induction x as [ | | | | x1 ih1 x2 ih2 | x ih] in |- *.
     all: intuition.
     simpl.
     apply/norP; split.
@@ -181,7 +203,7 @@ Section chUniverseTypes.
       ~~ (chUniverse_test x y) ==> (chUniverse_lt x y || chUniverse_lt y x).
   Proof.
     intros x y.
-    induction x as [ | | | | x1 ih1 x2 ih2] in y |- *.
+    induction x as [ | | | | x1 ih1 x2 ih2| x ih] in y |- *.
     all: try solve [ destruct y ; intuition ; reflexivity ].
     destruct y. all: try (intuition; reflexivity).
     cbn. intuition.
@@ -319,6 +341,7 @@ Section chUniverseTypes.
   | chBool => GenTree.Leaf 2
   | chNat => GenTree.Leaf 3
   | chProd l r => GenTree.Node 1 [:: encode l ; encode r]
+  | chOption u => GenTree.Node 2 [:: encode u]
   end.
 
   Fixpoint decode (t : GenTree.tree nat) : option chUniverse :=
@@ -332,13 +355,20 @@ Section chUniverseTypes.
       | Some l, Some r => Some (chProd l r)
       | _, _ => None
       end
+    | GenTree.Node 2 [:: l] =>
+      match decode l with
+      | Some l => Some (chOption l)
+      | _ => None
+      end
     | _ => None
     end.
 
   Lemma codeK : pcancel encode decode.
   Proof.
     move=> t. induction t; intuition.
-    simpl. rewrite IHt1. rewrite IHt2. reflexivity.
+    all: simpl.
+    - rewrite IHt1. rewrite IHt2. reflexivity.
+    - rewrite IHt. reflexivity.
   Defined.
 
   Definition chUniverse_choiceMixin := PcanChoiceMixin codeK.
