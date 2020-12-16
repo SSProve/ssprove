@@ -212,6 +212,12 @@ Module PackageNotation (π : RulesParam).
     format "x  ←  get  n  ;;  '/' c")
     : package_scope.
 
+  Notation "' p ← 'get' n ;; c" :=
+    (getr n _ (λ x, let p := x in c))
+    (at level 100, p pattern, n at next level, right associativity,
+    format "' p  ←  get  n  ;;  '/' c")
+    : package_scope.
+
   Declare Custom Entry pack_op.
 
   Notation "#[ f ] : A → B" :=
@@ -227,10 +233,23 @@ Module PackageNotation (π : RulesParam).
     format "x  ←  op  [  o  ]  n  ;;  '/' c")
     : package_scope.
 
+  Notation "' p ← 'op' [ o ] n ;; c" :=
+    (opr o _ n (λ x, let p := x in c))
+    (at level 100, p pattern, n at next level, o custom pack_op at level 2,
+    right associativity,
+    format "' p  ←  op  [  o  ]  n  ;;  '/' c")
+    : package_scope.
+
   Notation "x ← 'sample' o ;; c" :=
     (sampler o (λ x, c))
     (at level 100, o at next level, right associativity,
     format "x  ←  sample  o  ;;  '/' c")
+    : package_scope.
+
+  Notation "' p ← 'sample' o ;; c" :=
+    (sampler o (λ x, let p := x in c))
+    (at level 100, p pattern, o at next level, right associativity,
+    format "' p  ←  sample  o  ;;  '/' c")
     : package_scope.
 
   Notation "x <$ o ;; c" :=
