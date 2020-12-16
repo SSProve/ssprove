@@ -467,6 +467,20 @@ Module PackageRHL (π : RulesParam).
          (arg : S),
          ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄ repr (exist _ (f arg) (hpf arg)) ≈ repr (exist _ (g arg) (hpg arg)) ⦃ λ '(b1, s0) '(b2, s3), b1 = b2 /\ I (s0, s3) ⦄.
 
+(* Lemma sig_rewrite_aux :
+  ∀ {T A} {P : A → Prop} {x y} (p : T → A) (h : P (p x)) (e : x = y),
+    P (p y).
+Proof.
+  intros T A P x y p h e. subst. auto.
+Defined.
+
+Lemma sig_rewrite :
+  ∀ {T A} {P : A → Prop} {x y} (p : T → A) (h : P (p x)) (e : x = y),
+    exist _ (p x) h = exist _ (p y) (sig_rewrite_aux p h e).
+Proof.
+  intros T A P x y p h e. subst. reflexivity.
+Qed. *)
+
     (* TODO MOVE *)
     Lemma program_rewrite_valid :
       ∀ {A B L I} {x : A}
@@ -487,6 +501,22 @@ Module PackageRHL (π : RulesParam).
       intros A B L I x p h y e.
       apply program_ext. cbn. subst. reflexivity.
     Qed.
+
+    Ltac rewrite_prog e :=
+      match type of e with
+      | ?x = _ =>
+        match goal with
+        | |- context [ exist ?P ?p ?h ] =>
+          let foo := fresh "foo" in
+          set (foo := p) ;
+          pattern x in foo ;
+          lazymatch goal with
+          | h := (fun x => @?p x) ?y |- _ =>
+            subst foo ;
+            erewrite (program_rewrite p _ e)
+          end
+        end
+      end.
 
     (* Ltac rewrite_prog e :=
       lazymatch type of e with
@@ -539,10 +569,7 @@ Module PackageRHL (π : RulesParam).
           noconf e. noconf e0. reflexivity.
         }
         (* TW: The following works *)
-        (* erewrite (program_rewrite (λ y, match y with
-        | Some f0 => bind_ (f0 x) (λ x0 : T, raw_program_link (k x0) P1a)
-        | None => _opr (id, (S, T)) x (λ x0 : T, raw_program_link (k x0) P1a)
-        end) _ H1). *)
+        (* rewrite_prog H1. *)
         (* If we want to obtain bind and not bind_ then
           we have to define some tactics to fold these guys.
           This will be a rewrite and not a fold because of the proof.
