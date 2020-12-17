@@ -604,7 +604,9 @@ Qed. *)
             apply fsubsetUl.
           - eapply valid_package_inject_locations.
             2: eauto.
-            admit.
+            eapply fsubset_trans.
+            + eapply fsubsetUl.
+            + eapply fsubsetUr.
         }
         (* Would need funext rewrite *)
         (* unshelve erewrite fold_program_link. *)
@@ -616,7 +618,6 @@ Qed. *)
           destruct (chUniverse_eqP S S), (chUniverse_eqP T T). all: try contradiction.
           noconf e. noconf e0. reflexivity. }
         fold_repr.
-        (* TW: Here it doesn't work for some reason. *)
         rewrite_prog H2.
         unshelve erewrite fold_bind.
         { intro. eapply raw_program_link_valid.
@@ -625,7 +626,9 @@ Qed. *)
             apply fsubsetUl.
           - eapply valid_package_inject_locations.
             2: eauto.
-            admit.
+            eapply fsubset_trans.
+            + eapply fsubsetUr.
+            + eapply fsubsetUr.
         }
         rewrite !repr_bind.
         eapply bind_rule_pp.
@@ -647,8 +650,10 @@ Qed. *)
           cbn -[semantic_judgement] in H0.
           change (repr' ?p ?h) with (repr (exist _ p h)) in H0.
           eapply rhl_repr_change_all.
-          1: reflexivity. 1: reflexivity. exact H0.
-      - unfold program_link. unfold injectLocations. unfold opackage_inject_locations.
+          1: reflexivity. 1: reflexivity.
+          exact H0.
+      - unfold program_link. unfold injectLocations.
+        unfold opackage_inject_locations.
         cbn - [semantic_judgement bindrFree].
         destruct hA as [hA1 hA2].
         eapply bind_rule_pp.
@@ -656,8 +661,6 @@ Qed. *)
           ++ assumption.
           ++ exact hA1.
           Unshelve.
-          * admit.
-          * admit.
           * exact LA.
           * cbn. auto.
         + intros a1 a2.
@@ -720,8 +723,7 @@ Qed. *)
           change (repr' ?p ?h) with (repr (exist _ p h)) in H0.
           eapply rhl_repr_change_all.
           1: reflexivity. 1: reflexivity. exact H0.
-    (* ER : No goals remaining, but won't qed *)
-    Admitted.
+    Qed.
 
     (* ER: How do we connect the package theory with the RHL?
            Something along the following lines should hold? *)
