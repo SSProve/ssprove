@@ -507,18 +507,16 @@ Qed. *)
       | ?x = _ =>
         match goal with
         | |- context [ exist ?P ?p ?h ] =>
-          let foo := fresh "foo" in
-          set (foo := p) ;
-          pattern x in foo ;
-          lazymatch goal with
-          | h := (fun x => @?q x) ?y |- _ =>
-            subst foo ;
-            (* I use progress but it might be better to check
-              that x occurs in foo.
-              TODO: It actually doesn't work anyway because it still
-              rewrites the hidden proof…
-            *)
-            progress erewrite (program_rewrite q _ e)
+          lazymatch p with
+          | context [ x ] =>
+            let foo := fresh "foo" in
+            set (foo := p) ;
+            pattern x in foo ;
+            lazymatch goal with
+            | h := (fun x => @?q x) ?y |- _ =>
+              subst foo ;
+              erewrite (program_rewrite q _ e)
+            end
           end
         end
       end.
@@ -598,7 +596,6 @@ Qed. *)
           all: try contradiction.
           noconf e. noconf e0. reflexivity.
         }
-        (* TW: The following works, but I want to automate it better. *)
         rewrite_prog H1.
         unshelve erewrite fold_bind.
         { intro. eapply raw_program_link_valid.
@@ -620,46 +617,16 @@ Qed. *)
           noconf e. noconf e0. reflexivity. }
         fold_repr.
         (* TW: Here it doesn't work for some reason. *)
-        (* rewrite_prog H2. *)
-        match goal with
-        | |- ⊨ ⦃ _ ⦄ _ ≈ repr ⦑ ?w ⦒ ⦃ _ ⦄ =>
-          eassert (⦑ w ⦒ =
-                  bind (LA :|: (L1 :|: L2)) Game_import ⦑ f2 x ⦒ (λ x0 : T, ⦑ raw_program_link (k x0) P2a ⦒ )) as Hr
-        end.
-        { apply program_ext. cbn - [lookup_op]. rewrite H2. reflexivity. }
-        rewrite Hr.
-        Unshelve.
-        2: { rewrite H2.
-             eapply (valid_injectLocations _ (LA :|: L2)).
-             1: { apply fsetUS. apply fsubsetUr. }
-             apply bind_valid.
-             - eapply (valid_injectLocations _ L2).
-               + apply fsubsetUr.
-               + apply K22.
-             - intros x0.
-               eapply raw_program_link_valid.
-               + eapply (valid_injectLocations _ LA).
-                 ++  apply fsubsetUl.
-                 ++ apply hA2.
-               + eapply (valid_package_inject_locations).
-                 ++ apply fsubsetUr.
-                 ++ apply P2b. }
-        2: { cbn.
-             eapply (valid_injectLocations _ (LA :|: L2)).
-             1: { apply fsetUS. apply fsubsetUr. }
-             eapply valid_injectLocations.
-             + apply fsubsetUr.
-             + apply K22. }
-        2: { cbn.
-             eapply (valid_injectLocations _ (LA :|: L2)).
-             1: { apply fsetUS. apply fsubsetUr. }
-               eapply raw_program_link_valid.
-               + eapply (valid_injectLocations _ LA).
-                 ++  apply fsubsetUl.
-                 ++ apply hA2.
-               + eapply (valid_package_inject_locations).
-                 ++ apply fsubsetUr.
-                 ++ apply P2b. }
+        rewrite_prog H2.
+        unshelve erewrite fold_bind.
+        { intro. eapply raw_program_link_valid.
+          - eapply valid_injectLocations.
+            2: eapply hA2.
+            apply fsubsetUl.
+          - eapply valid_package_inject_locations.
+            2: eauto.
+            admit.
+        }
         rewrite !repr_bind.
         eapply bind_rule_pp.
         + unfold eq_up_to_inv in H.
@@ -689,6 +656,7 @@ Qed. *)
           ++ assumption.
           ++ exact hA1.
           Unshelve.
+          * admit.
           * admit.
           * exact LA.
           * cbn. auto.
