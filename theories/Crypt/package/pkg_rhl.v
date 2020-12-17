@@ -544,6 +544,19 @@ Qed. *)
       apply program_ext. cbn. reflexivity.
     Qed.
 
+    Lemma fold_program_link :
+      ∀ A L Im Ir (v : raw_program A) (p : raw_package)
+        (hv : valid_program L Im v)
+        (hp : valid_package L Ir Im p)
+        (h : valid_program L Ir (raw_program_link v p)),
+          exist _ (raw_program_link v p) h =
+          program_link (exist _ v hv) (exist _ p hp).
+    Proof.
+      intros A L Im Ir v p hv hp h.
+      apply program_ext. cbn.
+      reflexivity.
+    Qed.
+
     Lemma some_lemma_for_prove_relational {export : Interface} {B} {L1 L2 LA}
                (P1 : opackage L1 Game_import export)
                (P2 : opackage L2 Game_import export)
@@ -581,54 +594,18 @@ Qed. *)
           noconf e. noconf e0. reflexivity.
         }
         (* TW: The following works, but I want to automate it better. *)
-        (* rewrite_prog H1.
+        rewrite_prog H1.
         unshelve erewrite fold_bind.
         { intro. eapply raw_program_link_valid.
           - eapply valid_injectLocations.
             2: eapply hA2.
-            (* TODO Devise a nice tactic for this *)
+            apply fsubsetUl.
+          - eapply valid_package_inject_locations.
+            2: eauto.
             admit.
-          - admit.
-        } *)
-        match goal with
-        | |- ⊨ ⦃ _ ⦄ repr ⦑ ?w ⦒ ≈ _ ⦃ _ ⦄ =>
-          eassert (⦑ w ⦒ =
-                  bind (LA :|: (L1 :|: L2)) Game_import ⦑ f x ⦒ (λ x0 : T, ⦑ raw_program_link (k x0) P1a ⦒ )) as Hl
-        end.
-        { apply program_ext. cbn - [lookup_op]. rewrite H1. reflexivity. }
-        rewrite Hl.
-        Unshelve.
-        2: { rewrite H1.
-             eapply (valid_injectLocations _ (LA :|: L1)).
-             1: { apply fsetUS. apply fsubsetUl. }
-             apply bind_valid.
-             - eapply (valid_injectLocations _ L1).
-               + apply fsubsetUr.
-               + apply K2.
-             - intros x0.
-               eapply raw_program_link_valid.
-               + eapply (valid_injectLocations _ LA).
-                 ++  apply fsubsetUl.
-                 ++ apply hA2.
-               + eapply (valid_package_inject_locations).
-                 ++ apply fsubsetUr.
-                 ++ apply P1b. }
-        2: { cbn.
-             eapply (valid_injectLocations _ (LA :|: L1)).
-             1: { apply fsetUS. apply fsubsetUl. }
-             eapply valid_injectLocations.
-             + apply fsubsetUr.
-             + apply K2. }
-        2: { cbn.
-             eapply (valid_injectLocations _ (LA :|: L1)).
-             1: { apply fsetUS. apply fsubsetUl. }
-               eapply raw_program_link_valid.
-               + eapply (valid_injectLocations _ LA).
-                 ++  apply fsubsetUl.
-                 ++ apply hA2.
-               + eapply (valid_package_inject_locations).
-                 ++ apply fsubsetUr.
-                 ++ apply P1b. }
+        }
+        (* Would need funext rewrite *)
+        (* unshelve erewrite fold_program_link. *)
         pose foo2 := (P2b (id, (S, T)) hA1).
         destruct foo2 as [f2 [K12 K22]].
         cbn - [semantic_judgement lookup_op bind].
@@ -637,6 +614,8 @@ Qed. *)
           destruct (chUniverse_eqP S S), (chUniverse_eqP T T). all: try contradiction.
           noconf e. noconf e0. reflexivity. }
         fold_repr.
+        (* TW: Here it doesn't work for some reason. *)
+        (* rewrite_prog H2. *)
         match goal with
         | |- ⊨ ⦃ _ ⦄ _ ≈ repr ⦑ ?w ⦒ ⦃ _ ⦄ =>
           eassert (⦑ w ⦒ =
@@ -705,6 +684,7 @@ Qed. *)
           ++ assumption.
           ++ exact hA1.
           Unshelve.
+          * admit.
           * exact LA.
           * cbn. auto.
         + intros a1 a2.
