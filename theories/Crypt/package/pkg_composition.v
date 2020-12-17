@@ -1252,4 +1252,45 @@ Module PackageComposition (π : ProbRulesParam).
 
   End ID.
 
+  (* Some folding lemmata *)
+
+  Lemma valid_bind_1 :
+    ∀ {A B L I} {v : raw_program A} {k : A → raw_program B},
+      valid_program L I (bind_ v k) →
+      valid_program L I v.
+  Proof.
+    intros A B L I v k h.
+    induction v in k, h |- *.
+    - cbn. auto.
+    - cbn. cbn in h. intuition eauto.
+    - cbn. cbn in h. intuition eauto.
+    - cbn. cbn in h. intuition eauto.
+    - cbn. cbn in h. intuition eauto.
+  Qed.
+
+  Lemma fold_bind :
+    ∀ A B L I
+      (v : raw_program A) (k : A → raw_program B)
+      (h : valid_program L I (bind_ v k))
+      (h' : ∀ x, valid_program L I (k x)),
+      exist _ (bind_ v k) h =
+      bind L I (exist _ v (valid_bind_1 h)) (λ x, exist _ (k x) (h' x)).
+  Proof.
+    intros A B L I v k h h'.
+    apply program_ext. cbn. reflexivity.
+  Qed.
+
+  Lemma fold_program_link :
+    ∀ A L Im Ir (v : raw_program A) (p : raw_package)
+      (hv : valid_program L Im v)
+      (hp : valid_package L Ir Im p)
+      (h : valid_program L Ir (raw_program_link v p)),
+        exist _ (raw_program_link v p) h =
+        program_link (exist _ v hv) (exist _ p hp).
+  Proof.
+    intros A L Im Ir v p hv hp h.
+    apply program_ext. cbn.
+    reflexivity.
+  Qed.
+
 End PackageComposition.
