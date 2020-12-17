@@ -219,34 +219,91 @@ Module PackageRHL (π : RulesParam).
     Let getLocations {I E} (P : package I E) : {fset Location} :=
       let '(locs; PP) := P in locs.
 
+    Definition opaque_me {B} {L} {I E} (p : raw_package) (hp : valid_package L I E p)
+               (o : opsig) (ho : o \in E) (arg : src o)
+               (e : lookup_op p o = None) : B.
+    Proof.
+      (* TW: Done several times, I should make a lemma. *)
+      exfalso.
+      destruct o as [n [S T]].
+      cbn - [lookup_op] in e.
+      specialize (hp _ ho). cbn in hp. destruct hp as [f [ef hf]].
+      cbn in e. destruct (p n) as [[St [Tt g]]|] eqn:e2.
+      2: discriminate.
+      destruct chUniverse_eqP.
+      2:{ noconf ef. congruence. }
+      destruct chUniverse_eqP.
+      2:{ noconf ef. congruence. }
+      discriminate.
+    Qed.
+
     Definition get_raw_package_op {L} {I E : Interface} (p : raw_package)
                (hp : valid_package L I E p)
                (o : opsig) (ho : o \in E) (arg : src o) : program L I (tgt o).
     Proof.
-      (* ER: updated using the same order as TW below *)
-      destruct (lookup_op p o) as [f|] eqn:e.
-      2:{
-        (* TW: Done several times, I should make a lemma. *)
-        exfalso.
+        (* ER: updated using the same order as TW below *)
+        destruct (lookup_op p o) as [f|] eqn:e.
+        2:{ apply (opaque_me p hp o ho arg e). }
+        exists (f arg).
         destruct o as [n [S T]].
-        cbn - [lookup_op] in e.
-        specialize (hp _ ho). cbn in hp. destruct hp as [f [ef hf]].
-        cbn in e. destruct (p n) as [[St [Tt g]]|] eqn:e2.
-        2: discriminate.
-        destruct chUniverse_eqP.
-        2:{ noconf ef. congruence. }
-        destruct chUniverse_eqP.
-        2:{ noconf ef. congruence. }
-        discriminate.
-      }
-      exists (f arg).
-      destruct o as [n [S T]].
-      cbn - [lookup_op] in *.
-      eapply lookup_op_valid in hp. 2: eauto.
-      cbn - [lookup_op] in hp. destruct hp as [g [eg hg]].
-      rewrite e in eg. noconf eg.
-      eapply hg.
+        cbn - [lookup_op] in *.
+        eapply lookup_op_valid in hp. 2: eauto.
+        cbn - [lookup_op] in hp. destruct hp as [g [eg hg]].
+        rewrite e in eg. noconf eg.
+        eapply hg.
     Defined.
+
+    Definition get_raw_package_op_lookup {L} {I E : Interface} (p : raw_package)
+               (hp : valid_package L I E p)
+               (o : opsig) (ho : o \in E) (arg : src o)
+               (f : src o -> raw_program (tgt o))
+               (H : lookup_op p o = Some f) :
+      (get_raw_package_op p hp o ho arg) ∙1 = f arg.
+    Proof.
+      unfold get_raw_package_op.
+    Admitted.
+
+    Definition raw_program_link_ext {E : Interface}
+               (o : opsig) (ho : o \in E) (arg : src o) (p1 p2 : raw_package)
+               (f : src o -> raw_program (tgt o))
+               (Hf : lookup_op p1 o = Some f)
+               (g : src o -> raw_program (tgt o))
+               (Hg : lookup_op (raw_link p1 p2) o = Some g)
+      : g arg = raw_program_link (f arg) p2.
+    Proof.
+      unfold raw_link in Hg.
+      destruct o as [id [S T]].
+      assert ((fun x => raw_program_link (f x) p2) = g).
+      { extensionality x.
+        unfold raw_package in p1.
+        unfold lookup_op in Hg.
+        rewrite mapmE in Hg.
+        unfold omap in Hg.
+        unfold obind in Hg.
+        unfold oapp in Hg.
+        assert (p1 id = Some (S; T; f)).
+        { unfold lookup_op in Hf.
+          destruct (p1 id) eqn:Hp1id.
+          2: { inversion Hf. }
+          destruct p as [S' [T' f']].
+          destruct chUniverse_eqP.
+          2:{ noconf ef. congruence. }
+          destruct chUniverse_eqP.
+          2:{ noconf ef. congruence. }
+          noconf e. noconf e0.
+          repeat f_equal. inversion Hf.
+          rewrite -H0. reflexivity. }
+        rewrite H in Hg.
+        destruct chUniverse_eqP.
+        2:{ noconf ef. congruence. }
+        destruct chUniverse_eqP.
+        2:{ noconf ef. congruence. }
+        noconf e. noconf e0.
+        inversion Hg.
+        reflexivity. }
+      rewrite -H.
+      reflexivity.
+    Qed.
 
     Lemma get_raw_package_op_link {L} {I M E} {o : opsig}
           (hin : o \in E) (arg : src o) (p1 p2 : raw_package)
@@ -255,8 +312,34 @@ Module PackageRHL (π : RulesParam).
           : (get_raw_package_op (raw_link p1 p2) hpl o hin arg) ∙1 =
             raw_program_link ((get_raw_package_op p1 hp1 o hin arg) ∙1) p2.
     Proof.
-      admit.
-    Admitted.
+      destruct (lookup_op (raw_link p1 p2) o) as [f|] eqn:e.
+      2: { unfold valid_package in hpl.
+           pose (hpl o hin) as H.
+           destruct o as [id [S T]].
+           destruct H as [f [H1 H2]].
+           unfold lookup_op in e.
+           rewrite H1 in e.
+           destruct chUniverse_eqP.
+           2:{ noconf ef. congruence. }
+           destruct chUniverse_eqP.
+           2:{ noconf ef. congruence. }
+           discriminate. }
+      rewrite (get_raw_package_op_lookup (raw_link p1 p2) _ o hin arg f e).
+      destruct (lookup_op p1 o) as [fl|] eqn:el.
+      2: { unfold valid_package in hp1.
+           pose (hp1 o hin) as H.
+           destruct o as [id [S T]].
+           destruct H as [f' [H1 H2]].
+           unfold lookup_op in el.
+           rewrite H1 in el.
+           destruct chUniverse_eqP.
+           2:{ noconf ef. congruence. }
+           destruct chUniverse_eqP.
+           2:{ noconf ef. congruence. }
+           discriminate. }
+      rewrite (get_raw_package_op_lookup p1 _ o hin arg fl el).
+      apply (raw_program_link_ext o hin arg p1 p2 fl el f e).
+    Qed.
 
     Lemma get_raw_package_op_trim {L} {I E} {o : opsig}
           (hin : o \in E) (arg : src o) (p : raw_package)
@@ -265,7 +348,26 @@ Module PackageRHL (π : RulesParam).
       : get_raw_package_op (trim E p) hpt o hin arg =
         get_raw_package_op p hp o hin arg.
     Proof.
-    Admitted.
+      apply program_ext.
+      destruct (lookup_op p o) as [f|] eqn:e.
+      2: { unfold valid_package in hp.
+           pose (hp o hin) as H.
+           destruct o as [id [S T]].
+           destruct H as [f [H1 H2]].
+           unfold lookup_op in e.
+           rewrite H1 in e.
+           destruct chUniverse_eqP.
+           2:{ noconf ef. congruence. }
+           destruct chUniverse_eqP.
+           2:{ noconf ef. congruence. }
+           discriminate. }
+      rewrite (get_raw_package_op_lookup p _ o hin arg f e).
+      assert (lookup_op (trim E p) o = Some f) as H.
+      { rewrite (lookup_op_trim E o p).
+        unfold obind, oapp. rewrite e. rewrite hin. reflexivity. }
+      rewrite (get_raw_package_op_lookup (trim E p) _ o hin arg f H).
+      reflexivity.
+    Qed.
 
     Lemma get_raw_package_op_ext {L1 L2} {I E} {o : opsig}
           (hin : o \in E) (arg : src o) (p : raw_package)
@@ -274,7 +376,22 @@ Module PackageRHL (π : RulesParam).
       : (get_raw_package_op p hp1 o hin arg) ∙1 =
         (get_raw_package_op p hp2 o hin arg) ∙1.
     Proof.
-    Admitted.
+      destruct (lookup_op p o) as [f|] eqn:e.
+      2: { unfold valid_package in hp1.
+           pose (hp1 o hin) as H.
+           destruct o as [id [S T]].
+           destruct H as [f [H1 H2]].
+           unfold lookup_op in e.
+           rewrite H1 in e.
+           destruct chUniverse_eqP.
+           2:{ noconf ef. congruence. }
+           destruct chUniverse_eqP.
+           2:{ noconf ef. congruence. }
+           discriminate. }
+      rewrite (get_raw_package_op_lookup p _ o hin arg f e).
+      rewrite (get_raw_package_op_lookup p _ o hin arg f e).
+      reflexivity.
+    Qed.
 
     Definition get_opackage_op {L} {I E : Interface} (P : opackage L I E)
                (op : opsig) (Hin : op \in E) (arg : src op) : program L I (tgt op).
