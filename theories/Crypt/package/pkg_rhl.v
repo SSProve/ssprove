@@ -503,7 +503,7 @@ Qed. *)
     Qed.
 
     Ltac rewrite_prog e :=
-      match type of e with
+      lazymatch type of e with
       | ?x = _ =>
         match goal with
         | |- context [ exist ?P ?p ?h ] =>
@@ -511,9 +511,14 @@ Qed. *)
           set (foo := p) ;
           pattern x in foo ;
           lazymatch goal with
-          | h := (fun x => @?p x) ?y |- _ =>
+          | h := (fun x => @?q x) ?y |- _ =>
             subst foo ;
-            erewrite (program_rewrite p _ e)
+            (* I use progress but it might be better to check
+              that x occurs in foo.
+              TODO: It actually doesn't work anyway because it still
+              rewrites the hidden proof…
+            *)
+            progress erewrite (program_rewrite q _ e)
           end
         end
       end.
