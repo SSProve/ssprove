@@ -489,60 +489,6 @@ Module PackageRHL (π : RulesParam).
          (arg : S),
          ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄ repr (exist _ (f arg) (hpf arg)) ≈ repr (exist _ (g arg) (hpg arg)) ⦃ λ '(b1, s0) '(b2, s3), b1 = b2 /\ I (s0, s3) ⦄.
 
-(* Lemma sig_rewrite_aux :
-  ∀ {T A} {P : A → Prop} {x y} (p : T → A) (h : P (p x)) (e : x = y),
-    P (p y).
-Proof.
-  intros T A P x y p h e. subst. auto.
-Defined.
-
-Lemma sig_rewrite :
-  ∀ {T A} {P : A → Prop} {x y} (p : T → A) (h : P (p x)) (e : x = y),
-    exist _ (p x) h = exist _ (p y) (sig_rewrite_aux p h e).
-Proof.
-  intros T A P x y p h e. subst. reflexivity.
-Qed. *)
-
-    (* TODO MOVE *)
-    Lemma program_rewrite_valid :
-      ∀ {A B L I} {x : A}
-        (p : A → raw_program B) (h : valid_program L I (p x)) {y},
-          x = y →
-          valid_program L I (p y).
-    Proof.
-      intros A B L I x p h y e.
-      subst. auto.
-    Qed.
-
-    (* TODO MOVE *)
-    Lemma program_rewrite :
-      ∀ {A B L I} {x : A}
-        (p : A → raw_program B) (h : valid_program L I (p x)) {y} (e : x = y),
-          exist _ (p x) h = exist _ (p y) (program_rewrite_valid p h e).
-    Proof.
-      intros A B L I x p h y e.
-      apply program_ext. cbn. subst. reflexivity.
-    Qed.
-
-    Ltac rewrite_prog e :=
-      lazymatch type of e with
-      | ?x = _ =>
-        match goal with
-        | |- context [ exist ?P ?p ?h ] =>
-          lazymatch p with
-          | context [ x ] =>
-            let foo := fresh "foo" in
-            set (foo := p) ;
-            pattern x in foo ;
-            lazymatch goal with
-            | h := (fun x => @?q x) ?y |- _ =>
-              subst foo ;
-              erewrite (program_rewrite q _ e)
-            end
-          end
-        end
-      end.
-
     Lemma valid_bind_1 :
       ∀ {A B L I} {v : raw_program A} {k : A → raw_program B},
         valid_program L I (bind_ v k) →
@@ -618,7 +564,7 @@ Qed. *)
           all: try contradiction.
           noconf e. noconf e0. reflexivity.
         }
-        rewrite_prog H1.
+        sig rewrite H1.
         unshelve erewrite fold_bind.
         { intro. eapply raw_program_link_valid.
           - eapply valid_injectLocations.
@@ -640,7 +586,7 @@ Qed. *)
           destruct (chUniverse_eqP S S), (chUniverse_eqP T T). all: try contradiction.
           noconf e. noconf e0. reflexivity. }
         fold_repr.
-        rewrite_prog H2.
+        sig rewrite H2.
         unshelve erewrite fold_bind.
         { intro. eapply raw_program_link_valid.
           - eapply valid_injectLocations.

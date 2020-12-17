@@ -1,6 +1,11 @@
 (* Global utility *)
-(* Stolen from MetaCoq *)
+(* Partly stolen from MetaCoq *)
 
+From Coq Require Import Utf8.
+
+Set Bullet Behavior "Strict Subproofs".
+Set Default Goal Selector "!".
+Set Primitive Projections.
 
 (* Simple products *)
 
@@ -22,3 +27,42 @@ Notation "( x ; y ; z ; t ; u )" := (x ; ( y ; (z ; (t ; u)))).
 Notation "( x ; y ; z ; t ; u ; v )" := (x ; ( y ; (z ; (t ; (u ; v))))).
 Notation "x .π1" := (@projT1 _ _ x) (at level 3, format "x '.π1'").
 Notation "x .π2" := (@projT2 _ _ x) (at level 3, format "x '.π2'").
+
+
+(* Handy rewrite on sig *)
+
+Lemma sig_rewrite_aux :
+  ∀ {T A} {P : A → Prop} {x y} (p : T → A) (h : P (p x)) (e : x = y),
+    P (p y).
+Proof.
+  intros T A P x y p h e. subst. auto.
+Defined.
+
+Lemma sig_rewrite :
+  ∀ {T A} {P : A → Prop} {x y} (p : T → A) (h : P (p x)) (e : x = y),
+    exist _ (p x) h = exist _ (p y) (sig_rewrite_aux p h e).
+Proof.
+  intros T A P x y p h e. subst. reflexivity.
+Qed.
+
+Ltac sig_rewrite e :=
+  lazymatch type of e with
+  | ?x = _ =>
+    match goal with
+    | |- context [ exist ?P ?p ?h ] =>
+      lazymatch p with
+      | context [ x ] =>
+        let foo := fresh "foo" in
+        set (foo := p) ;
+        pattern x in foo ;
+        lazymatch goal with
+        | h := (fun x => @?q x) ?y |- _ =>
+          subst foo ;
+          erewrite (sig_rewrite q _ e)
+        end
+      end
+    end
+  end.
+
+Tactic Notation "sig" "rewrite" hyp(e) :=
+  sig_rewrite e.
