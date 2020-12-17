@@ -248,14 +248,32 @@ Module PackageRHL (π : RulesParam).
       eapply hg.
     Defined.
 
-    Lemma get_raw_package_op_link {L} {I E} {o : opsig}
+    Lemma get_raw_package_op_link {L} {I M E} {o : opsig}
           (hin : o \in E) (arg : src o) (p1 p2 : raw_package)
-          (hp1 : valid_package L I E p1)
+          (hp1 : valid_package L M E p1)
           (hpl : valid_package L I E (raw_link p1 p2))
           : (get_raw_package_op (raw_link p1 p2) hpl o hin arg) ∙1 =
             raw_program_link ((get_raw_package_op p1 hp1 o hin arg) ∙1) p2.
     Proof.
       admit.
+    Admitted.
+
+    Lemma get_raw_package_op_trim {L} {I E} {o : opsig}
+          (hin : o \in E) (arg : src o) (p : raw_package)
+          (hp : valid_package L I E p)
+          (hpt : valid_package L I E (trim E p))
+      : get_raw_package_op (trim E p) hpt o hin arg =
+        get_raw_package_op p hp o hin arg.
+    Proof.
+    Admitted.
+
+    Lemma get_raw_package_op_ext {L1 L2} {I E} {o : opsig}
+          (hin : o \in E) (arg : src o) (p : raw_package)
+          (hp1 : valid_package L1 I E p)
+          (hp2 : valid_package L2 I E p)
+      : (get_raw_package_op p hp1 o hin arg) ∙1 =
+        (get_raw_package_op p hp2 o hin arg) ∙1.
+    Proof.
     Admitted.
 
     Definition get_opackage_op {L} {I E : Interface} (P : opackage L I E)
@@ -385,6 +403,39 @@ Module PackageRHL (π : RulesParam).
     Definition INV (L : {fset Location}) (I : heap_choiceType * heap_choiceType -> Prop) :=
       forall s1 s2, (I (s1, s2) -> forall l, l \in L -> get_heap s1 l = get_heap s2 l) /\
                (I (s1, s2) -> forall l v, l \in L -> I (set_heap s1 l v, set_heap s2 l v)).
+
+    Definition INV' (L1 L2 : {fset Location}) (I : heap_choiceType * heap_choiceType -> Prop) :=
+      forall s1 s2, (I (s1, s2) -> forall l, l \notin L1 -> l \notin L2 -> get_heap s1 l = get_heap s2 l) /\
+               (I (s1, s2) -> forall l v, l \notin L1 -> l \notin L2 -> I (set_heap s1 l v, set_heap s2 l v)).
+
+    Lemma INV'_to_INV (L L1 L2 : {fset Location}) (I : heap_choiceType * heap_choiceType -> Prop)
+          (HINV' : INV' L1 L2 I) (Hdisjoint1 : fdisjoint L L1) (Hdisjoint2 : fdisjoint L L2)
+      : INV L I.
+    Proof.
+      unfold INV.
+      intros s1 s2. split.
+      - intros hi l hin.
+        apply HINV'.
+        + assumption.
+        + move: Hdisjoint1. move /fdisjointP => Hdisjoint1.
+          apply Hdisjoint1. assumption.
+        + move: Hdisjoint2. move /fdisjointP => Hdisjoint2.
+          apply Hdisjoint2. assumption.
+      - intros hi l v hin.
+        apply HINV'.
+        + assumption.
+        + move: Hdisjoint1. move /fdisjointP => Hdisjoint1.
+          apply Hdisjoint1. assumption.
+        + move: Hdisjoint2. move /fdisjointP => Hdisjoint2.
+          apply Hdisjoint2. assumption.
+    Qed.
+
+    Lemma fdisjoint_from_link {I E M}
+          {L1 L2} (p1 : opackage L1 M E) (p2 : opackage L2 I M)
+          (H : exists c, c = link (L1;p1) (L2;p2))
+      : fdisjoint L1 L2.
+    Proof.
+    Admitted.
 
     Lemma get_case {L LA} (I : heap_choiceType * heap_choiceType -> Prop)
       (HINV : INV LA I) {l : Location} (Hin : l \in LA)
@@ -551,7 +602,13 @@ Module PackageRHL (π : RulesParam).
         unfold repr'_obligation_1.
         eapply weaken_rule.
         + apply ret_rule.
-        + cbv. intuition.
+        + cbn. intros [h1 h2] post.
+          cbn. unfold SPropMonadicStructures.SProp_op_order.
+          unfold Basics.flip, SPropMonadicStructures.SProp_order.
+          intros [HI Hp].
+          apply Hp. split.
+          * reflexivity.
+          * assumption.
       - cbn in hA. destruct hA as [hA1 hA2].
         pose foo := (P1b o hA1).
         destruct o as [id [S T]].
@@ -695,10 +752,11 @@ Module PackageRHL (π : RulesParam).
 
     (* ER: How do we connect the package theory with the RHL?
            Something along the following lines should hold? *)
-    Definition prove_relational {export : Interface} {L1 L2}
+    Definition prove_relational {L1 L2} {export}
                (P1 : opackage L1 Game_import export)
                (P2 : opackage L2 Game_import export)
                (I : heap_choiceType * heap_choiceType -> Prop)
+               (HINV' : INV' L1 L2 I)
                (Hempty : I (emptym, emptym))
                (H : eq_up_to_inv I P1 P2)
       : (L1; P1) ≈[ fun A => 0 ] (L2; P2).
@@ -710,10 +768,29 @@ Module PackageRHL (π : RulesParam).
       pose r := r' tt.
       (* ER: from linking we should get the fact that A.π1 is disjoint from L1 and L2,
              and then from that conclude that we are invariant on A.π1 *)
+      unshelve epose (fdisjoint_from_link A.π2 P1 _) as Hdisjoint1.
+      { eexists. reflexivity. }
+      unshelve epose (fdisjoint_from_link A.π2 P2 _) as Hdisjoint2.
+      { eexists. reflexivity. }
       assert (INV A.π1 I) as HINV.
-      { destruct A.
+      { destruct A. simpl in Hdisjoint1, Hdisjoint2.
         cbn.  unfold INV.
-        intros s1 s2. admit. }
+        intros s1 s2. split.
+        - intros hi l hin.
+          apply HINV'.
+          + assumption.
+          + move: Hdisjoint1. move /fdisjointP => Hdisjoint1.
+            apply Hdisjoint1. assumption.
+          + move: Hdisjoint2. move /fdisjointP => Hdisjoint2.
+            apply Hdisjoint2. assumption.
+        - intros hi l v hin.
+          apply HINV'.
+          + assumption.
+          + move: Hdisjoint1. move /fdisjointP => Hdisjoint1.
+            apply Hdisjoint1. assumption.
+          + move: Hdisjoint2. move /fdisjointP => Hdisjoint2.
+            apply Hdisjoint2. assumption.
+      }
       pose Hlemma := (some_lemma_for_prove_relational _ _ _ HINV Hempty H r emptym emptym Hempty).
       assert (∀ x y : tgt RUN * heap_choiceType,
                  (let '(b1, s1) := x in λ '(b2, s2), b1 = b2 s/\ I (s1, s2)) y → (fst x == true) ↔ (fst y == true)) as Ha.
@@ -747,7 +824,17 @@ Module PackageRHL (π : RulesParam).
         apply repr'_ext.
         erewrite (get_raw_package_op_link RUN_in_A_export tt (trim A_export ((LA; ⦑ A ⦒).π2) ∙1) (P1 ∙1) _ _).
         apply f_equal2. 2: { reflexivity. }
-        admit.
+        cbn.
+        unfold get_opackage_op. cbn.
+        unshelve erewrite get_raw_package_op_trim.
+        { - apply (valid_package_inject_locations _ _ LA (LA :|: L1)).
+            + apply fsubsetUl.
+            + exact A_valid.
+        }
+        epose (get_raw_package_op_ext RUN_in_A_export tt A) as e.
+        specialize (e (valid_package_inject_locations export A_export LA (LA :|: L1) A
+                                                      (fsubsetUl (T:=nat_ordType) LA L1) A_valid)).
+        eapply e.
       }
       unfold lhs in H0.
       rewrite H0.
@@ -767,7 +854,23 @@ Module PackageRHL (π : RulesParam).
         unfold Pr_raw_package_op. unfold Pr_raw_program.
         unfold thetaFstd. simpl. apply f_equal2. 2: { reflexivity. }
         apply f_equal. apply f_equal.
-        apply repr'_ext. cbn. admit. }
+        unfold getLocations. unfold ".π1".
+        destruct A as [LA [A A_valid]].
+        apply repr'_ext.
+        erewrite (get_raw_package_op_link RUN_in_A_export tt (trim A_export ((LA; ⦑ A ⦒).π2) ∙1) (P2 ∙1) _ _).
+        apply f_equal2. 2: { reflexivity. }
+        cbn.
+        unfold get_opackage_op. cbn.
+        unshelve erewrite get_raw_package_op_trim.
+        { - apply (valid_package_inject_locations _ _ LA (LA :|: L2)).
+            + apply fsubsetUl.
+            + exact A_valid.
+        }
+        epose (get_raw_package_op_ext RUN_in_A_export tt A) as e.
+        specialize (e (valid_package_inject_locations export A_export LA (LA :|: L2) A
+                                                      (fsubsetUl (T:=nat_ordType) LA L2) A_valid)).
+        eapply e.
+      }
       unfold lhs' in H0'.
       rewrite H0'.
       unfold rhs', _rhs', rhs, _rhs.
@@ -800,8 +903,17 @@ Module PackageRHL (π : RulesParam).
       rewrite Hzero.
       reflexivity.
       Unshelve.
-      - admit.
-    Admitted.
+      - apply valid_trim.
+        cbn.
+        apply (valid_package_inject_locations _ _ LA (LA :|: L1)).
+            + apply fsubsetUl.
+            + exact A_valid.
+      - apply valid_trim.
+        cbn.
+        apply (valid_package_inject_locations _ _ LA (LA :|: L2)).
+            + apply fsubsetUl.
+            + exact A_valid.
+    Qed.
   End Games.
 
 End PackageRHL.
