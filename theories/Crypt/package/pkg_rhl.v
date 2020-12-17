@@ -193,6 +193,28 @@ Module PackageRHL (π : RulesParam).
         f_equal.
     Qed.
 
+    Notation "r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
+        (semantic_judgement _ _ (repr c1) (repr c2) (fromPrePost pre post)).
+
+    Theorem rbind_rule {A1 A2 B1 B2 : ord_choiceType}
+            {L1 L2 : {fset Location}}
+            {f1 : A1 -> program L1 Game_import B1}
+            {f2 : A2 -> program L2 Game_import B2}
+            (m1 : program L1 Game_import A1)
+            (m2 : program L2 Game_import A2)
+            (pre : heap * heap -> Prop)
+            (middle : (A1 * heap) -> (A2 * heap) -> Prop)
+            (post : (B1 * heap) -> (B2 * heap) -> Prop)
+            (judge_wm : r⊨ ⦃ pre ⦄ m1 ≈ m2 ⦃ middle ⦄)
+            (judge_wf : forall a1 a2,
+                r⊨ ⦃ fun '(s1, s2) => middle (a1, s1) (a2, s2) ⦄
+                  f1 a1 ≈ f2 a2
+                  ⦃ post ⦄ ) :
+      r⊨ ⦃ pre ⦄ (bind _ _ m1 f1 ) ≈ (bind _ _ m2 f2) ⦃ post ⦄.
+    Proof.
+      rewrite !repr_bind.
+      apply (bind_rule_pp (repr m1) (repr m2) pre middle post judge_wm judge_wf).
+    Qed.
 
     Let getLocations {I E} (P : package I E) : {fset Location} :=
       let '(locs; PP) := P in locs.
