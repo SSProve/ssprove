@@ -64,5 +64,12 @@ Ltac sig_rewrite e :=
     end
   end.
 
+(** Tactic sig rewrite
+
+  Usage: you have e : x = y as an hypothesis and you want to rewrite e inside
+  a term of the form exist _ u v, specifically inside the term u.
+  sig rewrite e will replace x by y in u and update v accordingly.
+
+*)
 Tactic Notation "sig" "rewrite" hyp(e) :=
   sig_rewrite e.
