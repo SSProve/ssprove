@@ -16,12 +16,10 @@
 
 **)
 
-From Coq Require Import Utf8.
-From mathcomp Require Import choice seq ssreflect.
-From extructures Require Import ord fset fmap.
+From mathcomp Require Import ssreflect.
+From extructures Require Import ord fset.
 
 Require Equations.Prop.DepElim.
-From Equations Require Import Equations.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".

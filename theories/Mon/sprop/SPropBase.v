@@ -2,7 +2,6 @@
 (*we try not using sprop this time*)
 (*we redefine the logical connectives by replacing Prop with
 Prop. The name are kept the same*)
-From Coq Require PeanoNat.
 From Mon Require Import Base.
 From mathcomp Require Import ssreflect.
 (* Conflicts with Coq.Utf8 and provides the same things *)

@@ -1,4 +1,4 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From Coq Require Import ssreflect.
 From Mon Require Export Base.
 From Coq Require Import Relation_Definitions Morphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures Monoid.
@@ -365,8 +365,6 @@ Section MonotonicRelations.
 ------------end of forgotten section *)
 End MonotonicRelations.
 
-
-From Coq Require FunctionalExtensionality.
 
 Section Pred.
 (*-----------------------a forgotten section

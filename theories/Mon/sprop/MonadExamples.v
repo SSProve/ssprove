@@ -1,6 +1,5 @@
-From Coq Require Import ssreflect ssrfun ssrbool List.
+From Coq Require Import ssreflect List.
 From Mon Require Export Base.
-From Coq Require Import Relation_Definitions Morphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures Monoid.
 
 Set Implicit Arguments.
