@@ -2,7 +2,9 @@ From Coq Require Import Morphisms.
 From Relational Require Import OrderEnrichedCategory.
 From Mon Require Import SPropBase.
 From mathcomp Require Import all_ssreflect boolp.
-From Crypt Require Import Axioms OrderEnrichedRelativeAdjunctions.
+From Crypt Require Import Axioms.
+
+Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
 
 (*
 This file defines lax functors and lax natural transformations which are in turn used to define lax morphisms between left relative adjunctions in the file LaxMorphismOfRelAdjunctions.v

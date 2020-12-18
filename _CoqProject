@@ -21,28 +21,30 @@ theories/Relational/GenericRulesSimple.v
 theories/Relational/Commutativity.v
 
 theories/Crypt/Prelude.v
+theories/Crypt/Axioms.v
 
 #categorical semantics
-theories/Crypt/ChoiceAsOrd.v
-theories/Crypt/Axioms.v
-theories/Crypt/RelativeMonadMorph_prod.v
-theories/Crypt/only_prob/SubDistr.v
-theories/Crypt/only_prob/FreeProbProg.v
-theories/Crypt/only_prob/Couplings.v
-theories/Crypt/only_prob/Theta_dens.v
-theories/Crypt/only_prob/Theta_exCP.v
-theories/Crypt/LaxComp.v
-theories/Crypt/OrderEnrichedRelativeAdjunctions.v
-theories/Crypt/OrderEnrichedRelativeAdjunctionsExamples.v
-theories/Crypt/LaxFunctorsAndTransf.v
-theories/Crypt/LaxMorphismOfRelAdjunctions.v
-theories/Crypt/TransformingLaxMorph.v
-theories/Crypt/only_prob/ThetaDex.v
-theories/Crypt/UniversalFreeMap.v
-theories/Crypt/StateTransformingLaxMorph.v
-theories/Crypt/StateTransfThetaDens.v
-theories/Crypt/LiftStateful.v
-theories/Crypt/InitialRelativeMonad.v
+
+theories/Crypt/rhl_semantics/ChoiceAsOrd.v
+
+theories/Crypt/rhl_semantics/more_categories/RelativeMonadMorph_prod.v
+theories/Crypt/rhl_semantics/more_categories/LaxComp.v
+theories/Crypt/rhl_semantics/more_categories/OrderEnrichedRelativeAdjunctions.v
+theories/Crypt/rhl_semantics/more_categories/LaxFunctorsAndTransf.v
+theories/Crypt/rhl_semantics/more_categories/LaxMorphismOfRelAdjunctions.v
+theories/Crypt/rhl_semantics/more_categories/TransformingLaxMorph.v
+theories/Crypt/rhl_semantics/more_categories/InitialRelativeMonad.v
+theories/Crypt/rhl_semantics/free_monad/FreeProbProg.v
+theories/Crypt/rhl_semantics/free_monad/UniversalFreeMap.v
+theories/Crypt/rhl_semantics/only_prob/SubDistr.v
+theories/Crypt/rhl_semantics/only_prob/Couplings.v
+theories/Crypt/rhl_semantics/only_prob/Theta_dens.v
+theories/Crypt/rhl_semantics/only_prob/Theta_exCP.v
+theories/Crypt/rhl_semantics/only_prob/ThetaDex.v
+theories/Crypt/rhl_semantics/state_prob/OrderEnrichedRelativeAdjunctionsExamples.v
+theories/Crypt/rhl_semantics/state_prob/StateTransformingLaxMorph.v
+theories/Crypt/rhl_semantics/state_prob/StateTransfThetaDens.v
+theories/Crypt/rhl_semantics/state_prob/LiftStateful.v
 
 #prob rules
 theories/Crypt/only_prob/Rules.v

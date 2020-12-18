@@ -3,7 +3,7 @@ From Coq Require Import Relation_Definitions.
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 From Mon Require Import SPropBase.
 From mathcomp Require Import all_ssreflect (*boolp*).
-From Crypt Require Import Axioms OrderEnrichedRelativeAdjunctions LaxFunctorsAndTransf LaxMorphismOfRelAdjunctions TransformingLaxMorph OrderEnrichedRelativeAdjunctionsExamples ThetaDex SubDistr Theta_exCP ChoiceAsOrd only_prob.FreeProbProg UniversalFreeMap RelativeMonadMorph_prod LaxComp.
+From Crypt Require Import Axioms OrderEnrichedRelativeAdjunctions LaxFunctorsAndTransf LaxMorphismOfRelAdjunctions TransformingLaxMorph OrderEnrichedRelativeAdjunctionsExamples ThetaDex SubDistr Theta_exCP ChoiceAsOrd FreeProbProg UniversalFreeMap RelativeMonadMorph_prod LaxComp.
 (* From Crypt Require Import only_prob.Rules. *)
 
 Import SPropNotations.

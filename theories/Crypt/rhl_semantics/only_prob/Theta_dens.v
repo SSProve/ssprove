@@ -1,8 +1,7 @@
 From Mon Require Import FiniteProbabilities SPropMonadicStructures SpecificationMonads MonadExamples SPropBase FiniteProbabilities.
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples Commutativity.
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum.
-From Crypt Require Import ChoiceAsOrd Axioms RelativeMonadMorph_prod only_prob.FreeProbProg
-only_prob.SubDistr.
+From Crypt Require Import ChoiceAsOrd Axioms RelativeMonadMorph_prod FreeProbProg SubDistr.
 
 
 Import SPropNotations.

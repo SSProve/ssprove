@@ -1,7 +1,7 @@
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 From Mon Require Import SPropBase.
 From mathcomp Require Import all_ssreflect.
-From Crypt Require Import only_prob.FreeProbProg ChoiceAsOrd.
+From Crypt Require Import FreeProbProg ChoiceAsOrd.
 
 Import SPropNotations.
 

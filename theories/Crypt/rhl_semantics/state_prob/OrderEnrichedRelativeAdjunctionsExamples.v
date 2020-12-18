@@ -2,7 +2,7 @@ From Coq Require Import Morphisms.
 From mathcomp Require Import all_algebra all_ssreflect boolp.
 From Mon Require Import SPropBase Base.
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
-From Crypt Require Import OrderEnrichedRelativeAdjunctions only_prob.FreeProbProg ChoiceAsOrd Couplings Theta_exCP only_prob.SubDistr.
+From Crypt Require Import OrderEnrichedRelativeAdjunctions FreeProbProg ChoiceAsOrd Couplings Theta_exCP SubDistr.
 
 Import SPropNotations.
 
