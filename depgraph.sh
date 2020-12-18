@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Adapt to macOS (brew install gsed)
+SED=`which gsed || which sed`
+
 fn_project=_CoqProject
 fn_out="dependencies"
 base_style="rounded,filled"
@@ -19,12 +22,12 @@ fi
   echo 'node [shape=box, style="'$base_style'", URL="html/\N.html", colorscheme='$color_scheme'];';
   coqdep -vos -dyndep var -f $fn_project |
       # drop prefix, turn '/' into '.' ,
-      sed -n -e 's,theories/,,g' -e 's,/,.,g' \
+      $SED -n -e 's,theories/,,g' -e 's,/,.,g' \
           `# keep lines with [src].vo : [x].v [dst]* , drop [x].v` \
           -e 's/[.]vo.*: [^ ]*[.]v//p' |
       while read src dst; do
           # pick a color number based on the src node name
-          color=$(echo "$src" | sed -r \
+          color=$(echo "$src" | $SED -r \
                                     -e 's,Crypt[.]only_prob.*,2,' \
                                     -e 's,Crypt[.]package[.].*,3,' \
                                     -e 's,Crypt[.]state[.].*,4,' \
@@ -47,4 +50,4 @@ fi
 
 dot -T svg $fn_out.dot > $fn_out.svg
 # dot -T png $fn_out.dot > $fn_out.png
-# dot -T cmap $fn_out.dot | sed -e 's,>$,/>,' > $fn_out.map
+# dot -T cmap $fn_out.dot | $SED -e 's,>$,/>,' > $fn_out.map
