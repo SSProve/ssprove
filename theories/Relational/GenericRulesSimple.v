@@ -78,7 +78,7 @@ Section RelationalProgramLogicFromRelativeMonadZero.
   Definition semantic_judgement A1 A2 c1 c2 w := proj1_sig (θ ⟨A1,A2⟩) ⟨c1,c2⟩ ≤ w.
   Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ c1 c2 w).
 
-  Check (fun A B (c1 : M1 A) (c2: M2 B) w => ⊨ c1 ≈ c2 [{ w }] ).
+  (* Check (fun A B (c1 : M1 A) (c2: M2 B) w => ⊨ c1 ≈ c2 [{ w }] ). *)
 
 
   Import SPropNotations.
