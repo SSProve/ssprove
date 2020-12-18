@@ -15,8 +15,8 @@ From mathcomp Require Import ssreflect eqtype choice seq ssrfun ssrbool ssrnat.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
-From Crypt Require Import Prelude Axioms ChoiceAsOrd Rules StateTransformingLaxMorph
-     pkg_chUniverse pkg_core_definition.
+From Crypt Require Import Prelude Axioms ChoiceAsOrd StateTransformingLaxMorph
+     pkg_chUniverse pkg_core_definition RulesStateProb.
 From Equations Require Import Equations.
 Require Equations.Prop.DepElim.
 
@@ -28,7 +28,7 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
-Module PackageComposition (π : ProbRulesParam).
+Module PackageComposition (π : RulesParam).
 
   Include (CorePackageTheory π).
 
