@@ -7,6 +7,8 @@
 - Mathcomp analysis `0.3.2`
 - Coq Extructures
 
+- (optionnal: graphviz)
+
 (Note: You of course need to have ocaml installed as well. It seems
 4.07.1+flambda is recommended, and then anything beyond 4.10 with flambda.)
 
@@ -23,6 +25,8 @@ Run `make` from this directory to compile all the coq files
 (this step is needed for the walkthrough). It should succeed
 displaying only warnings and coq terms.
 
+Run `make graph` to build a graph of dependencies between sources. graphviz must be installed.
+
 ## Organisation of the directories
 
 - theories/           : root of all the Coq files
@@ -30,7 +34,7 @@ displaying only warnings and coq terms.
 - theories/Relational : external development coming from "The Next 700 Relational Program Logics"
 - theories/Crypt      : this paper
 
-### Notes
+### Notes (TODO: remove/move this)
 
 - Category.v: Basic category theory (categories, functors,...)
 
@@ -58,17 +62,9 @@ displaying only warnings and coq terms.
 
 - GenericRulesComplex.v: pure and monadic relational rules in the full setting
 
-## Axioms and assumptions (obsolete?)
+## Axioms and assumptions
 
-Most of the development uses the recent SProp feature of Coq (instead of relying on UIP axiom).
+see theories/Crypt/Axioms.v
+We use functional extensionality and proof irrelevance throughout the development. We also assume the existence of a mathcomp type of real numbers.
 
-The functional extensionality axiom from Coq's standard library is used
-extensively in the development, as well as two variations of it with
-respect to SProp (that can be found in `theories/sprop/SPropBase.v`, module `SPropAxioms`).
-This module also defines the axiom of propositional extensionality
-for strict propositions.
 
-The use of these axioms can be checked for instance at the end of
-`theories/README.v` using `Print Assumptions term.`.
-
-No proof in the developement is admitted.
