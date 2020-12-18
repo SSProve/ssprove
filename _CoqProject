@@ -32,7 +32,6 @@ theories/Crypt/only_prob/Couplings.v
 theories/Crypt/only_prob/Theta_dens.v
 theories/Crypt/only_prob/Theta_exCP.v
 theories/Crypt/LaxComp.v
-theories/Crypt/only_prob/Rules.v
 theories/Crypt/OrderEnrichedRelativeAdjunctions.v
 theories/Crypt/OrderEnrichedRelativeAdjunctionsExamples.v
 theories/Crypt/LaxFunctorsAndTransf.v
@@ -44,6 +43,9 @@ theories/Crypt/StateTransformingLaxMorph.v
 theories/Crypt/StateTransfThetaDens.v
 theories/Crypt/LiftStateful.v
 theories/Crypt/InitialRelativeMonad.v
+
+#prob rules
+theories/Crypt/only_prob/Rules.v
 
 #Crypto
 theories/Crypt/only_prob/UniformDistrLemmas.v
