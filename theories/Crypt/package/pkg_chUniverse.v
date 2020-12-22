@@ -9,7 +9,7 @@ From Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples GenericRulesSimple.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
-  choice reals distr realsum seq all_algebra.
+  choice reals distr realsum seq all_algebra fintype.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings RulesStateProb
   StateTransfThetaDens StateTransformingLaxMorph FreeProbProg.
@@ -38,7 +38,8 @@ Inductive chUniverse :=
 | chNat
 | chBool
 | chProd (A B : chUniverse)
-| chOption (A : chUniverse).
+| chOption (A : chUniverse)
+| chFin (n : nat).
 
 Derive NoConfusion NoConfusionHom EqDec for chUniverse.
 
@@ -50,6 +51,7 @@ Fixpoint chElement (U : chUniverse) : choiceType :=
   | chBool => bool_choiceType
   | chProd U1 U2 => prod_choiceType (chElement U1) (chElement U2)
   | chOption U => option_choiceType (chElement U)
+  | chFin n => [choiceType of ordinal n]
   end.
 
 Coercion chElement : chUniverse >-> choiceType.
@@ -64,6 +66,7 @@ Section chUniverseTypes.
     | chBool , chBool => true
     | chProd a b , chProd a' b' => chUniverse_test a a' && chUniverse_test b b'
     | chOption a, chOption a' => chUniverse_test a a'
+    | chFin n, chFin n' => n == n'
     | _ , _ => false
     end.
 
@@ -73,8 +76,8 @@ Section chUniverseTypes.
   Lemma chUniverse_eqP : Equality.axiom chUniverse_eq.
   Proof.
     move=> x y.
-    induction x as [ | | | | x1 ih1 x2 ih2 | x1 ih1] in y |- *.
-    all: destruct y as [ | | | | y1 y2 | y1].
+    induction x as [ | | | | x1 ih1 x2 ih2 | x1 ih1 | x1 ih1] in y |- *.
+    all: destruct y as [ | | | | y1 y2 | y1 | y1].
     all: simpl.
     all: try solve [ right ; discriminate ].
     all: try solve [ left ; reflexivity ].
@@ -87,6 +90,23 @@ Section chUniverseTypes.
          all: subst.
          1: { left. reflexivity. }
          1: { right. congruence. }
+    }
+    1: { cbn. destruct (x1 == y1) eqn:H.
+         - move: H. move /eqP => H.
+           destruct H.
+           assert (chFin x1 = chFin x1) as H.
+           { reflexivity. }
+           rewrite eqnE.
+           assert (x1 == x1) as H'.
+           { auto. }
+           rewrite H'. clear H'.
+           apply Bool.ReflectT. assumption.
+         - assert (eqn x1 y1 = false) as H'.
+           { auto. }
+           rewrite H'. clear H'.
+           apply Bool.ReflectF.
+           injection.
+           move: H. move /eqP. auto.
     }
   Qed.
 
@@ -126,8 +146,20 @@ Section chUniverseTypes.
     (chUniverse_lt u1 w1) ||
     (chUniverse_eq u1 w1 && chUniverse_lt u2 w2)
   | chProd _ _, _ => true
+  | chOption _, chZero => false
+  | chOption _, chUnit => false
+  | chOption _, chBool => false
+  | chOption _, chNat => false
+  | chOption _, chProd _ _ => false
   | chOption u, chOption w => chUniverse_lt u w
-  | chOption _, _ => false
+  | chOption _, _ => true
+  | chFin n, chZero => false
+  | chFin n, chUnit => false
+  | chFin n, chBool => false
+  | chFin n, chNat => false
+  | chFin n, chProd _ _ => false
+  | chFin n, chOption _ => false
+  | chFin n, chFin n' => n < n'
   end.
 
 
@@ -137,7 +169,7 @@ Section chUniverseTypes.
   Lemma chUniverse_lt_transitive : transitive (T:=chUniverse) chUniverse_lt.
   Proof.
     intros v u w h1 h2.
-    induction u as [ | | | | u1 ih1 u2 ih2 | u ih] in v, w, h1, h2 |- *.
+    induction u as [ | | | | u1 ih1 u2 ih2 | u ih | u ih] in v, w, h1, h2 |- *.
     - destruct w. all: try reflexivity.
       destruct v. all: discriminate.
     - destruct v. all: try discriminate.
@@ -149,12 +181,16 @@ Section chUniverseTypes.
         all: reflexivity.
       + destruct w. all: try discriminate.
         all: reflexivity.
+      + destruct w. all: try discriminate.
+        all: reflexivity.
     - destruct w. all: try reflexivity.
       + destruct v. all: discriminate.
       + destruct v. all: discriminate.
       + destruct v. all: discriminate.
       + destruct v. all: discriminate.
     - destruct v. all: try discriminate.
+      + destruct w. all: try discriminate.
+        all: reflexivity.
       + destruct w. all: try discriminate.
         all: reflexivity.
       + destruct w. all: try discriminate.
@@ -182,20 +218,25 @@ Section chUniverseTypes.
         * apply/eqP. reflexivity.
         * apply (ih2 v2). all: auto.
     - destruct w. all: try discriminate; destruct v; try discriminate.
-      apply (ih v). all: assumption.
+      + apply (ih v). all: assumption.
+      + auto.
+      + auto.
+    - destruct w.  all: try discriminate; destruct v; try discriminate.
+      apply (ltn_trans h1 h2).
   Qed.
 
   Lemma chUniverse_lt_areflexive :
     ∀ x, ~~ chUniverse_lt x x.
   Proof.
     intros x.
-    induction x as [ | | | | x1 ih1 x2 ih2 | x ih] in |- *.
-    all: intuition.
-    simpl.
-    apply/norP; split.
-    - apply ih1.
-    - apply/nandP.
-      right. apply ih2.
+    induction x as [ | | | | x1 ih1 x2 ih2 | x ih | x ih] in |- *.
+    all: intuition; simpl.
+    1: { simpl.
+         apply/norP; split.
+         - apply ih1.
+         - apply/nandP.
+           right. apply ih2. }
+    rewrite ltnn. auto.
   Qed.
 
   Lemma chUniverse_lt_total_holds :
@@ -203,43 +244,48 @@ Section chUniverseTypes.
       ~~ (chUniverse_test x y) ==> (chUniverse_lt x y || chUniverse_lt y x).
   Proof.
     intros x y.
-    induction x as [ | | | | x1 ih1 x2 ih2| x ih] in y |- *.
+    induction x as [ | | | | x1 ih1 x2 ih2| x ih| x ih] in y |- *.
     all: try solve [ destruct y ; intuition ; reflexivity ].
-    destruct y. all: try (intuition; reflexivity).
-    cbn. intuition.
-    specialize (ih1 y1). specialize (ih2 y2).
-    apply/implyP.
-    move /nandP => H.
-    apply/orP.
-    destruct (chUniverse_test x1 y1) eqn:Heq.
-    - destruct H. 1: discriminate.
-      move: ih2. move /implyP => ih2.
-      specialize (ih2 H).
-      move: ih2. move /orP => ih2.
-      destruct ih2.
-      + left. apply/orP. right. apply/andP; split.
-        all: intuition auto.
-      + right. apply/orP. right. apply/andP; intuition.
-        move: Heq. move /eqP => Heq. rewrite Heq. apply/eqP. reflexivity.
-    - destruct H.
-      + move: ih1. move /implyP => ih1.
-        specialize (ih1 H).
-        move: ih1. move /orP => ih1.
-        destruct ih1.
-        * left. apply/orP. left. assumption.
-        * right. apply/orP. left. assumption.
-      + move: ih2. move /implyP => ih2.
-        specialize (ih2 H).
-        move: ih2. move /orP => ih2.
-        destruct ih2.
-        * simpl in ih1.  move: ih1. move /orP => ih1.
-          destruct ih1.
-          -- left. apply/orP. left. assumption.
-          -- right. apply/orP. left. assumption.
-        * simpl in ih1.  move: ih1. move /orP => ih1.
-          destruct ih1.
-          -- left. apply/orP. left. assumption.
-          -- right. apply/orP. left. assumption.
+    1: { destruct y. all: try (intuition; reflexivity).
+         cbn. intuition.
+         specialize (ih1 y1). specialize (ih2 y2).
+         apply/implyP.
+         move /nandP => H.
+         apply/orP.
+         destruct (chUniverse_test x1 y1) eqn:Heq.
+         - destruct H. 1: discriminate.
+           move: ih2. move /implyP => ih2.
+           specialize (ih2 H).
+           move: ih2. move /orP => ih2.
+           destruct ih2.
+           + left. apply/orP. right. apply/andP; split.
+             all: intuition auto.
+           + right. apply/orP. right. apply/andP; intuition.
+             move: Heq. move /eqP => Heq. rewrite Heq. apply/eqP. reflexivity.
+         - destruct H.
+           + move: ih1. move /implyP => ih1.
+             specialize (ih1 H).
+             move: ih1. move /orP => ih1.
+             destruct ih1.
+             * left. apply/orP. left. assumption.
+             * right. apply/orP. left. assumption.
+           + move: ih2. move /implyP => ih2.
+             specialize (ih2 H).
+             move: ih2. move /orP => ih2.
+             destruct ih2.
+             * simpl in ih1.  move: ih1. move /orP => ih1.
+               destruct ih1.
+               -- left. apply/orP. left. assumption.
+               -- right. apply/orP. left. assumption.
+             * simpl in ih1.  move: ih1. move /orP => ih1.
+               destruct ih1.
+               -- left. apply/orP. left. assumption.
+               -- right. apply/orP. left. assumption. }
+    1: { destruct y. all: try (intuition; reflexivity).
+         unfold chUniverse_lt.
+         unfold chUniverse_test.
+         rewrite neq_ltn.
+         apply /implyP. auto. }
   Qed.
 
   Lemma chUniverse_lt_asymmetric :
@@ -342,6 +388,7 @@ Section chUniverseTypes.
   | chNat => GenTree.Leaf 3
   | chProd l r => GenTree.Node 1 [:: encode l ; encode r]
   | chOption u => GenTree.Node 2 [:: encode u]
+  | chFin n => GenTree.Leaf (4 + n)%nat
   end.
 
   Fixpoint decode (t : GenTree.tree nat) : option chUniverse :=
@@ -350,6 +397,7 @@ Section chUniverseTypes.
     | GenTree.Leaf 1 => Some chUnit
     | GenTree.Leaf 2 => Some chBool
     | GenTree.Leaf 3 => Some chNat
+    | GenTree.Leaf n => Some (chFin (n - 4))
     | GenTree.Node 1 [:: l ; r] =>
       match decode l, decode r with
       | Some l, Some r => Some (chProd l r)
@@ -369,6 +417,22 @@ Section chUniverseTypes.
     all: simpl.
     - rewrite IHt1. rewrite IHt2. reflexivity.
     - rewrite IHt. reflexivity.
+    - destruct (4 + n)%nat eqn:N0.
+      1: discriminate.
+      destruct n0 eqn:N1.
+      1: discriminate.
+      destruct n1 eqn:N2.
+      1: discriminate.
+      destruct n2 eqn:N3.
+      1: discriminate.
+      subst. rewrite -N0.
+      rewrite addnC. rewrite -subnBA.
+      2: { auto. }
+      cbn.
+      assert ((n - 0)%Nrec = n) as H.
+      { rewrite -subnE. rewrite subn0. reflexivity. }
+      rewrite H. clear H.
+      reflexivity.
   Defined.
 
   Definition chUniverse_choiceMixin := PcanChoiceMixin codeK.
