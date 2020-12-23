@@ -7,7 +7,7 @@
 - Mathcomp analysis `0.3.2`
 - Coq Extructures
 
-- (optionnal: graphviz)
+- (optionnal: graphviz, and gsed on macOS)
 
 (Note: You of course need to have ocaml installed as well. It seems
 4.07.1+flambda is recommended, and then anything beyond 4.10 with flambda.)
@@ -25,7 +25,8 @@ Run `make` from this directory to compile all the coq files
 (this step is needed for the walkthrough). It should succeed
 displaying only warnings and coq terms.
 
-Run `make graph` to build a graph of dependencies between sources. graphviz must be installed.
+Run `make graph` to build a graph of dependencies between sources. graphviz must be installed. (On macOS, `gsed` is also required, they can both be
+installed with homebrew.)
 
 ## Organisation of the directories
 
