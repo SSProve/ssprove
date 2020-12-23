@@ -22,6 +22,7 @@
     zero
     unit
     option A
+    fin A
     A × B
     where A and B follow again the same syntax.
 
@@ -112,13 +113,15 @@ Module PackageNotation (π : RulesParam).
   (* Notation " 'zero' " := zero (at level 2). *)
   Notation " 'unit' " := unit (at level 2).
   Notation " 'option' " := option (at level 2).
+  (* Notation " 'fin' " := fin (at level 2). *)
 
   Notation " 'nat' " := (chNat) (in custom pack_type at level 2).
   Notation " 'bool' " := (chBool) (in custom pack_type at level 2).
   Notation " 'zero' " := (chZero) (in custom pack_type at level 2).
   Notation " 'unit' " := (chUnit) (in custom pack_type at level 2).
-  Notation " 'option' x " := (chOption x) (in custom pack_type at level 2).  
-  
+  Notation " 'option' x " := (chOption x) (in custom pack_type at level 2).
+  Notation " 'fin' x " := (chFin x) (in custom pack_type at level 2).
+
   Notation " x × y " := (chProd x y) (in custom pack_type at level 2).
 
   Notation "( x )" := x (in custom pack_type, x at level 2).
