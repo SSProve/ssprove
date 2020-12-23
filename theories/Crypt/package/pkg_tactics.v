@@ -8,6 +8,16 @@
     x \in S
     where S is a concrete finite set that contains x.
 
+  - inseq_try
+    This tactic should solve goals of the form
+    x \in S
+    where S is a sequence that contains x syntactically.
+
+  - inset_try
+    Similar to inseq_try but for fset.
+    It is slightly stronger than in_fset_auto in that it also works in case
+    the mem predicate doesn't compute in itself.
+
   - package_obtac
     This tactic can be used as an obligation tactic for Program or Equations
     mode.
@@ -16,7 +26,7 @@
 
 **)
 
-From mathcomp Require Import ssreflect.
+From mathcomp Require Import ssreflect ssrbool eqtype seq.
 From extructures Require Import ord fset.
 
 Require Equations.Prop.DepElim.
@@ -28,9 +38,21 @@ Set Primitive Projections.
 Ltac in_fset_auto :=
   rewrite extructures.fset.in_fset ; reflexivity.
 
+(* Succeeds for x \in S if S contains syntactically x, S seq *)
+Ltac inseq_try :=
+  apply/orP ; first [
+    left ; apply/andP ; split ;
+    apply/eqP ; reflexivity
+  | right ; inseq_try
+  ].
+
+Ltac inset_try :=
+  rewrite in_fset ; inseq_try.
+
 Ltac package_obtac :=
   (* Or try (Tactics.program_simpl; fail); simpl ? *)
   Tactics.program_simplify ;
   CoreTactics.equations_simpl ;
   try Tactics.program_solve_wf ;
-  try in_fset_auto.
+  try in_fset_auto ;
+  try inset_try.
