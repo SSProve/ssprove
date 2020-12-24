@@ -15,8 +15,8 @@ From Mon Require Import SPropBase.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings RulesStateProb
   StateTransfThetaDens StateTransformingLaxMorph
   pkg_chUniverse pkg_notation pkg_tactics.
-Require Equations.Prop.DepElim.
 From Equations Require Import Equations.
+Require Equations.Prop.DepElim.
 
 (* Must come after importing Equations.Equations, god knows why. *)
 From Crypt Require Import FreeProbProg.
@@ -237,31 +237,40 @@ Module PackageRHL (π : RulesParam).
       discriminate.
     Qed.
 
-    Definition get_raw_package_op {L} {I E : Interface} (p : raw_package)
-               (hp : valid_package L I E p)
-               (o : opsig) (ho : o \in E) (arg : src o) : program L I (tgt o).
+    Definition inspect {A : Type} (x : A) : { y : A | y = x } :=
+      exist _ x erefl.
+
+    Equations? get_raw_package_op {L} {I E : Interface} (p : raw_package)
+      (hp : valid_package L I E p)
+      (o : opsig) (ho : o \in E) (arg : src o) : program L I (tgt o) :=
+      get_raw_package_op p hp o ho arg with inspect (lookup_op p o) := {
+      | @exist (Some f) e1 := ⦑ f arg ⦒ ;
+      | @exist None e1 := False_rect _ _
+      }.
     Proof.
-        (* ER: updated using the same order as TW below *)
-        destruct (lookup_op p o) as [f|] eqn:e.
-        2:{ apply (opaque_me p hp o ho arg e). }
-        exists (f arg).
-        destruct o as [n [S T]].
+      - destruct o as [n [S T]].
         cbn - [lookup_op] in *.
         eapply lookup_op_valid in hp. 2: eauto.
         cbn - [lookup_op] in hp. destruct hp as [g [eg hg]].
-        rewrite e in eg. noconf eg.
+        rewrite <- e1 in eg. noconf eg.
         eapply hg.
+      - eapply opaque_me. all: eauto.
     Defined.
 
-    Definition get_raw_package_op_lookup {L} {I E : Interface} (p : raw_package)
-               (hp : valid_package L I E p)
-               (o : opsig) (ho : o \in E) (arg : src o)
-               (f : src o -> raw_program (tgt o))
-               (H : lookup_op p o = Some f) :
-      (get_raw_package_op p hp o ho arg) ∙1 = f arg.
+    Lemma get_raw_package_op_lookup :
+      ∀ {L} {I E : Interface} (p : raw_package)
+        (hp : valid_package L I E p)
+        (o : opsig) (ho : o \in E) (arg : src o)
+        (f : src o -> raw_program (tgt o))
+        (H : lookup_op p o = Some f),
+        (get_raw_package_op p hp o ho arg) ∙1 = f arg.
     Proof.
-      unfold get_raw_package_op.
-    Admitted.
+      intros L I E p hp o ho arg f e.
+      funelim (get_raw_package_op p hp o ho arg).
+      2:{ rewrite <- e in e0. discriminate. }
+      rewrite <- Heqcall. cbn. rewrite <- e in e0.
+      noconf e0. reflexivity.
+    Qed.
 
     Definition raw_program_link_ext {E : Interface}
                (o : opsig) (ho : o \in E) (arg : src o) (p1 p2 : raw_package)
@@ -902,12 +911,12 @@ Module PackageRHL (π : RulesParam).
         apply repr'_ext.
         erewrite (get_raw_package_op_link RUN_in_A_export tt (trim A_export ((LA; ⦑ A ⦒).π2) ∙1) (P1 ∙1) _ _).
         apply f_equal2. 2: { reflexivity. }
-        cbn.
-        unfold get_opackage_op. cbn.
+        cbn - [get_raw_package_op].
+        unfold get_opackage_op. cbn - [get_raw_package_op].
         unshelve erewrite get_raw_package_op_trim.
-        { - apply (valid_package_inject_locations _ _ LA (LA :|: L1)).
-            + apply fsubsetUl.
-            + exact A_valid.
+        { apply (valid_package_inject_locations _ _ LA (LA :|: L1)).
+          - apply fsubsetUl.
+          - exact A_valid.
         }
         epose (get_raw_package_op_ext RUN_in_A_export tt A) as e.
         specialize (e (valid_package_inject_locations export A_export LA (LA :|: L1) A
@@ -937,12 +946,12 @@ Module PackageRHL (π : RulesParam).
         apply repr'_ext.
         erewrite (get_raw_package_op_link RUN_in_A_export tt (trim A_export ((LA; ⦑ A ⦒).π2) ∙1) (P2 ∙1) _ _).
         apply f_equal2. 2: { reflexivity. }
-        cbn.
-        unfold get_opackage_op. cbn.
+        cbn - [get_raw_package_op].
+        unfold get_opackage_op. cbn - [get_raw_package_op].
         unshelve erewrite get_raw_package_op_trim.
-        { - apply (valid_package_inject_locations _ _ LA (LA :|: L2)).
-            + apply fsubsetUl.
-            + exact A_valid.
+        { apply (valid_package_inject_locations _ _ LA (LA :|: L2)).
+          - apply fsubsetUl.
+          - exact A_valid.
         }
         epose (get_raw_package_op_ext RUN_in_A_export tt A) as e.
         specialize (e (valid_package_inject_locations export A_export LA (LA :|: L2) A
