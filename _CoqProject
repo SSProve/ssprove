@@ -73,3 +73,5 @@ theories/Crypt/package/package_usage_example.v
 #State + Prob
 theories/Crypt/only_prob/RulesStateProb.v
 theories/Crypt/only_prob/UniformStateProb.v
+theories/Crypt/only_prob/SymmetricSchemeStateProb.v
+theories/Crypt/only_prob/AsymmetricSchemeStateProb.v
