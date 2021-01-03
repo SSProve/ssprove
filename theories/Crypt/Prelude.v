@@ -52,12 +52,8 @@ Ltac sig_rewrite e :=
     | |- context [ exist ?P ?p ?h ] =>
       lazymatch p with
       | context [ x ] =>
-        let foo := fresh "foo" in
-        set (foo := p) ;
-        pattern x in foo ;
-        lazymatch goal with
-        | h := (fun x => @?q x) ?y |- _ =>
-          subst foo ;
+        lazymatch eval pattern x in p with
+        | (fun x => @?q x) ?y =>
           erewrite (sig_rewrite q _ e)
         end
       end
