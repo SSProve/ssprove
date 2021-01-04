@@ -495,12 +495,15 @@ Module PackageRHL (π : RulesParam).
     Definition GamePair (Game_export : Interface) := bool -> Game_Type Game_export.
 
     Definition Advantage { Game_export : Interface } (G : GamePair Game_export)
-               (A : Adversary4Game Game_export) : R :=
+               (A : Adversary4Game Game_export)
+               {H1 : fdisjoint A.π1 (G false).π1} {H2 : fdisjoint A.π1 (G true).π1} : R :=
       `| (Pr (link A (G false)) true) - (Pr (link A (G true)) true)|.
 
     Definition AdvantageE { Game_export : Interface }
-      : Game_Type Game_export -> Game_Type Game_export -> Adversary4Game Game_export -> R
-      := fun G0 G1 A => `| (Pr (link A G0) true) - (Pr (link A G1) true)|.
+               (G0 : Game_Type Game_export) (G1 : Game_Type Game_export)
+               (A : Adversary4Game Game_export)
+               {H1 : fdisjoint A.π1 G0.π1} {H2 : fdisjoint A.π1 G1.π1} : R
+      := `| (Pr (link A G0) true) - (Pr (link A G1) true)|.
 
     Notation "ϵ( GP )" := (fun A => AdvantageE (GP false) (GP true) A) (at level 90).
     Notation " G0 ≈[ R ] G1 " := (AdvantageE G0 G1 = R) (at level 50).
@@ -555,13 +558,6 @@ Module PackageRHL (π : RulesParam).
         + move: Hdisjoint2. move /fdisjointP => Hdisjoint2.
           apply Hdisjoint2. assumption.
     Qed.
-
-    Lemma fdisjoint_from_link {I E M}
-          {L1 L2} (p1 : opackage L1 M E) (p2 : opackage L2 I M)
-          (H : exists c, c = link (L1;p1) (L2;p2))
-      : fdisjoint L1 L2.
-    Proof.
-    Admitted.
 
     Lemma get_case {L LA} (I : heap_choiceType * heap_choiceType -> Prop)
       (HINV : INV LA I) {l : Location} (Hin : l \in LA)
@@ -644,6 +640,74 @@ Module PackageRHL (π : RulesParam).
         assumption.
     Qed.
 
+    Lemma destruct_pair_eq {R : ringType} {A B : eqType} {a b : A} {c d : B}
+      : ((a, c) == (b, d))%:R = (a == b)%:R * (c == d)%:R :> R.
+    Proof.
+      destruct (a == b) eqn:ab, (c == d) eqn:cd.
+      all: cbn; rewrite ab cd /=; try rewrite GRing.mulr1; try rewrite GRing.mulr0; reflexivity.
+    Qed.
+    Lemma summable_eq {A : choiceType} {s : A}
+      : realsum.summable (T:=A) (R:=R) (λ x, (x == s)%:R).
+    Proof.
+      match goal with
+      | |- realsum.summable ?f => eassert (f = _) as Hf end.
+      { extensionality x. rewrite eq_sym.
+        rewrite -dunit1E. reflexivity. }
+      rewrite Hf. clear Hf.
+      apply summable_mu.
+    Qed.
+    Lemma summable_pair_eq {A : choiceType} {B C : eqType} (f1 f3 : A -> B) (f2 f4 : A -> C)
+          (h1 : realsum.summable (T:=A) (R:=R) (λ x, (f1 x == f3 x)%:R))
+          (h2 : realsum.summable (T:=_) (R:=R) (λ x, (f2 x == f4 x)%:R))
+      :
+        realsum.summable (T:=_) (R:=R) (λ x, ((f1 x, f2 x) == (f3 x, f4 x))%:R).
+    Proof.
+      match goal with
+      | |- realsum.summable ?f => eassert (f = _) as Hf end.
+      { extensionality x.
+        apply (destruct_pair_eq (a:= f1 x) (b:=f3 x) (c:= f2 x) (d := f4 x)). }
+      rewrite Hf.
+      apply realsum.summableM. all: assumption.
+    Qed.
+    Lemma psum_exists {R : realType} {A : choiceType} {f : A -> R}
+          (H : 0 < realsum.psum (T:=A) (R:=R) f) (Hpos : forall x, 0 <= f x) :
+      exists x, 0 < f x.
+    Proof.
+      assert (realsum.psum f ≠ 0) as Hneq.
+      { intros Hgt.
+        rewrite Hgt in H.
+        rewrite mc_1_10.Num.Theory.ltrr in H.
+        auto. }
+      destruct (realsum.neq0_psum (R:=R) Hneq) as [x Hx].
+      exists x. specialize (Hpos x).
+      rewrite mc_1_10.Num.Theory.ler_eqVlt in Hpos.
+      move: Hpos. move /orP => [H1 | H2].
+      - move: H1. move /eqP => H1. rewrite -H1.
+        rewrite mc_1_10.Num.Theory.ltrr. auto.
+      - assumption.
+    Qed.
+    Lemma pmulr_me (x y : R) : 0 <= y -> (0 < y * x) -> (0 < x).
+    Proof.
+      rewrite le0r => /orP[/eqP->|].
+      - by rewrite GRing.mul0r mc_1_10.Num.Theory.ltrr.
+      - intros. by rewrite -(pmulr_rgt0 x b).
+    Qed.
+    Lemma ge0_eq {R : realType} {A : eqType} {x y : A} (H : 0 < ((x == y)%:R) :> R) :
+      x = y.
+    Proof.
+      destruct (x == y) eqn:Heq.
+      - move: Heq. by move /eqP.
+      - by rewrite mc_1_10.Num.Theory.ltrr in H.
+    Qed.
+    Lemma ne0_eq {R : ringType} {A : eqType} {x y : A} (H : ((x == y)%:R) ≠ (0 : R)) :
+      x = y.
+    Proof.
+      destruct (x == y) eqn:Heq.
+      - move: Heq. by move /eqP.
+      - cbn in H. intuition.
+    Qed.
+
+
     Lemma sampler_case {L LA} (I : heap_choiceType * heap_choiceType -> Prop)
       (HINV : INV LA I) {op}
       (hp : [eta valid_program L Game_import] (_sampler op [eta _ret (A:=Arit op)])):
@@ -652,8 +716,135 @@ Module PackageRHL (π : RulesParam).
           ≈ repr (locs := L) (exist _ (_sampler op [eta _ret (A:=Arit op)]) hp)
           ⦃ fun '(b1, s1) '(b2, s2) => b1 = b2 /\ I (s1, s2) ⦄.
     Proof.
-      cbn - [semantic_judgement].
-    Admitted.
+      cbn - [thetaFstd θ]. intros [s1 s2].
+      rewrite /SpecificationMonads.MonoCont_order /SPropMonadicStructures.SProp_op_order
+              /Morphisms.pointwise_relation /Basics.flip /SPropMonadicStructures.SProp_order.
+      intuition. unfold θ. cbn - [justInterpState stT_thetaDex].
+      unfold justInterpState. unfold LaxComp.rlmm_comp.
+      simpl (nfst _). simpl (nsnd _). unfold stT_thetaDex.
+      simpl (TransformingLaxMorph.rlmm_from_lmla (stT_thetaDex_adj prob_handler) ⟨ Arit op, Arit op ⟩).
+      unfold stT_thetaDex_adj.
+      cbn - [ThetaDex.thetaDex UniversalFreeMap.outOfFree_obligation_1].
+      unfold TransformingLaxMorph.Kl_beta_obligation_1.
+      simpl ((ThetaDex.thetaDex prob_handler
+      ⟨ F_choice_prod_obj ⟨ Arit op, heap_choiceType ⟩,
+      F_choice_prod_obj ⟨ Arit op, heap_choiceType ⟩ ⟩) ∙1).
+      unfold Theta_exCP.θ0.
+      cbn - [Theta_dens.unary_theta_dens_obligation_1 ThetaDex.thetaDex UniversalFreeMap.outOfFree_obligation_1].
+      Eval cbn in (ord_functor_comp
+                    (OrderEnrichedRelativeAdjunctionsExamples.unaryTimesS1 heap_choiceType)
+                    (OrderEnrichedRelativeAdjunctions.KleisliLeftAdjoint Frp)
+                    (StateTransformingLaxMorph.ar_StP heap_choiceType (inr op))).
+      pose foo := (sigMap (inr op) s1).
+      cbn in foo.
+      unfold probopStP in foo. cbn in foo.
+      destruct op as [opA opB].
+      pose foo2 :=  SDistr_bind _ _ (fun x => SDistr_unit _ ((x, s1), (x, s2))) (Theta_dens.unary_ThetaDens0 prob_handler _ (ropr (opA; opB) (λ x : chEmb opA, retrFree x))).
+      exists foo2.
+      split.
+      - cbn. unfold coupling.
+        split.
+        + unfold lmg.
+          unfold foo2. apply distr_ext.
+          move => x0. unfold SDistr_bind, SDistr_unit.
+          unfold repr'_obligation_1. cbn.
+          rewrite SDistr_rightneutral. cbn.
+          rewrite dfstE. rewrite dletE. cbn.
+          match goal with
+          | |- realsum.psum ?f = _ => eassert (f = _) end.
+          { extensionality y. rewrite dletE.
+            match goal with
+            | |- realsum.psum ?g = _ => eassert (g = _) end.
+            { extensionality x. rewrite dunit1E. reflexivity. }
+            rewrite H0. reflexivity. }
+          rewrite H0. clear H0.
+          rewrite realsum.psum_sum.
+          * destruct x0. rewrite (realsum.sum_seq1 (s, s2)).
+            ** f_equal.
+               extensionality x. rewrite dunit1E. f_equal.
+               rewrite destruct_pair_eq.
+               destruct ((x, s1) == (s, h)) eqn:Heq1.
+               2: by rewrite Heq1 GRing.mul0r.
+               rewrite Heq1. rewrite GRing.mul1r.
+               move: Heq1. move /eqP => Heq1. inversion Heq1. subst.
+                 by rewrite eq_refl.
+            ** intros y.
+               move /eqP => Hneq.
+               apply realsum.neq0_psum in Hneq.
+               destruct Hneq as [x C].
+               unshelve eassert (((x, s1, (x, s2)) == (s, h, y))%:R ≠ 0).
+               { exact R. }
+               { unfold "_ ≠ _". intros Hne.
+                 rewrite Hne in C. rewrite GRing.mulr0 in C. contradiction. }
+               apply ne0_eq in H0.
+               inversion H0. subst. auto.
+          * intros x. apply realsum.ge0_psum.
+        + unfold rmg.
+          unfold foo2. apply distr_ext.
+          move => x0. unfold SDistr_bind, SDistr_unit.
+          unfold repr'_obligation_1. cbn.
+          rewrite SDistr_rightneutral. cbn.
+          rewrite dsndE. rewrite dletE. cbn.
+          match goal with
+          | |- realsum.psum ?f = _ => eassert (f = _) end.
+          { extensionality y. rewrite dletE.
+            match goal with
+            | |- realsum.psum ?g = _ => eassert (g = _) end.
+            { extensionality x. rewrite dunit1E. reflexivity. }
+            rewrite H0. reflexivity. }
+          rewrite H0. clear H0.
+          rewrite realsum.psum_sum.
+          * destruct x0. rewrite (realsum.sum_seq1 (s, s1)).
+            ** f_equal.
+               extensionality x. rewrite dunit1E. f_equal.
+               rewrite destruct_pair_eq.
+               destruct ((x, s2) == (s, h)) eqn:Heq1.
+               2: by rewrite Heq1 GRing.mulr0.
+               rewrite Heq1. rewrite GRing.mulr1.
+               move: Heq1. move /eqP => Heq1. inversion Heq1. subst.
+                 by rewrite eq_refl.
+            ** intros y.
+               move /eqP => Hneq.
+               apply realsum.neq0_psum in Hneq.
+               destruct Hneq as [x C].
+               unshelve eassert (((x, s1, (x, s2)) == (y, (s, h)))%:R ≠ 0).
+               { exact R. }
+               { unfold "_ ≠ _". intros Hne.
+                 rewrite Hne in C. rewrite GRing.mulr0 in C. contradiction. }
+               apply ne0_eq in H0.
+               inversion H0. subst. auto.
+          * intros x. apply realsum.ge0_psum.
+      - intros a1 a2.
+        unfold foo2. cbn.
+        intros Hd.
+        cbn in H.
+        destruct H as [HI H].
+        apply H.
+        destruct a1, a2.
+        rewrite SDistr_rightneutral in Hd.
+        cbn in Hd.
+        rewrite /SDistr_bind /SDistr_unit in Hd.
+        rewrite dletE in Hd.
+        eassert ((λ x : chEmb opA,
+            prob_handler (chEmb opA) opB x *
+            dunit
+              (T:=prod_choiceType
+                    (prod_choiceType (chEmb opA) (fmap_of_choiceType nat_ordType Value))
+                    (prod_choiceType (chEmb opA) (fmap_of_choiceType nat_ordType Value)))
+                    (x, s1, (x, s2)) (s, h, (s0, h0))) =
+                 _).
+        { extensionality x. rewrite dunit1E. reflexivity. }
+        rewrite H0 in Hd. clear H0.
+        apply psum_exists in Hd.
+        + destruct Hd as [x Hx].
+          apply pmulr_me in Hx.
+          * apply ge0_eq in Hx. inversion Hx. subst.
+            intuition auto.
+          * auto.
+        + intros x. apply mulr_ge0.
+          * auto.
+          * apply ler0n.
+    Qed.
 
     Definition eq_up_to_inv {L1 L2} {E}
                (I : heap_choiceType * heap_choiceType → Prop)
@@ -846,19 +1037,20 @@ Module PackageRHL (π : RulesParam).
                (HINV' : INV' L1 L2 I)
                (Hempty : I (emptym, emptym))
                (H : eq_up_to_inv I P1 P2)
-      : (L1; P1) ≈[ fun A => 0 ] (L2; P2).
+      : (L1; P1) ≈[ fun A {H1} {H2} => 0 ] (L2; P2).
     Proof.
       extensionality A.
       unfold Adversary4Game in A.
       unfold AdvantageE, Pr.
+      extensionality Hdisjoint1. extensionality Hdisjoint2.
       pose r' := get_package_op A RUN RUN_in_A_export.
       pose r := r' tt.
       (* ER: from linking we should get the fact that A.π1 is disjoint from L1 and L2,
              and then from that conclude that we are invariant on A.π1 *)
-      unshelve epose (fdisjoint_from_link A.π2 P1 _) as Hdisjoint1.
-      { eexists. reflexivity. }
-      unshelve epose (fdisjoint_from_link A.π2 P2 _) as Hdisjoint2.
-      { eexists. reflexivity. }
+      (* unshelve epose (fdisjoint_from_link A.π2 P1 _) as Hdisjoint1. *)
+      (* { eexists. reflexivity. } *)
+      (* unshelve epose (fdisjoint_from_link A.π2 P2 _) as Hdisjoint2. *)
+      (* { eexists. reflexivity. } *)
       assert (INV A.π1 I) as HINV.
       { destruct A. simpl in Hdisjoint1, Hdisjoint2.
         cbn.  unfold INV.
