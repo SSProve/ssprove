@@ -857,6 +857,22 @@ Module PackageRHL (π : RulesParam).
          (arg : S),
          ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄ repr (exist _ (f arg) (hpf arg)) ≈ repr (exist _ (g arg) (hpg arg)) ⦃ λ '(b1, s0) '(b2, s3), b1 = b2 /\ I (s0, s3) ⦄.
 
+
+    Lemma eq_up_to_inv' { L1 L2 } { E }
+               (I : heap_choiceType * heap_choiceType → Prop)
+               (P1 : opackage L1 Game_import E) (P2 : opackage L2 Game_import E) :
+      (eq_up_to_inv I P1 P2) <-> (
+      forall  (id : ident) (S T : chUniverse)
+         (hin : (id, (S, T)) \in E)
+         (arg : S),
+        ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄
+           repr (get_opackage_op P1 (id, (S,T)) hin arg) ≈
+           repr (get_opackage_op P2 (id, (S,T)) hin arg)
+           ⦃ λ '(b1, s0) '(b2, s3), b1 = b2 /\ I (s0, s3) ⦄ ).
+    Proof. Admitted. 
+     
+
+    
     Lemma some_lemma_for_prove_relational {export : Interface} {B} {L1 L2 LA}
                (P1 : opackage L1 Game_import export)
                (P2 : opackage L2 Game_import export)
