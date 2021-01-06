@@ -121,6 +121,18 @@ Module PackageNotation (π : RulesParam).
 
   Notation " x × y " := (chProd x y) (in custom pack_type at level 2).
 
+  (** Repeat the above notations here for package_scope. *)
+  Notation " 'nat " := (chNat) (at level 2) : package_scope.
+  Notation " 'bool " := (chBool) (at level 2) : package_scope.
+  Notation " 'zero " := (chZero) (at level 2) : package_scope.
+  Notation " 'unit " := (chUnit) (at level 2) : package_scope.
+  Notation " 'option x " := (chOption x) (at level 2) : package_scope.
+  Notation " 'fin x " :=
+    (chFin x)
+    (at level 2, x constr) : package_scope.
+
+  Notation " x × y " := (chProd x y) (at level 80) : package_scope.
+
   Notation "( x )" := x (in custom pack_type, x at level 2).
 
   Declare Custom Entry interface.

@@ -113,25 +113,25 @@ Module NotationExamples (π : RulesParam).
 
   (* The exact same definition but using the notations for the monad. *)
   #[program] Definition btest' : bundle := {|
-    locs := [fset (chNat; 0)] ;
-    import := [interface val #[0] : 'nat → 'nat] ;
+    locs := [fset ('nat; 0)] ;
+    import := [interface val #[0] : 'nat → 'nat ] ;
     export := [interface
       val #[1] : 'nat → 'nat ;
       val #[2] : 'unit → 'option ('fin 2)
     ] ;
     pack := [package
       def #[2] (_ : 'unit) : 'option ('fin 2) {
-        put (chNat; 0) := 0 ;;
+        put ('nat; 0) := 0 ;;
         ret (Some _)
       } ;
       def #[1] (x : 'nat) : 'nat {
-        n ← get (chNat; 0) ;;
+        n ← get ('nat; 0) ;;
         (* Here n : option nat, but it is automatically casted to nat? *)
         m ← op [ #[0] : 'nat → 'nat ] n ;;
-        n ← get (chNat; 0) or 4 ;;
+        n ← get ('nat; 0) or 4 ;;
         (* Here n : nat, as it has a default value 4 *)
         m ← op [ #[0] : 'nat → 'nat ] n ;;
-        put (chNat; 0) := m ;;
+        put ('nat; 0) := m ;;
         ret m
       }
     ]
