@@ -52,8 +52,8 @@ Module CorePackageTheory (π : RulesParam).
   tgt : chUniverse
   }. *)
 
-  Definition Location := nat.
-  Definition Value := nat_choiceType.
+  Definition Location := ∑ (t : chUniverse), nat.
+  Definition Value (t : chUniverse) := chElement t.
 
   Definition Interface := {fset opsig}.
 
@@ -97,8 +97,8 @@ Module CorePackageTheory (π : RulesParam).
     Inductive raw_program (A : choiceType) : Type :=
     | _ret (x : A)
     | _opr (o : opsig) (x : src o) (k : tgt o → raw_program A)
-    | _getr (l : Location) (k : Value → raw_program A)
-    | _putr (l : Location) (v : Value) (k : raw_program A)
+    | _getr (l : Location) (k : option (Value l.π1) → raw_program A)
+    | _putr (l : Location) (v : Value l.π1) (k : raw_program A)
     | _sampler (op : Op) (k : Arit op → raw_program A).
 
     Arguments _ret [A] _.
@@ -150,7 +150,7 @@ Module CorePackageTheory (π : RulesParam).
       exact ((k v) ∙2).
     Defined.
 
-    Definition getr [A : choiceType] l (h : l \in Loc) (k : Value → program A) :
+    Definition getr [A : choiceType] l (h : l \in Loc) (k : option (Value l.π1) → program A) :
       program A.
     Proof.
       pose k' := λ x, (k x) ∙1.
@@ -159,7 +159,7 @@ Module CorePackageTheory (π : RulesParam).
       exact ((k v) ∙2).
     Defined.
 
-    Definition putr [A : choiceType] l (h : l \in Loc) (v : Value)
+    Definition putr [A : choiceType] l (h : l \in Loc) (v : Value l.π1)
       (k : program A) : program A.
     Proof.
       exists (_putr l v (k ∙1)).
@@ -226,10 +226,10 @@ Module CorePackageTheory (π : RulesParam).
         (∀ (o : opsig) (h : o \in import) (x : src o) (k : tgt o → program A),
           (∀ s : tgt o, P (k s)) → P (opr o h x k)
         ) →
-        (∀ (l : Location) (h : l \in Loc) (k : Value → program A),
-          (∀ s : Value, P (k s)) → P (getr l h k)
+        (∀ (l : Location) (h : l \in Loc) (k : option (Value l.π1) → program A),
+          (∀ s : option (Value l.π1), P (k s)) → P (getr l h k)
         ) →
-        (∀ (l : Location) (h : l \in Loc) (v : Value) (k : program A),
+        (∀ (l : Location) (h : l \in Loc) (v : Value l.π1) (k : program A),
           P k → P (putr l h v k)
         ) →
         (∀ (op : Op) (k : Arit op → program A),
@@ -257,11 +257,10 @@ Module CorePackageTheory (π : RulesParam).
         eapply prove_program.
         + unshelve eapply hget.
           4:{
-            intro s. unshelve eapply aux.
+            intros s. unshelve eapply aux.
             - eapply (k s).
             - destruct h as [ho hk]. auto.
           }
-          * auto.
           * destruct h as [ho hk]. auto.
         + reflexivity.
       - cbn in h.

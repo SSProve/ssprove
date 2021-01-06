@@ -223,6 +223,12 @@ Module PackageNotation (π : RulesParam).
     format "' p  ←  get  n  ;;  '/' c")
     : package_scope.
 
+  Notation "x ← 'get' n 'or' d ;; c" :=
+    (getr n _ (λ y, let x := match y with | Some x => x | None => d end in c))
+    (at level 100, n at next level, d at next level, right associativity,
+    format "x  ←  get  n  or  d  ;;  '/' c")
+    : package_scope.
+
   Declare Custom Entry pack_op.
 
   Notation "#[ f ] : A → B" :=
