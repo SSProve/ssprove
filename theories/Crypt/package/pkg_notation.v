@@ -120,7 +120,9 @@ Module PackageNotation (π : RulesParam).
   Notation " 'zero' " := (chZero) (in custom pack_type at level 2).
   Notation " 'unit' " := (chUnit) (in custom pack_type at level 2).
   Notation " 'option' x " := (chOption x) (in custom pack_type at level 2).
-  Notation " 'fin' x " := (chFin x) (in custom pack_type at level 2).
+  Notation " 'fin' x " :=
+    (chFin x)
+    (in custom pack_type at level 2, x constr).
 
   Notation " x × y " := (chProd x y) (in custom pack_type at level 2).
 
