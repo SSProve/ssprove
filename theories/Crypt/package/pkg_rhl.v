@@ -60,21 +60,89 @@ Module PackageRHL (π : RulesParam).
     (* Let iops_StP := @ops_StP probE rel_choiceTypes chEmb. *)
     (* Let iar_StP := @ar_StP probE rel_choiceTypes chEmb. *)
 
-    Definition heap := {fmap Location -> Value}.
+    Definition pointed_value := ∑ (t : chUniverse), chElement t.
+
+    Definition raw_heap := {fmap Location -> pointed_value}.
+    Definition raw_heap_choiceType := [choiceType of raw_heap].
+
+    Definition check_loc_val (l : Location) (v : pointed_value) := l.π1 == v.π1.
+    Definition valid_location (h : raw_heap) (l : Location) :=
+      match h l with
+      | None => false
+      | Some v => check_loc_val l v
+      end.
+
+    Definition valid_heap : pred raw_heap := fun h =>
+      domm h == fset_filter (fun l => valid_location h l) (domm h).
+    Definition heap := { h : raw_heap | valid_heap h }.
     Definition heap_choiceType := [choiceType of heap].
 
     Definition Game_op_import_S : Type := {_ : ident & void}.
     Definition Game_import_P : Game_op_import_S → choiceType :=
       fun v => match v with existT a b => match b with end end.
 
-    Definition get_heap (map : heap) (l : Location) : Value.
+    Definition get_heap (map : heap) (l : Location) : option (Value l.π1).
     Proof.
-      destruct (getm map l).
-      + exact s.
-      + exact 0.
+      destruct map as [rh valid_rh].
+      destruct (getm rh l) eqn:Hgetm.
+      + assert (exists v, rh l = Some v) as H0.
+        { exists p. assumption. }
+        move: H0. move /dommP => H0.
+        unfold valid_heap in valid_rh.
+        move: valid_rh. move /eqP => valid_rh.
+        rewrite valid_rh in H0.
+        rewrite in_fset_filter in H0.
+        move: H0. move /andP => [H1 H2].
+        unfold valid_location in H1.
+        rewrite Hgetm in H1.
+        unfold check_loc_val in H1.
+        move: H1. move /eqP => H1.
+        rewrite H1.
+        unfold pointed_value in p.
+        exact (Some p.π2).
+      + exact None.
     Defined.
 
-    Definition set_heap (map : heap) (l : Location)  (v : Value) : heap := setm map l v.
+    Program Definition set_heap (map : heap) (l : Location)  (v : Value l.π1) : heap := setm map l (l.π1; v).
+    Next Obligation.
+      intros map l v.
+      unfold valid_heap.
+      destruct map as [rh valid_rh].
+      cbn - ["_ == _"].
+      apply /eqP.
+      apply eq_fset.
+      move => x.
+      rewrite domm_set.
+      rewrite in_fset_filter.
+      destruct ((x \in l |: domm rh)) eqn:Heq.
+      - rewrite andbC. cbn.
+        symmetry. apply /idP.
+        unfold valid_location.
+        rewrite setmE.
+        destruct (x == l) eqn:H.
+        + cbn. move: H. move /eqP => H. subst. apply chUniverse_refl.
+        + move: Heq. move /idP /fsetU1P => Heq.
+          destruct Heq.
+          * move: H. move /eqP => H. contradiction.
+          * destruct x, l. rewrite mem_domm in H0.
+            unfold isSome in H0.
+            destruct (rh (x; s)) eqn:Hrhx.
+            ** cbn. unfold valid_heap in valid_rh.
+               move: valid_rh. move /eqP /eq_fset => valid_rh.
+               specialize (valid_rh (x; s)).
+               rewrite in_fset_filter in valid_rh.
+               rewrite mem_domm in valid_rh.
+               assert (valid_location rh (x;s)) as Hvl.
+               { rewrite Hrhx in valid_rh. cbn in valid_rh.
+                 rewrite andbC in valid_rh. cbn in valid_rh.
+                 rewrite -valid_rh. auto. }
+               unfold valid_location in Hvl.
+               rewrite Hrhx in Hvl.
+               cbn in Hvl.
+               assumption.
+            ** assumption.
+      - rewrite andbC. auto.
+    Qed.
 
     Definition fromEmpty {B} {v : opsig} (H : v \in fset0) : B.
       rewrite in_fset0 in H.
@@ -453,9 +521,14 @@ Module PackageRHL (π : RulesParam).
       exact (Pr_raw_package_op PP PP_is_valid op Hin arg s0).
     Defined.
 
+    Program Definition empty_heap : heap := emptym.
+    Next Obligation.
+      by rewrite /valid_heap domm0 /fset_filter -fset0E.
+    Qed.
+
     Definition Pr (P : package Game_import A_export) : SDistr (bool_choiceType) :=
       SDistr_bind _ _ (fun '(b, _) => SDistr_unit _ b)
-                      (Pr_op P RUN RUN_in_A_export Datatypes.tt emptym).
+                      (Pr_op P RUN RUN_in_A_export Datatypes.tt empty_heap).
 
     Definition get_op {I E : Interface} (p : package I E)
       (o : opsig) (ho : o \in E) (arg : src o) :
@@ -561,10 +634,10 @@ Module PackageRHL (π : RulesParam).
 
     Lemma get_case {L LA} (I : heap_choiceType * heap_choiceType -> Prop)
       (HINV : INV LA I) {l : Location} (Hin : l \in LA)
-      (hp : [eta valid_program L Game_import] (_getr l [eta _ret (A:=Value)])):
+      (hp : [eta valid_program L Game_import] (_getr l (fun x => _ret x))):
       ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄
-            repr (locs := L) (exist _ (_getr l [eta _ret (A:=Value)]) hp)
-          ≈ repr (locs := L) (exist _ (_getr l [eta _ret (A:=Value)]) hp)
+            repr (locs := L) (exist _ (_getr l (fun x => _ret x)) hp)
+          ≈ repr (locs := L) (exist _ (_getr l (fun x => _ret x)) hp)
           ⦃ fun '(b1, s1) '(b2, s2) => b1 = b2 /\ I (s1, s2) ⦄.
     Proof.
       cbn. intros [s1 s2].
@@ -579,9 +652,10 @@ Module PackageRHL (π : RulesParam).
         specialize (HINV H0 _ Hin).
         assumption.
       }
-      simpl (repr'_obligation_1 Value (get_heap s1 l), s1).
-      exists (SDistr_unit _ ((repr'_obligation_1 Value (get_heap s1 l), s1),
-                        (repr'_obligation_1 Value (get_heap s2 l), s2))).
+      unfold repr'_obligation_1.
+      pose v := (SDistr_unit _ (((get_heap s1 l), s1),
+                                ((get_heap s2 l), s2))).
+      exists v.
       split.
       + apply SDistr_unit_F_choice_prod_coupling.
         reflexivity.
@@ -603,7 +677,7 @@ Module PackageRHL (π : RulesParam).
     Qed.
 
     Lemma put_case {L LA} (I : heap_choiceType * heap_choiceType -> Prop)
-      (HINV : INV LA I) {l : Location} {v : Value} (Hin : l \in LA)
+      (HINV : INV LA I) {l : Location} {v : Value l.π1} (Hin : l \in LA)
       (hp : [eta valid_program L Game_import] (_putr l v (_ret tt))):
       ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄
             repr (locs := L) (exist _ (_putr l v (_ret tt)) hp)
@@ -828,9 +902,6 @@ Module PackageRHL (π : RulesParam).
         eassert ((λ x : chEmb opA,
             prob_handler (chEmb opA) opB x *
             dunit
-              (T:=prod_choiceType
-                    (prod_choiceType (chEmb opA) (fmap_of_choiceType nat_ordType Value))
-                    (prod_choiceType (chEmb opA) (fmap_of_choiceType nat_ordType Value)))
                     (x, s1, (x, s2)) (s, h, (s0, h0))) =
                  _).
         { extensionality x. rewrite dunit1E. reflexivity. }
@@ -877,7 +948,7 @@ Module PackageRHL (π : RulesParam).
                (P1 : opackage L1 Game_import export)
                (P2 : opackage L2 Game_import export)
                (I : heap_choiceType * heap_choiceType -> Prop)
-               (HINV : INV LA I) (Hempty : I (emptym, emptym))
+               (HINV : INV LA I) (Hempty : I (empty_heap, empty_heap))
                (H : eq_up_to_inv I P1 P2)
                (A : program LA export B)
                (s1 : heap_choiceType) (s2 : heap_choiceType) (Hs1s2 : I (s1, s2))
@@ -975,11 +1046,17 @@ Module PackageRHL (π : RulesParam).
         unfold opackage_inject_locations.
         cbn - [semantic_judgement bindrFree].
         destruct hA as [hA1 hA2].
-        eapply bind_rule_pp.
+        unfold repr'_obligation_4.
+        cbn - [semantic_judgement bindrFree].
+        match goal with
+        | |- ⊨ ⦃ ?pre_ ⦄ bindrFree _ _ ?m_ ?f1_ ≈ bindrFree _ _ _ ?f2_ ⦃ ?post_ ⦄ =>
+          pose (m := m_); pose (f1 := f1_); pose (f2 := f2_); pose (pre := pre_); pose (post := post_)
+        end.
+        eapply (bind_rule_pp (f1 := f1) (f2 := f2) m m pre _ post).
         + eapply (@get_case _ LA).
           ++ assumption.
           ++ exact hA1.
-          Unshelve.
+             Unshelve.
           * exact LA.
           * cbn. auto.
         + intros a1 a2.
@@ -999,7 +1076,11 @@ Module PackageRHL (π : RulesParam).
       - unfold program_link. unfold injectLocations. unfold opackage_inject_locations.
         cbn - [semantic_judgement bindrFree].
         destruct hA as [hA1 hA2].
-        eapply bind_rule_pp.
+        match goal with
+        | |- ⊨ ⦃ ?pre_ ⦄ bindrFree _ _ ?m_ ?f1_ ≈ bindrFree _ _ _ ?f2_ ⦃ ?post_ ⦄ =>
+          pose (m := m_); pose (f1 := f1_); pose (f2 := f2_); pose (pre := pre_); pose (post := post_)
+        end.
+        eapply (bind_rule_pp (f1 := f1) (f2 := f2) m m pre _ post).
         + eapply (@put_case _ LA).
           ++ assumption.
           ++ exact hA1.
@@ -1025,8 +1106,8 @@ Module PackageRHL (π : RulesParam).
         eapply bind_rule_pp.
         + eapply (@sampler_case LA LA).
           ++ assumption.
-          Unshelve.
-          1: { cbn. auto. }
+             Unshelve.
+             1: { cbn. auto. }
         + intros a1 a2.
           simpl (λ '(s0, s3), (λ '(b1, s4) '(b2, s5), b1 = b2 s/\ I (s4, s5)) (a1, s0) (a2, s3)).
           apply pre_hypothesis_rule.
@@ -1051,7 +1132,7 @@ Module PackageRHL (π : RulesParam).
                (P2 : opackage L2 Game_import export)
                (I : heap_choiceType * heap_choiceType -> Prop)
                (HINV' : INV' L1 L2 I)
-               (Hempty : I (emptym, emptym))
+               (Hempty : I (empty_heap, empty_heap))
                (H : eq_up_to_inv I P1 P2)
       : (L1; P1) ≈[ fun A {H1} {H2} => 0 ] (L2; P2).
     Proof.
@@ -1086,7 +1167,7 @@ Module PackageRHL (π : RulesParam).
           + move: Hdisjoint2. move /fdisjointP => Hdisjoint2.
             apply Hdisjoint2. assumption.
       }
-      pose Hlemma := (some_lemma_for_prove_relational _ _ _ HINV Hempty H r emptym emptym Hempty).
+      pose Hlemma := (some_lemma_for_prove_relational _ _ _ HINV Hempty H r empty_heap empty_heap Hempty).
       assert (∀ x y : tgt RUN * heap_choiceType,
                  (let '(b1, s1) := x in λ '(b2, s2), b1 = b2 s/\ I (s1, s2)) y → (fst x == true) ↔ (fst y == true)) as Ha.
       { intros [b1 s1] [b2 s2]. simpl.
@@ -1099,16 +1180,16 @@ Module PackageRHL (π : RulesParam).
       simpl in Heq.
       unfold Pr_op.
       pose _rhs := (thetaFstd _ (repr (program_link
-            (injectLocations (fsubsetUl (T:=nat_ordType) (getLocations A) (L1 :|: L2)) r)
+            (injectLocations (fsubsetUl (getLocations A) (L1 :|: L2)) r)
             (opackage_inject_locations
-               (fsubset_trans (T:=nat_ordType) (y:=L1 :|: L2) (x:=L1)
-                  (z:=getLocations A :|: (L1 :|: L2)) (fsubsetUl (T:=nat_ordType) L1 L2)
-                  (fsubsetUr (T:=nat_ordType) (getLocations A) (L1 :|: L2))) P1))) emptym).
+               (fsubset_trans (y:=L1 :|: L2) (x:=L1)
+                  (z:=getLocations A :|: (L1 :|: L2)) (fsubsetUl L1 L2)
+                  (fsubsetUr (getLocations A) (L1 :|: L2))) P1))) empty_heap).
       pose rhs := _rhs prob_handler.
       simpl in _rhs, rhs.
       pose lhs := (let (L, o) := link A (L1; P1) in
                    let (PP, PP_is_valid) := o in
-                   Pr_raw_package_op PP PP_is_valid RUN RUN_in_A_export tt emptym).
+                   Pr_raw_package_op PP PP_is_valid RUN RUN_in_A_export tt empty_heap).
       assert (lhs = rhs).
       { unfold lhs, rhs, _rhs. simpl.
         unfold Pr_raw_package_op. unfold Pr_raw_program.
@@ -1128,22 +1209,22 @@ Module PackageRHL (π : RulesParam).
         }
         epose (get_raw_package_op_ext RUN_in_A_export tt A) as e.
         specialize (e (valid_package_inject_locations export A_export LA (LA :|: L1) A
-                                                      (fsubsetUl (T:=nat_ordType) LA L1) A_valid)).
+                                                      (fsubsetUl LA L1) A_valid)).
         eapply e.
       }
       unfold lhs in H0.
       rewrite H0.
       pose _rhs' := (thetaFstd _ (repr (program_link
-            (injectLocations (fsubsetUl (T:=nat_ordType) (getLocations A) (L1 :|: L2)) r)
+            (injectLocations (fsubsetUl (getLocations A) (L1 :|: L2)) r)
             (opackage_inject_locations
-               (fsubset_trans (T:=nat_ordType) (y:=L1 :|: L2) (x:=L2)
-                  (z:=getLocations A :|: (L1 :|: L2)) (fsubsetUr (T:=nat_ordType) L1 L2)
-                  (fsubsetUr (T:=nat_ordType) (getLocations A) (L1 :|: L2))) P2))) emptym).
+               (fsubset_trans (y:=L1 :|: L2) (x:=L2)
+                  (z:=getLocations A :|: (L1 :|: L2)) (fsubsetUr L1 L2)
+                  (fsubsetUr (getLocations A) (L1 :|: L2))) P2))) empty_heap).
       pose rhs' := _rhs' prob_handler.
       simpl in _rhs', rhs'.
       pose lhs' := (let (L, o) := link A (L2; P2) in
                    let (PP, PP_is_valid) := o in
-                   Pr_raw_package_op PP PP_is_valid RUN RUN_in_A_export tt emptym).
+                   Pr_raw_package_op PP PP_is_valid RUN RUN_in_A_export tt empty_heap).
       assert (lhs' = rhs') as H0'.
       { unfold lhs', rhs', _rhs'. simpl.
         unfold Pr_raw_package_op. unfold Pr_raw_program.
@@ -1163,7 +1244,7 @@ Module PackageRHL (π : RulesParam).
         }
         epose (get_raw_package_op_ext RUN_in_A_export tt A) as e.
         specialize (e (valid_package_inject_locations export A_export LA (LA :|: L2) A
-                                                      (fsubsetUl (T:=nat_ordType) LA L2) A_valid)).
+                                                      (fsubsetUl LA L2) A_valid)).
         eapply e.
       }
       unfold lhs' in H0'.
