@@ -260,8 +260,9 @@ Module PackageRHL (π : RulesParam).
         apply repr'_ext.
         f_equal.
     Qed.
-
-    Notation "r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
+      
+    
+    Notation " r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄ " :=
         (semantic_judgement _ _ (repr c1) (repr c2) (fromPrePost pre post)).
 
     Theorem rbind_rule {A1 A2 B1 B2 : ord_choiceType}
@@ -929,18 +930,18 @@ Module PackageRHL (π : RulesParam).
          ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄ repr (exist _ (f arg) (hpf arg)) ≈ repr (exist _ (g arg) (hpg arg)) ⦃ λ '(b1, s0) '(b2, s3), b1 = b2 /\ I (s0, s3) ⦄.
 
 
-    Lemma eq_up_to_inv' { L1 L2 } { E }
-               (I : heap_choiceType * heap_choiceType → Prop)
-               (P1 : opackage L1 Game_import E) (P2 : opackage L2 Game_import E) :
-      (eq_up_to_inv I P1 P2) <-> (
-      forall  (id : ident) (S T : chUniverse)
-         (hin : (id, (S, T)) \in E)
-         (arg : S),
-        ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄
-           repr (get_opackage_op P1 (id, (S,T)) hin arg) ≈
-           repr (get_opackage_op P2 (id, (S,T)) hin arg)
-           ⦃ λ '(b1, s0) '(b2, s3), b1 = b2 /\ I (s0, s3) ⦄ ).
-    Proof. Admitted. 
+    (* Lemma eq_up_to_inv' { L1 L2 } { E } *)
+    (*            (I : heap_choiceType * heap_choiceType → Prop) *)
+    (*            (P1 : opackage L1 Game_import E) (P2 : opackage L2 Game_import E) : *)
+    (*   (eq_up_to_inv I P1 P2) <-> ( *)
+    (*   forall  (id : ident) (S T : chUniverse) *)
+    (*      (hin : (id, (S, T)) \in E) *)
+    (*      (arg : S), *)
+    (*     ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄ *)
+    (*        repr (get_opackage_op P1 (id, (S,T)) hin arg) ≈ *)
+    (*        repr (get_opackage_op P2 (id, (S,T)) hin arg) *)
+    (*        ⦃ λ '(b1, s0) '(b2, s3), b1 = b2 /\ I (s0, s3) ⦄ ). *)
+    (* Proof. Admitted.  *)
      
 
     
@@ -1290,6 +1291,161 @@ Module PackageRHL (π : RulesParam).
             + apply fsubsetUl.
             + exact A_valid.
     Qed.
-  End Games.
+
+
+  (* Rules for packages *)
+  (* same as in RulesStateprob.v with `r` at the beginning *)
+
+  (* Pre-condition manipulating rules *)
+  Theorem rpre_weaken_rule {A1 A2 : ord_choiceType} {L1 L2 : {fset Location}}
+          {p1 : program L1 Game_import A1}
+          {p2 : program L2 Game_import A2} :
+    forall (pre pre' : heap * heap -> Prop) post, ( r⊨ ⦃ pre ⦄ p1 ≈ p2 ⦃ post ⦄) ->
+                                         (forall st1 st2, pre' (st1, st2) -> pre (st1, st2) ) ->
+                                          ( r⊨ ⦃ pre' ⦄ p1 ≈ p2 ⦃ post ⦄ ) .
+  Proof. by apply: pre_weaken_rule. Qed.
+  
+  Theorem rpre_hypothesis_rule  {A1 A2 : ord_choiceType} {L1 L2 : {fset Location}}
+          {p1 : program L1 Game_import A1}
+          {p2 : program L2 Game_import A2} :
+    forall (pre : heap * heap -> Prop) post,
+      (forall st1 st2, pre (st1, st2) -> r⊨ ⦃ (fun st => st.1 = st1 /\ st.2 = st2 ) ⦄ p1 ≈ p2 ⦃ post ⦄) ->
+      (r⊨ ⦃ pre ⦄ p1 ≈ p2 ⦃ post ⦄).
+  Proof. by apply: pre_hypothesis_rule. Qed.
+
+  
+Theorem rpre_strong_hypothesis_rule  {A1 A2 : ord_choiceType} {L1 L2 : {fset Location}}
+                             {p1 : program L1 Game_import A1}
+                             {p2 : program L1 Game_import A2} :
+  forall (pre : heap * heap -> Prop) post, (forall st1 st2, pre (st1, st2)) -> (r⊨ ⦃ (fun st => True ) ⦄ p1 ≈ p2 ⦃ post ⦄) ->
+                              (r⊨ ⦃ pre ⦄ p1 ≈ p2 ⦃ post ⦄).
+Proof. by apply: pre_strong_hypothesis_rule. Qed. 
+
+Theorem rpost_weaken_rule  {A1 A2 : ord_choiceType} {L1 L2 : {fset Location}}
+                          {p1 : program L1 Game_import A1}
+                          {p2 : program L2 Game_import A2} :
+    forall (pre : heap * heap -> Prop) (post1 post2 : A1 * heap -> A2 * heap -> Prop),
+    (r⊨ ⦃ pre ⦄ p1 ≈ p2 ⦃ post1 ⦄) ->
+    (forall as1 as2, post1 as1 as2 -> post2 as1 as2) -> (r⊨ ⦃ pre ⦄ p1 ≈ p2 ⦃ post2 ⦄).
+Proof. by apply: post_weaken_rule. Qed. 
+
+(* Theorem rseq_rule  { A1 A2 : ord_choiceType } *)
+(*                    { B1 B2 : ord_choiceType } *)
+(*                    {L1 L2 : {fset Location}} *)
+(*                    {f1 : A1 -> program L1 Game_import B1} *)
+(*                    {f2 : A2 -> program L2 Game_import B2} *)
+(*                    (m1 : program L1 Game_import A1) (m2 : program L2 Game_import A2) *)
+(*                    (P : heap * heap -> Prop) (R : A1 * heap -> A2 * heap -> Prop) *)
+(*                    (Q : B1 * heap -> B2 * heap -> Prop) *)
+(*                    (judge1 : r⊨ ⦃ P ⦄ m1 ≈ m2 ⦃ R ⦄ ) *)
+(*                    (judge2 : forall a1 a2, r⊨ ⦃ (fun '(st1, st2) => R (a1, st1) (a2, st2)) ⦄ (f1 a1) ≈ (f2 a2) ⦃ Q ⦄ ) : *)
+(*  r⊨ ⦃ P ⦄  (* x <- m1 ;; f1 x ≈  m2 ;; f2 *) ⦃ Q ⦄. *)
+
+Locate finType. 
+
+(* Skipped for now *)
+(* Theorem comp_rule ... *)
+
+Print repr_bind. 
+
+Lemma repr_if {A} {L} {b : bool} (c1 c2 : program L Game_import A):
+      repr (if b then c1 else c2) =  if b then (repr c1) else (repr c2).
+Proof. by destruct b. Qed. 
+
+  
+Theorem rif_rule  {A1 A2 : ord_choiceType} {L1 L2 : {fset Location}}
+                 (c1 c2 : program L1 Game_import A1)
+                 (c1' c2' : program L2 Game_import A2)
+                 {b1 b2 : bool}
+                 {pre : heap * heap -> Prop} {post : A1 * heap -> A2 * heap -> Prop}
+                 {pre_b1b2 : forall st, pre st -> b1 = b2}
+                 { H1 : r⊨ ⦃ fun st => pre st /\ b1 = true ⦄ c1 ≈ c1' ⦃ post ⦄ }
+                 { H2 : r⊨ ⦃ fun st => pre st /\ b1 = false ⦄ c2 ≈ c2' ⦃ post ⦄ } :
+  r⊨ ⦃ pre ⦄
+      (if b1 then c1 else c2) ≈
+      (if b2 then c1' else c2')
+     ⦃ post ⦄.
+Proof. rewrite !repr_if. by apply: if_rule. Qed. 
+
+(* TODO: asymmetric variants of if_rule: if_ruleL and if_ruleR *)
+
+
+(* skipped for now: 
+Theorem bounded_do_while_rule *)
+
+(*TODO: asymmetric variants of bounded_do_while -- CA: low priority as not useful for our examples *)
+
+
+Lemma rrewrite_eqDistrL { A1 A2 : ord_choiceType } {L1 L2 : {fset Location} } { P } { Q }
+      (c1 c1' : program L1 Game_import A1) (c2 : program L2 Game_import A2)
+      (H : r⊨ ⦃ P ⦄ c1 ≈ c2 ⦃ Q ⦄)
+      (θeq : θ0 (repr c1) = θ0 (repr c1') ) :
+
+ r⊨ ⦃ P ⦄ c1'  ≈ c2 ⦃ Q ⦄.
+Proof. by apply: rewrite_eqDistrL (repr c1) (repr c1') (repr c2) H θeq. Qed. 
+
+Lemma rrewrite_eqDistrR { A1 A2 : ord_choiceType } {L1 L2 : {fset Location} } { P } { Q }
+                       (c1  : program L1 Game_import A1) (c2 c2': program L2 Game_import A2)
+                       (H : r⊨ ⦃ P ⦄ c1 ≈ c2 ⦃ Q ⦄)
+                       (θeq : θ0 (repr c2) = θ0 (repr c2')) :
+
+  r⊨ ⦃ P ⦄ c1  ≈ c2' ⦃ Q ⦄.
+Proof. by apply: rewrite_eqDistrR (repr c1) (repr c2) (repr c2') H θeq. Qed. 
+
+
+Let θ_dens { S : choiceType } { X : ord_choiceType } :=
+  @Theta_dens.unary_theta_dens probE rel_choiceTypes chEmb prob_handler (F_choice_prod_obj ⟨ X, S ⟩).
+
+Lemma rreflexivity_rule { A : ord_choiceType } { L : {fset Location} }
+      (c : program L Game_import A):
+  r⊨ ⦃ fun '(s1, s2) => s1 = s2 ⦄ c ≈ c ⦃ eq ⦄.
+Proof. by apply: reflexivity_rule (repr c). Qed. 
+
+Theorem rswap_rule { A : ord_choiceType } { L : {fset Location} } { I Q }
+                  (c1 c2 : program L Game_import A)
+                  (Hinv1 : r⊨ ⦃ I ⦄ c1 ≈ c2 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Q (a1, s1) (a2, s2) ⦄ )
+                  (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Q (a1, s1) (a2, s2) ⦄ ):
+  r⊨ ⦃ I ⦄ (bind L _ c1 (fun _ => c2)) ≈ (bind L _ c2 (fun _ => c1)) ⦃ Q ⦄.
+Proof. rewrite !repr_bind. by apply: swap_rule (repr c1) (repr c2) Hinv1 Hinv2. Qed. 
+
+Theorem rswap_ruleL { A : ord_choiceType } { L : {fset Location} }
+                   { pre I } { Left  post : A * heap -> A * heap -> Prop }
+                   (l c1 c2 : program L Game_import A)
+                   (HL    : r⊨ ⦃ pre ⦄ l ≈ l ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) ⦄)
+                   (Hinv1 : r⊨ ⦃ I ⦄ c1 ≈ c2 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Left (a1, s1) (a2, s2) ⦄ )
+                   (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Left (a1, s1) (a2, s2) ⦄ )
+                   (LQ : forall a1 s1 a2 s2, Left (a1, s1) (a2, s2) -> post (a1, s1) (a2, s2)):
+  r⊨ ⦃ pre ⦄
+   (bind L _ l (fun _ => (bind L _ c1 (fun _ => c2)))) ≈
+   (bind L _ l (fun _ => (bind L _ c2 (fun _ => c1))))
+   ⦃ post ⦄ .
+Proof. rewrite !repr_bind. by apply: swap_ruleL (repr l) (repr c1) (repr c2) HL Hinv1 Hinv2 LQ. Qed. 
+
+Theorem rswap_ruleR { A : ord_choiceType } { L : {fset Location} }
+                   { I } { post Q : A * heap -> A * heap -> Prop }
+                   (r c1 c2 : program L Game_import A)
+                   (HR    : forall a1 a2, r⊨ ⦃ fun '(s1, s2) => Q (a1,s1) (a2,s2) ⦄ r ≈ r ⦃ post ⦄)
+                   (Hinv1 : r⊨ ⦃ I ⦄ c1 ≈ c2 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Q (a1, s1) (a2, s2) ⦄ )
+                   (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Q (a1, s1) (a2, s2) ⦄ ):
+  r⊨ ⦃ I ⦄
+   (bind L _ c1 (fun _ => bind L _ c2 (fun _ => r))) ≈
+   (bind L _ c2 (fun _ => bind L _ c1 (fun _ => r)))
+   ⦃ post ⦄.
+Proof. rewrite !repr_bind. by apply: swap_ruleR (repr r) (repr c1) (repr c2) HR Hinv1 Hinv2. Qed. 
+
+Theorem rswap_rule_ctx { A : ord_choiceType } { L : {fset Location} }
+                       { I pre } { post Q : A * heap -> A * heap -> Prop }
+                       (l r c1 c2 : program L Game_import A)
+                      (HL    : r⊨ ⦃ pre ⦄ l ≈ l ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) ⦄)
+                      (HR    : forall a1 a2, r⊨ ⦃ fun '(s1, s2) => Q (a1,s1) (a2,s2) ⦄ r ≈ r ⦃ post ⦄)
+                      (Hinv1 : r⊨ ⦃ I ⦄ c1 ≈ c2 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Q (a1, s1) (a2, s2) ⦄ )
+                      (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Q (a1, s1) (a2, s2) ⦄ ):
+  r⊨ ⦃ pre ⦄
+   (bind L _ l (fun _ => bind L _ c1  (fun _ => bind L _ c2 (fun _ => r)))) ≈
+   (bind L _ l (fun _ => bind L _ c2  (fun _ => bind L _ c1 (fun _ => r))))
+    ⦃ post ⦄.
+Proof. rewrite !repr_bind. by apply: swap_rule_ctx (repr l) (repr r) (repr c1) (repr c2) HL HR Hinv1 Hinv2. Qed.
+
+End Games. 
 
 End PackageRHL.
