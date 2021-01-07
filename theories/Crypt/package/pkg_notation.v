@@ -94,7 +94,8 @@
 
 
 From Coq Require Import Utf8.
-From mathcomp Require Import choice seq.
+From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
+  choice seq.
 From extructures Require Import ord fset fmap.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd RulesStateProb
   pkg_chUniverse pkg_core_definition pkg_composition.
