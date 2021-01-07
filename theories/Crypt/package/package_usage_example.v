@@ -102,6 +102,13 @@ Module NotationExamples (π : RulesParam).
     ]
   |}.
 
+  Lemma give_fin {m} (n : nat) {h : n < m} : chFin m.
+  Proof.
+    cbn. exists n. exact h.
+  Defined.
+
+  Notation gfin n := (@give_fin _ n _).
+
   (* The exact same definition but using the notations for the monad. *)
   #[program] Definition btest' : bundle := {|
     locs := [fset ('nat; 0)] ;
@@ -113,7 +120,7 @@ Module NotationExamples (π : RulesParam).
     pack := [package
       def #[2] (_ : 'unit) : 'option ('fin 2) {
         put ('nat; 0) := 0 ;;
-        ret (Some _)
+        ret (Some (gfin 1))
       } ;
       def #[1] (x : 'nat) : 'nat {
         n ← get ('nat; 0) ;;
@@ -127,8 +134,5 @@ Module NotationExamples (π : RulesParam).
       }
     ]
   |}.
-  Next Obligation.
-    exists 1. auto.
-  Defined.
 
 End NotationExamples.
