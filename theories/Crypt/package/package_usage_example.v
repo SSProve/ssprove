@@ -102,13 +102,6 @@ Module NotationExamples (π : RulesParam).
     ]
   |}.
 
-  Lemma give_fin {m} (n : nat) {h : n < m} : chFin m.
-  Proof.
-    cbn. exists n. exact h.
-  Defined.
-
-  Notation gfin n := (@give_fin _ n _).
-
   (* The exact same definition but using the notations for the monad. *)
   #[program] Definition btest' : bundle := {|
     locs := [fset ('nat; 0)] ;
