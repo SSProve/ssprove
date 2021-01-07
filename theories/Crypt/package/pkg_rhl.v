@@ -1375,11 +1375,18 @@ Theorem bounded_do_while_rule *)
 
 (*TODO: asymmetric variants of bounded_do_while -- CA: low priority as not useful for our examples *)
 
+Lemma rcoupling_eq { A : ord_choiceType } { L : {fset Location} }
+                  (K1 K2 : program L Game_import A )
+                  (ψ : heap * heap -> Prop)
+                  (H : r⊨ ⦃ ψ ⦄ K1 ≈ K2 ⦃ eq ⦄):
+  forall s1 s2, ψ (s1, s2) -> θ_dens (θ0 (repr K1) s1) = θ_dens (θ0 (repr K2) s2).
+Proof. by apply: coupling_eq (repr K1) (repr K2) ψ H. Qed. 
+               
 
 Lemma rrewrite_eqDistrL { A1 A2 : ord_choiceType } {L1 L2 : {fset Location} } { P } { Q }
       (c1 c1' : program L1 Game_import A1) (c2 : program L2 Game_import A2)
       (H : r⊨ ⦃ P ⦄ c1 ≈ c2 ⦃ Q ⦄)
-      (θeq : θ0 (repr c1) = θ0 (repr c1') ) :
+      (θeq : forall s, θ_dens (θ0 (repr c1) s) = θ_dens (θ0 (repr c1') s )) :
 
  r⊨ ⦃ P ⦄ c1'  ≈ c2 ⦃ Q ⦄.
 Proof. by apply: rewrite_eqDistrL (repr c1) (repr c1') (repr c2) H θeq. Qed. 
@@ -1387,14 +1394,10 @@ Proof. by apply: rewrite_eqDistrL (repr c1) (repr c1') (repr c2) H θeq. Qed.
 Lemma rrewrite_eqDistrR { A1 A2 : ord_choiceType } {L1 L2 : {fset Location} } { P } { Q }
                        (c1  : program L1 Game_import A1) (c2 c2': program L2 Game_import A2)
                        (H : r⊨ ⦃ P ⦄ c1 ≈ c2 ⦃ Q ⦄)
-                       (θeq : θ0 (repr c2) = θ0 (repr c2')) :
+                       (θeq : forall s, θ_dens (θ0 (repr c2) s) = θ_dens (θ0 (repr c2') s)) :
 
   r⊨ ⦃ P ⦄ c1  ≈ c2' ⦃ Q ⦄.
 Proof. by apply: rewrite_eqDistrR (repr c1) (repr c2) (repr c2') H θeq. Qed. 
-
-
-Let θ_dens { S : choiceType } { X : ord_choiceType } :=
-  @Theta_dens.unary_theta_dens probE rel_choiceTypes chEmb prob_handler (F_choice_prod_obj ⟨ X, S ⟩).
 
 Lemma rreflexivity_rule { A : ord_choiceType } { L : {fset Location} }
       (c : program L Game_import A):
