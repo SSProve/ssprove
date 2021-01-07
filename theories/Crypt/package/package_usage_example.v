@@ -101,15 +101,6 @@ Module NotationExamples (π : RulesParam).
       }
     ]
   |}.
-  Next Obligation.
-    by rewrite fsetU0 in_fset1.
-  Qed.
-  Next Obligation.
-    by rewrite fsetU0 in_fset1.
-  Qed.
-  Next Obligation.
-    by rewrite fsetU0 in_fset1.
-  Qed.
 
   (* The exact same definition but using the notations for the monad. *)
   #[program] Definition btest' : bundle := {|
@@ -122,7 +113,7 @@ Module NotationExamples (π : RulesParam).
     pack := [package
       def #[2] (_ : 'unit) : 'option ('fin 2) {
         put ('nat; 0) := 0 ;;
-        ret (Some _)
+        ret (Some (gfin 1))
       } ;
       def #[1] (x : 'nat) : 'nat {
         n ← get ('nat; 0) ;;
@@ -136,12 +127,5 @@ Module NotationExamples (π : RulesParam).
       }
     ]
   |}.
-  Next Obligation. admit. Admitted.
-  Next Obligation.
-    exists 1. auto.
-  Defined.
-  Next Obligation. admit. Admitted.
-  Next Obligation. admit. Admitted.
-  Next Obligation. admit. Admitted.
 
 End NotationExamples.

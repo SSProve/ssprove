@@ -17,14 +17,20 @@
     following notations.
     These types can be described using a syntax closer to the usual Coq
     syntax:
-    nat
-    bool
-    zero
-    unit
-    option A
-    fin A
+    'nat
+    'bool
+    'zero
+    'unit
+    'option A
+    'fin n
     A × B
-    where A and B follow again the same syntax.
+    where A and B follow again the same syntax and n is a natural number
+    given using the regular Coq syntax.
+
+  - Notation to provide an inhabitant of 'fin n
+    gfin m will try to inhabit 'fin n
+    It is best used in a #[program] environment to make sure the proof
+    obligation is automatically discharged.
 
   - Sequence notation for interfaces
 
@@ -275,5 +281,12 @@ Module PackageNotation (π : RulesParam).
     (at level 100, o at next level, right associativity,
     format "x  <$  o  ;;  '/' c", only parsing)
     : package_scope.
+
+  Lemma give_fin {m} (n : nat) {h : n < m} : chFin m.
+  Proof.
+    cbn. exists n. exact h.
+  Defined.
+
+  Notation gfin n := (@give_fin _ n _).
 
 End PackageNotation.

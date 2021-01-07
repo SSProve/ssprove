@@ -41,8 +41,7 @@ Ltac in_fset_auto :=
 (* Succeeds for x \in S if S contains syntactically x, S seq *)
 Ltac inseq_try :=
   apply/orP ; first [
-    left ; apply/andP ; split ;
-    apply/eqP ; reflexivity
+    left ; apply/eqP ; reflexivity
   | right ; inseq_try
   ].
 
