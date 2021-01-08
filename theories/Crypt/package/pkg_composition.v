@@ -1254,6 +1254,112 @@ Module PackageComposition (π : RulesParam).
 
   (* Some folding lemmata *)
 
+  Lemma fold_ret :
+    ∀ (A : choiceType) L I (x : A) (h : valid_program L I _),
+      exist _ (_ret x) h = ret x.
+  Proof.
+    intros A L I x h.
+    apply program_ext. reflexivity.
+  Qed.
+
+  Lemma valid_opr_in :
+    ∀ {A L I} {o x} {k : tgt o → raw_program A},
+      valid_program L I (_opr o x k) →
+      o \in I.
+  Proof.
+    intros A L I o x k h.
+    cbn in h. intuition auto.
+  Qed.
+
+  Lemma valid_opr_k :
+    ∀ {A L I} {o x} {k : tgt o → raw_program A},
+      valid_program L I (_opr o x k) →
+      ∀ v, valid_program L I (k v).
+  Proof.
+    intros A L I o x k h.
+    cbn in h. intuition auto.
+  Qed.
+
+  Lemma fold_opr :
+    ∀ (A : choiceType) L I
+      (o : opsig) (x : src o) (k : tgt o → raw_program A)
+      (h : valid_program L I _),
+      exist _ (_opr o x k) h =
+      opr o (valid_opr_in h) x (λ x, exist _ (k x) (valid_opr_k h x)).
+  Proof.
+    intros A L I o x k h.
+    apply program_ext. reflexivity.
+  Qed.
+
+  Lemma valid_getr_in :
+    ∀ {A L I} {l} {k : option (Value l.π1) → raw_program A},
+      valid_program L I (_getr l k) →
+      l \in L.
+  Proof.
+    intros A L I l k h.
+    cbn in h. intuition auto.
+  Qed.
+
+  Lemma valid_getr_k :
+    ∀ {A L I} {l} {k : option (Value l.π1) → raw_program A},
+      valid_program L I (_getr l k) →
+      ∀ v, valid_program L I (k v).
+  Proof.
+    intros A L I l k h.
+    cbn in h. intuition auto.
+  Qed.
+
+  Lemma fold_getr :
+    ∀ (A : choiceType) L I
+      (l : Location) (k : option (Value l.π1) → raw_program A)
+      (h : valid_program L I _),
+      exist _ (_getr l k) h =
+      getr l (valid_getr_in h) (λ x, exist _ (k x) (valid_getr_k h x)).
+  Proof.
+    intros A L I l k h.
+    apply program_ext. reflexivity.
+  Qed.
+
+  Lemma valid_putr_in :
+    ∀ {A L I} {l} {v : Value l.π1} {k : raw_program A},
+      valid_program L I (_putr l v k) →
+      l \in L.
+  Proof.
+    intros A L I l v k h.
+    cbn in h. intuition auto.
+  Qed.
+
+  Lemma valid_putr_k :
+    ∀ {A L I} {l} {v : Value l.π1} {k : raw_program A},
+      valid_program L I (_putr l v k) →
+      valid_program L I k.
+  Proof.
+    intros A L I l v k h.
+    cbn in h. intuition auto.
+  Qed.
+
+  Lemma fold_putr :
+    ∀ (A : choiceType) L I
+      (l : Location) (v : Value l.π1) (k : raw_program A)
+      (h : valid_program L I _),
+      exist _ (_putr l v k) h =
+      putr l (valid_putr_in h) v (exist _ k (valid_putr_k h)).
+  Proof.
+    intros A L I l v k h.
+    apply program_ext. reflexivity.
+  Qed.
+
+  Lemma fold_sampler :
+    ∀ (A : choiceType) L I
+      (op : Op) (k : Arit op → raw_program A)
+      (h : valid_program L I _),
+      exist _ (_sampler op k) h =
+      sampler op (λ x, exist _ (k x) (h x)).
+  Proof.
+    intros A L I op k h.
+    apply program_ext. reflexivity.
+  Qed.
+
   Lemma valid_bind_1 :
     ∀ {A B L I} {v : raw_program A} {k : A → raw_program B},
       valid_program L I (bind_ v k) →
