@@ -75,7 +75,7 @@ Module PackageTactics (π : RulesParam).
       rewrite fold_opr *)
 
   Ltac program_fold :=
-    rewrite !fold_ret !fold_opr !fold_getr !fold_putr !fold_sampler.
+    rewrite ?fold_ret ?fold_opr ?fold_getr ?fold_putr ?fold_sampler.
 
   Tactic Notation "program" "fold" :=
     program_fold.
