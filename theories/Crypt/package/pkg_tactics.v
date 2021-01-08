@@ -1,7 +1,7 @@
 (** Tactics to help write packages
 
   In this module we define handy tactics to deal with obligations generated
-  by packages operations.
+  by packages operations and packages in general.
 
   - in_fset_auto
     This tactic should solve goals of the form
@@ -24,10 +24,16 @@
     It can be set with
     Obligation Tactic := package_obtac.
 
+  - program fold
+    This tactic can be used to fold raw programs together with their validity
+    proof to program syntax.
+
 **)
 
 From mathcomp Require Import ssreflect ssrbool eqtype seq.
 From extructures Require Import ord fset.
+From Crypt Require Export pkg_core_definition pkg_composition pkg_notation
+  RulesStateProb.
 
 Require Equations.Prop.DepElim.
 
@@ -55,3 +61,23 @@ Ltac package_obtac :=
   try Tactics.program_solve_wf ;
   try in_fset_auto ;
   try inset_try.
+
+Module PackageTactics (π : RulesParam).
+
+  Include (PackageNotation π).
+  Include (DerivedRules π).
+
+  (* Ltac program_fold_one :=
+    lazymatch goal with
+    | context [ exist _ (_ret x) h ] =>
+      rewrite fold_ret
+    | context [ exist _ (_opr o x k) h ] =>
+      rewrite fold_opr *)
+
+  Ltac program_fold :=
+    rewrite !fold_ret !fold_opr !fold_getr !fold_putr !fold_sampler.
+
+  Tactic Notation "program" "fold" :=
+    program_fold.
+
+End PackageTactics.
