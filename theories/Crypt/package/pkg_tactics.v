@@ -28,6 +28,19 @@
     This tactic can be used to fold raw programs together with their validity
     proof to program syntax.
 
+  - program setoid fold
+    Variant of [program fold] which can go under binders (λ and the monadic
+    operations).
+    It is not well-optimised and it might be preferable to use the folding
+    lemmata by hand, using setoid_rewrite.
+    Here are a few examples
+
+    setoid_rewrite fold_getr.
+    unshelve setoid_rewrite fold_bind.
+
+    In the case of bind, an extra proof has to be provided, hence the
+    unshelve.
+
 **)
 
 From mathcomp Require Import ssreflect ssrbool eqtype seq eqtype choice.
