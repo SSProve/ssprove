@@ -32,8 +32,8 @@
 
 From mathcomp Require Import ssreflect ssrbool eqtype seq eqtype choice.
 From extructures Require Import ord fset.
-From Crypt Require Export pkg_core_definition pkg_composition pkg_notation
-  RulesStateProb.
+From Crypt Require Import Prelude pkg_core_definition pkg_composition
+  pkg_notation RulesStateProb.
 From Coq Require Import FunctionalExtensionality
   Setoids.Setoid Classes.Morphisms.
 
@@ -96,14 +96,36 @@ Module PackageTactics (π : RulesParam).
 
   (* TODO Add Proper for other contexts *)
 
-  Instance sampler_iff_morphism L I (A : choiceType) o :
+  Instance opr_morphism L I (A : choiceType) o h x :
+    Proper (pointwise_relation (tgt o) eq ==> eq) (@opr L I A o h x).
+  Proof.
+    simpl_relation.
+    f_equal. apply functional_extensionality. auto.
+  Qed.
+
+  Instance getr_morphism L I (A : choiceType) l h :
+    Proper
+      (pointwise_relation (option (Value l.π1)) eq ==> eq) (@getr L I A l h).
+  Proof.
+    simpl_relation.
+    f_equal. apply functional_extensionality. auto.
+  Qed.
+
+  Instance sampler_morphism L I (A : choiceType) o :
     Proper (pointwise_relation (Arit o) eq ==> eq) (@sampler L I A o).
   Proof.
     simpl_relation.
     f_equal. apply functional_extensionality. auto.
   Qed.
 
-  Opaque sampler getr putr ret opr.
+  Instance bind_morphism L I (A B : choiceType) c :
+    Proper (pointwise_relation A eq ==> eq) (@bind L I A B c).
+  Proof.
+    simpl_relation.
+    f_equal. apply functional_extensionality. auto.
+  Qed.
+
+  Opaque ret opr getr putr sampler.
 
   Tactic Notation "program" "setoid" "fold" :=
     try setoid_rewrite fold_putr ;
