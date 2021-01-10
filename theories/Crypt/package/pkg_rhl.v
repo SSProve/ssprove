@@ -1314,19 +1314,6 @@ Theorem rpost_weaken_rule  {A1 A2 : ord_choiceType} {L1 L2 : {fset Location}}
     (forall as1 as2, post1 as1 as2 -> post2 as1 as2) -> (r⊨ ⦃ pre ⦄ p1 ≈ p2 ⦃ post2 ⦄).
 Proof. by apply: post_weaken_rule. Qed.
 
-(* Theorem rseq_rule  { A1 A2 : ord_choiceType } *)
-(*                    { B1 B2 : ord_choiceType } *)
-(*                    {L1 L2 : {fset Location}} *)
-(*                    {f1 : A1 -> program L1 Game_import B1} *)
-(*                    {f2 : A2 -> program L2 Game_import B2} *)
-(*                    (m1 : program L1 Game_import A1) (m2 : program L2 Game_import A2) *)
-(*                    (P : heap * heap -> Prop) (R : A1 * heap -> A2 * heap -> Prop) *)
-(*                    (Q : B1 * heap -> B2 * heap -> Prop) *)
-(*                    (judge1 : r⊨ ⦃ P ⦄ m1 ≈ m2 ⦃ R ⦄ ) *)
-(*                    (judge2 : forall a1 a2, r⊨ ⦃ (fun '(st1, st2) => R (a1, st1) (a2, st2)) ⦄ (f1 a1) ≈ (f2 a2) ⦃ Q ⦄ ) : *)
-(*  r⊨ ⦃ P ⦄  (* x <- m1 ;; f1 x ≈  m2 ;; f2 *) ⦃ Q ⦄. *)
-
-Locate finType.
 
 (* Skipped for now *)
 (* Theorem comp_rule ... *)
@@ -1434,6 +1421,30 @@ Theorem rswap_rule_ctx { A : ord_choiceType } { L : {fset Location} }
     ⦃ post ⦄.
 Proof. rewrite !repr_bind. by apply: swap_rule_ctx (repr l) (repr r) (repr c1) (repr c2) HL HR Hinv1 Hinv2. Qed.
 
+Check rbind_rule. 
+
+Theorem rsame_head {A B : ord_choiceType}
+            {L : {fset Location}}
+            {f1 : A -> program L Game_import B}
+            {f2 : A -> program L Game_import B}
+            (m : program L Game_import A)
+            (post : (B * heap) -> (B * heap) -> Prop)
+            (judge_wf : forall a,
+                r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄ f1 a ≈ f2 a ⦃ post ⦄ ) :
+      r⊨ ⦃  fun '(h1,h2) => h1 = h2 ⦄ (bind _ _ m f1 ) ≈ (bind _ _ m f2) ⦃ post ⦄.
+Proof.
+  eapply (rbind_rule m m).
+  - exact: rreflexivity_rule. 
+  - move => a1 a2. apply: rpre_weaken_rule.
+    -- Unshelve. 2:{ exact: (fun '(h1,h2) => a1 = a2 /\ h1 = h2). } 
+       1: { specialize (judge_wf a1).
+            apply: rpre_hypothesis_rule. rewrite /= => st1 st2 [Heq1 Heq2].
+            subst. apply: rpre_weaken_rule. 
+            + exact: judge_wf. 
+            + rewrite /= => h1 h2 [Heq1 Heq2]. by subst. }  
+         rewrite /= => h1 h2 [Heq1 Heq2]. by subst.
+Qed.    
+  
 End Games.
 
 End PackageRHL.
