@@ -40,7 +40,6 @@ Module PackageRHL (π : RulesParam).
   Local Open Scope fset_scope.
   Local Open Scope type_scope.
 
-
   Section Games.
     Definition Game_import : Interface := fset0.
     Definition Game_Type (Game_export : Interface) : Type :=
@@ -1443,7 +1442,19 @@ Proof.
             + exact: judge_wf. 
             + rewrite /= => h1 h2 [Heq1 Heq2]. by subst. }  
          rewrite /= => h1 h2 [Heq1 Heq2]. by subst.
-Qed.    
+Qed.
+
+
+Local Open Scope package_scope.
+
+(* CA: not more useful than sampler_case *)
+(* Lemma rsample_rule { B1 B2 : ord_choiceType} { L : {fset Location}}  { o } *)
+(*       c1 c2  *)
+(*       pre (post : B1 * heap -> B2 * heap -> Prop) *)
+(*       (H : r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄) : *)
+(*          ⊨ ⦃ pre ⦄ repr (locs := L ) (x <$ o ;; c1) ≈ repr (locs := L) (x <$ o ;; c2) ⦃ post ⦄. *)
+(* Proof. Admitted.  *)
+      
   
 End Games.
 
