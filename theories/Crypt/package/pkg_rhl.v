@@ -1455,7 +1455,6 @@ Local Open Scope package_scope.
 (*          ⊨ ⦃ pre ⦄ repr (locs := L ) (x <$ o ;; c1) ≈ repr (locs := L) (x <$ o ;; c2) ⦃ post ⦄. *)
 (* Proof. Admitted.  *)
       
-  
 End Games.
 
 End PackageRHL.
