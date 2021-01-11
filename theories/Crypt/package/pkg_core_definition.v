@@ -351,6 +351,7 @@ Module CorePackageTheory (π : RulesParam).
   Arguments getr [Loc] [import] [A] _ _.
   Arguments putr [Loc] [import] [A] _ _.
   Arguments sampler [Loc] [import] [A] _ _.
+  Arguments bind [Loc] [import] [A] [B] _ _.
 
 
   Section FreeLocations.
@@ -495,8 +496,8 @@ Module CorePackageTheory (π : RulesParam).
     Lemma commuteBindLocations :
       ∀ {A B : choiceType} (h : fsubset locs1 locs2)
         (v : program locs1 I A) (f : A → program locs1 I B),
-        bind _ _ (injectLocations h v) (fun w => injectLocations h (f w)) =
-        injectLocations h (bind _ _ v f).
+        bind (injectLocations h v) (fun w => injectLocations h (f w)) =
+        injectLocations h (bind v f).
     Proof.
       intros A B h v f.
       apply program_ext. cbn. reflexivity.

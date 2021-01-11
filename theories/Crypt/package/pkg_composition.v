@@ -1404,7 +1404,7 @@ Module PackageComposition (π : RulesParam).
       (h : valid_program L I (bind_ v k))
       (h' : ∀ x, valid_program L I (k x)),
       exist _ (bind_ v k) h =
-      bind L I (exist _ v (valid_bind_1 h)) (λ x, exist _ (k x) (h' x)).
+      bind (exist _ v (valid_bind_1 h)) (λ x, exist _ (k x) (h' x)).
   Proof.
     intros A B L I v k h h'.
     apply program_ext. cbn. reflexivity.

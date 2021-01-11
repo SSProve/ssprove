@@ -228,7 +228,7 @@ Module PackageRHL (π : RulesParam).
 
     Lemma repr_bind {B C} {L}
           (p : program L Game_import B) (f : B -> program L Game_import C) :
-      repr (bind _ _ p f) =  bindrFree _ _ (repr p) (fun b => repr (f b)).
+      repr (bind p f) =  bindrFree _ _ (repr p) (fun b => repr (f b)).
     Proof.
       destruct p as [p h].
       induction p.
@@ -277,7 +277,7 @@ Module PackageRHL (π : RulesParam).
                 r⊨ ⦃ fun '(s1, s2) => middle (a1, s1) (a2, s2) ⦄
                   f1 a1 ≈ f2 a2
                   ⦃ post ⦄ ) :
-      r⊨ ⦃ pre ⦄ (bind _ _ m1 f1 ) ≈ (bind _ _ m2 f2) ⦃ post ⦄.
+      r⊨ ⦃ pre ⦄ (bind m1 f1 ) ≈ (bind m2 f2) ⦃ post ⦄.
     Proof.
       rewrite !repr_bind.
       apply (bind_rule_pp (repr m1) (repr m2) pre middle post judge_wm judge_wf).
@@ -1379,7 +1379,7 @@ Theorem rswap_rule { A : ord_choiceType } { L : {fset Location} } { I Q }
                   (c1 c2 : program L Game_import A)
                   (Hinv1 : r⊨ ⦃ I ⦄ c1 ≈ c2 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Q (a1, s1) (a2, s2) ⦄ )
                   (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Q (a1, s1) (a2, s2) ⦄ ):
-  r⊨ ⦃ I ⦄ (bind L _ c1 (fun _ => c2)) ≈ (bind L _ c2 (fun _ => c1)) ⦃ Q ⦄.
+  r⊨ ⦃ I ⦄ (bind c1 (fun _ => c2)) ≈ (bind c2 (fun _ => c1)) ⦃ Q ⦄.
 Proof. rewrite !repr_bind. by apply: swap_rule (repr c1) (repr c2) Hinv1 Hinv2. Qed.
 
 Theorem rswap_ruleL { A : ord_choiceType } { L : {fset Location} }
@@ -1390,8 +1390,8 @@ Theorem rswap_ruleL { A : ord_choiceType } { L : {fset Location} }
                    (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Left (a1, s1) (a2, s2) ⦄ )
                    (LQ : forall a1 s1 a2 s2, Left (a1, s1) (a2, s2) -> post (a1, s1) (a2, s2)):
   r⊨ ⦃ pre ⦄
-   (bind L _ l (fun _ => (bind L _ c1 (fun _ => c2)))) ≈
-   (bind L _ l (fun _ => (bind L _ c2 (fun _ => c1))))
+   (bind l (fun _ => (bind c1 (fun _ => c2)))) ≈
+   (bind l (fun _ => (bind c2 (fun _ => c1))))
    ⦃ post ⦄ .
 Proof. rewrite !repr_bind. by apply: swap_ruleL (repr l) (repr c1) (repr c2) HL Hinv1 Hinv2 LQ. Qed.
 
@@ -1402,8 +1402,8 @@ Theorem rswap_ruleR { A : ord_choiceType } { L : {fset Location} }
                    (Hinv1 : r⊨ ⦃ I ⦄ c1 ≈ c2 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Q (a1, s1) (a2, s2) ⦄ )
                    (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Q (a1, s1) (a2, s2) ⦄ ):
   r⊨ ⦃ I ⦄
-   (bind L _ c1 (fun _ => bind L _ c2 (fun _ => r))) ≈
-   (bind L _ c2 (fun _ => bind L _ c1 (fun _ => r)))
+   (bind c1 (fun _ => bind c2 (fun _ => r))) ≈
+   (bind c2 (fun _ => bind c1 (fun _ => r)))
    ⦃ post ⦄.
 Proof. rewrite !repr_bind. by apply: swap_ruleR (repr r) (repr c1) (repr c2) HR Hinv1 Hinv2. Qed.
 
@@ -1415,8 +1415,8 @@ Theorem rswap_rule_ctx { A : ord_choiceType } { L : {fset Location} }
                       (Hinv1 : r⊨ ⦃ I ⦄ c1 ≈ c2 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Q (a1, s1) (a2, s2) ⦄ )
                       (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Q (a1, s1) (a2, s2) ⦄ ):
   r⊨ ⦃ pre ⦄
-   (bind L _ l (fun _ => bind L _ c1  (fun _ => bind L _ c2 (fun _ => r)))) ≈
-   (bind L _ l (fun _ => bind L _ c2  (fun _ => bind L _ c1 (fun _ => r))))
+   (bind l (fun _ => bind c1  (fun _ => bind c2 (fun _ => r)))) ≈
+   (bind l (fun _ => bind c2  (fun _ => bind c1 (fun _ => r))))
     ⦃ post ⦄.
 Proof. rewrite !repr_bind. by apply: swap_rule_ctx (repr l) (repr r) (repr c1) (repr c2) HL HR Hinv1 Hinv2. Qed.
 
@@ -1430,7 +1430,7 @@ Theorem rsame_head {A B : ord_choiceType}
             (post : (B * heap) -> (B * heap) -> Prop)
             (judge_wf : forall a,
                 r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄ f1 a ≈ f2 a ⦃ post ⦄ ) :
-      r⊨ ⦃  fun '(h1,h2) => h1 = h2 ⦄ (bind _ _ m f1 ) ≈ (bind _ _ m f2) ⦃ post ⦄.
+      r⊨ ⦃  fun '(h1,h2) => h1 = h2 ⦄ (bind m f1 ) ≈ (bind m f2) ⦃ post ⦄.
 Proof.
   eapply (rbind_rule m m).
   - exact: rreflexivity_rule. 
