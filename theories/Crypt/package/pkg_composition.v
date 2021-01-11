@@ -1250,6 +1250,30 @@ Module PackageComposition (π : RulesParam).
       Unshelve. auto.
     Qed.
 
+    Lemma trim_ID :
+      ∀ I h,
+        ptrim (ID I h) = ID I h.
+    Proof.
+      intros I h.
+      apply package_ext.
+      - cbn. reflexivity.
+      - simpl. intro n. unfold trim.
+        rewrite filtermE. unfold obind, oapp.
+        rewrite mapmE. unfold omap, obind, oapp.
+        destruct (mkfmap (T:=nat_ordType) _ _) eqn:m.
+        + destruct p as [S [T p]].
+          destruct ((n, (S, T)) \in I) eqn:hin.
+          * rewrite hin. reflexivity.
+          * rewrite hin.
+            rewrite mkfmapE in m.
+            apply getm_def_map_interface_Some in m.
+            destruct m as [[S' T'] [hin' [L R]]].
+            inversion R; subst.
+            rewrite hin'  in hin.
+            discriminate.
+        + reflexivity.
+    Qed.
+
   End ID.
 
   (* Some folding lemmata *)
