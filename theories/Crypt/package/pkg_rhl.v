@@ -949,15 +949,16 @@ Module PackageRHL (π : RulesParam).
       (id : ident) (S T : chUniverse) (h : (id, (S, T)) \in E) :
       S → program L I T.
     Proof.
-      intros x. unshelve eexists.
-      - destruct (p.π1 id) as [[S' [T' f]]|] eqn:e.
-        2:{
-          exfalso.
-          destruct p as [p hp]. specialize (hp _ h) as h'.
-          cbn in h'. cbn in e. rewrite e in h'.
-          destruct h'. intuition discriminate.
-        }
-        simple refine (cast_fun _ _ f x).
+      intros x.
+      destruct (p.π1 id) as [[S' [T' f]]|] eqn:e.
+      2:{
+        exfalso.
+        destruct p as [p hp]. specialize (hp _ h) as h'.
+        cbn in h'. cbn in e. rewrite e in h'.
+        destruct h'. intuition discriminate.
+      }
+      unshelve eexists.
+      - simple refine (cast_fun _ _ f x).
         + destruct p as [p hp]. specialize (hp _ h) as h'.
           cbn in h'. cbn in e. rewrite e in h'.
           destruct h' as [g [he hv]].
@@ -966,8 +967,13 @@ Module PackageRHL (π : RulesParam).
           cbn in h'. cbn in e. rewrite e in h'.
           destruct h' as [g [he hv]].
           noconf he. reflexivity.
-      -
-    Admitted.
+      - destruct p as [p hp]. specialize (hp _ h) as h'.
+        cbn in h'. cbn in e. rewrite e in h'.
+        destruct h' as [g [he hv]].
+        noconf he. cbn.
+        rewrite cast_fun_K.
+        apply hv.
+    Defined.
 
     Definition eq_up_to_inv {L1 L2} {E}
                (I : heap_choiceType * heap_choiceType → Prop)
