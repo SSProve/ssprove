@@ -1054,6 +1054,27 @@ Module PackageRHL (π : RulesParam).
       - apply program_ext. cbn. erewrite olookup_fst. all: eauto.
     Qed.
 
+    Lemma eq_up_to_inv_from_alt :
+      ∀ L₁ L₂ E I p₁ p₂,
+        @eq_up_to_inv_alt L₁ L₂ E I p₁ p₂ →
+        @eq_up_to_inv L₁ L₂ E I p₁ p₂.
+    Proof.
+      intros L₁ L₂ E I p₁ p₂ h.
+      intros id S T hin f g ef hf eg hg x.
+      specialize (h id S T hin x).
+      lazymatch goal with
+      | h : r⊨ ⦃ _ ⦄ ?x ≈ ?y ⦃ _ ⦄ |- r⊨ ⦃ _ ⦄ ?u ≈ ?v ⦃ _ ⦄ =>
+        let e := fresh "e" in
+        let e' := fresh "e" in
+        assert (x = u) as e ; [
+        | assert (y = v) as e' ; [
+          | rewrite <- e ; rewrite <- e' ; auto
+          ]
+        ]
+      end.
+      - apply program_ext. cbn. erewrite olookup_fst. all: eauto.
+      - apply program_ext. cbn. erewrite olookup_fst. all: eauto.
+    Qed.
 
 
     Lemma some_lemma_for_prove_relational {export : Interface} {B} {L1 L2 LA}
