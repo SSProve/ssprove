@@ -131,8 +131,8 @@ Module PackageTactics (π : RulesParam).
     f_equal. apply functional_extensionality. auto.
   Qed.
 
-  Instance bind_morphism L I (A B : choiceType) c :
-    Proper (pointwise_relation A eq ==> eq) (@bind L I A B c).
+  Instance bind_morphism L I (A B : choiceType) :
+    Proper (eq ==> pointwise_relation A eq ==> eq) (@bind L I A B).
   Proof.
     simpl_relation.
     f_equal. apply functional_extensionality. auto.
