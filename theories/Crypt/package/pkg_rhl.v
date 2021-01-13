@@ -945,11 +945,11 @@ Module PackageRHL (π : RulesParam).
 
     (* TODO MOVE *)
     (* (Safe) lookup in open packages *)
-    Definition olookup {L I E} (p : opackage L I E)
-      (id : ident) (S T : chUniverse) (h : (id, (S, T)) \in E) :
-      S → program L I T.
+    Definition olookup_full {L I E} (p : opackage L I E)
+      {id : ident} {S T : chUniverse} (h : (id, (S, T)) \in E) :
+      ∑ f : S → program L I T,
+        ∀ g, p.π1 id = Some (S ; T ; g) → ∀ (x : S), (f x) ∙1 = g x.
     Proof.
-      intros x.
       destruct (p.π1 id) as [[S' [T' f]]|] eqn:e.
       2:{
         exfalso.
@@ -958,22 +958,55 @@ Module PackageRHL (π : RulesParam).
         destruct h'. intuition discriminate.
       }
       unshelve eexists.
-      - simple refine (cast_fun _ _ f x).
+      - intro x.
+        unshelve eexists.
+        + simple refine (cast_fun _ _ f x).
+          * destruct p as [p hp]. specialize (hp _ h) as h'.
+            cbn in h'. cbn in e. rewrite e in h'.
+            destruct h' as [g [he hv]].
+            noconf he. reflexivity.
+          * destruct p as [p hp]. specialize (hp _ h) as h'.
+            cbn in h'. cbn in e. rewrite e in h'.
+            destruct h' as [g [he hv]].
+            noconf he. reflexivity.
         + destruct p as [p hp]. specialize (hp _ h) as h'.
           cbn in h'. cbn in e. rewrite e in h'.
           destruct h' as [g [he hv]].
-          noconf he. reflexivity.
-        + destruct p as [p hp]. specialize (hp _ h) as h'.
-          cbn in h'. cbn in e. rewrite e in h'.
-          destruct h' as [g [he hv]].
-          noconf he. reflexivity.
-      - destruct p as [p hp]. specialize (hp _ h) as h'.
+          noconf he. cbn.
+          rewrite cast_fun_K.
+          apply hv.
+      - intros g eg x. cbn. noconf eg.
+        destruct p as [p hp]. specialize (hp _ h) as h'.
         cbn in h'. cbn in e. rewrite e in h'.
         destruct h' as [g [he hv]].
         noconf he. cbn.
         rewrite cast_fun_K.
-        apply hv.
+        reflexivity.
     Defined.
+
+    Definition olookup {L I E} (p : opackage L I E)
+      {id : ident} {S T : chUniverse} (h : (id, (S, T)) \in E) :
+      S → program L I T :=
+      (olookup_full p h).π1.
+
+    Lemma olookup_fst :
+      ∀ L I E (p : opackage L I E) id S T (h : (id, (S, T)) \in E) f x,
+        p.π1 id = Some (S ; T ; f) →
+        (olookup p h x) ∙1 = f x.
+    Proof.
+      intros L I E p id S T h f x e.
+      unfold olookup. destruct olookup_full as [g hg].
+      cbn. specialize hg with (1 := e).
+      apply hg.
+    Qed.
+
+    Definition eq_up_to_inv_alt {L₁ L₂} {E}
+      (I : heap_choiceType * heap_choiceType → Prop)
+      (p₁ : opackage L₁ Game_import E) (p₂ : opackage L₂ Game_import E) :=
+      ∀ (id : ident) (S T : chUniverse) (h : (id, (S, T)) \in E) (x : S),
+        ⊨ ⦃ λ '(s₀, s₃), I (s₀, s₃) ⦄
+          repr (olookup p₁ h x) ≈ repr (olookup p₂ h x)
+          ⦃ λ '(b₁, s₀) '(b₂, s₃), b₁ = b₂ ∧ I (s₀, s₃) ⦄.
 
     Definition eq_up_to_inv {L1 L2} {E}
                (I : heap_choiceType * heap_choiceType → Prop)
@@ -984,7 +1017,42 @@ Module PackageRHL (π : RulesParam).
         (Hf : P1.π1 id = Some (S; T; f)) (hpf : ∀ x, valid_program L1 Game_import (f x))
         (Hg : P2.π1 id = Some (S; T; g)) (hpg : ∀ x, valid_program L2 Game_import (g x))
         (arg : S),
-        ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄ repr (exist _ (f arg) (hpf arg)) ≈ repr (exist _ (g arg) (hpg arg)) ⦃ λ '(b1, s0) '(b2, s3), b1 = b2 /\ I (s0, s3) ⦄.
+        ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄ repr (exist _ (f arg) (hpf arg)) ≈ repr (exist _ (g arg) (hpg arg)) ⦃ λ '(b1, s0) '(b2, s3), b1 = b2 ∧ I (s0, s3) ⦄.
+
+    Lemma eq_up_to_inv_to_alt :
+      ∀ L₁ L₂ E I p₁ p₂,
+        @eq_up_to_inv L₁ L₂ E I p₁ p₂ →
+        @eq_up_to_inv_alt L₁ L₂ E I p₁ p₂.
+    Proof.
+      intros L₁ L₂ E I p₁ p₂ h.
+      intros id S T hin x.
+      specialize (h id S T hin).
+      destruct p₁ as [p₁ hp₁]. specialize (hp₁ _ hin) as h'.
+      cbn in h'. destruct h' as [f₁ [e₁ h₁]].
+      destruct p₂ as [p₂ hp₂]. specialize (hp₂ _ hin) as h'.
+      cbn in h'. destruct h' as [f₂ [e₂ h₂]].
+      specialize h with (1 := e₁) (2 := e₂).
+      specialize (h h₁ h₂ x).
+      (* Too slow *)
+      (* match goal with
+      | |- ?G =>
+        let T := type of h in
+        replace G with T ; [ auto | ]
+      end.
+      f_equal. *)
+      lazymatch goal with
+      | h : r⊨ ⦃ _ ⦄ ?x ≈ ?y ⦃ _ ⦄ |- r⊨ ⦃ _ ⦄ ?u ≈ ?v ⦃ _ ⦄ =>
+        let e := fresh "e" in
+        let e' := fresh "e" in
+        assert (x = u) as e ; [
+        | assert (y = v) as e' ; [
+          | rewrite <- e ; rewrite <- e' ; auto
+          ]
+        ]
+      end.
+      - apply program_ext. cbn. erewrite olookup_fst. all: eauto.
+      - apply program_ext. cbn. erewrite olookup_fst. all: eauto.
+    Qed.
 
 
 
