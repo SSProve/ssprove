@@ -38,10 +38,31 @@ Inductive chUniverse :=
 | chNat
 | chBool
 | chProd (A B : chUniverse)
+| chMap (A B : chUniverse)
 | chOption (A : chUniverse)
 | chFin (n : nat).
 
 Derive NoConfusion NoConfusionHom EqDec for chUniverse.
+
+Definition void_leq (x y : void) := true.
+
+Lemma void_leqP : Ord.axioms void_leq.
+Proof. split; by do ![case]. Qed.
+
+Definition void_ordMixin := OrdMixin void_leqP.
+Canonical void_ordType := Eval hnf in OrdType void void_ordMixin.
+
+Fixpoint chElement_ordType (U : chUniverse) : ordType :=
+  match U with
+  | chZero => void_ordType
+  | chUnit => unit_ordType
+  | chNat => nat_ordType
+  | chBool => bool_ordType
+  | chProd U1 U2 => prod_ordType (chElement_ordType U1) (chElement_ordType U2)
+  | chMap U1 U2 => fmap_ordType (chElement_ordType U1) (chElement_ordType U2)
+  | chOption U => option_ordType (chElement_ordType U)
+  | chFin n => [ordType of ordinal n]
+  end.
 
 Fixpoint chElement (U : chUniverse) : choiceType :=
   match U with
@@ -50,6 +71,7 @@ Fixpoint chElement (U : chUniverse) : choiceType :=
   | chNat => nat_choiceType
   | chBool => bool_choiceType
   | chProd U1 U2 => prod_choiceType (chElement U1) (chElement U2)
+  | chMap U1 U2 => fmap_choiceType (chElement_ordType U1) (chElement U2)
   | chOption U => option_choiceType (chElement U)
   | chFin n => [choiceType of ordinal n]
   end.
@@ -65,6 +87,7 @@ Section chUniverseTypes.
     | chUnit , chUnit => true
     | chBool , chBool => true
     | chProd a b , chProd a' b' => chUniverse_test a a' && chUniverse_test b b'
+    | chMap a b , chMap a' b' => chUniverse_test a a' && chUniverse_test b b'
     | chOption a, chOption a' => chUniverse_test a a'
     | chFin n, chFin n' => n == n'
     | _ , _ => false
@@ -76,11 +99,16 @@ Section chUniverseTypes.
   Lemma chUniverse_eqP : Equality.axiom chUniverse_eq.
   Proof.
     move=> x y.
-    induction x as [ | | | | x1 ih1 x2 ih2 | x1 ih1 | x1 ih1] in y |- *.
-    all: destruct y as [ | | | | y1 y2 | y1 | y1].
+    induction x as [ | | | | x1 ih1 x2 ih2 | x1 ih1 x2 ih2 | x1 ih1 | x1 ih1] in y |- *.
+    all: destruct y as [ | | | | y1 y2 | y1 y2 | y1 | y1].
     all: simpl.
     all: try solve [ right ; discriminate ].
     all: try solve [ left ; reflexivity ].
+    1: { destruct (ih1 y1), (ih2 y2).
+         all: simpl.
+         all: subst.
+         all: try solve [ right ; congruence ].
+         left. reflexivity. }
     1: { destruct (ih1 y1), (ih2 y2).
          all: simpl.
          all: subst.
@@ -146,11 +174,21 @@ Section chUniverseTypes.
     (chUniverse_lt u1 w1) ||
     (chUniverse_eq u1 w1 && chUniverse_lt u2 w2)
   | chProd _ _, _ => true
+  | chMap _ _, chZero => false
+  | chMap _ _, chUnit => false
+  | chMap _ _, chBool => false
+  | chMap _ _, chNat => false
+  | chMap _ _, chProd _ _ => false
+  | chMap u1 u2, chMap w1 w2 =>
+    (chUniverse_lt u1 w1) ||
+    (chUniverse_eq u1 w1 && chUniverse_lt u2 w2)
+  | chMap _ _, _ => true
   | chOption _, chZero => false
   | chOption _, chUnit => false
   | chOption _, chBool => false
   | chOption _, chNat => false
   | chOption _, chProd _ _ => false
+  | chOption _, chMap _ _ => false
   | chOption u, chOption w => chUniverse_lt u w
   | chOption _, _ => true
   | chFin n, chZero => false
@@ -158,6 +196,7 @@ Section chUniverseTypes.
   | chFin n, chBool => false
   | chFin n, chNat => false
   | chFin n, chProd _ _ => false
+  | chFin n, chMap _ _ => false
   | chFin n, chOption _ => false
   | chFin n, chFin n' => n < n'
   end.
@@ -169,7 +208,7 @@ Section chUniverseTypes.
   Lemma chUniverse_lt_transitive : transitive (T:=chUniverse) chUniverse_lt.
   Proof.
     intros v u w h1 h2.
-    induction u as [ | | | | u1 ih1 u2 ih2 | u ih | u ih] in v, w, h1, h2 |- *.
+    induction u as [ | | | | u1 ih1 u2 ih2 | u1 ih1 u2 ih2 | u ih | u ih] in v, w, h1, h2 |- *.
     - destruct w. all: try reflexivity.
       destruct v. all: discriminate.
     - destruct v. all: try discriminate.
@@ -183,6 +222,8 @@ Section chUniverseTypes.
         all: reflexivity.
       + destruct w. all: try discriminate.
         all: reflexivity.
+      + destruct w. all: try discriminate.
+        all: reflexivity.
     - destruct w. all: try reflexivity.
       + destruct v. all: discriminate.
       + destruct v. all: discriminate.
@@ -197,6 +238,28 @@ Section chUniverseTypes.
         all: reflexivity.
       + destruct w. all: try discriminate.
         all: reflexivity.
+      + destruct w. all: try discriminate.
+        all: reflexivity.
+    - destruct w. all: try discriminate; destruct v; try discriminate.
+      all: try reflexivity; simpl.
+      apply/orP.
+      simpl in h1, h2.
+      move: h1. move/orP => h1.
+      move: h2. move/orP => h2.
+      destruct h1 as [h1|h1], h2 as [h2|h2].
+      + left.
+        apply (ih1 v1). all: assumption.
+      + move: h2. move /andP => [h2 h2'].
+        move: h2. move /eqP => h2. destruct h2.
+        left. assumption.
+      + move: h1. move /andP => [h1 h1'].
+        move: h1. move /eqP => h1. destruct h1.
+        left. assumption.
+      + move: h1 => /andP [/eqP ? h1].
+        move: h2 => /andP [/eqP ? h2]. subst.
+        right. apply/andP. split.
+        * apply/eqP. reflexivity.
+        * apply (ih2 v2). all: auto.
     - destruct w. all: try discriminate; destruct v; try discriminate.
       all: try reflexivity; simpl.
       apply/orP.
@@ -229,8 +292,13 @@ Section chUniverseTypes.
     ∀ x, ~~ chUniverse_lt x x.
   Proof.
     intros x.
-    induction x as [ | | | | x1 ih1 x2 ih2 | x ih | x ih] in |- *.
+    induction x as [ | | | | x1 ih1 x2 ih2 | x1 ih1 x2 ih2 | x ih | x ih] in |- *.
     all: intuition; simpl.
+    1: { simpl.
+         apply/norP; split.
+         - apply ih1.
+         - apply/nandP.
+           right. apply ih2. }
     1: { simpl.
          apply/norP; split.
          - apply ih1.
@@ -244,8 +312,43 @@ Section chUniverseTypes.
       ~~ (chUniverse_test x y) ==> (chUniverse_lt x y || chUniverse_lt y x).
   Proof.
     intros x y.
-    induction x as [ | | | | x1 ih1 x2 ih2| x ih| x ih] in y |- *.
+    induction x as [ | | | | x1 ih1 x2 ih2| x1 ih1 x2 ih2| x ih| x ih] in y |- *.
     all: try solve [ destruct y ; intuition ; reflexivity ].
+    1: { destruct y. all: try (intuition; reflexivity).
+         cbn. intuition.
+         specialize (ih1 y1). specialize (ih2 y2).
+         apply/implyP.
+         move /nandP => H.
+         apply/orP.
+         destruct (chUniverse_test x1 y1) eqn:Heq.
+         - destruct H. 1: discriminate.
+           move: ih2. move /implyP => ih2.
+           specialize (ih2 H).
+           move: ih2. move /orP => ih2.
+           destruct ih2.
+           + left. apply/orP. right. apply/andP; split.
+             all: intuition auto.
+           + right. apply/orP. right. apply/andP; intuition.
+             move: Heq. move /eqP => Heq. rewrite Heq. apply/eqP. reflexivity.
+         - destruct H.
+           + move: ih1. move /implyP => ih1.
+             specialize (ih1 H).
+             move: ih1. move /orP => ih1.
+             destruct ih1.
+             * left. apply/orP. left. assumption.
+             * right. apply/orP. left. assumption.
+           + move: ih2. move /implyP => ih2.
+             specialize (ih2 H).
+             move: ih2. move /orP => ih2.
+             destruct ih2.
+             * simpl in ih1.  move: ih1. move /orP => ih1.
+               destruct ih1.
+               -- left. apply/orP. left. assumption.
+               -- right. apply/orP. left. assumption.
+             * simpl in ih1.  move: ih1. move /orP => ih1.
+               destruct ih1.
+               -- left. apply/orP. left. assumption.
+               -- right. apply/orP. left. assumption. }
     1: { destruct y. all: try (intuition; reflexivity).
          cbn. intuition.
          specialize (ih1 y1). specialize (ih2 y2).
@@ -387,7 +490,8 @@ Section chUniverseTypes.
   | chBool => GenTree.Leaf 2
   | chNat => GenTree.Leaf 3
   | chProd l r => GenTree.Node 1 [:: encode l ; encode r]
-  | chOption u => GenTree.Node 2 [:: encode u]
+  | chMap l r => GenTree.Node 2 [:: encode l ; encode r]
+  | chOption u => GenTree.Node 3 [:: encode u]
   | chFin n => GenTree.Leaf (4 + n)%nat
   end.
 
@@ -403,7 +507,12 @@ Section chUniverseTypes.
       | Some l, Some r => Some (chProd l r)
       | _, _ => None
       end
-    | GenTree.Node 2 [:: l] =>
+    | GenTree.Node 2 [:: l ; r] =>
+      match decode l, decode r with
+      | Some l, Some r => Some (chMap l r)
+      | _, _ => None
+      end
+    | GenTree.Node 3 [:: l] =>
       match decode l with
       | Some l => Some (chOption l)
       | _ => None
@@ -415,6 +524,7 @@ Section chUniverseTypes.
   Proof.
     move=> t. induction t; intuition.
     all: simpl.
+    - rewrite IHt1. rewrite IHt2. reflexivity.
     - rewrite IHt1. rewrite IHt2. reflexivity.
     - rewrite IHt. reflexivity.
     - destruct (4 + n)%nat eqn:N0.
