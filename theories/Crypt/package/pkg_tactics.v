@@ -138,7 +138,7 @@ Module PackageTactics (π : RulesParam).
     f_equal. apply functional_extensionality. auto.
   Qed.
 
-  Opaque ret opr getr putr sampler.
+  Opaque bind ret opr getr putr sampler.
 
   Tactic Notation "program" "setoid" "fold" :=
     try setoid_rewrite fold_putr ;
