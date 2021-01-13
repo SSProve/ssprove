@@ -102,15 +102,26 @@ Module NotationExamples (π : RulesParam).
     ]
   |}.
 
-  (* The exact same definition but using the notations for the monad. *)
+  Lemma access {A B} (m : chMap A B) (a : A) : option B.
+  Proof.
+    cbn in m.
+    Fail exact (getm m a).
+  Admitted.
+
+  (* A similar definition but using the notations for the monad. *)
   #[program] Definition btest' : bundle := {|
     locs := [fset ('nat; 0)] ;
     import := [interface val #[0] : 'nat → 'nat ] ;
     export := [interface
       val #[1] : 'nat → 'nat ;
-      val #[2] : 'unit → 'option ('fin 2)
+      val #[2] : 'unit → 'option ('fin 2) ;
+      val #[3] : {map 'nat → 'nat} → 'option 'nat
     ] ;
     pack := [package
+      def #[3] (m : {map 'nat → 'nat}) : 'option 'nat {
+        (* ret (getm m 0) *)
+        ret (access m 0)
+      } ;
       def #[2] (_ : 'unit) : 'option ('fin 2) {
         put ('nat; 0) := 0 ;;
         ret (Some (gfin 1))

@@ -126,8 +126,12 @@ Module PackageNotation (π : RulesParam).
   Notation " 'fin x " :=
     (chFin x)
     (in custom pack_type at level 2, x constr).
-
+  Notation "{map x → y }" :=
+    (chMap x y)
+    (in custom pack_type at level 2, format "{map  x  →  y  }").
   Notation " x × y " := (chProd x y) (in custom pack_type at level 2).
+
+  Notation "( x )" := x (in custom pack_type, x at level 2).
 
   (** Repeat the above notations here for package_scope. *)
   Notation " 'nat " := (chNat) (at level 2) : package_scope.
@@ -138,12 +142,10 @@ Module PackageNotation (π : RulesParam).
   Notation " 'fin x " :=
     (chFin x)
     (at level 2, x constr) : package_scope.
-
+  Notation "{map x → y }" :=
+    (chMap x y)
+    (at level 80, format "{map  x  →  y  }") : package_scope.
   Notation " x × y " := (chProd x y) (at level 80) : package_scope.
-
-  Notation "{ 'map' x → y }" := (chMap x y) (at level 80) : package_scope.
-
-  Notation "( x )" := x (in custom pack_type, x at level 2).
 
   Declare Custom Entry interface.
 
