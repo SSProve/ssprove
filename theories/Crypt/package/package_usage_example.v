@@ -102,12 +102,6 @@ Module NotationExamples (π : RulesParam).
     ]
   |}.
 
-  Lemma access {A B} (m : chMap A B) (a : A) : option B.
-  Proof.
-    cbn in m.
-    Fail exact (getm m a).
-  Admitted.
-
   (* A similar definition but using the notations for the monad. *)
   #[program] Definition btest' : bundle := {|
     locs := [fset ('nat; 0)] ;
@@ -119,8 +113,7 @@ Module NotationExamples (π : RulesParam).
     ] ;
     pack := [package
       def #[3] (m : {map 'nat → 'nat}) : 'option 'nat {
-        (* ret (getm m 0) *)
-        ret (access m 0)
+        ret (getm m 0)
       } ;
       def #[2] (_ : 'unit) : 'option ('fin 2) {
         put ('nat; 0) := 0 ;;
