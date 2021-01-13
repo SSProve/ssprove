@@ -580,6 +580,33 @@ Module PackageRHL (π : RulesParam).
     Notation "ϵ( GP )" := (fun A => AdvantageE (GP false) (GP true) A) (at level 90).
     Notation " G0 ≈[ R ] G1 " := (AdvantageE G0 G1 = R) (at level 50).
 
+    Lemma TriangleInequality  {Game_export : Interface} {F G H : Game_Type Game_export}
+          {ϵ1 ϵ2 ϵ3}
+          (ineq1 : F ≈[ ϵ1 ] G)
+          (ineq2 : G ≈[ ϵ2 ] H)
+          (ineq3 : F ≈[ ϵ3 ] H)
+      : forall A H1 H2 H3 H4 H5 H6, ϵ3 A H1 H2 <= ϵ1 A H3 H4 + ϵ2 A H5 H6.
+    Proof.
+      move => A H1 H2 H3 H4 H5 H6.
+      assert (@AdvantageE _ F G A H3 H4 = ϵ1 A H3 H4) as Ineq1.
+      { rewrite ineq1. reflexivity. }
+      assert (@AdvantageE _ G H A H5 H6 = ϵ2 A H5 H6) as Ineq2.
+      { rewrite ineq2. reflexivity. }
+      assert (@AdvantageE _ F H A H1 H2 = ϵ3 A H1 H2) as Ineq3.
+      { rewrite ineq3. reflexivity. }
+      unfold AdvantageE in Ineq1, Ineq2, Ineq3.
+      rewrite -Ineq1 -Ineq2 -Ineq3.
+      apply ler_dist_add.
+    Qed.
+
+    Lemma Reduction {Game_export M_export : Interface} {M : package Game_export M_export}
+          (G : GamePair Game_export) (A : Adversary4Game M_export) (b : bool) :
+      `| Pr (link A (link M (G b))) true | = `| Pr (link (link A M) (G b))  true |.
+    Proof.
+      rewrite link_assoc.
+      reflexivity.
+    Qed.
+
     Lemma rhl_repr_change_all {B1 B2 : choiceType} {L1 L2 L1' L2'}
           {pre : heap_choiceType * heap_choiceType -> Prop}
           {post : (B1 * heap_choiceType) -> (B2 * heap_choiceType) -> Prop}
