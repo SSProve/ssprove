@@ -943,16 +943,42 @@ Module PackageRHL (π : RulesParam).
           * apply ler0n.
     Qed.
 
+    (* TODO MOVE *)
+    (* (Safe) lookup in open packages *)
+    Definition olookup {L I E} (p : opackage L I E)
+      (id : ident) (S T : chUniverse) (h : (id, (S, T)) \in E) :
+      S → program L I T.
+    Proof.
+      intros x. unshelve eexists.
+      - destruct (p.π1 id) as [[S' [T' f]]|] eqn:e.
+        2:{
+          exfalso.
+          destruct p as [p hp]. specialize (hp _ h) as h'.
+          cbn in h'. cbn in e. rewrite e in h'.
+          destruct h'. intuition discriminate.
+        }
+        simple refine (cast_fun _ _ f x).
+        + destruct p as [p hp]. specialize (hp _ h) as h'.
+          cbn in h'. cbn in e. rewrite e in h'.
+          destruct h' as [g [he hv]].
+          noconf he. reflexivity.
+        + destruct p as [p hp]. specialize (hp _ h) as h'.
+          cbn in h'. cbn in e. rewrite e in h'.
+          destruct h' as [g [he hv]].
+          noconf he. reflexivity.
+      -
+    Admitted.
+
     Definition eq_up_to_inv {L1 L2} {E}
                (I : heap_choiceType * heap_choiceType → Prop)
                (P1 : opackage L1 Game_import E) (P2 : opackage L2 Game_import E) :=
-      forall  (id : ident) (S T : chUniverse)
-         (hin : (id, (S, T)) \in E)
-         (f : S → raw_program T) (g : S → raw_program T)
-         (Hf : P1.π1 id = Some (S; T; f)) (hpf : forall x, valid_program L1 Game_import (f x))
-         (Hg : P2.π1 id = Some (S; T; g)) (hpg : forall x, valid_program L2 Game_import (g x))
-         (arg : S),
-         ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄ repr (exist _ (f arg) (hpf arg)) ≈ repr (exist _ (g arg) (hpg arg)) ⦃ λ '(b1, s0) '(b2, s3), b1 = b2 /\ I (s0, s3) ⦄.
+      ∀ (id : ident) (S T : chUniverse)
+        (hin : (id, (S, T)) \in E)
+        (f : S → raw_program T) (g : S → raw_program T)
+        (Hf : P1.π1 id = Some (S; T; f)) (hpf : ∀ x, valid_program L1 Game_import (f x))
+        (Hg : P2.π1 id = Some (S; T; g)) (hpg : ∀ x, valid_program L2 Game_import (g x))
+        (arg : S),
+        ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄ repr (exist _ (f arg) (hpf arg)) ≈ repr (exist _ (g arg) (hpg arg)) ⦃ λ '(b1, s0) '(b2, s3), b1 = b2 /\ I (s0, s3) ⦄.
 
 
 
@@ -1447,7 +1473,7 @@ Theorem rswap_rule_ctx { A : ord_choiceType } { L : {fset Location} }
     ⦃ post ⦄.
 Proof. rewrite !repr_bind. by apply: swap_rule_ctx (repr l) (repr r) (repr c1) (repr c2) HL HR Hinv1 Hinv2. Qed.
 
-Check rbind_rule. 
+Check rbind_rule.
 
 Theorem rsame_head {A B : ord_choiceType}
             {L : {fset Location}}
@@ -1460,14 +1486,14 @@ Theorem rsame_head {A B : ord_choiceType}
       r⊨ ⦃  fun '(h1,h2) => h1 = h2 ⦄ (bind m f1 ) ≈ (bind m f2) ⦃ post ⦄.
 Proof.
   eapply (rbind_rule m m).
-  - exact: rreflexivity_rule. 
+  - exact: rreflexivity_rule.
   - move => a1 a2. apply: rpre_weaken_rule.
-    -- Unshelve. 2:{ exact: (fun '(h1,h2) => a1 = a2 /\ h1 = h2). } 
+    -- Unshelve. 2:{ exact: (fun '(h1,h2) => a1 = a2 /\ h1 = h2). }
        1: { specialize (judge_wf a1).
             apply: rpre_hypothesis_rule. rewrite /= => st1 st2 [Heq1 Heq2].
-            subst. apply: rpre_weaken_rule. 
-            + exact: judge_wf. 
-            + rewrite /= => h1 h2 [Heq1 Heq2]. by subst. }  
+            subst. apply: rpre_weaken_rule.
+            + exact: judge_wf.
+            + rewrite /= => h1 h2 [Heq1 Heq2]. by subst. }
          rewrite /= => h1 h2 [Heq1 Heq2]. by subst.
 Qed.
 
@@ -1483,17 +1509,17 @@ Local Open Scope package_scope.
 (* Proof. Admitted.  *)
 
 (*CA: probably not sound *)
-Theorem rdead_sampler_eliminationL { A : ord_choiceType } { L : {fset Location} } { D } 
+Theorem rdead_sampler_eliminationL { A : ord_choiceType } { L : {fset Location} } { D }
         (c1 c2 : program L Game_import A)
         (pre : heap * heap -> Prop) (post : (A * heap) -> (A * heap) -> Prop)
-        (H : r⊨ ⦃ pre ⦄ c1 ≈ c2  ⦃ post ⦄) : 
-  r⊨ ⦃ pre ⦄ c1 ≈ (x <$ D ;; c2)  ⦃ post ⦄. 
-Proof.   
+        (H : r⊨ ⦃ pre ⦄ c1 ≈ c2  ⦃ post ⦄) :
+  r⊨ ⦃ pre ⦄ c1 ≈ (x <$ D ;; c2)  ⦃ post ⦄.
+Proof.
   eapply rrewrite_eqDistrR.
   - exact: H.
   - admit.
-Admitted. 
-   
+Admitted.
+
 
 End Games.
 
