@@ -107,23 +107,27 @@ Module PackageTactics (π : RulesParam).
 
   (** Folding under binders with setoid_rewrite *)
 
-  (* TODO Add Proper for other contexts *)
-
-  Instance opr_morphism L I (A : choiceType) o h x :
-    Proper (pointwise_relation (tgt o) eq ==> eq) (@opr L I A o h x).
+  (* TODO: Can we also remove o? Hard because of the dependencies. *)
+  (* TODO: Can we use the trivial relation instead of the second eq? *)
+  Instance opr_morphism L I (A : choiceType) o :
+    Proper (eq ==> eq ==> pointwise_relation (tgt o) eq ==> eq) (@opr L I A o).
   Proof.
     simpl_relation.
     f_equal. apply functional_extensionality. auto.
   Qed.
 
-  Instance getr_morphism L I (A : choiceType) l h :
+  (* TODO: Can we also remove l? Hard because of the dependencies. *)
+  (* TODO: Can we use the trivial relation instead of the first eq? *)
+  Instance getr_morphism L I (A : choiceType) l :
     Proper
-      (pointwise_relation (option (Value l.π1)) eq ==> eq) (@getr L I A l h).
+      (eq ==> pointwise_relation (option (Value l.π1)) eq ==> eq)
+      (@getr L I A l).
   Proof.
     simpl_relation.
     f_equal. apply functional_extensionality. auto.
   Qed.
 
+  (* TODO: Can we also remove o? Hard because of the dependencies. *)
   Instance sampler_morphism L I (A : choiceType) o :
     Proper (pointwise_relation (Arit o) eq ==> eq) (@sampler L I A o).
   Proof.
