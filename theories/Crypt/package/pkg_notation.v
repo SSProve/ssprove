@@ -24,6 +24,7 @@
     'option A
     'fin n
     A × B
+    {map A → B}
     where A and B follow again the same syntax and n is a natural number
     given using the regular Coq syntax.
 
@@ -139,6 +140,8 @@ Module PackageNotation (π : RulesParam).
     (at level 2, x constr) : package_scope.
 
   Notation " x × y " := (chProd x y) (at level 80) : package_scope.
+
+  Notation "{ 'map' x → y }" := (chMap x y) (at level 80) : package_scope.
 
   Notation "( x )" := x (in custom pack_type, x at level 2).
 
