@@ -1423,4 +1423,14 @@ Module PackageComposition (π : RulesParam).
     reflexivity.
   Qed.
 
+  Lemma cast_fun_K :
+    ∀ S T f e1 e2,
+      @cast_fun S T S T e1 e2 f = f.
+  Proof.
+    intros S T f e1 e2.
+    rewrite (uip e1 erefl).
+    rewrite (uip e2 erefl).
+    reflexivity.
+  Qed.
+
 End PackageComposition.
