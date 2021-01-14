@@ -1210,6 +1210,36 @@ Module PackageRHL (π : RulesParam).
         (arg : S),
         ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄ repr (exist _ (f arg) (hpf arg)) ≈ repr (exist _ (g arg) (hpg arg)) ⦃ λ '(b1, s0) '(b2, s3), b1 = b2 ∧ I (s0, s3) ⦄.
 
+    Definition pdom (I : Interface) : {fset ident} :=
+      (λ '(id, _), id) @: I.
+
+    (* TODO MOVE *)
+    (* (Safe) lookup (by id) in open packages *)
+    Equations? olookup_id {L I E} (p : opackage L I E)
+      {id : ident} (h : id \in pdom E) :
+      pointed_vprogram L I :=
+      olookup_id p h with inspect (p.π1 id) := {
+      | @exist (Some (So ; To ; f)) e := (So ; To ; λ x, ⦑ f x ⦒) ;
+      | @exist None e := False_rect _ _
+      }.
+    Proof.
+      - destruct p as [p hp]. cbn in *.
+        unfold pdom in h.
+        move: h => /imfsetP h. cbn in h. destruct h as [[id' [S' T']] hin ?].
+        subst id'.
+        specialize (hp _ hin) as h'. cbn in h'.
+        destruct h' as [g [eg hg]].
+        rewrite -e in eg. noconf eg. cbn in hg.
+        apply hg.
+      - destruct p as [p hp]. cbn in *.
+        unfold pdom in h.
+        move: h => /imfsetP h. cbn in h. destruct h as [[id' [S' T']] hin ?].
+        subst id'.
+        specialize (hp _ hin) as h'. cbn in h'.
+        destruct h' as [g [eg hg]].
+        rewrite -e in eg. noconf eg.
+    Qed.
+
     Lemma eq_up_to_inv_to_alt :
       ∀ L₁ L₂ E I p₁ p₂,
         @eq_up_to_inv L₁ L₂ E I p₁ p₂ →
