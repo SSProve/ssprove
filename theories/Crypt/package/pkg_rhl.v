@@ -1000,7 +1000,44 @@ Module PackageRHL (π : RulesParam).
       apply hg.
     Qed.
 
-    Equations? safe_getm_def {A : eqType} n (x : A) (s : seq (nat * A))
+    Definition cast_vfun {L I} {So To St Tt : chUniverse}
+      (hS : St = So) (hT : Tt = To) (f : St → program L I Tt) :
+      So → program L I To.
+    Proof.
+      subst. auto.
+    Defined.
+
+    Equations? safe_list_lookup
+      {L I id S T} (l : seq (nat * pointed_vprogram L I)) (h : (id, (S, T)) \in export_interface (mkfmap l)) :
+      S → program L I T :=
+      safe_list_lookup p h with (inspect (getm_def p id)) := {
+      | @exist (Some (S' ; T'; f)) e := cast_vfun _ _ f ;
+      | @exist None e := False_rect _ _
+      }.
+    Proof.
+      - unfold export_interface in h. rewrite in_fset in h.
+        move: h => /getmP h. rewrite mapmE in h.
+        destruct (mkfmap p id) as [[SS [TT g]]|] eqn:e'.
+        2:{ rewrite e' in h. discriminate. }
+        rewrite e' in h. cbn in h. noconf h.
+        rewrite mkfmapE in e'. rewrite e' in e. noconf e.
+        reflexivity.
+      - unfold export_interface in h. rewrite in_fset in h.
+        move: h => /getmP h. rewrite mapmE in h.
+        destruct (mkfmap p id) as [[SS [TT g]]|] eqn:e'.
+        2:{ rewrite e' in h. discriminate. }
+        rewrite e' in h. cbn in h. noconf h.
+        rewrite mkfmapE in e'. rewrite e' in e. noconf e.
+        reflexivity.
+      - unfold export_interface in h. rewrite in_fset in h.
+        move: h => /getmP h. rewrite mapmE in h.
+        destruct (mkfmap p id) as [[SS [TT g]]|] eqn:e'.
+        2:{ rewrite e' in h. discriminate. }
+        rewrite e' in h. cbn in h. noconf h.
+        rewrite mkfmapE in e'. rewrite e' in e. noconf e.
+    Qed.
+
+    (* Equations? safe_getm_def {A : eqType} n (x : A) (s : seq (nat * A))
       (h : (n,x) \in s) : A :=
       safe_getm_def n x s h with inspect (getm_def s n) := {
       | @exist (Some u) _ := u ;
@@ -1008,12 +1045,30 @@ Module PackageRHL (π : RulesParam).
       }.
     Proof.
       eapply in_getm_def_None. all: eauto.
-    Qed.
+    Qed. *)
 
-    (* Lemma olookup_unfold :
+    Lemma olookup_unfold :
       ∀ L I id S T l (h : (id, (S, T)) \in export_interface (mkfmap l)),
         olookup (L := L) (I := I) (mkpack (mkfmap l)) h =
-        safe_getm_def l id. *)
+        safe_list_lookup l h.
+    Proof.
+      intros L I id S T l h.
+      extensionality x. apply program_ext.
+      unfold export_interface in h. pose proof h as h'.
+      rewrite in_fset in h'. move: h' => /getmP h'.
+      rewrite mapmE in h'.
+      destruct (mkfmap l id) as [[SS [TT g]]|] eqn:e'.
+      2:{ rewrite e' in h'. discriminate. }
+      rewrite e' in h'. cbn in h'. noconf h'.
+      (* rewrite mkfmapE in e'. rewrite e' in e. noconf e. *)
+      erewrite olookup_fst.
+      2:{
+        unfold mkpack. cbn - [mapm]. rewrite mapmE.
+        rewrite e'. cbn. reflexivity.
+      }
+      simpl. simp safe_list_lookup.
+      rewrite mkfmapE in e'. (* rewrite e'. *)
+    Admitted.
 
     Definition eq_up_to_inv_alt {L₁ L₂} {E}
       (I : heap_choiceType * heap_choiceType → Prop)
