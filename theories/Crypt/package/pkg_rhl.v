@@ -1007,6 +1007,16 @@ Module PackageRHL (π : RulesParam).
       subst. auto.
     Defined.
 
+    Lemma cast_vfun_K :
+      ∀ L I S T f e1 e2,
+        @cast_vfun L I S T S T e1 e2 f = f.
+    Proof.
+      intros L I S T f e1 e2.
+      rewrite (uip e1 erefl).
+      rewrite (uip e2 erefl).
+      reflexivity.
+    Qed.
+
     Equations? safe_list_lookup
       {L I id S T} (l : seq (nat * pointed_vprogram L I)) (h : (id, (S, T)) \in export_interface (mkfmap l)) :
       S → program L I T :=
@@ -1053,7 +1063,14 @@ Module PackageRHL (π : RulesParam).
         safe_list_lookup l h.
     Proof.
       intros L I id S T l h.
-      extensionality x. apply program_ext.
+      funelim (safe_list_lookup l h).
+      2:{
+        lazymatch goal with
+        | h : False_rect ?x ?y = _ |- _ => exact (False_rect _ y)
+        end.
+      }
+      inversion H as [e1]. rewrite <- Heqcall.
+      extensionality z. apply program_ext.
       unfold export_interface in h. pose proof h as h'.
       rewrite in_fset in h'. move: h' => /getmP h'.
       rewrite mapmE in h'.
@@ -1066,9 +1083,10 @@ Module PackageRHL (π : RulesParam).
         unfold mkpack. cbn - [mapm]. rewrite mapmE.
         rewrite e'. cbn. reflexivity.
       }
-      simpl. simp safe_list_lookup.
-      rewrite mkfmapE in e'. (* rewrite e'. *)
-    Admitted.
+      simpl.
+      rewrite mkfmapE in e'. rewrite e' in e1. noconf e1.
+      rewrite cast_vfun_K. reflexivity.
+    Qed.
 
     Definition eq_up_to_inv_alt {L₁ L₂} {E}
       (I : heap_choiceType * heap_choiceType → Prop)
