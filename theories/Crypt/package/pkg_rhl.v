@@ -1000,6 +1000,21 @@ Module PackageRHL (π : RulesParam).
       apply hg.
     Qed.
 
+    Equations? safe_getm_def {A : eqType} n (x : A) (s : seq (nat * A))
+      (h : (n,x) \in s) : A :=
+      safe_getm_def n x s h with inspect (getm_def s n) := {
+      | @exist (Some u) _ := u ;
+      | @exist None e := False_rect _ _
+      }.
+    Proof.
+      eapply in_getm_def_None. all: eauto.
+    Qed.
+
+    (* Lemma olookup_unfold :
+      ∀ L I id S T l (h : (id, (S, T)) \in export_interface (mkfmap l)),
+        olookup (L := L) (I := I) (mkpack (mkfmap l)) h =
+        safe_getm_def l id. *)
+
     Definition eq_up_to_inv_alt {L₁ L₂} {E}
       (I : heap_choiceType * heap_choiceType → Prop)
       (p₁ : opackage L₁ Game_import E) (p₂ : opackage L₂ Game_import E) :=
