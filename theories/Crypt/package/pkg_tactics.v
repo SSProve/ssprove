@@ -47,7 +47,7 @@ From mathcomp Require Import ssreflect ssrbool eqtype seq eqtype choice.
 From extructures Require Import ord fset.
 From Crypt Require Import Prelude pkg_core_definition pkg_composition
   pkg_notation RulesStateProb.
-From Coq Require Import FunctionalExtensionality
+From Coq Require Import Utf8 FunctionalExtensionality
   Setoids.Setoid Classes.Morphisms.
 
 Require Equations.Prop.DepElim.
@@ -89,7 +89,19 @@ Module PackageTactics (π : RulesParam).
     | context [ exist _ (_opr o x k) h ] =>
       rewrite fold_opr *)
 
+  Ltac program_fold_pass :=
+    change (exist (valid_program ?L ?I) (@_ret ?A ?x) ?h) with (@ret L I A x) ;
+    change (exist (valid_program ?L ?I) (@_opr ?A ?o ?x ?k) ?h)
+    with (@opr L I A o (valid_opr_in h) x (λ v, exist _ (k v) (valid_opr_k h v))) ;
+    change (exist (valid_program ?L ?I) (@_getr ?A ?l ?k) ?h)
+    with (@getr L I A l (valid_getr_in h) (λ x, exist _ (k x) (valid_getr_k h x))) ;
+    change (exist (valid_program ?L ?I) (@_putr ?A ?l ?v ?k) ?h)
+    with (@putr L I A l (valid_putr_in h) v (exist _ k (valid_putr_k h))) ;
+    change (exist (valid_program ?L ?I) (@_sampler ?A ?op ?k) ?h)
+    with (@sampler L I A op (λ x, exist _ (k x) (h x))).
+
   Ltac program_fold :=
+    repeat program_fold_pass ;
     rewrite ?fold_ret ?fold_opr ?fold_getr ?fold_putr ?fold_sampler.
 
   Tactic Notation "program" "fold" :=
