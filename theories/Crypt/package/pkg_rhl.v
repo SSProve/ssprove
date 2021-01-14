@@ -53,6 +53,8 @@ Module PackageRHL (π : RulesParam).
 
     Definition Adversary4Game (Game_export : Interface) : Type :=
       package Game_export A_export.
+    Definition Adversary4Game_weak (Game_export : Interface) : Type :=
+      opackage fset0 Game_export A_export.
 
     Open Scope fset.
     (* Let iops_StP := @ops_StP probE rel_choiceTypes chEmb. *)
@@ -576,6 +578,107 @@ Module PackageRHL (π : RulesParam).
                (A : Adversary4Game Game_export)
                {H1 : fdisjoint A.π1 G0.π1} {H2 : fdisjoint A.π1 G1.π1} : R
       := `| (Pr (link A G0) true) - (Pr (link A G1) true)|.
+
+    Definition AdvantageE_weak { Game_export : Interface }
+               (G0 : Game_Type Game_export) (G1 : Game_Type Game_export)
+               (A : Adversary4Game_weak Game_export) : R
+      := `| (Pr (link (fset0; A) G0) true) - (Pr (link (fset0; A) G1) true)|.
+
+    Definition state_pass_ {A} (p : raw_program A) : heap_choiceType -> raw_program (prod_choiceType A heap_choiceType).
+    Proof.
+      induction p; intros h.
+      - constructor.
+        exact (x, h).
+      - apply (_opr o).
+        + exact x.
+        + intros v. exact (X v h).
+      - apply X.
+        + exact (get_heap h l).
+        + exact h.
+      - apply IHp.
+        apply (set_heap h l v).
+      - apply (_sampler op).
+        intros v. exact (X v h).
+    Defined.
+
+    Definition state_pass__valid {A} {L} {I} (p : raw_program A) (h : valid_program L I p) :
+      ∀ hp, valid_program fset0 I (state_pass_ p hp).
+    Proof.
+      induction p; intros hp.
+      - auto.
+      - destruct h as [h1 h2]. split.
+        + assumption.
+        + intros t.
+          apply H.
+          apply h2.
+      - destruct h as [h1 h2].
+        apply H.
+        apply h2.
+      - destruct h as [h1 h2].
+        apply IHp.
+        apply h2.
+      - intros v.
+        apply H.
+        apply h.
+    Qed.
+
+    Definition state_pass {A} (p : raw_program A) : raw_program A :=
+      bind_ (state_pass_ p empty_heap) (fun '(r, _) => _ret r).
+
+    Definition state_pass_valid {A} {L} {I} (p : raw_program A) (h : valid_program L I p) :
+      valid_program fset0 I (state_pass p).
+    Proof.
+      apply bind_valid.
+      - apply (state_pass__valid p h empty_heap).
+      - intros x. destruct x. cbn. auto.
+    Qed.
+
+    Definition turn_adversary_weak  { Game_export : Interface }
+               (A : Adversary4Game Game_export) : Adversary4Game_weak Game_export.
+    Proof.
+      unfold Adversary4Game_weak, opackage.
+      pose (get_op A RUN RUN_in_A_export Datatypes.tt) as run.
+      destruct run as [run valid_run].
+      cbn in *.
+      pose (state_pass run) as raw_run_st.
+      pose (state_pass_valid run valid_run) as raw_run_st_valid.
+      apply funmkpack.
+      - unfold flat, A_export.
+        intros n u1 u2.
+        move /fset1P => h1.
+        move /fset1P => h2.
+        inversion h1. inversion h2.
+        reflexivity.
+      - intros o.
+        move /fset1P => hin.
+        subst. intros _.
+        exists raw_run_st.
+        assumption.
+    Defined.
+
+    Definition pr_weak {Game_export : Interface} (A : Adversary4Game Game_export) G :
+      Pr (link (fset0; turn_adversary_weak A) G) true = Pr (link A G) true.
+    Proof.
+    Admitted.
+
+    Definition perf_ind {Game_export : Interface}
+               (G0 : Game_Type Game_export) (G1 : Game_Type Game_export) :=
+      forall A H1 H2, @AdvantageE _ G0 G1 A H1 H2 = 0.
+
+    Definition perf_ind_weak {Game_export : Interface}
+               (G0 : Game_Type Game_export) (G1 : Game_Type Game_export) :=
+      forall A, @AdvantageE_weak _ G0 G1 A = 0.
+
+    Definition perf_ind_weak_implies_perf_ind {Game_export : Interface}
+               (G0 : Game_Type Game_export) (G1 : Game_Type Game_export)
+               (h : perf_ind_weak G0 G1) : perf_ind G0 G1.
+    Proof.
+      unfold perf_ind, perf_ind_weak, AdvantageE, AdvantageE_weak in *.
+      intros A H1 H2.
+      rewrite -(pr_weak A G0).
+      rewrite -(pr_weak A G1).
+      apply h.
+    Qed.
 
     Notation "ϵ( GP )" := (fun A => AdvantageE (GP false) (GP true) A) (at level 90).
     Notation " G0 ≈[ R ] G1 " := (AdvantageE G0 G1 = R) (at level 50).
