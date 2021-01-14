@@ -1191,25 +1191,6 @@ Module PackageRHL (π : RulesParam).
       rewrite cast_vfun_K. reflexivity.
     Qed.
 
-    Definition eq_up_to_inv_alt {L₁ L₂} {E}
-      (I : heap_choiceType * heap_choiceType → Prop)
-      (p₁ : opackage L₁ Game_import E) (p₂ : opackage L₂ Game_import E) :=
-      ∀ (id : ident) (S T : chUniverse) (h : (id, (S, T)) \in E) (x : S),
-        ⊨ ⦃ λ '(s₀, s₃), I (s₀, s₃) ⦄
-          repr (olookup p₁ h x) ≈ repr (olookup p₂ h x)
-          ⦃ λ '(b₁, s₀) '(b₂, s₃), b₁ = b₂ ∧ I (s₀, s₃) ⦄.
-
-    Definition eq_up_to_inv {L1 L2} {E}
-               (I : heap_choiceType * heap_choiceType → Prop)
-               (P1 : opackage L1 Game_import E) (P2 : opackage L2 Game_import E) :=
-      ∀ (id : ident) (S T : chUniverse)
-        (hin : (id, (S, T)) \in E)
-        (f : S → raw_program T) (g : S → raw_program T)
-        (Hf : P1.π1 id = Some (S; T; f)) (hpf : ∀ x, valid_program L1 Game_import (f x))
-        (Hg : P2.π1 id = Some (S; T; g)) (hpg : ∀ x, valid_program L2 Game_import (g x))
-        (arg : S),
-        ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄ repr (exist _ (f arg) (hpf arg)) ≈ repr (exist _ (g arg) (hpg arg)) ⦃ λ '(b1, s0) '(b2, s3), b1 = b2 ∧ I (s0, s3) ⦄.
-
     Definition pdom (I : Interface) : {fset ident} :=
       (λ '(id, _), id) @: I.
 
@@ -1239,6 +1220,112 @@ Module PackageRHL (π : RulesParam).
         destruct h' as [g [eg hg]].
         rewrite -e in eg. noconf eg.
     Qed.
+
+    Definition pdefS {L I E} (p : opackage L I E) {id : ident}
+      (h : id \in pdom E) : chUniverse :=
+      (olookup_id p h).π1.
+
+    Definition pdefT {L I E} (p : opackage L I E) {id : ident}
+      (h : id \in pdom E) : chUniverse :=
+      (olookup_id p h).π2.π1.
+
+    Definition pdef {L I E} (p : opackage L I E) {id : ident}
+      (h : id \in pdom E) : pdefS p h → program L I (pdefT p h) :=
+      (olookup_id p h).π2.π2.
+
+    Lemma pdefS_eq :
+      ∀ {L₁ L₂ I E} (p₁ : opackage L₁ I E) (p₂ : opackage L₂ I E)
+        {id : ident} (h : id \in pdom E),
+        pdefS p₁ h = pdefS p₂ h.
+    Proof.
+      intros L₁ L₂ I E p₁ p₂ id h.
+      unfold pdefS. funelim (olookup_id p₁ h).
+      2:{
+        lazymatch goal with
+        | h : context [ False_rect _ ?x ] |- _ => exact (False_rect _ x)
+        end.
+      }
+      rewrite <- Heqcall. clear Heqcall. simpl.
+      funelim (olookup_id p₂ h).
+      2:{
+        lazymatch goal with
+        | h : context [ False_rect _ ?x ] |- _ => exact (False_rect _ x)
+        end.
+      }
+      rewrite <- Heqcall. clear Heqcall. simpl.
+      destruct p as [p₁ h₁], p0 as [p₂ h₂]. cbn in *.
+      unfold pdom in h.
+      move: h => /imfsetP h. cbn in h. destruct h as [[id' [S' T']] hin ?].
+      subst id'.
+      specialize (h₁ _ hin). cbn in h₁.
+      destruct h₁ as [f [ef hf]].
+      rewrite -e in ef. noconf ef.
+      specialize (h₂ _ hin). cbn in h₂.
+      destruct h₂ as [g [eg hg]].
+      rewrite -e0 in eg. noconf eg.
+      reflexivity.
+    Qed.
+
+    Lemma pdefT_eq :
+      ∀ {L₁ L₂ I E} (p₁ : opackage L₁ I E) (p₂ : opackage L₂ I E)
+        {id : ident} (h : id \in pdom E),
+        pdefT p₁ h = pdefT p₂ h.
+    Proof.
+      intros L₁ L₂ I E p₁ p₂ id h.
+      unfold pdefT. funelim (olookup_id p₁ h).
+      2:{
+        lazymatch goal with
+        | h : context [ False_rect _ ?x ] |- _ => exact (False_rect _ x)
+        end.
+      }
+      rewrite <- Heqcall. clear Heqcall. simpl.
+      funelim (olookup_id p₂ h).
+      2:{
+        lazymatch goal with
+        | h : context [ False_rect _ ?x ] |- _ => exact (False_rect _ x)
+        end.
+      }
+      rewrite <- Heqcall. clear Heqcall. simpl.
+      destruct p as [p₁ h₁], p0 as [p₂ h₂]. cbn in *.
+      unfold pdom in h.
+      move: h => /imfsetP h. cbn in h. destruct h as [[id' [S' T']] hin ?].
+      subst id'.
+      specialize (h₁ _ hin). cbn in h₁.
+      destruct h₁ as [f [ef hf]].
+      rewrite -e in ef. noconf ef.
+      specialize (h₂ _ hin). cbn in h₂.
+      destruct h₂ as [g [eg hg]].
+      rewrite -e0 in eg. noconf eg.
+      reflexivity.
+    Qed.
+
+    (* TODO Transport here using equalities above *)
+    (* Definition eq_up_to_inv_alt2 {L₁ L₂} {E}
+      (I : heap_choiceType * heap_choiceType → Prop)
+      (p₁ : opackage L₁ Game_import E) (p₂ : opackage L₂ Game_import E) :=
+      ∀ (id : ident) (h : id \in pdom E) x,
+        r⊨ ⦃ λ '(s₀, s₃), I (s₀, s₃) ⦄
+          pdef p₁ h x ≈ pdef p₂ h x
+          ⦃ λ '(b₁, s₀) '(b₂, s₃), b₁ = b₂ ∧ I (s₀, s₃) ⦄. *)
+
+    Definition eq_up_to_inv_alt {L₁ L₂} {E}
+      (I : heap_choiceType * heap_choiceType → Prop)
+      (p₁ : opackage L₁ Game_import E) (p₂ : opackage L₂ Game_import E) :=
+      ∀ (id : ident) (S T : chUniverse) (h : (id, (S, T)) \in E) (x : S),
+        ⊨ ⦃ λ '(s₀, s₃), I (s₀, s₃) ⦄
+          repr (olookup p₁ h x) ≈ repr (olookup p₂ h x)
+          ⦃ λ '(b₁, s₀) '(b₂, s₃), b₁ = b₂ ∧ I (s₀, s₃) ⦄.
+
+    Definition eq_up_to_inv {L1 L2} {E}
+               (I : heap_choiceType * heap_choiceType → Prop)
+               (P1 : opackage L1 Game_import E) (P2 : opackage L2 Game_import E) :=
+      ∀ (id : ident) (S T : chUniverse)
+        (hin : (id, (S, T)) \in E)
+        (f : S → raw_program T) (g : S → raw_program T)
+        (Hf : P1.π1 id = Some (S; T; f)) (hpf : ∀ x, valid_program L1 Game_import (f x))
+        (Hg : P2.π1 id = Some (S; T; g)) (hpg : ∀ x, valid_program L2 Game_import (g x))
+        (arg : S),
+        ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄ repr (exist _ (f arg) (hpf arg)) ≈ repr (exist _ (g arg) (hpg arg)) ⦃ λ '(b1, s0) '(b2, s3), b1 = b2 ∧ I (s0, s3) ⦄.
 
     Lemma eq_up_to_inv_to_alt :
       ∀ L₁ L₂ E I p₁ p₂,
