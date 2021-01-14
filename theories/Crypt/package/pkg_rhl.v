@@ -1299,14 +1299,14 @@ Module PackageRHL (π : RulesParam).
       reflexivity.
     Qed.
 
-    (* TODO Transport here using equalities above *)
-    (* Definition eq_up_to_inv_alt2 {L₁ L₂} {E}
+    Definition eq_up_to_inv_alt2 {L₁ L₂} {E}
       (I : heap_choiceType * heap_choiceType → Prop)
       (p₁ : opackage L₁ Game_import E) (p₂ : opackage L₂ Game_import E) :=
       ∀ (id : ident) (h : id \in pdom E) x,
         r⊨ ⦃ λ '(s₀, s₃), I (s₀, s₃) ⦄
-          pdef p₁ h x ≈ pdef p₂ h x
-          ⦃ λ '(b₁, s₀) '(b₂, s₃), b₁ = b₂ ∧ I (s₀, s₃) ⦄. *)
+          pdef p₁ h x ≈
+          cast_vfun (pdefS_eq p₂ p₁ h) (pdefT_eq p₂ p₁ h) (pdef p₂ h) x
+          ⦃ λ '(b₁, s₀) '(b₂, s₃), b₁ = b₂ ∧ I (s₀, s₃) ⦄.
 
     Definition eq_up_to_inv_alt {L₁ L₂} {E}
       (I : heap_choiceType * heap_choiceType → Prop)
