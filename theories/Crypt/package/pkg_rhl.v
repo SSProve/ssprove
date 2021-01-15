@@ -1427,27 +1427,45 @@ Module PackageRHL (π : RulesParam).
       eapply ldefT_spec. eassumption.
     Qed.
 
-    (* Lemma pdef_unfold :
+    Lemma pdef_unfold :
       ∀ L I id l (h : id \in pdom (export_interface (mkfmap l))),
         pdef (L := L) (I := I) (mkpack (mkfmap l)) h =
-        ldef l h.
+        cast_vfun (ldefS_pdefS_eq h) (ldefT_pdefT_eq h) (ldef l h).
     Proof.
-      intros L I id S T l h.
-      funelim (safe_list_lookup l h). 2: falso.
-      inversion H as [e1]. rewrite <- Heqcall.
+      intros L I id l h.
+      pose proof h as h'. unfold pdom in h'.
+      move: h' => /imfsetP h'. cbn - [mkfmap] in h'.
+      destruct h' as [[id' [S T]] h' e]. subst id'.
+      unfold export_interface in h'.
+      rewrite in_fset in h'.
+      move: h' => /getmP h'. rewrite mapmE in h'.
+      destruct (mkfmap l id) as [[S' [T' f]]|] eqn:e.
+      2:{ rewrite e in h'. discriminate. }
+      rewrite e in h'. cbn in h'. noconf h'.
+      rewrite mkfmapE in e.
+      unfold ldef. funelim (safe_getm_def l h). 2: falso.
+      rewrite -e in e0. noconf e0.
       extensionality z. apply program_ext.
-      unfold export_interface in h. pose proof h as h'.
-      rewrite in_fset in h'. move: h' => /getmP h'.
-      rewrite mapmE in h'.
-      destruct (mkfmap l id) as [[SS [TT g]]|] eqn:e'.
-      2:{ rewrite e' in h'. discriminate. }
-      rewrite e' in h'. cbn in h'. noconf h'.
-      (* rewrite mkfmapE in e'. rewrite e' in e. noconf e. *)
-      erewrite olookup_fst. 2: falso.
-      simpl.
-      rewrite mkfmapE in e'. rewrite e' in e1. noconf e1.
-      rewrite cast_vfun_K. reflexivity.
-    Qed. *)
+      clear H.
+      pose proof (pdef_fst (mkpack (mkfmap l)) h (f := λ x, (p x) ∙1)) as e'.
+      match type of e' with
+      | ?A → _ =>
+        assert (e'' : A)
+      end.
+      { simpl. rewrite mapmE.
+        rewrite mkfmapE. rewrite <- e. cbn. reflexivity.
+      }
+      specialize (e' e'').
+      set (e1 := ldefS_pdefS_eq _).
+      set (e2 := ldefT_pdefT_eq _).
+      clearbody e1 e2. revert e1 e2.
+      unfold ldefS. unfold ldefT.
+      rewrite <- Heqcall. simpl.
+      intros e1 e2. subst. cbn.
+      rewrite <- e'.
+      rewrite cast_vfun_K.
+      reflexivity.
+    Qed.
 
     Definition eq_up_to_inv_alt2 {L₁ L₂} {E}
       (I : heap_choiceType * heap_choiceType → Prop)
