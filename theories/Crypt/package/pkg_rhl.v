@@ -1331,7 +1331,7 @@ Module PackageRHL (π : RulesParam).
       {L I id} (l : seq (nat * pointed_vprogram L I)) (h : id \in pdom (export_interface (mkfmap l))) :
       pointed_vprogram L I :=
       safe_getm_def p h with (inspect (getm_def p id)) := {
-      | @exist (Some p) e := p ;
+      | @exist (Some (S' ; T' ; f)) e := (S' ; T' ; f) ;
       | @exist None e := False_rect _ _
       }.
     Proof.
@@ -1362,8 +1362,26 @@ Module PackageRHL (π : RulesParam).
     Proof.
       intros L I id l S T f h e.
       rewrite mkfmapE in e.
-      unfold ldefS.
-    Admitted.
+      unfold ldefS. funelim (safe_getm_def l h). 2: falso.
+      rewrite <- Heqcall. clear Heqcall.
+      cbn.
+      rewrite -e in e0. noconf e0.
+      reflexivity.
+    Qed.
+
+    Lemma ldefT_spec :
+      ∀ {L I id l S T f} h,
+        mkfmap (T:=nat_ordType) l id = Some (S ; T ; f) →
+        @ldefT L I id l h = T.
+    Proof.
+      intros L I id l S T f h e.
+      rewrite mkfmapE in e.
+      unfold ldefT. funelim (safe_getm_def l h). 2: falso.
+      rewrite <- Heqcall. clear Heqcall.
+      cbn.
+      rewrite -e in e0. noconf e0.
+      reflexivity.
+    Qed.
 
     Lemma ldefS_pdefS_eq :
       ∀ {L I id l} h,
@@ -1385,6 +1403,28 @@ Module PackageRHL (π : RulesParam).
         rewrite mapmE. rewrite e. cbn. reflexivity.
       }
       eapply ldefS_spec. eassumption.
+    Qed.
+
+    Lemma ldefT_pdefT_eq :
+      ∀ {L I id l} h,
+        ldefT (id := id) l h = pdefT (L := L) (I := I) (mkpack (mkfmap l)) h.
+    Proof.
+      intros L I id l h.
+      pose proof h as h'. unfold pdom in h'.
+      move: h' => /imfsetP h'. cbn - [mkfmap] in h'.
+      destruct h' as [[id' [S T]] h' e]. subst id'.
+      unfold export_interface in h'.
+      rewrite in_fset in h'.
+      move: h' => /getmP h'. rewrite mapmE in h'.
+      destruct (mkfmap l id) as [[S' [T' f]]|] eqn:e.
+      2:{ rewrite e in h'. discriminate. }
+      rewrite e in h'. cbn in h'. noconf h'.
+      erewrite pdefT_spec.
+      2:{
+        unfold mkpack. cbn - [mapm mkfmap].
+        rewrite mapmE. rewrite e. cbn. reflexivity.
+      }
+      eapply ldefT_spec. eassumption.
     Qed.
 
     (* Lemma pdef_unfold :
