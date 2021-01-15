@@ -316,6 +316,25 @@ Module PackageComposition (π : RulesParam).
         apply fsubsetUr.
     Defined.
 
+    Definition olink' {L1 L2 I E I'}
+      (p1 : opackage L1 I E) (p2 : opackage L2 I' I) :
+      opackage (L1 :|: L2) I' E.
+    Proof.
+      exists (raw_link p1 ∙1 p2 ∙1).
+      destruct p1 as [p1 h1], p2 as [p2 h2]. cbn.
+      intros [n [So To]] ho.
+      unfold raw_link. rewrite mapmE.
+      specialize (h1 _ ho) as h1'. cbn in h1'.
+      destruct h1' as [f [ef hf]]. rewrite ef. cbn.
+      eexists. split. 1: reflexivity.
+      intro x.
+      eapply raw_program_link_valid.
+      - eapply valid_injectLocations. 2: eauto.
+        apply fsubsetUl.
+      - eapply valid_package_inject_locations. 2: eauto.
+        apply fsubsetUr.
+    Defined.
+
     (* Remove unexported functions from a raw package *)
     Definition trim (E : Interface) (p : raw_package) :=
       filterm (λ n '(So ; To ; f), (n, (So, To)) \in E) p.
