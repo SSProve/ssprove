@@ -1487,6 +1487,40 @@ Module PackageRHL (π : RulesParam).
     (* TODO Also \in domp can be replaced by \in domm p when proving useful
       lemma with mkpack mkfmap *)
 
+    Lemma eq_up_to_inv_from_alt2 :
+      ∀ L₁ L₂ E I p₁ p₂,
+        @eq_up_to_inv_alt2 L₁ L₂ E I p₁ p₂ →
+        @eq_up_to_inv L₁ L₂ E I p₁ p₂.
+    Proof.
+      intros L₁ L₂ E I p₁ p₂ h.
+      intros id S T hin f g ef hf eg hg x.
+      specialize (h id).
+      eapply mem_imfset in hin as hin'.
+      specialize (h hin').
+      eapply pdefS_spec with (h0 := hin') in ef as e'.
+      cbn in hin'. subst S.
+      specialize (h x).
+      eapply pdefT_spec with (h0 := hin') in ef as e'. subst T.
+      lazymatch goal with
+      | h : r⊨ ⦃ _ ⦄ ?x ≈ ?y ⦃ _ ⦄ |- r⊨ ⦃ _ ⦄ ?u ≈ ?v ⦃ _ ⦄ =>
+        let e := fresh "e" in
+        let e' := fresh "e" in
+        assert (x = u) as e ; [
+        | assert (y = v) as e' ; [
+          | rewrite <- e ; rewrite <- e' ; auto
+          ]
+        ]
+      end.
+      - apply program_ext. cbn.
+        pose proof (pdef_fst p₁ hin' ef) as e.
+        rewrite <- e.
+        rewrite cast_vfun_K. reflexivity.
+      - apply program_ext. cbn.
+        pose proof (pdef_fst p₂ hin' eg) as e'.
+        rewrite <- e'.
+        apply (f_equal (λ f, (f x) ∙1)).
+        apply cast_vfun_cong. reflexivity.
+    Qed.
 
     Lemma some_lemma_for_prove_relational {export : Interface} {B} {L1 L2 LA}
                (P1 : opackage L1 Game_import export)
