@@ -1814,7 +1814,7 @@ Module PackageRHL (π : RulesParam).
 
     (* ER: How do we connect the package theory with the RHL?
            Something along the following lines should hold? *)
-    Definition prove_relational {L1 L2} {export}
+    Lemma prove_relational {L1 L2} {export}
                (P1 : opackage L1 Game_import export)
                (P2 : opackage L2 Game_import export)
                (I : heap_choiceType * heap_choiceType -> Prop)
@@ -1976,6 +1976,21 @@ Module PackageRHL (π : RulesParam).
         apply (valid_package_inject_locations _ _ LA (LA :|: L2)).
             + apply fsubsetUl.
             + exact A_valid.
+    Qed.
+
+    (* Alternative version for packages *)
+    Corollary prove_relational' :
+      ∀ {export}
+        (P1 : package Game_import export)
+        (P2 : package Game_import export)
+        (I : heap_choiceType * heap_choiceType -> Prop)
+        (HINV' : INV' P1.π1 P2.π1 I)
+        (Hempty : I (empty_heap, empty_heap))
+        (H : eq_up_to_inv I P1.π2 P2.π2),
+        P1 ≈[ fun A {H1} {H2} => 0 ] P2.
+    Proof.
+      intros E [L₁ p₁] [L₂ p₂] I hI he h.
+      eapply prove_relational. all: eauto.
     Qed.
 
 
