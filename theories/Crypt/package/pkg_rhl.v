@@ -1327,6 +1327,88 @@ Module PackageRHL (π : RulesParam).
       cbn. reflexivity.
     Qed.
 
+    Equations? safe_getm_def
+      {L I id} (l : seq (nat * pointed_vprogram L I)) (h : id \in pdom (export_interface (mkfmap l))) :
+      pointed_vprogram L I :=
+      safe_getm_def p h with (inspect (getm_def p id)) := {
+      | @exist (Some p) e := p ;
+      | @exist None e := False_rect _ _
+      }.
+    Proof.
+      unfold export_interface in h. unfold pdom in h.
+      move: h => /imfsetP h. cbn - [mapm] in h.
+      destruct h as [[id' [S' T']] h e']. subst id'.
+      rewrite in_fset in h.
+      move: h => /getmP h. rewrite mapmE in h.
+      destruct (mkfmap p id) as [[SS [TT g]]|] eqn:e'.
+      2:{ rewrite e' in h. discriminate. }
+      rewrite e' in h. cbn in h. noconf h.
+      rewrite mkfmapE in e'. rewrite e' in e. noconf e.
+    Qed.
+
+    Definition ldefS {L I id} l h : chUniverse :=
+      (@safe_getm_def L I id l h).π1.
+
+    Definition ldefT {L I id} l h : chUniverse :=
+      (@safe_getm_def L I id l h).π2.π1.
+
+    Definition ldef {L I id} l h : ldefS l h → program L I (ldefT l h) :=
+      (@safe_getm_def L I id l h).π2.π2.
+
+    Lemma ldefS_spec :
+      ∀ {L I id l S T f} h,
+        mkfmap (T:=nat_ordType) l id = Some (S ; T ; f) →
+        @ldefS L I id l h = S.
+    Proof.
+      intros L I id l S T f h e.
+      rewrite mkfmapE in e.
+      unfold ldefS.
+    Admitted.
+
+    Lemma ldefS_pdefS_eq :
+      ∀ {L I id l} h,
+        ldefS (id := id) l h = pdefS (L := L) (I := I) (mkpack (mkfmap l)) h.
+    Proof.
+      intros L I id l h.
+      pose proof h as h'. unfold pdom in h'.
+      move: h' => /imfsetP h'. cbn - [mkfmap] in h'.
+      destruct h' as [[id' [S T]] h' e]. subst id'.
+      unfold export_interface in h'.
+      rewrite in_fset in h'.
+      move: h' => /getmP h'. rewrite mapmE in h'.
+      destruct (mkfmap l id) as [[S' [T' f]]|] eqn:e.
+      2:{ rewrite e in h'. discriminate. }
+      rewrite e in h'. cbn in h'. noconf h'.
+      erewrite pdefS_spec.
+      2:{
+        unfold mkpack. cbn - [mapm mkfmap].
+        rewrite mapmE. rewrite e. cbn. reflexivity.
+      }
+      eapply ldefS_spec. eassumption.
+    Qed.
+
+    (* Lemma pdef_unfold :
+      ∀ L I id l (h : id \in pdom (export_interface (mkfmap l))),
+        pdef (L := L) (I := I) (mkpack (mkfmap l)) h =
+        ldef l h.
+    Proof.
+      intros L I id S T l h.
+      funelim (safe_list_lookup l h). 2: falso.
+      inversion H as [e1]. rewrite <- Heqcall.
+      extensionality z. apply program_ext.
+      unfold export_interface in h. pose proof h as h'.
+      rewrite in_fset in h'. move: h' => /getmP h'.
+      rewrite mapmE in h'.
+      destruct (mkfmap l id) as [[SS [TT g]]|] eqn:e'.
+      2:{ rewrite e' in h'. discriminate. }
+      rewrite e' in h'. cbn in h'. noconf h'.
+      (* rewrite mkfmapE in e'. rewrite e' in e. noconf e. *)
+      erewrite olookup_fst. 2: falso.
+      simpl.
+      rewrite mkfmapE in e'. rewrite e' in e1. noconf e1.
+      rewrite cast_vfun_K. reflexivity.
+    Qed. *)
+
     Definition eq_up_to_inv_alt2 {L₁ L₂} {E}
       (I : heap_choiceType * heap_choiceType → Prop)
       (p₁ : opackage L₁ Game_import E) (p₂ : opackage L₂ Game_import E) :=
