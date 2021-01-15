@@ -1176,12 +1176,7 @@ Module PackageRHL (π : RulesParam).
         safe_list_lookup l h.
     Proof.
       intros L I id S T l h.
-      funelim (safe_list_lookup l h).
-      2:{
-        lazymatch goal with
-        | h : False_rect ?x ?y = _ |- _ => exact (False_rect _ y)
-        end.
-      }
+      funelim (safe_list_lookup l h). 2: falso.
       inversion H as [e1]. rewrite <- Heqcall.
       extensionality z. apply program_ext.
       unfold export_interface in h. pose proof h as h'.
@@ -1249,19 +1244,9 @@ Module PackageRHL (π : RulesParam).
         pdefS p₁ h = pdefS p₂ h.
     Proof.
       intros L₁ L₂ I E p₁ p₂ id h.
-      unfold pdefS. funelim (olookup_id p₁ h).
-      2:{
-        lazymatch goal with
-        | h : context [ False_rect _ ?x ] |- _ => exact (False_rect _ x)
-        end.
-      }
+      unfold pdefS. funelim (olookup_id p₁ h). 2: falso.
       rewrite <- Heqcall. clear Heqcall. simpl.
-      funelim (olookup_id p₂ h).
-      2:{
-        lazymatch goal with
-        | h : context [ False_rect _ ?x ] |- _ => exact (False_rect _ x)
-        end.
-      }
+      funelim (olookup_id p₂ h). 2: falso.
       rewrite <- Heqcall. clear Heqcall. simpl.
       destruct p as [p₁ h₁], p0 as [p₂ h₂]. cbn in *.
       unfold pdom in h.
@@ -1282,19 +1267,9 @@ Module PackageRHL (π : RulesParam).
         pdefT p₁ h = pdefT p₂ h.
     Proof.
       intros L₁ L₂ I E p₁ p₂ id h.
-      unfold pdefT. funelim (olookup_id p₁ h).
-      2:{
-        lazymatch goal with
-        | h : context [ False_rect _ ?x ] |- _ => exact (False_rect _ x)
-        end.
-      }
+      unfold pdefT. funelim (olookup_id p₁ h). 2: falso.
       rewrite <- Heqcall. clear Heqcall. simpl.
-      funelim (olookup_id p₂ h).
-      2:{
-        lazymatch goal with
-        | h : context [ False_rect _ ?x ] |- _ => exact (False_rect _ x)
-        end.
-      }
+      funelim (olookup_id p₂ h). 2: falso.
       rewrite <- Heqcall. clear Heqcall. simpl.
       destruct p as [p₁ h₁], p0 as [p₂ h₂]. cbn in *.
       unfold pdom in h.
@@ -1308,12 +1283,6 @@ Module PackageRHL (π : RulesParam).
       rewrite -e0 in eg. noconf eg.
       reflexivity.
     Qed.
-
-    (* TODO MOVE *)
-    Ltac falso :=
-      lazymatch goal with
-      | h : context [ False_rect _ ?x ] |- _ => exact (False_rect _ x)
-      end.
 
     Lemma pdefS_spec :
       ∀ {L I E} (p : opackage L I E) {id S T} (h : id \in pdom E) {f},

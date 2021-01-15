@@ -69,3 +69,15 @@ Ltac sig_rewrite e :=
 *)
 Tactic Notation "sig" "rewrite" hyp(e) :=
   sig_rewrite e.
+
+
+(** Tactic falso
+
+  Usage: you have an hyothesis containing a use of [False_rect] at top-level.
+  This tactic will take it to close the goal.
+
+*)
+Ltac falso :=
+  lazymatch goal with
+  | h : context [ False_rect _ ?x ] |- _ => exact (False_rect _ x)
+  end.
