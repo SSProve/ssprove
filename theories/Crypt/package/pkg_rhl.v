@@ -1120,6 +1120,16 @@ Module PackageRHL (π : RulesParam).
       reflexivity.
     Qed.
 
+    Lemma cast_vfun_cong :
+      ∀ L I S₁ S₂ T₁ T₂ f g u₁ v₁ u₂ v₂,
+        f = g →
+        @cast_vfun L I S₁ T₁ S₂ T₂ u₁ v₁ f =
+        @cast_vfun L I S₁ T₁ S₂ T₂ u₂ v₂ g.
+    Proof.
+      intros L I S₁ S₂ T₁ T₂ f ? u₁ v₁ u₂ v₂ [].
+      subst. cbn. rewrite cast_vfun_K. reflexivity.
+    Qed.
+
     Equations? safe_list_lookup
       {L I id S T} (l : seq (nat * pointed_vprogram L I)) (h : (id, (S, T)) \in export_interface (mkfmap l)) :
       S → program L I T :=
@@ -1330,11 +1340,11 @@ Module PackageRHL (π : RulesParam).
     Qed.
 
     Lemma pdef_fst :
-      ∀ L I E (p : opackage L I E) id S T (h : id \in pdom E) f x
-        (e : p.π1 id = Some (S ; T ; f)),
+      ∀ {L I E} (p : opackage L I E) {id S T} (h : id \in pdom E) {f}
+        (e : p.π1 id = Some (S ; T ; f)) x,
         (cast_vfun (pdefS_spec p h e) (pdefT_spec p h e) (pdef p h) x) ∙1 = f x.
     Proof.
-      intros L I E p id S T h f x e. cbn in f.
+      intros L I E p id S T h f e x. cbn in f.
       unfold pdef. funelim (olookup_id p h). 2: falso.
       pose proof e0 as e'. rewrite -e in e'. noconf e'.
       cbn in e0. clear H.
@@ -1441,11 +1451,41 @@ Module PackageRHL (π : RulesParam).
       intros L₁ L₂ E I p₁ p₂ h.
       intros id hin x.
       specialize (h id).
-      (* Prove a lemma about pdef when p.π1 id = Some and use that here *)
-      (* TODO Also \in domp can be replaced by \in domm p when proving useful
+      pose proof hin as hin'. unfold pdom in hin'.
+      move: hin' => /imfsetP hin'. cbn in hin'.
+      destruct hin' as [[id' [S' T']] hin' ?]. subst id'.
+      specialize h with (1 := hin').
+      destruct p₁ as [p₁ hp₁]. specialize (hp₁ _ hin') as h'.
+      cbn in h'. destruct h' as [f₁ [e₁ h₁]].
+      destruct p₂ as [p₂ hp₂]. specialize (hp₂ _ hin') as h'.
+      cbn in h'. destruct h' as [f₂ [e₂ h₂]].
+      specialize h with (1 := e₁) (2 := e₂).
+      specialize (h h₁ h₂).
+      pose proof (pdefS_spec (exist _ p₁ hp₁) hin e₁) as e. subst S'.
+      specialize (h x).
+      pose proof (pdefT_spec (exist _ p₁ hp₁) hin e₁) as e. subst T'.
+      lazymatch goal with
+      | h : r⊨ ⦃ _ ⦄ ?x ≈ ?y ⦃ _ ⦄ |- r⊨ ⦃ _ ⦄ ?u ≈ ?v ⦃ _ ⦄ =>
+        let e := fresh "e" in
+        let e' := fresh "e" in
+        assert (x = u) as e ; [
+        | assert (y = v) as e' ; [
+          | rewrite <- e ; rewrite <- e' ; auto
+          ]
+        ]
+      end.
+      - apply program_ext. cbn.
+        pose proof (pdef_fst (exist _ p₁ hp₁) hin e₁) as e.
+        rewrite <- e.
+        rewrite cast_vfun_K. reflexivity.
+      - apply program_ext. cbn.
+        pose proof (pdef_fst (exist _ p₂ hp₂) hin e₂) as e'.
+        rewrite <- e'.
+        apply (f_equal (λ f, (f x) ∙1)).
+        apply cast_vfun_cong. reflexivity.
+    Qed.
+    (* TODO Also \in domp can be replaced by \in domm p when proving useful
       lemma with mkpack mkfmap *)
-    (* Qed. *)
-    Admitted.
 
 
     Lemma some_lemma_for_prove_relational {export : Interface} {B} {L1 L2 LA}
