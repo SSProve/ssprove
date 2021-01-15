@@ -1299,6 +1299,55 @@ Module PackageRHL (π : RulesParam).
       reflexivity.
     Qed.
 
+    (* TODO MOVE *)
+    Ltac falso :=
+      lazymatch goal with
+      | h : context [ False_rect _ ?x ] |- _ => exact (False_rect _ x)
+      end.
+
+    Lemma pdefS_spec :
+      ∀ {L I E} (p : opackage L I E) {id S T} (h : id \in pdom E) {f},
+        p.π1 id = Some (S ; T ; f) →
+        pdefS p h = S.
+    Proof.
+      intros L I E p id S T h f e.
+      unfold pdefS. funelim (olookup_id p h). 2: falso.
+      rewrite <- Heqcall. clear Heqcall.
+      rewrite -e in e0. noconf e0.
+      cbn. reflexivity.
+    Qed.
+
+    Lemma pdefT_spec :
+      ∀ {L I E} (p : opackage L I E) {id S T} (h : id \in pdom E) {f},
+        p.π1 id = Some (S ; T ; f) →
+        pdefT p h = T.
+    Proof.
+      intros L I E p id S T h f e.
+      unfold pdefT. funelim (olookup_id p h). 2: falso.
+      rewrite <- Heqcall. clear Heqcall.
+      rewrite -e in e0. noconf e0.
+      cbn. reflexivity.
+    Qed.
+
+    Lemma pdef_fst :
+      ∀ L I E (p : opackage L I E) id S T (h : id \in pdom E) f x
+        (e : p.π1 id = Some (S ; T ; f)),
+        (cast_vfun (pdefS_spec p h e) (pdefT_spec p h e) (pdef p h) x) ∙1 = f x.
+    Proof.
+      intros L I E p id S T h f x e. cbn in f.
+      unfold pdef. funelim (olookup_id p h). 2: falso.
+      pose proof e0 as e'. rewrite -e in e'. noconf e'.
+      cbn in e0. clear H.
+      set (e1 := pdefS_spec _ _ _).
+      set (e2 := pdefT_spec _ _ _).
+      clearbody e1 e2. revert e1 e2.
+      unfold pdefS. unfold pdefT.
+      rewrite <- Heqcall. cbn.
+      intros e1 e2.
+      rewrite cast_vfun_K.
+      cbn. reflexivity.
+    Qed.
+
     Definition eq_up_to_inv_alt2 {L₁ L₂} {E}
       (I : heap_choiceType * heap_choiceType → Prop)
       (p₁ : opackage L₁ Game_import E) (p₂ : opackage L₂ Game_import E) :=
@@ -1383,6 +1432,20 @@ Module PackageRHL (π : RulesParam).
       - apply program_ext. cbn. erewrite olookup_fst. all: eauto.
       - apply program_ext. cbn. erewrite olookup_fst. all: eauto.
     Qed.
+
+    Lemma eq_up_to_inv_to_alt2 :
+      ∀ L₁ L₂ E I p₁ p₂,
+        @eq_up_to_inv L₁ L₂ E I p₁ p₂ →
+        @eq_up_to_inv_alt2 L₁ L₂ E I p₁ p₂.
+    Proof.
+      intros L₁ L₂ E I p₁ p₂ h.
+      intros id hin x.
+      specialize (h id).
+      (* Prove a lemma about pdef when p.π1 id = Some and use that here *)
+      (* TODO Also \in domp can be replaced by \in domm p when proving useful
+      lemma with mkpack mkfmap *)
+    (* Qed. *)
+    Admitted.
 
 
     Lemma some_lemma_for_prove_relational {export : Interface} {B} {L1 L2 LA}
