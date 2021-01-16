@@ -398,6 +398,18 @@ Module PackageComposition (π : RulesParam).
       eapply link_valid. all: eauto.
     Defined.
 
+    Lemma opackage_ext :
+      ∀ {L I E} (p1 p2 : opackage L I E),
+        p1 ∙1 =1 p2 ∙1 →
+        p1 = p2.
+    Proof.
+      intros L I E p1 p2 e.
+      destruct p1 as [p1 h1], p2 as [p2 h2].
+      apply eq_fmap in e.
+      cbn in *. subst.
+      f_equal. apply proof_irrelevance.
+    Qed.
+
     Lemma package_ext :
       ∀ {I E} (p1 p2 : package I E),
         p1.π1 = p2.π1 →
