@@ -827,7 +827,8 @@ Module PackageComposition (π : RulesParam).
       apply valid_par. all: auto.
     Defined.
 
-    Definition opackage_transport {L I1 I2 E1 E2} (eI : I1 = I2) (eE : E1 = E2)
+    Definition opackage_transport {L I1 I2 E1 E2}
+      (eI : I1 = I2) (eE : E1 = E2)
       (p : opackage L I1 E1) : opackage L I2 E2.
       (* exist (valid_package L I2 E2) (p ∙1) (eI ⋅ eE ⋅ (p ∙2)). *)
     Proof.
@@ -1452,6 +1453,25 @@ Module PackageComposition (π : RulesParam).
     intros S T f e1 e2.
     rewrite (uip e1 erefl).
     rewrite (uip e2 erefl).
+    reflexivity.
+  Qed.
+
+  Instance ordType_EqDec {A : ordType} : EqDec A.
+  Proof.
+    intros x y. destruct (x == y) eqn:e.
+    - move: e => /eqP. auto.
+    - move: e => /eqP. auto.
+  Defined.
+
+  Lemma opackage_transport_K :
+    ∀ L I E eI eE p,
+      @opackage_transport L I I E E eI eE p = p.
+  Proof.
+    intros L I E eI eE p.
+    rewrite (uip eI erefl).
+    rewrite (uip eE erefl).
+    unfold opackage_transport. apply opackage_ext. cbn.
+    intro.
     reflexivity.
   Qed.
 
