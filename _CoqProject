@@ -75,3 +75,6 @@ theories/Crypt/only_prob/RulesStateProb.v
 theories/Crypt/only_prob/UniformStateProb.v
 theories/Crypt/only_prob/SymmetricSchemeStateProb.v
 theories/Crypt/only_prob/AsymmetricSchemeStateProb.v
+#std. distributions
+theories/Crypt/only_prob/StdDistr.v
+theories/Crypt/only_prob/SymmetricSchemeStateProbStdDistr.v
