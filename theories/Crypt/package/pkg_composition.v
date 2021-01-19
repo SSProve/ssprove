@@ -57,6 +57,30 @@ Module PackageComposition (π : RulesParam).
     Derive NoConfusion NoConfusionHom for sigT.
     Derive NoConfusion NoConfusionHom for option.
 
+    Lemma cast_fun_K :
+      ∀ S T f e1 e2,
+        @cast_fun S T S T e1 e2 f = f.
+    Proof.
+      intros S T f e1 e2.
+      rewrite (uip e1 erefl).
+      rewrite (uip e2 erefl).
+      reflexivity.
+    Qed.
+
+    Lemma lookup_op_spec :
+      ∀ p o f,
+        lookup_op p o = Some f →
+        p (ide o) = Some (chsrc o ; chtgt o ; f).
+    Proof.
+      intros p o f e.
+      destruct o as [id [S T]]. cbn in *.
+      destruct (p id) as [[S' [T' g]]|] eqn:e1. 2: discriminate.
+      destruct chUniverse_eqP. 2: discriminate.
+      destruct chUniverse_eqP. 2: discriminate.
+      noconf e. subst.
+      reflexivity.
+    Qed.
+
     Lemma lookup_op_valid :
       ∀ L I E p o,
         valid_package L I E p →
@@ -1443,16 +1467,6 @@ Module PackageComposition (π : RulesParam).
   Proof.
     intros A L Im Ir v p hv hp h.
     apply program_ext. cbn.
-    reflexivity.
-  Qed.
-
-  Lemma cast_fun_K :
-    ∀ S T f e1 e2,
-      @cast_fun S T S T e1 e2 f = f.
-  Proof.
-    intros S T f e1 e2.
-    rewrite (uip e1 erefl).
-    rewrite (uip e2 erefl).
     reflexivity.
   Qed.
 
