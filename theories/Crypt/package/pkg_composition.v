@@ -1470,13 +1470,6 @@ Module PackageComposition (π : RulesParam).
     reflexivity.
   Qed.
 
-  Instance ordType_EqDec {A : ordType} : EqDec A.
-  Proof.
-    intros x y. destruct (x == y) eqn:e.
-    - move: e => /eqP. auto.
-    - move: e => /eqP. auto.
-  Defined.
-
   Lemma opackage_transport_K :
     ∀ L I E eI eE p,
       @opackage_transport L I I E E eI eE p = p.

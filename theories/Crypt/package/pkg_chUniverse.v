@@ -39,17 +39,17 @@ Inductive chUniverse :=
 | chProd (A B : chUniverse)
 | chMap (A B : chUniverse)
 | chOption (A : chUniverse)
-| chFin (n : nat).
+| chFin (n : {x : nat | 0 < x }).
 
-Derive NoConfusion NoConfusionHom EqDec for chUniverse.
+Derive NoConfusion NoConfusionHom for chUniverse.
 
-Definition void_leq (x y : void) := true.
+(* Definition void_leq (x y : void) := true. *)
 
-Lemma void_leqP : Ord.axioms void_leq.
-Proof. split; by do ![case]. Qed.
+(* Lemma void_leqP : Ord.axioms void_leq. *)
+(* Proof. split; by do ![case]. Qed. *)
 
-Definition void_ordMixin := OrdMixin void_leqP.
-Canonical void_ordType := Eval hnf in OrdType void void_ordMixin.
+(* Definition void_ordMixin := OrdMixin void_leqP. *)
+(* Canonical void_ordType := Eval hnf in OrdType void void_ordMixin. *)
 
 Fixpoint chElement_ordType (U : chUniverse) : ordType :=
   match U with
@@ -59,7 +59,7 @@ Fixpoint chElement_ordType (U : chUniverse) : ordType :=
   | chProd U1 U2 => prod_ordType (chElement_ordType U1) (chElement_ordType U2)
   | chMap U1 U2 => fmap_ordType (chElement_ordType U1) (chElement_ordType U2)
   | chOption U => option_ordType (chElement_ordType U)
-  | chFin n => [ordType of ordinal n]
+  | chFin n => [ordType of ordinal n.π1 ]
   end.
 
 Fixpoint chElement (U : chUniverse) : choiceType :=
@@ -70,7 +70,7 @@ Fixpoint chElement (U : chUniverse) : choiceType :=
   | chProd U1 U2 => prod_choiceType (chElement U1) (chElement U2)
   | chMap U1 U2 => fmap_choiceType (chElement_ordType U1) (chElement U2)
   | chOption U => option_choiceType (chElement U)
-  | chFin n => [choiceType of ordinal n]
+  | chFin n => [choiceType of ordinal n.π1 ]
   end.
 
 Coercion chElement : chUniverse >-> choiceType.
@@ -118,14 +118,21 @@ Section chUniverseTypes.
     1: { cbn. destruct (x1 == y1) eqn:H.
          - move: H. move /eqP => H.
            destruct H.
-           assert (chFin x1 = chFin x1) as H.
+           assert (chFin x1 = chFin x1 ) as H.
            { reflexivity. }
-           rewrite eqnE.
-           assert (x1 == x1) as H'.
-           { auto. }
-           rewrite H'. clear H'.
-           apply Bool.ReflectT. assumption.
-         - assert (eqn x1 y1 = false) as H'.
+           assert (eqn x1 ∙1 x1 ∙1 = true) as x1refl.
+           { destruct x1. cbn.
+             pose (@eqnP x x).
+             destruct r.
+             - reflexivity.
+             - destruct n. reflexivity.
+           }
+           rewrite x1refl.
+           constructor 1.
+           reflexivity.
+         - destruct x1 as [x1' x1pos]; destruct y1 as [y1' y1pos].
+           cbn in H.
+           assert (eqn x1' y1' = false) as H'.
            { auto. }
            rewrite H'. clear H'.
            apply Bool.ReflectF.
@@ -185,7 +192,7 @@ Section chUniverseTypes.
   | chFin n, chProd _ _ => false
   | chFin n, chMap _ _ => false
   | chFin n, chOption _ => false
-  | chFin n, chFin n' => n < n'
+  | chFin n, chFin n' => n.π1 < n'.π1
   end.
 
 
@@ -475,7 +482,7 @@ Section chUniverseTypes.
   | chProd l r => GenTree.Node 1 [:: encode l ; encode r]
   | chMap l r => GenTree.Node 2 [:: encode l ; encode r]
   | chOption u => GenTree.Node 3 [:: encode u]
-  | chFin n => GenTree.Leaf (4 + n)%nat
+  | chFin n => GenTree.Leaf ((4 + n.π1) - 1)%N
   end.
 
   Fixpoint decode (t : GenTree.tree nat) : option chUniverse :=
@@ -483,7 +490,9 @@ Section chUniverseTypes.
     | GenTree.Leaf 1 => Some chUnit
     | GenTree.Leaf 2 => Some chBool
     | GenTree.Leaf 3 => Some chNat
-    | GenTree.Leaf n => Some (chFin (n - 4))
+    | GenTree.Leaf n =>
+      Some ( chFin (exist _ ((n - 4).+1)%N
+                          (ltn0Sn (n - 4))) )
     | GenTree.Node 1 [:: l ; r] =>
       match decode l, decode r with
       | Some l, Some r => Some (chProd l r)
@@ -509,22 +518,13 @@ Section chUniverseTypes.
     - rewrite IHt1. rewrite IHt2. reflexivity.
     - rewrite IHt1. rewrite IHt2. reflexivity.
     - rewrite IHt. reflexivity.
-    - destruct (4 + n)%nat eqn:N0.
-      1: discriminate.
-      destruct n0 eqn:N1.
-      1: discriminate.
-      destruct n1 eqn:N2.
-      1: discriminate.
-      destruct n2 eqn:N3.
-      1: discriminate.
-      subst. rewrite -N0.
-      rewrite addnC. rewrite -subnBA.
-      2: { auto. }
-      cbn.
-      assert ((n - 0)%Nrec = n) as H.
-      { rewrite -subnE. rewrite subn0. reflexivity. }
-      rewrite H. clear H.
-      reflexivity.
+    - destruct n as [n npos]. cbn.
+      destruct n.
+      + discriminate.
+      + cbn.
+        rewrite -subnE subn0.
+        repeat f_equal.
+        apply bool_irrelevance.
   Defined.
 
   Definition chUniverse_choiceMixin := PcanChoiceMixin codeK.

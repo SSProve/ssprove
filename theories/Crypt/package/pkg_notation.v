@@ -285,7 +285,8 @@ Module PackageNotation (π : RulesParam).
     format "x  <$  o  ;;  '/' c", only parsing)
     : package_scope.
 
-  Lemma give_fin {m} (n : nat) {h : n < m} : chFin m.
+  Lemma give_fin {m} (n : nat) {h : n < m} :
+    chFin (exist _ m (@leq_trans (n.+1) 1 m is_true_true h)).
   Proof.
     cbn. exists n. exact h.
   Defined.
