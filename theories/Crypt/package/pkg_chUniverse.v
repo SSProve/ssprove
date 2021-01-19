@@ -33,7 +33,6 @@ Open Scope type_scope.
 (* Basic structure *)
 
 Inductive chUniverse :=
-| chZero
 | chUnit
 | chNat
 | chBool
@@ -54,7 +53,6 @@ Canonical void_ordType := Eval hnf in OrdType void void_ordMixin.
 
 Fixpoint chElement_ordType (U : chUniverse) : ordType :=
   match U with
-  | chZero => void_ordType
   | chUnit => unit_ordType
   | chNat => nat_ordType
   | chBool => bool_ordType
@@ -66,7 +64,6 @@ Fixpoint chElement_ordType (U : chUniverse) : ordType :=
 
 Fixpoint chElement (U : chUniverse) : choiceType :=
   match U with
-  | chZero => void_choiceType
   | chUnit => unit_choiceType
   | chNat => nat_choiceType
   | chBool => bool_choiceType
@@ -82,7 +79,6 @@ Section chUniverseTypes.
 
   Fixpoint chUniverse_test (u v : chUniverse) : bool :=
     match u, v with
-    | chZero , chZero => true
     | chNat , chNat => true
     | chUnit , chUnit => true
     | chBool , chBool => true
@@ -99,8 +95,8 @@ Section chUniverseTypes.
   Lemma chUniverse_eqP : Equality.axiom chUniverse_eq.
   Proof.
     move=> x y.
-    induction x as [ | | | | x1 ih1 x2 ih2 | x1 ih1 x2 ih2 | x1 ih1 | x1 ih1] in y |- *.
-    all: destruct y as [ | | | | y1 y2 | y1 y2 | y1 | y1].
+    induction x as [ | | | x1 ih1 x2 ih2 | x1 ih1 x2 ih2 | x1 ih1 | x1 ih1] in y |- *.
+    all: destruct y as [ | | | y1 y2 | y1 y2 | y1 | y1].
     all: simpl.
     all: try solve [ right ; discriminate ].
     all: try solve [ left ; reflexivity ].
@@ -152,21 +148,15 @@ Section chUniverseTypes.
 
   Fixpoint chUniverse_lt (t1 t2 : chUniverse) :=
   match t1, t2 with
-  | chZero, chZero   => false
-  | chZero, _ => true
-  | chUnit, chZero => false
   | chUnit, chUnit => false
   | chUnit, _ => true
-  | chBool, chZero => false
   | chBool, chUnit => false
   | chBool, chBool => false
   | chBool, _ => true
-  | chNat, chZero => false
   | chNat, chUnit => false
   | chNat, chBool => false
   | chNat, chNat => false
   | chNat, _ => true
-  | chProd _ _, chZero => false
   | chProd _ _, chUnit => false
   | chProd _ _, chBool => false
   | chProd _ _, chNat => false
@@ -174,7 +164,6 @@ Section chUniverseTypes.
     (chUniverse_lt u1 w1) ||
     (chUniverse_eq u1 w1 && chUniverse_lt u2 w2)
   | chProd _ _, _ => true
-  | chMap _ _, chZero => false
   | chMap _ _, chUnit => false
   | chMap _ _, chBool => false
   | chMap _ _, chNat => false
@@ -183,7 +172,6 @@ Section chUniverseTypes.
     (chUniverse_lt u1 w1) ||
     (chUniverse_eq u1 w1 && chUniverse_lt u2 w2)
   | chMap _ _, _ => true
-  | chOption _, chZero => false
   | chOption _, chUnit => false
   | chOption _, chBool => false
   | chOption _, chNat => false
@@ -191,7 +179,6 @@ Section chUniverseTypes.
   | chOption _, chMap _ _ => false
   | chOption u, chOption w => chUniverse_lt u w
   | chOption _, _ => true
-  | chFin n, chZero => false
   | chFin n, chUnit => false
   | chFin n, chBool => false
   | chFin n, chNat => false
@@ -208,9 +195,7 @@ Section chUniverseTypes.
   Lemma chUniverse_lt_transitive : transitive (T:=chUniverse) chUniverse_lt.
   Proof.
     intros v u w h1 h2.
-    induction u as [ | | | | u1 ih1 u2 ih2 | u1 ih1 u2 ih2 | u ih | u ih] in v, w, h1, h2 |- *.
-    - destruct w. all: try reflexivity.
-      destruct v. all: discriminate.
+    induction u as [ | | | u1 ih1 u2 ih2 | u1 ih1 u2 ih2 | u ih | u ih] in v, w, h1, h2 |- *.
     - destruct v. all: try discriminate.
       + destruct w. all: try discriminate.
         all: reflexivity.
@@ -225,7 +210,6 @@ Section chUniverseTypes.
       + destruct w. all: try discriminate.
         all: reflexivity.
     - destruct w. all: try reflexivity.
-      + destruct v. all: discriminate.
       + destruct v. all: discriminate.
       + destruct v. all: discriminate.
       + destruct v. all: discriminate.
@@ -292,7 +276,7 @@ Section chUniverseTypes.
     ∀ x, ~~ chUniverse_lt x x.
   Proof.
     intros x.
-    induction x as [ | | | | x1 ih1 x2 ih2 | x1 ih1 x2 ih2 | x ih | x ih] in |- *.
+    induction x as [ | | | x1 ih1 x2 ih2 | x1 ih1 x2 ih2 | x ih | x ih] in |- *.
     all: intuition; simpl.
     1: { simpl.
          apply/norP; split.
@@ -312,7 +296,7 @@ Section chUniverseTypes.
       ~~ (chUniverse_test x y) ==> (chUniverse_lt x y || chUniverse_lt y x).
   Proof.
     intros x y.
-    induction x as [ | | | | x1 ih1 x2 ih2| x1 ih1 x2 ih2| x ih| x ih] in y |- *.
+    induction x as [ | | | x1 ih1 x2 ih2| x1 ih1 x2 ih2| x ih| x ih] in y |- *.
     all: try solve [ destruct y ; intuition ; reflexivity ].
     1: { destruct y. all: try (intuition; reflexivity).
          cbn. intuition.
@@ -485,7 +469,6 @@ Section chUniverseTypes.
 
   Fixpoint encode (t : chUniverse) : GenTree.tree nat :=
   match t with
-  | chZero => GenTree.Leaf 0
   | chUnit => GenTree.Leaf 1
   | chBool => GenTree.Leaf 2
   | chNat => GenTree.Leaf 3
@@ -497,7 +480,6 @@ Section chUniverseTypes.
 
   Fixpoint decode (t : GenTree.tree nat) : option chUniverse :=
     match t with
-    | GenTree.Leaf 0 => Some chZero
     | GenTree.Leaf 1 => Some chUnit
     | GenTree.Leaf 2 => Some chBool
     | GenTree.Leaf 3 => Some chNat
