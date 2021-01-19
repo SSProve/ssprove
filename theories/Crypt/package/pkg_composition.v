@@ -1475,4 +1475,31 @@ Module PackageComposition (π : RulesParam).
     reflexivity.
   Qed.
 
+  (** Turn put/get/sample into binds *)
+
+  Lemma putr_bind :
+    ∀ L I A l h v k,
+      @putr L I A l h v k =
+      bind (putr l h v (ret Datatypes.tt)) (λ _, k).
+  Proof.
+    intros. apply program_ext. reflexivity.
+  Qed.
+
+  Lemma getr_bind :
+    ∀ L I A l h k,
+      @getr L I A l h k =
+      bind (getr l h (λ y, ret y)) k.
+  Proof.
+    intros. apply program_ext. reflexivity.
+  Qed.
+
+  Lemma sampler_bind :
+    ∀ L I A op k,
+      @sampler L I A op k =
+      bind (sampler op (λ x, ret x)) k.
+  Proof.
+    intros L I A op k.
+    apply program_ext. reflexivity.
+  Qed.
+
 End PackageComposition.
