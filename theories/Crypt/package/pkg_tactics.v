@@ -82,13 +82,6 @@ Module PackageTactics (π : RulesParam).
   Include (PackageNotation π).
   Include (DerivedRules π).
 
-  (* Ltac program_fold_one :=
-    lazymatch goal with
-    | context [ exist _ (_ret x) h ] =>
-      rewrite fold_ret
-    | context [ exist _ (_opr o x k) h ] =>
-      rewrite fold_opr *)
-
   Ltac program_fold_pass :=
     change (exist (valid_program ?L ?I) (@_ret ?A ?x) ?h) with (@ret L I A x) ;
     change (exist (valid_program ?L ?I) (@_opr ?A ?o ?x ?k) ?h)
@@ -119,7 +112,6 @@ Module PackageTactics (π : RulesParam).
 
   (** Folding under binders with setoid_rewrite *)
 
-  (* TODO: Can we also remove o? Hard because of the dependencies. *)
   (* TODO: Can we use the trivial relation instead of the second eq? *)
   Instance opr_morphism L I (A : choiceType) o :
     Proper (eq ==> eq ==> pointwise_relation (tgt o) eq ==> eq) (@opr L I A o).
@@ -128,7 +120,6 @@ Module PackageTactics (π : RulesParam).
     f_equal. apply functional_extensionality. auto.
   Qed.
 
-  (* TODO: Can we also remove l? Hard because of the dependencies. *)
   (* TODO: Can we use the trivial relation instead of the first eq? *)
   Instance getr_morphism L I (A : choiceType) l :
     Proper
@@ -139,7 +130,6 @@ Module PackageTactics (π : RulesParam).
     f_equal. apply functional_extensionality. auto.
   Qed.
 
-  (* TODO: Can we also remove o? Hard because of the dependencies. *)
   Instance sampler_morphism L I (A : choiceType) o :
     Proper (pointwise_relation (Arit o) eq ==> eq) (@sampler L I A o).
   Proof.
