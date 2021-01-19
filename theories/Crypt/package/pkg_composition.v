@@ -1516,4 +1516,14 @@ Module PackageComposition (π : RulesParam).
     apply program_ext. reflexivity.
   Qed.
 
+  Lemma link_olink :
+    ∀ {I M E} (p₁ : package M E) (p₂ : package I M),
+      link p₁ p₂ = (p₁.π1 :|: p₂.π1 ; olink' p₁.π2 p₂.π2).
+  Proof.
+    intros I M E p₁ p₂.
+    apply package_ext.
+    - reflexivity.
+    - cbn. intro x. reflexivity.
+  Qed.
+
 End PackageComposition.
