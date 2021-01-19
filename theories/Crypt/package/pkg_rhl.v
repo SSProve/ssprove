@@ -2034,8 +2034,6 @@ Proof. by apply: post_weaken_rule. Qed.
 (* Skipped for now *)
 (* Theorem comp_rule ... *)
 
-Print repr_bind.
-
 Lemma repr_if {A} {L} {b : bool} (c1 c2 : program L Game_import A):
       repr (if b then c1 else c2) =  if b then (repr c1) else (repr c2).
 Proof. by destruct b. Qed.

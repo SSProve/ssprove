@@ -53,14 +53,9 @@ theories/Crypt/only_prob/Rules.v
 theories/Crypt/only_prob/UniformDistrLemmas.v
 theories/Crypt/only_prob/UniformDistr.v
 theories/Crypt/only_prob/otp.v
-theories/Crypt/only_prob/Packages.v
 theories/Crypt/only_prob/AsymEnc.v
 theories/Crypt/only_prob/Elgamal.v
 theories/Crypt/only_prob/SSep.v
-theories/Crypt/only_prob/Interfaces.v
-theories/Crypt/only_prob/SetPackagesTheory.v
-theories/Crypt/only_prob/SetPackagesFTNv.v
-theories/Crypt/only_prob/SetPackagesExample.v
 theories/Crypt/package/pkg_chUniverse.v
 theories/Crypt/package/pkg_core_definition.v
 theories/Crypt/package/pkg_composition.v
