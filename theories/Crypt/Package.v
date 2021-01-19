@@ -4,7 +4,9 @@ From Crypt Require Export pkg_chUniverse.
 From Crypt Require Export pkg_core_definition.
 
 From Crypt Require Export pkg_tactics.
-From Crypt Require pkg_rhl.
+From Crypt Require pkg_rhl pkg_user_util.
 
-(* The main interface to packages is a functor parametrised by `Rules.ProbRulesParam`. *)
-Module Package_Make := pkg_rhl.PackageRHL.
+(** The main interface to packages is a functor parametrised by
+    `Rules.ProbRulesParam`.
+*)
+Module Package_Make := pkg_user_util.PackageUserUtil.
