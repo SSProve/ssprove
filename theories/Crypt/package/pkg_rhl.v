@@ -2090,34 +2090,36 @@ Lemma rreflexivity_rule { A : ord_choiceType } { L : {fset Location} }
   r⊨ ⦃ fun '(s1, s2) => s1 = s2 ⦄ c ≈ c ⦃ eq ⦄.
 Proof. by apply: reflexivity_rule (repr c). Qed.
 
-Theorem rswap_rule { A : ord_choiceType } { L : {fset Location} } { I Q }
-                  (c1 c2 : program L Game_import A)
-                  (Hinv1 : r⊨ ⦃ I ⦄ c1 ≈ c2 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Q (a1, s1) (a2, s2) ⦄ )
-                  (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Q (a1, s1) (a2, s2) ⦄ ):
-  r⊨ ⦃ I ⦄ (bind c1 (fun _ => c2)) ≈ (bind c2 (fun _ => c1)) ⦃ Q ⦄.
+Theorem rswap_rule { A1 A2 : ord_choiceType } { L : {fset Location} }
+                   { I : heap * heap -> Prop }
+                   { post : A1 * heap -> A2 * heap -> Prop }
+                  (c1 : program L Game_import A1) (c2 : program L Game_import A2)
+                  (Hinv1 : r⊨ ⦃ I ⦄ c1 ≈ c2 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ post (a1, s1) (a2, s2) ⦄ )
+                  (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ fun '(a2, s2) '(a1, s1) => I (s1, s2) /\ post (a1, s1) (a2, s2) ⦄ ):
+  r⊨ ⦃ I ⦄ (bind c1 (fun _ => c2)) ≈ (bind c2 (fun _ => c1)) ⦃ fun '(a2,s2) '(a1,s1) => I (s1, s2) /\ post (a1,s1) (a2, s2) ⦄.
 Proof. rewrite !repr_bind. by apply: swap_rule (repr c1) (repr c2) Hinv1 Hinv2. Qed.
 
-Theorem rswap_ruleL { A : ord_choiceType } { L : {fset Location} }
-                   { pre I } { Left  post : A * heap -> A * heap -> Prop }
-                   (l c1 c2 : program L Game_import A)
-                   (HL    : r⊨ ⦃ pre ⦄ l ≈ l ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) ⦄)
-                   (Hinv1 : r⊨ ⦃ I ⦄ c1 ≈ c2 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Left (a1, s1) (a2, s2) ⦄ )
-                   (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Left (a1, s1) (a2, s2) ⦄ )
-                   (LQ : forall a1 s1 a2 s2, Left (a1, s1) (a2, s2) -> post (a1, s1) (a2, s2)):
+Theorem rswap_ruleL { A1 A2 B : ord_choiceType } { L : {fset Location} }
+                    { pre I : heap * heap -> Prop } 
+                    { post :  A2 * heap -> A1 * heap -> Prop }
+                    (l : program L Game_import B)  (c1 : program L Game_import A1) (c2 : program L Game_import A2)
+                    (HL    : r⊨ ⦃ pre ⦄ l ≈ l ⦃ fun '(b1, s1) '(b2, s2) => I (s1, s2) ⦄)
+                    (Hinv1 : r⊨ ⦃ I ⦄ c1 ≈ c2 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ post (a2, s2) (a1, s1)  ⦄ )
+                    (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ fun '(a2, s2) '(a1, s1) => I (s1, s2) /\ post (a2, s2) (a1, s1) ⦄ ) :
   r⊨ ⦃ pre ⦄
    (bind l (fun _ => (bind c1 (fun _ => c2)))) ≈
    (bind l (fun _ => (bind c2 (fun _ => c1))))
    ⦃ post ⦄ .
-Proof. rewrite !repr_bind. by apply: swap_ruleL (repr l) (repr c1) (repr c2) HL Hinv1 Hinv2 LQ. Qed.
+Proof. rewrite !repr_bind. by apply: swap_ruleL (repr l) (repr c1) (repr c2) HL Hinv1 Hinv2. Qed.
 
 (*CA: 
   TODO: generalize the swap rule in RulesStateProb. 
  *)
 Theorem rswap_ruleR { A1 A2 B : ord_choiceType } { L : {fset Location} } 
-                   { I } { Q : A1 -> A2 -> Prop } { post }
-                   (c1 : program L Game_import A1)
-                   (c2 : program L Game_import A2)
-                   (r  : A1 -> A2 -> program L Game_import B )
+                    { I } { Q : A1 -> A2 -> Prop } { post }
+                    (c1 : program L Game_import A1)
+                    (c2 : program L Game_import A2)
+                    (r  : A1 -> A2 -> program L Game_import B )
                    (HR    : forall a1 a2, r⊨ ⦃ fun '(s1, s2) => I(s1, s2) /\ Q a1 a2 ⦄ (r a1 a2) ≈ (r a1 a2) ⦃ post ⦄)
                    (Hinv1 : r⊨ ⦃ I ⦄ c1 ≈ c2 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Q a1 a2 ⦄ )
                    (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ fun '(a2, s2) '(a1, s1) => I (s1, s2) /\ Q a1 a2 ⦄ ):
@@ -2125,7 +2127,8 @@ Theorem rswap_ruleR { A1 A2 B : ord_choiceType } { L : {fset Location} }
    (bind c1 (fun a1 => bind c2 (fun a2 => r a1 a2))) ≈
    (bind c2 (fun a2 => bind c1 (fun a1 => r a1 a2)))
    ⦃ post ⦄.
-Proof. rewrite !repr_bind. Admitted. 
+Proof. rewrite !repr_bind. (* eapply (swap_ruleR _ _ (repr c1) (repr c2)).  *) Admitted. 
+                             
 
 Theorem rswap_rule_ctx { A : ord_choiceType } { L : {fset Location} }
                        { I pre } { post Q : A * heap -> A * heap -> Prop }
@@ -2133,12 +2136,12 @@ Theorem rswap_rule_ctx { A : ord_choiceType } { L : {fset Location} }
                       (HL    : r⊨ ⦃ pre ⦄ l ≈ l ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) ⦄)
                       (HR    : forall a1 a2, r⊨ ⦃ fun '(s1, s2) => Q (a1,s1) (a2,s2) ⦄ r ≈ r ⦃ post ⦄)
                       (Hinv1 : r⊨ ⦃ I ⦄ c1 ≈ c2 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Q (a1, s1) (a2, s2) ⦄ )
-                      (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Q (a1, s1) (a2, s2) ⦄ ):
+                      (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ fun '(a2, s2) '(a1, s1) => I (s1, s2) /\ Q (a1, s1) (a2, s2) ⦄ ):
   r⊨ ⦃ pre ⦄
    (bind l (fun _ => bind c1  (fun _ => bind c2 (fun _ => r)))) ≈
    (bind l (fun _ => bind c2  (fun _ => bind c1 (fun _ => r))))
     ⦃ post ⦄.
-Proof. rewrite !repr_bind. by apply: swap_rule_ctx (repr l) (repr r) (repr c1) (repr c2) HL HR Hinv1 Hinv2. Qed.
+Proof. rewrite !repr_bind. (* by apply (swap_rule_ctx (repr l) (repr r) (repr c1) (repr c2) HL HR Hinv1 Hinv2). Qed. *) Admitted.
 
 Check rbind_rule.
 
