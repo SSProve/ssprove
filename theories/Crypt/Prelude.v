@@ -2,6 +2,9 @@
 (* Partly stolen from MetaCoq *)
 
 From Coq Require Import Utf8.
+From mathcomp Require Import ssreflect eqtype ssrbool.
+From extructures Require Import ord.
+From Equations Require Import Equations.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
@@ -81,3 +84,12 @@ Ltac falso :=
   lazymatch goal with
   | h : context [ False_rect _ ?x ] |- _ => exact (False_rect _ x)
   end.
+
+
+(** mathcomp: derive EqDec for any ordType *)
+Instance ordType_EqDec {A : ordType} : EqDec A.
+Proof.
+  intros x y. destruct (x == y) eqn:e.
+  - move: e => /eqP. auto.
+  - move: e => /eqP. auto.
+Defined.

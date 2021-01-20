@@ -19,7 +19,6 @@
     syntax:
     'nat
     'bool
-    'zero
     'unit
     'option A
     'fin n
@@ -120,7 +119,6 @@ Module PackageNotation (π : RulesParam).
 
   Notation " 'nat " := (chNat) (in custom pack_type at level 2).
   Notation " 'bool " := (chBool) (in custom pack_type at level 2).
-  Notation " 'zero " := (chZero) (in custom pack_type at level 2).
   Notation " 'unit " := (chUnit) (in custom pack_type at level 2).
   Notation " 'option x " := (chOption x) (in custom pack_type at level 2).
   Notation " 'fin x " :=
@@ -136,7 +134,6 @@ Module PackageNotation (π : RulesParam).
   (** Repeat the above notations here for package_scope. *)
   Notation " 'nat " := (chNat) (at level 2) : package_scope.
   Notation " 'bool " := (chBool) (at level 2) : package_scope.
-  Notation " 'zero " := (chZero) (at level 2) : package_scope.
   Notation " 'unit " := (chUnit) (at level 2) : package_scope.
   Notation " 'option x " := (chOption x) (at level 2) : package_scope.
   Notation " 'fin x " :=
@@ -288,7 +285,8 @@ Module PackageNotation (π : RulesParam).
     format "x  <$  o  ;;  '/' c", only parsing)
     : package_scope.
 
-  Lemma give_fin {m} (n : nat) {h : n < m} : chFin m.
+  Lemma give_fin {m} (n : nat) {h : n < m} :
+    chFin (exist _ m (@leq_trans (n.+1) 1 m is_true_true h)).
   Proof.
     cbn. exists n. exact h.
   Defined.
