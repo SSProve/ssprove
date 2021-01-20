@@ -40,6 +40,9 @@ Inductive chUniverse :=
 | chMap (A B : chUniverse)
 | chOption (A : chUniverse)
 | chFin (n : {x : nat | 0 < x }).
+(* TODO:
+Define a class of positive types, and provide instances for standard situations such as addition or
+2^n. Hint Extern might be useful for providing solutions too. *)
 
 Derive NoConfusion NoConfusionHom for chUniverse.
 
