@@ -5,18 +5,17 @@
 - Coq `8.12.0`
 - Equations `1.2.3`
 - Mathcomp analysis `0.3.2`
-- Coq Extructures
+- Coq Extructures `0.2.2`
 
 - (optionnal: graphviz, and gsed on macOS)
 
-(Note: You of course need to have ocaml installed as well. It seems
-4.07.1+flambda is recommended, and then anything beyond 4.10 with flambda.)
+(Note: You of course need to have ocaml installed as well.)
 
 You can get them from `opam`.
 
 ```
 opam repo add coq-released https://coq.inria.fr/opam/released
-opam install coq-equations.1.2.3 coq-mathcomp-analysis.0.3.2 coq-extructures
+opam install coq-equations.1.2.3 coq-mathcomp-analysis.0.3.2 coq-extructures.0.2.2
 ```
 
 ## Step-by-step Guide
