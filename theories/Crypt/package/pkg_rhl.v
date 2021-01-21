@@ -2112,24 +2112,66 @@ Theorem rswap_ruleL { A1 A2 B : ord_choiceType } { L : {fset Location} }
    ⦃ post ⦄ .
 Proof. rewrite !repr_bind. by apply: swap_ruleL (repr l) (repr c1) (repr c2) HL Hinv1 Hinv2. Qed.
 
-(*CA: 
-  TODO: generalize the swap rule in RulesStateProb. 
+(* TODO
+  CAution:  
+  the corresponding rule in RulesStateProb. contains some admits
  *)
 Theorem rswap_ruleR { A1 A2 B : ord_choiceType } { L : {fset Location} } 
-                    { pre } { Q : A1 * heap -> A2 * heap -> Prop } { post }
+                    { post : B * heap -> B * heap -> Prop} { post_refl : forall bs bs', bs = bs' -> post bs bs' } 
                     (c1 : program L Game_import A1)
                     (c2 : program L Game_import A2)
                     (r  : A1 -> A2 -> program L Game_import B )
-                    (HR    : forall a1 a2, r⊨ ⦃ fun '(s2, s1) => Q (a1, s1) (a2, s2) ⦄ (r a1 a2) ≈ (r a1 a2) ⦃ post ⦄)
-                    (Hinv : r⊨ ⦃ pre ⦄ (bind c1 (fun a1 => bind c2 ( fun a2 => ret (a1,a2))))  ≈
+                    (HR    : forall a1 a2, r⊨ ⦃ fun '(s2, s1) => s1 = s2 ⦄ (r a1 a2) ≈ (r a1 a2) ⦃ post ⦄)
+                    (Hcomm : r⊨ ⦃ fun '(h1, h2) => h1 = h2 ⦄
+                                       (bind c1 (fun a1 => bind c2 ( fun a2 => ret (a1,a2))))  ≈
                                        (bind c2 (fun a2 => bind c1 ( fun a1 => ret (a1,a2))))
-                              ⦃ fun '((a1,a2), s2) '((b1,b2), s1) => a1 = b1 /\ a2 = b2 /\ Q (a1, s1) (a2, s2) ⦄ ):
-  r⊨ ⦃ pre ⦄
+                                 ⦃ eq ⦄ ):
+  r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄
    (bind c1 (fun a1 => bind c2 (fun a2 => r a1 a2))) ≈
    (bind c2 (fun a2 => bind c1 (fun a1 => r a1 a2)))
    ⦃ post ⦄.
-Proof. rewrite !repr_bind. Check (swap_ruleR (fun a1 a2 => repr (r a1 a2)) (repr c1) (repr c2) HR).   Admitted. 
-                             
+Proof.
+  repeat setoid_rewrite repr_bind.  simpl. 
+  eapply (swap_ruleR (fun a1 a2 => repr (r a1 a2)) (repr c1) (repr c2) HR post_refl). 
+  move => s. 
+  unshelve eapply coupling_eq. { exact: (fun '(h1, h2) => h1 = h2) . } 
+  - repeat setoid_rewrite repr_bind in Hcomm. apply: Hcomm.
+  - by [].    
+Qed.
+
+Check sampler. 
+
+
+Local Open Scope package_scope.
+
+Check sampler. 
+
+
+(* CA:  Cannot infer the implicit parameter locs of repr whose type is "{fset Location}" ... *)
+(* Lemma sampler_commute {B : ord_choiceType} {L : {fset Location}} { o1 o2 : Op }  : *)
+(*        r⊨ ⦃ fun '(h1, h2) => h1 = h2 ⦄ *)
+(*            (bind (a1 <$ o1 ;; ret a1) (fun a1 => bind (a2 <$ o2 ;; ret a2) (fun a2 => ret (a1, a2)))) ≈ *)
+(*            (bind (a2 <$ o2 ;; ret a2) (fun a2 => bind (a1 <$ o1 ;; ret a1) (fun a1 => ret (a1, a2)))) *)
+(*            ⦃ eq ⦄. *)
+      
+
+(*CA: special case of the above *)
+Corollary rswap_sampleR { B : ord_choiceType } { L : {fset Location} }
+                        { o1 o2 } 
+                        { post : B * heap -> B * heap -> Prop} { post_refl : forall bs bs', bs = bs' -> post bs bs' } 
+                        (r  : (Arit o1) -> (Arit o2) -> program L Game_import B )
+                        (HR    : forall a1 a2, r⊨ ⦃ fun '(s2, s1) => s1 = s2 ⦄ (r a1 a2) ≈ (r a1 a2) ⦃ post ⦄) :
+  r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄
+       (a1 ←  (a1 ← sample o1 ;; ret a1) ;; a2 ← (a2 ← sample o2 ;; ret a2) ;;  (r a1 a2)) ≈
+       (a2 ←  (a2 ← sample o2 ;; ret a2) ;; a1 ← (a1 ← sample o1 ;; ret a1) ;;  (r a1 a2))
+   ⦃ post ⦄. 
+Proof.
+  unshelve eapply rswap_ruleR. 
+  - exact: post_refl.
+  - exact: HR.
+  - admit. (*CA: see commented lemma above  *)
+ Admitted. 
+ 
 
 Theorem rswap_rule_ctx { A : ord_choiceType } { L : {fset Location} }
                        { I pre } { post Q : A * heap -> A * heap -> Prop }
@@ -2173,7 +2215,7 @@ Qed.
 
 
 
-Local Open Scope package_scope.
+
 
 (* CA: not more useful than sampler_case *)
 (* Lemma rsample_rule { B1 B2 : ord_choiceType} { L : {fset Location}}  { o } *)
