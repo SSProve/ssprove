@@ -70,9 +70,8 @@ Section Rel.
                match t with | fun x y w => @?P y =>  P end
            in
            let tw := eval cbn in (fun x y w => πw (t ⦑x, y| w⦒)) in
-           exact (dpair (fun p => forall xl xr xw, πw Y (nfst p xl) (nsnd p xr)) ⟨tl, tr⟩ tw))).
-
-  Eval cbv in (TyRel R==> TyRel).
+           exact (dpair (fun p => forall xl xr xw, πw Y (nfst p xl) (nsnd p xr)) ⟨tl, tr⟩ tw)))
+    (only parsing).
 
   Definition Hi A : Rel := ⦑ A, A | fun a a' => True | TyRel ⦒.
   Definition Lo A : Rel := ⦑ A, A | fun a a' => a = a' | TyRel ⦒.
@@ -131,7 +130,9 @@ Module RelNotations.
                match t with | fun x y w => @?P y =>  P end
            in
            let tw := eval cbn in (fun x y w => πw (t ⦑x, y| w⦒)) in
-           exact (dpair (fun p => forall xl xr xw, πw Y (nfst p xl) (nsnd p xr)) ⟨tl, tr⟩ tw))).
+           exact (dpair (fun p => forall xl xr xw, πw Y (nfst p xl) (nsnd p xr)) ⟨tl, tr⟩ tw)))
+    (only parsing).
+
   Notation "f @R x" := (applyRel _ _ f x) (at level 85).
 
   Notation " Γ ,∘ X " := (ConsCtx Γ (Hi X)) (at level 100).
