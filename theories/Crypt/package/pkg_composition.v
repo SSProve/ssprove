@@ -54,7 +54,7 @@ Module PackageComposition (π : RulesParam).
       | None => None
       end.
 
-    Derive NoConfusion NoConfusionHom EqDec for chUniverse.
+    Derive NoConfusion NoConfusionHom for chUniverse.
     Derive NoConfusion NoConfusionHom for sigT.
     Derive NoConfusion NoConfusionHom for option.
 
