@@ -1743,7 +1743,7 @@ Module PackageRHL (π : RulesParam).
           * exact LA.
           * cbn. auto.
         + intros a1 a2.
-          simpl (λ '(s0, s3), (λ '(b1, s4) '(b2, s5), b1 = b2 s/\ I (s4, s5)) (a1, s0) (a2, s3)).
+          simpl.
           apply pre_hypothesis_rule.
           intros st1 st2 [Heqa Ist1st2].
           induction Heqa.
@@ -1771,7 +1771,7 @@ Module PackageRHL (π : RulesParam).
           * exact LA.
           * cbn. auto.
         + intros a1 a2.
-          simpl (λ '(s0, s3), (λ '(b1, s4) '(b2, s5), b1 = b2 s/\ I (s4, s5)) (a1, s0) (a2, s3)).
+          simpl.
           apply pre_hypothesis_rule.
           intros st1 st2 [Heqa Ist1st2].
           induction Heqa.
@@ -1792,7 +1792,7 @@ Module PackageRHL (π : RulesParam).
              Unshelve.
              1: { cbn. auto. }
         + intros a1 a2.
-          simpl (λ '(s0, s3), (λ '(b1, s4) '(b2, s5), b1 = b2 s/\ I (s4, s5)) (a1, s0) (a2, s3)).
+          simpl.
           apply pre_hypothesis_rule.
           intros st1 st2 [Heqa Ist1st2].
           induction Heqa.
