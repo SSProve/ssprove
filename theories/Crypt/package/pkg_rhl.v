@@ -2147,6 +2147,15 @@ Lemma rsamplerC { A : ord_choiceType } { L : {fset Location} }  (o : Op)
    ⦃ eq ⦄.
 Proof. Admitted.
 
+Lemma rsamplerC' { A : ord_choiceType } { L : {fset Location} }  (o : Op)
+                 (c : program L Game_import A):
+  r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄
+        r ← (r ← sample o ;; ret r) ;; a ← c ;;  (ret (r, a)) ≈
+        a ← c ;; r ← (r ← sample o ;; ret r) ;;  (ret (r, a)) 
+   ⦃ eq ⦄.
+Proof. Admitted.
+
+
 (* TODO: generalize the corresponding rule in RulesStateProb.v  *)
 (* CA: not hight priority as never used yet! *)
 Theorem rswap_rule_ctx { A : ord_choiceType } { L : {fset Location} }
@@ -2196,6 +2205,14 @@ Proof.
   { exact: (fun '(h1, h2) => pre (h2, h1)). }
   - assumption. - assumption.
 Qed.
+
+
+Lemma rsymmetry  { A1 A2 : ord_choiceType } { L : {fset Location} } { pre : heap * heap -> Prop } { post }
+                 { c1 : program L Game_import A1 } { c2 : program L Game_import A2 }
+                 (H : r⊨ ⦃ fun '(h1, h2) => pre (h2, h1) ⦄ c2 ≈ c1 ⦃ fun '(a2,h2) '(a1,h1) => post (a1,h1) (a2, h2) ⦄) :
+                     r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄.
+Proof. Admitted. 
+  
 
 
 (* CA: not more useful than sampler_case *)
