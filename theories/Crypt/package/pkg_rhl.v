@@ -2212,9 +2212,16 @@ Proof.
 Qed.
 
 
-
-
-
+Lemma rsym_pre  { A1 A2 : ord_choiceType } { L : {fset Location} } { pre : heap * heap -> Prop } { post }
+                     { c1 : program L Game_import A1 } { c2 : program L Game_import A2 }
+                     (pre_sym : forall h1 h2, pre (h1, h2) -> pre (h2, h1))                           
+                     (H : r⊨ ⦃ fun '(h1, h2) => pre (h2, h1) ⦄ c1 ≈ c2 ⦃ post ⦄) :
+                     r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄. 
+Proof.
+  unshelve eapply rpre_weaken_rule.
+  { exact: (fun '(h1, h2) => pre (h2, h1)). }
+  - assumption. - assumption. 
+Qed.                      
 
 
 (* CA: not more useful than sampler_case *)
@@ -2226,16 +2233,16 @@ Qed.
 (* Proof. Admitted.  *)
 
 (*CA: probably not sound *)
-Theorem rdead_sampler_eliminationL { A : ord_choiceType } { L : {fset Location} } { D }
-        (c1 c2 : program L Game_import A)
-        (pre : heap * heap -> Prop) (post : (A * heap) -> (A * heap) -> Prop)
-        (H : r⊨ ⦃ pre ⦄ c1 ≈ c2  ⦃ post ⦄) :
-  r⊨ ⦃ pre ⦄ c1 ≈ (x <$ D ;; c2)  ⦃ post ⦄.
-Proof.
-  eapply rrewrite_eqDistrR.
-  - exact: H.
-  - admit.
-Admitted.
+(* Theorem rdead_sampler_eliminationL { A : ord_choiceType } { L : {fset Location} } { D } *)
+(*         (c1 c2 : program L Game_import A) *)
+(*         (pre : heap * heap -> Prop) (post : (A * heap) -> (A * heap) -> Prop) *)
+(*         (H : r⊨ ⦃ pre ⦄ c1 ≈ c2  ⦃ post ⦄) : *)
+(*   r⊨ ⦃ pre ⦄ c1 ≈ (x <$ D ;; c2)  ⦃ post ⦄. *)
+(* Proof. *)
+(*   eapply rrewrite_eqDistrR. *)
+(*   - exact: H. *)
+(*   - admit. *)
+(* Admitted. *)
 
 
 End Games.
