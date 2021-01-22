@@ -1,8 +1,8 @@
 (* Global utility *)
 (* Partly stolen from MetaCoq *)
 
-From Coq Require Import Utf8.
-From mathcomp Require Import ssreflect eqtype ssrbool.
+From Coq Require Import Utf8 Lia.
+From mathcomp Require Import ssreflect eqtype ssrbool ssrnat.
 From extructures Require Import ord.
 From Equations Require Import Equations.
 
@@ -93,3 +93,77 @@ Proof.
   - move: e => /eqP. auto.
   - move: e => /eqP. auto.
 Defined.
+
+(** Notion of positive natural number
+
+  Usage: Simply write [mkpos n] to turn [n] into a positive natural number.
+  The positivity proof should be inferred by the [lia] tactic.
+*)
+Class Positive (n : nat) :=
+  is_positive : 0 < n.
+
+Ltac nat_reify :=
+  repeat match goal with
+  | h : is_true (_ < _) |- _ => move: h => /ltP h
+  | h : is_true (_ <= _) |- _ => move: h => /leqP h
+  | h : is_true (_ == _) |- _ => move: h => /eqP h
+  end.
+
+Hint Extern 1 (Positive ?n) =>
+  reflexivity : typeclass_instances.
+
+Hint Extern 2 (Positive ?n) =>
+  unfold Positive ; apply/ltP ; lia : typeclass_instances.
+
+Hint Extern 4 (Positive ?n) =>
+  unfold Positive ; apply/ltP ; nat_reify ; lia : typeclass_instances.
+
+Instance PositiveExp2 n : Positive (2^n)%N.
+Proof.
+  unfold Positive. apply/ltP. induction n.
+  - auto.
+  - rewrite expnS. rewrite mulSnr. rewrite mulSnr.
+    change (0 * ?n) with 0.
+    set (m := 2^n) in *. clearbody m. cbn.
+    rewrite -addnE. rewrite -plusE.
+    lia.
+Qed.
+
+Record positive := mkpos {
+  pos : nat ;
+  cond_pos : Positive pos
+}.
+Arguments mkpos _ {_}.
+
+Definition positive_to_nat (p : positive) : nat :=
+  p.(pos).
+
+Coercion positive_to_nat : positive >-> nat.
+
+Definition positive_eq : rel positive :=
+  λ u v, u.(pos) == v.(pos).
+
+Lemma positive_eqP : Equality.axiom positive_eq.
+Proof.
+  intros [n hn] [m hm]. unfold positive_eq. simpl.
+  destruct (n == m) eqn:e.
+  - move: e => /eqP e. subst. left. f_equal.
+    apply eq_irrelevance.
+  - move: e => /eqP e. right.
+    intro h. apply e. inversion h. reflexivity.
+Qed.
+
+Canonical positive_eqMixin := EqMixin positive_eqP.
+  Canonical positive_eqType :=
+    Eval hnf in EqType positive positive_eqMixin.
+
+(** Tactic to unfold all positives (NEEDED?) *)
+Ltac unfold_positives :=
+  repeat match goal with
+  | p : positive |- _ =>
+    let n := fresh "p" in
+    let h := fresh "h" in
+    destruct p as [n h] ;
+    repeat change (pos {| pos := n ; cond_pos := h |}) with n in * ;
+    repeat change (positive_to_nat {| pos := n ; cond_pos := h |}) with n in *
+  end.

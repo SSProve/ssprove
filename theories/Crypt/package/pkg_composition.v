@@ -15,8 +15,9 @@ From mathcomp Require Import ssreflect eqtype choice seq ssrfun ssrbool ssrnat.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
-From Crypt Require Import Prelude Axioms ChoiceAsOrd StateTransformingLaxMorph
-     pkg_chUniverse pkg_core_definition RulesStateProb.
+From Crypt Require Import Prelude Axioms ChoiceAsOrd
+  StateTransformingLaxMorph pkg_chUniverse pkg_core_definition
+  RulesStateProb.
 From Equations Require Import Equations.
 Require Equations.Prop.DepElim.
 
@@ -53,7 +54,7 @@ Module PackageComposition (π : RulesParam).
       | None => None
       end.
 
-    Derive NoConfusion NoConfusionHom EqDec for chUniverse.
+    Derive NoConfusion NoConfusionHom for chUniverse.
     Derive NoConfusion NoConfusionHom for sigT.
     Derive NoConfusion NoConfusionHom for option.
 

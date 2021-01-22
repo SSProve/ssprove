@@ -121,9 +121,9 @@ Module PackageNotation (π : RulesParam).
   Notation " 'bool " := (chBool) (in custom pack_type at level 2).
   Notation " 'unit " := (chUnit) (in custom pack_type at level 2).
   Notation " 'option x " := (chOption x) (in custom pack_type at level 2).
-  Notation " 'fin x " :=
-    (chFin x)
-    (in custom pack_type at level 2, x constr).
+  Notation " 'fin n " :=
+    (chFin (mkpos n))
+    (in custom pack_type at level 2, n constr).
   Notation "{map x → y }" :=
     (chMap x y)
     (in custom pack_type at level 2, format "{map  x  →  y  }").
@@ -137,11 +137,12 @@ Module PackageNotation (π : RulesParam).
   Notation " 'unit " := (chUnit) (at level 2) : package_scope.
   Notation " 'option x " := (chOption x) (at level 2) : package_scope.
   Notation " 'fin x " :=
-    (chFin x)
-    (at level 2, x constr) : package_scope.
-  Notation "{map x → y }" :=
+    (chFin (mkpos x))
+    (at level 2) : package_scope.
+  (* Conflicts with this one. *)
+  (* Notation "{map x → y }" :=
     (chMap x y)
-    (at level 80, format "{map  x  →  y  }") : package_scope.
+    (at level 80, format "{map  x  →  y  }") : package_scope. *)
   Notation " x × y " := (chProd x y) (at level 80) : package_scope.
 
   Declare Custom Entry interface.
@@ -285,8 +286,7 @@ Module PackageNotation (π : RulesParam).
     format "x  <$  o  ;;  '/' c", only parsing)
     : package_scope.
 
-  Lemma give_fin {m} (n : nat) {h : n < m} :
-    chFin (exist _ m (@leq_trans (n.+1) 1 m is_true_true h)).
+  Lemma give_fin {m} (n : nat) {h : n < m} : ('fin m)%pack.
   Proof.
     cbn. exists n. exact h.
   Defined.
