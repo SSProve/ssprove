@@ -723,6 +723,19 @@ Module PackageComposition (π : RulesParam).
       auto.
     Qed.
 
+    Lemma parable_union :
+      ∀ {E1 E2 E3},
+        parable E1 E2 →
+        parable E1 E3 →
+        parable E1 (E2 :|: E3).
+    Proof.
+      rewrite /parable.
+      move=> E1 E2 E3 h1 h2.
+      rewrite /idents imfsetU.
+      rewrite fdisjointUr.
+      by apply andb_true_intro.
+    Qed.
+
     Lemma valid_par :
       ∀ {L1 L2 I1 I2 E1 E2 p1 p2},
         valid_package L1 I1 E1 p1 →
@@ -796,6 +809,40 @@ Module PackageComposition (π : RulesParam).
       auto.
     Qed.
 
+    Lemma trim_union_trim : forall A1 A2 p1 p2,
+        parable A1 A2 →
+        (trim (A1 :|: A2) (unionm (trim A1 p1) (trim A2 p2)))
+        = (unionm (trim A1 p1) (trim A2 p2)).
+    Proof.
+      (* TL: this has to be my worst proof ever.. I should clean it up! *)
+      move=> A1 A2 p1 p2 H.
+      unfold trim at 1.
+      rewrite filterm_union.
+      - f_equal.
+        + unfold trim.
+          apply eq_fmap. move=> n.
+          rewrite filtermE /obind /oapp.
+          rewrite filtermE /obind /oapp.
+          move: (p1 n) => [[a [b c]]|]. 2: { reflexivity. }
+          set X:= _ \in _. remember X as Y eqn: eqY.
+          move: Y eqY. rewrite /X. clear X. move=> [|] eqY. 2: { reflexivity. }
+          suff: (n, (a, b)) \in A1 :|: A2.
+          * by move=> ->.
+          * rewrite in_fsetU. apply Bool.orb_true_intro. auto.
+        + unfold trim.
+          apply eq_fmap. move=> n.
+          rewrite filtermE /obind /oapp.
+          rewrite filtermE /obind /oapp.
+          move: (p2 n) => [[a [b c]]|]. 2: { reflexivity. }
+          set X:= _ \in _. remember X as Y eqn: eqY.
+          move: Y eqY. rewrite /X. clear X. move=> [|] eqY. 2: { reflexivity. }
+          suff: (n, (a, b)) \in A1 :|: A2.
+          * by move=> ->.
+          * rewrite in_fsetU. apply Bool.orb_true_intro. auto.
+      - unfold parable in H.
+        admit.
+    Admitted.
+
     (** To circumvent the very annoying lemmata that conclude on equality
         of coerced arguments when it is the same as concluding global equality!
     *)
@@ -828,6 +875,22 @@ Module PackageComposition (π : RulesParam).
       rewrite !fdisjointUr !fdisjointUl in h.
       move: h => /andP [h _]. move: h => /andP [h _].
       auto.
+    Qed.
+
+
+    Lemma raw_par_assoc :
+      ∀ E1 E2 E3 p1 p2 p3,
+        parable E1 E2 →
+        parable E2 E3 →
+        parable E1 E3 →
+        raw_par E1 (E2 :|: E3) p1 (raw_par E2 E3 p2 p3) =
+        raw_par (E1 :|: E2) E3 (raw_par E1 E2 p1 p2) p3.
+    Proof.
+      move=> E1 E2 E3 p1 p2 p3 h12 h23 h13.
+      unfold raw_par.
+      rewrite trim_union_trim. 2: try auto.
+      rewrite trim_union_trim. 2: try auto.
+      apply unionmA.
     Qed.
 
     Lemma bpar_commut :
@@ -876,6 +939,28 @@ Module PackageComposition (π : RulesParam).
       - cbn. apply fsetUC.
       - simpl. destruct p1 as [p1 h1], p2 as [p2 h2].
         simpl. intro. f_equal. apply raw_par_commut. assumption.
+    Qed.
+
+
+    Lemma par_assoc :
+      ∀ {I1 I2 I3 E1 E2 E3}
+        (p1 : package I1 E1)
+        (p2 : package I2 E2)
+        (p3 : package I3 E3)
+        (h12 : parable E1 E2)
+        (h23 : parable E2 E3)
+        (h13 : parable E1 E3),
+        (* TL: hm, this use of parable_union + parable_sym is quite cumbersome.. *)
+        package_transport (fsetUA I1 I2 I3) (fsetUA E1 E2 E3)
+                          (par p1 (par p2 p3 h23) (parable_union h12 h13)) =
+        par (par p1 p2 h12) p3 (parable_sym (parable_union (parable_sym h13) (parable_sym h23))).
+    Proof.
+      move=> I1 I2 I3 E1 E2 E3 [l1 [p1 h1]] [l2 [p2 h2]] [l3 [p3 h3]] ? ? ?.
+      apply package_ext.
+      - simpl. apply fsetUA.
+      - simpl. move=> ?. f_equal.
+        apply raw_par_assoc.
+        all: auto.
     Qed.
 
     Lemma trim_raw_par :
