@@ -2147,32 +2147,16 @@ Local Open Scope package_scope.
 Check sampler. 
 
 
-(* CA:  Cannot infer the implicit parameter locs of repr whose type is "{fset Location}" ... *)
-(* Lemma sampler_commute {B : ord_choiceType} {L : {fset Location}} { o1 o2 : Op }  : *)
-(*        r⊨ ⦃ fun '(h1, h2) => h1 = h2 ⦄ *)
-(*            (bind (a1 <$ o1 ;; ret a1) (fun a1 => bind (a2 <$ o2 ;; ret a2) (fun a2 => ret (a1, a2)))) ≈ *)
-(*            (bind (a2 <$ o2 ;; ret a2) (fun a2 => bind (a1 <$ o1 ;; ret a1) (fun a1 => ret (a1, a2)))) *)
-(*            ⦃ eq ⦄. *)
-      
-
-(*CA: special case of the above *)
-Corollary rswap_sampleR { B : ord_choiceType } { L : {fset Location} }
-                        { o1 o2 } 
-                        { post : B * heap -> B * heap -> Prop} { post_refl : forall bs bs', bs = bs' -> post bs bs' } 
-                        (r  : (Arit o1) -> (Arit o2) -> program L Game_import B )
-                        (HR    : forall a1 a2, r⊨ ⦃ fun '(s2, s1) => s1 = s2 ⦄ (r a1 a2) ≈ (r a1 a2) ⦃ post ⦄) :
+Lemma rsamplerC { A : ord_choiceType } { L : {fset Location} }  (o : Op)
+                (c : program L Game_import A):
   r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄
-       (a1 ←  (a1 ← sample o1 ;; ret a1) ;; a2 ← (a2 ← sample o2 ;; ret a2) ;;  (r a1 a2)) ≈
-       (a2 ←  (a2 ← sample o2 ;; ret a2) ;; a1 ← (a1 ← sample o1 ;; ret a1) ;;  (r a1 a2))
-   ⦃ post ⦄. 
-Proof.
-  unshelve eapply rswap_ruleR. 
-  - exact: post_refl.
-  - exact: HR.
-  - admit. (*CA: see commented lemma above  *)
- Admitted. 
- 
-
+       a ← c ;; r ← (r ← sample o ;; ret r) ;;  (ret (a, r)) ≈
+       r ← (r ← sample o ;; ret r) ;; a ← c ;;  (ret (a, r))
+   ⦃ eq ⦄. 
+Proof. Admitted. 
+  
+(* TODO: generalize the corresponding rule in RulesStateProb.v  *)
+(* CA: not hight priority as never used yet! *)
 Theorem rswap_rule_ctx { A : ord_choiceType } { L : {fset Location} }
                        { I pre } { post Q : A * heap -> A * heap -> Prop }
                        (l r c1 c2 : program L Game_import A)
