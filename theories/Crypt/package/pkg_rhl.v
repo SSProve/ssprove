@@ -1817,7 +1817,7 @@ Module PackageRHL (π : RulesParam).
                (HINV' : INV' L1 L2 I)
                (Hempty : I (empty_heap, empty_heap))
                (H : eq_up_to_inv I P1 P2)
-      : (L1; P1) ≈[ fun A {H1} {H2} => 0 ] (L2; P2).
+      : (L1; P1) ≈[ λ A H1 H2, 0 ] (L2; P2).
     Proof.
       extensionality A.
       unfold Adversary4Game in A.
@@ -1983,7 +1983,7 @@ Module PackageRHL (π : RulesParam).
         (HINV' : INV' P1.π1 P2.π1 I)
         (Hempty : I (empty_heap, empty_heap))
         (H : eq_up_to_inv I P1.π2 P2.π2),
-        P1 ≈[ fun A {H1} {H2} => 0 ] P2.
+        P1 ≈[ λ A H1 H2, 0 ] P2.
     Proof.
       intros E [L₁ p₁] [L₂ p₂] I hI he h.
       eapply prove_relational. all: eauto.
