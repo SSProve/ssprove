@@ -103,8 +103,6 @@ Section RelationalLaxEffectObservationFromRelator.
   Import SPropNotations.
   Import RelatorNotations.
 
-  Check Wrel.
-
   Program Let rleo_carrier (A:TypeCatSq) : M (nfst A) × M (nsnd A) --> Wrel A :=
     fun a => ⦑fun p => Γ@(fun a1 a2 => p ⟨a1, a2⟩) (nfst a) (nsnd a)⦒.
   Next Obligation.

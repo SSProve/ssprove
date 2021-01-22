@@ -126,7 +126,7 @@ Section EffectObservationFromMonadTransformer.
 
   Let M := T (DiscreteMonad Identity).
   Let W := T (MonoContSProp).
-  
+
   Definition effect_observation_from_monad_transformer :
     MonotonicMonadMorphism M W
     := mt_map T (from_discrete_monad_monotonic (ret_mmorph MonoContSProp)).
@@ -140,7 +140,7 @@ End EffectObservationFromMonadTransformer.
 Section NonDeterminism.
 
   Section Angelic.
-    
+
     Fixpoint or (xs : list SProp) : SProp :=
       match xs with
       | nil => False
@@ -218,7 +218,7 @@ Section NonDeterminism.
       move: H0 ; induction a ; constructor ; intuition.
     Qed.
 
-    
+
     Definition DemonicEffectObs : MonadMorphism ListM MonoContSProp
       := mor Demonic_oalg.
 
@@ -320,7 +320,7 @@ End IOObservations.
 Section DijkstraState.
 
   Context (S : Type).
-  
+
   Let State := St S.
 
   (* Weakest preconditions for specifying stateful operations *)
@@ -358,7 +358,7 @@ Section DijkstraState.
      triple.  *)
   Lemma soundness P Q : forall (c : PrePost P Q) s,
       P s -> Q s (nsnd (proj1_sig c s)).
-  Proof. 
+  Proof.
     move=> [f H] /= s pre_ok.
     cbv in H ; apply H.
     cbv; intuition.
@@ -468,7 +468,7 @@ Section IO.
   Variables oup1 oup2 : Oup.
 
   Program Definition print_sequence_spec : IOSpec unit :=
-    fun history => ⦑fun post => post ⟨tt, existT _ (Write oup2) tt :: existT _ (Write oup1) tt :: history⟩⦒. 
+    fun history => ⦑fun post => post ⟨tt, existT _ (Write oup2) tt :: existT _ (Write oup1) tt :: history⟩⦒.
   Next Obligation. move: H0 ; simpl; intuition. Qed.
 
   Program Definition print_sequence : IO unit print_sequence_spec :=
@@ -502,7 +502,7 @@ End IO.
 
 Section StateTMW.
   (* Slightly specializing the state transformer ST_T *)
-  
+
   Variable M : Monad.
   Variable W : OrderedMonad.
   Variable mm : MonadMorphism M W.
@@ -564,7 +564,7 @@ Section IOST.
   (* Let M := @Free IOSTop IOSTop_arity. *)
   (* Let W := @IOSpec Inp Oup. *)
   (* Import MonadTransformerMonotonic. *)
-  
+
   (* Let mm : MonadMorphism M W := @OpSpecEffObs _ _ _ (IOSpec _ _). *)
 
   Definition IOST := DStateT _ _ (θHistST Inp Oup) St.
@@ -593,7 +593,7 @@ Section IOST.
     intros s history.
     exists (fun post => forall i, post ⟨ ⟨ tt , s ⟩ , (existT _ (Write (s + i + 1)) tt :: existT _ (Read Oup) i :: history) ⟩).
     simpl. eauto.
-  Defined.       
+  Defined.
 
   Program Definition do_io_then_roll_back_state : IOST unit do_io_then_roll_back_state_spec :=
     (wkn (x <- getIOST; y <- readIOST; w <- putIOST (x + y); z <- getIOST; w <- writeIOST (z + 1); putIOST x) _).
@@ -672,7 +672,7 @@ Check CMonad.
 Check CMonadUnder.
 
 (* We can map monadic relations to monadic relations *)
-Check CMonadIdeal. 
+Check CMonadIdeal.
 
 (* If C is covariant, mapping monad morphisms to monad morphisms *)
 Check CMonadMorph.
@@ -798,7 +798,7 @@ Program Definition catch {Q_exn Q_exn'} {A B} {P Q} {wp_success: A -> ExcSpec Q_
     | ⦑ Some a ⦒ => wkn (N_ret a) _
     | ⦑ None ⦒ => wkn N_exn _
     end.
-Next Obligation. 
+Next Obligation.
   destruct H as [[? H0] ?] ; apply H0.
   apply wildcard'; cbv ; intuition.
 Qed.

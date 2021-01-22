@@ -24,7 +24,7 @@ Section Bla.
   Let target_relativeMonad :=  AdjTransform M2 Lflat R2 Chi_CodomainAdj.
 
   (*auxilliary cells for the untransformed lax morphism*)
-  
+
   Context (FC : ord_functor C1 C2).
   Context (theta_baseSqu : natIso J2 (ord_functor_comp J1 FC)).
 
@@ -39,10 +39,10 @@ Section Bla.
 
   (*Definition of the first part of the transformed morphism*)
 
-  Let domain_functor := (ord_functor_comp Lflat (ord_functor_comp 
+  Let domain_functor := (ord_functor_comp Lflat (ord_functor_comp
     (rmon_to_ord_functor M1) (ord_functor_comp R1 FC))).
 
-  Let intermediate_functor := (ord_functor_comp Lflat (ord_functor_comp 
+  Let intermediate_functor := (ord_functor_comp Lflat (ord_functor_comp
     (rmon_to_ord_functor M1) (ord_functor_comp FC R2))).
 
   Definition Ttheta_part1 : natTrans domain_functor intermediate_functor.
@@ -58,8 +58,7 @@ Section Bla.
     eapply (ofmap R2). eapply theta_lax.
     eapply Ttheta_part1.
   Defined.
- 
-  Check mkRelLaxMonMorph FC theta_baseSqu source_relativeMonad target_relativeMonad.
+
   Program Definition Ttheta : relativeLaxMonadMorphism
                 FC theta_baseSqu source_relativeMonad target_relativeMonad :=
     mkRelLaxMonMorph FC theta_baseSqu source_relativeMonad target_relativeMonad Ttheta0 _ _.
@@ -67,9 +66,9 @@ Section Bla.
     move=> i.
     move: theta_lax => [theta_lax_map theta_lax_law1 theta_lax_law2].
     move: theta_lax_law1 => /(_ (Lflat i)) theta_law_law1_i.
-    cbv. 
-    
+    cbv.
 
-  
 
-  
+
+
+

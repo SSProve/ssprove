@@ -465,7 +465,8 @@ Section OfMorphism.
   Next Obligation. apply eq_above_sig ; cbv ; by rewrite monad_law3. Qed.
 (*in the remaining obligations one use proof_irrelevance, which implies
 that equality of sigma types is equivalent to equality of carriers members*)
-  Next Obligation. destruct m as (m,e). Print Dθ_wkn.
+  Next Obligation.
+    destruct m as (m,e).
     compute.
     have hintUnif :
 (Dθ_wkn_obligation_1

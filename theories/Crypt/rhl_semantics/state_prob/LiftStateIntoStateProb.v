@@ -22,7 +22,7 @@ Section LiftOfStateComp.
 
   Let eta_Frp_squ :=  @etaAsRmm _ _ myJ Frp_squ.
 
-  
+
   Local Program  Definition myBet : lnatTrans
     (lord_functor_comp (strict2laxFunc (binaryToTheS S1 S2))
        (strict2laxFunc (ord_functor_id (prod_cat TypeCat TypeCat))))
@@ -32,7 +32,7 @@ Section LiftOfStateComp.
     move=> [A1 A2]. constructor.
     exact (fun bla => bla). exact (fun bla=> bla).
   Defined.
-  
+
 
   Program Definition stT_eta_Frp_squ_adj :=  Transformed_lmla eta_Frp_squ (Chi_DomainStateAdj S1 S2) (Chi_DomainStateAdj S1 S2) myBet _ _.
   Next Obligation.
@@ -44,7 +44,7 @@ Section LiftOfStateComp.
   Definition stT_eta_Frp_squ := rlmm_from_lmla stT_eta_Frp_squ_adj.
 
   Definition State_squ := rlmm_domain stT_eta_Frp_squ.
-    
+
 
   (*We now make the domain of the computational lift free*)
   (*First step: Fr[St]² → StT(choice_incl)²*)
@@ -62,19 +62,19 @@ Section LiftOfStateComp.
     @outOfFree (state_ops S1) (state_ar S1) unarySt1 _.
   Next Obligation.
     move=> [aget|aput]. all: cbn.
-      move: aget => [|]. 
+      move: aget => [|].
         exact (fun s => (s,s)). (*true get*)
         exact (fun s _ => (tt,tt) ). (*false get*)
       move: aput => [|].
         exact (fun s => (s,s)).
         move=> new_s. exact (fun _ => (tt,new_s)).
   Defined.
-        
+
   Program Definition qSt_2 : relativeMonadMorphism _ trivialChi FrSt2 unarySt2 :=
     @outOfFree (state_ops S2) (state_ar S2) unarySt2 _.
   Next Obligation.
     move=> [aget|aput]. all: cbn.
-      move: aget => [|]. 
+      move: aget => [|].
         exact (fun s => (s,s)). (*true get*)
         exact (fun s _ => (tt,tt) ). (*false get*)
       move: aput => [|].
@@ -134,10 +134,9 @@ Section StateEffObs.
   Let eta_WRelProp := etaAsRmm WRelProp.
 
   (*We have to state transform the above*)
-  (* Check eta_WRelProp. *)
-  
-  
-  
+
+
+
 
 
 

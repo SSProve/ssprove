@@ -2100,7 +2100,7 @@ Theorem rswap_rule { A1 A2 : ord_choiceType } { L : {fset Location} }
 Proof. rewrite !repr_bind. by apply: swap_rule (repr c1) (repr c2) Hinv1 Hinv2. Qed.
 
 Theorem rswap_ruleL { A1 A2 B : ord_choiceType } { L : {fset Location} }
-                    { pre I : heap * heap -> Prop } 
+                    { pre I : heap * heap -> Prop }
                     { post :  A2 * heap -> A1 * heap -> Prop }
                     (l : program L Game_import B)  (c1 : program L Game_import A1) (c2 : program L Game_import A2)
                     (HL    : r⊨ ⦃ pre ⦄ l ≈ l ⦃ fun '(b1, s1) '(b2, s2) => I (s1, s2) ⦄)
@@ -2113,11 +2113,11 @@ Theorem rswap_ruleL { A1 A2 B : ord_choiceType } { L : {fset Location} }
 Proof. rewrite !repr_bind. by apply: swap_ruleL (repr l) (repr c1) (repr c2) HL Hinv1 Hinv2. Qed.
 
 (* TODO
-  CAution:  
+  CAution:
   the corresponding rule in RulesStateProb. contains some admits
  *)
-Theorem rswap_ruleR { A1 A2 B : ord_choiceType } { L : {fset Location} } 
-                    { post : B * heap -> B * heap -> Prop} { post_refl : forall bs bs', bs = bs' -> post bs bs' } 
+Theorem rswap_ruleR { A1 A2 B : ord_choiceType } { L : {fset Location} }
+                    { post : B * heap -> B * heap -> Prop} { post_refl : forall bs bs', bs = bs' -> post bs bs' }
                     (c1 : program L Game_import A1)
                     (c2 : program L Game_import A2)
                     (r  : A1 -> A2 -> program L Game_import B )
@@ -2131,20 +2131,16 @@ Theorem rswap_ruleR { A1 A2 B : ord_choiceType } { L : {fset Location} }
    (bind c2 (fun a2 => bind c1 (fun a1 => r a1 a2)))
    ⦃ post ⦄.
 Proof.
-  repeat setoid_rewrite repr_bind.  simpl. 
-  eapply (swap_ruleR (fun a1 a2 => repr (r a1 a2)) (repr c1) (repr c2) HR post_refl). 
-  move => s. 
-  unshelve eapply coupling_eq. { exact: (fun '(h1, h2) => h1 = h2) . } 
+  repeat setoid_rewrite repr_bind.  simpl.
+  eapply (swap_ruleR (fun a1 a2 => repr (r a1 a2)) (repr c1) (repr c2) HR post_refl).
+  move => s.
+  unshelve eapply coupling_eq. { exact: (fun '(h1, h2) => h1 = h2) . }
   - repeat setoid_rewrite repr_bind in Hcomm. apply: Hcomm.
-  - by [].    
+  - by [].
 Qed.
-
-Check sampler. 
 
 
 Local Open Scope package_scope.
-
-Check sampler. 
 
 
 Lemma rsamplerC { A : ord_choiceType } { L : {fset Location} }  (o : Op)
@@ -2152,9 +2148,9 @@ Lemma rsamplerC { A : ord_choiceType } { L : {fset Location} }  (o : Op)
   r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄
        a ← c ;; r ← (r ← sample o ;; ret r) ;;  (ret (a, r)) ≈
        r ← (r ← sample o ;; ret r) ;; a ← c ;;  (ret (a, r))
-   ⦃ eq ⦄. 
-Proof. Admitted. 
-  
+   ⦃ eq ⦄.
+Proof. Admitted.
+
 (* TODO: generalize the corresponding rule in RulesStateProb.v  *)
 (* CA: not hight priority as never used yet! *)
 Theorem rswap_rule_ctx { A : ord_choiceType } { L : {fset Location} }
@@ -2170,8 +2166,6 @@ Theorem rswap_rule_ctx { A : ord_choiceType } { L : {fset Location} }
     ⦃ post ⦄.
 Proof. rewrite !repr_bind.
        (* by apply (swap_rule_ctx (repr l) (repr r) (repr c1) (repr c2) HL HR Hinv1 Hinv2). Qed. *) Admitted.
-
-Check rbind_rule.
 
 Theorem rsame_head {A B : ord_choiceType}
             {L : {fset Location}}
@@ -2198,14 +2192,14 @@ Qed.
 
 Lemma rsym_pre  { A1 A2 : ord_choiceType } { L : {fset Location} } { pre : heap * heap -> Prop } { post }
                      { c1 : program L Game_import A1 } { c2 : program L Game_import A2 }
-                     (pre_sym : forall h1 h2, pre (h1, h2) -> pre (h2, h1))                           
+                     (pre_sym : forall h1 h2, pre (h1, h2) -> pre (h2, h1))
                      (H : r⊨ ⦃ fun '(h1, h2) => pre (h2, h1) ⦄ c1 ≈ c2 ⦃ post ⦄) :
-                     r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄. 
+                     r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄.
 Proof.
   unshelve eapply rpre_weaken_rule.
   { exact: (fun '(h1, h2) => pre (h2, h1)). }
-  - assumption. - assumption. 
-Qed.                      
+  - assumption. - assumption.
+Qed.
 
 
 (* CA: not more useful than sampler_case *)

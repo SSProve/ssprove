@@ -183,10 +183,8 @@ Section Unary_free_prob_monad.
 
   (* (*We also define a relative account of this free monad (restricted *)
   (* to choice types, although it might not be used subsequently*) *)
-  (* About relativeMonad_precomposition. *)
   (* Definition rFreePr0 := *)
   (* relativeMonad_precomposition choice_incl (monad_to_relmon FreePr). *)
-  (* About rFreePr0. *)
 
   (*with the right type (computationally for its base functor)*)
   (*Here I recylce ancient code*)
@@ -204,7 +202,7 @@ Section Unary_free_prob_monad.
       destruct s. simpl in *.
         by apply: Hch.
    Defined.
-    
+
 
 
 End Unary_free_prob_monad.

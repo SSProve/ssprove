@@ -345,9 +345,6 @@ Section TransformedLaxMorphAdj.
     simpl in chiInvNat. rewrite chiInvNat. reflexivity.
   Qed.
 
-
-  (* Check paste smAlpha'. (*beta' has to be pastable to alpha' ...*) *)
-
   Context (smBeta' : lnatTrans (lord_functor_comp (strict2laxFunc R1) (strict2laxFunc KC))
          (lord_functor_comp (strict2laxFunc KC) (strict2laxFunc R2)) ).
 

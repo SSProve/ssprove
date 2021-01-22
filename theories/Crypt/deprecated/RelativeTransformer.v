@@ -10,7 +10,7 @@ Import SPropAxioms.
 In this file I try to define a state transformer for relative monads.
 just for choiceType relative monads for now.
 
-This file is not useful anymore. Can transform relative monads via left 
+This file is not useful anymore. Can transform relative monads via left
 relative adjunctions (see Crypt/OrderEnrichedAdjunctions.v)
 *)
 
@@ -26,7 +26,6 @@ Section OnRelMons.
   Definition rstt0 : (ord_relativeMonad choice_incl) -> ord_choiceType -> TypeCat :=
     fun M A => (choice_incl S) -> M (F_choice_prod  ⟨ A ,  S ⟩).
 
-  Check @mkOrdRelativeMonad.
   Program Definition rstt : ord_relativeMonad choice_incl -> ord_relativeMonad choice_incl :=
     fun M => @mkOrdRelativeMonad ord_choiceType TypeCat choice_incl
     (rstt0 M) _ _ _ _ _ _.

@@ -18,7 +18,7 @@ as well as the associated monad of this new adjunction (see AdjTransform in Orde
 
 Section ConstantFunctor.
   Context (C D : ord_category) (d : D).
-  
+
   Program Definition mkConstFunc : ord_functor C D := mkOrdFunctor (fun c => d) _ _ _ _.
   Next Obligation.
     intuition. apply Id.
@@ -86,7 +86,7 @@ Section DomainStateAdj.
     apply boolp.funext. move=> s2. eapply H1.
   Defined.
 
-  
+
   Program Definition Chi_DomainStateAdj : leftAdjunctionSituation J (ord_functor_comp Lflat J) R :=
     mkNatIso _ _ (Chi_DomainStateAdj0) _ _ _ _.
   Next Obligation.
@@ -121,13 +121,11 @@ Section DomainStateAdj.
   (ch_emb : rel_choiceTypes -> choiceType).
   Let rFreeProb_squFilled :=
     rFreeProb_squ probE rel_choiceTypes ch_emb.
-  
+
   (*state transform rFree[Pr] × rFree[Pr] *)
   Definition StT_rFreeProb_squ :=
     AdjTransform (rFreeProb_squFilled) Lflat R Chi_DomainStateAdj.
 
-  (* Check StT_rFreeProb_squ. *)
-    
 End DomainStateAdj.
 
 
@@ -149,7 +147,7 @@ Section CodomainStateAdj.
   Let preHom := functor_to_prod_cat SConst Ordid.
   Definition ToTheS_OrdCat : ord_functor OrdCat OrdCat :=
     ord_functor_comp preHom (HomF OrdCat).
-  
+
   Let R := ToTheS_OrdCat.
 
   Definition Chi_CodomainStateAdj0 :
@@ -184,7 +182,6 @@ Section CodomainStateAdj.
   Defined.
 
 
-(* Check (mkNatIso _ _ (Chi_CodomainStateAdj0) invChi_CodomainStateAdj0). *)
   Program Definition Chi_CodomainStateAdj : leftAdjunctionSituation J (ord_functor_comp Lflat J) R :=
     mkNatIso _ _ (Chi_CodomainStateAdj0) invChi_CodomainStateAdj0  _ _ _.
   (* Next Obligation. *)
@@ -214,8 +211,8 @@ Section CodomainStateAdj.
     apply sig_eq ; simpl. apply funext ; move=> [[c1 s1] [c2 s2]]. simpl.
     easy.
   Qed.
-    
+
   Definition StT_WRelprop :=
     AdjTransform (WRelProp) Lflat R Chi_CodomainStateAdj.
-    
+
 End CodomainStateAdj.

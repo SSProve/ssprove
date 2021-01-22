@@ -35,7 +35,7 @@ Section Rel.
   Definition TyRel : Rel := @mkRel Type Type (fun A B => A -> B -> Type).
 
   (* Up to size issues, we have ⟬TyRel⟭ = Rel *)
-  
+
 
   Definition ArrRel (X Y : Rel) : Rel :=
     ⦑ πl X -> πl Y, πr X -> πr Y
@@ -73,7 +73,6 @@ Section Rel.
            exact (dpair (fun p => forall xl xr xw, πw Y (nfst p xl) (nsnd p xr)) ⟨tl, tr⟩ tw))).
 
   Eval cbv in (TyRel R==> TyRel).
-  (* Check ([< fun x:Rel => @mkRel (πl x × nat) nat (fun _ _ => True) | TyRel >] : TyRel R==> TyRel). *)
 
   Definition Hi A : Rel := ⦑ A, A | fun a a' => True | TyRel ⦒.
   Definition Lo A : Rel := ⦑ A, A | fun a a' => a = a' | TyRel ⦒.
@@ -90,8 +89,6 @@ Section Rel.
     [< fun (hi : ⟬Hi nat⟭)  => [< fun lo : ⟬Lo nat⟭ => lo | Lo nat >] | Lo nat R=> Lo nat >].
 
   (* Notation "[| x | t |]" := (ltac:(let t' := constr:(fun x => t) in idtac t' ; exact 0)) (x ident). *)
-
-  (* Check [| x | x |]. *)
 
   (* Notation "λ² x ∈ X | Y → t" := ([< constr:(fun x : ⟬ X ⟭ => t) | Y >]) (at level 50, x ident). *)
 

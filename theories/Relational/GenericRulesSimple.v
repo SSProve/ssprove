@@ -22,8 +22,6 @@ Set Polymorphic Inductive Cumulativity.
 
 (*   Notation "⊨ c1 ≈ c2 [{ w }]" := (@mod_semantic_judgement _ _ c1 c2 w). *)
 
-(*   Check (fun A B (c1 : M1 A) (c2: M2 B) w => ⊨ c1 ≈ c2 [{ w }] ). *)
-
 (*   Lemma weaken_rule {A B} {c1 : M1 A} {c2 : M2 B} {w w'} : *)
 (*     ⊨ c1 ≈ c2 [{ w }] -> w ≤ w' -> ⊨ c1 ≈ c2 [{ w' }]. *)
 (*   Proof. move=> ? ? ; rewrite /mod_semantic_judgement ; estransitivity ; eassumption. Qed. *)
@@ -77,8 +75,6 @@ Section RelationalProgramLogicFromRelativeMonadZero.
 
   Definition semantic_judgement A1 A2 c1 c2 w := proj1_sig (θ ⟨A1,A2⟩) ⟨c1,c2⟩ ≤ w.
   Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ c1 c2 w).
-
-  (* Check (fun A B (c1 : M1 A) (c2: M2 B) w => ⊨ c1 ≈ c2 [{ w }] ). *)
 
 
   Import SPropNotations.

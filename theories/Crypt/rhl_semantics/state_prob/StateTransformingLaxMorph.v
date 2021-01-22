@@ -125,7 +125,6 @@ Section FreeStateProbMonad.
     end.
 
   (*this is a free choiceType relative monad with a stateful signature.*)
-  (* Check rFree state_ops state_ar. *)
 
 
   (*Now how can we combine state and probabilities?*)
@@ -236,10 +235,10 @@ Section UnaryInterpretState.
     simpl. move=> x. eapply retrFree_filled. simpl. exact ( (x,s) ).
   Defined.
 
-  
+
   Let ops_StP_filled :=  @ops_StP probE rel_choiceTypes chEmb S.
   Let ar_StP_filled := @ar_StP probE rel_choiceTypes chEmb S.
-  
+
 
   Definition sigMap : forall op : ops_StP_filled, stT_Frp( ar_StP_filled op ).
   move=> op. cbv in op.
@@ -348,7 +347,6 @@ Section MakeTheDomainFree.
   rlmm_comp _ _ _ _ _ _ _ preInterpretState_filled addIntState_filled.
 
   (*the other part is stT_thetaDex : stT(Frp²) → Wstrelprop*)
-  (* Check stT_thetaDex_filled. *)
 
   (*we now combine those two morphisms *)
   Definition thetaFstdex := rlmm_comp _ _ _ _ _ _ _ justInterpState stT_thetaDex_filled.

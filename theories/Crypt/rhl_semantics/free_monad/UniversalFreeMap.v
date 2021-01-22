@@ -12,7 +12,7 @@ Here we describe the object part of the forgetful functor U.
 *)
 Section ForgetFromRmonToOpar.
   Context (T : ord_relativeMonad choice_incl).
-  
+
   Definition forgOps : Type := {A : choiceType & T A}.
   Definition forgAr : forgOps -> choiceType := fun op => match op with |existT A _ => A end.
 
@@ -24,7 +24,7 @@ Section UnivFreeMap.
 
   (*domain signature = arbitrary signature*)
   Context {sigma_ops : Type} {sigma_ar : sigma_ops -> choiceType}.
-  
+
   (*codomain signature = coming from a relative monad*)
   Context {T : ord_relativeMonad choice_incl}.
   Let T_ops := forgOps T.
@@ -33,12 +33,11 @@ Section UnivFreeMap.
   (*here is an arrow in the slice cat Ty / chTy *)
   (* Context (sigMap : sigma_ops -> T_ops). *)
   (* Hypothesis (slicemorph : forall op : sigma_ops, T_ar (sigMap (op)) = sigma_ar op). *)
-  (*To avoid the need for equality transports we remark that to give such a morphism is 
+  (*To avoid the need for equality transports we remark that to give such a morphism is
    the same as giving a section like this:*)
   Context  (sigMap : forall op : sigma_ops , T (sigma_ar op) ).
 
   Let Free_sigma := rFree sigma_ops sigma_ar. (*the domain relative monad*)
-  (* Check T. (*the codomain relative monad*) *)
 
   Definition trivialChi :
   natIso choice_incl (ord_functor_comp choice_incl (ord_functor_id TypeCat)) :=
@@ -55,7 +54,7 @@ Section UnivFreeMap.
     simpl. move=> a0. apply outOfFree0. apply opk. exact a0.
     apply sigMap.
   Defined.
-    
+
 
   Program Definition outOfFree : relativeMonadMorphism (ord_functor_id _) trivialChi Free_sigma T :=
     mkRelMonMorph (ord_functor_id _) trivialChi Free_sigma T _ _ _.
@@ -90,13 +89,13 @@ Section ufmap_vs_callrFree.
   Context (sigma_ops : Type) (sigma_ar : sigma_ops -> choiceType)
           (T : ord_relativeMonad choice_incl).
   Context (sigMap : (forall op : sigma_ops , T ( sigma_ar op ))).
-  
+
   Lemma outOfFree_vs_callrFree :
   forall op : sigma_ops, outOfFree sigMap _ (callrFree _ _ op) = sigMap op.
   Proof.
     move=> op.
     cbn. epose (T_bindRet := ord_relmon_law1 T _).
-    eapply FunctionalExtensionality.equal_f in T_bindRet. 
+    eapply FunctionalExtensionality.equal_f in T_bindRet.
     cbn in T_bindRet. erewrite T_bindRet.
     reflexivity.
   Qed.

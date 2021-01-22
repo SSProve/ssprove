@@ -69,7 +69,7 @@ Section Aux.
     rewrite H.
     reflexivity.
   Qed.
-      
+
 
   Lemma v_nonsense : forall (A1 A2 : ord_choiceType) (a1 : A1) (a2 : A2),
   ((Theta_exCP.v ⟨ A1, A2 ⟩) ∙1 (a1, a2)) = ⟨a1,a2⟩.
@@ -89,7 +89,7 @@ Section AbstractLiftOplaxness.
 
   Context {S1 S2 : choiceType}.
 
-  
+
   Context {probE : Type -> Type} {rel_choiceTypes : Type} {chEmb : rel_choiceTypes -> choiceType} {prob_handler : forall T : choiceType, probE T -> SubDistr.SDistr T}.
 
 
@@ -109,7 +109,7 @@ Section AbstractLiftOplaxness.
 
 
   (*transformed lax morphism*)
-  
+
   Let StT_M := AdjTransform Mprod _ _ (Chi_DomainStateAdj S1 S2).
   Let StT_W := AdjTransform W _ _ (Chi_CodomainStateAdj S1 S2).
 
@@ -136,7 +136,7 @@ Section AbstractLiftOplaxness.
     apply sig_eq. simpl. apply boolp.funext. move=> [[a1 s1] [a2 s2]].
     simpl. reflexivity.
   Qed.
-  
+
   Let myStTθ := rlmm_from_lmla mystT_θ_adj.
 
   (*Liftings*)
@@ -144,7 +144,7 @@ Section AbstractLiftOplaxness.
   Let compLift_filled := @StatefulCompLift M1 M2 S1 S2.
   (*Specification lift*)
   Let specLift_filled := @StatefulSpecLift S1 S2 W.
-                   
+
 
   (*StT(θ) ∘ complift*)
   Let StTθ_of_complift :=
@@ -168,7 +168,7 @@ Section AbstractLiftOplaxness.
     rewrite !ord_relmon_law1. cbn.
     unfold comp.
     rewrite etaSigRule. rewrite etaSigRule'.
-    rewrite (ord_relmon_law1 W). cbn.    
+    rewrite (ord_relmon_law1 W). cbn.
     unshelve epose (θbind := (rlmm_law2 _ _ _ _ θ) _ _ _ _).
       exact ⟨A1,A2⟩.
       exact ⟨ prod_choiceType A1 S1, prod_choiceType A2 S2 ⟩.
@@ -193,18 +193,18 @@ Section AbstractLiftOplaxness.
   Qed.
 
 
-    
+
 End AbstractLiftOplaxness.
 
 
-    
+
 Section LiftOplaxness.
   Notation dnib := ord_relmon_bind.
   Notation η := ord_relmon_unit.
 
   Context {S1 S2 : choiceType}.
 
-  
+
   Context {probE : Type -> Type} {rel_choiceTypes : Type} {chEmb : rel_choiceTypes -> choiceType} {prob_handler : forall T : choiceType, probE T -> SubDistr.SDistr T}.
 
   (*The untransformed concrete lax morphism θdex : FrP² → Wrelprop*)
@@ -220,7 +220,6 @@ Section LiftOplaxness.
   Definition Lift_stComp := @StatefulCompLift M1 M2 S1 S2.
 
   (*The specification lift*)
-  (* Check @StatefulSpecLift. *)
   Let Lift_stSpec := @StatefulSpecLift S1 S2 (rlmm_codomain thetaDex_filled).
 
   Definition stTθdex_of_lift :=
@@ -240,7 +239,7 @@ Section LiftOplaxness.
 
 End LiftOplaxness.
 
-  
+
 Section unary_FreeProb_Into_FreeProbState.
   Context {probE : Type -> Type} {rel_choiceTypes : Type} {chEmb : rel_choiceTypes -> choiceType} {prob_handler : forall T : choiceType, probE T -> SubDistr.SDistr T}.
   Context {S : choiceType}. (*either S1 or S2*)
@@ -266,10 +265,10 @@ Section unary_FreeProb_Into_FreeProbState.
   Definition unary_freeprob_into_freestateprob :
   relativeMonadMorphism _  trivialChi FrP FrStP_filled :=
   outOfFree iotaSigMap.
-  
+
 
 (*We describe a preimage morphism on Ty/chTy , of the inclusion morphism above.
-  In other words we describe a point in the fiber 
+  In other words we describe a point in the fiber
      Fr^{-1}(morph above : FrP -> FrStP) : sigProb -> sigStateProb *)
 
   Definition sigMap_Pr_into_StPr : probOps -> probStateOps.
@@ -297,20 +296,13 @@ Section unary_FreeProb_Into_FreeProbState.
     cbn. reflexivity.
   Qed.
 
-  (*operations are sent to operations*)
-(*
-  Check unary_freeprob_into_freestateprob.
-  Check callrFree probStateOps probStateAr.
-  Check unary_freeprob_into_freestateprob _ (callrFree probOps probAr _).
-*)
 
- 
 End unary_FreeProb_Into_FreeProbState.
 
 
 
- 
-Section FreeProb_Into_FreeProbState.  
+
+Section FreeProb_Into_FreeProbState.
   Context {probE : Type -> Type} {rel_choiceTypes : Type} {chEmb : rel_choiceTypes -> choiceType} {prob_handler : forall T : choiceType, probE T -> SubDistr.SDistr T}.
   Context {S1 S2 : choiceType}.
 
@@ -382,7 +374,7 @@ Section EquivalentCompLift.
         cbn in localOutOfFree_bind.
         unfold FreeProbProg.rFree_obligation_2 in localOutOfFree_bind.
       erewrite localOutOfFree_bind. clear localOutOfFree_bind localOutOfFree.
-      
+
       rewrite /OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
       apply boolp.funext ; move=> s1.
       eassert (outOfFree_vs_callrFree' :
@@ -405,7 +397,7 @@ sigMap (inr probop) ).
         exact S1.
       rewrite -coucou.
       reflexivity.
-      erewrite vs_callrFree''. clear vs_callrFree''.  
+      erewrite vs_callrFree''. clear vs_callrFree''.
       assert (simplCont :
     (fun ans_s1 : probAnsType probop * S1 =>
      let (ans, s1) := ans_s1 in
@@ -415,7 +407,7 @@ sigMap (inr probop) ).
     (fun ans_ss : probAnsType probop * S1 =>
      let (ans, ss) := ans_ss in
     ord_relmon_bind M1
-            (fun a : choice_incl A1 => ord_relmon_unit M1 (prod_choiceType A1 S1) (a, ss)) 
+            (fun a : choice_incl A1 => ord_relmon_unit M1 (prod_choiceType A1 S1) (a, ss))
             (k ans) )
   ).
         apply boolp.funext. move=> [ans ss]. cbn. rewrite Hind. reflexivity.
@@ -447,13 +439,13 @@ sigMap (inr probop) ).
 =
 (fun p : probAnsType probop =>
 ord_relmon_bind M2
-            (fun a : choice_incl A2 => ord_relmon_unit M2 (prod_choiceType A2 S2) (a, s2)) 
+            (fun a : choice_incl A2 => ord_relmon_unit M2 (prod_choiceType A2 S2) (a, s2))
             (k p))
 ).
         apply boolp.funext. move=> ans. rewrite Hind. reflexivity.
       rewrite simplCont. reflexivity.
   Qed.
-      
+
 End EquivalentCompLift.
 
 
@@ -486,7 +478,7 @@ Section ExtendedLiftOplaxness.
   Let specLift_of_θprob :=
   rlmm_comp _ _ _ _ _ _ _ θprob specLift.
 
-  Let stTθ_of_complift := 
+  Let stTθ_of_complift :=
   rlmm_comp _ _ _ _ _ _ _ compLift stTθ.
 
   (* Lemma whiskered_EquCompLift : *)
@@ -510,7 +502,7 @@ Section ExtendedLiftOplaxness.
   Qed.
 
 
-End ExtendedLiftOplaxness. 
+End ExtendedLiftOplaxness.
 
 
 Section MonotonicSpecLift.
@@ -568,14 +560,14 @@ Section LiftJudgment.
   Let iiota :=  @FrPsqu_into_FrStPsqu probE rel_choiceTypes chEmb S1 S2.
   Let iota1 := @unary_freeprob_into_freestateprob probE rel_choiceTypes chEmb S1.
   Let iota2 := @unary_freeprob_into_freestateprob probE rel_choiceTypes chEmb S2.
-  
+
 
   Lemma iiota_compononents :
     iiota = prod_relativeMonadMorphism iota1 iota2.
   Proof.
     unfold iiota. reflexivity.
   Qed.
-  
+
   Let θprob := @thetaDex probE rel_choiceTypes chEmb prob_handler.
   Let Wprob := rlmm_codomain θprob.
   Let θStProb :=  @thetaFstdex probE rel_choiceTypes chEmb S1 S2 prob_handler.
@@ -586,19 +578,19 @@ Section LiftJudgment.
   Context (m1 : FrP A1) (m2 : FrP A2).
   Context (w  : Base.dfst (Wprob ⟨ A1, A2 ⟩)).
   Hypothesis ( judg_prob : (θprob ⟨A1,A2⟩)∙1 ⟨m1,m2⟩ ≤ w ). (*relational prob judg*)
-  
+
   Let specLift := @StatefulSpecLift S1 S2 Wprob.
   Lemma lift_probrules :
   (θStProb ⟨A1,A2⟩)∙1 ⟨iota1 _ m1, iota2 _ m2⟩
   ≤
   (specLift ⟨A1,A2⟩)∙1 w.
   Proof.
-    assert (lhs : 
+    assert (lhs :
     (θStProb ⟨ A1, A2 ⟩) ∙1 ⟨ iota1 A1 m1, iota2 A2 m2 ⟩ =
     ((θStProb \O iiota) ⟨A1,A2⟩)∙1 ⟨m1,m2⟩ ).
       cbn. reflexivity.
     rewrite lhs.
-    pose elo := 
+    pose elo :=
     @extended_liftOplaxness S1 S2 probE rel_choiceTypes chEmb prob_handler A1 A2.
     etransitivity.
     specialize (elo ⟨m1,m2⟩). eapply elo.
@@ -606,8 +598,8 @@ Section LiftJudgment.
     eapply monSpecLift.
     apply judg_prob.
   Qed.
-    
-    
+
+
 End LiftJudgment.
-    
-  
+
+
