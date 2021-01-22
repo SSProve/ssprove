@@ -1,7 +1,7 @@
 (* Global utility *)
 (* Partly stolen from MetaCoq *)
 
-From Coq Require Import Utf8.
+From Coq Require Import Utf8 Lia.
 From mathcomp Require Import ssreflect eqtype ssrbool.
 From extructures Require Import ord.
 From Equations Require Import Equations.
@@ -93,3 +93,25 @@ Proof.
   - move: e => /eqP. auto.
   - move: e => /eqP. auto.
 Defined.
+
+(** Notion of positive natural number
+
+  Usage: Simply write [mkpos n] to turn [n] into a positive natural number.
+  The positivity proof should be inferred by the [lia] tactic.
+*)
+Class Positive (n : nat) :=
+  is_positive : 0 < n.
+
+Hint Extern 4 (Positive ?n) =>
+  unfold Positive ; lia : typeclass_instances.
+
+Record positive := mkpos {
+  pos : nat ;
+  cond_pos : Positive pos
+}.
+Arguments mkpos _ {_}.
+
+Definition positive_to_nat (p : positive) : nat :=
+  p.(pos).
+
+Coercion positive_to_nat : positive >-> nat.
