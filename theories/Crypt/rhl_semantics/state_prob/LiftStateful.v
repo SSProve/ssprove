@@ -9,7 +9,7 @@ Import SPropNotations.
 
 Section AuxLemmas.
   Context {A : Type} {P : A -> Prop}.
-  
+
   Lemma myBetaRed : forall x e, (exist P x e)∙1 = x.
   Proof.
     move=> x e. simpl. reflexivity.
@@ -35,8 +35,8 @@ Section MonotonicBind.
   Let J :=
   (ord_functor_comp F_choice_prod SubDistr.chDiscr).
   Context {W : ord_relativeMonad J}.
-  
-  Context {AA BB : prod_cat ord_choiceType ord_choiceType}. 
+
+  Context {AA BB : prod_cat ord_choiceType ord_choiceType}.
   Context (w w' : dfst (W AA)).
   Context (Hw : w ≤ w').
   Context (f : OrdCat⦅ J AA ; W BB⦆).
@@ -72,7 +72,7 @@ Section ComputationalAuxiliary.
   Proof.
     move=> A. move=> x. rewrite ord_relmon_law1. simpl. reflexivity.
   Qed.
-  
+
 
   Lemma applied_ord_relmon_law2 :
   forall (A B : I) (f : TypeCat ⦅ J A; M B ⦆) x, dnib M f ( η M A x ) = f x.
@@ -116,7 +116,7 @@ Section ComputationalStatefulLiftDef.
 
   (*The state transformed computational monad*)
   Let StT_M := AdjTransform M _ _ TingAdj.
-  
+
 
   (*We wish to build the lift morphism M → StT_M*)
   Definition StatefulCompLift0 :
@@ -151,7 +151,7 @@ Section ComputationalStatefulLiftDef.
   Qed.
   Next Obligation.
     move=> [A1 A2] [B1 B2]. simpl.
-    move=> [k1 k2]. 
+    move=> [k1 k2].
     rewrite /OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
     simpl. f_equal.
     - apply boolp.funext. move=> m. apply boolp.funext. move=> s.
@@ -194,7 +194,7 @@ Section SpecificationAuxiliary.
   Proof.
     move=> A. move=> x. rewrite ord_relmon_law1. simpl. reflexivity.
   Qed.
-  
+
 
   Lemma spec_applied_ord_relmon_law2 :
   forall (A B : I) (f : OrdCat ⦅ J A; M B ⦆) x, (dnib M f)∙1 ( (η M A)∙1 x ) = f∙1 x.
@@ -202,7 +202,6 @@ Section SpecificationAuxiliary.
     move=> A B f x.
     unshelve epose (aux := (ord_relmon_law2 M) _ _ _).
       shelve. shelve. exact f.
-    Locate sval.
     apply (f_equal sval) in aux. simpl in aux.
     unshelve eapply equal_f in aux. exact x. simpl in aux.
     assumption.
@@ -229,7 +228,7 @@ Section SpecficationStatefulLiftDef.
 
   (*
   A relational specification monad W is a monad relative to
-  the product;discrete functor J : choiceType² → Preorder 
+  the product;discrete functor J : choiceType² → Preorder
    *)
   Context {S1 S2 : ord_choiceType}.
   Let J :=
@@ -242,7 +241,7 @@ Section SpecficationStatefulLiftDef.
   (*The state transformed spec monad*)
   Let StT_W := AdjTransform W _ _ TingAdj.
 
-  
+
 
   (* We wish to build a rmm morphism lift : W -> StT_W *)
 
@@ -266,7 +265,7 @@ Section SpecficationStatefulLiftDef.
     cbn.
     eapply monotonic_bind. assumption.
   Qed.
-        
+
 
   Let myChi := natIso_sym (ord_functor_unit_right J).
   Program Definition StatefulSpecLift :=

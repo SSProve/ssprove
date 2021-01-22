@@ -42,7 +42,7 @@ Section State.
   (* The Dijkstra monad for state, indexed by predicate transformers. *)
   Definition StateWP : Dijkstra StateSpec := @D_wp _ _.
 
-  Eval cbv in StateWP.
+  (* Eval cbv in StateWP. *)
 
   (* A convienient way to specify stateful computations: using pre and
      post conditions. *)
@@ -65,7 +65,7 @@ Section State.
      triple.  *)
   Lemma soundness P Q : forall (c : PrePost P Q) s,
       P s -> Q s (nsnd (underlying c s)).
-  Proof. 
+  Proof.
     move=> [f H] /= s pre_ok.
     move: (H (fun _ => Q s) s).
     cbv; intuition.
@@ -136,7 +136,7 @@ Section NonDeterminism.
   Definition pick : ListM bool := true :: false :: nil.
 
   Section Angelic.
-    
+
     Fixpoint or (xs : list SProp) : SProp :=
       match xs with
       | nil => False
@@ -339,7 +339,7 @@ Section FreeMonad.
 
     Definition opHist s : FreeHist (P s) _ :=
       @cont_perform S P _ HistSpec s.
-    
+
   End History.
 
   Section Future.
@@ -429,7 +429,7 @@ Section IO.
   Variables oup1 oup2 : Oup.
 
   Program Definition print_sequence_spec : IOSpec unit :=
-    fun history => ⦑fun post => post ⟨tt, existT _ (write oup2) tt :: existT _ (write oup1) tt :: history⟩⦒. 
+    fun history => ⦑fun post => post ⟨tt, existT _ (write oup2) tt :: existT _ (write oup1) tt :: history⟩⦒.
   Next Obligation. move: H0 ; simpl; intuition. Qed.
 
   Program Definition print_sequence : IO unit print_sequence_spec :=
@@ -596,7 +596,7 @@ Program Definition catch {Q_exn Q_exn'} {A B} {P Q} {wp_success: A -> ExcSpec Q_
     | ⦑ Some a ⦒ => wkn (N_ret a) _
     | ⦑ None ⦒ => wkn N_exn _
     end.
-Next Obligation. 
+Next Obligation.
   destruct H as [[? H0] ?] ; apply H0.
   apply wildcard'; cbv ; intuition.
 Qed.
@@ -889,7 +889,7 @@ End ConstantChoiceHandler.
 Section DijkstraMonadPolymorphic.
   Context W (D:Dijkstra W).
   Import ListNotations.
-  
+
   Section ListMap.
     Fixpoint list_mapW {A B} (w : A -> W B) (l : list A) : W (list B) :=
       match l with

@@ -57,7 +57,7 @@ Section Carrier.
   pointwise_srelation A (fun x y =>  ⟦absord x y⟧) de1 de2.
 
   (* This hangs: Eval cbv in Sdistr_carrier0_preorder. *)
-  Eval vm_compute in SDistr_carrier0_preorder.
+  (* Eval vm_compute in SDistr_carrier0_preorder. *)
 
   Instance SDistr_carrier0_preorder_preorder A
   : PreOrder (@SDistr_carrier0_preorder A).

@@ -243,7 +243,7 @@ Section ImpMonad.
   Definition Wun := STCont (S × S).
   Definition W' := ordmonad_to_relmon Wun.
 
-  Eval cbv in (Wun bool).
+  (* Eval cbv in (Wun bool). *)
   (* Notation "x ≊ y" := (x ≤ y s/\ y ≤ x) (at level 70). *)
 
   Definition W0 := STCont S.

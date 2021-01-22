@@ -934,10 +934,6 @@ Module PackageRHL (π : RulesParam).
       F_choice_prod_obj ⟨ Arit op, heap_choiceType ⟩ ⟩) ∙1).
       unfold Theta_exCP.θ0.
       cbn - [Theta_dens.unary_theta_dens_obligation_1 ThetaDex.thetaDex UniversalFreeMap.outOfFree_obligation_1].
-      Eval cbn in (ord_functor_comp
-                    (OrderEnrichedRelativeAdjunctionsExamples.unaryTimesS1 heap_choiceType)
-                    (OrderEnrichedRelativeAdjunctions.KleisliLeftAdjoint Frp)
-                    (StateTransformingLaxMorph.ar_StP heap_choiceType (inr op))).
       pose foo := (sigMap (inr op) s1).
       cbn in foo.
       unfold probopStP in foo. cbn in foo.
