@@ -36,6 +36,8 @@ Module PackageRHL (π : RulesParam).
   Import π.
   Include (PackageTactics π).
 
+  Import PackageNotation.
+
   Local Open Scope fset.
   Local Open Scope fset_scope.
   Local Open Scope type_scope.
@@ -2151,7 +2153,7 @@ Lemma rsamplerC' { A : ord_choiceType } { L : {fset Location} }  (o : Op)
                  (c : program L Game_import A):
   r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄
         r ← (r ← sample o ;; ret r) ;; a ← c ;;  (ret (r, a)) ≈
-        a ← c ;; r ← (r ← sample o ;; ret r) ;;  (ret (r, a)) 
+        a ← c ;; r ← (r ← sample o ;; ret r) ;;  (ret (r, a))
    ⦃ eq ⦄.
 Proof. Admitted.
 
@@ -2211,8 +2213,8 @@ Lemma rsymmetry  { A1 A2 : ord_choiceType } { L : {fset Location} } { pre : heap
                  { c1 : program L Game_import A1 } { c2 : program L Game_import A2 }
                  (H : r⊨ ⦃ fun '(h1, h2) => pre (h2, h1) ⦄ c2 ≈ c1 ⦃ fun '(a2,h2) '(a1,h1) => post (a1,h1) (a2, h2) ⦄) :
                      r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄.
-Proof. Admitted. 
-  
+Proof. Admitted.
+
 
 
 (* CA: not more useful than sampler_case *)

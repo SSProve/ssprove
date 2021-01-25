@@ -79,7 +79,7 @@ Ltac package_obtac :=
 
 Module PackageTactics (π : RulesParam).
 
-  Include (PackageNotation π).
+  Include (PkgNotation π).
   Include (DerivedRules π).
 
   Ltac program_fold_pass :=

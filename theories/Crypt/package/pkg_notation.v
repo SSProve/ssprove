@@ -101,7 +101,7 @@ From Crypt Require Import Prelude Axioms ChoiceAsOrd RulesStateProb
   pkg_chUniverse pkg_core_definition pkg_composition.
 
 
-Module PackageNotation (π : RulesParam).
+Module PkgNotation (π : RulesParam).
 
   Include (PackageComposition π).
 
@@ -109,188 +109,189 @@ Module PackageNotation (π : RulesParam).
   Local Open Scope fset_scope.
 
   Declare Custom Entry pack_type.
-
-  (**
-    The `custom entry` engine does not allow a name to be a symbol without
-    it being a symbol in the global grammar.
-    As a workaround, we define 'bool and such to avoid making it impossible
-    to refer to bool by making it a keyword.
-  *)
-
-  Notation " 'nat " := (chNat) (in custom pack_type at level 2).
-  Notation " 'bool " := (chBool) (in custom pack_type at level 2).
-  Notation " 'unit " := (chUnit) (in custom pack_type at level 2).
-  Notation " 'option x " := (chOption x) (in custom pack_type at level 2).
-  Notation " 'fin n " :=
-    (chFin (mkpos n))
-    (in custom pack_type at level 2, n constr).
-  Notation "{map x → y }" :=
-    (chMap x y)
-    (in custom pack_type at level 2, format "{map  x  →  y  }").
-  Notation " x × y " := (chProd x y) (in custom pack_type at level 2).
-
-  Notation "( x )" := x (in custom pack_type, x at level 2).
-
-  (** Repeat the above notations here for package_scope. *)
-  Notation " 'nat " := (chNat) (at level 2) : package_scope.
-  Notation " 'bool " := (chBool) (at level 2) : package_scope.
-  Notation " 'unit " := (chUnit) (at level 2) : package_scope.
-  Notation " 'option x " := (chOption x) (at level 2) : package_scope.
-  Notation " 'fin x " :=
-    (chFin (mkpos x))
-    (at level 2) : package_scope.
-  (* Conflicts with this one. *)
-  (* Notation "{map x → y }" :=
-    (chMap x y)
-    (at level 80, format "{map  x  →  y  }") : package_scope. *)
-  Notation " x × y " := (chProd x y) (at level 80) : package_scope.
-
   Declare Custom Entry interface.
-
-  Notation "[ 'interface' ]" :=
-    fset0
-    (at level 0, only parsing)
-    : package_scope.
-
-  Notation "[ 'interface' x1 ]" := (fset (x1 :: [::]))
-    (at level 0, x1 custom interface at level 2, format "[ interface  x1  ]")
-    : package_scope.
-
-  Notation "[ 'interface' x1 ; x2 ; .. ; xn ]" :=
-    (fset (x1 :: x2 :: .. [:: xn] ..))
-    (at level 0,
-    x1 custom interface at level 2,
-    x2 custom interface at level 2,
-    xn custom interface at level 2,
-    format "[ interface  '[' x1  ;  '/' x2  ;  '/' ..  ;  '/' xn ']'  ]")
-    : package_scope.
-
-  Notation "'val' #[ f ] : A → B" :=
-    (f, (A, B))
-    (in custom interface at level 0,
-    f constr, A custom pack_type, B custom pack_type,
-    format "val  #[ f ]  :  A  →  B").
-
   Declare Custom Entry package.
-
-  Notation "[ 'package' ]" :=
-    (mkpack (mkfmap [::]))
-    (at level 0, only parsing)
-    : package_scope.
-
-  Notation "[ 'package' x1 ]" :=
-    (mkpack (mkfmap (x1 :: [::])))
-    (at level 0, x1 custom package at level 2, format "[ package  x1  ]")
-    : package_scope.
-
-  Notation "[ 'package' x1 ; x2 ; .. ; xn ]" :=
-    (mkpack (mkfmap (x1 :: x2 :: .. [:: xn] ..)))
-    (at level 0,
-    x1 custom package at level 2,
-    x2 custom package at level 2,
-    xn custom package at level 2,
-    format "[ package  '[' x1  ;  '/' x2  ;  '/' ..  ;  '/' xn  ']' ]")
-    : package_scope.
-
-  Definition mkdef {L I} (A B : chUniverse) (f : A → program L I B)
-    : pointed_vprogram L I :=
-    (A ; B ; f).
-
-  Notation " 'def' #[ f ] ( x : A ) : B { e }" :=
-    (* ((f, (A ; B ; λ (x : chElement A), (e : program _ _ (chElement B))))) *)
-    ((f, mkdef A B (λ x, e)))
-    (in custom package at level 0,
-    f constr, e constr, x ident, A custom pack_type, B custom pack_type,
-    format "def  #[ f ]  ( x : A )  :  B  { '[' '/'  e  '/' ']' }")
-    : package_scope.
-
-  Notation "x ← c1 ;; c2" :=
-    (bind c1 (λ x, c2))
-    (at level 100, c1 at next level, right associativity,
-    format "x  ←  c1  ;;  '/' c2")
-    : package_scope.
-
-  Notation "' p ← c1 ;; c2" :=
-    (bind c1 (λ x, let p := x in c2))
-    (at level 100, p pattern, c1 at next level, right associativity,
-    format "' p  ←  c1  ;;  '/' c2")
-    : package_scope.
-
-  Notation "e1 ;; e2" :=
-    (_ ← e1%pack ;; e2%pack)%pack
-    (at level 100, right associativity,
-    format "e1  ;;  '/' e2")
-    : package_scope.
-
-  Notation "'put' n ':=' u ;; c" :=
-    (putr n _ u c)
-    (at level 100, u at next level, right associativity,
-    format "put  n  :=  u  ;;  '/' c")
-    : package_scope.
-
-  Notation "x ← 'get' n ;; c" :=
-    (getr n _ (λ x, c))
-    (at level 100, n at next level, right associativity,
-    format "x  ←  get  n  ;;  '/' c")
-    : package_scope.
-
-  Notation "' p ← 'get' n ;; c" :=
-    (getr n _ (λ x, let p := x in c))
-    (at level 100, p pattern, n at next level, right associativity,
-    format "' p  ←  get  n  ;;  '/' c")
-    : package_scope.
-
-  Notation "x ← 'get' n 'or' d ;; c" :=
-    (getr n _ (λ y, let x := match y with | Some x => x | None => d end in c))
-    (at level 100, n at next level, d at next level, right associativity,
-    format "x  ←  get  n  or  d  ;;  '/' c")
-    : package_scope.
-
   Declare Custom Entry pack_op.
 
-  Notation "#[ f ] : A → B" :=
-    (f, (A, B))
-    (in custom pack_op at level 0,
-    f constr, A custom pack_type, B custom pack_type,
-    format "#[ f ]  :  A  →  B").
+  Module PackageNotation.
 
-  Notation "x ← 'op' [ o ] n ;; c" :=
-    (opr o _ n (λ x, c))
-    (at level 100, n at next level, o custom pack_op at level 2,
-    right associativity,
-    format "x  ←  op  [  o  ]  n  ;;  '/' c")
-    : package_scope.
+    (**
+      The `custom entry` engine does not allow a name to be a symbol without
+      it being a symbol in the global grammar.
+      As a workaround, we define 'bool and such to avoid making it impossible
+      to refer to bool by making it a keyword.
+    *)
 
-  Notation "' p ← 'op' [ o ] n ;; c" :=
-    (opr o _ n (λ x, let p := x in c))
-    (at level 100, p pattern, n at next level, o custom pack_op at level 2,
-    right associativity,
-    format "' p  ←  op  [  o  ]  n  ;;  '/' c")
-    : package_scope.
+    Notation " 'nat " := (chNat) (in custom pack_type at level 2).
+    Notation " 'bool " := (chBool) (in custom pack_type at level 2).
+    Notation " 'unit " := (chUnit) (in custom pack_type at level 2).
+    Notation " 'option x " := (chOption x) (in custom pack_type at level 2).
+    Notation " 'fin n " :=
+      (chFin (mkpos n))
+      (in custom pack_type at level 2, n constr).
+    Notation "{map x → y }" :=
+      (chMap x y)
+      (in custom pack_type at level 2, format "{map  x  →  y  }").
+    Notation " x × y " := (chProd x y) (in custom pack_type at level 2).
 
-  Notation "x ← 'sample' o ;; c" :=
-    (sampler o (λ x, c))
-    (at level 100, o at next level, right associativity,
-    format "x  ←  sample  o  ;;  '/' c")
-    : package_scope.
+    Notation "( x )" := x (in custom pack_type, x at level 2).
 
-  Notation "' p ← 'sample' o ;; c" :=
-    (sampler o (λ x, let p := x in c))
-    (at level 100, p pattern, o at next level, right associativity,
-    format "' p  ←  sample  o  ;;  '/' c")
-    : package_scope.
+    (** Repeat the above notations here for package_scope. *)
+    Notation " 'nat " := (chNat) (at level 2) : package_scope.
+    Notation " 'bool " := (chBool) (at level 2) : package_scope.
+    Notation " 'unit " := (chUnit) (at level 2) : package_scope.
+    Notation " 'option x " := (chOption x) (at level 2) : package_scope.
+    Notation " 'fin x " :=
+      (chFin (mkpos x))
+      (at level 2) : package_scope.
+    (* Conflicts with this one. *)
+    (* Notation "{map x → y }" :=
+      (chMap x y)
+      (at level 80, format "{map  x  →  y  }") : package_scope. *)
+    Notation " x × y " := (chProd x y) (at level 80) : package_scope.
 
-  Notation "x <$ o ;; c" :=
-    (x ← sample o ;; c)%pack
-    (at level 100, o at next level, right associativity,
-    format "x  <$  o  ;;  '/' c", only parsing)
-    : package_scope.
+    Notation "[ 'interface' ]" :=
+      fset0
+      (at level 0, only parsing)
+      : package_scope.
 
-  Lemma give_fin {m} (n : nat) {h : n < m} : ('fin m)%pack.
-  Proof.
-    cbn. exists n. exact h.
-  Defined.
+    Notation "[ 'interface' x1 ]" := (fset (x1 :: [::]))
+      (at level 0, x1 custom interface at level 2, format "[ interface  x1  ]")
+      : package_scope.
 
-  Notation gfin n := (@give_fin _ n _).
+    Notation "[ 'interface' x1 ; x2 ; .. ; xn ]" :=
+      (fset (x1 :: x2 :: .. [:: xn] ..))
+      (at level 0,
+      x1 custom interface at level 2,
+      x2 custom interface at level 2,
+      xn custom interface at level 2,
+      format "[ interface  '[' x1  ;  '/' x2  ;  '/' ..  ;  '/' xn ']'  ]")
+      : package_scope.
 
-End PackageNotation.
+    Notation "'val' #[ f ] : A → B" :=
+      (f, (A, B))
+      (in custom interface at level 0,
+      f constr, A custom pack_type, B custom pack_type,
+      format "val  #[ f ]  :  A  →  B").
+
+    Notation "[ 'package' ]" :=
+      (mkpack (mkfmap [::]))
+      (at level 0, only parsing)
+      : package_scope.
+
+    Notation "[ 'package' x1 ]" :=
+      (mkpack (mkfmap (x1 :: [::])))
+      (at level 0, x1 custom package at level 2, format "[ package  x1  ]")
+      : package_scope.
+
+    Notation "[ 'package' x1 ; x2 ; .. ; xn ]" :=
+      (mkpack (mkfmap (x1 :: x2 :: .. [:: xn] ..)))
+      (at level 0,
+      x1 custom package at level 2,
+      x2 custom package at level 2,
+      xn custom package at level 2,
+      format "[ package  '[' x1  ;  '/' x2  ;  '/' ..  ;  '/' xn  ']' ]")
+      : package_scope.
+
+    Definition mkdef {L I} (A B : chUniverse) (f : A → program L I B)
+      : pointed_vprogram L I :=
+      (A ; B ; f).
+
+    Notation " 'def' #[ f ] ( x : A ) : B { e }" :=
+      (* ((f, (A ; B ; λ (x : chElement A), (e : program _ _ (chElement B))))) *)
+      ((f, mkdef A B (λ x, e)))
+      (in custom package at level 0,
+      f constr, e constr, x ident, A custom pack_type, B custom pack_type,
+      format "def  #[ f ]  ( x : A )  :  B  { '[' '/'  e  '/' ']' }")
+      : package_scope.
+
+    Notation "x ← c1 ;; c2" :=
+      (bind c1 (λ x, c2))
+      (at level 100, c1 at next level, right associativity,
+      format "x  ←  c1  ;;  '/' c2")
+      : package_scope.
+
+    Notation "' p ← c1 ;; c2" :=
+      (bind c1 (λ x, let p := x in c2))
+      (at level 100, p pattern, c1 at next level, right associativity,
+      format "' p  ←  c1  ;;  '/' c2")
+      : package_scope.
+
+    Notation "e1 ;; e2" :=
+      (_ ← e1%pack ;; e2%pack)%pack
+      (at level 100, right associativity,
+      format "e1  ;;  '/' e2")
+      : package_scope.
+
+    Notation "'put' n ':=' u ;; c" :=
+      (putr n _ u c)
+      (at level 100, u at next level, right associativity,
+      format "put  n  :=  u  ;;  '/' c")
+      : package_scope.
+
+    Notation "x ← 'get' n ;; c" :=
+      (getr n _ (λ x, c))
+      (at level 100, n at next level, right associativity,
+      format "x  ←  get  n  ;;  '/' c")
+      : package_scope.
+
+    Notation "' p ← 'get' n ;; c" :=
+      (getr n _ (λ x, let p := x in c))
+      (at level 100, p pattern, n at next level, right associativity,
+      format "' p  ←  get  n  ;;  '/' c")
+      : package_scope.
+
+    Notation "x ← 'get' n 'or' d ;; c" :=
+      (getr n _ (λ y, let x := match y with | Some x => x | None => d end in c))
+      (at level 100, n at next level, d at next level, right associativity,
+      format "x  ←  get  n  or  d  ;;  '/' c")
+      : package_scope.
+
+    Notation "#[ f ] : A → B" :=
+      (f, (A, B))
+      (in custom pack_op at level 0,
+      f constr, A custom pack_type, B custom pack_type,
+      format "#[ f ]  :  A  →  B").
+
+    Notation "x ← 'op' [ o ] n ;; c" :=
+      (opr o _ n (λ x, c))
+      (at level 100, n at next level, o custom pack_op at level 2,
+      right associativity,
+      format "x  ←  op  [  o  ]  n  ;;  '/' c")
+      : package_scope.
+
+    Notation "' p ← 'op' [ o ] n ;; c" :=
+      (opr o _ n (λ x, let p := x in c))
+      (at level 100, p pattern, n at next level, o custom pack_op at level 2,
+      right associativity,
+      format "' p  ←  op  [  o  ]  n  ;;  '/' c")
+      : package_scope.
+
+    Notation "x ← 'sample' o ;; c" :=
+      (sampler o (λ x, c))
+      (at level 100, o at next level, right associativity,
+      format "x  ←  sample  o  ;;  '/' c")
+      : package_scope.
+
+    Notation "' p ← 'sample' o ;; c" :=
+      (sampler o (λ x, let p := x in c))
+      (at level 100, p pattern, o at next level, right associativity,
+      format "' p  ←  sample  o  ;;  '/' c")
+      : package_scope.
+
+    Notation "x <$ o ;; c" :=
+      (x ← sample o ;; c)%pack
+      (at level 100, o at next level, right associativity,
+      format "x  <$  o  ;;  '/' c", only parsing)
+      : package_scope.
+
+    Lemma give_fin {m} (n : nat) {h : n < m} : ('fin m)%pack.
+    Proof.
+      cbn. exists n. exact h.
+    Defined.
+
+    Notation gfin n := (@give_fin _ n _).
+
+  End PackageNotation.
+
+End PkgNotation.

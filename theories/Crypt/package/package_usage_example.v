@@ -21,6 +21,7 @@ Module NotationExamples (π : RulesParam).
   Import π.
   Module M := (Package_Make π).
   Import M.
+  Import PackageNotation.
 
   Local Open Scope package_scope.
 

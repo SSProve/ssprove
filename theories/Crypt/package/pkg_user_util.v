@@ -23,6 +23,7 @@ Set Primitive Projections.
 Module PackageUserUtil (π : RulesParam).
 
   Include (PackageRHL π).
+  Import PackageNotation.
 
   Lemma in_pdom_fset :
     ∀ id l,
