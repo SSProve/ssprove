@@ -284,7 +284,7 @@ Module PkgNotation (π : RulesParam).
     Notation "x <$ o ;; c" :=
       (x ← sample o ;; c)%pack
       (at level 100, o at next level, right associativity,
-      format "x  <$  o  ;;  '/' c", only parsing)
+      (* format "x  <$  o  ;;  '/' c", *) only parsing)
       : package_scope.
 
     Lemma give_fin {m} (n : nat) {h : n < m} : ('fin m)%pack.
