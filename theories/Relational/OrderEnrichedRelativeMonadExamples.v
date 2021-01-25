@@ -65,7 +65,7 @@ Section OrdCat.
   Definition extract_ord {A : ordType} := proj1_sig (dsnd A).
   Definition extract_ord_preord A : PreOrder (@extract_ord A) := proj2_sig (dsnd A).
   Global Existing Instance extract_ord_preord.
-  Notation " x ≤ y " := (extract_ord x y).
+  Notation " x ≤ y " := (extract_ord x y) (at level 70).
 
   Program Definition OrdCat : ord_category :=
     mkOrdCategory
@@ -132,8 +132,16 @@ Section OrdCat.
 End OrdCat.
 
 (* Re-exporting the notation *)
-Notation " x ≤ y " := (extract_ord x y).
-Notation " X ---> Y " := (X -> dfst Y) (at level 99).
+Module OrderEnrichedRelativeMonadExamplesNotation.
+
+  Notation " x ≤ y " :=
+    (extract_ord x y) (at level 70) : SPropMonadicStructures_scope.
+  Notation " X ---> Y " :=
+    (X -> dfst Y) (at level 99) : SPropMonadicStructures_scope.
+
+End OrderEnrichedRelativeMonadExamplesNotation.
+
+Import OrderEnrichedRelativeMonadExamplesNotation.
 
 Section OrdProduct.
   Context {A B} (relA : relation A) (relB : relation B)

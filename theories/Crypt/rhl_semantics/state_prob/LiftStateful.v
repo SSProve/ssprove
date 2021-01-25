@@ -38,6 +38,9 @@ Section MonotonicBind.
   (ord_functor_comp F_choice_prod SubDistr.chDiscr).
   Context {W : ord_relativeMonad J}.
 
+  Import OrderEnrichedRelativeMonadExamplesNotation.
+  Open Scope SPropMonadicStructures_scope.
+
   Context {AA BB : prod_cat ord_choiceType ord_choiceType}.
   Context (w w' : dfst (W AA)).
   Context (Hw : w ≤ w').

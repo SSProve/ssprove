@@ -80,8 +80,8 @@ Section Option.
   Next Obligation. typeclasses eauto. Qed.
   Next Obligation. move=> ? ? ? [?|] //= ; intuition. Qed.
 
-  Definition morWpTot := mor TotAlg. 
-  
+  Definition morWpTot := mor TotAlg.
+
   Program Definition PartAlg : OrderedAlgebra Opt :=
     let alg := @mkMonadAlgebra Opt Prop
                                (fun c => match c with
@@ -92,7 +92,7 @@ Section Option.
   Next Obligation. typeclasses eauto. Qed.
   Next Obligation. move=> ? ? ? [?|] //= ; intuition. Qed.
 
-  Definition morWpPart := mor PartAlg. 
+  Definition morWpPart := mor PartAlg.
 
   Section commenting_strongestPostconditions.
 (*
@@ -153,7 +153,7 @@ Section Option.
   Proof.
     cbv ; destruct m as [?|]; split ; try intuition ; subst ; intuition.
   Qed.
-    
+
 
   Program Definition ranTotDiv A B (f : B -> Opt A)  w
     (H : morWpTot A (bind (None : Opt B) f) ≤ w) :
@@ -198,6 +198,8 @@ Section FreeMonadEffectObservation.
     cbv ; rewrite monad_law2 ; reflexivity.
   Qed.
 
+  Import SPropMonadicStructuresNotation.
+
   Inductive ObsFree A : W A -> Type :=
   | OFRet : forall a w, ret a ≤ w -> ObsFree w
   | OFOp : forall s w w',
@@ -205,7 +207,7 @@ Section FreeMonadEffectObservation.
       (forall x : P s, OpSpecWP A (w' x)) ->
       ObsFree w.
 
-  Definition observeθ A w (m:OpSpecWP A w) : ObsFree w. 
+  Definition observeθ A w (m:OpSpecWP A w) : ObsFree w.
   Proof.
     destruct m as [[|] H].
     exact (OFRet H).
@@ -214,7 +216,7 @@ Section FreeMonadEffectObservation.
 
   Context (OpPartialRan : forall s C (w : W C) w0,
               bind (OpContSpecs s) w0 ≤ w -> ran w (OpContSpecs s)).
-  Definition observeRan A w (m:OpSpecWP A w) : ObsFree w. 
+  Definition observeRan A w (m:OpSpecWP A w) : ObsFree w.
   Proof.
     destruct m as [[|] H] ; simpl in H.
     exact (OFRet H).
@@ -230,6 +232,9 @@ End FreeMonadEffectObservation.
 
 
 Section FreeDijkstraMonads.
+
+  Import SPropMonadicStructuresNotation.
+
   Context (S : Type) (P: S -> Type).
   Context (W : OrderedMonad).
   Context (OpSpecs : forall s, W (P s)).
@@ -243,7 +248,7 @@ Section FreeDijkstraMonads.
 
   Definition fd_dret A (a:A) : FreeD (ret a) :=
     @FDRet _ a (ret a) ltac:(reflexivity).
-  
+
   Definition fd_weaken A {w1 w2} (m : @FreeD A w1) (Hw : w1 ≤ w2)
     : FreeD w2.
   Proof.
@@ -362,7 +367,7 @@ End SumOfTheories.
 (*   Context (Cod : Dom -> Type) (inv : forall d:Dom, W (Cod d)). *)
 
 (*   Definition inv' d0 d := assume_p (Squash (prec d d0)) (inv d). *)
-  
+
 (*   Context (Hran_inv : forall d0 d C (w : W C) w0, *)
 (*               bind (inv' d0 d) w0 ≤ w -> *)
 (*               ran w (inv' d0 d)). *)
@@ -405,7 +410,7 @@ End SumOfTheories.
 (*     eval (exist _ (@opr _ _ _ (inl s) k) w) := *)
 (*       wkn (dm_bind (perform_s s) *)
 (*                     (fun ps => @eval _ (proj1_sig (Hran_s w) ps) d (exist _ (k ps) _))) _ ; *)
-        
+
 
 (*     eval (exist _ (@opr _ _ _ (inr d') k) w) := *)
 (*       let m (pre : Squash (prec d' d)) := @eval _ _ d' (f d') in *)
@@ -564,7 +569,7 @@ End SumOfTheories.
 (*             | eq_refl => _ *)
 (*             end eq_refl). *)
 (*     intros. apply sprop_app_irr. *)
-    
+
 (*     erewrite (H0 _ _ p' _ _ Hm). *)
 (*     reflexivity. *)
 (*   Qed. *)
@@ -579,7 +584,7 @@ End SumOfTheories.
 (*   Proof. reflexivity. Defined. *)
 
 (*   Import SPropAxioms. *)
-  
+
 (*   Program Definition Pure : Dijkstra W := *)
 (*     {| dm_tyop := Pure_car *)
 (*     ; dm_ret := Pure_ret *)

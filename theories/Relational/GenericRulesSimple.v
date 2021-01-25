@@ -74,6 +74,8 @@ Section RelationalProgramLogicFromRelativeMonadZero.
   Context (W : RelationalSpecMonad0)
           (θ : RelationalLaxEffectObservation0 M1 M2 W).
 
+  Import OrderEnrichedRelativeMonadExamplesNotation.
+
   Definition semantic_judgement A1 A2 c1 c2 w :=
     proj1_sig (θ ⟨A1,A2⟩) ⟨c1,c2⟩ ≤ w.
 
@@ -138,8 +140,11 @@ Open Scope GenericRulesSimple_scope.
 (* Tailored rules derived from the generic ones *)
 
 Section GoingPractical.
+
   Context (M1 M2 : Monad) (M12 := compPair M1 M2).
   Context (W : RelationalSpecMonad0) (θ : RelationalLaxEffectObservation0 M1 M2 W).
+
+  Import OrderEnrichedRelativeMonadExamplesNotation.
 
   Lemma gp_ret_rule {A B a b w} :
     proj1_sig (ord_relmon_unit W ⟨A , B⟩) ⟨a,b⟩ ≤ w ->

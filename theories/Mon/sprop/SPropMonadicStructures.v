@@ -108,8 +108,23 @@ Record OrderedMonad : Type :=
     }.
 
 Existing Instance omon_order.
-Notation "x ≤[ M ] y" := (@omon_rel M _ x y) (at level 70).
-Notation "x ≤ y" := (@omon_rel _ _ x y) (at level 70).
+
+Declare Scope SPropMonadicStructures_scope.
+Delimit Scope SPropMonadicStructures_scope with SMS.
+
+Module SPropMonadicStructuresNotation.
+
+  Notation "x ≤[ M ] y" :=
+    (@omon_rel M _ x y)
+    (at level 70) : SPropMonadicStructures_scope.
+  Notation "x ≤ y" :=
+    (@omon_rel _ _ x y)
+    (at level 70) : SPropMonadicStructures_scope.
+
+End SPropMonadicStructuresNotation.
+
+Import SPropMonadicStructuresNotation.
+Open Scope SPropMonadicStructures_scope.
 
 Section DiscreteMonad.
   Import SPropNotations.

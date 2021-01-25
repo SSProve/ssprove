@@ -181,6 +181,8 @@ Proof.
   rewrite Hxy /= in H. rewrite (ltrr 0) in H. discriminate.
 Qed.
 
+Import OrderEnrichedRelativeMonadExamplesNotation.
+
 Definition θ_morph : relativeLaxMonadMorphism
                                 (* C  = choiceType × choiceType *)
                                 (* D1 = OrdCat × OrdCat *)
