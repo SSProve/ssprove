@@ -128,12 +128,12 @@ Module GenericRulesSimpleNotation.
 
   Notation "θ ⊨ c1 ≈ c2 [{ w }]" :=
     (semantic_judgement _ _ _ θ _ _ c1 c2 w)
-    (at level 85) : GenericRulesSimpleNotation_scope.
+    (at level 85) : GenericRulesSimple_scope.
 
 End GenericRulesSimpleNotation.
 
 Import GenericRulesSimpleNotation.
-Open Scope GenericRulesSimpleNotation_scope.
+Open Scope GenericRulesSimple_scope.
 
 (* Tailored rules derived from the generic ones *)
 
