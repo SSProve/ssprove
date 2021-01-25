@@ -477,6 +477,8 @@ Module PrePost.
     Local Definition PPSpec_ran : A -> PPSpecMonad B :=
       fun (a:A) => ⟨nsnd w a s/\ nfst w', fun b => nsnd w a -> nsnd w' b⟩.
 
+    Import SPropMonadicStructuresNotation.
+
     Lemma PPSpec_ran_valid : bind w PPSpec_ran ≤[PPSpecMonad] w'.
     Proof.
       cbv ; split.

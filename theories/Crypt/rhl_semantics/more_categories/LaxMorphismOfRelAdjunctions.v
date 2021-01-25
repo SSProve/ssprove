@@ -1,6 +1,8 @@
 From Relational Require Import OrderEnrichedCategory.
 From Mon Require Import SPropBase.
+Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect boolp.
+Set Warnings "notation-overridden,ambiguous-paths".
 From Crypt Require Import Axioms OrderEnrichedRelativeAdjunctions LaxFunctorsAndTransf.
 
 Import SPropNotations.
@@ -28,7 +30,7 @@ Arguments lad_J {_}.
 Arguments lad_L {_}.
 Arguments lad_R {_}.
 Arguments lad_strucIso {_}.
-    
+
 
 Section LaxMorphismLeftRelativeAdjunctions.
   Context {I : ord_category}.
@@ -45,7 +47,7 @@ Section LaxMorphismLeftRelativeAdjunctions.
   Let phi2 := lad_strucIso adj2.
   Let M2 := relMon_fromLeftAdj J2 L2 R2 phi2.
 
-  
+
   Notation η := ord_relmon_unit.
 
   Record LaxMorphLeftAdj := mkLaxMorphLeftAdj {

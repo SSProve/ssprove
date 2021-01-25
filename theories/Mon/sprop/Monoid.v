@@ -27,7 +27,7 @@ End Monoid.
 Notation "x ⋅ y" := (monoid_mult x y) (at level 55).
 
 Section MonoidAction.
-  
+
   Record monoid_action (M : monoid) :=
     mkAction
       { monact_carrier :> Type
@@ -35,19 +35,21 @@ Section MonoidAction.
       ; monact_unit : forall x, monact_action (e M) x = x
       ; monact_mult : forall m1 m2 x, monact_action (m1 ⋅ m2) x = monact_action m1 (monact_action m2 x)
       }.
+
 End MonoidAction.
 
 Notation "m ⧕ x" := (monact_action m x) (at level 55).
 
 
 Section MonoidExamples.
+
   Program Definition endMonoid (X : Type) : monoid :=
     @mkMonoid (X -> X) id (fun f g x => f (g x)) _ _ _.
 
   Program Definition unitMonoid : monoid :=
     @mkMonoid unit tt (fun _ _ => tt) _ _ _.
   (* This does not solve the goal but the latter does ??? *)
-  Solve Obligations with move: m => [] //.
+  (* Solve Obligations with move: m => [] //. *)
   Solve Obligations with destruct m ; reflexivity.
 
   Program Definition oneMonoid : monoid := endMonoid False.
@@ -108,7 +110,7 @@ Section ActionExamples.
     @mkAction M unit (fun _ x => x) _ _.
 
   Program Definition endAction (X:Type) : monoid_action (endMonoid X) :=
-    @mkAction _ X (fun f x => f x) _ _. 
+    @mkAction _ X (fun f x => f x) _ _.
 
   Program Definition unitAction (X:Type) : monoid_action unitMonoid :=
    @mkAction _ X (fun _ x => x) _ _.

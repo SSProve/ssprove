@@ -1,4 +1,6 @@
+Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra boolp distr reals realsum.
+Set Warnings "notation-overridden,ambiguous-paths".
 From Mon Require Import SpecificationMonads SPropBase SPropMonadicStructures.
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 From Crypt Require Import ChoiceAsOrd SubDistr Couplings Axioms.
@@ -178,6 +180,8 @@ Proof.
     move: Hxy => /eqP Hxy //=.
   rewrite Hxy /= in H. rewrite (ltrr 0) in H. discriminate.
 Qed.
+
+Import OrderEnrichedRelativeMonadExamplesNotation.
 
 Definition θ_morph : relativeLaxMonadMorphism
                                 (* C  = choiceType × choiceType *)

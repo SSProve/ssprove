@@ -4,7 +4,9 @@ From Coq Require FunctionalExtensionality List.
 From Mon Require Export Base.
 From Coq Require Import Relation_Definitions Morphisms.
 From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads Monoid DijkstraMonadExamples.
+Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr.
+Set Warnings "notation-overridden,ambiguous-paths".
 From Relational Require Import Commutativity.
 
 Import GRing.Theory Num.Theory.
@@ -45,8 +47,8 @@ Section FinProb.
   Lemma I_le1 (x:I) : x∙1 <= 1.
   Proof. by move: (x∙2)=> /andP [_ ->]. Qed.
 
-  Hint Resolve I_ge0.
-  Hint Resolve I_le1.
+  Hint Resolve I_ge0 : core.
+  Hint Resolve I_le1 : core.
 
   Program Definition addI (x y : I) : I := ⦑(x∙1 + y∙1) / 2%:~R ⦒.
   Next Obligation.

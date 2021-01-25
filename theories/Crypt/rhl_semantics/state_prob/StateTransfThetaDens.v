@@ -1,6 +1,8 @@
-From Coq Require Import RelationClasses. 
+From Coq Require Import RelationClasses.
 From Mon Require Import SPropBase.
+Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect.
+Set Warnings "notation-overridden,ambiguous-paths".
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 From Crypt Require Import ChoiceAsOrd OrderEnrichedRelativeAdjunctions OrderEnrichedRelativeAdjunctionsExamples TransformingLaxMorph SubDistr Theta_dens LaxFunctorsAndTransf UniversalFreeMap FreeProbProg StateTransformingLaxMorph LaxComp.
 
@@ -20,13 +22,13 @@ Section GetDomainAndCodomain.
   Context {C D1 D2 : ord_category} {J1 : ord_functor C D1} {J12 : ord_functor D1 D2} {J2 : ord_functor C D2}
           {phi : natIso J2 (ord_functor_comp J1 J12)} (psi := ni_inv phi)
           {M1 : ord_relativeMonad J1} {M2: ord_relativeMonad J2}.
-  
+
 
   Definition rlmm_domain (smTheta :  relativeLaxMonadMorphism J12 phi M1 M2)
     : ord_relativeMonad J1
     := M1.
   Definition rlmm_codomain (smTheta :  relativeLaxMonadMorphism J12 phi M1 M2)
-    : ord_relativeMonad J2 
+    : ord_relativeMonad J2
     := M2.
 
 End GetDomainAndCodomain.
@@ -42,9 +44,9 @@ Section StT_unaryThetaDens.
   Context {S : choiceType}.
 
   (*we wish to transform this monad morphism*)
-  Let θdens_filled := 
+  Let θdens_filled :=
   @unary_theta_dens probE rel_choiceTypes chEmb prob_handler.
-  
+
   (*domain and codomain*)
   Let Frp := rlmm_domain θdens_filled.
   (* Eval hnf in rlmm_codomain θdens_filled. (*SDistr*) *)
@@ -114,7 +116,7 @@ Section StT_unaryThetaDens.
   Qed.
 
   Definition stT_thetaDens :=  rlmm_from_lmla stT_thetaDens_adj.
-  
+
 End StT_unaryThetaDens.
 
 
@@ -128,14 +130,14 @@ Section MakeTheDomainFree.
 
   Context {S : choiceType}.
 
-  Let unaryIntState_filled := 
+  Let unaryIntState_filled :=
   @unaryIntState probE rel_choiceTypes chEmb S.
 
   Let stT_thetaDens_filled :=
   @stT_thetaDens probE rel_choiceTypes chEmb prob_handler S.
 
-  
-  
+
+
   (*an auxiliary morphism to connect the dots*)
   Program Definition bridgg :
   relativeMonadMorphism (ord_functor_id _) (trivialChi)

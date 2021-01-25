@@ -1,5 +1,7 @@
 From Coq Require Import Relation_Definitions Morphisms.
+Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra distr reals realsum.
+Set Warnings "notation-overridden,ambiguous-paths".
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 From Crypt Require Import ChoiceAsOrd Axioms.
 

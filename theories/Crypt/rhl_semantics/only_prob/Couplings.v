@@ -1,7 +1,9 @@
 From Mon Require Import FiniteProbabilities SPropMonadicStructures SpecificationMonads MonadExamples SPropBase FiniteProbabilities.
 From Coq Require Import RelationClasses Morphisms.
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples Commutativity.
+Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum.
+Set Warnings "notation-overridden,ambiguous-paths".
 From Crypt Require Import Axioms ChoiceAsOrd only_prob.SubDistr.
 
 Import SPropNotations.

@@ -68,14 +68,18 @@ Set Polymorphic Inductive Cumulativity.
 
 
 Section RelationalProgramLogicFromRelativeMonadZero.
+
   Context (M1 M2 : Monad)
           (M12 := compPair M1 M2).
   Context (W : RelationalSpecMonad0)
           (θ : RelationalLaxEffectObservation0 M1 M2 W).
 
-  Definition semantic_judgement A1 A2 c1 c2 w := proj1_sig (θ ⟨A1,A2⟩) ⟨c1,c2⟩ ≤ w.
-  Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ c1 c2 w).
+  Import OrderEnrichedRelativeMonadExamplesNotation.
 
+  Definition semantic_judgement A1 A2 c1 c2 w :=
+    proj1_sig (θ ⟨A1,A2⟩) ⟨c1,c2⟩ ≤ w.
+
+  Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ c1 c2 w).
 
   Import SPropNotations.
   Lemma seq_rule {A1 A2 B1 B2}
@@ -119,13 +123,28 @@ Section RelationalProgramLogicFromRelativeMonadZero.
 
 End RelationalProgramLogicFromRelativeMonadZero.
 
-Notation "θ ⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ _ θ _ _ c1 c2 w) (at level 85).
+Declare Scope GenericRulesSimple_scope.
+Delimit Scope GenericRulesSimple_scope with GRS.
+
+Module GenericRulesSimpleNotation.
+
+  Notation "θ ⊨ c1 ≈ c2 [{ w }]" :=
+    (semantic_judgement _ _ _ θ _ _ c1 c2 w)
+    (at level 85) : GenericRulesSimple_scope.
+
+End GenericRulesSimpleNotation.
+
+Import GenericRulesSimpleNotation.
+Open Scope GenericRulesSimple_scope.
 
 (* Tailored rules derived from the generic ones *)
 
 Section GoingPractical.
+
   Context (M1 M2 : Monad) (M12 := compPair M1 M2).
   Context (W : RelationalSpecMonad0) (θ : RelationalLaxEffectObservation0 M1 M2 W).
+
+  Import OrderEnrichedRelativeMonadExamplesNotation.
 
   Lemma gp_ret_rule {A B a b w} :
     proj1_sig (ord_relmon_unit W ⟨A , B⟩) ⟨a,b⟩ ≤ w ->

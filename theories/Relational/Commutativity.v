@@ -3,9 +3,10 @@ From Coq Require FunctionalExtensionality.
 
 From Mon Require Export Base.
 From Coq Require Import Relation_Definitions Morphisms.
-From Mon.sprop Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads DijkstraMonadExamples.
-From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
-
+From Mon.sprop Require Import SPropBase SPropMonadicStructures
+  MonadExamples SpecificationMonads DijkstraMonadExamples.
+From Relational Require Import OrderEnrichedCategory
+  OrderEnrichedRelativeMonadExamples.
 
 Section Commutations.
   Context {M:Monad}.
@@ -143,7 +144,7 @@ Section ConverseCommute.
 
   Definition unitt : Type := unit.
 
-  Require Import Coq.Logic.FunctionalExtensionality.
+  Import FunctionalExtensionality.
 
   Lemma θret (A B : Type) (a : A) (b : B) : θapp A B ⟨ ret a, ret b ⟩ = ret ⟨ a, b ⟩.
 

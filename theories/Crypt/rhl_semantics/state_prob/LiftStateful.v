@@ -1,5 +1,7 @@
 From Coq Require Import Morphisms.
+Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect.
+Set Warnings "notation-overridden,ambiguous-paths".
 From Mon Require Import SPropBase.
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 From Crypt Require Import OrderEnrichedRelativeAdjunctions OrderEnrichedRelativeAdjunctionsExamples ChoiceAsOrd.
@@ -35,6 +37,9 @@ Section MonotonicBind.
   Let J :=
   (ord_functor_comp F_choice_prod SubDistr.chDiscr).
   Context {W : ord_relativeMonad J}.
+
+  Import OrderEnrichedRelativeMonadExamplesNotation.
+  Open Scope SPropMonadicStructures_scope.
 
   Context {AA BB : prod_cat ord_choiceType ord_choiceType}.
   Context (w w' : dfst (W AA)).
