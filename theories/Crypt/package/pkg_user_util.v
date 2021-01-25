@@ -4,7 +4,9 @@
 
 **)
 
+Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect ssrbool eqtype seq eqtype choice.
+Set Warnings "notation-overridden,ambiguous-paths".
 From extructures Require Import ord fset fmap.
 From Crypt Require Import Prelude pkg_core_definition pkg_composition
   pkg_notation RulesStateProb pkg_rhl pkg_tactics pkg_chUniverse.

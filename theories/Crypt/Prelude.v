@@ -2,7 +2,9 @@
 (* Partly stolen from MetaCoq *)
 
 From Coq Require Import Utf8 Lia.
+Set Warnings "-notation-overridden".
 From mathcomp Require Import ssreflect eqtype ssrbool ssrnat.
+Set Warnings "notation-overridden".
 From extructures Require Import ord.
 From Equations Require Import Equations.
 

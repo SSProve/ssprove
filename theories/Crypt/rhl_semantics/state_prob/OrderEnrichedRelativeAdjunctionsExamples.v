@@ -1,5 +1,7 @@
 From Coq Require Import Morphisms.
+Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_algebra all_ssreflect boolp.
+Set Warnings "notation-overridden,ambiguous-paths".
 From Mon Require Import SPropBase Base.
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 From Crypt Require Import OrderEnrichedRelativeAdjunctions FreeProbProg ChoiceAsOrd Couplings Theta_exCP SubDistr.

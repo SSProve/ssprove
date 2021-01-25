@@ -1,7 +1,9 @@
 From Coq Require Import Morphisms.
 From Relational Require Import OrderEnrichedCategory.
 From Mon Require Import SPropBase.
+Set Warnings "-notation-overridden".
 From mathcomp Require Import all_ssreflect boolp.
+Set Warnings "notation-overridden".
 From Crypt Require Import Axioms.
 
 Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
@@ -110,7 +112,7 @@ Section LaxNaturalTransformationComp.
 
   Program Definition lnatTrans_comp : lnatTrans F H :=
     mkLnatTrans (fun A => psi A ∙ phi A) _.
-  Next Obligation. 
+  Next Obligation.
     move=> A B f.
     rewrite -ord_cat_law3. transitivity ( psi B ∙ ((lofmap G f) ∙ phi A) ).
     eapply Comp_proper. reflexivity.
@@ -119,8 +121,8 @@ Section LaxNaturalTransformationComp.
     eapply Comp_proper. eapply lnt_lnatural. reflexivity.
     rewrite -ord_cat_law3. reflexivity.
   Qed.
- 
-End LaxNaturalTransformationComp. 
+
+End LaxNaturalTransformationComp.
 
 
 (*
@@ -137,7 +139,7 @@ Section LaxFunctorIso.
       ; lni_rightinv : forall {A}, (lnt_map _ _ lni_trans) ∙ (lnt_map _ _ lni_invTrans) = Id (G A)
       ; lni_leftinv : forall {A}, (lnt_map _ _ lni_invTrans) ∙ (lnt_map _ _ lni_trans) = Id (F A)
       }.
- 
+
 End LaxFunctorIso.
 
 Arguments mkLnatIso {_ _ _ _}.
@@ -292,10 +294,10 @@ Section lPastingTwoLaxSquares.
 End lPastingTwoLaxSquares.
 
 
-Section FromStrict2LaxTransf.    
+Section FromStrict2LaxTransf.
   Context {C D : ord_category}.
   Context {F G : ord_functor C D}.
-  Context (phi : natIso F G).     
+  Context (phi : natIso F G).
 
   Let lF := strict2laxFunc F. Let lG := strict2laxFunc G.
   Program Definition strict2laxTransf : lnatTrans lF lG := mkLnatTrans _ _.

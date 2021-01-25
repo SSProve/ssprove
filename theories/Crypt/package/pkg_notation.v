@@ -94,8 +94,10 @@
 
 
 From Coq Require Import Utf8.
+Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice seq.
+Set Warnings "notation-overridden,ambiguous-paths".
 From extructures Require Import ord fset fmap.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd RulesStateProb
   pkg_chUniverse pkg_core_definition pkg_composition.

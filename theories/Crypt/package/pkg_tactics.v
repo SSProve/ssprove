@@ -43,7 +43,9 @@
 
 **)
 
+Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import ssreflect ssrbool eqtype seq eqtype choice.
+Set Warnings "notation-overridden,ambiguous-paths".
 From extructures Require Import ord fset.
 From Crypt Require Import Prelude pkg_core_definition pkg_composition
   pkg_notation RulesStateProb.

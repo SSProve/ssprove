@@ -1,6 +1,8 @@
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 From Mon Require Import SPropBase.
+Set Warnings "-notation-overridden".
 From mathcomp Require Import all_ssreflect.
+Set Warnings "notation-overridden".
 From Crypt Require Import FreeProbProg ChoiceAsOrd.
 
 Import SPropNotations.
