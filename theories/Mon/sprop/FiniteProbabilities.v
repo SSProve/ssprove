@@ -47,8 +47,8 @@ Section FinProb.
   Lemma I_le1 (x:I) : x∙1 <= 1.
   Proof. by move: (x∙2)=> /andP [_ ->]. Qed.
 
-  Hint Resolve I_ge0.
-  Hint Resolve I_le1.
+  Hint Resolve I_ge0 : core.
+  Hint Resolve I_le1 : core.
 
   Program Definition addI (x y : I) : I := ⦑(x∙1 + y∙1) / 2%:~R ⦒.
   Next Obligation.
