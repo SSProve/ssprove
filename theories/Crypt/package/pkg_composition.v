@@ -841,8 +841,12 @@ Module PackageComposition (π : RulesParam).
           * by move=> ->.
           * rewrite in_fsetU. apply Bool.orb_true_intro. auto.
       - unfold parable in H.
-        admit.
-    Admitted.
+        eapply fdisjoint_trans. 1:{ apply trim_domm_subset. }
+        rewrite fdisjointC.
+        eapply fdisjoint_trans. 1: { apply trim_domm_subset. }
+        rewrite fdisjointC.
+        assumption.
+    Qed.
 
     (** To circumvent the very annoying lemmata that conclude on equality
         of coerced arguments when it is the same as concluding global equality!
