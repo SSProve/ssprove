@@ -94,7 +94,7 @@ Module NotationExamples (π : RulesParam).
         putr (chNat; 0) _ 0 (ret Datatypes.tt)
       } ;
       def #[1] (x : 'nat) : 'nat {
-        getr (chNat; 0) _ (λ n : option nat,
+        getr (chNat; 0) _ (λ n : nat,
           opr (0, (chNat, chNat)) _ n (λ m,
             putr (chNat; 0) _ m (ret m)
           )
@@ -122,10 +122,8 @@ Module NotationExamples (π : RulesParam).
       } ;
       def #[1] (x : 'nat) : 'nat {
         n ← get ('nat; 0) ;;
-        (* Here n : option nat, but it is automatically casted to nat? *)
         m ← op [ #[0] : 'nat → 'nat ] n ;;
-        n ← get ('nat; 0) or 4 ;;
-        (* Here n : nat, as it has a default value 4 *)
+        n ← get ('nat; 0) ;;
         m ← op [ #[0] : 'nat → 'nat ] n ;;
         put ('nat; 0) := m ;;
         ret m

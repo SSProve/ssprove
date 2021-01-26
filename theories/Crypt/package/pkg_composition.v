@@ -1453,7 +1453,7 @@ Module PackageComposition (π : RulesParam).
   Qed.
 
   Lemma valid_getr_in :
-    ∀ {A L I} {l} {k : option (Value l.π1) → raw_program A},
+    ∀ {A L I} {l} {k : Value l.π1 → raw_program A},
       valid_program L I (_getr l k) →
       l \in L.
   Proof.
@@ -1462,7 +1462,7 @@ Module PackageComposition (π : RulesParam).
   Qed.
 
   Lemma valid_getr_k :
-    ∀ {A L I} {l} {k : option (Value l.π1) → raw_program A},
+    ∀ {A L I} {l} {k : Value l.π1 → raw_program A},
       valid_program L I (_getr l k) →
       ∀ v, valid_program L I (k v).
   Proof.
@@ -1472,7 +1472,7 @@ Module PackageComposition (π : RulesParam).
 
   Lemma fold_getr :
     ∀ (A : choiceType) L I
-      (l : Location) (k : option (Value l.π1) → raw_program A)
+      (l : Location) (k : Value l.π1 → raw_program A)
       (h : valid_program L I _),
       exist _ (_getr l k) h =
       getr l (valid_getr_in h) (λ x, exist _ (k x) (valid_getr_k h x)).

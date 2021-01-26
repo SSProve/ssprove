@@ -97,7 +97,7 @@ Module CorePackageTheory (π : RulesParam).
     Inductive raw_program (A : choiceType) : Type :=
     | _ret (x : A)
     | _opr (o : opsig) (x : src o) (k : tgt o → raw_program A)
-    | _getr (l : Location) (k : option (Value l.π1) → raw_program A)
+    | _getr (l : Location) (k : Value l.π1 → raw_program A)
     | _putr (l : Location) (v : Value l.π1) (k : raw_program A)
     | _sampler (op : Op) (k : Arit op → raw_program A).
 
@@ -150,7 +150,7 @@ Module CorePackageTheory (π : RulesParam).
       exact ((k v) ∙2).
     Defined.
 
-    Definition getr [A : choiceType] l (h : l \in Loc) (k : option (Value l.π1) → program A) :
+    Definition getr [A : choiceType] l (h : l \in Loc) (k : Value l.π1 → program A) :
       program A.
     Proof.
       pose k' := λ x, (k x) ∙1.
@@ -226,8 +226,8 @@ Module CorePackageTheory (π : RulesParam).
         (∀ (o : opsig) (h : o \in import) (x : src o) (k : tgt o → program A),
           (∀ s : tgt o, P (k s)) → P (opr o h x k)
         ) →
-        (∀ (l : Location) (h : l \in Loc) (k : option (Value l.π1) → program A),
-          (∀ s : option (Value l.π1), P (k s)) → P (getr l h k)
+        (∀ (l : Location) (h : l \in Loc) (k : Value l.π1 → program A),
+          (∀ s : Value l.π1, P (k s)) → P (getr l h k)
         ) →
         (∀ (l : Location) (h : l \in Loc) (v : Value l.π1) (k : program A),
           P k → P (putr l h v k)

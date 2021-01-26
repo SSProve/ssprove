@@ -125,7 +125,7 @@ Module PackageTactics (π : RulesParam).
   (* TODO: Can we use the trivial relation instead of the first eq? *)
   Instance getr_morphism L I (A : choiceType) l :
     Proper
-      (eq ==> pointwise_relation (option (Value l.π1)) eq ==> eq)
+      (eq ==> pointwise_relation (Value l.π1) eq ==> eq)
       (@getr L I A l).
   Proof.
     simpl_relation.
