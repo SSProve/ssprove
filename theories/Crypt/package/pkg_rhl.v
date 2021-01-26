@@ -2225,17 +2225,28 @@ Proof. Admitted.
 (*          ⊨ ⦃ pre ⦄ repr (locs := L ) (x <$ o ;; c1) ≈ repr (locs := L) (x <$ o ;; c2) ⦃ post ⦄. *)
 (* Proof. Admitted.  *)
 
-(*CA: probably not sound *)
-(* Theorem rdead_sampler_eliminationL { A : ord_choiceType } { L : {fset Location} } { D } *)
-(*         (c1 c2 : program L Game_import A) *)
-(*         (pre : heap * heap -> Prop) (post : (A * heap) -> (A * heap) -> Prop) *)
-(*         (H : r⊨ ⦃ pre ⦄ c1 ≈ c2  ⦃ post ⦄) : *)
-(*   r⊨ ⦃ pre ⦄ c1 ≈ (x <$ D ;; c2)  ⦃ post ⦄. *)
-(* Proof. *)
-(*   eapply rrewrite_eqDistrR. *)
-(*   - exact: H. *)
-(*   - admit. *)
-(* Admitted. *)
+Theorem rdead_sampler_elimL { A : ord_choiceType } { L : {fset Location} } { D }
+        (c1 c2 : program L Game_import A)
+        (pre : heap * heap -> Prop) (post : (A * heap) -> (A * heap) -> Prop)
+        (H : r⊨ ⦃ pre ⦄ c1 ≈ c2  ⦃ post ⦄) :
+  r⊨ ⦃ pre ⦄ bind (x <$ D ;; ret x) (fun x => c1) ≈ c2  ⦃ post ⦄.
+Proof.
+  eapply rrewrite_eqDistrL.
+  - exact: H.
+  - admit. 
+Admitted.
+
+
+Theorem rdead_sampler_elimR { A : ord_choiceType } { L : {fset Location} } { D }
+        (c1 c2 : program L Game_import A)
+        (pre : heap * heap -> Prop) (post : (A * heap) -> (A * heap) -> Prop)
+        (H : r⊨ ⦃ pre ⦄ c1 ≈ c2  ⦃ post ⦄) :
+  r⊨ ⦃ pre ⦄ c1 ≈  bind (x <$ D ;; ret x) (fun x => c2) ⦃ post ⦄.
+Proof.
+  eapply rrewrite_eqDistrR.
+  - exact: H.
+  - admit.
+Admitted.
 
 
 End Games.
