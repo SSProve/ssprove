@@ -465,7 +465,7 @@ Module PackageComposition (π : RulesParam).
       rewrite e1. cbn. reflexivity.
     Qed.
 
-    Lemma trim_invol :
+    Lemma trim_idemp :
       ∀ E p,
         trim E (trim E p) = trim E p.
     Proof.
@@ -571,7 +571,7 @@ Module PackageComposition (π : RulesParam).
       intros L1 L2 E M1 M2 p1 p2 p3 h1 h2.
       rewrite (raw_link_trim_commut M1).
       rewrite (raw_link_trim_commut _ _ p2).
-      rewrite trim_invol.
+      rewrite trim_idemp.
       erewrite raw_link_trim_right. 2: eauto.
       unfold raw_link. unfold trim.
       intro n. repeat rewrite ?filtermE ?mapmE.
@@ -1109,8 +1109,8 @@ Module PackageComposition (π : RulesParam).
       - cbn. rewrite !fsetUA. f_equal. rewrite fsetUC. rewrite fsetUA. f_equal.
         apply fsetUC.
       - simpl. unfold raw_par.
-        rewrite <- raw_link_trim_commut. rewrite trim_invol.
-        rewrite <- raw_link_trim_commut. rewrite trim_invol.
+        rewrite <- raw_link_trim_commut. rewrite trim_idemp.
+        rewrite <- raw_link_trim_commut. rewrite trim_idemp.
         rewrite trim_raw_par. unfold raw_par.
         rewrite raw_link_unionm.
         erewrite <- import_raw_par_left. 2-3: eauto.
