@@ -2244,7 +2244,7 @@ Theorem rdead_sampler_elimR { A : ord_choiceType } { L : {fset Location} } { D }
   r⊨ ⦃ pre ⦄ c1 ≈  bind (x <$ D ;; ret x) (fun x => c2) ⦃ post ⦄.
 Proof.
   eapply rrewrite_eqDistrR.
-  - exact: H.
+  - exact: H. 
   - admit.
 Admitted.
 
