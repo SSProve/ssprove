@@ -442,16 +442,20 @@ Module CorePackageTheory (π : RulesParam).
         valid_program L2 import v.
     Proof.
       intros A L1 L2 v h p.
-      cbn. induction v in p |- *.
-      all: try solve [ cbn ; cbn in p ; intuition auto ].
-      - cbn. cbn in p. intuition auto. eapply injectSubset. all: eauto.
-      - cbn. cbn in p. intuition auto. eapply injectSubset. all: eauto.
+      induction p.
+      all: try solve [ constructor ; eauto ].
+      - constructor. 2: eauto.
+        eapply injectSubset. all: eauto.
+      - constructor. 2: eauto.
+        eapply injectSubset. all: eauto.
     Qed.
+
+    Open Scope package_scope.
 
     Definition injectLocations {A : choiceType} {loc1 loc2 : {fset Location}}
       (h : fsubset loc1 loc2) (v : programI loc1 A) : programI loc2 A.
     Proof.
-      exists v ∙1.
+      refine {program v.(prog)}.
       destruct v as [v p].
       cbn. eapply valid_injectLocations. all: eauto.
     Defined.
@@ -475,7 +479,7 @@ Module CorePackageTheory (π : RulesParam).
         injectLocations (fsubset_trans h1 h2) v.
     Proof.
       intros A locs1 locs2 locs3 h1 h2 v.
-      destruct v as [v h]. cbn.
+      destruct v as [v h].
       apply program_ext. cbn. reflexivity.
     Qed.
 
@@ -507,15 +511,18 @@ Module CorePackageTheory (π : RulesParam).
         valid_program Locs I2 v.
     Proof.
       intros A I1 I2 v h p.
-      induction v in p |- *.
-      all: try solve [ cbn ; cbn in p ; intuition auto ].
-      cbn. cbn in p. intuition auto. eapply in_fsubset. all: eauto.
+      induction p.
+      all: try solve [ constructor ; auto ].
+      constructor. 2: eauto.
+      eapply in_fsubset. all: eauto.
     Qed.
+
+    Open Scope package_scope.
 
     Definition injectMap {A : choiceType} {I1 I2 : Interface}
       (h : fsubset I1 I2) (v : programL I1 A) : programL I2 A.
     Proof.
-      exists v ∙1.
+      refine {program v.(prog) }.
       destruct v as [v p]. cbn.
       eapply valid_injectMap. all: eauto.
     Defined.
@@ -548,7 +555,8 @@ Module CorePackageTheory (π : RulesParam).
 
   End commuteMapLocations.
 
-  Section commuteBindLocations.
+  (* TODO NEEDED? *)
+  (* Section commuteBindLocations.
 
     Context {locs1 locs2 : {fset Location}}.
     Context {I : Interface}.
@@ -563,7 +571,7 @@ Module CorePackageTheory (π : RulesParam).
       apply program_ext. cbn. reflexivity.
     Qed.
 
-  End commuteBindLocations.
+  End commuteBindLocations. *)
 
   Definition typed_raw_function :=
     ∑ (S T : chUniverse), S → raw_program T.
