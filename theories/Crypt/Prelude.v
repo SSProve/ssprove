@@ -169,3 +169,11 @@ Ltac unfold_positives :=
     repeat change (pos {| pos := n ; cond_pos := h |}) with n in * ;
     repeat change (positive_to_nat {| pos := n ; cond_pos := h |}) with n in *
   end.
+
+Instance PositiveEqDec n : EqDec (Positive n).
+Proof.
+  intros x y.
+  left. apply eq_irrelevance.
+Qed.
+
+Derive NoConfusion NoConfusionHom EqDec for positive.
