@@ -75,8 +75,9 @@ Module CorePackageTheory (π : RulesParam).
   Section Translation.
 
     Context (probE : Type → Type).
-    Context (rel_choiceTypes : Type) (*the "small" type of relevant choiceTypes*)
-            (chEmb : rel_choiceTypes → choiceType).
+    (* The "small" type of relevant choiceTypes *)
+    Context (rel_choiceTypes : Type).
+    Context (chEmb : rel_choiceTypes → choiceType).
 
     Definition Prob_ops_collection :=
       ∑ rchT : rel_choiceTypes, probE (chEmb rchT).
@@ -95,37 +96,114 @@ Module CorePackageTheory (π : RulesParam).
     Context (import : Interface).
 
     Inductive raw_program (A : choiceType) : Type :=
-    | _ret (x : A)
-    | _opr (o : opsig) (x : src o) (k : tgt o → raw_program A)
-    | _getr (l : Location) (k : Value l.π1 → raw_program A)
-    | _putr (l : Location) (v : Value l.π1) (k : raw_program A)
-    | _sampler (op : Op) (k : Arit op → raw_program A).
+    | ret (x : A)
+    | opr (o : opsig) (x : src o) (k : tgt o → raw_program A)
+    | getr (l : Location) (k : Value l.π1 → raw_program A)
+    | putr (l : Location) (v : Value l.π1) (k : raw_program A)
+    | sampler (op : Op) (k : Arit op → raw_program A).
 
-    Arguments _ret [A] _.
-    Arguments _opr [A] _ _.
-    Arguments _getr [A] _.
-    Arguments _putr [A] _.
-    Arguments _sampler [A] _ _.
+    Arguments ret [A] _.
+    Arguments opr [A] _ _.
+    Arguments getr [A] _.
+    Arguments putr [A] _.
+    Arguments sampler [A] _ _.
 
-    (* TODO Investigate if we can have rules rather than such a function.
-      I see no reason why not. Would we gain something from it?
-      Maybe we would then have type checker (or the like).
-    *)
-    Fixpoint valid_program {A} (v : raw_program A) :=
-      match v with
-      | _ret x => True
-      | _opr o x k => o \in import ∧ ∀ v, valid_program (k v)
-      | _getr l k => l \in Loc ∧ ∀ v, valid_program (k v)
-      | _putr l v k => l \in Loc ∧ valid_program k
-      | _sampler op k => ∀ v, valid_program (k v)
-      end.
+    Inductive valid_program {A} : raw_program A → Prop :=
+    | valid_ret :
+        ∀ x,
+          valid_program (ret x)
 
-    Definition program A :=
-      { v : raw_program A | valid_program v }.
+    | valid_opr :
+        ∀ o x k,
+          o \in import →
+          (∀ v, valid_program (k v)) →
+          valid_program (opr o x k)
+
+    | valid_getr :
+        ∀ l k,
+          l \in Loc →
+          (∀ v, valid_program (k v)) →
+          valid_program (getr l k)
+
+    | valid_putr :
+        ∀ l v k,
+          l \in Loc →
+          valid_program k →
+          valid_program (putr l v k)
+
+    | valid_sampler :
+        ∀ op k,
+          (∀ v, valid_program (k v)) →
+          valid_program (sampler op k)
+    .
+
+    Class ValidProgram {A} (p : raw_program A) :=
+      is_valid_program : valid_program p.
+
+    Instance ValidProgram_ret (A : choiceType) (x : A) : ValidProgram (ret x).
+    Proof.
+      apply valid_ret.
+    Qed.
+
+    Lemma valid_from_class :
+      ∀ A (p : raw_program A),
+        ValidProgram p →
+        valid_program p.
+    Proof.
+      intros A p h. auto.
+    Defined.
+
+    Hint Extern 1 (ValidProgram (opr ?o ?x ?k)) =>
+      apply valid_opr ; [
+        eauto
+      | intro ; apply valid_from_class
+      ] : typeclass_instances.
+
+    Hint Extern 1 (ValidProgram (getr ?o ?x ?k)) =>
+      apply valid_getr ; [
+        eauto
+      | intro ; apply valid_from_class
+      ] : typeclass_instances.
+
+    Hint Extern 1 (ValidProgram (putr ?o ?x ?k)) =>
+      apply valid_putr ; [
+        eauto
+      | apply valid_from_class
+      ] : typeclass_instances.
+
+    Hint Extern 1 (ValidProgram (sampler ?op ?k)) =>
+      apply valid_sampler ;
+      intro ; apply valid_from_class
+      : typeclass_instances.
+
+    Record program A := mkprog {
+      prog : raw_program A ;
+      prog_valid : ValidProgram prog
+    }.
+
+    Arguments mkprog {_} _.
+    Arguments prog {_} _.
+    Arguments prog_valid {_} _.
+
+    Notation "{ 'program' p }" :=
+      (mkprog p _)
+      (format "{ program  p  }") : package_scope.
+
+    (* Open Scope package_scope.
+
+    Definition foo :=
+      {program ret 0 }.
+
+    Obligation Tactic := idtac.
+
+    Definition bar o (h : o \in import) x op :=
+      {program
+        sampler op (λ z, opr o x (λ y, ret y))
+      }. *)
 
     Lemma program_ext :
       ∀ A (u v : program A),
-        u ∙1 = v ∙1 →
+        u.(prog) = v.(prog) →
         u = v.
     Proof.
       intros A u v h.
@@ -134,93 +212,39 @@ Module CorePackageTheory (π : RulesParam).
       f_equal. apply proof_irrelevance.
     Qed.
 
-    Definition ret [A : choiceType] (x : A) : program A.
-    Proof.
-      exists (_ret x).
-      cbn. auto.
-    Defined.
-
-    Definition opr [A : choiceType] (o : opsig) (h : o \in import)
-      (x : src o) (k : tgt o → program A) : program A.
-    Proof.
-      pose k' := λ x, (k x) ∙1.
-      exists (_opr o x k').
-      cbn. intuition auto.
-      subst k'. cbn.
-      exact ((k v) ∙2).
-    Defined.
-
-    Definition getr [A : choiceType] l (h : l \in Loc) (k : Value l.π1 → program A) :
-      program A.
-    Proof.
-      pose k' := λ x, (k x) ∙1.
-      exists (_getr l k').
-      subst k'. cbn. intuition auto.
-      exact ((k v) ∙2).
-    Defined.
-
-    Definition putr [A : choiceType] l (h : l \in Loc) (v : Value l.π1)
-      (k : program A) : program A.
-    Proof.
-      exists (_putr l v (k ∙1)).
-      cbn. intuition auto.
-      exact (k ∙2).
-    Defined.
-
-    Definition sampler [A : choiceType] (op : Op) (k : Arit op → program A) :
-      program A.
-    Proof.
-      pose k' := λ x, (k x) ∙1.
-      exists (_sampler op k').
-      cbn. subst k'.
-      intro. cbn.
-      exact ((k v) ∙2).
-    Defined.
-
-    Fixpoint bind_ {A B : choiceType}
-      (c : raw_program A) (k : TypeCat ⦅ choice_incl A ; raw_program B ⦆ ) :
+    Fixpoint bind {A B} (c : raw_program A) (k : A → raw_program B) :
       raw_program B :=
       match c with
-      | _ret a => k a
-      | _opr o x k'  => _opr o x (λ p, bind_ (k' p) k)
-      | _getr l k' => _getr l (λ v, bind_ (k' v) k)
-      | _putr l v k' => _putr l v (bind_ k' k)
-      | _sampler op k' => _sampler op (λ a, bind_ (k' a) k)
+      | ret a => k a
+      | opr o x k'  => opr o x (λ p, bind (k' p) k)
+      | getr l k' => getr l (λ v, bind (k' v) k)
+      | putr l v k' => putr l v (bind k' k)
+      | sampler op k' => sampler op (λ a, bind (k' a) k)
       end.
 
     Lemma bind_valid :
       ∀ A B c k,
         valid_program c →
         (∀ x, valid_program (k x)) →
-        valid_program (@bind_ A B c k).
+        valid_program (@bind A B c k).
     Proof.
       intros A B c k hc hk.
-      induction c in hc |- *.
-      all: solve [ cbn ; cbn in hc ; intuition auto ].
+      induction hc. all: simpl.
+      all: solve [ try constructor ; eauto ].
     Qed.
-
-    Definition bind {A B : choiceType} (c : program A)
-      (k : TypeCat ⦅ choice_incl A ; program B ⦆ ) :
-      program B.
-    Proof.
-      exists (bind_ (c ∙1) (λ x, (k x) ∙1)).
-      destruct c as [c h]. cbn.
-      apply bind_valid.
-      - auto.
-      - intro x. exact ((k x) ∙2).
-    Defined.
 
     Lemma prove_program :
       ∀ {A} (P : program A → Type) p q,
         P p →
-        p ∙1 = q ∙1 →
+        p.(prog) = q.(prog) →
         P q.
     Proof.
       intros A P p q h e.
       apply program_ext in e. subst. auto.
     Defined.
 
-    Lemma program_rect :
+    (* TODO: Do we need it? *)
+    (* Lemma program_rect :
       ∀ (A : choiceType) (P : program A → Type),
         (∀ x : A, P (ret x)) →
         (∀ (o : opsig) (h : o \in import) (x : src o) (k : tgt o → program A),
@@ -284,7 +308,7 @@ Module CorePackageTheory (π : RulesParam).
             - auto.
           }
         + reflexivity.
-    Defined.
+    Defined. *)
 
     Import SPropAxioms. Import FunctionalExtensionality.
 
