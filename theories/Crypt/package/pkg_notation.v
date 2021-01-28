@@ -196,7 +196,7 @@ Module PkgNotation (π : RulesParam).
       : package_scope.
 
     Definition mkdef {L I} (A B : chUniverse) (f : A → program L I B)
-      : pointed_vprogram L I :=
+      : typed_function L I :=
       (A ; B ; f).
 
     Notation " 'def' #[ f ] ( x : A ) : B { e }" :=

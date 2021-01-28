@@ -392,7 +392,7 @@ Module PackageRHL (π : RulesParam).
         { unfold lookup_op in Hf.
           destruct (p1 id) eqn:Hp1id.
           2: { inversion Hf. }
-          destruct p as [S' [T' f']].
+          destruct t as [S' [T' f']].
           destruct chUniverse_eqP.
           2:{ noconf ef. congruence. }
           destruct chUniverse_eqP.
@@ -1156,7 +1156,7 @@ Module PackageRHL (π : RulesParam).
     Qed.
 
     Equations? safe_list_lookup
-      {L I id S T} (l : seq (nat * pointed_vprogram L I)) (h : (id, (S, T)) \in export_interface (mkfmap l)) :
+      {L I id S T} (l : seq (nat * typed_function L I)) (h : (id, (S, T)) \in export_interface (mkfmap l)) :
       S → program L I T :=
       safe_list_lookup p h with (inspect (getm_def p id)) := {
       | @exist (Some (S' ; T'; f)) e := cast_vfun _ _ f ;
@@ -1228,7 +1228,7 @@ Module PackageRHL (π : RulesParam).
     (* (Safe) lookup (by id) in open packages *)
     Equations? olookup_id {L I E} (p : opackage L I E)
       {id : ident} (h : id \in pdom E) :
-      pointed_vprogram L I :=
+      typed_function L I :=
       olookup_id p h with inspect (p.π1 id) := {
       | @exist (Some (So ; To ; f)) e := (So ; To ; λ x, ⦑ f x ⦒) ;
       | @exist None e := False_rect _ _
@@ -1353,8 +1353,8 @@ Module PackageRHL (π : RulesParam).
     Qed.
 
     Equations? safe_getm_def
-      {L I id} (l : seq (nat * pointed_vprogram L I)) (h : id \in pdom (export_interface (mkfmap l))) :
-      pointed_vprogram L I :=
+      {L I id} (l : seq (nat * typed_function L I)) (h : id \in pdom (export_interface (mkfmap l))) :
+      typed_function L I :=
       safe_getm_def p h with (inspect (getm_def p id)) := {
       | @exist (Some (S' ; T' ; f)) e := (S' ; T' ; f) ;
       | @exist None e := False_rect _ _

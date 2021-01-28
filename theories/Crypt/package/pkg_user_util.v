@@ -41,15 +41,15 @@ Module PackageUserUtil (π : RulesParam).
   Qed.
 
   Definition vprogram_link {L₁ L₂ I E}
-    (f : pointed_vprogram L₁ E) (p : opackage L₂ I E) :
-    pointed_vprogram (L₁ :|: L₂) I :=
+    (f : typed_function L₁ E) (p : opackage L₂ I E) :
+    typed_function (L₁ :|: L₂) I :=
     let '(S' ; T' ; g) := f in
     (S' ; T' ; λ x, program_link' (g x)p).
 
   Definition seq_link {L₁ L₂ I E}
-    (l : seq (nat * pointed_vprogram L₁ E))
+    (l : seq (nat * typed_function L₁ E))
     (p : opackage L₂ I E) :
-    seq (nat * pointed_vprogram (L₁ :|: L₂) I) :=
+    seq (nat * typed_function (L₁ :|: L₂) I) :=
     [seq let '(i, f) := d in (i, vprogram_link f p) | d <- l].
 
   (* TODO MOVE *)
@@ -83,7 +83,7 @@ Module PackageUserUtil (π : RulesParam).
 
   Lemma olink_package_def :
     ∀ L₁ L₂ I E
-      (l : seq (nat_ordType * pointed_vprogram L₁ E)) (p : opackage L₂ I E),
+      (l : seq (nat_ordType * typed_function L₁ E)) (p : opackage L₂ I E),
       olink' (L1 := L₁) (mkpack (mkfmap l)) p =
       opackage_transport erefl (export_interface_link _ _)
         (mkpack (mkfmap (seq_link l p))).

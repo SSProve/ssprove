@@ -106,7 +106,7 @@ Module PackageComposition (π : RulesParam).
 
     Lemma lookup_op_map :
       ∀ p o f,
-        lookup_op (@mapm _ pointed_program _ (λ '(So ; To ; g), (So ; To ; f So To g)) p) o =
+        lookup_op (@mapm _ typed_raw_function _ (λ '(So ; To ; g), (So ; To ; f So To g)) p) o =
         omap (f (chsrc o) (chtgt o)) (lookup_op p o).
     Proof.
       intros p [n [So To]] f. unfold lookup_op.
@@ -159,7 +159,7 @@ Module PackageComposition (π : RulesParam).
     Defined.
 
     Definition raw_link (p1 p2 : raw_package) : raw_package :=
-      @mapm _ pointed_program _
+      @mapm _ typed_raw_function _
         (λ '(So ; To ; f), (So ; To ; λ x, raw_program_link (f x) p2)) p1.
 
     (* TODO Maybe trim on the left? *)
@@ -1126,17 +1126,17 @@ Module PackageComposition (π : RulesParam).
     The same way we have constructors for program, we provide constructors
     for packages that are correct by construction.
   *)
-  Definition pointed_vprogram L I :=
+  Definition typed_function L I :=
     ∑ (S T : chUniverse), S → program L I T.
 
-  Definition export_interface {L I} (p : {fmap ident -> pointed_vprogram L I})
+  Definition export_interface {L I} (p : {fmap ident -> typed_function L I})
     : Interface :=
     fset (mapm (λ '(So ; To ; f), (So, To)) p).
 
-  Definition mkpack {L I} (p : {fmap ident -> pointed_vprogram L I}) :
+  Definition mkpack {L I} (p : {fmap ident -> typed_function L I}) :
     opackage L I (export_interface p).
   Proof.
-    exists (@mapm _ (pointed_vprogram L I) pointed_program
+    exists (@mapm _ (typed_function L I) typed_raw_function
       (λ '(So ; To ; f), (So ; To ; λ x, (f x) ∙1)) p).
     intros [n [So To]] ho.
     rewrite mapmE. unfold export_interface in ho.
@@ -1234,10 +1234,10 @@ Module PackageComposition (π : RulesParam).
     (f : ∀ (o : opsig), o \in E → src o → program L I (tgt o)) :
     opackage L I E.
   Proof.
-    pose foo : seq (nat * pointed_vprogram L I) :=
+    pose foo : seq (nat * typed_function L I) :=
       [interface (ide o, (chsrc o ; chtgt o ; f o h)) | h # o ∈ E].
     pose bar := mkfmap foo.
-    exists (@mapm _ (pointed_vprogram L I) pointed_program
+    exists (@mapm _ (typed_function L I) typed_raw_function
       (λ '(So ; To ; f), (So ; To ; λ x, (f x) ∙1)) bar).
     intros [n [So To]] ho.
     rewrite mapmE. subst bar foo.
@@ -1398,7 +1398,7 @@ Module PackageComposition (π : RulesParam).
         rewrite filtermE. unfold obind, oapp.
         rewrite mapmE. unfold omap, obind, oapp.
         destruct (mkfmap (T:=nat_ordType) _ _) eqn:m.
-        + destruct p as [S [T p]].
+        + destruct t as [S [T p]].
           destruct ((n, (S, T)) \in I) eqn:hin.
           * rewrite hin. reflexivity.
           * rewrite hin.

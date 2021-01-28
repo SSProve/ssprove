@@ -505,12 +505,12 @@ Module CorePackageTheory (π : RulesParam).
 
   End commuteBindLocations.
 
-  Definition pointed_program :=
+  Definition typed_raw_function :=
     ∑ (S T : chUniverse), S → raw_program T.
 
   (* Can't use opsig as index because maps aren't dependent. *)
   Definition raw_package :=
-    {fmap ident -> pointed_program}.
+    {fmap ident -> typed_raw_function}.
 
   Definition valid_package L I (E : Interface) (p : raw_package) :=
     ∀ o, o \in E →
