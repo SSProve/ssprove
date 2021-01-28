@@ -140,10 +140,10 @@ Module CorePackageTheory (π : RulesParam).
     Class ValidProgram {A} (p : raw_program A) :=
       is_valid_program : valid_program p.
 
-    Instance ValidProgram_ret (A : choiceType) (x : A) : ValidProgram (ret x).
+    (* Instance ValidProgram_ret (A : choiceType) (x : A) : ValidProgram (ret x).
     Proof.
       apply valid_ret.
-    Qed.
+    Qed. *)
 
     Lemma valid_from_class :
       ∀ A (p : raw_program A),
@@ -153,7 +153,7 @@ Module CorePackageTheory (π : RulesParam).
       intros A p h. auto.
     Defined.
 
-    Hint Extern 1 (ValidProgram (opr ?o ?x ?k)) =>
+    (* Hint Extern 1 (ValidProgram (opr ?o ?x ?k)) =>
       apply valid_opr ; [
         eauto
       | intro ; apply valid_from_class
@@ -174,7 +174,7 @@ Module CorePackageTheory (π : RulesParam).
     Hint Extern 1 (ValidProgram (sampler ?op ?k)) =>
       apply valid_sampler ;
       intro ; apply valid_from_class
-      : typeclass_instances.
+      : typeclass_instances. *)
 
     Record program A := mkprog {
       prog : raw_program A ;
@@ -185,21 +185,9 @@ Module CorePackageTheory (π : RulesParam).
     Arguments prog {_} _.
     Arguments prog_valid {_} _.
 
-    Notation "{ 'program' p }" :=
+    (* Notation "{ 'program' p }" :=
       (mkprog p _)
-      (format "{ program  p  }") : package_scope.
-
-    (* Open Scope package_scope.
-
-    Definition foo :=
-      {program ret 0 }.
-
-    Obligation Tactic := idtac.
-
-    Definition bar o (h : o \in import) x op :=
-      {program
-        sampler op (λ z, opr o x (λ y, ret y))
-      }. *)
+      (format "{ program  p  }") : package_scope. *)
 
     Lemma program_ext :
       ∀ A (u v : program A),
@@ -310,12 +298,19 @@ Module CorePackageTheory (π : RulesParam).
         + reflexivity.
     Defined. *)
 
+    Open Scope package_scope.
+
     Import SPropAxioms. Import FunctionalExtensionality.
 
-    Program Definition rFree : ord_relativeMonad choice_incl :=
+    (* TODO: NEEDED? *)
+    (* Program Definition rFree : ord_relativeMonad choice_incl :=
       @mkOrdRelativeMonad ord_choiceType TypeCat choice_incl program _ _ _ _ _ _.
-    Next Obligation. apply ret. auto. Defined.
-    Next Obligation. eapply bind. all: eauto. Defined.
+    Next Obligation.
+      simple refine {program ret _ }.
+      auto.
+    Defined.
+    Next Obligation.
+      eapply bind. all: eauto. Defined.
     Next Obligation.
       f_equal. apply functional_extensionality. auto.
     Qed.
@@ -341,42 +336,83 @@ Module CorePackageTheory (π : RulesParam).
         simpl in * ; try reflexivity ;
         f_equal ; try apply functional_extensionality ; intuition auto
       ].
-    Qed.
+    Qed. *)
 
-    Fixpoint mapFree_ {A B : choiceType} (f : A → B) (m : raw_program A) :
+    Fixpoint mapFree {A B : choiceType} (f : A → B) (m : raw_program A) :
       raw_program B :=
       match m with
-      | _ret x => _ret (f x)
-      | _opr o x k => _opr o x (λ r, mapFree_ f (k r))
-      | _getr l k' => _getr l (λ v, mapFree_ f (k' v))
-      | _putr l v k' => _putr l v (mapFree_ f k')
-      | _sampler op k' => _sampler op (λ a, mapFree_ f (k' a))
+      | ret x => ret (f x)
+      | opr o x k => opr o x (λ r, mapFree f (k r))
+      | getr l k' => getr l (λ v, mapFree f (k' v))
+      | putr l v k' => putr l v (mapFree f k')
+      | sampler op k' => sampler op (λ a, mapFree f (k' a))
       end.
 
-    Definition mapFree {A B : choiceType} (f : A → B) (m : program A) :
+    (* Definition mapFree {A B : choiceType} (f : A → B) (m : program A) :
       program B.
     Proof.
       exists (mapFree_ f (m ∙1)).
       destruct m as [m h]. cbn.
       induction m in h |- *.
       all: solve [ cbn in * ; intuition auto ].
-    Defined.
+    Defined. *)
 
   End FreeModule.
 
-  Arguments _ret [A] _.
-  Arguments _opr [A] _ _.
-  Arguments _getr [A] _.
-  Arguments _putr [A] _.
-  Arguments _sampler [A] _ _.
+  Arguments ret [A] _.
+  Arguments opr [A] _ _.
+  Arguments getr [A] _.
+  Arguments putr [A] _.
+  Arguments sampler [A] _ _.
 
-  Arguments ret [Loc] [import] [A] _.
-  Arguments opr [Loc] [import] [A] _ _.
-  Arguments getr [Loc] [import] [A] _ _.
-  Arguments putr [Loc] [import] [A] _ _.
-  Arguments sampler [Loc] [import] [A] _ _.
-  Arguments bind [Loc] [import] [A] [B] _ _.
+  Arguments mkprog [_ _ _] _.
+  Arguments prog [_ _ _] _.
+  Arguments prog_valid [_ _ _] _.
 
+  Notation "{ 'program' p }" :=
+    (mkprog p _)
+    (format "{ program  p  }") : package_scope.
+
+  Instance ValidProgram_ret (A : choiceType) (x : A) L I :
+    ValidProgram L I (ret x).
+  Proof.
+    apply valid_ret.
+  Qed.
+
+  Hint Extern 1 (ValidProgram ?L ?I (opr ?o ?x ?k)) =>
+    apply valid_opr ; [
+      eauto
+    | intro ; apply valid_from_class
+    ] : typeclass_instances.
+
+  Hint Extern 1 (ValidProgram ?L ?I (getr ?o ?x ?k)) =>
+    apply valid_getr ; [
+      eauto
+    | intro ; apply valid_from_class
+    ] : typeclass_instances.
+
+  Hint Extern 1 (ValidProgram ?L ?I (putr ?o ?x ?k)) =>
+    apply valid_putr ; [
+      eauto
+    | apply valid_from_class
+    ] : typeclass_instances.
+
+  Hint Extern 1 (ValidProgram ?L ?I (sampler ?op ?k)) =>
+    apply valid_sampler ;
+    intro ; apply valid_from_class
+    : typeclass_instances.
+
+  (* Open Scope package_scope.
+
+    Definition foo L I : program L I _ :=
+      {program ret 0 }.
+
+    (* Obligation Tactic := idtac. *)
+
+    Definition bar L I o (h : o \in I) x op : program L I _ :=
+      {program
+        sampler op (λ z, opr o x (λ y, ret y))
+      }. *)
 
   Section FreeLocations.
 
