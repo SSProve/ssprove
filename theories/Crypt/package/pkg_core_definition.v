@@ -16,8 +16,9 @@ From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd RulesStateProb StateTransformingLaxMorph
      pkg_chUniverse.
+
+Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
 
 Set Equations With UIP.
 
@@ -136,6 +137,24 @@ Module CorePackageTheory (π : RulesParam).
           (∀ v, valid_program (k v)) →
           valid_program (sampler op k)
     .
+
+    Derive NoConfusion NoConfusionHom for chUniverse.
+    Derive NoConfusion NoConfusionHom EqDec for nat.
+    Derive NoConfusion NoConfusionHom for raw_program.
+    Derive Signature for valid_program.
+
+    (* Inversion lemmata *)
+
+    Lemma inversion_valid_opr :
+      ∀ {A o x k},
+        @valid_program A (opr o x k) →
+        (o \in import) *
+        (∀ v, valid_program (k v)).
+    Proof.
+      intros A o x k h.
+      dependent destruction h.
+      intuition auto.
+    Qed.
 
     Class ValidProgram {A} (p : raw_program A) :=
       is_valid_program : valid_program p.
