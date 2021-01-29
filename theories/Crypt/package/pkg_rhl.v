@@ -48,7 +48,7 @@ Module PackageRHL (π : RulesParam).
     Definition Game_import : Interface := fset0.
 
     Definition Game_Type (Game_export : Interface) : Type :=
-      package Game_import Game_export.
+      loc_package Game_import Game_export.
 
     Definition RUN := (0, ('unit, 'bool)).
 
@@ -60,32 +60,37 @@ Module PackageRHL (π : RulesParam).
     Qed.
 
     Definition Adversary4Game (Game_export : Interface) : Type :=
-      package Game_export A_export.
+      loc_package Game_export A_export.
 
     Definition Adversary4Game_weak (Game_export : Interface) : Type :=
-      opackage fset0 Game_export A_export.
+      package fset0 Game_export A_export.
 
     Open Scope fset.
+
     (* Let iops_StP := @ops_StP probE rel_choiceTypes chEmb. *)
     (* Let iar_StP := @ar_StP probE rel_choiceTypes chEmb. *)
 
-    Definition pointed_value := ∑ (t : chUniverse), chElement t.
+    Definition pointed_value := ∑ (t : chUniverse), t.
 
     Definition raw_heap := {fmap Location -> pointed_value}.
     Definition raw_heap_choiceType := [choiceType of raw_heap].
 
-    Definition check_loc_val (l : Location) (v : pointed_value) := l.π1 == v.π1.
+    Definition check_loc_val (l : Location) (v : pointed_value) :=
+      l.π1 == v.π1.
+
     Definition valid_location (h : raw_heap) (l : Location) :=
       match h l with
       | None => false
       | Some v => check_loc_val l v
       end.
 
-    Definition valid_heap : pred raw_heap := fun h =>
+    Definition valid_heap : pred raw_heap := λ h,
       domm h == fset_filter (fun l => valid_location h l) (domm h).
 
-    Definition heap_defaults := forall a : chUniverse, chElement a.
+    Definition heap_defaults := ∀ a : chUniverse, a.
+
     Definition heap_init : heap_defaults.
+    Proof.
       intros a. induction a.
       - exact tt.
       - exact 0.
@@ -97,17 +102,19 @@ Module PackageRHL (π : RulesParam).
     Defined.
 
     Definition heap := { h : raw_heap | valid_heap h }.
+
     Definition heap_choiceType := [choiceType of heap].
 
     Definition Game_op_import_S : Type := {_ : ident & void}.
-    Definition Game_import_P : Game_op_import_S → choiceType :=
-      fun v => match v with existT a b => match b with end end.
 
-    Definition get_heap (map : heap) (l : Location) : (Value l.π1).
+    Definition Game_import_P : Game_op_import_S → choiceType :=
+      λ v, let 'existT a b := v in match b with end.
+
+    Definition get_heap (map : heap) (l : Location) : Value l.π1.
     Proof.
       destruct map as [rh valid_rh].
       destruct (getm rh l) eqn:Hgetm.
-      + assert (exists v, rh l = Some v) as H0.
+      - assert (exists v, rh l = Some v) as H0.
         { exists p. assumption. }
         move: H0. move /dommP => H0.
         unfold valid_heap in valid_rh.
@@ -122,10 +129,12 @@ Module PackageRHL (π : RulesParam).
         rewrite H1.
         unfold pointed_value in p.
         exact (p.π2).
-      + destruct l as [l_ty l_idx]. exact (heap_init l_ty).
+      - destruct l as [l_ty l_idx]. exact (heap_init l_ty).
     Defined.
 
-    Program Definition set_heap (map : heap) (l : Location)  (v : Value l.π1) : heap := setm map l (l.π1; v).
+    Program Definition set_heap (map : heap) (l : Location) (v : Value l.π1)
+    : heap :=
+      setm map l (l.π1 ; v).
     Next Obligation.
       intros map l v.
       unfold valid_heap.
@@ -167,6 +176,7 @@ Module PackageRHL (π : RulesParam).
     Qed.
 
     Definition fromEmpty {B} {v : opsig} (H : v \in fset0) : B.
+    Proof.
       rewrite in_fset0 in H.
       move: H. move /eqP. move /eqP => H.
       discriminate.
@@ -200,30 +210,32 @@ Module PackageRHL (π : RulesParam).
     : rFreeF (ops_StP heap_choiceType) (ar_StP heap_choiceType) B :=
       repr' p h with p := {
 
-      | _ret x := retrFree _ ;
+      | ret x := retrFree _ ;
 
-      | _opr o x k := False_rect _ _ ;
+      | opr o x k := False_rect _ _ ;
 
-      | _getr l k :=
+      | getr l k :=
         bindrFree _ _
-                  (ropr (inl (inl (gett _))) (fun s => retrFree (get_heap s l)))
-                  (λ v, repr' (k v) _) ;
+          (ropr (inl (inl (gett _))) (fun s => retrFree (get_heap s l)))
+          (λ v, repr' (k v) _) ;
 
-      | _putr l v k :=
+      | putr l v k :=
         bindrFree _ _
-                  (ropr
-                     (inl (inl (gett heap_choiceType)))
-                     (λ s, ropr (inl (inr (putt heap_choiceType (set_heap s l v))))
-                                (fun s => retrFree tt)))
-                  (λ s', repr' k _) ;
+          (ropr
+            (inl (inl (gett heap_choiceType)))
+            (λ s, ropr (inl (inr (putt heap_choiceType (set_heap s l v))))
+            (λ s, retrFree tt)))
+          (λ s', repr' k _) ;
 
-      | _sampler op k := bindrFree _ _
-                                   (ropr (inr op) (fun v => retrFree v))
-                                   (λ s, repr' (k s) _)
+      | sampler op k :=
+        bindrFree _ _
+          (ropr (inr op) (λ v, retrFree v))
+          (λ s, repr' (k s) _)
       }.
     Proof.
-      - destruct h as [hin _]. exact (fromEmpty hin).
-      - cbn in h. intuition auto.
+      - inversion h. eapply fromEmpty. eauto.
+      - (* TODO Inversion lemmata in core *)
+        inversion h. subst. eauto.
       - cbn in h. destruct h as [ho h]. apply h.
     Defined.
 
