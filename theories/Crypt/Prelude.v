@@ -177,3 +177,7 @@ Proof.
 Qed.
 
 Derive NoConfusion NoConfusionHom EqDec for positive.
+
+(* Utility for defining functions with Equations *)
+Definition inspect {A : Type} (x : A) : { y : A | y = x } :=
+  exist _ x Logic.eq_refl.

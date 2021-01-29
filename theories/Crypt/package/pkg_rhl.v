@@ -370,10 +370,6 @@ Module PackageRHL (π : RulesParam).
       discriminate.
     Qed.
 
-    (* TODO MOVE to Prelude *)
-    Definition inspect {A : Type} (x : A) : { y : A | y = x } :=
-      exist _ x erefl.
-
     Equations? get_raw_package_op {L} {I E : Interface} (p : raw_package)
       (hp : valid_package L I E p)
       (o : opsig) (ho : o \in E) (arg : src o) : program L I (tgt o) :=
