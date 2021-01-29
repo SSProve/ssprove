@@ -374,7 +374,7 @@ Module PackageRHL (π : RulesParam).
       (hp : valid_package L I E p)
       (o : opsig) (ho : o \in E) (arg : src o) : program L I (tgt o) :=
       get_raw_package_op p hp o ho arg with inspect (lookup_op p o) := {
-      | @exist (Some f) e1 := ⦑ f arg ⦒ ;
+      | @exist (Some f) e1 := {program f arg } ;
       | @exist None e1 := False_rect _ _
       }.
     Proof.
@@ -393,7 +393,7 @@ Module PackageRHL (π : RulesParam).
         (o : opsig) (ho : o \in E) (arg : src o)
         (f : src o -> raw_program (tgt o))
         (H : lookup_op p o = Some f),
-        (get_raw_package_op p hp o ho arg) ∙1 = f arg.
+        (get_raw_package_op p hp o ho arg).(prog) = f arg.
     Proof.
       intros L I E p hp o ho arg f e.
       funelim (get_raw_package_op p hp o ho arg).
@@ -403,11 +403,11 @@ Module PackageRHL (π : RulesParam).
     Qed.
 
     Definition raw_program_link_ext {E : Interface}
-               (o : opsig) (ho : o \in E) (arg : src o) (p1 p2 : raw_package)
-               (f : src o -> raw_program (tgt o))
-               (Hf : lookup_op p1 o = Some f)
-               (g : src o -> raw_program (tgt o))
-               (Hg : lookup_op (raw_link p1 p2) o = Some g)
+      (o : opsig) (ho : o \in E) (arg : src o) (p1 p2 : raw_package)
+      (f : src o -> raw_program (tgt o))
+      (Hf : lookup_op p1 o = Some f)
+      (g : src o -> raw_program (tgt o))
+      (Hg : lookup_op (raw_link p1 p2) o = Some g)
       : g arg = raw_program_link (f arg) p2.
     Proof.
       unfold raw_link in Hg.
@@ -445,11 +445,11 @@ Module PackageRHL (π : RulesParam).
     Qed.
 
     Lemma get_raw_package_op_link {L} {I M E} {o : opsig}
-          (hin : o \in E) (arg : src o) (p1 p2 : raw_package)
-          (hp1 : valid_package L M E p1)
-          (hpl : valid_package L I E (raw_link p1 p2))
-          : (get_raw_package_op (raw_link p1 p2) hpl o hin arg) ∙1 =
-            raw_program_link ((get_raw_package_op p1 hp1 o hin arg) ∙1) p2.
+      (hin : o \in E) (arg : src o) (p1 p2 : raw_package)
+      (hp1 : valid_package L M E p1)
+      (hpl : valid_package L I E (raw_link p1 p2))
+      : (get_raw_package_op (raw_link p1 p2) hpl o hin arg).(prog) =
+        raw_program_link ((get_raw_package_op p1 hp1 o hin arg).(prog)) p2.
     Proof.
       destruct (lookup_op (raw_link p1 p2) o) as [f|] eqn:e.
       2: { unfold valid_package in hpl.
@@ -512,8 +512,8 @@ Module PackageRHL (π : RulesParam).
           (hin : o \in E) (arg : src o) (p : raw_package)
           (hp1 : valid_package L1 I E p)
           (hp2 : valid_package L2 I E p)
-      : (get_raw_package_op p hp1 o hin arg) ∙1 =
-        (get_raw_package_op p hp2 o hin arg) ∙1.
+      : (get_raw_package_op p hp1 o hin arg).(prog) =
+        (get_raw_package_op p hp2 o hin arg).(prog).
     Proof.
       destruct (lookup_op p o) as [f|] eqn:e.
       2: { unfold valid_package in hp1.
@@ -532,51 +532,52 @@ Module PackageRHL (π : RulesParam).
       reflexivity.
     Qed.
 
-    Definition get_opackage_op {L} {I E : Interface} (P : opackage L I E)
-               (op : opsig) (Hin : op \in E) (arg : src op) : program L I (tgt op).
+    Definition get_opackage_op {L} {I E : Interface} (P : package L I E)
+      (op : opsig) (Hin : op \in E) (arg : src op) : program L I (tgt op).
     Proof.
-      exact (get_raw_package_op (projT1 P) (projT2 P) op Hin arg).
+      exact (get_raw_package_op P.(pack) P.(pack_valid) op Hin arg).
     Defined.
 
-    Definition get_package_op {I E : Interface} (P : package I E)
+    Definition get_package_op {I E : Interface} (P : loc_package I E)
                (op : opsig) (Hin : op \in E) (arg : src op)
       : program (getLocations P) I (tgt op) :=
       let (L, PP) as s return (program (getLocations s) I (tgt op)) := P in
       get_opackage_op PP op Hin arg.
 
     Definition Pr_raw_program {L} {B}
-               (p : raw_program B)
-               (p_is_valid : valid_program L Game_import p)
-      : heap_choiceType -> SDistr (F_choice_prod_obj ⟨ B , heap_choiceType ⟩).
+      (p : raw_program B)
+      (p_is_valid : ValidProgram L Game_import p)
+      : heap_choiceType → SDistr (F_choice_prod_obj ⟨ B , heap_choiceType ⟩).
     Proof.
       move => s0.
-      pose STDIST := thetaFstd B (repr (exist _ p p_is_valid)) s0.
-      exact (STDIST prob_handler).
+      pose STDIST := thetaFstd B (repr {program p}) s0.
+      specialize (STDIST prob_handler).
+      eapply STDIST. exact _.
     Defined.
 
     Definition Pr_raw_func_program {L} {A} {B}
-               (p : A -> raw_program B)
-               (p_is_valid : forall a, valid_program L Game_import (p a))
-      : A -> heap_choiceType -> SDistr (F_choice_prod_obj ⟨ B , heap_choiceType ⟩).
+      (p : A → raw_program B)
+      (p_is_valid : ∀ a, valid_program L Game_import (p a))
+      : A → heap_choiceType → SDistr (F_choice_prod_obj ⟨ B , heap_choiceType ⟩).
     Proof.
       move => a s0.
       exact (Pr_raw_program (p a) (p_is_valid a) s0).
     Defined.
 
     Definition Pr_raw_package_op  {E : Interface} {L}
-               (p : raw_package)
-               (p_is_valid : valid_package L Game_import E p)
-               (op : opsig) (Hin : op \in E) (arg : src op)
-      : heap_choiceType -> SDistr (F_choice_prod_obj ⟨ tgt op , heap_choiceType ⟩).
+      (p : raw_package)
+      (p_is_valid : valid_package L Game_import E p)
+      (op : opsig) (Hin : op \in E) (arg : src op)
+      : heap_choiceType → SDistr (F_choice_prod_obj ⟨ tgt op , heap_choiceType ⟩).
     Proof.
       move => s0.
       pose (get_raw_package_op p p_is_valid op Hin arg) as f.
-      exact (Pr_raw_program (f∙1) (f∙2) s0).
+      exact (Pr_raw_program f _ s0).
     Defined.
 
-    Definition Pr_op  {E : Interface} (P : package Game_import E)
-               (op : opsig) (Hin : op \in E) (arg : src op)
-      : heap_choiceType -> SDistr (F_choice_prod_obj ⟨ tgt op , heap_choiceType ⟩).
+    Definition Pr_op  {E : Interface} (P : loc_package Game_import E)
+      (op : opsig) (Hin : op \in E) (arg : src op)
+      : heap_choiceType → SDistr (F_choice_prod_obj ⟨ tgt op , heap_choiceType ⟩).
     Proof.
       move => s0.
       destruct P as [L [PP PP_is_valid]].
@@ -588,16 +589,17 @@ Module PackageRHL (π : RulesParam).
       by rewrite /valid_heap domm0 /fset_filter -fset0E.
     Qed.
 
-    Definition Pr (P : package Game_import A_export) : SDistr (bool_choiceType) :=
-      SDistr_bind _ _ (fun '(b, _) => SDistr_unit _ b)
+    Definition Pr (P : loc_package Game_import A_export) :
+      SDistr (bool_choiceType) :=
+      SDistr_bind _ _ (λ '(b, _), SDistr_unit _ b)
                       (Pr_op P RUN RUN_in_A_export Datatypes.tt empty_heap).
 
-    Definition get_op {I E : Interface} (p : package I E)
+    Definition get_op {I E : Interface} (p : loc_package I E)
       (o : opsig) (ho : o \in E) (arg : src o) :
       program (p.π1) I (tgt o).
     Proof.
       (* TW: I transformed this definition so that it computes directly. *)
-      destruct (lookup_op (p.π2 ∙1) o) as [f|] eqn:e.
+      destruct (lookup_op (p.π2).(pack) o) as [f|] eqn:e.
       2:{
         (* TW: Done several times, I should make a lemma. *)
         exfalso.
@@ -630,9 +632,12 @@ Module PackageRHL (π : RulesParam).
     Definition GamePair (Game_export : Interface) :=
       bool → Game_Type Game_export.
 
-    Definition Advantage { Game_export : Interface } (G : GamePair Game_export)
-               (A : Adversary4Game Game_export)
-               {H1 : fdisjoint A.π1 (G false).π1} {H2 : fdisjoint A.π1 (G true).π1} : R :=
+    (* TODO Now it seems we need linking on loc_package, loc_link? *)
+
+    Definition Advantage { Game_export : Interface }
+      (G : GamePair Game_export)
+      (A : Adversary4Game Game_export)
+      {H1 : fdisjoint A.π1 (G false).π1} {H2 : fdisjoint A.π1 (G true).π1} : R :=
       `| (Pr (link A (G false)) true) - (Pr (link A (G true)) true)|.
 
     Definition AdvantageE { Game_export : Interface }
@@ -646,7 +651,8 @@ Module PackageRHL (π : RulesParam).
                (A : Adversary4Game_weak Game_export) : R
       := `| (Pr (link (fset0; A) G0) true) - (Pr (link (fset0; A) G1) true)|.
 
-    Definition state_pass_ {A} (p : raw_program A) : heap_choiceType -> raw_program (prod_choiceType A heap_choiceType).
+    Definition state_pass_ {A} (p : raw_program A) :
+      heap_choiceType → raw_program (prod_choiceType A heap_choiceType).
     Proof.
       induction p; intros h.
       - constructor.
