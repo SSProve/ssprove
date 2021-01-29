@@ -293,64 +293,70 @@ Module PackageRHL (π : RulesParam).
       destruct p as [p h].
       induction p.
       - cbn. fold_repr.
-        f_equal.
-        apply program_ext.
+        f_equal. apply program_ext.
         simpl. reflexivity.
-      - cbn in h. destruct h as [h1 h2]. eapply fromEmpty. exact h1.
+      - apply inversion_valid_opr in h as h'. destruct h' as [h1 h2].
+        eapply fromEmpty. exact h1.
       - cbn. f_equal. extensionality s.
-        cbn in h. destruct h as [h1 h2].
-        rewrite -(H (get_heap s l) (h2 (get_heap s l))).
+        rewrite -H.
         apply repr'_ext.
-        + reflexivity.
+        reflexivity.
       - cbn. f_equal.
         extensionality s.
         f_equal.
         extensionality s'.
-        destruct h as [h1 h2].
-        rewrite -(IHp h2).
+        rewrite -IHp.
         apply repr'_ext.
         reflexivity.
       - cbn.
         f_equal.
         extensionality s.
-        simpl in h.
-        rewrite -(H s (h s)).
+        rewrite -H.
         apply repr'_ext.
-        + reflexivity.
+        reflexivity.
     Qed.
 
-
     Notation " r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄ " :=
-        (semantic_judgement _ _ (repr c1) (repr c2) (fromPrePost pre post)).
+      (semantic_judgement _ _ (repr c1) (repr c2) (fromPrePost pre post)).
 
-    Theorem rbind_rule {A1 A2 B1 B2 : ord_choiceType}
-            {L1 L2 : {fset Location}}
-            {f1 : A1 -> program L1 Game_import B1}
-            {f2 : A2 -> program L2 Game_import B2}
-            (m1 : program L1 Game_import A1)
-            (m2 : program L2 Game_import A2)
-            (pre : heap * heap -> Prop)
-            (middle : (A1 * heap) -> (A2 * heap) -> Prop)
-            (post : (B1 * heap) -> (B2 * heap) -> Prop)
-            (judge_wm : r⊨ ⦃ pre ⦄ m1 ≈ m2 ⦃ middle ⦄)
-            (judge_wf : forall a1 a2,
-                r⊨ ⦃ fun '(s1, s2) => middle (a1, s1) (a2, s2) ⦄
-                  f1 a1 ≈ f2 a2
-                  ⦃ post ⦄ ) :
-      r⊨ ⦃ pre ⦄ (bind m1 f1 ) ≈ (bind m2 f2) ⦃ post ⦄.
+    (* TODO Maybe change the underscores by variables so it applies more
+      often? Also might be worth considering using raw_program directly
+      instead of a coercion from program.
+    *)
+    Theorem rbind_rule :
+      ∀ {A1 A2 B1 B2 : ord_choiceType}
+        {L1 L2 : {fset Location}}
+        {f1 : A1 → program L1 Game_import B1}
+        {f2 : A2 → program L2 Game_import B2}
+        (m1 : program L1 Game_import A1)
+        (m2 : program L2 Game_import A2)
+        (pre : heap * heap → Prop)
+        (middle : (A1 * heap) → (A2 * heap) → Prop)
+        (post : (B1 * heap) → (B2 * heap) → Prop)
+        (judge_wm : r⊨ ⦃ pre ⦄ m1 ≈ m2 ⦃ middle ⦄)
+        (judge_wf : ∀ a1 a2,
+          r⊨ ⦃ λ '(s1, s2), middle (a1, s1) (a2, s2) ⦄
+            f1 a1 ≈ f2 a2
+            ⦃ post ⦄
+        ),
+        r⊨ ⦃ pre ⦄ mkprog (bind m1 f1) _ ≈ mkprog (bind m2 f2) _ ⦃ post ⦄.
     Proof.
+      intros A1 A2 B1 B2 L1 l2 f1 f2 m1 m2 pre middle post judge_wm judge_wf.
       rewrite !repr_bind.
       apply (bind_rule_pp (repr m1) (repr m2) pre middle post judge_wm judge_wf).
     Qed.
 
-    Let getLocations {I E} (P : package I E) : {fset Location} :=
+    Let getLocations {I E} (P : loc_package I E) : {fset Location} :=
       let '(locs; PP) := P in locs.
 
-    Definition opaque_me {B} {L} {I E} (p : raw_package) (hp : valid_package L I E p)
-               (o : opsig) (ho : o \in E) (arg : src o)
-               (e : lookup_op p o = None) : B.
+    Lemma opaque_me :
+      ∀ {B L I E}
+        (p : raw_package) (hp : valid_package L I E p)
+        (o : opsig) (ho : o \in E) (arg : src o)
+        (e : lookup_op p o = None),
+        B.
     Proof.
-      (* TW: Done several times, I should make a lemma. *)
+      intros B L I E p hp o ho arg e.
       exfalso.
       destruct o as [n [S T]].
       cbn - [lookup_op] in e.
@@ -364,6 +370,7 @@ Module PackageRHL (π : RulesParam).
       discriminate.
     Qed.
 
+    (* TODO MOVE to Prelude *)
     Definition inspect {A : Type} (x : A) : { y : A | y = x } :=
       exist _ x erefl.
 
