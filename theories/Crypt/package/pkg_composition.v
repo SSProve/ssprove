@@ -54,7 +54,6 @@ Module PackageComposition (π : RulesParam).
       | None => None
       end.
 
-    Derive NoConfusion NoConfusionHom for chUniverse.
     Derive NoConfusion NoConfusionHom for sigT.
     Derive NoConfusion NoConfusionHom for option.
 
@@ -144,7 +143,7 @@ Module PackageComposition (π : RulesParam).
       eapply lookup_op_valid in hp as hf. 2: eauto.
       destruct hf as [f [ef hf]].
       cbn. rewrite ef.
-      apply bind_valid. all: auto.
+      apply valid_bind. all: auto.
     Qed.
 
     (* TODO NEEDED? *)

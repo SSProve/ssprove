@@ -156,6 +156,38 @@ Module CorePackageTheory (π : RulesParam).
       intuition auto.
     Qed.
 
+    Lemma inversion_valid_getr :
+      ∀ {A l k},
+        @valid_program A (getr l k) →
+        (l \in Loc) *
+        (∀ v, valid_program (k v)).
+    Proof.
+      intros A l k h.
+      dependent destruction h.
+      intuition auto.
+    Qed.
+
+    Lemma inversion_valid_putr :
+      ∀ {A l v k},
+        @valid_program A (putr l v k) →
+        (l \in Loc) *
+        (valid_program k).
+    Proof.
+      intros A l v k h.
+      dependent destruction h.
+      intuition auto.
+    Qed.
+
+    Lemma inversion_valid_sampler :
+      ∀ {A op k},
+        @valid_program A (sampler op k) →
+        ∀ v, valid_program (k v).
+    Proof.
+      intros A op k h.
+      dependent destruction h.
+      auto.
+    Qed.
+
     Class ValidProgram {A} (p : raw_program A) :=
       is_valid_program : valid_program p.
 
@@ -229,7 +261,7 @@ Module CorePackageTheory (π : RulesParam).
       | sampler op k' => sampler op (λ a, bind (k' a) k)
       end.
 
-    Lemma bind_valid :
+    Lemma valid_bind :
       ∀ A B c k,
         valid_program c →
         (∀ x, valid_program (k x)) →
