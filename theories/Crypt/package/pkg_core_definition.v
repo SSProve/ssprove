@@ -453,6 +453,19 @@ Module CorePackageTheory (π : RulesParam).
     intro ; apply valid_from_class
     : typeclass_instances.
 
+  Hint Extern 1 (ValidProgram ?L ?I (bind ?p ?k)) =>
+    apply valid_bind ; [
+      apply valid_from_class
+    | intro ; apply valid_from_class
+    ]
+    : typeclass_instances.
+
+  Coercion prog : program >-> raw_program.
+
+  Hint Extern 1 (ValidProgram ?L ?I (?p.(prog))) =>
+    apply p.(prog_valid)
+    : typeclass_instances.
+
   (* Open Scope package_scope.
 
     Definition foo L I : program L I _ :=

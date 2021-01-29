@@ -284,22 +284,6 @@ Module PackageRHL (π : RulesParam).
       auto.
     Qed.
 
-    (* TODO MOVE *)
-    Coercion prog : program >-> raw_program.
-
-    (* TODO MOVE *)
-    Hint Extern 1 (ValidProgram ?L ?I (bind ?p ?k)) =>
-      apply valid_bind ; [
-        apply valid_from_class
-      | intro ; apply valid_from_class
-      ]
-      : typeclass_instances.
-
-    (* TODO MOVE *)
-    Hint Extern 1 (ValidProgram ?L ?I (?p.(prog))) =>
-      apply p.(prog_valid)
-      : typeclass_instances.
-
     Lemma repr_bind :
       ∀ {B C} {L}
         (p : program L Game_import B) (f : B → program L Game_import C),
