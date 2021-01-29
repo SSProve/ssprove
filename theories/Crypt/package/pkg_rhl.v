@@ -1,7 +1,7 @@
-(*
-  This file connects packages to the relational Hoare logic and provides basic crypto-style
-  reasoning notions.
- *)
+(**
+  This file connects packages to the relational Hoare logic and provides
+  basic crypto-style reasoning notions.
+**)
 
 
 From Coq Require Import Utf8.
@@ -41,20 +41,27 @@ Module PackageRHL (π : RulesParam).
   Local Open Scope fset.
   Local Open Scope fset_scope.
   Local Open Scope type_scope.
+  Local Open Scope package_scope.
 
   Section Games.
+
     Definition Game_import : Interface := fset0.
+
     Definition Game_Type (Game_export : Interface) : Type :=
       package Game_import Game_export.
 
-    Definition RUN := (0, (chUnit, chBool)).
+    Definition RUN := (0, ('unit, 'bool)).
+
     Definition A_export : Interface := fset1 RUN.
+
     Lemma RUN_in_A_export : RUN \in A_export.
+    Proof.
       apply in_fset1.
     Qed.
 
     Definition Adversary4Game (Game_export : Interface) : Type :=
       package Game_export A_export.
+
     Definition Adversary4Game_weak (Game_export : Interface) : Type :=
       opackage fset0 Game_export A_export.
 
@@ -595,7 +602,8 @@ Module PackageRHL (π : RulesParam).
     Open Scope ring_scope.
     Open Scope real_scope.
 
-    Definition GamePair (Game_export : Interface) := bool -> Game_Type Game_export.
+    Definition GamePair (Game_export : Interface) :=
+      bool → Game_Type Game_export.
 
     Definition Advantage { Game_export : Interface } (G : GamePair Game_export)
                (A : Adversary4Game Game_export)
@@ -2260,7 +2268,7 @@ Theorem rdead_sampler_elimL { A : ord_choiceType } { L : {fset Location} } { D }
 Proof.
   eapply rrewrite_eqDistrL.
   - exact: H.
-  - admit. 
+  - admit.
 Admitted.
 
 
@@ -2271,7 +2279,7 @@ Theorem rdead_sampler_elimR { A : ord_choiceType } { L : {fset Location} } { D }
   r⊨ ⦃ pre ⦄ c1 ≈  bind (x <$ D ;; ret x) (fun x => c2) ⦃ post ⦄.
 Proof.
   eapply rrewrite_eqDistrR.
-  - exact: H. 
+  - exact: H.
   - admit.
 Admitted.
 
