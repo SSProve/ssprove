@@ -233,31 +233,36 @@ Module PackageRHL (π : RulesParam).
           (λ s, repr' (k s) _)
       }.
     Proof.
-      - inversion h. eapply fromEmpty. eauto.
-      - (* TODO Inversion lemmata in core *)
-        inversion h. subst. eauto.
-      - cbn in h. destruct h as [ho h]. apply h.
+      - apply inversion_valid_opr in h. destruct h as [? ?].
+        eapply fromEmpty. eauto.
+      - apply inversion_valid_getr in h. destruct h as [? ?].
+        auto.
+      - apply inversion_valid_putr in h. destruct h as [? ?]. auto.
+      - eapply inversion_valid_sampler in h. eauto.
     Defined.
 
     Definition repr {B locs} (p : program locs Game_import B) :=
-      let '(exist p h) := p in
+      let '(mkprog p h) := p in
       repr' p h.
 
     Ltac fold_repr :=
-      change (repr' ?p ?h) with (repr (exist _ p h)).
+      change (repr' ?p ?h) with (repr (mkprog p h)).
 
-    Lemma repr'_ext {B L1 L2} (p1 p2 : raw_program B)
-          (hp1 : valid_program L1 Game_import p1) (hp2 : valid_program L2 Game_import p2)
-          (H : p1 = p2)
-      : repr' p1 hp1 = repr' p2 hp2.
+    Lemma repr'_ext :
+      ∀ {B L1 L2} (p1 p2 : raw_program B)
+        (hp1 : valid_program L1 Game_import p1)
+        (hp2 : valid_program L2 Game_import p2)
+        (H : p1 = p2),
+        repr' p1 hp1 = repr' p2 hp2.
     Proof.
-      destruct H.
+      intros B L1 L2 p1 p2 hp1 hp2 H.
+      subst p2.
       induction p1.
       - cbn. reflexivity.
-      - pose f := hp1. destruct f as [hin _].
-        eapply fromEmpty. exact hin.
-      - cbn in hp1, hp2.
-        cbn. f_equal. extensionality s.
+      - apply inversion_valid_opr in hp1 as h'.
+        destruct h' as [? ?].
+        eapply fromEmpty. eauto.
+      - cbn. f_equal. extensionality s.
         apply H.
       - cbn. f_equal. extensionality s.
         f_equal. extensionality s'.
@@ -266,20 +271,41 @@ Module PackageRHL (π : RulesParam).
         apply H.
     Qed.
 
-    Lemma repr_ext {B L1 L2} (p1 : program L1 Game_import B) (p2 : program L2 Game_import B)
-          (H : p1.π1 = p2.π1)
-      : repr p1 = repr p2.
+    Lemma repr_ext :
+      ∀ {B L1 L2}
+        (p1 : program L1 Game_import B) (p2 : program L2 Game_import B),
+        p1.(prog) = p2.(prog) →
+        repr p1 = repr p2.
     Proof.
+      intros B L1 L2 p1 p2 e.
       unfold repr.
       destruct p1. destruct p2.
       apply repr'_ext.
-      exact H.
+      auto.
     Qed.
 
-    Lemma repr_bind {B C} {L}
-          (p : program L Game_import B) (f : B -> program L Game_import C) :
-      repr (bind p f) =  bindrFree _ _ (repr p) (fun b => repr (f b)).
+    (* TODO MOVE *)
+    Coercion prog : program >-> raw_program.
+
+    (* TODO MOVE *)
+    Hint Extern 1 (ValidProgram ?L ?I (bind ?p ?k)) =>
+      apply valid_bind ; [
+        apply valid_from_class
+      | intro ; apply valid_from_class
+      ]
+      : typeclass_instances.
+
+    (* TODO MOVE *)
+    Hint Extern 1 (ValidProgram ?L ?I (?p.(prog))) =>
+      apply p.(prog_valid)
+      : typeclass_instances.
+
+    Lemma repr_bind :
+      ∀ {B C} {L}
+        (p : program L Game_import B) (f : B → program L Game_import C),
+        repr {program bind p f} = bindrFree _ _ (repr p) (λ b, repr (f b)).
     Proof.
+      intros B C L p f.
       destruct p as [p h].
       induction p.
       - cbn. fold_repr.
@@ -677,7 +703,7 @@ Module PackageRHL (π : RulesParam).
     Definition state_pass_valid {A} {L} {I} (p : raw_program A) (h : valid_program L I p) :
       valid_program fset0 I (state_pass p).
     Proof.
-      apply bind_valid.
+      apply valid_bind.
       - apply (state_pass__valid p h empty_heap).
       - intros x. destruct x. cbn. auto.
     Qed.
