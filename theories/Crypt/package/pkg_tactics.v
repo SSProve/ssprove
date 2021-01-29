@@ -24,23 +24,6 @@
     It can be set with
     Obligation Tactic := package_obtac.
 
-  - program fold
-    This tactic can be used to fold raw programs together with their validity
-    proof to program syntax.
-
-  - program setoid fold
-    Variant of [program fold] which can go under binders (λ and the monadic
-    operations).
-    It is not well-optimised and it might be preferable to use the folding
-    lemmata by hand, using setoid_rewrite.
-    Here are a few examples
-
-    setoid_rewrite fold_getr.
-    unshelve setoid_rewrite fold_bind.
-
-    In the case of bind, an extra proof has to be provided, hence the
-    unshelve.
-
 **)
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
@@ -84,24 +67,6 @@ Module PackageTactics (π : RulesParam).
   Include (PkgNotation π).
   Include (DerivedRules π).
 
-  Ltac program_fold_pass :=
-    change (exist (valid_program ?L ?I) (@_ret ?A ?x) ?h) with (@ret L I A x) ;
-    change (exist (valid_program ?L ?I) (@_opr ?A ?o ?x ?k) ?h)
-    with (@opr L I A o (valid_opr_in h) x (λ v, exist _ (k v) (valid_opr_k h v))) ;
-    change (exist (valid_program ?L ?I) (@_getr ?A ?l ?k) ?h)
-    with (@getr L I A l (valid_getr_in h) (λ x, exist _ (k x) (valid_getr_k h x))) ;
-    change (exist (valid_program ?L ?I) (@_putr ?A ?l ?v ?k) ?h)
-    with (@putr L I A l (valid_putr_in h) v (exist _ k (valid_putr_k h))) ;
-    change (exist (valid_program ?L ?I) (@_sampler ?A ?op ?k) ?h)
-    with (@sampler L I A op (λ x, exist _ (k x) (h x))).
-
-  Ltac program_fold :=
-    repeat program_fold_pass ;
-    rewrite ?fold_ret ?fold_opr ?fold_getr ?fold_putr ?fold_sampler.
-
-  Tactic Notation "program" "fold" :=
-    program_fold.
-
   (* With the following, one can rewrite under λ with setoid_rewrite *)
 
   Instance pointwise_eq_ext {A B : Type} {RB : relation B} (sb : subrelation RB eq) :
@@ -112,47 +77,34 @@ Module PackageTactics (π : RulesParam).
     intro x. apply sb. apply Hfg.
   Qed.
 
-  (** Folding under binders with setoid_rewrite *)
+  (** Rewriting under binders with setoid_rewrite *)
 
-  (* TODO: Can we use the trivial relation instead of the second eq? *)
-  Instance opr_morphism L I (A : choiceType) o :
-    Proper (eq ==> eq ==> pointwise_relation (tgt o) eq ==> eq) (@opr L I A o).
+  Instance opr_morphism (A : choiceType) o :
+    Proper (eq ==> pointwise_relation (tgt o) eq ==> eq) (@opr A o).
   Proof.
     simpl_relation.
     f_equal. apply functional_extensionality. auto.
   Qed.
 
-  (* TODO: Can we use the trivial relation instead of the first eq? *)
-  Instance getr_morphism L I (A : choiceType) l :
-    Proper
-      (eq ==> pointwise_relation (Value l.π1) eq ==> eq)
-      (@getr L I A l).
+  Instance getr_morphism (A : choiceType) l :
+    Proper (pointwise_relation (Value l.π1) eq ==> eq) (@getr A l).
   Proof.
     simpl_relation.
     f_equal. apply functional_extensionality. auto.
   Qed.
 
-  Instance sampler_morphism L I (A : choiceType) o :
-    Proper (pointwise_relation (Arit o) eq ==> eq) (@sampler L I A o).
+  Instance sampler_morphism (A : choiceType) o :
+    Proper (pointwise_relation (Arit o) eq ==> eq) (@sampler A o).
   Proof.
     simpl_relation.
     f_equal. apply functional_extensionality. auto.
   Qed.
 
-  Instance bind_morphism L I (A B : choiceType) :
-    Proper (eq ==> pointwise_relation A eq ==> eq) (@bind L I A B).
+  Instance bind_morphism (A B : choiceType) :
+    Proper (eq ==> pointwise_relation A eq ==> eq) (@bind A B).
   Proof.
     simpl_relation.
     f_equal. apply functional_extensionality. auto.
   Qed.
-
-  Opaque bind ret opr getr putr sampler.
-
-  Tactic Notation "program" "setoid" "fold" :=
-    try setoid_rewrite fold_putr ;
-    try setoid_rewrite fold_getr ;
-    try setoid_rewrite fold_opr ;
-    try setoid_rewrite fold_sampler ;
-    try setoid_rewrite fold_ret.
 
 End PackageTactics.

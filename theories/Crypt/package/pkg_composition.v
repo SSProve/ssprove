@@ -1290,7 +1290,9 @@ Module PackageComposition (π : RulesParam).
     Lemma raw_idE :
       ∀ I h n,
         raw_id I h n =
-        omap (λ '(So,To), (So ; To ; λ x, _opr (n,(So,To)) x (λ y, _ret y))) (getm_def I n).
+        omap
+          (λ '(So,To), (So ; To ; λ x, opr (n,(So,To)) x (λ y, ret y)))
+          (getm_def I n).
     Proof.
       intros I h n.
       unfold raw_id. simpl.
@@ -1322,7 +1324,7 @@ Module PackageComposition (π : RulesParam).
       ∀ I h o,
         lookup_op (raw_id I h) o =
         if o \in I
-        then Some (λ x, _opr o x (λ y, _ret y))
+        then Some (λ x, opr o x (λ y, ret y))
         else None.
     Proof.
       intros I h [n [S T]].
@@ -1356,20 +1358,18 @@ Module PackageComposition (π : RulesParam).
         raw_program_link v (raw_id I h) = v.
     Proof.
       intros A v L I h hv.
-      induction v in hv |- *.
+      induction hv.
       - cbn. reflexivity.
-      - simpl. cbn in hv. destruct hv as [ho hv].
-        rewrite lookup_op_raw_id. rewrite ho. simpl. f_equal.
-        extensionality z. intuition auto.
-      - simpl. cbn in hv. f_equal. apply functional_extensionality.
-        intuition auto.
-      - simpl. cbn in hv. f_equal. intuition auto.
-      - simpl. cbn in hv. f_equal. apply functional_extensionality.
-        intuition auto.
+      - simpl.
+        rewrite lookup_op_raw_id. rewrite H. simpl. f_equal.
+        extensionality z. auto.
+      - simpl. f_equal. apply functional_extensionality. auto.
+      - simpl. f_equal. auto.
+      - simpl. f_equal. apply functional_extensionality. auto.
     Qed.
 
-    Lemma link_id :
-      ∀ I E (p : package I E) h,
+    (* Lemma link_id :
+      ∀ L I E (p : package L I E) h,
         link p (ID I h) = ptrim p.
     Proof.
       intros I E [L [p hp]] h.
@@ -1386,7 +1386,7 @@ Module PackageComposition (π : RulesParam).
           eapply raw_program_link_id. eauto.
         + rewrite e. simpl. reflexivity.
       Unshelve. auto.
-    Qed.
+    Qed. *)
 
     Lemma trim_ID :
       ∀ I h,
@@ -1394,161 +1394,28 @@ Module PackageComposition (π : RulesParam).
     Proof.
       intros I h.
       apply package_ext.
-      - cbn. reflexivity.
-      - simpl. intro n. unfold trim.
-        rewrite filtermE. unfold obind, oapp.
-        rewrite mapmE. unfold omap, obind, oapp.
-        destruct (mkfmap (T:=nat_ordType) _ _) eqn:m.
-        + destruct t as [S [T p]].
-          destruct ((n, (S, T)) \in I) eqn:hin.
-          * rewrite hin. reflexivity.
-          * rewrite hin.
-            rewrite mkfmapE in m.
-            apply getm_def_map_interface_Some in m.
-            destruct m as [[S' T'] [hin' [L R]]].
-            inversion R; subst.
-            rewrite hin'  in hin.
-            discriminate.
-        + reflexivity.
+      simpl. intro n. unfold trim.
+      rewrite filtermE. unfold obind, oapp.
+      rewrite mapmE. unfold omap, obind, oapp.
+      destruct (mkfmap (T:=nat_ordType) _ _) eqn:m.
+      - destruct t as [S [T p]].
+        destruct ((n, (S, T)) \in I) eqn:hin.
+        + rewrite hin. reflexivity.
+        + rewrite hin.
+          rewrite mkfmapE in m.
+          apply getm_def_map_interface_Some in m.
+          destruct m as [[S' T'] [hin' [L R]]].
+          inversion R; subst.
+          rewrite hin'  in hin.
+          discriminate.
+      - reflexivity.
     Qed.
 
   End ID.
 
   (* Some folding lemmata *)
 
-  Lemma fold_ret :
-    ∀ (A : choiceType) L I (x : A) (h : valid_program L I _),
-      exist _ (_ret x) h = ret x.
-  Proof.
-    intros A L I x h.
-    apply program_ext. reflexivity.
-  Qed.
-
-  Lemma valid_opr_in :
-    ∀ {A L I} {o x} {k : tgt o → raw_program A},
-      valid_program L I (_opr o x k) →
-      o \in I.
-  Proof.
-    intros A L I o x k h.
-    cbn in h. intuition auto.
-  Qed.
-
-  Lemma valid_opr_k :
-    ∀ {A L I} {o x} {k : tgt o → raw_program A},
-      valid_program L I (_opr o x k) →
-      ∀ v, valid_program L I (k v).
-  Proof.
-    intros A L I o x k h.
-    cbn in h. intuition auto.
-  Qed.
-
-  Lemma fold_opr :
-    ∀ (A : choiceType) L I
-      (o : opsig) (x : src o) (k : tgt o → raw_program A)
-      (h : valid_program L I _),
-      exist _ (_opr o x k) h =
-      opr o (valid_opr_in h) x (λ x, exist _ (k x) (valid_opr_k h x)).
-  Proof.
-    intros A L I o x k h.
-    apply program_ext. reflexivity.
-  Qed.
-
-  Lemma valid_getr_in :
-    ∀ {A L I} {l} {k : Value l.π1 → raw_program A},
-      valid_program L I (_getr l k) →
-      l \in L.
-  Proof.
-    intros A L I l k h.
-    cbn in h. intuition auto.
-  Qed.
-
-  Lemma valid_getr_k :
-    ∀ {A L I} {l} {k : Value l.π1 → raw_program A},
-      valid_program L I (_getr l k) →
-      ∀ v, valid_program L I (k v).
-  Proof.
-    intros A L I l k h.
-    cbn in h. intuition auto.
-  Qed.
-
-  Lemma fold_getr :
-    ∀ (A : choiceType) L I
-      (l : Location) (k : Value l.π1 → raw_program A)
-      (h : valid_program L I _),
-      exist _ (_getr l k) h =
-      getr l (valid_getr_in h) (λ x, exist _ (k x) (valid_getr_k h x)).
-  Proof.
-    intros A L I l k h.
-    apply program_ext. reflexivity.
-  Qed.
-
-  Lemma valid_putr_in :
-    ∀ {A L I} {l} {v : Value l.π1} {k : raw_program A},
-      valid_program L I (_putr l v k) →
-      l \in L.
-  Proof.
-    intros A L I l v k h.
-    cbn in h. intuition auto.
-  Qed.
-
-  Lemma valid_putr_k :
-    ∀ {A L I} {l} {v : Value l.π1} {k : raw_program A},
-      valid_program L I (_putr l v k) →
-      valid_program L I k.
-  Proof.
-    intros A L I l v k h.
-    cbn in h. intuition auto.
-  Qed.
-
-  Lemma fold_putr :
-    ∀ (A : choiceType) L I
-      (l : Location) (v : Value l.π1) (k : raw_program A)
-      (h : valid_program L I _),
-      exist _ (_putr l v k) h =
-      putr l (valid_putr_in h) v (exist _ k (valid_putr_k h)).
-  Proof.
-    intros A L I l v k h.
-    apply program_ext. reflexivity.
-  Qed.
-
-  Lemma fold_sampler :
-    ∀ (A : choiceType) L I
-      (op : Op) (k : Arit op → raw_program A)
-      (h : valid_program L I _),
-      exist _ (_sampler op k) h =
-      sampler op (λ x, exist _ (k x) (h x)).
-  Proof.
-    intros A L I op k h.
-    apply program_ext. reflexivity.
-  Qed.
-
-  Lemma valid_bind_1 :
-    ∀ {A B L I} {v : raw_program A} {k : A → raw_program B},
-      valid_program L I (bind_ v k) →
-      valid_program L I v.
-  Proof.
-    intros A B L I v k h.
-    induction v in k, h |- *.
-    - cbn. auto.
-    - cbn. cbn in h. intuition eauto.
-    - cbn. cbn in h. intuition eauto.
-    - cbn. cbn in h. intuition eauto.
-    - cbn. cbn in h. intuition eauto.
-  Qed.
-
-  Lemma fold_bind :
-    ∀ A B L I
-      (v : raw_program A) (k : A → raw_program B)
-      (h : valid_program L I (bind_ v k))
-      (h' : ∀ x, valid_program L I (k x)),
-      exist _ (bind_ v k) h =
-      bind (exist _ v (valid_bind_1 h)) (λ x, exist _ (k x) (h' x)).
-  Proof.
-    intros A B L I v k h h'.
-    apply program_ext. cbn. reflexivity.
-  Qed.
-
-  Lemma fold_program_link :
+  (* Lemma fold_program_link :
     ∀ A L Im Ir (v : raw_program A) (p : raw_package)
       (hv : valid_program L Im v)
       (hp : valid_package L Ir Im p)
@@ -1559,9 +1426,9 @@ Module PackageComposition (π : RulesParam).
     intros A L Im Ir v p hv hp h.
     apply program_ext. cbn.
     reflexivity.
-  Qed.
+  Qed. *)
 
-  Lemma opackage_transport_K :
+  (* Lemma opackage_transport_K :
     ∀ L I E eI eE p,
       @opackage_transport L I I E E eI eE p = p.
   Proof.
@@ -1571,11 +1438,11 @@ Module PackageComposition (π : RulesParam).
     unfold opackage_transport. apply opackage_ext. cbn.
     intro.
     reflexivity.
-  Qed.
+  Qed. *)
 
   (** Turn put/get/sample into binds *)
 
-  Lemma putr_bind :
+  (* Lemma putr_bind :
     ∀ L I A l h v k,
       @putr L I A l h v k =
       bind (putr l h v (ret Datatypes.tt)) (λ _, k).
@@ -1598,9 +1465,9 @@ Module PackageComposition (π : RulesParam).
   Proof.
     intros L I A op k.
     apply program_ext. reflexivity.
-  Qed.
+  Qed. *)
 
-  Lemma link_olink :
+  (* Lemma link_olink :
     ∀ {I M E} (p₁ : package M E) (p₂ : package I M),
       link p₁ p₂ = (p₁.π1 :|: p₂.π1 ; olink' p₁.π2 p₂.π2).
   Proof.
@@ -1608,6 +1475,6 @@ Module PackageComposition (π : RulesParam).
     apply package_ext.
     - reflexivity.
     - cbn. intro x. reflexivity.
-  Qed.
+  Qed. *)
 
 End PackageComposition.
