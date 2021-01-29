@@ -576,7 +576,6 @@ Module CorePackageTheory (π : RulesParam).
   Definition typed_raw_function :=
     ∑ (S T : chUniverse), S → raw_program T.
 
-  (* Can't use opsig as index because maps aren't dependent. *)
   Definition raw_package :=
     {fmap ident -> typed_raw_function}.
 
@@ -586,18 +585,24 @@ Module CorePackageTheory (π : RulesParam).
       ∃ (f : src → raw_program tgt),
         p id = Some (src ; tgt ; f) ∧ ∀ x, valid_program L I (f x).
 
-  (* Open packages *)
-  Definition opackage L I E :=
-    { p : raw_package | valid_package L I E p }.
+  Class ValidPackage L I E p :=
+    is_valid_package : valid_package L I E p.
 
-  Definition package I E :=
-    ∑ L, opackage L I E.
+  (* Packages *)
+  Record package L I E := mkpackage {
+    pack : raw_package ;
+    pack_valid : ValidPackage L I E pack
+  }.
 
-  Record bundle := mkbundle {
+  Arguments mkpackage [_ _ _] _ {_}.
+  Arguments pack [_ _ _] _.
+  Arguments pack_valid [_ _ _] _.
+
+  (* Record bundle := mkbundle {
     locs : {fset Location} ;
     import : Interface ;
     export : Interface ;
     pack : opackage locs import export
-  }.
+  }. *)
 
 End CorePackageTheory.

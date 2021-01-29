@@ -120,15 +120,16 @@ Module PackageComposition (π : RulesParam).
     Fixpoint raw_program_link {A} (v : raw_program A) (p : raw_package) :
       raw_program A :=
       match v with
-      | _ret a => _ret a
-      | _opr o a k =>
+      | ret a => ret a
+      | opr o a k =>
+        (* The None branch doesn't happen when valid *)
         match lookup_op p o with
-        | Some f => bind_ (f a) (λ x, raw_program_link (k x) p)
-        | None => _opr o a (λ x, raw_program_link (k x) p) (* Should not happen in practice *)
+        | Some f => bind (f a) (λ x, raw_program_link (k x) p)
+        | None => opr o a (λ x, raw_program_link (k x) p)
         end
-      | _getr l k => _getr l (λ x, raw_program_link (k x) p)
-      | _putr l v k => _putr l v (raw_program_link k p)
-      | _sampler op k => _sampler op (λ x, raw_program_link (k x) p)
+      | getr l k => getr l (λ x, raw_program_link (k x) p)
+      | putr l v k => putr l v (raw_program_link k p)
+      | sampler op k => sampler op (λ x, raw_program_link (k x) p)
       end.
 
     Lemma raw_program_link_valid :
@@ -138,32 +139,30 @@ Module PackageComposition (π : RulesParam).
         valid_program L Ir (raw_program_link v p).
     Proof.
       intros A L Im Ir v p hv hp.
-      induction v in hv |- *.
-      all: try solve [ cbn ; cbn in hv ; intuition auto ].
-      cbn. cbn in hv.
-      eapply lookup_op_valid in hp as hf. 2: intuition eauto.
+      induction hv.
+      all: try solve [ constructor ; auto ].
+      eapply lookup_op_valid in hp as hf. 2: eauto.
       destruct hf as [f [ef hf]].
-      rewrite ef.
-      apply bind_valid.
-      - intuition auto.
-      - intuition auto.
+      cbn. rewrite ef.
+      apply bind_valid. all: auto.
     Qed.
 
-    Definition program_link {A L Im Ir}
+    (* TODO NEEDED? *)
+    (* Definition program_link {A L Im Ir}
       (v : program L Im A) (p : opackage L Ir Im) :
       program L Ir A.
     Proof.
       exists (raw_program_link (v ∙1) (p ∙1)).
       destruct v as [v hv], p as [p hp]. cbn.
       eapply raw_program_link_valid. all: eauto.
-    Defined.
+    Defined. *)
 
     Definition raw_link (p1 p2 : raw_package) : raw_package :=
       @mapm _ typed_raw_function _
         (λ '(So ; To ; f), (So ; To ; λ x, raw_program_link (f x) p2)) p1.
 
     (* TODO Maybe trim on the left? *)
-    Definition olink {L I E I'}
+    (* Definition olink {L I E I'}
       (p1 : opackage L I E) (p2 : opackage L I' I) : opackage L I' E.
     Proof.
       exists (raw_link p1 ∙1 p2 ∙1).
@@ -175,14 +174,13 @@ Module PackageComposition (π : RulesParam).
       eexists. split. 1: reflexivity.
       intro x.
       eapply raw_program_link_valid. all: eauto.
-    Defined.
+    Defined. *)
 
     Lemma bind_assoc :
       ∀ {A B C : choiceType} (v : raw_program A)
-        (k1 : TypeCat ⦅ choice_incl A ; raw_program B ⦆)
-        (k2 : TypeCat ⦅ choice_incl B ; raw_program C ⦆),
-        bind_ (bind_ v k1) k2 =
-        bind_ v (λ x, bind_ (k1 x) k2).
+        (k1 : A → raw_program B) (k2 : B → raw_program C),
+        bind (bind v k1) k2 =
+        bind v (λ x, bind (k1 x) k2).
     Proof.
       intros A B C v k1 k2.
       induction v in k1, k2 |- *.
@@ -195,10 +193,9 @@ Module PackageComposition (π : RulesParam).
 
     Lemma raw_program_link_bind :
       ∀ {A B : choiceType} (v : raw_program A)
-        (k : TypeCat ⦅ choice_incl A ; raw_program B ⦆)
-        (p : raw_package),
-        raw_program_link (bind_ v k) p =
-        bind_ (raw_program_link v p) (λ x, raw_program_link (k x) p).
+        (k : A → raw_program B) (p : raw_package),
+        raw_program_link (bind v k) p =
+        bind (raw_program_link v p) (λ x, raw_program_link (k x) p).
     Proof.
       intros A B v k p.
       induction v.
@@ -219,15 +216,15 @@ Module PackageComposition (π : RulesParam).
     *)
     Fixpoint provides {A} (p : raw_package) (v : raw_program A) :=
       match v with
-      | _ret a => True
-      | _opr o a k =>
+      | ret a => True
+      | opr o a k =>
         match lookup_op p o with
         | Some f => ∀ x, provides p (k x)
         | None => False
         end
-      | _getr l k => ∀ x, provides p (k x)
-      | _putr l v k => provides p k
-      | _sampler op k => ∀ x, provides p (k x)
+      | getr l k => ∀ x, provides p (k x)
+      | putr l v k => provides p k
+      | sampler op k => ∀ x, provides p (k x)
       end.
 
     Lemma raw_program_link_assoc :
@@ -256,28 +253,25 @@ Module PackageComposition (π : RulesParam).
         provides p v.
     Proof.
       intros A v p L I E hv hp.
-      induction v in hv |- *.
-      - cbn. auto.
-      - cbn. cbn in hv. destruct hv as [ho hv].
-        destruct lookup_op eqn:e.
-        2:{
-          specialize (hp _ ho) as hp'.
-          destruct o as [n [So To]]. cbn in *.
-          destruct hp' as [f [ef hf]].
-          destruct (p n) as [[St [Tt ft]]|] eqn:et. 2: discriminate.
-          destruct chUniverse_eqP.
-          2:{ inversion ef. congruence. }
-          destruct chUniverse_eqP.
-          2:{ inversion ef. congruence. }
-          discriminate.
-        }
-        intuition eauto.
-      - cbn. cbn in hv. intuition auto.
-      - cbn. cbn in hv. intuition auto.
-      - cbn. cbn in hv. intuition auto.
+      induction hv.
+      all: try solve [ cbn ; auto ].
+      cbn.
+      destruct lookup_op eqn:e.
+      2:{
+        specialize (hp _ H) as hp'.
+        destruct o as [n [So To]]. cbn in *.
+        destruct hp' as [f [ef hf]].
+        destruct (p n) as [[St [Tt ft]]|] eqn:et. 2: discriminate.
+        destruct chUniverse_eqP.
+        2:{ inversion ef. congruence. }
+        destruct chUniverse_eqP.
+        2:{ inversion ef. congruence. }
+        discriminate.
+      }
+      eauto.
     Qed.
 
-    Lemma program_link_assoc :
+    (* Lemma program_link_assoc :
       ∀ {A L Im Ir Il}
         (v : program L Im A)
         (f : opackage L Ir Im)
@@ -289,7 +283,7 @@ Module PackageComposition (π : RulesParam).
       apply program_ext. cbn.
       apply raw_program_link_assoc.
       eapply valid_provides. all: eauto.
-    Qed.
+    Qed. *)
 
     Lemma valid_package_inject_locations :
       ∀ I E L1 L2 p,
@@ -320,16 +314,16 @@ Module PackageComposition (π : RulesParam).
     Qed.
 
     (* TODO Probably useless? *)
-    Definition opackage_inject_locations {I E L1 L2}
+    (* Definition opackage_inject_locations {I E L1 L2}
       (hL : fsubset L1 L2) (p : opackage L1 I E) :
       opackage L2 I E.
     Proof.
       exists (p ∙1).
       destruct p as [p h]. cbn.
       eapply valid_package_inject_locations. all: eauto.
-    Defined.
+    Defined. *)
 
-    Definition program_link' {A L1 L2 I M}
+    (* Definition program_link' {A L1 L2 I M}
       (v : program L1 M A) (p : opackage L2 I M) :
       program (L1 :|: L2) I A.
     Proof.
@@ -340,7 +334,7 @@ Module PackageComposition (π : RulesParam).
         apply fsubsetUl.
       - eapply valid_package_inject_locations. 2: eauto.
         apply fsubsetUr.
-    Defined.
+    Defined. *)
 
     (* Remove unexported functions from a raw package *)
     Definition trim (E : Interface) (p : raw_package) :=
@@ -394,16 +388,16 @@ Module PackageComposition (π : RulesParam).
     Qed.
 
     (* Sequential composition p1 ∘ p2 *)
-    (* link_ is raw_link *)
-    Definition link {I M E} (p1 : package M E) (p2 : package I M) : package I E.
+    Definition link {L1 L2 I M E}
+      (p1 : package L1 M E) (p2 : package L2 I M) :
+      package (L1 :|: L2) I E.
     Proof.
-      exists (p1.π1 :|: p2.π1).
-      exists (raw_link (trim E (p1.π2 ∙1)) (p2.π2 ∙1)).
-      destruct p1 as [l1 [p1 h1]], p2 as [l2 [p2 h2]]. cbn.
+      exists (raw_link (trim E (p1.(pack))) (p2.(pack))).
+      destruct p1 as [p1 h1], p2 as [p2 h2]. cbn.
       eapply link_valid. all: eauto.
     Defined.
 
-    Definition link' {I M1 M2 E} (p1 : package M1 E) (p2 : package I M2)
+    (* Definition link' {I M1 M2 E} (p1 : package M1 E) (p2 : package I M2)
       (h : fsubset M1 M2) : package I E.
     Proof.
       exists (p1.π1 :|: p2.π1).
@@ -412,20 +406,20 @@ Module PackageComposition (π : RulesParam).
       eapply link_valid.
       - eauto.
       - eapply valid_package_inject_export. all: eauto.
-    Defined.
+    Defined. *)
 
-    Definition olink' {L1 L2 I E I'}
+    (* Definition olink' {L1 L2 I E I'}
       (p1 : opackage L1 I E) (p2 : opackage L2 I' I) :
       opackage (L1 :|: L2) I' E.
     Proof.
       exists (raw_link (trim E (p1 ∙1)) p2 ∙1).
       destruct p1 as [p1 h1], p2 as [p2 h2]. cbn.
       eapply link_valid. all: eauto.
-    Defined.
+    Defined. *)
 
-    Lemma opackage_ext :
-      ∀ {L I E} (p1 p2 : opackage L I E),
-        p1 ∙1 =1 p2 ∙1 →
+    Lemma package_ext :
+      ∀ {L I E} (p1 p2 : package L I E),
+        p1.(pack) =1 p2.(pack) →
         p1 = p2.
     Proof.
       intros L I E p1 p2 e.
@@ -435,7 +429,7 @@ Module PackageComposition (π : RulesParam).
       f_equal. apply proof_irrelevance.
     Qed.
 
-    Lemma package_ext :
+    (* Lemma package_ext :
       ∀ {I E} (p1 p2 : package I E),
         p1.π1 = p2.π1 →
         p1.π2 ∙1 =1 p2.π2 ∙1 →
@@ -446,7 +440,7 @@ Module PackageComposition (π : RulesParam).
       apply eq_fmap in e2.
       cbn in *. subst.
       f_equal. f_equal. apply proof_irrelevance.
-    Qed.
+    Qed. *)
 
     (* Technical lemma before proving assoc *)
     Lemma raw_link_trim_commut :
@@ -506,20 +500,16 @@ Module PackageComposition (π : RulesParam).
         raw_program_link v (trim E p) = raw_program_link v p.
     Proof.
       intros A L E v p h.
-      induction v in p, h |- *.
+      induction h in p |- *.
       - cbn. reflexivity.
-      - cbn. cbn in h. rewrite lookup_op_trim.
-        destruct h as [ho h].
+      - cbn. rewrite lookup_op_trim.
         destruct lookup_op eqn:e.
-        + cbn. rewrite ho. f_equal. apply functional_extensionality.
+        + cbn. rewrite H. f_equal. apply functional_extensionality.
           intuition auto.
-        + cbn. f_equal. apply functional_extensionality.
-          intuition auto.
-      - cbn. cbn in h. f_equal. apply functional_extensionality.
-        intuition auto.
-      - cbn. cbn in h. f_equal. intuition auto.
-      - cbn. cbn in h. f_equal. apply functional_extensionality.
-        intuition auto.
+        + cbn. f_equal. apply functional_extensionality. intuition auto.
+      - cbn. f_equal. apply functional_extensionality. intuition auto.
+      - cbn. f_equal. intuition auto.
+      - cbn. f_equal. apply functional_extensionality. intuition auto.
     Qed.
 
     Lemma trim_get_inv :
@@ -596,21 +586,21 @@ Module PackageComposition (π : RulesParam).
           -- eauto.
     Qed.
 
-    Lemma link_assoc :
-      ∀ {E M1 M2 I}
-        (p1 : package M1 E)
-        (p2 : package M2 M1)
-        (p3 : package I M2),
+    (* Lemma link_assoc :
+      ∀ {L1 L2 L3 E M1 M2 I}
+        (p1 : package L1 M1 E)
+        (p2 : package L2 M2 M1)
+        (p3 : package L3 I M2),
         link p1 (link p2 p3) = link (link p1 p2) p3.
     Proof.
       intros E M1 M2 I [l1 [p1 h1]] [l2 [p2 h2]] [l3 [p3 h3]].
       apply package_ext.
       - cbn. apply fsetUA.
       - cbn. eapply raw_link_assoc. all: eauto.
-    Qed.
+    Qed. *)
 
     (* bundled versions *)
-    Definition blink p1 p2 (h : import p1 = export p2) : bundle.
+    (* Definition blink p1 p2 (h : import p1 = export p2) : bundle.
     Proof.
       unshelve econstructor.
       - exact (locs p1 :|: locs p2).
@@ -620,9 +610,9 @@ Module PackageComposition (π : RulesParam).
         destruct p1 as [L1 I1 E1 [p1 h1]], p2 as [L2 I2 E2 [p2 h2]].
         cbn in h. subst. cbn.
         eapply link_valid. all: eauto.
-    Defined.
+    Defined. *)
 
-    Lemma blink_export :
+    (* Lemma blink_export :
       ∀ p1 p2 (h : import p1 = export p2),
         export p1 = export (blink p1 p2 h).
     Proof.
@@ -649,9 +639,9 @@ Module PackageComposition (π : RulesParam).
       intros [L1 I1 E1 [p1 h1]] [L2 I2 E2 [p2 h2]] el ei ee ep.
       cbn in *. apply eq_fmap in ep. subst. f_equal. f_equal.
       apply proof_irrelevance.
-    Qed.
+    Qed. *)
 
-    Lemma blink_assoc :
+    (* Lemma blink_assoc :
       ∀ p1 p2 p3 (h12 : import p1 = export p2) (h23 : import p2 = export p3),
         blink p1 (blink p2 p3 h23) h12 =
         blink (blink p1 p2 h12) p3 h23.
@@ -661,19 +651,22 @@ Module PackageComposition (π : RulesParam).
       apply bundle_ext. all: cbn. 2,3: auto.
       - apply fsetUA.
       - eapply raw_link_assoc. all: eauto.
-    Qed.
+    Qed. *)
 
   End Link.
 
-  Notation "p1 ∘ p2" := (link p1 p2) (right associativity, at level 80) : package_scope.
+  (* Notation "p1 ∘ p2" :=
+      (link p1 p2) (right associativity, at level 80) : package_scope. *)
 
+  (* TODO Probably move somewhere else? *)
   Section fset_par_facts.
 
     Fact disjoint_in_both {T : ordType} (s1 s2 : {fset T}) :
       fdisjoint s1 s2 → ∀ x, x \in s1 → x \in s2 → False.
     Proof.
       move => Hdisjoint x x_in_s1 x_in_s2.
-      assert (x \notin s2) as H by exact (fdisjointP s1 s2 Hdisjoint x x_in_s1).
+      assert (x \notin s2) as H.
+      { exact (fdisjointP s1 s2 Hdisjoint x x_in_s1). }
       rewrite x_in_s2 in H. by [].
     Qed.
 
@@ -784,7 +777,7 @@ Module PackageComposition (π : RulesParam).
         auto.
     Qed.
 
-    Definition bpar (p1 p2 : bundle) (h : parable (export p1) (export p2)) :
+    (* Definition bpar (p1 p2 : bundle) (h : parable (export p1) (export p2)) :
       bundle.
     Proof.
       unshelve econstructor.
@@ -795,7 +788,7 @@ Module PackageComposition (π : RulesParam).
         destruct p1 as [L1 I1 E1 [p1 h1]], p2 as [L2 I2 E2 [p2 h2]].
         cbn - [raw_par fdisjoint] in *.
         apply valid_par. all: auto.
-    Defined.
+    Defined. *)
 
     Lemma trim_domm_subset :
       ∀ E p,
@@ -882,7 +875,6 @@ Module PackageComposition (π : RulesParam).
       auto.
     Qed.
 
-
     Lemma raw_par_assoc :
       ∀ E1 E2 E3 p1 p2 p3,
         parable E1 E2 →
@@ -898,7 +890,9 @@ Module PackageComposition (π : RulesParam).
       apply unionmA.
     Qed.
 
-    Lemma bpar_commut :
+    (* TODO See what we should keep / what we need *)
+
+    (* Lemma bpar_commut :
       ∀ p1 p2 (h : parable (export p1) (export p2)),
         bpar p1 p2 h = bpar p2 p1 (parable_sym h).
     Proof.
@@ -908,9 +902,9 @@ Module PackageComposition (π : RulesParam).
       1-3: apply fsetUC.
       intro. f_equal.
       apply raw_par_commut. assumption.
-    Qed.
+    Qed. *)
 
-    Definition par {I1 I2 E1 E2} (p1 : package I1 E1) (p2 : package I2 E2)
+    (* Definition par {I1 I2 E1 E2} (p1 : package I1 E1) (p2 : package I2 E2)
       (h : parable E1 E2) : package (I1 :|: I2) (E1 :|: E2).
     Proof.
       exists (p1.π1 :|: p2.π1).
@@ -945,7 +939,6 @@ Module PackageComposition (π : RulesParam).
       - simpl. destruct p1 as [p1 h1], p2 as [p2 h2].
         simpl. intro. f_equal. apply raw_par_commut. assumption.
     Qed.
-
 
     Lemma par_assoc :
       ∀ {I1 I2 I3 E1 E2 E3}
@@ -1116,20 +1109,24 @@ Module PackageComposition (π : RulesParam).
         erewrite <- import_raw_par_left. 2-3: eauto.
         erewrite <- (import_raw_par_right p2 _ p4). 2-4: eauto.
         intro. reflexivity.
-    Qed.
+    Qed. *)
 
   End Par.
 
   Local Open Scope type_scope.
+
+  (* TODO OUTDATED *)
+
   (** Package builder
 
     The same way we have constructors for program, we provide constructors
     for packages that are correct by construction.
   *)
+
   Definition typed_function L I :=
     ∑ (S T : chUniverse), S → program L I T.
 
-  Definition export_interface {L I} (p : {fmap ident -> typed_function L I})
+  (* Definition export_interface {L I} (p : {fmap ident -> typed_function L I})
     : Interface :=
     fset (mapm (λ '(So ; To ; f), (So, To)) p).
 
@@ -1147,11 +1144,12 @@ Module PackageComposition (π : RulesParam).
     rewrite e in ho. cbn in ho. noconf ho.
     exists (λ x, (f x) ∙1). simpl. intuition auto.
     exact ((f x) ∙2).
-  Defined.
+  Defined. *)
 
   (* Alternative from a function *)
 
-  Equations? map_interface (I : seq opsig) {A} (f : ∀ x, x \in I → A) : seq A :=
+  Equations? map_interface (I : seq opsig) {A} (f : ∀ x, x \in I → A) :
+    seq A :=
       map_interface (a :: I') f := f a _ :: map_interface I' (λ x h, f x _) ;
       map_interface [::] f := [::].
     Proof.
@@ -1159,7 +1157,10 @@ Module PackageComposition (π : RulesParam).
       - rewrite in_cons. apply/orP. right. auto.
     Qed.
 
-  Notation "[ 'interface' e | h # x ∈ I ]" := (map_interface I (λ x h, e)).
+  Notation "[ 'interface' e | h # x ∈ I ]" :=
+    (map_interface I (λ x h, e)) : package_scope.
+
+  Open Scope package_scope.
 
   Lemma getm_def_map_interface_Some :
     ∀ A (I : seq opsig) (f : ∀ x, x \in I → A) n y,
@@ -1232,13 +1233,13 @@ Module PackageComposition (π : RulesParam).
 
   Definition funmkpack {L I} {E : Interface} (hE : flat E)
     (f : ∀ (o : opsig), o \in E → src o → program L I (tgt o)) :
-    opackage L I E.
+    package L I E.
   Proof.
     pose foo : seq (nat * typed_function L I) :=
       [interface (ide o, (chsrc o ; chtgt o ; f o h)) | h # o ∈ E].
     pose bar := mkfmap foo.
     exists (@mapm _ (typed_function L I) typed_raw_function
-      (λ '(So ; To ; f), (So ; To ; λ x, (f x) ∙1)) bar).
+      (λ '(So ; To ; f), (So ; To ; λ x, (f x).(prog))) bar).
     intros [n [So To]] ho.
     rewrite mapmE. subst bar foo.
     rewrite mkfmapE.
@@ -1248,7 +1249,7 @@ Module PackageComposition (π : RulesParam).
       specialize (hE _ _ _ h ho). noconf hE.
       eexists. split. 1: reflexivity.
       intro x. cbn.
-      exact ((f (n, (So, To)) h x) ∙2).
+      exact ((f (n, (So, To)) h x).(prog_valid)).
     - exfalso. apply getm_def_map_interface_None in e.
       eapply in_getm_def_None. 2: eauto.
       exact ho.
@@ -1256,27 +1257,27 @@ Module PackageComposition (π : RulesParam).
 
   Section ID.
 
-    Definition ID (I : Interface) (h : flat I) : package I I :=
-      (fset0 ; funmkpack h (λ o ho x, opr o ho x (λ x, ret x))).
+    Definition ID (I : Interface) (h : flat I) : package fset0 I I :=
+      (funmkpack h (λ o ho x, {program opr o x (λ x, ret x) })).
 
-    Definition idb (I : Interface) (h : flat I) : bundle := {|
+    (* Definition idb (I : Interface) (h : flat I) : bundle := {|
       locs := fset0 ;
       import := I ;
       export := I ;
       pack := funmkpack h (λ o ho x, opr o ho x (λ x, ret x))
-    |}.
+    |}. *)
 
     Definition raw_id I h :=
-      (ID I h).π2 ∙1.
+      (ID I h).(pack).
 
-    Definition optrim {L I E} (p : opackage L I E) : opackage L I E.
+    Definition ptrim {L I E} (p : package L I E) : package L I E.
     Proof.
-      exists (trim E (p ∙1)).
+      exists (trim E p.(pack)).
       destruct p as [p h]. cbn.
       apply valid_trim. auto.
     Defined.
 
-    Definition ptrim {I E} (p : package I E) : package I E :=
+    (* Definition ptrim {I E} (p : package I E) : package I E :=
       (p.π1 ; optrim (p.π2)).
 
     Definition btrim (b : bundle) : bundle := {|
@@ -1284,7 +1285,7 @@ Module PackageComposition (π : RulesParam).
       import := import b ;
       export := export b ;
       pack := optrim (pack b)
-    |}.
+    |}. *)
 
     Lemma raw_idE :
       ∀ I h n,
