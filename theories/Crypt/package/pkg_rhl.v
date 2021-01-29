@@ -2167,6 +2167,29 @@ Qed.
 
 Local Open Scope package_scope.
 
+Lemma rsym_pre  { A1 A2 : ord_choiceType } { L : {fset Location} } { pre : heap * heap -> Prop } { post }
+                     { c1 : program L Game_import A1 } { c2 : program L Game_import A2 }
+                     (pre_sym : forall h1 h2, pre (h1, h2) -> pre (h2, h1))
+                     (H : r⊨ ⦃ fun '(h1, h2) => pre (h2, h1) ⦄ c1 ≈ c2 ⦃ post ⦄) :
+                     r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄.
+Proof.
+  unshelve eapply rpre_weaken_rule.
+  { exact: (fun '(h1, h2) => pre (h2, h1)). }
+  - assumption. - assumption.
+Qed.
+
+
+Lemma rsymmetry  { A1 A2 : ord_choiceType } { L : {fset Location} } { pre : heap * heap -> Prop } { post }
+                 { c1 : program L Game_import A1 } { c2 : program L Game_import A2 }
+                 (H : r⊨ ⦃ fun '(h1, h2) => pre (h2, h1) ⦄ c2 ≈ c1 ⦃ fun '(a2,h2) '(a1,h1) => post (a1,h1) (a2, h2) ⦄) :
+                     r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄.
+Proof.
+  move => [h1 h2]. move => π. simpl in π. 
+  unfold semantic_judgement in H. 
+  specialize (H (h2, h1) (fun '(a2,s2, (a1,s1)) => π (a1, s1, (a2, s2)))).
+  (* CA: we need the symmetric of the coupling from H *)
+Admitted.  
+   
 
 Lemma rsamplerC { A : ord_choiceType } { L : {fset Location} }  (o : Op)
                 (c : program L Game_import A):
@@ -2174,7 +2197,8 @@ Lemma rsamplerC { A : ord_choiceType } { L : {fset Location} }  (o : Op)
        a ← c ;; r ← (r ← sample o ;; ret r) ;;  (ret (a, r)) ≈
        r ← (r ← sample o ;; ret r) ;; a ← c ;;  (ret (a, r))
    ⦃ eq ⦄.
-Proof. Admitted.
+Proof. 
+Admitted.
 
 Lemma rsamplerC' { A : ord_choiceType } { L : {fset Location} }  (o : Op)
                  (c : program L Game_import A):
@@ -2222,25 +2246,6 @@ Proof.
             + rewrite /= => h1 h2 [Heq1 Heq2]. by subst. }
          rewrite /= => h1 h2 [Heq1 Heq2]. by subst.
 Qed.
-
-
-Lemma rsym_pre  { A1 A2 : ord_choiceType } { L : {fset Location} } { pre : heap * heap -> Prop } { post }
-                     { c1 : program L Game_import A1 } { c2 : program L Game_import A2 }
-                     (pre_sym : forall h1 h2, pre (h1, h2) -> pre (h2, h1))
-                     (H : r⊨ ⦃ fun '(h1, h2) => pre (h2, h1) ⦄ c1 ≈ c2 ⦃ post ⦄) :
-                     r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄.
-Proof.
-  unshelve eapply rpre_weaken_rule.
-  { exact: (fun '(h1, h2) => pre (h2, h1)). }
-  - assumption. - assumption.
-Qed.
-
-
-Lemma rsymmetry  { A1 A2 : ord_choiceType } { L : {fset Location} } { pre : heap * heap -> Prop } { post }
-                 { c1 : program L Game_import A1 } { c2 : program L Game_import A2 }
-                 (H : r⊨ ⦃ fun '(h1, h2) => pre (h2, h1) ⦄ c2 ≈ c1 ⦃ fun '(a2,h2) '(a1,h1) => post (a1,h1) (a2, h2) ⦄) :
-                     r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄.
-Proof. Admitted.
 
 
 
