@@ -598,6 +598,10 @@ Module CorePackageTheory (π : RulesParam).
   Arguments pack [_ _ _] _.
   Arguments pack_valid [_ _ _] _.
 
+  (* Packages coming with their set of locations *)
+  Definition loc_package I E :=
+    ∑ L, package L I E.
+
   (* Record bundle := mkbundle {
     locs : {fset Location} ;
     import : Interface ;
