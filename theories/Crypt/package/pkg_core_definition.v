@@ -196,7 +196,7 @@ Module CorePackageTheory (π : RulesParam).
       apply valid_ret.
     Qed. *)
 
-    Lemma valid_from_class :
+    Lemma valid_program_from_class :
       ∀ A (p : raw_program A),
         ValidProgram p →
         valid_program p.
@@ -207,24 +207,24 @@ Module CorePackageTheory (π : RulesParam).
     (* Hint Extern 1 (ValidProgram (opr ?o ?x ?k)) =>
       apply valid_opr ; [
         eauto
-      | intro ; apply valid_from_class
+      | intro ; apply valid_program_from_class
       ] : typeclass_instances.
 
     Hint Extern 1 (ValidProgram (getr ?o ?x ?k)) =>
       apply valid_getr ; [
         eauto
-      | intro ; apply valid_from_class
+      | intro ; apply valid_program_from_class
       ] : typeclass_instances.
 
     Hint Extern 1 (ValidProgram (putr ?o ?x ?k)) =>
       apply valid_putr ; [
         eauto
-      | apply valid_from_class
+      | apply valid_program_from_class
       ] : typeclass_instances.
 
     Hint Extern 1 (ValidProgram (sampler ?op ?k)) =>
       apply valid_sampler ;
-      intro ; apply valid_from_class
+      intro ; apply valid_program_from_class
       : typeclass_instances. *)
 
     Record program A := mkprog {
@@ -434,33 +434,38 @@ Module CorePackageTheory (π : RulesParam).
     apply valid_ret.
   Qed.
 
+  (* TODO Replace the eautos in the tactics by in_fset stuff
+    This means moving them from pkg_tactics.
+    Can reorganise later.
+  *)
+
   Hint Extern 1 (ValidProgram ?L ?I (opr ?o ?x ?k)) =>
     apply valid_opr ; [
       eauto
-    | intro ; apply valid_from_class
+    | intro ; apply valid_program_from_class
     ] : typeclass_instances.
 
   Hint Extern 1 (ValidProgram ?L ?I (getr ?o ?k)) =>
     apply valid_getr ; [
       eauto
-    | intro ; apply valid_from_class
+    | intro ; apply valid_program_from_class
     ] : typeclass_instances.
 
   Hint Extern 1 (ValidProgram ?L ?I (putr ?o ?x ?k)) =>
     apply valid_putr ; [
       eauto
-    | apply valid_from_class
+    | apply valid_program_from_class
     ] : typeclass_instances.
 
   Hint Extern 1 (ValidProgram ?L ?I (sampler ?op ?k)) =>
     apply valid_sampler ;
-    intro ; apply valid_from_class
+    intro ; apply valid_program_from_class
     : typeclass_instances.
 
   Hint Extern 1 (ValidProgram ?L ?I (bind ?p ?k)) =>
     apply valid_bind ; [
-      apply valid_from_class
-    | intro ; apply valid_from_class
+      apply valid_program_from_class
+    | intro ; apply valid_program_from_class
     ]
     : typeclass_instances.
 
@@ -737,5 +742,13 @@ Module CorePackageTheory (π : RulesParam).
   Hint Extern 1 (ValidPackage ?L ?I ?E (?p.(pack))) =>
     apply p.(pack_valid)
     : typeclass_instances.
+
+  Lemma valid_package_from_class :
+    ∀ L I E (p : raw_package),
+      ValidPackage L I E p →
+      valid_package L I E p.
+  Proof.
+    intros A p h. auto.
+  Defined.
 
 End CorePackageTheory.

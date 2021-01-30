@@ -33,557 +33,517 @@ Module PackageComposition (π : RulesParam).
 
   Include (CorePackageTheory π).
 
-  Section Link.
+  Definition cast_fun {So To St Tt : chUniverse}
+    (hS : St = So) (hT : Tt = To) (f : St → raw_program Tt) :
+    So → raw_program To.
+  Proof.
+    subst. auto.
+  Defined.
 
-    Definition cast_fun {So To St Tt : chUniverse}
-      (hS : St = So) (hT : Tt = To) (f : St → raw_program Tt) :
-      So → raw_program To.
-    Proof.
-      subst. auto.
-    Defined.
+  Definition lookup_op (p: raw_package) (o : opsig) :
+    option (src o → raw_program (tgt o)) :=
+    let '(n, (So, To)) := o in
+    match p n with
+    | Some (St ; Tt ; f) =>
+      match chUniverse_eqP St So, chUniverse_eqP Tt To with
+      | ReflectT hS, ReflectT hT => Some (cast_fun hS hT f)
+      | _,_ => None
+      end
+    | None => None
+    end.
 
-    Definition lookup_op (p: raw_package) (o : opsig) :
-      option (src o → raw_program (tgt o)) :=
-      let '(n, (So, To)) := o in
-      match p n with
-      | Some (St ; Tt ; f) =>
-        match chUniverse_eqP St So, chUniverse_eqP Tt To with
-        | ReflectT hS, ReflectT hT => Some (cast_fun hS hT f)
-        | _,_ => None
-        end
-      | None => None
-      end.
+  Derive NoConfusion NoConfusionHom for sigT.
+  Derive NoConfusion NoConfusionHom for option.
 
-    Derive NoConfusion NoConfusionHom for sigT.
-    Derive NoConfusion NoConfusionHom for option.
+  Lemma cast_fun_K :
+    ∀ S T f e1 e2,
+      @cast_fun S T S T e1 e2 f = f.
+  Proof.
+    intros S T f e1 e2.
+    rewrite (uip e1 erefl).
+    rewrite (uip e2 erefl).
+    reflexivity.
+  Qed.
 
-    Lemma cast_fun_K :
-      ∀ S T f e1 e2,
-        @cast_fun S T S T e1 e2 f = f.
-    Proof.
-      intros S T f e1 e2.
-      rewrite (uip e1 erefl).
-      rewrite (uip e2 erefl).
-      reflexivity.
-    Qed.
+  Lemma lookup_op_spec :
+    ∀ p o f,
+      lookup_op p o = Some f →
+      p (ide o) = Some (chsrc o ; chtgt o ; f).
+  Proof.
+    intros p o f e.
+    destruct o as [id [S T]]. cbn in *.
+    destruct (p id) as [[S' [T' g]]|] eqn:e1. 2: discriminate.
+    destruct chUniverse_eqP. 2: discriminate.
+    destruct chUniverse_eqP. 2: discriminate.
+    noconf e. subst.
+    reflexivity.
+  Qed.
 
-    Lemma lookup_op_spec :
-      ∀ p o f,
-        lookup_op p o = Some f →
-        p (ide o) = Some (chsrc o ; chtgt o ; f).
-    Proof.
-      intros p o f e.
-      destruct o as [id [S T]]. cbn in *.
-      destruct (p id) as [[S' [T' g]]|] eqn:e1. 2: discriminate.
-      destruct chUniverse_eqP. 2: discriminate.
-      destruct chUniverse_eqP. 2: discriminate.
-      noconf e. subst.
-      reflexivity.
-    Qed.
+  Lemma lookup_op_valid :
+    ∀ L I E p o,
+      valid_package L I E p →
+      o \in E →
+      ∃ f,
+        lookup_op p o = Some f ∧
+        ∀ x, valid_program L I (f x).
+  Proof.
+    intros L I E p o hp ho.
+    specialize (hp o ho).
+    destruct o as [n [So To]].
+    destruct hp as [f [ef hf]].
+    exists f. intuition auto. cbn.
+    destruct (p n) as [[St [Tt ft]]|] eqn:e. 2: discriminate.
+    destruct chUniverse_eqP.
+    2:{ inversion ef. congruence. }
+    destruct chUniverse_eqP.
+    2:{ inversion ef. congruence. }
+    subst. cbn. noconf ef.
+    reflexivity.
+  Qed.
 
-    Lemma lookup_op_valid :
-      ∀ L I E p o,
-        valid_package L I E p →
-        o \in E →
-        ∃ f,
-          lookup_op p o = Some f ∧
-          ∀ x, valid_program L I (f x).
-    Proof.
-      intros L I E p o hp ho.
-      specialize (hp o ho).
-      destruct o as [n [So To]].
-      destruct hp as [f [ef hf]].
-      exists f. intuition auto. cbn.
-      destruct (p n) as [[St [Tt ft]]|] eqn:e. 2: discriminate.
-      destruct chUniverse_eqP.
-      2:{ inversion ef. congruence. }
-      destruct chUniverse_eqP.
-      2:{ inversion ef. congruence. }
-      subst. cbn. noconf ef.
-      reflexivity.
-    Qed.
+  Lemma lookup_op_map :
+    ∀ p o f,
+      lookup_op (@mapm _ typed_raw_function _ (λ '(So ; To ; g), (So ; To ; f So To g)) p) o =
+      omap (f (chsrc o) (chtgt o)) (lookup_op p o).
+  Proof.
+    intros p [n [So To]] f. unfold lookup_op.
+    rewrite mapmE. destruct (p n) as [[St [Tt ft]]|] eqn:e.
+    2:{ cbn. reflexivity. }
+    cbn. destruct chUniverse_eqP. 2: reflexivity.
+    destruct chUniverse_eqP. 2: reflexivity.
+    cbn. subst. cbn. reflexivity.
+  Qed.
 
-    Lemma lookup_op_map :
-      ∀ p o f,
-        lookup_op (@mapm _ typed_raw_function _ (λ '(So ; To ; g), (So ; To ; f So To g)) p) o =
-        omap (f (chsrc o) (chtgt o)) (lookup_op p o).
-    Proof.
-      intros p [n [So To]] f. unfold lookup_op.
-      rewrite mapmE. destruct (p n) as [[St [Tt ft]]|] eqn:e.
-      2:{ cbn. reflexivity. }
-      cbn. destruct chUniverse_eqP. 2: reflexivity.
-      destruct chUniverse_eqP. 2: reflexivity.
-      cbn. subst. cbn. reflexivity.
-    Qed.
+  Fixpoint program_link {A} (v : raw_program A) (p : raw_package) :
+    raw_program A :=
+    match v with
+    | ret a => ret a
+    | opr o a k =>
+      (* The None branch doesn't happen when valid *)
+      match lookup_op p o with
+      | Some f => bind (f a) (λ x, program_link (k x) p)
+      | None => opr o a (λ x, program_link (k x) p)
+      end
+    | getr l k => getr l (λ x, program_link (k x) p)
+    | putr l v k => putr l v (program_link k p)
+    | sampler op k => sampler op (λ x, program_link (k x) p)
+    end.
 
-    Fixpoint raw_program_link {A} (v : raw_program A) (p : raw_package) :
-      raw_program A :=
-      match v with
-      | ret a => ret a
-      | opr o a k =>
-        (* The None branch doesn't happen when valid *)
-        match lookup_op p o with
-        | Some f => bind (f a) (λ x, raw_program_link (k x) p)
-        | None => opr o a (λ x, raw_program_link (k x) p)
-        end
-      | getr l k => getr l (λ x, raw_program_link (k x) p)
-      | putr l v k => putr l v (raw_program_link k p)
-      | sampler op k => sampler op (λ x, raw_program_link (k x) p)
-      end.
+  Lemma valid_program_link :
+    ∀ A L Im Ir (v : raw_program A) p,
+      valid_program L Im v →
+      valid_package L Ir Im p →
+      valid_program L Ir (program_link v p).
+  Proof.
+    intros A L Im Ir v p hv hp.
+    induction hv.
+    all: try solve [ constructor ; auto ].
+    eapply lookup_op_valid in hp as hf. 2: eauto.
+    destruct hf as [f [ef hf]].
+    cbn. rewrite ef.
+    apply valid_bind. all: auto.
+  Qed.
 
-    Lemma raw_program_link_valid :
-      ∀ A L Im Ir (v : raw_program A) p,
-        valid_program L Im v →
-        valid_package L Ir Im p →
-        valid_program L Ir (raw_program_link v p).
-    Proof.
-      intros A L Im Ir v p hv hp.
-      induction hv.
-      all: try solve [ constructor ; auto ].
-      eapply lookup_op_valid in hp as hf. 2: eauto.
-      destruct hf as [f [ef hf]].
-      cbn. rewrite ef.
-      apply valid_bind. all: auto.
-    Qed.
+  Hint Extern 1 (ValidProgram ?L ?I (program_link ?v ?p)) =>
+    apply valid_program_link ; [
+      apply valid_program_from_class
+    | apply valid_package_from_class
+    ]
+    : typeclass_instances.
 
-    (* TODO NEEDED? *)
-    (* Definition program_link {A L Im Ir}
-      (v : program L Im A) (p : opackage L Ir Im) :
-      program L Ir A.
-    Proof.
-      exists (raw_program_link (v ∙1) (p ∙1)).
-      destruct v as [v hv], p as [p hp]. cbn.
-      eapply raw_program_link_valid. all: eauto.
-    Defined. *)
+  (* (Non-associative) linking *)
+  (* Should it be pre_link? *)
+  Definition link (p1 p2 : raw_package) : raw_package :=
+    @mapm _ typed_raw_function _
+      (λ '(So ; To ; f), (So ; To ; λ x, program_link (f x) p2)) p1.
 
-    Definition raw_link (p1 p2 : raw_package) : raw_package :=
-      @mapm _ typed_raw_function _
-        (λ '(So ; To ; f), (So ; To ; λ x, raw_program_link (f x) p2)) p1.
+  (* Remove unexported functions from a raw package *)
+  Definition trim (E : Interface) (p : raw_package) :=
+    filterm (λ n '(So ; To ; f), (n, (So, To)) \in E) p.
 
-    (* TODO Maybe trim on the left? *)
-    (* Definition olink {L I E I'}
-      (p1 : opackage L I E) (p2 : opackage L I' I) : opackage L I' E.
-    Proof.
-      exists (raw_link p1 ∙1 p2 ∙1).
-      destruct p1 as [p1 h1], p2 as [p2 h2]. cbn.
-      intros [n [So To]] ho.
-      unfold raw_link. rewrite mapmE.
-      specialize (h1 _ ho) as h1'. cbn in h1'.
-      destruct h1' as [f [ef hf]]. rewrite ef. cbn.
-      eexists. split. 1: reflexivity.
-      intro x.
-      eapply raw_program_link_valid. all: eauto.
-    Defined. *)
+  (* Linking *)
+  (* Definition link *)
 
-    Lemma bind_assoc :
-      ∀ {A B C : choiceType} (v : raw_program A)
-        (k1 : A → raw_program B) (k2 : B → raw_program C),
-        bind (bind v k1) k2 =
-        bind v (λ x, bind (k1 x) k2).
-    Proof.
-      intros A B C v k1 k2.
-      induction v in k1, k2 |- *.
-      - cbn. reflexivity.
-      - cbn. f_equal. apply functional_extensionality. auto.
-      - cbn. f_equal. extensionality z. auto.
-      - cbn. f_equal. auto.
-      - cbn. f_equal. extensionality z. auto.
-    Qed.
+  (* TODO MOVE *)
+  Lemma valid_package_inject_locations :
+    ∀ I E L1 L2 p,
+      fsubset L1 L2 →
+      valid_package L1 I E p →
+      valid_package L2 I E p.
+  Proof.
+    intros I E L1 L2 p hL h.
+    intros [n [S T]] ho. specialize (h _ ho). cbn in h.
+    destruct h as [f [ef hf]].
+    exists f. intuition auto.
+    eapply valid_injectLocations. all: eauto.
+  Qed.
 
-    Lemma raw_program_link_bind :
-      ∀ {A B : choiceType} (v : raw_program A)
-        (k : A → raw_program B) (p : raw_package),
-        raw_program_link (bind v k) p =
-        bind (raw_program_link v p) (λ x, raw_program_link (k x) p).
-    Proof.
-      intros A B v k p.
-      induction v.
-      - cbn. reflexivity.
-      - cbn. destruct lookup_op.
-        + rewrite bind_assoc. f_equal.
-          apply functional_extensionality. auto.
-        + cbn. f_equal. apply functional_extensionality. auto.
-      - cbn. f_equal. apply functional_extensionality. auto.
-      - cbn. f_equal. auto.
-      - cbn. f_equal. apply functional_extensionality. auto.
-    Qed.
+  Lemma valid_link :
+    ∀ L1 L2 I M E p1 p2,
+      valid_package L1 M E p1 →
+      valid_package L2 I M p2 →
+      valid_package (L1 :|: L2) I E (link p1 p2).
+  Proof.
+    intros L1 l2 I M E p1 p2 h1 h2.
+    intros [n [So To]] ho. unfold link.
+    rewrite mapmE.
+    specialize (h1 _ ho) as h1'. cbn in h1'.
+    destruct h1' as [f [ef hf]].
+    rewrite ef. cbn.
+    eexists. split. 1: reflexivity.
+    intro x.
+    eapply valid_program_link.
+    - eapply valid_injectLocations.
+      + apply fsubsetUl.
+      + eapply hf.
+    - eapply valid_package_inject_locations.
+      + apply fsubsetUr.
+      + auto.
+  Qed.
 
-    (* For associativity we need to know that all operations in the program
-      are indeed provided by the package.
-      [provides p v] states that p provides everything that v imports.
-      Alternatively we could compare with a set.
-    *)
-    Fixpoint provides {A} (p : raw_package) (v : raw_program A) :=
-      match v with
-      | ret a => True
-      | opr o a k =>
-        match lookup_op p o with
-        | Some f => ∀ x, provides p (k x)
-        | None => False
-        end
-      | getr l k => ∀ x, provides p (k x)
-      | putr l v k => provides p k
-      | sampler op k => ∀ x, provides p (k x)
-      end.
+  Hint Extern 1 (ValidPackage ?L ?I ?E (link ?p1 ?p2)) =>
+    apply valid_link ; [
+      apply valid_package_from_class
+    | apply valid_package_from_class
+    ]
+    : typeclass_instances.
 
-    Lemma raw_program_link_assoc :
-      ∀ A (v : raw_program A) f g,
-        provides f v →
-        raw_program_link (raw_program_link v f) g =
-        raw_program_link v (raw_link f g).
-    Proof.
-      intros A v f g h.
-      induction v in f, g, h |- *.
-      - cbn. reflexivity.
-      - cbn. unfold raw_link in *.
-        rewrite lookup_op_map. cbn in h.
-        destruct lookup_op eqn:e. 2: exfalso ; auto.
-        cbn. rewrite raw_program_link_bind. f_equal.
+  (* Lemma link_valid :
+    ∀ L1 L2 I M E p1 p2,
+      valid_package L1 M E p1 →
+      valid_package L2 I M p2 →
+      valid_package (L1 :|: L2) I E (link (trim E p1) p2).
+  Proof.
+    intros L1 L2 I M E p1 p2 h1 h2.
+    intros [n [So To]] ho. unfold raw_link.
+    rewrite mapmE.
+    specialize (h1 _ ho) as h1'. cbn in h1'.
+    destruct h1' as [f [ef hf]].
+    erewrite trim_get. 2-3: eauto.
+    cbn.
+    eexists. split. 1: reflexivity.
+    intro x.
+    eapply raw_program_link_valid.
+    - eapply valid_injectLocations.
+      + apply fsubsetUl.
+      + eapply hf.
+    - eapply valid_package_inject_locations.
+      + apply fsubsetUr.
+      + auto.
+  Qed. *)
+
+  (* TODO MOVE? *)
+  Lemma bind_assoc :
+    ∀ {A B C : choiceType} (v : raw_program A)
+      (k1 : A → raw_program B) (k2 : B → raw_program C),
+      bind (bind v k1) k2 =
+      bind v (λ x, bind (k1 x) k2).
+  Proof.
+    intros A B C v k1 k2.
+    induction v in k1, k2 |- *.
+    - cbn. reflexivity.
+    - cbn. f_equal. apply functional_extensionality. auto.
+    - cbn. f_equal. extensionality z. auto.
+    - cbn. f_equal. auto.
+    - cbn. f_equal. extensionality z. auto.
+  Qed.
+
+  Lemma program_link_bind :
+    ∀ {A B : choiceType} (v : raw_program A)
+      (k : A → raw_program B) (p : raw_package),
+      program_link (bind v k) p =
+      bind (program_link v p) (λ x, program_link (k x) p).
+  Proof.
+    intros A B v k p.
+    induction v.
+    - cbn. reflexivity.
+    - cbn. destruct lookup_op.
+      + rewrite bind_assoc. f_equal.
         apply functional_extensionality. auto.
-      - cbn. f_equal. apply functional_extensionality. auto.
-      - cbn. f_equal. auto.
-      - cbn. f_equal. apply functional_extensionality. auto.
-    Qed.
+      + cbn. f_equal. apply functional_extensionality. auto.
+    - cbn. f_equal. apply functional_extensionality. auto.
+    - cbn. f_equal. auto.
+    - cbn. f_equal. apply functional_extensionality. auto.
+  Qed.
 
-    Lemma valid_provides :
-      ∀ A (v : raw_program A) (p : raw_package) L I E,
-        valid_program L E v →
-        valid_package L I E p →
-        provides p v.
-    Proof.
-      intros A v p L I E hv hp.
-      induction hv.
-      all: try solve [ cbn ; auto ].
-      cbn.
+  (* For associativity we need to know that all operations in the program
+    are indeed provided by the package.
+    [provides p v] states that p provides everything that v imports.
+    Alternatively we could compare with a set.
+  *)
+  Fixpoint provides {A} (p : raw_package) (v : raw_program A) :=
+    match v with
+    | ret a => True
+    | opr o a k =>
+      match lookup_op p o with
+      | Some f => ∀ x, provides p (k x)
+      | None => False
+      end
+    | getr l k => ∀ x, provides p (k x)
+    | putr l v k => provides p k
+    | sampler op k => ∀ x, provides p (k x)
+    end.
+
+  Lemma program_link_assoc :
+    ∀ A (v : raw_program A) f g,
+      provides f v →
+      program_link (program_link v f) g =
+      program_link v (link f g).
+  Proof.
+    intros A v f g h.
+    induction v in f, g, h |- *.
+    - cbn. reflexivity.
+    - cbn. unfold link in *.
+      rewrite lookup_op_map. cbn in h.
+      destruct lookup_op eqn:e. 2: exfalso ; auto.
+      cbn. rewrite program_link_bind. f_equal.
+      apply functional_extensionality. auto.
+    - cbn. f_equal. apply functional_extensionality. auto.
+    - cbn. f_equal. auto.
+    - cbn. f_equal. apply functional_extensionality. auto.
+  Qed.
+
+  Lemma valid_provides :
+    ∀ A (v : raw_program A) (p : raw_package) L I E,
+      valid_program L E v →
+      valid_package L I E p →
+      provides p v.
+  Proof.
+    intros A v p L I E hv hp.
+    induction hv.
+    all: try solve [ cbn ; auto ].
+    cbn.
+    destruct lookup_op eqn:e.
+    2:{
+      specialize (hp _ H) as hp'.
+      destruct o as [n [So To]]. cbn in *.
+      destruct hp' as [f [ef hf]].
+      destruct (p n) as [[St [Tt ft]]|] eqn:et. 2: discriminate.
+      destruct chUniverse_eqP.
+      2:{ inversion ef. congruence. }
+      destruct chUniverse_eqP.
+      2:{ inversion ef. congruence. }
+      discriminate.
+    }
+    eauto.
+  Qed.
+
+  (* TODO MOVE? *)
+  Lemma valid_package_inject_export :
+    ∀ L I E1 E2 p,
+      fsubset E1 E2 →
+      valid_package L I E2 p →
+      valid_package L I E1 p.
+  Proof.
+    intros L I E1 E2 p hE h.
+    intros o ho. specialize (h o).
+    destruct o as [o [So To]].
+    forward h.
+    { eapply in_fsubset. all: eauto. }
+    destruct h as [f [ef hf]].
+    exists f. intuition auto.
+  Qed.
+
+  Lemma trim_get :
+    ∀ E (p : raw_package) n So To f,
+      p n = Some (So ; To ; f) →
+      (n, (So, To)) \in E →
+      trim E p n = Some (So ; To ; f).
+  Proof.
+    intros E p n So To f e h.
+    unfold trim. rewrite filtermE. rewrite e. cbn.
+    rewrite h. reflexivity.
+  Qed.
+
+  Lemma valid_trim :
+    ∀ L I E p,
+      valid_package L I E p →
+      valid_package L I E (trim E p).
+  Proof.
+    intros L I E p h.
+    intros [n [So To]] ho.
+    specialize (h _ ho). cbn in h. destruct h as [f [ef hf]].
+    exists f. intuition auto.
+    apply trim_get. all: auto.
+  Qed.
+
+  Hint Extern 1 (ValidPackage ?L ?I ?E (trim ?E ?p)) =>
+    apply valid_trim ;
+    apply valid_package_from_class
+    : typeclass_instances.
+
+  (* TODO MOVE? *)
+  Lemma package_ext :
+    ∀ {L I E} (p1 p2 : package L I E),
+      p1.(pack) =1 p2.(pack) →
+      p1 = p2.
+  Proof.
+    intros L I E p1 p2 e.
+    destruct p1 as [p1 h1], p2 as [p2 h2].
+    apply eq_fmap in e.
+    cbn in *. subst.
+    f_equal. apply proof_irrelevance.
+  Qed.
+
+  (* TODO MOVE? *)
+  Lemma loc_package_ext :
+    ∀ {I E} (p1 p2 : loc_package I E),
+      p1.π1 = p2.π1 →
+      p1.π2.(pack) =1 p2.π2.(pack) →
+      p1 = p2.
+  Proof.
+    intros I E p1 p2 e1 e2.
+    destruct p1 as [l1 [p1 h1]], p2 as [l2 [p2 h2]].
+    apply eq_fmap in e2.
+    cbn in *. subst.
+    f_equal. f_equal. apply proof_irrelevance.
+  Qed.
+
+  (* Technical lemma before proving assoc *)
+  Lemma link_trim_commut :
+    ∀ E p1 p2,
+      link (trim E p1) p2 =
+      trim E (link p1 p2).
+  Proof.
+    intros E p1 p2.
+    apply eq_fmap. intro n.
+    unfold link. unfold trim.
+    repeat rewrite ?filtermE ?mapmE.
+    destruct (p1 n) as [[S1 [T1 f1]]|] eqn:e. 2: reflexivity.
+    cbn.
+    destruct ((n, (S1, T1)) \in E) eqn:e1.
+    2:{ rewrite e1. cbn. reflexivity. }
+    rewrite e1. cbn. reflexivity.
+  Qed.
+
+  Lemma trim_idemp :
+    ∀ E p,
+      trim E (trim E p) = trim E p.
+  Proof.
+    intros E p.
+    apply eq_fmap. intro n.
+    unfold trim. rewrite !filtermE.
+    destruct (p n) as [[S1 [T1 f1]]|] eqn:e.
+    2:{ rewrite e. cbn. reflexivity. }
+    rewrite e. cbn.
+    destruct ((n, (S1, T1)) \in E) eqn:e1.
+    2:{ rewrite e1. cbn. reflexivity. }
+    rewrite e1. cbn. rewrite e1. reflexivity.
+  Qed.
+
+  Lemma lookup_op_trim :
+    ∀ E o p,
+      lookup_op (trim E p) o =
+      obind (λ f, if o \in E then Some f else None) (lookup_op p o).
+  Proof.
+    intros E [n [So To]] p.
+    unfold lookup_op, trim.
+    rewrite filtermE.
+    destruct (p n) as [[S1 [T1 f1]]|] eqn:e. 2: reflexivity.
+    cbn.
+    destruct ((n, (S1, T1)) \in E) eqn:e1.
+    - rewrite e1. destruct chUniverse_eqP. 2: reflexivity.
+      destruct chUniverse_eqP. 2: reflexivity.
+      cbn. subst. cbn. rewrite e1. reflexivity.
+    - rewrite e1.
+      destruct chUniverse_eqP. 2: reflexivity.
+      destruct chUniverse_eqP. 2: reflexivity.
+      subst. rewrite e1. cbn. reflexivity.
+  Qed.
+
+  Lemma program_link_trim_right :
+    ∀ A L E (v : raw_program A) p,
+      valid_program L E v →
+      program_link v (trim E p) = program_link v p.
+  Proof.
+    intros A L E v p h.
+    induction h in p |- *.
+    - cbn. reflexivity.
+    - cbn. rewrite lookup_op_trim.
       destruct lookup_op eqn:e.
-      2:{
-        specialize (hp _ H) as hp'.
-        destruct o as [n [So To]]. cbn in *.
-        destruct hp' as [f [ef hf]].
-        destruct (p n) as [[St [Tt ft]]|] eqn:et. 2: discriminate.
-        destruct chUniverse_eqP.
-        2:{ inversion ef. congruence. }
-        destruct chUniverse_eqP.
-        2:{ inversion ef. congruence. }
-        discriminate.
-      }
-      eauto.
-    Qed.
+      + cbn. rewrite H. f_equal. apply functional_extensionality.
+        intuition auto.
+      + cbn. f_equal. apply functional_extensionality. intuition auto.
+    - cbn. f_equal. apply functional_extensionality. intuition auto.
+    - cbn. f_equal. intuition auto.
+    - cbn. f_equal. apply functional_extensionality. intuition auto.
+  Qed.
 
-    (* Lemma program_link_assoc :
-      ∀ {A L Im Ir Il}
-        (v : program L Im A)
-        (f : opackage L Ir Im)
-        (g : opackage L Il Ir),
-        program_link (program_link v f) g =
-        program_link v (olink f g).
-    Proof.
-      intros A L Im Ir Il [v hv] [f hf] [g hg].
-      apply program_ext. cbn.
-      apply raw_program_link_assoc.
-      eapply valid_provides. all: eauto.
-    Qed. *)
+  Lemma trim_get_inv :
+    ∀ E p n So To f,
+      trim E p n = Some (So ; To ; f) →
+      p n = Some (So ; To ; f) ∧ (n, (So, To)) \in E.
+  Proof.
+    intros E p n So To f e.
+    unfold trim in e. rewrite filtermE in e. cbn in e.
+    destruct (p n) as [[S1 [T1 f1]]|] eqn:e1.
+    2:{ rewrite e1 in e. cbn in e. discriminate. }
+    rewrite e1 in e. cbn in e.
+    destruct ((n, (S1, T1)) \in E) eqn:e2.
+    2:{ rewrite e2 in e. discriminate. }
+    rewrite e2 in e. noconf e.
+    intuition auto.
+  Qed.
 
-    Lemma valid_package_inject_locations :
-      ∀ I E L1 L2 p,
-        fsubset L1 L2 →
-        valid_package L1 I E p →
-        valid_package L2 I E p.
-    Proof.
-      intros I E L1 L2 p hL h.
-      intros [n [S T]] ho. specialize (h _ ho). cbn in h.
-      destruct h as [f [ef hf]].
-      exists f. intuition auto.
-      eapply valid_injectLocations. all: eauto.
-    Qed.
+  Lemma link_trim_right :
+    ∀ L I E p1 p2,
+      valid_package L I E p1 →
+      link (trim E p1) (trim I p2) =
+      link (trim E p1) p2.
+  Proof.
+    intros L I E p1 p2 h.
+    apply eq_fmap. intro n.
+    unfold link.
+    rewrite !mapmE.
+    destruct (trim E p1 n) as [[S1 [T1 f1]]|] eqn:e.
+    2:{ rewrite e. reflexivity. }
+    rewrite e. cbn.
+    f_equal. f_equal. f_equal.
+    extensionality x.
+    apply trim_get_inv in e as [e he].
+    specialize (h _ he). cbn in h.
+    destruct h as [f [ef h]].
+    rewrite ef in e. noconf e.
+    eapply program_link_trim_right.
+    apply h.
+  Qed.
 
-    Lemma valid_package_inject_export :
-      ∀ L I E1 E2 p,
-        fsubset E1 E2 →
-        valid_package L I E2 p →
-        valid_package L I E1 p.
-    Proof.
-      intros L I E1 E2 p hE h.
-      intros o ho. specialize (h o).
-      destruct o as [o [So To]].
-      forward h.
-      { eapply in_fsubset. all: eauto. }
-      destruct h as [f [ef hf]].
-      exists f. intuition auto.
-    Qed.
-
-    (* TODO Probably useless? *)
-    (* Definition opackage_inject_locations {I E L1 L2}
-      (hL : fsubset L1 L2) (p : opackage L1 I E) :
-      opackage L2 I E.
-    Proof.
-      exists (p ∙1).
-      destruct p as [p h]. cbn.
-      eapply valid_package_inject_locations. all: eauto.
-    Defined. *)
-
-    (* Definition program_link' {A L1 L2 I M}
-      (v : program L1 M A) (p : opackage L2 I M) :
-      program (L1 :|: L2) I A.
-    Proof.
-      exists (raw_program_link (v ∙1) (p ∙1)).
-      destruct v as [v hv], p as [p hp]. cbn.
-      eapply raw_program_link_valid.
-      - eapply valid_injectLocations. 2: eauto.
-        apply fsubsetUl.
-      - eapply valid_package_inject_locations. 2: eauto.
-        apply fsubsetUr.
-    Defined. *)
-
-    (* Remove unexported functions from a raw package *)
-    Definition trim (E : Interface) (p : raw_package) :=
-      filterm (λ n '(So ; To ; f), (n, (So, To)) \in E) p.
-
-    Lemma trim_get :
-      ∀ E (p : raw_package) n So To f,
-        p n = Some (So ; To ; f) →
-        (n, (So, To)) \in E →
-        trim E p n = Some (So ; To ; f).
-    Proof.
-      intros E p n So To f e h.
-      unfold trim. rewrite filtermE. rewrite e. cbn.
-      rewrite h. reflexivity.
-    Qed.
-
-    Lemma valid_trim :
-      ∀ L I E p,
-        valid_package L I E p →
-        valid_package L I E (trim E p).
-    Proof.
-      intros L I E p h.
-      intros [n [So To]] ho.
-      specialize (h _ ho). cbn in h. destruct h as [f [ef hf]].
-      exists f. intuition auto.
-      apply trim_get. all: auto.
-    Qed.
-
-    Lemma link_valid :
-      ∀ L1 L2 I M E p1 p2,
-        valid_package L1 M E p1 →
-        valid_package L2 I M p2 →
-        valid_package (L1 :|: L2) I E (raw_link (trim E p1) p2).
-    Proof.
-      intros L1 L2 I M E p1 p2 h1 h2.
-      intros [n [So To]] ho. unfold raw_link.
-      rewrite mapmE.
-      specialize (h1 _ ho) as h1'. cbn in h1'.
-      destruct h1' as [f [ef hf]].
-      erewrite trim_get. 2-3: eauto.
-      cbn.
-      eexists. split. 1: reflexivity.
-      intro x.
-      eapply raw_program_link_valid.
-      - eapply valid_injectLocations.
-        + apply fsubsetUl.
-        + eapply hf.
-      - eapply valid_package_inject_locations.
-        + apply fsubsetUr.
-        + auto.
-    Qed.
-
-    (* Sequential composition p1 ∘ p2 *)
-    Definition link {L1 L2 I M E}
-      (p1 : package L1 M E) (p2 : package L2 I M) :
-      package (L1 :|: L2) I E.
-    Proof.
-      exists (raw_link (trim E (p1.(pack))) (p2.(pack))).
-      destruct p1 as [p1 h1], p2 as [p2 h2]. cbn.
-      eapply link_valid. all: eauto.
-    Defined.
-
-    (* Definition link' {I M1 M2 E} (p1 : package M1 E) (p2 : package I M2)
-      (h : fsubset M1 M2) : package I E.
-    Proof.
-      exists (p1.π1 :|: p2.π1).
-      exists (raw_link (trim E (p1.π2 ∙1)) (p2.π2 ∙1)).
-      destruct p1 as [l1 [p1 h1]], p2 as [l2 [p2 h2]]. cbn.
-      eapply link_valid.
-      - eauto.
-      - eapply valid_package_inject_export. all: eauto.
-    Defined. *)
-
-    (* Definition olink' {L1 L2 I E I'}
-      (p1 : opackage L1 I E) (p2 : opackage L2 I' I) :
-      opackage (L1 :|: L2) I' E.
-    Proof.
-      exists (raw_link (trim E (p1 ∙1)) p2 ∙1).
-      destruct p1 as [p1 h1], p2 as [p2 h2]. cbn.
-      eapply link_valid. all: eauto.
-    Defined. *)
-
-    Lemma package_ext :
-      ∀ {L I E} (p1 p2 : package L I E),
-        p1.(pack) =1 p2.(pack) →
-        p1 = p2.
-    Proof.
-      intros L I E p1 p2 e.
-      destruct p1 as [p1 h1], p2 as [p2 h2].
-      apply eq_fmap in e.
-      cbn in *. subst.
-      f_equal. apply proof_irrelevance.
-    Qed.
-
-    (* Lemma package_ext :
-      ∀ {I E} (p1 p2 : package I E),
-        p1.π1 = p2.π1 →
-        p1.π2 ∙1 =1 p2.π2 ∙1 →
-        p1 = p2.
-    Proof.
-      intros I E p1 p2 e1 e2.
-      destruct p1 as [l1 [p1 h1]], p2 as [l2 [p2 h2]].
-      apply eq_fmap in e2.
-      cbn in *. subst.
-      f_equal. f_equal. apply proof_irrelevance.
-    Qed. *)
-
-    (* Technical lemma before proving assoc *)
-    Lemma raw_link_trim_commut :
-      ∀ E p1 p2,
-        raw_link (trim E p1) p2 =
-        trim E (raw_link p1 p2).
-    Proof.
-      intros E p1 p2.
-      apply eq_fmap. intro n.
-      unfold raw_link. unfold trim.
-      repeat rewrite ?filtermE ?mapmE.
-      destruct (p1 n) as [[S1 [T1 f1]]|] eqn:e. 2: reflexivity.
-      cbn.
-      destruct ((n, (S1, T1)) \in E) eqn:e1.
-      2:{ rewrite e1. cbn. reflexivity. }
-      rewrite e1. cbn. reflexivity.
-    Qed.
-
-    Lemma trim_idemp :
-      ∀ E p,
-        trim E (trim E p) = trim E p.
-    Proof.
-      intros E p.
-      apply eq_fmap. intro n.
-      unfold trim. rewrite !filtermE.
-      destruct (p n) as [[S1 [T1 f1]]|] eqn:e.
-      2:{ rewrite e. cbn. reflexivity. }
-      rewrite e. cbn.
-      destruct ((n, (S1, T1)) \in E) eqn:e1.
-      2:{ rewrite e1. cbn. reflexivity. }
-      rewrite e1. cbn. rewrite e1. reflexivity.
-    Qed.
-
-    Lemma lookup_op_trim :
-      ∀ E o p,
-        lookup_op (trim E p) o =
-        obind (λ f, if o \in E then Some f else None) (lookup_op p o).
-    Proof.
-      intros E [n [So To]] p.
-      unfold lookup_op, trim.
-      rewrite filtermE.
-      destruct (p n) as [[S1 [T1 f1]]|] eqn:e. 2: reflexivity.
-      cbn.
-      destruct ((n, (S1, T1)) \in E) eqn:e1.
-      - rewrite e1. destruct chUniverse_eqP. 2: reflexivity.
-        destruct chUniverse_eqP. 2: reflexivity.
-        cbn. subst. cbn. rewrite e1. reflexivity.
-      - rewrite e1.
-        destruct chUniverse_eqP. 2: reflexivity.
-        destruct chUniverse_eqP. 2: reflexivity.
-        subst. rewrite e1. cbn. reflexivity.
-    Qed.
-
-    Lemma raw_program_link_trim_right :
-      ∀ A L E (v : raw_program A) p,
-        valid_program L E v →
-        raw_program_link v (trim E p) = raw_program_link v p.
-    Proof.
-      intros A L E v p h.
-      induction h in p |- *.
-      - cbn. reflexivity.
-      - cbn. rewrite lookup_op_trim.
-        destruct lookup_op eqn:e.
-        + cbn. rewrite H. f_equal. apply functional_extensionality.
-          intuition auto.
-        + cbn. f_equal. apply functional_extensionality. intuition auto.
-      - cbn. f_equal. apply functional_extensionality. intuition auto.
-      - cbn. f_equal. intuition auto.
-      - cbn. f_equal. apply functional_extensionality. intuition auto.
-    Qed.
-
-    Lemma trim_get_inv :
-      ∀ E p n So To f,
-        trim E p n = Some (So ; To ; f) →
-        p n = Some (So ; To ; f) ∧ (n, (So, To)) \in E.
-    Proof.
-      intros E p n So To f e.
-      unfold trim in e. rewrite filtermE in e. cbn in e.
-      destruct (p n) as [[S1 [T1 f1]]|] eqn:e1.
-      2:{ rewrite e1 in e. cbn in e. discriminate. }
-      rewrite e1 in e. cbn in e.
-      destruct ((n, (S1, T1)) \in E) eqn:e2.
-      2:{ rewrite e2 in e. discriminate. }
-      rewrite e2 in e. noconf e.
-      intuition auto.
-    Qed.
-
-    Lemma raw_link_trim_right :
-      ∀ L I E p1 p2,
-        valid_package L I E p1 →
-        raw_link (trim E p1) (trim I p2) =
-        raw_link (trim E p1) p2.
-    Proof.
-      intros L I E p1 p2 h.
-      apply eq_fmap. intro n.
-      unfold raw_link.
-      rewrite !mapmE.
-      destruct (trim E p1 n) as [[S1 [T1 f1]]|] eqn:e.
-      2:{ rewrite e. reflexivity. }
-      rewrite e. cbn.
-      f_equal. f_equal. f_equal.
-      extensionality x.
-      apply trim_get_inv in e as [e he].
-      specialize (h _ he). cbn in h.
-      destruct h as [f [ef h]].
-      rewrite ef in e. noconf e.
-      eapply raw_program_link_trim_right.
-      apply h.
-    Qed.
-
-    Lemma raw_link_assoc :
-      ∀ L1 L2 E M1 M2 p1 p2 p3,
-        valid_package L1 M1 E p1 →
-        valid_package L2 M2 M1 p2 →
-        raw_link (trim E p1) (raw_link (trim M1 p2) p3) =1
-        raw_link (trim E (raw_link (trim E p1) p2)) p3.
-    Proof.
-      intros L1 L2 E M1 M2 p1 p2 p3 h1 h2.
-      rewrite (raw_link_trim_commut M1).
-      rewrite (raw_link_trim_commut _ _ p2).
-      rewrite trim_idemp.
-      erewrite raw_link_trim_right. 2: eauto.
-      unfold raw_link. unfold trim.
-      intro n. repeat rewrite ?filtermE ?mapmE.
-      destruct (p1 n) as [[S1 [T1 f1]]|] eqn:e. 2: reflexivity.
-      cbn.
-      destruct ((n, (S1, T1)) \in E) eqn:e1.
-      2:{ rewrite e1. cbn. reflexivity. }
-      rewrite e1. cbn.
-      f_equal. f_equal. f_equal.
-      extensionality x.
-      rewrite raw_program_link_assoc.
-      + reflexivity.
-      + specialize (h1 _ e1). cbn in h1.
-        destruct h1 as [g [eg hg]].
-        rewrite eg in e. noconf e.
-        eapply valid_provides.
-        * eapply valid_injectLocations.
-          -- eapply fsubsetUl.
-          -- eapply hg.
-        * eapply valid_package_inject_locations.
-          -- eapply fsubsetUr.
-          -- eauto.
-    Qed.
+  (* Is that the desired link_assoc lemma? *)
+  (* I'm wondering if we don't want a trimmed predicate instead. *)
+  Lemma link_assoc :
+    ∀ L1 L2 E M1 M2 p1 p2 p3,
+      valid_package L1 M1 E p1 →
+      valid_package L2 M2 M1 p2 →
+      link (trim E p1) (link (trim M1 p2) p3) =1
+      link (trim E (link (trim E p1) p2)) p3.
+  Proof.
+    intros L1 L2 E M1 M2 p1 p2 p3 h1 h2.
+    rewrite (raw_link_trim_commut M1).
+    rewrite (raw_link_trim_commut _ _ p2).
+    rewrite trim_idemp.
+    erewrite raw_link_trim_right. 2: eauto.
+    unfold raw_link. unfold trim.
+    intro n. repeat rewrite ?filtermE ?mapmE.
+    destruct (p1 n) as [[S1 [T1 f1]]|] eqn:e. 2: reflexivity.
+    cbn.
+    destruct ((n, (S1, T1)) \in E) eqn:e1.
+    2:{ rewrite e1. cbn. reflexivity. }
+    rewrite e1. cbn.
+    f_equal. f_equal. f_equal.
+    extensionality x.
+    rewrite raw_program_link_assoc.
+    + reflexivity.
+    + specialize (h1 _ e1). cbn in h1.
+      destruct h1 as [g [eg hg]].
+      rewrite eg in e. noconf e.
+      eapply valid_provides.
+      * eapply valid_injectLocations.
+        -- eapply fsubsetUl.
+        -- eapply hg.
+      * eapply valid_package_inject_locations.
+        -- eapply fsubsetUr.
+        -- eauto.
+  Qed.
 
     (* Lemma link_assoc :
       ∀ {L1 L2 L3 E M1 M2 I}
