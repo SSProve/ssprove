@@ -633,6 +633,11 @@ Module PackageRHL (π : RulesParam).
       bool → Game_Type Game_export.
 
     (* TODO Now it seems we need linking on loc_package, loc_link? *)
+    (* Maybe it should like for programs. We only have one syntax for link
+      on raw packages. And then mkpack will pick up the right proof.
+      Maybe then it can be smart to deal with which version to chose?
+      Then maybe we can deal with assoc only on raw packages as well!
+    *)
 
     Definition Advantage { Game_export : Interface }
       (G : GamePair Game_export)

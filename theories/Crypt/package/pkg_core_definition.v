@@ -424,6 +424,10 @@ Module CorePackageTheory (π : RulesParam).
     (mkprog p _)
     (format "{ program  p  }") : package_scope.
 
+  Notation "{ 'program' p '#with' h }" :=
+    (mkprog p h)
+    (only parsing) : package_scope.
+
   Instance ValidProgram_ret (A : choiceType) (x : A) L I :
     ValidProgram L I (ret x).
   Proof.
@@ -436,7 +440,7 @@ Module CorePackageTheory (π : RulesParam).
     | intro ; apply valid_from_class
     ] : typeclass_instances.
 
-  Hint Extern 1 (ValidProgram ?L ?I (getr ?o ?x ?k)) =>
+  Hint Extern 1 (ValidProgram ?L ?I (getr ?o ?k)) =>
     apply valid_getr ; [
       eauto
     | intro ; apply valid_from_class
@@ -466,7 +470,25 @@ Module CorePackageTheory (π : RulesParam).
     apply p.(prog_valid)
     : typeclass_instances.
 
-  (* Open Scope package_scope.
+  (* Hints notation *)
+  Notation "[ 'hints' ]" :=
+    (_)
+    (at level 0, only parsing)
+    : package_scope.
+
+  Notation "[ 'hints' x1 ]" :=
+    (let hint := x1 in _)
+    (at level 0, only parsing)
+    : package_scope.
+
+  Notation "[ 'hints' x ; .. ; z ]" :=
+    (let hint := x in .. (let hint := z in _) ..)
+    (at level 0, only parsing)
+    : package_scope.
+
+  (* Section Test.
+
+    Open Scope package_scope.
 
     Definition foo L I : program L I _ :=
       {program ret 0 }.
@@ -476,7 +498,45 @@ Module CorePackageTheory (π : RulesParam).
     Definition bar L I o (h : o \in I) x op : program L I _ :=
       {program
         sampler op (λ z, opr o x (λ y, ret y))
-      }. *)
+      }.
+
+    Context (L : {fset Location}) (I : Interface).
+    Context (o : opsig).
+
+    Axiom h : o \in I.
+
+    Fail Definition toto x op : program L I _ :=
+      {program
+        sampler op (λ z, opr o x (λ y, ret y))
+      }.
+
+    Definition toto x op : program L I _ :=
+      {program
+        sampler op (λ z, opr o x (λ y, ret y))
+        #with let z := h in _
+      }.
+
+    Definition toto' x op : program L I _ :=
+      {program
+        sampler op (λ z, opr o x (λ y, ret y))
+        #with [hints h]
+      }.
+
+    Context (l : Location).
+    Axiom h' : l \in L.
+
+    Fail Definition baba x op : program L I _ :=
+      {program
+        getr l (λ u, sampler op (λ z, opr o x (λ y, ret y)))
+      }.
+
+    Definition baba x op : program L I _ :=
+      {program
+        getr l (λ u, sampler op (λ z, opr o x (λ y, ret y)))
+        #with [hints h ; h' ]
+      }.
+
+  End Test. *)
 
   Section FreeLocations.
 
