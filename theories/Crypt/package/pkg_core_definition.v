@@ -526,6 +526,7 @@ Module CorePackageTheory (π : RulesParam).
 
     Context {import : Interface}.
 
+    (* TODO Make this lemma more general? *)
     Lemma injectSubset :
       ∀ {locs1 locs2 : {fset Location}} {l : Location},
         fsubset locs1 locs2 →
@@ -560,15 +561,20 @@ Module CorePackageTheory (π : RulesParam).
 
     Open Scope package_scope.
 
-    Definition injectLocations {A : choiceType} {loc1 loc2 : {fset Location}}
+    (** Ideally we should need those.
+      Injections should be hanlded behind the scenes.
+      That's the point of using subset types. Maybe we can tweak the
+      typeclasses hints to use fsubset when needed.
+    *)
+    (* Definition injectLocations {A : choiceType} {loc1 loc2 : {fset Location}}
       (h : fsubset loc1 loc2) (v : programI loc1 A) : programI loc2 A.
     Proof.
       refine {program v.(prog)}.
       destruct v as [v p].
       cbn. eapply valid_injectLocations. all: eauto.
-    Defined.
+    Defined. *)
 
-    Lemma injectLocationsInjective :
+    (* Lemma injectLocationsInjective :
       ∀ {A : choiceType} {locs1 locs2 : {fset Location}}
         (Hfsubset1 Hfsubset2 : fsubset locs1 locs2)
         (v : programI locs1 A),
@@ -576,9 +582,9 @@ Module CorePackageTheory (π : RulesParam).
     Proof.
       intros A locs1 locs2 h1 h2 v.
       f_equal. apply bool_irrelevance.
-    Qed.
+    Qed. *)
 
-    Lemma injectLocationsMerge :
+    (* Lemma injectLocationsMerge :
       ∀ {A : choiceType} {locs1 locs2 locs3 : {fset Location}}
         (h1 : fsubset locs1 locs2)
         (h2 : fsubset locs2 locs3)
@@ -589,7 +595,7 @@ Module CorePackageTheory (π : RulesParam).
       intros A locs1 locs2 locs3 h1 h2 v.
       destruct v as [v h].
       apply program_ext. cbn. reflexivity.
-    Qed.
+    Qed. *)
 
   End FreeLocations.
 
@@ -597,6 +603,7 @@ Module CorePackageTheory (π : RulesParam).
 
     Context {Locs : {fset Location}}.
 
+    (* TODO Factorise with lemma above. *)
     Lemma in_fsubset :
       ∀ {e} {S1 S2 : Interface},
         fsubset S1 S2 →
@@ -627,7 +634,7 @@ Module CorePackageTheory (π : RulesParam).
 
     Open Scope package_scope.
 
-    Definition injectMap {A : choiceType} {I1 I2 : Interface}
+    (* Definition injectMap {A : choiceType} {I1 I2 : Interface}
       (h : fsubset I1 I2) (v : programL I1 A) : programL I2 A.
     Proof.
       refine {program v.(prog) }.
@@ -641,11 +648,11 @@ Module CorePackageTheory (π : RulesParam).
       injectMap Hfsubset1 v = injectMap Hfsubset2 v.
     Proof.
       f_equal. apply bool_irrelevance.
-    Qed.
+    Qed. *)
 
   End FreeMap.
 
-  Section commuteMapLocations.
+  (* Section commuteMapLocations.
 
     Context {locs1 locs2 : {fset Location}}.
     Context {I1 I2 : Interface}.
@@ -661,7 +668,7 @@ Module CorePackageTheory (π : RulesParam).
       apply program_ext. cbn. reflexivity.
     Qed.
 
-  End commuteMapLocations.
+  End commuteMapLocations. *)
 
   (* TODO NEEDED? *)
   (* Section commuteBindLocations.
@@ -724,5 +731,11 @@ Module CorePackageTheory (π : RulesParam).
   Notation "{ 'package' p '#with' h }" :=
     (mkpackage p h)
     (only parsing) : package_scope.
+
+  Coercion pack : package >-> raw_package.
+
+  Hint Extern 1 (ValidPackage ?L ?I ?E (?p.(pack))) =>
+    apply p.(pack_valid)
+    : typeclass_instances.
 
 End CorePackageTheory.
