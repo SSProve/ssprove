@@ -470,22 +470,6 @@ Module CorePackageTheory (π : RulesParam).
     apply p.(prog_valid)
     : typeclass_instances.
 
-  (* Hints notation *)
-  Notation "[ 'hints' ]" :=
-    (_)
-    (at level 0, only parsing)
-    : package_scope.
-
-  Notation "[ 'hints' x1 ]" :=
-    (let hint := x1 in _)
-    (at level 0, only parsing)
-    : package_scope.
-
-  Notation "[ 'hints' x ; .. ; z ]" :=
-    (let hint := x in .. (let hint := z in _) ..)
-    (at level 0, only parsing)
-    : package_scope.
-
   (* Section Test.
 
     Open Scope package_scope.

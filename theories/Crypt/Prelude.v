@@ -181,3 +181,35 @@ Derive NoConfusion NoConfusionHom EqDec for positive.
 (* Utility for defining functions with Equations *)
 Definition inspect {A : Type} (x : A) : { y : A | y = x } :=
   exist _ x Logic.eq_refl.
+
+(** Hints notation
+
+  When dealing with typeclasses, sometimes automation will fail.
+  The purpose of this is to be able to help the automation by providing
+  hints without having to write the whole term.
+
+  [hints h1 ; .. ; hn ] will try to solve the goal by having h1 to hn in the
+  context. This can be useful to provide lemmata that are not usually picked
+  up by the instance mechanism.
+  This could also be used in combination with Programs or Equations'
+  automation.
+
+  [hints] is also provided for completeness, but is merely long for _.
+
+*)
+
+(* Hints notation *)
+Notation "[ 'hints' ]" :=
+  (_)
+  (at level 0, only parsing)
+  : package_scope.
+
+Notation "[ 'hints' x1 ]" :=
+  (let hint := x1 in _)
+  (at level 0, only parsing)
+  : package_scope.
+
+Notation "[ 'hints' x ; .. ; z ]" :=
+  (let hint := x in .. (let hint := z in _) ..)
+  (at level 0, only parsing)
+  : package_scope.
