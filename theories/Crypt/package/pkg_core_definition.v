@@ -718,7 +718,7 @@ Module CorePackageTheory (π : RulesParam).
     pack_valid : ValidPackage L I E pack
   }.
 
-  Arguments mkpackage [_ _ _] _ {_}.
+  Arguments mkpackage [_ _ _] _ _.
   Arguments pack [_ _ _] _.
   Arguments pack_valid [_ _ _] _.
 
@@ -732,5 +732,13 @@ Module CorePackageTheory (π : RulesParam).
     export : Interface ;
     pack : opackage locs import export
   }. *)
+
+  Notation "{ 'package' p }" :=
+    (mkpackage p _)
+    (format "{ package  p  }") : package_scope.
+
+  Notation "{ 'package' p '#with' h }" :=
+    (mkpackage p h)
+    (only parsing) : package_scope.
 
 End CorePackageTheory.
