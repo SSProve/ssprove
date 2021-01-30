@@ -510,6 +510,11 @@ Module PackageComposition (π : RulesParam).
 
   (* Is that the desired link_assoc lemma? *)
   (* I'm wondering if we don't want a trimmed predicate instead. *)
+  (* Anyway, we should no longer define link using trim since we don't
+    know what to trim with. Or we would have to be explicit about the
+    interface we want to link with. Maybe it's not so bad...
+    But since linking already makes sense otherwise it's a bit sad.
+  *)
   Lemma link_assoc :
     ∀ L1 L2 E M1 M2 p1 p2 p3,
       valid_package L1 M1 E p1 →
@@ -518,11 +523,11 @@ Module PackageComposition (π : RulesParam).
       link (trim E (link (trim E p1) p2)) p3.
   Proof.
     intros L1 L2 E M1 M2 p1 p2 p3 h1 h2.
-    rewrite (raw_link_trim_commut M1).
-    rewrite (raw_link_trim_commut _ _ p2).
+    rewrite (link_trim_commut M1).
+    rewrite (link_trim_commut _ _ p2).
     rewrite trim_idemp.
-    erewrite raw_link_trim_right. 2: eauto.
-    unfold raw_link. unfold trim.
+    erewrite link_trim_right. 2: eauto.
+    unfold link. unfold trim.
     intro n. repeat rewrite ?filtermE ?mapmE.
     destruct (p1 n) as [[S1 [T1 f1]]|] eqn:e. 2: reflexivity.
     cbn.
@@ -531,7 +536,7 @@ Module PackageComposition (π : RulesParam).
     rewrite e1. cbn.
     f_equal. f_equal. f_equal.
     extensionality x.
-    rewrite raw_program_link_assoc.
+    rewrite program_link_assoc.
     + reflexivity.
     + specialize (h1 _ e1). cbn in h1.
       destruct h1 as [g [eg hg]].
@@ -545,74 +550,18 @@ Module PackageComposition (π : RulesParam).
         -- eauto.
   Qed.
 
-    (* Lemma link_assoc :
-      ∀ {L1 L2 L3 E M1 M2 I}
-        (p1 : package L1 M1 E)
-        (p2 : package L2 M2 M1)
-        (p3 : package L3 I M2),
-        link p1 (link p2 p3) = link (link p1 p2) p3.
-    Proof.
-      intros E M1 M2 I [l1 [p1 h1]] [l2 [p2 h2]] [l3 [p3 h3]].
-      apply package_ext.
-      - cbn. apply fsetUA.
-      - cbn. eapply raw_link_assoc. all: eauto.
-    Qed. *)
-
-    (* bundled versions *)
-    (* Definition blink p1 p2 (h : import p1 = export p2) : bundle.
-    Proof.
-      unshelve econstructor.
-      - exact (locs p1 :|: locs p2).
-      - exact (import p2).
-      - exact (export p1).
-      - exists (raw_link (trim (export p1) ((pack p1) ∙1)) ((pack p2) ∙1)).
-        destruct p1 as [L1 I1 E1 [p1 h1]], p2 as [L2 I2 E2 [p2 h2]].
-        cbn in h. subst. cbn.
-        eapply link_valid. all: eauto.
-    Defined. *)
-
-    (* Lemma blink_export :
-      ∀ p1 p2 (h : import p1 = export p2),
-        export p1 = export (blink p1 p2 h).
-    Proof.
-      intros p1 p2 h.
-      reflexivity.
-    Defined.
-
-    Lemma blink_import :
-      ∀ p1 p2 h,
-        import p2 = import (blink p1 p2 h).
-    Proof.
-      intros p1 p2 h.
-      reflexivity.
-    Defined.
-
-    Lemma bundle_ext :
-      ∀ (b1 b2 : bundle),
-        locs b1 = locs b2 →
-        import b1 = import b2 →
-        export b1 = export b2 →
-        (pack b1) ∙1 =1 (pack b2) ∙1 →
-        b1 = b2.
-    Proof.
-      intros [L1 I1 E1 [p1 h1]] [L2 I2 E2 [p2 h2]] el ei ee ep.
-      cbn in *. apply eq_fmap in ep. subst. f_equal. f_equal.
-      apply proof_irrelevance.
-    Qed. *)
-
-    (* Lemma blink_assoc :
-      ∀ p1 p2 p3 (h12 : import p1 = export p2) (h23 : import p2 = export p3),
-        blink p1 (blink p2 p3 h23) h12 =
-        blink (blink p1 p2 h12) p3 h23.
-    Proof.
-      intros [L1 I1 E1 [p1 h1]] [L2 I2 E2 [p2 h2]] [L3 I3 E3 [p3 h3]] h12 h23.
-      cbn in *. subst.
-      apply bundle_ext. all: cbn. 2,3: auto.
-      - apply fsetUA.
-      - eapply raw_link_assoc. all: eauto.
-    Qed. *)
-
-  End Link.
+  (* Lemma bundle_ext :
+    ∀ (b1 b2 : bundle),
+      locs b1 = locs b2 →
+      import b1 = import b2 →
+      export b1 = export b2 →
+      (pack b1) =1 (pack b2) →
+      b1 = b2.
+  Proof.
+    intros [L1 I1 E1 [p1 h1]] [L2 I2 E2 [p2 h2]] el ei ee ep.
+    cbn in *. apply eq_fmap in ep. subst. f_equal. f_equal.
+    apply proof_irrelevance.
+  Qed. *)
 
   (* Notation "p1 ∘ p2" :=
       (link p1 p2) (right associativity, at level 80) : package_scope. *)
