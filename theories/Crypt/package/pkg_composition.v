@@ -393,7 +393,7 @@ Module PackageComposition (π : RulesParam).
       destruct lookup_op eqn:e.
       + cbn. rewrite H. f_equal. apply functional_extensionality.
         intuition auto.
-      + cbn. f_equal. apply functional_extensionality. intuition auto.
+      + cbn. eauto.
     - cbn. f_equal. apply functional_extensionality. intuition auto.
     - cbn. f_equal. intuition auto.
     - cbn. f_equal. apply functional_extensionality. intuition auto.
