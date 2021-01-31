@@ -1656,6 +1656,18 @@ Module PackageRHL (π : RulesParam).
         apply cast_vfun_cong. reflexivity.
     Qed.
 
+    Lemma Pr_eq_empty {X Y : ord_choiceType} {A : pred (X * heap_choiceType)} {B : pred (Y * heap_choiceType)}
+            Ψ ϕ
+            (c1 : FrStP heap_choiceType X) (c2 : FrStP heap_choiceType Y)
+            (H : ⊨ ⦃ Ψ ⦄ c1 ≈ c2 ⦃ ϕ ⦄)
+            (HPsi : Ψ (empty_heap, empty_heap) )
+            (Hpost : forall x y,  ϕ x y -> (A x) <-> (B y)) :
+      \P_[ θ_dens (θ0 c1 empty_heap) ] A =
+      \P_[ θ_dens (θ0 c2 empty_heap) ] B.
+    Proof.
+      apply (Pr_eq Ψ ϕ); assumption.
+    Qed.
+
     Lemma some_lemma_for_prove_relational {export : Interface} {B} {L1 L2 LA}
                (P1 : opackage L1 Game_import export)
                (P2 : opackage L2 Game_import export)
@@ -1883,7 +1895,7 @@ Module PackageRHL (π : RulesParam).
                  (let '(b1, s1) := x in λ '(b2, s2), b1 = b2 s/\ I (s1, s2)) y → (fst x == true) ↔ (fst y == true)) as Ha.
       { intros [b1 s1] [b2 s2]. simpl.
         intros [H1 H2]. rewrite H1. intuition. }
-      pose Heq := (Pr_eq _ _ _ _ Hlemma Hempty Ha).
+      pose Heq := (Pr_eq_empty _ _ _ _ Hlemma Hempty Ha).
       simpl in Heq.
       simpl in Hlemma.
       unfold θ_dens in Heq.
