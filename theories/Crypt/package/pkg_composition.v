@@ -120,9 +120,10 @@ Module PackageComposition (π : RulesParam).
     | ret a => ret a
     | opr o a k =>
       (* The None branch doesn't happen when valid *)
+      (* We continue with a default value to preserve associativity. *)
       match lookup_op p o with
       | Some f => bind (f a) (λ x, program_link (k x) p)
-      | None => opr o a (λ x, program_link (k x) p)
+      | None => program_link (k (chCanonical (chtgt o))) p
       end
     | getr l k => getr l (λ x, program_link (k x) p)
     | putr l v k => putr l v (program_link k p)
@@ -151,8 +152,7 @@ Module PackageComposition (π : RulesParam).
     ]
     : typeclass_instances.
 
-  (* (Non-associative) linking *)
-  (* Should it be pre_link? *)
+  (* Linking *)
   Definition link (p1 p2 : raw_package) : raw_package :=
     @mapm _ typed_raw_function _
       (λ '(So ; To ; f), (So ; To ; λ x, program_link (f x) p2)) p1.
@@ -160,9 +160,6 @@ Module PackageComposition (π : RulesParam).
   (* Remove unexported functions from a raw package *)
   Definition trim (E : Interface) (p : raw_package) :=
     filterm (λ n '(So ; To ; f), (n, (So, To)) \in E) p.
-
-  (* Linking *)
-  (* Definition link *)
 
   (* TODO MOVE *)
   Lemma valid_package_inject_locations :
@@ -208,30 +205,6 @@ Module PackageComposition (π : RulesParam).
     ]
     : typeclass_instances.
 
-  (* Lemma link_valid :
-    ∀ L1 L2 I M E p1 p2,
-      valid_package L1 M E p1 →
-      valid_package L2 I M p2 →
-      valid_package (L1 :|: L2) I E (link (trim E p1) p2).
-  Proof.
-    intros L1 L2 I M E p1 p2 h1 h2.
-    intros [n [So To]] ho. unfold raw_link.
-    rewrite mapmE.
-    specialize (h1 _ ho) as h1'. cbn in h1'.
-    destruct h1' as [f [ef hf]].
-    erewrite trim_get. 2-3: eauto.
-    cbn.
-    eexists. split. 1: reflexivity.
-    intro x.
-    eapply raw_program_link_valid.
-    - eapply valid_injectLocations.
-      + apply fsubsetUl.
-      + eapply hf.
-    - eapply valid_package_inject_locations.
-      + apply fsubsetUr.
-      + auto.
-  Qed. *)
-
   (* TODO MOVE? *)
   Lemma bind_assoc :
     ∀ {A B C : choiceType} (v : raw_program A)
@@ -260,72 +233,29 @@ Module PackageComposition (π : RulesParam).
     - cbn. destruct lookup_op.
       + rewrite bind_assoc. f_equal.
         apply functional_extensionality. auto.
-      + cbn. f_equal. apply functional_extensionality. auto.
+      + eauto.
     - cbn. f_equal. apply functional_extensionality. auto.
     - cbn. f_equal. auto.
     - cbn. f_equal. apply functional_extensionality. auto.
   Qed.
-
-  (* For associativity we need to know that all operations in the program
-    are indeed provided by the package.
-    [provides p v] states that p provides everything that v imports.
-    Alternatively we could compare with a set.
-  *)
-  Fixpoint provides {A} (p : raw_package) (v : raw_program A) :=
-    match v with
-    | ret a => True
-    | opr o a k =>
-      match lookup_op p o with
-      | Some f => ∀ x, provides p (k x)
-      | None => False
-      end
-    | getr l k => ∀ x, provides p (k x)
-    | putr l v k => provides p k
-    | sampler op k => ∀ x, provides p (k x)
-    end.
 
   Lemma program_link_assoc :
     ∀ A (v : raw_program A) f g,
-      provides f v →
       program_link (program_link v f) g =
       program_link v (link f g).
   Proof.
-    intros A v f g h.
-    induction v in f, g, h |- *.
+    intros A v f g.
+    induction v in f, g |- *.
     - cbn. reflexivity.
     - cbn. unfold link in *.
-      rewrite lookup_op_map. cbn in h.
-      destruct lookup_op eqn:e. 2: exfalso ; auto.
-      cbn. rewrite program_link_bind. f_equal.
-      apply functional_extensionality. auto.
+      rewrite lookup_op_map.
+      destruct lookup_op eqn:e.
+      + cbn. rewrite program_link_bind. f_equal.
+        apply functional_extensionality. auto.
+      + cbn. eauto.
     - cbn. f_equal. apply functional_extensionality. auto.
     - cbn. f_equal. auto.
     - cbn. f_equal. apply functional_extensionality. auto.
-  Qed.
-
-  Lemma valid_provides :
-    ∀ A (v : raw_program A) (p : raw_package) L I E,
-      valid_program L E v →
-      valid_package L I E p →
-      provides p v.
-  Proof.
-    intros A v p L I E hv hp.
-    induction hv.
-    all: try solve [ cbn ; auto ].
-    cbn.
-    destruct lookup_op eqn:e.
-    2:{
-      specialize (hp _ H) as hp'.
-      destruct o as [n [So To]]. cbn in *.
-      destruct hp' as [f [ef hf]].
-      destruct (p n) as [[St [Tt ft]]|] eqn:et. 2: discriminate.
-      destruct chUniverse_eqP.
-      2:{ inversion ef. congruence. }
-      destruct chUniverse_eqP.
-      2:{ inversion ef. congruence. }
-      discriminate.
-    }
-    eauto.
   Qed.
 
   (* TODO MOVE? *)
@@ -514,6 +444,8 @@ Module PackageComposition (π : RulesParam).
     know what to trim with. Or we would have to be explicit about the
     interface we want to link with. Maybe it's not so bad...
     But since linking already makes sense otherwise it's a bit sad.
+    => It seems the best option is to use canonical inhabitants in
+    program_link. Maybe then we don't need provides and trim!
   *)
   Lemma link_assoc :
     ∀ L1 L2 E M1 M2 p1 p2 p3,
