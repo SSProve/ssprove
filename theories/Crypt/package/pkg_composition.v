@@ -438,48 +438,20 @@ Module PackageComposition (π : RulesParam).
     apply h.
   Qed.
 
-  (* Is that the desired link_assoc lemma? *)
-  (* I'm wondering if we don't want a trimmed predicate instead. *)
-  (* Anyway, we should no longer define link using trim since we don't
-    know what to trim with. Or we would have to be explicit about the
-    interface we want to link with. Maybe it's not so bad...
-    But since linking already makes sense otherwise it's a bit sad.
-    => It seems the best option is to use canonical inhabitants in
-    program_link. Maybe then we don't need provides and trim!
-  *)
   Lemma link_assoc :
     ∀ L1 L2 E M1 M2 p1 p2 p3,
       valid_package L1 M1 E p1 →
       valid_package L2 M2 M1 p2 →
-      link (trim E p1) (link (trim M1 p2) p3) =1
-      link (trim E (link (trim E p1) p2)) p3.
+      link p1 (link p2 p3) =1
+      link (link p1 p2) p3.
   Proof.
     intros L1 L2 E M1 M2 p1 p2 p3 h1 h2.
-    rewrite (link_trim_commut M1).
-    rewrite (link_trim_commut _ _ p2).
-    rewrite trim_idemp.
-    erewrite link_trim_right. 2: eauto.
-    unfold link. unfold trim.
-    intro n. repeat rewrite ?filtermE ?mapmE.
+    unfold link.
+    intro n. repeat rewrite ?mapmE.
     destruct (p1 n) as [[S1 [T1 f1]]|] eqn:e. 2: reflexivity.
-    cbn.
-    destruct ((n, (S1, T1)) \in E) eqn:e1.
-    2:{ rewrite e1. cbn. reflexivity. }
-    rewrite e1. cbn.
-    f_equal. f_equal. f_equal.
-    extensionality x.
+    cbn. f_equal. f_equal. f_equal. extensionality x.
     rewrite program_link_assoc.
-    + reflexivity.
-    + specialize (h1 _ e1). cbn in h1.
-      destruct h1 as [g [eg hg]].
-      rewrite eg in e. noconf e.
-      eapply valid_provides.
-      * eapply valid_injectLocations.
-        -- eapply fsubsetUl.
-        -- eapply hg.
-      * eapply valid_package_inject_locations.
-        -- eapply fsubsetUr.
-        -- eauto.
+    reflexivity.
   Qed.
 
   (* Lemma bundle_ext :
