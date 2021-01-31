@@ -75,6 +75,25 @@ Fixpoint chElement (U : chUniverse) : choiceType :=
 
 Coercion chElement : chUniverse >-> choiceType.
 
+(* Canonical element in a type of the chUniverse *)
+#[program] Fixpoint chCanonical (T : chUniverse) : T :=
+  match T with
+  | chUnit => Datatypes.tt
+  | chNat => 0
+  | chBool => false
+  | chProd A B => (chCanonical A, chCanonical B)
+  | chMap A B => _
+  | chOption A => None
+  | chFin n => _
+  end.
+Next Obligation.
+  eapply fmap_of_fmap. apply emptym.
+Defined.
+Next Obligation.
+  exists 0. destruct n as [p h]. simpl.
+  unfold Positive in h. auto.
+Defined.
+
 Section chUniverseTypes.
 
   Fixpoint chUniverse_test (u v : chUniverse) : bool :=
