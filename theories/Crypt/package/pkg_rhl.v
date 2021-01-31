@@ -1660,10 +1660,9 @@ Module PackageRHL (π : RulesParam).
                (P1 : opackage L1 Game_import export)
                (P2 : opackage L2 Game_import export)
                (I : heap_choiceType * heap_choiceType -> Prop)
-               (HINV : INV LA I) (Hempty : I (empty_heap, empty_heap))
+               (HINV : INV LA I)
                (H : eq_up_to_inv I P1 P2)
                (A : program LA export B)
-               (s1 : heap_choiceType) (s2 : heap_choiceType) (Hs1s2 : I (s1, s2))
       :
         ⊨ ⦃ fun '(s1, s2) => I (s1, s2)  ⦄
           repr (program_link (injectLocations (fsubsetUl LA (L1 :|: L2)) A) (opackage_inject_locations (fsubset_trans (fsubsetUl L1 L2) (fsubsetUr LA (L1 :|: L2))) P1))
@@ -1879,7 +1878,7 @@ Module PackageRHL (π : RulesParam).
           + move: Hdisjoint2. move /fdisjointP => Hdisjoint2.
             apply Hdisjoint2. assumption.
       }
-      pose Hlemma := (some_lemma_for_prove_relational _ _ _ HINV Hempty H r empty_heap empty_heap Hempty).
+      pose Hlemma := (some_lemma_for_prove_relational _ _ _ HINV H r).
       assert (∀ x y : tgt RUN * heap_choiceType,
                  (let '(b1, s1) := x in λ '(b2, s2), b1 = b2 s/\ I (s1, s2)) y → (fst x == true) ↔ (fst y == true)) as Ha.
       { intros [b1 s1] [b2 s2]. simpl.
