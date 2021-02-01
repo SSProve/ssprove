@@ -467,8 +467,8 @@ Module PackageComposition (π : RulesParam).
     apply proof_irrelevance.
   Qed. *)
 
-  (* Notation "p1 ∘ p2" :=
-      (link p1 p2) (right associativity, at level 80) : package_scope. *)
+  Notation "p1 ∘ p2" :=
+    (link p1 p2) (right associativity, at level 80) : package_scope.
 
   (* TODO Probably move somewhere else? *)
   Section fset_par_facts.
@@ -500,23 +500,36 @@ Module PackageComposition (π : RulesParam).
 
   End fset_par_facts.
 
+  (** Parallel composition *)
 
-  Section Par.
+  (* TODO For par it might be better to define parable on
+    domm p rather than on the interface and then not trim.
+    Once can then trim to ensure this holds?
+    Also remove trim from par, and just have it be unionm.
+    Only assoc will have a condition? Or maybe a condition for validity
+    we'll see.
+    Maybe a lemma also for the version with trims?
+    Or do we want to define a symmetric union? That would drop anything
+    that's not on both sides?
+    That's not so clear because in case we one def is in the interface of p1
+    but not in that of p2, but implemented in p2, then it gets dropped in
+    par p1 p2. This would make validity complicated as well.
+  *)
 
-    (** Because p1 and p2 might implement more than prescribed by their
-        interface and in particular overlap, we trim them first.
-    *)
-    Definition raw_par (E1 E2 : Interface) (p1 p2 : raw_package) :=
-      unionm (trim E1 p1) (trim E2 p2).
+  (** Because p1 and p2 might implement more than prescribed by their
+      interface and in particular overlap, we trim them first.
+  *)
+  Definition raw_par (E1 E2 : Interface) (p1 p2 : raw_package) :=
+    unionm (trim E1 p1) (trim E2 p2).
 
-    (** When comparing export interfaces, since we disallow overloading
-        we need to have only the identifier parts disjoint.
-    *)
-    Definition idents (E : Interface) : {fset ident} :=
-      (λ '(n, _), n) @: E.
+  (** When comparing export interfaces, since we disallow overloading
+      we need to have only the identifier parts disjoint.
+  *)
+  Definition idents (E : Interface) : {fset ident} :=
+    (λ '(n, _), n) @: E.
 
-    Definition parable (E1 E2 : Interface) :=
-      fdisjoint (idents E1) (idents E2).
+  Definition parable (E1 E2 : Interface) :=
+    fdisjoint (idents E1) (idents E2).
 
     Lemma parable_sym :
       ∀ {E1 E2},
