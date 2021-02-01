@@ -502,6 +502,60 @@ Module PackageComposition (π : RulesParam).
 
   (** Parallel composition *)
 
+  (** Two packages can be composed in parallel or merged if they implement
+      disjoint interfaces. As such, it might be worth it to trim the packages
+      before using par.
+  *)
+
+  Definition par (p1 p2 : raw_package) :=
+    unionm p1 p2.
+
+  Class Parable (p1 p2 : raw_package) :=
+    parable : fdisjoint (domm p1) (domm p2).
+
+  Lemma valid_par :
+    ∀ L1 L2 I1 I2 E1 E2 p1 p2,
+      Parable p1 p2 →
+      valid_package L1 I1 E1 p1 →
+      valid_package L2 I2 E2 p2 →
+      valid_package (L1 :|: L2) (I1 :|: I2) (E1 :|: E2) (par p1 p2).
+  Proof.
+    intros L1 L2 I1 I2 E1 E2 p1 p2 h h1 h2.
+    intros [n [So To]] ho.
+    unfold par. rewrite unionmE.
+    rewrite in_fsetU in ho. move: ho => /orP [ho | ho].
+    - specialize (h1 _ ho) as h'. cbn in h'.
+      destruct h' as [f [e hf]].
+      rewrite e. cbn.
+      exists f. intuition auto.
+      eapply valid_injectLocations. 1: apply fsubsetUl.
+      eapply valid_injectMap. 1: apply fsubsetUl.
+      auto.
+    - specialize (h2 _ ho) as h'. cbn in h'.
+      destruct h' as [f [e hf]].
+      destruct (p1 n) as [[S1 [T1 f1]]|] eqn:e1.
+      1:{
+        exfalso.
+        assert (i1 : isSome (p1 n)).
+        { rewrite e1. auto. }
+        assert (i2 : isSome (p2 n)).
+        { rewrite e. auto. }
+        rewrite -mem_domm in i1.
+        rewrite -mem_domm in i2.
+        unfold Parable in h.
+        eapply disjoint_in_both. all: eauto.
+      }
+      cbn. rewrite e.
+      exists f. intuition auto.
+      eapply valid_injectLocations. 1: apply fsubsetUr.
+      eapply valid_injectMap. 1: apply fsubsetUr.
+      auto.
+  Qed.
+
+      (* TODO Provide instance for parable in case of trim *)
+
+      unionmC (* For symmetry *)
+
   (* TODO For par it might be better to define parable on
     domm p rather than on the interface and then not trim.
     Once can then trim to ensure this holds?
