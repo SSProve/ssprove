@@ -2192,14 +2192,10 @@ Qed.
 
 Lemma rsymmetry  { A1 A2 : ord_choiceType } { L : {fset Location} } { pre : heap * heap -> Prop } { post }
                  { c1 : program L Game_import A1 } { c2 : program L Game_import A2 }
-                 (H : r⊨ ⦃ fun '(h1, h2) => pre (h2, h1) ⦄ c2 ≈ c1 ⦃ fun '(a2,h2) '(a1,h1) => post (a1,h1) (a2, h2) ⦄) :
-                     r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄.
-Proof.
-  move => [h1 h2]. move => π. simpl in π. 
-  unfold semantic_judgement in H. 
-  specialize (H (h2, h1) (fun '(a2,s2, (a1,s1)) => π (a1, s1, (a2, s2)))).
-  (* CA: we need the symmetric of the coupling from H *)
-Admitted.  
+                 ( H  : r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄) :
+                 r⊨ ⦃ fun '(h1, h2) => pre (h2, h1) ⦄ c2 ≈ c1 ⦃ fun '(a2,h2) '(a1,h1) => post (a1,h1) (a2, h2) ⦄.                 
+Proof. by apply: symmetry_rule. Qed. 
+  
    
 
 Lemma rsamplerC { A : ord_choiceType } { L : {fset Location} }  (o : Op)
@@ -2208,7 +2204,12 @@ Lemma rsamplerC { A : ord_choiceType } { L : {fset Location} }  (o : Op)
        a ← c ;; r ← (r ← sample o ;; ret r) ;;  (ret (a, r)) ≈
        r ← (r ← sample o ;; ret r) ;; a ← c ;;  (ret (a, r))
    ⦃ eq ⦄.
-Proof. 
+Proof.
+  apply: rrewrite_eqDistrL.
+  - apply: rreflexivity_rule. 
+  - move => s. f_equal.
+    (*CA: we should be able to rewrite smMonequ1/2 ? and have the equality? *)
+  
 Admitted.
 
 Lemma rsamplerC' { A : ord_choiceType } { L : {fset Location} }  (o : Op)
@@ -2217,7 +2218,11 @@ Lemma rsamplerC' { A : ord_choiceType } { L : {fset Location} }  (o : Op)
         r ← (r ← sample o ;; ret r) ;; a ← c ;;  (ret (r, a)) ≈
         a ← c ;; r ← (r ← sample o ;; ret r) ;;  (ret (r, a))
    ⦃ eq ⦄.
-Proof. Admitted.
+Proof.
+  
+
+
+Admitted.
 
 
 (* TODO: generalize the corresponding rule in RulesStateProb.v  *)
