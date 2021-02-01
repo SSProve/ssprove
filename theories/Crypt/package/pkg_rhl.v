@@ -2192,8 +2192,8 @@ Qed.
 
 Lemma rsymmetry  { A1 A2 : ord_choiceType } { L : {fset Location} } { pre : heap * heap -> Prop } { post }
                  { c1 : program L Game_import A1 } { c2 : program L Game_import A2 }
-                 ( H  : r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄) :
-                 r⊨ ⦃ fun '(h1, h2) => pre (h2, h1) ⦄ c2 ≈ c1 ⦃ fun '(a2,h2) '(a1,h1) => post (a1,h1) (a2, h2) ⦄.                 
+                 (H : r⊨ ⦃ fun '(h2, h1) => pre (h1, h2) ⦄ c2 ≈ c1 ⦃ fun '(a2,h2) '(a1,h1) => post (a1,h1) (a2, h2) ⦄ ):
+   r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄.
 Proof. by apply: symmetry_rule. Qed. 
   
    
