@@ -771,47 +771,6 @@ Module PackageRHL (π : RulesParam).
       apply ler_dist_add.
     Qed.
 
-(* Handy rewrite on packages *)
-
-Lemma rewrite_aux :
-  ∀ {T A} {P : A → Prop} {x y} (p : T → A) (h : P (p x)) (e : x = y),
-    P (p y).
-Proof.
-  intros T A P x y p h e. subst. auto.
-Defined.
-
-Lemma mkpackage_rewrite :
-∀ {L I E T} {x y} (p : T → _) h (e : x = y),
-  @mkpackage L I E (p x) h = mkpackage (p y) (rewrite_aux p h e).
-Proof.
-  intros L I E T x y p h e. subst. reflexivity.
-Qed.
-
-Ltac mkpackage_rewrite e :=
-  lazymatch type of e with
-  | ?x = _ =>
-    match goal with
-    | |- context [ mkpackage ?p ?h ] =>
-      lazymatch p with
-      | context [ x ] =>
-        lazymatch eval pattern x in p with
-        | (fun x => @?q x) ?y =>
-          erewrite (mkpackage_rewrite q _ e)
-        end
-      end
-    end
-  end.
-
-(** Tactic package rewrite
-
-Usage: you have e : x = y as an hypothesis and you want to rewrite e inside
-a term of the form mkpackage u v, specifically inside the term u.
-sig rewrite e will replace x by y in u and update v accordingly.
-
-*)
-Tactic Notation "package" "rewrite" constr(e) :=
-  mkpackage_rewrite e.
-
     Lemma Reduction {Game_export M_export : Interface}
       {M : loc_package Game_export M_export}
       (G : GamePair Game_export) (A : Adversary4Game M_export) (b : bool) :
@@ -822,20 +781,22 @@ Tactic Notation "package" "rewrite" constr(e) :=
       | |- context [ link (link ?x ?y) ?z ] =>
         package rewrite (link_assoc x y z)
       end.
-      reflexivity.
+      f_equal. f_equal. f_equal. apply loc_package_ext.
+      - cbn. rewrite fsetUA. reflexivity.
+      - cbn. intro. reflexivity.
     Qed.
 
     Lemma rhl_repr_change_all {B1 B2 : choiceType} {L1 L2 L1' L2'}
-          {pre : heap_choiceType * heap_choiceType -> Prop}
-          {post : (B1 * heap_choiceType) -> (B2 * heap_choiceType) -> Prop}
-          {r1 r1' : raw_program B1} {r2 r2' : raw_program B2}
-          {hr11 : valid_program L1 Game_import r1}
-          {hr12 : valid_program L2 Game_import r1'}
-          {hr21 : valid_program L1' Game_import r2}
-          {hr22 : valid_program L2' Game_import r2'}
-          (Hr1 : r1 = r1') (Hr2 : r2 = r2')
-          (H : ⊨ ⦃ pre ⦄ repr (exist _ r1 hr11) ≈ repr (exist _ r2 hr21) ⦃ post ⦄)
-      : ⊨ ⦃ pre ⦄ repr (exist _ r1' hr12) ≈ repr (exist _ r2' hr22) ⦃ post ⦄.
+      {pre : heap_choiceType * heap_choiceType -> Prop}
+      {post : (B1 * heap_choiceType) → (B2 * heap_choiceType) → Prop}
+      {r1 r1' : raw_program B1} {r2 r2' : raw_program B2}
+      {hr11 : ValidProgram L1 Game_import r1}
+      {hr12 : ValidProgram L2 Game_import r1'}
+      {hr21 : ValidProgram L1' Game_import r2}
+      {hr22 : ValidProgram L2' Game_import r2'}
+      (Hr1 : r1 = r1') (Hr2 : r2 = r2')
+      (H : ⊨ ⦃ pre ⦄ repr {program r1 } ≈ repr {program r2 } ⦃ post ⦄)
+      : ⊨ ⦃ pre ⦄ repr {program r1' } ≈ repr {program r2' } ⦃ post ⦄.
     Proof.
       unfold repr in *.
       induction Hr1. induction Hr2.
@@ -846,17 +807,25 @@ Tactic Notation "package" "rewrite" constr(e) :=
       rewrite -Hr1 -Hr2. assumption.
     Qed.
 
-    Definition INV (L : {fset Location}) (I : heap_choiceType * heap_choiceType -> Prop) :=
-      forall s1 s2, (I (s1, s2) -> forall l, l \in L -> get_heap s1 l = get_heap s2 l) /\
-               (I (s1, s2) -> forall l v, l \in L -> I (set_heap s1 l v, set_heap s2 l v)).
+    Definition INV (L : {fset Location})
+      (I : heap_choiceType * heap_choiceType → Prop) :=
+      ∀ s1 s2,
+        (I (s1, s2) → ∀ l, l \in L → get_heap s1 l = get_heap s2 l) ∧
+        (I (s1, s2) → ∀ l v, l \in L → I (set_heap s1 l v, set_heap s2 l v)).
 
-    Definition INV' (L1 L2 : {fset Location}) (I : heap_choiceType * heap_choiceType -> Prop) :=
-      forall s1 s2, (I (s1, s2) -> forall l, l \notin L1 -> l \notin L2 -> get_heap s1 l = get_heap s2 l) /\
-               (I (s1, s2) -> forall l v, l \notin L1 -> l \notin L2 -> I (set_heap s1 l v, set_heap s2 l v)).
+    Definition INV' (L1 L2 : {fset Location})
+      (I : heap_choiceType * heap_choiceType → Prop) :=
+      ∀ s1 s2,
+        (I (s1, s2) → ∀ l, l \notin L1 → l \notin L2 →
+          get_heap s1 l = get_heap s2 l) ∧
+        (I (s1, s2) → ∀ l v, l \notin L1 → l \notin L2 →
+          I (set_heap s1 l v, set_heap s2 l v)).
 
-    Lemma INV'_to_INV (L L1 L2 : {fset Location}) (I : heap_choiceType * heap_choiceType -> Prop)
-          (HINV' : INV' L1 L2 I) (Hdisjoint1 : fdisjoint L L1) (Hdisjoint2 : fdisjoint L L2)
-      : INV L I.
+    Lemma INV'_to_INV (L L1 L2 : {fset Location})
+      (I : heap_choiceType * heap_choiceType → Prop)
+      (HINV' : INV' L1 L2 I)
+      (Hdisjoint1 : fdisjoint L L1) (Hdisjoint2 : fdisjoint L L2) :
+      INV L I.
     Proof.
       unfold INV.
       intros s1 s2. split.
@@ -876,13 +845,13 @@ Tactic Notation "package" "rewrite" constr(e) :=
           apply Hdisjoint2. assumption.
     Qed.
 
-    Lemma get_case {L LA} (I : heap_choiceType * heap_choiceType -> Prop)
+    Lemma get_case {L LA} (I : heap_choiceType * heap_choiceType → Prop)
       (HINV : INV LA I) {l : Location} (Hin : l \in LA)
-      (hp : [eta valid_program L Game_import] (_getr l (fun x => _ret x))):
+      (hp : [eta valid_program L Game_import] (getr l (λ x, ret x))) :
       ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄
-            repr (locs := L) (exist _ (_getr l (fun x => _ret x)) hp)
-          ≈ repr (locs := L) (exist _ (_getr l (fun x => _ret x)) hp)
-          ⦃ fun '(b1, s1) '(b2, s2) => b1 = b2 /\ I (s1, s2) ⦄.
+            repr (locs := L) (mkprog (getr l (λ x, ret x)) hp)
+          ≈ repr (locs := L) (mkprog (getr l (λ x, ret x)) hp)
+          ⦃ λ '(b1, s1) '(b2, s2), b1 = b2 ∧ I (s1, s2) ⦄.
     Proof.
       cbn. intros [s1 s2].
       rewrite /SpecificationMonads.MonoCont_bind /=.
@@ -891,7 +860,7 @@ Tactic Notation "package" "rewrite" constr(e) :=
       intuition.
       assert (get_heap s1 l = get_heap s2 l) as Hv.
       { unfold INV in HINV.
-        destruct hp as [hp _].
+        apply inversion_valid_getr in hp as [hp _].
         specialize (HINV s1 s2). destruct HINV as [HINV _].
         specialize (HINV H0 _ Hin).
         assumption.
@@ -920,13 +889,13 @@ Tactic Notation "package" "rewrite" constr(e) :=
         intuition.
     Qed.
 
-    Lemma put_case {L LA} (I : heap_choiceType * heap_choiceType -> Prop)
+    Lemma put_case {L LA} (I : heap_choiceType * heap_choiceType → Prop)
       (HINV : INV LA I) {l : Location} {v : Value l.π1} (Hin : l \in LA)
-      (hp : [eta valid_program L Game_import] (_putr l v (_ret tt))):
+      (hp : [eta valid_program L Game_import] (putr l v (ret tt))):
       ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄
-            repr (locs := L) (exist _ (_putr l v (_ret tt)) hp)
-          ≈ repr (locs := L) (exist _ (_putr l v (_ret tt)) hp)
-          ⦃ fun '(b1, s1) '(b2, s2) => b1 = b2 /\ I (s1, s2) ⦄.
+            repr (locs := L) (mkprog (putr l v (ret tt)) hp)
+          ≈ repr (locs := L) (mkprog (putr l v (ret tt)) hp)
+          ⦃ λ '(b1, s1) '(b2, s2), b1 = b2 ∧ I (s1, s2) ⦄.
     Proof.
       cbn. intros [s1 s2].
       rewrite /SpecificationMonads.MonoCont_bind /=.
@@ -964,6 +933,7 @@ Tactic Notation "package" "rewrite" constr(e) :=
       destruct (a == b) eqn:ab, (c == d) eqn:cd.
       all: cbn; rewrite ab cd /=; try rewrite GRing.mulr1; try rewrite GRing.mulr0; reflexivity.
     Qed.
+
     Lemma summable_eq {A : choiceType} {s : A}
       : realsum.summable (T:=A) (R:=R) (λ x, (x == s)%:R).
     Proof.
@@ -974,6 +944,7 @@ Tactic Notation "package" "rewrite" constr(e) :=
       rewrite Hf. clear Hf.
       apply summable_mu.
     Qed.
+
     Lemma summable_pair_eq {A : choiceType} {B C : eqType} (f1 f3 : A -> B) (f2 f4 : A -> C)
           (h1 : realsum.summable (T:=A) (R:=R) (λ x, (f1 x == f3 x)%:R))
           (h2 : realsum.summable (T:=_) (R:=R) (λ x, (f2 x == f4 x)%:R))
@@ -987,6 +958,7 @@ Tactic Notation "package" "rewrite" constr(e) :=
       rewrite Hf.
       apply realsum.summableM. all: assumption.
     Qed.
+
     Lemma psum_exists {R : realType} {A : choiceType} {f : A -> R}
           (H : 0 < realsum.psum (T:=A) (R:=R) f) (Hpos : forall x, 0 <= f x) :
       exists x, 0 < f x.
@@ -1004,12 +976,14 @@ Tactic Notation "package" "rewrite" constr(e) :=
         rewrite mc_1_10.Num.Theory.ltrr. auto.
       - assumption.
     Qed.
+
     Lemma pmulr_me (x y : R) : 0 <= y -> (0 < y * x) -> (0 < x).
     Proof.
       rewrite le0r => /orP[/eqP->|].
       - by rewrite GRing.mul0r mc_1_10.Num.Theory.ltrr.
       - intros. by rewrite -(pmulr_rgt0 x b).
     Qed.
+
     Lemma ge0_eq {R : realType} {A : eqType} {x y : A} (H : 0 < ((x == y)%:R) :> R) :
       x = y.
     Proof.
@@ -1017,6 +991,7 @@ Tactic Notation "package" "rewrite" constr(e) :=
       - move: Heq. by move /eqP.
       - by rewrite mc_1_10.Num.Theory.ltrr in H.
     Qed.
+
     Lemma ne0_eq {R : ringType} {A : eqType} {x y : A} (H : ((x == y)%:R) ≠ (0 : R)) :
       x = y.
     Proof.
@@ -1025,14 +1000,13 @@ Tactic Notation "package" "rewrite" constr(e) :=
       - cbn in H. intuition.
     Qed.
 
-
     Lemma sampler_case {L LA} (I : heap_choiceType * heap_choiceType -> Prop)
       (HINV : INV LA I) {op}
-      (hp : [eta valid_program L Game_import] (_sampler op [eta _ret (A:=Arit op)])):
+      (hp : [eta valid_program L Game_import] (sampler op [eta ret (A:=Arit op)])):
       ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄
-            repr (locs := L) (exist _ (_sampler op [eta _ret (A:=Arit op)]) hp)
-          ≈ repr (locs := L) (exist _ (_sampler op [eta _ret (A:=Arit op)]) hp)
-          ⦃ fun '(b1, s1) '(b2, s2) => b1 = b2 /\ I (s1, s2) ⦄.
+            repr (locs := L) (mkprog (sampler op [eta ret (A:=Arit op)]) hp)
+          ≈ repr (locs := L) (mkprog (sampler op [eta ret (A:=Arit op)]) hp)
+          ⦃ λ '(b1, s1) '(b2, s2), b1 = b2 ∧ I (s1, s2) ⦄.
     Proof.
       cbn - [thetaFstd θ]. intros [s1 s2].
       rewrite /SpecificationMonads.MonoCont_order /SPropMonadicStructures.SProp_op_order
@@ -1156,6 +1130,10 @@ Tactic Notation "package" "rewrite" constr(e) :=
           * auto.
           * apply ler0n.
     Qed.
+
+    (* TODO STOP *)
+    (* The following will simply go away I think. *)
+    (* Indeed computation should do the trick for the most part. *)
 
     (* TODO MOVE *)
     (* (Safe) lookup in open packages *)

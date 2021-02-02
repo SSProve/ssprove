@@ -783,4 +783,72 @@ Module CorePackageTheory (π : RulesParam).
     (mkloc_package _ (mkpackage p h))
     (only parsing) : package_scope.
 
+  (* Rewriting in packages *)
+
+  Lemma mkpackage_rewrite :
+    ∀ {L I E T} {x y} (p : T → _) h (e : x = y),
+      @mkpackage L I E (p x) h = mkpackage (p y) (sig_rewrite_aux p h e).
+  Proof.
+    intros L I E T x y p h e. subst. reflexivity.
+  Qed.
+
+  Ltac mkpackage_rewrite e :=
+    lazymatch type of e with
+    | ?x = _ =>
+      match goal with
+      | |- context [ mkpackage ?p ?h ] =>
+        lazymatch p with
+        | context [ x ] =>
+          lazymatch eval pattern x in p with
+          | (fun x => @?q x) ?y =>
+            erewrite (mkpackage_rewrite q _ e)
+          end
+        end
+      end
+    end.
+
+  (** Tactic package rewrite
+
+  Usage: you have e : x = y as an hypothesis and you want to rewrite e inside
+  a term of the form mkpackage u v, specifically inside the term u.
+  sig rewrite e will replace x by y in u and update v accordingly.
+
+  *)
+  Tactic Notation "package" "rewrite" constr(e) :=
+    mkpackage_rewrite e.
+
+  (* Rewriting in programs *)
+
+  Lemma mkprog_rewrite :
+    ∀ {L I A T} {x y} (p : T → _) h (e : x = y),
+      @mkprog L I A (p x) h = mkprog (p y) (sig_rewrite_aux p h e).
+  Proof.
+    intros L I A T x y p h e. subst. reflexivity.
+  Qed.
+
+  Ltac mkprog_rewrite e :=
+    lazymatch type of e with
+    | ?x = _ =>
+      match goal with
+      | |- context [ mkprog ?p ?h ] =>
+        lazymatch p with
+        | context [ x ] =>
+          lazymatch eval pattern x in p with
+          | (fun x => @?q x) ?y =>
+            erewrite (mkprog_rewrite q _ e)
+          end
+        end
+      end
+    end.
+
+  (** Tactic program rewrite
+
+  Usage: you have e : x = y as an hypothesis and you want to rewrite e inside
+  a term of the form mkprogram u v, specifically inside the term u.
+  sig rewrite e will replace x by y in u and update v accordingly.
+
+  *)
+  Tactic Notation "program" "rewrite" constr(e) :=
+    mkprog_rewrite e.
+
 End CorePackageTheory.
