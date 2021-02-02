@@ -425,13 +425,12 @@ Module PackageComposition (π : RulesParam).
   Qed.
 
   Lemma link_assoc :
-    ∀ L1 L2 E M1 M2 p1 p2 p3,
-      valid_package L1 M1 E p1 →
-      valid_package L2 M2 M1 p2 →
-      link p1 (link p2 p3) =1
+    ∀ p1 p2 p3,
+      link p1 (link p2 p3) =
       link (link p1 p2) p3.
   Proof.
-    intros L1 L2 E M1 M2 p1 p2 p3 h1 h2.
+    intros p1 p2 p3.
+    apply eq_fmap.
     unfold link.
     intro n. repeat rewrite ?mapmE.
     destruct (p1 n) as [[S1 [T1 f1]]|] eqn:e. 2: reflexivity.

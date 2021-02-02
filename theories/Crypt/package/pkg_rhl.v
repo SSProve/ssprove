@@ -777,6 +777,9 @@ Module PackageRHL (π : RulesParam).
       `| Pr {locpackage link A (link M (G b)) } true | =
       `| Pr {locpackage link (link A M) (G b) } true |.
     Proof.
+      match goal with
+      | |- context [ link (link ?x ?y) ?z ] =>
+      end.
       rewrite link_assoc.
       reflexivity.
     Qed.
