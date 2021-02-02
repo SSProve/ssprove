@@ -771,6 +771,47 @@ Module PackageRHL (π : RulesParam).
       apply ler_dist_add.
     Qed.
 
+(* Handy rewrite on packages *)
+
+Lemma rewrite_aux :
+  ∀ {T A} {P : A → Prop} {x y} (p : T → A) (h : P (p x)) (e : x = y),
+    P (p y).
+Proof.
+  intros T A P x y p h e. subst. auto.
+Defined.
+
+Lemma mkpackage_rewrite :
+∀ {L I E T} {x y} (p : T → _) h (e : x = y),
+  @mkpackage L I E (p x) h = mkpackage (p y) (rewrite_aux p h e).
+Proof.
+  intros L I E T x y p h e. subst. reflexivity.
+Qed.
+
+Ltac mkpackage_rewrite e :=
+  lazymatch type of e with
+  | ?x = _ =>
+    match goal with
+    | |- context [ mkpackage ?p ?h ] =>
+      lazymatch p with
+      | context [ x ] =>
+        lazymatch eval pattern x in p with
+        | (fun x => @?q x) ?y =>
+          erewrite (mkpackage_rewrite q _ e)
+        end
+      end
+    end
+  end.
+
+(** Tactic package rewrite
+
+Usage: you have e : x = y as an hypothesis and you want to rewrite e inside
+a term of the form mkpackage u v, specifically inside the term u.
+sig rewrite e will replace x by y in u and update v accordingly.
+
+*)
+Tactic Notation "package" "rewrite" constr(e) :=
+  mkpackage_rewrite e.
+
     Lemma Reduction {Game_export M_export : Interface}
       {M : loc_package Game_export M_export}
       (G : GamePair Game_export) (A : Adversary4Game M_export) (b : bool) :
@@ -779,8 +820,8 @@ Module PackageRHL (π : RulesParam).
     Proof.
       match goal with
       | |- context [ link (link ?x ?y) ?z ] =>
+        package rewrite (link_assoc x y z)
       end.
-      rewrite link_assoc.
       reflexivity.
     Qed.
 
