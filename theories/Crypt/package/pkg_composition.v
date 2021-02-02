@@ -315,20 +315,6 @@ Module PackageComposition (π : RulesParam).
     f_equal. apply proof_irrelevance.
   Qed.
 
-  (* TODO MOVE? *)
-  Lemma loc_package_ext :
-    ∀ {I E} (p1 p2 : loc_package I E),
-      p1.π1 = p2.π1 →
-      p1.π2.(pack) =1 p2.π2.(pack) →
-      p1 = p2.
-  Proof.
-    intros I E p1 p2 e1 e2.
-    destruct p1 as [l1 [p1 h1]], p2 as [l2 [p2 h2]].
-    apply eq_fmap in e2.
-    cbn in *. subst.
-    f_equal. f_equal. apply proof_irrelevance.
-  Qed.
-
   (* Technical lemma before proving assoc *)
   Lemma link_trim_commut :
     ∀ E p1 p2,

@@ -346,9 +346,6 @@ Module PackageRHL (π : RulesParam).
       apply (bind_rule_pp (repr m1) (repr m2) pre middle post judge_wm judge_wf).
     Qed.
 
-    Let getLocations {I E} (P : loc_package I E) : {fset Location} :=
-      let '(locs; PP) := P in locs.
-
     Lemma opaque_me :
       ∀ {B L I E}
         (p : raw_package) (hp : valid_package L I E p)
@@ -540,8 +537,8 @@ Module PackageRHL (π : RulesParam).
 
     Definition get_package_op {I E : Interface} (P : loc_package I E)
                (op : opsig) (Hin : op \in E) (arg : src op)
-      : program (getLocations P) I (tgt op) :=
-      let (L, PP) as s return (program (getLocations s) I (tgt op)) := P in
+      : program P.(locs) I (tgt op) :=
+      let (L, PP) as s return (program s.(locs) I (tgt op)) := P in
       get_opackage_op PP op Hin arg.
 
     Definition Pr_raw_program {L} {B}
@@ -1933,11 +1930,11 @@ Module PackageRHL (π : RulesParam).
       simpl in Heq.
       unfold Pr_op.
       pose _rhs := (thetaFstd _ (repr (program_link
-            (injectLocations (fsubsetUl (getLocations A) (L1 :|: L2)) r)
+            (injectLocations (fsubsetUl A.(locs) (L1 :|: L2)) r)
             (opackage_inject_locations
                (fsubset_trans (y:=L1 :|: L2) (x:=L1)
-                  (z:=getLocations A :|: (L1 :|: L2)) (fsubsetUl L1 L2)
-                  (fsubsetUr (getLocations A) (L1 :|: L2))) P1))) empty_heap).
+                  (z:= A.(locs) :|: (L1 :|: L2)) (fsubsetUl L1 L2)
+                  (fsubsetUr A.(locs) (L1 :|: L2))) P1))) empty_heap).
       pose rhs := _rhs prob_handler.
       simpl in _rhs, rhs.
       pose lhs := (let (L, o) := link A (L1; P1) in
@@ -1948,7 +1945,6 @@ Module PackageRHL (π : RulesParam).
         unfold Pr_raw_package_op. unfold Pr_raw_program.
         unfold thetaFstd. simpl. apply f_equal2. 2: { reflexivity. }
         apply f_equal. apply f_equal.
-        unfold getLocations. unfold ".π1".
         destruct A as [LA [A A_valid]].
         apply repr'_ext.
         erewrite (get_raw_package_op_link RUN_in_A_export tt (trim A_export ((LA; ⦑ A ⦒).π2) ∙1) (P1 ∙1) _ _).
@@ -1968,11 +1964,11 @@ Module PackageRHL (π : RulesParam).
       unfold lhs in H0.
       rewrite H0.
       pose _rhs' := (thetaFstd _ (repr (program_link
-            (injectLocations (fsubsetUl (getLocations A) (L1 :|: L2)) r)
+            (injectLocations (fsubsetUl A.(locs) (L1 :|: L2)) r)
             (opackage_inject_locations
                (fsubset_trans (y:=L1 :|: L2) (x:=L2)
-                  (z:=getLocations A :|: (L1 :|: L2)) (fsubsetUr L1 L2)
-                  (fsubsetUr (getLocations A) (L1 :|: L2))) P2))) empty_heap).
+                  (z:= A.(locs) :|: (L1 :|: L2)) (fsubsetUr L1 L2)
+                  (fsubsetUr A.(locs) (L1 :|: L2))) P2))) empty_heap).
       pose rhs' := _rhs' prob_handler.
       simpl in _rhs', rhs'.
       pose lhs' := (let (L, o) := link A (L2; P2) in
@@ -1983,7 +1979,6 @@ Module PackageRHL (π : RulesParam).
         unfold Pr_raw_package_op. unfold Pr_raw_program.
         unfold thetaFstd. simpl. apply f_equal2. 2: { reflexivity. }
         apply f_equal. apply f_equal.
-        unfold getLocations. unfold ".π1".
         destruct A as [LA [A A_valid]].
         apply repr'_ext.
         erewrite (get_raw_package_op_link RUN_in_A_export tt (trim A_export ((LA; ⦑ A ⦒).π2) ∙1) (P2 ∙1) _ _).

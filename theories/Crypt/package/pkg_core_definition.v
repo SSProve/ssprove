@@ -719,8 +719,32 @@ Module CorePackageTheory (π : RulesParam).
   Arguments pack_valid [_ _ _] _.
 
   (* Packages coming with their set of locations *)
-  Definition loc_package I E :=
-    ∑ L, package L I E.
+  Record loc_package I E := mkloc_package {
+    locs : {fset Location} ;
+    locs_pack : package locs I E
+  }.
+
+  Arguments mkloc_package [_ _] _ _.
+  Arguments locs [_ _] _.
+  Arguments locs_pack [_ _] _.
+
+  (* Definition loc_package I E :=
+    ∑ L, package L I E. *)
+
+  Coercion locs_pack : loc_package >-> package.
+
+  Lemma loc_package_ext :
+    ∀ {I E} (p1 p2 : loc_package I E),
+      p1.(locs) = p2.(locs) →
+      p1.(locs_pack).(pack) =1 p2.(locs_pack).(pack) →
+      p1 = p2.
+  Proof.
+    intros I E p1 p2 e1 e2.
+    destruct p1 as [l1 [p1 h1]], p2 as [l2 [p2 h2]].
+    apply eq_fmap in e2.
+    cbn in *. subst.
+    f_equal. f_equal. apply proof_irrelevance.
+  Qed.
 
   (* Record bundle := mkbundle {
     locs : {fset Location} ;
