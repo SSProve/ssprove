@@ -634,21 +634,22 @@ Module PackageRHL (π : RulesParam).
       (A : Adversary4Game Game_export)
       {H1 : fdisjoint A.(locs) (G false).(locs)}
       {H2 : fdisjoint A.(locs) (G true).(locs)} : R :=
-      `| (Pr (mkloc_package _ {package link A (G false) }) true) -
-         (Pr (mkloc_package _ {package link A (G true) }) true) |.
+      `| (Pr {locpackage link A (G false) } true) -
+         (Pr {locpackage link A (G true) } true) |.
 
     Definition AdvantageE { Game_export : Interface }
                (G0 : Game_Type Game_export) (G1 : Game_Type Game_export)
                (A : Adversary4Game Game_export)
                {H1 : fdisjoint A.(locs) G0.(locs)}
                {H2 : fdisjoint A.(locs) G1.(locs)} : R
-      := `| (Pr (mkloc_package _ {package link A G0 }) true) -
-            (Pr (mkloc_package _ {package link A G1 }) true)|.
+      := `| (Pr {locpackage link A G0 } true) -
+            (Pr {locpackage link A G1 } true)|.
 
     Definition AdvantageE_weak { Game_export : Interface }
                (G0 : Game_Type Game_export) (G1 : Game_Type Game_export)
                (A : Adversary4Game_weak Game_export) : R
-      := `| (Pr (link (fset0; A) G0) true) - (Pr (link (fset0; A) G1) true)|.
+      := `| (Pr {locpackage link A G0 } true) -
+            (Pr {locpackage link A G1 } true)|.
 
     Definition state_pass_ {A} (p : raw_program A) :
       heap_choiceType → raw_program (prod_choiceType A heap_choiceType).
@@ -656,7 +657,7 @@ Module PackageRHL (π : RulesParam).
       induction p; intros h.
       - constructor.
         exact (x, h).
-      - apply (_opr o).
+      - apply (opr o).
         + exact x.
         + intros v. exact (X v h).
       - apply X.
@@ -664,46 +665,41 @@ Module PackageRHL (π : RulesParam).
         + exact h.
       - apply IHp.
         apply (set_heap h l v).
-      - apply (_sampler op).
+      - apply (sampler op).
         intros v. exact (X v h).
     Defined.
 
-    Definition state_pass__valid {A} {L} {I} (p : raw_program A) (h : valid_program L I p) :
+    Definition state_pass__valid {A} {L} {I} (p : raw_program A)
+      (h : valid_program L I p) :
       ∀ hp, valid_program fset0 I (state_pass_ p hp).
     Proof.
-      induction p; intros hp.
-      - auto.
-      - destruct h as [h1 h2]. split.
+      intro hp. induction h in hp |- *.
+      - cbn. constructor.
+      - simpl. constructor.
         + assumption.
-        + intros t.
-          apply H.
-          apply h2.
-      - destruct h as [h1 h2].
-        apply H.
-        apply h2.
-      - destruct h as [h1 h2].
-        apply IHp.
-        apply h2.
-      - intros v.
-        apply H.
-        apply h.
+        + intros t. eauto.
+      - simpl. eauto.
+      - simpl. eauto.
+      - simpl. constructor.
+        intros v. eauto.
     Qed.
 
     Definition state_pass {A} (p : raw_program A) : raw_program A :=
-      bind_ (state_pass_ p empty_heap) (fun '(r, _) => _ret r).
+      bind (state_pass_ p empty_heap) (λ '(r, _), ret r).
 
-    Definition state_pass_valid {A} {L} {I} (p : raw_program A) (h : valid_program L I p) :
+    Definition state_pass_valid {A} {L} {I} (p : raw_program A)
+      (h : valid_program L I p) :
       valid_program fset0 I (state_pass p).
     Proof.
       apply valid_bind.
       - apply (state_pass__valid p h empty_heap).
-      - intros x. destruct x. cbn. auto.
+      - intros x. destruct x. constructor.
     Qed.
 
-    Definition turn_adversary_weak  { Game_export : Interface }
-               (A : Adversary4Game Game_export) : Adversary4Game_weak Game_export.
+    Definition turn_adversary_weak  {Game_export : Interface}
+      (A : Adversary4Game Game_export) : Adversary4Game_weak Game_export.
     Proof.
-      unfold Adversary4Game_weak, opackage.
+      unfold Adversary4Game_weak.
       pose (get_op A RUN RUN_in_A_export Datatypes.tt) as run.
       destruct run as [run valid_run].
       cbn in *.
@@ -723,22 +719,24 @@ Module PackageRHL (π : RulesParam).
         assumption.
     Defined.
 
-    Definition pr_weak {Game_export : Interface} (A : Adversary4Game Game_export) G :
-      Pr (link (fset0; turn_adversary_weak A) G) true = Pr (link A G) true.
+    Lemma pr_weak {Game_export : Interface}
+      (A : Adversary4Game Game_export) (G : loc_package _ _) :
+      Pr {locpackage link (turn_adversary_weak A) G } true =
+      Pr {locpackage link A G } true.
     Proof.
     Admitted.
 
     Definition perf_ind {Game_export : Interface}
-               (G0 : Game_Type Game_export) (G1 : Game_Type Game_export) :=
-      forall A H1 H2, @AdvantageE _ G0 G1 A H1 H2 = 0.
+      (G0 : Game_Type Game_export) (G1 : Game_Type Game_export) :=
+      ∀ A H1 H2, @AdvantageE _ G0 G1 A H1 H2 = 0.
 
     Definition perf_ind_weak {Game_export : Interface}
-               (G0 : Game_Type Game_export) (G1 : Game_Type Game_export) :=
-      forall A, @AdvantageE_weak _ G0 G1 A = 0.
+      (G0 : Game_Type Game_export) (G1 : Game_Type Game_export) :=
+      ∀ A, @AdvantageE_weak _ G0 G1 A = 0.
 
     Definition perf_ind_weak_implies_perf_ind {Game_export : Interface}
-               (G0 : Game_Type Game_export) (G1 : Game_Type Game_export)
-               (h : perf_ind_weak G0 G1) : perf_ind G0 G1.
+      (G0 : Game_Type Game_export) (G1 : Game_Type Game_export)
+      (h : perf_ind_weak G0 G1) : perf_ind G0 G1.
     Proof.
       unfold perf_ind, perf_ind_weak, AdvantageE, AdvantageE_weak in *.
       intros A H1 H2.
@@ -747,15 +745,19 @@ Module PackageRHL (π : RulesParam).
       apply h.
     Qed.
 
-    Notation "ϵ( GP )" := (fun A => AdvantageE (GP false) (GP true) A) (at level 90).
-    Notation " G0 ≈[ R ] G1 " := (AdvantageE G0 G1 = R) (at level 50).
+    Notation "ϵ( GP )" :=
+      (λ A, AdvantageE (GP false) (GP true) A) (at level 90).
 
-    Lemma TriangleInequality  {Game_export : Interface} {F G H : Game_Type Game_export}
-          {ϵ1 ϵ2 ϵ3}
-          (ineq1 : F ≈[ ϵ1 ] G)
-          (ineq2 : G ≈[ ϵ2 ] H)
-          (ineq3 : F ≈[ ϵ3 ] H)
-      : forall A H1 H2 H3 H4 H5 H6, ϵ3 A H1 H2 <= ϵ1 A H3 H4 + ϵ2 A H5 H6.
+    Notation " G0 ≈[ R ] G1 " :=
+      (AdvantageE G0 G1 = R) (at level 50).
+
+    Lemma TriangleInequality {Game_export : Interface}
+      {F G H : Game_Type Game_export}
+      {ϵ1 ϵ2 ϵ3}
+      (ineq1 : F ≈[ ϵ1 ] G)
+      (ineq2 : G ≈[ ϵ2 ] H)
+      (ineq3 : F ≈[ ϵ3 ] H)
+      : ∀ A H1 H2 H3 H4 H5 H6, ϵ3 A H1 H2 <= ϵ1 A H3 H4 + ϵ2 A H5 H6.
     Proof.
       move => A H1 H2 H3 H4 H5 H6.
       assert (@AdvantageE _ F G A H3 H4 = ϵ1 A H3 H4) as Ineq1.
@@ -769,9 +771,11 @@ Module PackageRHL (π : RulesParam).
       apply ler_dist_add.
     Qed.
 
-    Lemma Reduction {Game_export M_export : Interface} {M : package Game_export M_export}
-          (G : GamePair Game_export) (A : Adversary4Game M_export) (b : bool) :
-      `| Pr (link A (link M (G b))) true | = `| Pr (link (link A M) (G b))  true |.
+    Lemma Reduction {Game_export M_export : Interface}
+      {M : loc_package Game_export M_export}
+      (G : GamePair Game_export) (A : Adversary4Game M_export) (b : bool) :
+      `| Pr {locpackage link A (link M (G b)) } true | =
+      `| Pr {locpackage link (link A M) (G b) } true |.
     Proof.
       rewrite link_assoc.
       reflexivity.

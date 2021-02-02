@@ -775,4 +775,12 @@ Module CorePackageTheory (π : RulesParam).
     intros A p h. auto.
   Defined.
 
+  Notation "{ 'locpackage' p }" :=
+    (mkloc_package _ (mkpackage p _))
+    (format "{ locpackage  p  }") : package_scope.
+
+  Notation "{ 'locpackage' p '#with' h }" :=
+    (mkloc_package _ (mkpackage p h))
+    (only parsing) : package_scope.
+
 End CorePackageTheory.
