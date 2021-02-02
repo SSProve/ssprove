@@ -552,35 +552,56 @@ Module PackageComposition (π : RulesParam).
       auto.
   Qed.
 
-      (* TODO Provide instance for parable in case of trim *)
-
-      unionmC (* For symmetry *)
-
-  (* TODO For par it might be better to define parable on
-    domm p rather than on the interface and then not trim.
-    Once can then trim to ensure this holds?
-    Also remove trim from par, and just have it be unionm.
-    Only assoc will have a condition? Or maybe a condition for validity
-    we'll see.
-    Maybe a lemma also for the version with trims?
-    Or do we want to define a symmetric union? That would drop anything
-    that's not on both sides?
-    That's not so clear because in case we one def is in the interface of p1
-    but not in that of p2, but implemented in p2, then it gets dropped in
-    par p1 p2. This would make validity complicated as well.
-  *)
-
-  (** Because p1 and p2 might implement more than prescribed by their
-      interface and in particular overlap, we trim them first.
-  *)
-  Definition raw_par (E1 E2 : Interface) (p1 p2 : raw_package) :=
-    unionm (trim E1 p1) (trim E2 p2).
+  (* TODO Check if the first branch is generated *)
+  Hint Extern 1 (ValidPackage ?L ?I ?E (par ?p1 ?p2)) =>
+    apply valid_par ; [
+      exact _
+    | apply valid_package_from_class
+    | apply valid_package_from_class
+    ]
+    : typeclass_instances.
 
   (** When comparing export interfaces, since we disallow overloading
       we need to have only the identifier parts disjoint.
   *)
   Definition idents (E : Interface) : {fset ident} :=
     (λ '(n, _), n) @: E.
+
+  Lemma domm_trim :
+    ∀ E p,
+      fsubset (domm (trim E p)) (idents E).
+  Proof.
+    intros E p. unfold trim. unfold idents.
+    apply fsubset_ext. cbn. intros x h.
+    rewrite mem_domm in h.
+    rewrite filtermE in h.
+    destruct (p x) as [[S' [T' f]]|] eqn:e.
+    2:{ rewrite e in h. cbn in h. discriminate. }
+    rewrite e in h. cbn in h.
+    destruct ((x, (S', T')) \in E) eqn:e1.
+    2:{ rewrite e1 in h. discriminate. }
+    eapply mem_imfset in e1. exact e1.
+  Qed.
+
+  Lemma parable_trim :
+    ∀ E1 E2 p1 p2,
+      fdisjoint (idents E1) (idents E2) →
+      Parable (trim E1 p1) (trim E2 p2).
+  Proof.
+    intros E1 E2 p1 p2 h.
+    unfold Parable.
+    eapply fdisjoint_trans.
+    { eapply domm_trim. }
+    rewrite fdisjointC.
+    eapply fdisjoint_trans.
+    { eapply domm_trim. }
+    rewrite fdisjointC. auto.
+  Qed.
+
+  (* TODO Provide an instance for the above *)
+  (* TODO Have a tactic to compute fdisjoint *)
+
+    unionmC (* For symmetry *)
 
   Definition parable (E1 E2 : Interface) :=
     fdisjoint (idents E1) (idents E2).
