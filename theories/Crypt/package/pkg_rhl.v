@@ -402,17 +402,17 @@ Module PackageRHL (π : RulesParam).
       noconf e0. reflexivity.
     Qed.
 
-    Definition raw_program_link_ext {E : Interface}
+    Definition program_link_ext {E : Interface}
       (o : opsig) (ho : o \in E) (arg : src o) (p1 p2 : raw_package)
-      (f : src o -> raw_program (tgt o))
+      (f : src o → raw_program (tgt o))
       (Hf : lookup_op p1 o = Some f)
-      (g : src o -> raw_program (tgt o))
-      (Hg : lookup_op (raw_link p1 p2) o = Some g)
-      : g arg = raw_program_link (f arg) p2.
+      (g : src o → raw_program (tgt o))
+      (Hg : lookup_op (link p1 p2) o = Some g)
+      : g arg = program_link (f arg) p2.
     Proof.
-      unfold raw_link in Hg.
+      unfold link in Hg.
       destruct o as [id [S T]].
-      assert ((fun x => raw_program_link (f x) p2) = g).
+      assert ((λ x, program_link (f x) p2) = g).
       { extensionality x.
         unfold raw_package in p1.
         unfold lookup_op in Hg.
@@ -447,11 +447,11 @@ Module PackageRHL (π : RulesParam).
     Lemma get_raw_package_op_link {L} {I M E} {o : opsig}
       (hin : o \in E) (arg : src o) (p1 p2 : raw_package)
       (hp1 : valid_package L M E p1)
-      (hpl : valid_package L I E (raw_link p1 p2))
-      : (get_raw_package_op (raw_link p1 p2) hpl o hin arg).(prog) =
-        raw_program_link ((get_raw_package_op p1 hp1 o hin arg).(prog)) p2.
+      (hpl : valid_package L I E (link p1 p2))
+      : (get_raw_package_op (link p1 p2) hpl o hin arg).(prog) =
+        program_link ((get_raw_package_op p1 hp1 o hin arg).(prog)) p2.
     Proof.
-      destruct (lookup_op (raw_link p1 p2) o) as [f|] eqn:e.
+      destruct (lookup_op (link p1 p2) o) as [f|] eqn:e.
       2: { unfold valid_package in hpl.
            pose (hpl o hin) as H.
            destruct o as [id [S T]].
@@ -463,7 +463,7 @@ Module PackageRHL (π : RulesParam).
            destruct chUniverse_eqP.
            2:{ noconf ef. congruence. }
            discriminate. }
-      rewrite (get_raw_package_op_lookup (raw_link p1 p2) _ o hin arg f e).
+      rewrite (get_raw_package_op_lookup (link p1 p2) _ o hin arg f e).
       destruct (lookup_op p1 o) as [fl|] eqn:el.
       2: { unfold valid_package in hp1.
            pose (hp1 o hin) as H.
@@ -477,7 +477,7 @@ Module PackageRHL (π : RulesParam).
            2:{ noconf ef. congruence. }
            discriminate. }
       rewrite (get_raw_package_op_lookup p1 _ o hin arg fl el).
-      apply (raw_program_link_ext o hin arg p1 p2 fl el f e).
+      apply (program_link_ext o hin arg p1 p2 fl el f e).
     Qed.
 
     Lemma get_raw_package_op_trim {L} {I E} {o : opsig}
@@ -632,18 +632,15 @@ Module PackageRHL (π : RulesParam).
     Definition GamePair (Game_export : Interface) :=
       bool → Game_Type Game_export.
 
-    (* TODO Now it seems we need linking on loc_package, loc_link? *)
-    (* Maybe it should like for programs. We only have one syntax for link
-      on raw packages. And then mkpack will pick up the right proof.
-      Maybe then it can be smart to deal with which version to chose?
-      Then maybe we can deal with assoc only on raw packages as well!
-    *)
+    (* TODO Coerce from loc_package to raw *)
+    Definition foo I E (p : loc_package I E) : raw_package := p.
 
     Definition Advantage { Game_export : Interface }
       (G : GamePair Game_export)
       (A : Adversary4Game Game_export)
       {H1 : fdisjoint A.π1 (G false).π1} {H2 : fdisjoint A.π1 (G true).π1} : R :=
-      `| (Pr (link A (G false)) true) - (Pr (link A (G true)) true)|.
+      `| (Pr {package link A (G false) } true) -
+         (Pr {package link A (G true) } true) |.
 
     Definition AdvantageE { Game_export : Interface }
                (G0 : Game_Type Game_export) (G1 : Game_Type Game_export)
