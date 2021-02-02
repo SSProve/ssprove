@@ -593,10 +593,10 @@ Module PackageRHL (π : RulesParam).
 
     Definition get_op {I E : Interface} (p : loc_package I E)
       (o : opsig) (ho : o \in E) (arg : src o) :
-      program (p.π1) I (tgt o).
+      program p.(locs) I (tgt o).
     Proof.
       (* TW: I transformed this definition so that it computes directly. *)
-      destruct (lookup_op (p.π2).(pack) o) as [f|] eqn:e.
+      destruct (lookup_op p o) as [f|] eqn:e.
       2:{
         (* TW: Done several times, I should make a lemma. *)
         exfalso.
@@ -629,21 +629,21 @@ Module PackageRHL (π : RulesParam).
     Definition GamePair (Game_export : Interface) :=
       bool → Game_Type Game_export.
 
-    (* TODO Coerce from loc_package to raw *)
-    Definition foo I E (p : loc_package I E) : raw_package := p.
-
     Definition Advantage { Game_export : Interface }
       (G : GamePair Game_export)
       (A : Adversary4Game Game_export)
-      {H1 : fdisjoint A.π1 (G false).π1} {H2 : fdisjoint A.π1 (G true).π1} : R :=
-      `| (Pr {package link A (G false) } true) -
-         (Pr {package link A (G true) } true) |.
+      {H1 : fdisjoint A.(locs) (G false).(locs)}
+      {H2 : fdisjoint A.(locs) (G true).(locs)} : R :=
+      `| (Pr (mkloc_package _ {package link A (G false) }) true) -
+         (Pr (mkloc_package _ {package link A (G true) }) true) |.
 
     Definition AdvantageE { Game_export : Interface }
                (G0 : Game_Type Game_export) (G1 : Game_Type Game_export)
                (A : Adversary4Game Game_export)
-               {H1 : fdisjoint A.π1 G0.π1} {H2 : fdisjoint A.π1 G1.π1} : R
-      := `| (Pr (link A G0) true) - (Pr (link A G1) true)|.
+               {H1 : fdisjoint A.(locs) G0.(locs)}
+               {H2 : fdisjoint A.(locs) G1.(locs)} : R
+      := `| (Pr (mkloc_package _ {package link A G0 }) true) -
+            (Pr (mkloc_package _ {package link A G1 }) true)|.
 
     Definition AdvantageE_weak { Game_export : Interface }
                (G0 : Game_Type Game_export) (G1 : Game_Type Game_export)

@@ -199,7 +199,7 @@ Module PackageComposition (π : RulesParam).
   Qed.
 
   Hint Extern 1 (ValidPackage ?L ?I ?E (link ?p1 ?p2)) =>
-    apply valid_link ; [
+    eapply valid_link ; [
       apply valid_package_from_class
     | apply valid_package_from_class
     ]
