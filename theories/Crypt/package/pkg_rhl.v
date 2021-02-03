@@ -771,15 +771,57 @@ Module PackageRHL (π : RulesParam).
       apply ler_dist_add.
     Qed.
 
+    (* TODO MOVE *)
+    Definition tac_mark {A} (x : A) := x.
+    Definition tac_intro_mark {A} (x : A) := x.
+
     Lemma Reduction {Game_export M_export : Interface}
       {M : loc_package Game_export M_export}
       (G : GamePair Game_export) (A : Adversary4Game M_export) (b : bool) :
       `| Pr {locpackage link A (link M (G b)) } true | =
       `| Pr {locpackage link (link A M) (G b) } true |.
     Proof.
-      match goal with
-      | |- context [ link (link ?x ?y) ?z ] =>
-        package rewrite (link_assoc x y z)
+      (* @Assia:
+        What I wanted to do was to directly use rewrite link_assoc here.
+        But I cannot do it because Pr expects a package and not a
+        raw_package. These are defined in pkg_core_definition.
+        Record package L I E := mkpackage {
+          pack : raw_package ;
+          pack_valid : ValidPackage L I E pack
+        }.
+
+        Notation "{ 'package' p }" :=
+          (mkpackage p _)
+          (format "{ package  p  }") : package_scope.
+
+        {locpackage} is just a layer above, but it doesn't add complexity.
+      *)
+      repeat match goal with
+      | |- context [ mkpackage ?p ?h ] =>
+        let h' := fresh "h" in
+        set (h' := h) ;
+        let p' := fresh "p" in
+        set (p' := mkpackage p h') ;
+        clearbody h' ;
+        change (mkpackage p h') with (tac_mark (mkpackage p h')) in p' ;
+        lazymatch type of h' with
+        | ?T => change T with (tac_intro_mark T) in h'
+        end
+      end.
+      repeat match goal with
+      | p := tac_mark ?t |- _ =>
+        change (tac_mark t) with t in p ;
+        subst p
+      end.
+      repeat match goal with
+      | h : tac_intro_mark ?t |- _ =>
+        revert h
+      end.
+      rewrite link_assoc.
+      repeat match goal with
+      | |- ∀ h : tac_intro_mark ?A, _ =>
+        intro h ;
+        change (tac_intro_mark A) with A in h
       end.
       f_equal. f_equal. f_equal. apply loc_package_ext.
       - cbn. rewrite fsetUA. reflexivity.
@@ -1134,90 +1176,6 @@ Module PackageRHL (π : RulesParam).
     (* TODO STOP *)
     (* The following will simply go away I think. *)
     (* Indeed computation should do the trick for the most part. *)
-
-    (* TODO MOVE *)
-    (* (Safe) lookup in open packages *)
-    Definition olookup_full {L I E} (p : opackage L I E)
-      {id : ident} {S T : chUniverse} (h : (id, (S, T)) \in E) :
-      ∑ f : S → program L I T,
-        ∀ g, p.π1 id = Some (S ; T ; g) → ∀ (x : S), (f x) ∙1 = g x.
-    Proof.
-      destruct (p.π1 id) as [[S' [T' f]]|] eqn:e.
-      2:{
-        exfalso.
-        destruct p as [p hp]. specialize (hp _ h) as h'.
-        cbn in h'. cbn in e. rewrite e in h'.
-        destruct h'. intuition discriminate.
-      }
-      unshelve eexists.
-      - intro x.
-        unshelve eexists.
-        + simple refine (cast_fun _ _ f x).
-          * destruct p as [p hp]. specialize (hp _ h) as h'.
-            cbn in h'. cbn in e. rewrite e in h'.
-            destruct h' as [g [he hv]].
-            noconf he. reflexivity.
-          * destruct p as [p hp]. specialize (hp _ h) as h'.
-            cbn in h'. cbn in e. rewrite e in h'.
-            destruct h' as [g [he hv]].
-            noconf he. reflexivity.
-        + destruct p as [p hp]. specialize (hp _ h) as h'.
-          cbn in h'. cbn in e. rewrite e in h'.
-          destruct h' as [g [he hv]].
-          noconf he. cbn.
-          rewrite cast_fun_K.
-          apply hv.
-      - intros g eg x. cbn. noconf eg.
-        destruct p as [p hp]. specialize (hp _ h) as h'.
-        cbn in h'. cbn in e. rewrite e in h'.
-        destruct h' as [g [he hv]].
-        noconf he. cbn.
-        rewrite cast_fun_K.
-        reflexivity.
-    Defined.
-
-    Definition olookup {L I E} (p : opackage L I E)
-      {id : ident} {S T : chUniverse} (h : (id, (S, T)) \in E) :
-      S → program L I T :=
-      (olookup_full p h).π1.
-
-    Lemma olookup_fst :
-      ∀ L I E (p : opackage L I E) id S T (h : (id, (S, T)) \in E) f x,
-        p.π1 id = Some (S ; T ; f) →
-        (olookup p h x) ∙1 = f x.
-    Proof.
-      intros L I E p id S T h f x e.
-      unfold olookup. destruct olookup_full as [g hg].
-      cbn. specialize hg with (1 := e).
-      apply hg.
-    Qed.
-
-    Definition cast_vfun {L I} {So To St Tt : chUniverse}
-      (hS : St = So) (hT : Tt = To) (f : St → program L I Tt) :
-      So → program L I To.
-    Proof.
-      subst. auto.
-    Defined.
-
-    Lemma cast_vfun_K :
-      ∀ L I S T f e1 e2,
-        @cast_vfun L I S T S T e1 e2 f = f.
-    Proof.
-      intros L I S T f e1 e2.
-      rewrite (uip e1 erefl).
-      rewrite (uip e2 erefl).
-      reflexivity.
-    Qed.
-
-    Lemma cast_vfun_cong :
-      ∀ L I S₁ S₂ T₁ T₂ f g u₁ v₁ u₂ v₂,
-        f = g →
-        @cast_vfun L I S₁ T₁ S₂ T₂ u₁ v₁ f =
-        @cast_vfun L I S₁ T₁ S₂ T₂ u₂ v₂ g.
-    Proof.
-      intros L I S₁ S₂ T₁ T₂ f ? u₁ v₁ u₂ v₂ [].
-      subst. cbn. rewrite cast_vfun_K. reflexivity.
-    Qed.
 
     Equations? safe_list_lookup
       {L I id S T} (l : seq (nat * typed_function L I)) (h : (id, (S, T)) \in export_interface (mkfmap l)) :
