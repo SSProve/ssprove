@@ -285,35 +285,31 @@ Module PackageRHL (π : RulesParam).
     Qed.
 
     Lemma repr_bind :
-      ∀ {B C} {L}
-        (p : program L Game_import B) (f : B → program L Game_import C),
-        repr {program bind p f} = bindrFree _ _ (repr p) (λ b, repr (f b)).
+      ∀ {B C} {L} p f
+        {hp : @ValidProgram L Game_import B p}
+        {hf : ∀ b, @ValidProgram L Game_import C (f b)}
+        {h : ValidProgram L Game_import _},
+        repr {program bind p f #with h } =
+        bindrFree _ _ (repr {program p}) (λ b, repr {program f b}).
     Proof.
-      intros B C L p f.
-      destruct p as [p h].
-      induction p.
+      intros B C L p f hp hf h.
+      induction p in hp, h, f, hf |- *.
       - cbn. fold_repr.
         f_equal. apply program_ext.
         simpl. reflexivity.
-      - apply inversion_valid_opr in h as h'. destruct h' as [h1 h2].
+      - apply inversion_valid_opr in hp as h'. destruct h' as [h1 h2].
         eapply fromEmpty. exact h1.
       - cbn. f_equal. extensionality s.
-        rewrite -H.
-        apply repr'_ext.
-        reflexivity.
+        fold_repr. apply H.
       - cbn. f_equal.
         extensionality s.
         f_equal.
         extensionality s'.
-        rewrite -IHp.
-        apply repr'_ext.
-        reflexivity.
+        fold_repr. apply IHp.
       - cbn.
         f_equal.
         extensionality s.
-        rewrite -H.
-        apply repr'_ext.
-        reflexivity.
+        fold_repr. apply H.
     Qed.
 
     Notation " r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄ " :=
@@ -1348,7 +1344,31 @@ Module PackageRHL (π : RulesParam).
         program_before_rewrite.
         rewrite H2.
         program_after_rewrite.
-        rewrite !repr_bind.
+        (* TODO: Is there a way to avoid these side conditions? *)
+        unshelve erewrite repr_bind.
+        1:{
+          eapply valid_injectLocations. 2: eauto.
+          exact (fsubset_trans (fsubsetUl L1 L2) (fsubsetUr LA (L1 :|: L2))).
+        }
+        1:{
+          intro. eapply valid_program_link.
+          - eapply valid_injectLocations. 2: eauto.
+            eapply fsubsetUl.
+          - eapply valid_package_inject_locations. 2: eauto.
+            exact (fsubset_trans (fsubsetUl L1 L2) (fsubsetUr LA (L1 :|: L2))).
+        }
+        unshelve erewrite repr_bind.
+        1:{
+          eapply valid_injectLocations. 2: eauto.
+          exact (fsubset_trans (fsubsetUr L1 L2) (fsubsetUr LA (L1 :|: L2))).
+        }
+        1:{
+          intro. eapply valid_program_link.
+          - eapply valid_injectLocations. 2: eauto.
+            eapply fsubsetUl.
+          - eapply valid_package_inject_locations. 2: eauto.
+            exact (fsubset_trans (fsubsetUr L1 L2) (fsubsetUr LA (L1 :|: L2))).
+        }
         eapply bind_rule_pp.
         + unfold eq_up_to_inv in H.
           specialize (H id S T hA1 f f2 K1 K2 K12 K22 x).
