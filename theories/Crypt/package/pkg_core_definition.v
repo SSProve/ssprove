@@ -205,25 +205,25 @@ Module CorePackageTheory (π : RulesParam).
     Defined.
 
     (* Hint Extern 1 (ValidProgram (opr ?o ?x ?k)) =>
-      apply valid_opr ; [
+      eapply valid_opr ; [
         eauto
       | intro ; apply valid_program_from_class
       ] : typeclass_instances.
 
     Hint Extern 1 (ValidProgram (getr ?o ?x ?k)) =>
-      apply valid_getr ; [
+      eapply valid_getr ; [
         eauto
       | intro ; apply valid_program_from_class
       ] : typeclass_instances.
 
     Hint Extern 1 (ValidProgram (putr ?o ?x ?k)) =>
-      apply valid_putr ; [
+      eapply valid_putr ; [
         eauto
       | apply valid_program_from_class
       ] : typeclass_instances.
 
     Hint Extern 1 (ValidProgram (sampler ?op ?k)) =>
-      apply valid_sampler ;
+      eapply valid_sampler ;
       intro ; apply valid_program_from_class
       : typeclass_instances. *)
 
@@ -440,30 +440,30 @@ Module CorePackageTheory (π : RulesParam).
   *)
 
   Hint Extern 1 (ValidProgram ?L ?I (opr ?o ?x ?k)) =>
-    apply valid_opr ; [
+    eapply valid_opr ; [
       eauto
     | intro ; apply valid_program_from_class
     ] : typeclass_instances.
 
   Hint Extern 1 (ValidProgram ?L ?I (getr ?o ?k)) =>
-    apply valid_getr ; [
+    eapply valid_getr ; [
       eauto
     | intro ; apply valid_program_from_class
     ] : typeclass_instances.
 
   Hint Extern 1 (ValidProgram ?L ?I (putr ?o ?x ?k)) =>
-    apply valid_putr ; [
+    eapply valid_putr ; [
       eauto
     | apply valid_program_from_class
     ] : typeclass_instances.
 
   Hint Extern 1 (ValidProgram ?L ?I (sampler ?op ?k)) =>
-    apply valid_sampler ;
+    eapply valid_sampler ;
     intro ; apply valid_program_from_class
     : typeclass_instances.
 
   Hint Extern 1 (ValidProgram ?L ?I (bind ?p ?k)) =>
-    apply valid_bind ; [
+    eapply valid_bind ; [
       apply valid_program_from_class
     | intro ; apply valid_program_from_class
     ]
@@ -472,7 +472,7 @@ Module CorePackageTheory (π : RulesParam).
   Coercion prog : program >-> raw_program.
 
   Hint Extern 1 (ValidProgram ?L ?I (?p.(prog))) =>
-    apply p.(prog_valid)
+    eapply p.(prog_valid)
     : typeclass_instances.
 
   (* Section Test.
