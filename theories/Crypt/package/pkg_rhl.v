@@ -1275,20 +1275,55 @@ Module PackageRHL (π : RulesParam).
       - apply program_ext. cbn. erewrite get_op_default_spec. all: eauto.
     Qed.
 
+    (* Slightly more expensive version that allows to change parameters *)
+    Hint Extern 3 (ValidProgram ?L ?I ?p) =>
+      eapply valid_injectLocations ; [
+        eassumption
+      | eapply valid_program_from_class
+      ]
+      : typeclass_instances.
+
+    Hint Extern 3 (ValidPackage ?L ?I ?E ?p) =>
+      eapply valid_package_inject_locations ; [
+        eassumption
+      | eapply valid_package_from_class
+      ]
+      : typeclass_instances.
+
+    #[program] Definition foo {export : Interface} {B} {L1 L2 LA}
+    (P1 : package L1 Game_import export)
+    (P2 : package L2 Game_import export)
+    (I : heap_choiceType * heap_choiceType -> Prop)
+    (HINV : INV LA I) (Hempty : I (empty_heap, empty_heap))
+    (H : eq_up_to_inv I P1 P2)
+    (A : program LA export B)
+    (s1 : heap_choiceType) (s2 : heap_choiceType) (Hs1s2 : I (s1, s2)) : program (LA :|: (L1 :|: L2)) Game_import _ :=
+    {program program_link A P1 #with [hints (fsubsetUl LA (L1 :|: L2)) ; (fsubset_trans (fsubsetUl L1 L2) (fsubsetUr LA (L1 :|: L2))) ]}.
+    Next Obligation.
+      intros.
+      pose (hint := fsubsetUl LA (L1 :|: L2)).
+      pose (hint' := fsubset_trans (fsubsetUl L1 L2) (fsubsetUr LA (L1 :|: L2))).
+      eapply valid_program_link.
+      - eapply valid_program_from_class.
+        clear hint'.
+        exact _.
+      - eapply valid_package_from_class.
+        exact _.
+    Qed.
+
     Lemma some_lemma_for_prove_relational {export : Interface} {B} {L1 L2 LA}
-               (P1 : opackage L1 Game_import export)
-               (P2 : opackage L2 Game_import export)
-               (I : heap_choiceType * heap_choiceType -> Prop)
-               (HINV : INV LA I) (Hempty : I (empty_heap, empty_heap))
-               (H : eq_up_to_inv I P1 P2)
-               (A : program LA export B)
-               (s1 : heap_choiceType) (s2 : heap_choiceType) (Hs1s2 : I (s1, s2))
-      :
-        ⊨ ⦃ fun '(s1, s2) => I (s1, s2)  ⦄
-          repr (program_link (injectLocations (fsubsetUl LA (L1 :|: L2)) A) (opackage_inject_locations (fsubset_trans (fsubsetUl L1 L2) (fsubsetUr LA (L1 :|: L2))) P1))
-          ≈
-          repr (program_link (injectLocations (fsubsetUl LA (L1 :|: L2)) A) (opackage_inject_locations (fsubset_trans (fsubsetUr L1 L2) (fsubsetUr LA (L1 :|: L2))) P2))
-          ⦃ fun '(b1, s1) '(b2, s2) => b1 = b2 /\ I (s1, s2) ⦄.
+      (P1 : package L1 Game_import export)
+      (P2 : package L2 Game_import export)
+      (I : heap_choiceType * heap_choiceType -> Prop)
+      (HINV : INV LA I) (Hempty : I (empty_heap, empty_heap))
+      (H : eq_up_to_inv I P1 P2)
+      (A : program LA export B)
+      (s1 : heap_choiceType) (s2 : heap_choiceType) (Hs1s2 : I (s1, s2)) :
+      ⊨ ⦃ λ '(s1, s2), I (s1, s2)  ⦄
+        repr (mkprog (program_link A P1) [hints (fsubsetUl LA (L1 :|: L2)) ; (fsubset_trans (fsubsetUl L1 L2) (fsubsetUr LA (L1 :|: L2))) ])
+        ≈
+        repr (mkprog (program_link A P2) [hints (fsubsetUl LA (L1 :|: L2)) ; (fsubset_trans (fsubsetUr L1 L2) (fsubsetUr LA (L1 :|: L2))) ])
+        ⦃ λ '(b1, s1) '(b2, s2), b1 = b2 ∧ I (s1, s2) ⦄.
     Proof.
       destruct P1 as [P1a P1b] eqn:HP1.
       destruct P2 as [P2a P2b] eqn:HP2.
