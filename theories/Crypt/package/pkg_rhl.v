@@ -1145,47 +1145,44 @@ Module PackageRHL (π : RulesParam).
           * apply ler0n.
     Qed.
 
-    (* TODO STOP *)
-    (* The following will simply go away I think. *)
-    (* Indeed computation should do the trick for the most part. *)
-
-    (* Definition pdom (I : Interface) : {fset ident} :=
-      (λ '(id, _), id) @: I. *)
-
-    (* TODO Maybe use a default here as well? Like ret canonical *)
-    Definition pget (p : raw_package) (id : ident) :=
-      match p id with
+    Definition get_op_default (p : raw_package) (o : opsig) :
+      src o → raw_program (tgt o) :=
+      match lookup_op p o with
       | Some f => f
-      | None => ('unit ; 'unit ; λ x, ret x)
+      | None => λ x, ret (chCanonical (chtgt o))
       end.
 
-    (* Sadly the semantic judgement is not heterogenous,
-      at least not with this invariant.
-    *)
-    (* Definition procedure_eq_up_to_inv {L₁ L₂ A B}
-      (I : heap_choiceType * heap_choiceType → Prop)
-      f g
-      {hf : ∀ x, @valid_program L₁ Game_import A (f x)}
-      {hg : ∀ x, @valid_program L₂ Game_import B (g x)} :=
-      ∀ x y,
-        r⊨ ⦃ λ '(s₀, s₃), I (s₀, s₃) ⦄ (mkprog (ret x) _) ≈ (mkprog (ret y) _) ⦃ λ '(b₁, s₀) '(b₂, s₃), b₁ = b₂ ∧ I (s₀, s₃) ⦄ →
-        r⊨ ⦃ λ '(s₀, s₃), I (s₀, s₃) ⦄ (mkprog (f x) (hf x)) ≈ (mkprog (g y) (hg y)) ⦃ λ '(b₁, s₀) '(b₂, s₃), b₁ = b₂ ∧ I (s₀, s₃) ⦄. *)
+    Lemma valid_get_op_default :
+      ∀ L I E p o x,
+        valid_package L I E p →
+        o \in E →
+        valid_program L I (get_op_default p o x).
+    Proof.
+      intros L I E p o x hp ho.
+      unfold get_op_default.
+      destruct lookup_op eqn:e.
+      - eapply lookup_op_spec in e as h.
+        specialize (hp _ ho). destruct o as [id [S T]].
+        destruct hp as [f [ef hf]].
+        cbn in h. rewrite ef in h. noconf h.
+        auto.
+      - constructor.
+    Qed.
 
-    Definition eq_up_to_inv_alt2 {L₁ L₂} {E}
-      (I : heap_choiceType * heap_choiceType → Prop)
-      (p₁ : package L₁ Game_import E) (p₂ : package L₂ Game_import E) :=
-      ∀ (id : ident) x y,
-        r⊨ ⦃ λ '(s₀, s₃), I (s₀, s₃) ⦄ (mkprog (ret x) _) ≈ (mkprog (ret y) _) ⦃ λ '(b₁, s₀) '(b₂, s₃), b₁ = b₂ ∧ I (s₀, s₃) ⦄ →
-        r⊨ ⦃ λ '(s₀, s₃), I (s₀, s₃) ⦄
-          pget p₁ id x ≈ pget p₂ id y
-          ⦃ λ '(b₁, s₀) '(b₂, s₃), b₁ = b₂ ∧ I (s₀, s₃) ⦄.
+    Hint Extern 1 (ValidProgram ?L ?I (get_op_default ?p ?o ?x)) =>
+      eapply valid_get_op_default ; [
+        apply valid_package_from_class
+      | eauto
+      ]
+      : typeclass_instances.
 
     Definition eq_up_to_inv_alt {L₁ L₂} {E}
       (I : heap_choiceType * heap_choiceType → Prop)
-      (p₁ : opackage L₁ Game_import E) (p₂ : opackage L₂ Game_import E) :=
+      (p₁ : package L₁ Game_import E) (p₂ : package L₂ Game_import E) :=
       ∀ (id : ident) (S T : chUniverse) (h : (id, (S, T)) \in E) (x : S),
-        ⊨ ⦃ λ '(s₀, s₃), I (s₀, s₃) ⦄
-          repr (olookup p₁ h x) ≈ repr (olookup p₂ h x)
+        r⊨ ⦃ λ '(s₀, s₃), I (s₀, s₃) ⦄
+          (mkprog (get_op_default p₁ (id, (S, T)) x) _) ≈
+          (mkprog (get_op_default p₂ (id, (S, T)) x) _)
           ⦃ λ '(b₁, s₀) '(b₂, s₃), b₁ = b₂ ∧ I (s₀, s₃) ⦄.
 
     Definition eq_up_to_inv {L1 L2} {E}
