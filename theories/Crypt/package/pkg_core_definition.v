@@ -53,6 +53,8 @@ Module CorePackageTheory (π : RulesParam).
   }. *)
 
   Definition Location := ∑ (t : chUniverse), nat.
+  Definition loc_type (l : Location) := l.π1.
+  Coercion loc_type : Location >-> chUniverse.
   Definition Value (t : chUniverse) := chElement t.
 
   Definition Interface := {fset opsig}.
@@ -97,8 +99,8 @@ Module CorePackageTheory (π : RulesParam).
     Inductive raw_program (A : choiceType) : Type :=
     | _ret (x : A)
     | _opr (o : opsig) (x : src o) (k : tgt o → raw_program A)
-    | _getr (l : Location) (k : Value l.π1 → raw_program A)
-    | _putr (l : Location) (v : Value l.π1) (k : raw_program A)
+    | _getr (l : Location) (k : l → raw_program A)
+    | _putr (l : Location) (v : l) (k : raw_program A)
     | _sampler (op : Op) (k : Arit op → raw_program A).
 
     Arguments _ret [A] _.
@@ -288,6 +290,7 @@ Module CorePackageTheory (π : RulesParam).
 
     Import SPropAxioms. Import FunctionalExtensionality.
 
+    (* PGH: should probably not use auto here in the proof relevant bits *)
     Program Definition rFree : ord_relativeMonad choice_incl :=
       @mkOrdRelativeMonad ord_choiceType TypeCat choice_incl program _ _ _ _ _ _.
     Next Obligation. apply ret. auto. Defined.
