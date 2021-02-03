@@ -733,9 +733,38 @@ Module PackageRHL (π : RulesParam).
 
     Lemma Reduction {Game_export M_export : Interface} {M : package Game_export M_export}
           (G : GamePair Game_export) (A : Adversary4Game M_export) (b : bool) :
-      `| Pr (link A (link M (G b))) true | = `| Pr (link (link A M) (G b))  true |.
+      Pr (link A (link M (G b))) true = Pr (link (link A M) (G b))  true.
     Proof.
       rewrite link_assoc.
+      reflexivity.
+    Qed.
+
+    Lemma auxReduction {Game_export M_export : Interface} {M : package Game_export M_export}
+          {G : Game_Type Game_export} {A : Adversary4Game M_export}
+          (Hdisjoint0 : fdisjoint M.π1 G.π1)
+          (Hdisjoint1 : fdisjoint A.π1 (link M G).π1)
+      :
+        fdisjoint (link A M).π1 G.π1.
+    Proof.
+      unfold link in *.
+      simpl in *.
+      rewrite fdisjointUl.
+      apply /andP. split.
+      - rewrite fdisjointUr in Hdisjoint1.
+        move: Hdisjoint1. by move /andP => [_ Hdisjoint1].
+      - apply Hdisjoint0.
+    Qed.
+
+    Lemma ReductionLem {Game_export M_export : Interface} {M : package Game_export M_export}
+          (G : GamePair Game_export)
+          (Hdisjoint0 : fdisjoint M.π1 (G false).π1)
+          (Hdisjoint1 : fdisjoint M.π1 (G true).π1)
+      :
+      link M (G false) ≈[ fun A H1 H2 => @AdvantageE Game_export (G false) (G true) (link A M) (auxReduction Hdisjoint0 H1) (auxReduction Hdisjoint1 H2) ] link M (G true).
+    Proof.
+      unfold AdvantageE. extensionality A.
+      extensionality H1. extensionality H2.
+      rewrite Reduction. rewrite Reduction.
       reflexivity.
     Qed.
 
