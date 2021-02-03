@@ -1385,18 +1385,19 @@ Module PackageRHL (π : RulesParam).
           induction Heqa.
           specialize (H0 a1 (hA2 a1)).
           apply (pre_weaken_rule  (λ '(s1, s2), I (s1, s2))).
-          2: { intros st0 st3.
-               cbn. intros [Heqst0 Heqst3].
-               rewrite Heqst0 Heqst3. assumption. }
+          2:{
+            intros st0 st3.
+            cbn. intros [Heqst0 Heqst3].
+            rewrite Heqst0 Heqst3. assumption.
+          }
           cbn -[semantic_judgement] in H0.
-          change (repr' ?p ?h) with (repr (exist _ p h)) in H0.
+          change (repr' ?p ?h) with (repr (mkprog p h)) in H0.
           eapply rhl_repr_change_all.
           1: reflexivity. 1: reflexivity.
           exact H0.
-      - unfold program_link. unfold injectLocations.
-        unfold opackage_inject_locations.
-        cbn - [semantic_judgement bindrFree].
-        destruct hA as [hA1 hA2].
+      - cbn - [semantic_judgement bindrFree].
+        apply inversion_valid_getr in hA as h'.
+        destruct h' as [hA1 hA2].
         unfold repr'_obligation_4.
         cbn - [semantic_judgement bindrFree].
         match goal with
@@ -1404,12 +1405,11 @@ Module PackageRHL (π : RulesParam).
           pose (m := m_); pose (f1 := f1_); pose (f2 := f2_); pose (pre := pre_); pose (post := post_)
         end.
         eapply (bind_rule_pp (f1 := f1) (f2 := f2) m m pre _ post).
-        + eapply (@get_case _ LA).
-          ++ assumption.
-          ++ exact hA1.
-             Unshelve.
+        + unshelve eapply (@get_case _ LA).
+          3: assumption.
+          3: exact hA1.
           * exact LA.
-          * cbn. auto.
+          * eapply valid_program_from_class. exact _.
         + intros a1 a2.
           simpl.
           apply pre_hypothesis_rule.
@@ -1421,12 +1421,12 @@ Module PackageRHL (π : RulesParam).
                cbn. intros [Heqst0 Heqst3].
                rewrite Heqst0 Heqst3. assumption. }
           cbn -[semantic_judgement] in H0.
-          change (repr' ?p ?h) with (repr (exist _ p h)) in H0.
+          change (repr' ?p ?h) with (repr (mkprog p h)) in H0.
           eapply rhl_repr_change_all.
           1: reflexivity. 1: reflexivity. exact H0.
-      - unfold program_link. unfold injectLocations. unfold opackage_inject_locations.
-        cbn - [semantic_judgement bindrFree].
-        destruct hA as [hA1 hA2].
+      - cbn - [semantic_judgement bindrFree].
+        apply inversion_valid_putr in hA as h'.
+        destruct h' as [hA1 hA2].
         match goal with
         | |- ⊨ ⦃ ?pre_ ⦄ bindrFree _ _ ?m_ ?f1_ ≈ bindrFree _ _ _ ?f2_ ⦃ ?post_ ⦄ =>
           pose (m := m_); pose (f1 := f1_); pose (f2 := f2_); pose (pre := pre_); pose (post := post_)
@@ -1437,7 +1437,7 @@ Module PackageRHL (π : RulesParam).
           ++ exact hA1.
           Unshelve.
           * exact LA.
-          * cbn. auto.
+          * eapply valid_program_from_class. exact _.
         + intros a1 a2.
           simpl.
           apply pre_hypothesis_rule.
@@ -1449,29 +1449,31 @@ Module PackageRHL (π : RulesParam).
                cbn. intros [Heqst0 Heqst3].
                rewrite Heqst0 Heqst3. assumption. }
           cbn -[semantic_judgement] in IHA.
-          change (repr' ?p ?h) with (repr (exist _ p h)) in IHA.
+          change (repr' ?p ?h) with (repr (mkprog p h)) in IHA.
           eapply rhl_repr_change_all.
           1: reflexivity. 1: reflexivity. exact IHA.
-      - unfold program_link. unfold injectLocations. unfold opackage_inject_locations.
-        cbn - [bindrFree semantic_judgement].
+      - cbn - [bindrFree semantic_judgement].
         eapply bind_rule_pp.
         + eapply (@sampler_case LA LA).
           ++ assumption.
              Unshelve.
-             1: { cbn. auto. }
+             eapply valid_program_from_class. exact _.
         + intros a1 a2.
           simpl.
           apply pre_hypothesis_rule.
           intros st1 st2 [Heqa Ist1st2].
           induction Heqa.
-          cbn in hA. pose (hA a1) as hAa1.
+          unshelve eapply inversion_valid_sampler in hA as hAa1.
+          1: exact a1.
           specialize (H0 a1 hAa1).
           apply (pre_weaken_rule  (λ '(s1, s2), I (s1, s2))).
-          2: { intros st0 st3.
-               cbn. intros [Heqst0 Heqst3].
-               rewrite Heqst0 Heqst3. assumption. }
+          2:{
+            intros st0 st3.
+            cbn. intros [Heqst0 Heqst3].
+            rewrite Heqst0 Heqst3. assumption.
+          }
           cbn -[semantic_judgement] in H0.
-          change (repr' ?p ?h) with (repr (exist _ p h)) in H0.
+          change (repr' ?p ?h) with (repr (mkprog p h)) in H0.
           eapply rhl_repr_change_all.
           1: reflexivity. 1: reflexivity. exact H0.
     Qed.
