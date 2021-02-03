@@ -764,7 +764,7 @@ Module CorePackageTheory (π : RulesParam).
   Coercion pack : package >-> raw_package.
 
   Hint Extern 1 (ValidPackage ?L ?I ?E (?p.(pack))) =>
-    apply p.(pack_valid)
+    eapply p.(pack_valid)
     : typeclass_instances.
 
   Lemma valid_package_from_class :

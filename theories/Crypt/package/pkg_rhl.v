@@ -1308,7 +1308,7 @@ Module PackageRHL (π : RulesParam).
     Proof.
       destruct P1 as [P1a P1b] eqn:HP1.
       destruct P2 as [P2a P2b] eqn:HP2.
-      destruct A as [A hA].
+      destruct A as [A hA]. simpl.
       induction A; intros.
       - cbn - [semantic_judgement].
         unfold repr'_obligation_1.
@@ -1321,7 +1321,7 @@ Module PackageRHL (π : RulesParam).
           apply Hp. split.
           * reflexivity.
           * assumption.
-      - cbn in hA. destruct hA as [hA1 hA2].
+      - apply inversion_valid_opr in hA as hA'. destruct hA' as [hA1 hA2].
         pose foo := (P1b o hA1).
         destruct o as [id [S T]].
         destruct foo as [f [K1 K2]].
@@ -1333,40 +1333,21 @@ Module PackageRHL (π : RulesParam).
           all: try contradiction.
           noconf e. noconf e0. reflexivity.
         }
-        sig rewrite H1.
-        unshelve erewrite fold_bind.
-        { intro. eapply raw_program_link_valid.
-          - eapply valid_injectLocations.
-            2: eapply hA2.
-            apply fsubsetUl.
-          - eapply valid_package_inject_locations.
-            2: eauto.
-            eapply fsubset_trans.
-            + eapply fsubsetUl.
-            + eapply fsubsetUr.
-        }
-        (* Would need funext rewrite *)
-        (* unshelve erewrite fold_program_link. *)
+        program_before_rewrite.
+        rewrite H1.
+        program_after_rewrite.
         pose foo2 := (P2b (id, (S, T)) hA1).
         destruct foo2 as [f2 [K12 K22]].
         cbn - [semantic_judgement lookup_op bind].
         assert (lookup_op P2a (id, (S, T)) = Some f2) as H2.
         { cbn. rewrite K12.
           destruct (chUniverse_eqP S S), (chUniverse_eqP T T). all: try contradiction.
-          noconf e. noconf e0. reflexivity. }
-        fold_repr.
-        sig rewrite H2.
-        unshelve erewrite fold_bind.
-        { intro. eapply raw_program_link_valid.
-          - eapply valid_injectLocations.
-            2: eapply hA2.
-            apply fsubsetUl.
-          - eapply valid_package_inject_locations.
-            2: eauto.
-            eapply fsubset_trans.
-            + eapply fsubsetUr.
-            + eapply fsubsetUr.
+          noconf e. noconf e0. reflexivity.
         }
+        fold_repr.
+        program_before_rewrite.
+        rewrite H2.
+        program_after_rewrite.
         rewrite !repr_bind.
         eapply bind_rule_pp.
         + unfold eq_up_to_inv in H.

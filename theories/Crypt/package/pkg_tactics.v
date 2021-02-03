@@ -120,11 +120,29 @@ Module PackageTactics (π : RulesParam).
       clearbody h' ;
       change (mkpackage p h') with (tac_mark (mkpackage p h')) in p' ;
       lazymatch type of h' with
-      | ?T => change T with (tac_intro_mark T) in h'
+      | valid_package ?L ?I ?E ?q =>
+        change (valid_package L I E q)
+        with (tac_intro_mark (valid_package L I E p)) in h'
       end
     end.
 
-  Ltac unmark_packages :=
+  Ltac mark_abstract_programs :=
+    repeat match goal with
+    | |- context [ mkprog ?p ?h ] =>
+      let h' := fresh "h" in
+      set (h' := h) ;
+      let p' := fresh "p" in
+      set (p' := mkprog p h') ;
+      clearbody h' ;
+      change (mkprog p h') with (tac_mark (mkprog p h')) in p' ;
+      lazymatch type of h' with
+      | valid_program ?L ?I ?q =>
+        change (valid_program L I q)
+        with (tac_intro_mark (valid_program L I p)) in h'
+      end
+    end.
+
+  Ltac unmark_tac_mark :=
     repeat match goal with
     | p := tac_mark ?t |- _ =>
       change (tac_mark t) with t in p ;
@@ -137,11 +155,6 @@ Module PackageTactics (π : RulesParam).
       revert h
     end.
 
-  Ltac package_before_rewrite :=
-    mark_abstract_packages ;
-    unmark_packages ;
-    revert_tac_intro.
-
   Ltac intro_tac_intro :=
     repeat match goal with
     | |- ∀ h : tac_intro_mark ?A, _ =>
@@ -149,7 +162,20 @@ Module PackageTactics (π : RulesParam).
       change (tac_intro_mark A) with A in h
     end.
 
+  Ltac package_before_rewrite :=
+    mark_abstract_packages ;
+    unmark_tac_mark ;
+    revert_tac_intro.
+
   Ltac package_after_rewrite :=
+    intro_tac_intro.
+
+  Ltac program_before_rewrite :=
+    mark_abstract_programs ;
+    unmark_tac_mark ;
+    revert_tac_intro.
+
+  Ltac program_after_rewrite :=
     intro_tac_intro.
 
 End PackageTactics.
