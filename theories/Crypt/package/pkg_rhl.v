@@ -1186,15 +1186,44 @@ Module PackageRHL (π : RulesParam).
           ⦃ λ '(b₁, s₀) '(b₂, s₃), b₁ = b₂ ∧ I (s₀, s₃) ⦄.
 
     Definition eq_up_to_inv {L1 L2} {E}
-               (I : heap_choiceType * heap_choiceType → Prop)
-               (P1 : opackage L1 Game_import E) (P2 : opackage L2 Game_import E) :=
+      (I : heap_choiceType * heap_choiceType → Prop)
+      (P1 : package L1 Game_import E) (P2 : package L2 Game_import E) :=
       ∀ (id : ident) (S T : chUniverse)
         (hin : (id, (S, T)) \in E)
         (f : S → raw_program T) (g : S → raw_program T)
-        (Hf : P1.π1 id = Some (S; T; f)) (hpf : ∀ x, valid_program L1 Game_import (f x))
-        (Hg : P2.π1 id = Some (S; T; g)) (hpg : ∀ x, valid_program L2 Game_import (g x))
+        (Hf : P1.(pack) id = Some (S; T; f)) (hpf : ∀ x, valid_program L1 Game_import (f x))
+        (Hg : P2.(pack) id = Some (S; T; g)) (hpg : ∀ x, valid_program L2 Game_import (g x))
         (arg : S),
-        ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄ repr (exist _ (f arg) (hpf arg)) ≈ repr (exist _ (g arg) (hpg arg)) ⦃ λ '(b1, s0) '(b2, s3), b1 = b2 ∧ I (s0, s3) ⦄.
+        ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄ repr (mkprog (f arg) (hpf arg)) ≈ repr (mkprog (g arg) (hpg arg)) ⦃ λ '(b1, s0) '(b2, s3), b1 = b2 ∧ I (s0, s3) ⦄.
+
+    (* TODO MOVE *)
+    Lemma lookup_op_spec_inv :
+      ∀ (p : raw_package) id S T f,
+        p id = Some (S ; T ; f) →
+        lookup_op p (id, (S, T)) = Some f.
+    Proof.
+      intros p id S T f e.
+      unfold lookup_op.
+      destruct (p id) as [[S' [T' g]]|] eqn:e1. 2: discriminate.
+      destruct chUniverse_eqP.
+      2:{ noconf e. contradiction. }
+      destruct chUniverse_eqP.
+      2:{ noconf e. contradiction. }
+      subst.
+      noconf e.
+      reflexivity.
+    Qed.
+
+    Lemma get_op_default_spec :
+      ∀ (p : raw_package) id S T f,
+        p id = Some (S ; T ; f) →
+        get_op_default p (id, (S, T)) = f.
+    Proof.
+      intros p id S T f e.
+      unfold get_op_default.
+      eapply lookup_op_spec_inv in e. rewrite e.
+      reflexivity.
+    Qed.
 
     Lemma eq_up_to_inv_to_alt :
       ∀ L₁ L₂ E I p₁ p₂,
@@ -1210,13 +1239,6 @@ Module PackageRHL (π : RulesParam).
       cbn in h'. destruct h' as [f₂ [e₂ h₂]].
       specialize h with (1 := e₁) (2 := e₂).
       specialize (h h₁ h₂ x).
-      (* Too slow *)
-      (* match goal with
-      | |- ?G =>
-        let T := type of h in
-        replace G with T ; [ auto | ]
-      end.
-      f_equal. *)
       lazymatch goal with
       | h : r⊨ ⦃ _ ⦄ ?x ≈ ?y ⦃ _ ⦄ |- r⊨ ⦃ _ ⦄ ?u ≈ ?v ⦃ _ ⦄ =>
         let e := fresh "e" in
@@ -1227,8 +1249,8 @@ Module PackageRHL (π : RulesParam).
           ]
         ]
       end.
-      - apply program_ext. cbn. erewrite olookup_fst. all: eauto.
-      - apply program_ext. cbn. erewrite olookup_fst. all: eauto.
+      - apply program_ext. cbn. erewrite get_op_default_spec. all: eauto.
+      - apply program_ext. cbn. erewrite get_op_default_spec. all: eauto.
     Qed.
 
     Lemma eq_up_to_inv_from_alt :
@@ -1249,87 +1271,8 @@ Module PackageRHL (π : RulesParam).
           ]
         ]
       end.
-      - apply program_ext. cbn. erewrite olookup_fst. all: eauto.
-      - apply program_ext. cbn. erewrite olookup_fst. all: eauto.
-    Qed.
-
-    Lemma eq_up_to_inv_to_alt2 :
-      ∀ L₁ L₂ E I p₁ p₂,
-        @eq_up_to_inv L₁ L₂ E I p₁ p₂ →
-        @eq_up_to_inv_alt2 L₁ L₂ E I p₁ p₂.
-    Proof.
-      intros L₁ L₂ E I p₁ p₂ h.
-      intros id hin x.
-      specialize (h id).
-      pose proof hin as hin'. unfold pdom in hin'.
-      move: hin' => /imfsetP hin'. cbn in hin'.
-      destruct hin' as [[id' [S' T']] hin' ?]. subst id'.
-      specialize h with (1 := hin').
-      destruct p₁ as [p₁ hp₁]. specialize (hp₁ _ hin') as h'.
-      cbn in h'. destruct h' as [f₁ [e₁ h₁]].
-      destruct p₂ as [p₂ hp₂]. specialize (hp₂ _ hin') as h'.
-      cbn in h'. destruct h' as [f₂ [e₂ h₂]].
-      specialize h with (1 := e₁) (2 := e₂).
-      specialize (h h₁ h₂).
-      pose proof (pdefS_spec (exist _ p₁ hp₁) hin e₁) as e. subst S'.
-      specialize (h x).
-      pose proof (pdefT_spec (exist _ p₁ hp₁) hin e₁) as e. subst T'.
-      lazymatch goal with
-      | h : r⊨ ⦃ _ ⦄ ?x ≈ ?y ⦃ _ ⦄ |- r⊨ ⦃ _ ⦄ ?u ≈ ?v ⦃ _ ⦄ =>
-        let e := fresh "e" in
-        let e' := fresh "e" in
-        assert (x = u) as e ; [
-        | assert (y = v) as e' ; [
-          | rewrite <- e ; rewrite <- e' ; auto
-          ]
-        ]
-      end.
-      - apply program_ext. cbn.
-        pose proof (pdef_fst (exist _ p₁ hp₁) hin e₁) as e.
-        rewrite <- e.
-        rewrite cast_vfun_K. reflexivity.
-      - apply program_ext. cbn.
-        pose proof (pdef_fst (exist _ p₂ hp₂) hin e₂) as e'.
-        rewrite <- e'.
-        apply (f_equal (λ f, (f x) ∙1)).
-        apply cast_vfun_cong. reflexivity.
-    Qed.
-    (* TODO Also \in domp can be replaced by \in domm p when proving useful
-      lemma with mkpack mkfmap *)
-
-    Lemma eq_up_to_inv_from_alt2 :
-      ∀ L₁ L₂ E I p₁ p₂,
-        @eq_up_to_inv_alt2 L₁ L₂ E I p₁ p₂ →
-        @eq_up_to_inv L₁ L₂ E I p₁ p₂.
-    Proof.
-      intros L₁ L₂ E I p₁ p₂ h.
-      intros id S T hin f g ef hf eg hg x.
-      specialize (h id).
-      eapply mem_imfset in hin as hin'.
-      specialize (h hin').
-      eapply pdefS_spec with (h0 := hin') in ef as e'.
-      cbn in hin'. subst S.
-      specialize (h x).
-      eapply pdefT_spec with (h0 := hin') in ef as e'. subst T.
-      lazymatch goal with
-      | h : r⊨ ⦃ _ ⦄ ?x ≈ ?y ⦃ _ ⦄ |- r⊨ ⦃ _ ⦄ ?u ≈ ?v ⦃ _ ⦄ =>
-        let e := fresh "e" in
-        let e' := fresh "e" in
-        assert (x = u) as e ; [
-        | assert (y = v) as e' ; [
-          | rewrite <- e ; rewrite <- e' ; auto
-          ]
-        ]
-      end.
-      - apply program_ext. cbn.
-        pose proof (pdef_fst p₁ hin' ef) as e.
-        rewrite <- e.
-        rewrite cast_vfun_K. reflexivity.
-      - apply program_ext. cbn.
-        pose proof (pdef_fst p₂ hin' eg) as e'.
-        rewrite <- e'.
-        apply (f_equal (λ f, (f x) ∙1)).
-        apply cast_vfun_cong. reflexivity.
+      - apply program_ext. cbn. erewrite get_op_default_spec. all: eauto.
+      - apply program_ext. cbn. erewrite get_op_default_spec. all: eauto.
     Qed.
 
     Lemma some_lemma_for_prove_relational {export : Interface} {B} {L1 L2 LA}
