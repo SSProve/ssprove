@@ -771,52 +771,6 @@ Module PackageRHL (π : RulesParam).
       apply ler_dist_add.
     Qed.
 
-    (* TODO MOVE *)
-    Definition tac_mark {A} (x : A) := x.
-    Definition tac_intro_mark {A} (x : A) := x.
-
-    Ltac mark_abstract_packages :=
-      repeat match goal with
-      | |- context [ mkpackage ?p ?h ] =>
-        let h' := fresh "h" in
-        set (h' := h) ;
-        let p' := fresh "p" in
-        set (p' := mkpackage p h') ;
-        clearbody h' ;
-        change (mkpackage p h') with (tac_mark (mkpackage p h')) in p' ;
-        lazymatch type of h' with
-        | ?T => change T with (tac_intro_mark T) in h'
-        end
-      end.
-
-    Ltac unmark_packages :=
-      repeat match goal with
-      | p := tac_mark ?t |- _ =>
-        change (tac_mark t) with t in p ;
-        subst p
-      end.
-
-    Ltac revert_tac_intro :=
-      repeat match goal with
-      | h : tac_intro_mark ?t |- _ =>
-        revert h
-      end.
-
-    Ltac package_before_rewrite :=
-      mark_abstract_packages ;
-      unmark_packages ;
-      revert_tac_intro.
-
-    Ltac intro_tac_intro :=
-      repeat match goal with
-      | |- ∀ h : tac_intro_mark ?A, _ =>
-        intro h ;
-        change (tac_intro_mark A) with A in h
-      end.
-
-    Ltac package_after_rewrite :=
-      intro_tac_intro.
-
     Lemma Reduction {Game_export M_export : Interface}
       {M : loc_package Game_export M_export}
       (G : GamePair Game_export) (A : Adversary4Game M_export) (b : bool) :
