@@ -428,11 +428,20 @@ Module CorePackageTheory (π : RulesParam).
     (mkprog p h)
     (only parsing) : package_scope.
 
-  Instance ValidProgram_ret (A : choiceType) (x : A) L I :
+
+  (* Having an instance here means that it will use ret when the program
+    is unknown. Pretty bad.
+    We will instead use Hint Extern.
+  *)
+  (* Instance ValidProgram_ret (A : choiceType) (x : A) L I :
     ValidProgram L I (ret x).
   Proof.
     apply valid_ret.
-  Qed.
+  Qed. *)
+
+  Hint Extern 1 (ValidProgram ?L ?I (ret ?x)) =>
+    apply valid_ret
+    : typeclass_instances.
 
   (* TODO Replace the eautos in the tactics by in_fset stuff
     This means moving them from pkg_tactics.
