@@ -1481,13 +1481,13 @@ Module PackageRHL (π : RulesParam).
     (* ER: How do we connect the package theory with the RHL?
            Something along the following lines should hold? *)
     Lemma prove_relational {L1 L2} {export}
-               (P1 : opackage L1 Game_import export)
-               (P2 : opackage L2 Game_import export)
-               (I : heap_choiceType * heap_choiceType -> Prop)
-               (HINV' : INV' L1 L2 I)
-               (Hempty : I (empty_heap, empty_heap))
-               (H : eq_up_to_inv I P1 P2)
-      : (L1; P1) ≈[ λ A H1 H2, 0 ] (L2; P2).
+      (P1 : package L1 Game_import export)
+      (P2 : package L2 Game_import export)
+      (I : heap_choiceType * heap_choiceType -> Prop)
+      (HINV' : INV' L1 L2 I)
+      (Hempty : I (empty_heap, empty_heap))
+      (H : eq_up_to_inv I P1 P2)
+      : (mkloc_package L1 P1) ≈[ λ A H1 H2, 0 ] (mkloc_package L2 P2).
     Proof.
       extensionality A.
       unfold Adversary4Game in A.
@@ -1501,7 +1501,7 @@ Module PackageRHL (π : RulesParam).
       (* { eexists. reflexivity. } *)
       (* unshelve epose (fdisjoint_from_link A.π2 P2 _) as Hdisjoint2. *)
       (* { eexists. reflexivity. } *)
-      assert (INV A.π1 I) as HINV.
+      assert (INV A.(locs) I) as HINV.
       { destruct A. simpl in Hdisjoint1, Hdisjoint2.
         cbn.  unfold INV.
         intros s1 s2. split.
@@ -1532,36 +1532,47 @@ Module PackageRHL (π : RulesParam).
       simpl in Heq. unfold pr in Heq.
       simpl in Heq.
       unfold Pr_op.
-      pose _rhs := (thetaFstd _ (repr (program_link
-            (injectLocations (fsubsetUl A.(locs) (L1 :|: L2)) r)
-            (opackage_inject_locations
-               (fsubset_trans (y:=L1 :|: L2) (x:=L1)
-                  (z:= A.(locs) :|: (L1 :|: L2)) (fsubsetUl L1 L2)
-                  (fsubsetUr A.(locs) (L1 :|: L2))) P1))) empty_heap).
-      pose rhs := _rhs prob_handler.
-      simpl in _rhs, rhs.
-      pose lhs := (let (L, o) := link A (L1; P1) in
-                   let (PP, PP_is_valid) := o in
-                   Pr_raw_package_op PP PP_is_valid RUN RUN_in_A_export tt empty_heap).
+      (* Interestingly, ssreflect's pose here succeeds but leads to
+        anomalies afterwards.
+      *)
+      unshelve epose (rhs := (
+        thetaFstd _
+          (repr {program
+            program_link r P1
+            #with [hints
+              fsubsetUl A.(locs) (L1 :|: L2) ;
+              fsubset_trans (y:=L1 :|: L2) (x:=L1)
+                (z:= A.(locs) :|: (L1 :|: L2)) (fsubsetUl L1 L2)
+                (fsubsetUr A.(locs) (L1 :|: L2))
+            ]
+          })
+          empty_heap
+      )).
+      1: exact prob_handler.
+      simpl in rhs.
+      unshelve epose (lhs :=
+        Pr_raw_package_op (link A P1) _ RUN RUN_in_A_export tt empty_heap
+      ).
+      2:{ eapply valid_package_from_class. exact _. }
       assert (lhs = rhs).
-      { unfold lhs, rhs, _rhs. simpl.
+      { subst lhs rhs.
         unfold Pr_raw_package_op. unfold Pr_raw_program.
-        unfold thetaFstd. simpl. apply f_equal2. 2: { reflexivity. }
+        unfold thetaFstd. simpl. apply f_equal2. 2: reflexivity.
         apply f_equal. apply f_equal.
         destruct A as [LA [A A_valid]].
         apply repr'_ext.
-        erewrite (get_raw_package_op_link RUN_in_A_export tt (trim A_export ((LA; ⦑ A ⦒).π2) ∙1) (P1 ∙1) _ _).
-        apply f_equal2. 2: { reflexivity. }
+        erewrite get_raw_package_op_link.
+        (* erewrite (get_raw_package_op_link RUN_in_A_export tt (trim A_export ((LA; ⦑ A ⦒).π2) ∙1) (P1 ∙1) _ _). *)
+        apply f_equal2. 2: reflexivity.
         cbn - [get_raw_package_op].
-        unfold get_opackage_op. cbn - [get_raw_package_op].
-        unshelve erewrite get_raw_package_op_trim.
-        { apply (valid_package_inject_locations _ _ LA (LA :|: L1)).
-          - apply fsubsetUl.
-          - exact A_valid.
-        }
+        subst r. subst r'.
+        unfold get_package_op. unfold get_opackage_op.
+        simpl.
+        cbn - [get_raw_package_op].
+        Set Printing All.
         epose (get_raw_package_op_ext RUN_in_A_export tt A) as e.
         specialize (e (valid_package_inject_locations export A_export LA (LA :|: L1) A
-                                                      (fsubsetUl LA L1) A_valid)).
+            (fsubsetUl LA L1) A_valid)).
         eapply e.
       }
       unfold lhs in H0.
