@@ -1292,24 +1292,6 @@ Module PackageRHL (π : RulesParam).
       end
       : typeclass_instances.
 
-    #[program] Definition foo {export : Interface} {B} {L1 L2 LA}
-    (P1 : package L1 Game_import export)
-    (P2 : package L2 Game_import export)
-    (I : heap_choiceType * heap_choiceType -> Prop)
-    (HINV : INV LA I) (Hempty : I (empty_heap, empty_heap))
-    (H : eq_up_to_inv I P1 P2)
-    (A : program LA export B)
-    (s1 : heap_choiceType) (s2 : heap_choiceType) (Hs1s2 : I (s1, s2)) : program (LA :|: (L1 :|: L2)) Game_import _ :=
-    {program program_link A P1 #with [hints (fsubsetUl LA (L1 :|: L2)) ; (fsubset_trans (fsubsetUl L1 L2) (fsubsetUr LA (L1 :|: L2))) ]}.
-    Next Obligation.
-      intros.
-      pose (hint := fsubsetUl LA (L1 :|: L2)).
-      pose (hint' := fsubset_trans (fsubsetUl L1 L2) (fsubsetUr LA (L1 :|: L2))).
-      eapply valid_program_link.
-      - eapply valid_program_from_class. exact _.
-      - eapply valid_package_from_class. exact _.
-    Qed.
-
     Lemma some_lemma_for_prove_relational {export : Interface} {B} {L1 L2 LA}
       (P1 : package L1 Game_import export)
       (P2 : package L2 Game_import export)
