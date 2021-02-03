@@ -1562,14 +1562,12 @@ Module PackageRHL (π : RulesParam).
         destruct A as [LA [A A_valid]].
         apply repr'_ext.
         erewrite get_raw_package_op_link.
-        (* erewrite (get_raw_package_op_link RUN_in_A_export tt (trim A_export ((LA; ⦑ A ⦒).π2) ∙1) (P1 ∙1) _ _). *)
         apply f_equal2. 2: reflexivity.
         cbn - [get_raw_package_op].
         subst r. subst r'.
         unfold get_package_op. unfold get_opackage_op.
         simpl.
         cbn - [get_raw_package_op].
-        Set Printing All.
         epose (get_raw_package_op_ext RUN_in_A_export tt A) as e.
         specialize (e (valid_package_inject_locations export A_export LA (LA :|: L1) A
             (fsubsetUl LA L1) A_valid)).
@@ -1577,33 +1575,37 @@ Module PackageRHL (π : RulesParam).
       }
       unfold lhs in H0.
       rewrite H0.
-      pose _rhs' := (thetaFstd _ (repr (program_link
-            (injectLocations (fsubsetUl A.(locs) (L1 :|: L2)) r)
-            (opackage_inject_locations
-               (fsubset_trans (y:=L1 :|: L2) (x:=L2)
-                  (z:= A.(locs) :|: (L1 :|: L2)) (fsubsetUr L1 L2)
-                  (fsubsetUr A.(locs) (L1 :|: L2))) P2))) empty_heap).
-      pose rhs' := _rhs' prob_handler.
-      simpl in _rhs', rhs'.
-      pose lhs' := (let (L, o) := link A (L2; P2) in
-                   let (PP, PP_is_valid) := o in
-                   Pr_raw_package_op PP PP_is_valid RUN RUN_in_A_export tt empty_heap).
+      unshelve epose (rhs' := (
+        thetaFstd _
+          (repr {program
+            program_link r P2
+            #with [hints
+              fsubsetUl A.(locs) (L1 :|: L2) ;
+              fsubset_trans (y:=L1 :|: L2) (x:=L2)
+                (z:= A.(locs) :|: (L1 :|: L2)) (fsubsetUr L1 L2)
+                (fsubsetUr A.(locs) (L1 :|: L2))
+            ]
+          })
+          empty_heap
+      )).
+      1: exact prob_handler.
+      simpl in rhs'.
+      unshelve epose (lhs' :=
+        Pr_raw_package_op (link A P2) _ RUN RUN_in_A_export tt empty_heap
+      ).
+      2:{ eapply valid_package_from_class. exact _. }
       assert (lhs' = rhs') as H0'.
-      { unfold lhs', rhs', _rhs'. simpl.
+      { subst lhs' rhs'.
         unfold Pr_raw_package_op. unfold Pr_raw_program.
-        unfold thetaFstd. simpl. apply f_equal2. 2: { reflexivity. }
+        unfold thetaFstd. simpl. apply f_equal2. 2: reflexivity.
         apply f_equal. apply f_equal.
         destruct A as [LA [A A_valid]].
         apply repr'_ext.
-        erewrite (get_raw_package_op_link RUN_in_A_export tt (trim A_export ((LA; ⦑ A ⦒).π2) ∙1) (P2 ∙1) _ _).
-        apply f_equal2. 2: { reflexivity. }
+        erewrite get_raw_package_op_link.
+        apply f_equal2. 2: reflexivity.
+        cbn - [get_raw_package_op]. subst r r'.
+        unfold get_package_op. unfold get_opackage_op.
         cbn - [get_raw_package_op].
-        unfold get_opackage_op. cbn - [get_raw_package_op].
-        unshelve erewrite get_raw_package_op_trim.
-        { apply (valid_package_inject_locations _ _ LA (LA :|: L2)).
-          - apply fsubsetUl.
-          - exact A_valid.
-        }
         epose (get_raw_package_op_ext RUN_in_A_export tt A) as e.
         specialize (e (valid_package_inject_locations export A_export LA (LA :|: L2) A
                                                       (fsubsetUl LA L2) A_valid)).
@@ -1611,19 +1613,21 @@ Module PackageRHL (π : RulesParam).
       }
       unfold lhs' in H0'.
       rewrite H0'.
-      unfold rhs', _rhs', rhs, _rhs.
+      unfold rhs', rhs.
 
       unfold SDistr_bind. unfold SDistr_unit.
       simpl.
       rewrite !dletE.
-      assert (forall x : bool_choiceType * heap_choiceType, ((let '(b, _) := x in dunit (R:=R) (T:=bool_choiceType) b) true) == (x.1 == true)%:R).
+      assert (∀ x : bool_choiceType * heap_choiceType, ((let '(b, _) := x in dunit (R:=R) (T:=bool_choiceType) b) true) == (x.1 == true)%:R).
       { intros [b s].
-        simpl. rewrite dunit1E. intuition. }
-      assert (forall y, (λ x : prod_choiceType (tgt RUN) heap_choiceType, (y x) * (let '(b, _) := x in dunit (R:=R) (T:=tgt RUN) b) true) = (λ x : prod_choiceType (tgt RUN) heap_choiceType, (x.1 == true)%:R * (y x))) as Hrew.
+        simpl. rewrite dunit1E. intuition.
+      }
+      assert (∀ y, (λ x : prod_choiceType (tgt RUN) heap_choiceType, (y x) * (let '(b, _) := x in dunit (R:=R) (T:=tgt RUN) b) true) = (λ x : prod_choiceType (tgt RUN) heap_choiceType, (x.1 == true)%:R * (y x))) as Hrew.
       { intros y. extensionality x.
         destruct x as [x1 x2].
         rewrite dunit1E.
-        simpl. rewrite GRing.mulrC. reflexivity. }
+        simpl. rewrite GRing.mulrC. reflexivity.
+      }
       rewrite !Hrew.
       unfold TransformingLaxMorph.rlmm_from_lmla_obligation_1. simpl.
       unfold SubDistr.SDistr_obligation_2. simpl.
@@ -1632,25 +1636,14 @@ Module PackageRHL (π : RulesParam).
       rewrite Heq.
       rewrite /StateTransfThetaDens.unaryStateBeta'_obligation_1.
       unfold TransformingLaxMorph.rlmm_from_lmla_obligation_1, stT_thetaDens_adj.
-      assert (forall (x : R), `|x - x| = 0) as Hzero.
+      assert (∀ (x : R), `|x - x| = 0) as Hzero.
       { intros x.
         assert (x - x = 0) as H3.
-        { apply /eqP. rewrite GRing.subr_eq0. intuition.  }
+        { apply /eqP. rewrite GRing.subr_eq0. intuition. }
         rewrite H3. apply mc_1_10.Num.Theory.normr0.
-        }
+      }
       rewrite Hzero.
       reflexivity.
-      Unshelve.
-      - apply valid_trim.
-        cbn.
-        apply (valid_package_inject_locations _ _ LA (LA :|: L1)).
-            + apply fsubsetUl.
-            + exact A_valid.
-      - apply valid_trim.
-        cbn.
-        apply (valid_package_inject_locations _ _ LA (LA :|: L2)).
-            + apply fsubsetUl.
-            + exact A_valid.
     Qed.
 
     (* Alternative version for packages *)
