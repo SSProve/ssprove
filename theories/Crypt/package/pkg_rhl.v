@@ -315,31 +315,34 @@ Module PackageRHL (π : RulesParam).
     Notation " r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄ " :=
       (semantic_judgement _ _ (repr c1) (repr c2) (fromPrePost pre post)).
 
-    (* TODO Maybe change the underscores by variables so it applies more
-      often? Also might be worth considering using raw_program directly
-      instead of a coercion from program.
-    *)
     Theorem rbind_rule :
       ∀ {A1 A2 B1 B2 : ord_choiceType}
         {L1 L2 : {fset Location}}
-        {f1 : A1 → program L1 Game_import B1}
-        {f2 : A2 → program L2 Game_import B2}
-        (m1 : program L1 Game_import A1)
-        (m2 : program L2 Game_import A2)
+        {f1}
+        {hf1 : ∀ (x : A1), @ValidProgram L1 Game_import B1 (f1 x)}
+        {f2}
+        {hf2 : ∀ (x : A2), @ValidProgram L2 Game_import B2 (f2 x)}
+        m1
+        {hm1 : @ValidProgram L1 Game_import A1 m1}
+        m2
+        {hm2 : @ValidProgram L2 Game_import A2 m2}
         (pre : heap * heap → Prop)
         (middle : (A1 * heap) → (A2 * heap) → Prop)
         (post : (B1 * heap) → (B2 * heap) → Prop)
-        (judge_wm : r⊨ ⦃ pre ⦄ m1 ≈ m2 ⦃ middle ⦄)
+        (judge_wm : r⊨ ⦃ pre ⦄ (mkprog m1 hm1) ≈ (mkprog m2 hm2) ⦃ middle ⦄)
         (judge_wf : ∀ a1 a2,
           r⊨ ⦃ λ '(s1, s2), middle (a1, s1) (a2, s2) ⦄
-            f1 a1 ≈ f2 a2
+            (mkprog (f1 a1) _) ≈ (mkprog (f2 a2) _)
             ⦃ post ⦄
-        ),
-        r⊨ ⦃ pre ⦄ mkprog (bind m1 f1) _ ≈ mkprog (bind m2 f2) _ ⦃ post ⦄.
+        )
+        {h1 : ValidProgram L1 _ _}
+        {h2 : ValidProgram L2 _ _},
+        r⊨ ⦃ pre ⦄ mkprog (bind m1 f1) h1 ≈ mkprog (bind m2 f2) h2 ⦃ post ⦄.
     Proof.
-      intros A1 A2 B1 B2 L1 l2 f1 f2 m1 m2 pre middle post judge_wm judge_wf.
+      intros A1 A2 B1 B2 L1 l2 f1 hf1 f2 hf2 m1 hm1 m2 hm2 pre middle post
+        judge_wm judge_wf h1 h2.
       rewrite !repr_bind.
-      apply (bind_rule_pp (repr m1) (repr m2) pre middle post judge_wm judge_wf).
+      apply (bind_rule_pp (repr {program m1}) (repr {program m2}) pre middle post judge_wm judge_wf).
     Qed.
 
     Lemma opaque_me :
