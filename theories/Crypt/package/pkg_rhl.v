@@ -1277,17 +1277,19 @@ Module PackageRHL (π : RulesParam).
 
     (* Slightly more expensive version that allows to change parameters *)
     Hint Extern 3 (ValidProgram ?L ?I ?p) =>
-      eapply valid_injectLocations ; [
-        eassumption
-      | eapply valid_program_from_class
-      ]
+      match goal with
+      | h : is_true (fsubset ?x ?y) |- _ =>
+        eapply valid_injectLocations with (1 := h) ;
+        eapply valid_program_from_class ; exact _
+      end
       : typeclass_instances.
 
     Hint Extern 3 (ValidPackage ?L ?I ?E ?p) =>
-      eapply valid_package_inject_locations ; [
-        eassumption
-      | eapply valid_package_from_class
-      ]
+      match goal with
+      | h : is_true (fsubset ?x ?y) |- _ =>
+        eapply valid_package_inject_locations with (1 := h) ;
+        eapply valid_package_from_class ; exact _
+      end
       : typeclass_instances.
 
     #[program] Definition foo {export : Interface} {B} {L1 L2 LA}
@@ -1304,11 +1306,8 @@ Module PackageRHL (π : RulesParam).
       pose (hint := fsubsetUl LA (L1 :|: L2)).
       pose (hint' := fsubset_trans (fsubsetUl L1 L2) (fsubsetUr LA (L1 :|: L2))).
       eapply valid_program_link.
-      - eapply valid_program_from_class.
-        clear hint'.
-        exact _.
-      - eapply valid_package_from_class.
-        exact _.
+      - eapply valid_program_from_class. exact _.
+      - eapply valid_package_from_class. exact _.
     Qed.
 
     Lemma some_lemma_for_prove_relational {export : Interface} {B} {L1 L2 LA}
