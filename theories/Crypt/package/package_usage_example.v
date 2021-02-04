@@ -66,10 +66,14 @@ Module NotationExamples (π : RulesParam).
       }
     ].
 
-  Fail Definition foo (x : bool) : program fset0 [interface] bool_choiceType :=
+
+  Obligation Tactic := idtac.
+
+  #[program] Definition foo (x : bool) : program fset0 [interface] bool_choiceType :=
     {program let u := x in ret u}.
-  (* Next Obligation.
-    intro x. cbn zeta. exact _. *)
+  Next Obligation.
+    intro x. cbv zeta. exact _.
+  Qed.
 
   Definition bar (b : bool) : program fset0 [interface] nat_choiceType :=
     {program if b then ret 0 else ret 1}.
