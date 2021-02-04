@@ -1788,56 +1788,77 @@ Proof.
   by apply: reflexivity_rule (repr c).
 Qed.
 
+(* TODO Decompose prgram *)
 Theorem rswap_rule {A1 A2 : ord_choiceType} {L : {fset Location}}
   {I : heap * heap → Prop}
   {post : A1 * heap → A2 * heap → Prop}
   (c1 : program L Game_import A1) (c2 : program L Game_import A2)
   (Hinv1 : r⊨ ⦃ I ⦄ c1 ≈ c2 ⦃ λ '(a1, s1) '(a2, s2), I (s1, s2) ∧ post (a1, s1) (a2, s2) ⦄)
-  (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ λ '(a2, s2) '(a1, s1), I (s1, s2) ∧ post (a1, s1) (a2, s2) ⦄) :
-  r⊨ ⦃ I ⦄ (bind c1 (λ _, c2)) ≈ (bind c2 (λ _, c1)) ⦃ λ '(a2,s2) '(a1,s1), I (s1, s2) ∧ post (a1,s1) (a2, s2) ⦄.
+  (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ λ '(a2, s2) '(a1, s1), I (s1, s2) ∧ post (a1, s1) (a2, s2) ⦄)
+  {h1 : ValidProgram L _ _} {h2 : ValidProgram L _ _} :
+  r⊨ ⦃ I ⦄
+    mkprog (c1 ;; c2) h1 ≈ mkprog (c2 ;; c1) h2
+    ⦃ λ '(a2,s2) '(a1,s1), I (s1, s2) ∧ post (a1,s1) (a2, s2) ⦄.
 Proof.
-  rewrite !repr_bind.
+  erewrite !repr_bind.
   by apply: swap_rule (repr c1) (repr c2) Hinv1 Hinv2.
 Qed.
 
-Theorem rswap_ruleL { A1 A2 B : ord_choiceType } { L : {fset Location} }
-                    { pre I : heap * heap -> Prop }
-                    { post :  A2 * heap -> A1 * heap -> Prop }
-                    (l : program L Game_import B)  (c1 : program L Game_import A1) (c2 : program L Game_import A2)
-                    (HL    : r⊨ ⦃ pre ⦄ l ≈ l ⦃ fun '(b1, s1) '(b2, s2) => I (s1, s2) ⦄)
-                    (Hinv1 : r⊨ ⦃ I ⦄ c1 ≈ c2 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ post (a2, s2) (a1, s1)  ⦄ )
-                    (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ fun '(a2, s2) '(a1, s1) => I (s1, s2) /\ post (a2, s2) (a1, s1) ⦄ ) :
-  r⊨ ⦃ pre ⦄
-   (bind l (fun _ => (bind c1 (fun _ => c2)))) ≈
-   (bind l (fun _ => (bind c2 (fun _ => c1))))
-   ⦃ post ⦄ .
-Proof. rewrite !repr_bind. by apply: swap_ruleL (repr l) (repr c1) (repr c2) HL Hinv1 Hinv2. Qed.
+(* TODO Decompose prgram *)
+(** TW: I guess this to allow going under binders.
+  We might be better off defining some morphisms on semantic judgments
+  to use setoid_rewrite.
+*)
+Theorem rswap_ruleL
+  {A1 A2 B : ord_choiceType} {L : {fset Location}}
+  {pre I : heap * heap → Prop}
+  {post :  A2 * heap → A1 * heap → Prop}
+  (l : program L Game_import B)
+  (c1 : program L Game_import A1)
+  (c2 : program L Game_import A2)
+  (HL : r⊨ ⦃ pre ⦄ l ≈ l ⦃ λ '(b1, s1) '(b2, s2), I (s1, s2) ⦄)
+  (Hinv1 : r⊨ ⦃ I ⦄ c1 ≈ c2 ⦃ λ '(a1, s1) '(a2, s2), I (s1, s2) ∧ post (a2, s2) (a1, s1) ⦄)
+  (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ λ '(a2, s2) '(a1, s1), I (s1, s2) ∧ post (a2, s2) (a1, s1) ⦄)
+  {h1 : ValidProgram L _ _} {h2 : ValidProgram L _ _} :
+  r⊨ ⦃ pre ⦄ mkprog (l ;; c1 ;; c2) h1 ≈ mkprog (l ;; c2 ;; c1) h2 ⦃ post ⦄ .
+Proof.
+  erewrite !repr_bind.
+  by apply: swap_ruleL (repr l) (repr c1) (repr c2) HL Hinv1 Hinv2.
+Qed.
 
+(* TODO Decompose prgram *)
 (* TODO
   CAution:
   the corresponding rule in RulesStateProb. contains some admits
  *)
-Theorem rswap_ruleR { A1 A2 B : ord_choiceType } { L : {fset Location} }
-                    { post : B * heap -> B * heap -> Prop} { post_refl : forall bs bs', bs = bs' -> post bs bs' }
-                    (c1 : program L Game_import A1)
-                    (c2 : program L Game_import A2)
-                    (r  : A1 -> A2 -> program L Game_import B )
-                    (HR    : forall a1 a2, r⊨ ⦃ fun '(s2, s1) => s1 = s2 ⦄ (r a1 a2) ≈ (r a1 a2) ⦃ post ⦄)
-                    (Hcomm : r⊨ ⦃ fun '(h1, h2) => h1 = h2 ⦄
-                                       (bind c1 (fun a1 => bind c2 ( fun a2 => ret (a1,a2))))  ≈
-                                       (bind c2 (fun a2 => bind c1 ( fun a1 => ret (a1,a2))))
-                                 ⦃ eq ⦄ ):
-  r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄
-   (bind c1 (fun a1 => bind c2 (fun a2 => r a1 a2))) ≈
-   (bind c2 (fun a2 => bind c1 (fun a1 => r a1 a2)))
+Theorem rswap_ruleR
+  {A1 A2 B : ord_choiceType} {L : {fset Location}}
+  {post : B * heap → B * heap → Prop}
+  {post_refl : ∀ bs bs', bs = bs' → post bs bs'}
+  (c1 : program L Game_import A1)
+  (c2 : program L Game_import A2)
+  (r : A1 → A2 → program L Game_import B)
+  (HR : ∀ a1 a2, r⊨ ⦃ λ '(s2, s1), s1 = s2 ⦄ (r a1 a2) ≈ (r a1 a2) ⦃ post ⦄)
+  (Hcomm : r⊨ ⦃ λ '(h1, h2), h1 = h2 ⦄
+              mkprog (a1 ← c1 ;; a2 ← c2 ;; ret (a1, a2)) _ ≈
+              mkprog (a2 ← c2 ;; a1 ← c1 ;; ret (a1 , a2)) _
+            ⦃ eq ⦄ )
+  {h1 : ValidProgram L _ _} {h2 : ValidProgram L _ _} :
+  r⊨ ⦃ λ '(h1,h2), h1 = h2 ⦄
+      mkprog (a1 ← c1 ;; a2 ← c2 ;; r a1 a2) h1 ≈
+      mkprog (a2 ← c2 ;; a1 ← c1 ;; r a1 a2) h2
    ⦃ post ⦄.
 Proof.
   repeat setoid_rewrite repr_bind.  simpl.
   eapply (swap_ruleR (fun a1 a2 => repr (r a1 a2)) (repr c1) (repr c2) HR post_refl).
   move => s.
-  unshelve eapply coupling_eq. { exact: (fun '(h1, h2) => h1 = h2) . }
-  - repeat setoid_rewrite repr_bind in Hcomm. apply: Hcomm.
+  unshelve eapply coupling_eq.
+  - exact: (λ '(h1, h2), h1 = h2).
+  - repeat setoid_rewrite repr_bind in Hcomm. 1: apply: Hcomm.
+    all: intro. all: exact _.
   - by [].
+  Unshelve.
+  all: intro. all: exact _.
 Qed.
 
 
