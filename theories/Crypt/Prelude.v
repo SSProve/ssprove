@@ -142,6 +142,10 @@ Definition positive_to_nat (p : positive) : nat :=
 
 Coercion positive_to_nat : positive >-> nat.
 
+Hint Extern 1 (Positive ?n.(pos)) =>
+  eapply cond_pos
+  : typeclass_instances.
+
 Definition positive_eq : rel positive :=
   λ u v, u.(pos) == v.(pos).
 
@@ -158,6 +162,25 @@ Qed.
 Canonical positive_eqMixin := EqMixin positive_eqP.
   Canonical positive_eqType :=
     Eval hnf in EqType positive positive_eqMixin.
+
+(** Lt class, for finite types  *)
+
+Class Lt n m :=
+  is_in_fin : n < m.
+
+Hint Extern 1 (Lt ?n ?m) =>
+  reflexivity : typeclass_instances.
+
+Hint Extern 2 (Lt ?n ?m) =>
+  unfold Lt ; apply/ltP ; lia : typeclass_instances.
+
+Hint Extern 4 (Lt ?n) =>
+  unfold Lt ; apply/ltP ; nat_reify ; lia : typeclass_instances.
+
+Instance PositiveInFin n m (h : Lt n m) : Positive m.
+Proof.
+  unfold Lt in h. exact _.
+Qed.
 
 (** Tactic to unfold all positives (NEEDED?) *)
 Ltac unfold_positives :=

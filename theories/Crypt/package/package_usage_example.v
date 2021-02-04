@@ -208,7 +208,10 @@ Module NotationExamples (π : RulesParam).
       }
     ].
 
-  Definition test' :
+  (* For some reason, typeclasses resolution doens't work?
+    Maybe it's not triggered at the right time.
+  *)
+  #[program] Definition test' :
     package
       [fset ('nat; 0)]
       [interface val #[0] : 'nat → 'nat ]
@@ -236,5 +239,8 @@ Module NotationExamples (π : RulesParam).
       }
     ]
   .
+  Next Obligation.
+    exact _.
+  Qed.
 
 End NotationExamples.

@@ -93,7 +93,7 @@
 **)
 
 
-From Coq Require Import Utf8.
+From Coq Require Import Utf8 Lia.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice seq.
@@ -289,7 +289,10 @@ Module PkgNotation (π : RulesParam).
       (* format "x  <$  o  ;;  '/' c", *) only parsing)
       : package_scope.
 
-    Lemma give_fin {m} (n : nat) {h : n < m} : ('fin m)%pack.
+    (** Utility for fin types *)
+
+    (** m : 'fin n *)
+    Lemma give_fin {m} (n : nat) {h : Lt n m} : ('fin m)%pack.
     Proof.
       cbn. exists n. exact h.
     Defined.
