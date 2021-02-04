@@ -313,8 +313,8 @@ Module PackageTactics (π : RulesParam).
     : typeclass_instances.
 
   (* Doesn't work? *)
-  Hint Extern 2 (ValidProgram ?L ?I (let u := ?t in ?p)) =>
-    cbn zeta
+  Hint Extern 10 (ValidProgram ?L ?I (let u := ?t in ?p)) =>
+    cbn zeta ; exact _
     : typeclass_instances.
 
   Hint Extern 2 (ValidProgram ?L ?I (match ?t with _ => _ end)) =>
