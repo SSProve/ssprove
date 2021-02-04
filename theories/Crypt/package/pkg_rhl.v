@@ -175,13 +175,6 @@ Module PackageRHL (π : RulesParam).
       - rewrite andbC. auto.
     Qed.
 
-    Definition fromEmpty {B} {v : opsig} (H : v \in fset0) : B.
-    Proof.
-      rewrite in_fset0 in H.
-      move: H. move /eqP. move /eqP => H.
-      discriminate.
-    Defined.
-
     Ltac revert_last :=
       match goal with
       | h : _ |- _ => revert h

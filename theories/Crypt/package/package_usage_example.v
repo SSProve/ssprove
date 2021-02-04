@@ -43,39 +43,8 @@ Module NotationExamples (π : RulesParam).
       val #[4] : 'bool × 'bool → 'bool
     ].
 
-  Lemma valid_empty_package :
-    ∀ L I,
-      valid_package L I [interface] emptym.
-  Proof.
-    intros L I.
-    intros [id [S T]] ho. eapply fromEmpty. eauto.
-  Qed.
-
-  Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap [::])) =>
-    eapply valid_empty_package
-    : typeclass_instances.
-
   Definition pempty : package fset0 [interface] [interface] :=
     [package].
-
-  Lemma valid_package1 :
-    ∀ L I i A B f,
-      (∀ x, valid_program L I (f x)) →
-      valid_package L I (fset [:: (i, (A, B))]) (mkfmap [:: (i, mkdef A B f)]).
-  Proof.
-    intros L I i A B f hf.
-    intros o ho. rewrite in_fset in ho.
-    rewrite mem_seq1 in ho. move: ho => /eqP ho. subst o.
-    cbn. exists f.
-    destruct (eqn i i) eqn:e.
-    2:{ move: e => /eqP. contradiction. }
-    intuition auto.
-  Qed.
-
-  Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap [:: (?i, mkdef ?A ?B ?f)])) =>
-    eapply valid_package1 ;
-    intro ; eapply valid_program_from_class
-    : typeclass_instances.
 
   Definition p0 : package fset0 [interface] I0 :=
     [package
@@ -83,63 +52,6 @@ Module NotationExamples (π : RulesParam).
         ret x
       }
     ].
-
-  Lemma flat_valid_package :
-    ∀ L I E p,
-      valid_package L I E p →
-      flat E.
-  Proof.
-    intros L I E p hp.
-    intros i [u1 u2] [v1 v2] h1 h2.
-    specialize (hp _ h1) as h1'.
-    specialize (hp _ h2) as h2'.
-    simpl in *.
-    destruct h1' as [f [ef _]].
-    destruct h2' as [g [eg _]].
-    rewrite ef in eg. noconf eg.
-    reflexivity.
-  Qed.
-
-  Lemma valid_package_cons :
-    ∀ L I i A B f E p,
-      valid_package L I (fset E) (mkfmap p) →
-      (∀ x, valid_program L I (f x)) →
-      i \notin (λ '(i,_), i) @: fset E →
-      valid_package L I (fset ((i, (A, B)) :: E))
-        (mkfmap ((i, mkdef A B f) :: p)).
-  Proof.
-    intros L I i A B f E p hp hf hi.
-    intros o ho. rewrite in_fset in ho. rewrite in_cons in ho.
-    move: ho => /orP [ho | ho].
-    - move: ho => /eqP ho. subst o.
-      rewrite mkfmapE. cbn. exists f.
-      destruct (eqn i i) eqn:e.
-      2:{ move: e => /eqP. contradiction. }
-      intuition auto.
-    - rewrite -in_fset in ho.
-      specialize (hp _ ho).
-      destruct o as [id [S T]].
-      destruct hp as [g [eg hg]].
-      rewrite mkfmapE. cbn.
-      destruct (eqn id i) eqn:e.
-      1:{
-        move: e => /eqP e. subst id.
-        eapply mem_imfset with (f := λ '(i,_), i) in ho.
-        unfold "\notin" in hi. rewrite ho in hi.
-        discriminate.
-      }
-      rewrite mkfmapE in eg.
-      exists g. intuition auto.
-  Qed.
-
-  Hint Extern 2 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
-    =>
-    eapply valid_package_cons ; [
-      eapply valid_package_from_class
-    | intro ; eapply valid_program_from_class
-    | unfold "\notin" ; rewrite imfset_fset ; rewrite in_fset ; eauto
-    ]
-    : typeclass_instances.
 
   Definition p1 : package fset0 [interface] I1 :=
     [package
@@ -154,20 +66,10 @@ Module NotationExamples (π : RulesParam).
       }
     ].
 
-  Hint Extern 2 (ValidProgram ?L ?I (let u := ?t in ?p)) =>
-    cbn zeta ; exact _
-    : typeclass_instances.
-
-  Obligation Tactic := idtac.
-
   Fail Definition foo (x : bool) : program fset0 [interface] bool_choiceType :=
     {program let u := x in ret u}.
   (* Next Obligation.
     intro x. cbn zeta. exact _. *)
-
-  Hint Extern 2 (ValidProgram ?L ?I (match ?t with _ => _ end)) =>
-    destruct t
-    : typeclass_instances.
 
   Definition bar (b : bool) : program fset0 [interface] nat_choiceType :=
     {program if b then ret 0 else ret 1}.
@@ -178,13 +80,6 @@ Module NotationExamples (π : RulesParam).
         let '(u,v) := x in ret v
       }
     ].
-
-  (* Definition b1 : bundle := {|
-    locs := fset0 ;
-    import := [interface] ;
-    export := _ ;
-    pack := p1
-  |}. *)
 
   Definition test :
     package
@@ -207,15 +102,6 @@ Module NotationExamples (π : RulesParam).
         putr ('nat; 0) 0 (ret Datatypes.tt)
       }
     ].
-
-  (** Variant of the cons case where we unify Positive proofs beforehand
-    This is—I hope—the only thing that might cause a discrepancy between
-    the interface and the signature of the term.
-  *)
-  Hint Extern 3 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
-    =>
-    unify_positive_proofs
-    : typeclass_instances.
 
   Definition test' :
     package
