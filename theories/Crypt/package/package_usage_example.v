@@ -249,10 +249,16 @@ Module NotationExamples (π : RulesParam).
     unmark_tac_intro_mark ;
     subst_marked.
 
-  (* For some reason, typeclasses resolution doens't work?
-    Maybe it's not triggered at the right time.
+  (** Variant of the cons case where we unify Positive proofs beforehand
+    This is—I hope—the only thing that might cause a discrepancy between
+    the interface and the signature of the term.
   *)
-  #[program] Definition test' :
+  Hint Extern 3 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
+    =>
+    unify_positive_proofs
+    : typeclass_instances.
+
+  Definition test' :
     package
       [fset ('nat; 0)]
       [interface val #[0] : 'nat → 'nat ]
@@ -280,18 +286,5 @@ Module NotationExamples (π : RulesParam).
       }
     ]
   .
-  Next Obligation.
-    exact _.
-  Qed.
-  Next Obligation.
-    eapply valid_package_cons ; [
-      eapply valid_package_from_class
-    | intro ; eapply valid_program_from_class
-    | unfold "\notin" ; rewrite imfset_fset ; rewrite in_fset ; eauto
-    ].
-    2: exact _.
-    unify_positive_proofs.
-    exact _.
-  Qed.
 
 End NotationExamples.
