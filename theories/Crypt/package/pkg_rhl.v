@@ -1861,85 +1861,103 @@ Proof.
   all: intro. all: exact _.
 Qed.
 
-
 Local Open Scope package_scope.
 
-
-Lemma rsamplerC { A : ord_choiceType } { L : {fset Location} }  (o : Op)
-                (c : program L Game_import A):
-  r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄
-       a ← c ;; r ← (r ← sample o ;; ret r) ;;  (ret (a, r)) ≈
-       r ← (r ← sample o ;; ret r) ;; a ← c ;;  (ret (a, r))
+(* TODO Decompose prgram *)
+Lemma rsamplerC
+  {A : ord_choiceType} {L : {fset Location}} (o : Op)
+  (c : program L Game_import A)
+  {h1 : ValidProgram L _ _} {h2 : ValidProgram L _ _} :
+  r⊨ ⦃ λ '(h1,h2), h1 = h2 ⦄
+       mkprog (a ← c ;; r ← (r ← sample o ;; ret r) ;;  (ret (a, r))) h1 ≈
+       mkprog (r ← (r ← sample o ;; ret r) ;; a ← c ;;  (ret (a, r))) h2
    ⦃ eq ⦄.
-Proof. Admitted.
+Proof.
+Admitted.
 
-Lemma rsamplerC' { A : ord_choiceType } { L : {fset Location} }  (o : Op)
-                 (c : program L Game_import A):
-  r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄
-        r ← (r ← sample o ;; ret r) ;; a ← c ;;  (ret (r, a)) ≈
-        a ← c ;; r ← (r ← sample o ;; ret r) ;;  (ret (r, a))
+(* TODO Decompose prgram *)
+Lemma rsamplerC' {A : ord_choiceType} {L : {fset Location}} (o : Op)
+  (c : program L Game_import A)
+  {h1 : ValidProgram L _ _} {h2 : ValidProgram L _ _} :
+  r⊨ ⦃ λ '(h1,h2), h1 = h2 ⦄
+      mkprog (r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (r, a)) h1 ≈
+      mkprog (a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (r, a)) h2
    ⦃ eq ⦄.
-Proof. Admitted.
+Proof.
+Admitted.
 
-
+(* TODO Decompose prgram *)
 (* TODO: generalize the corresponding rule in RulesStateProb.v  *)
 (* CA: not hight priority as never used yet! *)
-Theorem rswap_rule_ctx { A : ord_choiceType } { L : {fset Location} }
-                       { I pre } { post Q : A * heap -> A * heap -> Prop }
-                       (l r c1 c2 : program L Game_import A)
-                      (HL    : r⊨ ⦃ pre ⦄ l ≈ l ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) ⦄)
-                      (HR    : forall a1 a2, r⊨ ⦃ fun '(s1, s2) => Q (a1,s1) (a2,s2) ⦄ r ≈ r ⦃ post ⦄)
-                      (Hinv1 : r⊨ ⦃ I ⦄ c1 ≈ c2 ⦃ fun '(a1, s1) '(a2, s2) => I (s1, s2) /\ Q (a1, s1) (a2, s2) ⦄ )
-                      (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ fun '(a2, s2) '(a1, s1) => I (s1, s2) /\ Q (a1, s1) (a2, s2) ⦄ ):
+Theorem rswap_rule_ctx
+  {A : ord_choiceType} {L : {fset Location}}
+  {I pre} {post Q : A * heap → A * heap → Prop}
+  (l r c1 c2 : program L Game_import A)
+  (HL : r⊨ ⦃ pre ⦄ l ≈ l ⦃ λ '(a1, s1) '(a2, s2), I (s1, s2) ⦄)
+  (HR : ∀ a1 a2, r⊨ ⦃ λ '(s1, s2), Q (a1,s1) (a2,s2) ⦄ r ≈ r ⦃ post ⦄)
+  (Hinv1 : r⊨ ⦃ I ⦄ c1 ≈ c2 ⦃ λ '(a1, s1) '(a2, s2), I (s1, s2) ∧ Q (a1, s1) (a2, s2) ⦄)
+  (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ λ '(a2, s2) '(a1, s1), I (s1, s2) ∧ Q (a1, s1) (a2, s2) ⦄)
+  {h1 : ValidProgram L _ _} {h2 : ValidProgram L _ _} :
   r⊨ ⦃ pre ⦄
-   (bind l (fun _ => bind c1  (fun _ => bind c2 (fun _ => r)))) ≈
-   (bind l (fun _ => bind c2  (fun _ => bind c1 (fun _ => r))))
+    mkprog (l ;; c1 ;; c2 ;; r) h1 ≈
+    mkprog (l ;; c2 ;; c1 ;; r) h2
     ⦃ post ⦄.
-Proof. rewrite !repr_bind.
-       (* by apply (swap_rule_ctx (repr l) (repr r) (repr c1) (repr c2) HL HR Hinv1 Hinv2). Qed. *) Admitted.
+Proof.
+  erewrite !repr_bind.
+  (* by apply (swap_rule_ctx (repr l) (repr r) (repr c1) (repr c2) HL HR Hinv1 Hinv2). Qed. *)
+Admitted.
 
-Theorem rsame_head {A B : ord_choiceType}
-            {L : {fset Location}}
-            {f1 : A -> program L Game_import B}
-            {f2 : A -> program L Game_import B}
-            (m : program L Game_import A)
-            (post : (B * heap) -> (B * heap) -> Prop)
-            (judge_wf : forall a,
-                r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄ f1 a ≈ f2 a ⦃ post ⦄ ) :
-      r⊨ ⦃  fun '(h1,h2) => h1 = h2 ⦄ (bind m f1 ) ≈ (bind m f2) ⦃ post ⦄.
+(* TODO Decompose prgram *)
+Theorem rsame_head
+  {A B : ord_choiceType}
+  {L : {fset Location}}
+  {f1 : A → program L Game_import B}
+  {f2 : A → program L Game_import B}
+  (m : program L Game_import A)
+  (post : (B * heap) → (B * heap) → Prop)
+  (judge_wf : ∀ a, r⊨ ⦃ λ '(h1,h2), h1 = h2 ⦄ f1 a ≈ f2 a ⦃ post ⦄)
+  {h1 : ValidProgram L _ _} {h2 : ValidProgram L _ _} :
+  r⊨ ⦃ λ '(h1,h2), h1 = h2 ⦄
+    mkprog (bind m f1) h1 ≈ mkprog (bind m f2) h2
+    ⦃ post ⦄.
 Proof.
   eapply (rbind_rule m m).
   - exact: rreflexivity_rule.
-  - move => a1 a2. apply: rpre_weaken_rule.
-    -- Unshelve. 2:{ exact: (fun '(h1,h2) => a1 = a2 /\ h1 = h2). }
-       1: { specialize (judge_wf a1).
-            apply: rpre_hypothesis_rule. rewrite /= => st1 st2 [Heq1 Heq2].
-            subst. apply: rpre_weaken_rule.
-            + exact: judge_wf.
-            + rewrite /= => h1 h2 [Heq1 Heq2]. by subst. }
-         rewrite /= => h1 h2 [Heq1 Heq2]. by subst.
+  - move => a1 a2. unshelve apply: rpre_weaken_rule.
+    + exact: (λ '(h1,h2), a1 = a2 ∧ h1 = h2).
+    + specialize (judge_wf a1).
+      apply: rpre_hypothesis_rule. rewrite /= => st1 st2 [Heq1 Heq2].
+      subst. apply: rpre_weaken_rule.
+      * exact: judge_wf.
+      * rewrite /= => h1' h2' [Heq1 Heq2]. by subst.
+    + rewrite /= => h1' h2' [Heq1 Heq2]. by subst.
 Qed.
 
-
-Lemma rsym_pre  { A1 A2 : ord_choiceType } { L : {fset Location} } { pre : heap * heap -> Prop } { post }
-                     { c1 : program L Game_import A1 } { c2 : program L Game_import A2 }
-                     (pre_sym : forall h1 h2, pre (h1, h2) -> pre (h2, h1))
-                     (H : r⊨ ⦃ fun '(h1, h2) => pre (h2, h1) ⦄ c1 ≈ c2 ⦃ post ⦄) :
-                     r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄.
+(* TODO Decompose prgram? *)
+Lemma rsym_pre
+  {A1 A2 : ord_choiceType} {L : {fset Location}}
+  {pre : heap * heap → Prop} {post}
+  {c1 : program L Game_import A1}
+  {c2 : program L Game_import A2}
+  (pre_sym : ∀ h1 h2, pre (h1, h2) → pre (h2, h1))
+  (H : r⊨ ⦃ λ '(h1, h2), pre (h2, h1) ⦄ c1 ≈ c2 ⦃ post ⦄) :
+  r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄.
 Proof.
   unshelve eapply rpre_weaken_rule.
-  { exact: (fun '(h1, h2) => pre (h2, h1)). }
-  - assumption. - assumption.
+  - exact: (λ '(h1, h2), pre (h2, h1)).
+  - assumption.
+  - assumption.
 Qed.
 
-
-Lemma rsymmetry  { A1 A2 : ord_choiceType } { L : {fset Location} } { pre : heap * heap -> Prop } { post }
-                 { c1 : program L Game_import A1 } { c2 : program L Game_import A2 }
-                 (H : r⊨ ⦃ fun '(h1, h2) => pre (h2, h1) ⦄ c2 ≈ c1 ⦃ fun '(a2,h2) '(a1,h1) => post (a1,h1) (a2, h2) ⦄) :
-                     r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄.
+(* TODO Decompose prgram? *)
+Lemma rsymmetry
+  {A1 A2 : ord_choiceType} {L : {fset Location}}
+  {pre : heap * heap → Prop} {post}
+  {c1 : program L Game_import A1}
+  {c2 : program L Game_import A2}
+  (H : r⊨ ⦃ λ '(h1, h2), pre (h2, h1) ⦄ c2 ≈ c1 ⦃ λ '(a2,h2) '(a1,h1), post (a1,h1) (a2, h2) ⦄) :
+  r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄.
 Proof. Admitted.
-
-
 
 (* CA: not more useful than sampler_case *)
 (* Lemma rsample_rule { B1 B2 : ord_choiceType} { L : {fset Location}}  { o } *)
@@ -1949,29 +1967,34 @@ Proof. Admitted.
 (*          ⊨ ⦃ pre ⦄ repr (locs := L ) (x <$ o ;; c1) ≈ repr (locs := L) (x <$ o ;; c2) ⦃ post ⦄. *)
 (* Proof. Admitted.  *)
 
-Theorem rdead_sampler_elimL { A : ord_choiceType } { L : {fset Location} } { D }
-        (c1 c2 : program L Game_import A)
-        (pre : heap * heap -> Prop) (post : (A * heap) -> (A * heap) -> Prop)
-        (H : r⊨ ⦃ pre ⦄ c1 ≈ c2  ⦃ post ⦄) :
-  r⊨ ⦃ pre ⦄ bind (x <$ D ;; ret x) (fun x => c1) ≈ c2  ⦃ post ⦄.
+(* TODO Decompose prgram *)
+Theorem rdead_sampler_elimL
+  {A : ord_choiceType} {L : {fset Location}} {D}
+  (c1 c2 : program L Game_import A)
+  (pre : heap * heap → Prop)
+  (post : (A * heap) → (A * heap) → Prop)
+  (H : r⊨ ⦃ pre ⦄ c1 ≈ c2  ⦃ post ⦄)
+  {h1 : ValidProgram L _ _} :
+  r⊨ ⦃ pre ⦄ mkprog ((x ← sample D ;; ret x) ;; c1) h1 ≈ c2  ⦃ post ⦄.
 Proof.
   eapply rrewrite_eqDistrL.
   - exact: H.
   - admit.
 Admitted.
 
-
-Theorem rdead_sampler_elimR { A : ord_choiceType } { L : {fset Location} } { D }
-        (c1 c2 : program L Game_import A)
-        (pre : heap * heap -> Prop) (post : (A * heap) -> (A * heap) -> Prop)
-        (H : r⊨ ⦃ pre ⦄ c1 ≈ c2  ⦃ post ⦄) :
-  r⊨ ⦃ pre ⦄ c1 ≈  bind (x <$ D ;; ret x) (fun x => c2) ⦃ post ⦄.
+(* TODO Decompose prgram *)
+Theorem rdead_sampler_elimR
+  {A : ord_choiceType} {L : {fset Location}} {D}
+  (c1 c2 : program L Game_import A)
+  (pre : heap * heap → Prop) (post : (A * heap) → (A * heap) → Prop)
+  (H : r⊨ ⦃ pre ⦄ c1 ≈ c2  ⦃ post ⦄)
+  {h2 : ValidProgram L _ _} :
+  r⊨ ⦃ pre ⦄ c1 ≈ mkprog ((x ← sample D ;; ret x) ;; c2) h2 ⦃ post ⦄.
 Proof.
   eapply rrewrite_eqDistrR.
   - exact: H.
   - admit.
 Admitted.
-
 
 End Games.
 
