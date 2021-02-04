@@ -68,8 +68,10 @@ Module PackageUserUtil (π : RulesParam).
   Ltac invert_interface_in h :=
     let h' := fresh h in
     pose proof h as h' ;
+    rewrite in_fset in h' ;
     cbn in h' ;
-    _invert_interface_in h'.
+    _invert_interface_in h' ;
+    noconf h'.
 
   (* Ltac eq_up_to_inv_simplify :=
     apply eq_up_to_inv_from_alt2 ;
