@@ -223,6 +223,32 @@ Module NotationExamples (π : RulesParam).
       end
     end.
 
+  Ltac unify_marked_positive_proofs :=
+    repeat match goal with
+    | h : tac_intro_mark (Positive ?n),
+      h' : tac_intro_mark (Positive ?n) |- _ =>
+      assert (h = h') by eapply uip ;
+      subst h'
+    end.
+
+  Ltac subst_marked :=
+    repeat match goal with
+    | p := tac_mark ?t |- _ =>
+      subst p
+    end.
+
+  Ltac unmark_tac_intro_mark :=
+    repeat match goal with
+    | h : tac_intro_mark ?t |- _ =>
+      change (tac_intro_mark t) with t in h
+    end.
+
+  Ltac unify_positive_proofs :=
+    mark_abstract_positive ;
+    unify_marked_positive_proofs ;
+    unmark_tac_intro_mark ;
+    subst_marked.
+
   (* For some reason, typeclasses resolution doens't work?
     Maybe it's not triggered at the right time.
   *)
@@ -264,17 +290,7 @@ Module NotationExamples (π : RulesParam).
     | unfold "\notin" ; rewrite imfset_fset ; rewrite in_fset ; eauto
     ].
     2: exact _.
-    mark_abstract_positive.
-    repeat match goal with
-    | h : tac_intro_mark (Positive ?n), h' : tac_intro_mark (Positive ?n)
-      |- _ =>
-      assert (h = h') by eapply uip ;
-      subst h'
-    end.
-    repeat match goal with
-    | p := tac_mark ?t |- _ =>
-      subst p
-    end.
+    unify_positive_proofs.
     exact _.
   Qed.
 
