@@ -58,7 +58,7 @@ Module NotationExamples (π : RulesParam).
   Lemma valid_package1 :
     ∀ L I i A B f,
       (∀ x, valid_program L I (f x)) →
-      valid_package L I (fset [:: (i, (A, B))]) (mkfmap [:: (i, (A ; B ; f))]).
+      valid_package L I (fset [:: (i, (A, B))]) (mkfmap [:: (i, mkdef A B f)]).
   Proof.
     intros L I i A B f hf.
     intros o ho. rewrite in_fset in ho.
@@ -69,7 +69,7 @@ Module NotationExamples (π : RulesParam).
     intuition auto.
   Qed.
 
-  Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap [:: (?i, (?A ; ?B ; ?f))])) =>
+  Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap [:: (?i, mkdef ?A ?B ?f)])) =>
     eapply valid_package1 ;
     intro ; eapply valid_program_from_class
     : typeclass_instances.
@@ -81,7 +81,7 @@ Module NotationExamples (π : RulesParam).
       }
     ].
 
-  Definition p1 : opackage fset0 [interface] I1 :=
+  Definition p1 : package fset0 [interface] I1 :=
     [package
       def #[0] (z : 'bool) : 'bool {
         ret z
