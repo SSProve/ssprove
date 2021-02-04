@@ -208,23 +208,17 @@ Module NotationExamples (π : RulesParam).
       }
     ].
 
-  (* A similar definition but using the notations for the monad. *)
-  #[program] Definition btest' : bundle := {|
-    locs := [fset ('nat; 0)] ;
-    import := [interface val #[0] : 'nat → 'nat ] ;
-    export := [interface
-      val #[1] : 'nat → 'nat ;
-      val #[2] : 'unit → 'option ('fin 2) ;
-      val #[3] : {map 'nat → 'nat} → 'option 'nat
-    ] ;
-    pack := [package
-      def #[3] (m : {map 'nat → 'nat}) : 'option 'nat {
-        ret (getm m 0)
-      } ;
-      def #[2] (_ : 'unit) : 'option ('fin 2) {
-        put ('nat; 0) := 0 ;;
-        ret (Some (gfin 1))
-      } ;
+  Definition test' :
+    package
+      [fset ('nat; 0)]
+      [interface val #[0] : 'nat → 'nat ]
+      [interface
+        val #[1] : 'nat → 'nat ;
+        val #[2] : 'unit → 'option ('fin 2) ;
+        val #[3] : {map 'nat → 'nat} → 'option 'nat
+      ]
+    :=
+    [package
       def #[1] (x : 'nat) : 'nat {
         n ← get ('nat; 0) ;;
         m ← op [ #[0] : 'nat → 'nat ] n ;;
@@ -232,8 +226,15 @@ Module NotationExamples (π : RulesParam).
         m ← op [ #[0] : 'nat → 'nat ] n ;;
         put ('nat; 0) := m ;;
         ret m
+      } ;
+      def #[2] (_ : 'unit) : 'option ('fin 2) {
+        put ('nat; 0) := 0 ;;
+        ret (Some (gfin 1))
+      } ;
+      def #[3] (m : {map 'nat → 'nat}) : 'option 'nat {
+        ret (getm m 0)
       }
     ]
-  |}.
+  .
 
 End NotationExamples.
