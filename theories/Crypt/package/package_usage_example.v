@@ -154,6 +154,24 @@ Module NotationExamples (π : RulesParam).
       }
     ].
 
+  Hint Extern 2 (ValidProgram ?L ?I (let u := ?t in ?p)) =>
+    cbn zeta ; exact _
+    : typeclass_instances.
+
+  Obligation Tactic := idtac.
+
+  Fail Definition foo (x : bool) : program fset0 [interface] bool_choiceType :=
+    {program let u := x in ret u}.
+  (* Next Obligation.
+    intro x. cbn zeta. exact _. *)
+
+  Hint Extern 2 (ValidProgram ?L ?I (match ?t with _ => _ end)) =>
+    destruct t
+    : typeclass_instances.
+
+  Definition bar (b : bool) : program fset0 [interface] nat_choiceType :=
+    {program if b then ret 0 else ret 1}.
+
   Definition p2 : package fset0 [interface] I2 :=
     [package
       def #[4] (x : 'bool × 'bool) : 'bool {
@@ -161,12 +179,12 @@ Module NotationExamples (π : RulesParam).
       }
     ].
 
-  Definition b1 : bundle := {|
+  (* Definition b1 : bundle := {|
     locs := fset0 ;
     import := [interface] ;
     export := _ ;
     pack := p1
-  |}.
+  |}. *)
 
   Obligation Tactic := package_obtac.
 
