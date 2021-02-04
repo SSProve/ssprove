@@ -5,7 +5,7 @@ From Coq Require Import Utf8 Lia.
 Set Warnings "-notation-overridden".
 From mathcomp Require Import ssreflect eqtype ssrbool ssrnat.
 Set Warnings "notation-overridden".
-From extructures Require Import ord.
+From extructures Require Import ord fset.
 From Equations Require Import Equations.
 
 Set Bullet Behavior "Strict Subproofs".
@@ -213,3 +213,23 @@ Notation "[ 'hints' x ; .. ; z ]" :=
   (let hint := x in .. (let hint := z in _) ..)
   (at level 0, only parsing)
   : package_scope.
+
+(* Tactics to deal with \in fset *)
+
+Ltac in_fset_auto :=
+  rewrite in_fset ; reflexivity.
+
+(* Succeeds for x \in S if S contains syntactically x, S seq *)
+Ltac inseq_try :=
+  apply/orP ; first [
+    left ; apply/eqP ; reflexivity
+  | right ; inseq_try
+  ].
+
+Ltac inset_try :=
+  rewrite in_fset ; inseq_try.
+
+Ltac auto_in_fset :=
+  eauto ;
+  try in_fset_auto ;
+  try inset_try.

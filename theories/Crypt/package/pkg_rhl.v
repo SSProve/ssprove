@@ -1171,7 +1171,7 @@ Module PackageRHL (π : RulesParam).
     Hint Extern 1 (ValidProgram ?L ?I (get_op_default ?p ?o ?x)) =>
       eapply valid_get_op_default ; [
         apply valid_package_from_class
-      | eauto
+      | auto_in_fset
       ]
       : typeclass_instances.
 

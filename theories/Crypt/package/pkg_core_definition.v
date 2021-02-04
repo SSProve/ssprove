@@ -450,19 +450,19 @@ Module CorePackageTheory (π : RulesParam).
 
   Hint Extern 1 (ValidProgram ?L ?I (opr ?o ?x ?k)) =>
     eapply valid_opr ; [
-      eauto
+      auto_in_fset
     | intro ; apply valid_program_from_class
     ] : typeclass_instances.
 
   Hint Extern 1 (ValidProgram ?L ?I (getr ?o ?k)) =>
     eapply valid_getr ; [
-      eauto
+      auto_in_fset
     | intro ; apply valid_program_from_class
     ] : typeclass_instances.
 
   Hint Extern 1 (ValidProgram ?L ?I (putr ?o ?x ?k)) =>
     eapply valid_putr ; [
-      eauto
+      auto_in_fset
     | apply valid_program_from_class
     ] : typeclass_instances.
 

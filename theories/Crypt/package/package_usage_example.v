@@ -132,7 +132,7 @@ Module NotationExamples (π : RulesParam).
       exists g. intuition auto.
   Qed.
 
-  Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
+  Hint Extern 2 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
     =>
     eapply valid_package_cons ; [
       eapply valid_package_from_class

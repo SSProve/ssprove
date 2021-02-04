@@ -41,19 +41,6 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
-Ltac in_fset_auto :=
-  rewrite extructures.fset.in_fset ; reflexivity.
-
-(* Succeeds for x \in S if S contains syntactically x, S seq *)
-Ltac inseq_try :=
-  apply/orP ; first [
-    left ; apply/eqP ; reflexivity
-  | right ; inseq_try
-  ].
-
-Ltac inset_try :=
-  rewrite in_fset ; inseq_try.
-
 Ltac package_obtac :=
   (* Or try (Tactics.program_simpl; fail); simpl ? *)
   Tactics.program_simplify ;
