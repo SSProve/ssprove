@@ -35,6 +35,7 @@ From Crypt Require Import Prelude pkg_core_definition pkg_composition
 From Coq Require Import Utf8 FunctionalExtensionality
   Setoids.Setoid Classes.Morphisms.
 
+From Equations Require Import Equations.
 Require Equations.Prop.DepElim.
 
 Set Bullet Behavior "Strict Subproofs".
@@ -164,5 +165,48 @@ Module PackageTactics (π : RulesParam).
 
   Ltac program_after_rewrite :=
     intro_tac_intro.
+
+  (** Tactic to unify Positive proofs in a goal *)
+
+  Ltac mark_abstract_positive :=
+    repeat match goal with
+    | |- context [ @mkpos ?p ?h ] =>
+      let h' := fresh "h" in
+      set (h' := h) ;
+      let p' := fresh "p" in
+      set (p' := @mkpos p h') ;
+      clearbody h' ;
+      change (@mkpos p h') with (tac_mark (@mkpos p h')) in p' ;
+      lazymatch type of h' with
+      | ?T =>
+        change T with (tac_intro_mark (Positive p)) in h'
+      end
+    end.
+
+  Ltac unify_marked_positive_proofs :=
+    repeat match goal with
+    | h : tac_intro_mark (Positive ?n),
+      h' : tac_intro_mark (Positive ?n) |- _ =>
+      assert (h = h') by eapply uip ;
+      subst h'
+    end.
+
+  Ltac subst_marked :=
+    repeat match goal with
+    | p := tac_mark ?t |- _ =>
+      subst p
+    end.
+
+  Ltac unmark_tac_intro_mark :=
+    repeat match goal with
+    | h : tac_intro_mark ?t |- _ =>
+      change (tac_intro_mark t) with t in h
+    end.
+
+  Ltac unify_positive_proofs :=
+    mark_abstract_positive ;
+    unify_marked_positive_proofs ;
+    unmark_tac_intro_mark ;
+    subst_marked.
 
 End PackageTactics.

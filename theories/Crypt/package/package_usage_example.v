@@ -208,47 +208,6 @@ Module NotationExamples (π : RulesParam).
       }
     ].
 
-  Ltac mark_abstract_positive :=
-    repeat match goal with
-    | |- context [ @mkpos ?p ?h ] =>
-      let h' := fresh "h" in
-      set (h' := h) ;
-      let p' := fresh "p" in
-      set (p' := @mkpos p h') ;
-      clearbody h' ;
-      change (@mkpos p h') with (tac_mark (@mkpos p h')) in p' ;
-      lazymatch type of h' with
-      | ?T =>
-        change T with (tac_intro_mark (Positive p)) in h'
-      end
-    end.
-
-  Ltac unify_marked_positive_proofs :=
-    repeat match goal with
-    | h : tac_intro_mark (Positive ?n),
-      h' : tac_intro_mark (Positive ?n) |- _ =>
-      assert (h = h') by eapply uip ;
-      subst h'
-    end.
-
-  Ltac subst_marked :=
-    repeat match goal with
-    | p := tac_mark ?t |- _ =>
-      subst p
-    end.
-
-  Ltac unmark_tac_intro_mark :=
-    repeat match goal with
-    | h : tac_intro_mark ?t |- _ =>
-      change (tac_intro_mark t) with t in h
-    end.
-
-  Ltac unify_positive_proofs :=
-    mark_abstract_positive ;
-    unify_marked_positive_proofs ;
-    unmark_tac_intro_mark ;
-    subst_marked.
-
   (** Variant of the cons case where we unify Positive proofs beforehand
     This is—I hope—the only thing that might cause a discrepancy between
     the interface and the signature of the term.
