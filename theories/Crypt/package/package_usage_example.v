@@ -186,34 +186,27 @@ Module NotationExamples (π : RulesParam).
     pack := p1
   |}. *)
 
-  Obligation Tactic := package_obtac.
-
-  (** Note that because fsets are locked, ordering the export interface
-      differently would not work.
-
-      The program attribute is there to infer automatically the proofs
-      corresponding to opr/putr/getr.
-  *)
-  #[program] Definition btest : bundle := {|
-    locs := [fset (chNat; 0)] ;
-    import := [interface val #[0] : 'nat → 'nat] ;
-    export := [interface
-      val #[1] : 'nat → 'nat ;
-      val #[2] : 'unit → 'unit
-    ] ;
-    pack := [package
-      def #[2] (_ : 'unit) : 'unit {
-        putr (chNat; 0) _ 0 (ret Datatypes.tt)
-      } ;
+  Definition test :
+    package
+      [fset (chNat; 0)]
+      [interface val #[0] : 'nat → 'nat]
+      [interface
+        val #[1] : 'nat → 'nat ;
+        val #[2] : 'unit → 'unit
+      ]
+    :=
+    [package
       def #[1] (x : 'nat) : 'nat {
-        getr (chNat; 0) _ (λ n : nat,
-          opr (0, (chNat, chNat)) _ n (λ m,
-            putr (chNat; 0) _ m (ret m)
+        getr ('nat; 0) (λ n : nat,
+          opr (0, ('nat, 'nat)) n (λ m,
+            putr ('nat; 0) m (ret m)
           )
         )
+      } ;
+      def #[2] (_ : 'unit) : 'unit {
+        putr ('nat; 0) 0 (ret Datatypes.tt)
       }
-    ]
-  |}.
+    ].
 
   (* A similar definition but using the notations for the monad. *)
   #[program] Definition btest' : bundle := {|
