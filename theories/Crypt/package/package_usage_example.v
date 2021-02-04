@@ -208,6 +208,21 @@ Module NotationExamples (π : RulesParam).
       }
     ].
 
+  Ltac mark_abstract_positive :=
+    repeat match goal with
+    | |- context [ @mkpos ?p ?h ] =>
+      let h' := fresh "h" in
+      set (h' := h) ;
+      let p' := fresh "p" in
+      set (p' := @mkpos p h') ;
+      clearbody h' ;
+      change (@mkpos p h') with (tac_mark (@mkpos p h')) in p' ;
+      lazymatch type of h' with
+      | ?T =>
+        change T with (tac_intro_mark (Positive p)) in h'
+      end
+    end.
+
   (* For some reason, typeclasses resolution doens't work?
     Maybe it's not triggered at the right time.
   *)
@@ -240,6 +255,26 @@ Module NotationExamples (π : RulesParam).
     ]
   .
   Next Obligation.
+    exact _.
+  Qed.
+  Next Obligation.
+    eapply valid_package_cons ; [
+      eapply valid_package_from_class
+    | intro ; eapply valid_program_from_class
+    | unfold "\notin" ; rewrite imfset_fset ; rewrite in_fset ; eauto
+    ].
+    2: exact _.
+    mark_abstract_positive.
+    repeat match goal with
+    | h : tac_intro_mark (Positive ?n), h' : tac_intro_mark (Positive ?n)
+      |- _ =>
+      assert (h = h') by eapply uip ;
+      subst h'
+    end.
+    repeat match goal with
+    | p := tac_mark ?t |- _ =>
+      subst p
+    end.
     exact _.
   Qed.
 
