@@ -137,7 +137,7 @@ Module NotationExamples (π : RulesParam).
     eapply valid_package_cons ; [
       eapply valid_package_from_class
     | intro ; eapply valid_program_from_class
-    | unfold "\notin" ; rewrite in_fset ; eauto
+    | unfold "\notin" ; rewrite imfset_fset ; rewrite in_fset ; eauto
     ]
     : typeclass_instances.
 
@@ -154,7 +154,7 @@ Module NotationExamples (π : RulesParam).
       }
     ].
 
-  Definition p2 : opackage fset0 [interface] I2 :=
+  Definition p2 : package fset0 [interface] I2 :=
     [package
       def #[4] (x : 'bool × 'bool) : 'bool {
         let '(u,v) := x in ret v
