@@ -40,7 +40,41 @@ Module NotationExamples (π : RulesParam).
       val #[4] : 'bool × 'bool → 'bool
     ].
 
-  Definition p0 : opackage fset0 [interface] I0 :=
+  Lemma valid_empty_package :
+    ∀ L I,
+      valid_package L I [interface] emptym.
+  Proof.
+    intros L I.
+    intros [id [S T]] ho. eapply fromEmpty. eauto.
+  Qed.
+
+  Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap [::])) =>
+    eapply valid_empty_package
+    : typeclass_instances.
+
+  Definition pempty : package fset0 [interface] [interface] :=
+    [package].
+
+  Lemma valid_package1 :
+    ∀ L I i A B f,
+      (∀ x, valid_program L I (f x)) →
+      valid_package L I (fset [:: (i, (A, B))]) (mkfmap [:: (i, (A ; B ; f))]).
+  Proof.
+    intros L I i A B f hf.
+    intros o ho. rewrite in_fset in ho.
+    rewrite mem_seq1 in ho. move: ho => /eqP ho. subst o.
+    cbn. exists f.
+    destruct (eqn i i) eqn:e.
+    2:{ move: e => /eqP. contradiction. }
+    intuition auto.
+  Qed.
+
+  Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap [:: (?i, (?A ; ?B ; ?f))])) =>
+    eapply valid_package1 ;
+    intro ; eapply valid_program_from_class
+    : typeclass_instances.
+
+  Definition p0 : package fset0 [interface] I0 :=
     [package
       def #[3] (x : 'nat) : 'nat {
         ret x

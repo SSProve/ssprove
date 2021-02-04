@@ -185,17 +185,17 @@ Module PkgNotation (π : RulesParam).
       format "val  #[ f ]  :  A  →  B").
 
     Notation "[ 'package' ]" :=
-      (mkpackage (mkfmap [::]))
+      (mkpackage (mkfmap [::]) _)
       (at level 0, only parsing)
       : package_scope.
 
     Notation "[ 'package' x1 ]" :=
-      (mkpackage (mkfmap (x1 :: [::])))
+      (mkpackage (mkfmap (x1 :: [::])) _)
       (at level 0, x1 custom package at level 2, format "[ package  x1  ]")
       : package_scope.
 
     Notation "[ 'package' x1 ; x2 ; .. ; xn ]" :=
-      (mkpackage (mkfmap (x1 :: x2 :: .. [:: xn] ..)))
+      (mkpackage (mkfmap (x1 :: x2 :: .. [:: xn] ..)) _)
       (at level 0,
       x1 custom package at level 2,
       x2 custom package at level 2,
@@ -203,12 +203,12 @@ Module PkgNotation (π : RulesParam).
       format "[ package  '[' x1  ;  '/' x2  ;  '/' ..  ;  '/' xn  ']' ]")
       : package_scope.
 
+    (* Maybe lock this definition? *)
     Definition mkdef (A B : chUniverse) (f : A → raw_program B)
       : typed_raw_function :=
       (A ; B ; f).
 
     Notation " 'def' #[ f ] ( x : A ) : B { e }" :=
-      (* ((f, (A ; B ; λ (x : chElement A), (e : program _ _ (chElement B))))) *)
       ((f, mkdef A B (λ x, e)))
       (in custom package at level 0,
       f constr, e constr, x ident, A custom pack_type, B custom pack_type,
