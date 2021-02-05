@@ -1411,6 +1411,18 @@ Module PackageComposition (π : RulesParam).
         + reflexivity.
     Qed.
 
+    (* TODO MOVE *)
+    Lemma raw_bind_ret :
+      ∀ A (v : raw_program A),
+        bind_ v (λ x, _ret x) = v.
+    Proof.
+      intros A v.
+      induction v.
+      all: cbn. 1: reflexivity.
+      all: try solve [ f_equal ; apply functional_extensionality ; eauto ].
+      f_equal. auto.
+    Qed.
+
     Lemma id_link :
       ∀ I E (p : package I E) h,
         link (ID E h) p = ptrim p.
@@ -1450,7 +1462,7 @@ Module PackageComposition (π : RulesParam).
           }
           subst. cbn. rewrite ho.
           f_equal. f_equal. f_equal. extensionality x.
-          admit.
+          apply raw_bind_ret.
         + eapply getm_def_map_interface_None in e as e'.
           cbn. destruct (p n) as [[St [Tt f]]|] eqn:e1.
           * cbn. destruct ((n, (St, Tt)) \in E) eqn:e2.
@@ -1462,7 +1474,7 @@ Module PackageComposition (π : RulesParam).
             }
             rewrite e2. reflexivity.
           * reflexivity.
-    Admitted.
+    Qed.
 
   End ID.
 
