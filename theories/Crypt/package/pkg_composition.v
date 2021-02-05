@@ -960,10 +960,10 @@ Module PackageComposition (π : RulesParam).
                           (par p1 (par p2 p3 h23) (parable_union h12 h13)) =
         par (par p1 p2 h12) p3 (parable_sym (parable_union (parable_sym h13) (parable_sym h23))).
     Proof.
-      move=> I1 I2 I3 E1 E2 E3 [l1 [p1 h1]] [l2 [p2 h2]] [l3 [p3 h3]] ? ? ?.
+      intros I1 I2 I3 E1 E2 E3 [l1 [p1 h1]] [l2 [p2 h2]] [l3 [p3 h3]] ? ? ?.
       apply package_ext.
       - simpl. apply fsetUA.
-      - simpl. move=> ?. f_equal.
+      - simpl. intro. f_equal.
         apply raw_par_assoc.
         all: auto.
     Qed.
@@ -1410,6 +1410,59 @@ Module PackageComposition (π : RulesParam).
             discriminate.
         + reflexivity.
     Qed.
+
+    Lemma id_link :
+      ∀ I E (p : package I E) h,
+        link (ID E h) p = ptrim p.
+    Proof.
+      intros I E [L [p hp]] h.
+      apply package_ext.
+      - cbn. apply fset0U.
+      - simpl. intro n. unfold raw_link.
+        rewrite mapmE.
+        unfold trim. rewrite !filtermE.
+        rewrite mapmE. rewrite mkfmapE.
+        destruct (getm_def _ _) eqn:e.
+        + eapply getm_def_map_interface_Some in e as e'.
+          destruct e' as [[So To] [ho [eg e']]].
+          cbn in e'. subst t.
+          simpl. rewrite ho. simpl.
+          destruct (p n) as [[St [Tt f]]|] eqn:e1.
+          2:{
+            specialize (hp _ ho). cbn in hp.
+            destruct hp as [? [ee _]].
+            rewrite e1 in ee. noconf ee.
+          }
+          simpl.
+          destruct chUniverse_eqP.
+          2:{
+            specialize (hp _ ho). cbn in hp.
+            destruct hp as [? [ee _]].
+            rewrite e1 in ee. noconf ee.
+            contradiction.
+          }
+          destruct chUniverse_eqP.
+          2:{
+            specialize (hp _ ho). cbn in hp.
+            destruct hp as [? [ee _]].
+            rewrite e1 in ee. noconf ee.
+            contradiction.
+          }
+          subst. cbn. rewrite ho.
+          f_equal. f_equal. f_equal. extensionality x.
+          admit.
+        + eapply getm_def_map_interface_None in e as e'.
+          cbn. destruct (p n) as [[St [Tt f]]|] eqn:e1.
+          * cbn. destruct ((n, (St, Tt)) \in E) eqn:e2.
+            1:{
+              exfalso.
+              eapply in_getm_def_None.
+              - exact e2.
+              - auto.
+            }
+            rewrite e2. reflexivity.
+          * reflexivity.
+    Admitted.
 
   End ID.
 
