@@ -1474,18 +1474,6 @@ Module PackageComposition (π : RulesParam).
           * reflexivity.
     Qed.
 
-    Lemma id_link_r :
-      ∀ I E (p : package I E) h,
-        link p (ID I h) = ptrim p.
-    Proof.
-      intros I E [L [p hp]] h.
-      apply package_ext.
-      - cbn. apply fsetU0.
-      - simpl. intro n. unfold raw_link.
-        admit.
-    Admitted.
-
-
   End ID.
 
   (* Some folding lemmata *)
