@@ -39,3 +39,6 @@ Makefile.coq.conf
 *.cut
 *.fls
 *.fdb_latexmk
+
+# macOS
+.DS_store
