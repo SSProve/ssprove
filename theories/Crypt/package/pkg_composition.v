@@ -887,14 +887,13 @@ Module PackageComposition (π : RulesParam).
       ∀ E1 E2 E3 p1 p2 p3,
         parable E1 E2 →
         parable E2 E3 →
-        parable E1 E3 →
         raw_par E1 (E2 :|: E3) p1 (raw_par E2 E3 p2 p3) =
         raw_par (E1 :|: E2) E3 (raw_par E1 E2 p1 p2) p3.
     Proof.
-      move=> E1 E2 E3 p1 p2 p3 h12 h23 h13.
+      move=> E1 E2 E3 p1 p2 p3 h12 h23.
       unfold raw_par.
-      rewrite trim_union_trim. 2: try auto.
-      rewrite trim_union_trim. 2: try auto.
+      rewrite trim_union_trim. 2: auto.
+      rewrite trim_union_trim. 2: auto.
       apply unionmA.
     Qed.
 
@@ -945,7 +944,6 @@ Module PackageComposition (π : RulesParam).
       - simpl. destruct p1 as [p1 h1], p2 as [p2 h2].
         simpl. intro. f_equal. apply raw_par_commut. assumption.
     Qed.
-
 
     Lemma par_assoc :
       ∀ {I1 I2 I3 E1 E2 E3}
