@@ -68,7 +68,7 @@ theories/Crypt/only_prob/RulesStateProb.v
 theories/Crypt/only_prob/UniformStateProb.v
 theories/Crypt/only_prob/PRF.v
 theories/Crypt/only_prob/AsymScheme.v
-theories/Crypt/only_prob/ELGAMAL.v
+theories/Crypt/only_prob/Elgamal.v
 #std. distributions
 theories/Crypt/only_prob/StdDistr.v
 # theories/Crypt/only_prob/SymmetricSchemeStateProbStdDistr.v
