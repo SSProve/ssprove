@@ -522,6 +522,11 @@ Module PackageRHL (π : RulesParam).
       exact (STDIST prob_handler).
     Defined.
 
+    Definition Pr_program {L} {B}
+               (p : program L Game_import B)
+      : heap_choiceType -> SDistr (F_choice_prod_obj ⟨ B , heap_choiceType ⟩) :=
+      Pr_raw_program p.π1 p.π2.
+
     Definition Pr_raw_func_program {L} {A} {B}
                (p : A -> raw_program B)
                (p_is_valid : forall a, valid_program L Game_import (p a))
