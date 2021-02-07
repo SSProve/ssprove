@@ -1,3 +1,9 @@
+# CSF submission
+ssprove_csf2021.zip
+ssprove_csf2021/
+_testbuild_ssprove_csf2021/
+_namecheck_ssprove_csf2021/
+
 # Coq
 *.v.d
 *.vo
