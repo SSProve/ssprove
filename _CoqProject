@@ -52,7 +52,7 @@ theories/Crypt/rules/RulesProb.v
 #Crypto
 theories/Crypt/rules/UniformDistrLemmas.v
 theories/Crypt/rules/UniformDistr.v
-theories/Crypt/examples/deprecated/otp.v
+# theories/Crypt/examples/deprecated/otp.v
 theories/Crypt/package/pkg_chUniverse.v
 theories/Crypt/package/pkg_core_definition.v
 theories/Crypt/package/pkg_composition.v
