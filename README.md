@@ -173,94 +173,41 @@ TODO: I guess Lemma 1, 2 and Theorem 1 can go here besides Theorem 2.
 
 ## Axioms and assumptions
 
+Throughout the development we rely on the axioms of functional extensionality
+and of proof irrelevance(?), as well as propositional extensionality as listed
+below:
+
+```coq
+propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
+functional_extensionality_dep :
+  ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+      (∀ x : A, f x = g x) → f = g
+```
+
+Our methodology to find such dependencies is to use the `Print Assumptions`
+command of Coq which lists axioms a definition depends on.
+For instance
+```coq
+Print Assumptions par_commut.
+```
+will yield
+```coq
+Axioms:
+π.rel_choiceTypes : Type
+boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
+π.probE : Type → Type
+boolp.functional_extensionality_dep
+  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+	  (∀ x : A, f x = g x) → f = g
+π.chEmb : π.rel_choiceTypes → choiceType
+```
+
+Note that `π.rel_choiceTypes`, `π.probE` and `π.chEmb` are not actually axioms
+but instead parameters of the `Package` module, which are listed nonetheless.
+
+### TODO Check for other parts of the development
+
+### OLD BELOW?
+
 see theories/Crypt/Axioms.v
 We use functional extensionality and proof irrelevance throughout the development. We also assume the existence of a mathcomp type of real numbers.
-
-### Report for `package`
-
-For now, just a dump. We'll polish later.
-I use `Print Assumptions` on the following constants:
-
-* `link_assoc`:
-```coq
-Axioms:
-π.rel_choiceTypes : Type
-boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
-π.probE : Type → Type
-boolp.functional_extensionality_dep
-  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
-	  (∀ x : A, f x = g x) → f = g
-functional_extensionality_dep
-  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
-      (∀ x : A, f x = g x) → f = g
-π.chEmb : π.rel_choiceTypes → choiceType
-```
-
-* `par_commut`:
-```coq
-Axioms:
-π.rel_choiceTypes : Type
-boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
-π.probE : Type → Type
-boolp.functional_extensionality_dep
-  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
-	  (∀ x : A, f x = g x) → f = g
-π.chEmb : π.rel_choiceTypes → choiceType
-```
-
-* `par_assoc`:
-```coq
-Axioms:
-π.rel_choiceTypes : Type
-boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
-π.probE : Type → Type
-boolp.functional_extensionality_dep
-  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
-	  (∀ x : A, f x = g x) → f = g
-π.chEmb : π.rel_choiceTypes → choiceType
-```
-
-* `link_id`:
-```coq
-Axioms:
-π.rel_choiceTypes : Type
-boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
-π.probE : Type → Type
-boolp.functional_extensionality_dep
-  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
-	  (∀ x : A, f x = g x) → f = g
-functional_extensionality_dep
-  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
-      (∀ x : A, f x = g x) → f = g
-π.chEmb : π.rel_choiceTypes → choiceType
-```
-
-* `id_link`:
-```coq
-Axioms:
-π.rel_choiceTypes : Type
-boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
-π.probE : Type → Type
-boolp.functional_extensionality_dep
-  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
-	  (∀ x : A, f x = g x) → f = g
-functional_extensionality_dep
-  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
-      (∀ x : A, f x = g x) → f = g
-π.chEmb : π.rel_choiceTypes → choiceType
-```
-
-* `interchange`:
-```coq
-Axioms:
-π.rel_choiceTypes : Type
-boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
-π.probE : Type → Type
-boolp.functional_extensionality_dep
-  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
-	  (∀ x : A, f x = g x) → f = g
-functional_extensionality_dep
-  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
-      (∀ x : A, f x = g x) → f = g
-π.chEmb : π.rel_choiceTypes → choiceType
-```
