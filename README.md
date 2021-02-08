@@ -148,6 +148,23 @@ thrown away at linking.
 On packages that are *fit*, i.e. that do not implement more than they export,
 the equality becomes again `ID E ∘ p = p = p ∘ ID I`.
 
+#### Interchange between sequential and parallel composition
+
+Finally we prove a law involving sequential and parallel composition
+stating how we can interchange them:
+```coq
+Lemma interchange :
+  ∀ A B C D E F c1 c2
+    (p1 : package B A)
+    (p2 : package E D)
+    (p3 : package C B)
+    (p4 : package F E),
+    par (link p1 p3) (link p2 p4) c1 =
+    link (par p1 p2 c1) (par p3 p4 c2).
+```
+which can be read as
+`(p1 ∘ p3) || (p2 ∘ p4) = (p1 || p2) ∘ (p3 || p4)`.
+
 ### Probabilistic relational program logic
 
 TODO: I guess Lemma 1, 2 and Theorem 1 can go here besides Theorem 2.
@@ -219,6 +236,21 @@ functional_extensionality_dep
 ```
 
 * `id_link`:
+```coq
+Axioms:
+π.rel_choiceTypes : Type
+boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
+π.probE : Type → Type
+boolp.functional_extensionality_dep
+  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+	  (∀ x : A, f x = g x) → f = g
+functional_extensionality_dep
+  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+      (∀ x : A, f x = g x) → f = g
+π.chEmb : π.rel_choiceTypes → choiceType
+```
+
+* `interchange`:
 ```coq
 Axioms:
 π.rel_choiceTypes : Type
