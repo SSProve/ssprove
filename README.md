@@ -33,10 +33,12 @@ Run `make graph` to build a graph of dependencies between sources.
 
 ## Organisation of the directories
 
-- theories/           : root of all the Coq files
-- theories/Mon        : external development coming from "Dijkstra Monads For All"
-- theories/Relational : external development coming from "The Next 700 Relational Program Logics"
-- theories/Crypt      : this paper
+| Directory             | Description                                          |
+|-----------------------|------------------------------------------------------|
+| `theories/`           | Root of all the Coq files                            |
+| `theories/Mon`        | External development coming from "Dijkstra Monads For All" |
+| `theories/Relational` | External development coming from "The Next 700 Relational Program |Logics"
+| `theories/Crypt`      | This paper                                           |
 
 ## Mapping between paper and formalisation
 
