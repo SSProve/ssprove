@@ -780,9 +780,3 @@ Proof.
   simpl (Aux ∘ DH_rnd).π1. rewrite /DH_loc counter_DH_loc. assumption.
 Qed. 
   
-Theorem ElGamal_CPA_security (dh_secure : DH_security) : CPA_security.
-Proof.
-  apply: OT_secrecy_CPA_security.
-  apply: OT_rnd_cipher_implies_OT_secrecy.
-  exact: ElGamal_OT.
-Qed. 

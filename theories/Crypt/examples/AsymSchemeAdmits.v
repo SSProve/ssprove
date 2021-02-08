@@ -504,6 +504,7 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
   Definition OT_rnd_cipher : Prop := forall A H1 H2, @Advantage _ ots_real_vs_rnd A H1 H2 = 0.
 
   (* Future work! Please notice that in the paper we only claim OT_rnd_cipher *)
-  Lemma OT_rnd_cipher_implies_OT_secrecy : OT_rnd_cipher -> OT_secrecy. Admitted. 
+  Lemma OT_rnd_cipher_implies_OT_secrecy : OT_rnd_cipher -> OT_secrecy.
+  Proof.  Admitted. 
 
 End AsymmetricScheme.
