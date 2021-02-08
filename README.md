@@ -1,4 +1,10 @@
-# CheesyCrypt
+# SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq
+
+This complementary material corresponds to the Coq formalisation of the results
+mentioned in the paper.
+This README serves as guide to installing this project and finding
+correspondence between the claims in the paper and their formal proofs in Coq,
+as well as listing the assumptions that the formalisation makes.
 
 ## Prerequisites
 
