@@ -159,4 +159,76 @@ TODO: I guess Lemma 1, 2 and Theorem 1 can go here besides Theorem 2.
 see theories/Crypt/Axioms.v
 We use functional extensionality and proof irrelevance throughout the development. We also assume the existence of a mathcomp type of real numbers.
 
+### Report for `package`
 
+For now, just a dump. We'll polish later.
+I use `Print Assumptions` on the following constants:
+
+* `link_assoc`:
+```coq
+Axioms:
+π.rel_choiceTypes : Type
+boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
+π.probE : Type → Type
+boolp.functional_extensionality_dep
+  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+	  (∀ x : A, f x = g x) → f = g
+functional_extensionality_dep
+  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+      (∀ x : A, f x = g x) → f = g
+π.chEmb : π.rel_choiceTypes → choiceType
+```
+
+* `par_commut`:
+```coq
+Axioms:
+π.rel_choiceTypes : Type
+boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
+π.probE : Type → Type
+boolp.functional_extensionality_dep
+  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+	  (∀ x : A, f x = g x) → f = g
+π.chEmb : π.rel_choiceTypes → choiceType
+```
+
+* `par_assoc`:
+```coq
+Axioms:
+π.rel_choiceTypes : Type
+boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
+π.probE : Type → Type
+boolp.functional_extensionality_dep
+  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+	  (∀ x : A, f x = g x) → f = g
+π.chEmb : π.rel_choiceTypes → choiceType
+```
+
+* `link_id`:
+```coq
+Axioms:
+π.rel_choiceTypes : Type
+boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
+π.probE : Type → Type
+boolp.functional_extensionality_dep
+  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+	  (∀ x : A, f x = g x) → f = g
+functional_extensionality_dep
+  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+      (∀ x : A, f x = g x) → f = g
+π.chEmb : π.rel_choiceTypes → choiceType
+```
+
+* `id_link`:
+```coq
+Axioms:
+π.rel_choiceTypes : Type
+boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
+π.probE : Type → Type
+boolp.functional_extensionality_dep
+  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+	  (∀ x : A, f x = g x) → f = g
+functional_extensionality_dep
+  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+      (∀ x : A, f x = g x) → f = g
+π.chEmb : π.rel_choiceTypes → choiceType
+```
