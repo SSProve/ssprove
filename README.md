@@ -42,6 +42,16 @@ Run `make graph` to build a graph of dependencies between sources.
 
 ## Mapping between paper and formalisation
 
+### Examples
+
+### Package definition and laws
+
+### Probabilistic relational program logic
+
+TODO: I guess Lemma 1, 2 and Theorem 1 can go here besides Theorem 2.
+
+### Semantic model and soundness of rules
+
 ## Axioms and assumptions
 
 see theories/Crypt/Axioms.v
