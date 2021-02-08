@@ -47,12 +47,12 @@ theories/Crypt/rhl_semantics/state_prob/StateTransfThetaDens.v
 theories/Crypt/rhl_semantics/state_prob/LiftStateful.v
 
 #prob rules
-theories/Crypt/only_prob/Rules.v
+theories/Crypt/rules/RulesProb.v
 
 #Crypto
-theories/Crypt/only_prob/UniformDistrLemmas.v
-theories/Crypt/only_prob/UniformDistr.v
-theories/Crypt/only_prob/otp.v
+theories/Crypt/rules/UniformDistrLemmas.v
+theories/Crypt/rules/UniformDistr.v
+theories/Crypt/examples/deprecated/otp.v
 theories/Crypt/package/pkg_chUniverse.v
 theories/Crypt/package/pkg_core_definition.v
 theories/Crypt/package/pkg_composition.v
@@ -64,11 +64,11 @@ theories/Crypt/Package.v
 theories/Crypt/package/package_usage_example.v
 
 #State + Prob
-theories/Crypt/only_prob/RulesStateProb.v
-theories/Crypt/only_prob/UniformStateProb.v
-theories/Crypt/only_prob/PRF.v
-theories/Crypt/only_prob/AsymScheme.v
-theories/Crypt/only_prob/ELGAMAL.v
+theories/Crypt/rules/RulesStateProb.v
+theories/Crypt/rules/UniformStateProb.v
+theories/Crypt/examples/PRF.v
+theories/Crypt/examples/AsymScheme.v
+theories/Crypt/examples/ELGAMAL.v
 #std. distributions
-theories/Crypt/only_prob/StdDistr.v
+theories/Crypt/rules/StdDistr.v
 # theories/Crypt/only_prob/SymmetricSchemeStateProbStdDistr.v
