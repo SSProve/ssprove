@@ -234,112 +234,112 @@ Proof.
 Defined.
 
 
-Definition semantic_judgement A1 A2 c1 c2 w :=  (θ_morph ⟨A1,A2⟩) ∙1  ⟨c1,c2⟩ ≤ w.
+(* Definition semantic_judgement A1 A2 c1 c2 w :=  (θ_morph ⟨A1,A2⟩) ∙1  ⟨c1,c2⟩ ≤ w. *)
 
-Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ c1 c2 w).
+(* Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ c1 c2 w). *)
 
-Program Definition fromPrePost {A1 A2}
-          (pre : Prop)
-          (post : A1 -> A2 -> Prop)
-    : WProp (A1 * A2)%type :=
-    ⦑fun p =>  pre /\ forall a1 a2, post a1 a2 -> p (a1, a2)⦒.
-Next Obligation.
-  intros A1 A2 chA1 chA2. intros pre post.
-  split; case: H0 => // HA HB.
-  intros a1 a2 Hpost.
-  apply H. apply HB.
-  assumption.
-Qed.
+(* Program Definition fromPrePost {A1 A2} *)
+(*           (pre : Prop) *)
+(*           (post : A1 -> A2 -> Prop) *)
+(*     : WProp (A1 * A2)%type := *)
+(*     ⦑fun p =>  pre /\ forall a1 a2, post a1 a2 -> p (a1, a2)⦒. *)
+(* Next Obligation. *)
+(*   intros A1 A2 chA1 chA2. intros pre post. *)
+(*   split; case: H0 => // HA HB. *)
+(*   intros a1 a2 Hpost. *)
+(*   apply H. apply HB. *)
+(*   assumption. *)
+(* Qed. *)
 
-Notation "⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
-  (semantic_judgement _ _ c1 c2 (fromPrePost pre post)).
+(* Notation "⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" := *)
+(*   (semantic_judgement _ _ c1 c2 (fromPrePost pre post)). *)
 
-Definition flip (r : R) : SDistr (bool_choiceType).
-  rewrite /SDistr_carrier.
-  apply mkdistrd. intros b.
-  destruct b.
-  - exact r.
-  - exact (1 - r).
-Defined.
+(* Definition flip (r : R) : SDistr (bool_choiceType). *)
+(*   rewrite /SDistr_carrier. *)
+(*   apply mkdistrd. intros b. *)
+(*   destruct b. *)
+(*   - exact r. *)
+(*   - exact (1 - r). *)
+(* Defined. *)
 
-Lemma sample_rule : forall {A1 A2} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2}
-                      (pre : Prop) (post : A1 -> A2 -> Prop)
-                      (d1 : SDistr (Choice.Pack chA1)) (d2 : SDistr (Choice.Pack chA2)) d
-                      (Hd : coupling d d1 d2)
-                      (Hpost : forall a1 a2, d (a1, a2) > 0 -> post a1 a2),
-      ⊨ ⦃ pre ⦄ d1 ≈ d2 ⦃ post ⦄.
-Proof.
-  intros. rewrite /semantic_judgement /θ_morph //= /θ0 //=.
-  unfold "≤".  simpl.
-  rewrite /MonoCont_order //=. intros pi [H1 H2].
-  (* apply SProp2Prop_truthMorphism_leftRight in H1. *)
-  (* rewrite PSP_retr in H1. *)
-  exists d. split.
-  - (* apply Prop2SProp_truthMorphism_leftRight. *)
-    assumption.
-  - intros a1 a2 Hdp. apply H2.
-    (* apply Prop2SProp_truthMorphism_leftRight. *)
-    apply Hpost.
-    assumption.
-Qed.
+(* Lemma sample_rule : forall {A1 A2} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2} *)
+(*                       (pre : Prop) (post : A1 -> A2 -> Prop) *)
+(*                       (d1 : SDistr (Choice.Pack chA1)) (d2 : SDistr (Choice.Pack chA2)) d *)
+(*                       (Hd : coupling d d1 d2) *)
+(*                       (Hpost : forall a1 a2, d (a1, a2) > 0 -> post a1 a2), *)
+(*       ⊨ ⦃ pre ⦄ d1 ≈ d2 ⦃ post ⦄. *)
+(* Proof. *)
+(*   intros. rewrite /semantic_judgement /θ_morph //= /θ0 //=. *)
+(*   unfold "≤".  simpl. *)
+(*   rewrite /MonoCont_order //=. intros pi [H1 H2]. *)
+(*   (* apply SProp2Prop_truthMorphism_leftRight in H1. *) *)
+(*   (* rewrite PSP_retr in H1. *) *)
+(*   exists d. split. *)
+(*   - (* apply Prop2SProp_truthMorphism_leftRight. *) *)
+(*     assumption. *)
+(*   - intros a1 a2 Hdp. apply H2. *)
+(*     (* apply Prop2SProp_truthMorphism_leftRight. *) *)
+(*     apply Hpost. *)
+(*     assumption. *)
+(* Qed. *)
 
 
-(* GENERIC MONADIC RULES *)
+(* (* GENERIC MONADIC RULES *) *)
 
-Theorem ret_rule  {A1 A2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2}
-                  (a1 : A1) (a2 : A2) :
+(* Theorem ret_rule  {A1 A2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2} *)
+(*                   (a1 : A1) (a2 : A2) : *)
 
-   ⊨ (ord_relmon_unit SDistr (Choice.Pack chA1) a1) ≈
-     (ord_relmon_unit SDistr (Choice.Pack chA2) a2)
-     [{ (ret (a1, a2)) }].
-Proof.
-  rewrite /semantic_judgement /θ_morph //= /θ0 //=.
-  unfold "≤".  simpl.
-  rewrite /MonoCont_order //=. move => π πa1a2.
-  exists (SDistr_unit (F_choice_prod (npair (Choice.Pack chA1) (Choice.Pack chA2))) (a1,a2)).
-  split.
-  - rewrite /SubDistr.SDistr_obligation_1 /=.
-    (* apply: Prop2SProp_truthMorphism_leftRight. *)
-      by apply: SDistr_unit_F_choice_prod_coupling.
-  - move => b1 b2 Hb1b2.
-    by rewrite -(distr_get _ _ Hb1b2).
-Qed.
+(*    ⊨ (ord_relmon_unit SDistr (Choice.Pack chA1) a1) ≈ *)
+(*      (ord_relmon_unit SDistr (Choice.Pack chA2) a2) *)
+(*      [{ (ret (a1, a2)) }]. *)
+(* Proof. *)
+(*   rewrite /semantic_judgement /θ_morph //= /θ0 //=. *)
+(*   unfold "≤".  simpl. *)
+(*   rewrite /MonoCont_order //=. move => π πa1a2. *)
+(*   exists (SDistr_unit (F_choice_prod (npair (Choice.Pack chA1) (Choice.Pack chA2))) (a1,a2)). *)
+(*   split. *)
+(*   - rewrite /SubDistr.SDistr_obligation_1 /=. *)
+(*     (* apply: Prop2SProp_truthMorphism_leftRight. *) *)
+(*       by apply: SDistr_unit_F_choice_prod_coupling. *)
+(*   - move => b1 b2 Hb1b2. *)
+(*     by rewrite -(distr_get _ _ Hb1b2). *)
+(* Qed. *)
 
-Theorem weaken_rule  {A1 A2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2}
-                     {d1 : SDistr (Choice.Pack chA1)}
-                     {d2 : SDistr (Choice.Pack chA2)} :
-  forall w w', (⊨ d1 ≈ d2 [{ w }]) -> w ≤ w' -> (⊨ d1 ≈ d2 [{ w' }] ).
-Proof.
-  move => w w' Hjudg Hleq.
-  rewrite /semantic_judgement /θ_morph //= /θ0 //=.
-  unfold "≤". simpl. rewrite /MonoCont_order //=.
-  move => π H'.
-  move: (Hleq π H').
-  by apply: Hjudg.
-Qed.
+(* Theorem weaken_rule  {A1 A2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2} *)
+(*                      {d1 : SDistr (Choice.Pack chA1)} *)
+(*                      {d2 : SDistr (Choice.Pack chA2)} : *)
+(*   forall w w', (⊨ d1 ≈ d2 [{ w }]) -> w ≤ w' -> (⊨ d1 ≈ d2 [{ w' }] ). *)
+(* Proof. *)
+(*   move => w w' Hjudg Hleq. *)
+(*   rewrite /semantic_judgement /θ_morph //= /θ0 //=. *)
+(*   unfold "≤". simpl. rewrite /MonoCont_order //=. *)
+(*   move => π H'. *)
+(*   move: (Hleq π H'). *)
+(*   by apply: Hjudg. *)
+(* Qed. *)
 
-Theorem bind_rule {A1 A2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2}
-                  {B1 B2 : Type} {chB1 : Choice.class_of B1} {chB2 : Choice.class_of B2}
-                  {f1 : A1 -> SDistr (Choice.Pack chB1)}
-                  {f2 : A2 -> SDistr (Choice.Pack chB2)}
-                  (m1 : SDistr (Choice.Pack chA1))
-                  (m2 : SDistr (Choice.Pack chA2))
-                  (wm : WProp (A1 * A2)%type)
-                  (judge_wm : ⊨ m1 ≈ m2 [{ wm }])
-                  (wf : (A1 * A2) -> WProp (B1 * B2)%type)
-                  (a1 : A1) (a2 : A2)
-                  (judge_wf : ⊨ (f1 a1) ≈ (f2 a2) [{ (wf (a1, a2)) }]) :
-  ⊨ (ord_relmon_bind SDistr
-                     (fun x : (Choice.Pack chA1) => f1 x)
-                     m1) ≈
-    (ord_relmon_bind SDistr
-                     (fun x : (Choice.Pack chA2) => f2 x)
-                     m2)
-    [{ bind wm wf }].
-Proof.
-  rewrite /semantic_judgement /θ_morph //= /θ0 //=.
-  unfold "≤". simpl. rewrite /MonoCont_order //=.
-  move => π Hwm.
-  rewrite /SubDistr.SDistr_obligation_2.
-  Admitted.
+(* Theorem bind_rule {A1 A2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2} *)
+(*                   {B1 B2 : Type} {chB1 : Choice.class_of B1} {chB2 : Choice.class_of B2} *)
+(*                   {f1 : A1 -> SDistr (Choice.Pack chB1)} *)
+(*                   {f2 : A2 -> SDistr (Choice.Pack chB2)} *)
+(*                   (m1 : SDistr (Choice.Pack chA1)) *)
+(*                   (m2 : SDistr (Choice.Pack chA2)) *)
+(*                   (wm : WProp (A1 * A2)%type) *)
+(*                   (judge_wm : ⊨ m1 ≈ m2 [{ wm }]) *)
+(*                   (wf : (A1 * A2) -> WProp (B1 * B2)%type) *)
+(*                   (a1 : A1) (a2 : A2) *)
+(*                   (judge_wf : ⊨ (f1 a1) ≈ (f2 a2) [{ (wf (a1, a2)) }]) : *)
+(*   ⊨ (ord_relmon_bind SDistr *)
+(*                      (fun x : (Choice.Pack chA1) => f1 x) *)
+(*                      m1) ≈ *)
+(*     (ord_relmon_bind SDistr *)
+(*                      (fun x : (Choice.Pack chA2) => f2 x) *)
+(*                      m2) *)
+(*     [{ bind wm wf }]. *)
+(* Proof. *)
+(*   rewrite /semantic_judgement /θ_morph //= /θ0 //=. *)
+(*   unfold "≤". simpl. rewrite /MonoCont_order //=. *)
+(*   move => π Hwm. *)
+(*   rewrite /SubDistr.SDistr_obligation_2. *)
+(*   Admitted. *)
 

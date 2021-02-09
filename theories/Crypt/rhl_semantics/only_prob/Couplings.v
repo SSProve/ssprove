@@ -351,51 +351,51 @@ Section Forall_exists.
 
 End Forall_exists.
 
-Section Independent_coupling.
-  (*work in progress*)
+(* Section Independent_coupling. *)
+(*   (*work in progress*) *)
 
-  Context {A1 A2 : ord_choiceType}.
+(*   Context {A1 A2 : ord_choiceType}. *)
 
-  Context (c1 : SDistr A1) (c2 : SDistr A2).
+(*   Context (c1 : SDistr A1) (c2 : SDistr A2). *)
 
-  Definition indp := SDistr_bind _ _ (fun x => SDistr_bind _ _ (fun y => SDistr_unit _ (x, y)) c2) c1.
+(*   Definition indp := SDistr_bind _ _ (fun x => SDistr_bind _ _ (fun y => SDistr_unit _ (x, y)) c2) c1. *)
 
-  Local Lemma indp_ext (x : A1) (y : A2) : indp (x, y) = c1 x * c2 y.
-  Proof.
-    unfold indp.
-    unfold SDistr_bind, SDistr_unit.
-    rewrite dletE.
-    assert ((fun x0 : A1 => c1 x0 * (\dlet_(y0 <- c2) dunit (T:=prod_choiceType A1 A2) (x0, y0)) (x, y)) = (fun x0 : A1 => c1 x0 * psum (fun y0 : A2 => c2 y0 * dunit (T:=prod_choiceType A1 A2) (x0, y0)  (x, y)))) as H.
-    { extensionality x0. rewrite dletE. reflexivity. }
-    rewrite H. clear H.
-    assert ((fun x0 : A1 =>
-               c1 x0 * psum (fun y0 : A2 => c2 y0 * dunit (T:=prod_choiceType A1 A2) (x0, y0) (x, y))) =
-            (fun x0 : A1 =>
-               psum (fun y0 : A2 => c1 x0 * c2 y0 * (dunit (x0, y0) (x, y))))).
-    { extensionality x0.
-      rewrite -psumZ.
-      2: { admit. }
-      apply f_equal.
-      extensionality y0.
-      simpl. rewrite dunit1E.
-      apply GRing.mulrA. }
-    rewrite H. clear H.
-    rewrite -(psum_pair (S := fun p => c1 (fst p) * c2 (snd p) * dunit p (x, y))).
-  Admitted.
+(*   Local Lemma indp_ext (x : A1) (y : A2) : indp (x, y) = c1 x * c2 y. *)
+(*   Proof. *)
+(*     unfold indp. *)
+(*     unfold SDistr_bind, SDistr_unit. *)
+(*     rewrite dletE. *)
+(*     assert ((fun x0 : A1 => c1 x0 * (\dlet_(y0 <- c2) dunit (T:=prod_choiceType A1 A2) (x0, y0)) (x, y)) = (fun x0 : A1 => c1 x0 * psum (fun y0 : A2 => c2 y0 * dunit (T:=prod_choiceType A1 A2) (x0, y0)  (x, y)))) as H. *)
+(*     { extensionality x0. rewrite dletE. reflexivity. } *)
+(*     rewrite H. clear H. *)
+(*     assert ((fun x0 : A1 => *)
+(*                c1 x0 * psum (fun y0 : A2 => c2 y0 * dunit (T:=prod_choiceType A1 A2) (x0, y0) (x, y))) = *)
+(*             (fun x0 : A1 => *)
+(*                psum (fun y0 : A2 => c1 x0 * c2 y0 * (dunit (x0, y0) (x, y))))). *)
+(*     { extensionality x0. *)
+(*       rewrite -psumZ. *)
+(*       2: { admit. } *)
+(*       apply f_equal. *)
+(*       extensionality y0. *)
+(*       simpl. rewrite dunit1E. *)
+(*       apply GRing.mulrA. } *)
+(*     rewrite H. clear H. *)
+(*     rewrite -(psum_pair (S := fun p => c1 (fst p) * c2 (snd p) * dunit p (x, y))). *)
+(*   Admitted. *)
 
-  Local Lemma independent_coupling_lmg : lmg indp = c1.
-  Proof.
-  Admitted.
+(*   Local Lemma independent_coupling_lmg : lmg indp = c1. *)
+(*   Proof. *)
+(*   Admitted. *)
 
-  Local Lemma independent_coupling_rmg : rmg indp = c2.
-  Proof.
-  Admitted.
+(*   Local Lemma independent_coupling_rmg : rmg indp = c2. *)
+(*   Proof. *)
+(*   Admitted. *)
 
-  Local Lemma independent_coupling : coupling indp c1 c2.
-  Proof.
-    unfold coupling.
-    split.
-    - apply independent_coupling_lmg.
-    - apply independent_coupling_rmg.
-  Qed.
-End Independent_coupling.
+(*   Local Lemma independent_coupling : coupling indp c1 c2. *)
+(*   Proof. *)
+(*     unfold coupling. *)
+(*     split. *)
+(*     - apply independent_coupling_lmg. *)
+(*     - apply independent_coupling_rmg. *)
+(*   Qed. *)
+(* End Independent_coupling. *)
