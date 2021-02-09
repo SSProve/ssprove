@@ -185,9 +185,6 @@ game pair `IND_CPA` by the sum of the statistical gap and the advantages against
 Note that we require here some disjointness of state hypotheses as these are
 not enforced by our package definitions and laws.
 
-The proof of security_based_on_prf relies on the following assumtpions:
-TODO we still did not prove rsamplerC and rsamplerC'
-
 
 The ElGamal example is developed in `theories/Crypt/examples/Elgamal.v`
 The security theorem is the following:
@@ -198,28 +195,9 @@ Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher.
 
  OT_rnd_cipher is defined in `theories/Crypt/examples/AsymScheme.v
  ```coq
- Definition OT_rnd_cipher : Prop := forall A H1 H2, @Advantage _ ots_real_vs_rnd A H1 H2 = 0.
+Definition OT_rnd_cipher :=
+  ∀ A H1 H2, @Advantage _ ots_real_vs_rnd A H1 H2 = 0.
 ```
-
-The proof of Elgamal_OT relies on the following assumptions:
-
-+ pkch_i, ch2c_c2ch in `theories/Crypt/examples/Elgamal.v`
-
-  stating that the mapping pk2ch (c2ch reps.) is a bijection between
-  the group of public keys `PubKey` (`Cipher' resp.) and the ordinal
-  'I_#(PubKey) ('I_#(Cipher)).
-
-+ group_OTP, group_OTP_math in `theories/Crypt/examples/Elgamal.v`
-
-  stating that for a plaintext m (and g the generator of the group)
-
-  `C <$ uniform Cipher ;; return c` is equivalent to
-
-  `b <$ unifrom {0,.. q-1} ;; c <$ unifrom {0,.. q-1} ;; return (g^+b, m * g^+c)`
-
-  This condition was already proven in the literature
-
-+  TODO: we still did not prove rsamplerC and rsamplerC'
 
 
 ### Probabilistic relational program logic
@@ -255,6 +233,8 @@ Finally the "bwhile" rule is proven as `bounded_do_while_rule` in
 
 ## Axioms and assumptions
 
+### Axioms
+
 Throughout the development we rely on the axioms of functional extensionality,
 proof irrelevance, as well as propositional extensionality as listed below:
 
@@ -284,6 +264,45 @@ interchange_psum :
     psum (λ x : T, psum (λ y : U, S x y)) =
     psum (λ y : U, psum (λ x : T, S x y))
 ```
+
+### Admitted lemmata
+
+Unfortunately, our development still contains unproven results. We will list
+them in this section.
+
+- Two rules used in the examples are still not proven: `rsamplerC` and
+`rsamplerC'` which correspond to commutation laws for sampling.
+
+```coq
+rsamplerC :
+  ∀ (A : ord_choiceType) (L : {fset Location}) (o : Op)
+    (c : program L Game_import A),
+    ⊨ ⦃ λ '(h1, h2), h1 = h2
+    ⦄ repr (a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (a, r))
+    ≈ repr (r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (a, r)) ⦃ eq ⦄
+
+rsamplerC' :
+  ∀ (A : ord_choiceType) (L : {fset Location}) (o : Op)
+    (c : program L Game_import A),
+    ⊨ ⦃ λ '(h1, h2), h1 = h2
+    ⦄ repr (r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (r, a))
+    ≈ repr (a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (r, a)) ⦃ eq ⦄
+```
+
+- The security proof for ElGamal also relies on unproven properties
+`pkch_i` and `ch2c_c2ch` stated in `theories/Crypt/examples/Elgamal.v`
+saying that the mapping `pk2ch` (respectively `c2ch`) is a bijection between
+the group of public keys `PubKey` (respectively `Cipher`) and the ordinal
+corresponding to its cardinal `'I_#(PubKey)` (respectively `'I_#(Cipher)`).
+
+- Additionally, the proof for ElGamal relies on `group_OTP` and `group_OTP_math`
+also stated in `theories/Crypt/examples/Elgamal.v` saying that for a plaintext
+`m` (and `g` the generator of the group),
+`C <$ uniform Cipher ;; return c` is equivalent to
+`b <$ unifrom {0,.. q-1} ;; c <$ unifrom {0,.. q-1} ;; return (g^+b, m * g^+c)`.
+This condition was already proven in the literature.
+
+### Methodology for finding axioms
 
 Our methodology to find such dependencies is to use the `Print Assumptions`
 command of Coq which lists axioms a definition depends on.
