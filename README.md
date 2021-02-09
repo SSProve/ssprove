@@ -170,17 +170,17 @@ which can be read as
 
 TODO: I guess Lemma 1, 2 and Theorem 1 can go here besides Theorem 2.
 
-Where to find the Selected Rules from Fig 13:
+Where to find the Selected Rules from Figure 13:
 
-- "reflexivity" : rreflexivity_rule in pkg_rhl.v
-- "seq"	        : rbind_rule in pkg_rhl.v
-- "swap"        : rswap_rule in pkg_rhl.v
-- "eqDistrL"    : rrewrite_eqDistrL in pkg_rhl.v
-- "symmetry"    : rsymmetry in pkg_rhl.v (TODO: proof still ongoing)
-- "bwhile"      : bounded_do_while_rule in RulesStateProb.v
-- "uniform"     : Uniform_bij_rule in UniformStateProb.v
-- "asrt"	: assert_rule in UniformStateProb.v
-- "asrtL"	: assert_rule_left in UniformStateProb.v
+- `reflexivity` : rreflexivity_rule in pkg_rhl.v
+- `seq`	        : rbind_rule in pkg_rhl.v
+- `swap`        : rswap_rule in pkg_rhl.v
+- `eqDistrL`    : rrewrite_eqDistrL in pkg_rhl.v
+- `symmetry`    : rsymmetry in pkg_rhl.v (TODO: proof still ongoing)
+- `bwhile`      : bounded_do_while_rule in RulesStateProb.v
+- `uniform`     : Uniform_bij_rule in UniformStateProb.v
+- `asrt`	      : assert_rule in UniformStateProb.v
+- `asrtL`	      : assert_rule_left in UniformStateProb.v
 
 ### Semantic model and soundness of rules
 
@@ -197,7 +197,7 @@ functional_extensionality_dep :
 ```
 
 We further rely on the existence of a type of real numbers as used in the
-mathcomp library.
+`mathcomp` library.
 
 Our methodology to find such dependencies is to use the `Print Assumptions`
 command of Coq which lists axioms a definition depends on.
