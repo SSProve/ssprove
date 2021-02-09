@@ -330,7 +330,7 @@ interchange_psum :
 
 ### Admitted lemmata
 
-Unfortunately, our development still contains unproven results. We will list
+Our development curreently still contains unproven results. We will list
 them in this section.
 
 - Two rules used in the examples are still not proven: `rsamplerC` and
