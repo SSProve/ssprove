@@ -707,29 +707,28 @@ Proof.
 Qed.
 
 Definition dsym { A B : ord_choiceType } { S1 S2 : choiceType } (d : SDistr_carrier
-          (F_choice_prod_obj 
+          (F_choice_prod_obj
              ⟨ Choice.Pack {| Choice.base := prod_eqMixin B S2; Choice.mixin := prod_choiceMixin B S2 |},
-               Choice.Pack {| Choice.base := prod_eqMixin A S1; Choice.mixin := prod_choiceMixin A S1 |} ⟩)) : 
+               Choice.Pack {| Choice.base := prod_eqMixin A S1; Choice.mixin := prod_choiceMixin A S1 |} ⟩)) :
 SDistr_carrier
-          (F_choice_prod_obj 
+          (F_choice_prod_obj
              ⟨ Choice.Pack {| Choice.base := prod_eqMixin A S1; Choice.mixin := prod_choiceMixin A S1 |},
-               Choice.Pack {| Choice.base := prod_eqMixin B S2; Choice.mixin := prod_choiceMixin B S2 |} ⟩).
-Proof.
-  destruct d as [d_sup H1 H2 H3]. 
-  exists (fun '(x1, x2) => d_sup (x2, x1)). 
-  - move => [x1 x2]. apply: H1 (x2,x1).
-  - admit.
-  - admit.
-Admitted. 
+               Choice.Pack {| Choice.base := prod_eqMixin B S2; Choice.mixin := prod_choiceMixin B S2 |} ⟩) :=
+dswap d.
+
 
 Lemma dsym_coupling { A B : ord_choiceType } { S1 S2 : choiceType } { d : SDistr_carrier
-          (F_choice_prod_obj 
+          (F_choice_prod_obj
              ⟨ Choice.Pack {| Choice.base := prod_eqMixin B S2; Choice.mixin := prod_choiceMixin B S2 |},
                Choice.Pack {| Choice.base := prod_eqMixin A S1; Choice.mixin := prod_choiceMixin A S1 |} ⟩) }
-      {d1 d2 } 
+      {d1 d2 }
       (Hcoupling : coupling d d1 d2) : coupling (dsym d) d2 d1.
-Proof. Admitted. 
-  
+Proof. 
+  rewrite /dsym. destruct Hcoupling as [dfst_d dsnd_d]. unfold coupling, lmg, rmg in *.
+  subst. split.
+  - apply: distr_ext. exact: dfst_dswap d.
+  - apply: distr_ext. exact: dsnd_dswap d.   
+Qed.
 
 Lemma symmetry_rule { A B : ord_choiceType } { S1 S2 : choiceType } { pre post }
       (c1  : FrStP S1 A) (c2  : FrStP S2 B) 
@@ -743,14 +742,18 @@ Proof.
   - rewrite /=. split.
     -- assumption.  
     -- move => [a h1] [b h2] Hpost /=. apply: (H' (b, h2) (a, h1) Hpost). 
-  simpl in d', H1, H2. exists (dsym d'). split.
-    -- apply: dsym_coupling H1. 
+  simpl in d', H1, H2. exists (dswap d'). split. 
+    - exact: dsym_coupling. 
     -- move => [b h2] [a h1] Hdsym. apply: (H2 (a, h1) (b, h2)).
-       (* Rem.: we cannot rewrite /dsym in Hdsym because it is opaque! *)
-Admitted. 
-       
-(* Definition symmetric_pre { S : choiceType } (I : S * S -> Prop) : Prop := *)
-(*   forall s1 s2, I (s1, s2) -> I (s2, s1).  *)
+       apply msupp.
+       have Heq: dswap (dswap d') = d'. { apply: distr_ext. exact: (dswapK d'). } 
+       rewrite -Heq. 
+       apply dinsupp_swap.
+       apply /dinsuppP.
+       rewrite lt0r in Hdsym.
+       move /andP: Hdsym. move => [Hd1  Hd2].
+       apply /eqP. assumption.
+Qed.        
 
 Theorem swap_rule { A1 A2 : ord_choiceType } { S : choiceType } { I : S * S -> Prop } {post : A1 * S -> A2 * S -> Prop }
                   (c1 : FrStP S A1) (c2 : FrStP S A2)
@@ -1084,5 +1087,6 @@ Proof.
      -- exact: Hinv2.
 Qed.
 
+Print Assumptions bounded_do_while_rule.
 
 End DerivedRules.
