@@ -193,10 +193,20 @@ The security theorem is the following:
 Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher.
 ```
 
- OT_rnd_cipher is defined in `theories/Crypt/examples/AsymScheme.v
+`OT_rnd_cipher` is defined in `theories/Crypt/examples/AsymScheme.v`:
+
  ```coq
 Definition OT_rnd_cipher :=
   ∀ A H1 H2, @Advantage _ ots_real_vs_rnd A H1 H2 = 0.
+```
+
+Note that the theorem relies on `dh_secure` which corresponds to the DDH
+assumption:
+
+```coq
+Definition DH_security :=
+  ∀ A Hdisj1 Hdisj2,
+    @AdvantageE _ DH_real DH_rnd A  Hdisj1 Hdisj2 = 0.
 ```
 
 
