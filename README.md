@@ -193,7 +193,7 @@ The ElGamal example is developed in `theories/Crypt/examples/Elgamal.v`
 The security theorem is the following:
 
 ```coq
-Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher. 
+Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher.
 ```
 
  OT_rnd_cipher is defined in `theories/Crypt/examples/AsymScheme.v
@@ -220,24 +220,36 @@ The proof of Elgamal_OT relies on the following assumptions:
   This condition was already proven in the literature
 
 +  TODO: we still did not prove rsamplerC and rsamplerC'
-   
+
 
 ### Probabilistic relational program logic
 
 TODO: I guess Lemma 1, 2 and Theorem 1 can go here besides Theorem 2.
 
-Where to find the Selected Rules from Figure 13:
+Figure 13 presents a selection of rules for our probabilistic relational
+program logic. Most of them can be found in
+`theories/Crypt/package/pkg_rhl.v` which provides an interface for use of those
+rules directly with `code`.
 
+| Rule in paper | Rule in Coq           |
+|---------------|-----------------------|
+| reflexivity   | `rreflexivity_rule`   |
+| seq           | `rbind_rule`          |
+| swap          | `rswap_rule`          |
+| eqDistrL      | `rrewrite_eqDistrL`   |
+| symmetry      | `rsymmetry`           |
 
-- `reflexivity` : rreflexivity_rule     in `theories/Crypt/package/pkg_rhl.v`
-- `seq`	        : rbind_rule            in `theories/Crypt/package/pkg_rhl.v`
-- `swap`        : rswap_rule            in `theories/Crypt/package/pkg_rhl.v`
-- `eqDistrL`    : rrewrite_eqDistrL     in `theories/Crypt/package/pkg_rhl.v`
-- `symmetry`    : rsymmetry             in `theories/Crypt/package/pkg_rhl.v`
-- `bwhile`      : bounded_do_while_rule in `theories/Crypt/rules/RulesStateProb.v`
-- `uniform`     : Uniform_bij_rule      in `theories/Crypt/rules/UniformStateProb.v`
-- `asrt`        : assert_rule           in `theories/Crypt/rules/UniformStateProb.v`
-- `asrtL`	: assert_rule_left      in `theories/Crypt/rules/UniformStateProb.v`
+Some rules are for now only proven in the logic but have not been lifted
+to packages, they can be found in `theories/Crypt/rules/UniformStateProb.v`:
+
+| Rule in paper | Rule in Coq             |
+|---------------|-------------------------|
+| uniform       | `bounded_do_while_rule` |
+| asrt          | `assert_rule`           |
+| asrtL         | `assert_rule_left`      |
+
+Finally the "bwhile" rule is proven as `bounded_do_while_rule` in
+`theories/Crypt/rules/RulesStateProb.v`.
 
 ### Semantic model and soundness of rules
 
