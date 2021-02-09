@@ -335,7 +335,8 @@ End RelativeKleisliAdjunction.
 
 (*
 Let M:I→ C be a J-relative monad.
-Consider J♭ : I → I and R: C → C functors such that JL♭ ⊣ R (the "transforming (left relative) adjunction")
+Consider J♭ : I → I and R: C → C functors such that JL♭ ⊣ R
+(the "transforming (left relative) adjunction")
 M can be factored through its Kleisli: M = R^M ∘ L^M, with L^M ⊣ R^M
 This section builds the "transformed" left relative adjunction:
 L^M ∘ L♭ ⊣ R ∘ R^M .
