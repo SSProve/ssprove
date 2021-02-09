@@ -1087,6 +1087,4 @@ Proof.
      -- exact: Hinv2.
 Qed.
 
-Print Assumptions bounded_do_while_rule.
-
 End DerivedRules.
