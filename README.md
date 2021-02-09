@@ -396,5 +396,3 @@ boolp.functional_extensionality_dep
 
 Note that `π.rel_choiceTypes`, `π.probE` and `π.chEmb` are not actually axioms
 but instead parameters of the `Package` module, which are listed nonetheless.
-
-### TODO Check for other parts of the development
