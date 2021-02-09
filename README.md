@@ -230,10 +230,11 @@ Where to find the Selected Rules from Figure 13:
 
 ## Axioms and assumptions
 
-Throughout the development we rely on the axioms of functional extensionality
-and propositional extensionality as listed below:
+Throughout the development we rely on the axioms of functional extensionality,
+proof irrelevance, as well as propositional extensionality as listed below:
 
 ```coq
+ax_proof_irrel : ClassicalFacts.proof_irrelevance
 propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
 functional_extensionality_dep :
   ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
