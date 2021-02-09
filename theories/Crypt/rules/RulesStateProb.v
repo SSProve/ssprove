@@ -85,7 +85,7 @@ Import myparam.
 #[local] Definition WrelSt { S1 S2 : choiceType }  := (rlmm_codomain (@θ S1 S2)).
 
 
-(* CA: this spec monad is a ordered relative monad, while previously we were using an ordered monad *)
+(* Rem.: this spec monad is a ordered relative monad, while previously we were using an ordered monad *)
 
 Definition retW { A1 A2 : ord_choiceType } {S1 S2 : choiceType} (a : A1 * A2) :  Base.dfst (@WrelSt S1 S2 ⟨ A1, A2 ⟩).
 Proof.
@@ -297,9 +297,9 @@ Proof.
   by apply (pre_weaken_rule (fun st => True) _).
 Qed.
 
-(* CA: took around 40s to Qed. *)
+(* Rem.: took around 40s to Qed. *)
 (* post-condition manipulating rules *)
-(* ER: simplified the proof resorting to weaken_rule, should be quickier *)
+(* Rem.: simplified the proof resorting to weaken_rule, should be quickier *)
 Theorem post_weaken_rule  {A1 A2 : ord_choiceType} {S1 S2 : choiceType}
                           {d1 : FrStP S1 A1}
                           {d2 : FrStP S2 A2} :
@@ -367,7 +367,7 @@ Proof.
 Qed.
 
 
-(* CA: can we do \sum_ ( c \in C ) ... where C : choiceType? *)
+(* Rem.: can we do \sum_ ( c \in C ) ... where C : choiceType? *)
 Definition prod_comp { L R } { M : finType } { d1 : SDistr L } {d2 : SDistr M } { d3 : SDistr R } d12 d23
            ( H12 : coupling d12 d1 d2 ) ( H23 : coupling d23 d2 d3 ): SDistr (F_choice_prod ⟨ L,  R ⟩).
 Proof.
@@ -498,7 +498,7 @@ Proof.
     split; auto.
 Qed.
 
-(*TODO: asymmetric variants of bounded_do_while -- CA: low priority as not useful for our examples *)
+(*TODO: asymmetric variants of bounded_do_while -- Rem.: low priority as not useful for our examples *)
 
 #[local] Definition θ_dens { S : choiceType } { X : ord_choiceType } :=
   @Theta_dens.unary_theta_dens probE rel_choiceTypes chEmb prob_handler (F_choice_prod_obj ⟨ X, S ⟩).
@@ -707,29 +707,28 @@ Proof.
 Qed.
 
 Definition dsym { A B : ord_choiceType } { S1 S2 : choiceType } (d : SDistr_carrier
-          (F_choice_prod_obj 
+          (F_choice_prod_obj
              ⟨ Choice.Pack {| Choice.base := prod_eqMixin B S2; Choice.mixin := prod_choiceMixin B S2 |},
-               Choice.Pack {| Choice.base := prod_eqMixin A S1; Choice.mixin := prod_choiceMixin A S1 |} ⟩)) : 
+               Choice.Pack {| Choice.base := prod_eqMixin A S1; Choice.mixin := prod_choiceMixin A S1 |} ⟩)) :
 SDistr_carrier
-          (F_choice_prod_obj 
+          (F_choice_prod_obj
              ⟨ Choice.Pack {| Choice.base := prod_eqMixin A S1; Choice.mixin := prod_choiceMixin A S1 |},
-               Choice.Pack {| Choice.base := prod_eqMixin B S2; Choice.mixin := prod_choiceMixin B S2 |} ⟩).
-Proof.
-  destruct d as [d_sup H1 H2 H3]. 
-  exists (fun '(x1, x2) => d_sup (x2, x1)). 
-  - move => [x1 x2]. apply: H1 (x2,x1).
-  - admit.
-  - admit.
-Admitted. 
+               Choice.Pack {| Choice.base := prod_eqMixin B S2; Choice.mixin := prod_choiceMixin B S2 |} ⟩) :=
+dswap d.
+
 
 Lemma dsym_coupling { A B : ord_choiceType } { S1 S2 : choiceType } { d : SDistr_carrier
-          (F_choice_prod_obj 
+          (F_choice_prod_obj
              ⟨ Choice.Pack {| Choice.base := prod_eqMixin B S2; Choice.mixin := prod_choiceMixin B S2 |},
                Choice.Pack {| Choice.base := prod_eqMixin A S1; Choice.mixin := prod_choiceMixin A S1 |} ⟩) }
-      {d1 d2 } 
+      {d1 d2 }
       (Hcoupling : coupling d d1 d2) : coupling (dsym d) d2 d1.
-Proof. Admitted. 
-  
+Proof. 
+  rewrite /dsym. destruct Hcoupling as [dfst_d dsnd_d]. unfold coupling, lmg, rmg in *.
+  subst. split.
+  - apply: distr_ext. exact: dfst_dswap d.
+  - apply: distr_ext. exact: dsnd_dswap d.   
+Qed.
 
 Lemma symmetry_rule { A B : ord_choiceType } { S1 S2 : choiceType } { pre post }
       (c1  : FrStP S1 A) (c2  : FrStP S2 B) 
@@ -743,14 +742,18 @@ Proof.
   - rewrite /=. split.
     -- assumption.  
     -- move => [a h1] [b h2] Hpost /=. apply: (H' (b, h2) (a, h1) Hpost). 
-  simpl in d', H1, H2. exists (dsym d'). split.
-    -- apply: dsym_coupling H1. 
+  simpl in d', H1, H2. exists (dswap d'). split. 
+    - exact: dsym_coupling. 
     -- move => [b h2] [a h1] Hdsym. apply: (H2 (a, h1) (b, h2)).
-       (* CA: we cannot rewrite /dsym in Hdsym because it is opaque! *)
-Admitted. 
-       
-(* Definition symmetric_pre { S : choiceType } (I : S * S -> Prop) : Prop := *)
-(*   forall s1 s2, I (s1, s2) -> I (s2, s1).  *)
+       apply msupp.
+       have Heq: dswap (dswap d') = d'. { apply: distr_ext. exact: (dswapK d'). } 
+       rewrite -Heq. 
+       apply dinsupp_swap.
+       apply /dinsuppP.
+       rewrite lt0r in Hdsym.
+       move /andP: Hdsym. move => [Hd1  Hd2].
+       apply /eqP. assumption.
+Qed.        
 
 Theorem swap_rule { A1 A2 : ord_choiceType } { S : choiceType } { I : S * S -> Prop } {post : A1 * S -> A2 * S -> Prop }
                   (c1 : FrStP S A1) (c2 : FrStP S A2)
@@ -770,7 +773,7 @@ Proof.
     assumption.
 Qed.
 
-(*CA: don't worry too much about indexes and order, in most cases predicates will be symmetric *)
+(*Rem.: don't worry too much about indexes and order, in most cases predicates will be symmetric *)
 Theorem swap_ruleL { A1 A2 B : ord_choiceType } { S : choiceType }
                    { pre I : S * S -> Prop }
                    { post :  A2 * S -> A1 * S -> Prop }
@@ -1006,7 +1009,7 @@ Theorem swap_ruleR { A1 A2 B : ord_choiceType } { S : choiceType }
                    (HR    : forall a1  a2, ⊨ ⦃ fun '(s2, s1) => s1 = s2 ⦄ (r a1 a2) ≈ (r a1 a2) ⦃ post ⦄)
                    (post_eq : forall bs bs', bs = bs' -> post bs bs')
 
-                   (*CA: "commutativity condition" always satisfied for example by sample o ;; sample o' *)
+                   (*Rem.: "commutativity condition" always satisfied for example by sample o ;; sample o' *)
                    (Hcomm: forall s,  θ_dens (θ0 ((a1 <- c1 ;; a2 <- c2 ;; retF (a1,a2) )) s) =
                                  θ_dens (θ0 ((a2 <- c2 ;; a1 <- c1 ;; retF (a1,a2) )) s) ):
 
@@ -1039,7 +1042,7 @@ Proof.
 Qed.       
 
 
-(*CA: a proved variant of the above -- less useful though *)
+(*Rem.: a proved variant of the above -- less useful though *)
 Lemma swap_ruleR' { A1 A2 B : ord_choiceType } { S : choiceType }
                   { I : S * S -> Prop}
                   { post : B * S -> B * S -> Prop } { Q : A1 * S -> A2 * S -> Prop }
@@ -1064,7 +1067,7 @@ Proof.
   exact: HR a1 a2.
 Qed.
 
-(*CA: TODO possibly generalize as above *)
+(*Rem.: TODO possibly generalize as above *)
 Theorem swap_rule_ctx { A1 A2 Bl Br : ord_choiceType } { S : choiceType }
                       { I pre : S * S -> Prop }
                       { post: Br * S -> Br * S -> Prop } { Q : A1 * S -> A2 * S -> Prop }
@@ -1084,5 +1087,6 @@ Proof.
      -- exact: Hinv2.
 Qed.
 
+Print Assumptions bounded_do_while_rule.
 
 End DerivedRules.

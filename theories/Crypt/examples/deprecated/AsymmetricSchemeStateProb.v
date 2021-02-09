@@ -70,7 +70,7 @@ Module Type AsymmetricSchemeParams.
   Parameter pub0 : PubKey.
   Parameter sec0 : SecKey.
 
-  (*CA: If I don't put these here I get some trubles later... *)
+  (*Rem.: If I don't put these here I get some trubles later... *)
 
   Parameter probE : Type -> Type.
   Parameter rel_choiceTypes : Type.
@@ -80,12 +80,12 @@ Module Type AsymmetricSchemeParams.
 
 End AsymmetricSchemeParams.
 
-(* CA: derive the rules *)
+(* Rem.: derive the rules *)
 Module ARules (Aparam : AsymmetricSchemeParams).
 
   Export Aparam.
 
-  (*CA: Uniform distributions over Plain, Cipher, Key and bool *)
+  (*Rem.: Uniform distributions over Plain, Cipher, Key and bool *)
   Variant Index :=
   | i_plain  : Index
   | i_cipher : Index
@@ -137,7 +137,7 @@ Module ARules (Aparam : AsymmetricSchemeParams).
 
 End ARules.
 
-(**CA: packages for Key Generation, Encryption and Decryption  **)
+(**Rem.: packages for Key Generation, Encryption and Decryption  **)
 Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
 
   Import π.
@@ -164,7 +164,7 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
 
 
   (* Definition rel_loc : {fset Location} := [fset counter_loc]. *)
-  (* ER: ; kg_loc ; enc_loc ; dec_loc ; challenge_loc ; pk_loc; sk_loc]. *)
+  (* Rem.: ; kg_loc ; enc_loc ; dec_loc ; challenge_loc ; pk_loc; sk_loc]. *)
 
   Definition Plain_len_pos : positive.
   Proof. exists #|Plain|.  apply /card_gt0P. by exists plain0. Defined.
@@ -207,7 +207,7 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
   (* *)
   
   
-  (*CA: the following have fset0 rather than a nonempty list of locations, because
+  (*Rem.: the following have fset0 rather than a nonempty list of locations, because
         it's the program that calls them to "decide" to do some get/put.
    *)
 
@@ -227,11 +227,11 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
   Definition Dec : package [interface] [interface val #[dec_id] :  chSecKey × chCipher → chPlain].
   Proof. exists fset0. exact Dec_open. Defined.
 
-  (* (**CA: these will be used to define DDH **) *)
-  (* (* CA: for DDH this is λ x => g^x *) *)
+  (* (**Rem.: these will be used to define DDH **) *)
+  (* (* Rem.: for DDH this is λ x => g^x *) *)
   (* Parameter SecKey2PubKey : SecKey -> PubKey. *)
 
-  (* (* CA: for DDH this is just multiplication in 'Z_q *) *)
+  (* (* Rem.: for DDH this is just multiplication in 'Z_q *) *)
   (* Parameter SecKey_op : SecKey -> SecKey -> SecKey. *)
 
 End AsymmetricSchemeAlgorithms.
@@ -474,7 +474,7 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
 
   Definition L_locs_counter := fset [:: counter_loc; pk_loc; sk_loc(* ; c_loc *)].
 
-  (* CA: are we sufficiently faithful to the joy of crypto? *)
+  (* Rem.: are we sufficiently faithful to the joy of crypto? *)
   #[program] Definition L_pk_ots_L_open : opackage L_locs_counter
     [interface val #[kg_id] :  'unit → chPubKey × chSecKey ;
                val #[enc_id]:  chPubKey × chPlain → chCipher ]

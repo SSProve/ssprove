@@ -120,11 +120,11 @@ Section ActionExamples.
 
   Section PointwiseAction.
     Context (A:Type) (M:monoid) (X:monoid_action M).
-    Let AM := pointwiseMonoid A M.
-    Definition pointwise_action (m:AM) (x : A -> X) (a:A) := m a ⧕ x a.
+    Let A_M := pointwiseMonoid A M.
+    Definition pointwise_action (m:A_M) (x : A -> X) (a:A) := m a ⧕ x a.
 
     Definition pointwiseActionFromLaws pf1 pf2 :=
-      @mkAction AM (A -> X) pointwise_action pf1 pf2.
+      @mkAction A_M (A -> X) pointwise_action pf1 pf2.
 
     Import FunctionalExtensionality.
     Program Definition pointwiseAction := pointwiseActionFromLaws _ _.

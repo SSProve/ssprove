@@ -815,7 +815,7 @@ Module PackageComposition (π : RulesParam).
         (trim (A1 :|: A2) (unionm (trim A1 p1) (trim A2 p2)))
         = (unionm (trim A1 p1) (trim A2 p2)).
     Proof.
-      (* TL: this has to be my worst proof ever.. I should clean it up! *)
+      (* Rem.: this has to be my worst proof ever.. I should clean it up! *)
       move=> A1 A2 p1 p2 H.
       unfold trim at 1.
       rewrite filterm_union.
@@ -953,7 +953,7 @@ Module PackageComposition (π : RulesParam).
         (h12 : parable E1 E2)
         (h23 : parable E2 E3)
         (h13 : parable E1 E3),
-        (* TL: hm, this use of parable_union + parable_sym is quite cumbersome.. *)
+        (* Rem.: hm, this use of parable_union + parable_sym is quite cumbersome.. *)
         package_transport (fsetUA I1 I2 I3) (fsetUA E1 E2 E3)
                           (par p1 (par p2 p3 h23) (parable_union h12 h13)) =
         par (par p1 p2 h12) p3 (parable_sym (parable_union (parable_sym h13) (parable_sym h23))).

@@ -10,7 +10,7 @@ as well as listing the assumptions that the formalisation makes.
 
 - Ocaml
 - Coq `8.12.0`
-- Equations `1.2.3`
+- Equations `1.2.3+8.12`
 - Mathcomp analysis `0.3.2`
 - Coq Extructures `0.2.2`
 
@@ -20,7 +20,8 @@ To build the dependency graph, you can optionally install `graphviz`. On macOS,
 You can get them from the `opam` package manager for `ocaml`:
 ```sh
 opam repo add coq-released https://coq.inria.fr/opam/released
-opam install coq-equations.1.2.3 coq-mathcomp-analysis.0.3.2 coq-extructures.0.2.2
+opam update
+opam install coq.8.12.0 coq-equations.1.2.3+8.12 coq-mathcomp-analysis.0.3.2 coq-extructures.0.2.2
 ```
 
 ## Step-by-step compilation guide
@@ -41,8 +42,6 @@ Run `make graph` to build a graph of dependencies between sources.
 | `theories/Crypt`      | This paper                                           |
 
 ## Mapping between paper and formalisation
-
-### Examples
 
 ### Package definition and laws
 
@@ -165,23 +164,125 @@ Lemma interchange :
 which can be read as
 `(p1 ∘ p3) || (p2 ∘ p4) = (p1 || p2) ∘ (p3 || p4)`.
 
+### Examples
+
+The PRF example is developed in `theories/Crypt/examples/PRF.v`.
+The security theorem is the following:
+
+```coq
+Theorem security_based_on_prf (Hprf : PRF_security) :
+  ∀ A : Adversary4Game [interface val #[i1] : chWords → chWords × chWords ]
+    (Hdisjoint_extra : fdisjoint A.π1 EVAL_location_ff) Hdisjoint1 Hdisjoint2,
+    @Advantage _ IND_CPA A Hdisjoint1 Hdisjoint2 <=
+    prf_epsilon (link A (MOD_CPA_ff_pkg)) + @statistical_gap A +
+    prf_epsilon (link A (MOD_CPA_tt_pkg)).
+```
+
+As we claim in the paper, it bounds the advantage of any adversary to the
+game pair `IND_CPA` by the sum of the statistical gap and the advantages against
+`MOD_CPA`.
+
+Note that we require here some disjointness of state hypotheses as these are
+not enforced by our package definitions and laws.
+
+The proof of security_based_on_prf relies on the following assumtpions:
+TODO we still did not prove rsamplerC and rsamplerC'
+
+
+The ElGamal example is developed in `theories/Crypt/examples/Elgamal.v`
+The security theorem is the following:
+
+```coq
+Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher.
+```
+
+ OT_rnd_cipher is defined in `theories/Crypt/examples/AsymScheme.v
+ ```coq
+ Definition OT_rnd_cipher : Prop := forall A H1 H2, @Advantage _ ots_real_vs_rnd A H1 H2 = 0.
+```
+
+The proof of Elgamal_OT relies on the following assumptions:
+
++ pkch_i, ch2c_c2ch in `theories/Crypt/examples/Elgamal.v`
+
+  stating that the mapping pk2ch (c2ch reps.) is a bijection between
+  the group of public keys `PubKey` (`Cipher' resp.) and the ordinal
+  'I_#(PubKey) ('I_#(Cipher)).
+
++ group_OTP, group_OTP_math in `theories/Crypt/examples/Elgamal.v`
+
+  stating that for a plaintext m (and g the generator of the group)
+
+  `C <$ uniform Cipher ;; return c` is equivalent to
+
+  `b <$ unifrom {0,.. q-1} ;; c <$ unifrom {0,.. q-1} ;; return (g^+b, m * g^+c)`
+
+  This condition was already proven in the literature
+
++  TODO: we still did not prove rsamplerC and rsamplerC'
+
+
 ### Probabilistic relational program logic
 
 TODO: I guess Lemma 1, 2 and Theorem 1 can go here besides Theorem 2.
+
+Figure 13 presents a selection of rules for our probabilistic relational
+program logic. Most of them can be found in
+`theories/Crypt/package/pkg_rhl.v` which provides an interface for use of those
+rules directly with `code`.
+
+| Rule in paper | Rule in Coq           |
+|---------------|-----------------------|
+| reflexivity   | `rreflexivity_rule`   |
+| seq           | `rbind_rule`          |
+| swap          | `rswap_rule`          |
+| eqDistrL      | `rrewrite_eqDistrL`   |
+| symmetry      | `rsymmetry`           |
+
+Some rules are for now only proven in the logic but have not been lifted
+to packages, they can be found in `theories/Crypt/rules/UniformStateProb.v`:
+
+| Rule in paper | Rule in Coq             |
+|---------------|-------------------------|
+| uniform       | `bounded_do_while_rule` |
+| asrt          | `assert_rule`           |
+| asrtL         | `assert_rule_left`      |
+
+Finally the "bwhile" rule is proven as `bounded_do_while_rule` in
+`theories/Crypt/rules/RulesStateProb.v`.
 
 ### Semantic model and soundness of rules
 
 ## Axioms and assumptions
 
-Throughout the development we rely on the axioms of functional extensionality
-and of proof irrelevance(?), as well as propositional extensionality as listed
-below:
+Throughout the development we rely on the axioms of functional extensionality,
+proof irrelevance, as well as propositional extensionality as listed below:
 
 ```coq
+ax_proof_irrel : ClassicalFacts.proof_irrelevance
 propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
 functional_extensionality_dep :
   ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
       (∀ x : A, f x = g x) → f = g
+```
+
+We further rely on the existence of a type of real numbers as used in the
+`mathcomp` library.
+
+```coq
+R : realType
+```
+
+By using `mathcomp-analysis` we also inherit one of the admitted lemmata they
+have:
+
+```coq
+interchange_psum :
+  ∀ (R : realType) (T U : choiceType) (S : T → U → R),
+    (∀ x : T, summable (T:=U) (R:=R) (S x)) →
+    summable (T:=T) (R:=R) (λ x : T, psum (λ y : U, S x y)) →
+    psum (λ x : T, psum (λ y : U, S x y)) =
+    psum (λ y : U, psum (λ x : T, S x y))
 ```
 
 Our methodology to find such dependencies is to use the `Print Assumptions`
@@ -207,7 +308,88 @@ but instead parameters of the `Package` module, which are listed nonetheless.
 
 ### TODO Check for other parts of the development
 
-### OLD BELOW?
+DUMP for PRF
 
-see theories/Crypt/Axioms.v
-We use functional extensionality and proof irrelevance throughout the development. We also assume the existence of a mathcomp type of real numbers.
+```coq
+Axioms:
+rsamplerC'
+  : ∀ (A : ord_choiceType) (L : {fset Location}) (o : Op)
+	  (c : program L Game_import A),
+      ⊨ ⦃ λ '(h1, h2), h1 = h2
+      ⦄ repr (r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (r, a))
+      ≈ repr (a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (r, a)) ⦃ eq ⦄
+rsamplerC
+  : ∀ (A : ord_choiceType) (L : {fset Location}) (o : Op)
+      (c : program L Game_import A),
+      ⊨ ⦃ λ '(h1, h2), h1 = h2
+      ⦄ repr (a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (a, r))
+      ≈ repr (r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (a, r)) ⦃ eq ⦄
+boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
+prf_epsilon : Adversary4Game [interface val #[i0] : chKey → chKey ] → R
+n : nat
+interchange_psum
+  : ∀ (R : realType) (T U : choiceType) (S : T → U → R),
+      (∀ x : T, summable (T:=U) (R:=R) (S x))
+      → summable (T:=T) (R:=R) (λ x : T, psum (λ y : U, S x y))
+        → psum (λ x : T, psum (λ y : U, S x y)) =
+          psum (λ y : U, psum (λ x : T, S x y))
+boolp.functional_extensionality_dep
+  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+      (∀ x : A, f x = g x) → f = g
+functional_extensionality_dep
+  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+      (∀ x : A, f x = g x) → f = g
+boolp.constructive_indefinite_description
+  : ∀ (A : Type) (P : A → Prop), (∃ x : A, P x) → {x : A | P x}
+ax_proof_irrel : ClassicalFacts.proof_irrelevance
+R : realType
+PRF : Words → Key → Key
+```
+
+DUMP for ElGamal
+
+```coq
+Axioms:
+rsamplerC'
+  : ∀ (A : ord_choiceType) (L : {fset Location}) (o : Op)
+      (c : program L Game_import A),
+      ⊨ ⦃ λ '(h1, h2), h1 = h2
+      ⦄ repr (r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (r, a))
+      ≈ repr (a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (r, a)) ⦃ eq ⦄
+rsamplerC
+  : ∀ (A : ord_choiceType) (L : {fset Location}) (o : Op)
+      (c : program L Game_import A),
+      ⊨ ⦃ λ '(h1, h2), h1 = h2
+      ⦄ repr (a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (a, r))
+      ≈ repr (r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (a, r)) ⦃ eq ⦄
+boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
+pkch_i : ∀ i : nat, (i < #[g])%N → ch2pk (pk2ch (g ^+ i)) = g ^+ i
+interchange_psum
+  : ∀ (R : realType) (T U : choiceType) (S : T → U → R),
+      (∀ x : T, summable (T:=U) (R:=R) (S x))
+      → summable (T:=T) (R:=R) (λ x : T, psum (λ y : U, S x y))
+        → psum (λ x : T, psum (λ y : U, S x y)) =
+          psum (λ y : U, psum (λ x : T, S x y))
+group_OTP
+  : ∀ (L : {fset Location}) (m : chFin Plain_len_pos),
+      ⊨ ⦃ λ '(h1, h2), h1 = h2
+      ⦄ repr (c ← (c ← sample U i_cipher ;; ret c) ;; ret (Some (c2ch c)))
+      ≈ repr
+          (b ← (b ← sample U i_sk ;; ret b) ;;
+           c ← (c ← sample U i_sk ;; ret c) ;;
+           ret (Some (c2ch (g ^+ b, ch2m m * g ^+ c)))) ⦃ eq ⦄
+g_gen : ζ = <[g]>
+gT : finGroupType
+g : gT
+boolp.functional_extensionality_dep
+  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+      (∀ x : A, f x = g x) → f = g
+functional_extensionality_dep
+  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+      (∀ x : A, f x = g x) → f = g
+boolp.constructive_indefinite_description
+  : ∀ (A : Type) (P : A → Prop), (∃ x : A, P x) → {x : A | P x}
+ch2c_c2ch : ∀ x : Cipher, ch2c (c2ch x) = x
+ax_proof_irrel : ClassicalFacts.proof_irrelevance
+R : realType
+```

@@ -176,7 +176,7 @@ End Translation.
 Section Unary_free_prob_monad.
   Context (probE : Type -> Type).
   Context (rel_choiceTypes : Type) (chEmb : rel_choiceTypes -> choiceType).
-  Context (Hch : forall r : rel_choiceTypes, chEmb r). (* CA: In principle chEmb could map every rel_choiceTypes to void *)
+  Context (Hch : forall r : rel_choiceTypes, chEmb r). (* Rem.: In principle chEmb could map every rel_choiceTypes to void *)
 
 
   (* Definition FreePr := @Free *)

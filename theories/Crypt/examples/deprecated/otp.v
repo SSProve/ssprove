@@ -31,7 +31,7 @@ Local Open Scope ring_scope.
 #[local] Axiom xorW0 : forall w, xorW w w0 = w.
 #[local] Axiom xorWK : forall w, xorW w w = w0.
 
-(*CA : when adding adversaries we might want also
+(*Rem. : when adding adversaries we might want also
        uniform distributions over booleans. In this
        case just change the Index to (≈ bool)
 
@@ -61,7 +61,7 @@ End WordsParam.
 
 Inductive probEmpty : Type -> Type := .
 
-(*CA: probably change this when adding adversaries
+(*Rem.: probably change this when adding adversaries
       (non necessarily uniform distributions over booleans!)
  *)
 Module OtherParam <: ProbRulesParam.

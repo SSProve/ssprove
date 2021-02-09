@@ -351,7 +351,7 @@ Module PRF_example.
     exists MOD_CPA_location. exact:MOD_CPA_ff.
   Defined.
 
-  (* CA: I was forced to add also table_location, o.w. cannot apply eq_prog_semj_impl *)
+  (* Rem.: I was forced to add also table_location, o.w. cannot apply eq_prog_semj_impl *)
   Definition IND_CPA_location : {fset Location} := fset [:: key_location].
 
 
@@ -829,7 +829,7 @@ Qed.
 
   Theorem security_based_on_prf (Hprf : PRF_security) :
     ∀ A : Adversary4Game [interface val #[i1] : chWords → chWords × chWords ],
-    (* ER: this extra condition is annoying, but it comes from the fact
+    (* Rem.: this extra condition is annoying, but it comes from the fact
            that we write at some point link (link A MOD_CPA) EVAL_ff, which
            implies that EVAL_ff and A have disjoint memories *)
     ∀ Hdisjoint_extra : fdisjoint A.π1 EVAL_location_ff,

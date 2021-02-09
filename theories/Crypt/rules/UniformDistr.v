@@ -58,7 +58,7 @@ Module DerivedRulesUniform (myparam :  ProbRulesParam) (myparamUniform : Uniform
   Import myparam.
   Import myparamUniform.
 
-  (* CA: we extend the initial parameters for the rules  *)
+  (* Rem.: we extend the initial parameters for the rules  *)
   Inductive UprobE : Type -> Type :=
   | Uni_W  : forall i, UprobE (fin_family i).
 
@@ -109,7 +109,7 @@ Module DerivedRulesUniform (myparam :  ProbRulesParam) (myparamUniform : Uniform
 
   End myparamU.
 
-  (*CA:  *)
+  (*Rem.:  *)
   Module MyRulesU := DerivedRules myparamU.
   Export myparamU.
   Export MyRulesU.
