@@ -176,11 +176,11 @@ Where to find the Selected Rules from Figure 13:
 - `seq`	        : rbind_rule in pkg_rhl.v
 - `swap`        : rswap_rule in pkg_rhl.v
 - `eqDistrL`    : rrewrite_eqDistrL in pkg_rhl.v
-- `symmetry`    : rsymmetry in pkg_rhl.v (TODO: proof still ongoing)
+- `symmetry`    : rsymmetry in pkg_rhl.v 
 - `bwhile`      : bounded_do_while_rule in RulesStateProb.v
 - `uniform`     : Uniform_bij_rule in UniformStateProb.v
-- `asrt`	      : assert_rule in UniformStateProb.v
-- `asrtL`	      : assert_rule_left in UniformStateProb.v
+- `asrt`        : assert_rule in UniformStateProb.v
+- `asrtL`	: assert_rule_left in UniformStateProb.v
 
 ### Semantic model and soundness of rules
 
