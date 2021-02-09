@@ -261,7 +261,18 @@ Lemma Reduction :
     Pr (link A (link M (G b))) true = Pr (link (link A M) (G b)) true.
 ```
 
-**Theorem 1** TODO
+**Theorem 1**
+```coq
+Theorem prove_relational' :
+  ∀ {export}
+    (P1 : package Game_import export)
+    (P2 : package Game_import export)
+    (I : heap_choiceType * heap_choiceType → Prop)
+    INV' P1.π1 P2.π1 I →
+    I (empty_heap, empty_heap) →
+    eq_up_to_inv I P1.π2 P2.π2 →
+    P1 ≈[ λ A H1 H2, 0 ] P2.
+```
 
 **Theorem 2**
 ```coq
