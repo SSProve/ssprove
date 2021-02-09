@@ -173,7 +173,7 @@ The security theorem is the following:
 Theorem security_based_on_prf (Hprf : PRF_security) :
   ∀ A : Adversary4Game [interface val #[i1] : chWords → chWords × chWords ]
     (Hdisjoint_extra : fdisjoint A.π1 EVAL_location_ff) Hdisjoint1 Hdisjoint2,
-    @Advantage _ IND_CPA A Hdisjoint1 Hdisjoint2 <=
+    @Advantage _ IND_CPA A Hdisjoint1 Hdisjoint2 ≤
     prf_epsilon (link A (MOD_CPA_ff_pkg)) + @statistical_gap A +
     prf_epsilon (link A (MOD_CPA_tt_pkg)).
 ```
@@ -212,8 +212,6 @@ Definition DH_security :=
 
 ### Probabilistic relational program logic
 
-TODO: I guess Lemma 1, 2 and Theorem 1 can go here besides Theorem 2.
-
 Figure 13 presents a selection of rules for our probabilistic relational
 program logic. Most of them can be found in
 `theories/Crypt/package/pkg_rhl.v` which provides an interface for use of those
@@ -239,41 +237,90 @@ to packages, they can be found in `theories/Crypt/rules/UniformStateProb.v`:
 Finally the "bwhile" rule is proven as `bounded_do_while_rule` in
 `theories/Crypt/rules/RulesStateProb.v`.
 
+We will now list the different lemmata and theorem proven on our probabilistic
+relational program logic in the paper. They can all be found in
+`theories/Crypt/package/pkg_rhl.v`.
+
+**Lemma 1**
+```coq
+Lemma TriangleInequality :
+  ∀ {Game_export : Interface} {F G H : Game_Type Game_export}
+    {ϵ1 ϵ2 ϵ3}
+    F ≈[ ϵ1 ] G →
+    G ≈[ ϵ2 ] H →
+    F ≈[ ϵ3 ] H →
+    ∀ A H1 H2 H3 H4 H5 H6,
+      ϵ3 A H1 H2 ≤ ϵ1 A H3 H4 + ϵ2 A H5 H6.
+```
+
+**Lemma 2**
+```coq
+Lemma ReductionLem :
+  ∀ {Game_export M_export : Interface} {M : package Game_export M_export}
+    (G : GamePair Game_export)
+    (Hdisjoint0 : fdisjoint M.π1 (G false).π1)
+    (Hdisjoint1 : fdisjoint M.π1 (G true).π1),
+    link M (G false)
+    ≈[ λ A H1 H2, @AdvantageE Game_export (G false) (G true) (link A M) (auxReduction Hdisjoint0 H1) (auxReduction Hdisjoint1 H2) ]
+    link M (G true).
+```
+
+**Theorem 1**
+```coq
+Theorem prove_relational' :
+  ∀ {export}
+    (P1 : package Game_import export)
+    (P2 : package Game_import export)
+    (I : heap_choiceType * heap_choiceType → Prop)
+    INV' P1.π1 P2.π1 I →
+    I (empty_heap, empty_heap) →
+    eq_up_to_inv I P1.π2 P2.π2 →
+    P1 ≈[ λ A H1 H2, 0 ] P2.
+```
+
+**Theorem 2**
+```coq
+Lemma Pr_eq_empty :
+  ∀ {X Y : ord_choiceType}
+    {A : pred (X * heap_choiceType)} {B : pred (Y * heap_choiceType)}
+    Ψ ϕ
+    (c1 : FrStP heap_choiceType X) (c2 : FrStP heap_choiceType Y)
+    ⊨ ⦃ Ψ ⦄ c1 ≈ c2 ⦃ ϕ ⦄ →
+    Ψ (empty_heap, empty_heap) →
+    (∀ x y,  ϕ x y → (A x) ↔ (B y)) →
+    \P_[ θ_dens (θ0 c1 empty_heap) ] A =
+    \P_[ θ_dens (θ0 c2 empty_heap) ] B.
+```
+
 ### Semantic model and soundness of rules
 
 This part of the mapping corresponds to section 5.
 
 #### 5.1 Relational effect observation
 
-Start by reading the two following files.
+In `theories/Relational/OrderEnrichedCategory.v` we introduce some abstract
+notions such as categories, functors, relative monads, lax morphisms of relative
+monads and isomorphisms of functors, all of which are order-enriched.
+The file `theories/Relational/OrderEnrichedCategory.v` instantiate all of these
+abstract notions.
 
-Appearing abstract notions in the first
-file: Categories, functors, relative monads, 
-lax morphisms of relative monads,
-isomorphisms of functors. All order-enriched.
-The second files instantiate all of those abstract notions.
-`theories/Relational/OrderEnrichedCategory.v`
-`theories/Relational/OrderEnrichedCategory.v`
+Free monads are defined in
+`theories/Crypt/rhl_semantics/free_monad/FreeProbProg.v`.
 
+In `theories/Crypt/rhl_semantics/ChoiceAsOrd.v` we introduce the category of
+choice types (`choiceType`) which are useful for sub-distributions:
+they are basically the types from which we can sample.
+They are one of the reason why our monads are always relative.
 
-Free monads are defined here:
-`theories/Crypt/rhl_semantics/free_monad/FreeProbProg.v`
-
-The category of choiceTypes is introduced here:
-`theories/Crypt/rhl_semantics/ChoiceAsOrd.v`
-choiceType's are only useful to subdistributions.
-They one of the reason why our monads are always relative. 
-
-More basic categories (less relevant to read):
-`theories/Crypt/rhl_semantics/more_categories/RelativeMonadMorph_prod.v`
-`theories/Crypt/rhl_semantics/more_categories/LaxComp.v`
-`theories/Crypt/rhl_semantics/more_categories/LaxFunctorsAndTransf.v`
-`theories/Crypt/rhl_semantics/more_categories/InitialRelativeMonad.v`
+More basic categories can be found in the directory
+`theories/Crypt/rhl_semantics/more_categories/`, namely in the files
+`RelativeMonadMorph_prod.v`, `LaxComp.v`, `LaxFunctorsAndTransf.v` and
+`InitialRelativeMonad.v`.
 
 
 #### 5.2 The probabilistic relational effect observation
 
-
+The theory for §5.2 is developed in the following files:
 `theories/Crypt/rhl_semantics/only_prob/Couplings.v`
 `theories/Crypt/rhl_semantics/only_prob/Theta_dens.v`
 `(theories/Crypt/rhl_semantics/only_prob/Theta_exCP.v)`
@@ -282,16 +329,19 @@ More basic categories (less relevant to read):
 
 #### 5.3 The stateful and probabilistic relational effect observation
 
-Abstract:
-`theories/Crypt/rhl_semantics/more_categories/OrderEnrichedRelativeAdjunctions.v`
-`theories/Crypt/rhl_semantics/more_categories/LaxMorphismOfRelAdjunctions.v`
-`theories/Crypt/rhl_semantics/more_categories/TransformingLaxMorph.v`
+The theory for §5.3 is developed in the following files, divided in two
+lists, one for abstract results, and one for the instances we use.
 
-Instances:
-`theories/Crypt/rhl_semantics/state_prob/OrderEnrichedRelativeAdjunctionsExamples.v`
-`theories/Crypt/rhl_semantics/state_prob/StateTransformingLaxMorph.v`
-`theories/Crypt/rhl_semantics/state_prob/StateTransfThetaDens.v`
-`theories/Crypt/rhl_semantics/state_prob/LiftStateful.v`
+Abstract (in `theories/Crypt/rhl_semantics/more_categories/`):
+`OrderEnrichedRelativeAdjunctions.v`
+`LaxMorphismOfRelAdjunctions.v`
+`TransformingLaxMorph.v`
+
+Instances (in `theories/Crypt/rhl_semantics/state_prob/`):
+`OrderEnrichedRelativeAdjunctionsExamples.v`
+`StateTransformingLaxMorph.v`
+`StateTransfThetaDens.v`
+`LiftStateful.v`
 
 
 ## Axioms and assumptions
@@ -330,8 +380,8 @@ interchange_psum :
 
 ### Admitted lemmata
 
-Our development curreently still contains unproven results. We will list
-them in this section.
+Our development currently still contains a few unproven results. We list
+them all in this section.
 
 - Two rules used in the examples are still not proven: `rsamplerC` and
 `rsamplerC'` which correspond to commutation laws for sampling.
@@ -351,16 +401,17 @@ rsamplerC' :
     ⦄ repr (r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (r, a))
     ≈ repr (a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (r, a)) ⦃ eq ⦄
 ```
-We believe that the rule rsampleC can be given a proof in two steps
-(1) interpret the code fragment (a ← c ;; r ← sample o ;; ret (a, r))
-(the other one too) as some function S -> SDistr( A x R x S )
-for S a set of global states
+We believe that the rule `rsampleC` can be given a proof in two steps:
+(1) Interpret the code fragment `a ← c ;; r ← sample o ;; ret (a, r)`
+(the other one too) as some function `S → SDistr( A × R × S )`
+for `S` a set of global states
 (this kind of interpretation is discussed in 3.2 in the paper).
-This amounts to an evaluation of the first 3 passes of our theta mapping (see 5.4).
+This amounts to an evaluation of the first 3 passes of our theta mapping
+(see 5.4).
 (2) If the two code fragments are equal in the latter monad then we win.
-It then remains to prove that pure (lifted) subdistributions always
+It then remains to prove that pure (lifted) sub-distributions always
 commute with any other stateful function, a fact that should be
-entailed by the commutativity of the subdistribution monad.
+entailed by the commutativity of the sub-distribution monad.
 
 
 - The security proof for ElGamal also relies on unproven properties
@@ -398,5 +449,3 @@ boolp.functional_extensionality_dep
 
 Note that `π.rel_choiceTypes`, `π.probE` and `π.chEmb` are not actually axioms
 but instead parameters of the `Package` module, which are listed nonetheless.
-
-### TODO Check for other parts of the development
