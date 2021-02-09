@@ -245,34 +245,29 @@ This part of the mapping corresponds to section 5.
 
 #### 5.1 Relational effect observation
 
-Start by reading the two following files.
+In `theories/Relational/OrderEnrichedCategory.v` we introduce some abstract
+notions such as categories, functors, relative monads, lax morphisms of relative
+monads and isomorphisms of functors, all of which are order-enriched.
+The file `theories/Relational/OrderEnrichedCategory.v` instantiate all of these
+abstract notions.
 
-Appearing abstract notions in the first file: Categories, functors,
-relative monads, lax morphisms of relative monads, isomorphisms of functors.
-All order-enriched.
-The second files instantiate all of those abstract notions.
-`theories/Relational/OrderEnrichedCategory.v`
-`theories/Relational/OrderEnrichedCategory.v`
+Free monads are defined in
+`theories/Crypt/rhl_semantics/free_monad/FreeProbProg.v`.
 
-
-Free monads are defined here:
-`theories/Crypt/rhl_semantics/free_monad/FreeProbProg.v`
-
-The category of choice types is introduced in
-`theories/Crypt/rhl_semantics/ChoiceAsOrd.v`, they are only useful to
-sub-distributions.
+In `theories/Crypt/rhl_semantics/ChoiceAsOrd.v` we introduce the category of
+choice types (`choiceType`) which are useful for sub-distributions:
+they are basically the types from which we can sample.
 They are one of the reason why our monads are always relative.
 
-More basic categories (less relevant to read):
-`theories/Crypt/rhl_semantics/more_categories/RelativeMonadMorph_prod.v`
-`theories/Crypt/rhl_semantics/more_categories/LaxComp.v`
-`theories/Crypt/rhl_semantics/more_categories/LaxFunctorsAndTransf.v`
-`theories/Crypt/rhl_semantics/more_categories/InitialRelativeMonad.v`
+More basic categories can be found in the directory
+`theories/Crypt/rhl_semantics/more_categories/`, namely in the files
+`RelativeMonadMorph_prod.v`, `LaxComp.v`, `LaxFunctorsAndTransf.v` and
+`InitialRelativeMonad.v`.
 
 
 #### 5.2 The probabilistic relational effect observation
 
-
+The theory for §5.2 is developed in the following files:
 `theories/Crypt/rhl_semantics/only_prob/Couplings.v`
 `theories/Crypt/rhl_semantics/only_prob/Theta_dens.v`
 `(theories/Crypt/rhl_semantics/only_prob/Theta_exCP.v)`
@@ -281,16 +276,19 @@ More basic categories (less relevant to read):
 
 #### 5.3 The stateful and probabilistic relational effect observation
 
-Abstract:
-`theories/Crypt/rhl_semantics/more_categories/OrderEnrichedRelativeAdjunctions.v`
-`theories/Crypt/rhl_semantics/more_categories/LaxMorphismOfRelAdjunctions.v`
-`theories/Crypt/rhl_semantics/more_categories/TransformingLaxMorph.v`
+The theory for §5.3 is developed in the following files, divided in two
+lists, one for abstract results, and one for the instances we use.
 
-Instances:
-`theories/Crypt/rhl_semantics/state_prob/OrderEnrichedRelativeAdjunctionsExamples.v`
-`theories/Crypt/rhl_semantics/state_prob/StateTransformingLaxMorph.v`
-`theories/Crypt/rhl_semantics/state_prob/StateTransfThetaDens.v`
-`theories/Crypt/rhl_semantics/state_prob/LiftStateful.v`
+Abstract (in `theories/Crypt/rhl_semantics/more_categories/`):
+`OrderEnrichedRelativeAdjunctions.v`
+`LaxMorphismOfRelAdjunctions.v`
+`TransformingLaxMorph.v`
+
+Instances (in `theories/Crypt/rhl_semantics/state_prob/`):
+`OrderEnrichedRelativeAdjunctionsExamples.v`
+`StateTransformingLaxMorph.v`
+`StateTransfThetaDens.v`
+`LiftStateful.v`
 
 
 ## Axioms and assumptions
