@@ -365,8 +365,8 @@ interchange_psum :
 
 ### Admitted lemmata
 
-Our development curreently still contains unproven results. We will list
-them in this section.
+Our development currently still contains a few unproven results. We list
+them all in this section.
 
 - Two rules used in the examples are still not proven: `rsamplerC` and
 `rsamplerC'` which correspond to commutation laws for sampling.
