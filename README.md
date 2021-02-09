@@ -177,7 +177,7 @@ Where to find the Selected Rules from Fig 13:
 - "swap"        : rswap_rule in pkg_rhl.v
 - "eqDistrL"    : rrewrite_eqDistrL in pkg_rhl.v
 - "symmetry"    : rsymmetry in pkg_rhl.v (TODO: proof still ongoing)
-- "bwhile"      : bounded_do_while_rule in RulesStateProb.v 
+- "bwhile"      : bounded_do_while_rule in RulesStateProb.v
 - "uniform"     : Uniform_bij_rule in UniformStateProb.v
 - "asrt"	: assert_rule in UniformStateProb.v
 - "asrtL"	: assert_rule_left in UniformStateProb.v
@@ -187,8 +187,7 @@ Where to find the Selected Rules from Fig 13:
 ## Axioms and assumptions
 
 Throughout the development we rely on the axioms of functional extensionality
-and of proof irrelevance, as well as propositional extensionality as listed
-below:
+and propositional extensionality as listed below:
 
 ```coq
 propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
@@ -196,6 +195,7 @@ functional_extensionality_dep :
   ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
       (∀ x : A, f x = g x) → f = g
 ```
+
 We further rely on the existence of a type of real numbers as used in the
 mathcomp library.
 
