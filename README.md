@@ -247,10 +247,9 @@ This part of the mapping corresponds to section 5.
 
 Start by reading the two following files.
 
-Appearing abstract notions in the first
-file: Categories, functors, relative monads, 
-lax morphisms of relative monads,
-isomorphisms of functors. All order-enriched.
+Appearing abstract notions in the first file: Categories, functors,
+relative monads, lax morphisms of relative monads, isomorphisms of functors.
+All order-enriched.
 The second files instantiate all of those abstract notions.
 `theories/Relational/OrderEnrichedCategory.v`
 `theories/Relational/OrderEnrichedCategory.v`
@@ -259,10 +258,10 @@ The second files instantiate all of those abstract notions.
 Free monads are defined here:
 `theories/Crypt/rhl_semantics/free_monad/FreeProbProg.v`
 
-The category of choiceTypes is introduced here:
-`theories/Crypt/rhl_semantics/ChoiceAsOrd.v`
-choiceType's are only useful to subdistributions.
-They one of the reason why our monads are always relative. 
+The category of choice types is introduced in
+`theories/Crypt/rhl_semantics/ChoiceAsOrd.v`, they are only useful to
+sub-distributions.
+They are one of the reason why our monads are always relative.
 
 More basic categories (less relevant to read):
 `theories/Crypt/rhl_semantics/more_categories/RelativeMonadMorph_prod.v`
@@ -351,16 +350,17 @@ rsamplerC' :
     ⦄ repr (r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (r, a))
     ≈ repr (a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (r, a)) ⦃ eq ⦄
 ```
-We believe that the rule rsampleC can be given a proof in two steps
-(1) interpret the code fragment (a ← c ;; r ← sample o ;; ret (a, r))
-(the other one too) as some function S -> SDistr( A x R x S )
-for S a set of global states
+We believe that the rule `rsampleC` can be given a proof in two steps:
+(1) Interpret the code fragment `a ← c ;; r ← sample o ;; ret (a, r)`
+(the other one too) as some function `S → SDistr( A × R × S )`
+for `S` a set of global states
 (this kind of interpretation is discussed in 3.2 in the paper).
-This amounts to an evaluation of the first 3 passes of our theta mapping (see 5.4).
+This amounts to an evaluation of the first 3 passes of our theta mapping
+(see 5.4).
 (2) If the two code fragments are equal in the latter monad then we win.
-It then remains to prove that pure (lifted) subdistributions always
+It then remains to prove that pure (lifted) sub-distributions always
 commute with any other stateful function, a fact that should be
-entailed by the commutativity of the subdistribution monad.
+entailed by the commutativity of the sub-distribution monad.
 
 
 - The security proof for ElGamal also relies on unproven properties
