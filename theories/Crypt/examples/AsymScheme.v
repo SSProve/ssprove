@@ -70,7 +70,7 @@ Module Type AsymmetricSchemeParams.
   Parameter pub0 : PubKey.
   Parameter sec0 : SecKey.
 
-  (*CA: If I don't put these here I get some trubles later... *)
+  (*Rem.: If I don't put these here I get some trubles later... *)
 
   Parameter probE : Type -> Type.
   Parameter rel_choiceTypes : Type.
@@ -155,7 +155,7 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
 
 
   (* Definition rel_loc : {fset Location} := [fset counter_loc]. *)
-  (* ER: ; kg_loc ; enc_loc ; dec_loc ; challenge_loc ; pk_loc; sk_loc]. *)
+  (* Rem.: ; kg_loc ; enc_loc ; dec_loc ; challenge_loc ; pk_loc; sk_loc]. *)
 
   Definition Plain_len_pos : positive.
   Proof. exists #|Plain|.  apply /card_gt0P. by exists plain0. Defined.

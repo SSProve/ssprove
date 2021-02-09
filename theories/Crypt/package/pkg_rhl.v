@@ -321,7 +321,7 @@ Module PackageRHL (π : RulesParam).
                (o : opsig) (ho : o \in E) (arg : src o)
                (e : lookup_op p o = None) : B.
     Proof.
-      (* TW: Done several times, I should make a lemma. *)
+      (* Rem.: Done several times, I should make a lemma. *)
       exfalso.
       destruct o as [n [S T]].
       cbn - [lookup_op] in e.
@@ -569,10 +569,10 @@ Module PackageRHL (π : RulesParam).
       (o : opsig) (ho : o \in E) (arg : src o) :
       program (p.π1) I (tgt o).
     Proof.
-      (* TW: I transformed this definition so that it computes directly. *)
+      (* Rem.: I transformed this definition so that it computes directly. *)
       destruct (lookup_op (p.π2 ∙1) o) as [f|] eqn:e.
       2:{
-        (* TW: Done several times, I should make a lemma. *)
+        (* Rem.: Done several times, I should make a lemma. *)
         exfalso.
         destruct p as [L [p hp]].
         destruct o as [n [S T]].
@@ -1882,7 +1882,7 @@ Module PackageRHL (π : RulesParam).
           1: reflexivity. 1: reflexivity. exact H0.
     Qed.
 
-    (* ER: How do we connect the package theory with the RHL?
+    (* Rem.: How do we connect the package theory with the RHL?
            Something along the following lines should hold? *)
     Lemma prove_relational {L1 L2} {export}
                (P1 : opackage L1 Game_import export)
@@ -1899,7 +1899,7 @@ Module PackageRHL (π : RulesParam).
       extensionality Hdisjoint1. extensionality Hdisjoint2.
       pose r' := get_package_op A RUN RUN_in_A_export.
       pose r := r' tt.
-      (* ER: from linking we should get the fact that A.π1 is disjoint from L1 and L2,
+      (* Rem.: from linking we should get the fact that A.π1 is disjoint from L1 and L2,
              and then from that conclude that we are invariant on A.π1 *)
       (* unshelve epose (fdisjoint_from_link A.π2 P1 _) as Hdisjoint1. *)
       (* { eexists. reflexivity. } *)
@@ -2129,7 +2129,7 @@ Proof. rewrite !repr_if. by apply: if_rule. Qed.
 (* skipped for now:
 Theorem bounded_do_while_rule *)
 
-(*TODO: asymmetric variants of bounded_do_while -- CA: low priority as not useful for our examples *)
+(*TODO: asymmetric variants of bounded_do_while -- Rem.: low priority as not useful for our examples *)
 
 Lemma rcoupling_eq { A : ord_choiceType } { L : {fset Location} }
                   (K1 K2 : program L Game_import A )
@@ -2242,7 +2242,7 @@ Proof.
   apply: rrewrite_eqDistrL.
   - apply: rreflexivity_rule. 
   - move => s. f_equal.
-    (*CA: we should be able to rewrite smMonequ1/2 ? and have the equality? *)
+    (*Rem.: we should be able to rewrite smMonequ1/2 ? and have the equality? *)
   
 Admitted.
 
@@ -2260,7 +2260,7 @@ Admitted.
 
 
 (* TODO: generalize the corresponding rule in RulesStateProb.v  *)
-(* CA: not hight priority as never used yet! *)
+(* Rem.: not hight priority as never used yet! *)
 Theorem rswap_rule_ctx { A : ord_choiceType } { L : {fset Location} }
                        { I pre } { post Q : A * heap -> A * heap -> Prop }
                        (l r c1 c2 : program L Game_import A)
@@ -2299,7 +2299,7 @@ Qed.
 
 
 
-(* CA: not more useful than sampler_case *)
+(* Rem.: not more useful than sampler_case *)
 (* Lemma rsample_rule { B1 B2 : ord_choiceType} { L : {fset Location}}  { o } *)
 (*       c1 c2  *)
 (*       pre (post : B1 * heap -> B2 * heap -> Prop) *)

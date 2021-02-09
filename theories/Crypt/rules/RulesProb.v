@@ -355,7 +355,7 @@ Proof.
   simpl; intuition.
 Qed.
 
-(*CA: same as post_weaken_rule but with ord_choice_types *)
+(*Rem.: same as post_weaken_rule but with ord_choice_types *)
 Theorem post_weaken_rule_ch  {A1 A2 : ord_choiceType}
                              {d1 : MFreePr A1}
                              {d2 : MFreePr A2} :
@@ -525,14 +525,14 @@ Proof.
 Defined.
 
 (* I am not sure I follow the meaning of for_loop? It executes the command only once? *)
-(* ER: modified this to execute n-times c *)
+(* Rem.: modified this to execute n-times c *)
 Fixpoint for_loop {A : choiceType} (c : A -> MFreePr A) (n : nat) (a : A) :=
   match n with
   | 0  => c a
   | S m => ord_relmon_bind MFreePr (fun a' => for_loop c m a') (c a)
   end.
 
-(* ER: this is a bounded version of the iteration operator found in monads with iteration *)
+(* Rem.: this is a bounded version of the iteration operator found in monads with iteration *)
 Fixpoint bounded_iter {A B : choiceType} (n : nat) (c : A -> MFreePr (sum_choiceType A B)) (a : A) :
   MFreePr (sum_choiceType unit_choiceType B) :=
   match n with
@@ -550,7 +550,7 @@ Definition bounded_loop {A B : choiceType} (n : nat) (b : A -> MFreePr bool_choi
        | false => ord_relmon_unit MFreePr _ (inl a')
                                                         end) (b a')) a.
 
-(* ER: this a variant following what's in The next 700... *)
+(* Rem.: this a variant following what's in The next 700... *)
 Fixpoint bounded_do_while  (n : nat) (c : MFreePr bool_choiceType) :
   MFreePr bool_choiceType :=
   (* false means fuel emptied, true means execution finished *)
@@ -563,7 +563,7 @@ Fixpoint bounded_do_while  (n : nat) (c : MFreePr bool_choiceType) :
                                   ) c
   end.
 
-(* ER: maybe something like the rule in the paper can be proven? yes...
+(* Rem.: maybe something like the rule in the paper can be proven? yes...
        but I do not have intuition of how it could be used... examples needed! *)
 Theorem bounded_do_while_rule  {A1 A2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2} {n : nat}
         (c1 c2 : MFreePr bool_choiceType)
@@ -805,7 +805,7 @@ Proof.
     simpl in *. unfold nat_of_bool in s. rewrite /nat_of_bool. exact s.
 Qed.
 
-(*CA: Do we have a corollary coupling_le? *)
+(*Rem.: Do we have a corollary coupling_le? *)
 Corollary coupling_le { A : ord_choiceType }
                       (K1 K2 : MFreePr A )
                       { Ψ : Prop }
@@ -923,12 +923,12 @@ Proof.
     rewrite -(H (Hch x)) //=.
     apply: f_equal.
     rewrite  /FreeProbProg.rFree_obligation_2.
-    (*CA: the LHS is bindrFree _ _ (r ar) [eta f s]
+    (*Rem.: the LHS is bindrFree _ _ (r ar) [eta f s]
      *) admit.
   - destruct s. simpl in r, H.
     rewrite -(H (Hch x)) //=.
     rewrite  /FreeProbProg.rFree_obligation_2.
-    (*CA: the LHS is bindrFree _ _ (r ar) [eta f s]
+    (*Rem.: the LHS is bindrFree _ _ (r ar) [eta f s]
       *) admit.
   - destruct s0 as [x0 p0]. simpl in H0.
     specialize (H0 (Hch x0)).

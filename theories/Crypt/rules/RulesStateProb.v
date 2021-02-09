@@ -85,7 +85,7 @@ Import myparam.
 #[local] Definition WrelSt { S1 S2 : choiceType }  := (rlmm_codomain (@θ S1 S2)).
 
 
-(* CA: this spec monad is a ordered relative monad, while previously we were using an ordered monad *)
+(* Rem.: this spec monad is a ordered relative monad, while previously we were using an ordered monad *)
 
 Definition retW { A1 A2 : ord_choiceType } {S1 S2 : choiceType} (a : A1 * A2) :  Base.dfst (@WrelSt S1 S2 ⟨ A1, A2 ⟩).
 Proof.
@@ -297,9 +297,9 @@ Proof.
   by apply (pre_weaken_rule (fun st => True) _).
 Qed.
 
-(* CA: took around 40s to Qed. *)
+(* Rem.: took around 40s to Qed. *)
 (* post-condition manipulating rules *)
-(* ER: simplified the proof resorting to weaken_rule, should be quickier *)
+(* Rem.: simplified the proof resorting to weaken_rule, should be quickier *)
 Theorem post_weaken_rule  {A1 A2 : ord_choiceType} {S1 S2 : choiceType}
                           {d1 : FrStP S1 A1}
                           {d2 : FrStP S2 A2} :
@@ -367,7 +367,7 @@ Proof.
 Qed.
 
 
-(* CA: can we do \sum_ ( c \in C ) ... where C : choiceType? *)
+(* Rem.: can we do \sum_ ( c \in C ) ... where C : choiceType? *)
 Definition prod_comp { L R } { M : finType } { d1 : SDistr L } {d2 : SDistr M } { d3 : SDistr R } d12 d23
            ( H12 : coupling d12 d1 d2 ) ( H23 : coupling d23 d2 d3 ): SDistr (F_choice_prod ⟨ L,  R ⟩).
 Proof.
@@ -498,7 +498,7 @@ Proof.
     split; auto.
 Qed.
 
-(*TODO: asymmetric variants of bounded_do_while -- CA: low priority as not useful for our examples *)
+(*TODO: asymmetric variants of bounded_do_while -- Rem.: low priority as not useful for our examples *)
 
 #[local] Definition θ_dens { S : choiceType } { X : ord_choiceType } :=
   @Theta_dens.unary_theta_dens probE rel_choiceTypes chEmb prob_handler (F_choice_prod_obj ⟨ X, S ⟩).
@@ -746,7 +746,7 @@ Proof.
   simpl in d', H1, H2. exists (dsym d'). split.
     -- apply: dsym_coupling H1. 
     -- move => [b h2] [a h1] Hdsym. apply: (H2 (a, h1) (b, h2)).
-       (* CA: we cannot rewrite /dsym in Hdsym because it is opaque! *)
+       (* Rem.: we cannot rewrite /dsym in Hdsym because it is opaque! *)
 Admitted. 
        
 (* Definition symmetric_pre { S : choiceType } (I : S * S -> Prop) : Prop := *)
@@ -770,7 +770,7 @@ Proof.
     assumption.
 Qed.
 
-(*CA: don't worry too much about indexes and order, in most cases predicates will be symmetric *)
+(*Rem.: don't worry too much about indexes and order, in most cases predicates will be symmetric *)
 Theorem swap_ruleL { A1 A2 B : ord_choiceType } { S : choiceType }
                    { pre I : S * S -> Prop }
                    { post :  A2 * S -> A1 * S -> Prop }
@@ -1006,7 +1006,7 @@ Theorem swap_ruleR { A1 A2 B : ord_choiceType } { S : choiceType }
                    (HR    : forall a1  a2, ⊨ ⦃ fun '(s2, s1) => s1 = s2 ⦄ (r a1 a2) ≈ (r a1 a2) ⦃ post ⦄)
                    (post_eq : forall bs bs', bs = bs' -> post bs bs')
 
-                   (*CA: "commutativity condition" always satisfied for example by sample o ;; sample o' *)
+                   (*Rem.: "commutativity condition" always satisfied for example by sample o ;; sample o' *)
                    (Hcomm: forall s,  θ_dens (θ0 ((a1 <- c1 ;; a2 <- c2 ;; retF (a1,a2) )) s) =
                                  θ_dens (θ0 ((a2 <- c2 ;; a1 <- c1 ;; retF (a1,a2) )) s) ):
 
@@ -1039,7 +1039,7 @@ Proof.
 Qed.       
 
 
-(*CA: a proved variant of the above -- less useful though *)
+(*Rem.: a proved variant of the above -- less useful though *)
 Lemma swap_ruleR' { A1 A2 B : ord_choiceType } { S : choiceType }
                   { I : S * S -> Prop}
                   { post : B * S -> B * S -> Prop } { Q : A1 * S -> A2 * S -> Prop }
@@ -1064,7 +1064,7 @@ Proof.
   exact: HR a1 a2.
 Qed.
 
-(*CA: TODO possibly generalize as above *)
+(*Rem.: TODO possibly generalize as above *)
 Theorem swap_rule_ctx { A1 A2 Bl Br : ord_choiceType } { S : choiceType }
                       { I pre : S * S -> Prop }
                       { post: Br * S -> Br * S -> Prop } { Q : A1 * S -> A2 * S -> Prop }

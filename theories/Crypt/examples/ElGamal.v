@@ -154,7 +154,7 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
 
 
   (* Definition rel_loc : {fset Location} := [fset counter_loc]. *)
-  (* ER: ; kg_loc ; enc_loc ; dec_loc ; challenge_loc ; pk_loc; sk_loc]. *)
+  (* Rem.: ; kg_loc ; enc_loc ; dec_loc ; challenge_loc ; pk_loc; sk_loc]. *)
 
   Definition Plain_len_pos : positive.
   Proof. exists #|Plain|.  apply /card_gt0P. by exists plain0. Defined.
@@ -439,7 +439,7 @@ Lemma group_OTP_math { L : {fset  Location } } : forall m (s : heap_choiceType),
      (MyAlg.MyPackage.θ0
         (@repr _ L ((b ← (b ← sample U i_sk ;; ret b) ;; c ← (c ← sample U i_sk ;; ret c) ;;
                      ret (Some (c2ch (g ^+ b, g ^+ c)))))) s). 
-Admitted. (* CA: look for an informal proof of this in the CertyCrypt paper *)
+Admitted. (* Rem.: look for an informal proof of this in the CertyCrypt paper *)
   
 Lemma group_OTP { L : { fset Location } } : forall m, 
     ⊨ ⦃ λ '(h1, h2), h1 = h2 ⦄
@@ -456,7 +456,7 @@ Proof.
     - by apply: rreflexivity_rule. 
     - exact: group_OTP_math. } 
   move => s. apply rcoupling_eq with (ψ := fun '(s1, s2) => s1 = s2). 2: by reflexivity.
-  (*CA:
+  (*Rem.:
    1. sampling c <$ U i_cipher is the same as sampling two element of the group say (C1,C2) <$ U (G × G) 
    2. the map (g^+_, g^+_) is a bijection and we can use the uniform bij rule.
  *) Admitted.  
@@ -485,7 +485,7 @@ Proof.
 Qed.
 
 
-(*CA: it would be good to prove these before the deadline *)
+(*Rem.: it would be good to prove these before the deadline *)
 Lemma pkch_i : forall i (H : (i < #[g])%N), ch2pk (pk2ch (g^+i)) = g^+i. 
 Proof.
   move => i Hi.

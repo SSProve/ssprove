@@ -8,7 +8,7 @@
 
 *)
 
-(* CA: TODO In the SSEP paper packages return (r,c) we only return c *)
+(* Rem.: TODO In the SSEP paper packages return (r,c) we only return c *)
 
 From Relational Require Import
      OrderEnrichedCategory
@@ -99,7 +99,7 @@ Module Type SymmetricSchemeRules (π : SymmetricSchemeParam).
 
 End SymmetricSchemeRules.
 
-(* CA: EXPERIMENT with current chUniverse
+(* Rem.: EXPERIMENT with current chUniverse
 
    TODO:
    + conclude proof of the lemma
@@ -144,7 +144,7 @@ Module PRF_example.
 
   Definition rel_loc : {fset Location} :=
     fset [:: key_location; plain_location; cipher_location; salt_location; table_location].
-  (* ER: i0;  i1; i2 ; -> only memory locations should belong here, not program entries/package oracles *)
+  (* Rem.: i0;  i1; i2 ; -> only memory locations should belong here, not program entries/package oracles *)
 
 
   (* Parameter PRF : forall (r: Words) (k : Key), raw_program Key. *)
@@ -176,7 +176,7 @@ Module PRF_example.
    }
    ].
 
-   (* (* ER: this shouldn't belong here, but everything is so convoluted... *) *)
+   (* (* Rem.: this shouldn't belong here, but everything is so convoluted... *) *)
    (* Definition _assert (L : {fset Location}) (I : Interface) (b : bool) : program L I chUnit. *)
    (*   unfold program. *)
    (*   destruct b. *)
@@ -213,11 +213,11 @@ Module PRF_example.
     #[program] Definition EVAL_opkg_ff : opackage rel_loc [interface] [interface val #[i0] : chWords → chKey] :=
    [package def #[i0] ( r : chWords) : chKey
  {
-   T ← get table_location or emptym ;; (*CA: isn't a bit odd that the table is an option? *)
-   (* ER: indeed, it's annoying. I've used a default empytm with "or emptym" *)
+   T ← get table_location or emptym ;; (*Rem.: isn't a bit odd that the table is an option? *)
+   (* Rem.: indeed, it's annoying. I've used a default empytm with "or emptym" *)
    match (getm T 0) with
    | None  => T_key <$ (U (mkpos i_key)) ;;
-             ret T_key (* ER: here's still missing the update to the table? *)
+             ret T_key (* Rem.: here's still missing the update to the table? *)
    | Some T_key =>  ret T_key
    end
    }
@@ -227,7 +227,7 @@ Module PRF_example.
   (* #[program] Definition EVAL_opkg_ff : opackage rel_loc [interface] [interface val #[i0] : chWords → chKey] := *)
   (*  [package def #[i0] ( r : chWords) : chKey *)
   (*  { *)
-  (*    Tx_init ←  get key_location ;; (* CA: not sure this is the right location *) *)
+  (*    Tx_init ←  get key_location ;; (* Rem.: not sure this is the right location *) *)
   (*    match Tx_init with *)
   (*        | None  => Tx <$ (U i_key) ;; *)
   (*                   ret Tx *)
@@ -366,12 +366,12 @@ Proof.
     move => L1 L2. split; move => L1_eq_L2; by rewrite L1_eq_L2.
   }
   eq_up_to_inv_simplify.
-  (*CA: here Coq gets stuck for me! *)
+  (*Rem.: here Coq gets stuck for me! *)
    (* setoid_rewrite program_link_eqmatch_option. *)
-  (* TW: Now, it looks like something manageable! *)
+  (* Rem.: Now, it looks like something manageable! *)
   simpl injectLocations.
   (******)
-  (*CA: Is it possible to write a tactic that changes constructors with binds? *)
+  (*Rem.: Is it possible to write a tactic that changes constructors with binds? *)
   rewrite [_ ← sample _ ;; _ ← sample _ ;; _] sampler_bind.
   rewrite [H ← sample _ ;; _ ← sample _ ;; _] sampler_bind.
   rewrite [_ ← get _ ;; _] getr_bind.
@@ -408,7 +408,7 @@ Proof.
           destruct c.
         ++ apply: ret o.
         ++ apply: ret w0. }
-   2: { admit. (*CA: not as immediate as expected *) }
+   2: { admit. (*Rem.: not as immediate as expected *) }
   + unshelve eapply rrewrite_eqDistrR.
     { apply: (sampler (U (mkpos i_words))) => /= r.
       apply: bind.
@@ -473,7 +473,7 @@ Proof.
 (*     repeat (apply Eqdep.EqdepTheory.inj_pair2 in Heq). *)
 (*     subst. *)
 (*     (* *) *)
-(*     (* (*CA: the LHS of the judjement has the form { raw_program | valid_program }  *) *) *)
+(*     (* (*Rem.: the LHS of the judjement has the form { raw_program | valid_program }  *) *) *)
 (*     (* (*       while we want a program to use the Rules *)  *) *)
 (*     have key_location_in_rel_loc : key_location \in rel_loc :|: rel_loc. *)
 (*     { rewrite in_fsetU. apply /orP. left. package_obtac. } *)
@@ -555,7 +555,7 @@ Proof.
 (*           change (cast_fun erefl erefl ?f) with f. *)
 (*           repeat program setoid fold. *)
 (*           eapply (rpost_weaken_rule _ (fun '(x, h1) '(y, h2) =>  x = y /\ h1 = h2)). *)
-(*           - (*CA: this is a hack, we are trying to "rewrite" more nicely the program by hand *) *)
+(*           - (*Rem.: this is a hack, we are trying to "rewrite" more nicely the program by hand *) *)
 (*             unshelve eapply rrewrite_eqDistrR.  *)
 (*             1:{ *)
 (*               apply (sampler (U i_words)) => r'. *)
@@ -580,9 +580,9 @@ Proof.
 (*             } *)
 (*             move => s'.  *)
 (*             f_equal. f_equal. f_equal. *)
-(*             (* CA: the two programs should be syntactically equal  *) *)
-(*             (* TW: It seems they are not? *) *)
-(*             (* CA: right, in the RHS we do put;; get  *) *)
+(*             (* Rem.: the two programs should be syntactically equal  *) *)
+(*             (* Rem.: It seems they are not? *) *)
+(*             (* Rem.: right, in the RHS we do put;; get  *) *)
 (*   (*                  and thus the val2word does a casting... *) *)
 (*             Transparent sampler getr bind ret putr. *)
 (*             apply program_ext. cbn. f_equal. extensionality x. *)
@@ -613,7 +613,7 @@ Proof.
 (*         } *)
 (*         apply: (rpost_weaken_rule _ eq). *)
 (*         2:{ move => [a1 h1] [a2 h2] [H1 H2]. split; assumption. } *)
-(*         admit. (*CA: this proof should be "T correctly implements PRF" *) *)
+(*         admit. (*Rem.: this proof should be "T correctly implements PRF" *) *)
 (*       + inversion Hrefl'. contradiction. *)
 (*     - inversion Hrefl. contradiction. *)
 (*   } *)
@@ -665,12 +665,12 @@ Proof.
     (* have hfoo : rel_loc :|: rel_loc = rel_loc. { apply: fsetUidPr. by apply: fsubsetxx. }   *)
     (* rewrite hfoo in Hdisjoint1, Hdisjoint2. clear hfoo. *)
     (* have hfoo :  A.π1 =  A.π1 :|: rel_loc by admit. *)
-    (* (*CA: if the attacker accesses to all rel_locations then it is *)
+    (* (*Rem.: if the attacker accesses to all rel_locations then it is *)
     (* trivially true. If the attacker does not then disjointness should *)
     (* still hold *) *)
     (* rewrite hfoo in Hdisjoint1, Hdisjoint2. clear hfoo. *)
     apply: (Hprf (A ∘ MOD_CPA_ff_pkg)); rewrite /=; admit.
-    (*CA: the "new" attacker has disjotint memory *)
+    (*Rem.: the "new" attacker has disjotint memory *)
   - have sum_sub : `|Pr ((A ∘ MOD_CPA_ff_pkg) ∘ EVAL_pkg_ff) true - Pr ((A ∘ MOD_CPA_tt_pkg) ∘ EVAL_pkg_tt) true| =
                    `|Pr ((A ∘ MOD_CPA_ff_pkg) ∘ EVAL_pkg_ff) true - Pr ((A ∘ MOD_CPA_ff_pkg) ∘ EVAL_pkg_tt) true +
                      Pr ((A ∘ MOD_CPA_ff_pkg) ∘ EVAL_pkg_tt) true - Pr ((A ∘ MOD_CPA_tt_pkg) ∘ EVAL_pkg_tt) true|

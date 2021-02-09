@@ -290,7 +290,7 @@ Module CorePackageTheory (π : RulesParam).
 
     Import SPropAxioms. Import FunctionalExtensionality.
 
-    (* PGH: should probably not use auto here in the proof relevant bits *)
+    (* Rem.: should probably not use auto here in the proof relevant bits *)
     Program Definition rFree : ord_relativeMonad choice_incl :=
       @mkOrdRelativeMonad ord_choiceType TypeCat choice_incl program _ _ _ _ _ _.
     Next Obligation. apply ret. auto. Defined.

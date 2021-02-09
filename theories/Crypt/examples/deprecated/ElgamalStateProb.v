@@ -83,7 +83,7 @@ Qed.
 (* order of g *)
 Definition q : nat := #[g].
 
-(*CA: cyclic -> abelian (i.e. commutative) however the ssreflect definition of abelian is the one with subgroups *)
+(*Rem.: cyclic -> abelian (i.e. commutative) however the ssreflect definition of abelian is the one with subgroups *)
 Lemma group_prodC : forall x y : gT, x * y = y * x.
 Admitted.
   
@@ -143,7 +143,7 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
 
 
   (* Definition rel_loc : {fset Location} := [fset counter_loc]. *)
-  (* ER: ; kg_loc ; enc_loc ; dec_loc ; challenge_loc ; pk_loc; sk_loc]. *)
+  (* Rem.: ; kg_loc ; enc_loc ; dec_loc ; challenge_loc ; pk_loc; sk_loc]. *)
 
   Definition Plain_len_pos : positive.
   Proof. exists #|Plain|.  apply /card_gt0P. by exists plain0. Defined.
@@ -275,7 +275,7 @@ Definition DH_rnd : package  [interface] [interface val #[10]: 'unit → chPubKe
 Proof. exists DH_loc. exact: DH_rnd_opkg. Defined.
 
 
-(*CA: I don't understand why this Fail *)
+(*Rem.: I don't understand why this Fail *)
 #[program] Definition Aux_opkg : opackage (fset [:: counter_loc])
      [interface val #[10]: 'unit → chPubKey × chCipher]
      [interface val #[challenge_id'] : chPlain → 'option chCipher] :=
@@ -421,7 +421,7 @@ Lemma group_OTP_math { L : {fset  Location } } : forall m (s : heap_choiceType),
      (MyAlg.MyPackage.θ0
         (@repr _ L ((b ← (b ← sample U i_sk ;; ret b) ;; c ← (c ← sample U i_sk ;; ret c) ;;
                      ret (Some (c2ch (g ^+ b, g ^+ c)))))) s). 
-Admitted. (* CA: look for an informal proof of this in the CertyCrypt paper *)
+Admitted. (* Rem.: look for an informal proof of this in the CertyCrypt paper *)
   
 Lemma group_OTP { L : { fset Location } } : forall m, 
     ⊨ ⦃ λ '(h1, h2), h1 = h2 ⦄
@@ -438,7 +438,7 @@ Proof.
     - by apply: rreflexivity_rule. 
     - exact: group_OTP_math. } 
   move => s. apply rcoupling_eq with (ψ := fun '(s1, s2) => s1 = s2). 2: by reflexivity.
-  (*CA:
+  (*Rem.:
    1. sampling c <$ U i_cipher is the same as sampling two element of the group say (C1,C2) <$ U (G × G) 
    2. the map (g^+_, g^+_) is a bijection and we can use the uniform bij rule.
  *) Admitted.  
@@ -481,7 +481,7 @@ Proof.
   (**********************************)
   have HR : Pr (A ∘ ots_real_vs_rnd false) true = Pr (A ∘ Aux ∘ DH_rnd) true.
   { apply: GRing.subr0_eq. apply: normr0_eq0.
-    (*CA: I don't know why fold does not fold *)
+    (*Rem.: I don't know why fold does not fold *)
     have Hfool : `|Pr (A ∘ ots_real_vs_rnd false) true - Pr (A ∘ Aux ∘ DH_rnd) true| =
     (@AdvantageE [interface val #[challenge_id'] : chPlain → 'option chCipher ]
                  (ots_real_vs_rnd false) (Aux ∘ DH_rnd) A Hdisj1 Hdisj1') by [].

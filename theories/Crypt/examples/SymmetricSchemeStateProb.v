@@ -8,7 +8,7 @@
 
 *)
 
-(* CA: TODO In the SSEP paper packages return (r,c) we only return c *)
+(* Rem.: TODO In the SSEP paper packages return (r,c) we only return c *)
 
 From Relational Require Import
      OrderEnrichedCategory
@@ -226,7 +226,7 @@ Module PRF_example.
 
   Definition rel_loc : {fset Location} :=
     fset [:: key_location ; cipher_location ; table_location ].
-  (* ER: i0;  i1; i2 ; -> only memory locations should belong here, not program entries/package oracles *)
+  (* Rem.: i0;  i1; i2 ; -> only memory locations should belong here, not program entries/package oracles *)
 
 
   (* Parameter PRF : forall (r: Words) (k : Key), raw_program Key. *)
@@ -300,7 +300,7 @@ Module PRF_example.
     λ (b : bool),
       if b then EVAL_pkg_tt else EVAL_pkg_ff.
 
-  (*CA: Notice that we put also table_location here!
+  (*Rem.: Notice that we put also table_location here!
         Because we want IND_CPA ∘ ENC  and MOD_CPA ∘ EVAL to have the same locations.
   *)
   Definition ENC_location := fset [:: key_location ; cipher_location ; table_location ].

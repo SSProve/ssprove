@@ -59,7 +59,7 @@ Proof.
   apply: divr_ge0; by apply: ler0n.
 Qed.
 
-(* CA: TODO: generalize this *)
+(* Rem.: TODO: generalize this *)
 Lemma sum_const_seq_finType { T : finType } ( J : seq T) (k : R) (Huniq : uniq J) :
   \sum_(j <- J) k = \sum_(j in (seq_sub_finType J)) k.
 Proof.
@@ -213,13 +213,13 @@ Proof.
   reflexivity.
 Qed.
 
-(*CA: adapting GRing.sumr_const *)
+(*Rem.: adapting GRing.sumr_const *)
 Lemma sumr_const (T : finType) (x : R): \sum_(i <- enum T) x = x * (#|T|%:~R).
 Proof.
   rewrite sum_const_seq_finType.
   2: { apply enum_uniq. }
   rewrite GRing.sumr_const pmulrn /=.
-  (* CA: need to show #|seq_sub (T:=T) (enum T)| = #|T| *)
+  (* Rem.: need to show #|seq_sub (T:=T) (enum T)| = #|T| *)
   rewrite !enumT.
   unfold intmul.
   rewrite GRing.mulrC.

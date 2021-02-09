@@ -33,7 +33,7 @@ Infix "-s>" := (s_impl) (right associativity, at level 86, only parsing).
 
 Local Open Scope ring_scope.
 
-(* CA's TODO:
+(* Rem.'s TODO:
 
    Define θ: SDistr × SDistr ==> ×; Cont_Prop
 
@@ -44,7 +44,7 @@ Local Open Scope ring_scope.
 
                ∃ d ~ < c1, c2 >. ∀ (a1 : A1) (a2 : A2). d(a1, a2) > 0 -> π(a1, a2)
 
-    CA's math intuition: ∃ d ~ < c1, c2 >. ∫_{¬ π} d = 0
+    Rem.'s math intuition: ∃ d ~ < c1, c2 >. ∫_{¬ π} d = 0
 
          the expected value when sampling using d from the set of
          points that are not in the relation π is 0.
@@ -155,7 +155,7 @@ Definition mono {A : Type} (α : (A -> SProp) -> SProp) : SProp :=
 Definition mono_predtrans (A : Type) := {α : (A -> SProp) -> SProp ≫ mono α}.
 
 
-(* CA: usual ordering on monotonic pred transformes, equality o.w. *)
+(* Rem.: usual ordering on monotonic pred transformes, equality o.w. *)
 Definition predtrans_leq {A : Type} :
   (mono_predtrans A) -> mono_predtrans A -> SProp.
 Proof.
@@ -325,7 +325,7 @@ Defined.
 (* Definition Uprod : ord_functor (prod_cat OrdCat OrdCat) TypeCatSq. *)
 (* Proof. *)
 (*   exists Uprod_obj Uprod_morph. *)
-(* Admitted. (*CA: This is not an ord_functor *) *)
+(* Admitted. (*Rem.: This is not an ord_functor *) *)
 
 
 (* Definition J12 : ord_functor (prod_cat OrdCat OrdCat) OrdCat := *)
@@ -355,7 +355,7 @@ Proof.
 Defined.
 
 
-(* CA:
+(* Rem.:
     1. Do we really need this?
     2. Does this exist already somewhere?
 *)
