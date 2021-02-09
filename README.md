@@ -212,8 +212,6 @@ Definition DH_security :=
 
 ### Probabilistic relational program logic
 
-TODO: I guess Lemma 1, 2 and Theorem 1 can go here besides Theorem 2.
-
 Figure 13 presents a selection of rules for our probabilistic relational
 program logic. Most of them can be found in
 `theories/Crypt/package/pkg_rhl.v` which provides an interface for use of those
@@ -238,6 +236,29 @@ to packages, they can be found in `theories/Crypt/rules/UniformStateProb.v`:
 
 Finally the "bwhile" rule is proven as `bounded_do_while_rule` in
 `theories/Crypt/rules/RulesStateProb.v`.
+
+We will now list the different lemmata and theorem proven on our probabilistic
+relational program logic in the paper.
+
+**Lemma 1** TODO
+
+**Lemma 2** TODO
+
+**Theorem 1** TODO
+
+**Theorem 2** is proven in `theories/Crypt/package/pkg_rhl.v` and stated as
+```coq
+Lemma Pr_eq_empty :
+  ∀ {X Y : ord_choiceType}
+    {A : pred (X * heap_choiceType)} {B : pred (Y * heap_choiceType)}
+    Ψ ϕ
+    (c1 : FrStP heap_choiceType X) (c2 : FrStP heap_choiceType Y)
+    ⊨ ⦃ Ψ ⦄ c1 ≈ c2 ⦃ ϕ ⦄ →
+    Ψ (empty_heap, empty_heap) →
+    (∀ x y,  ϕ x y → (A x) ↔ (B y)) →
+    \P_[ θ_dens (θ0 c1 empty_heap) ] A =
+    \P_[ θ_dens (θ0 c2 empty_heap) ] B.
+```
 
 ### Semantic model and soundness of rules
 
