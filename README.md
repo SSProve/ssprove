@@ -43,8 +43,6 @@ Run `make graph` to build a graph of dependencies between sources.
 
 ## Mapping between paper and formalisation
 
-### Examples
-
 ### Package definition and laws
 
 The formalisation of packages can be found in the directory
@@ -166,6 +164,27 @@ Lemma interchange :
 which can be read as
 `(p1 ∘ p3) || (p2 ∘ p4) = (p1 || p2) ∘ (p3 || p4)`.
 
+### Examples
+
+The PRF example is developed in `theories/Crypt/examples/PRF.v`.
+The security theorem is the following:
+
+```coq
+Theorem security_based_on_prf (Hprf : PRF_security) :
+  ∀ A : Adversary4Game [interface val #[i1] : chWords → chWords × chWords ]
+    (Hdisjoint_extra : fdisjoint A.π1 EVAL_location_ff) Hdisjoint1 Hdisjoint2,
+    @Advantage _ IND_CPA A Hdisjoint1 Hdisjoint2 <=
+    prf_epsilon (link A (MOD_CPA_ff_pkg)) + @statistical_gap A +
+    prf_epsilon (link A (MOD_CPA_tt_pkg)).
+```
+
+As we claim in the paper, it bounds the advantage of any adversary to the
+game pair `IND_CPA` by the sum of the statistical gap and the advantages against
+`MOD_CPA`.
+
+Note that we require here some disjointness of state hypotheses as these are
+not enforced by our package definitions and laws.
+
 ### Probabilistic relational program logic
 
 TODO: I guess Lemma 1, 2 and Theorem 1 can go here besides Theorem 2.
@@ -221,3 +240,41 @@ Note that `π.rel_choiceTypes`, `π.probE` and `π.chEmb` are not actually axiom
 but instead parameters of the `Package` module, which are listed nonetheless.
 
 ### TODO Check for other parts of the development
+
+DUMP for PRF
+
+```coq
+Axioms:
+rsamplerC'
+  : ∀ (A : ord_choiceType) (L : {fset Location}) (o : Op)
+	  (c : program L Game_import A),
+      ⊨ ⦃ λ '(h1, h2), h1 = h2
+      ⦄ repr (r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (r, a))
+      ≈ repr (a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (r, a)) ⦃ eq ⦄
+rsamplerC
+  : ∀ (A : ord_choiceType) (L : {fset Location}) (o : Op)
+      (c : program L Game_import A),
+      ⊨ ⦃ λ '(h1, h2), h1 = h2
+      ⦄ repr (a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (a, r))
+      ≈ repr (r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (a, r)) ⦃ eq ⦄
+boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
+prf_epsilon : Adversary4Game [interface val #[i0] : chKey → chKey ] → R
+n : nat
+interchange_psum
+  : ∀ (R : realType) (T U : choiceType) (S : T → U → R),
+      (∀ x : T, summable (T:=U) (R:=R) (S x))
+      → summable (T:=T) (R:=R) (λ x : T, psum (λ y : U, S x y))
+        → psum (λ x : T, psum (λ y : U, S x y)) =
+          psum (λ y : U, psum (λ x : T, S x y))
+boolp.functional_extensionality_dep
+  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+      (∀ x : A, f x = g x) → f = g
+functional_extensionality_dep
+  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+      (∀ x : A, f x = g x) → f = g
+boolp.constructive_indefinite_description
+  : ∀ (A : Type) (P : A → Prop), (∃ x : A, P x) → {x : A | P x}
+ax_proof_irrel : ClassicalFacts.proof_irrelevance
+R : realType
+PRF : Words → Key → Key
+```
