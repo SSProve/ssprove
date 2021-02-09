@@ -185,21 +185,59 @@ game pair `IND_CPA` by the sum of the statistical gap and the advantages against
 Note that we require here some disjointness of state hypotheses as these are
 not enforced by our package definitions and laws.
 
+The proof of security_based_on_prf relies on the following assumtpions:
+TODO we still did not prove rsamplerC and rsamplerC'
+
+
+The ElGamal example is developed in `theories/Crypt/examples/Elgamal.v`
+The security theorem is the following:
+
+```coq
+Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher. 
+```
+
+ OT_rnd_cipher is defined in `theories/Crypt/examples/AsymScheme.v
+ ```coq
+ Definition OT_rnd_cipher : Prop := forall A H1 H2, @Advantage _ ots_real_vs_rnd A H1 H2 = 0.
+```
+
+The proof of Elgamal_OT relies on the following assumptions:
+
++ pkch_i, ch2c_c2ch in `theories/Crypt/examples/Elgamal.v`
+
+  stating that the mapping pk2ch (c2ch reps.) is a bijection between
+  the group of public keys `PubKey` (`Cipher' resp.) and the ordinal
+  'I_#(PubKey) ('I_#(Cipher)).
+
++ group_OTP, group_OTP_math in `theories/Crypt/examples/Elgamal.v`
+
+  stating that for a plaintext m (and g the generator of the group)
+
+  `C <$ uniform Cipher ;; return c` is equivalent to
+
+  `b <$ unifrom {0,.. q-1} ;; c <$ unifrom {0,.. q-1} ;; return (g^+b, m * g^+c)`
+
+  This condition was already proven in the literature
+
++  TODO: we still did not prove rsamplerC and rsamplerC'
+   
+
+
 ### Probabilistic relational program logic
 
 TODO: I guess Lemma 1, 2 and Theorem 1 can go here besides Theorem 2.
 
 Where to find the Selected Rules from Figure 13:
 
-- `reflexivity` : rreflexivity_rule in pkg_rhl.v
-- `seq`	        : rbind_rule in pkg_rhl.v
-- `swap`        : rswap_rule in pkg_rhl.v
-- `eqDistrL`    : rrewrite_eqDistrL in pkg_rhl.v
-- `symmetry`    : rsymmetry in pkg_rhl.v 
-- `bwhile`      : bounded_do_while_rule in RulesStateProb.v
-- `uniform`     : Uniform_bij_rule in UniformStateProb.v
-- `asrt`        : assert_rule in UniformStateProb.v
-- `asrtL`	: assert_rule_left in UniformStateProb.v
+- `reflexivity` : rreflexivity_rule     in `theories/Crypt/package/pkg_rhl.v`
+- `seq`	        : rbind_rule            in `theories/Crypt/package/pkg_rhl.v`
+- `swap`        : rswap_rule            in `theories/Crypt/package/pkg_rhl.v`
+- `eqDistrL`    : rrewrite_eqDistrL     in `theories/Crypt/package/pkg_rhl.v`
+- `symmetry`    : rsymmetry             in `theories/Crypt/package/pkg_rhl.v`
+- `bwhile`      : bounded_do_while_rule in `theories/Crypt/rules/RulesStateProb.v`
+- `uniform`     : Uniform_bij_rule      in `theories/Crypt/rules/UniformStateProb.v`
+- `asrt`        : assert_rule           in `theories/Crypt/rules/UniformStateProb.v`
+- `asrtL`	: assert_rule_left      in `theories/Crypt/rules/UniformStateProb.v`
 
 ### Semantic model and soundness of rules
 
