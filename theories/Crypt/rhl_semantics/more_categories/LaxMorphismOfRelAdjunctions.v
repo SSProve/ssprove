@@ -8,11 +8,10 @@ From Crypt Require Import Axioms OrderEnrichedRelativeAdjunctions LaxFunctorsAnd
 Import SPropNotations.
 (*
 In this file we define the notion of lax morphism between left relative adjunctions.
-We use it to transform relative monad morphisms based on "transforming adjunctions" in the file TransformingLaxMorph.v.
-*)
+We use it to transform relative monad morphisms based on "transforming adjunctions"
+in the file TransformingLaxMorph.v.
 
-(*
-We first pack left adjunctions in a single record type
+We first pack left adjunctions into a single record type
 *)
 Section leftAdjunctions.
   (*J:I → C, L:I → D, R:D → C, L ⊣ R above J*)
