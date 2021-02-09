@@ -185,6 +185,31 @@ game pair `IND_CPA` by the sum of the statistical gap and the advantages against
 Note that we require here some disjointness of state hypotheses as these are
 not enforced by our package definitions and laws.
 
+
+The ElGamal example on the other hand can be found in
+`theories/Crypt/examples/ElGamal.v`.
+The security theorem is as follows:
+
+```coq
+Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher.
+```
+
+The `dh_secure` corresponds to the DDH assumption. It is stated below:
+
+```coq
+Definition DH_security : Prop :=
+  ∀ A Hdisj1 Hdisj2,
+    @AdvantageE _ DH_real DH_rnd A  Hdisj1 Hdisj2 = 0.
+```
+
+`OT_rnd_cipher` comes from a different file:
+`theories/Crypt/examples/AsymScheme.v` and is defined below.
+
+```coq
+Definition OT_rnd_cipher : Prop :=
+  ∀ A H1 H2, @Advantage _ ots_real_vs_rnd A H1 H2 = 0.
+```
+
 ### Probabilistic relational program logic
 
 TODO: I guess Lemma 1, 2 and Theorem 1 can go here besides Theorem 2.
@@ -195,11 +220,11 @@ Where to find the Selected Rules from Figure 13:
 - `seq`	        : rbind_rule in pkg_rhl.v
 - `swap`        : rswap_rule in pkg_rhl.v
 - `eqDistrL`    : rrewrite_eqDistrL in pkg_rhl.v
-- `symmetry`    : rsymmetry in pkg_rhl.v 
+- `symmetry`    : rsymmetry in pkg_rhl.v
 - `bwhile`      : bounded_do_while_rule in RulesStateProb.v
 - `uniform`     : Uniform_bij_rule in UniformStateProb.v
 - `asrt`        : assert_rule in UniformStateProb.v
-- `asrtL`	: assert_rule_left in UniformStateProb.v
+- `asrtL`	      : assert_rule_left in UniformStateProb.v
 
 ### Semantic model and soundness of rules
 
