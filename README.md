@@ -222,12 +222,12 @@ The proof of Elgamal_OT relies on the following assumptions:
 +  TODO: we still did not prove rsamplerC and rsamplerC'
    
 
-
 ### Probabilistic relational program logic
 
 TODO: I guess Lemma 1, 2 and Theorem 1 can go here besides Theorem 2.
 
 Where to find the Selected Rules from Figure 13:
+
 
 - `reflexivity` : rreflexivity_rule     in `theories/Crypt/package/pkg_rhl.v`
 - `seq`	        : rbind_rule            in `theories/Crypt/package/pkg_rhl.v`
@@ -243,10 +243,11 @@ Where to find the Selected Rules from Figure 13:
 
 ## Axioms and assumptions
 
-Throughout the development we rely on the axioms of functional extensionality
-and propositional extensionality as listed below:
+Throughout the development we rely on the axioms of functional extensionality,
+proof irrelevance, as well as propositional extensionality as listed below:
 
 ```coq
+ax_proof_irrel : ClassicalFacts.proof_irrelevance
 propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
 functional_extensionality_dep :
   ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
@@ -255,6 +256,22 @@ functional_extensionality_dep :
 
 We further rely on the existence of a type of real numbers as used in the
 `mathcomp` library.
+
+```coq
+R : realType
+```
+
+By using `mathcomp-analysis` we also inherit one of the admitted lemmata they
+have:
+
+```coq
+interchange_psum :
+  ∀ (R : realType) (T U : choiceType) (S : T → U → R),
+    (∀ x : T, summable (T:=U) (R:=R) (S x)) →
+    summable (T:=T) (R:=R) (λ x : T, psum (λ y : U, S x y)) →
+    psum (λ x : T, psum (λ y : U, S x y)) =
+    psum (λ y : U, psum (λ x : T, S x y))
+```
 
 Our methodology to find such dependencies is to use the `Print Assumptions`
 command of Coq which lists axioms a definition depends on.
@@ -315,4 +332,52 @@ boolp.constructive_indefinite_description
 ax_proof_irrel : ClassicalFacts.proof_irrelevance
 R : realType
 PRF : Words → Key → Key
+```
+
+DUMP for ElGamal
+
+```coq
+Axioms:
+rsamplerC'
+  : ∀ (A : ord_choiceType) (L : {fset Location}) (o : Op)
+      (c : program L Game_import A),
+      ⊨ ⦃ λ '(h1, h2), h1 = h2
+      ⦄ repr (r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (r, a))
+      ≈ repr (a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (r, a)) ⦃ eq ⦄
+rsamplerC
+  : ∀ (A : ord_choiceType) (L : {fset Location}) (o : Op)
+      (c : program L Game_import A),
+      ⊨ ⦃ λ '(h1, h2), h1 = h2
+      ⦄ repr (a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (a, r))
+      ≈ repr (r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (a, r)) ⦃ eq ⦄
+boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
+pkch_i : ∀ i : nat, (i < #[g])%N → ch2pk (pk2ch (g ^+ i)) = g ^+ i
+interchange_psum
+  : ∀ (R : realType) (T U : choiceType) (S : T → U → R),
+      (∀ x : T, summable (T:=U) (R:=R) (S x))
+      → summable (T:=T) (R:=R) (λ x : T, psum (λ y : U, S x y))
+        → psum (λ x : T, psum (λ y : U, S x y)) =
+          psum (λ y : U, psum (λ x : T, S x y))
+group_OTP
+  : ∀ (L : {fset Location}) (m : chFin Plain_len_pos),
+      ⊨ ⦃ λ '(h1, h2), h1 = h2
+      ⦄ repr (c ← (c ← sample U i_cipher ;; ret c) ;; ret (Some (c2ch c)))
+      ≈ repr
+          (b ← (b ← sample U i_sk ;; ret b) ;;
+           c ← (c ← sample U i_sk ;; ret c) ;;
+           ret (Some (c2ch (g ^+ b, ch2m m * g ^+ c)))) ⦃ eq ⦄
+g_gen : ζ = <[g]>
+gT : finGroupType
+g : gT
+boolp.functional_extensionality_dep
+  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+      (∀ x : A, f x = g x) → f = g
+functional_extensionality_dep
+  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+      (∀ x : A, f x = g x) → f = g
+boolp.constructive_indefinite_description
+  : ∀ (A : Type) (P : A → Prop), (∃ x : A, P x) → {x : A | P x}
+ch2c_c2ch : ∀ x : Cipher, ch2c (c2ch x) = x
+ax_proof_irrel : ClassicalFacts.proof_irrelevance
+R : realType
 ```
