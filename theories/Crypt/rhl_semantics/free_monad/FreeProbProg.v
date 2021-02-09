@@ -9,12 +9,12 @@ From Crypt Require Import ChoiceAsOrd.
 Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
 
 (*
-In this file we pack pairs of free probabilistic computations into a (order enriched) relative monad instance (see ord_relativeMonad).
+In this file we pack pairs of free probabilistic computations into a
+(order enriched) relative monad instance (see ord_relativeMonad).
 
-Let us  describe the free monad implementation in the dm4all dev,
-and how it relates to the user friendly Itree like event types.
+Some informations about free monads:
 
-The unary Free monad is parametrized over a collection of operations S
+The unary Free monad can be parametrized by a collection of operations S
 and arities for those operations (somth of type S -> Type).
 Concretely S could be the collection {(sample_bollean p) | p in [01]}, ie
 one Bernouilli sampling operation for each probability p. In this case
@@ -22,8 +22,9 @@ the arity predicate (ar : S -> Type) would map each operation to bool.
 Indeed we expect the environment to either return true or false after
 a Bernouilli sampling operation has been issued to it.
 
-On the other hand the ITree library provides a generic type of event of
-this shape.
+On the other hand it is aslo possible to specify
+free monads using event types ("functors")
+The follwoing is stolen from the ITree Coq library
 Inductive probE : Type -> Type :=
   |Bern : unit_interval R -> probE bool
   |Poisson : (λ : unit_interval R) → probE nat.
@@ -176,26 +177,15 @@ End Translation.
 Section Unary_free_prob_monad.
   Context (probE : Type -> Type).
   Context (rel_choiceTypes : Type) (chEmb : rel_choiceTypes -> choiceType).
-  Context (Hch : forall r : rel_choiceTypes, chEmb r). (* Rem.: In principle chEmb could map every rel_choiceTypes to void *)
+  Context (Hch : forall r : rel_choiceTypes, chEmb r).
 
 
-  (* Definition FreePr := @Free *)
-  (*   (Prob_ops_collection probE rel_choiceTypes chEmb) *)
-  (*   (Prob_arities probE rel_choiceTypes chEmb). *)
-
-  (* (*We also define a relative account of this free monad (restricted *)
-  (* to choice types, although it might not be used subsequently*) *)
-  (* Definition rFreePr0 := *)
-  (* relativeMonad_precomposition choice_incl (monad_to_relmon FreePr). *)
-
-  (*with the right type (computationally for its base functor)*)
   (*Here I recylce ancient code*)
   Definition rFreePr := @rFree
     (Prob_ops_collection probE rel_choiceTypes chEmb)
     (Prob_arities probE rel_choiceTypes chEmb).
 
 
-  (*problematic if there is a void sampling in the probabilistic signature*)
   Definition sample_from { A } (D : rFreePr A) : A.
   Proof.
     elim: D => [ a | s Ps IH].
