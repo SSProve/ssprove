@@ -243,6 +243,22 @@ functional_extensionality_dep :
 We further rely on the existence of a type of real numbers as used in the
 `mathcomp` library.
 
+```coq
+R : realType
+```
+
+By using `mathcomp-analysis` we also inherit one of the admitted lemmata they
+have:
+
+```coq
+interchange_psum :
+  ∀ (R : realType) (T U : choiceType) (S : T → U → R),
+    (∀ x : T, summable (T:=U) (R:=R) (S x)) →
+    summable (T:=T) (R:=R) (λ x : T, psum (λ y : U, S x y)) →
+    psum (λ x : T, psum (λ y : U, S x y)) =
+    psum (λ y : U, psum (λ x : T, S x y))
+```
+
 Our methodology to find such dependencies is to use the `Print Assumptions`
 command of Coq which lists axioms a definition depends on.
 For instance
