@@ -255,10 +255,14 @@ Lemma TriangleInequality :
 
 **Lemma 2**
 ```coq
-Lemma Reduction :
+Lemma ReductionLem :
   ∀ {Game_export M_export : Interface} {M : package Game_export M_export}
-    (G : GamePair Game_export) (A : Adversary4Game M_export) (b : bool),
-    Pr (link A (link M (G b))) true = Pr (link (link A M) (G b)) true.
+    (G : GamePair Game_export)
+    (Hdisjoint0 : fdisjoint M.π1 (G false).π1)
+    (Hdisjoint1 : fdisjoint M.π1 (G true).π1),
+    link M (G false)
+    ≈[ λ A H1 H2, @AdvantageE Game_export (G false) (G true) (link A M) (auxReduction Hdisjoint0 H1) (auxReduction Hdisjoint1 H2) ]
+    link M (G true).
 ```
 
 **Theorem 1**
