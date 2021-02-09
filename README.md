@@ -10,7 +10,7 @@ as well as listing the assumptions that the formalisation makes.
 
 - Ocaml
 - Coq `8.12.0`
-- Equations `1.2.3`
+- Equations `1.2.3+8.12`
 - Mathcomp analysis `0.3.2`
 - Coq Extructures `0.2.2`
 
@@ -20,7 +20,8 @@ To build the dependency graph, you can optionally install `graphviz`. On macOS,
 You can get them from the `opam` package manager for `ocaml`:
 ```sh
 opam repo add coq-released https://coq.inria.fr/opam/released
-opam install coq-equations.1.2.3 coq-mathcomp-analysis.0.3.2 coq-extructures.0.2.2
+opam update
+opam install coq.8.12.0 coq-equations.1.2.3+8.12 coq-mathcomp-analysis.0.3.2 coq-extructures.0.2.2
 ```
 
 ## Step-by-step compilation guide
@@ -174,7 +175,7 @@ TODO: I guess Lemma 1, 2 and Theorem 1 can go here besides Theorem 2.
 ## Axioms and assumptions
 
 Throughout the development we rely on the axioms of functional extensionality
-and of proof irrelevance(?), as well as propositional extensionality as listed
+and of proof irrelevance, as well as propositional extensionality as listed
 below:
 
 ```coq
@@ -183,6 +184,8 @@ functional_extensionality_dep :
   ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
       (∀ x : A, f x = g x) → f = g
 ```
+We further rely on the existence of a type of real numbers as used in the
+mathcomp library.
 
 Our methodology to find such dependencies is to use the `Print Assumptions`
 command of Coq which lists axioms a definition depends on.
@@ -206,8 +209,3 @@ Note that `π.rel_choiceTypes`, `π.probE` and `π.chEmb` are not actually axiom
 but instead parameters of the `Package` module, which are listed nonetheless.
 
 ### TODO Check for other parts of the development
-
-### OLD BELOW?
-
-see theories/Crypt/Axioms.v
-We use functional extensionality and proof irrelevance throughout the development. We also assume the existence of a mathcomp type of real numbers.
