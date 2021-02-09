@@ -173,7 +173,7 @@ The security theorem is the following:
 Theorem security_based_on_prf (Hprf : PRF_security) :
   ∀ A : Adversary4Game [interface val #[i1] : chWords → chWords × chWords ]
     (Hdisjoint_extra : fdisjoint A.π1 EVAL_location_ff) Hdisjoint1 Hdisjoint2,
-    @Advantage _ IND_CPA A Hdisjoint1 Hdisjoint2 <=
+    @Advantage _ IND_CPA A Hdisjoint1 Hdisjoint2 ≤
     prf_epsilon (link A (MOD_CPA_ff_pkg)) + @statistical_gap A +
     prf_epsilon (link A (MOD_CPA_tt_pkg)).
 ```
@@ -238,15 +238,32 @@ Finally the "bwhile" rule is proven as `bounded_do_while_rule` in
 `theories/Crypt/rules/RulesStateProb.v`.
 
 We will now list the different lemmata and theorem proven on our probabilistic
-relational program logic in the paper.
+relational program logic in the paper. They can all be found in
+`theories/Crypt/package/pkg_rhl.v`.
 
-**Lemma 1** TODO
+**Lemma 1**
+```coq
+Lemma TriangleInequality :
+  ∀ {Game_export : Interface} {F G H : Game_Type Game_export}
+    {ϵ1 ϵ2 ϵ3}
+    F ≈[ ϵ1 ] G →
+    G ≈[ ϵ2 ] H →
+    F ≈[ ϵ3 ] H →
+    ∀ A H1 H2 H3 H4 H5 H6,
+      ϵ3 A H1 H2 ≤ ϵ1 A H3 H4 + ϵ2 A H5 H6.
+```
 
-**Lemma 2** TODO
+**Lemma 2**
+```coq
+Lemma Reduction :
+  ∀ {Game_export M_export : Interface} {M : package Game_export M_export}
+    (G : GamePair Game_export) (A : Adversary4Game M_export) (b : bool),
+    Pr (link A (link M (G b))) true = Pr (link (link A M) (G b)) true.
+```
 
 **Theorem 1** TODO
 
-**Theorem 2** is proven in `theories/Crypt/package/pkg_rhl.v` and stated as
+**Theorem 2**
 ```coq
 Lemma Pr_eq_empty :
   ∀ {X Y : ord_choiceType}
