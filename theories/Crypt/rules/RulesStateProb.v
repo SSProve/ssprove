@@ -738,6 +738,7 @@ Proof.
   move => [s1 s2]. move => /= π.
   move => [Hpre H'].
   specialize (H (s2,s1) (fun '(a,s1,(b,s2)) => π ((b,s2,(a,s1))))).
+  cbn in H.
   destruct H as [d' [H1 H2]].
   - rewrite /=. split.
     -- assumption.  
