@@ -2063,24 +2063,52 @@ Inductive raw_judgment :
 where "⊢ ⦃ pre ⦄ c1 ~ c2 ⦃ post ⦄" := (raw_judgment pre post c1 c2).
 
 Lemma valid_judgment :
-  ∀ (A0 A1 : choiceType) L0 L1 pre post c0 c1
-    `{@ValidProgram L0 _ A0 c0}
-    `{@ValidProgram L1 _ A1 c1},
-    ⊢ ⦃ pre ⦄ c0 ~ c1 ⦃ post ⦄ →
-    r⊨ ⦃ pre ⦄ mkprog c0 _ ≈ mkprog c1 _ ⦃ post ⦄.
+  ∀ (A₀ A₁ : choiceType) L₀ L₁ pre post c₀ c₁
+    `{@ValidProgram L₀ _ A₀ c₀}
+    `{@ValidProgram L₁ _ A₁ c₁},
+    ⊢ ⦃ pre ⦄ c₀ ~ c₁ ⦃ post ⦄ →
+    r⊨ ⦃ pre ⦄ mkprog c₀ _ ≈ mkprog c₁ _ ⦃ post ⦄.
 Proof.
   intros A₀ A₁ L₀ L₁ pre post c₀ c₁ h₀ h₁ h.
   induction h in L₀, L₁, h₀, h₁ |- *.
   - pose proof (reflexivity_rule (repr {program c})) as h.
     erewrite repr_ext. 1: exact h.
     cbn. reflexivity.
-  - (* apply inversion_valid_bind in h₀ as h₀'.
+  (* - apply inversion_valid_bind in h₀ as h₀'.
     apply inversion_valid_bind in h₁ as h₁'.
     specialize IHh1 with (h₀ := h₀') (h₁ := h₁').
     specialize IHh2 with (h₀ := h₁') (h₁ := h₀').
+    pose proof @swap_rule as h.
+    specialize h with (c1 := repr {program c₀ #with h₀' }).
+    specialize h with (c2 := repr {program c₁ #with h₁' }).
+    specialize h with (I := I) (post := post).
+    eapply post_weaken_rule in IHh1.
+    1: specialize h with (1 := IHh1).
+    2:{
+      cbn. intros [a₀ s₀] [a₁ s₁]. cbn. auto.
+    }
+    eapply post_weaken_rule in IHh2.
+    1: specialize h with (1 := IHh2).
+    2:{
+      cbn. intros [a₀ s₀] [a₁ s₁]. cbn. auto.
+    }
+    cbn - [semantic_judgement repr].
+    cbn - [semantic_judgement] in h.
+    unshelve erewrite !repr_bind. 1,3: eauto.
+
+
+    Unset Printing Notations.
+    specialize
+    erewrite !repr_bind.
+    eapply post_weaken_rule.
+    1: eapply swap_rule.
+
     erewrite repr_ext.
     + eapply post_weaken_rule.
-      * eapply rswap_rule.
+      * erewrite !repr_bind.
+        eapply swap_rule. _ _ IHh1 IHh2.
+
+      eapply rswap_rule.
         -- unfold repr in *. Set Printing Implicit.
         eapply post_weaken_rule. 1: exact IHh1.
 
@@ -2097,9 +2125,9 @@ Proof.
 
 
     erewrite !repr_bind.
-    pose proof (swap_rule _ _ IHh1 IHh2). *)
+    pose proof (swap_rule _ _ IHh1 IHh2).
     (* pose proof (rswap_rule _ _ IHh1 IHh2). *)
-      (* rswap_rule *)
+      rswap_rule *)
 Admitted.
 
 End Games.
