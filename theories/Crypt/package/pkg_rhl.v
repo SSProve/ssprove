@@ -1267,6 +1267,8 @@ Module PackageRHL (π : RulesParam).
       - apply program_ext. cbn. erewrite get_op_default_spec. all: eauto.
     Qed.
 
+    (* TODO MOVE *)
+
     (* Slightly more expensive version that allows to change parameters *)
     Hint Extern 3 (ValidProgram ?L ?I ?p) =>
       match goal with
@@ -1987,6 +1989,55 @@ Proof.
   eapply rrewrite_eqDistrR.
   - exact: H.
   - admit.
+Admitted.
+
+(* TODO Find a proper place for it *)
+(** Rules on raw_program
+
+  The idea is to define rules that don't care about validity. They will be the
+  one manipulated by the user when showing perfect equivalence.
+  A theorem will then say that when the programs are valid and in this relation
+  then they are in the program relation from before.
+  ⊢ ⦃ pre ⦄ u ~ v ⦃ post ⦄ →
+  Valid u →
+  Valid v →
+  ⊨ ⦃ pre ⦄ u ~ v ⦃ post ⦄
+
+  And with classes, the validity will be inferred automatically.
+  Or even better when starting from packages, it will follow from the
+  packages being valid themselves.
+
+  Better: With context rules we could then use setoid rewrite.
+
+*)
+
+Definition precond := heap * heap → Prop.
+Definition postcond A B := (A * heap) → (B * heap) → Prop.
+
+Reserved Notation "⊢ ⦃ pre ⦄ c1 ~ c2 ⦃ post ⦄".
+
+(* TODO Complete *)
+
+Inductive raw_judgment :
+  ∀ {A B : choiceType},
+    precond → postcond A B → raw_program A → raw_program B → Prop :=
+
+| r_refl :
+    ∀ A (c : raw_program A),
+      ⊢ ⦃ λ '(s1, s2), s1 = s2 ⦄ c ~ c ⦃ eq ⦄
+
+where "⊢ ⦃ pre ⦄ c1 ~ c2 ⦃ post ⦄" := (raw_judgment pre post c1 c2).
+
+Lemma valid_judgment :
+  ∀ (A0 A1 : choiceType) L0 L1 pre post c0 c1
+    `{@ValidProgram L0 _ A0 c0}
+    `{@ValidProgram L1 _ A1 c1},
+    ⊢ ⦃ pre ⦄ c0 ~ c1 ⦃ post ⦄ →
+    r⊨ ⦃ pre ⦄ mkprog c0 _ ≈ mkprog c1 _ ⦃ post ⦄.
+Proof.
+  intros A0 A1 L0 L1 pre post c0 c1 h0 h1 h.
+  induction h.
+  -  (* apply rreflexivity_rule. *) (* It doesn't work *)
 Admitted.
 
 End Games.
