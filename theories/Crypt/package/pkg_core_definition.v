@@ -272,6 +272,26 @@ Module CorePackageTheory (π : RulesParam).
       all: solve [ try constructor ; eauto ].
     Qed.
 
+    Lemma inversion_valid_bind :
+      ∀ {A B} {c : raw_program A} {k : A → raw_program B},
+        valid_program (bind c k) →
+        valid_program c.
+    Proof.
+      intros A B c k h.
+      induction c.
+      - constructor.
+      - simpl in h. apply inversion_valid_opr in h. destruct h as [h1 h2].
+        constructor. all: eauto.
+      - simpl in h. apply inversion_valid_getr in h.
+        constructor. all: intuition eauto.
+      - simpl in h. apply inversion_valid_putr in h.
+        constructor. all: intuition eauto.
+      - simpl in h.
+        constructor. intro.
+        eapply inversion_valid_sampler in h.
+        eauto.
+    Qed.
+
     Lemma prove_program :
       ∀ {A} (P : program A → Type) p q,
         P p →

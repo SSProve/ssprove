@@ -1976,26 +1976,6 @@ Proof.
   - admit.
 Admitted.
 
-Lemma inversion_valid_bind :
-  ∀ L I (A B : choiceType) (c : raw_program A) (k : A → raw_program B),
-    valid_program L I (x ← c ;; k x) →
-    (∃ y, c = ret y ∧ valid_program L I (k y)) ∨
-    (valid_program L I c ∧ ∀ x, valid_program L I (k x)).
-Proof.
-  intros L I A B c k h.
-  induction c.
-  - left. eexists. intuition auto.
-  - right. simpl in h. apply inversion_valid_opr in h. destruct h as [h1 h2].
-    split.
-    + constructor. 1: auto.
-      intro s. specialize (H s (h2 _)). destruct H as [[y [e ?]] | h].
-      * rewrite e. constructor.
-      * intuition eauto.
-    + intro s. specialize (H (chCanonical _) (h2 _)).
-      destruct H as [[y [e ?]] | h].
-      *
-Abort.
-
 (* TODO Find a proper place for it *)
 (** Rules on raw_program
 
