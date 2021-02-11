@@ -2037,8 +2037,10 @@ Lemma valid_judgment :
 Proof.
   intros A0 A1 L0 L1 pre post c0 c1 h0 h1 h.
   induction h.
-  -  (* apply rreflexivity_rule. *) (* It doesn't work *)
-Admitted.
+  - pose proof (reflexivity_rule (repr {program c})) as h.
+    erewrite repr_ext. 1: exact h.
+    cbn. reflexivity.
+Qed.
 
 End Games.
 
