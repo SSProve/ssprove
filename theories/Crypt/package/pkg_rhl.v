@@ -1684,7 +1684,6 @@ Module PackageRHL (π : RulesParam).
     by apply: pre_hypothesis_rule.
   Qed.
 
-
 Theorem rpre_strong_hypothesis_rule
   {A1 A2 : ord_choiceType} {L1 L2 : {fset Location}}
   {p1 : program L1 Game_import A1}
@@ -1708,7 +1707,6 @@ Theorem rpost_weaken_rule
 Proof.
   by apply: post_weaken_rule.
 Qed.
-
 
 (* Skipped for now *)
 (* Theorem comp_rule ... *)
@@ -1783,7 +1781,6 @@ Proof.
   by apply: reflexivity_rule (repr c).
 Qed.
 
-(* TODO Decompose prgram *)
 Theorem rswap_rule {A1 A2 : ord_choiceType} {L : {fset Location}}
   {I : heap * heap → Prop}
   {post : A1 * heap → A2 * heap → Prop}
@@ -1799,7 +1796,6 @@ Proof.
   by apply: swap_rule (repr c1) (repr c2) Hinv1 Hinv2.
 Qed.
 
-(* TODO Decompose prgram *)
 (** TW: I guess this to allow going under binders.
   We might be better off defining some morphisms on semantic judgments
   to use setoid_rewrite.
@@ -1821,11 +1817,6 @@ Proof.
   by apply: swap_ruleL (repr l) (repr c1) (repr c2) HL Hinv1 Hinv2.
 Qed.
 
-(* TODO Decompose prgram *)
-(* TODO
-  CAution:
-  the corresponding rule in RulesStateProb. contains some admits
- *)
 Theorem rswap_ruleR
   {A1 A2 B : ord_choiceType} {L : {fset Location}}
   {post : B * heap → B * heap → Prop}
@@ -1858,7 +1849,6 @@ Qed.
 
 Local Open Scope package_scope.
 
-(* TODO Decompose prgram *)
 Lemma rsamplerC
   {A : ord_choiceType} {L : {fset Location}} (o : Op)
   (c : program L Game_import A)
@@ -1870,7 +1860,6 @@ Lemma rsamplerC
 Proof.
 Admitted.
 
-(* TODO Decompose prgram *)
 Lemma rsamplerC' {A : ord_choiceType} {L : {fset Location}} (o : Op)
   (c : program L Game_import A)
   {h1 : ValidProgram L _ _} {h2 : ValidProgram L _ _} :
@@ -1881,7 +1870,6 @@ Lemma rsamplerC' {A : ord_choiceType} {L : {fset Location}} (o : Op)
 Proof.
 Admitted.
 
-(* TODO Decompose prgram *)
 (* TODO: generalize the corresponding rule in RulesStateProb.v  *)
 (* CA: not hight priority as never used yet! *)
 Theorem rswap_rule_ctx
@@ -1902,7 +1890,6 @@ Proof.
   (* by apply (swap_rule_ctx (repr l) (repr r) (repr c1) (repr c2) HL HR Hinv1 Hinv2). Qed. *)
 Admitted.
 
-(* TODO Decompose prgram *)
 Theorem rsame_head
   {A B : ord_choiceType}
   {L : {fset Location}}
@@ -1962,7 +1949,6 @@ Proof. Admitted.
 (*          ⊨ ⦃ pre ⦄ repr (locs := L ) (x <$ o ;; c1) ≈ repr (locs := L) (x <$ o ;; c2) ⦃ post ⦄. *)
 (* Proof. Admitted.  *)
 
-(* TODO Decompose prgram *)
 Theorem rdead_sampler_elimL
   {A : ord_choiceType} {L : {fset Location}} {D}
   (c1 c2 : program L Game_import A)
@@ -1977,7 +1963,6 @@ Proof.
   - admit.
 Admitted.
 
-(* TODO Decompose prgram *)
 Theorem rdead_sampler_elimR
   {A : ord_choiceType} {L : {fset Location}} {D}
   (c1 c2 : program L Game_import A)
@@ -1990,6 +1975,26 @@ Proof.
   - exact: H.
   - admit.
 Admitted.
+
+Lemma inversion_valid_bind :
+  ∀ L I (A B : choiceType) (c : raw_program A) (k : A → raw_program B),
+    valid_program L I (x ← c ;; k x) →
+    (∃ y, c = ret y ∧ valid_program L I (k y)) ∨
+    (valid_program L I c ∧ ∀ x, valid_program L I (k x)).
+Proof.
+  intros L I A B c k h.
+  induction c.
+  - left. eexists. intuition auto.
+  - right. simpl in h. apply inversion_valid_opr in h. destruct h as [h1 h2].
+    split.
+    + constructor. 1: auto.
+      intro s. specialize (H s (h2 _)). destruct H as [[y [e ?]] | h].
+      * rewrite e. constructor.
+      * intuition eauto.
+    + intro s. specialize (H (chCanonical _) (h2 _)).
+      destruct H as [[y [e ?]] | h].
+      *
+Abort.
 
 (* TODO Find a proper place for it *)
 (** Rules on raw_program
@@ -2011,6 +2016,28 @@ Admitted.
 
 *)
 
+(** TODO Some rules will be missing, maybe best to wait after merge.
+
+  Here is the list:
+  - rpre_weaken_rule
+  - rpre_hypothesis_rule
+  - rpre_strong_hypothesis_rule
+  - rpost_weaken_rule
+  - rif_rule
+  - rswap_rule
+  - rswap_ruleR
+  - rsamplerC
+  - rsamplerC'
+  - rsame_head
+  - rsym_pre
+  - rsymmetry
+  - rdead_sampler_elimL
+  - rdead_sampler_elimR
+
+  + context rules
+
+*)
+
 Definition precond := heap * heap → Prop.
 Definition postcond A B := (A * heap) → (B * heap) → Prop.
 
@@ -2026,6 +2053,14 @@ Inductive raw_judgment :
     ∀ A (c : raw_program A),
       ⊢ ⦃ λ '(s1, s2), s1 = s2 ⦄ c ~ c ⦃ eq ⦄
 
+(* r_seq *) (* Which one ist it? *)
+
+| r_swap :
+    ∀ (A₀ A₁ : choiceType) (I : precond) (post : postcond A₀ A₁) (c₀ : raw_program A₀) (c₁ : raw_program A₁),
+      ⊢ ⦃ I ⦄ c₀ ~ c₁ ⦃ λ b₀ b₁, I (b₀.2, b₁.2) ∧ post b₀ b₁ ⦄ →
+      ⊢ ⦃ I ⦄ c₁ ~ c₀ ⦃ λ b₁ b₀, I (b₀.2, b₁.2) ∧ post b₀ b₁ ⦄ →
+      ⊢ ⦃ I ⦄ c₀ ;; c₁ ~ c₁ ;; c₀ ⦃ λ b₁ b₀, I (b₀.2, b₁.2) ∧ post b₀ b₁ ⦄
+
 where "⊢ ⦃ pre ⦄ c1 ~ c2 ⦃ post ⦄" := (raw_judgment pre post c1 c2).
 
 Lemma valid_judgment :
@@ -2040,7 +2075,12 @@ Proof.
   - pose proof (reflexivity_rule (repr {program c})) as h.
     erewrite repr_ext. 1: exact h.
     cbn. reflexivity.
-Qed.
+  - (* Really annoying that we don't have any way to properly inverse
+        validity of bind.
+        Maybe it's ok when we have ;; ?
+      *)
+      (* rswap_rule *)
+Admitted.
 
 End Games.
 
