@@ -1784,16 +1784,17 @@ Qed.
 Theorem rswap_rule {A1 A2 : ord_choiceType} {L : {fset Location}}
   {I : heap * heap → Prop}
   {post : A1 * heap → A2 * heap → Prop}
-  (c1 : program L Game_import A1) (c2 : program L Game_import A2)
-  (Hinv1 : r⊨ ⦃ I ⦄ c1 ≈ c2 ⦃ λ '(a1, s1) '(a2, s2), I (s1, s2) ∧ post (a1, s1) (a2, s2) ⦄)
-  (Hinv2 : r⊨ ⦃ I ⦄ c2 ≈ c1 ⦃ λ '(a2, s2) '(a1, s1), I (s1, s2) ∧ post (a1, s1) (a2, s2) ⦄)
+  (c1 : raw_program A1) (c2 : raw_program A2)
+  (hc1 : valid_program L Game_import c1) (hc2 : valid_program L Game_import c2)
+  (Hinv1 : r⊨ ⦃ I ⦄ mkprog c1 hc1 ≈ mkprog c2 hc2 ⦃ λ '(a1, s1) '(a2, s2), I (s1, s2) ∧ post (a1, s1) (a2, s2) ⦄)
+  (Hinv2 : r⊨ ⦃ I ⦄ mkprog c2 hc2 ≈ mkprog c1 hc1 ⦃ λ '(a2, s2) '(a1, s1), I (s1, s2) ∧ post (a1, s1) (a2, s2) ⦄)
   {h1 : ValidProgram L _ _} {h2 : ValidProgram L _ _} :
   r⊨ ⦃ I ⦄
     mkprog (c1 ;; c2) h1 ≈ mkprog (c2 ;; c1) h2
     ⦃ λ '(a2,s2) '(a1,s1), I (s1, s2) ∧ post (a1,s1) (a2, s2) ⦄.
 Proof.
   erewrite !repr_bind.
-  by apply: swap_rule (repr c1) (repr c2) Hinv1 Hinv2.
+  by apply: swap_rule (repr {program c1}) (repr {program c2}) Hinv1 Hinv2.
 Qed.
 
 (** TW: I guess this to allow going under binders.
@@ -2003,7 +2004,7 @@ Admitted.
   - rpre_hypothesis_rule
   - rpre_strong_hypothesis_rule
   - rpost_weaken_rule
-  - rif_rule
+  - rif_rule (should be provable without being assumed, otherwise we have a problem for user-defined types)
   - rswap_rule
   - rswap_ruleR
   - rsamplerC
@@ -2017,6 +2018,54 @@ Admitted.
   + context rules
 
 *)
+
+(* TODO MOVE *)
+Lemma Arit_canonical :
+  ∀ op, Arit op.
+Proof.
+  intro op. unfold Arit.
+  unfold Prob_arities. destruct op as [T ?].
+Abort.
+
+(* TODO MOVE *)
+Lemma inversion_valid_bind_seq :
+      ∀ {L I} {A B} {c1 : raw_program A} {c2 : raw_program B},
+        valid_program L I (c1 ;; c2) →
+        valid_program L I c1 ∧ valid_program L I c2.
+Proof.
+  intros L I A B c1 c2 h.
+  induction c1.
+  - split.
+    + constructor.
+    + cbn in h. auto.
+  - simpl in h. apply inversion_valid_opr in h. destruct h as [h1 h2].
+    split.
+    + constructor. 1: auto.
+      intro s. specialize (H s (h2 _)).
+      intuition auto.
+    + specialize (H (chCanonical _) (h2 _)).
+      intuition auto.
+  - simpl in h. apply inversion_valid_getr in h. destruct h as [h1 h2].
+    split.
+    + constructor. 1: auto.
+      intro s. specialize (H s (h2 _)).
+      intuition auto.
+    + specialize (H (chCanonical _) (h2 _)).
+      intuition auto.
+  - simpl in h. apply inversion_valid_putr in h. destruct h as [h1 h2].
+    specialize (IHc1 h2).
+    split.
+    + constructor. all: intuition auto.
+    + intuition auto.
+  - simpl in h. split.
+    + constructor. intro s. specialize (H s). forward H.
+      { eapply inversion_valid_sampler in h. eauto. }
+      intuition auto.
+    (* + specialize (H _). forward H.
+      { eapply inversion_valid_sampler in h. eauto. }
+      intuition auto.
+Qed. *)
+Abort.
 
 Definition precond := heap * heap → Prop.
 Definition postcond A B := (A * heap) → (B * heap) → Prop.
@@ -2050,15 +2099,36 @@ Lemma valid_judgment :
     ⊢ ⦃ pre ⦄ c0 ~ c1 ⦃ post ⦄ →
     r⊨ ⦃ pre ⦄ mkprog c0 _ ≈ mkprog c1 _ ⦃ post ⦄.
 Proof.
-  intros A0 A1 L0 L1 pre post c0 c1 h0 h1 h.
-  induction h.
+  intros A₀ A₁ L₀ L₁ pre post c₀ c₁ h₀ h₁ h.
+  induction h in L₀, L₁, h₀, h₁ |- *.
   - pose proof (reflexivity_rule (repr {program c})) as h.
     erewrite repr_ext. 1: exact h.
     cbn. reflexivity.
-  - (* Really annoying that we don't have any way to properly inverse
-        validity of bind.
-        Maybe it's ok when we have ;; ?
-      *)
+  - (* apply inversion_valid_bind in h₀ as h₀'.
+    apply inversion_valid_bind in h₁ as h₁'.
+    specialize IHh1 with (h₀ := h₀') (h₁ := h₁').
+    specialize IHh2 with (h₀ := h₁') (h₁ := h₀').
+    erewrite repr_ext.
+    + eapply post_weaken_rule.
+      * eapply rswap_rule.
+        -- unfold repr in *. Set Printing Implicit.
+        eapply post_weaken_rule. 1: exact IHh1.
+
+    (* eapply post_weaken_rule.
+    + eapply rswap_rule. *)
+
+    pose proof @rswap_rule as h.
+    specialize h with (I := I) (post := post).
+    specialize h with (hc1 := h₀'). (hc2 := h₁').
+    eapply rpost_weaken_rule in IHh1.
+    1: specialize h with (1 := IHh1).
+
+
+
+
+    erewrite !repr_bind.
+    pose proof (swap_rule _ _ IHh1 IHh2). *)
+    (* pose proof (rswap_rule _ _ IHh1 IHh2). *)
       (* rswap_rule *)
 Admitted.
 
