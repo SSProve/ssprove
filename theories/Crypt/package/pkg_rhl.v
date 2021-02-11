@@ -15,8 +15,8 @@ From Mon Require Import SPropBase.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings RulesStateProb
   StateTransfThetaDens StateTransformingLaxMorph
   pkg_chUniverse pkg_notation pkg_tactics.
+Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
 
 (* Must come after importing Equations.Equations, god knows why. *)
 From Crypt Require Import FreeProbProg.
@@ -2019,52 +2019,22 @@ Admitted.
 
 *)
 
-(* TODO MOVE *)
-Lemma Arit_canonical :
-  ∀ op, Arit op.
-Proof.
-  intro op. unfold Arit.
-  unfold Prob_arities. destruct op as [T ?].
-Abort.
-
-(* TODO MOVE *)
 Lemma inversion_valid_bind_seq :
-      ∀ {L I} {A B} {c1 : raw_program A} {c2 : raw_program B},
-        valid_program L I (c1 ;; c2) →
-        valid_program L I c1 ∧ valid_program L I c2.
+      ∀ {L1 L2 I} {A B} {c1 : raw_program A} {c2 : raw_program B},
+        valid_program L1 I (c1 ;; c2) →
+        valid_program L2 I c2 →
+        valid_program L1 I c2.
 Proof.
-  intros L I A B c1 c2 h.
+  intros L1 L2 I A B c1 c2 h1 h2.
   induction c1.
-  - split.
-    + constructor.
-    + cbn in h. auto.
-  - simpl in h. apply inversion_valid_opr in h. destruct h as [h1 h2].
-    split.
-    + constructor. 1: auto.
-      intro s. specialize (H s (h2 _)).
-      intuition auto.
-    + specialize (H (chCanonical _) (h2 _)).
-      intuition auto.
-  - simpl in h. apply inversion_valid_getr in h. destruct h as [h1 h2].
-    split.
-    + constructor. 1: auto.
-      intro s. specialize (H s (h2 _)).
-      intuition auto.
-    + specialize (H (chCanonical _) (h2 _)).
-      intuition auto.
-  - simpl in h. apply inversion_valid_putr in h. destruct h as [h1 h2].
-    specialize (IHc1 h2).
-    split.
-    + constructor. all: intuition auto.
-    + intuition auto.
-  - simpl in h. split.
-    + constructor. intro s. specialize (H s). forward H.
-      { eapply inversion_valid_sampler in h. eauto. }
-      intuition auto.
-    (* + specialize (H _). forward H.
-      { eapply inversion_valid_sampler in h. eauto. }
-      intuition auto.
-Qed. *)
+  - cbn in h1. auto.
+  - simpl in h1. apply inversion_valid_opr in h1. destruct h1 as [? hk].
+    eapply H. eapply hk.
+  - simpl in h1. apply inversion_valid_getr in h1. destruct h1 as [? hk].
+    eapply H. eapply hk.
+  - simpl in h1. apply inversion_valid_putr in h1. destruct h1 as [? hk].
+    eapply IHc1. auto.
+  - simpl in h1.
 Abort.
 
 Definition precond := heap * heap → Prop.
