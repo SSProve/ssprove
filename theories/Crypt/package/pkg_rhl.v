@@ -305,6 +305,33 @@ Module PackageRHL (π : RulesParam).
         fold_repr. apply H.
     Qed.
 
+    Lemma repr_bind' :
+      ∀ {B C} {L1 L2 L3} p f
+        {hp : @ValidProgram L1 Game_import B p}
+        {hf : ∀ b, @ValidProgram L2 Game_import C (f b)}
+        {h : ValidProgram L3 Game_import _},
+        repr {program bind p f #with h } =
+        bindrFree _ _ (repr {program p}) (λ b, repr {program f b}).
+    Proof.
+      intros B C L1 L2 L3 p f hp hf h.
+      induction p in hp, h, f, hf |- *.
+      - cbn. fold_repr. eapply repr_ext.
+        simpl. reflexivity.
+      - apply inversion_valid_opr in hp as h'. destruct h' as [h1 h2].
+        eapply fromEmpty. exact h1.
+      - cbn. f_equal. extensionality s.
+        fold_repr. apply H.
+      - cbn. f_equal.
+        extensionality s.
+        f_equal.
+        extensionality s'.
+        fold_repr. apply IHp.
+      - cbn.
+        f_equal.
+        extensionality s.
+        fold_repr. apply H.
+    Qed.
+
     Notation " r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄ " :=
       (semantic_judgement _ _ (repr c1) (repr c2) (fromPrePost pre post)).
 
@@ -2074,7 +2101,7 @@ Proof.
   - pose proof (reflexivity_rule (repr {program c})) as h.
     erewrite repr_ext. 1: exact h.
     cbn. reflexivity.
-  (* - apply inversion_valid_bind in h₀ as h₀'.
+  - apply inversion_valid_bind in h₀ as h₀'.
     apply inversion_valid_bind in h₁ as h₁'.
     specialize IHh1 with (h₀ := h₀') (h₁ := h₁').
     specialize IHh2 with (h₀ := h₁') (h₁ := h₀').
@@ -2094,41 +2121,11 @@ Proof.
     }
     cbn - [semantic_judgement repr].
     cbn - [semantic_judgement] in h.
-    unshelve erewrite !repr_bind. 1,3: eauto.
-
-
-    Unset Printing Notations.
-    specialize
-    erewrite !repr_bind.
+    unshelve erewrite !repr_bind'. 3,4,7,8: eauto.
     eapply post_weaken_rule.
-    1: eapply swap_rule.
-
-    erewrite repr_ext.
-    + eapply post_weaken_rule.
-      * erewrite !repr_bind.
-        eapply swap_rule. _ _ IHh1 IHh2.
-
-      eapply rswap_rule.
-        -- unfold repr in *. Set Printing Implicit.
-        eapply post_weaken_rule. 1: exact IHh1.
-
-    (* eapply post_weaken_rule.
-    + eapply rswap_rule. *)
-
-    pose proof @rswap_rule as h.
-    specialize h with (I := I) (post := post).
-    specialize h with (hc1 := h₀'). (hc2 := h₁').
-    eapply rpost_weaken_rule in IHh1.
-    1: specialize h with (1 := IHh1).
-
-
-
-
-    erewrite !repr_bind.
-    pose proof (swap_rule _ _ IHh1 IHh2).
-    (* pose proof (rswap_rule _ _ IHh1 IHh2). *)
-      rswap_rule *)
-Admitted.
+    1: exact h.
+    cbn. intros [a₀ s₀] [a₁ s₁]. cbn. auto.
+Qed.
 
 End Games.
 
