@@ -2161,6 +2161,20 @@ Proof.
   - apply inversion_valid_bind in h₀ as h₀'.
     apply inversion_valid_bind in h₁ as h₁'.
     unshelve (repeat setoid_rewrite repr_bind'). 3,7,11,15:eauto.
+(* TODO Maybe define another kind of bind which doesn't take raw programs
+  but rather commands (so excluding ret), stuff that usally takes a continuation
+  but without the continuation.
+  Maybe just some cmd : Cmd → _
+  cmd csample = sample
+  Maybe have a x ← cmd c ;; k notation?
+  What about ;;? Maybe we fine another one for now. Since swap could
+  be proven with ;; (bind).
+
+  Inductive Cmd : Type → Type :=
+  | cmd_sample op : Cmd (Arit op)
+  ...
+*)
+
     (* HOW can I get validity of the subexpressions?
       Especially r, if I get it then it should be alright.
     *)
