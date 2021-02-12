@@ -2032,8 +2032,6 @@ Admitted.
   - rpre_strong_hypothesis_rule
   - rpost_weaken_rule
   - rif_rule (should be provable without being assumed, otherwise we have a problem for user-defined types)
-  - rswap_rule
-  - rswap_ruleR
   - rsamplerC
   - rsamplerC'
   - rsame_head
@@ -2044,25 +2042,10 @@ Admitted.
 
   + context rules
 
-*)
+  TODO Remove the rules above? It seems I will inline their proofs rather than
+  use them.
 
-Lemma inversion_valid_bind_seq :
-      ∀ {L1 L2 I} {A B} {c1 : raw_program A} {c2 : raw_program B},
-        valid_program L1 I (c1 ;; c2) →
-        valid_program L2 I c2 →
-        valid_program L1 I c2.
-Proof.
-  intros L1 L2 I A B c1 c2 h1 h2.
-  induction c1.
-  - cbn in h1. auto.
-  - simpl in h1. apply inversion_valid_opr in h1. destruct h1 as [? hk].
-    eapply H. eapply hk.
-  - simpl in h1. apply inversion_valid_getr in h1. destruct h1 as [? hk].
-    eapply H. eapply hk.
-  - simpl in h1. apply inversion_valid_putr in h1. destruct h1 as [? hk].
-    eapply IHc1. auto.
-  - simpl in h1.
-Abort.
+*)
 
 Definition precond := heap * heap → Prop.
 Definition postcond A B := (A * heap) → (B * heap) → Prop.
@@ -2086,6 +2069,22 @@ Inductive raw_judgment :
       ⊢ ⦃ I ⦄ c₀ ~ c₁ ⦃ λ b₀ b₁, I (b₀.2, b₁.2) ∧ post b₀ b₁ ⦄ →
       ⊢ ⦃ I ⦄ c₁ ~ c₀ ⦃ λ b₁ b₀, I (b₀.2, b₁.2) ∧ post b₀ b₁ ⦄ →
       ⊢ ⦃ I ⦄ c₀ ;; c₁ ~ c₁ ;; c₀ ⦃ λ b₁ b₀, I (b₀.2, b₁.2) ∧ post b₀ b₁ ⦄
+
+| r_swapR :
+    ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
+      (c₀ : raw_program A₀) (c₁ : raw_program A₁)
+      (r : A₀ → A₁ → raw_program B),
+      (∀ b, post b b) →
+      (∀ a₀ a₁, ⊢ ⦃ λ '(s₁, s₀), s₀ = s₁ ⦄ r a₀ a₁ ~ r a₀ a₁ ⦃ post ⦄) →
+      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+        a₀ ← c₀ ;; a₁ ← c₁ ;; ret (a₀, a₁) ~
+        a₁ ← c₁ ;; a₀ ← c₀ ;; ret (a₀, a₁)
+        ⦃ eq ⦄ →
+      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+        a₀ ← c₀ ;; a₁ ← c₁ ;; r a₀ a₁ ~
+        a₁ ← c₁ ;; a₀ ← c₀ ;; r a₀ a₁
+        ⦃ eq ⦄
+
 
 where "⊢ ⦃ pre ⦄ c1 ~ c2 ⦃ post ⦄" := (raw_judgment pre post c1 c2).
 
@@ -2125,7 +2124,24 @@ Proof.
     eapply post_weaken_rule.
     1: exact h.
     cbn. intros [a₀ s₀] [a₁ s₁]. cbn. auto.
-Qed.
+  - apply inversion_valid_bind in h₀ as h₀'.
+    apply inversion_valid_bind in h₁ as h₁'.
+    unshelve (repeat setoid_rewrite repr_bind'). 3,7,11,15:eauto.
+    (* HOW can I get validity of the subexpressions?
+      Especially r, if I get it then it should be alright.
+    *)
+    (* Below proof of rsawp_ruleR *)
+    (* eapply (swap_ruleR (fun a1 a2 => repr (r a1 a2)) (repr c1) (repr c2) HR post_refl).
+    move => s.
+    unshelve eapply coupling_eq.
+    - exact: (λ '(h1, h2), h1 = h2).
+    - repeat setoid_rewrite repr_bind in Hcomm. 1: apply: Hcomm.
+      all: intro. all: exact _.
+    - by [].
+    Unshelve.
+    all: intro. all: exact _. *)
+    all: admit.
+Admitted.
 
 End Games.
 
