@@ -2047,6 +2047,40 @@ Admitted.
 
 *)
 
+(* Definition ret_discr {A} (v : raw_program A) : Prop :=
+  match v with
+  | ret _ => False
+  | _ => True
+  end.
+
+Inductive ret_view {A} : raw_program A → Type :=
+| is_ret x : ret_view (ret x)
+| is_not_ret c : ret_discr c → ret_view c.
+
+Equations ret_viewc {A} (c : raw_program A) : ret_view c :=
+  ret_viewc (ret x) := is_ret x ;
+  ret_viewc c := is_not_ret c I.
+
+Lemma inversion_valid_bind2 :
+      ∀ {L I} {A B} {c : raw_program A} {k : A → raw_program B},
+        ret_discr c →
+        valid_program L I (x ← c ;; k x) →
+        ∀ x, valid_program L I (k x).
+Proof.
+  intros L I A B c k nr h.
+  induction c.
+  - cbn in nr. contradiction.
+  - simpl in h. apply inversion_valid_opr in h. destruct h as [? hk].
+    intro a. remember (k a) as c eqn:e.
+    destruct (ret_viewc c). 1: constructor.
+    subst c. eapply H. eapply hk.
+  - simpl in h1. apply inversion_valid_getr in h1. destruct h1 as [? hk].
+    eapply H. eapply hk.
+  - simpl in h1. apply inversion_valid_putr in h1. destruct h1 as [? hk].
+    eapply IHc1. auto.
+  - simpl in h1.
+Abort. *)
+
 Definition precond := heap * heap → Prop.
 Definition postcond A B := (A * heap) → (B * heap) → Prop.
 
