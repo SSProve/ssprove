@@ -340,7 +340,41 @@ Module CorePackageTheory (π : RulesParam).
       auto.
     Qed.
 
-    (* TODO Lemma valid_cmd_bind + inversion *)
+    Lemma valid_cmd_bind :
+      ∀ {A B} (c : command A) (k : A → raw_program B),
+        valid_command c →
+        (∀ x, valid_program (k x)) →
+        valid_program (cmd_bind c k).
+    Proof.
+      intros A B c k hc hk.
+      induction hc.
+      - cbn. constructor. all: auto.
+      - cbn. constructor. all: auto.
+      - cbn. constructor. all: auto.
+      - cbn. constructor. auto.
+    Qed.
+
+    Lemma inversion_valid_cmd_bind :
+      ∀ {A B} (c : command A) (k : A → raw_program B),
+        valid_program (cmd_bind c k) →
+        valid_command c ∧ (∀ x, valid_program (k x)).
+    Proof.
+      intros A B c k h.
+      destruct c.
+      - cbn. apply inversion_valid_opr in h. intuition auto.
+        constructor. auto.
+      - cbn. apply inversion_valid_getr in h. intuition auto.
+        constructor. auto.
+      - cbn. apply inversion_valid_putr in h. split.
+        + constructor. intuition auto.
+        + intros []. intuition auto.
+      - cbn. split.
+        + constructor.
+        + intro. eapply inversion_valid_sampler in h. eauto.
+    Qed.
+
+    (* TODO Arguments outside of section *)
+    (* TODO Notation *)
 
     Lemma prove_program :
       ∀ {A} (P : program A → Type) p q,
