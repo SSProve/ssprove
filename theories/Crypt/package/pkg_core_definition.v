@@ -373,9 +373,6 @@ Module CorePackageTheory (π : RulesParam).
         + intro. eapply inversion_valid_sampler in h. eauto.
     Qed.
 
-    (* TODO Arguments outside of section *)
-    (* TODO Notation *)
-
     Lemma prove_program :
       ∀ {A} (P : program A → Type) p q,
         P p →
@@ -586,6 +583,34 @@ Module CorePackageTheory (π : RulesParam).
 
   Hint Extern 1 (ValidProgram ?L ?I (?p.(prog))) =>
     eapply p.(prog_valid)
+    : typeclass_instances.
+
+  Arguments valid_command _ _ [_] _.
+
+  Hint Extern 1 (ValidCommand ?L ?I (cmd_op ?o ?x)) =>
+    eapply valid_cmd_op ;
+    auto_in_fset
+    : typeclass_instances.
+
+  Hint Extern 1 (ValidCommand ?L ?I (cmd_get ?l)) =>
+    eapply valid_cmd_get ;
+    auto_in_fset
+    : typeclass_instances.
+
+  Hint Extern 1 (ValidProgram ?L ?I (cmd_put ?l ?v)) =>
+    eapply valid_cmd_put ;
+    auto_in_fset
+    : typeclass_instances.
+
+  Hint Extern 1 (ValidProgram ?L ?I (cmd_sample ?op)) =>
+    eapply valid_cmd_sample
+    : typeclass_instances.
+
+  Hint Extern 1 (ValidProgram ?L ?I (cmd_bind ?c ?k)) =>
+    eapply valid_cmd_bind ; [
+      apply valid_command_from_class
+    | intro ; apply valid_program_from_class
+    ]
     : typeclass_instances.
 
   (* Section Test.
