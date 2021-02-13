@@ -2173,6 +2173,18 @@ Proof.
   Inductive Cmd : Type → Type :=
   | cmd_sample op : Cmd (Arit op)
   ...
+
+  Will need ValidCmd, valid_cmd and inversion lemma
+  ok because continuation in case put is unit so fine.
+  Do it in core? SO that stuff can be where it should, notation etc.
+
+  There is also the less satisfying possibility of requiring validity of stuff
+  fron time to time.
+  In a sense, it's a bit weird that repr doesn't care at all about validity
+  with which location set...
+
+  Might make sense to keep rswapR for legacy by requiring the missing validity
+  statements. And on the other hand prove swap_cmd.
 *)
 
     (* HOW can I get validity of the subexpressions?

@@ -292,6 +292,23 @@ Module CorePackageTheory (π : RulesParam).
         eauto.
     Qed.
 
+    (* Alternative to bind *)
+    Inductive command : Type → Type :=
+    | cmd_op o (x : src o) : command (tgt o)
+    | cmd_get (ℓ : Location) : command (Value ℓ.π1)
+    | cmd_put (ℓ : Location) (v : Value ℓ.π1) : command unit
+    | cmd_sample op : command (Arit op).
+
+    Definition cmd_bind {A B} (c : command A) (k : A → raw_program B) :=
+      match c in command A return (A → raw_program B) → raw_program B with
+      | cmd_op o x => opr o x
+      | cmd_get ℓ => getr ℓ
+      | cmd_put ℓ v => λ k, putr ℓ v (k Datatypes.tt)
+      | cmd_sample op => sampler op
+      end k.
+
+    (* TODO Ind valid_cmd, Class ValidCmd and Lemma valid_cmd_bind. *)
+
     Lemma prove_program :
       ∀ {A} (P : program A → Type) p q,
         P p →
