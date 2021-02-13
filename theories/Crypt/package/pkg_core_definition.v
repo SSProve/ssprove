@@ -307,7 +307,40 @@ Module CorePackageTheory (π : RulesParam).
       | cmd_sample op => sampler op
       end k.
 
-    (* TODO Ind valid_cmd, Class ValidCmd and Lemma valid_cmd_bind. *)
+    Inductive valid_command : ∀ A, command A → Prop :=
+    | valid_cmd_op :
+        ∀ o x,
+          o \in import →
+          valid_command _ (cmd_op o x)
+
+    | valid_cmd_get :
+        ∀ ℓ,
+          ℓ \in Loc →
+          valid_command _ (cmd_get ℓ)
+
+    | valid_cmd_put :
+        ∀ ℓ v,
+          ℓ \in Loc →
+          valid_command _ (cmd_put ℓ v)
+
+    | valid_cmd_sample :
+        ∀ op,
+          valid_command _ (cmd_sample op).
+
+    Arguments valid_command [_] _.
+
+    Class ValidCommand {A} (c : command A) :=
+      is_valid_command : valid_command c.
+
+    Lemma valid_command_from_class :
+      ∀ A (c : command A),
+        ValidCommand c →
+        valid_command c.
+    Proof.
+      auto.
+    Qed.
+
+    (* TODO Lemma valid_cmd_bind + inversion *)
 
     Lemma prove_program :
       ∀ {A} (P : program A → Type) p q,
