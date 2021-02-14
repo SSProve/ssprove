@@ -2173,10 +2173,52 @@ Proof.
     + intros ? ? []. eauto.
     + intro s. unshelve eapply coupling_eq.
       * exact: (λ '(h1, h2), h1 = h2).
-      * (* Instantiate IHh, setoid rewrite repr_bind' and then apply it *)
-        admit.
+      * evar (L0 : {fset Location}).
+        evar (L1 : {fset Location}).
+        specialize (IHh L0 L1).
+        subst L0 L1.
+        match type of IHh with
+        | ?A → _ =>
+          assert (h0 : A)
+        end.
+        { eapply valid_bind.
+          - eapply valid_injectLocations. 2: exact h₀'.
+            eapply fsubsetUl.
+          - intro. eapply valid_bind.
+            + eapply valid_injectLocations. 2: eassumption.
+              eapply fsubsetUr.
+            + intro. constructor.
+        }
+        specialize (IHh h0).
+        match type of IHh with
+        | ?A → _ =>
+          assert (h1 : A)
+        end.
+        { eapply valid_bind.
+          - eapply valid_injectLocations. 2: exact h₁'.
+            eapply fsubsetUl.
+          - intro. eapply valid_bind.
+            + eapply valid_injectLocations. 2: eassumption.
+              eapply fsubsetUr.
+            + intro. constructor.
+        }
+        specialize (IHh h1).
+        revert IHh.
+        unshelve (repeat (setoid_rewrite repr_bind')).
+        3,7,11,15: eauto.
+        6,8: intro ; constructor.
+        2:{
+          intro. eapply valid_bind. 1: eauto.
+          intro. constructor.
+        }
+        2:{
+          intro. eapply valid_bind. 1: eauto.
+          intro. constructor.
+        }
+        1,2: exact fset0.
+        auto.
       * cbn. reflexivity.
-Admitted.
+Qed.
 
 End Games.
 
