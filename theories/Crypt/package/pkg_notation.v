@@ -289,6 +289,24 @@ Module PkgNotation (π : RulesParam).
       (* format "x  <$  o  ;;  '/' c", *) only parsing)
       : package_scope.
 
+    Notation "x ← 'cmd' o ;; c" :=
+      (cmd_bind o (λ x, c))
+      (at level 100, o at next level, right associativity,
+      format "x  ←  cmd  o  ;;  '/' c")
+      : package_scope.
+
+    Notation "' p ← 'cmd' o ;; c" :=
+      (cmd_bind o (λ x, let p := x in c))
+      (at level 100, p pattern, o at next level, right associativity,
+      format "' p  ←  cmd  o  ;;  '/' c")
+      : package_scope.
+
+    Notation "e1 ;' e2" :=
+      (_ ← cmd e1 ;; e2)%pack
+      (at level 100, right associativity,
+      format "e1  ;'  '/' e2")
+      : package_scope.
+
     (** Utility for fin types *)
 
     (** m : 'fin n *)
