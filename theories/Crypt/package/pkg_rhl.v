@@ -2098,6 +2098,7 @@ Inductive raw_judgment :
 
 (* r_seq *) (* Which one ist it? *)
 
+(* Legacy rule *)
 | r_swap :
     ∀ (A₀ A₁ : choiceType) (I : precond) (post : postcond A₀ A₁) (c₀ : raw_program A₀) (c₁ : raw_program A₁),
       ⊢ ⦃ I ⦄ c₀ ~ c₁ ⦃ λ b₀ b₁, I (b₀.2, b₁.2) ∧ post b₀ b₁ ⦄ →
@@ -2124,6 +2125,22 @@ Inductive raw_judgment :
         a₁ ← c₁ ;; a₀ ← c₀ ;; r a₀ a₁
         ⦃ post ⦄
 
+(* | r_swap_cmd_seq *)
+
+| r_swap_cmd :
+    ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
+      (c₀ : command A₀) (c₁ : command A₁)
+      (r : A₀ → A₁ → raw_program B),
+      (∀ b, post b b) →
+      (∀ a₀ a₁, ⊢ ⦃ λ '(s₁, s₀), s₀ = s₁ ⦄ r a₀ a₁ ~ r a₀ a₁ ⦃ post ⦄) →
+      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+        a₀ ← cmd c₀ ;; a₁ ← cmd c₁ ;; ret (a₀, a₁) ~
+        a₁ ← cmd c₁ ;; a₀ ← cmd c₀ ;; ret (a₀, a₁)
+        ⦃ eq ⦄ →
+      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+        a₀ ← cmd c₀ ;; a₁ ← cmd c₁ ;; r a₀ a₁ ~
+        a₁ ← cmd c₁ ;; a₀ ← cmd c₀ ;; r a₀ a₁
+        ⦃ post ⦄
 
 where "⊢ ⦃ pre ⦄ c1 ~ c2 ⦃ post ⦄" := (raw_judgment pre post c1 c2).
 
@@ -2218,11 +2235,18 @@ Proof.
         1,2: exact fset0.
         auto.
       * cbn. reflexivity.
-Qed.
+  - apply inversion_valid_cmd_bind in h₀ as hh.
+    destruct hh as [hc₀ hk₀].
+    apply inversion_valid_cmd_bind in h₁ as hh.
+    destruct hh as [hc₁ hk₁].
+    (* TODO NEED some repr_cmd_bind *)
+    (* After or before defining new repr? *)
+Admitted.
 
 (* TODO Seems like repr only need no import, but doesn't care about
 locations. If so we could make a much simpler statement?
 Can probably define rep = repr' using noimport predicate
+Then the above would be simpler! No need for stupid Ls everywhere.
 *)
 
 End Games.
