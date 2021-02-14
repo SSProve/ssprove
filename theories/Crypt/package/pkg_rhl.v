@@ -203,7 +203,7 @@ Module PackageRHL (π : RulesParam).
     : rFreeF (ops_StP heap_choiceType) (ar_StP heap_choiceType) B :=
       repr' p h with p := {
 
-      | ret x := retrFree _ ;
+      | ret x := retrFree x ;
 
       | opr o x k := False_rect _ _ ;
 
@@ -2219,6 +2219,11 @@ Proof.
         auto.
       * cbn. reflexivity.
 Qed.
+
+(* TODO Seems like repr only need no import, but doesn't care about
+locations. If so we could make a much simpler statement?
+Can probably define rep = repr' using noimport predicate
+*)
 
 End Games.
 
