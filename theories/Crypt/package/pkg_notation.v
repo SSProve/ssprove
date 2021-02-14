@@ -301,6 +301,11 @@ Module PkgNotation (π : RulesParam).
       format "' p  ←  cmd  o  ;;  '/' c")
       : package_scope.
 
+    (* TODO Use ;; for this, and a longer notation or none at all for
+      bind. Bind is just a tool to compose programs while this is to compose
+      commands and code, much more practical.
+      TODO: Maybe not add things such as get/put/cmd to the grammar.
+    *)
     Notation "e1 ;' e2" :=
       (_ ← cmd e1 ;; e2)%pack
       (at level 100, right associativity,

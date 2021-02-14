@@ -2104,12 +2104,17 @@ Inductive raw_judgment :
       ⊢ ⦃ I ⦄ c₁ ~ c₀ ⦃ λ b₁ b₀, I (b₀.2, b₁.2) ∧ post b₀ b₁ ⦄ →
       ⊢ ⦃ I ⦄ c₀ ;; c₁ ~ c₁ ;; c₀ ⦃ λ b₁ b₀, I (b₀.2, b₁.2) ∧ post b₀ b₁ ⦄
 
+(* Legacy rule, it requires extra validity assumptions *)
+(* Better use r_swap_cmd instead *)
 | r_swapR :
-    ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
+    ∀ L₀ L₁ Lr (A₀ A₁ B : choiceType) (post : postcond B B)
       (c₀ : raw_program A₀) (c₁ : raw_program A₁)
       (r : A₀ → A₁ → raw_program B),
       (∀ b, post b b) →
       (∀ a₀ a₁, ⊢ ⦃ λ '(s₁, s₀), s₀ = s₁ ⦄ r a₀ a₁ ~ r a₀ a₁ ⦃ post ⦄) →
+      (∀ x, ValidProgram L₁ Game_import (a₁ ← c₁ ;; r x a₁)) →
+      (∀ x, ValidProgram L₀ Game_import (a₀ ← c₀ ;; r a₀ x)) →
+      (∀ x y, ValidProgram Lr Game_import (r x y)) →
       ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
         a₀ ← c₀ ;; a₁ ← c₁ ;; ret (a₀, a₁) ~
         a₁ ← c₁ ;; a₀ ← c₀ ;; ret (a₀, a₁)
@@ -2117,7 +2122,7 @@ Inductive raw_judgment :
       ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
         a₀ ← c₀ ;; a₁ ← c₁ ;; r a₀ a₁ ~
         a₁ ← c₁ ;; a₀ ← c₀ ;; r a₀ a₁
-        ⦃ eq ⦄
+        ⦃ post ⦄
 
 
 where "⊢ ⦃ pre ⦄ c1 ~ c2 ⦃ post ⦄" := (raw_judgment pre post c1 c2).
@@ -2160,47 +2165,17 @@ Proof.
     cbn. intros [a₀ s₀] [a₁ s₁]. cbn. auto.
   - apply inversion_valid_bind in h₀ as h₀'.
     apply inversion_valid_bind in h₁ as h₁'.
-    unshelve (repeat setoid_rewrite repr_bind'). 3,7,11,15:eauto.
-(* TODO Maybe define another kind of bind which doesn't take raw programs
-  but rather commands (so excluding ret), stuff that usally takes a continuation
-  but without the continuation.
-  Maybe just some cmd : Cmd → _
-  cmd csample = sample
-  Maybe have a x ← cmd c ;; k notation?
-  What about ;;? Maybe we fine another one for now. Since swap could
-  be proven with ;; (bind).
-
-  Inductive Cmd : Type → Type :=
-  | cmd_sample op : Cmd (Arit op)
-  ...
-
-  Will need ValidCmd, valid_cmd and inversion lemma
-  ok because continuation in case put is unit so fine.
-  Do it in core? SO that stuff can be where it should, notation etc.
-
-  There is also the less satisfying possibility of requiring validity of stuff
-  fron time to time.
-  In a sense, it's a bit weird that repr doesn't care at all about validity
-  with which location set...
-
-  Might make sense to keep rswapR for legacy by requiring the missing validity
-  statements. And on the other hand prove swap_cmd.
-*)
-
-    (* HOW can I get validity of the subexpressions?
-      Especially r, if I get it then it should be alright.
-    *)
-    (* Below proof of rsawp_ruleR *)
-    (* eapply (swap_ruleR (fun a1 a2 => repr (r a1 a2)) (repr c1) (repr c2) HR post_refl).
-    move => s.
-    unshelve eapply coupling_eq.
-    - exact: (λ '(h1, h2), h1 = h2).
-    - repeat setoid_rewrite repr_bind in Hcomm. 1: apply: Hcomm.
-      all: intro. all: exact _.
-    - by [].
-    Unshelve.
-    all: intro. all: exact _. *)
-    all: admit.
+    unshelve (repeat setoid_rewrite repr_bind'). 3,4,7,8,11,12,15,16:eauto.
+    eapply (swap_ruleR (λ a₀ a₁, repr {program r a₀ a₁ }) (repr {program c₀ }) (repr {program c₁ })).
+    + intros a₀ a₁. specialize (H1 a₀ a₁).
+      specialize H1 with (h₀ := H4 _ _) (h₁ := H4 _ _).
+      exact H1.
+    + intros ? ? []. eauto.
+    + intro s. unshelve eapply coupling_eq.
+      * exact: (λ '(h1, h2), h1 = h2).
+      * (* Instantiate IHh, setoid rewrite repr_bind' and then apply it *)
+        admit.
+      * cbn. reflexivity.
 Admitted.
 
 End Games.
