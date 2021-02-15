@@ -293,10 +293,10 @@ Module CorePackageTheory (π : RulesParam).
     Qed.
 
     (* Alternative to bind *)
-    Inductive command : Type → Type :=
+    Inductive command : choiceType → Type :=
     | cmd_op o (x : src o) : command (tgt o)
     | cmd_get (ℓ : Location) : command (Value ℓ.π1)
-    | cmd_put (ℓ : Location) (v : Value ℓ.π1) : command unit
+    | cmd_put (ℓ : Location) (v : Value ℓ.π1) : command unit_choiceType
     | cmd_sample op : command (Arit op).
 
     Definition cmd_bind {A B} (c : command A) (k : A → raw_program B) :=

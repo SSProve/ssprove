@@ -1027,8 +1027,7 @@ Module PackageRHL (π : RulesParam).
       rewrite /SpecificationMonads.MonoCont_order /SPropMonadicStructures.SProp_op_order
               /Morphisms.pointwise_relation /Basics.flip /SPropMonadicStructures.SProp_order /=.
       intuition.
-      exists (SDistr_unit _ ((repr'_obligation_1 unit_choiceType tt, set_heap s1 l v),
-                        (repr'_obligation_1 unit_choiceType tt, set_heap s2 l v))).
+      eexists (SDistr_unit _ _).
       split.
       + apply SDistr_unit_F_choice_prod_coupling.
         reflexivity.
