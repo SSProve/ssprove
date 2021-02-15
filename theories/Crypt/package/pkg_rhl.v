@@ -209,7 +209,7 @@ Module PackageRHL (π : RulesParam).
 
       | getr l k :=
         bindrFree _ _
-          (ropr (inl (inl (gett _))) (fun s => retrFree (get_heap s l)))
+          (ropr (inl (inl (gett _))) (λ s, retrFree (get_heap s l)))
           (λ v, repr' (k v) _) ;
 
       | putr l v k :=
@@ -331,6 +331,98 @@ Module PackageRHL (π : RulesParam).
         extensionality s.
         fold_repr. apply H.
     Qed.
+
+    (* Definition repr_cmd {L} {A : choiceType} (c : command A) :
+      ValidCommand L Game_import c →
+      rFreeF (ops_StP heap_choiceType) (ar_StP heap_choiceType) A :=
+      match c in command A as c return ValidCommand L Game_import c →
+      rFreeF (ops_StP heap_choiceType) (ar_StP heap_choiceType) A with
+      | cmd_op o x => λ h, False_rect _ _
+      | cmd_get ℓ => λ h,
+          bindrFree _ _
+            (ropr (inl (inl (gett _))) (λ s, retrFree (get_heap s ℓ)))
+            (λ v, retrFree v)
+      | cmd_put ℓ v => λ h,
+          bindrFree _ _
+            (ropr
+              (inl (inl (gett heap_choiceType)))
+              (λ s, ropr (inl (inr (putt heap_choiceType (set_heap s ℓ v))))
+              (λ s, retrFree tt)))
+            (λ s', retrFree s')
+      | cmd_sample op => λ h,
+          bindrFree _ _
+            (ropr (inr op) (λ v, retrFree v))
+            (λ s, retrFree s)
+      end. *)
+
+    (* Equations? repr_cmd {L} {A} (c : command A)
+      (hc : valid_command L Game_import c) :
+      rFreeF (ops_StP heap_choiceType) (ar_StP heap_choiceType) A :=
+
+      repr_cmd c hc with c := {
+      | cmd_op o x := _ ;
+      | cmd_get ℓ := _ ;
+      | cmd_put ℓ v := _ ;
+      | cmd_sample op := _
+      }. *)
+
+      (* repr_cmd (cmd_op o x) hc := False_rect _ _ ; *)
+
+      (* repr_cmd (cmd_get ℓ) hc :=
+        bindrFree _ _
+          (ropr (inl (inl (gett _))) (λ s, retrFree (get_heap s ℓ)))
+          (λ v, retrFree v) ; *)
+
+      (* repr_cmd (cmd_put ℓ v) hc :=
+        bindrFree _ _
+          (ropr
+            (inl (inl (gett heap_choiceType)))
+            (λ s, ropr (inl (inr (putt heap_choiceType (set_heap s ℓ v))))
+            (λ s, retrFree tt)))
+          (λ s', retrFree s') ; *)
+
+      (* repr_cmd (cmd_sample op) hc :=
+        bindrFree _ _
+          (ropr (inr op) (λ v, retrFree v))
+          (λ s, retrFree s) ; *)
+
+      (* repr_cmd c hc := _. *)
+
+
+    (* Notion of stem to mirror commands in the interpretation free monad? *)
+    (* ... *)
+
+    (* TODO NEED Some repr_cmd? *)
+    (* Since we need to define it, it's really raising the question
+      of whether to use noimport or not.
+    *)
+
+    (* Lemma repr_cmd_bind :
+      ∀ {B C} {L1 L2 L3} p f
+        {hp : @ValidCommand L1 Game_import B p}
+        {hf : ∀ b, @ValidProgram L2 Game_import C (f b)}
+        {h : ValidProgram L3 Game_import _},
+        repr {program cmd_bind p f #with h } =
+        bindrFree _ _ (repr {program p}) (λ b, repr {program f b}).
+    Proof.
+      intros B C L1 L2 L3 p f hp hf h.
+      induction p in hp, h, f, hf |- *.
+      - cbn. fold_repr. eapply repr_ext.
+        simpl. reflexivity.
+      - apply inversion_valid_opr in hp as h'. destruct h' as [h1 h2].
+        eapply fromEmpty. exact h1.
+      - cbn. f_equal. extensionality s.
+        fold_repr. apply H.
+      - cbn. f_equal.
+        extensionality s.
+        f_equal.
+        extensionality s'.
+        fold_repr. apply IHp.
+      - cbn.
+        f_equal.
+        extensionality s.
+        fold_repr. apply H.
+    Qed. *)
 
     Notation " r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄ " :=
       (semantic_judgement _ _ (repr c1) (repr c2) (fromPrePost pre post)).
