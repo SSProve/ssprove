@@ -9,7 +9,8 @@ Import SPropNotations.
 
 
 (*
-in theory there is a free-forgetful adjunction between choiceType relative monads on one side, and operations and arities on the other side (the involved category is the slice Ty / chTy).
+in theory there is a free-forgetful adjunction between choiceType relative monads on one side,
+and operations and arities on the other side (the involved category is the slice Ty / chTy).
 Here we describe the object part of the forgetful functor U.
 *)
 Section ForgetFromRmonToOpar.

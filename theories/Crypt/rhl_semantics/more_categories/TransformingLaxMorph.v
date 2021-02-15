@@ -36,7 +36,8 @@ End OrdCatLe.
 
 (*
 Take two relative monads and a lax morphism between them. For instance
-θ : Prob × Prob → SomeSpecRmonad. Based on θ, we begin by building a lax morphism between the associated Kleisli relative ajdunctions.
+θ : Prob × Prob → SomeSpecRmonad. Based on θ, we begin by building a lax morphism
+between the associated Kleisli relative ajdunctions.
 *)
 Section LaxMorphBetwKleislis.
   Context {I : ord_category}. (* both rmonads share the same index cat *)
@@ -165,7 +166,8 @@ End LaxMorphBetwKleislis.
 
 (*
 From a left relative adjunction we can deduce a relative monad
-Similarly from a lax morphism of left relative adjunctions we can deduce a lax morphism of relative monads.
+Similarly from a lax morphism of left relative adjunctions we can
+deduce a lax morphism of relative monads.
 We implement the latter fact in the following section.
 *)
 Section FromLaxMorphAdj_TO_LaxMorphRmon.

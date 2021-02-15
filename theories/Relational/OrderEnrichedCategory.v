@@ -648,7 +648,7 @@ End RelativeMonadPostcomposition.
 (*     set H := (Hobj _). *)
 (*     move: H => H. *)
 
-(*     (* KM : This is totally getting out of hand !!!! *) *)
+(*     (* Rem.: This is totally getting out of hand !!!! *) *)
 
 (* End IdNatIso. *)
 

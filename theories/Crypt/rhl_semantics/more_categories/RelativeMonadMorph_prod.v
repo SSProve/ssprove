@@ -9,10 +9,14 @@ Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
 (*
 In this file we build products of relative monad morphisms.
 
-First we build products of natural isomorphisms: let F1,G1 : C1 → D1 and Ψ1 a natural iso between F1 and G1. Similarly let F2,G2 : C2 → D2 and Ψ2 a natural iso between F2 and G2.
-Then we can build F1×F2, G1×G2 : C1×C2→D1×D2 and a natural iso Ψ1×Ψ2 between the product functors F1×F2 and G1×G2.
+First we build products of natural isomorphisms: let F1,G1 : C1 → D1 and Ψ1 a
+natural iso between F1 and G1. Similarly let F2,G2 : C2 → D2 and Ψ2 a natural
+iso between F2 and G2.
+Then we can build F1×F2, G1×G2 : C1×C2→D1×D2 and a natural iso Ψ1×Ψ2 between
+the product functors F1×F2 and G1×G2.
 
-Second, two relative monad morphisms θ1 : M1 → W1 and θ2 : M2 → W2 can be multiplied together to get θ1 × θ2 : M1×M2 → W1×W2 (section Rel_mon_morph_prod).
+Second, two relative monad morphisms θ1 : M1 → W1 and θ2 : M2 → W2 can
+be multiplied together to get θ1 × θ2 : M1×M2 → W1×W2 (section Rel_mon_morph_prod).
 *)
 
 

@@ -318,28 +318,28 @@ Proof.
   by apply: Hjudg.
 Qed.
 
-Theorem bind_rule {A1 A2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2}
-                  {B1 B2 : Type} {chB1 : Choice.class_of B1} {chB2 : Choice.class_of B2}
-                  {f1 : A1 -> SDistr (Choice.Pack chB1)}
-                  {f2 : A2 -> SDistr (Choice.Pack chB2)}
-                  (m1 : SDistr (Choice.Pack chA1))
-                  (m2 : SDistr (Choice.Pack chA2))
-                  (wm : WProp (A1 * A2)%type)
-                  (judge_wm : ⊨ m1 ≈ m2 [{ wm }])
-                  (wf : (A1 * A2) -> WProp (B1 * B2)%type)
-                  (a1 : A1) (a2 : A2)
-                  (judge_wf : ⊨ (f1 a1) ≈ (f2 a2) [{ (wf (a1, a2)) }]) :
-  ⊨ (ord_relmon_bind SDistr
-                     (fun x : (Choice.Pack chA1) => f1 x)
-                     m1) ≈
-    (ord_relmon_bind SDistr
-                     (fun x : (Choice.Pack chA2) => f2 x)
-                     m2)
-    [{ bind wm wf }].
-Proof.
-  rewrite /semantic_judgement /θ_morph //= /θ0 //=.
-  unfold "≤". simpl. rewrite /MonoCont_order //=.
-  move => π Hwm.
-  rewrite /SubDistr.SDistr_obligation_2.
-  Admitted.
+(* Theorem bind_rule {A1 A2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2} *)
+(*                   {B1 B2 : Type} {chB1 : Choice.class_of B1} {chB2 : Choice.class_of B2} *)
+(*                   {f1 : A1 -> SDistr (Choice.Pack chB1)} *)
+(*                   {f2 : A2 -> SDistr (Choice.Pack chB2)} *)
+(*                   (m1 : SDistr (Choice.Pack chA1)) *)
+(*                   (m2 : SDistr (Choice.Pack chA2)) *)
+(*                   (wm : WProp (A1 * A2)%type) *)
+(*                   (judge_wm : ⊨ m1 ≈ m2 [{ wm }]) *)
+(*                   (wf : (A1 * A2) -> WProp (B1 * B2)%type) *)
+(*                   (a1 : A1) (a2 : A2) *)
+(*                   (judge_wf : ⊨ (f1 a1) ≈ (f2 a2) [{ (wf (a1, a2)) }]) : *)
+(*   ⊨ (ord_relmon_bind SDistr *)
+(*                      (fun x : (Choice.Pack chA1) => f1 x) *)
+(*                      m1) ≈ *)
+(*     (ord_relmon_bind SDistr *)
+(*                      (fun x : (Choice.Pack chA2) => f2 x) *)
+(*                      m2) *)
+(*     [{ bind wm wf }]. *)
+(* Proof. *)
+(*   rewrite /semantic_judgement /θ_morph //= /θ0 //=. *)
+(*   unfold "≤". simpl. rewrite /MonoCont_order //=. *)
+(*   move => π Hwm. *)
+(*   rewrite /SubDistr.SDistr_obligation_2. *)
+(*   Admitted. *)
 

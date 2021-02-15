@@ -618,6 +618,11 @@ Module PackageRHL (π : RulesParam).
       eapply STDIST. exact _.
     Defined.
 
+    Definition Pr_program {L} {B}
+               (p : program L Game_import B)
+      : heap_choiceType -> SDistr (F_choice_prod_obj ⟨ B , heap_choiceType ⟩) :=
+      Pr_raw_program p.π1 p.π2.
+
     Definition Pr_raw_func_program {L} {A} {B}
       (p : A → raw_program B)
       (p_is_valid : ∀ a, valid_program L Game_import (p a))
@@ -664,7 +669,7 @@ Module PackageRHL (π : RulesParam).
       (* TW: I transformed this definition so that it computes directly. *)
       destruct (lookup_op p o) as [f|] eqn:e.
       2:{
-        (* TW: Done several times, I should make a lemma. *)
+        (* Rem.: Done several times, I should make a lemma. *)
         exfalso.
         destruct p as [L [p hp]].
         destruct o as [n [S T]].
@@ -864,6 +869,35 @@ Module PackageRHL (π : RulesParam).
       f_equal. f_equal. f_equal. apply loc_package_ext.
       - cbn. rewrite fsetUA. reflexivity.
       - cbn. intro. reflexivity.
+    Qed.
+
+    Lemma auxReduction {Game_export M_export : Interface} {M : package Game_export M_export}
+          {G : Game_Type Game_export} {A : Adversary4Game M_export}
+          (Hdisjoint0 : fdisjoint M.π1 G.π1)
+          (Hdisjoint1 : fdisjoint A.π1 (link M G).π1)
+      :
+        fdisjoint (link A M).π1 G.π1.
+    Proof.
+      unfold link in *.
+      simpl in *.
+      rewrite fdisjointUl.
+      apply /andP. split.
+      - rewrite fdisjointUr in Hdisjoint1.
+        move: Hdisjoint1. by move /andP => [_ Hdisjoint1].
+      - apply Hdisjoint0.
+    Qed.
+
+    Lemma ReductionLem {Game_export M_export : Interface} {M : package Game_export M_export}
+          (G : GamePair Game_export)
+          (Hdisjoint0 : fdisjoint M.π1 (G false).π1)
+          (Hdisjoint1 : fdisjoint M.π1 (G true).π1)
+      :
+      link M (G false) ≈[ fun A H1 H2 => @AdvantageE Game_export (G false) (G true) (link A M) (auxReduction Hdisjoint0 H1) (auxReduction Hdisjoint1 H2) ] link M (G true).
+    Proof.
+      unfold AdvantageE. extensionality A.
+      extensionality H1. extensionality H2.
+      rewrite Reduction. rewrite Reduction.
+      reflexivity.
     Qed.
 
     Lemma rhl_repr_change_all {B1 B2 : choiceType} {L1 L2 L1' L2'}
@@ -1359,6 +1393,18 @@ Module PackageRHL (π : RulesParam).
       end
       : typeclass_instances.
 
+    Lemma Pr_eq_empty {X Y : ord_choiceType} {A : pred (X * heap_choiceType)} {B : pred (Y * heap_choiceType)}
+            Ψ ϕ
+            (c1 : FrStP heap_choiceType X) (c2 : FrStP heap_choiceType Y)
+            (H : ⊨ ⦃ Ψ ⦄ c1 ≈ c2 ⦃ ϕ ⦄)
+            (HPsi : Ψ (empty_heap, empty_heap) )
+            (Hpost : forall x y,  ϕ x y -> (A x) <-> (B y)) :
+      \P_[ θ_dens (θ0 c1 empty_heap) ] A =
+      \P_[ θ_dens (θ0 c2 empty_heap) ] B.
+    Proof.
+      apply (Pr_eq Ψ ϕ); assumption.
+    Qed.
+
     Lemma some_lemma_for_prove_relational {export : Interface} {B} {L1 L2 LA}
       (P1 : package L1 Game_import export)
       (P2 : package L2 Game_import export)
@@ -1546,7 +1592,7 @@ Module PackageRHL (π : RulesParam).
           1: reflexivity. 1: reflexivity. exact H0.
     Qed.
 
-    (* ER: How do we connect the package theory with the RHL?
+    (* Rem.: How do we connect the package theory with the RHL?
            Something along the following lines should hold? *)
     Lemma prove_relational {L1 L2} {export}
       (P1 : package L1 Game_import export)
@@ -1563,7 +1609,7 @@ Module PackageRHL (π : RulesParam).
       extensionality Hdisjoint1. extensionality Hdisjoint2.
       pose r' := get_package_op A RUN RUN_in_A_export.
       pose r := r' tt.
-      (* ER: from linking we should get the fact that A.π1 is disjoint from L1 and L2,
+      (* Rem.: from linking we should get the fact that A.π1 is disjoint from L1 and L2,
              and then from that conclude that we are invariant on A.π1 *)
       (* unshelve epose (fdisjoint_from_link A.π2 P1 _) as Hdisjoint1. *)
       (* { eexists. reflexivity. } *)
@@ -1588,12 +1634,12 @@ Module PackageRHL (π : RulesParam).
           + move: Hdisjoint2. move /fdisjointP => Hdisjoint2.
             apply Hdisjoint2. assumption.
       }
-      pose Hlemma := (some_lemma_for_prove_relational _ _ _ HINV Hempty H r empty_heap empty_heap Hempty).
+      pose Hlemma := (some_lemma_for_prove_relational _ _ _ HINV H r).
       assert (∀ x y : tgt RUN * heap_choiceType,
                  (let '(b1, s1) := x in λ '(b2, s2), b1 = b2 s/\ I (s1, s2)) y → (fst x == true) ↔ (fst y == true)) as Ha.
       { intros [b1 s1] [b2 s2]. simpl.
         intros [H1 H2]. rewrite H1. intuition. }
-      pose Heq := (Pr_eq _ _ _ _ Hlemma Hempty Ha).
+      pose Heq := (Pr_eq_empty _ _ _ _ Hlemma Hempty Ha).
       simpl in Heq.
       simpl in Hlemma.
       unfold θ_dens in Heq.
@@ -1813,7 +1859,7 @@ Qed.
 (* skipped for now:
 Theorem bounded_do_while_rule *)
 
-(*TODO: asymmetric variants of bounded_do_while -- CA: low priority as not useful for our examples *)
+(*TODO: asymmetric variants of bounded_do_while -- Rem.: low priority as not useful for our examples *)
 
 Lemma rcoupling_eq {A : ord_choiceType} {L : {fset Location}}
   (K1 K2 : program L Game_import A)
@@ -1923,6 +1969,24 @@ Qed.
 
 Local Open Scope package_scope.
 
+Lemma rsym_pre  { A1 A2 : ord_choiceType } { L : {fset Location} } { pre : heap * heap -> Prop } { post }
+                     { c1 : program L Game_import A1 } { c2 : program L Game_import A2 }
+                     (pre_sym : forall h1 h2, pre (h1, h2) -> pre (h2, h1))
+                     (H : r⊨ ⦃ fun '(h1, h2) => pre (h2, h1) ⦄ c1 ≈ c2 ⦃ post ⦄) :
+                     r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄.
+Proof.
+  unshelve eapply rpre_weaken_rule.
+  { exact: (fun '(h1, h2) => pre (h2, h1)). }
+  - assumption. - assumption.
+Qed.
+
+
+Lemma rsymmetry  { A1 A2 : ord_choiceType } { L : {fset Location} } { pre : heap * heap -> Prop } { post }
+                 { c1 : program L Game_import A1 } { c2 : program L Game_import A2 }
+                 (H : r⊨ ⦃ fun '(h2, h1) => pre (h1, h2) ⦄ c2 ≈ c1 ⦃ fun '(a2,h2) '(a1,h1) => post (a1,h1) (a2, h2) ⦄ ):
+   r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄.
+Proof. by apply: symmetry_rule. Qed. 
+  
 Lemma rsamplerC
   {A : ord_choiceType} {L : {fset Location}} (o : Op)
   (c : program L Game_import A)
@@ -1932,6 +1996,11 @@ Lemma rsamplerC
        mkprog (r ← (r ← sample o ;; ret r) ;; a ← c ;;  (ret (a, r))) h2
    ⦃ eq ⦄.
 Proof.
+  apply: rrewrite_eqDistrL.
+  - apply: rreflexivity_rule. 
+  - move => s. f_equal.
+    (*Rem.: we should be able to rewrite smMonequ1/2 ? and have the equality? *)
+  
 Admitted.
 
 Lemma rsamplerC' {A : ord_choiceType} {L : {fset Location}} (o : Op)
@@ -1943,6 +2012,7 @@ Lemma rsamplerC' {A : ord_choiceType} {L : {fset Location}} (o : Op)
    ⦃ eq ⦄.
 Proof.
 Admitted.
+
 
 (* TODO: generalize the corresponding rule in RulesStateProb.v  *)
 (* CA: not hight priority as never used yet! *)

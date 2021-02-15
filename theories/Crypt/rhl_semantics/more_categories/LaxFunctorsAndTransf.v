@@ -9,12 +9,13 @@ From Crypt Require Import Axioms.
 Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
 
 (*
-This file defines lax functors and lax natural transformations which are in turn used to define lax morphisms between left relative adjunctions in the file LaxMorphismOfRelAdjunctions.v
-*)
-
-
-(*
-Such lax morphisms (L_1 ⊣ R_1) → (L_2 ⊣ R_2) contain lax functors linking the categories involved, as well as lax natural transformations (our "lax" is commonly known as "oplax" in the literature) between those lax functors. Recall that we are always working in an order-enriched setting, see OrderEnrichedCategory.v
+This file defines lax functors and lax natural transformations which are
+in turn used to define lax morphisms between left relative adjunctions
+in the file LaxMorphismOfRelAdjunctions.v
+Such lax morphisms (L_1 ⊣ R_1) → (L_2 ⊣ R_2) contain lax functors linking the
+categories involved, as well as lax natural transformations (our "lax" is commonly known
+as "oplax" in the literature) between those lax functors. Recall that we are always
+working in an order-enriched setting, see OrderEnrichedCategory.v
 *)
 
 Section LaxFunctors.
@@ -126,7 +127,12 @@ End LaxNaturalTransformationComp.
 
 
 (*
-Because lord_functor's are record types, its difficult to prove equality between them. For example the associativity property for composition of lord_functors uses such an equality. Instead of equality we use a notion of isomophism between lax functors. It is defined as an invertible lax transformation between the two functors, and it turns out that the naturality square holds strictly (not only laxly)
+Because lord_functor's are record types, its difficult to prove equality
+between them. For example the associativity property for composition of
+lord_functors uses such an equality. Instead of equality we use a
+notion of isomophism between lax functors. It is defined as an
+invertible lax transformation between the two functors, and it
+turns out that the naturality square holds strictly (not only laxly)
 /!\ in our case "strictly" means up to antisymmetry classes of ⪷ , the order on morphisms...
 *)
 Section LaxFunctorIso.

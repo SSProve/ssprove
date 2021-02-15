@@ -54,6 +54,8 @@ Module CorePackageTheory (π : RulesParam).
   }. *)
 
   Definition Location := ∑ (t : chUniverse), nat.
+  Definition loc_type (l : Location) := l.π1.
+  Coercion loc_type : Location >-> chUniverse.
   Definition Value (t : chUniverse) := chElement t.
 
   Definition Interface := {fset opsig}.
@@ -99,8 +101,8 @@ Module CorePackageTheory (π : RulesParam).
     Inductive raw_program (A : choiceType) : Type :=
     | ret (x : A)
     | opr (o : opsig) (x : src o) (k : tgt o → raw_program A)
-    | getr (l : Location) (k : Value l.π1 → raw_program A)
-    | putr (l : Location) (v : Value l.π1) (k : raw_program A)
+    | getr (l : Location) (k : l → raw_program A)
+    | putr (l : Location) (v : l) (k : raw_program A)
     | sampler (op : Op) (k : Arit op → raw_program A).
 
     Arguments ret [A] _.

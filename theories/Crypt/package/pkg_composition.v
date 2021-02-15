@@ -545,6 +545,43 @@ Module PackageComposition (π : RulesParam).
     | apply valid_package_from_class
     ]
     : typeclass_instances.
+    Lemma trim_union_trim : forall A1 A2 p1 p2,
+        parable A1 A2 →
+        (trim (A1 :|: A2) (unionm (trim A1 p1) (trim A2 p2)))
+        = (unionm (trim A1 p1) (trim A2 p2)).
+    Proof.
+      (* Rem.: this has to be my worst proof ever.. I should clean it up! *)
+      move=> A1 A2 p1 p2 H.
+      unfold trim at 1.
+      rewrite filterm_union.
+      - f_equal.
+        + unfold trim.
+          apply eq_fmap. move=> n.
+          rewrite filtermE /obind /oapp.
+          rewrite filtermE /obind /oapp.
+          move: (p1 n) => [[a [b c]]|]. 2: { reflexivity. }
+          set X:= _ \in _. remember X as Y eqn: eqY.
+          move: Y eqY. rewrite /X. clear X. move=> [|] eqY. 2: { reflexivity. }
+          suff: (n, (a, b)) \in A1 :|: A2.
+          * by move=> ->.
+          * rewrite in_fsetU. apply Bool.orb_true_intro. auto.
+        + unfold trim.
+          apply eq_fmap. move=> n.
+          rewrite filtermE /obind /oapp.
+          rewrite filtermE /obind /oapp.
+          move: (p2 n) => [[a [b c]]|]. 2: { reflexivity. }
+          set X:= _ \in _. remember X as Y eqn: eqY.
+          move: Y eqY. rewrite /X. clear X. move=> [|] eqY. 2: { reflexivity. }
+          suff: (n, (a, b)) \in A1 :|: A2.
+          * by move=> ->.
+          * rewrite in_fsetU. apply Bool.orb_true_intro. auto.
+      - unfold parable in H.
+        eapply fdisjoint_trans. 1:{ apply trim_domm_subset. }
+        rewrite fdisjointC.
+        eapply fdisjoint_trans. 1: { apply trim_domm_subset. }
+        rewrite fdisjointC.
+        assumption.
+    Qed.
 
   (** When comparing export interfaces, since we disallow overloading
       we need to have only the identifier parts disjoint.
@@ -583,8 +620,20 @@ Module PackageComposition (π : RulesParam).
     rewrite fdisjointC. auto.
   Qed.
 
-  Class FDisjoint {A : ordType} s1 s2 :=
-    are_disjoint : @fdisjoint A s1 s2.
+    Lemma raw_par_assoc :
+      ∀ E1 E2 E3 p1 p2 p3,
+        parable E1 E2 →
+        parable E2 E3 →
+        parable E1 E3 →
+        raw_par E1 (E2 :|: E3) p1 (raw_par E2 E3 p2 p3) =
+        raw_par (E1 :|: E2) E3 (raw_par E1 E2 p1 p2) p3.
+    Proof.
+      move=> E1 E2 E3 p1 p2 p3 h12 h23 h13.
+      unfold raw_par.
+      rewrite trim_union_trim. 2: try auto.
+      rewrite trim_union_trim. 2: try auto.
+      apply unionmA.
+    Qed.
 
   Lemma fdisjoint_from_class :
     ∀ A s1 s2,
@@ -631,6 +680,26 @@ Module PackageComposition (π : RulesParam).
     rewrite fdisjointC.
     auto.
   Qed. *)
+    Lemma par_assoc :
+      ∀ {I1 I2 I3 E1 E2 E3}
+        (p1 : package I1 E1)
+        (p2 : package I2 E2)
+        (p3 : package I3 E3)
+        (h12 : parable E1 E2)
+        (h23 : parable E2 E3)
+        (h13 : parable E1 E3),
+        (* Rem.: hm, this use of parable_union + parable_sym is quite cumbersome.. *)
+        package_transport (fsetUA I1 I2 I3) (fsetUA E1 E2 E3)
+                          (par p1 (par p2 p3 h23) (parable_union h12 h13)) =
+        par (par p1 p2 h12) p3 (parable_sym (parable_union (parable_sym h13) (parable_sym h23))).
+    Proof.
+      intros I1 I2 I3 E1 E2 E3 [l1 [p1 h1]] [l2 [p2 h2]] [l3 [p3 h3]] ? ? ?.
+      apply package_ext.
+      - simpl. apply fsetUA.
+      - simpl. intro. f_equal.
+        apply raw_par_assoc.
+        all: auto.
+    Qed.
 
   (* Lemma trim_union_trim :
     ∀ A1 A2 p1 p2,
@@ -897,6 +966,179 @@ Module PackageComposition (π : RulesParam).
   Definition raw_id I h :=
     (ID I h).(pack).
 
+    Lemma getm_def_in :
+      ∀ {A : eqType} n (x : A) (s : seq (nat_eqType * A)),
+        (n,x) \in s.
+        getm_def s n = Some x →
+    Proof.
+      simpl. intros A n x s h.
+      induction s as [| [m a] s ih] in n, x, h |- *.
+      - inversion h.
+      - cbn in h. rewrite in_cons. apply/orP.
+        destruct eqn eqn:e.
+        + noconf h. move: e => /eqP e. subst.
+          left. apply/eqP. reflexivity.
+        + right. eapply ih. auto.
+    Qed.
+
+    Lemma lookup_op_raw_id :
+      ∀ I h o,
+        lookup_op (raw_id I h) o =
+        if o \in I
+        then Some (λ x, _opr o x (λ y, _ret y))
+        else None.
+    Proof.
+      intros I h [n [S T]].
+      unfold lookup_op. rewrite raw_idE.
+      destruct getm_def as [[So To]|] eqn:e.
+      - cbn. apply getm_def_in in e as h1.
+        destruct chUniverse_eqP.
+        2:{
+          destruct ((n, (S, T)) \in I) eqn:e1.
+          2:{ rewrite e1. reflexivity. }
+          specialize (h _ _ _ h1 e1). noconf h. congruence.
+        }
+        destruct chUniverse_eqP.
+        2:{
+          destruct ((n, (S, T)) \in I) eqn:e1.
+          2:{ rewrite e1. reflexivity. }
+          specialize (h _ _ _ h1 e1). noconf h. congruence.
+        }
+        subst. rewrite h1. reflexivity.
+      - cbn. destruct ((n, (S, T)) \in I) eqn:e1.
+        1:{
+          exfalso. eapply in_getm_def_None. 2: eauto.
+          exact e1.
+        }
+        rewrite e1. reflexivity.
+    Qed.
+
+    Lemma raw_program_link_id :
+      ∀ A (v : raw_program A) L I h,
+        valid_program L I v →
+        raw_program_link v (raw_id I h) = v.
+    Proof.
+      intros A v L I h hv.
+      induction v in hv |- *.
+      - cbn. reflexivity.
+      - simpl. cbn in hv. destruct hv as [ho hv].
+        rewrite lookup_op_raw_id. rewrite ho. simpl. f_equal.
+        extensionality z. intuition auto.
+      - simpl. cbn in hv. f_equal. apply functional_extensionality.
+        intuition auto.
+      - simpl. cbn in hv. f_equal. intuition auto.
+      - simpl. cbn in hv. f_equal. apply functional_extensionality.
+        intuition auto.
+    Qed.
+
+    Lemma link_id :
+      ∀ I E (p : package I E) h,
+        link p (ID I h) = ptrim p.
+    Proof.
+      intros I E [L [p hp]] h.
+      apply package_ext.
+      - cbn. rewrite fsetU0. reflexivity.
+      - simpl. intro n. unfold raw_link.
+        rewrite mapmE. destruct (trim E p n) as [[S [T f]]|] eqn:e.
+        + rewrite e. simpl. f_equal. f_equal. f_equal.
+          apply functional_extensionality. intro x.
+          apply trim_get_inv in e. destruct e as [e ho].
+          specialize (hp _ ho). cbn in hp.
+          destruct hp as [g [eg hg]].
+          rewrite e in eg. noconf eg. cbn in hg.
+          eapply raw_program_link_id. eauto.
+        + rewrite e. simpl. reflexivity.
+      Unshelve. auto.
+    Qed.
+
+    Lemma trim_ID :
+      ∀ I h,
+        ptrim (ID I h) = ID I h.
+    Proof.
+      intros I h.
+      apply package_ext.
+      - cbn. reflexivity.
+      - simpl. intro n. unfold trim.
+        rewrite filtermE. unfold obind, oapp.
+        rewrite mapmE. unfold omap, obind, oapp.
+        destruct (mkfmap (T:=nat_ordType) _ _) eqn:m.
+        + destruct t as [S [T p]].
+          destruct ((n, (S, T)) \in I) eqn:hin.
+          * rewrite hin. reflexivity.
+          * rewrite hin.
+            rewrite mkfmapE in m.
+            apply getm_def_map_interface_Some in m.
+            destruct m as [[S' T'] [hin' [L R]]].
+            inversion R; subst.
+            rewrite hin'  in hin.
+            discriminate.
+        + reflexivity.
+    Qed.
+
+    (* TODO MOVE *)
+    Lemma raw_bind_ret :
+      ∀ A (v : raw_program A),
+        bind_ v (λ x, _ret x) = v.
+    Proof.
+      intros A v.
+      induction v.
+      all: cbn. 1: reflexivity.
+      all: try solve [ f_equal ; apply functional_extensionality ; eauto ].
+      f_equal. auto.
+    Qed.
+
+    Lemma id_link :
+      ∀ I E (p : package I E) h,
+        link (ID E h) p = ptrim p.
+    Proof.
+      intros I E [L [p hp]] h.
+      apply package_ext.
+      - cbn. apply fset0U.
+      - simpl. intro n. unfold raw_link.
+        rewrite mapmE.
+        unfold trim. rewrite !filtermE.
+        rewrite mapmE. rewrite mkfmapE.
+        destruct (getm_def _ _) eqn:e.
+        + eapply getm_def_map_interface_Some in e as e'.
+          destruct e' as [[So To] [ho [eg e']]].
+          cbn in e'. subst t.
+          simpl. rewrite ho. simpl.
+          destruct (p n) as [[St [Tt f]]|] eqn:e1.
+          2:{
+            specialize (hp _ ho). cbn in hp.
+            destruct hp as [? [ee _]].
+            rewrite e1 in ee. noconf ee.
+          }
+          simpl.
+          destruct chUniverse_eqP.
+          2:{
+            specialize (hp _ ho). cbn in hp.
+            destruct hp as [? [ee _]].
+            rewrite e1 in ee. noconf ee.
+            contradiction.
+          }
+          destruct chUniverse_eqP.
+          2:{
+            specialize (hp _ ho). cbn in hp.
+            destruct hp as [? [ee _]].
+            rewrite e1 in ee. noconf ee.
+            contradiction.
+          }
+          subst. cbn. rewrite ho.
+          f_equal. f_equal. f_equal. extensionality x.
+          apply raw_bind_ret.
+        + eapply getm_def_map_interface_None in e as e'.
+          cbn. destruct (p n) as [[St [Tt f]]|] eqn:e1.
+          * cbn. destruct ((n, (St, Tt)) \in E) eqn:e2.
+            1:{
+              exfalso.
+              eapply in_getm_def_None.
+              - exact e2.
+              - auto.
+            }
+            rewrite e2. reflexivity.
+          * reflexivity.
+    Qed.
   Lemma raw_idE :
     ∀ I h n,
       raw_id I h n =

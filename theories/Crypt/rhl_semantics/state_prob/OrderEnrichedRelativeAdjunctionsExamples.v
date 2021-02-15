@@ -11,7 +11,8 @@ Import SPropNotations.
 
 (*
 Let M: I → C be a J-relative monad.
-Consider J♭ : I → I and R: C → C functors such that JL♭ ⊣ R (the "transforming (left relative) adjunction")
+Consider J♭ : I → I and R: C → C functors such that JL♭ ⊣ R 
+(the "transforming (left relative) adjunction")
 M can be factored through its Kleisli: M = R^M ∘ L^M, with L^M ⊣ R^M
 And there is a "transformed" left relative adjunction  L^M ∘ L♭ ⊣ R ∘ R^M .
 as well as the associated monad of this new adjunction (see AdjTransform in OrderEnrichedRelativeAdjunctions.)

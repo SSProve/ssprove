@@ -1,10 +1,8 @@
 (*From Coq Require Export Logic.StrictProp.*)
-(*we try not using sprop this time*)
-(*we redefine the logical connectives by replacing Prop with
-Prop. The name are kept the same*)
+(*This file was originally referring to SProp. Not anymore*)
 From Mon Require Import Base.
 From mathcomp Require Import ssreflect.
-(* Conflicts with Coq.Utf8 and provides the same things *)
+
 
 From Coq Require ClassicalFacts.
 
@@ -13,9 +11,7 @@ Axiom ax_proof_irrel : ClassicalFacts.proof_irrelevance.
 Set Primitive Projections.
 
 Module Redefined_sprop_constructs.
-(*not all redefinitions Prop -> Prop are provided in this module
-planning to put them all here
-*)
+
 
 Record Box (A:Prop) : Prop := box { unbox : A }.
 
@@ -71,7 +67,7 @@ Section sigLemmas.
 End sigLemmas.
 
 Module SPropAxioms.
-  (** Propositional extensionality *)
+
   Import SPropNotations.
 
   Axiom sprop_ext : forall {p q : Prop}, p = q <-> Box (sand (p -> q) (q -> p)).

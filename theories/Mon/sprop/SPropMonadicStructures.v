@@ -238,7 +238,7 @@ Section KanExtensionIsoStable.
   Context (Hran:ran f p) (f':W C) (p':W B) (Hf : f ≅ f') (Hp : p ≅ p').
   Definition ran_iso : ran f' p'.
     constructor 1 with (x:=proj1_sig Hran).
-    (* TL: this is such an ugly fix.
+    (* Rem.: this is such an ugly fix.
      * Program Definition ... := exist _ (proj1_sig Hran) _.
      * was hanging. *)
     destruct Hf as [Hf1 Hf2] ; destruct Hp as [Hp1 Hp2] ; destruct (proj2_sig Hran) as [Hran1 Hran2].

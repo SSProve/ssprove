@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Adapt to macOS (brew install gsed)
-SED=`which gsed || which sed`
+SED=`which gsed 2>/dev/null || which sed`
 
 fn_project=_CoqProject
 fn_out="dependencies"
