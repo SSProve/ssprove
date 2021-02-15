@@ -2285,8 +2285,24 @@ Proof.
     destruct hh as [hc₀ hk₀].
     apply inversion_valid_cmd_bind in h₁ as hh.
     destruct hh as [hc₁ hk₁].
-    (* TODO NEED some repr_cmd_bind *)
-    (* After or before defining new repr? *)
+    unshelve (repeat setoid_rewrite repr_cmd_bind).
+    3,4,7,8,11,15: eauto.
+    2:{
+      intro b'.
+      specialize (hk₁ b'). apply inversion_valid_cmd_bind in hk₁.
+      destruct hk₁ as [_ hk₁]. eapply hk₁.
+    }
+    2:{
+      intro b'.
+      specialize (hk₁ b). apply inversion_valid_cmd_bind in hk₁.
+      destruct hk₁ as [_ hk₁]. eapply hk₁.
+    }
+    eapply (swap_ruleR (λ a₀ a₁, repr {program r a₀ a₁ }) (repr_cmd c₀ hc₀) (repr_cmd c₁ hc₁)).
+    + (* intros a₀ a₁. specialize (H1 a₀ a₁).
+      specialize H1 with (h₀ := H4 _ _) (h₁ := H4 _ _).
+      exact H1.
+    +
+    + *)
 Admitted.
 
 (* TODO Seems like repr only need no import, but doesn't care about
