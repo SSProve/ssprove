@@ -359,32 +359,25 @@ Module PackageRHL (π : RulesParam).
       inversion hc. eapply fromEmpty. eassumption.
     Qed.
 
-    (* Lemma repr_cmd_bind :
+    Lemma repr_cmd_bind :
       ∀ {B C} {L1 L2 L3} p f
         {hp : @ValidCommand L1 Game_import B p}
         {hf : ∀ b, @ValidProgram L2 Game_import C (f b)}
         {h : ValidProgram L3 Game_import _},
         repr {program cmd_bind p f #with h } =
-        bindrFree _ _ (repr {program p}) (λ b, repr {program f b}).
+        bindrFree _ _ (repr_cmd p hp) (λ b, repr {program f b}).
     Proof.
       intros B C L1 L2 L3 p f hp hf h.
-      induction p in hp, h, f, hf |- *.
-      - cbn. fold_repr. eapply repr_ext.
-        simpl. reflexivity.
-      - apply inversion_valid_opr in hp as h'. destruct h' as [h1 h2].
-        eapply fromEmpty. exact h1.
+      destruct p.
+      - cbn. falso.
       - cbn. f_equal. extensionality s.
-        fold_repr. apply H.
-      - cbn. f_equal.
-        extensionality s.
-        f_equal.
-        extensionality s'.
-        fold_repr. apply IHp.
-      - cbn.
-        f_equal.
-        extensionality s.
-        fold_repr. apply H.
-    Qed. *)
+        fold_repr. apply repr_ext. cbn. reflexivity.
+      - cbn. f_equal. extensionality s.
+        f_equal. extensionality s'.
+        fold_repr. apply repr_ext. reflexivity.
+      - cbn. f_equal. extensionality s.
+        fold_repr. apply repr_ext. reflexivity.
+    Qed.
 
     Notation " r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄ " :=
       (semantic_judgement _ _ (repr c1) (repr c2) (fromPrePost pre post)).

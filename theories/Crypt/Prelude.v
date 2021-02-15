@@ -84,6 +84,7 @@ Tactic Notation "sig" "rewrite" hyp(e) :=
 *)
 Ltac falso :=
   lazymatch goal with
+  | |- context [ False_rect _ ?x] => exact (False_rect _ x)
   | h : context [ False_rect _ ?x ] |- _ => exact (False_rect _ x)
   end.
 
