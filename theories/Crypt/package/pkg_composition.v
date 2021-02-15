@@ -998,8 +998,6 @@ Module PackageComposition (π : RulesParam).
     - simpl. f_equal. apply functional_extensionality. auto.
   Qed.
 
-  (* TODO FIX *)
-
   Lemma link_id :
     ∀ L I E p,
       valid_package L I E p →
@@ -1020,9 +1018,9 @@ Module PackageComposition (π : RulesParam).
   Qed.
 
   (* TODO MOVE *)
-  (* Lemma raw_bind_ret :
+  Lemma bind_ret :
     ∀ A (v : raw_program A),
-      bind_ v (λ x, _ret x) = v.
+      bind v (λ x, ret x) = v.
   Proof.
     intros A v.
     induction v.
@@ -1032,56 +1030,34 @@ Module PackageComposition (π : RulesParam).
   Qed.
 
   Lemma id_link :
-    ∀ I E (p : package I E) h,
-      link (ID E h) p = ptrim p.
+    ∀ L I E p,
+      valid_package L I E p →
+      trimmed E p →
+      link (ID E) p = p.
   Proof.
-    intros I E [L [p hp]] h.
-    apply package_ext.
-    - cbn. apply fset0U.
-    - simpl. intro n. unfold raw_link.
-      rewrite mapmE.
-      unfold trim. rewrite !filtermE.
-      rewrite mapmE. rewrite mkfmapE.
-      destruct (getm_def _ _) eqn:e.
-      + eapply getm_def_map_interface_Some in e as e'.
-        destruct e' as [[So To] [ho [eg e']]].
-        cbn in e'. subst t.
-        simpl. rewrite ho. simpl.
-        destruct (p n) as [[St [Tt f]]|] eqn:e1.
-        2:{
-          specialize (hp _ ho). cbn in hp.
-          destruct hp as [? [ee _]].
-          rewrite e1 in ee. noconf ee.
-        }
-        simpl.
-        destruct chUniverse_eqP.
-        2:{
-          specialize (hp _ ho). cbn in hp.
-          destruct hp as [? [ee _]].
-          rewrite e1 in ee. noconf ee.
-          contradiction.
-        }
-        destruct chUniverse_eqP.
-        2:{
-          specialize (hp _ ho). cbn in hp.
-          destruct hp as [? [ee _]].
-          rewrite e1 in ee. noconf ee.
-          contradiction.
-        }
-        subst. cbn. rewrite ho.
-        f_equal. f_equal. f_equal. extensionality x.
-        apply raw_bind_ret.
-      + eapply getm_def_map_interface_None in e as e'.
-        cbn. destruct (p n) as [[St [Tt f]]|] eqn:e1.
-        * cbn. destruct ((n, (St, Tt)) \in E) eqn:e2.
-          1:{
-            exfalso.
-            eapply in_getm_def_None.
-            - exact e2.
-            - auto.
-          }
-          rewrite e2. reflexivity.
-        * reflexivity.
-  Qed. *)
+    intros L I E p hp tp.
+    apply eq_fmap. intro n. unfold link.
+    rewrite mapmE. rewrite IDE.
+    destruct getm_def as [[So To]|] eqn:e.
+    - eapply getm_def_in in e as hi.
+      specialize (hp _ hi) as h'. cbn in h'.
+      destruct h' as [f [ef hf]].
+      cbn. destruct (p n) as [[St [Tt g]]|] eqn:e1. 2: discriminate.
+      destruct chUniverse_eqP. 2:{ noconf ef. contradiction. }
+      destruct chUniverse_eqP. 2:{ noconf ef. contradiction. }
+      subst. cbn.
+      f_equal. f_equal. f_equal.
+      extensionality x.
+      apply bind_ret.
+    - simpl. unfold trimmed in tp.
+      destruct (p n) as [[St [Tt g]]|] eqn:e1.
+      1:{
+        eapply trimmed_valid_Some_in in e1 as hi. 2,3: eauto.
+        exfalso. eapply in_getm_def_None.
+        - exact hi.
+        - cbn. auto.
+      }
+      reflexivity.
+  Qed.
 
 End PackageComposition.
