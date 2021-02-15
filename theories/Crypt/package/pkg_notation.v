@@ -203,11 +203,6 @@ Module PkgNotation (π : RulesParam).
       format "[ package  '[' x1  ;  '/' x2  ;  '/' ..  ;  '/' xn  ']' ]")
       : package_scope.
 
-    (* Maybe lock this definition? *)
-    Definition mkdef (A B : chUniverse) (f : A → raw_program B)
-      : typed_raw_function :=
-      (A ; B ; f).
-
     Notation " 'def' #[ f ] ( x : A ) : B { e }" :=
       ((f, mkdef A B (λ x, e)))
       (in custom package at level 0,

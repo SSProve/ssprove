@@ -27,20 +27,6 @@ Module PackageUserUtil (π : RulesParam).
   Include (PackageRHL π).
   Import PackageNotation.
 
-  (* TODO MOVE *)
-  Lemma getm_def_map :
-    ∀ (T : ordType) (S S' : Type) (s : seq (T * S)) (k : T) (f : S → S'),
-      getm_def [seq let '(a,b) := x in (a, f b) | x <- s] k =
-      omap f (getm_def s k).
-  Proof.
-    intros T S S' s k f.
-    induction s as [| [a b] s ih].
-    - cbn. reflexivity.
-    - cbn. destruct (k == a).
-      + reflexivity.
-      + apply ih.
-  Qed.
-
   Lemma opsig_in_unfold :
     ∀ {o : opsig} {E : Interface},
       o \in E →

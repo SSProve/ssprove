@@ -766,6 +766,7 @@ Module PackageComposition (π : RulesParam).
   Local Open Scope type_scope.
 
   (** Package builder from a function *)
+  (* TODO: Still works, but outdated. *)
 
   Definition typed_function L I :=
     ∑ (S T : chUniverse), S → program L I T.
@@ -780,7 +781,8 @@ Module PackageComposition (π : RulesParam).
     Qed.
 
   Notation "[ 'interface' e | h # x ∈ I ]" :=
-    (map_interface I (λ x h, e)) : package_scope.
+    (map_interface I (λ x h, e))
+    (format "[ interface  e  |  h  #  x  ∈  I ]") : package_scope.
 
   Local Open Scope package_scope.
 
@@ -879,28 +881,55 @@ Module PackageComposition (π : RulesParam).
 
   (* Identity package *)
 
-  Definition ID (I : Interface) (h : flat I) : package fset0 I I :=
-    (funmkpack h (λ o ho x, {program opr o x (λ x, ret x) })).
+  (* Maybe lock this definition? *)
+  Definition mkdef (A B : chUniverse) (f : A → raw_program B)
+    : typed_raw_function :=
+    (A ; B ; f).
 
-  Definition raw_id I h :=
-    (ID I h).(pack).
+  Definition ID (I : Interface) : raw_package :=
+    mkfmap [seq
+      let '(n, p) := i in
+      (n, let '(s, t) := p in mkdef s t (λ x, opr (n, (s, t)) x (λ y, ret y)))
+    | i <- I ].
 
-  Lemma raw_idE :
-    ∀ I h n,
-      raw_id I h n =
+  Lemma getm_def_map :
+    ∀ (T : ordType) S1 S2 (l : seq (T * S1)) (f : S1 → S2) x,
+      getm_def [seq let '(i,s) := u in (i, f s) | u <- l ] x =
+      omap f (getm_def l x).
+  Proof.
+    intros T S1 S2 l f x.
+    induction l as [| u l ih].
+    - simpl. reflexivity.
+    - simpl. destruct u as [i s]. simpl.
+      destruct (x == i).
+      + reflexivity.
+      + apply ih.
+  Qed.
+
+  Lemma getm_def_map_dep :
+    ∀ (T : ordType) S1 S2 (l : seq (T * S1)) (f : T → S1 → S2) x,
+      getm_def [seq let '(i,s) := u in (i, f i s) | u <- l ] x =
+      omap (f x) (getm_def l x).
+  Proof.
+    intros T S1 S2 l f x.
+    induction l as [| u l ih].
+    - simpl. reflexivity.
+    - simpl. destruct u as [i s]. simpl.
+      destruct (x == i) eqn:e.
+      + cbn. move: e => /eqP e. subst. reflexivity.
+      + apply ih.
+  Qed.
+
+  Lemma IDE :
+    ∀ I n,
+      ID I n =
       omap
         (λ '(So,To), (So ; To ; λ x, opr (n,(So,To)) x (λ y, ret y)))
         (getm_def I n).
   Proof.
-    intros I h n.
-    unfold raw_id. simpl.
-    rewrite mapmE. rewrite mkfmapE.
-    destruct getm_def eqn:e.
-    - apply getm_def_map_interface_Some in e as h1.
-      destruct h1 as [[S T] [hn [h1 h2]]]. subst. cbn.
-      rewrite h1. cbn. reflexivity.
-    - apply getm_def_map_interface_None in e.
-      rewrite e. reflexivity.
+    intros I n.
+    unfold ID. rewrite mkfmapE.
+    rewrite getm_def_map_dep. reflexivity.
   Qed.
 
   Lemma getm_def_in :
@@ -918,15 +947,16 @@ Module PackageComposition (π : RulesParam).
       + right. eapply ih. auto.
   Qed.
 
-  Lemma lookup_op_raw_id :
-    ∀ I h o,
-      lookup_op (raw_id I h) o =
+  Lemma lookup_op_ID :
+    ∀ I o,
+      flat I →
+      lookup_op (ID I) o =
       if o \in I
       then Some (λ x, opr o x (λ y, ret y))
       else None.
   Proof.
-    intros I h [n [S T]].
-    unfold lookup_op. rewrite raw_idE.
+    intros I [n [S T]] h.
+    unfold lookup_op. rewrite IDE.
     destruct getm_def as [[So To]|] eqn:e.
     - cbn. apply getm_def_in in e as h1.
       destruct chUniverse_eqP.
@@ -951,15 +981,17 @@ Module PackageComposition (π : RulesParam).
   Qed.
 
   Lemma program_link_id :
-    ∀ A (v : raw_program A) L I h,
+    ∀ A (v : raw_program A) L I,
+      flat I →
       valid_program L I v →
-      program_link v (raw_id I h) = v.
+      program_link v (ID I) = v.
   Proof.
     intros A v L I h hv.
     induction hv.
     - cbn. reflexivity.
     - simpl.
-      rewrite lookup_op_raw_id. rewrite H. simpl. f_equal.
+      rewrite lookup_op_ID. 2: auto.
+      rewrite H. simpl. f_equal.
       extensionality z. auto.
     - simpl. f_equal. apply functional_extensionality. auto.
     - simpl. f_equal. auto.
@@ -969,16 +1001,23 @@ Module PackageComposition (π : RulesParam).
   (* TODO FIX *)
 
   Lemma link_id :
-    ∀ L I E (p : package L I E) h,
-      link p (ID I h) = p.
+    ∀ L I E p,
+      valid_package L I E p →
+      flat I →
+      trimmed E p →
+      link p (ID I) = p.
   Proof.
-    intros L I E [p hp] h. cbn - [ID].
+    intros L I E p hp hI tp.
     apply eq_fmap. intro n. unfold link.
     rewrite mapmE. destruct (p n) as [[S [T f]]|] eqn:e.
-    - cbn - [ID]. f_equal. f_equal. f_equal. extensionality x.
-      eapply program_link_id. give_up.
+    - cbn. f_equal. f_equal. f_equal. extensionality x.
+      eapply trimmed_valid_Some_in in e as hi. 2,3: eauto.
+      specialize (hp _ hi) as h'. cbn in h'.
+      destruct h' as [g [eg hg]].
+      rewrite e in eg. noconf eg. cbn in hg.
+      eapply program_link_id. all: eauto.
     - reflexivity.
-  Abort.
+  Qed.
 
   (* TODO MOVE *)
   (* Lemma raw_bind_ret :
