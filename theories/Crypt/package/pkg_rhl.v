@@ -2285,25 +2285,66 @@ Proof.
     destruct hh as [hc₀ hk₀].
     apply inversion_valid_cmd_bind in h₁ as hh.
     destruct hh as [hc₁ hk₁].
+    assert (hk : ∀ a₀ a₁, ValidProgram L₀ Game_import (r a₀ a₁)).
+    { intros a₀ a₁. specialize (hk₀ a₀).
+      apply inversion_valid_cmd_bind in hk₀ as [_ hk₀].
+      eapply hk₀.
+    }
     unshelve (repeat setoid_rewrite repr_cmd_bind).
-    3,4,7,8,11,15: eauto.
-    2:{
-      intro b'.
-      specialize (hk₁ b'). apply inversion_valid_cmd_bind in hk₁.
-      destruct hk₁ as [_ hk₁]. eapply hk₁.
-    }
-    2:{
-      intro b'.
-      specialize (hk₁ b). apply inversion_valid_cmd_bind in hk₁.
-      destruct hk₁ as [_ hk₁]. eapply hk₁.
-    }
+    3,4,7,8,11,12,15,16: eauto.
     eapply (swap_ruleR (λ a₀ a₁, repr {program r a₀ a₁ }) (repr_cmd c₀ hc₀) (repr_cmd c₁ hc₁)).
-    + (* intros a₀ a₁. specialize (H1 a₀ a₁).
-      specialize H1 with (h₀ := H4 _ _) (h₁ := H4 _ _).
+    + intros a₀ a₁. specialize (H1 a₀ a₁).
+      specialize H1 with (h₀ := hk _ _) (h₁ := hk _ _).
       exact H1.
-    +
-    + *)
-Admitted.
+    + intros ? ? []. eauto.
+    + intro s. unshelve eapply coupling_eq.
+      * exact: (λ '(h1, h2), h1 = h2).
+      * evar (L0 : {fset Location}).
+        evar (L1 : {fset Location}).
+        specialize (IHh L0 L1).
+        subst L0 L1.
+        match type of IHh with
+        | ?A → _ =>
+          assert (h0 : A)
+        end.
+        { eapply valid_cmd_bind.
+          - eapply valid_cmd_injectLocations. 2: exact hc₀.
+            eapply fsubsetUl.
+          - intro. eapply valid_cmd_bind.
+            + eapply valid_cmd_injectLocations. 2: eassumption.
+              eapply fsubsetUr.
+            + intro. constructor.
+        }
+        specialize (IHh h0).
+        match type of IHh with
+        | ?A → _ =>
+          assert (h1 : A)
+        end.
+        { eapply valid_cmd_bind.
+          - eapply valid_cmd_injectLocations. 2: exact hc₁.
+            eapply fsubsetUl.
+          - intro. eapply valid_cmd_bind.
+            + eapply valid_cmd_injectLocations. 2: eassumption.
+              eapply fsubsetUr.
+            + intro. constructor.
+        }
+        specialize (IHh h1).
+        revert IHh.
+        unshelve (repeat (setoid_rewrite repr_cmd_bind)).
+        3,7,11,15: eauto.
+        6,8: intro ; constructor.
+        2:{
+          intro. eapply valid_cmd_bind. 1: eauto.
+          intro. constructor.
+        }
+        2:{
+          intro. eapply valid_cmd_bind. 1: eauto.
+          intro. constructor.
+        }
+        1,2: exact fset0.
+        auto.
+      * cbn. reflexivity.
+Qed.
 
 (* TODO Seems like repr only need no import, but doesn't care about
 locations. If so we could make a much simpler statement?

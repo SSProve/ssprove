@@ -702,6 +702,21 @@ Module CorePackageTheory (π : RulesParam).
         eapply injectSubset. all: eauto.
     Qed.
 
+    Lemma valid_cmd_injectLocations :
+      ∀ A L1 L2 (v : command A),
+        fsubset L1 L2 →
+        valid_command L1 import v →
+        valid_command L2 import v.
+    Proof.
+      intros A L1 L2 v h p.
+      destruct p.
+      all: try solve [ constructor ; eauto ].
+      - constructor.
+        eapply injectSubset. all: eauto.
+      - constructor.
+        eapply injectSubset. all: eauto.
+    Qed.
+
     Open Scope package_scope.
 
     (** Ideally we should need those.
