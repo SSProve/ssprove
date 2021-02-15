@@ -54,8 +54,11 @@ Module CorePackageTheory (π : RulesParam).
   }. *)
 
   Definition Location := ∑ (t : chUniverse), nat.
+
   Definition loc_type (l : Location) := l.π1.
+
   Coercion loc_type : Location >-> chUniverse.
+
   Definition Value (t : chUniverse) := chElement t.
 
   Definition Interface := {fset opsig}.

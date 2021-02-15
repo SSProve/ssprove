@@ -621,7 +621,7 @@ Module PackageRHL (π : RulesParam).
     Definition Pr_program {L} {B}
                (p : program L Game_import B)
       : heap_choiceType -> SDistr (F_choice_prod_obj ⟨ B , heap_choiceType ⟩) :=
-      Pr_raw_program p.π1 p.π2.
+      Pr_raw_program p _.
 
     Definition Pr_raw_func_program {L} {A} {B}
       (p : A → raw_program B)
@@ -871,14 +871,14 @@ Module PackageRHL (π : RulesParam).
       - cbn. intro. reflexivity.
     Qed.
 
-    Lemma auxReduction {Game_export M_export : Interface} {M : package Game_export M_export}
-          {G : Game_Type Game_export} {A : Adversary4Game M_export}
-          (Hdisjoint0 : fdisjoint M.π1 G.π1)
-          (Hdisjoint1 : fdisjoint A.π1 (link M G).π1)
-      :
-        fdisjoint (link A M).π1 G.π1.
+    Lemma auxReduction :
+      ∀ {Game_export M_export : Interface} {M : loc_package Game_export M_export}
+        {G : Game_Type Game_export} {A : Adversary4Game M_export},
+        fdisjoint M.(locs) G.(locs) →
+        fdisjoint A.(locs) {locpackage link M G }.(locs) →
+        fdisjoint {locpackage link A M }.(locs) G.(locs).
     Proof.
-      unfold link in *.
+      intros Game_export M_export M G A Hdisjoint0 Hdisjoint1.
       simpl in *.
       rewrite fdisjointUl.
       apply /andP. split.
@@ -887,18 +887,26 @@ Module PackageRHL (π : RulesParam).
       - apply Hdisjoint0.
     Qed.
 
-    Lemma ReductionLem {Game_export M_export : Interface} {M : package Game_export M_export}
-          (G : GamePair Game_export)
-          (Hdisjoint0 : fdisjoint M.π1 (G false).π1)
-          (Hdisjoint1 : fdisjoint M.π1 (G true).π1)
-      :
-      link M (G false) ≈[ fun A H1 H2 => @AdvantageE Game_export (G false) (G true) (link A M) (auxReduction Hdisjoint0 H1) (auxReduction Hdisjoint1 H2) ] link M (G true).
+    Lemma ReductionLem :
+      ∀ {Game_export M_export : Interface}
+        {M : loc_package Game_export M_export}
+        (G : GamePair Game_export)
+        (Hdisjoint0 : fdisjoint M.(locs) (G false).(locs))
+        (Hdisjoint1 : fdisjoint M.(locs) (G true).(locs)),
+        {locpackage link M (G false)}
+        ≈[ λ A H1 H2, @AdvantageE Game_export (G false) (G true) {locpackage link A M} (auxReduction Hdisjoint0 H1) (auxReduction Hdisjoint1 H2) ]
+        {locpackage link M (G true)}.
     Proof.
+      intros Game_export M_export M G Hdisjoint0 Hdisjoint1.
       unfold AdvantageE. extensionality A.
       extensionality H1. extensionality H2.
-      rewrite Reduction. rewrite Reduction.
+      simpl.
+      (* TODO FIX *)
+      (* This means that the Reduction lemma should be stated better *)
+      (* rewrite Reduction. rewrite Reduction.
       reflexivity.
-    Qed.
+    Qed. *)
+    Admitted.
 
     Lemma rhl_repr_change_all {B1 B2 : choiceType} {L1 L2 L1' L2'}
       {pre : heap_choiceType * heap_choiceType -> Prop}
@@ -1634,7 +1642,7 @@ Module PackageRHL (π : RulesParam).
           + move: Hdisjoint2. move /fdisjointP => Hdisjoint2.
             apply Hdisjoint2. assumption.
       }
-      pose Hlemma := (some_lemma_for_prove_relational _ _ _ HINV H r).
+      pose Hlemma := (some_lemma_for_prove_relational _ _ _ HINV Hempty H r empty_heap empty_heap Hempty).
       assert (∀ x y : tgt RUN * heap_choiceType,
                  (let '(b1, s1) := x in λ '(b2, s2), b1 = b2 s/\ I (s1, s2)) y → (fst x == true) ↔ (fst y == true)) as Ha.
       { intros [b1 s1] [b2 s2]. simpl.
@@ -1985,8 +1993,8 @@ Lemma rsymmetry  { A1 A2 : ord_choiceType } { L : {fset Location} } { pre : heap
                  { c1 : program L Game_import A1 } { c2 : program L Game_import A2 }
                  (H : r⊨ ⦃ fun '(h2, h1) => pre (h1, h2) ⦄ c2 ≈ c1 ⦃ fun '(a2,h2) '(a1,h1) => post (a1,h1) (a2, h2) ⦄ ):
    r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄.
-Proof. by apply: symmetry_rule. Qed. 
-  
+Proof. by apply: symmetry_rule. Qed.
+
 Lemma rsamplerC
   {A : ord_choiceType} {L : {fset Location}} (o : Op)
   (c : program L Game_import A)
@@ -1997,10 +2005,10 @@ Lemma rsamplerC
    ⦃ eq ⦄.
 Proof.
   apply: rrewrite_eqDistrL.
-  - apply: rreflexivity_rule. 
+  - apply: rreflexivity_rule.
   - move => s. f_equal.
     (*Rem.: we should be able to rewrite smMonequ1/2 ? and have the equality? *)
-  
+
 Admitted.
 
 Lemma rsamplerC' {A : ord_choiceType} {L : {fset Location}} (o : Op)
@@ -2060,7 +2068,7 @@ Proof.
 Qed.
 
 (* TODO Decompose prgram? *)
-Lemma rsym_pre
+(* Lemma rsym_pre
   {A1 A2 : ord_choiceType} {L : {fset Location}}
   {pre : heap * heap → Prop} {post}
   {c1 : program L Game_import A1}
@@ -2073,17 +2081,18 @@ Proof.
   - exact: (λ '(h1, h2), pre (h2, h1)).
   - assumption.
   - assumption.
-Qed.
+Qed. *)
 
 (* TODO Decompose prgram? *)
-Lemma rsymmetry
+(* Lemma rsymmetry
   {A1 A2 : ord_choiceType} {L : {fset Location}}
   {pre : heap * heap → Prop} {post}
   {c1 : program L Game_import A1}
   {c2 : program L Game_import A2}
   (H : r⊨ ⦃ λ '(h1, h2), pre (h2, h1) ⦄ c2 ≈ c1 ⦃ λ '(a2,h2) '(a1,h1), post (a1,h1) (a2, h2) ⦄) :
   r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄.
-Proof. Admitted.
+Proof.
+Admitted. *)
 
 (* CA: not more useful than sampler_case *)
 (* Lemma rsample_rule { B1 B2 : ord_choiceType} { L : {fset Location}}  { o } *)
