@@ -675,12 +675,12 @@ Module PackageComposition (π : RulesParam).
   Qed.
 
   Lemma program_link_par_left :
-    ∀ A I L L' E1 (v : raw_program A) p1 p2,
-      ValidProgram L E1 v →
-      ValidPackage L' I E1 p1 →
+    ∀ A I L L' E (v : raw_program A) p1 p2,
+      ValidProgram L E v →
+      ValidPackage L' I E p1 →
       program_link v (par p1 p2) = program_link v p1.
   Proof.
-    intros A I L L' E1 v p1 p2 hv hp1.
+    intros A I L L' E v p1 p2 hv hp1.
     unfold ValidProgram in hv.
     induction hv.
     - cbn. reflexivity.
@@ -707,8 +707,25 @@ Module PackageComposition (π : RulesParam).
     all: eauto.
   Qed.
 
-  (* TODO FIX *)
-  (* I hope we don't need to trim again, that would be unfortunate. *)
+  (* Predicate stating that a package exports all it implements *)
+  Definition trimmed E p :=
+    trim E p = p.
+
+  Lemma trimmed_valid_Some_in :
+    ∀ L I E p n S T f,
+      valid_package L I E p →
+      trimmed E p →
+      p n = Some (S ; T ; f) →
+      (n, (S, T)) \in E.
+  Proof.
+    intros L I E p n S T f hv ht e.
+    unfold trimmed in ht. pose e as e'. rewrite <- ht in e'.
+    unfold trim in e'. rewrite filtermE in e'.
+    rewrite e in e'. simpl in e'.
+    destruct ((n, (S, T)) \in E) eqn:e2.
+    2:{ rewrite e2 in e'. discriminate. }
+    reflexivity.
+  Qed.
 
   Lemma interchange :
     ∀ A B C D E F L1 L2 L3 L4 p1 p2 p3 p4,
@@ -716,9 +733,12 @@ Module PackageComposition (π : RulesParam).
       ValidPackage L2 E D p2 →
       ValidPackage L3 C B p3 →
       ValidPackage L4 F E p4 →
+      trimmed A p1 →
+      trimmed D p2 →
+      Parable p3 p4 →
       par (link p1 p3) (link p2 p4) = link (par p1 p2) (par p3 p4).
   Proof.
-    intros A B C D E F L1 L2 L3 L4 p1 p2 p3 p4 h1 h2 h3 h4.
+    intros A B C D E F L1 L2 L3 L4 p1 p2 p3 p4 h1 h2 h3 h4 t1 t2 p34.
     apply eq_fmap. intro n.
     unfold par.
     rewrite unionmE. unfold link.
@@ -726,15 +746,22 @@ Module PackageComposition (π : RulesParam).
     destruct (p1 n) as [[S1 [T1 f1]]|] eqn:e1.
     - simpl. f_equal. f_equal. f_equal.
       extensionality x.
-      specialize (h1 (n, (S1, T1))). cbn in h1.
-      erewrite program_link_par_left.
+      eapply trimmed_valid_Some_in in e1 as hi. 2,3: eauto.
+      specialize (h1 _ hi). cbn in h1.
+      destruct h1 as [g [eg hg]].
+      rewrite e1 in eg. noconf eg. cbn in hg.
+      erewrite program_link_par_left. 2: eapply hg.
       all: eauto.
-      give_up.
     - simpl. destruct (p2 n) as [[S2 [T2 f2]]|] eqn:e2.
       + simpl. f_equal. f_equal. f_equal. extensionality x.
-        give_up.
+        eapply trimmed_valid_Some_in in e2 as hi. 2,3: eauto.
+        specialize (h2 _ hi). cbn in h2.
+        destruct h2 as [g [eg hg]].
+        rewrite e2 in eg. noconf eg. cbn in hg.
+        erewrite program_link_par_right. all: eauto.
+        eapply hg.
       + simpl. reflexivity.
-  Abort.
+  Qed.
 
   Local Open Scope type_scope.
 
