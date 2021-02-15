@@ -332,70 +332,32 @@ Module PackageRHL (π : RulesParam).
         fold_repr. apply H.
     Qed.
 
-    (* Definition repr_cmd {L} {A : choiceType} (c : command A) :
-      ValidCommand L Game_import c →
-      rFreeF (ops_StP heap_choiceType) (ar_StP heap_choiceType) A :=
-      match c in command A as c return ValidCommand L Game_import c →
-      rFreeF (ops_StP heap_choiceType) (ar_StP heap_choiceType) A with
-      | cmd_op o x => λ h, False_rect _ _
-      | cmd_get ℓ => λ h,
-          bindrFree _ _
-            (ropr (inl (inl (gett _))) (λ s, retrFree (get_heap s ℓ)))
-            (λ v, retrFree v)
-      | cmd_put ℓ v => λ h,
-          bindrFree _ _
-            (ropr
-              (inl (inl (gett heap_choiceType)))
-              (λ s, ropr (inl (inr (putt heap_choiceType (set_heap s ℓ v))))
-              (λ s, retrFree tt)))
-            (λ s', retrFree s')
-      | cmd_sample op => λ h,
-          bindrFree _ _
-            (ropr (inr op) (λ v, retrFree v))
-            (λ s, retrFree s)
-      end. *)
-
-    (* Equations? repr_cmd {L} {A} (c : command A)
+    Equations? repr_cmd {L} {A} (c : command A)
       (hc : valid_command L Game_import c) :
       rFreeF (ops_StP heap_choiceType) (ar_StP heap_choiceType) A :=
 
-      repr_cmd c hc with c := {
-      | cmd_op o x := _ ;
-      | cmd_get ℓ := _ ;
-      | cmd_put ℓ v := _ ;
-      | cmd_sample op := _
-      }. *)
+      repr_cmd (cmd_op o x) hc := False_rect _ _ ;
 
-      (* repr_cmd (cmd_op o x) hc := False_rect _ _ ; *)
-
-      (* repr_cmd (cmd_get ℓ) hc :=
+      repr_cmd (cmd_get ℓ) hc :=
         bindrFree _ _
           (ropr (inl (inl (gett _))) (λ s, retrFree (get_heap s ℓ)))
-          (λ v, retrFree v) ; *)
+          (λ v, retrFree v) ;
 
-      (* repr_cmd (cmd_put ℓ v) hc :=
+      repr_cmd (cmd_put ℓ v) hc :=
         bindrFree _ _
           (ropr
             (inl (inl (gett heap_choiceType)))
             (λ s, ropr (inl (inr (putt heap_choiceType (set_heap s ℓ v))))
             (λ s, retrFree tt)))
-          (λ s', retrFree s') ; *)
+          (λ s', retrFree s') ;
 
-      (* repr_cmd (cmd_sample op) hc :=
+      repr_cmd (cmd_sample op) hc :=
         bindrFree _ _
           (ropr (inr op) (λ v, retrFree v))
-          (λ s, retrFree s) ; *)
-
-      (* repr_cmd c hc := _. *)
-
-
-    (* Notion of stem to mirror commands in the interpretation free monad? *)
-    (* ... *)
-
-    (* TODO NEED Some repr_cmd? *)
-    (* Since we need to define it, it's really raising the question
-      of whether to use noimport or not.
-    *)
+          (λ s, retrFree s).
+    Proof.
+      inversion hc. eapply fromEmpty. eassumption.
+    Qed.
 
     (* Lemma repr_cmd_bind :
       ∀ {B C} {L1 L2 L3} p f
