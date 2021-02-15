@@ -901,12 +901,20 @@ Module PackageRHL (π : RulesParam).
       unfold AdvantageE. extensionality A.
       extensionality H1. extensionality H2.
       simpl.
-      (* TODO FIX *)
-      (* This means that the Reduction lemma should be stated better *)
+      (* TODO Used to be the following *)
       (* rewrite Reduction. rewrite Reduction.
-      reflexivity.
-    Qed. *)
-    Admitted.
+      reflexivity. *)
+      package_before_rewrite.
+      rewrite !link_assoc.
+      package_after_rewrite.
+      f_equal. f_equal.
+      - f_equal. f_equal. apply loc_package_ext.
+        + cbn. rewrite fsetUA. reflexivity.
+        + cbn. intro. reflexivity.
+      - f_equal. f_equal. f_equal. apply loc_package_ext.
+        + cbn. rewrite fsetUA. reflexivity.
+        + cbn. intro. reflexivity.
+    Qed.
 
     Lemma rhl_repr_change_all {B1 B2 : choiceType} {L1 L2 L1' L2'}
       {pre : heap_choiceType * heap_choiceType -> Prop}
