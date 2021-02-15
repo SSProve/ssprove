@@ -2233,7 +2233,8 @@ Inductive raw_judgment :
 
 (* Legacy rule *)
 | r_swap :
-    ∀ (A₀ A₁ : choiceType) (I : precond) (post : postcond A₀ A₁) (c₀ : raw_program A₀) (c₁ : raw_program A₁),
+    ∀ (A₀ A₁ : choiceType) (I : precond) (post : postcond A₀ A₁)
+      (c₀ : raw_program A₀) (c₁ : raw_program A₁),
       ⊢ ⦃ I ⦄ c₀ ~ c₁ ⦃ λ b₀ b₁, I (b₀.2, b₁.2) ∧ post b₀ b₁ ⦄ →
       ⊢ ⦃ I ⦄ c₁ ~ c₀ ⦃ λ b₁ b₀, I (b₀.2, b₁.2) ∧ post b₀ b₁ ⦄ →
       ⊢ ⦃ I ⦄ c₀ ;; c₁ ~ c₁ ;; c₀ ⦃ λ b₁ b₀, I (b₀.2, b₁.2) ∧ post b₀ b₁ ⦄
@@ -2258,7 +2259,14 @@ Inductive raw_judgment :
         a₁ ← c₁ ;; a₀ ← c₀ ;; r a₀ a₁
         ⦃ post ⦄
 
-(* | r_swap_cmd_seq *)
+(* Not clear what the rule should be. *)
+(* Should we have rules for commands? That sounds cumbersome. *)
+(* | r_swap_cmd_seq :
+    ∀ (A₀ A₁ B : choiceType) (I : precond) (post : postcond A₀ A₁)
+      (c₀ : command A₀) (c₁ : command A₁) (k : raw_program B),
+      ⊢ ⦃ I ⦄ c₀ ~ c₁ ⦃ λ b₀ b₁, I (b₀.2, b₁.2) ∧ post b₀ b₁ ⦄ →
+      ⊢ ⦃ I ⦄ c₁ ~ c₀ ⦃ λ b₁ b₀, I (b₀.2, b₁.2) ∧ post b₀ b₁ ⦄ →
+      ⊢ ⦃ I ⦄ c₀ ;' c₁ ;' k ~ c₁ ;' c₀ ;' k ⦃ λ b₁ b₀, I (b₀.2, b₁.2) ∧ post b₀ b₁ ⦄ *)
 
 | r_swap_cmd :
     ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
