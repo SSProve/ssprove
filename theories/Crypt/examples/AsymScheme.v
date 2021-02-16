@@ -352,134 +352,104 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
 
   Definition L_locs_counter := fset [:: counter_loc ; pk_loc ; sk_loc].
 
-  (** TODO OLD BELOW **)
-
-  #[program] Definition L_pk_ots_L_open : opackage L_locs_counter
-    [interface ]
-    [interface val #[challenge_id] : chPlain × chPlain → 'option chCipher ] :=
+  Definition L_pk_ots_L :
+    package L_locs_counter
+      [interface]
+      [interface val #[challenge_id] : chPlain × chPlain → 'option chCipher ] :=
     [package
-
-       def #[challenge_id] ( mL_mR : chPlain × chPlain ) : 'option chCipher
-     {
-       count ← get counter_loc ;;
-       put counter_loc := (count + 1)%N;;
-       if ((count == 0)%N) then
-         '(pk, sk) ← KeyGen ;;
-         put pk_loc := pk ;;
-         put sk_loc := sk ;;
-         c ← Enc pk (fst mL_mR) ;;
-         ret (some c)
-       else ret None
+      def #[challenge_id] ( mL_mR : chPlain × chPlain ) : 'option chCipher
+      {
+        count ← get counter_loc ;;
+        put counter_loc := (count + 1)%N;;
+        if ((count == 0)%N) then
+          '(pk, sk) ← KeyGen ;;
+          put pk_loc := pk ;;
+          put sk_loc := sk ;;
+          c ← Enc pk (fst mL_mR) ;;
+          ret (some c)
+        else ret None
       }
-
     ].
 
-  Definition L_pk_ots_L : package [interface ]
-                                  [interface val #[challenge_id] : chPlain × chPlain → 'option chCipher].
-  Proof. exists L_locs_counter. exact: L_pk_ots_L_open. Defined.
-
-
-  #[program] Definition L_pk_ots_R_open : opackage L_locs_counter
-    [interface ]
-    [interface val #[challenge_id] : chPlain × chPlain → 'option chCipher ] :=
+  Definition L_pk_ots_R :
+    package L_locs_counter
+      [interface]
+      [interface val #[challenge_id] : chPlain × chPlain → 'option chCipher ] :=
     [package
-
-       def #[challenge_id] ( mL_mR :  chPlain × chPlain ) : 'option chCipher
-     {
-       count ← get counter_loc ;;
-       put counter_loc := (count + 1)%N;;
-       if ((count == 0)%N) then
-        '(pk, sk) ← KeyGen ;;
-         put pk_loc := pk ;;
-         put sk_loc := sk ;;
-         c ← Enc pk (snd mL_mR) ;;
-         ret (some c)
-       else ret None
+      def #[challenge_id] ( mL_mR :  chPlain × chPlain ) : 'option chCipher
+      {
+        count ← get counter_loc ;;
+        put counter_loc := (count + 1)%N;;
+        if ((count == 0)%N) then
+          '(pk, sk) ← KeyGen ;;
+          put pk_loc := pk ;;
+          put sk_loc := sk ;;
+          c ← Enc pk (snd mL_mR) ;;
+          ret (some c)
+        else ret None
       }
-
     ].
 
-  Definition L_pk_ots_R : package [interface ]
-                                  [interface val #[challenge_id] : chPlain × chPlain → 'option chCipher].
-  Proof. exists L_locs_counter. exact: L_pk_ots_R_open. Defined.
+  Definition ots_L_vs_R :
+    GamePair [interface
+      val #[challenge_id] :chPlain × chPlain → 'option chCipher
+    ] :=
+    λ b, if b then {locpackage L_pk_ots_L } else {locpackage L_pk_ots_R }.
 
+  (** [The Joy of Cryptography] Definition 15.4
 
-   Definition ots_L_vs_R : GamePair [interface val #[challenge_id] :chPlain × chPlain → 'option chCipher].
-   Proof.
-     move => b. destruct b.
-     - exact: L_pk_ots_L.
-     - exact: L_pk_ots_R.
-   Defined.
+    A public-key encryption scheme is secure against chosen-plaintext attacks
+    when the following holds.
+  *)
 
-
-   (* [The Joy of Cryptography] Definition 15.4
-
-     A public-key encryption scheme is secure against chosen-plaintext attacks iff the following is True.
-    *)
-
-  Definition OT_secrecy : Prop := forall A H1 H2, @Advantage _ ots_L_vs_R A H1 H2 = 0.
+  Definition OT_secrecy : Prop :=
+    ∀ A H1 H2, @Advantage _ ots_L_vs_R A H1 H2 = 0.
 
   (*  *)
 
-  #[program] Definition L_pk_ots_real_open :  opackage L_locs_counter
-    [interface ]
-    [interface val #[challenge_id'] : chPlain → 'option chCipher ]  :=
+  Definition L_pk_ots_real :
+    package L_locs_counter
+      [interface]
+      [interface val #[challenge_id'] : chPlain → 'option chCipher ] :=
     [package
-
-       def #[challenge_id'] ( m : chPlain  ) : 'option chCipher
-     {
-       count ← get counter_loc ;;
-       put counter_loc := (count + 1)%N;;
-       if ((count == 0)%N) then
-         '(pk, sk) ← KeyGen ;;
-         put pk_loc := pk ;;
-         put sk_loc := sk ;;
-         c ← Enc pk m ;;
-         ret (some c)
-       else ret None
+      def #[challenge_id'] ( m : chPlain  ) : 'option chCipher
+      {
+        count ← get counter_loc ;;
+        put counter_loc := (count + 1)%N;;
+        if ((count == 0)%N) then
+          '(pk, sk) ← KeyGen ;;
+          put pk_loc := pk ;;
+          put sk_loc := sk ;;
+          c ← Enc pk m ;;
+          ret (some c)
+        else ret None
       }
-
     ].
 
-
-  Definition L_pk_ots_real: package [interface ]
-                                    [interface val #[challenge_id'] : chPlain → 'option chCipher ].
-  Proof. exists L_locs_counter. exact: L_pk_ots_real_open. Defined.
-
-  #[program] Definition L_pk_ots_rnd_open : opackage L_locs_counter
-    [interface ]
-    [interface val #[challenge_id'] : chPlain → 'option chCipher ] :=
+  Definition L_pk_ots_rnd :
+    package L_locs_counter
+      [interface]
+      [interface val #[challenge_id'] : chPlain → 'option chCipher ] :=
     [package
-
-       def #[challenge_id'] ( m : chPlain ) : 'option chCipher
-     {
-       count ← get counter_loc ;;
-       put counter_loc := (count + 1)%N;;
-       if ((count == 0)%N) then
-        '(pk, sk) ← KeyGen ;;
-         put pk_loc := pk ;;
-         put sk_loc := sk ;;
-         c <$ (U i_cipher) ;;
-         ret (some (c2ch c))
-       else ret None
+      def #[challenge_id'] ( m : chPlain ) : 'option chCipher
+      {
+        count ← get counter_loc ;;
+        put counter_loc := (count + 1)%N;;
+        if ((count == 0)%N) then
+          '(pk, sk) ← KeyGen ;;
+          put pk_loc := pk ;;
+          put sk_loc := sk ;;
+          c <$ (U i_cipher) ;;
+          ret (some (c2ch c))
+        else ret None
       }
-
     ].
-
-  Definition L_pk_ots_rnd: package  [interface ]
-                                    [interface val #[challenge_id'] : chPlain → 'option chCipher ].
-  Proof. exists L_locs_counter. exact: L_pk_ots_rnd_open. Defined.
-
 
   Definition ots_real_vs_rnd :
-    GamePair [interface val #[challenge_id'] : chPlain → 'option chCipher].
-  Proof.
-    move => b. destruct b eqn:Hb.
-    - exact: L_pk_ots_real.
-    - exact: L_pk_ots_rnd.
-  Defined.
+    GamePair [interface val #[challenge_id'] : chPlain → 'option chCipher] :=
+    λ b, if b then {locpackage L_pk_ots_real } else {locpackage L_pk_ots_rnd }.
 
-  Definition OT_rnd_cipher : Prop := forall A H1 H2, @Advantage _ ots_real_vs_rnd A H1 H2 = 0.
-
+  Definition OT_rnd_cipher : Prop :=
+    ∀ A H1 H2, @Advantage _ ots_real_vs_rnd A H1 H2 = 0.
 
 End AsymmetricScheme.
