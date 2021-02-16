@@ -185,16 +185,16 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
   Notation " 'chSecurityParameter' " :=
     (chNat) (in custom pack_type at level 2).
   Notation " 'chPlain' " :=
-    (chFin Plain_len_pos )
+    ('fin #|Plain|)
     (in custom pack_type at level 2).
   Notation " 'chCipher' " :=
-    (chFin Cipher_len_pos)
+    ('fin #|Cipher|)
     (in custom pack_type at level 2).
   Notation " 'chPubKey' " :=
-    (chFin PubKey_len_pos)
+    ('fin #|PubKey|)
     (in custom pack_type at level 2).
   Notation " 'chSecKey' " :=
-    (chFin SecKey_len_pos)
+    ('fin #|SecKey|)
     (in custom pack_type at level 2).
 
   Parameter c2ch : Cipher → 'fin #|Cipher|.
@@ -221,36 +221,57 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
     ∀ {L : {fset Location}}, program L fset0 ('fin #|PubKey| × 'fin #|SecKey|).
 
   (* Encryption algorithm *)
-  Parameter Enc : forall { L : {fset Location} } (pk : chFin PubKey_len_pos) (m : chFin Plain_len_pos),
-      program L fset0 (chFin Cipher_len_pos).
+  Parameter Enc :
+    ∀ {L : {fset Location}} (pk : 'fin #|PubKey|) (m : 'fin #|Plain|),
+      program L fset0 ('fin #|Cipher|).
 
   (* Decryption algorithm *)
-  Parameter Dec_open : forall { L : {fset Location} } (sk : chFin SecKey_len_pos) (c : chFin Cipher_len_pos),
-      program L fset0 (chFin Plain_len_pos).
+  Parameter Dec_open :
+    ∀ {L : {fset Location}} (sk : 'fin #|SecKey|) (c : 'fin #|Cipher|),
+      program L fset0 ('fin #|Plain|).
 
 End AsymmetricSchemeAlgorithms.
-
 
 (* A Module for Asymmetric Encryption Schemes, inspired to Joy of Crypto *)
 Module AsymmetricScheme (π : AsymmetricSchemeParams)
                         (Alg : AsymmetricSchemeAlgorithms π).
 
-
   Import Alg.
   Import PackageNotation.
 
-  Definition U (i : Index) : {rchT : myparamU.rel_choiceTypes & myparamU.probE (myparamU.chEmb rchT)} :=
+  Definition U (i : Index) :
+    {rchT : myparamU.rel_choiceTypes & myparamU.probE (myparamU.chEmb rchT)} :=
     (existT (λ rchT : myparamU.rel_choiceTypes, myparamU.probE (myparamU.chEmb rchT))
             (inl (inl i)) (inl (Uni_W i))).
 
   Local Open Scope package_scope.
 
-  Obligation Tactic := package_obtac.
-
    (* Define what it means for an asymmetric encryption scheme to be: *)
    (**   *SECURE AGAINST CHOSEN-PLAINTEXT ATTACKS **)
 
-  Definition L_locs : { fset Location } := fset [:: pk_loc; sk_loc ].
+  Definition L_locs : { fset Location } := fset [:: pk_loc ; sk_loc ].
+
+  (** WARNING loop BELOW **)
+
+  Fail.
+
+  Definition L_pk_cpa_L :
+    package
+      _
+      [interface]
+      [interface val #[challenge_id] : chPlain × chPlain → chCipher] :=
+    [package
+      def #[challenge_id] ( mL_mR : chPlain × chPlain ) : chCipher
+      {
+        '(pk, sk) ← KeyGen ;;
+        put pk_loc := pk ;;
+        put sk_loc := sk ;;
+        c ← Enc pk (fst mL_mR) ;;
+        ret c
+      }
+    ].
+
+  (** TODO OLD BELOW **)
 
   #[program] Definition L_pk_cpa_L_open :
     opackage L_locs
