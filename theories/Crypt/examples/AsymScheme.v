@@ -1,5 +1,7 @@
-(*
-    Asymmetric encryption schemes -- stateful and probabilistic setting -- defines :
+(** Asymmetric encryption schemes
+
+  In the stateful and probabilistic setting.
+  This module defines:
 
     1. CPA_security    "security under chosen plaintext attacks"
     2. CPA_rnd_cipher  "cipher looks random"
@@ -439,7 +441,7 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
           '(pk, sk) ← KeyGen ;;
           put pk_loc := pk ;;
           put sk_loc := sk ;;
-          c <$ (U i_cipher) ;;
+          c ← sample U i_cipher ;;
           ret (some (c2ch c))
         else ret None
       }

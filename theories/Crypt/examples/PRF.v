@@ -1,52 +1,29 @@
-(*
-   Inspired to "State Separation for Code-Based Game-Playing Proofs" - Brzuska et al.
+(** PRF Example
 
-   Appendix A.
+  Inspired by "State Separation for Code-Based Game-Playing Proofs"
+  by Brzuska et al.
 
-   "Given a pseudorandom function (PRF) we construct a symmetric encryption scheme
-    that is indistinguishable under chosen plaintext attacks (IND-CPA). "
+  Appendix A.
+
+  "Given a pseudorandom function (PRF) we construct a symmetric encryption
+  scheme that is indistinguishable under chosen plaintext attacks (IND-CPA)."
 
 *)
 
-From Relational Require Import
-     OrderEnrichedCategory
-     GenericRulesSimple.
+From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import
-     all_ssreflect
-     all_algebra
-     reals
-     distr
-     realsum.
+From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
+  ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
 
 From Mon Require Import SPropBase.
-From Crypt Require Import
-     Axioms
-     ChoiceAsOrd
-     SubDistr
-     Couplings
-     UniformDistrLemmas
-     FreeProbProg
-     Theta_dens
-     RulesStateProb
-     StdDistr.
-From Crypt Require Import
-     pkg_core_definition
-     pkg_chUniverse
-     pkg_composition
-     pkg_rhl
-     Package
-     Prelude
-     pkg_notation.
-
-From Crypt Require Import pkg_notation.
+From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
+  UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb StdDistr
+  pkg_core_definition pkg_chUniverse pkg_composition pkg_rhl  Package Prelude
+  pkg_notation.
 
 From Coq Require Import Utf8.
-Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
-From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
-Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 
 Import SPropNotations.
@@ -71,11 +48,15 @@ Module Type SymmetricSchemeParam.
   Parameter Key_N_pos : Positive Key_N.
   Existing Instance Words_N_pos.
   Existing Instance Key_N_pos.
-  Definition Words := (chFin (mkpos Words_N)).
+
+  Definition Words := chFin (mkpos Words_N).
   Definition Key := chFin (mkpos Key_N).
-  Parameter plus : Words -> Key -> Words.
+
+  Parameter plus : Words → Key → Words.
+
   Notation "m ⊕ k" := (plus m k) (at level 70).
-  Parameter plus_involutive : forall m k, (m ⊕ k) ⊕ k = m.
+
+  Parameter plus_involutive : ∀ m k, (m ⊕ k) ⊕ k = m.
 
 End SymmetricSchemeParam.
 
@@ -83,18 +64,31 @@ End SymmetricSchemeParam.
 Module Type SymmetricSchemeRules (π : SymmetricSchemeParam).
 
   Import π.
-  Inductive probEmpty : Type -> Type := .
+
+  Inductive probEmpty : Type → Type :=.
 
   Module genparam <: RulesParam.
 
-    Definition probE : Type -> Type := probEmpty.
+    Definition probE : Type → Type := probEmpty.
     Definition rel_choiceTypes : Type := void.
-    Definition chEmb : rel_choiceTypes -> choiceType.
-    Proof. move => v. inversion v. Defined.
-    Definition prob_handler : forall T : choiceType, probE T -> SDistr T.
-    Proof. move => T v. inversion v. Defined.
-    Definition Hch : forall r : rel_choiceTypes, chEmb r.
-    Proof. move => v. inversion v. Defined.
+
+    Definition chEmb : rel_choiceTypes → choiceType.
+    Proof.
+      intro v. inversion v.
+    Defined.
+
+    Definition prob_handler :
+      ∀ (T : choiceType),
+        probE T → SDistr T.
+    Proof.
+      intros T v. inversion v.
+    Defined.
+
+    Definition Hch :
+      ∀ (r : rel_choiceTypes), chEmb r.
+    Proof.
+      intro v. inversion v.
+    Defined.
 
   End genparam.
 
@@ -114,22 +108,31 @@ Module PRF_example.
     Definition Key_N : nat := 2^n.
     Definition Key_N_pos : Positive Key_N := _.
     Definition Key : chUniverse := chFin (mkpos Key_N).
-    Program Definition plus : Words -> Key -> Words :=
-      fun w k => @Ordinal _ (BinNat.N.to_nat (BinNat.N.lxor (BinNat.N.of_nat (nat_of_ord w)) (BinNat.N.of_nat (nat_of_ord k)))) _.
+
+    (* TW: Is this normal that this definition is so big? *)
+    #[program] Definition plus : Words → Key → Words :=
+      λ w k,
+        @Ordinal _ (BinNat.N.to_nat (BinNat.N.lxor (BinNat.N.of_nat (nat_of_ord w)) (BinNat.N.of_nat (nat_of_ord k)))) _.
     Next Obligation.
       destruct w as [w Hw], k as [k Hk].
       destruct w as [|Pw], k as [|Pk].
-      1: { simpl. assumption. }
-      1: { simpl.
-           rewrite Pnat.SuccNat2Pos.id_succ.
-           assumption. }
-      1: { simpl.
-           rewrite Pnat.SuccNat2Pos.id_succ.
-           assumption. }
+      1:{ simpl. assumption. }
+      1:{
+        simpl.
+        rewrite Pnat.SuccNat2Pos.id_succ.
+        assumption.
+      }
+      1:{
+        simpl.
+        rewrite Pnat.SuccNat2Pos.id_succ.
+        assumption.
+      }
       remember (succn Pw) as w.
       remember (succn Pk) as k.
-      assert (forall m, (2 ^ m)%nat = BinNat.N.to_nat
-                              (BinNat.N.pow (BinNums.Npos (BinNums.xO 1%AC)) (BinNat.N.of_nat m))) as H.
+      assert (
+        ∀ m,
+          (2 ^ m)%nat = BinNat.N.to_nat (BinNat.N.pow (BinNums.Npos (BinNums.xO 1%AC)) (BinNat.N.of_nat m))
+      ) as H.
       { induction m.
         - reflexivity.
         - rewrite expnSr.
@@ -139,13 +142,18 @@ Module PRF_example.
           rewrite PeanoNat.Nat.mul_comm.
           apply f_equal2.
           + apply IHm.
-          + reflexivity. }
+          + reflexivity.
+      }
       unfold Words_N, Key_N in *.
       move: (BinNat.N.log2_lxor (BinNat.N.of_nat w) (BinNat.N.of_nat k)) => Hbound.
-      assert (BinNat.N.lt (BinNat.N.log2 (BinNat.N.of_nat w)) (BinNat.N.of_nat n)) as H1.
+      assert (
+        BinNat.N.lt (BinNat.N.log2 (BinNat.N.of_nat w)) (BinNat.N.of_nat n)
+      ) as H1.
       { rewrite -BinNat.N.log2_lt_pow2.
-        2: { rewrite Heqw. rewrite Nnat.Nat2N.inj_succ.
-             apply BinNat.N.lt_0_succ. }
+        2:{
+          rewrite Heqw. rewrite Nnat.Nat2N.inj_succ.
+          apply BinNat.N.lt_0_succ.
+        }
         unfold BinNat.N.lt.
         rewrite Nnat.N2Nat.inj_compare.
         rewrite PeanoNat.Nat.compare_lt_iff.
@@ -154,10 +162,14 @@ Module PRF_example.
         apply /ltP.
         apply Hw.
       }
-      assert (BinNat.N.lt (BinNat.N.log2 (BinNat.N.of_nat k)) (BinNat.N.of_nat n)) as H2.
+      assert (
+        BinNat.N.lt (BinNat.N.log2 (BinNat.N.of_nat k)) (BinNat.N.of_nat n)
+      ) as H2.
       { rewrite -BinNat.N.log2_lt_pow2.
-        2: { rewrite Heqk. rewrite Nnat.Nat2N.inj_succ.
-             apply BinNat.N.lt_0_succ. }
+        2:{
+          rewrite Heqk. rewrite Nnat.Nat2N.inj_succ.
+          apply BinNat.N.lt_0_succ.
+        }
         unfold BinNat.N.lt.
         rewrite Nnat.N2Nat.inj_compare.
         rewrite PeanoNat.Nat.compare_lt_iff.
@@ -168,12 +180,16 @@ Module PRF_example.
       }
       move: (BinNat.N.max_lub_lt _ _ _ H1 H2) => Hm.
       destruct ((BinNat.N.lxor (BinNat.N.of_nat w) (BinNat.N.of_nat k)) == BinNat.N0) eqn:H0.
-      1: { simpl. move: H0. move /eqP => H0. rewrite H0. simpl.
-           rewrite expn_gt0. apply /orP. left. auto. }
+      1:{
+        simpl. move: H0. move /eqP => H0. rewrite H0. simpl.
+        rewrite expn_gt0. apply /orP. left. auto.
+      }
       move: (BinNat.N.le_lt_trans _ _ _ Hbound Hm).
       rewrite -BinNat.N.log2_lt_pow2.
-      2: { apply BinNat.N.neq_0_lt_0.
-           move: H0. move /eqP. auto. }
+      2:{
+        apply BinNat.N.neq_0_lt_0.
+        move: H0. move /eqP. auto.
+      }
       unfold BinNat.N.lt.
       rewrite Nnat.N2Nat.inj_compare.
       rewrite PeanoNat.Nat.compare_lt_iff.
@@ -185,9 +201,11 @@ Module PRF_example.
     Qed.
 
     Notation "m ⊕ k" := (plus m k) (at level 70).
-    Lemma plus_involutive : forall m k, (m ⊕ k) ⊕ k = m.
+
+    Lemma plus_involutive :
+      ∀ m k, (m ⊕ k) ⊕ k = m.
     Proof.
-      move => m k.
+      intros m k.
       move: ord_inj => Hordinj.
       unfold injective in Hordinj.
       apply Hordinj.
@@ -199,6 +217,7 @@ Module PRF_example.
       rewrite Nnat.Nat2N.id.
       reflexivity.
     Qed.
+
   End π.
 
   Local Open Scope package_scope.
@@ -210,76 +229,76 @@ Module PRF_example.
   Import MyPackage.
   Import PackageNotation.
 
-  Definition key_location : Location := ('option Key; 0).
-  Definition plain_location : Location := (Words; 1).
-  Definition cipher_location : Location := (Words; 2).
+  Definition key_location : Location := ('option Key ; 0).
+  Definition plain_location : Location := (Words ; 1).
+  Definition cipher_location : Location := (Words ; 2).
   Definition i0 : nat := 3.
   Definition i1 : nat := 4.
   Definition i2 : nat := 5.
-  Definition salt_location : Location := ('nat; 6).
+  Definition salt_location : Location := ('nat ; 6).
   Definition table_location : Location :=
     (chMap 'nat ('fin (2^n)%N) ; 7).
 
   Definition rel_loc : {fset Location} :=
     fset [:: key_location ; table_location ].
 
-  Parameter PRF : Words -> Key -> Key.
+  Parameter PRF : Words → Key → Key.
 
-  Definition U (i : positive) : {rchT : MyRules.myparamU.rel_choiceTypes & MyRules.myparamU.probE (MyRules.myparamU.chEmb rchT)} :=
-    (existT (λ rchT : MyRules.myparamU.rel_choiceTypes, MyRules.myparamU.probE (MyRules.myparamU.chEmb rchT))
-            (chFin i) (inl (MyRules.Unif_Fin i))).
-  Obligation Tactic := package_obtac.
+  Definition U (i : positive) :
+    { rchT : MyRules.myparamU.rel_choiceTypes &
+      MyRules.myparamU.probE (MyRules.myparamU.chEmb rchT) } :=
+    existT (λ rchT : MyRules.myparamU.rel_choiceTypes, MyRules.myparamU.probE (MyRules.myparamU.chEmb rchT))
+            (chFin i) (inl (MyRules.Unif_Fin i)).
 
   Notation " 'chWords' " := ('fin (2^n)%N) (in custom pack_type at level 2).
   Notation " 'chKey' " := ('fin (2^n)%N) (in custom pack_type at level 2).
   Definition i_key : nat := 2^n.
   Definition i_words : nat := 2^n.
 
-  Definition enc { L : { fset Location } } (m : Words) (k : Key) : program L fset0  ('fin (2^n) × 'fin (2^n)) :=
-     r <$ U (mkpos i_words) ;;
-     let pad := PRF r k in
-     let c := m ⊕ pad in
-      ret (r, c).
-
+  Definition enc {L : { fset Location }} (m : Words) (k : Key) :
+    program L fset0  ('fin (2^n) × 'fin (2^n)) :=
+      {program
+        r ← sample U (mkpos i_words) ;;
+        let pad := PRF r k in
+        let c := m ⊕ pad in
+        ret (r, c)
+      }.
 
   Definition kgen : program fset0 fset0 'fin (2^n) :=
-    k <$ U (mkpos i_key) ;;
-    ret k.
+    {program
+      k <$ U (mkpos i_key) ;;
+      ret k
+    }.
 
-  Definition dec (c : Words) (k : Key) : program (fset [:: key_location; table_location])
-                                                 fset0
-                                                 ('fin (2^n) × 'fin (2^n)) := enc k c.
-
+  Definition dec (c : Words) (k : Key) :
+    program (fset [:: key_location; table_location])
+            fset0
+            ('fin (2^n) × 'fin (2^n)) :=
+    enc k c.
 
   Definition EVAL_location_tt := (fset [:: key_location]).
   Definition EVAL_location_ff := (fset [:: table_location]).
 
-  #[program] Definition EVAL_opkg_tt :
-    opackage EVAL_location_tt [interface]
-      [interface val #[i0] : chWords → chKey ] :=
-  [package
-    def #[i0] ( r : chWords) : chKey
-    {
-      k_init ← get key_location ;;
-      match k_init with
-      | None =>
-           k <$ (U (mkpos i_key)) ;;
-           put key_location := Some k ;;
-           ret (PRF r k)
-      | Some k_val =>
-           ret (PRF r k_val)
-      end
-    }
-  ].
-
   Definition EVAL_pkg_tt :
-    package [interface] [interface val #[i0] : chWords → chKey].
-  Proof.
-    exists EVAL_location_tt. exact: EVAL_opkg_tt.
-  Defined.
+    package EVAL_location_tt [interface]
+      [interface val #[i0] : chWords → chKey ] :=
+    [package
+      def #[i0] (r : chWords) : chKey
+      {
+        k_init ← get key_location ;;
+        match k_init with
+        | None =>
+            k ← sample U (mkpos i_key) ;;
+            put key_location := Some k ;;
+            ret (PRF r k)
+        | Some k_val =>
+            ret (PRF r k_val)
+        end
+      }
+    ].
 
-  #[program] Definition EVAL_opkg_ff :
-    opackage EVAL_location_ff [interface]
+  Definition EVAL_pkg_ff :
+    package EVAL_location_ff [interface]
       [interface val #[i0] : chWords → chKey] :=
     [package
       def #[i0] (r : chWords) : chKey
@@ -287,7 +306,7 @@ Module PRF_example.
         T ← get table_location ;;
         match getm T r with
         | None =>
-            T_key <$ (U (mkpos i_key)) ;;
+            T_key ← sample U (mkpos i_key) ;;
             put table_location := (setm T r T_key) ;;
             ret T_key
         | Some T_key => ret T_key
@@ -295,97 +314,46 @@ Module PRF_example.
       }
     ].
 
-  Definition EVAL_pkg_ff :
-    package [interface] [interface val #[i0] : chWords → chKey].
-  Proof.
-    exists EVAL_location_ff. exact: EVAL_opkg_ff.
-  Defined.
-
   Definition EVAL : GamePair  [interface val #[i0] : chWords → chKey] :=
-    λ (b : bool),
-      if b then EVAL_pkg_tt else EVAL_pkg_ff.
+    λ b, if b then {locpackage EVAL_pkg_tt } else {locpackage EVAL_pkg_ff }.
 
+  Definition MOD_CPA_location : {fset Location} := fset0.
 
-  Definition MOD_CPA_location : { fset Location } := fset0 .
-
-
-  #[program] Definition MOD_CPA_tt :
-    opackage MOD_CPA_location [interface val #[i0] : chWords → chKey]
-             [interface val #[i1] : chWords → chWords × chWords ] :=
+  Definition MOD_CPA_tt_pkg :
+    package MOD_CPA_location [interface val #[i0] : chWords → chKey]
+      [interface val #[i1] : chWords → chWords × chWords ] :=
     [package
       def #[i1] (m : chWords) : chWords × chWords
       {
-        r <$ (U (mkpos i_words)) ;;
+        r ← sample U (mkpos i_words) ;;
         pad ← op [ #[i0] : chWords → chKey ] r ;;
         let c := (m ⊕ pad) in
         ret (r, c)
       }
     ].
 
-
-  Definition MOD_CPA_tt_pkg :
-    package [interface val #[i0] : chWords → chKey]
-      [interface val #[i1] : chWords → chWords × chWords].
-  Proof.
-    exists MOD_CPA_location. exact:MOD_CPA_tt.
-  Defined.
-
-  #[program] Definition MOD_CPA_ff :
-    opackage MOD_CPA_location [interface val #[i0] : chWords → chKey]
+  Definition MOD_CPA_ff_pkg :
+    package MOD_CPA_location [interface val #[i0] : chWords → chKey]
       [interface val #[i1] : chWords → chWords × chWords ]:=
     [package
       def #[i1] (m : chWords) : chWords × chWords
       {
-        r  <$ (U (mkpos i_words)) ;;
-        m' <$ (U (mkpos i_words)) ;;
+        r ← sample U (mkpos i_words) ;;
+        m' ← sample U (mkpos i_words) ;;
         pad ← op [ #[i0] : chWords → chKey ] r ;;
         let c := (m' ⊕ pad) in
         ret (r, c)
       }
     ].
 
-  Definition MOD_CPA_ff_pkg :
-    package [interface val #[i0] : chWords → chKey]
-      [interface val #[i1] : chWords → chWords × chWords ].
-  Proof.
-    exists MOD_CPA_location. exact:MOD_CPA_ff.
-  Defined.
-
-  (* Rem.: I was forced to add also table_location, o.w. cannot apply eq_prog_semj_impl *)
+  (* Rem.: I was forced to add also table_location, o.w.
+    cannot apply eq_prog_semj_impl
+  *)
   Definition IND_CPA_location : {fset Location} := fset [:: key_location].
 
-
-  #[program] Definition IND_CPA_opkg_tt :
-    opackage IND_CPA_location
-      [interface]
-      [interface val #[i1] : chWords → chWords × chWords ] :=
-   [package
-      def #[i1] (m : chWords) : chWords × chWords
-      {
-        k ← get key_location ;;
-        match k with
-        | None =>
-          k_val <$ (U (mkpos i_key)) ;;
-          put key_location := Some k_val ;;
-          (enc m k_val)
-        | Some k_val =>
-          (enc m k_val)
-        end
-      }
-   ].
-
-
   Definition IND_CPA_pkg_tt :
-    package
-      [interface ]
-      [interface val #[i1] : chWords → chWords × chWords ].
-  Proof.
-    exists IND_CPA_location. exact: IND_CPA_opkg_tt.
-  Defined.
-
-  #[program] Definition IND_CPA_opkg_ff :
-    opackage IND_CPA_location
-      [interface ]
+    package IND_CPA_location
+      [interface]
       [interface val #[i1] : chWords → chWords × chWords ] :=
     [package
       def #[i1] (m : chWords) : chWords × chWords
@@ -393,38 +361,53 @@ Module PRF_example.
         k ← get key_location ;;
         match k with
         | None =>
-          k_val <$ (U (mkpos i_key)) ;;
+          k_val ← sample U (mkpos i_key) ;;
           put key_location := Some k_val ;;
-          m' <$ (U (mkpos i_words)) ;;
-          (enc m' k_val)
+          enc m k_val
         | Some k_val =>
-          m' <$ (U (mkpos i_words)) ;;
-          (enc m' k_val)
+          enc m k_val
+        end
+      }
+   ].
+
+  Definition IND_CPA_pkg_ff :
+    package IND_CPA_location
+      [interface]
+      [interface val #[i1] : chWords → chWords × chWords ] :=
+    [package
+      def #[i1] (m : chWords) : chWords × chWords
+      {
+        k ← get key_location ;;
+        match k with
+        | None =>
+          k_val ← sample U (mkpos i_key) ;;
+          put key_location := Some k_val ;;
+          m' ← sample U (mkpos i_words) ;;
+          enc m' k_val
+        | Some k_val =>
+          m' ← sample U (mkpos i_words) ;;
+          enc m' k_val
         end
       }
     ].
 
-  Definition IND_CPA_pkg_ff :
-    package
-      [interface ]
-      [interface val #[i1] : chWords → chWords × chWords].
-  Proof.
-    exists IND_CPA_location.
-    exact: IND_CPA_opkg_ff.
-  Defined.
-
-  Definition IND_CPA : GamePair [interface val #[i1] : chWords → chWords × chWords ] :=
-    λ (b : bool),
-      if b then IND_CPA_pkg_tt
-           else IND_CPA_pkg_ff.
+  Definition IND_CPA :
+    GamePair [interface val #[i1] : chWords → chWords × chWords ] :=
+    λ b,
+      if b then {locpackage IND_CPA_pkg_tt } else {locpackage IND_CPA_pkg_ff }.
 
   Local Open Scope ring_scope.
 
-  Parameter prf_epsilon : Adversary4Game [interface val #[i0] : chWords → chKey ] -> R.
+  Parameter prf_epsilon :
+    Adversary4Game [interface val #[i0] : chWords → chKey ] → R.
+
   Definition PRF_security :=
     ∀ A H1 H2, (@Advantage _ EVAL A H1 H2) = prf_epsilon A.
 
-  Definition statistical_gap { A } : R :=
+  (** TODO OLD BELOW **)
+
+  (* TW: Is it really good to have A implicit here? *)
+  Definition statistical_gap {A} : R :=
     `|Pr ((A ∘ MOD_CPA_tt_pkg) ∘ EVAL false) true - Pr ((A ∘ MOD_CPA_ff_pkg) ∘ EVAL false) true|.
 
   Ltac fold_repr :=
