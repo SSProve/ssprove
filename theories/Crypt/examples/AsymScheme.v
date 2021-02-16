@@ -272,134 +272,87 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
       }
     ].
 
-  (** TODO OLD BELOW **)
-
-  #[program] Definition L_pk_cpa_L_open :
-    opackage L_locs
-      [interface ]
+  Definition L_pk_cpa_R :
+    package
+      L_locs
+      [interface]
       [interface val #[challenge_id] : chPlain × chPlain → chCipher ] :=
     [package
-
       def #[challenge_id] ( mL_mR : chPlain × chPlain ) : chCipher
       {
         '(pk, sk) ← KeyGen ;;
-         put pk_loc := pk ;;
-         put sk_loc := sk ;;
-         c ← Enc pk (fst mL_mR) ;;
-         ret c
+        put pk_loc := pk ;;
+        put sk_loc := sk ;;
+        c ← Enc pk (snd mL_mR) ;;
+        ret c
       }
-
     ].
 
-  Definition L_pk_cpa_L : package  [interface ]
-                                   [interface val #[challenge_id] : chPlain × chPlain → chCipher].
-  Proof. exists L_locs. exact: L_pk_cpa_L_open. Defined.
+  (* TODO Use {locpackage} here or above? *)
+  Definition cpa_L_vs_R : GamePair [interface val #[challenge_id] : chPlain × chPlain → chCipher] :=
+    λ b, if b then {locpackage L_pk_cpa_L} else {locpackage L_pk_cpa_R}.
 
+  (** [The Joy of Cryptography] Definition 15.1
 
-  #[program] Definition L_pk_cpa_R_open :
-    opackage L_locs
-             [interface ]
-             [interface val #[challenge_id] : chPlain × chPlain → chCipher ] :=
+    A public-key encryption scheme is secure against chosen-plaintext attacks
+    when the following holds.
+  *)
+
+  Definition CPA_security : Prop :=
+    ∀ A H1 H2, @Advantage _ cpa_L_vs_R A H1 H2 = 0.
+
+  (* Define what it means for an asymmetric encryption scheme to: *)
+  (**  *HAVE PSEUDORND CIPHERTEXT IN PRESENCE OF CHOSEN PLAINTEXT ATTACKS **)
+
+  Definition L_pk_cpa_real :
+    package L_locs
+      [interface]
+      [interface val #[challenge_id] : chPlain → chCipher ] :=
     [package
+      def #[challenge_id] (m : chPlain) : chCipher
+      {
+        '(pk, sk) ← KeyGen ;;
+        put pk_loc := pk ;;
+        put sk_loc := sk ;;
+        c ← Enc pk m ;;
+        ret c
+      }
+    ].
 
-       def #[challenge_id] ( mL_mR : chPlain × chPlain ) : chCipher
+  Definition L_pk_cpa_rand :
+    package L_locs
+      [interface]
+      [interface val #[challenge_id] : chPlain → chCipher ] :=
+    [package
+      def #[challenge_id] (m : chPlain) : chCipher
       {
         '(pk, sk) ← KeyGen ;;
          put pk_loc := pk ;;
          put sk_loc := sk ;;
-         c ← Enc pk (snd mL_mR) ;;
-         ret c
-      }
-
-    ].
-
-  Definition L_pk_cpa_R : package [interface ]
-                                  [interface val #[challenge_id] : chPlain × chPlain → chCipher].
-  Proof. exists L_locs. exact: L_pk_cpa_R_open. Defined.
-
-
-   Definition cpa_L_vs_R : GamePair [interface val #[challenge_id] : chPlain × chPlain → chCipher].
-   Proof.
-     move => b. destruct b.
-     - exact: L_pk_cpa_L.
-     - exact: L_pk_cpa_R.
-   Defined.
-
-
-   (* [The Joy of Cryptography] Definition 15.1
-
-     A public-key encryption scheme is secure against chosen-plaintext attacks iff the following is True.
-    *)
-
-   Definition CPA_security : Prop := forall A H1 H2, @Advantage _ cpa_L_vs_R A H1 H2 = 0.
-
-
-     (* Define what it means for an asymmetric encryption scheme to: *)
-     (**  *HAVE PSEUDORND CIPHERTEXT IN PRESENCE OF CHOSEN PLAINTEXT ATTACKS **)
-
-   #[program] Definition L_pk_cpa_real_open : opackage L_locs
-   [interface  ]
-   [interface val #[challenge_id] : chPlain → chCipher ] :=
-    [package
-
-       def #[challenge_id] ( m : chPlain ) : chCipher
-      {
-        '(pk, sk) ← KeyGen ;;
-         put pk_loc := pk ;;
-         put sk_loc := sk ;;
-         c ← Enc pk m ;;
-         ret c
-      }
-
-    ].
-
-
-   Definition L_pk_cpa_real : package [interface ]
-                                      [interface val #[challenge_id] : chPlain → chCipher].
-  Proof. exists L_locs. exact: L_pk_cpa_real_open. Defined.
-
-
-
-  #[program] Definition L_pk_cpa_rand_open : opackage L_locs
-    [interface ]
-    [interface val #[challenge_id] : chPlain → chCipher ]  :=
-    [package
-
-       def #[challenge_id] ( m : chPlain ) : chCipher
-      {
-        '(pk, sk) ← KeyGen ;;
-         put pk_loc := pk ;;
-         put sk_loc := sk ;;
-         c <$ (U i_cipher) ;;
+         c ← sample U i_cipher ;;
          ret (c2ch c)
       }
-
     ].
 
+  Definition cpa_real_vs_rand :
+    GamePair [interface val #[challenge_id] : chPlain → chCipher] :=
+    λ b, if b then {locpackage L_pk_cpa_real } else {locpackage L_pk_cpa_rand }.
 
-  Definition L_pk_cpa_rand : package [interface ]
-                                     [interface val #[challenge_id] : chPlain → chCipher].
-  Proof. exists L_locs. exact: L_pk_cpa_rand_open. Defined.
+  (** [The Joy of Cryptography] Definition 15.2
 
-  Definition cpa_real_vs_rand : GamePair [interface val #[challenge_id] : chPlain → chCipher].
-  Proof.
-    move => b. destruct b.
-    - exact: L_pk_cpa_real.
-    - exact: L_pk_cpa_rand.
-  Defined.
+    A public-key encryption scheme has pseudornd ciphertext against
+    chosen-plaintext attacks when the following holds.
+  *)
 
-   (* [The Joy of Cryptography] Definition 15.2
+  Definition CPA_rnd_cipher : Prop :=
+    ∀ A H1 H2, @Advantage _ cpa_real_vs_rand A H1 H2 = 0.
 
-     A public-key encryption scheme has pseudornd ciphertext against chosen-plaintext attacks iff the following is True.
-    *)
-
-  Definition CPA_rnd_cipher : Prop := forall A H1 H2, @Advantage _ cpa_real_vs_rand A H1 H2 = 0.
-
-   (* Define what it means for an asymmetric encryption scheme to have: *)
+  (* Define what it means for an asymmetric encryption scheme to have: *)
   (**   *ONE-TIME SECRECY **)
 
+  Definition L_locs_counter := fset [:: counter_loc ; pk_loc ; sk_loc].
 
-  Definition L_locs_counter := fset [:: counter_loc; pk_loc; sk_loc].
+  (** TODO OLD BELOW **)
 
   #[program] Definition L_pk_ots_L_open : opackage L_locs_counter
     [interface ]
