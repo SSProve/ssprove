@@ -251,15 +251,16 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
 
   Definition L_locs : { fset Location } := fset [:: pk_loc ; sk_loc ].
 
-  (** WARNING loop BELOW **)
-
-  Fail.
+  (* TODO INVESTIGATE:
+    If I put _ instead of L_locs, the following loops.
+    So probably some problem with how I try to infer \in?
+  *)
 
   Definition L_pk_cpa_L :
     package
-      _
+      L_locs
       [interface]
-      [interface val #[challenge_id] : chPlain × chPlain → chCipher] :=
+      [interface val #[challenge_id] : chPlain × chPlain → chCipher ] :=
     [package
       def #[challenge_id] ( mL_mR : chPlain × chPlain ) : chCipher
       {
