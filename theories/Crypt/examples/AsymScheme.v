@@ -70,12 +70,12 @@ Module Type AsymmetricSchemeParams.
   Parameter pub0 : PubKey.
   Parameter sec0 : SecKey.
 
-  (*Rem.: If I don't put these here I get some trubles later... *)
+  (*Rem.: If I don't put these here I get some troubles later... *)
 
-  Parameter probE : Type -> Type.
+  Parameter probE : Type → Type.
   Parameter rel_choiceTypes : Type.
-  Parameter chEmb : rel_choiceTypes -> choiceType.
-  Parameter prob_handler : forall T : choiceType, probE T -> SDistr T.
+  Parameter chEmb : rel_choiceTypes → choiceType.
+  Parameter prob_handler : forall T : choiceType, probE T → SDistr T.
   Parameter Hch : forall r : rel_choiceTypes, chEmb r.
 
 End AsymmetricSchemeParams.
@@ -95,37 +95,42 @@ Module ARules (Aparam : AsymmetricSchemeParams).
 
   Module UParam <: UniformParameters.
 
-  Definition Index : Type := Index.
-  Definition i0 : Index := i_plain.
-  Definition fin_family : Index -> finType := fun i => match i with
-                                                   | i_plain   => Plain
-                                                   | i_cipher  => Cipher
-                                                   | i_pk      => PubKey
-                                                   | i_sk      => SecKey
-                                                   | i_bool    => bool_finType
-                                                   end.
+    Definition Index : Type := Index.
 
-  Definition F_w0 : forall i : Index, (fin_family i).
-  Proof.
-    case; rewrite /fin_family;
-    [exact plain0| exact cipher0 | exact pub0 | exact sec0 | exact false].
-  Defined.
+    Definition i0 : Index := i_plain.
+
+    Definition fin_family : Index → finType :=
+      λ i,
+        match i with
+        | i_plain   => Plain
+        | i_cipher  => Cipher
+        | i_pk      => PubKey
+        | i_sk      => SecKey
+        | i_bool    => bool_finType
+        end.
+
+    Definition F_w0 : ∀ (i : Index), (fin_family i).
+    Proof.
+      case; rewrite /fin_family;
+      [exact plain0| exact cipher0 | exact pub0 | exact sec0 | exact false].
+    Defined.
 
   End UParam.
 
   Module genparam <: RulesParam.
 
-    Definition probE : Type -> Type := probE.
+    Definition probE : Type → Type := probE.
     Definition rel_choiceTypes : Type := rel_choiceTypes.
-    Definition chEmb : rel_choiceTypes -> choiceType := chEmb.
-    Definition prob_handler : forall T : choiceType, probE T -> SDistr T := prob_handler.
-    Definition Hch : forall r : rel_choiceTypes, chEmb r := Hch.
+    Definition chEmb : rel_choiceTypes → choiceType := chEmb.
+    Definition prob_handler : forall T : choiceType, probE T → SDistr T :=
+      prob_handler.
+    Definition Hch : ∀ (r : rel_choiceTypes), chEmb r := Hch.
 
   End genparam.
 
   Module MyARulesUniform := DerivedRulesUniform genparam UParam.
   Export MyARulesUniform.
- 
+
 End ARules.
 
 (** algorithms for Key Generation, Encryption and Decryption  **)
@@ -141,11 +146,11 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
   Import PackageNotation.
   Local Open Scope package_scope.
 
-  Definition counter_loc : Location := ('nat; 0%N).
-  Definition pk_loc : Location := ('nat; 1%N).
-  Definition sk_loc : Location := ('nat; 2%N).
-  Definition m_loc  : Location := ('nat; 3%N).
-  Definition c_loc  : Location := ('nat; 4%N).
+  Definition counter_loc : Location := ('nat ; 0%N).
+  Definition pk_loc : Location := ('nat ; 1%N).
+  Definition sk_loc : Location := ('nat ; 2%N).
+  Definition m_loc  : Location := ('nat ; 3%N).
+  Definition c_loc  : Location := ('nat ; 4%N).
 
   Definition kg_id : nat := 5.
   Definition enc_id : nat := 6.
@@ -157,17 +162,25 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
   (* Definition rel_loc : {fset Location} := [fset counter_loc]. *)
   (* Rem.: ; kg_loc ; enc_loc ; dec_loc ; challenge_loc ; pk_loc; sk_loc]. *)
 
-  Definition Plain_len_pos : positive.
-  Proof. exists #|Plain|.  apply /card_gt0P. by exists plain0. Defined.
+  Instance Plain_len_pos : Positive #|Plain|.
+  Proof.
+    apply /card_gt0P. by exists plain0.
+  Qed.
 
-  Definition Cipher_len_pos : positive.
-  Proof. exists #|Cipher|. apply /card_gt0P. by exists cipher0. Defined.
+  Instance Cipher_len_pos : Positive #|Cipher|.
+  Proof.
+    apply /card_gt0P. by exists cipher0.
+  Qed.
 
-  Definition PubKey_len_pos : positive.
-  Proof. exists #|PubKey|. apply /card_gt0P. by exists pub0. Defined.
+  Instance PubKey_len_pos : Positive #|PubKey|.
+  Proof.
+    apply /card_gt0P. by exists pub0.
+  Defined.
 
-  Definition SecKey_len_pos : positive.
-  Proof. exists #|SecKey|. apply /card_gt0P. by exists sec0. Defined.
+  Instance SecKey_len_pos : Positive #|SecKey|.
+  Proof.
+    apply /card_gt0P. by exists sec0.
+  Qed.
 
   Notation " 'chSecurityParameter' " :=
     (chNat) (in custom pack_type at level 2).
@@ -184,29 +197,33 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
     (chFin SecKey_len_pos)
     (in custom pack_type at level 2).
 
-  Parameter c2ch : Cipher -> (chFin Cipher_len_pos). 
-  Parameter ch2c : (chFin Cipher_len_pos) -> Cipher.
+  Parameter c2ch : Cipher → 'fin #|Cipher|.
+  Parameter ch2c : 'fin #|Cipher| → Cipher.
   (* *)
-  Parameter pk2ch : PubKey -> (chFin PubKey_len_pos). 
-  Parameter ch2pk : (chFin PubKey_len_pos) -> PubKey. 
+  Parameter pk2ch : PubKey → 'fin #|PubKey|.
+  Parameter ch2pk : 'fin #|PubKey| → PubKey.
   (* *)
-  Parameter sk2ch : SecKey -> (chFin SecKey_len_pos). 
-  Parameter ch2sk : (chFin SecKey_len_pos) -> SecKey. 
+  Parameter sk2ch : SecKey → 'fin #|SecKey|.
+  Parameter ch2sk : 'fin #|SecKey| → SecKey.
   (* *)
-  Parameter m2ch : Plain -> (chFin Plain_len_pos).
-  Parameter ch2m : (chFin Plain_len_pos) -> Plain. 
+  Parameter m2ch : Plain → 'fin #|Plain|.
+  Parameter ch2m : 'fin #|Plain| → Plain.
   (* *)
-  
 
+  (*** TODO ****)
+  (* UPDATE BELOW *)
+  (* Indeed, we can already see [program] here which feels wrong with the new
+    approach.
+  *)
 
   (* Key Generation *)
-  Parameter KeyGen : forall { L : {fset Location} }, program L fset0 ((chFin PubKey_len_pos) × (chFin SecKey_len_pos)).
-
+  Parameter KeyGen :
+    ∀ {L : {fset Location}}, program L fset0 ('fin #|PubKey| × 'fin #|SecKey|).
 
   (* Encryption algorithm *)
   Parameter Enc : forall { L : {fset Location} } (pk : chFin PubKey_len_pos) (m : chFin Plain_len_pos),
       program L fset0 (chFin Cipher_len_pos).
-  
+
   (* Decryption algorithm *)
   Parameter Dec_open : forall { L : {fset Location} } (sk : chFin SecKey_len_pos) (c : chFin Cipher_len_pos),
       program L fset0 (chFin Plain_len_pos).
@@ -218,14 +235,14 @@ End AsymmetricSchemeAlgorithms.
 Module AsymmetricScheme (π : AsymmetricSchemeParams)
                         (Alg : AsymmetricSchemeAlgorithms π).
 
-  
+
   Import Alg.
   Import PackageNotation.
 
   Definition U (i : Index) : {rchT : myparamU.rel_choiceTypes & myparamU.probE (myparamU.chEmb rchT)} :=
     (existT (λ rchT : myparamU.rel_choiceTypes, myparamU.probE (myparamU.chEmb rchT))
             (inl (inl i)) (inl (Uni_W i))).
-     
+
   Local Open Scope package_scope.
 
   Obligation Tactic := package_obtac.
@@ -282,8 +299,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
    Definition cpa_L_vs_R : GamePair [interface val #[challenge_id] : chPlain × chPlain → chCipher].
    Proof.
      move => b. destruct b.
-     - exact: L_pk_cpa_L. 
-     - exact: L_pk_cpa_R. 
+     - exact: L_pk_cpa_L.
+     - exact: L_pk_cpa_R.
    Defined.
 
 
@@ -319,13 +336,13 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
                                       [interface val #[challenge_id] : chPlain → chCipher].
   Proof. exists L_locs. exact: L_pk_cpa_real_open. Defined.
 
- 
+
 
   #[program] Definition L_pk_cpa_rand_open : opackage L_locs
     [interface ]
     [interface val #[challenge_id] : chPlain → chCipher ]  :=
     [package
-       
+
        def #[challenge_id] ( m : chPlain ) : chCipher
       {
         '(pk, sk) ← KeyGen ;;
@@ -345,7 +362,7 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
   Definition cpa_real_vs_rand : GamePair [interface val #[challenge_id] : chPlain → chCipher].
   Proof.
     move => b. destruct b.
-    - exact: L_pk_cpa_real. 
+    - exact: L_pk_cpa_real.
     - exact: L_pk_cpa_rand.
   Defined.
 
@@ -399,7 +416,7 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
        if ((count == 0)%N) then
         '(pk, sk) ← KeyGen ;;
          put pk_loc := pk ;;
-         put sk_loc := sk ;;                     
+         put sk_loc := sk ;;
          c ← Enc pk (snd mL_mR) ;;
          ret (some c)
        else ret None
@@ -489,5 +506,5 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
 
   Definition OT_rnd_cipher : Prop := forall A H1 H2, @Advantage _ ots_real_vs_rnd A H1 H2 = 0.
 
- 
+
 End AsymmetricScheme.
