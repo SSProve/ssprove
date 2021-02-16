@@ -404,24 +404,27 @@ Module PRF_example.
   Definition PRF_security :=
     ∀ A H1 H2, (@Advantage _ EVAL A H1 H2) = prf_epsilon A.
 
-  (** TODO OLD BELOW **)
-
   (* TW: Is it really good to have A implicit here? *)
-  Definition statistical_gap {A} : R :=
-    `|Pr ((A ∘ MOD_CPA_tt_pkg) ∘ EVAL false) true - Pr ((A ∘ MOD_CPA_ff_pkg) ∘ EVAL false) true|.
+  Definition statistical_gap {A : Adversary4Game _} : R :=
+    `|Pr {locpackage (A ∘ MOD_CPA_tt_pkg) ∘ EVAL false } true -
+      Pr {locpackage (A ∘ MOD_CPA_ff_pkg) ∘ EVAL false } true|.
 
   Ltac fold_repr :=
-    change (repr' ?p ?h) with (repr (exist _ p h)).
+    change (repr' ?p ?h) with (repr (mkprog p h)).
 
   Lemma key_location_in_rel_loc : key_location \in rel_loc.
   Proof.
-    package_obtac.
+    auto_in_fset.
   Qed.
 
   Lemma key_location_in_INDCPA_location : key_location \in IND_CPA_location.
   Proof.
-    package_obtac.
+    auto_in_fset.
   Qed.
+
+  (** TODO OLD BELOW **)
+
+  (* Hopefully, we don't have to unfold these guys? *)
 
  (* INDCPA0 unfolded *)
   Definition LHS0 (m : ('fin (2^n)%N)) :
