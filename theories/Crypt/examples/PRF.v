@@ -402,7 +402,9 @@ Module PRF_example.
     Adversary4Game [interface val #[i0] : chWords → chKey ] → R.
 
   Definition PRF_security :=
-    ∀ A H1 H2, (@Advantage _ EVAL A H1 H2) = prf_epsilon A.
+    ∀ A,
+      adv_forp A EVAL →
+      Advantage EVAL A = prf_epsilon A.
 
   (* TW: Is it really good to have A implicit here? *)
   Definition statistical_gap {A : Adversary4Game _} : R :=
@@ -806,7 +808,7 @@ Qed.
 
 
   Lemma same_locations :
-    IND_CPA_location  = MOD_CPA_location :|: EVAL_location_tt.
+    IND_CPA_location = MOD_CPA_location :|: EVAL_location_tt.
   Proof.
     rewrite /IND_CPA_location /MOD_CPA_location /EVAL_location_tt.
     rewrite fset0U. reflexivity.

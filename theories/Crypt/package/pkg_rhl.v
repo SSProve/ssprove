@@ -700,27 +700,27 @@ Module PackageRHL (π : RulesParam).
     Definition GamePair (Game_export : Interface) :=
       bool → Game_Type Game_export.
 
-    Definition Advantage { Game_export : Interface }
+    (* TW: Note the definition of advantage should not be the one
+      requiring disjointness of state. Only the theorems that need the
+      hypothesis should require it.
+      This should make reasoning about advantage easier.
+    *)
+    Definition Advantage {Game_export : Interface}
       (G : GamePair Game_export)
-      (A : Adversary4Game Game_export)
-      {H1 : fdisjoint A.(locs) (G false).(locs)}
-      {H2 : fdisjoint A.(locs) (G true).(locs)} : R :=
+      (A : Adversary4Game Game_export) : R :=
       `| (Pr {locpackage link A (G false) } true) -
          (Pr {locpackage link A (G true) } true) |.
 
-    Definition AdvantageE { Game_export : Interface }
-               (G0 : Game_Type Game_export) (G1 : Game_Type Game_export)
-               (A : Adversary4Game Game_export)
-               {H1 : fdisjoint A.(locs) G0.(locs)}
-               {H2 : fdisjoint A.(locs) G1.(locs)} : R
-      := `| (Pr {locpackage link A G0 } true) -
-            (Pr {locpackage link A G1 } true)|.
+    Definition AdvantageE {Game_export : Interface}
+      (G0 : Game_Type Game_export) (G1 : Game_Type Game_export)
+      (A : Adversary4Game Game_export) : R :=
+      `| (Pr {locpackage link A G0 } true) - (Pr {locpackage link A G1 } true)|.
 
-    Definition AdvantageE_weak { Game_export : Interface }
-               (G0 : Game_Type Game_export) (G1 : Game_Type Game_export)
-               (A : Adversary4Game_weak Game_export) : R
-      := `| (Pr {locpackage link A G0 } true) -
-            (Pr {locpackage link A G1 } true)|.
+    (* TODO: Is this useful? *)
+    Definition AdvantageE_weak {Game_export : Interface}
+      (G0 : Game_Type Game_export) (G1 : Game_Type Game_export)
+      (A : Adversary4Game_weak Game_export) : R :=
+      `| (Pr {locpackage link A G0 } true) - (Pr {locpackage link A G1 } true)|.
 
     Definition state_pass_ {A} (p : raw_program A) :
       heap_choiceType → raw_program (prod_choiceType A heap_choiceType).
@@ -799,11 +799,14 @@ Module PackageRHL (π : RulesParam).
 
     Definition perf_ind {Game_export : Interface}
       (G0 : Game_Type Game_export) (G1 : Game_Type Game_export) :=
-      ∀ A H1 H2, @AdvantageE _ G0 G1 A H1 H2 = 0.
+      ∀ A,
+        fdisjoint A.(locs) G0.(locs) →
+        fdisjoint A.(locs) G1.(locs) →
+        AdvantageE G0 G1 A = 0.
 
     Definition perf_ind_weak {Game_export : Interface}
       (G0 : Game_Type Game_export) (G1 : Game_Type Game_export) :=
-      ∀ A, @AdvantageE_weak _ G0 G1 A = 0.
+      ∀ A, AdvantageE_weak G0 G1 A = 0.
 
     Definition perf_ind_weak_implies_perf_ind {Game_export : Interface}
       (G0 : Game_Type Game_export) (G1 : Game_Type Game_export)
@@ -819,29 +822,46 @@ Module PackageRHL (π : RulesParam).
     Notation "ϵ( GP )" :=
       (λ A, AdvantageE (GP false) (GP true) A) (at level 90).
 
-    Notation " G0 ≈[ R ] G1 " :=
-      (AdvantageE G0 G1 = R) (at level 50).
+    (* Adversary for condition *)
+    Definition adv_for {I} (A : Adversary4Game I) (G₀ G₁ : Game_Type I) :=
+      fdisjoint A.(locs) G₀.(locs) && fdisjoint A.(locs) G₁.(locs).
 
-    Lemma TriangleInequality {Game_export : Interface}
-      {F G H : Game_Type Game_export}
-      {ϵ1 ϵ2 ϵ3}
-      (ineq1 : F ≈[ ϵ1 ] G)
-      (ineq2 : G ≈[ ϵ2 ] H)
-      (ineq3 : F ≈[ ϵ3 ] H)
-      : ∀ A H1 H2 H3 H4 H5 H6, ϵ3 A H1 H2 <= ϵ1 A H3 H4 + ϵ2 A H5 H6.
+    Definition adv_forp {I} (A : Adversary4Game I) (G : GamePair I) :=
+      fdisjoint A.(locs) (G true).(locs) &&
+      fdisjoint A.(locs) (G false).(locs).
+
+    Definition adv_equiv {I} (G₀ G₁ : Game_Type I) ε :=
+      ∀ A, adv_for A G₀ G₁ → AdvantageE G₀ G₁ A = ε A.
+
+    (** The quantification over a disjoint adversary is now here.
+      Also, the function equality is now pointwise.
+    *)
+    Notation " G0 ≈[ R ] G1 " :=
+      (adv_equiv G0 G1 R)
+      (at level 50, format " G0  ≈[  R  ]  G1").
+
+    Lemma TriangleInequality :
+      ∀ {Game_export : Interface}
+        {F G H : Game_Type Game_export}
+        {ϵ1 ϵ2 ϵ3},
+        F ≈[ ϵ1 ] G →
+        G ≈[ ϵ2 ] H →
+        F ≈[ ϵ3 ] H →
+        ∀ A,
+          adv_for A F G →
+          adv_for A G H →
+          adv_for A F H →
+          ϵ3 A <= ϵ1 A + ϵ2 A.
     Proof.
-      move => A H1 H2 H3 H4 H5 H6.
-      assert (@AdvantageE _ F G A H3 H4 = ϵ1 A H3 H4) as Ineq1.
-      { rewrite ineq1. reflexivity. }
-      assert (@AdvantageE _ G H A H5 H6 = ϵ2 A H5 H6) as Ineq2.
-      { rewrite ineq2. reflexivity. }
-      assert (@AdvantageE _ F H A H1 H2 = ϵ3 A H1 H2) as Ineq3.
-      { rewrite ineq3. reflexivity. }
-      unfold AdvantageE in Ineq1, Ineq2, Ineq3.
-      rewrite -Ineq1 -Ineq2 -Ineq3.
+      intros Game_export F G H ε₁ ε₂ ε₃ h1 h2 h3 A hA1 hA2 hA3.
+      rewrite <- h1, <- h2, <- h3 by assumption.
       apply ler_dist_add.
     Qed.
 
+    (* TODO FIX *)
+    (* It's not usable in practice because it requires loc_packages and
+      stuff and not raw stuff.
+    *)
     Lemma Reduction {Game_export M_export : Interface}
       {M : loc_package Game_export M_export}
       (G : GamePair Game_export) (A : Adversary4Game M_export) (b : bool) :
@@ -890,16 +910,13 @@ Module PackageRHL (π : RulesParam).
     Lemma ReductionLem :
       ∀ {Game_export M_export : Interface}
         {M : loc_package Game_export M_export}
-        (G : GamePair Game_export)
-        (Hdisjoint0 : fdisjoint M.(locs) (G false).(locs))
-        (Hdisjoint1 : fdisjoint M.(locs) (G true).(locs)),
+        (G : GamePair Game_export),
         {locpackage link M (G false)}
-        ≈[ λ A H1 H2, @AdvantageE Game_export (G false) (G true) {locpackage link A M} (auxReduction Hdisjoint0 H1) (auxReduction Hdisjoint1 H2) ]
+        ≈[ λ A, AdvantageE (G false) (G true) {locpackage link A M} ]
         {locpackage link M (G true)}.
     Proof.
-      intros Game_export M_export M G Hdisjoint0 Hdisjoint1.
-      unfold AdvantageE. extensionality A.
-      extensionality H1. extensionality H2.
+      intros Game_export M_export M G.
+      intros A h. unfold AdvantageE.
       simpl.
       (* TODO Used to be the following *)
       (* rewrite Reduction. rewrite Reduction.
@@ -1608,21 +1625,18 @@ Module PackageRHL (π : RulesParam).
           1: reflexivity. 1: reflexivity. exact H0.
     Qed.
 
-    (* Rem.: How do we connect the package theory with the RHL?
-           Something along the following lines should hold? *)
     Lemma prove_relational {L1 L2} {export}
       (P1 : package L1 Game_import export)
       (P2 : package L2 Game_import export)
       (I : heap_choiceType * heap_choiceType -> Prop)
       (HINV' : INV' L1 L2 I)
       (Hempty : I (empty_heap, empty_heap))
-      (H : eq_up_to_inv I P1 P2)
-      : (mkloc_package L1 P1) ≈[ λ A H1 H2, 0 ] (mkloc_package L2 P2).
+      (H : eq_up_to_inv I P1 P2) :
+      (mkloc_package L1 P1) ≈[ λ A, 0 ] (mkloc_package L2 P2).
     Proof.
-      extensionality A.
+      intros A h. unfold adv_for in h. simpl in h. move: h => /andP [hd1 hd2].
       unfold Adversary4Game in A.
       unfold AdvantageE, Pr.
-      extensionality Hdisjoint1. extensionality Hdisjoint2.
       pose r' := get_package_op A RUN RUN_in_A_export.
       pose r := r' tt.
       (* Rem.: from linking we should get the fact that A.π1 is disjoint from L1 and L2,
@@ -1632,29 +1646,30 @@ Module PackageRHL (π : RulesParam).
       (* unshelve epose (fdisjoint_from_link A.π2 P2 _) as Hdisjoint2. *)
       (* { eexists. reflexivity. } *)
       assert (INV A.(locs) I) as HINV.
-      { destruct A. simpl in Hdisjoint1, Hdisjoint2.
+      { destruct A. simpl in hd1, hd2.
         cbn.  unfold INV.
         intros s1 s2. split.
         - intros hi l hin.
           apply HINV'.
           + assumption.
-          + move: Hdisjoint1. move /fdisjointP => Hdisjoint1.
-            apply Hdisjoint1. assumption.
-          + move: Hdisjoint2. move /fdisjointP => Hdisjoint2.
-            apply Hdisjoint2. assumption.
+          + move: hd1. move /fdisjointP => hd1.
+            apply hd1. assumption.
+          + move: hd2. move /fdisjointP => hd2.
+            apply hd2. assumption.
         - intros hi l v hin.
           apply HINV'.
           + assumption.
-          + move: Hdisjoint1. move /fdisjointP => Hdisjoint1.
-            apply Hdisjoint1. assumption.
-          + move: Hdisjoint2. move /fdisjointP => Hdisjoint2.
-            apply Hdisjoint2. assumption.
+          + move: hd1. move /fdisjointP => hd1.
+            apply hd1. assumption.
+          + move: hd2. move /fdisjointP => hd2.
+            apply hd2. assumption.
       }
       pose Hlemma := (some_lemma_for_prove_relational _ _ _ HINV Hempty H r empty_heap empty_heap Hempty).
       assert (∀ x y : tgt RUN * heap_choiceType,
                  (let '(b1, s1) := x in λ '(b2, s2), b1 = b2 s/\ I (s1, s2)) y → (fst x == true) ↔ (fst y == true)) as Ha.
       { intros [b1 s1] [b2 s2]. simpl.
-        intros [H1 H2]. rewrite H1. intuition. }
+        intros [H1 H2]. rewrite H1. intuition.
+      }
       pose Heq := (Pr_eq_empty _ _ _ _ Hlemma Hempty Ha).
       simpl in Heq.
       simpl in Hlemma.
@@ -1785,7 +1800,7 @@ Module PackageRHL (π : RulesParam).
         (HINV' : INV' P1.(locs) P2.(locs) I)
         (Hempty : I (empty_heap, empty_heap))
         (H : eq_up_to_inv I P1 P2),
-        P1 ≈[ λ A H1 H2, 0 ] P2.
+        P1 ≈[ λ A, 0 ] P2.
     Proof.
       intros E [L₁ p₁] [L₂ p₂] I hI he h.
       eapply prove_relational. all: eauto.

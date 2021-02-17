@@ -301,7 +301,9 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
   *)
 
   Definition CPA_security : Prop :=
-    ∀ A H1 H2, @Advantage _ cpa_L_vs_R A H1 H2 = 0.
+    ∀ A,
+      adv_forp A cpa_L_vs_R →
+      Advantage cpa_L_vs_R A = 0.
 
   (* Define what it means for an asymmetric encryption scheme to: *)
   (**  *HAVE PSEUDORND CIPHERTEXT IN PRESENCE OF CHOSEN PLAINTEXT ATTACKS **)
@@ -347,7 +349,9 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
   *)
 
   Definition CPA_rnd_cipher : Prop :=
-    ∀ A H1 H2, @Advantage _ cpa_real_vs_rand A H1 H2 = 0.
+    ∀ A,
+      adv_forp A cpa_real_vs_rand →
+      Advantage cpa_real_vs_rand A = 0.
 
   (* Define what it means for an asymmetric encryption scheme to have: *)
   (**   *ONE-TIME SECRECY **)
@@ -405,7 +409,9 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
   *)
 
   Definition OT_secrecy : Prop :=
-    ∀ A H1 H2, @Advantage _ ots_L_vs_R A H1 H2 = 0.
+    ∀ A,
+      adv_forp A ots_L_vs_R →
+      Advantage ots_L_vs_R A = 0.
 
   (*  *)
 
@@ -452,6 +458,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
     λ b, if b then {locpackage L_pk_ots_real } else {locpackage L_pk_ots_rnd }.
 
   Definition OT_rnd_cipher : Prop :=
-    ∀ A H1 H2, @Advantage _ ots_real_vs_rnd A H1 H2 = 0.
+    ∀ A,
+      adv_forp A ots_real_vs_rnd →
+      Advantage ots_real_vs_rnd A = 0.
 
 End AsymmetricScheme.
