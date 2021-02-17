@@ -406,8 +406,7 @@ Module PRF_example.
       adv_forp A EVAL →
       Advantage EVAL A = prf_epsilon A.
 
-  (* TW: Is it really good to have A implicit here? *)
-  Definition statistical_gap {A : Adversary4Game _} : R :=
+  Definition statistical_gap (A : Adversary4Game _) : R :=
     `|Pr {locpackage (A ∘ MOD_CPA_tt_pkg) ∘ EVAL false } true -
       Pr {locpackage (A ∘ MOD_CPA_ff_pkg) ∘ EVAL false } true|.
 
@@ -423,6 +422,22 @@ Module PRF_example.
   Proof.
     auto_in_fset.
   Qed.
+
+  (* Stating the theorem as the end goal *)
+  (* To prove it we have to show two perfect equivalences
+    and then conclude using triangle inequality.
+    It seems that even that last bit is long, so it can be polished.
+  *)
+  Theorem security_based_on_prf (Hprf : PRF_security) :
+    ∀ A : Adversary4Game [interface val #[i1] : chWords → chWords × chWords ],
+      adv_forp A IND_CPA →
+      Advantage IND_CPA A <=
+      prf_epsilon {locpackage A ∘ MOD_CPA_ff_pkg } +
+      statistical_gap A +
+      prf_epsilon {locpackage A ∘ MOD_CPA_tt_pkg }.
+  Proof.
+    intros A hA.
+  Abort.
 
   (** TODO OLD BELOW **)
 
