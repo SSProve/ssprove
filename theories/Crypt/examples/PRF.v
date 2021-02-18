@@ -493,6 +493,12 @@ Module PRF_example.
     What is the type of dom f in there? Just raw_package? In that case we
     probably have to change ≈[ f ] as well.
 
+    It seems I want to define advantage for raw packages, and for this I would
+    need to define Pr on raw programs. I guess it all comes down to defining
+    repr on raw programs, and this might be doable using the same trick as for
+    linking: just using chCanonical to get inhabitants for free instead of
+    failing.
+
   *)
   Theorem security_based_on_prf :
     ∀ A : Adversary4Game [interface val #[i1] : chWords → chWords × chWords ],
