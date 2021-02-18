@@ -400,9 +400,10 @@ Module PRF_example.
 
   Definition prf_epsilon A := Advantage EVAL A.
 
-  Definition statistical_gap (A : Adversary4Game _) : R :=
-    `|Pr {locpackage (A ∘ MOD_CPA_tt_pkg) ∘ EVAL false } true -
-      Pr {locpackage (A ∘ MOD_CPA_ff_pkg) ∘ EVAL false } true|.
+  Definition statistical_gap :=
+    AdvantageE
+      {locpackage MOD_CPA_tt_pkg ∘ EVAL false }
+      {locpackage MOD_CPA_ff_pkg ∘ EVAL false }.
 
   Ltac fold_repr :=
     change (repr' ?p ?h) with (repr (mkprog p h)).
@@ -431,10 +432,18 @@ Module PRF_example.
   Proof.
   Admitted.
 
-  (* Stating the theorem as the end goal *)
-  (* To prove it we have to show two perfect equivalences
-    and then conclude using triangle inequality.
-    It seems that even that last bit is long, so it can be polished.
+  (** Security of PRF
+
+    The bound is given by using the triangle inequality several times,
+    using the following chain:
+    IND_CPA false ≈ MOD_CPA_ff_pkg ∘ EVAL true
+                  ≈ MOD_CPA_ff_pkg ∘ EVAL false
+                  ≈ MOD_CPA_tt_pkg ∘ EVAL false
+                  ≈ MOD_CPA_tt_pkg ∘ EVAL true
+                  ≈ IND_CPA true
+
+    (* TODO It would be nice to have the same names as the paper *)
+
   *)
   Theorem security_based_on_prf :
     ∀ A : Adversary4Game [interface val #[i1] : chWords → chWords × chWords ],
@@ -444,8 +453,37 @@ Module PRF_example.
       statistical_gap A +
       prf_epsilon {locpackage A ∘ MOD_CPA_tt_pkg }.
   Proof.
-    intros A hA.
-    (* rewrite TriangleInequality. *)
+    intros A hA. unfold prf_epsilon, statistical_gap.
+    pose proof (Advantage_equiv _ IND_CPA) as h1.
+    (* TODO adv_forp hyps are probably redundant of G in F,G,H *)
+    (* First application of triangle inequality *)
+    (* HOP IND_CPA false ≈ MOD_CPA_ff_pkg ∘ EVAL true *)
+    pose proof @TriangleInequality as h.
+    specialize h with (3 := h1).
+    specialize h with (1 := IND_CPA_equiv_false).
+    specialize h with (1 := AdvantageE_equiv _ _ _).
+    specialize (h A).
+    unfold adv_forp in hA. simpl in hA. move: hA => /andP [hd _].
+    forward h.
+    { unfold adv_for. simpl. rewrite hd. simpl.
+      admit.
+    }
+    forward h.
+    { unfold adv_for. simpl. rewrite hd.
+      admit.
+    }
+    forward h.
+    { unfold adv_for. simpl. rewrite hd. simpl. reflexivity. }
+    cbn beta in h.
+    (* Second application of triangle inequality *)
+    (* HOP MOD_CPA_ff_pkg ∘ EVAL true ≈ MOD_CPA_ff_pkg ∘ EVAL false *)
+    pose proof @TriangleInequality as h'.
+    lazymatch type of h with
+    | context [ _ + AdvantageE ?p ?q _ ] =>
+      specialize h' with (3 := AdvantageE_equiv _ p q)
+    end.
+    (* Why doesn't it find a proof here? *)
+    Fail specialize h' with (1 := AdvantageE_equiv _ _ {locpackage MOD_CPA_ff_pkg ∘ EVAL false }).
   Abort.
 
   (** TODO OLD BELOW **)

@@ -849,6 +849,13 @@ Module PackageRHL (π : RulesParam).
     intros I G. intros A h. reflexivity.
   Qed.
 
+  Lemma AdvantageE_equiv :
+    ∀ I (G₀ G₁ : Game_Type I),
+      G₀ ≈[ AdvantageE G₀ G₁ ] G₁.
+  Proof.
+    intros I G₀ G₁. intros A h. reflexivity.
+  Qed.
+
   Lemma TriangleInequality :
     ∀ {Game_export : Interface}
       {F G H : Game_Type Game_export}
