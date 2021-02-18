@@ -428,7 +428,7 @@ Module PRF_example.
   Admitted.
 
   Lemma IND_CPA_equiv_true :
-    (IND_CPA true) ≈[ λ A, 0 ] {locpackage MOD_CPA_tt_pkg ∘ (EVAL true) }.
+  {locpackage MOD_CPA_tt_pkg ∘ (EVAL true) } ≈[ λ A, 0 ] (IND_CPA true).
   Proof.
   Admitted.
 
@@ -442,7 +442,8 @@ Module PRF_example.
                   ≈ MOD_CPA_tt_pkg ∘ EVAL true
                   ≈ IND_CPA true
 
-    (* TODO It would be nice to have the same names as the paper *)
+    TODO: It would be nice to have the same names as the paper
+    TODO: Can we devise a tactic to do the hops automatically?
 
   *)
   Theorem security_based_on_prf :
@@ -454,37 +455,82 @@ Module PRF_example.
       prf_epsilon {locpackage A ∘ MOD_CPA_tt_pkg }.
   Proof.
     intros A hA. unfold prf_epsilon, statistical_gap.
-    pose proof (Advantage_equiv _ IND_CPA) as h1.
     (* TODO adv_forp hyps are probably redundant of G in F,G,H *)
     (* First application of triangle inequality *)
     (* HOP IND_CPA false ≈ MOD_CPA_ff_pkg ∘ EVAL true *)
-    pose proof @TriangleInequality as h.
-    specialize h with (3 := h1).
-    specialize h with (1 := IND_CPA_equiv_false).
-    specialize h with (1 := AdvantageE_equiv _ _ _).
-    specialize (h A).
+    pose proof @TriangleInequality as h1.
+    specialize h1 with (3 := Advantage_equiv _ IND_CPA).
+    specialize h1 with (1 := IND_CPA_equiv_false).
+    specialize h1 with (1 := AdvantageE_equiv _ _ _).
+    specialize (h1 A).
     unfold adv_forp in hA. simpl in hA. move: hA => /andP [hd _].
-    forward h.
+    forward h1.
     { unfold adv_for. simpl. rewrite hd. simpl.
       admit.
     }
-    forward h.
+    forward h1.
     { unfold adv_for. simpl. rewrite hd.
       admit.
     }
-    forward h.
+    forward h1.
     { unfold adv_for. simpl. rewrite hd. simpl. reflexivity. }
-    cbn beta in h.
+    cbn beta in h1.
     (* Second application of triangle inequality *)
     (* HOP MOD_CPA_ff_pkg ∘ EVAL true ≈ MOD_CPA_ff_pkg ∘ EVAL false *)
-    pose proof @TriangleInequality as h'.
-    lazymatch type of h with
+    pose proof @TriangleInequality as h2.
+    lazymatch type of h1 with
     | context [ _ + AdvantageE ?p ?q _ ] =>
-      specialize h' with (3 := AdvantageE_equiv _ p q)
+      specialize h2 with (3 := AdvantageE_equiv _ p q)
     end.
-    (* Why doesn't it find a proof here? *)
-    Fail specialize h' with (1 := AdvantageE_equiv _ _ {locpackage MOD_CPA_ff_pkg ∘ EVAL false }).
-  Abort.
+    (* Somehow, it doesn't work directly *)
+    unshelve pose (foo := {locpackage MOD_CPA_ff_pkg ∘ EVAL false }).
+    specialize h2 with (1 := AdvantageE_equiv _ _ foo).
+    subst foo.
+    specialize h2 with (1 := AdvantageE_equiv _ _ _).
+    specialize (h2 A).
+    forward h2.
+    { unfold adv_for. simpl. admit. }
+    forward h2.
+    { unfold adv_for. simpl. rewrite hd. admit. }
+    forward h2.
+    { unfold adv_for. simpl. rewrite hd. admit. }
+    (* HOP MOD_CPA_ff_pkg ∘ EVAL false ≈ MOD_CPA_tt_pkg ∘ EVAL false *)
+    pose proof @TriangleInequality as h3.
+    lazymatch type of h2 with
+    | context [ _ + AdvantageE ?p ?q _ ] =>
+      specialize h3 with (3 := AdvantageE_equiv _ p q)
+    end.
+    unshelve pose (foo := {locpackage MOD_CPA_tt_pkg ∘ EVAL false }).
+    specialize h3 with (1 := AdvantageE_equiv _ _ foo).
+    subst foo.
+    specialize h3 with (1 := AdvantageE_equiv _ _ _).
+    specialize (h3 A).
+    forward h3.
+    { unfold adv_for. simpl. admit. }
+    forward h3.
+    { unfold adv_for. simpl. rewrite hd. admit. }
+    forward h3.
+    { unfold adv_for. simpl. rewrite hd. admit. }
+    (* HOP MOD_CPA_tt_pkg ∘ EVAL false ≈ MOD_CPA_tt_pkg ∘ EVAL true *)
+    pose proof @TriangleInequality as h4.
+    lazymatch type of h3 with
+    | context [ _ + AdvantageE ?p ?q _ ] =>
+      specialize h4 with (3 := AdvantageE_equiv _ p q)
+    end.
+    unshelve pose (foo := {locpackage MOD_CPA_tt_pkg ∘ EVAL true }).
+    specialize h4 with (1 := AdvantageE_equiv _ _ foo).
+    subst foo.
+    specialize h4 with (1 := IND_CPA_equiv_true).
+    specialize (h4 A).
+    forward h4.
+    { unfold adv_for. simpl. admit. }
+    forward h4.
+    { unfold adv_for. simpl. rewrite hd. admit. }
+    forward h4.
+    { unfold adv_for. simpl. rewrite hd. admit. }
+    cbn beta in h4.
+    unfold Order.le.
+  Admitted.
 
   (** TODO OLD BELOW **)
 
