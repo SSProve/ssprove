@@ -192,9 +192,33 @@ Module PackageRHL (π : RulesParam).
     end.
 
   Arguments retrFree {_ _ _} _.
+  Arguments bindrFree {_ _ _ _} _ _.
   Arguments ropr {_ _ _} _ _.
 
   Set Equations Transparent.
+
+  Fail Fail Fixpoint repr {A : choiceType} (p : raw_program A) :
+    rFreeF (ops_StP heap_choiceType) (ar_StP heap_choiceType) A :=
+    match p with
+    | ret x => retrFree x
+    | opr o x k =>
+        repr (k (chCanonical (chtgt o)))
+    | getr l k =>
+        bindrFree
+          (ropr (inl (inl (gett _))) (λ s, retrFree (get_heap s l)))
+          (λ v, repr (k v))
+    | putr l v k =>
+        bindrFree
+          (ropr
+            (inl (inl (gett heap_choiceType)))
+            (λ s, ropr (inl (inr (putt heap_choiceType (set_heap s l v))))
+            (λ s, retrFree tt)))
+          (λ s', repr k)
+    | sampler op k =>
+        bindrFree
+          (ropr (inr op) (λ v, retrFree v))
+          (λ s, repr (k s))
+    end.
 
   Equations? repr' {B : choiceType} {L : {fset Location}}
     (p : raw_program B) (h : valid_program L Game_import p)
@@ -206,12 +230,12 @@ Module PackageRHL (π : RulesParam).
     | opr o x k := False_rect _ _ ;
 
     | getr l k :=
-      bindrFree _ _
+      bindrFree
         (ropr (inl (inl (gett _))) (λ s, retrFree (get_heap s l)))
         (λ v, repr' (k v) _) ;
 
     | putr l v k :=
-      bindrFree _ _
+      bindrFree
         (ropr
           (inl (inl (gett heap_choiceType)))
           (λ s, ropr (inl (inr (putt heap_choiceType (set_heap s l v))))
@@ -219,7 +243,7 @@ Module PackageRHL (π : RulesParam).
         (λ s', repr' k _) ;
 
     | sampler op k :=
-      bindrFree _ _
+      bindrFree
         (ropr (inr op) (λ v, retrFree v))
         (λ s, repr' (k s) _)
     }.
@@ -281,7 +305,7 @@ Module PackageRHL (π : RulesParam).
       {hf : ∀ b, @ValidProgram L Game_import C (f b)}
       {h : ValidProgram L Game_import _},
       repr {program bind p f #with h } =
-      bindrFree _ _ (repr {program p}) (λ b, repr {program f b}).
+      bindrFree (repr {program p}) (λ b, repr {program f b}).
   Proof.
     intros B C L p f hp hf h.
     induction p in hp, h, f, hf |- *.
@@ -309,7 +333,7 @@ Module PackageRHL (π : RulesParam).
       {hf : ∀ b, @ValidProgram L2 Game_import C (f b)}
       {h : ValidProgram L3 Game_import _},
       repr {program bind p f #with h } =
-      bindrFree _ _ (repr {program p}) (λ b, repr {program f b}).
+      bindrFree (repr {program p}) (λ b, repr {program f b}).
   Proof.
     intros B C L1 L2 L3 p f hp hf h.
     induction p in hp, h, f, hf |- *.
@@ -330,6 +354,7 @@ Module PackageRHL (π : RulesParam).
       fold_repr. apply H.
   Qed.
 
+  (* TODO Will also change to let go of the validity condition *)
   Equations? repr_cmd {L} {A} (c : command A)
     (hc : valid_command L Game_import c) :
     rFreeF (ops_StP heap_choiceType) (ar_StP heap_choiceType) A :=
@@ -337,12 +362,12 @@ Module PackageRHL (π : RulesParam).
     repr_cmd (cmd_op o x) hc := False_rect _ _ ;
 
     repr_cmd (cmd_get ℓ) hc :=
-      bindrFree _ _
+      bindrFree
         (ropr (inl (inl (gett _))) (λ s, retrFree (get_heap s ℓ)))
         (λ v, retrFree v) ;
 
     repr_cmd (cmd_put ℓ v) hc :=
-      bindrFree _ _
+      bindrFree
         (ropr
           (inl (inl (gett heap_choiceType)))
           (λ s, ropr (inl (inr (putt heap_choiceType (set_heap s ℓ v))))
@@ -350,7 +375,7 @@ Module PackageRHL (π : RulesParam).
         (λ s', retrFree s') ;
 
     repr_cmd (cmd_sample op) hc :=
-      bindrFree _ _
+      bindrFree
         (ropr (inr op) (λ v, retrFree v))
         (λ s, retrFree s).
   Proof.
@@ -363,7 +388,7 @@ Module PackageRHL (π : RulesParam).
       {hf : ∀ b, @ValidProgram L2 Game_import C (f b)}
       {h : ValidProgram L3 Game_import _},
       repr {program cmd_bind p f #with h } =
-      bindrFree _ _ (repr_cmd p hp) (λ b, repr {program f b}).
+      bindrFree (repr_cmd p hp) (λ b, repr {program f b}).
   Proof.
     intros B C L1 L2 L3 p f hp hf h.
     destruct p.
@@ -1564,7 +1589,7 @@ Module PackageRHL (π : RulesParam).
       unfold repr'_obligation_4.
       cbn - [semantic_judgement bindrFree].
       match goal with
-      | |- ⊨ ⦃ ?pre_ ⦄ bindrFree _ _ ?m_ ?f1_ ≈ bindrFree _ _ _ ?f2_ ⦃ ?post_ ⦄ =>
+      | |- ⊨ ⦃ ?pre_ ⦄ bindrFree ?m_ ?f1_ ≈ bindrFree _ ?f2_ ⦃ ?post_ ⦄ =>
         pose (m := m_); pose (f1 := f1_); pose (f2 := f2_); pose (pre := pre_); pose (post := post_)
       end.
       eapply (bind_rule_pp (f1 := f1) (f2 := f2) m m pre _ post).
@@ -1591,7 +1616,7 @@ Module PackageRHL (π : RulesParam).
       apply inversion_valid_putr in hA as h'.
       destruct h' as [hA1 hA2].
       match goal with
-      | |- ⊨ ⦃ ?pre_ ⦄ bindrFree _ _ ?m_ ?f1_ ≈ bindrFree _ _ _ ?f2_ ⦃ ?post_ ⦄ =>
+      | |- ⊨ ⦃ ?pre_ ⦄ bindrFree ?m_ ?f1_ ≈ bindrFree _ ?f2_ ⦃ ?post_ ⦄ =>
         pose (m := m_); pose (f1 := f1_); pose (f2 := f2_); pose (pre := pre_); pose (post := post_)
       end.
       eapply (bind_rule_pp (f1 := f1) (f2 := f2) m m pre _ post).
