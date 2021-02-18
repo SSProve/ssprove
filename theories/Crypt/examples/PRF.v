@@ -485,6 +485,14 @@ Module PRF_example.
     TODO: It would be nice to have the same names as the paper
     TODO: Can we devise a tactic to do the hops automatically?
 
+    TODO: Unsurprisingly it seems we need to also have things like ≈[]
+    and advantage talk about raw packages rather than packages.
+    They could be treated the same way as the adv_for criterion at the moment.
+    We probably can prove some Pr_ext anyway.
+    Or should it just be some P ~[ f ] Q → ValidPackages P Q → P ≈[ f ] Q?
+    What is the type of dom f in there? Just raw_package? In that case we
+    probably have to change ≈[ f ] as well.
+
   *)
   Theorem security_based_on_prf :
     ∀ A : Adversary4Game [interface val #[i1] : chWords → chWords × chWords ],
