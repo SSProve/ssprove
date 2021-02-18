@@ -423,6 +423,28 @@ Module PRF_example.
     auto_in_fset.
   Qed.
 
+  (* TODO See if it is better to have packages or raw packages here
+    and above.
+  *)
+  Lemma IND_CPA_equiv_false :
+    (IND_CPA false) ≈[ λ A, 0 ] {locpackage MOD_CPA_ff_pkg ∘ (EVAL true) }.
+  Proof.
+    (* Here the proof should come down to using the syntactic rules. *)
+  Admitted.
+
+  Lemma IND_CPA_equiv_true :
+    (IND_CPA true) ≈[ λ A, 0 ] {locpackage MOD_CPA_tt_pkg ∘ (EVAL true) }.
+  Proof.
+  Admitted.
+
+  (* TODO MOVE *)
+  Lemma Advantage_equiv :
+    ∀ I (G : GamePair I),
+      (G false) ≈[ Advantage G ] (G true).
+  Proof.
+    intros I G. intros A h. reflexivity.
+  Qed.
+
   (* Stating the theorem as the end goal *)
   (* To prove it we have to show two perfect equivalences
     and then conclude using triangle inequality.
@@ -437,6 +459,7 @@ Module PRF_example.
       prf_epsilon {locpackage A ∘ MOD_CPA_tt_pkg }.
   Proof.
     intros A hA.
+    (* rewrite TriangleInequality. *)
   Abort.
 
   (** TODO OLD BELOW **)
