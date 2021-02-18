@@ -462,6 +462,16 @@ Module PRF_example.
       + simpl. intro. reflexivity.
   Qed.
 
+  (* TODO MOVE *)
+  Lemma ler_refl :
+    ∀ (x y :R),
+      x = y →
+      x <= y.
+  Proof.
+    intros x y [].
+    auto.
+  Qed.
+
   (** Security of PRF
 
     The bound is given by using the triangle inequality several times,
@@ -595,23 +605,28 @@ Module PRF_example.
         dependency.
       *)
       Fail rewrite Advantage_link.
-      (* rewrite Advantage_E.
-      rewrite ler_addr.
-      rewrite ler_addl.
-
-    ler_addl: ∀ (R : numDomainType) (x y : R), (x <= x + y) = (0 <= y)
-    ger_addr: ∀ (R : numDomainType) (x y : R), (y + x <= x) = (y <= 0)
-gtr_addl: ∀ (R : numDomainType) (x y : R), (x + y < x) = (y < 0)
-ger_addl: ∀ (R : numDomainType) (x y : R), (x + y <= x) = (y <= 0)
-ltr_addr: ∀ (R : numDomainType) (x y : R), (x < y + x) = (0 < y)
-ler_addr: ∀ (R : numDomainType) (x y : R), (x <= y + x) = (0 <= y)
-ltr_addl: ∀ (R : numDomainType) (x y : R), (x < x + y) = (0 < y)
-subr_ge0: ∀ (R : numDomainType) (x y : R), (0 <= y - x) = (x <= y)
-ler_subr_addr: ∀ (R : numDomainType) (x y z : R), (x <= y - z) = (x + z <= y)
-ltr_subl_addr: ∀ (R : numDomainType) (x y z : R), (x - y < z) = (x < z + y)
-ler_add:
-  ∀ (R : numDomainType) (x y z t : R), x <= y → z <= t → x + z <= y + t
-    unfold Order.le. *)
+      eapply ler_refl.
+      unfold AdvantageE.
+      repeat change ({locpackage ?p }.(pack)) with p.
+      package_before_rewrite.
+      rewrite !link_assoc.
+      package_after_rewrite.
+      clear.
+      f_equal.
+      + rewrite distrC. f_equal. f_equal.
+        * f_equal. f_equal. apply loc_package_ext.
+          -- simpl. rewrite fsetUA. reflexivity.
+          -- intro. reflexivity.
+        * f_equal. f_equal. f_equal. apply loc_package_ext.
+          -- simpl. rewrite fsetUA. reflexivity.
+          -- intro. reflexivity.
+      + f_equal. f_equal.
+        * f_equal. f_equal. apply loc_package_ext.
+          -- simpl. rewrite fsetUA. reflexivity.
+          -- intro. reflexivity.
+        * f_equal. f_equal. f_equal. apply loc_package_ext.
+          -- simpl. rewrite fsetUA. reflexivity.
+          -- intro. reflexivity.
   Admitted.
 
   (** TODO OLD BELOW **)
