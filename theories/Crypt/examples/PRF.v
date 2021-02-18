@@ -402,8 +402,8 @@ Module PRF_example.
 
   Definition statistical_gap :=
     AdvantageE
-      {locpackage MOD_CPA_tt_pkg ∘ EVAL false }
-      {locpackage MOD_CPA_ff_pkg ∘ EVAL false }.
+      {locpackage MOD_CPA_ff_pkg ∘ EVAL false }
+      {locpackage MOD_CPA_tt_pkg ∘ EVAL false }.
 
   Ltac fold_repr :=
     change (repr' ?p ?h) with (repr (mkprog p h)).
@@ -431,6 +431,36 @@ Module PRF_example.
   {locpackage MOD_CPA_tt_pkg ∘ (EVAL true) } ≈[ λ A, 0 ] (IND_CPA true).
   Proof.
   Admitted.
+
+  (* TODO MOVE *)
+  Lemma Advantage_E :
+    ∀ I (G : GamePair I) A,
+      Advantage G A = AdvantageE (G false) (G true) A.
+  Proof.
+    intros I G A.
+    reflexivity.
+  Qed.
+
+  (* TODO MOVE *)
+  (* Similar to reduction lemma *)
+  Lemma Advantage_link :
+    ∀ I E (G₀ G₁ : Game_Type I) (A : Adversary4Game _) (P : loc_package _ E),
+      AdvantageE G₀ G₁ {locpackage A ∘ P} =
+      AdvantageE {locpackage P ∘ G₀} {locpackage P ∘ G₁} A.
+  Proof.
+    intros I E G₀ G₁ A P.
+    unfold AdvantageE. simpl.
+    package_before_rewrite.
+    rewrite !link_assoc.
+    package_after_rewrite.
+    f_equal. f_equal.
+    - f_equal. f_equal. apply loc_package_ext.
+      + simpl. rewrite fsetUA. reflexivity.
+      + intro. reflexivity.
+    - f_equal. f_equal. f_equal. apply loc_package_ext.
+      + simpl. rewrite fsetUA. reflexivity.
+      + simpl. intro. reflexivity.
+  Qed.
 
   (** Security of PRF
 
@@ -528,8 +558,60 @@ Module PRF_example.
     { unfold adv_for. simpl. rewrite hd. admit. }
     forward h4.
     { unfold adv_for. simpl. rewrite hd. admit. }
-    cbn beta in h4.
-    unfold Order.le.
+    cbn beta in h4. rewrite GRing.addr0 in h4.
+    (* Now we conclude *)
+    eapply ler_trans. 1: exact h1.
+    rewrite GRing.add0r.
+    eapply ler_trans. 1: exact h2.
+    clear hd h1 h2.
+    eapply ler_trans.
+    - eapply ler_add. 2: exact h3.
+      auto.
+    - clear h3.
+      revert h4.
+      unify_package_proofs.
+      intro ineq.
+      match goal with
+      | |- context [ _ + ?x + _ ] =>
+        set (x0 := x) in *
+      end.
+      rewrite GRing.addrCA.
+      rewrite [X in _ <= X]GRing.addrAC.
+      rewrite [X in _ <= X]GRing.addrC.
+      eapply ler_add. 1: auto.
+      clear x0.
+      match goal with
+      | |- context [ _ + ?x ] =>
+        set (x0 := x) in *
+      end.
+      eapply ler_trans.
+      1: eapply ler_add.
+      2: exact ineq.
+      1: auto.
+      clear.
+      rewrite 2!Advantage_E.
+      (* It'd be nice to be able to rewrite with the following
+        but I don't really know how to do it because of the needed
+        dependency.
+      *)
+      Fail rewrite Advantage_link.
+      (* rewrite Advantage_E.
+      rewrite ler_addr.
+      rewrite ler_addl.
+
+    ler_addl: ∀ (R : numDomainType) (x y : R), (x <= x + y) = (0 <= y)
+    ger_addr: ∀ (R : numDomainType) (x y : R), (y + x <= x) = (y <= 0)
+gtr_addl: ∀ (R : numDomainType) (x y : R), (x + y < x) = (y < 0)
+ger_addl: ∀ (R : numDomainType) (x y : R), (x + y <= x) = (y <= 0)
+ltr_addr: ∀ (R : numDomainType) (x y : R), (x < y + x) = (0 < y)
+ler_addr: ∀ (R : numDomainType) (x y : R), (x <= y + x) = (0 <= y)
+ltr_addl: ∀ (R : numDomainType) (x y : R), (x < x + y) = (0 < y)
+subr_ge0: ∀ (R : numDomainType) (x y : R), (0 <= y - x) = (x <= y)
+ler_subr_addr: ∀ (R : numDomainType) (x y z : R), (x <= y - z) = (x + z <= y)
+ltr_subl_addr: ∀ (R : numDomainType) (x y z : R), (x - y < z) = (x < z + y)
+ler_add:
+  ∀ (R : numDomainType) (x y z t : R), x <= y → z <= t → x + z <= y + t
+    unfold Order.le. *)
   Admitted.
 
   (** TODO OLD BELOW **)
