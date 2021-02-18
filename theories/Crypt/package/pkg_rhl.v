@@ -842,6 +842,13 @@ Module PackageRHL (π : RulesParam).
     (at level 50, format " G0  ≈[  R  ]  G1")
     : package_scope.
 
+  Lemma Advantage_equiv :
+    ∀ I (G : GamePair I),
+      (G false) ≈[ Advantage G ] (G true).
+  Proof.
+    intros I G. intros A h. reflexivity.
+  Qed.
+
   Lemma TriangleInequality :
     ∀ {Game_export : Interface}
       {F G H : Game_Type Game_export}

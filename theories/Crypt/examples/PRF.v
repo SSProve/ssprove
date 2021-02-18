@@ -437,14 +437,6 @@ Module PRF_example.
   Proof.
   Admitted.
 
-  (* TODO MOVE *)
-  Lemma Advantage_equiv :
-    ∀ I (G : GamePair I),
-      (G false) ≈[ Advantage G ] (G true).
-  Proof.
-    intros I G. intros A h. reflexivity.
-  Qed.
-
   (* Stating the theorem as the end goal *)
   (* To prove it we have to show two perfect equivalences
     and then conclude using triangle inequality.
