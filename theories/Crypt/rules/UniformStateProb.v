@@ -392,6 +392,49 @@ Module DerivedRulesUniform (myparam :  RulesParam) (myparamUniform : UniformPara
       split; [assumption |  by rewrite refl_true ].
   Qed.
 
+  Export RSPNotation.
+
+  Variables i1 i2 : Index.
+  
+  
+  Theorem Uniform_bij_rule_sq { i1 i2 j1 j2 : Index } { S1 S2 : choiceType }
+          { f1 : fin_family i1 -> fin_family j1 } (f1_bij : bijective f1)
+          { f2 : fin_family i2 -> fin_family j2 } (f2_bij : bijective f2)
+          (P : S1 * S2 -> Prop) :
+    ⊨ ⦃ P ⦄ ( ( A <- (A <- (@Uniform_F i1 S1) ;; @retrFree _ _ _ A) ;;
+               (B <- (B <- (@Uniform_F i2 S1) ;; @retrFree _ _ _ B) ;;
+               @retrFree _ _ _ (A, B) )))
+
+                  ≈
+            (( A <- (A <- (@Uniform_F j1 S2) ;; @retrFree _ _ _ A) ;;
+             (B <- (B <- (@Uniform_F j2 S2) ;; @retrFree _ _ _ B) ;;
+             @retrFree _ _ _ (A, B) )))
+         ⦃ fun '((A1, B1), s1) '((A2, B2), s2) => P (s1, s2) /\ (f1 A1 == A2) /\ (f2 B1 == B2) ⦄.
+  Proof.
+    unshelve apply: seq_rule.
+    { move => [A1 s1] [A2 s2]. exact: (P (s1, s2) /\ (f1 A1 == A2)). }
+    apply: Uniform_bij_rule. assumption.
+    move => A1 A2.
+    unshelve apply: seq_rule.  
+    { move => [B1 s1] [B2 s2]. exact: ((P (s1, s2) /\ (f1 A1 == A2) ) /\ (f2 B1 == B2)). }
+    simpl.    
+    apply: Uniform_bij_rule f2_bij (fun '(s1,s2) => P (s1, s2) /\ (f1 A1 == A2)).
+    move => B1 B2.
+    simpl. 
+    apply: pre_hypothesis_rule => s1 s2 [[HP H1] H2]. simpl in HP. 
+    move /eqP: H1. move /eqP: H2. move => H2 H1. subst. 
+    unshelve apply: post_weaken_rule.
+    { move => [[A B] st1] [[A' B'] st2].
+      exact: ((st1 , st2) = (s1, s2) /\ (f1 A, f2 B) = (A', B') ). }
+    simpl. rewrite /fromPrePost. Check ret_rule (A1,B1) (f1 A1, f2 B1). 
+    admit. 
+    simpl.  
+    move => [[a1 b1] st1] [[a2 b2] st2] [H1 [H2 H3]]. subst.
+    rewrite H1. 
+    split; auto. 
+    Admitted. 
+
+    
   Definition Fail { S : choiceType } : FrStP S chUnit.
     apply: ropr.
     Unshelve. 2: {
