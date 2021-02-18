@@ -398,13 +398,7 @@ Module PRF_example.
 
   Local Open Scope ring_scope.
 
-  Parameter prf_epsilon :
-    Adversary4Game [interface val #[i0] : chWords → chKey ] → R.
-
-  Definition PRF_security :=
-    ∀ A,
-      adv_forp A EVAL →
-      Advantage EVAL A = prf_epsilon A.
+  Definition prf_epsilon A := Advantage EVAL A.
 
   Definition statistical_gap (A : Adversary4Game _) : R :=
     `|Pr {locpackage (A ∘ MOD_CPA_tt_pkg) ∘ EVAL false } true -
@@ -442,7 +436,7 @@ Module PRF_example.
     and then conclude using triangle inequality.
     It seems that even that last bit is long, so it can be polished.
   *)
-  Theorem security_based_on_prf (Hprf : PRF_security) :
+  Theorem security_based_on_prf :
     ∀ A : Adversary4Game [interface val #[i1] : chWords → chWords × chWords ],
       adv_forp A IND_CPA →
       Advantage IND_CPA A <=
