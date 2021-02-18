@@ -506,11 +506,23 @@ Module PRF_example.
     unfold adv_forp in hA. simpl in hA. move: hA => /andP [hd _].
     forward h1.
     { unfold adv_for. simpl. rewrite hd. simpl.
-      admit.
+      rewrite fdisjointUr.
+      apply/andP. split.
+      - unfold MOD_CPA_location. apply fdisjoints0.
+      - rewrite fdisjointC. rewrite fdisjointC in hd.
+        eapply fdisjoint_trans. 2: exact hd.
+        unfold EVAL_location_tt, IND_CPA_location.
+        apply fsubsetxx.
     }
     forward h1.
     { unfold adv_for. simpl. rewrite hd.
-      admit.
+      rewrite andbC. simpl.
+      rewrite fdisjointUr. apply/andP. split.
+      - unfold MOD_CPA_location. apply fdisjoints0.
+      - rewrite fdisjointC. rewrite fdisjointC in hd.
+        eapply fdisjoint_trans. 2: exact hd.
+        unfold EVAL_location_tt, IND_CPA_location.
+        apply fsubsetxx.
     }
     forward h1.
     { unfold adv_for. simpl. rewrite hd. simpl. reflexivity. }
@@ -529,7 +541,26 @@ Module PRF_example.
     specialize h2 with (1 := AdvantageE_equiv _ _ _).
     specialize (h2 A).
     forward h2.
-    { unfold adv_for. simpl. admit. }
+    { unfold adv_for. simpl. apply/andP. split.
+      - rewrite fdisjointUr. apply/andP. split.
+        + unfold MOD_CPA_location. apply fdisjoints0.
+        + rewrite fdisjointC. rewrite fdisjointC in hd.
+          eapply fdisjoint_trans. 2: exact hd.
+          unfold EVAL_location_tt, IND_CPA_location.
+          apply fsubsetxx.
+      - rewrite fdisjointUr. apply/andP. split.
+        + unfold MOD_CPA_location. apply fdisjoints0.
+        + rewrite fdisjointC. rewrite fdisjointC in hd.
+          eapply fdisjoint_trans. 2: exact hd.
+          unfold EVAL_location_ff, IND_CPA_location.
+          (* Can we avoid this? *)
+          (* Or should we require IND_CPA_location to include table_location?
+            Or do as below and simply add a requirement of disjointness?
+            Doesn't seem great.
+          *)
+          (* apply fsubsetxx. *)
+          give_up.
+    }
     forward h2.
     { unfold adv_for. simpl. rewrite hd. admit. }
     forward h2.
