@@ -226,9 +226,25 @@ Module PackageTactics (π : RulesParam).
 
   Ltac unify_program_proofs :=
     mark_abstract_programs ;
-    unify_marked_positive_proofs ;
+    unify_marked_program_proofs ;
     unmark_tac_intro_mark ;
     subst_marked.
+
+  (** Tactic to unify ValidPackage proofs in a goal *)
+
+  Ltac unify_marked_package_proofs :=
+    repeat match goal with
+    | h : tac_intro_mark (ValidPackage ?L ?I ?E ?p),
+      h' : tac_intro_mark (ValidPackage ?L ?I ?E ?p) |- _ =>
+      assert (h = h') by eapply uip ;
+      subst h'
+    end.
+
+  Ltac unify_package_proofs :=
+    mark_abstract_packages ;
+    unify_marked_package_proofs ;
+    unmark_tac_intro_mark ;
+    unmark_tac_mark.
 
   (** Some validity lemmata and hints *)
   (* TODO MOVE? *)
