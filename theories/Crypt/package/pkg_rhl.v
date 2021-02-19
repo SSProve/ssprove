@@ -23,6 +23,7 @@ From Crypt Require Import FreeProbProg.
 
 
 Set Equations With UIP.
+Set Equations Transparent.
 
 Import SPropNotations.
 
@@ -195,9 +196,14 @@ Module PackageRHL (π : RulesParam).
   Arguments bindrFree {_ _ _ _} _ _.
   Arguments ropr {_ _ _} _ _.
 
-  Set Equations Transparent.
+  (** Interpretation of raw programs into the semantic model
 
-  Fail Fail Fixpoint repr {A : choiceType} (p : raw_program A) :
+    Note that we don't require any validity proof to do so,
+    instead we rely on the fact that types in the chUniverse are all
+    inhabited.
+
+  *)
+  Fixpoint repr {A : choiceType} (p : raw_program A) :
     rFreeF (ops_StP heap_choiceType) (ar_StP heap_choiceType) A :=
     match p with
     | ret x => retrFree x
@@ -220,222 +226,70 @@ Module PackageRHL (π : RulesParam).
           (λ s, repr (k s))
     end.
 
-  Equations? repr' {B : choiceType} {L : {fset Location}}
-    (p : raw_program B) (h : valid_program L Game_import p)
-  : rFreeF (ops_StP heap_choiceType) (ar_StP heap_choiceType) B :=
-    repr' p h with p := {
-
-    | ret x := retrFree x ;
-
-    | opr o x k := False_rect _ _ ;
-
-    | getr l k :=
-      bindrFree
-        (ropr (inl (inl (gett _))) (λ s, retrFree (get_heap s l)))
-        (λ v, repr' (k v) _) ;
-
-    | putr l v k :=
-      bindrFree
-        (ropr
-          (inl (inl (gett heap_choiceType)))
-          (λ s, ropr (inl (inr (putt heap_choiceType (set_heap s l v))))
-          (λ s, retrFree tt)))
-        (λ s', repr' k _) ;
-
-    | sampler op k :=
-      bindrFree
-        (ropr (inr op) (λ v, retrFree v))
-        (λ s, repr' (k s) _)
-    }.
-  Proof.
-    - apply inversion_valid_opr in h. destruct h as [? ?].
-      eapply fromEmpty. eauto.
-    - apply inversion_valid_getr in h. destruct h as [? ?].
-      auto.
-    - apply inversion_valid_putr in h. destruct h as [? ?]. auto.
-    - eapply inversion_valid_sampler in h. eauto.
-  Defined.
-
-  Definition repr {B locs} (p : program locs Game_import B) :=
-    let '(mkprog p h) := p in
-    repr' p h.
-
-  Ltac fold_repr :=
-    change (repr' ?p ?h) with (repr (mkprog p h)).
-
-  Lemma repr'_ext :
-    ∀ {B L1 L2} (p1 p2 : raw_program B)
-      (hp1 : valid_program L1 Game_import p1)
-      (hp2 : valid_program L2 Game_import p2)
-      (H : p1 = p2),
-      repr' p1 hp1 = repr' p2 hp2.
-  Proof.
-    intros B L1 L2 p1 p2 hp1 hp2 H.
-    subst p2.
-    induction p1.
-    - cbn. reflexivity.
-    - apply inversion_valid_opr in hp1 as h'.
-      destruct h' as [? ?].
-      eapply fromEmpty. eauto.
-    - cbn. f_equal. extensionality s.
-      apply H.
-    - cbn. f_equal. extensionality s.
-      f_equal. extensionality s'.
-      apply IHp1.
-    - cbn. f_equal. extensionality s.
-      apply H.
-  Qed.
-
-  Lemma repr_ext :
-    ∀ {B L1 L2}
-      (p1 : program L1 Game_import B) (p2 : program L2 Game_import B),
-      p1.(prog) = p2.(prog) →
-      repr p1 = repr p2.
-  Proof.
-    intros B L1 L2 p1 p2 e.
-    unfold repr.
-    destruct p1. destruct p2.
-    apply repr'_ext.
-    auto.
-  Qed.
-
   Lemma repr_bind :
-    ∀ {B C} {L} p f
-      {hp : @ValidProgram L Game_import B p}
-      {hf : ∀ b, @ValidProgram L Game_import C (f b)}
-      {h : ValidProgram L Game_import _},
-      repr {program bind p f #with h } =
-      bindrFree (repr {program p}) (λ b, repr {program f b}).
+    ∀ {A B : choiceType} (p : raw_program A) (f : A → raw_program B),
+      repr (bind p f) = bindrFree (repr p) (λ a, repr (f a)).
   Proof.
-    intros B C L p f hp hf h.
-    induction p in hp, h, f, hf |- *.
-    - cbn. fold_repr.
-      f_equal. apply program_ext.
-      simpl. reflexivity.
-    - apply inversion_valid_opr in hp as h'. destruct h' as [h1 h2].
-      eapply fromEmpty. exact h1.
-    - cbn. f_equal. extensionality s.
-      fold_repr. apply H.
-    - cbn. f_equal.
-      extensionality s.
-      f_equal.
-      extensionality s'.
-      fold_repr. apply IHp.
-    - cbn.
-      f_equal.
-      extensionality s.
-      fold_repr. apply H.
+    intros A B p f.
+    induction p in f |- *.
+    - cbn. reflexivity.
+    - simpl. auto.
+    - simpl. f_equal. extensionality x. auto.
+    - simpl. f_equal. extensionality x. f_equal. extensionality y. auto.
+    - simpl. f_equal. extensionality x. auto.
   Qed.
 
-  Lemma repr_bind' :
-    ∀ {B C} {L1 L2 L3} p f
-      {hp : @ValidProgram L1 Game_import B p}
-      {hf : ∀ b, @ValidProgram L2 Game_import C (f b)}
-      {h : ValidProgram L3 Game_import _},
-      repr {program bind p f #with h } =
-      bindrFree (repr {program p}) (λ b, repr {program f b}).
-  Proof.
-    intros B C L1 L2 L3 p f hp hf h.
-    induction p in hp, h, f, hf |- *.
-    - cbn. fold_repr. eapply repr_ext.
-      simpl. reflexivity.
-    - apply inversion_valid_opr in hp as h'. destruct h' as [h1 h2].
-      eapply fromEmpty. exact h1.
-    - cbn. f_equal. extensionality s.
-      fold_repr. apply H.
-    - cbn. f_equal.
-      extensionality s.
-      f_equal.
-      extensionality s'.
-      fold_repr. apply IHp.
-    - cbn.
-      f_equal.
-      extensionality s.
-      fold_repr. apply H.
-  Qed.
-
-  (* TODO Will also change to let go of the validity condition *)
-  Equations? repr_cmd {L} {A} (c : command A)
-    (hc : valid_command L Game_import c) :
+  Definition repr_cmd {A} (c : command A) :
     rFreeF (ops_StP heap_choiceType) (ar_StP heap_choiceType) A :=
-
-    repr_cmd (cmd_op o x) hc := False_rect _ _ ;
-
-    repr_cmd (cmd_get ℓ) hc :=
-      bindrFree
-        (ropr (inl (inl (gett _))) (λ s, retrFree (get_heap s ℓ)))
-        (λ v, retrFree v) ;
-
-    repr_cmd (cmd_put ℓ v) hc :=
-      bindrFree
-        (ropr
-          (inl (inl (gett heap_choiceType)))
-          (λ s, ropr (inl (inr (putt heap_choiceType (set_heap s ℓ v))))
-          (λ s, retrFree tt)))
-        (λ s', retrFree s') ;
-
-    repr_cmd (cmd_sample op) hc :=
-      bindrFree
-        (ropr (inr op) (λ v, retrFree v))
-        (λ s, retrFree s).
-  Proof.
-    inversion hc. eapply fromEmpty. eassumption.
-  Qed.
+    match c with
+    | cmd_op o x => retrFree (chCanonical (chtgt o))
+    | cmd_get ℓ =>
+        bindrFree
+          (ropr (inl (inl (gett _))) (λ s, retrFree (get_heap s ℓ)))
+          (λ v, retrFree v)
+    | cmd_put ℓ v =>
+        bindrFree
+          (ropr
+            (inl (inl (gett heap_choiceType)))
+            (λ s, ropr (inl (inr (putt heap_choiceType (set_heap s ℓ v))))
+            (λ s, retrFree tt)))
+          (λ s', retrFree s')
+    | cmd_sample op =>
+        bindrFree
+          (ropr (inr op) (λ v, retrFree v))
+          (λ s, retrFree s)
+    end.
 
   Lemma repr_cmd_bind :
-    ∀ {B C} {L1 L2 L3} p f
-      {hp : @ValidCommand L1 Game_import B p}
-      {hf : ∀ b, @ValidProgram L2 Game_import C (f b)}
-      {h : ValidProgram L3 Game_import _},
-      repr {program cmd_bind p f #with h } =
-      bindrFree (repr_cmd p hp) (λ b, repr {program f b}).
+    ∀ {A B} (c : command A) (k : A → raw_program B),
+      repr (cmd_bind c k) = bindrFree (repr_cmd c) (λ a, repr (k a)).
   Proof.
-    intros B C L1 L2 L3 p f hp hf h.
-    destruct p.
-    - cbn. falso.
-    - cbn. f_equal. extensionality s.
-      fold_repr. apply repr_ext. cbn. reflexivity.
-    - cbn. f_equal. extensionality s.
-      f_equal. extensionality s'.
-      fold_repr. apply repr_ext. reflexivity.
-    - cbn. f_equal. extensionality s.
-      fold_repr. apply repr_ext. reflexivity.
+    intros A B c k.
+    destruct c. all: reflexivity.
   Qed.
 
   Notation " r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄ " :=
     (semantic_judgement _ _ (repr c1) (repr c2) (fromPrePost pre post))
     : package_scope.
 
+  Definition precond := heap * heap → Prop.
+  Definition postcond A B := (A * heap) → (B * heap) → Prop.
+
   Theorem rbind_rule :
-    ∀ {A1 A2 B1 B2 : ord_choiceType}
-      {L1 L2 : {fset Location}}
-      {f1}
-      {hf1 : ∀ (x : A1), @ValidProgram L1 Game_import B1 (f1 x)}
-      {f2}
-      {hf2 : ∀ (x : A2), @ValidProgram L2 Game_import B2 (f2 x)}
-      m1
-      {hm1 : @ValidProgram L1 Game_import A1 m1}
-      m2
-      {hm2 : @ValidProgram L2 Game_import A2 m2}
-      (pre : heap * heap → Prop)
-      (middle : (A1 * heap) → (A2 * heap) → Prop)
-      (post : (B1 * heap) → (B2 * heap) → Prop)
-      (judge_wm : r⊨ ⦃ pre ⦄ (mkprog m1 hm1) ≈ (mkprog m2 hm2) ⦃ middle ⦄)
-      (judge_wf : ∀ a1 a2,
-        r⊨ ⦃ λ '(s1, s2), middle (a1, s1) (a2, s2) ⦄
-          (mkprog (f1 a1) _) ≈ (mkprog (f2 a2) _)
-          ⦃ post ⦄
-      )
-      {h1 : ValidProgram L1 _ _}
-      {h2 : ValidProgram L2 _ _},
-      r⊨ ⦃ pre ⦄ mkprog (bind m1 f1) h1 ≈ mkprog (bind m2 f2) h2 ⦃ post ⦄.
+    ∀ {A1 A2 B1 B2 : ord_choiceType} {f1 f2} m1 m2
+      (pre : precond) (mid : postcond A1 A2) (post : postcond B1 B2),
+      r⊨ ⦃ pre ⦄ m1 ≈ m2 ⦃ mid ⦄ →
+      (∀ a1 a2,
+        r⊨ ⦃ λ '(s1, s2), mid (a1, s1) (a2, s2) ⦄ f1 a1 ≈ f2 a2 ⦃ post ⦄
+      ) →
+      r⊨ ⦃ pre ⦄ bind m1 f1 ≈ bind m2 f2 ⦃ post ⦄.
   Proof.
-    intros A1 A2 B1 B2 L1 l2 f1 hf1 f2 hf2 m1 hm1 m2 hm2 pre middle post
-      judge_wm judge_wf h1 h2.
+    intros A1 A2 B1 B2 f1 f2 m1 m2 pre mid post hm hf.
     rewrite !repr_bind.
-    apply (bind_rule_pp (repr {program m1}) (repr {program m2}) pre middle post judge_wm judge_wf).
+    apply (bind_rule_pp (repr m1) (repr m2) pre mid post hm hf).
   Qed.
 
+  (* TODO Is it still needed? *)
   Lemma opaque_me :
     ∀ {B L I E}
       (p : raw_package) (hp : valid_package L I E p)
@@ -489,6 +343,7 @@ Module PackageRHL (π : RulesParam).
     noconf e0. reflexivity.
   Qed.
 
+  (* TODO Needed? MOVE? *)
   Definition program_link_ext {E : Interface}
     (o : opsig) (ho : o \in E) (arg : src o) (p1 p2 : raw_package)
     (f : src o → raw_program (tgt o))
@@ -631,61 +486,65 @@ Module PackageRHL (π : RulesParam).
     let (L, PP) as s return (program s.(locs) I (tgt op)) := P in
     get_opackage_op PP op Hin arg.
 
-  Definition Pr_raw_program {L} {B}
-    (p : raw_program B)
-    (p_is_valid : ValidProgram L Game_import p)
-    : heap_choiceType → SDistr (F_choice_prod_obj ⟨ B , heap_choiceType ⟩).
+  (* Rather than the above, we use the version with default values *)
+  Definition get_op_default (p : raw_package) (o : opsig) :
+    src o → raw_program (tgt o) :=
+    match lookup_op p o with
+    | Some f => f
+    | None => λ x, ret (chCanonical (chtgt o))
+    end.
+
+  Lemma valid_get_op_default :
+    ∀ L I E p o x,
+      valid_package L I E p →
+      o \in E →
+      valid_program L I (get_op_default p o x).
   Proof.
-    move => s0.
-    pose STDIST := thetaFstd B (repr {program p}) s0.
-    specialize (STDIST prob_handler).
-    eapply STDIST. exact _.
-  Defined.
+    intros L I E p o x hp ho.
+    unfold get_op_default.
+    destruct lookup_op eqn:e.
+    - eapply lookup_op_spec in e as h.
+      specialize (hp _ ho). destruct o as [id [S T]].
+      destruct hp as [f [ef hf]].
+      cbn in h. rewrite ef in h. noconf h.
+      auto.
+    - constructor.
+  Qed.
 
-  Definition Pr_program {L} {B}
-              (p : program L Game_import B)
-    : heap_choiceType -> SDistr (F_choice_prod_obj ⟨ B , heap_choiceType ⟩) :=
-    Pr_raw_program p _.
+  Hint Extern 1 (ValidProgram ?L ?I (get_op_default ?p ?o ?x)) =>
+    eapply valid_get_op_default ; [
+      apply valid_package_from_class
+    | auto_in_fset
+    ]
+    : typeclass_instances.
 
-  Definition Pr_raw_func_program {L} {A} {B}
-    (p : A → raw_program B)
-    (p_is_valid : ∀ a, valid_program L Game_import (p a))
-    : A → heap_choiceType → SDistr (F_choice_prod_obj ⟨ B , heap_choiceType ⟩).
-  Proof.
-    move => a s0.
-    exact (Pr_raw_program (p a) (p_is_valid a) s0).
-  Defined.
+  Definition Pr_program {A} (p : raw_program A) :
+    heap_choiceType → SDistr (F_choice_prod_obj ⟨ A , heap_choiceType ⟩) :=
+    λ s, thetaFstd (prob_handler := prob_handler) A (repr p) s.
 
-  Definition Pr_raw_package_op  {E : Interface} {L}
-    (p : raw_package)
-    (p_is_valid : valid_package L Game_import E p)
-    (op : opsig) (Hin : op \in E) (arg : src op)
-    : heap_choiceType → SDistr (F_choice_prod_obj ⟨ tgt op , heap_choiceType ⟩).
-  Proof.
-    move => s0.
-    pose (get_raw_package_op p p_is_valid op Hin arg) as f.
-    exact (Pr_raw_program f _ s0).
-  Defined.
+  (* TODO REMOVE? *)
+  Definition Pr_raw_func_program {A B} (p : A → raw_program B) :
+    A → heap_choiceType → SDistr (F_choice_prod_obj ⟨ B , heap_choiceType ⟩) :=
+    λ a s, Pr_program (p a) s.
 
-  Definition Pr_op  {E : Interface} (P : loc_package Game_import E)
-    (op : opsig) (Hin : op \in E) (arg : src op)
-    : heap_choiceType → SDistr (F_choice_prod_obj ⟨ tgt op , heap_choiceType ⟩).
-  Proof.
-    move => s0.
-    destruct P as [L [PP PP_is_valid]].
-    exact (Pr_raw_package_op PP PP_is_valid op Hin arg s0).
-  Defined.
+  Definition Pr_op (p : raw_package) (o : opsig) (x : src o) :
+    heap_choiceType → SDistr (F_choice_prod_obj ⟨ tgt o , heap_choiceType ⟩) :=
+    Pr_program (get_op_default p o x).
 
-  Program Definition empty_heap : heap := emptym.
+  #[program] Definition empty_heap : heap := emptym.
   Next Obligation.
     by rewrite /valid_heap domm0 /fset_filter -fset0E.
   Qed.
 
-  Definition Pr (P : loc_package Game_import A_export) :
-    SDistr (bool_choiceType) :=
-    SDistr_bind _ _ (λ '(b, _), SDistr_unit _ b)
-                    (Pr_op P RUN RUN_in_A_export Datatypes.tt empty_heap).
+  Arguments SDistr_bind {_ _}.
 
+  Definition Pr (p : raw_package) :
+    SDistr (bool_choiceType) :=
+    SDistr_bind
+      (λ '(b, _), SDistr_unit _ b)
+      (Pr_op p RUN Datatypes.tt empty_heap).
+
+  (* TODO Still useful? *)
   Definition get_op {I E : Interface} (p : loc_package I E)
     (o : opsig) (ho : o \in E) (arg : src o) :
     program p.(locs) I (tgt o).
@@ -721,8 +580,15 @@ Module PackageRHL (π : RulesParam).
   Local Open Scope ring_scope.
   Local Open Scope real_scope.
 
+  (* TODO Should it stay this way? Probably need to change the type Game_Type *)
   Definition GamePair (Game_export : Interface) :=
     bool → Game_Type Game_export.
+
+  (** TODO BELOW
+    We can actually define Advantage so that it doesn't rely on validity
+    of anything. This would change things significantly though.
+    Still, probably the right approach.
+  *)
 
   (* TW: Note the definition of advantage should not be the one
     requiring disjointness of state. Only the theorems that need the
@@ -1317,37 +1183,6 @@ Module PackageRHL (π : RulesParam).
         * auto.
         * apply ler0n.
   Qed.
-
-  Definition get_op_default (p : raw_package) (o : opsig) :
-    src o → raw_program (tgt o) :=
-    match lookup_op p o with
-    | Some f => f
-    | None => λ x, ret (chCanonical (chtgt o))
-    end.
-
-  Lemma valid_get_op_default :
-    ∀ L I E p o x,
-      valid_package L I E p →
-      o \in E →
-      valid_program L I (get_op_default p o x).
-  Proof.
-    intros L I E p o x hp ho.
-    unfold get_op_default.
-    destruct lookup_op eqn:e.
-    - eapply lookup_op_spec in e as h.
-      specialize (hp _ ho). destruct o as [id [S T]].
-      destruct hp as [f [ef hf]].
-      cbn in h. rewrite ef in h. noconf h.
-      auto.
-    - constructor.
-  Qed.
-
-  Hint Extern 1 (ValidProgram ?L ?I (get_op_default ?p ?o ?x)) =>
-    eapply valid_get_op_default ; [
-      apply valid_package_from_class
-    | auto_in_fset
-    ]
-    : typeclass_instances.
 
   Definition eq_up_to_inv_alt {L₁ L₂} {E}
     (I : heap_choiceType * heap_choiceType → Prop)
@@ -2269,9 +2104,6 @@ Module PackageRHL (π : RulesParam).
       eapply IHc1. auto.
     - simpl in h1.
   Abort. *)
-
-  Definition precond := heap * heap → Prop.
-  Definition postcond A B := (A * heap) → (B * heap) → Prop.
 
   Reserved Notation "⊢ ⦃ pre ⦄ c1 ~ c2 ⦃ post ⦄".
 
