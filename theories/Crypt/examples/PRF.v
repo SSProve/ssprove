@@ -433,15 +433,6 @@ Module PRF_example.
   Admitted.
 
   (* TODO MOVE *)
-  Lemma Advantage_E :
-    ∀ I (G : GamePair I) A,
-      Advantage G A = AdvantageE (G false) (G true) A.
-  Proof.
-    intros I G A.
-    reflexivity.
-  Qed.
-
-  (* TODO MOVE *)
   (* Similar to reduction lemma *)
   Lemma Advantage_link :
     ∀ I E (G₀ G₁ : Game_Type I) (A : Adversary4Game _) (P : loc_package _ E),

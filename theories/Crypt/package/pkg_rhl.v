@@ -581,37 +581,28 @@ Module PackageRHL (π : RulesParam).
   Local Open Scope real_scope.
 
   (* TODO Should it stay this way? Probably need to change the type Game_Type *)
-  Definition GamePair (Game_export : Interface) :=
-    bool → Game_Type Game_export.
+  (* Definition GamePair (Game_export : Interface) :=
+    bool → Game_Type Game_export. *)
 
-  (** TODO BELOW
-    We can actually define Advantage so that it doesn't rely on validity
-    of anything. This would change things significantly though.
-    Still, probably the right approach.
+  (* TODO Again, why not an actual pair? *)
+  Definition GamePair :=
+      bool → raw_package.
+
+  (* TODO: Should the type of the adversary be raw_package?
+    Probably, but should we give it a name anyway?
+    I guess it'll just come up in theorems.
+
+    NOTE: With this there is no longer a definition of weak advantage.
+    We will still be able to talk about weak adversaries at another level.
   *)
 
-  (* TW: Note the definition of advantage should not be the one
-    requiring disjointness of state. Only the theorems that need the
-    hypothesis should require it.
-    This should make reasoning about advantage easier.
-  *)
-  Definition Advantage {Game_export : Interface}
-    (G : GamePair Game_export)
-    (A : Adversary4Game Game_export) : R :=
-    `| (Pr {locpackage link A (G false) } true) -
-        (Pr {locpackage link A (G true) } true) |.
+  Definition Advantage (G : GamePair) (A : raw_package) : R :=
+    `| Pr (A ∘ (G false)) true - Pr (A ∘ (G true)) true |.
 
-  Definition AdvantageE {Game_export : Interface}
-    (G0 : Game_Type Game_export) (G1 : Game_Type Game_export)
-    (A : Adversary4Game Game_export) : R :=
-    `| (Pr {locpackage link A G0 } true) - (Pr {locpackage link A G1 } true)|.
+  Definition AdvantageE (G₀ G₁ : raw_package) (A : raw_package) : R :=
+    `| Pr (A ∘ G₀) true - Pr (A ∘ G₁) true |.
 
-  (* TODO: Is this useful? *)
-  Definition AdvantageE_weak {Game_export : Interface}
-    (G0 : Game_Type Game_export) (G1 : Game_Type Game_export)
-    (A : Adversary4Game_weak Game_export) : R :=
-    `| (Pr {locpackage link A G0 } true) - (Pr {locpackage link A G1 } true)|.
-
+  (* TODO Useful? *)
   Definition state_pass_ {A} (p : raw_program A) :
     heap_choiceType → raw_program (prod_choiceType A heap_choiceType).
   Proof.
@@ -657,6 +648,10 @@ Module PackageRHL (π : RulesParam).
     - intros x. destruct x. constructor.
   Qed.
 
+  (* TODO Will have to be updated *)
+  (* Probably by having first an operation on raw_packages
+    and then a validity proof.
+  *)
   Definition turn_adversary_weak  {Game_export : Interface}
     (A : Adversary4Game Game_export) : Adversary4Game_weak Game_export.
   Proof.
@@ -680,25 +675,28 @@ Module PackageRHL (π : RulesParam).
       assumption.
   Defined.
 
-  Lemma pr_weak {Game_export : Interface}
+  (* TODO Update to the new setting *)
+  (* Lemma pr_weak {Game_export : Interface}
     (A : Adversary4Game Game_export) (G : loc_package _ _) :
     Pr {locpackage link (turn_adversary_weak A) G } true =
     Pr {locpackage link A G } true.
   Proof.
-  Admitted.
+  Admitted. *)
 
-  Definition perf_ind {Game_export : Interface}
+  (* TODO UPDATE, first figure out what its role is *)
+  (* Definition perf_ind {Game_export : Interface}
     (G0 : Game_Type Game_export) (G1 : Game_Type Game_export) :=
     ∀ A,
       fdisjoint A.(locs) G0.(locs) →
       fdisjoint A.(locs) G1.(locs) →
-      AdvantageE G0 G1 A = 0.
+      AdvantageE G0 G1 A = 0. *)
 
-  Definition perf_ind_weak {Game_export : Interface}
+  (* TODO UPDATE *)
+  (* Definition perf_ind_weak {Game_export : Interface}
     (G0 : Game_Type Game_export) (G1 : Game_Type Game_export) :=
-    ∀ A, AdvantageE_weak G0 G1 A = 0.
+    ∀ A, AdvantageE_weak G0 G1 A = 0. *)
 
-  Definition perf_ind_weak_implies_perf_ind {Game_export : Interface}
+  (* Definition perf_ind_weak_implies_perf_ind {Game_export : Interface}
     (G0 : Game_Type Game_export) (G1 : Game_Type Game_export)
     (h : perf_ind_weak G0 G1) : perf_ind G0 G1.
   Proof.
@@ -707,15 +705,32 @@ Module PackageRHL (π : RulesParam).
     rewrite -(pr_weak A G0).
     rewrite -(pr_weak A G1).
     apply h.
-  Qed.
+  Qed. *)
 
-  Notation "ϵ( GP )" :=
-    (λ A, AdvantageE (GP false) (GP true) A)
+  (* Notation "ε( GP )" :=
+    (AdvantageE (GP false) (GP true))
     (at level 90)
-    : package_scope.
+    : package_scope. *)
+
+  (* TODO Do I want to have a notion of equivalence on raw_packages?
+    I could do it since I already have advantage on those.
+    But then it would push disjointness requirements somewhere else.
+    Maybe it's the ~[ ε ] which will imply ≈[ ε ]?
+    I don't really see how because the quantification over the adversary
+    is hidden here.
+
+    Maybe for now I should try to just have it as before, without any
+    restriction. And then we'll see where it comes up?
+    I might have to redo some stuff, but it'll help tailoring things.
+    The motivation for constraining it is we want to have perfect equivalence
+    as ≈[ λ _, 0 ].
+  *)
+
+  Definition adv_equiv (G₀ G₁ : raw_package) ε :=
+    ∀ A, AdvantageE G₀ G₁ A = ε A.
 
   (* Adversary for condition *)
-  Definition adv_for {I} (A : Adversary4Game I) (G₀ G₁ : Game_Type I) :=
+  (* Definition adv_for {I} (A : Adversary4Game I) (G₀ G₁ : Game_Type I) :=
     fdisjoint A.(locs) G₀.(locs) && fdisjoint A.(locs) G₁.(locs).
 
   Definition adv_forp {I} (A : Adversary4Game I) (G : GamePair I) :=
@@ -723,7 +738,7 @@ Module PackageRHL (π : RulesParam).
     fdisjoint A.(locs) (G false).(locs).
 
   Definition adv_equiv {I} (G₀ G₁ : Game_Type I) ε :=
-    ∀ A, adv_for A G₀ G₁ → AdvantageE G₀ G₁ A = ε A.
+    ∀ A, adv_for A G₀ G₁ → AdvantageE G₀ G₁ A = ε A. *)
 
   (** The quantification over a disjoint adversary is now here.
     Also, the function equality is now pointwise.
@@ -733,7 +748,13 @@ Module PackageRHL (π : RulesParam).
     (at level 50, format " G0  ≈[  R  ]  G1")
     : package_scope.
 
-  Lemma Advantage_equiv :
+  Notation " G0 ≈₀ G1 " :=
+    (G0 ≈[ λ A, 0 ] G1)
+    (at level 50, format " G0  ≈₀  G1")
+    : package_scope.
+
+  (* TODO Update *)
+  (* Lemma Advantage_equiv :
     ∀ I (G : GamePair I),
       (G false) ≈[ Advantage G ] (G true).
   Proof.
@@ -745,6 +766,14 @@ Module PackageRHL (π : RulesParam).
       G₀ ≈[ AdvantageE G₀ G₁ ] G₁.
   Proof.
     intros I G₀ G₁. intros A h. reflexivity.
+  Qed. *)
+
+  Lemma Advantage_E :
+    ∀ (G : GamePair) A,
+      Advantage G A = AdvantageE (G false) (G true) A.
+  Proof.
+    intros G A.
+    reflexivity.
   Qed.
 
   Lemma TriangleInequality :
@@ -755,50 +784,27 @@ Module PackageRHL (π : RulesParam).
       G ≈[ ϵ2 ] H →
       F ≈[ ϵ3 ] H →
       ∀ A,
-        adv_for A F G →
+        (* adv_for A F G →
         adv_for A G H →
-        adv_for A F H →
+        adv_for A F H → *)
         ϵ3 A <= ϵ1 A + ϵ2 A.
   Proof.
-    intros Game_export F G H ε₁ ε₂ ε₃ h1 h2 h3 A hA1 hA2 hA3.
+    intros Game_export F G H ε₁ ε₂ ε₃ h1 h2 h3 A (* hA1 hA2 hA3 *).
+    unfold adv_equiv in *.
     rewrite <- h1, <- h2, <- h3 by assumption.
     apply ler_dist_add.
   Qed.
 
-  (* TODO FIX *)
-  (* It's not usable in practice because it requires loc_packages and
-    stuff and not raw stuff.
-  *)
-  Lemma Reduction {Game_export M_export : Interface}
-    {M : loc_package Game_export M_export}
-    (G : GamePair Game_export) (A : Adversary4Game M_export) (b : bool) :
-    `| Pr {locpackage link A (link M (G b)) } true | =
-    `| Pr {locpackage link (link A M) (G b) } true |.
+  Lemma Reduction :
+    ∀ (M : raw_package) (G : GamePair) A b,
+      `| Pr (A ∘ (M ∘ (G b))) true | =
+      `| Pr ((A ∘ M) ∘ (G b)) true |.
   Proof.
-    (* @Assia:
-      What I wanted to do was to directly use rewrite link_assoc here.
-      But I cannot do it because Pr expects a package and not a
-      raw_package. These are defined in pkg_core_definition.
-      Record package L I E := mkpackage {
-        pack : raw_package ;
-        pack_valid : ValidPackage L I E pack
-      }.
-
-      Notation "{ 'package' p }" :=
-        (mkpackage p _)
-        (format "{ package  p  }") : package_scope.
-
-      {locpackage} is just a layer above, but it doesn't add complexity.
-    *)
-    package_before_rewrite.
-    rewrite link_assoc.
-    package_after_rewrite.
-    f_equal. f_equal. f_equal. apply loc_package_ext.
-    - cbn. rewrite fsetUA. reflexivity.
-    - cbn. intro. reflexivity.
+    intros M G A b.
+    rewrite link_assoc. reflexivity.
   Qed.
 
-  Lemma auxReduction :
+  (* Lemma auxReduction :
     ∀ {Game_export M_export : Interface} {M : loc_package Game_export M_export}
       {G : Game_Type Game_export} {A : Adversary4Game M_export},
       fdisjoint M.(locs) G.(locs) →
@@ -812,35 +818,18 @@ Module PackageRHL (π : RulesParam).
     - rewrite fdisjointUr in Hdisjoint1.
       move: Hdisjoint1. by move /andP => [_ Hdisjoint1].
     - apply Hdisjoint0.
-  Qed.
+  Qed. *)
 
   Lemma ReductionLem :
-    ∀ {Game_export M_export : Interface}
-      {M : loc_package Game_export M_export}
-      (G : GamePair Game_export),
-      {locpackage link M (G false)}
-      ≈[ λ A, AdvantageE (G false) (G true) {locpackage link A M} ]
-      {locpackage link M (G true)}.
+    ∀ M (G : GamePair),
+      (M ∘ (G false)) ≈[ λ A, Advantage G (A ∘ M) ] (M ∘ (G true)).
   Proof.
-    intros Game_export M_export M G.
-    intros A h. unfold AdvantageE.
-    simpl.
-    (* TODO Used to be the following *)
-    (* rewrite Reduction. rewrite Reduction.
-    reflexivity. *)
-    package_before_rewrite.
-    rewrite !link_assoc.
-    package_after_rewrite.
-    f_equal. f_equal.
-    - f_equal. f_equal. apply loc_package_ext.
-      + cbn. rewrite fsetUA. reflexivity.
-      + cbn. intro. reflexivity.
-    - f_equal. f_equal. f_equal. apply loc_package_ext.
-      + cbn. rewrite fsetUA. reflexivity.
-      + cbn. intro. reflexivity.
+    intros M G.
+    unfold adv_equiv. intro A. rewrite Advantage_E.
+    unfold AdvantageE. rewrite !link_assoc. reflexivity.
   Qed.
 
-  Lemma rhl_repr_change_all {B1 B2 : choiceType} {L1 L2 L1' L2'}
+  (* Lemma rhl_repr_change_all {B1 B2 : choiceType} {L1 L2 L1' L2'}
     {pre : heap_choiceType * heap_choiceType -> Prop}
     {post : (B1 * heap_choiceType) → (B2 * heap_choiceType) → Prop}
     {r1 r1' : raw_program B1} {r2 r2' : raw_program B2}
@@ -859,7 +848,7 @@ Module PackageRHL (π : RulesParam).
     assert (repr' r2 hr21 = repr' r2 hr22) as Hr2.
     { apply repr'_ext. reflexivity. }
     rewrite -Hr1 -Hr2. assumption.
-  Qed.
+  Qed. *)
 
   Definition INV (L : {fset Location})
     (I : heap_choiceType * heap_choiceType → Prop) :=
@@ -899,59 +888,54 @@ Module PackageRHL (π : RulesParam).
         apply Hdisjoint2. assumption.
   Qed.
 
-  Lemma get_case {L LA} (I : heap_choiceType * heap_choiceType → Prop)
-    (HINV : INV LA I) {l : Location} (Hin : l \in LA)
-    (hp : [eta valid_program L Game_import] (getr l (λ x, ret x))) :
-    ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄
-          repr (locs := L) (mkprog (getr l (λ x, ret x)) hp)
-        ≈ repr (locs := L) (mkprog (getr l (λ x, ret x)) hp)
-        ⦃ λ '(b1, s1) '(b2, s2), b1 = b2 ∧ I (s1, s2) ⦄.
+  Lemma get_case :
+    ∀ LA (I : heap_choiceType * heap_choiceType → Prop) ℓ,
+      INV LA I →
+      ℓ \in LA →
+      r⊨ ⦃ λ '(s₀, s₃), I (s₀, s₃) ⦄
+        x ← get ℓ ;; ret x ≈ x ← get ℓ ;; ret x
+        ⦃ λ '(b₁, s₁) '(b₂, s₂), b₁ = b₂ ∧ I (s₁, s₂) ⦄.
   Proof.
-    cbn. intros [s1 s2].
+    intros LA I ℓ hinv hin. intros [s₁ s₂]. simpl.
     rewrite /SpecificationMonads.MonoCont_bind /=.
-    rewrite /SpecificationMonads.MonoCont_order /SPropMonadicStructures.SProp_op_order
-            /Morphisms.pointwise_relation /Basics.flip /SPropMonadicStructures.SProp_order /=.
+    rewrite /SpecificationMonads.MonoCont_order
+      /SPropMonadicStructures.SProp_op_order
+      /Morphisms.pointwise_relation /Basics.flip
+      /SPropMonadicStructures.SProp_order /=.
     intuition.
-    assert (get_heap s1 l = get_heap s2 l) as Hv.
-    { unfold INV in HINV.
-      apply inversion_valid_getr in hp as [hp _].
-      specialize (HINV s1 s2). destruct HINV as [HINV _].
-      specialize (HINV H0 _ Hin).
-      assumption.
+    assert (get_heap s₁ ℓ = get_heap s₂ ℓ) as Hv.
+    { unfold INV in hinv.
+      specialize (hinv s₁ s₂). destruct hinv as [hinv _].
+      eapply hinv. all: auto.
     }
-    unfold repr'_obligation_1.
-    pose v := (SDistr_unit _ (((get_heap s1 l), s1),
-                              ((get_heap s2 l), s2))).
-    exists v.
-    split.
-    + apply SDistr_unit_F_choice_prod_coupling.
+    pose v := (SDistr_unit _ (((get_heap s₁ ℓ), s₁),
+                              ((get_heap s₂ ℓ), s₂))).
+    exists v. split.
+    - apply SDistr_unit_F_choice_prod_coupling.
       reflexivity.
-    + intros [b1 s3] [b2 s4].
-      intros Hd.
-      apply H1.
-      unfold SDistr_unit in Hd.
-      rewrite dunit1E in Hd.
-      unfold repr'_obligation_1 in Hd.
-      assert (((get_heap s1 l, s1, (get_heap s2 l, s2)) = (b1, s3, (b2, s4)))) as Heqs.
-      { destruct ((get_heap s1 l, s1, (get_heap s2 l, s2)) == (b1, s3, (b2, s4))) eqn:Heqd.
-        + move: Heqd. move /eqP => Heqd. assumption.
-        + rewrite Heqd in Hd. simpl in Hd.
-          rewrite mc_1_10.Num.Theory.ltrr in Hd.
-          move: Hd. move /eqP /eqP => Hd. discriminate. }
-      inversion Heqs.
-      all: rewrite -H3 -H5.
-      intuition.
+    - intros [b₁ s₃] [b₂ s₄]. intro hd.
+      apply H1. rewrite dunit1E in hd.
+      assert (
+        (get_heap s₁ ℓ, s₁, (get_heap s₂ ℓ, s₂)) = (b₁, s₃, (b₂, s₄))
+      ) as e.
+      { destruct ((get_heap s₁ ℓ, s₁, (get_heap s₂ ℓ, s₂)) == (b₁, s₃, (b₂, s₄))) eqn:e.
+        - move: e => /eqP e. assumption.
+        - rewrite e in hd. cbn in hd.
+          rewrite mc_1_10.Num.Theory.ltrr in hd. discriminate.
+      }
+      inversion e. subst. intuition.
   Qed.
 
-  Lemma put_case {L LA} (I : heap_choiceType * heap_choiceType → Prop)
-    (HINV : INV LA I) {l : Location} {v : Value l.π1} (Hin : l \in LA)
-    (hp : [eta valid_program L Game_import] (putr l v (ret tt))):
-    ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄
-          repr (locs := L) (mkprog (putr l v (ret tt)) hp)
-        ≈ repr (locs := L) (mkprog (putr l v (ret tt)) hp)
-        ⦃ λ '(b1, s1) '(b2, s2), b1 = b2 ∧ I (s1, s2) ⦄.
+  Lemma put_case :
+    ∀ {LA} (I : heap_choiceType * heap_choiceType → Prop) l v,
+      INV LA I →
+      l \in LA →
+      r⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄
+          putr l v (ret tt) ≈ putr l v (ret tt)
+          ⦃ λ '(b1, s1) '(b2, s2), b1 = b2 ∧ I (s1, s2) ⦄.
   Proof.
-    cbn. intros [s1 s2].
+    intros LA I l v hinv hin.
+    intros [s1 s2]. simpl.
     rewrite /SpecificationMonads.MonoCont_bind /=.
     rewrite /SpecificationMonads.MonoCont_order /SPropMonadicStructures.SProp_op_order
             /Morphisms.pointwise_relation /Basics.flip /SPropMonadicStructures.SProp_order /=.
@@ -965,30 +949,27 @@ Module PackageRHL (π : RulesParam).
       apply H1.
       unfold SDistr_unit in Hd.
       rewrite dunit1E in Hd.
-      unfold repr'_obligation_1 in Hd.
       assert ((tt, set_heap s1 l v, (tt, set_heap s2 l v)) = (b1, s3, (b2, s4))) as Heqs.
       { destruct ((tt, set_heap s1 l v, (tt, set_heap s2 l v)) == (b1, s3, (b2, s4))) eqn:Heqd.
-        + move: Heqd. move /eqP => Heqd. assumption.
-        + rewrite Heqd in Hd. simpl in Hd.
-          rewrite mc_1_10.Num.Theory.ltrr in Hd.
-          move: Hd. move /eqP /eqP => Hd. discriminate. }
+        - move: Heqd. move /eqP => Heqd. assumption.
+        - rewrite Heqd in Hd. simpl in Hd.
+          rewrite mc_1_10.Num.Theory.ltrr in Hd. discriminate.
+      }
       inversion Heqs.
-      split.
-      1: reflexivity.
-      specialize (HINV s1 s2). destruct HINV as [_ HINV].
-      specialize (HINV H0 l v Hin).
-      assumption.
+      intuition.
   Qed.
 
-  Lemma destruct_pair_eq {R : ringType} {A B : eqType} {a b : A} {c d : B}
-    : ((a, c) == (b, d))%:R = (a == b)%:R * (c == d)%:R :> R.
+  (* TODO MOVE? *)
+
+  Lemma destruct_pair_eq {R : ringType} {A B : eqType} {a b : A} {c d : B} :
+    ((a, c) == (b, d))%:R = (a == b)%:R * (c == d)%:R :> R.
   Proof.
     destruct (a == b) eqn:ab, (c == d) eqn:cd.
     all: cbn; rewrite ab cd /=; try rewrite GRing.mulr1; try rewrite GRing.mulr0; reflexivity.
   Qed.
 
-  Lemma summable_eq {A : choiceType} {s : A}
-    : realsum.summable (T:=A) (R:=R) (λ x, (x == s)%:R).
+  Lemma summable_eq {A : choiceType} {s : A} :
+    realsum.summable (T:=A) (R:=R) (λ x, (x == s)%:R).
   Proof.
     match goal with
     | |- realsum.summable ?f => eassert (f = _) as Hf end.
@@ -1053,14 +1034,14 @@ Module PackageRHL (π : RulesParam).
     - cbn in H. intuition.
   Qed.
 
-  Lemma sampler_case {L LA} (I : heap_choiceType * heap_choiceType -> Prop)
-    (HINV : INV LA I) {op}
-    (hp : [eta valid_program L Game_import] (sampler op [eta ret (A:=Arit op)])):
-    ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄
-          repr (locs := L) (mkprog (sampler op [eta ret (A:=Arit op)]) hp)
-        ≈ repr (locs := L) (mkprog (sampler op [eta ret (A:=Arit op)]) hp)
+  Lemma sampler_case :
+    ∀ {LA} (I : heap_choiceType * heap_choiceType -> Prop) op,
+      INV LA I →
+      r⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄
+        sampler op [eta ret (A:=Arit op)] ≈ sampler op [eta ret (A:=Arit op)]
         ⦃ λ '(b1, s1) '(b2, s2), b1 = b2 ∧ I (s1, s2) ⦄.
   Proof.
+    intros LA I op HINV.
     cbn - [thetaFstd θ]. intros [s1 s2].
     rewrite /SpecificationMonads.MonoCont_order /SPropMonadicStructures.SProp_op_order
             /Morphisms.pointwise_relation /Basics.flip /SPropMonadicStructures.SProp_order.
@@ -1080,7 +1061,7 @@ Module PackageRHL (π : RulesParam).
     cbn in foo.
     unfold probopStP in foo. cbn in foo.
     destruct op as [opA opB].
-    pose foo2 :=  SDistr_bind _ _ (fun x => SDistr_unit _ ((x, s1), (x, s2))) (Theta_dens.unary_ThetaDens0 prob_handler _ (ropr (opA; opB) (λ x : chEmb opA, retrFree x))).
+    pose foo2 := SDistr_bind (fun x => SDistr_unit _ ((x, s1), (x, s2))) (Theta_dens.unary_ThetaDens0 prob_handler _ (ropr (opA; opB) (λ x : chEmb opA, retrFree x))).
     exists foo2.
     split.
     - cbn. unfold coupling.
@@ -1088,7 +1069,7 @@ Module PackageRHL (π : RulesParam).
       + unfold lmg.
         unfold foo2. apply distr_ext.
         move => x0. unfold SDistr_bind, SDistr_unit.
-        unfold repr'_obligation_1. cbn.
+        cbn.
         rewrite SDistr_rightneutral. cbn.
         rewrite dfstE. rewrite dletE. cbn.
         match goal with
@@ -1123,7 +1104,7 @@ Module PackageRHL (π : RulesParam).
       + unfold rmg.
         unfold foo2. apply distr_ext.
         move => x0. unfold SDistr_bind, SDistr_unit.
-        unfold repr'_obligation_1. cbn.
+        cbn.
         rewrite SDistr_rightneutral. cbn.
         rewrite dsndE. rewrite dletE. cbn.
         match goal with
@@ -1183,6 +1164,8 @@ Module PackageRHL (π : RulesParam).
         * auto.
         * apply ler0n.
   Qed.
+
+  (* TODO These guys type-check but they should be updated nonetheless *)
 
   Definition eq_up_to_inv_alt {L₁ L₂} {E}
     (I : heap_choiceType * heap_choiceType → Prop)
