@@ -1394,23 +1394,39 @@ Module PackageRHL (π : RulesParam).
   Qed.
 
   Lemma prove_relational :
-    ∀ {L₀ L₁ E} (p₀ p₁ : raw_package) (I : precond)
+    ∀ {L₀ L₁ LA E} (p₀ p₁ : raw_package) (I : precond) (A : raw_package)
       `{ValidPackage L₀ Game_import E p₀}
-      `{ValidPackage L₁ Game_import E p₁},
+      `{ValidPackage L₁ Game_import E p₁}
+      `{ValidPackage LA E A_export A},
       INV' L₀ L₁ I →
+      fdisjoint LA L₀ →
+      fdisjoint LA L₁ →
       eq_up_to_inv I p₀ p₁ →
-      p₀ ≈[ λ A, 0 ] p₁.
+      AdvantageE p₀ p₁ A = 0.
   Proof.
-    intros L₀ L₁ E p₀ p₁ I vp₀ vp₁ hI' hp.
-    intros A. (* TODO More restrictions and rewrite happen here *)
+    intros L₀ L₁ LA E p₀ p₁ I A vp₀ vp₁ vA hI' hd₀ hd₁ hp.
     unfold AdvantageE, Pr.
     pose r := get_op_default A RUN tt.
     (* TODO We already start seeing contrainsts that A must satisfy. *)
-    (* assert (hI : INV LA I). *)
-    (* pose proof (some_lemma_for_prove_relational p₀ p₁ A hI hp). *)
-    (* Maybe first it would be better not to use the ≈[] notation and
-    directly talk about advantage and adversary?
-    This way we don't have to decide what the definiton of ≈[] should be. *)
+    assert (hI : INV LA I).
+    { unfold INV. intros s₀ s₁. split.
+      - intros hi l hin. apply hI'.
+        + assumption.
+        + move: hd₀ => /fdisjointP hd₀. apply hd₀. assumption.
+        + move: hd₁ => /fdisjointP hd₁. apply hd₁. assumption.
+      - intros hi l v hin. apply hI'.
+        + assumption.
+        + move: hd₀ => /fdisjointP hd₀. apply hd₀. assumption.
+        + move: hd₁ => /fdisjointP hd₁. apply hd₁. assumption.
+    }
+    unshelve epose proof (some_lemma_for_prove_relational p₀ p₁ I r hI hp).
+    4-5: eauto.
+    1:{ (* exact _. *)
+      (* It'd be nice to automate this bit as well, no?
+      At least we should have a lemma for this.
+      *)
+      admit.
+    }
   Abort.
 
   (* Lemma prove_relational {L1 L2} {export}
