@@ -436,6 +436,16 @@ Module PRF_example.
   Qed.
 
   (* TODO MOVE *)
+  Lemma Advantage_sym :
+    ∀ P Q A,
+      AdvantageE P Q A = AdvantageE Q P A.
+  Proof.
+    intros P Q A.
+    unfold AdvantageE.
+    rewrite distrC. reflexivity.
+  Qed.
+
+  (* TODO MOVE *)
   Lemma ler_refl :
     ∀ (x y : R),
       x = y →
@@ -474,6 +484,15 @@ Module PRF_example.
         * auto.
         * eapply ih.
   Qed.
+
+  Ltac advantage_sum_simpl_in h :=
+    repeat
+      change (advantage_sum ?P (?R :: ?l) ?Q ?A)
+      with (AdvantageE P R A + advantage_sum R l Q A) in h ;
+    change (advantage_sum ?P [::] ?Q ?A) with (AdvantageE P Q A) in h.
+
+  Tactic Notation "advantage_sum" "simpl" "in" hyp(h) :=
+    advantage_sum_simpl_in h.
 
   (** Security of PRF
 
@@ -523,177 +542,23 @@ Module PRF_example.
         MOD_CPA_ff_pkg ∘ EVAL false ;
         MOD_CPA_tt_pkg ∘ EVAL false ;
         MOD_CPA_tt_pkg ∘ EVAL true
-      ] (IND_CPA true)
+      ] (IND_CPA true) A
     ) as ineq.
-    repeat change (advantage_sum ?P (?R :: ?l) ?Q ?A) with (AdvantageE P R A + advantage_sum R l Q A) in ineq.
-    change (advantage_sum ?P [::] ?Q ?A) with (AdvantageE P Q A) in ineq.
-
-
-
-
-    (* TODO adv_forp hyps are probably redundant of G in F,G,H *)
-    (* First application of triangle inequality *)
-    (* HOP IND_CPA false ≈ MOD_CPA_ff_pkg ∘ EVAL true *)
-    pose proof @TriangleInequality as h1.
-    specialize h1 with (3 := Advantage_equiv _ IND_CPA).
-    specialize h1 with (1 := IND_CPA_equiv_false).
-    specialize h1 with (1 := AdvantageE_equiv _ _ _).
-    specialize (h1 A).
-    unfold adv_forp in hA. simpl in hA. move: hA => /andP [hd _].
-    forward h1.
-    { unfold adv_for. simpl. rewrite hd. simpl.
-      rewrite fdisjointUr.
-      apply/andP. split.
-      - unfold MOD_CPA_location. apply fdisjoints0.
-      - rewrite fdisjointC. rewrite fdisjointC in hd.
-        eapply fdisjoint_trans. 2: exact hd.
-        unfold EVAL_location_tt, IND_CPA_location.
-        apply fsubsetxx.
-    }
-    forward h1.
-    { unfold adv_for. simpl. rewrite hd.
-      rewrite andbC. simpl.
-      rewrite fdisjointUr. apply/andP. split.
-      - unfold MOD_CPA_location. apply fdisjoints0.
-      - rewrite fdisjointC. rewrite fdisjointC in hd.
-        eapply fdisjoint_trans. 2: exact hd.
-        unfold EVAL_location_tt, IND_CPA_location.
-        apply fsubsetxx.
-    }
-    forward h1.
-    { unfold adv_for. simpl. rewrite hd. simpl. reflexivity. }
-    cbn beta in h1.
-    (* Second application of triangle inequality *)
-    (* HOP MOD_CPA_ff_pkg ∘ EVAL true ≈ MOD_CPA_ff_pkg ∘ EVAL false *)
-    pose proof @TriangleInequality as h2.
-    lazymatch type of h1 with
-    | context [ _ + AdvantageE ?p ?q _ ] =>
-      specialize h2 with (3 := AdvantageE_equiv _ p q)
-    end.
-    (* Somehow, it doesn't work directly *)
-    unshelve pose (foo := {locpackage MOD_CPA_ff_pkg ∘ EVAL false }).
-    specialize h2 with (1 := AdvantageE_equiv _ _ foo).
-    subst foo.
-    specialize h2 with (1 := AdvantageE_equiv _ _ _).
-    specialize (h2 A).
-    forward h2.
-    { unfold adv_for. simpl. apply/andP. split.
-      - rewrite fdisjointUr. apply/andP. split.
-        + unfold MOD_CPA_location. apply fdisjoints0.
-        + rewrite fdisjointC. rewrite fdisjointC in hd.
-          eapply fdisjoint_trans. 2: exact hd.
-          unfold EVAL_location_tt, IND_CPA_location.
-          apply fsubsetxx.
-      - rewrite fdisjointUr. apply/andP. split.
-        + unfold MOD_CPA_location. apply fdisjoints0.
-        + rewrite fdisjointC. rewrite fdisjointC in hd.
-          eapply fdisjoint_trans. 2: exact hd.
-          unfold EVAL_location_ff, IND_CPA_location.
-          (* Can we avoid this? *)
-          (* Or should we require IND_CPA_location to include table_location?
-            Or do as below and simply add a requirement of disjointness?
-            Doesn't seem great.
-          *)
-          (* apply fsubsetxx. *)
-          give_up.
-    }
-    forward h2.
-    { unfold adv_for. simpl. rewrite hd. admit. }
-    forward h2.
-    { unfold adv_for. simpl. rewrite hd. admit. }
-    (* HOP MOD_CPA_ff_pkg ∘ EVAL false ≈ MOD_CPA_tt_pkg ∘ EVAL false *)
-    pose proof @TriangleInequality as h3.
-    lazymatch type of h2 with
-    | context [ _ + AdvantageE ?p ?q _ ] =>
-      specialize h3 with (3 := AdvantageE_equiv _ p q)
-    end.
-    unshelve pose (foo := {locpackage MOD_CPA_tt_pkg ∘ EVAL false }).
-    specialize h3 with (1 := AdvantageE_equiv _ _ foo).
-    subst foo.
-    specialize h3 with (1 := AdvantageE_equiv _ _ _).
-    specialize (h3 A).
-    forward h3.
-    { unfold adv_for. simpl. admit. }
-    forward h3.
-    { unfold adv_for. simpl. rewrite hd. admit. }
-    forward h3.
-    { unfold adv_for. simpl. rewrite hd. admit. }
-    (* HOP MOD_CPA_tt_pkg ∘ EVAL false ≈ MOD_CPA_tt_pkg ∘ EVAL true *)
-    pose proof @TriangleInequality as h4.
-    lazymatch type of h3 with
-    | context [ _ + AdvantageE ?p ?q _ ] =>
-      specialize h4 with (3 := AdvantageE_equiv _ p q)
-    end.
-    unshelve pose (foo := {locpackage MOD_CPA_tt_pkg ∘ EVAL true }).
-    specialize h4 with (1 := AdvantageE_equiv _ _ foo).
-    subst foo.
-    specialize h4 with (1 := IND_CPA_equiv_true).
-    specialize (h4 A).
-    forward h4.
-    { unfold adv_for. simpl. admit. }
-    forward h4.
-    { unfold adv_for. simpl. rewrite hd. admit. }
-    forward h4.
-    { unfold adv_for. simpl. rewrite hd. admit. }
-    cbn beta in h4. rewrite GRing.addr0 in h4.
-    (* Now we conclude *)
-    eapply ler_trans. 1: exact h1.
-    rewrite GRing.add0r.
-    eapply ler_trans. 1: exact h2.
-    clear hd h1 h2.
-    eapply ler_trans.
-    - eapply ler_add. 2: exact h3.
-      auto.
-    - clear h3.
-      revert h4.
-      unify_package_proofs.
-      intro ineq.
-      match goal with
-      | |- context [ _ + ?x + _ ] =>
-        set (x0 := x) in *
-      end.
-      rewrite GRing.addrCA.
-      rewrite [X in _ <= X]GRing.addrAC.
-      rewrite [X in _ <= X]GRing.addrC.
-      eapply ler_add. 1: auto.
-      clear x0.
-      match goal with
-      | |- context [ _ + ?x ] =>
-        set (x0 := x) in *
-      end.
-      eapply ler_trans.
-      1: eapply ler_add.
-      2: exact ineq.
-      1: auto.
-      clear.
-      rewrite 2!Advantage_E.
-      (* It'd be nice to be able to rewrite with the following
-        but I don't really know how to do it because of the needed
-        dependency.
-      *)
-      Fail rewrite Advantage_link.
-      eapply ler_refl.
-      unfold AdvantageE.
-      repeat change ({locpackage ?p }.(pack)) with p.
-      package_before_rewrite.
-      rewrite !link_assoc.
-      package_after_rewrite.
-      clear.
-      f_equal.
-      + rewrite distrC. f_equal. f_equal.
-        * f_equal. f_equal. apply loc_package_ext.
-          -- simpl. rewrite fsetUA. reflexivity.
-          -- intro. reflexivity.
-        * f_equal. f_equal. f_equal. apply loc_package_ext.
-          -- simpl. rewrite fsetUA. reflexivity.
-          -- intro. reflexivity.
-      + f_equal. f_equal.
-        * f_equal. f_equal. apply loc_package_ext.
-          -- simpl. rewrite fsetUA. reflexivity.
-          -- intro. reflexivity.
-        * f_equal. f_equal. f_equal. apply loc_package_ext.
-          -- simpl. rewrite fsetUA. reflexivity.
-          -- intro. reflexivity.
+    advantage_sum simpl in ineq.
+    rewrite !GRing.addrA in ineq.
+    eapply ler_trans. 1: exact ineq.
+    clear ineq.
+    assert (h0 :
+      AdvantageE (IND_CPA false) (MOD_CPA_ff_pkg ∘ (EVAL true)) A = 0
+    ).
+    { admit. }
+    assert (h1 :
+      AdvantageE (MOD_CPA_tt_pkg ∘ (EVAL true)) (IND_CPA true) A = 0
+    ).
+    { admit. }
+    rewrite h0 h1. clear h0 h1.
+    rewrite GRing.add0r GRing.addr0.
+    rewrite !Advantage_link. rewrite Advantage_sym. auto.
   Admitted.
 
   (** TODO OLD BELOW **)
