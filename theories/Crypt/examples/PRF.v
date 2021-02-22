@@ -476,6 +476,10 @@ Module PRF_example.
     TODO: It would be nice to have the same names as the paper
     TODO: Can we devise a tactic to do the hops automatically?
 
+    TODO: For the HOPS I think we can have a theorem rather than a tactic
+    concluding on triangle inequality of advantages from two packages and a list
+    of others.
+
     TODO: Unsurprisingly it seems we need to also have things like ≈[]
     and advantage talk about raw packages rather than packages.
     They could be treated the same way as the adv_for criterion at the moment.
