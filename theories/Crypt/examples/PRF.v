@@ -445,6 +445,36 @@ Module PRF_example.
     auto.
   Qed.
 
+  (* TODO MOVE *)
+  Lemma Advantage_triangle :
+    ∀ P Q R A,
+      AdvantageE P Q A <= AdvantageE P R A + AdvantageE R Q A.
+  Proof.
+    intros P Q R A.
+    unfold AdvantageE.
+    apply ler_dist_add.
+  Qed.
+
+  Fixpoint advantage_sum P l Q A :=
+    match l with
+    | [::] => AdvantageE P Q A
+    | R :: l => AdvantageE P R A + advantage_sum R l Q A
+    end.
+
+  Lemma Advantage_triangle_chain :
+    ∀ P (l : seq raw_package) Q A,
+      AdvantageE P Q A <= advantage_sum P l Q A.
+  Proof.
+    intros P l Q A.
+    induction l as [| R l ih] in P, Q |- *.
+    - simpl. auto.
+    - simpl. eapply ler_trans.
+      + eapply Advantage_triangle.
+      + eapply ler_add.
+        * auto.
+        * eapply ih.
+  Qed.
+
   (** Security of PRF
 
     The bound is given by using the triangle inequality several times,
@@ -486,6 +516,21 @@ Module PRF_example.
       prf_epsilon (A ∘ MOD_CPA_tt_pkg).
   Proof.
     intros A (* hA *). unfold prf_epsilon, statistical_gap.
+    rewrite !Advantage_E.
+    pose proof (
+      Advantage_triangle_chain (IND_CPA false) [::
+        MOD_CPA_ff_pkg ∘ EVAL true ;
+        MOD_CPA_ff_pkg ∘ EVAL false ;
+        MOD_CPA_tt_pkg ∘ EVAL false ;
+        MOD_CPA_tt_pkg ∘ EVAL true
+      ] (IND_CPA true)
+    ) as ineq.
+    repeat change (advantage_sum ?P (?R :: ?l) ?Q ?A) with (AdvantageE P R A + advantage_sum R l Q A) in ineq.
+    change (advantage_sum ?P [::] ?Q ?A) with (AdvantageE P Q A) in ineq.
+
+
+
+
     (* TODO adv_forp hyps are probably redundant of G in F,G,H *)
     (* First application of triangle inequality *)
     (* HOP IND_CPA false ≈ MOD_CPA_ff_pkg ∘ EVAL true *)
