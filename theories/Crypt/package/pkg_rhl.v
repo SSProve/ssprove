@@ -1408,6 +1408,9 @@ Module PackageRHL (π : RulesParam).
     (* TODO We already start seeing contrainsts that A must satisfy. *)
     (* assert (hI : INV LA I). *)
     (* pose proof (some_lemma_for_prove_relational p₀ p₁ A hI hp). *)
+    (* Maybe first it would be better not to use the ≈[] notation and
+    directly talk about advantage and adversary?
+    This way we don't have to decide what the definiton of ≈[] should be. *)
   Abort.
 
   (* Lemma prove_relational {L1 L2} {export}
