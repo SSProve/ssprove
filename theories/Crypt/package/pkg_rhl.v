@@ -1176,6 +1176,12 @@ Module PackageRHL (π : RulesParam).
     doesn't have any requirements.
   *)
 
+  Definition eq_up_to_inv (I : precond) (p₀ p₁ : raw_package) :=
+    ∀ (id : ident) (S T : chUniverse) (x : S),
+      r⊨ ⦃ λ '(s₀, s₁), I (s₀, s₁) ⦄
+        get_op_default p₀ (id, (S, T)) x ≈ get_op_default p₁ (id, (S, T)) x
+        ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ I (s₀, s₁) ⦄.
+
   (* Definition eq_up_to_inv_alt {L₁ L₂} {E}
     (I : heap_choiceType * heap_choiceType → Prop)
     (p₁ : package L₁ Game_import E) (p₂ : package L₂ Game_import E) :=
@@ -1309,192 +1315,83 @@ Module PackageRHL (π : RulesParam).
     apply (Pr_eq Ψ Φ). all: assumption.
   Qed.
 
-  (* Lemma some_lemma_for_prove_relational {export : Interface} {B} {L1 L2 LA}
-    (P1 : package L1 Game_import export)
-    (P2 : package L2 Game_import export)
-    (I : heap_choiceType * heap_choiceType -> Prop)
-    (HINV : INV LA I) (Hempty : I (empty_heap, empty_heap))
-    (H : eq_up_to_inv I P1 P2)
-    (A : program LA export B)
-    (s1 : heap_choiceType) (s2 : heap_choiceType) (Hs1s2 : I (s1, s2)) :
-    ⊨ ⦃ λ '(s1, s2), I (s1, s2)  ⦄
-      repr (mkprog (program_link A P1) [hints (fsubsetUl LA (L1 :|: L2)) ; (fsubset_trans (fsubsetUl L1 L2) (fsubsetUr LA (L1 :|: L2))) ])
-      ≈
-      repr (mkprog (program_link A P2) [hints (fsubsetUl LA (L1 :|: L2)) ; (fsubset_trans (fsubsetUr L1 L2) (fsubsetUr LA (L1 :|: L2))) ])
-      ⦃ λ '(b1, s1) '(b2, s2), b1 = b2 ∧ I (s1, s2) ⦄.
+  (* TODO Rename *)
+  Lemma some_lemma_for_prove_relational :
+    ∀ {L₀ L₁ LA E} (p₀ p₁ : raw_package) (I : precond) {B} (A : raw_program B)
+      `{ValidPackage L₀ Game_import E p₀}
+      `{ValidPackage L₁ Game_import E p₁}
+      `{@ValidProgram LA E B A},
+      INV LA I →
+      eq_up_to_inv I p₀ p₁ →
+      r⊨ ⦃ I ⦄ program_link A p₀ ≈ program_link A p₁
+        ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ I (s₀, s₁) ⦄.
   Proof.
-    destruct P1 as [P1a P1b] eqn:HP1.
-    destruct P2 as [P2a P2b] eqn:HP2.
-    destruct A as [A hA]. simpl.
-    induction A; intros.
+    intros L₀ L₁ LA E p₀ p₁ I B A vp₀ vp₁ vA hLA hp.
+    induction A in vA |- *.
     - cbn - [semantic_judgement].
-      unfold repr'_obligation_1.
-      eapply weaken_rule.
-      + apply ret_rule.
-      + cbn. intros [h1 h2] post.
-        cbn. unfold SPropMonadicStructures.SProp_op_order.
-        unfold Basics.flip, SPropMonadicStructures.SProp_order.
-        intros [HI Hp].
-        apply Hp. split.
-        * reflexivity.
-        * assumption.
-    - apply inversion_valid_opr in hA as hA'. destruct hA' as [hA1 hA2].
-      pose foo := (P1b o hA1).
+      eapply weaken_rule. 1: apply ret_rule.
+      intros [h₀ h₁] post.
+      cbn. unfold SPropMonadicStructures.SProp_op_order.
+      unfold Basics.flip, SPropMonadicStructures.SProp_order.
+      intros [HI Hp].
+      apply Hp. intuition auto.
+    - cbn - [semantic_judgement lookup_op].
+      apply inversion_valid_opr in vA as hA. destruct hA as [hi vk].
       destruct o as [id [S T]].
-      destruct foo as [f [K1 K2]].
-      cbn - [semantic_judgement lookup_op].
-      fold_repr.
-      assert (lookup_op P1a (id, (S, T)) = Some f).
-      { cbn. rewrite K1.
-        destruct (chUniverse_eqP S S), (chUniverse_eqP T T).
-        all: try contradiction.
-        noconf e. noconf e0. reflexivity.
-      }
-      program_before_rewrite.
-      rewrite H1.
-      program_after_rewrite.
-      pose foo2 := (P2b (id, (S, T)) hA1).
-      destruct foo2 as [f2 [K12 K22]].
-      cbn - [semantic_judgement lookup_op bind].
-      assert (lookup_op P2a (id, (S, T)) = Some f2) as H2.
-      { cbn. rewrite K12.
-        destruct (chUniverse_eqP S S), (chUniverse_eqP T T). all: try contradiction.
-        noconf e. noconf e0. reflexivity.
-      }
-      fold_repr.
-      program_before_rewrite.
-      rewrite H2.
-      program_after_rewrite.
-      (* TODO: Is there a way to avoid these side conditions? *)
-      unshelve erewrite repr_bind.
-      1:{
-        eapply valid_injectLocations. 2: eauto.
-        exact (fsubset_trans (fsubsetUl L1 L2) (fsubsetUr LA (L1 :|: L2))).
-      }
-      1:{
-        intro. eapply valid_program_link.
-        - eapply valid_injectLocations. 2: eauto.
-          eapply fsubsetUl.
-        - eapply valid_package_inject_locations. 2: eauto.
-          exact (fsubset_trans (fsubsetUl L1 L2) (fsubsetUr LA (L1 :|: L2))).
-      }
-      unshelve erewrite repr_bind.
-      1:{
-        eapply valid_injectLocations. 2: eauto.
-        exact (fsubset_trans (fsubsetUr L1 L2) (fsubsetUr LA (L1 :|: L2))).
-      }
-      1:{
-        intro. eapply valid_program_link.
-        - eapply valid_injectLocations. 2: eauto.
-          eapply fsubsetUl.
-        - eapply valid_package_inject_locations. 2: eauto.
-          exact (fsubset_trans (fsubsetUr L1 L2) (fsubsetUr LA (L1 :|: L2))).
-      }
-      eapply bind_rule_pp.
-      + unfold eq_up_to_inv in H.
-        specialize (H id S T hA1 f f2 K1 K2 K12 K22 x).
-        unfold repr in H. unfold repr.
-        eapply rhl_repr_change_all.
-        1: reflexivity. 1: reflexivity.
-        exact H.
-      + intros a1 a2.
-        apply pre_hypothesis_rule.
-        intros st1 st2 [Heqa Ist1st2].
-        induction Heqa.
-        specialize (H0 a1 (hA2 a1)).
-        apply (pre_weaken_rule  (λ '(s1, s2), I (s1, s2))).
-        2:{
-          intros st0 st3.
-          cbn. intros [Heqst0 Heqst3].
-          rewrite Heqst0 Heqst3. assumption.
-        }
-        cbn -[semantic_judgement] in H0.
-        change (repr' ?p ?h) with (repr (mkprog p h)) in H0.
-        eapply rhl_repr_change_all.
-        1: reflexivity. 1: reflexivity.
-        exact H0.
+      specialize (vp₀ _ hi). simpl in vp₀.
+      destruct vp₀ as [f₀ [e₀ h₀]].
+      specialize (vp₁ _ hi). simpl in vp₁.
+      destruct vp₁ as [f₁ [e₁ h₁]].
+      erewrite lookup_op_spec_inv. 2: eauto.
+      erewrite lookup_op_spec_inv. 2: eauto.
+      specialize (hp id S T x).
+      erewrite get_op_default_spec in hp. 2: eauto.
+      erewrite get_op_default_spec in hp. 2: eauto.
+      rewrite !repr_bind.
+      eapply bind_rule_pp. 1: exact hp.
+      cbn - [semantic_judgement].
+      intros a₀ a₁.
+      apply pre_hypothesis_rule.
+      intros s₀ s₁ [? ?]. subst.
+      eapply pre_weaken_rule. 1: eapply H.
+      + eapply vk.
+      + cbn. intros s₀' s₁' [? ?]. subst. auto.
     - cbn - [semantic_judgement bindrFree].
-      apply inversion_valid_getr in hA as h'.
-      destruct h' as [hA1 hA2].
-      unfold repr'_obligation_4.
-      cbn - [semantic_judgement bindrFree].
+      apply inversion_valid_getr in vA as hA. destruct hA as [hi vk].
       match goal with
       | |- ⊨ ⦃ ?pre_ ⦄ bindrFree ?m_ ?f1_ ≈ bindrFree _ ?f2_ ⦃ ?post_ ⦄ =>
-        pose (m := m_); pose (f1 := f1_); pose (f2 := f2_); pose (pre := pre_); pose (post := post_)
+        eapply (bind_rule_pp (f1 := f1_) (f2 := f2_) m_ m_ pre_ _ post_)
       end.
-      eapply (bind_rule_pp (f1 := f1) (f2 := f2) m m pre _ post).
-      + unshelve eapply (@get_case _ LA).
-        3: assumption.
-        3: exact hA1.
-        * exact LA.
-        * eapply valid_program_from_class. exact _.
-      + intros a1 a2.
-        simpl.
-        apply pre_hypothesis_rule.
-        intros st1 st2 [Heqa Ist1st2].
-        induction Heqa.
-        specialize (H0 a1 (hA2 a1)).
-        apply (pre_weaken_rule  (λ '(s1, s2), I (s1, s2))).
-        2: { intros st0 st3.
-              cbn. intros [Heqst0 Heqst3].
-              rewrite Heqst0 Heqst3. assumption. }
-        cbn -[semantic_judgement] in H0.
-        change (repr' ?p ?h) with (repr (mkprog p h)) in H0.
-        eapply rhl_repr_change_all.
-        1: reflexivity. 1: reflexivity. exact H0.
+      + eapply (get_case LA). all: auto.
+      + intros a₀ a₁. cbn - [semantic_judgement].
+        eapply pre_hypothesis_rule.
+        intros s₀ s₁ [? ?]. subst a₁.
+        eapply pre_weaken_rule. 1: eapply H.
+        * eapply vk.
+        * cbn. intros s₀' s₁' [? ?]. subst. auto.
     - cbn - [semantic_judgement bindrFree].
-      apply inversion_valid_putr in hA as h'.
-      destruct h' as [hA1 hA2].
+      apply inversion_valid_putr in vA as hA. destruct hA as [hi vk].
       match goal with
       | |- ⊨ ⦃ ?pre_ ⦄ bindrFree ?m_ ?f1_ ≈ bindrFree _ ?f2_ ⦃ ?post_ ⦄ =>
-        pose (m := m_); pose (f1 := f1_); pose (f2 := f2_); pose (pre := pre_); pose (post := post_)
+        eapply (bind_rule_pp (f1 := f1_) (f2 := f2_) m_ m_ pre_ _ post_)
       end.
-      eapply (bind_rule_pp (f1 := f1) (f2 := f2) m m pre _ post).
-      + eapply (@put_case _ LA).
-        ++ assumption.
-        ++ exact hA1.
-        Unshelve.
-        * exact LA.
-        * eapply valid_program_from_class. exact _.
-      + intros a1 a2.
-        simpl.
-        apply pre_hypothesis_rule.
-        intros st1 st2 [Heqa Ist1st2].
-        induction Heqa.
-        specialize (IHA hA2).
-        apply (pre_weaken_rule  (λ '(s1, s2), I (s1, s2))).
-        2: { intros st0 st3.
-              cbn. intros [Heqst0 Heqst3].
-              rewrite Heqst0 Heqst3. assumption. }
-        cbn -[semantic_judgement] in IHA.
-        change (repr' ?p ?h) with (repr (mkprog p h)) in IHA.
-        eapply rhl_repr_change_all.
-        1: reflexivity. 1: reflexivity. exact IHA.
-    - cbn - [bindrFree semantic_judgement].
+      + eapply (@put_case LA). all: auto.
+      + intros a₀ a₁. cbn - [semantic_judgement].
+        eapply pre_hypothesis_rule.
+        intros s₀ s₁ [? ?]. subst a₁.
+        eapply pre_weaken_rule. 1: eapply IHA.
+        * eapply vk.
+        * cbn. intros s₀' s₁' [? ?]. subst. auto.
+    - cbn - [semantic_judgement bindrFree].
       eapply bind_rule_pp.
-      + eapply (@sampler_case LA LA).
-        ++ assumption.
-            Unshelve.
-            eapply valid_program_from_class. exact _.
-      + intros a1 a2.
-        simpl.
-        apply pre_hypothesis_rule.
-        intros st1 st2 [Heqa Ist1st2].
-        induction Heqa.
-        unshelve eapply inversion_valid_sampler in hA as hAa1.
-        1: exact a1.
-        specialize (H0 a1 hAa1).
-        apply (pre_weaken_rule  (λ '(s1, s2), I (s1, s2))).
-        2:{
-          intros st0 st3.
-          cbn. intros [Heqst0 Heqst3].
-          rewrite Heqst0 Heqst3. assumption.
-        }
-        cbn -[semantic_judgement] in H0.
-        change (repr' ?p ?h) with (repr (mkprog p h)) in H0.
-        eapply rhl_repr_change_all.
-        1: reflexivity. 1: reflexivity. exact H0.
-  Qed. *)
+      + eapply (@sampler_case LA). auto.
+      + intros a₀ a₁. cbn - [semantic_judgement].
+        eapply pre_hypothesis_rule.
+        intros s₀ s₁ [? ?]. subst a₁.
+        eapply pre_weaken_rule. 1: eapply H.
+        * eapply inversion_valid_sampler. eauto.
+        * cbn. intros s₀' s₁' [? ?]. subst. auto.
+  Qed.
 
   (* Lemma prove_relational {L1 L2} {export}
     (P1 : package L1 Game_import export)
