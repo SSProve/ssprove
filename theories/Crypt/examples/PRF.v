@@ -314,8 +314,8 @@ Module PRF_example.
       }
     ].
 
-  Definition EVAL : GamePair  [interface val #[i0] : chWords → chKey] :=
-    λ b, if b then {locpackage EVAL_pkg_tt } else {locpackage EVAL_pkg_ff }.
+  Definition EVAL : GamePair :=
+    λ b, if b then EVAL_pkg_tt.(pack) else EVAL_pkg_ff.(pack).
 
   Definition MOD_CPA_location : {fset Location} := fset0.
 
@@ -391,22 +391,16 @@ Module PRF_example.
       }
     ].
 
-  Definition IND_CPA :
-    GamePair [interface val #[i1] : chWords → chWords × chWords ] :=
+  Definition IND_CPA : GamePair :=
     λ b,
-      if b then {locpackage IND_CPA_pkg_tt } else {locpackage IND_CPA_pkg_ff }.
+      if b then IND_CPA_pkg_tt.(pack) else IND_CPA_pkg_ff.(pack).
 
   Local Open Scope ring_scope.
 
   Definition prf_epsilon A := Advantage EVAL A.
 
   Definition statistical_gap :=
-    AdvantageE
-      {locpackage MOD_CPA_ff_pkg ∘ EVAL false }
-      {locpackage MOD_CPA_tt_pkg ∘ EVAL false }.
-
-  Ltac fold_repr :=
-    change (repr' ?p ?h) with (repr (mkprog p h)).
+    AdvantageE (MOD_CPA_ff_pkg ∘ EVAL false) (MOD_CPA_tt_pkg ∘ EVAL false).
 
   Lemma key_location_in_rel_loc : key_location \in rel_loc.
   Proof.
@@ -418,44 +412,32 @@ Module PRF_example.
     auto_in_fset.
   Qed.
 
-  (* TODO See if it is better to have packages or raw packages here
-    and above.
-  *)
-  Lemma IND_CPA_equiv_false :
+  (* Lemma IND_CPA_equiv_false :
     (IND_CPA false) ≈[ λ A, 0 ] {locpackage MOD_CPA_ff_pkg ∘ (EVAL true) }.
   Proof.
     (* Here the proof should come down to using the syntactic rules. *)
-  Admitted.
+  Admitted. *)
 
-  Lemma IND_CPA_equiv_true :
+  (* Lemma IND_CPA_equiv_true :
   {locpackage MOD_CPA_tt_pkg ∘ (EVAL true) } ≈[ λ A, 0 ] (IND_CPA true).
   Proof.
-  Admitted.
+  Admitted. *)
 
   (* TODO MOVE *)
   (* Similar to reduction lemma *)
+  (* Still necessary? *)
   Lemma Advantage_link :
-    ∀ I E (G₀ G₁ : Game_Type I) (A : Adversary4Game _) (P : loc_package _ E),
-      AdvantageE G₀ G₁ {locpackage A ∘ P} =
-      AdvantageE {locpackage P ∘ G₀} {locpackage P ∘ G₁} A.
+    ∀ G₀ G₁ A P,
+      AdvantageE G₀ G₁ (A ∘ P) =
+      AdvantageE (P ∘ G₀) (P ∘ G₁) A.
   Proof.
-    intros I E G₀ G₁ A P.
-    unfold AdvantageE. simpl.
-    package_before_rewrite.
-    rewrite !link_assoc.
-    package_after_rewrite.
-    f_equal. f_equal.
-    - f_equal. f_equal. apply loc_package_ext.
-      + simpl. rewrite fsetUA. reflexivity.
-      + intro. reflexivity.
-    - f_equal. f_equal. f_equal. apply loc_package_ext.
-      + simpl. rewrite fsetUA. reflexivity.
-      + simpl. intro. reflexivity.
+    intros G₀ G₁ A P.
+    unfold AdvantageE. rewrite !link_assoc. reflexivity.
   Qed.
 
   (* TODO MOVE *)
   Lemma ler_refl :
-    ∀ (x y :R),
+    ∀ (x y : R),
       x = y →
       x <= y.
   Proof.
@@ -496,14 +478,14 @@ Module PRF_example.
 
   *)
   Theorem security_based_on_prf :
-    ∀ A : Adversary4Game [interface val #[i1] : chWords → chWords × chWords ],
-      adv_forp A IND_CPA →
+    ∀ A (* : Adversary4Game [interface val #[i1] : chWords → chWords × chWords ] *),
+      (* adv_forp A IND_CPA → *)
       Advantage IND_CPA A <=
-      prf_epsilon {locpackage A ∘ MOD_CPA_ff_pkg } +
+      prf_epsilon (A ∘ MOD_CPA_ff_pkg) +
       statistical_gap A +
-      prf_epsilon {locpackage A ∘ MOD_CPA_tt_pkg }.
+      prf_epsilon (A ∘ MOD_CPA_tt_pkg).
   Proof.
-    intros A hA. unfold prf_epsilon, statistical_gap.
+    intros A (* hA *). unfold prf_epsilon, statistical_gap.
     (* TODO adv_forp hyps are probably redundant of G in F,G,H *)
     (* First application of triangle inequality *)
     (* HOP IND_CPA false ≈ MOD_CPA_ff_pkg ∘ EVAL true *)

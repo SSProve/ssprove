@@ -290,9 +290,9 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
       }
     ].
 
-  (* TODO Use {locpackage} here or above? *)
-  Definition cpa_L_vs_R : GamePair [interface val #[challenge_id] : chPlain × chPlain → chCipher] :=
-    λ b, if b then {locpackage L_pk_cpa_L} else {locpackage L_pk_cpa_R}.
+  (* TODO RESTORE *)
+  (* Definition cpa_L_vs_R : GamePair [interface val #[challenge_id] : chPlain × chPlain → chCipher] :=
+    λ b, if b then {locpackage L_pk_cpa_L} else {locpackage L_pk_cpa_R}. *)
 
   (** [The Joy of Cryptography] Definition 15.1
 
@@ -300,10 +300,10 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
     when the following holds.
   *)
 
-  Definition CPA_security : Prop :=
+  (* Definition CPA_security : Prop :=
     ∀ A,
       adv_forp A cpa_L_vs_R →
-      Advantage cpa_L_vs_R A = 0.
+      Advantage cpa_L_vs_R A = 0. *)
 
   (* Define what it means for an asymmetric encryption scheme to: *)
   (**  *HAVE PSEUDORND CIPHERTEXT IN PRESENCE OF CHOSEN PLAINTEXT ATTACKS **)
@@ -338,9 +338,9 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
       }
     ].
 
-  Definition cpa_real_vs_rand :
+  (* Definition cpa_real_vs_rand :
     GamePair [interface val #[challenge_id] : chPlain → chCipher] :=
-    λ b, if b then {locpackage L_pk_cpa_real } else {locpackage L_pk_cpa_rand }.
+    λ b, if b then {locpackage L_pk_cpa_real } else {locpackage L_pk_cpa_rand }. *)
 
   (** [The Joy of Cryptography] Definition 15.2
 
@@ -348,10 +348,10 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
     chosen-plaintext attacks when the following holds.
   *)
 
-  Definition CPA_rnd_cipher : Prop :=
+  (* Definition CPA_rnd_cipher : Prop :=
     ∀ A,
       adv_forp A cpa_real_vs_rand →
-      Advantage cpa_real_vs_rand A = 0.
+      Advantage cpa_real_vs_rand A = 0. *)
 
   (* Define what it means for an asymmetric encryption scheme to have: *)
   (**   *ONE-TIME SECRECY **)
@@ -396,11 +396,11 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
       }
     ].
 
-  Definition ots_L_vs_R :
+  (* Definition ots_L_vs_R :
     GamePair [interface
       val #[challenge_id] :chPlain × chPlain → 'option chCipher
     ] :=
-    λ b, if b then {locpackage L_pk_ots_L } else {locpackage L_pk_ots_R }.
+    λ b, if b then {locpackage L_pk_ots_L } else {locpackage L_pk_ots_R }. *)
 
   (** [The Joy of Cryptography] Definition 15.4
 
@@ -408,10 +408,10 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
     when the following holds.
   *)
 
-  Definition OT_secrecy : Prop :=
+  (* Definition OT_secrecy : Prop :=
     ∀ A,
       adv_forp A ots_L_vs_R →
-      Advantage ots_L_vs_R A = 0.
+      Advantage ots_L_vs_R A = 0. *)
 
   (*  *)
 
@@ -453,13 +453,13 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
       }
     ].
 
-  Definition ots_real_vs_rnd :
+  (* Definition ots_real_vs_rnd :
     GamePair [interface val #[challenge_id'] : chPlain → 'option chCipher] :=
-    λ b, if b then {locpackage L_pk_ots_real } else {locpackage L_pk_ots_rnd }.
+    λ b, if b then {locpackage L_pk_ots_real } else {locpackage L_pk_ots_rnd }. *)
 
-  Definition OT_rnd_cipher : Prop :=
+  (* Definition OT_rnd_cipher : Prop :=
     ∀ A,
       adv_forp A ots_real_vs_rnd →
-      Advantage ots_real_vs_rnd A = 0.
+      Advantage ots_real_vs_rnd A = 0. *)
 
 End AsymmetricScheme.
