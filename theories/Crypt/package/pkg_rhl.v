@@ -1393,6 +1393,23 @@ Module PackageRHL (π : RulesParam).
         * cbn. intros s₀' s₁' [? ?]. subst. auto.
   Qed.
 
+  Lemma prove_relational :
+    ∀ {L₀ L₁ E} (p₀ p₁ : raw_package) (I : precond)
+      `{ValidPackage L₀ Game_import E p₀}
+      `{ValidPackage L₁ Game_import E p₁},
+      INV' L₀ L₁ I →
+      eq_up_to_inv I p₀ p₁ →
+      p₀ ≈[ λ A, 0 ] p₁.
+  Proof.
+    intros L₀ L₁ E p₀ p₁ I vp₀ vp₁ hI' hp.
+    intros A. (* TODO More restrictions and rewrite happen here *)
+    unfold AdvantageE, Pr.
+    pose r := get_op_default A RUN tt.
+    (* TODO We already start seeing contrainsts that A must satisfy. *)
+    (* assert (hI : INV LA I). *)
+    (* pose proof (some_lemma_for_prove_relational p₀ p₁ A hI hp). *)
+  Abort.
+
   (* Lemma prove_relational {L1 L2} {export}
     (P1 : package L1 Game_import export)
     (P2 : package L2 Game_import export)
