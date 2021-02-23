@@ -1794,318 +1794,35 @@ Module PackageRHL (π : RulesParam).
     admit.
   Admitted.
 
-  (* TODO
-    Instead of syntactic rules we should still find a way to make the judgment
-    opaque, it takes so long to find it doesn't unify.
-    Especially important when I will add commands in rules for which unification
-    should be harder.
-  *)
+  (* Rules using commands instead of bind *)
 
-  (* TODO Find a proper place for it *)
-  (** Rules on raw_program
-
-    The idea is to define rules that don't care about validity. They will be the
-    one manipulated by the user when showing perfect equivalence.
-    A theorem will then say that when the programs are valid and in this relation
-    then they are in the program relation from before.
-    ⊢ ⦃ pre ⦄ u ~ v ⦃ post ⦄ →
-    Valid u →
-    Valid v →
-    ⊨ ⦃ pre ⦄ u ~ v ⦃ post ⦄
-
-    And with classes, the validity will be inferred automatically.
-    Or even better when starting from packages, it will follow from the
-    packages being valid themselves.
-
-    Better: With context rules we could then use setoid rewrite.
-
-  *)
-
-  (** TODO Some rules will be missing, maybe best to wait after merge.
-
-    Here is the list:
-    - rpre_weaken_rule
-    - rpre_hypothesis_rule
-    - rpre_strong_hypothesis_rule
-    - rpost_weaken_rule
-    - rif_rule (should be provable without being assumed, otherwise we have a problem for user-defined types)
-    - rsamplerC
-    - rsamplerC'
-    - rsame_head
-    - rsym_pre
-    - rsymmetry
-    - rdead_sampler_elimL
-    - rdead_sampler_elimR
-
-    + context rules
-
-    TODO Remove the rules above? It seems I will inline their proofs rather than
-    use them.
-
-  *)
-
-  (* Definition ret_discr {A} (v : raw_program A) : Prop :=
-    match v with
-    | ret _ => False
-    | _ => True
-    end.
-
-  Inductive ret_view {A} : raw_program A → Type :=
-  | is_ret x : ret_view (ret x)
-  | is_not_ret c : ret_discr c → ret_view c.
-
-  Equations ret_viewc {A} (c : raw_program A) : ret_view c :=
-    ret_viewc (ret x) := is_ret x ;
-    ret_viewc c := is_not_ret c I.
-
-  Lemma inversion_valid_bind2 :
-        ∀ {L I} {A B} {c : raw_program A} {k : A → raw_program B},
-          ret_discr c →
-          valid_program L I (x ← c ;; k x) →
-          ∀ x, valid_program L I (k x).
+  Lemma r_swap_cmd :
+    ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
+      (c₀ : command A₀) (c₁ : command A₁)
+      (r : A₀ → A₁ → raw_program B),
+      (∀ b, post b b) →
+      (∀ a₀ a₁, ⊢ ⦃ λ '(s₁, s₀), s₀ = s₁ ⦄ r a₀ a₁ ≈ r a₀ a₁ ⦃ post ⦄) →
+      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+        a₀ ← cmd c₀ ;; a₁ ← cmd c₁ ;; ret (a₀, a₁) ≈
+        a₁ ← cmd c₁ ;; a₀ ← cmd c₀ ;; ret (a₀, a₁)
+        ⦃ eq ⦄ →
+      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+        a₀ ← cmd c₀ ;; a₁ ← cmd c₁ ;; r a₀ a₁ ≈
+        a₁ ← cmd c₁ ;; a₀ ← cmd c₀ ;; r a₀ a₁
+        ⦃ post ⦄.
   Proof.
-    intros L I A B c k nr h.
-    induction c.
-    - cbn in nr. contradiction.
-    - simpl in h. apply inversion_valid_opr in h. destruct h as [? hk].
-      intro a. remember (k a) as c eqn:e.
-      destruct (ret_viewc c). 1: constructor.
-      subst c. eapply H. eapply hk.
-    - simpl in h1. apply inversion_valid_getr in h1. destruct h1 as [? hk].
-      eapply H. eapply hk.
-    - simpl in h1. apply inversion_valid_putr in h1. destruct h1 as [? hk].
-      eapply IHc1. auto.
-    - simpl in h1.
-  Abort. *)
-
-  (* Reserved Notation "⊢ ⦃ pre ⦄ c1 ~ c2 ⦃ post ⦄". *)
-
-  (* TODO Complete *)
-
-  (* Inductive raw_judgment :
-    ∀ {A B : choiceType},
-      precond → postcond A B → raw_program A → raw_program B → Prop :=
-
-  | r_refl :
-      ∀ A (c : raw_program A),
-        ⊢ ⦃ λ '(s1, s2), s1 = s2 ⦄ c ~ c ⦃ eq ⦄
-
-  (* r_seq *) (* Which one ist it? *)
-
-  (* Legacy rule *)
-  | r_swap :
-      ∀ (A₀ A₁ : choiceType) (I : precond) (post : postcond A₀ A₁)
-        (c₀ : raw_program A₀) (c₁ : raw_program A₁),
-        ⊢ ⦃ I ⦄ c₀ ~ c₁ ⦃ λ b₀ b₁, I (b₀.2, b₁.2) ∧ post b₀ b₁ ⦄ →
-        ⊢ ⦃ I ⦄ c₁ ~ c₀ ⦃ λ b₁ b₀, I (b₀.2, b₁.2) ∧ post b₀ b₁ ⦄ →
-        ⊢ ⦃ I ⦄ c₀ ;; c₁ ~ c₁ ;; c₀ ⦃ λ b₁ b₀, I (b₀.2, b₁.2) ∧ post b₀ b₁ ⦄
-
-  (* Legacy rule, it requires extra validity assumptions *)
-  (* Better use r_swap_cmd instead *)
-  | r_swapR :
-      ∀ L₀ L₁ Lr (A₀ A₁ B : choiceType) (post : postcond B B)
-        (c₀ : raw_program A₀) (c₁ : raw_program A₁)
-        (r : A₀ → A₁ → raw_program B),
-        (∀ b, post b b) →
-        (∀ a₀ a₁, ⊢ ⦃ λ '(s₁, s₀), s₀ = s₁ ⦄ r a₀ a₁ ~ r a₀ a₁ ⦃ post ⦄) →
-        (∀ x, ValidProgram L₁ Game_import (a₁ ← c₁ ;; r x a₁)) →
-        (∀ x, ValidProgram L₀ Game_import (a₀ ← c₀ ;; r a₀ x)) →
-        (∀ x y, ValidProgram Lr Game_import (r x y)) →
-        ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
-          a₀ ← c₀ ;; a₁ ← c₁ ;; ret (a₀, a₁) ~
-          a₁ ← c₁ ;; a₀ ← c₀ ;; ret (a₀, a₁)
-          ⦃ eq ⦄ →
-        ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
-          a₀ ← c₀ ;; a₁ ← c₁ ;; r a₀ a₁ ~
-          a₁ ← c₁ ;; a₀ ← c₀ ;; r a₀ a₁
-          ⦃ post ⦄
-
-  (* Not clear what the rule should be. *)
-  (* Should we have rules for commands? That sounds cumbersome. *)
-  (* | r_swap_cmd_seq :
-      ∀ (A₀ A₁ B : choiceType) (I : precond) (post : postcond A₀ A₁)
-        (c₀ : command A₀) (c₁ : command A₁) (k : raw_program B),
-        ⊢ ⦃ I ⦄ c₀ ~ c₁ ⦃ λ b₀ b₁, I (b₀.2, b₁.2) ∧ post b₀ b₁ ⦄ →
-        ⊢ ⦃ I ⦄ c₁ ~ c₀ ⦃ λ b₁ b₀, I (b₀.2, b₁.2) ∧ post b₀ b₁ ⦄ →
-        ⊢ ⦃ I ⦄ c₀ ;' c₁ ;' k ~ c₁ ;' c₀ ;' k ⦃ λ b₁ b₀, I (b₀.2, b₁.2) ∧ post b₀ b₁ ⦄ *)
-
-  | r_swap_cmd :
-      ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
-        (c₀ : command A₀) (c₁ : command A₁)
-        (r : A₀ → A₁ → raw_program B),
-        (∀ b, post b b) →
-        (∀ a₀ a₁, ⊢ ⦃ λ '(s₁, s₀), s₀ = s₁ ⦄ r a₀ a₁ ~ r a₀ a₁ ⦃ post ⦄) →
-        ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
-          a₀ ← cmd c₀ ;; a₁ ← cmd c₁ ;; ret (a₀, a₁) ~
-          a₁ ← cmd c₁ ;; a₀ ← cmd c₀ ;; ret (a₀, a₁)
-          ⦃ eq ⦄ →
-        ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
-          a₀ ← cmd c₀ ;; a₁ ← cmd c₁ ;; r a₀ a₁ ~
-          a₁ ← cmd c₁ ;; a₀ ← cmd c₀ ;; r a₀ a₁
-          ⦃ post ⦄
-
-  where "⊢ ⦃ pre ⦄ c1 ~ c2 ⦃ post ⦄" := (raw_judgment pre post c1 c2) : package_scope.
-
-  Lemma valid_judgment :
-    ∀ (A₀ A₁ : choiceType) L₀ L₁ pre post c₀ c₁
-      `{@ValidProgram L₀ _ A₀ c₀}
-      `{@ValidProgram L₁ _ A₁ c₁},
-      ⊢ ⦃ pre ⦄ c₀ ~ c₁ ⦃ post ⦄ →
-      r⊨ ⦃ pre ⦄ mkprog c₀ _ ≈ mkprog c₁ _ ⦃ post ⦄.
-  Proof.
-    intros A₀ A₁ L₀ L₁ pre post c₀ c₁ h₀ h₁ h.
-    induction h in L₀, L₁, h₀, h₁ |- *.
-    - pose proof (reflexivity_rule (repr {program c})) as h.
-      erewrite repr_ext. 1: exact h.
-      cbn. reflexivity.
-    - apply inversion_valid_bind in h₀ as h₀'.
-      apply inversion_valid_bind in h₁ as h₁'.
-      specialize IHh1 with (h₀ := h₀') (h₁ := h₁').
-      specialize IHh2 with (h₀ := h₁') (h₁ := h₀').
-      pose proof @swap_rule as h.
-      specialize h with (c1 := repr {program c₀ #with h₀' }).
-      specialize h with (c2 := repr {program c₁ #with h₁' }).
-      specialize h with (I := I) (post := post).
-      eapply post_weaken_rule in IHh1.
-      1: specialize h with (1 := IHh1).
-      2:{
-        cbn. intros [a₀ s₀] [a₁ s₁]. cbn. auto.
-      }
-      eapply post_weaken_rule in IHh2.
-      1: specialize h with (1 := IHh2).
-      2:{
-        cbn. intros [a₀ s₀] [a₁ s₁]. cbn. auto.
-      }
-      cbn - [semantic_judgement repr].
-      cbn - [semantic_judgement] in h.
-      unshelve erewrite !repr_bind'. 3,4,7,8: eauto.
-      eapply post_weaken_rule.
-      1: exact h.
-      cbn. intros [a₀ s₀] [a₁ s₁]. cbn. auto.
-    - apply inversion_valid_bind in h₀ as h₀'.
-      apply inversion_valid_bind in h₁ as h₁'.
-      unshelve (repeat setoid_rewrite repr_bind'). 3,4,7,8,11,12,15,16:eauto.
-      eapply (swap_ruleR (λ a₀ a₁, repr {program r a₀ a₁ }) (repr {program c₀ }) (repr {program c₁ })).
-      + intros a₀ a₁. specialize (H1 a₀ a₁).
-        specialize H1 with (h₀ := H4 _ _) (h₁ := H4 _ _).
-        exact H1.
-      + intros ? ? []. eauto.
-      + intro s. unshelve eapply coupling_eq.
-        * exact: (λ '(h1, h2), h1 = h2).
-        * evar (L0 : {fset Location}).
-          evar (L1 : {fset Location}).
-          specialize (IHh L0 L1).
-          subst L0 L1.
-          match type of IHh with
-          | ?A → _ =>
-            assert (h0 : A)
-          end.
-          { eapply valid_bind.
-            - eapply valid_injectLocations. 2: exact h₀'.
-              eapply fsubsetUl.
-            - intro. eapply valid_bind.
-              + eapply valid_injectLocations. 2: eassumption.
-                eapply fsubsetUr.
-              + intro. constructor.
-          }
-          specialize (IHh h0).
-          match type of IHh with
-          | ?A → _ =>
-            assert (h1 : A)
-          end.
-          { eapply valid_bind.
-            - eapply valid_injectLocations. 2: exact h₁'.
-              eapply fsubsetUl.
-            - intro. eapply valid_bind.
-              + eapply valid_injectLocations. 2: eassumption.
-                eapply fsubsetUr.
-              + intro. constructor.
-          }
-          specialize (IHh h1).
-          revert IHh.
-          unshelve (repeat (setoid_rewrite repr_bind')).
-          3,7,11,15: eauto.
-          6,8: intro ; constructor.
-          2:{
-            intro. eapply valid_bind. 1: eauto.
-            intro. constructor.
-          }
-          2:{
-            intro. eapply valid_bind. 1: eauto.
-            intro. constructor.
-          }
-          1,2: exact fset0.
-          auto.
-        * cbn. reflexivity.
-    - apply inversion_valid_cmd_bind in h₀ as hh.
-      destruct hh as [hc₀ hk₀].
-      apply inversion_valid_cmd_bind in h₁ as hh.
-      destruct hh as [hc₁ hk₁].
-      assert (hk : ∀ a₀ a₁, ValidProgram L₀ Game_import (r a₀ a₁)).
-      { intros a₀ a₁. specialize (hk₀ a₀).
-        apply inversion_valid_cmd_bind in hk₀ as [_ hk₀].
-        eapply hk₀.
-      }
-      unshelve (repeat setoid_rewrite repr_cmd_bind).
-      3,4,7,8,11,12,15,16: eauto.
-      eapply (swap_ruleR (λ a₀ a₁, repr {program r a₀ a₁ }) (repr_cmd c₀ hc₀) (repr_cmd c₁ hc₁)).
-      + intros a₀ a₁. specialize (H1 a₀ a₁).
-        specialize H1 with (h₀ := hk _ _) (h₁ := hk _ _).
-        exact H1.
-      + intros ? ? []. eauto.
-      + intro s. unshelve eapply coupling_eq.
-        * exact: (λ '(h1, h2), h1 = h2).
-        * evar (L0 : {fset Location}).
-          evar (L1 : {fset Location}).
-          specialize (IHh L0 L1).
-          subst L0 L1.
-          match type of IHh with
-          | ?A → _ =>
-            assert (h0 : A)
-          end.
-          { eapply valid_cmd_bind.
-            - eapply valid_cmd_injectLocations. 2: exact hc₀.
-              eapply fsubsetUl.
-            - intro. eapply valid_cmd_bind.
-              + eapply valid_cmd_injectLocations. 2: eassumption.
-                eapply fsubsetUr.
-              + intro. constructor.
-          }
-          specialize (IHh h0).
-          match type of IHh with
-          | ?A → _ =>
-            assert (h1 : A)
-          end.
-          { eapply valid_cmd_bind.
-            - eapply valid_cmd_injectLocations. 2: exact hc₁.
-              eapply fsubsetUl.
-            - intro. eapply valid_cmd_bind.
-              + eapply valid_cmd_injectLocations. 2: eassumption.
-                eapply fsubsetUr.
-              + intro. constructor.
-          }
-          specialize (IHh h1).
-          revert IHh.
-          unshelve (repeat (setoid_rewrite repr_cmd_bind)).
-          3,7,11,15: eauto.
-          6,8: intro ; constructor.
-          2:{
-            intro. eapply valid_cmd_bind. 1: eauto.
-            intro. constructor.
-          }
-          2:{
-            intro. eapply valid_cmd_bind. 1: eauto.
-            intro. constructor.
-          }
-          1,2: exact fset0.
-          auto.
-        * cbn. reflexivity.
-  Qed. *)
-
-  (* TODO Seems like repr only need no import, but doesn't care about
-  locations. If so we could make a much simpler statement?
-  Can probably define rep = repr' using noimport predicate
-  Then the above would be simpler! No need for stupid Ls everywhere.
-  *)
+    intros A₀ A₁ B post c₀ c₁ r hpost hr h.
+    rewrite rel_jdgE.
+    repeat setoid_rewrite repr_cmd_bind.
+    eapply (swap_ruleR (λ a₀ a₁, repr (r a₀ a₁)) (repr_cmd c₀) (repr_cmd c₁)).
+    + intros a₀ a₁. rewrite -rel_jdgE. eapply hr.
+    + intros ? ? []. eauto.
+    + intro s. unshelve eapply coupling_eq.
+      * exact: (λ '(h1, h2), h1 = h2).
+      * rewrite rel_jdgE in h.
+        repeat (setoid_rewrite repr_cmd_bind in h).
+        auto.
+      * reflexivity.
+  Qed.
 
 End PackageRHL.
