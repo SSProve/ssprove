@@ -735,37 +735,14 @@ Module PackageRHL (π : RulesParam).
     (at level 90)
     : package_scope. *)
 
-  (* TODO Do I want to have a notion of equivalence on raw_packages?
-    I could do it since I already have advantage on those.
-    But then it would push disjointness requirements somewhere else.
-    Maybe it's the ~[ ε ] which will imply ≈[ ε ]?
-    I don't really see how because the quantification over the adversary
-    is hidden here.
+  Definition adv_equiv {L₀ L₁ E} (G₀ G₁ : raw_package)
+    `{ValidPackage L₀ Game_import E G₀} `{ValidPackage L₁ Game_import E G₁} ε :=
+    ∀ LA A,
+      ValidPackage LA E A_export A →
+      fdisjoint LA L₀ →
+      fdisjoint LA L₁ →
+      AdvantageE G₀ G₁ A = ε A.
 
-    Maybe for now I should try to just have it as before, without any
-    restriction. And then we'll see where it comes up?
-    I might have to redo some stuff, but it'll help tailoring things.
-    The motivation for constraining it is we want to have perfect equivalence
-    as ≈[ λ _, 0 ].
-  *)
-
-  Definition adv_equiv (G₀ G₁ : raw_package) ε :=
-    ∀ A, AdvantageE G₀ G₁ A = ε A.
-
-  (* Adversary for condition *)
-  (* Definition adv_for {I} (A : Adversary4Game I) (G₀ G₁ : Game_Type I) :=
-    fdisjoint A.(locs) G₀.(locs) && fdisjoint A.(locs) G₁.(locs).
-
-  Definition adv_forp {I} (A : Adversary4Game I) (G : GamePair I) :=
-    fdisjoint A.(locs) (G true).(locs) &&
-    fdisjoint A.(locs) (G false).(locs).
-
-  Definition adv_equiv {I} (G₀ G₁ : Game_Type I) ε :=
-    ∀ A, adv_for A G₀ G₁ → AdvantageE G₀ G₁ A = ε A. *)
-
-  (** The quantification over a disjoint adversary is now here.
-    Also, the function equality is now pointwise.
-  *)
   Notation " G0 ≈[ R ] G1 " :=
     (adv_equiv G0 G1 R)
     (at level 50, format " G0  ≈[  R  ]  G1")
@@ -806,15 +783,16 @@ Module PackageRHL (π : RulesParam).
       F ≈[ ϵ1 ] G →
       G ≈[ ϵ2 ] H →
       F ≈[ ϵ3 ] H →
-      ∀ A,
-        (* adv_for A F G →
-        adv_for A G H →
-        adv_for A F H → *)
+      ∀ LA A,
+        ValidPackage LA Game_export A_export A →
+        fdisjoint LA F.(locs) →
+        fdisjoint LA G.(locs) →
+        fdisjoint LA H.(locs) →
         ϵ3 A <= ϵ1 A + ϵ2 A.
   Proof.
-    intros Game_export F G H ε₁ ε₂ ε₃ h1 h2 h3 A (* hA1 hA2 hA3 *).
+    intros Game_export F G H ε₁ ε₂ ε₃ h1 h2 h3 LA A vA hF hG hH.
     unfold adv_equiv in *.
-    rewrite <- h1, <- h2, <- h3 by assumption.
+    erewrite <- h1, <- h2, <- h3 by eassumption.
     apply ler_dist_add.
   Qed.
 
@@ -827,51 +805,16 @@ Module PackageRHL (π : RulesParam).
     rewrite link_assoc. reflexivity.
   Qed.
 
-  (* Lemma auxReduction :
-    ∀ {Game_export M_export : Interface} {M : loc_package Game_export M_export}
-      {G : Game_Type Game_export} {A : Adversary4Game M_export},
-      fdisjoint M.(locs) G.(locs) →
-      fdisjoint A.(locs) {locpackage link M G }.(locs) →
-      fdisjoint {locpackage link A M }.(locs) G.(locs).
-  Proof.
-    intros Game_export M_export M G A Hdisjoint0 Hdisjoint1.
-    simpl in *.
-    rewrite fdisjointUl.
-    apply /andP. split.
-    - rewrite fdisjointUr in Hdisjoint1.
-      move: Hdisjoint1. by move /andP => [_ Hdisjoint1].
-    - apply Hdisjoint0.
-  Qed. *)
-
   Lemma ReductionLem :
-    ∀ M (G : GamePair),
+    ∀ L₀ L₁ E M (G : GamePair)
+      `{ValidPackage L₀ Game_import E (M ∘ G false)}
+      `{ValidPackage L₁ Game_import E (M ∘ G true)},
       (M ∘ (G false)) ≈[ λ A, Advantage G (A ∘ M) ] (M ∘ (G true)).
   Proof.
-    intros M G.
-    unfold adv_equiv. intro A. rewrite Advantage_E.
+    intros L₀ L₁ E M G v₀ v₁.
+    unfold adv_equiv. intros LA A vA hd₀ hd₁. rewrite Advantage_E.
     unfold AdvantageE. rewrite !link_assoc. reflexivity.
   Qed.
-
-  (* Lemma rhl_repr_change_all {B1 B2 : choiceType} {L1 L2 L1' L2'}
-    {pre : heap_choiceType * heap_choiceType -> Prop}
-    {post : (B1 * heap_choiceType) → (B2 * heap_choiceType) → Prop}
-    {r1 r1' : raw_program B1} {r2 r2' : raw_program B2}
-    {hr11 : ValidProgram L1 Game_import r1}
-    {hr12 : ValidProgram L2 Game_import r1'}
-    {hr21 : ValidProgram L1' Game_import r2}
-    {hr22 : ValidProgram L2' Game_import r2'}
-    (Hr1 : r1 = r1') (Hr2 : r2 = r2')
-    (H : ⊨ ⦃ pre ⦄ repr {program r1 } ≈ repr {program r2 } ⦃ post ⦄)
-    : ⊨ ⦃ pre ⦄ repr {program r1' } ≈ repr {program r2' } ⦃ post ⦄.
-  Proof.
-    unfold repr in *.
-    induction Hr1. induction Hr2.
-    assert (repr' r1 hr11 = repr' r1 hr12) as Hr1.
-    { apply repr'_ext. reflexivity. }
-    assert (repr' r2 hr21 = repr' r2 hr22) as Hr2.
-    { apply repr'_ext. reflexivity. }
-    rewrite -Hr1 -Hr2. assumption.
-  Qed. *)
 
   Definition INV (L : {fset Location})
     (I : heap_choiceType * heap_choiceType → Prop) :=
