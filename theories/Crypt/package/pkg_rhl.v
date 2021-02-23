@@ -603,21 +603,12 @@ Module PackageRHL (π : RulesParam).
   Local Open Scope ring_scope.
   Local Open Scope real_scope.
 
-  (* TODO Should it stay this way? Probably need to change the type Game_Type *)
-  (* Definition GamePair (Game_export : Interface) :=
-    bool → Game_Type Game_export. *)
+  Definition loc_GamePair (Game_export : Interface) :=
+    bool → Game_Type Game_export.
 
   (* TODO Again, why not an actual pair? *)
   Definition GamePair :=
       bool → raw_package.
-
-  (* TODO: Should the type of the adversary be raw_package?
-    Probably, but should we give it a name anyway?
-    I guess it'll just come up in theorems.
-
-    NOTE: With this there is no longer a definition of weak advantage.
-    We will still be able to talk about weak adversaries at another level.
-  *)
 
   Definition Advantage (G : GamePair) (A : raw_package) : R :=
     `| Pr (A ∘ (G false)) true - Pr (A ∘ (G true)) true |.
@@ -753,20 +744,19 @@ Module PackageRHL (π : RulesParam).
     (at level 50, format " G0  ≈₀  G1")
     : package_scope.
 
-  (* TODO Update *)
-  (* Lemma Advantage_equiv :
-    ∀ I (G : GamePair I),
+  Lemma Advantage_equiv :
+    ∀ I (G : loc_GamePair I),
       (G false) ≈[ Advantage G ] (G true).
   Proof.
-    intros I G. intros A h. reflexivity.
+    intros I G. intros LA A vA hd₀ hd₁. reflexivity.
   Qed.
 
   Lemma AdvantageE_equiv :
     ∀ I (G₀ G₁ : Game_Type I),
       G₀ ≈[ AdvantageE G₀ G₁ ] G₁.
   Proof.
-    intros I G₀ G₁. intros A h. reflexivity.
-  Qed. *)
+    intros I G₀ G₁. intros LA A vA hd₀ hd₁. reflexivity.
+  Qed.
 
   Lemma Advantage_E :
     ∀ (G : GamePair) A,
