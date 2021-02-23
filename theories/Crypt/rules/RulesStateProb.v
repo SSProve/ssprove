@@ -1088,4 +1088,231 @@ Proof.
      -- exact: Hinv2.
 Qed.
 
+
+
+Section samplerC_rule.
+Notation η M := (ord_relmon_unit M).
+Notation dnib M := (ord_relmon_bind M).
+(* In this section we prove a rule called samplerC, which tells that *)
+(* sampling operations in the monad free monad Fr[St,P] *)
+(* (on a  stateful probabilistic signature) commute with other *)
+(* operations (for instance 'get' ...) *)
+
+(* More precisely we prove that the semantics of programs *)
+(* Fr[St,P] --> StT(Fr[P]) --> StT(SD) *)
+(* assigns the same value to *)
+(* r <- sample o ;; a <- c ;; ret (a,r) and *)
+(* a <- c ;; r <- sample o ;; ret (a,r). *)
+(* And this condition is sufficient to prove a rule like the one described *)
+(* above *)
+
+(*operations and arities for probabilities*)
+Let Op := Prob_ops_collection probE rel_choiceTypes chEmb.
+Let Ar := Prob_arities probE rel_choiceTypes chEmb.
+
+Context { A : ord_choiceType }  {S : choiceType}.
+
+(*for state + prob*)
+Let Opst := (ops_StP S).
+Let Arst := (ar_StP S).
+
+Context (o : Op) (c : FrStP S A).
+
+Arguments bindrFree { _ _ _ _ } _ _.
+Arguments ropr {_ _ _ } _ _.
+Arguments callrFree {_ _} _.
+Arguments retrFree {_ _ _} _.
+
+(*the two programs of interest...*)
+(*sample_c and c_sample*)
+Let splo :=  @callrFree Opst Arst (inr o).
+Definition sample_c :=
+bindrFree splo (fun r =>
+bindrFree c (fun a =>
+retrFree (a,r))).
+
+Definition c_sample :=
+bindrFree c (fun a =>
+bindrFree splo (fun r =>
+retrFree (a,r))).
+
+
+Lemma θ0_vs_bind {X Y : choiceType} (m : FrStP S X) (k : X -> FrStP S Y):
+θ0 (bindrFree m k) =
+(dnib stT_Frp) (fun x:X => θ0 (k x)) (θ0  m).
+Proof.
+  assert ( to_dnib : bindrFree m k = (dnib (FrStP S)  k) m ).
+    reflexivity.
+  rewrite to_dnib.
+  rewrite /θ0 /DerivedRules.θ0.
+  pose bla :=
+rmm_law2 _ _ _ _ (@unaryIntState probE rel_choiceTypes chEmb S)
+         X Y k.
+  rewrite /= in bla.
+  unshelve eapply equal_f in bla. exact m.
+  rewrite /=. assumption.
+Qed.
+
+Lemma θ0_vs_sample_c :
+  θ0 sample_c 
+  =
+  dnib stT_Frp
+    (fun r : Arst (inr o) => dnib stT_Frp (fun a : A => θ0 (retrFree (a, r))) (θ0 c))
+    (θ0 splo).
+Proof.
+  unfold sample_c.
+  rewrite θ0_vs_bind.
+  eassert (eqCont :
+(fun r : Arst (inr o) => θ0 (bindrFree c (fun a : choice_incl A => retrFree (a, r))))
+=
+(fun r => _) ).
+  apply boolp.funext. move=> x. rewrite θ0_vs_bind. reflexivity.
+  rewrite eqCont. reflexivity.
+Qed.
+
+Lemma θ0_vs_c_sample :
+  θ0 c_sample 
+  =
+  dnib stT_Frp
+    (fun a : A => dnib stT_Frp (fun r : Arst (inr o) => θ0 (retrFree (a, r))) (θ0 splo))
+    (θ0 c).
+Proof.
+  unfold c_sample.
+  rewrite θ0_vs_bind.
+  f_equal. apply boolp.funext. move=> a.
+  rewrite θ0_vs_bind. reflexivity.
+Qed.
+
+Lemma θ0_c_sample_vs_s0 (s0 : S) :
+θ0 c_sample s0 =
+bindrFree (θ0 c s0) (fun asc => let (a, sc) := asc in
+bindrFree (θ0 splo sc) (fun rsr => let (r,sr) := rsr in
+retrFree (a,r,sr))).
+Proof.
+  rewrite θ0_vs_c_sample.
+  rewrite /=.
+  rewrite /OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
+  rewrite /FreeProbProg.rFree_obligation_2.
+  reflexivity.
+Qed.
+
+Lemma θ0_sample_c_vs_s0 (s0 : S) :
+θ0 sample_c s0 =
+bindrFree (θ0 splo s0) (fun rsr => let (r,sr) := rsr in
+bindrFree (θ0 c sr) (fun asc => let (a, sc) := asc in
+retrFree (a,r,sc))).
+Proof.
+  rewrite θ0_vs_sample_c.
+  rewrite /=.
+  rewrite /OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
+  rewrite /FreeProbProg.rFree_obligation_2.
+  reflexivity.
+Qed.
+
+Let Frp_fld :=  @Frp probE rel_choiceTypes chEmb.
+
+Lemma bindrFree_and_ret {U:choiceType} (mu : Frp_fld U) :
+bindrFree mu (fun u =>
+retrFree u)
+=
+mu.
+Proof.
+  unfold bindrFree. induction mu.
+  reflexivity.
+  f_equal. apply boolp.funext. move=> p.
+  specialize (H p). rewrite H. reflexivity.
+Qed.
+
+
+Lemma op_outoffree (s0 : S):
+UniversalFreeMap.outOfFree sigMap (Arst (inr o)) splo
+=
+@sigMap probE rel_choiceTypes chEmb S (inr o).
+Proof.
+    cbn.
+    rewrite /OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
+    apply boolp.funext. move=> s0'.
+    rewrite /FreeProbProg.rFree_obligation_2.
+    rewrite /FreeProbProg.rFree_obligation_1.
+    set (weirdCont :=
+(fun
+          topas : prod (Choice.sort (Prob_arities probE rel_choiceTypes chEmb o))
+                                (Choice.sort S) =>
+        match
+          topas
+          return
+            (rFreeF (Prob_ops_collection probE rel_choiceTypes chEmb)
+               (Prob_arities probE rel_choiceTypes chEmb)
+               (F_choice_prod_obj
+                  (@npair Choice.type Choice.type (Prob_arities probE rel_choiceTypes chEmb o) S)))
+        with
+        | pair a s =>
+            @retrFree (Prob_ops_collection probE rel_choiceTypes chEmb)
+              (Prob_arities probE rel_choiceTypes chEmb)
+              (F_choice_prod_obj
+                 (@npair Choice.type Choice.type (Prob_arities probE rel_choiceTypes chEmb o) S))
+              (@pair (Choice.sort (Prob_arities probE rel_choiceTypes chEmb o)) (Choice.sort S) a s)
+        end)
+).
+    assert (eq_cont :
+weirdCont = [eta retrFree] ).
+    apply boolp.funext. move=> [a s]. unfold weirdCont. reflexivity.
+    rewrite eq_cont.
+    rewrite bindrFree_and_ret.
+    reflexivity.
+Qed.
+
+Let sploP :=  @callrFree Op Ar o.
+
+Lemma θ0_of_sample (s0 : S) :
+θ0 splo s0
+=
+bindrFree sploP (fun r =>
+retrFree (r, s0) ).
+Proof.
+  unfold θ0. unfold unaryIntState.
+  rewrite (op_outoffree s0). rewrite [LHS] /=.
+  destruct o as [X op]. unfold probopStP.
+  reflexivity.
+Qed.
+
+Lemma θ0_OF_sample_c_s0 (s0 : S) :
+θ0 sample_c s0 =
+bindrFree sploP (fun r =>
+bindrFree (θ0 c s0) (fun asc => let (a, sc) := asc in
+retrFree (a,r,sc))).
+Proof.
+  rewrite θ0_sample_c_vs_s0.
+  rewrite θ0_of_sample.
+  epose (bind_assoc := ord_relmon_law3 Frp_fld _ _ _ _ _).
+  eapply equal_f in bind_assoc.
+  cbn in bind_assoc.
+  rewrite /FreeProbProg.rFree_obligation_2 in bind_assoc.
+  erewrite <- bind_assoc.
+  f_equal.
+Qed.
+
+Lemma θ0_OF_c_sample_s0 (s0 : S) :
+θ0 c_sample s0 =
+bindrFree (θ0 c s0) (fun asc => let (a, sc) := asc in
+bindrFree sploP (fun r =>
+retrFree (a,r,sc))).
+Proof.
+  rewrite θ0_c_sample_vs_s0.
+  f_equal. apply boolp.funext. move=> [a sc].
+  rewrite θ0_of_sample.
+  epose (bind_assoc := ord_relmon_law3 Frp_fld _ _ _ _ _).
+  eapply equal_f in bind_assoc.
+  cbn in bind_assoc.
+  rewrite /FreeProbProg.rFree_obligation_2 in bind_assoc.
+  erewrite <- bind_assoc.
+  f_equal.
+Qed.
+
+
+
+End samplerC_rule.
+
+
+
 End DerivedRules.
