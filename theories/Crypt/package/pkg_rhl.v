@@ -1420,18 +1420,20 @@ Module PackageRHL (π : RulesParam).
     add the o \in stuff to eq_up_to_inv like before.
     This way we can invert on the \in blabla.
   *)
+  (* TODO RENAME *)
   Lemma prove_relational :
     ∀ {L₀ L₁ LA E} (p₀ p₁ : raw_package) (I : precond) (A : raw_package)
       `{ValidPackage L₀ Game_import E p₀}
       `{ValidPackage L₁ Game_import E p₁}
       `{ValidPackage LA E A_export A},
       INV' L₀ L₁ I →
+      I (empty_heap, empty_heap) →
       fdisjoint LA L₀ →
       fdisjoint LA L₁ →
       eq_up_to_inv I p₀ p₁ →
       AdvantageE p₀ p₁ A = 0.
   Proof.
-    intros L₀ L₁ LA E p₀ p₁ I A vp₀ vp₁ vA hI' hd₀ hd₁ hp.
+    intros L₀ L₁ LA E p₀ p₁ I A vp₀ vp₁ vA hI' hIe hd₀ hd₁ hp.
     unfold AdvantageE, Pr.
     pose r := get_op_default A RUN tt.
     assert (hI : INV LA I).
@@ -1460,12 +1462,6 @@ Module PackageRHL (π : RulesParam).
     { intros [b₀ s₀] [b₁ s₁]. simpl.
       intros [e ?]. rewrite e. intuition auto.
     }
-    (* pose Heq := (Pr_eq_empty _ _ _ _ Hlemma Hempty Ha). *)
-    (* simpl in Heq. *)
-    (* simpl in h. *)
-    (* unfold θ_dens in Heq. *)
-    (* simpl in Heq. unfold pr in Heq. *)
-    (* simpl in Heq. *)
     unfold Pr_op.
     unshelve epose (rhs := thetaFstd _ (repr (program_link r p₀)) empty_heap).
     1: exact prob_handler.
@@ -1519,184 +1515,21 @@ Module PackageRHL (π : RulesParam).
     unfold SubDistr.SDistr_obligation_2. simpl.
     unfold OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
     rewrite !SDistr_rightneutral. simpl.
-    (* rewrite Heq. *)
-    rewrite /StateTransfThetaDens.unaryStateBeta'_obligation_1.
-    unfold TransformingLaxMorph.rlmm_from_lmla_obligation_1, stT_thetaDens_adj.
-    assert (∀ (x : R), `|x - x| = 0) as Hzero.
-    { intros x.
-      assert (x - x = 0) as H3.
-      { apply /eqP. rewrite GRing.subr_eq0. intuition. }
-      rewrite H3. apply mc_1_10.Num.Theory.normr0.
-    }
-    (* rewrite Hzero. *)
-    (* reflexivity. *)
-  Admitted.
-
-  (* Lemma prove_relational {L1 L2} {export}
-    (P1 : package L1 Game_import export)
-    (P2 : package L2 Game_import export)
-    (I : heap_choiceType * heap_choiceType -> Prop)
-    (HINV' : INV' L1 L2 I)
-    (Hempty : I (empty_heap, empty_heap))
-    (H : eq_up_to_inv I P1 P2) :
-    (mkloc_package L1 P1) ≈[ λ A, 0 ] (mkloc_package L2 P2).
-  Proof.
-    intros A h. unfold adv_for in h. simpl in h. move: h => /andP [hd1 hd2].
-    unfold Adversary4Game in A.
-    unfold AdvantageE, Pr.
-    pose r' := get_package_op A RUN RUN_in_A_export.
-    pose r := r' tt.
-    (* Rem.: from linking we should get the fact that A.π1 is disjoint from L1 and L2,
-            and then from that conclude that we are invariant on A.π1 *)
-    (* unshelve epose (fdisjoint_from_link A.π2 P1 _) as Hdisjoint1. *)
-    (* { eexists. reflexivity. } *)
-    (* unshelve epose (fdisjoint_from_link A.π2 P2 _) as Hdisjoint2. *)
-    (* { eexists. reflexivity. } *)
-    assert (INV A.(locs) I) as HINV.
-    { destruct A. simpl in hd1, hd2.
-      cbn.  unfold INV.
-      intros s1 s2. split.
-      - intros hi l hin.
-        apply HINV'.
-        + assumption.
-        + move: hd1. move /fdisjointP => hd1.
-          apply hd1. assumption.
-        + move: hd2. move /fdisjointP => hd2.
-          apply hd2. assumption.
-      - intros hi l v hin.
-        apply HINV'.
-        + assumption.
-        + move: hd1. move /fdisjointP => hd1.
-          apply hd1. assumption.
-        + move: hd2. move /fdisjointP => hd2.
-          apply hd2. assumption.
-    }
-    pose Hlemma := (some_lemma_for_prove_relational _ _ _ HINV Hempty H r empty_heap empty_heap Hempty).
-    assert (∀ x y : tgt RUN * heap_choiceType,
-                (let '(b1, s1) := x in λ '(b2, s2), b1 = b2 s/\ I (s1, s2)) y → (fst x == true) ↔ (fst y == true)) as Ha.
-    { intros [b1 s1] [b2 s2]. simpl.
-      intros [H1 H2]. rewrite H1. intuition.
-    }
-    pose Heq := (Pr_eq_empty _ _ _ _ Hlemma Hempty Ha).
+    pose proof (Pr_eq_empty _ _ _ _ h hIe Ha) as Heq.
     simpl in Heq.
-    simpl in Hlemma.
     unfold θ_dens in Heq.
     simpl in Heq. unfold pr in Heq.
     simpl in Heq.
-    unfold Pr_op.
-    (* Interestingly, ssreflect's pose here succeeds but leads to
-      anomalies afterwards.
-    *)
-    unshelve epose (rhs := (
-      thetaFstd _
-        (repr {program
-          program_link r P1
-          #with [hints
-            fsubsetUl A.(locs) (L1 :|: L2) ;
-            fsubset_trans (y:=L1 :|: L2) (x:=L1)
-              (z:= A.(locs) :|: (L1 :|: L2)) (fsubsetUl L1 L2)
-              (fsubsetUr A.(locs) (L1 :|: L2))
-          ]
-        })
-        empty_heap
-    )).
-    1: exact prob_handler.
-    simpl in rhs.
-    unshelve epose (lhs :=
-      Pr_raw_package_op (link A P1) _ RUN RUN_in_A_export tt empty_heap
-    ).
-    2:{ eapply valid_package_from_class. exact _. }
-    assert (lhs = rhs).
-    { subst lhs rhs.
-      unfold Pr_raw_package_op. unfold Pr_raw_program.
-      unfold thetaFstd. simpl. apply f_equal2. 2: reflexivity.
-      apply f_equal. apply f_equal.
-      destruct A as [LA [A A_valid]].
-      apply repr'_ext.
-      erewrite get_raw_package_op_link.
-      apply f_equal2. 2: reflexivity.
-      cbn - [get_raw_package_op].
-      subst r. subst r'.
-      unfold get_package_op. unfold get_opackage_op.
-      simpl.
-      cbn - [get_raw_package_op].
-      epose (get_raw_package_op_ext RUN_in_A_export tt A) as e.
-      specialize (e (valid_package_inject_locations export A_export LA (LA :|: L1) A
-          (fsubsetUl LA L1) A_valid)).
-      eapply e.
-    }
-    unfold lhs in H0.
-    rewrite H0.
-    unshelve epose (rhs' := (
-      thetaFstd _
-        (repr {program
-          program_link r P2
-          #with [hints
-            fsubsetUl A.(locs) (L1 :|: L2) ;
-            fsubset_trans (y:=L1 :|: L2) (x:=L2)
-              (z:= A.(locs) :|: (L1 :|: L2)) (fsubsetUr L1 L2)
-              (fsubsetUr A.(locs) (L1 :|: L2))
-          ]
-        })
-        empty_heap
-    )).
-    1: exact prob_handler.
-    simpl in rhs'.
-    unshelve epose (lhs' :=
-      Pr_raw_package_op (link A P2) _ RUN RUN_in_A_export tt empty_heap
-    ).
-    2:{ eapply valid_package_from_class. exact _. }
-    assert (lhs' = rhs') as H0'.
-    { subst lhs' rhs'.
-      unfold Pr_raw_package_op. unfold Pr_raw_program.
-      unfold thetaFstd. simpl. apply f_equal2. 2: reflexivity.
-      apply f_equal. apply f_equal.
-      destruct A as [LA [A A_valid]].
-      apply repr'_ext.
-      erewrite get_raw_package_op_link.
-      apply f_equal2. 2: reflexivity.
-      cbn - [get_raw_package_op]. subst r r'.
-      unfold get_package_op. unfold get_opackage_op.
-      cbn - [get_raw_package_op].
-      epose (get_raw_package_op_ext RUN_in_A_export tt A) as e.
-      specialize (e (valid_package_inject_locations export A_export LA (LA :|: L2) A
-                                                    (fsubsetUl LA L2) A_valid)).
-      eapply e.
-    }
-    unfold lhs' in H0'.
-    rewrite H0'.
-    unfold rhs', rhs.
-
-    unfold SDistr_bind. unfold SDistr_unit.
-    simpl.
-    rewrite !dletE.
-    assert (∀ x : bool_choiceType * heap_choiceType, ((let '(b, _) := x in dunit (R:=R) (T:=bool_choiceType) b) true) == (x.1 == true)%:R).
-    { intros [b s].
-      simpl. rewrite dunit1E. intuition.
-    }
-    assert (∀ y, (λ x : prod_choiceType (tgt RUN) heap_choiceType, (y x) * (let '(b, _) := x in dunit (R:=R) (T:=tgt RUN) b) true) = (λ x : prod_choiceType (tgt RUN) heap_choiceType, (x.1 == true)%:R * (y x))) as Hrew.
-    { intros y. extensionality x.
-      destruct x as [x1 x2].
-      rewrite dunit1E.
-      simpl. rewrite GRing.mulrC. reflexivity.
-    }
-    rewrite !Hrew.
-    unfold TransformingLaxMorph.rlmm_from_lmla_obligation_1. simpl.
-    unfold SubDistr.SDistr_obligation_2. simpl.
-    unfold OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1. simpl.
-    rewrite !SDistr_rightneutral. simpl.
     rewrite Heq.
     rewrite /StateTransfThetaDens.unaryStateBeta'_obligation_1.
-    unfold TransformingLaxMorph.rlmm_from_lmla_obligation_1, stT_thetaDens_adj.
     assert (∀ (x : R), `|x - x| = 0) as Hzero.
     { intros x.
       assert (x - x = 0) as H3.
       { apply /eqP. rewrite GRing.subr_eq0. intuition. }
       rewrite H3. apply mc_1_10.Num.Theory.normr0.
     }
-    rewrite Hzero.
-    reflexivity.
-  Qed. *)
+    apply Hzero.
+  Qed.
 
   (* Alternative version for packages *)
   (* Corollary prove_relational' :
