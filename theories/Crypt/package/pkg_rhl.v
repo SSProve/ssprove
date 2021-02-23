@@ -1186,7 +1186,8 @@ Module PackageRHL (π : RulesParam).
 
   Notation "⊢ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
     (rel_jdg pre post c1 c2)
-    (format "⊢  ⦃  pre  ⦄  '/' c1  '/' ≈  '/' c2  '/' ⦃  post  ⦄") : package_scope.
+    (format "⊢  ⦃  pre  ⦄ '/  '  '[' c1  ']' '/' ≈ '/  '  '[' c2  ']' '/' ⦃  post  ⦄")
+    : package_scope.
 
   Lemma rel_jdgE :
     ∀ {A B : choiceType} pre (post : postcond A B) p q,
