@@ -314,8 +314,11 @@ Module PRF_example.
       }
     ].
 
-  Definition EVAL : GamePair :=
-    λ b, if b then EVAL_pkg_tt.(pack) else EVAL_pkg_ff.(pack).
+  (* TODO Not the most satisfying, it would be nice to think of something else
+    This might come with more automation to deal with the GamePair type.
+  *)
+  Definition EVAL : loc_GamePair [interface val #[i0] : chWords → chKey] :=
+    λ b, if b then {locpackage EVAL_pkg_tt } else {locpackage EVAL_pkg_ff }.
 
   Definition MOD_CPA_location : {fset Location} := fset0.
 
@@ -391,9 +394,10 @@ Module PRF_example.
       }
     ].
 
-  Definition IND_CPA : GamePair :=
+  Definition IND_CPA :
+    loc_GamePair [interface val #[i1] : chWords → chWords × chWords ] :=
     λ b,
-      if b then IND_CPA_pkg_tt.(pack) else IND_CPA_pkg_ff.(pack).
+      if b then {locpackage IND_CPA_pkg_tt } else {locpackage IND_CPA_pkg_ff }.
 
   Local Open Scope ring_scope.
 
@@ -412,17 +416,16 @@ Module PRF_example.
     auto_in_fset.
   Qed.
 
-  (* Lemma IND_CPA_equiv_false :
-    (* (IND_CPA false) ≈₀ (MOD_CPA_ff_pkg ∘ (EVAL true)). *)
-    @adv_equiv _ _ _ (IND_CPA false) (MOD_CPA_ff_pkg ∘ (EVAL true)) _ _ (λ A, 0).
+  Lemma IND_CPA_equiv_false :
+    IND_CPA false ≈₀ MOD_CPA_ff_pkg ∘ (EVAL true).
   Proof.
     (* Here the proof should come down to using the syntactic rules. *)
-  Admitted. *)
+  Admitted.
 
-  (* Lemma IND_CPA_equiv_true :
-  {locpackage MOD_CPA_tt_pkg ∘ (EVAL true) } ≈[ λ A, 0 ] (IND_CPA true).
+  Lemma IND_CPA_equiv_true :
+    MOD_CPA_tt_pkg ∘ (EVAL true) ≈₀ IND_CPA true.
   Proof.
-  Admitted. *)
+  Admitted.
 
   (** Security of PRF
 
