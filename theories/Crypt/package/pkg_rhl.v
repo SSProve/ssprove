@@ -518,6 +518,29 @@ Module PackageRHL (π : RulesParam).
     ]
     : typeclass_instances.
 
+  Lemma lookup_op_link :
+    ∀ p q o,
+      lookup_op (p ∘ q) o = omap (λ f x, program_link (f x) q) (lookup_op p o).
+  Proof.
+    intros p q [id [S T]].
+    unfold lookup_op. unfold link.
+    rewrite mapmE.
+    destruct (p id) as [[S' [T' g]]|] eqn:e. 2: reflexivity.
+    simpl. destruct chUniverse_eqP. 2: reflexivity.
+    destruct chUniverse_eqP. 2: reflexivity.
+    subst. cbn. reflexivity.
+  Qed.
+
+  Lemma get_op_default_link :
+    ∀ p q o x,
+      get_op_default (p ∘ q) o x = program_link (get_op_default p o x) q.
+  Proof.
+    intros p q o x.
+    unfold get_op_default. rewrite lookup_op_link.
+    destruct lookup_op as [f|] eqn:e. 2: reflexivity.
+    simpl. reflexivity.
+  Qed.
+
   Definition Pr_program {A} (p : raw_program A) :
     heap_choiceType → SDistr (F_choice_prod_obj ⟨ A , heap_choiceType ⟩) :=
     λ s, thetaFstd (prob_handler := prob_handler) A (repr p) s.
@@ -1393,6 +1416,10 @@ Module PackageRHL (π : RulesParam).
         * cbn. intros s₀' s₁' [? ?]. subst. auto.
   Qed.
 
+  (* TODO NOTE for practical reasons, and strength, it might be better to
+    add the o \in stuff to eq_up_to_inv like before.
+    This way we can invert on the \in blabla.
+  *)
   Lemma prove_relational :
     ∀ {L₀ L₁ LA E} (p₀ p₁ : raw_package) (I : precond) (A : raw_package)
       `{ValidPackage L₀ Game_import E p₀}
@@ -1407,7 +1434,6 @@ Module PackageRHL (π : RulesParam).
     intros L₀ L₁ LA E p₀ p₁ I A vp₀ vp₁ vA hI' hd₀ hd₁ hp.
     unfold AdvantageE, Pr.
     pose r := get_op_default A RUN tt.
-    (* TODO We already start seeing contrainsts that A must satisfy. *)
     assert (hI : INV LA I).
     { unfold INV. intros s₀ s₁. split.
       - intros hi l hin. apply hI'.
@@ -1419,15 +1445,92 @@ Module PackageRHL (π : RulesParam).
         + move: hd₀ => /fdisjointP hd₀. apply hd₀. assumption.
         + move: hd₁ => /fdisjointP hd₁. apply hd₁. assumption.
     }
-    unshelve epose proof (some_lemma_for_prove_relational p₀ p₁ I r hI hp).
+    unshelve epose proof (some_lemma_for_prove_relational p₀ p₁ I r hI hp) as h.
     4-5: eauto.
-    1:{ (* exact _. *)
-      (* It'd be nice to automate this bit as well, no?
-      At least we should have a lemma for this.
-      *)
-      admit.
+    1:{
+      eapply valid_get_op_default.
+      - eauto.
+      - auto_in_fset.
     }
-  Abort.
+    assert (
+      ∀ x y : tgt RUN * heap_choiceType,
+        (let '(b₀, s₀) := x in λ '(b₁, s₁), b₀ = b₁ ∧ I (s₀, s₁)) y →
+        (fst x == true) ↔ (fst y == true)
+    ) as Ha.
+    { intros [b₀ s₀] [b₁ s₁]. simpl.
+      intros [e ?]. rewrite e. intuition auto.
+    }
+    (* pose Heq := (Pr_eq_empty _ _ _ _ Hlemma Hempty Ha). *)
+    (* simpl in Heq. *)
+    (* simpl in h. *)
+    (* unfold θ_dens in Heq. *)
+    (* simpl in Heq. unfold pr in Heq. *)
+    (* simpl in Heq. *)
+    unfold Pr_op.
+    unshelve epose (rhs := thetaFstd _ (repr (program_link r p₀)) empty_heap).
+    1: exact prob_handler.
+    simpl in rhs.
+    epose (lhs := Pr_op (A ∘ p₀) RUN tt empty_heap).
+    assert (lhs = rhs) as he.
+    { subst lhs rhs.
+      unfold Pr_op. unfold Pr_program.
+      unfold thetaFstd. simpl. apply f_equal2. 2: reflexivity.
+      apply f_equal. apply f_equal.
+      rewrite get_op_default_link. reflexivity.
+    }
+    unfold lhs in he. unfold Pr_op in he.
+    rewrite he.
+    unshelve epose (rhs' := thetaFstd _ (repr (program_link r p₁)) empty_heap).
+    1: exact prob_handler.
+    simpl in rhs'.
+    epose (lhs' := Pr_op (A ∘ p₁) RUN tt empty_heap).
+    assert (lhs' = rhs') as e'.
+    { subst lhs' rhs'.
+      unfold Pr_op. unfold Pr_program.
+      unfold thetaFstd. simpl. apply f_equal2. 2: reflexivity.
+      apply f_equal. apply f_equal.
+      rewrite get_op_default_link. reflexivity.
+    }
+    unfold lhs' in e'. unfold Pr_op in e'.
+    rewrite e'.
+    unfold rhs', rhs.
+    unfold SDistr_bind. unfold SDistr_unit.
+    rewrite !dletE.
+    assert (
+      ∀ x : bool_choiceType * heap_choiceType,
+        ((let '(b, _) := x in dunit (R:=R) (T:=bool_choiceType) b) true) ==
+        (x.1 == true)%:R
+    ) as h1.
+    { intros [b s].
+      simpl. rewrite dunit1E. apply/eqP. reflexivity.
+    }
+    assert (
+      ∀ y,
+        (λ x : prod_choiceType (tgt RUN) heap_choiceType, (y x) * (let '(b, _) := x in dunit (R:=R) (T:=tgt RUN) b) true) =
+        (λ x : prod_choiceType (tgt RUN) heap_choiceType, (x.1 == true)%:R * (y x))
+    ) as Hrew.
+    { intros y. extensionality x.
+      destruct x as [x1 x2].
+      rewrite dunit1E.
+      simpl. rewrite GRing.mulrC. reflexivity.
+    }
+    rewrite !Hrew.
+    unfold TransformingLaxMorph.rlmm_from_lmla_obligation_1. simpl.
+    unfold SubDistr.SDistr_obligation_2. simpl.
+    unfold OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
+    rewrite !SDistr_rightneutral. simpl.
+    (* rewrite Heq. *)
+    rewrite /StateTransfThetaDens.unaryStateBeta'_obligation_1.
+    unfold TransformingLaxMorph.rlmm_from_lmla_obligation_1, stT_thetaDens_adj.
+    assert (∀ (x : R), `|x - x| = 0) as Hzero.
+    { intros x.
+      assert (x - x = 0) as H3.
+      { apply /eqP. rewrite GRing.subr_eq0. intuition. }
+      rewrite H3. apply mc_1_10.Num.Theory.normr0.
+    }
+    (* rewrite Hzero. *)
+    (* reflexivity. *)
+  Admitted.
 
   (* Lemma prove_relational {L1 L2} {export}
     (P1 : package L1 Game_import export)
