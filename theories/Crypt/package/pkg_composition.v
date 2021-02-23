@@ -453,7 +453,7 @@ Module PackageComposition (π : RulesParam).
   Qed. *)
 
   Notation "p1 ∘ p2" :=
-    (link p1 p2) (right associativity, at level 80) : package_scope.
+    (link p1 p2) (right associativity, at level 20) : package_scope.
 
   (* TODO Probably move somewhere else? *)
   Section fset_par_facts.
