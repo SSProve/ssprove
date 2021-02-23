@@ -461,7 +461,7 @@ Module PRF_example.
     *)
     cbn - [semantic_judgement repr].
     destruct chUniverse_eqP as [e|]. 2: contradiction.
-    assert (he : e = erefl) by (eapply uip). subst e.
+    rewrite cast_fun_K. clear e.
     cbn - [semantic_judgement repr].
     (* We are now in the realm of program logic *)
   Admitted.
@@ -469,6 +469,51 @@ Module PRF_example.
   Lemma IND_CPA_equiv_true :
     MOD_CPA_tt_pkg ∘ (EVAL true) ≈₀ IND_CPA true.
   Proof.
+    (* We go to the relation logic using equality as invariant. *)
+    eapply eq_rel_perf_ind with (λ '(h₀, h₁), h₀ = h₁). 2: reflexivity.
+    1:{
+      simpl. intros s₀ s₁. split.
+      - intro e. rewrite e. auto.
+      - intro e. rewrite e. auto.
+    }
+    (* We now conduct the proof in relational logic. *)
+    intros id S T m hin.
+    invert_interface_in hin.
+    rewrite get_op_default_link.
+    (* First we need to squeeze the programs out of the packages *)
+    (* Hopefully I will find a way to automate it. *)
+    unfold get_op_default.
+    destruct lookup_op as [f|] eqn:e.
+    2:{
+      exfalso.
+      simpl in e.
+      destruct chUniverse_eqP. 2: eauto.
+      destruct chUniverse_eqP. 2: eauto.
+      discriminate.
+    }
+    eapply lookup_op_spec in e. simpl in e.
+    rewrite setmE in e. rewrite eq_refl in e.
+    noconf e.
+    (* Now to the RHS *)
+    destruct lookup_op as [f|] eqn:e.
+    2:{
+      exfalso.
+      simpl in e.
+      destruct chUniverse_eqP. 2: eauto.
+      destruct chUniverse_eqP. 2: eauto.
+      discriminate.
+    }
+    eapply lookup_op_spec in e. simpl in e.
+    rewrite setmE in e. rewrite eq_refl in e.
+    noconf e.
+    (* It would be nice to lock things a bit so we don't have to do cbn- all
+      the time.
+    *)
+    cbn - [semantic_judgement repr].
+    destruct chUniverse_eqP as [e|]. 2: contradiction.
+    rewrite cast_fun_K. clear e.
+    cbn - [semantic_judgement repr].
+    (* We are now in the realm of program logic *)
   Admitted.
 
   (** Security of PRF
