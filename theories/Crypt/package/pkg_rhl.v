@@ -1531,20 +1531,7 @@ Module PackageRHL (π : RulesParam).
     apply Hzero.
   Qed.
 
-  (* Alternative version for packages *)
-  (* Corollary prove_relational' :
-    ∀ {export}
-      (P1 : loc_package Game_import export)
-      (P2 : loc_package Game_import export)
-      (I : heap_choiceType * heap_choiceType -> Prop)
-      (HINV' : INV' P1.(locs) P2.(locs) I)
-      (Hempty : I (empty_heap, empty_heap))
-      (H : eq_up_to_inv I P1 P2),
-      P1 ≈[ λ A, 0 ] P2.
-  Proof.
-    intros E [L₁ p₁] [L₂ p₂] I hI he h.
-    eapply prove_relational. all: eauto.
-  Qed. *)
+  (* TODO Alternative version with ≈₀ *)
 
   (* Rules for packages *)
   (* same as in RulesStateprob.v with `r` at the beginning *)
