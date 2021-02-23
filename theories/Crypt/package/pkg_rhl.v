@@ -1456,6 +1456,22 @@ Module PackageRHL (π : RulesParam).
     eapply prove_relational. all: eauto.
   Qed.
 
+  (** Syntactic judgment *)
+  (* It's the same as the semantic one, but we're abstracting it away. *)
+  Definition rel_jdg {A B : choiceType} (pre : precond) (post : postcond A B)
+    (p : raw_program A) (q : raw_program B) :=
+    locked (r⊨ ⦃ pre ⦄ p ≈ q ⦃ post ⦄).
+
+  Notation "⊢ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
+    (rel_jdg pre post c1 c2) : package_scope.
+
+  Lemma rel_jdgE :
+    ∀ {A B : choiceType} pre (post : postcond A B) p q,
+      ⊢ ⦃ pre ⦄ p ≈ q ⦃ post ⦄ = r⊨ ⦃ pre ⦄ p ≈ q ⦃ post ⦄.
+  Proof.
+    intros. unfold rel_jdg. rewrite -lock. reflexivity.
+  Qed.
+
   (* Rules for packages *)
   (* same as in RulesStateprob.v with `r` at the beginning *)
 
@@ -1464,11 +1480,12 @@ Module PackageRHL (π : RulesParam).
   Theorem rpre_weaken_rule :
     ∀ {A₀ A₁ : ord_choiceType} {p₀ : raw_program A₀} {p₁ : raw_program A₁}
       (pre pre' : precond) post,
-      r⊨ ⦃ pre ⦄ p₀ ≈ p₁ ⦃ post ⦄ →
+      ⊢ ⦃ pre ⦄ p₀ ≈ p₁ ⦃ post ⦄ →
       (∀ s₀ s₁, pre' (s₀, s₁) → pre (s₀, s₁)) →
-      r⊨ ⦃ pre' ⦄ p₀ ≈ p₁ ⦃ post ⦄.
+      ⊢ ⦃ pre' ⦄ p₀ ≈ p₁ ⦃ post ⦄.
   Proof.
     intros A₀ A₁ p₀ p₁ pre pre' post he hi.
+    rewrite -> rel_jdgE in *.
     eapply pre_weaken_rule. all: eauto.
   Qed.
 
@@ -1476,23 +1493,26 @@ Module PackageRHL (π : RulesParam).
     ∀ {A₀ A₁ : ord_choiceType} {p₀ : raw_program A₀} {p₁ : raw_program A₁}
       (pre : precond) post,
       (∀ s₀ s₁,
-        pre (s₀, s₁) → r⊨ ⦃ λ s, s.1 = s₀ ∧ s.2 = s₁ ⦄ p₀ ≈ p₁ ⦃ post ⦄
+        pre (s₀, s₁) → ⊢ ⦃ λ s, s.1 = s₀ ∧ s.2 = s₁ ⦄ p₀ ≈ p₁ ⦃ post ⦄
       ) →
-      r⊨ ⦃ pre ⦄ p₀ ≈ p₁ ⦃ post ⦄.
+      ⊢ ⦃ pre ⦄ p₀ ≈ p₁ ⦃ post ⦄.
   Proof.
     intros A₀ A₁ p₀ p₁ pre post h.
+    rewrite rel_jdgE.
     eapply pre_hypothesis_rule.
-    exact h.
+    intros. rewrite -rel_jdgE.
+    apply h. auto.
   Qed.
 
   Theorem rpre_strong_hypothesis_rule :
     ∀ {A₀ A₁ : ord_choiceType} {p₀ : raw_program A₀} {p₁ : raw_program A₁}
       (pre : precond) post,
       (∀ s₀ s₁, pre (s₀, s₁)) →
-      r⊨ ⦃ λ _, True ⦄ p₀ ≈ p₁ ⦃ post ⦄ →
-      r⊨ ⦃ pre ⦄ p₀ ≈ p₁ ⦃ post ⦄.
+      ⊢ ⦃ λ _, True ⦄ p₀ ≈ p₁ ⦃ post ⦄ →
+      ⊢ ⦃ pre ⦄ p₀ ≈ p₁ ⦃ post ⦄.
   Proof.
     intros A₀ A₁ p₀ p₁ pre post hs h.
+    rewrite -> rel_jdgE in *.
     eapply pre_strong_hypothesis_rule.
     all: eauto.
   Qed.
@@ -1500,11 +1520,12 @@ Module PackageRHL (π : RulesParam).
   Theorem rpost_weaken_rule :
     ∀ {A₀ A₁ : ord_choiceType} {p₀ : raw_program A₀} {p₁ : raw_program A₁}
       (pre : precond) (post1 post2 : postcond A₀ A₁),
-      r⊨ ⦃ pre ⦄ p₀ ≈ p₁ ⦃ post1 ⦄ →
+      ⊢ ⦃ pre ⦄ p₀ ≈ p₁ ⦃ post1 ⦄ →
       (∀ a₀ a₁, post1 a₀ a₁ → post2 a₀ a₁) →
-      r⊨ ⦃ pre ⦄ p₀ ≈ p₁ ⦃ post2 ⦄.
+      ⊢ ⦃ pre ⦄ p₀ ≈ p₁ ⦃ post2 ⦄.
   Proof.
     intros A₀ A₁ p₀ p₁ pre post1 post2 h hi.
+    rewrite -> rel_jdgE in *.
     eapply post_weaken_rule. all: eauto.
   Qed.
 
@@ -1529,11 +1550,12 @@ Module PackageRHL (π : RulesParam).
       {b₀ b₁}
       {pre : precond} {post : postcond A₀ A₁},
       (∀ s, pre s → b₀ = b₁) →
-      r⊨ ⦃ λ s, pre s ∧ b₀ = true ⦄ c₀ ≈ c₁ ⦃ post ⦄ →
-      r⊨ ⦃ λ s, pre s ∧ b₀ = false ⦄ c₀' ≈ c₁' ⦃ post ⦄ →
-      r⊨ ⦃ pre ⦄ if b₀ then c₀ else c₀' ≈ if b₁ then c₁ else c₁' ⦃ post ⦄.
+      ⊢ ⦃ λ s, pre s ∧ b₀ = true ⦄ c₀ ≈ c₁ ⦃ post ⦄ →
+      ⊢ ⦃ λ s, pre s ∧ b₀ = false ⦄ c₀' ≈ c₁' ⦃ post ⦄ →
+      ⊢ ⦃ pre ⦄ if b₀ then c₀ else c₀' ≈ if b₁ then c₁ else c₁' ⦃ post ⦄.
   Proof.
     intros A₀ A₁ c₀ c₀' c₁ c₁' b₀ b₁ pre post hb ht hf.
+    rewrite -> rel_jdgE in *.
     rewrite !repr_if.
     eapply if_rule. all: eauto.
   Qed.
@@ -1549,58 +1571,64 @@ Module PackageRHL (π : RulesParam).
 
   Lemma rcoupling_eq :
     ∀ {A : ord_choiceType} (K₀ K₁ : raw_program A) (ψ : precond),
-      r⊨ ⦃ ψ ⦄ K₀ ≈ K₁ ⦃ eq ⦄ →
+      ⊢ ⦃ ψ ⦄ K₀ ≈ K₁ ⦃ eq ⦄ →
       ∀ s₀ s₁,
         ψ (s₀, s₁) →
         θ_dens (θ0 (repr K₀) s₀) = θ_dens (θ0 (repr K₁) s₁).
   Proof.
     intros A K₀ K₁ ψ h s₀ s₁ hψ.
+    rewrite -> rel_jdgE in h.
     eapply coupling_eq. all: eauto.
   Qed.
 
   Lemma rrewrite_eqDistrL :
     ∀ {A₀ A₁ : ord_choiceType} {P Q}
       (c₀ c₀' : raw_program A₀) (c₁ : raw_program A₁),
-      r⊨ ⦃ P ⦄ c₀ ≈ c₁ ⦃ Q ⦄ →
+      ⊢ ⦃ P ⦄ c₀ ≈ c₁ ⦃ Q ⦄ →
       (∀ s, θ_dens (θ0 (repr c₀) s) = θ_dens (θ0 (repr c₀') s)) →
-      r⊨ ⦃ P ⦄ c₀' ≈ c₁ ⦃ Q ⦄.
+      ⊢ ⦃ P ⦄ c₀' ≈ c₁ ⦃ Q ⦄.
   Proof.
     intros A₀ A₁ P Q c₀ c₀' c₁ h hθ.
+    rewrite -> rel_jdgE in *.
     eapply rewrite_eqDistrL. all: eauto.
   Qed.
 
   Lemma rrewrite_eqDistrR :
     ∀ {A₀ A₁ : ord_choiceType} {P Q}
       (c₀ : raw_program A₀) (c₁ c₁' : raw_program A₁),
-      r⊨ ⦃ P ⦄ c₀ ≈ c₁ ⦃ Q ⦄ →
+      ⊢ ⦃ P ⦄ c₀ ≈ c₁ ⦃ Q ⦄ →
       (∀ s, θ_dens (θ0 (repr c₁) s) = θ_dens (θ0 (repr c₁') s)) →
-      r⊨ ⦃ P ⦄ c₀ ≈ c₁' ⦃ Q ⦄.
+      ⊢ ⦃ P ⦄ c₀ ≈ c₁' ⦃ Q ⦄.
   Proof.
     intros A₀ A₁ P Q c₀ c₁ c₁' h hθ.
+    rewrite -> rel_jdgE in *.
     eapply rewrite_eqDistrR. all: eauto.
   Qed.
 
   Lemma rreflexivity_rule :
     ∀ {A : ord_choiceType} (c : raw_program A),
-      r⊨ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ c ≈ c ⦃ eq ⦄.
+      ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ c ≈ c ⦃ eq ⦄.
   Proof.
     intros A c.
-    apply reflexivity_rule.
+    rewrite -> rel_jdgE.
+    apply (reflexivity_rule (repr c)).
   Qed.
 
   Theorem rswap_rule :
     ∀ {A₀ A₁ : ord_choiceType} {I : precond} {post : postcond A₀ A₁}
       (c₀ : raw_program A₀) (c₁ : raw_program A₁),
-      r⊨ ⦃ I ⦄ c₀ ≈ c₁
+      ⊢ ⦃ I ⦄ c₀ ≈ c₁
         ⦃ λ '(a₀, s₀) '(a₁, s₁), I (s₀, s₁) ∧ post (a₀, s₀) (a₁, s₁) ⦄ →
-      r⊨ ⦃ I ⦄ c₁ ≈ c₀
+      ⊢ ⦃ I ⦄ c₁ ≈ c₀
         ⦃ λ '(a₁, s₁) '(a₀, s₀), I (s₀, s₁) ∧ post (a₀, s₀) (a₁, s₁) ⦄ →
-      r⊨ ⦃ I ⦄ c₀ ;; c₁ ≈ c₁ ;; c₀
+      ⊢ ⦃ I ⦄ c₀ ;; c₁ ≈ c₁ ;; c₀
         ⦃ λ '(a₁, s₁) '(a₀, s₀), I (s₀, s₁) ∧ post (a₀, s₀) (a₁, s₁) ⦄.
   Proof.
     intros A₀ A₁ I post c₀ c₁ h1 h2.
+    rewrite rel_jdgE in h1. rewrite rel_jdgE in h2.
+    rewrite rel_jdgE.
     rewrite !repr_bind.
-    eapply swap_rule. all: auto.
+    eapply (swap_rule (repr c₀) (repr c₁)). all: auto.
   Qed.
 
   (** TW: I guess this to allow going under binders.
@@ -1610,12 +1638,14 @@ Module PackageRHL (π : RulesParam).
   Theorem rswap_ruleL :
     ∀ {A₀ A₁ B : ord_choiceType} {pre I : precond} {post : postcond A₁ A₀}
     (l : raw_program B) (c₀ : raw_program A₀) (c₁ : raw_program A₁),
-    r⊨ ⦃ pre ⦄ l ≈ l ⦃ λ '(b₀, s₀) '(b₁, s₁), I (s₀, s₁) ⦄ →
-    r⊨ ⦃ I ⦄ c₀ ≈ c₁ ⦃ λ '(a₀, s₀) '(a₁, s₁), I (s₀, s₁) ∧ post (a₁, s₁) (a₀, s₀) ⦄ →
-    r⊨ ⦃ I ⦄ c₁ ≈ c₀ ⦃ λ '(a₁, s₁) '(a₀, s₀), I (s₀, s₁) ∧ post (a₁, s₁) (a₀, s₀) ⦄ →
-    r⊨ ⦃ pre ⦄ l ;; c₀ ;; c₁ ≈ l ;; c₁ ;; c₀ ⦃ post ⦄.
+    ⊢ ⦃ pre ⦄ l ≈ l ⦃ λ '(b₀, s₀) '(b₁, s₁), I (s₀, s₁) ⦄ →
+    ⊢ ⦃ I ⦄ c₀ ≈ c₁ ⦃ λ '(a₀, s₀) '(a₁, s₁), I (s₀, s₁) ∧ post (a₁, s₁) (a₀, s₀) ⦄ →
+    ⊢ ⦃ I ⦄ c₁ ≈ c₀ ⦃ λ '(a₁, s₁) '(a₀, s₀), I (s₀, s₁) ∧ post (a₁, s₁) (a₀, s₀) ⦄ →
+    ⊢ ⦃ pre ⦄ l ;; c₀ ;; c₁ ≈ l ;; c₁ ;; c₀ ⦃ post ⦄.
   Proof.
     intros A₀ A₁ B pre I post l c₀ c₁ hl h0 h1.
+    rewrite rel_jdgE in h0. rewrite rel_jdgE in h1. rewrite rel_jdgE in hl.
+    rewrite rel_jdgE.
     rewrite !repr_bind.
     eapply swap_ruleL. all: eauto.
   Qed.
@@ -1624,25 +1654,28 @@ Module PackageRHL (π : RulesParam).
     ∀ {A₀ A₁ B : ord_choiceType} {post : postcond B B}
       (c₀ : raw_program A₀) (c₁ : raw_program A₁) (r : A₀ → A₁ → raw_program B),
       (∀ b b', b = b' → post b b') →
-      (∀ a₀ a₁, r⊨ ⦃ λ '(s₁, s₀), s₀ = s₁ ⦄ r a₀ a₁ ≈ r a₀ a₁ ⦃ post ⦄) →
-      r⊨ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      (∀ a₀ a₁, ⊢ ⦃ λ '(s₁, s₀), s₀ = s₁ ⦄ r a₀ a₁ ≈ r a₀ a₁ ⦃ post ⦄) →
+      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
         a₀ ← c₀ ;; a₁ ← c₁ ;; ret (a₀, a₁) ≈
         a₁ ← c₁ ;; a₀ ← c₀ ;; ret (a₀, a₁)
         ⦃ eq ⦄ →
-      r⊨ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
         a₀ ← c₀ ;; a₁ ← c₁ ;; r a₀ a₁ ≈
         a₁ ← c₁ ;; a₀ ← c₀ ;; r a₀ a₁
         ⦃ post ⦄.
   Proof.
     intros A₀ A₁ B post c₀ c₁ r postr hr h.
+    rewrite rel_jdgE.
     repeat setoid_rewrite repr_bind. simpl.
-    eapply (swap_ruleR (λ a₀ a₁, repr (r a₀ a₁)) (repr c₀) (repr c₁) hr postr).
-    intro s.
-    unshelve eapply coupling_eq.
-    - exact (λ '(h₀, h₁), h₀ = h₁).
-    - repeat setoid_rewrite repr_bind in h.
-      apply h.
-    - reflexivity.
+    eapply (swap_ruleR (λ a₀ a₁, repr (r a₀ a₁)) (repr c₀) (repr c₁)).
+    - intros. rewrite -rel_jdgE. apply hr.
+    - apply postr.
+    - intro s.
+      unshelve eapply coupling_eq.
+      + exact (λ '(h₀, h₁), h₀ = h₁).
+      + rewrite rel_jdgE in h. repeat setoid_rewrite repr_bind in h.
+        apply h.
+      + reflexivity.
   Qed.
 
   Local Open Scope package_scope.
@@ -1651,8 +1684,8 @@ Module PackageRHL (π : RulesParam).
     ∀ {A₀ A₁ : ord_choiceType} {pre : precond} {post}
       {c₀ : raw_program A₀} {c₁ : raw_program A₁},
       (∀ h₀ h₁, pre (h₀, h₁) → pre (h₁, h₀)) →
-      r⊨ ⦃ λ '(h₀, h₁), pre (h₁, h₀) ⦄ c₀ ≈ c₁ ⦃ post ⦄ →
-      r⊨ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄.
+      ⊢ ⦃ λ '(h₀, h₁), pre (h₁, h₀) ⦄ c₀ ≈ c₁ ⦃ post ⦄ →
+      ⊢ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄.
   Proof.
     intros A₀ A₁ pre post c₀ c₁ pre_sym h.
     unshelve eapply rpre_weaken_rule. 2: eassumption.
@@ -1662,17 +1695,18 @@ Module PackageRHL (π : RulesParam).
   Lemma rsymmetry :
     ∀ {A₀ A₁ : ord_choiceType} {pre : precond} {post}
       {c₀ : raw_program A₀} {c₁ : raw_program A₁},
-      r⊨ ⦃ λ '(h₁, h₀), pre (h₀, h₁) ⦄ c₁ ≈ c₀
+      ⊢ ⦃ λ '(h₁, h₀), pre (h₀, h₁) ⦄ c₁ ≈ c₀
         ⦃ λ '(a₁, h₁) '(a₀, h₀), post (a₀, h₀) (a₁, h₁) ⦄ →
-      r⊨ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄.
+      ⊢ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄.
   Proof.
     intros A₀ A₁ pre post c₀ c₁ h.
-    eapply symmetry_rule. auto.
+    rewrite rel_jdgE.
+    eapply symmetry_rule. rewrite -rel_jdgE. auto.
   Qed.
 
   Lemma rsamplerC :
     ∀ {A : ord_choiceType} (o : Op) (c : raw_program A),
-      r⊨ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
         a ← c ;; r ← (r ← sample o ;; ret r) ;;  (ret (a, r)) ≈
         r ← (r ← sample o ;; ret r) ;; a ← c ;;  (ret (a, r))
       ⦃ eq ⦄.
@@ -1682,7 +1716,7 @@ Module PackageRHL (π : RulesParam).
 
   Lemma rsamplerC' :
     ∀ {A : ord_choiceType} (o : Op) (c : raw_program A),
-    r⊨ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (r, a) ≈
       a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (r, a)
     ⦃ eq ⦄.
@@ -1694,28 +1728,34 @@ Module PackageRHL (π : RulesParam).
   Theorem rswap_rule_ctx :
   ∀ {A : ord_choiceType} {I pre} {post Q : postcond A A}
     (l r c₀ c₁ : raw_program A),
-    r⊨ ⦃ pre ⦄ l ≈ l ⦃ λ '(a₀, s₀) '(a₁, s₁), I (s₀, s₁) ⦄ →
-    (∀ a₀ a₁, r⊨ ⦃ λ '(s₁, s₀), Q (a₀,s₀) (a₁,s₁) ⦄ r ≈ r ⦃ post ⦄) →
-    r⊨ ⦃ I ⦄ c₀ ≈ c₁ ⦃ λ '(a₀, s₀) '(a₁, s₁), I (s₀, s₁) ∧ Q (a₀, s₀) (a₁, s₁) ⦄ →
-    r⊨ ⦃ I ⦄ c₁ ≈ c₀ ⦃ λ '(a₁, s₁) '(a₀, s₀), I (s₀, s₁) ∧ Q (a₀, s₀) (a₁, s₁) ⦄ →
-    r⊨ ⦃ pre ⦄ l ;; c₀ ;; c₁ ;; r ≈ l ;; c₁ ;; c₀ ;; r ⦃ post ⦄.
+    ⊢ ⦃ pre ⦄ l ≈ l ⦃ λ '(a₀, s₀) '(a₁, s₁), I (s₀, s₁) ⦄ →
+    (∀ a₀ a₁, ⊢ ⦃ λ '(s₁, s₀), Q (a₀,s₀) (a₁,s₁) ⦄ r ≈ r ⦃ post ⦄) →
+    ⊢ ⦃ I ⦄ c₀ ≈ c₁ ⦃ λ '(a₀, s₀) '(a₁, s₁), I (s₀, s₁) ∧ Q (a₀, s₀) (a₁, s₁) ⦄ →
+    ⊢ ⦃ I ⦄ c₁ ≈ c₀ ⦃ λ '(a₁, s₁) '(a₀, s₀), I (s₀, s₁) ∧ Q (a₀, s₀) (a₁, s₁) ⦄ →
+    ⊢ ⦃ pre ⦄ l ;; c₀ ;; c₁ ;; r ≈ l ;; c₁ ;; c₀ ;; r ⦃ post ⦄.
   Proof.
     intros A I pre post Q l r c₀ c₁ hl hr h₀ h₁.
+    rewrite rel_jdgE.
     rewrite !repr_bind.
-    eapply swap_rule_ctx. 1: exact hl. 2: exact h₀. 2: exact h₁.
-    intros a₀ a₁. eapply hr.
+    eapply swap_rule_ctx.
+    1:{ rewrite -rel_jdgE. exact hl. }
+    2:{ rewrite -rel_jdgE. exact h₀. }
+    2:{ rewrite -rel_jdgE. exact h₁. }
+    intros a₀ a₁. rewrite -rel_jdgE. eapply hr.
   Qed.
 
   Theorem rsame_head :
     ∀ {A B : ord_choiceType} {f₀ f₁ : A → raw_program B}
     (m : raw_program A) (post : postcond B B),
-    (∀ a, r⊨ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ f₀ a ≈ f₁ a ⦃ post ⦄) →
-    r⊨ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ bind m f₀ ≈ bind m f₁ ⦃ post ⦄.
+    (∀ a, ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ f₀ a ≈ f₁ a ⦃ post ⦄) →
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ bind m f₀ ≈ bind m f₁ ⦃ post ⦄.
   Proof.
     intros A B f₀ f₁ m post h.
+    rewrite rel_jdgE.
     eapply (rbind_rule m m).
-    - eapply rreflexivity_rule.
-    - intros a₀ a₁. unshelve eapply rpre_weaken_rule.
+    - rewrite -rel_jdgE. eapply rreflexivity_rule.
+    - intros a₀ a₁. rewrite -rel_jdgE.
+      unshelve eapply rpre_weaken_rule.
       + exact (λ '(h₀, h₁), a₀ = a₁ ∧ h₀ = h₁).
       + specialize (h a₀).
         eapply rpre_hypothesis_rule. simpl. intros s₀ s₁ [ea es]. subst.
@@ -1728,15 +1768,15 @@ Module PackageRHL (π : RulesParam).
   (* Lemma rsample_rule { B1 B2 : ord_choiceType} { L : {fset Location}}  { o } *)
   (*       c1 c2  *)
   (*       pre (post : B1 * heap -> B2 * heap -> Prop) *)
-  (*       (H : r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄) : *)
+  (*       (H : ⊢ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄) : *)
   (*          ⊨ ⦃ pre ⦄ repr (locs := L ) (x <$ o ;; c1) ≈ repr (locs := L) (x <$ o ;; c2) ⦃ post ⦄. *)
   (* Proof. Admitted.  *)
 
   Theorem rdead_sampler_elimL :
     ∀ {A : ord_choiceType} {D}
       (c₀ c₁ : raw_program A) (pre : precond) (post : postcond A A),
-      r⊨ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄ →
-      r⊨ ⦃ pre ⦄ (x ← sample D ;; ret x) ;; c₀ ≈ c₁ ⦃ post ⦄.
+      ⊢ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄ →
+      ⊢ ⦃ pre ⦄ (x ← sample D ;; ret x) ;; c₀ ≈ c₁ ⦃ post ⦄.
   Proof.
     intros A D c₀ c₁ pre post h.
     eapply rrewrite_eqDistrL. 1: exact h.
@@ -1746,8 +1786,8 @@ Module PackageRHL (π : RulesParam).
   Theorem rdead_sampler_elimR :
     ∀ {A : ord_choiceType} {D}
       (c₀ c₁ : raw_program A) (pre : precond) (post : postcond A A),
-      r⊨ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄ →
-      r⊨ ⦃ pre ⦄ c₀ ≈ (x ← sample D ;; ret x) ;; c₁ ⦃ post ⦄.
+      ⊢ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄ →
+      ⊢ ⦃ pre ⦄ c₀ ≈ (x ← sample D ;; ret x) ;; c₁ ⦃ post ⦄.
   Proof.
     intros A D c₀ c₁ pre post h.
     eapply rrewrite_eqDistrR. 1: exact h.
