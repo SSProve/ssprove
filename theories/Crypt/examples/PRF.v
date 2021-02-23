@@ -483,14 +483,17 @@ Module PRF_example.
 
   *)
   Theorem security_based_on_prf :
-    ∀ A (* : Adversary4Game [interface val #[i1] : chWords → chWords × chWords ] *),
-      (* adv_forp A IND_CPA → *)
+    ∀ LA A,
+      ValidPackage LA
+        [interface val #[i1] : chWords → chWords × chWords ] A_export A →
+      fdisjoint LA (IND_CPA false).(locs) →
+      fdisjoint LA (IND_CPA true).(locs) →
       Advantage IND_CPA A <=
       prf_epsilon (A ∘ MOD_CPA_ff_pkg) +
       statistical_gap A +
       prf_epsilon (A ∘ MOD_CPA_tt_pkg).
   Proof.
-    intros A (* hA *). unfold prf_epsilon, statistical_gap.
+    intros LA A vA hd₀ hd₁. unfold prf_epsilon, statistical_gap.
     rewrite !Advantage_E.
     pose proof (
       Advantage_triangle_chain (IND_CPA false) [::
@@ -504,18 +507,13 @@ Module PRF_example.
     rewrite !GRing.addrA in ineq.
     eapply ler_trans. 1: exact ineq.
     clear ineq.
-    assert (h0 :
-      AdvantageE (IND_CPA false) (MOD_CPA_ff_pkg ∘ (EVAL true)) A = 0
-    ).
-    { admit. }
-    assert (h1 :
-      AdvantageE (MOD_CPA_tt_pkg ∘ (EVAL true)) (IND_CPA true) A = 0
-    ).
-    { admit. }
-    rewrite h0 h1. clear h0 h1.
+    erewrite IND_CPA_equiv_false. all: eauto.
+    2:{ simpl. unfold MOD_CPA_location. rewrite fset0U. auto. }
+    erewrite IND_CPA_equiv_true. all: eauto.
+    2:{ simpl. unfold MOD_CPA_location. rewrite fset0U. auto. }
     rewrite GRing.add0r GRing.addr0.
     rewrite !Advantage_link. rewrite Advantage_sym. auto.
-  Admitted.
+  Qed.
 
   (** TODO OLD BELOW **)
 
