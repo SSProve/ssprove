@@ -1177,10 +1177,29 @@ Module PackageRHL (π : RulesParam).
         * apply ler0n.
   Qed.
 
+  (** Syntactic judgment *)
+
+  (* It's the same as the semantic one, but we're abstracting it away. *)
+  Definition rel_jdg {A B : choiceType} (pre : precond) (post : postcond A B)
+    (p : raw_program A) (q : raw_program B) :=
+    locked (r⊨ ⦃ pre ⦄ p ≈ q ⦃ post ⦄).
+
+  Notation "⊢ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
+    (rel_jdg pre post c1 c2) : package_scope.
+
+  Lemma rel_jdgE :
+    ∀ {A B : choiceType} pre (post : postcond A B) p q,
+      ⊢ ⦃ pre ⦄ p ≈ q ⦃ post ⦄ = r⊨ ⦃ pre ⦄ p ≈ q ⦃ post ⦄.
+  Proof.
+    intros. unfold rel_jdg. rewrite -lock. reflexivity.
+  Qed.
+
+  (** Equivalence of packages in the program logic *)
+
   Definition eq_up_to_inv (E : Interface) (I : precond) (p₀ p₁ : raw_package) :=
     ∀ (id : ident) (S T : chUniverse) (x : S),
       (id, (S, T)) \in E →
-      r⊨ ⦃ λ '(s₀, s₁), I (s₀, s₁) ⦄
+      ⊢ ⦃ λ '(s₀, s₁), I (s₀, s₁) ⦄
         get_op_default p₀ (id, (S, T)) x ≈ get_op_default p₁ (id, (S, T)) x
         ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ I (s₀, s₁) ⦄.
 
@@ -1287,7 +1306,7 @@ Module PackageRHL (π : RulesParam).
       erewrite get_op_default_spec in hp. 2: eauto.
       erewrite get_op_default_spec in hp. 2: eauto.
       rewrite !repr_bind.
-      eapply bind_rule_pp. 1: exact hp.
+      eapply bind_rule_pp. 1:{ rewrite -rel_jdgE. exact hp. }
       cbn - [semantic_judgement].
       intros a₀ a₁.
       apply pre_hypothesis_rule.
@@ -1454,22 +1473,6 @@ Module PackageRHL (π : RulesParam).
     intros L₀ L₁ E p₀ p₁ I v₀ v₁ hI' hIe he.
     intros LA A vA hd₀ hd₁.
     eapply prove_relational. all: eauto.
-  Qed.
-
-  (** Syntactic judgment *)
-  (* It's the same as the semantic one, but we're abstracting it away. *)
-  Definition rel_jdg {A B : choiceType} (pre : precond) (post : postcond A B)
-    (p : raw_program A) (q : raw_program B) :=
-    locked (r⊨ ⦃ pre ⦄ p ≈ q ⦃ post ⦄).
-
-  Notation "⊢ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
-    (rel_jdg pre post c1 c2) : package_scope.
-
-  Lemma rel_jdgE :
-    ∀ {A B : choiceType} pre (post : postcond A B) p q,
-      ⊢ ⦃ pre ⦄ p ≈ q ⦃ post ⦄ = r⊨ ⦃ pre ⦄ p ≈ q ⦃ post ⦄.
-  Proof.
-    intros. unfold rel_jdg. rewrite -lock. reflexivity.
   Qed.
 
   (* Rules for packages *)
@@ -1795,6 +1798,10 @@ Module PackageRHL (π : RulesParam).
   Admitted.
 
   (* Rules using commands instead of bind *)
+
+  (* TODO Find out how/if we can improve unification of cmd_bind with
+    sampler/getr/putr.
+  *)
 
   Lemma r_swap_cmd :
     ∀ (A₀ A₁ B : choiceType) (post : postcond B B)

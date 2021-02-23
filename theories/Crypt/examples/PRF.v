@@ -456,13 +456,11 @@ Module PRF_example.
     eapply lookup_op_spec in e. simpl in e.
     rewrite setmE in e. rewrite eq_refl in e.
     noconf e.
-    (* It would be nice to lock things a bit so we don't have to do cbn- all
-      the time.
-    *)
-    cbn - [semantic_judgement repr].
+    (* Now the linking *)
+    cbn.
     destruct chUniverse_eqP as [e|]. 2: contradiction.
     rewrite cast_fun_K. clear e.
-    cbn - [semantic_judgement repr].
+    cbn.
     (* We are now in the realm of program logic *)
   Admitted.
 
@@ -506,13 +504,11 @@ Module PRF_example.
     eapply lookup_op_spec in e. simpl in e.
     rewrite setmE in e. rewrite eq_refl in e.
     noconf e.
-    (* It would be nice to lock things a bit so we don't have to do cbn- all
-      the time.
-    *)
-    cbn - [semantic_judgement repr].
+    (* Now the linking *)
+    cbn.
     destruct chUniverse_eqP as [e|]. 2: contradiction.
     rewrite cast_fun_K. clear e.
-    cbn - [semantic_judgement repr].
+    cbn.
     (* We are now in the realm of program logic *)
   Admitted.
 
