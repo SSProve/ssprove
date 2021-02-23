@@ -740,7 +740,7 @@ Module PackageRHL (π : RulesParam).
     : package_scope.
 
   Notation " G0 ≈₀ G1 " :=
-    (G0 ≈[ λ A, 0 ] G1)
+    (G0 ≈[ λ (_ : raw_package), 0 ] G1)
     (at level 50, format " G0  ≈₀  G1")
     : package_scope.
 
