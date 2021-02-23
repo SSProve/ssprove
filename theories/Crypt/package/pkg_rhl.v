@@ -776,6 +776,62 @@ Module PackageRHL (π : RulesParam).
     reflexivity.
   Qed.
 
+  Lemma Advantage_link :
+    ∀ G₀ G₁ A P,
+      AdvantageE G₀ G₁ (A ∘ P) =
+      AdvantageE (P ∘ G₀) (P ∘ G₁) A.
+  Proof.
+    intros G₀ G₁ A P.
+    unfold AdvantageE. rewrite !link_assoc. reflexivity.
+  Qed.
+
+  Lemma Advantage_sym :
+    ∀ P Q A,
+      AdvantageE P Q A = AdvantageE Q P A.
+  Proof.
+    intros P Q A.
+    unfold AdvantageE.
+    rewrite distrC. reflexivity.
+  Qed.
+
+  Lemma Advantage_triangle :
+    ∀ P Q R A,
+      AdvantageE P Q A <= AdvantageE P R A + AdvantageE R Q A.
+  Proof.
+    intros P Q R A.
+    unfold AdvantageE.
+    apply ler_dist_add.
+  Qed.
+
+  Fixpoint advantage_sum P l Q A :=
+    match l with
+    | [::] => AdvantageE P Q A
+    | R :: l => AdvantageE P R A + advantage_sum R l Q A
+    end.
+
+  Lemma Advantage_triangle_chain :
+    ∀ P (l : seq raw_package) Q A,
+      AdvantageE P Q A <= advantage_sum P l Q A.
+  Proof.
+    intros P l Q A.
+    induction l as [| R l ih] in P, Q |- *.
+    - simpl. auto.
+    - simpl. eapply mc_1_10.Num.Theory.ler_trans.
+      + eapply Advantage_triangle.
+      + eapply ler_add.
+        * auto.
+        * eapply ih.
+  Qed.
+
+  Ltac advantage_sum_simpl_in h :=
+    repeat
+      change (advantage_sum ?P (?R :: ?l) ?Q ?A)
+      with (AdvantageE P R A + advantage_sum R l Q A) in h ;
+    change (advantage_sum ?P [::] ?Q ?A) with (AdvantageE P Q A) in h.
+
+  Tactic Notation "advantage_sum" "simpl" "in" hyp(h) :=
+    advantage_sum_simpl_in h.
+
   Lemma TriangleInequality :
     ∀ {Game_export : Interface}
       {F G H : Game_Type Game_export}

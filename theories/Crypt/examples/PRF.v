@@ -413,7 +413,8 @@ Module PRF_example.
   Qed.
 
   (* Lemma IND_CPA_equiv_false :
-    (IND_CPA false) ≈[ λ A, 0 ] {locpackage MOD_CPA_ff_pkg ∘ (EVAL true) }.
+    (* (IND_CPA false) ≈₀ (MOD_CPA_ff_pkg ∘ (EVAL true)). *)
+    @adv_equiv _ _ _ (IND_CPA false) (MOD_CPA_ff_pkg ∘ (EVAL true)) _ _ (λ A, 0).
   Proof.
     (* Here the proof should come down to using the syntactic rules. *)
   Admitted. *)
@@ -422,77 +423,6 @@ Module PRF_example.
   {locpackage MOD_CPA_tt_pkg ∘ (EVAL true) } ≈[ λ A, 0 ] (IND_CPA true).
   Proof.
   Admitted. *)
-
-  (* TODO MOVE *)
-  (* Similar to reduction lemma *)
-  (* Still necessary? *)
-  Lemma Advantage_link :
-    ∀ G₀ G₁ A P,
-      AdvantageE G₀ G₁ (A ∘ P) =
-      AdvantageE (P ∘ G₀) (P ∘ G₁) A.
-  Proof.
-    intros G₀ G₁ A P.
-    unfold AdvantageE. rewrite !link_assoc. reflexivity.
-  Qed.
-
-  (* TODO MOVE *)
-  Lemma Advantage_sym :
-    ∀ P Q A,
-      AdvantageE P Q A = AdvantageE Q P A.
-  Proof.
-    intros P Q A.
-    unfold AdvantageE.
-    rewrite distrC. reflexivity.
-  Qed.
-
-  (* TODO MOVE *)
-  Lemma ler_refl :
-    ∀ (x y : R),
-      x = y →
-      x <= y.
-  Proof.
-    intros x y [].
-    auto.
-  Qed.
-
-  (* TODO MOVE *)
-  Lemma Advantage_triangle :
-    ∀ P Q R A,
-      AdvantageE P Q A <= AdvantageE P R A + AdvantageE R Q A.
-  Proof.
-    intros P Q R A.
-    unfold AdvantageE.
-    apply ler_dist_add.
-  Qed.
-
-  Fixpoint advantage_sum P l Q A :=
-    match l with
-    | [::] => AdvantageE P Q A
-    | R :: l => AdvantageE P R A + advantage_sum R l Q A
-    end.
-
-  Lemma Advantage_triangle_chain :
-    ∀ P (l : seq raw_package) Q A,
-      AdvantageE P Q A <= advantage_sum P l Q A.
-  Proof.
-    intros P l Q A.
-    induction l as [| R l ih] in P, Q |- *.
-    - simpl. auto.
-    - simpl. eapply ler_trans.
-      + eapply Advantage_triangle.
-      + eapply ler_add.
-        * auto.
-        * eapply ih.
-  Qed.
-
-  Ltac advantage_sum_simpl_in h :=
-    repeat
-      change (advantage_sum ?P (?R :: ?l) ?Q ?A)
-      with (AdvantageE P R A + advantage_sum R l Q A) in h ;
-    change (advantage_sum ?P [::] ?Q ?A) with (AdvantageE P Q A) in h.
-
-  Tactic Notation "advantage_sum" "simpl" "in" hyp(h) :=
-    advantage_sum_simpl_in h.
 
   (** Security of PRF
 
@@ -503,27 +433,6 @@ Module PRF_example.
                   ≈ MOD_CPA_tt_pkg ∘ EVAL false
                   ≈ MOD_CPA_tt_pkg ∘ EVAL true
                   ≈ IND_CPA true
-
-    TODO: It would be nice to have the same names as the paper
-    TODO: Can we devise a tactic to do the hops automatically?
-
-    TODO: For the HOPS I think we can have a theorem rather than a tactic
-    concluding on triangle inequality of advantages from two packages and a list
-    of others.
-
-    TODO: Unsurprisingly it seems we need to also have things like ≈[]
-    and advantage talk about raw packages rather than packages.
-    They could be treated the same way as the adv_for criterion at the moment.
-    We probably can prove some Pr_ext anyway.
-    Or should it just be some P ~[ f ] Q → ValidPackages P Q → P ≈[ f ] Q?
-    What is the type of dom f in there? Just raw_package? In that case we
-    probably have to change ≈[ f ] as well.
-
-    It seems I want to define advantage for raw packages, and for this I would
-    need to define Pr on raw programs. I guess it all comes down to defining
-    repr on raw programs, and this might be doable using the same trick as for
-    linking: just using chCanonical to get inhabitants for free instead of
-    failing.
 
   *)
   Theorem security_based_on_prf :
