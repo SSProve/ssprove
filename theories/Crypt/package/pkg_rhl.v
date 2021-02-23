@@ -1805,7 +1805,7 @@ Module PackageRHL (π : RulesParam).
     sampler/getr/putr.
   *)
 
-  Lemma r_swap_cmd :
+  Lemma rswap_cmd :
     ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
       (c₀ : command A₀) (c₁ : command A₁)
       (r : A₀ → A₁ → raw_program B),
@@ -1833,5 +1833,24 @@ Module PackageRHL (π : RulesParam).
         auto.
       * reflexivity.
   Qed.
+
+  Lemma rsamplerC_cmd :
+    ∀ {A : ord_choiceType} (o : Op) (c : command A),
+      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+        a ← cmd c ;; r ← sample o ;; ret (a, r) ≈
+        r ← sample o ;; a ← cmd c ;; ret (a, r)
+      ⦃ eq ⦄.
+  Proof.
+    intros A o c.
+  Admitted.
+
+  Lemma rsamplerC'_cmd :
+    ∀ {A : ord_choiceType} (o : Op) (c : command A),
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      r ← sample o ;; a ← cmd c ;; ret (r, a) ≈
+      a ← cmd c ;; r ← sample o ;; ret (r, a)
+    ⦃ eq ⦄.
+  Proof.
+  Admitted.
 
 End PackageRHL.

@@ -462,6 +462,10 @@ Module PRF_example.
     rewrite cast_fun_K. clear e.
     cbn.
     (* We are now in the realm of program logic *)
+    (* eapply rsamplerC. *)
+    (* We might want to be able to rewrite with equivalent stuff *)
+    (* Transitivity might be nice. But it's not clear how to do it. *)
+    (* We probably want rsamplerC but with cmd_bind *)
   Admitted.
 
   Lemma IND_CPA_equiv_true :
