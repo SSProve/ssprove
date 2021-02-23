@@ -1188,42 +1188,19 @@ Module PackageRHL (π : RulesParam).
         * apply ler0n.
   Qed.
 
-  (* TODO These guys type-check but they should be updated nonetheless
-    I probably want to take the opportunity to remove the normal one and just
-    use alt. It might be the only one that makes sense anyway.
-    The problem is that at the moment equivalence is really weak so I shouldn't
-    update the theorem now.
-
-    For the final PRF theorem, we don't need the extra disjointness hypotheses.
-    It's just we should use triangle inequality on advantage directly which
-    doesn't have any requirements.
-  *)
-
-  Definition eq_up_to_inv (I : precond) (p₀ p₁ : raw_package) :=
+  Definition eq_up_to_inv (E : Interface) (I : precond) (p₀ p₁ : raw_package) :=
     ∀ (id : ident) (S T : chUniverse) (x : S),
+      (id, (S, T)) \in E →
       r⊨ ⦃ λ '(s₀, s₁), I (s₀, s₁) ⦄
         get_op_default p₀ (id, (S, T)) x ≈ get_op_default p₁ (id, (S, T)) x
         ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ I (s₀, s₁) ⦄.
 
-  (* Definition eq_up_to_inv_alt {L₁ L₂} {E}
-    (I : heap_choiceType * heap_choiceType → Prop)
-    (p₁ : package L₁ Game_import E) (p₂ : package L₂ Game_import E) :=
-    ∀ (id : ident) (S T : chUniverse) (h : (id, (S, T)) \in E) (x : S),
-      r⊨ ⦃ λ '(s₀, s₃), I (s₀, s₃) ⦄
-        (mkprog (get_op_default p₁ (id, (S, T)) x) _) ≈
-        (mkprog (get_op_default p₂ (id, (S, T)) x) _)
-        ⦃ λ '(b₁, s₀) '(b₂, s₃), b₁ = b₂ ∧ I (s₀, s₃) ⦄.
-
-  Definition eq_up_to_inv {L1 L2} {E}
-    (I : heap_choiceType * heap_choiceType → Prop)
-    (P1 : package L1 Game_import E) (P2 : package L2 Game_import E) :=
-    ∀ (id : ident) (S T : chUniverse)
-      (hin : (id, (S, T)) \in E)
-      (f : S → raw_program T) (g : S → raw_program T)
-      (Hf : P1.(pack) id = Some (S; T; f)) (hpf : ∀ x, valid_program L1 Game_import (f x))
-      (Hg : P2.(pack) id = Some (S; T; g)) (hpg : ∀ x, valid_program L2 Game_import (g x))
-      (arg : S),
-      ⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄ repr (mkprog (f arg) (hpf arg)) ≈ repr (mkprog (g arg) (hpg arg)) ⦃ λ '(b1, s0) '(b2, s3), b1 = b2 ∧ I (s0, s3) ⦄. *)
+  (* The version below works as well, but is weaker *)
+  (* Definition eq_up_to_inv (I : precond) (p₀ p₁ : raw_package) :=
+    ∀ (id : ident) (S T : chUniverse) (x : S),
+      r⊨ ⦃ λ '(s₀, s₁), I (s₀, s₁) ⦄
+        get_op_default p₀ (id, (S, T)) x ≈ get_op_default p₁ (id, (S, T)) x
+        ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ I (s₀, s₁) ⦄. *)
 
   (* TODO MOVE *)
   Lemma lookup_op_spec_inv :
@@ -1253,56 +1230,6 @@ Module PackageRHL (π : RulesParam).
     eapply lookup_op_spec_inv in e. rewrite e.
     reflexivity.
   Qed.
-
-  (* Lemma eq_up_to_inv_to_alt :
-    ∀ L₁ L₂ E I p₁ p₂,
-      @eq_up_to_inv L₁ L₂ E I p₁ p₂ →
-      @eq_up_to_inv_alt L₁ L₂ E I p₁ p₂.
-  Proof.
-    intros L₁ L₂ E I p₁ p₂ h.
-    intros id S T hin x.
-    specialize (h id S T hin).
-    destruct p₁ as [p₁ hp₁]. specialize (hp₁ _ hin) as h'.
-    cbn in h'. destruct h' as [f₁ [e₁ h₁]].
-    destruct p₂ as [p₂ hp₂]. specialize (hp₂ _ hin) as h'.
-    cbn in h'. destruct h' as [f₂ [e₂ h₂]].
-    specialize h with (1 := e₁) (2 := e₂).
-    specialize (h h₁ h₂ x).
-    lazymatch goal with
-    | h : r⊨ ⦃ _ ⦄ ?x ≈ ?y ⦃ _ ⦄ |- r⊨ ⦃ _ ⦄ ?u ≈ ?v ⦃ _ ⦄ =>
-      let e := fresh "e" in
-      let e' := fresh "e" in
-      assert (x = u) as e ; [
-      | assert (y = v) as e' ; [
-        | rewrite <- e ; rewrite <- e' ; auto
-        ]
-      ]
-    end.
-    - apply program_ext. cbn. erewrite get_op_default_spec. all: eauto.
-    - apply program_ext. cbn. erewrite get_op_default_spec. all: eauto.
-  Qed. *)
-
-  (* Lemma eq_up_to_inv_from_alt :
-    ∀ L₁ L₂ E I p₁ p₂,
-      @eq_up_to_inv_alt L₁ L₂ E I p₁ p₂ →
-      @eq_up_to_inv L₁ L₂ E I p₁ p₂.
-  Proof.
-    intros L₁ L₂ E I p₁ p₂ h.
-    intros id S T hin f g ef hf eg hg x.
-    specialize (h id S T hin x).
-    lazymatch goal with
-    | h : r⊨ ⦃ _ ⦄ ?x ≈ ?y ⦃ _ ⦄ |- r⊨ ⦃ _ ⦄ ?u ≈ ?v ⦃ _ ⦄ =>
-      let e := fresh "e" in
-      let e' := fresh "e" in
-      assert (x = u) as e ; [
-      | assert (y = v) as e' ; [
-        | rewrite <- e ; rewrite <- e' ; auto
-        ]
-      ]
-    end.
-    - apply program_ext. cbn. erewrite get_op_default_spec. all: eauto.
-    - apply program_ext. cbn. erewrite get_op_default_spec. all: eauto.
-  Qed. *)
 
   (* TODO MOVE *)
 
@@ -1345,7 +1272,7 @@ Module PackageRHL (π : RulesParam).
       `{ValidPackage L₁ Game_import E p₁}
       `{@ValidProgram LA E B A},
       INV LA I →
-      eq_up_to_inv I p₀ p₁ →
+      eq_up_to_inv E I p₀ p₁ →
       r⊨ ⦃ I ⦄ program_link A p₀ ≈ program_link A p₁
         ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ I (s₀, s₁) ⦄.
   Proof.
@@ -1367,7 +1294,7 @@ Module PackageRHL (π : RulesParam).
       destruct vp₁ as [f₁ [e₁ h₁]].
       erewrite lookup_op_spec_inv. 2: eauto.
       erewrite lookup_op_spec_inv. 2: eauto.
-      specialize (hp id S T x).
+      specialize (hp id S T x hi).
       erewrite get_op_default_spec in hp. 2: eauto.
       erewrite get_op_default_spec in hp. 2: eauto.
       rewrite !repr_bind.
@@ -1416,10 +1343,6 @@ Module PackageRHL (π : RulesParam).
         * cbn. intros s₀' s₁' [? ?]. subst. auto.
   Qed.
 
-  (* TODO NOTE for practical reasons, and strength, it might be better to
-    add the o \in stuff to eq_up_to_inv like before.
-    This way we can invert on the \in blabla.
-  *)
   (* TODO RENAME *)
   Lemma prove_relational :
     ∀ {L₀ L₁ LA E} (p₀ p₁ : raw_package) (I : precond) (A : raw_package)
@@ -1430,7 +1353,7 @@ Module PackageRHL (π : RulesParam).
       I (empty_heap, empty_heap) →
       fdisjoint LA L₀ →
       fdisjoint LA L₁ →
-      eq_up_to_inv I p₀ p₁ →
+      eq_up_to_inv E I p₀ p₁ →
       AdvantageE p₀ p₁ A = 0.
   Proof.
     intros L₀ L₁ LA E p₀ p₁ I A vp₀ vp₁ vA hI' hIe hd₀ hd₁ hp.
@@ -1448,7 +1371,6 @@ Module PackageRHL (π : RulesParam).
         + move: hd₁ => /fdisjointP hd₁. apply hd₁. assumption.
     }
     unshelve epose proof (some_lemma_for_prove_relational p₀ p₁ I r hI hp) as h.
-    4-5: eauto.
     1:{
       eapply valid_get_op_default.
       - eauto.
@@ -1531,7 +1453,10 @@ Module PackageRHL (π : RulesParam).
     apply Hzero.
   Qed.
 
-  (* TODO Alternative version with ≈₀ *)
+  (* TODO Alternative version with ≈₀
+    Maybe it should be on loc_pacakges or on packages as before.
+    Maybe pacakges.
+  *)
 
   (* Rules for packages *)
   (* same as in RulesStateprob.v with `r` at the beginning *)
