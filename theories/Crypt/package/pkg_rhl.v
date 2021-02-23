@@ -1442,10 +1442,19 @@ Module PackageRHL (π : RulesParam).
     apply Hzero.
   Qed.
 
-  (* TODO Alternative version with ≈₀
-    Maybe it should be on loc_pacakges or on packages as before.
-    Maybe pacakges.
-  *)
+  Lemma eq_rel_perf_ind :
+    ∀ {L₀ L₁ E} (p₀ p₁ : raw_package) (I : precond)
+      `{ValidPackage L₀ Game_import E p₀}
+      `{ValidPackage L₁ Game_import E p₁},
+      INV' L₀ L₁ I →
+      I (empty_heap, empty_heap) →
+      eq_up_to_inv E I p₀ p₁ →
+      p₀ ≈₀ p₁.
+  Proof.
+    intros L₀ L₁ E p₀ p₁ I v₀ v₁ hI' hIe he.
+    intros LA A vA hd₀ hd₁.
+    eapply prove_relational. all: eauto.
+  Qed.
 
   (* Rules for packages *)
   (* same as in RulesStateprob.v with `r` at the beginning *)
