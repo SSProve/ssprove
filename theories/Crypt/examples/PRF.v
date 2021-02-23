@@ -244,11 +244,11 @@ Module PRF_example.
 
   Parameter PRF : Words → Key → Key.
 
-  Definition U (i : positive) :
+  Definition U (i : nat) `{Positive i} :
     { rchT : MyRules.myparamU.rel_choiceTypes &
       MyRules.myparamU.probE (MyRules.myparamU.chEmb rchT) } :=
     existT (λ rchT : MyRules.myparamU.rel_choiceTypes, MyRules.myparamU.probE (MyRules.myparamU.chEmb rchT))
-            (chFin i) (inl (MyRules.Unif_Fin i)).
+            ('fin i) (inl (MyRules.Unif_Fin (mkpos i))).
 
   Notation " 'chWords' " := ('fin (2^n)%N) (in custom pack_type at level 2).
   Notation " 'chKey' " := ('fin (2^n)%N) (in custom pack_type at level 2).
@@ -258,7 +258,7 @@ Module PRF_example.
   Definition enc {L : { fset Location }} (m : Words) (k : Key) :
     program L fset0  ('fin (2^n) × 'fin (2^n)) :=
       {program
-        r ← sample U (mkpos i_words) ;;
+        r ← sample U i_words ;;
         let pad := PRF r k in
         let c := m ⊕ pad in
         ret (r, c)
@@ -266,7 +266,7 @@ Module PRF_example.
 
   Definition kgen : program fset0 fset0 'fin (2^n) :=
     {program
-      k <$ U (mkpos i_key) ;;
+      k <$ U i_key ;;
       ret k
     }.
 
@@ -288,7 +288,7 @@ Module PRF_example.
         k_init ← get key_location ;;
         match k_init with
         | None =>
-            k ← sample U (mkpos i_key) ;;
+            k ← sample U i_key ;;
             put key_location := Some k ;;
             ret (PRF r k)
         | Some k_val =>
@@ -306,7 +306,7 @@ Module PRF_example.
         T ← get table_location ;;
         match getm T r with
         | None =>
-            T_key ← sample U (mkpos i_key) ;;
+            T_key ← sample U i_key ;;
             put table_location := (setm T r T_key) ;;
             ret T_key
         | Some T_key => ret T_key
@@ -328,7 +328,7 @@ Module PRF_example.
     [package
       def #[i1] (m : chWords) : chWords × chWords
       {
-        r ← sample U (mkpos i_words) ;;
+        r ← sample U i_words ;;
         pad ← op [ #[i0] : chWords → chKey ] r ;;
         let c := (m ⊕ pad) in
         ret (r, c)
@@ -341,8 +341,8 @@ Module PRF_example.
     [package
       def #[i1] (m : chWords) : chWords × chWords
       {
-        r ← sample U (mkpos i_words) ;;
-        m' ← sample U (mkpos i_words) ;;
+        r ← sample U i_words ;;
+        m' ← sample U i_words ;;
         pad ← op [ #[i0] : chWords → chKey ] r ;;
         let c := (m' ⊕ pad) in
         ret (r, c)
@@ -364,7 +364,7 @@ Module PRF_example.
         k ← get key_location ;;
         match k with
         | None =>
-          k_val ← sample U (mkpos i_key) ;;
+          k_val ← sample U i_key ;;
           put key_location := Some k_val ;;
           enc m k_val
         | Some k_val =>
@@ -383,12 +383,12 @@ Module PRF_example.
         k ← get key_location ;;
         match k with
         | None =>
-          k_val ← sample U (mkpos i_key) ;;
+          k_val ← sample U i_key ;;
           put key_location := Some k_val ;;
-          m' ← sample U (mkpos i_words) ;;
+          m' ← sample U i_words ;;
           enc m' k_val
         | Some k_val =>
-          m' ← sample U (mkpos i_words) ;;
+          m' ← sample U i_words ;;
           enc m' k_val
         end
       }
