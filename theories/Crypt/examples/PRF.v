@@ -462,30 +462,41 @@ Module PRF_example.
     rewrite cast_fun_K. clear e.
     cbn.
     (* We are now in the realm of program logic *)
-    (* The first step is to swap sample/sample/get into get/sample/sample
-      in the RHS.
-      Then we can use the rsame_head to deal with the option.
+    eapply r_transR.
+    1:{
+      eapply (rsame_head_cmd (cmd_sample _)).
+      intro a. eapply (rswap_cmd _ _ _ _ (cmd_get _) (cmd_sample _)).
+      - cbn. intro. reflexivity.
+      - cbn. intros a₀ a₁.
+        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+        cbn. auto.
+      - eapply rsamplerC_cmd.
+    }
+    cbn.
+    eapply r_transR.
+    1:{
+      eapply (rswap_cmd _ _ _ _ (cmd_get _) (cmd_sample _)).
+      - cbn. intro. reflexivity.
+      - cbn. intros a₀ a₁.
+        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+        cbn. auto.
+      - eapply rsamplerC_cmd.
+    }
+    cbn.
+    eapply (rsame_head_cmd (cmd_get _)). cbn.
+    intros [k|].
+    - cbn. eapply (rswap_cmd _ _ _ _ (cmd_sample _) (cmd_sample _)).
+      + cbn. intros [? ?]. intuition auto.
+      + cbn. intros a₀ a₁. eapply rpost_weaken_rule.
+        1: eapply rpre_weaken_rule.
+        1: eapply rreflexivity_rule.
+        * cbn. auto.
+        * cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
+      + eapply rsamplerC_cmd.
+    - cbn. (* k_val/put/m'/r vs a₁/a₁0/a/put *)
+    (* Where k_val = a, r = a₁, m' = a₁0
+    Meaning k_val/put/m'/r vs r/m'/k_val/put
     *)
-    (* We could use some transR or some setoid rewrite I guess. *)
-
-
-
-(*
-    Could we have rules like
-
-    (∀ k, ⊢ ⦃ λ '(h₀, h₁), pre (h₀, h₁) ∧ h₁ @ ℓ = k ⦄ c ≈ f k ⦃ post ⦄) →
-    ⊢ ⦃ pre ⦄ c ≈ k ← get ℓ ;; f k ⦃ post ⦄
-
-    ?
-
-    *)
-
-
-    (* eapply rsamplerC_cmd. *)
-    (* eapply rsamplerC. *)
-    (* We might want to be able to rewrite with equivalent stuff *)
-    (* Transitivity might be nice. But it's not clear how to do it. *)
-    (* We probably want rsamplerC but with cmd_bind *)
   Admitted.
 
   Lemma IND_CPA_equiv_true :
