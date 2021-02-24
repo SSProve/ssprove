@@ -1788,6 +1788,17 @@ Module PackageRHL (π : RulesParam).
     admit.
   Admitted.
 
+Lemma rsymmetry  { A1 A2 : ord_choiceType } { L : {fset Location} } { pre : heap * heap -> Prop } { post }
+                 { c1 : program L Game_import A1 } { c2 : program L Game_import A2 }
+                 (H : r⊨ ⦃ fun '(h2, h1) => pre (h1, h2) ⦄ c2 ≈ c1 ⦃ fun '(a2,h2) '(a1,h1) => post (a1,h1) (a2, h2) ⦄ ):
+   r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄.
+Proof. by apply: symmetry_rule. Qed. 
+  
+   
+Let spl (o : Op) :=  @callrFree
+(ops_StP heap_choiceType)
+(ar_StP heap_choiceType)
+(inr o).
   Theorem rdead_sampler_elimR :
     ∀ {A : ord_choiceType} {D}
       (c₀ c₁ : raw_program A) (pre : precond) (post : postcond A A),
@@ -1799,8 +1810,73 @@ Module PackageRHL (π : RulesParam).
     admit.
   Admitted.
 
+Lemma rsamplerC { A : ord_choiceType } { L : {fset Location} }  (o : Op)
+                (c : program L Game_import A):
+  r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄
+       a ← c ;; r ← (r ← sample o ;; ret r) ;;  (ret (a, r)) ≈
+       r ← (r ← sample o ;; ret r) ;; a ← c ;;  (ret (a, r))
+   ⦃ eq ⦄.
+Proof.
+  apply: rrewrite_eqDistrL.
+  - apply: rreflexivity_rule. 
+  - move => s.
+    assert (repr_sample_c :
+repr (r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (a, r))
+=
+bindrFree _ _ (spl o) (fun r =>
+bindrFree _ _ (repr c) (fun a =>
+retrFree (a,r)))
+ ).
+  {
+    rewrite !repr_bind. f_equal.
+    apply boolp.funext ; move=> r.
+    rewrite !repr_bind. reflexivity.
+  }
+    assert (repr_c_sample :
+repr (a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (a, r))
+=
+bindrFree _ _ (repr c) (fun a =>
+bindrFree _ _ (spl o) (fun r =>
+retrFree (a,r))) ).
+  {
+    rewrite repr_bind. reflexivity.
+  }
+  rewrite repr_sample_c. rewrite repr_c_sample.
+  unshelve epose (hlp := sample_c_is_c_sample o (repr c) s).
+  unfold sample_c in hlp. unfold c_sample in hlp.
+  apply hlp.
+Qed.
   (* Rules I added *)
 
+Lemma rsamplerC_sym' { A : ord_choiceType } { L : {fset Location} }  (o : Op)
+                 (c : program L Game_import A):
+  r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄
+        a ← c ;; r ← (r ← sample o ;; ret r) ;;  (ret (r, a)) ≈
+        r ← (r ← sample o ;; ret r) ;; a ← c ;;  (ret (r, a))
+   ⦃ eq ⦄. 
+Proof.
+  unshelve eapply rswap_ruleR.
+  - intuition.
+  - move=> a r.
+    apply rsym_pre. { by intuition. }
+    apply ( @rreflexivity_rule (prod_choiceType (Arit o) A) L
+    (@ret L Game_import (prod_choiceType (Arit o) A) (r,a)) ).
+  - apply rsamplerC.
+Qed.
+
+Lemma rsamplerC' { A : ord_choiceType } { L : {fset Location} }  (o : Op)
+                 (c : program L Game_import A):
+  r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄
+        r ← (r ← sample o ;; ret r) ;; a ← c ;;  (ret (r, a)) ≈
+        a ← c ;; r ← (r ← sample o ;; ret r) ;;  (ret (r, a))
+   ⦃ eq ⦄. 
+Proof.
+  unshelve eapply rsymmetry.
+  unshelve eapply rsym_pre. { by intuition. }
+  unshelve eapply rpost_weaken_rule. { exact eq. }
+  - apply (@rsamplerC_sym' A L o c).
+  - intuition.
+Qed.
   (* Similar to rrewrite_eqDistr but with program logic. *)
   Lemma r_transL :
     ∀ {A₀ A₁ : ord_choiceType} {P Q}

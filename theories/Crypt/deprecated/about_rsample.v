@@ -279,4 +279,94 @@ Proof.
 
 
 
+
+
+
+(*attempt to prove SD_commutativity without resorting to interchange_psum
+( =fubini)
+and computing that dirac disctr instead*)
+
+Lemma SD_commutativity {X Y : choiceType}
+(p : SDistr X) (q : SDistr Y) :
+SD_bind p (fun x =>
+SD_bind q (fun y =>
+SD_ret (x,y)))
+=
+SD_bind q (fun y =>
+SD_bind p (fun x =>
+SD_ret (x,y))).
+Proof.
+  rewrite !/SD_bind. rewrite !/SDistr_bind.
+  rewrite !/SD_ret. rewrite !/SDistr_unit.
+  rewrite !/dlet.
+  unlock. apply distr_ext. move=> [x y].
+  rewrite /mlet /=.
+(* psumZ: *)
+(*   forall {R : realType} [T : choiceType] (S : T -> R) [c : R], 0 <= c -> psum (c \*o S) = c * psum S *)
+  transitivity
+(psum
+  (fun x0 : X => psum (fun x1 : Y => p x0 * q x1 * dunit (T:=prod_choiceType X Y) (x0, x1) (x, y)))).
+{
+  apply eq_psum. move=> x0. rewrite -psumZ /=.
+  apply eq_psum. move=> y0 /=.
+  Search "mul" "A". rewrite GRing.mulrA. reflexivity.
+  destruct p as [pmap p0 p_sum p1]. apply p0.
+}
+  symmetry.
+  transitivity
+(psum
+  (fun x0 : Y => psum (fun x1 : X => p x1 * q x0 * dunit (T:=prod_choiceType X Y) (x1, x0) (x, y)))).
+{
+    apply eq_psum. move=> y0. rewrite -psumZ /=.
+    apply eq_psum. move=> x0 /=.
+    rewrite GRing.mulrA. rewrite[q y0 * _] GRing.mulrC.
+    reflexivity.
+    destruct q as [qmap q0 q_sum q1]. apply q0.
+}
+  symmetry. 
+(* psum_pair_swap: *)
+(*   forall {R : realType} {T U : choiceType} [S : T * U -> R], *)
+(*   summable (T:=prod_choiceType T U) (R:=R) S -> *)
+(*   psum S = psum (fun y : U => psum (fun x : T => S (x, y))) *)
+  epose (hlp := psum_pair_swap
+(S:=fun (yx0 : Y * X) => let (y0,x0) := yx0 in
+p x0 * q y0 * dunit (T:=prod_choiceType X Y) (x0,y0) (x,y)) _).
+  rewrite -hlp.
+  rewrite psum_pair. reflexivity.
+  Unshelve.
+(* summableMr: *)
+(*   forall {R : realType} [T : choiceType] [S1 S2 : T -> R], *)
+(*   (exists M : R, forall x : T, `|S2 x| <= M) -> *)
+(*   summable (T:=T) (R:=R) S1 -> summable (T:=T) (R:=R) (fun x : T => S1 x * S2 x) *)
+(* summableMl: *)
+(*   forall {R : realType} [T : choiceType] [S1 S2 : T -> R], *)
+(*   (exists M : R, forall x : T, `|S1 x| <= M) -> *)
+(*   summable (T:=T) (R:=R) S2 -> summable (T:=T) (R:=R) (fun x : T => S1 x * S2 x) *)
+(* summable_mu_wgtd: *)
+(*   forall {R : realType} [T : choiceType] [f : T -> R] (mu0 : {distr T / R}), *)
+(*   (forall x : T, 0 <= f x <= 1) -> summable (T:=T) (R:=R) (fun x : T => mu0 x * f x) *)
+(* le_summable: *)
+(*   forall {R : realType} [T : choiceType] [F1 F2 : T -> R], *)
+(*   (forall x : T, 0 <= F1 x <= F2 x) -> summable (T:=T) (R:=R) F2 -> summable (T:=T) (R:=R) F1 *)
+(* summable_mlet: *)
+(*   forall {R : realType} [T U : choiceType] (f : T -> {distr U / R}) (mu0 : {distr T / R}) (y : U), *)
+(*   summable (T:=T) (R:=R) (fun x : T => mu0 x * f x y) *)
+(* summableM: *)
+(*   forall {R : realType} [T : choiceType] [S1 S2 : T -> R], *)
+(*   summable (T:=T) (R:=R) S1 -> *)
+(*   summable (T:=T) (R:=R) S2 -> summable (T:=T) (R:=R) (fun x : T => S1 x * S2 x) *)
+(* summableZ: *)
+(*   forall {R : realType} [T : choiceType] [S : T -> R] (c : R), *)
+(*   summable (T:=T) (R:=R) S -> summable (T:=T) (R:=R) (c \*o S) *)
+(* summableZr: *)
+(*   forall {R : realType} [T : choiceType] [S : T -> R] (c : R), *)
+(*   summable (T:=T) (R:=R) S -> summable (T:=T) (R:=R) (c \o* S) *)
+(* eq_summable: *)
+(*   forall {R : realType} [T : choiceType] [S1 S2 : T -> R], *)
+(*   S1 =1 S2 -> summable (T:=T) (R:=R) S1 -> summable (T:=T) (R:=R) S2 *)
+
+  (* unshelve eapply eq_summable. *)
+  (* Search ((_ == _) %R). *)
+  (*   move=> [y0 x0]. exact  ((x0,y0) == (x,y)) . *)
+
 End samplerC.

@@ -430,16 +430,7 @@ Proof.
   - apply: ret None.
 Defined.
 
-Lemma group_OTP_math { L : {fset  Location } } : forall m (s : heap_choiceType),
-   MyAlg.MyPackage.θ_dens
-     (MyAlg.MyPackage.θ0
-        (@repr _ L ( (b ← (b ← sample U i_sk ;; ret b) ;;
-                      c ← (c ← sample U i_sk ;; ret c) ;; ret (Some (c2ch (g ^+ b, ch2m m * g ^+ c)))))) s) =
-   MyAlg.MyPackage.θ_dens
-     (MyAlg.MyPackage.θ0
-        (@repr _ L ((b ← (b ← sample U i_sk ;; ret b) ;; c ← (c ← sample U i_sk ;; ret c) ;;
-                     ret (Some (c2ch (g ^+ b, g ^+ c)))))) s).
-Admitted. (* Rem.: look for an informal proof of this in the CertyCrypt paper *)
+
 
 Lemma group_OTP { L : { fset Location } } : forall m,
     ⊨ ⦃ λ '(h1, h2), h1 = h2 ⦄
@@ -447,19 +438,20 @@ Lemma group_OTP { L : { fset Location } } : forall m,
       @repr _ L ((b ← (b ← sample U i_sk ;; ret b) ;;
                   c ← (c ← sample U i_sk ;; ret c) ;; ret (Some (c2ch (g ^+ b, ch2m m * g ^+ c))))) ⦃ eq ⦄.
 Proof.
-  move => m.
+  move => m.  
   unshelve apply: rrewrite_eqDistrL.
   { eapply (
-        ((b ← (b ← sample U i_sk ;; ret b) ;;
-          c ← (c ← sample U i_sk ;; ret c) ;; ret (Some (c2ch (g ^+ b, g ^+ c)))))). }
-  { apply: rrewrite_eqDistrL.
-    - by apply: rreflexivity_rule.
-    - exact: group_OTP_math. }
-  move => s. apply rcoupling_eq with (ψ := fun '(s1, s2) => s1 = s2). 2: by reflexivity.
-  (*Rem.:
-   1. sampling c <$ U i_cipher is the same as sampling two element of the group say (C1,C2) <$ U (G × G)
-   2. the map (g^+_, g^+_) is a bijection and we can use the uniform bij rule.
- *) Admitted.
+        ((B ← (B ← sample U i_pk ;; ret B) ;;
+          A ← (A ← sample U i_pk ;; ret A) ;; ret (Some (c2ch (B, A)))))). } 
+  { unshelve apply: rpost_weaken_rule.
+    { exact : eq. }
+    2: { by move => [a1 s1] [a2 s2]. } 
+    Check Uniform_bij_rule_sq.
+(*CA: morally c2ch = pk2ch × pk2ch so after convinced Coq of this it suffices to apply
+      Uniform_bij_rule_sq *) admit.
+  }
+  (*CA: just Fubini? *) admit. 
+Admitted.
 
 (* Note duplicate in SymmetricSchemeStateProb *)
 (* TODO MOVE But where? *)

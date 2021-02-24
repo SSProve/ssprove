@@ -1088,4 +1088,510 @@ Proof.
      -- exact: Hinv2.
 Qed.
 
+
+
+Section samplerC_rule.
+Notation η M := (ord_relmon_unit M).
+Notation dnib M := (ord_relmon_bind M).
+(* In this section we prove a rule called samplerC, which tells that *)
+(* sampling operations in the monad free monad Fr[St,P] *)
+(* (on a  stateful probabilistic signature) commute with other *)
+(* operations (for instance 'get' ...) *)
+
+(* More precisely we prove that the semantics of programs *)
+(* Fr[St,P] --> StT(Fr[P]) --> StT(SD) *)
+(* assigns the same value to *)
+(* r <- sample o ;; a <- c ;; ret (a,r) and *)
+(* a <- c ;; r <- sample o ;; ret (a,r). *)
+(* And this condition is sufficient to prove a rule like the one described *)
+(* above *)
+
+(*operations and arities for probabilities*)
+Let Op := Prob_ops_collection probE rel_choiceTypes chEmb.
+Let Ar := Prob_arities probE rel_choiceTypes chEmb.
+
+Context { A : ord_choiceType }  {S : choiceType}.
+
+(*for state + prob*)
+Let Opst := (ops_StP S).
+Let Arst := (ar_StP S).
+
+Context (o : Op) (c : FrStP S A).
+
+Arguments bindrFree { _ _ _ _ } _ _.
+Arguments ropr {_ _ _ } _ _.
+Arguments callrFree {_ _} _.
+Arguments retrFree {_ _ _} _.
+
+(*the two programs of interest...*)
+(*sample_c and c_sample*)
+Let splo :=  @callrFree Opst Arst (inr o).
+Definition sample_c :=
+bindrFree splo (fun r =>
+bindrFree c (fun a =>
+retrFree (a,r))).
+
+Definition c_sample :=
+bindrFree c (fun a =>
+bindrFree splo (fun r =>
+retrFree (a,r))).
+
+
+Lemma θ0_vs_bind {X Y : choiceType} (m : FrStP S X) (k : X -> FrStP S Y):
+θ0 (bindrFree m k) =
+(dnib stT_Frp) (fun x:X => θ0 (k x)) (θ0  m).
+Proof.
+  assert ( to_dnib : bindrFree m k = (dnib (FrStP S)  k) m ).
+    reflexivity.
+  rewrite to_dnib.
+  rewrite /θ0 /DerivedRules.θ0.
+  pose bla :=
+rmm_law2 _ _ _ _ (@unaryIntState probE rel_choiceTypes chEmb S)
+         X Y k.
+  rewrite /= in bla.
+  unshelve eapply equal_f in bla. exact m.
+  rewrite /=. assumption.
+Qed.
+
+Lemma θ0_vs_sample_c :
+  θ0 sample_c 
+  =
+  dnib stT_Frp
+    (fun r : Arst (inr o) => dnib stT_Frp (fun a : A => θ0 (retrFree (a, r))) (θ0 c))
+    (θ0 splo).
+Proof.
+  unfold sample_c.
+  rewrite θ0_vs_bind.
+  eassert (eqCont :
+(fun r : Arst (inr o) => θ0 (bindrFree c (fun a : choice_incl A => retrFree (a, r))))
+=
+(fun r => _) ).
+  apply boolp.funext. move=> x. rewrite θ0_vs_bind. reflexivity.
+  rewrite eqCont. reflexivity.
+Qed.
+
+Lemma θ0_vs_c_sample :
+  θ0 c_sample 
+  =
+  dnib stT_Frp
+    (fun a : A => dnib stT_Frp (fun r : Arst (inr o) => θ0 (retrFree (a, r))) (θ0 splo))
+    (θ0 c).
+Proof.
+  unfold c_sample.
+  rewrite θ0_vs_bind.
+  f_equal. apply boolp.funext. move=> a.
+  rewrite θ0_vs_bind. reflexivity.
+Qed.
+
+Lemma θ0_c_sample_vs_s0 (s0 : S) :
+θ0 c_sample s0 =
+bindrFree (θ0 c s0) (fun asc => let (a, sc) := asc in
+bindrFree (θ0 splo sc) (fun rsr => let (r,sr) := rsr in
+retrFree (a,r,sr))).
+Proof.
+  rewrite θ0_vs_c_sample.
+  rewrite /=.
+  rewrite /OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
+  rewrite /FreeProbProg.rFree_obligation_2.
+  reflexivity.
+Qed.
+
+Lemma θ0_sample_c_vs_s0 (s0 : S) :
+θ0 sample_c s0 =
+bindrFree (θ0 splo s0) (fun rsr => let (r,sr) := rsr in
+bindrFree (θ0 c sr) (fun asc => let (a, sc) := asc in
+retrFree (a,r,sc))).
+Proof.
+  rewrite θ0_vs_sample_c.
+  rewrite /=.
+  rewrite /OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
+  rewrite /FreeProbProg.rFree_obligation_2.
+  reflexivity.
+Qed.
+
+Let Frp_fld :=  @Frp probE rel_choiceTypes chEmb.
+
+Lemma bindrFree_and_ret {U:choiceType} (mu : Frp_fld U) :
+bindrFree mu (fun u =>
+retrFree u)
+=
+mu.
+Proof.
+  unfold bindrFree. induction mu.
+  reflexivity.
+  f_equal. apply boolp.funext. move=> p.
+  specialize (H p). rewrite H. reflexivity.
+Qed.
+
+
+Lemma op_outoffree (s0 : S):
+UniversalFreeMap.outOfFree sigMap (Arst (inr o)) splo
+=
+@sigMap probE rel_choiceTypes chEmb S (inr o).
+Proof.
+    cbn.
+    rewrite /OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
+    apply boolp.funext. move=> s0'.
+    rewrite /FreeProbProg.rFree_obligation_2.
+    rewrite /FreeProbProg.rFree_obligation_1.
+    set (weirdCont :=
+(fun
+          topas : prod (Choice.sort (Prob_arities probE rel_choiceTypes chEmb o))
+                                (Choice.sort S) =>
+        match
+          topas
+          return
+            (rFreeF (Prob_ops_collection probE rel_choiceTypes chEmb)
+               (Prob_arities probE rel_choiceTypes chEmb)
+               (F_choice_prod_obj
+                  (@npair Choice.type Choice.type (Prob_arities probE rel_choiceTypes chEmb o) S)))
+        with
+        | pair a s =>
+            @retrFree (Prob_ops_collection probE rel_choiceTypes chEmb)
+              (Prob_arities probE rel_choiceTypes chEmb)
+              (F_choice_prod_obj
+                 (@npair Choice.type Choice.type (Prob_arities probE rel_choiceTypes chEmb o) S))
+              (@pair (Choice.sort (Prob_arities probE rel_choiceTypes chEmb o)) (Choice.sort S) a s)
+        end)
+).
+    assert (eq_cont :
+weirdCont = [eta retrFree] ).
+    apply boolp.funext. move=> [a s]. unfold weirdCont. reflexivity.
+    rewrite eq_cont.
+    rewrite bindrFree_and_ret.
+    reflexivity.
+Qed.
+
+Let sploP :=  @callrFree Op Ar o.
+
+Lemma θ0_of_sample (s0 : S) :
+θ0 splo s0
+=
+bindrFree sploP (fun r =>
+retrFree (r, s0) ).
+Proof.
+  unfold θ0. unfold unaryIntState.
+  rewrite (op_outoffree s0). rewrite [LHS] /=.
+  destruct o as [X op]. unfold probopStP.
+  reflexivity.
+Qed.
+
+Lemma θ0_OF_sample_c_s0 (s0 : S) :
+θ0 sample_c s0 =
+bindrFree sploP (fun r =>
+bindrFree (θ0 c s0) (fun asc => let (a, sc) := asc in
+retrFree (a,r,sc))).
+Proof.
+  rewrite θ0_sample_c_vs_s0.
+  rewrite θ0_of_sample.
+  epose (bind_assoc := ord_relmon_law3 Frp_fld _ _ _ _ _).
+  eapply equal_f in bind_assoc.
+  cbn in bind_assoc.
+  rewrite /FreeProbProg.rFree_obligation_2 in bind_assoc.
+  erewrite <- bind_assoc.
+  f_equal.
+Qed.
+
+Lemma θ0_OF_c_sample_s0 (s0 : S) :
+θ0 c_sample s0 =
+bindrFree (θ0 c s0) (fun asc => let (a, sc) := asc in
+bindrFree sploP (fun r =>
+retrFree (a,r,sc))).
+Proof.
+  rewrite θ0_c_sample_vs_s0.
+  f_equal. apply boolp.funext. move=> [a sc].
+  rewrite θ0_of_sample.
+  epose (bind_assoc := ord_relmon_law3 Frp_fld _ _ _ _ _).
+  eapply equal_f in bind_assoc.
+  cbn in bind_assoc.
+  rewrite /FreeProbProg.rFree_obligation_2 in bind_assoc.
+  erewrite <- bind_assoc.
+  f_equal.
+Qed.
+
+Let utheta_dens_fld :=
+(@Theta_dens.unary_theta_dens probE rel_choiceTypes chEmb prob_handler).
+
+Lemma utheta_dens_vs_bind {X Y : choiceType}
+(m : Frp X)
+(k : X -> Frp Y) :
+utheta_dens_fld _ (bindrFree m k)
+=
+(dnib SDistr) (fun x => utheta_dens_fld _ (k x))
+              (utheta_dens_fld _ m).
+Proof.
+  assert ( to_dnib : bindrFree m k = (dnib Frp  k) m ).
+    reflexivity.
+  rewrite to_dnib.
+  pose bla :=
+rmm_law2 _ _ _ _
+(@Theta_dens.unary_theta_dens probE rel_choiceTypes chEmb prob_handler)
+X Y k.
+  rewrite /= in bla.
+  unshelve eapply equal_f in bla. exact m.
+  rewrite /=. assumption.
+Qed.
+
+Lemma θ_dens_vs_bind' {X Y : choiceType} 
+(m : Frp  X )
+(k : X -> Frp (prod_choiceType Y S)) :
+θ_dens (bindrFree m k) =
+(dnib SDistr) (fun xs => θ_dens (k xs)) (utheta_dens_fld _ m).
+Proof.
+  assert ( to_dnib : bindrFree m k = (dnib Frp  k) m ).
+    reflexivity.
+  rewrite to_dnib.
+  rewrite /θ_dens.
+  pose bla :=
+rmm_law2 _ _ _ _
+(@Theta_dens.unary_theta_dens probE rel_choiceTypes chEmb prob_handler)
+X (prod_choiceType Y S) k.
+  rewrite /= in bla.
+  unshelve eapply equal_f in bla. exact m.
+  rewrite /=. assumption.
+Qed.
+
+
+Let SD_bind
+{A B : choiceType}
+(m : SDistr_carrier A)
+(k : A -> SDistr_carrier B) :=
+SDistr_bind A B k m.
+Let SD_ret {A : choiceType}
+(a : A) :=
+SDistr_unit A a.
+
+Lemma θ_dens_OF_θ0_sample_c_s0 (s0:S) :
+θ_dens (θ0 sample_c s0)
+=
+SD_bind (utheta_dens_fld _ sploP) (fun r =>
+SD_bind (utheta_dens_fld _ (θ0 c s0)) (fun asc => let (a,sc) := asc in
+SDistr_unit _ (a,r,sc))).
+Proof.
+  rewrite θ0_OF_sample_c_s0.
+  rewrite !/θ_dens.
+  rewrite utheta_dens_vs_bind.
+  rewrite !/SD_bind.
+  rewrite /=.
+  rewrite /SubDistr.SDistr_obligation_2.
+  f_equal.
+  apply boolp.funext. move=> r.
+  rewrite /Theta_dens.unary_theta_dens_obligation_1.
+  epose (hlp := utheta_dens_vs_bind _ _).
+  rewrite /= in hlp.
+  unfold Theta_dens.unary_theta_dens_obligation_1 in hlp.
+  unfold SubDistr.SDistr_obligation_2 in hlp.
+  erewrite hlp.
+  f_equal.
+  apply boolp.funext. move=> [aa ss].
+  clear hlp.
+  cbn. f_equal.
+Qed.
+
+  
+
+Lemma θ_dens_OF_θ0_c_sample_s0 (s0:S) :
+θ_dens (θ0 c_sample s0)
+=
+SD_bind (utheta_dens_fld _ (θ0 c s0)) (fun asc => let (a,sc) := asc in
+SD_bind (utheta_dens_fld _ sploP) (fun r =>
+SDistr_unit _ (a,r,sc))).
+Proof.
+  rewrite θ0_OF_c_sample_s0.
+  rewrite !/θ_dens.
+  rewrite utheta_dens_vs_bind.
+unshelve eassert (eq_cont :
+(fun
+       x : choice_incl
+             (ord_functor_comp (OrderEnrichedRelativeAdjunctionsExamples.unaryTimesS1 S)
+                (OrderEnrichedRelativeAdjunctions.KleisliLeftAdjoint Frp) A) =>
+     utheta_dens_fld
+       (F_choice_prod_obj
+          ⟨ ord_functor_id ord_choiceType (prod_choiceType A (Arst (inr o))),
+          OrderEnrichedRelativeAdjunctionsExamples.mkConstFunc ord_choiceType ord_choiceType S
+            (prod_choiceType A (Arst (inr o))) ⟩)
+       (let (a, sc) := x in bindrFree sploP (fun r : choice_incl (Ar o) => retrFree (a, r, sc))))
+=
+fun x => let (a,sc) := x in
+SD_bind (utheta_dens_fld _ sploP) (fun r =>
+SDistr_unit _ (a,r,sc))).
+    exact probE. exact rel_choiceTypes. exact chEmb.
+    apply boolp.funext. move=> [aa ss]. rewrite utheta_dens_vs_bind. reflexivity.
+  rewrite eq_cont. rewrite /=.
+  rewrite !/SD_bind.
+  rewrite /SubDistr.SDistr_obligation_2.
+  rewrite /Theta_dens.unary_theta_dens_obligation_1.
+  reflexivity.
+Qed.
+
+
+Lemma SD_commutativity {X Y : choiceType}
+(p : SDistr X) (q : SDistr Y) :
+SD_bind p (fun x =>
+SD_bind q (fun y =>
+SD_ret (x,y)))
+=
+SD_bind q (fun y =>
+SD_bind p (fun x =>
+SD_ret (x,y))).
+Proof.
+  rewrite !/SD_bind. rewrite !/SDistr_bind.
+  rewrite !/SD_ret. rewrite !/SDistr_unit.
+  rewrite !/dlet.
+  unlock. apply distr_ext. move=> [x y].
+  rewrite /mlet /=.
+  transitivity
+(psum
+  (fun x0 : X => psum (fun x1 : Y => p x0 * q x1 * dunit (T:=prod_choiceType X Y) (x0, x1) (x, y)))).
+{
+  apply eq_psum. move=> x0. rewrite -psumZ /=.
+  apply eq_psum. move=> y0 /=.
+  rewrite GRing.mulrA. reflexivity.
+  destruct p as [pmap p0 p_sum p1]. apply p0.
+}
+  symmetry.
+  transitivity
+(psum
+  (fun x0 : Y => psum (fun x1 : X => p x1 * q x0 * dunit (T:=prod_choiceType X Y) (x1, x0) (x, y)))).
+{
+    apply eq_psum. move=> y0. rewrite -psumZ /=.
+    apply eq_psum. move=> x0 /=.
+    rewrite GRing.mulrA. rewrite[q y0 * _] GRing.mulrC.
+    reflexivity.
+    destruct q as [qmap q0 q_sum q1]. apply q0.
+}
+  symmetry. 
+(*   epose (hlp := psum_pair_swap *)
+(* (S:=fun (yx0 : Y * X) => let (y0,x0) := yx0 in *)
+(* p x0 * q y0 * dunit (T:=prod_choiceType X Y) (x0,y0) (x,y)) _). *)
+(*   rewrite -hlp. *)
+(*   rewrite psum_pair. reflexivity. *)
+(*   Unshelve<. *)
+  apply interchange_psum.
+{
+  move=> x0.
+  unshelve eapply eq_summable.
+    move=> y0. exact (q y0 * (p x0 * dunit (T:=_) (x0,y0)(x,y))).
+    move=> y0. rewrite GRing.mulrA. rewrite [q y0 * _] GRing.mulrC.
+    reflexivity.
+  apply (
+  summable_mu_wgtd (T:=Y)
+  (f:=fun y0 => p x0 * dunit (T:=_) (x0,y0) (x,y)) q ).
+  move=> y0. unshelve edestruct mulr_cp1.
+    exact R.
+  clear p1. destruct p0 as [le1 _].
+  apply /andP. split.
+  apply mulr_ge0.
+  destruct p as [pmap p_0 p_sum p_1]. apply p_0.
+  destruct (dunit (T:=_) (x0,y0)) as [umap u_0 u_sum u_1]. apply u_0.
+  apply le1. destruct p as [pmap p_0 p_sum p_1]. apply p_0.
+  destruct (dunit (T:=_) (x0,y0)) as [umap u_0 u_sum u_1]. apply u_0.
+  apply le1_mu1. apply le1_mu1.
+}
+  unshelve eapply eq_summable.
+    move=> x0. exact ( p x0 * psum (fun y0 => q y0 * dunit (T:=_) (x0,y0)(x,y))).
+  move=> x0. rewrite -psumZ. apply eq_psum. move=> y0 /=. rewrite GRing.mulrA. reflexivity.
+  destruct p as [pmap p_0 p_sum p_1]. apply p_0.
+  apply (
+  summable_mu_wgtd (T:=X)
+  (f:=fun x0 => psum (fun y0 : Y => q y0 * dunit (T:=prod_choiceType X Y) (x0, y0) (x, y))) p).
+  move=> x0. apply /andP. split.
+  apply ge0_psum.
+  unshelve eapply mc_1_10.Num.Theory.ler_trans.
+    exact (psum q).
+  eapply le_psum.
+  move=> y0. apply/andP. split.
+  apply mulr_ge0.
+  destruct q as [qmap q_0 q_sum q_1]. apply q_0.
+  easy.
+(* ler_pimulr: forall [R : numDomainType] [x y : R], 0 <= y -> x <= 1 -> y * x <= y *)
+  apply ler_pimulr. destruct q as [qmap q_0 q_sum q_1]. apply q_0.
+  apply le1_mu1. easy. destruct q as [qmap q_0 q_sum q_1]. apply q_1.
+Qed.
+
+Lemma SD_commutativity' {X Y Z : choiceType}
+(p : SDistr X) (q : SDistr Y)
+(g : X -> Y -> SDistr Z) :
+SD_bind p (fun x =>
+SD_bind q (fun y =>
+g x y))
+=
+SD_bind q (fun y =>
+SD_bind p (fun x =>
+g x y)).
+Proof.
+  transitivity
+(SD_bind (
+  SD_bind p (fun x =>
+  SD_bind q (fun y =>
+  SD_ret (x,y)))
+        ) (fun xy => let (x,y) := xy in
+g x y)).
+{
+  epose (bind_bind := (ord_relmon_law3 SDistr) _ _ _ _ _).
+  eapply equal_f in bind_bind.
+  rewrite /= in bind_bind.
+  unfold SubDistr.SDistr_obligation_2 in bind_bind.
+  rewrite !/SD_bind.
+  erewrite <- bind_bind.
+  f_equal. apply boolp.funext. move=> x.
+  clear bind_bind.
+  epose (bind_bind := (ord_relmon_law3 SDistr) _ _ _ _ _).
+  eapply equal_f in bind_bind.
+  rewrite /= in bind_bind.
+  unfold SubDistr.SDistr_obligation_2 in bind_bind.  
+  erewrite <- bind_bind. f_equal.
+  apply boolp.funext ; move=> y.
+  clear bind_bind.
+  epose (bind_ret := (ord_relmon_law2 SDistr) _ _ _).
+  eapply equal_f in bind_ret. rewrite /= in bind_ret.
+  unfold SubDistr.SDistr_obligation_2 in bind_ret.
+  unfold SubDistr.SDistr_obligation_1 in bind_ret.
+  rewrite /SD_ret. erewrite bind_ret. reflexivity.
+}
+  rewrite SD_commutativity.
+  epose (bind_bind := (ord_relmon_law3 SDistr) _ _ _ _ _).
+  eapply equal_f in bind_bind.
+  rewrite /= in bind_bind.
+  unfold SubDistr.SDistr_obligation_2 in bind_bind.
+  rewrite !/SD_bind.
+  erewrite <- bind_bind.
+  f_equal. apply boolp.funext. move=> y.
+  clear bind_bind.
+  epose (bind_bind := (ord_relmon_law3 SDistr) _ _ _ _ _).
+  eapply equal_f in bind_bind.
+  rewrite /= in bind_bind.
+  unfold SubDistr.SDistr_obligation_2 in bind_bind.  
+  erewrite <- bind_bind. f_equal.
+  apply boolp.funext ; move=> x.
+  clear bind_bind.
+  epose (bind_ret := (ord_relmon_law2 SDistr) _ _ _).
+  eapply equal_f in bind_ret. rewrite /= in bind_ret.
+  unfold SubDistr.SDistr_obligation_2 in bind_ret.
+  unfold SubDistr.SDistr_obligation_1 in bind_ret.
+  rewrite /SD_ret. erewrite bind_ret. reflexivity.
+Qed.
+
+
+Lemma sample_c_is_c_sample (s0 : S):
+θ_dens (θ0 sample_c s0)
+=
+θ_dens (θ0 c_sample s0).
+Proof.
+  rewrite (θ_dens_OF_θ0_sample_c_s0 s0).
+  rewrite (θ_dens_OF_θ0_c_sample_s0 s0).
+  unshelve epose (hlp := 
+SD_commutativity'
+(utheta_dens_fld (Ar o) sploP)
+(utheta_dens_fld _ (θ0 c s0)) _).
+    shelve.
+    move=> rr /= [aa ss]. exact (SDistr_unit _ (aa,rr,ss)).
+  rewrite hlp. f_equal.
+  apply boolp.funext. move=> [a sc]. f_equal.
+Qed.
+
+
+End samplerC_rule.
+
+
 End DerivedRules.
