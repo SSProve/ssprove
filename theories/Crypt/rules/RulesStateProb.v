@@ -1309,28 +1309,6 @@ Proof.
   f_equal.
 Qed.
 
-
-(*Now we have to apply θdens*)
-
-(* Lemma θ_dens_vs_bind {X Y : choiceType}  *)
-(* (m : Frp (prod_choiceType X S) ) *)
-(* (k : prod_choiceType X S -> Frp (prod_choiceType Y S)) : *)
-(* θ_dens (bindrFree m k) = *)
-(* (dnib SDistr) (fun xs => θ_dens (k xs)) (θ_dens m). *)
-(* Proof. *)
-(*   assert ( to_dnib : bindrFree m k = (dnib Frp  k) m ). *)
-(*     reflexivity. *)
-(*   rewrite to_dnib. *)
-(*   rewrite /θ_dens. *)
-(*   pose bla := *)
-(* rmm_law2 _ _ _ _ *)
-(* (@Theta_dens.unary_theta_dens probE rel_choiceTypes chEmb prob_handler) *)
-(* (prod_choiceType X S) (prod_choiceType Y S) k. *)
-(*   rewrite /= in bla. *)
-(*   unshelve eapply equal_f in bla. exact m. *)
-(*   rewrite /=. assumption. *)
-(* Qed. *)
-
 Let utheta_dens_fld :=
 (@Theta_dens.unary_theta_dens probE rel_choiceTypes chEmb prob_handler).
 
@@ -1468,7 +1446,7 @@ Proof.
 {
   apply eq_psum. move=> x0. rewrite -psumZ /=.
   apply eq_psum. move=> y0 /=.
-  Search "mul" "A". rewrite GRing.mulrA. reflexivity.
+  rewrite GRing.mulrA. reflexivity.
   destruct p as [pmap p0 p_sum p1]. apply p0.
 }
   symmetry.
@@ -1508,7 +1486,6 @@ Proof.
   destruct (dunit (T:=_) (x0,y0)) as [umap u_0 u_sum u_1]. apply u_0.
   apply le1. destruct p as [pmap p_0 p_sum p_1]. apply p_0.
   destruct (dunit (T:=_) (x0,y0)) as [umap u_0 u_sum u_1]. apply u_0.
-  Search ( _ <= 1).
   apply le1_mu1. apply le1_mu1.
 }
   unshelve eapply eq_summable.
@@ -1520,8 +1497,17 @@ Proof.
   (f:=fun x0 => psum (fun y0 : Y => q y0 * dunit (T:=prod_choiceType X Y) (x0, y0) (x, y))) p).
   move=> x0. apply /andP. split.
   apply ge0_psum.
-  admit.
-Admitted.
+  unshelve eapply mc_1_10.Num.Theory.ler_trans.
+    exact (psum q).
+  eapply le_psum.
+  move=> y0. apply/andP. split.
+  apply mulr_ge0.
+  destruct q as [qmap q_0 q_sum q_1]. apply q_0.
+  easy.
+(* ler_pimulr: forall [R : numDomainType] [x y : R], 0 <= y -> x <= 1 -> y * x <= y *)
+  apply ler_pimulr. destruct q as [qmap q_0 q_sum q_1]. apply q_0.
+  apply le1_mu1. easy. destruct q as [qmap q_0 q_sum q_1]. apply q_1.
+Qed.
 
 Lemma SD_commutativity' {X Y Z : choiceType}
 (p : SDistr X) (q : SDistr Y)
@@ -1606,44 +1592,6 @@ Qed.
 
 
 End samplerC_rule.
-
-(*some mathcomp summable lemmas*)
-
-(* summableMr: *)
-(*   forall {R : realType} [T : choiceType] [S1 S2 : T -> R], *)
-(*   (exists M : R, forall x : T, `|S2 x| <= M) -> *)
-(*   summable (T:=T) (R:=R) S1 -> summable (T:=T) (R:=R) (fun x : T => S1 x * S2 x) *)
-(* summableMl: *)
-(*   forall {R : realType} [T : choiceType] [S1 S2 : T -> R], *)
-(*   (exists M : R, forall x : T, `|S1 x| <= M) -> *)
-(*   summable (T:=T) (R:=R) S2 -> summable (T:=T) (R:=R) (fun x : T => S1 x * S2 x) *)
-(* summable_mu_wgtd: *)
-(*   forall {R : realType} [T : choiceType] [f : T -> R] (mu0 : {distr T / R}), *)
-(*   (forall x : T, 0 <= f x <= 1) -> summable (T:=T) (R:=R) (fun x : T => mu0 x * f x) *)
-(* le_summable: *)
-(*   forall {R : realType} [T : choiceType] [F1 F2 : T -> R], *)
-(*   (forall x : T, 0 <= F1 x <= F2 x) -> summable (T:=T) (R:=R) F2 -> summable (T:=T) (R:=R) F1 *)
-(* summable_mlet: *)
-(*   forall {R : realType} [T U : choiceType] (f : T -> {distr U / R}) (mu0 : {distr T / R}) (y : U), *)
-(*   summable (T:=T) (R:=R) (fun x : T => mu0 x * f x y) *)
-(* summableM: *)
-(*   forall {R : realType} [T : choiceType] [S1 S2 : T -> R], *)
-(*   summable (T:=T) (R:=R) S1 -> *)
-(*   summable (T:=T) (R:=R) S2 -> summable (T:=T) (R:=R) (fun x : T => S1 x * S2 x) *)
-(* summableZ: *)
-(*   forall {R : realType} [T : choiceType] [S : T -> R] (c : R), *)
-(*   summable (T:=T) (R:=R) S -> summable (T:=T) (R:=R) (c \*o S) *)
-(* summableZr: *)
-(*   forall {R : realType} [T : choiceType] [S : T -> R] (c : R), *)
-(*   summable (T:=T) (R:=R) S -> summable (T:=T) (R:=R) (c \o* S) *)
-(* eq_summable: *)
-(*   forall {R : realType} [T : choiceType] [S1 S2 : T -> R], *)
-(*   S1 =1 S2 -> summable (T:=T) (R:=R) S1 -> summable (T:=T) (R:=R) S2 *)
-
-  (* unshelve eapply eq_summable. *)
-  (* Search ((_ == _) %R). *)
-  (*   move=> [y0 x0]. exact  ((x0,y0) == (x,y)) . *)
-
 
 
 End DerivedRules.
