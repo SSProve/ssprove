@@ -493,11 +493,79 @@ Module PRF_example.
         * cbn. auto.
         * cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
       + eapply rsamplerC_cmd.
-    - cbn. (* k_val/put/m'/r vs a₁/a₁0/a/put *)
-    (* Where k_val = a, r = a₁, m' = a₁0
-    Meaning k_val/put/m'/r vs r/m'/k_val/put
-    *)
-  Admitted.
+    - cbn.
+      (* Here we are swapping a lot, tactics could help.
+        Is there a better way?
+
+        k_val/put/m'/r vs a₁/a₁0/a/put
+        where k_val = a, r = a₁, m' = a₁0
+
+        Meaning k_val/put/m'/r vs r/m'/k_val/put
+        Starting from the right,
+        r/m'/k_val/put
+        m'/r/k_val/put
+        m'/k_val/r/put
+        k_val/m'/r/put
+        k_val/m'/put/r
+        k_val/put/m'/r
+      *)
+      eapply r_transR.
+      1:{
+        eapply (rswap_cmd _ _ _ _ (cmd_sample _) (cmd_sample _)).
+        - auto.
+        - cbn. intros a₀ a₁.
+          eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+          cbn. auto.
+        - eapply rsamplerC_cmd.
+      }
+      cbn.
+      eapply r_transR.
+      1:{
+        eapply (rsame_head_cmd (cmd_sample _)). cbn. intro a₀.
+        eapply (rswap_cmd _ _ _ _ (cmd_sample _) (cmd_sample _)).
+        - auto.
+        - cbn. intros ? ?.
+          eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+          cbn. auto.
+        - eapply rsamplerC_cmd.
+      }
+      cbn.
+      eapply r_transR.
+      1:{
+        eapply (rswap_cmd _ _ _ _ (cmd_sample _) (cmd_sample _)).
+        - auto.
+        - cbn. intros ? ?.
+          eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+          cbn. auto.
+        - eapply rsamplerC_cmd.
+      }
+      cbn.
+      eapply r_transR.
+      1:{
+        eapply (rsame_head_cmd (cmd_sample _)). cbn. intro x.
+        eapply (rsame_head_cmd (cmd_sample _)). cbn. intro y.
+        eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U (2^n)%N)) (λ z a₁, ret (a₁, y ⊕ PRF a₁ x))).
+        - auto.
+        - cbn. intros ? ?.
+          eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+          cbn. auto.
+        - eapply rsamplerC_cmd.
+      }
+      cbn.
+      eapply r_transR.
+      1:{
+        eapply (rsame_head_cmd (cmd_sample _)). cbn. intro x.
+        eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U (2^n)%N)) (λ z a₁, _)).
+        - auto.
+        - cbn. intros ? ?.
+          eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+          cbn. auto.
+        - eapply rsamplerC_cmd.
+      }
+      cbn.
+      eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
+      cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
+  Qed.
 
   Lemma IND_CPA_equiv_true :
     MOD_CPA_tt_pkg ∘ (EVAL true) ≈₀ IND_CPA true.
