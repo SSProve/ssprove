@@ -461,7 +461,16 @@ Module PRF_example.
     destruct chUniverse_eqP as [e|]. 2: contradiction.
     rewrite cast_fun_K. clear e.
     cbn.
-    (*
+    (* We are now in the realm of program logic *)
+    (* The first step is to swap sample/sample/get into get/sample/sample
+      in the RHS.
+      Then we can use the rsame_head to deal with the option.
+    *)
+    (* We could use some transR or some setoid rewrite I guess. *)
+
+
+
+(*
     Could we have rules like
 
     (∀ k, ⊢ ⦃ λ '(h₀, h₁), pre (h₀, h₁) ∧ h₁ @ ℓ = k ⦄ c ≈ f k ⦃ post ⦄) →
@@ -470,7 +479,8 @@ Module PRF_example.
     ?
 
     *)
-    (* We are now in the realm of program logic *)
+
+
     (* eapply rsamplerC_cmd. *)
     (* eapply rsamplerC. *)
     (* We might want to be able to rewrite with equivalent stuff *)

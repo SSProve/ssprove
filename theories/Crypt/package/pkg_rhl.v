@@ -1805,6 +1805,26 @@ Module PackageRHL (π : RulesParam).
     sampler/getr/putr.
   *)
 
+  Theorem rsame_head_cmd :
+    ∀ {A B : ord_choiceType} {f₀ f₁ : A → raw_program B}
+    (m : command A) (post : postcond B B),
+    (∀ a, ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ f₀ a ≈ f₁ a ⦃ post ⦄) →
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ x ← cmd m ;; f₀ x ≈ x ← cmd m ;; f₁ x ⦃ post ⦄.
+  Proof.
+    intros A B f₀ f₁ m post h.
+    rewrite rel_jdgE. rewrite !repr_cmd_bind.
+    eapply (bind_rule_pp (repr_cmd m) (repr_cmd m)).
+    - apply (reflexivity_rule (repr_cmd m)).
+    - intros a₀ a₁. rewrite -rel_jdgE.
+      unshelve eapply rpre_weaken_rule.
+      + exact (λ '(h₀, h₁), a₀ = a₁ ∧ h₀ = h₁).
+      + specialize (h a₀).
+        eapply rpre_hypothesis_rule. simpl. intros s₀ s₁ [ea es]. subst.
+        eapply rpre_weaken_rule. 1: exact h.
+        simpl. intros h₀ h₁ [? ?]. subst. reflexivity.
+      + simpl. intros s₀ s₁ e. noconf e. intuition auto.
+  Qed.
+
   Lemma rswap_cmd :
     ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
       (c₀ : command A₀) (c₁ : command A₁)
