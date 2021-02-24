@@ -1760,10 +1760,10 @@ Module PackageRHL (π : RulesParam).
 
   Lemma rsamplerC' :
     ∀ {A : ord_choiceType} (o : Op) (c : raw_program A),
-    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
-      r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (r, a) ≈
-      a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (r, a)
-    ⦃ eq ⦄.
+      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+        r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (r, a) ≈
+        a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (r, a)
+      ⦃ eq ⦄.
   Proof.
     intros A o c.
     eapply rsymmetry. eapply rsym_pre. 1: auto.
@@ -1927,6 +1927,34 @@ Module PackageRHL (π : RulesParam).
       * reflexivity.
   Qed.
 
+  Theorem rswap_ruleR_cmd :
+    ∀ {A₀ A₁ B : ord_choiceType} {post : postcond B B}
+      (c₀ : command A₀) (c₁ : command A₁) (r : A₀ → A₁ → raw_program B),
+      (∀ b b', b = b' → post b b') →
+      (∀ a₀ a₁, ⊢ ⦃ λ '(s₁, s₀), s₀ = s₁ ⦄ r a₀ a₁ ≈ r a₀ a₁ ⦃ post ⦄) →
+      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+        a₀ ← cmd c₀ ;; a₁ ← cmd c₁ ;; ret (a₀, a₁) ≈
+        a₁ ← cmd c₁ ;; a₀ ← cmd c₀ ;; ret (a₀, a₁)
+        ⦃ eq ⦄ →
+      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+        a₀ ← cmd c₀ ;; a₁ ← cmd c₁ ;; r a₀ a₁ ≈
+        a₁ ← cmd c₁ ;; a₀ ← cmd c₀ ;; r a₀ a₁
+        ⦃ post ⦄.
+  Proof.
+    intros A₀ A₁ B post c₀ c₁ r postr hr h.
+    rewrite rel_jdgE.
+    repeat setoid_rewrite repr_cmd_bind. simpl.
+    eapply (swap_ruleR (λ a₀ a₁, repr (r a₀ a₁)) (repr_cmd c₀) (repr_cmd c₁)).
+    - intros. rewrite -rel_jdgE. apply hr.
+    - apply postr.
+    - intro s.
+      unshelve eapply coupling_eq.
+      + exact (λ '(h₀, h₁), h₀ = h₁).
+      + rewrite rel_jdgE in h. repeat setoid_rewrite repr_cmd_bind in h.
+        apply h.
+      + reflexivity.
+  Qed.
+
   Lemma rsamplerC_cmd :
     ∀ {A : ord_choiceType} (o : Op) (c : command A),
       ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
@@ -1935,7 +1963,41 @@ Module PackageRHL (π : RulesParam).
       ⦃ eq ⦄.
   Proof.
     intros A o c.
-  Admitted.
+    eapply rrewrite_eqDistrL.
+    - eapply rreflexivity_rule.
+    - intro s.
+      assert (
+        repr_sample_c :
+          repr (r ← sample o ;; a ← cmd c ;; ret (a, r)) =
+          bindrFree (spl o) (λ r, bindrFree (repr_cmd c) (λ a, retrFree (a,r)))
+      ).
+      { simpl. f_equal. extensionality r. rewrite repr_cmd_bind. reflexivity. }
+      assert (
+        repr_c_sample :
+          repr (a ← cmd c ;; r ← sample o ;; ret (a, r)) =
+          bindrFree (repr_cmd c) (λ a, bindrFree (spl o) (λ r, retrFree (a,r)))
+      ).
+      { rewrite repr_cmd_bind. reflexivity. }
+      rewrite repr_c_sample repr_sample_c.
+      pose proof (sample_c_is_c_sample o (repr_cmd c) s) as hlp.
+      unfold sample_c in hlp. unfold c_sample in hlp.
+      apply hlp.
+  Qed.
+
+  Lemma rsamplerC_sym'_cmd :
+    ∀ {A : ord_choiceType} (o : Op) (c : command A),
+      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      a ← cmd c ;; r ← sample o ;; ret (r, a) ≈
+      r ← sample o ;; a ← cmd c ;; ret (r, a)
+      ⦃ eq ⦄.
+  Proof.
+    intros A o c.
+    unshelve eapply (rswap_ruleR_cmd _ (cmd_sample _)).
+    - auto.
+    - intros a r. apply rsym_pre. 1: auto.
+      apply rreflexivity_rule.
+    - apply rsamplerC_cmd.
+  Qed.
 
   Lemma rsamplerC'_cmd :
     ∀ {A : ord_choiceType} (o : Op) (c : command A),
@@ -1944,6 +2006,11 @@ Module PackageRHL (π : RulesParam).
       a ← cmd c ;; r ← sample o ;; ret (r, a)
     ⦃ eq ⦄.
   Proof.
-  Admitted.
+    intros A o c.
+    eapply rsymmetry. eapply rsym_pre. 1: auto.
+    eapply rpost_weaken_rule.
+    - apply rsamplerC_sym'_cmd.
+    - intros [? ?] [? ?] e. inversion e. intuition auto.
+  Qed.
 
 End PackageRHL.
