@@ -2298,7 +2298,7 @@ Lemma rsamplerC' { A : ord_choiceType } { L : {fset Location} }  (o : Op)
 Proof.
   unshelve eapply rsymmetry.
   unshelve eapply rsym_pre. { by intuition. }
-  unshelve eapply rpost_weaken_rule. { exact eq. }.
+  unshelve eapply rpost_weaken_rule. { exact eq. }
   - apply (@rsamplerC_sym' A L o c).
   - intuition.
 Qed.
