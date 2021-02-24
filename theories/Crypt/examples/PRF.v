@@ -461,7 +461,17 @@ Module PRF_example.
     destruct chUniverse_eqP as [e|]. 2: contradiction.
     rewrite cast_fun_K. clear e.
     cbn.
+    (*
+    Could we have rules like
+
+    (∀ k, ⊢ ⦃ λ '(h₀, h₁), pre (h₀, h₁) ∧ h₁ @ ℓ = k ⦄ c ≈ f k ⦃ post ⦄) →
+    ⊢ ⦃ pre ⦄ c ≈ k ← get ℓ ;; f k ⦃ post ⦄
+
+    ?
+
+    *)
     (* We are now in the realm of program logic *)
+    (* eapply rsamplerC_cmd. *)
     (* eapply rsamplerC. *)
     (* We might want to be able to rewrite with equivalent stuff *)
     (* Transitivity might be nice. But it's not clear how to do it. *)
