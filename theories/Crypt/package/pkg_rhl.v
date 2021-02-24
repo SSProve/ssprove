@@ -1853,14 +1853,10 @@ Module PackageRHL (π : RulesParam).
       ⊢ ⦃ P ⦄ c₀' ≈ c₁ ⦃ Q ⦄.
   Proof.
     intros A₀ A₁ P Q c₀ c₀' c₁ he h.
-    (* rewrite rel_jdgE. rewrite rel_jdgE in h.
-    eapply rewrite_eqDistrL. 1: exact h.
-    rewrite rel_jdgE in he. unfold semantic_judgement, fromPrePost in he.
-    simpl in he. unfold SpecificationMonads.MonoCont_order in he.
-    intro s. unfold θ0. simpl.
-    unfold UniversalFreeMap.outOfFree_obligation_1.
-    cbn. unfold Theta_dens.unary_theta_dens_obligation_1. *)
-  Admitted.
+    eapply rrewrite_eqDistrL. 1: exact h.
+    intro s. eapply rcoupling_eq. 1: exact he.
+    cbn. reflexivity.
+  Qed.
 
   Lemma r_transR :
     ∀ {A₀ A₁ : ord_choiceType} {P Q}
@@ -1870,7 +1866,10 @@ Module PackageRHL (π : RulesParam).
       ⊢ ⦃ P ⦄ c₀ ≈ c₁' ⦃ Q ⦄.
   Proof.
     intros A₀ A₁ P Q c₀ c₁ c₁' he h.
-  Admitted.
+    eapply rrewrite_eqDistrR. 1: exact h.
+    intro s. eapply rcoupling_eq. 1: exact he.
+    cbn. reflexivity.
+  Qed.
 
   (* Rules using commands instead of bind *)
 
