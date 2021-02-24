@@ -613,7 +613,57 @@ Module PRF_example.
     rewrite cast_fun_K. clear e.
     cbn.
     (* We are now in the realm of program logic *)
-  Admitted.
+    eapply r_transL.
+    1:{
+      eapply (rswap_cmd _ _ _ _ (cmd_get _) (cmd_sample _)).
+      - cbn. auto.
+      - cbn. intros ? ?.
+        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+        cbn. auto.
+      - eapply rsamplerC_cmd.
+    }
+    cbn.
+    eapply (rsame_head_cmd (cmd_get _)). cbn.
+    intros [k|].
+    - cbn. eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
+      cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
+    - cbn.
+      (* Here we are swapping a lot, tactics could help.
+        Is there a better way?
+
+        a₁/a/put vs k_val/put/r
+        where k_val = a, r = a₁
+
+        Meaning r/k_val/put vs k_val/put/r
+        Starting from the right,
+        k_val/put/r
+        k_val/r/put
+        r/k_val/put
+      *)
+      eapply r_transR.
+      1:{
+        eapply (rsame_head_cmd (cmd_sample _)). cbn. intro x.
+        eapply (rswap_cmd _ _ _ _ (cmd_sample (U (2^n)%N)) (cmd_put _ _) (λ a₁ z, _)).
+        - auto.
+        - cbn. intros ? ?.
+          eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+          cbn. auto.
+        - eapply rsamplerC'_cmd.
+      }
+      cbn.
+      eapply r_transR.
+      1:{
+        eapply (rswap_cmd _ _ _ _ (cmd_sample _) (cmd_sample _)).
+        - auto.
+        - cbn. intros ? ?.
+          eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+          cbn. auto.
+        - eapply rsamplerC_cmd.
+      }
+      cbn.
+      eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
+      cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
+  Qed.
 
   (** Security of PRF
 
