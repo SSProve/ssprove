@@ -1799,6 +1799,36 @@ Module PackageRHL (π : RulesParam).
     admit.
   Admitted.
 
+  (* Rules I added *)
+
+  (* Similar to rrewrite_eqDistr but with program logic. *)
+  Lemma r_transL :
+    ∀ {A₀ A₁ : ord_choiceType} {P Q}
+      (c₀ c₀' : raw_program A₀) (c₁ : raw_program A₁),
+      ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ c₀ ≈ c₀' ⦃ eq ⦄ →
+      ⊢ ⦃ P ⦄ c₀ ≈ c₁ ⦃ Q ⦄ →
+      ⊢ ⦃ P ⦄ c₀' ≈ c₁ ⦃ Q ⦄.
+  Proof.
+    intros A₀ A₁ P Q c₀ c₀' c₁ he h.
+    (* rewrite rel_jdgE. rewrite rel_jdgE in h.
+    eapply rewrite_eqDistrL. 1: exact h.
+    rewrite rel_jdgE in he. unfold semantic_judgement, fromPrePost in he.
+    simpl in he. unfold SpecificationMonads.MonoCont_order in he.
+    intro s. unfold θ0. simpl.
+    unfold UniversalFreeMap.outOfFree_obligation_1.
+    cbn. unfold Theta_dens.unary_theta_dens_obligation_1. *)
+  Admitted.
+
+  Lemma r_transR :
+    ∀ {A₀ A₁ : ord_choiceType} {P Q}
+      (c₀ : raw_program A₀) (c₁ c₁' : raw_program A₁),
+      ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ c₁ ≈ c₁' ⦃ eq ⦄ →
+      ⊢ ⦃ P ⦄ c₀ ≈ c₁ ⦃ Q ⦄ →
+      ⊢ ⦃ P ⦄ c₀ ≈ c₁' ⦃ Q ⦄.
+  Proof.
+    intros A₀ A₁ P Q c₀ c₁ c₁' he h.
+  Admitted.
+
   (* Rules using commands instead of bind *)
 
   (* TODO Find out how/if we can improve unification of cmd_bind with
