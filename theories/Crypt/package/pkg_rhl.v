@@ -2273,17 +2273,21 @@ retrFree (a,r))) ).
   apply hlp.
 Qed.
 
-(* Lemma retcomm_comm {A B : ord_choiceType} {L : {fset Location} } *)
-(*       (c : program L Game_import A) (s : program L Game_import B) *)
-(* (Hretcomm : *)
-(*   r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄ *)
-(*        a ← c ;; r ← s ;;  (ret (a, r)) ≈ *)
-(*        r ← s ;; a ← c ;;  (ret (a, r)) *)
-(*    ⦃ eq ⦄ ) : *)
-(*   r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄ *)
-(*         r ← s ;; a ← c ;;  (ret (r, a)) ≈ *)
-(*         a ← c ;; r ← s ;;  (ret (r, a)) *)
-(*    ⦃ eq ⦄. *)
+Lemma rsamplerC_sym' { A : ord_choiceType } { L : {fset Location} }  (o : Op)
+                 (c : program L Game_import A):
+  r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄
+        a ← c ;; r ← (r ← sample o ;; ret r) ;;  (ret (r, a)) ≈
+        r ← (r ← sample o ;; ret r) ;; a ← c ;;  (ret (r, a))
+   ⦃ eq ⦄. 
+Proof.
+  unshelve eapply rswap_ruleR.
+  - intuition.
+  - move=> a r.
+    apply rsym_pre. { by intuition. }
+    apply ( @rreflexivity_rule (prod_choiceType (Arit o) A) L
+    (@ret L Game_import (prod_choiceType (Arit o) A) (r,a)) ).
+  - apply rsamplerC.
+Qed.
 
 Lemma rsamplerC' { A : ord_choiceType } { L : {fset Location} }  (o : Op)
                  (c : program L Game_import A):
@@ -2292,16 +2296,12 @@ Lemma rsamplerC' { A : ord_choiceType } { L : {fset Location} }  (o : Op)
         a ← c ;; r ← (r ← sample o ;; ret r) ;;  (ret (r, a))
    ⦃ eq ⦄. 
 Proof.
-(*   unshelve eapply rswap_ruleR. *)
-(*   - intros. assumption. *)
-(*   - intuition. *)
-(*     Check rreflexivity_rule. *)
-(*     Set Printing All. *)
-(*     apply (@rreflexivity_rule (prod_choiceType (Arit o) A) L  *)
-(* (@ret L Game_import (prod_choiceType (Arit o) A) *)
-(*           (@pair (ofmapObj _ _ choice_incl (Arit o)) (ofmapObj _ _ choice_incl A) a1 a2)) ). *)
-
-Admitted.    
+  unshelve eapply rsymmetry.
+  unshelve eapply rsym_pre. { by intuition. }
+  unshelve eapply rpost_weaken_rule. { exact eq. }.
+  - apply (@rsamplerC_sym' A L o c).
+  - intuition.
+Qed.
 
 
 (* TODO: generalize the corresponding rule in RulesStateProb.v  *)
