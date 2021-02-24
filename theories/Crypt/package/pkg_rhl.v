@@ -2231,6 +2231,10 @@ Lemma rsymmetry  { A1 A2 : ord_choiceType } { L : {fset Location} } { pre : heap
 Proof. by apply: symmetry_rule. Qed. 
   
    
+Let spl (o : Op) :=  @callrFree
+(ops_StP heap_choiceType)
+(ar_StP heap_choiceType)
+(inr o).
 
 Lemma rsamplerC { A : ord_choiceType } { L : {fset Location} }  (o : Op)
                 (c : program L Game_import A):
@@ -2241,22 +2245,63 @@ Lemma rsamplerC { A : ord_choiceType } { L : {fset Location} }  (o : Op)
 Proof.
   apply: rrewrite_eqDistrL.
   - apply: rreflexivity_rule. 
-  - move => s. f_equal.
-    (*Rem.: we should be able to rewrite smMonequ1/2 ? and have the equality? *)
-  
-Admitted.
+  - move => s.
+    assert (repr_sample_c :
+repr (r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (a, r))
+=
+bindrFree _ _ (spl o) (fun r =>
+bindrFree _ _ (repr c) (fun a =>
+retrFree (a,r)))
+ ).
+  {
+    rewrite !repr_bind. f_equal.
+    apply boolp.funext ; move=> r.
+    rewrite !repr_bind. reflexivity.
+  }
+    assert (repr_c_sample :
+repr (a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (a, r))
+=
+bindrFree _ _ (repr c) (fun a =>
+bindrFree _ _ (spl o) (fun r =>
+retrFree (a,r))) ).
+  {
+    rewrite repr_bind. reflexivity.
+  }
+  rewrite repr_sample_c. rewrite repr_c_sample.
+  unshelve epose (hlp := sample_c_is_c_sample o (repr c) s).
+  unfold sample_c in hlp. unfold c_sample in hlp.
+  apply hlp.
+Qed.
+
+(* Lemma retcomm_comm {A B : ord_choiceType} {L : {fset Location} } *)
+(*       (c : program L Game_import A) (s : program L Game_import B) *)
+(* (Hretcomm : *)
+(*   r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄ *)
+(*        a ← c ;; r ← s ;;  (ret (a, r)) ≈ *)
+(*        r ← s ;; a ← c ;;  (ret (a, r)) *)
+(*    ⦃ eq ⦄ ) : *)
+(*   r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄ *)
+(*         r ← s ;; a ← c ;;  (ret (r, a)) ≈ *)
+(*         a ← c ;; r ← s ;;  (ret (r, a)) *)
+(*    ⦃ eq ⦄. *)
 
 Lemma rsamplerC' { A : ord_choiceType } { L : {fset Location} }  (o : Op)
                  (c : program L Game_import A):
   r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄
         r ← (r ← sample o ;; ret r) ;; a ← c ;;  (ret (r, a)) ≈
         a ← c ;; r ← (r ← sample o ;; ret r) ;;  (ret (r, a))
-   ⦃ eq ⦄.
+   ⦃ eq ⦄. 
 Proof.
-  
+(*   unshelve eapply rswap_ruleR. *)
+(*   - intros. assumption. *)
+(*   - intuition. *)
+(*     Check rreflexivity_rule. *)
+(*     Set Printing All. *)
+(*     apply (@rreflexivity_rule (prod_choiceType (Arit o) A) L  *)
+(* (@ret L Game_import (prod_choiceType (Arit o) A) *)
+(*           (@pair (ofmapObj _ _ choice_incl (Arit o)) (ofmapObj _ _ choice_incl A) a1 a2)) ). *)
 
-
-Admitted.
+Admitted.    
 
 
 (* TODO: generalize the corresponding rule in RulesStateProb.v  *)
