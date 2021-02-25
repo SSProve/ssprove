@@ -141,76 +141,55 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
   Import PackageNotation.
   Local Open Scope package_scope.
 
-  Definition counter_loc : Location := ('nat; 0%N).
-  Definition pk_loc : Location := ('nat; 1%N).
-  Definition sk_loc : Location := ('nat; 2%N).
-  Definition m_loc  : Location := ('nat; 3%N).
-  Definition c_loc  : Location := ('nat; 4%N).
+
+  (* chX is the chUniverse in bijection with X  *)
+  Parameters choicePlain choiceCipher choicePubKey choiceSecKey : chUniverse. 
+
+  
+  Parameter c2ch : Cipher -> choiceCipher.
+  Parameter ch2c : choiceCipher -> Cipher.
+  (* *)
+  Parameter pk2ch : PubKey -> choicePubKey.
+  Parameter ch2pk : choicePubKey -> PubKey. 
+  (* *)
+  Parameter sk2ch : SecKey -> choiceSecKey. 
+  Parameter ch2sk : choiceSecKey -> SecKey. 
+  (* *)
+  Parameter m2ch : Plain -> choicePlain.
+  Parameter ch2m : choicePlain -> Plain. 
+  (* *)
+
+  Definition counter_loc : Location := ('nat; 0%N). 
+  Definition pk_loc : Location := (choicePubKey; 1%N). 
+  Definition sk_loc : Location := (choiceSecKey; 2%N).
+  Definition m_loc  : Location := (choicePlain; 3%N). 
+  Definition c_loc  : Location := (choiceCipher; 4%N).
 
   Definition kg_id : nat := 5.
   Definition enc_id : nat := 6.
   Definition dec_id : nat := 7.
   Definition challenge_id : nat := 8. (*challenge for LR *)
-  Definition challenge_id' : nat := 9. (*challenge for real rnd *)
-
-
-  (* Definition rel_loc : {fset Location} := [fset counter_loc]. *)
-  (* Rem.: ; kg_loc ; enc_loc ; dec_loc ; challenge_loc ; pk_loc; sk_loc]. *)
-
-  Definition Plain_len_pos : positive.
-  Proof. exists #|Plain|.  apply /card_gt0P. by exists plain0. Defined.
-
-  Definition Cipher_len_pos : positive.
-  Proof. exists #|Cipher|. apply /card_gt0P. by exists cipher0. Defined.
-
-  Definition PubKey_len_pos : positive.
-  Proof. exists #|PubKey|. apply /card_gt0P. by exists pub0. Defined.
-
-  Definition SecKey_len_pos : positive.
-  Proof. exists #|SecKey|. apply /card_gt0P. by exists sec0. Defined.
-
-  Notation " 'chSecurityParameter' " :=
-    (chNat) (in custom pack_type at level 2).
-  Notation " 'chPlain' " :=
-    (chFin Plain_len_pos )
-    (in custom pack_type at level 2).
-  Notation " 'chCipher' " :=
-    (chFin Cipher_len_pos)
-    (in custom pack_type at level 2).
-  Notation " 'chPubKey' " :=
-    (chFin PubKey_len_pos)
-    (in custom pack_type at level 2).
-  Notation " 'chSecKey' " :=
-    (chFin SecKey_len_pos)
-    (in custom pack_type at level 2).
-
-  Parameter c2ch : Cipher -> (chFin Cipher_len_pos). 
-  Parameter ch2c : (chFin Cipher_len_pos) -> Cipher.
-  (* *)
-  Parameter pk2ch : PubKey -> (chFin PubKey_len_pos). 
-  Parameter ch2pk : (chFin PubKey_len_pos) -> PubKey. 
-  (* *)
-  Parameter sk2ch : SecKey -> (chFin SecKey_len_pos). 
-  Parameter ch2sk : (chFin SecKey_len_pos) -> SecKey. 
-  (* *)
-  Parameter m2ch : Plain -> (chFin Plain_len_pos).
-  Parameter ch2m : (chFin Plain_len_pos) -> Plain. 
-  (* *)
+  Definition challenge_id' : nat := 9. (*challenge for real rnd *) 
   
-
-
+ 
   (* Key Generation *)
-  Parameter KeyGen : forall { L : {fset Location} }, program L fset0 ((chFin PubKey_len_pos) × (chFin SecKey_len_pos)).
+  Parameter KeyGen : forall { L : {fset Location} }, program L fset0 (choicePubKey × choiceSecKey).
 
 
   (* Encryption algorithm *)
-  Parameter Enc : forall { L : {fset Location} } (pk : chFin PubKey_len_pos) (m : chFin Plain_len_pos),
-      program L fset0 (chFin Cipher_len_pos).
+  Parameter Enc : forall { L : {fset Location} } (pk : choicePubKey) (m : choicePlain),
+      program L fset0 (choiceCipher).
   
   (* Decryption algorithm *)
-  Parameter Dec_open : forall { L : {fset Location} } (sk : chFin SecKey_len_pos) (c : chFin Cipher_len_pos),
-      program L fset0 (chFin Plain_len_pos).
+  Parameter Dec_open : forall { L : {fset Location} } (sk : choiceSecKey) (c : choiceCipher),
+      program L fset0 (choicePlain).
 
+  Notation " 'chSecurityParameter' " :=  (chNat) (in custom pack_type at level 2).
+  Notation " 'chPlain' " := choicePlain (in custom pack_type at level 2).
+  Notation " 'chCipher' " :=  choiceCipher (in custom pack_type at level 2).
+  Notation " 'chPubKey' " := choicePubKey (in custom pack_type at level 2).
+  Notation " 'chSecKey' " := choiceSecKey (in custom pack_type at level 2).
+  
 End AsymmetricSchemeAlgorithms.
 
 
@@ -234,7 +213,7 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
    (**   *SECURE AGAINST CHOSEN-PLAINTEXT ATTACKS **)
 
   Definition L_locs : { fset Location } := fset [:: pk_loc; sk_loc ].
-
+  
   #[program] Definition L_pk_cpa_L_open :
     opackage L_locs
       [interface ]
