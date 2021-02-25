@@ -196,11 +196,6 @@ Module CorePackageTheory (π : RulesParam).
     Class ValidProgram {A} (p : raw_program A) :=
       is_valid_program : valid_program p.
 
-    (* Instance ValidProgram_ret (A : choiceType) (x : A) : ValidProgram (ret x).
-    Proof.
-      apply valid_ret.
-    Qed. *)
-
     Lemma valid_program_from_class :
       ∀ A (p : raw_program A),
         ValidProgram p →
@@ -208,29 +203,6 @@ Module CorePackageTheory (π : RulesParam).
     Proof.
       intros A p h. auto.
     Defined.
-
-    (* Hint Extern 1 (ValidProgram (opr ?o ?x ?k)) =>
-      eapply valid_opr ; [
-        eauto
-      | intro ; apply valid_program_from_class
-      ] : typeclass_instances.
-
-    Hint Extern 1 (ValidProgram (getr ?o ?x ?k)) =>
-      eapply valid_getr ; [
-        eauto
-      | intro ; apply valid_program_from_class
-      ] : typeclass_instances.
-
-    Hint Extern 1 (ValidProgram (putr ?o ?x ?k)) =>
-      eapply valid_putr ; [
-        eauto
-      | apply valid_program_from_class
-      ] : typeclass_instances.
-
-    Hint Extern 1 (ValidProgram (sampler ?op ?k)) =>
-      eapply valid_sampler ;
-      intro ; apply valid_program_from_class
-      : typeclass_instances. *)
 
     Record program A := mkprog {
       prog : raw_program A ;
@@ -240,10 +212,6 @@ Module CorePackageTheory (π : RulesParam).
     Arguments mkprog {_} _.
     Arguments prog {_} _.
     Arguments prog_valid {_} _.
-
-    (* Notation "{ 'program' p }" :=
-      (mkprog p _)
-      (format "{ program  p  }") : package_scope. *)
 
     Lemma program_ext :
       ∀ A (u v : program A),
@@ -414,73 +382,6 @@ Module CorePackageTheory (π : RulesParam).
       apply program_ext in e. subst. auto.
     Defined.
 
-    (* TODO: Do we need it? *)
-    (* Lemma program_rect :
-      ∀ (A : choiceType) (P : program A → Type),
-        (∀ x : A, P (ret x)) →
-        (∀ (o : opsig) (h : o \in import) (x : src o) (k : tgt o → program A),
-          (∀ s : tgt o, P (k s)) → P (opr o h x k)
-        ) →
-        (∀ (l : Location) (h : l \in Loc) (k : Value l.π1 → program A),
-          (∀ s : Value l.π1, P (k s)) → P (getr l h k)
-        ) →
-        (∀ (l : Location) (h : l \in Loc) (v : Value l.π1) (k : program A),
-          P k → P (putr l h v k)
-        ) →
-        (∀ (op : Op) (k : Arit op → program A),
-          (∀ s : Arit op, P (k s)) → P (sampler op k)
-        ) →
-        ∀ p : program A, P p.
-    Proof.
-      intros A P hret hop hget hput hsamp.
-      intros [p h]. revert p h. fix aux 1.
-      intros p h. destruct p.
-      - eapply prove_program. 1: eapply hret.
-        reflexivity.
-      - cbn in h.
-        eapply prove_program.
-        + unshelve eapply hop.
-          5:{
-            intro s. unshelve eapply aux.
-            - eapply (k s).
-            - destruct h as [ho hk]. auto.
-          }
-          * destruct h as [ho hk]. auto.
-          * auto.
-        + reflexivity.
-      - cbn in h.
-        eapply prove_program.
-        + unshelve eapply hget.
-          4:{
-            intros s. unshelve eapply aux.
-            - eapply (k s).
-            - destruct h as [ho hk]. auto.
-          }
-          * destruct h as [ho hk]. auto.
-        + reflexivity.
-      - cbn in h.
-        eapply prove_program.
-        + unshelve eapply hput.
-          5:{
-            unshelve eapply aux.
-            - eapply p.
-            - destruct h as [ho hk]. auto.
-          }
-          * auto.
-          * destruct h as [ho hk]. auto.
-          * auto.
-        + reflexivity.
-      - cbn in h.
-        eapply prove_program.
-        + unshelve eapply hsamp.
-          3:{
-            intro s. unshelve eapply aux.
-            - eapply (k s).
-            - auto.
-          }
-        + reflexivity.
-    Defined. *)
-
     Open Scope package_scope.
 
     Import SPropAxioms. Import FunctionalExtensionality.
@@ -531,15 +432,6 @@ Module CorePackageTheory (π : RulesParam).
       | sampler op k' => sampler op (λ a, mapFree f (k' a))
       end.
 
-    (* Definition mapFree {A B : choiceType} (f : A → B) (m : program A) :
-      program B.
-    Proof.
-      exists (mapFree_ f (m ∙1)).
-      destruct m as [m h]. cbn.
-      induction m in h |- *.
-      all: solve [ cbn in * ; intuition auto ].
-    Defined. *)
-
   End FreeModule.
 
   Arguments ret [A] _.
@@ -574,11 +466,6 @@ Module CorePackageTheory (π : RulesParam).
   Hint Extern 1 (ValidProgram ?L ?I (ret ?x)) =>
     apply valid_ret
     : typeclass_instances.
-
-  (* TODO Replace the eautos in the tactics by in_fset stuff
-    This means moving them from pkg_tactics.
-    Can reorganise later.
-  *)
 
   Hint Extern 1 (ValidProgram ?L ?I (opr ?o ?x ?k)) =>
     eapply valid_opr ; [
@@ -644,58 +531,6 @@ Module CorePackageTheory (π : RulesParam).
     ]
     : typeclass_instances.
 
-  (* Section Test.
-
-    Open Scope package_scope.
-
-    Definition foo L I : program L I _ :=
-      {program ret 0 }.
-
-    (* Obligation Tactic := idtac. *)
-
-    Definition bar L I o (h : o \in I) x op : program L I _ :=
-      {program
-        sampler op (λ z, opr o x (λ y, ret y))
-      }.
-
-    Context (L : {fset Location}) (I : Interface).
-    Context (o : opsig).
-
-    Axiom h : o \in I.
-
-    Fail Definition toto x op : program L I _ :=
-      {program
-        sampler op (λ z, opr o x (λ y, ret y))
-      }.
-
-    Definition toto x op : program L I _ :=
-      {program
-        sampler op (λ z, opr o x (λ y, ret y))
-        #with let z := h in _
-      }.
-
-    Definition toto' x op : program L I _ :=
-      {program
-        sampler op (λ z, opr o x (λ y, ret y))
-        #with [hints h]
-      }.
-
-    Context (l : Location).
-    Axiom h' : l \in L.
-
-    Fail Definition baba x op : program L I _ :=
-      {program
-        getr l (λ u, sampler op (λ z, opr o x (λ y, ret y)))
-      }.
-
-    Definition baba x op : program L I _ :=
-      {program
-        getr l (λ u, sampler op (λ z, opr o x (λ y, ret y)))
-        #with [hints h ; h' ]
-      }.
-
-  End Test. *)
-
   Section FreeLocations.
 
     Context {import : Interface}.
@@ -748,44 +583,6 @@ Module CorePackageTheory (π : RulesParam).
         eapply injectSubset. all: eauto.
     Qed.
 
-    Open Scope package_scope.
-
-    (** Ideally we should need those.
-      Injections should be hanlded behind the scenes.
-      That's the point of using subset types. Maybe we can tweak the
-      typeclasses hints to use fsubset when needed.
-    *)
-    (* Definition injectLocations {A : choiceType} {loc1 loc2 : {fset Location}}
-      (h : fsubset loc1 loc2) (v : programI loc1 A) : programI loc2 A.
-    Proof.
-      refine {program v.(prog)}.
-      destruct v as [v p].
-      cbn. eapply valid_injectLocations. all: eauto.
-    Defined. *)
-
-    (* Lemma injectLocationsInjective :
-      ∀ {A : choiceType} {locs1 locs2 : {fset Location}}
-        (Hfsubset1 Hfsubset2 : fsubset locs1 locs2)
-        (v : programI locs1 A),
-        injectLocations Hfsubset1 v = injectLocations Hfsubset2 v.
-    Proof.
-      intros A locs1 locs2 h1 h2 v.
-      f_equal. apply bool_irrelevance.
-    Qed. *)
-
-    (* Lemma injectLocationsMerge :
-      ∀ {A : choiceType} {locs1 locs2 locs3 : {fset Location}}
-        (h1 : fsubset locs1 locs2)
-        (h2 : fsubset locs2 locs3)
-        (v : programI locs1 A),
-        (injectLocations h2 (injectLocations h1 v)) =
-        injectLocations (fsubset_trans h1 h2) v.
-    Proof.
-      intros A locs1 locs2 locs3 h1 h2 v.
-      destruct v as [v h].
-      apply program_ext. cbn. reflexivity.
-    Qed. *)
-
   End FreeLocations.
 
   Section FreeMap.
@@ -821,61 +618,7 @@ Module CorePackageTheory (π : RulesParam).
       eapply in_fsubset. all: eauto.
     Qed.
 
-    Open Scope package_scope.
-
-    (* Definition injectMap {A : choiceType} {I1 I2 : Interface}
-      (h : fsubset I1 I2) (v : programL I1 A) : programL I2 A.
-    Proof.
-      refine {program v.(prog) }.
-      destruct v as [v p]. cbn.
-      eapply valid_injectMap. all: eauto.
-    Defined.
-
-    Lemma injectMapInjective {A : choiceType} {I1 I2 : Interface}
-          (Hfsubset1 Hfsubset2 : fsubset I1 I2)
-          (v : programL I1 A) :
-      injectMap Hfsubset1 v = injectMap Hfsubset2 v.
-    Proof.
-      f_equal. apply bool_irrelevance.
-    Qed. *)
-
   End FreeMap.
-
-  (* Section commuteMapLocations.
-
-    Context {locs1 locs2 : {fset Location}}.
-    Context {I1 I2 : Interface}.
-
-    Lemma commuteMapLocations :
-      ∀ {A : choiceType}
-        (h1 : fsubset locs1 locs2) (h2 : fsubset I1 I2)
-        (v : program locs1 I1 A),
-        injectMap h2 (injectLocations h1 v) =
-        injectLocations h1 (injectMap h2 v).
-    Proof.
-      intros A h1 h2 v.
-      apply program_ext. cbn. reflexivity.
-    Qed.
-
-  End commuteMapLocations. *)
-
-  (* TODO NEEDED? *)
-  (* Section commuteBindLocations.
-
-    Context {locs1 locs2 : {fset Location}}.
-    Context {I : Interface}.
-
-    Lemma commuteBindLocations :
-      ∀ {A B : choiceType} (h : fsubset locs1 locs2)
-        (v : program locs1 I A) (f : A → program locs1 I B),
-        bind (injectLocations h v) (fun w => injectLocations h (f w)) =
-        injectLocations h (bind v f).
-    Proof.
-      intros A B h v f.
-      apply program_ext. cbn. reflexivity.
-    Qed.
-
-  End commuteBindLocations. *)
 
   Definition typed_raw_function :=
     ∑ (S T : chUniverse), S → raw_program T.
@@ -912,9 +655,6 @@ Module CorePackageTheory (π : RulesParam).
   Arguments locs [_ _] _.
   Arguments locs_pack [_ _] _.
 
-  (* Definition loc_package I E :=
-    ∑ L, package L I E. *)
-
   Coercion locs_pack : loc_package >-> package.
 
   Lemma loc_package_ext :
@@ -929,13 +669,6 @@ Module CorePackageTheory (π : RulesParam).
     cbn in *. subst.
     f_equal. f_equal. apply proof_irrelevance.
   Qed.
-
-  (* Record bundle := mkbundle {
-    locs : {fset Location} ;
-    import : Interface ;
-    export : Interface ;
-    pack : opackage locs import export
-  }. *)
 
   Notation "{ 'package' p }" :=
     (mkpackage p _)
