@@ -350,28 +350,6 @@ Definition DH_security : Prop :=
     AdvantageE DH_real DH_rnd A = 0.
 
 (* TODO MOVE *)
-Lemma AdvantageE_le_0 :
-  ∀ G₀ G₁ A,
-    AdvantageE G₀ G₁ A <= 0 →
-    AdvantageE G₀ G₁ A = 0.
-Proof.
-  intros G₀ G₁ A h.
-  unfold AdvantageE in *.
-  rewrite mc_1_10.Num.Theory.normr_le0 in h.
-  apply/mc_1_10.Num.Theory.normr0P. auto.
-Qed.
-
-(* TODO MOVE *)
-Lemma Advantage_le_0 :
-  ∀ G A,
-    Advantage G A <= 0 →
-    Advantage G A = 0.
-Proof.
-  intros G A h.
-  rewrite -> Advantage_E in *. apply AdvantageE_le_0. auto.
-Qed.
-
-(* TODO MOVE *)
 Lemma program_link_if :
   ∀ A (c₀ c₁ : raw_program A) (p : raw_package) b,
     program_link (if b then c₀ else c₁) p =
