@@ -161,20 +161,6 @@ Module PackageComposition (π : RulesParam).
   Definition trim (E : Interface) (p : raw_package) :=
     filterm (λ n '(So ; To ; f), (n, (So, To)) \in E) p.
 
-  (* TODO MOVE *)
-  Lemma valid_package_inject_locations :
-    ∀ I E L1 L2 p,
-      fsubset L1 L2 →
-      valid_package L1 I E p →
-      valid_package L2 I E p.
-  Proof.
-    intros I E L1 L2 p hL h.
-    intros [n [S T]] ho. specialize (h _ ho). cbn in h.
-    destruct h as [f [ef hf]].
-    exists f. intuition auto.
-    eapply valid_injectLocations. all: eauto.
-  Qed.
-
   Lemma valid_link :
     ∀ L1 L2 I M E p1 p2,
       valid_package L1 M E p1 →
@@ -204,22 +190,6 @@ Module PackageComposition (π : RulesParam).
     | apply valid_package_from_class
     ]
     : typeclass_instances.
-
-  (* TODO MOVE? *)
-  Lemma bind_assoc :
-    ∀ {A B C : choiceType} (v : raw_program A)
-      (k1 : A → raw_program B) (k2 : B → raw_program C),
-      bind (bind v k1) k2 =
-      bind v (λ x, bind (k1 x) k2).
-  Proof.
-    intros A B C v k1 k2.
-    induction v in k1, k2 |- *.
-    - cbn. reflexivity.
-    - cbn. f_equal. apply functional_extensionality. auto.
-    - cbn. f_equal. extensionality z. auto.
-    - cbn. f_equal. auto.
-    - cbn. f_equal. extensionality z. auto.
-  Qed.
 
   Lemma program_link_bind :
     ∀ {A B : choiceType} (v : raw_program A)
@@ -258,22 +228,6 @@ Module PackageComposition (π : RulesParam).
     - cbn. f_equal. apply functional_extensionality. auto.
   Qed.
 
-  (* TODO MOVE? *)
-  Lemma valid_package_inject_export :
-    ∀ L I E1 E2 p,
-      fsubset E1 E2 →
-      valid_package L I E2 p →
-      valid_package L I E1 p.
-  Proof.
-    intros L I E1 E2 p hE h.
-    intros o ho. specialize (h o).
-    destruct o as [o [So To]].
-    forward h.
-    { eapply in_fsubset. all: eauto. }
-    destruct h as [f [ef hf]].
-    exists f. intuition auto.
-  Qed.
-
   Lemma trim_get :
     ∀ E (p : raw_package) n So To f,
       p n = Some (So ; To ; f) →
@@ -301,19 +255,6 @@ Module PackageComposition (π : RulesParam).
     apply valid_trim ;
     apply valid_package_from_class
     : typeclass_instances.
-
-  (* TODO MOVE? *)
-  Lemma package_ext :
-    ∀ {L I E} (p1 p2 : package L I E),
-      p1.(pack) =1 p2.(pack) →
-      p1 = p2.
-  Proof.
-    intros L I E p1 p2 e.
-    destruct p1 as [p1 h1], p2 as [p2 h2].
-    apply eq_fmap in e.
-    cbn in *. subst.
-    f_equal. apply proof_irrelevance.
-  Qed.
 
   (* Technical lemma before proving assoc *)
   Lemma link_trim_commut :
@@ -1015,18 +956,6 @@ Module PackageComposition (π : RulesParam).
       rewrite e in eg. noconf eg. cbn in hg.
       eapply program_link_id. all: eauto.
     - reflexivity.
-  Qed.
-
-  (* TODO MOVE *)
-  Lemma bind_ret :
-    ∀ A (v : raw_program A),
-      bind v (λ x, ret x) = v.
-  Proof.
-    intros A v.
-    induction v.
-    all: cbn. 1: reflexivity.
-    all: try solve [ f_equal ; apply functional_extensionality ; eauto ].
-    f_equal. auto.
   Qed.
 
   Lemma id_link :

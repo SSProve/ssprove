@@ -378,6 +378,32 @@ Module CorePackageTheory (π : RulesParam).
         + intro. eapply inversion_valid_sampler in h. eauto.
     Qed.
 
+    Lemma bind_assoc :
+      ∀ {A B C : choiceType} (v : raw_program A)
+        (k1 : A → raw_program B) (k2 : B → raw_program C),
+        bind (bind v k1) k2 =
+        bind v (λ x, bind (k1 x) k2).
+    Proof.
+      intros A B C v k1 k2.
+      induction v in k1, k2 |- *.
+      - cbn. reflexivity.
+      - cbn. f_equal. apply functional_extensionality. auto.
+      - cbn. f_equal. extensionality z. auto.
+      - cbn. f_equal. auto.
+      - cbn. f_equal. extensionality z. auto.
+    Qed.
+
+    Lemma bind_ret :
+      ∀ A (v : raw_program A),
+        bind v (λ x, ret x) = v.
+    Proof.
+      intros A v.
+      induction v.
+      all: cbn. 1: reflexivity.
+      all: try solve [ f_equal ; apply functional_extensionality ; eauto ].
+      f_equal. auto.
+    Qed.
+
     Lemma prove_program :
       ∀ {A} (P : program A → Type) p q,
         P p →
@@ -940,6 +966,48 @@ Module CorePackageTheory (π : RulesParam).
   Notation "{ 'locpackage' p '#with' h }" :=
     (mkloc_package _ (mkpackage p h))
     (only parsing) : package_scope.
+
+  (* Some validity lemmata *)
+
+  Lemma valid_package_inject_locations :
+    ∀ I E L1 L2 p,
+      fsubset L1 L2 →
+      valid_package L1 I E p →
+      valid_package L2 I E p.
+  Proof.
+    intros I E L1 L2 p hL h.
+    intros [n [S T]] ho. specialize (h _ ho). cbn in h.
+    destruct h as [f [ef hf]].
+    exists f. intuition auto.
+    eapply valid_injectLocations. all: eauto.
+  Qed.
+
+  Lemma valid_package_inject_export :
+    ∀ L I E1 E2 p,
+      fsubset E1 E2 →
+      valid_package L I E2 p →
+      valid_package L I E1 p.
+  Proof.
+    intros L I E1 E2 p hE h.
+    intros o ho. specialize (h o).
+    destruct o as [o [So To]].
+    forward h.
+    { eapply in_fsubset. all: eauto. }
+    destruct h as [f [ef hf]].
+    exists f. intuition auto.
+  Qed.
+
+  Lemma package_ext :
+    ∀ {L I E} (p1 p2 : package L I E),
+      p1.(pack) =1 p2.(pack) →
+      p1 = p2.
+  Proof.
+    intros L I E p1 p2 e.
+    destruct p1 as [p1 h1], p2 as [p2 h2].
+    apply eq_fmap in e.
+    cbn in *. subst.
+    f_equal. apply proof_irrelevance.
+  Qed.
 
   (* Rewriting in packages *)
 
