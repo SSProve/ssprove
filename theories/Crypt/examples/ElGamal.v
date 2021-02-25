@@ -499,6 +499,16 @@ Proof.
   assert (e = erefl) by apply uip. subst e.
   simpl.
   (* We are now in the realm of program logic *)
+  eapply (rsame_head_cmd (cmd_get _)). intro count.
+  eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put _ _)). intros _.
+  match goal with
+  | |- context [ if ?b then _ else _ ] =>
+    destruct b eqn:e
+  end.
+  - eapply (rsame_head_cmd (cmd_sample _)). intro a.
+    admit.
+  - eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
+    intros [? ?] [? ?] ee. inversion ee. intuition reflexivity.
 Admitted.
 
 Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher.
