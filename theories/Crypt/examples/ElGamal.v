@@ -360,6 +360,16 @@ Proof.
   rewrite -> Advantage_E in *. apply AdvantageE_le_0. auto.
 Qed.
 
+Lemma ots_real_vs_rnd_equiv_false :
+  ots_real_vs_rnd false ≈₀ Aux ∘ DH_real.
+Proof.
+Admitted.
+
+Lemma ots_real_vs_rnd_equiv_true :
+  Aux ∘ DH_rnd ≈₀ ots_real_vs_rnd true.
+Proof.
+Admitted.
+
 Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher.
 Proof.
   unfold OT_rnd_cipher. intros LA A vA hd₀ hd₁.
@@ -391,7 +401,38 @@ Proof.
       move: e => /orP [/eqP e | /eqP e].
       all: discriminate.
   }
-Admitted.
+  rewrite ots_real_vs_rnd_equiv_false. 2: auto.
+  2:{
+    rewrite fdisjointUr. apply/andP. split.
+    - unfold L_locs_counter in hd.
+      rewrite fdisjointC.
+      eapply fdisjoint_trans. 2:{ rewrite fdisjointC. exact hd. }
+      rewrite [X in fsubset _ X]fset_cons.
+      rewrite fset_cons. rewrite -fset0E. rewrite fsetU0.
+      apply fsubsetUl.
+    - unfold DH_loc. unfold L_locs_counter in hd.
+      rewrite fdisjointC.
+      eapply fdisjoint_trans. 2:{ rewrite fdisjointC. exact hd. }
+      rewrite [X in fsubset _ X]fset_cons.
+      apply fsubsetUr.
+  }
+  rewrite ots_real_vs_rnd_equiv_true. 3: auto.
+  2:{
+    rewrite fdisjointUr. apply/andP. split.
+    - unfold L_locs_counter in hd.
+      rewrite fdisjointC.
+      eapply fdisjoint_trans. 2:{ rewrite fdisjointC. exact hd. }
+      rewrite [X in fsubset _ X]fset_cons.
+      rewrite fset_cons. rewrite -fset0E. rewrite fsetU0.
+      apply fsubsetUl.
+    - unfold DH_loc. unfold L_locs_counter in hd.
+      rewrite fdisjointC.
+      eapply fdisjoint_trans. 2:{ rewrite fdisjointC. exact hd. }
+      rewrite [X in fsubset _ X]fset_cons.
+      apply fsubsetUr.
+  }
+  rewrite !GRing.addr0. auto.
+Qed.
 
 (* TODO OLD BELOW
   I will now try to salvage the parts that are necessary to conclude.
