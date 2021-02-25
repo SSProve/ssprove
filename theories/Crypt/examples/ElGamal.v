@@ -129,21 +129,26 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Definition challenge_id : nat := 8. (*challenge for LR *)
   Definition challenge_id' : nat := 9. (*challenge for real rnd *)
 
-  (* Duplicate from the AsymetricScheme module *)
-  Instance Plain_len_pos : Positive #|Plain|.
+  (* Will subsume both Plain and PubKey positivity proofs
+    The idea is that the proofs don't get in the way.
+  *)
+  Instance gT_card_pos : Positive #|gT|.
   Proof.
-    apply /card_gt0P. by exists plain0.
+    apply /card_gt0P. exists plain0. auto.
   Qed.
+
+  Definition Plain_len_pos := gT_card_pos.
+
+  (* We have to keep it to make the module mechanism happy. *)
+  Definition PubKey_len_pos : Positive #|PubKey|.
+  Proof.
+    apply /card_gt0P. by exists pub0.
+  Defined.
 
   Instance Cipher_len_pos : Positive #|Cipher|.
   Proof.
     apply /card_gt0P. by exists cipher0.
   Qed.
-
-  Instance PubKey_len_pos : Positive #|PubKey|.
-  Proof.
-    apply /card_gt0P. by exists pub0.
-  Defined.
 
   Instance SecKey_len_pos : Positive #|SecKey|.
   Proof.
@@ -370,12 +375,7 @@ Proof.
   rewrite !GRing.addrA in ineq.
   eapply ler_trans. 1: exact ineq.
   clear ineq.
-  rewrite -Advantage_link. erewrite dh_secure.
-  2:{
-    eapply valid_link. 1: eauto.
-    eapply valid_package_from_class.
-    eapply (Aux.(pack_valid)).
-  }
+  rewrite -Advantage_link. erewrite dh_secure. 2: exact _.
 
 (* TODO OLD BELOW
   I will now try to salvage the parts that are necessary to conclude.
