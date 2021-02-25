@@ -643,111 +643,10 @@ Proof.
 Qed.
 
 (* TODO OLD BELOW
-  I will now try to salvage the parts that are necessary to conclude.
-  The rest will be dropped.
+  Some parts are still salvageable, the rest has been scraped.
 *)
 
-(* Aux ∘ DH_real *)
-Definition Aux_DH_real (m : 'I_#|gT|) :  program (fset [:: counter_loc; pk_loc; sk_loc ]) fset0 (chOption choiceCipher).
-Proof.
-  apply: bind.
-  { apply: (getr counter_loc counter_loc_in) => count.
-    apply: ret count.
-  }
-  move => /= count. apply: bind.
-  { apply: (putr _ counter_loc_in).
-    - simpl. exact: (count + 1)%N.
-    - apply: ret Datatypes.tt. }
-  move => tt. destruct count eqn: Hcount.
-  - apply: bind.
-    { apply: (sampler (U i_sk)) => /= a. apply: ret a. }
-    move => /= a. apply: bind.
-    { apply: (sampler (U i_sk)) => /= b. apply: ret b. }
-    move => /= b. apply: bind.
-    { apply: (putr _ pk_loc_in (pk2ch (g^+a))). apply: ret Datatypes.tt. }
-    move => tt1. apply: bind.
-    { apply: (putr _ sk_loc_in  (sk2ch a)). apply: ret Datatypes.tt. }
-    move => tt2.
-    apply: ret (some (c2ch (g^+b, (ch2m m)* g^+(a * b)))).
-  - apply: ret None.
-Defined.
-
-(* Aux ∘ DH_rnd *)
-Definition Aux_DH_rnd (m : 'I_#|gT|) :  program (fset [:: counter_loc; pk_loc; sk_loc ]) fset0 (chOption choiceCipher).
-Proof.
-  apply: bind.
-  { apply: (getr counter_loc counter_loc_in) => count.
-    apply: ret count. }
-  move => /= count. apply: bind.
-  { apply: (putr _ counter_loc_in).
-    - simpl. exact: (count + 1)%N.
-    - apply: ret Datatypes.tt. }
-  move => tt. destruct count eqn: Hcount.
-  - apply: bind.
-    { apply: (sampler (U i_sk)) => /= a. apply: ret a. }
-    move => /= a. apply: bind.
-    { apply: (sampler (U i_sk)) => /= b. apply: ret b. }
-    move => /= b. apply: bind.
-    { apply: (sampler (U i_sk)) => /= c. apply: ret c. }
-    move => /= c. apply: bind.
-    { apply: (putr _ pk_loc_in (pk2ch (g^+a))). apply: ret Datatypes.tt. }
-    move => tt1. apply: bind.
-    { apply: (putr _ sk_loc_in (sk2ch a)). apply: ret Datatypes.tt. }
-    move => tt3.
-    apply: ret (some (c2ch (g^+b, (ch2m m) * (g^+c)))).
-  - apply: ret None.
-Defined.
-
-Definition LHS0 (m : 'I_#|gT|) : program (fset [:: counter_loc; pk_loc; sk_loc ])  fset0 (chOption choiceCipher).
-Proof.
-  apply: bind.
-  { apply: (getr counter_loc counter_loc_in) => /= count.
-    apply: ret count. }
-  move => /= count. apply: bind.
-  { apply: (putr _ counter_loc_in).
-    - simpl. exact: (count + 1)%N.
-    - apply: ret Datatypes.tt. }
-   move => tt1. destruct count eqn: Hcount.
-  - apply: bind.
-    { apply: (sampler (U i_sk)) => /= a. apply: ret a. }
-    move => /= a. apply: bind.
-    { apply: (putr _ pk_loc_in (pk2ch (g^+a))). apply: ret Datatypes.tt. }
-    move => tt2. apply: bind.
-    { apply: (putr _ sk_loc_in (sk2ch a)). apply: ret Datatypes.tt. }
-    move => tt3. apply: bind.
-    { apply: (sampler (U i_sk)) => /= b. apply: ret b. }
-    move => /= b.
-    apply: ret (some (c2ch (g^+b, (ch2m m) * (g^+(a*b))))).
-  - apply: ret None.
-Defined.
-
-
-Definition RHS0 (m : 'I_#|gT|) : program (fset [:: counter_loc; pk_loc; sk_loc ]) fset0 (chOption choiceCipher).
-Proof.
-  apply: bind.
-  { apply: (getr counter_loc counter_loc_in) => /= count.
-    apply: ret count. }
-  move => /= count. apply: bind.
-  { apply: (putr _ counter_loc_in).
-    - simpl. exact: (count + 1)%N.
-    - apply: ret Datatypes.tt. }
-  move => tt2. destruct count eqn: Hcount.
-  - apply: bind.
-     { apply: (sampler (U i_sk)) => /= a. apply: ret a. }
-     move => /= a. apply: bind.
-     { apply: (putr _ pk_loc_in (pk2ch (g^+a))). apply: ret Datatypes.tt. }
-     move => tt1. apply: bind.
-     { apply: (putr _ sk_loc_in (sk2ch a)). apply: ret Datatypes.tt. }
-    move => tt4. apply: bind.
-    { apply: (sampler (U i_cipher)) => /= c. apply: ret c. }
-    move => /= c.
-    apply: ret (some (c2ch c)).
-  - apply: ret None.
-Defined.
-
-
-
-Lemma group_OTP { L : { fset Location } } : forall m,
+(* Lemma group_OTP { L : { fset Location } } : forall m,
     ⊨ ⦃ λ '(h1, h2), h1 = h2 ⦄
       @repr _ L ((c ← (c ← sample U i_cipher ;; ret c) ;; ret (Some (c2ch c))))  ≈
       @repr _ L ((b ← (b ← sample U i_sk ;; ret b) ;;
@@ -762,52 +661,28 @@ Proof.
     Check Uniform_bij_rule_sq. admit.
      }
   (*CA: just Fubini? *) admit.
-Admitted.
+Admitted. *)
 
-(* Note duplicate in SymmetricSchemeStateProb *)
-(* TODO MOVE But where? *)
-Lemma eq_prog_semj_impl :
-  ∀ L L' R R' A
-    (p : program L _ A) (q : program R _ _)
-    (p' : program L' _ A) (q' : program R' _ _),
-    L = L' →
-    R = R' →
-    sval p = sval p' →
-    sval q = sval q' →
-    ⊨ ⦃ λ '(s1, s2), s1 = s2 ⦄ repr p ≈ repr q ⦃ eq ⦄ →
-    ⊨ ⦃ λ '(s1, s2), s1 = s2 ⦄ repr p' ≈ repr q' ⦃ λ '(a, b) '(c, d), a = c ∧ b = d ⦄.
-Proof.
-  intros L L' R R' A p q p' q' eL eR ep eq.
-  subst L' R'.
-  eapply program_ext in ep.
-  eapply program_ext in eq.
-  subst q' p'.
-  intro h.
-  eapply post_weaken_rule. 1: eauto.
-  cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
-Qed.
-
-
-Lemma pk_encoding_correct : forall p,
+(* Lemma pk_encoding_correct : forall p,
     ch2pk (pk2ch p ) = p.
 Proof.
   move => /= A. rewrite /ch2pk /pk2ch. exact: ch2gT_gT2ch.
-Qed.
+Qed. *)
 
-Lemma ch2c_c2ch : forall x, ch2c (c2ch x) = x.
+(* Lemma ch2c_c2ch : forall x, ch2c (c2ch x) = x.
 Proof.
   move => [C1 C2]. rewrite /ch2c /c2ch.
   by rewrite !ch2gT_gT2ch.
-Qed.
+Qed. *)
 
- Lemma cipher_encoding_correct : forall b c m,
+ (* Lemma cipher_encoding_correct : forall b c m,
      c2ch (g ^+ b, ch2m m * g ^+ c) = c2ch ((ch2c (c2ch (g ^+ b, g ^+ c))).1, ch2m m * (ch2c (c2ch (g ^+ b, g ^+ c))).2).
  Proof.
    move => b c m. by rewrite !ch2c_c2ch.
- Qed.
+ Qed. *)
 
 
-Lemma game_hop : forall A Hdisj1 Hdisj2 Hdisj1' Hdisj2',
+(* Lemma game_hop : forall A Hdisj1 Hdisj2 Hdisj1' Hdisj2',
   @AdvantageE _ (ots_real_vs_rnd false) (ots_real_vs_rnd true) A Hdisj1 Hdisj2 =
   @AdvantageE _ (Aux ∘ DH_real) (Aux ∘ DH_rnd) A Hdisj1' Hdisj2'.
 Proof.
@@ -1011,16 +886,16 @@ Proof.
     ++ apply: rreflexivity_rule. }
   rewrite HL. clear HL.
   by rewrite distrC.
-Qed.
+Qed. *)
 
-Lemma counter_DH_loc : (fset [:: counter_loc] :|: DH_loc) = fset ([:: counter_loc; pk_loc; sk_loc]).
+(* Lemma counter_DH_loc : (fset [:: counter_loc] :|: DH_loc) = fset ([:: counter_loc; pk_loc; sk_loc]).
 Proof.
   rewrite /DH_loc.
   apply eq_fset => x.
   by rewrite in_fsetU !in_fset  mem_seq1 mem_seq2 mem_seq3.
-Qed.
+Qed. *)
 
-Lemma counter_pk_sk_disj : fset [:: counter_loc] :&: fset [:: pk_loc; sk_loc] == fset0 .
+(* Lemma counter_pk_sk_disj : fset [:: counter_loc] :&: fset [:: pk_loc; sk_loc] == fset0 .
 Proof.
   apply /eqP.
   apply eq_fset => x.
@@ -1028,40 +903,4 @@ Proof.
   apply: negPf. apply /andP.  move => [H1 H2].
   rewrite in_fset mem_seq1 in H1. move/eqP: H1. move => H1. subst.
   rewrite in_fset mem_seq2 in H2. move /orP: H2. move => [K | K]; move /eqP : K ; move => K ; inversion K.
-Qed.
-
-Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher.
-Proof.
-  rewrite /OT_rnd_cipher.
-  move => A /= Hdisj1 Hdisj2.  unfold L_locs_counter in Hdisj1, Hdisj2.
-  rewrite /Advantage.
-  fold (@AdvantageE _ (ots_real_vs_rnd false) (ots_real_vs_rnd true) A Hdisj1 Hdisj2).
-  rewrite game_hop.
-  1: { simpl (Aux ∘ DH_real).π1. rewrite /DH_loc counter_DH_loc. assumption. }
-  2: {
-  rewrite /AdvantageE => H1 H2. rewrite !link_assoc.
-  have H1' : fdisjoint (T:=tag_ordType (I:=chUniverse_ordType) (λ _ : chUniverse, nat_ordType)) (A ∘ Aux).π1 (DH_real).π1.
-  { simpl (A ∘ Aux).π1. simpl (DH_real).π1. simpl (Aux ∘ DH_real).π1 in H1. unfold DH_loc in *.
-    unfold fdisjoint in *.
-    rewrite fsetIUr in H1.
-    rewrite fsetU_eq0 in H1.
-    move /andP: H1 => [H11 H12].
-    move /eqP : H12 => H12.
-    rewrite fsetIUl H12 fset0U.
-    exact: counter_pk_sk_disj.
-  }
-  have H2' : fdisjoint (T:=tag_ordType (I:=chUniverse_ordType) (λ _ : chUniverse, nat_ordType)) (A ∘ Aux).π1 (DH_rnd).π1.
-  { simpl (A ∘ Aux).π1. simpl (DH_rnd).π1. simpl (Aux ∘ DH_rnd).π1 in H1. unfold DH_loc in *.
-    unfold fdisjoint in *.
-    rewrite fsetIUr in H2.
-    rewrite fsetU_eq0 in H2.
-    move /andP: H2 => [H21 H22].
-    move /eqP : H22 => H22.
-    rewrite fsetIUl H22 fset0U.
-    exact: counter_pk_sk_disj.
-  }
-  fold (@AdvantageE _ DH_real DH_rnd (A ∘ Aux) H1' H2').
-    by apply: dh_secure. }
-  simpl (Aux ∘ DH_rnd).π1. rewrite /DH_loc counter_DH_loc. assumption.
-Qed.
-
+Qed. *)
