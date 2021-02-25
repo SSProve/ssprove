@@ -349,16 +349,6 @@ Definition DH_security : Prop :=
     fdisjoint LA DH_loc →
     AdvantageE DH_real DH_rnd A = 0.
 
-(* TODO MOVE *)
-Lemma program_link_if :
-  ∀ A (c₀ c₁ : raw_program A) (p : raw_package) b,
-    program_link (if b then c₀ else c₁) p =
-    if b then program_link c₀ p else program_link c₁ p.
-Proof.
-  intros A c₀ c₁ p b.
-  destruct b. all: reflexivity.
-Qed.
-
 Lemma ots_real_vs_rnd_equiv_false :
   ots_real_vs_rnd false ≈₀ Aux ∘ DH_real.
 Proof.

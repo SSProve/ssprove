@@ -1060,4 +1060,13 @@ Module PackageComposition (π : RulesParam).
       reflexivity.
   Qed.
 
+  Lemma program_link_if :
+    ∀ A (c₀ c₁ : raw_program A) (p : raw_package) b,
+      program_link (if b then c₀ else c₁) p =
+      if b then program_link c₀ p else program_link c₁ p.
+  Proof.
+    intros A c₀ c₁ p b.
+    destruct b. all: reflexivity.
+  Qed.
+
 End PackageComposition.
