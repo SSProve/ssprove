@@ -261,64 +261,75 @@ Module ElGamal_Scheme := AsymmetricScheme MyParam MyAlg.
 
 Import MyParam MyAlg asym_rules MyPackage ElGamal_Scheme PackageNotation.
 
-(* TODO UPDATE BELOW *)
+Lemma counter_loc_in :
+  counter_loc \in (fset [:: counter_loc; pk_loc; sk_loc ]).
+Proof.
+  auto_in_fset.
+Qed.
 
-Lemma counter_loc_in : is_true (counter_loc \in (fset [:: counter_loc; pk_loc; sk_loc ])). Proof. package_obtac. Qed.
-Lemma pk_loc_in : is_true (pk_loc \in (fset [:: counter_loc; pk_loc; sk_loc ])). Proof. package_obtac. Qed.
-Lemma sk_loc_in : is_true (sk_loc \in (fset [:: counter_loc; pk_loc; sk_loc ])). Proof. package_obtac. Qed.
+Lemma pk_loc_in :
+  pk_loc \in (fset [:: counter_loc; pk_loc; sk_loc ]).
+Proof.
+  auto_in_fset.
+Qed.
 
-Definition DH_loc := fset [:: pk_loc; sk_loc].
+Lemma sk_loc_in :
+  sk_loc \in (fset [:: counter_loc; pk_loc; sk_loc ]).
+Proof.
+  auto_in_fset.
+Qed.
 
-#[program] Definition DH_real_opkg : opackage DH_loc [interface] [interface val #[10]: 'unit → chPubKey × chCipher ] :=
-  [ package def #[10] ( _ : 'unit ) : chPubKey × chCipher
-             {
-               a <$ (U i_sk);; b <$ (U i_sk);;
-               put pk_loc := pk2ch (g^+a);;
-               put sk_loc := sk2ch a ;;
-               ret (pk2ch (g^+a), c2ch (g^+b, g^+(a * b)) )
-             }
+Definition DH_loc := fset [:: pk_loc ; sk_loc].
 
-  ].
+Definition DH_real :
+  package DH_loc [interface]
+    [interface val #[10] : 'unit → chPubKey × chCipher ] :=
+    [package
+      def #[10] (_ : 'unit) : chPubKey × chCipher
+      {
+        a ← sample U i_sk ;;
+        b ← sample U i_sk ;;
+        put pk_loc := pk2ch (g^+a) ;;
+        put sk_loc := sk2ch a ;;
+        ret (pk2ch (g^+a), c2ch (g^+b, g^+(a * b)))
+      }
+    ].
 
-Definition DH_real : package  [interface] [interface val #[10]: 'unit → chPubKey × chCipher ].
-Proof. exists DH_loc. exact: DH_real_opkg. Defined.
+Definition DH_rnd :
+  package DH_loc [interface]
+    [interface val #[10] : 'unit → chPubKey × chCipher ] :=
+    [package
+      def #[10] (_ : 'unit) : chPubKey × chCipher
+      {
+        a ← sample U i_sk ;;
+        b ← sample U i_sk ;;
+        c ← sample U i_sk ;;
+        put pk_loc := pk2ch (g^+a) ;;
+        put sk_loc := sk2ch a ;;
+        ret (pk2ch (g^+a), c2ch (g^+b, g^+c))
+      }
+    ].
 
-#[program] Definition DH_rnd_opkg : opackage  DH_loc [interface] [interface val #[10]: 'unit → chPubKey × chCipher ] :=
-  [ package def #[10] ( _ : 'unit ) : chPubKey × chCipher
-             {
-               a <$ (U i_sk);; b <$ (U i_sk);; c <$ (U i_sk);;
-               put pk_loc := pk2ch (g^+a);;
-               put sk_loc := sk2ch a ;;
-               ret (pk2ch (g^+a), c2ch (g^+b, g^+c) )
-             }
+Definition Aux :
+  package (fset [:: counter_loc])
+    [interface val #[10] : 'unit → chPubKey × chCipher]
+    [interface val #[challenge_id'] : chPlain → 'option chCipher] :=
+    [package
+      def #[challenge_id'] (m : chPlain) : 'option chCipher
+      {
+        count ← get counter_loc ;;
+        put counter_loc := (count + 1)%N ;;
+        if (count == 0)%N then
+          '(pk, c) ← op [ #[10] : 'unit → chPubKey × chCipher ] Datatypes.tt ;;
+          ret (Some (c2ch ((ch2c c).1 , (ch2m m) * ((ch2c c).2))))
+        else ret None
+      }
+    ].
 
-  ].
-
-Definition DH_rnd : package  [interface] [interface val #[10]: 'unit → chPubKey × chCipher ].
-Proof. exists DH_loc. exact: DH_rnd_opkg. Defined.
-
-
-#[program] Definition Aux_opkg : opackage (fset [:: counter_loc])
-     [interface val #[10]: 'unit → chPubKey × chCipher]
-     [interface val #[challenge_id'] : chPlain → 'option chCipher] :=
-  [
-    package def #[challenge_id'] ( m : chPlain ) : 'option chCipher
-             {
-                count ← get counter_loc ;;
-                put counter_loc := (count + 1)%N;;
-                if ((count == 0)%N) then
-                  '(pk, c) ← op [ #[10] : 'unit → chPubKey × chCipher] Datatypes.tt ;;
-                   ret (some (c2ch ((ch2c c).1 , (ch2m m) * ((ch2c c).2))))
-                else ret None
-             }
-
-  ].
-
-
-Definition Aux : package [interface val #[10]: 'unit → chPubKey × chCipher]
-                         [interface val #[challenge_id'] : chPlain → 'option chCipher].
-Proof. exists (fset [:: counter_loc]). exact: Aux_opkg. Defined.
-
+(* TODO OLD BELOW
+  I will now try to salvage the parts that are necessary to conclude.
+  The rest will be dropped.
+*)
 
 (* Aux ∘ DH_real *)
 Definition Aux_DH_real (m : 'I_#|gT|) :  program (fset [:: counter_loc; pk_loc; sk_loc ]) fset0 (chOption (chFin Cipher_len_pos)).
