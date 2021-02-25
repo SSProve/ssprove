@@ -1,56 +1,25 @@
-(*
-
-  ElGamal encryption scheme.
+(** ElGamal encryption scheme.
 
   We show that DH security implies the security of ElGamal.
 
+*)
 
- *)
-
-From Relational Require Import
-     OrderEnrichedCategory
-     GenericRulesSimple.
+From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import
-     all_ssreflect
-     all_algebra
-     reals
-     distr
-     realsum
-     fingroup.fingroup
-     solvable.cyclic
-     prime.
+From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
+  fingroup.fingroup solvable.cyclic prime ssrnat ssreflect ssrfun ssrbool ssrnum
+  eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
 
 From Mon Require Import SPropBase.
 
-From Crypt Require Import
-     Axioms
-     ChoiceAsOrd
-     SubDistr
-     Couplings
-     UniformDistrLemmas
-     FreeProbProg
-     Theta_dens
-     RulesStateProb
-     UniformStateProb.
-From Crypt Require Import
-     pkg_core_definition
-     pkg_chUniverse
-     pkg_composition
-     pkg_rhl
-     Package
-     Prelude
-     pkg_notation
-     AsymScheme.
-
-From Crypt Require Import pkg_notation.
+From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
+  UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
+  pkg_core_definition pkg_chUniverse pkg_composition pkg_rhl Package Prelude
+  pkg_notation AsymScheme.
 
 From Coq Require Import Utf8.
-Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
-From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
-Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 
 From Equations Require Import Equations.
@@ -82,7 +51,8 @@ Qed.
 (* order of g *)
 Definition q : nat := #[g].
 
-Lemma group_prodC : forall x y : gT, x * y = y * x.
+Lemma group_prodC :
+  ∀ x y : gT, x * y = y * x.
 Proof.
   move => x y.
   have Hx: exists ix, x = g^+ix.
@@ -98,13 +68,14 @@ Proof.
 Qed.
 
 
-Inductive probEmpty : Type -> Type := .
+Inductive probEmpty : Type → Type := .
 
 Module MyParam <: AsymmetricSchemeParams.
 
   Definition SecurityParameter : choiceType := nat_choiceType.
   Definition Plain  : finType := FinGroup.arg_finType gT.
-  Definition Cipher : finType := prod_finType (FinGroup.arg_finType gT) (FinGroup.arg_finType gT).
+  Definition Cipher : finType :=
+    prod_finType (FinGroup.arg_finType gT) (FinGroup.arg_finType gT).
   Definition PubKey : finType := FinGroup.arg_finType gT.
   Definition SecKey : finType := [finType of 'Z_q].
 
@@ -113,17 +84,23 @@ Module MyParam <: AsymmetricSchemeParams.
   Definition pub0 := g.
   Definition sec0 : SecKey := 0.
 
-  Definition probE : Type -> Type := probEmpty.
+  Definition probE : Type → Type := probEmpty.
   Definition rel_choiceTypes : Type := void.
 
-  Definition chEmb : rel_choiceTypes -> choiceType.
-  Proof.  move => contra. contradiction. Defined.
+  Definition chEmb : rel_choiceTypes → choiceType.
+  Proof.
+    intro. contradiction.
+  Defined.
 
-  Definition prob_handler : forall T : choiceType, probE T -> SDistr T.
-  Proof. move => contra. contradiction. Defined.
+  Definition prob_handler : ∀ T : choiceType, probE T → SDistr T.
+  Proof.
+    intro. contradiction.
+  Defined.
 
-  Definition Hch : forall r : rel_choiceTypes, chEmb r.
-  Proof. move => contra. contradiction. Defined.
+  Definition Hch : ∀ r : rel_choiceTypes, chEmb r.
+  Proof.
+    intro. contradiction.
+  Defined.
 
 End MyParam.
 
@@ -139,12 +116,11 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Import MyPackage.
   Import PackageNotation.
 
-
-  Definition counter_loc : Location := (chNat; 0%N).
-  Definition pk_loc : Location := (chNat; 1%N).
-  Definition sk_loc : Location := (chNat; 2%N).
-  Definition m_loc  : Location := (chNat; 3%N).
-  Definition c_loc  : Location := (chNat; 4%N).
+  Definition counter_loc : Location := ('nat ; 0%N).
+  Definition pk_loc : Location := ('nat ; 1%N).
+  Definition sk_loc : Location := ('nat ; 2%N).
+  Definition m_loc  : Location := ('nat ; 3%N).
+  Definition c_loc  : Location := ('nat ; 4%N).
 
   Definition kg_id : nat := 5.
   Definition enc_id : nat := 6.
@@ -152,37 +128,41 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Definition challenge_id : nat := 8. (*challenge for LR *)
   Definition challenge_id' : nat := 9. (*challenge for real rnd *)
 
+  (* Duplicate from the AsymetricScheme module *)
+  Instance Plain_len_pos : Positive #|Plain|.
+  Proof.
+    apply /card_gt0P. by exists plain0.
+  Qed.
 
-  (* Definition rel_loc : {fset Location} := [fset counter_loc]. *)
-  (* Rem.: ; kg_loc ; enc_loc ; dec_loc ; challenge_loc ; pk_loc; sk_loc]. *)
+  Instance Cipher_len_pos : Positive #|Cipher|.
+  Proof.
+    apply /card_gt0P. by exists cipher0.
+  Qed.
 
-  Definition Plain_len_pos : positive.
-  Proof. exists #|Plain|.  apply /card_gt0P. by exists plain0. Defined.
+  Instance PubKey_len_pos : Positive #|PubKey|.
+  Proof.
+    apply /card_gt0P. by exists pub0.
+  Defined.
 
-  Definition Cipher_len_pos : positive.
-  Proof. exists #|Cipher|. apply /card_gt0P. by exists cipher0. Defined.
-
-  Definition PubKey_len_pos : positive.
-  Proof. exists #|PubKey|. apply /card_gt0P. by exists pub0. Defined.
-
-  Definition SecKey_len_pos : positive.
-  Proof. exists #|SecKey|. apply /card_gt0P. by exists sec0. Defined.
+  Instance SecKey_len_pos : Positive #|SecKey|.
+  Proof.
+    apply /card_gt0P. by exists sec0.
+  Qed.
 
   Notation " 'chSecurityParameter' " :=
-    (chNat) (in custom pack_type at level 2).
+    ('nat) (in custom pack_type at level 2).
   Notation " 'chPlain' " :=
-    (chFin Plain_len_pos )
+    ('fin #|Plain|)
     (in custom pack_type at level 2).
   Notation " 'chCipher' " :=
-    (chFin Cipher_len_pos)
+    ('fin #|Cipher|)
     (in custom pack_type at level 2).
   Notation " 'chPubKey' " :=
-    (chFin PubKey_len_pos)
+    ('fin #|PubKey|)
     (in custom pack_type at level 2).
   Notation " 'chSecKey' " :=
-    (chFin SecKey_len_pos)
+    ('fin #|SecKey|)
     (in custom pack_type at level 2).
-
 
   Definition U (i : Index) :
     {rchT : myparamU.rel_choiceTypes &
@@ -191,7 +171,7 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
             (inl (inl i)) (inl (Uni_W i))).
 
   (* *)
-  Definition pk2ch_aux (i : nat) (Hi : (i < #[g])%N)  : (chFin PubKey_len_pos).
+  Definition pk2ch_aux (i : nat) (Hi : (i < #[g])%N) : 'fin #|PubKey|.
   Proof.
     exists i.
     rewrite orderE in Hi.
@@ -200,7 +180,7 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
     assumption.
   Defined.
 
-  Definition pk2ch : PubKey -> (chFin PubKey_len_pos).
+  Definition pk2ch : PubKey → 'fin #|PubKey|.
   Proof.
     move => /= A.
     destruct (@cyclePmin gT g A) as [i Hi].
@@ -209,30 +189,31 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
     exact: pk2ch_aux i Hi.
   Defined.
 
-  Definition ch2pk : (chFin PubKey_len_pos) -> PubKey.
+  Definition ch2pk : 'fin #|PubKey| → PubKey.
   Proof.
     move => /= [i Hi]. exact: (g^+i).
   Defined.
 
   (* *)
-  Definition sk2ch : SecKey -> (chFin SecKey_len_pos).
+  Definition sk2ch : SecKey → 'fin #|SecKey|.
   Proof.
     move => /= [a Ha].
     exists a.
     rewrite card_ord. assumption.
   Defined.
 
-  Definition ch2sk : (chFin SecKey_len_pos) -> SecKey.
+  Definition ch2sk : 'fin #|SecKey| → SecKey.
     move => /= [a Ha].
     exists a.
     rewrite card_ord in Ha. assumption.
   Defined.
 
   (* *)
-  Definition m2ch : Plain -> (chFin Plain_len_pos) := pk2ch.
-  Definition ch2m : (chFin Plain_len_pos) -> Plain := ch2pk.
+  Definition m2ch : Plain → 'fin #|Plain| := pk2ch.
+  Definition ch2m : 'fin #|Plain| → Plain := ch2pk.
+
   (* *)
-  Definition c2ch  : Cipher -> (chFin Cipher_len_pos).
+  Definition c2ch : Cipher → 'fin #|Cipher|.
   Proof.
     move => [g1 g2] /=.
     rewrite card_prod.
@@ -241,7 +222,7 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
     - exact: pk2ch g2.
   Defined.
 
-  Definition ch2c : (chFin Cipher_len_pos) -> Cipher.
+  Definition ch2c : 'fin #|Cipher| → Cipher.
   Proof.
     rewrite /=. rewrite card_prod.
     move => ij. destruct (@pair_of_mxvec_index #|gT| #|gT| ij) as [i j].
@@ -249,31 +230,38 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
     - exact: (g^+i, g^+j).
   Defined.
 
-  (* (* Key Generation algorithm *) *)
-  Definition KeyGen { L : {fset Location} }: program L fset0 ((chFin PubKey_len_pos) × (chFin SecKey_len_pos)) :=
-    x <$ (U i_sk) ;;
-    ret ( pk2ch (g^+x), sk2ch x).
+  (** Key Generation algorithm *)
+  Definition KeyGen {L : {fset Location}} :
+    program L [interface] ('fin #|PubKey| × 'fin #|SecKey|) :=
+    {program
+      x ← sample U i_sk ;;
+      ret (pk2ch (g^+x), sk2ch x)
+    }.
 
-  (* Encryption algorithm *)
-  Definition Enc { L : {fset Location} } (pk : chFin PubKey_len_pos) (m : chFin Plain_len_pos) : program L fset0 (chFin Cipher_len_pos) :=
-    y <$ (U i_sk) ;;
-    ret (c2ch (g^+y, (ch2pk pk)^+y * (ch2m m))).
+  (** Encryption algorithm *)
+  Definition Enc {L : {fset Location}} (pk : 'fin #|PubKey|) (m : 'fin #|Plain|) :
+    program L [interface] ('fin #|Cipher|) :=
+    {program
+      y ← sample U i_sk ;;
+      ret (c2ch (g^+y, (ch2pk pk)^+y * (ch2m m)))
+    }.
 
-
-  (* Decryption algorithm *)
-  Definition Dec_open { L : {fset Location} } (sk : chFin SecKey_len_pos) (c : chFin Cipher_len_pos) :
-    program L fset0 (chFin Plain_len_pos) :=
-               ret (m2ch ( (fst (ch2c c)) * ( (snd (ch2c c))^-(ch2sk sk)) )).
+  (** Decryption algorithm *)
+  Definition Dec_open {L : {fset Location}} (sk : 'fin #|SecKey|) (c : 'fin #|Cipher|) :
+    program L [interface] ('fin #|Plain|) :=
+    {program
+      ret (m2ch ((fst (ch2c c)) * ((snd (ch2c c))^-(ch2sk sk))))
+    }.
 
 End MyAlg.
 
 Local Open Scope package_scope.
 
-Module ElGamal_Scheme :=  AsymmetricScheme MyParam MyAlg.
+Module ElGamal_Scheme := AsymmetricScheme MyParam MyAlg.
 
 Import MyParam MyAlg asym_rules MyPackage ElGamal_Scheme PackageNotation.
 
-Obligation Tactic := package_obtac.
+(* TODO UPDATE BELOW *)
 
 Lemma counter_loc_in : is_true (counter_loc \in (fset [:: counter_loc; pk_loc; sk_loc ])). Proof. package_obtac. Qed.
 Lemma pk_loc_in : is_true (pk_loc \in (fset [:: counter_loc; pk_loc; sk_loc ])). Proof. package_obtac. Qed.
@@ -438,19 +426,19 @@ Lemma group_OTP { L : { fset Location } } : forall m,
       @repr _ L ((b ← (b ← sample U i_sk ;; ret b) ;;
                   c ← (c ← sample U i_sk ;; ret c) ;; ret (Some (c2ch (g ^+ b, ch2m m * g ^+ c))))) ⦃ eq ⦄.
 Proof.
-  move => m.  
+  move => m.
   unshelve apply: rrewrite_eqDistrL.
   { eapply (
         ((B ← (B ← sample U i_pk ;; ret B) ;;
-          A ← (A ← sample U i_pk ;; ret A) ;; ret (Some (c2ch (B, A)))))). } 
+          A ← (A ← sample U i_pk ;; ret A) ;; ret (Some (c2ch (B, A)))))). }
   { unshelve apply: rpost_weaken_rule.
     { exact : eq. }
-    2: { by move => [a1 s1] [a2 s2]. } 
+    2: { by move => [a1 s1] [a2 s2]. }
     Check Uniform_bij_rule_sq.
 (*CA: morally c2ch = pk2ch × pk2ch so after convinced Coq of this it suffices to apply
       Uniform_bij_rule_sq *) admit.
   }
-  (*CA: just Fubini? *) admit. 
+  (*CA: just Fubini? *) admit.
 Admitted.
 
 (* Note duplicate in SymmetricSchemeStateProb *)
