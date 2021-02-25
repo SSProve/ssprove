@@ -465,6 +465,9 @@ Proof.
     (* We might want a ret rule that asks us to show equality
       of the arguments or even just pre -> post?
     *)
+    (* The following is to see clearer, might be best not to do it. *)
+    setoid_rewrite gT2ch_ch2gT.
+    setoid_rewrite ch2gT_gT2ch.
     admit.
   - eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
     intros [? ?] [? ?] ee. inversion ee. intuition reflexivity.
@@ -573,6 +576,9 @@ Proof.
     simpl.
     eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put _ _)). intros _.
     (* Now I guess is where gT × gT vs gT sampling appears? *)
+    (* The following is to see clearer, might be best not to do it. *)
+    setoid_rewrite gT2ch_ch2gT.
+    setoid_rewrite ch2gT_gT2ch.
     admit.
   - eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
     intros [? ?] [? ?] ee. inversion ee. intuition reflexivity.
