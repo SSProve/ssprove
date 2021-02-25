@@ -148,18 +148,13 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
   Import PackageNotation.
   Local Open Scope package_scope.
 
-  Definition counter_loc : Location := ('nat ; 0%N).
-  Definition pk_loc : Location := ('nat ; 1%N).
-  Definition sk_loc : Location := ('nat ; 2%N).
-  Definition m_loc  : Location := ('nat ; 3%N).
-  Definition c_loc  : Location := ('nat ; 4%N).
 
-  Definition kg_id : nat := 5.
-  Definition enc_id : nat := 6.
-  Definition dec_id : nat := 7.
-  Definition challenge_id : nat := 8. (*challenge for LR *)
-  Definition challenge_id' : nat := 9. (*challenge for real rnd *)
+  (* chX is the chUniverse in bijection with X  *)
+  Parameters choicePlain choiceCipher choicePubKey choiceSecKey : chUniverse. 
 
+  
+  Parameter c2ch : Cipher -> choiceCipher.
+  Parameter ch2c : choiceCipher -> Cipher.
   (* Definition rel_loc : {fset Location} := [fset counter_loc]. *)
   (* Rem.: ; kg_loc ; enc_loc ; dec_loc ; challenge_loc ; pk_loc; sk_loc]. *)
 
@@ -201,30 +196,61 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
   Parameter c2ch : Cipher → 'fin #|Cipher|.
   Parameter ch2c : 'fin #|Cipher| → Cipher.
   (* *)
+  Parameter pk2ch : PubKey -> choicePubKey.
+  Parameter ch2pk : choicePubKey -> PubKey. 
   Parameter pk2ch : PubKey → 'fin #|PubKey|.
   Parameter ch2pk : 'fin #|PubKey| → PubKey.
   (* *)
+  Parameter sk2ch : SecKey -> choiceSecKey. 
+  Parameter ch2sk : choiceSecKey -> SecKey. 
   Parameter sk2ch : SecKey → 'fin #|SecKey|.
   Parameter ch2sk : 'fin #|SecKey| → SecKey.
   (* *)
+  Parameter m2ch : Plain -> choicePlain.
+  Parameter ch2m : choicePlain -> Plain. 
   Parameter m2ch : Plain → 'fin #|Plain|.
   Parameter ch2m : 'fin #|Plain| → Plain.
   (* *)
 
+  Definition counter_loc : Location := ('nat; 0%N). 
+  Definition pk_loc : Location := (choicePubKey; 1%N). 
+  Definition sk_loc : Location := (choiceSecKey; 2%N).
+  Definition m_loc  : Location := (choicePlain; 3%N). 
+  Definition c_loc  : Location := (choiceCipher; 4%N).
+
+  Definition kg_id : nat := 5.
+  Definition enc_id : nat := 6.
+  Definition dec_id : nat := 7.
+  Definition challenge_id : nat := 8. (*challenge for LR *)
+  Definition challenge_id' : nat := 9. (*challenge for real rnd *) 
+  
+ 
   (* Key Generation *)
+  Parameter KeyGen : forall { L : {fset Location} }, program L fset0 (choicePubKey × choiceSecKey).
   Parameter KeyGen :
     ∀ {L : {fset Location}}, program L fset0 ('fin #|PubKey| × 'fin #|SecKey|).
 
   (* Encryption algorithm *)
+  Parameter Enc : forall { L : {fset Location} } (pk : choicePubKey) (m : choicePlain),
+      program L fset0 (choiceCipher).
+  
   Parameter Enc :
     ∀ {L : {fset Location}} (pk : 'fin #|PubKey|) (m : 'fin #|Plain|),
       program L fset0 ('fin #|Cipher|).
 
   (* Decryption algorithm *)
+  Parameter Dec_open : forall { L : {fset Location} } (sk : choiceSecKey) (c : choiceCipher),
+      program L fset0 (choicePlain).
   Parameter Dec_open :
     ∀ {L : {fset Location}} (sk : 'fin #|SecKey|) (c : 'fin #|Cipher|),
       program L fset0 ('fin #|Plain|).
 
+  Notation " 'chSecurityParameter' " :=  (chNat) (in custom pack_type at level 2).
+  Notation " 'chPlain' " := choicePlain (in custom pack_type at level 2).
+  Notation " 'chCipher' " :=  choiceCipher (in custom pack_type at level 2).
+  Notation " 'chPubKey' " := choicePubKey (in custom pack_type at level 2).
+  Notation " 'chSecKey' " := choiceSecKey (in custom pack_type at level 2).
+  
 End AsymmetricSchemeAlgorithms.
 
 (* A Module for Asymmetric Encryption Schemes, inspired to Joy of Crypto *)
