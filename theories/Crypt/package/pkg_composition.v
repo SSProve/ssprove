@@ -380,19 +380,6 @@ Module PackageComposition (π : RulesParam).
     reflexivity.
   Qed.
 
-  (* Lemma bundle_ext :
-    ∀ (b1 b2 : bundle),
-      locs b1 = locs b2 →
-      import b1 = import b2 →
-      export b1 = export b2 →
-      (pack b1) =1 (pack b2) →
-      b1 = b2.
-  Proof.
-    intros [L1 I1 E1 [p1 h1]] [L2 I2 E2 [p2 h2]] el ei ee ep.
-    cbn in *. apply eq_fmap in ep. subst. f_equal. f_equal.
-    apply proof_irrelevance.
-  Qed. *)
-
   Notation "p1 ∘ p2" :=
     (link p1 p2) (right associativity, at level 20) : package_scope.
 
@@ -559,19 +546,6 @@ Module PackageComposition (π : RulesParam).
     apply parable_trim ;
     apply fdisjoint_from_class
     : typeclass_instances.
-
-  (* unionmC For symmetry *)
-
-  (* Lemma parable_sym :
-    ∀ {E1 E2},
-      parable E1 E2 →
-      parable E2 E1.
-  Proof.
-    intros E1 E2 h.
-    unfold parable.
-    rewrite fdisjointC.
-    auto.
-  Qed. *)
 
   (* TODO MOVE *)
   (** To circumvent the very annoying lemmata that conclude on equality

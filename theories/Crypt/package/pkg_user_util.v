@@ -59,16 +59,4 @@ Module PackageUserUtil (π : RulesParam).
     _invert_interface_in h' ;
     noconf h'.
 
-  (* Ltac eq_up_to_inv_simplify :=
-    apply eq_up_to_inv_from_alt2 ;
-    package_link_simplify ;
-    let id := fresh "id" in
-    let h := fresh "h" in
-    let x := fresh "x"  in
-    intros id h x ;
-    invert_interface_in h ;
-    repeat opackage_transport_simplify ;
-    package_pdef_simpl ;
-    program_link_simpl. *)
-
 End PackageUserUtil.
