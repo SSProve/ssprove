@@ -12,43 +12,19 @@
 
 *)
 
-From Relational Require Import
-     OrderEnrichedCategory
-     GenericRulesSimple.
+From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import
-     all_ssreflect
-     all_algebra
-     reals
-     distr
-     realsum.
+From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
+  ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From Crypt Require Import
-     Axioms
-     ChoiceAsOrd
-     SubDistr
-     Couplings
-     UniformDistrLemmas
-     FreeProbProg
-     Theta_dens
-     RulesStateProb
-     UniformStateProb.
-From Crypt Require Import
-     pkg_core_definition
-     pkg_chUniverse
-     pkg_composition
-     pkg_notation
-     pkg_rhl
-     Package
-     Prelude.
-
+From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
+  UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
+  pkg_core_definition pkg_chUniverse pkg_composition pkg_notation pkg_rhl
+  Package Prelude.
 
 From Coq Require Import Utf8.
-Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
-From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
-Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 
 Set Bullet Behavior "Strict Subproofs".
@@ -72,13 +48,11 @@ Module Type AsymmetricSchemeParams.
   Parameter pub0 : PubKey.
   Parameter sec0 : SecKey.
 
-  (*Rem.: If I don't put these here I get some troubles later... *)
-
   Parameter probE : Type → Type.
   Parameter rel_choiceTypes : Type.
   Parameter chEmb : rel_choiceTypes → choiceType.
-  Parameter prob_handler : forall T : choiceType, probE T → SDistr T.
-  Parameter Hch : forall r : rel_choiceTypes, chEmb r.
+  Parameter prob_handler : ∀ T : choiceType, probE T → SDistr T.
+  Parameter Hch : ∀ r : rel_choiceTypes, chEmb r.
 
 End AsymmetricSchemeParams.
 
@@ -88,12 +62,11 @@ Module ARules (Aparam : AsymmetricSchemeParams).
 
   (*: Uniform distributions over Plain, Cipher, Key and bool *)
   Variant Index :=
-  | i_plain  : Index
-  | i_cipher : Index
-  | i_pk     : Index
-  | i_sk     : Index
-  | i_bool   : Index.
-
+  | i_plain
+  | i_cipher
+  | i_pk
+  | i_sk
+  | i_bool.
 
   Module UParam <: UniformParameters.
 
@@ -148,109 +121,56 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
   Import PackageNotation.
   Local Open Scope package_scope.
 
-
   (* chX is the chUniverse in bijection with X  *)
-  Parameters choicePlain choiceCipher choicePubKey choiceSecKey : chUniverse. 
+  Parameters choicePlain choiceCipher choicePubKey choiceSecKey : chUniverse.
 
-  
-  Parameter c2ch : Cipher -> choiceCipher.
-  Parameter ch2c : choiceCipher -> Cipher.
-  (* Definition rel_loc : {fset Location} := [fset counter_loc]. *)
-  (* Rem.: ; kg_loc ; enc_loc ; dec_loc ; challenge_loc ; pk_loc; sk_loc]. *)
+  Parameter c2ch : Cipher → choiceCipher.
+  Parameter ch2c : choiceCipher → Cipher.
 
-  Instance Plain_len_pos : Positive #|Plain|.
-  Proof.
-    apply /card_gt0P. by exists plain0.
-  Qed.
-
-  Instance Cipher_len_pos : Positive #|Cipher|.
-  Proof.
-    apply /card_gt0P. by exists cipher0.
-  Qed.
-
-  Instance PubKey_len_pos : Positive #|PubKey|.
-  Proof.
-    apply /card_gt0P. by exists pub0.
-  Defined.
-
-  Instance SecKey_len_pos : Positive #|SecKey|.
-  Proof.
-    apply /card_gt0P. by exists sec0.
-  Qed.
-
-  Notation " 'chSecurityParameter' " :=
-    (chNat) (in custom pack_type at level 2).
-  Notation " 'chPlain' " :=
-    ('fin #|Plain|)
-    (in custom pack_type at level 2).
-  Notation " 'chCipher' " :=
-    ('fin #|Cipher|)
-    (in custom pack_type at level 2).
-  Notation " 'chPubKey' " :=
-    ('fin #|PubKey|)
-    (in custom pack_type at level 2).
-  Notation " 'chSecKey' " :=
-    ('fin #|SecKey|)
-    (in custom pack_type at level 2).
-
-  Parameter c2ch : Cipher → 'fin #|Cipher|.
-  Parameter ch2c : 'fin #|Cipher| → Cipher.
   (* *)
-  Parameter pk2ch : PubKey -> choicePubKey.
-  Parameter ch2pk : choicePubKey -> PubKey. 
-  Parameter pk2ch : PubKey → 'fin #|PubKey|.
-  Parameter ch2pk : 'fin #|PubKey| → PubKey.
+  Parameter pk2ch : PubKey → choicePubKey.
+  Parameter ch2pk : choicePubKey → PubKey.
   (* *)
-  Parameter sk2ch : SecKey -> choiceSecKey. 
-  Parameter ch2sk : choiceSecKey -> SecKey. 
-  Parameter sk2ch : SecKey → 'fin #|SecKey|.
-  Parameter ch2sk : 'fin #|SecKey| → SecKey.
+  Parameter sk2ch : SecKey → choiceSecKey.
+  Parameter ch2sk : choiceSecKey → SecKey.
   (* *)
-  Parameter m2ch : Plain -> choicePlain.
-  Parameter ch2m : choicePlain -> Plain. 
-  Parameter m2ch : Plain → 'fin #|Plain|.
-  Parameter ch2m : 'fin #|Plain| → Plain.
+  Parameter m2ch : Plain → choicePlain.
+  Parameter ch2m : choicePlain → Plain.
   (* *)
 
-  Definition counter_loc : Location := ('nat; 0%N). 
-  Definition pk_loc : Location := (choicePubKey; 1%N). 
-  Definition sk_loc : Location := (choiceSecKey; 2%N).
-  Definition m_loc  : Location := (choicePlain; 3%N). 
-  Definition c_loc  : Location := (choiceCipher; 4%N).
+  Definition counter_loc : Location := ('nat ; 0%N).
+  Definition pk_loc : Location := (choicePubKey ; 1%N).
+  Definition sk_loc : Location := (choiceSecKey ; 2%N).
+  Definition m_loc  : Location := (choicePlain ; 3%N).
+  Definition c_loc  : Location := (choiceCipher ; 4%N).
 
   Definition kg_id : nat := 5.
   Definition enc_id : nat := 6.
   Definition dec_id : nat := 7.
   Definition challenge_id : nat := 8. (*challenge for LR *)
-  Definition challenge_id' : nat := 9. (*challenge for real rnd *) 
-  
- 
+  Definition challenge_id' : nat := 9. (*challenge for real rnd *)
+
   (* Key Generation *)
-  Parameter KeyGen : forall { L : {fset Location} }, program L fset0 (choicePubKey × choiceSecKey).
   Parameter KeyGen :
-    ∀ {L : {fset Location}}, program L fset0 ('fin #|PubKey| × 'fin #|SecKey|).
+    ∀ {L : {fset Location}},
+      program L [interface] (choicePubKey × choiceSecKey).
 
   (* Encryption algorithm *)
-  Parameter Enc : forall { L : {fset Location} } (pk : choicePubKey) (m : choicePlain),
-      program L fset0 (choiceCipher).
-  
   Parameter Enc :
-    ∀ {L : {fset Location}} (pk : 'fin #|PubKey|) (m : 'fin #|Plain|),
-      program L fset0 ('fin #|Cipher|).
+    ∀ {L : {fset Location}} (pk : choicePubKey) (m : choicePlain),
+      program L [interface] choiceCipher.
 
   (* Decryption algorithm *)
-  Parameter Dec_open : forall { L : {fset Location} } (sk : choiceSecKey) (c : choiceCipher),
-      program L fset0 (choicePlain).
   Parameter Dec_open :
-    ∀ {L : {fset Location}} (sk : 'fin #|SecKey|) (c : 'fin #|Cipher|),
-      program L fset0 ('fin #|Plain|).
+    ∀ {L : {fset Location}} (sk : choiceSecKey) (c : choiceCipher),
+      program L fset0 choicePlain.
 
-  Notation " 'chSecurityParameter' " :=  (chNat) (in custom pack_type at level 2).
+  Notation " 'chSecurityParameter' " := ('nat) (in custom pack_type at level 2).
   Notation " 'chPlain' " := choicePlain (in custom pack_type at level 2).
   Notation " 'chCipher' " :=  choiceCipher (in custom pack_type at level 2).
   Notation " 'chPubKey' " := choicePubKey (in custom pack_type at level 2).
   Notation " 'chSecKey' " := choiceSecKey (in custom pack_type at level 2).
-  
+
 End AsymmetricSchemeAlgorithms.
 
 (* A Module for Asymmetric Encryption Schemes, inspired to Joy of Crypto *)
@@ -276,7 +196,6 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
     If I put _ instead of L_locs, the following loops.
     So probably some problem with how I try to infer \in?
   *)
-
   Definition L_pk_cpa_L :
     package
       L_locs
@@ -327,7 +246,7 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
       Advantage cpa_L_vs_R A = 0.
 
   (* Define what it means for an asymmetric encryption scheme to: *)
-  (**  *HAVE PSEUDORND CIPHERTEXT IN PRESENCE OF CHOSEN PLAINTEXT ATTACKS **)
+  (** HAVE PSEUDORND CIPHERTEXT IN PRESENCE OF CHOSEN PLAINTEXT ATTACKS **)
 
   Definition L_pk_cpa_real :
     package L_locs

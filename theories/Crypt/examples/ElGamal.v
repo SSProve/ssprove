@@ -117,36 +117,33 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Import MyPackage.
   Import PackageNotation.
 
+  Instance positive_gT : Positive #|gT|.
+  Proof.
+    apply /card_gt0P. exists g. auto.
+  Qed.
+
+  Instance positive_SecKey : Positive #|SecKey|.
+  Proof.
+    apply /card_gt0P. exists sec0. auto.
+  Qed.
+
+  Definition choicePlain  : chUniverse := 'fin #|gT|.
+  Definition choicePubKey : chUniverse := 'fin #|gT|.
+  Definition choiceCipher : chUniverse := chProd ('fin #|gT|) ('fin #|gT|).
+  Definition choiceSecKey : chUniverse := 'fin #|SecKey|.
+
   Definition counter_loc : Location := ('nat ; 0%N).
-  Definition pk_loc : Location := ('nat ; 1%N).
-  Definition sk_loc : Location := ('nat ; 2%N).
-  Definition m_loc  : Location := ('nat ; 3%N).
-  Definition c_loc  : Location := ('nat ; 4%N).
+  Definition pk_loc : Location := (choicePubKey ; 1%N).
+  Definition sk_loc : Location := (choiceSecKey ; 2%N).
+  Definition m_loc  : Location := (choicePlain ; 3%N).
+  Definition c_loc  : Location := (choiceCipher ; 4%N).
 
- Definition gT_pos : positive.
- Proof. exists #|gT|. apply /card_gt0P. by exists g. Defined. 
- 
+  Definition kg_id : nat := 5.
+  Definition enc_id : nat := 6.
+  Definition dec_id : nat := 7.
+  Definition challenge_id : nat := 8. (*challenge for LR *)
+  Definition challenge_id' : nat := 9. (*challenge for real rnd *)
 
-  Definition SecKey_len_pos : positive.
-  Proof. exists #|SecKey|. apply /card_gt0P. by exists sec0. Defined.
-
- Definition choicePlain  : chUniverse := chFin gT_pos.
- Definition choicePubKey : chUniverse := chFin gT_pos.
- Definition choiceCipher : chUniverse := chProd (chFin gT_pos) (chFin gT_pos). 
- Definition choiceSecKey : chUniverse := chFin SecKey_len_pos. 
- 
- Definition counter_loc : Location := ('nat; 0%N). 
- Definition pk_loc : Location := (choicePubKey; 1%N). 
- Definition sk_loc : Location := (choiceSecKey; 2%N).
- Definition m_loc  : Location := (choicePlain; 3%N). 
- Definition c_loc  : Location := (choiceCipher; 4%N).
- 
- Definition kg_id : nat := 5.
- Definition enc_id : nat := 6.
- Definition dec_id : nat := 7.
- Definition challenge_id : nat := 8. (*challenge for LR *)
- Definition challenge_id' : nat := 9. (*challenge for real rnd *) 
-  
   Definition U (i : Index) :
     {rchT : myparamU.rel_choiceTypes &
             myparamU.probE (myparamU.chEmb rchT)} :=
@@ -161,48 +158,55 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   (*   assumption. *)
   (* Defined. *)
 
-  Definition gT2ch : gT -> chFin gT_pos.
+  Definition gT2ch : gT → 'fin #|gT|.
   Proof.
-    move => /= A. 
-     destruct (@cyclePmin gT g A) as [i Hi]. Check cyclePmin. 
-    { rewrite -g_gen.
-      apply: in_setT. } 
-    exists i.
-    rewrite orderE in Hi.
-    rewrite /= -cardsT.
-    setoid_rewrite g_gen.
-    assumption.
-  Defined.   
+    move => /= A.
+    destruct (@cyclePmin gT g A) as [i Hi].
+    - rewrite -g_gen. apply: in_setT.
+    - exists i.
+      rewrite orderE in Hi.
+      rewrite /= -cardsT.
+      setoid_rewrite g_gen.
+      assumption.
+  Defined.
 
-  Definition ch2gT : (chFin gT_pos) -> gT.
-  Proof. 
+  Definition ch2gT : 'fin #|gT| → gT.
+  Proof.
     move => /= [i Hi]. exact: (g^+i).
   Defined.
-  
+
   Lemma ch2gT_gT2ch (A : gT) : ch2gT (gT2ch A) = A.
   Proof.
-    destruct (@cyclePmin gT g A) as [i Hi].
-      { rewrite -g_gen.
-        apply: in_setT. }
-      rewrite e. 
-  Admitted.
-  
-  Lemma gT2ch_ch2gT (chA : chFin gT_pos) : gT2ch (ch2gT chA) = chA.
-  Proof.
-    destruct chA as [i Hi].
-    have Hfoo: ch2gT (Ordinal (n:=pos gT_pos) (m:=i) Hi) = g^+i by [].
-    rewrite Hfoo.
-    rewrite //=. 
-  Admitted. 
+    unfold gT2ch.
+    destruct (@cyclePmin gT g A) as [i Hi]. subst.
+    simpl. reflexivity.
+  Qed.
 
-  
-  Definition pk2ch : PubKey -> choicePubKey := gT2ch. 
-  Definition ch2pk : choicePubKey -> PubKey := ch2gT. 
-  Definition m2ch : Plain -> choicePlain := gT2ch.
-  Definition ch2m : choicePlain -> Plain := ch2gT.
+  Lemma gT2ch_ch2gT (chA : 'fin #|gT|) : gT2ch (ch2gT chA) = chA.
+  Proof.
+    unfold ch2gT, gT2ch.
+    destruct chA as [i hi]. simpl in *.
+    destruct cyclePmin as [j hj e].
+    assert (e' : i = j).
+    { move: e => /eqP e. rewrite eq_expg_mod_order in e.
+      move: e => /eqP e.
+      rewrite !modn_small in e.
+      - auto.
+      - auto.
+      - rewrite orderE. rewrite -g_gen. rewrite cardsT. auto.
+    }
+    subst j.
+    f_equal.
+    apply bool_irrelevance.
+  Qed.
+
+  Definition pk2ch : PubKey → choicePubKey := gT2ch.
+  Definition ch2pk : choicePubKey → PubKey := ch2gT.
+  Definition m2ch : Plain → choicePlain := gT2ch.
+  Definition ch2m : choicePlain → Plain := ch2gT.
 
   (* *)
-  Definition sk2ch : SecKey -> choiceSecKey.
+  Definition sk2ch : SecKey → choiceSecKey.
   Proof.
     move => /= [a Ha].
     exists a.
@@ -215,63 +219,57 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
     rewrite card_ord in Ha. assumption.
   Defined.
 
-  
   (* *)
-  Definition c2ch  : Cipher -> choiceCipher.
+  Definition c2ch  : Cipher → choiceCipher.
   Proof.
-    move => [g1 g2] /=. 
+    move => [g1 g2] /=.
     exact: (gT2ch g1, gT2ch g2).
   Defined.
 
-  Definition ch2c : choiceCipher -> Cipher.
-  Proof. 
+  Definition ch2c : choiceCipher → Cipher.
+  Proof.
     move => [A B].
     exact: (ch2gT A, ch2gT B).
   Defined.
 
   (** Key Generation algorithm *)
   Definition KeyGen {L : {fset Location}} :
-    program L [interface] ('fin #|PubKey| × 'fin #|SecKey|) :=
+    program L [interface] (choicePubKey × choiceSecKey) :=
     {program
       x ← sample U i_sk ;;
       ret (pk2ch (g^+x), sk2ch x)
     }.
 
   (** Encryption algorithm *)
-  Definition Enc {L : {fset Location}} (pk : 'fin #|PubKey|) (m : 'fin #|Plain|) :
-    program L [interface] ('fin #|Cipher|) :=
+  Definition Enc {L : {fset Location}} (pk : choicePubKey) (m : choicePlain) :
+    program L [interface] choiceCipher :=
     {program
       y ← sample U i_sk ;;
       ret (c2ch (g^+y, (ch2pk pk)^+y * (ch2m m)))
     }.
 
   (** Decryption algorithm *)
-  Definition Dec_open {L : {fset Location}} (sk : 'fin #|SecKey|) (c : 'fin #|Cipher|) :
-    program L [interface] ('fin #|Plain|) :=
+  Definition Dec_open {L : {fset Location}} (sk : choiceSecKey) (c : choiceCipher) :
+    program L [interface] choicePlain :=
     {program
       ret (m2ch ((fst (ch2c c)) * ((snd (ch2c c))^-(ch2sk sk))))
     }.
 
-  (* Decryption algorithm *)
-  Definition Dec_open { L : {fset Location} } (sk : choiceSecKey) (c : choiceCipher) :
-    program L fset0 (choicePlain) :=
-               ret (m2ch ( (fst (ch2c c)) * ( (snd (ch2c c))^-(ch2sk sk)) )).
-
   Notation " 'chSecurityParameter' " :=
-    (chNat) (in custom pack_type at level 2).
-  Notation " 'chPlain' " := choicePlain 
-    (* (chFin Plain_len_pos ) *)
+    ('nat) (in custom pack_type at level 2).
+  Notation " 'chPlain' " :=
+    choicePlain
     (in custom pack_type at level 2).
-  Notation " 'chCipher' " := choiceCipher
-    (* (chFin Cipher_len_pos) *)
+  Notation " 'chCipher' " :=
+    choiceCipher
     (in custom pack_type at level 2).
-  Notation " 'chPubKey' " := choicePubKey
-    (* (chFin PubKey_len_pos) *)
+  Notation " 'chPubKey' " :=
+    choicePubKey
     (in custom pack_type at level 2).
-  Notation " 'chSecKey' " := choiceSecKey
-    (* (chFin SecKey_len_pos) *)
+  Notation " 'chSecKey' " :=
+    choiceSecKey
     (in custom pack_type at level 2).
-  
+
 End MyAlg.
 
 Local Open Scope package_scope.
@@ -682,11 +680,11 @@ Proof.
   unshelve apply: rrewrite_eqDistrL.
   { eapply (
         ((B ← (B ← sample U i_pk ;; ret B) ;;
-          A ← (A ← sample U i_pk ;; ret A) ;; ret (Some (c2ch (B, A)))))). }  
-  { rewrite /c2ch.   
-    Check Uniform_bij_rule_sq. admit. 
+          A ← (A ← sample U i_pk ;; ret A) ;; ret (Some (c2ch (B, A)))))). }
+  { rewrite /c2ch.
+    Check Uniform_bij_rule_sq. admit.
      }
-  (*CA: just Fubini? *) admit. 
+  (*CA: just Fubini? *) admit.
 Admitted.
 
 (* Note duplicate in SymmetricSchemeStateProb *)
@@ -716,14 +714,14 @@ Qed.
 Lemma pk_encoding_correct : forall p,
     ch2pk (pk2ch p ) = p.
 Proof.
-  move => /= A. rewrite /ch2pk /pk2ch. exact: ch2gT_gT2ch. 
+  move => /= A. rewrite /ch2pk /pk2ch. exact: ch2gT_gT2ch.
 Qed.
 
 Lemma ch2c_c2ch : forall x, ch2c (c2ch x) = x.
 Proof.
-  move => [C1 C2]. rewrite /ch2c /c2ch.  
-  by rewrite !ch2gT_gT2ch. 
-Qed. 
+  move => [C1 C2]. rewrite /ch2c /c2ch.
+  by rewrite !ch2gT_gT2ch.
+Qed.
 
  Lemma cipher_encoding_correct : forall b c m,
      c2ch (g ^+ b, ch2m m * g ^+ c) = c2ch ((ch2c (c2ch (g ^+ b, g ^+ c))).1, ch2m m * (ch2c (c2ch (g ^+ b, g ^+ c))).2).
