@@ -363,6 +363,7 @@ Qed.
 Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher.
 Proof.
   unfold OT_rnd_cipher. intros LA A vA hd₀ hd₁.
+  simpl in hd₀, hd₁. clear hd₁. rename hd₀ into hd.
   apply Advantage_le_0.
   rewrite Advantage_E.
   pose proof (
@@ -376,6 +377,21 @@ Proof.
   eapply ler_trans. 1: exact ineq.
   clear ineq.
   rewrite -Advantage_link. erewrite dh_secure. 2: exact _.
+  2:{
+    rewrite fdisjointUl. apply/andP. split.
+    - unfold DH_loc. unfold L_locs_counter in hd.
+      rewrite fdisjointC.
+      eapply fdisjoint_trans. 2:{ rewrite fdisjointC. exact hd. }
+      rewrite [X in fsubset _ X]fset_cons.
+      apply fsubsetUr.
+    - unfold DH_loc. rewrite fset_cons. rewrite -fset0E. rewrite fsetU0.
+      rewrite fdisjoint1s.
+      apply/negP. intro e.
+      rewrite in_fset in e. rewrite in_cons in e. rewrite mem_seq1 in e.
+      move: e => /orP [/eqP e | /eqP e].
+      all: discriminate.
+  }
+Admitted.
 
 (* TODO OLD BELOW
   I will now try to salvage the parts that are necessary to conclude.
