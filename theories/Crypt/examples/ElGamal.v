@@ -506,6 +506,51 @@ Proof.
     destruct b eqn:e
   end.
   - eapply (rsame_head_cmd (cmd_sample _)). intro a.
+    eapply r_transL.
+    1:{
+      eapply (rsame_head_cmd (cmd_sample _)). intro x.
+      eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U i_sk)) (λ a₁ z, _)).
+      - auto.
+      - intros ? ?.
+        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+        cbn. auto.
+      - eapply rsamplerC_cmd.
+    }
+    simpl.
+    eapply r_transL.
+    1:{
+      eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U i_sk)) (λ a₁ z, _)).
+      - auto.
+      - intros ? ?.
+        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+        cbn. auto.
+      - eapply rsamplerC_cmd.
+    }
+    simpl.
+    eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put _ _)). intros _.
+    eapply r_transL.
+    1:{
+      eapply (rsame_head_cmd (cmd_sample _)). intro x.
+      eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U i_sk)) (λ a₁ z, _)).
+      - auto.
+      - intros ? ?.
+        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+        cbn. auto.
+      - eapply rsamplerC_cmd.
+    }
+    simpl.
+    eapply r_transL.
+    1:{
+      eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U i_sk)) (λ a₁ z, _)).
+      - auto.
+      - intros ? ?.
+        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+        cbn. auto.
+      - eapply rsamplerC_cmd.
+    }
+    simpl.
+    eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put _ _)). intros _.
+    (* Now I guess is where gT × gT vs gT sampling appears? *)
     admit.
   - eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
     intros [? ?] [? ?] ee. inversion ee. intuition reflexivity.
