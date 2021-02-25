@@ -32,6 +32,7 @@ Set Default Goal Selector "!".
 Set Primitive Projections.
 
 Import Num.Theory.
+Import mc_1_10.Num.Theory.
 
 Local Open Scope ring_scope.
 Import GroupScope GRing.Theory.
@@ -325,6 +326,56 @@ Definition Aux :
         else ret None
       }
     ].
+
+Definition DH_security : Prop :=
+  ∀ LA A,
+    ValidPackage LA [interface val #[10] : 'unit → chPubKey × chCipher ] A_export A →
+    fdisjoint LA DH_loc →
+    AdvantageE DH_real DH_rnd A = 0.
+
+(* TODO MOVE *)
+Lemma AdvantageE_le_0 :
+  ∀ G₀ G₁ A,
+    AdvantageE G₀ G₁ A <= 0 →
+    AdvantageE G₀ G₁ A = 0.
+Proof.
+  intros G₀ G₁ A h.
+  unfold AdvantageE in *.
+  rewrite mc_1_10.Num.Theory.normr_le0 in h.
+  apply/mc_1_10.Num.Theory.normr0P. auto.
+Qed.
+
+(* TODO MOVE *)
+Lemma Advantage_le_0 :
+  ∀ G A,
+    Advantage G A <= 0 →
+    Advantage G A = 0.
+Proof.
+  intros G A h.
+  rewrite -> Advantage_E in *. apply AdvantageE_le_0. auto.
+Qed.
+
+Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher.
+Proof.
+  unfold OT_rnd_cipher. intros LA A vA hd₀ hd₁.
+  apply Advantage_le_0.
+  rewrite Advantage_E.
+  pose proof (
+    Advantage_triangle_chain (ots_real_vs_rnd false) [::
+      Aux ∘ DH_real ;
+      Aux ∘ DH_rnd
+    ] (ots_real_vs_rnd true) A
+  ) as ineq.
+  advantage_sum simpl in ineq.
+  rewrite !GRing.addrA in ineq.
+  eapply ler_trans. 1: exact ineq.
+  clear ineq.
+  rewrite -Advantage_link. erewrite dh_secure.
+  2:{
+    eapply valid_link. 1: eauto.
+    eapply valid_package_from_class.
+    eapply (Aux.(pack_valid)).
+  }
 
 (* TODO OLD BELOW
   I will now try to salvage the parts that are necessary to conclude.
@@ -715,9 +766,6 @@ Proof.
   rewrite HL. clear HL.
   by rewrite distrC.
 Qed.
-
-Definition DH_security : Prop := forall A Hdisj1 Hdisj2,
-    @AdvantageE _ DH_real DH_rnd A  Hdisj1 Hdisj2 = 0.
 
 Lemma counter_DH_loc : (fset [:: counter_loc] :|: DH_loc) = fset ([:: counter_loc; pk_loc; sk_loc]).
 Proof.
