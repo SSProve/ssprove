@@ -360,14 +360,120 @@ Proof.
   rewrite -> Advantage_E in *. apply AdvantageE_le_0. auto.
 Qed.
 
+(* TODO MOVE *)
+Lemma program_link_if :
+  ∀ A (c₀ c₁ : raw_program A) (p : raw_package) b,
+    program_link (if b then c₀ else c₁) p =
+    if b then program_link c₀ p else program_link c₁ p.
+Proof.
+  intros A c₀ c₁ p b.
+  destruct b. all: reflexivity.
+Qed.
+
 Lemma ots_real_vs_rnd_equiv_false :
   ots_real_vs_rnd false ≈₀ Aux ∘ DH_real.
 Proof.
+  (* We go to the relation logic using equality as invariant. *)
+  eapply eq_rel_perf_ind with (λ '(h₀, h₁), h₀ = h₁). 2: reflexivity.
+  1:{
+    simpl. intros s₀ s₁. split.
+    - intro e. rewrite e. auto.
+    - intro e. rewrite e. auto.
+  }
+  (* We now conduct the proof in relational logic. *)
+  intros id S T m hin.
+  invert_interface_in hin.
+  rewrite get_op_default_link.
+  (* First we need to squeeze the programs out of the packages *)
+  (* Hopefully I will find a way to automate it. *)
+  unfold get_op_default.
+  destruct lookup_op as [f|] eqn:e.
+  2:{
+    exfalso.
+    simpl in e.
+    destruct chUniverse_eqP. 2: eauto.
+    destruct chUniverse_eqP. 2: eauto.
+    discriminate.
+  }
+  eapply lookup_op_spec in e. simpl in e.
+  rewrite setmE in e. rewrite eq_refl in e.
+  noconf e.
+  (* Now to the RHS *)
+  destruct lookup_op as [f|] eqn:e.
+  2:{
+    exfalso.
+    simpl in e.
+    destruct chUniverse_eqP. 2: eauto.
+    destruct chUniverse_eqP. 2: eauto.
+    discriminate.
+  }
+  eapply lookup_op_spec in e. simpl in e.
+  rewrite setmE in e. rewrite eq_refl in e.
+  noconf e.
+  (* Now the linking *)
+  simpl.
+  (* Too bad but linking doesn't automatically commute with match *)
+  setoid_rewrite program_link_if.
+  simpl.
+  destruct chUniverse_eqP as [e|]. 2: contradiction.
+  assert (e = erefl) by apply uip. subst e.
+  destruct chUniverse_eqP as [e|]. 2: contradiction.
+  assert (e = erefl) by apply uip. subst e.
+  simpl.
+  (* We are now in the realm of program logic *)
 Admitted.
 
 Lemma ots_real_vs_rnd_equiv_true :
   Aux ∘ DH_rnd ≈₀ ots_real_vs_rnd true.
 Proof.
+  (* We go to the relation logic using equality as invariant. *)
+  eapply eq_rel_perf_ind with (λ '(h₀, h₁), h₀ = h₁). 2: reflexivity.
+  1:{
+    simpl. intros s₀ s₁. split.
+    - intro e. rewrite e. auto.
+    - intro e. rewrite e. auto.
+  }
+  (* We now conduct the proof in relational logic. *)
+  intros id S T m hin.
+  invert_interface_in hin.
+  rewrite get_op_default_link.
+  (* First we need to squeeze the programs out of the packages *)
+  (* Hopefully I will find a way to automate it. *)
+  unfold get_op_default.
+  destruct lookup_op as [f|] eqn:e.
+  2:{
+    exfalso.
+    simpl in e.
+    destruct chUniverse_eqP. 2: eauto.
+    destruct chUniverse_eqP. 2: eauto.
+    discriminate.
+  }
+  eapply lookup_op_spec in e. simpl in e.
+  rewrite setmE in e. rewrite eq_refl in e.
+  noconf e.
+  (* Now to the RHS *)
+  destruct lookup_op as [f|] eqn:e.
+  2:{
+    exfalso.
+    simpl in e.
+    destruct chUniverse_eqP. 2: eauto.
+    destruct chUniverse_eqP. 2: eauto.
+    discriminate.
+  }
+  eapply lookup_op_spec in e. simpl in e.
+  rewrite setmE in e. rewrite eq_refl in e.
+  noconf e.
+  (* Now the linking *)
+  simpl.
+  (* Too bad but linking doesn't automatically commute with match *)
+  setoid_rewrite program_link_if.
+  simpl.
+  destruct chUniverse_eqP as [e|]. 2: contradiction.
+  assert (e = erefl) by apply uip. subst e.
+  destruct chUniverse_eqP as [e|]. 2: contradiction.
+  assert (e = erefl) by apply uip. subst e.
+  simpl.
+  (* We are now in the realm of program logic *)
 Admitted.
 
 Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher.
