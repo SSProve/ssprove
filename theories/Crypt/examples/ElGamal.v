@@ -439,7 +439,29 @@ Proof.
     destruct b eqn:e
   end.
   - eapply (rsame_head_cmd (cmd_sample _)). intro a.
-    (* The put are the same, but not the sampling? *)
+    eapply r_transR.
+    1:{
+      eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U i_sk)) (λ a₁ z, _)).
+      - auto.
+      - intros ? ?.
+        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+        cbn. auto.
+      - eapply rsamplerC_cmd.
+    }
+    simpl.
+    eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put _ _)). intros _.
+    eapply r_transR.
+    1:{
+      eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U i_sk)) (λ a₁ z, _)).
+      - auto.
+      - intros ? ?.
+        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+        cbn. auto.
+      - eapply rsamplerC_cmd.
+    }
+    simpl.
+    eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put _ _)). intros _.
+    (* Not clear how to relate the two sampling to me. *)
     (* We might want a ret rule that asks us to show equality
       of the arguments or even just pre -> post?
     *)
