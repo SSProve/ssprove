@@ -2,6 +2,38 @@
 
   TODO
 
+  Here are some ideas for improvement:
+
+  - A swapping tactic. I imagine something like
+
+    ssprove swap lhs 2
+
+    to swap commands in the lhs at depth 2.
+    It would basically try to play by hand the rules I did in PRF/ElGamal.
+    For instance applying rsamplerC_cmd automatically.
+
+  - More generally some tactics to apply the rules, hopefully ones that are not
+    as slow when failing, maybe providing clearer error messages.
+    It would be useful to infer the cmd_sample etc. and more importantly to
+    deal with higher order unification for cmd_put.
+    Something like
+
+    ssprove reflexivity
+
+    could try to apply the reflexivity rule, and even use weakening
+    automatically if necessary? Maybe not.
+
+  - Provide a new notation
+
+    #import [ #[0] : 'nat → 'nat ] as inc ;; p
+
+    which behaves as
+
+    let inc := λ x, cmd_op (0, 'nat, 'nat) x in p
+
+    The idea being that by using #import, linking now should work as a
+    substitution if computation is done in the right order (so zeta last).
+
 **)
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
