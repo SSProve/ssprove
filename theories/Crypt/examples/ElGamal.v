@@ -343,15 +343,25 @@ Definition DH_security : Prop :=
     AdvantageE DH_real DH_rnd A = 0.
 
 (* TODO MOVE *)
-(* I don't see how to do this, a raw_program can't be turned into
-  a command (that's precisely the point of commands) so the #import notation
-  has to be updated to use program instead.
-*)
-(* Lemma program_link_import :
-  ∀ {A} (o : opsig) (c : (src o → command (tgt o)) → raw_program A) p,
+Lemma program_link_import :
+  ∀ {A} (o : opsig) (c : (src o → raw_program (tgt o)) → raw_program A) p,
     program_link (#import o as f ;; c f) p =
     (let f := get_op_default p o in
-    program_link (c f) p). *)
+    program_link (c f) p).
+Proof.
+  intros A o c p.
+  cbn. induction c eqn:e.
+  (* - cbn.
+  -
+  -
+  -
+  - *)
+  (* Will this even be provable? Without parametricity seems hard.
+    c might branch on the argument... Even though in practice it won't.
+    So maybe I should use tactics to do this?
+    Maybe just a change with the above?
+  *)
+Abort.
 
 Lemma ots_real_vs_rnd_equiv_false :
   ots_real_vs_rnd false ≈₀ Aux ∘ DH_real.
