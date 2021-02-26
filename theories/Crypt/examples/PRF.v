@@ -329,7 +329,7 @@ Module PRF_example.
       def #[i1] (m : chWords) : chWords × chWords
       {
         r ← sample U i_words ;;
-        pad ← op [ #[i0] : chWords → chKey ] r ;;
+        pad ← op {sig #[i0] : chWords → chKey } ⋅ r ;;
         let c := (m ⊕ pad) in
         ret (r, c)
       }
@@ -343,7 +343,7 @@ Module PRF_example.
       {
         r ← sample U i_words ;;
         m' ← sample U i_words ;;
-        pad ← op [ #[i0] : chWords → chKey ] r ;;
+        pad ← op {sig #[i0] : chWords → chKey } ⋅ r ;;
         let c := (m' ⊕ pad) in
         ret (r, c)
       }

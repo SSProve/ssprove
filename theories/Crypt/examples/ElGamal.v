@@ -329,7 +329,7 @@ Definition Aux :
         count ← get counter_loc ;;
         put counter_loc := (count + 1)%N ;;
         if (count == 0)%N then
-          '(pk, c) ← op [ #[10] : 'unit → chPubKey × chCipher ] Datatypes.tt ;;
+          '(pk, c) ← op {sig #[10] : 'unit → chPubKey × chCipher } ⋅ Datatypes.tt ;;
           ret (Some (c2ch ((ch2c c).1 , (ch2m m) * ((ch2c c).2))))
         else ret None
       }
@@ -622,14 +622,14 @@ Proof.
   unshelve apply: rrewrite_eqDistrR.
   { eapply (
         bc ← (bc ← sample U (i_prod i_sk i_sk) ;; ret bc) ;;
-               ret (Some (c2ch ( g^+ (bc.1), (ch2m m) * g ^+ (bc.2))))). } 
+               ret (Some (c2ch ( g^+ (bc.1), (ch2m m) * g ^+ (bc.2))))). }
   { suffices:
       ⊨ ⦃ λ '(h1, h2), h1 = h2 ⦄
         @repr _  L (c ← (c ← sample U i_cipher ;; ret c) ;; ret c) ≈
         @repr _  L (bc ← (bc ← sample U (i_prod i_sk i_sk) ;; ret bc) ;; ret ((g ^+ bc.1, ch2m m * g ^+ bc.2))) ⦃ eq ⦄.
     { admit. (*CA: I think that to show this we can use (twice) again the Uniform_bij_rule, and show that Some ∘ c2ch is a bijection *) }
     Check Uniform_bij_rule.
-    admit. 
+    admit.
      }
   (*CA: just Fubini? *) admit.
 Admitted. *)

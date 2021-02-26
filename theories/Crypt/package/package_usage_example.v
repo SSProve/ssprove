@@ -79,7 +79,7 @@ Module NotationExamples (π : RulesParam).
       }
     ].
 
-  Definition test :
+  Definition test₁ :
     package
       [fset (chNat; 0)]
       [interface val #[0] : 'nat → 'nat]
@@ -101,6 +101,8 @@ Module NotationExamples (π : RulesParam).
       }
     ].
 
+  Definition sig := {sig #[0] : 'nat → 'nat }.
+
   Definition test' :
     package
       [fset ('nat; 0)]
@@ -113,15 +115,15 @@ Module NotationExamples (π : RulesParam).
     :=
     [package
       def #[1] (x : 'nat) : 'nat {
-        n ← get ('nat; 0) ;;
-        m ← op [ #[0] : 'nat → 'nat ] n ;;
-        n ← get ('nat; 0) ;;
-        m ← op [ #[0] : 'nat → 'nat ] n ;;
-        put ('nat; 0) := m ;;
+        n ← get ('nat ; 0) ;;
+        m ← op sig ⋅ n ;;
+        n ← get ('nat ; 0) ;;
+        m ← op sig ⋅ n ;;
+        put ('nat ; 0) := m ;;
         ret m
       } ;
       def #[2] (_ : 'unit) : 'option ('fin 2) {
-        put ('nat; 0) := 0 ;;
+        put ('nat ; 0) := 0 ;;
         ret (Some (gfin 1))
       } ;
       def #[3] (m : {map 'nat → 'nat}) : 'option 'nat {

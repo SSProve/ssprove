@@ -210,6 +210,11 @@ Module PkgNotation (π : RulesParam).
       format "def  #[ f ]  ( x : A )  :  B  { '[' '/'  e  '/' ']' }")
       : package_scope.
 
+    Notation "{ 'sig' o }" :=
+      (o)
+      (o custom pack_op at level 2, format "{ sig  o  }")
+      : package_scope.
+
     Notation "x ← c1 ;; c2" :=
       (bind c1 (λ x, c2))
       (at level 100, c1 at next level, right associativity,
@@ -252,18 +257,18 @@ Module PkgNotation (π : RulesParam).
       f constr, A custom pack_type, B custom pack_type,
       format "#[ f ]  :  A  →  B").
 
-    Notation "x ← 'op' [ o ] n ;; c" :=
+    Notation "x ← 'op' o ⋅ n ;; c" :=
       (opr o n (λ x, c))
-      (at level 100, n at next level, o custom pack_op at level 2,
+      (at level 100, n at next level, o at next level,
       right associativity,
-      format "x  ←  op  [  o  ]  n  ;;  '/' c")
+      format "x  ←  op  o  ⋅  n  ;;  '/' c")
       : package_scope.
 
-    Notation "' p ← 'op' [ o ] n ;; c" :=
+    Notation "' p ← 'op' o ⋅ n ;; c" :=
       (opr o n (λ x, let p := x in c))
-      (at level 100, p pattern, n at next level, o custom pack_op at level 2,
+      (at level 100, p pattern, n at next level, o at next level,
       right associativity,
-      format "' p  ←  op  [  o  ]  n  ;;  '/' c")
+      format "' p  ←  op  o  ⋅  n  ;;  '/' c")
       : package_scope.
 
     Notation "x ← 'sample' o ;; c" :=
