@@ -91,8 +91,8 @@ Module ARules (Aparam : AsymmetricSchemeParams).
   | i_pk     : Index
   | i_sk     : Index
   | i_bool   : Index
-  | i_prod   : Index -> Index -> Index.                
-
+  | i_prod   : Index -> Index -> Index. 
+              
 
   Module UParam <: UniformParameters.
 
@@ -105,7 +105,7 @@ Module ARules (Aparam : AsymmetricSchemeParams).
                                                    | i_pk      => PubKey
                                                    | i_sk      => SecKey
                                                    | i_bool    => bool_finType
-                                                   | i_prod i j => prod_finType (fin_family i) (fin_family j)
+                                                   | i_prod i1 i2  => prod_finType (fin_family i1) (fin_family i2)
                                                    end.
 
   Fixpoint F_w0 (i : Index) : (fin_family i) :=

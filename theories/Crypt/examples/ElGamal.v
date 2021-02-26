@@ -458,13 +458,17 @@ Proof.
                ret (Some (c2ch ( g^+ (bc.1), (ch2m m) * g ^+ (bc.2))))). } 
   { suffices:
       ⊨ ⦃ λ '(h1, h2), h1 = h2 ⦄
-        @repr _  L (c ← (c ← sample U i_cipher ;; ret c) ;; ret c) ≈
-        @repr _  L (bc ← (bc ← sample U (i_prod i_sk i_sk) ;; ret bc) ;; ret ((g ^+ bc.1, ch2m m * g ^+ bc.2))) ⦃ eq ⦄.
-    { admit. (*CA: I think that to show this we can use (twice) again the Uniform_bij_rule, and show that Some ∘ c2ch is a bijection *) }
-    Check Uniform_bij_rule.
+        @repr _  L (bc ← (bc ← sample U (i_prod i_sk i_sk) ;; ret bc) ;; ret (bc.1, bc.2)) ≈
+        @repr _  L (c ← (c ← sample U i_cipher ;; ret c) ;; ret c)
+        
+  ⦃ (fun '(bc, s1) '(C,s2) => s1 = s2 /\ (g^+(bc.1), (ch2m m) * g^+(bc.2)) == C) : ((SecKey * SecKey) * heap) -> (Cipher * heap) -> Prop ⦄.
+    { admit. }
+    (*CA: now before applying Uniform_bij_rule  we need a lemma that show repr _ = Uniform_F for both terms in the judgement *)
     admit. 
-     }
-  (*CA: just Fubini? *) admit. 
+  }
+  (*CA: This now looks easier than a Fubini Theorem
+        and my guess is that it should not be too hard to write down a coupling for this case (lemma)
+ *) admit. 
 Admitted.
 
 (* Note duplicate in SymmetricSchemeStateProb *)
