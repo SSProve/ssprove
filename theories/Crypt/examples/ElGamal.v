@@ -170,14 +170,6 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
     (existT (λ rchT : myparamU.rel_choiceTypes, myparamU.probE (chEmb rchT))
             (inl (inl i)) (inl (Uni_W i))).
 
-  (* Definition gT2ch_aux ( i : nat) (H : (i < #[g])%N): chFin gT_pos. *)
-  (* Proof. *)
-  (*   exists i. rewrite orderE in H. *)
-  (*   rewrite /= -cardsT. *)
-  (*   setoid_rewrite g_gen.  *)
-  (*   assumption. *)
-  (* Defined. *)
-
   Definition gT2ch : gT -> chFin gT_pos.
   Proof.
     move => /= A. 
@@ -198,19 +190,28 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   
   Lemma ch2gT_gT2ch (A : gT) : ch2gT (gT2ch A) = A.
   Proof.
-    destruct (@cyclePmin gT g A) as [i Hi].
-      { rewrite -g_gen.
-        apply: in_setT. }
-      rewrite e. 
-  Admitted.
+   unfold gT2ch.
+   destruct (@cyclePmin gT g A) as [i Hi]. subst.
+   simpl. reflexivity.
+  Qed. 
   
   Lemma gT2ch_ch2gT (chA : chFin gT_pos) : gT2ch (ch2gT chA) = chA.
   Proof.
-    destruct chA as [i Hi].
-    have Hfoo: ch2gT (Ordinal (n:=pos gT_pos) (m:=i) Hi) = g^+i by [].
-    rewrite Hfoo.
-    rewrite //=. 
-  Admitted. 
+    unfold ch2gT, gT2ch.
+    destruct chA as [i hi]. simpl in *.
+    destruct cyclePmin as [j hj e].
+    assert (e' : i = j).
+    { move: e => /eqP e. rewrite eq_expg_mod_order in e.
+      move: e => /eqP e.
+      rewrite !modn_small in e.
+      - auto.
+      - auto.
+      - rewrite orderE. rewrite -g_gen. rewrite cardsT. auto.
+    }
+    subst j.
+    f_equal.
+    apply bool_irrelevance.
+  Qed. 
 
   
   Definition pk2ch : PubKey -> choicePubKey := gT2ch. 
@@ -450,13 +451,18 @@ Lemma group_OTP { L : { fset Location } } : forall m,
       @repr _ L ((b ← (b ← sample U i_sk ;; ret b) ;;
                   c ← (c ← sample U i_sk ;; ret c) ;; ret (Some (c2ch (g ^+ b, ch2m m * g ^+ c))))) ⦃ eq ⦄.
 Proof.
-  move => m.  
-  unshelve apply: rrewrite_eqDistrL.
+  move => m.
+  unshelve apply: rrewrite_eqDistrR.
   { eapply (
-        ((B ← (B ← sample U i_pk ;; ret B) ;;
-          A ← (A ← sample U i_pk ;; ret A) ;; ret (Some (c2ch (B, A)))))). }  
-  { rewrite /c2ch.   
-    Check Uniform_bij_rule_sq. admit. 
+        bc ← (bc ← sample U (i_prod i_sk i_sk) ;; ret bc) ;;
+               ret (Some (c2ch ( g^+ (bc.1), (ch2m m) * g ^+ (bc.2))))). } 
+  { suffices:
+      ⊨ ⦃ λ '(h1, h2), h1 = h2 ⦄
+        @repr _  L (c ← (c ← sample U i_cipher ;; ret c) ;; ret c) ≈
+        @repr _  L (bc ← (bc ← sample U (i_prod i_sk i_sk) ;; ret bc) ;; ret ((g ^+ bc.1, ch2m m * g ^+ bc.2))) ⦃ eq ⦄.
+    { admit. (*CA: I think that to show this we can use (twice) again the Uniform_bij_rule, and show that Some ∘ c2ch is a bijection *) }
+    Check Uniform_bij_rule.
+    admit. 
      }
   (*CA: just Fubini? *) admit. 
 Admitted.
