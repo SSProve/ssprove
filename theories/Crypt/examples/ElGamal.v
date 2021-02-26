@@ -326,10 +326,11 @@ Definition Aux :
     [package
       def #[challenge_id'] (m : chPlain) : 'option chCipher
       {
+        #import {sig #[10] : 'unit → chPubKey × chCipher } as query ;;
         count ← get counter_loc ;;
         put counter_loc := (count + 1)%N ;;
         if (count == 0)%N then
-          '(pk, c) ← op {sig #[10] : 'unit → chPubKey × chCipher } ⋅ Datatypes.tt ;;
+          '(pk, c) ← cmd query Datatypes.tt ;;
           ret (Some (c2ch ((ch2c c).1 , (ch2m m) * ((ch2c c).2))))
         else ret None
       }
@@ -383,7 +384,13 @@ Proof.
   noconf e.
   (* Now the linking *)
   simpl.
-  (* Too bad but linking doesn't automatically commute with match *)
+  (* Too bad but linking doesn't automatically commute with match
+    Thanks to the #import notation we should be able to avoid this business.
+    The problem is that the let has been consumed.
+    After eapply lookup_op_spec, we would need to do something that is not
+    simpl, or at least make sure #import are not substituted now.
+    TODO
+  *)
   setoid_rewrite program_link_if.
   simpl.
   destruct chUniverse_eqP as [e|]. 2: contradiction.
