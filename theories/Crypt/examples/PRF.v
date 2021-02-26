@@ -331,7 +331,7 @@ Module PRF_example.
       {
         #import {sig #[i0] : chWords → chKey } as eval ;;
         r ← sample U i_words ;;
-        pad ← cmd eval r ;;
+        pad ← eval r ;;
         let c := m ⊕ pad in
         ret (r, c)
       }
@@ -346,7 +346,7 @@ Module PRF_example.
         #import {sig #[i0] : chWords → chKey } as eval ;;
         r ← sample U i_words ;;
         m' ← sample U i_words ;;
-        pad ← cmd eval r ;;
+        pad ← eval r ;;
         let c := (m' ⊕ pad) in
         ret (r, c)
       }

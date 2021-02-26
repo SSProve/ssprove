@@ -330,7 +330,7 @@ Definition Aux :
         count ← get counter_loc ;;
         put counter_loc := (count + 1)%N ;;
         if (count == 0)%N then
-          '(pk, c) ← cmd query Datatypes.tt ;;
+          '(pk, c) ← query Datatypes.tt ;;
           ret (Some (c2ch ((ch2c c).1 , (ch2m m) * ((ch2c c).2))))
         else ret None
       }

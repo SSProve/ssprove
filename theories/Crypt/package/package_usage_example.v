@@ -145,9 +145,9 @@ Module NotationExamples (π : RulesParam).
       def #[2] (n : 'nat) : 'nat {
         #import {sig #[0] : 'nat → 'bool } as f ;;
         #import {sig #[1] : 'bool → 'unit } as g ;;
-        b ← cmd f n ;;
+        b ← f n ;;
         if b then
-          _ ← cmd g false ;;
+          _ ← g false ;;
           ret 0
         else ret n
       }

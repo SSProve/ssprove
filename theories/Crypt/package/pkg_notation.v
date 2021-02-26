@@ -316,7 +316,7 @@ Module PkgNotation (π : RulesParam).
       : package_scope.
 
     Notation "'#import' s 'as' id ;; t" :=
-      (let id := λ x, cmd_op s x in t)
+      (let id := λ x, opr s x (λ y, ret y) in t)
       (at level 100, id ident, s at next level, right associativity,
       format "#import  s  as  id  ;;  '/' t")
       : package_scope.
