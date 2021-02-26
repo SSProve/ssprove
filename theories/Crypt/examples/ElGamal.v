@@ -150,14 +150,6 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
     (existT (λ rchT : myparamU.rel_choiceTypes, myparamU.probE (chEmb rchT))
             (inl (inl i)) (inl (Uni_W i))).
 
-  (* Definition gT2ch_aux ( i : nat) (H : (i < #[g])%N): chFin gT_pos. *)
-  (* Proof. *)
-  (*   exists i. rewrite orderE in H. *)
-  (*   rewrite /= -cardsT. *)
-  (*   setoid_rewrite g_gen.  *)
-  (*   assumption. *)
-  (* Defined. *)
-
   Definition gT2ch : gT → 'fin #|gT|.
   Proof.
     move => /= A.
@@ -627,12 +619,17 @@ Qed.
                   c ← (c ← sample U i_sk ;; ret c) ;; ret (Some (c2ch (g ^+ b, ch2m m * g ^+ c))))) ⦃ eq ⦄.
 Proof.
   move => m.
-  unshelve apply: rrewrite_eqDistrL.
+  unshelve apply: rrewrite_eqDistrR.
   { eapply (
-        ((B ← (B ← sample U i_pk ;; ret B) ;;
-          A ← (A ← sample U i_pk ;; ret A) ;; ret (Some (c2ch (B, A)))))). }
-  { rewrite /c2ch.
-    Check Uniform_bij_rule_sq. admit.
+        bc ← (bc ← sample U (i_prod i_sk i_sk) ;; ret bc) ;;
+               ret (Some (c2ch ( g^+ (bc.1), (ch2m m) * g ^+ (bc.2))))). } 
+  { suffices:
+      ⊨ ⦃ λ '(h1, h2), h1 = h2 ⦄
+        @repr _  L (c ← (c ← sample U i_cipher ;; ret c) ;; ret c) ≈
+        @repr _  L (bc ← (bc ← sample U (i_prod i_sk i_sk) ;; ret bc) ;; ret ((g ^+ bc.1, ch2m m * g ^+ bc.2))) ⦃ eq ⦄.
+    { admit. (*CA: I think that to show this we can use (twice) again the Uniform_bij_rule, and show that Some ∘ c2ch is a bijection *) }
+    Check Uniform_bij_rule.
+    admit. 
      }
   (*CA: just Fubini? *) admit.
 Admitted. *)

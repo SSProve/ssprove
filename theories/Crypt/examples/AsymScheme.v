@@ -61,18 +61,37 @@ Module ARules (Aparam : AsymmetricSchemeParams).
   Export Aparam.
 
   (*: Uniform distributions over Plain, Cipher, Key and bool *)
-  Variant Index :=
-  | i_plain
-  | i_cipher
-  | i_pk
-  | i_sk
-  | i_bool.
+  Inductive Index :=
+  | i_plain  : Index
+  | i_cipher : Index
+  | i_pk     : Index
+  | i_sk     : Index
+  | i_bool   : Index
+  | i_prod   : Index -> Index -> Index.                
 
   Module UParam <: UniformParameters.
 
-    Definition Index : Type := Index.
+  Definition Index : Type := Index.
+  Definition i0 : Index := i_plain.
 
-    Definition i0 : Index := i_plain.
+  Fixpoint fin_family ( i : Index ) : finType :=  match i with
+                                                   | i_plain   => Plain
+                                                   | i_cipher  => Cipher
+                                                   | i_pk      => PubKey
+                                                   | i_sk      => SecKey
+                                                   | i_bool    => bool_finType
+                                                   | i_prod i j => prod_finType (fin_family i) (fin_family j)
+                                                   end.
+
+  Fixpoint F_w0 (i : Index) : (fin_family i) :=
+    match i with
+    | i_plain => plain0
+    | i_cipher => cipher0
+    | i_pk  => pub0
+    | i_sk  => sec0
+    | i_bool => false
+    | i_prod i1 i2 => (F_w0 i1, F_w0 i2)
+    end. 
 
     Definition fin_family : Index → finType :=
       λ i,
