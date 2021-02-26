@@ -312,6 +312,12 @@ Module PkgNotation (π : RulesParam).
       format "e1  ;'  '/' e2")
       : package_scope.
 
+    Notation "'#import' s 'as' id ;; t" :=
+      (let id := λ x, cmd_op s x in t)
+      (at level 100, id ident, s at next level, right associativity,
+      format "#import  s  as  id  ;;  '/' t")
+      : package_scope.
+
     (** Utility for fin types *)
 
     (** m : 'fin n *)

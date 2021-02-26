@@ -103,7 +103,7 @@ Module NotationExamples (π : RulesParam).
 
   Definition sig := {sig #[0] : 'nat → 'nat }.
 
-  Definition test' :
+  Definition test₂ :
     package
       [fset ('nat; 0)]
       [interface val #[0] : 'nat → 'nat ]
@@ -129,7 +129,28 @@ Module NotationExamples (π : RulesParam).
       def #[3] (m : {map 'nat → 'nat}) : 'option 'nat {
         ret (getm m 0)
       }
-    ]
-  .
+    ].
+
+  (* Testing the #import notation *)
+  Definition test₃ :
+    package
+      fset0
+      [interface
+        val #[0] : 'nat → 'bool ;
+        val #[1] : 'bool → 'unit
+      ]
+      [interface val #[2] : 'nat → 'nat ]
+    :=
+    [package
+      def #[2] (n : 'nat) : 'nat {
+        #import {sig #[0] : 'nat → 'bool } as f ;;
+        #import {sig #[1] : 'bool → 'unit } as g ;;
+        b ← cmd f n ;;
+        if b then
+          _ ← cmd g false ;;
+          ret 0
+        else ret n
+      }
+    ].
 
 End NotationExamples.
