@@ -1891,6 +1891,19 @@ Module PackageRHL (π : RulesParam).
     cbn. reflexivity.
   Qed.
 
+  (* TODO: From Uniform_bij_rule *)
+  (* TODO Figure out what uniform should be here! *)
+  (* Lemma r_uniform_bij :
+    ∀ {A₀ A₁ : ord_choiceType}
+      (c₀ : raw_program A₀) (c₁ : raw_program A₁)
+      n pre post f,
+      bijective f →
+      (∀ x, ⊢ ⦃ pre ⦄ c₀ x ;; c₁ (f x) ⦃ post ⦄) →
+      ⊢ ⦃ pre ⦄
+        x ← sample uniform n ;; c₀ x ≈
+        x ← sample uniform n ;; c₁ x
+      ⦃ post ⦄. *)
+
   (* Rules using commands instead of bind *)
 
   (* TODO Find out how/if we can improve unification of cmd_bind with
