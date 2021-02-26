@@ -342,6 +342,17 @@ Definition DH_security : Prop :=
     fdisjoint LA DH_loc →
     AdvantageE DH_real DH_rnd A = 0.
 
+(* TODO MOVE *)
+(* I don't see how to do this, a raw_program can't be turned into
+  a command (that's precisely the point of commands) so the #import notation
+  has to be updated to use program instead.
+*)
+(* Lemma program_link_import :
+  ∀ {A} (o : opsig) (c : (src o → command (tgt o)) → raw_program A) p,
+    program_link (#import o as f ;; c f) p =
+    (let f := get_op_default p o in
+    program_link (c f) p). *)
+
 Lemma ots_real_vs_rnd_equiv_false :
   ots_real_vs_rnd false ≈₀ Aux ∘ DH_real.
 Proof.
@@ -379,9 +390,18 @@ Proof.
     destruct chUniverse_eqP. 2: eauto.
     discriminate.
   }
-  eapply lookup_op_spec in e. simpl in e.
-  rewrite setmE in e. rewrite eq_refl in e.
-  noconf e.
+  eapply lookup_op_spec in e.
+  match type of e with
+  | ?x = _ =>
+    let x' := eval hnf in x in
+    change x with x' in e
+  end.
+  match type of e with
+  | context [ mkdef _ _ ?p ] =>
+    set (foo := p) in e
+  end.
+  cbn in e. unfold mkdef in e. noconf e. subst foo.
+  cbn beta.
   (* Now the linking *)
   simpl.
   (* Too bad but linking doesn't automatically commute with match
@@ -390,6 +410,8 @@ Proof.
     After eapply lookup_op_spec, we would need to do something that is not
     simpl, or at least make sure #import are not substituted now.
     TODO
+    How do I evaluate the epxression but not the the programs inside the
+    packages?
   *)
   setoid_rewrite program_link_if.
   simpl.
