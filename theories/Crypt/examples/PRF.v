@@ -256,7 +256,7 @@ Module PRF_example.
   Definition i_words : nat := 2^n.
 
   Definition enc {L : { fset Location }} (m : Words) (k : Key) :
-    program L fset0  ('fin (2^n) × 'fin (2^n)) :=
+    program L [interface] ('fin (2^n) × 'fin (2^n)) :=
       {program
         r ← sample U i_words ;;
         let pad := PRF r k in
@@ -264,16 +264,17 @@ Module PRF_example.
         ret (r, c)
       }.
 
-  Definition kgen : program fset0 fset0 'fin (2^n) :=
+  Definition kgen : program fset0 [interface] 'fin (2^n) :=
     {program
-      k <$ U i_key ;;
+      k ← sample U i_key ;;
       ret k
     }.
 
   Definition dec (c : Words) (k : Key) :
-    program (fset [:: key_location; table_location])
-            fset0
-            ('fin (2^n) × 'fin (2^n)) :=
+    program
+      (fset [:: key_location; table_location])
+      [interface]
+      ('fin (2^n) × 'fin (2^n)) :=
     enc k c.
 
   Definition EVAL_location_tt := (fset [:: key_location]).
@@ -299,7 +300,7 @@ Module PRF_example.
 
   Definition EVAL_pkg_ff :
     package EVAL_location_ff [interface]
-      [interface val #[i0] : chWords → chKey] :=
+      [interface val #[i0] : chWords → chKey ] :=
     [package
       def #[i0] (r : chWords) : chKey
       {
@@ -317,20 +318,21 @@ Module PRF_example.
   (* TODO Not the most satisfying, it would be nice to think of something else
     This might come with more automation to deal with the GamePair type.
   *)
-  Definition EVAL : loc_GamePair [interface val #[i0] : chWords → chKey] :=
+  Definition EVAL : loc_GamePair [interface val #[i0] : chWords → chKey ] :=
     λ b, if b then {locpackage EVAL_pkg_tt } else {locpackage EVAL_pkg_ff }.
 
   Definition MOD_CPA_location : {fset Location} := fset0.
 
   Definition MOD_CPA_tt_pkg :
-    package MOD_CPA_location [interface val #[i0] : chWords → chKey]
+    package MOD_CPA_location [interface val #[i0] : chWords → chKey ]
       [interface val #[i1] : chWords → chWords × chWords ] :=
     [package
       def #[i1] (m : chWords) : chWords × chWords
       {
+        #import {sig #[i0] : chWords → chKey } as eval ;;
         r ← sample U i_words ;;
-        pad ← op {sig #[i0] : chWords → chKey } ⋅ r ;;
-        let c := (m ⊕ pad) in
+        pad ← cmd eval r ;;
+        let c := m ⊕ pad in
         ret (r, c)
       }
     ].
@@ -341,9 +343,10 @@ Module PRF_example.
     [package
       def #[i1] (m : chWords) : chWords × chWords
       {
+        #import {sig #[i0] : chWords → chKey } as eval ;;
         r ← sample U i_words ;;
         m' ← sample U i_words ;;
-        pad ← op {sig #[i0] : chWords → chKey } ⋅ r ;;
+        pad ← cmd eval r ;;
         let c := (m' ⊕ pad) in
         ret (r, c)
       }
