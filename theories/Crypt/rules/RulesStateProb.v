@@ -419,8 +419,43 @@ Proof.
     (* by definition of d13*) admit.
 Admitted.
 
+Lemma f_preserves_eq { A B : ord_choiceType } { S : choiceType }
+                     { x  y: FrStP S A }
+                     (f : A -> B )      
+                     ( H: ⊨ ⦃ fun '(s1, s2) => s1 = s2 ⦄
+                             ( X <- x ;; retF X ) ≈
+                             ( Y <- y ;; retF Y) 
+                            
+                            ⦃ eq ⦄ ) :
+    ⊨ ⦃ fun '(s1, s2) => s1 = s2 ⦄
+       (X <- x ;; retF (f X) ) ≈
+       (Y <- y ;; retF (f Y) ) 
+       
+       ⦃ eq ⦄. 
+Proof.
+  move => [s1 s2].
+  specialize (H (s1, s2)).
+  unfold "≤" in *. simpl. simpl in H.
+  rewrite /MonoCont_order //=. rewrite /MonoCont_order //= in H.
+  move => β [hs1 h].
+  specialize (H (fun '(a1, s1, (a2, s2)) => (β (f a1 ,s1, (f a2, s2))))).
+  destruct H as [d H].
+  split.
+  - assumption.
+  - move => [a1 st1] [a2 st2] [Heqa Heqst]. subst.
+      by apply: h.
+ (*CA: 
+    for the coupling d : A × A ->  [0,1]  we can consider 
 
+                     d0 : B × B -> [0,1] 
+                          (b1, b2) ↦ ∑ _{a1,a2 : f(a1) = b1 /\ f(a2) = b2} d(a1,a2)
+    
+  *)
+Admitted. 
+ 
+  
 
+  
 Theorem if_rule  {A1 A2 : ord_choiceType} {S1 S2 : choiceType}
                  (c1 c2 : FrStP S1 A1)
                  (c1' c2' : FrStP S2 A2)
