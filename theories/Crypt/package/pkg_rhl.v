@@ -2100,6 +2100,18 @@ Theorem rpost_weaken_rule  {A1 A2 : ord_choiceType} {L1 L2 : {fset Location}}
     (forall as1 as2, post1 as1 as2 -> post2 as1 as2) -> (r⊨ ⦃ pre ⦄ p1 ≈ p2 ⦃ post2 ⦄).
 Proof. by apply: post_weaken_rule. Qed.
 
+Local Open Scope package_scope.
+
+(*CA: TODO first state and prove it in RulesStateprob.v *)
+Theorem rpost_conclusion_rule {A1 A2 B : ord_choiceType} {L : {fset Location}}
+        {pre : heap * heap -> Prop } 
+        {p1 : program L Game_import A1}
+        {p2 : program L Game_import A2}
+        (f1 : A1 -> B ) (f2 : A2 -> B) :
+  (r⊨ ⦃ pre ⦄ x1 ← p1 ;; ret x1 ≈ x2 ← p2 ;; ret x2 ⦃ fun '(a1, s1) '(a2,s2) => s1 = s2 /\ (f1 a1) = (f2 a2) ⦄) ->
+  (r⊨ ⦃ pre ⦄ x1 ← p1 ;; ret (f1 x1)  ≈  x2 ← p2 ;; ret (f2 x2) ⦃ eq ⦄).
+Admitted. 
+
 
 (* Skipped for now *)
 (* Theorem comp_rule ... *)
@@ -2210,7 +2222,7 @@ Proof.
 Qed.
 
 
-Local Open Scope package_scope.
+
 
 Lemma rsym_pre  { A1 A2 : ord_choiceType } { L : {fset Location} } { pre : heap * heap -> Prop } { post }
                      { c1 : program L Game_import A1 } { c2 : program L Game_import A2 }
@@ -2342,7 +2354,24 @@ Proof.
          rewrite /= => h1 h2 [Heq1 Heq2]. by subst.
 Qed.
 
-
+Lemma rf_preserves_eq  { A B : ord_choiceType }
+                       { L : {fset Location} }
+                       { x  y: program L Game_import A }
+                       (f : A -> B )      
+                       ( H: r⊨ ⦃ fun '(s1, s2) => s1 = s2 ⦄
+                               ( X ← x ;; ret X ) ≈
+                               ( Y ← y ;; ret Y) 
+                              
+                               ⦃ eq ⦄ ) :
+  r⊨ ⦃ fun '(s1, s2) => s1 = s2 ⦄
+     (X ← x ;; ret (f X) ) ≈
+     (Y ← y ;; ret (f Y) ) 
+    
+     ⦃ eq ⦄.
+Proof.
+  rewrite !repr_bind. rewrite !repr_bind in H. 
+  by apply: f_preserves_eq. 
+Qed. 
 
 (* Rem.: not more useful than sampler_case *)
 (* Lemma rsample_rule { B1 B2 : ord_choiceType} { L : {fset Location}}  { o } *)

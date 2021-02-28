@@ -443,7 +443,16 @@ Proof.
   - apply: ret None.
 Defined.
 
+(*CA: probably already here we need that repr (sample U i) is Uniform i. *)
+Lemma UniformIprod_UniformUniform { L : {fset Location} } (i j : Index)  :
+  ⊨ ⦃ fun '(s1, s2) => s1 = s2 ⦄
+    @repr _ L (XY ← (XY ← sample U (i_prod i j) ;; ret XY) ;; ret XY ) ≈
+    @repr _ L (X ←  (X ← sample U i ;; ret X) ;;
+              (Y ←  (Y ← sample U j ;; ret Y) ;; ret (X, Y)))
 
+    ⦃ eq ⦄. 
+Admitted. 
+    
 
 Lemma group_OTP { L : { fset Location } } : forall m,
     ⊨ ⦃ λ '(h1, h2), h1 = h2 ⦄
@@ -456,19 +465,26 @@ Proof.
   { eapply (
         bc ← (bc ← sample U (i_prod i_sk i_sk) ;; ret bc) ;;
                ret (Some (c2ch ( g^+ (bc.1), (ch2m m) * g ^+ (bc.2))))). } 
-  { suffices:
-      ⊨ ⦃ λ '(h1, h2), h1 = h2 ⦄
-        @repr _  L (bc ← (bc ← sample U (i_prod i_sk i_sk) ;; ret bc) ;; ret (bc.1, bc.2)) ≈
-        @repr _  L (c ← (c ← sample U i_cipher ;; ret c) ;; ret c)
-        
-  ⦃ (fun '(bc, s1) '(C,s2) => s1 = s2 /\ (g^+(bc.1), (ch2m m) * g^+(bc.2)) == C) : ((SecKey * SecKey) * heap) -> (Cipher * heap) -> Prop ⦄.
-    { admit. }
+  { apply (@rpost_conclusion_rule _ _ _ L (fun '(h1,h2) => h1 = h2)
+                                  ((c ← sample U i_cipher ;; ret c))
+                                  ((bc ← sample U (i_prod i_sk i_sk) ;; ret bc))
+                                  (fun c => Some (c2ch c)) (fun bc => (Some (c2ch (g ^+ bc.1, ch2m m * g ^+ bc.2))))).
     (*CA: now before applying Uniform_bij_rule  we need a lemma that show repr _ = Uniform_F for both terms in the judgement *)
     admit. 
   }
   (*CA: This now looks easier than a Fubini Theorem
         and my guess is that it should not be too hard to write down a coupling for this case (lemma)
- *) admit. 
+   *)
+  move => s. unshelve eapply rcoupling_eq.
+  { move => [s1 s2]. exact: (s1 = s2). }
+  - (*CA: I don't manage to simplify only in the pre-condition *)
+    suffices:  ⊨ ⦃ fun '(s1, s2) => s1 = s2 ⦄
+              @repr _ L (bc ← (bc ← sample U (i_prod i_sk i_sk) ;; ret bc) ;; ret (Some (c2ch (g ^+ bc.1, ch2m m * g ^+ bc.2))))
+              ≈
+              @repr _ L (b ← (b ← sample U i_sk ;; ret b) ;; c ← (c ← sample U i_sk ;; ret c) ;;
+                         ret (Some (c2ch (g ^+ b, ch2m m * g ^+ c)))) ⦃ eq ⦄ by []. 
+   (*TODO: massage a bit more the RHS and then apply rf_preserves_eq and then UniformIprod_UniformUniform *) 
+  admit. 
 Admitted.
 
 (* Note duplicate in SymmetricSchemeStateProb *)
