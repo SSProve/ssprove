@@ -695,7 +695,12 @@ Proof.
     | |- context [ @bindrFree ?S ?P ?A ?B ?m ?k ] =>
       change (@bindrFree S P A B m k) with (@Uniform_F (i_prod i_sk i_sk) heap_choiceType)
     end.
-    (* Conclude with Uniform_bij_rule? *)
+    (* eapply Uniform_bij_rule. *)
+    (* We cannot conclude with Uniform_bij_rule yet because we do not have the
+      same index on both sides.
+      Maybe Uniform_bij_rule should be generalised to have a bijection
+      from i to j?
+    *)
     admit.
   - intro s. unshelve eapply rcoupling_eq.
   1:{ exact (λ '(s₀, s₁), s₀ = s₁). }
