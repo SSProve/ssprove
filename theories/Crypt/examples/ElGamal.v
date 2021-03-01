@@ -618,14 +618,23 @@ Proof.
   rewrite !GRing.addr0. auto.
 Qed.
 
-(* TODO Updated definitions of old theorems *)
+(* TODO Updated definitions of old theorems
+  They will have to be moved upstream to use in the above theorems.
+*)
 
 Lemma repr_Uniform :
   ∀ (i : Index),
     repr (x ← sample U i ;; ret x) = @Uniform_F i _.
 Proof.
-  intros i.
-  cbn. unfold Uniform_F. reflexivity.
+  intro i. reflexivity.
+Qed.
+
+(* Alternative, we'll see which is better. *)
+Lemma repr_cmd_Uniform :
+  ∀ (i : Index),
+    repr_cmd (cmd_sample (U i)) = @Uniform_F i _.
+Proof.
+  intro i. reflexivity.
 Qed.
 
 (* TODO OLD BELOW
