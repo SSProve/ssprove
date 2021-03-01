@@ -419,6 +419,15 @@ Module PRF_example.
     auto_in_fset.
   Qed.
 
+  (* Simplication of cmd_bind *)
+  Ltac cmd_bind_simpl_once :=
+    try change (cmd_bind (cmd_sample ?op) ?k) with (sampler op k) ;
+    try change (cmd_bind (cmd_get ?ℓ) ?k) with (getr ℓ k) ;
+    try change (cmd_bind (cmd_put ?ℓ ?v) ?k) with (put ℓ := v ;; k Datatypes.tt).
+
+  Ltac cmd_bind_simpl :=
+    repeat cmd_bind_simpl_once.
+
   (* Right-biased application of rsame_head *)
   Ltac ssprove_same_head_r :=
     lazymatch goal with
@@ -523,26 +532,22 @@ Module PRF_example.
 
     Argument n correspond to depth at which to swap.
     0 will swap the toplevel, 1 will swap under one command, and so on.
-
-    TODO: Use cbn instead of idtac? Or something to just unfold cmd_bind?
   *)
   Ltac ssprove_swap_rhs n :=
     eapply r_transR ; [
       ssprove_swap_aux n
-    | idtac
+    | cmd_bind_simpl ; cbn beta
     ].
 
   (** Swapping tactic in LHS
 
     Argument n correspond to depth at which to swap.
     0 will swap the toplevel, 1 will swap under one command, and so on.
-
-    TODO: Use cbn instead of idtac? Or something to just unfold cmd_bind?
   *)
   Ltac ssprove_swap_lhs n :=
     eapply r_transL ; [
       ssprove_swap_aux n
-    | idtac
+    | cmd_bind_simpl ; cbn beta
     ].
 
   Lemma IND_CPA_equiv_false :
@@ -591,10 +596,10 @@ Module PRF_example.
     rewrite cast_fun_K. clear e.
     cbn.
     (* We are now in the realm of program logic *)
-    ssprove_swap_rhs 1%N. cbn.
-    ssprove_swap_rhs 0%N. cbn.
+    ssprove_swap_rhs 1%N.
+    ssprove_swap_rhs 0%N.
     ssprove_same_head_r. cbn. intros [k|].
-    - cbn. ssprove_swap_rhs 0%N. cbn.
+    - cbn. ssprove_swap_rhs 0%N.
       eapply rpost_weaken_rule.
       1: eapply rreflexivity_rule.
       cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
@@ -613,11 +618,11 @@ Module PRF_example.
         k_val/m'/put/r
         k_val/put/m'/r
       *)
-      ssprove_swap_rhs 0%N. cbn.
-      ssprove_swap_rhs 1%N. cbn.
-      ssprove_swap_rhs 0%N. cbn.
-      ssprove_swap_rhs 2%N. cbn.
-      ssprove_swap_rhs 1%N. cbn.
+      ssprove_swap_rhs 0%N.
+      ssprove_swap_rhs 1%N.
+      ssprove_swap_rhs 0%N.
+      ssprove_swap_rhs 2%N.
+      ssprove_swap_rhs 1%N.
       eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
       cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
   Qed.
@@ -668,7 +673,7 @@ Module PRF_example.
     rewrite cast_fun_K. clear e.
     cbn.
     (* We are now in the realm of program logic *)
-    ssprove_swap_lhs 0%N. cbn.
+    ssprove_swap_lhs 0%N.
     ssprove_same_head_r. cbn. intros [k|].
     - cbn. eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
       cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
@@ -684,8 +689,8 @@ Module PRF_example.
         k_val/r/put
         r/k_val/put
       *)
-      ssprove_swap_rhs 1%N. cbn.
-      ssprove_swap_rhs 0%N. cbn.
+      ssprove_swap_rhs 1%N.
+      ssprove_swap_rhs 0%N.
       eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
       cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
   Qed.
