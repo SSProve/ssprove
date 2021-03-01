@@ -5,7 +5,7 @@ From Coq Require Import Utf8 Lia.
 Set Warnings "-notation-overridden".
 From mathcomp Require Import ssreflect eqtype ssrbool ssrnat.
 Set Warnings "notation-overridden".
-From extructures Require Import ord.
+From extructures Require Import ord fset.
 From Equations Require Import Equations.
 
 Set Bullet Behavior "Strict Subproofs".
@@ -84,6 +84,7 @@ Tactic Notation "sig" "rewrite" hyp(e) :=
 *)
 Ltac falso :=
   lazymatch goal with
+  | |- context [ False_rect _ ?x] => exact (False_rect _ x)
   | h : context [ False_rect _ ?x ] |- _ => exact (False_rect _ x)
   end.
 
@@ -142,6 +143,10 @@ Definition positive_to_nat (p : positive) : nat :=
 
 Coercion positive_to_nat : positive >-> nat.
 
+Hint Extern 1 (Positive ?n.(pos)) =>
+  eapply cond_pos
+  : typeclass_instances.
+
 Definition positive_eq : rel positive :=
   λ u v, u.(pos) == v.(pos).
 
@@ -158,6 +163,25 @@ Qed.
 Canonical positive_eqMixin := EqMixin positive_eqP.
   Canonical positive_eqType :=
     Eval hnf in EqType positive positive_eqMixin.
+
+(** Lt class, for finite types  *)
+
+Class Lt n m :=
+  is_in_fin : n < m.
+
+Hint Extern 1 (Lt ?n ?m) =>
+  reflexivity : typeclass_instances.
+
+Hint Extern 2 (Lt ?n ?m) =>
+  unfold Lt ; apply/ltP ; lia : typeclass_instances.
+
+Hint Extern 4 (Lt ?n) =>
+  unfold Lt ; apply/ltP ; nat_reify ; lia : typeclass_instances.
+
+Instance PositiveInFin n m (h : Lt n m) : Positive m.
+Proof.
+  unfold Lt in h. exact _.
+Qed.
 
 (** Tactic to unfold all positives (NEEDED?) *)
 Ltac unfold_positives :=
@@ -177,3 +201,59 @@ Proof.
 Qed.
 
 Derive NoConfusion NoConfusionHom EqDec for positive.
+
+(* Utility for defining functions with Equations *)
+Definition inspect {A : Type} (x : A) : { y : A | y = x } :=
+  exist _ x Logic.eq_refl.
+
+(** Hints notation
+
+  When dealing with typeclasses, sometimes automation will fail.
+  The purpose of this is to be able to help the automation by providing
+  hints without having to write the whole term.
+
+  [hints h1 ; .. ; hn ] will try to solve the goal by having h1 to hn in the
+  context. This can be useful to provide lemmata that are not usually picked
+  up by the instance mechanism.
+  This could also be used in combination with Programs or Equations'
+  automation.
+
+  [hints] is also provided for completeness, but is merely long for _.
+
+*)
+
+(* Hints notation *)
+Notation "[ 'hints' ]" :=
+  (_)
+  (at level 0, only parsing)
+  : package_scope.
+
+Notation "[ 'hints' x1 ]" :=
+  (let hint := x1 in _)
+  (at level 0, only parsing)
+  : package_scope.
+
+Notation "[ 'hints' x ; .. ; z ]" :=
+  (let hint := x in .. (let hint := z in _) ..)
+  (at level 0, only parsing)
+  : package_scope.
+
+(* Tactics to deal with \in fset *)
+
+Ltac in_fset_auto :=
+  rewrite in_fset ; reflexivity.
+
+(* Succeeds for x \in S if S contains syntactically x, S seq *)
+Ltac inseq_try :=
+  apply/orP ; first [
+    left ; apply/eqP ; reflexivity
+  | right ; inseq_try
+  ].
+
+Ltac inset_try :=
+  rewrite in_fset ; inseq_try.
+
+Ltac auto_in_fset :=
+  eauto ;
+  try in_fset_auto ;
+  try inset_try.

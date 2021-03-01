@@ -1,56 +1,25 @@
-(*
-
-  ElGamal encryption scheme.
+(** ElGamal encryption scheme.
 
   We show that DH security implies the security of ElGamal.
 
+*)
 
- *)
-
-From Relational Require Import
-     OrderEnrichedCategory
-     GenericRulesSimple.
+From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import
-     all_ssreflect
-     all_algebra
-     reals
-     distr
-     realsum
-     fingroup.fingroup
-     solvable.cyclic
-     prime.
+From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
+  fingroup.fingroup solvable.cyclic prime ssrnat ssreflect ssrfun ssrbool ssrnum
+  eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
 
 From Mon Require Import SPropBase.
 
-From Crypt Require Import
-     Axioms
-     ChoiceAsOrd
-     SubDistr
-     Couplings
-     UniformDistrLemmas
-     FreeProbProg
-     Theta_dens
-     RulesStateProb
-     UniformStateProb.
-From Crypt Require Import
-     pkg_core_definition
-     pkg_chUniverse
-     pkg_composition
-     pkg_rhl
-     Package
-     Prelude
-     pkg_notation
-     AsymScheme.
-
-From Crypt Require Import pkg_notation.
+From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
+  UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
+  pkg_core_definition pkg_chUniverse pkg_composition pkg_rhl Package Prelude
+  pkg_notation AsymScheme.
 
 From Coq Require Import Utf8.
-Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
-From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
-Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 
 From Equations Require Import Equations.
@@ -63,6 +32,7 @@ Set Default Goal Selector "!".
 Set Primitive Projections.
 
 Import Num.Theory.
+Import mc_1_10.Num.Theory.
 
 Local Open Scope ring_scope.
 Import GroupScope GRing.Theory.
@@ -82,7 +52,8 @@ Qed.
 (* order of g *)
 Definition q : nat := #[g].
 
-Lemma group_prodC : forall x y : gT, x * y = y * x.
+Lemma group_prodC :
+  ∀ x y : gT, x * y = y * x.
 Proof.
   move => x y.
   have Hx: exists ix, x = g^+ix.
@@ -98,13 +69,14 @@ Proof.
 Qed.
 
 
-Inductive probEmpty : Type -> Type := .
+Inductive probEmpty : Type → Type := .
 
 Module MyParam <: AsymmetricSchemeParams.
 
   Definition SecurityParameter : choiceType := nat_choiceType.
   Definition Plain  : finType := FinGroup.arg_finType gT.
-  Definition Cipher : finType := prod_finType (FinGroup.arg_finType gT) (FinGroup.arg_finType gT).
+  Definition Cipher : finType :=
+    prod_finType (FinGroup.arg_finType gT) (FinGroup.arg_finType gT).
   Definition PubKey : finType := FinGroup.arg_finType gT.
   Definition SecKey : finType := [finType of 'Z_q].
 
@@ -113,17 +85,23 @@ Module MyParam <: AsymmetricSchemeParams.
   Definition pub0 := g.
   Definition sec0 : SecKey := 0.
 
-  Definition probE : Type -> Type := probEmpty.
+  Definition probE : Type → Type := probEmpty.
   Definition rel_choiceTypes : Type := void.
 
-  Definition chEmb : rel_choiceTypes -> choiceType.
-  Proof.  move => contra. contradiction. Defined.
+  Definition chEmb : rel_choiceTypes → choiceType.
+  Proof.
+    intro. contradiction.
+  Defined.
 
-  Definition prob_handler : forall T : choiceType, probE T -> SDistr T.
-  Proof. move => contra. contradiction. Defined.
+  Definition prob_handler : ∀ T : choiceType, probE T → SDistr T.
+  Proof.
+    intro. contradiction.
+  Defined.
 
-  Definition Hch : forall r : rel_choiceTypes, chEmb r.
-  Proof. move => contra. contradiction. Defined.
+  Definition Hch : ∀ r : rel_choiceTypes, chEmb r.
+  Proof.
+    intro. contradiction.
+  Defined.
 
 End MyParam.
 
@@ -139,63 +117,64 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Import MyPackage.
   Import PackageNotation.
 
+  Instance positive_gT : Positive #|gT|.
+  Proof.
+    apply /card_gt0P. exists g. auto.
+  Qed.
 
- Definition gT_pos : positive.
- Proof. exists #|gT|. apply /card_gt0P. by exists g. Defined. 
- 
+  Instance positive_SecKey : Positive #|SecKey|.
+  Proof.
+    apply /card_gt0P. exists sec0. auto.
+  Qed.
 
-  Definition SecKey_len_pos : positive.
-  Proof. exists #|SecKey|. apply /card_gt0P. by exists sec0. Defined.
+  Definition choicePlain  : chUniverse := 'fin #|gT|.
+  Definition choicePubKey : chUniverse := 'fin #|gT|.
+  Definition choiceCipher : chUniverse := chProd ('fin #|gT|) ('fin #|gT|).
+  Definition choiceSecKey : chUniverse := 'fin #|SecKey|.
 
- Definition choicePlain  : chUniverse := chFin gT_pos.
- Definition choicePubKey : chUniverse := chFin gT_pos.
- Definition choiceCipher : chUniverse := chProd (chFin gT_pos) (chFin gT_pos). 
- Definition choiceSecKey : chUniverse := chFin SecKey_len_pos. 
- 
- Definition counter_loc : Location := ('nat; 0%N). 
- Definition pk_loc : Location := (choicePubKey; 1%N). 
- Definition sk_loc : Location := (choiceSecKey; 2%N).
- Definition m_loc  : Location := (choicePlain; 3%N). 
- Definition c_loc  : Location := (choiceCipher; 4%N).
- 
- Definition kg_id : nat := 5.
- Definition enc_id : nat := 6.
- Definition dec_id : nat := 7.
- Definition challenge_id : nat := 8. (*challenge for LR *)
- Definition challenge_id' : nat := 9. (*challenge for real rnd *) 
-  
+  Definition counter_loc : Location := ('nat ; 0%N).
+  Definition pk_loc : Location := (choicePubKey ; 1%N).
+  Definition sk_loc : Location := (choiceSecKey ; 2%N).
+  Definition m_loc  : Location := (choicePlain ; 3%N).
+  Definition c_loc  : Location := (choiceCipher ; 4%N).
+
+  Definition kg_id : nat := 5.
+  Definition enc_id : nat := 6.
+  Definition dec_id : nat := 7.
+  Definition challenge_id : nat := 8. (*challenge for LR *)
+  Definition challenge_id' : nat := 9. (*challenge for real rnd *)
+
   Definition U (i : Index) :
     {rchT : myparamU.rel_choiceTypes &
             myparamU.probE (myparamU.chEmb rchT)} :=
     (existT (λ rchT : myparamU.rel_choiceTypes, myparamU.probE (chEmb rchT))
             (inl (inl i)) (inl (Uni_W i))).
 
-  Definition gT2ch : gT -> chFin gT_pos.
+  Definition gT2ch : gT → 'fin #|gT|.
   Proof.
-    move => /= A. 
-     destruct (@cyclePmin gT g A) as [i Hi]. Check cyclePmin. 
-    { rewrite -g_gen.
-      apply: in_setT. } 
-    exists i.
-    rewrite orderE in Hi.
-    rewrite /= -cardsT.
-    setoid_rewrite g_gen.
-    assumption.
-  Defined.   
+    move => /= A.
+    destruct (@cyclePmin gT g A) as [i Hi].
+    - rewrite -g_gen. apply: in_setT.
+    - exists i.
+      rewrite orderE in Hi.
+      rewrite /= -cardsT.
+      setoid_rewrite g_gen.
+      assumption.
+  Defined.
 
-  Definition ch2gT : (chFin gT_pos) -> gT.
-  Proof. 
+  Definition ch2gT : 'fin #|gT| → gT.
+  Proof.
     move => /= [i Hi]. exact: (g^+i).
   Defined.
-  
+
   Lemma ch2gT_gT2ch (A : gT) : ch2gT (gT2ch A) = A.
   Proof.
-   unfold gT2ch.
-   destruct (@cyclePmin gT g A) as [i Hi]. subst.
-   simpl. reflexivity.
-  Qed. 
-  
-  Lemma gT2ch_ch2gT (chA : chFin gT_pos) : gT2ch (ch2gT chA) = chA.
+    unfold gT2ch.
+    destruct (@cyclePmin gT g A) as [i Hi]. subst.
+    simpl. reflexivity.
+  Qed.
+
+  Lemma gT2ch_ch2gT (chA : 'fin #|gT|) : gT2ch (ch2gT chA) = chA.
   Proof.
     unfold ch2gT, gT2ch.
     destruct chA as [i hi]. simpl in *.
@@ -211,257 +190,476 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
     subst j.
     f_equal.
     apply bool_irrelevance.
-  Qed. 
+  Qed.
 
-  
-  Definition pk2ch : PubKey -> choicePubKey := gT2ch. 
-  Definition ch2pk : choicePubKey -> PubKey := ch2gT. 
-  Definition m2ch : Plain -> choicePlain := gT2ch.
-  Definition ch2m : choicePlain -> Plain := ch2gT.
+  Definition pk2ch : PubKey → choicePubKey := gT2ch.
+  Definition ch2pk : choicePubKey → PubKey := ch2gT.
+  Definition m2ch : Plain → choicePlain := gT2ch.
+  Definition ch2m : choicePlain → Plain := ch2gT.
 
   (* *)
-  Definition sk2ch : SecKey -> choiceSecKey.
+  Definition sk2ch : SecKey → choiceSecKey.
   Proof.
     move => /= [a Ha].
     exists a.
     rewrite card_ord. assumption.
   Defined.
 
-  Definition ch2sk : (chFin SecKey_len_pos) -> SecKey.
+  Definition ch2sk : 'fin #|SecKey| → SecKey.
     move => /= [a Ha].
     exists a.
     rewrite card_ord in Ha. assumption.
   Defined.
 
-  
   (* *)
-  Definition c2ch  : Cipher -> choiceCipher.
+  Definition c2ch  : Cipher → choiceCipher.
   Proof.
-    move => [g1 g2] /=. 
+    move => [g1 g2] /=.
     exact: (gT2ch g1, gT2ch g2).
   Defined.
 
-  Definition ch2c : choiceCipher -> Cipher.
-  Proof. 
+  Definition ch2c : choiceCipher → Cipher.
+  Proof.
     move => [A B].
     exact: (ch2gT A, ch2gT B).
   Defined.
 
-  (* (* Key Generation algorithm *) *)
-  Definition KeyGen { L : {fset Location} }: program L fset0 (choicePubKey × choiceSecKey) :=
-    x <$ (U i_sk) ;;
-    ret ( pk2ch (g^+x), sk2ch x).
+  (** Key Generation algorithm *)
+  Definition KeyGen {L : {fset Location}} :
+    program L [interface] (choicePubKey × choiceSecKey) :=
+    {program
+      x ← sample U i_sk ;;
+      ret (pk2ch (g^+x), sk2ch x)
+    }.
 
-  (* Encryption algorithm *)
-  Definition Enc { L : {fset Location} } (pk : choicePubKey) (m : choicePlain) : program L fset0 (choiceCipher) :=
-    y <$ (U i_sk) ;;
-    ret (c2ch (g^+y, (ch2pk pk)^+y * (ch2m m))).
+  (** Encryption algorithm *)
+  Definition Enc {L : {fset Location}} (pk : choicePubKey) (m : choicePlain) :
+    program L [interface] choiceCipher :=
+    {program
+      y ← sample U i_sk ;;
+      ret (c2ch (g^+y, (ch2pk pk)^+y * (ch2m m)))
+    }.
 
-
-  (* Decryption algorithm *)
-  Definition Dec_open { L : {fset Location} } (sk : choiceSecKey) (c : choiceCipher) :
-    program L fset0 (choicePlain) :=
-               ret (m2ch ( (fst (ch2c c)) * ( (snd (ch2c c))^-(ch2sk sk)) )).
+  (** Decryption algorithm *)
+  Definition Dec_open {L : {fset Location}} (sk : choiceSecKey) (c : choiceCipher) :
+    program L [interface] choicePlain :=
+    {program
+      ret (m2ch ((fst (ch2c c)) * ((snd (ch2c c))^-(ch2sk sk))))
+    }.
 
   Notation " 'chSecurityParameter' " :=
-    (chNat) (in custom pack_type at level 2).
-  Notation " 'chPlain' " := choicePlain 
-    (* (chFin Plain_len_pos ) *)
+    ('nat) (in custom pack_type at level 2).
+  Notation " 'chPlain' " :=
+    choicePlain
     (in custom pack_type at level 2).
-  Notation " 'chCipher' " := choiceCipher
-    (* (chFin Cipher_len_pos) *)
+  Notation " 'chCipher' " :=
+    choiceCipher
     (in custom pack_type at level 2).
-  Notation " 'chPubKey' " := choicePubKey
-    (* (chFin PubKey_len_pos) *)
+  Notation " 'chPubKey' " :=
+    choicePubKey
     (in custom pack_type at level 2).
-  Notation " 'chSecKey' " := choiceSecKey
-    (* (chFin SecKey_len_pos) *)
+  Notation " 'chSecKey' " :=
+    choiceSecKey
     (in custom pack_type at level 2).
-  
+
 End MyAlg.
 
 Local Open Scope package_scope.
 
-Module ElGamal_Scheme :=  AsymmetricScheme MyParam MyAlg.
+Module ElGamal_Scheme := AsymmetricScheme MyParam MyAlg.
 
 Import MyParam MyAlg asym_rules MyPackage ElGamal_Scheme PackageNotation.
 
-Obligation Tactic := package_obtac.
-
-Lemma counter_loc_in : is_true (counter_loc \in (fset [:: counter_loc; pk_loc; sk_loc ])). Proof. package_obtac. Qed.
-Lemma pk_loc_in : is_true (pk_loc \in (fset [:: counter_loc; pk_loc; sk_loc ])). Proof. package_obtac. Qed.
-Lemma sk_loc_in : is_true (sk_loc \in (fset [:: counter_loc; pk_loc; sk_loc ])). Proof. package_obtac. Qed.
-
-Definition DH_loc := fset [:: pk_loc; sk_loc].
-
-#[program] Definition DH_real_opkg : opackage DH_loc [interface] [interface val #[10]: 'unit → chPubKey × chCipher ] :=
-  [ package def #[10] ( _ : 'unit ) : chPubKey × chCipher
-             {
-               a <$ (U i_sk);; b <$ (U i_sk);;
-               put pk_loc := pk2ch (g^+a);;
-               put sk_loc := sk2ch a ;;
-               ret (pk2ch (g^+a), c2ch (g^+b, g^+(a * b)) )
-             }
-
-  ].
-
-Definition DH_real : package  [interface] [interface val #[10]: 'unit → chPubKey × chCipher ].
-Proof. exists DH_loc. exact: DH_real_opkg. Defined.
-
-#[program] Definition DH_rnd_opkg : opackage  DH_loc [interface] [interface val #[10]: 'unit → chPubKey × chCipher ] :=
-  [ package def #[10] ( _ : 'unit ) : chPubKey × chCipher
-             {
-               a <$ (U i_sk);; b <$ (U i_sk);; c <$ (U i_sk);;
-               put pk_loc := pk2ch (g^+a);;
-               put sk_loc := sk2ch a ;;
-               ret (pk2ch (g^+a), c2ch (g^+b, g^+c) )
-             }
-
-  ].
-
-Definition DH_rnd : package  [interface] [interface val #[10]: 'unit → chPubKey × chCipher ].
-Proof. exists DH_loc. exact: DH_rnd_opkg. Defined.
-
-
-#[program] Definition Aux_opkg : opackage (fset [:: counter_loc])
-     [interface val #[10]: 'unit → chPubKey × chCipher]
-     [interface val #[challenge_id'] : chPlain → 'option chCipher] :=
-  [
-    package def #[challenge_id'] ( m : chPlain ) : 'option chCipher
-             {
-                count ← get counter_loc ;;
-                put counter_loc := (count + 1)%N;;
-                if ((count == 0)%N) then
-                  '(pk, c) ← op [ #[10] : 'unit → chPubKey × chCipher] Datatypes.tt ;;
-                   ret (some (c2ch ((ch2c c).1 , (ch2m m) * ((ch2c c).2))))
-                else ret None
-             }
-
-  ].
-
-
-Definition Aux : package [interface val #[10]: 'unit → chPubKey × chCipher]
-                         [interface val #[challenge_id'] : chPlain → 'option chCipher].
-Proof. exists (fset [:: counter_loc]). exact: Aux_opkg. Defined.
-
-
-(* Aux ∘ DH_real *)
-Definition Aux_DH_real (m : 'I_#|gT|) :  program (fset [:: counter_loc; pk_loc; sk_loc ]) fset0 (chOption choiceCipher).
+Lemma counter_loc_in :
+  counter_loc \in (fset [:: counter_loc; pk_loc; sk_loc ]).
 Proof.
-  apply: bind.
-  { apply: (getr counter_loc counter_loc_in) => count.
-    apply: ret count.
+  auto_in_fset.
+Qed.
+
+Lemma pk_loc_in :
+  pk_loc \in (fset [:: counter_loc; pk_loc; sk_loc ]).
+Proof.
+  auto_in_fset.
+Qed.
+
+Lemma sk_loc_in :
+  sk_loc \in (fset [:: counter_loc; pk_loc; sk_loc ]).
+Proof.
+  auto_in_fset.
+Qed.
+
+Definition DH_loc := fset [:: pk_loc ; sk_loc].
+
+Definition DH_real :
+  package DH_loc [interface]
+    [interface val #[10] : 'unit → chPubKey × chCipher ] :=
+    [package
+      def #[10] (_ : 'unit) : chPubKey × chCipher
+      {
+        a ← sample U i_sk ;;
+        b ← sample U i_sk ;;
+        put pk_loc := pk2ch (g^+a) ;;
+        put sk_loc := sk2ch a ;;
+        ret (pk2ch (g^+a), c2ch (g^+b, g^+(a * b)))
+      }
+    ].
+
+Definition DH_rnd :
+  package DH_loc [interface]
+    [interface val #[10] : 'unit → chPubKey × chCipher ] :=
+    [package
+      def #[10] (_ : 'unit) : chPubKey × chCipher
+      {
+        a ← sample U i_sk ;;
+        b ← sample U i_sk ;;
+        c ← sample U i_sk ;;
+        put pk_loc := pk2ch (g^+a) ;;
+        put sk_loc := sk2ch a ;;
+        ret (pk2ch (g^+a), c2ch (g^+b, g^+c))
+      }
+    ].
+
+Definition Aux :
+  package (fset [:: counter_loc])
+    [interface val #[10] : 'unit → chPubKey × chCipher]
+    [interface val #[challenge_id'] : chPlain → 'option chCipher] :=
+    [package
+      def #[challenge_id'] (m : chPlain) : 'option chCipher
+      {
+        #import {sig #[10] : 'unit → chPubKey × chCipher } as query ;;
+        count ← get counter_loc ;;
+        put counter_loc := (count + 1)%N ;;
+        if (count == 0)%N then
+          '(pk, c) ← query Datatypes.tt ;;
+          ret (Some (c2ch ((ch2c c).1 , (ch2m m) * ((ch2c c).2))))
+        else ret None
+      }
+    ].
+
+Definition DH_security : Prop :=
+  ∀ LA A,
+    ValidPackage LA [interface val #[10] : 'unit → chPubKey × chCipher ] A_export A →
+    fdisjoint LA DH_loc →
+    AdvantageE DH_real DH_rnd A = 0.
+
+(* TODO MOVE *)
+Lemma program_link_import :
+  ∀ {A} (o : opsig) (c : (src o → raw_program (tgt o)) → raw_program A) p,
+    program_link (#import o as f ;; c f) p =
+    (let f := get_op_default p o in
+    program_link (c f) p).
+Proof.
+  intros A o c p.
+  cbn. induction c eqn:e.
+  (* - cbn.
+  -
+  -
+  -
+  - *)
+  (* Will this even be provable? Without parametricity seems hard.
+    c might branch on the argument... Even though in practice it won't.
+    So maybe I should use tactics to do this?
+    Maybe just a change with the above?
+  *)
+Abort.
+
+Lemma ots_real_vs_rnd_equiv_false :
+  ots_real_vs_rnd false ≈₀ Aux ∘ DH_real.
+Proof.
+  (* We go to the relation logic using equality as invariant. *)
+  eapply eq_rel_perf_ind with (λ '(h₀, h₁), h₀ = h₁). 2: reflexivity.
+  1:{
+    simpl. intros s₀ s₁. split.
+    - intro e. rewrite e. auto.
+    - intro e. rewrite e. auto.
   }
-  move => /= count. apply: bind.
-  { apply: (putr _ counter_loc_in).
-    - simpl. exact: (count + 1)%N.
-    - apply: ret Datatypes.tt. }
-  move => tt. destruct count eqn: Hcount.
-  - apply: bind.
-    { apply: (sampler (U i_sk)) => /= a. apply: ret a. }
-    move => /= a. apply: bind.
-    { apply: (sampler (U i_sk)) => /= b. apply: ret b. }
-    move => /= b. apply: bind.
-    { apply: (putr _ pk_loc_in (pk2ch (g^+a))). apply: ret Datatypes.tt. }
-    move => tt1. apply: bind.
-    { apply: (putr _ sk_loc_in  (sk2ch a)). apply: ret Datatypes.tt. }
-    move => tt2.
-    apply: ret (some (c2ch (g^+b, (ch2m m)* g^+(a * b)))).
-  - apply: ret None.
-Defined.
+  (* We now conduct the proof in relational logic. *)
+  intros id S T m hin.
+  invert_interface_in hin.
+  rewrite get_op_default_link.
+  (* First we need to squeeze the programs out of the packages *)
+  (* Hopefully I will find a way to automate it. *)
+  unfold get_op_default.
+  destruct lookup_op as [f|] eqn:e.
+  2:{
+    exfalso.
+    simpl in e.
+    destruct chUniverse_eqP. 2: eauto.
+    destruct chUniverse_eqP. 2: eauto.
+    discriminate.
+  }
+  eapply lookup_op_spec in e. simpl in e.
+  rewrite setmE in e. rewrite eq_refl in e.
+  noconf e.
+  (* Now to the RHS *)
+  destruct lookup_op as [f|] eqn:e.
+  2:{
+    exfalso.
+    simpl in e.
+    destruct chUniverse_eqP. 2: eauto.
+    destruct chUniverse_eqP. 2: eauto.
+    discriminate.
+  }
+  eapply lookup_op_spec in e.
+  match type of e with
+  | ?x = _ =>
+    let x' := eval hnf in x in
+    change x with x' in e
+  end.
+  match type of e with
+  | context [ mkdef _ _ ?p ] =>
+    set (foo := p) in e
+  end.
+  cbn in e. unfold mkdef in e. noconf e. subst foo.
+  cbn beta.
+  (* Now the linking *)
+  simpl.
+  (* Too bad but linking doesn't automatically commute with match *)
+  setoid_rewrite program_link_if.
+  simpl.
+  destruct chUniverse_eqP as [e|]. 2: contradiction.
+  assert (e = erefl) by apply uip. subst e.
+  destruct chUniverse_eqP as [e|]. 2: contradiction.
+  assert (e = erefl) by apply uip. subst e.
+  simpl.
+  (* We are now in the realm of program logic *)
+  eapply (rsame_head_cmd (cmd_get _)). intro count.
+  eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put _ _)). intros _.
+  match goal with
+  | |- context [ if ?b then _ else _ ] =>
+    destruct b eqn:e
+  end.
+  - eapply (rsame_head_cmd (cmd_sample _)). intro a.
+    eapply r_transR.
+    1:{
+      eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U i_sk)) (λ a₁ z, _)).
+      - auto.
+      - intros ? ?.
+        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+        cbn. auto.
+      - eapply rsamplerC_cmd.
+    }
+    simpl.
+    eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put _ _)). intros _.
+    eapply r_transR.
+    1:{
+      eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U i_sk)) (λ a₁ z, _)).
+      - auto.
+      - intros ? ?.
+        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+        cbn. auto.
+      - eapply rsamplerC_cmd.
+    }
+    simpl.
+    eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put _ _)). intros _.
+    (* Not clear how to relate the two sampling to me. *)
+    (* We might want a ret rule that asks us to show equality
+      of the arguments or even just pre -> post?
+    *)
+    (* The following is to see clearer, might be best not to do it. *)
+    setoid_rewrite gT2ch_ch2gT.
+    setoid_rewrite ch2gT_gT2ch.
+    admit.
+  - eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
+    intros [? ?] [? ?] ee. inversion ee. intuition reflexivity.
+Admitted.
 
-(* Aux ∘ DH_rnd *)
-Definition Aux_DH_rnd (m : 'I_#|gT|) :  program (fset [:: counter_loc; pk_loc; sk_loc ]) fset0 (chOption choiceCipher).
+Lemma ots_real_vs_rnd_equiv_true :
+  Aux ∘ DH_rnd ≈₀ ots_real_vs_rnd true.
 Proof.
-  apply: bind.
-  { apply: (getr counter_loc counter_loc_in) => count.
-    apply: ret count. }
-  move => /= count. apply: bind.
-  { apply: (putr _ counter_loc_in).
-    - simpl. exact: (count + 1)%N.
-    - apply: ret Datatypes.tt. }
-  move => tt. destruct count eqn: Hcount.
-  - apply: bind.
-    { apply: (sampler (U i_sk)) => /= a. apply: ret a. }
-    move => /= a. apply: bind.
-    { apply: (sampler (U i_sk)) => /= b. apply: ret b. }
-    move => /= b. apply: bind.
-    { apply: (sampler (U i_sk)) => /= c. apply: ret c. }
-    move => /= c. apply: bind.
-    { apply: (putr _ pk_loc_in (pk2ch (g^+a))). apply: ret Datatypes.tt. }
-    move => tt1. apply: bind.
-    { apply: (putr _ sk_loc_in (sk2ch a)). apply: ret Datatypes.tt. }
-    move => tt3.
-    apply: ret (some (c2ch (g^+b, (ch2m m) * (g^+c)))).
-  - apply: ret None.
-Defined.
+  (* We go to the relation logic using equality as invariant. *)
+  eapply eq_rel_perf_ind with (λ '(h₀, h₁), h₀ = h₁). 2: reflexivity.
+  1:{
+    simpl. intros s₀ s₁. split.
+    - intro e. rewrite e. auto.
+    - intro e. rewrite e. auto.
+  }
+  (* We now conduct the proof in relational logic. *)
+  intros id S T m hin.
+  invert_interface_in hin.
+  rewrite get_op_default_link.
+  (* First we need to squeeze the programs out of the packages *)
+  (* Hopefully I will find a way to automate it. *)
+  unfold get_op_default.
+  destruct lookup_op as [f|] eqn:e.
+  2:{
+    exfalso.
+    simpl in e.
+    destruct chUniverse_eqP. 2: eauto.
+    destruct chUniverse_eqP. 2: eauto.
+    discriminate.
+  }
+  eapply lookup_op_spec in e. simpl in e.
+  rewrite setmE in e. rewrite eq_refl in e.
+  noconf e.
+  (* Now to the RHS *)
+  destruct lookup_op as [f|] eqn:e.
+  2:{
+    exfalso.
+    simpl in e.
+    destruct chUniverse_eqP. 2: eauto.
+    destruct chUniverse_eqP. 2: eauto.
+    discriminate.
+  }
+  eapply lookup_op_spec in e. simpl in e.
+  rewrite setmE in e. rewrite eq_refl in e.
+  noconf e.
+  (* Now the linking *)
+  simpl.
+  (* Too bad but linking doesn't automatically commute with match *)
+  setoid_rewrite program_link_if.
+  simpl.
+  destruct chUniverse_eqP as [e|]. 2: contradiction.
+  assert (e = erefl) by apply uip. subst e.
+  destruct chUniverse_eqP as [e|]. 2: contradiction.
+  assert (e = erefl) by apply uip. subst e.
+  simpl.
+  (* We are now in the realm of program logic *)
+  eapply (rsame_head_cmd (cmd_get _)). intro count.
+  eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put _ _)). intros _.
+  match goal with
+  | |- context [ if ?b then _ else _ ] =>
+    destruct b eqn:e
+  end.
+  - eapply (rsame_head_cmd (cmd_sample _)). intro a.
+    eapply r_transL.
+    1:{
+      eapply (rsame_head_cmd (cmd_sample _)). intro x.
+      eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U i_sk)) (λ a₁ z, _)).
+      - auto.
+      - intros ? ?.
+        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+        cbn. auto.
+      - eapply rsamplerC_cmd.
+    }
+    simpl.
+    eapply r_transL.
+    1:{
+      eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U i_sk)) (λ a₁ z, _)).
+      - auto.
+      - intros ? ?.
+        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+        cbn. auto.
+      - eapply rsamplerC_cmd.
+    }
+    simpl.
+    eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put _ _)). intros _.
+    eapply r_transL.
+    1:{
+      eapply (rsame_head_cmd (cmd_sample _)). intro x.
+      eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U i_sk)) (λ a₁ z, _)).
+      - auto.
+      - intros ? ?.
+        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+        cbn. auto.
+      - eapply rsamplerC_cmd.
+    }
+    simpl.
+    eapply r_transL.
+    1:{
+      eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U i_sk)) (λ a₁ z, _)).
+      - auto.
+      - intros ? ?.
+        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+        cbn. auto.
+      - eapply rsamplerC_cmd.
+    }
+    simpl.
+    eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put _ _)). intros _.
+    (* Now I guess is where gT × gT vs gT sampling appears? *)
+    (* The following is to see clearer, might be best not to do it. *)
+    setoid_rewrite gT2ch_ch2gT.
+    setoid_rewrite ch2gT_gT2ch.
+    admit.
+  - eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
+    intros [? ?] [? ?] ee. inversion ee. intuition reflexivity.
+Admitted.
 
-Definition LHS0 (m : 'I_#|gT|) : program (fset [:: counter_loc; pk_loc; sk_loc ])  fset0 (chOption choiceCipher).
+Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher.
 Proof.
-  apply: bind.
-  { apply: (getr counter_loc counter_loc_in) => /= count.
-    apply: ret count. }
-  move => /= count. apply: bind.
-  { apply: (putr _ counter_loc_in).
-    - simpl. exact: (count + 1)%N.
-    - apply: ret Datatypes.tt. }
-   move => tt1. destruct count eqn: Hcount.
-  - apply: bind.
-    { apply: (sampler (U i_sk)) => /= a. apply: ret a. }
-    move => /= a. apply: bind.
-    { apply: (putr _ pk_loc_in (pk2ch (g^+a))). apply: ret Datatypes.tt. }
-    move => tt2. apply: bind.
-    { apply: (putr _ sk_loc_in (sk2ch a)). apply: ret Datatypes.tt. }
-    move => tt3. apply: bind.
-    { apply: (sampler (U i_sk)) => /= b. apply: ret b. }
-    move => /= b.
-    apply: ret (some (c2ch (g^+b, (ch2m m) * (g^+(a*b))))).
-  - apply: ret None.
-Defined.
+  unfold OT_rnd_cipher. intros LA A vA hd₀ hd₁.
+  simpl in hd₀, hd₁. clear hd₁. rename hd₀ into hd.
+  apply Advantage_le_0.
+  rewrite Advantage_E.
+  pose proof (
+    Advantage_triangle_chain (ots_real_vs_rnd false) [::
+      Aux ∘ DH_real ;
+      Aux ∘ DH_rnd
+    ] (ots_real_vs_rnd true) A
+  ) as ineq.
+  advantage_sum simpl in ineq.
+  rewrite !GRing.addrA in ineq.
+  eapply ler_trans. 1: exact ineq.
+  clear ineq.
+  rewrite -Advantage_link. erewrite dh_secure. 2: exact _.
+  2:{
+    rewrite fdisjointUl. apply/andP. split.
+    - unfold DH_loc. unfold L_locs_counter in hd.
+      rewrite fdisjointC.
+      eapply fdisjoint_trans. 2:{ rewrite fdisjointC. exact hd. }
+      rewrite [X in fsubset _ X]fset_cons.
+      apply fsubsetUr.
+    - unfold DH_loc. rewrite fset_cons. rewrite -fset0E. rewrite fsetU0.
+      rewrite fdisjoint1s.
+      apply/negP. intro e.
+      rewrite in_fset in e. rewrite in_cons in e. rewrite mem_seq1 in e.
+      move: e => /orP [/eqP e | /eqP e].
+      all: discriminate.
+  }
+  rewrite ots_real_vs_rnd_equiv_false. 2: auto.
+  2:{
+    rewrite fdisjointUr. apply/andP. split.
+    - unfold L_locs_counter in hd.
+      rewrite fdisjointC.
+      eapply fdisjoint_trans. 2:{ rewrite fdisjointC. exact hd. }
+      rewrite [X in fsubset _ X]fset_cons.
+      rewrite fset_cons. rewrite -fset0E. rewrite fsetU0.
+      apply fsubsetUl.
+    - unfold DH_loc. unfold L_locs_counter in hd.
+      rewrite fdisjointC.
+      eapply fdisjoint_trans. 2:{ rewrite fdisjointC. exact hd. }
+      rewrite [X in fsubset _ X]fset_cons.
+      apply fsubsetUr.
+  }
+  rewrite ots_real_vs_rnd_equiv_true. 3: auto.
+  2:{
+    rewrite fdisjointUr. apply/andP. split.
+    - unfold L_locs_counter in hd.
+      rewrite fdisjointC.
+      eapply fdisjoint_trans. 2:{ rewrite fdisjointC. exact hd. }
+      rewrite [X in fsubset _ X]fset_cons.
+      rewrite fset_cons. rewrite -fset0E. rewrite fsetU0.
+      apply fsubsetUl.
+    - unfold DH_loc. unfold L_locs_counter in hd.
+      rewrite fdisjointC.
+      eapply fdisjoint_trans. 2:{ rewrite fdisjointC. exact hd. }
+      rewrite [X in fsubset _ X]fset_cons.
+      apply fsubsetUr.
+  }
+  rewrite !GRing.addr0. auto.
+Qed.
 
+(* TODO OLD BELOW
+  Some parts are still salvageable, the rest has been scraped.
+*)
 
-Definition RHS0 (m : 'I_#|gT|) : program (fset [:: counter_loc; pk_loc; sk_loc ]) fset0 (chOption choiceCipher).
-Proof.
-  apply: bind.
-  { apply: (getr counter_loc counter_loc_in) => /= count.
-    apply: ret count. }
-  move => /= count. apply: bind.
-  { apply: (putr _ counter_loc_in).
-    - simpl. exact: (count + 1)%N.
-    - apply: ret Datatypes.tt. }
-  move => tt2. destruct count eqn: Hcount.
-  - apply: bind.
-     { apply: (sampler (U i_sk)) => /= a. apply: ret a. }
-     move => /= a. apply: bind.
-     { apply: (putr _ pk_loc_in (pk2ch (g^+a))). apply: ret Datatypes.tt. }
-     move => tt1. apply: bind.
-     { apply: (putr _ sk_loc_in (sk2ch a)). apply: ret Datatypes.tt. }
-    move => tt4. apply: bind.
-    { apply: (sampler (U i_cipher)) => /= c. apply: ret c. }
-    move => /= c.
-    apply: ret (some (c2ch c)).
-  - apply: ret None.
-Defined.
-
-
-Lemma repr_Uniform { L : {fset Location} } (i: Index) :
+(* Lemma repr_Uniform { L : {fset Location} } (i: Index) :
   @repr _ L (x ← sample (U i);; ret x) = (@Uniform_F i _).
-Admitted.   
+Admitted. *)
 
 (*CA: probably already here we need that repr (sample U i) is Uniform i. *)
-Lemma UniformIprod_UniformUniform { L : {fset Location} } (i j : Index)  :
+(* Lemma UniformIprod_UniformUniform { L : {fset Location} } (i j : Index)  :
   ⊨ ⦃ fun '(s1, s2) => s1 = s2 ⦄
     @repr _ L (XY ← (XY ← sample U (i_prod i j) ;; ret XY) ;; ret XY ) ≈
     @repr _ L (X ←  (X ← sample U i ;; ret X) ;;
               (Y ←  (Y ← sample U j ;; ret Y) ;; ret (X, Y)))
-
-    ⦃ eq ⦄.
+  ⦃ eq ⦄.
 Proof.
-  rewrite !repr_bind. rewrite !repr_Uniform. 
-Admitted. 
-    
+  rewrite !repr_bind. rewrite !repr_Uniform.
+Admitted.
+*)
 
-Lemma group_OTP { L : { fset Location } } : forall m,
+(* Lemma group_OTP { L : { fset Location } } : forall m,
     ⊨ ⦃ λ '(h1, h2), h1 = h2 ⦄
       @repr _ L ((c ← (c ← sample U i_cipher ;; ret c) ;; ret (Some (c2ch c))))  ≈
       @repr _ L ((b ← (b ← sample U i_sk ;; ret b) ;;
@@ -471,14 +669,14 @@ Proof.
   unshelve apply: rrewrite_eqDistrR.
   { eapply (
         bc ← (bc ← sample U (i_prod i_sk i_sk) ;; ret bc) ;;
-               ret (Some (c2ch ( g^+ (bc.1), (ch2m m) * g ^+ (bc.2))))). } 
+               ret (Some (c2ch ( g^+ (bc.1), (ch2m m) * g ^+ (bc.2))))). }
   { apply (@rpost_conclusion_rule _ _ _ L (fun '(h1,h2) => h1 = h2)
                                   ((c ← sample U i_cipher ;; ret c))
                                   ((bc ← sample U (i_prod i_sk i_sk) ;; ret bc))
                                   (fun c => Some (c2ch c)) (fun bc => (Some (c2ch (g ^+ bc.1, ch2m m * g ^+ bc.2))))).
     rewrite !repr_bind !repr_Uniform.
     (* this is just Uniform_F ≈ Uniform_F... we should be able to apply monad laws and then Uniform_bij_law. *)
-    admit. 
+    admit.
   }
   (*CA: This now looks easier than a Fubini Theorem
         and my guess is that it should not be too hard to write down a coupling for this case (lemma)
@@ -490,55 +688,31 @@ Proof.
               @repr _ L (bc ← (bc ← sample U (i_prod i_sk i_sk) ;; ret bc) ;; ret (Some (c2ch (g ^+ bc.1, ch2m m * g ^+ bc.2))))
               ≈
               @repr _ L (b ← (b ← sample U i_sk ;; ret b) ;; c ← (c ← sample U i_sk ;; ret c) ;;
-                         ret (Some (c2ch (g ^+ b, ch2m m * g ^+ c)))) ⦃ eq ⦄ by []. 
-   (*TODO: massage a bit more the RHS and then apply rf_preserves_eq and then UniformIprod_UniformUniform *) 
-  admit. 
-Admitted.
+                         ret (Some (c2ch (g ^+ b, ch2m m * g ^+ c)))) ⦃ eq ⦄ by [].
+   (*TODO: massage a bit more the RHS and then apply rf_preserves_eq and then UniformIprod_UniformUniform *)
+  admit.
+Admitted. *)
 
-(* Note duplicate in SymmetricSchemeStateProb *)
-(* TODO MOVE But where? *)
-Lemma eq_prog_semj_impl :
-  ∀ L L' R R' A
-    (p : program L _ A) (q : program R _ _)
-    (p' : program L' _ A) (q' : program R' _ _),
-    L = L' →
-    R = R' →
-    sval p = sval p' →
-    sval q = sval q' →
-    ⊨ ⦃ λ '(s1, s2), s1 = s2 ⦄ repr p ≈ repr q ⦃ eq ⦄ →
-    ⊨ ⦃ λ '(s1, s2), s1 = s2 ⦄ repr p' ≈ repr q' ⦃ λ '(a, b) '(c, d), a = c ∧ b = d ⦄.
-Proof.
-  intros L L' R R' A p q p' q' eL eR ep eq.
-  subst L' R'.
-  eapply program_ext in ep.
-  eapply program_ext in eq.
-  subst q' p'.
-  intro h.
-  eapply post_weaken_rule. 1: eauto.
-  cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
-Qed.
-
-
-Lemma pk_encoding_correct : forall p,
+(* Lemma pk_encoding_correct : forall p,
     ch2pk (pk2ch p ) = p.
 Proof.
-  move => /= A. rewrite /ch2pk /pk2ch. exact: ch2gT_gT2ch. 
-Qed.
+  move => /= A. rewrite /ch2pk /pk2ch. exact: ch2gT_gT2ch.
+Qed. *)
 
-Lemma ch2c_c2ch : forall x, ch2c (c2ch x) = x.
+(* Lemma ch2c_c2ch : forall x, ch2c (c2ch x) = x.
 Proof.
-  move => [C1 C2]. rewrite /ch2c /c2ch.  
-  by rewrite !ch2gT_gT2ch. 
-Qed. 
+  move => [C1 C2]. rewrite /ch2c /c2ch.
+  by rewrite !ch2gT_gT2ch.
+Qed. *)
 
- Lemma cipher_encoding_correct : forall b c m,
+ (* Lemma cipher_encoding_correct : forall b c m,
      c2ch (g ^+ b, ch2m m * g ^+ c) = c2ch ((ch2c (c2ch (g ^+ b, g ^+ c))).1, ch2m m * (ch2c (c2ch (g ^+ b, g ^+ c))).2).
  Proof.
    move => b c m. by rewrite !ch2c_c2ch.
- Qed.
+ Qed. *)
 
 
-Lemma game_hop : forall A Hdisj1 Hdisj2 Hdisj1' Hdisj2',
+(* Lemma game_hop : forall A Hdisj1 Hdisj2 Hdisj1' Hdisj2',
   @AdvantageE _ (ots_real_vs_rnd false) (ots_real_vs_rnd true) A Hdisj1 Hdisj2 =
   @AdvantageE _ (Aux ∘ DH_real) (Aux ∘ DH_rnd) A Hdisj1' Hdisj2'.
 Proof.
@@ -742,19 +916,16 @@ Proof.
     ++ apply: rreflexivity_rule. }
   rewrite HL. clear HL.
   by rewrite distrC.
-Qed.
+Qed. *)
 
-Definition DH_security : Prop := forall A Hdisj1 Hdisj2,
-    @AdvantageE _ DH_real DH_rnd A  Hdisj1 Hdisj2 = 0.
-
-Lemma counter_DH_loc : (fset [:: counter_loc] :|: DH_loc) = fset ([:: counter_loc; pk_loc; sk_loc]).
+(* Lemma counter_DH_loc : (fset [:: counter_loc] :|: DH_loc) = fset ([:: counter_loc; pk_loc; sk_loc]).
 Proof.
   rewrite /DH_loc.
   apply eq_fset => x.
   by rewrite in_fsetU !in_fset  mem_seq1 mem_seq2 mem_seq3.
-Qed.
+Qed. *)
 
-Lemma counter_pk_sk_disj : fset [:: counter_loc] :&: fset [:: pk_loc; sk_loc] == fset0 .
+(* Lemma counter_pk_sk_disj : fset [:: counter_loc] :&: fset [:: pk_loc; sk_loc] == fset0 .
 Proof.
   apply /eqP.
   apply eq_fset => x.
@@ -762,40 +933,4 @@ Proof.
   apply: negPf. apply /andP.  move => [H1 H2].
   rewrite in_fset mem_seq1 in H1. move/eqP: H1. move => H1. subst.
   rewrite in_fset mem_seq2 in H2. move /orP: H2. move => [K | K]; move /eqP : K ; move => K ; inversion K.
-Qed.
-
-Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher.
-Proof.
-  rewrite /OT_rnd_cipher.
-  move => A /= Hdisj1 Hdisj2.  unfold L_locs_counter in Hdisj1, Hdisj2.
-  rewrite /Advantage.
-  fold (@AdvantageE _ (ots_real_vs_rnd false) (ots_real_vs_rnd true) A Hdisj1 Hdisj2).
-  rewrite game_hop.
-  1: { simpl (Aux ∘ DH_real).π1. rewrite /DH_loc counter_DH_loc. assumption. }
-  2: {
-  rewrite /AdvantageE => H1 H2. rewrite !link_assoc.
-  have H1' : fdisjoint (T:=tag_ordType (I:=chUniverse_ordType) (λ _ : chUniverse, nat_ordType)) (A ∘ Aux).π1 (DH_real).π1.
-  { simpl (A ∘ Aux).π1. simpl (DH_real).π1. simpl (Aux ∘ DH_real).π1 in H1. unfold DH_loc in *.
-    unfold fdisjoint in *.
-    rewrite fsetIUr in H1.
-    rewrite fsetU_eq0 in H1.
-    move /andP: H1 => [H11 H12].
-    move /eqP : H12 => H12.
-    rewrite fsetIUl H12 fset0U.
-    exact: counter_pk_sk_disj.
-  }
-  have H2' : fdisjoint (T:=tag_ordType (I:=chUniverse_ordType) (λ _ : chUniverse, nat_ordType)) (A ∘ Aux).π1 (DH_rnd).π1.
-  { simpl (A ∘ Aux).π1. simpl (DH_rnd).π1. simpl (Aux ∘ DH_rnd).π1 in H1. unfold DH_loc in *.
-    unfold fdisjoint in *.
-    rewrite fsetIUr in H2.
-    rewrite fsetU_eq0 in H2.
-    move /andP: H2 => [H21 H22].
-    move /eqP : H22 => H22.
-    rewrite fsetIUl H22 fset0U.
-    exact: counter_pk_sk_disj.
-  }
-  fold (@AdvantageE _ DH_real DH_rnd (A ∘ Aux) H1' H2').
-    by apply: dh_secure. }
-  simpl (Aux ∘ DH_rnd).π1. rewrite /DH_loc counter_DH_loc. assumption.
-Qed.
-
+Qed. *)

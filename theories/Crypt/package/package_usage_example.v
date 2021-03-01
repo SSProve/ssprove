@@ -10,6 +10,9 @@ Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From Crypt Require Import RulesStateProb Package Prelude.
 
+From Equations Require Import Equations.
+Require Equations.Prop.DepElim.
+
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
@@ -40,14 +43,17 @@ Module NotationExamples (π : RulesParam).
       val #[4] : 'bool × 'bool → 'bool
     ].
 
-  Definition p0 : opackage fset0 [interface] I0 :=
+  Definition pempty : package fset0 [interface] [interface] :=
+    [package].
+
+  Definition p0 : package fset0 [interface] I0 :=
     [package
       def #[3] (x : 'nat) : 'nat {
         ret x
       }
     ].
 
-  Definition p1 : opackage fset0 [interface] I1 :=
+  Definition p1 : package fset0 [interface] I1 :=
     [package
       def #[0] (z : 'bool) : 'bool {
         ret z
@@ -60,75 +66,91 @@ Module NotationExamples (π : RulesParam).
       }
     ].
 
-  Definition p2 : opackage fset0 [interface] I2 :=
+  Definition foo (x : bool) : program fset0 [interface] bool_choiceType :=
+    {program let u := x in ret u}.
+
+  Definition bar (b : bool) : program fset0 [interface] nat_choiceType :=
+    {program if b then ret 0 else ret 1}.
+
+  Definition p2 : package fset0 [interface] I2 :=
     [package
       def #[4] (x : 'bool × 'bool) : 'bool {
         let '(u,v) := x in ret v
       }
     ].
 
-  Definition b1 : bundle := {|
-    locs := fset0 ;
-    import := [interface] ;
-    export := _ ;
-    pack := p1
-  |}.
-
-  Obligation Tactic := package_obtac.
-
-  (** Note that because fsets are locked, ordering the export interface
-      differently would not work.
-
-      The program attribute is there to infer automatically the proofs
-      corresponding to opr/putr/getr.
-  *)
-  #[program] Definition btest : bundle := {|
-    locs := [fset (chNat; 0)] ;
-    import := [interface val #[0] : 'nat → 'nat] ;
-    export := [interface
-      val #[1] : 'nat → 'nat ;
-      val #[2] : 'unit → 'unit
-    ] ;
-    pack := [package
-      def #[2] (_ : 'unit) : 'unit {
-        putr (chNat; 0) _ 0 (ret Datatypes.tt)
-      } ;
+  Definition test₁ :
+    package
+      [fset (chNat; 0)]
+      [interface val #[0] : 'nat → 'nat]
+      [interface
+        val #[1] : 'nat → 'nat ;
+        val #[2] : 'unit → 'unit
+      ]
+    :=
+    [package
       def #[1] (x : 'nat) : 'nat {
-        getr (chNat; 0) _ (λ n : nat,
-          opr (0, (chNat, chNat)) _ n (λ m,
-            putr (chNat; 0) _ m (ret m)
+        getr ('nat; 0) (λ n : nat,
+          opr (0, ('nat, 'nat)) n (λ m,
+            putr ('nat; 0) m (ret m)
           )
         )
+      } ;
+      def #[2] (_ : 'unit) : 'unit {
+        putr ('nat; 0) 0 (ret Datatypes.tt)
       }
-    ]
-  |}.
+    ].
 
-  (* A similar definition but using the notations for the monad. *)
-  #[program] Definition btest' : bundle := {|
-    locs := [fset ('nat; 0)] ;
-    import := [interface val #[0] : 'nat → 'nat ] ;
-    export := [interface
-      val #[1] : 'nat → 'nat ;
-      val #[2] : 'unit → 'option ('fin 2) ;
-      val #[3] : {map 'nat → 'nat} → 'option 'nat
-    ] ;
-    pack := [package
-      def #[3] (m : {map 'nat → 'nat}) : 'option 'nat {
-        ret (getm m 0)
+  Definition sig := {sig #[0] : 'nat → 'nat }.
+
+  Definition test₂ :
+    package
+      [fset ('nat; 0)]
+      [interface val #[0] : 'nat → 'nat ]
+      [interface
+        val #[1] : 'nat → 'nat ;
+        val #[2] : 'unit → 'option ('fin 2) ;
+        val #[3] : {map 'nat → 'nat} → 'option 'nat
+      ]
+    :=
+    [package
+      def #[1] (x : 'nat) : 'nat {
+        n ← get ('nat ; 0) ;;
+        m ← op sig ⋅ n ;;
+        n ← get ('nat ; 0) ;;
+        m ← op sig ⋅ n ;;
+        put ('nat ; 0) := m ;;
+        ret m
       } ;
       def #[2] (_ : 'unit) : 'option ('fin 2) {
-        put ('nat; 0) := 0 ;;
+        put ('nat ; 0) := 0 ;;
         ret (Some (gfin 1))
       } ;
-      def #[1] (x : 'nat) : 'nat {
-        n ← get ('nat; 0) ;;
-        m ← op [ #[0] : 'nat → 'nat ] n ;;
-        n ← get ('nat; 0) ;;
-        m ← op [ #[0] : 'nat → 'nat ] n ;;
-        put ('nat; 0) := m ;;
-        ret m
+      def #[3] (m : {map 'nat → 'nat}) : 'option 'nat {
+        ret (getm m 0)
       }
-    ]
-  |}.
+    ].
+
+  (* Testing the #import notation *)
+  Definition test₃ :
+    package
+      fset0
+      [interface
+        val #[0] : 'nat → 'bool ;
+        val #[1] : 'bool → 'unit
+      ]
+      [interface val #[2] : 'nat → 'nat ]
+    :=
+    [package
+      def #[2] (n : 'nat) : 'nat {
+        #import {sig #[0] : 'nat → 'bool } as f ;;
+        #import {sig #[1] : 'bool → 'unit } as g ;;
+        b ← f n ;;
+        if b then
+          _ ← g false ;;
+          ret 0
+        else ret n
+      }
+    ].
 
 End NotationExamples.

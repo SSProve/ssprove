@@ -93,7 +93,7 @@
 **)
 
 
-From Coq Require Import Utf8.
+From Coq Require Import Utf8 Lia.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice seq.
@@ -128,12 +128,15 @@ Module PkgNotation (π : RulesParam).
     Notation " 'bool " := (chBool) (in custom pack_type at level 2).
     Notation " 'unit " := (chUnit) (in custom pack_type at level 2).
     Notation " 'option x " := (chOption x) (in custom pack_type at level 2).
+
     Notation " 'fin n " :=
       (chFin (mkpos n))
       (in custom pack_type at level 2, n constr).
+
     Notation "{map x → y }" :=
       (chMap x y)
       (in custom pack_type at level 2, format "{map  x  →  y  }").
+
     Notation " x × y " := (chProd x y) (in custom pack_type at level 2).
 
     Notation "( x )" := x (in custom pack_type, x at level 2).
@@ -143,13 +146,16 @@ Module PkgNotation (π : RulesParam).
     Notation " 'bool " := (chBool) (at level 2) : package_scope.
     Notation " 'unit " := (chUnit) (at level 2) : package_scope.
     Notation " 'option x " := (chOption x) (at level 2) : package_scope.
+
     Notation " 'fin x " :=
       (chFin (mkpos x))
       (at level 2) : package_scope.
+
     (* Conflicts with this one. *)
     (* Notation "{map x → y }" :=
       (chMap x y)
       (at level 80, format "{map  x  →  y  }") : package_scope. *)
+
     Notation " x × y " := (chProd x y) (at level 80) : package_scope.
 
     Notation "[ 'interface' ]" :=
@@ -157,8 +163,10 @@ Module PkgNotation (π : RulesParam).
       (at level 0, only parsing)
       : package_scope.
 
-    Notation "[ 'interface' x1 ]" := (fset (x1 :: [::]))
-      (at level 0, x1 custom interface at level 2, format "[ interface  x1  ]")
+    Notation "[ 'interface' x1 ]" :=
+      (fset (x1 :: [::]))
+      (at level 0, x1 custom interface at level 2,
+      format "[ interface  x1  ]")
       : package_scope.
 
     Notation "[ 'interface' x1 ; x2 ; .. ; xn ]" :=
@@ -177,17 +185,17 @@ Module PkgNotation (π : RulesParam).
       format "val  #[ f ]  :  A  →  B").
 
     Notation "[ 'package' ]" :=
-      (mkpack (mkfmap [::]))
+      (mkpackage (mkfmap [::]) _)
       (at level 0, only parsing)
       : package_scope.
 
     Notation "[ 'package' x1 ]" :=
-      (mkpack (mkfmap (x1 :: [::])))
+      (mkpackage (mkfmap (x1 :: [::])) _)
       (at level 0, x1 custom package at level 2, format "[ package  x1  ]")
       : package_scope.
 
     Notation "[ 'package' x1 ; x2 ; .. ; xn ]" :=
-      (mkpack (mkfmap (x1 :: x2 :: .. [:: xn] ..)))
+      (mkpackage (mkfmap (x1 :: x2 :: .. [:: xn] ..)) _)
       (at level 0,
       x1 custom package at level 2,
       x2 custom package at level 2,
@@ -195,16 +203,25 @@ Module PkgNotation (π : RulesParam).
       format "[ package  '[' x1  ;  '/' x2  ;  '/' ..  ;  '/' xn  ']' ]")
       : package_scope.
 
-    Definition mkdef {L I} (A B : chUniverse) (f : A → program L I B)
-      : typed_function L I :=
-      (A ; B ; f).
-
     Notation " 'def' #[ f ] ( x : A ) : B { e }" :=
-      (* ((f, (A ; B ; λ (x : chElement A), (e : program _ _ (chElement B))))) *)
       ((f, mkdef A B (λ x, e)))
       (in custom package at level 0,
       f constr, e constr, x ident, A custom pack_type, B custom pack_type,
       format "def  #[ f ]  ( x : A )  :  B  { '[' '/'  e  '/' ']' }")
+      : package_scope.
+
+    (* TODO Use some mkopsig instead of the following, otherwise every
+      triplet might be printed as {sig ... }.
+    *)
+    Notation "#[ f ] : A → B" :=
+      (f, (A, B))
+      (in custom pack_op at level 0,
+      f constr, A custom pack_type, B custom pack_type,
+      format "#[ f ]  :  A  →  B").
+
+    Notation "{ 'sig' o }" :=
+      (o)
+      (at level 0, o custom pack_op at level 2, format "{ sig  o  }")
       : package_scope.
 
     Notation "x ← c1 ;; c2" :=
@@ -220,47 +237,41 @@ Module PkgNotation (π : RulesParam).
       : package_scope.
 
     Notation "e1 ;; e2" :=
-      (_ ← e1%pack ;; e2%pack)%pack
+      (_ ← e1 ;; e2)%pack
       (at level 100, right associativity,
       format "e1  ;;  '/' e2")
       : package_scope.
 
     Notation "'put' n ':=' u ;; c" :=
-      (putr n _ u c)
+      (putr n u c)
       (at level 100, u at next level, right associativity,
       format "put  n  :=  u  ;;  '/' c")
       : package_scope.
 
     Notation "x ← 'get' n ;; c" :=
-      (getr n _ (λ x, c))
+      (getr n (λ x, c))
       (at level 100, n at next level, right associativity,
       format "x  ←  get  n  ;;  '/' c")
       : package_scope.
 
     Notation "' p ← 'get' n ;; c" :=
-      (getr n _ (λ x, let p := x in c))
+      (getr n (λ x, let p := x in c))
       (at level 100, p pattern, n at next level, right associativity,
       format "' p  ←  get  n  ;;  '/' c")
       : package_scope.
 
-    Notation "#[ f ] : A → B" :=
-      (f, (A, B))
-      (in custom pack_op at level 0,
-      f constr, A custom pack_type, B custom pack_type,
-      format "#[ f ]  :  A  →  B").
-
-    Notation "x ← 'op' [ o ] n ;; c" :=
-      (opr o _ n (λ x, c))
-      (at level 100, n at next level, o custom pack_op at level 2,
+    Notation "x ← 'op' o ⋅ n ;; c" :=
+      (opr o n (λ x, c))
+      (at level 100, n at next level, o at next level,
       right associativity,
-      format "x  ←  op  [  o  ]  n  ;;  '/' c")
+      format "x  ←  op  o  ⋅  n  ;;  '/' c")
       : package_scope.
 
-    Notation "' p ← 'op' [ o ] n ;; c" :=
-      (opr o _ n (λ x, let p := x in c))
-      (at level 100, p pattern, n at next level, o custom pack_op at level 2,
+    Notation "' p ← 'op' o ⋅ n ;; c" :=
+      (opr o n (λ x, let p := x in c))
+      (at level 100, p pattern, n at next level, o at next level,
       right associativity,
-      format "' p  ←  op  [  o  ]  n  ;;  '/' c")
+      format "' p  ←  op  o  ⋅  n  ;;  '/' c")
       : package_scope.
 
     Notation "x ← 'sample' o ;; c" :=
@@ -281,7 +292,39 @@ Module PkgNotation (π : RulesParam).
       (* format "x  <$  o  ;;  '/' c", *) only parsing)
       : package_scope.
 
-    Lemma give_fin {m} (n : nat) {h : n < m} : ('fin m)%pack.
+    Notation "x ← 'cmd' o ;; c" :=
+      (cmd_bind o (λ x, c))
+      (at level 100, o at next level, right associativity,
+      format "x  ←  cmd  o  ;;  '/' c")
+      : package_scope.
+
+    Notation "' p ← 'cmd' o ;; c" :=
+      (cmd_bind o (λ x, let p := x in c))
+      (at level 100, p pattern, o at next level, right associativity,
+      format "' p  ←  cmd  o  ;;  '/' c")
+      : package_scope.
+
+    (* TODO Use ;; for this, and a longer notation or none at all for
+      bind. Bind is just a tool to compose programs while this is to compose
+      commands and code, much more practical.
+      TODO: Maybe not add things such as get/put/cmd to the grammar.
+    *)
+    Notation "e1 ;' e2" :=
+      (_ ← cmd e1 ;; e2)%pack
+      (at level 100, right associativity,
+      format "e1  ;'  '/' e2")
+      : package_scope.
+
+    Notation "'#import' s 'as' id ;; t" :=
+      (let id := λ x, opr s x (λ y, ret y) in t)
+      (at level 100, id ident, s at next level, right associativity,
+      format "#import  s  as  id  ;;  '/' t")
+      : package_scope.
+
+    (** Utility for fin types *)
+
+    (** m : 'fin n *)
+    Lemma give_fin {m} (n : nat) {h : Lt n m} : ('fin m)%pack.
     Proof.
       cbn. exists n. exact h.
     Defined.
