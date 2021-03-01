@@ -691,29 +691,30 @@ Proof.
   admit.
 Admitted.
 
+Lemma pk_encoding_correct :
+  ∀ p,
+    ch2pk (pk2ch p ) = p.
+Proof.
+  move => /= A. rewrite /ch2pk /pk2ch. exact: ch2gT_gT2ch.
+Qed.
+
+Lemma ch2c_c2ch : ∀ x, ch2c (c2ch x) = x.
+Proof.
+  move => [C1 C2]. rewrite /ch2c /c2ch.
+  by rewrite !ch2gT_gT2ch.
+Qed.
+
+Lemma cipher_encoding_correct :
+  ∀ b c m,
+    c2ch (g ^+ b, ch2m m * g ^+ c) =
+    c2ch ((ch2c (c2ch (g ^+ b, g ^+ c))).1, ch2m m * (ch2c (c2ch (g ^+ b, g ^+ c))).2).
+Proof.
+  move => b c m. by rewrite !ch2c_c2ch.
+Qed.
 
 (* TODO OLD BELOW
   Some parts are still salvageable, the rest has been scraped.
 *)
-
-(* Lemma pk_encoding_correct : forall p,
-    ch2pk (pk2ch p ) = p.
-Proof.
-  move => /= A. rewrite /ch2pk /pk2ch. exact: ch2gT_gT2ch.
-Qed. *)
-
-(* Lemma ch2c_c2ch : forall x, ch2c (c2ch x) = x.
-Proof.
-  move => [C1 C2]. rewrite /ch2c /c2ch.
-  by rewrite !ch2gT_gT2ch.
-Qed. *)
-
- (* Lemma cipher_encoding_correct : forall b c m,
-     c2ch (g ^+ b, ch2m m * g ^+ c) = c2ch ((ch2c (c2ch (g ^+ b, g ^+ c))).1, ch2m m * (ch2c (c2ch (g ^+ b, g ^+ c))).2).
- Proof.
-   move => b c m. by rewrite !ch2c_c2ch.
- Qed. *)
-
 
 (* Lemma game_hop : forall A Hdisj1 Hdisj2 Hdisj1' Hdisj2',
   @AdvantageE _ (ots_real_vs_rnd false) (ots_real_vs_rnd true) A Hdisj1 Hdisj2 =
