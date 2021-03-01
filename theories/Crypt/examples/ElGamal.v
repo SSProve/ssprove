@@ -414,15 +414,7 @@ Proof.
   cbn beta.
   (* Now the linking *)
   simpl.
-  (* Too bad but linking doesn't automatically commute with match
-    Thanks to the #import notation we should be able to avoid this business.
-    The problem is that the let has been consumed.
-    After eapply lookup_op_spec, we would need to do something that is not
-    simpl, or at least make sure #import are not substituted now.
-    TODO
-    How do I evaluate the epxression but not the the programs inside the
-    packages?
-  *)
+  (* Too bad but linking doesn't automatically commute with match *)
   setoid_rewrite program_link_if.
   simpl.
   destruct chUniverse_eqP as [e|]. 2: contradiction.

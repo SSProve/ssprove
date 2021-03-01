@@ -34,6 +34,20 @@
     The idea being that by using #import, linking now should work as a
     substitution if computation is done in the right order (so zeta last).
 
+    The good thing with this notation is that its meaning can be changed
+    later on to be an actual constructor of program, replacing opr.
+    Same as this notation, with discipline placing imports at the start,
+    linking will become seemless.
+    Better kept for later though, because it's another refactoring, though
+    not as big as the current one.
+    Problem: It doesn't work when linking several times. After the first
+    linking, #import might no longer be in first position.
+
+    It might be better to have programs without #import first, then
+    consider things which can be prefixed by as many #import as one wants.
+
+    It might also make sense not to have op/import as a command.
+
 **)
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
