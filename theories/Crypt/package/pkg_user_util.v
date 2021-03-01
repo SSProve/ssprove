@@ -126,7 +126,7 @@ Module PackageUserUtil (π : RulesParam).
       | x ← sample ?op ;; _ =>
         eapply (rsame_head_cmd (cmd_sample op))
       | put ?ℓ := ?v ;; _ =>
-        eapply (@rsame_head_cmd _ _ _ (λ z, _) (cmd_put ℓ v))
+        eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put ℓ v))
       | x ← get ?ℓ ;; _ =>
         eapply (rsame_head_cmd (cmd_get ℓ))
       | x ← cmd ?c ;; _ =>
