@@ -1554,9 +1554,21 @@ Module PackageRHL (π : RulesParam).
     eapply post_weaken_rule. all: eauto.
   Qed.
 
-  (* Skipped for now *)
-  (* Theorem comp_rule ... *)
+Local Open Scope package_scope.
 
+(*CA: TODO first state and prove it in RulesStateprob.v *)
+Theorem rpost_conclusion_rule {A1 A2 B : ord_choiceType} {L : {fset Location}}
+        {pre : heap * heap -> Prop } 
+        {p1 : program L Game_import A1}
+        {p2 : program L Game_import A2}
+        (f1 : A1 -> B ) (f2 : A2 -> B) :
+  (r⊨ ⦃ pre ⦄ x1 ← p1 ;; ret x1 ≈ x2 ← p2 ;; ret x2 ⦃ fun '(a1, s1) '(a2,s2) => s1 = s2 /\ (f1 a1) = (f2 a2) ⦄) ->
+  (r⊨ ⦃ pre ⦄ x1 ← p1 ;; ret (f1 x1)  ≈  x2 ← p2 ;; ret (f2 x2) ⦃ eq ⦄).
+Admitted. 
+
+
+(* Skipped for now *)
+(* Theorem comp_rule ... *)
   Lemma repr_if :
     ∀ {A b} (c₀ c₁ : raw_program A),
       repr (if b then c₀ else c₁) = if b then repr c₀ else repr c₁.
@@ -1812,6 +1824,17 @@ Module PackageRHL (π : RulesParam).
     intros a₀ a₁. rewrite -rel_jdgE. eapply hr.
   Qed.
 
+Lemma rsym_pre  { A1 A2 : ord_choiceType } { L : {fset Location} } { pre : heap * heap -> Prop } { post }
+                     { c1 : program L Game_import A1 } { c2 : program L Game_import A2 }
+                     (pre_sym : forall h1 h2, pre (h1, h2) -> pre (h2, h1))
+                     (H : r⊨ ⦃ fun '(h1, h2) => pre (h2, h1) ⦄ c1 ≈ c2 ⦃ post ⦄) :
+                     r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄.
+Proof.
+  unshelve eapply rpre_weaken_rule.
+  { exact: (fun '(h1, h2) => pre (h2, h1)). }
+  - assumption. - assumption.
+Qed.
+
   Theorem rsame_head :
     ∀ {A B : ord_choiceType} {f₀ f₁ : A → raw_program B}
     (m : raw_program A) (post : postcond B B),
@@ -1904,8 +1927,33 @@ Module PackageRHL (π : RulesParam).
         x ← sample uniform n ;; c₁ x
       ⦃ post ⦄. *)
 
+Lemma rf_preserves_eq  { A B : ord_choiceType }
+                       { L : {fset Location} }
+                       { x  y: program L Game_import A }
+                       (f : A -> B )      
+                       ( H: r⊨ ⦃ fun '(s1, s2) => s1 = s2 ⦄
+                               ( X ← x ;; ret X ) ≈
+                               ( Y ← y ;; ret Y) 
+                              
+                               ⦃ eq ⦄ ) :
+  r⊨ ⦃ fun '(s1, s2) => s1 = s2 ⦄
+     (X ← x ;; ret (f X) ) ≈
+     (Y ← y ;; ret (f Y) ) 
+    
+     ⦃ eq ⦄.
+Proof.
+  rewrite !repr_bind. rewrite !repr_bind in H. 
+  by apply: f_preserves_eq. 
+Qed. 
   (* Rules using commands instead of bind *)
 
+(* Rem.: not more useful than sampler_case *)
+(* Lemma rsample_rule { B1 B2 : ord_choiceType} { L : {fset Location}}  { o } *)
+(*       c1 c2  *)
+(*       pre (post : B1 * heap -> B2 * heap -> Prop) *)
+(*       (H : r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄) : *)
+(*          ⊨ ⦃ pre ⦄ repr (locs := L ) (x <$ o ;; c1) ≈ repr (locs := L) (x <$ o ;; c2) ⦃ post ⦄. *)
+(* Proof. Admitted.  *)
   (* TODO Find out how/if we can improve unification of cmd_bind with
     sampler/getr/putr.
   *)
