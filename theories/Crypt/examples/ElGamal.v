@@ -643,6 +643,9 @@ Qed.
   Some parts are still salvageable, the rest has been scraped.
 *)
 
+Lemma repr_Uniform { L : {fset Location} } (i: Index) :
+Admitted.   
+  @repr _ L (x ← sample (U i);; ret x) = (@Uniform_F i _).
 (*CA: probably already here we need that repr (sample U i) is Uniform i. *)
 (* Lemma UniformIprod_UniformUniform { L : {fset Location} } (i j : Index)  :
   ⊨ ⦃ fun '(s1, s2) => s1 = s2 ⦄
@@ -650,8 +653,10 @@ Qed.
     @repr _ L (X ←  (X ← sample U i ;; ret X) ;;
               (Y ←  (Y ← sample U j ;; ret Y) ;; ret (X, Y)))
 
+Proof.
+  rewrite !repr_bind. rewrite !repr_Uniform. 
+Admitted. 
     ⦃ eq ⦄.
-Admitted.  *)
 
 (* Lemma group_OTP { L : { fset Location } } : forall m,
     ⊨ ⦃ λ '(h1, h2), h1 = h2 ⦄
@@ -668,8 +673,9 @@ Proof.
                                   ((c ← sample U i_cipher ;; ret c))
                                   ((bc ← sample U (i_prod i_sk i_sk) ;; ret bc))
                                   (fun c => Some (c2ch c)) (fun bc => (Some (c2ch (g ^+ bc.1, ch2m m * g ^+ bc.2))))).
-    (*CA: now before applying Uniform_bij_rule  we need a lemma that show repr _ = Uniform_F for both terms in the judgement *)
-    admit.
+    rewrite !repr_bind !repr_Uniform.
+    (* this is just Uniform_F ≈ Uniform_F... we should be able to apply monad laws and then Uniform_bij_law. *)
+    admit. 
   }
   (*CA: This now looks easier than a Fubini Theorem
         and my guess is that it should not be too hard to write down a coupling for this case (lemma)
