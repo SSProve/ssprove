@@ -1557,13 +1557,16 @@ Module PackageRHL (π : RulesParam).
   Local Open Scope package_scope.
 
   (*CA: TODO first state and prove it in RulesStateprob.v *)
-  Theorem rpost_conclusion_rule {A1 A2 B : ord_choiceType} {L : {fset Location}}
-          {pre : heap * heap -> Prop }
-          {p1 : program L Game_import A1}
-          {p2 : program L Game_import A2}
-          (f1 : A1 -> B ) (f2 : A2 -> B) :
-    (r⊨ ⦃ pre ⦄ x1 ← p1 ;; ret x1 ≈ x2 ← p2 ;; ret x2 ⦃ fun '(a1, s1) '(a2,s2) => s1 = s2 /\ (f1 a1) = (f2 a2) ⦄) ->
-    (r⊨ ⦃ pre ⦄ x1 ← p1 ;; ret (f1 x1)  ≈  x2 ← p2 ;; ret (f2 x2) ⦃ eq ⦄).
+  Theorem rpost_conclusion_rule :
+    ∀ {A₀ A₁ B : ord_choiceType} {pre : precond}
+      {c₀ : raw_program A₀} {c₁ : raw_program A₁}
+      (f₀ : A₀ → B) (f₁ : A₁ → B),
+      ⊢ ⦃ pre ⦄
+        x₀ ← c₀ ;; ret x₀ ≈ x₁ ← c₁ ;; ret x₁
+      ⦃ λ '(a₀, s₀) '(a₁, s₁), s₀ = s₁ ∧ f₀ a₀ = f₁ a₁ ⦄ →
+      ⊢ ⦃ pre ⦄ x₀ ← c₀ ;; ret (f₀ x₀) ≈ x₁ ← c₁ ;; ret (f₁ x₁) ⦃ eq ⦄.
+  Proof.
+    intros A₀ A₁ B pre c₀ c₁ f₀ f₁ h.
   Admitted.
 
   Lemma repr_if :
@@ -1870,23 +1873,16 @@ Module PackageRHL (π : RulesParam).
     admit.
   Admitted.
 
-  Lemma rf_preserves_eq  { A B : ord_choiceType }
-    { L : {fset Location} }
-    { x  y: program L Game_import A }
-    (f : A -> B )
-    ( H: r⊨ ⦃ fun '(s1, s2) => s1 = s2 ⦄
-            ( X ← x ;; ret X ) ≈
-            ( Y ← y ;; ret Y)
-
-            ⦃ eq ⦄ ) :
-  r⊨ ⦃ fun '(s1, s2) => s1 = s2 ⦄
-  (X ← x ;; ret (f X) ) ≈
-  (Y ← y ;; ret (f Y) )
-
-  ⦃ eq ⦄.
+  Lemma rf_preserves_eq :
+    ∀ {A B : ord_choiceType} {c₀ c₁ : raw_program A}
+      (f : A → B),
+      ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ x ← c₀ ;; ret x ≈ x ← c₁ ;; ret x ⦃ eq ⦄ →
+      ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ x ← c₀ ;; ret (f x) ≈ x ← c₁ ;; ret (f x) ⦃ eq ⦄.
   Proof.
-  rewrite !repr_bind. rewrite !repr_bind in H.
-  by apply: f_preserves_eq.
+    intros A B c₀ c₁ f h.
+    rewrite rel_jdgE. rewrite rel_jdgE in h.
+    rewrite !repr_bind. rewrite !repr_bind in h.
+    apply: f_preserves_eq. assumption.
   Qed.
 
   (* Rules I added *)
