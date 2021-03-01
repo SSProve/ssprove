@@ -402,35 +402,17 @@ Proof.
   assert (e = erefl) by apply uip. subst e.
   simpl.
   (* We are now in the realm of program logic *)
-  eapply (rsame_head_cmd (cmd_get _)). intro count.
-  eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put _ _)). intros _.
+  ssprove_same_head_r. intro count.
+  ssprove_same_head_r. intros _.
   match goal with
   | |- context [ if ?b then _ else _ ] =>
     destruct b eqn:e
   end.
-  - eapply (rsame_head_cmd (cmd_sample _)). intro a.
-    eapply r_transR.
-    1:{
-      eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U i_sk)) (λ a₁ z, _)).
-      - auto.
-      - intros ? ?.
-        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
-        cbn. auto.
-      - eapply rsamplerC_cmd.
-    }
-    simpl.
-    eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put _ _)). intros _.
-    eapply r_transR.
-    1:{
-      eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U i_sk)) (λ a₁ z, _)).
-      - auto.
-      - intros ? ?.
-        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
-        cbn. auto.
-      - eapply rsamplerC_cmd.
-    }
-    simpl.
-    eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put _ _)). intros _.
+  - ssprove_same_head_r. intro a.
+    ssprove_swap_rhs 0%N.
+    ssprove_same_head_r. intros _.
+    ssprove_swap_rhs 0%N.
+    ssprove_same_head_r. intros _.
     (* Not clear how to relate the two sampling to me. *)
     (* We might want a ret rule that asks us to show equality
       of the arguments or even just pre -> post?
@@ -494,57 +476,19 @@ Proof.
   assert (e = erefl) by apply uip. subst e.
   simpl.
   (* We are now in the realm of program logic *)
-  eapply (rsame_head_cmd (cmd_get _)). intro count.
-  eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put _ _)). intros _.
+  ssprove_same_head_r. intro count.
+  ssprove_same_head_r. intros _.
   match goal with
   | |- context [ if ?b then _ else _ ] =>
     destruct b eqn:e
   end.
-  - eapply (rsame_head_cmd (cmd_sample _)). intro a.
-    eapply r_transL.
-    1:{
-      eapply (rsame_head_cmd (cmd_sample _)). intro x.
-      eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U i_sk)) (λ a₁ z, _)).
-      - auto.
-      - intros ? ?.
-        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
-        cbn. auto.
-      - eapply rsamplerC_cmd.
-    }
-    simpl.
-    eapply r_transL.
-    1:{
-      eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U i_sk)) (λ a₁ z, _)).
-      - auto.
-      - intros ? ?.
-        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
-        cbn. auto.
-      - eapply rsamplerC_cmd.
-    }
-    simpl.
-    eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put _ _)). intros _.
-    eapply r_transL.
-    1:{
-      eapply (rsame_head_cmd (cmd_sample _)). intro x.
-      eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U i_sk)) (λ a₁ z, _)).
-      - auto.
-      - intros ? ?.
-        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
-        cbn. auto.
-      - eapply rsamplerC_cmd.
-    }
-    simpl.
-    eapply r_transL.
-    1:{
-      eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U i_sk)) (λ a₁ z, _)).
-      - auto.
-      - intros ? ?.
-        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
-        cbn. auto.
-      - eapply rsamplerC_cmd.
-    }
-    simpl.
-    eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put _ _)). intros _.
+  - ssprove_same_head_r. intro a.
+    ssprove_swap_lhs 1%N.
+    ssprove_swap_lhs 0%N.
+    ssprove_same_head_r. intros _.
+    ssprove_swap_lhs 1%N.
+    ssprove_swap_lhs 0%N.
+    ssprove_same_head_r. intros _.
     (* Now I guess is where gT × gT vs gT sampling appears? *)
     (* The following is to see clearer, might be best not to do it. *)
     setoid_rewrite gT2ch_ch2gT.
@@ -699,7 +643,7 @@ Proof.
     pose (f := (fun '(a,b) => (g^+a, (ch2m m) * g^+b)) : 'Z_q * 'Z_q -> gT * gT).
     have Hbij: bijective f by admit.
     (* *)
-    unshelve apply: symmetry_rule.    
+    unshelve apply: symmetry_rule.
      + unshelve eapply pre_weaken_rule.
       {  exact: (fun '(s1, s2) => s1 = s2). } 2: { move => st1 st2 H //=. }
       unshelve eapply post_weaken_rule.
