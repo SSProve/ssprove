@@ -663,8 +663,10 @@ Proof.
     move: e => /eqP [? ?]. subst. intuition auto.
   - intro s. unshelve eapply rcoupling_eq.
   1:{ exact (λ '(s₀, s₁), s₀ = s₁). }
-  2: reflexivity.
-  (*TODO: massage a bit more the RHS and then apply rf_preserves_eq and then UniformIprod_UniformUniform *)
+  2: reflexivity. 
+  (*TODO: write the RHS as (sample sample) ;; ret, so that it is
+  possible to apply rf_preserves_eq and then
+  UniformIprod_UniformUniform *)
   admit.
 Admitted.
 
