@@ -637,6 +637,27 @@ Proof.
   intro i. reflexivity.
 Qed.
 
+(*CA: probably already here we need that repr (sample U i) is Uniform i. *)
+Lemma UniformIprod_UniformUniform :
+  ∀ (i j : Index),
+    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
+      xy ← sample U (i_prod i j) ;; ret xy ≈
+      x ← sample U i ;; y ← sample U j ;; ret (x, y)
+    ⦃ eq ⦄.
+Proof.
+  intros i j.
+  change (
+    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
+      xy ← sample U (i_prod i j) ;; ret xy ≈
+      x ← cmd (cmd_sample (U i)) ;; y ← cmd (cmd_sample (U j)) ;; ret (x, y)
+    ⦃ eq ⦄
+  ).
+  rewrite rel_jdgE.
+  rewrite repr_Uniform. repeat setoid_rewrite repr_cmd_bind.
+  change (repr_cmd (cmd_sample (U ?i))) with (@Uniform_F i heap_choiceType).
+  cbn - [semantic_judgement Uniform_F].
+Admitted.
+
 (* TODO OLD BELOW
   Some parts are still salvageable, the rest has been scraped.
 *)
