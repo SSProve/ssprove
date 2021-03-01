@@ -73,6 +73,8 @@ Module PackageUserUtil (π : RulesParam).
   Include (PackageRHL π).
   Import PackageNotation.
 
+  (** Preliminary work *)
+
   Lemma opsig_in_unfold :
     ∀ {o : opsig} {E : Interface},
       o \in E →
@@ -104,5 +106,138 @@ Module PackageUserUtil (π : RulesParam).
     cbn in h' ;
     _invert_interface_in h' ;
     noconf h'.
+
+  (** Working in the program logic *)
+
+  (* Simplication of cmd_bind *)
+  Ltac cmd_bind_simpl_once :=
+    try change (cmd_bind (cmd_sample ?op) ?k) with (sampler op k) ;
+    try change (cmd_bind (cmd_get ?ℓ) ?k) with (getr ℓ k) ;
+    try change (cmd_bind (cmd_put ?ℓ ?v) ?k) with (put ℓ := v ;; k Datatypes.tt).
+
+  Ltac cmd_bind_simpl :=
+    repeat cmd_bind_simpl_once.
+
+  (* Right-biased application of rsame_head *)
+  Ltac ssprove_same_head_r :=
+    lazymatch goal with
+    | |- ⊢ ⦃ _ ⦄ _ ≈ ?c ⦃ _ ⦄ =>
+      lazymatch c with
+      | x ← sample ?op ;; _ =>
+        eapply (rsame_head_cmd (cmd_sample op))
+      | put ?ℓ := ?v ;; _ =>
+        eapply (@rsame_head_cmd _ _ _ (λ z, _) (cmd_put ℓ v))
+      | x ← get ?ℓ ;; _ =>
+        eapply (rsame_head_cmd (cmd_get ℓ))
+      | x ← cmd ?c ;; _ =>
+        eapply (rsame_head_cmd c)
+      | _ => fail "No head found."
+      end
+    | |- _ => fail "The goal should be a syntactic judgment."
+    end.
+
+  (* Apply rswap_cmd_eq by reading rhs *)
+  (* TODO Guard it by checking post = eq and even pre? *)
+  Ltac ssprove_rswap_cmd_eq_rhs :=
+    lazymatch goal with
+    | |- ⊢ ⦃ _ ⦄ _ ≈ ?c ⦃ _ ⦄ =>
+      lazymatch c with
+      | x ← sample ?op ;; y ← sample ?op' ;;  _ =>
+        eapply (rswap_cmd_eq _ _ _ (cmd_sample op') (cmd_sample op))
+      | x ← sample ?op ;; y ← get ?ℓ ;;  _ =>
+        eapply (rswap_cmd_eq _ _ _ (cmd_get ℓ) (cmd_sample op))
+      | x ← sample ?op ;; put ?ℓ := ?v ;;  _ =>
+        eapply (rswap_cmd_eq _ _ _ (cmd_put ℓ v) (cmd_sample op) (λ x y, _))
+      | x ← get ?ℓ ;; y ← sample ?op ;;  _ =>
+        eapply (rswap_cmd_eq _ _ _ (cmd_sample op) (cmd_get ℓ))
+      | x ← get ?ℓ ;; y ← get ?ℓ' ;;  _ =>
+        eapply (rswap_cmd_eq _ _ _ (cmd_get ℓ') (cmd_get ℓ))
+      | x ← get ?ℓ ;; put ?ℓ' := ?v ;;  _ =>
+        eapply (rswap_cmd_eq _ _ _ (cmd_put ℓ' v) (cmd_get ℓ) (λ x y, _))
+      | put ?ℓ := ?v ;; x ← sample ?op ;;  _ =>
+        eapply (rswap_cmd_eq _ _ _ (cmd_sample op) (cmd_put ℓ v) (λ x y, _))
+      | put ?ℓ := ?v ;; x ← get ?ℓ' ;;  _ =>
+        eapply (rswap_cmd_eq _ _ _ (cmd_get ℓ') (cmd_put ℓ v) (λ x y, _))
+      | put ?ℓ := ?v ;; put ?ℓ' := ?v' ;;  _ =>
+        eapply (rswap_cmd_eq _ _ _ (cmd_put ℓ' v') (cmd_put ℓ v) (λ x y, _))
+      | _ => fail "No swappable pair found."
+      end
+    | |- _ => fail "The goal should be a syntactic judgment."
+    end.
+
+  (* Apply rswap_cmd by reading rhs *)
+  Ltac ssprove_rswap_cmd_rhs :=
+    lazymatch goal with
+    | |- ⊢ ⦃ _ ⦄ _ ≈ ?c ⦃ _ ⦄ =>
+      lazymatch c with
+      | x ← sample ?op ;; y ← sample ?op' ;;  _ =>
+        eapply (rswap_cmd _ _ _ _ (cmd_sample op') (cmd_sample op))
+      | x ← sample ?op ;; y ← get ?ℓ ;;  _ =>
+        eapply (rswap_cmd _ _ _ _ (cmd_get ℓ) (cmd_sample op))
+      | x ← sample ?op ;; put ?ℓ := ?v ;;  _ =>
+        eapply (rswap_cmd _ _ _ _ (cmd_put ℓ v) (cmd_sample op) (λ x y, _))
+      | x ← get ?ℓ ;; y ← sample ?op ;;  _ =>
+        eapply (rswap_cmd _ _ _ _ (cmd_sample op) (cmd_get ℓ))
+      | x ← get ?ℓ ;; y ← get ?ℓ' ;;  _ =>
+        eapply (rswap_cmd _ _ _ _ (cmd_get ℓ') (cmd_get ℓ))
+      | x ← get ?ℓ ;; put ?ℓ' := ?v ;;  _ =>
+        eapply (rswap_cmd _ _ _ _ (cmd_put ℓ' v) (cmd_get ℓ) (λ x y, _))
+      | put ?ℓ := ?v ;; x ← sample ?op ;;  _ =>
+        eapply (rswap_cmd _ _ _ _ (cmd_sample op) (cmd_put ℓ v) (λ x y, _))
+      | put ?ℓ := ?v ;; x ← get ?ℓ' ;;  _ =>
+        eapply (rswap_cmd _ _ _ _ (cmd_get ℓ') (cmd_put ℓ v) (λ x y, _))
+      | put ?ℓ := ?v ;; put ?ℓ' := ?v' ;;  _ =>
+        eapply (rswap_cmd _ _ _ _ (cmd_put ℓ' v') (cmd_put ℓ v) (λ x y, _))
+      | _ => fail "No swappable pair found."
+      end
+    | |- _ => fail "The goal should be a syntactic judgment."
+    end.
+
+  (* TODO: Are there more cases we can consider? *)
+  Ltac ssprove_swap_side_cond :=
+    lazymatch goal with
+    | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_sample _) ;; _ ← cmd (cmd_sample _) ;; _ ≈ _ ⦃ _ ⦄ =>
+      apply rsamplerC_cmd
+    | |- ⊢ ⦃ _ ⦄ _ ← cmd _ ;; _ ← cmd (cmd_sample _) ;; _ ≈ _ ⦃ _ ⦄ =>
+      apply rsamplerC_cmd
+    | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_sample _) ;; _ ← cmd _ ;; _ ≈ _ ⦃ _ ⦄ =>
+      apply rsamplerC'_cmd
+    | |- ⊢ ⦃ _ ⦄ _ ← sample _ ;; _ ← sample _ ;; _ ≈ _ ⦃ _ ⦄ =>
+      apply rsamplerC_cmd
+    | |- ⊢ ⦃ _ ⦄ _ ← cmd _ ;; _ ← sample _ ;; _ ≈ _ ⦃ _ ⦄ =>
+      apply rsamplerC_cmd
+    | |- ⊢ ⦃ _ ⦄ _ ← sample _ ;; _ ← cmd _ ;; _ ≈ _ ⦃ _ ⦄ =>
+      apply rsamplerC'_cmd
+    end.
+
+  (* TODO Tactic to solve automatically condition when possible *)
+  Ltac ssprove_swap_aux n :=
+    lazymatch eval cbv in n with
+    | S ?n => ssprove_same_head_r ; intro ; ssprove_swap_aux n
+    | 0%N => ssprove_rswap_cmd_eq_rhs ; try ssprove_swap_side_cond
+    | _ => fail "Wrong number: " n
+    end.
+
+  (** Swapping tactic in RHS
+
+    Argument n correspond to depth at which to swap.
+    0 will swap the toplevel, 1 will swap under one command, and so on.
+  *)
+  Ltac ssprove_swap_rhs n :=
+    eapply r_transR ; [
+      ssprove_swap_aux n
+    | cmd_bind_simpl ; cbn beta
+    ].
+
+  (** Swapping tactic in LHS
+
+    Argument n correspond to depth at which to swap.
+    0 will swap the toplevel, 1 will swap under one command, and so on.
+  *)
+  Ltac ssprove_swap_lhs n :=
+    eapply r_transL ; [
+      ssprove_swap_aux n
+    | cmd_bind_simpl ; cbn beta
+    ].
 
 End PackageUserUtil.
