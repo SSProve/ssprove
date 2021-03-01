@@ -437,6 +437,34 @@ Module PRF_example.
     | |- _ => fail "The goal should be a syntactic judgment."
     end.
 
+  (* Apply swap rule by reading rhs *)
+  Ltac ssprove_swap_rule_rhs :=
+    lazymatch goal with
+    | |- ⊢ ⦃ _ ⦄ _ ≈ ?c ⦃ _ ⦄ =>
+      lazymatch c with
+      | x ← sample ?op ;; y ← sample ?op' ;;  _ =>
+        eapply (rswap_cmd _ _ _ _ (cmd_sample op') (cmd_sample op))
+      | x ← sample ?op ;; y ← get ?ℓ ;;  _ =>
+        eapply (rswap_cmd _ _ _ _ (cmd_get ℓ) (cmd_sample op))
+      | x ← sample ?op ;; put ?ℓ := ?v ;;  _ =>
+        eapply (rswap_cmd _ _ _ _ (cmd_put ℓ v) (cmd_sample op) (λ x y, _))
+      | x ← get ?ℓ ;; y ← sample ?op ;;  _ =>
+        eapply (rswap_cmd _ _ _ _ (cmd_sample op) (cmd_get ℓ))
+      | x ← get ?ℓ ;; y ← get ?ℓ' ;;  _ =>
+        eapply (rswap_cmd _ _ _ _ (cmd_get ℓ') (cmd_get ℓ))
+      | x ← get ?ℓ ;; put ?ℓ' := ?v ;;  _ =>
+        eapply (rswap_cmd _ _ _ _ (cmd_put ℓ' v) (cmd_get ℓ) (λ x y, _))
+      | put ?ℓ := ?v ;; x ← sample ?op ;;  _ =>
+        eapply (rswap_cmd _ _ _ _ (cmd_sample op) (cmd_put ℓ v) (λ x y, _))
+      | put ?ℓ := ?v ;; x ← get ?ℓ' ;;  _ =>
+        eapply (rswap_cmd _ _ _ _ (cmd_get ℓ') (cmd_put ℓ v) (λ x y, _))
+      | put ?ℓ := ?v ;; put ?ℓ' := ?v' ;;  _ =>
+        eapply (rswap_cmd _ _ _ _ (cmd_put ℓ' v') (cmd_put ℓ v) (λ x y, _))
+      | _ => fail "No swappable pair found."
+      end
+    | |- _ => fail "The goal should be a syntactic judgment."
+    end.
+
   Lemma IND_CPA_equiv_false :
     IND_CPA false ≈₀ MOD_CPA_ff_pkg ∘ (EVAL true).
   Proof.
@@ -486,7 +514,7 @@ Module PRF_example.
     eapply r_transR.
     1:{
       ssprove_same_head_r. intro a.
-      eapply (rswap_cmd _ _ _ _ (cmd_get _) (cmd_sample _)).
+      ssprove_swap_rule_rhs.
       - cbn. intro. reflexivity.
       - cbn. intros a₀ a₁.
         eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
@@ -496,7 +524,7 @@ Module PRF_example.
     cbn.
     eapply r_transR.
     1:{
-      eapply (rswap_cmd _ _ _ _ (cmd_get _) (cmd_sample _)).
+      ssprove_swap_rule_rhs.
       - cbn. intro. reflexivity.
       - cbn. intros a₀ a₁.
         eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
@@ -505,7 +533,7 @@ Module PRF_example.
     }
     cbn.
     ssprove_same_head_r. cbn. intros [k|].
-    - cbn. eapply (rswap_cmd _ _ _ _ (cmd_sample _) (cmd_sample _)).
+    - cbn. ssprove_swap_rule_rhs.
       + cbn. intros [? ?]. intuition auto.
       + cbn. intros a₀ a₁. eapply rpost_weaken_rule.
         1: eapply rpre_weaken_rule.
@@ -531,7 +559,7 @@ Module PRF_example.
       *)
       eapply r_transR.
       1:{
-        eapply (rswap_cmd _ _ _ _ (cmd_sample _) (cmd_sample _)).
+        ssprove_swap_rule_rhs.
         - auto.
         - cbn. intros a₀ a₁.
           eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
@@ -542,7 +570,7 @@ Module PRF_example.
       eapply r_transR.
       1:{
         ssprove_same_head_r. cbn. intro a₀.
-        eapply (rswap_cmd _ _ _ _ (cmd_sample _) (cmd_sample _)).
+        ssprove_swap_rule_rhs.
         - auto.
         - cbn. intros ? ?.
           eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
@@ -552,7 +580,7 @@ Module PRF_example.
       cbn.
       eapply r_transR.
       1:{
-        eapply (rswap_cmd _ _ _ _ (cmd_sample _) (cmd_sample _)).
+        ssprove_swap_rule_rhs.
         - auto.
         - cbn. intros ? ?.
           eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
@@ -564,7 +592,7 @@ Module PRF_example.
       1:{
         ssprove_same_head_r. cbn. intro x.
         ssprove_same_head_r. cbn. intro y.
-        eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U (2^n)%N)) (λ z a₁, ret (a₁, y ⊕ PRF a₁ x))).
+        ssprove_swap_rule_rhs.
         - auto.
         - cbn. intros ? ?.
           eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
@@ -575,7 +603,7 @@ Module PRF_example.
       eapply r_transR.
       1:{
         ssprove_same_head_r. cbn. intro x.
-        eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U (2^n)%N)) (λ z a₁, _)).
+        ssprove_swap_rule_rhs.
         - auto.
         - cbn. intros ? ?.
           eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
@@ -635,7 +663,7 @@ Module PRF_example.
     (* We are now in the realm of program logic *)
     eapply r_transL.
     1:{
-      eapply (rswap_cmd _ _ _ _ (cmd_get _) (cmd_sample _)).
+      ssprove_swap_rule_rhs.
       - cbn. auto.
       - cbn. intros ? ?.
         eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
@@ -662,7 +690,7 @@ Module PRF_example.
       eapply r_transR.
       1:{
         ssprove_same_head_r. cbn. intro x.
-        eapply (rswap_cmd _ _ _ _ (cmd_sample (U (2^n)%N)) (cmd_put _ _) (λ a₁ z, _)).
+        ssprove_swap_rule_rhs.
         - auto.
         - cbn. intros ? ?.
           eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
@@ -672,7 +700,7 @@ Module PRF_example.
       cbn.
       eapply r_transR.
       1:{
-        eapply (rswap_cmd _ _ _ _ (cmd_sample _) (cmd_sample _)).
+        ssprove_swap_rule_rhs.
         - auto.
         - cbn. intros ? ?.
           eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
