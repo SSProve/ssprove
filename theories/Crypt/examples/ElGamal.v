@@ -618,13 +618,19 @@ Proof.
   rewrite !GRing.addr0. auto.
 Qed.
 
+(* TODO Updated definitions of old theorems *)
+
+Lemma repr_Uniform :
+  ∀ (i : Index),
+    repr (x ← sample U i ;; ret x) = @Uniform_F i _.
+Proof.
+  intros i.
+  cbn. unfold Uniform_F. reflexivity.
+Qed.
+
 (* TODO OLD BELOW
   Some parts are still salvageable, the rest has been scraped.
 *)
-
-(* Lemma repr_Uniform { L : {fset Location} } (i: Index) :
-  @repr _ L (x ← sample (U i);; ret x) = (@Uniform_F i _).
-Admitted. *)
 
 (*CA: probably already here we need that repr (sample U i) is Uniform i. *)
 (* Lemma UniformIprod_UniformUniform { L : {fset Location} } (i j : Index)  :
