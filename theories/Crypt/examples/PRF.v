@@ -465,40 +465,15 @@ Module PRF_example.
     rewrite cast_fun_K. clear e.
     cbn.
     (* We are now in the realm of program logic *)
-    eapply r_transR.
-    1:{
-      eapply (rsame_head_cmd (cmd_sample _)).
-      intro a. eapply (rswap_cmd _ _ _ _ (cmd_get _) (cmd_sample _)).
-      - cbn. intro. reflexivity.
-      - cbn. intros a₀ a₁.
-        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
-        cbn. auto.
-      - eapply rsamplerC_cmd.
-    }
-    cbn.
-    eapply r_transR.
-    1:{
-      eapply (rswap_cmd _ _ _ _ (cmd_get _) (cmd_sample _)).
-      - cbn. intro. reflexivity.
-      - cbn. intros a₀ a₁.
-        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
-        cbn. auto.
-      - eapply rsamplerC_cmd.
-    }
-    cbn.
-    eapply (rsame_head_cmd (cmd_get _)). cbn.
-    intros [k|].
-    - cbn. eapply (rswap_cmd _ _ _ _ (cmd_sample _) (cmd_sample _)).
-      + cbn. intros [? ?]. intuition auto.
-      + cbn. intros a₀ a₁. eapply rpost_weaken_rule.
-        1: eapply rpre_weaken_rule.
-        1: eapply rreflexivity_rule.
-        * cbn. auto.
-        * cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
-      + eapply rsamplerC_cmd.
+    ssprove_swap_rhs 1%N.
+    ssprove_swap_rhs 0%N.
+    ssprove_same_head_r. cbn. intros [k|].
+    - cbn. ssprove_swap_rhs 0%N.
+      eapply rpost_weaken_rule.
+      1: eapply rreflexivity_rule.
+      cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
     - cbn.
-      (* Here we are swapping a lot, tactics could help.
-        Is there a better way?
+      (* Swapping:
 
         k_val/put/m'/r vs a₁/a₁0/a/put
         where k_val = a, r = a₁, m' = a₁0
@@ -512,60 +487,11 @@ Module PRF_example.
         k_val/m'/put/r
         k_val/put/m'/r
       *)
-      eapply r_transR.
-      1:{
-        eapply (rswap_cmd _ _ _ _ (cmd_sample _) (cmd_sample _)).
-        - auto.
-        - cbn. intros a₀ a₁.
-          eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
-          cbn. auto.
-        - eapply rsamplerC_cmd.
-      }
-      cbn.
-      eapply r_transR.
-      1:{
-        eapply (rsame_head_cmd (cmd_sample _)). cbn. intro a₀.
-        eapply (rswap_cmd _ _ _ _ (cmd_sample _) (cmd_sample _)).
-        - auto.
-        - cbn. intros ? ?.
-          eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
-          cbn. auto.
-        - eapply rsamplerC_cmd.
-      }
-      cbn.
-      eapply r_transR.
-      1:{
-        eapply (rswap_cmd _ _ _ _ (cmd_sample _) (cmd_sample _)).
-        - auto.
-        - cbn. intros ? ?.
-          eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
-          cbn. auto.
-        - eapply rsamplerC_cmd.
-      }
-      cbn.
-      eapply r_transR.
-      1:{
-        eapply (rsame_head_cmd (cmd_sample _)). cbn. intro x.
-        eapply (rsame_head_cmd (cmd_sample _)). cbn. intro y.
-        eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U (2^n)%N)) (λ z a₁, ret (a₁, y ⊕ PRF a₁ x))).
-        - auto.
-        - cbn. intros ? ?.
-          eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
-          cbn. auto.
-        - eapply rsamplerC_cmd.
-      }
-      cbn.
-      eapply r_transR.
-      1:{
-        eapply (rsame_head_cmd (cmd_sample _)). cbn. intro x.
-        eapply (rswap_cmd _ _ _ _ (cmd_put _ _) (cmd_sample (U (2^n)%N)) (λ z a₁, _)).
-        - auto.
-        - cbn. intros ? ?.
-          eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
-          cbn. auto.
-        - eapply rsamplerC_cmd.
-      }
-      cbn.
+      ssprove_swap_rhs 0%N.
+      ssprove_swap_rhs 1%N.
+      ssprove_swap_rhs 0%N.
+      ssprove_swap_rhs 2%N.
+      ssprove_swap_rhs 1%N.
       eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
       cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
   Qed.
@@ -616,23 +542,12 @@ Module PRF_example.
     rewrite cast_fun_K. clear e.
     cbn.
     (* We are now in the realm of program logic *)
-    eapply r_transL.
-    1:{
-      eapply (rswap_cmd _ _ _ _ (cmd_get _) (cmd_sample _)).
-      - cbn. auto.
-      - cbn. intros ? ?.
-        eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
-        cbn. auto.
-      - eapply rsamplerC_cmd.
-    }
-    cbn.
-    eapply (rsame_head_cmd (cmd_get _)). cbn.
-    intros [k|].
+    ssprove_swap_lhs 0%N.
+    ssprove_same_head_r. cbn. intros [k|].
     - cbn. eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
       cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
     - cbn.
-      (* Here we are swapping a lot, tactics could help.
-        Is there a better way?
+      (* Swapping:
 
         a₁/a/put vs k_val/put/r
         where k_val = a, r = a₁
@@ -643,27 +558,8 @@ Module PRF_example.
         k_val/r/put
         r/k_val/put
       *)
-      eapply r_transR.
-      1:{
-        eapply (rsame_head_cmd (cmd_sample _)). cbn. intro x.
-        eapply (rswap_cmd _ _ _ _ (cmd_sample (U (2^n)%N)) (cmd_put _ _) (λ a₁ z, _)).
-        - auto.
-        - cbn. intros ? ?.
-          eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
-          cbn. auto.
-        - eapply rsamplerC'_cmd.
-      }
-      cbn.
-      eapply r_transR.
-      1:{
-        eapply (rswap_cmd _ _ _ _ (cmd_sample _) (cmd_sample _)).
-        - auto.
-        - cbn. intros ? ?.
-          eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
-          cbn. auto.
-        - eapply rsamplerC_cmd.
-      }
-      cbn.
+      ssprove_swap_rhs 1%N.
+      ssprove_swap_rhs 0%N.
       eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
       cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
   Qed.
