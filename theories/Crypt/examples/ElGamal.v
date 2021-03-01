@@ -640,18 +640,16 @@ Proof.
       change (@bindrFree S P A B m k) with (@Uniform_F (i_prod i_sk i_sk) heap_choiceType)
     end.
     (* *)
-    pose (f := (fun '(a,b) => (g^+a, (ch2m m) * g^+b)) : 'Z_q * 'Z_q -> gT * gT).
+    pose (f := (λ '(a,b), (g^+a, (ch2m m) * g^+b)) : 'Z_q * 'Z_q -> gT * gT).
     have Hbij: bijective f by admit.
     (* *)
-    unshelve apply: symmetry_rule.
-     + unshelve eapply pre_weaken_rule.
-      {  exact: (fun '(s1, s2) => s1 = s2). } 2: { move => st1 st2 H //=. }
-      unshelve eapply post_weaken_rule.
-      { exact: (fun '(w1, h1) '(w2,h2) => (h1 = h2 /\ (f w1) == w2 )). }
-      ++ by apply (@Uniform_bij_rule (i_prod i_sk i_sk) (i_cipher) _ _
-                                     f Hbij (fun '(s1,s2) => s1 = s2)).
-      ++ move => /= [[A B] h1] [[C1 C2] h2] [Hh Hf].
-         move /eqP : Hf. move => [H1 H2]. by subst.
+    apply: symmetry_rule.
+    unshelve eapply pre_weaken_rule. 1: exact (λ '(s₀, s₁), s₀ = s₁).
+    2:{ intros. cbn. auto. }
+    unshelve eapply post_weaken_rule.
+    2: eapply @Uniform_bij_rule with (1 := Hbij).
+    simpl. intros [[? ?] ?] [[? ?] ?] [? e].
+    move: e => /eqP [? ?]. subst. intuition auto.
   - intro s. unshelve eapply rcoupling_eq.
   1:{ exact (λ '(s₀, s₁), s₀ = s₁). }
   2: reflexivity.
