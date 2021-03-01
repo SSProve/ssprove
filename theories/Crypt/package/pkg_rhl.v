@@ -1560,14 +1560,17 @@ Module PackageRHL (π : RulesParam).
   Theorem rpost_conclusion_rule :
     ∀ {A₀ A₁ B : ord_choiceType} {pre : precond}
       {c₀ : raw_program A₀} {c₁ : raw_program A₁}
-      (f₀ : A₀ → B) (f₁ : A₁ → B),
+      (f0 : A₀ → B) (f1 : A₁ → B) (Hbij0 : bijective f0) (Hbij1 : bijective f1),
       ⊢ ⦃ pre ⦄
         x₀ ← c₀ ;; ret x₀ ≈ x₁ ← c₁ ;; ret x₁
-      ⦃ λ '(a₀, s₀) '(a₁, s₁), s₀ = s₁ ∧ f₀ a₀ = f₁ a₁ ⦄ →
-      ⊢ ⦃ pre ⦄ x₀ ← c₀ ;; ret (f₀ x₀) ≈ x₁ ← c₁ ;; ret (f₁ x₁) ⦃ eq ⦄.
+      ⦃ λ '(a₀, s₀) '(a₁, s₁), s₀ = s₁ ∧ f0 a₀ = f1 a₁ ⦄ →
+      ⊢ ⦃ pre ⦄ x₀ ← c₀ ;; ret (f0 x₀) ≈ x₁ ← c₁ ;; ret (f1 x₁) ⦃ eq ⦄.
   Proof.
-    intros A₀ A₁ B pre c₀ c₁ f₀ f₁ h.
-  Admitted.
+    intros A₀ A₁ B pre c₀ c₁ f₀ f₁ bij0 bij1 h.
+    rewrite -> rel_jdgE in *. rewrite -> rel_jdgE in h. 
+    rewrite !repr_bind in h.  rewrite !repr_bind. 
+    apply: post_conclusion_rule bij0 bij1 h. 
+ Qed. 
 
   Theorem rpost_conclusion_rule_cmd :
     ∀ {A₀ A₁ B : ord_choiceType} {pre : precond}
@@ -1579,7 +1582,7 @@ Module PackageRHL (π : RulesParam).
       ⦃ λ '(a₀, s₀) '(a₁, s₁), s₀ = s₁ ∧ f₀ a₀ = f₁ a₁ ⦄ →
       ⊢ ⦃ pre ⦄ x₀ ← cmd c₀ ;; ret (f₀ x₀) ≈ x₁ ← cmd c₁ ;; ret (f₁ x₁) ⦃ eq ⦄.
   Proof.
-    intros A₀ A₁ B pre c₀ c₁ f₀ f₁ h.
+    intros A₀ A₁ B pre c₀ c₁ f₀ f₁ h. 
   Admitted.
 
   Lemma repr_if :
@@ -1888,14 +1891,15 @@ Module PackageRHL (π : RulesParam).
 
   Lemma rf_preserves_eq :
     ∀ {A B : ord_choiceType} {c₀ c₁ : raw_program A}
-      (f : A → B),
+      (f : A → B) (Hbij : bijective f),
       ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ x ← c₀ ;; ret x ≈ x ← c₁ ;; ret x ⦃ eq ⦄ →
       ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ x ← c₀ ;; ret (f x) ≈ x ← c₁ ;; ret (f x) ⦃ eq ⦄.
   Proof.
-    intros A B c₀ c₁ f h.
+    intros A B c₀ c₁ f Hbij h.
     rewrite rel_jdgE. rewrite rel_jdgE in h.
     rewrite !repr_bind. rewrite !repr_bind in h.
-    apply: f_preserves_eq. assumption.
+    apply: f_preserves_eq;
+    assumption.
   Qed.
 
   (* Rules I added *)

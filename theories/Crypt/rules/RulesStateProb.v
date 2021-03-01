@@ -419,9 +419,95 @@ Proof.
     (* by definition of d13*) admit.
 Admitted.
 
+
+Lemma bij_pres_summable { A B: choiceType } { d : A -> R } { f : A -> B }  {finv : B -> A }
+      (kinvf  : cancel finv f) (kfinv : cancel f finv) ( H: summable (T:= A) (R:=R) d):
+  summable (T:=B) (R:=R) (fun b : B => d (finv b)).
+Admitted. 
+
+Definition bij_lift { A B : ord_choiceType} (d : SDistr A) { f : A -> B } 
+           { finv : B -> A } (kinvf  : cancel finv f) (kfinv : cancel f finv) : SDistr  B.
+Proof.
+  destruct d as [d Hd1 Hd2 Hd3].
+  unshelve eexists. 
+  { move => b. exact: d (finv b). } 
+  - move => b /=.  by apply: Hd1. 
+  - by apply: bij_pres_summable. 
+  - unshelve erewrite <- reindex_psum.
+    { apply: predT. } 
+    assumption.
+      by [].
+      exists f.
+   -- move => x H. apply: kinvf.
+   -- move => x H. apply: kfinv.
+Defined. 
+
+Lemma cancel_prod { A0 A1 B0 B1 } { f0 : A0 -> B0 } { f1 : A1 -> B1 } {finv0 : B0 -> A0 } {finv1 : B1 -> A1}
+           (K0 : cancel f0 finv0) (K1 : cancel f1 finv1) : cancel (fun '(a0,a1) => (f0 a0, f1 a1)) (fun '(b0, b1) => (finv0 b0, finv1 b1)).
+Admitted.  
+    
+Lemma bij_coupling {A0 B0 A1 B1 : ord_choiceType } { d0 : SDistr A0 } { d1 : SDistr A1} { d }
+      (Hd : coupling d d0 d1)
+      { f0 : A0 -> B0 } { finv0 : B0 -> A0 } { kinvf0  : cancel finv0 f0 } { kfinv0 : cancel f0 finv0 }
+      { f1 : A1 -> B1 } { finv1 : B1 -> A1 }  { kinvf1  : cancel finv1 f1 } { kfinv1 : cancel f1 finv1 } :
+  coupling (bij_lift d (cancel_prod kinvf0 kinvf1) (cancel_prod kfinv0 kfinv1))
+           (bij_lift d0 kinvf0 kfinv0) (bij_lift d1 kinvf1 kfinv1). Admitted. 
+      
+Theorem post_conclusion_rule {A0 A1 B : ord_choiceType} { S : choiceType } { pre : S * S -> Prop }
+        {c0 : FrStP S A0 } { c1 : FrStP S A1 } 
+        { f0 : A0 -> B } { f1 : A1 -> B } (Hbij0 : bijective f0) (Hbij1 : bijective f1)
+        (H : ⊨ ⦃ pre ⦄
+               (x0 <- c0 ;; retF x0) ≈
+               (x1 <- c1 ;; retF x1)
+               ⦃ fun '(a0, s0) '(a1, s1) => s0 = s1 /\ f0 a0 = f1 a1 ⦄) :
+  ⊨ ⦃ pre ⦄ x0 <- c0 ;; retF (f0 x0) ≈ x1 <- c1 ;; retF (f1 x1) ⦃ eq ⦄.
+Proof.
+  move => [s0 s1].
+  specialize (H (s0, s1)).
+  unfold "≤" in *. simpl. simpl in H.
+  rewrite /MonoCont_order //=. rewrite /MonoCont_order //= in H.
+  move => β [hs0 h].
+  specialize (H (fun '(a0, s0, (a1, s1)) => (β (f0 a0 ,s0, (f1 a1, s1))))).
+  destruct H as [d [H H']]. 
+  split.
+  - assumption.
+  - move => [a1 st1] [a2 st2] [Heqa Heqst]. subst.
+    apply: h. by rewrite Heqst.
+  - destruct Hbij0 as [finv0 kfinv0 kinvf0]. 
+    destruct Hbij1 as [finv1 kfinv1 kinvf1].
+    pose fs0 :=  (fun as0 : A0 * S => (f0 as0.1, as0.2)).  
+    pose fs1 :=  (fun as1 : A1 * S => (f1 as1.1, as1.2)).
+    pose finvs0 := (fun bs : B * S => (finv0 bs.1, bs.2)).  
+    pose finvs1 := (fun bs : B * S => (finv1 bs.1, bs.2)).
+    have kinvfs0 : cancel finvs0 fs0. { admit. }
+    have kfinvs0 : cancel fs0 finvs0. { admit. } 
+    have kinvfs1 : cancel finvs1 fs1. { admit. }
+    have kfinvs1 : cancel fs1 finvs1. { admit. }
+    exists (bij_lift d (cancel_prod kinvfs0 kinvfs1) (cancel_prod kfinvs0 kfinvs1)).
+    split.
+    { simpl. have H0 :  ((Theta_dens.unary_theta_dens_obligation_1 prob_handler (F_choice_prod_obj ⟨ B, S ⟩)
+                          (UniversalFreeMap.outOfFree_obligation_1 sigMap B (x0 ∈ A0 <<- c0;; retF (f0 x0)) s0))) = 
+                        (bij_lift ((Theta_dens.unary_theta_dens_obligation_1 prob_handler (F_choice_prod_obj ⟨ A0, S ⟩)
+                                  (UniversalFreeMap.outOfFree_obligation_1 sigMap A0 (x0 ∈ A0 <<- c0;; retF x0) s0)))
+                                  kinvfs0 kfinvs0) by admit.
+            have H1 :  ((Theta_dens.unary_theta_dens_obligation_1 prob_handler (F_choice_prod_obj ⟨ B, S ⟩)
+                          (UniversalFreeMap.outOfFree_obligation_1 sigMap B (x1 ∈ A1 <<- c1;; retF (f1 x1)) s1))) = 
+                        (bij_lift ((Theta_dens.unary_theta_dens_obligation_1 prob_handler (F_choice_prod_obj ⟨ A1, S ⟩)
+                                  (UniversalFreeMap.outOfFree_obligation_1 sigMap A1 (x1 ∈ A1 <<- c1;; retF x1) s1)))
+                                  kinvfs1 kfinvs1) by admit. 
+            rewrite H0 H1.      
+            by apply: bij_coupling.
+    }
+    move => bs0 bs1 Hlift_gt0. 
+    apply (h bs0 bs1).
+    (*we can deduce this by Hlift_gt0 *)
+Admitted. 
+ 
+  
+
 Lemma f_preserves_eq { A B : ord_choiceType } { S : choiceType }
                      { x  y: FrStP S A }
-                     (f : A -> B )      
+                     (f : A -> B ) (Hbij : bijective f)     
                      ( H: ⊨ ⦃ fun '(s1, s2) => s1 = s2 ⦄
                              ( X <- x ;; retF X ) ≈
                              ( Y <- y ;; retF Y) 
@@ -433,26 +519,11 @@ Lemma f_preserves_eq { A B : ord_choiceType } { S : choiceType }
        
        ⦃ eq ⦄. 
 Proof.
-  move => [s1 s2].
-  specialize (H (s1, s2)).
-  unfold "≤" in *. simpl. simpl in H.
-  rewrite /MonoCont_order //=. rewrite /MonoCont_order //= in H.
-  move => β [hs1 h].
-  specialize (H (fun '(a1, s1, (a2, s2)) => (β (f a1 ,s1, (f a2, s2))))).
-  destruct H as [d H].
-  split.
+  apply: post_conclusion_rule; auto. 
+  unshelve eapply post_weaken_rule. { exact: eq. }
   - assumption.
-  - move => [a1 st1] [a2 st2] [Heqa Heqst]. subst.
-      by apply: h.
- (*CA: 
-    for the coupling d : A × A ->  [0,1]  we can consider 
-
-                     d0 : B × B -> [0,1] 
-                          (b1, b2) ↦ ∑ _{a1,a2 : f(a1) = b1 /\ f(a2) = b2} d(a1,a2)
-    
-  *)
-Admitted. 
- 
+  - move => /= [a1 s1] [a2 s2] [H1 H2]. split; by subst.
+Qed.     
   
 
   
