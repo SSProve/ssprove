@@ -682,7 +682,20 @@ Proof.
         (λ c, Some (c2ch c))
         (λ bc, Some (c2ch (g ^+ bc.1, ch2m m * g ^+ bc.2)))
     ).
-    (* this is just Uniform_F ≈ Uniform_F... we should be able to apply monad laws and then Uniform_bij_law. *)
+    rewrite rel_jdgE. rewrite !repr_cmd_bind.
+    rewrite !repr_cmd_Uniform.
+    simpl (repr (ret _)).
+    (* For some reason the lemma doesn't apply?? *)
+    (* rewrite bindrFree_and_ret. *)
+    match goal with
+    | |- context [ @bindrFree ?S ?P ?A ?B ?m ?k ] =>
+      change (@bindrFree S P A B m k) with (@Uniform_F i_cipher heap_choiceType)
+    end.
+    match goal with
+    | |- context [ @bindrFree ?S ?P ?A ?B ?m ?k ] =>
+      change (@bindrFree S P A B m k) with (@Uniform_F (i_prod i_sk i_sk) heap_choiceType)
+    end.
+    (* Conclude with Uniform_bij_rule? *)
     admit.
   - intro s. unshelve eapply rcoupling_eq.
   1:{ exact (λ '(s₀, s₁), s₀ = s₁). }
