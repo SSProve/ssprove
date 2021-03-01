@@ -1991,6 +1991,28 @@ Module PackageRHL (π : RulesParam).
       * reflexivity.
   Qed.
 
+  (* Specialised version to use when post = eq *)
+  Lemma rswap_cmd_eq :
+    ∀ (A₀ A₁ B : choiceType)
+      (c₀ : command A₀) (c₁ : command A₁)
+      (r : A₀ → A₁ → raw_program B),
+      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+        a₀ ← cmd c₀ ;; a₁ ← cmd c₁ ;; ret (a₀, a₁) ≈
+        a₁ ← cmd c₁ ;; a₀ ← cmd c₀ ;; ret (a₀, a₁)
+        ⦃ eq ⦄ →
+      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+        a₀ ← cmd c₀ ;; a₁ ← cmd c₁ ;; r a₀ a₁ ≈
+        a₁ ← cmd c₁ ;; a₀ ← cmd c₀ ;; r a₀ a₁
+        ⦃ eq ⦄.
+  Proof.
+    intros A₀ A₁ B c₀ c₁ r h.
+    eapply rswap_cmd.
+    - intro. reflexivity.
+    - intros a₀ a₁. eapply rsym_pre. 1: auto.
+      apply rreflexivity_rule.
+    - auto.
+  Qed.
+
   Theorem rswap_ruleR_cmd :
     ∀ {A₀ A₁ B : ord_choiceType} {post : postcond B B}
       (c₀ : command A₀) (c₁ : command A₁) (r : A₀ → A₁ → raw_program B),
