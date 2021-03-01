@@ -438,6 +438,7 @@ Module PRF_example.
     end.
 
   (* Apply rswap_cmd_eq by reading rhs *)
+  (* TODO Guard it by checking post = eq and even pre? *)
   Ltac ssprove_rswap_cmd_eq_rhs :=
     lazymatch goal with
     | |- ⊢ ⦃ _ ⦄ _ ≈ ?c ⦃ _ ⦄ =>
@@ -493,6 +494,40 @@ Module PRF_example.
     | |- _ => fail "The goal should be a syntactic judgment."
     end.
 
+  (* TODO Tactic to solve automatically condition when possible *)
+  Ltac ssprove_swap_aux n :=
+    lazymatch eval cbv in n with
+    | S ?n => ssprove_same_head_r ; intro ; ssprove_swap_aux n
+    | 0%N => ssprove_rswap_cmd_eq_rhs
+    | _ => fail "Wrong number: " n
+    end.
+
+  (** Swapping tactic in RHS
+
+    Argument n correspond to depth at which to swap.
+    0 will swap the toplevel, 1 will swap under one command, and so on.
+
+    TODO: Use cbn instead of idtac? Or something to just unfold cmd_bind?
+  *)
+  Ltac ssprove_swap_rhs n :=
+    eapply r_transR ; [
+      ssprove_swap_aux n
+    | idtac
+    ].
+
+  (** Swapping tactic in LHS
+
+    Argument n correspond to depth at which to swap.
+    0 will swap the toplevel, 1 will swap under one command, and so on.
+
+    TODO: Use cbn instead of idtac? Or something to just unfold cmd_bind?
+  *)
+  Ltac ssprove_swap_lhs n :=
+    eapply r_transL ; [
+      ssprove_swap_aux n
+    | idtac
+    ].
+
   Lemma IND_CPA_equiv_false :
     IND_CPA false ≈₀ MOD_CPA_ff_pkg ∘ (EVAL true).
   Proof.
@@ -539,31 +574,18 @@ Module PRF_example.
     rewrite cast_fun_K. clear e.
     cbn.
     (* We are now in the realm of program logic *)
-    eapply r_transR.
-    1:{
-      ssprove_same_head_r. intro a.
-      ssprove_rswap_cmd_eq_rhs.
-      eapply rsamplerC_cmd.
-    }
+    ssprove_swap_rhs 1%N. 1: apply rsamplerC_cmd.
     cbn.
-    eapply r_transR.
-    1:{
-      ssprove_rswap_cmd_eq_rhs.
-      eapply rsamplerC_cmd.
-    }
+    ssprove_swap_rhs 0%N. 1: apply rsamplerC_cmd.
     cbn.
     ssprove_same_head_r. cbn. intros [k|].
-    - cbn. ssprove_rswap_cmd_rhs.
-      + cbn. intros [? ?]. intuition auto.
-      + cbn. intros a₀ a₁. eapply rpost_weaken_rule.
-        1: eapply rpre_weaken_rule.
-        1: eapply rreflexivity_rule.
-        * cbn. auto.
-        * cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
-      + eapply rsamplerC_cmd.
+    - cbn. ssprove_swap_rhs 0%N. 1: apply rsamplerC_cmd.
+      cbn.
+      eapply rpost_weaken_rule.
+      1: eapply rreflexivity_rule.
+      cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
     - cbn.
-      (* Here we are swapping a lot, tactics could help.
-        Is there a better way?
+      (* Swapping:
 
         k_val/put/m'/r vs a₁/a₁0/a/put
         where k_val = a, r = a₁, m' = a₁0
@@ -577,39 +599,15 @@ Module PRF_example.
         k_val/m'/put/r
         k_val/put/m'/r
       *)
-      eapply r_transR.
-      1:{
-        ssprove_rswap_cmd_eq_rhs.
-        eapply rsamplerC_cmd.
-      }
+      ssprove_swap_rhs 0%N. 1: apply rsamplerC_cmd.
       cbn.
-      eapply r_transR.
-      1:{
-        ssprove_same_head_r. cbn. intro a₀.
-        ssprove_rswap_cmd_eq_rhs.
-        eapply rsamplerC_cmd.
-      }
+      ssprove_swap_rhs 1%N. 1: apply rsamplerC_cmd.
       cbn.
-      eapply r_transR.
-      1:{
-        ssprove_rswap_cmd_eq_rhs.
-        eapply rsamplerC_cmd.
-      }
+      ssprove_swap_rhs 0%N. 1: apply rsamplerC_cmd.
       cbn.
-      eapply r_transR.
-      1:{
-        ssprove_same_head_r. cbn. intro x.
-        ssprove_same_head_r. cbn. intro y.
-        ssprove_rswap_cmd_eq_rhs.
-        eapply rsamplerC_cmd.
-      }
+      ssprove_swap_rhs 2%N. 1: apply rsamplerC_cmd.
       cbn.
-      eapply r_transR.
-      1:{
-        ssprove_same_head_r. cbn. intro x.
-        ssprove_rswap_cmd_eq_rhs.
-        eapply rsamplerC_cmd.
-      }
+      ssprove_swap_rhs 1%N. 1: apply rsamplerC_cmd.
       cbn.
       eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
       cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
@@ -661,18 +659,13 @@ Module PRF_example.
     rewrite cast_fun_K. clear e.
     cbn.
     (* We are now in the realm of program logic *)
-    eapply r_transL.
-    1:{
-      ssprove_rswap_cmd_eq_rhs.
-      eapply rsamplerC_cmd.
-    }
+    ssprove_swap_lhs 0%N. 1: apply rsamplerC_cmd.
     cbn.
     ssprove_same_head_r. cbn. intros [k|].
     - cbn. eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
       cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
     - cbn.
-      (* Here we are swapping a lot, tactics could help.
-        Is there a better way?
+      (* Swapping:
 
         a₁/a/put vs k_val/put/r
         where k_val = a, r = a₁
@@ -683,18 +676,9 @@ Module PRF_example.
         k_val/r/put
         r/k_val/put
       *)
-      eapply r_transR.
-      1:{
-        ssprove_same_head_r. cbn. intro x.
-        ssprove_rswap_cmd_eq_rhs.
-        eapply rsamplerC'_cmd.
-      }
+      ssprove_swap_rhs 1%N. 1: apply rsamplerC'_cmd.
       cbn.
-      eapply r_transR.
-      1:{
-        ssprove_rswap_cmd_eq_rhs.
-        eapply rsamplerC_cmd.
-      }
+      ssprove_swap_rhs 0%N. 1: apply rsamplerC_cmd.
       cbn.
       eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
       cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
