@@ -53,6 +53,8 @@ Module CorePackageTheory (π : RulesParam).
   tgt : chUniverse
   }. *)
 
+  Definition mkopsig id S T : opsig := (id, (S, T)).
+
   Definition Location := ∑ (t : chUniverse), nat.
 
   Definition loc_type (l : Location) := l.π1.

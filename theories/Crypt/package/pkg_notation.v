@@ -210,11 +210,8 @@ Module PkgNotation (π : RulesParam).
       format "def  #[ f ]  ( x : A )  :  B  { '[' '/'  e  '/' ']' }")
       : package_scope.
 
-    (* TODO Use some mkopsig instead of the following, otherwise every
-      triplet might be printed as {sig ... }.
-    *)
     Notation "#[ f ] : A → B" :=
-      (f, (A, B))
+      (mkopsig f A B)
       (in custom pack_op at level 0,
       f constr, A custom pack_type, B custom pack_type,
       format "#[ f ]  :  A  →  B").
