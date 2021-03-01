@@ -658,55 +658,43 @@ Proof.
   cbn - [semantic_judgement Uniform_F].
 Admitted.
 
+Lemma group_OTP :
+  ∀ m,
+    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
+      c ← sample U i_cipher ;; ret (Some (c2ch c))
+      ≈
+      b ← sample U i_sk ;;
+      c ← sample U i_sk ;;
+      ret (Some (c2ch (g ^+ b, ch2m m * g ^+ c)))
+    ⦃ eq ⦄.
+Proof.
+  intros m.
+  unshelve apply: rrewrite_eqDistrR.
+  - exact (
+      bc ← sample U (i_prod i_sk i_sk) ;;
+      ret (Some (c2ch ( g^+ (bc.1), (ch2m m) * g ^+ (bc.2))))
+    ).
+  - apply (
+      @rpost_conclusion_rule_cmd _ _ _
+        (λ '(s₀,s₁), s₀ = s₁)
+        (cmd_sample (U i_cipher))
+        (cmd_sample (U (i_prod i_sk i_sk)))
+        (λ c, Some (c2ch c))
+        (λ bc, Some (c2ch (g ^+ bc.1, ch2m m * g ^+ bc.2)))
+    ).
+    (* this is just Uniform_F ≈ Uniform_F... we should be able to apply monad laws and then Uniform_bij_law. *)
+    admit.
+  - intro s. unshelve eapply rcoupling_eq.
+  1:{ exact (λ '(s₀, s₁), s₀ = s₁). }
+  2: reflexivity.
+  (*TODO: massage a bit more the RHS and then apply rf_preserves_eq and then UniformIprod_UniformUniform *)
+  admit.
+Admitted.
+
+
 (* TODO OLD BELOW
   Some parts are still salvageable, the rest has been scraped.
 *)
-
-(*CA: probably already here we need that repr (sample U i) is Uniform i. *)
-(* Lemma UniformIprod_UniformUniform { L : {fset Location} } (i j : Index)  :
-  ⊨ ⦃ fun '(s1, s2) => s1 = s2 ⦄
-    @repr _ L (XY ← (XY ← sample U (i_prod i j) ;; ret XY) ;; ret XY ) ≈
-    @repr _ L (X ←  (X ← sample U i ;; ret X) ;;
-              (Y ←  (Y ← sample U j ;; ret Y) ;; ret (X, Y)))
-  ⦃ eq ⦄.
-Proof.
-  rewrite !repr_bind. rewrite !repr_Uniform.
-Admitted.
-*)
-
-(* Lemma group_OTP { L : { fset Location } } : forall m,
-    ⊨ ⦃ λ '(h1, h2), h1 = h2 ⦄
-      @repr _ L ((c ← (c ← sample U i_cipher ;; ret c) ;; ret (Some (c2ch c))))  ≈
-      @repr _ L ((b ← (b ← sample U i_sk ;; ret b) ;;
-                  c ← (c ← sample U i_sk ;; ret c) ;; ret (Some (c2ch (g ^+ b, ch2m m * g ^+ c))))) ⦃ eq ⦄.
-Proof.
-  move => m.
-  unshelve apply: rrewrite_eqDistrR.
-  { eapply (
-        bc ← (bc ← sample U (i_prod i_sk i_sk) ;; ret bc) ;;
-               ret (Some (c2ch ( g^+ (bc.1), (ch2m m) * g ^+ (bc.2))))). }
-  { apply (@rpost_conclusion_rule _ _ _ L (fun '(h1,h2) => h1 = h2)
-                                  ((c ← sample U i_cipher ;; ret c))
-                                  ((bc ← sample U (i_prod i_sk i_sk) ;; ret bc))
-                                  (fun c => Some (c2ch c)) (fun bc => (Some (c2ch (g ^+ bc.1, ch2m m * g ^+ bc.2))))).
-    rewrite !repr_bind !repr_Uniform.
-    (* this is just Uniform_F ≈ Uniform_F... we should be able to apply monad laws and then Uniform_bij_law. *)
-    admit.
-  }
-  (*CA: This now looks easier than a Fubini Theorem
-        and my guess is that it should not be too hard to write down a coupling for this case (lemma)
-   *)
-  move => s. unshelve eapply rcoupling_eq.
-  { move => [s1 s2]. exact: (s1 = s2). }
-  - (*CA: I don't manage to simplify only in the pre-condition *)
-    suffices:  ⊨ ⦃ fun '(s1, s2) => s1 = s2 ⦄
-              @repr _ L (bc ← (bc ← sample U (i_prod i_sk i_sk) ;; ret bc) ;; ret (Some (c2ch (g ^+ bc.1, ch2m m * g ^+ bc.2))))
-              ≈
-              @repr _ L (b ← (b ← sample U i_sk ;; ret b) ;; c ← (c ← sample U i_sk ;; ret c) ;;
-                         ret (Some (c2ch (g ^+ b, ch2m m * g ^+ c)))) ⦃ eq ⦄ by [].
-   (*TODO: massage a bit more the RHS and then apply rf_preserves_eq and then UniformIprod_UniformUniform *)
-  admit.
-Admitted. *)
 
 (* Lemma pk_encoding_correct : forall p,
     ch2pk (pk2ch p ) = p.

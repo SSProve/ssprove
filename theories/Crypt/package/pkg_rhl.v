@@ -1569,6 +1569,19 @@ Module PackageRHL (π : RulesParam).
     intros A₀ A₁ B pre c₀ c₁ f₀ f₁ h.
   Admitted.
 
+  Theorem rpost_conclusion_rule_cmd :
+    ∀ {A₀ A₁ B : ord_choiceType} {pre : precond}
+      {c₀ : command A₀} {c₁ : command A₁}
+      (f₀ : A₀ → B) (f₁ : A₁ → B),
+      ⊢ ⦃ pre ⦄
+        x₀ ← cmd c₀ ;; ret x₀ ≈
+        x₁ ← cmd c₁ ;; ret x₁
+      ⦃ λ '(a₀, s₀) '(a₁, s₁), s₀ = s₁ ∧ f₀ a₀ = f₁ a₁ ⦄ →
+      ⊢ ⦃ pre ⦄ x₀ ← cmd c₀ ;; ret (f₀ x₀) ≈ x₁ ← cmd c₁ ;; ret (f₁ x₁) ⦃ eq ⦄.
+  Proof.
+    intros A₀ A₁ B pre c₀ c₁ f₀ f₁ h.
+  Admitted.
+
   Lemma repr_if :
     ∀ {A b} (c₀ c₁ : raw_program A),
       repr (if b then c₀ else c₁) = if b then repr c₀ else repr c₁.
