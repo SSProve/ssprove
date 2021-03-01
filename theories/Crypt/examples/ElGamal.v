@@ -641,7 +641,18 @@ Proof.
     end.
     (* *)
     pose (f := (λ '(a,b), (g^+a, (ch2m m) * g^+b)) : 'Z_q * 'Z_q -> gT * gT).
-    have Hbij: bijective f by admit.
+    assert (Hbij : bijective f).
+    { unshelve epose (g1 := (λ x, (proj1_sig (@cyclePmin gT g x _) %% q)%:R) : gT → 'Z_q).
+      { rewrite -g_gen. unfold ζ. apply in_setT. }
+      simpl in g1.
+      eexists (λ '(x,y), (g1 x, g1 ((ch2m m)^-1 * y))).
+      (* Might be useful lemma eq_expg_mod_order *)
+      - intros [a b]. simpl.
+        (* Associativity for * and cancel ^-1 *)
+        (* Maybe prove a lemma saying g1 (g ^+ a) is equal to a in 'Z_q? *)
+        admit.
+      - intros [x y]. simpl. admit.
+     }
     (* *)
     apply: symmetry_rule.
     unshelve eapply pre_weaken_rule. 1: exact (λ '(s₀, s₁), s₀ = s₁).
