@@ -494,11 +494,28 @@ Module PRF_example.
     | |- _ => fail "The goal should be a syntactic judgment."
     end.
 
+  (* TODO: Are there more cases we can consider? *)
+  Ltac ssprove_swap_side_cond :=
+    lazymatch goal with
+    | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_sample _) ;; _ ← cmd (cmd_sample _) ;; _ ≈ _ ⦃ _ ⦄ =>
+      apply rsamplerC_cmd
+    | |- ⊢ ⦃ _ ⦄ _ ← cmd _ ;; _ ← cmd (cmd_sample _) ;; _ ≈ _ ⦃ _ ⦄ =>
+      apply rsamplerC_cmd
+    | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_sample _) ;; _ ← cmd _ ;; _ ≈ _ ⦃ _ ⦄ =>
+      apply rsamplerC'_cmd
+    | |- ⊢ ⦃ _ ⦄ _ ← sample _ ;; _ ← sample _ ;; _ ≈ _ ⦃ _ ⦄ =>
+      apply rsamplerC_cmd
+    | |- ⊢ ⦃ _ ⦄ _ ← cmd _ ;; _ ← sample _ ;; _ ≈ _ ⦃ _ ⦄ =>
+      apply rsamplerC_cmd
+    | |- ⊢ ⦃ _ ⦄ _ ← sample _ ;; _ ← cmd _ ;; _ ≈ _ ⦃ _ ⦄ =>
+      apply rsamplerC'_cmd
+    end.
+
   (* TODO Tactic to solve automatically condition when possible *)
   Ltac ssprove_swap_aux n :=
     lazymatch eval cbv in n with
     | S ?n => ssprove_same_head_r ; intro ; ssprove_swap_aux n
-    | 0%N => ssprove_rswap_cmd_eq_rhs
+    | 0%N => ssprove_rswap_cmd_eq_rhs ; try ssprove_swap_side_cond
     | _ => fail "Wrong number: " n
     end.
 
@@ -574,13 +591,10 @@ Module PRF_example.
     rewrite cast_fun_K. clear e.
     cbn.
     (* We are now in the realm of program logic *)
-    ssprove_swap_rhs 1%N. 1: apply rsamplerC_cmd.
-    cbn.
-    ssprove_swap_rhs 0%N. 1: apply rsamplerC_cmd.
-    cbn.
+    ssprove_swap_rhs 1%N. cbn.
+    ssprove_swap_rhs 0%N. cbn.
     ssprove_same_head_r. cbn. intros [k|].
-    - cbn. ssprove_swap_rhs 0%N. 1: apply rsamplerC_cmd.
-      cbn.
+    - cbn. ssprove_swap_rhs 0%N. cbn.
       eapply rpost_weaken_rule.
       1: eapply rreflexivity_rule.
       cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
@@ -599,16 +613,11 @@ Module PRF_example.
         k_val/m'/put/r
         k_val/put/m'/r
       *)
-      ssprove_swap_rhs 0%N. 1: apply rsamplerC_cmd.
-      cbn.
-      ssprove_swap_rhs 1%N. 1: apply rsamplerC_cmd.
-      cbn.
-      ssprove_swap_rhs 0%N. 1: apply rsamplerC_cmd.
-      cbn.
-      ssprove_swap_rhs 2%N. 1: apply rsamplerC_cmd.
-      cbn.
-      ssprove_swap_rhs 1%N. 1: apply rsamplerC_cmd.
-      cbn.
+      ssprove_swap_rhs 0%N. cbn.
+      ssprove_swap_rhs 1%N. cbn.
+      ssprove_swap_rhs 0%N. cbn.
+      ssprove_swap_rhs 2%N. cbn.
+      ssprove_swap_rhs 1%N. cbn.
       eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
       cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
   Qed.
@@ -659,8 +668,7 @@ Module PRF_example.
     rewrite cast_fun_K. clear e.
     cbn.
     (* We are now in the realm of program logic *)
-    ssprove_swap_lhs 0%N. 1: apply rsamplerC_cmd.
-    cbn.
+    ssprove_swap_lhs 0%N. cbn.
     ssprove_same_head_r. cbn. intros [k|].
     - cbn. eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
       cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
@@ -676,10 +684,8 @@ Module PRF_example.
         k_val/r/put
         r/k_val/put
       *)
-      ssprove_swap_rhs 1%N. 1: apply rsamplerC'_cmd.
-      cbn.
-      ssprove_swap_rhs 0%N. 1: apply rsamplerC_cmd.
-      cbn.
+      ssprove_swap_rhs 1%N. cbn.
+      ssprove_swap_rhs 0%N. cbn.
       eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
       cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
   Qed.
