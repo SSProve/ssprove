@@ -712,9 +712,23 @@ Proof.
   - intro s. unshelve eapply rcoupling_eq.
     1:{ exact (λ '(s₀, s₁), s₀ = s₁). }
     2: reflexivity.
-    (*TODO: write the RHS as (sample sample) ;; ret, so that it is
-    possible to apply rf_preserves_eq and then
-    UniformIprod_UniformUniform *)
+    match goal with
+    | |- ⊢ ⦃ _ ⦄ ?ll ≈ ?rr ⦃ _ ⦄ =>
+      change ll with (
+        bc ← (bc ← sample U (i_prod i_sk i_sk) ;; ret bc) ;;
+        ret (Some (c2ch (g ^+ bc.1, ch2m m * g ^+ bc.2)))
+      ) ;
+      change rr with (
+        bc ← (b ← sample U i_sk ;; c ← sample U i_sk ;; ret (b,c)) ;;
+        ret (Some (c2ch (g ^+ bc.1, ch2m m * g ^+ bc.2)))
+      )
+    end.
+    eapply rf_preserves_eq.
+    1:{
+      (* Again, not bijective is it? *)
+      give_up.
+    }
+    (*TODO: apply UniformIprod_UniformUniform *)
     admit.
 Admitted.
 
