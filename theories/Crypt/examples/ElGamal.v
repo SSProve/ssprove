@@ -728,8 +728,8 @@ Proof.
       (* Again, not bijective is it? *)
       give_up.
     }
-    (*TODO: apply UniformIprod_UniformUniform *)
-    admit.
+    cbn.
+    apply (UniformIprod_UniformUniform i_sk i_sk).
 Admitted.
 
 Lemma pk_encoding_correct :
