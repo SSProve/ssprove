@@ -690,33 +690,32 @@ Proof.
     end.
     (* *)
     pose (f := (λ '(a,b), (g^+a, (ch2m m) * g^+b)) : 'Z_q * 'Z_q -> gT * gT).
-    assert (Hbij : bijective f).
-    { unshelve epose (g1 := (λ x, (proj1_sig (@cyclePmin gT g x _) %% q)%:R) : gT → 'Z_q).
-      { rewrite -g_gen. unfold ζ. apply in_setT. }
-      simpl in g1.
-      eexists (λ '(x,y), (g1 x, g1 ((ch2m m)^-1 * y))).
-      (* Might be useful lemma eq_expg_mod_order *)
-      - intros [a b]. simpl.
-        (* Associativity for * and cancel ^-1 *)
-        (* Maybe prove a lemma saying g1 (g ^+ a) is equal to a in 'Z_q? *)
-        admit.
-      - intros [x y]. simpl. admit.
-     }
+    assert (fbij : bijective f).
+    { pose proof bijective_expgn as bij.
+      destruct bij as [d hed hde].
+      eexists (λ '(x,y), (d x, d ((ch2m m)^-1 * y))).
+      - intros [a b]. simpl. rewrite hed. f_equal.
+        rewrite mulgA. rewrite mulVg. rewrite mul1g.
+        apply hed.
+      - intros [x y]. simpl. rewrite hde. f_equal.
+        rewrite hde. rewrite mulgA. rewrite mulgV. rewrite mul1g.
+        reflexivity.
+    }
     (* *)
     apply: symmetry_rule.
     unshelve eapply pre_weaken_rule. 1: exact (λ '(s₀, s₁), s₀ = s₁).
     2:{ intros. cbn. auto. }
     unshelve eapply post_weaken_rule.
-    2: eapply @Uniform_bij_rule with (1 := Hbij).
+    2: eapply @Uniform_bij_rule with (1 := fbij).
     simpl. intros [[? ?] ?] [[? ?] ?] [? e].
     move: e => /eqP [? ?]. subst. intuition auto.
   - intro s. unshelve eapply rcoupling_eq.
-  1:{ exact (λ '(s₀, s₁), s₀ = s₁). }
-  2: reflexivity.
-  (*TODO: write the RHS as (sample sample) ;; ret, so that it is
-  possible to apply rf_preserves_eq and then
-  UniformIprod_UniformUniform *)
-  admit.
+    1:{ exact (λ '(s₀, s₁), s₀ = s₁). }
+    2: reflexivity.
+    (*TODO: write the RHS as (sample sample) ;; ret, so that it is
+    possible to apply rf_preserves_eq and then
+    UniformIprod_UniformUniform *)
+    admit.
 Admitted.
 
 Lemma pk_encoding_correct :
