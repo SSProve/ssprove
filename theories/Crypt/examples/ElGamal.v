@@ -743,6 +743,33 @@ Proof.
     apply (UniformIprod_UniformUniform i_sk i_sk).
 Admitted.
 
+(* TW: Alternatively I think we want a rule as follows: *)
+(* TODO: From Uniform_bij_rule *)
+(* TODO Generalise and move with other rules *)
+Lemma r_uniform_bij :
+  ∀ {A₀ A₁ : ord_choiceType} i pre post f
+    (c₀ : _ → raw_program A₀) (c₁ : _ → raw_program A₁),
+    bijective f →
+    (∀ x, ⊢ ⦃ pre ⦄ c₀ x ≈ c₁ (f x) ⦃ post ⦄) →
+    ⊢ ⦃ pre ⦄
+      x ← sample U i ;; c₀ x ≈
+      x ← sample U i ;; c₁ x
+    ⦃ post ⦄.
+Proof.
+  intros A₀ A₁ i pre post f c₀ c₁ bijf h.
+  rewrite rel_jdgE.
+  change (repr (sampler (U ?i) ?k))
+  with (bindrFree (@Uniform_F i heap_choiceType) (λ x, repr (k x))).
+  eapply bind_rule_pp.
+  - eapply Uniform_bij_rule. eauto.
+  - intros a₀ a₁. simpl.
+    rewrite -rel_jdgE.
+    eapply rpre_hypothesis_rule. intros s₀ s₁ [hs e].
+    move: e => /eqP e. subst.
+    eapply rpre_weaken_rule. 1: eapply h.
+    intros h₀ h₁. simpl. intros [? ?]. subst. auto.
+Qed.
+
 Lemma pk_encoding_correct :
   ∀ p,
     ch2pk (pk2ch p ) = p.
