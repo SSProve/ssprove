@@ -342,8 +342,8 @@ Definition DH_security : Prop :=
     fdisjoint LA DH_loc →
     AdvantageE DH_real DH_rnd A = 0.
 
-Lemma ots_real_vs_rnd_equiv_false :
-  ots_real_vs_rnd false ≈₀ Aux ∘ DH_real.
+Lemma ots_real_vs_rnd_equiv_true :
+  ots_real_vs_rnd true ≈₀ Aux ∘ DH_real.
 Proof.
   (* We go to the relation logic using equality as invariant. *)
   eapply eq_rel_perf_ind with (λ '(h₀, h₁), h₀ = h₁). 2: reflexivity.
@@ -404,29 +404,29 @@ Proof.
   (* We are now in the realm of program logic *)
   ssprove_same_head_r. intro count.
   ssprove_same_head_r. intros _.
-  match goal with
-  | |- context [ if ?b then _ else _ ] =>
-    destruct b eqn:e
-  end.
-  - ssprove_same_head_r. intro a.
+  destruct count eqn: Hcount; rewrite /=. 
+  + ssprove_same_head_r => a.
     ssprove_swap_rhs 0%N.
-    ssprove_same_head_r. intros _.
+    ssprove_same_head_r => _.
     ssprove_swap_rhs 0%N.
-    ssprove_same_head_r. intros _.
-    (* Not clear how to relate the two sampling to me. *)
-    (* We might want a ret rule that asks us to show equality
-      of the arguments or even just pre -> post?
-    *)
-    (* The following is to see clearer, might be best not to do it. *)
-    setoid_rewrite gT2ch_ch2gT.
-    setoid_rewrite ch2gT_gT2ch.
-    admit.
-  - eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
-    intros [? ?] [? ?] ee. inversion ee. intuition reflexivity.
-Admitted.
+    ssprove_same_head_r => _.
+    ssprove_same_head_r => b.
+    repeat setoid_rewrite gT2ch_ch2gT.
+    repeat setoid_rewrite ch2gT_gT2ch.  
+    unshelve eapply rpost_weaken_rule.
+    { exact: eq. } 
+    { rewrite expgM group_prodC.
+      by apply: rreflexivity_rule. } 
+    { move => [X h0] [Y h1] [HeqXY Heqh] //=. } 
+ +  unshelve eapply rpost_weaken_rule.
+    { exact: eq. } 
+    { by apply: rreflexivity_rule. }
+    { move => [X h0] [Y h1] [HeqXY Heqh] //=. } 
+Qed.
 
-Lemma ots_real_vs_rnd_equiv_true :
-  Aux ∘ DH_rnd ≈₀ ots_real_vs_rnd true.
+
+Lemma ots_real_vs_rnd_equiv_false :
+  Aux ∘ DH_rnd ≈₀ ots_real_vs_rnd false.
 Proof.
   (* We go to the relation logic using equality as invariant. *)
   eapply eq_rel_perf_ind with (λ '(h₀, h₁), h₀ = h₁). 2: reflexivity.
@@ -474,28 +474,33 @@ Proof.
   assert (e = erefl) by apply uip. subst e.
   destruct chUniverse_eqP as [e|]. 2: contradiction.
   assert (e = erefl) by apply uip. subst e.
-  simpl.
+  simpl. 
   (* We are now in the realm of program logic *)
   ssprove_same_head_r. intro count.
   ssprove_same_head_r. intros _.
-  match goal with
-  | |- context [ if ?b then _ else _ ] =>
-    destruct b eqn:e
-  end.
-  - ssprove_same_head_r. intro a.
-    ssprove_swap_lhs 1%N.
-    ssprove_swap_lhs 0%N.
-    ssprove_same_head_r. intros _.
-    ssprove_swap_lhs 1%N.
-    ssprove_swap_lhs 0%N.
-    ssprove_same_head_r. intros _.
-    (* Now I guess is where gT × gT vs gT sampling appears? *)
-    (* The following is to see clearer, might be best not to do it. *)
-    setoid_rewrite gT2ch_ch2gT.
-    setoid_rewrite ch2gT_gT2ch.
-    admit.
-  - eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
-    intros [? ?] [? ?] ee. inversion ee. intuition reflexivity.
+  destruct count eqn:Hcount; rewrite /=. 
+  2: { unshelve eapply rpost_weaken_rule.
+       -- exact: eq.
+       -- by apply: rreflexivity_rule.
+       -- move => [C0 h0] [C1 h1] [HeqC Heqh] //=. 
+  } 
+  (* unshelve eapply rrewrite_eqDistrL. *)
+  (* {  exact:   *)
+  (*      ( a ← sample MyAlg.U i_sk ;; a0 ← sample MyAlg.U i_sk ;; *)
+  (*        put pk_loc := pk2ch (g ^+ a) ;; put sk_loc := sk2ch a ;; *)
+  (*        ret (Some (gT2ch (g ^+ a0), gT2ch (ch2pk (pk2ch (g ^+ a)) ^+ a0 * ch2m m))) ).  }  *)
+  (* {  *)
+  ssprove_same_head_r => a.
+  ssprove_swap_lhs 1%N.
+  ssprove_swap_lhs 0%N. 
+  ssprove_same_head_r => _.
+  ssprove_swap_lhs 1%N.
+  ssprove_swap_lhs 0%N. 
+  ssprove_same_head_r => _.
+  unshelve eapply rpost_weaken_rule.
+       -- exact: eq.
+       -- admit. (* group_OTP! *)
+       -- move => [C0 h0] [C1 h1] [HeqC Heqh] //=. 
 Admitted.
 
 Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher.
@@ -504,11 +509,14 @@ Proof.
   simpl in hd₀, hd₁. clear hd₁. rename hd₀ into hd.
   apply Advantage_le_0.
   rewrite Advantage_E.
+  have Hfoo : AdvantageE (ots_real_vs_rnd false) (ots_real_vs_rnd true) A =
+              AdvantageE (ots_real_vs_rnd true) (ots_real_vs_rnd false) A by admit.
+  rewrite Hfoo. clear Hfoo. 
   pose proof (
-    Advantage_triangle_chain (ots_real_vs_rnd false) [::
+    Advantage_triangle_chain (ots_real_vs_rnd true) [::
       Aux ∘ DH_real ;
       Aux ∘ DH_rnd
-    ] (ots_real_vs_rnd true) A
+    ] (ots_real_vs_rnd false) A
   ) as ineq.
   advantage_sum simpl in ineq.
   rewrite !GRing.addrA in ineq.
@@ -529,7 +537,7 @@ Proof.
       move: e => /orP [/eqP e | /eqP e].
       all: discriminate.
   }
-  rewrite ots_real_vs_rnd_equiv_false. 2: auto.
+  rewrite -ots_real_vs_rnd_equiv_true. 2: auto.
   2:{
     rewrite fdisjointUr. apply/andP. split.
     - unfold L_locs_counter in hd.
@@ -544,7 +552,7 @@ Proof.
       rewrite [X in fsubset _ X]fset_cons.
       apply fsubsetUr.
   }
-  rewrite ots_real_vs_rnd_equiv_true. 3: auto.
+  rewrite ots_real_vs_rnd_equiv_false. 3: auto.
   2:{
     rewrite fdisjointUr. apply/andP. split.
     - unfold L_locs_counter in hd.
@@ -560,7 +568,7 @@ Proof.
       apply fsubsetUr.
   }
   rewrite !GRing.addr0. auto.
-Qed.
+Admitted. (*CA: only need to show Hfoo *)
 
 (* TODO Updated definitions of old theorems
   They will have to be moved upstream to use in the above theorems.
