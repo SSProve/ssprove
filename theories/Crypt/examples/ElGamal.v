@@ -342,6 +342,33 @@ Definition DH_security : Prop :=
     fdisjoint LA DH_loc →
     AdvantageE DH_real DH_rnd A = 0.
 
+(* TW: Alternatively I think we want a rule as follows: *)
+(* TODO: From Uniform_bij_rule *)
+(* TODO Generalise and move with other rules *)
+Lemma r_uniform_bij :
+  ∀ {A₀ A₁ : ord_choiceType} i pre post f
+    (c₀ : _ → raw_program A₀) (c₁ : _ → raw_program A₁),
+    bijective f →
+    (∀ x, ⊢ ⦃ pre ⦄ c₀ x ≈ c₁ (f x) ⦃ post ⦄) →
+    ⊢ ⦃ pre ⦄
+      x ← sample U i ;; c₀ x ≈
+      x ← sample U i ;; c₁ x
+    ⦃ post ⦄.
+Proof.
+  intros A₀ A₁ i pre post f c₀ c₁ bijf h.
+  rewrite rel_jdgE.
+  change (repr (sampler (U ?i) ?k))
+  with (bindrFree (@Uniform_F i heap_choiceType) (λ x, repr (k x))).
+  eapply bind_rule_pp.
+  - eapply Uniform_bij_rule. eauto.
+  - intros a₀ a₁. simpl.
+    rewrite -rel_jdgE.
+    eapply rpre_hypothesis_rule. intros s₀ s₁ [hs e].
+    move: e => /eqP e. subst.
+    eapply rpre_weaken_rule. 1: eapply h.
+    intros h₀ h₁. simpl. intros [? ?]. subst. auto.
+Qed.
+
 Lemma ots_real_vs_rnd_equiv_true :
   ots_real_vs_rnd true ≈₀ Aux ∘ DH_real.
 Proof.
@@ -404,24 +431,20 @@ Proof.
   (* We are now in the realm of program logic *)
   ssprove_same_head_r. intro count.
   ssprove_same_head_r. intros _.
-  destruct count eqn: Hcount; rewrite /=. 
-  + ssprove_same_head_r => a.
+  destruct count.
+  - simpl. ssprove_same_head_r. intro a.
     ssprove_swap_rhs 0%N.
-    ssprove_same_head_r => _.
+    ssprove_same_head_r. intros _.
     ssprove_swap_rhs 0%N.
-    ssprove_same_head_r => _.
-    ssprove_same_head_r => b.
-    repeat setoid_rewrite gT2ch_ch2gT.
-    repeat setoid_rewrite ch2gT_gT2ch.  
-    unshelve eapply rpost_weaken_rule.
-    { exact: eq. } 
-    { rewrite expgM group_prodC.
-      by apply: rreflexivity_rule. } 
-    { move => [X h0] [Y h1] [HeqXY Heqh] //=. } 
- +  unshelve eapply rpost_weaken_rule.
-    { exact: eq. } 
-    { by apply: rreflexivity_rule. }
-    { move => [X h0] [Y h1] [HeqXY Heqh] //=. } 
+    ssprove_same_head_r. intros _.
+    ssprove_same_head_r. intro b.
+    unfold ch2pk, pk2ch.
+    rewrite !ch2gT_gT2ch.
+    rewrite expgM group_prodC.
+    eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
+    cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
+  - simpl. eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
+    cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
 Qed.
 
 
@@ -474,36 +497,35 @@ Proof.
   assert (e = erefl) by apply uip. subst e.
   destruct chUniverse_eqP as [e|]. 2: contradiction.
   assert (e = erefl) by apply uip. subst e.
-  simpl. 
+  simpl.
   (* We are now in the realm of program logic *)
   ssprove_same_head_r. intro count.
   ssprove_same_head_r. intros _.
-  destruct count eqn:Hcount; rewrite /=. 
-  2: { unshelve eapply rpost_weaken_rule.
-       -- exact: eq.
-       -- by apply: rreflexivity_rule.
-       -- move => [C0 h0] [C1 h1] [HeqC Heqh] //=. 
-  } 
-  (* unshelve eapply rrewrite_eqDistrL. *)
-  (* {  exact:   *)
-  (*      ( a ← sample MyAlg.U i_sk ;; a0 ← sample MyAlg.U i_sk ;; *)
-  (*        put pk_loc := pk2ch (g ^+ a) ;; put sk_loc := sk2ch a ;; *)
-  (*        ret (Some (gT2ch (g ^+ a0), gT2ch (ch2pk (pk2ch (g ^+ a)) ^+ a0 * ch2m m))) ).  }  *)
-  (* {  *)
-  ssprove_same_head_r => a.
+  destruct count.
+  2:{
+    cbn. eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
+    cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
+  }
+  simpl.
+  ssprove_same_head_r. intro a.
   ssprove_swap_lhs 1%N.
-  ssprove_swap_lhs 0%N. 
-  ssprove_same_head_r => _.
+  ssprove_swap_lhs 0%N.
+  ssprove_same_head_r. intros _.
   ssprove_swap_lhs 1%N.
-  ssprove_swap_lhs 0%N. 
-  ssprove_same_head_r => _.
+  ssprove_swap_lhs 0%N.
+  ssprove_same_head_r. intros _.
+  (* TW: Alternatively I would like to apply the uniform_bij rule
+    or something similar *)
+  repeat setoid_rewrite gT2ch_ch2gT.
+  repeat setoid_rewrite ch2gT_gT2ch.
+  unfold c2ch.
   unshelve eapply rpost_weaken_rule.
-       -- exact: eq.
-       -- repeat setoid_rewrite gT2ch_ch2gT.
-          repeat setoid_rewrite ch2gT_gT2ch.
-          rewrite /c2ch /=. 
-          admit. (* group_OTP! *)
-       -- move => [C0 h0] [C1 h1] [HeqC Heqh] //=. 
+  - exact: eq.
+  - repeat setoid_rewrite gT2ch_ch2gT.
+    repeat setoid_rewrite ch2gT_gT2ch.
+    rewrite /c2ch /=.
+    admit. (* group_OTP! *)
+  - move => [C0 h0] [C1 h1] [HeqC Heqh] //=.
 Admitted.
 
 Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher.
@@ -514,7 +536,7 @@ Proof.
   rewrite Advantage_E.
   have Hfoo : AdvantageE (ots_real_vs_rnd false) (ots_real_vs_rnd true) A =
               AdvantageE (ots_real_vs_rnd true) (ots_real_vs_rnd false) A by admit.
-  rewrite Hfoo. clear Hfoo. 
+  rewrite Hfoo. clear Hfoo.
   pose proof (
     Advantage_triangle_chain (ots_real_vs_rnd true) [::
       Aux ∘ DH_real ;
@@ -742,33 +764,6 @@ Proof.
     cbn.
     apply (UniformIprod_UniformUniform i_sk i_sk).
 Admitted.
-
-(* TW: Alternatively I think we want a rule as follows: *)
-(* TODO: From Uniform_bij_rule *)
-(* TODO Generalise and move with other rules *)
-Lemma r_uniform_bij :
-  ∀ {A₀ A₁ : ord_choiceType} i pre post f
-    (c₀ : _ → raw_program A₀) (c₁ : _ → raw_program A₁),
-    bijective f →
-    (∀ x, ⊢ ⦃ pre ⦄ c₀ x ≈ c₁ (f x) ⦃ post ⦄) →
-    ⊢ ⦃ pre ⦄
-      x ← sample U i ;; c₀ x ≈
-      x ← sample U i ;; c₁ x
-    ⦃ post ⦄.
-Proof.
-  intros A₀ A₁ i pre post f c₀ c₁ bijf h.
-  rewrite rel_jdgE.
-  change (repr (sampler (U ?i) ?k))
-  with (bindrFree (@Uniform_F i heap_choiceType) (λ x, repr (k x))).
-  eapply bind_rule_pp.
-  - eapply Uniform_bij_rule. eauto.
-  - intros a₀ a₁. simpl.
-    rewrite -rel_jdgE.
-    eapply rpre_hypothesis_rule. intros s₀ s₁ [hs e].
-    move: e => /eqP e. subst.
-    eapply rpre_weaken_rule. 1: eapply h.
-    intros h₀ h₁. simpl. intros [? ?]. subst. auto.
-Qed.
 
 Lemma pk_encoding_correct :
   ∀ p,
