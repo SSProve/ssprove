@@ -626,6 +626,14 @@ Proof.
         (λ c, Some (c2ch c))
         (λ bc, Some (c2ch (g ^+ bc.1, ch2m m * g ^+ bc.2)))
     ).
+    1:{
+      (* Doesn't sound bijective as it doesn't reach None *)
+      give_up.
+    }
+    1:{
+      (* Same *)
+      give_up.
+    }
     rewrite rel_jdgE. rewrite !repr_cmd_bind.
     rewrite !repr_cmd_Uniform.
     simpl (repr (ret _)).
@@ -663,7 +671,7 @@ Proof.
     move: e => /eqP [? ?]. subst. intuition auto.
   - intro s. unshelve eapply rcoupling_eq.
   1:{ exact (λ '(s₀, s₁), s₀ = s₁). }
-  2: reflexivity. 
+  2: reflexivity.
   (*TODO: write the RHS as (sample sample) ;; ret, so that it is
   possible to apply rf_preserves_eq and then
   UniformIprod_UniformUniform *)
