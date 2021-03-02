@@ -340,7 +340,7 @@ Definition DH_security : Prop :=
   ∀ LA A,
     ValidPackage LA [interface val #[10] : 'unit → chPubKey × chCipher ] A_export A →
     fdisjoint LA DH_loc →
-    AdvantageE DH_real DH_rnd A = 0.
+    AdvantageE DH_rnd DH_real A = 0.
 
 (* TW: Alternatively I think we want a rule as follows: *)
 (* TODO: From Uniform_bij_rule *)
@@ -370,7 +370,7 @@ Proof.
 Qed.
 
 Lemma ots_real_vs_rnd_equiv_true :
-  ots_real_vs_rnd true ≈₀ Aux ∘ DH_real.
+  Aux ∘ DH_real ≈₀ ots_real_vs_rnd true.
 Proof.
   (* We go to the relation logic using equality as invariant. *)
   eapply eq_rel_perf_ind with (λ '(h₀, h₁), h₀ = h₁). 2: reflexivity.
@@ -406,18 +406,9 @@ Proof.
     destruct chUniverse_eqP. 2: eauto.
     discriminate.
   }
-  eapply lookup_op_spec in e.
-  match type of e with
-  | ?x = _ =>
-    let x' := eval hnf in x in
-    change x with x' in e
-  end.
-  match type of e with
-  | context [ mkdef _ _ ?p ] =>
-    set (foo := p) in e
-  end.
-  cbn in e. unfold mkdef in e. noconf e. subst foo.
-  cbn beta.
+  eapply lookup_op_spec in e. simpl in e.
+  rewrite setmE in e. rewrite eq_refl in e.
+  noconf e.
   (* Now the linking *)
   simpl.
   (* Too bad but linking doesn't automatically commute with match *)
@@ -432,24 +423,26 @@ Proof.
   ssprove_same_head_r. intro count.
   ssprove_same_head_r. intros _.
   destruct count.
-  - simpl. ssprove_same_head_r. intro a.
-    ssprove_swap_rhs 0%N.
-    ssprove_same_head_r. intros _.
-    ssprove_swap_rhs 0%N.
-    ssprove_same_head_r. intros _.
-    ssprove_same_head_r. intro b.
-    unfold ch2pk, pk2ch.
-    rewrite !ch2gT_gT2ch.
-    rewrite expgM group_prodC.
-    eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
+  2:{
+    simpl. eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
     cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
-  - simpl. eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
-    cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
+  }
+  simpl. ssprove_same_head_r. intro a.
+  ssprove_swap_lhs 0%N.
+  ssprove_same_head_r. intros _.
+  ssprove_swap_lhs 0%N.
+  ssprove_same_head_r. intros _.
+  ssprove_same_head_r. intro b.
+  unfold ch2pk, pk2ch.
+  rewrite !ch2gT_gT2ch.
+  rewrite expgM group_prodC.
+  eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
+  cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
 Qed.
 
 
 Lemma ots_real_vs_rnd_equiv_false :
-  Aux ∘ DH_rnd ≈₀ ots_real_vs_rnd false.
+  ots_real_vs_rnd false ≈₀ Aux ∘ DH_rnd.
 Proof.
   (* We go to the relation logic using equality as invariant. *)
   eapply eq_rel_perf_ind with (λ '(h₀, h₁), h₀ = h₁). 2: reflexivity.
@@ -508,11 +501,11 @@ Proof.
   }
   simpl.
   ssprove_same_head_r. intro a.
-  ssprove_swap_lhs 1%N.
-  ssprove_swap_lhs 0%N.
+  ssprove_swap_rhs 1%N.
+  ssprove_swap_rhs 0%N.
   ssprove_same_head_r. intros _.
-  ssprove_swap_lhs 1%N.
-  ssprove_swap_lhs 0%N.
+  ssprove_swap_rhs 1%N.
+  ssprove_swap_rhs 0%N.
   ssprove_same_head_r. intros _.
   (* TW: Alternatively I would like to apply the uniform_bij rule
     or something similar *)
@@ -521,11 +514,8 @@ Proof.
   unfold c2ch.
   unshelve eapply rpost_weaken_rule.
   - exact: eq.
-  - repeat setoid_rewrite gT2ch_ch2gT.
-    repeat setoid_rewrite ch2gT_gT2ch.
-    rewrite /c2ch /=.
-    admit. (* group_OTP! *)
-  - move => [C0 h0] [C1 h1] [HeqC Heqh] //=.
+  - admit. (* group_OTP! *)
+  - cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
 Admitted.
 
 Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher.
@@ -534,14 +524,11 @@ Proof.
   simpl in hd₀, hd₁. clear hd₁. rename hd₀ into hd.
   apply Advantage_le_0.
   rewrite Advantage_E.
-  have Hfoo : AdvantageE (ots_real_vs_rnd false) (ots_real_vs_rnd true) A =
-              AdvantageE (ots_real_vs_rnd true) (ots_real_vs_rnd false) A by admit.
-  rewrite Hfoo. clear Hfoo.
   pose proof (
-    Advantage_triangle_chain (ots_real_vs_rnd true) [::
-      Aux ∘ DH_real ;
-      Aux ∘ DH_rnd
-    ] (ots_real_vs_rnd false) A
+    Advantage_triangle_chain (ots_real_vs_rnd false) [::
+      Aux ∘ DH_rnd ;
+      Aux ∘ DH_real
+    ] (ots_real_vs_rnd true) A
   ) as ineq.
   advantage_sum simpl in ineq.
   rewrite !GRing.addrA in ineq.
@@ -562,7 +549,7 @@ Proof.
       move: e => /orP [/eqP e | /eqP e].
       all: discriminate.
   }
-  rewrite -ots_real_vs_rnd_equiv_true. 2: auto.
+  rewrite ots_real_vs_rnd_equiv_true. 3: auto.
   2:{
     rewrite fdisjointUr. apply/andP. split.
     - unfold L_locs_counter in hd.
@@ -577,7 +564,7 @@ Proof.
       rewrite [X in fsubset _ X]fset_cons.
       apply fsubsetUr.
   }
-  rewrite ots_real_vs_rnd_equiv_false. 3: auto.
+  rewrite ots_real_vs_rnd_equiv_false. 2: auto.
   2:{
     rewrite fdisjointUr. apply/andP. split.
     - unfold L_locs_counter in hd.
@@ -593,7 +580,7 @@ Proof.
       apply fsubsetUr.
   }
   rewrite !GRing.addr0. auto.
-Admitted. (*CA: only need to show Hfoo *)
+Qed.
 
 (* TODO Updated definitions of old theorems
   They will have to be moved upstream to use in the above theorems.
