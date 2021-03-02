@@ -605,6 +605,8 @@ Admitted.
 Lemma bijective_expgn :
   bijective (λ (a : 'Z_q), g ^+ a).
 Proof.
+  assert (hq : (1 < q)%N).
+  { eapply prime_gt1. unfold q. apply prime_order. }
   unshelve eexists (λ x, (proj1_sig (@cyclePmin gT g x _) %% q)%:R).
   - rewrite -g_gen. unfold ζ. apply in_setT.
   - simpl. intros a.
@@ -620,8 +622,6 @@ Proof.
     2:{
       eapply leq_trans. 1: eapply ltn_ord. fold q.
       unfold Zp_trunc.
-      assert (hq : (1 < q)%N).
-      { eapply prime_gt1. unfold q. apply prime_order. }
       erewrite <- Lt.S_pred. 2:{ eapply Lt.lt_pred. apply /leP. eauto. }
       apply /leP.
       rewrite PeanoNat.Nat.succ_pred_pos.
@@ -631,8 +631,17 @@ Proof.
     subst.
     rewrite modn_small. 2: auto.
     apply natr_Zp.
-  -
-Admitted.
+  - simpl. intro x.
+    match goal with
+    | |- context [ @cyclePmin _ _ _ ?hh ] =>
+      set (h := hh)
+    end.
+    clearbody h. simpl in h.
+    destruct cyclePmin as [n hn e]. simpl. subst.
+    rewrite modn_small. 2: auto.
+    f_equal. rewrite val_Zp_nat. 2: auto.
+    apply modn_small. auto.
+Qed.
 
 Lemma group_OTP :
   ∀ m,
