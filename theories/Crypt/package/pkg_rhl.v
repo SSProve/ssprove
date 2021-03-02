@@ -1560,30 +1560,37 @@ Module PackageRHL (π : RulesParam).
   Theorem rpost_conclusion_rule :
     ∀ {A₀ A₁ B : ord_choiceType} {pre : precond}
       {c₀ : raw_program A₀} {c₁ : raw_program A₁}
-      (f0 : A₀ → B) (f1 : A₁ → B) (Hbij0 : bijective f0) (Hbij1 : bijective f1),
+      (f₀ : A₀ → B) (f₁ : A₁ → B),
+      bijective f₀ →
+      bijective f₁ →
       ⊢ ⦃ pre ⦄
         x₀ ← c₀ ;; ret x₀ ≈ x₁ ← c₁ ;; ret x₁
-      ⦃ λ '(a₀, s₀) '(a₁, s₁), s₀ = s₁ ∧ f0 a₀ = f1 a₁ ⦄ →
-      ⊢ ⦃ pre ⦄ x₀ ← c₀ ;; ret (f0 x₀) ≈ x₁ ← c₁ ;; ret (f1 x₁) ⦃ eq ⦄.
+      ⦃ λ '(a₀, s₀) '(a₁, s₁), s₀ = s₁ ∧ f₀ a₀ = f₁ a₁ ⦄ →
+      ⊢ ⦃ pre ⦄ x₀ ← c₀ ;; ret (f₀ x₀) ≈ x₁ ← c₁ ;; ret (f₁ x₁) ⦃ eq ⦄.
   Proof.
-    intros A₀ A₁ B pre c₀ c₁ f₀ f₁ bij0 bij1 h.
-    rewrite -> rel_jdgE in *. rewrite -> rel_jdgE in h. 
-    rewrite !repr_bind in h.  rewrite !repr_bind. 
-    apply: post_conclusion_rule bij0 bij1 h. 
- Qed. 
+    intros A₀ A₁ B pre c₀ c₁ f₀ f₁ hb₀ hb₁ h.
+    rewrite rel_jdgE. rewrite rel_jdgE in h.
+    rewrite !repr_bind in h.  rewrite !repr_bind.
+    apply: post_conclusion_rule hb₀ hb₁ h.
+ Qed.
 
   Theorem rpost_conclusion_rule_cmd :
     ∀ {A₀ A₁ B : ord_choiceType} {pre : precond}
       {c₀ : command A₀} {c₁ : command A₁}
       (f₀ : A₀ → B) (f₁ : A₁ → B),
+      bijective f₀ →
+      bijective f₁ →
       ⊢ ⦃ pre ⦄
         x₀ ← cmd c₀ ;; ret x₀ ≈
         x₁ ← cmd c₁ ;; ret x₁
       ⦃ λ '(a₀, s₀) '(a₁, s₁), s₀ = s₁ ∧ f₀ a₀ = f₁ a₁ ⦄ →
       ⊢ ⦃ pre ⦄ x₀ ← cmd c₀ ;; ret (f₀ x₀) ≈ x₁ ← cmd c₁ ;; ret (f₁ x₁) ⦃ eq ⦄.
   Proof.
-    intros A₀ A₁ B pre c₀ c₁ f₀ f₁ h. 
-  Admitted.
+    intros A₀ A₁ B pre c₀ c₁ f₀ f₁ hb₀ hb₁ h.
+    rewrite rel_jdgE. rewrite rel_jdgE in h.
+    rewrite !repr_cmd_bind in h.  rewrite !repr_cmd_bind.
+    apply: post_conclusion_rule hb₀ hb₁ h.
+  Qed.
 
   Lemma repr_if :
     ∀ {A b} (c₀ c₁ : raw_program A),
