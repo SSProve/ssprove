@@ -420,42 +420,45 @@ Proof.
 Admitted.
 
 
-Lemma bij_pres_summable { A B: choiceType } { d : A -> R } { f : A -> B }  {finv : B -> A }
-      (kinvf  : cancel finv f) (kfinv : cancel f finv) ( H: summable (T:= A) (R:=R) d):
-  summable (T:=B) (R:=R) (fun b : B => d (finv b)).
-Admitted. 
+(* Lemma bij_pres_summable { A B: choiceType } { d : A -> R } { f : A -> B }  {finv : B -> A } *)
+(*       (kinvf  : cancel finv f) (kfinv : cancel f finv) ( H: summable (T:= A) (R:=R) d): *)
+(*   summable (T:=B) (R:=R) (fun b : B => d (finv b)). *)
+(* Admitted.  *)
 
-Definition bij_lift { A B : ord_choiceType} (d : SDistr A) { f : A -> B } 
-           { finv : B -> A } (kinvf  : cancel finv f) (kfinv : cancel f finv) : SDistr  B.
-Proof.
-  destruct d as [d Hd1 Hd2 Hd3].
-  unshelve eexists. 
-  { move => b. exact: d (finv b). } 
-  - move => b /=.  by apply: Hd1. 
-  - by apply: bij_pres_summable. 
-  - unshelve erewrite <- reindex_psum.
-    { apply: predT. } 
-    assumption.
-      by [].
-      exists f.
-   -- move => x H. apply: kinvf.
-   -- move => x H. apply: kfinv.
-Defined. 
+Definition d__f { A B : ord_choiceType} { d : SDistr A } { f : A -> B } : SDistr  B. Admitted.
+(*CA's proof sketch 
+  d__f : B -> [0,1] 
 
-Lemma cancel_prod { A0 A1 B0 B1 } { f0 : A0 -> B0 } { f1 : A1 -> B1 } {finv0 : B0 -> A0 } {finv1 : B1 -> A1}
-           (K0 : cancel f0 finv0) (K1 : cancel f1 finv1) : cancel (fun '(a0,a1) => (f0 a0, f1 a1)) (fun '(b0, b1) => (finv0 b0, finv1 b1)).
-Admitted.  
-    
-Lemma bij_coupling {A0 B0 A1 B1 : ord_choiceType } { d0 : SDistr A0 } { d1 : SDistr A1} { d }
-      (Hd : coupling d d0 d1)
-      { f0 : A0 -> B0 } { finv0 : B0 -> A0 } { kinvf0  : cancel finv0 f0 } { kfinv0 : cancel f0 finv0 }
-      { f1 : A1 -> B1 } { finv1 : B1 -> A1 }  { kinvf1  : cancel finv1 f1 } { kfinv1 : cancel f1 finv1 } :
-  coupling (bij_lift d (cancel_prod kinvf0 kinvf1) (cancel_prod kfinv0 kfinv1))
-           (bij_lift d0 kinvf0 kfinv0) (bij_lift d1 kinvf1 kfinv1). Admitted. 
-      
+         b ↦ ∑_{a ∈ A: f(a) = b} d(a)  // d-measure of the pre-image of b -- in particular if b is not in image(f) then d__f(b) = 0 // 
+
+
+  - 0 ≤ d__f (b) because sum of non-negative quantities 
+  - for J ⊆ B, d__f (J) = d (f^-1 (J)) that is finite 
+  - ∑_{b ∈ B} d__f(b) = ∑_{a ∈ A} d(a) 
+
+ *)
+
+
+(* CA: old proof for a bijective f *)
+(* Proof. *)
+(*   destruct d as [d Hd1 Hd2 Hd3]. *)
+(*   unshelve eexists.  *)
+(*   { move => b. exact: d (finv b). }  *)
+(*   - move => b /=.  by apply: Hd1.  *)
+(*   - by apply: bij_pres_summable.  *)
+(*   - unshelve erewrite <- reindex_psum. *)
+(*     { apply: predT. }  *)
+(*     assumption. *)
+(*       by []. *)
+(*       exists f. *)
+(*    -- move => x H. apply: kinvf. *)
+(*    -- move => x H. apply: kfinv. *)
+(* Defined.  *)
+
+
 Theorem post_conclusion_rule {A0 A1 B : ord_choiceType} { S : choiceType } { pre : S * S -> Prop }
         {c0 : FrStP S A0 } { c1 : FrStP S A1 } 
-        { f0 : A0 -> B } { f1 : A1 -> B } (Hbij0 : bijective f0) (Hbij1 : bijective f1)
+        { f0 : A0 -> B } { f1 : A1 -> B } (* (Hbij0 : bijective f0) (Hbij1 : bijective f1) *)
         (H : ⊨ ⦃ pre ⦄
                (x0 <- c0 ;; retF x0) ≈
                (x1 <- c1 ;; retF x1)
@@ -471,43 +474,45 @@ Proof.
   destruct H as [d [H H']]. 
   split.
   - assumption.
-  - move => [a1 st1] [a2 st2] [Heqa Heqst]. subst.
-    apply: h. by rewrite Heqst.
-  - destruct Hbij0 as [finv0 kfinv0 kinvf0]. 
-    destruct Hbij1 as [finv1 kfinv1 kinvf1].
-    pose fs0 :=  (fun as0 : A0 * S => (f0 as0.1, as0.2)).  
-    pose fs1 :=  (fun as1 : A1 * S => (f1 as1.1, as1.2)).
-    pose finvs0 := (fun bs : B * S => (finv0 bs.1, bs.2)).  
-    pose finvs1 := (fun bs : B * S => (finv1 bs.1, bs.2)).
-    have kinvfs0 : cancel finvs0 fs0. { admit. }
-    have kfinvs0 : cancel fs0 finvs0. { admit. } 
-    have kinvfs1 : cancel finvs1 fs1. { admit. }
-    have kfinvs1 : cancel fs1 finvs1. { admit. }
-    exists (bij_lift d (cancel_prod kinvfs0 kinvfs1) (cancel_prod kfinvs0 kfinvs1)).
+  - move => [a1 st1] [a2 st2] [Heqa Heqst]. subst. 
+    apply: h. by rewrite Heqst. 
+  - unshelve eexists.
+    { unshelve eapply d__f.
+      exact: F_choice_prod ⟨ F_choice_prod ⟨ A0, S ⟩, F_choice_prod ⟨ A1, S ⟩ ⟩.
+      exact: d.
+      move => [[a0 st0] [a1 st1]]. exact: (f0 a0, st0, (f1 a1, st1)). } 
     split.
-    { simpl. have H0 :  ((Theta_dens.unary_theta_dens_obligation_1 prob_handler (F_choice_prod_obj ⟨ B, S ⟩)
-                          (UniversalFreeMap.outOfFree_obligation_1 sigMap B (x0 ∈ A0 <<- c0;; retF (f0 x0)) s0))) = 
-                        (bij_lift ((Theta_dens.unary_theta_dens_obligation_1 prob_handler (F_choice_prod_obj ⟨ A0, S ⟩)
-                                  (UniversalFreeMap.outOfFree_obligation_1 sigMap A0 (x0 ∈ A0 <<- c0;; retF x0) s0)))
-                                  kinvfs0 kfinvs0) by admit.
-            have H1 :  ((Theta_dens.unary_theta_dens_obligation_1 prob_handler (F_choice_prod_obj ⟨ B, S ⟩)
-                          (UniversalFreeMap.outOfFree_obligation_1 sigMap B (x1 ∈ A1 <<- c1;; retF (f1 x1)) s1))) = 
-                        (bij_lift ((Theta_dens.unary_theta_dens_obligation_1 prob_handler (F_choice_prod_obj ⟨ A1, S ⟩)
-                                  (UniversalFreeMap.outOfFree_obligation_1 sigMap A1 (x1 ∈ A1 <<- c1;; retF x1) s1)))
-                                  kinvfs1 kfinvs1) by admit. 
-            rewrite H0 H1.      
-            by apply: bij_coupling.
-    }
-    move => bs0 bs1 Hlift_gt0. 
-    apply (h bs0 bs1).
-    (*we can deduce this by Hlift_gt0 *)
-Admitted. 
+    { (*CA:  let fs0 : A0 * S -> B * S = fun (a0, st) => (f a0, st) 
+
+             to prove the lmg it suffices to show that 
+
+             "θ (x <- c0 ;; ret (f0 x)) : SDistr B * S"  = 
+
+             " d__fs0 (θ (x <- c0 ;; ret x) "
+
+             // it will map (b,s) ↦ ∑_{a0 ∈ A0: f(a0) = b} θ (x <- c0; ret x)  // 
+             
+             indeed for (b1,st1), 
+
+             Σ_{(b0, st0)} d' (b0,st0) (b1,st1) =  
+
+             Σ_{(a0,st0) a1 : f0(a0) = b0 /\ f1(a1) = b1} d (a0,st0) (a1,st1) = [coupling d _ _ ] 
+             
+             Σ_{a1 : f1(a1) = } θ (x <- c1 ;; ret x) (a1, st1) = θ (x <- c1 ;; ret (f1 x)    
  
-  
+        *) admit. } 
+      move => [b0 st0] [b1 st1] Hgt0. 
+      (* by definition of d' fi^-1(bi) are both non empty 
+         -> exits ai s.t. fi(ai) = bi,  i = 1,2 
+         -> specialize H with (a0,st0) (a1,st1) and get the thesis
+       *)
+    admit. 
+Admitted. 
+   
 
 Lemma f_preserves_eq { A B : ord_choiceType } { S : choiceType }
                      { x  y: FrStP S A }
-                     (f : A -> B ) (Hbij : bijective f)     
+                     (f : A -> B ) (* (Hbij : bijective f)    *)  
                      ( H: ⊨ ⦃ fun '(s1, s2) => s1 = s2 ⦄
                              ( X <- x ;; retF X ) ≈
                              ( Y <- y ;; retF Y) 
