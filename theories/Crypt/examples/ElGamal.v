@@ -499,7 +499,10 @@ Proof.
   ssprove_same_head_r => _.
   unshelve eapply rpost_weaken_rule.
        -- exact: eq.
-       -- admit. (* group_OTP! *)
+       -- repeat setoid_rewrite gT2ch_ch2gT.
+          repeat setoid_rewrite ch2gT_gT2ch.
+          rewrite /c2ch /=. 
+          admit. (* group_OTP! *)
        -- move => [C0 h0] [C1 h1] [HeqC Heqh] //=. 
 Admitted.
 
