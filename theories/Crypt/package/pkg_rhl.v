@@ -1898,15 +1898,15 @@ Module PackageRHL (π : RulesParam).
 
   Lemma rf_preserves_eq :
     ∀ {A B : ord_choiceType} {c₀ c₁ : raw_program A}
-      (f : A → B) (Hbij : bijective f),
+      (f : A → B),
+      bijective f →
       ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ x ← c₀ ;; ret x ≈ x ← c₁ ;; ret x ⦃ eq ⦄ →
       ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ x ← c₀ ;; ret (f x) ≈ x ← c₁ ;; ret (f x) ⦃ eq ⦄.
   Proof.
-    intros A B c₀ c₁ f Hbij h.
+    intros A B c₀ c₁ f fbij h.
     rewrite rel_jdgE. rewrite rel_jdgE in h.
     rewrite !repr_bind. rewrite !repr_bind in h.
-    apply: f_preserves_eq;
-    assumption.
+    apply: f_preserves_eq. all: assumption.
   Qed.
 
   (* Rules I added *)
