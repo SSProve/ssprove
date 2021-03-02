@@ -602,6 +602,38 @@ Proof.
   cbn - [semantic_judgement Uniform_F].
 Admitted.
 
+Lemma bijective_expgn :
+  bijective (λ (a : 'Z_q), g ^+ a).
+Proof.
+  unshelve eexists (λ x, (proj1_sig (@cyclePmin gT g x _) %% q)%:R).
+  - rewrite -g_gen. unfold ζ. apply in_setT.
+  - simpl. intros a.
+    match goal with
+    | |- context [ @cyclePmin _ _ _ ?hh ] =>
+      set (h := hh)
+    end.
+    clearbody h. simpl in h.
+    destruct cyclePmin as [n hn e]. simpl.
+    move: e => /eqP e. rewrite eq_expg_mod_order in e.
+    move: e => /eqP e.
+    rewrite !modn_small in e. 2: auto.
+    2:{
+      eapply leq_trans. 1: eapply ltn_ord. fold q.
+      unfold Zp_trunc.
+      assert (hq : (1 < q)%N).
+      { eapply prime_gt1. unfold q. apply prime_order. }
+      erewrite <- Lt.S_pred. 2:{ eapply Lt.lt_pred. apply /leP. eauto. }
+      apply /leP.
+      rewrite PeanoNat.Nat.succ_pred_pos.
+      2:{ move: hq => /leP hq. auto with arith. }
+      auto.
+    }
+    subst.
+    rewrite modn_small. 2: auto.
+    apply natr_Zp.
+  -
+Admitted.
+
 Lemma group_OTP :
   ∀ m,
     ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
