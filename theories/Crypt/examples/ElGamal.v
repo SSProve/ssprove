@@ -342,33 +342,6 @@ Definition DH_security : Prop :=
     fdisjoint LA DH_loc →
     AdvantageE DH_rnd DH_real A = 0.
 
-(* TW: Alternatively I think we want a rule as follows: *)
-(* TODO: From Uniform_bij_rule *)
-(* TODO Generalise and move with other rules *)
-Lemma r_uniform_bij :
-  ∀ {A₀ A₁ : ord_choiceType} i pre post f
-    (c₀ : _ → raw_program A₀) (c₁ : _ → raw_program A₁),
-    bijective f →
-    (∀ x, ⊢ ⦃ pre ⦄ c₀ x ≈ c₁ (f x) ⦃ post ⦄) →
-    ⊢ ⦃ pre ⦄
-      x ← sample U i ;; c₀ x ≈
-      x ← sample U i ;; c₁ x
-    ⦃ post ⦄.
-Proof.
-  intros A₀ A₁ i pre post f c₀ c₁ bijf h.
-  rewrite rel_jdgE.
-  change (repr (sampler (U ?i) ?k))
-  with (bindrFree (@Uniform_F i heap_choiceType) (λ x, repr (k x))).
-  eapply bind_rule_pp.
-  - eapply Uniform_bij_rule. eauto.
-  - intros a₀ a₁. simpl.
-    rewrite -rel_jdgE.
-    eapply rpre_hypothesis_rule. intros s₀ s₁ [hs e].
-    move: e => /eqP e. subst.
-    eapply rpre_weaken_rule. 1: eapply h.
-    intros h₀ h₁. simpl. intros [? ?]. subst. auto.
-Qed.
-
 Lemma ots_real_vs_rnd_equiv_true :
   Aux ∘ DH_real ≈₀ ots_real_vs_rnd true.
 Proof.
@@ -440,6 +413,168 @@ Proof.
   cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
 Qed.
 
+(** Technical steps
+
+  Ideally, this would go somewhere else to live in the form of rules.
+  This burden should not be on the user.
+
+*)
+
+Lemma repr_Uniform :
+  ∀ (i : Index),
+    repr (x ← sample U i ;; ret x) = @Uniform_F i _.
+Proof.
+  intro i. reflexivity.
+Qed.
+
+(* Alternative, we'll see which is better. *)
+Lemma repr_cmd_Uniform :
+  ∀ (i : Index),
+    repr_cmd (cmd_sample (U i)) = @Uniform_F i _.
+Proof.
+  intro i. reflexivity.
+Qed.
+
+(*CA: probably already here we need that repr (sample U i) is Uniform i. *)
+Lemma UniformIprod_UniformUniform :
+  ∀ (i j : Index),
+    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
+      xy ← sample U (i_prod i j) ;; ret xy ≈
+      x ← sample U i ;; y ← sample U j ;; ret (x, y)
+    ⦃ eq ⦄.
+Proof.
+  intros i j.
+  change (
+    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
+      xy ← sample U (i_prod i j) ;; ret xy ≈
+      x ← cmd (cmd_sample (U i)) ;; y ← cmd (cmd_sample (U j)) ;; ret (x, y)
+    ⦃ eq ⦄
+  ).
+  rewrite rel_jdgE.
+  rewrite repr_Uniform. repeat setoid_rewrite repr_cmd_bind.
+  change (repr_cmd (cmd_sample (U ?i))) with (@Uniform_F i heap_choiceType).
+  cbn - [semantic_judgement Uniform_F].
+Admitted.
+
+Lemma bijective_expgn :
+  bijective (λ (a : 'Z_q), g ^+ a).
+Proof.
+  assert (hq : (1 < q)%N).
+  { eapply prime_gt1. unfold q. apply prime_order. }
+  unshelve eexists (λ x, (proj1_sig (@cyclePmin gT g x _) %% q)%:R).
+  - rewrite -g_gen. unfold ζ. apply in_setT.
+  - simpl. intros a.
+    match goal with
+    | |- context [ @cyclePmin _ _ _ ?hh ] =>
+      set (h := hh)
+    end.
+    clearbody h. simpl in h.
+    destruct cyclePmin as [n hn e]. simpl.
+    move: e => /eqP e. rewrite eq_expg_mod_order in e.
+    move: e => /eqP e.
+    rewrite !modn_small in e. 2: auto.
+    2:{
+      eapply leq_trans. 1: eapply ltn_ord. fold q.
+      unfold Zp_trunc.
+      erewrite <- Lt.S_pred. 2:{ eapply Lt.lt_pred. apply /leP. eauto. }
+      apply /leP.
+      rewrite PeanoNat.Nat.succ_pred_pos.
+      2:{ move: hq => /leP hq. auto with arith. }
+      auto.
+    }
+    subst.
+    rewrite modn_small. 2: auto.
+    apply natr_Zp.
+  - simpl. intro x.
+    match goal with
+    | |- context [ @cyclePmin _ _ _ ?hh ] =>
+      set (h := hh)
+    end.
+    clearbody h. simpl in h.
+    destruct cyclePmin as [n hn e]. simpl. subst.
+    rewrite modn_small. 2: auto.
+    f_equal. rewrite val_Zp_nat. 2: auto.
+    apply modn_small. auto.
+Qed.
+
+Lemma group_OTP :
+  ∀ m,
+    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
+      c ← sample U i_cipher ;; ret (Some (c2ch c))
+      ≈
+      b ← sample U i_sk ;;
+      c ← sample U i_sk ;;
+      ret (Some (c2ch (g ^+ b, ch2m m * g ^+ c)))
+    ⦃ eq ⦄.
+Proof.
+  intros m.
+  unshelve apply: rrewrite_eqDistrR.
+  - exact (
+      bc ← sample U (i_prod i_sk i_sk) ;;
+      ret (Some (c2ch ( g^+ (bc.1), (ch2m m) * g ^+ (bc.2))))
+    ).
+  - apply (
+      @rpost_conclusion_rule_cmd _ _ _
+        (λ '(s₀,s₁), s₀ = s₁)
+        (cmd_sample (U i_cipher))
+        (cmd_sample (U (i_prod i_sk i_sk)))
+        (λ c, Some (c2ch c))
+        (λ bc, Some (c2ch (g ^+ bc.1, ch2m m * g ^+ bc.2)))
+    ).
+    rewrite rel_jdgE. rewrite !repr_cmd_bind.
+    rewrite !repr_cmd_Uniform.
+    simpl (repr (ret _)).
+    match goal with
+    | |- context [ @bindrFree ?S ?P ?A ?B ?m ?k ] =>
+      change (@bindrFree S P A B m k)
+      with (@Uniform_F i_cipher heap_choiceType)
+    end.
+    match goal with
+    | |- context [ @bindrFree ?S ?P ?A ?B ?m ?k ] =>
+      change (@bindrFree S P A B m k)
+      with (@Uniform_F (i_prod i_sk i_sk) heap_choiceType)
+    end.
+    (* *)
+    pose (f := (λ '(a,b), (g^+a, (ch2m m) * g^+b)) : 'Z_q * 'Z_q -> gT * gT).
+    assert (fbij : bijective f).
+    { pose proof bijective_expgn as bij.
+      destruct bij as [d hed hde].
+      eexists (λ '(x,y), (d x, d ((ch2m m)^-1 * y))).
+      - intros [a b]. simpl. rewrite hed. f_equal.
+        rewrite mulgA. rewrite mulVg. rewrite mul1g.
+        apply hed.
+      - intros [x y]. simpl. rewrite hde. f_equal.
+        rewrite hde. rewrite mulgA. rewrite mulgV. rewrite mul1g.
+        reflexivity.
+    }
+    (* *)
+    apply: symmetry_rule.
+    unshelve eapply pre_weaken_rule. 1: exact (λ '(s₀, s₁), s₀ = s₁).
+    2:{ intros. cbn. auto. }
+    unshelve eapply post_weaken_rule.
+    2: eapply @Uniform_bij_rule with (1 := fbij).
+    simpl. intros [[? ?] ?] [[? ?] ?] [? e].
+    move: e => /eqP [? ?]. subst. intuition auto.
+  - intro s. unshelve eapply rcoupling_eq.
+    1:{ exact (λ '(s₀, s₁), s₀ = s₁). }
+    2: reflexivity.
+    match goal with
+    | |- ⊢ ⦃ _ ⦄ ?ll ≈ ?rr ⦃ _ ⦄ =>
+      change ll with (
+        bc ← (bc ← sample U (i_prod i_sk i_sk) ;; ret bc) ;;
+        ret (Some (c2ch (g ^+ bc.1, ch2m m * g ^+ bc.2)))
+      ) ;
+      change rr with (
+        bc ← (b ← sample U i_sk ;; c ← sample U i_sk ;; ret (b,c)) ;;
+        ret (Some (c2ch (g ^+ bc.1, ch2m m * g ^+ bc.2)))
+      )
+    end.
+    eapply rf_preserves_eq.
+    cbn.
+    apply (UniformIprod_UniformUniform i_sk i_sk).
+Qed.
+
+(** End of technical steps *)
 
 Lemma ots_real_vs_rnd_equiv_false :
   ots_real_vs_rnd false ≈₀ Aux ∘ DH_rnd.
@@ -586,158 +721,30 @@ Qed.
   They will have to be moved upstream to use in the above theorems.
 *)
 
-Lemma repr_Uniform :
-  ∀ (i : Index),
-    repr (x ← sample U i ;; ret x) = @Uniform_F i _.
+(* TW: Alternatively I think we want a rule as follows: *)
+(* TODO Generalise and move with other rules *)
+Lemma r_uniform_bij :
+  ∀ {A₀ A₁ : ord_choiceType} i pre post f
+    (c₀ : _ → raw_program A₀) (c₁ : _ → raw_program A₁),
+    bijective f →
+    (∀ x, ⊢ ⦃ pre ⦄ c₀ x ≈ c₁ (f x) ⦃ post ⦄) →
+    ⊢ ⦃ pre ⦄
+      x ← sample U i ;; c₀ x ≈
+      x ← sample U i ;; c₁ x
+    ⦃ post ⦄.
 Proof.
-  intro i. reflexivity.
-Qed.
-
-(* Alternative, we'll see which is better. *)
-Lemma repr_cmd_Uniform :
-  ∀ (i : Index),
-    repr_cmd (cmd_sample (U i)) = @Uniform_F i _.
-Proof.
-  intro i. reflexivity.
-Qed.
-
-(*CA: probably already here we need that repr (sample U i) is Uniform i. *)
-Lemma UniformIprod_UniformUniform :
-  ∀ (i j : Index),
-    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
-      xy ← sample U (i_prod i j) ;; ret xy ≈
-      x ← sample U i ;; y ← sample U j ;; ret (x, y)
-    ⦃ eq ⦄.
-Proof.
-  intros i j.
-  change (
-    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
-      xy ← sample U (i_prod i j) ;; ret xy ≈
-      x ← cmd (cmd_sample (U i)) ;; y ← cmd (cmd_sample (U j)) ;; ret (x, y)
-    ⦃ eq ⦄
-  ).
+  intros A₀ A₁ i pre post f c₀ c₁ bijf h.
   rewrite rel_jdgE.
-  rewrite repr_Uniform. repeat setoid_rewrite repr_cmd_bind.
-  change (repr_cmd (cmd_sample (U ?i))) with (@Uniform_F i heap_choiceType).
-  cbn - [semantic_judgement Uniform_F].
-Admitted.
-
-Lemma bijective_expgn :
-  bijective (λ (a : 'Z_q), g ^+ a).
-Proof.
-  assert (hq : (1 < q)%N).
-  { eapply prime_gt1. unfold q. apply prime_order. }
-  unshelve eexists (λ x, (proj1_sig (@cyclePmin gT g x _) %% q)%:R).
-  - rewrite -g_gen. unfold ζ. apply in_setT.
-  - simpl. intros a.
-    match goal with
-    | |- context [ @cyclePmin _ _ _ ?hh ] =>
-      set (h := hh)
-    end.
-    clearbody h. simpl in h.
-    destruct cyclePmin as [n hn e]. simpl.
-    move: e => /eqP e. rewrite eq_expg_mod_order in e.
-    move: e => /eqP e.
-    rewrite !modn_small in e. 2: auto.
-    2:{
-      eapply leq_trans. 1: eapply ltn_ord. fold q.
-      unfold Zp_trunc.
-      erewrite <- Lt.S_pred. 2:{ eapply Lt.lt_pred. apply /leP. eauto. }
-      apply /leP.
-      rewrite PeanoNat.Nat.succ_pred_pos.
-      2:{ move: hq => /leP hq. auto with arith. }
-      auto.
-    }
-    subst.
-    rewrite modn_small. 2: auto.
-    apply natr_Zp.
-  - simpl. intro x.
-    match goal with
-    | |- context [ @cyclePmin _ _ _ ?hh ] =>
-      set (h := hh)
-    end.
-    clearbody h. simpl in h.
-    destruct cyclePmin as [n hn e]. simpl. subst.
-    rewrite modn_small. 2: auto.
-    f_equal. rewrite val_Zp_nat. 2: auto.
-    apply modn_small. auto.
-Qed.
-
-Lemma group_OTP :
-  ∀ m,
-    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
-      c ← sample U i_cipher ;; ret (Some (c2ch c))
-      ≈
-      b ← sample U i_sk ;;
-      c ← sample U i_sk ;;
-      ret (Some (c2ch (g ^+ b, ch2m m * g ^+ c)))
-    ⦃ eq ⦄.
-Proof.
-  intros m.
-  unshelve apply: rrewrite_eqDistrR.
-  - exact (
-      bc ← sample U (i_prod i_sk i_sk) ;;
-      ret (Some (c2ch ( g^+ (bc.1), (ch2m m) * g ^+ (bc.2))))
-    ).
-  - apply (
-      @rpost_conclusion_rule_cmd _ _ _
-        (λ '(s₀,s₁), s₀ = s₁)
-        (cmd_sample (U i_cipher))
-        (cmd_sample (U (i_prod i_sk i_sk)))
-        (λ c, Some (c2ch c))
-        (λ bc, Some (c2ch (g ^+ bc.1, ch2m m * g ^+ bc.2)))
-    ).
-    rewrite rel_jdgE. rewrite !repr_cmd_bind.
-    rewrite !repr_cmd_Uniform.
-    simpl (repr (ret _)).
-    (* For some reason the lemma doesn't apply?? *)
-    (* rewrite bindrFree_and_ret. *)
-    match goal with
-    | |- context [ @bindrFree ?S ?P ?A ?B ?m ?k ] =>
-      change (@bindrFree S P A B m k) with (@Uniform_F i_cipher heap_choiceType)
-    end.
-    match goal with
-    | |- context [ @bindrFree ?S ?P ?A ?B ?m ?k ] =>
-      change (@bindrFree S P A B m k) with (@Uniform_F (i_prod i_sk i_sk) heap_choiceType)
-    end.
-    (* *)
-    pose (f := (λ '(a,b), (g^+a, (ch2m m) * g^+b)) : 'Z_q * 'Z_q -> gT * gT).
-    assert (fbij : bijective f).
-    { pose proof bijective_expgn as bij.
-      destruct bij as [d hed hde].
-      eexists (λ '(x,y), (d x, d ((ch2m m)^-1 * y))).
-      - intros [a b]. simpl. rewrite hed. f_equal.
-        rewrite mulgA. rewrite mulVg. rewrite mul1g.
-        apply hed.
-      - intros [x y]. simpl. rewrite hde. f_equal.
-        rewrite hde. rewrite mulgA. rewrite mulgV. rewrite mul1g.
-        reflexivity.
-    }
-    (* *)
-    apply: symmetry_rule.
-    unshelve eapply pre_weaken_rule. 1: exact (λ '(s₀, s₁), s₀ = s₁).
-    2:{ intros. cbn. auto. }
-    unshelve eapply post_weaken_rule.
-    2: eapply @Uniform_bij_rule with (1 := fbij).
-    simpl. intros [[? ?] ?] [[? ?] ?] [? e].
-    move: e => /eqP [? ?]. subst. intuition auto.
-  - intro s. unshelve eapply rcoupling_eq.
-    1:{ exact (λ '(s₀, s₁), s₀ = s₁). }
-    2: reflexivity.
-    match goal with
-    | |- ⊢ ⦃ _ ⦄ ?ll ≈ ?rr ⦃ _ ⦄ =>
-      change ll with (
-        bc ← (bc ← sample U (i_prod i_sk i_sk) ;; ret bc) ;;
-        ret (Some (c2ch (g ^+ bc.1, ch2m m * g ^+ bc.2)))
-      ) ;
-      change rr with (
-        bc ← (b ← sample U i_sk ;; c ← sample U i_sk ;; ret (b,c)) ;;
-        ret (Some (c2ch (g ^+ bc.1, ch2m m * g ^+ bc.2)))
-      )
-    end.
-    eapply rf_preserves_eq.
-    cbn.
-    apply (UniformIprod_UniformUniform i_sk i_sk).
+  change (repr (sampler (U ?i) ?k))
+  with (bindrFree (@Uniform_F i heap_choiceType) (λ x, repr (k x))).
+  eapply bind_rule_pp.
+  - eapply Uniform_bij_rule. eauto.
+  - intros a₀ a₁. simpl.
+    rewrite -rel_jdgE.
+    eapply rpre_hypothesis_rule. intros s₀ s₁ [hs e].
+    move: e => /eqP e. subst.
+    eapply rpre_weaken_rule. 1: eapply h.
+    intros h₀ h₁. simpl. intros [? ?]. subst. auto.
 Qed.
 
 Lemma pk_encoding_correct :
