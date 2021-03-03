@@ -678,7 +678,7 @@ Proof.
   - exact (
       bc ← sample U (i_prod i_sk i_sk) ;;
       ret (Some (c2ch ( g^+ (bc.1), (ch2m m) * g ^+ (bc.2))))
-    ).
+      ).
   - apply (
       @rpost_conclusion_rule_cmd _ _ _
         (λ '(s₀,s₁), s₀ = s₁)
@@ -738,8 +738,10 @@ Proof.
     eapply rf_preserves_eq.
     cbn.
     apply (UniformIprod_UniformUniform i_sk i_sk).
-Qed. 
+Qed.
 
+Print Assumptions group_OTP. 
+    
 Lemma pk_encoding_correct :
   ∀ p,
     ch2pk (pk2ch p ) = p.
