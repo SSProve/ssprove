@@ -895,6 +895,22 @@ Module PackageComposition (π : RulesParam).
       rewrite e1. reflexivity.
   Qed.
 
+  Lemma valid_ID :
+    ∀ L I,
+      flat I →
+      valid_package L I I (ID I).
+  Proof.
+    intros L I hI.
+    intros [id [S T]] ho.
+    rewrite IDE. destruct getm_def as [[S' T']|] eqn:e.
+    2:{ exfalso. eapply in_getm_def_None. 2: eauto. exact ho. }
+    eapply getm_def_in in e as hi.
+    eapply hI in hi. specialize (hi ho). noconf hi.
+    simpl. eexists. split. 1: reflexivity.
+    simpl. intro x.
+    eapply valid_program_from_class. exact _.
+  Qed.
+
   Lemma program_link_id :
     ∀ A (v : raw_program A) L I,
       flat I →

@@ -133,7 +133,13 @@ The identity package is called `ID` in Coq and has the following type:
 Definition ID (I : Interface) : raw_package.
 ```
 
-TODO Missing `valid_ID`!!!
+Its validity is stated as
+```coq
+Lemma valid_ID :
+  ∀ L I,
+    flat I →
+    valid_package L I I (ID I).
+```
 
 Note the extra `flat I` condition on the interface which essentially forbids
 overloading: there cannot be two procedures in `I` that share the same name.
