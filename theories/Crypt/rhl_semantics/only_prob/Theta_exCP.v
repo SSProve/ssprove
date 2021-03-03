@@ -233,10 +233,15 @@ Proof.
     apply HB.
 Defined.
 
+Definition semantic_judgement A1 A2 c1 c2 w :=
+  (θ_morph ⟨A1,A2⟩) ∙1 ⟨c1,c2⟩ ≤ w.
 
-Definition semantic_judgement A1 A2 c1 c2 w :=  (θ_morph ⟨A1,A2⟩) ∙1  ⟨c1,c2⟩ ≤ w.
+Declare Scope semantic_scope.
+Delimit Scope semantic_scope with sem.
+#[local] Open Scope semantic_scope.
 
-Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ c1 c2 w).
+Notation "⊨ c1 ≈ c2 [{ w }]" :=
+  (semantic_judgement _ _ c1 c2 w) : semantic_scope.
 
 Program Definition fromPrePost {A1 A2}
           (pre : Prop)
@@ -252,7 +257,7 @@ Next Obligation.
 Qed.
 
 Notation "⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
-  (semantic_judgement _ _ c1 c2 (fromPrePost pre post)).
+  (semantic_judgement _ _ c1 c2 (fromPrePost pre post)) : semantic_scope.
 
 Definition flip (r : R) : SDistr (bool_choiceType).
   rewrite /SDistr_carrier.
