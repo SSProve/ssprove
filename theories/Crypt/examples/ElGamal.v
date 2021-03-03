@@ -687,14 +687,6 @@ Proof.
         (λ c, Some (c2ch c))
         (λ bc, Some (c2ch (g ^+ bc.1, ch2m m * g ^+ bc.2)))
     ).
-    1:{
-      (* Doesn't sound bijective as it doesn't reach None *)
-      give_up.
-    }
-    1:{
-      (* Same *)
-      give_up.
-    }
     rewrite rel_jdgE. rewrite !repr_cmd_bind.
     rewrite !repr_cmd_Uniform.
     simpl (repr (ret _)).
