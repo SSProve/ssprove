@@ -110,7 +110,6 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Import MyParam.
   Module asym_rules := (ARules MyParam).
   Import asym_rules.
-  Include (Package_Make myparamU).
 
   Module MyPackage := Package_Make myparamU.
 
