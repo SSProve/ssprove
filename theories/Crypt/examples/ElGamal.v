@@ -721,7 +721,7 @@ Proof.
     2: eapply @Uniform_bij_rule with (1 := fbij).
     simpl. intros [[? ?] ?] [[? ?] ?] [? e].
     move: e => /eqP [? ?]. subst. intuition auto.
-  - intro s. unshelve eapply rcoupling_eq.
+  - intro s. unshelve eapply rcoupling_eq. 
     1:{ exact (λ '(s₀, s₁), s₀ = s₁). }
     2: reflexivity.
     match goal with
@@ -736,13 +736,9 @@ Proof.
       )
     end.
     eapply rf_preserves_eq.
-    1:{
-      (* Again, not bijective is it? *)
-      give_up.
-    }
     cbn.
     apply (UniformIprod_UniformUniform i_sk i_sk).
-Admitted.
+Qed. 
 
 Lemma pk_encoding_correct :
   ∀ p,
