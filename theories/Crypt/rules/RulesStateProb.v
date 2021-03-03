@@ -425,6 +425,7 @@ Admitted.
 (*   summable (T:=B) (R:=R) (fun b : B => d (finv b)). *)
 (* Admitted.  *)
 
+(*CA: not used  *)
 Definition d__f { A B : ord_choiceType} { d : SDistr A } { f : A -> B } : SDistr  B. Admitted.
 (*CA's proof sketch 
   d__f : B -> [0,1] 
@@ -455,7 +456,7 @@ Definition d__f { A B : ord_choiceType} { d : SDistr A } { f : A -> B } : SDistr
 (*    -- move => x H. apply: kfinv. *)
 (* Defined.  *)
 
-
+(*CA: not used *)
 Theorem post_conclusion_rule {A0 A1 B : ord_choiceType} { S : choiceType } { pre : S * S -> Prop }
         {c0 : FrStP S A0 } { c1 : FrStP S A1 } 
         { f0 : A0 -> B } { f1 : A1 -> B } (* (Hbij0 : bijective f0) (Hbij1 : bijective f1) *)
@@ -509,7 +510,7 @@ Proof.
     admit. 
 Admitted. 
    
-
+(*CA: depends on post_conclusion_rule but is not used *)
 Lemma f_preserves_eq { A B : ord_choiceType } { S : choiceType }
                      { x  y: FrStP S A }
                      (f : A -> B ) (* (Hbij : bijective f)    *)  

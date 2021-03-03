@@ -619,7 +619,7 @@ Proof.
   rewrite rel_jdgE.
   rewrite repr_Uniform. repeat setoid_rewrite repr_cmd_bind.
   change (repr_cmd (cmd_sample (U ?i))) with (@Uniform_F i heap_choiceType).
-  cbn - [semantic_judgement Uniform_F].
+  cbn - [semantic_judgement Uniform_F]. 
 Admitted.
 
 Lemma bijective_expgn :

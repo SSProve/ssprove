@@ -1918,10 +1918,6 @@ Module PackageRHL (π : RulesParam).
       ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ x ← c₀ ;; ret (f x) ≈ x ← c₁ ;; ret (f x) ⦃ eq ⦄.
   Proof.
     intros A B c₀ c₁ f h.
-      ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ x ← c₀ ;; ret x ≈ x ← c₁ ;; ret x ⦃ eq ⦄ →
-      ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ x ← c₀ ;; ret (f x) ≈ x ← c₁ ;; ret (f x) ⦃ eq ⦄.
-  Proof.
-    intros A B c₀ c₁ f h.
     rewrite rel_jdgE. rewrite rel_jdgE in h.
     eapply rbind_rule.
     - rewrite !bind_ret in h. exact h.
