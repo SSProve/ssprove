@@ -453,7 +453,7 @@ Proof.
   rewrite rel_jdgE.
   rewrite repr_Uniform. repeat setoid_rewrite repr_cmd_bind.
   change (repr_cmd (cmd_sample (U ?i))) with (@Uniform_F i heap_choiceType).
-  cbn - [semantic_judgement Uniform_F].
+  cbn - [semantic_judgement Uniform_F]. 
 Admitted.
 
 Lemma bijective_expgn :
@@ -512,7 +512,7 @@ Proof.
   - exact (
       bc ← sample U (i_prod i_sk i_sk) ;;
       ret (Some (c2ch ( g^+ (bc.1), (ch2m m) * g ^+ (bc.2))))
-    ).
+      ).
   - apply (
       @rpost_conclusion_rule_cmd _ _ _
         (λ '(s₀,s₁), s₀ = s₁)
@@ -555,7 +555,7 @@ Proof.
     2: eapply @Uniform_bij_rule with (1 := fbij).
     simpl. intros [[? ?] ?] [[? ?] ?] [? e].
     move: e => /eqP [? ?]. subst. intuition auto.
-  - intro s. unshelve eapply rcoupling_eq.
+  - intro s. unshelve eapply rcoupling_eq. 
     1:{ exact (λ '(s₀, s₁), s₀ = s₁). }
     2: reflexivity.
     match goal with
