@@ -57,7 +57,7 @@ Herein, `package I E` is the type of packages with import interface `I` and expo
 interface `E`.
 
 Package laws, as introduced in the paper, are all stated and proven in
-`pkg_composition.v`:
+`pkg_composition.v` directly on raw packages.
 
 
 #### Sequential composition
@@ -66,17 +66,27 @@ In Coq, we call `link p1 p2` the sequential composition of `p1` and `p2`:
 `p1 ∘ p2`.
 
 ```coq
-Definition link {I M E} (p1 : package M E) (p2 : package I M) : package I E.
+Definition link (p1 p2 : raw_package) : raw_package.
 ```
 
-Associativity is state as follows:
+Linking is valid if the export and import match:
+```coq
+Lemma valid_link :
+  ∀ L1 L2 I M E p1 p2,
+    valid_package L1 M E p1 →
+    valid_package L2 I M p2 →
+    valid_package (L1 :|: L2) I E (link p1 p2).
+```
+
+Associativity is stated as follows:
 
 ```coq
 Lemma link_assoc :
-  ∀ {E M1 M2 I}
-    (p1 : package M1 E) (p2 : package M2 M1) (p3 : package I M2),
-    link p1 (link p2 p3) = link (link p1 p2) p3.
+  ∀ p1 p2 p3,
+    link p1 (link p2 p3) =
+    link (link p1 p2) p3.
 ```
+It holds directly on raw packages, even if they are ill-formed.
 
 #### Parallel composition
 
@@ -84,43 +94,47 @@ In Coq, we write `par p1 p2` for the parallel composition of `p1` and `p2`:
 `p1 || p2`.
 
 ```coq
-Definition par {I1 I2 E1 E2} (p1 : package I1 E1) (p2 : package I2 E2)
-  (h : parable E1 E2) : package (I1 :|: I2) (E1 :|: E2).
+Definition par (p1 p2 : raw_package) : raw_package.
 ```
-The `parable` condition checks that the export interfaces are indeed disjoint.
+
+The validity of parallel composition can be proven with the following lemma:
+```coq
+Lemma valid_par :
+  ∀ L1 L2 I1 I2 E1 E2 p1 p2,
+    Parable p1 p2 →
+    valid_package L1 I1 E1 p1 →
+    valid_package L2 I2 E2 p2 →
+    valid_package (L1 :|: L2) (I1 :|: I2) (E1 :|: E2) (par p1 p2).
+```
+
+The `Parable` condition checks that the export interfaces are indeed disjoint.
 
 We have commutativity as follows:
 ```coq
 Lemma par_commut :
-  ∀ {I1 I2 E1 E2} (p1 : package I1 E1) (p2 : package I2 E2) (h : parable E1 E2),
-    par p1 p2 h =
-    package_transport (fsetUC I2 I1) (fsetUC E2 E1) (par p2 p1 (parable_sym h)).
+  ∀ p1 p2,
+    Parable p1 p2 →
+    par p1 p2 = par p2 p1.
 ```
-While heavy this lemma can be read as `p1 || p2 = p2 || p1`, unfortunately,
-these two packages do not have strictly equal interfaces (`E1 :|: E2` versus
-`E2 :|: E1`, where `:|:` represents union of sets) and thus `package_transport`
-allows us to use the fact the interfaces can be proven equal to satisfy the
-type checker.
+This lemma does not work on arbitrary raw packages, it is requires that the
+packages implement disjoint signatures.
 
-The very same problem is even more apparent in the associativity lemma,
-stated as follows:
+Associativity on the other hand is free from this problem:
 ```coq
 Lemma par_assoc :
-  ∀ {I1 I2 I3 E1 E2 E3}
-    (p1 : package I1 E1) (p2 : package I2 E2) (p3 : package I3 E3)
-    (h12 : parable E1 E2) (h23 : parable E2 E3) (h13 : parable E1 E3),
-    package_transport (fsetUA I1 I2 I3) (fsetUA E1 E2 E3)
-                      (par p1 (par p2 p3 h23) (parable_union h12 h13)) =
-    par (par p1 p2 h12) p3 (parable_sym (parable_union (parable_sym h13) (parable_sym h23))).
+  ∀ p1 p2 p3,
+    par p1 (par p2 p3) = par (par p1 p2) p3.
 ```
-It can be read as `p1 || (p2 || p3) = (p1 || p2) || p3`).
 
 #### Identity package
 
 The identity package is called `ID` in Coq and has the following type:
 ```coq
-Definition ID (I : Interface) (h : flat I) : package I I.
+Definition ID (I : Interface) : raw_package.
 ```
+
+TODO Missing `valid_ID`!!!
+
 Note the extra `flat I` condition on the interface which essentially forbids
 overloading: there cannot be two procedures in `I` that share the same name.
 While our interfaces could in theory allow such procedures in general, the
@@ -130,39 +144,44 @@ restriction.
 The two identity laws are as follows:
 ```coq
 Lemma link_id :
-  ∀ I E (p : package I E) h,
-    link p (ID I h) = ptrim p.
+  ∀ L I E p,
+    valid_package L I E p →
+    flat I →
+    trimmed E p →
+    link p (ID I) = p.
 ```
 
 ```coq
 Lemma id_link :
-  ∀ I E (p : package I E) h,
-    link (ID E h) p = ptrim p.
+  ∀ L I E p,
+    valid_package L I E p →
+    trimmed E p →
+    link (ID E) p = p.
 ```
 
-Once again, we differ from the paper by the usage of `ptrim`. This operations
-*trims* a package to match its export interface. Indeed, we allow a package
-to define more than it actually exports and these *extra* procedures are
-thrown away at linking.
-On packages that are *fit*, i.e. that do not implement more than they export,
-the equality becomes again `ID E ∘ p = p = p ∘ ID I`.
+In both cases, we ask that the package we link the identity package with is
+`trimmed`, meaning that it implements *exactly* its export interface and nothing
+more. Packages created through our interfaces always verify this property.
 
 #### Interchange between sequential and parallel composition
 
 Finally we prove a law involving sequential and parallel composition
 stating how we can interchange them:
 ```coq
-Lemma interchange :
-  ∀ A B C D E F c1 c2
-    (p1 : package B A)
-    (p2 : package E D)
-    (p3 : package C B)
-    (p4 : package F E),
-    par (link p1 p3) (link p2 p4) c1 =
-    link (par p1 p2 c1) (par p3 p4 c2).
+∀ A B C D E F L1 L2 L3 L4 p1 p2 p3 p4,
+  ValidPackage L1 B A p1 →
+  ValidPackage L2 E D p2 →
+  ValidPackage L3 C B p3 →
+  ValidPackage L4 F E p4 →
+  trimmed A p1 →
+  trimmed D p2 →
+  Parable p3 p4 →
+  par (link p1 p3) (link p2 p4) = link (par p1 p2) (par p3 p4).
 ```
 which can be read as
 `(p1 ∘ p3) || (p2 ∘ p4) = (p1 || p2) ∘ (p3 || p4)`.
+
+It once again requires some validity and trimming properties.
 
 ### Examples
 
@@ -170,12 +189,16 @@ The PRF example is developed in `theories/Crypt/examples/PRF.v`.
 The security theorem is the following:
 
 ```coq
-Theorem security_based_on_prf (Hprf : PRF_security) :
-  ∀ A : Adversary4Game [interface val #[i1] : chWords → chWords × chWords ]
-    (Hdisjoint_extra : fdisjoint A.π1 EVAL_location_ff) Hdisjoint1 Hdisjoint2,
-    @Advantage _ IND_CPA A Hdisjoint1 Hdisjoint2 ≤
-    prf_epsilon (link A (MOD_CPA_ff_pkg)) + @statistical_gap A +
-    prf_epsilon (link A (MOD_CPA_tt_pkg)).
+Theorem security_based_on_prf :
+  ∀ LA A,
+    ValidPackage LA
+      [interface val #[i1] : chWords → chWords × chWords ] A_export A →
+    fdisjoint LA (IND_CPA false).(locs) →
+    fdisjoint LA (IND_CPA true).(locs) →
+    Advantage IND_CPA A <=
+    prf_epsilon (A ∘ MOD_CPA_ff_pkg) +
+    statistical_gap A +
+    prf_epsilon (A ∘ MOD_CPA_tt_pkg).
 ```
 
 As we claim in the paper, it bounds the advantage of any adversary to the
@@ -196,17 +219,23 @@ Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher.
 `OT_rnd_cipher` is defined in `theories/Crypt/examples/AsymScheme.v`:
 
  ```coq
-Definition OT_rnd_cipher :=
-  ∀ A H1 H2, @Advantage _ ots_real_vs_rnd A H1 H2 = 0.
+Definition OT_rnd_cipher : Prop :=
+  ∀ LA A,
+    ValidPackage LA [interface val #[challenge_id'] : chPlain → 'option chCipher] A_export A →
+    fdisjoint LA (ots_real_vs_rnd true).(locs) →
+    fdisjoint LA (ots_real_vs_rnd false).(locs) →
+    Advantage ots_real_vs_rnd A = 0.
 ```
 
 Note that the theorem relies on `dh_secure` which corresponds to the DDH
 assumption:
 
 ```coq
-Definition DH_security :=
-  ∀ A Hdisj1 Hdisj2,
-    @AdvantageE _ DH_real DH_rnd A  Hdisj1 Hdisj2 = 0.
+Definition DH_security : Prop :=
+  ∀ LA A,
+    ValidPackage LA [interface val #[10] : 'unit → chPubKey × chCipher ] A_export A →
+    fdisjoint LA DH_loc →
+    AdvantageE DH_rnd DH_real A = 0.
 ```
 
 
@@ -267,15 +296,17 @@ Lemma ReductionLem :
 
 **Theorem 1**
 ```coq
-Theorem prove_relational' :
-  ∀ {export}
-    (P1 : package Game_import export)
-    (P2 : package Game_import export)
-    (I : heap_choiceType * heap_choiceType → Prop)
-    INV' P1.π1 P2.π1 I →
+Lemma prove_relational :
+  ∀ {L₀ L₁ LA E} (p₀ p₁ : raw_package) (I : precond) (A : raw_package)
+    `{ValidPackage L₀ Game_import E p₀}
+    `{ValidPackage L₁ Game_import E p₁}
+    `{ValidPackage LA E A_export A},
+    INV' L₀ L₁ I →
     I (empty_heap, empty_heap) →
-    eq_up_to_inv I P1.π2 P2.π2 →
-    P1 ≈[ λ A H1 H2, 0 ] P2.
+    fdisjoint LA L₀ →
+    fdisjoint LA L₁ →
+    eq_up_to_inv E I p₀ p₁ →
+    AdvantageE p₀ p₁ A = 0.
 ```
 
 **Theorem 2**
@@ -378,54 +409,23 @@ interchange_psum :
     psum (λ y : U, psum (λ x : T, S x y))
 ```
 
-### Admitted lemmata
+### Admitted lemma
 
-Our development currently still contains a few unproven results. We list
-them all in this section.
-
-- Two rules used in the examples are still not proven: `rsamplerC` and
-`rsamplerC'` which correspond to commutation laws for sampling.
+Our development currently still contains a few unproven results. All the results
+presented in the paper are formalised without admitted dependencies (besides
+those announced above) except for one admitted lemma in the ElGamal example:
 
 ```coq
-rsamplerC :
-  ∀ (A : ord_choiceType) (L : {fset Location}) (o : Op)
-    (c : program L Game_import A),
-    ⊨ ⦃ λ '(h1, h2), h1 = h2
-    ⦄ repr (a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (a, r))
-    ≈ repr (r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (a, r)) ⦃ eq ⦄
-
-rsamplerC' :
-  ∀ (A : ord_choiceType) (L : {fset Location}) (o : Op)
-    (c : program L Game_import A),
-    ⊨ ⦃ λ '(h1, h2), h1 = h2
-    ⦄ repr (r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (r, a))
-    ≈ repr (a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (r, a)) ⦃ eq ⦄
+Lemma UniformIprod_UniformUniform :
+  ∀ (i j : Index),
+    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
+      xy ← sample U (i_prod i j) ;; ret xy ≈
+      x ← sample U i ;; y ← sample U j ;; ret (x, y)
+    ⦃ eq ⦄.
 ```
-We believe that the rule `rsampleC` can be given a proof in two steps:
-(1) Interpret the code fragment `a ← c ;; r ← sample o ;; ret (a, r)`
-(the other one too) as some function `S → SDistr( A × R × S )`
-for `S` a set of global states
-(this kind of interpretation is discussed in 3.2 in the paper).
-This amounts to an evaluation of the first 3 passes of our theta mapping
-(see 5.4).
-(2) If the two code fragments are equal in the latter monad then we win.
-It then remains to prove that pure (lifted) sub-distributions always
-commute with any other stateful function, a fact that should be
-entailed by the commutativity of the sub-distribution monad.
 
-
-- The security proof for ElGamal also relies on unproven properties
-`pkch_i` and `ch2c_c2ch` stated in `theories/Crypt/examples/Elgamal.v`
-saying that the mapping `pk2ch` (respectively `c2ch`) is a bijection between
-the group of public keys `PubKey` (respectively `Cipher`) and the ordinal
-corresponding to its cardinal `'I_#(PubKey)` (respectively `'I_#(Cipher)`).
-
-- Additionally, the proof for ElGamal relies on `group_OTP` and `group_OTP_math`
-also stated in `theories/Crypt/examples/Elgamal.v` saying that for a plaintext
-`m` (and `g` the generator of the group),
-`C <$ uniform Cipher ;; return c` is equivalent to
-`b <$ unifrom {0,.. q-1} ;; c <$ unifrom {0,.. q-1} ;; return (g^+b, m * g^+c)`.
-This condition was already proven in the literature.
+It states that sampling from the uniform distribution over a product is the same
+as sampling over two uniform distributions.
 
 ### Methodology for finding axioms
 
