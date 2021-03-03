@@ -1556,6 +1556,15 @@ Module PackageRHL (π : RulesParam).
 
   Local Open Scope package_scope.
 
+  Lemma rreflexivity_rule :
+    ∀ {A : ord_choiceType} (c : raw_program A),
+      ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ c ≈ c ⦃ eq ⦄.
+  Proof.
+    intros A c.
+    rewrite -> rel_jdgE.
+    apply (reflexivity_rule (repr c)).
+  Qed.
+
   (*CA: TODO first state and prove it in RulesStateprob.v *)
   Theorem rpost_conclusion_rule :
     ∀ {A₀ A₁ B : ord_choiceType} {pre : precond}
@@ -1572,24 +1581,39 @@ Module PackageRHL (π : RulesParam).
     rewrite rel_jdgE. rewrite rel_jdgE in h.
     rewrite !repr_bind in h.  rewrite !repr_bind.
     apply: post_conclusion_rule (* hb₀ hb₁ *) h.
- Qed.
+  Qed.
+
+  (* bindrFree_and_ret is too constrained *)
+  Lemma bindrFree_ret :
+    ∀ S P A (m : rFreeF S P A),
+      bindrFree m (λ x, retrFree x) = m.
+  Proof.
+    intros S P A m.
+    induction m.
+    - reflexivity.
+    - cbn. f_equal. extensionality x. auto.
+  Qed.
 
   Theorem rpost_conclusion_rule_cmd :
     ∀ {A₀ A₁ B : ord_choiceType} {pre : precond}
       {c₀ : command A₀} {c₁ : command A₁}
       (f₀ : A₀ → B) (f₁ : A₁ → B),
-      (* bijective f₀ → *)
-      (* bijective f₁ → *)
       ⊢ ⦃ pre ⦄
         x₀ ← cmd c₀ ;; ret x₀ ≈
         x₁ ← cmd c₁ ;; ret x₁
       ⦃ λ '(a₀, s₀) '(a₁, s₁), s₀ = s₁ ∧ f₀ a₀ = f₁ a₁ ⦄ →
       ⊢ ⦃ pre ⦄ x₀ ← cmd c₀ ;; ret (f₀ x₀) ≈ x₁ ← cmd c₁ ;; ret (f₁ x₁) ⦃ eq ⦄.
   Proof.
-    intros A₀ A₁ B pre c₀ c₁ f₀ f₁ (* hb₀ hb₁ *) h.
+    intros A₀ A₁ B pre c₀ c₁ f₀ f₁ h.
     rewrite rel_jdgE. rewrite rel_jdgE in h.
     rewrite !repr_cmd_bind in h.  rewrite !repr_cmd_bind.
-    apply: post_conclusion_rule (* hb₀ hb₁ *) h.
+    eapply bind_rule_pp.
+    - simpl (repr (ret _)) in h.
+      rewrite !bindrFree_ret in h. exact h.
+    - intros a₀ a₁. rewrite -rel_jdgE.
+      eapply rpre_hypothesis_rule. intros s s' [? e]. subst s'.
+      rewrite e. eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+      cbn. intros ? ? [? ?]. subst. reflexivity.
   Qed.
 
   Lemma repr_if :
@@ -1662,15 +1686,6 @@ Module PackageRHL (π : RulesParam).
     intros A₀ A₁ P Q c₀ c₁ c₁' h hθ.
     rewrite -> rel_jdgE in *.
     eapply rewrite_eqDistrR. all: eauto.
-  Qed.
-
-  Lemma rreflexivity_rule :
-    ∀ {A : ord_choiceType} (c : raw_program A),
-      ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ c ≈ c ⦃ eq ⦄.
-  Proof.
-    intros A c.
-    rewrite -> rel_jdgE.
-    apply (reflexivity_rule (repr c)).
   Qed.
 
   Theorem rswap_rule :
