@@ -1565,24 +1565,7 @@ Module PackageRHL (π : RulesParam).
     apply (reflexivity_rule (repr c)).
   Qed.
 
-  (*CA: TODO first state and prove it in RulesStateprob.v *)
-  Theorem rpost_conclusion_rule :
-    ∀ {A₀ A₁ B : ord_choiceType} {pre : precond}
-      {c₀ : raw_program A₀} {c₁ : raw_program A₁}
-      (f₀ : A₀ → B) (f₁ : A₁ → B),
-      (* bijective f₀ → *)
-      (* bijective f₁ → *)
-      ⊢ ⦃ pre ⦄
-        x₀ ← c₀ ;; ret x₀ ≈ x₁ ← c₁ ;; ret x₁
-      ⦃ λ '(a₀, s₀) '(a₁, s₁), s₀ = s₁ ∧ f₀ a₀ = f₁ a₁ ⦄ →
-      ⊢ ⦃ pre ⦄ x₀ ← c₀ ;; ret (f₀ x₀) ≈ x₁ ← c₁ ;; ret (f₁ x₁) ⦃ eq ⦄.
-  Proof.
-    intros A₀ A₁ B pre c₀ c₁ f₀ f₁ (* hb₀ hb₁ *) h.
-    rewrite rel_jdgE. rewrite rel_jdgE in h.
-    rewrite !repr_bind in h.  rewrite !repr_bind.
-    apply: post_conclusion_rule (* hb₀ hb₁ *) h.
-  Qed.
-
+  (* TODO MOVE? *)
   (* bindrFree_and_ret is too constrained *)
   Lemma bindrFree_ret :
     ∀ S P A (m : rFreeF S P A),
@@ -1592,6 +1575,27 @@ Module PackageRHL (π : RulesParam).
     induction m.
     - reflexivity.
     - cbn. f_equal. extensionality x. auto.
+  Qed.
+
+  Theorem rpost_conclusion_rule :
+    ∀ {A₀ A₁ B : ord_choiceType} {pre : precond}
+      {c₀ : raw_program A₀} {c₁ : raw_program A₁}
+      (f₀ : A₀ → B) (f₁ : A₁ → B),
+      ⊢ ⦃ pre ⦄
+        x₀ ← c₀ ;; ret x₀ ≈ x₁ ← c₁ ;; ret x₁
+      ⦃ λ '(a₀, s₀) '(a₁, s₁), s₀ = s₁ ∧ f₀ a₀ = f₁ a₁ ⦄ →
+      ⊢ ⦃ pre ⦄ x₀ ← c₀ ;; ret (f₀ x₀) ≈ x₁ ← c₁ ;; ret (f₁ x₁) ⦃ eq ⦄.
+  Proof.
+    intros A₀ A₁ B pre c₀ c₁ f₀ f₁ h.
+    rewrite rel_jdgE. rewrite rel_jdgE in h.
+    rewrite !repr_bind in h. rewrite !repr_bind.
+    eapply bind_rule_pp.
+    - simpl (repr (ret _)) in h.
+      rewrite !bindrFree_ret in h. exact h.
+    - intros a₀ a₁. rewrite -rel_jdgE.
+      eapply rpre_hypothesis_rule. intros s s' [? e]. subst s'.
+      rewrite e. eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+      cbn. intros ? ? [? ?]. subst. reflexivity.
   Qed.
 
   Theorem rpost_conclusion_rule_cmd :
