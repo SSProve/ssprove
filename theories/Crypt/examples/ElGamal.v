@@ -736,13 +736,9 @@ Proof.
       )
     end.
     eapply rf_preserves_eq.
-    1:{
-      (* Again, not bijective is it? *)
-      give_up.
-    }
     cbn.
     apply (UniformIprod_UniformUniform i_sk i_sk).
-Admitted.
+Qed.
 
 Lemma pk_encoding_correct :
   ∀ p,
