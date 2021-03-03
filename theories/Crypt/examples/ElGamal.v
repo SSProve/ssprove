@@ -453,7 +453,7 @@ Proof.
   rewrite rel_jdgE.
   rewrite repr_Uniform. repeat setoid_rewrite repr_cmd_bind.
   change (repr_cmd (cmd_sample (U ?i))) with (@Uniform_F i heap_choiceType).
-  cbn - [semantic_judgement Uniform_F]. 
+  cbn - [semantic_judgement Uniform_F].
 Admitted.
 
 Lemma bijective_expgn :
@@ -555,7 +555,7 @@ Proof.
     2: eapply @Uniform_bij_rule with (1 := fbij).
     simpl. intros [[? ?] ?] [[? ?] ?] [? e].
     move: e => /eqP [? ?]. subst. intuition auto.
-  - intro s. unshelve eapply rcoupling_eq. 
+  - intro s. unshelve eapply rcoupling_eq.
     1:{ exact (λ '(s₀, s₁), s₀ = s₁). }
     2: reflexivity.
     match goal with
@@ -642,16 +642,13 @@ Proof.
   ssprove_swap_rhs 1%N.
   ssprove_swap_rhs 0%N.
   ssprove_same_head_r. intros _.
-  (* TW: Alternatively I would like to apply the uniform_bij rule
-    or something similar *)
+  (* TW: It would be nice to apply rules here instead. *)
   repeat setoid_rewrite gT2ch_ch2gT.
   repeat setoid_rewrite ch2gT_gT2ch.
   unfold c2ch.
-  unshelve eapply rpost_weaken_rule.
-  - exact: eq.
-  - admit. (* group_OTP! *)
-  - cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
-Admitted.
+  eapply rpost_weaken_rule. 1: eapply group_OTP.
+  cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
+Qed.
 
 Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher.
 Proof.
