@@ -1497,6 +1497,23 @@ Module PackageRHL (π : RulesParam).
     eapply prove_relational. all: eauto.
   Qed.
 
+  (* Special case where the invariant is equality of state. *)
+  Corollary eq_rel_perf_ind_eq :
+    ∀ {L₀ L₁ E} (p₀ p₁ : raw_package)
+      `{ValidPackage L₀ Game_import E p₀}
+      `{ValidPackage L₁ Game_import E p₁},
+      eq_up_to_inv E (λ '(h₀, h₁), h₀ = h₁) p₀ p₁ →
+      p₀ ≈₀ p₁.
+  Proof.
+    intros L₀ L₁ E p₀ p₁ v₀ v₁ h.
+    eapply eq_rel_perf_ind with (λ '(h₀, h₁), h₀ = h₁).
+    - simpl. intros s₀ s₁. split.
+      + intro e. rewrite e. auto.
+      + intro e. rewrite e. auto.
+    - reflexivity.
+    - assumption.
+  Qed.
+
   (* Rules for packages *)
   (* same as in RulesStateprob.v with `r` at the beginning *)
 

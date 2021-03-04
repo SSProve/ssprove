@@ -410,12 +410,7 @@ Module PRF_example.
     IND_CPA false ≈₀ MOD_CPA_ff_pkg ∘ (EVAL true).
   Proof.
     (* We go to the relation logic using equality as invariant. *)
-    eapply eq_rel_perf_ind with (λ '(h₀, h₁), h₀ = h₁). 2: reflexivity.
-    1:{
-      simpl. intros s₀ s₁. split.
-      - intro e. rewrite e. auto.
-      - intro e. rewrite e. auto.
-    }
+    eapply eq_rel_perf_ind_eq.
     (* We now conduct the proof in relational logic. *)
     intros id S T m hin.
     invert_interface_in hin.
@@ -487,12 +482,7 @@ Module PRF_example.
     MOD_CPA_tt_pkg ∘ (EVAL true) ≈₀ IND_CPA true.
   Proof.
     (* We go to the relation logic using equality as invariant. *)
-    eapply eq_rel_perf_ind with (λ '(h₀, h₁), h₀ = h₁). 2: reflexivity.
-    1:{
-      simpl. intros s₀ s₁. split.
-      - intro e. rewrite e. auto.
-      - intro e. rewrite e. auto.
-    }
+    eapply eq_rel_perf_ind_eq.
     (* We now conduct the proof in relational logic. *)
     intros id S T m hin.
     invert_interface_in hin.

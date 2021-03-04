@@ -579,12 +579,7 @@ Lemma ots_real_vs_rnd_equiv_false :
   ots_real_vs_rnd false ≈₀ Aux ∘ DH_rnd.
 Proof.
   (* We go to the relation logic using equality as invariant. *)
-  eapply eq_rel_perf_ind with (λ '(h₀, h₁), h₀ = h₁). 2: reflexivity.
-  1:{
-    simpl. intros s₀ s₁. split.
-    - intro e. rewrite e. auto.
-    - intro e. rewrite e. auto.
-  }
+  eapply eq_rel_perf_ind_eq.
   (* We now conduct the proof in relational logic. *)
   intros id S T m hin.
   invert_interface_in hin.
