@@ -193,22 +193,22 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
     (chFin SecKey_len_pos)
     (in custom pack_type at level 2).
 
-  Parameter c2ch : Cipher -> (chFin Cipher_len_pos). 
+  Parameter c2ch : Cipher -> (chFin Cipher_len_pos).
   Parameter ch2c : (chFin Cipher_len_pos) -> Cipher.
   (* *)
-  Parameter pk2ch : PubKey -> (chFin PubKey_len_pos). 
-  Parameter ch2pk : (chFin PubKey_len_pos) -> PubKey. 
+  Parameter pk2ch : PubKey -> (chFin PubKey_len_pos).
+  Parameter ch2pk : (chFin PubKey_len_pos) -> PubKey.
   (* *)
-  Parameter sk2ch : SecKey -> (chFin SecKey_len_pos). 
-  Parameter ch2sk : (chFin SecKey_len_pos) -> SecKey. 
+  Parameter sk2ch : SecKey -> (chFin SecKey_len_pos).
+  Parameter ch2sk : (chFin SecKey_len_pos) -> SecKey.
   (* *)
   Parameter m2ch : Plain -> (chFin Plain_len_pos).
-  Parameter ch2m : (chFin Plain_len_pos) -> Plain. 
+  Parameter ch2m : (chFin Plain_len_pos) -> Plain.
   (* *)
-  
-  
+
+
   (*Rem.: the following have fset0 rather than a nonempty list of locations, because
-        it's the program that calls them to "decide" to do some get/put.
+        it's the code that calls them to "decide" to do some get/put.
    *)
 
   (* Key Generation *)
@@ -267,7 +267,7 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
   (* TODO: define "correct_scheme" predicate *)
   (* Definition correct_scheme : Prop := forall η m, Dec (_ <$ (KG η)).2 ( _ <$(Enc  (_ <$ (KG η)).1 m)) = m.  *)
 
-     
+
   Local Open Scope package_scope.
 
   Obligation Tactic := package_obtac.
@@ -412,7 +412,7 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
                                      [interface val #[challenge_id] : chPlain → chCipher].
   Proof. exists L_locs. exact: L_pk_cpa_real_open. Defined.
 
- 
+
 
   #[program] Definition L_pk_cpa_rand_open : opackage L_locs
     [interface val #[kg_id] : 'unit → chPubKey × chSecKey ;
@@ -518,7 +518,7 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
        if ((count == 0)%N) then
         '(pk, sk) ← op [ #[kg_id] : 'unit → chPubKey × chSecKey] Datatypes.tt ;;
          put pk_loc := pk ;;
-         put sk_loc := sk ;;                     
+         put sk_loc := sk ;;
          c ← op [ #[enc_id] : chPubKey × chPlain → chCipher ] (pk , snd mL_mR) ;;
          (* put c_loc := c ;; *)
          ret (some c)

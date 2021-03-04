@@ -66,11 +66,11 @@ Module NotationExamples (π : RulesParam).
       }
     ].
 
-  Definition foo (x : bool) : program fset0 [interface] bool_choiceType :=
-    {program let u := x in ret u}.
+  Definition foo (x : bool) : code fset0 [interface] bool_choiceType :=
+    {code let u := x in ret u}.
 
-  Definition bar (b : bool) : program fset0 [interface] nat_choiceType :=
-    {program if b then ret 0 else ret 1}.
+  Definition bar (b : bool) : code fset0 [interface] nat_choiceType :=
+    {code if b then ret 0 else ret 1}.
 
   Definition p2 : package fset0 [interface] I2 :=
     [package

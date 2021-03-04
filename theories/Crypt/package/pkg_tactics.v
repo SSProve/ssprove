@@ -119,7 +119,7 @@ Module PackageTactics (π : RulesParam).
       end
     end.
 
-  Ltac mark_abstract_programs :=
+  Ltac mark_abstract_codes :=
     repeat match goal with
     | |- context [ mkprog ?p ?h ] =>
       let h' := fresh "h" in
@@ -129,9 +129,9 @@ Module PackageTactics (π : RulesParam).
       clearbody h' ;
       change (mkprog p h') with (tac_mark (mkprog p h')) in p' ;
       lazymatch type of h' with
-      | valid_program ?L ?I ?q =>
-        change (valid_program L I q)
-        with (tac_intro_mark (valid_program L I p)) in h'
+      | valid_code ?L ?I ?q =>
+        change (valid_code L I q)
+        with (tac_intro_mark (valid_code L I p)) in h'
       end
     end.
 
@@ -163,12 +163,12 @@ Module PackageTactics (π : RulesParam).
   Ltac package_after_rewrite :=
     intro_tac_intro.
 
-  Ltac program_before_rewrite :=
-    mark_abstract_programs ;
+  Ltac code_before_rewrite :=
+    mark_abstract_codes ;
     unmark_tac_mark ;
     revert_tac_intro.
 
-  Ltac program_after_rewrite :=
+  Ltac code_after_rewrite :=
     intro_tac_intro.
 
   (** Tactic to unify Positive proofs in a goal *)
@@ -216,7 +216,7 @@ Module PackageTactics (π : RulesParam).
 
   (** Tactic to unify ValidProgram proofs in a goal *)
 
-  Ltac unify_marked_program_proofs :=
+  Ltac unify_marked_code_proofs :=
     repeat match goal with
     | h : tac_intro_mark (ValidProgram ?L ?I ?p),
       h' : tac_intro_mark (ValidProgram ?L ?I ?p) |- _ =>
@@ -224,9 +224,9 @@ Module PackageTactics (π : RulesParam).
       subst h'
     end.
 
-  Ltac unify_program_proofs :=
-    mark_abstract_programs ;
-    unify_marked_program_proofs ;
+  Ltac unify_code_proofs :=
+    mark_abstract_codes ;
+    unify_marked_code_proofs ;
     unmark_tac_intro_mark ;
     subst_marked.
 
@@ -270,7 +270,7 @@ Module PackageTactics (π : RulesParam).
 
   Lemma valid_package1 :
     ∀ L I i A B f,
-      (∀ x, valid_program L I (f x)) →
+      (∀ x, valid_code L I (f x)) →
       valid_package L I (fset [:: (i, (A, B))]) (mkfmap [:: (i, mkdef A B f)]).
   Proof.
     intros L I i A B f hf.
@@ -284,7 +284,7 @@ Module PackageTactics (π : RulesParam).
 
   Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap [:: (?i, mkdef ?A ?B ?f)])) =>
     eapply valid_package1 ;
-    intro ; eapply valid_program_from_class
+    intro ; eapply valid_code_from_class
     : typeclass_instances.
 
   Lemma flat_valid_package :
@@ -306,7 +306,7 @@ Module PackageTactics (π : RulesParam).
   Lemma valid_package_cons :
     ∀ L I i A B f E p,
       valid_package L I (fset E) (mkfmap p) →
-      (∀ x, valid_program L I (f x)) →
+      (∀ x, valid_code L I (f x)) →
       i \notin (λ '(i,_), i) @: fset E →
       valid_package L I (fset ((i, (A, B)) :: E))
         (mkfmap ((i, mkdef A B f) :: p)).
@@ -339,7 +339,7 @@ Module PackageTactics (π : RulesParam).
     =>
     eapply valid_package_cons ; [
       eapply valid_package_from_class
-    | intro ; eapply valid_program_from_class
+    | intro ; eapply valid_code_from_class
     | unfold "\notin" ; rewrite imfset_fset ; rewrite in_fset ; eauto
     ]
     : typeclass_instances.

@@ -1,7 +1,7 @@
 (** Package notations
 
   In this module we define a functor to export user-friendly notations for
-  packages and package programs.
+  packages and package codes.
   The user doesn't need to instantiate the functor here, and should only rely
   on the Package functor which exports the notations as well.
 
@@ -53,9 +53,9 @@
     following the syntax above and e is a regular Coq expression which has
     x of type (chElement A) in scope.
 
-  - Notation for the program monad
+  - Notation for the code monad
 
-    Additionally we provide some useful notations for writing programs.
+    Additionally we provide some useful notations for writing codes.
     All notations with a binder (x ← ...) can be instantiated with patterns
     instead of new identifiers (e.g. '(x,y) ← ...).
 
@@ -302,7 +302,7 @@ Module PkgNotation (π : RulesParam).
       : package_scope.
 
     (* TODO Use ;; for this, and a longer notation or none at all for
-      bind. Bind is just a tool to compose programs while this is to compose
+      bind. Bind is just a tool to compose codes while this is to compose
       commands and code, much more practical.
       TODO: Maybe not add things such as get/put/cmd to the grammar.
     *)

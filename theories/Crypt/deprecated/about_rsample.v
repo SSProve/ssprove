@@ -3,7 +3,7 @@
 Section OriginalLemma_rSamplerC.
 (* ------------------Lemma----------------- *)
 (* Lemma rsamplerC { A : ord_choiceType }§ { L : {fset Location} }  (o : Op) *)
-(*                 (c : program L Game_import A): *)
+(*                 (c : code L Game_import A): *)
 (*   r⊨ ⦃ fun '(h1,h2) => h1 = h2 ⦄ *)
 (*        a ← c ;; r ← (r ← sample o ;; ret r) ;;  (ret (a, r)) ≈ *)
 (*        r ← (r ← sample o ;; ret r) ;; a ← c ;;  (ret (a, r)) *)
@@ -20,7 +20,7 @@ Section OriginalLemma_rSamplerC.
   (* A : ord_choiceType *)
   (* L : {fset Location} *)
   (* o : Op *)
-  (* c : program L Game_import A *)
+  (* c : code L Game_import A *)
   (* s : heap_choiceType *)
   (* ============================ *)
   (* θ_dens (θ0 (repr (r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (a, r))) s) = *)
@@ -29,7 +29,7 @@ Section OriginalLemma_rSamplerC.
 
 (* -------------------- repr header ------------------ *)
     (* Equations? repr' {B : choiceType} {L : {fset Location}} *)
-    (*   (p : raw_program B) (h : valid_program L Game_import p) *)
+    (*   (p : raw_code B) (h : valid_code L Game_import p) *)
     (* : rFreeF (ops_StP heap_choiceType) (ar_StP heap_choiceType) B := *)
 
 
@@ -69,7 +69,7 @@ mybind g (fun b =>
 End PipelineOperation.
 
 Check pipel.
- 
+
 Infix ">>>>" := pipel (at level 80).
 
 
@@ -121,7 +121,7 @@ rmm_law2 _ _ _ _ (@unaryIntState probE rel_choiceTypes chEmb S)
          X (prod_choiceType X Y) _ ).
   exact (fun a : X => dnib (FrStP S) (fun b : Y => η (FrStP S) (prod_choiceType X Y) (a, b)) z2).
   unshelve eapply equal_f in bla. exact z1.
-  rewrite /= in bla. rewrite /=. rewrite bla. clear bla.  
+  rewrite /= in bla. rewrite /=. rewrite bla. clear bla.
   (* unshelve eapply equal_f in bla. shelve. clear bla. *)
   rewrite /OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
   apply boolp.funext ; move=> s.
@@ -136,7 +136,7 @@ rmm_law2 _ _ _ _ (@UniversalFreeMap.outOfFree _ _ _ sigMap) ).
   (fun b : Y =>
         FreeProbProg.rFree_obligation_1 (StateTransformingLaxMorph.ops_StP S)
           (StateTransformingLaxMorph.ar_StP S) (prod_choiceType X Y) (x, b)) ).
-  unshelve eapply equal_f in bla. exact z2.  
+  unshelve eapply equal_f in bla. exact z2.
   rewrite /= in bla. rewrite /FreeProbProg.rFree_obligation_2 in bla.
   rewrite /OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1 in bla.
   unshelve eapply equal_f in bla. exact sf. assumption.
@@ -271,11 +271,11 @@ Proof.
 (*   apply distr_ext. move=> y. cbn in y. *)
 (*   destruct y as [a z sf]. *)
 (*   rewrite /SDistr_bind. rewrite /dlet. unlock. rewrite /=. *)
-  
+
 (* (fun xs : Prob_arities o * S => *)
 (*      θ_dens (let (z, s0) := xs in θ0 (bindrFree c (fun a1 : A => retrFree (a1, z))) s0)) *)
-  
-  
+
+
 
 
 
@@ -323,7 +323,7 @@ Proof.
     reflexivity.
     destruct q as [qmap q0 q_sum q1]. apply q0.
 }
-  symmetry. 
+  symmetry.
 (* psum_pair_swap: *)
 (*   forall {R : realType} {T U : choiceType} [S : T * U -> R], *)
 (*   summable (T:=prod_choiceType T U) (R:=R) S -> *)

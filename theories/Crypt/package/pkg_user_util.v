@@ -35,7 +35,7 @@
     substitution if computation is done in the right order (so zeta last).
 
     The good thing with this notation is that its meaning can be changed
-    later on to be an actual constructor of program, replacing opr.
+    later on to be an actual constructor of code, replacing opr.
     Same as this notation, with discipline placing imports at the start,
     linking will become seemless.
     Better kept for later though, because it's another refactoring, though
@@ -43,7 +43,7 @@
     Problem: It doesn't work when linking several times. After the first
     linking, #import might no longer be in first position.
 
-    It might be better to have programs without #import first, then
+    It might be better to have codes without #import first, then
     consider things which can be prefixed by as many #import as one wants.
 
     It might also make sense not to have op/import as a command.
@@ -135,7 +135,7 @@ Module PackageUserUtil (π : RulesParam).
     intros id So To m hin ;
     invert_interface_in hin ;
     rewrite ?get_op_default_link ;
-    (* First we need to squeeze the programs out of the packages *)
+    (* First we need to squeeze the codes out of the packages *)
     unfold get_op_default ;
     lookup_op_squeeze ;
     lookup_op_squeeze ;

@@ -157,17 +157,17 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
   (* Key Generation *)
   Parameter KeyGen :
     ∀ {L : {fset Location}},
-      program L [interface] (choicePubKey × choiceSecKey).
+      code L [interface] (choicePubKey × choiceSecKey).
 
   (* Encryption algorithm *)
   Parameter Enc :
     ∀ {L : {fset Location}} (pk : choicePubKey) (m : choicePlain),
-      program L [interface] choiceCipher.
+      code L [interface] choiceCipher.
 
   (* Decryption algorithm *)
   Parameter Dec_open :
     ∀ {L : {fset Location}} (sk : choiceSecKey) (c : choiceCipher),
-      program L fset0 choicePlain.
+      code L fset0 choicePlain.
 
   Notation " 'chSecurityParameter' " := ('nat) (in custom pack_type at level 2).
   Notation " 'chPlain' " := choicePlain (in custom pack_type at level 2).

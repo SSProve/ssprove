@@ -86,7 +86,7 @@ Definition q : nat := #[g].
 (*Rem.: cyclic -> abelian (i.e. commutative) however the ssreflect definition of abelian is the one with subgroups *)
 Lemma group_prodC : forall x y : gT, x * y = y * x.
 Admitted.
-  
+
 Inductive probEmpty : Type -> Type := .
 
 Module MyParam <: AsymmetricSchemeParams.
@@ -298,7 +298,7 @@ Definition Aux : package [interface val #[10]: 'unit → chPubKey × chCipher]
 Proof. exists (fset [:: counter_loc]). exact: Aux_opkg. Defined.
 
 
-Definition Aux_DH_real (m : 'I_#|gT|) :  program (fset [:: counter_loc; pk_loc; sk_loc (*; c_loc *) ]) fset0 (chOption (chFin Cipher_len_pos)).
+Definition Aux_DH_real (m : 'I_#|gT|) :  code (fset [:: counter_loc; pk_loc; sk_loc (*; c_loc *) ]) fset0 (chOption (chFin Cipher_len_pos)).
 Proof.
   apply: bind.
   { apply: (getr counter_loc counter_loc_in) => count.
@@ -325,7 +325,7 @@ Proof.
   - apply: ret None.
 Defined.
 
-Definition Aux_DH_rnd (m : 'I_#|gT|) :  program (fset [:: counter_loc; pk_loc; sk_loc (*; c_loc *)]) fset0 (chOption (chFin Cipher_len_pos)).
+Definition Aux_DH_rnd (m : 'I_#|gT|) :  code (fset [:: counter_loc; pk_loc; sk_loc (*; c_loc *)]) fset0 (chOption (chFin Cipher_len_pos)).
 Proof.
   apply: bind.
   { apply: (getr counter_loc counter_loc_in) => count.
@@ -353,7 +353,7 @@ Proof.
   - apply: ret None.
 Defined.
 
-Definition LHS0 (m : 'I_#|gT|) : program (fset [:: counter_loc; pk_loc; sk_loc (*; c_loc *)])  fset0 (chOption (chFin Cipher_len_pos)).
+Definition LHS0 (m : 'I_#|gT|) : code (fset [:: counter_loc; pk_loc; sk_loc (*; c_loc *)])  fset0 (chOption (chFin Cipher_len_pos)).
 Proof.
   apply: bind.
   { apply: (getr counter_loc counter_loc_in) => /= count.
@@ -382,7 +382,7 @@ Proof.
 Defined.
 
 
-Definition RHS0 (m : 'I_#|gT|) : program (fset [:: counter_loc; pk_loc; sk_loc (*; c_loc *)]) fset0 (chOption (chFin Cipher_len_pos)).
+Definition RHS0 (m : 'I_#|gT|) : code (fset [:: counter_loc; pk_loc; sk_loc (*; c_loc *)]) fset0 (chOption (chFin Cipher_len_pos)).
 Proof.
   apply: bind.
   { apply: (getr counter_loc counter_loc_in) => /= count.
@@ -420,35 +420,35 @@ Lemma group_OTP_math { L : {fset  Location } } : forall m (s : heap_choiceType),
    MyAlg.MyPackage.θ_dens
      (MyAlg.MyPackage.θ0
         (@repr _ L ((b ← (b ← sample U i_sk ;; ret b) ;; c ← (c ← sample U i_sk ;; ret c) ;;
-                     ret (Some (c2ch (g ^+ b, g ^+ c)))))) s). 
+                     ret (Some (c2ch (g ^+ b, g ^+ c)))))) s).
 Admitted. (* Rem.: look for an informal proof of this in the CertyCrypt paper *)
-  
-Lemma group_OTP { L : { fset Location } } : forall m, 
+
+Lemma group_OTP { L : { fset Location } } : forall m,
     ⊨ ⦃ λ '(h1, h2), h1 = h2 ⦄
       @repr _ L ((c ← (c ← sample U i_cipher ;; ret c) ;; ret (Some (c2ch c))))  ≈
       @repr _ L ((b ← (b ← sample U i_sk ;; ret b) ;;
-                  c ← (c ← sample U i_sk ;; ret c) ;; ret (Some (c2ch (g ^+ b, ch2m m * g ^+ c))))) ⦃ eq ⦄. 
+                  c ← (c ← sample U i_sk ;; ret c) ;; ret (Some (c2ch (g ^+ b, ch2m m * g ^+ c))))) ⦃ eq ⦄.
 Proof.
-  move => m. 
+  move => m.
   unshelve apply: rrewrite_eqDistrL.
   { eapply (
         ((b ← (b ← sample U i_sk ;; ret b) ;;
-          c ← (c ← sample U i_sk ;; ret c) ;; ret (Some (c2ch (g ^+ b, g ^+ c)))))). } 
+          c ← (c ← sample U i_sk ;; ret c) ;; ret (Some (c2ch (g ^+ b, g ^+ c)))))). }
   { apply: rrewrite_eqDistrL.
-    - by apply: rreflexivity_rule. 
-    - exact: group_OTP_math. } 
+    - by apply: rreflexivity_rule.
+    - exact: group_OTP_math. }
   move => s. apply rcoupling_eq with (ψ := fun '(s1, s2) => s1 = s2). 2: by reflexivity.
   (*Rem.:
-   1. sampling c <$ U i_cipher is the same as sampling two element of the group say (C1,C2) <$ U (G × G) 
+   1. sampling c <$ U i_cipher is the same as sampling two element of the group say (C1,C2) <$ U (G × G)
    2. the map (g^+_, g^+_) is a bijection and we can use the uniform bij rule.
- *) Admitted.  
-  
+ *) Admitted.
+
 (* Note duplicate in SymmetricSchemeStateProb *)
 (* TODO MOVE But where? *)
 Lemma eq_prog_semj_impl :
   ∀ L L' R R' A
-    (p : program L _ A) (q : program R _ _)
-    (p' : program L' _ A) (q' : program R' _ _),
+    (p : code L _ A) (q : code R _ _)
+    (p' : code L' _ A) (q' : code R' _ _),
     L = L' →
     R = R' →
     sval p = sval p' →
@@ -458,8 +458,8 @@ Lemma eq_prog_semj_impl :
 Proof.
   intros L L' R R' A p q p' q' eL eR ep eq.
   subst L' R'.
-  eapply program_ext in ep.
-  eapply program_ext in eq.
+  eapply code_ext in ep.
+  eapply code_ext in eq.
   subst q' p'.
   intro h.
   eapply post_weaken_rule. 1: eauto.
@@ -471,8 +471,8 @@ Qed.
   Admitted.
 
  Lemma pk_encoding_correct : forall p,
-     ch2pk (pk2ch p ) = p. Admitted. 
- 
+     ch2pk (pk2ch p ) = p. Admitted.
+
 Lemma game_hop : forall A Hdisj1 Hdisj2 Hdisj1' Hdisj2',
   @AdvantageE _ (ots_real_vs_rnd false) (ots_real_vs_rnd true) A Hdisj1 Hdisj2 =
   @AdvantageE _ (Aux ∘ DH_real) (Aux ∘ DH_rnd) A Hdisj1' Hdisj2'.
@@ -600,7 +600,7 @@ Proof.
                                              apply: rreflexivity_rule.
            - apply (rsamplerC (U i_cipher)). }
          move => s. apply rcoupling_eq with (ψ := (fun '(s1,s2) => s1 = s2)). 2: by reflexivity.
-         apply: rsame_head => a. 
+         apply: rsame_head => a.
          apply: rrewrite_eqDistrL.
          --- exact: rreflexivity_rule.
          --- move => s0. apply rcoupling_eq with (ψ := (fun '(s1,s2) => s1 = s2)). 2: by reflexivity.
@@ -610,43 +610,43 @@ Proof.
                    (put sk_loc := sk2ch a ;; ret Datatypes.tt) ;;
                    (b ← (b ← sample U i_sk ;; ret b) ;;
                     c ← (c ← sample U i_sk ;; ret c) ;;
-                    ret (Some (c2ch (g ^+ b, ch2m m * g ^+ c))) )). } 
+                    ret (Some (c2ch (g ^+ b, ch2m m * g ^+ c))) )). }
                -- unshelve apply: rrewrite_eqDistrL.
                   { eapply (
                         (put pk_loc := pk2ch (g ^+ a) ;; ret Datatypes.tt) ;;
                         (put sk_loc := sk2ch a ;; ret Datatypes.tt) ;;
                         (c ← (c ← sample U i_cipher ;; ret c) ;;
-                        ret (Some (c2ch c))) ). }  
+                        ret (Some (c2ch c))) ). }
                   --- apply: rrewrite_eqDistrL.
                       { apply: rswap_ruleR. { move => bs bs' H. assumption. }
                         + move => tt2 c. apply: rsym_pre. { move => h1 h2 H. symmetry. assumption. } apply: rreflexivity_rule.
-                        + apply: rsamplerC (U i_cipher) (put pk_loc := pk2ch (g ^+ a) ;; ret Datatypes.tt). } 
+                        + apply: rsamplerC (U i_cipher) (put pk_loc := pk2ch (g ^+ a) ;; ret Datatypes.tt). }
                       move => s1. apply rcoupling_eq with (ψ := (fun '(s1,s2) => s1 = s2)). 2: by reflexivity.
                       apply: rsame_head => tt'. apply: rswap_ruleR. { move => bs bs' H. assumption. }
                         + move => tt2 c. apply: rsym_pre. { move => h1 h2 H. symmetry. assumption. } apply: rreflexivity_rule.
-                        + apply: rsamplerC' (U i_cipher)(put sk_loc := sk2ch a ;; ret Datatypes.tt).                       
-                  --- move => s1. apply rcoupling_eq with (ψ := (fun '(s1,s2) => s1 = s2)). 2: by reflexivity.  
-                      apply: rsame_head => tt'. apply: rsame_head => tt''. exact: group_OTP. 
-               -- move => s1. apply rcoupling_eq with (ψ := (fun '(s1,s2) => s1 = s2)). 2: by reflexivity. 
-                  apply: rrewrite_eqDistrL. 
+                        + apply: rsamplerC' (U i_cipher)(put sk_loc := sk2ch a ;; ret Datatypes.tt).
+                  --- move => s1. apply rcoupling_eq with (ψ := (fun '(s1,s2) => s1 = s2)). 2: by reflexivity.
+                      apply: rsame_head => tt'. apply: rsame_head => tt''. exact: group_OTP.
+               -- move => s1. apply rcoupling_eq with (ψ := (fun '(s1,s2) => s1 = s2)). 2: by reflexivity.
+                  apply: rrewrite_eqDistrL.
                   { apply: rsame_head => b. apply: rswap_ruleR. { move => bs bs' H. assumption. }
                     ++ move => tt2 c. apply: rsym_pre. { move => h1 h2 H. symmetry. assumption. } apply: rreflexivity_rule.
                     ++ apply: rsamplerC (U i_sk) (put pk_loc := pk2ch (g ^+ a) ;; ret Datatypes.tt). }
                   move => s2. apply rcoupling_eq with (ψ := (fun '(s1,s2) => s1 = s2)). 2: by reflexivity.
-                  apply: rrewrite_eqDistrR. 
+                  apply: rrewrite_eqDistrR.
                   { apply: rswap_ruleR. { move => bs bs' H. assumption. }
                     ++ move => tt2 c. apply: rsym_pre. { move => h1 h2 H. symmetry. assumption. } apply: rreflexivity_rule.
                     ++ apply: rsamplerC' (U i_sk) (put pk_loc := pk2ch (g ^+ a) ;; ret Datatypes.tt). }
                   move => s3. apply rcoupling_eq with (ψ := (fun '(s1,s2) => s1 = s2)). 2: by reflexivity.
-                  apply: rsame_head => tt1.  
-                  apply: rrewrite_eqDistrL. 
+                  apply: rsame_head => tt1.
+                  apply: rrewrite_eqDistrL.
                   { apply: rswap_ruleR. { move => bs bs' H. assumption. }
                     ++ move => tt2 c. apply: rsym_pre. { move => h1 h2 H. symmetry. assumption. } apply: rreflexivity_rule.
                     ++ apply: rsamplerC' (U i_sk) (put sk_loc := sk2ch a ;; ret Datatypes.tt). }
                   move => s4. apply rcoupling_eq with (ψ := (fun '(s1,s2) => s1 = s2)). 2: by reflexivity.
                   apply: rsame_head => b. apply: rswap_ruleR. { move => bs bs' H. assumption. }
                     ++ move => tt2 c. apply: rsym_pre. { move => h1 h2 H. symmetry. assumption. } apply: rreflexivity_rule.
-                    ++ apply: rsamplerC (U i_sk) (put sk_loc := sk2ch a ;; ret Datatypes.tt).  } 
+                    ++ apply: rsamplerC (U i_sk) (put sk_loc := sk2ch a ;; ret Datatypes.tt).  }
       -- apply: rreflexivity_rule. }
   rewrite HR. clear HR.
   have HL : Pr (A ∘ ots_real_vs_rnd true) true = Pr (A ∘ Aux ∘ DH_real) true.
@@ -766,7 +766,7 @@ Proof.
         cbn - [lookup_op raw_par sk2ch pk2ch "^+" "*"].
         f_equal. extensionality b. f_equal. f_equal.
         rewrite pk_encoding_correct.
-        f_equal. by rewrite expgM group_prodC. 
+        f_equal. by rewrite expgM group_prodC.
       - rewrite /Aux_DH_real.
         cbn - [lookup_op raw_par pk2ch "^+" "*"].
         f_equal. extensionality a.
@@ -809,7 +809,7 @@ Proof.
     ++ apply: rreflexivity_rule. }
   rewrite HL. clear HL.
   by rewrite distrC.
-Qed. 
+Qed.
 
 Definition DH_security : Prop := forall A Hdisj1 Hdisj2,
     @AdvantageE _ DH_real DH_rnd A  Hdisj1 Hdisj2 = 0.

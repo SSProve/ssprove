@@ -103,12 +103,12 @@ Module CorePackageTheory (π : RulesParam).
     Context (Loc : {fset Location}).
     Context (import : Interface).
 
-    Inductive raw_program (A : choiceType) : Type :=
+    Inductive raw_code (A : choiceType) : Type :=
     | ret (x : A)
-    | opr (o : opsig) (x : src o) (k : tgt o → raw_program A)
-    | getr (l : Location) (k : l → raw_program A)
-    | putr (l : Location) (v : l) (k : raw_program A)
-    | sampler (op : Op) (k : Arit op → raw_program A).
+    | opr (o : opsig) (x : src o) (k : tgt o → raw_code A)
+    | getr (l : Location) (k : l → raw_code A)
+    | putr (l : Location) (v : l) (k : raw_code A)
+    | sampler (op : Op) (k : Arit op → raw_code A).
 
     Arguments ret [A] _.
     Arguments opr [A] _ _.
@@ -116,47 +116,47 @@ Module CorePackageTheory (π : RulesParam).
     Arguments putr [A] _.
     Arguments sampler [A] _ _.
 
-    Inductive valid_program {A} : raw_program A → Prop :=
+    Inductive valid_code {A} : raw_code A → Prop :=
     | valid_ret :
         ∀ x,
-          valid_program (ret x)
+          valid_code (ret x)
 
     | valid_opr :
         ∀ o x k,
           o \in import →
-          (∀ v, valid_program (k v)) →
-          valid_program (opr o x k)
+          (∀ v, valid_code (k v)) →
+          valid_code (opr o x k)
 
     | valid_getr :
         ∀ l k,
           l \in Loc →
-          (∀ v, valid_program (k v)) →
-          valid_program (getr l k)
+          (∀ v, valid_code (k v)) →
+          valid_code (getr l k)
 
     | valid_putr :
         ∀ l v k,
           l \in Loc →
-          valid_program k →
-          valid_program (putr l v k)
+          valid_code k →
+          valid_code (putr l v k)
 
     | valid_sampler :
         ∀ op k,
-          (∀ v, valid_program (k v)) →
-          valid_program (sampler op k)
+          (∀ v, valid_code (k v)) →
+          valid_code (sampler op k)
     .
 
     Derive NoConfusion NoConfusionHom for chUniverse.
     Derive NoConfusion NoConfusionHom EqDec for nat.
-    Derive NoConfusion NoConfusionHom for raw_program.
-    Derive Signature for valid_program.
+    Derive NoConfusion NoConfusionHom for raw_code.
+    Derive Signature for valid_code.
 
     (* Inversion lemmata *)
 
     Lemma inversion_valid_opr :
       ∀ {A o x k},
-        @valid_program A (opr o x k) →
+        @valid_code A (opr o x k) →
         (o \in import) *
-        (∀ v, valid_program (k v)).
+        (∀ v, valid_code (k v)).
     Proof.
       intros A o x k h.
       dependent destruction h.
@@ -165,9 +165,9 @@ Module CorePackageTheory (π : RulesParam).
 
     Lemma inversion_valid_getr :
       ∀ {A l k},
-        @valid_program A (getr l k) →
+        @valid_code A (getr l k) →
         (l \in Loc) *
-        (∀ v, valid_program (k v)).
+        (∀ v, valid_code (k v)).
     Proof.
       intros A l k h.
       dependent destruction h.
@@ -176,9 +176,9 @@ Module CorePackageTheory (π : RulesParam).
 
     Lemma inversion_valid_putr :
       ∀ {A l v k},
-        @valid_program A (putr l v k) →
+        @valid_code A (putr l v k) →
         (l \in Loc) *
-        (valid_program k).
+        (valid_code k).
     Proof.
       intros A l v k h.
       dependent destruction h.
@@ -187,27 +187,27 @@ Module CorePackageTheory (π : RulesParam).
 
     Lemma inversion_valid_sampler :
       ∀ {A op k},
-        @valid_program A (sampler op k) →
-        ∀ v, valid_program (k v).
+        @valid_code A (sampler op k) →
+        ∀ v, valid_code (k v).
     Proof.
       intros A op k h.
       dependent destruction h.
       auto.
     Qed.
 
-    Class ValidProgram {A} (p : raw_program A) :=
-      is_valid_program : valid_program p.
+    Class ValidProgram {A} (p : raw_code A) :=
+      is_valid_code : valid_code p.
 
-    Lemma valid_program_from_class :
-      ∀ A (p : raw_program A),
+    Lemma valid_code_from_class :
+      ∀ A (p : raw_code A),
         ValidProgram p →
-        valid_program p.
+        valid_code p.
     Proof.
       intros A p h. auto.
     Defined.
 
-    Record program A := mkprog {
-      prog : raw_program A ;
+    Record code A := mkprog {
+      prog : raw_code A ;
       prog_valid : ValidProgram prog
     }.
 
@@ -215,8 +215,8 @@ Module CorePackageTheory (π : RulesParam).
     Arguments prog {_} _.
     Arguments prog_valid {_} _.
 
-    Lemma program_ext :
-      ∀ A (u v : program A),
+    Lemma code_ext :
+      ∀ A (u v : code A),
         u.(prog) = v.(prog) →
         u = v.
     Proof.
@@ -226,8 +226,8 @@ Module CorePackageTheory (π : RulesParam).
       f_equal. apply proof_irrelevance.
     Qed.
 
-    Fixpoint bind {A B} (c : raw_program A) (k : A → raw_program B) :
-      raw_program B :=
+    Fixpoint bind {A B} (c : raw_code A) (k : A → raw_code B) :
+      raw_code B :=
       match c with
       | ret a => k a
       | opr o x k'  => opr o x (λ p, bind (k' p) k)
@@ -238,9 +238,9 @@ Module CorePackageTheory (π : RulesParam).
 
     Lemma valid_bind :
       ∀ A B c k,
-        valid_program c →
-        (∀ x, valid_program (k x)) →
-        valid_program (@bind A B c k).
+        valid_code c →
+        (∀ x, valid_code (k x)) →
+        valid_code (@bind A B c k).
     Proof.
       intros A B c k hc hk.
       induction hc. all: simpl.
@@ -248,9 +248,9 @@ Module CorePackageTheory (π : RulesParam).
     Qed.
 
     Lemma inversion_valid_bind :
-      ∀ {A B} {c : raw_program A} {k : A → raw_program B},
-        valid_program (bind c k) →
-        valid_program c.
+      ∀ {A B} {c : raw_code A} {k : A → raw_code B},
+        valid_code (bind c k) →
+        valid_code c.
     Proof.
       intros A B c k h.
       induction c.
@@ -274,8 +274,8 @@ Module CorePackageTheory (π : RulesParam).
     | cmd_put (ℓ : Location) (v : Value ℓ.π1) : command unit_choiceType
     | cmd_sample op : command (Arit op).
 
-    Definition cmd_bind {A B} (c : command A) (k : A → raw_program B) :=
-      match c in command A return (A → raw_program B) → raw_program B with
+    Definition cmd_bind {A B} (c : command A) (k : A → raw_code B) :=
+      match c in command A return (A → raw_code B) → raw_code B with
       | cmd_op o x => opr o x
       | cmd_get ℓ => getr ℓ
       | cmd_put ℓ v => λ k, putr ℓ v (k Datatypes.tt)
@@ -316,10 +316,10 @@ Module CorePackageTheory (π : RulesParam).
     Qed.
 
     Lemma valid_cmd_bind :
-      ∀ {A B} (c : command A) (k : A → raw_program B),
+      ∀ {A B} (c : command A) (k : A → raw_code B),
         valid_command c →
-        (∀ x, valid_program (k x)) →
-        valid_program (cmd_bind c k).
+        (∀ x, valid_code (k x)) →
+        valid_code (cmd_bind c k).
     Proof.
       intros A B c k hc hk.
       induction hc.
@@ -330,9 +330,9 @@ Module CorePackageTheory (π : RulesParam).
     Qed.
 
     Lemma inversion_valid_cmd_bind :
-      ∀ {A B} (c : command A) (k : A → raw_program B),
-        valid_program (cmd_bind c k) →
-        valid_command c ∧ (∀ x, valid_program (k x)).
+      ∀ {A B} (c : command A) (k : A → raw_code B),
+        valid_code (cmd_bind c k) →
+        valid_command c ∧ (∀ x, valid_code (k x)).
     Proof.
       intros A B c k h.
       destruct c.
@@ -349,8 +349,8 @@ Module CorePackageTheory (π : RulesParam).
     Qed.
 
     Lemma bind_assoc :
-      ∀ {A B C : choiceType} (v : raw_program A)
-        (k1 : A → raw_program B) (k2 : B → raw_program C),
+      ∀ {A B C : choiceType} (v : raw_code A)
+        (k1 : A → raw_code B) (k2 : B → raw_code C),
         bind (bind v k1) k2 =
         bind v (λ x, bind (k1 x) k2).
     Proof.
@@ -364,7 +364,7 @@ Module CorePackageTheory (π : RulesParam).
     Qed.
 
     Lemma bind_ret :
-      ∀ A (v : raw_program A),
+      ∀ A (v : raw_code A),
         bind v (λ x, ret x) = v.
     Proof.
       intros A v.
@@ -374,14 +374,14 @@ Module CorePackageTheory (π : RulesParam).
       f_equal. auto.
     Qed.
 
-    Lemma prove_program :
-      ∀ {A} (P : program A → Type) p q,
+    Lemma prove_code :
+      ∀ {A} (P : code A → Type) p q,
         P p →
         p.(prog) = q.(prog) →
         P q.
     Proof.
       intros A P p q h e.
-      apply program_ext in e. subst. auto.
+      apply code_ext in e. subst. auto.
     Defined.
 
     Open Scope package_scope.
@@ -390,9 +390,9 @@ Module CorePackageTheory (π : RulesParam).
 
     (* TODO: NEEDED? *)
     (* Program Definition rFree : ord_relativeMonad choice_incl :=
-      @mkOrdRelativeMonad ord_choiceType TypeCat choice_incl program _ _ _ _ _ _.
+      @mkOrdRelativeMonad ord_choiceType TypeCat choice_incl code _ _ _ _ _ _.
     Next Obligation.
-      simple refine {program ret _ }.
+      simple refine {code ret _ }.
       auto.
     Defined.
     Next Obligation.
@@ -402,7 +402,7 @@ Module CorePackageTheory (π : RulesParam).
     Qed.
     Next Obligation.
       apply functional_extensionality.
-      intro c. apply program_ext.
+      intro c. apply code_ext.
       destruct c as [c h]. cbn.
       induction c.
       all: solve [
@@ -411,12 +411,12 @@ Module CorePackageTheory (π : RulesParam).
       ].
     Qed.
     Next Obligation.
-      extensionality x. apply program_ext.
+      extensionality x. apply code_ext.
       cbn. reflexivity.
     Qed.
     Next Obligation.
       apply functional_extensionality. intros [c h].
-      apply program_ext. cbn.
+      apply code_ext. cbn.
       induction c in h |- *.
       all: solve [
         simpl in * ; try reflexivity ;
@@ -424,8 +424,8 @@ Module CorePackageTheory (π : RulesParam).
       ].
     Qed. *)
 
-    Fixpoint mapFree {A B : choiceType} (f : A → B) (m : raw_program A) :
-      raw_program B :=
+    Fixpoint mapFree {A B : choiceType} (f : A → B) (m : raw_code A) :
+      raw_code B :=
       match m with
       | ret x => ret (f x)
       | opr o x k => opr o x (λ r, mapFree f (k r))
@@ -446,16 +446,16 @@ Module CorePackageTheory (π : RulesParam).
   Arguments prog [_ _ _] _.
   Arguments prog_valid [_ _ _] _.
 
-  Notation "{ 'program' p }" :=
+  Notation "{ 'code' p }" :=
     (mkprog p _)
-    (format "{ program  p  }") : package_scope.
+    (format "{ code  p  }") : package_scope.
 
-  Notation "{ 'program' p '#with' h }" :=
+  Notation "{ 'code' p '#with' h }" :=
     (mkprog p h)
     (only parsing) : package_scope.
 
 
-  (* Having an instance here means that it will use ret when the program
+  (* Having an instance here means that it will use ret when the code
     is unknown. Pretty bad.
     We will instead use Hint Extern.
   *)
@@ -472,34 +472,34 @@ Module CorePackageTheory (π : RulesParam).
   Hint Extern 1 (ValidProgram ?L ?I (opr ?o ?x ?k)) =>
     eapply valid_opr ; [
       auto_in_fset
-    | intro ; apply valid_program_from_class
+    | intro ; apply valid_code_from_class
     ] : typeclass_instances.
 
   Hint Extern 1 (ValidProgram ?L ?I (getr ?o ?k)) =>
     eapply valid_getr ; [
       auto_in_fset
-    | intro ; apply valid_program_from_class
+    | intro ; apply valid_code_from_class
     ] : typeclass_instances.
 
   Hint Extern 1 (ValidProgram ?L ?I (putr ?o ?x ?k)) =>
     eapply valid_putr ; [
       auto_in_fset
-    | apply valid_program_from_class
+    | apply valid_code_from_class
     ] : typeclass_instances.
 
   Hint Extern 1 (ValidProgram ?L ?I (sampler ?op ?k)) =>
     eapply valid_sampler ;
-    intro ; apply valid_program_from_class
+    intro ; apply valid_code_from_class
     : typeclass_instances.
 
   Hint Extern 1 (ValidProgram ?L ?I (bind ?p ?k)) =>
     eapply valid_bind ; [
-      apply valid_program_from_class
-    | intro ; apply valid_program_from_class
+      apply valid_code_from_class
+    | intro ; apply valid_code_from_class
     ]
     : typeclass_instances.
 
-  Coercion prog : program >-> raw_program.
+  Coercion prog : code >-> raw_code.
 
   Hint Extern 1 (ValidProgram ?L ?I (?p.(prog))) =>
     eapply p.(prog_valid)
@@ -529,7 +529,7 @@ Module CorePackageTheory (π : RulesParam).
   Hint Extern 1 (ValidProgram ?L ?I (cmd_bind ?c ?k)) =>
     eapply valid_cmd_bind ; [
       apply valid_command_from_class
-    | intro ; apply valid_program_from_class
+    | intro ; apply valid_code_from_class
     ]
     : typeclass_instances.
 
@@ -553,13 +553,13 @@ Module CorePackageTheory (π : RulesParam).
       intuition.
     Defined.
 
-    Let programI locs := program locs import.
+    Let codeI locs := code locs import.
 
     Lemma valid_injectLocations :
-      ∀ A L1 L2 (v : raw_program A),
+      ∀ A L1 L2 (v : raw_code A),
         fsubset L1 L2 →
-        valid_program L1 import v →
-        valid_program L2 import v.
+        valid_code L1 import v →
+        valid_code L2 import v.
     Proof.
       intros A L1 L2 v h p.
       induction p.
@@ -605,13 +605,13 @@ Module CorePackageTheory (π : RulesParam).
       intuition.
     Defined.
 
-    Let programL I := program Locs I.
+    Let codeL I := code Locs I.
 
     Lemma valid_injectMap :
-      ∀ {A I1 I2} (v : raw_program A),
+      ∀ {A I1 I2} (v : raw_code A),
         fsubset I1 I2 →
-        valid_program Locs I1 v →
-        valid_program Locs I2 v.
+        valid_code Locs I1 v →
+        valid_code Locs I2 v.
     Proof.
       intros A I1 I2 v h p.
       induction p.
@@ -623,7 +623,7 @@ Module CorePackageTheory (π : RulesParam).
   End FreeMap.
 
   Definition typed_raw_function :=
-    ∑ (S T : chUniverse), S → raw_program T.
+    ∑ (S T : chUniverse), S → raw_code T.
 
   Definition raw_package :=
     {fmap ident -> typed_raw_function}.
@@ -631,8 +631,8 @@ Module CorePackageTheory (π : RulesParam).
   Definition valid_package L I (E : Interface) (p : raw_package) :=
     ∀ o, o \in E →
       let '(id, (src, tgt)) := o in
-      ∃ (f : src → raw_program tgt),
-        p id = Some (src ; tgt ; f) ∧ ∀ x, valid_program L I (f x).
+      ∃ (f : src → raw_code tgt),
+        p id = Some (src ; tgt ; f) ∧ ∀ x, valid_code L I (f x).
 
   Class ValidPackage L I E p :=
     is_valid_package : valid_package L I E p.
@@ -778,7 +778,7 @@ Module CorePackageTheory (π : RulesParam).
   Tactic Notation "package" "rewrite" constr(e) :=
     mkpackage_rewrite e.
 
-  (* Rewriting in programs *)
+  (* Rewriting in codes *)
 
   Lemma mkprog_rewrite :
     ∀ {L I A T} {x y} (p : T → _) h (e : x = y),
@@ -802,14 +802,14 @@ Module CorePackageTheory (π : RulesParam).
       end
     end.
 
-  (** Tactic program rewrite
+  (** Tactic code rewrite
 
   Usage: you have e : x = y as an hypothesis and you want to rewrite e inside
-  a term of the form mkprogram u v, specifically inside the term u.
+  a term of the form mkcode u v, specifically inside the term u.
   sig rewrite e will replace x by y in u and update v accordingly.
 
   *)
-  Tactic Notation "program" "rewrite" constr(e) :=
+  Tactic Notation "code" "rewrite" constr(e) :=
     mkprog_rewrite e.
 
 End CorePackageTheory.

@@ -125,7 +125,7 @@ Module ARules (Aparam : AsymmetricSchemeParams).
 
   Module MyARulesUniform := DerivedRulesUniform genparam UParam.
   Export MyARulesUniform.
- 
+
 End ARules.
 
 (** algorithms for Key Generation, Encryption and Decryption  **)
@@ -184,32 +184,32 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
     (chFin SecKey_len_pos)
     (in custom pack_type at level 2).
 
-  Parameter c2ch : Cipher -> (chFin Cipher_len_pos). 
+  Parameter c2ch : Cipher -> (chFin Cipher_len_pos).
   Parameter ch2c : (chFin Cipher_len_pos) -> Cipher.
   (* *)
-  Parameter pk2ch : PubKey -> (chFin PubKey_len_pos). 
-  Parameter ch2pk : (chFin PubKey_len_pos) -> PubKey. 
+  Parameter pk2ch : PubKey -> (chFin PubKey_len_pos).
+  Parameter ch2pk : (chFin PubKey_len_pos) -> PubKey.
   (* *)
-  Parameter sk2ch : SecKey -> (chFin SecKey_len_pos). 
-  Parameter ch2sk : (chFin SecKey_len_pos) -> SecKey. 
+  Parameter sk2ch : SecKey -> (chFin SecKey_len_pos).
+  Parameter ch2sk : (chFin SecKey_len_pos) -> SecKey.
   (* *)
   Parameter m2ch : Plain -> (chFin Plain_len_pos).
-  Parameter ch2m : (chFin Plain_len_pos) -> Plain. 
+  Parameter ch2m : (chFin Plain_len_pos) -> Plain.
   (* *)
-  
+
 
 
   (* Key Generation *)
-  Parameter KeyGen : forall { L : {fset Location} }, program L fset0 ((chFin PubKey_len_pos) × (chFin SecKey_len_pos)).
+  Parameter KeyGen : forall { L : {fset Location} }, code L fset0 ((chFin PubKey_len_pos) × (chFin SecKey_len_pos)).
 
 
   (* Encryption algorithm *)
   Parameter Enc : forall { L : {fset Location} } (pk : chFin PubKey_len_pos) (m : chFin Plain_len_pos),
-      program L fset0 (chFin Cipher_len_pos).
-  
+      code L fset0 (chFin Cipher_len_pos).
+
   (* Decryption algorithm *)
   Parameter Dec_open : forall { L : {fset Location} } (sk : chFin SecKey_len_pos) (c : chFin Cipher_len_pos),
-      program L fset0 (chFin Plain_len_pos).
+      code L fset0 (chFin Plain_len_pos).
 
 End AsymmetricSchemeAlgorithms.
 
@@ -218,14 +218,14 @@ End AsymmetricSchemeAlgorithms.
 Module AsymmetricScheme (π : AsymmetricSchemeParams)
                         (Alg : AsymmetricSchemeAlgorithms π).
 
-  
+
   Import Alg.
   Import PackageNotation.
 
   Definition U (i : Index) : {rchT : myparamU.rel_choiceTypes & myparamU.probE (myparamU.chEmb rchT)} :=
     (existT (λ rchT : myparamU.rel_choiceTypes, myparamU.probE (myparamU.chEmb rchT))
             (inl (inl i)) (inl (Uni_W i))).
-     
+
   Local Open Scope package_scope.
 
   Obligation Tactic := package_obtac.
@@ -290,8 +290,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
    Definition cpa_L_vs_R : GamePair [interface val #[challenge_id] : chPlain × chPlain → chCipher].
    Proof.
      move => b. destruct b.
-     - exact: L_pk_cpa_L. 
-     - exact: L_pk_cpa_R. 
+     - exact: L_pk_cpa_L.
+     - exact: L_pk_cpa_R.
    Defined.
 
 
@@ -327,13 +327,13 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
                                       [interface val #[challenge_id] : chPlain → chCipher].
   Proof. exists L_locs. exact: L_pk_cpa_real_open. Defined.
 
- 
+
 
   #[program] Definition L_pk_cpa_rand_open : opackage L_locs
     [interface ]
     [interface val #[challenge_id] : chPlain → chCipher ]  :=
     [package
-       
+
        def #[challenge_id] ( m : chPlain ) : chCipher
       {
         '(pk, sk) ← KeyGen ;;
@@ -353,7 +353,7 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
   Definition cpa_real_vs_rand : GamePair [interface val #[challenge_id] : chPlain → chCipher].
   Proof.
     move => b. destruct b.
-    - exact: L_pk_cpa_real. 
+    - exact: L_pk_cpa_real.
     - exact: L_pk_cpa_rand.
   Defined.
 
@@ -410,7 +410,7 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
        if ((count == 0)%N) then
         '(pk, sk) ← KeyGen ;;
          put pk_loc := pk ;;
-         put sk_loc := sk ;;                     
+         put sk_loc := sk ;;
          c ← Enc pk (snd mL_mR) ;;
          ret (some c)
        else ret None
@@ -505,6 +505,6 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
 
   (* Future work! Please notice that in the paper we only claim OT_rnd_cipher *)
   Lemma OT_rnd_cipher_implies_OT_secrecy : OT_rnd_cipher -> OT_secrecy.
-  Proof.  Admitted. 
+  Proof.  Admitted.
 
 End AsymmetricScheme.

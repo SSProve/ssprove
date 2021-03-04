@@ -256,22 +256,22 @@ Module PRF_example.
   Definition i_words : nat := 2^n.
 
   Definition enc {L : { fset Location }} (m : Words) (k : Key) :
-    program L [interface] ('fin (2^n) × 'fin (2^n)) :=
-      {program
+    code L [interface] ('fin (2^n) × 'fin (2^n)) :=
+      {code
         r ← sample U i_words ;;
         let pad := PRF r k in
         let c := m ⊕ pad in
         ret (r, c)
       }.
 
-  Definition kgen : program fset0 [interface] 'fin (2^n) :=
-    {program
+  Definition kgen : code fset0 [interface] 'fin (2^n) :=
+    {code
       k ← sample U i_key ;;
       ret k
     }.
 
   Definition dec (c : Words) (k : Key) :
-    program
+    code
       (fset [:: key_location; table_location])
       [interface]
       ('fin (2^n) × 'fin (2^n)) :=

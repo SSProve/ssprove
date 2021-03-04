@@ -196,14 +196,14 @@ Module PackageRHL (π : RulesParam).
   Arguments bindrFree {_ _ _ _} _ _.
   Arguments ropr {_ _ _} _ _.
 
-  (** Interpretation of raw programs into the semantic model
+  (** Interpretation of raw codes into the semantic model
 
     Note that we don't require any validity proof to do so,
     instead we rely on the fact that types in the chUniverse are all
     inhabited.
 
   *)
-  Fixpoint repr {A : choiceType} (p : raw_program A) :
+  Fixpoint repr {A : choiceType} (p : raw_code A) :
     rFreeF (ops_StP heap_choiceType) (ar_StP heap_choiceType) A :=
     match p with
     | ret x => retrFree x
@@ -227,7 +227,7 @@ Module PackageRHL (π : RulesParam).
     end.
 
   Lemma repr_bind :
-    ∀ {A B : choiceType} (p : raw_program A) (f : A → raw_program B),
+    ∀ {A B : choiceType} (p : raw_code A) (f : A → raw_code B),
       repr (bind p f) = bindrFree (repr p) (λ a, repr (f a)).
   Proof.
     intros A B p f.
@@ -261,7 +261,7 @@ Module PackageRHL (π : RulesParam).
     end.
 
   Lemma repr_cmd_bind :
-    ∀ {A B} (c : command A) (k : A → raw_program B),
+    ∀ {A B} (c : command A) (k : A → raw_code B),
       repr (cmd_bind c k) = bindrFree (repr_cmd c) (λ a, repr (k a)).
   Proof.
     intros A B c k.
@@ -313,9 +313,9 @@ Module PackageRHL (π : RulesParam).
 
   Equations? get_raw_package_op {L} {I E : Interface} (p : raw_package)
     (hp : valid_package L I E p)
-    (o : opsig) (ho : o \in E) (arg : src o) : program L I (tgt o) :=
+    (o : opsig) (ho : o \in E) (arg : src o) : code L I (tgt o) :=
     get_raw_package_op p hp o ho arg with inspect (lookup_op p o) := {
-    | @exist (Some f) e1 := {program f arg } ;
+    | @exist (Some f) e1 := {code f arg } ;
     | @exist None e1 := False_rect _ _
     }.
   Proof.
@@ -332,7 +332,7 @@ Module PackageRHL (π : RulesParam).
     ∀ {L} {I E : Interface} (p : raw_package)
       (hp : valid_package L I E p)
       (o : opsig) (ho : o \in E) (arg : src o)
-      (f : src o -> raw_program (tgt o))
+      (f : src o -> raw_code (tgt o))
       (H : lookup_op p o = Some f),
       (get_raw_package_op p hp o ho arg).(prog) = f arg.
   Proof.
@@ -344,17 +344,17 @@ Module PackageRHL (π : RulesParam).
   Qed.
 
   (* TODO Needed? MOVE? *)
-  Definition program_link_ext {E : Interface}
+  Definition code_link_ext {E : Interface}
     (o : opsig) (ho : o \in E) (arg : src o) (p1 p2 : raw_package)
-    (f : src o → raw_program (tgt o))
+    (f : src o → raw_code (tgt o))
     (Hf : lookup_op p1 o = Some f)
-    (g : src o → raw_program (tgt o))
+    (g : src o → raw_code (tgt o))
     (Hg : lookup_op (link p1 p2) o = Some g)
-    : g arg = program_link (f arg) p2.
+    : g arg = code_link (f arg) p2.
   Proof.
     unfold link in Hg.
     destruct o as [id [S T]].
-    assert ((λ x, program_link (f x) p2) = g).
+    assert ((λ x, code_link (f x) p2) = g).
     { extensionality x.
       unfold raw_package in p1.
       unfold lookup_op in Hg.
@@ -391,7 +391,7 @@ Module PackageRHL (π : RulesParam).
     (hp1 : valid_package L M E p1)
     (hpl : valid_package L I E (link p1 p2))
     : (get_raw_package_op (link p1 p2) hpl o hin arg).(prog) =
-      program_link ((get_raw_package_op p1 hp1 o hin arg).(prog)) p2.
+      code_link ((get_raw_package_op p1 hp1 o hin arg).(prog)) p2.
   Proof.
     destruct (lookup_op (link p1 p2) o) as [f|] eqn:e.
     2: { unfold valid_package in hpl.
@@ -419,7 +419,7 @@ Module PackageRHL (π : RulesParam).
           2:{ noconf ef. congruence. }
           discriminate. }
     rewrite (get_raw_package_op_lookup p1 _ o hin arg fl el).
-    apply (program_link_ext o hin arg p1 p2 fl el f e).
+    apply (code_link_ext o hin arg p1 p2 fl el f e).
   Qed.
 
   Lemma get_raw_package_op_trim {L} {I E} {o : opsig}
@@ -429,7 +429,7 @@ Module PackageRHL (π : RulesParam).
     : get_raw_package_op (trim E p) hpt o hin arg =
       get_raw_package_op p hp o hin arg.
   Proof.
-    apply program_ext.
+    apply code_ext.
     destruct (lookup_op p o) as [f|] eqn:e.
     2: { unfold valid_package in hp.
           pose (hp o hin) as H.
@@ -475,20 +475,20 @@ Module PackageRHL (π : RulesParam).
   Qed.
 
   Definition get_opackage_op {L} {I E : Interface} (P : package L I E)
-    (op : opsig) (Hin : op \in E) (arg : src op) : program L I (tgt op).
+    (op : opsig) (Hin : op \in E) (arg : src op) : code L I (tgt op).
   Proof.
     exact (get_raw_package_op P.(pack) P.(pack_valid) op Hin arg).
   Defined.
 
   Definition get_package_op {I E : Interface} (P : loc_package I E)
               (op : opsig) (Hin : op \in E) (arg : src op)
-    : program P.(locs) I (tgt op) :=
-    let (L, PP) as s return (program s.(locs) I (tgt op)) := P in
+    : code P.(locs) I (tgt op) :=
+    let (L, PP) as s return (code s.(locs) I (tgt op)) := P in
     get_opackage_op PP op Hin arg.
 
   (* Rather than the above, we use the version with default values *)
   Definition get_op_default (p : raw_package) (o : opsig) :
-    src o → raw_program (tgt o) :=
+    src o → raw_code (tgt o) :=
     match lookup_op p o with
     | Some f => f
     | None => λ x, ret (chCanonical (chtgt o))
@@ -498,7 +498,7 @@ Module PackageRHL (π : RulesParam).
     ∀ L I E p o x,
       valid_package L I E p →
       o \in E →
-      valid_program L I (get_op_default p o x).
+      valid_code L I (get_op_default p o x).
   Proof.
     intros L I E p o x hp ho.
     unfold get_op_default.
@@ -520,7 +520,7 @@ Module PackageRHL (π : RulesParam).
 
   Lemma lookup_op_link :
     ∀ p q o,
-      lookup_op (p ∘ q) o = omap (λ f x, program_link (f x) q) (lookup_op p o).
+      lookup_op (p ∘ q) o = omap (λ f x, code_link (f x) q) (lookup_op p o).
   Proof.
     intros p q [id [S T]].
     unfold lookup_op. unfold link.
@@ -533,7 +533,7 @@ Module PackageRHL (π : RulesParam).
 
   Lemma get_op_default_link :
     ∀ p q o x,
-      get_op_default (p ∘ q) o x = program_link (get_op_default p o x) q.
+      get_op_default (p ∘ q) o x = code_link (get_op_default p o x) q.
   Proof.
     intros p q o x.
     unfold get_op_default. rewrite lookup_op_link.
@@ -541,18 +541,18 @@ Module PackageRHL (π : RulesParam).
     simpl. reflexivity.
   Qed.
 
-  Definition Pr_program {A} (p : raw_program A) :
+  Definition Pr_code {A} (p : raw_code A) :
     heap_choiceType → SDistr (F_choice_prod_obj ⟨ A , heap_choiceType ⟩) :=
     λ s, thetaFstd (prob_handler := prob_handler) A (repr p) s.
 
   (* TODO REMOVE? *)
-  Definition Pr_raw_func_program {A B} (p : A → raw_program B) :
+  Definition Pr_raw_func_code {A B} (p : A → raw_code B) :
     A → heap_choiceType → SDistr (F_choice_prod_obj ⟨ B , heap_choiceType ⟩) :=
-    λ a s, Pr_program (p a) s.
+    λ a s, Pr_code (p a) s.
 
   Definition Pr_op (p : raw_package) (o : opsig) (x : src o) :
     heap_choiceType → SDistr (F_choice_prod_obj ⟨ tgt o , heap_choiceType ⟩) :=
-    Pr_program (get_op_default p o x).
+    Pr_code (get_op_default p o x).
 
   #[program] Definition empty_heap : heap := emptym.
   Next Obligation.
@@ -570,7 +570,7 @@ Module PackageRHL (π : RulesParam).
   (* TODO Still useful? *)
   Definition get_op {I E : Interface} (p : loc_package I E)
     (o : opsig) (ho : o \in E) (arg : src o) :
-    program p.(locs) I (tgt o).
+    code p.(locs) I (tgt o).
   Proof.
     (* TW: I transformed this definition so that it computes directly. *)
     destruct (lookup_op p o) as [f|] eqn:e.
@@ -630,8 +630,8 @@ Module PackageRHL (π : RulesParam).
   Coercion adv_pack : AdversaryFor >-> loc_package. *)
 
   (* TODO Useful? *)
-  Definition state_pass_ {A} (p : raw_program A) :
-    heap_choiceType → raw_program (prod_choiceType A heap_choiceType).
+  Definition state_pass_ {A} (p : raw_code A) :
+    heap_choiceType → raw_code (prod_choiceType A heap_choiceType).
   Proof.
     induction p; intros h.
     - constructor.
@@ -648,9 +648,9 @@ Module PackageRHL (π : RulesParam).
       intros v. exact (X v h).
   Defined.
 
-  Definition state_pass__valid {A} {L} {I} (p : raw_program A)
-    (h : valid_program L I p) :
-    ∀ hp, valid_program fset0 I (state_pass_ p hp).
+  Definition state_pass__valid {A} {L} {I} (p : raw_code A)
+    (h : valid_code L I p) :
+    ∀ hp, valid_code fset0 I (state_pass_ p hp).
   Proof.
     intro hp. induction h in hp |- *.
     - cbn. constructor.
@@ -663,12 +663,12 @@ Module PackageRHL (π : RulesParam).
       intros v. eauto.
   Qed.
 
-  Definition state_pass {A} (p : raw_program A) : raw_program A :=
+  Definition state_pass {A} (p : raw_code A) : raw_code A :=
     bind (state_pass_ p empty_heap) (λ '(r, _), ret r).
 
-  Definition state_pass_valid {A} {L} {I} (p : raw_program A)
-    (h : valid_program L I p) :
-    valid_program fset0 I (state_pass p).
+  Definition state_pass_valid {A} {L} {I} (p : raw_code A)
+    (h : valid_code L I p) :
+    valid_code fset0 I (state_pass p).
   Proof.
     apply valid_bind.
     - apply (state_pass__valid p h empty_heap).
@@ -1214,7 +1214,7 @@ Module PackageRHL (π : RulesParam).
 
   (* It's the same as the semantic one, but we're abstracting it away. *)
   Definition rel_jdg {A B : choiceType} (pre : precond) (post : postcond A B)
-    (p : raw_program A) (q : raw_program B) :=
+    (p : raw_code A) (q : raw_code B) :=
     locked (r⊨ ⦃ pre ⦄ p ≈ q ⦃ post ⦄).
 
   Notation "⊢ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
@@ -1281,7 +1281,7 @@ Module PackageRHL (π : RulesParam).
     match goal with
     | h : is_true (fsubset ?x ?y) |- _ =>
       eapply valid_injectLocations with (1 := h) ;
-      eapply valid_program_from_class ; exact _
+      eapply valid_code_from_class ; exact _
     end
     : typeclass_instances.
 
@@ -1310,13 +1310,13 @@ Module PackageRHL (π : RulesParam).
 
   (* TODO Rename *)
   Lemma some_lemma_for_prove_relational :
-    ∀ {L₀ L₁ LA E} (p₀ p₁ : raw_package) (I : precond) {B} (A : raw_program B)
+    ∀ {L₀ L₁ LA E} (p₀ p₁ : raw_package) (I : precond) {B} (A : raw_code B)
       `{ValidPackage L₀ Game_import E p₀}
       `{ValidPackage L₁ Game_import E p₁}
       `{@ValidProgram LA E B A},
       INV LA I →
       eq_up_to_inv E I p₀ p₁ →
-      r⊨ ⦃ I ⦄ program_link A p₀ ≈ program_link A p₁
+      r⊨ ⦃ I ⦄ code_link A p₀ ≈ code_link A p₁
         ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ I (s₀, s₁) ⦄.
   Proof.
     intros L₀ L₁ LA E p₀ p₁ I B A vp₀ vp₁ vA hLA hp.
@@ -1428,26 +1428,26 @@ Module PackageRHL (π : RulesParam).
       intros [e ?]. rewrite e. intuition auto.
     }
     unfold Pr_op.
-    unshelve epose (rhs := thetaFstd _ (repr (program_link r p₀)) empty_heap).
+    unshelve epose (rhs := thetaFstd _ (repr (code_link r p₀)) empty_heap).
     1: exact prob_handler.
     simpl in rhs.
     epose (lhs := Pr_op (A ∘ p₀) RUN tt empty_heap).
     assert (lhs = rhs) as he.
     { subst lhs rhs.
-      unfold Pr_op. unfold Pr_program.
+      unfold Pr_op. unfold Pr_code.
       unfold thetaFstd. simpl. apply f_equal2. 2: reflexivity.
       apply f_equal. apply f_equal.
       rewrite get_op_default_link. reflexivity.
     }
     unfold lhs in he. unfold Pr_op in he.
     rewrite he.
-    unshelve epose (rhs' := thetaFstd _ (repr (program_link r p₁)) empty_heap).
+    unshelve epose (rhs' := thetaFstd _ (repr (code_link r p₁)) empty_heap).
     1: exact prob_handler.
     simpl in rhs'.
     epose (lhs' := Pr_op (A ∘ p₁) RUN tt empty_heap).
     assert (lhs' = rhs') as e'.
     { subst lhs' rhs'.
-      unfold Pr_op. unfold Pr_program.
+      unfold Pr_op. unfold Pr_code.
       unfold thetaFstd. simpl. apply f_equal2. 2: reflexivity.
       apply f_equal. apply f_equal.
       rewrite get_op_default_link. reflexivity.
@@ -1533,7 +1533,7 @@ Module PackageRHL (π : RulesParam).
   (* Pre-condition manipulating rules *)
 
   Theorem rpre_weaken_rule :
-    ∀ {A₀ A₁ : ord_choiceType} {p₀ : raw_program A₀} {p₁ : raw_program A₁}
+    ∀ {A₀ A₁ : ord_choiceType} {p₀ : raw_code A₀} {p₁ : raw_code A₁}
       (pre pre' : precond) post,
       ⊢ ⦃ pre ⦄ p₀ ≈ p₁ ⦃ post ⦄ →
       (∀ s₀ s₁, pre' (s₀, s₁) → pre (s₀, s₁)) →
@@ -1545,7 +1545,7 @@ Module PackageRHL (π : RulesParam).
   Qed.
 
   Theorem rpre_hypothesis_rule :
-    ∀ {A₀ A₁ : ord_choiceType} {p₀ : raw_program A₀} {p₁ : raw_program A₁}
+    ∀ {A₀ A₁ : ord_choiceType} {p₀ : raw_code A₀} {p₁ : raw_code A₁}
       (pre : precond) post,
       (∀ s₀ s₁,
         pre (s₀, s₁) → ⊢ ⦃ λ s, s.1 = s₀ ∧ s.2 = s₁ ⦄ p₀ ≈ p₁ ⦃ post ⦄
@@ -1560,7 +1560,7 @@ Module PackageRHL (π : RulesParam).
   Qed.
 
   Theorem rpre_strong_hypothesis_rule :
-    ∀ {A₀ A₁ : ord_choiceType} {p₀ : raw_program A₀} {p₁ : raw_program A₁}
+    ∀ {A₀ A₁ : ord_choiceType} {p₀ : raw_code A₀} {p₁ : raw_code A₁}
       (pre : precond) post,
       (∀ s₀ s₁, pre (s₀, s₁)) →
       ⊢ ⦃ λ _, True ⦄ p₀ ≈ p₁ ⦃ post ⦄ →
@@ -1573,7 +1573,7 @@ Module PackageRHL (π : RulesParam).
   Qed.
 
   Theorem rpost_weaken_rule :
-    ∀ {A₀ A₁ : ord_choiceType} {p₀ : raw_program A₀} {p₁ : raw_program A₁}
+    ∀ {A₀ A₁ : ord_choiceType} {p₀ : raw_code A₀} {p₁ : raw_code A₁}
       (pre : precond) (post1 post2 : postcond A₀ A₁),
       ⊢ ⦃ pre ⦄ p₀ ≈ p₁ ⦃ post1 ⦄ →
       (∀ a₀ a₁, post1 a₀ a₁ → post2 a₀ a₁) →
@@ -1587,7 +1587,7 @@ Module PackageRHL (π : RulesParam).
   Local Open Scope package_scope.
 
   Lemma rreflexivity_rule :
-    ∀ {A : ord_choiceType} (c : raw_program A),
+    ∀ {A : ord_choiceType} (c : raw_code A),
       ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ c ≈ c ⦃ eq ⦄.
   Proof.
     intros A c.
@@ -1609,7 +1609,7 @@ Module PackageRHL (π : RulesParam).
 
   Theorem rpost_conclusion_rule :
     ∀ {A₀ A₁ B : ord_choiceType} {pre : precond}
-      {c₀ : raw_program A₀} {c₁ : raw_program A₁}
+      {c₀ : raw_code A₀} {c₁ : raw_code A₁}
       (f₀ : A₀ → B) (f₁ : A₁ → B),
       ⊢ ⦃ pre ⦄
         x₀ ← c₀ ;; ret x₀ ≈ x₁ ← c₁ ;; ret x₁
@@ -1651,7 +1651,7 @@ Module PackageRHL (π : RulesParam).
   Qed.
 
   Lemma repr_if :
-    ∀ {A b} (c₀ c₁ : raw_program A),
+    ∀ {A b} (c₀ c₁ : raw_code A),
       repr (if b then c₀ else c₁) = if b then repr c₀ else repr c₁.
   Proof.
     intros A b c₀ c₁.
@@ -1664,7 +1664,7 @@ Module PackageRHL (π : RulesParam).
   *)
   Theorem rif_rule :
     ∀ {A₀ A₁ : ord_choiceType}
-      (c₀ c₀' : raw_program A₀) (c₁ c₁' : raw_program A₁)
+      (c₀ c₀' : raw_code A₀) (c₁ c₁' : raw_code A₁)
       {b₀ b₁}
       {pre : precond} {post : postcond A₀ A₁},
       (∀ s, pre s → b₀ = b₁) →
@@ -1687,7 +1687,7 @@ Module PackageRHL (π : RulesParam).
     Rem.: low priority as not useful for our examples *)
 
   Lemma rcoupling_eq :
-    ∀ {A : ord_choiceType} (K₀ K₁ : raw_program A) (ψ : precond),
+    ∀ {A : ord_choiceType} (K₀ K₁ : raw_code A) (ψ : precond),
       ⊢ ⦃ ψ ⦄ K₀ ≈ K₁ ⦃ eq ⦄ →
       ∀ s₀ s₁,
         ψ (s₀, s₁) →
@@ -1700,7 +1700,7 @@ Module PackageRHL (π : RulesParam).
 
   Lemma rrewrite_eqDistrL :
     ∀ {A₀ A₁ : ord_choiceType} {P Q}
-      (c₀ c₀' : raw_program A₀) (c₁ : raw_program A₁),
+      (c₀ c₀' : raw_code A₀) (c₁ : raw_code A₁),
       ⊢ ⦃ P ⦄ c₀ ≈ c₁ ⦃ Q ⦄ →
       (∀ s, θ_dens (θ0 (repr c₀) s) = θ_dens (θ0 (repr c₀') s)) →
       ⊢ ⦃ P ⦄ c₀' ≈ c₁ ⦃ Q ⦄.
@@ -1712,7 +1712,7 @@ Module PackageRHL (π : RulesParam).
 
   Lemma rrewrite_eqDistrR :
     ∀ {A₀ A₁ : ord_choiceType} {P Q}
-      (c₀ : raw_program A₀) (c₁ c₁' : raw_program A₁),
+      (c₀ : raw_code A₀) (c₁ c₁' : raw_code A₁),
       ⊢ ⦃ P ⦄ c₀ ≈ c₁ ⦃ Q ⦄ →
       (∀ s, θ_dens (θ0 (repr c₁) s) = θ_dens (θ0 (repr c₁') s)) →
       ⊢ ⦃ P ⦄ c₀ ≈ c₁' ⦃ Q ⦄.
@@ -1724,7 +1724,7 @@ Module PackageRHL (π : RulesParam).
 
   Theorem rswap_rule :
     ∀ {A₀ A₁ : ord_choiceType} {I : precond} {post : postcond A₀ A₁}
-      (c₀ : raw_program A₀) (c₁ : raw_program A₁),
+      (c₀ : raw_code A₀) (c₁ : raw_code A₁),
       ⊢ ⦃ I ⦄ c₀ ≈ c₁
         ⦃ λ '(a₀, s₀) '(a₁, s₁), I (s₀, s₁) ∧ post (a₀, s₀) (a₁, s₁) ⦄ →
       ⊢ ⦃ I ⦄ c₁ ≈ c₀
@@ -1745,7 +1745,7 @@ Module PackageRHL (π : RulesParam).
   *)
   Theorem rswap_ruleL :
     ∀ {A₀ A₁ B : ord_choiceType} {pre I : precond} {post : postcond A₁ A₀}
-    (l : raw_program B) (c₀ : raw_program A₀) (c₁ : raw_program A₁),
+    (l : raw_code B) (c₀ : raw_code A₀) (c₁ : raw_code A₁),
     ⊢ ⦃ pre ⦄ l ≈ l ⦃ λ '(b₀, s₀) '(b₁, s₁), I (s₀, s₁) ⦄ →
     ⊢ ⦃ I ⦄ c₀ ≈ c₁ ⦃ λ '(a₀, s₀) '(a₁, s₁), I (s₀, s₁) ∧ post (a₁, s₁) (a₀, s₀) ⦄ →
     ⊢ ⦃ I ⦄ c₁ ≈ c₀ ⦃ λ '(a₁, s₁) '(a₀, s₀), I (s₀, s₁) ∧ post (a₁, s₁) (a₀, s₀) ⦄ →
@@ -1760,7 +1760,7 @@ Module PackageRHL (π : RulesParam).
 
   Theorem rswap_ruleR :
     ∀ {A₀ A₁ B : ord_choiceType} {post : postcond B B}
-      (c₀ : raw_program A₀) (c₁ : raw_program A₁) (r : A₀ → A₁ → raw_program B),
+      (c₀ : raw_code A₀) (c₁ : raw_code A₁) (r : A₀ → A₁ → raw_code B),
       (∀ b b', b = b' → post b b') →
       (∀ a₀ a₁, ⊢ ⦃ λ '(s₁, s₀), s₀ = s₁ ⦄ r a₀ a₁ ≈ r a₀ a₁ ⦃ post ⦄) →
       ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
@@ -1790,7 +1790,7 @@ Module PackageRHL (π : RulesParam).
 
   Lemma rsym_pre :
     ∀ {A₀ A₁ : ord_choiceType} {pre : precond} {post}
-      {c₀ : raw_program A₀} {c₁ : raw_program A₁},
+      {c₀ : raw_code A₀} {c₁ : raw_code A₁},
       (∀ h₀ h₁, pre (h₀, h₁) → pre (h₁, h₀)) →
       ⊢ ⦃ λ '(h₀, h₁), pre (h₁, h₀) ⦄ c₀ ≈ c₁ ⦃ post ⦄ →
       ⊢ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄.
@@ -1802,7 +1802,7 @@ Module PackageRHL (π : RulesParam).
 
   Lemma rsymmetry :
     ∀ {A₀ A₁ : ord_choiceType} {pre : precond} {post}
-      {c₀ : raw_program A₀} {c₁ : raw_program A₁},
+      {c₀ : raw_code A₀} {c₁ : raw_code A₁},
       ⊢ ⦃ λ '(h₁, h₀), pre (h₀, h₁) ⦄ c₁ ≈ c₀
         ⦃ λ '(a₁, h₁) '(a₀, h₀), post (a₀, h₀) (a₁, h₁) ⦄ →
       ⊢ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄.
@@ -1816,7 +1816,7 @@ Module PackageRHL (π : RulesParam).
     @callrFree (ops_StP heap_choiceType) (ar_StP heap_choiceType) (inr o).
 
   Lemma rsamplerC :
-    ∀ {A : ord_choiceType} (o : Op) (c : raw_program A),
+    ∀ {A : ord_choiceType} (o : Op) (c : raw_code A),
       ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
         a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (a, r) ≈
         r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (a, r)
@@ -1847,7 +1847,7 @@ Module PackageRHL (π : RulesParam).
   Qed.
 
   Lemma rsamplerC_sym' :
-    ∀ {A : ord_choiceType} (o : Op) (c : raw_program A),
+    ∀ {A : ord_choiceType} (o : Op) (c : raw_code A),
       ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
         a ← c ;; r ← (r ← sample o ;; ret r) ;;  (ret (r, a)) ≈
         r ← (r ← sample o ;; ret r) ;; a ← c ;;  (ret (r, a))
@@ -1862,7 +1862,7 @@ Module PackageRHL (π : RulesParam).
   Qed.
 
   Lemma rsamplerC' :
-    ∀ {A : ord_choiceType} (o : Op) (c : raw_program A),
+    ∀ {A : ord_choiceType} (o : Op) (c : raw_code A),
       ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
         r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (r, a) ≈
         a ← c ;; r ← (r ← sample o ;; ret r) ;; ret (r, a)
@@ -1878,7 +1878,7 @@ Module PackageRHL (π : RulesParam).
   (* TODO: generalize the corresponding rule in RulesStateProb.v  *)
   Theorem rswap_rule_ctx :
   ∀ {A : ord_choiceType} {I pre} {post Q : postcond A A}
-    (l r c₀ c₁ : raw_program A),
+    (l r c₀ c₁ : raw_code A),
     ⊢ ⦃ pre ⦄ l ≈ l ⦃ λ '(a₀, s₀) '(a₁, s₁), I (s₀, s₁) ⦄ →
     (∀ a₀ a₁, ⊢ ⦃ λ '(s₁, s₀), Q (a₀,s₀) (a₁,s₁) ⦄ r ≈ r ⦃ post ⦄) →
     ⊢ ⦃ I ⦄ c₀ ≈ c₁ ⦃ λ '(a₀, s₀) '(a₁, s₁), I (s₀, s₁) ∧ Q (a₀, s₀) (a₁, s₁) ⦄ →
@@ -1896,8 +1896,8 @@ Module PackageRHL (π : RulesParam).
   Qed.
 
   Theorem rsame_head :
-    ∀ {A B : ord_choiceType} {f₀ f₁ : A → raw_program B}
-    (m : raw_program A) (post : postcond B B),
+    ∀ {A B : ord_choiceType} {f₀ f₁ : A → raw_code B}
+    (m : raw_code A) (post : postcond B B),
     (∀ a, ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ f₀ a ≈ f₁ a ⦃ post ⦄) →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ bind m f₀ ≈ bind m f₁ ⦃ post ⦄.
   Proof.
@@ -1925,7 +1925,7 @@ Module PackageRHL (π : RulesParam).
 
   Theorem rdead_sampler_elimL :
     ∀ {A : ord_choiceType} {D}
-      (c₀ c₁ : raw_program A) (pre : precond) (post : postcond A A),
+      (c₀ c₁ : raw_code A) (pre : precond) (post : postcond A A),
       ⊢ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄ →
       ⊢ ⦃ pre ⦄ (x ← sample D ;; ret x) ;; c₀ ≈ c₁ ⦃ post ⦄.
   Proof.
@@ -1936,7 +1936,7 @@ Module PackageRHL (π : RulesParam).
 
   Theorem rdead_sampler_elimR :
     ∀ {A : ord_choiceType} {D}
-      (c₀ c₁ : raw_program A) (pre : precond) (post : postcond A A),
+      (c₀ c₁ : raw_code A) (pre : precond) (post : postcond A A),
       ⊢ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄ →
       ⊢ ⦃ pre ⦄ c₀ ≈ (x ← sample D ;; ret x) ;; c₁ ⦃ post ⦄.
   Proof.
@@ -1946,7 +1946,7 @@ Module PackageRHL (π : RulesParam).
   Admitted.
 
   Lemma rf_preserves_eq :
-    ∀ {A B : ord_choiceType} {c₀ c₁ : raw_program A}
+    ∀ {A B : ord_choiceType} {c₀ c₁ : raw_code A}
       (f : A → B),
       ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ x ← c₀ ;; ret x ≈ x ← c₁ ;; ret x ⦃ eq ⦄ →
       ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ x ← c₀ ;; ret (f x) ≈ x ← c₁ ;; ret (f x) ⦃ eq ⦄.
@@ -1966,7 +1966,7 @@ Module PackageRHL (π : RulesParam).
   (* Similar to rrewrite_eqDistr but with program logic. *)
   Lemma r_transL :
     ∀ {A₀ A₁ : ord_choiceType} {P Q}
-      (c₀ c₀' : raw_program A₀) (c₁ : raw_program A₁),
+      (c₀ c₀' : raw_code A₀) (c₁ : raw_code A₁),
       ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ c₀ ≈ c₀' ⦃ eq ⦄ →
       ⊢ ⦃ P ⦄ c₀ ≈ c₁ ⦃ Q ⦄ →
       ⊢ ⦃ P ⦄ c₀' ≈ c₁ ⦃ Q ⦄.
@@ -1979,7 +1979,7 @@ Module PackageRHL (π : RulesParam).
 
   Lemma r_transR :
     ∀ {A₀ A₁ : ord_choiceType} {P Q}
-      (c₀ : raw_program A₀) (c₁ c₁' : raw_program A₁),
+      (c₀ : raw_code A₀) (c₁ c₁' : raw_code A₁),
       ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ c₁ ≈ c₁' ⦃ eq ⦄ →
       ⊢ ⦃ P ⦄ c₀ ≈ c₁ ⦃ Q ⦄ →
       ⊢ ⦃ P ⦄ c₀ ≈ c₁' ⦃ Q ⦄.
@@ -1994,7 +1994,7 @@ Module PackageRHL (π : RulesParam).
   (* TODO Figure out what uniform should be here! *)
   (* Lemma r_uniform_bij :
     ∀ {A₀ A₁ : ord_choiceType}
-      (c₀ : raw_program A₀) (c₁ : raw_program A₁)
+      (c₀ : raw_code A₀) (c₁ : raw_code A₁)
       n pre post f,
       bijective f →
       (∀ x, ⊢ ⦃ pre ⦄ c₀ x ;; c₁ (f x) ⦃ post ⦄) →
@@ -2006,7 +2006,7 @@ Module PackageRHL (π : RulesParam).
   (* Rules using commands instead of bind *)
 
   Theorem rsame_head_cmd :
-    ∀ {A B : ord_choiceType} {f₀ f₁ : A → raw_program B}
+    ∀ {A B : ord_choiceType} {f₀ f₁ : A → raw_code B}
     (m : command A) (post : postcond B B),
     (∀ a, ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ f₀ a ≈ f₁ a ⦃ post ⦄) →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ x ← cmd m ;; f₀ x ≈ x ← cmd m ;; f₁ x ⦃ post ⦄.
@@ -2028,7 +2028,7 @@ Module PackageRHL (π : RulesParam).
   Lemma rswap_cmd :
     ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
       (c₀ : command A₀) (c₁ : command A₁)
-      (r : A₀ → A₁ → raw_program B),
+      (r : A₀ → A₁ → raw_code B),
       (∀ b, post b b) →
       (∀ a₀ a₁, ⊢ ⦃ λ '(s₁, s₀), s₀ = s₁ ⦄ r a₀ a₁ ≈ r a₀ a₁ ⦃ post ⦄) →
       ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
@@ -2058,7 +2058,7 @@ Module PackageRHL (π : RulesParam).
   Lemma rswap_cmd_eq :
     ∀ (A₀ A₁ B : choiceType)
       (c₀ : command A₀) (c₁ : command A₁)
-      (r : A₀ → A₁ → raw_program B),
+      (r : A₀ → A₁ → raw_code B),
       ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
         a₀ ← cmd c₀ ;; a₁ ← cmd c₁ ;; ret (a₀, a₁) ≈
         a₁ ← cmd c₁ ;; a₀ ← cmd c₀ ;; ret (a₀, a₁)
@@ -2078,7 +2078,7 @@ Module PackageRHL (π : RulesParam).
 
   Theorem rswap_ruleR_cmd :
     ∀ {A₀ A₁ B : ord_choiceType} {post : postcond B B}
-      (c₀ : command A₀) (c₁ : command A₁) (r : A₀ → A₁ → raw_program B),
+      (c₀ : command A₀) (c₁ : command A₁) (r : A₀ → A₁ → raw_code B),
       (∀ b b', b = b' → post b b') →
       (∀ a₀ a₁, ⊢ ⦃ λ '(s₁, s₀), s₀ = s₁ ⦄ r a₀ a₁ ≈ r a₀ a₁ ⦃ post ⦄) →
       ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄

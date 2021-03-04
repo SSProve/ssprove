@@ -142,7 +142,7 @@ Module PRF_example.
           rewrite Nnat.N2Nat.inj_mul.
           rewrite PeanoNat.Nat.mul_comm.
           apply f_equal2.
-          + apply IHm. 
+          + apply IHm.
           + reflexivity. }
       unfold Words_N, Key_N in *.
       move: (BinNat.N.log2_lxor (BinNat.N.of_nat w) (BinNat.N.of_nat k)) => Hbound.
@@ -229,8 +229,8 @@ Module PRF_example.
   (* Rem.: i0;  i1; i2 ; -> only memory locations should belong here, not program entries/package oracles *)
 
 
-  (* Parameter PRF : forall (r: Words) (k : Key), raw_program Key. *)
-  (* Parameter PRF_valid : forall r k, valid_program rel_loc fset0 (PRF r k). *)
+  (* Parameter PRF : forall (r: Words) (k : Key), raw_code Key. *)
+  (* Parameter PRF_valid : forall r k, valid_code rel_loc fset0 (PRF r k). *)
   Parameter PRF : Words -> Key -> Key.
   Parameter prf_epsilon : R.
 
@@ -257,7 +257,7 @@ Module PRF_example.
       | None =>
            k <$ (U (mkpos i_key)) ;;
            let pad := PRF r k in
-           put key_location := Some pad ;; 
+           put key_location := Some pad ;;
            ret pad
       | Some k_val =>
            let pad := PRF r k_val in
@@ -284,7 +284,7 @@ Module PRF_example.
         | None =>
             T_key <$ (U (mkpos i_key)) ;;
             put table_location := (setm T r T_key) ;;
-            ret T_key 
+            ret T_key
         | Some T_key => ret T_key
         end
       }
@@ -313,7 +313,7 @@ Module PRF_example.
       {
         r <$ U (mkpos i_words) ;;
         let pad := PRF r (snd mk) in
-        put key_location := Some pad ;; 
+        put key_location := Some pad ;;
         put cipher_location := (fst mk) ⊕ pad ;;
         c ← get cipher_location ;;
         ret (c)
@@ -462,7 +462,7 @@ Module PRF_example.
   Qed.
 
   Definition LHS0 (m : ('fin (2^n)%N)) :
-    program rel_loc fset0 ('fin (2^n)%N).
+    code rel_loc fset0 ('fin (2^n)%N).
   Proof.
     apply: bind.
     { apply: (getr _ key_location_in_rel_loc) => /= option_k. apply: ret option_k. }
@@ -473,7 +473,7 @@ Module PRF_example.
       { apply: (sampler (U (mkpos i_words))) => /= r_val. apply: ret r_val. }
       move => /= r_val. apply: bind.
       { apply: (putr _ key_location_in_rel_loc (Some (PRF r_val k_val))). apply: ret Datatypes.tt. }
-        move => tt. apply: bind. 
+        move => tt. apply: bind.
         { apply: (putr _ cipher_location_in_rel_loc (m_val' ⊕ ((PRF r_val k_val)))).  apply: ret Datatypes.tt. }
         move => tt'. apply: bind.
         { apply: (getr _ cipher_location_in_rel_loc) => /= c_val. apply: ret c_val. }
@@ -488,7 +488,7 @@ Module PRF_example.
       { apply: (sampler (U (mkpos i_words))) => /= r_val. apply: ret r_val. }
       move => /= r_val. apply: bind.
       { apply: (putr _ key_location_in_rel_loc (Some (PRF r_val k))). apply: ret Datatypes.tt. }
-        move => tt. apply: bind. 
+        move => tt. apply: bind.
         { apply: (putr _ cipher_location_in_rel_loc (m_val' ⊕ ((PRF r_val k)))).  apply: ret Datatypes.tt. }
         move => tt'. apply: bind.
         { apply: (getr _ cipher_location_in_rel_loc) => /= c_val. apply: ret c_val. }
@@ -497,7 +497,7 @@ Module PRF_example.
   Defined.
 
   Definition RHS0 (m : ('fin (2^n)%N)) :
-    program rel_loc fset0 ('fin (2^n)%N).
+    code rel_loc fset0 ('fin (2^n)%N).
   Proof.
     apply: bind.
     { apply: (sampler (U (mkpos i_words))) => /= r_val. apply: ret r_val. }
@@ -508,7 +508,7 @@ Module PRF_example.
     move => [k_val | ].
     - apply: bind.
       { apply: (putr _ key_location_in_rel_loc (Some (PRF r_val k_val))). apply: ret Datatypes.tt. }
-        move => tt. apply: bind. 
+        move => tt. apply: bind.
       { apply: (putr _ cipher_location_in_rel_loc (m_val' ⊕ (PRF r_val k_val))). apply: ret Datatypes.tt. }
       move => tt'. apply: bind.
       { apply: (getr _ cipher_location_in_rel_loc) => /= c_val. apply: ret c_val. }
@@ -518,7 +518,7 @@ Module PRF_example.
       { apply: (sampler (U (mkpos i_key))) => /= k_val. apply: ret k_val. }
       move => /= k. apply: bind.
       { apply: (putr _ key_location_in_rel_loc (Some (PRF r_val k))). apply: ret Datatypes.tt. }
-        move => tt. apply: bind. 
+        move => tt. apply: bind.
       { apply: (putr _ cipher_location_in_rel_loc (m_val' ⊕ (PRF r_val k))). apply: ret Datatypes.tt. }
       move => tt'. apply: bind.
       { apply: (getr _ cipher_location_in_rel_loc) => /= c_val. apply: ret c_val. }
@@ -527,7 +527,7 @@ Module PRF_example.
   Defined.
 
   Definition RHS0_swap (m : ('fin (2^n)%N)) :
-    program rel_loc fset0 ('fin (2^n)%N).
+    code rel_loc fset0 ('fin (2^n)%N).
   Proof.
     apply: bind.
     { apply: (sampler (U (mkpos i_words))) => /= r_val. apply: ret r_val. }
@@ -538,7 +538,7 @@ Module PRF_example.
     move => /= m_val'. destruct option_k as [k_val |].
     - apply: bind.
       { apply: (putr _ key_location_in_rel_loc (Some (PRF r_val k_val))). apply: ret Datatypes.tt. }
-      move => tt. apply: bind. 
+      move => tt. apply: bind.
       { apply: (putr _ cipher_location_in_rel_loc (m_val' ⊕ (PRF r_val k_val))). apply: ret Datatypes.tt. }
       move => tt'. apply: bind.
       { apply: (getr _ cipher_location_in_rel_loc) => /= c_val. apply: ret c_val. }
@@ -548,7 +548,7 @@ Module PRF_example.
       { apply: (sampler (U (mkpos i_key))) => /= k_val. apply: ret k_val. }
       move => /= k. apply: bind.
        { apply: (putr _ key_location_in_rel_loc (Some (PRF r_val k))). apply: ret Datatypes.tt. }
-        move => tt. apply: bind. 
+        move => tt. apply: bind.
       { apply: (putr _ cipher_location_in_rel_loc (m_val' ⊕ (PRF r_val k))). apply: ret Datatypes.tt. }
       move => tt'. apply: bind.
       { apply: (getr _ cipher_location_in_rel_loc) => /= c_val. apply: ret c_val. }
@@ -557,7 +557,7 @@ Module PRF_example.
   Defined.
 
   Definition RHS0_swap_swap  (m : ('fin (2^n)%N)) :
-    program rel_loc fset0 ('fin (2^n)%N).
+    code rel_loc fset0 ('fin (2^n)%N).
   Proof.
     apply: bind.
     { apply: (getr _ key_location_in_rel_loc) => /= option_k. apply: ret option_k. }
@@ -568,7 +568,7 @@ Module PRF_example.
     move => /= m_val'. destruct option_k as [k_val |].
     - apply: bind.
        { apply: (putr _ key_location_in_rel_loc (Some (PRF r_val k_val))). apply: ret Datatypes.tt. }
-        move => tt. apply: bind. 
+        move => tt. apply: bind.
       { apply: (putr _ cipher_location_in_rel_loc (m_val' ⊕ (PRF r_val k_val))). apply: ret Datatypes.tt. }
       move => tt'. apply: bind.
       { apply: (getr _ cipher_location_in_rel_loc) => /= c_val. apply: ret c_val. }
@@ -578,7 +578,7 @@ Module PRF_example.
       { apply: (sampler (U (mkpos i_key))) => /= k_val. apply: ret k_val. }
       move => /= k. apply: bind.
        { apply: (putr _ key_location_in_rel_loc (Some (PRF r_val k))). apply: ret Datatypes.tt. }
-        move => tt. apply: bind. 
+        move => tt. apply: bind.
       { apply: (putr _ cipher_location_in_rel_loc (m_val' ⊕ (PRF r_val k))). apply: ret Datatypes.tt. }
       move => tt'. apply: bind.
       { apply: (getr _ cipher_location_in_rel_loc) => /= c_val. apply: ret c_val. }
@@ -590,8 +590,8 @@ Module PRF_example.
   (* TODO MOVE But where? *)
   Lemma eq_prog_semj_impl :
     ∀ L L' R R' A
-      (p : program L _ A) (q : program R _ _)
-      (p' : program L' _ A) (q' : program R' _ _),
+      (p : code L _ A) (q : code R _ _)
+      (p' : code L' _ A) (q' : code R' _ _),
       L = L' →
       R = R' →
       p ∙1 = p' ∙1 →
@@ -601,29 +601,29 @@ Module PRF_example.
   Proof.
     intros L L' R R' A p q p' q' eL eR ep eq.
     subst L' R'.
-    eapply program_ext in ep.
-    eapply program_ext in eq.
+    eapply code_ext in ep.
+    eapply code_ext in eq.
     subst q' p'.
     intro h.
     eapply post_weaken_rule. 1: eauto.
     cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
   Qed.
 
-  
+
 Lemma subset_key_rel : fsubset (fset [:: key_location ]) (fset [:: key_location ; cipher_location ; table_location ]).
 Proof.
-  apply /eqP. apply eq_fset => x. 
+  apply /eqP. apply eq_fset => x.
   rewrite in_fsetU !in_fset. rewrite !in_cons.
   rewrite in_fset0. rewrite -orbA Bool.orb_false_r Bool.orb_false_l.
-  by rewrite !orbA Bool.orb_diag. 
-Qed. 
-  
+  by rewrite !orbA Bool.orb_diag.
+Qed.
+
   Lemma IND_CPA_location_rel_loc :
     rel_loc = IND_CPA_location :|: ENC_location.
   Proof.
     rewrite /IND_CPA_location /ENC_location /rel_loc.
     move/fsetUidPr : subset_key_rel => H. by subst.
-  Qed. 
+  Qed.
 
 
   Lemma MOD_CPA_location_rel_loc :
@@ -780,7 +780,7 @@ Qed.
 Qed.
 
   Definition LHS1 (m : ('fin (2^n)%N)) :
-    program rel_loc fset0 ('fin (2^n)%N).
+    code rel_loc fset0 ('fin (2^n)%N).
   Proof.
     apply: bind.
     { apply: (getr _ key_location_in_rel_loc) => /= option_k. apply: ret option_k. }
@@ -789,7 +789,7 @@ Qed.
       { apply: (sampler (U (mkpos i_words))) => /= r_val. apply: ret r_val. }
       move => /= r_val. apply: bind.
        { apply: (putr _ key_location_in_rel_loc (Some (PRF r_val k_val))). apply: ret Datatypes.tt. }
-        move => tt. apply: bind. 
+        move => tt. apply: bind.
       { apply: (putr _ cipher_location_in_rel_loc (m ⊕ ((PRF r_val k_val)))).
         apply: ret Datatypes.tt. }
       move => tt'. apply: bind.
@@ -803,7 +803,7 @@ Qed.
       { apply: (sampler (U (mkpos i_words))) => /= r_val. apply: ret r_val. }
       move => /= r_val. apply: bind.
        { apply: (putr _ key_location_in_rel_loc (Some (PRF r_val k))). apply: ret Datatypes.tt. }
-       move => tt. apply: bind. 
+       move => tt. apply: bind.
       { apply: (putr _ cipher_location_in_rel_loc (m ⊕ ((PRF r_val k)))).
         apply: ret Datatypes.tt. }
       move => tt'. apply: bind.
@@ -813,7 +813,7 @@ Qed.
   Defined.
 
   Definition RHS1 (m : ('fin (2^n)%N)) :
-    program rel_loc fset0  ('fin (2^n)%N).
+    code rel_loc fset0  ('fin (2^n)%N).
   Proof.
     apply: bind.
     { apply: (sampler (U (mkpos i_words))) => /= r_val. apply: ret r_val. }
@@ -822,7 +822,7 @@ Qed.
     move => option_k. destruct option_k as [k_val |].
     - apply: bind.
       { apply: (putr _ key_location_in_rel_loc (Some (PRF r_val k_val))). apply: ret Datatypes.tt. }
-       move => tt. apply: bind. 
+       move => tt. apply: bind.
       { apply: (putr _ cipher_location_in_rel_loc (m ⊕ (PRF r_val k_val))). apply: ret Datatypes.tt. }
       move => tt'. apply: bind.
       { apply: (getr _ cipher_location_in_rel_loc) => /= c_val. apply: ret c_val. }
@@ -832,7 +832,7 @@ Qed.
       { apply: (sampler (U (mkpos i_key))) => /= k_val. apply: ret k_val. }
       move => /= k. apply: bind.
        { apply: (putr _ key_location_in_rel_loc (Some (PRF r_val k))). apply: ret Datatypes.tt. }
-        move => tt. apply: bind. 
+        move => tt. apply: bind.
       { apply: (putr _ cipher_location_in_rel_loc (m ⊕ (PRF r_val k))). apply: ret Datatypes.tt. }
       move => tt'. apply: bind.
       { apply: (getr _ cipher_location_in_rel_loc) => /= c_val. apply: ret c_val. }
@@ -841,7 +841,7 @@ Qed.
   Defined.
 
   Definition RHS1_swap (m : ('fin (2^n)%N)) :
-    program rel_loc fset0 ('fin (2^n)%N).
+    code rel_loc fset0 ('fin (2^n)%N).
   Proof.
     apply: bind.
     { apply: (getr _ key_location_in_rel_loc) => /= option_k. apply: ret option_k. }
@@ -850,7 +850,7 @@ Qed.
       move => /= r_val. destruct option_k as [k_val |].
     - apply: bind.
        { apply: (putr _ key_location_in_rel_loc (Some (PRF r_val k_val))). apply: ret Datatypes.tt. }
-        move => tt. apply: bind. 
+        move => tt. apply: bind.
       { apply: (putr _ cipher_location_in_rel_loc (m ⊕ (PRF r_val k_val))). apply: ret Datatypes.tt. }
       move => tt'. apply: bind.
       { apply: (getr _ cipher_location_in_rel_loc) => /= c_val. apply: ret c_val. }
@@ -860,7 +860,7 @@ Qed.
       { apply: (sampler (U (mkpos i_key))) => /= k_val. apply: ret k_val. }
       move => /= k. apply: bind.
        { apply: (putr _ key_location_in_rel_loc (Some (PRF r_val k))). apply: ret Datatypes.tt. }
-        move => tt. apply: bind. 
+        move => tt. apply: bind.
       { apply: (putr _ cipher_location_in_rel_loc (m ⊕ (PRF r_val k))). apply: ret Datatypes.tt. }
       move => tt'. apply: bind.
       { apply: (getr _ cipher_location_in_rel_loc) => /= c_val. apply: ret c_val. }

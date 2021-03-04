@@ -225,24 +225,24 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
 
   (** Key Generation algorithm *)
   Definition KeyGen {L : {fset Location}} :
-    program L [interface] (choicePubKey × choiceSecKey) :=
-    {program
+    code L [interface] (choicePubKey × choiceSecKey) :=
+    {code
       x ← sample U i_sk ;;
       ret (pk2ch (g^+x), sk2ch x)
     }.
 
   (** Encryption algorithm *)
   Definition Enc {L : {fset Location}} (pk : choicePubKey) (m : choicePlain) :
-    program L [interface] choiceCipher :=
-    {program
+    code L [interface] choiceCipher :=
+    {code
       y ← sample U i_sk ;;
       ret (c2ch (g^+y, (ch2pk pk)^+y * (ch2m m)))
     }.
 
   (** Decryption algorithm *)
   Definition Dec_open {L : {fset Location}} (sk : choiceSecKey) (c : choiceCipher) :
-    program L [interface] choicePlain :=
-    {program
+    code L [interface] choicePlain :=
+    {code
       ret (m2ch ((fst (ch2c c)) * ((snd (ch2c c))^-(ch2sk sk))))
     }.
 
@@ -355,7 +355,7 @@ Proof.
   intros id S T m hin.
   invert_interface_in hin.
   rewrite get_op_default_link.
-  (* First we need to squeeze the programs out of the packages *)
+  (* First we need to squeeze the codes out of the packages *)
   (* Hopefully I will find a way to automate it. *)
   unfold get_op_default.
   destruct lookup_op as [f|] eqn:e.
@@ -384,7 +384,7 @@ Proof.
   (* Now the linking *)
   simpl.
   (* Too bad but linking doesn't automatically commute with match *)
-  setoid_rewrite program_link_if.
+  setoid_rewrite code_link_if.
   simpl.
   destruct chUniverse_eqP as [e|]. 2: contradiction.
   assert (e = erefl) by apply uip. subst e.
@@ -582,7 +582,7 @@ Proof.
   eapply eq_rel_perf_ind_eq.
   simplify_eq_rel m.
   (* Too bad but linking doesn't automatically commute with match *)
-  setoid_rewrite program_link_if.
+  setoid_rewrite code_link_if.
   simpl.
   simplify_linking.
   (* We are now in the realm of program logic *)
@@ -681,7 +681,7 @@ Qed.
 (* TODO Generalise and move with other rules *)
 Lemma r_uniform_bij :
   ∀ {A₀ A₁ : ord_choiceType} i pre post f
-    (c₀ : _ → raw_program A₀) (c₁ : _ → raw_program A₁),
+    (c₀ : _ → raw_code A₀) (c₁ : _ → raw_code A₁),
     bijective f →
     (∀ x, ⊢ ⦃ pre ⦄ c₀ x ≈ c₁ (f x) ⦃ post ⦄) →
     ⊢ ⦃ pre ⦄

@@ -34,14 +34,14 @@ Module PackageComposition (π : RulesParam).
   Include (CorePackageTheory π).
 
   Definition cast_fun {So To St Tt : chUniverse}
-    (hS : St = So) (hT : Tt = To) (f : St → raw_program Tt) :
-    So → raw_program To.
+    (hS : St = So) (hT : Tt = To) (f : St → raw_code Tt) :
+    So → raw_code To.
   Proof.
     subst. auto.
   Defined.
 
   Definition lookup_op (p: raw_package) (o : opsig) :
-    option (src o → raw_program (tgt o)) :=
+    option (src o → raw_code (tgt o)) :=
     let '(n, (So, To)) := o in
     match p n with
     | Some (St ; Tt ; f) =>
@@ -85,7 +85,7 @@ Module PackageComposition (π : RulesParam).
       o \in E →
       ∃ f,
         lookup_op p o = Some f ∧
-        ∀ x, valid_program L I (f x).
+        ∀ x, valid_code L I (f x).
   Proof.
     intros L I E p o hp ho.
     specialize (hp o ho).
@@ -114,27 +114,27 @@ Module PackageComposition (π : RulesParam).
     cbn. subst. cbn. reflexivity.
   Qed.
 
-  Fixpoint program_link {A} (v : raw_program A) (p : raw_package) :
-    raw_program A :=
+  Fixpoint code_link {A} (v : raw_code A) (p : raw_package) :
+    raw_code A :=
     match v with
     | ret a => ret a
     | opr o a k =>
       (* The None branch doesn't happen when valid *)
       (* We continue with a default value to preserve associativity. *)
       match lookup_op p o with
-      | Some f => bind (f a) (λ x, program_link (k x) p)
-      | None => program_link (k (chCanonical (chtgt o))) p
+      | Some f => bind (f a) (λ x, code_link (k x) p)
+      | None => code_link (k (chCanonical (chtgt o))) p
       end
-    | getr l k => getr l (λ x, program_link (k x) p)
-    | putr l v k => putr l v (program_link k p)
-    | sampler op k => sampler op (λ x, program_link (k x) p)
+    | getr l k => getr l (λ x, code_link (k x) p)
+    | putr l v k => putr l v (code_link k p)
+    | sampler op k => sampler op (λ x, code_link (k x) p)
     end.
 
-  Lemma valid_program_link :
-    ∀ A L Im Ir (v : raw_program A) p,
-      valid_program L Im v →
+  Lemma valid_code_link :
+    ∀ A L Im Ir (v : raw_code A) p,
+      valid_code L Im v →
       valid_package L Ir Im p →
-      valid_program L Ir (program_link v p).
+      valid_code L Ir (code_link v p).
   Proof.
     intros A L Im Ir v p hv hp.
     induction hv.
@@ -145,9 +145,9 @@ Module PackageComposition (π : RulesParam).
     apply valid_bind. all: auto.
   Qed.
 
-  Hint Extern 1 (ValidProgram ?L ?I (program_link ?v ?p)) =>
-    eapply valid_program_link ; [
-      apply valid_program_from_class
+  Hint Extern 1 (ValidProgram ?L ?I (code_link ?v ?p)) =>
+    eapply valid_code_link ; [
+      apply valid_code_from_class
     | apply valid_package_from_class
     ]
     : typeclass_instances.
@@ -155,7 +155,7 @@ Module PackageComposition (π : RulesParam).
   (* Linking *)
   Definition link (p1 p2 : raw_package) : raw_package :=
     @mapm _ typed_raw_function _
-      (λ '(So ; To ; f), (So ; To ; λ x, program_link (f x) p2)) p1.
+      (λ '(So ; To ; f), (So ; To ; λ x, code_link (f x) p2)) p1.
 
   (* Remove unexported functions from a raw package *)
   Definition trim (E : Interface) (p : raw_package) :=
@@ -175,7 +175,7 @@ Module PackageComposition (π : RulesParam).
     rewrite ef. cbn.
     eexists. split. 1: reflexivity.
     intro x.
-    eapply valid_program_link.
+    eapply valid_code_link.
     - eapply valid_injectLocations.
       + apply fsubsetUl.
       + eapply hf.
@@ -191,11 +191,11 @@ Module PackageComposition (π : RulesParam).
     ]
     : typeclass_instances.
 
-  Lemma program_link_bind :
-    ∀ {A B : choiceType} (v : raw_program A)
-      (k : A → raw_program B) (p : raw_package),
-      program_link (bind v k) p =
-      bind (program_link v p) (λ x, program_link (k x) p).
+  Lemma code_link_bind :
+    ∀ {A B : choiceType} (v : raw_code A)
+      (k : A → raw_code B) (p : raw_package),
+      code_link (bind v k) p =
+      bind (code_link v p) (λ x, code_link (k x) p).
   Proof.
     intros A B v k p.
     induction v.
@@ -209,10 +209,10 @@ Module PackageComposition (π : RulesParam).
     - cbn. f_equal. apply functional_extensionality. auto.
   Qed.
 
-  Lemma program_link_assoc :
-    ∀ A (v : raw_program A) f g,
-      program_link (program_link v f) g =
-      program_link v (link f g).
+  Lemma code_link_assoc :
+    ∀ A (v : raw_code A) f g,
+      code_link (code_link v f) g =
+      code_link v (link f g).
   Proof.
     intros A v f g.
     induction v in f, g |- *.
@@ -220,7 +220,7 @@ Module PackageComposition (π : RulesParam).
     - cbn. unfold link in *.
       rewrite lookup_op_map.
       destruct lookup_op eqn:e.
-      + cbn. rewrite program_link_bind. f_equal.
+      + cbn. rewrite code_link_bind. f_equal.
         apply functional_extensionality. auto.
       + cbn. eauto.
     - cbn. f_equal. apply functional_extensionality. auto.
@@ -308,10 +308,10 @@ Module PackageComposition (π : RulesParam).
       subst. rewrite e1. cbn. reflexivity.
   Qed.
 
-  Lemma program_link_trim_right :
-    ∀ A L E (v : raw_program A) p,
-      valid_program L E v →
-      program_link v (trim E p) = program_link v p.
+  Lemma code_link_trim_right :
+    ∀ A L E (v : raw_code A) p,
+      valid_code L E v →
+      code_link v (trim E p) = code_link v p.
   Proof.
     intros A L E v p h.
     induction h in p |- *.
@@ -361,7 +361,7 @@ Module PackageComposition (π : RulesParam).
     specialize (h _ he). cbn in h.
     destruct h as [f [ef h]].
     rewrite ef in e. noconf e.
-    eapply program_link_trim_right.
+    eapply code_link_trim_right.
     apply h.
   Qed.
 
@@ -376,7 +376,7 @@ Module PackageComposition (π : RulesParam).
     intro n. repeat rewrite ?mapmE.
     destruct (p1 n) as [[S1 [T1 f1]]|] eqn:e. 2: reflexivity.
     cbn. f_equal. f_equal. f_equal. extensionality x.
-    rewrite program_link_assoc.
+    rewrite code_link_assoc.
     reflexivity.
   Qed.
 
@@ -589,11 +589,11 @@ Module PackageComposition (π : RulesParam).
     destruct (p1 n) as [[S1 [T1 f1]]|] eqn:e1. all: reflexivity.
   Qed.
 
-  Lemma program_link_par_left :
-    ∀ A I L L' E (v : raw_program A) p1 p2,
+  Lemma code_link_par_left :
+    ∀ A I L L' E (v : raw_code A) p1 p2,
       ValidProgram L E v →
       ValidPackage L' I E p1 →
-      program_link v (par p1 p2) = program_link v p1.
+      code_link v (par p1 p2) = code_link v p1.
   Proof.
     intros A I L L' E v p1 p2 hv hp1.
     unfold ValidProgram in hv.
@@ -610,15 +610,15 @@ Module PackageComposition (π : RulesParam).
     - simpl. f_equal. extensionality x. eauto.
   Qed.
 
-  Lemma program_link_par_right :
-    ∀ A I L L' E (v : raw_program A) p1 p2,
+  Lemma code_link_par_right :
+    ∀ A I L L' E (v : raw_code A) p1 p2,
       Parable p1 p2 →
       ValidProgram L E v →
       ValidPackage L' I E p2 →
-      program_link v (par p1 p2) = program_link v p2.
+      code_link v (par p1 p2) = code_link v p2.
   Proof.
     intros A I L L' E v p1 p2 h hv hp1.
-    rewrite par_commut. eapply program_link_par_left.
+    rewrite par_commut. eapply code_link_par_left.
     all: eauto.
   Qed.
 
@@ -665,7 +665,7 @@ Module PackageComposition (π : RulesParam).
       specialize (h1 _ hi). cbn in h1.
       destruct h1 as [g [eg hg]].
       rewrite e1 in eg. noconf eg. cbn in hg.
-      erewrite program_link_par_left. 2: eapply hg.
+      erewrite code_link_par_left. 2: eapply hg.
       all: eauto.
     - simpl. destruct (p2 n) as [[S2 [T2 f2]]|] eqn:e2.
       + simpl. f_equal. f_equal. f_equal. extensionality x.
@@ -673,7 +673,7 @@ Module PackageComposition (π : RulesParam).
         specialize (h2 _ hi). cbn in h2.
         destruct h2 as [g [eg hg]].
         rewrite e2 in eg. noconf eg. cbn in hg.
-        erewrite program_link_par_right. all: eauto.
+        erewrite code_link_par_right. all: eauto.
         eapply hg.
       + simpl. reflexivity.
   Qed.
@@ -684,7 +684,7 @@ Module PackageComposition (π : RulesParam).
   (* TODO: Still works, but outdated. *)
 
   Definition typed_function L I :=
-    ∑ (S T : chUniverse), S → program L I T.
+    ∑ (S T : chUniverse), S → code L I T.
 
   Equations? map_interface (I : seq opsig) {A} (f : ∀ x, x \in I → A) :
     seq A :=
@@ -771,7 +771,7 @@ Module PackageComposition (π : RulesParam).
   Qed.
 
   Definition funmkpack {L I} {E : Interface} (hE : flat E)
-    (f : ∀ (o : opsig), o \in E → src o → program L I (tgt o)) :
+    (f : ∀ (o : opsig), o \in E → src o → code L I (tgt o)) :
     package L I E.
   Proof.
     pose foo : seq (nat * typed_function L I) :=
@@ -797,7 +797,7 @@ Module PackageComposition (π : RulesParam).
   (* Identity package *)
 
   (* Maybe lock this definition? *)
-  Definition mkdef (A B : chUniverse) (f : A → raw_program B)
+  Definition mkdef (A B : chUniverse) (f : A → raw_code B)
     : typed_raw_function :=
     (A ; B ; f).
 
@@ -908,14 +908,14 @@ Module PackageComposition (π : RulesParam).
     eapply hI in hi. specialize (hi ho). noconf hi.
     simpl. eexists. split. 1: reflexivity.
     simpl. intro x.
-    eapply valid_program_from_class. exact _.
+    eapply valid_code_from_class. exact _.
   Qed.
 
-  Lemma program_link_id :
-    ∀ A (v : raw_program A) L I,
+  Lemma code_link_id :
+    ∀ A (v : raw_code A) L I,
       flat I →
-      valid_program L I v →
-      program_link v (ID I) = v.
+      valid_code L I v →
+      code_link v (ID I) = v.
   Proof.
     intros A v L I h hv.
     induction hv.
@@ -944,7 +944,7 @@ Module PackageComposition (π : RulesParam).
       specialize (hp _ hi) as h'. cbn in h'.
       destruct h' as [g [eg hg]].
       rewrite e in eg. noconf eg. cbn in hg.
-      eapply program_link_id. all: eauto.
+      eapply code_link_id. all: eauto.
     - reflexivity.
   Qed.
 
@@ -979,10 +979,10 @@ Module PackageComposition (π : RulesParam).
       reflexivity.
   Qed.
 
-  Lemma program_link_if :
-    ∀ A (c₀ c₁ : raw_program A) (p : raw_package) b,
-      program_link (if b then c₀ else c₁) p =
-      if b then program_link c₀ p else program_link c₁ p.
+  Lemma code_link_if :
+    ∀ A (c₀ c₁ : raw_code A) (p : raw_package) b,
+      code_link (if b then c₀ else c₁) p =
+      if b then code_link c₀ p else code_link c₁ p.
   Proof.
     intros A c₀ c₁ p b.
     destruct b. all: reflexivity.
