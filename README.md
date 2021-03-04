@@ -48,13 +48,9 @@ Run `make graph` to build a graph of dependencies between sources.
 The formalisation of packages can be found in the directory
 `theories/Crypt/package`.
 
-The definition of packages can be found in `pkg_core_definition.v`. Note that
-the definition is slightly different from the paper, but the differences are
-only in naming. `raw_code` is referred to as `raw_code` and similarly
-`code` is called `program`. The final version of `SSProve` will account for
-this renaming.
-Herein, `package I E` is the type of packages with import interface `I` and export
-interface `E`.
+The definition of packages can be found in `pkg_core_definition.v`.
+Herein, `package L I E` is the type of packages with set of locations `L`,
+import interface `I` and export interface `E`.
 
 Package laws, as introduced in the paper, are all stated and proven in
 `pkg_composition.v` directly on raw packages.
