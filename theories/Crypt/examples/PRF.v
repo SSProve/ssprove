@@ -406,47 +406,49 @@ Module PRF_example.
   Definition statistical_gap :=
     AdvantageE (MOD_CPA_ff_pkg ∘ EVAL false) (MOD_CPA_tt_pkg ∘ EVAL false).
 
+  Ltac lookup_op_squeeze :=
+    let f := fresh "f" in
+    let e := fresh "e" in
+    destruct lookup_op as [f|] eqn:e ; [
+    | exfalso ;
+      simpl in e ;
+      destruct chUniverse_eqP ; [| contradiction ] ;
+      destruct chUniverse_eqP ; [| contradiction ] ;
+      discriminate
+    ] ;
+    eapply lookup_op_spec in e ; simpl in e ;
+    rewrite setmE in e ; rewrite eq_refl in e ;
+    noconf e.
+
+  Ltac chUniverse_eqP_handle :=
+    let e := fresh "e" in
+    destruct chUniverse_eqP as [e|] ; [| contradiction ] ;
+    assert (e = erefl) by eapply uip ;
+    subst e.
+
+  Ltac simplify_eq_rel m :=
+    let id := fresh "id" in
+    let So := fresh "S" in
+    let To := fresh "T" in
+    let hin := fresh "hin" in
+    intros id So To m hin ;
+    invert_interface_in hin ;
+    rewrite ?get_op_default_link ;
+    (* First we need to squeeze the programs out of the packages *)
+    unfold get_op_default ;
+    lookup_op_squeeze ;
+    lookup_op_squeeze ;
+    cbn ;
+    repeat chUniverse_eqP_handle ;
+    cbn.
+
   Lemma IND_CPA_equiv_false :
     IND_CPA false ≈₀ MOD_CPA_ff_pkg ∘ (EVAL true).
   Proof.
     (* We go to the relation logic using equality as invariant. *)
     eapply eq_rel_perf_ind_eq.
+    simplify_eq_rel m.
     (* We now conduct the proof in relational logic. *)
-    intros id S T m hin.
-    invert_interface_in hin.
-    rewrite get_op_default_link.
-    (* First we need to squeeze the programs out of the packages *)
-    (* Hopefully I will find a way to automate it. *)
-    unfold get_op_default.
-    destruct lookup_op as [f|] eqn:e.
-    2:{
-      exfalso.
-      simpl in e.
-      destruct chUniverse_eqP. 2: eauto.
-      destruct chUniverse_eqP. 2: eauto.
-      discriminate.
-    }
-    eapply lookup_op_spec in e. simpl in e.
-    rewrite setmE in e. rewrite eq_refl in e.
-    noconf e.
-    (* Now to the RHS *)
-    destruct lookup_op as [f|] eqn:e.
-    2:{
-      exfalso.
-      simpl in e.
-      destruct chUniverse_eqP. 2: eauto.
-      destruct chUniverse_eqP. 2: eauto.
-      discriminate.
-    }
-    eapply lookup_op_spec in e. simpl in e.
-    rewrite setmE in e. rewrite eq_refl in e.
-    noconf e.
-    (* Now the linking *)
-    cbn.
-    destruct chUniverse_eqP as [e|]. 2: contradiction.
-    rewrite cast_fun_K. clear e.
-    cbn.
-    (* We are now in the realm of program logic *)
     ssprove_swap_rhs 1%N.
     ssprove_swap_rhs 0%N.
     ssprove_same_head_r. cbn. intros [k|].
@@ -455,20 +457,6 @@ Module PRF_example.
       1: eapply rreflexivity_rule.
       cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
     - cbn.
-      (* Swapping:
-
-        k_val/put/m'/r vs a₁/a₁0/a/put
-        where k_val = a, r = a₁, m' = a₁0
-
-        Meaning k_val/put/m'/r vs r/m'/k_val/put
-        Starting from the right,
-        r/m'/k_val/put
-        m'/r/k_val/put
-        m'/k_val/r/put
-        k_val/m'/r/put
-        k_val/m'/put/r
-        k_val/put/m'/r
-      *)
       ssprove_swap_rhs 0%N.
       ssprove_swap_rhs 1%N.
       ssprove_swap_rhs 0%N.
@@ -483,58 +471,13 @@ Module PRF_example.
   Proof.
     (* We go to the relation logic using equality as invariant. *)
     eapply eq_rel_perf_ind_eq.
+    simplify_eq_rel m.
     (* We now conduct the proof in relational logic. *)
-    intros id S T m hin.
-    invert_interface_in hin.
-    rewrite get_op_default_link.
-    (* First we need to squeeze the programs out of the packages *)
-    (* Hopefully I will find a way to automate it. *)
-    unfold get_op_default.
-    destruct lookup_op as [f|] eqn:e.
-    2:{
-      exfalso.
-      simpl in e.
-      destruct chUniverse_eqP. 2: eauto.
-      destruct chUniverse_eqP. 2: eauto.
-      discriminate.
-    }
-    eapply lookup_op_spec in e. simpl in e.
-    rewrite setmE in e. rewrite eq_refl in e.
-    noconf e.
-    (* Now to the RHS *)
-    destruct lookup_op as [f|] eqn:e.
-    2:{
-      exfalso.
-      simpl in e.
-      destruct chUniverse_eqP. 2: eauto.
-      destruct chUniverse_eqP. 2: eauto.
-      discriminate.
-    }
-    eapply lookup_op_spec in e. simpl in e.
-    rewrite setmE in e. rewrite eq_refl in e.
-    noconf e.
-    (* Now the linking *)
-    cbn.
-    destruct chUniverse_eqP as [e|]. 2: contradiction.
-    rewrite cast_fun_K. clear e.
-    cbn.
-    (* We are now in the realm of program logic *)
     ssprove_swap_lhs 0%N.
     ssprove_same_head_r. cbn. intros [k|].
     - cbn. eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
       cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
     - cbn.
-      (* Swapping:
-
-        a₁/a/put vs k_val/put/r
-        where k_val = a, r = a₁
-
-        Meaning r/k_val/put vs k_val/put/r
-        Starting from the right,
-        k_val/put/r
-        k_val/r/put
-        r/k_val/put
-      *)
       ssprove_swap_rhs 1%N.
       ssprove_swap_rhs 0%N.
       eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
