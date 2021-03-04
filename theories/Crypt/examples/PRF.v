@@ -352,9 +352,6 @@ Module PRF_example.
       }
     ].
 
-  (* Rem.: I was forced to add also table_location, o.w.
-    cannot apply eq_prog_semj_impl
-  *)
   Definition IND_CPA_location : {fset Location} := fset [:: key_location].
 
   Definition IND_CPA_pkg_tt :
@@ -408,16 +405,6 @@ Module PRF_example.
 
   Definition statistical_gap :=
     AdvantageE (MOD_CPA_ff_pkg ∘ EVAL false) (MOD_CPA_tt_pkg ∘ EVAL false).
-
-  Lemma key_location_in_rel_loc : key_location \in rel_loc.
-  Proof.
-    auto_in_fset.
-  Qed.
-
-  Lemma key_location_in_INDCPA_location : key_location \in IND_CPA_location.
-  Proof.
-    auto_in_fset.
-  Qed.
 
   Lemma IND_CPA_equiv_false :
     IND_CPA false ≈₀ MOD_CPA_ff_pkg ∘ (EVAL true).
