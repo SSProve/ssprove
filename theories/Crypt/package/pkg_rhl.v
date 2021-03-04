@@ -616,6 +616,19 @@ Module PackageRHL (π : RulesParam).
   Definition AdvantageE (G₀ G₁ : raw_package) (A : raw_package) : R :=
     `| Pr (A ∘ G₀) true - Pr (A ∘ G₁) true |.
 
+  (* TODO We could have the following
+    Not clear it would be an improvement. It would be shorter but maybe not
+    as easy to work with.
+  *)
+
+  (* Record AdversaryFor {I} (G : loc_GamePair I) := mkAdversary {
+    adv_pack : loc_package I A_export ;
+    adv_disj_false : fdisjoint adv_pack.(locs) (G false).(locs) ;
+    adv_disj_true : fdisjoint adv_pack.(locs) (G true).(locs)
+  }.
+
+  Coercion adv_pack : AdversaryFor >-> loc_package. *)
+
   (* TODO Useful? *)
   Definition state_pass_ {A} (p : raw_program A) :
     heap_choiceType → raw_program (prod_choiceType A heap_choiceType).
