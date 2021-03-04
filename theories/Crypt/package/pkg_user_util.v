@@ -107,6 +107,42 @@ Module PackageUserUtil (π : RulesParam).
     _invert_interface_in h' ;
     noconf h'.
 
+  Ltac lookup_op_squeeze :=
+    let f := fresh "f" in
+    let e := fresh "e" in
+    destruct lookup_op as [f|] eqn:e ; [
+    | exfalso ;
+      simpl in e ;
+      destruct chUniverse_eqP ; [| contradiction ] ;
+      destruct chUniverse_eqP ; [| contradiction ] ;
+      discriminate
+    ] ;
+    eapply lookup_op_spec in e ; simpl in e ;
+    rewrite setmE in e ; rewrite eq_refl in e ;
+    noconf e.
+
+  Ltac chUniverse_eqP_handle :=
+    let e := fresh "e" in
+    destruct chUniverse_eqP as [e|] ; [| contradiction ] ;
+    assert (e = erefl) by eapply uip ;
+    subst e.
+
+  Ltac simplify_eq_rel m :=
+    let id := fresh "id" in
+    let So := fresh "S" in
+    let To := fresh "T" in
+    let hin := fresh "hin" in
+    intros id So To m hin ;
+    invert_interface_in hin ;
+    rewrite ?get_op_default_link ;
+    (* First we need to squeeze the programs out of the packages *)
+    unfold get_op_default ;
+    lookup_op_squeeze ;
+    lookup_op_squeeze ;
+    cbn ;
+    repeat chUniverse_eqP_handle ;
+    cbn.
+
   (** Working in the program logic *)
 
   (* Simplication of cmd_bind *)
