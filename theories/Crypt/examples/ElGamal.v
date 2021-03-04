@@ -580,46 +580,11 @@ Lemma ots_real_vs_rnd_equiv_false :
 Proof.
   (* We go to the relation logic using equality as invariant. *)
   eapply eq_rel_perf_ind_eq.
-  (* We now conduct the proof in relational logic. *)
-  intros id S T m hin.
-  invert_interface_in hin.
-  rewrite get_op_default_link.
-  (* First we need to squeeze the programs out of the packages *)
-  (* Hopefully I will find a way to automate it. *)
-  unfold get_op_default.
-  destruct lookup_op as [f|] eqn:e.
-  2:{
-    exfalso.
-    simpl in e.
-    destruct chUniverse_eqP. 2: eauto.
-    destruct chUniverse_eqP. 2: eauto.
-    discriminate.
-  }
-  eapply lookup_op_spec in e. simpl in e.
-  rewrite setmE in e. rewrite eq_refl in e.
-  noconf e.
-  (* Now to the RHS *)
-  destruct lookup_op as [f|] eqn:e.
-  2:{
-    exfalso.
-    simpl in e.
-    destruct chUniverse_eqP. 2: eauto.
-    destruct chUniverse_eqP. 2: eauto.
-    discriminate.
-  }
-  eapply lookup_op_spec in e. simpl in e.
-  rewrite setmE in e. rewrite eq_refl in e.
-  noconf e.
-  (* Now the linking *)
-  simpl.
+  simplify_eq_rel m.
   (* Too bad but linking doesn't automatically commute with match *)
   setoid_rewrite program_link_if.
   simpl.
-  destruct chUniverse_eqP as [e|]. 2: contradiction.
-  assert (e = erefl) by apply uip. subst e.
-  destruct chUniverse_eqP as [e|]. 2: contradiction.
-  assert (e = erefl) by apply uip. subst e.
-  simpl.
+  simplify_linking.
   (* We are now in the realm of program logic *)
   ssprove_same_head_r. intro count.
   ssprove_same_head_r. intros _.

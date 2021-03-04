@@ -412,6 +412,7 @@ Module PRF_example.
     (* We go to the relation logic using equality as invariant. *)
     eapply eq_rel_perf_ind_eq.
     simplify_eq_rel m.
+    simplify_linking.
     (* We now conduct the proof in relational logic. *)
     ssprove_swap_rhs 1%N.
     ssprove_swap_rhs 0%N.
@@ -436,6 +437,7 @@ Module PRF_example.
     (* We go to the relation logic using equality as invariant. *)
     eapply eq_rel_perf_ind_eq.
     simplify_eq_rel m.
+    simplify_linking.
     (* We now conduct the proof in relational logic. *)
     ssprove_swap_lhs 0%N.
     ssprove_same_head_r. cbn. intros [k|].

@@ -139,7 +139,9 @@ Module PackageUserUtil (π : RulesParam).
     unfold get_op_default ;
     lookup_op_squeeze ;
     lookup_op_squeeze ;
-    cbn ;
+    cbn.
+
+  Ltac simplify_linking :=
     repeat chUniverse_eqP_handle ;
     cbn.
 
