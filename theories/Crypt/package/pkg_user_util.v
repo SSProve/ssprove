@@ -169,9 +169,9 @@ Module PackageUserUtil (π : RulesParam).
         eapply (rsame_head_cmd (cmd_get ℓ))
       | x ← cmd ?c ;; _ =>
         eapply (rsame_head_cmd c)
-      | _ => fail "No head found."
+      | _ => fail "No head found"
       end
-    | |- _ => fail "The goal should be a syntactic judgment."
+    | |- _ => fail "The goal should be a syntactic judgment"
     end.
 
   (* Apply rswap_cmd_eq by reading rhs *)
@@ -226,9 +226,9 @@ Module PackageUserUtil (π : RulesParam).
         eapply (rswap_cmd _ _ _ _ (cmd_get ℓ') (cmd_put ℓ v) (λ x y, _))
       | put ?ℓ := ?v ;; put ?ℓ' := ?v' ;;  _ =>
         eapply (rswap_cmd _ _ _ _ (cmd_put ℓ' v') (cmd_put ℓ v) (λ x y, _))
-      | _ => fail "No swappable pair found."
+      | _ => fail "No swappable pair found"
       end
-    | |- _ => fail "The goal should be a syntactic judgment."
+    | |- _ => fail "The goal should be a syntactic judgment"
     end.
 
   (* TODO: Are there more cases we can consider? *)

@@ -573,6 +573,69 @@ Proof.
     apply (UniformIprod_UniformUniform i_sk i_sk).
 Qed.
 
+(* This version raises an anomaly *)
+(* Ltac ssprove_zip_link :=
+  lazymatch goal with
+  | |- ⊢ ⦃ _ ⦄ _ ≈ ?rr ⦃ _ ⦄ =>
+    lazymatch rr with
+    | code_link (match ?x with _ => _ end) _ =>
+      instantiate (1 := ltac:(destruct x)) ;
+      destruct x ; cbn - [lookup_op] ;
+      lazymatch goal with
+      | |- context [ code_link (match _ with _ => _ end) _ ] =>
+        ssprove_zip_link
+      | |- _ =>
+        eapply rreflexivity_rule
+      end
+    | match lookup_op ?p ?o with _ => _ end =>
+      lookup_op_squeeze ;
+      cbn - [lookup_op] ;
+      lazymatch goal with
+      | |- context [ code_link (match _ with _ => _ end) _ ] =>
+        ssprove_zip_link
+      | |- _ =>
+        eapply rreflexivity_rule
+      end
+    | _ =>
+      ssprove_same_head_r ; intro ;
+      ssprove_zip_link
+    end
+  | |- _ => fail "ssprove_zip_link: goal should be a syntactic judgment"
+  end. *)
+
+Ltac ssprove_zip_link_step :=
+  lazymatch goal with
+  | |- ⊢ ⦃ _ ⦄ _ ≈ ?rr ⦃ _ ⦄ =>
+    lazymatch rr with
+    | code_link (match ?x with _ => _ end) _ =>
+      instantiate (1 := ltac:(destruct x)) ;
+      destruct x ; cbn - [lookup_op] ;
+      lazymatch goal with
+      | |- context [ code_link (match _ with _ => _ end) _ ] =>
+        idtac
+      | |- _ =>
+        eapply rreflexivity_rule
+      end
+    | match lookup_op ?p ?o with _ => _ end =>
+      lookup_op_squeeze ;
+      cbn - [lookup_op] ;
+      lazymatch goal with
+      | |- context [ code_link (match _ with _ => _ end) _ ] =>
+        idtac
+      | |- _ =>
+        eapply rreflexivity_rule
+      end
+    | _ =>
+      ssprove_same_head_r ; intro ;
+      idtac
+    end
+  | |- _ => fail "ssprove_zip_link: goal should be a syntactic judgment"
+  end.
+
+(* Also raises an anomaly *)
+Ltac ssprove_zip_link :=
+  repeat ssprove_zip_link_step.
+
 (** End of technical steps *)
 
 Lemma ots_real_vs_rnd_equiv_false :
@@ -581,10 +644,12 @@ Proof.
   (* We go to the relation logic using equality as invariant. *)
   eapply eq_rel_perf_ind_eq.
   simplify_eq_rel m.
-  (* Too bad but linking doesn't automatically commute with match *)
-  setoid_rewrite code_link_if.
-  simpl.
-  simplify_linking.
+  eapply r_transR. (* 1: ssprove_zip_link. *)
+  1:{
+    ssprove_zip_link_step. ssprove_zip_link_step. ssprove_zip_link_step.
+    ssprove_zip_link_step.
+  }
+  cbn - [lookup_op].
   (* We are now in the realm of program logic *)
   ssprove_same_head_r. intro count.
   ssprove_same_head_r. intros _.
