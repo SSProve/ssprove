@@ -603,6 +603,26 @@ Qed.
   | |- _ => fail "ssprove_zip_link: goal should be a syntactic judgment"
   end. *)
 
+(* ssprove_same_head_r but where the hole is filled with a function
+  binding na
+*)
+Ltac ssprove_same_head_r' na :=
+  lazymatch goal with
+  | |- ⊢ ⦃ _ ⦄ _ ≈ ?c ⦃ _ ⦄ =>
+    lazymatch c with
+    | x ← sample ?op ;; _ =>
+      eapply (@rsame_head_cmd _ _ (λ na, _) (λ na, _) (cmd_sample op))
+    | put ?ℓ := ?v ;; _ =>
+      eapply (@rsame_head_cmd _ _ (λ na, _) (λ na, _) (cmd_put ℓ v))
+    | x ← get ?ℓ ;; _ =>
+      eapply (@rsame_head_cmd _ _ (λ na, _) (λ na, _) (cmd_get ℓ))
+    | x ← cmd ?c ;; _ =>
+      eapply (@rsame_head_cmd _ _ (λ na, _) (λ na, _) c)
+    | _ => fail "No head found"
+    end
+  | |- _ => fail "The goal should be a syntactic judgment"
+  end.
+
 Ltac ssprove_zip_link_step :=
   lazymatch goal with
   | |- ⊢ ⦃ _ ⦄ _ ≈ ?rr ⦃ _ ⦄ =>
@@ -626,7 +646,8 @@ Ltac ssprove_zip_link_step :=
         eapply rreflexivity_rule
       end
     | _ =>
-      ssprove_same_head_r ; intro ;
+      let na := fresh "na" in
+      ssprove_same_head_r' na ; intro na ;
       idtac
     end
   | |- _ => fail "ssprove_zip_link: goal should be a syntactic judgment"
