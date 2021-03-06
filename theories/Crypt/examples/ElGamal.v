@@ -435,6 +435,40 @@ Proof.
 Qed.
 
 (*CA: probably already here we need that repr (sample U i) is Uniform i. *)
+
+Section Mkdistrd_nonsense.
+
+  Context {T : choiceType}.
+  Context (mu0 : T -> R) (Hmu : isdistr mu0).
+
+  Let mu := mkdistr Hmu.
+
+  Lemma mkdistrd_nonsense:
+  mkdistrd mu0 = mu.
+  Proof.
+    apply distr_ext. move=> t /=. rewrite /mkdistrd.
+    destruct (@idP (boolp.asbool (@isdistr R T mu0))).
+    - cbn. reflexivity.
+    - rewrite boolp.asboolE in n. contradiction.
+  Qed.
+
+End Mkdistrd_nonsense.
+
+
+Section Uniform_prod.
+
+  Let SD_bind
+      {A B : choiceType}
+      (m : SDistr_carrier A)
+      (k : A -> SDistr_carrier B) :=
+    SDistr_bind k m.
+  Let SD_ret {A : choiceType}
+      (a : A) :=
+    SDistr_unit A a.
+
+Arguments r _ _ :clear implicits.
+
+
 Lemma UniformIprod_UniformUniform :
   ∀ (i j : Index),
     ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
@@ -453,7 +487,44 @@ Proof.
   rewrite repr_Uniform. repeat setoid_rewrite repr_cmd_bind.
   change (repr_cmd (cmd_sample (U ?i))) with (@Uniform_F i heap_choiceType).
   cbn - [semantic_judgement Uniform_F].
+  eapply rewrite_eqDistrR.
+  { apply (@reflexivity_rule _ _ (@Uniform_F (i_prod i j) heap_choiceType)). }
+  move=> s. cbn.
+  unshelve erewrite !mkdistrd_nonsense.
+  { unshelve eapply is_uniform. admit. }
+  { unshelve eapply is_uniform. admit. }
+  { unshelve eapply is_uniform. admit. }
+  eassert ( as_uniform :
+(mkdistr (mu:=λ f : UParam.fin_family i * UParam.fin_family j, r (prod_finType (UParam.fin_family i) (UParam.fin_family j)) f) is_uniform)
+=
+@uniform_F (prod_finType (fin_family i) (fin_family j)) _ ).
+  { rewrite /uniform_F. reflexivity. }
+  rewrite as_uniform.
+  erewrite prod_uniform.
+  epose (bind_bind := ord_relmon_law3 SDistr _ _ _ _ _).
+  eapply equal_f in bind_bind.
+  cbn in bind_bind.
+  unfold SubDistr.SDistr_obligation_2 in bind_bind.
+  erewrite <- bind_bind. clear bind_bind.
+  f_equal. all: revgoals. { rewrite /uniform_F. reflexivity. }
+  apply boolp.funext. move=> xi.
+  epose (bind_bind := ord_relmon_law3 SDistr _ _ _ _ _).
+  eapply equal_f in bind_bind.  cbn in bind_bind.
+  unfold SubDistr.SDistr_obligation_2 in bind_bind.
+  erewrite <- bind_bind. clear bind_bind.
+  f_equal. all: revgoals. { rewrite /uniform_F. reflexivity. }
+  apply boolp.funext. move=> xj.  
+  epose (bind_ret := ord_relmon_law2 SDistr _ _ _).
+  eapply equal_f in bind_ret.
+  cbn in bind_ret.
+  unfold SubDistr.SDistr_obligation_2 in bind_ret.  
+  unfold SubDistr.SDistr_obligation_1 in bind_ret.
+  erewrite bind_ret. reflexivity.
+
+  Unshelve.
 Admitted.
+
+End Uniform_prod.
 
 Lemma bijective_expgn :
   bijective (λ (a : 'Z_q), g ^+ a).
