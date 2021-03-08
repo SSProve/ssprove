@@ -434,7 +434,17 @@ Proof.
   intro i. reflexivity.
 Qed.
 
-(*CA: probably already here we need that repr (sample U i) is Uniform i. *)
+Lemma fin_family_inhabited :
+  ∀ (i : Index), fin_family i.
+Proof.
+  intros i. induction i.
+  - cbn. exact g.
+  - cbn. split. all: exact g.
+  - cbn. exact g.
+  - cbn. exact 0.
+  - cbn. exact false.
+  - split. all: auto.
+Qed.
 
 Section Mkdistrd_nonsense.
 
@@ -443,8 +453,8 @@ Section Mkdistrd_nonsense.
 
   Let mu := mkdistr Hmu.
 
-  Lemma mkdistrd_nonsense:
-  mkdistrd mu0 = mu.
+  Lemma mkdistrd_nonsense :
+    mkdistrd mu0 = mu.
   Proof.
     apply distr_ext. move=> t /=. rewrite /mkdistrd.
     destruct (@idP (boolp.asbool (@isdistr R T mu0))).
@@ -454,7 +464,6 @@ Section Mkdistrd_nonsense.
 
 End Mkdistrd_nonsense.
 
-
 Section Uniform_prod.
 
   Let SD_bind
@@ -462,67 +471,68 @@ Section Uniform_prod.
       (m : SDistr_carrier A)
       (k : A -> SDistr_carrier B) :=
     SDistr_bind k m.
-  Let SD_ret {A : choiceType}
-      (a : A) :=
+
+  Let SD_ret {A : choiceType} (a : A) :=
     SDistr_unit A a.
 
-Arguments r _ _ :clear implicits.
+  Arguments r _ _ : clear implicits.
 
-
-Lemma UniformIprod_UniformUniform :
-  ∀ (i j : Index),
-    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
-      xy ← sample U (i_prod i j) ;; ret xy ≈
-      x ← sample U i ;; y ← sample U j ;; ret (x, y)
-    ⦃ eq ⦄.
-Proof.
-  intros i j.
-  change (
-    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
-      xy ← sample U (i_prod i j) ;; ret xy ≈
-      x ← cmd (cmd_sample (U i)) ;; y ← cmd (cmd_sample (U j)) ;; ret (x, y)
-    ⦃ eq ⦄
-  ).
-  rewrite rel_jdgE.
-  rewrite repr_Uniform. repeat setoid_rewrite repr_cmd_bind.
-  change (repr_cmd (cmd_sample (U ?i))) with (@Uniform_F i heap_choiceType).
-  cbn - [semantic_judgement Uniform_F].
-  eapply rewrite_eqDistrR.
-  { apply (@reflexivity_rule _ _ (@Uniform_F (i_prod i j) heap_choiceType)). }
-  move=> s. cbn.
-  unshelve erewrite !mkdistrd_nonsense.
-  { unshelve eapply is_uniform. admit. }
-  { unshelve eapply is_uniform. admit. }
-  { unshelve eapply is_uniform. admit. }
-  eassert ( as_uniform :
-(mkdistr (mu:=λ f : UParam.fin_family i * UParam.fin_family j, r (prod_finType (UParam.fin_family i) (UParam.fin_family j)) f) is_uniform)
-=
-@uniform_F (prod_finType (fin_family i) (fin_family j)) _ ).
-  { rewrite /uniform_F. reflexivity. }
-  rewrite as_uniform.
-  erewrite prod_uniform.
-  epose (bind_bind := ord_relmon_law3 SDistr _ _ _ _ _).
-  eapply equal_f in bind_bind.
-  cbn in bind_bind.
-  unfold SubDistr.SDistr_obligation_2 in bind_bind.
-  erewrite <- bind_bind. clear bind_bind.
-  f_equal. all: revgoals. { rewrite /uniform_F. reflexivity. }
-  apply boolp.funext. move=> xi.
-  epose (bind_bind := ord_relmon_law3 SDistr _ _ _ _ _).
-  eapply equal_f in bind_bind.  cbn in bind_bind.
-  unfold SubDistr.SDistr_obligation_2 in bind_bind.
-  erewrite <- bind_bind. clear bind_bind.
-  f_equal. all: revgoals. { rewrite /uniform_F. reflexivity. }
-  apply boolp.funext. move=> xj.
-  epose (bind_ret := ord_relmon_law2 SDistr _ _ _).
-  eapply equal_f in bind_ret.
-  cbn in bind_ret.
-  unfold SubDistr.SDistr_obligation_2 in bind_ret.
-  unfold SubDistr.SDistr_obligation_1 in bind_ret.
-  erewrite bind_ret. reflexivity.
-
-  Unshelve.
-Admitted.
+  Lemma UniformIprod_UniformUniform :
+    ∀ (i j : Index),
+      ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
+        xy ← sample U (i_prod i j) ;; ret xy ≈
+        x ← sample U i ;; y ← sample U j ;; ret (x, y)
+      ⦃ eq ⦄.
+  Proof.
+    intros i j.
+    change (
+      ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
+        xy ← sample U (i_prod i j) ;; ret xy ≈
+        x ← cmd (cmd_sample (U i)) ;; y ← cmd (cmd_sample (U j)) ;; ret (x, y)
+      ⦃ eq ⦄
+    ).
+    rewrite rel_jdgE.
+    rewrite repr_Uniform. repeat setoid_rewrite repr_cmd_bind.
+    change (repr_cmd (cmd_sample (U ?i))) with (@Uniform_F i heap_choiceType).
+    cbn - [semantic_judgement Uniform_F].
+    eapply rewrite_eqDistrR.
+    1:{
+      apply (@reflexivity_rule _ _ (@Uniform_F (i_prod i j) heap_choiceType)).
+    }
+    intro s. cbn.
+    unshelve erewrite !mkdistrd_nonsense.
+    1-3: unshelve eapply is_uniform.
+    1: refine (_,_).
+    1-4: apply fin_family_inhabited.
+    unshelve eassert (as_uniform :
+      (mkdistr (mu:=λ f : UParam.fin_family i * UParam.fin_family j, r (prod_finType (UParam.fin_family i) (UParam.fin_family j)) f) is_uniform)
+      =
+      @uniform_F (prod_finType (fin_family i) (fin_family j)) _
+    ).
+    3:{ rewrite /uniform_F. reflexivity. }
+    1:{ refine (_,_). all: apply fin_family_inhabited. }
+    rewrite as_uniform.
+    erewrite prod_uniform.
+    epose (bind_bind := ord_relmon_law3 SDistr _ _ _ _ _).
+    eapply equal_f in bind_bind.
+    cbn in bind_bind.
+    unfold SubDistr.SDistr_obligation_2 in bind_bind.
+    erewrite <- bind_bind. clear bind_bind.
+    f_equal.
+    apply boolp.funext. intro xi.
+    epose (bind_bind := ord_relmon_law3 SDistr _ _ _ _ _).
+    eapply equal_f in bind_bind.  cbn in bind_bind.
+    unfold SubDistr.SDistr_obligation_2 in bind_bind.
+    erewrite <- bind_bind. clear bind_bind.
+    f_equal.
+    apply boolp.funext. intro xj.
+    epose (bind_ret := ord_relmon_law2 SDistr _ _ _).
+    eapply equal_f in bind_ret.
+    cbn in bind_ret.
+    unfold SubDistr.SDistr_obligation_2 in bind_ret.
+    unfold SubDistr.SDistr_obligation_1 in bind_ret.
+    erewrite bind_ret. reflexivity.
+  Qed.
 
 End Uniform_prod.
 
