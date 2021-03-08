@@ -396,12 +396,15 @@ boolp.constructive_indefinite_description :
   ∀ (A : Type) (P : A → Prop), (∃ x : A, P x) → {x : A | P x}
 ```
 
-We further rely on the existence of a type of real numbers as used in the
-`mathcomp` library.
+Following the `mathcomp` analysis library, we abstract from a specific construction
 
 ```coq
 R : realType
 ```
+We could plugin any real number construction: Cauchy, Dedekind, ...
+In `mathcomp`s ` Rstruct.v` an instance is build from any instance of the abstract `stdlib` reals.
+An instance of the latter is build from the (constructive) Cauchy reals in `Coq.Reals.ClassicalConstructiveReals`.
+
 
 By using `mathcomp-analysis` we also inherit one of the admitted lemmata they
 have:
