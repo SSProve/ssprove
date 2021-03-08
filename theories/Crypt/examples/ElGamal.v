@@ -491,9 +491,9 @@ Proof.
   { apply (@reflexivity_rule _ _ (@Uniform_F (i_prod i j) heap_choiceType)). }
   move=> s. cbn.
   unshelve erewrite !mkdistrd_nonsense.
-  { unshelve eapply is_uniform. admit. }
-  { unshelve eapply is_uniform. admit. }
-  { unshelve eapply is_uniform. admit. }
+  { unshelve eapply is_uniform. shelve. }
+  { unshelve eapply is_uniform. shelve. }
+  { unshelve eapply is_uniform. shelve. }
   eassert ( as_uniform :
 (mkdistr (mu:=λ f : UParam.fin_family i * UParam.fin_family j, r (prod_finType (UParam.fin_family i) (UParam.fin_family j)) f) is_uniform)
 =
@@ -522,7 +522,9 @@ Proof.
   erewrite bind_ret. reflexivity.
 
   Unshelve.
-Admitted.
+  { constructor ; apply F_w0. }
+  { apply F_w0. } {apply F_w0. }
+Qed.
 
 End Uniform_prod.
 
