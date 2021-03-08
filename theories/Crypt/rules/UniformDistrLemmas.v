@@ -385,8 +385,9 @@ psum (λ x1 : X, psum (λ x2 : Y, SD_ret (x1, x2) (x, y))) = 1 ).
     rewrite !/r. rewrite card_prod.
     rewrite GRing.Theory.mulf_div.
     rewrite GRing.mulr1.
-    admit.
-Admitted.
+    f_equal. f_equal.
+    by rewrite -intrM. 
+Qed. 
     
 End prod_uniform.
 
