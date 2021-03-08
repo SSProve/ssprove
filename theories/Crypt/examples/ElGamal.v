@@ -513,11 +513,11 @@ Proof.
   unfold SubDistr.SDistr_obligation_2 in bind_bind.
   erewrite <- bind_bind. clear bind_bind.
   f_equal. all: revgoals. { rewrite /uniform_F. reflexivity. }
-  apply boolp.funext. move=> xj.  
+  apply boolp.funext. move=> xj.
   epose (bind_ret := ord_relmon_law2 SDistr _ _ _).
   eapply equal_f in bind_ret.
   cbn in bind_ret.
-  unfold SubDistr.SDistr_obligation_2 in bind_ret.  
+  unfold SubDistr.SDistr_obligation_2 in bind_ret.
   unfold SubDistr.SDistr_obligation_1 in bind_ret.
   erewrite bind_ret. reflexivity.
 
@@ -694,12 +694,13 @@ Ltac ssprove_same_head_r' na :=
   | |- _ => fail "The goal should be a syntactic judgment"
   end.
 
+(* Maybe try with equality directly? *)
 Ltac ssprove_zip_link_step :=
   lazymatch goal with
   | |- ⊢ ⦃ _ ⦄ _ ≈ ?rr ⦃ _ ⦄ =>
     lazymatch rr with
     | code_link (match ?x with _ => _ end) _ =>
-      instantiate (1 := ltac:(destruct x)) ;
+      instantiate (1 := ltac:(let _ := type of x in destruct x)) ;
       destruct x ; cbn - [lookup_op] ;
       lazymatch goal with
       | |- context [ code_link (match _ with _ => _ end) _ ] =>
