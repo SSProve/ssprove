@@ -350,45 +350,52 @@ Section prod_uniform.
   Arguments r _ {_}.
 
   Lemma prod_uniform :
-  @uniform_F (prod_finType X Y) (x0,y0) =
-  SD_bind (@uniform_F X x0) (fun x =>
-  SD_bind (@uniform_F Y y0) (fun y =>
-  SD_ret (x,y))).
+    @uniform_F (prod_finType X Y) (x0,y0) =
+    SD_bind (@uniform_F X x0) (fun x =>
+    SD_bind (@uniform_F Y y0) (fun y =>
+    SD_ret (x,y))).
   Proof.
     apply distr_ext. move=> [x y].
     rewrite !/SD_bind !/SDistr_bind /dlet /=. unlock.
     rewrite /mlet /=.
-    rewrite psumZ. all: revgoals. apply r_nonneg.
-    erewrite eq_psum. all: revgoals.
-    move=> x1. rewrite psumZ. all: swap 1 2. apply r_nonneg.
-    reflexivity.
-    rewrite psumZ. all: revgoals. apply r_nonneg.
+    rewrite psumZ. 2: apply r_nonneg.
+    erewrite eq_psum.
+    2:{
+      move=> x1. rewrite psumZ. 2: apply r_nonneg.
+      reflexivity.
+    }
+    rewrite psumZ. 2: apply r_nonneg.
     rewrite GRing.Theory.mulrA.
-    assert ( psum_ret :
-psum (λ x1 : X, psum (λ x2 : Y, SD_ret (x1, x2) (x, y))) = 1 ).
-    rewrite /SD_ret.
-    pose hlp := (  @psum_pair _ X Y
-    (fun (x12 : prod_finType X Y) =>
-       let (x1,x2) := x12 in 
-       SDistr_unit (prod_choiceType X Y) (x1,x2) (x,y))).
-    rewrite -hlp.
-    unshelve erewrite eq_psum. exact (SDistr_unit _ (x,y)).
-    apply psum_SDistr_unit.
-    move=> [x1 x2] /=. rewrite /SDistr_unit.
-    rewrite !dunit1E.
-    rewrite eq_sym. reflexivity.
-    unshelve eapply eq_summable. exact (SDistr_unit _ (x,y)).
-    move=> [x1 x2] /=. rewrite /SDistr_unit.    
-    rewrite !dunit1E. rewrite eq_sym. reflexivity.
-    apply summable_mu.
+    assert (psum_ret :
+      psum (λ x1 : X, psum (λ x2 : Y, SD_ret (x1, x2) (x, y))) = 1
+    ).
+    { rewrite /SD_ret.
+      pose hlp := (
+        @psum_pair _ X Y
+          (fun (x12 : prod_finType X Y) =>
+          let (x1,x2) := x12 in
+          SDistr_unit (prod_choiceType X Y) (x1,x2) (x,y))
+      ).
+      rewrite -hlp.
+      - unshelve erewrite eq_psum.
+        + exact (SDistr_unit _ (x,y)).
+        + apply psum_SDistr_unit.
+        + move=> [x1 x2] /=. rewrite /SDistr_unit.
+          rewrite !dunit1E.
+          rewrite eq_sym. reflexivity.
+        + unshelve eapply eq_summable.
+          * exact (SDistr_unit _ (x,y)).
+          * move=> [x1 x2] /=. rewrite /SDistr_unit.
+            rewrite !dunit1E. rewrite eq_sym. reflexivity.
+          * apply summable_mu.
+    }
     rewrite psum_ret. rewrite GRing.mulr1.
     rewrite !/r. rewrite card_prod.
     rewrite GRing.Theory.mulf_div.
     rewrite GRing.mulr1.
-    f_equal. f_equal.
-    by rewrite -intrM. 
-Qed. 
-    
+    rewrite -intrM. reflexivity.
+Qed.
+
 End prod_uniform.
 
 
