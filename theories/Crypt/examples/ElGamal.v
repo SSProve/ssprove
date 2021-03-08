@@ -477,7 +477,6 @@ Section Uniform_prod.
 
   Arguments r _ _ : clear implicits.
 
-
   Lemma UniformIprod_UniformUniform :
     ∀ (i j : Index),
       ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
@@ -534,65 +533,6 @@ Section Uniform_prod.
     unfold SubDistr.SDistr_obligation_1 in bind_ret.
     erewrite bind_ret. reflexivity.
   Qed.
-
-(* another proof *)
-(* Lemma UniformIprod_UniformUniform : *)
-(*   ∀ (i j : Index), *)
-(*     ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ *)
-(*       xy ← sample U (i_prod i j) ;; ret xy ≈ *)
-(*       x ← sample U i ;; y ← sample U j ;; ret (x, y) *)
-(*     ⦃ eq ⦄. *)
-(* Proof. *)
-(*   intros i j. *)
-(*   change ( *)
-(*     ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ *)
-(*       xy ← sample U (i_prod i j) ;; ret xy ≈ *)
-(*       x ← cmd (cmd_sample (U i)) ;; y ← cmd (cmd_sample (U j)) ;; ret (x, y) *)
-(*     ⦃ eq ⦄ *)
-(*   ). *)
-(*   rewrite rel_jdgE. *)
-(*   rewrite repr_Uniform. repeat setoid_rewrite repr_cmd_bind. *)
-(*   change (repr_cmd (cmd_sample (U ?i))) with (@Uniform_F i heap_choiceType). *)
-(*   cbn - [semantic_judgement Uniform_F]. *)
-(*   eapply rewrite_eqDistrR. *)
-(*   { apply (@reflexivity_rule _ _ (@Uniform_F (i_prod i j) heap_choiceType)). } *)
-(*   move=> s. cbn. *)
-(*   unshelve erewrite !mkdistrd_nonsense. *)
-(*   { unshelve eapply is_uniform. shelve. } *)
-(*   { unshelve eapply is_uniform. shelve. } *)
-(*   { unshelve eapply is_uniform. shelve. } *)
-(*   eassert ( as_uniform : *)
-(* (mkdistr (mu:=λ f : UParam.fin_family i * UParam.fin_family j, r (prod_finType (UParam.fin_family i) (UParam.fin_family j)) f) is_uniform) *)
-(* = *)
-(* @uniform_F (prod_finType (fin_family i) (fin_family j)) _ ). *)
-(*   { rewrite /uniform_F. reflexivity. } *)
-(*   rewrite as_uniform. *)
-(*   erewrite prod_uniform. *)
-(*   epose (bind_bind := ord_relmon_law3 SDistr _ _ _ _ _). *)
-(*   eapply equal_f in bind_bind. *)
-(*   cbn in bind_bind. *)
-(*   unfold SubDistr.SDistr_obligation_2 in bind_bind. *)
-(*   erewrite <- bind_bind. clear bind_bind. *)
-(*   f_equal. all: revgoals. { rewrite /uniform_F. reflexivity. } *)
-(*   apply boolp.funext. move=> xi. *)
-(*   epose (bind_bind := ord_relmon_law3 SDistr _ _ _ _ _). *)
-(*   eapply equal_f in bind_bind.  cbn in bind_bind. *)
-(*   unfold SubDistr.SDistr_obligation_2 in bind_bind. *)
-(*   erewrite <- bind_bind. clear bind_bind. *)
-(*   f_equal. all: revgoals. { rewrite /uniform_F. reflexivity. } *)
-(*   apply boolp.funext. move=> xj. *)
-(*   epose (bind_ret := ord_relmon_law2 SDistr _ _ _). *)
-(*   eapply equal_f in bind_ret. *)
-(*   cbn in bind_ret. *)
-(*   unfold SubDistr.SDistr_obligation_2 in bind_ret. *)
-(*   unfold SubDistr.SDistr_obligation_1 in bind_ret. *)
-(*   erewrite bind_ret. reflexivity. *)
-
-(*   Unshelve. *)
-(*   { constructor ; apply F_w0. } *)
-(*   { apply F_w0. } {apply F_w0. } *)
-(* Qed. *)
-
 
 End Uniform_prod.
 
