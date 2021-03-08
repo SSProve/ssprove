@@ -382,7 +382,9 @@ Instances (in `theories/Crypt/rhl_semantics/state_prob/`):
 ### Axioms
 
 Throughout the development we rely on the axioms of functional extensionality,
-proof irrelevance, as well as propositional extensionality as listed below:
+proof irrelevance, as well as propositional extensionality as listed below.
+Perhaps more surprisingly, we also rely on the constructive indefinite
+description axiom. We inherit its use from mathcomp-analysis.
 
 ```coq
 ax_proof_irrel : ClassicalFacts.proof_irrelevance
@@ -390,6 +392,8 @@ propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
 functional_extensionality_dep :
   ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
       (∀ x : A, f x = g x) → f = g
+boolp.constructive_indefinite_description :
+  ∀ (A : Type) (P : A → Prop), (∃ x : A, P x) → {x : A | P x}
 ```
 
 We further rely on the existence of a type of real numbers as used in the
