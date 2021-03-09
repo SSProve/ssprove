@@ -698,6 +698,24 @@ Ltac ssprove_match_commut_gen :=
     end
   end.
 
+Ltac ssprove_code_link_commute_aux rr :=
+  lazymatch rr with
+  | context [ code_link (match _ with _ => _ end) _ ] =>
+    let T := type of rr in
+    let tm := fresh "tm" in
+    evar (tm : T) ;
+    replace rr with tm ; subst tm ; [| solve [ ssprove_match_commut_gen ] ]
+  | _ => idtac
+  end.
+
+Ltac ssprove_code_link_commute :=
+  lazymatch goal with
+  | |- ⊢ ⦃ _ ⦄ ?ll ≈ ?rr ⦃ _ ⦄ =>
+    ssprove_code_link_commute_aux ll ;
+    ssprove_code_link_commute_aux rr
+  | |- _ => fail "ssprove_code_link_commute: goal should be syntactic judgment"
+  end.
+
 (** End of technical steps *)
 
 Lemma ots_real_vs_rnd_equiv_false :
@@ -706,14 +724,7 @@ Proof.
   (* We go to the relation logic using equality as invariant. *)
   eapply eq_rel_perf_ind_eq.
   simplify_eq_rel m.
-  lazymatch goal with
-  | |- ⊢ ⦃ _ ⦄ _ ≈ ?rr ⦃ _ ⦄ =>
-    let T := type of rr in
-    let tm := fresh "tm" in
-    evar (tm : T) ;
-    replace rr with tm ; subst tm
-  end.
-  2: ssprove_match_commut_gen.
+  ssprove_code_link_commute.
   simpl.
   simplify_linking.
   (* We are now in the realm of program logic *)
