@@ -225,7 +225,9 @@ Module PRF_example.
   Import π.
   Include (SymmetricSchemeRules π).
 
+  Set Warnings "-custom-entry-overriden".
   Import MyRules.MyPackage.
+  Set Warnings "custom-entry-overriden".
   Import PackageNotation.
 
   Definition key_location : Location := ('option Key ; 0).

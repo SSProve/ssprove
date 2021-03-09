@@ -267,7 +267,9 @@ Local Open Scope package_scope.
 
 Module ElGamal_Scheme := AsymmetricScheme MyParam MyAlg.
 
+Set Warnings "-custom-entry-overriden".
 Import MyParam MyAlg asym_rules MyPackage ElGamal_Scheme PackageNotation.
+Set Warnings "custom-entry-overriden".
 
 Lemma counter_loc_in :
   counter_loc \in (fset [:: counter_loc; pk_loc; sk_loc ]).
