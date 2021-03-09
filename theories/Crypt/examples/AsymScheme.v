@@ -409,11 +409,4 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
     loc_GamePair [interface val #[challenge_id'] : chPlain → 'option chCipher] :=
     λ b, if b then {locpackage L_pk_ots_real } else {locpackage L_pk_ots_rnd }.
 
-  Definition OT_rnd_cipher : Prop :=
-    ∀ LA A,
-      ValidPackage LA [interface val #[challenge_id'] : chPlain → 'option chCipher] A_export A →
-      fdisjoint LA (ots_real_vs_rnd true).(locs) →
-      fdisjoint LA (ots_real_vs_rnd false).(locs) →
-      Advantage ots_real_vs_rnd A = 0.
-
 End AsymmetricScheme.

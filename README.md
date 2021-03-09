@@ -219,30 +219,14 @@ The ElGamal example is developed in `theories/Crypt/examples/Elgamal.v`
 The security theorem is the following:
 
 ```coq
-Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher.
-```
-
-`OT_rnd_cipher` is defined in `theories/Crypt/examples/AsymScheme.v`:
-
- ```coq
-Definition OT_rnd_cipher : Prop :=
+Theorem ElGamal_OT :
   ∀ LA A,
     ValidPackage LA [interface val #[challenge_id'] : chPlain → 'option chCipher] A_export A →
     fdisjoint LA (ots_real_vs_rnd true).(locs) →
     fdisjoint LA (ots_real_vs_rnd false).(locs) →
-    Advantage ots_real_vs_rnd A = 0.
+    Advantage ots_real_vs_rnd A <= AdvantageE DH_rnd DH_real (A ∘ Aux).
 ```
-
-Note that the theorem relies on `dh_secure` which corresponds to the DDH
-assumption:
-
-```coq
-Definition DH_security : Prop :=
-  ∀ LA A,
-    ValidPackage LA [interface val #[10] : 'unit → chPubKey × chCipher ] A_export A →
-    fdisjoint LA DH_loc →
-    AdvantageE DH_rnd DH_real A = 0.
-```
+where `Aux` is called `L` in the paper.
 
 
 ### Probabilistic relational program logic
