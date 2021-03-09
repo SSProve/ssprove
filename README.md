@@ -390,8 +390,8 @@ The `mathcomp-analysis` library also abstracts from a specific construction of t
 R : realType
 ```
 One could plugin any real number construction: Cauchy, Dedekind, ...
-In `mathcomp`s ` Rstruct.v` an instance is build from any instance of the abstract `stdlib` reals.
-An instance of the latter is build from the (constructive) Cauchy reals in `Coq.Reals.ClassicalConstructiveReals`.
+In `mathcomp`s ` Rstruct.v` an instance is built from any instance of the abstract `stdlib` reals.
+An instance of the latter is built from the (constructive) Cauchy reals in `Coq.Reals.ClassicalConstructiveReals`.
 
 Finally, by using `mathcomp-analysis` we also inherit an admitted lemma they have:
 
