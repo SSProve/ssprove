@@ -215,7 +215,7 @@ Note that we require here some disjointness of state hypotheses as these are
 not enforced by our package definitions and laws.
 
 
-The ElGamal example is developed in `theories/Crypt/examples/Elgamal.v`
+The ElGamal example is developed in `theories/Crypt/examples/ElGamal.v`
 The security theorem is the following:
 
 ```coq
@@ -400,12 +400,13 @@ boolp.constructive_indefinite_description :
   ∀ (A : Type) (P : A → Prop), (∃ x : A, P x) → {x : A | P x}
 ```
 
-The `mathcomp-analysis` library also abstracts from a specific construction of the reals:
+The `mathcomp-analysis` library also uses an axiom to abstract away from any
+specific construction of the reals:
 
 ```coq
 R : realType
 ```
-One could plugin any real number construction: Cauchy, Dedekind, ...
+One could plug in any real number construction: Cauchy, Dedekind, ...
 In `mathcomp`s ` Rstruct.v` an instance is build from any instance of the abstract `stdlib` reals.
 An instance of the latter is build from the (constructive) Cauchy reals in `Coq.Reals.ClassicalConstructiveReals`.
 
