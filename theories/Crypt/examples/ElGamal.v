@@ -654,61 +654,29 @@ Proof.
     apply (UniformIprod_UniformUniform i_sk i_sk).
 Qed.
 
-(* This version raises an anomaly *)
-(* Ltac ssprove_zip_link :=
-  lazymatch goal with
-  | |- ⊢ ⦃ _ ⦄ _ ≈ ?rr ⦃ _ ⦄ =>
+(* TODO MOVE *)
+Ltac ssprove_match_commut_gen :=
+  repeat lazymatch goal with
+  | |- _ = ?rr =>
     lazymatch rr with
-    | code_link (match ?x with _ => _ end) _ =>
-      instantiate (1 := ltac:(destruct x)) ;
-      destruct x ; cbn - [lookup_op] ;
-      lazymatch goal with
-      | |- context [ code_link (match _ with _ => _ end) _ ] =>
-        ssprove_zip_link
-      | |- _ =>
-        eapply rreflexivity_rule
-      end
-    | match lookup_op ?p ?o with _ => _ end =>
-      lookup_op_squeeze ;
-      cbn - [lookup_op] ;
-      lazymatch goal with
-      | |- context [ code_link (match _ with _ => _ end) _ ] =>
-        ssprove_zip_link
-      | |- _ =>
-        eapply rreflexivity_rule
-      end
-    | _ =>
-      ssprove_same_head_r ; intro ;
-      ssprove_zip_link
-    end
-  | |- _ => fail "ssprove_zip_link: goal should be a syntactic judgment"
-  end. *)
-
-(* ssprove_same_head_r but where the hole is filled with a function
-  binding na
-*)
-Ltac ssprove_same_head_r' na :=
-  lazymatch goal with
-  | |- ⊢ ⦃ _ ⦄ _ ≈ ?c ⦃ _ ⦄ =>
-    lazymatch c with
     | x ← sample ?op ;; _ =>
-      eapply (@rsame_head_cmd _ _ (λ na, _) (λ na, _) (cmd_sample op))
-    | put ?ℓ := ?v ;; _ =>
-      eapply (@rsame_head_cmd _ _ (λ na, _) (λ na, _) (cmd_put ℓ v))
+      let x' := fresh x in
+      eapply (f_equal (sampler _)) ;
+      eapply functional_extensionality with (f := λ x', _) ; intro x'
     | x ← get ?ℓ ;; _ =>
-      eapply (@rsame_head_cmd _ _ (λ na, _) (λ na, _) (cmd_get ℓ))
+      let x' := fresh x in
+      eapply (f_equal (getr _)) ;
+      eapply functional_extensionality with (f := λ x', _) ; intro x'
+    | put ?ℓ := ?v ;; _ =>
+      eapply (f_equal (putr _ _))
     | x ← cmd ?c ;; _ =>
-      eapply (@rsame_head_cmd _ _ (λ na, _) (λ na, _) c)
-    | _ => fail "No head found"
-    end
-  | |- _ => fail "The goal should be a syntactic judgment"
-  end.
-
-(* Maybe try with equality directly? *)
-Ltac ssprove_zip_link_step :=
-  lazymatch goal with
-  | |- ⊢ ⦃ _ ⦄ _ ≈ ?rr ⦃ _ ⦄ =>
-    lazymatch rr with
+      let x' := fresh x in
+      eapply (f_equal (cmd_bind _)) ;
+      eapply functional_extensionality with (f := λ x', _) ; intro x'
+    | x ← ?c ;; _ =>
+      let x' := fresh x in
+      eapply (f_equal (bind _)) ;
+      eapply functional_extensionality with (f := λ x', _) ; intro x'
     | code_link (match ?x with _ => _ end) _ =>
       instantiate (1 := ltac:(let _ := type of x in destruct x)) ;
       destruct x ; cbn - [lookup_op] ;
@@ -716,17 +684,8 @@ Ltac ssprove_zip_link_step :=
       | |- context [ code_link (match _ with _ => _ end) _ ] =>
         idtac
       | |- _ =>
-        eapply rreflexivity_rule
+        reflexivity
       end
-    (* | match lookup_op ?p ?o with _ => _ end =>
-      lookup_op_squeeze ;
-      cbn - [lookup_op] ;
-      lazymatch goal with
-      | |- context [ code_link (match _ with _ => _ end) _ ] =>
-        idtac
-      | |- _ =>
-        eapply rreflexivity_rule
-      end *)
     | match ?x with _ => _ end =>
       instantiate (1 := ltac:(let _ := type of x in destruct x)) ;
       destruct x ; cbn - [lookup_op] ;
@@ -734,19 +693,10 @@ Ltac ssprove_zip_link_step :=
       | |- context [ code_link (match _ with _ => _ end) _ ] =>
         idtac
       | |- _ =>
-        eapply rreflexivity_rule
+        reflexivity
       end
-    | _ =>
-      let na := fresh "na" in
-      ssprove_same_head_r' na ; intro na ;
-      idtac
     end
-  | |- _ => fail "ssprove_zip_link: goal should be a syntactic judgment"
   end.
-
-(* Also raises an anomaly *)
-Ltac ssprove_zip_link :=
-  repeat ssprove_zip_link_step.
 
 (** End of technical steps *)
 
@@ -763,49 +713,7 @@ Proof.
     evar (tm : T) ;
     replace rr with tm ; subst tm
   end.
-  2:{
-    repeat lazymatch goal with
-    | |- _ = ?rr =>
-      lazymatch rr with
-      | x ← sample ?op ;; _ =>
-        let x' := fresh x in
-        eapply (f_equal (sampler _)) ;
-        eapply functional_extensionality with (f := λ x', _) ; intro x'
-      | x ← get ?ℓ ;; _ =>
-        let x' := fresh x in
-        eapply (f_equal (getr _)) ;
-        eapply functional_extensionality with (f := λ x', _) ; intro x'
-      | put ?ℓ := ?v ;; _ =>
-        eapply (f_equal (putr _ _))
-      | x ← cmd ?c ;; _ =>
-        let x' := fresh x in
-        eapply (f_equal (cmd _)) ;
-        eapply functional_extensionality with (f := λ x', _) ; intro x'
-      | x ← ?c ;; _ =>
-        let x' := fresh x in
-        eapply (f_equal (bind _)) ;
-        eapply functional_extensionality with (f := λ x', _) ; intro x'
-      | code_link (match ?x with _ => _ end) _ =>
-        instantiate (1 := ltac:(let _ := type of x in destruct x)) ;
-        destruct x ; cbn - [lookup_op] ;
-        lazymatch goal with
-        | |- context [ code_link (match _ with _ => _ end) _ ] =>
-          idtac
-        | |- _ =>
-          reflexivity
-        end
-      | match ?x with _ => _ end =>
-        instantiate (1 := ltac:(let _ := type of x in destruct x)) ;
-        destruct x ; cbn - [lookup_op] ;
-        lazymatch goal with
-        | |- context [ code_link (match _ with _ => _ end) _ ] =>
-          idtac
-        | |- _ =>
-          reflexivity
-        end
-      end
-    end.
-  }
+  2: ssprove_match_commut_gen.
   simpl.
   simplify_linking.
   (* We are now in the realm of program logic *)
