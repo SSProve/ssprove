@@ -54,12 +54,12 @@ Module DerivedRulesUniform (myparam :  RulesParam) (myparamUniform : UniformPara
   Import myparam.
   Import myparamUniform.
 
-  Definition Index : Type := Index. 
+  Definition Index : Type := Index.
 
-  Definition fin_family (i : Index) : finType := fin_family i. 
+  Definition fin_family (i : Index) : finType := fin_family i.
 
   Definition F_w0 (i : Index) : fin_family i := F_w0 i.
-  
+
   (* extend the initial parameters for the rules  *)
   Inductive UprobE : Type -> Type :=
   | Uni_W  : forall i, UprobE (fin_family i)
@@ -70,20 +70,20 @@ Module DerivedRulesUniform (myparam :  RulesParam) (myparamUniform : UniformPara
   Definition UchEmb : Urel_choiceTypes -> choiceType.
   Proof. move => i.
          destruct i.
-         - exact: fin_family i. 
+         - exact: fin_family i.
          - exact chUnit.
   Defined.
-  
-  
+
+
   Definition Uprob_handler : forall T : choiceType, UprobE T -> SDistr T.
   Proof.
     move => T TF.
     inversion TF.
     -  eapply mkdistrd.
-       rewrite -H0. 
+       rewrite -H0.
        move => f.
        apply: r.
-       exact: f. 
+       exact: f.
     - exact dnull.
   Defined.
 
@@ -175,7 +175,7 @@ Module DerivedRulesUniform (myparam :  RulesParam) (myparamUniform : UniformPara
     Unshelve. exact (Real.ringType R).
   Qed.
 
-  
+
   Definition f_dprod { F1 F2: finType } { S1 S2 : choiceType } { w0 : F1 } { w0' : F2 } {s1 : S1 } {s2 : S2}
              (f : F1 -> F2) : (F1 * S1) * (F2 * S2) -> R :=
   fun '((w1,st1),(w2, st2)) => if  ((st1 == s1) && (st2 == s2) && ((f w1) == w2)) then (@r F1 w0) else 0.
@@ -306,12 +306,12 @@ Module DerivedRulesUniform (myparam :  RulesParam) (myparamUniform : UniformPara
     by apply: bijective_isdistr.
   Defined.
 
-  
+
   Definition UniformSQ { i j : Index } { S1 S2 : choiceType } (s1 : S1) (s2 : S2)
                        { f : fin_family i -> fin_family j } (f_bij : bijective f) :=
     @UniformFsq_f (fin_family i) (fin_family j) (F_w0 i) (F_w0 j) S1 S2 s1 s2 f f_bij.
 
-  
+
   Lemma bij_same_r { F1 F2 : finType } { w0 : F1 } { w0' : F2 } { f : F1 -> F2 }
         ( bij_f : bijective f ) : @r F1 w0 = @r F2 w0'.
   Proof.
@@ -326,8 +326,8 @@ Module DerivedRulesUniform (myparam :  RulesParam) (myparamUniform : UniformPara
     rewrite cardsT. reflexivity.
   Qed.
 
- 
-  
+
+
   Lemma UniformSQ_f_coupling { i j : Index}
                              { S1 S2 : choiceType } { s1 : S1 } { s2 : S2 }
                              { f : fin_family i -> fin_family j } (f_bij : bijective f):
@@ -373,6 +373,9 @@ Module DerivedRulesUniform (myparam :  RulesParam) (myparamUniform : UniformPara
       exact: r_nonneg.
   Qed.
 
+  Import RSemanticNotation.
+  #[local] Open Scope rsemantic_scope.
+
 
   Theorem Uniform_bij_rule { i j : Index } { S1 S2 : choiceType }
                            { f : fin_family i -> fin_family j } (f_bij : bijective f)
@@ -402,7 +405,7 @@ Module DerivedRulesUniform (myparam :  RulesParam) (myparamUniform : UniformPara
   Qed.
 
   Export RSPNotation.
-  
+
   (*CA: probably not necessary *)
   (* Theorem Uniform_bij_rule_sq { i1 i2 j1 j2 : Index } { S1 S2 : choiceType } *)
   (*         { f1 : fin_family i1 -> fin_family j1 } (f1_bij : bijective f1) *)
@@ -441,7 +444,7 @@ Module DerivedRulesUniform (myparam :  RulesParam) (myparamUniform : UniformPara
   (*   split; auto.  *)
   (*   Admitted.  *)
 
-    
+
   Definition Fail { S : choiceType } : FrStP S chUnit.
     apply: ropr.
     Unshelve. 2: {

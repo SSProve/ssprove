@@ -5,22 +5,22 @@
 
 
 From Coq Require Import Utf8.
-From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
+From Relational Require Import OrderEnrichedCategory
+  OrderEnrichedRelativeMonadExamples.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr seq all_algebra.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
-From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings RulesStateProb
-  StateTransfThetaDens StateTransformingLaxMorph
+From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
+  RulesStateProb StateTransfThetaDens StateTransformingLaxMorph
   pkg_chUniverse pkg_notation pkg_tactics.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
 (* Must come after importing Equations.Equations, god knows why. *)
 From Crypt Require Import FreeProbProg.
-
 
 Set Equations With UIP.
 Set Equations Transparent.
@@ -38,6 +38,9 @@ Module PackageRHL (π : RulesParam).
   Include (PackageTactics π).
 
   Import PackageNotation.
+
+  Import RSemanticNotation.
+  #[local] Open Scope rsemantic_scope.
 
   Local Open Scope fset.
   Local Open Scope fset_scope.

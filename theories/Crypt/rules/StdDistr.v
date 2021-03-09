@@ -143,6 +143,9 @@ Module DerivedRulesUniform (myparam :  RulesParam).
    all: cbn; rewrite ab cd /=; try rewrite GRing.mulr1; try rewrite GRing.mulr0; reflexivity.
  Qed.
 
+Import RSemanticNotation.
+#[local] Open Scope rsemantic_scope.
+
  Theorem _assert_rule { S1 S2 : choiceType }  (b b' : bool) :
    ⊨ ⦃ fun (_ : S1 * S2) => b = b' ⦄ (Assert b) ≈ (Assert b') ⦃ fun _ _ => b = true /\ b' = true ⦄.
  Proof.

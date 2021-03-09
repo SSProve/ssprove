@@ -116,9 +116,6 @@ Definition semantic_judgement (A1 A2 : ord_choiceType) {S1 S2 : choiceType}
                               (w  : Base.dfst (WrelSt ⟨ A1, A2 ⟩)) : Prop :=
    (θ ⟨A1,A2⟩)∙1 ⟨c1,c2⟩ ≤ w.
 
-
-Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ c1 c2 w).
-
 Definition fromPrePost {A1 A2 : ord_choiceType} {S1 S2: choiceType}
            (pre : (S1 * S2) -> Prop)
            (post : (A1 * S1) -> (A2 * S2) -> Prop)
@@ -138,13 +135,26 @@ Definition fromPrePost {A1 A2 : ord_choiceType} {S1 S2: choiceType}
      by rewrite Heq.
 Defined.
 
-Notation "⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
-  (semantic_judgement _ _ c1 c2 (fromPrePost pre post)).
+Declare Scope rsemantic_scope.
+Delimit Scope rsemantic_scope with rsem.
+
+Module RSemanticNotation.
+
+  Notation "⊨ c1 ≈ c2 [{ w }]" :=
+    (semantic_judgement _ _ c1 c2 w) : rsemantic_scope.
+
+  Notation "⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
+    (semantic_judgement _ _ c1 c2 (fromPrePost pre post))
+    : rsemantic_scope.
+
+End RSemanticNotation.
+
+Import RSemanticNotation.
+#[local] Open Scope rsemantic_scope.
 
 Import finmap.set finmap.finmap xfinmap.
 
 Open Scope fset_scope.
-
 
 Definition d_inv { A1 A2 : choiceType} (d : SDistr  (F_choice_prod ⟨ A1, A2 ⟩)) :
            SDistr  (F_choice_prod ⟨ A2, A1 ⟩) :=
@@ -427,15 +437,15 @@ Admitted.
 
 (*CA: not used  *)
 Definition d__f { A B : ord_choiceType} { d : SDistr A } { f : A -> B } : SDistr  B. Admitted.
-(*CA's proof sketch 
-  d__f : B -> [0,1] 
+(*CA's proof sketch
+  d__f : B -> [0,1]
 
-         b ↦ ∑_{a ∈ A: f(a) = b} d(a)  // d-measure of the pre-image of b -- in particular if b is not in image(f) then d__f(b) = 0 // 
+         b ↦ ∑_{a ∈ A: f(a) = b} d(a)  // d-measure of the pre-image of b -- in particular if b is not in image(f) then d__f(b) = 0 //
 
 
-  - 0 ≤ d__f (b) because sum of non-negative quantities 
-  - for J ⊆ B, d__f (J) = d (f^-1 (J)) that is finite 
-  - ∑_{b ∈ B} d__f(b) = ∑_{a ∈ A} d(a) 
+  - 0 ≤ d__f (b) because sum of non-negative quantities
+  - for J ⊆ B, d__f (J) = d (f^-1 (J)) that is finite
+  - ∑_{b ∈ B} d__f(b) = ∑_{a ∈ A} d(a)
 
  *)
 
@@ -458,7 +468,7 @@ Definition d__f { A B : ord_choiceType} { d : SDistr A } { f : A -> B } : SDistr
 
 (*CA: not used *)
 Theorem post_conclusion_rule {A0 A1 B : ord_choiceType} { S : choiceType } { pre : S * S -> Prop }
-        {c0 : FrStP S A0 } { c1 : FrStP S A1 } 
+        {c0 : FrStP S A0 } { c1 : FrStP S A1 }
         { f0 : A0 -> B } { f1 : A1 -> B } (* (Hbij0 : bijective f0) (Hbij1 : bijective f1) *)
         (H : ⊨ ⦃ pre ⦄
                (x0 <- c0 ;; retF x0) ≈
@@ -472,67 +482,67 @@ Proof.
   rewrite /MonoCont_order //=. rewrite /MonoCont_order //= in H.
   move => β [hs0 h].
   specialize (H (fun '(a0, s0, (a1, s1)) => (β (f0 a0 ,s0, (f1 a1, s1))))).
-  destruct H as [d [H H']]. 
+  destruct H as [d [H H']].
   split.
   - assumption.
-  - move => [a1 st1] [a2 st2] [Heqa Heqst]. subst. 
-    apply: h. by rewrite Heqst. 
+  - move => [a1 st1] [a2 st2] [Heqa Heqst]. subst.
+    apply: h. by rewrite Heqst.
   - unshelve eexists.
     { unshelve eapply d__f.
       exact: F_choice_prod ⟨ F_choice_prod ⟨ A0, S ⟩, F_choice_prod ⟨ A1, S ⟩ ⟩.
       exact: d.
-      move => [[a0 st0] [a1 st1]]. exact: (f0 a0, st0, (f1 a1, st1)). } 
+      move => [[a0 st0] [a1 st1]]. exact: (f0 a0, st0, (f1 a1, st1)). }
     split.
-    { (*CA:  let fs0 : A0 * S -> B * S = fun (a0, st) => (f a0, st) 
+    { (*CA:  let fs0 : A0 * S -> B * S = fun (a0, st) => (f a0, st)
 
-             to prove the lmg it suffices to show that 
+             to prove the lmg it suffices to show that
 
-             "θ (x <- c0 ;; ret (f0 x)) : SDistr B * S"  = 
+             "θ (x <- c0 ;; ret (f0 x)) : SDistr B * S"  =
 
              " d__fs0 (θ (x <- c0 ;; ret x) "
 
-             // it will map (b,s) ↦ ∑_{a0 ∈ A0: f(a0) = b} θ (x <- c0; ret x)  // 
-             
-             indeed for (b1,st1), 
+             // it will map (b,s) ↦ ∑_{a0 ∈ A0: f(a0) = b} θ (x <- c0; ret x)  //
 
-             Σ_{(b0, st0)} d' (b0,st0) (b1,st1) =  
+             indeed for (b1,st1),
 
-             Σ_{(a0,st0) a1 : f0(a0) = b0 /\ f1(a1) = b1} d (a0,st0) (a1,st1) = [coupling d _ _ ] 
-             
-             Σ_{a1 : f1(a1) = } θ (x <- c1 ;; ret x) (a1, st1) = θ (x <- c1 ;; ret (f1 x)    
- 
-        *) admit. } 
-      move => [b0 st0] [b1 st1] Hgt0. 
-      (* by definition of d' fi^-1(bi) are both non empty 
-         -> exits ai s.t. fi(ai) = bi,  i = 1,2 
+             Σ_{(b0, st0)} d' (b0,st0) (b1,st1) =
+
+             Σ_{(a0,st0) a1 : f0(a0) = b0 /\ f1(a1) = b1} d (a0,st0) (a1,st1) = [coupling d _ _ ]
+
+             Σ_{a1 : f1(a1) = } θ (x <- c1 ;; ret x) (a1, st1) = θ (x <- c1 ;; ret (f1 x)
+
+        *) admit. }
+      move => [b0 st0] [b1 st1] Hgt0.
+      (* by definition of d' fi^-1(bi) are both non empty
+         -> exits ai s.t. fi(ai) = bi,  i = 1,2
          -> specialize H with (a0,st0) (a1,st1) and get the thesis
        *)
-    admit. 
-Admitted. 
-   
+    admit.
+Admitted.
+
 (*CA: depends on post_conclusion_rule but is not used *)
 Lemma f_preserves_eq { A B : ord_choiceType } { S : choiceType }
                      { x  y: FrStP S A }
-                     (f : A -> B ) (* (Hbij : bijective f)    *)  
+                     (f : A -> B ) (* (Hbij : bijective f)    *)
                      ( H: ⊨ ⦃ fun '(s1, s2) => s1 = s2 ⦄
                              ( X <- x ;; retF X ) ≈
-                             ( Y <- y ;; retF Y) 
-                            
+                             ( Y <- y ;; retF Y)
+
                             ⦃ eq ⦄ ) :
     ⊨ ⦃ fun '(s1, s2) => s1 = s2 ⦄
        (X <- x ;; retF (f X) ) ≈
-       (Y <- y ;; retF (f Y) ) 
-       
-       ⦃ eq ⦄. 
+       (Y <- y ;; retF (f Y) )
+
+       ⦃ eq ⦄.
 Proof.
-  apply: post_conclusion_rule; auto. 
+  apply: post_conclusion_rule; auto.
   unshelve eapply post_weaken_rule. { exact: eq. }
   - assumption.
   - move => /= [a1 s1] [a2 s2] [H1 H2]. split; by subst.
-Qed.     
-  
+Qed.
 
-  
+
+
 Theorem if_rule  {A1 A2 : ord_choiceType} {S1 S2 : choiceType}
                  (c1 c2 : FrStP S1 A1)
                  (c1' c2' : FrStP S2 A2)
@@ -835,38 +845,38 @@ Lemma dsym_coupling { A B : ord_choiceType } { S1 S2 : choiceType } { d : SDistr
                Choice.Pack {| Choice.base := prod_eqMixin A S1; Choice.mixin := prod_choiceMixin A S1 |} ⟩) }
       {d1 d2 }
       (Hcoupling : coupling d d1 d2) : coupling (dsym d) d2 d1.
-Proof. 
+Proof.
   rewrite /dsym. destruct Hcoupling as [dfst_d dsnd_d]. unfold coupling, lmg, rmg in *.
   subst. split.
   - apply: distr_ext. exact: dfst_dswap d.
-  - apply: distr_ext. exact: dsnd_dswap d.   
+  - apply: distr_ext. exact: dsnd_dswap d.
 Qed.
 
 Lemma symmetry_rule { A B : ord_choiceType } { S1 S2 : choiceType } { pre post }
-      (c1  : FrStP S1 A) (c2  : FrStP S2 B) 
+      (c1  : FrStP S1 A) (c2  : FrStP S2 B)
       (H: ⊨ ⦃ fun '(s2, s1) => pre (s1, s2) ⦄ c2 ≈ c1 ⦃ fun '(b,s2) '(a,s1) => post (a,s1) (b,s2) ⦄ ):
-      ⊨ ⦃ pre  ⦄ c1 ≈ c2 ⦃ post ⦄. 
-Proof. 
+      ⊨ ⦃ pre  ⦄ c1 ≈ c2 ⦃ post ⦄.
+Proof.
   move => [s1 s2]. move => /= π.
   move => [Hpre H'].
   specialize (H (s2,s1) (fun '(a,s1,(b,s2)) => π ((b,s2,(a,s1))))).
   cbn in H.
   destruct H as [d' [H1 H2]].
   - rewrite /=. split.
-    -- assumption.  
-    -- move => [a h1] [b h2] Hpost /=. apply: (H' (b, h2) (a, h1) Hpost). 
-  simpl in d', H1, H2. exists (dswap d'). split. 
-    - exact: dsym_coupling. 
+    -- assumption.
+    -- move => [a h1] [b h2] Hpost /=. apply: (H' (b, h2) (a, h1) Hpost).
+  simpl in d', H1, H2. exists (dswap d'). split.
+    - exact: dsym_coupling.
     -- move => [b h2] [a h1] Hdsym. apply: (H2 (a, h1) (b, h2)).
        apply msupp.
-       have Heq: dswap (dswap d') = d'. { apply: distr_ext. exact: (dswapK d'). } 
-       rewrite -Heq. 
+       have Heq: dswap (dswap d') = d'. { apply: distr_ext. exact: (dswapK d'). }
+       rewrite -Heq.
        apply dinsupp_swap.
        apply /dinsuppP.
        rewrite lt0r in Hdsym.
        move /andP: Hdsym. move => [Hd1  Hd2].
        apply /eqP. assumption.
-Qed.        
+Qed.
 
 Theorem swap_rule { A1 A2 : ord_choiceType } { S : choiceType } { I : S * S -> Prop } {post : A1 * S -> A2 * S -> Prop }
                   (c1 : FrStP S A1) (c2 : FrStP S A2)
@@ -909,12 +919,12 @@ Qed.
 Section AuxLemmasSwapRuleR.
 
 Lemma  smMonEqu1
-{A1 A2 B : ord_choiceType} {S : choiceType} 
+{A1 A2 B : ord_choiceType} {S : choiceType}
 (r : A1 -> A2 -> FrStP S B) (c1 : FrStP S A1) (c2 : FrStP S A2) :
 (a2 ∈ choice_incl A2 <<- c2;; a1 ∈ choice_incl A1 <<- c1;; (r a1 a2))
 =
 (a ∈ choice_incl (prod_choiceType A1 A2) <<-
-        (a2 ∈ choice_incl A2 <<- c2;; a1 ∈ choice_incl A1 <<- c1;; retF (a1, a2));; 
+        (a2 ∈ choice_incl A2 <<- c2;; a1 ∈ choice_incl A1 <<- c1;; retF (a1, a2));;
         r a.1 a.2).
 Proof.
    symmetry.
@@ -939,12 +949,12 @@ Proof.
 Qed.
 
 Lemma  smMonEqu2
-{A1 A2 B : ord_choiceType} {S : choiceType} 
+{A1 A2 B : ord_choiceType} {S : choiceType}
 (r : A1 -> A2 -> FrStP S B) (c1 : FrStP S A1) (c2 : FrStP S A2) :
 (a1 ∈ choice_incl A1 <<- c1;; a2 ∈ choice_incl A2 <<- c2;; (r a1 a2))
 =
 (a ∈ choice_incl (prod_choiceType A1 A2) <<-
-        (a1 ∈ choice_incl A1 <<- c1;; a2 ∈ choice_incl A2 <<- c2;; retF (a1, a2));; 
+        (a1 ∈ choice_incl A1 <<- c1;; a2 ∈ choice_incl A2 <<- c2;; retF (a1, a2));;
         r a.1 a.2).
 Proof.
    symmetry.
@@ -974,8 +984,8 @@ Let Frp_fld :=  @Frp probE rel_choiceTypes chEmb.
 
 Lemma theta0_vsbind {P Q : ord_choiceType} (p : FrStP S P) (q : FrStP S Q)
   (s : S) :
-θ0 (x ∈ P <<- p ;; q) s 
-= 
+θ0 (x ∈ P <<- p ;; q) s
+=
 (ord_relmon_bind Frp_fld)
   (fun ps : P * S => let (p,s) := ps in θ0 q s)
   (θ0 p s).
@@ -1005,12 +1015,12 @@ Lemma some_commutativity
 θ_dens
   (θ0
      (a ∈ choice_incl (prod_choiceType A1 A2) <<-
-      (a1 ∈ choice_incl A1 <<- c1;; a2 ∈ choice_incl A2 <<- c2;; retF (a1, a2));; 
+      (a1 ∈ choice_incl A1 <<- c1;; a2 ∈ choice_incl A2 <<- c2;; retF (a1, a2));;
       r a.1 a.2) s) =
 θ_dens
   (θ0
      (a ∈ choice_incl (prod_choiceType A1 A2) <<-
-      (a2 ∈ choice_incl A2 <<- c2;; a1 ∈ choice_incl A1 <<- c1;; retF (a1, a2));; 
+      (a2 ∈ choice_incl A2 <<- c2;; a1 ∈ choice_incl A1 <<- c1;; retF (a1, a2));;
       r a.1 a.2) s).
 Proof.
   (*we begin by using bind preservation of θ0 on both sides*)
@@ -1112,7 +1122,7 @@ Proof.
   rewrite contEqu. apply f_equal.
   apply Hcomm.
 Qed.
- 
+
 
 End AuxLemmasSwapRuleR.
 
@@ -1152,7 +1162,7 @@ Proof.
        apply HR.
        apply post_eq.
        apply Hcomm.
-Qed.       
+Qed.
 
 
 (*Rem.: a proved variant of the above -- less useful though *)
@@ -1266,7 +1276,7 @@ rmm_law2 _ _ _ _ (@unaryIntState probE rel_choiceTypes chEmb S)
 Qed.
 
 Lemma θ0_vs_sample_c :
-  θ0 sample_c 
+  θ0 sample_c
   =
   dnib stT_Frp
     (fun r : Arst (inr o) => dnib stT_Frp (fun a : A => θ0 (retrFree (a, r))) (θ0 c))
@@ -1283,7 +1293,7 @@ Proof.
 Qed.
 
 Lemma θ0_vs_c_sample :
-  θ0 c_sample 
+  θ0 c_sample
   =
   dnib stT_Frp
     (fun a : A => dnib stT_Frp (fun r : Arst (inr o) => θ0 (retrFree (a, r))) (θ0 splo))
@@ -1444,7 +1454,7 @@ X Y k.
   rewrite /=. assumption.
 Qed.
 
-Lemma θ_dens_vs_bind' {X Y : choiceType} 
+Lemma θ_dens_vs_bind' {X Y : choiceType}
 (m : Frp  X )
 (k : X -> Frp (prod_choiceType Y S)) :
 θ_dens (bindrFree m k) =
@@ -1500,7 +1510,7 @@ Proof.
   cbn. f_equal.
 Qed.
 
-  
+
 
 Lemma θ_dens_OF_θ0_c_sample_s0 (s0:S) :
 θ_dens (θ0 c_sample s0)
@@ -1572,7 +1582,7 @@ Proof.
     reflexivity.
     destruct q as [qmap q0 q_sum q1]. apply q0.
 }
-  symmetry. 
+  symmetry.
 (*   epose (hlp := psum_pair_swap *)
 (* (S:=fun (yx0 : Y * X) => let (y0,x0) := yx0 in *)
 (* p x0 * q y0 * dunit (T:=prod_choiceType X Y) (x0,y0) (x,y)) _). *)
@@ -1651,7 +1661,7 @@ g x y)).
   epose (bind_bind := (ord_relmon_law3 SDistr) _ _ _ _ _).
   eapply equal_f in bind_bind.
   rewrite /= in bind_bind.
-  unfold SubDistr.SDistr_obligation_2 in bind_bind.  
+  unfold SubDistr.SDistr_obligation_2 in bind_bind.
   erewrite <- bind_bind. f_equal.
   apply boolp.funext ; move=> y.
   clear bind_bind.
@@ -1673,7 +1683,7 @@ g x y)).
   epose (bind_bind := (ord_relmon_law3 SDistr) _ _ _ _ _).
   eapply equal_f in bind_bind.
   rewrite /= in bind_bind.
-  unfold SubDistr.SDistr_obligation_2 in bind_bind.  
+  unfold SubDistr.SDistr_obligation_2 in bind_bind.
   erewrite <- bind_bind. f_equal.
   apply boolp.funext ; move=> x.
   clear bind_bind.
@@ -1692,7 +1702,7 @@ Lemma sample_c_is_c_sample (s0 : S):
 Proof.
   rewrite (θ_dens_OF_θ0_sample_c_s0 s0).
   rewrite (θ_dens_OF_θ0_c_sample_s0 s0).
-  unshelve epose (hlp := 
+  unshelve epose (hlp :=
 SD_commutativity'
 (utheta_dens_fld (Ar o) sploP)
 (utheta_dens_fld _ (θ0 c s0)) _).
