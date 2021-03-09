@@ -337,12 +337,6 @@ Definition Aux :
       }
     ].
 
-Definition DH_security : Prop :=
-  ∀ LA A,
-    ValidPackage LA [interface val #[10] : 'unit → chPubKey × chCipher ] A_export A →
-    fdisjoint LA DH_loc →
-    AdvantageE DH_rnd DH_real A = 0.
-
 Lemma ots_real_vs_rnd_equiv_true :
   Aux ∘ DH_real ≈₀ ots_real_vs_rnd true.
 Proof.
@@ -690,11 +684,15 @@ Proof.
   cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
 Qed.
 
-Theorem ElGamal_OT (dh_secure : DH_security) : OT_rnd_cipher.
+Theorem ElGamal_OT :
+  ∀ LA A,
+    ValidPackage LA [interface val #[challenge_id'] : chPlain → 'option chCipher] A_export A →
+    fdisjoint LA (ots_real_vs_rnd true).(locs) →
+    fdisjoint LA (ots_real_vs_rnd false).(locs) →
+    Advantage ots_real_vs_rnd A <= AdvantageE DH_rnd DH_real (A ∘ Aux).
 Proof.
-  unfold OT_rnd_cipher. intros LA A vA hd₀ hd₁.
+  intros LA A vA hd₀ hd₁.
   simpl in hd₀, hd₁. clear hd₁. rename hd₀ into hd.
-  apply Advantage_le_0.
   rewrite Advantage_E.
   pose proof (
     Advantage_triangle_chain (ots_real_vs_rnd false) [::
@@ -706,21 +704,6 @@ Proof.
   rewrite !GRing.addrA in ineq.
   eapply ler_trans. 1: exact ineq.
   clear ineq.
-  rewrite -Advantage_link. erewrite dh_secure. 2: exact _.
-  2:{
-    rewrite fdisjointUl. apply/andP. split.
-    - unfold DH_loc. unfold L_locs_counter in hd.
-      rewrite fdisjointC.
-      eapply fdisjoint_trans. 2:{ rewrite fdisjointC. exact hd. }
-      rewrite [X in fsubset _ X]fset_cons.
-      apply fsubsetUr.
-    - unfold DH_loc. rewrite fset_cons. rewrite -fset0E. rewrite fsetU0.
-      rewrite fdisjoint1s.
-      apply/negP. intro e.
-      rewrite in_fset in e. rewrite in_cons in e. rewrite mem_seq1 in e.
-      move: e => /orP [/eqP e | /eqP e].
-      all: discriminate.
-  }
   rewrite ots_real_vs_rnd_equiv_true. 3: auto.
   2:{
     rewrite fdisjointUr. apply/andP. split.
@@ -751,7 +734,8 @@ Proof.
       rewrite [X in fsubset _ X]fset_cons.
       apply fsubsetUr.
   }
-  rewrite !GRing.addr0. auto.
+  rewrite GRing.addr0. rewrite GRing.add0r.
+  rewrite -Advantage_link. auto.
 Qed.
 
 (* TODO Updated definitions of old theorems
