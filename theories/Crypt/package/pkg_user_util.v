@@ -141,6 +141,68 @@ Module PackageUserUtil (π : RulesParam).
     lookup_op_squeeze ;
     cbn.
 
+  Ltac ssprove_match_commut_gen :=
+    repeat lazymatch goal with
+    | |- _ = ?rr =>
+      lazymatch rr with
+      | x ← sample ?op ;; _ =>
+        let x' := fresh x in
+        eapply (f_equal (sampler _)) ;
+        eapply functional_extensionality with (f := λ x', _) ; intro x'
+      | x ← get ?ℓ ;; _ =>
+        let x' := fresh x in
+        eapply (f_equal (getr _)) ;
+        eapply functional_extensionality with (f := λ x', _) ; intro x'
+      | put ?ℓ := ?v ;; _ =>
+        eapply (f_equal (putr _ _))
+      | x ← cmd ?c ;; _ =>
+        let x' := fresh x in
+        eapply (f_equal (cmd_bind _)) ;
+        eapply functional_extensionality with (f := λ x', _) ; intro x'
+      | x ← ?c ;; _ =>
+        let x' := fresh x in
+        eapply (f_equal (bind _)) ;
+        eapply functional_extensionality with (f := λ x', _) ; intro x'
+      | code_link (match ?x with _ => _ end) _ =>
+        instantiate (1 := ltac:(let _ := type of x in destruct x)) ;
+        destruct x ; cbn - [lookup_op] ;
+        lazymatch goal with
+        | |- context [ code_link (match _ with _ => _ end) _ ] =>
+          idtac
+        | |- _ =>
+          reflexivity
+        end
+      | match ?x with _ => _ end =>
+        instantiate (1 := ltac:(let _ := type of x in destruct x)) ;
+        destruct x ; cbn - [lookup_op] ;
+        lazymatch goal with
+        | |- context [ code_link (match _ with _ => _ end) _ ] =>
+          idtac
+        | |- _ =>
+          reflexivity
+        end
+      end
+    end.
+
+  Ltac ssprove_code_link_commute_aux rr :=
+    lazymatch rr with
+    | context [ code_link (match _ with _ => _ end) _ ] =>
+      let T := type of rr in
+      let tm := fresh "tm" in
+      evar (tm : T) ;
+      replace rr with tm ; subst tm ; [| solve [ ssprove_match_commut_gen ] ]
+    | _ => idtac
+    end.
+
+  Ltac ssprove_code_link_commute :=
+    lazymatch goal with
+    | |- ⊢ ⦃ _ ⦄ ?ll ≈ ?rr ⦃ _ ⦄ =>
+      ssprove_code_link_commute_aux ll ;
+      ssprove_code_link_commute_aux rr
+    | |- _ =>
+      fail "ssprove_code_link_commute: goal should be syntactic judgment"
+    end.
+
   Ltac simplify_linking :=
     repeat chUniverse_eqP_handle ;
     cbn.
