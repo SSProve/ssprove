@@ -718,9 +718,18 @@ Ltac ssprove_zip_link_step :=
       | |- _ =>
         eapply rreflexivity_rule
       end
-    | match lookup_op ?p ?o with _ => _ end =>
+    (* | match lookup_op ?p ?o with _ => _ end =>
       lookup_op_squeeze ;
       cbn - [lookup_op] ;
+      lazymatch goal with
+      | |- context [ code_link (match _ with _ => _ end) _ ] =>
+        idtac
+      | |- _ =>
+        eapply rreflexivity_rule
+      end *)
+    | match ?x with _ => _ end =>
+      instantiate (1 := ltac:(let _ := type of x in destruct x)) ;
+      destruct x ; cbn - [lookup_op] ;
       lazymatch goal with
       | |- context [ code_link (match _ with _ => _ end) _ ] =>
         idtac
@@ -747,12 +756,58 @@ Proof.
   (* We go to the relation logic using equality as invariant. *)
   eapply eq_rel_perf_ind_eq.
   simplify_eq_rel m.
-  eapply r_transR. (* 1: ssprove_zip_link. *)
-  1:{
-    ssprove_zip_link_step. ssprove_zip_link_step. ssprove_zip_link_step.
-    ssprove_zip_link_step.
+  lazymatch goal with
+  | |- ⊢ ⦃ _ ⦄ _ ≈ ?rr ⦃ _ ⦄ =>
+    let T := type of rr in
+    let tm := fresh "tm" in
+    evar (tm : T) ;
+    replace rr with tm ; subst tm
+  end.
+  2:{
+    repeat lazymatch goal with
+    | |- _ = ?rr =>
+      lazymatch rr with
+      | x ← sample ?op ;; _ =>
+        let x' := fresh x in
+        eapply (f_equal (sampler _)) ;
+        eapply functional_extensionality with (f := λ x', _) ; intro x'
+      | x ← get ?ℓ ;; _ =>
+        let x' := fresh x in
+        eapply (f_equal (getr _)) ;
+        eapply functional_extensionality with (f := λ x', _) ; intro x'
+      | put ?ℓ := ?v ;; _ =>
+        eapply (f_equal (putr _ _))
+      | x ← cmd ?c ;; _ =>
+        let x' := fresh x in
+        eapply (f_equal (cmd _)) ;
+        eapply functional_extensionality with (f := λ x', _) ; intro x'
+      | x ← ?c ;; _ =>
+        let x' := fresh x in
+        eapply (f_equal (bind _)) ;
+        eapply functional_extensionality with (f := λ x', _) ; intro x'
+      | code_link (match ?x with _ => _ end) _ =>
+        instantiate (1 := ltac:(let _ := type of x in destruct x)) ;
+        destruct x ; cbn - [lookup_op] ;
+        lazymatch goal with
+        | |- context [ code_link (match _ with _ => _ end) _ ] =>
+          idtac
+        | |- _ =>
+          reflexivity
+        end
+      | match ?x with _ => _ end =>
+        instantiate (1 := ltac:(let _ := type of x in destruct x)) ;
+        destruct x ; cbn - [lookup_op] ;
+        lazymatch goal with
+        | |- context [ code_link (match _ with _ => _ end) _ ] =>
+          idtac
+        | |- _ =>
+          reflexivity
+        end
+      end
+    end.
   }
-  cbn - [lookup_op].
+  simpl.
+  simplify_linking.
   (* We are now in the realm of program logic *)
   ssprove_same_head_r. intro count.
   ssprove_same_head_r. intros _.
