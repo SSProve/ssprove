@@ -1,52 +1,37 @@
 (** Tactics to help prove things abouve packages
 
-  TODO
+  Massaging perfect equivalence goals
+  -----------------------------------
 
-  Here are some ideas for improvement:
+  - [simplify_eq_rel m]
+    Will deal with a goal of the form [eq_up_to_inv] by reducing it to
+    syntactical judgments about its procedures.
 
-  - A swapping tactic. I imagine something like
+  - [ssprove_code_link_commute]
+    Will operate on a syntactic judgment [⊢ ⦃ pre ⦄ l ≈ r ⦃ post ⦄] and deal
+    with code linking apearing in [l] and/or [r], in particular making it
+    commute with pattern-matching.
 
-    ssprove swap lhs 2
+  - [simplify_linking]
+    Will deal with residual [chUniverse_eqP] coming from linking.
 
-    to swap commands in the lhs at depth 2.
-    It would basically try to play by hand the rules I did in PRF/ElGamal.
-    For instance applying rsamplerC_cmd automatically.
 
-  - More generally some tactics to apply the rules, hopefully ones that are not
-    as slow when failing, maybe providing clearer error messages.
-    It would be useful to infer the cmd_sample etc. and more importantly to
-    deal with higher order unification for cmd_put.
-    Something like
+  Tools for relation program logic
+  --------------------------------
 
-    ssprove reflexivity
+  - [ssprove_same_head_r]
+    Applies the rule that states that both pieces of code have the same head
+    (meaning the same command at top-level).
+    It is right-biased and as such will work even if the left-hand side is
+    an evar.
 
-    could try to apply the reflexivity rule, and even use weakening
-    automatically if necessary? Maybe not.
+  - [ssprove_swap_rhs n]
+    Swap in the right-hand side.
+    Argument n correspond to depth at which to swap.
+    0 will swap the toplevel, 1 will swap under one command, and so on.
 
-  - Provide a new notation
-
-    #import [ #[0] : 'nat → 'nat ] as inc ;; p
-
-    which behaves as
-
-    let inc := λ x, cmd_op (0, 'nat, 'nat) x in p
-
-    The idea being that by using #import, linking now should work as a
-    substitution if computation is done in the right order (so zeta last).
-
-    The good thing with this notation is that its meaning can be changed
-    later on to be an actual constructor of code, replacing opr.
-    Same as this notation, with discipline placing imports at the start,
-    linking will become seemless.
-    Better kept for later though, because it's another refactoring, though
-    not as big as the current one.
-    Problem: It doesn't work when linking several times. After the first
-    linking, #import might no longer be in first position.
-
-    It might be better to have codes without #import first, then
-    consider things which can be prefixed by as many #import as one wants.
-
-    It might also make sense not to have op/import as a command.
+  - [ssprove_swap_lhs n]
+    Similar but in the left-hand side.
 
 **)
 
