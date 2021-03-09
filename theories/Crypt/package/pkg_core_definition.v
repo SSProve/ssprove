@@ -31,9 +31,6 @@ Set Primitive Projections.
 
 (* General definitions *)
 
-Declare Scope package_scope.
-Delimit Scope package_scope with pack.
-
 
 Module CorePackageTheory (π : RulesParam).
 

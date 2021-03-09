@@ -222,6 +222,9 @@ Definition inspect {A : Type} (x : A) : { y : A | y = x } :=
 
 *)
 
+Declare Scope package_scope.
+Delimit Scope package_scope with pack.
+
 (* Hints notation *)
 Notation "[ 'hints' ]" :=
   (_)
