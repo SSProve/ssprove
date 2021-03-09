@@ -181,7 +181,9 @@ End AsymmetricSchemeAlgorithms.
 Module AsymmetricScheme (π : AsymmetricSchemeParams)
                         (Alg : AsymmetricSchemeAlgorithms π).
 
+  Set Warnings "-custom-entry-overriden".
   Import Alg.
+  Set Warnings "custom-entry-overriden".
   Import PackageNotation.
 
   Definition U (i : Index) :
