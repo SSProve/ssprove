@@ -420,11 +420,15 @@ interchange_psum :
     psum (λ y : U, psum (λ x : T, S x y))
 ```
 
-### How to find axioms
+### Other admits
 
-Our methodology to find such dependencies is to use the `Print Assumptions`
-command of Coq which lists axioms a definition depends on.
-For instance
+Our development also contains a few new work-in-progress results that are
+admitted, but none of them is used to show the results from the paper above.
+
+### How to find axioms/admits
+
+We use the `Print Assumptions`command of Coq which lists axioms/admits on which
+a definition depends.  For instance
 ```coq
 Print Assumptions par_commut.
 ```
