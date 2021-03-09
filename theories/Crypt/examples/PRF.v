@@ -225,8 +225,7 @@ Module PRF_example.
   Import π.
   Include (SymmetricSchemeRules π).
 
-  Module MyPackage := Package_Make (MyRules.myparamU).
-  Import MyPackage.
+  Import MyRules.MyPackage.
   Import PackageNotation.
 
   Definition key_location : Location := ('option Key ; 0).
