@@ -1,10 +1,14 @@
 # SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq
 
-This complementary material corresponds to the Coq formalisation of the results
-mentioned in the paper.
-This README serves as guide to installing this project and finding
-correspondence between the claims in the paper and their formal proofs in Coq,
-as well as listing the assumptions that the formalisation makes.
+This repository contains Coq formalisation of the results from the paper:
+- SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq.
+  Carmine Abate, Philipp G. Haselwarter, Exequiel Rivas, Antoine Van Muylder,
+  Théo Winterhalter, Catalin Hritcu, Kenji Maillard, and Bas Spitters. March 2021.
+
+This README serves as guide to installing this project and finding the
+correspondence between the claims in the paper and the formal proofs in Coq, as
+well as listing the small set of standard axioms on which the formalisation
+relies (mostly transitively by using `mathcomp-analysis`).
 
 ## Prerequisites
 
@@ -14,9 +18,6 @@ as well as listing the assumptions that the formalisation makes.
 - Mathcomp analysis `0.3.2`
 - Coq Extructures `0.2.2`
 
-To build the dependency graph, you can optionally install `graphviz`. On macOS,
-`gsed` is additionally required for this.
-
 You can get them from the `opam` package manager for `ocaml`:
 ```sh
 opam repo add coq-released https://coq.inria.fr/opam/released
@@ -24,21 +25,24 @@ opam update
 opam install coq.8.12.0 coq-equations.1.2.3+8.12 coq-mathcomp-analysis.0.3.2 coq-extructures.0.2.2
 ```
 
-## Step-by-step compilation guide
+To build the dependency graph, you can optionally install `graphviz`.
+On macOS, `gsed` is additionally required for this.
 
-Run `make` from this directory to compile all the coq files
+## Running verification
+
+Run `make` from this directory to compile all the Coq files
 (this step is needed for the walkthrough). It should succeed
 displaying only warnings.
 
 Run `make graph` to build a graph of dependencies between sources.
 
-## Organisation of the directories
+## Directory organisation
 
 | Directory             | Description                                          |
 |-----------------------|------------------------------------------------------|
 | `theories/`           | Root of all the Coq files                            |
 | `theories/Mon`        | External development coming from "Dijkstra Monads For All" |
-| `theories/Relational` | External development coming from "The Next 700 Relational Program |Logics"
+| `theories/Relational` | External development coming from "The Next 700 Relational Program Logics"|
 | `theories/Crypt`      | This paper                                           |
 
 ## Mapping between paper and formalisation
@@ -54,7 +58,6 @@ import interface `I` and export interface `E`.
 
 Package laws, as introduced in the paper, are all stated and proven in
 `pkg_composition.v` directly on raw packages.
-
 
 #### Sequential composition
 
@@ -185,6 +188,7 @@ which can be read as
 
 It once again requires some validity and trimming properties.
 
+
 ### Examples
 
 The PRF example is developed in `theories/Crypt/examples/PRF.v`.
@@ -245,7 +249,7 @@ Definition DH_security : Prop :=
 
 Figure 13 presents a selection of rules for our probabilistic relational
 program logic. Most of them can be found in
-`theories/Crypt/package/pkg_rhl.v` which provides an interface for use of those
+`theories/Crypt/package/pkg_rhl.v` which provides an interface for using these
 rules directly with `code`.
 
 | Rule in paper | Rule in Coq           |
@@ -261,16 +265,16 @@ to packages, they can be found in `theories/Crypt/rules/UniformStateProb.v`:
 
 | Rule in paper | Rule in Coq             |
 |---------------|-------------------------|
-| uniform       | `bounded_do_while_rule` |
+| uniform       | `Uniform_bij_rule`      |
 | asrt          | `assert_rule`           |
 | asrtL         | `assert_rule_left`      |
 
 Finally the "bwhile" rule is proven as `bounded_do_while_rule` in
 `theories/Crypt/rules/RulesStateProb.v`.
 
-We will now list the different lemmata and theorem proven on our probabilistic
-relational program logic in the paper. They can all be found in
-`theories/Crypt/package/pkg_rhl.v`.
+We will now list the lemmas and theorems about packages listed in the paper and
+proven using our probabilistic relational program logic. They can all be found
+in `theories/Crypt/package/pkg_rhl.v`.
 
 **Lemma 1**
 ```coq
@@ -334,7 +338,7 @@ This part of the mapping corresponds to section 5.
 In `theories/Relational/OrderEnrichedCategory.v` we introduce some abstract
 notions such as categories, functors, relative monads, lax morphisms of relative
 monads and isomorphisms of functors, all of which are order-enriched.
-The file `theories/Relational/OrderEnrichedCategory.v` instantiate all of these
+The file `theories/Relational/OrderEnrichedCategory.v` instantiates all of these
 abstract notions.
 
 Free monads are defined in
@@ -343,7 +347,7 @@ Free monads are defined in
 In `theories/Crypt/rhl_semantics/ChoiceAsOrd.v` we introduce the category of
 choice types (`choiceType`) which are useful for sub-distributions:
 they are basically the types from which we can sample.
-They are one of the reason why our monads are always relative.
+They are one of the reasons why our monads are always relative.
 
 More basic categories can be found in the directory
 `theories/Crypt/rhl_semantics/more_categories/`, namely in the files
@@ -377,14 +381,14 @@ Instances (in `theories/Crypt/rhl_semantics/state_prob/`):
 `LiftStateful.v`
 
 
-## Axioms and assumptions
+## Axioms
 
-### Axioms
+### List of axioms
 
-Throughout the development we rely on the axioms of functional extensionality,
-proof irrelevance, as well as propositional extensionality as listed below.
-Perhaps more surprisingly, we also rely on the constructive indefinite
-description axiom. We inherit its use from mathcomp-analysis.
+Throughout the development we rely on the following standard axioms: functional
+extensionality, proof irrelevance, and propositional extensionality, as listed
+below. We also rely on the constructive indefinite description axiom, whose use
+we inherit from the `mathcomp-analysis` library.
 
 ```coq
 ax_proof_irrel : ClassicalFacts.proof_irrelevance
@@ -396,18 +400,16 @@ boolp.constructive_indefinite_description :
   ∀ (A : Type) (P : A → Prop), (∃ x : A, P x) → {x : A | P x}
 ```
 
-Following the `mathcomp` analysis library, we abstract from a specific construction
+The `mathcomp-analysis` library also abstracts from a specific construction of the reals:
 
 ```coq
 R : realType
 ```
-We could plugin any real number construction: Cauchy, Dedekind, ...
+One could plugin any real number construction: Cauchy, Dedekind, ...
 In `mathcomp`s ` Rstruct.v` an instance is build from any instance of the abstract `stdlib` reals.
 An instance of the latter is build from the (constructive) Cauchy reals in `Coq.Reals.ClassicalConstructiveReals`.
 
-
-By using `mathcomp-analysis` we also inherit one of the admitted lemmata they
-have:
+Finally, by using `mathcomp-analysis` we also inherit an admitted lemma they have:
 
 ```coq
 interchange_psum :
@@ -418,25 +420,7 @@ interchange_psum :
     psum (λ y : U, psum (λ x : T, S x y))
 ```
 
-### Admitted lemma
-
-Our development currently still contains a few unproven results. All the results
-presented in the paper are formalised without admitted dependencies (besides
-those announced above) except for one admitted lemma in the ElGamal example:
-
-```coq
-Lemma UniformIprod_UniformUniform :
-  ∀ (i j : Index),
-    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
-      xy ← sample U (i_prod i j) ;; ret xy ≈
-      x ← sample U i ;; y ← sample U j ;; ret (x, y)
-    ⦃ eq ⦄.
-```
-
-It states that sampling from the uniform distribution over a product is the same
-as sampling over two uniform distributions.
-
-### Methodology for finding axioms
+### How to find axioms
 
 Our methodology to find such dependencies is to use the `Print Assumptions`
 command of Coq which lists axioms a definition depends on.
@@ -456,5 +440,5 @@ boolp.functional_extensionality_dep
 π.chEmb : π.rel_choiceTypes → choiceType
 ```
 
-Note that `π.rel_choiceTypes`, `π.probE` and `π.chEmb` are not actually axioms
-but instead parameters of the `Package` module, which are listed nonetheless.
+Note that `π.rel_choiceTypes`, `π.probE` and `π.chEmb` are not actually axioms,
+but parameters of the `Package` module, which are listed nonetheless.
