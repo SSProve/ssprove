@@ -143,11 +143,8 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Definition challenge_id : nat := 8. (*challenge for LR *)
   Definition challenge_id' : nat := 9. (*challenge for real rnd *)
 
-  Definition U (i : Index) :
-    {rchT : myparamU.rel_choiceTypes &
-            myparamU.probE (myparamU.chEmb rchT)} :=
-    (existT (λ rchT : myparamU.rel_choiceTypes, myparamU.probE (chEmb rchT))
-            (inl (inl i)) (inl (Uni_W i))).
+  Definition U (i : Index) : Op :=
+    existT _ (inl (inl i)) (inl (Uni_W i)).
 
   Definition gT2ch : gT → 'fin #|gT|.
   Proof.

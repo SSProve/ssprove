@@ -245,11 +245,8 @@ Module PRF_example.
 
   Parameter PRF : Words → Key → Key.
 
-  Definition U (i : nat) `{Positive i} :
-    { rchT : MyRules.myparamU.rel_choiceTypes &
-      MyRules.myparamU.probE (MyRules.myparamU.chEmb rchT) } :=
-    existT (λ rchT : MyRules.myparamU.rel_choiceTypes, MyRules.myparamU.probE (MyRules.myparamU.chEmb rchT))
-            ('fin i) (inl (MyRules.Unif_Fin (mkpos i))).
+  Definition U (i : nat) `{Positive i} : Op :=
+    existT _ ('fin i) (inl (MyRules.Unif_Fin (mkpos i))).
 
   Notation " 'chWords' " := ('fin (2^n)%N) (in custom pack_type at level 2).
   Notation " 'chKey' " := ('fin (2^n)%N) (in custom pack_type at level 2).
