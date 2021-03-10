@@ -120,7 +120,7 @@ Section unarySpecStateOmegaCpo.
   Proof. reflexivity. Defined.
 
   Program Definition tarksi_fix (f : dfst (WSt A) --> WSt A) : dfst (WSt A) :=
-    ⦑fun post s0 => exists w, f w ≤ w s/\ w∙1 post s0⦒.
+    ⦑fun post s0 => exists w, f w ≤ w /\ w∙1 post s0⦒.
   Next Obligation.
     move=> ? ? H ? [w0 [? H']]; exists w0; split=> //; move: H'; apply: (w0∙2)=> //.
   Qed.
@@ -244,13 +244,13 @@ Section ImpMonad.
   Definition W' := ordmonad_to_relmon Wun.
 
   (* Eval cbv in (Wun bool). *)
-  (* Notation "x ≊ y" := (x ≤ y s/\ y ≤ x) (at level 70). *)
+  (* Notation "x ≊ y" := (x ≤ y /\ y ≤ x) (at level 70). *)
 
   Definition W0 := STCont S.
   Definition W0' := ordmonad_to_relmon W0.
 
   (* Program Definition tarksi_fix' {A} (f : dfst (W0' A) --> W0' A) : dfst (W0' A) := *)
-  (*   ⦑fun post s0 => exists w, f w ≤ w s/\ w∙1 post s0⦒. *)
+  (*   ⦑fun post s0 => exists w, f w ≤ w /\ w∙1 post s0⦒. *)
   (* Next Obligation. *)
   (*   move=> ? ? H ? [w0 [? H']]; exists w0; split=> //; move: H'; apply: (w0∙2)=> //. *)
   (* Qed. *)
@@ -696,14 +696,14 @@ Section ImpMonad.
           (pre : S -> S -> SProp)
           (post : A1 -> S -> S -> A2 -> S -> S -> SProp)
     : dfst (Wrel Wun ⟨A1,A2⟩) :=
-    ⦑fun p s0 => pre (nfst s0) (nsnd s0) s/\
+    ⦑fun p s0 => pre (nfst s0) (nsnd s0) /\
                  forall a1 a2 s, post a1 (nfst s0) (nfst s) a2 (nsnd s0) (nsnd s)
                             -> p ⟨a1,a2⟩ s⦒.
   Next Obligation. cbv ; intuition. Qed.
 
   Lemma do_while_rule (inv : bool -> bool -> S -> S -> SProp)
         (body1 body2 : Imp bool) :
-        ⊨ body1 ≈ body2 [{ fromPrePost (inv true true) (fun b1 _ s1 b2 _ s2 => b1 = b2 s/\ inv b1 b2 s1 s2) }] ->
+        ⊨ body1 ≈ body2 [{ fromPrePost (inv true true) (fun b1 _ s1 b2 _ s2 => b1 = b2 /\ inv b1 b2 s1 s2) }] ->
         ⊨ do_while body1 ≈ do_while body2 [{ fromPrePost (inv true true) (fun 'tt _ s1 'tt _ s2 => inv false false s1 s2) }].
   Proof.
     admit.

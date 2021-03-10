@@ -294,7 +294,7 @@ Section FreeDijkstraMonads.
 
   (* Import FunctionalExtensionality. *)
   (* Import SPropNotations. *)
-  (* Notation "w1 ≃ w2" := (w1 ≤ w2 s/\ w2 ≤ w1) (at level 65). *)
+  (* Notation "w1 ≃ w2" := (w1 ≤ w2 /\ w2 ≤ w1) (at level 65). *)
   (* Context (Wantisym : forall A (w1 w2 : W A), w1 ≃ w2 -> w1 = w2). *)
   (* Lemma kleisli_antisym A B (w1 w2 : A -> W B) : (forall a, w1 a ≃ w2 a) -> w1 = w2.  *)
   (* Proof. *)

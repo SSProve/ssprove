@@ -336,7 +336,7 @@ Definition θ0 (A1 A2 : Type) (ch1 : Choice.class_of A1) (ch2 : Choice.class_of 
 Proof.
   rewrite /SDistr_carrier. move => [d1 d2].
   exists (fun π : A1 * A2 -> SProp => (s∃ d, Prop2SProp (coupling d d1 d2)
-                                     s/\
+                                     /\
                                     (forall (a1 : A1) (a2 : A2), (d (a1, a2)) > 0 -> π (a1, a2)))).
   move => π1 π2 leq12 [d [marg_d integral]].
   exists d. split.
@@ -377,7 +377,7 @@ Definition kd {A1 A2 B1 B2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice.cl
                          s∃ d : SDistr_carrier (Couplings.F_choice_prod_obj
                                                   ⟨ Choice.Pack chB1, Choice.Pack chB2 ⟩),
                              Prop2SProp (coupling d (f1 a1) (f2 a2))
-                                        s/\ (forall (a3 : B1) (a4 : B2), 0 < d (a3, a4) -> π (a3, a4))) :
+                                        /\ (forall (a3 : B1) (a4 : B2), 0 < d (a3, a4) -> π (a3, a4))) :
        TypeCat ⦅ choice_incl (F_choice_prod ⟨ Choice.Pack chA1, Choice.Pack chA2 ⟩);
                  SDistr (F_choice_prod ⟨ Choice.Pack chB1, Choice.Pack chB2 ⟩) ⦆.
 Proof.
@@ -407,7 +407,7 @@ Lemma kd_coup {A1 A2 B1 B2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice.cl
                   s∃ d : SDistr_carrier (Couplings.F_choice_prod_obj
                                            ⟨ Choice.Pack chB1, Choice.Pack chB2 ⟩),
                       Prop2SProp (coupling d (f1 a1) (f2 a2))
-                                 s/\ (forall (a3 : B1) (a4 : B2), 0 < d (a3, a4) -> π (a3, a4))) :
+                                 /\ (forall (a3 : B1) (a4 : B2), 0 < d (a3, a4) -> π (a3, a4))) :
   (forall (x1 : A1) (x2 : A2), coupling ((kd dA integral) (x1,x2)) (f1 x1) (f2 x2)).
 Proof.
   move => a1 a2.

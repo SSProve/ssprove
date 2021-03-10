@@ -261,8 +261,8 @@ Section RelationalProgramLogicFromRelativeMonad.
     - (* Strenghening the inductive invariant *)
       match goal with
       | [|- ?G ] =>
-        enough ((θ1 _ )∙1 (m1 γl) ≤ wm1 γl s/\
-                (θ2 _ )∙1 (m2 γr) ≤ wm2 γr s/\ G) as [[]]=> //
+        enough ((θ1 _ )∙1 (m1 γl) ≤ wm1 γl /\
+                (θ2 _ )∙1 (m2 γr) ≤ wm2 γr /\ G) as [[]]=> //
       end.
       move: γl γr γw=> [γl ll] [γr lr] [/= γw] ;
                         elim: ll lr=> [|xl xls /(fun f => f xls erefl) [[? ?] ?]];

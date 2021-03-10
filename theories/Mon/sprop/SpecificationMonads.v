@@ -76,7 +76,7 @@ Section MonoContProp.
     :=
       @mkAa _ _
             (fun pre w => exist _ (fun p => pre -> proj1_sig w p) _)
-            (fun pre w => exist _ (fun p => pre s/\ proj1_sig w p) _)
+            (fun pre w => exist _ (fun p => pre /\ proj1_sig w p) _)
             _ _ _.
   Solve All Obligations with cbv ; intuition ; try (eapply (proj2_sig w) ; eauto).
   Next Obligation. compute. split ; intuition.
@@ -95,7 +95,7 @@ Section PrePostSpec.
   (* Generic pre-/post-conditions for the W^Pure specification monad. *)
   Program Definition PrePostSpec {A} (P : Prop) (Q : A -> Prop) :
     MonoContSProp A :=
-    exist _ (fun (Z : A -> Prop) => P s/\ forall a, Q a -> Z a) _.
+    exist _ (fun (Z : A -> Prop) => P /\ forall a, Q a -> Z a) _.
   Next Obligation. cbv ; intuition eauto. Qed.
 
   Section Ran.
@@ -106,7 +106,7 @@ Section PrePostSpec.
     Definition MonoContAlongPrePost_ran : ran w (PrePostSpec pre post).
     Proof.
       unshelve econstructor.
-      refine (fun b => exist _ (fun p => post b s/\ proj1_sig w p) _).
+      refine (fun b => exist _ (fun p => post b /\ proj1_sig w p) _).
       cbv ; intuition ; eapply (proj2_sig w _) ; eauto.
       split.
       cbv. intros ; split.
@@ -259,7 +259,7 @@ Section UpdateSpecMonad.
       :=
         @mkAa _ _
               (fun pre w => exist _ (fun p x => pre -> proj1_sig w p x) _)
-              (fun pre w => exist _ (fun p x => pre s/\ proj1_sig w p x) _)
+              (fun pre w => exist _ (fun p x => pre /\ proj1_sig w p x) _)
               _ _ _.
     Solve All Obligations with cbv ; intuition ; try (eapply (proj2_sig w) ; eauto).
     Next Obligation. compute. split ; intuition.
@@ -376,7 +376,7 @@ Section Pred.
   Definition Pred_ret : forall A, A -> Pred A := fun _ x y => y = x.
   Definition Pred_bind
     : forall A B, Pred A -> (A -> Pred B) -> Pred B :=
-    fun A B m f y => exists x, m x s/\ (f x) y.
+    fun A B m f y => exists x, m x /\ (f x) y.
 
   Program Definition PredM : Monad :=
     @mkMonad Pred Pred_ret Pred_bind _ _ _.
@@ -416,8 +416,8 @@ Module PrePost.
   Definition PP_bind
     : forall A B, PP A -> (A -> PP B) -> PP B :=
     fun A B m f =>
-      ⟨ (nfst m s/\ forall x, nsnd m x -> nfst (f x)),
-        fun y => exists x, nsnd m x s/\ nsnd (f x) y ⟩.
+      ⟨ (nfst m /\ forall x, nsnd m x -> nfst (f x)),
+        fun y => exists x, nsnd m x /\ nsnd (f x) y ⟩.
 
   Program Definition PP_monad : Monad :=
     @mkMonad PP PP_ret PP_bind _ _ _.
@@ -449,7 +449,7 @@ Module PrePost.
   Qed.
 
   Program Definition PP_rel A : relation (PP A) :=
-    fun m1 m2 => (nfst m2 -> nfst m1) s/\ forall x, nsnd m1 x -> nsnd m2 x.
+    fun m1 m2 => (nfst m2 -> nfst m1) /\ forall x, nsnd m1 x -> nsnd m2 x.
   Instance PP_rel_preorder A : PreOrder (@PP_rel A).
   Proof. constructor ; cbv ; dintuition. Qed.
 
@@ -475,7 +475,7 @@ Module PrePost.
     Context (Hpre : nfst w' -> nfst w).
 
     Local Definition PPSpec_ran : A -> PPSpecMonad B :=
-      fun (a:A) => ⟨nsnd w a s/\ nfst w', fun b => nsnd w a -> nsnd w' b⟩.
+      fun (a:A) => ⟨nsnd w a /\ nfst w', fun b => nsnd w a -> nsnd w' b⟩.
 
     Import SPropMonadicStructuresNotation.
 
@@ -504,7 +504,7 @@ Module PrePost.
     :=
       @mkAa _ _
             (fun pre w => ⟨pre -> nfst w, nsnd w⟩)
-            (fun pre w => ⟨pre s/\ nfst w, nsnd w⟩)
+            (fun pre w => ⟨pre /\ nfst w, nsnd w⟩)
             _ _ _.
   Solve All Obligations with cbv ; intuition.
 
@@ -524,7 +524,7 @@ Module  StrongestPostcondition.
                        forall (p1 p2 : Prop) x, (p1 -> p2) -> f p1 x -> f p2 x}.
 
   Program Definition SP_ret A (a:A) : SP A :=
-    exist _ (fun p y => @mkOver _ (p s/\ a = y) _) _.
+    exist _ (fun p y => @mkOver _ (p /\ a = y) _) _.
   Next Obligation. destruct H ; assumption. Qed.
   Next Obligation. destruct H0 ; split ; auto. Qed.
 
@@ -540,7 +540,7 @@ Module  StrongestPostcondition.
     exists x0 ; apply (proj2_sig (f x0) _ _ _ (proj2_sig m _ _ x0 H)) ; assumption.
   Qed.
 
-  Lemma trivial_eq (p:Prop) {A} (x:A) : p = (p s/\ x = x).
+  Lemma trivial_eq (p:Prop) {A} (x:A) : p = (p /\ x = x).
   Proof. apply sprop_ext ; split ; dintuition. Qed.
 
   Lemma SPropOver_eq p (q1 q2 : SPropOver p) :
@@ -615,7 +615,7 @@ Section Adjunctions.
   Definition wp2pp A (w : MonoCont A) : PPSpecMonad A :=
     ⟨proj1_sig w (fun _ => True), fun x =>  forall p, proj1_sig w p -> p x⟩.
   Program Definition pp2wp A (pp : PPSpecMonad A) : MonoCont A :=
-    exist _ (fun post => nfst pp s/\ (forall x, nsnd pp x -> post x)) _.
+    exist _ (fun post => nfst pp /\ (forall x, nsnd pp x -> post x)) _.
   Next Obligation. cbv ; intuition. Qed.
 
   Lemma wp_pp_adjunction : forall A pp (w : MonoCont A),
@@ -646,7 +646,7 @@ Section Adjunctions.
   Next Obligation. cbv ; intuition. Qed.
 
   Program Definition mr2wp A (mr:MRSpec A) : MonoCont A :=
-    exist _ (fun p => exists (pre:Prop), proj1_sig (proj1_sig mr pre (assuming pre p)) s/\ pre) _.
+    exist _ (fun p => exists (pre:Prop), proj1_sig (proj1_sig mr pre (assuming pre p)) /\ pre) _.
   Next Obligation.
     cbv ; intuition.
     move: H0 => [pre [Hmr ?]] ; exists pre ; intuition.
@@ -671,7 +671,7 @@ Section Adjunctions.
      fun r => proj1_sig sp True r.
 
    Program Definition pred2sp A (post : PredOM A) : ForwardPredTransformer A :=
-     ⦑fun pre r => @mkOver _ (pre s/\ post r) _⦒.
+     ⦑fun pre r => @mkOver _ (pre /\ post r) _⦒.
    Next Obligation. destruct H ; assumption. Qed.
    Next Obligation. destruct H0; split ; auto. Qed.
 
@@ -694,11 +694,11 @@ Section Adjunctions.
   (** Previous convoluted definition that's secretly "equivalent" to the one above *)
   (*  Definition sp2pp A (sp:ForwardPredTransformer A) : PPSpecMonad A := *)
   (*    let post := fun x => forall (pre : Prop), pre -> proj1_sig sp pre x in *)
-  (*    let pre := exists pre, (forall x, post x -> proj1_sig sp pre x) s/\ pre in *)
+  (*    let pre := exists pre, (forall x, post x -> proj1_sig sp pre x) /\ pre in *)
   (*    ⟨pre, post⟩. *)
 
   (* Program Definition pp2sp0 A (pp : PPSpecMonad A) : ForwardPredTransformer A := *)
-  (*   let sp pre x := pre s/\ (nfst pp -> nsnd pp x) in *)
+  (*   let sp pre x := pre /\ (nfst pp -> nsnd pp x) in *)
   (*   exist _ (fun pre x => @mkOver _ (sp pre x) _) _. *)
   (* Next Obligation. destruct H ; assumption. Qed. *)
   (* Next Obligation. move: H0 => [Hpre Hpost] ; split ; auto. Qed. *)
@@ -706,7 +706,7 @@ Section Adjunctions.
   (* Program Definition pp2sp A (pp : PPSpecMonad A) : ForwardPredTransformer A := *)
   (*   let sp pre x : Prop := *)
   (*       forall (sp: ForwardPredTransformer A), *)
-  (*         (forall x pre', pre' s/\ nsnd pp x -> proj1_sig sp pre' x) -> *)
+  (*         (forall x pre', pre' /\ nsnd pp x -> proj1_sig sp pre' x) -> *)
   (*             proj1_sig sp pre x in *)
   (*   exist _ (fun pre x => @mkOver _ (sp pre x) _) _. *)
   (* Next Obligation. *)
@@ -779,7 +779,7 @@ Section Adjunctions.
 
   Program Definition mr2sp A (mr : MRSpec A)
     : ForwardPredTransformer A :=
-    exist _ (fun pre a => @mkOver _ (pre s/\ forall post, proj1_sig (proj1_sig mr pre post) -> proj1_sig (post a)) _)_.
+    exist _ (fun pre a => @mkOver _ (pre /\ forall post, proj1_sig (proj1_sig mr pre post) -> proj1_sig (post a)) _)_.
   Next Obligation. destruct H ; assumption. Qed.
   Next Obligation.
     move: H0 => [Hpre Hmr] ; split ; [auto|].
@@ -813,7 +813,7 @@ Section WpSpRightKanExtension.
     forall a, proj1_sig sp (nfst pp) a -> nsnd pp a.
 
   Definition wpsp_pairing A (wp: MonoCont A) (sp:ForwardPredTransformer A) : Prop :=
-    (forall pre post, let pp := ⟨pre, post⟩ in ppwp_pairing pp wp -> ppsp_pairing pp sp) s/\
+    (forall pre post, let pp := ⟨pre, post⟩ in ppwp_pairing pp wp -> ppsp_pairing pp sp) /\
     (forall pre post, let pp := ⟨pre, post⟩ in ppsp_pairing pp sp -> ppwp_pairing pp wp).
 
   Context (M : Monad) (θwp : MonadMorphism M MonoCont)

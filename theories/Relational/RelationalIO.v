@@ -68,7 +68,7 @@ Section IOs.
           (pre : Es1 -> Es2 -> Prop)
           (post : A1 -> Es1 -> Es1 -> A2 -> Es2 -> Es2 -> Prop)
     : dfst (Wrel ⟨A1,A2⟩) :=
-    ⦑fun p h => pre (nfst h) (nsnd h) s/\
+    ⦑fun p h => pre (nfst h) (nsnd h) /\
                  forall a1 a2 h', post a1 (nfst h) (nfst h') a2 (nsnd h) (nsnd h')
                             -> p ⟨a1, a2⟩ h'⦒.
   Next Obligation. split; case: H0 => // ? Hy *; apply H, Hy=> //. Qed.
@@ -87,28 +87,28 @@ Section IOs.
       ⊨ ⦃ ttrue ⦄
         read1 ≈ ret a2
         ⦃ fun i1 h1 h1' a2' h2 h2' =>
-            h1' = inl i1 :: h1 s/\ a2' = a2 s/\ h2' = h2 ⦄.
+            h1' = inl i1 :: h1 /\ a2' = a2 /\ h2' = h2 ⦄.
   Proof. cbv; move=> ? ? ? [_ Hpost] ?; by apply: Hpost. Qed.
 
   Lemma read2_rule {A1} : forall (a1:A1),
       ⊨ ⦃ ttrue ⦄
         ret a1 ≈ read2
         ⦃ fun a1' h1 h1' i2 h2 h2' =>
-            h1' =  h1 s/\ a1' = a1 s/\ h2' = inl i2 :: h2 ⦄.
+            h1' =  h1 /\ a1' = a1 /\ h2' = inl i2 :: h2 ⦄.
   Proof. cbv; move=> ? ? ? [_ Hpost] ?; by apply: Hpost. Qed.
 
   Lemma write1_rule {A2}: forall (o1 : O1) (a2:A2),
       ⊨ ⦃ ttrue ⦄
         write1 o1 ≈ ret a2
         ⦃ fun _ h1 h1' a2' h2 h2' =>
-            h1' = inr o1 :: h1 s/\ a2' = a2 s/\ h2' = h2 ⦄.
+            h1' = inr o1 :: h1 /\ a2' = a2 /\ h2' = h2 ⦄.
   Proof. cbv; move=> ? ? ? ? [_ Hpost] ; by apply: Hpost. Qed.
 
   Lemma write2_rule {A1}: forall (a1 : A1) (o2:O2),
       ⊨ ⦃ ttrue ⦄
         ret a1 ≈ write2 o2
         ⦃ fun a1' h1 h1' _ h2 h2' =>
-            h1' = h1 s/\ a1' = a1 s/\ h2' = inr o2 :: h2 ⦄.
+            h1' = h1 /\ a1' = a1 /\ h2' = inr o2 :: h2 ⦄.
   Proof. cbv; move=> ? ? ? ? [_ Hpost] ; by apply: Hpost. Qed.
 End IOs.
 
@@ -201,7 +201,7 @@ Section NI_IO.
           (pre : Es1 -> Es2 -> Prop)
           (post : A1 -> Es1 -> Es1 -> A2 -> Es2 -> Es2 -> Prop)
     : dfst (Wrel ⟨A1,A2⟩) :=
-    ⦑fun p h => pre (nfst h) (nsnd h) s/\
+    ⦑fun p h => pre (nfst h) (nsnd h) /\
                  forall a1 a2 h', post a1 (nfst h) (nfst h') a2 (nsnd h) (nsnd h')
                             -> p ⟨a1, a2⟩ h'⦒.
   Next Obligation. split; case: H0 => // ? Hy *; apply H, Hy=> //. Qed.
@@ -215,21 +215,21 @@ Section NI_IO.
       ⊨ ⦃ ttrue ⦄
         readLow ≈ readLow
         ⦃ fun i1 h1 h1' i2 h2 h2' =>
-            h1' = InpPub i1 :: [] s/\ h2' = InpPub i2 :: [] ⦄.
+            h1' = InpPub i1 :: [] /\ h2' = InpPub i2 :: [] ⦄.
   Proof. cbv; move => ? ? H ? ?; apply H; split; sreflexivity. Qed.
 
   Lemma readHigh_readHigh_rule :
       ⊨ ⦃ ttrue ⦄
         readHigh ≈ readHigh
         ⦃ fun i1 h1 h1' i2 h2 h2' =>
-            h1' = InpPriv i1 :: [] s/\ h2' = InpPriv i2 :: [] ⦄.
+            h1' = InpPriv i1 :: [] /\ h2' = InpPriv i2 :: [] ⦄.
   Proof. cbv; move => ? ? H ? ?; apply H; split; sreflexivity. Qed.
 
   Lemma write_write_rule : forall (o1 : O1) (o2 : O2),
       ⊨ ⦃ ttrue ⦄
         write o1 ≈ write o2
         ⦃ fun _ h1 h1' _ h2 h2' =>
-            h1' = Out o1 :: [] s/\ h2' = Out o2 :: [] ⦄.
+            h1' = Out o1 :: [] /\ h2' = Out o2 :: [] ⦄.
   Proof. cbv; move => ? ? ? ? H; apply H; split; sreflexivity. Qed.
 End NI_IO.
 
@@ -253,7 +253,7 @@ Section NI_Examples.
     (* | (InpPriv i1 :: fp1, fp2) *)
     (* | (fp1, InpPriv i2 :: fp2) => aux fp1 fp2 p *)
     | (InpPub i1 :: fp1, InpPub i2 :: fp2) => i1 = i2 -> aux fp1 fp2 p
-    | (Out o1 :: fp1, Out o2 :: fp2) => o1 = o2 s/\ aux fp1 fp2 p
+    | (Out o1 :: fp1, Out o2 :: fp2) => o1 = o2 /\ aux fp1 fp2 p
     | (_, _) => False
     end.
 
@@ -366,7 +366,7 @@ Section NI_Examples.
                                          (w':=fromPrePost'
                                                 (fun _ _ => True)
                                                 (fun _ _ h1 _ _ h2 =>
-                                                   exists n1 n2, h1 = [Out n1] s/\ h2 = [Out n2])) _ _);
+                                                   exists n1 n2, h1 = [Out n1] /\ h2 = [Out n2])) _ _);
     try apply write_write_rule;
     auto_prepost_eq; do 2 eexists; dintuition.
     cbv -[app filter rev ni_pred]; intuition; apply q.
@@ -416,9 +416,9 @@ Section NI_Examples.
   Lemma NI_prog_declasify : forall f,
     ⊨ ⦃ fun _ _ => True ⦄
       (prog_declasify f) ≈ (prog_declasify f)
-      ⦃ fun _ _ h1' _ _ h2' => 
-          exists i1 i2 o1 o2, h1' = [InpPriv i1; Out o1] s/\
-                          h2' = [InpPriv i2; Out o2] s/\
+      ⦃ fun _ _ h1' _ _ h2' =>
+          exists i1 i2 o1 o2, h1' = [InpPriv i1; Out o1] /\
+                          h2' = [InpPriv i2; Out o2] /\
                           (f i1 = f i2 -> o1 = o2) ⦄.
   Proof.
   Admitted.

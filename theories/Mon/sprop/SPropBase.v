@@ -22,12 +22,12 @@ Export Redefined_sprop_constructs.
 Definition sand := and.
 
 Module SPropNotations.
-  Notation "p s/\ q" := (and p q) (at level 80).
 
   Notation "⦑ t ⦒" := (exist _ t _).
 
   Notation " x ∙1" := (proj1_sig x) (at level 2).
   Notation " x ∙2" := (proj2_sig x) (at level 2).
+
 End SPropNotations.
 
 Section sigLemmas.
@@ -71,5 +71,6 @@ Module SPropAxioms.
   Import SPropNotations.
 
   Axiom sprop_ext : forall {p q : Prop}, p = q <-> Box (sand (p -> q) (q -> p)).
+
 End SPropAxioms.
 
