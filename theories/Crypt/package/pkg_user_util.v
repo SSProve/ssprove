@@ -98,8 +98,7 @@ Module PackageUserUtil (π : RulesParam).
     destruct lookup_op as [f|] eqn:e ; [
     | exfalso ;
       simpl in e ;
-      destruct chUniverse_eqP ; [| contradiction ] ;
-      destruct chUniverse_eqP ; [| contradiction ] ;
+      repeat (destruct chUniverse_eqP ; [| contradiction ]) ;
       discriminate
     ] ;
     eapply lookup_op_spec in e ; simpl in e ;
