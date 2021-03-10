@@ -405,10 +405,10 @@ Proof.
   cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
 Qed.
 
-(** Technical steps
+(** Rules specific to uniform distributions
 
-  Ideally, this would go somewhere else to live in the form of rules.
-  This burden should not be on the user.
+  At the moment, these rules cannot be defined in RHL directly.
+  Hopefully this will change in the future.
 
 *)
 
@@ -419,7 +419,6 @@ Proof.
   intro i. reflexivity.
 Qed.
 
-(* Alternative, we'll see which is better. *)
 Lemma repr_cmd_Uniform :
   ∀ (i : Index),
     repr_cmd (cmd_sample (U i)) = @Uniform_F i _.
@@ -439,6 +438,9 @@ Proof.
   - split. all: auto.
 Qed.
 
+(* TW: Can we rename this and explain what it is?
+  Can we move it?
+*)
 Section Mkdistrd_nonsense.
 
   Context {T : choiceType}.
@@ -555,7 +557,6 @@ Proof.
     simpl. intros ? ? [? ?]. subst. reflexivity.
 Qed.
 
-(* TODO Generalise and move with other rules *)
 Lemma r_uniform_bij :
   ∀ {A₀ A₁ : ord_choiceType} i j pre post f
     (c₀ : _ → raw_code A₀) (c₁ : _ → raw_code A₁),
@@ -579,6 +580,14 @@ Proof.
     eapply rpre_weaken_rule. 1: eapply h.
     intros h₀ h₁. simpl. intros [? ?]. subst. auto.
 Qed.
+
+(** End of technical steps *)
+
+(** In order to deal with sampling, we rely on bijections
+
+  We prove here two such bijections.
+
+*)
 
 Lemma bijective_expgn :
   bijective (λ (a : 'Z_q), g ^+ a).
@@ -621,7 +630,22 @@ Proof.
     apply modn_small. auto.
 Qed.
 
-(** End of technical steps *)
+#[local] Definition f m : 'Z_q * 'Z_q -> gT * gT :=
+  λ '(a,b), (g^+a, (ch2m m) * g^+b).
+
+Lemma bijective_f : ∀ m, bijective (f m).
+Proof.
+  intro m.
+  pose proof bijective_expgn as bij.
+  destruct bij as [d hed hde].
+  eexists (λ '(x,y), (d x, d ((ch2m m)^-1 * y))).
+  - intros [? ?]. simpl. rewrite hed. f_equal.
+    rewrite mulgA. rewrite mulVg. rewrite mul1g.
+    apply hed.
+  - intros [x y]. simpl. rewrite hde. f_equal.
+    rewrite hde. rewrite mulgA. rewrite mulgV. rewrite mul1g.
+    reflexivity.
+Qed.
 
 Lemma ots_real_vs_rnd_equiv_false :
   ots_real_vs_rnd false ≈₀ Aux ∘ DH_rnd.
@@ -649,26 +673,13 @@ Proof.
   ssprove_same_head_r. intros _.
   eapply r_transR.
   1:{ eapply r_uniform_prod. intros x y. eapply rreflexivity_rule. }
-  pose (f := (λ '(a,b), (g^+a, (ch2m m) * g^+b)) : 'Z_q * 'Z_q -> gT * gT).
-  assert (fbij : bijective f).
-  { pose proof bijective_expgn as bij.
-    destruct bij as [d hed hde].
-    eexists (λ '(x,y), (d x, d ((ch2m m)^-1 * y))).
-    - intros [? ?]. simpl. rewrite hed. f_equal.
-      rewrite mulgA. rewrite mulVg. rewrite mul1g.
-      apply hed.
-    - intros [x y]. simpl. rewrite hde. f_equal.
-      rewrite hde. rewrite mulgA. rewrite mulgV. rewrite mul1g.
-      reflexivity.
-  }
   simpl.
   eapply rsymmetry.
-  eapply @r_uniform_bij with (f := f). 1: auto.
+  eapply @r_uniform_bij with (f := f m). 1: apply bijective_f.
   simpl. intros [x y].
   rewrite !gT2ch_ch2gT !ch2gT_gT2ch.
   unfold c2ch. simpl.
-  eapply r_ret. intros s ? e. subst.
-  intuition auto.
+  eapply r_ret. intros s ? e. subst. intuition auto.
 Qed.
 
 Theorem ElGamal_OT :
