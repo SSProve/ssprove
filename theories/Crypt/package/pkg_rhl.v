@@ -1653,6 +1653,18 @@ Module PackageRHL (π : RulesParam).
       cbn. intros ? ? [? ?]. subst. reflexivity.
   Qed.
 
+  Lemma r_ret :
+    ∀ {A₀ A₁ : ord_choiceType} u₀ u₁ (pre : precond) (post : postcond A₀ A₁),
+      (∀ s₀ s₁, pre (s₀, s₁) → post (u₀, s₀) (u₁, s₁)) →
+      ⊢ ⦃ pre ⦄ ret u₀ ≈ ret u₁ ⦃ post ⦄.
+  Proof.
+    intros A₀ A₁ u₀ u₁ pre post h.
+    rewrite rel_jdgE. simpl.
+    eapply weaken_rule. 1: eapply ret_rule.
+    intros [s₀ s₁] P [hpre hpost]. simpl.
+    eapply hpost. eapply h. apply hpre.
+  Qed.
+
   Lemma repr_if :
     ∀ {A b} (c₀ c₁ : raw_code A),
       repr (if b then c₀ else c₁) = if b then repr c₀ else repr c₁.
