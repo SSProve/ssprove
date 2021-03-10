@@ -361,23 +361,6 @@ Module OTP_example.
         }
       ].
 
-  (* Intermediate game to introduce dead sampling in the RHS. *)
-  (* NOTE: Having a rule for {pre} x <- U _ ;; m ≈ m {post}, *)
-  (* which moves x into the context as a constant would remove the need of defining an intermediate game. *)
-  Definition Aux :
-    package IND_CPA_location
-      [interface ]
-      [interface val #[i1] : chWords → chWords ] :=
-      [package
-        def #[i1] (m : chWords) : chWords 
-        {
-          m'    <$ (U i_words) ;;
-          k_val <$ (U i_key) ;;
-          r     ← Enc (ch2words m) k_val ;;
-          ret (words2ch r)
-        }
-      ].
-
   Definition IND_CPA : loc_GamePair [interface val #[i1] : chWords → chWords ] :=
     λ (b : bool),
       if b then {locpackage IND_CPA_real}
@@ -387,23 +370,6 @@ Module OTP_example.
 
   (* One-sided sampling rule. *)
   (* Removes the need for intermediate games in some cases. *)
-  Lemma rconst_samplerR :
-    ∀ {B : ord_choiceType} {D}
-      (c₀ : raw_code B) (c₁ : (Arit D) -> raw_code B) (post : postcond B B),
-      (forall x, ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ c₀ ≈ c₁ x ⦃ post ⦄) →
-      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ c₀ ≈ (bind (x ← sample D ;; ret x) c₁) ⦃ post ⦄.
-  Proof.
-    intros B D c₀ c₁ post h.
-    pose c' := (fun (x : Arit D) => c₀).
-    eapply rrewrite_eqDistrL with (bind (x ← sample D ;; ret x) c'). 
-    - apply rsame_head=> x.
-      apply h.
-    - move=> s. eapply rcoupling_eq with (fun '(s0, s1) => s0 = s1).
-      + unfold c'. apply rdead_sampler_elimL.
-        apply rreflexivity_rule.
-      + reflexivity.
-  Qed.
-
   Lemma rconst_samplerL :
     ∀ {B : ord_choiceType} {D}
       (c₀ : (Arit D) -> raw_code B) (c₁ : raw_code B) (post : postcond B B),
@@ -423,8 +389,7 @@ Module OTP_example.
 
   Lemma IND_CPA_ideal_real : (IND_CPA false) ≈₀ (IND_CPA true).
   Proof.
-    eapply eq_rel_perf_ind with (fun '(h1, h2) => h1 = h2)=>//.
-    { move=> h1 h2; split; move=> Heq ? ? ?; by rewrite Heq. }
+    eapply eq_rel_perf_ind_eq.
     move=> id S T m h.
     invert_interface_in h.
 
@@ -485,122 +450,12 @@ Module OTP_example.
     split; reflexivity.
   Qed.
 
-  Lemma IND_CPA_ideal_aux : (IND_CPA false) ≈₀ Aux.
-  Proof.
-    (* NOTE: Could this be a general tactic? *)
-    (* Prove relational with pre post and inferred probability. *)
-    eapply eq_rel_perf_ind with (fun '(h1, h2) => h1 = h2)=>//.
-    { move=> h1 h2; split; move=> Heq ? ? ?; by rewrite Heq. }
-    move=> id S T m h.
-    invert_interface_in h.
-
-    (* NOTE: Should ideally be automatic. *)
-    unfold get_op_default.
-    destruct lookup_op as [f|] eqn:e.
-    2:{ exfalso.
-        simpl in e.
-        destruct chUniverse_eqP. 2: auto.
-        discriminate.
-    }
-    apply lookup_op_spec in e.
-    rewrite setmE in e. rewrite eq_refl in e.
-    noconf e.
-
-    destruct lookup_op as [f|] eqn:e.
-    2:{ exfalso.
-        simpl in e.
-        destruct chUniverse_eqP. 2: auto.
-        discriminate.
-    }
-    apply lookup_op_spec in e.
-    rewrite setmE in e. rewrite eq_refl in e.
-    rewrite /code in e.
-    noconf e.
-
-    ssprove_same_head_r=>m_val.
-    pose f := (fun k => k ⊕ ch2words m ⊕ m_val).
-    have f_bij : bijective f.
-    { apply Bijective with (g:= fun x => (x ⊕ m_val ⊕ ch2words m)).
-      1-2: rewrite /f /cancel=> x; by rewrite !plus_involutive.
-    }
-    eapply rpost_weaken_rule with eq.
-    2: { by move=> [? ?] [? ?] [-> ->]. }
-    apply (
-      @rpost_conclusion_rule_cmd _ _ _
-        (λ '(s₀,s₁), s₀ = s₁)
-        (cmd_sample (U i_key))
-        (cmd_sample (U i_key))
-        (λ k, words2ch (m_val ⊕ k))
-        (λ k, words2ch (ch2words m ⊕ k))
-    ).
-    eapply rpost_weaken_rule with (fun '(w1, s1) '(w2, s2) => s1 = s2 /\ f w1 == w2).
-    { (* NOTE: Is it really needed change judgement here? *)
-      rewrite rel_jdgE. rewrite repr_cmd_bind.
-      simpl (repr (ret _)).
-      rewrite bindrFree_ret.
-      have Huni := (@Uniform_bij_rule i_key i_key _ _ f f_bij (fun '(s₀, s₁) => s₀ = s₁)).
-      apply Huni.
-    }
-    move=> [k1 s1] [k2 s2] [-> Hxor].
-    rewrite /f in Hxor.
-    apply reflection_nonsense in Hxor.
-    have <- : (k2 ⊕ ch2words m) = (ch2words m ⊕ k2).
-    { apply plus_comm. }
-    rewrite plus_assoc plus_comm plus_assoc plus_comm in Hxor.
-    rewrite -Hxor !plus_involutive.
-    split; reflexivity.
-  Qed.
-
-  Lemma IND_CPA_aux_real : Aux  ≈₀ (IND_CPA true).
-  Proof.
-    eapply eq_rel_perf_ind with (fun '(h1, h2) => h1 = h2).
-    { move=> h1 h2; split; by move=> -> ? ? ?. }
-    { reflexivity. }
-    move=> id S T m h.
-    invert_interface_in h.
-
-    unfold get_op_default.
-    destruct lookup_op as [f|] eqn:e.
-    2:{ exfalso.
-        simpl in e.
-        destruct chUniverse_eqP. 2: auto.
-        discriminate.
-    }
-    apply lookup_op_spec in e. 
-    rewrite setmE in e. rewrite eq_refl in e.
-    noconf e.
-    destruct lookup_op as [f|] eqn:e.
-    2:{ exfalso.
-        simpl in e.
-        destruct chUniverse_eqP. 2: auto.
-        discriminate.
-    }
-    apply lookup_op_spec in e. simpl in e.
-    rewrite setmE in e. rewrite eq_refl in e.
-    noconf e.
-
-    apply: rdead_sampler_elimL.
-    ssprove_same_head_r=>key_val.
-    eapply rpost_weaken_rule with eq.
-    1: apply rreflexivity_rule.
-    by move=> [a1 s1] [a2 s2] [-> ->].
-  Qed.
-
   Theorem unconditional_secrecy :
     ∀ A : Adversary4Game [interface val #[i1] : chWords → chWords ],
       Advantage IND_CPA A = 0.
   Proof.
     move=> A.
     rewrite Advantage_E IND_CPA_ideal_real //; apply fdisjoints0.
-
-    (* apply AdvantageE_le_0. *)
-    (* eapply ler_trans. *)
-    (* 1: exact (Advantage_triangle (IND_CPA false) (IND_CPA true) Aux A). *)
-    (* rewrite IND_CPA_aux_real. *)
-    (* 2-3: apply fdisjoints0. *)
-    (* rewrite IND_CPA_ideal_aux. *)
-    (* 2-3: apply fdisjoints0. *)
-    (* by rewrite GRing.add0r. *)
   Qed.
     
 End OTP_example.
