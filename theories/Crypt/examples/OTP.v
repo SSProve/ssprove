@@ -374,17 +374,14 @@ Module OTP_example.
     ∀ {B : ord_choiceType} {D}
       (c₀ : (Arit D) -> raw_code B) (c₁ : raw_code B) (post : postcond B B),
       (forall x, ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ c₀ x ≈ c₁ ⦃ post ⦄) →
-      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ (bind (x ← sample D ;; ret x) c₀) ≈ c₁ ⦃ post ⦄.
+      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ x ← sample D ;; c₀ x ≈ c₁ ⦃ post ⦄.
   Proof.
     intros B D c₀ c₁ post h.
-    pose c' := (fun (x : Arit D) => c₁).
-    eapply rrewrite_eqDistrR with (bind (x ← sample D ;; ret x) c'). 
-    - apply rsame_head=> x.
+    eapply r_transR with (x ← sample D ;; (fun _ => c₁) x).
+    - apply rdead_sampler_elimL.
+      apply rreflexivity_rule.
+    - ssprove_same_head_r.
       apply h.
-    - move=> s. eapply rcoupling_eq with (fun '(s0, s1) => s0 = s1).
-      + unfold c'. apply rdead_sampler_elimL.
-        apply rreflexivity_rule.
-      + reflexivity.
   Qed.
 
   Lemma IND_CPA_ideal_real : (IND_CPA false) ≈₀ (IND_CPA true).
