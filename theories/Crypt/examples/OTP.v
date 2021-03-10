@@ -16,7 +16,6 @@ From mathcomp Require Import
      realsum.
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From Mon Require Import SPropBase.
 From Crypt Require Import
      Axioms
      ChoiceAsOrd
@@ -41,8 +40,6 @@ Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-forma
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
-
-Import SPropNotations.
 
 From Equations Require Import Equations.
 Require Equations.Prop.DepElim.
@@ -283,11 +280,8 @@ Module OTP_example.
 
   Definition i1 : nat := 0.
 
-  Definition U (i : Index) :
-    {rchT : myparamU.rel_choiceTypes &
-            myparamU.probE (myparamU.chEmb rchT)} :=
-    (existT (λ rchT : myparamU.rel_choiceTypes, myparamU.probE (chEmb rchT))
-            (inl (inl i)) (inl (Uni_W i))).
+  Definition U (i : Index) : Op :=
+    existT _ (inl (inl i)) (inl (Uni_W i)).
 
   Notation " 'chWords' " := ('fin (2^n)%N) (in custom pack_type at level 2).
   Notation " 'chKey' " := ('fin (2^n)%N) (in custom pack_type at level 2).
@@ -430,5 +424,5 @@ Module OTP_example.
     move=> A.
     rewrite Advantage_E IND_CPA_ideal_real //; apply fdisjoints0.
   Qed.
-    
+
 End OTP_example.
