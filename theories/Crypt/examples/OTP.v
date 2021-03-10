@@ -387,31 +387,7 @@ Module OTP_example.
   Lemma IND_CPA_ideal_real : (IND_CPA false) ≈₀ (IND_CPA true).
   Proof.
     eapply eq_rel_perf_ind_eq.
-    move=> id S T m h.
-    invert_interface_in h.
-
-    (* NOTE: Should ideally be automatic. *)
-    unfold get_op_default.
-    destruct lookup_op as [f|] eqn:e.
-    2:{ exfalso.
-        simpl in e.
-        destruct chUniverse_eqP. 2: auto.
-        discriminate.
-    }
-    apply lookup_op_spec in e.
-    rewrite setmE in e. rewrite eq_refl in e.
-    noconf e.
-
-    destruct lookup_op as [f|] eqn:e.
-    2:{ exfalso.
-        simpl in e.
-        destruct chUniverse_eqP. 2: auto.
-        discriminate.
-    }
-    apply lookup_op_spec in e.
-    rewrite setmE in e. rewrite eq_refl in e.
-    rewrite /code in e.
-    noconf e.
+    simplify_eq_rel m.
 
     apply rconst_samplerL=>m_val.
     pose f := (fun k => k ⊕ ch2words m ⊕ m_val).
