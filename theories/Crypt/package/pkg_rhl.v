@@ -2005,6 +2005,7 @@ Module PackageRHL (π : RulesParam).
     cbn. reflexivity.
   Qed.
 
+
   (* TODO: From Uniform_bij_rule *)
   (* TODO Figure out what uniform should be here! *)
   (* Lemma r_uniform_bij :
@@ -2175,6 +2176,22 @@ Module PackageRHL (π : RulesParam).
     eapply rpost_weaken_rule.
     - apply rsamplerC_sym'_cmd.
     - intros [? ?] [? ?] e. inversion e. intuition auto.
+  Qed.
+
+  (* One-sided sampling rule. *)
+  (* Removes the need for intermediate games in some cases. *)
+  Lemma rconst_samplerL :
+    ∀ {A : ord_choiceType} {D}
+      (c₀ : (Arit D) -> raw_code A) (c₁ : raw_code A) (post : postcond A A),
+      (forall x, ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ c₀ x ≈ c₁ ⦃ post ⦄) →
+      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ x ← sample D ;; c₀ x ≈ c₁ ⦃ post ⦄.
+  Proof.
+    intros A D c₀ c₁ post h.
+    eapply r_transR with (x ← sample D ;; (fun _ => c₁) x).
+    - apply rdead_sampler_elimL.
+      apply rreflexivity_rule.
+    - apply (rsame_head_cmd (cmd_sample D)).
+      apply h.
   Qed.
 
 End PackageRHL.
