@@ -385,6 +385,106 @@ Module OTP_example.
 
   Local Open Scope ring_scope.
 
+  (* One-sided sampling rule. *)
+  (* Removes the need for intermediate games in some cases. *)
+  Lemma rconst_samplerR :
+    ∀ {B : ord_choiceType} {D}
+      (c₀ : raw_code B) (c₁ : (Arit D) -> raw_code B) (post : postcond B B),
+      (forall x, ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ c₀ ≈ c₁ x ⦃ post ⦄) →
+      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ c₀ ≈ (bind (x ← sample D ;; ret x) c₁) ⦃ post ⦄.
+  Proof.
+    intros B D c₀ c₁ post h.
+    pose c' := (fun (x : Arit D) => c₀).
+    eapply rrewrite_eqDistrL with (bind (x ← sample D ;; ret x) c'). 
+    - apply rsame_head=> x.
+      apply h.
+    - move=> s. eapply rcoupling_eq with (fun '(s0, s1) => s0 = s1).
+      + unfold c'. apply rdead_sampler_elimL.
+        apply rreflexivity_rule.
+      + reflexivity.
+  Qed.
+
+  Lemma rconst_samplerL :
+    ∀ {B : ord_choiceType} {D}
+      (c₀ : (Arit D) -> raw_code B) (c₁ : raw_code B) (post : postcond B B),
+      (forall x, ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ c₀ x ≈ c₁ ⦃ post ⦄) →
+      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ (bind (x ← sample D ;; ret x) c₀) ≈ c₁ ⦃ post ⦄.
+  Proof.
+    intros B D c₀ c₁ post h.
+    pose c' := (fun (x : Arit D) => c₁).
+    eapply rrewrite_eqDistrR with (bind (x ← sample D ;; ret x) c'). 
+    - apply rsame_head=> x.
+      apply h.
+    - move=> s. eapply rcoupling_eq with (fun '(s0, s1) => s0 = s1).
+      + unfold c'. apply rdead_sampler_elimL.
+        apply rreflexivity_rule.
+      + reflexivity.
+  Qed.
+
+  Lemma IND_CPA_ideal_aux : (IND_CPA false) ≈₀ (IND_CPA true).
+  Proof.
+    eapply eq_rel_perf_ind with (fun '(h1, h2) => h1 = h2)=>//.
+    { move=> h1 h2; split; move=> Heq ? ? ?; by rewrite Heq. }
+    move=> id S T m h.
+    invert_interface_in h.
+
+    (* NOTE: Should ideally be automatic. *)
+    unfold get_op_default.
+    destruct lookup_op as [f|] eqn:e.
+    2:{ exfalso.
+        simpl in e.
+        destruct chUniverse_eqP. 2: auto.
+        discriminate.
+    }
+    apply lookup_op_spec in e.
+    rewrite setmE in e. rewrite eq_refl in e.
+    noconf e.
+
+    destruct lookup_op as [f|] eqn:e.
+    2:{ exfalso.
+        simpl in e.
+        destruct chUniverse_eqP. 2: auto.
+        discriminate.
+    }
+    apply lookup_op_spec in e.
+    rewrite setmE in e. rewrite eq_refl in e.
+    rewrite /code in e.
+    noconf e.
+
+    apply rconst_samplerL=>m_val.
+    pose f := (fun k => k ⊕ ch2words m ⊕ m_val).
+    have f_bij : bijective f.
+    { apply Bijective with (g:= fun x => (x ⊕ m_val ⊕ ch2words m)).
+      1-2: rewrite /f /cancel=> x; by rewrite !plus_involutive.
+    }
+    eapply rpost_weaken_rule with eq.
+    2: { by move=> [? ?] [? ?] [-> ->]. }
+    apply (
+      @rpost_conclusion_rule_cmd _ _ _
+        (λ '(s₀,s₁), s₀ = s₁)
+        (cmd_sample (U i_key))
+        (cmd_sample (U i_key))
+        (λ k, words2ch (m_val ⊕ k))
+        (λ k, words2ch (ch2words m ⊕ k))
+    ).
+    eapply rpost_weaken_rule with (fun '(w1, s1) '(w2, s2) => s1 = s2 /\ f w1 == w2).
+    { (* NOTE: Is it really needed change judgement here? *)
+      rewrite rel_jdgE. rewrite repr_cmd_bind.
+      simpl (repr (ret _)).
+      rewrite bindrFree_ret.
+      have Huni := (@Uniform_bij_rule i_key i_key _ _ f f_bij (fun '(s₀, s₁) => s₀ = s₁)).
+      apply Huni.
+    }
+    move=> [k1 s1] [k2 s2] [-> Hxor].
+    rewrite /f in Hxor.
+    apply reflection_nonsense in Hxor.
+    have <- : (k2 ⊕ ch2words m) = (ch2words m ⊕ k2).
+    { apply plus_comm. }
+    rewrite plus_assoc plus_comm plus_assoc plus_comm in Hxor.
+    rewrite -Hxor !plus_involutive.
+    split; reflexivity.
+  Qed.
+
   Lemma IND_CPA_ideal_aux : (IND_CPA false) ≈₀ Aux.
   Proof.
     (* NOTE: Could this be a general tactic? *)
