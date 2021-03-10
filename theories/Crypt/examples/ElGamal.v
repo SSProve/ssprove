@@ -529,6 +529,57 @@ Section Uniform_prod.
 
 End Uniform_prod.
 
+Lemma r_uniform_prod :
+  ∀ {A : ord_choiceType} i j
+    (r : fin_family i → fin_family j → raw_code A),
+    (∀ x y, ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ r x y ≈ r x y ⦃ eq ⦄) →
+    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
+      '(x,y) ← sample U (i_prod i j) ;; r x y ≈
+      x ← sample U i ;; y ← sample U j ;; r x y
+    ⦃ eq ⦄.
+Proof.
+  intros A i j r h.
+  change (
+    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
+      '(x,y) ← (z ← sample (U (i_prod i j)) ;; ret z) ;; r x y ≈
+      '(x,y) ← (x ← sample U i ;; y ← sample U j ;; ret (x, y)) ;; r x y
+    ⦃ eq ⦄
+  ).
+  rewrite rel_jdgE.
+  eapply rbind_rule.
+  - rewrite -rel_jdgE. eapply UniformIprod_UniformUniform.
+  - intros [? ?] [? ?]. rewrite -rel_jdgE.
+    eapply rpre_hypothesis_rule. intros ? ? e. noconf e.
+    eapply rpre_weaken_rule.
+    1: eapply h.
+    simpl. intros ? ? [? ?]. subst. reflexivity.
+Qed.
+
+(* TODO Generalise and move with other rules *)
+Lemma r_uniform_bij :
+  ∀ {A₀ A₁ : ord_choiceType} i j pre post f
+    (c₀ : _ → raw_code A₀) (c₁ : _ → raw_code A₁),
+    bijective f →
+    (∀ x, ⊢ ⦃ pre ⦄ c₀ x ≈ c₁ (f x) ⦃ post ⦄) →
+    ⊢ ⦃ pre ⦄
+      x ← sample U i ;; c₀ x ≈
+      x ← sample U j ;; c₁ x
+    ⦃ post ⦄.
+Proof.
+  intros A₀ A₁ i j pre post f c₀ c₁ bijf h.
+  rewrite rel_jdgE.
+  change (repr (sampler (U ?i) ?k))
+  with (bindrFree (@Uniform_F i heap_choiceType) (λ x, repr (k x))).
+  eapply bind_rule_pp.
+  - eapply Uniform_bij_rule. eauto.
+  - intros a₀ a₁. simpl.
+    rewrite -rel_jdgE.
+    eapply rpre_hypothesis_rule. intros s₀ s₁ [hs e].
+    move: e => /eqP e. subst.
+    eapply rpre_weaken_rule. 1: eapply h.
+    intros h₀ h₁. simpl. intros [? ?]. subst. auto.
+Qed.
+
 Lemma bijective_expgn :
   bijective (λ (a : 'Z_q), g ^+ a).
 Proof.
@@ -647,6 +698,19 @@ Proof.
     apply (UniformIprod_UniformUniform i_sk i_sk).
 Qed.
 
+(* TODO MOVE *)
+Lemma r_ret :
+  ∀ {A₀ A₁ : ord_choiceType} u₀ u₁ (pre : precond) (post : postcond A₀ A₁),
+    (∀ s₀ s₁, pre (s₀, s₁) → post (u₀, s₀) (u₁, s₁)) →
+    ⊢ ⦃ pre ⦄ ret u₀ ≈ ret u₁ ⦃ post ⦄.
+Proof.
+  intros A₀ A₁ u₀ u₁ pre post h.
+  rewrite rel_jdgE. simpl.
+  eapply weaken_rule. 1: eapply ret_rule.
+  intros [s₀ s₁] P [hpre hpost]. simpl.
+  eapply hpost. eapply h. apply hpre.
+Qed.
+
 (** End of technical steps *)
 
 Lemma ots_real_vs_rnd_equiv_false :
@@ -673,12 +737,28 @@ Proof.
   ssprove_swap_rhs 1%N.
   ssprove_swap_rhs 0%N.
   ssprove_same_head_r. intros _.
-  (* TW: It would be nice to apply rules here instead. *)
-  repeat setoid_rewrite gT2ch_ch2gT.
-  repeat setoid_rewrite ch2gT_gT2ch.
-  unfold c2ch.
-  eapply rpost_weaken_rule. 1: eapply group_OTP.
-  cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
+  eapply r_transR.
+  1:{ eapply r_uniform_prod. intros x y. eapply rreflexivity_rule. }
+  pose (f := (λ '(a,b), (g^+a, (ch2m m) * g^+b)) : 'Z_q * 'Z_q -> gT * gT).
+  assert (fbij : bijective f).
+  { pose proof bijective_expgn as bij.
+    destruct bij as [d hed hde].
+    eexists (λ '(x,y), (d x, d ((ch2m m)^-1 * y))).
+    - intros [? ?]. simpl. rewrite hed. f_equal.
+      rewrite mulgA. rewrite mulVg. rewrite mul1g.
+      apply hed.
+    - intros [x y]. simpl. rewrite hde. f_equal.
+      rewrite hde. rewrite mulgA. rewrite mulgV. rewrite mul1g.
+      reflexivity.
+  }
+  simpl.
+  eapply rsymmetry.
+  eapply @r_uniform_bij with (f := f). 1: auto.
+  simpl. intros [x y].
+  rewrite !gT2ch_ch2gT !ch2gT_gT2ch.
+  unfold c2ch. simpl.
+  eapply r_ret. intros s ? e. subst.
+  intuition auto.
 Qed.
 
 Theorem ElGamal_OT :
@@ -733,34 +813,4 @@ Proof.
   }
   rewrite GRing.addr0. rewrite GRing.add0r.
   rewrite -Advantage_link. auto.
-Qed.
-
-(* TODO Updated definitions of old theorems
-  They will have to be moved upstream to use in the above theorems.
-*)
-
-(* TW: Alternatively I think we want a rule as follows: *)
-(* TODO Generalise and move with other rules *)
-Lemma r_uniform_bij :
-  ∀ {A₀ A₁ : ord_choiceType} i pre post f
-    (c₀ : _ → raw_code A₀) (c₁ : _ → raw_code A₁),
-    bijective f →
-    (∀ x, ⊢ ⦃ pre ⦄ c₀ x ≈ c₁ (f x) ⦃ post ⦄) →
-    ⊢ ⦃ pre ⦄
-      x ← sample U i ;; c₀ x ≈
-      x ← sample U i ;; c₁ x
-    ⦃ post ⦄.
-Proof.
-  intros A₀ A₁ i pre post f c₀ c₁ bijf h.
-  rewrite rel_jdgE.
-  change (repr (sampler (U ?i) ?k))
-  with (bindrFree (@Uniform_F i heap_choiceType) (λ x, repr (k x))).
-  eapply bind_rule_pp.
-  - eapply Uniform_bij_rule. eauto.
-  - intros a₀ a₁. simpl.
-    rewrite -rel_jdgE.
-    eapply rpre_hypothesis_rule. intros s₀ s₁ [hs e].
-    move: e => /eqP e. subst.
-    eapply rpre_weaken_rule. 1: eapply h.
-    intros h₀ h₁. simpl. intros [? ?]. subst. auto.
 Qed.
