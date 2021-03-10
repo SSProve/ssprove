@@ -421,7 +421,7 @@ Module OTP_example.
       + reflexivity.
   Qed.
 
-  Lemma IND_CPA_ideal_aux : (IND_CPA false) ≈₀ (IND_CPA true).
+  Lemma IND_CPA_ideal_real : (IND_CPA false) ≈₀ (IND_CPA true).
   Proof.
     eapply eq_rel_perf_ind with (fun '(h1, h2) => h1 = h2)=>//.
     { move=> h1 h2; split; move=> Heq ? ? ?; by rewrite Heq. }
@@ -591,15 +591,16 @@ Module OTP_example.
       Advantage IND_CPA A = 0.
   Proof.
     move=> A.
-    rewrite Advantage_E.
-    apply AdvantageE_le_0.
-    eapply ler_trans.
-    1: exact (Advantage_triangle (IND_CPA false) (IND_CPA true) Aux A).
-    rewrite IND_CPA_aux_real.
-    2-3: apply fdisjoints0.
-    rewrite IND_CPA_ideal_aux.
-    2-3: apply fdisjoints0.
-    by rewrite GRing.add0r.
+    rewrite Advantage_E IND_CPA_ideal_real //; apply fdisjoints0.
+
+    (* apply AdvantageE_le_0. *)
+    (* eapply ler_trans. *)
+    (* 1: exact (Advantage_triangle (IND_CPA false) (IND_CPA true) Aux A). *)
+    (* rewrite IND_CPA_aux_real. *)
+    (* 2-3: apply fdisjoints0. *)
+    (* rewrite IND_CPA_ideal_aux. *)
+    (* 2-3: apply fdisjoints0. *)
+    (* by rewrite GRing.add0r. *)
   Qed.
     
 End OTP_example.
