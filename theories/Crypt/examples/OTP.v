@@ -126,7 +126,7 @@ Module OTP_example.
     apply Zp_cast.
     have n_pos : (lt 0 n).
     { have := n_pos. apply /ltP. }
-    simpl. 
+    simpl.
     destruct n as [| n].
     + apply /ltP; intuition.
     + rewrite expnS.
@@ -142,7 +142,7 @@ Module OTP_example.
           have falso := PeanoNat.Nat.lt_irrefl 0.
           exfalso.
           apply falso.
-          apply /ltP. apply Hcontra. 
+          apply /ltP. apply Hcontra.
       ++ move=> n'; apply /ltP.
   Qed.
 
@@ -256,7 +256,7 @@ Module OTP_example.
     Qed.
 
     Lemma plus_assoc : forall m n k, ((m ⊕ n) ⊕ k) = (m ⊕ (n ⊕ k)).
-    Proof. 
+    Proof.
       move=> m n k.
       move: ord_inj => Hordinj.
       unfold injective in Hordinj.
@@ -320,7 +320,7 @@ Module OTP_example.
 
   Definition ch2words : 'fin (2^n)%N -> Words.
     move=> [n Hn].
-    exists n. 
+    exists n.
     simpl in Hn. rewrite -expn2n in Hn.
     exact Hn.
   Qed.
@@ -346,7 +346,7 @@ Module OTP_example.
       [interface ]
       [interface val #[i1] : chWords → chWords ] :=
       [package
-        def #[i1] (m : chWords) : chWords 
+        def #[i1] (m : chWords) : chWords
         {
           m'    <$ (U i_words) ;;
           k_val <$ (U i_key) ;;
