@@ -372,62 +372,60 @@ Module OTP_example.
       if b then {locpackage IND_CPA_real}
            else {locpackage IND_CPA_ideal}.
 
-  #[local] Open Scope ring_scope.
+  (** Technical step
 
-  (* One-sided sampling rule. *)
-  (* Removes the need for intermediate games in some cases. *)
-  Lemma rconst_samplerL :
-    ∀ {B : ord_choiceType} {D}
-      (c₀ : Arit D → raw_code B) (c₁ : raw_code B) (post : postcond B B),
-      (∀ x, ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ c₀ x ≈ c₁ ⦃ post ⦄) →
-      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ x ← sample D ;; c₀ x ≈ c₁ ⦃ post ⦄.
+    Uniform distrbutions are not factorised yet so we have to inline rules
+    in examples. Hopefully this will go away in the future.
+
+  *)
+
+  Lemma r_uniform_bij :
+    ∀ {A₀ A₁ : ord_choiceType} i j pre post f
+      (c₀ : _ → raw_code A₀) (c₁ : _ → raw_code A₁),
+      bijective f →
+      (∀ x, ⊢ ⦃ pre ⦄ c₀ x ≈ c₁ (f x) ⦃ post ⦄) →
+      ⊢ ⦃ pre ⦄
+        x ← sample U i ;; c₀ x ≈
+        x ← sample U j ;; c₁ x
+      ⦃ post ⦄.
   Proof.
-    intros B D c₀ c₁ post h.
-    eapply r_transR with (x ← sample D ;; (λ _, c₁) x).
-    - apply rdead_sampler_elimL.
-      apply rreflexivity_rule.
-    - ssprove_same_head_r.
-      apply h.
+    intros A₀ A₁ i j pre post f c₀ c₁ bijf h.
+    rewrite rel_jdgE.
+    change (repr (sampler (U ?i) ?k))
+    with (bindrFree (@Uniform_F i heap_choiceType) (λ x, repr (k x))).
+    eapply bind_rule_pp.
+    - eapply Uniform_bij_rule. eauto.
+    - intros a₀ a₁. simpl.
+      rewrite <- rel_jdgE.
+      eapply rpre_hypothesis_rule. intros s₀ s₁ [hs e].
+      move: e => /eqP e. subst.
+      eapply rpre_weaken_rule. 1: eapply h.
+      intros h₀ h₁. simpl. intros [? ?]. subst. auto.
   Qed.
+
+  (* End of technical step *)
+
+  #[local] Open Scope ring_scope.
 
   Lemma IND_CPA_ideal_real :
     IND_CPA false ≈₀ IND_CPA true.
   Proof.
     eapply eq_rel_perf_ind_eq.
     simplify_eq_rel m.
-
     apply rconst_samplerL. intro m_val.
-    pose f := (λ k, k ⊕ ch2words m ⊕ m_val).
-    have f_bij : bijective f.
-    { apply Bijective with (g := λ x, x ⊕ m_val ⊕ ch2words m).
-      all: rewrite /f /cancel => x ; by rewrite !plus_involutive.
+    pose (f := λ k, k ⊕ ch2words m ⊕ m_val).
+    assert (bij_f : bijective f).
+    { subst f. exists (λ x, x ⊕ m_val ⊕ ch2words m).
+      - intro x. rewrite !plus_involutive. reflexivity.
+      - intro x. rewrite !plus_involutive. reflexivity.
     }
-    eapply rpost_weaken_rule with eq.
-    2:{ by move=> [? ?] [? ?] [-> ->]. }
-    apply (
-      @rpost_conclusion_rule_cmd _ _ _
-        (λ '(s₀,s₁), s₀ = s₁)
-        (cmd_sample (U i_key))
-        (cmd_sample (U i_key))
-        (λ k, words2ch (m_val ⊕ k))
-        (λ k, words2ch (ch2words m ⊕ k))
-    ).
-    eapply rpost_weaken_rule with (λ '(w1, s1) '(w2, s2), s1 = s2 ∧ f w1 == w2).
-    { (* NOTE: Is it really needed change judgement here? *)
-      rewrite rel_jdgE. rewrite repr_cmd_bind.
-      simpl (repr (ret _)).
-      rewrite bindrFree_ret.
-      have Huni := (@Uniform_bij_rule i_key i_key _ _ f f_bij (λ '(s₀, s₁), s₀ = s₁)).
-      apply Huni.
-    }
-    move=> [k1 s1] [k2 s2] [-> Hxor].
-    unfold f in Hxor.
-    move: Hxor => /eqP Hxor.
-    have <- : (k2 ⊕ ch2words m) = (ch2words m ⊕ k2).
-    { apply plus_comm. }
-    rewrite plus_assoc plus_comm plus_assoc plus_comm in Hxor.
-    rewrite -Hxor !plus_involutive.
-    intuition auto.
+    eapply r_uniform_bij with (1 := bij_f). intro k_val.
+    apply r_ret. intros s₀ s₁ e. intuition auto.
+    subst f. simpl. f_equal.
+    rewrite <- plus_assoc.
+    rewrite [X in _ = X]plus_comm. f_equal.
+    rewrite plus_comm. rewrite plus_involutive.
+    reflexivity.
   Qed.
 
   Theorem unconditional_secrecy :
