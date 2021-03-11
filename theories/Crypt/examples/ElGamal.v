@@ -98,11 +98,6 @@ Module MyParam <: AsymmetricSchemeParams.
     intro. contradiction.
   Defined.
 
-  Definition Hch : ∀ r : rel_choiceTypes, chEmb r.
-  Proof.
-    intro. contradiction.
-  Defined.
-
 End MyParam.
 
 Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.

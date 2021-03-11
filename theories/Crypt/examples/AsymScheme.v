@@ -52,7 +52,6 @@ Module Type AsymmetricSchemeParams.
   Parameter rel_choiceTypes : Type.
   Parameter chEmb : rel_choiceTypes → choiceType.
   Parameter prob_handler : ∀ T : choiceType, probE T → SDistr T.
-  Parameter Hch : ∀ r : rel_choiceTypes, chEmb r.
 
 End AsymmetricSchemeParams.
 
@@ -103,7 +102,6 @@ Module ARules (Aparam : AsymmetricSchemeParams).
     Definition chEmb : rel_choiceTypes → choiceType := chEmb.
     Definition prob_handler : forall T : choiceType, probE T → SDistr T :=
       prob_handler.
-    Definition Hch : ∀ (r : rel_choiceTypes), chEmb r := Hch.
 
   End genparam.
 
