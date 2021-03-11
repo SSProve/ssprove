@@ -2182,12 +2182,12 @@ Module PackageRHL (π : RulesParam).
   (* Removes the need for intermediate games in some cases. *)
   Lemma rconst_samplerL :
     ∀ {A : ord_choiceType} {D}
-      (c₀ : (Arit D) -> raw_code A) (c₁ : raw_code A) (post : postcond A A),
-      (forall x, ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ c₀ x ≈ c₁ ⦃ post ⦄) →
+      (c₀ : Arit D -> raw_code A) (c₁ : raw_code A) (post : postcond A A),
+      (∀ x, ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ c₀ x ≈ c₁ ⦃ post ⦄) →
       ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ x ← sample D ;; c₀ x ≈ c₁ ⦃ post ⦄.
   Proof.
     intros A D c₀ c₁ post h.
-    eapply r_transR with (x ← sample D ;; (fun _ => c₁) x).
+    eapply r_transR with (x ← sample D ;; (λ _, c₁) x).
     - apply rdead_sampler_elimL.
       apply rreflexivity_rule.
     - apply (rsame_head_cmd (cmd_sample D)).
