@@ -337,7 +337,7 @@ Definition θ0 (A1 A2 : Type) (ch1 : Choice.class_of A1) (ch2 : Choice.class_of 
 Proof.
   rewrite /SDistr_carrier. move => [d1 d2].
   exists (fun π : A1 * A2 -> SProp => (s∃ d, Prop2SProp (coupling d d1 d2)
-                                     s/\
+                                     /\
                                     (forall (a1 : A1) (a2 : A2), (d (a1, a2)) > 0 -> π (a1, a2)))).
   move => π1 π2 leq12 [d [marg_d integral]].
   exists d. split.
@@ -422,7 +422,7 @@ Definition kd {A1 A2 B1 B2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice.cl
                          s∃ d : SDistr_carrier (Couplings.F_choice_prod_obj
                                                   ⟨ Choice.Pack chB1, Choice.Pack chB2 ⟩),
                               Prop2SProp (coupling d (f1 a1) (f2 a2))
-                                        s/\ (forall (a3 : B1) (a4 : B2), 0 < d (a3, a4) -> (π (a3, a4)))) :
+                                        /\ (forall (a3 : B1) (a4 : B2), 0 < d (a3, a4) -> (π (a3, a4)))) :
   { kd : A1 * A2 -> SDistr (F_choice_prod ⟨ Choice.Pack chB1, Choice.Pack chB2 ⟩) |
     (forall (x1 : A1 * A2), (dA x1 > 0) = true -> coupling (kd x1) (f1 (fst x1)) (f2 (snd x1)) /\ forall (a3 : B1) (a4 : B2), 0 < kd x1 (a3, a4) -> SProp2Prop (π (a3, a4))) }.
 Proof.
@@ -533,7 +533,7 @@ Program Definition fromPrePost {A1 A2}
           (pre : Prop)
           (post : A1 -> A2 -> Prop)
     : mono_predtrans (A1 * A2) :=
-    ⦑fun p => Prop2SProp pre s/\ s∀ a1 a2, Prop2SProp (post a1 a2) -> p (a1, a2)⦒.
+    ⦑fun p => Prop2SProp pre /\ s∀ a1 a2, Prop2SProp (post a1 a2) -> p (a1, a2)⦒.
 Next Obligation.
   intros A1 A2 chA1 chA2. intros pre post.
   split; case: H0 => // HA HB.

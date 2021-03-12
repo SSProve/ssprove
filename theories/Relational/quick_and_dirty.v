@@ -367,7 +367,7 @@ Proof.
 Qed.
 
 Program Definition null_wp1 {A} : W1 A :=
-  ⦑fun (p : A -> SProp) pexc => (forall a, p a) s/\ pexc tt⦒.
+  ⦑fun (p : A -> SProp) pexc => (forall a, p a) /\ pexc tt⦒.
 Next Obligation. cbv ; intuition. Qed.
 
 Program Definition null_wp2 {A} : W2 A :=
@@ -375,7 +375,7 @@ Program Definition null_wp2 {A} : W2 A :=
 Next Obligation. cbv ; intuition. Qed.
 
 Program Definition rel_invariant : Wrel unit bool :=
-  ⦑fun post => post ⟨None, true⟩ s/\ post ⟨Some tt, false⟩⦒.
+  ⦑fun post => post ⟨None, true⟩ /\ post ⟨Some tt, false⟩⦒.
 Next Obligation. cbv; intuition. Qed.
 
 Section ExcPure.

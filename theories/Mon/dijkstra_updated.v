@@ -48,7 +48,7 @@ Section State.
      post conditions. *)
   Program Definition PrePostWP (P : St -> SProp) (Q : St -> St -> SProp)
     : StateSpec unit :=
-    ⦑fun (Z : unit -> St -> SProp) s0 => P s0 s/\ forall s1, Q s0 s1 -> Z tt s1⦒.
+    ⦑fun (Z : unit -> St -> SProp) s0 => P s0 /\ forall s1, Q s0 s1 -> Z tt s1⦒.
   Next Obligation. intuition eauto ; move: (q s1 H0) ; apply H. Qed.
 
   Definition PrePost P (Q : St -> St -> SProp) :=
@@ -234,10 +234,10 @@ Section NonDeterminism.
     Fixpoint and (xs : list SProp) : SProp :=
       match xs with
       | nil => True
-      | P :: Ps => P s/\ and Ps
+      | P :: Ps => P /\ and Ps
       end.
 
-    Lemma and_app : forall l1 l2, and (l1 ++ l2) = (and l1 s/\ and l2).
+    Lemma and_app : forall l1 l2, and (l1 ++ l2) = (and l1 /\ and l2).
     Proof.
       intros l1 l2. apply SPropAxioms.sprop_ext.
       induction l1; simpl; constructor; intuition.
@@ -298,7 +298,7 @@ Section NonDeterminism.
 
   End Demonic.
 
-  Definition test_demonic : Demonic nat (PostDemonic (fun x => 1 < x s/\ x < 6)).
+  Definition test_demonic : Demonic nat (PostDemonic (fun x => 1 < x /\ x < 6)).
     apply (wkn (chooseD (2 :: 3 :: 5 :: nil))).
     intros Q H. simpl. simpl in H.
     intuition ltac:(try (apply H ; do 8 constructor)).
@@ -384,7 +384,7 @@ Section FreeMonad.
 
     Program Definition frameConj {A}{Pre}{I}{Q : A -> SProp} :
       PrePostOp Pre Q ->
-      PrePostOp (Pre s/\ I) (fun a => Q a s/\ I) := fun c => wkn c _.
+      PrePostOp (Pre /\ I) (fun a => Q a /\ I) := fun c => wkn c _.
     Next Obligation.
       move:H ; simpl ; intuition.
     Qed.
@@ -415,7 +415,7 @@ Section IO.
   Definition write' (o : Oup) : IO unit _ := opHist _ _ (write o).
 
   Program Definition mustHaveOccurredSpec (o : Oup) : IOSpec unit :=
-    fun history => ⦑fun post => Squash (In (existT _ (write o) tt) history) s/\ post ⟨tt, history⟩ ⦒.
+    fun history => ⦑fun post => Squash (In (existT _ (write o) tt) history) /\ post ⟨tt, history⟩ ⦒.
   Next Obligation.
     move: H0 ; simpl ; intuition.
   Qed.
@@ -551,7 +551,7 @@ Section Exceptions.
 
     Import SPropNotations.
     Program Definition PrePostExcSpec {A} (P : SProp) (Q : A -> SProp) : ExcSpec A :=
-      ⦑fun (Z : A -> SProp) => P s/\ forall a, Q a -> Z a⦒.
+      ⦑fun (Z : A -> SProp) => P /\ forall a, Q a -> Z a⦒.
     Next Obligation. cbv ; intuition. Qed.
 
     Definition PrePostExc {A} P (Q : A -> SProp) :=
@@ -578,8 +578,8 @@ Section Exceptions.
     ExcSpec Q_exn' B
     :=
       fun P Q Q_exn wp_ret wp_exn =>
-        ⦑fun post => P s/\ (forall a, Q a -> proj1_sig (wp_ret a) post)
-                  s/\ (Q_exn -> proj1_sig wp_exn post)⦒.
+        ⦑fun post => P /\ (forall a, Q a -> proj1_sig (wp_ret a) post)
+                  /\ (Q_exn -> proj1_sig wp_exn post)⦒.
   Next Obligation.
     destruct H0 as [[]] ; intuition.
   Qed.
@@ -653,8 +653,8 @@ Section Handler.
              (M    : PrePostOp S P Inner Pre Q)
              (Hret : forall a, PrePostOp S' P' Outer (Q a) R)
              (Hops : forall (I : SProp) s,
-                 (forall p, PrePostOp S' P' Outer (I s/\ nsnd (Inner s) p) R) ->
-                 PrePostOp S' P' Outer (I s/\ nfst (Inner s)) R)
+                 (forall p, PrePostOp S' P' Outer (I /\ nsnd (Inner s) p) R) ->
+                 PrePostOp S' P' Outer (I /\ nfst (Inner s)) R)
     : PrePostOp S' P' Outer Pre R.
   Proof.
     destruct M as [comp comp_ok].
@@ -666,7 +666,7 @@ Section Handler.
       + assumption.
     - simpl in comp_ok.
       refine
-        (wkn (Hops Pre s (fun p => wkn (X p (Pre s/\ nsnd (Inner s) p) _) _)) _);
+        (wkn (Hops Pre s (fun p => wkn (X p (Pre /\ nsnd (Inner s) p) _) _)) _);
         simpl.
       + intros k [[H1 H2] H3]. apply comp_ok; cbv ; intuition.
       + intros k [[H1 H2] H3]. cbv ; eauto.

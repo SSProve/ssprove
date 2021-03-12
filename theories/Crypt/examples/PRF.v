@@ -84,12 +84,6 @@ Module Type SymmetricSchemeRules (π : SymmetricSchemeParam).
       intros T v. inversion v.
     Defined.
 
-    Definition Hch :
-      ∀ (r : rel_choiceTypes), chEmb r.
-    Proof.
-      intro v. inversion v.
-    Defined.
-
   End genparam.
 
   Module MyRules := DerivedRulesUniform genparam.

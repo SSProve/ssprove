@@ -94,7 +94,7 @@ Section RelationalState.
           (pre : S1 -> S2 -> Prop)
           (post : A1 -> S1 -> S1 -> A2 -> S2 -> S2 -> Prop)
     : dfst (RelSt S ⟨A1,A2⟩) :=
-    ⦑fun p s0 => pre (res1 s0) (res2 s0) s/\
+    ⦑fun p s0 => pre (res1 s0) (res2 s0) /\
                  forall a1 a2 s, post a1 (res1 s0) (res1 s) a2 (res2 s0) (res2 s)
                             -> p ⟨a1,a2⟩ s⦒.
   Next Obligation. cbv ; intuition. Qed.
@@ -103,20 +103,20 @@ Section RelationalState.
   Lemma read1_rule (l1 : loc1) :
     ⊨ read1 l1 ≈ skip [{ fromPrePost (fun s1 s2 => True)
                                      (fun v s1 s1' _ s2 s2' =>
-                                        s1 = s1' s/\ s2 = s2' s/\ v = s1 l1) }].
+                                        s1 = s1' /\ s2 = s2' /\ v = s1 l1) }].
   Proof. cbv ; intuition. Qed.
 
   Lemma read2_rule (l2 : loc2) :
     ⊨ skip ≈ read2 l2 [{ fromPrePost (fun s1 s2 => True)
                                      (fun _ s1 s1' v s2 s2' =>
-                                        s1 = s1' s/\ s2 = s2' s/\ v = s2 l2) }].
+                                        s1 = s1' /\ s2 = s2' /\ v = s2 l2) }].
   Proof. cbv ; intuition. Qed.
 
   Lemma write1_rule (l1:loc1) (v:val) :
     ⊨ write1 l1 v ≈ skip [{
                              fromPrePost (fun s1 s2 => True)
                                          (fun _ s1 s1' _ s2 s2' =>
-                                            s1' = upd eql1 l1 v s1 s/\ s2 = s2')
+                                            s1' = upd eql1 l1 v s1 /\ s2 = s2')
                          }].
   Proof. cbv ; intuition. Qed.
 
@@ -124,7 +124,7 @@ Section RelationalState.
     ⊨ skip ≈ write2 l2 v [{
                              fromPrePost (fun s1 s2 => True)
                                          (fun _ s1 s1' _ s2 s2' =>
-                                            s1' = s1 s/\ s2' = upd eql2 l2 v s2)
+                                            s1' = s1 /\ s2' = upd eql2 l2 v s2)
                          }].
   Proof. cbv ; intuition. Qed.
 
@@ -153,7 +153,7 @@ Section NonInterference.
   Definition NI_pre_post {A:Type} :=
     fromPrePost'
       (fun s1 s2 => s1 false = s2 false)
-      (fun (i:A) s1 s1' (i':A) s2 s2' =>  s1' false = s2' false s/\ i = i').
+      (fun (i:A) s1 s1' (i':A) s2 s2' =>  s1' false = s2' false /\ i = i').
 
   (* Noninterference property *)
   Definition NI {A : Type} (c : St (loc -> val) A) :=
@@ -165,29 +165,29 @@ Section NonInterference.
   (* Effect specific rules for state *)
   Lemma get_left_rule {A} {l:loc} {a:A} :
     ⊨ get l ≈ ret a [{ fromPrePost' (fun s1 s2 => True)
-                              (fun v s1 s1' x s2 s2' => x = a s/\
-                                 s1 = s1' s/\ s2 = s2' s/\ v = s1 l) }].
+                              (fun v s1 s1' x s2 s2' => x = a /\
+                                 s1 = s1' /\ s2 = s2' /\ v = s1 l) }].
   Proof. cbv ; intuition. Qed.
 
   Lemma get_right_rule {A} {l:loc} {a:A} :
     ⊨ ret a ≈ get l [{fromPrePost' (fun s1 s2 => True)
-                        (fun x s1 s1' v s2 s2' => x = a s/\
-                           s1 = s1' s/\ s2 = s2' s/\ v = s2 l) }].
+                        (fun x s1 s1' v s2 s2' => x = a /\
+                           s1 = s1' /\ s2 = s2' /\ v = s2 l) }].
   Proof. cbv ; intuition. Qed.
 
   Lemma put_left_rule (l:loc) (v:nat) {A} {a:A} :
     ⊨ put l v ≈ ret a
         [{fromPrePost' (fun s1 s2 => True)
-                        (fun _ s1 s1' x s2 s2' => x = a s/\
-                           s1' = upd _ eql l v s1 s/\ s2 = s2')
+                        (fun _ s1 s1' x s2 s2' => x = a /\
+                           s1' = upd _ eql l v s1 /\ s2 = s2')
                         }].
   Proof. cbv ; intuition. Qed.
 
   Lemma put_right_rule (l:loc) (v:nat) {A} {a:A} :
     ⊨ ret a ≈ put l v
         [{fromPrePost' (fun s1 s2 => True)
-                        (fun x s1 s1' _ s2 s2' => x = a s/\
-                           s1' = s1 s/\ s2' = upd _ eql l v s2)
+                        (fun x s1 s1' _ s2 s2' => x = a /\
+                           s1' = s1 /\ s2' = upd _ eql l v s2)
                         }].
   Proof. cbv ; intuition. Qed.
 
@@ -195,7 +195,7 @@ Section NonInterference.
     ⊨ put l1 v1 ≈ put l2 v2
       [{ fromPrePost' (fun s1 s2 => True)
                       (fun x s1 s1' _ s2 s2' =>    s1' = upd _ eql l1 v1 s1
-                                              s/\ s2' = upd _ eql l2 v2 s2)
+                                              /\ s2' = upd _ eql l2 v2 s2)
       }].
   Proof.
     rewrite <- (monad_law1 tt (fun _ => put l1 v1)).
@@ -214,8 +214,8 @@ Section NonInterference.
   Lemma get_get_rule (l1 l2:loc) :
     ⊨ get l1 ≈ get l2
       [{ fromPrePost' (fun s1 s2 => True)
-                      (fun x1 s1 s1' x2 s2 s2' =>    s1' = s1 s/\ x1 = s1 l1
-                                                s/\ s2' = s2 s/\ x2 = s2 l2)
+                      (fun x1 s1 s1' x2 s2 s2' =>    s1' = s1 /\ x1 = s1 l1
+                                                /\ s2' = s2 /\ x2 = s2 l2)
       }].
   Proof.
     rewrite <- (monad_law1 tt (fun=> get l1)).

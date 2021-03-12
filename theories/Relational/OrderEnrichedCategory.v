@@ -100,7 +100,7 @@ Section ProductCat.
   Program Definition prod_cat : ord_category :=
     mkOrdCategory (C × D)
                   (fun A B => C⦅nfst A ; nfst B⦆ × D⦅nsnd A ; nsnd B⦆)
-                  (fun _ _ f g => nfst f ⪷ nfst g s/\ nsnd f ⪷ nsnd g)
+                  (fun _ _ f g => nfst f ⪷ nfst g /\ nsnd f ⪷ nsnd g)
                   _
                   (fun A => ⟨Id (nfst A), Id (nsnd A)⟩)
                   (fun _ _ _ f g => ⟨nfst f ∙ nfst g, nsnd f ∙ nsnd g⟩)

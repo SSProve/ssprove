@@ -84,7 +84,7 @@ Section Cost.
 
   Program Definition costs {A} n (pre : SProp) (post : A -> SProp)
     : CostSpec A :=
-    ⦑ fun post' => ⦑fun n0 => pre s/\ s∃ (H : Box (n s<= n0)), forall a, post a -> Spr1 (post' a) (@monus n0 n (unbox H))⦒⦒.
+    ⦑ fun post' => ⦑fun n0 => pre /\ s∃ (H : Box (n s<= n0)), forall a, post a -> Spr1 (post' a) (@monus n0 n (unbox H))⦒⦒.
   Next Obligation.
     move: H0 => [? [[H']] p] ; split ; [assumption|].
     unshelve eexists.

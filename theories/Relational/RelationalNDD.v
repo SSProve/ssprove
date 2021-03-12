@@ -35,7 +35,7 @@ Section NDDs.
 
   Notation "⊨ c1 ≈ c2 [{ w }]" := (semantic_judgement _ _ _ θforallrel _ _ c1 c2 w).
 
-  Program Definition demonic_left_rule_w {A2 : Type} (a2:A2) : dfst (Commutativity.Wrel Wun ⟨ bool, A2 ⟩). apply (exist _ (fun post => post ⟨true, a2⟩ s/\ post ⟨false, a2⟩)). cbv; intuition.
+  Program Definition demonic_left_rule_w {A2 : Type} (a2:A2) : dfst (Commutativity.Wrel Wun ⟨ bool, A2 ⟩). apply (exist _ (fun post => post ⟨true, a2⟩ /\ post ⟨false, a2⟩)). cbv; intuition.
   Defined.
 
   Lemma demonic_left_rule {A2 : Set} (a2:A2) :

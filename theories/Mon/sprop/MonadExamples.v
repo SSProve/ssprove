@@ -138,7 +138,7 @@ Section NonDeterminismSet.
   Program Definition NDSet : Monad :=
     @mkMonad (fun X => X -> Prop)
              (fun X x => fun x' => x = x')
-             (fun X Y c f => fun y => exists x, c x s/\ f x y) _ _ _.
+             (fun X Y c f => fun y => exists x, c x /\ f x y) _ _ _.
   Next Obligation.
     extensionality y; apply sprop_ext; do 2 split.
     + intros [x [eq H]]; induction eq=> //.

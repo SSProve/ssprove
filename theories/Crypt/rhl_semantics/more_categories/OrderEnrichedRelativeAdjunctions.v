@@ -30,14 +30,14 @@ Section PreorderIso.
   Context (A B: Type).
 
   Definition are_inv (f : A -> B) (g : B -> A) : Prop :=
-    forall (a:A) (b:B), g(f(a)) = a s/\ f(g(b)) = b.
+    forall (a:A) (b:B), g(f(a)) = a /\ f(g(b)) = b.
 
   Context (rA : relation A) (rB : relation B).
   Context (pA : PreOrder rA) (pB : PreOrder rB).
 
   Definition are_preorder_inv (f : A -> B) (g : B -> A) :=
-    (@is_preorder_morph A B rA rB f) s/\
-    (@is_preorder_morph B A rB rA g) s/\
+    (@is_preorder_morph A B rA rB f) /\
+    (@is_preorder_morph B A rB rA g) /\
     (are_inv f g).
 
 End PreorderIso.

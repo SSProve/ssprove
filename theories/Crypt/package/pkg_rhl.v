@@ -1938,28 +1938,6 @@ Module PackageRHL (π : RulesParam).
   (*          ⊨ ⦃ pre ⦄ repr (locs := L ) (x <$ o ;; c1) ≈ repr (locs := L) (x <$ o ;; c2) ⦃ post ⦄. *)
   (* Proof. Admitted.  *)
 
-  Theorem rdead_sampler_elimL :
-    ∀ {A : ord_choiceType} {D}
-      (c₀ c₁ : raw_code A) (pre : precond) (post : postcond A A),
-      ⊢ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄ →
-      ⊢ ⦃ pre ⦄ (x ← sample D ;; ret x) ;; c₀ ≈ c₁ ⦃ post ⦄.
-  Proof.
-    intros A D c₀ c₁ pre post h.
-    eapply rrewrite_eqDistrL. 1: exact h.
-    admit.
-  Admitted.
-
-  Theorem rdead_sampler_elimR :
-    ∀ {A : ord_choiceType} {D}
-      (c₀ c₁ : raw_code A) (pre : precond) (post : postcond A A),
-      ⊢ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄ →
-      ⊢ ⦃ pre ⦄ c₀ ≈ (x ← sample D ;; ret x) ;; c₁ ⦃ post ⦄.
-  Proof.
-    intros A D c₀ c₁ pre post h.
-    eapply rrewrite_eqDistrR. 1: exact h.
-    admit.
-  Admitted.
-
   Lemma rf_preserves_eq :
     ∀ {A B : ord_choiceType} {c₀ c₁ : raw_code A}
       (f : A → B),
@@ -2004,6 +1982,7 @@ Module PackageRHL (π : RulesParam).
     intro s. eapply rcoupling_eq. 1: exact he.
     cbn. reflexivity.
   Qed.
+
 
   (* TODO: From Uniform_bij_rule *)
   (* TODO Figure out what uniform should be here! *)
@@ -2175,6 +2154,44 @@ Module PackageRHL (π : RulesParam).
     eapply rpost_weaken_rule.
     - apply rsamplerC_sym'_cmd.
     - intros [? ?] [? ?] e. inversion e. intuition auto.
+  Qed.
+
+  Theorem rdead_sampler_elimL :
+    ∀ {A : ord_choiceType} {D}
+      (c₀ c₁ : raw_code A) (pre : precond) (post : postcond A A),
+      ⊢ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄ →
+      ⊢ ⦃ pre ⦄ (x ← sample D ;; ret x) ;; c₀ ≈ c₁ ⦃ post ⦄.
+  Proof.
+    intros A D c₀ c₁ pre post h.
+    eapply rrewrite_eqDistrL. 1: exact h.
+    admit.
+  Admitted.
+
+  Theorem rdead_sampler_elimR :
+    ∀ {A : ord_choiceType} {D}
+      (c₀ c₁ : raw_code A) (pre : precond) (post : postcond A A),
+      ⊢ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄ →
+      ⊢ ⦃ pre ⦄ c₀ ≈ (x ← sample D ;; ret x) ;; c₁ ⦃ post ⦄.
+  Proof.
+    intros A D c₀ c₁ pre post h.
+    eapply rrewrite_eqDistrR. 1: exact h.
+    admit.
+  Admitted.
+
+  (* One-sided sampling rule. *)
+  (* Removes the need for intermediate games in some cases. *)
+  Lemma rconst_samplerL :
+    ∀ {A : ord_choiceType} {D}
+      (c₀ : Arit D -> raw_code A) (c₁ : raw_code A) (post : postcond A A),
+      (∀ x, ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ c₀ x ≈ c₁ ⦃ post ⦄) →
+      ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ x ← sample D ;; c₀ x ≈ c₁ ⦃ post ⦄.
+  Proof.
+    intros A D c₀ c₁ post h.
+    eapply r_transR with (x ← sample D ;; (λ _, c₁) x).
+    - apply rdead_sampler_elimL.
+      apply rreflexivity_rule.
+    - apply (rsame_head_cmd (cmd_sample D)).
+      apply h.
   Qed.
 
 End PackageRHL.
