@@ -299,7 +299,7 @@ Module OTP_example.
   Definition KeyGen {L : {fset Location}} :
     code L [interface] Key :=
     {code
-       k <$ U (i_key) ;;
+       k ← sample U i_key ;;
        ret k
     }.
 
@@ -308,7 +308,7 @@ Module OTP_example.
 
   Definition IND_CPA_location : {fset Location} := fset0.
 
-  Definition key2ch : Key -> 'fin (2^n)%N.
+  Definition key2ch : Key → 'fin (2^n)%N.
   Proof.
     intros [k kpos].
     rewrite expn2n in kpos.
