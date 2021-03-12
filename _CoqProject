@@ -70,6 +70,7 @@ theories/Crypt/examples/PRF.v
 theories/Crypt/examples/AsymScheme.v
 theories/Crypt/examples/ElGamal.v
 theories/Crypt/examples/OTP.v
+theories/Crypt/examples/KEMDEM.v
 #std. distributions
 theories/Crypt/rules/StdDistr.v
 # theories/Crypt/only_prob/SymmetricSchemeStateProbStdDistr.v
