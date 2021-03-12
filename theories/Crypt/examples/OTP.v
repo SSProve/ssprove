@@ -104,31 +104,26 @@ End SymmetricSchemeRules.
 
 Module OTP_example.
 
-  Parameter n : nat.
-  Parameter n_pos : Positive n.
+  Parameter (n : nat).
+  Parameter (n_pos : Positive n).
 
   Lemma expn2n : (succn (succn (Zp_trunc (2^n)))) = (2^n)%N.
   Proof.
     apply Zp_cast.
-    have n_pos : (lt 0 n).
-    { have := n_pos. apply /ltP. }
-    destruct n as [| n].
-    - apply /ltP. intuition.
-    - rewrite expnS.
-      move: (PositiveExp2 n).
-      rewrite /Positive !mulSnr => Hpos.
-      change (0 * ?n ^ ?m)%N with 0%N.
-      set (m := (2^n)%N) in *. clearbody m.
-      apply /ltP.
-      apply PeanoNat.Nat.lt_sub_lt_add_l.
-      move: Hpos.
-      case m.
-      + intro Hcontra.
-        have falso := PeanoNat.Nat.lt_irrefl 0.
-        exfalso.
-        apply falso.
-        apply /ltP. apply Hcontra.
-      + intro n'. apply /ltP.
+    pose proof n_pos as n_pos.
+    destruct n as [| k].
+    1:{ inversion n_pos. }
+    rewrite expnS.
+    move: (PositiveExp2 k).
+    rewrite /Positive !mulSnr => Hpos.
+    change (0 * ?n ^ ?m)%N with 0%N.
+    set (m := (2^ k)%N) in *. clearbody m.
+    apply /ltP. move: Hpos => /ltP Hpos.
+    apply PeanoNat.Nat.lt_sub_lt_add_l.
+    move: Hpos.
+    case m.
+    1:{ intro h. inversion h. }
+    intro n'. auto.
   Qed.
 
   Module π <: SymmetricSchemeParam.
