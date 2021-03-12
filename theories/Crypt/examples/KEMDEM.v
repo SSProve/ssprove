@@ -51,26 +51,68 @@ Module genparam <: RulesParam.
 End genparam.
 
 (* TODO *)
-Variant Index := i_todo.
+Variant Index := i_key (l : nat) `{Positive l}.
 
 Module Uparam <: UniformParameters.
 
   Definition Index : Type := Index.
 
-  Definition i0 : Index := i_todo.
+  Definition i0 : Index := i_key 1.
 
   Definition fin_family : Index → finType :=
     λ i,
       match i with
-      | i_todo => [finType of 'Z_2]
+      | i_key l pl => [finType of chFin (mkpos l)]
       end.
 
   Definition F_w0 : ∀ i, fin_family i.
   Proof.
     unfold fin_family.
-    case. exact 0.
+    case.
+    intros. simpl. exists 0%N. auto.
   Defined.
 
 End Uparam.
 
 Module Rules := DerivedRulesUniform genparam Uparam.
+Import Rules.
+
+Module Package := Package_Make myparamU.
+Import Package.
+Import PackageNotation.
+
+Definition U (i : Index) : Op :=
+  existT _ (inl (inl i)) (inl (Uni_W i)).
+
+Definition GEN := 0%N.
+Definition SET := 1%N.
+Definition GET := 2%N.
+
+Definition key n `{Positive n} : Location := ('fin n ; 0%N).
+
+Definition KEY n `{Positive n} :
+  package
+    (fset [:: key n ])
+    [interface]
+    [interface
+      val #[ GEN ] : 'unit → 'fin n ;
+      val #[ SET ] : ('fin n) → 'unit ;
+      val #[ GET ] : 'unit → 'fin n
+    ] :=
+  [package
+    def #[ GEN ] (_ : 'unit) : ('fin n) {
+      (* assert k = ⊥ ;; *)
+      k ← sample U (i_key n) ;;
+      ret k
+    } ;
+    def #[ SET ] (k : ('fin n)) : 'unit {
+      (* assert k = ⊥ ;; *)
+      put (key n) := k ;;
+      ret Datatypes.tt
+    } ;
+    def #[ GET ] (_ : 'unit) : ('fin n) {
+      (* assert k ≠ ⊥ ;; *)
+      k ← get (key n) ;;
+      ret k
+    }
+  ].
