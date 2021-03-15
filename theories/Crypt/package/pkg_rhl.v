@@ -69,8 +69,8 @@ Module PackageRHL (π : RulesParam).
 
   Local Open Scope fset.
 
-  (* Let iops_StP := @ops_StP probE rel_choiceTypes chEmb. *)
-  (* Let iar_StP := @ar_StP probE rel_choiceTypes chEmb. *)
+  (* Let iops_StP := @ops_StP probE chUniverse chElement. *)
+  (* Let iar_StP := @ar_StP probE chUniverse chElement. *)
 
   Definition pointed_value := ∑ (t : chUniverse), t.
 
@@ -1109,7 +1109,7 @@ Module PackageRHL (π : RulesParam).
     cbn in foo.
     unfold probopStP in foo. cbn in foo.
     destruct op as [opA opB].
-    pose foo2 := SDistr_bind (fun x => SDistr_unit _ ((x, s1), (x, s2))) (Theta_dens.unary_ThetaDens0 prob_handler _ (ropr (opA; opB) (λ x : chEmb opA, retrFree x))).
+    pose foo2 := SDistr_bind (fun x => SDistr_unit _ ((x, s1), (x, s2))) (Theta_dens.unary_ThetaDens0 prob_handler _ (ropr (opA; opB) (λ x : chElement opA, retrFree x))).
     exists foo2.
     split.
     - cbn. unfold coupling.
@@ -1195,8 +1195,8 @@ Module PackageRHL (π : RulesParam).
       cbn in Hd.
       rewrite /SDistr_bind /SDistr_unit in Hd.
       rewrite dletE in Hd.
-      eassert ((λ x : chEmb opA,
-          prob_handler (chEmb opA) opB x *
+      eassert ((λ x : chElement opA,
+          prob_handler (chElement opA) opB x *
           dunit
                   (x, s1, (x, s2)) (s, h, (s0, h0))) =
                 _).

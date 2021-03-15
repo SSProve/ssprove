@@ -68,15 +68,15 @@ Module OtherParam <: ProbRulesParam.
 
   Definition probE : Type -> Type := probEmpty.
 
-  Definition rel_choiceTypes : Type := void.
+  Definition chUniverse : Type := void.
 
-  Definition chEmb : rel_choiceTypes -> choiceType.
+  Definition chElement : chUniverse -> choiceType.
   Proof.  move => contra. contradiction. Defined.
 
   Definition prob_handler : forall T : choiceType, probE T -> SDistr T.
   Proof. move => contra. contradiction. Defined.
 
-  Definition Hch : forall r : rel_choiceTypes, chEmb r.
+  Definition Hch : forall r : chUniverse, chElement r.
   Proof. move => contra. contradiction. Defined.
 
 End OtherParam.

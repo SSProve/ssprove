@@ -36,8 +36,8 @@ End GetDomainAndCodomain.
 
 Section StT_unaryThetaDens.
   Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {rel_choiceTypes : Type}
-          {chEmb : rel_choiceTypes -> choiceType}.
+  Context {chUniverse : Type}
+          {chElement : chUniverse -> choiceType}.
   Context (prob_handler : forall (T:choiceType),
     probE T -> SDistr T).
 
@@ -45,7 +45,7 @@ Section StT_unaryThetaDens.
 
   (*we wish to transform this monad morphism*)
   Let θdens_filled :=
-  @unary_theta_dens probE rel_choiceTypes chEmb prob_handler.
+  @unary_theta_dens probE chUniverse chElement prob_handler.
 
   (*domain and codomain*)
   Let Frp := rlmm_domain θdens_filled.
@@ -123,18 +123,18 @@ End StT_unaryThetaDens.
 
 Section MakeTheDomainFree.
   Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {rel_choiceTypes : Type}
-          {chEmb : rel_choiceTypes -> choiceType}.
+  Context {chUniverse : Type}
+          {chElement : chUniverse -> choiceType}.
   Context {prob_handler : forall (T:choiceType),
     probE T -> SDistr T}.
 
   Context {S : choiceType}.
 
   Let unaryIntState_filled :=
-  @unaryIntState probE rel_choiceTypes chEmb S.
+  @unaryIntState probE chUniverse chElement S.
 
   Let stT_thetaDens_filled :=
-  @stT_thetaDens probE rel_choiceTypes chEmb prob_handler S.
+  @stT_thetaDens probE chUniverse chElement prob_handler S.
 
 
 

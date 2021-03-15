@@ -81,19 +81,19 @@ Module CorePackageTheory (π : RulesParam).
 
     Context (probE : Type → Type).
     (* The "small" type of relevant choiceTypes *)
-    Context (rel_choiceTypes : Type).
-    Context (chEmb : rel_choiceTypes → choiceType).
+    Context (chUniverse : Type).
+    Context (chElement : chUniverse → choiceType).
 
     Definition Prob_ops_collection :=
-      ∑ rchT : rel_choiceTypes, probE (chEmb rchT).
+      ∑ rchT : chUniverse, probE (chElement rchT).
 
     Definition Prob_arities : Prob_ops_collection → choiceType :=
-      fun '(envType ; opp) => chEmb envType.
+      fun '(envType ; opp) => chElement envType.
 
   End Translation.
 
-  Definition Op := (Prob_ops_collection probE rel_choiceTypes chEmb).
-  Definition Arit := (Prob_arities probE rel_choiceTypes chEmb).
+  Definition Op := (Prob_ops_collection probE chUniverse chElement).
+  Definition Arit := (Prob_arities probE chUniverse chElement).
 
   Section FreeModule.
 

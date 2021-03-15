@@ -70,9 +70,9 @@ Module Type SymmetricSchemeRules (π : SymmetricSchemeParam).
   Module genparam <: RulesParam.
 
     Definition probE : Type → Type := probEmpty.
-    Definition rel_choiceTypes : Type := void.
+    Definition chUniverse : Type := void.
 
-    Definition chEmb : rel_choiceTypes → choiceType.
+    Definition chElement : chUniverse → choiceType.
     Proof.
       intro v. inversion v.
     Defined.

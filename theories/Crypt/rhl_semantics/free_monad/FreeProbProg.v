@@ -135,20 +135,20 @@ Section Translation.
   should be understood as the collection of
   choiceTypes where the values will be drawn from. This could be
   the singleton {bool} for example, or the set {bool, nat}. *)
-  Context (rel_choiceTypes : Type) (*the "small" type of relevant choiceTypes*)
-  (chEmb : rel_choiceTypes -> choiceType).
+  Context (chUniverse : Type) (*the "small" type of relevant choiceTypes*)
+  (chElement : chUniverse -> choiceType).
 
 (*
   possible implementation in the case we want to sample things from bool, and nat:
 
-    Record rel_choiceTypes : Type := mk_rel_choiceTypes
+    Record chUniverse : Type := mk_chUniverse
       { abs_chTy :> choiceType ;
         unlock_absChTy : ((abs_chTy = bool_choiceType) + ( abs_chTy = nat_choiceType))%type
       }.
 
-    Definition chEmb : rel_choiceTypes -> choiceType := fun relChTy =>
+    Definition chElement : chUniverse -> choiceType := fun relChTy =>
       match relChTy with
-      |mk_rel_choiceTypes T unlock_T =>
+      |mk_chUniverse T unlock_T =>
       match unlock_T with
       |inl unlock_bool => bool_choiceType
       |inr unlock_nat => nat_choiceType
@@ -157,18 +157,18 @@ Section Translation.
 
   This restriction to a small subtype of choiceType is needed for universe consistency reasons: The
   set of all operations can not be defined by quantifying over all
-  choiceTypes (This type is too "big") so we use rel_choiceTypes instead. *)
+  choiceTypes (This type is too "big") so we use chUniverse instead. *)
   (*problematic example here: *)
   (* Fail Check @Free (@sigT choiceType _). *)
 
   (*Our set S, depending over the above probE interface*)
 
   Definition Prob_ops_collection := @sigT
-    rel_choiceTypes (fun rchT => probE (chEmb rchT)).
+    chUniverse (fun rchT => probE (chElement rchT)).
 
   Definition Prob_arities : Prob_ops_collection -> choiceType := fun op =>
     match op with
-    | existT envType opp => chEmb envType
+    | existT envType opp => chElement envType
     end.
 
 End Translation.
@@ -176,14 +176,14 @@ End Translation.
 
 Section Unary_free_prob_monad.
   Context (probE : Type -> Type).
-  Context (rel_choiceTypes : Type) (chEmb : rel_choiceTypes -> choiceType).
-  Context (Hch : forall r : rel_choiceTypes, chEmb r).
+  Context (chUniverse : Type) (chElement : chUniverse -> choiceType).
+  Context (Hch : forall r : chUniverse, chElement r).
 
 
   (*Here I recylce ancient code*)
   Definition rFreePr := @rFree
-    (Prob_ops_collection probE rel_choiceTypes chEmb)
-    (Prob_arities probE rel_choiceTypes chEmb).
+    (Prob_ops_collection probE chUniverse chElement)
+    (Prob_arities probE chUniverse chElement).
 
 
   Definition sample_from { A } (D : rFreePr A) : A.
@@ -205,14 +205,14 @@ Section Pairs_of_probabilistic_computations.
   monads provided by the dm4all devlopment .*)
 
   Context (probE : Type -> Type).
-  Context (rel_choiceTypes : Type)
-  (chEmb : rel_choiceTypes -> choiceType).
+  Context (chUniverse : Type)
+  (chElement : chUniverse -> choiceType).
 
 
   Definition rFreeProb_squ_fromProd :=
     product_rmon
-      (rFreePr probE rel_choiceTypes chEmb)
-      (rFreePr probE rel_choiceTypes chEmb).
+      (rFreePr probE chUniverse chElement)
+      (rFreePr probE chUniverse chElement).
 
   (*alias for retro compatibility*)
   Definition rFreeProb_squ := rFreeProb_squ_fromProd.

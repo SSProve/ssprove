@@ -57,13 +57,6 @@ Module Type SymmetricSchemeRules (π : SymmetricSchemeParam).
 
     Definition probE : Type → Type := probEmpty.
 
-    Definition rel_choiceTypes : Type := void.
-
-    Definition chEmb : rel_choiceTypes → choiceType.
-    Proof.
-      intro v. contradiction.
-    Defined.
-
     Definition prob_handler : ∀ T : choiceType, probE T → SDistr T.
     Proof.
       intros T v. inversion v.
@@ -75,30 +68,7 @@ Module Type SymmetricSchemeRules (π : SymmetricSchemeParam).
   | i_words
   | i_key.
 
-  Module Uparam <: UniformParameters.
-
-    Definition Index : Type := Index.
-
-    Definition i0 : Index := i_words.
-
-    Definition fin_family : Index → finType :=
-      λ i,
-        match i with
-        | i_words => Words
-        | i_key   => Key
-        end.
-
-    Definition F_w0 : ∀ i, fin_family i.
-    Proof.
-      unfold fin_family.
-      case.
-      - exact w0.
-      - exact k0.
-    Defined.
-
-  End Uparam.
-
-  Module MyRules := DerivedRulesUniform genparam Uparam.
+  Module MyRules := DerivedRulesUniform genparam.
 
 End SymmetricSchemeRules.
 

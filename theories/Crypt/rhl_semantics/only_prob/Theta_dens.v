@@ -28,7 +28,7 @@ SDistr.
 
 Section test.
   (*In this section we implement a probability handler, ie something of type
-  forall T : rel_choiceTypes, probE T -> SDistr T*)
+  forall T : chUniverse, probE T -> SDistr T*)
   (*This kind of handler is exactly the data needed to define a universal map exiting
   the free probablistic relative monad defined in FreeProbProg.v. Is abstracted over
   in the subsequent sections. *)
@@ -43,14 +43,14 @@ Section test.
     |Bern : unit_interval R -> concrete_probE bool
     |Poiss : unit_interval R -> concrete_probE nat.
 
-  Record my_rel_choiceTypes : Type := mk_rel_choiceTypes
+  Record my_chUniverse : Type := mk_chUniverse
     { abs_chTy :> choiceType ;
       unlock_absChTy : ((abs_chTy = bool_choiceType) + ( abs_chTy = nat_choiceType))%type
     }.
 
-  Definition my_chEmb : my_rel_choiceTypes -> choiceType := fun relChTy =>
+  Definition my_chElement : my_chUniverse -> choiceType := fun relChTy =>
     match relChTy with
-    |mk_rel_choiceTypes T unlock_T =>
+    |mk_chUniverse T unlock_T =>
     match unlock_T with
     |inl unlock_bool => bool_choiceType
     |inr unlock_nat => nat_choiceType
@@ -82,8 +82,8 @@ Section Unary_effobs.
    probablity handler which transform operations into actual distributions*)
 
   Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {rel_choiceTypes : Type}
-          {chEmb : rel_choiceTypes -> choiceType}.
+  Context {chUniverse : Type}
+          {chElement : chUniverse -> choiceType}.
   Context (prob_handler : forall (T:choiceType),
     probE T -> SDistr T).
 
@@ -99,26 +99,26 @@ Section Unary_effobs.
   Defined.
 
 
-  Local Definition S := Prob_ops_collection probE rel_choiceTypes chEmb.
-  Local Definition Ar := Prob_arities probE rel_choiceTypes chEmb.
+  Local Definition S := Prob_ops_collection probE chUniverse chElement.
+  Local Definition Ar := Prob_arities probE chUniverse chElement.
 
 (*  | ropr     : forall s, (P s -> rFreeF A) -> rFreeF A.*)
   Definition unary_ThetaDens0 : forall (A:choiceType) (tree : rFreeF S Ar A),
   SDistr_carrier A.
     intro A. elim=> [a | [relchty op] /= sbtrs IH].
       apply SDistr_unit. simpl. assumption.
-    (*IH: each subtree, indexed by x:chEmb relchty has already produced a SDistr A*)
+    (*IH: each subtree, indexed by x:chElement relchty has already produced a SDistr A*)
     (*sbtrs: the trees below s = (relchty, op)*)
-    refine ((SDistr_bind (chEmb relchty) A _) _). all:revgoals.
+    refine ((SDistr_bind (chElement relchty) A _) _). all:revgoals.
     (*we turn s into a subdistr, using the available handler.*)
-    apply (prob_handler (chEmb relchty)). exact op.
+    apply (prob_handler (chElement relchty)). exact op.
     (*now the continuation. *)
     simpl. exact IH.
   Defined.
 
   Program Definition unary_theta_dens :
   relativeMonadMorphism (ord_functor_id TypeCat) (commuting_unary_base_square)
-  (rFreePr probE rel_choiceTypes chEmb) (SDistr) :=
+  (rFreePr probE chUniverse chElement) (SDistr) :=
     mkRelMonMorph (ord_functor_id TypeCat) (commuting_unary_base_square) _ _ _ _ _.
   Next Obligation.
     intros A tree. exact (unary_ThetaDens0 A tree).
@@ -138,19 +138,19 @@ Section Unary_effobs.
 
 End Unary_effobs.
 
-Arguments unary_theta_dens {probE} {rel_choiceTypes} {chEmb} _.
+Arguments unary_theta_dens {probE} {chUniverse} {chElement} _.
 
 Section Relational_effobs.
   (*We just need to square unary_theta_dens to obtain the desired relational effect
    observation.*)
   Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {rel_choiceTypes : Type}
-          {chEmb : rel_choiceTypes -> choiceType}.
+  Context {chUniverse : Type}
+          {chElement : chUniverse -> choiceType}.
   Context (prob_handler : forall (T:choiceType),
     probE T -> SDistr T).
   Definition theta_dens :=
-    prod_relativeMonadMorphism (@unary_theta_dens probE rel_choiceTypes chEmb prob_handler)
-                               (@unary_theta_dens probE rel_choiceTypes chEmb prob_handler).
+    prod_relativeMonadMorphism (@unary_theta_dens probE chUniverse chElement prob_handler)
+                               (@unary_theta_dens probE chUniverse chElement prob_handler).
 End Relational_effobs.
 
 

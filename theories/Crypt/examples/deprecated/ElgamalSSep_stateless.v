@@ -1,5 +1,5 @@
 From Coq Require Import
-     RelationClasses 
+     RelationClasses
      Morphisms.
 From Mon Require Import
      FiniteProbabilities
@@ -56,7 +56,7 @@ Definition q : nat := #[g].
 
 Inductive probEmpty : Type -> Type := .
 
-Module MyParam <: AsymmetricSchemeParams. 
+Module MyParam <: AsymmetricSchemeParams.
 
   Definition SecurityParameter : choiceType := nat_choiceType.
   Definition Plain  : finType := FinGroup.arg_finType gT.
@@ -70,15 +70,15 @@ Module MyParam <: AsymmetricSchemeParams.
   Definition sec0 : SecKey := 0.
 
   Definition probE : Type -> Type := probEmpty.
-  Definition rel_choiceTypes : Type := void.
+  Definition chUniverse : Type := void.
 
-  Definition chEmb : rel_choiceTypes -> choiceType.
+  Definition chElement : chUniverse -> choiceType.
   Proof.  move => contra. contradiction. Defined.
 
   Definition prob_handler : forall T : choiceType, probE T -> SDistr T.
   Proof. move => contra. contradiction. Defined.
 
-  Definition Hch : forall r : rel_choiceTypes, chEmb r.
+  Definition Hch : forall r : chUniverse, chElement r.
   Proof. move => contra. contradiction. Defined.
 
 End MyParam.
@@ -112,10 +112,10 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   (* Dec (x, (β, γ)) := return (γ × β^(-x)) *)
   Definition Dec (sk : SecKey) (c : Cipher) : Plain := c.2 * (c.1)^-sk.
 
-  Definition chEmb_non_trivial : forall r : rel_choiceTypes, chEmb r.
+  Definition chElement_non_trivial : forall r : chUniverse, chElement r.
   Proof.
     move => [r | r].
-    - unfold Urel_choiceTypes in r.
+    - unfold UchUniverse in r.
       destruct r; simpl; [exact: g | exact: (g, g) | exact: g | exact: 0 | exact: true].
     - inversion r.
   Qed.
@@ -186,7 +186,7 @@ Defined.
 
 
 Lemma ropr_bindrFree_inl { C } { i } { cont } :
-    bindrFree Ops Arit (@Uniform_F i) cont = ropr Ops Arit C (existT (fun rchT => probE (chEmb rchT)) (inl i) (inl (Uni_W i))) cont.
+    bindrFree Ops Arit (@Uniform_F i) cont = ropr Ops Arit C (existT (fun rchT => probE (chElement rchT)) (inl i) (inl (Uni_W i))) cont.
 Proof.  by []. Qed.
 
 Lemma ropr_bindrFree_inr { C } { ops : Ops } { cont } :

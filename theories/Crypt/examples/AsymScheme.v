@@ -49,8 +49,6 @@ Module Type AsymmetricSchemeParams.
   Parameter sec0 : SecKey.
 
   Parameter probE : Type → Type.
-  Parameter rel_choiceTypes : Type.
-  Parameter chEmb : rel_choiceTypes → choiceType.
   Parameter prob_handler : ∀ T : choiceType, probE T → SDistr T.
 
 End AsymmetricSchemeParams.
@@ -68,44 +66,21 @@ Module ARules (Aparam : AsymmetricSchemeParams).
   | i_bool
   | i_prod (i j : Index).
 
-  Module UParam <: UniformParameters.
-
-  Definition Index : Type := Index.
-  Definition i0 : Index := i_plain.
-
-  Fixpoint fin_family (i : Index) : finType :=
-    match i with
-    | i_plain   => Plain
-    | i_cipher  => Cipher
-    | i_pk      => PubKey
-    | i_sk      => SecKey
-    | i_bool    => bool_finType
-    | i_prod i j => prod_finType (fin_family i) (fin_family j)
-    end.
-
-  Fixpoint F_w0 (i : Index) : (fin_family i) :=
-    match i with
-    | i_plain => plain0
-    | i_cipher => cipher0
-    | i_pk  => pub0
-    | i_sk  => sec0
-    | i_bool => false
-    | i_prod i1 i2 => (F_w0 i1, F_w0 i2)
-    end.
-
-  End UParam.
+  (* We can use positive instead of finType, but then it becomes annoying
+    for the product because it's no longer a structural product.
+    Maybe I'll have to change Uniform in the end.
+    Or even chFin to take a finType?
+  *)
 
   Module genparam <: RulesParam.
 
     Definition probE : Type → Type := probE.
-    Definition rel_choiceTypes : Type := rel_choiceTypes.
-    Definition chEmb : rel_choiceTypes → choiceType := chEmb.
     Definition prob_handler : forall T : choiceType, probE T → SDistr T :=
       prob_handler.
 
   End genparam.
 
-  Module MyARulesUniform := DerivedRulesUniform genparam UParam.
+  Module MyARulesUniform := DerivedRulesUniform genparam.
   Export MyARulesUniform.
 
 End ARules.
@@ -184,10 +159,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
   Set Warnings "custom-entry-overriden".
   Import PackageNotation.
 
-  Definition U (i : Index) :
-    {rchT : myparamU.rel_choiceTypes & myparamU.probE (myparamU.chEmb rchT)} :=
-    (existT (λ rchT : myparamU.rel_choiceTypes, myparamU.probE (myparamU.chEmb rchT))
-            (inl (inl i)) (inl (Uni_W i))).
+  Definition U (i : Index) : Op :=
+    existT _ (inl (inl i)) (inl (Uni_W i)).
 
   Local Open Scope package_scope.
 

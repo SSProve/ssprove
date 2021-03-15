@@ -86,9 +86,9 @@ Module MyParam <: AsymmetricSchemeParams.
   Definition sec0 : SecKey := 0.
 
   Definition probE : Type → Type := probEmpty.
-  Definition rel_choiceTypes : Type := void.
+  Definition chUniverse : Type := void.
 
-  Definition chEmb : rel_choiceTypes → choiceType.
+  Definition chElement : chUniverse → choiceType.
   Proof.
     intro. contradiction.
   Defined.
