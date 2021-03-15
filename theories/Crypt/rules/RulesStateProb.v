@@ -48,13 +48,10 @@ Local Open Scope ring_scope.
 
 Module Type RulesParam.
 
-Parameter probE : Type -> Type.
-Parameter rel_choiceTypes : Type.
-Parameter chEmb : rel_choiceTypes -> choiceType.
-Parameter prob_handler : (forall T : choiceType, probE T -> SDistr T).
-(* Parameter S1 S2 : choiceType. *)
-(* Parameter s1 : S1. *)
-(* Parameter s2 : S2.  *)
+  Parameter probE : Type -> Type.
+  Parameter rel_choiceTypes : Type.
+  Parameter chEmb : rel_choiceTypes -> choiceType.
+  Parameter prob_handler : forall (T : choiceType), probE T -> SDistr T.
 
 End RulesParam.
 
