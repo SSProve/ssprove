@@ -57,15 +57,6 @@ Module ARules (Aparam : AsymmetricSchemeParams).
 
   Export Aparam.
 
-  (*: Uniform distributions over Plain, Cipher, Key and bool *)
-  Inductive Index :=
-  | i_plain
-  | i_cipher
-  | i_pk
-  | i_sk
-  | i_bool
-  | i_prod (i j : Index).
-
   (* We can use positive instead of finType, but then it becomes annoying
     for the product because it's no longer a structural product.
     Maybe I'll have to change Uniform in the end.
@@ -99,7 +90,21 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
   Local Open Scope package_scope.
 
   (* chX is the chUniverse in bijection with X  *)
-  Parameters choicePlain choiceCipher choicePubKey choiceSecKey : chUniverse.
+  (* Parameters choicePlain choiceCipher choicePubKey choiceSecKey : chUniverse. *)
+  Parameter Plain_pos : Positive #|Plain|.
+  Parameter Cipher_pos : Positive #|Cipher|.
+  Parameter PubKey_pos : Positive #|PubKey|.
+  Parameter SecKey_pos : Positive #|SecKey|.
+
+  #[local] Existing Instance Plain_pos.
+  #[local] Existing Instance Cipher_pos.
+  #[local] Existing Instance PubKey_pos.
+  #[local] Existing Instance SecKey_pos.
+
+  Definition choicePlain := 'fin #|Plain|.
+  Definition choiceCipher := 'fin #|Cipher|.
+  Definition choicePubKey := 'fin #|PubKey|.
+  Definition choiceSecKey := 'fin #|SecKey|.
 
   Parameter c2ch : Cipher → choiceCipher.
   Parameter ch2c : choiceCipher → Cipher.
@@ -159,8 +164,15 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
   Set Warnings "custom-entry-overriden".
   Import PackageNotation.
 
-  Definition U (i : Index) : Op :=
-    existT _ (inl (inl i)) (inl (Uni_W i)).
+  Definition U (i : nat) `{Positive i} : Op :=
+    existT _ ('fin i) (inl (Uni_W (mkpos i))).
+
+  (* Compatibitlity *)
+  Definition i_plain := #|Plain|.
+  Definition i_cipher := #|Cipher|.
+  Definition i_pk := #|PubKey|.
+  Definition i_sk := #|SecKey|.
+  Definition i_bool := 2.
 
   Local Open Scope package_scope.
 
@@ -251,7 +263,7 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
          put pk_loc := pk ;;
          put sk_loc := sk ;;
          c ← sample U i_cipher ;;
-         ret (c2ch c)
+         ret c
       }
     ].
 
@@ -371,7 +383,7 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
           put pk_loc := pk ;;
           put sk_loc := sk ;;
           c ← sample U i_cipher ;;
-          ret (some (c2ch c))
+          ret (Some c)
         else ret None
       }
     ].

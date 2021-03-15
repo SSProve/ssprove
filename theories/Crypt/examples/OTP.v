@@ -64,10 +64,6 @@ Module Type SymmetricSchemeRules (π : SymmetricSchemeParam).
 
   End genparam.
 
-  Variant Index :=
-  | i_words
-  | i_key.
-
   Module MyRules := DerivedRulesUniform genparam.
 
 End SymmetricSchemeRules.
@@ -255,10 +251,79 @@ Module OTP_example.
   Definition i1 : nat := 0.
 
   Definition U (i : Index) : Op :=
-    existT _ (inl (inl i)) (inl (Uni_W i)).
+    existT _ ('fin i) (inl (Uni_W i)).
+
+  Definition i_words : positive := mkpos (2^n)%N.
+  Definition i_key : positive := mkpos (2^n)%N.
 
   Notation " 'chWords' " := ('fin (2^n)%N) (in custom pack_type at level 2).
   Notation " 'chKey' " := ('fin (2^n)%N) (in custom pack_type at level 2).
+
+  Definition key2ch : Key → 'fin (2^n)%N.
+  Proof.
+    intros [k kpos].
+    rewrite expn2n in kpos.
+    exists k.
+    exact kpos.
+  Defined.
+
+  Definition ch2key : 'fin (2^n)%N → Key.
+  Proof.
+    intros [n Hn].
+    exists n.
+    simpl in Hn. rewrite -expn2n in Hn.
+    exact Hn.
+  Defined.
+
+  Definition words2ch : Words → 'fin (2^n)%N.
+  Proof.
+    intros [w wpos].
+    exists w.
+    rewrite expn2n in wpos.
+    exact wpos.
+  Defined.
+
+  Definition ch2words : 'fin (2^n)%N → Words.
+  Proof.
+    intros [n Hn].
+    exists n.
+    simpl in Hn. rewrite -expn2n in Hn.
+    exact Hn.
+  Defined.
+
+  Lemma words2ch_ch2words :
+    ∀ x, words2ch (ch2words x) = x.
+  Proof.
+    intros x.
+    unfold words2ch, ch2words.
+    destruct x. f_equal. apply bool_irrelevance.
+  Qed.
+
+  Lemma ch2words_words2ch :
+    ∀ x, ch2words (words2ch x) = x.
+  Proof.
+    intros x.
+    unfold words2ch, ch2words.
+    destruct x. f_equal. apply bool_irrelevance.
+  Qed.
+
+  Lemma words2ch_ch2key :
+    ∀ x, words2ch (ch2key x) = x.
+  Proof.
+    intros x.
+    unfold words2ch, ch2key.
+    destruct x. f_equal. apply bool_irrelevance.
+  Qed.
+
+  Lemma ch2key_words2ch :
+    ∀ x, ch2key (words2ch x) = x.
+  Proof.
+    intros x.
+    unfold words2ch, ch2key.
+    destruct x. f_equal. apply bool_irrelevance.
+  Qed.
+
+  Opaque key2ch ch2key words2ch ch2words.
 
   Definition Enc {L : {fset Location}} (m : Words) (k : Key) :
     code L [interface] Words :=
@@ -270,37 +335,13 @@ Module OTP_example.
     code L [interface] Key :=
     {code
        k ← sample U i_key ;;
-       ret k
+       ret (ch2key k)
     }.
 
   Definition dec {L : {fset Location }}(c : Words) (k : Key) :
     code L [interface] Words := Enc k c.
 
   Definition IND_CPA_location : {fset Location} := fset0.
-
-  Definition key2ch : Key → 'fin (2^n)%N.
-  Proof.
-    intros [k kpos].
-    rewrite expn2n in kpos.
-    exists k.
-    exact kpos.
-  Qed.
-
-  Definition words2ch : Words → 'fin (2^n)%N.
-  Proof.
-    intros [w wpos].
-    rewrite expn2n in wpos.
-    exists w.
-    exact wpos.
-  Qed.
-
-  Definition ch2words : 'fin (2^n)%N → Words.
-  Proof.
-    intros [n Hn].
-    exists n.
-    simpl in Hn. rewrite -expn2n in Hn.
-    exact Hn.
-  Qed.
 
   (* REM: Key is always sampled at the side of the encrypter. *)
   (* This assumption is stronger than usual crypto definitions. *)
@@ -313,7 +354,7 @@ Module OTP_example.
         def #[i1] (m : chWords) : chWords
         {
           k_val ← sample U i_key ;;
-          r ← Enc (ch2words m) k_val ;;
+          r ← Enc (ch2words m) (ch2key k_val) ;;
           ret (words2ch r)
         }
     ].
@@ -327,7 +368,7 @@ Module OTP_example.
       {
         m'    ← sample U i_words ;;
         k_val ← sample U i_key ;;
-        r     ← Enc m' k_val ;;
+        r     ← Enc (ch2words m') (ch2key k_val) ;;
         ret (words2ch r)
       }
     ].
@@ -378,15 +419,19 @@ Module OTP_example.
     eapply eq_rel_perf_ind_eq.
     simplify_eq_rel m.
     apply rconst_samplerL. intro m_val.
-    pose (f := λ k, k ⊕ ch2words m ⊕ m_val).
+    pose (f := λ (k : Arit (U i_key)), words2ch (ch2key k ⊕ ch2words m ⊕ (ch2words m_val))).
     assert (bij_f : bijective f).
-    { subst f. exists (λ x, x ⊕ m_val ⊕ ch2words m).
-      - intro x. rewrite !plus_involutive. reflexivity.
-      - intro x. rewrite !plus_involutive. reflexivity.
+    { subst f.
+      exists (λ x, words2ch (ch2words x ⊕ (ch2words m_val) ⊕ ch2words m)).
+      - intro x. rewrite ch2words_words2ch. rewrite !plus_involutive.
+        apply words2ch_ch2key.
+      - intro x. rewrite ch2key_words2ch. rewrite !plus_involutive.
+        apply words2ch_ch2words.
     }
     eapply r_uniform_bij with (1 := bij_f). intro k_val.
     apply r_ret. intros s₀ s₁ e. intuition auto.
     subst f. simpl. f_equal.
+    rewrite ch2key_words2ch.
     rewrite <- plus_assoc.
     rewrite [X in _ = X]plus_comm. f_equal.
     rewrite plus_comm. rewrite plus_involutive.
