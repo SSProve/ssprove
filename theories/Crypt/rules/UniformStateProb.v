@@ -73,7 +73,7 @@ Module DerivedRulesUniform (myparam :  RulesParam) (* (myparamUniform : UniformP
 
   Module myparamU <: RulesParam.
 
-    Definition probE : Type -> Type := fun T => (UprobE T + probE T):Type.
+    Definition probE : Type -> Type := fun T => (UprobE T + probE T)%type.
 
     Definition prob_handler : forall T : choiceType, probE T -> SDistr T.
     Proof.
