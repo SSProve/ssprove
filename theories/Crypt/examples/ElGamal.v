@@ -16,7 +16,7 @@ From Mon Require Import SPropBase.
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_core_definition pkg_chUniverse pkg_composition pkg_rhl Package Prelude
+  pkg_core_definition chUniverse pkg_composition pkg_rhl Package Prelude
   pkg_notation AsymScheme.
 
 From Coq Require Import Utf8.

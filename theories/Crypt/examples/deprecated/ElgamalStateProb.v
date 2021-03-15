@@ -37,7 +37,7 @@ From Crypt Require Import
      UniformStateProb.
 From Crypt Require Import
      pkg_core_definition
-     pkg_chUniverse
+     chUniverse
      pkg_composition
      pkg_rhl
      Package

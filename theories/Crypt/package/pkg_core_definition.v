@@ -15,7 +15,7 @@ Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd RulesStateProb StateTransformingLaxMorph
-     pkg_chUniverse.
+     chUniverse.
 
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.

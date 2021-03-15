@@ -31,7 +31,7 @@ From Crypt Require Import
      FreeProbProg
      RulesStateProb
      UniformDistrLemmas
-     pkg_chUniverse.
+     chUniverse.
 
 Import SPropNotations.
 Import Num.Theory.

@@ -22,8 +22,9 @@ theories/Relational/Commutativity.v
 
 theories/Crypt/Prelude.v
 theories/Crypt/Axioms.v
+theories/Crypt/chUniverse.v
 
-#categorical semantics
+# Categorical semantics
 
 theories/Crypt/rhl_semantics/ChoiceAsOrd.v
 
@@ -46,14 +47,13 @@ theories/Crypt/rhl_semantics/state_prob/StateTransformingLaxMorph.v
 theories/Crypt/rhl_semantics/state_prob/StateTransfThetaDens.v
 theories/Crypt/rhl_semantics/state_prob/LiftStateful.v
 
-#prob rules
+# Prob rules
 theories/Crypt/rules/RulesProb.v
 
-#Crypto
+# Crypto
 theories/Crypt/rules/UniformDistrLemmas.v
 theories/Crypt/rules/UniformDistr.v
 # theories/Crypt/examples/deprecated/otp.v
-theories/Crypt/package/pkg_chUniverse.v
 theories/Crypt/package/pkg_core_definition.v
 theories/Crypt/package/pkg_composition.v
 theories/Crypt/package/pkg_notation.v
@@ -63,7 +63,7 @@ theories/Crypt/package/pkg_user_util.v
 theories/Crypt/Package.v
 theories/Crypt/package/package_usage_example.v
 
-#State + Prob
+# State + Prob
 theories/Crypt/rules/RulesStateProb.v
 theories/Crypt/rules/UniformStateProb.v
 theories/Crypt/examples/PRF.v

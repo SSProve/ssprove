@@ -36,7 +36,7 @@ From Crypt Require Import
      StdDistr.
 From Crypt Require Import
      pkg_core_definition
-     pkg_chUniverse
+     chUniverse
      pkg_composition
      pkg_rhl
      Package
