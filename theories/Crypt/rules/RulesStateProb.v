@@ -585,7 +585,7 @@ Theorem bounded_do_while_rule  {A1 A2 : ord_choiceType} {S1 S2 : choiceType}
 Proof.
   induction n.
   - simpl. eapply weaken_rule.
-    apply ret_rule. cbv; intuition.
+    apply ret_rule. simpl. intros [? ?] ?. simpl. cbv. intuition eauto.
   - simpl. eapply weaken_rule.
     apply bind_rule. apply H.
     move => b1 b2. eapply weaken_rule. apply if_rule.
@@ -593,10 +593,10 @@ Proof.
     instantiate (1 := fun s => inv b1 b2 s /\ b1 = b2).
     rewrite /=. move => [hfoo heq]. assumption.
     instantiate (1 := fun ls rs => ls.1 = false /\ rs.1 = false \/ (inv false false) (ls.2, rs.2)).
-    eapply weaken_rule. apply IHn. cbv; intuition.
+    eapply weaken_rule. apply IHn. simpl. intros [? ?] ?. cbv. intuition eauto.
     rewrite -H3. rewrite {2}H4. assumption.
     eapply weaken_rule. apply ret_rule.
-    cbv; intuition.
+    simpl. intros [? ?] ?. cbv. intuition eauto.
     apply H2. right. rewrite -H3. rewrite {2}H4. assumption.
     instantiate (1 := fun '(b1, b2) => fromPrePost (fun st => (inv b1 b2 st) /\ b1 = b2)
                                                  (fun ls rs => ls.1 = false /\ rs.1 = false \/ (inv false false (ls.2, rs.2)))).
@@ -1063,7 +1063,7 @@ Proof.
     - exact ( prod_choiceType (prod_choiceType A1 A2 ) S ).
     - move=> [x s'].  exact ( θ_dens (θ0 (r x.1 x.2) s' ) ).
     - exact (θ_dens (θ0 p12 s)).
-  rewrite [LHS]/θ_dens.
+  unfold θ_dens at 1.
   pose utheta_dens_fld :=
 @unary_theta_dens probE chUniverse chElement prob_handler.
   unshelve epose (θ_dens_bind :=
@@ -1089,7 +1089,7 @@ Proof.
   rewrite contEqu. apply f_equal. reflexivity.
 
   (*p12 is p21 under θ_dens ∘ θ0 *)
-  rewrite [RHS]/θ_dens.
+  unfold θ_dens at 3.
   pose utheta_dens_fld :=
 @unary_theta_dens probE chUniverse chElement prob_handler.
   unshelve epose (θ_dens_bind :=
@@ -1290,7 +1290,8 @@ Lemma θ0_vs_c_sample :
 Proof.
   unfold c_sample.
   rewrite θ0_vs_bind.
-  f_equal. apply boolp.funext. move=> a.
+  eapply (f_equal (λ x, dnib stT_Frp x (θ0 c))).
+  apply boolp.funext. move=> a.
   rewrite θ0_vs_bind. reflexivity.
 Qed.
 
