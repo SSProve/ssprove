@@ -36,12 +36,9 @@ Module genparam <: RulesParam.
 
   Definition probE : Type → Type := probEmpty.
 
-  Definition rel_choiceTypes : Type := void.
+  Definition rel_choiceTypes : Type := chUniverse.
 
-  Definition chEmb : rel_choiceTypes → choiceType.
-  Proof.
-    intro v. contradiction.
-  Defined.
+  Definition chEmb : rel_choiceTypes → choiceType := chElement.
 
   Definition prob_handler : ∀ T : choiceType, probE T → SDistr T.
   Proof.
