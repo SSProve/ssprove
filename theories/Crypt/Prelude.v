@@ -132,6 +132,13 @@ Proof.
     lia.
 Qed.
 
+Instance Positive_prod {n m} `{Positive n} `{Positive m} :
+    Positive (n * m).
+Proof.
+  unfold Positive in *.
+  eapply leq_trans. 2: eapply leq_pmull. all: auto.
+Qed.
+
 Record positive := mkpos {
   pos : nat ;
   cond_pos : Positive pos
