@@ -503,32 +503,30 @@ Section Uniform_prod.
   Arguments r _ _ : clear implicits.
 
   Lemma UniformIprod_UniformUniform :
-    ∀ (i j : Index),
+    ∀ (i j : nat) `{Positive i} `{Positive j},
       ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
-        xy ← sample U (i_prod i j) ;; ret xy ≈
-        x ← sample U i ;; y ← sample U j ;; ret (prod2ch (x, y))
+        xy ← sample U (i_prod i j) ;; ret (ch2prod xy) ≈
+        x ← sample U i ;; y ← sample U j ;; ret (x, y)
       ⦃ eq ⦄.
   Proof.
-    intros i j.
+    intros i j pi pj.
     change (
       ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
-        xy ← sample U (i_prod i j) ;;
-        ret xy
+        xy ← cmd (cmd_sample (U (i_prod i j))) ;;
+        ret (ch2prod xy)
         ≈
         x ← cmd (cmd_sample (U i)) ;;
         y ← cmd (cmd_sample (U j)) ;;
-        ret (prod2ch (x, y))
+        ret (x, y)
       ⦃ eq ⦄
     ).
     rewrite rel_jdgE.
-    rewrite repr_Uniform. repeat setoid_rewrite repr_cmd_bind.
+    repeat setoid_rewrite repr_cmd_bind.
     change (repr_cmd (cmd_sample (U ?i)))
     with (@Uniform_F (mkpos i) heap_choiceType).
-    cbn - [semantic_judgement Uniform_F].
+    cbn - [semantic_judgement Uniform_F i_prod].
     eapply rewrite_eqDistrR.
-    1:{
-      apply (@reflexivity_rule _ _ (@Uniform_F (mkpos (i_prod i j)) heap_choiceType)).
-    }
+    1:{ apply: reflexivity_rule. }
     intro s. cbn - [i_prod].
     unshelve erewrite !mkdistrd_nonsense.
     1-3: unshelve eapply @is_uniform.
@@ -586,15 +584,13 @@ Proof.
   ).
   rewrite rel_jdgE.
   eapply rbind_rule.
-  - rewrite -rel_jdgE. (* eapply UniformIprod_UniformUniform. *)
-    admit.
+  - rewrite -rel_jdgE. eapply UniformIprod_UniformUniform.
   - intros [? ?] [? ?]. rewrite -rel_jdgE.
-    (* eapply rpre_hypothesis_rule. intros ? ? e. noconf e.
+    eapply rpre_hypothesis_rule. intros ? ? e. noconf e.
     eapply rpre_weaken_rule.
     1: eapply h.
-    simpl. intros ? ? [? ?]. subst. reflexivity. *)
-(* Qed. *)
-Admitted.
+    simpl. intros ? ? [? ?]. subst. reflexivity.
+Qed.
 
 Lemma r_uniform_bij :
   ∀ {A₀ A₁ : ord_choiceType} i j `{Positive i} `{Positive j} pre post f
