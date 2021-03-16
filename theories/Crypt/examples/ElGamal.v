@@ -532,6 +532,24 @@ Section Uniform_prod.
     1-3: unshelve eapply @is_uniform.
     1-3: apply ordinal_finType_inhabited.
     1-3: exact _.
+    pose proof @prod_uniform as h. simpl in h.
+    specialize (h [finType of 'I_i] [finType of 'I_j]).
+    simpl in h. (* unfold uniform_F in h. simpl in h. *)
+    unshelve eassert (ei :
+      mkdistr (mu:=λ f : 'I_i, r (ordinal_finType i) f) is_uniform =
+      @uniform_F _ _
+    ).
+    3: reflexivity.
+    1:{ apply ordinal_finType_inhabited. auto. }
+    unshelve eassert (ej :
+      mkdistr (mu:=λ f : 'I_j, r (ordinal_finType j) f) is_uniform =
+      @uniform_F _ _
+    ).
+    3: reflexivity.
+    1:{ apply ordinal_finType_inhabited. auto. }
+    rewrite ei ej. clear ei ej.
+    unfold F_choice_prod_obj. simpl.
+    (* erewrite <- h. *)
     (* unshelve eassert (as_uniform :
       mkdistr (mu:=λ f : 'I_(i_prod i j), r (ordinal_finType (i_prod i j)) f)
       is_uniform
