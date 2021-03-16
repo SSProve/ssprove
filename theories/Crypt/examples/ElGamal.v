@@ -534,8 +534,42 @@ Section Uniform_prod.
     1-3: exact _.
     pose proof @prod_uniform as h. simpl in h.
     specialize (h [finType of 'I_i] [finType of 'I_j]).
-    simpl in h. (* unfold uniform_F in h. simpl in h. *)
-    unshelve eassert (ei :
+
+
+    simpl in h. unfold uniform_F in h. simpl in h.
+    apply distr_ext. simpl. intros [[x y] s'].
+    unfold SDistr_bind. rewrite !dletE. simpl.
+    rewrite psumZ.
+    2:{
+      unshelve eapply @r_nonneg. eapply ordinal_finType_inhabited.
+      exact _.
+    }
+    simpl.
+    rewrite psumZ.
+    2:{
+      unshelve eapply @r_nonneg. eapply ordinal_finType_inhabited.
+      exact _.
+    }
+    simpl.
+    (* erewrite eq_psum.
+    2:{
+      simpl. intro x1. unfold SDistr_unit. unfold dunit. unlock.
+      unfold drat. unlock. simpl. unfold mrat. simpl.
+      reflexivity.
+    }
+    simpl. rewrite !card_ord. *)
+    unfold dlet. unlock. simpl. unfold mlet. simpl.
+    (* unfold SDistr_unit. unfold dunit. unlock. unfold drat. unlock. simpl.
+    unfold mrat. simpl.
+    erewrite eq_psum.
+    2:{
+      move=> x1. rewrite psumZ. 2: apply r_nonneg.
+      reflexivity.
+    } *)
+
+
+
+    (* unshelve eassert (ei :
       mkdistr (mu:=λ f : 'I_i, r (ordinal_finType i) f) is_uniform =
       @uniform_F _ _
     ).
@@ -548,8 +582,10 @@ Section Uniform_prod.
     3: reflexivity.
     1:{ apply ordinal_finType_inhabited. auto. }
     rewrite ei ej. clear ei ej.
-    unfold F_choice_prod_obj. simpl.
+    unfold F_choice_prod_obj. simpl. *)
     (* erewrite <- h. *)
+
+
     (* unshelve eassert (as_uniform :
       mkdistr (mu:=λ f : 'I_(i_prod i j), r (ordinal_finType (i_prod i j)) f)
       is_uniform
