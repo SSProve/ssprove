@@ -744,6 +744,30 @@ Proof.
     reflexivity.
 Qed.
 
+#[local] Definition f' (m : choicePlain) : Arit (U (i_prod i_sk i_sk)) → Arit (U i_cipher) :=
+  λ x,
+    let '(a, b) := ch2prod x in
+    fto (f m (otf a, otf b)).
+
+Lemma bijective_f' : ∀ m, bijective (f' m).
+Proof.
+  intro m.
+  pose proof (bijective_f m) as bij. destruct bij as [g gf fg].
+  unfold f'.
+  exists (λ x, let '(a,b) := g (otf x) in prod2ch (fto a, fto b)).
+  - cbn - [f]. intros x. rewrite -[RHS]prod2ch_ch2prod.
+    set (y := ch2prod x). clearbody y. clear x.
+    simpl in y. destruct y as [a b].
+    rewrite otf_fto. rewrite gf. f_equal.
+    rewrite !fto_otf. reflexivity.
+  - cbn - [f]. intro x.
+    replace x with (fto (f m (g (otf x)))) at 2.
+    2:{ rewrite fg. rewrite fto_otf. reflexivity. }
+    set (y := g (otf x)). change (g (otf x)) with y. clearbody y. clear x.
+    destruct y as [a b]. rewrite ch2prod_prod2ch. rewrite !otf_fto.
+    reflexivity.
+Qed.
+
 Lemma ots_real_vs_rnd_equiv_false :
   ots_real_vs_rnd false ≈₀ Aux ∘ DH_rnd.
 Proof.
@@ -772,12 +796,22 @@ Proof.
   1:{ eapply r_uniform_prod. intros x y. eapply rreflexivity_rule. }
   simpl.
   eapply rsymmetry.
-  (* eapply @r_uniform_bij with (f := f m). 1: apply bijective_f.
-  simpl. intros [x y].
-  rewrite !gT2ch_ch2gT !ch2gT_gT2ch.
-  unfold c2ch. simpl.
-  eapply r_ret. intros s ? e. subst. intuition auto.
-Qed. *)
+  eapply @r_uniform_bij with (f := f' m). 1: apply bijective_f'.
+  simpl. intros x.
+  unfold f'. set (z := ch2prod x). clearbody z. clear x.
+  destruct z as [x y]. simpl.
+  eapply r_ret. intros s ? e. subst.
+  intuition auto.
+  unfold c2ch, ch2c, ch2m. rewrite !otf_fto. simpl.
+  f_equal. f_equal.
+  (* For some reason, we have x = otf x to prove
+    Maybe the bijection was unnecessary?
+  *)
+  simpl in x.
+  pose (p := otf x). unfold SecKey in p.
+  Set Printing Coercions.
+  Fail reflexivity.
+(* Qed. *)
 Admitted.
 
 Theorem ElGamal_OT :
