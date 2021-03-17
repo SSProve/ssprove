@@ -268,7 +268,7 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Defined.
 
   Definition ch2prod_prod2ch :
-    ∀ {i j} `{Positive i} `{Positive j} x,
+    ∀ {i j} `{Positive i} `{Positive j} (x : prod_choiceType (Arit (U i)) (Arit (U j))),
       ch2prod (prod2ch x) = x.
   Proof.
     intros i j hi hj x.
@@ -278,7 +278,7 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Qed.
 
   Definition prod2ch_ch2prod :
-    ∀ {i j} `{Positive i} `{Positive j} x,
+    ∀ {i j} `{Positive i} `{Positive j} (x : Arit (U (i_prod i j))),
       prod2ch (ch2prod x) = x.
   Proof.
     intros i j hi hj x.
@@ -502,6 +502,56 @@ Section Uniform_prod.
 
   Arguments r _ _ : clear implicits.
 
+  Lemma uniform_F_prod_bij :
+    ∀ i j `{Positive i} `{Positive j} (x : 'I_i) (y : 'I_j),
+      mkdistr
+        (mu := λ _ : 'I_i * 'I_j, r (prod_finType [finType of 'I_i] [finType of 'I_j]) (x, y))
+        (@is_uniform _ (x,y))
+      =
+      SDistr_bind
+        (λ z : 'I_(i_prod i j),
+          SDistr_unit _ (ch2prod z)
+        )
+        (mkdistr
+          (mu := λ f : 'I_(i_prod i j), r (ordinal_finType (i_prod i j)) f)
+          (@is_uniform _ (ordinal_finType_inhabited (i_prod i j)))
+        ).
+  Proof.
+    intros i j pi pj x y.
+    apply distr_ext. simpl. intros [a b].
+    unfold SDistr_bind. rewrite dletE. simpl.
+    rewrite psumZ.
+    2:{
+      unshelve eapply @r_nonneg. eapply ordinal_finType_inhabited.
+      exact _.
+    }
+    unfold r. rewrite card_prod. simpl.
+    rewrite !card_ord. unfold i_prod.
+    unfold SDistr_unit. unfold dunit. unlock. unfold drat. unlock. simpl.
+    unfold mrat. simpl.
+    erewrite eq_psum.
+    2:{
+      simpl. intro u. rewrite divr1. rewrite addn0. reflexivity.
+    }
+    erewrite psum_finseq with (r := [:: prod2ch (a, b)]).
+    2: reflexivity.
+    2:{
+      simpl. intros u hu. rewrite inE in hu.
+      destruct (ch2prod u == (a,b)) eqn:e.
+      2:{
+        exfalso.
+        rewrite e in hu. cbn in hu.
+        move: hu => /negP hu. apply hu. apply eqxx.
+      }
+      move: e => /eqP e. rewrite -e.
+      rewrite inE. apply /eqP. symmetry. apply prod2ch_ch2prod.
+    }
+    rewrite big_cons big_nil.
+    rewrite ch2prod_prod2ch. rewrite eqxx. simpl.
+    rewrite addr0. rewrite normr1.
+    rewrite GRing.mulr1. reflexivity.
+  Qed.
+
   Lemma UniformIprod_UniformUniform :
     ∀ (i j : nat) `{Positive i} `{Positive j},
       ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
@@ -532,59 +582,10 @@ Section Uniform_prod.
     1-3: unshelve eapply @is_uniform.
     1-3: apply ordinal_finType_inhabited.
     1-3: exact _.
-    pose proof @prod_uniform as h. simpl in h.
-    specialize (h [finType of 'I_i] [finType of 'I_j]).
 
-
-    simpl in h. unfold uniform_F in h. simpl in h.
-    apply distr_ext. simpl. intros [[x y] s'].
-    unfold SDistr_bind. rewrite !dletE. simpl.
-    rewrite psumZ.
-    2:{
-      unshelve eapply @r_nonneg. eapply ordinal_finType_inhabited.
-      exact _.
-    }
-    simpl.
-    rewrite psumZ.
-    2:{
-      unshelve eapply @r_nonneg. eapply ordinal_finType_inhabited.
-      exact _.
-    }
-    simpl.
-    (* erewrite eq_psum.
-    2:{
-      simpl. intro x1. unfold SDistr_unit. unfold dunit. unlock.
-      unfold drat. unlock. simpl. unfold mrat. simpl.
-      reflexivity.
-    }
-    simpl. rewrite !card_ord. *)
-    unfold dlet. unlock. simpl. unfold mlet. simpl.
-    (* unfold SDistr_unit. unfold dunit. unlock. unfold drat. unlock. simpl.
-    unfold mrat. simpl.
-    erewrite eq_psum.
-    2:{
-      move=> x1. rewrite psumZ. 2: apply r_nonneg.
-      reflexivity.
-    } *)
-
-
-
-    (* unshelve eassert (ei :
-      mkdistr (mu:=λ f : 'I_i, r (ordinal_finType i) f) is_uniform =
-      @uniform_F _ _
-    ).
-    3: reflexivity.
-    1:{ apply ordinal_finType_inhabited. auto. }
-    unshelve eassert (ej :
-      mkdistr (mu:=λ f : 'I_j, r (ordinal_finType j) f) is_uniform =
-      @uniform_F _ _
-    ).
-    3: reflexivity.
-    1:{ apply ordinal_finType_inhabited. auto. }
-    rewrite ei ej. clear ei ej.
-    unfold F_choice_prod_obj. simpl. *)
-    (* erewrite <- h. *)
-
+    (* TODO: Now it remains to apply the lemma above before using the proof
+      below.
+    *)
 
     (* unshelve eassert (as_uniform :
       mkdistr (mu:=λ f : 'I_(i_prod i j), r (ordinal_finType (i_prod i j)) f)
