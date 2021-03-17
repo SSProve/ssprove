@@ -605,19 +605,6 @@ Section Uniform_prod.
     simpl in h.
     rewrite SDistr_bind_unit_unit in h.
     rewrite h. clear h.
-
-
-
-    (* unshelve eassert (as_uniform :
-      mkdistr (mu:=λ f : 'I_(i_prod i j), r (ordinal_finType (i_prod i j)) f)
-      is_uniform
-      =
-      @uniform_F (prod_finType (fin_family i) (fin_family j)) _
-    ).
-    3:{ rewrite /uniform_F. reflexivity. }
-    1:{ refine (_,_). all: apply fin_family_inhabited. }
-    rewrite as_uniform.
-    erewrite prod_uniform.
     epose (bind_bind := ord_relmon_law3 SDistr _ _ _ _ _).
     eapply equal_f in bind_bind.
     cbn in bind_bind.
@@ -637,8 +624,7 @@ Section Uniform_prod.
     unfold SubDistr.SDistr_obligation_2 in bind_ret.
     unfold SubDistr.SDistr_obligation_1 in bind_ret.
     erewrite bind_ret. reflexivity.
-  Qed. *)
-  Admitted.
+  Qed.
 
 End Uniform_prod.
 
