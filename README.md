@@ -1,7 +1,7 @@
-# SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq
+![SSProve](https://user-images.githubusercontent.com/5850655/111436014-c6811f00-8701-11eb-9363-3f2a1b9e9da1.png)
 
 This repository contains Coq formalisation of the results from the paper:
-- SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq.
+- **SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq.**
   Carmine Abate, Philipp G. Haselwarter, Exequiel Rivas, Antoine Van Muylder,
   Théo Winterhalter, Catalin Hritcu, Kenji Maillard, and Bas Spitters. March 2021.
 
