@@ -552,6 +552,20 @@ Section Uniform_prod.
     rewrite GRing.mulr1. reflexivity.
   Qed.
 
+  Lemma SDistr_bind_unit_unit :
+    ∀ (A B C : ord_choiceType) (f : A → B) (g : B → C) u,
+      SDistr_bind (λ y, SDistr_unit _ (g y)) (SDistr_bind (λ x, SDistr_unit _ (f x)) u) =
+      SDistr_bind (λ x, SDistr_unit _ (g (f x))) u.
+  Proof.
+    intros A B C f g u.
+    apply distr_ext. simpl. intro z.
+    unfold SDistr_bind. unfold SDistr_unit.
+    rewrite dlet_dlet.
+    eapply eq_in_dlet. 2:{ intro. reflexivity. }
+    intros x hx y.
+    rewrite dlet_unit. reflexivity.
+  Qed.
+
   Lemma UniformIprod_UniformUniform :
     ∀ (i j : nat) `{Positive i} `{Positive j},
       ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
@@ -582,10 +596,17 @@ Section Uniform_prod.
     1-3: unshelve eapply @is_uniform.
     1-3: apply ordinal_finType_inhabited.
     1-3: exact _.
+    pose proof @prod_uniform as h.
+    specialize (h [finType of 'I_i] [finType of 'I_j]). simpl in h.
+    unfold uniform_F in h.
+    specialize (h (ordinal_finType_inhabited _) (ordinal_finType_inhabited _)).
+    rewrite uniform_F_prod_bij in h. simpl in h.
+    eapply (f_equal (SDistr_bind (λ x, SDistr_unit _ (x, s)))) in h.
+    simpl in h.
+    rewrite SDistr_bind_unit_unit in h.
+    rewrite h. clear h.
 
-    (* TODO: Now it remains to apply the lemma above before using the proof
-      below.
-    *)
+
 
     (* unshelve eassert (as_uniform :
       mkdistr (mu:=λ f : 'I_(i_prod i j), r (ordinal_finType (i_prod i j)) f)
