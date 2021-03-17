@@ -301,6 +301,7 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
     code L [interface] choiceCipher :=
     {code
       y ← sample U i_sk ;;
+      let y := ch2sk y in
       ret (c2ch (g^+y, (ch2pk pk)^+y * (ch2m m)))
     }.
 
@@ -365,6 +366,7 @@ Definition DH_real :
         a ← sample U i_sk ;;
         let a := ch2sk a in
         b ← sample U i_sk ;;
+        let b := ch2sk b in
         put pk_loc := pk2ch (g^+a) ;;
         put sk_loc := sk2ch a ;;
         ret (pk2ch (g^+a), c2ch (g^+b, g^+(a * b)))
@@ -380,7 +382,9 @@ Definition DH_rnd :
         a ← sample U i_sk ;;
         let a := ch2sk a in
         b ← sample U i_sk ;;
+        let b := ch2sk b in
         c ← sample U i_sk ;;
+        let c := ch2sk c  in
         put pk_loc := pk2ch (g^+a) ;;
         put sk_loc := sk2ch a ;;
         ret (pk2ch (g^+a), c2ch (g^+b, g^+c))
@@ -803,16 +807,8 @@ Proof.
   eapply r_ret. intros s ? e. subst.
   intuition auto.
   unfold c2ch, ch2c, ch2m. rewrite !otf_fto. simpl.
-  f_equal. f_equal.
-  (* For some reason, we have x = otf x to prove
-    Maybe the bijection was unnecessary?
-  *)
-  simpl in x.
-  pose (p := otf x). unfold SecKey in p.
-  Set Printing Coercions.
-  Fail reflexivity.
-(* Qed. *)
-Admitted.
+  reflexivity.
+Qed.
 
 Theorem ElGamal_OT :
   ∀ LA A,
