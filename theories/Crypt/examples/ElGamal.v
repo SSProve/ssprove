@@ -132,9 +132,6 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Definition challenge_id : nat := 8. (*challenge for LR *)
   Definition challenge_id' : nat := 9. (*challenge for real rnd *)
 
-  Definition U (i : nat) `{Positive i} : Op :=
-    existT _ ('fin i) (inl (Uni_W (mkpos i))).
-
   Definition gT2ch : gT → 'fin #|gT|.
   Proof.
     move => /= A.
@@ -635,30 +632,6 @@ Proof.
     eapply rpre_weaken_rule.
     1: eapply h.
     simpl. intros ? ? [? ?]. subst. reflexivity.
-Qed.
-
-Lemma r_uniform_bij :
-  ∀ {A₀ A₁ : ord_choiceType} i j `{Positive i} `{Positive j} pre post f
-    (c₀ : _ → raw_code A₀) (c₁ : _ → raw_code A₁),
-    bijective f →
-    (∀ x, ⊢ ⦃ pre ⦄ c₀ x ≈ c₁ (f x) ⦃ post ⦄) →
-    ⊢ ⦃ pre ⦄
-      x ← sample U i ;; c₀ x ≈
-      x ← sample U j ;; c₁ x
-    ⦃ post ⦄.
-Proof.
-  intros A₀ A₁ i j pi pj pre post f c₀ c₁ bijf h.
-  rewrite rel_jdgE.
-  change (repr (sampler (U ?i) ?k))
-  with (bindrFree (@Uniform_F (mkpos i) heap_choiceType) (λ x, repr (k x))).
-  eapply bind_rule_pp.
-  - eapply Uniform_bij_rule. eauto.
-  - intros a₀ a₁. simpl.
-    rewrite -rel_jdgE.
-    eapply rpre_hypothesis_rule. intros s₀ s₁ [hs e].
-    move: e => /eqP e. subst.
-    eapply rpre_weaken_rule. 1: eapply h.
-    intros h₀ h₁. simpl. intros [? ?]. subst. auto.
 Qed.
 
 (** End of technical steps *)

@@ -208,9 +208,6 @@ Module PRF_example.
 
   Parameter PRF : Words → Key → Key.
 
-  Definition U (i : nat) `{Positive i} : Op :=
-    existT _ ('fin i) (inl (Uni_W (mkpos i))).
-
   Notation " 'chWords' " := ('fin (2^n)%N) (in custom pack_type at level 2).
   Notation " 'chKey' " := ('fin (2^n)%N) (in custom pack_type at level 2).
   Definition i_key : nat := 2^n.

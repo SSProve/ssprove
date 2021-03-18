@@ -135,9 +135,6 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
   Import π.
   Import Alg.
 
-  Definition U (i : nat) `{Positive i} : Op :=
-    existT _ ('fin i) (inl (Uni_W (mkpos i))).
-
   (* Compatibitlity *)
   Definition i_plain := #|Plain|.
   Definition i_cipher := #|Cipher|.

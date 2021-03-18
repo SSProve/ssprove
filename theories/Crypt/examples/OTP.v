@@ -227,9 +227,6 @@ Module OTP_example.
 
   Definition i1 : nat := 0.
 
-  Definition U (i : Index) : Op :=
-    existT _ ('fin i) (inl (Uni_W i)).
-
   Definition i_words : positive := mkpos (2^n)%N.
   Definition i_key : positive := mkpos (2^n)%N.
 
@@ -354,39 +351,6 @@ Module OTP_example.
     λ b,
       if b then {locpackage IND_CPA_real}
            else {locpackage IND_CPA_ideal}.
-
-  (** Technical step
-
-    Uniform distrbutions are not factorised yet so we have to inline rules
-    in examples. Hopefully this will go away in the future.
-
-  *)
-
-  Lemma r_uniform_bij :
-    ∀ {A₀ A₁ : ord_choiceType} i j pre post f
-      (c₀ : _ → raw_code A₀) (c₁ : _ → raw_code A₁),
-      bijective f →
-      (∀ x, ⊢ ⦃ pre ⦄ c₀ x ≈ c₁ (f x) ⦃ post ⦄) →
-      ⊢ ⦃ pre ⦄
-        x ← sample U i ;; c₀ x ≈
-        x ← sample U j ;; c₁ x
-      ⦃ post ⦄.
-  Proof.
-    intros A₀ A₁ i j pre post f c₀ c₁ bijf h.
-    rewrite rel_jdgE.
-    change (repr (sampler (U ?i) ?k))
-    with (bindrFree (@Uniform_F i heap_choiceType) (λ x, repr (k x))).
-    eapply bind_rule_pp.
-    - eapply Uniform_bij_rule. eauto.
-    - intros a₀ a₁. simpl.
-      rewrite <- rel_jdgE.
-      eapply rpre_hypothesis_rule. intros s₀ s₁ [hs e].
-      move: e => /eqP e. subst.
-      eapply rpre_weaken_rule. 1: eapply h.
-      intros h₀ h₁. simpl. intros [? ?]. subst. auto.
-  Qed.
-
-  (* End of technical step *)
 
   #[local] Open Scope ring_scope.
 
