@@ -31,7 +31,7 @@ From Crypt Require Import
      StdDistr.
 From Crypt Require Import
      pkg_core_definition
-     pkg_chUniverse
+     chUniverse
      pkg_composition
      pkg_rhl
      Package
@@ -85,12 +85,12 @@ Module Type SymmetricSchemeRules (π : SymmetricSchemeParam).
   Module genparam <: RulesParam.
 
     Definition probE : Type -> Type := probEmpty.
-    Definition rel_choiceTypes : Type := void.
-    Definition chEmb : rel_choiceTypes -> choiceType.
+    Definition chUniverse : Type := void.
+    Definition chElement : chUniverse -> choiceType.
     Proof. move => v. inversion v. Defined.
     Definition prob_handler : forall T : choiceType, probE T -> SDistr T.
     Proof. move => T v. inversion v. Defined.
-    Definition Hch : forall r : rel_choiceTypes, chEmb r.
+    Definition Hch : forall r : chUniverse, chElement r.
     Proof. move => v. inversion v. Defined.
 
   End genparam.
@@ -152,8 +152,8 @@ Module PRF_example.
   Parameter PRF : Words -> Key -> Key.
   Parameter prf_epsilon : R.
 
-  Definition U (i : positive) : {rchT : MyRules.myparamU.rel_choiceTypes & MyRules.myparamU.probE (MyRules.myparamU.chEmb rchT)} :=
-    (existT (λ rchT : MyRules.myparamU.rel_choiceTypes, MyRules.myparamU.probE (MyRules.myparamU.chEmb rchT))
+  Definition U (i : positive) : {rchT : MyRules.myparamU.chUniverse & MyRules.myparamU.probE (MyRules.myparamU.chElement rchT)} :=
+    (existT (λ rchT : MyRules.myparamU.chUniverse, MyRules.myparamU.probE (MyRules.myparamU.chElement rchT))
             (chFin i) (inl (MyRules.Unif_Fin i))).
   Obligation Tactic := package_obtac.
 

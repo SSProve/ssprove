@@ -32,7 +32,7 @@ From mathcomp Require Import ssreflect ssrbool ssrnat eqtype seq eqtype
 Set Warnings "notation-overridden,ambiguous-paths".
 From extructures Require Import ord fset fmap.
 From Crypt Require Import Prelude pkg_core_definition
-  pkg_composition pkg_notation pkg_chUniverse
+  pkg_composition pkg_notation chUniverse
   RulesStateProb.
 From Coq Require Import Utf8 FunctionalExtensionality
   Setoids.Setoid Classes.Morphisms.

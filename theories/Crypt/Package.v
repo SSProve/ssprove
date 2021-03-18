@@ -1,5 +1,5 @@
 (* Export chUniverse *)
-From Crypt Require Export pkg_chUniverse.
+From Crypt Require Export chUniverse.
 (* Export the package_scope ("%pack") *)
 From Crypt Require Export pkg_core_definition.
 

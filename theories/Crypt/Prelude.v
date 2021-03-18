@@ -132,16 +132,34 @@ Proof.
     lia.
 Qed.
 
+Lemma Positive_prod :
+  ∀ {n m},
+    Positive n →
+    Positive m →
+    Positive (n * m).
+Proof.
+  intros n m hn hm.
+  unfold Positive in *.
+  eapply leq_trans. 2: eapply leq_pmull. all: auto.
+Qed.
+
+(* Instance Positive_prod {n m} `{Positive n} `{Positive m} :
+    Positive (n * m).
+Proof.
+  unfold Positive in *.
+  eapply leq_trans. 2: eapply leq_pmull. all: auto.
+Qed. *)
+
+Hint Extern 2 (Positive (?n * ?m)) =>
+  eapply Positive_prod : typeclass_instances.
+
 Record positive := mkpos {
   pos : nat ;
   cond_pos : Positive pos
 }.
 Arguments mkpos _ {_}.
 
-Definition positive_to_nat (p : positive) : nat :=
-  p.(pos).
-
-Coercion positive_to_nat : positive >-> nat.
+Coercion pos : positive >-> nat.
 
 Hint Extern 1 (Positive ?n.(pos)) =>
   eapply cond_pos
@@ -190,8 +208,7 @@ Ltac unfold_positives :=
     let n := fresh "p" in
     let h := fresh "h" in
     destruct p as [n h] ;
-    repeat change (pos {| pos := n ; cond_pos := h |}) with n in * ;
-    repeat change (positive_to_nat {| pos := n ; cond_pos := h |}) with n in *
+    repeat change (pos {| pos := n ; cond_pos := h |}) with n in *
   end.
 
 Instance PositiveEqDec n : EqDec (Positive n).

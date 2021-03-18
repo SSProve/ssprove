@@ -42,10 +42,10 @@ Local Open Scope ring_scope.
 Module Type ProbRulesParam.
 
 Parameter probE : Type -> Type.
-Parameter rel_choiceTypes : Type.
-Parameter chEmb : rel_choiceTypes -> choiceType.
+Parameter chUniverse : Type.
+Parameter chElement : chUniverse -> choiceType.
 Parameter prob_handler : (forall T : choiceType, probE T -> SDistr T).
-Parameter Hch : forall r : rel_choiceTypes, chEmb r.
+Parameter Hch : forall r : chUniverse, chElement r.
 
 End ProbRulesParam.
 
@@ -58,10 +58,10 @@ Local Definition ϕ_d :=
   @RelativeMonadMorph_prod.cmtSqu _ _ _ _ _ _ squ
                                   _ _ _ _ _ _ squ.
 
-Local Definition MFreePr := rFreePr probE rel_choiceTypes chEmb.
+Local Definition MFreePr := rFreePr probE chUniverse chElement.
 
-Local Definition Ops := (Prob_ops_collection probE rel_choiceTypes chEmb).
-Local Definition Arit := (Prob_arities probE rel_choiceTypes chEmb).
+Local Definition Ops := (Prob_ops_collection probE chUniverse chElement).
+Local Definition Arit := (Prob_arities probE chUniverse chElement).
 
 Local Definition Call (s : Ops) : MFreePr (Arit s) :=
   ropr _ _ _ s (fun r => retrFree _ _ _ r).
@@ -74,12 +74,12 @@ Lemma θ0_preserves_bind A B (c1 c2 : MFreePr A) (f1 f2 : A -> MFreePr B) (Hc : 
       (Hf : forall v, θ0 (f1 v) = θ0 (f2 v))
   : θ0 (bindrFree _ _ c1 f1) = θ0 (bindrFree _ _ c2 f2).
 Proof.
-  pose (rmm_law2 _ _ _ _ (@unary_theta_dens _ _ chEmb prob_handler ) _ _ f1).
+  pose (rmm_law2 _ _ _ _ (@unary_theta_dens _ _ chElement prob_handler ) _ _ f1).
   simpl in e.
   apply equal_f with (x := c1) in e.
   rewrite /θ0 /unary_theta_dens /=.
   rewrite e.
-  pose (rmm_law2 _ _ _ _ (@unary_theta_dens _ _ chEmb prob_handler ) _ _ f2).
+  pose (rmm_law2 _ _ _ _ (@unary_theta_dens _ _ chElement prob_handler ) _ _ f2).
   simpl in e0.
   apply equal_f with (x := c2) in e0.
   rewrite /θ0 /unary_theta_dens /=.
@@ -104,7 +104,7 @@ Definition pure {X : ord_choiceType} (x : X) := ord_relmon_unit MFreePr _ x.
 
 Definition retF { A : choiceType } (a : A) := retrFree Ops Arit A a.
 
-Notation " A <$ c " := (@sample_from probE rel_choiceTypes chEmb Hch A c) (at level 100).
+Notation " A <$ c " := (@sample_from probE chUniverse chElement Hch A c) (at level 100).
 
 
 Definition M_d := (@RelativeMonadMorph_prod.Mprod _ _ _  MFreePr _ _ _ MFreePr ).
@@ -113,8 +113,8 @@ Definition ϕ_ex := ϕ.
 
 Definition theta_dens :=
   RelativeMonadMorph_prod.prod_relativeMonadMorphism
-    (@unary_theta_dens probE rel_choiceTypes chEmb prob_handler)
-    (@unary_theta_dens probE rel_choiceTypes chEmb prob_handler).
+    (@unary_theta_dens probE chUniverse chElement prob_handler)
+    (@unary_theta_dens probE chUniverse chElement prob_handler).
 
 Definition θ_dens_lax := (relativeMonadMorphism_to_lax _ (* J12_dens *)
                                                        ϕ_d  (* natIso_dens*)
@@ -888,11 +888,11 @@ Proof.
   apply: (rewrite_eqDistrL (c2;; c1) (c1;; c2) (c2 ;; c1)).
   - apply: reflexivity_rule.
   rewrite /θ0 /unary_theta_dens /=.
-  pose (rmm_law2 _ _ _ _ (@unary_theta_dens _ _ chEmb prob_handler) A A (fun _ => c1)).
+  pose (rmm_law2 _ _ _ _ (@unary_theta_dens _ _ chElement prob_handler) A A (fun _ => c1)).
   simpl in e.
   apply equal_f with (x := c2) in e.
   rewrite e. clear e.
-  pose (rmm_law2 _ _ _ _ (@unary_theta_dens _ _ chEmb prob_handler) A A (fun _ => c2)).
+  pose (rmm_law2 _ _ _ _ (@unary_theta_dens _ _ chElement prob_handler) A A (fun _ => c2)).
   simpl in e.
   apply equal_f with (x := c1) in e.
   rewrite e /=. clear e.

@@ -1,7 +1,7 @@
-# SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq
+![SSProve](https://user-images.githubusercontent.com/5850655/111436014-c6811f00-8701-11eb-9363-3f2a1b9e9da1.png)
 
 This repository contains Coq formalisation of the results from the paper:
-- SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq.
+- **SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq.**
   Carmine Abate, Philipp G. Haselwarter, Exequiel Rivas, Antoine Van Muylder,
   Théo Winterhalter, Catalin Hritcu, Kenji Maillard, and Bas Spitters. March 2021.
 
@@ -262,26 +262,17 @@ in `theories/Crypt/package/pkg_rhl.v`.
 
 **Lemma 1**
 ```coq
-Lemma TriangleInequality :
-  ∀ {Game_export : Interface} {F G H : Game_Type Game_export}
-    {ϵ1 ϵ2 ϵ3}
-    F ≈[ ϵ1 ] G →
-    G ≈[ ϵ2 ] H →
-    F ≈[ ϵ3 ] H →
-    ∀ A H1 H2 H3 H4 H5 H6,
-      ϵ3 A H1 H2 ≤ ϵ1 A H3 H4 + ϵ2 A H5 H6.
+Lemma Advantage_triangle :
+  ∀ P Q R A,
+    AdvantageE P Q A <= AdvantageE P R A + AdvantageE R Q A.
 ```
 
 **Lemma 2**
 ```coq
-Lemma ReductionLem :
-  ∀ {Game_export M_export : Interface} {M : package Game_export M_export}
-    (G : GamePair Game_export)
-    (Hdisjoint0 : fdisjoint M.π1 (G false).π1)
-    (Hdisjoint1 : fdisjoint M.π1 (G true).π1),
-    link M (G false)
-    ≈[ λ A H1 H2, @AdvantageE Game_export (G false) (G true) (link A M) (auxReduction Hdisjoint0 H1) (auxReduction Hdisjoint1 H2) ]
-    link M (G true).
+Lemma Advantage_link :
+  ∀ G₀ G₁ A P,
+    AdvantageE G₀ G₁ (A ∘ P) =
+    AdvantageE (P ∘ G₀) (P ∘ G₁) A.
 ```
 
 **Theorem 1**

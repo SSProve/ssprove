@@ -21,8 +21,11 @@ Set Warnings "notation-overridden,ambiguous-paths".
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_core_definition pkg_chUniverse pkg_composition pkg_notation pkg_rhl
+  pkg_core_definition chUniverse pkg_composition pkg_notation pkg_rhl
   Package Prelude.
+Set Warnings "-custom-entry-overriden".
+From Crypt Require Import package_instance.
+Set Warnings "custom-entry-overriden".
 
 From Coq Require Import Utf8.
 From extructures Require Import ord fset fmap.
@@ -34,6 +37,8 @@ Set Primitive Projections.
 Import Num.Def.
 Import Num.Theory.
 Import mc_1_10.Num.Theory.
+
+Import PackageNotation.
 
 Local Open Scope ring_scope.
 
@@ -48,97 +53,31 @@ Module Type AsymmetricSchemeParams.
   Parameter pub0 : PubKey.
   Parameter sec0 : SecKey.
 
-  Parameter probE : Type → Type.
-  Parameter rel_choiceTypes : Type.
-  Parameter chEmb : rel_choiceTypes → choiceType.
-  Parameter prob_handler : ∀ T : choiceType, probE T → SDistr T.
-
 End AsymmetricSchemeParams.
-
-Module ARules (Aparam : AsymmetricSchemeParams).
-
-  Export Aparam.
-
-  (*: Uniform distributions over Plain, Cipher, Key and bool *)
-  Inductive Index :=
-  | i_plain
-  | i_cipher
-  | i_pk
-  | i_sk
-  | i_bool
-  | i_prod (i j : Index).
-
-  Module UParam <: UniformParameters.
-
-  Definition Index : Type := Index.
-  Definition i0 : Index := i_plain.
-
-  Fixpoint fin_family (i : Index) : finType :=
-    match i with
-    | i_plain   => Plain
-    | i_cipher  => Cipher
-    | i_pk      => PubKey
-    | i_sk      => SecKey
-    | i_bool    => bool_finType
-    | i_prod i j => prod_finType (fin_family i) (fin_family j)
-    end.
-
-  Fixpoint F_w0 (i : Index) : (fin_family i) :=
-    match i with
-    | i_plain => plain0
-    | i_cipher => cipher0
-    | i_pk  => pub0
-    | i_sk  => sec0
-    | i_bool => false
-    | i_prod i1 i2 => (F_w0 i1, F_w0 i2)
-    end.
-
-  End UParam.
-
-  Module genparam <: RulesParam.
-
-    Definition probE : Type → Type := probE.
-    Definition rel_choiceTypes : Type := rel_choiceTypes.
-    Definition chEmb : rel_choiceTypes → choiceType := chEmb.
-    Definition prob_handler : forall T : choiceType, probE T → SDistr T :=
-      prob_handler.
-
-  End genparam.
-
-  Module MyARulesUniform := DerivedRulesUniform genparam UParam.
-  Export MyARulesUniform.
-
-End ARules.
 
 (** algorithms for Key Generation, Encryption and Decryption  **)
 Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
 
   Import π.
-  Module asym_rules := (ARules π).
-  Export asym_rules.
-  Import asym_rules.MyARulesUniform.
 
-  Module MyPackage := Package_Make myparamU.
-  Export MyPackage.
-  Import PackageNotation.
   Local Open Scope package_scope.
 
   (* chX is the chUniverse in bijection with X  *)
-  Parameters choicePlain choiceCipher choicePubKey choiceSecKey : chUniverse.
+  (* Parameters choicePlain choiceCipher choicePubKey choiceSecKey : chUniverse. *)
+  Parameter Plain_pos : Positive #|Plain|.
+  Parameter Cipher_pos : Positive #|Cipher|.
+  Parameter PubKey_pos : Positive #|PubKey|.
+  Parameter SecKey_pos : Positive #|SecKey|.
 
-  Parameter c2ch : Cipher → choiceCipher.
-  Parameter ch2c : choiceCipher → Cipher.
+  #[local] Existing Instance Plain_pos.
+  #[local] Existing Instance Cipher_pos.
+  #[local] Existing Instance PubKey_pos.
+  #[local] Existing Instance SecKey_pos.
 
-  (* *)
-  Parameter pk2ch : PubKey → choicePubKey.
-  Parameter ch2pk : choicePubKey → PubKey.
-  (* *)
-  Parameter sk2ch : SecKey → choiceSecKey.
-  Parameter ch2sk : choiceSecKey → SecKey.
-  (* *)
-  Parameter m2ch : Plain → choicePlain.
-  Parameter ch2m : choicePlain → Plain.
-  (* *)
+  Definition choicePlain := 'fin #|Plain|.
+  Definition choiceCipher := 'fin #|Cipher|.
+  Definition choicePubKey := 'fin #|PubKey|.
+  Definition choiceSecKey := 'fin #|SecKey|.
 
   Definition counter_loc : Location := ('nat ; 0%N).
   Definition pk_loc : Location := (choicePubKey ; 1%N).
@@ -179,15 +118,15 @@ End AsymmetricSchemeAlgorithms.
 Module AsymmetricScheme (π : AsymmetricSchemeParams)
                         (Alg : AsymmetricSchemeAlgorithms π).
 
-  Set Warnings "-custom-entry-overriden".
+  Import π.
   Import Alg.
-  Set Warnings "custom-entry-overriden".
-  Import PackageNotation.
 
-  Definition U (i : Index) :
-    {rchT : myparamU.rel_choiceTypes & myparamU.probE (myparamU.chEmb rchT)} :=
-    (existT (λ rchT : myparamU.rel_choiceTypes, myparamU.probE (myparamU.chEmb rchT))
-            (inl (inl i)) (inl (Uni_W i))).
+  (* Compatibitlity *)
+  Definition i_plain := #|Plain|.
+  Definition i_cipher := #|Cipher|.
+  Definition i_pk := #|PubKey|.
+  Definition i_sk := #|SecKey|.
+  Definition i_bool := 2.
 
   Local Open Scope package_scope.
 
@@ -278,7 +217,7 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
          put pk_loc := pk ;;
          put sk_loc := sk ;;
          c ← sample U i_cipher ;;
-         ret (c2ch c)
+         ret c
       }
     ].
 
@@ -398,7 +337,7 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
           put pk_loc := pk ;;
           put sk_loc := sk ;;
           c ← sample U i_cipher ;;
-          ret (some (c2ch c))
+          ret (Some c)
         else ret None
       }
     ].

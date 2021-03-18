@@ -62,9 +62,9 @@ Module DerivedRulesUniform (myparam :  ProbRulesParam) (myparamUniform : Uniform
   Inductive UprobE : Type -> Type :=
   | Uni_W  : forall i, UprobE (fin_family i).
 
-  Definition Urel_choiceTypes : Type := Index.
+  Definition UchUniverse : Type := Index.
 
-  Definition UchEmb : Urel_choiceTypes -> choiceType.
+  Definition UchElement : UchUniverse -> choiceType.
   Proof. move => i. exact (fin_family i). Defined.
 
   Definition Uprob_handler : forall T : choiceType, UprobE T -> SDistr T.
@@ -83,13 +83,13 @@ Module DerivedRulesUniform (myparam :  ProbRulesParam) (myparamUniform : Uniform
 
     Definition probE : Type -> Type := fun T => (UprobE T + probE T):Type.
 
-    Definition rel_choiceTypes : Type := Urel_choiceTypes + rel_choiceTypes.
+    Definition chUniverse : Type := UchUniverse + chUniverse.
 
-    Definition chEmb : rel_choiceTypes -> choiceType.
+    Definition chElement : chUniverse -> choiceType.
     Proof.
       move => [t1 | t2].
-      + exact (UchEmb t1).
-      + exact (chEmb t2).
+      + exact (UchElement t1).
+      + exact (chElement t2).
     Defined.
 
     Definition prob_handler : forall T : choiceType, probE T -> SDistr T.
@@ -99,7 +99,7 @@ Module DerivedRulesUniform (myparam :  ProbRulesParam) (myparamUniform : Uniform
       + exact (prob_handler T HR).
     Defined.
 
-    Definition Hch : forall r : rel_choiceTypes, chEmb r.
+    Definition Hch : forall r : chUniverse, chElement r.
     Proof.
       move => r.
       destruct r; rewrite /=.
@@ -118,8 +118,8 @@ Module DerivedRulesUniform (myparam :  ProbRulesParam) (myparamUniform : Uniform
   (* Uniform distribution over F *)
   Definition Uniform_F { i : Index } : MyRulesU.MFreePr (fin_family i).
     rewrite /MyRulesU.MFreePr.
-    rewrite /probE /rel_choiceTypes.
-    apply: (ropr _ _ (fin_family i) (existT (fun rchT : rel_choiceTypes => probE (chEmb rchT)) (inl _ i) (inl _ (Uni_W i)))).
+    rewrite /probE /chUniverse.
+    apply: (ropr _ _ (fin_family i) (existT (fun rchT : chUniverse => probE (chElement rchT)) (inl _ i) (inl _ (Uni_W i)))).
     rewrite /= => w.
     constructor.
     exact w.
