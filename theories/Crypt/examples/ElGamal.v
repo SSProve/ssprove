@@ -458,13 +458,6 @@ Proof.
   intros i hi. reflexivity.
 Qed.
 
-Lemma fin_family_inhabited :
-  ∀ (i : nat) `{Positive i}, fin_family (mkpos i).
-Proof.
-  intros i hi.
-  exists 0%N. simpl. auto.
-Qed.
-
 Lemma ordinal_finType_inhabited :
   ∀ i `{Positive i}, ordinal_finType i.
 Proof.
