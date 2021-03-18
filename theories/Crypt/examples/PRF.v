@@ -22,11 +22,16 @@ From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb StdDistr
   pkg_core_definition chUniverse pkg_composition pkg_rhl  Package Prelude
   pkg_notation.
+Set Warnings "-custom-entry-overriden".
+From Crypt Require Import package_instance.
+Set Warnings "custom-entry-overriden".
 
 From Coq Require Import Utf8.
 From extructures Require Import ord fset fmap.
 
 Import SPropNotations.
+
+Import PackageNotation.
 
 From Equations Require Import Equations.
 Require Equations.Prop.DepElim.
@@ -59,36 +64,6 @@ Module Type SymmetricSchemeParam.
   Parameter plus_involutive : ∀ m k, (m ⊕ k) ⊕ k = m.
 
 End SymmetricSchemeParam.
-
-(* Symmetric Schemes *)
-Module Type SymmetricSchemeRules (π : SymmetricSchemeParam).
-
-  Import π.
-
-  Inductive probEmpty : Type → Type :=.
-
-  Module genparam <: RulesParam.
-
-    Definition probE : Type → Type := probEmpty.
-    Definition chUniverse : Type := void.
-
-    Definition chElement : chUniverse → choiceType.
-    Proof.
-      intro v. inversion v.
-    Defined.
-
-    Definition prob_handler :
-      ∀ (T : choiceType),
-        probE T → SDistr T.
-    Proof.
-      intros T v. inversion v.
-    Defined.
-
-  End genparam.
-
-  Module MyRules := DerivedRulesUniform genparam.
-
-End SymmetricSchemeRules.
 
 Module PRF_example.
 
@@ -217,12 +192,6 @@ Module PRF_example.
   Local Open Scope package_scope.
 
   Import π.
-  Include (SymmetricSchemeRules π).
-
-  Set Warnings "-custom-entry-overriden".
-  Import MyRules.MyPackage.
-  Set Warnings "custom-entry-overriden".
-  Import PackageNotation.
 
   Definition key_location : Location := ('option Key ; 0).
   Definition plain_location : Location := (Words ; 1).
@@ -240,7 +209,7 @@ Module PRF_example.
   Parameter PRF : Words → Key → Key.
 
   Definition U (i : nat) `{Positive i} : Op :=
-    existT _ ('fin i) (inl (MyRules.Unif_Fin (mkpos i))).
+    existT _ ('fin i) (inl (Uni_W (mkpos i))).
 
   Notation " 'chWords' " := ('fin (2^n)%N) (in custom pack_type at level 2).
   Notation " 'chKey' " := ('fin (2^n)%N) (in custom pack_type at level 2).
