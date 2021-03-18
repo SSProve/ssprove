@@ -84,3 +84,36 @@ Proof.
     eapply rpre_weaken_rule. 1: eapply h.
     intros h₀ h₁. simpl. intros [? ?]. subst. auto.
 Qed.
+
+(** Some bijections
+
+  These are useful when working with uniform distributions that can only
+  land in 'fin n.
+
+*)
+
+Definition fto {F : finType} : F → 'I_#|F|.
+Proof.
+  intro x. eapply enum_rank. auto.
+Defined.
+
+Definition otf {F : finType} : 'I_#|F| → F.
+Proof.
+  intro x. eapply enum_val. exact x.
+Defined.
+
+Lemma fto_otf :
+  ∀ {F} x, fto (F := F) (otf x) = x.
+Proof.
+  intros F x.
+  unfold fto, otf.
+  apply enum_valK.
+Qed.
+
+Lemma otf_fto :
+  ∀ {F} x, otf (F := F) (fto x) = x.
+Proof.
+  intros F x.
+  unfold fto, otf.
+  apply enum_rankK.
+Qed.

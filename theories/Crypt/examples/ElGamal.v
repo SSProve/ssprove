@@ -179,32 +179,6 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Definition m2ch : Plain → choicePlain := gT2ch.
   Definition ch2m : choicePlain → Plain := ch2gT.
 
-  Definition fto {F : finType} : F → 'I_#|F|.
-  Proof.
-    intro x. eapply enum_rank. auto.
-  Defined.
-
-  Definition otf {F : finType} : 'I_#|F| → F.
-  Proof.
-    intro x. eapply enum_val. exact x.
-  Defined.
-
-  Lemma fto_otf :
-    ∀ {F} x, fto (F := F) (otf x) = x.
-  Proof.
-    intros F x.
-    unfold fto, otf.
-    apply enum_valK.
-  Qed.
-
-  Lemma otf_fto :
-    ∀ {F} x, otf (F := F) (fto x) = x.
-  Proof.
-    intros F x.
-    unfold fto, otf.
-    apply enum_rankK.
-  Qed.
-
   (* *)
   Definition sk2ch : SecKey → choiceSecKey := fto.
 
