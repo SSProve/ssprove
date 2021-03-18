@@ -79,20 +79,6 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
   Definition choicePubKey := 'fin #|PubKey|.
   Definition choiceSecKey := 'fin #|SecKey|.
 
-  Parameter c2ch : Cipher → choiceCipher.
-  Parameter ch2c : choiceCipher → Cipher.
-
-  (* *)
-  Parameter pk2ch : PubKey → choicePubKey.
-  Parameter ch2pk : choicePubKey → PubKey.
-  (* *)
-  Parameter sk2ch : SecKey → choiceSecKey.
-  Parameter ch2sk : choiceSecKey → SecKey.
-  (* *)
-  Parameter m2ch : Plain → choicePlain.
-  Parameter ch2m : choicePlain → Plain.
-  (* *)
-
   Definition counter_loc : Location := ('nat ; 0%N).
   Definition pk_loc : Location := (choicePubKey ; 1%N).
   Definition sk_loc : Location := (choiceSecKey ; 2%N).
