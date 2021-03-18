@@ -115,8 +115,6 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
 
   Definition choicePlain  : chUniverse := 'fin #|gT|.
   Definition choicePubKey : chUniverse := 'fin #|gT|.
-  (* Sadly it's not a 'fin so I have to change it *)
-  (* Definition choiceCipher : chUniverse := chProd ('fin #|gT|) ('fin #|gT|). *)
   Definition choiceCipher : chUniverse := 'fin #|Cipher|.
   Definition choiceSecKey : chUniverse := 'fin #|SecKey|.
 
@@ -132,21 +130,6 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Definition challenge_id : nat := 8. (*challenge for LR *)
   Definition challenge_id' : nat := 9. (*challenge for real rnd *)
 
-  Definition pk2ch : PubKey → choicePubKey := fto.
-  Definition ch2pk : choicePubKey → PubKey := otf.
-  Definition m2ch : Plain → choicePlain := fto.
-  Definition ch2m : choicePlain → Plain := otf.
-
-  (* *)
-  Definition sk2ch : SecKey → choiceSecKey := fto.
-
-  Definition ch2sk : 'fin #|SecKey| → SecKey := otf.
-
-  (* *)
-  Definition c2ch  : Cipher → choiceCipher := fto.
-
-  Definition ch2c : choiceCipher → Cipher := otf.
-
   Definition i_plain := #|Plain|.
   Definition i_cipher := #|Cipher|.
   Definition i_pk := #|PubKey|.
@@ -158,8 +141,8 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
     code L [interface] (choicePubKey × choiceSecKey) :=
     {code
       x ← sample U i_sk ;;
-      let x := ch2sk x in
-      ret (pk2ch (g^+x), sk2ch x)
+      let x := otf x in
+      ret (fto (g^+x), fto x)
     }.
 
   (** Encryption algorithm *)
@@ -167,15 +150,15 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
     code L [interface] choiceCipher :=
     {code
       y ← sample U i_sk ;;
-      let y := ch2sk y in
-      ret (c2ch (g^+y, (ch2pk pk)^+y * (ch2m m)))
+      let y := otf y in
+      ret (fto (g^+y, (otf pk)^+y * (otf m)))
     }.
 
   (** Decryption algorithm *)
   Definition Dec_open {L : {fset Location}} (sk : choiceSecKey) (c : choiceCipher) :
     code L [interface] choicePlain :=
     {code
-      ret (m2ch ((fst (ch2c c)) * ((snd (ch2c c))^-(ch2sk sk))))
+      ret (fto ((fst (otf c)) * ((snd (otf c))^-(otf sk))))
     }.
 
   Notation " 'chSecurityParameter' " :=
@@ -228,12 +211,12 @@ Definition DH_real :
       def #[10] (_ : 'unit) : chPubKey × chCipher
       {
         a ← sample U i_sk ;;
-        let a := ch2sk a in
+        let a := otf a in
         b ← sample U i_sk ;;
-        let b := ch2sk b in
-        put pk_loc := pk2ch (g^+a) ;;
-        put sk_loc := sk2ch a ;;
-        ret (pk2ch (g^+a), c2ch (g^+b, g^+(a * b)))
+        let b := otf b in
+        put pk_loc := fto (g^+a) ;;
+        put sk_loc := fto a ;;
+        ret (fto (g^+a), fto (g^+b, g^+(a * b)))
       }
     ].
 
@@ -244,14 +227,14 @@ Definition DH_rnd :
       def #[10] (_ : 'unit) : chPubKey × chCipher
       {
         a ← sample U i_sk ;;
-        let a := ch2sk a in
+        let a := otf a in
         b ← sample U i_sk ;;
-        let b := ch2sk b in
+        let b := otf b in
         c ← sample U i_sk ;;
-        let c := ch2sk c  in
-        put pk_loc := pk2ch (g^+a) ;;
-        put sk_loc := sk2ch a ;;
-        ret (pk2ch (g^+a), c2ch (g^+b, g^+c))
+        let c := otf c  in
+        put pk_loc := fto (g^+a) ;;
+        put sk_loc := fto a ;;
+        ret (fto (g^+a), fto (g^+b, g^+c))
       }
     ].
 
@@ -267,7 +250,7 @@ Definition Aux :
         put counter_loc := (count + 1)%N ;;
         if (count == 0)%N then
           '(pk, c) ← query Datatypes.tt ;;
-          ret (Some (c2ch ((ch2c c).1 , (ch2m m) * ((ch2c c).2))))
+          ret (Some (fto ((otf c).1 , (otf m) * ((otf c).2))))
         else ret None
       }
     ].
@@ -291,8 +274,7 @@ Proof.
   ssprove_swap_lhs 0%N.
   ssprove_same_head_r. intros _.
   ssprove_same_head_r. intro b.
-  unfold ch2pk, pk2ch.
-  unfold c2ch, ch2c. rewrite !otf_fto.
+  rewrite !otf_fto.
   eapply r_ret. intuition eauto.
   f_equal. f_equal. f_equal.
   rewrite group_prodC. f_equal. simpl.
@@ -342,14 +324,14 @@ Proof.
 Qed.
 
 #[local] Definition f m : 'Z_q * 'Z_q -> gT * gT :=
-  λ '(a,b), (g^+a, (ch2m m) * g^+b).
+  λ '(a,b), (g^+a, (otf m) * g^+b).
 
 Lemma bijective_f : ∀ m, bijective (f m).
 Proof.
   intro m.
   pose proof bijective_expgn as bij.
   destruct bij as [d hed hde].
-  eexists (λ '(x,y), (d x, d ((ch2m m)^-1 * y))).
+  eexists (λ '(x,y), (d x, d ((otf m)^-1 * y))).
   - intros [? ?]. simpl. rewrite hed. f_equal.
     rewrite mulgA. rewrite mulVg. rewrite mul1g.
     apply hed.
@@ -416,7 +398,7 @@ Proof.
   destruct z as [x y]. simpl.
   eapply r_ret. intros s ? e. subst.
   intuition auto.
-  unfold c2ch, ch2c, ch2m. rewrite !otf_fto. simpl.
+  rewrite !otf_fto. simpl.
   reflexivity.
 Qed.
 
