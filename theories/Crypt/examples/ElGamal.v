@@ -132,52 +132,10 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Definition challenge_id : nat := 8. (*challenge for LR *)
   Definition challenge_id' : nat := 9. (*challenge for real rnd *)
 
-  Definition gT2ch : gT → 'fin #|gT|.
-  Proof.
-    move => /= A.
-    destruct (@cyclePmin gT g A) as [i Hi].
-    - rewrite -g_gen. apply: in_setT.
-    - exists i.
-      rewrite orderE in Hi.
-      rewrite /= -cardsT.
-      setoid_rewrite g_gen.
-      assumption.
-  Defined.
-
-  Definition ch2gT : 'fin #|gT| → gT.
-  Proof.
-    move => /= [i Hi]. exact: (g^+i).
-  Defined.
-
-  Lemma ch2gT_gT2ch (A : gT) : ch2gT (gT2ch A) = A.
-  Proof.
-    unfold gT2ch.
-    destruct (@cyclePmin gT g A) as [i Hi]. subst.
-    simpl. reflexivity.
-  Qed.
-
-  Lemma gT2ch_ch2gT (chA : 'fin #|gT|) : gT2ch (ch2gT chA) = chA.
-  Proof.
-    unfold ch2gT, gT2ch.
-    destruct chA as [i hi]. simpl in *.
-    destruct cyclePmin as [j hj e].
-    assert (e' : i = j).
-    { move: e => /eqP e. rewrite eq_expg_mod_order in e.
-      move: e => /eqP e.
-      rewrite !modn_small in e.
-      - auto.
-      - auto.
-      - rewrite orderE. rewrite -g_gen. rewrite cardsT. auto.
-    }
-    subst j.
-    f_equal.
-    apply bool_irrelevance.
-  Qed.
-
-  Definition pk2ch : PubKey → choicePubKey := gT2ch.
-  Definition ch2pk : choicePubKey → PubKey := ch2gT.
-  Definition m2ch : Plain → choicePlain := gT2ch.
-  Definition ch2m : choicePlain → Plain := ch2gT.
+  Definition pk2ch : PubKey → choicePubKey := fto.
+  Definition ch2pk : choicePubKey → PubKey := otf.
+  Definition m2ch : Plain → choicePlain := fto.
+  Definition ch2m : choicePlain → Plain := otf.
 
   (* *)
   Definition sk2ch : SecKey → choiceSecKey := fto.
@@ -334,7 +292,6 @@ Proof.
   ssprove_same_head_r. intros _.
   ssprove_same_head_r. intro b.
   unfold ch2pk, pk2ch.
-  rewrite ch2gT_gT2ch.
   unfold c2ch, ch2c. rewrite !otf_fto.
   eapply r_ret. intuition eauto.
   f_equal. f_equal. f_equal.
