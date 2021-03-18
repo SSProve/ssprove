@@ -17,21 +17,11 @@ Import Num.Theory.
 
 Local Open Scope ring_scope.
 
-(* Module Type UniformParameters.
-
-  Parameter Index : Type.
-  (* Parameter i0 : Index. *)
-  Parameter fin_family : Index -> finType.
-  Parameter F_w0 : forall i, fin_family i.
-
-End UniformParameters. *)
-
 (* general Rules + Rules for uniform distributions over a finite
     family of non-empty finite types *)
-Module DerivedRulesUniform (myparam :  RulesParam) (* (myparamUniform : UniformParameters) *).
+Module DerivedRulesUniform (myparam :  RulesParam).
 
   Import myparam.
-  (* Import myparamUniform. *)
 
   Definition Index : Type := positive.
 
