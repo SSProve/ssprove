@@ -23,6 +23,9 @@ From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
   pkg_core_definition chUniverse pkg_composition pkg_notation pkg_rhl
   Package Prelude.
+Set Warnings "-custom-entry-overriden".
+From Crypt Require Import package_instance.
+Set Warnings "custom-entry-overriden".
 
 From Coq Require Import Utf8.
 From extructures Require Import ord fset fmap.
@@ -34,6 +37,8 @@ Set Primitive Projections.
 Import Num.Def.
 Import Num.Theory.
 Import mc_1_10.Num.Theory.
+
+Import PackageNotation.
 
 Local Open Scope ring_scope.
 
@@ -48,45 +53,13 @@ Module Type AsymmetricSchemeParams.
   Parameter pub0 : PubKey.
   Parameter sec0 : SecKey.
 
-  Parameter probE : Type → Type.
-  Parameter prob_handler : ∀ T : choiceType, probE T → SDistr T.
-
 End AsymmetricSchemeParams.
-
-Module ARules (Aparam : AsymmetricSchemeParams).
-
-  Export Aparam.
-
-  (* We can use positive instead of finType, but then it becomes annoying
-    for the product because it's no longer a structural product.
-    Maybe I'll have to change Uniform in the end.
-    Or even chFin to take a finType?
-  *)
-
-  Module genparam <: RulesParam.
-
-    Definition probE : Type → Type := probE.
-    Definition prob_handler : forall T : choiceType, probE T → SDistr T :=
-      prob_handler.
-
-  End genparam.
-
-  Module MyARulesUniform := DerivedRulesUniform genparam.
-  Export MyARulesUniform.
-
-End ARules.
 
 (** algorithms for Key Generation, Encryption and Decryption  **)
 Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
 
   Import π.
-  Module asym_rules := (ARules π).
-  Export asym_rules.
-  Import asym_rules.MyARulesUniform.
 
-  Module MyPackage := Package_Make myparamU.
-  Export MyPackage.
-  Import PackageNotation.
   Local Open Scope package_scope.
 
   (* chX is the chUniverse in bijection with X  *)
@@ -159,10 +132,8 @@ End AsymmetricSchemeAlgorithms.
 Module AsymmetricScheme (π : AsymmetricSchemeParams)
                         (Alg : AsymmetricSchemeAlgorithms π).
 
-  Set Warnings "-custom-entry-overriden".
+  Import π.
   Import Alg.
-  Set Warnings "custom-entry-overriden".
-  Import PackageNotation.
 
   Definition U (i : nat) `{Positive i} : Op :=
     existT _ ('fin i) (inl (Uni_W (mkpos i))).

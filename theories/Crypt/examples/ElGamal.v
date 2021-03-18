@@ -18,6 +18,9 @@ From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
   pkg_core_definition chUniverse pkg_composition pkg_rhl Package Prelude
   pkg_notation AsymScheme.
+Set Warnings "-custom-entry-overriden".
+From Crypt Require Import package_instance.
+Set Warnings "custom-entry-overriden".
 
 From Coq Require Import Utf8.
 From extructures Require Import ord fset fmap.
@@ -36,6 +39,8 @@ Import mc_1_10.Num.Theory.
 
 Local Open Scope ring_scope.
 Import GroupScope GRing.Theory.
+
+Import PackageNotation.
 
 Parameter η : nat.
 Parameter gT : finGroupType.
@@ -68,9 +73,6 @@ Proof.
   repeat rewrite -expgD addnC. reflexivity.
 Qed.
 
-
-Inductive probEmpty : Type → Type := .
-
 Module MyParam <: AsymmetricSchemeParams.
 
   Definition SecurityParameter : choiceType := nat_choiceType.
@@ -85,25 +87,11 @@ Module MyParam <: AsymmetricSchemeParams.
   Definition pub0 := g.
   Definition sec0 : SecKey := 0.
 
-  Definition probE : Type → Type := probEmpty.
-
-  Definition prob_handler : ∀ T : choiceType, probE T → SDistr T.
-  Proof.
-    intro. contradiction.
-  Defined.
-
 End MyParam.
 
 Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
 
   Import MyParam.
-  Module asym_rules := (ARules MyParam).
-  Import asym_rules.
-
-  Module MyPackage := Package_Make myparamU.
-
-  Import MyPackage.
-  Import PackageNotation.
 
   Instance positive_gT : Positive #|gT|.
   Proof.
@@ -333,9 +321,7 @@ Local Open Scope package_scope.
 
 Module ElGamal_Scheme := AsymmetricScheme MyParam MyAlg.
 
-Set Warnings "-custom-entry-overriden".
-Import MyParam MyAlg asym_rules MyPackage ElGamal_Scheme PackageNotation.
-Set Warnings "custom-entry-overriden".
+Import MyParam MyAlg ElGamal_Scheme.
 
 Lemma counter_loc_in :
   counter_loc \in (fset [:: counter_loc; pk_loc; sk_loc ]).
