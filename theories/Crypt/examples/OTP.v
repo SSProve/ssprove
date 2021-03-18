@@ -13,6 +13,9 @@ Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-format".
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
   pkg_composition pkg_rhl pkg_notation Package Prelude pkg_notation.
+Set Warnings "-custom-entry-overriden".
+From Crypt Require Import package_instance.
+Set Warnings "custom-entry-overriden".
 
 From Coq Require Import Utf8 Lia.
 From extructures Require Import ord fset fmap.
@@ -30,6 +33,8 @@ Import Num.Def.
 Import Num.Theory.
 Import mc_1_10.Num.Theory.
 
+Import PackageNotation.
+
 Local Open Scope ring_scope.
 
 Module Type SymmetricSchemeParam.
@@ -45,28 +50,6 @@ Module Type SymmetricSchemeParam.
   Parameter plus_involutive : ∀ m k, (m ⊕ k) ⊕ k = m.
 
 End SymmetricSchemeParam.
-
-(* Symmetric Schemes *)
-Module Type SymmetricSchemeRules (π : SymmetricSchemeParam).
-
-  Import π.
-
-  Inductive probEmpty : Type → Type := .
-
-  Module genparam <: RulesParam.
-
-    Definition probE : Type → Type := probEmpty.
-
-    Definition prob_handler : ∀ T : choiceType, probE T → SDistr T.
-    Proof.
-      intros T v. inversion v.
-    Defined.
-
-  End genparam.
-
-  Module MyRules := DerivedRulesUniform genparam.
-
-End SymmetricSchemeRules.
 
 Module OTP_example.
 
@@ -241,12 +224,6 @@ Module OTP_example.
   #[local] Open Scope package_scope.
 
   Import π.
-  Include (SymmetricSchemeRules π).
-
-  Module MyPackage := Package_Make (MyRules.myparamU).
-  Import MyPackage.
-  Import PackageNotation.
-  Import MyRules.
 
   Definition i1 : nat := 0.
 
