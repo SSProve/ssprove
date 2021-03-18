@@ -90,7 +90,7 @@ Section AbstractLiftOplaxness.
   Context {S1 S2 : choiceType}.
 
 
-  Context {probE : Type -> Type} {rel_choiceTypes : Type} {chEmb : rel_choiceTypes -> choiceType} {prob_handler : forall T : choiceType, probE T -> SubDistr.SDistr T}.
+  Context {probE : Type -> Type} {chUniverse : Type} {chElement : chUniverse -> choiceType} {prob_handler : forall T : choiceType, probE T -> SubDistr.SDistr T}.
 
 
   (*untransformed relative lax monad morphism*)
@@ -103,7 +103,7 @@ Section AbstractLiftOplaxness.
   Context {W : ord_relativeMonad Jspec}.
 
   (*We prove lift oplaxness for a morphism ressembling thetaDex*)
-  Let thetaDex_filled :=  @thetaDex probE rel_choiceTypes chEmb prob_handler.
+  Let thetaDex_filled :=  @thetaDex probE chUniverse chElement prob_handler.
   Context (θ : relativeLaxMonadMorphism _ (rlmm_getBaseIso thetaDex_filled)
   Mprod W).
 
@@ -205,16 +205,16 @@ Section LiftOplaxness.
   Context {S1 S2 : choiceType}.
 
 
-  Context {probE : Type -> Type} {rel_choiceTypes : Type} {chEmb : rel_choiceTypes -> choiceType} {prob_handler : forall T : choiceType, probE T -> SubDistr.SDistr T}.
+  Context {probE : Type -> Type} {chUniverse : Type} {chElement : chUniverse -> choiceType} {prob_handler : forall T : choiceType, probE T -> SubDistr.SDistr T}.
 
   (*The untransformed concrete lax morphism θdex : FrP² → Wrelprop*)
-  Let thetaDex_filled := @thetaDex probE rel_choiceTypes chEmb prob_handler.
+  Let thetaDex_filled := @thetaDex probE chUniverse chElement prob_handler.
   (*the two computational monads*)
-  Let M1 := rFreePr probE rel_choiceTypes chEmb.
-  Let M2 := rFreePr probE rel_choiceTypes chEmb.
+  Let M1 := rFreePr probE chUniverse chElement.
+  Let M2 := rFreePr probE chUniverse chElement.
 
   (*The transformed morphism*)
-  Let stT_thetaDex_filled := @stT_thetaDex probE rel_choiceTypes chEmb prob_handler S1 S2.
+  Let stT_thetaDex_filled := @stT_thetaDex probE chUniverse chElement prob_handler S1 S2.
 
   (*The computational lift*)
   Definition Lift_stComp := @StatefulCompLift M1 M2 S1 S2.
@@ -233,7 +233,7 @@ Section LiftOplaxness.
   stTθdex_of_lift ⟨A1,A2⟩ ⪷ lift_of_θdex ⟨A1,A2⟩.
   Proof.
     move=> A1 A2.
-    apply (@abstract_lift_oplaxness S1 S2 probE rel_choiceTypes chEmb prob_handler
+    apply (@abstract_lift_oplaxness S1 S2 probE chUniverse chElement prob_handler
   _ _ _ thetaDex_filled).
   Qed.
 
@@ -241,20 +241,20 @@ End LiftOplaxness.
 
 
 Section unary_FreeProb_Into_FreeProbState.
-  Context {probE : Type -> Type} {rel_choiceTypes : Type} {chEmb : rel_choiceTypes -> choiceType} {prob_handler : forall T : choiceType, probE T -> SubDistr.SDistr T}.
+  Context {probE : Type -> Type} {chUniverse : Type} {chElement : chUniverse -> choiceType} {prob_handler : forall T : choiceType, probE T -> SubDistr.SDistr T}.
   Context {S : choiceType}. (*either S1 or S2*)
 
   (*unary free prob*)
-  Let FrP := rFreePr probE rel_choiceTypes chEmb.
+  Let FrP := rFreePr probE chUniverse chElement.
 
   (*unary free prob+state*)
-  Let FrStP_filled := @FrStP probE rel_choiceTypes chEmb S.
+  Let FrStP_filled := @FrStP probE chUniverse chElement S.
 
-  Let probOps := Prob_ops_collection probE rel_choiceTypes chEmb.
-  Let probAr := Prob_arities probE rel_choiceTypes chEmb.
+  Let probOps := Prob_ops_collection probE chUniverse chElement.
+  Let probAr := Prob_arities probE chUniverse chElement.
 
-  Let probStateOps :=  @ops_StP probE rel_choiceTypes chEmb S.
-  Let probStateAr :=  @ar_StP probE rel_choiceTypes chEmb S.
+  Let probStateOps :=  @ops_StP probE chUniverse chElement S.
+  Let probStateAr :=  @ar_StP probE chUniverse chElement S.
 
   Definition iotaSigMap :
   forall op : probOps,
@@ -303,10 +303,10 @@ End unary_FreeProb_Into_FreeProbState.
 
 
 Section FreeProb_Into_FreeProbState.
-  Context {probE : Type -> Type} {rel_choiceTypes : Type} {chEmb : rel_choiceTypes -> choiceType} {prob_handler : forall T : choiceType, probE T -> SubDistr.SDistr T}.
+  Context {probE : Type -> Type} {chUniverse : Type} {chElement : chUniverse -> choiceType} {prob_handler : forall T : choiceType, probE T -> SubDistr.SDistr T}.
   Context {S1 S2 : choiceType}.
 
-  Let incl_filled := @unary_freeprob_into_freestateprob probE rel_choiceTypes chEmb.
+  Let incl_filled := @unary_freeprob_into_freestateprob probE chUniverse chElement.
   Definition FrPsqu_into_FrStPsqu := prod_relativeMonadMorphism (incl_filled S1) (incl_filled S2).
 
 End FreeProb_Into_FreeProbState.
@@ -314,27 +314,27 @@ End FreeProb_Into_FreeProbState.
 
 Section EquivalentCompLift.
 
-  Context (probE : Type -> Type) (rel_choiceTypes : Type) (chEmb : rel_choiceTypes -> choiceType)
+  Context (probE : Type -> Type) (chUniverse : Type) (chElement : chUniverse -> choiceType)
          (S1 S2 : choiceType) (prob_handler : forall T : choiceType, probE T -> SubDistr.SDistr T).
 
-  Notation ProbSig := (Prob_ops_collection probE rel_choiceTypes chEmb).
-  Notation probAnsType := (Prob_arities probE rel_choiceTypes chEmb).
+  Notation ProbSig := (Prob_ops_collection probE chUniverse chElement).
+  Notation probAnsType := (Prob_arities probE chUniverse chElement).
 
 
-  Let probStateOps1 :=  @ops_StP probE rel_choiceTypes chEmb S1.
-  Let probStateAr1 :=  @ar_StP probE rel_choiceTypes chEmb S1.
+  Let probStateOps1 :=  @ops_StP probE chUniverse chElement S1.
+  Let probStateAr1 :=  @ar_StP probE chUniverse chElement S1.
 
 
   Arguments bindrFree {_ _ _ _}.
   Arguments ropr {_ _ _}.
 
   Let justInterpState_filled :=
-  @justInterpState probE rel_choiceTypes chEmb S1 S2 prob_handler.
+  @justInterpState probE chUniverse chElement S1 S2 prob_handler.
 
-  Let iotaSqu :=  @FrPsqu_into_FrStPsqu probE rel_choiceTypes chEmb S1 S2.
+  Let iotaSqu :=  @FrPsqu_into_FrStPsqu probE chUniverse chElement S1 S2.
 
-  Let M1 := rFreePr probE rel_choiceTypes chEmb.
-  Let M2 := rFreePr probE rel_choiceTypes chEmb.
+  Let M1 := rFreePr probE chUniverse chElement.
+  Let M2 := rFreePr probE chUniverse chElement.
   Let myCompLift := @StatefulCompLift M1 M2 S1 S2.
 
   Let jis_of_iota := rlmm_comp _ _ _ _ _ _ _ iotaSqu justInterpState_filled.
@@ -360,7 +360,7 @@ Section EquivalentCompLift.
         cbn. reflexivity.
       rewrite ropr_vs_bind.
       unshelve epose (localOutOfFree := outOfFree iotaSigMap).
-        exact probE. exact rel_choiceTypes. exact chEmb. exact S1.
+        exact probE. exact chUniverse. exact chElement. exact S1.
       epose (localOutOfFree_bind := rmm_law2 _ _ _ _ localOutOfFree _ _ _).
         eapply equal_f in localOutOfFree_bind.
         cbn in localOutOfFree_bind.
@@ -368,7 +368,7 @@ Section EquivalentCompLift.
       erewrite localOutOfFree_bind. clear localOutOfFree_bind localOutOfFree.
       (*external*)
       unshelve epose (localOutOfFree := outOfFree sigMap).
-        exact probE. exact rel_choiceTypes. exact chEmb. exact S1.
+        exact probE. exact chUniverse. exact chElement. exact S1.
       epose (localOutOfFree_bind := rmm_law2 _ _ _ _ localOutOfFree _ _ _).
         eapply equal_f in localOutOfFree_bind.
         cbn in localOutOfFree_bind.
@@ -386,7 +386,7 @@ callrFree _ _ (inr probop) ).
       reflexivity.
       erewrite outOfFree_vs_callrFree'. clear outOfFree_vs_callrFree'.
       (* unshelve epose (bla := outOfFree_vs_callrFree _ _ _ sigMap). *)
-      (*   exact probE. exact rel_choiceTypes. exact chEmb. exact S1. *)
+      (*   exact probE. exact chUniverse. exact chElement. exact S1. *)
       (* specialize (bla (inr probop)). *)
       eassert ( vs_callrFree'' :
 UniversalFreeMap.outOfFree_obligation_1 sigMap (probAnsType probop)
@@ -456,21 +456,21 @@ Section ExtendedLiftOplaxness.
 
   Context {S1 S2 : choiceType}.
 
-  Context {probE : Type -> Type} {rel_choiceTypes : Type} {chEmb : rel_choiceTypes -> choiceType} {prob_handler : forall T : choiceType, probE T -> SubDistr.SDistr T}.
+  Context {probE : Type -> Type} {chUniverse : Type} {chElement : chUniverse -> choiceType} {prob_handler : forall T : choiceType, probE T -> SubDistr.SDistr T}.
 
-  Let FrP := rFreePr probE rel_choiceTypes chEmb.
-  Let θprob := @thetaDex probE rel_choiceTypes chEmb prob_handler.
+  Let FrP := rFreePr probE chUniverse chElement.
+  Let θprob := @thetaDex probE chUniverse chElement prob_handler.
   Let Wprob := rlmm_codomain θprob.
-  Let θStProb :=  @thetaFstdex probE rel_choiceTypes chEmb S1 S2 prob_handler.
+  Let θStProb :=  @thetaFstdex probE chUniverse chElement S1 S2 prob_handler.
   Let WStProb := rlmm_codomain θStProb.
   Let specLift := @StatefulSpecLift S1 S2 Wprob.
-  Let iiota :=  @FrPsqu_into_FrStPsqu probE rel_choiceTypes chEmb S1 S2.
-  Let stTθ :=  @stT_thetaDex probE rel_choiceTypes chEmb prob_handler S1 S2.
+  Let iiota :=  @FrPsqu_into_FrStPsqu probE chUniverse chElement S1 S2.
+  Let stTθ :=  @stT_thetaDex probE chUniverse chElement prob_handler S1 S2.
   Let compLift := @StatefulCompLift FrP FrP S1 S2.
   Let justIntState_filled :=
-  @justInterpState probE rel_choiceTypes chEmb S1 S2 prob_handler.
+  @justInterpState probE chUniverse chElement S1 S2 prob_handler.
   Let stT_thetaDex_filled :=
-  @stT_thetaDex probE rel_choiceTypes chEmb prob_handler S1 S2.
+  @stT_thetaDex probE chUniverse chElement prob_handler S1 S2.
 
   Let θStProb_of_iiota :=
   rlmm_comp _ _ _ _ _ _ _ iiota θStProb.
@@ -508,11 +508,11 @@ End ExtendedLiftOplaxness.
 Section MonotonicSpecLift.
   Context {S1 S2 : choiceType}.
 
-  Context {probE : Type -> Type} {rel_choiceTypes : Type} {chEmb : rel_choiceTypes -> choiceType} {prob_handler : forall T : choiceType, probE T -> SubDistr.SDistr T}.
+  Context {probE : Type -> Type} {chUniverse : Type} {chElement : chUniverse -> choiceType} {prob_handler : forall T : choiceType, probE T -> SubDistr.SDistr T}.
 
-  Let θprob := @thetaDex probE rel_choiceTypes chEmb prob_handler.
+  Let θprob := @thetaDex probE chUniverse chElement prob_handler.
   Let Wprob := rlmm_codomain θprob.
-  Let θStProb :=  @thetaFstdex probE rel_choiceTypes chEmb S1 S2 prob_handler.
+  Let θStProb :=  @thetaFstdex probE chUniverse chElement S1 S2 prob_handler.
   Let WStProb := rlmm_codomain θStProb.
 
   Context {A1 A2 : choiceType}.
@@ -536,30 +536,30 @@ Section LiftJudgment.
 
   Context {S1 S2 : choiceType}.
 
-  Context {probE : Type -> Type} {rel_choiceTypes : Type} {chEmb : rel_choiceTypes -> choiceType} {prob_handler : forall T : choiceType, probE T -> SubDistr.SDistr T}.
+  Context {probE : Type -> Type} {chUniverse : Type} {chElement : chUniverse -> choiceType} {prob_handler : forall T : choiceType, probE T -> SubDistr.SDistr T}.
 
   (*unary free probabilistic monad "Fr[P]"*)
-  Let FrP := rFreePr probE rel_choiceTypes chEmb.
+  Let FrP := rFreePr probE chUniverse chElement.
 
   (*unary free prob+state monad "Fr[St,P]"*)
-  Let FrStP_filled1 := @FrStP probE rel_choiceTypes chEmb S1.
-  Let FrStP_filled2 := @FrStP probE rel_choiceTypes chEmb S2.
+  Let FrStP_filled1 := @FrStP probE chUniverse chElement S1.
+  Let FrStP_filled2 := @FrStP probE chUniverse chElement S2.
 
   (*operations and arities for the various free monads involved*)
-  Let probOps := Prob_ops_collection probE rel_choiceTypes chEmb.
-  Let probAr := Prob_arities probE rel_choiceTypes chEmb.
+  Let probOps := Prob_ops_collection probE chUniverse chElement.
+  Let probAr := Prob_arities probE chUniverse chElement.
 
-  Let probStateOps1 :=  @ops_StP probE rel_choiceTypes chEmb S1.
-  Let probStateAr1 :=  @ar_StP probE rel_choiceTypes chEmb S1.
+  Let probStateOps1 :=  @ops_StP probE chUniverse chElement S1.
+  Let probStateAr1 :=  @ar_StP probE chUniverse chElement S1.
 
-  Let probStateOps2 :=  @ops_StP probE rel_choiceTypes chEmb S2.
-  Let probStateAr2 :=  @ar_StP probE rel_choiceTypes chEmb S2.
+  Let probStateOps2 :=  @ops_StP probE chUniverse chElement S2.
+  Let probStateAr2 :=  @ar_StP probE chUniverse chElement S2.
 
 
   (*prob signature is included in state+prob signature*)
-  Let iiota :=  @FrPsqu_into_FrStPsqu probE rel_choiceTypes chEmb S1 S2.
-  Let iota1 := @unary_freeprob_into_freestateprob probE rel_choiceTypes chEmb S1.
-  Let iota2 := @unary_freeprob_into_freestateprob probE rel_choiceTypes chEmb S2.
+  Let iiota :=  @FrPsqu_into_FrStPsqu probE chUniverse chElement S1 S2.
+  Let iota1 := @unary_freeprob_into_freestateprob probE chUniverse chElement S1.
+  Let iota2 := @unary_freeprob_into_freestateprob probE chUniverse chElement S2.
 
 
   Lemma iiota_compononents :
@@ -568,9 +568,9 @@ Section LiftJudgment.
     unfold iiota. reflexivity.
   Qed.
 
-  Let θprob := @thetaDex probE rel_choiceTypes chEmb prob_handler.
+  Let θprob := @thetaDex probE chUniverse chElement prob_handler.
   Let Wprob := rlmm_codomain θprob.
-  Let θStProb :=  @thetaFstdex probE rel_choiceTypes chEmb S1 S2 prob_handler.
+  Let θStProb :=  @thetaFstdex probE chUniverse chElement S1 S2 prob_handler.
   Let WStProb := rlmm_codomain θStProb.
 
 
@@ -591,7 +591,7 @@ Section LiftJudgment.
       cbn. reflexivity.
     rewrite lhs.
     pose elo :=
-    @extended_liftOplaxness S1 S2 probE rel_choiceTypes chEmb prob_handler A1 A2.
+    @extended_liftOplaxness S1 S2 probE chUniverse chElement prob_handler A1 A2.
     etransitivity.
     specialize (elo ⟨m1,m2⟩). eapply elo.
     rewrite rlmm_comp_pointwise_formula.

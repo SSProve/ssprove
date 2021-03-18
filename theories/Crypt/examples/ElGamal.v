@@ -16,7 +16,7 @@ From Mon Require Import SPropBase.
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_core_definition pkg_chUniverse pkg_composition pkg_rhl Package Prelude
+  pkg_core_definition chUniverse pkg_composition pkg_rhl Package Prelude
   pkg_notation AsymScheme.
 
 From Coq Require Import Utf8.
@@ -86,12 +86,6 @@ Module MyParam <: AsymmetricSchemeParams.
   Definition sec0 : SecKey := 0.
 
   Definition probE : Type → Type := probEmpty.
-  Definition rel_choiceTypes : Type := void.
-
-  Definition chEmb : rel_choiceTypes → choiceType.
-  Proof.
-    intro. contradiction.
-  Defined.
 
   Definition prob_handler : ∀ T : choiceType, probE T → SDistr T.
   Proof.
@@ -121,9 +115,21 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
     apply /card_gt0P. exists sec0. auto.
   Qed.
 
+  Definition Plain_pos : Positive #|Plain| := _.
+  Definition PubKey_pos : Positive #|PubKey| := _.
+  Definition SecKey_pos : Positive #|SecKey| := _.
+
+  Instance Cipher_pos : Positive #|Cipher|.
+  Proof.
+    unfold Cipher. rewrite card_prod.
+    exact _.
+  Qed.
+
   Definition choicePlain  : chUniverse := 'fin #|gT|.
   Definition choicePubKey : chUniverse := 'fin #|gT|.
-  Definition choiceCipher : chUniverse := chProd ('fin #|gT|) ('fin #|gT|).
+  (* Sadly it's not a 'fin so I have to change it *)
+  (* Definition choiceCipher : chUniverse := chProd ('fin #|gT|) ('fin #|gT|). *)
+  Definition choiceCipher : chUniverse := 'fin #|Cipher|.
   Definition choiceSecKey : chUniverse := 'fin #|SecKey|.
 
   Definition counter_loc : Location := ('nat ; 0%N).
@@ -138,8 +144,8 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Definition challenge_id : nat := 8. (*challenge for LR *)
   Definition challenge_id' : nat := 9. (*challenge for real rnd *)
 
-  Definition U (i : Index) : Op :=
-    existT _ (inl (inl i)) (inl (Uni_W i)).
+  Definition U (i : nat) `{Positive i} : Op :=
+    existT _ ('fin i) (inl (Uni_W (mkpos i))).
 
   Definition gT2ch : gT → 'fin #|gT|.
   Proof.
@@ -188,38 +194,105 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Definition m2ch : Plain → choicePlain := gT2ch.
   Definition ch2m : choicePlain → Plain := ch2gT.
 
+  Definition fto {F : finType} : F → 'I_#|F|.
+  Proof.
+    intro x. eapply enum_rank. auto.
+  Defined.
+
+  Definition otf {F : finType} : 'I_#|F| → F.
+  Proof.
+    intro x. eapply enum_val. exact x.
+  Defined.
+
+  Lemma fto_otf :
+    ∀ {F} x, fto (F := F) (otf x) = x.
+  Proof.
+    intros F x.
+    unfold fto, otf.
+    apply enum_valK.
+  Qed.
+
+  Lemma otf_fto :
+    ∀ {F} x, otf (F := F) (fto x) = x.
+  Proof.
+    intros F x.
+    unfold fto, otf.
+    apply enum_rankK.
+  Qed.
+
   (* *)
-  Definition sk2ch : SecKey → choiceSecKey.
-  Proof.
-    move => /= [a Ha].
-    exists a.
-    rewrite card_ord. assumption.
-  Defined.
+  Definition sk2ch : SecKey → choiceSecKey := fto.
 
-  Definition ch2sk : 'fin #|SecKey| → SecKey.
-    move => /= [a Ha].
-    exists a.
-    rewrite card_ord in Ha. assumption.
-  Defined.
+  Definition ch2sk : 'fin #|SecKey| → SecKey := otf.
 
   (* *)
-  Definition c2ch  : Cipher → choiceCipher.
+  Definition c2ch  : Cipher → choiceCipher := fto.
+
+  Definition ch2c : choiceCipher → Cipher := otf.
+
+  Definition i_plain := #|Plain|.
+  Definition i_cipher := #|Cipher|.
+  Definition i_pk := #|PubKey|.
+  Definition i_sk := #|SecKey|.
+  Definition i_bool := 2.
+  Definition i_prod i j := (i * j)%N.
+
+  Hint Extern 2 (Positive (i_prod ?n ?m)) =>
+    eapply Positive_prod : typeclass_instances.
+
+  Lemma card_prod_iprod :
+    ∀ i j,
+      #|prod_finType (ordinal_finType i) (ordinal_finType j)| = i_prod i j.
   Proof.
-    move => [g1 g2] /=.
-    exact: (gT2ch g1, gT2ch g2).
+    intros i j.
+    rewrite card_prod. simpl. rewrite !card_ord. reflexivity.
+  Qed.
+
+  Definition ch2prod {i j} `{Positive i} `{Positive j}
+    (x : Arit (U (i_prod i j))) :
+    prod_choiceType (Arit (U i)) (Arit (U j)).
+  Proof.
+    simpl in *.
+    eapply otf. rewrite card_prod_iprod.
+    auto.
   Defined.
 
-  Definition ch2c : choiceCipher → Cipher.
+  Definition prod2ch {i j} `{Positive i} `{Positive j}
+    (x : prod_choiceType (Arit (U i)) (Arit (U j))) :
+    Arit (U (i_prod i j)).
   Proof.
-    move => [A B].
-    exact: (ch2gT A, ch2gT B).
+    simpl in *.
+    rewrite -card_prod_iprod.
+    eapply fto.
+    auto.
   Defined.
+
+  Definition ch2prod_prod2ch :
+    ∀ {i j} `{Positive i} `{Positive j} (x : prod_choiceType (Arit (U i)) (Arit (U j))),
+      ch2prod (prod2ch x) = x.
+  Proof.
+    intros i j hi hj x.
+    unfold ch2prod, prod2ch.
+    rewrite -[RHS]otf_fto. f_equal.
+    rewrite rew_opp_l. reflexivity.
+  Qed.
+
+  Definition prod2ch_ch2prod :
+    ∀ {i j} `{Positive i} `{Positive j} (x : Arit (U (i_prod i j))),
+      prod2ch (ch2prod x) = x.
+  Proof.
+    intros i j hi hj x.
+    unfold ch2prod, prod2ch.
+    rewrite fto_otf.
+    rewrite rew_opp_r. reflexivity.
+  Qed.
 
   (** Key Generation algorithm *)
   Definition KeyGen {L : {fset Location}} :
     code L [interface] (choicePubKey × choiceSecKey) :=
     {code
       x ← sample U i_sk ;;
+      let x := ch2sk x in
       ret (pk2ch (g^+x), sk2ch x)
     }.
 
@@ -228,6 +301,7 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
     code L [interface] choiceCipher :=
     {code
       y ← sample U i_sk ;;
+      let y := ch2sk y in
       ret (c2ch (g^+y, (ch2pk pk)^+y * (ch2m m)))
     }.
 
@@ -290,7 +364,9 @@ Definition DH_real :
       def #[10] (_ : 'unit) : chPubKey × chCipher
       {
         a ← sample U i_sk ;;
+        let a := ch2sk a in
         b ← sample U i_sk ;;
+        let b := ch2sk b in
         put pk_loc := pk2ch (g^+a) ;;
         put sk_loc := sk2ch a ;;
         ret (pk2ch (g^+a), c2ch (g^+b, g^+(a * b)))
@@ -304,8 +380,11 @@ Definition DH_rnd :
       def #[10] (_ : 'unit) : chPubKey × chCipher
       {
         a ← sample U i_sk ;;
+        let a := ch2sk a in
         b ← sample U i_sk ;;
+        let b := ch2sk b in
         c ← sample U i_sk ;;
+        let c := ch2sk c  in
         put pk_loc := pk2ch (g^+a) ;;
         put sk_loc := sk2ch a ;;
         ret (pk2ch (g^+a), c2ch (g^+b, g^+c))
@@ -333,60 +412,15 @@ Lemma ots_real_vs_rnd_equiv_true :
   Aux ∘ DH_real ≈₀ ots_real_vs_rnd true.
 Proof.
   (* We go to the relation logic using equality as invariant. *)
-  eapply eq_rel_perf_ind with (λ '(h₀, h₁), h₀ = h₁). 2: reflexivity.
-  1:{
-    simpl. intros s₀ s₁. split.
-    - intro e. rewrite e. auto.
-    - intro e. rewrite e. auto.
-  }
-  (* We now conduct the proof in relational logic. *)
-  intros id S T m hin.
-  invert_interface_in hin.
-  rewrite get_op_default_link.
-  (* First we need to squeeze the codes out of the packages *)
-  (* Hopefully I will find a way to automate it. *)
-  unfold get_op_default.
-  destruct lookup_op as [f|] eqn:e.
-  2:{
-    exfalso.
-    simpl in e.
-    destruct chUniverse_eqP. 2: eauto.
-    destruct chUniverse_eqP. 2: eauto.
-    discriminate.
-  }
-  eapply lookup_op_spec in e. simpl in e.
-  rewrite setmE in e. rewrite eq_refl in e.
-  noconf e.
-  (* Now to the RHS *)
-  destruct lookup_op as [f|] eqn:e.
-  2:{
-    exfalso.
-    simpl in e.
-    destruct chUniverse_eqP. 2: eauto.
-    destruct chUniverse_eqP. 2: eauto.
-    discriminate.
-  }
-  eapply lookup_op_spec in e. simpl in e.
-  rewrite setmE in e. rewrite eq_refl in e.
-  noconf e.
-  (* Now the linking *)
-  simpl.
-  (* Too bad but linking doesn't automatically commute with match *)
-  setoid_rewrite code_link_if.
-  simpl.
-  destruct chUniverse_eqP as [e|]. 2: contradiction.
-  assert (e = erefl) by apply uip. subst e.
-  destruct chUniverse_eqP as [e|]. 2: contradiction.
-  assert (e = erefl) by apply uip. subst e.
-  simpl.
+  eapply eq_rel_perf_ind_eq.
+  simplify_eq_rel m.
+  ssprove_code_link_commute. simpl.
+  simplify_linking.
   (* We are now in the realm of program logic *)
   ssprove_same_head_r. intro count.
   ssprove_same_head_r. intros _.
   destruct count.
-  2:{
-    simpl. eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
-    cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
-  }
+  2:{ simpl. eapply r_ret. intuition eauto. }
   simpl. ssprove_same_head_r. intro a.
   ssprove_swap_lhs 0%N.
   ssprove_same_head_r. intros _.
@@ -394,10 +428,13 @@ Proof.
   ssprove_same_head_r. intros _.
   ssprove_same_head_r. intro b.
   unfold ch2pk, pk2ch.
-  rewrite !ch2gT_gT2ch.
-  rewrite expgM group_prodC.
-  eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
-  cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
+  rewrite ch2gT_gT2ch.
+  unfold c2ch, ch2c. rewrite !otf_fto.
+  eapply r_ret. intuition eauto.
+  f_equal. f_equal. f_equal.
+  rewrite group_prodC. f_equal. simpl.
+  rewrite -expgnE. rewrite -expgnE.
+  rewrite -expgM. reflexivity.
 Qed.
 
 (** Rules specific to uniform distributions
@@ -408,29 +445,31 @@ Qed.
 *)
 
 Lemma repr_Uniform :
-  ∀ (i : Index),
-    repr (x ← sample U i ;; ret x) = @Uniform_F i _.
+  ∀ i `{Positive i},
+    repr (x ← sample U i ;; ret x) = @Uniform_F (mkpos i) _.
 Proof.
-  intro i. reflexivity.
+  intros i hi. reflexivity.
 Qed.
 
 Lemma repr_cmd_Uniform :
-  ∀ (i : Index),
-    repr_cmd (cmd_sample (U i)) = @Uniform_F i _.
+  ∀ i `{Positive i},
+    repr_cmd (cmd_sample (U i)) = @Uniform_F (mkpos i) _.
 Proof.
-  intro i. reflexivity.
+  intros i hi. reflexivity.
 Qed.
 
 Lemma fin_family_inhabited :
-  ∀ (i : Index), fin_family i.
+  ∀ (i : nat) `{Positive i}, fin_family (mkpos i).
 Proof.
-  intros i. induction i.
-  - cbn. exact g.
-  - cbn. split. all: exact g.
-  - cbn. exact g.
-  - cbn. exact 0.
-  - cbn. exact false.
-  - split. all: auto.
+  intros i hi.
+  exists 0%N. simpl. auto.
+Qed.
+
+Lemma ordinal_finType_inhabited :
+  ∀ i `{Positive i}, ordinal_finType i.
+Proof.
+  intros i hi.
+  exists 0%N. auto.
 Qed.
 
 (* TW: Can we rename this and explain what it is?
@@ -467,42 +506,109 @@ Section Uniform_prod.
 
   Arguments r _ _ : clear implicits.
 
+  Lemma uniform_F_prod_bij :
+    ∀ i j `{Positive i} `{Positive j} (x : 'I_i) (y : 'I_j),
+      mkdistr
+        (mu := λ _ : 'I_i * 'I_j, r (prod_finType [finType of 'I_i] [finType of 'I_j]) (x, y))
+        (@is_uniform _ (x,y))
+      =
+      SDistr_bind
+        (λ z : 'I_(i_prod i j),
+          SDistr_unit _ (ch2prod z)
+        )
+        (mkdistr
+          (mu := λ f : 'I_(i_prod i j), r (ordinal_finType (i_prod i j)) f)
+          (@is_uniform _ (ordinal_finType_inhabited (i_prod i j)))
+        ).
+  Proof.
+    intros i j pi pj x y.
+    apply distr_ext. simpl. intros [a b].
+    unfold SDistr_bind. rewrite dletE. simpl.
+    rewrite psumZ.
+    2:{
+      unshelve eapply @r_nonneg. eapply ordinal_finType_inhabited.
+      exact _.
+    }
+    unfold r. rewrite card_prod. simpl.
+    rewrite !card_ord. unfold i_prod.
+    unfold SDistr_unit. unfold dunit. unlock. unfold drat. unlock. simpl.
+    unfold mrat. simpl.
+    erewrite eq_psum.
+    2:{
+      simpl. intro u. rewrite divr1. rewrite addn0. reflexivity.
+    }
+    erewrite psum_finseq with (r := [:: prod2ch (a, b)]).
+    2: reflexivity.
+    2:{
+      simpl. intros u hu. rewrite inE in hu.
+      destruct (ch2prod u == (a,b)) eqn:e.
+      2:{
+        exfalso.
+        rewrite e in hu. cbn in hu.
+        move: hu => /negP hu. apply hu. apply eqxx.
+      }
+      move: e => /eqP e. rewrite -e.
+      rewrite inE. apply /eqP. symmetry. apply prod2ch_ch2prod.
+    }
+    rewrite big_cons big_nil.
+    rewrite ch2prod_prod2ch. rewrite eqxx. simpl.
+    rewrite addr0. rewrite normr1.
+    rewrite GRing.mulr1. reflexivity.
+  Qed.
+
+  Lemma SDistr_bind_unit_unit :
+    ∀ (A B C : ord_choiceType) (f : A → B) (g : B → C) u,
+      SDistr_bind (λ y, SDistr_unit _ (g y)) (SDistr_bind (λ x, SDistr_unit _ (f x)) u) =
+      SDistr_bind (λ x, SDistr_unit _ (g (f x))) u.
+  Proof.
+    intros A B C f g u.
+    apply distr_ext. simpl. intro z.
+    unfold SDistr_bind. unfold SDistr_unit.
+    rewrite dlet_dlet.
+    eapply eq_in_dlet. 2:{ intro. reflexivity. }
+    intros x hx y.
+    rewrite dlet_unit. reflexivity.
+  Qed.
+
   Lemma UniformIprod_UniformUniform :
-    ∀ (i j : Index),
+    ∀ (i j : nat) `{Positive i} `{Positive j},
       ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
-        xy ← sample U (i_prod i j) ;; ret xy ≈
+        xy ← sample U (i_prod i j) ;; ret (ch2prod xy) ≈
         x ← sample U i ;; y ← sample U j ;; ret (x, y)
       ⦃ eq ⦄.
   Proof.
-    intros i j.
+    intros i j pi pj.
     change (
       ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
-        xy ← sample U (i_prod i j) ;; ret xy ≈
-        x ← cmd (cmd_sample (U i)) ;; y ← cmd (cmd_sample (U j)) ;; ret (x, y)
+        xy ← cmd (cmd_sample (U (i_prod i j))) ;;
+        ret (ch2prod xy)
+        ≈
+        x ← cmd (cmd_sample (U i)) ;;
+        y ← cmd (cmd_sample (U j)) ;;
+        ret (x, y)
       ⦃ eq ⦄
     ).
     rewrite rel_jdgE.
-    rewrite repr_Uniform. repeat setoid_rewrite repr_cmd_bind.
-    change (repr_cmd (cmd_sample (U ?i))) with (@Uniform_F i heap_choiceType).
-    cbn - [semantic_judgement Uniform_F].
+    repeat setoid_rewrite repr_cmd_bind.
+    change (repr_cmd (cmd_sample (U ?i)))
+    with (@Uniform_F (mkpos i) heap_choiceType).
+    cbn - [semantic_judgement Uniform_F i_prod].
     eapply rewrite_eqDistrR.
-    1:{
-      apply (@reflexivity_rule _ _ (@Uniform_F (i_prod i j) heap_choiceType)).
-    }
-    intro s. cbn.
+    1:{ apply: reflexivity_rule. }
+    intro s. cbn - [i_prod].
     unshelve erewrite !mkdistrd_nonsense.
-    1-3: unshelve eapply is_uniform.
-    1: refine (_,_).
-    1-4: apply fin_family_inhabited.
-    unshelve eassert (as_uniform :
-      (mkdistr (mu:=λ f : UParam.fin_family i * UParam.fin_family j, r (prod_finType (UParam.fin_family i) (UParam.fin_family j)) f) is_uniform)
-      =
-      @uniform_F (prod_finType (fin_family i) (fin_family j)) _
-    ).
-    3:{ rewrite /uniform_F. reflexivity. }
-    1:{ refine (_,_). all: apply fin_family_inhabited. }
-    rewrite as_uniform.
-    erewrite prod_uniform.
+    1-3: unshelve eapply @is_uniform.
+    1-3: apply ordinal_finType_inhabited.
+    1-3: exact _.
+    pose proof @prod_uniform as h.
+    specialize (h [finType of 'I_i] [finType of 'I_j]). simpl in h.
+    unfold uniform_F in h.
+    specialize (h (ordinal_finType_inhabited _) (ordinal_finType_inhabited _)).
+    rewrite uniform_F_prod_bij in h. simpl in h.
+    eapply (f_equal (SDistr_bind (λ x, SDistr_unit _ (x, s)))) in h.
+    simpl in h.
+    rewrite SDistr_bind_unit_unit in h.
+    rewrite h. clear h.
     epose (bind_bind := ord_relmon_law3 SDistr _ _ _ _ _).
     eapply equal_f in bind_bind.
     cbn in bind_bind.
@@ -527,18 +633,18 @@ Section Uniform_prod.
 End Uniform_prod.
 
 Lemma r_uniform_prod :
-  ∀ {A : ord_choiceType} i j
-    (r : fin_family i → fin_family j → raw_code A),
+  ∀ {A : ord_choiceType} i j `{Positive i} `{Positive j}
+    (r : fin_family (mkpos i) → fin_family (mkpos j) → raw_code A),
     (∀ x y, ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ r x y ≈ r x y ⦃ eq ⦄) →
     ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
-      '(x,y) ← sample U (i_prod i j) ;; r x y ≈
+      xy ← sample U (i_prod i j) ;; let '(x,y) := ch2prod xy in r x y ≈
       x ← sample U i ;; y ← sample U j ;; r x y
     ⦃ eq ⦄.
 Proof.
-  intros A i j r h.
+  intros A i j pi pj r h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
-      '(x,y) ← (z ← sample (U (i_prod i j)) ;; ret z) ;; r x y ≈
+      '(x,y) ← (z ← sample (U (i_prod i j)) ;; ret (ch2prod z)) ;; r x y ≈
       '(x,y) ← (x ← sample U i ;; y ← sample U j ;; ret (x, y)) ;; r x y
     ⦃ eq ⦄
   ).
@@ -553,7 +659,7 @@ Proof.
 Qed.
 
 Lemma r_uniform_bij :
-  ∀ {A₀ A₁ : ord_choiceType} i j pre post f
+  ∀ {A₀ A₁ : ord_choiceType} i j `{Positive i} `{Positive j} pre post f
     (c₀ : _ → raw_code A₀) (c₁ : _ → raw_code A₁),
     bijective f →
     (∀ x, ⊢ ⦃ pre ⦄ c₀ x ≈ c₁ (f x) ⦃ post ⦄) →
@@ -562,10 +668,10 @@ Lemma r_uniform_bij :
       x ← sample U j ;; c₁ x
     ⦃ post ⦄.
 Proof.
-  intros A₀ A₁ i j pre post f c₀ c₁ bijf h.
+  intros A₀ A₁ i j pi pj pre post f c₀ c₁ bijf h.
   rewrite rel_jdgE.
   change (repr (sampler (U ?i) ?k))
-  with (bindrFree (@Uniform_F i heap_choiceType) (λ x, repr (k x))).
+  with (bindrFree (@Uniform_F (mkpos i) heap_choiceType) (λ x, repr (k x))).
   eapply bind_rule_pp.
   - eapply Uniform_bij_rule. eauto.
   - intros a₀ a₁. simpl.
@@ -642,6 +748,30 @@ Proof.
     reflexivity.
 Qed.
 
+#[local] Definition f' (m : choicePlain) : Arit (U (i_prod i_sk i_sk)) → Arit (U i_cipher) :=
+  λ x,
+    let '(a, b) := ch2prod x in
+    fto (f m (otf a, otf b)).
+
+Lemma bijective_f' : ∀ m, bijective (f' m).
+Proof.
+  intro m.
+  pose proof (bijective_f m) as bij. destruct bij as [g gf fg].
+  unfold f'.
+  exists (λ x, let '(a,b) := g (otf x) in prod2ch (fto a, fto b)).
+  - cbn - [f]. intros x. rewrite -[RHS]prod2ch_ch2prod.
+    set (y := ch2prod x). clearbody y. clear x.
+    simpl in y. destruct y as [a b].
+    rewrite otf_fto. rewrite gf. f_equal.
+    rewrite !fto_otf. reflexivity.
+  - cbn - [f]. intro x.
+    replace x with (fto (f m (g (otf x)))) at 2.
+    2:{ rewrite fg. rewrite fto_otf. reflexivity. }
+    set (y := g (otf x)). change (g (otf x)) with y. clearbody y. clear x.
+    destruct y as [a b]. rewrite ch2prod_prod2ch. rewrite !otf_fto.
+    reflexivity.
+Qed.
+
 Lemma ots_real_vs_rnd_equiv_false :
   ots_real_vs_rnd false ≈₀ Aux ∘ DH_rnd.
 Proof.
@@ -670,11 +800,14 @@ Proof.
   1:{ eapply r_uniform_prod. intros x y. eapply rreflexivity_rule. }
   simpl.
   eapply rsymmetry.
-  eapply @r_uniform_bij with (f := f m). 1: apply bijective_f.
-  simpl. intros [x y].
-  rewrite !gT2ch_ch2gT !ch2gT_gT2ch.
-  unfold c2ch. simpl.
-  eapply r_ret. intros s ? e. subst. intuition auto.
+  eapply @r_uniform_bij with (f := f' m). 1: apply bijective_f'.
+  simpl. intros x.
+  unfold f'. set (z := ch2prod x). clearbody z. clear x.
+  destruct z as [x y]. simpl.
+  eapply r_ret. intros s ? e. subst.
+  intuition auto.
+  unfold c2ch, ch2c, ch2m. rewrite !otf_fto. simpl.
+  reflexivity.
 Qed.
 
 Theorem ElGamal_OT :

@@ -39,7 +39,7 @@ Section OriginalLemma_rSamplerC.
       (*                              (λ s, repr' (k s) _) *)
 
  (* ------------------- Op ---------------------------- *)
-(* Op = Prob_ops_collection probE rel_choiceTypes chEmb *)
+(* Op = Prob_ops_collection probE chUniverse chElement *)
 (*      : Type *)
 
 
@@ -87,7 +87,7 @@ Arguments rFreeF { _ _ }.
 Context {S : choiceType} (X Y : choiceType).
 
 Let θ0 := @θ0 S.
-Let stT_Frp_ := @stT_Frp probE rel_choiceTypes chEmb S.
+Let stT_Frp_ := @stT_Frp probE chUniverse chElement S.
 
 Context (m : FrStP S X) (k : X -> FrStP S Y).
 
@@ -101,7 +101,7 @@ Proof.
   rewrite to_dnib.
   rewrite /θ0 /DerivedRules.θ0.
   pose bla :=
-rmm_law2 _ _ _ _ (@unaryIntState probE rel_choiceTypes chEmb S)
+rmm_law2 _ _ _ _ (@unaryIntState probE chUniverse chElement S)
          X Y k.
   rewrite /= in bla.
   unshelve eapply equal_f in bla. exact m.
@@ -117,7 +117,7 @@ Lemma θ0_vs_pipel : (θ0 _ (z1 >>>> z2)) = ((θ0 _ z1) >>>> (θ0 _ z2)).
   rewrite /θ0 /DerivedRules.θ0.
   rewrite /mybind.
   unshelve epose ( bla :=
-rmm_law2 _ _ _ _ (@unaryIntState probE rel_choiceTypes chEmb S)
+rmm_law2 _ _ _ _ (@unaryIntState probE chUniverse chElement S)
          X (prod_choiceType X Y) _ ).
   exact (fun a : X => dnib (FrStP S) (fun b : Y => η (FrStP S) (prod_choiceType X Y) (a, b)) z2).
   unshelve eapply equal_f in bla. exact z1.
@@ -130,8 +130,8 @@ rmm_law2 _ _ _ _ (@unaryIntState probE rel_choiceTypes chEmb S)
   Check @UniversalFreeMap.outOfFree _ _ _ sigMap.
   unshelve epose ( bla :=
 rmm_law2 _ _ _ _ (@UniversalFreeMap.outOfFree _ _ _ sigMap) ).
-  exact probE ; exact rel_choiceTypes ; exact chEmb. exact rel_choiceTypes.
-  exact chEmb. exact S.
+  exact probE ; exact chUniverse ; exact chElement. exact chUniverse.
+  exact chElement. exact S.
   specialize (bla Y (prod_choiceType X Y)
   (fun b : Y =>
         FreeProbProg.rFree_obligation_1 (StateTransformingLaxMorph.ops_StP S)
@@ -162,8 +162,8 @@ Arguments rFreeF { _ _ }.
 Context {S : choiceType} (X Y : choiceType).
 
 Let θ_dens_ := @θ_dens S.
-Let Frp := rFreePr probE rel_choiceTypes chEmb.
-Let stT_Frp_fld := @stT_Frp probE rel_choiceTypes chEmb S.
+Let Frp := rFreePr probE chUniverse chElement.
+Let stT_Frp_fld := @stT_Frp probE chUniverse chElement S.
 
 Context (m : Frp (prod_choiceType X S) )
 (k : prod_choiceType X S -> Frp (prod_choiceType Y S)).
@@ -179,7 +179,7 @@ Proof.
   rewrite /θ_dens_ /θ_dens.
   pose bla :=
 rmm_law2 _ _ _ _
-(@Theta_dens.unary_theta_dens probE rel_choiceTypes chEmb prob_handler)
+(@Theta_dens.unary_theta_dens probE chUniverse chElement prob_handler)
 (prod_choiceType X S) (prod_choiceType Y S) k.
   rewrite /= in bla.
   unshelve eapply equal_f in bla. exact m.
@@ -223,8 +223,8 @@ Infix "-*-" := prod_choiceType (at level 80, right associativity).
 Arguments dnib { _ _ _ _ _ _}.
 
 (*operations for proba, proba + state*)
-Let Op := Prob_ops_collection probE rel_choiceTypes chEmb.
-Let Ar := Prob_arities probE rel_choiceTypes chEmb.
+Let Op := Prob_ops_collection probE chUniverse chElement.
+Let Ar := Prob_arities probE chUniverse chElement.
 
 Context { A : ord_choiceType }  {S : choiceType}.
 
@@ -238,7 +238,7 @@ Arguments ropr {_ _ _ } _ _.
 Arguments callrFree {_ _} _.
 Arguments retrFree {_ _ _} _.
 
-Let stT_Frp := @stT_Frp probE rel_choiceTypes chEmb S.
+Let stT_Frp := @stT_Frp probE chUniverse chElement S.
 
 
 Local Definition c_sample_ret :=
@@ -264,7 +264,7 @@ Proof.
 (*   rewrite /OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1. *)
 (*   rewrite /FreeProbProg.rFree_obligation_2. *)
 (*   pose bla := ( rmm_law2 _ _ _ _ *)
-(*  (@Theta_dens.unary_theta_dens probE rel_choiceTypes chEmb prob_handler) ). *)
+(*  (@Theta_dens.unary_theta_dens probE chUniverse chElement prob_handler) ). *)
 (*   rewrite !θ_dens_vs_bind. *)
 (*   rewrite /=. *)
 (*   rewrite /SubDistr.SDistr_obligation_2 /=. *)

@@ -11,13 +11,13 @@ into θdex : FreeProb² → Wrelprop by precomposing it with θdens : FreeProb²
 Section ThetaDexDef.
   (*some context for theta_dens*)
   Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {rel_choiceTypes : Type}
-          {chEmb : rel_choiceTypes -> choiceType}.
+  Context {chUniverse : Type}
+          {chElement : chUniverse -> choiceType}.
   Context (prob_handler : forall (T:choiceType),
     probE T -> SDistr T).
 
 
-  Let theta_dens_filled :=  @theta_dens probE rel_choiceTypes chEmb prob_handler.
+  Let theta_dens_filled :=  @theta_dens probE chUniverse chElement prob_handler.
   Let ltheta_dens :=  relativeMonadMorphism_to_lax _ _ _ _ (theta_dens_filled).
 
   Definition thetaDex := rlmm_comp _ _ _ _ _ _ _ ltheta_dens θ_morph.

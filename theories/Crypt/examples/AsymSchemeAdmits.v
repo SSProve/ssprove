@@ -35,7 +35,7 @@ From Crypt Require Import
      UniformStateProb.
 From Crypt Require Import
      pkg_core_definition
-     pkg_chUniverse
+     chUniverse
      pkg_composition
      pkg_notation
      pkg_rhl
@@ -73,10 +73,10 @@ Module Type AsymmetricSchemeParams.
   (*Rem.: If I don't put these here I get some trubles later... *)
 
   Parameter probE : Type -> Type.
-  Parameter rel_choiceTypes : Type.
-  Parameter chEmb : rel_choiceTypes -> choiceType.
+  Parameter chUniverse : Type.
+  Parameter chElement : chUniverse -> choiceType.
   Parameter prob_handler : forall T : choiceType, probE T -> SDistr T.
-  Parameter Hch : forall r : rel_choiceTypes, chEmb r.
+  Parameter Hch : forall r : chUniverse, chElement r.
 
 End AsymmetricSchemeParams.
 
@@ -116,10 +116,10 @@ Module ARules (Aparam : AsymmetricSchemeParams).
   Module genparam <: RulesParam.
 
     Definition probE : Type -> Type := probE.
-    Definition rel_choiceTypes : Type := rel_choiceTypes.
-    Definition chEmb : rel_choiceTypes -> choiceType := chEmb.
+    Definition chUniverse : Type := chUniverse.
+    Definition chElement : chUniverse -> choiceType := chElement.
     Definition prob_handler : forall T : choiceType, probE T -> SDistr T := prob_handler.
-    Definition Hch : forall r : rel_choiceTypes, chEmb r := Hch.
+    Definition Hch : forall r : chUniverse, chElement r := Hch.
 
   End genparam.
 
@@ -222,8 +222,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
   Import Alg.
   Import PackageNotation.
 
-  Definition U (i : Index) : {rchT : myparamU.rel_choiceTypes & myparamU.probE (myparamU.chEmb rchT)} :=
-    (existT (λ rchT : myparamU.rel_choiceTypes, myparamU.probE (myparamU.chEmb rchT))
+  Definition U (i : Index) : {rchT : myparamU.chUniverse & myparamU.probE (myparamU.chElement rchT)} :=
+    (existT (λ rchT : myparamU.chUniverse, myparamU.probE (myparamU.chElement rchT))
             (inl (inl i)) (inl (Uni_W i))).
 
   Local Open Scope package_scope.

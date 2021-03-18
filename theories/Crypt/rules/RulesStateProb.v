@@ -1,42 +1,19 @@
-From Coq Require Import
-     RelationClasses
-     Morphisms.
+From Coq Require Import RelationClasses Morphisms Utf8.
 
-From Mon Require Import
-     SPropMonadicStructures
-     SpecificationMonads
-     MonadExamples
-     SPropBase
-     FiniteProbabilities.
+From Mon Require Import SPropMonadicStructures SpecificationMonads MonadExamples
+  SPropBase FiniteProbabilities.
 
-From Relational Require Import
-     OrderEnrichedCategory
-     OrderEnrichedRelativeMonadExamples
-     Commutativity
-     GenericRulesSimple.
+From Relational Require Import OrderEnrichedCategory
+  OrderEnrichedRelativeMonadExamples Commutativity GenericRulesSimple.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import
-     all_ssreflect
-     all_algebra
-     reals
-     distr
-     realsum.
+From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
+  finmap.set finmap.finmap xfinmap.
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From mathcomp Require finmap.set finmap.finmap xfinmap.
-
-From Crypt Require Import
-     Axioms
-     ChoiceAsOrd
-     SubDistr
-     Couplings
-     Theta_dens
-     Theta_exCP
-     LaxComp
-     FreeProbProg
-     RelativeMonadMorph_prod
-     StateTransformingLaxMorph.
+From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings Theta_dens
+  Theta_exCP LaxComp FreeProbProg RelativeMonadMorph_prod
+  StateTransformingLaxMorph chUniverse.
 
 Import SPropNotations.
 Import Num.Theory.
@@ -48,13 +25,8 @@ Local Open Scope ring_scope.
 
 Module Type RulesParam.
 
-Parameter probE : Type -> Type.
-Parameter rel_choiceTypes : Type.
-Parameter chEmb : rel_choiceTypes -> choiceType.
-Parameter prob_handler : (forall T : choiceType, probE T -> SDistr T).
-(* Parameter S1 S2 : choiceType. *)
-(* Parameter s1 : S1. *)
-(* Parameter s2 : S2.  *)
+  Parameter probE : Type → Type.
+  Parameter prob_handler : ∀ (T : choiceType), probE T → SDistr T.
 
 End RulesParam.
 
@@ -62,32 +34,44 @@ Module DerivedRules (myparam : RulesParam).
 
 Import myparam.
 
-#[local] Definition ops_StP (S : choiceType) := @ops_StP probE rel_choiceTypes chEmb S.
-#[local] Definition ar_StP (S : choiceType) := @ar_StP probE rel_choiceTypes chEmb S.
+#[local] Definition ops_StP (S : choiceType) :=
+  @ops_StP probE chUniverse chElement S.
+
+#[local] Definition ar_StP (S : choiceType) :=
+  @ar_StP probE chUniverse chElement S.
 
 (* free monad *)
-#[local] Definition FrStP (S : choiceType) :=  @FrStP probE rel_choiceTypes chEmb S.
+#[local] Definition FrStP (S : choiceType) :=
+  @FrStP probE chUniverse chElement S.
 
-#[local] Definition pure { S : choiceType } { A : ord_choiceType } (a : A) := ord_relmon_unit (FrStP S) A a.
-#[local] Definition bindF { S : choiceType } { A B : ord_choiceType } (f : TypeCat ⦅ choice_incl A; FrStP S B ⦆ ) (m : FrStP S A) :=
+#[local] Definition pure {S : choiceType} {A : ord_choiceType} (a : A) :=
+  ord_relmon_unit (FrStP S) A a.
+
+#[local] Definition bindF {S : choiceType} {A B : ord_choiceType}
+  (f : TypeCat ⦅ choice_incl A; FrStP S B ⦆ ) (m : FrStP S A) :=
   ord_relmon_bind (FrStP S) f m.
 
-#[local] Definition retF { S : choiceType } { A : choiceType } (a : A) := retrFree (ops_StP S) (ar_StP S) A a.
+#[local] Definition retF {S : choiceType} {A : choiceType} (a : A) :=
+  retrFree (ops_StP S) (ar_StP S) A a.
 
 
 (* morphism *)
-#[local] Definition θ { S1 S2 : choiceType } := @thetaFstdex probE rel_choiceTypes chEmb S1 S2 prob_handler.
+#[local] Definition θ {S1 S2 : choiceType} :=
+  @thetaFstdex probE chUniverse chElement S1 S2 prob_handler.
 
-#[local] Definition θ0 { S : choiceType } { A : ord_choiceType } (c : FrStP S A) := (@unaryIntState probE rel_choiceTypes chEmb S) A c.
+#[local] Definition θ0 {S : choiceType} {A : ord_choiceType} (c : FrStP S A) :=
+  @unaryIntState probE chUniverse chElement S A c.
 
 
 (* spec monad *)
-#[local] Definition WrelSt { S1 S2 : choiceType }  := (rlmm_codomain (@θ S1 S2)).
+#[local] Definition WrelSt {S1 S2 : choiceType} :=
+  rlmm_codomain (@θ S1 S2).
 
 
 (* Rem.: this spec monad is a ordered relative monad, while previously we were using an ordered monad *)
 
-Definition retW { A1 A2 : ord_choiceType } {S1 S2 : choiceType} (a : A1 * A2) :  Base.dfst (@WrelSt S1 S2 ⟨ A1, A2 ⟩).
+Definition retW {A1 A2 : ord_choiceType} {S1 S2 : choiceType} (a : A1 * A2) :
+  Base.dfst (@WrelSt S1 S2 ⟨ A1, A2 ⟩).
 Proof.
   apply (ord_relmon_unit WrelSt).
   simpl.
@@ -95,9 +79,10 @@ Proof.
 Defined.
 
 
-Definition bindW { A1 A2 B1 B2 : ord_choiceType } { S1 S2 : choiceType }
-                 (w : Base.dfst (@WrelSt S1 S2 ⟨ A1, A2 ⟩))
-                 (f : A1 * A2 ->  (Base.dfst (@WrelSt S1 S2 ⟨ B1, B2 ⟩))) : (Base.dfst (@WrelSt S1 S2 ⟨ B1, B2 ⟩)).
+Definition bindW {A1 A2 B1 B2 : ord_choiceType} {S1 S2 : choiceType}
+  (w : Base.dfst (@WrelSt S1 S2 ⟨ A1, A2 ⟩))
+  (f : A1 * A2 → Base.dfst (@WrelSt S1 S2 ⟨ B1, B2 ⟩)) :
+  Base.dfst (@WrelSt S1 S2 ⟨ B1, B2 ⟩).
 Proof.
   unshelve eapply (ord_relmon_bind WrelSt).
   - simpl. exact: npair A1 A2.
@@ -112,27 +97,29 @@ Defined.
 Import OrderEnrichedRelativeMonadExamplesNotation.
 
 Definition semantic_judgement (A1 A2 : ord_choiceType) {S1 S2 : choiceType}
-                              (c1 : FrStP S1 A1) (c2 : FrStP S2 A2)
-                              (w  : Base.dfst (WrelSt ⟨ A1, A2 ⟩)) : Prop :=
+  (c1 : FrStP S1 A1) (c2 : FrStP S2 A2)
+  (w  : Base.dfst (WrelSt ⟨ A1, A2 ⟩)) : Prop :=
    (θ ⟨A1,A2⟩)∙1 ⟨c1,c2⟩ ≤ w.
 
 Definition fromPrePost {A1 A2 : ord_choiceType} {S1 S2: choiceType}
-           (pre : (S1 * S2) -> Prop)
-           (post : (A1 * S1) -> (A2 * S2) -> Prop)
-   :  Base.dfst (@WrelSt S1 S2 ⟨ A1, A2 ⟩).
- Proof.
-   simpl.
-   unshelve econstructor.
-     move=> [is1 is2]. unshelve econstructor.
-     move=> myPost.
-     exact (  pre (is1,is2) /\
-              forall as1 as2, (post as1 as2) -> myPost (as1, as2)).
-     move => x y Hxy [H1 H2].
-     split.
-     - assumption.
-     - move => as1 as2 post12. apply: Hxy. by apply: H2.
-     move => x y Heq π.
-     by rewrite Heq.
+  (pre : (S1 * S2) → Prop)
+  (post : (A1 * S1) → (A2 * S2) → Prop) :
+  Base.dfst (@WrelSt S1 S2 ⟨ A1, A2 ⟩).
+Proof.
+  simpl.
+  unshelve econstructor.
+  move=> [is1 is2]. unshelve econstructor.
+  move=> myPost.
+  exact (
+    pre (is1,is2) ∧
+    ∀ as1 as2, (post as1 as2) → myPost (as1, as2)
+  ).
+  move => x y Hxy [H1 H2].
+  split.
+  - assumption.
+  - move => as1 as2 post12. apply: Hxy. by apply: H2.
+  move => x y Heq π.
+  by rewrite Heq.
 Defined.
 
 Declare Scope rsemantic_scope.
@@ -156,12 +143,12 @@ Import finmap.set finmap.finmap xfinmap.
 
 Open Scope fset_scope.
 
-Definition d_inv { A1 A2 : choiceType} (d : SDistr  (F_choice_prod ⟨ A1, A2 ⟩)) :
-           SDistr  (F_choice_prod ⟨ A2, A1 ⟩) :=
+Definition d_inv {A1 A2 : choiceType} (d : SDistr  (F_choice_prod ⟨ A1, A2 ⟩)) :
+  SDistr  (F_choice_prod ⟨ A2, A1 ⟩) :=
   dswap d.
 
-Lemma d_inv_coupling { A1 A2 } { c1 : SDistr A1 } { c2 : SDistr A2 }
-           (d : SDistr (F_choice_prod ⟨ A1, A2 ⟩ )) (d_coupling : coupling d c1 c2) :
+Lemma d_inv_coupling {A1 A2} {c1 : SDistr A1} {c2 : SDistr A2}
+  (d : SDistr (F_choice_prod ⟨ A1, A2 ⟩ )) (d_coupling : coupling d c1 c2) :
   coupling (d_inv d) c2 c1.
 Proof.
   unfold coupling. split.
@@ -173,12 +160,10 @@ Proof.
     destruct d_coupling as [lH rH]. rewrite -lH. unfold lmg. reflexivity.
 Qed.
 
-
-
-Theorem inv_rule { A1 A2 : ord_choiceType } { S1 S2 : choiceType } { P Q }
-                 (c1 : FrStP S1 A1) (c2 : FrStP S2 A2)
-                 (H : ⊨ ⦃ P ⦄ c1 ≈ c2 ⦃ Q ⦄ ) :
-  ⊨ ⦃ fun '(st1,st2) => P (st2, st1) ⦄ c2 ≈ c1 ⦃ fun as1 as2 => Q as2 as1 ⦄.
+Theorem inv_rule {A1 A2 : ord_choiceType} {S1 S2 : choiceType} {P Q}
+  (c1 : FrStP S1 A1) (c2 : FrStP S2 A2)
+  (H : ⊨ ⦃ P ⦄ c1 ≈ c2 ⦃ Q ⦄ ) :
+  ⊨ ⦃ λ '(st1,st2), P (st2, st1) ⦄ c2 ≈ c1 ⦃ λ as1 as2, Q as2 as1 ⦄.
 Proof.
   move => [st1 st2] /=. move => π [H1 H2] /=.
   specialize (H (st2, st1) (fun '(as1, as2) => π (as2, as1))).
@@ -194,14 +179,13 @@ Proof.
   rewrite dswapE in H'. cbn in H'. assumption.
 Qed.
 
-
 (* GENERIC MONADIC RULES *)
-Theorem ret_rule  {A1 A2 : ord_choiceType} { S1 S2 : choiceType }
-                  (a1 : A1) (a2 : A2):
-   ⊨ @pure S1 A1 a1 ≈ @pure S2 A2 a2  [{ retW (a1, a2) }].
+Theorem ret_rule  {A1 A2 : ord_choiceType} {S1 S2 : choiceType}
+  (a1 : A1) (a2 : A2):
+  ⊨ @pure S1 A1 a1 ≈ @pure S2 A2 a2  [{ retW (a1, a2) }].
 Proof.
   rewrite /semantic_judgement /θ.
-  unfold "≤".  simpl.
+  unfold "≤". simpl.
   rewrite /MonoCont_order //=. move => [ss1 ss2] πa1a2 /=.
   exists (SDistr_unit (F_choice_prod (npair (prod_choiceType A1 S1) (prod_choiceType A2 S2)))
                  ((a1, ss1), (a2, ss2))).
@@ -213,23 +197,23 @@ Proof.
 Qed.
 
 Theorem weaken_rule  {A1 A2 : ord_choiceType} {S1 S2 : choiceType}
-                     {d1 : FrStP S1 A1}
-                     {d2 : FrStP S2 A2} :
-  forall w w', (⊨ d1 ≈ d2 [{ w }]) -> w ≤ w' -> (⊨ d1 ≈ d2 [{ w' }] ).
+  {d1 : FrStP S1 A1}
+  {d2 : FrStP S2 A2} :
+  ∀ w w', (⊨ d1 ≈ d2 [{ w }]) → w ≤ w' → (⊨ d1 ≈ d2 [{ w' }] ).
 Proof.
   rewrite /semantic_judgement.
   by etransitivity.
 Qed.
 
 Theorem bind_rule {A1 A2 B1 B2 : ord_choiceType} {S1 S2 : choiceType}
-                  {f1 : A1 -> FrStP S1 B1}
-                  {f2 : A2 -> FrStP S2 B2}
-                  (m1 : FrStP S1 A1)
-                  (m2 : FrStP S2 A2)
-                  (wm : Base.dfst (WrelSt ⟨ A1, A2 ⟩))
-                  (judge_wm : ⊨ m1 ≈ m2 [{ wm }])
-                  (wf : (A1 * A2) -> Base.dfst (WrelSt ⟨ B1, B2 ⟩))
-                  (judge_wf : forall a1 a2, ⊨ (f1 a1) ≈ (f2 a2) [{ (wf (a1, a2)) }]) :
+  {f1 : A1 → FrStP S1 B1}
+  {f2 : A2 → FrStP S2 B2}
+  (m1 : FrStP S1 A1)
+  (m2 : FrStP S2 A2)
+  (wm : Base.dfst (WrelSt ⟨ A1, A2 ⟩))
+  (judge_wm : ⊨ m1 ≈ m2 [{ wm }])
+  (wf : (A1 * A2) → Base.dfst (WrelSt ⟨ B1, B2 ⟩))
+  (judge_wf : ∀ a1 a2, ⊨ (f1 a1) ≈ (f2 a2) [{ (wf (a1, a2)) }]) :
   ⊨ (bindF f1 m1 ) ≈ (bindF f2 m2) [{ bindW wm wf }].
 Proof.
   move => [st1 st2].
@@ -246,18 +230,18 @@ Proof.
 Qed.
 
 Theorem bind_rule_pp {A1 A2 B1 B2 : ord_choiceType}  {S1 S2 : choiceType}
-        {f1 : A1 -> FrStP S1 B1}
-        {f2 : A2 -> FrStP S2 B2}
-        (m1 : FrStP S1 A1)
-        (m2 : FrStP S2 A2)
-        (pre : S1 * S2 -> Prop)
-        (middle : (A1 * S1) -> (A2 * S2) -> Prop)
-        (post : (B1 * S1) -> (B2 * S2) -> Prop)
-        (judge_wm : ⊨ ⦃ pre ⦄ m1 ≈ m2 ⦃ middle ⦄)
-        (judge_wf : forall a1 a2,
-            ⊨ ⦃ fun '(s1, s2) => middle (a1, s1) (a2, s2) ⦄
-              f1 a1 ≈ f2 a2
-              ⦃ post ⦄ ) :
+  {f1 : A1 → FrStP S1 B1}
+  {f2 : A2 → FrStP S2 B2}
+  (m1 : FrStP S1 A1)
+  (m2 : FrStP S2 A2)
+  (pre : S1 * S2 → Prop)
+  (middle : (A1 * S1) → (A2 * S2) → Prop)
+  (post : (B1 * S1) → (B2 * S2) → Prop)
+  (judge_wm : ⊨ ⦃ pre ⦄ m1 ≈ m2 ⦃ middle ⦄)
+  (judge_wf : ∀ a1 a2,
+      ⊨ ⦃ λ '(s1, s2), middle (a1, s1) (a2, s2) ⦄
+        f1 a1 ≈ f2 a2
+        ⦃ post ⦄ ) :
   ⊨ ⦃ pre ⦄ (bindrFree _ _ m1 f1 ) ≈ (bindrFree _ _ m2 f2) ⦃ post ⦄.
 Proof.
   destruct S1, S2, A1, A2, B1, B2.
@@ -266,30 +250,35 @@ Proof.
     + exact judge_wm.
     + exact judge_wf.
   - cbv. intuition.
-    destruct as2. intuition.
 Qed.
 
 (* Pre-condition manipulating rules *)
 Theorem pre_weaken_rule {A1 A2 : ord_choiceType} {S1 S2 : choiceType}
-                        {d1 : FrStP S1 A1}
-                        {d2 : FrStP S2 A2} :
-  forall (pre pre' : S1 * S2 -> Prop) post, (⊨ ⦃ pre ⦄ d1 ≈ d2 ⦃ post ⦄) -> (forall st1 st2, pre' (st1, st2) -> pre (st1, st2) ) ->
-                                    (⊨ ⦃ pre' ⦄ d1 ≈ d2 ⦃ post ⦄).
+  {d1 : FrStP S1 A1}
+  {d2 : FrStP S2 A2} :
+  ∀ (pre pre' : S1 * S2 → Prop) post,
+    (⊨ ⦃ pre ⦄ d1 ≈ d2 ⦃ post ⦄) →
+    (∀ st1 st2, pre' (st1, st2) → pre (st1, st2) ) →
+    (⊨ ⦃ pre' ⦄ d1 ≈ d2 ⦃ post ⦄).
 Proof.
   move => w w' post Hjudg Hleq. move => [st1 st2].
   move => π [H1 H2]. simpl in π.
   apply: Hjudg.
   rewrite /fromPrePost /=.
   split.
-  + by apply: Hleq.
-  + assumption.
+  - by apply: Hleq.
+  - assumption.
 Qed.
 
 Theorem pre_hypothesis_rule  {A1 A2 : ord_choiceType} {S1 S2 : choiceType}
-                             {d1 : FrStP S1 A1}
-                             {d2 : FrStP S2 A2} :
-  forall (pre : S1 * S2 -> Prop) post, (forall st1 st2, pre (st1, st2) -> ⊨ ⦃ (fun st => st.1 = st1 /\ st.2 = st2 ) ⦄ d1 ≈ d2 ⦃ post ⦄) ->
-                              (⊨ ⦃ pre ⦄ d1 ≈ d2 ⦃ post ⦄).
+  {d1 : FrStP S1 A1}
+  {d2 : FrStP S2 A2} :
+  ∀ (pre : S1 * S2 → Prop) post,
+    (∀ st1 st2,
+      pre (st1, st2) →
+      ⊨ ⦃ (λ st, st.1 = st1 ∧ st.2 = st2 ) ⦄ d1 ≈ d2 ⦃ post ⦄
+    ) →
+    (⊨ ⦃ pre ⦄ d1 ≈ d2 ⦃ post ⦄).
 Proof.
   move => pre post Hjudg. move => [st1 st2].
   move => π [H1 H2] /=. simpl in π.
@@ -596,7 +585,7 @@ Theorem bounded_do_while_rule  {A1 A2 : ord_choiceType} {S1 S2 : choiceType}
 Proof.
   induction n.
   - simpl. eapply weaken_rule.
-    apply ret_rule. cbv; intuition.
+    apply ret_rule. simpl. intros [? ?] ?. simpl. cbv. intuition eauto.
   - simpl. eapply weaken_rule.
     apply bind_rule. apply H.
     move => b1 b2. eapply weaken_rule. apply if_rule.
@@ -604,10 +593,10 @@ Proof.
     instantiate (1 := fun s => inv b1 b2 s /\ b1 = b2).
     rewrite /=. move => [hfoo heq]. assumption.
     instantiate (1 := fun ls rs => ls.1 = false /\ rs.1 = false \/ (inv false false) (ls.2, rs.2)).
-    eapply weaken_rule. apply IHn. cbv; intuition.
+    eapply weaken_rule. apply IHn. simpl. intros [? ?] ?. cbv. intuition eauto.
     rewrite -H3. rewrite {2}H4. assumption.
     eapply weaken_rule. apply ret_rule.
-    cbv; intuition.
+    simpl. intros [? ?] ?. cbv. intuition eauto.
     apply H2. right. rewrite -H3. rewrite {2}H4. assumption.
     instantiate (1 := fun '(b1, b2) => fromPrePost (fun st => (inv b1 b2 st) /\ b1 = b2)
                                                  (fun ls rs => ls.1 = false /\ rs.1 = false \/ (inv false false (ls.2, rs.2)))).
@@ -623,7 +612,7 @@ Qed.
 (*TODO: asymmetric variants of bounded_do_while -- Rem.: low priority as not useful for our examples *)
 
 #[local] Definition θ_dens { S : choiceType } { X : ord_choiceType } :=
-  @Theta_dens.unary_theta_dens probE rel_choiceTypes chEmb prob_handler (F_choice_prod_obj ⟨ X, S ⟩).
+  @Theta_dens.unary_theta_dens probE chUniverse chElement prob_handler (F_choice_prod_obj ⟨ X, S ⟩).
 
 
 Lemma Pr_eq {X Y : ord_choiceType} { S1 S2 : choiceType } {A : pred (X * S1)} {B : pred (Y * S2)}
@@ -980,7 +969,7 @@ Qed.
 
 Context (S : choiceType).
 
-Let Frp_fld :=  @Frp probE rel_choiceTypes chEmb.
+Let Frp_fld :=  @Frp probE chUniverse chElement.
 
 Lemma theta0_vsbind {P Q : ord_choiceType} (p : FrStP S P) (q : FrStP S Q)
   (s : S) :
@@ -1034,7 +1023,7 @@ Proof.
 {
   unfold θ0.
   unshelve epose (assoc := rlmm_law2 _ _ _ _ (unaryIntState) _ _ _ ).
-    exact probE. exact rel_choiceTypes. exact chEmb.
+    exact probE. exact chUniverse. exact chElement.
     shelve. shelve. shelve.
     exact (fun (a : A1 * A2) => r a.1 a.2).
   cbn in assoc. specialize (assoc p12).
@@ -1056,7 +1045,7 @@ Proof.
 {
   unfold θ0.
   unshelve epose (assoc := rlmm_law2 _ _ _ _ (unaryIntState) _ _ _ ).
-    exact probE. exact rel_choiceTypes. exact chEmb.
+    exact probE. exact chUniverse. exact chElement.
     shelve. shelve. shelve.
     exact (fun (a : A1 * A2) => r a.1 a.2).
   cbn in assoc. specialize (assoc p21).
@@ -1074,9 +1063,9 @@ Proof.
     - exact ( prod_choiceType (prod_choiceType A1 A2 ) S ).
     - move=> [x s'].  exact ( θ_dens (θ0 (r x.1 x.2) s' ) ).
     - exact (θ_dens (θ0 p12 s)).
-  rewrite [LHS]/θ_dens.
+  unfold θ_dens at 1.
   pose utheta_dens_fld :=
-@unary_theta_dens probE rel_choiceTypes chEmb prob_handler.
+@unary_theta_dens probE chUniverse chElement prob_handler.
   unshelve epose (θ_dens_bind :=
 @rmm_law2 _ _ _ _ _ _ _ _ _ utheta_dens_fld _ _ _).
   shelve. shelve.
@@ -1100,9 +1089,9 @@ Proof.
   rewrite contEqu. apply f_equal. reflexivity.
 
   (*p12 is p21 under θ_dens ∘ θ0 *)
-  rewrite [RHS]/θ_dens.
+  unfold θ_dens at 3.
   pose utheta_dens_fld :=
-@unary_theta_dens probE rel_choiceTypes chEmb prob_handler.
+@unary_theta_dens probE chUniverse chElement prob_handler.
   unshelve epose (θ_dens_bind :=
 @rmm_law2 _ _ _ _ _ _ _ _ _ utheta_dens_fld _ _ _).
   shelve. shelve.
@@ -1229,8 +1218,8 @@ Notation dnib M := (ord_relmon_bind M).
 (* above *)
 
 (*operations and arities for probabilities*)
-Let Op := Prob_ops_collection probE rel_choiceTypes chEmb.
-Let Ar := Prob_arities probE rel_choiceTypes chEmb.
+Let Op := Prob_ops_collection probE chUniverse chElement.
+Let Ar := Prob_arities probE chUniverse chElement.
 
 Context { A : ord_choiceType }  {S : choiceType}.
 
@@ -1268,7 +1257,7 @@ Proof.
   rewrite to_dnib.
   rewrite /θ0 /DerivedRules.θ0.
   pose bla :=
-rmm_law2 _ _ _ _ (@unaryIntState probE rel_choiceTypes chEmb S)
+rmm_law2 _ _ _ _ (@unaryIntState probE chUniverse chElement S)
          X Y k.
   rewrite /= in bla.
   unshelve eapply equal_f in bla. exact m.
@@ -1301,7 +1290,8 @@ Lemma θ0_vs_c_sample :
 Proof.
   unfold c_sample.
   rewrite θ0_vs_bind.
-  f_equal. apply boolp.funext. move=> a.
+  eapply (f_equal (λ x, dnib stT_Frp x (θ0 c))).
+  apply boolp.funext. move=> a.
   rewrite θ0_vs_bind. reflexivity.
 Qed.
 
@@ -1331,7 +1321,7 @@ Proof.
   reflexivity.
 Qed.
 
-Let Frp_fld :=  @Frp probE rel_choiceTypes chEmb.
+Let Frp_fld :=  @Frp probE chUniverse chElement.
 
 Lemma bindrFree_and_ret {U:choiceType} (mu : Frp_fld U) :
 bindrFree mu (fun u =>
@@ -1349,7 +1339,7 @@ Qed.
 Lemma op_outoffree (s0 : S):
 UniversalFreeMap.outOfFree sigMap (Arst (inr o)) splo
 =
-@sigMap probE rel_choiceTypes chEmb S (inr o).
+@sigMap probE chUniverse chElement S (inr o).
 Proof.
     cbn.
     rewrite /OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
@@ -1358,22 +1348,22 @@ Proof.
     rewrite /FreeProbProg.rFree_obligation_1.
     set (weirdCont :=
 (fun
-          topas : prod (Choice.sort (Prob_arities probE rel_choiceTypes chEmb o))
+          topas : prod (Choice.sort (Prob_arities probE chUniverse chElement o))
                                 (Choice.sort S) =>
         match
           topas
           return
-            (rFreeF (Prob_ops_collection probE rel_choiceTypes chEmb)
-               (Prob_arities probE rel_choiceTypes chEmb)
+            (rFreeF (Prob_ops_collection probE chUniverse chElement)
+               (Prob_arities probE chUniverse chElement)
                (F_choice_prod_obj
-                  (@npair Choice.type Choice.type (Prob_arities probE rel_choiceTypes chEmb o) S)))
+                  (@npair Choice.type Choice.type (Prob_arities probE chUniverse chElement o) S)))
         with
         | pair a s =>
-            @retrFree (Prob_ops_collection probE rel_choiceTypes chEmb)
-              (Prob_arities probE rel_choiceTypes chEmb)
+            @retrFree (Prob_ops_collection probE chUniverse chElement)
+              (Prob_arities probE chUniverse chElement)
               (F_choice_prod_obj
-                 (@npair Choice.type Choice.type (Prob_arities probE rel_choiceTypes chEmb o) S))
-              (@pair (Choice.sort (Prob_arities probE rel_choiceTypes chEmb o)) (Choice.sort S) a s)
+                 (@npair Choice.type Choice.type (Prob_arities probE chUniverse chElement o) S))
+              (@pair (Choice.sort (Prob_arities probE chUniverse chElement o)) (Choice.sort S) a s)
         end)
 ).
     assert (eq_cont :
@@ -1432,7 +1422,7 @@ Proof.
 Qed.
 
 Let utheta_dens_fld :=
-(@Theta_dens.unary_theta_dens probE rel_choiceTypes chEmb prob_handler).
+(@Theta_dens.unary_theta_dens probE chUniverse chElement prob_handler).
 
 Lemma utheta_dens_vs_bind {X Y : choiceType}
 (m : Frp X)
@@ -1447,7 +1437,7 @@ Proof.
   rewrite to_dnib.
   pose bla :=
 rmm_law2 _ _ _ _
-(@Theta_dens.unary_theta_dens probE rel_choiceTypes chEmb prob_handler)
+(@Theta_dens.unary_theta_dens probE chUniverse chElement prob_handler)
 X Y k.
   rewrite /= in bla.
   unshelve eapply equal_f in bla. exact m.
@@ -1466,7 +1456,7 @@ Proof.
   rewrite /θ_dens.
   pose bla :=
 rmm_law2 _ _ _ _
-(@Theta_dens.unary_theta_dens probE rel_choiceTypes chEmb prob_handler)
+(@Theta_dens.unary_theta_dens probE chUniverse chElement prob_handler)
 X (prod_choiceType Y S) k.
   rewrite /= in bla.
   unshelve eapply equal_f in bla. exact m.
@@ -1537,7 +1527,7 @@ unshelve eassert (eq_cont :
 fun x => let (a,sc) := x in
 SD_bind (utheta_dens_fld _ sploP) (fun r =>
 SDistr_unit _ (a,r,sc))).
-    exact probE. exact rel_choiceTypes. exact chEmb.
+    exact probE. exact chUniverse. exact chElement.
     apply boolp.funext. move=> [aa ss]. rewrite utheta_dens_vs_bind. reflexivity.
   rewrite eq_cont. rewrite /=.
   rewrite !/SD_bind.

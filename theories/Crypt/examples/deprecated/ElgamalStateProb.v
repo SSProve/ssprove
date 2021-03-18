@@ -37,7 +37,7 @@ From Crypt Require Import
      UniformStateProb.
 From Crypt Require Import
      pkg_core_definition
-     pkg_chUniverse
+     chUniverse
      pkg_composition
      pkg_rhl
      Package
@@ -103,15 +103,15 @@ Module MyParam <: AsymmetricSchemeParams.
   Definition sec0 : SecKey := 0.
 
   Definition probE : Type -> Type := probEmpty.
-  Definition rel_choiceTypes : Type := void.
+  Definition chUniverse : Type := void.
 
-  Definition chEmb : rel_choiceTypes -> choiceType.
+  Definition chElement : chUniverse -> choiceType.
   Proof.  move => contra. contradiction. Defined.
 
   Definition prob_handler : forall T : choiceType, probE T -> SDistr T.
   Proof. move => contra. contradiction. Defined.
 
-  Definition Hch : forall r : rel_choiceTypes, chEmb r.
+  Definition Hch : forall r : chUniverse, chElement r.
   Proof. move => contra. contradiction. Defined.
 
 End MyParam.
@@ -174,9 +174,9 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
 
 
   Definition U (i : Index) :
-    {rchT : myparamU.rel_choiceTypes &
-            myparamU.probE (myparamU.chEmb rchT)} :=
-    (existT (λ rchT : myparamU.rel_choiceTypes, myparamU.probE (chEmb rchT))
+    {rchT : myparamU.chUniverse &
+            myparamU.probE (myparamU.chElement rchT)} :=
+    (existT (λ rchT : myparamU.chUniverse, myparamU.probE (chElement rchT))
             (inl (inl i)) (inl (Uni_W i))).
 
   (* *)

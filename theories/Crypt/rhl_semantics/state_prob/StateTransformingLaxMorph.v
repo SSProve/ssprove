@@ -20,14 +20,14 @@ with type FreeStateProb² → StT(FreeProb²)
 
 Section StT_thetaDex_definition.
   Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {rel_choiceTypes : Type}
-          {chEmb : rel_choiceTypes -> choiceType}.
+  Context {chUniverse : Type}
+          {chElement : chUniverse -> choiceType}.
   Context (prob_handler : forall (T:choiceType),
     probE T -> SDistr T).
 
 
   (*thetaDex filled with the relevant parameters*)
-  Let myThetaDex :=  @thetaDex probE rel_choiceTypes chEmb prob_handler.
+  Let myThetaDex :=  @thetaDex probE chUniverse chElement prob_handler.
 
   Context {S1 S2 : choiceType}.
   Let TingAdj1_0 := Chi_DomainStateAdj S1 S2.
@@ -97,8 +97,8 @@ signature.
 Section FreeStateProbMonad.
   (*some context for the probabilistic signature*)
   Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {rel_choiceTypes : Type}
-          {chEmb : rel_choiceTypes -> choiceType}.
+  Context {chUniverse : Type}
+          {chElement : chUniverse -> choiceType}.
   Context (prob_handler : forall (T:choiceType),
     probE T -> SDistr T).
 
@@ -131,12 +131,12 @@ Section FreeStateProbMonad.
 
   (*Now how can we combine state and probabilities?*)
     (*operations are either stateful or probabilistic...*)
-  Let prob_ops :=  Prob_ops_collection probE rel_choiceTypes chEmb.
+  Let prob_ops :=  Prob_ops_collection probE chUniverse chElement.
   Definition ops_StP := sum state_ops prob_ops.
 
     (*arities of an operation stpOp: is it stateful or probabilistic? answer is
      given accordingly*)
-  Let prob_ar :=  Prob_arities probE rel_choiceTypes chEmb.
+  Let prob_ar :=  Prob_arities probE chUniverse chElement.
   Definition ar_StP : ops_StP -> choiceType := fun stpOp =>
     match stpOp with
     |inl sop => state_ar sop
@@ -154,20 +154,20 @@ we interpret the stateful part of the signature of FrStP, but not the probabilis
 one*)
 Section UnaryInterpretState.
   Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {rel_choiceTypes : Type}
-          {chEmb : rel_choiceTypes -> choiceType}.
+  Context {chUniverse : Type}
+          {chElement : chUniverse -> choiceType}.
 
   Context {S : choiceType}.
 
 
   (*The domain of the intended morphism is FrStP ...*)
-  Let FrStP_filled := @FrStP probE rel_choiceTypes chEmb S.
+  Let FrStP_filled := @FrStP probE chUniverse chElement S.
 
 
   (*The codomain is StT(Frp)*)
 
-  Let prob_ops :=  Prob_ops_collection probE rel_choiceTypes chEmb.
-  Let prob_ar :=  Prob_arities probE rel_choiceTypes chEmb.
+  Let prob_ops :=  Prob_ops_collection probE chUniverse chElement.
+  Let prob_ar :=  Prob_arities probE chUniverse chElement.
 
   Definition Frp :=  rFree prob_ops prob_ar.
   Let myLflat :=  unaryTimesS1 S.
@@ -230,7 +230,7 @@ Section UnaryInterpretState.
     retrFree_filled (F_choice_prod ⟨ unit_choiceType, S ⟩) (tt, new_s).
 
 
-  Definition probopStP {T : rel_choiceTypes} : probE (chEmb T) -> stT_Frp (chEmb T).
+  Definition probopStP {T : chUniverse} : probE (chElement T) -> stT_Frp (chElement T).
     move=> probop. move=> s. simpl.
     unshelve eapply ropr.
       unshelve econstructor. exact T. exact probop.
@@ -238,8 +238,8 @@ Section UnaryInterpretState.
   Defined.
 
 
-  Let ops_StP_filled :=  @ops_StP probE rel_choiceTypes chEmb S.
-  Let ar_StP_filled := @ar_StP probE rel_choiceTypes chEmb S.
+  Let ops_StP_filled :=  @ops_StP probE chUniverse chElement S.
+  Let ar_StP_filled := @ar_StP probE chUniverse chElement S.
 
 
   Definition sigMap : forall op : ops_StP_filled, stT_Frp( ar_StP_filled op ).
@@ -272,13 +272,13 @@ End UnaryInterpretState.
 (*now we square this morphism to get a relative monad morphism FrStP² → stT(Frp)²*)
 Section SquareUnaryIntState.
   Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {rel_choiceTypes : Type}
-          {chEmb : rel_choiceTypes -> choiceType}.
+  Context {chUniverse : Type}
+          {chElement : chUniverse -> choiceType}.
 
   Context {S1 S2 : choiceType}.
 
-  Let unaryIntState_filled_left := @unaryIntState probE rel_choiceTypes chEmb S1.
-    Let unaryIntState_filled_right := @unaryIntState probE rel_choiceTypes chEmb S2.
+  Let unaryIntState_filled_left := @unaryIntState probE chUniverse chElement S1.
+    Let unaryIntState_filled_right := @unaryIntState probE chUniverse chElement S2.
   Definition preInterpretState :=
   prod_relativeMonadMorphism
     unaryIntState_filled_left unaryIntState_filled_right.
@@ -290,8 +290,8 @@ End SquareUnaryIntState.
 of stT_thetaDex *)
 Section StT_vs_squaredMonads.
   Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {rel_choiceTypes : Type}
-          {chEmb : rel_choiceTypes -> choiceType}.
+  Context {chUniverse : Type}
+          {chElement : chUniverse -> choiceType}.
 
   Context {S1 S2 : choiceType}.
   Context {prob_handler : forall (T:choiceType),
@@ -299,8 +299,8 @@ Section StT_vs_squaredMonads.
 
 
 
-  Let preInterpretState_filled := @preInterpretState probE rel_choiceTypes chEmb S1 S2.
-  Let stT_thetaDex_filled := @stT_thetaDex probE rel_choiceTypes chEmb prob_handler S1 S2.
+  Let preInterpretState_filled := @preInterpretState probE chUniverse chElement S1 S2.
+  Let stT_thetaDex_filled := @stT_thetaDex probE chUniverse chElement prob_handler S1 S2.
 
   (*domain of the additional morphism*)
   Let squOf_stT_Frp := rlmm_codomain preInterpretState_filled.
@@ -315,8 +315,8 @@ Section StT_vs_squaredMonads.
   apply natIso_sym. apply ord_functor_unit_right.
   Defined.
 
-  Notation Frpp := (rFreeF (Prob_ops_collection probE rel_choiceTypes chEmb)
-      (Prob_arities probE rel_choiceTypes chEmb)).
+  Notation Frpp := (rFreeF (Prob_ops_collection probE chUniverse chElement)
+      (Prob_arities probE chUniverse chElement)).
 
   Program Definition additionalIntState :
   relativeMonadMorphism (ord_functor_id _) BinaryTrivialChi squOf_stT_Frp stT_squOf_Frp :=
@@ -333,16 +333,16 @@ End StT_vs_squaredMonads.
 (*And now we are finally ready to define the intended theta *)
 Section MakeTheDomainFree.
   Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {rel_choiceTypes : Type}
-          {chEmb : rel_choiceTypes -> choiceType}.
+  Context {chUniverse : Type}
+          {chElement : chUniverse -> choiceType}.
 
   Context {S1 S2 : choiceType}.
   Context {prob_handler : forall (T:choiceType),
     probE T -> SDistr T}.
 
-  Let preInterpretState_filled := @preInterpretState probE rel_choiceTypes chEmb S1 S2.
-  Let addIntState_filled := @additionalIntState probE rel_choiceTypes chEmb S1 S2 prob_handler.
-  Let stT_thetaDex_filled := @stT_thetaDex probE rel_choiceTypes chEmb prob_handler S1 S2.
+  Let preInterpretState_filled := @preInterpretState probE chUniverse chElement S1 S2.
+  Let addIntState_filled := @additionalIntState probE chUniverse chElement S1 S2 prob_handler.
+  Let stT_thetaDex_filled := @stT_thetaDex probE chUniverse chElement prob_handler S1 S2.
 
   (*FrStP² → stT(Frp²) part*)
   Definition justInterpState :=

@@ -11,7 +11,7 @@ Import SPropNotations.
 
 (*
 Let M: I → C be a J-relative monad.
-Consider J♭ : I → I and R: C → C functors such that JL♭ ⊣ R 
+Consider J♭ : I → I and R: C → C functors such that JL♭ ⊣ R
 (the "transforming (left relative) adjunction")
 M can be factored through its Kleisli: M = R^M ∘ L^M, with L^M ⊣ R^M
 And there is a "transformed" left relative adjunction  L^M ∘ L♭ ⊣ R ∘ R^M .
@@ -120,10 +120,10 @@ Section DomainStateAdj.
       apply funext. move=> [c2 s2]. reflexivity.
   Qed.
 
-  Context {probE : Type -> Type} {rel_choiceTypes : Type}
-  (ch_emb : rel_choiceTypes -> choiceType).
+  Context {probE : Type -> Type} {chUniverse : Type}
+  (ch_emb : chUniverse -> choiceType).
   Let rFreeProb_squFilled :=
-    rFreeProb_squ probE rel_choiceTypes ch_emb.
+    rFreeProb_squ probE chUniverse ch_emb.
 
   (*state transform rFree[Pr] × rFree[Pr] *)
   Definition StT_rFreeProb_squ :=

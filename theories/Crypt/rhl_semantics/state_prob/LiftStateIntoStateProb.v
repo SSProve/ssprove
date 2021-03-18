@@ -6,15 +6,15 @@ From Crypt Require Import ChoiceAsOrd SubDistr InitialRelativeMonad Transforming
 for η : "id" → Fr[P]² *)
 Section LiftOfStateComp.
   Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {rel_choiceTypes : Type}
-          {chEmb : rel_choiceTypes -> choiceType}.
+  Context {chUniverse : Type}
+          {chElement : chUniverse -> choiceType}.
   Context (prob_handler : forall (T:choiceType),
     probE T -> SDistr T).
 
   Context {S1 S2 : choiceType}.
 
 
-  Let thetaDex_filled := @thetaDex probE rel_choiceTypes chEmb prob_handler.
+  Let thetaDex_filled := @thetaDex probE chUniverse chElement prob_handler.
   Let Frp_squ := rlmm_domain thetaDex_filled.
 
   Let myJ := prod_functor choice_incl choice_incl.
@@ -121,8 +121,8 @@ End LiftOfStateComp.
 (*as: θSt := stT(η^W) after qSt*)
 Section StateEffObs.
   Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {rel_choiceTypes : Type}
-          {chEmb : rel_choiceTypes -> choiceType}.
+  Context {chUniverse : Type}
+          {chElement : chUniverse -> choiceType}.
   Context (prob_handler : forall (T:choiceType),
     probE T -> SDistr T).
 

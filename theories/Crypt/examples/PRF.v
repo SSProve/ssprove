@@ -20,7 +20,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 From Mon Require Import SPropBase.
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb StdDistr
-  pkg_core_definition pkg_chUniverse pkg_composition pkg_rhl  Package Prelude
+  pkg_core_definition chUniverse pkg_composition pkg_rhl  Package Prelude
   pkg_notation.
 
 From Coq Require Import Utf8.
@@ -70,9 +70,9 @@ Module Type SymmetricSchemeRules (π : SymmetricSchemeParam).
   Module genparam <: RulesParam.
 
     Definition probE : Type → Type := probEmpty.
-    Definition rel_choiceTypes : Type := void.
+    Definition chUniverse : Type := void.
 
-    Definition chEmb : rel_choiceTypes → choiceType.
+    Definition chElement : chUniverse → choiceType.
     Proof.
       intro v. inversion v.
     Defined.

@@ -31,7 +31,7 @@ From Crypt Require Import
      FreeProbProg
      RulesStateProb
      UniformDistrLemmas
-     pkg_chUniverse
+     chUniverse
      pkg_core_definition
      pkg_composition
      pkg_rhl
@@ -62,9 +62,9 @@ Module DerivedRulesUniform (myparam :  RulesParam).
   | Unif_Bool : UprobE chBool
   | Fail_Unit : UprobE chUnit.
 
-  Definition Urel_choiceTypes : Type := chUniverse.
+  Definition UchUniverse : Type := chUniverse.
 
-  Definition UchEmb : Urel_choiceTypes -> choiceType := chElement.
+  Definition UchElement : UchUniverse -> choiceType := chElement.
 
   Definition Uprob_handler : forall T : choiceType, UprobE T -> SDistr T.
   Proof.
@@ -83,9 +83,9 @@ Module DerivedRulesUniform (myparam :  RulesParam).
 
     Definition probE : Type -> Type := fun T => (UprobE T + probE T):Type.
 
-    Definition rel_choiceTypes : Type := chUniverse.
+    Definition chUniverse : Type := chUniverse.
 
-    Definition chEmb : rel_choiceTypes -> choiceType := chElement.
+    Definition chElement : chUniverse -> choiceType := chElement.
     Definition prob_handler : forall T : choiceType, probE T -> SDistr T.
     Proof.
       move => T [HU | HR].

@@ -1,79 +1,63 @@
-From Mon Require Import
-     FiniteProbabilities
-     SPropMonadicStructures
-     SpecificationMonads
-     MonadExamples
-     SPropBase.
+From Mon Require Import FiniteProbabilities SPropMonadicStructures
+  SpecificationMonads MonadExamples SPropBase.
 
-From Relational Require Import
-     OrderEnrichedCategory
-     OrderEnrichedRelativeMonadExamples
-     Commutativity
-     GenericRulesSimple.
+From Relational Require Import OrderEnrichedCategory
+  OrderEnrichedRelativeMonadExamples Commutativity GenericRulesSimple.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import
-     all_ssreflect
-     all_algebra
-     reals
-     distr
-     realsum.
+From mathcomp Require Import all_ssreflect all_algebra reals distr realsum.
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From Crypt Require Import
-     Axioms
-     ChoiceAsOrd
-     SubDistr
-     Couplings
-     Theta_dens
-     Theta_exCP
-     LaxComp
-     FreeProbProg
-     RulesStateProb
-     UniformDistrLemmas
-     pkg_chUniverse.
+From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings Theta_dens
+  Theta_exCP LaxComp FreeProbProg RulesStateProb UniformDistrLemmas
+  Prelude chUniverse.
 
 Import SPropNotations.
 Import Num.Theory.
 
 Local Open Scope ring_scope.
 
-Module Type UniformParameters.
+(* Module Type UniformParameters.
 
   Parameter Index : Type.
   (* Parameter i0 : Index. *)
   Parameter fin_family : Index -> finType.
   Parameter F_w0 : forall i, fin_family i.
 
-End UniformParameters.
+End UniformParameters. *)
 
 (* general Rules + Rules for uniform distributions over a finite
     family of non-empty finite types *)
-Module DerivedRulesUniform (myparam :  RulesParam) (myparamUniform : UniformParameters).
+Module DerivedRulesUniform (myparam :  RulesParam) (* (myparamUniform : UniformParameters) *).
 
   Import myparam.
-  Import myparamUniform.
+  (* Import myparamUniform. *)
 
-  Definition Index : Type := Index.
+  Definition Index : Type := positive.
 
-  Definition fin_family (i : Index) : finType := fin_family i.
+  Definition fin_family (i : Index) : finType := [finType of chFin i].
 
-  Definition F_w0 (i : Index) : fin_family i := F_w0 i.
+  Lemma F_w0 :
+    forall (i : Index), fin_family i.
+  Proof.
+    intros i. unfold fin_family. cbn.
+    exists 0%N. eapply i.(cond_pos).
+  Qed.
 
   (* extend the initial parameters for the rules  *)
   Inductive UprobE : Type -> Type :=
   | Uni_W  : forall i, UprobE (fin_family i)
   | Fail_Unit : UprobE chUnit.
 
-  Definition Urel_choiceTypes : Type := Index + unit.
+  Definition UchUniverse : Type := Index + unit.
 
-  Definition UchEmb : Urel_choiceTypes -> choiceType.
-  Proof. move => i.
-         destruct i.
-         - exact: fin_family i.
-         - exact chUnit.
+  Definition UchElement : UchUniverse -> choiceType.
+  Proof.
+    move => i.
+    destruct i.
+    - exact: fin_family i.
+    - exact chUnit.
   Defined.
-
 
   Definition Uprob_handler : forall T : choiceType, UprobE T -> SDistr T.
   Proof.
@@ -89,16 +73,7 @@ Module DerivedRulesUniform (myparam :  RulesParam) (myparamUniform : UniformPara
 
   Module myparamU <: RulesParam.
 
-    Definition probE : Type -> Type := fun T => (UprobE T + probE T):Type.
-
-    Definition rel_choiceTypes : Type := Urel_choiceTypes + rel_choiceTypes.
-
-    Definition chEmb : rel_choiceTypes -> choiceType.
-    Proof.
-      move => [t1 | t2].
-      + exact (UchEmb t1).
-      + exact (chEmb t2).
-    Defined.
+    Definition probE : Type -> Type := fun T => (UprobE T + probE T)%type.
 
     Definition prob_handler : forall T : choiceType, probE T -> SDistr T.
     Proof.
@@ -119,21 +94,23 @@ Module DerivedRulesUniform (myparam :  RulesParam) (myparamUniform : UniformPara
   #[local] Definition θ_dens { S } { X } := @MyRulesU.θ_dens S X.
 
   (* Uniform distribution over F *)
-  Definition Uniform_F { i : Index } { S : choiceType } : FrStP S (fin_family i).
-    apply: ropr.
-    Unshelve. 2: {
-      right.
-      exists (inl (inl i)).
-      left. apply Uni_W. }
-    rewrite /= => w.
-    constructor.
-    exact w.
+  Definition Uniform_F {i : Index} {S : choiceType} : FrStP S (fin_family i).
+  Proof.
+    unshelve eapply ropr.
+    1:{
+      right. exists (chFin i).
+      left. eapply Uni_W.
+    }
+    intro w. constructor. exact w.
   Defined.
 
-  Definition Uniform ( i : Index ) { S : choiceType } { s : S } := θ_dens (θ0 (@Uniform_F i S) s).
+  Definition Uniform ( i : Index ) { S : choiceType } { s : S } :=
+    θ_dens (θ0 (@Uniform_F i S) s).
 
-  Lemma Uniform_eval (i : Index ) { S : choiceType } { s : S } : forall (st : S) (w : fin_family i),
-      @Uniform i S s (w, st) = if st == s then @r (fin_family i) (F_w0 i) else 0.
+  Lemma Uniform_eval (i : Index ) {S : choiceType} {s : S} :
+    forall (st : S) (w : fin_family i),
+      @Uniform i S s (w, st) =
+      if st == s then @r (fin_family i) (F_w0 i) else 0.
   Proof.
     cbn.
     rewrite /SDistr_bind /SDistr_unit => st w /=.
@@ -145,36 +122,41 @@ Module DerivedRulesUniform (myparam :  RulesParam) (myparamUniform : UniformPara
     { extensionality x.
       rewrite dunit1E.
       eassert (((x, s) == (w, st))%:R = (x == w)%:R * (s == st)%:R).
-      { destruct (x == w) eqn:H1, (s == st) eqn:H2. all: cbn; rewrite H1 H2; cbn.
-        - rewrite GRing.mulr1. reflexivity.
-        - rewrite GRing.mulr0. reflexivity.
-        all: rewrite GRing.mul0r; reflexivity.
+      { destruct (x == w) eqn:e1, (s == st) eqn:e2.
+        all: cbn.
+        all: cbn in e1.
+        all: rewrite ?e1 ?e2.
+        all: cbn.
+        all: rewrite ?GRing.mulr1 ?GRing.mul0r ?GRing.mulr0.
+        all: reflexivity.
       }
       rewrite H.
       rewrite GRing.mulrA.
       rewrite -dunit1E.
-      reflexivity. }
+      reflexivity.
+    }
     rewrite H. clear H.
     rewrite psumZr.
-    2: { destruct (s == st). all: cbn.
-         - apply (@ler01 R).
-         - apply mc_1_10.Num.Theory.lerr. }
+    2:{
+      destruct (s == st). all: cbn.
+      - apply (@ler01 R).
+      - apply mc_1_10.Num.Theory.lerr.
+    }
     rewrite -dletE.
     rewrite dlet_dunit_id.
     destruct (s == st) eqn:Heq.
-    { have Heq' : st == s. apply /eqP. by move /eqP: Heq.
+    - have Heq' : st == s. apply /eqP. by move /eqP: Heq.
       rewrite Heq'. rewrite GRing.mulr1. unfold mkdistrd.
       destruct idP.
-      - reflexivity.
-      - exfalso. eapply n. apply /boolp.asboolP.
-        unshelve eapply is_uniform. auto.
-    }
-    { have Heq' : st == s = false. apply /eqP. move /eqP: Heq. congruence.
+      + reflexivity.
+      + exfalso. eapply n. apply /boolp.asboolP.
+        eapply @is_uniform.
+    - have Heq' : st == s = false. apply /eqP. move /eqP: Heq. congruence.
       rewrite Heq'. rewrite GRing.mulr0. reflexivity.
-    }
-    Unshelve. exact (Real.ringType R).
+    Unshelve.
+      exact (Real.ringType R).
+      cbn. auto.
   Qed.
-
 
   Definition f_dprod { F1 F2: finType } { S1 S2 : choiceType } { w0 : F1 } { w0' : F2 } {s1 : S1 } {s2 : S2}
              (f : F1 -> F2) : (F1 * S1) * (F2 * S2) -> R :=
@@ -446,22 +428,25 @@ Module DerivedRulesUniform (myparam :  RulesParam) (myparamUniform : UniformPara
 
 
   Definition Fail { S : choiceType } : FrStP S chUnit.
-    apply: ropr.
-    Unshelve. 2: {
+  Proof.
+    unshelve eapply ropr.
+    1:{
       right.
       unfold Prob_ops_collection.
-      exists (inl (inr tt)).
-      left. apply Fail_Unit. }
+      exists chUnit.
+      left. apply Fail_Unit.
+    }
     rewrite /= => w.
     constructor.
     exact w.
   Defined.
 
   Definition Assert {S : choiceType} (b : bool) : FrStP S chUnit.
-   destruct b.
-   - constructor.
-     exact Datatypes.tt.
-   - exact Fail.
+  Proof.
+    destruct b.
+    - constructor.
+      exact Datatypes.tt.
+    - exact Fail.
  Defined.
 
  Lemma destruct_pair_eq {R : ringType} {A B : eqType} {a b : A} {c d : B}
