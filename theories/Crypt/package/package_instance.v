@@ -400,3 +400,7 @@ Definition failr : raw_code unit_choiceType :=
 
 Definition assert b : raw_code 'unit :=
   if b then ret Datatypes.tt else failr.
+
+(* Sometimes useful *)
+Definition assert_false {A : chUniverse} : raw_code A :=
+  failr ;; ret (chCanonical A).

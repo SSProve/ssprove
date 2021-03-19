@@ -41,31 +41,39 @@ Definition GEN := 0%N.
 Definition SET := 1%N.
 Definition GET := 2%N.
 
-Definition key n `{Positive n} : Location := ('fin n ; 0%N).
+Definition key n `{Positive n} : Location := ('option ('fin n) ; 0%N).
 
-Definition KEY n `{Positive n} :
+(* It can't solve it for now because it doesn't have any rules for
+  assert, fail and assert_false.
+*)
+(* Definition KEY n `{Positive n} :
   package
     (fset [:: key n ])
     [interface]
     [interface
-      val #[ GEN ] : 'unit → 'fin n ;
+      val #[ GEN ] : 'unit → 'unit ;
       val #[ SET ] : ('fin n) → 'unit ;
       val #[ GET ] : 'unit → 'fin n
     ] :=
   [package
-    def #[ GEN ] (_ : 'unit) : ('fin n) {
-      (* assert k = ⊥ ;; *)
+    def #[ GEN ] (_ : 'unit) : 'unit {
+      k ← get (key n) ;;
+      assert (k == None) ;;
       k ← sample U (i_key n) ;;
-      ret k
+      put (key n) := Some k ;;
+      ret Datatypes.tt
     } ;
     def #[ SET ] (k : ('fin n)) : 'unit {
-      (* assert k = ⊥ ;; *)
-      put (key n) := k ;;
+      k' ← get (key n) ;;
+      assert (k' == None) ;;
+      put (key n) := Some k ;;
       ret Datatypes.tt
     } ;
     def #[ GET ] (_ : 'unit) : ('fin n) {
-      (* assert k ≠ ⊥ ;; *)
       k ← get (key n) ;;
-      ret k
+      match k with
+      | Some k => ret k
+      | None => @assert_false ('fin n)
+      end
     }
-  ].
+  ]. *)
