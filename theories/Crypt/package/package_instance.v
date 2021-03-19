@@ -387,3 +387,16 @@ Proof.
     1: eapply h.
     simpl. intros ? ? [? ?]. subst. reflexivity.
 Qed.
+
+(** assert
+
+  Defined from the null sub-distribution.
+
+*)
+
+(* TODO Maybe a command instead? *)
+Definition failr : raw_code unit_choiceType :=
+  x ← sample ('unit ; inl Fail_Unit) ;; ret x.
+
+Definition assert b : raw_code 'unit :=
+  if b then ret Datatypes.tt else failr.
