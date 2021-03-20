@@ -132,17 +132,6 @@ Section Unary_free_prob_monad.
 
   Definition rFreePr := rFree P_OP P_AR.
 
-  Context (Hch : forall r : chUniverse, chElement r).
-
-  Definition sample_from { A } (D : rFreePr A) : A.
-  Proof.
-    elim: D => [ a | s Ps IH].
-    - exact: a.
-    - apply: IH.
-      destruct s. simpl in *.
-        by apply: Hch.
-   Defined.
-
 End Unary_free_prob_monad.
 
 
