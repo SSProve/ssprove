@@ -3,7 +3,7 @@ From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadE
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum.
 Set Warnings "notation-overridden,ambiguous-paths".
-From Crypt Require Import ChoiceAsOrd Axioms RelativeMonadMorph_prod FreeProbProg SubDistr.
+From Crypt Require Import ChoiceAsOrd Axioms RelativeMonadMorph_prod FreeProbProg SubDistr chUniverse.
 
 
 Import SPropNotations.
@@ -26,45 +26,45 @@ two unary relative monad morphisms, each of them going from rFreePr to
 SDistr.
 *)
 
-Section test.
-  (*In this section we implement a probability handler, ie something of type
-  forall T : chUniverse, probE T -> SDistr T*)
-  (*This kind of handler is exactly the data needed to define a universal map exiting
-  the free probablistic relative monad defined in FreeProbProg.v. Is abstracted over
-  in the subsequent sections. *)
+(* Section test. *)
+(*   (*In this section we implement a probability handler, ie something of type *)
+(*   forall T : chUniverse, probE T -> SDistr T*) *)
+(*   (*This kind of handler is exactly the data needed to define a universal map exiting *)
+(*   the free probablistic relative monad defined in FreeProbProg.v. Is abstracted over *)
+(*   in the subsequent sections. *) *)
 
-  Program Local Definition myzero : unit_interval R := exist _ 0 _.
-  Next Obligation.
-    apply /andP ; split.
-    apply lerr. eapply (@ler01 R).
-  Qed.
+(*   Program Local Definition myzero : unit_interval R := exist _ 0 _. *)
+(*   Next Obligation. *)
+(*     apply /andP ; split. *)
+(*     apply lerr. eapply (@ler01 R). *)
+(*   Qed. *)
 
-  Inductive concrete_probE : Type -> Type :=
-    |Bern : unit_interval R -> concrete_probE bool
-    |Poiss : unit_interval R -> concrete_probE nat.
+(*   Inductive concrete_probE : Type -> Type := *)
+(*     |Bern : unit_interval R -> concrete_probE bool *)
+(*     |Poiss : unit_interval R -> concrete_probE nat. *)
 
-  Record my_chUniverse : Type := mk_chUniverse
-    { abs_chTy :> choiceType ;
-      unlock_absChTy : ((abs_chTy = bool_choiceType) + ( abs_chTy = nat_choiceType))%type
-    }.
+(*   Record my_chUniverse : Type := mk_chUniverse *)
+(*     { abs_chTy :> choiceType ; *)
+(*       unlock_absChTy : ((abs_chTy = bool_choiceType) + ( abs_chTy = nat_choiceType))%type *)
+(*     }. *)
 
-  Definition my_chElement : my_chUniverse -> choiceType := fun relChTy =>
-    match relChTy with
-    |mk_chUniverse T unlock_T =>
-    match unlock_T with
-    |inl unlock_bool => bool_choiceType
-    |inr unlock_nat => nat_choiceType
-    end
-    end.
+(*   Definition my_chElement : my_chUniverse -> choiceType := fun relChTy => *)
+(*     match relChTy with *)
+(*     |mk_chUniverse T unlock_T => *)
+(*     match unlock_T with *)
+(*     |inl unlock_bool => bool_choiceType *)
+(*     |inr unlock_nat => nat_choiceType *)
+(*     end *)
+(*     end. *)
 
-  Definition my_concrete_probhandler : forall T : choiceType,
-  concrete_probE T -> SDistr T := fun T opp =>
-    match opp with
-    |Bern p => dnull (*to replace with the relevant mass function*)
-    |Poiss λ => dnull
-  end.
+(*   Definition my_concrete_probhandler : forall T : choiceType, *)
+(*   concrete_probE T -> SDistr T := fun T opp => *)
+(*     match opp with *)
+(*     |Bern p => dnull (*to replace with the relevant mass function*) *)
+(*     |Poiss λ => dnull *)
+(*   end. *)
 
-End test.
+(* End test. *)
 
 
 
@@ -81,11 +81,6 @@ Section Unary_effobs.
    relative monad. Consequently it is defined inductively, just using a
    probablity handler which transform operations into actual distributions*)
 
-  Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {chUniverse : Type}
-          {chElement : chUniverse -> choiceType}.
-  Context (prob_handler : forall (T:choiceType),
-    probE T -> SDistr T).
 
   Definition commuting_unary_base_square :
   natIso (choice_incl)
@@ -99,26 +94,20 @@ Section Unary_effobs.
   Defined.
 
 
-  Local Definition S := Prob_ops_collection probE chUniverse chElement.
-  Local Definition Ar := Prob_arities probE chUniverse chElement.
-
-(*  | ropr     : forall s, (P s -> rFreeF A) -> rFreeF A.*)
-  Definition unary_ThetaDens0 : forall (A:choiceType) (tree : rFreeF S Ar A),
+  Definition unary_ThetaDens0 : forall (A:choiceType) (tree : rFreePr A),
   SDistr_carrier A.
-    intro A. elim=> [a | [relchty op] /= sbtrs IH].
+    move=> A. elim=> [a | [X op] /= sbtrs IH].
       apply SDistr_unit. simpl. assumption.
-    (*IH: each subtree, indexed by x:chElement relchty has already produced a SDistr A*)
-    (*sbtrs: the trees below s = (relchty, op)*)
-    refine ((SDistr_bind (chElement relchty) A _) _). all:revgoals.
-    (*we turn s into a subdistr, using the available handler.*)
-    apply (prob_handler (chElement relchty)). exact op.
+    (*IH: each subtree, indexed by x:chElement X has already produced a SDistr A*)
+    eapply SDistr_bind. all: revgoals.
+      exact op.
     (*now the continuation. *)
     simpl. exact IH.
   Defined.
 
   Program Definition unary_theta_dens :
   relativeMonadMorphism (ord_functor_id TypeCat) (commuting_unary_base_square)
-  (rFreePr probE chUniverse chElement) (SDistr) :=
+  (rFreePr) (SDistr) :=
     mkRelMonMorph (ord_functor_id TypeCat) (commuting_unary_base_square) _ _ _ _ _.
   Next Obligation.
     intros A tree. exact (unary_ThetaDens0 A tree).
@@ -138,19 +127,16 @@ Section Unary_effobs.
 
 End Unary_effobs.
 
-Arguments unary_theta_dens {probE} {chUniverse} {chElement} _.
+About unary_theta_dens.
+
 
 Section Relational_effobs.
   (*We just need to square unary_theta_dens to obtain the desired relational effect
    observation.*)
-  Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {chUniverse : Type}
-          {chElement : chUniverse -> choiceType}.
-  Context (prob_handler : forall (T:choiceType),
-    probE T -> SDistr T).
+
   Definition theta_dens :=
-    prod_relativeMonadMorphism (@unary_theta_dens probE chUniverse chElement prob_handler)
-                               (@unary_theta_dens probE chUniverse chElement prob_handler).
+    prod_relativeMonadMorphism unary_theta_dens unary_theta_dens.
+
 End Relational_effobs.
 
 

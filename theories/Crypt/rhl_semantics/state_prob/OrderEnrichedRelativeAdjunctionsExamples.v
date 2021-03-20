@@ -24,7 +24,7 @@ Section ConstantFunctor.
 
   Program Definition mkConstFunc : ord_functor C D := mkOrdFunctor (fun c => d) _ _ _ _.
   Next Obligation.
-    intuition. apply Id.
+    intuition.
   Defined.
   Next Obligation.
     cbv. intuition.
@@ -120,14 +120,8 @@ Section DomainStateAdj.
       apply funext. move=> [c2 s2]. reflexivity.
   Qed.
 
-  Context {probE : Type -> Type} {chUniverse : Type}
-  (ch_emb : chUniverse -> choiceType).
-  Let rFreeProb_squFilled :=
-    rFreeProb_squ probE chUniverse ch_emb.
-
-  (*state transform rFree[Pr] × rFree[Pr] *)
   Definition StT_rFreeProb_squ :=
-    AdjTransform (rFreeProb_squFilled) Lflat R Chi_DomainStateAdj.
+    AdjTransform (rFreeProb_squ) Lflat R Chi_DomainStateAdj.
 
 End DomainStateAdj.
 

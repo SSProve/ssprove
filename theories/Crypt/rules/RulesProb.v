@@ -39,47 +39,37 @@ Import mc_1_10.Num.Theory.
 
 Local Open Scope ring_scope.
 
-Module Type ProbRulesParam.
 
-Parameter probE : Type -> Type.
-Parameter chUniverse : Type.
-Parameter chElement : chUniverse -> choiceType.
-Parameter prob_handler : (forall T : choiceType, probE T -> SDistr T).
-Parameter Hch : forall r : chUniverse, chElement r.
+Module DerivedRules.
 
-End ProbRulesParam.
-
-Module DerivedRules (myparam : ProbRulesParam).
-
-Import myparam.
 
 Local Definition squ := commuting_unary_base_square.
 Local Definition ϕ_d :=
   @RelativeMonadMorph_prod.cmtSqu _ _ _ _ _ _ squ
                                   _ _ _ _ _ _ squ.
 
-Local Definition MFreePr := rFreePr probE chUniverse chElement.
+Local Definition MFreePr := rFreePr.
 
-Local Definition Ops := (Prob_ops_collection probE chUniverse chElement).
-Local Definition Arit := (Prob_arities probE chUniverse chElement).
+Local Definition Ops := P_OP.
+Local Definition Arit := P_AR.
 
 Local Definition Call (s : Ops) : MFreePr (Arit s) :=
   ropr _ _ _ s (fun r => retrFree _ _ _ r).
 
 Local Definition θ0 {A} (c : MFreePr A) :=
-  unary_theta_dens prob_handler _ c.
+  unary_theta_dens _ c.
 
 
 Lemma θ0_preserves_bind A B (c1 c2 : MFreePr A) (f1 f2 : A -> MFreePr B) (Hc : θ0 c1 = θ0 c2)
       (Hf : forall v, θ0 (f1 v) = θ0 (f2 v))
   : θ0 (bindrFree _ _ c1 f1) = θ0 (bindrFree _ _ c2 f2).
 Proof.
-  pose (rmm_law2 _ _ _ _ (@unary_theta_dens _ _ chElement prob_handler ) _ _ f1).
+  pose (rmm_law2 _ _ _ _ (@unary_theta_dens) _ _ f1).
   simpl in e.
   apply equal_f with (x := c1) in e.
   rewrite /θ0 /unary_theta_dens /=.
   rewrite e.
-  pose (rmm_law2 _ _ _ _ (@unary_theta_dens _ _ chElement prob_handler ) _ _ f2).
+  pose (rmm_law2 _ _ _ _ (@unary_theta_dens) _ _ f2).
   simpl in e0.
   apply equal_f with (x := c2) in e0.
   rewrite /θ0 /unary_theta_dens /=.
