@@ -115,14 +115,22 @@ Section FreeStateProbMonad.
   Inductive SP_OP :=
     |gett : SP_OP
     |putt : S -> SP_OP
-    |samplee : forall X : chUniverse, SDistr X -> SP_OP.
+    |samplee : P_OP -> SP_OP.
 
   Definition SP_AR : SP_OP -> choiceType := fun stpOp =>
     match stpOp with
     |gett => S
     |putt _ => chUnit
-    |samplee X _ => chElement X
+    |samplee p_op => chElement (projT1 p_op)
     end.
+
+  Definition op_iota : P_OP -> SP_OP := samplee.
+
+  Lemma computational_sliceMorph (o : P_OP) :
+    P_AR o = SP_AR ( samplee o ).
+  Proof.
+    reflexivity.
+  Qed.
 
   (*retro comp*)
   Definition ops_StP := SP_OP.
@@ -227,7 +235,7 @@ Section UnaryInterpretState.
   move=> op. cbv in op. destruct op.
   - exact getStP.
   - cbn. exact (putStP s).
-  - cbn. refine (probopStP _). assumption.
+  - cbn. apply probopStP. destruct p. cbn.  assumption.
   Defined.
 
   Definition unaryIntState

@@ -1216,10 +1216,6 @@ Context { A : ord_choiceType }  {S : choiceType}.
 Let Opst := (ops_StP S).
 Let Arst := (ar_StP S).
 
-Definition op_iota : Op -> Opst := fun op =>
-  let (X , sd) := op in
-  samplee X sd.
-
 Context (o : Op) (c : FrStP S A).
 
 Arguments bindrFree { _ _ _ _ } _ _.
@@ -1339,37 +1335,22 @@ Proof.
     apply boolp.funext. move=> s0'.
     rewrite /FreeProbProg.rFree_obligation_2.
     rewrite /FreeProbProg.rFree_obligation_1.
-    set (weirdCont :=
-(fun
-          topas : prod (Choice.sort (@StateTransformingLaxMorph.ar_StP S (op_iota o)))
-                                (Choice.sort S) =>
-        match
-          topas
-          return
-            (rFreeF P_OP P_AR
-               (F_choice_prod_obj (@npair Choice.type Choice.type (Arst (op_iota o)) S)))
-        with
-        | pair a s =>
-            @retrFree P_OP P_AR
-              (F_choice_prod_obj (@npair Choice.type Choice.type (Arst (op_iota o)) S))
-              (@pair (Choice.sort (Arst (op_iota o))) (Choice.sort S) a s)
-        end)
-).
-    assert (eq_cont :
-weirdCont = [eta retrFree] ).
-    apply boolp.funext. move=> [a s]. unfold weirdCont. reflexivity.
-    rewrite eq_cont.
-    rewrite bindrFree_and_ret.
-    reflexivity.
+    cbn. rewrite /probopStP. reflexivity.
 Qed.
 
+Let sploP := @callrFree Op Ar o.
 
-Let sploP :=  @callrFree Op Ar o.
+(* Lemma quick_slice : *)
+(* Ar o = Arst (op_iota o). *)
+(*   destruct o. cbn. reflexivity. *)
+(* Qed. *)
 
-Lemma quick_slice :
-Ar o = Arst (op_iota o).
-  destruct o. cbn. reflexivity.
-Qed.
+(* Let sploP' :=  @callrFree Op Ar o. *)
+(* Program Definition sploP : rFreeF Op Ar (Arst (op_iota o)) := sploP'. *)
+(* Next Obligation. *)
+(*   apply quick_slice. *)
+(* Qed. *)
+
 
 (* Context (s0 : S). *)
 (* Goal True. *)
@@ -1380,41 +1361,25 @@ Qed.
 (* rFreeF P_OP P_AR (F_choice_prod_obj ⟨ Arst (op_iota o), S ⟩) *)
 (* rFreeF Op   Ar   (prod_choiceType (Ar o) S) *)
 
-Definition hhlp:  S -> rFreeF P_OP P_AR (F_choice_prod_obj ⟨ Arst (op_iota o), S ⟩).
-  move=> s0.
-  eapply bindrFree.
-    exact sploP.
-  move=> r. eapply retrFree. econstructor. all: revgoals.
-    exact s0.
-  rewrite /op_iota. destruct o. cbn. exact r.
-Defined.
-
-Program Definition  θ0_of_sample (s0 : S) :
+Lemma θ0_of_sample (s0 : S) :
 θ0 splo s0
 =
 bindrFree sploP (fun r =>
-retrFree (r, s0) ) := _.
-Next Obligation.
-move=> s0. cbn. rewrite /F_choice_prod_obj. f_equal. apply quick_slice.
-Qed.
-Next Obligation.
-  move=> s0.
+retrFree (r, s0) ).
+Proof.
   unfold θ0. unfold unaryIntState.
-  rewrite (op_outoffree s0). rewrite [LHS] /=.
-  destruct o as [X op]. unfold probopStP.
+  rewrite (op_outoffree s0). rewrite /=.
+  rewrite /probopStP.
+  destruct o as [X op].
   reflexivity.
 Qed.
 
-Program Definition θ0_OF_sample_c_s0 (s0 : S) :
+Lemma θ0_OF_sample_c_s0 (s0 : S) :
 θ0 sample_c s0 =
 bindrFree sploP (fun r =>
 bindrFree (θ0 c s0) (fun asc => let (a, sc) := asc in
-retrFree (a,r,sc))) := _.
-Next Obligation.
-  move=> s0. rewrite /F_choice_prod_obj. f_equal. f_equal.
-  apply quick_slice.
-Qed.
-Next Obligation.
+retrFree (a,r,sc))).
+Proof.
   rewrite θ0_sample_c_vs_s0.
   rewrite θ0_of_sample.
   epose (bind_assoc := ord_relmon_law3 Frp_fld _ _ _ _ _).
@@ -1443,7 +1408,7 @@ Proof.
 Qed.
 
 Let utheta_dens_fld :=
-(@Theta_dens.unary_theta_dens probE chUniverse chElement prob_handler).
+(@Theta_dens.unary_theta_dens).
 
 Lemma utheta_dens_vs_bind {X Y : choiceType}
 (m : Frp X)
@@ -1458,7 +1423,7 @@ Proof.
   rewrite to_dnib.
   pose bla :=
 rmm_law2 _ _ _ _
-(@Theta_dens.unary_theta_dens probE chUniverse chElement prob_handler)
+(@Theta_dens.unary_theta_dens)
 X Y k.
   rewrite /= in bla.
   unshelve eapply equal_f in bla. exact m.
@@ -1477,7 +1442,7 @@ Proof.
   rewrite /θ_dens.
   pose bla :=
 rmm_law2 _ _ _ _
-(@Theta_dens.unary_theta_dens probE chUniverse chElement prob_handler)
+(@Theta_dens.unary_theta_dens)
 X (prod_choiceType Y S) k.
   rewrite /= in bla.
   unshelve eapply equal_f in bla. exact m.
@@ -1534,21 +1499,19 @@ Proof.
   rewrite !/θ_dens.
   rewrite utheta_dens_vs_bind.
 unshelve eassert (eq_cont :
-(fun
-       x : choice_incl
+(λ x : choice_incl
              (ord_functor_comp (OrderEnrichedRelativeAdjunctionsExamples.unaryTimesS1 S)
-                (OrderEnrichedRelativeAdjunctions.KleisliLeftAdjoint Frp) A) =>
-     utheta_dens_fld
-       (F_choice_prod_obj
-          ⟨ ord_functor_id ord_choiceType (prod_choiceType A (Arst (inr o))),
-          OrderEnrichedRelativeAdjunctionsExamples.mkConstFunc ord_choiceType ord_choiceType S
-            (prod_choiceType A (Arst (inr o))) ⟩)
-       (let (a, sc) := x in bindrFree sploP (fun r : choice_incl (Ar o) => retrFree (a, r, sc))))
+                (OrderEnrichedRelativeAdjunctions.KleisliLeftAdjoint Frp) A),
+       utheta_dens_fld
+         (F_choice_prod_obj
+            ⟨ ord_functor_id ord_choiceType (prod_choiceType A (Arst (op_iota o))),
+            OrderEnrichedRelativeAdjunctionsExamples.mkConstFunc ord_choiceType ord_choiceType S
+              (prod_choiceType A (Arst (op_iota o))) ⟩)
+         (let (a, sc) := x in bindrFree sploP (λ r : choice_incl (Ar o), retrFree (a, r, sc))))
 =
 fun x => let (a,sc) := x in
 SD_bind (utheta_dens_fld _ sploP) (fun r =>
 SDistr_unit _ (a,r,sc))).
-    exact probE. exact chUniverse. exact chElement.
     apply boolp.funext. move=> [aa ss]. rewrite utheta_dens_vs_bind. reflexivity.
   rewrite eq_cont. rewrite /=.
   rewrite !/SD_bind.
