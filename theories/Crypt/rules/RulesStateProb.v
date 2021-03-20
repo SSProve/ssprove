@@ -23,26 +23,17 @@ Local Open Scope ring_scope.
 
 
 
-Module Type RulesParam.
-
-  Parameter probE : Type → Type.
-  Parameter prob_handler : ∀ (T : choiceType), probE T → SDistr T.
-
-End RulesParam.
-
-Module DerivedRules (myparam : RulesParam).
-
-Import myparam.
+Module DerivedRules.
 
 #[local] Definition ops_StP (S : choiceType) :=
-  @ops_StP probE chUniverse chElement S.
+  @ops_StP S.
 
 #[local] Definition ar_StP (S : choiceType) :=
-  @ar_StP probE chUniverse chElement S.
+  @ar_StP S.
 
 (* free monad *)
 #[local] Definition FrStP (S : choiceType) :=
-  @FrStP probE chUniverse chElement S.
+  @FrStP S.
 
 #[local] Definition pure {S : choiceType} {A : ord_choiceType} (a : A) :=
   ord_relmon_unit (FrStP S) A a.
@@ -57,10 +48,10 @@ Import myparam.
 
 (* morphism *)
 #[local] Definition θ {S1 S2 : choiceType} :=
-  @thetaFstdex probE chUniverse chElement S1 S2 prob_handler.
+  @thetaFstdex S1 S2.
 
 #[local] Definition θ0 {S : choiceType} {A : ord_choiceType} (c : FrStP S A) :=
-  @unaryIntState probE chUniverse chElement S A c.
+  @unaryIntState S A c.
 
 
 (* spec monad *)
@@ -612,7 +603,7 @@ Qed.
 (*TODO: asymmetric variants of bounded_do_while -- Rem.: low priority as not useful for our examples *)
 
 #[local] Definition θ_dens { S : choiceType } { X : ord_choiceType } :=
-  @Theta_dens.unary_theta_dens probE chUniverse chElement prob_handler (F_choice_prod_obj ⟨ X, S ⟩).
+  @Theta_dens.unary_theta_dens (F_choice_prod_obj ⟨ X, S ⟩).
 
 
 Lemma Pr_eq {X Y : ord_choiceType} { S1 S2 : choiceType } {A : pred (X * S1)} {B : pred (Y * S2)}
@@ -922,7 +913,7 @@ Proof.
      shelve. shelve. shelve.
      exact (fun a : A1 * A2 => r a.1 a.2).
      exact (fun a2 : A2 =>
-        bindrFree (StateTransformingLaxMorph.ops_StP S) (StateTransformingLaxMorph.ar_StP S) c1
+        bindrFree (@StateTransformingLaxMorph.ops_StP S) (@StateTransformingLaxMorph.ar_StP S) c1
           (fun a1 : A1 => retF (a1, a2))).
    cbn in assoc. unfold FreeProbProg.rFree_obligation_2 in assoc.
    symmetry in assoc. unshelve eapply equal_f in assoc. exact c2. rewrite assoc.
@@ -952,7 +943,7 @@ Proof.
      shelve. shelve. shelve.
      exact (fun a : A1 * A2 => r a.1 a.2).
      exact (fun a1 : A1 =>
-      bindrFree (StateTransformingLaxMorph.ops_StP S) (StateTransformingLaxMorph.ar_StP S) c2
+      bindrFree (@StateTransformingLaxMorph.ops_StP S) (@StateTransformingLaxMorph.ar_StP S) c2
         (fun a2 : A2 => retF (a1, a2))).
    cbn in assoc. unfold FreeProbProg.rFree_obligation_2 in assoc.
    symmetry in assoc. unshelve eapply equal_f in assoc. exact c1. rewrite assoc.
@@ -969,7 +960,7 @@ Qed.
 
 Context (S : choiceType).
 
-Let Frp_fld :=  @Frp probE chUniverse chElement.
+Let Frp_fld :=  @Frp.
 
 Lemma theta0_vsbind {P Q : ord_choiceType} (p : FrStP S P) (q : FrStP S Q)
   (s : S) :
@@ -1023,7 +1014,6 @@ Proof.
 {
   unfold θ0.
   unshelve epose (assoc := rlmm_law2 _ _ _ _ (unaryIntState) _ _ _ ).
-    exact probE. exact chUniverse. exact chElement.
     shelve. shelve. shelve.
     exact (fun (a : A1 * A2) => r a.1 a.2).
   cbn in assoc. specialize (assoc p12).
@@ -1045,7 +1035,6 @@ Proof.
 {
   unfold θ0.
   unshelve epose (assoc := rlmm_law2 _ _ _ _ (unaryIntState) _ _ _ ).
-    exact probE. exact chUniverse. exact chElement.
     shelve. shelve. shelve.
     exact (fun (a : A1 * A2) => r a.1 a.2).
   cbn in assoc. specialize (assoc p21).
@@ -1065,7 +1054,7 @@ Proof.
     - exact (θ_dens (θ0 p12 s)).
   unfold θ_dens at 1.
   pose utheta_dens_fld :=
-@unary_theta_dens probE chUniverse chElement prob_handler.
+@unary_theta_dens.
   unshelve epose (θ_dens_bind :=
 @rmm_law2 _ _ _ _ _ _ _ _ _ utheta_dens_fld _ _ _).
   shelve. shelve.
@@ -1078,12 +1067,12 @@ Proof.
   rewrite  /θ_dens /=.
   assert (contEqu :
 ( fun x : A1 * A2 * S =>
-     Theta_dens.unary_theta_dens_obligation_1 prob_handler (F_choice_prod_obj ⟨ B, S ⟩)
+     Theta_dens.unary_theta_dens_obligation_1 (F_choice_prod_obj ⟨ B, S ⟩)
        (let (x0, s') := x in θ0 (r x0.1 x0.2) s') )
 =
 ( fun trucc : A1 * A2 * S =>
      let (x, s') := trucc in
-     Theta_dens.unary_theta_dens_obligation_1 prob_handler (F_choice_prod_obj ⟨ B, S ⟩)
+     Theta_dens.unary_theta_dens_obligation_1 (F_choice_prod_obj ⟨ B, S ⟩)
        (θ0 (r x.1 x.2) s') ) ).
   apply boolp.funext. move=> [[a1 a2] ss]. reflexivity.
   rewrite contEqu. apply f_equal. reflexivity.
@@ -1091,7 +1080,7 @@ Proof.
   (*p12 is p21 under θ_dens ∘ θ0 *)
   unfold θ_dens at 3.
   pose utheta_dens_fld :=
-@unary_theta_dens probE chUniverse chElement prob_handler.
+@unary_theta_dens.
   unshelve epose (θ_dens_bind :=
 @rmm_law2 _ _ _ _ _ _ _ _ _ utheta_dens_fld _ _ _).
   shelve. shelve.
@@ -1105,7 +1094,7 @@ Proof.
      let (x, s') := trucc in θ_dens (θ0 (r x.1 x.2) s'))
 =
 (fun x : A1 * A2 * S =>
-     Theta_dens.unary_theta_dens_obligation_1 prob_handler (F_choice_prod_obj ⟨ B, S ⟩)
+     Theta_dens.unary_theta_dens_obligation_1 (F_choice_prod_obj ⟨ B, S ⟩)
        (let (x0, s') := x in θ0 (r x0.1 x0.2) s')) ).
   apply boolp.funext. move=> [[a1 a2] ss]. rewrite /=. reflexivity.
   rewrite contEqu. apply f_equal.
@@ -1218,14 +1207,18 @@ Notation dnib M := (ord_relmon_bind M).
 (* above *)
 
 (*operations and arities for probabilities*)
-Let Op := Prob_ops_collection probE chUniverse chElement.
-Let Ar := Prob_arities probE chUniverse chElement.
+Let Op := P_OP.
+Let Ar := P_AR.
 
 Context { A : ord_choiceType }  {S : choiceType}.
 
 (*for state + prob*)
 Let Opst := (ops_StP S).
 Let Arst := (ar_StP S).
+
+Definition op_iota : Op -> Opst := fun op =>
+  let (X , sd) := op in
+  samplee X sd.
 
 Context (o : Op) (c : FrStP S A).
 
@@ -1236,7 +1229,7 @@ Arguments retrFree {_ _ _} _.
 
 (*the two programs of interest...*)
 (*sample_c and c_sample*)
-Let splo :=  @callrFree Opst Arst (inr o).
+Let splo :=  @callrFree Opst Arst (op_iota o).
 Definition sample_c :=
 bindrFree splo (fun r =>
 bindrFree c (fun a =>
@@ -1257,7 +1250,7 @@ Proof.
   rewrite to_dnib.
   rewrite /θ0 /DerivedRules.θ0.
   pose bla :=
-rmm_law2 _ _ _ _ (@unaryIntState probE chUniverse chElement S)
+rmm_law2 _ _ _ _ (@unaryIntState S)
          X Y k.
   rewrite /= in bla.
   unshelve eapply equal_f in bla. exact m.
@@ -1268,13 +1261,13 @@ Lemma θ0_vs_sample_c :
   θ0 sample_c
   =
   dnib stT_Frp
-    (fun r : Arst (inr o) => dnib stT_Frp (fun a : A => θ0 (retrFree (a, r))) (θ0 c))
+    (fun r : Arst (op_iota o) => dnib stT_Frp (fun a : A => θ0 (retrFree (a, r))) (θ0 c))
     (θ0 splo).
 Proof.
   unfold sample_c.
   rewrite θ0_vs_bind.
   eassert (eqCont :
-(fun r : Arst (inr o) => θ0 (bindrFree c (fun a : choice_incl A => retrFree (a, r))))
+(fun r : Arst (op_iota o) => θ0 (bindrFree c (fun a : choice_incl A => retrFree (a, r))))
 =
 (fun r => _) ).
   apply boolp.funext. move=> x. rewrite θ0_vs_bind. reflexivity.
@@ -1285,7 +1278,7 @@ Lemma θ0_vs_c_sample :
   θ0 c_sample
   =
   dnib stT_Frp
-    (fun a : A => dnib stT_Frp (fun r : Arst (inr o) => θ0 (retrFree (a, r))) (θ0 splo))
+    (fun a : A => dnib stT_Frp (fun r : Arst (op_iota o) => θ0 (retrFree (a, r))) (θ0 splo))
     (θ0 c).
 Proof.
   unfold c_sample.
@@ -1321,7 +1314,7 @@ Proof.
   reflexivity.
 Qed.
 
-Let Frp_fld :=  @Frp probE chUniverse chElement.
+Let Frp_fld :=  @Frp.
 
 Lemma bindrFree_and_ret {U:choiceType} (mu : Frp_fld U) :
 bindrFree mu (fun u =>
@@ -1337,9 +1330,9 @@ Qed.
 
 
 Lemma op_outoffree (s0 : S):
-UniversalFreeMap.outOfFree sigMap (Arst (inr o)) splo
+UniversalFreeMap.outOfFree sigMap (Arst (op_iota o)) splo
 =
-@sigMap probE chUniverse chElement S (inr o).
+@sigMap S (op_iota o).
 Proof.
     cbn.
     rewrite /OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
@@ -1348,22 +1341,18 @@ Proof.
     rewrite /FreeProbProg.rFree_obligation_1.
     set (weirdCont :=
 (fun
-          topas : prod (Choice.sort (Prob_arities probE chUniverse chElement o))
+          topas : prod (Choice.sort (@StateTransformingLaxMorph.ar_StP S (op_iota o)))
                                 (Choice.sort S) =>
         match
           topas
           return
-            (rFreeF (Prob_ops_collection probE chUniverse chElement)
-               (Prob_arities probE chUniverse chElement)
-               (F_choice_prod_obj
-                  (@npair Choice.type Choice.type (Prob_arities probE chUniverse chElement o) S)))
+            (rFreeF P_OP P_AR
+               (F_choice_prod_obj (@npair Choice.type Choice.type (Arst (op_iota o)) S)))
         with
         | pair a s =>
-            @retrFree (Prob_ops_collection probE chUniverse chElement)
-              (Prob_arities probE chUniverse chElement)
-              (F_choice_prod_obj
-                 (@npair Choice.type Choice.type (Prob_arities probE chUniverse chElement o) S))
-              (@pair (Choice.sort (Prob_arities probE chUniverse chElement o)) (Choice.sort S) a s)
+            @retrFree P_OP P_AR
+              (F_choice_prod_obj (@npair Choice.type Choice.type (Arst (op_iota o)) S))
+              (@pair (Choice.sort (Arst (op_iota o))) (Choice.sort S) a s)
         end)
 ).
     assert (eq_cont :
@@ -1374,26 +1363,58 @@ weirdCont = [eta retrFree] ).
     reflexivity.
 Qed.
 
+
 Let sploP :=  @callrFree Op Ar o.
 
-Lemma θ0_of_sample (s0 : S) :
+Lemma quick_slice :
+Ar o = Arst (op_iota o).
+  destruct o. cbn. reflexivity.
+Qed.
+
+(* Context (s0 : S). *)
+(* Goal True. *)
+(*   pose bla := θ0 splo s0. cbn in bla. *)
+(*   pose bla' := bindrFree sploP (fun r => *)
+(* retrFree (r, s0) ). *)
+(*   cbn in bla'. *)
+(* rFreeF P_OP P_AR (F_choice_prod_obj ⟨ Arst (op_iota o), S ⟩) *)
+(* rFreeF Op   Ar   (prod_choiceType (Ar o) S) *)
+
+Definition hhlp:  S -> rFreeF P_OP P_AR (F_choice_prod_obj ⟨ Arst (op_iota o), S ⟩).
+  move=> s0.
+  eapply bindrFree.
+    exact sploP.
+  move=> r. eapply retrFree. econstructor. all: revgoals.
+    exact s0.
+  rewrite /op_iota. destruct o. cbn. exact r.
+Defined.
+
+Program Definition  θ0_of_sample (s0 : S) :
 θ0 splo s0
 =
 bindrFree sploP (fun r =>
-retrFree (r, s0) ).
-Proof.
+retrFree (r, s0) ) := _.
+Next Obligation.
+move=> s0. cbn. rewrite /F_choice_prod_obj. f_equal. apply quick_slice.
+Qed.
+Next Obligation.
+  move=> s0.
   unfold θ0. unfold unaryIntState.
   rewrite (op_outoffree s0). rewrite [LHS] /=.
   destruct o as [X op]. unfold probopStP.
   reflexivity.
 Qed.
 
-Lemma θ0_OF_sample_c_s0 (s0 : S) :
+Program Definition θ0_OF_sample_c_s0 (s0 : S) :
 θ0 sample_c s0 =
 bindrFree sploP (fun r =>
 bindrFree (θ0 c s0) (fun asc => let (a, sc) := asc in
-retrFree (a,r,sc))).
-Proof.
+retrFree (a,r,sc))) := _.
+Next Obligation.
+  move=> s0. rewrite /F_choice_prod_obj. f_equal. f_equal.
+  apply quick_slice.
+Qed.
+Next Obligation.
   rewrite θ0_sample_c_vs_s0.
   rewrite θ0_of_sample.
   epose (bind_assoc := ord_relmon_law3 Frp_fld _ _ _ _ _).
