@@ -6,8 +6,6 @@ From Mon Require Import SpecificationMonads.
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 From Crypt Require Import ChoiceAsOrd LiftStateful OrderEnrichedRelativeAdjunctions OrderEnrichedRelativeAdjunctionsExamples TransformingLaxMorph StateTransformingLaxMorph ThetaDex FreeProbProg LaxComp LaxFunctorsAndTransf Axioms UniversalFreeMap RelativeMonadMorph_prod.
 
-(*the file is broken but we never use it (cf _CoqProject) *)
-
 Import SPropNotations.
 
 Section RetrieveRlmmParameters.
