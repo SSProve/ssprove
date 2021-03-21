@@ -151,6 +151,7 @@ Proof.
   rewrite /=.
   rewrite /op_iota. rewrite /U. rewrite /Uni_W.
   Set Printing All.
+Abort.
   
 
 (** Rules on uniform distributions *)
@@ -167,7 +168,8 @@ Lemma r_uniform_bij :
 Proof.
   intros A₀ A₁ i j pi pj pre post f c₀ c₁ bijf h.
   rewrite rel_jdgE.
-  Unset Printing Notations.
+  (*change not accepted because terms are not convertible*)
+  (* see lemma above for an attempt to have this conversion as an equality *)
   change (repr (sampler (U ?i) ?k))
   with (bindrFree (@Uniform_F (mkpos i) heap_choiceType) (λ x, repr (k x))).
   eapply bind_rule_pp.
