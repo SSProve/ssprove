@@ -10,7 +10,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings Theta_dens
   Theta_exCP LaxComp FreeProbProg RulesStateProb UniformDistrLemmas
-  Prelude chUniverse.
+  Prelude chUniverse StateTransformingLaxMorph.
 
 Import SPropNotations.
 Import Num.Theory.
@@ -33,30 +33,14 @@ Module DerivedRulesUniform.
   Qed.
 
   (* extend the initial parameters for the rules  *)
-  Inductive UprobE : Type -> Type :=
-  | Uni_W  : forall i, UprobE (fin_family i)
-  | Fail_Unit : UprobE chUnit.
 
-  Definition UchUniverse : Type := Index + unit.
-
-  Definition UchElement : UchUniverse -> choiceType.
-  Proof.
-    move => i.
-    destruct i.
-    - exact: fin_family i.
-    - exact chUnit.
+  Definition Uni_W : forall i, SDistr (fin_family i).
+    move=> i. apply (@uniform_F (fin_family i)).
+    apply F_w0.
   Defined.
 
-  Definition Uprob_handler : forall T : choiceType, UprobE T -> SDistr T.
-  Proof.
-    move => T TF.
-    inversion TF.
-    -  eapply mkdistrd.
-       rewrite -H0.
-       move => f.
-       apply: r.
-       exact: f.
-    - exact dnull.
+  Definition Fail_Unit : SDistr chUnit.
+    exact dnull.
   Defined.
 
   Module MyRulesU := DerivedRules.
@@ -67,18 +51,24 @@ Module DerivedRulesUniform.
   #[local] Definition θ0 { S } { A } (c : FrStP S A) := @MyRulesU.θ0 S A c.
   #[local] Definition θ_dens { S } { X } := @MyRulesU.θ_dens S X.
 
+  Definition inhab (i : positive) : [finType of chFin i].
+  destruct i as [i ipos]. destruct i.
+  - cbv in ipos. discriminate.
+  - cbn. unshelve econstructor.
+    exact i. auto.
+  Defined.
+
   (* Uniform distribution over F *)
   Definition Uniform_F {i : Index} {S : choiceType} : FrStP S (fin_family i).
   Proof.
+    rewrite /=.
+    rewrite /ops_StP /ar_StP /fin_family.
+    pose usd :=  @uniform_F [finType of chFin i] (inhab i).
     unshelve eapply ropr.
-    rewrite /StateTransformingLaxMorph.ops_StP.
-    1:{
-      apply StateTransformingLaxMorph.samplee.
-      econstructor. exact Uni_W.
-      right. exists (chFin i).
-      left. eapply Uni_W.
-    }
-    intro w. constructor. exact w.
+    - apply samplee. unshelve econstructor.
+      + exact (chFin i).
+      + exact usd.
+    - rewrite /=. move=> j. eapply retrFree. assumption.
   Defined.
 
   Definition Uniform ( i : Index ) { S : choiceType } { s : S } :=
@@ -89,6 +79,9 @@ Module DerivedRulesUniform.
       @Uniform i S s (w, st) =
       if st == s then @r (fin_family i) (F_w0 i) else 0.
   Proof.
+    (* move=> st w. rewrite /Uniform /=. *)
+    (* case bb : (st == s). *)
+    (* - rewrite  *)
     cbn.
     rewrite /SDistr_bind /SDistr_unit => st w /=.
     rewrite dletE.
@@ -123,16 +116,10 @@ Module DerivedRulesUniform.
     rewrite dlet_dunit_id.
     destruct (s == st) eqn:Heq.
     - have Heq' : st == s. apply /eqP. by move /eqP: Heq.
-      rewrite Heq'. rewrite GRing.mulr1. unfold mkdistrd.
-      destruct idP.
-      + reflexivity.
-      + exfalso. eapply n. apply /boolp.asboolP.
-        eapply @is_uniform.
+      rewrite Heq'. rewrite GRing.mulr1. reflexivity.
     - have Heq' : st == s = false. apply /eqP. move /eqP: Heq. congruence.
       rewrite Heq'. rewrite GRing.mulr0. reflexivity.
-    Unshelve.
-      exact (Real.ringType R).
-      cbn. auto.
+    Unshelve. exact (Real.ringType R).
   Qed.
 
   Definition f_dprod { F1 F2: finType } { S1 S2 : choiceType } { w0 : F1 } { w0' : F2 } {s1 : S1 } {s2 : S2}
@@ -404,24 +391,18 @@ Module DerivedRulesUniform.
   (*   Admitted.  *)
 
 
+Check Fail_Unit.
   Definition Fail { S : choiceType } : FrStP S chUnit.
   Proof.
     unshelve eapply ropr.
-    1:{
-      right.
-      unfold Prob_ops_collection.
-      exists chUnit.
-      left. apply Fail_Unit.
-    }
-    rewrite /= => w.
-    constructor.
-    exact w.
+      apply op_iota. econstructor. exact Fail_Unit.
+    move=> _ /=. eapply retrFree. easy.
   Defined.
 
   Definition Assert {S : choiceType} (b : bool) : FrStP S chUnit.
   Proof.
     destruct b.
-    - constructor.
+    - apply retrFree.
       exact Datatypes.tt.
     - exact Fail.
  Defined.

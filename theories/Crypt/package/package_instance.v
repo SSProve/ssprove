@@ -39,24 +39,11 @@ Import mc_1_10.Num.Theory.
 #[local] Open Scope ring_scope.
 Import GroupScope GRing.Theory.
 
-(* Empty instance for probE *)
-Inductive probEmpty : Type → Type :=.
 
-Module genparam <: RulesParam.
-
-  Definition probE : Type → Type := probEmpty.
-
-  Definition prob_handler : ∀ T : choiceType, probE T → SDistr T.
-  Proof.
-    intros T v. inversion v.
-  Defined.
-
-End genparam.
-
-Module Rules := DerivedRulesUniform genparam.
+Module Rules := DerivedRulesUniform.
 Export Rules.
 
-Module Package := Package_Make myparamU.
+Module Package := Package_Make.
 Export Package.
 
 Import PackageNotation.
@@ -67,8 +54,9 @@ Import PackageNotation.
   TODO: See if we don't want something more explicit like [uniform].
 
 *)
+
 Definition U (i : nat) `{Positive i} : Op :=
-  existT _ ('fin i) (inl (Uni_W (mkpos i))).
+  existT _ ('fin i) (Uni_W (mkpos i)).
 
 Definition i_prod i j := (i * j)%N.
 
@@ -169,8 +157,8 @@ Lemma r_uniform_bij :
 Proof.
   intros A₀ A₁ i j pi pj pre post f c₀ c₁ bijf h.
   rewrite rel_jdgE.
-  change (repr (sampler (U ?i) ?k))
-  with (bindrFree (@Uniform_F (mkpos i) heap_choiceType) (λ x, repr (k x))).
+  (* change (repr (sampler (U ?i) ?k)) *)
+  (* with (bindrFree (@Uniform_F (mkpos i) heap_choiceType) (λ x, repr (k x))). *)
   eapply bind_rule_pp.
   - eapply Uniform_bij_rule. eauto.
   - intros a₀ a₁. simpl.
