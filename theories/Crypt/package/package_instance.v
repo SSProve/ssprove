@@ -21,7 +21,7 @@ Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-format".
 
 From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 From Crypt Require Import Prelude Package RulesStateProb SubDistr
-  UniformStateProb ChoiceAsOrd FreeProbProg UniformDistrLemmas Axioms.
+  UniformStateProb ChoiceAsOrd FreeProbProg UniformDistrLemmas Axioms StateTransformingLaxMorph.
 
 From Equations Require Import Equations.
 Require Equations.Prop.DepElim.
@@ -143,6 +143,16 @@ Proof.
   rewrite rew_opp_r. reflexivity.
 Qed.
 
+Lemma repr_vs_sampler i `{Positive i} Z (k : Arit (U i) -> raw_code Z) :
+repr (sampler (U i) k)
+=
+(bindrFree (@Uniform_F (mkpos i) heap_choiceType) (λ x, repr (k x))).
+Proof.
+  rewrite /=.
+  rewrite /op_iota. rewrite /U. rewrite /Uni_W.
+  Set Printing All.
+  
+
 (** Rules on uniform distributions *)
 
 Lemma r_uniform_bij :
@@ -157,8 +167,9 @@ Lemma r_uniform_bij :
 Proof.
   intros A₀ A₁ i j pi pj pre post f c₀ c₁ bijf h.
   rewrite rel_jdgE.
-  (* change (repr (sampler (U ?i) ?k)) *)
-  (* with (bindrFree (@Uniform_F (mkpos i) heap_choiceType) (λ x, repr (k x))). *)
+  Unset Printing Notations.
+  change (repr (sampler (U ?i) ?k))
+  with (bindrFree (@Uniform_F (mkpos i) heap_choiceType) (λ x, repr (k x))).
   eapply bind_rule_pp.
   - eapply Uniform_bij_rule. eauto.
   - intros a₀ a₁. simpl.
