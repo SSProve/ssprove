@@ -39,6 +39,9 @@ Module DerivedRulesUniform.
     apply F_w0.
   Defined.
 
+  Definition Uni_W' : forall i, SDistr( chFin i) := Uni_W.
+
+
   Definition Fail_Unit : SDistr chUnit.
     exact dnull.
   Defined.
@@ -51,23 +54,23 @@ Module DerivedRulesUniform.
   #[local] Definition θ0 { S } { A } (c : FrStP S A) := @MyRulesU.θ0 S A c.
   #[local] Definition θ_dens { S } { X } := @MyRulesU.θ_dens S X.
 
-  Definition inhab (i : positive) : [finType of chFin i].
-  destruct i as [i ipos]. destruct i.
-  - cbv in ipos. discriminate.
-  - cbn. unshelve econstructor.
-    exact i. auto.
-  Defined.
+  (* Definition inhab (i : positive) : [finType of chFin i]. *)
+  (* destruct i as [i ipos]. destruct i. *)
+  (* - cbv in ipos. discriminate. *)
+  (* - cbn. unshelve econstructor. *)
+  (*   exact i. auto. *)
+  (* Defined. *)
 
   (* Uniform distribution over F *)
   Definition Uniform_F {i : Index} {S : choiceType} : FrStP S (fin_family i).
   Proof.
     rewrite /=.
     rewrite /ops_StP /ar_StP /fin_family.
-    pose usd :=  @uniform_F [finType of chFin i] (inhab i).
+    (* pose usd :=  @uniform_F [finType of chFin i] (inhab i). *)    
     unshelve eapply ropr.
-    - apply samplee. unshelve econstructor.
+    - apply op_iota. unshelve econstructor.
       + exact (chFin i).
-      + exact usd.
+      + apply Uni_W'.
     - rewrite /=. move=> j. eapply retrFree. assumption.
   Defined.
 
@@ -391,7 +394,7 @@ Module DerivedRulesUniform.
   (*   Admitted.  *)
 
 
-Check Fail_Unit.
+
   Definition Fail { S : choiceType } : FrStP S chUnit.
   Proof.
     unshelve eapply ropr.
