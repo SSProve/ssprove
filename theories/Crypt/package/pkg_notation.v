@@ -103,9 +103,9 @@ From Crypt Require Import Prelude Axioms ChoiceAsOrd RulesStateProb
   chUniverse pkg_core_definition pkg_composition.
 
 
-Module PkgNotation (π : RulesParam).
+Module PkgNotation.
 
-  Include (PackageComposition π).
+  Include PackageComposition.
 
   Local Open Scope fset.
   Local Open Scope fset_scope.

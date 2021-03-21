@@ -52,10 +52,10 @@ Ltac package_obtac :=
   try in_fset_auto ;
   try inset_try.
 
-Module PackageTactics (π : RulesParam).
+Module PackageTactics.
 
-  Include (PkgNotation π).
-  Include (DerivedRules π).
+  Include PkgNotation.
+  Include DerivedRules.
 
   Import PackageNotation.
   Local Open Scope package_scope.

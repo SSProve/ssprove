@@ -29,9 +29,9 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
-Module PackageComposition (π : RulesParam).
+Module PackageComposition.
 
-  Include (CorePackageTheory π).
+  Include CorePackageTheory.
 
   Definition cast_fun {So To St Tt : chUniverse}
     (hS : St = So) (hT : Tt = To) (f : St → raw_code Tt) :

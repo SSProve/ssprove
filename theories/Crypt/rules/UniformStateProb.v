@@ -19,9 +19,7 @@ Local Open Scope ring_scope.
 
 (* general Rules + Rules for uniform distributions over a finite
     family of non-empty finite types *)
-Module DerivedRulesUniform (myparam :  RulesParam).
-
-  Import myparam.
+Module DerivedRulesUniform.
 
   Definition Index : Type := positive.
 
@@ -61,21 +59,7 @@ Module DerivedRulesUniform (myparam :  RulesParam).
     - exact dnull.
   Defined.
 
-  Module myparamU <: RulesParam.
-
-    Definition probE : Type -> Type := fun T => (UprobE T + probE T)%type.
-
-    Definition prob_handler : forall T : choiceType, probE T -> SDistr T.
-    Proof.
-      move => T [HU | HR].
-      + exact (Uprob_handler T HU).
-      + exact (prob_handler T HR).
-    Defined.
-
-  End myparamU.
-
-  Module MyRulesU := DerivedRules myparamU.
-  Export myparamU.
+  Module MyRulesU := DerivedRules.
   Export MyRulesU.
 
 
@@ -87,7 +71,10 @@ Module DerivedRulesUniform (myparam :  RulesParam).
   Definition Uniform_F {i : Index} {S : choiceType} : FrStP S (fin_family i).
   Proof.
     unshelve eapply ropr.
+    rewrite /StateTransformingLaxMorph.ops_StP.
     1:{
+      apply StateTransformingLaxMorph.samplee.
+      econstructor. exact Uni_W.
       right. exists (chFin i).
       left. eapply Uni_W.
     }

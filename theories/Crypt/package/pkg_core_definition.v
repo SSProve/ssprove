@@ -32,13 +32,11 @@ Set Primitive Projections.
 (* General definitions *)
 
 
-Module CorePackageTheory (π : RulesParam).
+Module CorePackageTheory.
 
   Local Open Scope fset.
   Local Open Scope fset_scope.
   Local Open Scope type_scope.
-
-  Import π.
 
   Definition ident := nat.
 
@@ -79,21 +77,15 @@ Module CorePackageTheory (π : RulesParam).
 
   Section Translation.
 
-    Context (probE : Type → Type).
-    (* The "small" type of relevant choiceTypes *)
-    Context (chUniverse : Type).
-    Context (chElement : chUniverse → choiceType).
-
-    Definition Prob_ops_collection :=
-      ∑ rchT : chUniverse, probE (chElement rchT).
+    Definition Prob_ops_collection := FreeProbProg.P_OP.
 
     Definition Prob_arities : Prob_ops_collection → choiceType :=
-      fun '(envType ; opp) => chElement envType.
+      FreeProbProg.P_AR.
 
   End Translation.
 
-  Definition Op := (Prob_ops_collection probE chUniverse chElement).
-  Definition Arit := (Prob_arities probE chUniverse chElement).
+  Definition Op := (Prob_ops_collection).
+  Definition Arit := (Prob_arities).
 
   Section FreeModule.
 

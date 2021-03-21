@@ -32,10 +32,9 @@ Set Default Goal Selector "!".
 Set Primitive Projections.
 
 
-Module PackageRHL (π : RulesParam).
+Module PackageRHL.
 
-  Import π.
-  Include (PackageTactics π).
+  Include PackageTactics.
 
   Import PackageNotation.
 
@@ -214,18 +213,16 @@ Module PackageRHL (π : RulesParam).
         repr (k (chCanonical (chtgt o)))
     | getr l k =>
         bindrFree
-          (ropr (inl (inl (gett _))) (λ s, retrFree (get_heap s l)))
+          (ropr gett (λ s, retrFree (get_heap s l)))
           (λ v, repr (k v))
     | putr l v k =>
         bindrFree
-          (ropr
-            (inl (inl (gett heap_choiceType)))
-            (λ s, ropr (inl (inr (putt heap_choiceType (set_heap s l v))))
-            (λ s, retrFree tt)))
-          (λ s', repr k)
+          (ropr gett (λ s, ropr (putt (set_heap s l v)) (λ s, retrFree tt)))
+          (λ _, repr k)
+
     | sampler op k =>
         bindrFree
-          (ropr (inr op) (λ v, retrFree v))
+          (ropr (op_iota op) (λ v, retrFree v))
           (λ s, repr (k s))
     end.
 
@@ -248,18 +245,15 @@ Module PackageRHL (π : RulesParam).
     | cmd_op o x => retrFree (chCanonical (chtgt o))
     | cmd_get ℓ =>
         bindrFree
-          (ropr (inl (inl (gett _))) (λ s, retrFree (get_heap s ℓ)))
+          (ropr gett (λ s, retrFree (get_heap s ℓ)))
           (λ v, retrFree v)
     | cmd_put ℓ v =>
         bindrFree
-          (ropr
-            (inl (inl (gett heap_choiceType)))
-            (λ s, ropr (inl (inr (putt heap_choiceType (set_heap s ℓ v))))
-            (λ s, retrFree tt)))
+          (ropr gett (λ s, ropr (putt (set_heap s ℓ v)) (λ s, retrFree tt)))
           (λ s', retrFree s')
     | cmd_sample op =>
         bindrFree
-          (ropr (inr op) (λ v, retrFree v))
+          (ropr (op_iota op) (λ v, retrFree v))
           (λ s, retrFree s)
     end.
 
@@ -546,7 +540,7 @@ Module PackageRHL (π : RulesParam).
 
   Definition Pr_code {A} (p : raw_code A) :
     heap_choiceType → SDistr (F_choice_prod_obj ⟨ A , heap_choiceType ⟩) :=
-    λ s, thetaFstd (prob_handler := prob_handler) A (repr p) s.
+    λ s, thetaFstd A (repr p) s.
 
   (* TODO REMOVE? *)
   Definition Pr_raw_func_code {A B} (p : A → raw_code B) :
@@ -1096,20 +1090,20 @@ Module PackageRHL (π : RulesParam).
     intuition. unfold θ. cbn - [justInterpState stT_thetaDex].
     unfold justInterpState. unfold LaxComp.rlmm_comp.
     simpl (nfst _). simpl (nsnd _). unfold stT_thetaDex.
-    simpl (TransformingLaxMorph.rlmm_from_lmla (stT_thetaDex_adj prob_handler) ⟨ Arit op, Arit op ⟩).
+    simpl (TransformingLaxMorph.rlmm_from_lmla (stT_thetaDex_adj) ⟨ Arit op, Arit op ⟩).
     unfold stT_thetaDex_adj.
     cbn - [ThetaDex.thetaDex UniversalFreeMap.outOfFree_obligation_1].
     unfold TransformingLaxMorph.Kl_beta_obligation_1.
-    simpl ((ThetaDex.thetaDex prob_handler
+    simpl ((ThetaDex.thetaDex
     ⟨ F_choice_prod_obj ⟨ Arit op, heap_choiceType ⟩,
     F_choice_prod_obj ⟨ Arit op, heap_choiceType ⟩ ⟩) ∙1).
     unfold Theta_exCP.θ0.
     cbn - [Theta_dens.unary_theta_dens_obligation_1 ThetaDex.thetaDex UniversalFreeMap.outOfFree_obligation_1].
-    pose foo := (sigMap (inr op) s1).
+    pose foo := (sigMap (op_iota op) s1).
     cbn in foo.
     unfold probopStP in foo. cbn in foo.
     destruct op as [opA opB].
-    pose foo2 := SDistr_bind (fun x => SDistr_unit _ ((x, s1), (x, s2))) (Theta_dens.unary_ThetaDens0 prob_handler _ (ropr (opA; opB) (λ x : chElement opA, retrFree x))).
+    pose foo2 := SDistr_bind (fun x => SDistr_unit _ ((x, s1), (x, s2))) (Theta_dens.unary_ThetaDens0 _ (ropr (opA; opB) (λ x : chElement opA, retrFree x))).
     exists foo2.
     split.
     - cbn. unfold coupling.
@@ -1196,7 +1190,7 @@ Module PackageRHL (π : RulesParam).
       rewrite /SDistr_bind /SDistr_unit in Hd.
       rewrite dletE in Hd.
       eassert ((λ x : chElement opA,
-          prob_handler (chElement opA) opB x *
+          opB x *
           dunit
                   (x, s1, (x, s2)) (s, h, (s0, h0))) =
                 _).
@@ -1432,7 +1426,6 @@ Module PackageRHL (π : RulesParam).
     }
     unfold Pr_op.
     unshelve epose (rhs := thetaFstd _ (repr (code_link r p₀)) empty_heap).
-    1: exact prob_handler.
     simpl in rhs.
     epose (lhs := Pr_op (A ∘ p₀) RUN tt empty_heap).
     assert (lhs = rhs) as he.
@@ -1445,7 +1438,6 @@ Module PackageRHL (π : RulesParam).
     unfold lhs in he. unfold Pr_op in he.
     rewrite he.
     unshelve epose (rhs' := thetaFstd _ (repr (code_link r p₁)) empty_heap).
-    1: exact prob_handler.
     simpl in rhs'.
     epose (lhs' := Pr_op (A ∘ p₁) RUN tt empty_heap).
     assert (lhs' = rhs') as e'.
@@ -1828,7 +1820,7 @@ Module PackageRHL (π : RulesParam).
   Qed.
 
   Definition spl (o : Op) :=
-    @callrFree (ops_StP heap_choiceType) (ar_StP heap_choiceType) (inr o).
+    @callrFree (ops_StP heap_choiceType) (ar_StP heap_choiceType) (op_iota o).
 
   Lemma rsamplerC :
     ∀ {A : ord_choiceType} (o : Op) (c : raw_code A),

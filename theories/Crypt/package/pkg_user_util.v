@@ -53,9 +53,9 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
-Module PackageUserUtil (π : RulesParam).
+Module PackageUserUtil.
 
-  Include (PackageRHL π).
+  Include PackageRHL.
   Import PackageNotation.
 
   (** Preliminary work *)

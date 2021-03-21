@@ -19,10 +19,10 @@ Set Default Goal Selector "!".
 Set Primitive Projections.
 
 
-Module NotationExamples (π : RulesParam).
+Module NotationExamples.
 
-  Import π.
-  Module M := (Package_Make π).
+
+  Module M := Package_Make.
   Import M.
   Import PackageNotation.
 
