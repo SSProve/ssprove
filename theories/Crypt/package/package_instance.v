@@ -151,8 +151,6 @@ Lemma r_uniform_bij :
 Proof.
   intros A₀ A₁ i j pi pj pre post f c₀ c₁ bijf h.
   rewrite rel_jdgE.
-  (*change not accepted because terms are not convertible*)
-  (* see lemma above for an attempt to have this conversion as an equality *)
   change (repr (sampler (U ?i) ?k))
   with (bindrFree (@Uniform_F (mkpos i) heap_choiceType) (λ x, repr (k x))).
   eapply bind_rule_pp.
@@ -309,19 +307,24 @@ Section Uniform_prod.
     eapply rewrite_eqDistrR.
     1:{ apply: reflexivity_rule. }
     intro s. cbn - [i_prod].
-    admit.
     (* unshelve erewrite !mkdistrd_nonsense. *)
     (* 1-3: unshelve eapply @is_uniform. *)
     (* 1-3: apply ordinal_finType_inhabited. *)
     (* 1-3: exact _. *)
-    (* pose proof @prod_uniform as h. *)
-    (* specialize (h [finType of 'I_i] [finType of 'I_j]). simpl in h. *)
-    (* unfold uniform_F in h. *)
+    pose proof @prod_uniform as h.
+    specialize (h [finType of 'I_i] [finType of 'I_j]). simpl in h.
+    unfold uniform_F in h.
+    evar (xx : 'I_i).
+    evar (yy : 'I_j).
     (* specialize (h (ordinal_finType_inhabited _) (ordinal_finType_inhabited _)). *)
-    (* rewrite uniform_F_prod_bij in h. simpl in h. *)
-    (* eapply (f_equal (SDistr_bind (λ x, SDistr_unit _ (x, s)))) in h. *)
-    (* simpl in h. *)
-    (* rewrite SDistr_bind_unit_unit in h. *)
+    specialize (h xx yy).
+    rewrite uniform_F_prod_bij in h. (* simpl in h. *)
+    eapply (f_equal (SDistr_bind (λ x, SDistr_unit _ (x, s)))) in h.
+    simpl in h.
+    rewrite SDistr_bind_unit_unit in h. simpl in h.
+    unfold Uni_W'. unfold Uni_W. unfold uniform_F.
+    unfold F_choice_prod_obj.
+    (* erewrite <- mkdistrd_nonsense. erewrite mkdistrd_nonsense. *)
     (* rewrite h. clear h. *)
     (* epose (bind_bind := ord_relmon_law3 SDistr _ _ _ _ _). *)
     (* eapply equal_f in bind_bind. *)
