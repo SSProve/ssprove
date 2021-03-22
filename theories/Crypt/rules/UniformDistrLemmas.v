@@ -112,7 +112,7 @@ Proof.
   intro. rewrite mem_enum. reflexivity.
 Qed.
 
-Lemma is_uniform { F : finType} { w0 : F } : isdistr (fun w : F => (@r F w0)).
+Lemma is_uniform {F : finType} (w0 : F) : isdistr (fun w : F => (@r F w0)).
 Proof.
   split.
   - move => w; apply: r_nonneg.
