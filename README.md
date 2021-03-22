@@ -1,24 +1,24 @@
 ![SSProve](https://user-images.githubusercontent.com/5850655/111436014-c6811f00-8701-11eb-9363-3f2a1b9e9da1.png)
 
-This repository contains Coq formalisation of the results from the paper:
+This repository contains the Coq formalisation of the paper:
 - **SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq.**
   Carmine Abate, Philipp G. Haselwarter, Exequiel Rivas, Antoine Van Muylder,
   Théo Winterhalter, Catalin Hritcu, Kenji Maillard, and Bas Spitters. March 2021.
 
-This README serves as guide to installing this project and finding the
+This README serves as a guide to running verification and finding the
 correspondence between the claims in the paper and the formal proofs in Coq, as
-well as listing the small set of standard axioms on which the formalisation
-relies (mostly transitively by using `mathcomp-analysis`).
+well as listing the small set of axioms on which the formalisation relies
+(either entirely standard ones or transitive ones from `mathcomp-analysis`).
 
 ## Prerequisites
 
-- Ocaml
+- OCaml `>=4.05.0 & <4.12`
 - Coq `8.12.0`
 - Equations `1.2.3+8.12`
 - Mathcomp analysis `0.3.2`
 - Coq Extructures `0.2.2`
 
-You can get them from the `opam` package manager for `ocaml`:
+You can get them all from the `opam` package manager for OCaml:
 ```sh
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam update
@@ -30,9 +30,8 @@ On macOS, `gsed` is additionally required for this.
 
 ## Running verification
 
-Run `make` from this directory to compile all the Coq files
-(this step is needed for the walkthrough). It should succeed
-displaying only warnings.
+Run `make` from this directory to verify all the Coq files.
+This should succeed displaying only warnings.
 
 Run `make graph` to build a graph of dependencies between sources.
 
@@ -61,8 +60,8 @@ Package laws, as introduced in the paper, are all stated and proven in
 
 #### Sequential composition
 
-In Coq, we call `link p1 p2` the sequential composition of `p1` and `p2`:
-`p1 ∘ p2`.
+In Coq, we call `link p1 p2` the sequential composition of `p1` and `p2`
+(written `p1 ∘ p2` in the paper).
 
 ```coq
 Definition link (p1 p2 : raw_package) : raw_package.
@@ -90,7 +89,7 @@ It holds directly on raw packages, even if they are ill-formed.
 #### Parallel composition
 
 In Coq, we write `par p1 p2` for the parallel composition of `p1` and `p2`:
-`p1 || p2`.
+(written `p1 || p2` in the paper).
 
 ```coq
 Definition par (p1 p2 : raw_package) : raw_package.
@@ -118,7 +117,7 @@ Lemma par_commut :
 This lemma does not work on arbitrary raw packages, it is requires that the
 packages implement disjoint signatures.
 
-Associativity on the other hand is free from this problem:
+Associativity on the other hand is free from this requirement:
 ```coq
 Lemma par_assoc :
   ∀ p1 p2 p3,
@@ -140,11 +139,11 @@ Lemma valid_ID :
     valid_package L I I (ID I).
 ```
 
-Note the extra `flat I` condition on the interface which essentially forbids
-overloading: there cannot be two procedures in `I` that share the same name.
-While our interfaces could in theory allow such procedures in general, the
-way we build packages forbid us from ever implementing them, hence the
-restriction.
+The extra `flat I` condition on the interface essentially forbids overloading:
+there cannot be two procedures in `I` that share the same name, but have
+different types. While the types of our interfaces could in theory allow such
+overloading, the way we build packages forbids us from ever implementing them,
+hence the restriction.
 
 The two identity laws are as follows:
 ```coq
@@ -166,13 +165,14 @@ Lemma id_link :
 
 In both cases, we ask that the package we link the identity package with is
 `trimmed`, meaning that it implements *exactly* its export interface and nothing
-more. Packages created through our interfaces always verify this property.
+more. Packages created through our operations always verify this property.
 
 #### Interchange between sequential and parallel composition
 
 Finally we prove a law involving sequential and parallel composition
 stating how we can interchange them:
 ```coq
+Lemma interchange :
 ∀ A B C D E F L1 L2 L3 L4 p1 p2 p3 p4,
   ValidPackage L1 B A p1 →
   ValidPackage L2 E D p2 →
@@ -183,7 +183,7 @@ stating how we can interchange them:
   Parable p3 p4 →
   par (link p1 p3) (link p2 p4) = link (par p1 p2) (par p3 p4).
 ```
-which can be read as
+where the last line can be read as
 `(p1 ∘ p3) || (p2 ∘ p4) = (p1 || p2) ∘ (p3 || p4)`.
 
 It once again requires some validity and trimming properties.
@@ -211,8 +211,8 @@ As we claim in the paper, it bounds the advantage of any adversary to the
 game pair `IND_CPA` by the sum of the statistical gap and the advantages against
 `MOD_CPA`.
 
-Note that we require here some disjointness of state hypotheses as these are
-not enforced by our package definitions and laws.
+Note that we require some state separation hypotheses here, as such disjointness
+of state is not required by our package definitions and laws.
 
 
 The ElGamal example is developed in `theories/Crypt/examples/ElGamal.v`
@@ -256,18 +256,20 @@ to packages, they can be found in `theories/Crypt/rules/UniformStateProb.v`:
 Finally the "bwhile" rule is proven as `bounded_do_while_rule` in
 `theories/Crypt/rules/RulesStateProb.v`.
 
-We will now list the lemmas and theorems about packages listed in the paper and
-proven using our probabilistic relational program logic. They can all be found
-in `theories/Crypt/package/pkg_rhl.v`.
+### Lemmas 1 & 2 and Theorems 1 & 2 from the paper
 
-**Lemma 1**
+We now list the lemmas and theorems about packages from the paper and in the
+case of Theorems 1 & 2 proven using our probabilistic relational program
+logic. They can all be found in `theories/Crypt/package/pkg_rhl.v`.
+
+**Lemma 1 (Triangle Inequality)**
 ```coq
 Lemma Advantage_triangle :
   ∀ P Q R A,
     AdvantageE P Q A <= AdvantageE P R A + AdvantageE R Q A.
 ```
 
-**Lemma 2**
+**Lemma 2 (Reduction)**
 ```coq
 Lemma Advantage_link :
   ∀ G₀ G₁ A P,
@@ -360,10 +362,9 @@ Instances (in `theories/Crypt/rhl_semantics/state_prob/`):
 
 ### List of axioms
 
-Throughout the development we rely on the following standard axioms: functional
+In our development we rely on the following standard axioms: functional
 extensionality, proof irrelevance, and propositional extensionality, as listed
-below. We also rely on the constructive indefinite description axiom, whose use
-we inherit from the `mathcomp-analysis` library.
+below.
 
 ```coq
 ax_proof_irrel : ClassicalFacts.proof_irrelevance
@@ -371,6 +372,12 @@ propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
 functional_extensionality_dep :
   ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
       (∀ x : A, f x = g x) → f = g
+```
+
+We also rely on the constructive indefinite description axiom, whose use
+we inherit transitively from the `mathcomp-analysis` library.
+
+```coq
 boolp.constructive_indefinite_description :
   ∀ (A : Type) (P : A → Prop), (∃ x : A, P x) → {x : A | P x}
 ```
@@ -382,8 +389,9 @@ specific construction of the reals:
 R : realType
 ```
 One could plug in any real number construction: Cauchy, Dedekind, ...
-In `mathcomp`s ` Rstruct.v` an instance is built from any instance of the abstract `stdlib` reals.
-An instance of the latter is built from the (constructive) Cauchy reals in `Coq.Reals.ClassicalConstructiveReals`.
+In `mathcomp`s ` Rstruct.v` an instance is built from any instance of the
+abstract `stdlib` reals.  An instance of the latter is built from the
+(constructive) Cauchy reals in `Coq.Reals.ClassicalConstructiveReals`.
 
 Finally, by using `mathcomp-analysis` we also inherit an admitted lemma they have:
 
@@ -396,29 +404,31 @@ interchange_psum :
     psum (λ y : U, psum (λ x : T, S x y))
 ```
 
-### Other admits
+### Other admits not used by results from the paper
 
 Our development also contains a few new work-in-progress results that are
 admitted, but none of them is used to show the results from the paper above.
 
 ### How to find axioms/admits
 
-We use the `Print Assumptions`command of Coq which lists axioms/admits on which
-a definition depends.  For instance
+We use the `Print Assumptions`command of Coq to list the axioms/admits on which
+a definition, lemma, or theorem depends.  For instance
 ```coq
 Print Assumptions par_commut.
 ```
 will yield
 ```coq
 Axioms:
-π.rel_choiceTypes : Type
 boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
-π.probE : Type → Type
+realsum.interchange_psum
+  : ∀ (R : reals.Real.type) (T U : choiceType) (S : T → U → reals.Real.sort R),
+      (∀ x : T, realsum.summable (T:=U) (R:=R) (S x))
+      → realsum.summable (T:=T) (R:=R) (λ x : T, realsum.psum [eta S x])
+        → realsum.psum (λ x : T, realsum.psum [eta S x]) =
+          realsum.psum (λ y : U, realsum.psum (S^~ y))
 boolp.functional_extensionality_dep
-  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
-	  (∀ x : A, f x = g x) → f = g
-π.chEmb : π.rel_choiceTypes → choiceType
+  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x), (∀ x : A, f x = g x) → f = g
+boolp.constructive_indefinite_description
+  : ∀ (A : Type) (P : A → Prop), (∃ x : A, P x) → {x : A | P x}
+R : reals.Real.type
 ```
-
-Note that `π.rel_choiceTypes`, `π.probE` and `π.chEmb` are not actually axioms,
-but parameters of the `Package` module, which are listed nonetheless.
