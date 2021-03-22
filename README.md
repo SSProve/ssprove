@@ -412,23 +412,36 @@ admitted, but none of them is used to show the results from the paper above.
 ### How to find axioms/admits
 
 We use the `Print Assumptions`command of Coq to list the axioms/admits on which
-a definition, lemma, or theorem depends.  For instance
+a definition, lemma, or theorem depends. In `theories/Crypt/Main.v` we run this
+command on all the results above at once:
 ```coq
-Print Assumptions par_commut.
+Print Assumptions results_from_the_paper.
 ```
-will yield
+which yields
 ```coq
 Axioms:
-boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
+boolp.propositional_extensionality : forall P Q : Prop, P <-> Q -> P = Q
 realsum.interchange_psum
-  : ∀ (R : reals.Real.type) (T U : choiceType) (S : T → U → reals.Real.sort R),
-      (∀ x : T, realsum.summable (T:=U) (R:=R) (S x))
-      → realsum.summable (T:=T) (R:=R) (λ x : T, realsum.psum [eta S x])
-        → realsum.psum (λ x : T, realsum.psum [eta S x]) =
-          realsum.psum (λ y : U, realsum.psum (S^~ y))
+  : forall (R : reals.Real.type) (T U : choice.Choice.type)
+      (S : choice.Choice.sort T -> choice.Choice.sort U -> reals.Real.sort R),
+    (forall x : choice.Choice.sort T, realsum.summable (T:=U) (R:=R) (S x)) ->
+    realsum.summable (T:=T) (R:=R)
+      (fun x : choice.Choice.sort T =>
+       realsum.psum (fun y : choice.Choice.sort U => S x y)) ->
+    realsum.psum
+      (fun x : choice.Choice.sort T =>
+       realsum.psum (fun y : choice.Choice.sort U => S x y)) =
+    realsum.psum
+      (fun y : choice.Choice.sort U =>
+       realsum.psum (fun x : choice.Choice.sort T => S x y))
 boolp.functional_extensionality_dep
-  : ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x), (∀ x : A, f x = g x) → f = g
+  : forall (A : Type) (B : A -> Type) (f g : forall x : A, B x),
+    (forall x : A, f x = g x) -> f = g
+FunctionalExtensionality.functional_extensionality_dep
+  : forall (A : Type) (B : A -> Type) (f g : forall x : A, B x),
+    (forall x : A, f x = g x) -> f = g
 boolp.constructive_indefinite_description
-  : ∀ (A : Type) (P : A → Prop), (∃ x : A, P x) → {x : A | P x}
-R : reals.Real.type
+  : forall (A : Type) (P : A -> Prop), (exists x : A, P x) -> {x : A | P x}
+SPropBase.ax_proof_irrel : ClassicalFacts.proof_irrelevance
+Axioms.R : reals.Real.type
 ```
