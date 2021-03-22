@@ -320,7 +320,7 @@ Proof.
     apply modn_small. auto.
 Qed.
 
-#[local] Definition f m : 'Z_q * 'Z_q -> gT * gT :=
+#[local] Definition f m : 'Z_q * 'Z_q → gT * gT :=
   λ '(a,b), (g^+a, (otf m) * g^+b).
 
 Lemma bijective_f : ∀ m, bijective (f m).
@@ -337,7 +337,8 @@ Proof.
     reflexivity.
 Qed.
 
-#[local] Definition f' (m : choicePlain) : Arit (uniform (i_sk * i_sk)) → Arit (uniform i_cipher) :=
+#[local] Definition f' (m : choicePlain) :
+  Arit (uniform (i_sk * i_sk)) → Arit (uniform i_cipher) :=
   λ x,
     let '(a, b) := ch2prod x in
     fto (f m (otf a, otf b)).
