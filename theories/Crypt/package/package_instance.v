@@ -184,27 +184,6 @@ Proof.
   exists 0%N. auto.
 Qed.
 
-(* TW: Can we rename this and explain what it is?
-  Can we move it?
-*)
-Section Mkdistrd_nonsense.
-
-  Context {T : choiceType}.
-  Context (mu0 : T → R) (Hmu : isdistr mu0).
-
-  Let mu := mkdistr Hmu.
-
-  Lemma mkdistrd_nonsense :
-    mkdistrd mu0 = mu.
-  Proof.
-    apply distr_ext. move=> t /=. rewrite /mkdistrd.
-    destruct (@idP (boolp.asbool (@isdistr R T mu0))).
-    - cbn. reflexivity.
-    - rewrite boolp.asboolE in n. contradiction.
-  Qed.
-
-End Mkdistrd_nonsense.
-
 Section Uniform_prod.
 
   Let SD_bind
