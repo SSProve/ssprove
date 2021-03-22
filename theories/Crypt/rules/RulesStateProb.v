@@ -19,11 +19,7 @@ Import SPropNotations.
 Import Num.Theory.
 
 
-Local Open Scope ring_scope.
-
-
-
-Module DerivedRules.
+#[local] Open Scope ring_scope.
 
 #[local] Definition ops_StP (S : choiceType) :=
   @ops_StP S.
@@ -42,15 +38,15 @@ Module DerivedRules.
   (f : TypeCat ⦅ choice_incl A; FrStP S B ⦆ ) (m : FrStP S A) :=
   ord_relmon_bind (FrStP S) f m.
 
-#[local] Definition retF {S : choiceType} {A : choiceType} (a : A) :=
+Definition retF {S : choiceType} {A : choiceType} (a : A) :=
   retrFree (ops_StP S) (ar_StP S) A a.
 
 
 (* morphism *)
-#[local] Definition θ {S1 S2 : choiceType} :=
+Definition θ {S1 S2 : choiceType} :=
   @thetaFstdex S1 S2.
 
-#[local] Definition θ0 {S : choiceType} {A : ord_choiceType} (c : FrStP S A) :=
+Definition θ0 {S : choiceType} {A : ord_choiceType} (c : FrStP S A) :=
   @unaryIntState S A c.
 
 
@@ -602,7 +598,7 @@ Qed.
 
 (*TODO: asymmetric variants of bounded_do_while -- Rem.: low priority as not useful for our examples *)
 
-#[local] Definition θ_dens { S : choiceType } { X : ord_choiceType } :=
+Definition θ_dens { S : choiceType } { X : ord_choiceType } :=
   @Theta_dens.unary_theta_dens (F_choice_prod_obj ⟨ X, S ⟩).
 
 
@@ -1244,7 +1240,7 @@ Proof.
   assert ( to_dnib : bindrFree m k = (dnib (FrStP S)  k) m ).
     reflexivity.
   rewrite to_dnib.
-  rewrite /θ0 /DerivedRules.θ0.
+  rewrite /θ0.
   pose bla :=
 rmm_law2 _ _ _ _ (@unaryIntState S)
          X Y k.
@@ -1688,6 +1684,3 @@ Qed.
 
 
 End samplerC_rule.
-
-
-End DerivedRules.

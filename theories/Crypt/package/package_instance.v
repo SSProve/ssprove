@@ -39,13 +39,6 @@ Import mc_1_10.Num.Theory.
 #[local] Open Scope ring_scope.
 Import GroupScope GRing.Theory.
 
-
-Module Rules := DerivedRulesUniform.
-Export Rules.
-
-Module Package := Package_Make.
-Export Package.
-
 Import PackageNotation.
 #[local] Open Scope package_scope.
 
