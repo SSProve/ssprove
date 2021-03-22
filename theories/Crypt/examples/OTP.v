@@ -12,10 +12,7 @@ Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-format".
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_composition pkg_rhl Package Prelude package_instance.
-Set Warnings "-custom-entry-overriden".
-From Crypt Require Import pkg_notation.
-Set Warnings "custom-entry-overriden".
+  pkg_composition pkg_rhl Package Prelude.
 
 From Coq Require Import Utf8 Lia.
 From extructures Require Import ord fset fmap.

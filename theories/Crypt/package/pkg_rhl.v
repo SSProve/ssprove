@@ -9,13 +9,14 @@ From Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
-  choice reals distr seq all_algebra.
+  choice reals distr seq all_algebra fintype realsum.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
-  RulesStateProb StateTransfThetaDens StateTransformingLaxMorph
-  chUniverse pkg_core_definition pkg_notation pkg_tactics pkg_composition.
+  RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
+  StateTransformingLaxMorph chUniverse pkg_core_definition pkg_notation
+  pkg_tactics pkg_composition.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
@@ -1969,20 +1970,6 @@ Proof.
   cbn. reflexivity.
 Qed.
 
-
-(* TODO: From Uniform_bij_rule *)
-(* TODO Figure out what uniform should be here! *)
-(* Lemma r_uniform_bij :
-  ∀ {A₀ A₁ : ord_choiceType}
-    (c₀ : raw_code A₀) (c₁ : raw_code A₁)
-    n pre post f,
-    bijective f →
-    (∀ x, ⊢ ⦃ pre ⦄ c₀ x ;; c₁ (f x) ⦃ post ⦄) →
-    ⊢ ⦃ pre ⦄
-      x ← sample uniform n ;; c₀ x ≈
-      x ← sample uniform n ;; c₁ x
-    ⦃ post ⦄. *)
-
 (* Rules using commands instead of bind *)
 
 Theorem rsame_head_cmd :
@@ -2178,4 +2165,302 @@ Proof.
     apply rreflexivity_rule.
   - apply (rsame_head_cmd (cmd_sample D)).
     apply h.
+Qed.
+
+(** Uniform distributions  *)
+
+Definition uniform (i : nat) `{Positive i} : Op :=
+  existT _ ('fin i) (Uni_W (mkpos i)).
+
+(** Some bijections
+
+  These are useful when working with uniform distributions that can only
+  land in 'fin n.
+
+  TODO: Move? In Prelude?
+
+*)
+
+Definition fto {F : finType} : F → 'I_#|F|.
+Proof.
+  intro x. eapply enum_rank. auto.
+Defined.
+
+Definition otf {F : finType} : 'I_#|F| → F.
+Proof.
+  intro x. eapply enum_val. exact x.
+Defined.
+
+Lemma fto_otf :
+  ∀ {F} x, fto (F := F) (otf x) = x.
+Proof.
+  intros F x.
+  unfold fto, otf.
+  apply enum_valK.
+Qed.
+
+Lemma otf_fto :
+  ∀ {F} x, otf (F := F) (fto x) = x.
+Proof.
+  intros F x.
+  unfold fto, otf.
+  apply enum_rankK.
+Qed.
+
+Lemma card_prod_iprod :
+  ∀ i j,
+    #|prod_finType (ordinal_finType i) (ordinal_finType j)| = (i * j)%N.
+Proof.
+  intros i j.
+  rewrite card_prod. simpl. rewrite !card_ord. reflexivity.
+Qed.
+
+Definition ch2prod {i j} `{Positive i} `{Positive j}
+  (x : Arit (uniform (i * j))) :
+  prod_choiceType (Arit (uniform i)) (Arit (uniform j)).
+Proof.
+  simpl in *.
+  eapply otf. rewrite card_prod_iprod.
+  auto.
+Defined.
+
+Definition prod2ch {i j} `{Positive i} `{Positive j}
+  (x : prod_choiceType (Arit (uniform i)) (Arit (uniform j))) :
+  Arit (uniform (i * j)).
+Proof.
+  simpl in *.
+  rewrite -card_prod_iprod.
+  eapply fto.
+  auto.
+Defined.
+
+Definition ch2prod_prod2ch :
+  ∀ {i j} `{Positive i} `{Positive j} (x : prod_choiceType (Arit (uniform i)) (Arit (uniform j))),
+    ch2prod (prod2ch x) = x.
+Proof.
+  intros i j hi hj x.
+  unfold ch2prod, prod2ch.
+  rewrite -[RHS]otf_fto. f_equal.
+  rewrite rew_opp_l. reflexivity.
+Qed.
+
+Definition prod2ch_ch2prod :
+  ∀ {i j} `{Positive i} `{Positive j} (x : Arit (uniform (i * j))),
+    prod2ch (ch2prod x) = x.
+Proof.
+  intros i j hi hj x.
+  unfold ch2prod, prod2ch.
+  rewrite fto_otf.
+  rewrite rew_opp_r. reflexivity.
+Qed.
+
+(** Rules on uniform distributions  *)
+
+Lemma r_uniform_bij :
+  ∀ {A₀ A₁ : ord_choiceType} i j `{Positive i} `{Positive j} pre post f
+    (c₀ : _ → raw_code A₀) (c₁ : _ → raw_code A₁),
+    bijective f →
+    (∀ x, ⊢ ⦃ pre ⦄ c₀ x ≈ c₁ (f x) ⦃ post ⦄) →
+    ⊢ ⦃ pre ⦄
+      x ← sample uniform i ;; c₀ x ≈
+      x ← sample uniform j ;; c₁ x
+    ⦃ post ⦄.
+Proof.
+  intros A₀ A₁ i j pi pj pre post f c₀ c₁ bijf h.
+  rewrite rel_jdgE.
+  change (repr (sampler (uniform ?i) ?k))
+  with (bindrFree (@Uniform_F (mkpos i) heap_choiceType) (λ x, repr (k x))).
+  eapply bind_rule_pp.
+  - eapply Uniform_bij_rule. eauto.
+  - intros a₀ a₁. simpl.
+    rewrite -rel_jdgE.
+    eapply rpre_hypothesis_rule. intros s₀ s₁ [hs e].
+    move: e => /eqP e. subst.
+    eapply rpre_weaken_rule. 1: eapply h.
+    intros h₀ h₁. simpl. intros [? ?]. subst. auto.
+Qed.
+
+Lemma repr_Uniform :
+  ∀ i `{Positive i},
+    repr (x ← sample uniform i ;; ret x) = @Uniform_F (mkpos i) _.
+Proof.
+  intros i hi. reflexivity.
+Qed.
+
+Lemma repr_cmd_Uniform :
+  ∀ i `{Positive i},
+    repr_cmd (cmd_sample (uniform i)) = @Uniform_F (mkpos i) _.
+Proof.
+  intros i hi. reflexivity.
+Qed.
+
+Lemma ordinal_finType_inhabited :
+  ∀ i `{Positive i}, ordinal_finType i.
+Proof.
+  intros i hi.
+  exists 0%N. auto.
+Qed.
+
+Section Uniform_prod.
+
+  Let SD_bind
+      {A B : choiceType}
+      (m : SDistr_carrier A)
+      (k : A -> SDistr_carrier B) :=
+    SDistr_bind k m.
+
+  Let SD_ret {A : choiceType} (a : A) :=
+    SDistr_unit A a.
+
+  Arguments r _ _ : clear implicits.
+  Arguments r [_] _.
+  Arguments uniform_F _ _ : clear implicits.
+  Arguments uniform_F [_] _.
+
+  Lemma uniform_F_prod_bij :
+    ∀ i j `{Positive i} `{Positive j} (x : 'I_i) (y : 'I_j),
+      mkdistr
+        (mu := λ _ : 'I_i * 'I_j, r (x, y))
+        (@is_uniform _ (x,y))
+      =
+      SDistr_bind
+        (λ z : 'I_(i * j),
+          SDistr_unit _ (ch2prod z)
+        )
+        (mkdistr
+          (mu := λ f : 'I_(i * j), r f)
+          (@is_uniform _ (F_w0 (mkpos (i * j))))
+        ).
+  Proof.
+    intros i j pi pj x y.
+    apply distr_ext. simpl. intros [a b].
+    unfold SDistr_bind. rewrite dletE. simpl.
+    rewrite psumZ.
+    2:{
+      unshelve eapply @r_nonneg. eapply ordinal_finType_inhabited.
+      exact _.
+    }
+    unfold r. rewrite card_prod. simpl.
+    rewrite !card_ord.
+    unfold SDistr_unit. unfold dunit. unlock. unfold drat. unlock. simpl.
+    unfold mrat. simpl.
+    erewrite eq_psum.
+    2:{
+      simpl. intro u. rewrite GRing.divr1. rewrite addn0. reflexivity.
+    }
+    erewrite psum_finseq with (r := [:: prod2ch (a, b)]).
+    2: reflexivity.
+    2:{
+      simpl. intros u hu. rewrite inE in hu.
+      destruct (ch2prod u == (a,b)) eqn:e.
+      2:{
+        exfalso.
+        move: hu => /negP hu. apply hu. apply eqxx.
+      }
+      move: e => /eqP e. rewrite -e.
+      rewrite inE. apply /eqP. symmetry. apply prod2ch_ch2prod.
+    }
+    rewrite bigop.big_cons bigop.big_nil.
+    rewrite ch2prod_prod2ch. rewrite eqxx. simpl.
+    rewrite GRing.addr0. rewrite normr1.
+    rewrite GRing.mulr1. reflexivity.
+  Qed.
+
+  Lemma SDistr_bind_unit_unit :
+    ∀ (A B C : ord_choiceType) (f : A → B) (g : B → C) u,
+      SDistr_bind (λ y, SDistr_unit _ (g y)) (SDistr_bind (λ x, SDistr_unit _ (f x)) u) =
+      SDistr_bind (λ x, SDistr_unit _ (g (f x))) u.
+  Proof.
+    intros A B C f g u.
+    apply distr_ext. simpl. intro z.
+    unfold SDistr_bind. unfold SDistr_unit.
+    rewrite dlet_dlet.
+    eapply eq_in_dlet. 2:{ intro. reflexivity. }
+    intros x hx y.
+    rewrite dlet_unit. reflexivity.
+  Qed.
+
+  Lemma UniformIprod_UniformUniform :
+    ∀ (i j : nat) `{Positive i} `{Positive j},
+      ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
+        xy ← sample uniform (i * j) ;; ret (ch2prod xy) ≈
+        x ← sample uniform i ;; y ← sample uniform j ;; ret (x, y)
+      ⦃ eq ⦄.
+  Proof.
+    intros i j pi pj.
+    change (
+      ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
+        xy ← cmd (cmd_sample (uniform (i * j))) ;;
+        ret (ch2prod xy)
+        ≈
+        x ← cmd (cmd_sample (uniform i)) ;;
+        y ← cmd (cmd_sample (uniform j)) ;;
+        ret (x, y)
+      ⦃ eq ⦄
+    ).
+    rewrite rel_jdgE.
+    repeat setoid_rewrite repr_cmd_bind.
+    change (repr_cmd (cmd_sample (uniform ?i)))
+    with (@Uniform_F (mkpos i) heap_choiceType).
+    cbn - [semantic_judgement Uniform_F].
+    eapply rewrite_eqDistrR. 1: apply: reflexivity_rule.
+    intro s. cbn.
+    pose proof @prod_uniform as h.
+    specialize (h [finType of 'I_i] [finType of 'I_j]). simpl in h.
+    unfold Uni_W'. unfold Uni_W.
+    specialize (h (F_w0 (mkpos _)) (F_w0 (mkpos _))).
+    unfold uniform_F in h.
+    rewrite uniform_F_prod_bij in h.
+    eapply (f_equal (SDistr_bind (λ x, SDistr_unit _ (x, s)))) in h.
+    simpl in h.
+    rewrite SDistr_bind_unit_unit in h. simpl in h.
+    unfold uniform_F. unfold F_choice_prod_obj.
+    rewrite h. clear h.
+    epose (bind_bind := ord_relmon_law3 SDistr _ _ _ _ _).
+    eapply equal_f in bind_bind.
+    cbn in bind_bind.
+    unfold SubDistr.SDistr_obligation_2 in bind_bind.
+    erewrite <- bind_bind. clear bind_bind.
+    f_equal.
+    apply boolp.funext. intro xi.
+    epose (bind_bind := ord_relmon_law3 SDistr _ _ _ _ _).
+    eapply equal_f in bind_bind.  cbn in bind_bind.
+    unfold SubDistr.SDistr_obligation_2 in bind_bind.
+    erewrite <- bind_bind. clear bind_bind.
+    f_equal.
+    apply boolp.funext. intro xj.
+    epose (bind_ret := ord_relmon_law2 SDistr _ _ _).
+    eapply equal_f in bind_ret.
+    cbn in bind_ret.
+    unfold SubDistr.SDistr_obligation_2 in bind_ret.
+    unfold SubDistr.SDistr_obligation_1 in bind_ret.
+    erewrite bind_ret. reflexivity.
+  Qed.
+
+End Uniform_prod.
+
+Lemma r_uniform_prod :
+  ∀ {A : ord_choiceType} i j `{Positive i} `{Positive j}
+    (r : fin_family (mkpos i) → fin_family (mkpos j) → raw_code A),
+    (∀ x y, ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ r x y ≈ r x y ⦃ eq ⦄) →
+    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
+      xy ← sample uniform (i * j) ;; let '(x,y) := ch2prod xy in r x y ≈
+      x ← sample uniform i ;; y ← sample uniform j ;; r x y
+    ⦃ eq ⦄.
+Proof.
+  intros A i j pi pj r h.
+  change (
+    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
+      '(x,y) ← (z ← sample (uniform (i * j)) ;; ret (ch2prod z)) ;; r x y ≈
+      '(x,y) ← (x ← sample uniform i ;; y ← sample uniform j ;; ret (x, y)) ;; r x y
+    ⦃ eq ⦄
+  ).
+  rewrite rel_jdgE.
+  eapply rbind_rule.
+  - rewrite -rel_jdgE. eapply UniformIprod_UniformUniform.
+  - intros [? ?] [? ?]. rewrite -rel_jdgE.
+    eapply rpre_hypothesis_rule. intros ? ? e. noconf e.
+    eapply rpre_weaken_rule.
+    1: eapply h.
+    simpl. intros ? ? [? ?]. subst. reflexivity.
 Qed.

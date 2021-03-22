@@ -17,10 +17,7 @@ From Mon Require Import SPropBase.
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
   pkg_core_definition chUniverse pkg_composition pkg_rhl Package Prelude
-  package_instance AsymScheme.
-Set Warnings "-custom-entry-overriden".
-From Crypt Require Import pkg_notation.
-Set Warnings "custom-entry-overriden".
+  AsymScheme.
 
 From Coq Require Import Utf8.
 From extructures Require Import ord fset fmap.
@@ -340,7 +337,7 @@ Proof.
     reflexivity.
 Qed.
 
-#[local] Definition f' (m : choicePlain) : Arit (uniform (i_prod i_sk i_sk)) → Arit (uniform i_cipher) :=
+#[local] Definition f' (m : choicePlain) : Arit (uniform (i_sk * i_sk)) → Arit (uniform i_cipher) :=
   λ x,
     let '(a, b) := ch2prod x in
     fto (f m (otf a, otf b)).

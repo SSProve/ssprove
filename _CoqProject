@@ -62,7 +62,6 @@ theories/Crypt/package/pkg_rhl.v
 theories/Crypt/package/pkg_user_util.v
 theories/Crypt/Package.v
 theories/Crypt/package/package_usage_example.v
-theories/Crypt/package/package_instance.v
 
 # State + Prob
 theories/Crypt/rules/RulesStateProb.v

@@ -20,11 +20,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 From Mon Require Import SPropBase.
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb StdDistr
-  pkg_core_definition chUniverse pkg_composition pkg_rhl  Package Prelude
-  package_instance.
-Set Warnings "-custom-entry-overriden".
-From Crypt Require Import pkg_notation.
-Set Warnings "custom-entry-overriden".
+  pkg_core_definition chUniverse pkg_composition pkg_rhl Package Prelude.
 
 From Coq Require Import Utf8.
 From extructures Require Import ord fset fmap.
