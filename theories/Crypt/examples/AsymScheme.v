@@ -216,7 +216,7 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
         '(pk, sk) ← KeyGen ;;
          put pk_loc := pk ;;
          put sk_loc := sk ;;
-         c ← sample U i_cipher ;;
+         c ← sample uniform i_cipher ;;
          ret c
       }
     ].
@@ -336,7 +336,7 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
           '(pk, sk) ← KeyGen ;;
           put pk_loc := pk ;;
           put sk_loc := sk ;;
-          c ← sample U i_cipher ;;
+          c ← sample uniform i_cipher ;;
           ret (Some c)
         else ret None
       }

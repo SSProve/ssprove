@@ -216,7 +216,7 @@ Module PRF_example.
   Definition enc {L : { fset Location }} (m : Words) (k : Key) :
     code L [interface] ('fin (2^n) × 'fin (2^n)) :=
       {code
-        r ← sample U i_words ;;
+        r ← sample uniform i_words ;;
         let pad := PRF r k in
         let c := m ⊕ pad in
         ret (r, c)
@@ -224,7 +224,7 @@ Module PRF_example.
 
   Definition kgen : code fset0 [interface] 'fin (2^n) :=
     {code
-      k ← sample U i_key ;;
+      k ← sample uniform i_key ;;
       ret k
     }.
 
@@ -247,7 +247,7 @@ Module PRF_example.
         k_init ← get key_location ;;
         match k_init with
         | None =>
-            k ← sample U i_key ;;
+            k ← sample uniform i_key ;;
             put key_location := Some k ;;
             ret (PRF r k)
         | Some k_val =>
@@ -265,7 +265,7 @@ Module PRF_example.
         T ← get table_location ;;
         match getm T r with
         | None =>
-            T_key ← sample U i_key ;;
+            T_key ← sample uniform i_key ;;
             put table_location := (setm T r T_key) ;;
             ret T_key
         | Some T_key => ret T_key
@@ -288,7 +288,7 @@ Module PRF_example.
       def #[i1] (m : chWords) : chWords × chWords
       {
         #import {sig #[i0] : chWords → chKey } as eval ;;
-        r ← sample U i_words ;;
+        r ← sample uniform i_words ;;
         pad ← eval r ;;
         let c := m ⊕ pad in
         ret (r, c)
@@ -302,8 +302,8 @@ Module PRF_example.
       def #[i1] (m : chWords) : chWords × chWords
       {
         #import {sig #[i0] : chWords → chKey } as eval ;;
-        r ← sample U i_words ;;
-        m' ← sample U i_words ;;
+        r ← sample uniform i_words ;;
+        m' ← sample uniform i_words ;;
         pad ← eval r ;;
         let c := (m' ⊕ pad) in
         ret (r, c)
@@ -322,7 +322,7 @@ Module PRF_example.
         k ← get key_location ;;
         match k with
         | None =>
-          k_val ← sample U i_key ;;
+          k_val ← sample uniform i_key ;;
           put key_location := Some k_val ;;
           enc m k_val
         | Some k_val =>
@@ -341,12 +341,12 @@ Module PRF_example.
         k ← get key_location ;;
         match k with
         | None =>
-          k_val ← sample U i_key ;;
+          k_val ← sample uniform i_key ;;
           put key_location := Some k_val ;;
-          m' ← sample U i_words ;;
+          m' ← sample uniform i_words ;;
           enc m' k_val
         | Some k_val =>
-          m' ← sample U i_words ;;
+          m' ← sample uniform i_words ;;
           enc m' k_val
         end
       }

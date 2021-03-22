@@ -43,15 +43,11 @@ Import GroupScope GRing.Theory.
 Import PackageNotation.
 #[local] Open Scope package_scope.
 
-(** Syntax for uniform distributions
-
-  TODO: See if we don't want something more explicit like [uniform].
-
-*)
-
-Definition U (i : nat) `{Positive i} : Op :=
+(** Syntax for uniform distributions *)
+Definition uniform (i : nat) `{Positive i} : Op :=
   existT _ ('fin i) (Uni_W (mkpos i)).
 
+(* TODO REMOVE? *)
 Definition i_prod i j := (i * j)%N.
 
 (** Some bijections
@@ -99,8 +95,8 @@ Proof.
 Qed.
 
 Definition ch2prod {i j} `{Positive i} `{Positive j}
-  (x : Arit (U (i_prod i j))) :
-  prod_choiceType (Arit (U i)) (Arit (U j)).
+  (x : Arit (uniform (i_prod i j))) :
+  prod_choiceType (Arit (uniform i)) (Arit (uniform j)).
 Proof.
   simpl in *.
   eapply otf. rewrite card_prod_iprod.
@@ -108,8 +104,8 @@ Proof.
 Defined.
 
 Definition prod2ch {i j} `{Positive i} `{Positive j}
-  (x : prod_choiceType (Arit (U i)) (Arit (U j))) :
-  Arit (U (i_prod i j)).
+  (x : prod_choiceType (Arit (uniform i)) (Arit (uniform j))) :
+  Arit (uniform (i_prod i j)).
 Proof.
   simpl in *.
   rewrite -card_prod_iprod.
@@ -118,7 +114,7 @@ Proof.
 Defined.
 
 Definition ch2prod_prod2ch :
-  ∀ {i j} `{Positive i} `{Positive j} (x : prod_choiceType (Arit (U i)) (Arit (U j))),
+  ∀ {i j} `{Positive i} `{Positive j} (x : prod_choiceType (Arit (uniform i)) (Arit (uniform j))),
     ch2prod (prod2ch x) = x.
 Proof.
   intros i j hi hj x.
@@ -128,7 +124,7 @@ Proof.
 Qed.
 
 Definition prod2ch_ch2prod :
-  ∀ {i j} `{Positive i} `{Positive j} (x : Arit (U (i_prod i j))),
+  ∀ {i j} `{Positive i} `{Positive j} (x : Arit (uniform (i_prod i j))),
     prod2ch (ch2prod x) = x.
 Proof.
   intros i j hi hj x.
@@ -145,13 +141,13 @@ Lemma r_uniform_bij :
     bijective f →
     (∀ x, ⊢ ⦃ pre ⦄ c₀ x ≈ c₁ (f x) ⦃ post ⦄) →
     ⊢ ⦃ pre ⦄
-      x ← sample U i ;; c₀ x ≈
-      x ← sample U j ;; c₁ x
+      x ← sample uniform i ;; c₀ x ≈
+      x ← sample uniform j ;; c₁ x
     ⦃ post ⦄.
 Proof.
   intros A₀ A₁ i j pi pj pre post f c₀ c₁ bijf h.
   rewrite rel_jdgE.
-  change (repr (sampler (U ?i) ?k))
+  change (repr (sampler (uniform ?i) ?k))
   with (bindrFree (@Uniform_F (mkpos i) heap_choiceType) (λ x, repr (k x))).
   eapply bind_rule_pp.
   - eapply Uniform_bij_rule. eauto.
@@ -165,14 +161,14 @@ Qed.
 
 Lemma repr_Uniform :
   ∀ i `{Positive i},
-    repr (x ← sample U i ;; ret x) = @Uniform_F (mkpos i) _.
+    repr (x ← sample uniform i ;; ret x) = @Uniform_F (mkpos i) _.
 Proof.
   intros i hi. reflexivity.
 Qed.
 
 Lemma repr_cmd_Uniform :
   ∀ i `{Positive i},
-    repr_cmd (cmd_sample (U i)) = @Uniform_F (mkpos i) _.
+    repr_cmd (cmd_sample (uniform i)) = @Uniform_F (mkpos i) _.
 Proof.
   intros i hi. reflexivity.
 Qed.
@@ -266,24 +262,24 @@ Section Uniform_prod.
   Lemma UniformIprod_UniformUniform :
     ∀ (i j : nat) `{Positive i} `{Positive j},
       ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
-        xy ← sample U (i_prod i j) ;; ret (ch2prod xy) ≈
-        x ← sample U i ;; y ← sample U j ;; ret (x, y)
+        xy ← sample uniform (i_prod i j) ;; ret (ch2prod xy) ≈
+        x ← sample uniform i ;; y ← sample uniform j ;; ret (x, y)
       ⦃ eq ⦄.
   Proof.
     intros i j pi pj.
     change (
       ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
-        xy ← cmd (cmd_sample (U (i_prod i j))) ;;
+        xy ← cmd (cmd_sample (uniform (i_prod i j))) ;;
         ret (ch2prod xy)
         ≈
-        x ← cmd (cmd_sample (U i)) ;;
-        y ← cmd (cmd_sample (U j)) ;;
+        x ← cmd (cmd_sample (uniform i)) ;;
+        y ← cmd (cmd_sample (uniform j)) ;;
         ret (x, y)
       ⦃ eq ⦄
     ).
     rewrite rel_jdgE.
     repeat setoid_rewrite repr_cmd_bind.
-    change (repr_cmd (cmd_sample (U ?i)))
+    change (repr_cmd (cmd_sample (uniform ?i)))
     with (@Uniform_F (mkpos i) heap_choiceType).
     cbn - [semantic_judgement Uniform_F i_prod].
     eapply rewrite_eqDistrR. 1: apply: reflexivity_rule.
@@ -327,15 +323,15 @@ Lemma r_uniform_prod :
     (r : fin_family (mkpos i) → fin_family (mkpos j) → raw_code A),
     (∀ x y, ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ r x y ≈ r x y ⦃ eq ⦄) →
     ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
-      xy ← sample U (i_prod i j) ;; let '(x,y) := ch2prod xy in r x y ≈
-      x ← sample U i ;; y ← sample U j ;; r x y
+      xy ← sample uniform (i_prod i j) ;; let '(x,y) := ch2prod xy in r x y ≈
+      x ← sample uniform i ;; y ← sample uniform j ;; r x y
     ⦃ eq ⦄.
 Proof.
   intros A i j pi pj r h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
-      '(x,y) ← (z ← sample (U (i_prod i j)) ;; ret (ch2prod z)) ;; r x y ≈
-      '(x,y) ← (x ← sample U i ;; y ← sample U j ;; ret (x, y)) ;; r x y
+      '(x,y) ← (z ← sample (uniform (i_prod i j)) ;; ret (ch2prod z)) ;; r x y ≈
+      '(x,y) ← (x ← sample uniform i ;; y ← sample uniform j ;; ret (x, y)) ;; r x y
     ⦃ eq ⦄
   ).
   rewrite rel_jdgE.

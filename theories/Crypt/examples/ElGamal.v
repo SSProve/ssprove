@@ -140,7 +140,7 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Definition KeyGen {L : {fset Location}} :
     code L [interface] (choicePubKey × choiceSecKey) :=
     {code
-      x ← sample U i_sk ;;
+      x ← sample uniform i_sk ;;
       let x := otf x in
       ret (fto (g^+x), fto x)
     }.
@@ -149,7 +149,7 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Definition Enc {L : {fset Location}} (pk : choicePubKey) (m : choicePlain) :
     code L [interface] choiceCipher :=
     {code
-      y ← sample U i_sk ;;
+      y ← sample uniform i_sk ;;
       let y := otf y in
       ret (fto (g^+y, (otf pk)^+y * (otf m)))
     }.
@@ -210,9 +210,9 @@ Definition DH_real :
     [package
       def #[10] (_ : 'unit) : chPubKey × chCipher
       {
-        a ← sample U i_sk ;;
+        a ← sample uniform i_sk ;;
         let a := otf a in
-        b ← sample U i_sk ;;
+        b ← sample uniform i_sk ;;
         let b := otf b in
         put pk_loc := fto (g^+a) ;;
         put sk_loc := fto a ;;
@@ -226,11 +226,11 @@ Definition DH_rnd :
     [package
       def #[10] (_ : 'unit) : chPubKey × chCipher
       {
-        a ← sample U i_sk ;;
+        a ← sample uniform i_sk ;;
         let a := otf a in
-        b ← sample U i_sk ;;
+        b ← sample uniform i_sk ;;
         let b := otf b in
-        c ← sample U i_sk ;;
+        c ← sample uniform i_sk ;;
         let c := otf c  in
         put pk_loc := fto (g^+a) ;;
         put sk_loc := fto a ;;
@@ -340,7 +340,7 @@ Proof.
     reflexivity.
 Qed.
 
-#[local] Definition f' (m : choicePlain) : Arit (U (i_prod i_sk i_sk)) → Arit (U i_cipher) :=
+#[local] Definition f' (m : choicePlain) : Arit (uniform (i_prod i_sk i_sk)) → Arit (uniform i_cipher) :=
   λ x,
     let '(a, b) := ch2prod x in
     fto (f m (otf a, otf b)).

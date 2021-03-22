@@ -308,7 +308,7 @@ Module OTP_example.
   Definition KeyGen {L : {fset Location}} :
     code L [interface] Key :=
     {code
-       k ← sample U i_key ;;
+       k ← sample uniform i_key ;;
        ret (ch2key k)
     }.
 
@@ -327,7 +327,7 @@ Module OTP_example.
     [package
         def #[i1] (m : chWords) : chWords
         {
-          k_val ← sample U i_key ;;
+          k_val ← sample uniform i_key ;;
           r ← Enc (ch2words m) (ch2key k_val) ;;
           ret (words2ch r)
         }
@@ -340,8 +340,8 @@ Module OTP_example.
     [package
       def #[i1] (m : chWords) : chWords
       {
-        m'    ← sample U i_words ;;
-        k_val ← sample U i_key ;;
+        m'    ← sample uniform i_words ;;
+        k_val ← sample uniform i_key ;;
         r     ← Enc (ch2words m') (ch2key k_val) ;;
         ret (words2ch r)
       }
@@ -360,7 +360,7 @@ Module OTP_example.
     eapply eq_rel_perf_ind_eq.
     simplify_eq_rel m.
     apply rconst_samplerL. intro m_val.
-    pose (f := λ (k : Arit (U i_key)), words2ch (ch2key k ⊕ ch2words m ⊕ (ch2words m_val))).
+    pose (f := λ (k : Arit (uniform i_key)), words2ch (ch2key k ⊕ ch2words m ⊕ (ch2words m_val))).
     assert (bij_f : bijective f).
     { subst f.
       exists (λ x, words2ch (ch2words x ⊕ (ch2words m_val) ⊕ ch2words m)).
