@@ -28,7 +28,7 @@ Import Num.Theory.
   @ar_StP S.
 
 (* free monad *)
-#[local] Definition FrStP (S : choiceType) :=
+Definition FrStP (S : choiceType) :=
   @FrStP S.
 
 #[local] Definition pure {S : choiceType} {A : ord_choiceType} (a : A) :=

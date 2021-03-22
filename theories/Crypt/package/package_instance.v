@@ -21,7 +21,8 @@ Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-format".
 
 From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 From Crypt Require Import Prelude Package RulesStateProb SubDistr
-  UniformStateProb ChoiceAsOrd FreeProbProg UniformDistrLemmas Axioms StateTransformingLaxMorph.
+  UniformStateProb ChoiceAsOrd FreeProbProg UniformDistrLemmas Axioms
+  StateTransformingLaxMorph.
 
 From Equations Require Import Equations.
 Require Equations.Prop.DepElim.
