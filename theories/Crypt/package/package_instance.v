@@ -21,7 +21,8 @@ Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-format".
 
 From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 From Crypt Require Import Prelude Package RulesStateProb SubDistr
-  UniformStateProb ChoiceAsOrd FreeProbProg UniformDistrLemmas Axioms.
+  UniformStateProb ChoiceAsOrd FreeProbProg UniformDistrLemmas Axioms
+  StateTransformingLaxMorph.
 
 From Equations Require Import Equations.
 Require Equations.Prop.DepElim.
@@ -39,26 +40,6 @@ Import mc_1_10.Num.Theory.
 #[local] Open Scope ring_scope.
 Import GroupScope GRing.Theory.
 
-(* Empty instance for probE *)
-Inductive probEmpty : Type → Type :=.
-
-Module genparam <: RulesParam.
-
-  Definition probE : Type → Type := probEmpty.
-
-  Definition prob_handler : ∀ T : choiceType, probE T → SDistr T.
-  Proof.
-    intros T v. inversion v.
-  Defined.
-
-End genparam.
-
-Module Rules := DerivedRulesUniform genparam.
-Export Rules.
-
-Module Package := Package_Make myparamU.
-Export Package.
-
 Import PackageNotation.
 #[local] Open Scope package_scope.
 
@@ -67,8 +48,9 @@ Import PackageNotation.
   TODO: See if we don't want something more explicit like [uniform].
 
 *)
+
 Definition U (i : nat) `{Positive i} : Op :=
-  existT _ ('fin i) (inl (Uni_W (mkpos i))).
+  existT _ ('fin i) (Uni_W (mkpos i)).
 
 Definition i_prod i j := (i * j)%N.
 
@@ -202,27 +184,6 @@ Proof.
   exists 0%N. auto.
 Qed.
 
-(* TW: Can we rename this and explain what it is?
-  Can we move it?
-*)
-Section Mkdistrd_nonsense.
-
-  Context {T : choiceType}.
-  Context (mu0 : T → R) (Hmu : isdistr mu0).
-
-  Let mu := mkdistr Hmu.
-
-  Lemma mkdistrd_nonsense :
-    mkdistrd mu0 = mu.
-  Proof.
-    apply distr_ext. move=> t /=. rewrite /mkdistrd.
-    destruct (@idP (boolp.asbool (@isdistr R T mu0))).
-    - cbn. reflexivity.
-    - rewrite boolp.asboolE in n. contradiction.
-  Qed.
-
-End Mkdistrd_nonsense.
-
 Section Uniform_prod.
 
   Let SD_bind
@@ -235,11 +196,14 @@ Section Uniform_prod.
     SDistr_unit A a.
 
   Arguments r _ _ : clear implicits.
+  Arguments r [_] _.
+  Arguments uniform_F _ _ : clear implicits.
+  Arguments uniform_F [_] _.
 
   Lemma uniform_F_prod_bij :
     ∀ i j `{Positive i} `{Positive j} (x : 'I_i) (y : 'I_j),
       mkdistr
-        (mu := λ _ : 'I_i * 'I_j, r (prod_finType [finType of 'I_i] [finType of 'I_j]) (x, y))
+        (mu := λ _ : 'I_i * 'I_j, r (x, y))
         (@is_uniform _ (x,y))
       =
       SDistr_bind
@@ -247,8 +211,8 @@ Section Uniform_prod.
           SDistr_unit _ (ch2prod z)
         )
         (mkdistr
-          (mu := λ f : 'I_(i_prod i j), r (ordinal_finType (i_prod i j)) f)
-          (@is_uniform _ (ordinal_finType_inhabited (i_prod i j)))
+          (mu := λ f : 'I_(i_prod i j), r f)
+          (@is_uniform _ (F_w0 (mkpos (i_prod i j))))
         ).
   Proof.
     intros i j pi pj x y.
@@ -274,7 +238,6 @@ Section Uniform_prod.
       destruct (ch2prod u == (a,b)) eqn:e.
       2:{
         exfalso.
-        rewrite e in hu. cbn in hu.
         move: hu => /negP hu. apply hu. apply eqxx.
       }
       move: e => /eqP e. rewrite -e.
@@ -323,21 +286,18 @@ Section Uniform_prod.
     change (repr_cmd (cmd_sample (U ?i)))
     with (@Uniform_F (mkpos i) heap_choiceType).
     cbn - [semantic_judgement Uniform_F i_prod].
-    eapply rewrite_eqDistrR.
-    1:{ apply: reflexivity_rule. }
+    eapply rewrite_eqDistrR. 1: apply: reflexivity_rule.
     intro s. cbn - [i_prod].
-    unshelve erewrite !mkdistrd_nonsense.
-    1-3: unshelve eapply @is_uniform.
-    1-3: apply ordinal_finType_inhabited.
-    1-3: exact _.
     pose proof @prod_uniform as h.
     specialize (h [finType of 'I_i] [finType of 'I_j]). simpl in h.
+    unfold Uni_W'. unfold Uni_W.
+    specialize (h (F_w0 (mkpos _)) (F_w0 (mkpos _))).
     unfold uniform_F in h.
-    specialize (h (ordinal_finType_inhabited _) (ordinal_finType_inhabited _)).
-    rewrite uniform_F_prod_bij in h. simpl in h.
+    rewrite uniform_F_prod_bij in h.
     eapply (f_equal (SDistr_bind (λ x, SDistr_unit _ (x, s)))) in h.
     simpl in h.
-    rewrite SDistr_bind_unit_unit in h.
+    rewrite SDistr_bind_unit_unit in h. simpl in h.
+    unfold uniform_F. unfold F_choice_prod_obj.
     rewrite h. clear h.
     epose (bind_bind := ord_relmon_law3 SDistr _ _ _ _ _).
     eapply equal_f in bind_bind.

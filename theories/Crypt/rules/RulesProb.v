@@ -39,47 +39,37 @@ Import mc_1_10.Num.Theory.
 
 Local Open Scope ring_scope.
 
-Module Type ProbRulesParam.
 
-Parameter probE : Type -> Type.
-Parameter chUniverse : Type.
-Parameter chElement : chUniverse -> choiceType.
-Parameter prob_handler : (forall T : choiceType, probE T -> SDistr T).
-Parameter Hch : forall r : chUniverse, chElement r.
+Module DerivedRules.
 
-End ProbRulesParam.
-
-Module DerivedRules (myparam : ProbRulesParam).
-
-Import myparam.
 
 Local Definition squ := commuting_unary_base_square.
 Local Definition ϕ_d :=
   @RelativeMonadMorph_prod.cmtSqu _ _ _ _ _ _ squ
                                   _ _ _ _ _ _ squ.
 
-Local Definition MFreePr := rFreePr probE chUniverse chElement.
+Local Definition MFreePr := rFreePr.
 
-Local Definition Ops := (Prob_ops_collection probE chUniverse chElement).
-Local Definition Arit := (Prob_arities probE chUniverse chElement).
+Local Definition Ops := P_OP.
+Local Definition Arit := P_AR.
 
 Local Definition Call (s : Ops) : MFreePr (Arit s) :=
   ropr _ _ _ s (fun r => retrFree _ _ _ r).
 
 Local Definition θ0 {A} (c : MFreePr A) :=
-  unary_theta_dens prob_handler _ c.
+  unary_theta_dens _ c.
 
 
 Lemma θ0_preserves_bind A B (c1 c2 : MFreePr A) (f1 f2 : A -> MFreePr B) (Hc : θ0 c1 = θ0 c2)
       (Hf : forall v, θ0 (f1 v) = θ0 (f2 v))
   : θ0 (bindrFree _ _ c1 f1) = θ0 (bindrFree _ _ c2 f2).
 Proof.
-  pose (rmm_law2 _ _ _ _ (@unary_theta_dens _ _ chElement prob_handler ) _ _ f1).
+  pose (rmm_law2 _ _ _ _ (@unary_theta_dens) _ _ f1).
   simpl in e.
   apply equal_f with (x := c1) in e.
   rewrite /θ0 /unary_theta_dens /=.
   rewrite e.
-  pose (rmm_law2 _ _ _ _ (@unary_theta_dens _ _ chElement prob_handler ) _ _ f2).
+  pose (rmm_law2 _ _ _ _ (@unary_theta_dens) _ _ f2).
   simpl in e0.
   apply equal_f with (x := c2) in e0.
   rewrite /θ0 /unary_theta_dens /=.
@@ -104,23 +94,17 @@ Definition pure {X : ord_choiceType} (x : X) := ord_relmon_unit MFreePr _ x.
 
 Definition retF { A : choiceType } (a : A) := retrFree Ops Arit A a.
 
-Notation " A <$ c " := (@sample_from probE chUniverse chElement Hch A c) (at level 100).
+(* Notation " A <$ c " := (@sample_from probE chUniverse chElement Hch A c) (at level 100). *)
 
 
 Definition M_d := (@RelativeMonadMorph_prod.Mprod _ _ _  MFreePr _ _ _ MFreePr ).
 
 Definition ϕ_ex := ϕ.
 
-Definition theta_dens :=
-  RelativeMonadMorph_prod.prod_relativeMonadMorphism
-    (@unary_theta_dens probE chUniverse chElement prob_handler)
-    (@unary_theta_dens probE chUniverse chElement prob_handler).
 
-Definition θ_dens_lax := (relativeMonadMorphism_to_lax _ (* J12_dens *)
-                                                       ϕ_d  (* natIso_dens*)
-                                                       M_d
-                                                       RelativeMonadMorph_prod.Wprod
-                                                       theta_dens).
+Definition θ_dens_lax := relativeMonadMorphism_to_lax _ _ _ _ theta_dens.
+Check θ_dens_lax.
+
 
 
 Local Definition J1_d  := prod_functor choice_incl choice_incl.
@@ -176,7 +160,7 @@ Definition flip (r : R) : SDistr (bool_choiceType).
 Defined.
 
 Definition get_d { A  : choiceType} (c : MFreePr A):=
-  (Theta_dens.unary_theta_dens_obligation_1 prob_handler A c).
+  (Theta_dens.unary_theta_dens_obligation_1 A c).
 
 Lemma sample_rule :
   ∀ {A1 A2} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2}
@@ -511,8 +495,8 @@ Definition judgement_d {A1 A2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice
            (J : ⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄) :
   { d : { distr (F_choice_prod (npair (Choice.Pack chA1) (Choice.Pack chA2))) / R } |
     coupling d
-     (Theta_dens.unary_theta_dens_obligation_1 prob_handler (Choice.Pack chA1) c1)
-       (Theta_dens.unary_theta_dens_obligation_1 prob_handler (Choice.Pack chA2) c2)
+     (Theta_dens.unary_theta_dens_obligation_1 (Choice.Pack chA1) c1)
+       (Theta_dens.unary_theta_dens_obligation_1 (Choice.Pack chA2) c2)
      /\ (forall (a1 : A1) (a2 : A2), 0 < d (a1, a2) -> π (a1, a2)) }.
 Proof.
   move : J. rewrite /semantic_judgement //= /fromPrePost /θ0 /=.
@@ -888,11 +872,11 @@ Proof.
   apply: (rewrite_eqDistrL (c2;; c1) (c1;; c2) (c2 ;; c1)).
   - apply: reflexivity_rule.
   rewrite /θ0 /unary_theta_dens /=.
-  pose (rmm_law2 _ _ _ _ (@unary_theta_dens _ _ chElement prob_handler) A A (fun _ => c1)).
+  pose (rmm_law2 _ _ _ _ (@unary_theta_dens) A A (fun _ => c1)).
   simpl in e.
   apply equal_f with (x := c2) in e.
   rewrite e. clear e.
-  pose (rmm_law2 _ _ _ _ (@unary_theta_dens _ _ chElement prob_handler) A A (fun _ => c2)).
+  pose (rmm_law2 _ _ _ _ (@unary_theta_dens) A A (fun _ => c2)).
   simpl in e.
   apply equal_f with (x := c1) in e.
   rewrite e /=. clear e.
@@ -910,45 +894,45 @@ Proof.
 Qed.
 
 
-Lemma bind_bind_sample { A1 A2 A3: ord_choiceType }
-      (c1 : MFreePr A1)
-      (c2 : MFreePr A2)
-      (f : A1 -> A2 -> MFreePr A3) :
-  θ0 (x ∈ A1 <<- c1;; y ∈ A2 <<- c2 ;; (f x y)) =
-  θ0 (f ( A1 <$ c1) ( A2 <$ c2)).
-Proof.
-  induction c1; induction c2.
-  - by [].
-  - destruct s0. simpl in r, H.
-    rewrite -(H (Hch x)) //=.
-    apply: f_equal.
-    rewrite  /FreeProbProg.rFree_obligation_2.
-    (*Rem.: the LHS is bindrFree _ _ (r ar) [eta f s]
-     *) admit.
-  - destruct s. simpl in r, H.
-    rewrite -(H (Hch x)) //=.
-    rewrite  /FreeProbProg.rFree_obligation_2.
-    (*Rem.: the LHS is bindrFree _ _ (r ar) [eta f s]
-      *) admit.
-  - destruct s0 as [x0 p0]. simpl in H0.
-    specialize (H0 (Hch x0)).
-    destruct s as [x p]. simpl in H, H0.
-    (* specialize (H0 H). *)
-Admitted.
+(* Lemma bind_bind_sample { A1 A2 A3: ord_choiceType } *)
+(*       (c1 : MFreePr A1) *)
+(*       (c2 : MFreePr A2) *)
+(*       (f : A1 -> A2 -> MFreePr A3) : *)
+(*   θ0 (x ∈ A1 <<- c1;; y ∈ A2 <<- c2 ;; (f x y)) = *)
+(*   θ0 (f ( A1 <$ c1) ( A2 <$ c2)). *)
+(* Proof. *)
+(*   induction c1; induction c2. *)
+(*   - by []. *)
+(*   - destruct s0. simpl in r, H. *)
+(*     rewrite -(H (Hch x)) //=. *)
+(*     apply: f_equal. *)
+(*     rewrite  /FreeProbProg.rFree_obligation_2. *)
+(*     (*Rem.: the LHS is bindrFree _ _ (r ar) [eta f s] *)
+(*      *) admit. *)
+(*   - destruct s. simpl in r, H. *)
+(*     rewrite -(H (Hch x)) //=. *)
+(*     rewrite  /FreeProbProg.rFree_obligation_2. *)
+(*     (*Rem.: the LHS is bindrFree _ _ (r ar) [eta f s] *)
+(*       *) admit. *)
+(*   - destruct s0 as [x0 p0]. simpl in H0. *)
+(*     specialize (H0 (Hch x0)). *)
+(*     destruct s as [x p]. simpl in H, H0. *)
+(*     (* specialize (H0 H). *) *)
+(* Admitted. *)
 
 
-Theorem swap_rule_gen { A1 A2 A3: ord_choiceType }
-                      (c1 : MFreePr A1)
-                      (c2 : MFreePr A2)
-                      (f : A1 -> A2 -> MFreePr A3):
-  ⊨ ⦃ True ⦄ (x ∈ A1 <<- c1;; y ∈ A2 <<- c2 ;; (f x y)) ≈
-           (y ∈ A2 <<- c2;; x ∈ A1 <<- c1 ;; (f x y))
-    ⦃ eq ⦄ .
-Proof.
-  apply: rewrite_eqDistrL.
-    by apply: reflexivity_rule.
-  by rewrite !bind_bind_sample.
-Qed.
+(* Theorem swap_rule_gen { A1 A2 A3: ord_choiceType } *)
+(*                       (c1 : MFreePr A1) *)
+(*                       (c2 : MFreePr A2) *)
+(*                       (f : A1 -> A2 -> MFreePr A3): *)
+(*   ⊨ ⦃ True ⦄ (x ∈ A1 <<- c1;; y ∈ A2 <<- c2 ;; (f x y)) ≈ *)
+(*            (y ∈ A2 <<- c2;; x ∈ A1 <<- c1 ;; (f x y)) *)
+(*     ⦃ eq ⦄ . *)
+(* Proof. *)
+(*   apply: rewrite_eqDistrL. *)
+(*     by apply: reflexivity_rule. *)
+(*   by rewrite !bind_bind_sample. *)
+(* Qed. *)
 
 Theorem async_retL { A B : ord_choiceType }
                    (m : MFreePr A) (f : A -> B )  :

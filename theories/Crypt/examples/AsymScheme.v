@@ -21,10 +21,10 @@ Set Warnings "notation-overridden,ambiguous-paths".
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_core_definition chUniverse pkg_composition pkg_notation pkg_rhl
+  pkg_core_definition chUniverse pkg_composition pkg_rhl package_instance
   Package Prelude.
 Set Warnings "-custom-entry-overriden".
-From Crypt Require Import package_instance.
+From Crypt Require Import pkg_notation.
 Set Warnings "custom-entry-overriden".
 
 From Coq Require Import Utf8.

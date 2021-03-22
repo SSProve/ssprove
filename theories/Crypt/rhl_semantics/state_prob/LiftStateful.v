@@ -174,7 +174,7 @@ Section ComputationalStatefulLiftDef.
       apply boolp.funext. move=> a.
       rewrite ! applied_ord_relmon_law2. reflexivity.
     - apply boolp.funext. move=> m. apply boolp.funext. move=> s.
-      rewrite -!applied_ord_relmon_law3. simpl.
+      rewrite - !applied_ord_relmon_law3. simpl.
       f_equal.
       apply boolp.funext. move=> a.
       rewrite ! applied_ord_relmon_law2. reflexivity.

@@ -45,7 +45,7 @@ Section StT_unaryThetaDens.
 
   (*we wish to transform this monad morphism*)
   Let θdens_filled :=
-  @unary_theta_dens probE chUniverse chElement prob_handler.
+  @unary_theta_dens.
 
   (*domain and codomain*)
   Let Frp := rlmm_domain θdens_filled.
@@ -54,7 +54,6 @@ Section StT_unaryThetaDens.
 
 
   (*state transform the domain*)
-
 
   Program Definition unaryStateTingAdj :
   leftAdjunctionSituation choice_incl
@@ -131,10 +130,10 @@ Section MakeTheDomainFree.
   Context {S : choiceType}.
 
   Let unaryIntState_filled :=
-  @unaryIntState probE chUniverse chElement S.
+  @unaryIntState S.
 
   Let stT_thetaDens_filled :=
-  @stT_thetaDens probE chUniverse chElement prob_handler S.
+  @stT_thetaDens S.
 
 
 

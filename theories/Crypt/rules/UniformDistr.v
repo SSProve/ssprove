@@ -32,105 +32,61 @@ From Crypt Require Import
      LaxComp
      FreeProbProg
      RulesProb
-     UniformDistrLemmas.
+     UniformDistrLemmas
+     chUniverse
+     Prelude.
 
 Import SPropNotations.
 Import Num.Theory.
 
-(* Notation "⟦ b ⟧" := (is_true_sprop b). *)
-(* Infix "-s>" := (s_impl) (right associativity, at level 86, only parsing). *)
 
 Local Open Scope ring_scope.
 
-Module Type UniformParameters.
-
-  Parameter Index : Type.
-  Parameter i0 : Index.
-  Parameter fin_family : Index -> finType.
-  Parameter F_w0 : forall i, (fin_family i).
-
-End UniformParameters.
 
 (* "standard" Rules + Rules for uniform distributions over a finite
     family of non-empty finite types *)
-Module DerivedRulesUniform (myparam :  ProbRulesParam) (myparamUniform : UniformParameters).
+Module DerivedRulesUniform.
 
-  Import myparam.
-  Import myparamUniform.
-
-  (* Rem.: we extend the initial parameters for the rules  *)
-  Inductive UprobE : Type -> Type :=
-  | Uni_W  : forall i, UprobE (fin_family i).
-
-  Definition UchUniverse : Type := Index.
-
-  Definition UchElement : UchUniverse -> choiceType.
-  Proof. move => i. exact (fin_family i). Defined.
-
-  Definition Uprob_handler : forall T : choiceType, UprobE T -> SDistr T.
-  Proof.
-    move => T TF.
-    inversion TF.
-    rewrite /SDistr /SDistr_carrier.
-    eapply mkdistrd.
-    rewrite -H0.
-    move => F.
-    apply: r.
-    exact F.
+  Definition inhab (i : positive) : chFin i.
+  destruct i as [i ipos]. destruct i.
+  - cbv in ipos. discriminate.
+  - cbn. unshelve econstructor.
+    exact i. auto.
   Defined.
 
-  Module myparamU <: ProbRulesParam.
+  #[local] Definition Index := positive.
+  #[local] Definition i0 := mkpos 1.
+  #[local] Definition fin_family : Index -> finType := fun i => 
+     [finType of ordinal i.(pos) ].
+  #[local] Definition F_w0 : forall i, (fin_family i).
+    move=> i. apply inhab. Defined.
+                                                        
 
-    Definition probE : Type -> Type := fun T => (UprobE T + probE T):Type.
-
-    Definition chUniverse : Type := UchUniverse + chUniverse.
-
-    Definition chElement : chUniverse -> choiceType.
-    Proof.
-      move => [t1 | t2].
-      + exact (UchElement t1).
-      + exact (chElement t2).
-    Defined.
-
-    Definition prob_handler : forall T : choiceType, probE T -> SDistr T.
-    Proof.
-      move => T [HU | HR].
-      + exact (Uprob_handler T HU).
-      + exact (prob_handler T HR).
-    Defined.
-
-    Definition Hch : forall r : chUniverse, chElement r.
-    Proof.
-      move => r.
-      destruct r; rewrite /=.
-      - by apply: F_w0.
-      - by apply: myparam.Hch.
-    Defined.
-
-  End myparamU.
-
-  (*Rem.:  *)
-  Module MyRulesU := DerivedRules myparamU.
-  Export myparamU.
+  Module MyRulesU := DerivedRules.
   Export MyRulesU.
-
 
   (* Uniform distribution over F *)
   Definition Uniform_F { i : Index } : MyRulesU.MFreePr (fin_family i).
-    rewrite /MyRulesU.MFreePr.
-    rewrite /probE /chUniverse.
-    apply: (ropr _ _ (fin_family i) (existT (fun rchT : chUniverse => probE (chElement rchT)) (inl _ i) (inl _ (Uni_W i)))).
-    rewrite /= => w.
-    constructor.
-    exact w.
+    rewrite /MyRulesU.MFreePr /rFreePr.
+    Check callrFree.
+    unshelve eapply ropr. unshelve econstructor.
+      exact (chFin i). cbn. eapply @uniform_F. eapply F_w0.
+    cbn. move=> i'. eapply retrFree. eapply F_w0.
   Defined.
 
   (* Uniform_F is actually the uniform distribution over F *)
   Lemma Uniform_F_is_uniform_F { i : Index } : get_d (@Uniform_F i) = (@uniform_F (fin_family i) (F_w0 i)).
   Proof.
+    cbn.
+    (* epose (hlp := ord_relmon_law1 SDistr). *)
+    (* eapply equal_f in hlp. cbn in hlp. *)
+    (* unfold SubDistr.SDistr_obligation_1 in hlp. *)
+    (* unfold SubDistr.SDistr_obligation_2 in hlp. *)
+    (* erewrite hlp. *)
     apply: distr_ext.
     cbn.
     rewrite /SDistr_bind /Uniform_F /SDistr_unit => w.
+    
     rewrite (@dlet_dunit_id _ _ (mkdistrd (fun=> r)) w) /mkdistrd.
     destruct idP.
     + by [].

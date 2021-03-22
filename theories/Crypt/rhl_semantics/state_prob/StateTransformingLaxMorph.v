@@ -5,7 +5,7 @@ From Mon Require Import SPropBase.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect (*boolp*).
 Set Warnings "notation-overridden,ambiguous-paths".
-From Crypt Require Import Axioms OrderEnrichedRelativeAdjunctions LaxFunctorsAndTransf LaxMorphismOfRelAdjunctions TransformingLaxMorph OrderEnrichedRelativeAdjunctionsExamples ThetaDex SubDistr Theta_exCP ChoiceAsOrd FreeProbProg UniversalFreeMap RelativeMonadMorph_prod LaxComp.
+From Crypt Require Import Axioms OrderEnrichedRelativeAdjunctions LaxFunctorsAndTransf LaxMorphismOfRelAdjunctions TransformingLaxMorph OrderEnrichedRelativeAdjunctionsExamples ThetaDex SubDistr Theta_exCP ChoiceAsOrd FreeProbProg UniversalFreeMap RelativeMonadMorph_prod LaxComp chUniverse.
 (* From Crypt Require Import only_prob.Rules. *)
 
 Import SPropNotations.
@@ -19,15 +19,8 @@ with type FreeStateProb² → StT(FreeProb²)
 *)
 
 Section StT_thetaDex_definition.
-  Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {chUniverse : Type}
-          {chElement : chUniverse -> choiceType}.
-  Context (prob_handler : forall (T:choiceType),
-    probE T -> SDistr T).
 
-
-  (*thetaDex filled with the relevant parameters*)
-  Let myThetaDex :=  @thetaDex probE chUniverse chElement prob_handler.
+  Let myThetaDex :=  thetaDex.
 
   Context {S1 S2 : choiceType}.
   Let TingAdj1_0 := Chi_DomainStateAdj S1 S2.
@@ -95,57 +88,56 @@ Here we build a unary choiceType relative monad, free, with a stateful-probabili
 signature.
 *)
 Section FreeStateProbMonad.
-  (*some context for the probabilistic signature*)
-  Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {chUniverse : Type}
-          {chElement : chUniverse -> choiceType}.
-  Context (prob_handler : forall (T:choiceType),
-    probE T -> SDistr T).
 
 
-  (*what about the state signature?*)
-  Context (S : choiceType). (*the set of states is itself a choiceType*)
-    (*a state event is either a gett or a putt. If it is a gett, we expect the environement
-     to yield a state after we issue the gett command. If it is a putt, we have to
-     specify a new state s:S in order to overwrite the current state. No information
-     is returned by the environement after we issue this command (hence the unit type)*)
-  Inductive stateE : Type -> Type :=
-  |gett : stateE S
-  |putt : S -> stateE unit.
+  Context {S : choiceType}. (*the set of states is itself a choiceType*)
 
-  (*Lemma S_vs_unit : forall (x : stateE unit), x = gett -> S = unit_choiceType.*)
+(*old formulation*)
+  (* Inductive stateE : Type -> Type := *)
+  (* |gett : stateE S *)
+  (* |putt : S -> stateE unit. *)
 
 
-  (*In terms of operations and arities...*)
-  (*how to build the type of all (putt s) operations?*)
-  Definition state_ops := sum (stateE S) (stateE unit).
-  (*what about arities*)
-  Program Definition state_ar : state_ops -> choiceType := fun sop =>
+  Inductive S_OP :=
+    |sgett : S_OP
+    |sputt : S -> S_OP.
+
+  Definition S_AR : S_OP -> choiceType := fun sop =>
     match sop with
-    |inl _ => S
-    |inr _ => unit_choiceType
+    |sgett => S
+    |sputt _ => chUnit
     end.
 
-  (*this is a free choiceType relative monad with a stateful signature.*)
 
 
   (*Now how can we combine state and probabilities?*)
-    (*operations are either stateful or probabilistic...*)
-  Let prob_ops :=  Prob_ops_collection probE chUniverse chElement.
-  Definition ops_StP := sum state_ops prob_ops.
+  (*operations are either stateful or probabilistic...*)
+  Inductive SP_OP :=
+    |gett : SP_OP
+    |putt : S -> SP_OP
+    |samplee : P_OP -> SP_OP.
 
-    (*arities of an operation stpOp: is it stateful or probabilistic? answer is
-     given accordingly*)
-  Let prob_ar :=  Prob_arities probE chUniverse chElement.
-  Definition ar_StP : ops_StP -> choiceType := fun stpOp =>
+  Definition SP_AR : SP_OP -> choiceType := fun stpOp =>
     match stpOp with
-    |inl sop => state_ar sop
-    |inr probop => prob_ar probop
+    |gett => S
+    |putt _ => chUnit
+    |samplee p_op => chElement (projT1 p_op)
     end.
+
+  Definition op_iota : P_OP -> SP_OP := samplee.
+
+  Lemma computational_sliceMorph (o : P_OP) :
+    P_AR o = SP_AR ( samplee o ).
+  Proof.
+    reflexivity.
+  Qed.
+
+  (*retro comp*)
+  Definition ops_StP := SP_OP.
+  Definition ar_StP := SP_AR.
 
   (*Here is our free choiceType relative monad with a stateful probabilistic signature*)
   Definition FrStP := rFree ops_StP ar_StP.
-
 
 End FreeStateProbMonad.
 
@@ -153,21 +145,18 @@ End FreeStateProbMonad.
 we interpret the stateful part of the signature of FrStP, but not the probabilistic
 one*)
 Section UnaryInterpretState.
-  Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {chUniverse : Type}
-          {chElement : chUniverse -> choiceType}.
 
   Context {S : choiceType}.
 
 
   (*The domain of the intended morphism is FrStP ...*)
-  Let FrStP_filled := @FrStP probE chUniverse chElement S.
+  Let FrStP_filled := @FrStP S.
 
 
   (*The codomain is StT(Frp)*)
 
-  Let prob_ops :=  Prob_ops_collection probE chUniverse chElement.
-  Let prob_ar :=  Prob_arities probE chUniverse chElement.
+  Let prob_ops :=  P_OP.
+  Let prob_ar :=  P_AR.
 
   Definition Frp :=  rFree prob_ops prob_ar.
   Let myLflat :=  unaryTimesS1 S.
@@ -230,39 +219,28 @@ Section UnaryInterpretState.
     retrFree_filled (F_choice_prod ⟨ unit_choiceType, S ⟩) (tt, new_s).
 
 
-  Definition probopStP {T : chUniverse} : probE (chElement T) -> stT_Frp (chElement T).
-    move=> probop. move=> s. simpl.
+  Definition probopStP {T : chUniverse} (sd: SDistr T) : stT_Frp (chElement T).
+    move=> s. simpl.
     unshelve eapply ropr.
-      unshelve econstructor. exact T. exact probop.
-    simpl. move=> x. eapply retrFree_filled. simpl. exact ( (x,s) ).
+      unshelve econstructor. exact T. exact sd.
+    cbn. move=> t. eapply retrFree_filled. simpl. exact ( (t,s) ).
   Defined.
 
 
-  Let ops_StP_filled :=  @ops_StP probE chUniverse chElement S.
-  Let ar_StP_filled := @ar_StP probE chUniverse chElement S.
+  Let ops_StP_filled :=  @ops_StP S.
+  Let ar_StP_filled := @ar_StP S.
 
 
   Definition sigMap : forall op : ops_StP_filled, stT_Frp( ar_StP_filled op ).
-  move=> op. cbv in op.
-  move: op => [[aget|aput]|aprobop].
-    (*get case*)
-    unfold ar_StP_filled. unfold ar_StP. unfold state_ar.
-    move: aget=> [|].
-    - exact getStP. (*true get*)
-    - move=> new_s. move=> old_s. simpl. apply retrFree_filled. exact (old_s,new_s). (*flase get*)
-    (*put case*)
-    unfold ar_StP_filled. unfold ar_StP. unfold state_ar.
-    move: aput=> [|].
-      - simpl. move=> s. apply retrFree_filled. exact (tt,s). (*false put*)
-      - exact putStP. (*true put*)
-    (*probop case*)
-    move: aprobop => [X op].
-    cbn. exact (probopStP op).
+  move=> op. cbv in op. destruct op.
+  - exact getStP.
+  - cbn. exact (putStP s).
+  - cbn. apply probopStP. destruct p. cbn.  assumption.
   Defined.
 
   Definition unaryIntState
   : relativeMonadMorphism _ _ (FrStP_filled) stT_Frp
-  := @outOfFree (ops_StP S) (ar_StP S) stT_Frp sigMap.
+  := @outOfFree (ops_StP_filled) (ar_StP_filled) stT_Frp sigMap.
 
 
 End UnaryInterpretState.
@@ -271,14 +249,11 @@ End UnaryInterpretState.
 
 (*now we square this morphism to get a relative monad morphism FrStP² → stT(Frp)²*)
 Section SquareUnaryIntState.
-  Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {chUniverse : Type}
-          {chElement : chUniverse -> choiceType}.
 
   Context {S1 S2 : choiceType}.
 
-  Let unaryIntState_filled_left := @unaryIntState probE chUniverse chElement S1.
-    Let unaryIntState_filled_right := @unaryIntState probE chUniverse chElement S2.
+  Let unaryIntState_filled_left := @unaryIntState S1.
+  Let unaryIntState_filled_right := @unaryIntState S2.
   Definition preInterpretState :=
   prod_relativeMonadMorphism
     unaryIntState_filled_left unaryIntState_filled_right.
@@ -289,18 +264,11 @@ End SquareUnaryIntState.
 (*We also need an additional bit stT(Frp)² → stT(Frp²), the latter being the domain
 of stT_thetaDex *)
 Section StT_vs_squaredMonads.
-  Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {chUniverse : Type}
-          {chElement : chUniverse -> choiceType}.
 
   Context {S1 S2 : choiceType}.
-  Context {prob_handler : forall (T:choiceType),
-    probE T -> SDistr T}.
 
-
-
-  Let preInterpretState_filled := @preInterpretState probE chUniverse chElement S1 S2.
-  Let stT_thetaDex_filled := @stT_thetaDex probE chUniverse chElement prob_handler S1 S2.
+  Let preInterpretState_filled := @preInterpretState S1 S2.
+  Let stT_thetaDex_filled := @stT_thetaDex S1 S2.
 
   (*domain of the additional morphism*)
   Let squOf_stT_Frp := rlmm_codomain preInterpretState_filled.
@@ -315,8 +283,7 @@ Section StT_vs_squaredMonads.
   apply natIso_sym. apply ord_functor_unit_right.
   Defined.
 
-  Notation Frpp := (rFreeF (Prob_ops_collection probE chUniverse chElement)
-      (Prob_arities probE chUniverse chElement)).
+  Notation Frpp := (rFreeF P_OP P_AR).
 
   Program Definition additionalIntState :
   relativeMonadMorphism (ord_functor_id _) BinaryTrivialChi squOf_stT_Frp stT_squOf_Frp :=
@@ -332,17 +299,12 @@ End StT_vs_squaredMonads.
 
 (*And now we are finally ready to define the intended theta *)
 Section MakeTheDomainFree.
-  Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {chUniverse : Type}
-          {chElement : chUniverse -> choiceType}.
 
   Context {S1 S2 : choiceType}.
-  Context {prob_handler : forall (T:choiceType),
-    probE T -> SDistr T}.
 
-  Let preInterpretState_filled := @preInterpretState probE chUniverse chElement S1 S2.
-  Let addIntState_filled := @additionalIntState probE chUniverse chElement S1 S2 prob_handler.
-  Let stT_thetaDex_filled := @stT_thetaDex probE chUniverse chElement prob_handler S1 S2.
+  Let preInterpretState_filled := @preInterpretState S1 S2.
+  Let addIntState_filled := @additionalIntState S1 S2.
+  Let stT_thetaDex_filled := @stT_thetaDex S1 S2.
 
   (*FrStP² → stT(Frp²) part*)
   Definition justInterpState :=

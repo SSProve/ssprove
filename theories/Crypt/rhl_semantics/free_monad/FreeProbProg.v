@@ -2,7 +2,8 @@ Set Warnings "-notation-overridden".
 From mathcomp Require Import all_ssreflect boolp.
 Set Warnings "notation-overridden".
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
-From Crypt Require Import ChoiceAsOrd.
+From Crypt Require Import ChoiceAsOrd chUniverse.
+From Crypt Require Import SubDistr.
 
 
 (*so that Next Obligation doesnt introduce variables by itself:*)
@@ -15,16 +16,24 @@ In this file we pack pairs of free probabilistic computations into a
 Some informations about free monads:
 
 The unary Free monad can be parametrized by a collection of operations S
-and arities for those operations (somth of type S -> Type).
+and arities for those operations (somth of type S -> choiceType).
 Concretely S could be the collection {(sample_bollean p) | p in [01]}, ie
 one Bernouilli sampling operation for each probability p. In this case
-the arity predicate (ar : S -> Type) would map each operation to bool.
+the arity predicate (ar : S -> choiceType) would map each operation to bool
+(or rather the choiceType instance for bool).
 Indeed we expect the environment to either return true or false after
 a Bernouilli sampling operation has been issued to it.
 
-On the other hand it is aslo possible to specify
-free monads using event types ("functors")
-The follwoing is stolen from the ITree Coq library
+We take S = { X: chUniverse & SDistr X }, that is, each subdistribution
+sampling from a choiceType present in chUniverse (a small universe of choiceTypes)
+is considered as being part of our probabilistic signature (S,P)
+where P : S -> choiceType is the first projection.
+
+
+NOTE regarding ancient design:
+
+Note that before we were specifying a probabilistic operation with
+an ITree like event type 
 Inductive probE : Type -> Type :=
   |Bern : unit_interval R -> probE bool
   |Poisson : (λ : unit_interval R) → probE nat.
@@ -33,11 +42,10 @@ returned by the environment after an operation has been issued. The
 parameters of the constructors are supposed to represent the information
 we would like to pass when we issue an operation. For instance when
 sampling uniformly a boolean we need to provide a probability p : [O,1].
-
-We use this last way of specifying sampling operations generically and
-translate it internally into a collection of operations S and an
-arity predicate ar : S -> Type (needed for the Free monad implementation
-in the dm4all devlopment).
+We were using this last way of specifying sampling operations generically
+and we were translating this signature 
+internally into a collection of operations S and an
+arity predicate ar : S -> choiceType
 *)
 
 Section Extensionality_for_ordfunctors.
@@ -52,7 +60,8 @@ Section Extensionality_for_ordfunctors.
     destruct F as [F F2 F3 F4 F5]. destruct G as [G G2 G3 G4 G5].
     simpl in H.
     move: F2 F3 F4 F5 G2 G3 G4 G5.
-    rewrite !H. intuition. assert (FG2 : F2 = G2). Abort.
+    rewrite !H. intuition. assert (FG2 : F2 = G2).
+  Abort.
 
 End Extensionality_for_ordfunctors.
 
@@ -112,107 +121,27 @@ Section RelativeFreeMonad.
 
 End RelativeFreeMonad.
 
-Section Translation.
-  (*In this section we translate a probabilistic signature into a set of operations S
-  and an arity prediacte ar : S -> Type as expected by rFree (defined in the section
-  RelativeFreemonad)*)
-
-
-  (*We specify a probabilistic signature using ITree like events type: *)
-  Context (probE : Type -> Type).
-  (*for instance the above could be defined like so
-  Inductive concrete_probE : Type -> Type :=
-  |Bern : unit_interval R -> concrete_probE bool
-  |Poiss : unit_interval R -> concrete_probE nat.
-
-  The parameter of this interface has to be understood as the type of values returned
-  by the environment after we issue some operation (as `Poiss 0.5` for example)
-  The arguments of the constructors correspond to the information we pass to the
-  environement.
-*)
-
-  (*Next we abstract on a subtype of choiceType. This "small" type of relevant choiceTypes
-  should be understood as the collection of
-  choiceTypes where the values will be drawn from. This could be
-  the singleton {bool} for example, or the set {bool, nat}. *)
-  Context (chUniverse : Type) (*the "small" type of relevant choiceTypes*)
-  (chElement : chUniverse -> choiceType).
-
-(*
-  possible implementation in the case we want to sample things from bool, and nat:
-
-    Record chUniverse : Type := mk_chUniverse
-      { abs_chTy :> choiceType ;
-        unlock_absChTy : ((abs_chTy = bool_choiceType) + ( abs_chTy = nat_choiceType))%type
-      }.
-
-    Definition chElement : chUniverse -> choiceType := fun relChTy =>
-      match relChTy with
-      |mk_chUniverse T unlock_T =>
-      match unlock_T with
-      |inl unlock_bool => bool_choiceType
-      |inr unlock_nat => nat_choiceType
-      end
-      end.
-
-  This restriction to a small subtype of choiceType is needed for universe consistency reasons: The
-  set of all operations can not be defined by quantifying over all
-  choiceTypes (This type is too "big") so we use chUniverse instead. *)
-  (*problematic example here: *)
-  (* Fail Check @Free (@sigT choiceType _). *)
-
-  (*Our set S, depending over the above probE interface*)
-
-  Definition Prob_ops_collection := @sigT
-    chUniverse (fun rchT => probE (chElement rchT)).
-
-  Definition Prob_arities : Prob_ops_collection -> choiceType := fun op =>
-    match op with
-    | existT envType opp => chElement envType
-    end.
-
-End Translation.
-
-
 Section Unary_free_prob_monad.
-  Context (probE : Type -> Type).
-  Context (chUniverse : Type) (chElement : chUniverse -> choiceType).
-  Context (Hch : forall r : chUniverse, chElement r).
 
+  (* the type of probabilistic operations*)
+  Definition P_OP  := { X : chUniverse & SDistr X }.
+  
+  (* the arities for operations in OPP*)
+  Definition P_AR : P_OP -> choiceType :=
+    fun op => chElement ( projT1 op ).
 
-  (*Here I recylce ancient code*)
-  Definition rFreePr := @rFree
-    (Prob_ops_collection probE chUniverse chElement)
-    (Prob_arities probE chUniverse chElement).
-
-
-  Definition sample_from { A } (D : rFreePr A) : A.
-  Proof.
-    elim: D => [ a | s Ps IH].
-    - exact: a.
-    - apply: IH.
-      destruct s. simpl in *.
-        by apply: Hch.
-   Defined.
-
-
+  Definition rFreePr := rFree P_OP P_AR.
 
 End Unary_free_prob_monad.
+
 
 Section Pairs_of_probabilistic_computations.
   (*We want to obtain a product of relative monads, the product of rFreePr
   with itself. We use the support for product of relative
   monads provided by the dm4all devlopment .*)
 
-  Context (probE : Type -> Type).
-  Context (chUniverse : Type)
-  (chElement : chUniverse -> choiceType).
-
-
   Definition rFreeProb_squ_fromProd :=
-    product_rmon
-      (rFreePr probE chUniverse chElement)
-      (rFreePr probE chUniverse chElement).
+    product_rmon rFreePr rFreePr.
 
   (*alias for retro compatibility*)
   Definition rFreeProb_squ := rFreeProb_squ_fromProd.

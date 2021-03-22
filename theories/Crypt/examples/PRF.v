@@ -21,9 +21,9 @@ From Mon Require Import SPropBase.
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb StdDistr
   pkg_core_definition chUniverse pkg_composition pkg_rhl  Package Prelude
-  pkg_notation.
+  package_instance.
 Set Warnings "-custom-entry-overriden".
-From Crypt Require Import package_instance.
+From Crypt Require Import pkg_notation.
 Set Warnings "custom-entry-overriden".
 
 From Coq Require Import Utf8.

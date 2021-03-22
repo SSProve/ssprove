@@ -45,14 +45,14 @@ theories/Crypt/rhl_semantics/only_prob/ThetaDex.v
 theories/Crypt/rhl_semantics/state_prob/OrderEnrichedRelativeAdjunctionsExamples.v
 theories/Crypt/rhl_semantics/state_prob/StateTransformingLaxMorph.v
 theories/Crypt/rhl_semantics/state_prob/StateTransfThetaDens.v
-theories/Crypt/rhl_semantics/state_prob/LiftStateful.v
+#theories/Crypt/rhl_semantics/state_prob/LiftStateful.v
 
 # Prob rules
 theories/Crypt/rules/RulesProb.v
 
 # Crypto
 theories/Crypt/rules/UniformDistrLemmas.v
-theories/Crypt/rules/UniformDistr.v
+#theories/Crypt/rules/UniformDistr.v
 # theories/Crypt/examples/deprecated/otp.v
 theories/Crypt/package/pkg_core_definition.v
 theories/Crypt/package/pkg_composition.v

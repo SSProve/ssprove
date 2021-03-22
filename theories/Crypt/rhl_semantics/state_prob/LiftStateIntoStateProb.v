@@ -2,6 +2,8 @@ From mathcomp Require Import all_ssreflect all_algebra.
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 From Crypt Require Import ChoiceAsOrd SubDistr InitialRelativeMonad TransformingLaxMorph StateTransformingLaxMorph OrderEnrichedRelativeAdjunctionsExamples LaxFunctorsAndTransf ThetaDex FreeProbProg OrderEnrichedRelativeAdjunctions OrderEnrichedRelativeAdjunctionsExamples UniversalFreeMap RelativeMonadMorph_prod LaxComp Theta_exCP.
 
+(*This file is broken but we never use it (cf _CoqProject)*)
+
 (*We define the computational lift state -> state + prob which relies on StT(η)
 for η : "id" → Fr[P]² *)
 Section LiftOfStateComp.
