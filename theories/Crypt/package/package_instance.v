@@ -217,11 +217,14 @@ Section Uniform_prod.
     SDistr_unit A a.
 
   Arguments r _ _ : clear implicits.
+  Arguments r [_] _.
+  Arguments uniform_F _ _ : clear implicits.
+  Arguments uniform_F [_] _.
 
   Lemma uniform_F_prod_bij :
     ∀ i j `{Positive i} `{Positive j} (x : 'I_i) (y : 'I_j),
       mkdistr
-        (mu := λ _ : 'I_i * 'I_j, r (prod_finType [finType of 'I_i] [finType of 'I_j]) (x, y))
+        (mu := λ _ : 'I_i * 'I_j, r (x, y))
         (@is_uniform _ (x,y))
       =
       SDistr_bind
@@ -229,8 +232,8 @@ Section Uniform_prod.
           SDistr_unit _ (ch2prod z)
         )
         (mkdistr
-          (mu := λ f : 'I_(i_prod i j), r (ordinal_finType (i_prod i j)) f)
-          (@is_uniform _ (ordinal_finType_inhabited (i_prod i j)))
+          (mu := λ f : 'I_(i_prod i j), r f)
+          (@is_uniform _ (F_w0 (mkpos (i_prod i j))))
         ).
   Proof.
     intros i j pi pj x y.
@@ -304,48 +307,39 @@ Section Uniform_prod.
     change (repr_cmd (cmd_sample (U ?i)))
     with (@Uniform_F (mkpos i) heap_choiceType).
     cbn - [semantic_judgement Uniform_F i_prod].
-    eapply rewrite_eqDistrR.
-    1:{ apply: reflexivity_rule. }
+    eapply rewrite_eqDistrR. 1: apply: reflexivity_rule.
     intro s. cbn - [i_prod].
-    (* unshelve erewrite !mkdistrd_nonsense. *)
-    (* 1-3: unshelve eapply @is_uniform. *)
-    (* 1-3: apply ordinal_finType_inhabited. *)
-    (* 1-3: exact _. *)
     pose proof @prod_uniform as h.
     specialize (h [finType of 'I_i] [finType of 'I_j]). simpl in h.
+    unfold Uni_W'. unfold Uni_W.
+    specialize (h (F_w0 (mkpos _)) (F_w0 (mkpos _))).
     unfold uniform_F in h.
-    evar (xx : 'I_i).
-    evar (yy : 'I_j).
-    (* specialize (h (ordinal_finType_inhabited _) (ordinal_finType_inhabited _)). *)
-    specialize (h xx yy).
-    rewrite uniform_F_prod_bij in h. (* simpl in h. *)
+    rewrite uniform_F_prod_bij in h.
     eapply (f_equal (SDistr_bind (λ x, SDistr_unit _ (x, s)))) in h.
     simpl in h.
     rewrite SDistr_bind_unit_unit in h. simpl in h.
-    unfold Uni_W'. unfold Uni_W. unfold uniform_F.
-    unfold F_choice_prod_obj.
-    (* erewrite <- mkdistrd_nonsense. erewrite mkdistrd_nonsense. *)
-    (* rewrite h. clear h. *)
-    (* epose (bind_bind := ord_relmon_law3 SDistr _ _ _ _ _). *)
-    (* eapply equal_f in bind_bind. *)
-    (* cbn in bind_bind. *)
-    (* unfold SubDistr.SDistr_obligation_2 in bind_bind. *)
-    (* erewrite <- bind_bind. clear bind_bind. *)
-    (* f_equal. *)
-    (* apply boolp.funext. intro xi. *)
-    (* epose (bind_bind := ord_relmon_law3 SDistr _ _ _ _ _). *)
-    (* eapply equal_f in bind_bind.  cbn in bind_bind. *)
-    (* unfold SubDistr.SDistr_obligation_2 in bind_bind. *)
-    (* erewrite <- bind_bind. clear bind_bind. *)
-    (* f_equal. *)
-    (* apply boolp.funext. intro xj. *)
-    (* epose (bind_ret := ord_relmon_law2 SDistr _ _ _). *)
-    (* eapply equal_f in bind_ret. *)
-    (* cbn in bind_ret. *)
-    (* unfold SubDistr.SDistr_obligation_2 in bind_ret. *)
-    (* unfold SubDistr.SDistr_obligation_1 in bind_ret. *)
-    (* erewrite bind_ret. reflexivity. *)
-  Admitted.
+    unfold uniform_F. unfold F_choice_prod_obj.
+    rewrite h. clear h.
+    epose (bind_bind := ord_relmon_law3 SDistr _ _ _ _ _).
+    eapply equal_f in bind_bind.
+    cbn in bind_bind.
+    unfold SubDistr.SDistr_obligation_2 in bind_bind.
+    erewrite <- bind_bind. clear bind_bind.
+    f_equal.
+    apply boolp.funext. intro xi.
+    epose (bind_bind := ord_relmon_law3 SDistr _ _ _ _ _).
+    eapply equal_f in bind_bind.  cbn in bind_bind.
+    unfold SubDistr.SDistr_obligation_2 in bind_bind.
+    erewrite <- bind_bind. clear bind_bind.
+    f_equal.
+    apply boolp.funext. intro xj.
+    epose (bind_ret := ord_relmon_law2 SDistr _ _ _).
+    eapply equal_f in bind_ret.
+    cbn in bind_ret.
+    unfold SubDistr.SDistr_obligation_2 in bind_ret.
+    unfold SubDistr.SDistr_obligation_1 in bind_ret.
+    erewrite bind_ret. reflexivity.
+  Qed.
 
 End Uniform_prod.
 
