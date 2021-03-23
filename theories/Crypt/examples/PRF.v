@@ -42,152 +42,127 @@ Import Num.Def.
 Import Num.Theory.
 Import mc_1_10.Num.Theory.
 
-Module Type SymmetricSchemeParam.
+Section PRF_example.
 
-  Parameter Words_N Key_N : nat.
-  Parameter Words_N_pos : Positive Words_N.
-  Parameter Key_N_pos : Positive Key_N.
-  Existing Instance Words_N_pos.
-  Existing Instance Key_N_pos.
+  Context (n : nat).
 
-  Definition Words := chFin (mkpos Words_N).
-  Definition Key := chFin (mkpos Key_N).
+  Definition Words_N : nat := 2^n.
+  Definition Words_N_pos : Positive Words_N := _.
+  Definition Words : chUniverse := chFin (mkpos Words_N).
+  Definition Key_N : nat := 2^n.
+  Definition Key_N_pos : Positive Key_N := _.
+  Definition Key : chUniverse := chFin (mkpos Key_N).
 
-  Parameter plus : Words → Key → Words.
-
-  Notation "m ⊕ k" := (plus m k) (at level 70).
-
-  Parameter plus_involutive : ∀ m k, (m ⊕ k) ⊕ k = m.
-
-End SymmetricSchemeParam.
-
-Module PRF_example.
-
-  Parameter n : nat.
-
-  Module π <: SymmetricSchemeParam.
-
-    Definition Words_N : nat := 2^n.
-    Definition Words_N_pos : Positive Words_N := _.
-    Definition Words : chUniverse := chFin (mkpos Words_N).
-    Definition Key_N : nat := 2^n.
-    Definition Key_N_pos : Positive Key_N := _.
-    Definition Key : chUniverse := chFin (mkpos Key_N).
-
-    (* TW: Is this normal that this definition is so big? *)
-    #[program] Definition plus : Words → Key → Words :=
-      λ w k,
-        @Ordinal _ (BinNat.N.to_nat (BinNat.N.lxor (BinNat.N.of_nat (nat_of_ord w)) (BinNat.N.of_nat (nat_of_ord k)))) _.
-    Next Obligation.
-      destruct w as [w Hw], k as [k Hk].
-      destruct w as [|Pw], k as [|Pk].
-      1:{ simpl. assumption. }
-      1:{
-        simpl.
-        rewrite Pnat.SuccNat2Pos.id_succ.
-        assumption.
-      }
-      1:{
-        simpl.
-        rewrite Pnat.SuccNat2Pos.id_succ.
-        assumption.
-      }
-      remember (succn Pw) as w.
-      remember (succn Pk) as k.
-      assert (
-        ∀ m,
-          (2 ^ m)%nat = BinNat.N.to_nat (BinNat.N.pow (BinNums.Npos (BinNums.xO 1%AC)) (BinNat.N.of_nat m))
-      ) as H.
-      { induction m.
-        - reflexivity.
-        - rewrite expnSr.
-          rewrite Nnat.Nat2N.inj_succ.
-          rewrite BinNat.N.pow_succ_r'.
-          rewrite Nnat.N2Nat.inj_mul.
-          rewrite PeanoNat.Nat.mul_comm.
-          apply f_equal2.
-          + apply IHm.
-          + reflexivity.
-      }
-      unfold Words_N, Key_N in *.
-      move: (BinNat.N.log2_lxor (BinNat.N.of_nat w) (BinNat.N.of_nat k)) => Hbound.
-      assert (
-        BinNat.N.lt (BinNat.N.log2 (BinNat.N.of_nat w)) (BinNat.N.of_nat n)
-      ) as H1.
-      { rewrite -BinNat.N.log2_lt_pow2.
-        2:{
-          rewrite Heqw. rewrite Nnat.Nat2N.inj_succ.
-          apply BinNat.N.lt_0_succ.
-        }
-        unfold BinNat.N.lt.
-        rewrite Nnat.N2Nat.inj_compare.
-        rewrite PeanoNat.Nat.compare_lt_iff.
-        rewrite Nnat.Nat2N.id.
-        rewrite -H.
-        apply /ltP.
-        apply Hw.
-      }
-      assert (
-        BinNat.N.lt (BinNat.N.log2 (BinNat.N.of_nat k)) (BinNat.N.of_nat n)
-      ) as H2.
-      { rewrite -BinNat.N.log2_lt_pow2.
-        2:{
-          rewrite Heqk. rewrite Nnat.Nat2N.inj_succ.
-          apply BinNat.N.lt_0_succ.
-        }
-        unfold BinNat.N.lt.
-        rewrite Nnat.N2Nat.inj_compare.
-        rewrite PeanoNat.Nat.compare_lt_iff.
-        rewrite Nnat.Nat2N.id.
-        rewrite -H.
-        apply /ltP.
-        apply Hk.
-      }
-      move: (BinNat.N.max_lub_lt _ _ _ H1 H2) => Hm.
-      destruct ((BinNat.N.lxor (BinNat.N.of_nat w) (BinNat.N.of_nat k)) == BinNat.N0) eqn:H0.
-      1:{
-        simpl. move: H0. move /eqP => H0. rewrite H0. simpl.
-        rewrite expn_gt0. apply /orP. left. auto.
-      }
-      move: (BinNat.N.le_lt_trans _ _ _ Hbound Hm).
-      rewrite -BinNat.N.log2_lt_pow2.
+  (* TW: Is this normal that this definition is so big? *)
+  #[program] Definition plus : Words → Key → Words :=
+    λ w k,
+      @Ordinal _ (BinNat.N.to_nat (BinNat.N.lxor (BinNat.N.of_nat (nat_of_ord w)) (BinNat.N.of_nat (nat_of_ord k)))) _.
+  Next Obligation.
+    destruct w as [w Hw], k as [k Hk].
+    destruct w as [|Pw], k as [|Pk].
+    1:{ simpl. assumption. }
+    1:{
+      simpl.
+      rewrite Pnat.SuccNat2Pos.id_succ.
+      assumption.
+    }
+    1:{
+      simpl.
+      rewrite Pnat.SuccNat2Pos.id_succ.
+      assumption.
+    }
+    remember (succn Pw) as w.
+    remember (succn Pk) as k.
+    assert (
+      ∀ m,
+        (2 ^ m)%nat = BinNat.N.to_nat (BinNat.N.pow (BinNums.Npos (BinNums.xO 1%AC)) (BinNat.N.of_nat m))
+    ) as H.
+    { induction m.
+      - reflexivity.
+      - rewrite expnSr.
+        rewrite Nnat.Nat2N.inj_succ.
+        rewrite BinNat.N.pow_succ_r'.
+        rewrite Nnat.N2Nat.inj_mul.
+        rewrite PeanoNat.Nat.mul_comm.
+        apply f_equal2.
+        + apply IHm.
+        + reflexivity.
+    }
+    unfold Words_N, Key_N in *.
+    move: (BinNat.N.log2_lxor (BinNat.N.of_nat w) (BinNat.N.of_nat k)) => Hbound.
+    assert (
+      BinNat.N.lt (BinNat.N.log2 (BinNat.N.of_nat w)) (BinNat.N.of_nat n)
+    ) as H1.
+    { rewrite -BinNat.N.log2_lt_pow2.
       2:{
-        apply BinNat.N.neq_0_lt_0.
-        move: H0. move /eqP. auto.
+        rewrite Heqw. rewrite Nnat.Nat2N.inj_succ.
+        apply BinNat.N.lt_0_succ.
       }
       unfold BinNat.N.lt.
       rewrite Nnat.N2Nat.inj_compare.
       rewrite PeanoNat.Nat.compare_lt_iff.
-      move => Hlt.
-      apply /ltP.
-      simpl in *.
-      rewrite H.
-      assumption.
-    Qed.
-
-    Notation "m ⊕ k" := (plus m k) (at level 70).
-
-    Lemma plus_involutive :
-      ∀ m k, (m ⊕ k) ⊕ k = m.
-    Proof.
-      intros m k.
-      move: ord_inj => Hordinj.
-      unfold injective in Hordinj.
-      apply Hordinj.
-      destruct m. cbn.
-      rewrite Nnat.N2Nat.id.
-      rewrite BinNat.N.lxor_assoc.
-      rewrite BinNat.N.lxor_nilpotent.
-      rewrite BinNat.N.lxor_0_r.
       rewrite Nnat.Nat2N.id.
-      reflexivity.
-    Qed.
+      rewrite -H.
+      apply /ltP.
+      apply Hw.
+    }
+    assert (
+      BinNat.N.lt (BinNat.N.log2 (BinNat.N.of_nat k)) (BinNat.N.of_nat n)
+    ) as H2.
+    { rewrite -BinNat.N.log2_lt_pow2.
+      2:{
+        rewrite Heqk. rewrite Nnat.Nat2N.inj_succ.
+        apply BinNat.N.lt_0_succ.
+      }
+      unfold BinNat.N.lt.
+      rewrite Nnat.N2Nat.inj_compare.
+      rewrite PeanoNat.Nat.compare_lt_iff.
+      rewrite Nnat.Nat2N.id.
+      rewrite -H.
+      apply /ltP.
+      apply Hk.
+    }
+    move: (BinNat.N.max_lub_lt _ _ _ H1 H2) => Hm.
+    destruct ((BinNat.N.lxor (BinNat.N.of_nat w) (BinNat.N.of_nat k)) == BinNat.N0) eqn:H0.
+    1:{
+      simpl. move: H0. move /eqP => H0. rewrite H0. simpl.
+      rewrite expn_gt0. apply /orP. left. auto.
+    }
+    move: (BinNat.N.le_lt_trans _ _ _ Hbound Hm).
+    rewrite -BinNat.N.log2_lt_pow2.
+    2:{
+      apply BinNat.N.neq_0_lt_0.
+      move: H0. move /eqP. auto.
+    }
+    unfold BinNat.N.lt.
+    rewrite Nnat.N2Nat.inj_compare.
+    rewrite PeanoNat.Nat.compare_lt_iff.
+    move => Hlt.
+    apply /ltP.
+    simpl in *.
+    rewrite H.
+    assumption.
+  Qed.
 
-  End π.
+  Notation "m ⊕ k" := (plus m k) (at level 70).
 
-  Local Open Scope package_scope.
+  Lemma plus_involutive :
+    ∀ m k, (m ⊕ k) ⊕ k = m.
+  Proof.
+    intros m k.
+    move: ord_inj => Hordinj.
+    unfold injective in Hordinj.
+    apply Hordinj.
+    destruct m. cbn.
+    rewrite Nnat.N2Nat.id.
+    rewrite BinNat.N.lxor_assoc.
+    rewrite BinNat.N.lxor_nilpotent.
+    rewrite BinNat.N.lxor_0_r.
+    rewrite Nnat.Nat2N.id.
+    reflexivity.
+  Qed.
 
-  Import π.
+  #[local] Open Scope package_scope.
 
   Definition key_location : Location := ('option Key ; 0).
   Definition plain_location : Location := (Words ; 1).
@@ -202,7 +177,7 @@ Module PRF_example.
   Definition rel_loc : {fset Location} :=
     fset [:: key_location ; table_location ].
 
-  Parameter PRF : Words → Key → Key.
+  Context (PRF : Words → Key → Key).
 
   Notation " 'chWords' " := ('fin (2^n)%N) (in custom pack_type at level 2).
   Notation " 'chKey' " := ('fin (2^n)%N) (in custom pack_type at level 2).
