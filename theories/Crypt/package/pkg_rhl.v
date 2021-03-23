@@ -2464,3 +2464,83 @@ Proof.
     1: eapply h.
     simpl. intros ? ? [? ?]. subst. reflexivity.
 Qed.
+
+(** Fail and Assert *)
+
+Definition fail_unit : raw_code 'unit :=
+  x ← sample ('unit ; dnull) ;; ret x.
+
+Definition assert b : raw_code 'unit :=
+  if b then ret Datatypes.tt else fail_unit.
+
+(* Dependent version of assert *)
+Definition assertD {A : chUniverse} b (k : b = true → raw_code A) : raw_code A :=
+  (if b as b' return b = b' → raw_code A
+  then k
+  else λ _, ret (chCanonical A)) erefl.
+
+Lemma r_fail_unit :
+  ∀ pre post,
+    ⊢ ⦃ pre ⦄ fail_unit ≈ fail_unit ⦃ post ⦄.
+Proof.
+  intros pre post.
+  rewrite rel_jdgE. intros [s₀ s₁]. hnf. intro P. hnf.
+  intros [hpre hpost]. simpl.
+  exists dnull. split.
+  - unfold coupling. split.
+    + unfold lmg. apply distr_ext.
+      intro. unfold dfst. rewrite dlet_null.
+      unfold SDistr_bind. rewrite dlet_null.
+      reflexivity.
+    + unfold rmg. apply distr_ext.
+      intro. unfold dsnd. rewrite dlet_null.
+      unfold SDistr_bind. rewrite dlet_null.
+      reflexivity.
+  - intros [? ?] [? ?]. rewrite dnullE.
+    rewrite mc_1_10.Num.Theory.ltrr. discriminate.
+Qed.
+
+Lemma r_assert' :
+  ∀ b₀ b₁,
+    ⊢ ⦃ λ _, b₀ = b₁ ⦄ assert b₀ ≈ assert b₁ ⦃ λ _ _, b₀ = true ∧ b₁ = true ⦄.
+Proof.
+  intros b₀ b₁.
+  destruct b₀, b₁. all: simpl.
+  - apply r_ret. auto.
+  - eapply rpre_hypothesis_rule. intros ? ? e. discriminate e.
+  - eapply rpre_hypothesis_rule. intros ? ? e. discriminate e.
+  - apply r_fail_unit.
+Qed.
+
+Theorem r_assert :
+  ∀ b₀ b₁ (pre : precond) (post : postcond _ _),
+    (∀ s, pre s → b₀ = b₁) →
+    (∀ s₀ s₁, b₀ = true ∧ b₁ = true → post s₀ s₁) →
+    ⊢ ⦃ pre ⦄ assert b₀ ≈ assert b₁ ⦃ post ⦄.
+Proof.
+  intros b₀ b₁ pre post hpre hpost.
+  eapply rpre_weaken_rule. 1: eapply rpost_weaken_rule.
+  1: eapply r_assert'.
+  - simpl. intros [? ?] [? ?]. eapply hpost.
+  - simpl. intros ? ?. eapply hpre.
+Qed.
+
+Theorem r_assertL :
+  ∀ b,
+    ⊢ ⦃ λ _, b = true ⦄ assert b ≈ ret Datatypes.tt ⦃ λ _ _, b = true ⦄.
+Proof.
+  intros b.
+  destruct b.
+  - simpl. apply r_ret. auto.
+  - simpl. apply rpre_hypothesis_rule. discriminate.
+Qed.
+
+Theorem r_assertR :
+  ∀ b,
+    ⊢ ⦃ λ _, b = true ⦄ ret Datatypes.tt ≈ assert b ⦃ λ _ _, b = true ⦄.
+Proof.
+  intros b.
+  destruct b.
+  - simpl. apply r_ret. auto.
+  - simpl. apply rpre_hypothesis_rule. discriminate.
+Qed.
