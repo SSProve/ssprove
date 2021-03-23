@@ -32,26 +32,12 @@ Import mc_1_10.Num.Theory.
 
 Import PackageNotation.
 
-Local Open Scope ring_scope.
+#[local] Open Scope ring_scope.
 
-Module Type SymmetricSchemeParam.
+Section OTP_example.
 
-  Parameter N : nat.
-  Parameter N_pos : Positive N.
-  Existing Instance N_pos.
-  Parameters Words Key : finType.
-  Parameter w0 : Words.
-  Parameter k0 : Key.
-  Parameter plus : Words → Key → Words.
-  Notation "m ⊕ k" := (plus m k) (at level 70).
-  Parameter plus_involutive : ∀ m k, (m ⊕ k) ⊕ k = m.
-
-End SymmetricSchemeParam.
-
-Module OTP_example.
-
-  Parameter (n : nat).
-  Parameter (n_pos : Positive n).
+  Context (n : nat).
+  Context (n_pos : Positive n).
 
   Lemma expn2n : (succn (succn (Zp_trunc (2^n)))) = (2^n)%N.
   Proof.
@@ -72,155 +58,149 @@ Module OTP_example.
     intro n'. auto.
   Qed.
 
-  Module π <: SymmetricSchemeParam.
+  Definition N : nat := 2^n.
 
-    Definition N : nat := 2^n.
+  Definition N_pos : Positive N := _.
 
-    Definition N_pos : Positive N := _.
+  Definition Words : finType := [finType of 'Z_N].
 
-    Definition Words : finType := [finType of 'Z_N].
+  Definition Key : finType := [finType of 'Z_N].
 
-    Definition Key : finType := [finType of 'Z_N].
+  Definition w0 : Words := 0.
 
-    Definition w0 : Words := 0.
+  Definition k0 : Key := 0.
 
-    Definition k0 : Key := 0.
-
-    #[program] Definition plus : Words → Key → Words :=
-      λ w k,
-        @Ordinal _ (BinNat.N.to_nat (BinNat.N.lxor (BinNat.N.of_nat (nat_of_ord w)) (BinNat.N.of_nat (nat_of_ord k)))) _.
-    Next Obligation.
-      destruct w as [w Hw], k as [k Hk].
-      destruct w as [|Pw], k as [|Pk].
-      1:{ simpl. assumption. }
-      1:{
-        simpl.
-        rewrite Pnat.SuccNat2Pos.id_succ.
-        assumption.
-      }
-      1:{
-        simpl.
-        rewrite Pnat.SuccNat2Pos.id_succ.
-        assumption.
-      }
-      remember (succn Pw) as w.
-      remember (succn Pk) as k.
-      assert (H :
-        ∀ m,
-          (2 ^ m)%nat =
-          BinNat.N.to_nat
-            (BinNat.N.pow (BinNums.Npos (BinNums.xO 1%AC)) (BinNat.N.of_nat m))
-      ).
-      { induction m.
-        - reflexivity.
-        - rewrite expnSr.
-          rewrite Nnat.Nat2N.inj_succ.
-          rewrite BinNat.N.pow_succ_r'.
-          rewrite Nnat.N2Nat.inj_mul.
-          rewrite PeanoNat.Nat.mul_comm.
-          apply f_equal2.
-          + apply IHm.
-          + reflexivity.
-      }
-      unfold N in *.
-      move: (BinNat.N.log2_lxor (BinNat.N.of_nat w) (BinNat.N.of_nat k)) => Hbound.
-      assert (BinNat.N.lt (BinNat.N.log2 (BinNat.N.of_nat w)) (BinNat.N.of_nat n)) as H1.
-      { rewrite -BinNat.N.log2_lt_pow2.
-        2:{
-          rewrite Heqw. rewrite Nnat.Nat2N.inj_succ.
-          apply BinNat.N.lt_0_succ.
-        }
-        unfold BinNat.N.lt.
-        rewrite Nnat.N2Nat.inj_compare.
-        rewrite PeanoNat.Nat.compare_lt_iff.
-        rewrite Nnat.Nat2N.id.
-        rewrite -H.
-        apply /ltP.
-        unfold Zp_trunc in *.
-        rewrite expn2n in Hw.
-        apply Hw.
-      }
-      assert (BinNat.N.lt (BinNat.N.log2 (BinNat.N.of_nat k)) (BinNat.N.of_nat n)) as H2.
-      { rewrite -BinNat.N.log2_lt_pow2.
-        2:{
-          rewrite Heqk. rewrite Nnat.Nat2N.inj_succ.
-          apply BinNat.N.lt_0_succ.
-        }
-        unfold BinNat.N.lt.
-        rewrite Nnat.N2Nat.inj_compare.
-        rewrite PeanoNat.Nat.compare_lt_iff.
-        rewrite Nnat.Nat2N.id.
-        rewrite -H.
-        apply /ltP.
-        rewrite expn2n in Hk.
-        apply Hk.
-      }
-      move: (BinNat.N.max_lub_lt _ _ _ H1 H2) => Hm.
-      destruct ((BinNat.N.lxor (BinNat.N.of_nat w) (BinNat.N.of_nat k)) == BinNat.N0) eqn:H0.
-      1:{
-        simpl. move: H0. move /eqP => H0. rewrite H0. simpl.
-        rewrite expn2n. rewrite expn_gt0. apply /orP. left. auto.
-      }
-      move: (BinNat.N.le_lt_trans _ _ _ Hbound Hm).
-      rewrite -BinNat.N.log2_lt_pow2.
+  #[program] Definition plus : Words → Key → Words :=
+    λ w k,
+      @Ordinal _ (BinNat.N.to_nat (BinNat.N.lxor (BinNat.N.of_nat (nat_of_ord w)) (BinNat.N.of_nat (nat_of_ord k)))) _.
+  Next Obligation.
+    destruct w as [w Hw], k as [k Hk].
+    destruct w as [|Pw], k as [|Pk].
+    1:{ simpl. assumption. }
+    1:{
+      simpl.
+      rewrite Pnat.SuccNat2Pos.id_succ.
+      assumption.
+    }
+    1:{
+      simpl.
+      rewrite Pnat.SuccNat2Pos.id_succ.
+      assumption.
+    }
+    remember (succn Pw) as w.
+    remember (succn Pk) as k.
+    assert (H :
+      ∀ m,
+        (2 ^ m)%nat =
+        BinNat.N.to_nat
+          (BinNat.N.pow (BinNums.Npos (BinNums.xO 1%AC)) (BinNat.N.of_nat m))
+    ).
+    { induction m.
+      - reflexivity.
+      - rewrite expnSr.
+        rewrite Nnat.Nat2N.inj_succ.
+        rewrite BinNat.N.pow_succ_r'.
+        rewrite Nnat.N2Nat.inj_mul.
+        rewrite PeanoNat.Nat.mul_comm.
+        apply f_equal2.
+        + apply IHm.
+        + reflexivity.
+    }
+    unfold N in *.
+    move: (BinNat.N.log2_lxor (BinNat.N.of_nat w) (BinNat.N.of_nat k)) => Hbound.
+    assert (BinNat.N.lt (BinNat.N.log2 (BinNat.N.of_nat w)) (BinNat.N.of_nat n)) as H1.
+    { rewrite -BinNat.N.log2_lt_pow2.
       2:{
-        apply BinNat.N.neq_0_lt_0.
-        move: H0. move /eqP. auto.
+        rewrite Heqw. rewrite Nnat.Nat2N.inj_succ.
+        apply BinNat.N.lt_0_succ.
       }
       unfold BinNat.N.lt.
       rewrite Nnat.N2Nat.inj_compare.
       rewrite PeanoNat.Nat.compare_lt_iff.
-      move => Hlt.
-      apply /ltP.
-      simpl in *.
-      rewrite H.
-      rewrite -H expn2n H.
-      assumption.
-    Qed.
-
-    Notation "m ⊕ k" := (plus m k) (at level 70).
-
-    Lemma plus_involutive : ∀ m k, (m ⊕ k) ⊕ k = m.
-    Proof.
-      intros m k.
-      move: ord_inj => Hordinj.
-      unfold injective in Hordinj.
-      apply Hordinj.
-      destruct m. cbn.
-      rewrite Nnat.N2Nat.id.
-      rewrite BinNat.N.lxor_assoc.
-      rewrite BinNat.N.lxor_nilpotent.
-      rewrite BinNat.N.lxor_0_r.
       rewrite Nnat.Nat2N.id.
-      reflexivity.
-    Qed.
+      rewrite -H.
+      apply /ltP.
+      unfold Zp_trunc in *.
+      rewrite expn2n in Hw.
+      apply Hw.
+    }
+    assert (BinNat.N.lt (BinNat.N.log2 (BinNat.N.of_nat k)) (BinNat.N.of_nat n)) as H2.
+    { rewrite -BinNat.N.log2_lt_pow2.
+      2:{
+        rewrite Heqk. rewrite Nnat.Nat2N.inj_succ.
+        apply BinNat.N.lt_0_succ.
+      }
+      unfold BinNat.N.lt.
+      rewrite Nnat.N2Nat.inj_compare.
+      rewrite PeanoNat.Nat.compare_lt_iff.
+      rewrite Nnat.Nat2N.id.
+      rewrite -H.
+      apply /ltP.
+      rewrite expn2n in Hk.
+      apply Hk.
+    }
+    move: (BinNat.N.max_lub_lt _ _ _ H1 H2) => Hm.
+    destruct ((BinNat.N.lxor (BinNat.N.of_nat w) (BinNat.N.of_nat k)) == BinNat.N0) eqn:H0.
+    1:{
+      simpl. move: H0. move /eqP => H0. rewrite H0. simpl.
+      rewrite expn2n. rewrite expn_gt0. apply /orP. left. auto.
+    }
+    move: (BinNat.N.le_lt_trans _ _ _ Hbound Hm).
+    rewrite -BinNat.N.log2_lt_pow2.
+    2:{
+      apply BinNat.N.neq_0_lt_0.
+      move: H0. move /eqP. auto.
+    }
+    unfold BinNat.N.lt.
+    rewrite Nnat.N2Nat.inj_compare.
+    rewrite PeanoNat.Nat.compare_lt_iff.
+    move => Hlt.
+    apply /ltP.
+    simpl in *.
+    rewrite H.
+    rewrite -H expn2n H.
+    assumption.
+  Qed.
 
-    Lemma plus_comm : ∀ m k, (m ⊕ k) = (k ⊕ m).
-    Proof.
-      intros m k.
-      move: ord_inj => Hordinj.
-      unfold injective in Hordinj.
-      apply Hordinj.
-      destruct m. cbn.
-      rewrite BinNat.N.lxor_comm. reflexivity.
-    Qed.
+  Notation "m ⊕ k" := (plus m k) (at level 70).
 
-    Lemma plus_assoc : ∀ m n k, ((m ⊕ n) ⊕ k) = (m ⊕ (n ⊕ k)).
-    Proof.
-      intros m n k.
-      move: ord_inj => Hordinj.
-      unfold injective in Hordinj.
-      apply Hordinj.
-      destruct m. cbn.
-      rewrite !Nnat.N2Nat.id.
-      rewrite BinNat.N.lxor_assoc. reflexivity.
-    Qed.
+  Lemma plus_involutive : ∀ m k, (m ⊕ k) ⊕ k = m.
+  Proof.
+    intros m k.
+    move: ord_inj => Hordinj.
+    unfold injective in Hordinj.
+    apply Hordinj.
+    destruct m. cbn.
+    rewrite Nnat.N2Nat.id.
+    rewrite BinNat.N.lxor_assoc.
+    rewrite BinNat.N.lxor_nilpotent.
+    rewrite BinNat.N.lxor_0_r.
+    rewrite Nnat.Nat2N.id.
+    reflexivity.
+  Qed.
 
-  End π.
+  Lemma plus_comm : ∀ m k, (m ⊕ k) = (k ⊕ m).
+  Proof.
+    intros m k.
+    move: ord_inj => Hordinj.
+    unfold injective in Hordinj.
+    apply Hordinj.
+    destruct m. cbn.
+    rewrite BinNat.N.lxor_comm. reflexivity.
+  Qed.
+
+  Lemma plus_assoc : ∀ m n k, ((m ⊕ n) ⊕ k) = (m ⊕ (n ⊕ k)).
+  Proof.
+    intros m p k.
+    move: ord_inj => Hordinj.
+    unfold injective in Hordinj.
+    apply Hordinj.
+    destruct m. cbn.
+    rewrite !Nnat.N2Nat.id.
+    rewrite BinNat.N.lxor_assoc. reflexivity.
+  Qed.
 
   #[local] Open Scope package_scope.
-
-  Import π.
 
   Definition i1 : nat := 0.
 
@@ -240,10 +220,10 @@ Module OTP_example.
 
   Definition ch2key : 'fin (2^n)%N → Key.
   Proof.
-    intros [n Hn].
-    exists n.
-    simpl in Hn. rewrite -expn2n in Hn.
-    exact Hn.
+    intros [m hm].
+    exists m.
+    simpl in hm. rewrite -expn2n in hm.
+    exact hm.
   Defined.
 
   Definition words2ch : Words → 'fin (2^n)%N.
@@ -256,10 +236,10 @@ Module OTP_example.
 
   Definition ch2words : 'fin (2^n)%N → Words.
   Proof.
-    intros [n Hn].
-    exists n.
-    simpl in Hn. rewrite -expn2n in Hn.
-    exact Hn.
+    intros [m hm].
+    exists m.
+    simpl in hm. rewrite -expn2n in hm.
+    exact hm.
   Defined.
 
   Lemma words2ch_ch2words :
