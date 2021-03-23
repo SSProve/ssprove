@@ -19,7 +19,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 
 From Mon Require Import SPropBase.
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
-  UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb StdDistr
+  UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb
   pkg_core_definition chUniverse pkg_composition pkg_rhl Package Prelude.
 
 From Coq Require Import Utf8.
