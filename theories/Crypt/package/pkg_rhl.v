@@ -1704,17 +1704,22 @@ Section For_loop_rule.
   Context (c0 c1 : raw_code 'unit).
 
   (*body maintains the loop invariant I*)
-  Context (Hbody : forall n : nat, (0 <= n <= N)%nat ->
+  (* to ease the proof we forget about this condition (0 <= n <= N)%nat -> *)
+  Context (Hbody : forall n : nat,
    ⊢ ⦃ I n ⦄ c0 ≈ c1 ⦃ λ '(_, s0) '(_, s1), I n.+1 (s0,s1) ⦄ ).
   
   Lemma for_loop_rule :
   ⊢ ⦃ I 0%nat ⦄ for_loop (λ _, c0) N ≈ for_loop (λ _, c1) N ⦃ λ '(_,s0) '(_,s1), I N.+1 (s0,s1) ⦄.
   Proof.
   elim: N.
-  - rewrite /=. apply Hbody. auto.
+  - rewrite /=. apply Hbody.
   - move=> /= n IH.
     rewrite rel_jdgE in IH. rewrite rel_jdgE.
-    Check rbind_rule.
+    unshelve eapply (  @rbind_rule _ _ _ _ (λ _, c0) (λ _, c1)
+          (for_loop (fun=> c0) n) (for_loop (fun=> c1) n) ).
+    1:{ exact ( λ '(_, s0) '(_, s2), I n.+1 (s0, s2) ). }
+    1:{ assumption. }
+    move=> tt1 tt2.    
   Abort.
   
 
