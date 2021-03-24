@@ -39,7 +39,6 @@ Import GroupScope GRing.Theory.
 
 Import PackageNotation.
 
-Parameter η : nat.
 Parameter gT : finGroupType.
 Definition ζ : {set gT} := [set : gT].
 Parameter g :  gT.
