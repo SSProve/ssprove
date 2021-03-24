@@ -243,6 +243,7 @@ rules directly with `code`.
 | swap          | `rswap_rule`          |
 | eqDistrL      | `rrewrite_eqDistrL`   |
 | symmetry      | `rsymmetry`           |
+| for-loop      | `for_loop_rule`       |
 
 Some rules are for now only proven in the logic but have not been lifted
 to packages, they can be found in `theories/Crypt/rules/UniformStateProb.v`:

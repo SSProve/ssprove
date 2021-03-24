@@ -1,4 +1,4 @@
-From Crypt Require Import pkg_composition PRF ElGamal pkg_rhl UniformStateProb.
+From Crypt Require Import pkg_composition PRF ElGamal pkg_rhl UniformStateProb RulesStateProb.
 
 (* Notation to chain lets and end with 0 *)
 Notation "[ 'let' ]" :=
@@ -32,6 +32,8 @@ Definition results_from_the_paper := [let
   @Uniform_bij_rule ;
   @assert_rule ;
   @assert_rule_left ;
+  @bounded_do_while_rule;
+  @for_loop_rule;
   Advantage_triangle ;
   Advantage_link ;
   @prove_relational ;
