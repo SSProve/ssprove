@@ -39,3 +39,4 @@ Definition results_from_the_paper := [let
 ].
 
 Print Assumptions results_from_the_paper.
+Print Assumptions ElGamal_OT.
