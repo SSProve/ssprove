@@ -1688,6 +1688,41 @@ Theorem bounded_do_while_rule *)
 (*TODO: asymmetric variants of bounded_do_while --
   Rem.: low priority as not useful for our examples *)
 
+
+Section For_loop_rule.
+(*for i = 0 to N : do c*)
+  Fixpoint for_loop (c : nat -> raw_code 'unit)
+                    (N : nat) : raw_code 'unit :=
+  match N with
+  | 0 => c 0%nat
+  | S m => bind (for_loop c m) (λ _, c (S m))
+  end.
+
+  Context (I : nat -> precond)
+          (N : nat).
+
+  Context (c0 c1 : raw_code 'unit).
+
+  (*body maintains the loop invariant I*)
+  Context (Hbody : forall n : nat, (0 <= n <= N)%nat ->
+   ⊢ ⦃ I n ⦄ c0 ≈ c1 ⦃ λ '(_, s0) '(_, s1), I n.+1 (s0,s1) ⦄ ).
+  
+  Lemma for_loop_rule :
+  ⊢ ⦃ I 0%nat ⦄ for_loop (λ _, c0) N ≈ for_loop (λ _, c1) N ⦃ λ '(_,s0) '(_,s1), I N.+1 (s0,s1) ⦄.
+  Proof.
+  elim: N.
+  - rewrite /=. apply Hbody. auto.
+  - move=> /= n IH.
+    rewrite rel_jdgE in IH. rewrite rel_jdgE.
+    Check rbind_rule.
+  Abort.
+  
+
+End For_loop_rule.
+
+
+
+
 Lemma rcoupling_eq :
   ∀ {A : ord_choiceType} (K₀ K₁ : raw_code A) (ψ : precond),
     ⊢ ⦃ ψ ⦄ K₀ ≈ K₁ ⦃ eq ⦄ →
