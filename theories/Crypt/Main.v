@@ -24,7 +24,7 @@ Definition results_from_the_paper := [let
   id_link ;
   interchange ;
   security_based_on_prf ;
-  (* ElGamal_OT ; *)
+  ElGamal_Z3.ElGamal_OT ;
   @rreflexivity_rule ;
   @rbind_rule ;
   @rswap_rule ;
@@ -39,4 +39,3 @@ Definition results_from_the_paper := [let
 ].
 
 Print Assumptions results_from_the_paper.
-Print Assumptions ElGamal_OT.

@@ -39,11 +39,19 @@ Import GroupScope GRing.Theory.
 
 Import PackageNotation.
 
-Parameter gT : finGroupType.
-Definition ζ : {set gT} := [set : gT].
-Parameter g :  gT.
-Parameter g_gen : ζ = <[g]>.
-Parameter prime_order : prime #[g].
+Module Type ElGamalParam.
+
+  Parameter gT : finGroupType.
+  Definition ζ : {set gT} := [set : gT].
+  Parameter g :  gT.
+  Parameter g_gen : ζ = <[g]>.
+  Parameter prime_order : prime #[g].
+
+End ElGamalParam.
+
+Module ElGamal (EGP : ElGamalParam).
+
+Import EGP.
 
 Lemma cyclic_zeta: cyclic ζ.
 Proof.
@@ -452,3 +460,27 @@ Proof.
   rewrite GRing.addr0. rewrite GRing.add0r.
   rewrite -Advantage_link. auto.
 Qed.
+
+End ElGamal.
+
+Module EGP_Z3 <: ElGamalParam.
+
+  Definition gT : finGroupType := Zp_finGroupType 2.
+  Definition ζ : {set gT} := [set : gT].
+  Definition g :  gT := Zp1.
+
+  Lemma g_gen : ζ = <[g]>.
+  Proof.
+    unfold ζ, g. apply Zp_cycle.
+  Qed.
+
+  Lemma prime_order : prime #[g].
+  Proof.
+    unfold g.
+    rewrite order_Zp1.
+    reflexivity.
+  Qed.
+
+End EGP_Z3.
+
+Module ElGamal_Z3 := ElGamal EGP_Z3.

@@ -173,15 +173,15 @@ Finally we prove a law involving sequential and parallel composition
 stating how we can interchange them:
 ```coq
 Lemma interchange :
-∀ A B C D E F L1 L2 L3 L4 p1 p2 p3 p4,
-  ValidPackage L1 B A p1 →
-  ValidPackage L2 E D p2 →
-  ValidPackage L3 C B p3 →
-  ValidPackage L4 F E p4 →
-  trimmed A p1 →
-  trimmed D p2 →
-  Parable p3 p4 →
-  par (link p1 p3) (link p2 p4) = link (par p1 p2) (par p3 p4).
+  ∀ A B C D E F L1 L2 L3 L4 p1 p2 p3 p4,
+    ValidPackage L1 B A p1 →
+    ValidPackage L2 E D p2 →
+    ValidPackage L3 C B p3 →
+    ValidPackage L4 F E p4 →
+    trimmed A p1 →
+    trimmed D p2 →
+    Parable p3 p4 →
+    par (link p1 p3) (link p2 p4) = link (par p1 p2) (par p3 p4).
 ```
 where the last line can be read as
 `(p1 ∘ p3) || (p2 ∘ p4) = (p1 || p2) ∘ (p3 || p4)`.
@@ -445,3 +445,8 @@ boolp.constructive_indefinite_description
 SPropBase.ax_proof_irrel : ClassicalFacts.proof_irrelevance
 Axioms.R : reals.Real.type
 ```
+
+The ElGamal example is parametrized by a cyclic group using a Coq functor.
+To print its axioms we have to provide an instance of this functor, and for
+simplicity we chose to use ℤ₃ as an instance even if it is not realistic.
+The axioms we use do not depend on the instance itself.
