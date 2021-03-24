@@ -1688,7 +1688,6 @@ Theorem bounded_do_while_rule *)
 (*TODO: asymmetric variants of bounded_do_while --
   Rem.: low priority as not useful for our examples *)
 
-
 Section For_loop_rule.
 (*for i = 0 to N : do c*)
   Fixpoint for_loop (c : nat -> raw_code 'unit)
@@ -1701,24 +1700,24 @@ Section For_loop_rule.
   Context (I : nat -> precond)
           (N : nat).
 
-  Context (c0 c1 : raw_code 'unit).
+  Context (c0 c1 : nat -> raw_code 'unit).
 
   (* hypothesis : *)
   (*body maintains the loop invariant I*)
   (* to ease the proof we forget about this condition (0 <= n <= N)%nat -> *)
   
   Lemma for_loop_rule :
-  (forall n : nat,
-   ⊢ ⦃ I n ⦄ c0 ≈ c1 ⦃ λ '(_, s0) '(_, s1), I n.+1 (s0,s1) ⦄ ) ->
-  ⊢ ⦃ I 0%nat ⦄ for_loop (λ _, c0) N ≈ for_loop (λ _, c1) N ⦃ λ '(_,s0) '(_,s1), I N.+1 (s0,s1) ⦄.
+  (forall i : nat,
+   ⊢ ⦃ I i ⦄ c0 i ≈ c1 i ⦃ λ '(_, s0) '(_, s1), I i.+1 (s0,s1) ⦄ ) ->
+  ⊢ ⦃ I 0%nat ⦄ for_loop c0 N ≈ for_loop c1 N ⦃ λ '(_,s0) '(_,s1), I N.+1 (s0,s1) ⦄.
   Proof.
   move=> Hbody.
   elim: N.
   - rewrite /=. apply (Hbody 0%nat).
   - move=> /= n IH.
     rewrite rel_jdgE in IH. rewrite rel_jdgE.
-    unshelve eapply (  @rbind_rule _ _ _ _ (λ _, c0) (λ _, c1)
-          (for_loop (fun=> c0) n) (for_loop (fun=> c1) n) ).
+    unshelve eapply
+( @rbind_rule _ _ _ _ (λ _, c0 n.+1) (λ _, c1 n.+1) (for_loop c0 n) (for_loop c1 n) ).
     1:{ exact ( λ '(_, s0) '(_, s2), I n.+1 (s0, s2) ). }
     1:{ assumption. }
     move=> tt1 tt2. rewrite /=.
@@ -1728,6 +1727,48 @@ Section For_loop_rule.
   
 
 End For_loop_rule.
+
+
+(* alternative, more imperative version (weaker)*)
+(* Section For_loop_rule. *)
+(* (*for i = 0 to N : do c*) *)
+(*   Fixpoint for_loop (c : nat -> raw_code 'unit) *)
+(*                     (N : nat) : raw_code 'unit := *)
+(*   match N with *)
+(*   | 0 => c 0%nat *)
+(*   | S m => bind (for_loop c m) (λ _, c (S m)) *)
+(*   end. *)
+
+(*   Context (I : nat -> precond) *)
+(*           (N : nat). *)
+
+(*   Context (c0 c1 : raw_code 'unit). *)
+
+(*   (* hypothesis : *) *)
+(*   (*body maintains the loop invariant I*) *)
+(*   (* to ease the proof we forget about this condition (0 <= n <= N)%nat -> *) *)
+  
+(*   Lemma for_loop_rule : *)
+(*   (forall n : nat, *)
+(*    ⊢ ⦃ I n ⦄ c0 ≈ c1 ⦃ λ '(_, s0) '(_, s1), I n.+1 (s0,s1) ⦄ ) -> *)
+(*   ⊢ ⦃ I 0%nat ⦄ for_loop (λ _, c0) N ≈ for_loop (λ _, c1) N ⦃ λ '(_,s0) '(_,s1), I N.+1 (s0,s1) ⦄. *)
+(*   Proof. *)
+(*   move=> Hbody. *)
+(*   elim: N. *)
+(*   - rewrite /=. apply (Hbody 0%nat). *)
+(*   - move=> /= n IH. *)
+(*     rewrite rel_jdgE in IH. rewrite rel_jdgE. *)
+(*     unshelve eapply (  @rbind_rule _ _ _ _ (λ _, c0) (λ _, c1) *)
+(*           (for_loop (fun=> c0) n) (for_loop (fun=> c1) n) ). *)
+(*     1:{ exact ( λ '(_, s0) '(_, s2), I n.+1 (s0, s2) ). } *)
+(*     1:{ assumption. } *)
+(*     move=> tt1 tt2. rewrite /=. *)
+(*     pose (Hbody_suc := (Hbody n.+1)). rewrite -rel_jdgE. *)
+(*     assumption. *)
+(*   Qed. *)
+  
+
+(* End For_loop_rule. *)
 
 
 
