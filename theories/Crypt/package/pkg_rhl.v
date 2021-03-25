@@ -1775,6 +1775,22 @@ End For_loop_rule.
 
 (* End For_loop_rule. *)
 
+Lemma valid_for_loop :
+  ∀ L I c N,
+    (∀ i, valid_code L I (c i)) →
+    valid_code L I (for_loop c N).
+Proof.
+  intros L I c N h.
+  induction N. all: simpl.
+  - eapply h.
+  - eapply valid_bind. all: eauto.
+Qed.
+
+Hint Extern 1 (ValidProgram ?L ?I (for_loop ?c ?N)) =>
+  eapply valid_for_loop ;
+  intro ; apply valid_code_from_class
+  : typeclass_instances.
+
 Lemma rcoupling_eq :
   ∀ {A : ord_choiceType} (K₀ K₁ : raw_code A) (ψ : precond),
     ⊢ ⦃ ψ ⦄ K₀ ≈ K₁ ⦃ eq ⦄ →
