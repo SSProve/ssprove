@@ -1660,6 +1660,20 @@ Proof.
   destruct b. all: reflexivity.
 Qed.
 
+(* Alternative to rbind_rule *)
+Lemma r_bind :
+  ∀ {A₀ A₁ B₀ B₁ : ord_choiceType} m₀ m₁ f₀ f₁
+    (pre : precond) (mid : postcond A₀ A₁) (post : postcond B₀ B₁),
+    ⊢ ⦃ pre ⦄ m₀ ≈ m₁ ⦃ mid ⦄ →
+    (∀ a₀ a₁, ⊢ ⦃ λ '(s₀, s₁), mid (a₀, s₀) (a₁, s₁) ⦄ f₀ a₀ ≈ f₁ a₁ ⦃ post ⦄) →
+    ⊢ ⦃ pre ⦄ bind m₀ f₀ ≈ bind m₁ f₁ ⦃ post ⦄.
+Proof.
+  intros A₀ A₁ B₀ B₁ m₀ m₁ f₀ f₁ pre mid post hm hf.
+  rewrite rel_jdgE. eapply rbind_rule.
+  - rewrite -rel_jdgE. exact hm.
+  - intros a₀ a₁. rewrite -rel_jdgE. eapply hf.
+Qed.
+
 (* TW: The (∀ s, pre s → b₀ = b₁) hypothesis is really weird.
   The booleans do not depend on s, is that to say that they must be equal
   unless pre is empty?
@@ -1689,42 +1703,35 @@ Theorem bounded_do_while_rule *)
   Rem.: low priority as not useful for our examples *)
 
 Section For_loop_rule.
-(*for i = 0 to N : do c*)
-  Fixpoint for_loop (c : nat -> raw_code 'unit)
-                    (N : nat) : raw_code 'unit :=
-  match N with
-  | 0 => c 0%nat
-  | S m => bind (for_loop c m) (λ _, c (S m))
-  end.
 
-  Context (I : nat -> precond)
-          (N : nat).
+  (* for i = 0 to N : do c *)
+  Fixpoint for_loop (c : nat → raw_code 'unit) (N : nat) : raw_code 'unit :=
+    match N with
+    | 0 => c 0%nat
+    | S m => for_loop c m ;; c (S m)
+    end.
 
-  Context (c0 c1 : nat -> raw_code 'unit).
+  Context (I : nat → precond) (N : nat).
+
+  Context (c₀ c₁ : nat → raw_code 'unit).
 
   (* hypothesis : *)
-  (*body maintains the loop invariant I*)
+  (* body maintains the loop invariant I *)
   (* to ease the proof we forget about this condition (0 <= n <= N)%nat -> *)
-  
+
   Lemma for_loop_rule :
-  (forall i : nat,
-   ⊢ ⦃ I i ⦄ c0 i ≈ c1 i ⦃ λ '(_, s0) '(_, s1), I i.+1 (s0,s1) ⦄ ) ->
-  ⊢ ⦃ I 0%nat ⦄ for_loop c0 N ≈ for_loop c1 N ⦃ λ '(_,s0) '(_,s1), I N.+1 (s0,s1) ⦄.
+    (∀ i, ⊢ ⦃ I i ⦄ c₀ i ≈ c₁ i ⦃ λ '(_, s₀) '(_, s₁), I i.+1 (s₀,s₁) ⦄) →
+    ⊢ ⦃ I 0%nat ⦄
+      for_loop c₀ N ≈ for_loop c₁ N
+    ⦃ λ '(_,s₀) '(_,s₁), I N.+1 (s₀,s₁) ⦄.
   Proof.
-  move=> Hbody.
-  elim: N.
-  - rewrite /=. apply (Hbody 0%nat).
-  - move=> /= n IH.
-    rewrite rel_jdgE in IH. rewrite rel_jdgE.
-    unshelve eapply
-( @rbind_rule _ _ _ _ (λ _, c0 n.+1) (λ _, c1 n.+1) (for_loop c0 n) (for_loop c1 n) ).
-    1:{ exact ( λ '(_, s0) '(_, s2), I n.+1 (s0, s2) ). }
-    1:{ assumption. }
-    move=> tt1 tt2. rewrite /=.
-    pose (Hbody_suc := (Hbody n.+1)). rewrite -rel_jdgE.
-    assumption.
+    intros h.
+    induction N as [| n ih].
+    - simpl. apply h.
+    - simpl. eapply r_bind.
+      + eapply ih.
+      + simpl. intros _ _. eapply h.
   Qed.
-  
 
 End For_loop_rule.
 
@@ -1747,7 +1754,7 @@ End For_loop_rule.
 (*   (* hypothesis : *) *)
 (*   (*body maintains the loop invariant I*) *)
 (*   (* to ease the proof we forget about this condition (0 <= n <= N)%nat -> *) *)
-  
+
 (*   Lemma for_loop_rule : *)
 (*   (forall n : nat, *)
 (*    ⊢ ⦃ I n ⦄ c0 ≈ c1 ⦃ λ '(_, s0) '(_, s1), I n.+1 (s0,s1) ⦄ ) -> *)
@@ -1766,12 +1773,8 @@ End For_loop_rule.
 (*     pose (Hbody_suc := (Hbody n.+1)). rewrite -rel_jdgE. *)
 (*     assumption. *)
 (*   Qed. *)
-  
 
 (* End For_loop_rule. *)
-
-
-
 
 Lemma rcoupling_eq :
   ∀ {A : ord_choiceType} (K₀ K₁ : raw_code A) (ψ : precond),
