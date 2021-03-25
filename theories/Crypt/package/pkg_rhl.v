@@ -2708,23 +2708,6 @@ Proof.
     rewrite mc_1_10.Num.Theory.ltrr. discriminate.
 Qed.
 
-Theorem r_assertD' :
-  ∀ {A₀ A₁ : chUniverse} b₀ b₁
-    (k₀ : b₀ = true → raw_code A₀) (k₁ : b₁ = true → raw_code A₁),
-    (∀ e₀ e₁, ⊢ ⦃ λ _, b₀ = b₁ ⦄ k₀ e₀ ≈ k₁ e₁ ⦃ λ _ _, True ⦄) →
-    ⊢ ⦃ λ _, b₀ = b₁ ⦄
-      #assert b₀ as x ;; k₀ x ≈ #assert b₁ as x ;; k₁ x
-    ⦃ λ _ _, b₀ = true ∧ b₁ = true ⦄.
-Proof.
-  intros A₀ A₁ b₀ b₁ k₀ k₁ h.
-  destruct b₀, b₁. all: simpl.
-  - eapply rpost_weaken_rule. 1: eapply h.
-    simpl. intros. auto.
-  - eapply rpre_hypothesis_rule. intros ? ? e. discriminate e.
-  - eapply rpre_hypothesis_rule. intros ? ? e. discriminate e.
-  - eapply r_fail.
-Qed.
-
 Theorem r_assertD :
   ∀ {A₀ A₁ : chUniverse} b₀ b₁ (pre : precond) (post : postcond A₀ A₁) k₀ k₁,
     (∀ s, pre s → b₀ = b₁) →
@@ -2733,12 +2716,11 @@ Theorem r_assertD :
     ⊢ ⦃ pre ⦄ #assert b₀ as x ;; k₀ x ≈ #assert b₁ as x ;; k₁ x ⦃ post ⦄.
 Proof.
   intros A₀ A₁ b₀ b₁ pre post k₀ k₁ hpre hpost h.
-  eapply rpre_weaken_rule. 1: eapply rpost_weaken_rule.
-  1: eapply r_assertD'.
-  - intros e₀ e₁.
-    eapply rpre_weaken_rule. 1: eapply rpost_weaken_rule. 1: eapply h.
-    + intros. auto.
-    + give_up.
-  - simpl. intros [? ?] [? ?]. eapply hpost.
-  - simpl. intros ? ? ?. eapply hpre.
-Abort.
+  destruct b₀, b₁. all: simpl.
+  - eapply h.
+  - eapply rpre_hypothesis_rule. intros ? ? hh.
+    eapply hpre in hh. discriminate.
+  - eapply rpre_hypothesis_rule. intros ? ? hh.
+    eapply hpre in hh. discriminate.
+  - eapply r_fail.
+Qed.
