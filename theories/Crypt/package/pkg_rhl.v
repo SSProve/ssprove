@@ -2560,6 +2560,43 @@ Definition assertD {A : chUniverse} b (k : b = true → raw_code A) : raw_code A
   then k
   else λ _, ret (chCanonical A)) erefl.
 
+Lemma valid_fail_unit :
+  ∀ L I, valid_code L I fail_unit.
+Proof.
+  intros L I.
+  unfold fail_unit. eapply valid_code_from_class. exact _.
+Qed.
+
+Hint Extern 1 (ValidProgram ?L ?I fail_unit) =>
+  eapply valid_fail_unit
+  : typeclass_instances.
+
+Lemma valid_assert :
+  ∀ L I b, valid_code L I (assert b).
+Proof.
+  intros L I b. unfold assert. eapply valid_code_from_class. exact _.
+Qed.
+
+Hint Extern 1 (ValidProgram ?L ?I (assert ?b)) =>
+  eapply valid_assert
+  : typeclass_instances.
+
+Lemma valid_assertD :
+  ∀ A L I b k,
+    (∀ x, valid_code L I (k x)) →
+    valid_code L I (@assertD A b k).
+Proof.
+  intros A L I b k h.
+  destruct b.
+  - simpl. eapply h.
+  - simpl. eapply valid_code_from_class. exact _.
+Qed.
+
+Hint Extern 1 (ValidProgram ?L ?I (assertD ?b ?k)) =>
+  eapply valid_assertD ;
+  intro ; apply valid_code_from_class
+  : typeclass_instances.
+
 Lemma r_fail_unit :
   ∀ pre post,
     ⊢ ⦃ pre ⦄ fail_unit ≈ fail_unit ⦃ post ⦄.
