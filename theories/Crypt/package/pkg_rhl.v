@@ -2554,11 +2554,13 @@ Definition fail_unit : raw_code 'unit :=
 Definition assert b : raw_code 'unit :=
   if b then ret Datatypes.tt else fail_unit.
 
+(* fail at any type in the chUniverse *)
+Definition fail {A : chUniverse} : raw_code A :=
+  x ← sample (A ; dnull) ;; ret x.
+
 (* Dependent version of assert *)
 Definition assertD {A : chUniverse} b (k : b = true → raw_code A) : raw_code A :=
-  (if b as b' return b = b' → raw_code A
-  then k
-  else λ _, ret (chCanonical A)) erefl.
+  (if b as b' return b = b' → raw_code A then k else λ _, fail) erefl.
 
 Lemma valid_fail_unit :
   ∀ L I, valid_code L I fail_unit.
@@ -2579,6 +2581,16 @@ Qed.
 
 Hint Extern 1 (ValidProgram ?L ?I (assert ?b)) =>
   eapply valid_assert
+  : typeclass_instances.
+
+Lemma valid_fail :
+  ∀ A L I, valid_code L I (@fail A).
+Proof.
+  intros A L I. unfold fail. eapply valid_code_from_class. exact _.
+Qed.
+
+Hint Extern 1 (ValidProgram ?L ?I fail) =>
+  eapply valid_fail
   : typeclass_instances.
 
 Lemma valid_assertD :
@@ -2675,6 +2687,27 @@ Proof.
   - simpl. apply rpre_hypothesis_rule. discriminate.
 Qed.
 
+Lemma r_fail :
+  ∀ A₀ A₁ pre post,
+    ⊢ ⦃ pre ⦄ @fail A₀ ≈ @fail A₁ ⦃ post ⦄.
+Proof.
+  intros A₀ A₁ pre post.
+  rewrite rel_jdgE. intros [s₀ s₁]. hnf. intro P. hnf.
+  intros [hpre hpost]. simpl.
+  exists dnull. split.
+  - unfold coupling. split.
+    + unfold lmg. apply distr_ext.
+      intro. unfold dfst. rewrite dlet_null.
+      unfold SDistr_bind. rewrite dlet_null.
+      reflexivity.
+    + unfold rmg. apply distr_ext.
+      intro. unfold dsnd. rewrite dlet_null.
+      unfold SDistr_bind. rewrite dlet_null.
+      reflexivity.
+  - intros [? ?] [? ?]. rewrite dnullE.
+    rewrite mc_1_10.Num.Theory.ltrr. discriminate.
+Qed.
+
 Theorem r_assertD' :
   ∀ {A₀ A₁ : chUniverse} b₀ b₁ (k₀ : _ → raw_code A₀) (k₁ : _ → raw_code A₁),
     ⊢ ⦃ λ _, b₀ = b₁ ⦄
@@ -2686,8 +2719,7 @@ Proof.
   - admit.
   - eapply rpre_hypothesis_rule. intros ? ? e. discriminate e.
   - eapply rpre_hypothesis_rule. intros ? ? e. discriminate e.
-  - (* assertD is ill-defined *)
-    give_up.
+  - eapply r_fail.
 Abort.
 
 Theorem r_assertD :
