@@ -2605,8 +2605,12 @@ Proof.
   intros A L I. unfold fail. eapply valid_code_from_class. exact _.
 Qed.
 
-Hint Extern 1 (ValidProgram ?L ?I fail) =>
+(* In some cases eapply valid_fail fails and I don't understand why *)
+(* Hint Extern 1 (ValidProgram ?L ?I fail) =>
   eapply valid_fail
+  : typeclass_instances. *)
+Hint Extern 1 (ValidProgram ?L ?I fail) =>
+  unfold fail
   : typeclass_instances.
 
 Lemma valid_assertD :

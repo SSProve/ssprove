@@ -41,10 +41,7 @@ Definition GET := 2%N.
 
 Definition key n `{Positive n} : Location := ('option ('fin n) ; 0%N).
 
-(* It can't solve it for now because it doesn't have any rules for
-  assert, fail and assert_false.
-*)
-(* Definition KEY n `{Positive n} :
+Definition KEY n `{Positive n} :
   package
     (fset [:: key n ])
     [interface]
@@ -57,7 +54,7 @@ Definition key n `{Positive n} : Location := ('option ('fin n) ; 0%N).
     def #[ GEN ] (_ : 'unit) : 'unit {
       k ← get (key n) ;;
       assert (k == None) ;;
-      k ← sample U (i_key n) ;;
+      k ← sample uniform (i_key n) ;;
       put (key n) := Some k ;;
       ret Datatypes.tt
     } ;
@@ -71,7 +68,7 @@ Definition key n `{Positive n} : Location := ('option ('fin n) ; 0%N).
       k ← get (key n) ;;
       match k with
       | Some k => ret k
-      | None => @assert_false ('fin n)
+      | None => @fail ('fin n)
       end
     }
-  ]. *)
+  ].
