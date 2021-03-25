@@ -2711,11 +2711,10 @@ Qed.
 Theorem r_assertD :
   ∀ {A₀ A₁ : chUniverse} b₀ b₁ (pre : precond) (post : postcond A₀ A₁) k₀ k₁,
     (∀ s, pre s → b₀ = b₁) →
-    (∀ s₀ s₁, b₀ = true ∧ b₁ = true → post s₀ s₁) →
     (∀ e₀ e₁, ⊢ ⦃ pre ⦄ k₀ e₀ ≈ k₁ e₁ ⦃ post ⦄) →
     ⊢ ⦃ pre ⦄ #assert b₀ as x ;; k₀ x ≈ #assert b₁ as x ;; k₁ x ⦃ post ⦄.
 Proof.
-  intros A₀ A₁ b₀ b₁ pre post k₀ k₁ hpre hpost h.
+  intros A₀ A₁ b₀ b₁ pre post k₀ k₁ hpre h.
   destruct b₀, b₁. all: simpl.
   - eapply h.
   - eapply rpre_hypothesis_rule. intros ? ? hh.
