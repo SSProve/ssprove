@@ -503,7 +503,7 @@ Proof.
   - constructor.
 Qed.
 
-Hint Extern 1 (ValidProgram ?L ?I (get_op_default ?p ?o ?x)) =>
+Hint Extern 1 (ValidCode ?L ?I (get_op_default ?p ?o ?x)) =>
   eapply valid_get_op_default ; [
     apply valid_package_from_class
   | auto_in_fset
@@ -1269,7 +1269,7 @@ Qed.
 (* TODO MOVE *)
 
 (* Slightly more expensive version that allows to change parameters *)
-Hint Extern 3 (ValidProgram ?L ?I ?p) =>
+Hint Extern 3 (ValidCode ?L ?I ?p) =>
   match goal with
   | h : is_true (fsubset ?x ?y) |- _ =>
     eapply valid_injectLocations with (1 := h) ;
@@ -1305,7 +1305,7 @@ Lemma some_lemma_for_prove_relational :
   ∀ {L₀ L₁ LA E} (p₀ p₁ : raw_package) (I : precond) {B} (A : raw_code B)
     `{ValidPackage L₀ Game_import E p₀}
     `{ValidPackage L₁ Game_import E p₁}
-    `{@ValidProgram LA E B A},
+    `{@ValidCode LA E B A},
     INV LA I →
     eq_up_to_inv E I p₀ p₁ →
     r⊨ ⦃ I ⦄ code_link A p₀ ≈ code_link A p₁
@@ -1786,7 +1786,7 @@ Proof.
   - eapply valid_bind. all: eauto.
 Qed.
 
-Hint Extern 1 (ValidProgram ?L ?I (for_loop ?c ?N)) =>
+Hint Extern 1 (ValidCode ?L ?I (for_loop ?c ?N)) =>
   eapply valid_for_loop ;
   intro ; apply valid_code_from_class
   : typeclass_instances.
@@ -2585,7 +2585,7 @@ Proof.
   unfold fail_unit. eapply valid_code_from_class. exact _.
 Qed.
 
-Hint Extern 1 (ValidProgram ?L ?I fail_unit) =>
+Hint Extern 1 (ValidCode ?L ?I fail_unit) =>
   eapply valid_fail_unit
   : typeclass_instances.
 
@@ -2595,7 +2595,7 @@ Proof.
   intros L I b. unfold assert. eapply valid_code_from_class. exact _.
 Qed.
 
-Hint Extern 1 (ValidProgram ?L ?I (assert ?b)) =>
+Hint Extern 1 (ValidCode ?L ?I (assert ?b)) =>
   eapply valid_assert
   : typeclass_instances.
 
@@ -2605,7 +2605,7 @@ Proof.
   intros A L I. unfold fail. eapply valid_code_from_class. exact _.
 Qed.
 
-Hint Extern 1 (ValidProgram ?L ?I fail) =>
+Hint Extern 1 (ValidCode ?L ?I fail) =>
   eapply valid_fail
   : typeclass_instances.
 
@@ -2620,7 +2620,7 @@ Proof.
   - simpl. eapply valid_code_from_class. exact _.
 Qed.
 
-Hint Extern 1 (ValidProgram ?L ?I (assertD ?b ?k)) =>
+Hint Extern 1 (ValidCode ?L ?I (assertD ?b ?k)) =>
   eapply valid_assertD ;
   intro ; apply valid_code_from_class
   : typeclass_instances.

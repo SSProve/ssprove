@@ -209,12 +209,12 @@ Ltac unify_positive_proofs :=
   unmark_tac_intro_mark ;
   subst_marked.
 
-(** Tactic to unify ValidProgram proofs in a goal *)
+(** Tactic to unify ValidCode proofs in a goal *)
 
 Ltac unify_marked_code_proofs :=
   repeat match goal with
-  | h : tac_intro_mark (ValidProgram ?L ?I ?p),
-    h' : tac_intro_mark (ValidProgram ?L ?I ?p) |- _ =>
+  | h : tac_intro_mark (ValidCode ?L ?I ?p),
+    h' : tac_intro_mark (ValidCode ?L ?I ?p) |- _ =>
     assert (h = h') by eapply uip ;
     subst h'
   end.
@@ -339,11 +339,11 @@ Hint Extern 2 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
   ]
   : typeclass_instances.
 
-Hint Extern 10 (ValidProgram ?L ?I (let u := _ in _)) =>
+Hint Extern 10 (ValidCode ?L ?I (let u := _ in _)) =>
   cbv zeta
   : typeclass_instances.
 
-Hint Extern 2 (ValidProgram ?L ?I (match ?t with _ => _ end)) =>
+Hint Extern 2 (ValidCode ?L ?I (match ?t with _ => _ end)) =>
   destruct t
   : typeclass_instances.
 
