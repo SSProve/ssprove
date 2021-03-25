@@ -2597,6 +2597,18 @@ Hint Extern 1 (ValidProgram ?L ?I (assertD ?b ?k)) =>
   intro ; apply valid_code_from_class
   : typeclass_instances.
 
+Notation "'#assert' b 'as' id ;; k" :=
+  (assertD b (λ id, k))
+  (at level 100, id ident, b at next level, right associativity,
+  format "#assert  b  as  id  ;;  '/' k")
+  : package_scope.
+
+Notation "'#assert' b ;; k" :=
+  (assertD b (λ _, k))
+  (at level 100, b at next level, right associativity,
+  format "#assert  b  ;;  '/' k")
+  : package_scope.
+
 Lemma r_fail_unit :
   ∀ pre post,
     ⊢ ⦃ pre ⦄ fail_unit ≈ fail_unit ⦃ post ⦄.
@@ -2662,3 +2674,25 @@ Proof.
   - simpl. apply r_ret. auto.
   - simpl. apply rpre_hypothesis_rule. discriminate.
 Qed.
+
+Theorem r_assertD' :
+  ∀ {A₀ A₁ : chUniverse} b₀ b₁ (k₀ : _ → raw_code A₀) (k₁ : _ → raw_code A₁),
+    ⊢ ⦃ λ _, b₀ = b₁ ⦄
+      #assert b₀ as x ;; k₀ x ≈ #assert b₁ as x ;; k₁ x
+    ⦃ λ _ _, b₀ = true ∧ b₁ = true ⦄.
+Proof.
+  intros A₀ A₁ b₀ b₁ k₀ k₁.
+  destruct b₀, b₁. all: simpl.
+  - admit.
+  - eapply rpre_hypothesis_rule. intros ? ? e. discriminate e.
+  - eapply rpre_hypothesis_rule. intros ? ? e. discriminate e.
+  - (* assertD is ill-defined *)
+    give_up.
+Abort.
+
+Theorem r_assertD :
+  ∀ {A₀ A₁ : chUniverse} b₀ b₁ (pre : precond) (post : postcond A₀ A₁) k₀ k₁,
+    ⊢ ⦃ pre ⦄ #assert b₀ as x ;; k₀ x ≈ #assert b₁ as x ;; k₁ x ⦃ post ⦄.
+Proof.
+  intros A₀ A₁ b₀ b₁ pre post k₀ k₁.
+Abort.
