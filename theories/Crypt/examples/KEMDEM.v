@@ -41,6 +41,16 @@ Definition GET := 2%N.
 
 Definition key n `{Positive n} : Location := ('option ('fin n) ; 0%N).
 
+(* TODO MOVE *)
+(* TODO Same as finmap.oextract but with a better name? *)
+Definition getSome {A} (o : option A) :
+  isSome o → A.
+Proof.
+  intro h.
+  destruct o. 2: discriminate.
+  assumption.
+Defined.
+
 Definition KEY n `{Positive n} :
   package
     (fset [:: key n ])
@@ -66,9 +76,7 @@ Definition KEY n `{Positive n} :
     } ;
     def #[ GET ] (_ : 'unit) : ('fin n) {
       k ← get (key n) ;;
-      match k with
-      | Some k => ret k
-      | None => @fail ('fin n)
-      end
+      #assert (isSome k) as kSome ;;
+      @ret ('fin n) (getSome k kSome)
     }
   ].
