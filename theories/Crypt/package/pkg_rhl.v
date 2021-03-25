@@ -1520,6 +1520,20 @@ Qed.
 (* Rules for packages *)
 (* same as in RulesStateprob.v with `r` at the beginning *)
 
+(* Alternative to rbind_rule *)
+Lemma r_bind :
+  ∀ {A₀ A₁ B₀ B₁ : ord_choiceType} m₀ m₁ f₀ f₁
+    (pre : precond) (mid : postcond A₀ A₁) (post : postcond B₀ B₁),
+    ⊢ ⦃ pre ⦄ m₀ ≈ m₁ ⦃ mid ⦄ →
+    (∀ a₀ a₁, ⊢ ⦃ λ '(s₀, s₁), mid (a₀, s₀) (a₁, s₁) ⦄ f₀ a₀ ≈ f₁ a₁ ⦃ post ⦄) →
+    ⊢ ⦃ pre ⦄ bind m₀ f₀ ≈ bind m₁ f₁ ⦃ post ⦄.
+Proof.
+  intros A₀ A₁ B₀ B₁ m₀ m₁ f₀ f₁ pre mid post hm hf.
+  rewrite rel_jdgE. eapply rbind_rule.
+  - rewrite -rel_jdgE. exact hm.
+  - intros a₀ a₁. rewrite -rel_jdgE. eapply hf.
+Qed.
+
 (* Pre-condition manipulating rules *)
 
 Theorem rpre_weaken_rule :
@@ -1660,20 +1674,6 @@ Proof.
   destruct b. all: reflexivity.
 Qed.
 
-(* Alternative to rbind_rule *)
-Lemma r_bind :
-  ∀ {A₀ A₁ B₀ B₁ : ord_choiceType} m₀ m₁ f₀ f₁
-    (pre : precond) (mid : postcond A₀ A₁) (post : postcond B₀ B₁),
-    ⊢ ⦃ pre ⦄ m₀ ≈ m₁ ⦃ mid ⦄ →
-    (∀ a₀ a₁, ⊢ ⦃ λ '(s₀, s₁), mid (a₀, s₀) (a₁, s₁) ⦄ f₀ a₀ ≈ f₁ a₁ ⦃ post ⦄) →
-    ⊢ ⦃ pre ⦄ bind m₀ f₀ ≈ bind m₁ f₁ ⦃ post ⦄.
-Proof.
-  intros A₀ A₁ B₀ B₁ m₀ m₁ f₀ f₁ pre mid post hm hf.
-  rewrite rel_jdgE. eapply rbind_rule.
-  - rewrite -rel_jdgE. exact hm.
-  - intros a₀ a₁. rewrite -rel_jdgE. eapply hf.
-Qed.
-
 (* TW: The (∀ s, pre s → b₀ = b₁) hypothesis is really weird.
   The booleans do not depend on s, is that to say that they must be equal
   unless pre is empty?
@@ -1734,7 +1734,6 @@ Section For_loop_rule.
   Qed.
 
 End For_loop_rule.
-
 
 (* alternative, more imperative version (weaker)*)
 (* Section For_loop_rule. *)
@@ -1992,17 +1991,13 @@ Theorem rsame_head :
   ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ bind m f₀ ≈ bind m f₁ ⦃ post ⦄.
 Proof.
   intros A B f₀ f₁ m post h.
-  rewrite rel_jdgE.
-  eapply (rbind_rule m m).
-  - rewrite -rel_jdgE. eapply rreflexivity_rule.
-  - intros a₀ a₁. rewrite -rel_jdgE.
-    unshelve eapply rpre_weaken_rule.
-    + exact (λ '(h₀, h₁), a₀ = a₁ ∧ h₀ = h₁).
-    + specialize (h a₀).
-      eapply rpre_hypothesis_rule. simpl. intros s₀ s₁ [ea es]. subst.
-      eapply rpre_weaken_rule. 1: exact h.
-      simpl. intros h₀ h₁ [? ?]. subst. reflexivity.
-    + simpl. intros s₀ s₁ e. noconf e. intuition auto.
+  eapply (r_bind m m).
+  - eapply rreflexivity_rule.
+  - intros a₀ a₁.
+    eapply rpre_hypothesis_rule. intros s₀ s₁ e.
+    noconf e.
+    eapply rpre_weaken_rule. 1: eapply h.
+    cbn. intros ? ? [? ?]. subst. reflexivity.
 Qed.
 
 (* CA: not more useful than sampler_case *)
@@ -2020,10 +2015,9 @@ Lemma rf_preserves_eq :
     ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ x ← c₀ ;; ret (f x) ≈ x ← c₁ ;; ret (f x) ⦃ eq ⦄.
 Proof.
   intros A B c₀ c₁ f h.
-  rewrite rel_jdgE. rewrite rel_jdgE in h.
-  eapply rbind_rule.
+  eapply r_bind.
   - rewrite !bind_ret in h. exact h.
-  - intros a₀ a₁. rewrite -rel_jdgE.
+  - intros a₀ a₁.
     apply rpre_hypothesis_rule. intros s₀ s₁ e. noconf e.
     eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
     cbn. intros ? ? [? ?]. subst. reflexivity.
@@ -2543,10 +2537,9 @@ Proof.
       '(x,y) ← (x ← sample uniform i ;; y ← sample uniform j ;; ret (x, y)) ;; r x y
     ⦃ eq ⦄
   ).
-  rewrite rel_jdgE.
-  eapply rbind_rule.
-  - rewrite -rel_jdgE. eapply UniformIprod_UniformUniform.
-  - intros [? ?] [? ?]. rewrite -rel_jdgE.
+  eapply r_bind.
+  - eapply UniformIprod_UniformUniform.
+  - intros [? ?] [? ?].
     eapply rpre_hypothesis_rule. intros ? ? e. noconf e.
     eapply rpre_weaken_rule.
     1: eapply h.
