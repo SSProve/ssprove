@@ -82,6 +82,9 @@ theories/Crypt/examples/AsymScheme.v
 theories/Crypt/examples/ElGamal.v
 theories/Crypt/examples/OTP.v
 theories/Crypt/examples/KEMDEM.v
+theories/Crypt/examples/RandomOracle.v
+theories/Crypt/examples/SigmaProtocol.v
+theories/Crypt/examples/Schnorr.v
 
 # Printing the axioms of all results from the paper
 theories/Crypt/Main.v
