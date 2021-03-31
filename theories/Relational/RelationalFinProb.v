@@ -36,8 +36,8 @@ Section RelFinProb.
 
   Import SPropNotations.
 
-  Hint Resolve I_ge0.
-  Hint Resolve I_le1.
+  #[export] Hint Resolve I_ge0.
+  #[export] Hint Resolve I_le1.
 
   Program Definition toss1_spec {A2} (a2:A2) (p:unit_interval R) : dfst (Wrel ⟨bool,A2⟩) :=
     ⦑fun post => barycentric_sum R p (post ⟨true,a2⟩) (post ⟨false, a2⟩)⦒.
