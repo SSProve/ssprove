@@ -127,8 +127,6 @@ Section Unary_effobs.
 
 End Unary_effobs.
 
-About unary_theta_dens.
-
 
 Section Relational_effobs.
   (*We just need to square unary_theta_dens to obtain the desired relational effect

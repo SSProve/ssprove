@@ -103,7 +103,6 @@ Definition ϕ_ex := ϕ.
 
 
 Definition θ_dens_lax := relativeMonadMorphism_to_lax _ _ _ _ theta_dens.
-Check θ_dens_lax.
 
 
 
