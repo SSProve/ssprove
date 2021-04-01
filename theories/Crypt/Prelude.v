@@ -112,13 +112,13 @@ Ltac nat_reify :=
   | h : is_true (_ == _) |- _ => move: h => /eqP h
   end.
 
-Hint Extern 1 (Positive ?n) =>
+#[export] Hint Extern 1 (Positive ?n) =>
   reflexivity : typeclass_instances.
 
-Hint Extern 2 (Positive ?n) =>
+#[export] Hint Extern 2 (Positive ?n) =>
   unfold Positive ; apply/ltP ; lia : typeclass_instances.
 
-Hint Extern 4 (Positive ?n) =>
+#[export] Hint Extern 4 (Positive ?n) =>
   unfold Positive ; apply/ltP ; nat_reify ; lia : typeclass_instances.
 
 Instance PositiveExp2 n : Positive (2^n)%N.
@@ -150,7 +150,7 @@ Proof.
   eapply leq_trans. 2: eapply leq_pmull. all: auto.
 Qed. *)
 
-Hint Extern 2 (Positive (?n * ?m)) =>
+#[export] Hint Extern 2 (Positive (?n * ?m)) =>
   eapply Positive_prod : typeclass_instances.
 
 Record positive := mkpos {
@@ -161,7 +161,7 @@ Arguments mkpos _ {_}.
 
 Coercion pos : positive >-> nat.
 
-Hint Extern 1 (Positive ?n.(pos)) =>
+#[export] Hint Extern 1 (Positive ?n.(pos)) =>
   eapply cond_pos
   : typeclass_instances.
 
@@ -187,13 +187,13 @@ Canonical positive_eqMixin := EqMixin positive_eqP.
 Class Lt n m :=
   is_in_fin : n < m.
 
-Hint Extern 1 (Lt ?n ?m) =>
+#[export] Hint Extern 1 (Lt ?n ?m) =>
   reflexivity : typeclass_instances.
 
-Hint Extern 2 (Lt ?n ?m) =>
+#[export] Hint Extern 2 (Lt ?n ?m) =>
   unfold Lt ; apply/ltP ; lia : typeclass_instances.
 
-Hint Extern 4 (Lt ?n) =>
+#[export] Hint Extern 4 (Lt ?n) =>
   unfold Lt ; apply/ltP ; nat_reify ; lia : typeclass_instances.
 
 Instance PositiveInFin n m (h : Lt n m) : Positive m.

@@ -202,7 +202,7 @@ Module PackageNotation.
   Notation " 'def' #[ f ] ( x : A ) : B { e }" :=
     ((f, mkdef A B (λ x, e)))
     (in custom package at level 0,
-    f constr, e constr, x ident, A custom pack_type, B custom pack_type,
+    f constr, e constr, x name, A custom pack_type, B custom pack_type,
     format "def  #[ f ]  ( x : A )  :  B  { '[' '/'  e  '/' ']' }")
     : package_scope.
 
@@ -310,7 +310,7 @@ Module PackageNotation.
 
   Notation "'#import' s 'as' id ;; t" :=
     (let id := λ x, opr s x (λ y, ret y) in t)
-    (at level 100, id ident, s at next level, right associativity,
+    (at level 100, id name, s at next level, right associativity,
     format "#import  s  as  id  ;;  '/' t")
     : package_scope.
 
