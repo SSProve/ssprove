@@ -16,14 +16,14 @@ well as listing the small set of axioms on which the formalisation relies
 - OCaml `>=4.05.0 & <4.12`
 - Coq `8.13.1`
 - Equations `1.2.4+8.13`
-- Mathcomp analysis `0.3.6`
+- Mathcomp analysis `0.3.7`
 - Coq Extructures `0.2.2`
 
 You can get them all from the `opam` package manager for OCaml:
 ```sh
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam update
-opam install coq.8.13.1 coq-equations.1.2.4+8.13 coq-mathcomp-analysis.0.3.6 coq-extructures.0.2.2
+opam install coq.8.13.1 coq-equations.1.2.4+8.13 coq-mathcomp-analysis.0.3.7 coq-extructures.0.2.2
 ```
 
 To build the dependency graph, you can optionally install `graphviz`.
