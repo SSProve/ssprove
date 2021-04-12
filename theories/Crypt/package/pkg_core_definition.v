@@ -181,12 +181,12 @@ Section FreeModule.
     auto.
   Qed.
 
-  Class ValidProgram {A} (p : raw_code A) :=
+  Class ValidCode {A} (p : raw_code A) :=
     is_valid_code : valid_code p.
 
   Lemma valid_code_from_class :
     ∀ A (p : raw_code A),
-      ValidProgram p →
+      ValidCode p →
       valid_code p.
   Proof.
     intros A p h. auto.
@@ -194,7 +194,7 @@ Section FreeModule.
 
   Record code A := mkprog {
     prog : raw_code A ;
-    prog_valid : ValidProgram prog
+    prog_valid : ValidCode prog
   }.
 
   Arguments mkprog {_} _.
@@ -443,42 +443,42 @@ Notation "{ 'code' p '#with' h }" :=
 
 (* Having an instance here means that it will use ret when the code
   is unknown. Pretty bad.
-  We will instead use Hint Extern.
+  We will instead use #[export] Hint Extern.
 *)
-(* Instance ValidProgram_ret (A : choiceType) (x : A) L I :
-  ValidProgram L I (ret x).
+(* Instance ValidCode_ret (A : choiceType) (x : A) L I :
+  ValidCode L I (ret x).
 Proof.
   apply valid_ret.
 Qed. *)
 
-Hint Extern 1 (ValidProgram ?L ?I (ret ?x)) =>
+#[export] Hint Extern 1 (ValidCode ?L ?I (ret ?x)) =>
   apply valid_ret
   : typeclass_instances.
 
-Hint Extern 1 (ValidProgram ?L ?I (opr ?o ?x ?k)) =>
+#[export] Hint Extern 1 (ValidCode ?L ?I (opr ?o ?x ?k)) =>
   eapply valid_opr ; [
     auto_in_fset
   | intro ; apply valid_code_from_class
   ] : typeclass_instances.
 
-Hint Extern 1 (ValidProgram ?L ?I (getr ?o ?k)) =>
+#[export] Hint Extern 1 (ValidCode ?L ?I (getr ?o ?k)) =>
   eapply valid_getr ; [
     auto_in_fset
   | intro ; apply valid_code_from_class
   ] : typeclass_instances.
 
-Hint Extern 1 (ValidProgram ?L ?I (putr ?o ?x ?k)) =>
+#[export] Hint Extern 1 (ValidCode ?L ?I (putr ?o ?x ?k)) =>
   eapply valid_putr ; [
     auto_in_fset
   | apply valid_code_from_class
   ] : typeclass_instances.
 
-Hint Extern 1 (ValidProgram ?L ?I (sampler ?op ?k)) =>
+#[export] Hint Extern 1 (ValidCode ?L ?I (sampler ?op ?k)) =>
   eapply valid_sampler ;
   intro ; apply valid_code_from_class
   : typeclass_instances.
 
-Hint Extern 1 (ValidProgram ?L ?I (bind ?p ?k)) =>
+#[export] Hint Extern 1 (ValidCode ?L ?I (bind ?p ?k)) =>
   eapply valid_bind ; [
     apply valid_code_from_class
   | intro ; apply valid_code_from_class
@@ -487,32 +487,32 @@ Hint Extern 1 (ValidProgram ?L ?I (bind ?p ?k)) =>
 
 Coercion prog : code >-> raw_code.
 
-Hint Extern 1 (ValidProgram ?L ?I (?p.(prog))) =>
+#[export] Hint Extern 1 (ValidCode ?L ?I (?p.(prog))) =>
   eapply p.(prog_valid)
   : typeclass_instances.
 
 Arguments valid_command _ _ [_] _.
 
-Hint Extern 1 (ValidCommand ?L ?I (cmd_op ?o ?x)) =>
+#[export] Hint Extern 1 (ValidCommand ?L ?I (cmd_op ?o ?x)) =>
   eapply valid_cmd_op ;
   auto_in_fset
   : typeclass_instances.
 
-Hint Extern 1 (ValidCommand ?L ?I (cmd_get ?l)) =>
+#[export] Hint Extern 1 (ValidCommand ?L ?I (cmd_get ?l)) =>
   eapply valid_cmd_get ;
   auto_in_fset
   : typeclass_instances.
 
-Hint Extern 1 (ValidProgram ?L ?I (cmd_put ?l ?v)) =>
+#[export] Hint Extern 1 (ValidCode ?L ?I (cmd_put ?l ?v)) =>
   eapply valid_cmd_put ;
   auto_in_fset
   : typeclass_instances.
 
-Hint Extern 1 (ValidProgram ?L ?I (cmd_sample ?op)) =>
+#[export] Hint Extern 1 (ValidCode ?L ?I (cmd_sample ?op)) =>
   eapply valid_cmd_sample
   : typeclass_instances.
 
-Hint Extern 1 (ValidProgram ?L ?I (cmd_bind ?c ?k)) =>
+#[export] Hint Extern 1 (ValidCode ?L ?I (cmd_bind ?c ?k)) =>
   eapply valid_cmd_bind ; [
     apply valid_command_from_class
   | intro ; apply valid_code_from_class
@@ -668,7 +668,7 @@ Notation "{ 'package' p '#with' h }" :=
 
 Coercion pack : package >-> raw_package.
 
-Hint Extern 1 (ValidPackage ?L ?I ?E (?p.(pack))) =>
+#[export] Hint Extern 1 (ValidPackage ?L ?I ?E (?p.(pack))) =>
   eapply p.(pack_valid)
   : typeclass_instances.
 

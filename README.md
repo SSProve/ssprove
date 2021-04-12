@@ -1,9 +1,10 @@
 ![SSProve](https://user-images.githubusercontent.com/5850655/111436014-c6811f00-8701-11eb-9363-3f2a1b9e9da1.png)
 
 This repository contains the Coq formalisation of the paper:
-- **SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq.**
+- **[SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq](https://eprint.iacr.org/2021/397).**
   Carmine Abate, Philipp G. Haselwarter, Exequiel Rivas, Antoine Van Muylder,
-  Théo Winterhalter, Catalin Hritcu, Kenji Maillard, and Bas Spitters. March 2021.
+  Théo Winterhalter, Cătălin Hrițcu, Kenji Maillard, and Bas Spitters.
+  Cryptology ePrint Archive, Report 2021/397. March 2021.
 
 This README serves as a guide to running verification and finding the
 correspondence between the claims in the paper and the formal proofs in Coq, as
@@ -13,16 +14,16 @@ well as listing the small set of axioms on which the formalisation relies
 ## Prerequisites
 
 - OCaml `>=4.05.0 & <4.12`
-- Coq `8.12.0`
-- Equations `1.2.3+8.12`
-- Mathcomp analysis `0.3.2`
+- Coq `8.13.1`
+- Equations `1.2.4+8.13`
+- Mathcomp analysis `0.3.7`
 - Coq Extructures `0.2.2`
 
 You can get them all from the `opam` package manager for OCaml:
 ```sh
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam update
-opam install coq.8.12.0 coq-equations.1.2.3+8.12 coq-mathcomp-analysis.0.3.2 coq-extructures.0.2.2
+opam install coq.8.13.1 coq-equations.1.2.4+8.13 coq-mathcomp-analysis.0.3.7 coq-extructures.0.2.2
 ```
 
 To build the dependency graph, you can optionally install `graphviz`.

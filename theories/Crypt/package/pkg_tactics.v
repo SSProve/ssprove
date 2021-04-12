@@ -209,12 +209,12 @@ Ltac unify_positive_proofs :=
   unmark_tac_intro_mark ;
   subst_marked.
 
-(** Tactic to unify ValidProgram proofs in a goal *)
+(** Tactic to unify ValidCode proofs in a goal *)
 
 Ltac unify_marked_code_proofs :=
   repeat match goal with
-  | h : tac_intro_mark (ValidProgram ?L ?I ?p),
-    h' : tac_intro_mark (ValidProgram ?L ?I ?p) |- _ =>
+  | h : tac_intro_mark (ValidCode ?L ?I ?p),
+    h' : tac_intro_mark (ValidCode ?L ?I ?p) |- _ =>
     assert (h = h') by eapply uip ;
     subst h'
   end.
@@ -259,7 +259,7 @@ Proof.
   intros [id [S T]] ho. eapply fromEmpty. eauto.
 Qed.
 
-Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap [::])) =>
+#[export] Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap [::])) =>
   eapply valid_empty_package
   : typeclass_instances.
 
@@ -277,7 +277,7 @@ Proof.
   intuition auto.
 Qed.
 
-Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap [:: (?i, mkdef ?A ?B ?f)])) =>
+#[export] Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap [:: (?i, mkdef ?A ?B ?f)])) =>
   eapply valid_package1 ;
   intro ; eapply valid_code_from_class
   : typeclass_instances.
@@ -330,7 +330,7 @@ Proof.
     exists g. intuition auto.
 Qed.
 
-Hint Extern 2 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
+#[export] Hint Extern 2 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
   =>
   eapply valid_package_cons ; [
     eapply valid_package_from_class
@@ -339,11 +339,11 @@ Hint Extern 2 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
   ]
   : typeclass_instances.
 
-Hint Extern 10 (ValidProgram ?L ?I (let u := _ in _)) =>
+#[export] Hint Extern 10 (ValidCode ?L ?I (let u := _ in _)) =>
   cbv zeta
   : typeclass_instances.
 
-Hint Extern 2 (ValidProgram ?L ?I (match ?t with _ => _ end)) =>
+#[export] Hint Extern 2 (ValidCode ?L ?I (match ?t with _ => _ end)) =>
   destruct t
   : typeclass_instances.
 
@@ -351,7 +351,7 @@ Hint Extern 2 (ValidProgram ?L ?I (match ?t with _ => _ end)) =>
   This is—I hope—the only thing that might cause a discrepancy between
   the interface and the signature of the term.
 *)
-Hint Extern 3 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
+#[export] Hint Extern 3 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
   =>
   unify_positive_proofs
   : typeclass_instances.

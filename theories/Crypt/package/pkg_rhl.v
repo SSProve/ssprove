@@ -503,7 +503,7 @@ Proof.
   - constructor.
 Qed.
 
-Hint Extern 1 (ValidProgram ?L ?I (get_op_default ?p ?o ?x)) =>
+#[export] Hint Extern 1 (ValidCode ?L ?I (get_op_default ?p ?o ?x)) =>
   eapply valid_get_op_default ; [
     apply valid_package_from_class
   | auto_in_fset
@@ -1269,7 +1269,7 @@ Qed.
 (* TODO MOVE *)
 
 (* Slightly more expensive version that allows to change parameters *)
-Hint Extern 3 (ValidProgram ?L ?I ?p) =>
+#[export] Hint Extern 3 (ValidCode ?L ?I ?p) =>
   match goal with
   | h : is_true (fsubset ?x ?y) |- _ =>
     eapply valid_injectLocations with (1 := h) ;
@@ -1277,7 +1277,7 @@ Hint Extern 3 (ValidProgram ?L ?I ?p) =>
   end
   : typeclass_instances.
 
-Hint Extern 3 (ValidPackage ?L ?I ?E ?p) =>
+#[export] Hint Extern 3 (ValidPackage ?L ?I ?E ?p) =>
   match goal with
   | h : is_true (fsubset ?x ?y) |- _ =>
     eapply valid_package_inject_locations with (1 := h) ;
@@ -1305,7 +1305,7 @@ Lemma some_lemma_for_prove_relational :
   ∀ {L₀ L₁ LA E} (p₀ p₁ : raw_package) (I : precond) {B} (A : raw_code B)
     `{ValidPackage L₀ Game_import E p₀}
     `{ValidPackage L₁ Game_import E p₁}
-    `{@ValidProgram LA E B A},
+    `{@ValidCode LA E B A},
     INV LA I →
     eq_up_to_inv E I p₀ p₁ →
     r⊨ ⦃ I ⦄ code_link A p₀ ≈ code_link A p₁
@@ -1786,7 +1786,7 @@ Proof.
   - eapply valid_bind. all: eauto.
 Qed.
 
-Hint Extern 1 (ValidProgram ?L ?I (for_loop ?c ?N)) =>
+#[export] Hint Extern 1 (ValidCode ?L ?I (for_loop ?c ?N)) =>
   eapply valid_for_loop ;
   intro ; apply valid_code_from_class
   : typeclass_instances.
@@ -2585,7 +2585,7 @@ Proof.
   unfold fail_unit. eapply valid_code_from_class. exact _.
 Qed.
 
-Hint Extern 1 (ValidProgram ?L ?I fail_unit) =>
+#[export] Hint Extern 1 (ValidCode ?L ?I fail_unit) =>
   eapply valid_fail_unit
   : typeclass_instances.
 
@@ -2595,7 +2595,7 @@ Proof.
   intros L I b. unfold assert. eapply valid_code_from_class. exact _.
 Qed.
 
-Hint Extern 1 (ValidProgram ?L ?I (assert ?b)) =>
+#[export] Hint Extern 1 (ValidCode ?L ?I (assert ?b)) =>
   eapply valid_assert
   : typeclass_instances.
 
@@ -2605,12 +2605,8 @@ Proof.
   intros A L I. unfold fail. eapply valid_code_from_class. exact _.
 Qed.
 
-(* In some cases eapply valid_fail fails and I don't understand why *)
-(* Hint Extern 1 (ValidProgram ?L ?I fail) =>
+#[export] Hint Extern 1 (ValidCode ?L ?I fail) =>
   eapply valid_fail
-  : typeclass_instances. *)
-Hint Extern 1 (ValidProgram ?L ?I fail) =>
-  unfold fail
   : typeclass_instances.
 
 Lemma valid_assertD :
@@ -2624,14 +2620,14 @@ Proof.
   - simpl. eapply valid_code_from_class. exact _.
 Qed.
 
-Hint Extern 1 (ValidProgram ?L ?I (assertD ?b ?k)) =>
+#[export] Hint Extern 1 (ValidCode ?L ?I (assertD ?b ?k)) =>
   eapply valid_assertD ;
   intro ; apply valid_code_from_class
   : typeclass_instances.
 
 Notation "'#assert' b 'as' id ;; k" :=
   (assertD b (λ id, k))
-  (at level 100, id ident, b at next level, right associativity,
+  (at level 100, id name, b at next level, right associativity,
   format "#assert  b  as  id  ;;  '/' k")
   : package_scope.
 

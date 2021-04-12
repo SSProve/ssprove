@@ -2,7 +2,7 @@
 
 name: Test build
 
-# Controls when the action will run. 
+# Controls when the action will run.
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
   push:
@@ -22,16 +22,16 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-    
+
       - name: Try to restore opam cache
         id: opam-cache
         uses: actions/cache@v2
         with:
           path: "~/.opam"
-          key: opam-${{github.base_ref}}-${{github.ref}} 
+          key: opam-${{github.base_ref}}-${{github.ref}}
           restore-keys: |
             opam--refs/heads/${{github.base_ref}}
-      
+
       - name: Install OCaml
         uses: avsm/setup-ocaml@v1
         with:
@@ -45,6 +45,6 @@ jobs:
       - name: Build
         run: |
           opam repo add coq-released https://coq.inria.fr/opam/released
-          opam install coq.8.12.0 coq-equations.1.2.3+8.12 coq-mathcomp-analysis.0.3.2 coq-extructures.0.2.2
+          opam install coq.8.13.1 coq-equations.1.2.4+8.13 coq-mathcomp-analysis.0.3.7 coq-extructures.0.2.2
           opam exec -- make -j4
-          
+

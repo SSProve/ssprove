@@ -56,11 +56,11 @@ Module DerivedRulesUniform.
 
   #[local] Definition Index := positive.
   #[local] Definition i0 := mkpos 1.
-  #[local] Definition fin_family : Index -> finType := fun i => 
+  #[local] Definition fin_family : Index -> finType := fun i =>
      [finType of ordinal i.(pos) ].
   #[local] Definition F_w0 : forall i, (fin_family i).
     move=> i. apply inhab. Defined.
-                                                        
+
 
   Module MyRulesU := DerivedRules.
   Export MyRulesU.
@@ -68,7 +68,6 @@ Module DerivedRulesUniform.
   (* Uniform distribution over F *)
   Definition Uniform_F { i : Index } : MyRulesU.MFreePr (fin_family i).
     rewrite /MyRulesU.MFreePr /rFreePr.
-    Check callrFree.
     unshelve eapply ropr. unshelve econstructor.
       exact (chFin i). cbn. eapply @uniform_F. eapply F_w0.
     cbn. move=> i'. eapply retrFree. eapply F_w0.
@@ -86,7 +85,7 @@ Module DerivedRulesUniform.
     apply: distr_ext.
     cbn.
     rewrite /SDistr_bind /Uniform_F /SDistr_unit => w.
-    
+
     rewrite (@dlet_dunit_id _ _ (mkdistrd (fun=> r)) w) /mkdistrd.
     destruct idP.
     + by [].

@@ -141,7 +141,7 @@ Proof.
   apply valid_bind. all: auto.
 Qed.
 
-Hint Extern 1 (ValidProgram ?L ?I (code_link ?v ?p)) =>
+#[export] Hint Extern 1 (ValidCode ?L ?I (code_link ?v ?p)) =>
   eapply valid_code_link ; [
     apply valid_code_from_class
   | apply valid_package_from_class
@@ -180,7 +180,7 @@ Proof.
     + auto.
 Qed.
 
-Hint Extern 1 (ValidPackage ?L ?I ?E (link ?p1 ?p2)) =>
+#[export] Hint Extern 1 (ValidPackage ?L ?I ?E (link ?p1 ?p2)) =>
   eapply valid_link ; [
     apply valid_package_from_class
   | apply valid_package_from_class
@@ -247,7 +247,7 @@ Proof.
   apply trim_get. all: auto.
 Qed.
 
-Hint Extern 1 (ValidPackage ?L ?I ?E (trim ?E ?p)) =>
+#[export] Hint Extern 1 (ValidPackage ?L ?I ?E (trim ?E ?p)) =>
   apply valid_trim ;
   apply valid_package_from_class
   : typeclass_instances.
@@ -462,7 +462,7 @@ Proof.
 Qed.
 
 (* TODO Check if the first branch is generated *)
-Hint Extern 1 (ValidPackage ?L ?I ?E (par ?p1 ?p2)) =>
+#[export] Hint Extern 1 (ValidPackage ?L ?I ?E (par ?p1 ?p2)) =>
   apply valid_par ; [
     exact _
   | apply valid_package_from_class
@@ -529,16 +529,16 @@ Proof.
   rewrite h2 h3. reflexivity.
 Qed.
 
-Hint Extern 1 (FDisjoint (fset ?l1) (fset ?l2)) =>
+#[export] Hint Extern 1 (FDisjoint (fset ?l1) (fset ?l2)) =>
   repeat rewrite [fset]unlock ;
   eauto
   : typeclass_instances.
 
-Hint Extern 1 (Parable _ _) =>
+#[export] Hint Extern 1 (Parable _ _) =>
   apply fdisjoint_from_class
   : typeclass_instances.
 
-Hint Extern 1 (Parable (trim ?E1 ?p1) (trim ?E2 ?p2)) =>
+#[export] Hint Extern 1 (Parable (trim ?E1 ?p1) (trim ?E2 ?p2)) =>
   apply parable_trim ;
   apply fdisjoint_from_class
   : typeclass_instances.
@@ -587,12 +587,12 @@ Qed.
 
 Lemma code_link_par_left :
   ∀ A I L L' E (v : raw_code A) p1 p2,
-    ValidProgram L E v →
+    ValidCode L E v →
     ValidPackage L' I E p1 →
     code_link v (par p1 p2) = code_link v p1.
 Proof.
   intros A I L L' E v p1 p2 hv hp1.
-  unfold ValidProgram in hv.
+  unfold ValidCode in hv.
   induction hv.
   - cbn. reflexivity.
   - simpl. rewrite lookup_op_unionm.
@@ -609,7 +609,7 @@ Qed.
 Lemma code_link_par_right :
   ∀ A I L L' E (v : raw_code A) p1 p2,
     Parable p1 p2 →
-    ValidProgram L E v →
+    ValidCode L E v →
     ValidPackage L' I E p2 →
     code_link v (par p1 p2) = code_link v p2.
 Proof.

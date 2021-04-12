@@ -244,9 +244,10 @@ Definition UniformFsq_f { F1 F2 : finType} { w0 : F1 } { w0' : F2 }
   SDistr (ChoiceAsOrd.F_choice_prod ⟨ ChoiceAsOrd.F_choice_prod ⟨ Finite.choiceType F1 , S1 ⟩ ,
                                     ChoiceAsOrd.F_choice_prod ⟨ Finite.choiceType F2 , S2 ⟩ ⟩ ).
 Proof.
-  apply: mkdistr.
-  Unshelve. 2: {
-  exact: (@f_dprod F1 F2 S1 S2 w0 w0' s1 s2 f). }
+  unshelve eapply mkdistr.
+  1:{
+    exact: (@f_dprod F1 F2 S1 S2 w0 w0' s1 s2 f).
+  }
   by apply: bijective_isdistr.
 Defined.
 

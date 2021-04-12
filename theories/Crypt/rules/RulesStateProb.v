@@ -766,7 +766,7 @@ Abort.
 
 Lemma aux_domain : forall u v : R, u * v <> 0 -> u <> 0.
 Proof.
-  move=> u v. apply boolp.contrap. move=> H0. rewrite H0.
+  move=> u v. apply contra_not. move=> H0. rewrite H0.
   apply GRing.Theory.mul0r.
 Qed.
 
