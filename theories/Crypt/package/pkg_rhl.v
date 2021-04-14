@@ -1277,10 +1277,34 @@ Qed.
   end
   : typeclass_instances.
 
+#[export] Hint Extern 3 (ValidCode ?L ?I ?p) =>
+  match goal with
+  | h : is_true (fsubset ?x ?y) |- _ =>
+    eapply valid_injectMap with (1 := h) ;
+    eapply valid_code_from_class ; exact _
+  end
+  : typeclass_instances.
+
 #[export] Hint Extern 3 (ValidPackage ?L ?I ?E ?p) =>
   match goal with
   | h : is_true (fsubset ?x ?y) |- _ =>
     eapply valid_package_inject_locations with (1 := h) ;
+    eapply valid_package_from_class ; exact _
+  end
+  : typeclass_instances.
+
+#[export] Hint Extern 3 (ValidPackage ?L ?I ?E ?p) =>
+  match goal with
+  | h : is_true (fsubset ?x ?y) |- _ =>
+    eapply valid_package_inject_export with (1 := h) ;
+    eapply valid_package_from_class ; exact _
+  end
+  : typeclass_instances.
+
+#[export] Hint Extern 3 (ValidPackage ?L ?I ?E ?p) =>
+  match goal with
+  | h : is_true (fsubset ?x ?y) |- _ =>
+    eapply valid_package_inject_import with (1 := h) ;
     eapply valid_package_from_class ; exact _
   end
   : typeclass_instances.
