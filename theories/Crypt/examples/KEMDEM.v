@@ -33,11 +33,26 @@ Import PackageNotation.
 #[local] Open Scope ring_scope.
 #[local] Open Scope package_scope.
 
-Definition i_key (l : nat) := l.
+(** Procedure names
 
+  All in one place so it's easier.
+
+*)
+
+(* KEY *)
 Definition GEN := 0%N.
 Definition SET := 1%N.
 Definition GET := 2%N.
+
+(* MOD-CCA *)
+Definition PKGEN := 3%N.
+Definition PKENC := 4%N.
+Definition PKDEC := 5%N.
+
+(** KEY Package *)
+
+(* TODO Section for length?  *)
+Definition i_key (l : nat) := l.
 
 Definition key n `{Positive n} : Location := ('option ('fin n) ; 0%N).
 
@@ -80,3 +95,14 @@ Definition KEY n `{Positive n} :
       @ret ('fin n) (getSome k kSome)
     }
   ].
+
+(** MOD-CCA *)
+
+Definition MODCCA l `{Positive l} :
+  package
+    (fset [:: (* TODO *) ])
+    [interface] (* TODO Import KEM and DEM *)
+    [interface
+      val #[ PKGEN ] : 'unit → ('fin l) × ('fin l)
+    ].
+Abort.
