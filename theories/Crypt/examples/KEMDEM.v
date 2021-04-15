@@ -93,10 +93,37 @@ Section KEMDEM.
   Definition PKDEC := 5%N.
 
   (** Memory locations *)
-  Definition key : Location := ('option ('fin key_length) ; 0%N).
+  Definition key : Location := ('option 'key ; 0%N).
+  Definition pk_loc : Location := ('option 'key ; 1%N).
+  Definition sk_loc : Location := ('option 'key ; 2%N).
+  Definition c_loc : Location := ('option ('elen × 'clen) ; 2%N).
 
   (** Uniform distributions *)
   Definition i_key := key_length.
+
+  (** PKE scheme *)
+  Record PKE_scheme := {
+    PKE_loc : {fset Location } ;
+    PKE_kgen : code PKE_loc [interface] ('key × 'key) ;
+    PKE_enc : 'key → 'plain → code PKE_loc [interface] 'clen ;
+    (* clen is global *)
+    PKE_dec : 'key → 'elen × 'clen → code PKE_loc [interface] 'plain
+  }.
+
+  (** KEM scheme *)
+  Record KEM_scheme := {
+    KEM_loc : {fset Location } ;
+    KEM_kgen : code KEM_loc [interface] ('key × 'key) ;
+    KEM_encap : 'key → code KEM_loc [interface] 'elen ;
+    KEM_decap : 'key → 'elen → code KEM_loc [interface] 'key
+  }.
+
+  (** DEM scheme *)
+  Record DEM_scheme := {
+    DEM_loc : {fset Location } ;
+    DEM_enc : 'key → 'plain → code DEM_loc [interface] 'clen ;
+    DEM_dec : 'key → 'clen → code DEM_loc [interface] 'plain
+  }.
 
   (** KEY Package *)
 
@@ -155,16 +182,34 @@ Section KEMDEM.
   (** PKE-CCA *)
 
   (* Probably a loc_GamePair *)
-  Definition PKE_CCA :
+  (* Definition PKE_CCA b :
     package
-      (fset [:: (* TODO *) ])
-      [interface (* TODO *) ]
+      (fset [:: pk_loc ; sk_loc ; c_loc ])
+      [interface]
       [interface
         val #[ PKGEN ] : 'unit → 'key ;
         val #[ PKENC ] : 'plain → 'clen ;
         val #[ PKDEC ] : 'elen × 'clen → 'plain
-      ].
-  Abort.
+      ] :=
+    [package
+      def #[ PKGEN ] (_ : 'unit) : 'key {
+        sk ← get sk_loc ;;
+        assert (sk == None) ;;
+        ??
+      } ;
+      def #[ PKENC ] (m : 'plain) : 'clen {
+        pk ← get pk_loc ;;
+        #assert (isSome pk) as pkSome ;;
+        c ← get c_loc ;;
+        assert (c == None) ;;
+        c ← sample (if b then ? else ?) ;;
+        put c_loc := c ;;
+        ret c
+      } ;
+      def #[ PKDEC ] (c' : 'elen × 'clen) : 'clen {
+        ?
+      }
+    ]. *)
 
   (** MOD-CCA *)
 
