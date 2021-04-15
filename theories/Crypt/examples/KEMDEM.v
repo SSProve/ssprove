@@ -154,6 +154,7 @@ Section KEMDEM.
 
   (** PKE-CCA *)
 
+  (* Probably a loc_GamePair *)
   Definition PKE_CCA :
     package
       (fset [:: (* TODO *) ])
@@ -177,5 +178,21 @@ Section KEMDEM.
         val #[ PKDEC ] : 'elen × 'clen → 'plain
       ].
   Abort.
+
+  (** Security theorem *)
+
+  (* Since in the theorem we use the PKE of construction 23, we can probably
+    directly specialise things?
+  *)
+
+  (* Theorem PKE_security :
+    ∀ LA A,
+      ValidPackage LA PKE_CCA_export A_export A →
+      fdisjoint LA (PKE_CCA true).(locs) →
+      fdisjoint LA (PKE_CCA false).(locs) →
+      Advantage PKE_CCA A <=
+      Advantage KEM_CCA (A ∘ MOC_CCA ∘ par (ID KEM_export) DEM₀) +
+      Advantage DEM_CCA (A ∘ MOD_CCA ∘ par KEM₁ (ID DEM_export)).
+  Abort. *)
 
 End KEMDEM.
