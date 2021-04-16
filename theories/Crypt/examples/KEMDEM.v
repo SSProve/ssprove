@@ -100,14 +100,15 @@ Section KEMDEM.
 
   (** Uniform distributions *)
   Definition i_key := key_length.
+  Definition i_clen := clen.
 
   (** PKE scheme *)
   Record PKE_scheme := {
     PKE_loc : {fset Location } ;
-    PKE_kgen : code PKE_loc [interface] ('key × 'key) ;
-    PKE_enc : 'key → 'plain → code PKE_loc [interface] 'clen ;
+    PKE_kgen : code PKE_loc [interface] (chProd 'key 'key) ;
+    PKE_enc : 'key → 'plain → code PKE_loc [interface] (chProd 'elen 'clen) ;
     (* clen is global *)
-    PKE_dec : 'key → 'elen × 'clen → code PKE_loc [interface] 'plain
+    PKE_dec : 'key → chProd 'elen 'clen → code PKE_loc [interface] 'plain
   }.
 
   (** KEM scheme *)
@@ -182,32 +183,49 @@ Section KEMDEM.
   (** PKE-CCA *)
 
   (* Probably a loc_GamePair *)
-  (* Definition PKE_CCA b :
+  (* Now it loops! Probably same problem as Nikolaj where interfaces don't
+    match
+  *)
+  (* Definition PKE_CCA (ζ : PKE_scheme) b :
     package
       (fset [:: pk_loc ; sk_loc ; c_loc ])
       [interface]
       [interface
         val #[ PKGEN ] : 'unit → 'key ;
-        val #[ PKENC ] : 'plain → 'clen ;
+        val #[ PKENC ] : 'plain → 'elen × 'clen ;
         val #[ PKDEC ] : 'elen × 'clen → 'plain
       ] :=
     [package
       def #[ PKGEN ] (_ : 'unit) : 'key {
         sk ← get sk_loc ;;
         assert (sk == None) ;;
-        ??
+        '(pk, sk) ← ζ.(PKE_kgen) ;;
+        put pk_loc := Some pk ;;
+        put sk_loc := Some sk ;;
+        ret pk
       } ;
-      def #[ PKENC ] (m : 'plain) : 'clen {
+      def #[ PKENC ] (m : 'plain) : 'elen × 'clen {
         pk ← get pk_loc ;;
         #assert (isSome pk) as pkSome ;;
+        let pk := getSome pk pkSome in
         c ← get c_loc ;;
         assert (c == None) ;;
-        c ← sample (if b then ? else ?) ;;
-        put c_loc := c ;;
+        c ← (
+          if b return raw_code _
+          then ζ.(PKE_enc) pk m
+          else c ← sample uniform i_clen ;; ret (gfin 0, c)
+        ) ;;
+        put c_loc := Some c ;;
         ret c
       } ;
-      def #[ PKDEC ] (c' : 'elen × 'clen) : 'clen {
-        ?
+      def #[ PKDEC ] (c' : 'elen × 'clen) : 'plain {
+        sk ← get sk_loc ;;
+        #assert (isSome sk) as skSome ;;
+        let sk := getSome sk skSome in
+        c ← get c_loc ;;
+        assert (Some c' != c) ;;
+        m ← ζ.(PKE_dec) sk c' ;;
+        ret m
       }
     ]. *)
 

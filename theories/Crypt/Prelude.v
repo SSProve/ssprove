@@ -196,6 +196,11 @@ Class Lt n m :=
 #[export] Hint Extern 4 (Lt ?n) =>
   unfold Lt ; apply/ltP ; nat_reify ; lia : typeclass_instances.
 
+Instance Positive_Lt n `{Positive n} : Lt 0 n.
+Proof.
+  unfold Lt. auto.
+Qed.
+
 Instance PositiveInFin n m (h : Lt n m) : Positive m.
 Proof.
   unfold Lt in h. exact _.
