@@ -118,8 +118,8 @@ Section KEMDEM.
   (** KEM scheme *)
   Record KEM_scheme := {
     KEM_loc : {fset Location } ;
-    KEM_kgen : code KEM_loc [interface] ('key × 'key) ;
-    KEM_encap : 'key → code KEM_loc [interface] 'elen ;
+    KEM_kgen : code KEM_loc [interface] (chProd 'key 'key) ;
+    KEM_encap : 'key → code KEM_loc [interface] (chProd 'key 'elen) ;
     KEM_decap : 'key → 'elen → code KEM_loc [interface] 'key
   }.
 
@@ -129,6 +129,9 @@ Section KEMDEM.
     DEM_enc : 'key → 'plain → code DEM_loc [interface] 'clen ;
     DEM_dec : 'key → 'clen → code DEM_loc [interface] 'plain
   }.
+
+  Context (η : KEM_scheme).
+  Context (θ : DEM_scheme).
 
   (** KEY Package *)
 
@@ -188,16 +191,15 @@ Section KEMDEM.
 
   Opaque ValidPackage mkfmap pkg_composition.mkdef.
 
-  (* Probably a loc_GamePair *)
-  #[program] Definition PKE_CCA (ζ : PKE_scheme) b :
-    package
-      (fset [:: pk_loc ; sk_loc ; c_loc ])
-      [interface]
-      [interface
-        val #[ PKGEN ] : 'unit → 'key ;
-        val #[ PKENC ] : 'plain → 'elen × 'clen ;
-        val #[ PKDEC ] : 'elen × 'clen → 'plain
-      ] :=
+  Definition PKE_CCA_out :=
+    [interface
+      val #[ PKGEN ] : 'unit → 'key ;
+      val #[ PKENC ] : 'plain → 'elen × 'clen ;
+      val #[ PKDEC ] : 'elen × 'clen → 'plain
+    ].
+
+  #[program] Definition PKE_CCA_pkg (ζ : PKE_scheme) b :
+    package PKE_loc [interface] PKE_CCA_out :=
     [package
       def #[ PKGEN ] (_ : 'unit) : 'key {
         sk ← get sk_loc ;;
@@ -240,6 +242,12 @@ Section KEMDEM.
     destruct x1. ssprove_valid.
   Qed.
 
+  Definition PKE_CCA (ζ : PKE_scheme) : loc_GamePair PKE_CCA_out :=
+    λ b,
+      if b
+      then {locpackage PKE_CCA_pkg ζ true }
+      else {locpackage PKE_CCA_pkg ζ false }.
+
   (** MOD-CCA *)
 
   Definition MOD_CCA :
@@ -253,6 +261,35 @@ Section KEMDEM.
       ].
   Abort.
 
+  (** PKE scheme instance *)
+  #[program] Definition KEM_DEM : PKE_scheme := {|
+    PKE_kgen := {code η.(KEM_kgen)} ;
+    PKE_enc := λ pk m, {code
+      '(k, c₁) ← η.(KEM_encap) pk ;;
+      c₂ ← θ.(DEM_enc) k m ;;
+      ret (c₁, c₂)
+    } ;
+    PKE_dec := λ sk c, {code
+      let '(c₁, c₂) := c in
+      k ← η.(KEM_decap) sk c₁ ;;
+      m ← θ.(DEM_dec) k c₂ ;;
+      ret m
+    }
+  |}.
+  Next Obligation.
+    (* See what we want as locations. If they are the same, the {code} case
+      will not be necessary.
+    *)
+  Admitted.
+  Next Obligation.
+    ssprove_valid.
+    - admit.
+    - destruct x. ssprove_valid. admit.
+  Admitted.
+  Next Obligation.
+    ssprove_valid. all: admit.
+  Admitted.
+
   (** Security theorem *)
 
   (* Since in the theorem we use the PKE of construction 23, we can probably
@@ -262,8 +299,7 @@ Section KEMDEM.
   (* Theorem PKE_security :
     ∀ LA A,
       ValidPackage LA PKE_CCA_export A_export A →
-      fdisjoint LA (PKE_CCA true).(locs) →
-      fdisjoint LA (PKE_CCA false).(locs) →
+      fdisjoint LA PKE_loc →
       Advantage PKE_CCA A <=
       Advantage KEM_CCA (A ∘ MOC_CCA ∘ par (ID KEM_export) DEM₀) +
       Advantage DEM_CCA (A ∘ MOD_CCA ∘ par KEM₁ (ID DEM_export)).
