@@ -361,7 +361,7 @@ Proof.
   - cbn - [f]. intros x. rewrite -[RHS]prod2ch_ch2prod.
     set (y := ch2prod x). clearbody y. clear x.
     simpl in y. destruct y as [a b].
-    rewrite otf_fto. rewrite gf. f_equal.
+    rewrite otf_fto. rewrite gf.
     rewrite !fto_otf. reflexivity.
   - cbn - [f]. intro x.
     replace x with (fto (f m (g (otf x)))) at 2.
@@ -369,8 +369,7 @@ Proof.
     set (y := g (otf x)). change (g (otf x)) with y. clearbody y. clear x.
     destruct y as [a b]. rewrite ch2prod_prod2ch. rewrite !otf_fto.
     reflexivity.
-(* Qed. *)
-Admitted.
+Qed.
 
 Lemma ots_real_vs_rnd_equiv_false :
   ots_real_vs_rnd false ≈₀ Aux ∘ DH_rnd.
