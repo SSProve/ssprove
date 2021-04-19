@@ -333,6 +333,9 @@ Qed.
 
 Create HintDb packages.
 
+#[export] Hint Extern 100 =>
+  shelve : packages.
+
 #[export] Hint Extern 2 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
   =>
   eapply valid_package_cons ; [
@@ -344,11 +347,11 @@ Create HintDb packages.
 
 #[export] Hint Extern 10 (ValidCode ?L ?I (let u := _ in _)) =>
   cbv zeta
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 #[export] Hint Extern 2 (ValidCode ?L ?I (match ?t with _ => _ end)) =>
   destruct t
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 (** Variant of the cons case where we unify Positive proofs beforehand
   This is—I hope—the only thing that might cause a discrepancy between

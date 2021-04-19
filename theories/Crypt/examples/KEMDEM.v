@@ -184,18 +184,6 @@ Section KEMDEM.
 
   Opaque ValidPackage mkfmap pkg_composition.mkdef.
 
-  (* #[export] *) Hint Extern 10 =>
-    shelve : packages.
-
-    (* Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap ((?i, pkg_composition.mkdef ?A ?B ?f) :: ?p)))
-    =>
-    eapply valid_package_cons ; [
-      eapply valid_package_from_class || shelve
-    | intro ; eapply valid_code_from_class || shelve
-    | shelve
-    ]
-    : packages. *)
-
   (* Probably a loc_GamePair *)
   #[program] Definition PKE_CCA (ζ : PKE_scheme) b :
     package

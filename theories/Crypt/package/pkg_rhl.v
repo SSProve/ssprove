@@ -939,7 +939,7 @@ Proof.
     /SPropMonadicStructures.SProp_op_order
     /Morphisms.pointwise_relation /Basics.flip
     /SPropMonadicStructures.SProp_order /=.
-  intuition.
+  intuition auto.
   assert (get_heap s₁ ℓ = get_heap s₂ ℓ) as Hv.
   { unfold INV in hinv.
     specialize (hinv s₁ s₂). destruct hinv as [hinv _].
@@ -960,7 +960,7 @@ Proof.
       - rewrite e in hd. cbn in hd.
         rewrite mc_1_10.Num.Theory.ltrr in hd. discriminate.
     }
-    inversion e. subst. intuition.
+    inversion e. subst. intuition auto.
 Qed.
 
 Lemma put_case :
@@ -976,7 +976,7 @@ Proof.
   rewrite /SpecificationMonads.MonoCont_bind /=.
   rewrite /SpecificationMonads.MonoCont_order /SPropMonadicStructures.SProp_op_order
           /Morphisms.pointwise_relation /Basics.flip /SPropMonadicStructures.SProp_order /=.
-  intuition.
+  intuition eauto.
   eexists (SDistr_unit _ _).
   split.
   + apply SDistr_unit_F_choice_prod_coupling.
@@ -993,7 +993,8 @@ Proof.
         rewrite mc_1_10.Num.Theory.ltrr in Hd. discriminate.
     }
     inversion Heqs.
-    intuition.
+    intuition eauto.
+    eapply hinv. all: eauto.
 Qed.
 
 (* TODO MOVE? *)
@@ -1082,7 +1083,7 @@ Proof.
   cbn - [thetaFstd θ]. intros [s1 s2].
   rewrite /SpecificationMonads.MonoCont_order /SPropMonadicStructures.SProp_op_order
           /Morphisms.pointwise_relation /Basics.flip /SPropMonadicStructures.SProp_order.
-  intuition. unfold θ. cbn - [justInterpState stT_thetaDex].
+  intuition eauto. unfold θ. cbn - [justInterpState stT_thetaDex].
   unfold justInterpState. unfold LaxComp.rlmm_comp.
   simpl (nfst _). simpl (nsnd _). unfold stT_thetaDex.
   simpl (TransformingLaxMorph.rlmm_from_lmla (stT_thetaDex_adj) ⟨ Arit op, Arit op ⟩).
