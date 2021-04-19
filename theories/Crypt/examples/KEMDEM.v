@@ -184,6 +184,18 @@ Section KEMDEM.
 
   Opaque ValidPackage mkfmap pkg_composition.mkdef.
 
+  (* #[export] *) Hint Extern 10 =>
+    shelve : packages.
+
+    (* Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap ((?i, pkg_composition.mkdef ?A ?B ?f) :: ?p)))
+    =>
+    eapply valid_package_cons ; [
+      eapply valid_package_from_class || shelve
+    | intro ; eapply valid_code_from_class || shelve
+    | shelve
+    ]
+    : packages. *)
+
   (* Probably a loc_GamePair *)
   #[program] Definition PKE_CCA (ζ : PKE_scheme) b :
     package
@@ -231,13 +243,9 @@ Section KEMDEM.
     exact _.
   Qed.
   Next Obligation.
-    (* TODO Have a tactic that does most of the work. *)
-    eapply valid_package_cons.
-    3:{ unfold "\notin" ; rewrite imfset_fset ; rewrite in_fset ; eauto. }
-    1: eapply valid_package_cons.
-    3:{ unfold "\notin" ; rewrite imfset_fset ; rewrite in_fset ; eauto. }
-    1: eapply valid_package1.
-    - intro. eapply valid_getr. 1: auto_in_fset.
+    unshelve typeclasses eauto with packages.
+    - exact _.
+    - eapply valid_getr. 1: auto_in_fset.
       intro.
       match goal with
       | |- valid_code _ _ (@assertD ?A ?b ?k) =>
@@ -250,7 +258,7 @@ Section KEMDEM.
       2:{ intro. eapply valid_code_from_class. exact _. }
       (* NEED to update PKE_dec to use these locs I guess... *)
       give_up.
-    - intro. eapply valid_getr. 1: auto_in_fset.
+    - eapply valid_getr. 1: auto_in_fset.
       intro.
       match goal with
       | |- valid_code _ _ (@assertD ?A ?b ?k) =>
@@ -265,7 +273,7 @@ Section KEMDEM.
       2:{ eapply valid_code_from_class. exact _. }
       (* NEED to update PKE_enc to use these locs I guess... *)
       give_up.
-    - intro. eapply valid_getr. 1: auto_in_fset.
+    - eapply valid_getr. 1: auto_in_fset.
       intro. eapply valid_bind.
       1:{ eapply valid_code_from_class. exact _. }
       intro. eapply valid_bind.

@@ -331,6 +331,8 @@ Proof.
     exists g. intuition auto.
 Qed.
 
+Create HintDb packages.
+
 #[export] Hint Extern 2 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
   =>
   eapply valid_package_cons ; [
@@ -338,7 +340,7 @@ Qed.
   | intro ; eapply valid_code_from_class
   | unfold "\notin" ; rewrite imfset_fset ; rewrite in_fset ; eauto
   ]
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 #[export] Hint Extern 10 (ValidCode ?L ?I (let u := _ in _)) =>
   cbv zeta
