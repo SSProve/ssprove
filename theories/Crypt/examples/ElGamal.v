@@ -99,11 +99,13 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
 
   Instance positive_gT : Positive #|gT|.
   Proof.
+    constructor.
     apply /card_gt0P. exists g. auto.
   Qed.
 
   Instance positive_SecKey : Positive #|SecKey|.
   Proof.
+    constructor.
     apply /card_gt0P. exists sec0. auto.
   Qed.
 
@@ -359,7 +361,7 @@ Proof.
   - cbn - [f]. intros x. rewrite -[RHS]prod2ch_ch2prod.
     set (y := ch2prod x). clearbody y. clear x.
     simpl in y. destruct y as [a b].
-    rewrite otf_fto. rewrite gf. f_equal.
+    rewrite otf_fto. rewrite gf.
     rewrite !fto_otf. reflexivity.
   - cbn - [f]. intro x.
     replace x with (fto (f m (g (otf x)))) at 2.

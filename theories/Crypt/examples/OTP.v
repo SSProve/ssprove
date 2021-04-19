@@ -44,10 +44,12 @@ Section OTP_example.
     apply Zp_cast.
     pose proof n_pos as n_pos.
     destruct n as [| k].
-    1:{ inversion n_pos. }
+    1:{ eapply from_Positive in n_pos. inversion n_pos. }
     rewrite expnS.
     move: (PositiveExp2 k).
-    rewrite /Positive !mulSnr => Hpos.
+    eapply from_Positive in n_pos.
+    intro Hpos. eapply from_Positive in Hpos.
+    rewrite !mulSnr.
     change (0 * ?n ^ ?m)%N with 0%N.
     set (m := (2^ k)%N) in *. clearbody m.
     apply /ltP. move: Hpos => /ltP Hpos.
@@ -337,7 +339,10 @@ Section OTP_example.
     eapply eq_rel_perf_ind_eq.
     simplify_eq_rel m.
     apply rconst_samplerL. intro m_val.
-    pose (f := λ (k : Arit (uniform i_key)), words2ch (ch2key k ⊕ ch2words m ⊕ (ch2words m_val))).
+    pose (f :=
+      λ (k : Arit (uniform i_key)),
+        words2ch (ch2key k ⊕ ch2words m ⊕ (ch2words m_val))
+    ).
     assert (bij_f : bijective f).
     { subst f.
       exists (λ x, words2ch (ch2words x ⊕ (ch2words m_val) ⊕ ch2words m)).

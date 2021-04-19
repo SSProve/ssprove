@@ -146,7 +146,7 @@ Qed.
     apply valid_code_from_class
   | apply valid_package_from_class
   ]
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 (* Linking *)
 Definition link (p1 p2 : raw_package) : raw_package :=
@@ -185,7 +185,7 @@ Qed.
     apply valid_package_from_class
   | apply valid_package_from_class
   ]
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 Lemma code_link_bind :
   ∀ {A B : choiceType} (v : raw_code A)
@@ -250,7 +250,7 @@ Qed.
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (trim ?E ?p)) =>
   apply valid_trim ;
   apply valid_package_from_class
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 (* Technical lemma before proving assoc *)
 Lemma link_trim_commut :
@@ -468,7 +468,7 @@ Qed.
   | apply valid_package_from_class
   | apply valid_package_from_class
   ]
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 Class FDisjoint {A : ordType} s1 s2 :=
   are_disjoint : @fdisjoint A s1 s2.
@@ -532,16 +532,16 @@ Qed.
 #[export] Hint Extern 1 (FDisjoint (fset ?l1) (fset ?l2)) =>
   repeat rewrite [fset]unlock ;
   eauto
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 #[export] Hint Extern 1 (Parable _ _) =>
   apply fdisjoint_from_class
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 #[export] Hint Extern 1 (Parable (trim ?E1 ?p1) (trim ?E2 ?p2)) =>
   apply parable_trim ;
   apply fdisjoint_from_class
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 (* TODO MOVE *)
 (** To circumvent the very annoying lemmata that conclude on equality

@@ -94,7 +94,7 @@ Proof.
   - exact (IHa1, IHa2).
   - exact emptym.
   - exact None.
-  - exact (fintype.Ordinal (cond_pos n)).
+  - exact (fintype.Ordinal (from_Positive _ n.(cond_pos))).
 Defined.
 
 Definition heap := { h : raw_heap | valid_heap h }.
@@ -508,7 +508,7 @@ Qed.
     apply valid_package_from_class
   | auto_in_fset
   ]
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 Lemma lookup_op_link :
   ∀ p q o,
@@ -939,7 +939,7 @@ Proof.
     /SPropMonadicStructures.SProp_op_order
     /Morphisms.pointwise_relation /Basics.flip
     /SPropMonadicStructures.SProp_order /=.
-  intuition.
+  intuition auto.
   assert (get_heap s₁ ℓ = get_heap s₂ ℓ) as Hv.
   { unfold INV in hinv.
     specialize (hinv s₁ s₂). destruct hinv as [hinv _].
@@ -960,7 +960,7 @@ Proof.
       - rewrite e in hd. cbn in hd.
         rewrite mc_1_10.Num.Theory.ltrr in hd. discriminate.
     }
-    inversion e. subst. intuition.
+    inversion e. subst. intuition auto.
 Qed.
 
 Lemma put_case :
@@ -976,7 +976,7 @@ Proof.
   rewrite /SpecificationMonads.MonoCont_bind /=.
   rewrite /SpecificationMonads.MonoCont_order /SPropMonadicStructures.SProp_op_order
           /Morphisms.pointwise_relation /Basics.flip /SPropMonadicStructures.SProp_order /=.
-  intuition.
+  intuition eauto.
   eexists (SDistr_unit _ _).
   split.
   + apply SDistr_unit_F_choice_prod_coupling.
@@ -993,7 +993,8 @@ Proof.
         rewrite mc_1_10.Num.Theory.ltrr in Hd. discriminate.
     }
     inversion Heqs.
-    intuition.
+    intuition eauto.
+    eapply hinv. all: eauto.
 Qed.
 
 (* TODO MOVE? *)
@@ -1082,7 +1083,7 @@ Proof.
   cbn - [thetaFstd θ]. intros [s1 s2].
   rewrite /SpecificationMonads.MonoCont_order /SPropMonadicStructures.SProp_op_order
           /Morphisms.pointwise_relation /Basics.flip /SPropMonadicStructures.SProp_order.
-  intuition. unfold θ. cbn - [justInterpState stT_thetaDex].
+  intuition eauto. unfold θ. cbn - [justInterpState stT_thetaDex].
   unfold justInterpState. unfold LaxComp.rlmm_comp.
   simpl (nfst _). simpl (nsnd _). unfold stT_thetaDex.
   simpl (TransformingLaxMorph.rlmm_from_lmla (stT_thetaDex_adj) ⟨ Arit op, Arit op ⟩).
@@ -1269,45 +1270,45 @@ Qed.
 (* TODO MOVE *)
 
 (* Slightly more expensive version that allows to change parameters *)
-#[export] Hint Extern 3 (ValidCode ?L ?I ?p) =>
+(* #[export] Hint Extern 3 (ValidCode ?L ?I ?p) =>
   match goal with
   | h : is_true (fsubset ?x ?y) |- _ =>
     eapply valid_injectLocations with (1 := h) ;
     eapply valid_code_from_class ; exact _
   end
-  : typeclass_instances.
+  : typeclass_instances. *)
 
-#[export] Hint Extern 3 (ValidCode ?L ?I ?p) =>
+(* #[export] Hint Extern 3 (ValidCode ?L ?I ?p) =>
   match goal with
   | h : is_true (fsubset ?x ?y) |- _ =>
     eapply valid_injectMap with (1 := h) ;
     eapply valid_code_from_class ; exact _
   end
-  : typeclass_instances.
+  : typeclass_instances. *)
 
-#[export] Hint Extern 3 (ValidPackage ?L ?I ?E ?p) =>
+(* #[export] Hint Extern 3 (ValidPackage ?L ?I ?E ?p) =>
   match goal with
   | h : is_true (fsubset ?x ?y) |- _ =>
     eapply valid_package_inject_locations with (1 := h) ;
     eapply valid_package_from_class ; exact _
   end
-  : typeclass_instances.
+  : typeclass_instances. *)
 
-#[export] Hint Extern 3 (ValidPackage ?L ?I ?E ?p) =>
+(* #[export] Hint Extern 3 (ValidPackage ?L ?I ?E ?p) =>
   match goal with
   | h : is_true (fsubset ?x ?y) |- _ =>
     eapply valid_package_inject_export with (1 := h) ;
     eapply valid_package_from_class ; exact _
   end
-  : typeclass_instances.
+  : typeclass_instances. *)
 
-#[export] Hint Extern 3 (ValidPackage ?L ?I ?E ?p) =>
+(* #[export] Hint Extern 3 (ValidPackage ?L ?I ?E ?p) =>
   match goal with
   | h : is_true (fsubset ?x ?y) |- _ =>
     eapply valid_package_inject_import with (1 := h) ;
     eapply valid_package_from_class ; exact _
   end
-  : typeclass_instances.
+  : typeclass_instances. *)
 
 Lemma Pr_eq_empty :
   ∀ {X Y : ord_choiceType}
@@ -1813,7 +1814,7 @@ Qed.
 #[export] Hint Extern 1 (ValidCode ?L ?I (for_loop ?c ?N)) =>
   eapply valid_for_loop ;
   intro ; apply valid_code_from_class
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 Lemma rcoupling_eq :
   ∀ {A : ord_choiceType} (K₀ K₁ : raw_code A) (ψ : precond),
@@ -2420,7 +2421,7 @@ Lemma ordinal_finType_inhabited :
   ∀ i `{Positive i}, ordinal_finType i.
 Proof.
   intros i hi.
-  exists 0%N. auto.
+  exists 0%N. eapply from_Positive. auto.
 Qed.
 
 Section Uniform_prod.
@@ -2611,7 +2612,7 @@ Qed.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I fail_unit) =>
   eapply valid_fail_unit
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 Lemma valid_assert :
   ∀ L I b, valid_code L I (assert b).
@@ -2621,7 +2622,7 @@ Qed.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (assert ?b)) =>
   eapply valid_assert
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 Lemma valid_fail :
   ∀ A L I, valid_code L I (@fail A).
@@ -2631,7 +2632,7 @@ Qed.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I fail) =>
   eapply valid_fail
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 Lemma valid_assertD :
   ∀ A L I b k,
@@ -2644,10 +2645,10 @@ Proof.
   - simpl. eapply valid_code_from_class. exact _.
 Qed.
 
-#[export] Hint Extern 1 (ValidCode ?L ?I (assertD ?b ?k)) =>
-  eapply valid_assertD ;
+#[export] Hint Extern 1 (ValidCode ?L ?I (@assertD ?A ?b ?k)) =>
+  eapply (valid_assertD A _ _ b k) ;
   intro ; apply valid_code_from_class
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 Notation "'#assert' b 'as' id ;; k" :=
   (assertD b (λ id, k))
