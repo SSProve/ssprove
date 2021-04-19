@@ -443,7 +443,7 @@ Notation "{ 'code' p '#with' h }" :=
 
 (* Having an instance here means that it will use ret when the code
   is unknown. Pretty bad.
-  We will instead use #[export] Hint Extern.
+  We will instead use Hint Extern.
 *)
 (* Instance ValidCode_ret (A : choiceType) (x : A) L I :
   ValidCode L I (ret x).
@@ -451,73 +451,75 @@ Proof.
   apply valid_ret.
 Qed. *)
 
+Create HintDb packages.
+
 #[export] Hint Extern 1 (ValidCode ?L ?I (ret ?x)) =>
   apply valid_ret
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (opr ?o ?x ?k)) =>
   eapply valid_opr ; [
     auto_in_fset
   | intro ; apply valid_code_from_class
-  ] : typeclass_instances.
+  ] : typeclass_instances packages.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (getr ?o ?k)) =>
   eapply valid_getr ; [
     auto_in_fset
   | intro ; apply valid_code_from_class
-  ] : typeclass_instances.
+  ] : typeclass_instances packages.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (putr ?o ?x ?k)) =>
   eapply valid_putr ; [
     auto_in_fset
   | apply valid_code_from_class
-  ] : typeclass_instances.
+  ] : typeclass_instances packages.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (sampler ?op ?k)) =>
   eapply valid_sampler ;
   intro ; apply valid_code_from_class
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (bind ?p ?k)) =>
   eapply valid_bind ; [
     apply valid_code_from_class
   | intro ; apply valid_code_from_class
   ]
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 Coercion prog : code >-> raw_code.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (?p.(prog))) =>
   eapply p.(prog_valid)
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 Arguments valid_command _ _ [_] _.
 
 #[export] Hint Extern 1 (ValidCommand ?L ?I (cmd_op ?o ?x)) =>
   eapply valid_cmd_op ;
   auto_in_fset
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 #[export] Hint Extern 1 (ValidCommand ?L ?I (cmd_get ?l)) =>
   eapply valid_cmd_get ;
   auto_in_fset
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (cmd_put ?l ?v)) =>
   eapply valid_cmd_put ;
   auto_in_fset
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (cmd_sample ?op)) =>
   eapply valid_cmd_sample
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (cmd_bind ?c ?k)) =>
   eapply valid_cmd_bind ; [
     apply valid_command_from_class
   | intro ; apply valid_code_from_class
   ]
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 Section FreeLocations.
 
@@ -670,7 +672,7 @@ Coercion pack : package >-> raw_package.
 
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (?p.(pack))) =>
   eapply p.(pack_valid)
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 Lemma valid_package_from_class :
   ∀ L I E (p : raw_package),

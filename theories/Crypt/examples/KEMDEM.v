@@ -231,43 +231,14 @@ Section KEMDEM.
     exact _.
   Qed.
   Next Obligation.
-    unshelve typeclasses eauto with packages.
-    - exact _.
-    - eapply valid_getr. 1: auto_in_fset.
-      intro.
-      match goal with
-      | |- valid_code _ _ (@assertD ?A ?b ?k) =>
-        eapply (valid_assertD A _ _ b k)
-      end.
-      intro. eapply valid_getr. 1: auto_in_fset.
-      intro. eapply valid_bind.
-      1:{ eapply valid_code_from_class. exact _. }
-      intro. eapply valid_bind.
-      2:{ intro. eapply valid_code_from_class. exact _. }
-      (* NEED to update PKE_dec to use these locs I guess... *)
+    ssprove_valid.
+    - (* NEED to update PKE_dec to use these locs I guess... *)
       give_up.
-    - eapply valid_getr. 1: auto_in_fset.
-      intro.
-      match goal with
-      | |- valid_code _ _ (@assertD ?A ?b ?k) =>
-        eapply (valid_assertD A _ _ b k)
-      end.
-      intro. eapply valid_getr. 1: auto_in_fset.
-      intro. eapply valid_bind.
-      1:{ eapply valid_code_from_class. exact _. }
-      intro. eapply valid_bind.
-      2:{ intro. eapply valid_code_from_class. exact _. }
-      destruct b.
-      2:{ eapply valid_code_from_class. exact _. }
-      (* NEED to update PKE_enc to use these locs I guess... *)
+    - (* NEED to update PKE_enc to use these locs I guess... *)
       give_up.
-    - eapply valid_getr. 1: auto_in_fset.
-      intro. eapply valid_bind.
-      1:{ eapply valid_code_from_class. exact _. }
-      intro. eapply valid_bind.
-      + (* NEED to update PKE_kgen to use these locs I guess... *)
-        admit.
-      + intros []. eapply valid_code_from_class. exact _.
+    - (* NEED to update PKE_kgen to use these locs I guess... *)
+      give_up.
+    - destruct x1. ssprove_valid.
   Admitted.
 
   (** MOD-CCA *)

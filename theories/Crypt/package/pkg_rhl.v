@@ -508,7 +508,7 @@ Qed.
     apply valid_package_from_class
   | auto_in_fset
   ]
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 Lemma lookup_op_link :
   ∀ p q o,
@@ -1814,7 +1814,7 @@ Qed.
 #[export] Hint Extern 1 (ValidCode ?L ?I (for_loop ?c ?N)) =>
   eapply valid_for_loop ;
   intro ; apply valid_code_from_class
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 Lemma rcoupling_eq :
   ∀ {A : ord_choiceType} (K₀ K₁ : raw_code A) (ψ : precond),
@@ -2612,7 +2612,7 @@ Qed.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I fail_unit) =>
   eapply valid_fail_unit
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 Lemma valid_assert :
   ∀ L I b, valid_code L I (assert b).
@@ -2622,7 +2622,7 @@ Qed.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (assert ?b)) =>
   eapply valid_assert
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 Lemma valid_fail :
   ∀ A L I, valid_code L I (@fail A).
@@ -2632,7 +2632,7 @@ Qed.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I fail) =>
   eapply valid_fail
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 Lemma valid_assertD :
   ∀ A L I b k,
@@ -2648,7 +2648,7 @@ Qed.
 #[export] Hint Extern 1 (ValidCode ?L ?I (@assertD ?A ?b ?k)) =>
   eapply (valid_assertD A _ _ b k) ;
   intro ; apply valid_code_from_class
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 Notation "'#assert' b 'as' id ;; k" :=
   (assertD b (λ id, k))

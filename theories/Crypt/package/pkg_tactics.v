@@ -261,7 +261,7 @@ Qed.
 
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap [::])) =>
   rewrite -?fset0E ; eapply valid_empty_package
-  : typeclass_instances.
+  : typeclass_instances packages.
 
 Lemma valid_package1 :
   ∀ L I i A B f,
@@ -331,8 +331,6 @@ Proof.
     exists g. intuition auto.
 Qed.
 
-Create HintDb packages.
-
 #[export] Hint Extern 100 =>
   shelve : packages.
 
@@ -361,3 +359,6 @@ Create HintDb packages.
   =>
   unify_positive_proofs
   : typeclass_instances. *)
+
+Ltac ssprove_valid :=
+  unshelve typeclasses eauto with packages.
