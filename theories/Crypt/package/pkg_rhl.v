@@ -2644,8 +2644,8 @@ Proof.
   - simpl. eapply valid_code_from_class. exact _.
 Qed.
 
-#[export] Hint Extern 1 (ValidCode ?L ?I (assertD ?b ?k)) =>
-  eapply valid_assertD ;
+#[export] Hint Extern 1 (ValidCode ?L ?I (@assertD ?A ?b ?k)) =>
+  eapply (valid_assertD A _ _ b k) ;
   intro ; apply valid_code_from_class
   : typeclass_instances.
 

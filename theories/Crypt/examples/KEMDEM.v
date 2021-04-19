@@ -238,10 +238,33 @@ Section KEMDEM.
     3:{ unfold "\notin" ; rewrite imfset_fset ; rewrite in_fset ; eauto. }
     1: eapply valid_package1.
     - intro. eapply valid_getr. 1: auto_in_fset.
-      intro. Fail eapply valid_assertD. admit.
+      intro.
+      match goal with
+      | |- valid_code _ _ (@assertD ?A ?b ?k) =>
+        eapply (valid_assertD A _ _ b k)
+      end.
+      intro. eapply valid_getr. 1: auto_in_fset.
+      intro. eapply valid_bind.
+      1:{ eapply valid_code_from_class. exact _. }
+      intro. eapply valid_bind.
+      2:{ intro. eapply valid_code_from_class. exact _. }
+      (* NEED to update PKE_dec to use these locs I guess... *)
+      give_up.
     - intro. eapply valid_getr. 1: auto_in_fset.
-      intro. Fail eapply valid_assertD. admit.
-      (* eapply valid_code_from_class. exact _. *)
+      intro.
+      match goal with
+      | |- valid_code _ _ (@assertD ?A ?b ?k) =>
+        eapply (valid_assertD A _ _ b k)
+      end.
+      intro. eapply valid_getr. 1: auto_in_fset.
+      intro. eapply valid_bind.
+      1:{ eapply valid_code_from_class. exact _. }
+      intro. eapply valid_bind.
+      2:{ intro. eapply valid_code_from_class. exact _. }
+      destruct b.
+      2:{ eapply valid_code_from_class. exact _. }
+      (* NEED to update PKE_enc to use these locs I guess... *)
+      give_up.
     - intro. eapply valid_getr. 1: auto_in_fset.
       intro. eapply valid_bind.
       1:{ eapply valid_code_from_class. exact _. }
