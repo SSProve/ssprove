@@ -10,7 +10,7 @@ Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-format".
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  Package Prelude.
+  Package Prelude pkg_composition.
 
 From Coq Require Import Utf8 Lia.
 From extructures Require Import ord fset fmap.
@@ -106,7 +106,7 @@ Section KEMDEM.
     For it to be used in PKE-CCA I specialise the definitions to use locations
     PKE_loc.
   *)
-  Definition PKE_loc := fset [:: pk_loc; sk_loc; c_loc].
+  Definition PKE_loc := fset [:: pk_loc ; sk_loc ; c_loc ].
 
   Record PKE_scheme := {
     PKE_kgen : code PKE_loc [interface] (chProd 'key 'key) ;
@@ -135,15 +135,17 @@ Section KEMDEM.
 
   (** KEY Package *)
 
-  Definition KEY :
-    package
-      (fset [:: key ])
-      [interface]
-      [interface
-        val #[ GEN ] : 'unit → 'unit ;
-        val #[ SET ] : 'key → 'unit ;
-        val #[ GET ] : 'unit → 'key
-      ] :=
+  Definition KEY_loc :=
+    fset [:: key ].
+
+  Definition KEY_out :=
+    [interface
+      val #[ GEN ] : 'unit → 'unit ;
+      val #[ SET ] : 'key → 'unit ;
+      val #[ GET ] : 'unit → 'key
+    ].
+
+  Definition KEY : package KEY_loc [interface] KEY_out :=
     [package
       def #[ GEN ] (_ : 'unit) : 'unit {
         k ← get key ;;
@@ -165,31 +167,57 @@ Section KEMDEM.
       }
     ].
 
-  (** Assumed KEM game *)
-  (* TODO Not sure if I should do this, or simply assusme some code. *)
-  Definition KEM_export :=
+  (** KEM package *)
+
+  Definition KEM_in :=
+    [interface
+      val #[ SET ] : 'key → 'unit ;
+      val #[ GEN ] : 'unit → 'unit
+    ].
+
+  Definition KEM_out :=
     [interface
       val #[ KEMGEN ] : 'unit → 'key ;
       val #[ ENCAP ] : 'unit → 'elen ;
       val #[ DECAP ] : 'elen → 'key
     ].
 
-  Context (KEM₀ : loc_package [interface val #[ SET ] : 'key → 'unit ] KEM_export).
-  Context (KEM₁ : loc_package [interface val #[ GEN ] : 'unit → 'unit ] KEM_export).
+  Definition KEM (b : bool) : package PKE_loc KEM_in KEM_out.
+  Admitted.
 
-  (** Assumed DEM game *)
-  Definition DEM_export :=
+  (** KEM-CCA game *)
+
+  Definition KEM_CCA_out :=
+    [interface
+      val #[ KEMGEN ] : 'unit → 'key ;
+      val #[ ENCAP ] : 'unit → 'elen ;
+      val #[ DECAP ] : 'elen → 'key
+    ].
+
+  (* TODO loops! Might be because of Parable or simpilar things *)
+  (* Definition KEM_CCA_pkg b :
+    package (PKE_loc :|: KEY_loc) [interface] KEM_CCA_out :=
+    {package (par (KEM b) (ID [interface  val #[GET] : 'unit → 'key ])) ∘ KEY }. *)
+
+  (** DEM package *)
+
+  Definition DEM_in :=
+    [interface
+      val #[ GET ] : 'unit → 'key
+    ].
+
+  Definition DEM_out :=
     [interface
       val #[ ENC ] : 'plain → 'clen ;
       val #[ DEC ] : 'clen → 'plain
     ].
 
-  Context (DEM₀ : loc_package [interface val #[ GET ] : 'unit → 'key ] DEM_export).
-  Context (DEM₁ : loc_package [interface val #[ GET ] : 'unit → 'key ] DEM_export).
+  Definition DEM (b : bool) : package PKE_loc DEM_in DEM_out.
+  Admitted.
 
   (** PKE-CCA *)
 
-  Opaque ValidPackage mkfmap pkg_composition.mkdef.
+  Opaque ValidPackage mkfmap mkdef.
 
   Definition PKE_CCA_out :=
     [interface
@@ -301,8 +329,8 @@ Section KEMDEM.
       ValidPackage LA PKE_CCA_export A_export A →
       fdisjoint LA PKE_loc →
       Advantage PKE_CCA A <=
-      Advantage KEM_CCA (A ∘ MOC_CCA ∘ par (ID KEM_export) DEM₀) +
-      Advantage DEM_CCA (A ∘ MOD_CCA ∘ par KEM₁ (ID DEM_export)).
+      Advantage KEM_CCA (A ∘ MOC_CCA ∘ par (ID KEM_out) DEM₀) +
+      Advantage DEM_CCA (A ∘ MOD_CCA ∘ par KEM₁ (ID DEM_out)).
   Abort. *)
 
 End KEMDEM.
