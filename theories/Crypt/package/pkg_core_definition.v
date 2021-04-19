@@ -718,6 +718,19 @@ Proof.
   exists f. intuition auto.
 Qed.
 
+Lemma valid_package_inject_import :
+  ∀ L I1 I2 E p,
+    fsubset I1 I2 →
+    valid_package L I1 E p →
+    valid_package L I2 E p.
+Proof.
+  intros L I1 I2 E p hE h.
+  intros [n [S T]] ho. specialize (h _ ho). cbn in h.
+  destruct h as [f [ef hf]].
+  exists f. intuition auto.
+  eapply valid_injectMap. all: eauto.
+Qed.
+
 Lemma package_ext :
   ∀ {L I E} (p1 p2 : package L I E),
     p1.(pack) =1 p2.(pack) →
