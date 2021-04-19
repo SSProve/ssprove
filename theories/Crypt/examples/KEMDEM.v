@@ -102,9 +102,13 @@ Section KEMDEM.
   Definition i_key := key_length.
   Definition i_clen := clen.
 
-  (** PKE scheme *)
+  (** PKE scheme
+    For it to be used in PKE-CCA I specialise the definitions to use locations
+    PKE_loc.
+  *)
+  Definition PKE_loc := fset [:: pk_loc; sk_loc; c_loc].
+
   Record PKE_scheme := {
-    PKE_loc : {fset Location } ;
     PKE_kgen : code PKE_loc [interface] (chProd 'key 'key) ;
     PKE_enc : 'key → 'plain → code PKE_loc [interface] (chProd 'elen 'clen) ;
     (* clen is global *)
@@ -232,14 +236,9 @@ Section KEMDEM.
   Qed.
   Next Obligation.
     ssprove_valid.
-    - (* NEED to update PKE_dec to use these locs I guess... *)
-      give_up.
-    - (* NEED to update PKE_enc to use these locs I guess... *)
-      give_up.
-    - (* NEED to update PKE_kgen to use these locs I guess... *)
-      give_up.
-    - destruct x1. ssprove_valid.
-  Admitted.
+    (* TODO A hint to deal with this case *)
+    destruct x1. ssprove_valid.
+  Qed.
 
   (** MOD-CCA *)
 
