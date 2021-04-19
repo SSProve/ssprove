@@ -94,7 +94,7 @@ Proof.
   - exact (IHa1, IHa2).
   - exact emptym.
   - exact None.
-  - exact (fintype.Ordinal (cond_pos n)).
+  - exact (fintype.Ordinal (from_Positive _ n.(cond_pos))).
 Defined.
 
 Definition heap := { h : raw_heap | valid_heap h }.
@@ -1269,21 +1269,21 @@ Qed.
 (* TODO MOVE *)
 
 (* Slightly more expensive version that allows to change parameters *)
-#[export] Hint Extern 3 (ValidCode ?L ?I ?p) =>
+(* #[export] Hint Extern 3 (ValidCode ?L ?I ?p) =>
   match goal with
   | h : is_true (fsubset ?x ?y) |- _ =>
     eapply valid_injectLocations with (1 := h) ;
     eapply valid_code_from_class ; exact _
   end
-  : typeclass_instances.
+  : typeclass_instances. *)
 
-#[export] Hint Extern 3 (ValidPackage ?L ?I ?E ?p) =>
+(* #[export] Hint Extern 3 (ValidPackage ?L ?I ?E ?p) =>
   match goal with
   | h : is_true (fsubset ?x ?y) |- _ =>
     eapply valid_package_inject_locations with (1 := h) ;
     eapply valid_package_from_class ; exact _
   end
-  : typeclass_instances.
+  : typeclass_instances. *)
 
 Lemma Pr_eq_empty :
   ∀ {X Y : ord_choiceType}
@@ -2396,7 +2396,7 @@ Lemma ordinal_finType_inhabited :
   ∀ i `{Positive i}, ordinal_finType i.
 Proof.
   intros i hi.
-  exists 0%N. auto.
+  exists 0%N. eapply from_Positive. auto.
 Qed.
 
 Section Uniform_prod.

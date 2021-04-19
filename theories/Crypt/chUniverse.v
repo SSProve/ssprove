@@ -90,7 +90,7 @@ Next Obligation.
 Defined.
 Next Obligation.
   exists 0. destruct n as [p h]. simpl.
-  unfold Positive in h. auto.
+  eapply from_Positive in h. auto.
 Defined.
 
 Section chUniverseTypes.
@@ -481,22 +481,23 @@ Section chUniverseTypes.
 
   Lemma codeK : pcancel encode decode.
   Proof.
-    move=> t. induction t; intuition.
+    intro t. induction t.
+    all: intuition.
     all: simpl.
     - rewrite IHt1. rewrite IHt2. reflexivity.
     - rewrite IHt1. rewrite IHt2. reflexivity.
     - rewrite IHt. reflexivity.
     - destruct n as [n npos]. cbn.
       destruct n.
-      + discriminate.
+      + eapply from_Positive in npos as h. discriminate.
       + cbn.
         rewrite -subnE subn0.
-        repeat f_equal.
-        apply bool_irrelevance.
+        reflexivity.
   Defined.
 
   Definition chUniverse_choiceMixin := PcanChoiceMixin codeK.
-  Canonical chUniverse_choiceType := ChoiceType chUniverse chUniverse_choiceMixin.
+  Canonical chUniverse_choiceType :=
+    ChoiceType chUniverse chUniverse_choiceMixin.
 
   Definition chUniverse_ordMixin := OrdMixin chUniverse_leqP.
   Canonical chUniverse_ordType :=

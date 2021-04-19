@@ -168,7 +168,7 @@ Ltac code_after_rewrite :=
 
 (** Tactic to unify Positive proofs in a goal *)
 
-Ltac mark_abstract_positive :=
+(* Ltac mark_abstract_positive :=
   repeat match goal with
   | |- context [ @mkpos ?p ?h ] =>
     let h' := fresh "h" in
@@ -181,15 +181,15 @@ Ltac mark_abstract_positive :=
     | ?T =>
       change T with (tac_intro_mark (Positive p)) in h'
     end
-  end.
+  end. *)
 
-Ltac unify_marked_positive_proofs :=
+(* Ltac unify_marked_positive_proofs :=
   repeat match goal with
   | h : tac_intro_mark (Positive ?n),
     h' : tac_intro_mark (Positive ?n) |- _ =>
     assert (h = h') by eapply uip ;
     subst h'
-  end.
+  end. *)
 
 Ltac subst_marked :=
   repeat match goal with
@@ -203,11 +203,11 @@ Ltac unmark_tac_intro_mark :=
     change (tac_intro_mark t) with t in h
   end.
 
-Ltac unify_positive_proofs :=
+(* Ltac unify_positive_proofs :=
   mark_abstract_positive ;
   unify_marked_positive_proofs ;
   unmark_tac_intro_mark ;
-  subst_marked.
+  subst_marked. *)
 
 (** Tactic to unify ValidCode proofs in a goal *)
 
@@ -260,7 +260,7 @@ Proof.
 Qed.
 
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap [::])) =>
-  eapply valid_empty_package
+  rewrite -?fset0E ; eapply valid_empty_package
   : typeclass_instances.
 
 Lemma valid_package1 :
@@ -277,10 +277,11 @@ Proof.
   intuition auto.
 Qed.
 
-#[export] Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap [:: (?i, mkdef ?A ?B ?f)])) =>
+(* Would be a shortcut, but when backtracking, this has an unnecessary cost *)
+(* #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap [:: (?i, mkdef ?A ?B ?f)])) =>
   eapply valid_package1 ;
   intro ; eapply valid_code_from_class
-  : typeclass_instances.
+  : typeclass_instances. *)
 
 Lemma flat_valid_package :
   ∀ L I E p,
@@ -351,7 +352,7 @@ Qed.
   This is—I hope—the only thing that might cause a discrepancy between
   the interface and the signature of the term.
 *)
-#[export] Hint Extern 3 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
+(* #[export] Hint Extern 3 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
   =>
   unify_positive_proofs
-  : typeclass_instances.
+  : typeclass_instances. *)

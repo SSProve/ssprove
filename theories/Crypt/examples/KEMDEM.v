@@ -180,13 +180,14 @@ Section KEMDEM.
   Context (DEM₀ : loc_package [interface val #[ GET ] : 'unit → 'key ] DEM_export).
   Context (DEM₁ : loc_package [interface val #[ GET ] : 'unit → 'key ] DEM_export).
 
+  (* Set Typeclasses Debug.
+  Set Typeclasses Depth 10.
+  Set Typeclasses Debug Verbosity 2. *)
+
   (** PKE-CCA *)
 
   (* Probably a loc_GamePair *)
-  (* Now it loops! Probably same problem as Nikolaj where interfaces don't
-    match
-  *)
-  (* Definition PKE_CCA (ζ : PKE_scheme) b :
+  Fail Definition PKE_CCA (ζ : PKE_scheme) b :
     package
       (fset [:: pk_loc ; sk_loc ; c_loc ])
       [interface]
@@ -227,7 +228,7 @@ Section KEMDEM.
         m ← ζ.(PKE_dec) sk c' ;;
         ret m
       }
-    ]. *)
+    ].
 
   (** MOD-CCA *)
 
