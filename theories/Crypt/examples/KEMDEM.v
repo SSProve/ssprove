@@ -180,14 +180,12 @@ Section KEMDEM.
   Context (DEM₀ : loc_package [interface val #[ GET ] : 'unit → 'key ] DEM_export).
   Context (DEM₁ : loc_package [interface val #[ GET ] : 'unit → 'key ] DEM_export).
 
-  (* Set Typeclasses Debug.
-  Set Typeclasses Depth 10.
-  Set Typeclasses Debug Verbosity 2. *)
-
   (** PKE-CCA *)
 
+  Opaque ValidPackage mkfmap pkg_composition.mkdef.
+
   (* Probably a loc_GamePair *)
-  Fail Definition PKE_CCA (ζ : PKE_scheme) b :
+  #[program] Definition PKE_CCA (ζ : PKE_scheme) b :
     package
       (fset [:: pk_loc ; sk_loc ; c_loc ])
       [interface]
@@ -229,6 +227,29 @@ Section KEMDEM.
         ret m
       }
     ].
+  Next Obligation.
+    exact _.
+  Qed.
+  Next Obligation.
+    (* TODO Have a tactic that does most of the work. *)
+    eapply valid_package_cons.
+    3:{ unfold "\notin" ; rewrite imfset_fset ; rewrite in_fset ; eauto. }
+    1: eapply valid_package_cons.
+    3:{ unfold "\notin" ; rewrite imfset_fset ; rewrite in_fset ; eauto. }
+    1: eapply valid_package1.
+    - intro. eapply valid_getr. 1: auto_in_fset.
+      intro. Fail eapply valid_assertD. admit.
+    - intro. eapply valid_getr. 1: auto_in_fset.
+      intro. Fail eapply valid_assertD. admit.
+      (* eapply valid_code_from_class. exact _. *)
+    - intro. eapply valid_getr. 1: auto_in_fset.
+      intro. eapply valid_bind.
+      1:{ eapply valid_code_from_class. exact _. }
+      intro. eapply valid_bind.
+      + (* NEED to update PKE_kgen to use these locs I guess... *)
+        admit.
+      + intros []. eapply valid_code_from_class. exact _.
+  Admitted.
 
   (** MOD-CCA *)
 
