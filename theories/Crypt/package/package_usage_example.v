@@ -145,3 +145,21 @@ Definition test₃ :
       else ret n
     }
   ].
+
+(** Information is redundant between the export interface and the package
+    definition, so it can safely be skipped.
+*)
+Definition test₄ :
+  package
+    fset0
+    [interface]
+    _
+  :=
+  [package
+    def #[ 0 ] (n : 'nat) : 'nat {
+      ret (n + n)%N
+    } ;
+    def #[ 1 ] (b : 'bool) : 'nat {
+      if b then ret 0 else ret 13
+    }
+  ].
