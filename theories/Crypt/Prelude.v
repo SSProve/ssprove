@@ -233,25 +233,7 @@ Ltac unfold_positives :=
     repeat change (pos {| pos := n ; cond_pos := h |}) with n in *
   end.
 
-(* Instance PositiveEqDec n : EqDec (Positive n) :=
-  λ x y, left (Logic.eq_refl).
-Proof.
-  intros x y.
-  left.
-  Show Proof.
-  change x with y.
-  simple refine (@Logic.eq_refl _ _).
-  reflexivity.
-  (* Should I instead have Positive in SProp? *)
-  apply eq_irrelevance.
-Qed. *)
-
-(* Require Import StrictProp.
-Set Cumulative StrictProp.
-
-Derive NoConfusion NoConfusionHom for positive.
-Unset Printing Records.
-Set Printing Coercions. *)
+(* Derive NoConfusion NoConfusionHom for positive. *)
 
 Definition NoConfusion_positive (x y : positive) :=
   x.(pos) = y.(pos).
@@ -271,30 +253,6 @@ Proof.
     cbn. reflexivity.
 Defined.
 
-(* Instance NoConfusionHomPackage_positive : NoConfusionPackage positive. *)
-
-(* Derive NoConfusion NoConfusionHom EqDec for positive. *)
-(* Definition NoConfusion_positive :=
-  (* λ (x : positive), let '(mkpos x hx) := x in
-  λ (y : positive), let '(mkpos y hy) := y in
-  x = y. *)
-  λ (x : positive) (x0 := x) (pos := Prelude.pos x0)
-    (cond_pos := Prelude.cond_pos x0) (y : positive),
-    let y0 := y in
-    let pos0 := Prelude.pos y0 in
-    let cond_pos0 := Prelude.cond_pos y0 in
-    pos = pos0. *)
-
-(* Definition NoConfusionHom_positive :=
-  λ (x y : positive),
-    (λ (p := x) (pos := Prelude.pos p) (cond_pos := Prelude.cond_pos p)
-	    (y0 : positive),
-      let p0 := y0 in
-      let pos0 := Prelude.pos p0 in
-      let cond_pos0 := Prelude.cond_pos p0 in
-      pos = pos0
-    ) y. *)
-
 Instance positive_EqDec : EqDec positive.
 Proof.
   intros [x hx] [y hy].
@@ -302,8 +260,6 @@ Proof.
   - left. move: e => /eqP e. subst. reflexivity.
   - right. intro h. inversion h. move: e => /eqP e. contradiction.
 Defined.
-
-(* Need NoConfusionHom too? *)
 
 (* Utility for defining functions with Equations *)
 Definition inspect {A : Type} (x : A) : { y : A | y = x } :=

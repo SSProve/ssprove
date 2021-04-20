@@ -149,12 +149,7 @@ Definition test₃ :
 (** Information is redundant between the export interface and the package
     definition, so it can safely be skipped.
 *)
-Definition test₄ :
-  package
-    fset0
-    [interface]
-    _
-  :=
+Definition test₄ : package fset0 [interface] _ :=
   [package
     def #[ 0 ] (n : 'nat) : 'nat {
       ret (n + n)%N
