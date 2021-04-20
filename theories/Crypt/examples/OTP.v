@@ -327,9 +327,7 @@ Section OTP_example.
     ].
 
   Definition IND_CPA : loc_GamePair [interface val #[i1] : chWords → chWords ] :=
-    λ b,
-      if b then {locpackage IND_CPA_real}
-           else {locpackage IND_CPA_ideal}.
+    λ b, if b then {locpackage IND_CPA_real } else {locpackage IND_CPA_ideal }.
 
   #[local] Open Scope ring_scope.
 

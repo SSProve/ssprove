@@ -338,15 +338,40 @@ Proof.
     exists g. intuition auto.
 Qed.
 
+(* TODO MOVE *)
+Lemma notin_fset :
+  ∀ (T : ordType) (s : seq T) (x : T),
+    (x \notin fset s) = (x \notin s).
+Proof.
+  intros T s x.
+  unfold "\notin". rewrite in_fset. reflexivity.
+Qed.
+
 #[export] Hint Extern 100 =>
   shelve : packages.
+
+#[export] Hint Extern 2 (is_true (?x \in fset ?I)) =>
+  auto_in_fset
+  : typeclass_instances packages.
+
+#[export] Hint Extern 3 (is_true (?x \in ?I)) =>
+  reflexivity
+  : typeclass_instances packages.
+
+#[export] Hint Extern 2 (is_true (?x \notin fset ?I)) =>
+  rewrite notin_fset
+  : typeclass_instances packages.
+
+#[export] Hint Extern 3 (is_true (?x \notin ?I)) =>
+  reflexivity
+  : typeclass_instances packages.
 
 #[export] Hint Extern 2 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
   =>
   eapply valid_package_cons ; [
     eapply valid_package_from_class
   | intro ; eapply valid_code_from_class
-  | unfold "\notin" ; rewrite imfset_fset ; rewrite in_fset ; eauto
+  | rewrite imfset_fset ; rewrite notin_fset
   ]
   : typeclass_instances packages.
 
