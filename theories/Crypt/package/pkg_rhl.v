@@ -41,7 +41,7 @@ Set Primitive Projections.
 #[local] Open Scope type_scope.
 #[local] Open Scope package_scope.
 
-Definition Game_import : Interface := fset0.
+Definition Game_import : Interface := [interface].
 
 Definition Game_Type (Game_export : Interface) : Type :=
   loc_package Game_import Game_export.
@@ -505,7 +505,7 @@ Qed.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (get_op_default ?p ?o ?x)) =>
   eapply valid_get_op_default ; [
-    apply valid_package_from_class
+    eapply valid_package_from_class
   | auto_in_fset
   ]
   : typeclass_instances packages.
@@ -1813,7 +1813,7 @@ Qed.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (for_loop ?c ?N)) =>
   eapply valid_for_loop ;
-  intro ; apply valid_code_from_class
+  intro ; eapply valid_code_from_class
   : typeclass_instances packages.
 
 Lemma rcoupling_eq :
@@ -2647,7 +2647,7 @@ Qed.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (@assertD ?A ?b ?k)) =>
   eapply (valid_assertD A _ _ b k) ;
-  intro ; apply valid_code_from_class
+  intro ; eapply valid_code_from_class
   : typeclass_instances packages.
 
 Notation "'#assert' b 'as' id ;; k" :=

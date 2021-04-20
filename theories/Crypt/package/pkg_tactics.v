@@ -256,11 +256,13 @@ Lemma valid_empty_package :
     valid_package L I [interface] emptym.
 Proof.
   intros L I.
+  rewrite -fset0E.
   intros [id [S T]] ho. eapply fromEmpty. eauto.
 Qed.
 
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap [::])) =>
-  rewrite -?fset0E ; eapply valid_empty_package
+  try (replace E with [interface] by eapply fset0E) ;
+  eapply valid_empty_package
   : typeclass_instances packages.
 
 Lemma valid_package1 :

@@ -143,8 +143,8 @@ Qed.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (code_link ?v ?p)) =>
   eapply valid_code_link ; [
-    apply valid_code_from_class
-  | apply valid_package_from_class
+    eapply valid_code_from_class
+  | eapply valid_package_from_class
   ]
   : typeclass_instances packages.
 
@@ -182,8 +182,8 @@ Qed.
 
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (link ?p1 ?p2)) =>
   eapply valid_link ; [
-    apply valid_package_from_class
-  | apply valid_package_from_class
+    eapply valid_package_from_class
+  | eapply valid_package_from_class
   ]
   : typeclass_instances packages.
 
@@ -248,8 +248,8 @@ Proof.
 Qed.
 
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (trim ?E ?p)) =>
-  apply valid_trim ;
-  apply valid_package_from_class
+  eapply valid_trim ;
+  eapply valid_package_from_class
   : typeclass_instances packages.
 
 (* Technical lemma before proving assoc *)
@@ -463,10 +463,10 @@ Qed.
 
 (* TODO Check if the first branch is generated *)
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (par ?p1 ?p2)) =>
-  apply valid_par ; [
-    exact _
-  | apply valid_package_from_class
-  | apply valid_package_from_class
+  eapply valid_par ; [
+    idtac
+  | eapply valid_package_from_class
+  | eapply valid_package_from_class
   ]
   : typeclass_instances packages.
 
@@ -530,17 +530,16 @@ Proof.
 Qed.
 
 #[export] Hint Extern 1 (FDisjoint (fset ?l1) (fset ?l2)) =>
-  repeat rewrite [fset]unlock ;
-  eauto
+  repeat rewrite [fset]unlock
   : typeclass_instances packages.
 
 #[export] Hint Extern 1 (Parable _ _) =>
-  apply fdisjoint_from_class
+  eapply fdisjoint_from_class
   : typeclass_instances packages.
 
 #[export] Hint Extern 1 (Parable (trim ?E1 ?p1) (trim ?E2 ?p2)) =>
-  apply parable_trim ;
-  apply fdisjoint_from_class
+  eapply parable_trim ;
+  eapply fdisjoint_from_class
   : typeclass_instances packages.
 
 (* TODO MOVE *)

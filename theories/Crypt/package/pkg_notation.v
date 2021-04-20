@@ -155,7 +155,7 @@ Module PackageNotation.
   Notation " x × y " := (chProd x y) (at level 80) : package_scope.
 
   Notation "[ 'interface' ]" :=
-    fset0
+    (fset [::])
     (at level 0, only parsing)
     : package_scope.
 

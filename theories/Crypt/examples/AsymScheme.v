@@ -101,7 +101,7 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
   (* Decryption algorithm *)
   Parameter Dec_open :
     ∀ {L : {fset Location}} (sk : choiceSecKey) (c : choiceCipher),
-      code L fset0 choicePlain.
+      code L [interface] choicePlain.
 
   Notation " 'chSecurityParameter' " := ('nat) (in custom pack_type at level 2).
   Notation " 'chPlain' " := choicePlain (in custom pack_type at level 2).

@@ -460,30 +460,30 @@ Create HintDb packages.
 #[export] Hint Extern 1 (ValidCode ?L ?I (opr ?o ?x ?k)) =>
   eapply valid_opr ; [
     auto_in_fset
-  | intro ; apply valid_code_from_class
+  | intro ; eapply valid_code_from_class
   ] : typeclass_instances packages.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (getr ?o ?k)) =>
   eapply valid_getr ; [
     auto_in_fset
-  | intro ; apply valid_code_from_class
+  | intro ; eapply valid_code_from_class
   ] : typeclass_instances packages.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (putr ?o ?x ?k)) =>
   eapply valid_putr ; [
     auto_in_fset
-  | apply valid_code_from_class
+  | eapply valid_code_from_class
   ] : typeclass_instances packages.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (sampler ?op ?k)) =>
   eapply valid_sampler ;
-  intro ; apply valid_code_from_class
+  intro ; eapply valid_code_from_class
   : typeclass_instances packages.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (bind ?p ?k)) =>
   eapply valid_bind ; [
-    apply valid_code_from_class
-  | intro ; apply valid_code_from_class
+    eapply valid_code_from_class
+  | intro ; eapply valid_code_from_class
   ]
   : typeclass_instances packages.
 
@@ -516,8 +516,8 @@ Arguments valid_command _ _ [_] _.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (cmd_bind ?c ?k)) =>
   eapply valid_cmd_bind ; [
-    apply valid_command_from_class
-  | intro ; apply valid_code_from_class
+    eapply valid_command_from_class
+  | intro ; eapply valid_code_from_class
   ]
   : typeclass_instances packages.
 
