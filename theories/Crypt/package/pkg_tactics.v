@@ -257,6 +257,7 @@ Lemma valid_empty_package :
 Proof.
   intros L I.
   rewrite -fset0E.
+  apply prove_valid_package.
   intros [id [S T]] ho. eapply fromEmpty. eauto.
 Qed.
 
@@ -271,6 +272,7 @@ Lemma valid_package1 :
     valid_package L I (fset [:: (i, (A, B))]) (mkfmap [:: (i, mkdef A B f)]).
 Proof.
   intros L I i A B f hf.
+  apply prove_valid_package.
   intros o ho. rewrite in_fset in ho.
   rewrite mem_seq1 in ho. move: ho => /eqP ho. subst o.
   cbn. exists f.
@@ -292,6 +294,7 @@ Lemma flat_valid_package :
 Proof.
   intros L I E p hp.
   intros i [u1 u2] [v1 v2] h1 h2.
+  eapply from_valid_package in hp.
   specialize (hp _ h1) as h1'.
   specialize (hp _ h2) as h2'.
   simpl in *.
@@ -310,6 +313,7 @@ Lemma valid_package_cons :
       (mkfmap ((i, mkdef A B f) :: p)).
 Proof.
   intros L I i A B f E p hp hf hi.
+  apply prove_valid_package.
   intros o ho. rewrite in_fset in ho. rewrite in_cons in ho.
   move: ho => /orP [ho | ho].
   - move: ho => /eqP ho. subst o.
@@ -318,6 +322,7 @@ Proof.
     2:{ move: e => /eqP. contradiction. }
     intuition auto.
   - rewrite -in_fset in ho.
+    eapply from_valid_package in hp.
     specialize (hp _ ho).
     destruct o as [id [S T]].
     destruct hp as [g [eg hg]].

@@ -616,11 +616,23 @@ Definition typed_raw_function :=
 Definition raw_package :=
   {fmap ident -> typed_raw_function}.
 
-Definition valid_package L I (E : Interface) (p : raw_package) :=
+(* To avoid unification troubles, we wrap this definition in an inductive. *)
+Definition valid_package_ext L I (E : Interface) (p : raw_package) :=
   ∀ o, o \in E →
     let '(id, (src, tgt)) := o in
     ∃ (f : src → raw_code tgt),
       p id = Some (src ; tgt ; f) ∧ ∀ x, valid_code L I (f x).
+
+Inductive valid_package L I E p :=
+| prove_valid_package : valid_package_ext L I E p → valid_package L I E p.
+
+Lemma from_valid_package :
+  ∀ L I E p,
+    valid_package L I E p →
+    valid_package_ext L I E p.
+Proof.
+  intros L I E p [h]. exact h.
+Qed.
 
 Class ValidPackage L I E p :=
   is_valid_package : valid_package L I E p.
@@ -699,6 +711,8 @@ Lemma valid_package_inject_locations :
     valid_package L2 I E p.
 Proof.
   intros I E L1 L2 p hL h.
+  apply prove_valid_package.
+  eapply from_valid_package in h.
   intros [n [S T]] ho. specialize (h _ ho). cbn in h.
   destruct h as [f [ef hf]].
   exists f. intuition auto.
@@ -712,6 +726,8 @@ Lemma valid_package_inject_export :
     valid_package L I E1 p.
 Proof.
   intros L I E1 E2 p hE h.
+  apply prove_valid_package.
+  eapply from_valid_package in h.
   intros o ho. specialize (h o).
   destruct o as [o [So To]].
   forward h.
@@ -727,6 +743,8 @@ Lemma valid_package_inject_import :
     valid_package L I2 E p.
 Proof.
   intros L I1 I2 E p hE h.
+  apply prove_valid_package.
+  eapply from_valid_package in h.
   intros [n [S T]] ho. specialize (h _ ho). cbn in h.
   destruct h as [f [ef hf]].
   exists f. intuition auto.

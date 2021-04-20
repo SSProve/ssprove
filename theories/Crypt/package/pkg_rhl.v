@@ -293,6 +293,7 @@ Proof.
   exfalso.
   destruct o as [n [S T]].
   cbn - [lookup_op] in e.
+  eapply from_valid_package in hp.
   specialize (hp _ ho). cbn in hp. destruct hp as [f [ef hf]].
   cbn in e. destruct (p n) as [[St [Tt g]]|] eqn:e2.
   2: discriminate.
@@ -386,30 +387,34 @@ Lemma get_raw_package_op_link {L} {I M E} {o : opsig}
     code_link ((get_raw_package_op p1 hp1 o hin arg).(prog)) p2.
 Proof.
   destruct (lookup_op (link p1 p2) o) as [f|] eqn:e.
-  2: { unfold valid_package in hpl.
-        pose (hpl o hin) as H.
-        destruct o as [id [S T]].
-        destruct H as [f [H1 H2]].
-        unfold lookup_op in e.
-        rewrite H1 in e.
-        destruct chUniverse_eqP.
-        2:{ noconf ef. congruence. }
-        destruct chUniverse_eqP.
-        2:{ noconf ef. congruence. }
-        discriminate. }
+  2:{
+    eapply from_valid_package in hpl as H.
+    specialize (H o hin).
+    destruct o as [id [S T]].
+    destruct H as [f [H1 H2]].
+    unfold lookup_op in e.
+    rewrite H1 in e.
+    destruct chUniverse_eqP.
+    2:{ noconf ef. congruence. }
+    destruct chUniverse_eqP.
+    2:{ noconf ef. congruence. }
+    discriminate.
+  }
   rewrite (get_raw_package_op_lookup (link p1 p2) _ o hin arg f e).
   destruct (lookup_op p1 o) as [fl|] eqn:el.
-  2: { unfold valid_package in hp1.
-        pose (hp1 o hin) as H.
-        destruct o as [id [S T]].
-        destruct H as [f' [H1 H2]].
-        unfold lookup_op in el.
-        rewrite H1 in el.
-        destruct chUniverse_eqP.
-        2:{ noconf ef. congruence. }
-        destruct chUniverse_eqP.
-        2:{ noconf ef. congruence. }
-        discriminate. }
+  2:{
+    eapply from_valid_package in hp1 as H.
+    specialize (H o hin).
+    destruct o as [id [S T]].
+    destruct H as [f' [H1 H2]].
+    unfold lookup_op in el.
+    rewrite H1 in el.
+    destruct chUniverse_eqP.
+    2:{ noconf ef. congruence. }
+    destruct chUniverse_eqP.
+    2:{ noconf ef. congruence. }
+    discriminate.
+  }
   rewrite (get_raw_package_op_lookup p1 _ o hin arg fl el).
   apply (code_link_ext o hin arg p1 p2 fl el f e).
 Qed.
@@ -423,17 +428,19 @@ Lemma get_raw_package_op_trim {L} {I E} {o : opsig}
 Proof.
   apply code_ext.
   destruct (lookup_op p o) as [f|] eqn:e.
-  2: { unfold valid_package in hp.
-        pose (hp o hin) as H.
-        destruct o as [id [S T]].
-        destruct H as [f [H1 H2]].
-        unfold lookup_op in e.
-        rewrite H1 in e.
-        destruct chUniverse_eqP.
-        2:{ noconf ef. congruence. }
-        destruct chUniverse_eqP.
-        2:{ noconf ef. congruence. }
-        discriminate. }
+  2:{
+    eapply from_valid_package in hp as H.
+    specialize (H o hin).
+    destruct o as [id [S T]].
+    destruct H as [f [H1 H2]].
+    unfold lookup_op in e.
+    rewrite H1 in e.
+    destruct chUniverse_eqP.
+    2:{ noconf ef. congruence. }
+    destruct chUniverse_eqP.
+    2:{ noconf ef. congruence. }
+    discriminate.
+  }
   rewrite (get_raw_package_op_lookup p _ o hin arg f e).
   assert (lookup_op (trim E p) o = Some f) as H.
   { rewrite (lookup_op_trim E o p).
@@ -450,17 +457,19 @@ Lemma get_raw_package_op_ext {L1 L2} {I E} {o : opsig}
     (get_raw_package_op p hp2 o hin arg).(prog).
 Proof.
   destruct (lookup_op p o) as [f|] eqn:e.
-  2: { unfold valid_package in hp1.
-        pose (hp1 o hin) as H.
-        destruct o as [id [S T]].
-        destruct H as [f [H1 H2]].
-        unfold lookup_op in e.
-        rewrite H1 in e.
-        destruct chUniverse_eqP.
-        2:{ noconf ef. congruence. }
-        destruct chUniverse_eqP.
-        2:{ noconf ef. congruence. }
-        discriminate. }
+  2:{
+    eapply from_valid_package in hp1 as H.
+    specialize (H o hin).
+    destruct o as [id [S T]].
+    destruct H as [f [H1 H2]].
+    unfold lookup_op in e.
+    rewrite H1 in e.
+    destruct chUniverse_eqP.
+    2:{ noconf ef. congruence. }
+    destruct chUniverse_eqP.
+    2:{ noconf ef. congruence. }
+    discriminate.
+  }
   rewrite (get_raw_package_op_lookup p _ o hin arg f e).
   rewrite (get_raw_package_op_lookup p _ o hin arg f e).
   reflexivity.
@@ -496,6 +505,7 @@ Proof.
   unfold get_op_default.
   destruct lookup_op eqn:e.
   - eapply lookup_op_spec in e as h.
+    eapply from_valid_package in hp.
     specialize (hp _ ho). destruct o as [id [S T]].
     destruct hp as [f [ef hf]].
     cbn in h. rewrite ef in h. noconf h.
@@ -572,6 +582,7 @@ Proof.
     destruct p as [L [p hp]].
     destruct o as [n [S T]].
     cbn - [lookup_op] in e.
+    eapply from_valid_package in hp.
     specialize (hp _ ho). cbn in hp. destruct hp as [f [ef hf]].
     cbn in e. destruct (p n) as [[St [Tt g]]|] eqn:e2.
     2: discriminate.
@@ -1348,8 +1359,10 @@ Proof.
   - cbn - [semantic_judgement lookup_op].
     apply inversion_valid_opr in vA as hA. destruct hA as [hi vk].
     destruct o as [id [S T]].
+    eapply from_valid_package in vp₀.
     specialize (vp₀ _ hi). simpl in vp₀.
     destruct vp₀ as [f₀ [e₀ h₀]].
+    eapply from_valid_package in vp₁.
     specialize (vp₁ _ hi). simpl in vp₁.
     destruct vp₁ as [f₁ [e₁ h₁]].
     erewrite lookup_op_spec_inv. 2: eauto.

@@ -84,6 +84,7 @@ Lemma lookup_op_valid :
       ∀ x, valid_code L I (f x).
 Proof.
   intros L I E p o hp ho.
+  eapply from_valid_package in hp.
   specialize (hp o ho).
   destruct o as [n [So To]].
   destruct hp as [f [ef hf]].
@@ -164,6 +165,8 @@ Lemma valid_link :
     valid_package (L1 :|: L2) I E (link p1 p2).
 Proof.
   intros L1 l2 I M E p1 p2 h1 h2.
+  apply prove_valid_package.
+  eapply from_valid_package in h1.
   intros [n [So To]] ho. unfold link.
   rewrite mapmE.
   specialize (h1 _ ho) as h1'. cbn in h1'.
@@ -241,6 +244,8 @@ Lemma valid_trim :
     valid_package L I E (trim E p).
 Proof.
   intros L I E p h.
+  apply prove_valid_package.
+  eapply from_valid_package in h.
   intros [n [So To]] ho.
   specialize (h _ ho). cbn in h. destruct h as [f [ef hf]].
   exists f. intuition auto.
@@ -354,6 +359,7 @@ Proof.
   f_equal. f_equal. f_equal.
   extensionality x.
   apply trim_get_inv in e as [e he].
+  eapply from_valid_package in h.
   specialize (h _ he). cbn in h.
   destruct h as [f [ef h]].
   rewrite ef in e. noconf e.
@@ -430,6 +436,9 @@ Lemma valid_par :
     valid_package (L1 :|: L2) (I1 :|: I2) (E1 :|: E2) (par p1 p2).
 Proof.
   intros L1 L2 I1 I2 E1 E2 p1 p2 h h1 h2.
+  apply prove_valid_package.
+  eapply from_valid_package in h1.
+  eapply from_valid_package in h2.
   intros [n [So To]] ho.
   unfold par. rewrite unionmE.
   rewrite in_fsetU in ho. move: ho => /orP [ho | ho].
@@ -657,6 +666,7 @@ Proof.
   - simpl. f_equal. f_equal. f_equal.
     extensionality x.
     eapply trimmed_valid_Some_in in e1 as hi. 2,3: eauto.
+    eapply from_valid_package in h1.
     specialize (h1 _ hi). cbn in h1.
     destruct h1 as [g [eg hg]].
     rewrite e1 in eg. noconf eg. cbn in hg.
@@ -665,6 +675,7 @@ Proof.
   - simpl. destruct (p2 n) as [[S2 [T2 f2]]|] eqn:e2.
     + simpl. f_equal. f_equal. f_equal. extensionality x.
       eapply trimmed_valid_Some_in in e2 as hi. 2,3: eauto.
+      eapply from_valid_package in h2.
       specialize (h2 _ hi). cbn in h2.
       destruct h2 as [g [eg hg]].
       rewrite e2 in eg. noconf eg. cbn in hg.
@@ -774,6 +785,7 @@ Proof.
   pose bar := mkfmap foo.
   exists (@mapm _ (typed_function L I) typed_raw_function
     (λ '(So ; To ; f), (So ; To ; λ x, (f x).(prog))) bar).
+  apply prove_valid_package.
   intros [n [So To]] ho.
   rewrite mapmE. subst bar foo.
   rewrite mkfmapE.
@@ -896,6 +908,7 @@ Lemma valid_ID :
     valid_package L I I (ID I).
 Proof.
   intros L I hI.
+  apply prove_valid_package.
   intros [id [S T]] ho.
   rewrite IDE. destruct getm_def as [[S' T']|] eqn:e.
   2:{ exfalso. eapply in_getm_def_None. 2: eauto. exact ho. }
@@ -936,6 +949,7 @@ Proof.
   rewrite mapmE. destruct (p n) as [[S [T f]]|] eqn:e.
   - cbn. f_equal. f_equal. f_equal. extensionality x.
     eapply trimmed_valid_Some_in in e as hi. 2,3: eauto.
+    eapply from_valid_package in hp.
     specialize (hp _ hi) as h'. cbn in h'.
     destruct h' as [g [eg hg]].
     rewrite e in eg. noconf eg. cbn in hg.
@@ -954,6 +968,7 @@ Proof.
   rewrite mapmE. rewrite IDE.
   destruct getm_def as [[So To]|] eqn:e.
   - eapply getm_def_in in e as hi.
+    eapply from_valid_package in hp.
     specialize (hp _ hi) as h'. cbn in h'.
     destruct h' as [f [ef hf]].
     cbn. destruct (p n) as [[St [Tt g]]|] eqn:e1. 2: discriminate.
