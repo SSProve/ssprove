@@ -101,6 +101,7 @@ Section KEMDEM.
   (** Uniform distributions *)
   Definition i_key := key_length.
   Definition i_clen := clen.
+  Definition i_elen := elen.
 
   (** PKE scheme
     For it to be used in PKE-CCA I specialise the definitions to use locations
@@ -182,6 +183,49 @@ Section KEMDEM.
       val #[ DECAP ] : 'elen → 'key
     ].
 
+  Fail Definition KEM (b : bool) : package PKE_loc KEM_in KEM_out :=
+    [package
+      def #[ KEMGEN ] (_ : 'unit) : 'key {
+        sk ← get sk_loc ;;
+        assert (sk == None) ;;
+        '(pk, sk) ← η.(KEM_kgen) ;;
+        put pk_loc := Some pk ;;
+        put sk_loc := Some sk ;;
+        ret pk
+      } ;
+      def #[ ENCAP ] (_ : 'unit) : 'elen {
+        #import {sig #[ SET ] : 'key → 'unit } as SET ;;
+        #import {sig #[ GEN ] : 'unit → 'unit } as GEN ;;
+        pk ← get pk_loc ;;
+        #assert (isSome pk) as pkSome ;;
+        let pk := getSome pk pkSome in
+        c ← get c_loc ;;
+        assert (c == None) ;;
+        if b
+        then (
+          '(k, c) ← η.(KEM_encap) pk ;;
+          put c_loc := Some c ;;
+          SET k ;;
+          ret c
+        )
+        else (
+          c ← sample uniform i_elen ;;
+          put c_loc := Some c ;;
+          GEN Datatypes.tt ;;
+          ret c
+        )
+      } ;
+      def #[ DECAP ] (c' : 'elen) : 'key {
+        sk ← get sk_loc ;;
+        #assert (isSome sk) as skSome ;;
+        let sk := getSome sk skSome in
+        c ← get c_loc ;;
+        assert (c != Some c') ;;
+        k ← η.(KEM_decap) sk c' ;;
+        ret k
+      }
+    ].
+
   Definition KEM (b : bool) : package PKE_loc KEM_in KEM_out.
   Admitted.
 
@@ -210,7 +254,7 @@ Section KEMDEM.
       intros n o₀ o₁ h₀ h₁.
       invert_interface_in h₀.
       invert_interface_in h₁.
-      reflexivity.
+      chUniverse_eq_prove.
     - erewrite fsetU0. apply fsubsetxx.
     - unfold KEM_CCA_out, KEM_out.
       rewrite -fset_cat. simpl. apply fsubsetxx.

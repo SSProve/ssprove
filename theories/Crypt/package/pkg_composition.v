@@ -569,6 +569,10 @@ Proof.
   rewrite h2 h3. reflexivity.
 Qed.
 
+#[export] Hint Extern 1 (FDisjoint _ _) =>
+  reflexivity
+  : typeclass_instances packages.
+
 #[export] Hint Extern 1 (FDisjoint (fset ?l1) (fset ?l2)) =>
   repeat rewrite [fset]unlock
   : typeclass_instances packages.
