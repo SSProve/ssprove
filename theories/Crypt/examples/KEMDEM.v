@@ -201,8 +201,7 @@ Section KEMDEM.
     package (PKE_loc :|: KEY_loc) [interface] KEM_CCA_out :=
     {package (par (KEM b) (ID [interface val #[GET] : 'unit → 'key ])) ∘ KEY }.
   Next Obligation.
-    (* TODO Add shelve_unifiable in ssprove_valid *)
-    ssprove_valid. all: shelve_unifiable.
+    ssprove_valid.
     - unfold FDisjoint. (* Unclear this class is of any use! Same for Parable
         Especially in packages hint DB
       *)

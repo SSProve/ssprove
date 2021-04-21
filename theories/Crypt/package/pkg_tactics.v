@@ -427,4 +427,4 @@ Ltac chUniverse_eq_prove :=
   : typeclass_instances. *)
 
 Ltac ssprove_valid :=
-  unshelve typeclasses eauto with packages.
+  (unshelve typeclasses eauto with packages) ; shelve_unifiable.
