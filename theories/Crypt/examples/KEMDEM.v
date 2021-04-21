@@ -98,6 +98,7 @@ Section KEMDEM.
   Definition sk_loc : Location := ('option 'key ; 2%N).
   Definition c_loc : Location := ('option ('elen × 'clen) ; 3%N).
   Definition ce_loc : Location := ('option 'elen ; 4%N).
+  Definition cc_loc : Location := ('option 'clen ; 5%N).
 
   (** Uniform distributions *)
   Definition i_key := key_length.
@@ -134,10 +135,17 @@ Section KEMDEM.
   }.
 
   (** DEM scheme *)
+
+  Definition DEM_loc := fset [:: cc_loc ].
+
+  Definition DEM_in :=
+    [interface
+      val #[ GET ] : 'unit → 'key
+    ].
+
   Record DEM_scheme := {
-    DEM_loc : {fset Location } ;
-    DEM_enc : 'key → 'plain → code DEM_loc [interface] 'clen ;
-    DEM_dec : 'key → 'clen → code DEM_loc [interface] 'plain
+    DEM_enc : 'key → 'plain → code DEM_loc DEM_in 'clen ;
+    DEM_dec : 'key → 'clen → code DEM_loc DEM_in 'plain
   }.
 
   Context (η : KEM_scheme).
@@ -296,19 +304,40 @@ Section KEMDEM.
 
   (** DEM package *)
 
-  Definition DEM_in :=
-    [interface
-      val #[ GET ] : 'unit → 'key
-    ].
-
   Definition DEM_out :=
     [interface
       val #[ ENC ] : 'plain → 'clen ;
       val #[ DEC ] : 'clen → 'plain
     ].
 
-  Definition DEM (b : bool) : package PKE_loc DEM_in DEM_out.
-  Admitted.
+  Definition DEM (b : bool) : package DEM_loc DEM_in DEM_out :=
+    [package
+      def #[ ENC ] (m : 'plain) : 'clen {
+        #import {sig #[ GET ] : 'unit → 'key } as GET ;;
+        c ← get cc_loc ;;
+        assert (c == None) ;;
+        k ← GET Datatypes.tt ;;
+        if b
+        then (
+          c ← θ.(DEM_enc) k m ;;
+          put cc_loc := Some c ;;
+          ret c
+        )
+        else (
+          c ← sample uniform i_clen ;;
+          put cc_loc := Some c ;;
+          ret c
+        )
+      } ;
+      def #[ DEC ] (c' : 'clen) : 'plain {
+        #import {sig #[ GET ] : 'unit → 'key } as GET ;;
+        c ← get cc_loc ;;
+        assert (c != Some c') ;;
+        k ← GET Datatypes.tt ;;
+        m ← θ.(DEM_dec) k c' ;;
+        ret m
+      }
+    ].
 
   (** PKE-CCA *)
 
