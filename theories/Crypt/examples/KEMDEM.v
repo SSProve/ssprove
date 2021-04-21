@@ -105,22 +105,16 @@ Section KEMDEM.
   Definition i_clen := clen.
   Definition i_elen := elen.
 
-  (** PKE scheme
-    For it to be used in PKE-CCA I specialise the definitions to use locations
-    PKE_loc.
-  *)
-  Definition PKE_loc := fset [:: pk_loc ; sk_loc ; c_loc ].
+  (** PKE scheme *)
 
   Record PKE_scheme := {
-    PKE_kgen : code PKE_loc [interface] (chProd 'key 'key) ;
-    PKE_enc : 'key → 'plain → code PKE_loc [interface] (chProd 'elen 'clen) ;
+    PKE_kgen : code fset0 [interface] (chProd 'key 'key) ;
+    PKE_enc : 'key → 'plain → code fset0 [interface] (chProd 'elen 'clen) ;
     (* clen is global *)
-    PKE_dec : 'key → chProd 'elen 'clen → code PKE_loc [interface] 'plain
+    PKE_dec : 'key → chProd 'elen 'clen → code fset0 [interface] 'plain
   }.
 
   (** KEM scheme *)
-
-  Definition KEM_loc := fset [:: pk_loc ; sk_loc ; ce_loc ].
 
   Definition KEM_in :=
     [interface
@@ -129,14 +123,12 @@ Section KEMDEM.
     ].
 
   Record KEM_scheme := {
-    KEM_kgen : code KEM_loc KEM_in (chProd 'key 'key) ;
-    KEM_encap : 'key → code KEM_loc KEM_in (chProd 'key 'elen) ;
-    KEM_decap : 'key → 'elen → code KEM_loc KEM_in 'key
+    KEM_kgen : code fset0 KEM_in (chProd 'key 'key) ;
+    KEM_encap : 'key → code fset0 KEM_in (chProd 'key 'elen) ;
+    KEM_decap : 'key → 'elen → code fset0 KEM_in 'key
   }.
 
   (** DEM scheme *)
-
-  Definition DEM_loc := fset [:: cc_loc ].
 
   Definition DEM_in :=
     [interface
@@ -144,8 +136,8 @@ Section KEMDEM.
     ].
 
   Record DEM_scheme := {
-    DEM_enc : 'key → 'plain → code DEM_loc DEM_in 'clen ;
-    DEM_dec : 'key → 'clen → code DEM_loc DEM_in 'plain
+    DEM_enc : 'key → 'plain → code fset0 DEM_in 'clen ;
+    DEM_dec : 'key → 'clen → code fset0 DEM_in 'plain
   }.
 
   Context (η : KEM_scheme).
@@ -186,6 +178,8 @@ Section KEMDEM.
     ].
 
   (** KEM package *)
+
+  Definition KEM_loc := fset [:: pk_loc ; sk_loc ; ce_loc ].
 
   Definition KEM_out :=
     [interface
@@ -241,7 +235,16 @@ Section KEMDEM.
     ].
   Next Obligation.
     ssprove_valid.
+    - eapply valid_injectLocations.
+      2:{ eapply valid_code_from_class. ssprove_valid. }
+      apply fsub0set.
+    - eapply valid_injectLocations.
+      2:{ eapply valid_code_from_class. ssprove_valid. }
+      apply fsub0set.
     - destruct x2. ssprove_valid.
+    - eapply valid_injectLocations.
+      2:{ eapply valid_code_from_class. ssprove_valid. }
+      apply fsub0set.
     - destruct x1. ssprove_valid.
   Qed.
 
@@ -257,7 +260,7 @@ Section KEMDEM.
 
   (* Maybe inline? *)
   Definition KEM_CCA_loc :=
-    PKE_loc :|: KEM_loc :|: KEY_loc.
+    KEM_loc :|: KEY_loc.
 
   #[program] Definition KEM_CCA_pkg b :
     package KEM_CCA_loc [interface] KEM_CCA_out :=
@@ -275,16 +278,16 @@ Section KEMDEM.
     - give_up.
     - give_up.
     - (* TODO Why does it unfold the def again *)
-      destruct x2. ssprove_valid. all: give_up.
+      destruct x2. ssprove_valid. give_up.
     - give_up.
-    - admit.
     - give_up.
-    - destruct x1. ssprove_valid.
+    - destruct x1. ssprove_valid. all: give_up.
     - (* Might be automated *)
       intros n o₀ o₁ h₀ h₁.
       invert_interface_in h₀.
       invert_interface_in h₁.
       chUniverse_eq_prove.
+    - admit.
     - rewrite -fset_cat. simpl. apply fsubsetxx.
     - (* TODO It seems to unfold even valid_package_ext, why?? *)
       (* eapply valid_package_cons. *)
@@ -304,13 +307,15 @@ Section KEMDEM.
 
   (** DEM package *)
 
+  Definition DEM_loc := fset [:: cc_loc ].
+
   Definition DEM_out :=
     [interface
       val #[ ENC ] : 'plain → 'clen ;
       val #[ DEC ] : 'clen → 'plain
     ].
 
-  Definition DEM (b : bool) : package DEM_loc DEM_in DEM_out :=
+  #[program] Definition DEM (b : bool) : package DEM_loc DEM_in DEM_out :=
     [package
       def #[ ENC ] (m : 'plain) : 'clen {
         #import {sig #[ GET ] : 'unit → 'key } as GET ;;
@@ -338,6 +343,15 @@ Section KEMDEM.
         ret m
       }
     ].
+  Next Obligation.
+    ssprove_valid.
+    - eapply valid_injectLocations.
+      2:{ eapply valid_code_from_class. ssprove_valid. }
+      apply fsub0set.
+    - eapply valid_injectLocations.
+      2:{ eapply valid_code_from_class. ssprove_valid. }
+      apply fsub0set.
+  Qed.
 
   (** DEM-CCA game *)
 
@@ -350,7 +364,7 @@ Section KEMDEM.
 
   (* Maybe inline? *)
   Definition DEM_CCA_loc :=
-    PKE_loc :|: DEM_loc :|: KEY_loc.
+    DEM_loc :|: KEY_loc.
 
   #[program] Definition DEM_CCA_pkg b :
     package DEM_CCA_loc [interface] DEM_CCA_out :=
@@ -363,10 +377,7 @@ Section KEMDEM.
       admit.
     - (* Odd that we have to prove this *)
       give_up.
-    - give_up.
-    - give_up.
-    - give_up.
-    - admit.
+    - unfold DEM_in. rewrite in_fset. rewrite mem_seq1. apply/eqP. reflexivity.
     - give_up.
     - give_up.
     - give_up.
@@ -375,6 +386,7 @@ Section KEMDEM.
       invert_interface_in h₀.
       invert_interface_in h₁.
       chUniverse_eq_prove.
+    - admit.
     - rewrite -fset_cat. simpl. Fail apply fsubsetxx.
       admit.
     - (* TODO It seems to unfold even valid_package_ext, why?? *)
@@ -394,6 +406,8 @@ Section KEMDEM.
       else {locpackage DEM_CCA_pkg false }.
 
   (** PKE-CCA *)
+
+  Definition PKE_loc := fset [:: pk_loc ; sk_loc ; c_loc ].
 
   Definition PKE_CCA_out :=
     [interface
@@ -439,8 +453,17 @@ Section KEMDEM.
     ].
   Next Obligation.
     ssprove_valid.
-    (* TODO A hint to deal with this case *)
-    destruct x1. ssprove_valid.
+    - eapply valid_injectLocations.
+      2:{ eapply valid_code_from_class. ssprove_valid. }
+      apply fsub0set.
+    - eapply valid_injectLocations.
+      2:{ eapply valid_code_from_class. ssprove_valid. }
+      apply fsub0set.
+    - eapply valid_injectLocations.
+      2:{ eapply valid_code_from_class. ssprove_valid. }
+      apply fsub0set.
+    - (* TODO A hint to deal with this case *)
+      destruct x1. ssprove_valid.
   Qed.
 
   Definition PKE_CCA (ζ : PKE_scheme) : loc_GamePair PKE_CCA_out :=
@@ -520,18 +543,15 @@ Section KEMDEM.
     destruct x. ssprove_valid.
     eapply valid_injectLocations. 2: eapply valid_injectMap.
     3: eapply valid_code_from_class. 3: ssprove_valid.
-    - (* Calling DEM_dec directly is a bit odd...
-        In terms of locations it's not ideal.
-      *)
-      unfold DEM_loc, MOD_CCA_loc.
-      give_up.
+    - apply fsub0set.
     - unfold DEM_in, MOD_CCA_in.
+      (* Maybe MOD_CCA_in is wrong then *)
       give_up.
   Admitted.
 
   (** PKE scheme instance *)
   #[program] Definition KEM_DEM : PKE_scheme := {|
-    PKE_kgen := {code η.(KEM_kgen)} ;
+    PKE_kgen := η.(KEM_kgen) ;
     PKE_enc := λ pk m, {code
       '(k, c₁) ← η.(KEM_encap) pk ;;
       c₂ ← θ.(DEM_enc) k m ;;
@@ -545,17 +565,16 @@ Section KEMDEM.
     }
   |}.
   Next Obligation.
-    (* See what we want as locations. If they are the same, the {code} case
-      will not be necessary.
-    *)
+    unfold KEM_in.
+    (* It's probably that scheme do not import anything either! *)
   Admitted.
   Next Obligation.
     ssprove_valid.
-    - admit.
-    - destruct x. ssprove_valid. admit.
+    - give_up.
+    - destruct x. ssprove_valid. give_up.
   Admitted.
   Next Obligation.
-    ssprove_valid. all: admit.
+    ssprove_valid. all: give_up.
   Admitted.
 
   (** Security theorem *)
@@ -567,6 +586,8 @@ Section KEMDEM.
       Advantage (PKE_CCA KEM_DEM) A <=
       Advantage KEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (ID KEM_out) (DEM true)) +
       Advantage DEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (KEM false) (ID DEM_out)).
+  Proof.
+    intros LA A hA hd.
   Abort.
 
 End KEMDEM.
