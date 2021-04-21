@@ -338,6 +338,20 @@ Proof.
     exists g. intuition auto.
 Qed.
 
+Lemma valid_package_cons_upto :
+  ∀ L I i A B A' B' f E p,
+    valid_package L I (fset E) (mkfmap p) →
+    (∀ x, valid_code L I (f x)) →
+    i \notin (λ '(i,_), i) @: fset E →
+    A = A' →
+    B = B' →
+    valid_package L I (fset ((i, (A', B')) :: E))
+      (mkfmap ((i, mkdef A B f) :: p)).
+Proof.
+  intros L I i A B A' B' f E p hp hf hi eA eB. subst.
+  eapply valid_package_cons. all: eauto.
+Qed.
+
 (* TODO MOVE *)
 Lemma notin_fset :
   ∀ (T : ordType) (s : seq T) (x : T),
@@ -372,6 +386,26 @@ Qed.
     eapply valid_package_from_class
   | intro ; eapply valid_code_from_class
   | rewrite imfset_fset ; rewrite notin_fset
+  ]
+  : typeclass_instances packages.
+
+Ltac chUniverse_eq_prove :=
+  lazymatch goal with
+  | |- chProd _ _ = chProd _ _ => f_equal ; chUniverse_eq_prove
+  | |- chMap _ _ = chMap _ _ => f_equal ; chUniverse_eq_prove
+  | |- chOption _ = chOption _ => f_equal ; chUniverse_eq_prove
+  | |- chFin _ = chFin _ => f_equal ; apply positive_ext ; reflexivity
+  | |- _ = _ => reflexivity
+  end.
+
+#[export] Hint Extern 4 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
+  =>
+  eapply valid_package_cons_upto ; [
+    eapply valid_package_from_class
+  | intro ; eapply valid_code_from_class
+  | rewrite imfset_fset ; rewrite notin_fset
+  | chUniverse_eq_prove
+  | chUniverse_eq_prove
   ]
   : typeclass_instances packages.
 

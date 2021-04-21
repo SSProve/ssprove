@@ -7,6 +7,7 @@ From mathcomp Require Import ssreflect eqtype ssrbool ssrnat.
 Set Warnings "notation-overridden".
 From extructures Require Import ord fset.
 From Equations Require Import Equations.
+From Mon Require SPropBase.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
@@ -97,21 +98,14 @@ Proof.
   - move: e => /eqP. auto.
 Defined.
 
-(** SProp squash *)
-Inductive squash (A : Type) : SProp :=
-| sq (x : A).
-
-Notation "∥ A ∥" := (squash A) (at level 100).
-
-Inductive SEmpty : SProp :=.
-
 (** Notion of positive natural number
 
   Usage: Simply write [mkpos n] to turn [n] into a positive natural number.
-  The positivity proof should be inferred by the [lia] tactic.
+  The positivity proof should be inferred by the [lia] tactic or some other
+  means.
 *)
-Class Positive (n : nat) : SProp :=
-  is_positive : ∥ 0 < n ∥.
+Class Positive (n : nat) : Prop :=
+  is_positive : 0 < n.
 
 Ltac nat_reify :=
   repeat match goal with
@@ -121,17 +115,17 @@ Ltac nat_reify :=
   end.
 
 #[export] Hint Extern 1 (Positive ?n) =>
-  constructor ; reflexivity : typeclass_instances.
+  reflexivity : typeclass_instances.
 
 #[export] Hint Extern 2 (Positive ?n) =>
-  unfold Positive ; constructor ; apply/ltP ; lia : typeclass_instances.
+  unfold Positive ; apply/ltP ; lia : typeclass_instances.
 
 #[export] Hint Extern 4 (Positive ?n) =>
-  unfold Positive ; constructor ; apply/ltP ; nat_reify ; lia : typeclass_instances.
+  unfold Positive ; apply/ltP ; nat_reify ; lia : typeclass_instances.
 
 Instance PositiveExp2 n : Positive (2^n)%N.
 Proof.
-  unfold Positive. constructor. apply/ltP. induction n.
+  unfold Positive. apply/ltP. induction n.
   - auto.
   - rewrite expnS. rewrite mulSnr. rewrite mulSnr.
     change (0 * ?n) with 0.
@@ -146,8 +140,8 @@ Lemma Positive_prod :
     Positive m →
     Positive (n * m).
 Proof.
-  intros n m [hn] [hm].
-  constructor.
+  intros n m hn hm.
+  unfold Positive in *.
   eapply leq_trans. 2: eapply leq_pmull. all: auto.
 Qed.
 
@@ -180,7 +174,8 @@ Lemma positive_eqP : Equality.axiom positive_eq.
 Proof.
   intros [n hn] [m hm]. unfold positive_eq. simpl.
   destruct (n == m) eqn:e.
-  - move: e => /eqP e. subst. left. reflexivity.
+  - move: e => /eqP e. subst. left.
+    f_equal. apply eq_irrelevance.
   - move: e => /eqP e. right.
     intro h. apply e. inversion h. reflexivity.
 Qed.
@@ -188,16 +183,6 @@ Qed.
 Canonical positive_eqMixin := EqMixin positive_eqP.
   Canonical positive_eqType :=
     Eval hnf in EqType positive positive_eqMixin.
-
-Lemma from_Positive :
-  ∀ n, Positive n → 0 < n.
-Proof.
-  intros n h.
-  destruct (0 < n) eqn:e.
-  - reflexivity.
-  - eapply SEmpty_ind. destruct h as [h].
-    exfalso. rewrite e in h. discriminate.
-Qed.
 
 (** Lt class, for finite types  *)
 
@@ -215,12 +200,22 @@ Class Lt n m :=
 
 Instance Positive_Lt n `{h : Positive n} : Lt 0 n.
 Proof.
-  unfold Lt. eapply from_Positive in h. auto.
+  auto.
 Qed.
 
 Instance PositiveInFin n m (h : Lt n m) : Positive m.
 Proof.
   unfold Lt in h. exact _.
+Qed.
+
+Lemma positive_ext :
+  ∀ (p q : positive),
+    p.(pos) = q.(pos) →
+    p = q.
+Proof.
+  intros [p hp] [q hq] e.
+  cbn in e. subst.
+  f_equal. apply eq_irrelevance.
 Qed.
 
 (** Tactic to unfold all positives (NEEDED?) *)
@@ -233,33 +228,12 @@ Ltac unfold_positives :=
     repeat change (pos {| pos := n ; cond_pos := h |}) with n in *
   end.
 
-(* Derive NoConfusion NoConfusionHom for positive. *)
-
-Definition NoConfusion_positive (x y : positive) :=
-  x.(pos) = y.(pos).
-
-Instance NoConfusionPackage_positive : NoConfusionPackage positive.
+Instance PositiveEqDec n : EqDec (Positive n).
 Proof.
-  unshelve econstructor.
-  - exact NoConfusion_positive.
-  - intros [a ha] [b hb] e. unfold NoConfusion_positive in e. simpl in e.
-    subst. reflexivity.
-  - intros [a ha] [b hb] e. unfold NoConfusion_positive. simpl.
-    inversion e. reflexivity.
-  - cbn. intros [a ha] [b hb] e. unfold NoConfusion_positive in e.
-    simpl in e. subst. cbn. reflexivity.
-  - cbn. intros [a ha] [b hb] e. inversion e. subst.
-    pose proof (eq_irrelevance e Logic.eq_refl). subst.
-    cbn. reflexivity.
-Defined.
+  left. apply eq_irrelevance.
+Qed.
 
-Instance positive_EqDec : EqDec positive.
-Proof.
-  intros [x hx] [y hy].
-  destruct (x == y) eqn:e.
-  - left. move: e => /eqP e. subst. reflexivity.
-  - right. intro h. inversion h. move: e => /eqP e. contradiction.
-Defined.
+Derive NoConfusion NoConfusionHom for positive.
 
 (* Utility for defining functions with Equations *)
 Definition inspect {A : Type} (x : A) : { y : A | y = x } :=

@@ -96,7 +96,7 @@ Definition test₁ :
 
 Definition sig := {sig #[0] : 'nat → 'nat }.
 
-Definition test₂ :
+#[program] Definition test₂ :
   package
     [fset ('nat; 0)]
     [interface val #[0] : 'nat → 'nat ]

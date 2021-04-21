@@ -28,7 +28,7 @@ Lemma F_w0 :
   forall (i : Index), fin_family i.
 Proof.
   intros i. unfold fin_family. cbn.
-  exists 0%N. eapply from_Positive. eapply i.(cond_pos).
+  exists 0%N. eapply i.(cond_pos).
 Qed.
 
 (* extend the initial parameters for the rules  *)

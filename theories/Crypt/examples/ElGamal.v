@@ -99,13 +99,11 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
 
   Instance positive_gT : Positive #|gT|.
   Proof.
-    constructor.
     apply /card_gt0P. exists g. auto.
   Qed.
 
   Instance positive_SecKey : Positive #|SecKey|.
   Proof.
-    constructor.
     apply /card_gt0P. exists sec0. auto.
   Qed.
 

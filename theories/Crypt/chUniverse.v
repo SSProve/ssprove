@@ -90,7 +90,7 @@ Next Obligation.
 Defined.
 Next Obligation.
   exists 0. destruct n as [p h]. simpl.
-  eapply from_Positive in h. auto.
+  unfold Positive in h. auto.
 Defined.
 
 Section chUniverseTypes.
@@ -489,10 +489,9 @@ Section chUniverseTypes.
     - rewrite IHt. reflexivity.
     - destruct n as [n npos]. cbn.
       destruct n.
-      + eapply from_Positive in npos as h. discriminate.
+      + discriminate.
       + cbn.
-        rewrite -subnE subn0.
-        reflexivity.
+        rewrite -subnE subn0. repeat f_equal. apply eq_irrelevance.
   Defined.
 
   Definition chUniverse_choiceMixin := PcanChoiceMixin codeK.
