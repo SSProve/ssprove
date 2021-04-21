@@ -194,10 +194,16 @@ Section KEMDEM.
       val #[ DECAP ] : 'elen → 'key
     ].
 
-  (* TODO loops! Might be because of Parable or simpilar things *)
-  (* Definition KEM_CCA_pkg b :
+  Opaque mkfmap mkdef.
+
+  #[program] Definition KEM_CCA_pkg b :
     package (PKE_loc :|: KEY_loc) [interface] KEM_CCA_out :=
-    {package (par (KEM b) (ID [interface  val #[GET] : 'unit → 'key ])) ∘ KEY }. *)
+    {package (par (KEM b) (ID [interface  val #[GET] : 'unit → 'key ])) ∘ KEY }.
+  Next Obligation.
+    ssprove_valid.
+    (* valid_par is not a bottom-up rule! *)
+    (* eapply valid_par. *)
+  Admitted.
 
   (** DEM package *)
 
@@ -216,8 +222,6 @@ Section KEMDEM.
   Admitted.
 
   (** PKE-CCA *)
-
-  Opaque mkfmap mkdef.
 
   Definition PKE_CCA_out :=
     [interface
