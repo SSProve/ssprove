@@ -191,19 +191,46 @@ Section KEMDEM.
     [interface
       val #[ KEMGEN ] : 'unit → 'key ;
       val #[ ENCAP ] : 'unit → 'elen ;
-      val #[ DECAP ] : 'elen → 'key
+      val #[ DECAP ] : 'elen → 'key ;
+      val #[GET] : 'unit → 'key
     ].
 
   Opaque mkfmap mkdef.
 
   #[program] Definition KEM_CCA_pkg b :
     package (PKE_loc :|: KEY_loc) [interface] KEM_CCA_out :=
-    {package (par (KEM b) (ID [interface  val #[GET] : 'unit → 'key ])) ∘ KEY }.
+    {package (par (KEM b) (ID [interface val #[GET] : 'unit → 'key ])) ∘ KEY }.
   Next Obligation.
-    ssprove_valid.
-    (* valid_par is not a bottom-up rule! *)
-    (* eapply valid_par. *)
+    (* TODO Add shelve_unifiable in ssprove_valid *)
+    ssprove_valid. all: shelve_unifiable.
+    - unfold FDisjoint. (* Unclear this class is of any use! Same for Parable
+        Especially in packages hint DB
+      *)
+      admit.
+    - (* Might be automated *)
+      intros n o₀ o₁ h₀ h₁.
+      invert_interface_in h₀.
+      invert_interface_in h₁.
+      reflexivity.
+    - erewrite fsetU0. apply fsubsetxx.
+    - unfold KEM_CCA_out, KEM_out.
+      rewrite -fset_cat. simpl. apply fsubsetxx.
+    - rewrite -fset_cat. simpl. (* ssprove_valid. *)
+      (* TODO It seems to unfold even valid_package_ext, why?? *)
+      (* eapply valid_package_cons. *)
+      (* eapply valid_package_cons_upto. *)
+      (* The order is wrong, but also it unfolded KEY, I would have liked it
+          not to do it. Should I add a second option for coercions to
+          use an upto version?
+      *)
+      admit.
   Admitted.
+
+  Definition KEM_CCA : loc_GamePair KEM_CCA_out :=
+    λ b,
+      if b
+      then {locpackage KEM_CCA_pkg true }
+      else {locpackage KEM_CCA_pkg false }.
 
   (** DEM package *)
 

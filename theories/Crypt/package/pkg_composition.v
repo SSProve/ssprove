@@ -470,7 +470,23 @@ Proof.
     auto.
 Qed.
 
-(* TODO Check if the first branch is generated *)
+Lemma valid_par_upto :
+  ∀ L I E L1 L2 I1 I2 E1 E2 p1 p2,
+    Parable p1 p2 →
+    valid_package L1 I1 E1 p1 →
+    valid_package L2 I2 E2 p2 →
+    fsubset (L1 :|: L2) L →
+    fsubset (I1 :|: I2) I →
+    fsubset E (E1 :|: E2) →
+    valid_package L I E (par p1 p2).
+Proof.
+  intros L I E L1 L2 I1 I2 E1 E2 p1 p2 h h1 h2 hL hI hE.
+  eapply valid_package_inject_locations. 1: eauto.
+  eapply valid_package_inject_import. 1: eauto.
+  eapply valid_package_inject_export. 1: eauto.
+  eapply valid_par. all: eauto.
+Qed.
+
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (par ?p1 ?p2)) =>
   eapply valid_par ; [
     idtac
@@ -478,6 +494,21 @@ Qed.
   | eapply valid_package_from_class
   ]
   : typeclass_instances packages.
+
+(** This one is only in packages and not typeclass_instances
+    because I don't expect it to ever find the fsubset automatically.
+    At least for now.
+*)
+#[export] Hint Extern 3 (ValidPackage ?L ?I ?E (par ?p1 ?p2)) =>
+  eapply valid_par_upto ; [
+    idtac
+  | eapply valid_package_from_class
+  | eapply valid_package_from_class
+  | try eapply fsubsetxx
+  | try eapply fsubsetxx
+  | try eapply fsubsetxx
+  ]
+  : packages.
 
 Class FDisjoint {A : ordType} s1 s2 :=
   are_disjoint : @fdisjoint A s1 s2.
@@ -918,6 +949,11 @@ Proof.
   simpl. intro x.
   eapply valid_code_from_class. exact _.
 Qed.
+
+(* Only for pacakages because we don't expect to infer a flat proof *)
+#[export] Hint Extern 2 (ValidPackage ?L ?I ?E (ID ?I')) =>
+  eapply valid_ID
+  : packages.
 
 Lemma code_link_id :
   ∀ A (v : raw_code A) L I,
