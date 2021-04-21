@@ -451,11 +451,82 @@ Section KEMDEM.
 
   (** MOD-CCA *)
 
-  Definition MOD_CCA (ζ : PKE_scheme) :
-    package
-      (fset [:: (* TODO *) ])
-      [interface (* TODO *) ]
-      PKE_CCA_out.
+  Definition MOD_CCA_loc :=
+    fset [:: pk_loc ; c_loc ].
+
+  Definition MOD_CCA_in :=
+    [interface
+      val #[ KEMGEN ] : 'unit → 'key ;
+      val #[ ENCAP ] : 'unit → 'elen ;
+      val #[ DECAP ] : 'elen → 'key ;
+      val #[ ENC ] : 'plain → 'clen ;
+      val #[ DEC ] : 'clen → 'plain
+    ].
+
+  Definition MOD_CCA_out :=
+    PKE_CCA_out.
+
+  (* TODO MOVE *)
+  Definition testSome {A} (P : A → bool) (o : option A) : bool :=
+    match o with
+    | Some a => P a
+    | None => false
+    end.
+
+  #[program] Definition MOD_CCA (ζ : PKE_scheme) :
+    package MOD_CCA_loc MOD_CCA_in MOD_CCA_out :=
+    [package
+      def #[ PKGEN ] (_ : 'unit) : 'key {
+        #import {sig #[ KEMGEN ] : 'unit → 'key } as KEMGEN ;;
+        pk ← get pk_loc ;;
+        assert (pk == None) ;;
+        pk ← KEMGEN Datatypes.tt ;;
+        ret pk
+      } ;
+      def #[ PKENC ] (m : 'plain) : 'elen × 'clen {
+        #import {sig #[ ENCAP ] : 'unit → 'elen } as ENCAP ;;
+        #import {sig #[ ENC ] : 'plain → 'clen } as ENC ;;
+        pk ← get pk_loc ;;
+        assert (isSome pk) ;;
+        c ← get c_loc ;;
+        assert (c ==  None) ;;
+        c₁ ← ENCAP Datatypes.tt ;;
+        c₂ ← ENC m ;;
+        put c_loc := Some (c₁, c₂) ;;
+        ret (c₁, c₂)
+      } ;
+      def #[ PKDEC ] (c' : 'elen × 'clen) : 'plain {
+        #import {sig #[ DECAP ] : 'elen → 'key } as DECAP ;;
+        #import {sig #[ DEC ] : 'clen → 'plain } as DEC ;;
+        pk ← get pk_loc ;;
+        assert (isSome pk) ;;
+        c ← get c_loc ;;
+        assert (c != Some c') ;;
+        let '(c'₁, c'₂) := c' in
+        if testSome (λ '(c₁, c₂), c'₁ == c₁) c
+        then (
+          m ← DEC c'₂ ;;
+          ret m
+        )
+        else (
+          k' ← DECAP c'₁ ;;
+          m ← θ.(DEM_dec) k' c'₂ ;;
+          ret m
+        )
+      }
+    ].
+  Next Obligation.
+    ssprove_valid.
+    destruct x. ssprove_valid.
+    eapply valid_injectLocations. 2: eapply valid_injectMap.
+    3: eapply valid_code_from_class. 3: ssprove_valid.
+    - (* Calling DEM_dec directly is a bit odd...
+        In terms of locations it's not ideal.
+      *)
+      unfold DEM_loc, MOD_CCA_loc.
+      give_up.
+    - unfold DEM_in, MOD_CCA_in.
+      give_up.
   Admitted.
 
   (** PKE scheme instance *)
