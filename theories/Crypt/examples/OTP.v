@@ -44,11 +44,11 @@ Section OTP_example.
     apply Zp_cast.
     pose proof n_pos as n_pos.
     destruct n as [| k].
-    1:{ eapply from_Positive in n_pos. inversion n_pos. }
+    1:{ inversion n_pos. }
     rewrite expnS.
     move: (PositiveExp2 k).
-    eapply from_Positive in n_pos.
-    intro Hpos. eapply from_Positive in Hpos.
+    unfold Positive in n_pos.
+    intro Hpos. unfold Positive in Hpos.
     rewrite !mulSnr.
     change (0 * ?n ^ ?m)%N with 0%N.
     set (m := (2^ k)%N) in *. clearbody m.

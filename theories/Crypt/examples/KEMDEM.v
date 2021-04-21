@@ -217,7 +217,7 @@ Section KEMDEM.
 
   (** PKE-CCA *)
 
-  Opaque ValidPackage mkfmap mkdef.
+  Opaque mkfmap mkdef.
 
   Definition PKE_CCA_out :=
     [interface
@@ -261,9 +261,6 @@ Section KEMDEM.
         ret m
       }
     ].
-  Next Obligation.
-    exact _.
-  Qed.
   Next Obligation.
     ssprove_valid.
     (* TODO A hint to deal with this case *)

@@ -94,7 +94,7 @@ Proof.
   - exact (IHa1, IHa2).
   - exact emptym.
   - exact None.
-  - exact (fintype.Ordinal (from_Positive _ n.(cond_pos))).
+  - exact (fintype.Ordinal n.(cond_pos)).
 Defined.
 
 Definition heap := { h : raw_heap | valid_heap h }.
@@ -2434,7 +2434,7 @@ Lemma ordinal_finType_inhabited :
   ∀ i `{Positive i}, ordinal_finType i.
 Proof.
   intros i hi.
-  exists 0%N. eapply from_Positive. auto.
+  exists 0%N. auto.
 Qed.
 
 Section Uniform_prod.
