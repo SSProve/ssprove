@@ -339,6 +339,60 @@ Section KEMDEM.
       }
     ].
 
+  (** DEM-CCA game *)
+
+  Definition DEM_CCA_out :=
+    [interface
+      val #[ GEN ] : 'unit → 'unit ;
+      val #[ ENC ] : 'plain → 'clen ;
+      val #[ DEC ] : 'clen → 'plain
+    ].
+
+  (* Maybe inline? *)
+  Definition DEM_CCA_loc :=
+    PKE_loc :|: DEM_loc :|: KEY_loc.
+
+  #[program] Definition DEM_CCA_pkg b :
+    package DEM_CCA_loc [interface] DEM_CCA_out :=
+    {package (par (DEM b) (ID [interface val #[ GEN ] : 'unit → 'unit ])) ∘ KEY }.
+  Next Obligation.
+    ssprove_valid.
+    - unfold FDisjoint. (* Unclear this class is of any use! Same for Parable
+        Especially in packages hint DB
+      *)
+      admit.
+    - (* Odd that we have to prove this *)
+      give_up.
+    - give_up.
+    - give_up.
+    - give_up.
+    - admit.
+    - give_up.
+    - give_up.
+    - give_up.
+    - (* Might be automated *)
+      intros n o₀ o₁ h₀ h₁.
+      invert_interface_in h₀.
+      invert_interface_in h₁.
+      chUniverse_eq_prove.
+    - rewrite -fset_cat. simpl. Fail apply fsubsetxx.
+      admit.
+    - (* TODO It seems to unfold even valid_package_ext, why?? *)
+      (* eapply valid_package_cons. *)
+      (* eapply valid_package_cons_upto. *)
+      (* The order is wrong, but also it unfolded KEY, I would have liked it
+          not to do it. Should I add a second option for coercions to
+          use an upto version?
+      *)
+      admit.
+  Admitted.
+
+  Definition DEM_CCA : loc_GamePair DEM_CCA_out :=
+    λ b,
+      if b
+      then {locpackage DEM_CCA_pkg true }
+      else {locpackage DEM_CCA_pkg false }.
+
   (** PKE-CCA *)
 
   Definition PKE_CCA_out :=
