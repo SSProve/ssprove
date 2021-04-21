@@ -96,7 +96,8 @@ Section KEMDEM.
   Definition key : Location := ('option 'key ; 0%N).
   Definition pk_loc : Location := ('option 'key ; 1%N).
   Definition sk_loc : Location := ('option 'key ; 2%N).
-  Definition c_loc : Location := ('option ('elen × 'clen) ; 2%N).
+  Definition c_loc : Location := ('option ('elen × 'clen) ; 3%N).
+  Definition ce_loc : Location := ('option 'elen ; 4%N).
 
   (** Uniform distributions *)
   Definition i_key := key_length.
@@ -117,11 +118,19 @@ Section KEMDEM.
   }.
 
   (** KEM scheme *)
+
+  Definition KEM_loc := fset [:: pk_loc ; sk_loc ; ce_loc ].
+
+  Definition KEM_in :=
+    [interface
+      val #[ SET ] : 'key → 'unit ;
+      val #[ GEN ] : 'unit → 'unit
+    ].
+
   Record KEM_scheme := {
-    KEM_loc : {fset Location } ;
-    KEM_kgen : code KEM_loc [interface] (chProd 'key 'key) ;
-    KEM_encap : 'key → code KEM_loc [interface] (chProd 'key 'elen) ;
-    KEM_decap : 'key → 'elen → code KEM_loc [interface] 'key
+    KEM_kgen : code KEM_loc KEM_in (chProd 'key 'key) ;
+    KEM_encap : 'key → code KEM_loc KEM_in (chProd 'key 'elen) ;
+    KEM_decap : 'key → 'elen → code KEM_loc KEM_in 'key
   }.
 
   (** DEM scheme *)
@@ -170,12 +179,6 @@ Section KEMDEM.
 
   (** KEM package *)
 
-  Definition KEM_in :=
-    [interface
-      val #[ SET ] : 'key → 'unit ;
-      val #[ GEN ] : 'unit → 'unit
-    ].
-
   Definition KEM_out :=
     [interface
       val #[ KEMGEN ] : 'unit → 'key ;
@@ -183,7 +186,10 @@ Section KEMDEM.
       val #[ DECAP ] : 'elen → 'key
     ].
 
-  Fail Definition KEM (b : bool) : package PKE_loc KEM_in KEM_out :=
+  (* TODO Find a way to make this not mandatory *)
+  Opaque mkfmap mkdef.
+
+  #[program] Definition KEM (b : bool) : package KEM_loc KEM_in KEM_out :=
     [package
       def #[ KEMGEN ] (_ : 'unit) : 'key {
         sk ← get sk_loc ;;
@@ -199,18 +205,18 @@ Section KEMDEM.
         pk ← get pk_loc ;;
         #assert (isSome pk) as pkSome ;;
         let pk := getSome pk pkSome in
-        c ← get c_loc ;;
+        c ← get ce_loc ;;
         assert (c == None) ;;
-        if b
+        if b return raw_code 'elen
         then (
           '(k, c) ← η.(KEM_encap) pk ;;
-          put c_loc := Some c ;;
+          put ce_loc := Some c ;;
           SET k ;;
           ret c
         )
         else (
           c ← sample uniform i_elen ;;
-          put c_loc := Some c ;;
+          put ce_loc := Some c ;;
           GEN Datatypes.tt ;;
           ret c
         )
@@ -219,15 +225,17 @@ Section KEMDEM.
         sk ← get sk_loc ;;
         #assert (isSome sk) as skSome ;;
         let sk := getSome sk skSome in
-        c ← get c_loc ;;
+        c ← get ce_loc ;;
         assert (c != Some c') ;;
         k ← η.(KEM_decap) sk c' ;;
         ret k
       }
     ].
-
-  Definition KEM (b : bool) : package PKE_loc KEM_in KEM_out.
-  Admitted.
+  Next Obligation.
+    ssprove_valid.
+    - destruct x2. ssprove_valid.
+    - destruct x1. ssprove_valid.
+  Qed.
 
   (** KEM-CCA game *)
 
@@ -239,10 +247,12 @@ Section KEMDEM.
       val #[GET] : 'unit → 'key
     ].
 
-  Opaque mkfmap mkdef.
+  (* Maybe inline? *)
+  Definition KEM_CCA_loc :=
+    PKE_loc :|: KEM_loc :|: KEY_loc.
 
   #[program] Definition KEM_CCA_pkg b :
-    package (PKE_loc :|: KEY_loc) [interface] KEM_CCA_out :=
+    package KEM_CCA_loc [interface] KEM_CCA_out :=
     {package (par (KEM b) (ID [interface val #[GET] : 'unit → 'key ])) ∘ KEY }.
   Next Obligation.
     ssprove_valid.
@@ -250,16 +260,25 @@ Section KEMDEM.
         Especially in packages hint DB
       *)
       admit.
+    - (* Odd that we have to prove this *)
+      give_up.
+    - (* Odd again! *)
+      give_up.
+    - give_up.
+    - give_up.
+    - (* TODO Why does it unfold the def again *)
+      destruct x2. ssprove_valid. all: give_up.
+    - give_up.
+    - admit.
+    - give_up.
+    - destruct x1. ssprove_valid.
     - (* Might be automated *)
       intros n o₀ o₁ h₀ h₁.
       invert_interface_in h₀.
       invert_interface_in h₁.
       chUniverse_eq_prove.
-    - erewrite fsetU0. apply fsubsetxx.
-    - unfold KEM_CCA_out, KEM_out.
-      rewrite -fset_cat. simpl. apply fsubsetxx.
-    - rewrite -fset_cat. simpl. (* ssprove_valid. *)
-      (* TODO It seems to unfold even valid_package_ext, why?? *)
+    - rewrite -fset_cat. simpl. apply fsubsetxx.
+    - (* TODO It seems to unfold even valid_package_ext, why?? *)
       (* eapply valid_package_cons. *)
       (* eapply valid_package_cons_upto. *)
       (* The order is wrong, but also it unfolded KEY, I would have liked it
