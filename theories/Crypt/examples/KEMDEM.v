@@ -451,16 +451,12 @@ Section KEMDEM.
 
   (** MOD-CCA *)
 
-  Definition MOD_CCA :
+  Definition MOD_CCA (ζ : PKE_scheme) :
     package
       (fset [:: (* TODO *) ])
       [interface (* TODO *) ]
-      [interface
-        val #[ PKGEN ] : 'unit → 'key ;
-        val #[ PKENC ] : 'plain → 'clen ;
-        val #[ PKDEC ] : 'elen × 'clen → 'plain
-      ].
-  Abort.
+      PKE_CCA_out.
+  Admitted.
 
   (** PKE scheme instance *)
   #[program] Definition KEM_DEM : PKE_scheme := {|
@@ -493,17 +489,13 @@ Section KEMDEM.
 
   (** Security theorem *)
 
-  (* Since in the theorem we use the PKE of construction 23, we can probably
-    directly specialise things?
-  *)
-
-  (* Theorem PKE_security :
+  Theorem PKE_security :
     ∀ LA A,
-      ValidPackage LA PKE_CCA_export A_export A →
+      ValidPackage LA PKE_CCA_out A_export A →
       fdisjoint LA PKE_loc →
-      Advantage PKE_CCA A <=
-      Advantage KEM_CCA (A ∘ MOC_CCA ∘ par (ID KEM_out) DEM₀) +
-      Advantage DEM_CCA (A ∘ MOD_CCA ∘ par KEM₁ (ID DEM_out)).
-  Abort. *)
+      Advantage (PKE_CCA KEM_DEM) A <=
+      Advantage KEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (ID KEM_out) (DEM true)) +
+      Advantage DEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (KEM false) (ID DEM_out)).
+  Abort.
 
 End KEMDEM.
