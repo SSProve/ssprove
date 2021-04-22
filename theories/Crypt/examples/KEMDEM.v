@@ -414,10 +414,22 @@ Section KEMDEM.
       rewrite -fset_cat. simpl.
       apply fsubsetxx.
     }
-    14,15: apply fsubsetxx.
+    15: apply fsubsetUr.
+    14: apply fsubsetUl.
+    8:{ erewrite fsetU0. apply fsubsetxx. }
     all: ssprove_valid.
-    all: admit.
-  Admitted.
+    2-5: unfold DEM_loc.
+    6-10: unfold KEY_loc.
+    all: ssprove_valid.
+    (* Maybe we can automate this better *)
+    apply/fdisjointP.
+    intros n h.
+    rewrite domm_mkfmap in h. simpl in h.
+    rewrite domm_ID_fset. rewrite in_fset. simpl.
+    (* TODO Rename this guy into invert_seq_in *)
+    _invert_interface_in h.
+    all: reflexivity.
+  Qed.
 
   Definition DEM_CCA : loc_GamePair DEM_CCA_out :=
     λ b,
