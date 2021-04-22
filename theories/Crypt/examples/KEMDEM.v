@@ -200,6 +200,17 @@ Section KEMDEM.
     eapply valid_scheme ; eapply c.(prog_valid)
     : typeclass_instances packages.
 
+  (* TODO Export (porbably in user util) *)
+  Hint Extern 3 (flat ?I) =>
+    let n := fresh "n" in
+    let h₀ := fresh "h₀" in
+    let h₁ := fresh "h₁" in
+    intros n ? ? h₀ h₁ ;
+    invert_interface_in h₀ ;
+    invert_interface_in h₁ ;
+    chUniverse_eq_prove
+    : typeclass_instances packages.
+
   (* TODO Find a way to make this not mandatory *)
   Opaque mkfmap mkdef.
 
@@ -289,11 +300,6 @@ Section KEMDEM.
     - give_up.
     - give_up.
     - destruct x1. ssprove_valid. all: give_up.
-    - (* Might be automated *)
-      intros n o₀ o₁ h₀ h₁.
-      invert_interface_in h₀.
-      invert_interface_in h₁.
-      chUniverse_eq_prove.
     - admit.
     - rewrite -fset_cat. simpl. give_up.
     - admit.
@@ -378,11 +384,6 @@ Section KEMDEM.
     - give_up.
     - give_up.
     - give_up.
-    - (* Might be automated *)
-      intros n o₀ o₁ h₀ h₁.
-      invert_interface_in h₀.
-      invert_interface_in h₁.
-      chUniverse_eq_prove.
     - admit.
     - rewrite -fset_cat. simpl.
       admit.
