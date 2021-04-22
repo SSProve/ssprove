@@ -598,6 +598,15 @@ Section KEMDEM.
 
   Transparent mkfmap mkdef.
 
+  (* TODO MOVE *)
+  Lemma code_link_assert :
+    ∀ b p,
+      code_link (assert b) p = assert b.
+  Proof.
+    intros b p.
+    unfold assert. rewrite code_link_if. cbn. reflexivity.
+  Qed.
+
   Lemma PKE_CCA_perf_false :
       (PKE_CCA KEM_DEM false) ≈₀ Aux false.
       (* (MOD_CCA KEM_DEM ∘ par (KEM b) (DEM b) ∘ KEY). *)
@@ -620,6 +629,18 @@ Section KEMDEM.
     all: simpl.
     all: simplify_linking.
     (* We are now in the realm of program logic *)
+    - setoid_rewrite code_link_bind. cbn.
+      simplify_linking.
+      setoid_rewrite code_link_assert.
+      setoid_rewrite code_link_bind.
+      setoid_rewrite code_link_assert.
+      setoid_rewrite code_link_bind.
+      (* We have again this erefl that appears because of assertD
+        if I cannot prevent them from appearing, then I should deal with
+        them in a better way. The best would be to bypass them by treating
+        assertD as a special case, don't know if possible.
+      *)
+      admit.
   Admitted.
 
   (* TODO MOVE *)
