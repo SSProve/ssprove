@@ -116,28 +116,17 @@ Section KEMDEM.
 
   (** KEM scheme *)
 
-  Definition KEM_in :=
-    [interface
-      val #[ SET ] : 'key → 'unit ;
-      val #[ GEN ] : 'unit → 'unit
-    ].
-
   Record KEM_scheme := {
-    KEM_kgen : code fset0 KEM_in (chProd 'key 'key) ;
-    KEM_encap : 'key → code fset0 KEM_in (chProd 'key 'elen) ;
-    KEM_decap : 'key → 'elen → code fset0 KEM_in 'key
+    KEM_kgen : code fset0 [interface] (chProd 'key 'key) ;
+    KEM_encap : 'key → code fset0 [interface] (chProd 'key 'elen) ;
+    KEM_decap : 'key → 'elen → code fset0 [interface] 'key
   }.
 
   (** DEM scheme *)
 
-  Definition DEM_in :=
-    [interface
-      val #[ GET ] : 'unit → 'key
-    ].
-
   Record DEM_scheme := {
-    DEM_enc : 'key → 'plain → code fset0 DEM_in 'clen ;
-    DEM_dec : 'key → 'clen → code fset0 DEM_in 'plain
+    DEM_enc : 'key → 'plain → code fset0 [interface] 'clen ;
+    DEM_dec : 'key → 'clen → code fset0 [interface] 'plain
   }.
 
   Context (η : KEM_scheme).
@@ -181,12 +170,35 @@ Section KEMDEM.
 
   Definition KEM_loc := fset [:: pk_loc ; sk_loc ; ce_loc ].
 
+  Definition KEM_in :=
+    [interface
+      val #[ SET ] : 'key → 'unit ;
+      val #[ GEN ] : 'unit → 'unit
+    ].
+
   Definition KEM_out :=
     [interface
       val #[ KEMGEN ] : 'unit → 'key ;
       val #[ ENCAP ] : 'unit → 'elen ;
       val #[ DECAP ] : 'elen → 'key
     ].
+
+  (* TODO MOVE *)
+  Lemma valid_scheme :
+    ∀ A L I c,
+      @valid_code fset0 [interface] A c →
+      valid_code L I c.
+  Proof.
+    intros A L I c h.
+    eapply valid_injectMap. 2: eapply valid_injectLocations.
+    1-2: eapply fsub0set.
+    rewrite -fset0E in h. auto.
+  Qed.
+
+  (* Export? *)
+  (* Hint Extern 10 (ValidCode ?L ?I ?c.(prog)) =>
+    eapply valid_scheme ; eapply c.(prog_valid)
+    : typeclass_instances packages. *)
 
   (* TODO Find a way to make this not mandatory *)
   Opaque mkfmap mkdef.
@@ -235,16 +247,10 @@ Section KEMDEM.
     ].
   Next Obligation.
     ssprove_valid.
-    - eapply valid_injectLocations.
-      2:{ eapply valid_code_from_class. ssprove_valid. }
-      apply fsub0set.
-    - eapply valid_injectLocations.
-      2:{ eapply valid_code_from_class. ssprove_valid. }
-      apply fsub0set.
+    - eapply valid_scheme. eapply valid_code_from_class. ssprove_valid.
+    - eapply valid_scheme. eapply valid_code_from_class. ssprove_valid.
     - destruct x2. ssprove_valid.
-    - eapply valid_injectLocations.
-      2:{ eapply valid_code_from_class. ssprove_valid. }
-      apply fsub0set.
+    - eapply valid_scheme. eapply valid_code_from_class. ssprove_valid.
     - destruct x1. ssprove_valid.
   Qed.
 
@@ -267,6 +273,9 @@ Section KEMDEM.
     {package (par (KEM b) (ID [interface val #[GET] : 'unit → 'key ])) ∘ KEY }.
   Next Obligation.
     ssprove_valid.
+    (* The mess is probably coming from valid_par, might be better to never
+      use it and instead always rely on valid_par_upto.
+    *)
     - unfold FDisjoint. (* Unclear this class is of any use! Same for Parable
         Especially in packages hint DB
       *)
@@ -278,7 +287,8 @@ Section KEMDEM.
     - give_up.
     - give_up.
     - (* TODO Why does it unfold the def again *)
-      destruct x2. ssprove_valid. give_up.
+      destruct x2. ssprove_valid. all: give_up.
+    - give_up.
     - give_up.
     - give_up.
     - destruct x1. ssprove_valid. all: give_up.
@@ -308,6 +318,11 @@ Section KEMDEM.
   (** DEM package *)
 
   Definition DEM_loc := fset [:: cc_loc ].
+
+  Definition DEM_in :=
+    [interface
+      val #[ GET ] : 'unit → 'key
+    ].
 
   Definition DEM_out :=
     [interface
@@ -345,12 +360,8 @@ Section KEMDEM.
     ].
   Next Obligation.
     ssprove_valid.
-    - eapply valid_injectLocations.
-      2:{ eapply valid_code_from_class. ssprove_valid. }
-      apply fsub0set.
-    - eapply valid_injectLocations.
-      2:{ eapply valid_code_from_class. ssprove_valid. }
-      apply fsub0set.
+    - eapply valid_scheme. eapply valid_code_from_class. ssprove_valid.
+    - eapply valid_scheme. eapply valid_code_from_class. ssprove_valid.
   Qed.
 
   (** DEM-CCA game *)
@@ -377,7 +388,8 @@ Section KEMDEM.
       admit.
     - (* Odd that we have to prove this *)
       give_up.
-    - unfold DEM_in. rewrite in_fset. rewrite mem_seq1. apply/eqP. reflexivity.
+    - give_up.
+    - give_up.
     - give_up.
     - give_up.
     - give_up.
@@ -387,7 +399,7 @@ Section KEMDEM.
       invert_interface_in h₁.
       chUniverse_eq_prove.
     - admit.
-    - rewrite -fset_cat. simpl. Fail apply fsubsetxx.
+    - rewrite -fset_cat. simpl.
       admit.
     - (* TODO It seems to unfold even valid_package_ext, why?? *)
       (* eapply valid_package_cons. *)
@@ -565,17 +577,11 @@ Section KEMDEM.
     }
   |}.
   Next Obligation.
-    unfold KEM_in.
-    (* It's probably that scheme do not import anything either! *)
-  Admitted.
+    ssprove_valid. destruct x. ssprove_valid.
+  Qed.
   Next Obligation.
     ssprove_valid.
-    - give_up.
-    - destruct x. ssprove_valid. give_up.
-  Admitted.
-  Next Obligation.
-    ssprove_valid. all: give_up.
-  Admitted.
+  Qed.
 
   (** Security theorem *)
 
