@@ -269,60 +269,23 @@ Section KEMDEM.
     package KEM_CCA_loc [interface] KEM_CCA_out :=
     {package (par (KEM b) (ID [interface val #[GET] : 'unit → 'key ])) ∘ KEY }.
   Next Obligation.
-    (* Let's do it by hand, to see why automation is failing me. *)
-    eapply valid_link_upto.
-    - eapply valid_par_upto.
-      + admit.
-      + eapply valid_package_cons.
-        1: eapply valid_package_cons.
-        1: eapply valid_package_cons.
-        1: eapply valid_package_from_class. 1: ssprove_valid.
-        * intro. eapply valid_code_from_class.
-          (* The scheme terms are polluting the rest...
-            Maybe I should make the valid_scheme thing higher priority.
-            This might mean increasing all current priorities.
-            Maybe not such a bad idea, allowing users to add their own hints
-            with higher or lower priority.
-          *)
-          (* ssprove_valid. *)
-          admit.
-        * admit.
-        * admit.
-        * admit.
-        * admit.
-        * admit.
-      + admit.
-      + admit.
-      + admit.
-      + admit.
-    - admit.
-    - admit.
-    - admit.
-
-
-    (* ssprove_valid.
-    (* The mess is probably coming from valid_par, might be better to never
-      use it and instead always rely on valid_par_upto.
-    *)
-    - unfold FDisjoint. (* Unclear this class is of any use! Same for Parable
-        Especially in packages hint DB
-      *)
-      admit.
-    - (* Odd that we have to prove this *)
-      give_up.
-    - (* Odd again! *)
-      give_up.
-    - give_up.
-    - give_up.
-    - (* TODO Why does it unfold the def again *)
-      destruct x2. ssprove_valid. all: give_up.
-    - give_up.
-    - give_up.
-    - give_up.
-    - destruct x1. ssprove_valid. all: give_up.
-    - admit.
-    - rewrite -fset_cat. simpl. give_up.
-    - admit. *)
+    ssprove_valid.
+    6: destruct x2. 6: ssprove_valid.
+    11: destruct x1. 11: ssprove_valid.
+    15:{
+      unfold KEM_CCA_out. rewrite -fset_cat. simpl.
+      apply fsubsetxx.
+    }
+    14:{
+      instantiate (1 := fset [:: _ ; _ ]).
+      erewrite <- fset_cat. simpl.
+      apply fsubsetxx.
+    }
+    19,20: apply fsubsetxx.
+    all: ssprove_valid.
+    (* Maybe valid_par_upto should have two fsubset instead of fsubset (_ :|: _) *)
+    (* Maybe inline KEM_CCA_loc for tactics to work better *)
+    all: admit.
   Admitted.
 
   Definition KEM_CCA : loc_GamePair KEM_CCA_out :=
@@ -393,28 +356,21 @@ Section KEMDEM.
     {package (par (DEM b) (ID [interface val #[ GEN ] : 'unit → 'unit ])) ∘ KEY }.
   Next Obligation.
     ssprove_valid.
-    - unfold FDisjoint. (* Unclear this class is of any use! Same for Parable
-        Especially in packages hint DB
-      *)
-      admit.
-    - (* Odd that we have to prove this *)
-      give_up.
-    - give_up.
-    - give_up.
-    - give_up.
-    - give_up.
-    - give_up.
-    - admit.
-    - rewrite -fset_cat. simpl.
-      admit.
-    - (* TODO It seems to unfold even valid_package_ext, why?? *)
-      (* eapply valid_package_cons. *)
-      (* eapply valid_package_cons_upto. *)
-      (* The order is wrong, but also it unfolded KEY, I would have liked it
-          not to do it. Should I add a second option for coercions to
-          use an upto version?
-      *)
-      admit.
+    10:{
+      unfold DEM_CCA_out.
+      rewrite fsetUC.
+      rewrite -fset_cat. simpl.
+      apply fsubsetxx.
+    }
+    9:{
+      rewrite fsetUC.
+      instantiate (1 := fset [:: _ ; _ ]).
+      rewrite -fset_cat. simpl.
+      apply fsubsetxx.
+    }
+    14,15: apply fsubsetxx.
+    all: ssprove_valid.
+    all: admit.
   Admitted.
 
   Definition DEM_CCA : loc_GamePair DEM_CCA_out :=

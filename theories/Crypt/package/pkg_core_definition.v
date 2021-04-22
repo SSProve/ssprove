@@ -489,9 +489,10 @@ Create HintDb packages.
 
 Coercion prog : code >-> raw_code.
 
+(* Only in typeclasses inference to avoid bad progress *)
 #[export] Hint Extern 1 (ValidCode ?L ?I (?p.(prog))) =>
   eapply p.(prog_valid)
-  : typeclass_instances packages.
+  : typeclass_instances.
 
 Arguments valid_command _ _ [_] _.
 
