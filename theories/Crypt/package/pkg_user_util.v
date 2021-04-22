@@ -143,7 +143,7 @@ Ltac ssprove_match_commut_gen :=
       eapply functional_extensionality with (f := λ x', _) ; intro x'
     | put ?ℓ := ?v ;; _ =>
       eapply (f_equal (putr _ _))
-    | #assert ?b as ?x ;; _ =>
+    | #assert ?b as x ;; _ =>
       let x' := fresh x in
       eapply (f_equal (assertD _ _)) ;
       eapply functional_extensionality with (f := λ x', _) ; intro x'
