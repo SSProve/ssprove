@@ -269,7 +269,38 @@ Section KEMDEM.
     package KEM_CCA_loc [interface] KEM_CCA_out :=
     {package (par (KEM b) (ID [interface val #[GET] : 'unit → 'key ])) ∘ KEY }.
   Next Obligation.
-    ssprove_valid.
+    (* Let's do it by hand, to see why automation is failing me. *)
+    eapply valid_link_upto.
+    - eapply valid_par_upto.
+      + admit.
+      + eapply valid_package_cons.
+        1: eapply valid_package_cons.
+        1: eapply valid_package_cons.
+        1: eapply valid_package_from_class. 1: ssprove_valid.
+        * intro. eapply valid_code_from_class.
+          (* The scheme terms are polluting the rest...
+            Maybe I should make the valid_scheme thing higher priority.
+            This might mean increasing all current priorities.
+            Maybe not such a bad idea, allowing users to add their own hints
+            with higher or lower priority.
+          *)
+          (* ssprove_valid. *)
+          admit.
+        * admit.
+        * admit.
+        * admit.
+        * admit.
+        * admit.
+      + admit.
+      + admit.
+      + admit.
+      + admit.
+    - admit.
+    - admit.
+    - admit.
+
+
+    (* ssprove_valid.
     (* The mess is probably coming from valid_par, might be better to never
       use it and instead always rely on valid_par_upto.
     *)
@@ -291,7 +322,7 @@ Section KEMDEM.
     - destruct x1. ssprove_valid. all: give_up.
     - admit.
     - rewrite -fset_cat. simpl. give_up.
-    - admit.
+    - admit. *)
   Admitted.
 
   Definition KEM_CCA : loc_GamePair KEM_CCA_out :=
