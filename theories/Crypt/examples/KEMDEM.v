@@ -264,6 +264,42 @@ Section KEMDEM.
   (* Maybe inline? *)
   Definition KEM_CCA_loc :=
     KEM_loc :|: KEY_loc.
+    (* fset [:: pk_loc ; sk_loc ; ce_loc ; key ]. *)
+
+  (* TODO MOVE *)
+  Lemma domm_ID :
+    ∀ I, domm (ID I) = fset (unzip1 I).
+  Proof.
+    intros I.
+    apply eq_fset. intro x.
+    rewrite in_fset. rewrite mem_domm.
+    unfold ID. rewrite mkfmapE. rewrite getm_def_map_dep.
+    rewrite -mkfmapE.
+    rewrite -domm_mkfmap. rewrite mem_domm.
+    destruct (mkfmap I x) eqn:e.
+    - rewrite e. simpl. reflexivity.
+    - rewrite e. reflexivity.
+  Qed.
+
+  (* TODO MOVE *)
+  Lemma domm_ID_fset :
+    ∀ I, domm (ID (fset I)) = fset (unzip1 I).
+  Proof.
+    intros I.
+    rewrite domm_ID.
+    apply eq_fset. intro x.
+    rewrite !in_fset.
+    unfold unzip1.
+    apply/mapP.
+    destruct (x \in [seq i.1 | i <- I]) eqn: e.
+    - move: e => /mapP e. simpl in e. destruct e as [? h ?]. subst.
+      simpl. eexists. 2: reflexivity.
+      rewrite in_fset. auto.
+    - move: e => /mapP e. simpl in e.
+      intro h. apply e.
+      destruct h as [? h ?]. rewrite in_fset in h.
+      eexists. all: eauto.
+  Qed.
 
   #[program] Definition KEM_CCA_pkg b :
     package KEM_CCA_loc [interface] KEM_CCA_out :=
@@ -281,12 +317,22 @@ Section KEMDEM.
       erewrite <- fset_cat. simpl.
       apply fsubsetxx.
     }
-    19,20: apply fsubsetxx.
+    20: apply fsubsetUr.
+    19: apply fsubsetUl.
+    13:{ erewrite fsetU0. apply fsubsetxx. }
     all: ssprove_valid.
-    (* Maybe valid_par_upto should have two fsubset instead of fsubset (_ :|: _) *)
-    (* Maybe inline KEM_CCA_loc for tactics to work better *)
-    all: admit.
-  Admitted.
+    2-10: unfold KEM_loc.
+    11-15: unfold KEY_loc.
+    all: ssprove_valid.
+    (* Maybe we can automate this better *)
+    apply/fdisjointP.
+    intros n h.
+    rewrite domm_mkfmap in h. simpl in h.
+    rewrite domm_ID_fset. rewrite in_fset. simpl.
+    (* TODO Rename this guy into invert_seq_in *)
+    _invert_interface_in h.
+    all: reflexivity.
+  Qed.
 
   Definition KEM_CCA : loc_GamePair KEM_CCA_out :=
     λ b,
