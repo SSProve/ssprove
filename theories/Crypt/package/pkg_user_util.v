@@ -73,11 +73,9 @@ Ltac _invert_interface_in h :=
   then (move: h => /eqP h ; subst)
   else (
     rewrite in_cons in h ;
-    let e := fresh "e" in
-    let h' := fresh "h'" in
-    move: h => /orP [/eqP e | h'] ; [
+    move: h => /orP [/eqP h | h] ; [
       subst
-    | _invert_interface_in h'
+    | _invert_interface_in h
     ]
   ).
 
@@ -87,7 +85,7 @@ Ltac invert_interface_in h :=
   rewrite in_fset in h' ;
   cbn in h' ;
   _invert_interface_in h' ;
-  noconf h'.
+  [ noconf h' .. ].
 
 Ltac lookup_op_squeeze :=
   let f := fresh "f" in
@@ -99,7 +97,16 @@ Ltac lookup_op_squeeze :=
     discriminate
   ] ;
   eapply lookup_op_spec in e ; simpl in e ;
-  rewrite setmE in e ; rewrite eq_refl in e ;
+  repeat (
+    rewrite setmE in e ;
+    tryif (rewrite eq_refl in e)
+    then idtac
+    else lazymatch type of e with
+    | (if ?b then _ else _) = _ =>
+      change b with false in e ;
+      simpl in e
+    end
+  ) ;
   noconf e.
 
 Ltac chUniverse_eqP_handle :=

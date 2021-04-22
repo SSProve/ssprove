@@ -596,18 +596,29 @@ Section KEMDEM.
     ssprove_valid.
   Admitted.
 
-  Lemma PKE_CCA_perf :
-    ∀ b,
-      (PKE_CCA KEM_DEM b) ≈₀ Aux b.
+  Transparent mkfmap mkdef.
+
+  Lemma PKE_CCA_perf_false :
+      (PKE_CCA KEM_DEM false) ≈₀ Aux false.
       (* (MOD_CCA KEM_DEM ∘ par (KEM b) (DEM b) ∘ KEY). *)
   Proof.
-    intros b. unfold Aux.
+    unfold Aux.
     (* We go to the relation logic using equality as invariant. *)
     eapply eq_rel_perf_ind_eq.
-    (* Uh oh, it doesn't appply, that's annoying. *)
-    (* simplify_eq_rel m.
-    ssprove_code_link_commute. simpl.
-    simplify_linking. *)
+    simplify_eq_rel m.
+    (* intros id So To m hin.
+    invert_interface_in hin.
+    all: rewrite ?get_op_default_link.
+    all: unfold get_op_default.
+    all: lookup_op_squeeze.
+    all: lookup_op_squeeze.
+    all: cbn. *)
+    (* TODO The following should now account for assert and #assert probably
+       or maybe is it bind?
+    *)
+    all: ssprove_code_link_commute.
+    all: simpl.
+    all: simplify_linking.
     (* We are now in the realm of program logic *)
   Admitted.
 
@@ -623,11 +634,10 @@ Section KEMDEM.
     eapply h. all: eauto.
   Qed.
 
-  Corollary PKE_CCA_perf_true :
+  Lemma PKE_CCA_perf_true :
     (Aux true) ≈₀ (PKE_CCA KEM_DEM true).
   Proof.
-    apply adv_equiv_sym. apply PKE_CCA_perf.
-  Qed.
+  Admitted.
 
   (** Security theorem *)
 
@@ -651,7 +661,7 @@ Section KEMDEM.
     rewrite !GRing.addrA in ineq.
     eapply ler_trans. 1: exact ineq.
     clear ineq.
-    rewrite PKE_CCA_perf.
+    rewrite PKE_CCA_perf_false.
     2-3: admit.
     rewrite PKE_CCA_perf_true.
     2-3: admit.
