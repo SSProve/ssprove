@@ -507,9 +507,9 @@ Qed.
     idtac
   | eapply valid_package_from_class
   | eapply valid_package_from_class
-  | try eapply fsubsetxx
-  | try eapply fsubsetxx
-  | try eapply fsubsetxx
+  | (* try eapply fsubsetxx *)
+  | (* try eapply fsubsetxx *)
+  | (* try eapply fsubsetxx *)
   ]
   : packages.
 

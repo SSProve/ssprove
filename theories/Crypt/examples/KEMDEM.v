@@ -295,15 +295,8 @@ Section KEMDEM.
       invert_interface_in h₁.
       chUniverse_eq_prove.
     - admit.
-    - rewrite -fset_cat. simpl. apply fsubsetxx.
-    - (* TODO It seems to unfold even valid_package_ext, why?? *)
-      (* eapply valid_package_cons. *)
-      (* eapply valid_package_cons_upto. *)
-      (* The order is wrong, but also it unfolded KEY, I would have liked it
-          not to do it. Should I add a second option for coercions to
-          use an upto version?
-      *)
-      admit.
+    - rewrite -fset_cat. simpl. give_up.
+    - admit.
   Admitted.
 
   Definition KEM_CCA : loc_GamePair KEM_CCA_out :=
