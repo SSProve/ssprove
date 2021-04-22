@@ -588,6 +588,47 @@ Section KEMDEM.
     ssprove_valid.
   Qed.
 
+  (** Perfect indistinguishability with PKE-CCA *)
+
+  #[program] Definition Aux b : package PKE_loc [interface] PKE_CCA_out :=
+    {package (MOD_CCA KEM_DEM ∘ par (KEM b) (DEM b) ∘ KEY) }.
+  Next Obligation.
+    ssprove_valid.
+  Admitted.
+
+  Lemma PKE_CCA_perf :
+    ∀ b,
+      (PKE_CCA KEM_DEM b) ≈₀ Aux b.
+      (* (MOD_CCA KEM_DEM ∘ par (KEM b) (DEM b) ∘ KEY). *)
+  Proof.
+    intros b. unfold Aux.
+    (* We go to the relation logic using equality as invariant. *)
+    eapply eq_rel_perf_ind_eq.
+    (* Uh oh, it doesn't appply, that's annoying. *)
+    (* simplify_eq_rel m.
+    ssprove_code_link_commute. simpl.
+    simplify_linking. *)
+    (* We are now in the realm of program logic *)
+  Admitted.
+
+  (* TODO MOVE *)
+  Lemma adv_equiv_sym :
+    ∀ L₀ L₁ E G₀ G₁ h₀ h₁ ε,
+      @adv_equiv L₀ L₁ E G₀ G₁ h₀ h₁ ε →
+      adv_equiv G₁ G₀ ε.
+  Proof.
+    intros L₀ L₁ E G₀ G₁ h₀ h₁ ε h.
+    intros LA A hA hd₁ hd₀.
+    rewrite Advantage_sym.
+    eapply h. all: eauto.
+  Qed.
+
+  Corollary PKE_CCA_perf_true :
+    (Aux true) ≈₀ (PKE_CCA KEM_DEM true).
+  Proof.
+    apply adv_equiv_sym. apply PKE_CCA_perf.
+  Qed.
+
   (** Security theorem *)
 
   Theorem PKE_security :
@@ -599,6 +640,26 @@ Section KEMDEM.
       Advantage DEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (KEM false) (ID DEM_out)).
   Proof.
     intros LA A hA hd.
-  Abort.
+    rewrite Advantage_E.
+    pose proof (
+      Advantage_triangle_chain (PKE_CCA KEM_DEM false) [::
+        (MOD_CCA KEM_DEM) ∘ par (KEM false) (DEM false) ∘ KEY ;
+        (MOD_CCA KEM_DEM) ∘ par (KEM true) (DEM true) ∘ KEY
+      ] (PKE_CCA KEM_DEM true) A
+    ) as ineq.
+    advantage_sum simpl in ineq.
+    rewrite !GRing.addrA in ineq.
+    eapply ler_trans. 1: exact ineq.
+    clear ineq.
+    rewrite PKE_CCA_perf.
+    2-3: admit.
+    rewrite PKE_CCA_perf_true.
+    2-3: admit.
+    rewrite GRing.addr0. rewrite GRing.add0r.
+    (* Maybe I can state Lemma 19 of the SSP paper using advantage directly
+        this way I don't have to type the packages.
+        We could also inline the proof... Let's see which is better.
+    *)
+  Admitted.
 
 End KEMDEM.
