@@ -196,9 +196,9 @@ Section KEMDEM.
   Qed.
 
   (* Export? *)
-  (* Hint Extern 10 (ValidCode ?L ?I ?c.(prog)) =>
+  Hint Extern 10 (ValidCode ?L ?I ?c.(prog)) =>
     eapply valid_scheme ; eapply c.(prog_valid)
-    : typeclass_instances packages. *)
+    : typeclass_instances packages.
 
   (* TODO Find a way to make this not mandatory *)
   Opaque mkfmap mkdef.
@@ -247,10 +247,7 @@ Section KEMDEM.
     ].
   Next Obligation.
     ssprove_valid.
-    - eapply valid_scheme. eapply valid_code_from_class. ssprove_valid.
-    - eapply valid_scheme. eapply valid_code_from_class. ssprove_valid.
     - destruct x2. ssprove_valid.
-    - eapply valid_scheme. eapply valid_code_from_class. ssprove_valid.
     - destruct x1. ssprove_valid.
   Qed.
 
@@ -330,7 +327,7 @@ Section KEMDEM.
       val #[ DEC ] : 'clen → 'plain
     ].
 
-  #[program] Definition DEM (b : bool) : package DEM_loc DEM_in DEM_out :=
+  Definition DEM (b : bool) : package DEM_loc DEM_in DEM_out :=
     [package
       def #[ ENC ] (m : 'plain) : 'clen {
         #import {sig #[ GET ] : 'unit → 'key } as GET ;;
@@ -358,11 +355,6 @@ Section KEMDEM.
         ret m
       }
     ].
-  Next Obligation.
-    ssprove_valid.
-    - eapply valid_scheme. eapply valid_code_from_class. ssprove_valid.
-    - eapply valid_scheme. eapply valid_code_from_class. ssprove_valid.
-  Qed.
 
   (** DEM-CCA game *)
 
@@ -465,17 +457,8 @@ Section KEMDEM.
     ].
   Next Obligation.
     ssprove_valid.
-    - eapply valid_injectLocations.
-      2:{ eapply valid_code_from_class. ssprove_valid. }
-      apply fsub0set.
-    - eapply valid_injectLocations.
-      2:{ eapply valid_code_from_class. ssprove_valid. }
-      apply fsub0set.
-    - eapply valid_injectLocations.
-      2:{ eapply valid_code_from_class. ssprove_valid. }
-      apply fsub0set.
-    - (* TODO A hint to deal with this case *)
-      destruct x1. ssprove_valid.
+    (* TODO A hint to deal with this case *)
+    destruct x1. ssprove_valid.
   Qed.
 
   Definition PKE_CCA (ζ : PKE_scheme) : loc_GamePair PKE_CCA_out :=
@@ -553,13 +536,7 @@ Section KEMDEM.
   Next Obligation.
     ssprove_valid.
     destruct x. ssprove_valid.
-    eapply valid_injectLocations. 2: eapply valid_injectMap.
-    3: eapply valid_code_from_class. 3: ssprove_valid.
-    - apply fsub0set.
-    - unfold DEM_in, MOD_CCA_in.
-      (* Maybe MOD_CCA_in is wrong then *)
-      give_up.
-  Admitted.
+  Qed.
 
   (** PKE scheme instance *)
   #[program] Definition KEM_DEM : PKE_scheme := {|
