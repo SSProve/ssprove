@@ -365,11 +365,15 @@ Qed.
   shelve : packages.
 
 #[export] Hint Extern 2 (is_true (?x \in fset ?I)) =>
-  auto_in_fset
+  rewrite in_fset
   : typeclass_instances packages.
 
 #[export] Hint Extern 3 (is_true (?x \in ?I)) =>
   reflexivity
+  : typeclass_instances packages.
+
+#[export] Hint Extern 3 (is_true (?x \in ?I)) =>
+  inseq_try
   : typeclass_instances packages.
 
 #[export] Hint Extern 2 (is_true (?x \notin fset ?I)) =>
