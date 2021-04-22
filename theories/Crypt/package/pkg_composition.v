@@ -183,12 +183,38 @@ Proof.
     + auto.
 Qed.
 
+Lemma valid_link_upto :
+  ∀ L1 L2 L I M E p1 p2,
+    valid_package L1 M E p1 →
+    valid_package L2 I M p2 →
+    fsubset L1 L →
+    fsubset L2 L →
+    valid_package L I E (link p1 p2).
+Proof.
+  intros L1 L2 L I M E p1 p2 h1 h2 hL1 hL2.
+  eapply valid_package_inject_locations.
+  2: eapply valid_link.
+  2-3: eauto.
+  rewrite fsubUset. rewrite hL1 hL2. reflexivity.
+Qed.
+
+(* Only for typeclasses resolution to avoid bad unification of locations *)
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (link ?p1 ?p2)) =>
   eapply valid_link ; [
     eapply valid_package_from_class
   | eapply valid_package_from_class
   ]
-  : typeclass_instances packages.
+  : typeclass_instances.
+
+(* Only for ssprove_valid because it will never completely succeed *)
+#[export] Hint Extern 1 (ValidPackage ?L ?I ?E (link ?p1 ?p2)) =>
+  eapply valid_link_upto ; [
+    eapply valid_package_from_class
+  | eapply valid_package_from_class
+  |
+  |
+  ]
+  : packages.
 
 Lemma code_link_bind :
   ∀ {A B : choiceType} (v : raw_code A)
