@@ -487,13 +487,16 @@ Proof.
   eapply valid_par. all: eauto.
 Qed.
 
+(** This one is not in packages because it might progress with the wrong
+    locations and interfaces.
+*)
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (par ?p1 ?p2)) =>
   eapply valid_par ; [
     idtac
   | eapply valid_package_from_class
   | eapply valid_package_from_class
   ]
-  : typeclass_instances packages.
+  : typeclass_instances.
 
 (** This one is only in packages and not typeclass_instances
     because I don't expect it to ever find the fsubset automatically.
