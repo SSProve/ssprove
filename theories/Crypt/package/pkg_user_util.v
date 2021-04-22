@@ -320,3 +320,14 @@ Ltac ssprove_swap_lhs n :=
     ssprove_swap_aux n
   | cmd_bind_simpl ; cbn beta
   ].
+
+(** Automation of flat proofs *)
+#[export] Hint Extern 3 (flat ?I) =>
+  let n := fresh "n" in
+  let h₀ := fresh "h₀" in
+  let h₁ := fresh "h₁" in
+  intros n ? ? h₀ h₁ ;
+  invert_interface_in h₀ ;
+  invert_interface_in h₁ ;
+  chUniverse_eq_prove
+  : typeclass_instances packages.
