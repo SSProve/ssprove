@@ -623,33 +623,90 @@ Section KEMDEM.
       let D₀ := (par (ID IGEN) CD₀) ∘ KEY in
       let D₁ := (par (ID IGEN) CD₁) ∘ KEY in
       flat EK →
+      flat ED →
       Parable CK₀ (ID IGET) →
+      Parable CK₁ (ID IGET) →
+      Parable (ID IGEN) CD₀ →
+      Parable (ID IGEN) CD₁ →
       ValidPackage LD₀ IGET ED CD₀ →
+      ValidPackage LD₀ IGET ED CD₁ →
       trimmed ED CD₀ →
+      trimmed ED CD₁ →
       ValidPackage LK₀ ISET EK CK₀ →
+      ValidPackage LK₀ IGEN EK CK₁ →
       trimmed EK CK₀ →
+      trimmed EK CK₁ →
       AdvantageE ((par CK₀ CD₀) ∘ KEY) ((par CK₁ CD₁) ∘ KEY) A <=
       AdvantageE K₀ K₁ (A ∘ (par (ID EK) CD₀)) +
       AdvantageE D₀ D₁ (A ∘ (par CK₁ (ID ED))).
   Proof.
     intros LD₀ LK₀ CK₀ CK₁ CD₀ CD₁ EK ED A K₀ K₁ D₀ D₁.
-    intros fEK pCK₀ hCD₀ tCD₀ hCK₀ tCK₀.
-    (* Maybe I should start by using triangle inequality? *)
+    intros fEK fED pCK₀ pCK₁ pCD₀ pCD₁ hCD₀ hCD₁ tCD₀ tCD₁ hCK₀ hCK₁ tCK₀ tCK₁.
+    pose proof (
+      Advantage_triangle_chain (par CK₀ CD₀ ∘ KEY) [::
+        par CK₁ CD₀ ∘ KEY
+      ] (par CK₁ CD₁ ∘ KEY) A
+    ) as ineq.
+    advantage_sum simpl in ineq.
+    eapply ler_trans. 1: exact ineq.
+    clear ineq.
+    eapply ler_add.
     (* Idealising the core keying package *)
-    replace (par CK₀ CD₀) with ((par (ID EK) CD₀) ∘ (par CK₀ (ID IGET))).
-    2:{
-      erewrite <- interchange.
-      all: eauto.
-      2-3: ssprove_valid.
-      2: apply trimmed_ID.
-      erewrite link_id. all: eauto.
-      2: ssprove_valid.
-      erewrite id_link.
-      all: eauto.
-    }
+    - replace (par CK₀ CD₀) with ((par (ID EK) CD₀) ∘ (par CK₀ (ID IGET))).
+      2:{
+        erewrite <- interchange.
+        all: eauto.
+        2-3: ssprove_valid.
+        2: apply trimmed_ID.
+        erewrite link_id. all: eauto.
+        2: ssprove_valid.
+        erewrite id_link.
+        all: eauto.
+      }
+      replace (par CK₁ CD₀) with ((par (ID EK) CD₀) ∘ (par CK₁ (ID IGET))).
+      2:{
+        erewrite <- interchange.
+        all: eauto.
+        2-3: ssprove_valid.
+        2: apply trimmed_ID.
+        erewrite link_id. all: eauto.
+        2: ssprove_valid.
+        erewrite id_link.
+        all: eauto.
+      }
+      rewrite Advantage_link.
+      unfold K₀, K₁.
+      rewrite !link_assoc.
+      apply lerr.
     (* Idealising the core keyed package *)
-    (* De-idealising the core keying package *)
-  Admitted.
+    - replace (par CK₁ CD₀) with ((par CK₁ (ID ED)) ∘ (par (ID IGEN) CD₀)).
+      2:{
+        erewrite <- interchange.
+        all: eauto.
+        2-3: ssprove_valid.
+        2: apply trimmed_ID.
+        erewrite link_id. all: eauto.
+        2: ssprove_valid.
+        erewrite id_link.
+        all: eauto.
+      }
+      replace (par CK₁ CD₁) with ((par CK₁ (ID ED)) ∘ (par (ID IGEN) CD₁)).
+      2:{
+        erewrite <- interchange.
+        all: eauto.
+        2-3: ssprove_valid.
+        2: apply trimmed_ID.
+        erewrite link_id. all: eauto.
+        2: ssprove_valid.
+        erewrite id_link.
+        all: eauto.
+      }
+      rewrite Advantage_link.
+      unfold D₀, D₁.
+      rewrite !link_assoc.
+      apply lerr.
+    Unshelve. all: exact fset0.
+  Qed.
 
   (* Warning, will probably have extra hyps *)
   (* See if we need this one too before proving it.
