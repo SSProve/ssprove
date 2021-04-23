@@ -622,8 +622,8 @@ Section KEMDEM.
     - rewrite e. reflexivity.
   Qed.
 
-  (* Warning, will probably have extra hyps *)
-  Lemma single_key_a :
+  (* Corresponds to Lemma 19.a in the SSP paper *)
+  Lemma single_key :
     ∀ LD₀ LK₀ CK₀ CK₁ CD₀ CD₁ EK ED A,
       let K₀ := (par CK₀ (ID IGET)) ∘ KEY in
       let K₁ := (par CK₁ (ID IGET)) ∘ KEY in
@@ -714,22 +714,6 @@ Section KEMDEM.
       apply lerr.
     Unshelve. all: exact fset0.
   Qed.
-
-  (* Warning, will probably have extra hyps *)
-  (* See if we need this one too before proving it.
-    It seems not. If remove, rename above to remove _a
-  *)
-  (* Lemma single_key_b :
-    ∀ CK₀ CK₁ CD₀ CD₁ EK ED A,
-      let K₀ := (par CK₀ (ID [interface val #[GET] : 'unit → 'key ])) ∘ KEY in
-      let K₁ := (par CK₁ (ID [interface val #[GET] : 'unit → 'key ])) ∘ KEY in
-      let D₀ := (par (ID [interface val #[ GEN ] : 'unit → 'unit ]) CD₀) ∘ KEY in
-      let D₁ := (par (ID [interface val #[ GEN ] : 'unit → 'unit ]) CD₁) ∘ KEY in
-      AdvantageE ((par CK₀ CD₀) ∘ KEY) ((par CK₀ CD₁) ∘ KEY) A <=
-      AdvantageE K₀ K₁ (A ∘ (par (ID EK) CD₀)) +
-      AdvantageE D₀ D₁ (A ∘ (par CK₁ (ID ED))) +
-      AdvantageE K₀ K₁ (A ∘ (par (ID EK) CD₁)).
-  Admitted. *)
 
   (** Perfect indistinguishability with PKE-CCA *)
 
@@ -846,7 +830,7 @@ Section KEMDEM.
     eapply ler_trans.
     - rewrite Advantage_sym.
       rewrite -Advantage_link.
-      eapply single_key_a.
+      eapply single_key.
       7,8: ssprove_valid.
       9,10: ssprove_valid.
       1-2: ssprove_valid.
