@@ -801,6 +801,53 @@ Section KEMDEM.
     intros x y e. subst. apply lerr.
   Qed.
 
+  (* TODO MOVE in pkg_tactics *)
+  Lemma trimmed_empty_package :
+    trimmed [interface] (mkfmap nil).
+  Proof.
+    unfold trimmed. simpl. unfold trim.
+    apply eq_fmap. intro n.
+    rewrite filtermE. rewrite emptymE. reflexivity.
+  Qed.
+
+  Lemma trimmed_package_cons :
+    ∀ i A B f p E,
+      trimmed (fset E) (mkfmap p) →
+      trimmed (fset ((i, (A, B)) :: E)) (mkfmap ((i, mkdef A B f) :: p)).
+  Proof.
+    intros i A B f p E h.
+    unfold trimmed. unfold trim.
+    apply eq_fmap. intro n.
+    rewrite filtermE.
+    rewrite mkfmapE. simpl.
+    destruct (n == i) eqn:e.
+    - simpl. move: e => /eqP e. subst.
+      rewrite in_fset. rewrite in_cons. rewrite eqxx. simpl.
+      reflexivity.
+    - unfold trimmed, trim in h.
+      apply eq_fmap in h. specialize (h n).
+      rewrite filtermE in h. rewrite mkfmapE in h.
+      rewrite -[X in _ = X]h.
+      destruct (getm_def p n) as [[S [T g]]|] eqn:e'.
+      2:{ rewrite e'. reflexivity. }
+      rewrite e'. simpl.
+      rewrite !in_fset. rewrite in_cons.
+      destruct ((n, (S, T)) == (i, (A, B))) eqn:e2.
+      1:{
+        exfalso. move: e2 => /eqP e2. noconf e2.
+        rewrite eqxx in e. discriminate.
+      }
+      rewrite e2. simpl. reflexivity.
+  Qed.
+
+  Hint Extern 1 (trimmed ?E (mkfmap [::])) =>
+    eapply trimmed_empty_package
+  : typeclass_instances packages.
+
+  Hint Extern 2 (trimmed ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p))) =>
+    eapply trimmed_package_cons
+  : typeclass_instances packages.
+
   (** Security theorem *)
 
   Theorem PKE_security :
@@ -834,6 +881,10 @@ Section KEMDEM.
       7,8: ssprove_valid.
       9,10: ssprove_valid.
       1-2: ssprove_valid.
+      (* Sad we have to do this before. *)
+      5-8: unfold KEM, DEM.
+      5-8: cbn - [mkdef mkfmap].
+      5-8: ssprove_valid.
       (* Should be able to derive trimmed the same way as valid_package_cons
         Probably some trimmed_package_cons and trimmed_empty_package.
         Then can add to both packages and typeclass_instances!
