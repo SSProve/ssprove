@@ -105,6 +105,11 @@ Section KEMDEM.
   Definition i_clen := clen.
   Definition i_elen := elen.
 
+  (** Some shorthands *)
+  Definition IGEN := [interface val #[ GEN ] : 'unit → 'unit ].
+  Definition ISET := [interface val #[ SET ] : 'key → 'unit ].
+  Definition IGET := [interface val #[GET] : 'unit → 'key ].
+
   (** PKE scheme *)
 
   Record PKE_scheme := {
@@ -170,11 +175,8 @@ Section KEMDEM.
 
   Definition KEM_loc := fset [:: pk_loc ; sk_loc ; ce_loc ].
 
-  Definition KEM_in :=
-    [interface
-      val #[ SET ] : 'key → 'unit ;
-      val #[ GEN ] : 'unit → 'unit
-    ].
+  Definition KEM_in b :=
+    if b then ISET else IGEN.
 
   Definition KEM_out :=
     [interface
@@ -203,7 +205,7 @@ Section KEMDEM.
   (* TODO Find a way to make this not mandatory *)
   Opaque mkfmap mkdef.
 
-  #[program] Definition KEM (b : bool) : package KEM_loc KEM_in KEM_out :=
+  #[program] Definition KEM (b : bool) : package KEM_loc (KEM_in b) KEM_out :=
     [package
       def #[ KEMGEN ] (_ : 'unit) : 'key {
         sk ← get sk_loc ;;
@@ -303,7 +305,7 @@ Section KEMDEM.
 
   #[program] Definition KEM_CCA_pkg b :
     package KEM_CCA_loc [interface] KEM_CCA_out :=
-    {package (par (KEM b) (ID [interface val #[GET] : 'unit → 'key ])) ∘ KEY }.
+    {package (par (KEM b) (ID IGET)) ∘ KEY }.
   Next Obligation.
     ssprove_valid.
     6: destruct x2. 6: ssprove_valid.
@@ -313,10 +315,27 @@ Section KEMDEM.
       apply fsubsetxx.
     }
     14:{
-      instantiate (1 := fset [:: _ ; _ ]).
-      erewrite <- fset_cat. simpl.
-      apply fsubsetxx.
+      instantiate (1 := KEM_in b).
+      destruct b. all: unfold KEM_in.
+      all: unfold ISET, IGET.
+      all: rewrite -fset_cat. all: simpl.
+      - apply /fsubsetP. simpl.
+        intros n h. rewrite in_fset. rewrite in_fset in h.
+        _invert_interface_in h.
+        + rewrite in_cons. apply/orP. right. rewrite in_cons.
+          apply/orP. left. apply eqxx.
+        + rewrite in_cons. apply/orP. right.
+          rewrite in_cons. apply/orP. right.
+          rewrite mem_seq1. apply eqxx.
+      - apply /fsubsetP. simpl.
+        intros n h. rewrite in_fset. rewrite in_fset in h.
+        _invert_interface_in h.
+        + rewrite in_cons. apply/orP. left. apply eqxx.
+        + rewrite in_cons. apply/orP. right.
+          rewrite in_cons. apply/orP. right.
+          rewrite mem_seq1. apply eqxx.
     }
+    7,9: unfold KEM_in, ISET, IGEN.
     20: apply fsubsetUr.
     19: apply fsubsetUl.
     13:{ erewrite fsetU0. apply fsubsetxx. }
@@ -344,10 +363,7 @@ Section KEMDEM.
 
   Definition DEM_loc := fset [:: cc_loc ].
 
-  Definition DEM_in :=
-    [interface
-      val #[ GET ] : 'unit → 'key
-    ].
+  Definition DEM_in := IGET.
 
   Definition DEM_out :=
     [interface
@@ -399,11 +415,11 @@ Section KEMDEM.
 
   #[program] Definition DEM_CCA_pkg b :
     package DEM_CCA_loc [interface] DEM_CCA_out :=
-    {package (par (DEM b) (ID [interface val #[ GEN ] : 'unit → 'unit ])) ∘ KEY }.
+    {package (par (DEM b) (ID IGEN)) ∘ KEY }.
   Next Obligation.
     ssprove_valid.
     10:{
-      unfold DEM_CCA_out.
+      unfold DEM_CCA_out, IGEN.
       rewrite fsetUC.
       rewrite -fset_cat. simpl.
       apply fsubsetxx.
@@ -589,15 +605,6 @@ Section KEMDEM.
   Qed.
 
   (** Single key lemma *)
-
-  Definition IGEN :=
-    [interface val #[ GEN ] : 'unit → 'unit ].
-
-  Definition ISET :=
-    [interface val #[ SET ] : 'key → 'unit ].
-
-  Definition IGET :=
-    [interface val #[GET] : 'unit → 'key ].
 
   (* TODO MOVE *)
   Lemma trimmed_ID :
@@ -837,24 +844,31 @@ Section KEMDEM.
     rewrite GRing.addr0. rewrite GRing.add0r.
     (* Now we massage the expression to apply the single key lemma *)
     eapply ler_trans.
-    - rewrite -Advantage_link.
+    - rewrite Advantage_sym.
+      rewrite -Advantage_link.
       eapply single_key_a.
       7,8: ssprove_valid.
-      (* NEED to specialise KEM so that KEM true and KEM false don't share
-        their import interface.
-      *)
       9,10: ssprove_valid.
-      1: instantiate (1 := KEM_out).
+      1-2: ssprove_valid.
+      (* Should be able to derive trimmed the same way as valid_package_cons
+        Probably some trimmed_package_cons and trimmed_empty_package.
+        Then can add to both packages and typeclass_instances!
+
+        Also neeed a lemma to get Parable from proved interfaces.
+        This one should *not* go into packages.
+      *)
       all: admit.
     - rewrite !Advantage_E.
       unfold KEM_CCA. unfold KEM_CCA_pkg.
       unfold DEM_CCA. unfold DEM_CCA_pkg.
       change ({locpackage ?p }.(pack)) with p.
       change ({package ?p }.(pack)) with p.
-      apply eq_ler. rewrite !link_assoc. f_equal. all: f_equal.
-      (* Seems I messed up true/false somewhere...
-        Don't know if it's in the proof here, or even in the statement/defs.
-      *)
+      apply eq_ler. rewrite !link_assoc. f_equal.
+      all: rewrite Advantage_sym. 1: reflexivity.
+      f_equal. all: f_equal.
+      all: apply par_commut.
+      (* Again the same Parable instances *)
+      all: admit.
   Admitted.
 
 End KEMDEM.
