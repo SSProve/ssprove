@@ -67,15 +67,14 @@ Defined.
 
 Open Scope pack.
 
-(* Actually more general than interfaces here. *)
-Ltac _invert_interface_in h :=
+Ltac invert_in_seq h :=
   tryif (rewrite mem_seq1 in h)
   then (move: h => /eqP h ; subst)
   else (
     rewrite in_cons in h ;
     move: h => /orP [/eqP h | h] ; [
       subst
-    | _invert_interface_in h
+    | invert_in_seq h
     ]
   ).
 
@@ -84,7 +83,7 @@ Ltac invert_interface_in h :=
   pose proof h as h' ;
   rewrite in_fset in h' ;
   cbn in h' ;
-  _invert_interface_in h' ;
+  invert_in_seq h' ;
   [ noconf h' .. ].
 
 Ltac lookup_op_squeeze :=

@@ -272,7 +272,7 @@ Section KEMDEM.
       all: rewrite -fset_cat. all: simpl.
       - apply /fsubsetP. simpl.
         intros n h. rewrite in_fset. rewrite in_fset in h.
-        _invert_interface_in h.
+        invert_in_seq h.
         + rewrite in_cons. apply/orP. right. rewrite in_cons.
           apply/orP. left. apply eqxx.
         + rewrite in_cons. apply/orP. right.
@@ -280,7 +280,7 @@ Section KEMDEM.
           rewrite mem_seq1. apply eqxx.
       - apply /fsubsetP. simpl.
         intros n h. rewrite in_fset. rewrite in_fset in h.
-        _invert_interface_in h.
+        invert_in_seq h.
         + rewrite in_cons. apply/orP. left. apply eqxx.
         + rewrite in_cons. apply/orP. right.
           rewrite in_cons. apply/orP. right.
@@ -299,8 +299,7 @@ Section KEMDEM.
     intros n h.
     rewrite domm_mkfmap in h. simpl in h.
     rewrite domm_ID_fset. rewrite in_fset. simpl.
-    (* TODO Rename this guy into invert_seq_in *)
-    _invert_interface_in h.
+    invert_in_seq h.
     all: reflexivity.
   Qed.
 
@@ -394,7 +393,7 @@ Section KEMDEM.
     rewrite domm_mkfmap in h. simpl in h.
     rewrite domm_ID_fset. rewrite in_fset. simpl.
     (* TODO Rename this guy into invert_seq_in *)
-    _invert_interface_in h.
+    invert_in_seq h.
     all: reflexivity.
   Qed.
 
@@ -762,7 +761,7 @@ Section KEMDEM.
       all: intros x hx.
       all: rewrite in_fset in hx.
       all: rewrite in_fset.
-      all: _invert_interface_in hx.
+      all: invert_in_seq hx.
       all: reflexivity.
     - rewrite !Advantage_E.
       unfold KEM_CCA. unfold KEM_CCA_pkg.
@@ -790,7 +789,7 @@ Section KEMDEM.
       all: intros x hx.
       all: rewrite in_fset in hx.
       all: rewrite in_fset.
-      all: _invert_interface_in hx.
+      all: invert_in_seq hx.
       all: reflexivity.
   Qed.
 
