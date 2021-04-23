@@ -590,21 +590,72 @@ Section KEMDEM.
 
   (** Single key lemma *)
 
+  Definition IGEN :=
+    [interface val #[ GEN ] : 'unit → 'unit ].
+
+  Definition ISET :=
+    [interface val #[ SET ] : 'key → 'unit ].
+
+  Definition IGET :=
+    [interface val #[GET] : 'unit → 'key ].
+
+  (* TODO MOVE *)
+  Lemma trimmed_ID :
+    ∀ I, trimmed I (ID I).
+  Proof.
+    intros I.
+    unfold trimmed. apply eq_fmap. intro n.
+    unfold trim. rewrite filtermE.
+    destruct (ID I n) as [[S [T f]]|] eqn:e.
+    - rewrite e. simpl.
+      rewrite IDE in e.
+      destruct (getm_def I n) as [[S' T']|] eqn:e'. 2: discriminate.
+      cbn in e. noconf e.
+      eapply getm_def_in in e'. rewrite e'. reflexivity.
+    - rewrite e. reflexivity.
+  Qed.
+
   (* Warning, will probably have extra hyps *)
   Lemma single_key_a :
-    ∀ CK₀ CK₁ CD₀ CD₁ EK ED A,
-      let K₀ := (par CK₀ (ID [interface val #[GET] : 'unit → 'key ])) ∘ KEY in
-      let K₁ := (par CK₁ (ID [interface val #[GET] : 'unit → 'key ])) ∘ KEY in
-      let D₀ := (par (ID [interface val #[ GEN ] : 'unit → 'unit ]) CD₀) ∘ KEY in
-      let D₁ := (par (ID [interface val #[ GEN ] : 'unit → 'unit ]) CD₁) ∘ KEY in
+    ∀ LD₀ LK₀ CK₀ CK₁ CD₀ CD₁ EK ED A,
+      let K₀ := (par CK₀ (ID IGET)) ∘ KEY in
+      let K₁ := (par CK₁ (ID IGET)) ∘ KEY in
+      let D₀ := (par (ID IGEN) CD₀) ∘ KEY in
+      let D₁ := (par (ID IGEN) CD₁) ∘ KEY in
+      flat EK →
+      Parable CK₀ (ID IGET) →
+      ValidPackage LD₀ IGET ED CD₀ →
+      trimmed ED CD₀ →
+      ValidPackage LK₀ ISET EK CK₀ →
+      trimmed EK CK₀ →
       AdvantageE ((par CK₀ CD₀) ∘ KEY) ((par CK₁ CD₁) ∘ KEY) A <=
       AdvantageE K₀ K₁ (A ∘ (par (ID EK) CD₀)) +
       AdvantageE D₀ D₁ (A ∘ (par CK₁ (ID ED))).
+  Proof.
+    intros LD₀ LK₀ CK₀ CK₁ CD₀ CD₁ EK ED A K₀ K₁ D₀ D₁.
+    intros fEK pCK₀ hCD₀ tCD₀ hCK₀ tCK₀.
+    (* Maybe I should start by using triangle inequality? *)
+    (* Idealising the core keying package *)
+    replace (par CK₀ CD₀) with ((par (ID EK) CD₀) ∘ (par CK₀ (ID IGET))).
+    2:{
+      erewrite <- interchange.
+      all: eauto.
+      2-3: ssprove_valid.
+      2: apply trimmed_ID.
+      erewrite link_id. all: eauto.
+      2: ssprove_valid.
+      erewrite id_link.
+      all: eauto.
+    }
+    (* Idealising the core keyed package *)
+    (* De-idealising the core keying package *)
   Admitted.
 
   (* Warning, will probably have extra hyps *)
-  (* See if we need this one too before proving it. *)
-  Lemma single_key_b :
+  (* See if we need this one too before proving it.
+    It seems not. If remove, rename above to remove _a
+  *)
+  (* Lemma single_key_b :
     ∀ CK₀ CK₁ CD₀ CD₁ EK ED A,
       let K₀ := (par CK₀ (ID [interface val #[GET] : 'unit → 'key ])) ∘ KEY in
       let K₁ := (par CK₁ (ID [interface val #[GET] : 'unit → 'key ])) ∘ KEY in
@@ -614,7 +665,7 @@ Section KEMDEM.
       AdvantageE K₀ K₁ (A ∘ (par (ID EK) CD₀)) +
       AdvantageE D₀ D₁ (A ∘ (par CK₁ (ID ED))) +
       AdvantageE K₀ K₁ (A ∘ (par (ID EK) CD₁)).
-  Admitted.
+  Admitted. *)
 
   (** Perfect indistinguishability with PKE-CCA *)
 
