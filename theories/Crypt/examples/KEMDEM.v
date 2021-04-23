@@ -588,6 +588,34 @@ Section KEMDEM.
     ssprove_valid.
   Qed.
 
+  (** Single key lemma *)
+
+  (* Warning, will probably have extra hyps *)
+  Lemma single_key_a :
+    ∀ CK₀ CK₁ CD₀ CD₁ EK ED A,
+      let K₀ := (par CK₀ (ID [interface val #[GET] : 'unit → 'key ])) ∘ KEY in
+      let K₁ := (par CK₁ (ID [interface val #[GET] : 'unit → 'key ])) ∘ KEY in
+      let D₀ := (par (ID [interface val #[ GEN ] : 'unit → 'unit ]) CD₀) ∘ KEY in
+      let D₁ := (par (ID [interface val #[ GEN ] : 'unit → 'unit ]) CD₁) ∘ KEY in
+      AdvantageE ((par CK₀ CD₀) ∘ KEY) ((par CK₁ CD₁) ∘ KEY) A <=
+      AdvantageE K₀ K₁ (A ∘ (par (ID EK) CD₀)) +
+      AdvantageE D₀ D₁ (A ∘ (par CK₁ (ID ED))).
+  Admitted.
+
+  (* Warning, will probably have extra hyps *)
+  (* See if we need this one too before proving it. *)
+  Lemma single_key_b :
+    ∀ CK₀ CK₁ CD₀ CD₁ EK ED A,
+      let K₀ := (par CK₀ (ID [interface val #[GET] : 'unit → 'key ])) ∘ KEY in
+      let K₁ := (par CK₁ (ID [interface val #[GET] : 'unit → 'key ])) ∘ KEY in
+      let D₀ := (par (ID [interface val #[ GEN ] : 'unit → 'unit ]) CD₀) ∘ KEY in
+      let D₁ := (par (ID [interface val #[ GEN ] : 'unit → 'unit ]) CD₁) ∘ KEY in
+      AdvantageE ((par CK₀ CD₀) ∘ KEY) ((par CK₀ CD₁) ∘ KEY) A <=
+      AdvantageE K₀ K₁ (A ∘ (par (ID EK) CD₀)) +
+      AdvantageE D₀ D₁ (A ∘ (par CK₁ (ID ED))) +
+      AdvantageE K₀ K₁ (A ∘ (par (ID EK) CD₁)).
+  Admitted.
+
   (** Perfect indistinguishability with PKE-CCA *)
 
   #[program] Definition Aux b : package PKE_loc [interface] PKE_CCA_out :=
@@ -639,6 +667,11 @@ Section KEMDEM.
         if I cannot prevent them from appearing, then I should deal with
         them in a better way. The best would be to bypass them by treating
         assertD as a special case, don't know if possible.
+
+        ssprove_code_link_commute can probably become some code_link_simplify
+        and not check the match thing.
+
+        But first do the keying/keyed thing!
       *)
       admit.
   Admitted.
