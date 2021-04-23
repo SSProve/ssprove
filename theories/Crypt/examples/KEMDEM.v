@@ -801,6 +801,15 @@ Section KEMDEM.
   Proof.
   Admitted.
 
+  (* TODO MOVE *)
+  Lemma eq_ler :
+    ∀ (x y : R),
+      x = y →
+      x <= y.
+  Proof.
+    intros x y e. subst. apply lerr.
+  Qed.
+
   (** Security theorem *)
 
   Theorem PKE_security :
@@ -823,15 +832,29 @@ Section KEMDEM.
     rewrite !GRing.addrA in ineq.
     eapply ler_trans. 1: exact ineq.
     clear ineq.
-    rewrite PKE_CCA_perf_false.
-    2-3: admit.
-    rewrite PKE_CCA_perf_true.
-    2-3: admit.
+    rewrite PKE_CCA_perf_false. 2,3: auto.
+    rewrite PKE_CCA_perf_true. 2,3: auto.
     rewrite GRing.addr0. rewrite GRing.add0r.
-    (* Maybe I can state Lemma 19 of the SSP paper using advantage directly
-        this way I don't have to type the packages.
-        We could also inline the proof... Let's see which is better.
-    *)
+    (* Now we massage the expression to apply the single key lemma *)
+    eapply ler_trans.
+    - rewrite -Advantage_link.
+      eapply single_key_a.
+      7,8: ssprove_valid.
+      (* NEED to specialise KEM so that KEM true and KEM false don't share
+        their import interface.
+      *)
+      9,10: ssprove_valid.
+      1: instantiate (1 := KEM_out).
+      all: admit.
+    - rewrite !Advantage_E.
+      unfold KEM_CCA. unfold KEM_CCA_pkg.
+      unfold DEM_CCA. unfold DEM_CCA_pkg.
+      change ({locpackage ?p }.(pack)) with p.
+      change ({package ?p }.(pack)) with p.
+      apply eq_ler. rewrite !link_assoc. f_equal. all: f_equal.
+      (* Seems I messed up true/false somewhere...
+        Don't know if it's in the proof here, or even in the statement/defs.
+      *)
   Admitted.
 
 End KEMDEM.
