@@ -694,6 +694,16 @@ Qed.
 Definition trimmed E p :=
   trim E p = p.
 
+Lemma domm_trimmed :
+  ∀ E p,
+    trimmed E p →
+    fsubset (domm p) (idents E).
+Proof.
+  intros E p h.
+  unfold trimmed in h. rewrite <- h.
+  apply domm_trim.
+Qed.
+
 Lemma trimmed_valid_Some_in :
   ∀ L I E p n S T f,
     valid_package L I E p →
@@ -1065,4 +1075,37 @@ Lemma code_link_if :
 Proof.
   intros A c₀ c₁ p b.
   destruct b. all: reflexivity.
+Qed.
+
+Lemma domm_ID :
+  ∀ I, domm (ID I) = fset (unzip1 I).
+Proof.
+  intros I.
+  apply eq_fset. intro x.
+  rewrite in_fset. rewrite mem_domm.
+  unfold ID. rewrite mkfmapE. rewrite getm_def_map_dep.
+  rewrite -mkfmapE.
+  rewrite -domm_mkfmap. rewrite mem_domm.
+  destruct (mkfmap I x) eqn:e.
+  - rewrite e. simpl. reflexivity.
+  - rewrite e. reflexivity.
+Qed.
+
+Lemma domm_ID_fset :
+  ∀ I, domm (ID (fset I)) = fset (unzip1 I).
+Proof.
+  intros I.
+  rewrite domm_ID.
+  apply eq_fset. intro x.
+  rewrite !in_fset.
+  unfold unzip1.
+  apply/mapP.
+  destruct (x \in [seq i.1 | i <- I]) eqn: e.
+  - move: e => /mapP e. simpl in e. destruct e as [? h ?]. subst.
+    simpl. eexists. 2: reflexivity.
+    rewrite in_fset. auto.
+  - move: e => /mapP e. simpl in e.
+    intro h. apply e.
+    destruct h as [? h ?]. rewrite in_fset in h.
+    eexists. all: eauto.
 Qed.

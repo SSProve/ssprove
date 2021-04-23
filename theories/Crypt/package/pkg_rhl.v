@@ -800,6 +800,17 @@ Proof.
   rewrite distrC. reflexivity.
 Qed.
 
+Lemma adv_equiv_sym :
+  ∀ L₀ L₁ E G₀ G₁ h₀ h₁ ε,
+    @adv_equiv L₀ L₁ E G₀ G₁ h₀ h₁ ε →
+    adv_equiv G₁ G₀ ε.
+Proof.
+  intros L₀ L₁ E G₀ G₁ h₀ h₁ ε h.
+  intros LA A hA hd₁ hd₀.
+  rewrite Advantage_sym.
+  eapply h. all: eauto.
+Qed.
+
 Lemma Advantage_triangle :
   ∀ P Q R A,
     AdvantageE P Q A <= AdvantageE P R A + AdvantageE R Q A.

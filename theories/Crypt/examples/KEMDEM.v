@@ -33,16 +33,6 @@ Import PackageNotation.
 #[local] Open Scope ring_scope.
 #[local] Open Scope package_scope.
 
-(* TODO MOVE *)
-(* TODO Same as finmap.oextract but with a better name? *)
-Definition getSome {A} (o : option A) :
-  isSome o → A.
-Proof.
-  intro h.
-  destruct o. 2: discriminate.
-  assumption.
-Defined.
-
 Section KEMDEM.
 
   (** In the SSP paper, we have λ.
@@ -266,42 +256,6 @@ Section KEMDEM.
   (* Maybe inline? *)
   Definition KEM_CCA_loc :=
     KEM_loc :|: KEY_loc.
-    (* fset [:: pk_loc ; sk_loc ; ce_loc ; key ]. *)
-
-  (* TODO MOVE *)
-  Lemma domm_ID :
-    ∀ I, domm (ID I) = fset (unzip1 I).
-  Proof.
-    intros I.
-    apply eq_fset. intro x.
-    rewrite in_fset. rewrite mem_domm.
-    unfold ID. rewrite mkfmapE. rewrite getm_def_map_dep.
-    rewrite -mkfmapE.
-    rewrite -domm_mkfmap. rewrite mem_domm.
-    destruct (mkfmap I x) eqn:e.
-    - rewrite e. simpl. reflexivity.
-    - rewrite e. reflexivity.
-  Qed.
-
-  (* TODO MOVE *)
-  Lemma domm_ID_fset :
-    ∀ I, domm (ID (fset I)) = fset (unzip1 I).
-  Proof.
-    intros I.
-    rewrite domm_ID.
-    apply eq_fset. intro x.
-    rewrite !in_fset.
-    unfold unzip1.
-    apply/mapP.
-    destruct (x \in [seq i.1 | i <- I]) eqn: e.
-    - move: e => /mapP e. simpl in e. destruct e as [? h ?]. subst.
-      simpl. eexists. 2: reflexivity.
-      rewrite in_fset. auto.
-    - move: e => /mapP e. simpl in e.
-      intro h. apply e.
-      destruct h as [? h ?]. rewrite in_fset in h.
-      eexists. all: eauto.
-  Qed.
 
   #[program] Definition KEM_CCA_pkg b :
     package KEM_CCA_loc [interface] KEM_CCA_out :=
@@ -527,13 +481,6 @@ Section KEMDEM.
 
   Definition MOD_CCA_out :=
     PKE_CCA_out.
-
-  (* TODO MOVE *)
-  Definition testSome {A} (P : A → bool) (o : option A) : bool :=
-    match o with
-    | Some a => P a
-    | None => false
-    end.
 
   #[program] Definition MOD_CCA (ζ : PKE_scheme) :
     package MOD_CCA_loc MOD_CCA_in MOD_CCA_out :=
@@ -775,18 +722,6 @@ Section KEMDEM.
       admit.
   Admitted.
 
-  (* TODO MOVE *)
-  Lemma adv_equiv_sym :
-    ∀ L₀ L₁ E G₀ G₁ h₀ h₁ ε,
-      @adv_equiv L₀ L₁ E G₀ G₁ h₀ h₁ ε →
-      adv_equiv G₁ G₀ ε.
-  Proof.
-    intros L₀ L₁ E G₀ G₁ h₀ h₁ ε h.
-    intros LA A hA hd₁ hd₀.
-    rewrite Advantage_sym.
-    eapply h. all: eauto.
-  Qed.
-
   Lemma PKE_CCA_perf_true :
     (Aux true) ≈₀ (PKE_CCA KEM_DEM true).
   Proof.
@@ -799,64 +734,6 @@ Section KEMDEM.
       x <= y.
   Proof.
     intros x y e. subst. apply lerr.
-  Qed.
-
-  (* TODO MOVE in pkg_tactics *)
-  Lemma trimmed_empty_package :
-    trimmed [interface] (mkfmap nil).
-  Proof.
-    unfold trimmed. simpl. unfold trim.
-    apply eq_fmap. intro n.
-    rewrite filtermE. rewrite emptymE. reflexivity.
-  Qed.
-
-  Lemma trimmed_package_cons :
-    ∀ i A B f p E,
-      trimmed (fset E) (mkfmap p) →
-      trimmed (fset ((i, (A, B)) :: E)) (mkfmap ((i, mkdef A B f) :: p)).
-  Proof.
-    intros i A B f p E h.
-    unfold trimmed. unfold trim.
-    apply eq_fmap. intro n.
-    rewrite filtermE.
-    rewrite mkfmapE. simpl.
-    destruct (n == i) eqn:e.
-    - simpl. move: e => /eqP e. subst.
-      rewrite in_fset. rewrite in_cons. rewrite eqxx. simpl.
-      reflexivity.
-    - unfold trimmed, trim in h.
-      apply eq_fmap in h. specialize (h n).
-      rewrite filtermE in h. rewrite mkfmapE in h.
-      rewrite -[X in _ = X]h.
-      destruct (getm_def p n) as [[S [T g]]|] eqn:e'.
-      2:{ rewrite e'. reflexivity. }
-      rewrite e'. simpl.
-      rewrite !in_fset. rewrite in_cons.
-      destruct ((n, (S, T)) == (i, (A, B))) eqn:e2.
-      1:{
-        exfalso. move: e2 => /eqP e2. noconf e2.
-        rewrite eqxx in e. discriminate.
-      }
-      rewrite e2. simpl. reflexivity.
-  Qed.
-
-  Hint Extern 1 (trimmed ?E (mkfmap [::])) =>
-    eapply trimmed_empty_package
-  : typeclass_instances packages.
-
-  Hint Extern 2 (trimmed ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p))) =>
-    eapply trimmed_package_cons
-  : typeclass_instances packages.
-
-  (* TODO MOVE *)
-  Lemma domm_trimmed :
-    ∀ E p,
-      trimmed E p →
-      fsubset (domm p) (idents E).
-  Proof.
-    intros E p h.
-    unfold trimmed in h. rewrite <- h.
-    apply domm_trim.
   Qed.
 
   (** Security theorem *)

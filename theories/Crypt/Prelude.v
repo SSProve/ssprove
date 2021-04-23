@@ -293,3 +293,18 @@ Ltac auto_in_fset :=
   eauto ;
   try in_fset_auto ;
   try inset_try.
+
+(* TODO Same as finmap.oextract but with a better name? *)
+Definition getSome {A} (o : option A) :
+  isSome o → A.
+Proof.
+  intro h.
+  destruct o. 2: discriminate.
+  assumption.
+Defined.
+
+Definition testSome {A} (P : A → bool) (o : option A) : bool :=
+  match o with
+  | Some a => P a
+  | None => false
+  end.
