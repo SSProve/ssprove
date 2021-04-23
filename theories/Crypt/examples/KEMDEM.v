@@ -848,6 +848,12 @@ Section KEMDEM.
     eapply trimmed_package_cons
   : typeclass_instances packages.
 
+  (* TODO MOVE *)
+  Lemma domm_pack :
+    ∀ L I E (p : package L I E),
+      fsubset (domm p.(pack)) (idents E).
+  Admitted.
+
   (** Security theorem *)
 
   Theorem PKE_security :
@@ -885,12 +891,18 @@ Section KEMDEM.
       5-8: unfold KEM, DEM.
       5-8: cbn - [mkdef mkfmap].
       5-8: ssprove_valid.
-      (* Should be able to derive trimmed the same way as valid_package_cons
-        Probably some trimmed_package_cons and trimmed_empty_package.
-        Then can add to both packages and typeclass_instances!
-
-        Also neeed a lemma to get Parable from proved interfaces.
-        This one should *not* go into packages.
+      all: unfold Parable.
+      all: rewrite domm_ID_fset.
+      3,4: rewrite fdisjointC.
+      all: eapply fdisjoint_trans ; [ eapply domm_pack |].
+      all: simpl.
+      all: unfold idents, KEM_out, DEM_out.
+      all: rewrite imfset_fset.
+      all: simpl.
+      (* Is there better than fsubsetP?
+        In any case, might be worth it to write a tactic doing the invert_in
+        and fsubsetP automatically.
+        Including for the above.
       *)
       all: admit.
     - rewrite !Advantage_E.
