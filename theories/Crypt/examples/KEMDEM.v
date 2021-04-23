@@ -33,6 +33,15 @@ Import PackageNotation.
 #[local] Open Scope ring_scope.
 #[local] Open Scope package_scope.
 
+(* TODO MOVE *)
+Lemma eq_ler :
+  ∀ (x y : R),
+    x = y →
+    x <= y.
+Proof.
+  intros x y e. subst. apply lerr.
+Qed.
+
 Section KEMDEM.
 
   (** In the SSP paper, we have λ.
@@ -174,18 +183,6 @@ Section KEMDEM.
       val #[ ENCAP ] : 'unit → 'elen ;
       val #[ DECAP ] : 'elen → 'key
     ].
-
-  (* TODO MOVE *)
-  Lemma valid_scheme :
-    ∀ A L I c,
-      @valid_code fset0 [interface] A c →
-      valid_code L I c.
-  Proof.
-    intros A L I c h.
-    eapply valid_injectMap. 2: eapply valid_injectLocations.
-    1-2: eapply fsub0set.
-    rewrite -fset0E in h. auto.
-  Qed.
 
   (* Export? *)
   Hint Extern 10 (ValidCode ?L ?I ?c.(prog)) =>
@@ -553,22 +550,6 @@ Section KEMDEM.
 
   (** Single key lemma *)
 
-  (* TODO MOVE *)
-  Lemma trimmed_ID :
-    ∀ I, trimmed I (ID I).
-  Proof.
-    intros I.
-    unfold trimmed. apply eq_fmap. intro n.
-    unfold trim. rewrite filtermE.
-    destruct (ID I n) as [[S [T f]]|] eqn:e.
-    - rewrite e. simpl.
-      rewrite IDE in e.
-      destruct (getm_def I n) as [[S' T']|] eqn:e'. 2: discriminate.
-      cbn in e. noconf e.
-      eapply getm_def_in in e'. rewrite e'. reflexivity.
-    - rewrite e. reflexivity.
-  Qed.
-
   (* Corresponds to Lemma 19.a in the SSP paper *)
   Lemma single_key :
     ∀ LD₀ LK₀ CK₀ CK₁ CD₀ CD₁ EK ED A,
@@ -726,15 +707,6 @@ Section KEMDEM.
     (Aux true) ≈₀ (PKE_CCA KEM_DEM true).
   Proof.
   Admitted.
-
-  (* TODO MOVE *)
-  Lemma eq_ler :
-    ∀ (x y : R),
-      x = y →
-      x <= y.
-  Proof.
-    intros x y e. subst. apply lerr.
-  Qed.
 
   (** Security theorem *)
 

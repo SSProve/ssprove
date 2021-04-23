@@ -998,6 +998,21 @@ Qed.
   eapply valid_ID
   : packages.
 
+Lemma trimmed_ID :
+  ∀ I, trimmed I (ID I).
+Proof.
+  intros I.
+  unfold trimmed. apply eq_fmap. intro n.
+  unfold trim. rewrite filtermE.
+  destruct (ID I n) as [[S [T f]]|] eqn:e.
+  - rewrite e. simpl.
+    rewrite IDE in e.
+    destruct (getm_def I n) as [[S' T']|] eqn:e'. 2: discriminate.
+    cbn in e. noconf e.
+    eapply getm_def_in in e'. rewrite e'. reflexivity.
+  - rewrite e. reflexivity.
+Qed.
+
 Lemma code_link_id :
   ∀ A (v : raw_code A) L I,
     flat I →

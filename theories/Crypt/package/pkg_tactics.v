@@ -439,6 +439,17 @@ Qed.
   eapply trimmed_package_cons
 : typeclass_instances packages.
 
+Lemma valid_scheme :
+  ∀ A L I c,
+    @valid_code fset0 [interface] A c →
+    valid_code L I c.
+Proof.
+  intros A L I c h.
+  eapply valid_injectMap. 2: eapply valid_injectLocations.
+  1-2: eapply fsub0set.
+  rewrite -fset0E in h. auto.
+Qed.
+
 Ltac chUniverse_eq_prove :=
   lazymatch goal with
   | |- chProd _ _ = chProd _ _ => f_equal ; chUniverse_eq_prove
