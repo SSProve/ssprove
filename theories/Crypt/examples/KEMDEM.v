@@ -849,10 +849,15 @@ Section KEMDEM.
   : typeclass_instances packages.
 
   (* TODO MOVE *)
-  Lemma domm_pack :
-    ∀ L I E (p : package L I E),
-      fsubset (domm p.(pack)) (idents E).
-  Admitted.
+  Lemma domm_trimmed :
+    ∀ E p,
+      trimmed E p →
+      fsubset (domm p) (idents E).
+  Proof.
+    intros E p h.
+    unfold trimmed in h. rewrite <- h.
+    apply domm_trim.
+  Qed.
 
   (** Security theorem *)
 
@@ -894,7 +899,10 @@ Section KEMDEM.
       all: unfold Parable.
       all: rewrite domm_ID_fset.
       3,4: rewrite fdisjointC.
-      all: eapply fdisjoint_trans ; [ eapply domm_pack |].
+      all:
+        eapply fdisjoint_trans ; [
+          eapply domm_trimmed ; unfold KEM, DEM ; cbn - [mkdef mkfmap] ; ssprove_valid
+        |].
       all: simpl.
       all: unfold idents, KEM_out, DEM_out.
       all: rewrite imfset_fset.
@@ -920,7 +928,10 @@ Section KEMDEM.
       all: unfold Parable.
       all: rewrite domm_ID_fset.
       all: rewrite fdisjointC.
-      all: eapply fdisjoint_trans ; [ eapply domm_pack |].
+      all:
+        eapply fdisjoint_trans ; [
+          eapply domm_trimmed ; unfold KEM, DEM ; cbn - [mkdef mkfmap] ; ssprove_valid
+        |].
       all: simpl.
       all: unfold idents, DEM_out.
       all: rewrite imfset_fset.
