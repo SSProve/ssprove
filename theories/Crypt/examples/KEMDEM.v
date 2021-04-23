@@ -899,12 +899,14 @@ Section KEMDEM.
       all: unfold idents, KEM_out, DEM_out.
       all: rewrite imfset_fset.
       all: simpl.
-      (* Is there better than fsubsetP?
-        In any case, might be worth it to write a tactic doing the invert_in
-        and fsubsetP automatically.
-        Including for the above.
-      *)
-      all: admit.
+      (* TODO Can we do better than what follows? *)
+      all: rewrite fdisjointC.
+      all: apply/fdisjointP.
+      all: intros x hx.
+      all: rewrite in_fset in hx.
+      all: rewrite in_fset.
+      all: _invert_interface_in hx.
+      all: reflexivity.
     - rewrite !Advantage_E.
       unfold KEM_CCA. unfold KEM_CCA_pkg.
       unfold DEM_CCA. unfold DEM_CCA_pkg.
@@ -914,8 +916,22 @@ Section KEMDEM.
       all: rewrite Advantage_sym. 1: reflexivity.
       f_equal. all: f_equal.
       all: apply par_commut.
-      (* Again the same Parable instances *)
-      all: admit.
-  Admitted.
+      (* TODO Can we do better than what follows? *)
+      all: unfold Parable.
+      all: rewrite domm_ID_fset.
+      all: rewrite fdisjointC.
+      all: eapply fdisjoint_trans ; [ eapply domm_pack |].
+      all: simpl.
+      all: unfold idents, DEM_out.
+      all: rewrite imfset_fset.
+      all: simpl.
+      all: rewrite fdisjointC.
+      all: apply/fdisjointP.
+      all: intros x hx.
+      all: rewrite in_fset in hx.
+      all: rewrite in_fset.
+      all: _invert_interface_in hx.
+      all: reflexivity.
+  Qed.
 
 End KEMDEM.
