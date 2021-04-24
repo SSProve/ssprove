@@ -128,8 +128,26 @@ Ltac simplify_eq_rel m :=
   lookup_op_squeeze ;
   cbn.
 
-Ltac ssprove_match_commut_gen :=
-  repeat lazymatch goal with
+Lemma code_link_assert :
+  ∀ b p,
+    code_link (assert b) p = assert b.
+Proof.
+  intros b p.
+  unfold assert. rewrite code_link_if. cbn. reflexivity.
+Qed.
+
+Lemma bind_cong :
+  ∀ A B u v f g,
+    u = v →
+    f = g →
+    @bind A B u f = bind v g.
+Proof.
+  intros A B u v f g ? ?. subst.
+  reflexivity.
+Qed.
+
+Ltac ssprove_match_commut_gen1 :=
+  lazymatch goal with
   | |- _ = ?rr =>
     lazymatch rr with
     | x ← sample ?op ;; _ =>
@@ -152,8 +170,16 @@ Ltac ssprove_match_commut_gen :=
       eapply functional_extensionality with (f := λ x', _) ; intro x'
     | x ← ?c ;; _ =>
       let x' := fresh x in
-      eapply (f_equal (bind _)) ;
-      eapply functional_extensionality with (f := λ x', _) ; intro x'
+      (* Changing this broke ElGamal, figure out why *)
+      (* eapply (f_equal (bind _)) ;
+      eapply functional_extensionality with (f := λ x', _) ; intro x' *)
+      eapply bind_cong ; [
+      | eapply functional_extensionality with (f := λ x', _) ; intro x'
+      ]
+    | code_link (x ← _ ;; _) _ =>
+      rewrite code_link_bind ; simpl
+    | code_link (assert _) _ =>
+      rewrite code_link_assert
     | code_link (match ?x with _ => _ end) _ =>
       instantiate (1 := ltac:(let _ := type of x in destruct x)) ;
       destruct x ; cbn - [lookup_op] ;
@@ -172,18 +198,24 @@ Ltac ssprove_match_commut_gen :=
       | |- _ =>
         reflexivity
       end
+    | _ =>
+      reflexivity
     end
   end.
 
+Ltac ssprove_match_commut_gen :=
+  repeat ssprove_match_commut_gen1.
+
 Ltac ssprove_code_link_commute_aux rr :=
-  lazymatch rr with
-  | context [ code_link (match _ with _ => _ end) _ ] =>
+  (* lazymatch rr with
+  | context [ code_link (match _ with _ => _ end) _ ] => *)
     let T := type of rr in
     let tm := fresh "tm" in
     evar (tm : T) ;
     replace rr with tm ; subst tm ; [| solve [ ssprove_match_commut_gen ] ]
-  | _ => idtac
-  end.
+  (* | _ => idtac
+  end. *)
+  .
 
 Ltac ssprove_code_link_commute :=
   lazymatch goal with

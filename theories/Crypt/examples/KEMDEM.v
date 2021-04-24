@@ -652,15 +652,6 @@ Section KEMDEM.
 
   Transparent mkfmap mkdef.
 
-  (* TODO MOVE *)
-  Lemma code_link_assert :
-    ∀ b p,
-      code_link (assert b) p = assert b.
-  Proof.
-    intros b p.
-    unfold assert. rewrite code_link_if. cbn. reflexivity.
-  Qed.
-
   Lemma PKE_CCA_perf_false :
       (PKE_CCA KEM_DEM false) ≈₀ Aux false.
       (* (MOD_CCA KEM_DEM ∘ par (KEM b) (DEM b) ∘ KEY). *)
@@ -669,17 +660,28 @@ Section KEMDEM.
     (* We go to the relation logic using equality as invariant. *)
     eapply eq_rel_perf_ind_eq.
     simplify_eq_rel m.
-    (* intros id So To m hin.
-    invert_interface_in hin.
-    all: rewrite ?get_op_default_link.
-    all: unfold get_op_default.
-    all: lookup_op_squeeze.
-    all: lookup_op_squeeze.
-    all: cbn. *)
-    (* TODO The following should now account for assert and #assert probably
-       or maybe is it bind?
-    *)
-    all: ssprove_code_link_commute.
+    1: ssprove_code_link_commute. (* Still doesn't work?? *)
+    2:{
+      lazymatch goal with
+      | |- ⊢ ⦃ _ ⦄ ?ll ≈ ?rr ⦃ _ ⦄ =>
+        (* ssprove_code_link_commute_aux ll  *)
+        (* ssprove_code_link_commute_aux rr *)
+
+        let T := type of ll in
+      let tm := fresh "tm" in
+      evar (tm : T) ;
+      replace ll with tm ; subst tm (* ; [| solve [ ssprove_match_commut_gen ] ] *)
+      | |- _ =>
+        fail "ssprove_code_link_commute: goal should be syntactic judgment"
+      end.
+      2:{
+        ssprove_match_commut_gen. (* It stops here, meaning the #assert case failed *)
+        Fail ssprove_match_commut_gen1.
+        admit.
+      }
+      admit.
+    }
+    (* all: ssprove_code_link_commute.
     all: simpl.
     all: simplify_linking.
     (* We are now in the realm of program logic *)
@@ -699,7 +701,7 @@ Section KEMDEM.
 
         But first do the keying/keyed thing!
       *)
-      admit.
+      admit. *)
   Admitted.
 
   Lemma PKE_CCA_perf_true :
