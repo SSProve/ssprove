@@ -652,6 +652,16 @@ Section KEMDEM.
 
   Transparent mkfmap mkdef.
 
+  (* Why doesn't f_equal (assertD _) work? *)
+  Lemma assertD_cong :
+    ∀ A b k k',
+      k = k' →
+      @assertD A b k = assertD b k'.
+  Proof.
+    intros A b k k' e.
+    subst. reflexivity.
+  Qed.
+
   Lemma PKE_CCA_perf_false :
       (PKE_CCA KEM_DEM false) ≈₀ Aux false.
       (* (MOD_CCA KEM_DEM ∘ par (KEM b) (DEM b) ∘ KEY). *)
@@ -660,8 +670,12 @@ Section KEMDEM.
     (* We go to the relation logic using equality as invariant. *)
     eapply eq_rel_perf_ind_eq.
     simplify_eq_rel m.
-    1: ssprove_code_link_commute. (* Still doesn't work?? *)
-    2:{
+    all: ssprove_code_link_commute. (* Still doesn't work for bind?? *)
+    (* Also might be good to also deal with let, and maybe match/let + refl?
+      In fact let like this should be a match? Otherwise it would simpl away?
+    *)
+    (* I'll keep it as debug *)
+    (* 2:{
       lazymatch goal with
       | |- ⊢ ⦃ _ ⦄ ?ll ≈ ?rr ⦃ _ ⦄ =>
         (* ssprove_code_link_commute_aux ll  *)
@@ -675,33 +689,28 @@ Section KEMDEM.
         fail "ssprove_code_link_commute: goal should be syntactic judgment"
       end.
       2:{
-        ssprove_match_commut_gen. (* It stops here, meaning the #assert case failed *)
-        Fail ssprove_match_commut_gen1.
-        admit.
+        ssprove_match_commut_gen.
+        ssprove_match_commut_gen1.
       }
       admit.
-    }
-    (* all: ssprove_code_link_commute.
+    } *)
+    (* all: ssprove_code_link_commute. *)
     all: simpl.
     all: simplify_linking.
     (* We are now in the realm of program logic *)
-    - setoid_rewrite code_link_bind. cbn.
+    (* - setoid_rewrite code_link_bind. cbn.
       simplify_linking.
       setoid_rewrite code_link_assert.
       setoid_rewrite code_link_bind.
       setoid_rewrite code_link_assert.
-      setoid_rewrite code_link_bind.
+      setoid_rewrite code_link_bind. *)
       (* We have again this erefl that appears because of assertD
         if I cannot prevent them from appearing, then I should deal with
         them in a better way. The best would be to bypass them by treating
         assertD as a special case, don't know if possible.
 
-        ssprove_code_link_commute can probably become some code_link_simplify
-        and not check the match thing.
-
-        But first do the keying/keyed thing!
+        ssprove_code_link_commute can probably become some code_link_simplify.
       *)
-      admit. *)
   Admitted.
 
   Lemma PKE_CCA_perf_true :

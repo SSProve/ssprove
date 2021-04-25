@@ -160,9 +160,9 @@ Ltac ssprove_match_commut_gen1 :=
       eapply functional_extensionality with (f := λ x', _) ; intro x'
     | put ?ℓ := ?v ;; _ =>
       eapply (f_equal (putr _ _))
-    | #assert ?b as x ;; _ =>
+    | @assertD ?A ?b (λ x, _) =>
       let x' := fresh x in
-      eapply (f_equal (assertD _ _)) ;
+      eapply (f_equal (@assertD A b)) ;
       eapply functional_extensionality with (f := λ x', _) ; intro x'
     | x ← cmd ?c ;; _ =>
       let x' := fresh x in
@@ -170,7 +170,6 @@ Ltac ssprove_match_commut_gen1 :=
       eapply functional_extensionality with (f := λ x', _) ; intro x'
     | x ← ?c ;; _ =>
       let x' := fresh x in
-      (* Changing this broke ElGamal, figure out why *)
       (* eapply (f_equal (bind _)) ;
       eapply functional_extensionality with (f := λ x', _) ; intro x' *)
       eapply bind_cong ; [
