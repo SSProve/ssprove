@@ -1,4 +1,8 @@
-(** KEM-DEM example *)
+(** KEM-DEM example
+
+  From the original SSP paper https://eprint.iacr.org/2018/306*
+
+*)
 
 From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
