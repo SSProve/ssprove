@@ -656,16 +656,6 @@ Section KEMDEM.
 
   Transparent mkfmap mkdef.
 
-  (* Why doesn't f_equal (assertD _) work? *)
-  Lemma assertD_cong :
-    ∀ A b k k',
-      k = k' →
-      @assertD A b k = assertD b k'.
-  Proof.
-    intros A b k k' e.
-    subst. reflexivity.
-  Qed.
-
   Lemma PKE_CCA_perf_false :
       (PKE_CCA KEM_DEM false) ≈₀ Aux false.
       (* (MOD_CCA KEM_DEM ∘ par (KEM b) (DEM b) ∘ KEY). *)
