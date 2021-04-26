@@ -146,6 +146,17 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma rel_jdg_replace :
+  ∀ (A B : choiceType) (pre : precond) (post : postcond A B) l l' r r',
+    ⊢ ⦃ pre ⦄ l ≈ r ⦃ post ⦄ →
+    l = l' →
+    r = r' →
+    ⊢ ⦃ pre ⦄ l' ≈ r' ⦃ post ⦄.
+Proof.
+  intros A B pre post l l' r r' h ? ?.
+  subst. auto.
+Qed.
+
 Ltac ssprove_match_commut_gen1 :=
   lazymatch goal with
   | |- _ = ?rr =>
@@ -205,7 +216,7 @@ Ltac ssprove_match_commut_gen1 :=
 Ltac ssprove_match_commut_gen :=
   repeat ssprove_match_commut_gen1.
 
-Ltac ssprove_code_link_commute_aux rr :=
+(* Ltac ssprove_code_link_commute_aux rr :=
   (* lazymatch rr with
   | context [ code_link (match _ with _ => _ end) _ ] => *)
     let T := type of rr in
@@ -214,13 +225,17 @@ Ltac ssprove_code_link_commute_aux rr :=
     replace rr with tm ; subst tm ; [| solve [ ssprove_match_commut_gen ] ]
   (* | _ => idtac
   end. *)
-  .
+  . *)
 
 Ltac ssprove_code_link_commute :=
   lazymatch goal with
-  | |- ⊢ ⦃ _ ⦄ ?ll ≈ ?rr ⦃ _ ⦄ =>
-    ssprove_code_link_commute_aux ll ;
-    ssprove_code_link_commute_aux rr
+  | |- ⊢ ⦃ _ ⦄ _ ≈ _ ⦃ _ ⦄ =>
+    (* ssprove_code_link_commute_aux ll ;
+    ssprove_code_link_commute_aux rr *)
+    eapply rel_jdg_replace ; [
+    | solve [ ssprove_match_commut_gen ]
+    | solve [ ssprove_match_commut_gen ]
+    ]
   | |- _ =>
     fail "ssprove_code_link_commute: goal should be syntactic judgment"
   end.

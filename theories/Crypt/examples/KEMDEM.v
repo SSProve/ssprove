@@ -674,32 +674,16 @@ Section KEMDEM.
     (* We go to the relation logic using equality as invariant. *)
     eapply eq_rel_perf_ind_eq.
     simplify_eq_rel m.
-    all: ssprove_code_link_commute. (* Still doesn't work for bind?? *)
-    (* Also might be good to also deal with let, and maybe match/let + refl?
+    all: ssprove_code_link_commute.
+    (* Might be good to also deal with let, and maybe match/let + refl?
       In fact let like this should be a match? Otherwise it would simpl away?
     *)
-    (* I'll keep it as debug *)
-    (* 2:{
-      lazymatch goal with
-      | |- ⊢ ⦃ _ ⦄ ?ll ≈ ?rr ⦃ _ ⦄ =>
-        (* ssprove_code_link_commute_aux ll  *)
-        (* ssprove_code_link_commute_aux rr *)
-
-        let T := type of ll in
-      let tm := fresh "tm" in
-      evar (tm : T) ;
-      replace ll with tm ; subst tm (* ; [| solve [ ssprove_match_commut_gen ] ] *)
-      | |- _ =>
-        fail "ssprove_code_link_commute: goal should be syntactic judgment"
-      end.
-      2:{
-        ssprove_match_commut_gen.
-        ssprove_match_commut_gen1.
-      }
-      admit.
-    } *)
-    (* all: ssprove_code_link_commute. *)
     all: simpl.
+    all: simplify_linking.
+    (* Is it desirable that we have to do it again?
+      Maybe these two should be merged?
+    *)
+    all: ssprove_code_link_commute.
     all: simplify_linking.
     (* We are now in the realm of program logic *)
     (* - setoid_rewrite code_link_bind. cbn.
