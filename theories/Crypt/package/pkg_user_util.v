@@ -126,7 +126,7 @@ Ltac simplify_eq_rel m :=
   unfold get_op_default ;
   lookup_op_squeeze ;
   lookup_op_squeeze ;
-  cbn.
+  simpl.
 
 Lemma code_link_assert :
   ∀ b p,
@@ -198,9 +198,9 @@ Ltac ssprove_match_commut_gen1 :=
       | eapply functional_extensionality with (f := λ x', _) ; intro x'
       ]
     | code_link (#assert ?b as x ;; _) =>
-      rewrite code_link_assertD ; simpl
+      rewrite code_link_assertD ; cbn - [lookup_op]
     | code_link (x ← _ ;; _) _ =>
-      rewrite code_link_bind ; simpl
+      rewrite code_link_bind ; cbn - [lookup_op]
     | code_link (assert _) _ =>
       rewrite code_link_assert
     | code_link (match ?x with _ => _ end) _ =>
@@ -255,7 +255,7 @@ Ltac ssprove_code_link_commute :=
 
 Ltac simplify_linking :=
   repeat chUniverse_eqP_handle ;
-  cbn.
+  simpl.
 
 (** Working in the program logic *)
 

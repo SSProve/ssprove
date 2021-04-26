@@ -677,11 +677,14 @@ Section KEMDEM.
     all: ssprove_code_link_commute.
     (* Might be good to also deal with let, and maybe match/let + refl?
       In fact let like this should be a match? Otherwise it would simpl away?
+      This let/refl pattern seems to be coming from '(x,y) ← KEM_kgen,
+      but why??
     *)
     all: simpl.
     all: simplify_linking.
     (* Is it desirable that we have to do it again?
       Maybe these two should be merged?
+      It's seems unavoidable, considering we link with a composition.
     *)
     all: ssprove_code_link_commute.
     all: simplify_linking.
