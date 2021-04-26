@@ -7,7 +7,7 @@
     Will deal with a goal of the form [eq_up_to_inv] by reducing it to
     syntactical judgments about its procedures.
 
-  - [ssprove_code_link_commute]
+  - [ssprove_code_link_simpl]
     Will operate on a syntactic judgment [⊢ ⦃ pre ⦄ l ≈ r ⦃ post ⦄] and deal
     with code linking apearing in [l] and/or [r], in particular making it
     commute with pattern-matching.
@@ -229,28 +229,15 @@ Ltac ssprove_match_commut_gen1 :=
 Ltac ssprove_match_commut_gen :=
   repeat ssprove_match_commut_gen1.
 
-(* Ltac ssprove_code_link_commute_aux rr :=
-  (* lazymatch rr with
-  | context [ code_link (match _ with _ => _ end) _ ] => *)
-    let T := type of rr in
-    let tm := fresh "tm" in
-    evar (tm : T) ;
-    replace rr with tm ; subst tm ; [| solve [ ssprove_match_commut_gen ] ]
-  (* | _ => idtac
-  end. *)
-  . *)
-
-Ltac ssprove_code_link_commute :=
+Ltac ssprove_code_link_simpl :=
   lazymatch goal with
   | |- ⊢ ⦃ _ ⦄ _ ≈ _ ⦃ _ ⦄ =>
-    (* ssprove_code_link_commute_aux ll ;
-    ssprove_code_link_commute_aux rr *)
     eapply rel_jdg_replace ; [
     | solve [ ssprove_match_commut_gen ]
     | solve [ ssprove_match_commut_gen ]
     ]
   | |- _ =>
-    fail "ssprove_code_link_commute: goal should be syntactic judgment"
+    fail "ssprove_code_link_simpl: goal should be syntactic judgment"
   end.
 
 Ltac simplify_linking :=

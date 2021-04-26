@@ -684,10 +684,10 @@ Section KEMDEM.
     (* We go to the relation logic using equality as invariant. *)
     eapply eq_rel_perf_ind_eq.
     simplify_eq_rel m.
-    all: ssprove_code_link_commute.
+    all: ssprove_code_link_simpl.
     all: simpl.
     all: simplify_linking.
-    all: ssprove_code_link_commute.
+    all: ssprove_code_link_simpl.
     (* We are now in the realm of program logic *)
     - setoid_rewrite code_link_scheme. 2: ssprove_valid.
       (* TODO Update swap and head tactics to deal with assert
@@ -708,7 +708,6 @@ Section KEMDEM.
         code_link of bind??
       *)
       admit.
-    (* ssprove_code_link_commute can probably become some code_link_simplify. *)
   Admitted.
 
   Lemma PKE_CCA_perf_true :

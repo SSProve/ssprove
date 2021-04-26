@@ -265,7 +265,7 @@ Proof.
   (* We go to the relation logic using equality as invariant. *)
   eapply eq_rel_perf_ind_eq.
   simplify_eq_rel m.
-  ssprove_code_link_commute. simpl.
+  ssprove_code_link_simpl. simpl.
   simplify_linking.
   (* We are now in the realm of program logic *)
   ssprove_same_head_r. intro count.
@@ -375,7 +375,7 @@ Proof.
   (* We go to the relation logic using equality as invariant. *)
   eapply eq_rel_perf_ind_eq.
   simplify_eq_rel m.
-  ssprove_code_link_commute. simpl.
+  ssprove_code_link_simpl. simpl.
   simplify_linking.
   (* We are now in the realm of program logic *)
   ssprove_same_head_r. intro count.
