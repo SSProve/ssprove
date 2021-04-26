@@ -194,9 +194,14 @@ Section KEMDEM.
     : typeclass_instances packages.
 
   (* TODO Find a way to make this not mandatory *)
-  Opaque mkfmap mkdef.
+  (* Opaque mkfmap mkdef. *)
+  (* Instead, as we are in a section, we can safely kill the obligation tactic.
+    It will restored after we leave the section.
+  *)
+  Obligation Tactic := idtac.
+  Set Equations Transparent.
 
-  #[program] Definition KEM (b : bool) : package KEM_loc (KEM_in b) KEM_out :=
+  Definition KEM (b : bool) : package KEM_loc (KEM_in b) KEM_out :=
     [package
       def #[ KEMGEN ] (_ : 'unit) : 'key {
         sk ← get sk_loc ;;
@@ -238,11 +243,6 @@ Section KEMDEM.
         ret k
       }
     ].
-  Next Obligation.
-    ssprove_valid.
-    - destruct x2. ssprove_valid.
-    - destruct x1. ssprove_valid.
-  Qed.
 
   (** KEM-CCA game *)
 
@@ -258,53 +258,43 @@ Section KEMDEM.
   Definition KEM_CCA_loc :=
     KEM_loc :|: KEY_loc.
 
-  #[program] Definition KEM_CCA_pkg b :
+  Equations? KEM_CCA_pkg b :
     package KEM_CCA_loc [interface] KEM_CCA_out :=
+    KEM_CCA_pkg b :=
     {package (par (KEM b) (ID IGET)) ∘ KEY }.
-  Next Obligation.
+  Proof.
     ssprove_valid.
-    6: destruct x2. 6: ssprove_valid.
-    11: destruct x1. 11: ssprove_valid.
-    15:{
-      unfold KEM_CCA_out. rewrite -fset_cat. simpl.
-      apply fsubsetxx.
-    }
-    14:{
-      instantiate (1 := KEM_in b).
-      destruct b. all: unfold KEM_in.
+    - (* Maybe we can automate this better *)
+      apply/fdisjointP.
+      intros n h.
+      rewrite domm_mkfmap in h. simpl in h.
+      rewrite domm_ID_fset. rewrite in_fset. simpl.
+      invert_in_seq h.
+      all: reflexivity.
+    - erewrite fsetU0. apply fsubsetxx.
+    - destruct b.
+      all: unfold KEM_in.
       all: unfold ISET, IGET.
       all: rewrite -fset_cat. all: simpl.
-      - apply /fsubsetP. simpl.
+      + apply /fsubsetP. simpl.
         intros n h. rewrite in_fset. rewrite in_fset in h.
         invert_in_seq h.
-        + rewrite in_cons. apply/orP. right. rewrite in_cons.
+        * rewrite in_cons. apply/orP. right. rewrite in_cons.
           apply/orP. left. apply eqxx.
-        + rewrite in_cons. apply/orP. right.
+        * rewrite in_cons. apply/orP. right.
           rewrite in_cons. apply/orP. right.
           rewrite mem_seq1. apply eqxx.
-      - apply /fsubsetP. simpl.
+      + apply /fsubsetP. simpl.
         intros n h. rewrite in_fset. rewrite in_fset in h.
         invert_in_seq h.
-        + rewrite in_cons. apply/orP. left. apply eqxx.
-        + rewrite in_cons. apply/orP. right.
+        * rewrite in_cons. apply/orP. left. apply eqxx.
+        * rewrite in_cons. apply/orP. right.
           rewrite in_cons. apply/orP. right.
           rewrite mem_seq1. apply eqxx.
-    }
-    7,9: unfold KEM_in, ISET, IGEN.
-    20: apply fsubsetUr.
-    19: apply fsubsetUl.
-    13:{ erewrite fsetU0. apply fsubsetxx. }
-    all: ssprove_valid.
-    2-10: unfold KEM_loc.
-    11-15: unfold KEY_loc.
-    all: ssprove_valid.
-    (* Maybe we can automate this better *)
-    apply/fdisjointP.
-    intros n h.
-    rewrite domm_mkfmap in h. simpl in h.
-    rewrite domm_ID_fset. rewrite in_fset. simpl.
-    invert_in_seq h.
-    all: reflexivity.
+    - unfold KEM_CCA_out. rewrite -fset_cat. simpl.
+      apply fsubsetxx.
+    - apply fsubsetUl.
+    - apply fsubsetUr.
   Qed.
 
   Definition KEM_CCA : loc_GamePair KEM_CCA_out :=
@@ -367,38 +357,37 @@ Section KEMDEM.
   Definition DEM_CCA_loc :=
     DEM_loc :|: KEY_loc.
 
-  #[program] Definition DEM_CCA_pkg b :
+  Equations? DEM_CCA_pkg b :
     package DEM_CCA_loc [interface] DEM_CCA_out :=
+    DEM_CCA_pkg b :=
     {package (par (DEM b) (ID IGEN)) ∘ KEY }.
-  Next Obligation.
+  Proof.
     ssprove_valid.
-    10:{
-      unfold DEM_CCA_out, IGEN.
+    - (* Maybe we can automate this better *)
+      apply/fdisjointP.
+      intros n h.
+      rewrite domm_mkfmap in h. simpl in h.
+      rewrite domm_ID_fset. rewrite in_fset. simpl.
+      invert_in_seq h.
+      all: reflexivity.
+    - erewrite fsetU0. apply fsubsetxx.
+    - apply/fsubsetP.
+      rewrite -fset_cat. simpl.
+      unfold KEY_out.
+      intros n h. rewrite in_fset. rewrite in_fset in h.
+      invert_in_seq h.
+      + rewrite in_cons. apply/orP. right.
+        rewrite in_cons. apply/orP. right.
+        rewrite in_cons. apply/orP. left.
+        apply eqxx.
+      + rewrite in_cons. apply/orP. left.
+        apply eqxx.
+    - unfold DEM_CCA_out, IGEN.
       rewrite fsetUC.
       rewrite -fset_cat. simpl.
       apply fsubsetxx.
-    }
-    9:{
-      rewrite fsetUC.
-      instantiate (1 := fset [:: _ ; _ ]).
-      rewrite -fset_cat. simpl.
-      apply fsubsetxx.
-    }
-    15: apply fsubsetUr.
-    14: apply fsubsetUl.
-    8:{ erewrite fsetU0. apply fsubsetxx. }
-    all: ssprove_valid.
-    2-5: unfold DEM_loc.
-    6-10: unfold KEY_loc.
-    all: ssprove_valid.
-    (* Maybe we can automate this better *)
-    apply/fdisjointP.
-    intros n h.
-    rewrite domm_mkfmap in h. simpl in h.
-    rewrite domm_ID_fset. rewrite in_fset. simpl.
-    (* TODO Rename this guy into invert_seq_in *)
-    invert_in_seq h.
-    all: reflexivity.
+    - apply fsubsetUl.
+    - apply fsubsetUr.
   Qed.
 
   Definition DEM_CCA : loc_GamePair DEM_CCA_out :=
@@ -418,7 +407,7 @@ Section KEMDEM.
       val #[ PKDEC ] : 'elen × 'clen → 'plain
     ].
 
-  #[program] Definition PKE_CCA_pkg (ζ : PKE_scheme) b :
+  Definition PKE_CCA_pkg (ζ : PKE_scheme) b :
     package PKE_loc [interface] PKE_CCA_out :=
     [package
       def #[ PKGEN ] (_ : 'unit) : 'key {
@@ -453,11 +442,6 @@ Section KEMDEM.
         ret m
       }
     ].
-  Next Obligation.
-    ssprove_valid.
-    (* TODO A hint to deal with this case *)
-    destruct x1. ssprove_valid.
-  Qed.
 
   Definition PKE_CCA (ζ : PKE_scheme) : loc_GamePair PKE_CCA_out :=
     λ b,
@@ -482,7 +466,7 @@ Section KEMDEM.
   Definition MOD_CCA_out :=
     PKE_CCA_out.
 
-  #[program] Definition MOD_CCA (ζ : PKE_scheme) :
+  Definition MOD_CCA (ζ : PKE_scheme) :
     package MOD_CCA_loc MOD_CCA_in MOD_CCA_out :=
     [package
       def #[ PKGEN ] (_ : 'unit) : 'key {
@@ -524,13 +508,9 @@ Section KEMDEM.
         )
       }
     ].
-  Next Obligation.
-    ssprove_valid.
-    destruct x. ssprove_valid.
-  Qed.
 
   (** PKE scheme instance *)
-  #[program] Definition KEM_DEM : PKE_scheme := {|
+  Definition KEM_DEM : PKE_scheme := {|
     PKE_kgen := η.(KEM_kgen) ;
     PKE_enc := λ pk m, {code
       '(k, c₁) ← η.(KEM_encap) pk ;;
@@ -544,12 +524,6 @@ Section KEMDEM.
       ret m
     }
   |}.
-  Next Obligation.
-    ssprove_valid. destruct x. ssprove_valid.
-  Qed.
-  Next Obligation.
-    ssprove_valid.
-  Qed.
 
   (** Single key lemma *)
 
@@ -648,13 +622,63 @@ Section KEMDEM.
 
   (** Perfect indistinguishability with PKE-CCA *)
 
-  #[program] Definition Aux b : package PKE_loc [interface] PKE_CCA_out :=
-    {package (MOD_CCA KEM_DEM ∘ par (KEM b) (DEM b) ∘ KEY) }.
-  Next Obligation.
-    ssprove_valid.
-  Admitted.
+  Definition Aux_loc :=
+    MOD_CCA_loc :|: KEM_loc :|: DEM_loc :|: KEY_loc.
 
-  Transparent mkfmap mkdef.
+  Equations? Aux b : package Aux_loc [interface] PKE_CCA_out :=
+    Aux b :=
+    {package (MOD_CCA KEM_DEM ∘ par (KEM b) (DEM b) ∘ KEY) }.
+  Proof.
+    ssprove_valid.
+    - (* Maybe we can automate this better *)
+      apply/fdisjointP.
+      intros n h.
+      rewrite domm_mkfmap in h. simpl in h.
+      rewrite domm_mkfmap. simpl.
+      invert_in_seq h.
+      all: reflexivity.
+    - apply fsubsetxx.
+    - destruct b.
+      all: unfold KEM_in, DEM_in, KEY_out.
+      all: unfold ISET, IGET, IGEN.
+      all: rewrite -fset_cat. all: simpl.
+      + apply/fsubsetP. intros n hn.
+        rewrite in_fset. rewrite in_fset in hn.
+        invert_in_seq hn.
+        * rewrite in_cons. apply/orP. right.
+          rewrite in_cons. apply/orP. left.
+          apply eqxx.
+        * rewrite in_cons. apply/orP. right.
+          rewrite in_cons. apply/orP. right.
+          rewrite in_cons. apply/orP. left.
+          apply eqxx.
+      + apply/fsubsetP. intros n hn.
+        rewrite in_fset. rewrite in_fset in hn.
+        invert_in_seq hn.
+        * rewrite in_cons. apply/orP. left.
+          apply eqxx.
+        * rewrite in_cons. apply/orP. right.
+          rewrite in_cons. apply/orP. right.
+          rewrite in_cons. apply/orP. left.
+          apply eqxx.
+    - unfold MOD_CCA_in, KEM_out, DEM_out.
+      rewrite -fset_cat. simpl.
+      apply fsubsetxx.
+    - instantiate (1 := Aux_loc).
+      unfold Aux_loc.
+      eapply fsubset_trans. 1: eapply fsubsetUr.
+      eapply fsubset_trans. 1: eapply fsubsetUl.
+      rewrite !fsetUA. apply fsubsetxx.
+    - unfold Aux_loc.
+      eapply fsubset_trans. 1: eapply fsubsetUr.
+      apply fsubsetxx.
+    - unfold Aux_loc.
+      rewrite -!fsetUA.
+      eapply fsubsetUl.
+    - apply fsubsetxx.
+  Qed.
+
+  (* Transparent mkfmap mkdef. *)
 
   Lemma PKE_CCA_perf_false :
       (PKE_CCA KEM_DEM false) ≈₀ Aux false.
@@ -669,6 +693,8 @@ Section KEMDEM.
       In fact let like this should be a match? Otherwise it would simpl away?
       This let/refl pattern seems to be coming from '(x,y) ← KEM_kgen,
       but why??
+      => The culprit is program! Of course, it messes things up by adding
+      equalities everwhere...
     *)
     all: simpl.
     all: simplify_linking.
@@ -677,7 +703,7 @@ Section KEMDEM.
       It's seems unavoidable, considering we link with a composition.
     *)
     all: ssprove_code_link_commute.
-    all: simplify_linking.
+    (* all: simplify_linking. *)
     (* We are now in the realm of program logic *)
     (* - setoid_rewrite code_link_bind. cbn.
       simplify_linking.
@@ -721,8 +747,9 @@ Section KEMDEM.
     rewrite !GRing.addrA in ineq.
     eapply ler_trans. 1: exact ineq.
     clear ineq.
-    rewrite PKE_CCA_perf_false. 2,3: auto.
-    rewrite PKE_CCA_perf_true. 2,3: auto.
+    (* Aux_loc is problematic here, can I make it equal to PKE_loc? *)
+    rewrite PKE_CCA_perf_false. 2: auto. 2: admit.
+    rewrite PKE_CCA_perf_true. 2: admit. 2: auto.
     rewrite GRing.addr0. rewrite GRing.add0r.
     (* Now we massage the expression to apply the single key lemma *)
     eapply ler_trans.
@@ -783,6 +810,6 @@ Section KEMDEM.
       all: rewrite in_fset.
       all: invert_in_seq hx.
       all: reflexivity.
-  Qed.
+  Admitted.
 
 End KEMDEM.
