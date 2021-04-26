@@ -721,11 +721,12 @@ Section KEMDEM.
     ∀ LA A,
       ValidPackage LA PKE_CCA_out A_export A →
       fdisjoint LA PKE_loc →
+      fdisjoint LA Aux_loc → (* Do we really need this? *)
       Advantage (PKE_CCA KEM_DEM) A <=
       Advantage KEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (ID KEM_out) (DEM true)) +
       Advantage DEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (KEM false) (ID DEM_out)).
   Proof.
-    intros LA A hA hd.
+    intros LA A hA hA' hd.
     rewrite Advantage_E.
     pose proof (
       Advantage_triangle_chain (PKE_CCA KEM_DEM false) [::
@@ -738,8 +739,8 @@ Section KEMDEM.
     eapply ler_trans. 1: exact ineq.
     clear ineq.
     (* Aux_loc is problematic here, can I make it equal to PKE_loc? *)
-    rewrite PKE_CCA_perf_false. 2: auto. 2: admit.
-    rewrite PKE_CCA_perf_true. 2: admit. 2: auto.
+    rewrite PKE_CCA_perf_false. 2,3: auto.
+    rewrite PKE_CCA_perf_true. 2,3: auto.
     rewrite GRing.addr0. rewrite GRing.add0r.
     (* Now we massage the expression to apply the single key lemma *)
     eapply ler_trans.
@@ -800,6 +801,6 @@ Section KEMDEM.
       all: rewrite in_fset.
       all: invert_in_seq hx.
       all: reflexivity.
-  Admitted.
+  Qed.
 
 End KEMDEM.
