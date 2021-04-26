@@ -48,6 +48,12 @@ Qed.
 
 Section KEMDEM.
 
+  (** As we are in a section, we can safely kill the obligation tactic.
+      It will restored after we leave the section.
+  *)
+  Obligation Tactic := idtac.
+  Set Equations Transparent.
+
   (** In the SSP paper, we have λ.
       key_length would 2^λ because we do not use bitstrings.
   *)
@@ -192,14 +198,6 @@ Section KEMDEM.
   Hint Extern 10 (ValidCode ?L ?I ?c.(prog)) =>
     eapply valid_scheme ; eapply c.(prog_valid)
     : typeclass_instances packages.
-
-  (* TODO Find a way to make this not mandatory *)
-  (* Opaque mkfmap mkdef. *)
-  (* Instead, as we are in a section, we can safely kill the obligation tactic.
-    It will restored after we leave the section.
-  *)
-  Obligation Tactic := idtac.
-  Set Equations Transparent.
 
   Definition KEM (b : bool) : package KEM_loc (KEM_in b) KEM_out :=
     [package
@@ -678,8 +676,6 @@ Section KEMDEM.
     - apply fsubsetxx.
   Qed.
 
-  (* Transparent mkfmap mkdef. *)
-
   Lemma PKE_CCA_perf_false :
       (PKE_CCA KEM_DEM false) ≈₀ Aux false.
       (* (MOD_CCA KEM_DEM ∘ par (KEM b) (DEM b) ∘ KEY). *)
@@ -689,19 +685,8 @@ Section KEMDEM.
     eapply eq_rel_perf_ind_eq.
     simplify_eq_rel m.
     all: ssprove_code_link_commute.
-    (* Might be good to also deal with let, and maybe match/let + refl?
-      In fact let like this should be a match? Otherwise it would simpl away?
-      This let/refl pattern seems to be coming from '(x,y) ← KEM_kgen,
-      but why??
-      => The culprit is program! Of course, it messes things up by adding
-      equalities everwhere...
-    *)
     all: simpl.
     all: simplify_linking.
-    (* Is it desirable that we have to do it again?
-      Maybe these two should be merged?
-      It's seems unavoidable, considering we link with a composition.
-    *)
     all: ssprove_code_link_commute.
     (* all: simplify_linking. *)
     (* We are now in the realm of program logic *)
