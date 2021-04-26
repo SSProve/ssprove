@@ -676,6 +676,24 @@ Section KEMDEM.
     - apply fsubsetxx.
   Qed.
 
+  (* TODO MOVE *)
+  (* Could be more general with no fset0 for locations *)
+  Lemma code_link_scheme :
+    ∀ A c p,
+      @ValidCode fset0 [interface] A c →
+      code_link c p = c.
+  Proof.
+    intros A c p h.
+    induction h.
+    - reflexivity.
+    - eapply fromEmpty. rewrite fset0E. eauto.
+    - simpl. f_equal. apply functional_extensionality.
+      intro. eauto.
+    - simpl. f_equal. eauto.
+    - simpl. f_equal. apply functional_extensionality.
+      intro. eauto.
+  Qed.
+
   Lemma PKE_CCA_perf_false :
       (PKE_CCA KEM_DEM false) ≈₀ Aux false.
       (* (MOD_CCA KEM_DEM ∘ par (KEM b) (DEM b) ∘ KEY). *)
@@ -688,21 +706,27 @@ Section KEMDEM.
     all: simpl.
     all: simplify_linking.
     all: ssprove_code_link_commute.
-    (* all: simplify_linking. *)
     (* We are now in the realm of program logic *)
-    (* - setoid_rewrite code_link_bind. cbn.
-      simplify_linking.
-      setoid_rewrite code_link_assert.
-      setoid_rewrite code_link_bind.
-      setoid_rewrite code_link_assert.
-      setoid_rewrite code_link_bind. *)
-      (* We have again this erefl that appears because of assertD
-        if I cannot prevent them from appearing, then I should deal with
-        them in a better way. The best would be to bypass them by treating
-        assertD as a special case, don't know if possible.
-
-        ssprove_code_link_commute can probably become some code_link_simplify.
+    - setoid_rewrite code_link_scheme. 2: ssprove_valid.
+      (* TODO Update swap and head tactics to deal with assert
+        Should behave as sample.
+        Otherwise looks ok.
       *)
+      admit.
+    - (* TODO Has the code_link vs #assert not be triggered because it's
+        not eta-expanded?
+        Might be worth it to just have a special case to test before going
+        full debug.
+        Also it seems we still have some lookup_op left.
+      *)
+      simpl.
+      simplify_linking.
+      admit.
+    - (* TODO code_link is also not fully simplified, why do we have
+        code_link of bind??
+      *)
+      admit.
+    (* ssprove_code_link_commute can probably become some code_link_simplify. *)
   Admitted.
 
   Lemma PKE_CCA_perf_true :
