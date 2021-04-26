@@ -676,24 +676,6 @@ Section KEMDEM.
     - apply fsubsetxx.
   Qed.
 
-  (* TODO MOVE *)
-  (* Could be more general with no fset0 for locations *)
-  Lemma code_link_scheme :
-    ∀ A c p,
-      @ValidCode fset0 [interface] A c →
-      code_link c p = c.
-  Proof.
-    intros A c p h.
-    induction h.
-    - reflexivity.
-    - eapply fromEmpty. rewrite fset0E. eauto.
-    - simpl. f_equal. apply functional_extensionality.
-      intro. eauto.
-    - simpl. f_equal. eauto.
-    - simpl. f_equal. apply functional_extensionality.
-      intro. eauto.
-  Qed.
-
   Lemma PKE_CCA_perf_false :
       (PKE_CCA KEM_DEM false) ≈₀ Aux false.
       (* (MOD_CCA KEM_DEM ∘ par (KEM b) (DEM b) ∘ KEY). *)

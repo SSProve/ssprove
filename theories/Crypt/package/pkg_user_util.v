@@ -400,3 +400,20 @@ Ltac ssprove_swap_lhs n :=
   invert_interface_in h₁ ;
   chUniverse_eq_prove
   : typeclass_instances packages.
+
+(* Could be more general with no fset0 for locations *)
+Lemma code_link_scheme :
+  ∀ A c p,
+    @ValidCode fset0 [interface] A c →
+    code_link c p = c.
+Proof.
+  intros A c p h.
+  induction h.
+  - reflexivity.
+  - eapply fromEmpty. rewrite fset0E. eauto.
+  - simpl. f_equal. apply functional_extensionality.
+    intro. eauto.
+  - simpl. f_equal. eauto.
+  - simpl. f_equal. apply functional_extensionality.
+    intro. eauto.
+Qed.
