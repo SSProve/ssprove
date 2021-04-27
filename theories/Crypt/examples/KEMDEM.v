@@ -695,6 +695,7 @@ Section KEMDEM.
         Should behave as sample.
         Otherwise looks ok.
       *)
+      (* ssprove_swap_rhs 1%N. *)
       admit.
     - (* Worth asking where this #assert without as come from. *)
       (* Two binds did not disappear, it would be nice though.

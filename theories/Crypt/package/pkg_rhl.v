@@ -2788,3 +2788,16 @@ Proof.
     eapply hpre in hh. discriminate.
   - eapply r_fail.
 Qed.
+
+(* Simpler version for same_head *)
+Lemma r_assertD_same :
+  ∀ (A : chUniverse) b (pre : precond) (post : postcond A A) k₀ k₁,
+    (∀ e, ⊢ ⦃ pre ⦄ k₀ e ≈ k₁ e ⦃ post ⦄) →
+    ⊢ ⦃ pre ⦄ #assert b as x ;; k₀ x ≈ #assert b as x ;; k₁ x ⦃ post ⦄.
+Proof.
+  intros A b pre post k₀ k₁ h.
+  eapply r_assertD.
+  - reflexivity.
+  - intros e₀ e₁. assert (e₀ = e₁) by eapply eq_irrelevance. subst.
+    eapply h.
+Qed.

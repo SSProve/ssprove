@@ -162,6 +162,9 @@ Proof.
 Qed.
 
 (* Sadly this is not the case... *)
+(* Maybe we should not drop the continuation and just keep it under
+  absurd context?
+*)
 (* Lemma bind_assertD :
   ∀ (A B : chUniverse) b k1 (k2 : _ → raw_code B),
     (x ← (@assertD A b (λ z, k1 z)) ;; k2 x) =
@@ -270,6 +273,10 @@ Ltac cmd_bind_simpl_once :=
 Ltac cmd_bind_simpl :=
   repeat cmd_bind_simpl_once.
 
+(* No clear way of having cmd_assertD *)
+(* Definition cmd_assertD {A : chUniverse} (b : bool) : command A :=
+  (if b as b' return b = b' → raw_code A then k else λ _, fail) erefl. *)
+
 (* Right-biased application of rsame_head *)
 Ltac ssprove_same_head_r :=
   lazymatch goal with
@@ -283,6 +290,8 @@ Ltac ssprove_same_head_r :=
       eapply (rsame_head_cmd (cmd_get ℓ))
     | x ← cmd ?c ;; _ =>
       eapply (rsame_head_cmd c)
+    | @assert ?A ?b _ =>
+      eapply (r_assertD_same A b)
     | _ => fail "No head found"
     end
   | |- _ => fail "The goal should be a syntactic judgment"
