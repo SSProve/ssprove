@@ -205,22 +205,13 @@ Ltac ssprove_match_commut_gen1 :=
       rewrite code_link_assert
     | code_link (match ?x with _ => _ end) _ =>
       instantiate (1 := ltac:(let _ := type of x in destruct x)) ;
-      destruct x ; cbn - [lookup_op] (* ;
-      lazymatch goal with
-      | |- context [ code_link (match _ with _ => _ end) _ ] =>
-        idtac
-      | |- _ =>
-        reflexivity
-      end *)
+      destruct x ; cbn - [lookup_op]
     | match ?x with _ => _ end =>
       instantiate (1 := ltac:(let _ := type of x in destruct x)) ;
-      destruct x ; cbn - [lookup_op] (* ;
-      lazymatch goal with
-      | |- context [ code_link (match _ with _ => _ end) _ ] =>
-        idtac
-      | |- _ =>
-        reflexivity
-      end *)
+      destruct x ; cbn - [lookup_op]
+    | code_link (let _ := ?x in _) _ =>
+      instantiate (1 := ltac:(let _ := type of x in destruct x)) ;
+      destruct x ; cbn - [lookup_op]
     | let _ := ?x in _ =>
       instantiate (1 := ltac:(let _ := type of x in destruct x)) ;
       destruct x ; cbn - [lookup_op]
