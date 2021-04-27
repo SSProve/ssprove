@@ -708,39 +708,12 @@ Section KEMDEM.
       *)
       ssprove_same_head_r. intro pk.
       admit.
-    - (* TODO code_link is also not fully simplified, why do we have
-        code_link of bind??
+    - (* Sadly, the setoid_rewrite doesn't know how to reach any of the schemes
+        here. It would suggest that using hints to extend code_link_simpl
+        is a good idea. Towards a ssprove_code_simpl then?
+        Better to include simplify_linking first.
       *)
-      (* eapply rel_jdg_replace. 2: reflexivity.
-      2:{
-        ssprove_match_commut_gen1.
-        ssprove_match_commut_gen1. 1: ssprove_match_commut_gen1.
-        ssprove_match_commut_gen1.
-        ssprove_match_commut_gen1. 1: ssprove_match_commut_gen1.
-        ssprove_match_commut_gen1.
-        ssprove_match_commut_gen1.
-        -
-
-          lazymatch goal with
-          | |- _ = ?rr =>
-            lazymatch rr with
-            | @assertD ?A ?b (λ x, _) =>
-              let x' := fresh x in
-              eapply (f_equal (@assertD A b)) ;
-              eapply functional_extensionality with (f := λ x', _) ; intro x'
-            | @assertD ?A ?b ?k =>
-              let x' := fresh "x" in
-              eapply (f_equal (@assertD A b)) ;
-              eapply functional_extensionality with (f := λ x', _) ; intro x'
-            (* | code_link (#assert ?b as x ;; _) _ => *)
-            | code_link (@assertD ?A ?b _) _ =>
-              rewrite (code_link_assertD A) ; cbn - [lookup_op]
-            end
-          end.
-
-        ssprove_match_commut_gen1.
-        -
-      } *)
+      (* setoid_rewrite code_link_scheme. 2: ssprove_valid. *)
       admit.
   Admitted.
 
