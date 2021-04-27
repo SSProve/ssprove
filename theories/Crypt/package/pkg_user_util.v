@@ -7,10 +7,11 @@
     Will deal with a goal of the form [eq_up_to_inv] by reducing it to
     syntactical judgments about its procedures.
 
-  - [ssprove_code_link_simpl]
+  - [ssprove_code_simpl]
     Will operate on a syntactic judgment [⊢ ⦃ pre ⦄ l ≈ r ⦃ post ⦄] and deal
     with code linking apearing in [l] and/or [r], in particular making it
     commute with pattern-matching.
+    It subsumes [simplify_linking] but might not be always necessary.
 
   - [simplify_linking]
     Will deal with residual [chUniverse_eqP] coming from linking.
@@ -114,6 +115,10 @@ Ltac chUniverse_eqP_handle :=
   assert (e = erefl) by eapply uip ;
   subst e.
 
+Ltac simplify_linking :=
+  repeat chUniverse_eqP_handle ;
+  simpl.
+
 Ltac simplify_eq_rel m :=
   let id := fresh "id" in
   let So := fresh "S" in
@@ -192,38 +197,36 @@ Ltac ssprove_match_commut_gen1 :=
       eapply functional_extensionality with (f := λ x', _) ; intro x'
     | x ← ?c ;; _ =>
       let x' := fresh x in
-      (* eapply (f_equal (bind _)) ;
-      eapply functional_extensionality with (f := λ x', _) ; intro x' *)
       eapply bind_cong ; [
       | eapply functional_extensionality with (f := λ x', _) ; intro x'
       ]
     | code_link (@assertD ?A ?b _) _ =>
-      rewrite (code_link_assertD A) ; cbn - [lookup_op]
+      rewrite (code_link_assertD A) ; simpl
     | code_link (x ← _ ;; _) _ =>
-      rewrite code_link_bind ; cbn - [lookup_op]
+      rewrite code_link_bind ; simpl
     | code_link (assert _) _ =>
       rewrite code_link_assert
     | code_link (match ?x with _ => _ end) _ =>
       instantiate (1 := ltac:(let _ := type of x in destruct x)) ;
-      destruct x ; cbn - [lookup_op]
+      destruct x ; simpl
     | match ?x with _ => _ end =>
       instantiate (1 := ltac:(let _ := type of x in destruct x)) ;
-      destruct x ; cbn - [lookup_op]
+      destruct x ; simpl
     | code_link (let _ := ?x in _) _ =>
       instantiate (1 := ltac:(let _ := type of x in destruct x)) ;
-      destruct x ; cbn - [lookup_op]
+      destruct x ; simpl
     | let _ := ?x in _ =>
       instantiate (1 := ltac:(let _ := type of x in destruct x)) ;
-      destruct x ; cbn - [lookup_op]
+      destruct x ; simpl
     | _ =>
       reflexivity
     end
   end.
 
 Ltac ssprove_match_commut_gen :=
-  repeat ssprove_match_commut_gen1.
+  repeat (ssprove_match_commut_gen1 ; simplify_linking).
 
-Ltac ssprove_code_link_simpl :=
+Ltac ssprove_code_simpl :=
   lazymatch goal with
   | |- ⊢ ⦃ _ ⦄ _ ≈ _ ⦃ _ ⦄ =>
     eapply rel_jdg_replace ; [
@@ -231,12 +234,8 @@ Ltac ssprove_code_link_simpl :=
     | solve [ ssprove_match_commut_gen ]
     ]
   | |- _ =>
-    fail "ssprove_code_link_simpl: goal should be syntactic judgment"
+    fail "ssprove_code_simpl: goal should be syntactic judgment"
   end.
-
-Ltac simplify_linking :=
-  repeat chUniverse_eqP_handle ;
-  simpl.
 
 (** Working in the program logic *)
 

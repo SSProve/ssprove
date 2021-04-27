@@ -265,8 +265,8 @@ Proof.
   (* We go to the relation logic using equality as invariant. *)
   eapply eq_rel_perf_ind_eq.
   simplify_eq_rel m.
-  ssprove_code_link_simpl. simpl.
-  simplify_linking.
+  ssprove_code_simpl. simpl.
+  (* simplify_linking. *)
   (* We are now in the realm of program logic *)
   ssprove_same_head_r. intro count.
   ssprove_same_head_r. intros _.
@@ -282,8 +282,7 @@ Proof.
   eapply r_ret. intuition eauto.
   f_equal. f_equal. f_equal.
   rewrite group_prodC. f_equal. simpl.
-  rewrite -expgnE. rewrite -expgnE.
-  rewrite -expgM. reflexivity.
+  apply expgM.
 Qed.
 
 Lemma bijective_expgn :
@@ -375,8 +374,7 @@ Proof.
   (* We go to the relation logic using equality as invariant. *)
   eapply eq_rel_perf_ind_eq.
   simplify_eq_rel m.
-  ssprove_code_link_simpl. simpl.
-  simplify_linking.
+  ssprove_code_simpl.
   (* We are now in the realm of program logic *)
   ssprove_same_head_r. intro count.
   ssprove_same_head_r. intros _.
