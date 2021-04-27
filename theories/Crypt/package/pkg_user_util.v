@@ -161,6 +161,17 @@ Proof.
   - simpl. reflexivity.
 Qed.
 
+(* Sadly this is not the case... *)
+(* Lemma bind_assertD :
+  ∀ (A B : chUniverse) b k1 (k2 : _ → raw_code B),
+    (x ← (@assertD A b (λ z, k1 z)) ;; k2 x) =
+    (@assertD B b (λ z, x ← k1 z ;; k2 x)).
+Proof.
+  intros A B b k1 k2.
+  destruct b.
+  - simpl. reflexivity.
+  - simpl. unfold fail. *)
+
 Lemma bind_cong :
   ∀ A B u v f g,
     u = v →
