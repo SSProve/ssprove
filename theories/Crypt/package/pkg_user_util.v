@@ -13,6 +13,9 @@
     commute with pattern-matching.
     It subsumes [simplify_linking] but might not be always necessary.
 
+    Note: It can be extended by adding hints to the [ssprove_code_simpl]
+    database, with cost lower than [100].
+
   - [simplify_linking]
     Will deal with residual [chUniverse_eqP] coming from linking.
 
@@ -133,6 +136,12 @@ Ltac simplify_eq_rel m :=
   lookup_op_squeeze ;
   simpl.
 
+Create HintDb ssprove_code_simpl.
+
+#[export] Hint Extern 100 =>
+  reflexivity
+  : ssprove_code_simpl.
+
 Lemma code_link_assert :
   ∀ b p,
     code_link (assert b) p = assert b.
@@ -219,7 +228,7 @@ Ltac ssprove_match_commut_gen1 :=
       instantiate (1 := ltac:(let _ := type of x in destruct x)) ;
       destruct x ; simpl
     | _ =>
-      reflexivity
+      typeclasses eauto with ssprove_code_simpl
     end
   end.
 
