@@ -204,6 +204,8 @@ Ltac ssprove_match_commut_gen1 :=
       let x' := fresh x in
       eapply (f_equal (cmd_bind _)) ;
       eapply functional_extensionality with (f := λ x', _) ; intro x'
+    | x ← (y ← _ ;; _) ;; _ =>
+      rewrite bind_assoc
     | x ← ?c ;; _ =>
       let x' := fresh x in
       eapply bind_cong ; [

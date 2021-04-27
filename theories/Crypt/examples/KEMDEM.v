@@ -700,11 +700,17 @@ Section KEMDEM.
       (* Two binds did not disappear, it would be nice though.
          These could be added to code_link_simpl which would become more
          general.
-         It seems we need a rule for bind of assert.
+         It seems we need a rule for bind of assert/assertD.
+
+         It seems I need to apply code_simpl again sadly...
       *)
+      ssprove_code_simpl.
       ssprove_same_head_r. intro pk.
       admit.
-    - admit.
+    - (* ssprove_same_head_r. will loop instead of fail, maybe simple eapply
+        in these tactics? If it doesn't bring regressions.
+      *)
+      admit.
   Admitted.
 
   Lemma PKE_CCA_perf_true :
