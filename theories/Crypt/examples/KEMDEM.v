@@ -688,6 +688,8 @@ Section KEMDEM.
     all: simpl.
     all: simplify_linking.
     all: ssprove_code_link_simpl.
+    all: simpl.
+    all: simplify_linking.
     (* We are now in the realm of program logic *)
     - setoid_rewrite code_link_scheme. 2: ssprove_valid.
       (* TODO Update swap and head tactics to deal with assert
@@ -695,18 +697,50 @@ Section KEMDEM.
         Otherwise looks ok.
       *)
       admit.
-    - (* TODO Has the code_link vs #assert not be triggered because it's
-        not eta-expanded?
-        Might be worth it to just have a special case to test before going
-        full debug.
-        Also it seems we still have some lookup_op left.
+    - (* Worth asking where this #assert without as come from. *)
+      (* Two binds did not disappear, it would be nice though.
+         These could be added to code_link_simpl which would become more
+         general. Could also be merged with simplify_linking.
+         ssprove_match_commut_gen1 could also be handled with hints,
+         where reflexivity is the most expensive hint.
+        (Would be useful to add code_link_scheme, although, it's not clear
+        because we cannot determine ahead of time if something is a scheme.)
       *)
-      simpl.
-      simplify_linking.
+      ssprove_same_head_r. intro pk.
       admit.
     - (* TODO code_link is also not fully simplified, why do we have
         code_link of bind??
       *)
+      (* eapply rel_jdg_replace. 2: reflexivity.
+      2:{
+        ssprove_match_commut_gen1.
+        ssprove_match_commut_gen1. 1: ssprove_match_commut_gen1.
+        ssprove_match_commut_gen1.
+        ssprove_match_commut_gen1. 1: ssprove_match_commut_gen1.
+        ssprove_match_commut_gen1.
+        ssprove_match_commut_gen1.
+        -
+
+          lazymatch goal with
+          | |- _ = ?rr =>
+            lazymatch rr with
+            | @assertD ?A ?b (λ x, _) =>
+              let x' := fresh x in
+              eapply (f_equal (@assertD A b)) ;
+              eapply functional_extensionality with (f := λ x', _) ; intro x'
+            | @assertD ?A ?b ?k =>
+              let x' := fresh "x" in
+              eapply (f_equal (@assertD A b)) ;
+              eapply functional_extensionality with (f := λ x', _) ; intro x'
+            (* | code_link (#assert ?b as x ;; _) _ => *)
+            | code_link (@assertD ?A ?b _) _ =>
+              rewrite (code_link_assertD A) ; cbn - [lookup_op]
+            end
+          end.
+
+        ssprove_match_commut_gen1.
+        -
+      } *)
       admit.
   Admitted.
 

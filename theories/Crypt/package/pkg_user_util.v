@@ -197,8 +197,8 @@ Ltac ssprove_match_commut_gen1 :=
       eapply bind_cong ; [
       | eapply functional_extensionality with (f := λ x', _) ; intro x'
       ]
-    | code_link (#assert ?b as x ;; _) =>
-      rewrite code_link_assertD ; cbn - [lookup_op]
+    | code_link (@assertD ?A ?b _) _ =>
+      rewrite (code_link_assertD A) ; cbn - [lookup_op]
     | code_link (x ← _ ;; _) _ =>
       rewrite code_link_bind ; cbn - [lookup_op]
     | code_link (assert _) _ =>
