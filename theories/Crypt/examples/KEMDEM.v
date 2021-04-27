@@ -676,6 +676,11 @@ Section KEMDEM.
     - apply fsubsetxx.
   Qed.
 
+  (* We extend ssprove_code_simpl to use code_link_scheme *)
+  Hint Extern 50 (_ = code_link _ _) =>
+    rewrite code_link_scheme
+    : ssprove_code_simpl.
+
   Lemma PKE_CCA_perf_false :
       (PKE_CCA KEM_DEM false) ≈₀ Aux false.
       (* (MOD_CCA KEM_DEM ∘ par (KEM b) (DEM b) ∘ KEY). *)
@@ -686,8 +691,7 @@ Section KEMDEM.
     simplify_eq_rel m.
     all: ssprove_code_simpl.
     (* We are now in the realm of program logic *)
-    - setoid_rewrite code_link_scheme. 2: ssprove_valid.
-      (* TODO Update swap and head tactics to deal with assert
+    - (* TODO Update swap and head tactics to deal with assert
         Should behave as sample.
         Otherwise looks ok.
       *)
@@ -695,21 +699,12 @@ Section KEMDEM.
     - (* Worth asking where this #assert without as come from. *)
       (* Two binds did not disappear, it would be nice though.
          These could be added to code_link_simpl which would become more
-         general. Could also be merged with simplify_linking.
-         ssprove_match_commut_gen1 could also be handled with hints,
-         where reflexivity is the most expensive hint.
-        (Would be useful to add code_link_scheme, although, it's not clear
-        because we cannot determine ahead of time if something is a scheme.)
+         general.
+         It seems we need a rule for bind of assert.
       *)
       ssprove_same_head_r. intro pk.
       admit.
-    - (* Sadly, the setoid_rewrite doesn't know how to reach any of the schemes
-        here. It would suggest that using hints to extend code_link_simpl
-        is a good idea. Towards a ssprove_code_simpl then?
-        Better to include simplify_linking first.
-      *)
-      (* setoid_rewrite code_link_scheme. 2: ssprove_valid. *)
-      admit.
+    - admit.
   Admitted.
 
   Lemma PKE_CCA_perf_true :
