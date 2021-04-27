@@ -297,6 +297,25 @@ Ltac ssprove_same_head_r :=
   | |- _ => fail "The goal should be a syntactic judgment"
   end.
 
+(* TODO MOVE *)
+Lemma rswap_assertD_cmd_eq :
+  ∀ A (B : chUniverse) b (c : command A) (r : _ → _ → raw_code B),
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      #assert b as e ;; x ← cmd c ;; r e x ≈
+      x ← cmd c ;; #assert b as e ;; r e x
+    ⦃ eq ⦄.
+Proof.
+  intros A B b c r.
+  destruct b.
+  - simpl. apply rreflexivity_rule.
+  - simpl. (* Sounds true, but how to tackle this?
+      The proof would change a lot if we were to keep the continuation.
+    *)
+Abort.
+
+(* Symmetric of the above. *)
+(* Lemma rswap_cmd_assertD_eq : *)
+
 (* Apply rswap_cmd_eq by reading rhs *)
 (* TODO Guard it by checking post = eq and even pre? *)
 Ltac ssprove_rswap_cmd_eq_rhs :=
