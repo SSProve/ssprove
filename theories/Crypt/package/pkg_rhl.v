@@ -2842,4 +2842,17 @@ Proof.
 Qed.
 
 (* Symmetric of the above. *)
-(* Lemma rswap_cmd_assertD_eq : *)
+Lemma rswap_cmd_assertD_eq :
+  ∀ A (B : chUniverse) b (c : command A) (r : _ → _ → raw_code B),
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      x ← cmd c ;; #assert b as e ;; r e x ≈
+      #assert b as e ;; x ← cmd c ;; r e x
+  ⦃ eq ⦄.
+Proof.
+  intros A B b c r.
+  eapply rsymmetry.
+  eapply rpost_weaken_rule. 1: eapply rpre_weaken_rule.
+  - eapply rswap_assertD_cmd_eq.
+  - simpl. intuition auto.
+  - intros [] []. intuition auto.
+Qed.
