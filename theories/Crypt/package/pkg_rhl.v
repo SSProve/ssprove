@@ -2856,3 +2856,31 @@ Proof.
   - simpl. intuition auto.
   - intros [] []. intuition auto.
 Qed.
+
+(* Unfortunately, this doesn't hold syntactically *)
+Lemma r_bind_assertD :
+  ∀ (A B : chUniverse) b k1 (k2 : _ → raw_code B),
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      x ← (@assertD A b (λ z, k1 z)) ;; k2 x ≈
+      @assertD B b (λ z, x ← k1 z ;; k2 x)
+    ⦃ eq ⦄.
+Proof.
+  intros A B b k1 k2.
+  destruct b.
+  - simpl. apply rreflexivity_rule.
+  - simpl. unfold fail.
+    rewrite rel_jdgE. intros [s₀ s₁]. hnf. intro P. hnf.
+    intros [hpre hpost]. simpl.
+    exists dnull. split.
+    + unfold coupling. split.
+      * unfold lmg. apply distr_ext.
+        intro. unfold dfst. rewrite dlet_null.
+        unfold SDistr_bind. rewrite dlet_null.
+        reflexivity.
+      * unfold rmg. apply distr_ext.
+        intro. unfold dsnd. rewrite dlet_null.
+        unfold SDistr_bind. rewrite dlet_null.
+        reflexivity.
+    + intros [? ?] [? ?]. rewrite dnullE.
+      rewrite mc_1_10.Num.Theory.ltrr. discriminate.
+Qed.
