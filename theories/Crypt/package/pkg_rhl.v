@@ -2802,6 +2802,7 @@ Proof.
     eapply h.
 Qed.
 
+(* TODO Extract subgoals as lemmata *)
 Lemma rswap_assertD_cmd_eq :
   ∀ A (B : chUniverse) b (c : command A) (r : _ → _ → raw_code B),
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
@@ -2813,36 +2814,28 @@ Proof.
   destruct b.
   - simpl. apply rreflexivity_rule.
   - simpl.
-    unfold fail.
-    rewrite rel_jdgE. intros [s₀ s₁]. hnf. intro P. hnf.
-    intros [hpre hpost]. simpl.
-    exists dnull. split.
-    + unfold coupling. split.
-      * unfold lmg. apply distr_ext.
-        intro. unfold dfst. rewrite dlet_null.
-        unfold SDistr_bind. rewrite dlet_null.
-        reflexivity.
-      * unfold rmg. apply distr_ext.
-        intro. unfold dsnd. rewrite dlet_null.
-        rewrite repr_cmd_bind. simpl.
-        pose (t :=
-          θ_dens (θ0 (bindrFree (repr_cmd c) (fun=> ropr (op_iota (B; dnull)) [eta retrFree])) s₁)
-        ).
-        (* unfold θ_dens in t. unfold θ0 in t. simpl in t. *)
-        change (dnull x = t x). subst t.
-        rewrite θ0_vs_bind. simpl.
-        unfold OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
-        unfold FreeProbProg.rFree_obligation_2.
-        rewrite θ_dens_vs_bind'.
-        simpl.
-        unfold SubDistr.SDistr_obligation_2.
-        (* rewrite θ0_of_sample. *)
-        (* unfold SDistr_bind.
-        unfold Theta_dens.unary_theta_dens_obligation_1. *)
-        admit.
-    + intros [? ?] [? ?]. rewrite dnullE.
-      rewrite mc_1_10.Num.Theory.ltrr. discriminate.
-Abort.
+    eapply r_transR.
+    + unfold fail.
+      eapply rswap_cmd_eq with (c₀ := cmd_sample _) (c₁ := c).
+      simpl.
+      eapply rsamplerC'_cmd with (c0 := c).
+    + simpl.
+      unfold fail.
+      rewrite rel_jdgE. intros [s₀ s₁]. hnf. intro P. hnf.
+      intros [hpre hpost]. simpl.
+      exists dnull. split.
+      * unfold coupling. split.
+        --- unfold lmg. apply distr_ext.
+            intro. unfold dfst. rewrite dlet_null.
+            unfold SDistr_bind. rewrite dlet_null.
+            reflexivity.
+        --- unfold rmg. apply distr_ext.
+            intro. unfold dsnd. rewrite dlet_null.
+            unfold SDistr_bind. rewrite dlet_null.
+            reflexivity.
+      * intros [? ?] [? ?]. rewrite dnullE.
+        rewrite mc_1_10.Num.Theory.ltrr. discriminate.
+Qed.
 
 (* Symmetric of the above. *)
 (* Lemma rswap_cmd_assertD_eq : *)
