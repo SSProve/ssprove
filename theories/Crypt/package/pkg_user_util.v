@@ -426,3 +426,53 @@ Proof.
   - simpl. f_equal. apply functional_extensionality.
     intro. eauto.
 Qed.
+
+Lemma rel_jdg_replace_sem :
+  ∀ (A B : choiceType) (pre : precond) (post : postcond A B) l l' r r',
+    ⊢ ⦃ pre ⦄ l ≈ r ⦃ post ⦄ →
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ l ≈ l' ⦃ eq ⦄ →
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ r ≈ r' ⦃ eq ⦄ →
+    ⊢ ⦃ pre ⦄ l' ≈ r' ⦃ post ⦄.
+Proof.
+  intros A B pre post l l' r r' h hl hr.
+  eapply r_transL. 1: eauto.
+  eapply r_transR. 1: eauto.
+  auto.
+Qed.
+
+Ltac ssprove_code_simpl_more_aux :=
+  lazymatch goal with
+  | |- ⊢ ⦃ _ ⦄ _ ≈ ?c ⦃ _ ⦄ =>
+    lazymatch c with
+    | x ← (@assertD ?A _ _) ;; _ =>
+      eapply (r_bind_assertD_sym _ A) (* How do I recover the other chUniverse? *)
+    | x ← sample ?op ;; _ =>
+      let x' := fresh x in
+      ssprove_same_head_r ; intro x'
+    | put ?ℓ := ?v ;; _ =>
+      ssprove_same_head_r ; intro
+    | x ← get ?ℓ ;; _ =>
+      let x' := fresh x in
+      ssprove_same_head_r ; intro x'
+    | x ← cmd ?c ;; _ =>
+      let x' := fresh x in
+      ssprove_same_head_r ; intro x'
+    | @assertD ?A ?b (λ x, _) =>
+      let x' := fresh x in
+      ssprove_same_head_r ; intro x'
+    | _ => eapply rreflexivity_rule
+    end
+  | |- _ => fail "The goal should be a syntactic judgment"
+  end.
+
+Ltac ssprove_code_simpl_more :=
+  lazymatch goal with
+  | |- ⊢ ⦃ _ ⦄ _ ≈ _ ⦃ _ ⦄ =>
+    eapply rel_jdg_replace_sem ; [
+    | solve [ repeat ssprove_code_simpl_more_aux ]
+    | solve [ repeat ssprove_code_simpl_more_aux ]
+    ] ;
+    cmd_bind_simpl ; cbn beta
+  | |- _ =>
+    fail "ssprove_code_simpl_more: goal should be syntactic judgment"
+  end.

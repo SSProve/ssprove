@@ -2884,3 +2884,17 @@ Proof.
     + intros [? ?] [? ?]. rewrite dnullE.
       rewrite mc_1_10.Num.Theory.ltrr. discriminate.
 Qed.
+
+Lemma r_bind_assertD_sym :
+  ∀ (A B : chUniverse) b k1 (k2 : _ → raw_code B),
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      @assertD B b (λ z, x ← k1 z ;; k2 x) ≈
+      x ← (@assertD A b (λ z, k1 z)) ;; k2 x
+    ⦃ eq ⦄.
+Proof.
+  intros A B b k1 k2.
+  eapply rsymmetry. eapply rsym_pre. 1: auto.
+  eapply rpost_weaken_rule.
+  - eapply r_bind_assertD.
+  - intros [] []. auto.
+Qed.
