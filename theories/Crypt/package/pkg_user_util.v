@@ -213,6 +213,12 @@ Ltac ssprove_match_commut_gen1 :=
       eapply functional_extensionality with (f := λ x', _) ; intro x'
     | x ← (y ← _ ;; _) ;; _ =>
       rewrite bind_assoc
+    | x ← (match ?u with _ => _ end) ;; _ =>
+      instantiate (1 := ltac:(let _ := type of u in destruct u)) ;
+      destruct u ; simpl
+    | x ← (let _ := ?u in _) ;; _ =>
+      instantiate (1 := ltac:(let _ := type of u in destruct u)) ;
+      destruct u ; simpl
     | x ← ?c ;; _ =>
       let x' := fresh x in
       eapply bind_cong ; [

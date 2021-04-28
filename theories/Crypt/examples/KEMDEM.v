@@ -693,23 +693,27 @@ Section KEMDEM.
     (* We are now in the realm of program logic *)
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
-      (* Need to also add rules to simplify bind of let/match *)
       (* ssprove_swap_rhs 1%N. *)
       admit.
-    - (* Worth asking where this #assert without as come from. *)
-      (* Two binds did not disappear, it would be nice though.
-         These could be added to code_link_simpl which would become more
-         general.
-         It seems we need a rule for bind of assert/assertD.
-
-         It seems I need to apply code_simpl again sadly...
+    - (* ssprove_code_simpl_more. *)
+      (* The above loops, might be due to unification again...
+        It would be nice to have a surefire way to get the chUniverse for
+        assertD... Maybe with a tactic (CPS?) that traverses the continuation
+        to find the last return if any? Even then, we would not be much better
+        off than when reading the type of bind... If it doesn't unify
+        then we won't find the chElement form...
+        Maybe with a tactic to invert chElement?
+        Or we could at least prevent looping by explicitly having
+        chElement in the unification problem.
       *)
-      ssprove_code_simpl.
+      (* ssprove_code_simpl. *)
       ssprove_same_head_r. intro pk.
+      ssprove_same_head_r. intro pkSome.
+      ssprove_same_head_r. intro c.
+      ssprove_same_head_r. intro cNone.
       admit.
-    - (* ssprove_same_head_r. will loop instead of fail, maybe simple eapply
-        in these tactics? If it doesn't bring regressions.
-      *)
+    - (* ssprove_code_simpl. *) (* Here it seems to compute 'plain away,
+       that's counterproductive! *)
       admit.
   Admitted.
 
