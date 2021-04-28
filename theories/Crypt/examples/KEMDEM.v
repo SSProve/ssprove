@@ -681,6 +681,74 @@ Section KEMDEM.
     rewrite code_link_scheme
     : ssprove_code_simpl.
 
+  (* TODO MOVE *)
+Lemma r_bind_assertD_sym :
+    ∀ (A B : chUniverse) b k1 (k2 : _ → raw_code B),
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      @assertD B b (λ z, x ← k1 z ;; k2 x) ≈
+      x ← (@assertD A b (λ z, k1 z)) ;; k2 x
+    ⦃ eq ⦄.
+Proof.
+  intros A B b k1 k2.
+  eapply rsymmetry. eapply rsym_pre. 1: auto.
+  eapply rpost_weaken_rule.
+  - eapply r_bind_assertD.
+  - intros [] []. auto.
+Qed.
+
+(* TODO MOVE *)
+Lemma rel_jdg_replace_sem :
+  ∀ (A B : choiceType) (pre : precond) (post : postcond A B) l l' r r',
+    ⊢ ⦃ pre ⦄ l ≈ r ⦃ post ⦄ →
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ l ≈ l' ⦃ eq ⦄ →
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ r ≈ r' ⦃ eq ⦄ →
+    ⊢ ⦃ pre ⦄ l' ≈ r' ⦃ post ⦄.
+Proof.
+  intros A B pre post l l' r r' h hl hr.
+  eapply r_transL. 1: eauto.
+  eapply r_transR. 1: eauto.
+  auto.
+Qed.
+
+(* TODO MOVE *)
+Ltac ssprove_code_simpl_more_aux :=
+  lazymatch goal with
+  | |- ⊢ ⦃ _ ⦄ _ ≈ ?c ⦃ _ ⦄ =>
+    lazymatch c with
+    | x ← (@assertD ?A _ _) ;; _ =>
+      eapply (r_bind_assertD_sym _ A) (* How do I recover the other chUniverse? *)
+    | x ← sample ?op ;; _ =>
+      let x' := fresh x in
+      ssprove_same_head_r ; intro x'
+    | put ?ℓ := ?v ;; _ =>
+      ssprove_same_head_r ; intro
+    | x ← get ?ℓ ;; _ =>
+      let x' := fresh x in
+      ssprove_same_head_r ; intro x'
+    | x ← cmd ?c ;; _ =>
+      let x' := fresh x in
+      ssprove_same_head_r ; intro x'
+    | @assertD ?A ?b (λ x, _) =>
+      let x' := fresh x in
+      ssprove_same_head_r ; intro x'
+    | _ => eapply rreflexivity_rule
+    end
+  | |- _ => fail "The goal should be a syntactic judgment"
+  end.
+
+(* TODO MOVE *)
+Ltac ssprove_code_simpl_more :=
+  lazymatch goal with
+  | |- ⊢ ⦃ _ ⦄ _ ≈ _ ⦃ _ ⦄ =>
+    eapply rel_jdg_replace_sem ; [
+    | solve [ repeat ssprove_code_simpl_more_aux ]
+    | solve [ repeat ssprove_code_simpl_more_aux ]
+    ] ;
+    cmd_bind_simpl ; cbn beta
+  | |- _ =>
+    fail "ssprove_code_simpl_more: goal should be syntactic judgment"
+  end.
+
   Lemma PKE_CCA_perf_false :
       (PKE_CCA KEM_DEM false) ≈₀ Aux false.
       (* (MOD_CCA KEM_DEM ∘ par (KEM b) (DEM b) ∘ KEY). *)
@@ -691,20 +759,11 @@ Section KEMDEM.
     simplify_eq_rel m.
     all: ssprove_code_simpl.
     (* We are now in the realm of program logic *)
-    - (* Towards a relational simpl tactic *)
-      eapply r_transR.
-      + ssprove_same_head_r. intro.
-        ssprove_same_head_r. intro.
-        ssprove_same_head_r. intro.
-        eapply rsymmetry. eapply rsym_pre. 1: auto.
-        eapply rpost_weaken_rule.
-        * eapply (r_bind_assertD 'key 'key).
-        * intros [] []. auto.
-      + cmd_bind_simpl. cbn beta.
-        ssprove_code_simpl.
-        (* Need to also add rules to simplify bind of let/match *)
-        (* ssprove_swap_rhs 1%N. *)
-        admit.
+    - ssprove_code_simpl_more.
+      ssprove_code_simpl.
+      (* Need to also add rules to simplify bind of let/match *)
+      (* ssprove_swap_rhs 1%N. *)
+      admit.
     - (* Worth asking where this #assert without as come from. *)
       (* Two binds did not disappear, it would be nice though.
          These could be added to code_link_simpl which would become more
