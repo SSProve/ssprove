@@ -16,6 +16,13 @@
     Note: It can be extended by adding hints to the [ssprove_code_simpl]
     database, with cost lower than [100].
 
+  - [ssprove_code_simpl_more]
+    Applying this tactic will simplify a relational judgment further, by
+    applying relation rules instead of syntactical equalities.
+    For now only useful to re-associate #assert with respect to bind.
+    Might require to be applied several times, and interleaved with
+    [ssprove_code_simpl].
+
   - [simplify_linking]
     Will deal with residual [chUniverse_eqP] coming from linking.
 
