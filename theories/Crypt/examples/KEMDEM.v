@@ -691,11 +691,7 @@ Section KEMDEM.
     simplify_eq_rel m.
     all: ssprove_code_simpl.
     (* We are now in the realm of program logic *)
-    - (* TODO Update swap and head tactics to deal with assert
-        Should behave as sample.
-        Otherwise looks ok.
-      *)
-      (* ssprove_swap_rhs 1%N. *)
+    - (* ssprove_swap_rhs 1%N. *)
       admit.
     - (* Worth asking where this #assert without as come from. *)
       (* Two binds did not disappear, it would be nice though.
