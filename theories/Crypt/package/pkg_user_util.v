@@ -276,7 +276,7 @@ Ltac ssprove_same_head_r :=
       eapply (rsame_head_cmd (cmd_get ℓ))
     | x ← cmd ?c ;; _ =>
       eapply (rsame_head_cmd c)
-    | @assert ?A ?b _ =>
+    | @assertD ?A ?b _ =>
       eapply (r_assertD_same A b)
     | _ => fail "No head found"
     end

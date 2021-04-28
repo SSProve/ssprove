@@ -691,8 +691,20 @@ Section KEMDEM.
     simplify_eq_rel m.
     all: ssprove_code_simpl.
     (* We are now in the realm of program logic *)
-    - (* ssprove_swap_rhs 1%N. *)
-      admit.
+    - (* Towards a relational simpl tactic *)
+      eapply r_transR.
+      + ssprove_same_head_r. intro.
+        ssprove_same_head_r. intro.
+        ssprove_same_head_r. intro.
+        eapply rsymmetry. eapply rsym_pre. 1: auto.
+        eapply rpost_weaken_rule.
+        * eapply (r_bind_assertD 'key 'key).
+        * intros [] []. auto.
+      + cmd_bind_simpl. cbn beta.
+        ssprove_code_simpl.
+        (* Need to also add rules to simplify bind of let/match *)
+        (* ssprove_swap_rhs 1%N. *)
+        admit.
     - (* Worth asking where this #assert without as come from. *)
       (* Two binds did not disappear, it would be nice though.
          These could be added to code_link_simpl which would become more
