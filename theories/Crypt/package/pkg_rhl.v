@@ -2802,7 +2802,32 @@ Proof.
     eapply h.
 Qed.
 
-(* TODO Extract subgoals as lemmata *)
+Lemma r_cmd_fail :
+  ∀ A (B : chUniverse) (c : command A) (pre : precond) (post : postcond B B),
+    ⊢ ⦃ pre ⦄ fail ≈ c ;' fail ⦃ post ⦄.
+Proof.
+  intros A B c pre post.
+  eapply r_transR.
+  - unfold fail.
+    eapply rswap_cmd_eq with (c₀ := cmd_sample _) (c₁ := c).
+    eapply rsamplerC'_cmd with (c0 := c).
+  - simpl. unfold fail.
+    rewrite rel_jdgE. intros [s₀ s₁]. hnf. intro P. hnf.
+    intros [hpre hpost]. simpl.
+    exists dnull. split.
+    + unfold coupling. split.
+      * unfold lmg. apply distr_ext.
+        intro. unfold dfst. rewrite dlet_null.
+        unfold SDistr_bind. rewrite dlet_null.
+        reflexivity.
+      * unfold rmg. apply distr_ext.
+        intro. unfold dsnd. rewrite dlet_null.
+        unfold SDistr_bind. rewrite dlet_null.
+        reflexivity.
+    + intros [? ?] [? ?]. rewrite dnullE.
+      rewrite mc_1_10.Num.Theory.ltrr. discriminate.
+Qed.
+
 Lemma rswap_assertD_cmd_eq :
   ∀ A (B : chUniverse) b (c : command A) (r : _ → _ → raw_code B),
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
@@ -2813,28 +2838,7 @@ Proof.
   intros A B b c r.
   destruct b.
   - simpl. apply rreflexivity_rule.
-  - simpl.
-    eapply r_transR.
-    + unfold fail.
-      eapply rswap_cmd_eq with (c₀ := cmd_sample _) (c₁ := c).
-      simpl.
-      eapply rsamplerC'_cmd with (c0 := c).
-    + simpl.
-      unfold fail.
-      rewrite rel_jdgE. intros [s₀ s₁]. hnf. intro P. hnf.
-      intros [hpre hpost]. simpl.
-      exists dnull. split.
-      * unfold coupling. split.
-        --- unfold lmg. apply distr_ext.
-            intro. unfold dfst. rewrite dlet_null.
-            unfold SDistr_bind. rewrite dlet_null.
-            reflexivity.
-        --- unfold rmg. apply distr_ext.
-            intro. unfold dsnd. rewrite dlet_null.
-            unfold SDistr_bind. rewrite dlet_null.
-            reflexivity.
-      * intros [? ?] [? ?]. rewrite dnullE.
-        rewrite mc_1_10.Num.Theory.ltrr. discriminate.
+  - simpl. apply r_cmd_fail.
 Qed.
 
 (* Symmetric of the above. *)
