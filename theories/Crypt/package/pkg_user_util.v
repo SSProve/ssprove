@@ -332,6 +332,8 @@ Ltac ssprove_rswap_cmd_eq_rhs :=
       eapply (rswap_assertD_cmd_eq _ A b (cmd_get ℓ) (λ x y, _))
     | put ?ℓ := ?v ;; @assertD ?A ?b _ =>
       eapply (rswap_assertD_cmd_eq _ A b (cmd_put ℓ v))
+    | @assertD ?A ?b (λ e, #assert _ as e' ;; _) =>
+      eapply (rswap_assertD_assertD_eq A _ _ (λ e' e, _))
     | _ => fail "No swappable pair found."
     end
   | |- _ => fail "The goal should be a syntactic judgment."

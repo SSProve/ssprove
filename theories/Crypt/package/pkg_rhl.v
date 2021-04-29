@@ -2857,6 +2857,21 @@ Proof.
   - intros [] []. intuition auto.
 Qed.
 
+Lemma rswap_assertD_assertD_eq :
+  ∀ (A : chUniverse) b₀ b₁ (r : _ → _ → raw_code A),
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      #assert b₀ as e₀ ;; #assert b₁ as e₁ ;; r e₀ e₁ ≈
+      #assert b₁ as e₁ ;; #assert b₀ as e₀ ;; r e₀ e₁
+    ⦃ eq ⦄.
+Proof.
+  intros A b₀ b₁ r.
+  destruct b₀.
+  - simpl. apply rreflexivity_rule.
+  - simpl. destruct b₁.
+    + simpl. apply r_fail.
+    + simpl. apply r_fail.
+Qed.
+
 (* Unfortunately, this doesn't hold syntactically *)
 Lemma r_bind_assertD :
   ∀ (A B : chUniverse) b k1 (k2 : _ → raw_code B),
