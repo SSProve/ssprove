@@ -409,6 +409,13 @@ Section KEMDEM.
     package PKE_loc [interface] PKE_CCA_out :=
     [package
       def #[ PKGEN ] (_ : 'unit) : 'key {
+        (** In the original SSP paper, there is only a check that the location
+            sk_loc is empty, for simplicity, we check also that pk_loc is empty.
+            In the future, we can probably ensure that pk_loc is empty iff
+            sk_loc is empty, by using a stronger invariant.
+        *)
+        pk ← get pk_loc ;;
+        #assert (pk == None) ;;
         sk ← get sk_loc ;;
         #assert (sk == None) ;;
         '(pk, sk) ← ζ.(PKE_kgen) ;;
@@ -693,20 +700,12 @@ Section KEMDEM.
     (* We are now in the realm of program logic *)
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
-      ssprove_swap_rhs 1%N.
-      ssprove_swap_rhs 0%N.
+      ssprove_same_head_r. intro pk.
+      ssprove_same_head_r. intro pkNone.
       ssprove_same_head_r. intro sk.
-      ssprove_swap_rhs 1%N.
-      ssprove_swap_rhs 0%N.
       ssprove_same_head_r. intro skNone.
-      (* Do we have a rule to introduce a get on the right?
-        Even if we did, there is no such rule for assert because it would fail
-        on the rhs and not in the lhs if the boolean is false.
-
-        What we conclude here, is that the theorem we're trying to prove is
-        currently false.
-      *)
-      admit.
+      eapply rpost_weaken_rule. 1: apply rreflexivity_rule.
+      intros [] [] e. inversion e. auto.
     - (* ssprove_code_simpl_more. *)
       (* The above loops, might be due to unification again...
         It would be nice to have a surefire way to get the chUniverse for
