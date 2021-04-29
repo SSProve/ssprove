@@ -683,7 +683,7 @@ Section KEMDEM.
 
   Lemma PKE_CCA_perf_false :
       (PKE_CCA KEM_DEM false) ≈₀ Aux false.
-      (* (MOD_CCA KEM_DEM ∘ par (KEM b) (DEM b) ∘ KEY). *)
+      (* (MOD_CCA KEM_DEM ∘ par (KEM false) (DEM false) ∘ KEY). *)
   Proof.
     unfold Aux.
     (* We go to the relation logic using equality as invariant. *)
@@ -699,7 +699,13 @@ Section KEMDEM.
       ssprove_swap_rhs 1%N.
       ssprove_swap_rhs 0%N.
       ssprove_same_head_r. intro skNone.
-      (* Do we have a rule to introduce a get on the right? *)
+      (* Do we have a rule to introduce a get on the right?
+        Even if we did, there is no such rule for assert because it would fail
+        on the rhs and not in the lhs if the boolean is false.
+
+        What we conclude here, is that the theorem we're trying to prove is
+        currently false.
+      *)
       admit.
     - (* ssprove_code_simpl_more. *)
       (* The above loops, might be due to unification again...
