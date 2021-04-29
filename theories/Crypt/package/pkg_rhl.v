@@ -2898,3 +2898,42 @@ Proof.
   - eapply r_bind_assertD.
   - intros [] []. auto.
 Qed.
+
+Lemma r_get_swap :
+  ∀ ℓ ℓ',
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      x ← get ℓ ;; y ← get ℓ' ;; ret (x, y) ≈
+      y ← get ℓ' ;; x ← get ℓ ;; ret (x, y)
+    ⦃ eq ⦄.
+Proof.
+  intros ℓ ℓ'.
+  rewrite rel_jdgE. intros [s₀ s₁]. hnf. intro P. hnf.
+  intros [hpre hpost]. simpl.
+  unfold SDistr_carrier. unfold F_choice_prod_obj. simpl.
+  exists (dunit (get_heap s₀ ℓ, get_heap s₀ ℓ', s₀, (get_heap s₁ ℓ, get_heap s₁ ℓ', s₁))).
+  split.
+  - unfold coupling. split.
+    + unfold lmg. unfold dfst.
+      unfold SDistr_unit.
+      apply distr_ext. intro.
+      rewrite dlet_unit.
+      reflexivity.
+    + unfold rmg. unfold dsnd.
+      unfold SDistr_unit.
+      apply distr_ext. intro.
+      rewrite dlet_unit.
+      reflexivity.
+  - intros [[] ?] [[] ?] hh.
+    eapply hpost.
+    rewrite dunit1E in hh.
+    lazymatch type of hh with
+    | context [ ?x == ?y ] =>
+      destruct (x == y) eqn:e
+    end.
+    2:{
+      rewrite e in hh. simpl in hh.
+      rewrite mc_1_10.Num.Theory.ltrr in hh. discriminate.
+    }
+    move: e => /eqP e. inversion e.
+    subst. reflexivity.
+Qed.

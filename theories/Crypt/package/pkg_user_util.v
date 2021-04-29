@@ -380,6 +380,10 @@ Ltac ssprove_swap_side_cond :=
     apply rsamplerC_cmd
   | |- ⊢ ⦃ _ ⦄ _ ← sample _ ;; _ ← cmd _ ;; _ ≈ _ ⦃ _ ⦄ =>
     apply rsamplerC'_cmd
+  | |- ⊢ ⦃ _ ⦄ _ ← get _ ;; _ ← get _ ;; _ ≈ _ ⦃ _ ⦄ =>
+    apply r_get_swap
+  | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_get _) ;; _ ← cmd (cmd_get _) ;; _ ≈ _ ⦃ _ ⦄ =>
+    apply r_get_swap
   end.
 
 (* TODO Tactic to solve automatically condition when possible *)

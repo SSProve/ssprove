@@ -695,9 +695,10 @@ Section KEMDEM.
       ssprove_code_simpl.
       ssprove_swap_rhs 1%N.
       ssprove_swap_rhs 0%N.
-      { (* Seems we need something to swap gets *) admit. }
       ssprove_same_head_r. intro sk.
-      (* ssprove_swap_rhs 0%N. *)
+      (* Missing swap for two asserts *)
+      (* ssprove_swap_rhs 1%N.
+      ssprove_swap_rhs 0%N. *)
       admit.
     - (* ssprove_code_simpl_more. *)
       (* The above loops, might be due to unification again...
