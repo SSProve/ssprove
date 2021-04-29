@@ -320,6 +320,18 @@ Ltac ssprove_rswap_cmd_eq_rhs :=
       eapply (rswap_cmd_eq _ _ _ (cmd_get ℓ') (cmd_put ℓ v) (λ x y, _))
     | put ?ℓ := ?v ;; put ?ℓ' := ?v' ;;  _ =>
       eapply (rswap_cmd_eq _ _ _ (cmd_put ℓ' v') (cmd_put ℓ v) (λ x y, _))
+    | @assertD ?A ?b (λ e, x ← sample ?op ;; _) =>
+      eapply (rswap_assertD_cmd_eq _ A b (cmd_sample op) (λ x y, _))
+    | @assertD ?A ?b (λ e, x ← get ?ℓ ;; _) =>
+      eapply (rswap_assertD_cmd_eq _ A b (cmd_get ℓ) (λ x y, _))
+    | @assertD ?A ?b (λ e, put ?ℓ := ?v ;; _) =>
+      eapply (rswap_assertD_cmd_eq _ A b (cmd_put ℓ v))
+    | x ← sample ?op ;; @assertD ?A ?b _ =>
+      eapply (rswap_cmd_assertD_eq _ A b (cmd_sample op) (λ x y, _))
+    | x ← get ?ℓ ;; @assertD ?A ?b _ =>
+      eapply (rswap_cmd_assertD_eq _ A b (cmd_get ℓ) (λ x y, _))
+    | put ?ℓ := ?v ;; @assertD ?A ?b _ =>
+      eapply (rswap_cmd_assertD_eq _ A b (cmd_put ℓ v))
     | _ => fail "No swappable pair found."
     end
   | |- _ => fail "The goal should be a syntactic judgment."
@@ -348,18 +360,6 @@ Ltac ssprove_rswap_cmd_rhs :=
       eapply (rswap_cmd _ _ _ _ (cmd_get ℓ') (cmd_put ℓ v) (λ x y, _))
     | put ?ℓ := ?v ;; put ?ℓ' := ?v' ;;  _ =>
       eapply (rswap_cmd _ _ _ _ (cmd_put ℓ' v') (cmd_put ℓ v) (λ x y, _))
-    | @assertD ?A ?b (λ e, x ← sample ?op ;; _) =>
-      eapply (rswap_assertD_cmd_eq _ A b (cmd_sample op) (λ x y, _))
-    | @assertD ?A ?b (λ e, x ← get ?ℓ ;; _) =>
-      eapply (rswap_assertD_cmd_eq _ A b (cmd_get ℓ) (λ x y, _))
-    | @assertD ?A ?b (λ e, put ?ℓ := ?v ;; _) =>
-      eapply (rswap_assertD_cmd_eq _ A b (cmd_put ℓ v))
-    | x ← sample ?op ;; @assertD ?A ?b _ =>
-      eapply (rswap_cmd_assertD_eq _ A b (cmd_sample op) (λ x y, _))
-    | x ← get ?ℓ ;; @assertD ?A ?b _ =>
-      eapply (rswap_cmd_assertD_eq _ A b (cmd_get ℓ) (λ x y, _))
-    | put ?ℓ := ?v ;; @assertD ?A ?b _ =>
-      eapply (rswap_cmd_assertD_eq _ A b (cmd_put ℓ v))
     | _ => fail "No swappable pair found"
     end
   | |- _ => fail "The goal should be a syntactic judgment"
