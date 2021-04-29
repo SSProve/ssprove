@@ -706,22 +706,28 @@ Section KEMDEM.
       ssprove_same_head_r. intro skNone.
       eapply rpost_weaken_rule. 1: apply rreflexivity_rule.
       intros [] [] e. inversion e. auto.
-    - (* ssprove_code_simpl_more. *)
-      (* The above loops, might be due to unification again...
-        It would be nice to have a surefire way to get the chUniverse for
-        assertD... Maybe with a tactic (CPS?) that traverses the continuation
-        to find the last return if any? Even then, we would not be much better
-        off than when reading the type of bind... If it doesn't unify
-        then we won't find the chElement form...
-        Maybe with a tactic to invert chElement?
-        Or we could at least prevent looping by explicitly having
-        chElement in the unification problem.
+    - ssprove_code_simpl_more.
+      ssprove_code_simpl.
+      ssprove_code_simpl_more. simpl.
+      ssprove_code_simpl.
+      ssprove_code_simpl_more. simpl.
+      ssprove_code_simpl_more. simpl.
+      ssprove_code_simpl.
+      ssprove_code_simpl_more. simpl.
+      (* That was a lot of simpl. Would be good to have it all sorted out
+        as one thing.
       *)
-      (* ssprove_code_simpl. *)
       ssprove_same_head_r. intro pk.
       ssprove_same_head_r. intro pkSome.
       ssprove_same_head_r. intro c.
       ssprove_same_head_r. intro cNone.
+      (* Doesn't look very equivalent...
+        But some asserts are redundant with previous asserts.
+        We would need to know that getting twice in the same loc yields
+        twice the same value.
+
+        Even then, this looks not equivalent.
+      *)
       admit.
     - (* ssprove_code_simpl. *) (* Here it seems to compute 'plain away,
        that's counterproductive! *)
