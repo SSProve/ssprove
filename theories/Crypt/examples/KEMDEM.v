@@ -693,11 +693,11 @@ Section KEMDEM.
     (* We are now in the realm of program logic *)
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
-      (* Now loops instead of failing! *)
-      (* ssprove_swap_rhs 1%N. *)
-      (* eapply r_transR.
-      + ssprove_same_head_r. intro. *)
-        (* ssprove_rswap_cmd_eq_rhs. *)
+      ssprove_swap_rhs 1%N.
+      ssprove_swap_rhs 0%N.
+      { (* Seems we need something to swap gets *) admit. }
+      ssprove_same_head_r. intro sk.
+      (* ssprove_swap_rhs 0%N. *)
       admit.
     - (* ssprove_code_simpl_more. *)
       (* The above loops, might be due to unification again...
