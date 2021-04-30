@@ -716,6 +716,8 @@ Section KEMDEM.
       ssprove_code_simpl_more. simpl.
       (* That was a lot of simpl. Would be good to have it all sorted out
         as one thing.
+        We can probably do more simpl_more in one go by using r_transR
+        again, and using simpl.
       *)
       ssprove_same_head_r. intro pk.
       ssprove_same_head_r. intro pkSome.
@@ -725,12 +727,14 @@ Section KEMDEM.
         But some asserts are redundant with previous asserts.
         We would need to know that getting twice in the same loc yields
         twice the same value.
+        We can also just swap things and then have a rule saying that
+        twice the same get, is the same thing as just once.
 
         Even then, this looks not equivalent.
       *)
       admit.
-    - (* ssprove_code_simpl. *) (* Here it seems to compute 'plain away,
-       that's counterproductive! *)
+    - (* ssprove_code_simpl. *)
+      (* has getSome been unfolded? That's sad *)
       admit.
   Admitted.
 
