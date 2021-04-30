@@ -1228,20 +1228,32 @@ Qed.
 (** Syntactic judgment *)
 
 (* It's the same as the semantic one, but we're abstracting it away. *)
-Definition rel_jdg {A B : choiceType} (pre : precond) (post : postcond A B)
+Inductive rel_jdg {A B : choiceType} (pre : precond) (post : postcond A B)
   (p : raw_code A) (q : raw_code B) :=
-  locked (r⊨ ⦃ pre ⦄ p ≈ q ⦃ post ⦄).
+  _from_sem_jdg : locked (r⊨ ⦃ pre ⦄ p ≈ q ⦃ post ⦄) → rel_jdg pre post p q.
 
 Notation "⊢ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
   (rel_jdg pre post c1 c2)
   (format "⊢  ⦃  pre  ⦄ '/  '  '[' c1  ']' '/' ≈ '/  '  '[' c2  ']' '/' ⦃  post  ⦄")
   : package_scope.
 
-Lemma rel_jdgE :
+Lemma from_sem_jdg :
   ∀ {A B : choiceType} pre (post : postcond A B) p q,
-    ⊢ ⦃ pre ⦄ p ≈ q ⦃ post ⦄ = r⊨ ⦃ pre ⦄ p ≈ q ⦃ post ⦄.
+    r⊨ ⦃ pre ⦄ p ≈ q ⦃ post ⦄ →
+    ⊢ ⦃ pre ⦄ p ≈ q ⦃ post ⦄.
 Proof.
-  intros. unfold rel_jdg. rewrite -lock. reflexivity.
+  intros A B pre post p q h.
+  constructor. rewrite -lock. auto.
+Qed.
+
+Lemma to_sem_jdg :
+  ∀ {A B : choiceType} pre (post : postcond A B) p q,
+    ⊢ ⦃ pre ⦄ p ≈ q ⦃ post ⦄ →
+    r⊨ ⦃ pre ⦄ p ≈ q ⦃ post ⦄.
+Proof.
+  intros A B pre post p q [h].
+  rewrite -lock in h.
+  exact h.
 Qed.
 
 (** Equivalence of packages in the program logic *)
@@ -1382,7 +1394,7 @@ Proof.
     erewrite get_op_default_spec in hp. 2: eauto.
     erewrite get_op_default_spec in hp. 2: eauto.
     rewrite !repr_bind.
-    eapply bind_rule_pp. 1:{ rewrite -rel_jdgE. exact hp. }
+    eapply bind_rule_pp. 1:{ eapply to_sem_jdg in hp. exact hp. }
     cbn - [semantic_judgement].
     intros a₀ a₁.
     apply pre_hypothesis_rule.
@@ -1578,9 +1590,9 @@ Lemma r_bind :
     ⊢ ⦃ pre ⦄ bind m₀ f₀ ≈ bind m₁ f₁ ⦃ post ⦄.
 Proof.
   intros A₀ A₁ B₀ B₁ m₀ m₁ f₀ f₁ pre mid post hm hf.
-  rewrite rel_jdgE. eapply rbind_rule.
-  - rewrite -rel_jdgE. exact hm.
-  - intros a₀ a₁. rewrite -rel_jdgE. eapply hf.
+  eapply from_sem_jdg. eapply rbind_rule.
+  - eapply to_sem_jdg. exact hm.
+  - intros a₀ a₁. eapply to_sem_jdg. eapply hf.
 Qed.
 
 (* Pre-condition manipulating rules *)
@@ -1593,8 +1605,10 @@ Theorem rpre_weaken_rule :
     ⊢ ⦃ pre' ⦄ p₀ ≈ p₁ ⦃ post ⦄.
 Proof.
   intros A₀ A₁ p₀ p₁ pre pre' post he hi.
-  rewrite -> rel_jdgE in *.
-  eapply pre_weaken_rule. all: eauto.
+  eapply from_sem_jdg.
+  eapply pre_weaken_rule.
+  - eapply to_sem_jdg. eauto.
+  - eauto.
 Qed.
 
 Theorem rpre_hypothesis_rule :
@@ -1606,9 +1620,9 @@ Theorem rpre_hypothesis_rule :
     ⊢ ⦃ pre ⦄ p₀ ≈ p₁ ⦃ post ⦄.
 Proof.
   intros A₀ A₁ p₀ p₁ pre post h.
-  rewrite rel_jdgE.
+  eapply from_sem_jdg.
   eapply pre_hypothesis_rule.
-  intros. rewrite -rel_jdgE.
+  intros. eapply to_sem_jdg.
   apply h. auto.
 Qed.
 
@@ -1620,9 +1634,10 @@ Theorem rpre_strong_hypothesis_rule :
     ⊢ ⦃ pre ⦄ p₀ ≈ p₁ ⦃ post ⦄.
 Proof.
   intros A₀ A₁ p₀ p₁ pre post hs h.
-  rewrite -> rel_jdgE in *.
+  eapply from_sem_jdg.
   eapply pre_strong_hypothesis_rule.
-  all: eauto.
+  - eauto.
+  - eapply to_sem_jdg. auto.
 Qed.
 
 Theorem rpost_weaken_rule :
@@ -1633,8 +1648,10 @@ Theorem rpost_weaken_rule :
     ⊢ ⦃ pre ⦄ p₀ ≈ p₁ ⦃ post2 ⦄.
 Proof.
   intros A₀ A₁ p₀ p₁ pre post1 post2 h hi.
-  rewrite -> rel_jdgE in *.
-  eapply post_weaken_rule. all: eauto.
+  eapply from_sem_jdg.
+  eapply post_weaken_rule.
+  - eapply to_sem_jdg. eauto.
+  - eauto.
 Qed.
 
 Local Open Scope package_scope.
@@ -1644,7 +1661,7 @@ Lemma rreflexivity_rule :
     ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ c ≈ c ⦃ eq ⦄.
 Proof.
   intros A c.
-  rewrite -> rel_jdgE.
+  eapply from_sem_jdg.
   apply (reflexivity_rule (repr c)).
 Qed.
 
@@ -1670,12 +1687,12 @@ Theorem rpost_conclusion_rule :
     ⊢ ⦃ pre ⦄ x₀ ← c₀ ;; ret (f₀ x₀) ≈ x₁ ← c₁ ;; ret (f₁ x₁) ⦃ eq ⦄.
 Proof.
   intros A₀ A₁ B pre c₀ c₁ f₀ f₁ h.
-  rewrite rel_jdgE. rewrite rel_jdgE in h.
+  eapply from_sem_jdg. eapply to_sem_jdg in h.
   rewrite !repr_bind in h. rewrite !repr_bind.
   eapply bind_rule_pp.
   - simpl (repr (ret _)) in h.
     rewrite !bindrFree_ret in h. exact h.
-  - intros a₀ a₁. rewrite -rel_jdgE.
+  - intros a₀ a₁. eapply to_sem_jdg.
     eapply rpre_hypothesis_rule. intros s s' [? e]. subst s'.
     rewrite e. eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
     cbn. intros ? ? [? ?]. subst. reflexivity.
@@ -1692,12 +1709,12 @@ Theorem rpost_conclusion_rule_cmd :
     ⊢ ⦃ pre ⦄ x₀ ← cmd c₀ ;; ret (f₀ x₀) ≈ x₁ ← cmd c₁ ;; ret (f₁ x₁) ⦃ eq ⦄.
 Proof.
   intros A₀ A₁ B pre c₀ c₁ f₀ f₁ h.
-  rewrite rel_jdgE. rewrite rel_jdgE in h.
+  eapply from_sem_jdg. eapply to_sem_jdg in h.
   rewrite !repr_cmd_bind in h.  rewrite !repr_cmd_bind.
   eapply bind_rule_pp.
   - simpl (repr (ret _)) in h.
     rewrite !bindrFree_ret in h. exact h.
-  - intros a₀ a₁. rewrite -rel_jdgE.
+  - intros a₀ a₁. eapply to_sem_jdg.
     eapply rpre_hypothesis_rule. intros s s' [? e]. subst s'.
     rewrite e. eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
     cbn. intros ? ? [? ?]. subst. reflexivity.
@@ -1709,7 +1726,7 @@ Lemma r_ret :
     ⊢ ⦃ pre ⦄ ret u₀ ≈ ret u₁ ⦃ post ⦄.
 Proof.
   intros A₀ A₁ u₀ u₁ pre post h.
-  rewrite rel_jdgE. simpl.
+  eapply from_sem_jdg. simpl.
   eapply weaken_rule. 1: eapply ret_rule.
   intros [s₀ s₁] P [hpre hpost]. simpl.
   eapply hpost. eapply h. apply hpre.
@@ -1738,7 +1755,7 @@ Theorem rif_rule :
     ⊢ ⦃ pre ⦄ if b₀ then c₀ else c₀' ≈ if b₁ then c₁ else c₁' ⦃ post ⦄.
 Proof.
   intros A₀ A₁ c₀ c₀' c₁ c₁' b₀ b₁ pre post hb ht hf.
-  rewrite -> rel_jdgE in *.
+  eapply from_sem_jdg. eapply to_sem_jdg in ht, hf.
   rewrite !repr_if.
   eapply if_rule. all: eauto.
 Qed.
@@ -1779,7 +1796,9 @@ Section For_loop_rule.
     - simpl. apply h.
     - simpl. eapply r_bind.
       + eapply ih.
-      + simpl. intros _ _. eapply h.
+      + simpl. intros _ _.
+        eapply rpre_weaken_rule. 1: eapply h.
+        auto.
   Qed.
 
 End For_loop_rule.
@@ -1848,7 +1867,7 @@ Lemma rcoupling_eq :
       θ_dens (θ0 (repr K₀) s₀) = θ_dens (θ0 (repr K₁) s₁).
 Proof.
   intros A K₀ K₁ ψ h s₀ s₁ hψ.
-  rewrite -> rel_jdgE in h.
+  eapply to_sem_jdg in h.
   eapply coupling_eq. all: eauto.
 Qed.
 
@@ -1860,7 +1879,8 @@ Lemma rrewrite_eqDistrL :
     ⊢ ⦃ P ⦄ c₀' ≈ c₁ ⦃ Q ⦄.
 Proof.
   intros A₀ A₁ P Q c₀ c₀' c₁ h hθ.
-  rewrite -> rel_jdgE in *.
+  eapply to_sem_jdg in h.
+  eapply from_sem_jdg.
   eapply rewrite_eqDistrL. all: eauto.
 Qed.
 
@@ -1872,7 +1892,8 @@ Lemma rrewrite_eqDistrR :
     ⊢ ⦃ P ⦄ c₀ ≈ c₁' ⦃ Q ⦄.
 Proof.
   intros A₀ A₁ P Q c₀ c₁ c₁' h hθ.
-  rewrite -> rel_jdgE in *.
+  eapply to_sem_jdg in h.
+  eapply from_sem_jdg.
   eapply rewrite_eqDistrR. all: eauto.
 Qed.
 
@@ -1887,8 +1908,8 @@ Theorem rswap_rule :
       ⦃ λ '(a₁, s₁) '(a₀, s₀), I (s₀, s₁) ∧ post (a₀, s₀) (a₁, s₁) ⦄.
 Proof.
   intros A₀ A₁ I post c₀ c₁ h1 h2.
-  rewrite rel_jdgE in h1. rewrite rel_jdgE in h2.
-  rewrite rel_jdgE.
+  eapply to_sem_jdg in h1. eapply to_sem_jdg in h2.
+  eapply from_sem_jdg.
   rewrite !repr_bind.
   eapply (swap_rule (repr c₀) (repr c₁)). all: auto.
 Qed.
@@ -1906,8 +1927,8 @@ Theorem rswap_ruleL :
   ⊢ ⦃ pre ⦄ l ;; c₀ ;; c₁ ≈ l ;; c₁ ;; c₀ ⦃ post ⦄.
 Proof.
   intros A₀ A₁ B pre I post l c₀ c₁ hl h0 h1.
-  rewrite rel_jdgE in h0. rewrite rel_jdgE in h1. rewrite rel_jdgE in hl.
-  rewrite rel_jdgE.
+  eapply to_sem_jdg in h0, h1, hl.
+  eapply from_sem_jdg.
   rewrite !repr_bind.
   eapply swap_ruleL. all: eauto.
 Qed.
@@ -1927,15 +1948,15 @@ Theorem rswap_ruleR :
       ⦃ post ⦄.
 Proof.
   intros A₀ A₁ B post c₀ c₁ r postr hr h.
-  rewrite rel_jdgE.
+  eapply from_sem_jdg.
   repeat setoid_rewrite repr_bind. simpl.
   eapply (swap_ruleR (λ a₀ a₁, repr (r a₀ a₁)) (repr c₀) (repr c₁)).
-  - intros. rewrite -rel_jdgE. apply hr.
+  - intros. eapply to_sem_jdg. apply hr.
   - apply postr.
   - intro s.
     unshelve eapply coupling_eq.
     + exact (λ '(h₀, h₁), h₀ = h₁).
-    + rewrite rel_jdgE in h. repeat setoid_rewrite repr_bind in h.
+    + eapply to_sem_jdg in h. repeat setoid_rewrite repr_bind in h.
       apply h.
     + reflexivity.
 Qed.
@@ -1962,8 +1983,8 @@ Lemma rsymmetry :
     ⊢ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄.
 Proof.
   intros A₀ A₁ pre post c₀ c₁ h.
-  rewrite rel_jdgE.
-  eapply symmetry_rule. rewrite -rel_jdgE. auto.
+  eapply from_sem_jdg.
+  eapply symmetry_rule. eapply to_sem_jdg. auto.
 Qed.
 
 Definition spl (o : Op) :=
@@ -2040,13 +2061,13 @@ Theorem rswap_rule_ctx :
   ⊢ ⦃ pre ⦄ l ;; c₀ ;; c₁ ;; r ≈ l ;; c₁ ;; c₀ ;; r ⦃ post ⦄.
 Proof.
   intros A I pre post Q l r c₀ c₁ hl hr h₀ h₁.
-  rewrite rel_jdgE.
+  eapply from_sem_jdg.
   rewrite !repr_bind.
   eapply swap_rule_ctx.
-  1:{ rewrite -rel_jdgE. exact hl. }
-  2:{ rewrite -rel_jdgE. exact h₀. }
-  2:{ rewrite -rel_jdgE. exact h₁. }
-  intros a₀ a₁. rewrite -rel_jdgE. eapply hr.
+  1:{ eapply to_sem_jdg. exact hl. }
+  2:{ eapply to_sem_jdg. exact h₀. }
+  2:{ eapply to_sem_jdg. exact h₁. }
+  intros a₀ a₁. eapply to_sem_jdg. eapply hr.
 Qed.
 
 Theorem rsame_head :
@@ -2126,10 +2147,10 @@ Theorem rsame_head_cmd :
   ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ x ← cmd m ;; f₀ x ≈ x ← cmd m ;; f₁ x ⦃ post ⦄.
 Proof.
   intros A B f₀ f₁ m post h.
-  rewrite rel_jdgE. rewrite !repr_cmd_bind.
+  eapply from_sem_jdg. rewrite !repr_cmd_bind.
   eapply (bind_rule_pp (repr_cmd m) (repr_cmd m)).
   - apply (reflexivity_rule (repr_cmd m)).
-  - intros a₀ a₁. rewrite -rel_jdgE.
+  - intros a₀ a₁. eapply to_sem_jdg.
     unshelve eapply rpre_weaken_rule.
     + exact (λ '(h₀, h₁), a₀ = a₁ ∧ h₀ = h₁).
     + specialize (h a₀).
@@ -2155,14 +2176,14 @@ Lemma rswap_cmd :
       ⦃ post ⦄.
 Proof.
   intros A₀ A₁ B post c₀ c₁ r hpost hr h.
-  rewrite rel_jdgE.
+  eapply from_sem_jdg.
   repeat setoid_rewrite repr_cmd_bind.
   eapply (swap_ruleR (λ a₀ a₁, repr (r a₀ a₁)) (repr_cmd c₀) (repr_cmd c₁)).
-  + intros a₀ a₁. rewrite -rel_jdgE. eapply hr.
+  + intros a₀ a₁. eapply to_sem_jdg. eapply hr.
   + intros ? ? []. eauto.
   + intro s. unshelve eapply coupling_eq.
     * exact: (λ '(h1, h2), h1 = h2).
-    * rewrite rel_jdgE in h.
+    * eapply to_sem_jdg in h.
       repeat (setoid_rewrite repr_cmd_bind in h).
       auto.
     * reflexivity.
@@ -2205,15 +2226,15 @@ Theorem rswap_ruleR_cmd :
       ⦃ post ⦄.
 Proof.
   intros A₀ A₁ B post c₀ c₁ r postr hr h.
-  rewrite rel_jdgE.
+  eapply from_sem_jdg.
   repeat setoid_rewrite repr_cmd_bind. simpl.
   eapply (swap_ruleR (λ a₀ a₁, repr (r a₀ a₁)) (repr_cmd c₀) (repr_cmd c₁)).
-  - intros. rewrite -rel_jdgE. apply hr.
+  - intros. eapply to_sem_jdg. apply hr.
   - apply postr.
   - intro s.
     unshelve eapply coupling_eq.
     + exact (λ '(h₀, h₁), h₀ = h₁).
-    + rewrite rel_jdgE in h. repeat setoid_rewrite repr_cmd_bind in h.
+    + eapply to_sem_jdg in h. repeat setoid_rewrite repr_cmd_bind in h.
       apply h.
     + reflexivity.
 Qed.
@@ -2301,7 +2322,7 @@ Admitted.
 (* One-sided sampling rule. *)
 (* Removes the need for intermediate games in some cases. *)
 Lemma rconst_samplerL :
-  ∀ {A : ord_choiceType} {D}
+  ∀ {A : ord_choiceType} {D : Op}
     (c₀ : Arit D -> raw_code A) (c₁ : raw_code A) (post : postcond A A),
     (∀ x, ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ c₀ x ≈ c₁ ⦃ post ⦄) →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ x ← sample D ;; c₀ x ≈ c₁ ⦃ post ⦄.
@@ -2414,13 +2435,13 @@ Lemma r_uniform_bij :
     ⦃ post ⦄.
 Proof.
   intros A₀ A₁ i j pi pj pre post f c₀ c₁ bijf h.
-  rewrite rel_jdgE.
+  eapply from_sem_jdg.
   change (repr (sampler (uniform ?i) ?k))
   with (bindrFree (@Uniform_F (mkpos i) heap_choiceType) (λ x, repr (k x))).
   eapply bind_rule_pp.
   - eapply Uniform_bij_rule. eauto.
   - intros a₀ a₁. simpl.
-    rewrite -rel_jdgE.
+    eapply to_sem_jdg.
     eapply rpre_hypothesis_rule. intros s₀ s₁ [hs e].
     move: e => /eqP e. subst.
     eapply rpre_weaken_rule. 1: eapply h.
@@ -2545,7 +2566,7 @@ Section Uniform_prod.
         ret (x, y)
       ⦃ eq ⦄
     ).
-    rewrite rel_jdgE.
+    eapply from_sem_jdg.
     repeat setoid_rewrite repr_cmd_bind.
     change (repr_cmd (cmd_sample (uniform ?i)))
     with (@Uniform_F (mkpos i) heap_choiceType).
@@ -2691,7 +2712,7 @@ Lemma r_fail_unit :
     ⊢ ⦃ pre ⦄ fail_unit ≈ fail_unit ⦃ post ⦄.
 Proof.
   intros pre post.
-  rewrite rel_jdgE. intros [s₀ s₁]. hnf. intro P. hnf.
+  eapply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
   intros [hpre hpost]. simpl.
   exists dnull. split.
   - unfold coupling. split.
@@ -2757,7 +2778,7 @@ Lemma r_fail :
     ⊢ ⦃ pre ⦄ @fail A₀ ≈ @fail A₁ ⦃ post ⦄.
 Proof.
   intros A₀ A₁ pre post.
-  rewrite rel_jdgE. intros [s₀ s₁]. hnf. intro P. hnf.
+  eapply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
   intros [hpre hpost]. simpl.
   exists dnull. split.
   - unfold coupling. split.
@@ -2812,7 +2833,7 @@ Proof.
     eapply rswap_cmd_eq with (c₀ := cmd_sample _) (c₁ := c).
     eapply rsamplerC'_cmd with (c0 := c).
   - simpl. unfold fail.
-    rewrite rel_jdgE. intros [s₀ s₁]. hnf. intro P. hnf.
+    eapply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
     intros [hpre hpost]. simpl.
     exists dnull. split.
     + unfold coupling. split.
@@ -2884,7 +2905,7 @@ Proof.
   destruct b.
   - simpl. apply rreflexivity_rule.
   - simpl. unfold fail.
-    rewrite rel_jdgE. intros [s₀ s₁]. hnf. intro P. hnf.
+    eapply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
     intros [hpre hpost]. simpl.
     exists dnull. split.
     + unfold coupling. split.
@@ -2922,7 +2943,7 @@ Lemma r_get_swap :
     ⦃ eq ⦄.
 Proof.
   intros ℓ ℓ'.
-  rewrite rel_jdgE. intros [s₀ s₁]. hnf. intro P. hnf.
+  eapply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
   intros [hpre hpost]. simpl.
   unfold SDistr_carrier. unfold F_choice_prod_obj. simpl.
   exists (dunit (get_heap s₀ ℓ, get_heap s₀ ℓ', s₀, (get_heap s₁ ℓ, get_heap s₁ ℓ', s₁))).
