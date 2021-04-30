@@ -719,19 +719,21 @@ Section KEMDEM.
         We can probably do more simpl_more in one go by using r_transR
         again, and using simpl.
       *)
+      ssprove_swap_rhs 3%N.
+      ssprove_swap_rhs 2%N.
+      ssprove_swap_rhs 1%N.
+      (* TODO tactic *)
+      eapply r_transR.
+      1:{
+        eapply contract_get.
+      }
+      simpl.
       ssprove_same_head_r. intro pk.
       ssprove_same_head_r. intro pkSome.
+      rewrite pkSome. simpl.
       ssprove_same_head_r. intro c.
       ssprove_same_head_r. intro cNone.
-      (* Doesn't look very equivalent...
-        But some asserts are redundant with previous asserts.
-        We would need to know that getting twice in the same loc yields
-        twice the same value.
-        We can also just swap things and then have a rule saying that
-        twice the same get, is the same thing as just once.
-
-        Even then, this looks not equivalent.
-      *)
+      (* Doesn't look very equivalent... *)
       admit.
     - (* ssprove_code_simpl. *)
       (* has getSome been unfolded? That's sad *)

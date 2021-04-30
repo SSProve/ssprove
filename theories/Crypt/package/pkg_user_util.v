@@ -498,3 +498,5 @@ Ltac ssprove_code_simpl_more :=
   | |- _ =>
     fail "ssprove_code_simpl_more: goal should be syntactic judgment"
   end.
+
+(* TODO Have ssprove_contract_get_lhs/rhs *)

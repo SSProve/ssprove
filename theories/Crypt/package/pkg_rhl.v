@@ -2987,5 +2987,3 @@ Proof.
   intros s. simpl.
   reflexivity.
 Qed.
-
-(* TODO Have ssprove_contract_get_lhs/rhs *)
