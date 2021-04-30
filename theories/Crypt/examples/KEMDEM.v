@@ -722,12 +722,7 @@ Section KEMDEM.
       ssprove_swap_rhs 3%N.
       ssprove_swap_rhs 2%N.
       ssprove_swap_rhs 1%N.
-      (* TODO tactic *)
-      eapply r_transR.
-      1:{
-        eapply contract_get.
-      }
-      simpl.
+      ssprove_contract_get_rhs.
       ssprove_same_head_r. intro pk.
       ssprove_same_head_r. intro pkSome.
       rewrite pkSome. simpl.

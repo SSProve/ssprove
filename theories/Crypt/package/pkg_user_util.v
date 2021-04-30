@@ -499,4 +499,17 @@ Ltac ssprove_code_simpl_more :=
     fail "ssprove_code_simpl_more: goal should be syntactic judgment"
   end.
 
-(* TODO Have ssprove_contract_get_lhs/rhs *)
+Ltac ssprove_contract_get_aux :=
+  eapply contract_get.
+
+Ltac ssprove_contract_get_lhs :=
+  eapply r_transL ; [
+    ssprove_contract_get_aux
+  | cmd_bind_simpl ; cbn beta
+  ].
+
+Ltac ssprove_contract_get_rhs :=
+  eapply r_transR ; [
+    ssprove_contract_get_aux
+  | cmd_bind_simpl ; cbn beta
+  ].
