@@ -2973,3 +2973,19 @@ Proof.
     move: e => /eqP e. inversion e.
     subst. reflexivity.
 Qed.
+
+Lemma contract_get :
+  ∀ A ℓ (r : _ → _ → raw_code A),
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      z ← get ℓ ;; r z z ≈
+      x ← get ℓ ;; y ← get ℓ ;; r x y
+    ⦃ eq ⦄.
+Proof.
+  intros A ℓ r.
+  eapply rrewrite_eqDistrR.
+  1: eapply rreflexivity_rule.
+  intros s. simpl.
+  reflexivity.
+Qed.
+
+(* TODO Have ssprove_contract_get_lhs/rhs *)
