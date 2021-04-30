@@ -728,10 +728,18 @@ Section KEMDEM.
       rewrite pkSome. simpl.
       ssprove_same_head_r. intro c.
       ssprove_same_head_r. intro cNone.
-      (* Doesn't look very equivalent... *)
+      (* Doesn't look very equivalent...
+        In the SSP proof, the package magically changes so...
+      *)
       admit.
     - (* ssprove_code_simpl. *)
-      (* has getSome been unfolded? That's sad *)
+      (* It seems the simplifications tactics did something weird to the let *)
+      (* In the SSP paper proof, there is pk on the lhs instead of sk.
+        but changing it in the rhs means changing the locations of MOD-CCA to add
+        some sk which is never set, doesn't make much sense,
+        and if we change it to pk in the lhs we don't have the info needed
+        to actually read sk...
+      *)
       admit.
   Admitted.
 
