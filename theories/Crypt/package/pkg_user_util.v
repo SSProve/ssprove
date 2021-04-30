@@ -464,10 +464,16 @@ Ltac ssprove_code_simpl_more_aux :=
   | |- ⊢ ⦃ _ ⦄ _ ≈ ?c ⦃ _ ⦄ =>
     lazymatch c with
     | @bind _ (chElement ?B) (@assertD ?A ?b ?k1) ?k2 =>
-      (* How do I recover the other chUniverse otherwise? *)
-      eapply (r_bind_assertD_sym A B b k1 k2)
+      eapply r_transR ; [
+        (* How do I recover the other chUniverse otherwise? *)
+        eapply (r_bind_assertD_sym A B b k1 k2)
+      | simpl
+      ]
     | @bind _ _ (@assertD ?A _ _) _ =>
-      eapply (r_bind_assertD_sym A)
+      eapply r_transR ; [
+        eapply (r_bind_assertD_sym A)
+      | simpl
+      ]
     | x ← sample ?op ;; _ =>
       let x' := fresh x in
       ssprove_same_head_r ; intro x'

@@ -708,16 +708,11 @@ Section KEMDEM.
       intros [] [] e. inversion e. auto.
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
-      ssprove_code_simpl_more. simpl.
+      ssprove_code_simpl_more.
       ssprove_code_simpl.
-      ssprove_code_simpl_more. simpl.
-      ssprove_code_simpl_more. simpl.
-      ssprove_code_simpl.
-      ssprove_code_simpl_more. simpl.
+      ssprove_code_simpl_more.
       (* That was a lot of simpl. Would be good to have it all sorted out
         as one thing.
-        We can probably do more simpl_more in one go by using r_transR
-        again, and using simpl.
       *)
       ssprove_swap_rhs 3%N.
       ssprove_swap_rhs 2%N.
