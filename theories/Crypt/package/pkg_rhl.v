@@ -3025,3 +3025,56 @@ Proof.
   unfold UniversalFreeMap.outOfFree_obligation_1.
   rewrite set_heap_contract. reflexivity.
 Qed.
+
+Lemma set_heap_commut :
+  ∀ s ℓ v ℓ' v',
+    ℓ != ℓ' →
+    set_heap (set_heap s ℓ v) ℓ' v' =
+    set_heap (set_heap s ℓ' v') ℓ v.
+Proof.
+  intros s ℓ v ℓ' v' ne.
+  apply heap_ext. destruct s as [h vh]. simpl.
+  apply setmC. auto.
+Qed.
+
+Lemma r_put_swap :
+  ∀ ℓ ℓ' v v' (A : choiceType) (u : A),
+    ℓ != ℓ' →
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      put ℓ := v ;; put ℓ' := v' ;; ret u ≈
+      put ℓ' := v' ;; put ℓ := v ;; ret u
+    ⦃ eq ⦄.
+Proof.
+  intros ℓ ℓ' v v' A u ne.
+  eapply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
+  intros [hpre hpost]. simpl.
+  unfold SDistr_carrier. unfold F_choice_prod_obj. simpl.
+  eexists (dunit (_, _)).
+  split.
+  - unfold coupling. split.
+    + unfold lmg. unfold dfst.
+      unfold SDistr_unit.
+      apply distr_ext. intro.
+      rewrite dlet_unit.
+      reflexivity.
+    + unfold rmg. unfold dsnd.
+      unfold SDistr_unit.
+      apply distr_ext. intro.
+      rewrite dlet_unit.
+      reflexivity.
+  - intros [] [] hh.
+    eapply hpost.
+    rewrite dunit1E in hh.
+    lazymatch type of hh with
+    | context [ ?x == ?y ] =>
+      destruct (x == y) eqn:e
+    end.
+    2:{
+      rewrite e in hh. simpl in hh.
+      rewrite mc_1_10.Num.Theory.ltrr in hh. discriminate.
+    }
+    move: e => /eqP e. inversion e.
+    subst.
+    rewrite set_heap_commut. 2: auto.
+    reflexivity.
+Qed.
