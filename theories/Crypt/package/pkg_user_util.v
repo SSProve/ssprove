@@ -367,6 +367,12 @@ Ltac ssprove_rswap_cmd_rhs :=
   | |- _ => fail "The goal should be a syntactic judgment"
   end.
 
+Ltac neq_loc_auto :=
+  let e := fresh "e" in
+  apply /negP ;
+  move /eqP => e ;
+  noconf e.
+
 (* TODO: Are there more cases we can consider? *)
 Ltac ssprove_swap_side_cond :=
   lazymatch goal with
@@ -386,6 +392,18 @@ Ltac ssprove_swap_side_cond :=
     apply r_get_swap
   | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_get _) ;; _ ← cmd (cmd_get _) ;; _ ≈ _ ⦃ _ ⦄ =>
     apply r_get_swap
+  | |- ⊢ ⦃ _ ⦄ _ ← get ?ℓ' ;; put ?ℓ := ?v ;; _ ≈ _ ⦃ _ ⦄ =>
+    apply (r_get_put_swap' ℓ ℓ' v) ;
+    neq_loc_auto
+  | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_get ?ℓ') ;; _ ← cmd (cmd_put ?ℓ ?v) ;; _ ≈ _ ⦃ _ ⦄ =>
+    apply (r_get_put_swap' ℓ ℓ' v) ;
+    neq_loc_auto
+  | |- ⊢ ⦃ _ ⦄ put ?ℓ := ?v ;; _ ← get ?ℓ' ;; _ ≈ _ ⦃ _ ⦄ =>
+    apply (r_put_get_swap' ℓ ℓ' v) ;
+    neq_loc_auto
+  | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_put ?ℓ ?v) ;; _ ← cmd (cmd_get ?ℓ') ;; _ ≈ _ ⦃ _ ⦄ =>
+    apply (r_put_get_swap' ℓ ℓ' v) ;
+    neq_loc_auto
   end.
 
 (* TODO Tactic to solve automatically condition when possible *)

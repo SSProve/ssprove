@@ -766,23 +766,11 @@ Section KEMDEM.
       ssprove_same_head_r. intro ekNone.
       rewrite ekNone. simpl.
       ssprove_swap_rhs 8%N.
-      1:{
-        simpl.
-        (* It doesn't unify easily... *)
-        pose proof r_get_put_swap' as ee.
-        specialize ee with (ℓ := ek_loc) (ℓ' := c_loc).
-        specialize ee with (v := Some a0).
-        eapply ee.
-        (* eapply r_get_put_swap'. *)
-        apply /negP.
-        move /eqP => equ.
-        noconf equ.
-      }
-      ssprove_swap_rhs 7%N. 1: admit.
+      ssprove_swap_rhs 7%N.
       ssprove_swap_rhs 6%N.
       ssprove_swap_rhs 5%N.
       ssprove_swap_rhs 4%N.
-      ssprove_swap_rhs 3%N. 1: admit.
+      ssprove_swap_rhs 3%N.
       ssprove_swap_rhs 2%N.
       ssprove_swap_rhs 1%N.
       ssprove_contract_get_rhs.
@@ -793,8 +781,9 @@ Section KEMDEM.
       ssprove_swap_lhs 0%N.
       ssprove_swap_rhs 4%N.
       1:{
-        simpl. (* Similar need for put/put *)
-        admit.
+        (* TODO Have swap do it automatically *)
+        eapply r_put_swap.
+        neq_loc_auto.
       }
       ssprove_swap_rhs 3%N.
       (* The following doesn't work. Maybe a unification problem? *)
