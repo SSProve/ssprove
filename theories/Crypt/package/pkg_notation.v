@@ -206,6 +206,13 @@ Module PackageNotation.
     format "def  #[ f ]  ( x : A )  :  B  { '[' '/'  e  '/' ']' }")
     : package_scope.
 
+  Notation " 'def' #[ f ] ( ' p : A ) : B { e }" :=
+    ((f, mkdef A B (λ x, let p := x in e)))
+    (in custom package at level 0,
+    f constr, e constr, p pattern, A custom pack_type, B custom pack_type,
+    format "def  #[ f ]  ( ' p : A )  :  B  { '[' '/'  e  '/' ']' }")
+    : package_scope.
+
   Notation "#[ f ] : A → B" :=
     (mkopsig f A B)
     (in custom pack_op at level 0,
