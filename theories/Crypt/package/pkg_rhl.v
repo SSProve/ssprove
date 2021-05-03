@@ -132,14 +132,14 @@ Proof.
   move: vℓ => /eqP. auto.
 Qed.
 
-Definition get_heap (map : heap) (ℓ : Location) : Value ℓ.π1.
+Equations? get_heap (map : heap) (ℓ : Location) : Value ℓ.π1 :=
+  get_heap map ℓ with inspect (map ∙1 ℓ) := {
+  | @exist (Some p) e := cast_pointed_value p _ ;
+  | @exist None e := heap_init (ℓ.π1)
+  }.
 Proof.
-  destruct map as [h vh].
-  destruct (inspect (h ℓ)) as [[p|] e].
-  (* destruct (h ℓ) eqn:e. *)
-  - unshelve eapply cast_pointed_value. 1: exact p.
-    eapply get_heap_helper. all: eauto.
-  - destruct ℓ as [A n]. exact (heap_init A).
+  destruct map as [h vh]. simpl in e.
+  eapply get_heap_helper. all: eauto.
 Defined.
 
 Program Definition set_heap (map : heap) (l : Location) (v : Value l.π1)
@@ -3093,19 +3093,51 @@ Proof.
     reflexivity.
 Qed.
 
+(* TODO MOVE *)
+Lemma cast_pointed_value_ext :
+  ∀ A p e1 q e2,
+    p = q →
+    @cast_pointed_value A p e1 = @cast_pointed_value A q e2.
+Proof.
+  intros A p e1 q e2 e. subst.
+  cbn.
+  assert (ee : e2 = erefl).
+  { apply eq_irrelevance. }
+  rewrite ee. reflexivity.
+Qed.
+
 Lemma get_heap_set_heap :
   ∀ s ℓ ℓ' v,
     ℓ != ℓ' →
     get_heap s ℓ = get_heap (set_heap s ℓ' v) ℓ.
 Proof.
   intros s ℓ ℓ' v ne.
-  destruct s as [h vh].
-  simpl.
-Abort.
+  funelim (get_heap s ℓ).
+  - rewrite -Heqcall. clear Heqcall.
+    funelim (get_heap (set_heap map ℓ' v) ℓ).
+    + rewrite -Heqcall. clear Heqcall.
+      pose proof e as ep.
+      simpl in ep. rewrite setmE in ep.
+      eapply negbTE in ne.
+      rewrite ne in ep. rewrite -e0 in ep. noconf ep.
+      eapply cast_pointed_value_ext. reflexivity.
+    + pose proof e as ep.
+      simpl in ep. rewrite setmE in ep.
+      eapply negbTE in ne.
+      rewrite ne in ep. rewrite -e0 in ep. noconf ep.
+  - rewrite -Heqcall. clear Heqcall.
+    funelim (get_heap (set_heap map ℓ' v) ℓ).
+    + pose proof e as ep.
+      simpl in ep. rewrite setmE in ep.
+      eapply negbTE in ne.
+      rewrite ne in ep. rewrite -e0 in ep. noconf ep.
+    + rewrite -Heqcall. clear Heqcall.
+      reflexivity.
+Qed.
 
 Lemma r_get_put_swap :
   ∀ ℓ ℓ' v,
-    ℓ != ℓ' →
+    ℓ' != ℓ →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       x ← get ℓ' ;; put ℓ := v ;; ret x ≈
       put ℓ := v ;; x ← get ℓ' ;; ret x
@@ -3143,5 +3175,21 @@ Proof.
     }
     move: e => /eqP e. noconf e.
     subst. f_equal.
-(* Qed. *)
-Abort.
+    apply get_heap_set_heap.
+    auto.
+Qed.
+
+Lemma r_put_get_swap :
+  ∀ ℓ ℓ' v,
+    ℓ' != ℓ →
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      put ℓ := v ;; x ← get ℓ' ;; ret x ≈
+      x ← get ℓ' ;; put ℓ := v ;; ret x
+    ⦃ eq ⦄.
+Proof.
+  intros ℓ ℓ' v ne.
+  eapply rsymmetry. eapply rsym_pre. 1: auto.
+  eapply rpost_weaken_rule.
+  - eapply r_get_put_swap. auto.
+  - intros [] []. auto.
+Qed.
