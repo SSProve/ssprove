@@ -80,8 +80,8 @@ Definition valid_location (h : raw_heap) (l : Location) :=
   | Some v => check_loc_val l v
   end.
 
-Definition valid_heap : pred raw_heap := λ h,
-  domm h == fset_filter (fun l => valid_location h l) (domm h).
+Definition valid_heap : pred raw_heap :=
+  λ h, domm h == fset_filter (valid_location h) (domm h).
 
 Definition heap_defaults := ∀ a : chUniverse, a.
 
@@ -106,26 +106,40 @@ Definition Game_op_import_S : Type := {_ : ident & void}.
 Definition Game_import_P : Game_op_import_S → choiceType :=
   λ v, let 'existT a b := v in match b with end.
 
-Definition get_heap (map : heap) (l : Location) : Value l.π1.
+Definition cast_pointed_value {A} (p : pointed_value) (e : A = p.π1) : Value A.
 Proof.
-  destruct map as [rh valid_rh].
-  destruct (getm rh l) eqn:Hgetm.
-  - assert (exists v, rh l = Some v) as H0.
-    { exists p. assumption. }
-    move: H0. move /dommP => H0.
-    unfold valid_heap in valid_rh.
-    move: valid_rh. move /eqP => valid_rh.
-    rewrite valid_rh in H0.
-    rewrite in_fset_filter in H0.
-    move: H0. move /andP => [H1 H2].
-    unfold valid_location in H1.
-    rewrite Hgetm in H1.
-    unfold check_loc_val in H1.
-    move: H1. move /eqP => H1.
-    rewrite H1.
-    unfold pointed_value in p.
-    exact (p.π2).
-  - destruct l as [l_ty l_idx]. exact (heap_init l_ty).
+  subst. exact p.π2.
+Defined.
+
+Lemma get_heap_helper :
+  ∀ h ℓ p,
+    valid_heap h →
+    h ℓ = Some p →
+    ℓ.π1 = p.π1.
+Proof.
+  intros h ℓ p vh e.
+  assert (hℓ : exists v, h ℓ = Some v).
+  { eexists. eauto. }
+  move: hℓ => /dommP hℓ.
+  unfold valid_heap in vh.
+  move: vh => /eqP vh.
+  rewrite vh in hℓ.
+  rewrite in_fset_filter in hℓ.
+  move: hℓ => /andP [vℓ hℓ].
+  unfold valid_location in vℓ.
+  rewrite e in vℓ.
+  unfold check_loc_val in vℓ.
+  move: vℓ => /eqP. auto.
+Qed.
+
+Definition get_heap (map : heap) (ℓ : Location) : Value ℓ.π1.
+Proof.
+  destruct map as [h vh].
+  destruct (inspect (h ℓ)) as [[p|] e].
+  (* destruct (h ℓ) eqn:e. *)
+  - unshelve eapply cast_pointed_value. 1: exact p.
+    eapply get_heap_helper. all: eauto.
+  - destruct ℓ as [A n]. exact (heap_init A).
 Defined.
 
 Program Definition set_heap (map : heap) (l : Location) (v : Value l.π1)
@@ -3078,3 +3092,56 @@ Proof.
     rewrite set_heap_commut. 2: auto.
     reflexivity.
 Qed.
+
+Lemma get_heap_set_heap :
+  ∀ s ℓ ℓ' v,
+    ℓ != ℓ' →
+    get_heap s ℓ = get_heap (set_heap s ℓ' v) ℓ.
+Proof.
+  intros s ℓ ℓ' v ne.
+  destruct s as [h vh].
+  simpl.
+Abort.
+
+Lemma r_get_put_swap :
+  ∀ ℓ ℓ' v,
+    ℓ != ℓ' →
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      x ← get ℓ' ;; put ℓ := v ;; ret x ≈
+      put ℓ := v ;; x ← get ℓ' ;; ret x
+    ⦃ eq ⦄.
+Proof.
+  intros ℓ ℓ' v ne.
+  eapply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
+  intros [hpre hpost]. simpl repr.
+  Opaque get_heap. simpl. Transparent get_heap.
+  eexists (dunit (_, _)).
+  split.
+  - unfold coupling. split.
+    + unfold lmg. unfold dfst.
+      unfold SDistr_unit.
+      apply distr_ext. intro.
+      rewrite dlet_unit.
+      cbn - [get_heap].
+      reflexivity.
+    + unfold rmg. unfold dsnd.
+      unfold SDistr_unit.
+      apply distr_ext. intro.
+      rewrite dlet_unit.
+      cbn - [get_heap].
+      reflexivity.
+  - intros [] [] hh.
+    eapply hpost.
+    rewrite dunit1E in hh.
+    lazymatch type of hh with
+    | context [ ?x == ?y ] =>
+      destruct (x == y) eqn:e
+    end.
+    2:{
+      rewrite e in hh. simpl in hh.
+      rewrite mc_1_10.Num.Theory.ltrr in hh. discriminate.
+    }
+    move: e => /eqP e. noconf e.
+    subst. f_equal.
+(* Qed. *)
+Abort.
