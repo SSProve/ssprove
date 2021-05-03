@@ -3193,3 +3193,35 @@ Proof.
   - eapply r_get_put_swap. auto.
   - intros [] []. auto.
 Qed.
+
+Lemma r_get_put_swap' :
+  ∀ ℓ ℓ' v,
+    ℓ' != ℓ →
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      x ← get ℓ' ;; put ℓ := v ;; ret (x, Datatypes.tt) ≈
+      put ℓ := v ;; x ← get ℓ' ;; ret (x, Datatypes.tt)
+    ⦃ eq ⦄.
+Proof.
+  intros ℓ ℓ' v ne.
+  eapply r_get_put_swap in ne.
+  eapply r_bind with (f₁ := λ x, ret (x, Datatypes.tt)) in ne .
+  - exact ne.
+  - simpl. intros. apply r_ret.
+    intros ? ? e. inversion e. reflexivity.
+Qed.
+
+Lemma r_put_get_swap' :
+  ∀ ℓ ℓ' v,
+    ℓ' != ℓ →
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      put ℓ := v ;; x ← get ℓ' ;; ret (Datatypes.tt, x) ≈
+      x ← get ℓ' ;; put ℓ := v ;; ret (Datatypes.tt, x)
+    ⦃ eq ⦄.
+Proof.
+  intros ℓ ℓ' v ne.
+  eapply r_put_get_swap in ne.
+  eapply r_bind with (f₁ := λ x, ret (Datatypes.tt, x)) in ne .
+  - exact ne.
+  - simpl. intros. apply r_ret.
+    intros ? ? e. inversion e. reflexivity.
+Qed.

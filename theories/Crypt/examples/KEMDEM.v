@@ -768,10 +768,15 @@ Section KEMDEM.
       ssprove_swap_rhs 8%N.
       1:{
         simpl.
-        (* TODO A lemma to swap get/put on different locs + a tactic
-          to solve the inequality afterwards, maybe by projecting the nat.
-        *)
-        admit.
+        (* It doesn't unify easily... *)
+        pose proof r_get_put_swap' as ee.
+        specialize ee with (ℓ := ek_loc) (ℓ' := c_loc).
+        specialize ee with (v := Some a0).
+        eapply ee.
+        (* eapply r_get_put_swap'. *)
+        apply /negP.
+        move /eqP => equ.
+        noconf equ.
       }
       ssprove_swap_rhs 7%N. 1: admit.
       ssprove_swap_rhs 6%N.
@@ -792,7 +797,7 @@ Section KEMDEM.
         admit.
       }
       ssprove_swap_rhs 3%N.
-      (* The following doesn't work. Maybe a unificatin problem? *)
+      (* The following doesn't work. Maybe a unification problem? *)
       (* ssprove_swap_rhs 2%N.
       ssprove_swap_rhs 1%N.
       ssprove_contract_put_rhs.
