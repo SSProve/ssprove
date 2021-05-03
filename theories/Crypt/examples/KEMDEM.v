@@ -781,11 +781,26 @@ Section KEMDEM.
       ssprove_swap_lhs 0%N.
       ssprove_swap_rhs 4%N.
       ssprove_swap_rhs 3%N.
-      (* The following doesn't work. Maybe a unification problem? *)
-      (* ssprove_swap_rhs 2%N.
+      ssprove_swap_rhs 2%N.
       ssprove_swap_rhs 1%N.
       ssprove_contract_put_rhs.
-      ssprove_same_head_r. intros _. *)
+      ssprove_same_head_r. intros _.
+      ssprove_swap_rhs 5%N.
+      ssprove_swap_rhs 4%N.
+      ssprove_swap_rhs 3%N.
+      ssprove_swap_rhs 2%N.
+      ssprove_swap_rhs 1%N.
+      ssprove_swap_rhs 0%N.
+      ssprove_same_head_r. intros c'.
+      (* For later it seems we might gain from a rule saying
+        that get right after put is the same as put and then reusing that
+        value.
+
+        Sadly the problem we have right now is bigger than that!
+        The rhs talks about k_loc when the lhs doesn't at all.
+        Considering we have to show that the heaps are equal in the end,
+        it's problematic.
+      *)
       admit.
     - (* ssprove_code_simpl. *)
       (* It seems the simplifications tactics did something weird to the let *)
