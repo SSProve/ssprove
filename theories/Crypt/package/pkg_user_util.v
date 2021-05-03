@@ -404,6 +404,12 @@ Ltac ssprove_swap_side_cond :=
   | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_put ?ℓ ?v) ;; _ ← cmd (cmd_get ?ℓ') ;; _ ≈ _ ⦃ _ ⦄ =>
     apply (r_put_get_swap' ℓ ℓ' v) ;
     neq_loc_auto
+  | |- ⊢ ⦃ _ ⦄ put _ := _ ;; put _ := _ ;; _ ≈ _ ⦃ _ ⦄ =>
+    apply r_put_swap ;
+    neq_loc_auto
+  | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_put _ _) ;; _ ← cmd (cmd_put _ _) ;; _ ≈ _ ⦃ _ ⦄ =>
+    apply r_put_swap ;
+    neq_loc_auto
   end.
 
 (* TODO Tactic to solve automatically condition when possible *)

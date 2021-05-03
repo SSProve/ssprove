@@ -780,11 +780,6 @@ Section KEMDEM.
       ssprove_same_head_r. intro ek'.
       ssprove_swap_lhs 0%N.
       ssprove_swap_rhs 4%N.
-      1:{
-        (* TODO Have swap do it automatically *)
-        eapply r_put_swap.
-        neq_loc_auto.
-      }
       ssprove_swap_rhs 3%N.
       (* The following doesn't work. Maybe a unification problem? *)
       (* ssprove_swap_rhs 2%N.
