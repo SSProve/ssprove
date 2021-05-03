@@ -56,29 +56,46 @@ Section KEMDEM.
 
   (** In the SSP paper, we have λ.
       key_length would 2^λ because we do not use bitstrings.
+      This also applies for things like cipher and encapsulation lengths.
+      Instead we will have dedicated types for objects.
+      We still use cardinals when we need them to be finite types for
+      uniform sampling.
   *)
+
+  (** Symmetric key length *)
   Context (key_length : nat) `{Positive key_length}.
 
-  Context (plain_length : nat) `{Positive plain_length}.
+  (** Public and secret key lengths  *)
+  Context (pkey_length : nat) `{Positive pkey_length}.
+  Context (skey_length : nat) `{Positive skey_length}.
 
-  (** In the paper, the following are functions of |m|, here we assume |m|
-      is constant: plain_length.
-  *)
-  Context (clen : nat) `{Positive clen}.
-  Context (elen : nat) `{Positive elen}.
+  (** Plain text *)
+  Context (chPlain : chUniverse).
+
+  (** Ecrypted key *)
+  Context (ekey_length : nat) `{Positive ekey_length}.
+
+  (** Cipher text *)
+  Context (cipher_length : nat) `{Positive cipher_length}.
 
   (** Types *)
   Notation "'key" := ('fin key_length) (in custom pack_type at level 2).
   Notation "'key" := ('fin key_length) (at level 2) : package_scope.
 
-  Notation "'plain" := ('fin plain_length) (in custom pack_type at level 2).
-  Notation "'plain" := ('fin plain_length) (at level 2) : package_scope.
+  Notation "'pkey" := ('fin pkey_length) (in custom pack_type at level 2).
+  Notation "'pkey" := ('fin pkey_length) (at level 2) : package_scope.
 
-  Notation "'clen" := ('fin clen) (in custom pack_type at level 2).
-  Notation "'clen" := ('fin clen) (at level 2) : package_scope.
+  Notation "'skey" := ('fin skey_length) (in custom pack_type at level 2).
+  Notation "'skey" := ('fin skey_length) (at level 2) : package_scope.
 
-  Notation "'elen" := ('fin elen) (in custom pack_type at level 2).
-  Notation "'elen" := ('fin elen) (at level 2) : package_scope.
+  Notation "'plain" := (chPlain) (in custom pack_type at level 2).
+  Notation "'plain" := (chPlain) (at level 2) : package_scope.
+
+  Notation "'ekey" := ('fin ekey_length) (in custom pack_type at level 2).
+  Notation "'ekey" := ('fin ekey_length) (at level 2) : package_scope.
+
+  Notation "'cipher" := ('fin cipher_length) (in custom pack_type at level 2).
+  Notation "'cipher" := ('fin cipher_length) (at level 2) : package_scope.
 
   (** Procedure names *)
 
@@ -102,17 +119,18 @@ Section KEMDEM.
   Definition PKDEC := 5%N.
 
   (** Memory locations *)
-  Definition key : Location := ('option 'key ; 0%N).
-  Definition pk_loc : Location := ('option 'key ; 1%N).
-  Definition sk_loc : Location := ('option 'key ; 2%N).
-  Definition c_loc : Location := ('option ('elen × 'clen) ; 3%N).
-  Definition ce_loc : Location := ('option 'elen ; 4%N).
-  Definition cc_loc : Location := ('option 'clen ; 5%N).
+  Definition k_loc : Location := ('option 'key ; 0%N).
+  Definition pk_loc : Location := ('option 'pkey ; 1%N).
+  Definition sk_loc : Location := ('option 'skey ; 2%N).
+  Definition ek_loc : Location := ('option 'ekey ; 3%N).
+  Definition c_loc : Location := ('option 'cipher ; 4%N).
 
   (** Uniform distributions *)
   Definition i_key := key_length.
-  Definition i_clen := clen.
-  Definition i_elen := elen.
+  Definition i_pk := pkey_length.
+  Definition i_sk := skey_length.
+  Definition i_ek := ekey_length.
+  Definition i_c := cipher_length.
 
   (** Some shorthands *)
   Definition IGEN := [interface val #[ GEN ] : 'unit → 'unit ].
@@ -122,25 +140,24 @@ Section KEMDEM.
   (** PKE scheme *)
 
   Record PKE_scheme := {
-    PKE_kgen : code fset0 [interface] (chProd 'key 'key) ;
-    PKE_enc : 'key → 'plain → code fset0 [interface] (chProd 'elen 'clen) ;
-    (* clen is global *)
-    PKE_dec : 'key → chProd 'elen 'clen → code fset0 [interface] 'plain
+    PKE_kgen : code fset0 [interface] (chProd 'pkey 'skey) ;
+    PKE_enc : 'pkey → 'plain → code fset0 [interface] (chProd 'ekey 'cipher) ;
+    PKE_dec : 'skey → chProd 'ekey 'cipher → code fset0 [interface] 'plain
   }.
 
   (** KEM scheme *)
 
   Record KEM_scheme := {
-    KEM_kgen : code fset0 [interface] (chProd 'key 'key) ;
-    KEM_encap : 'key → code fset0 [interface] (chProd 'key 'elen) ;
-    KEM_decap : 'key → 'elen → code fset0 [interface] 'key
+    KEM_kgen : code fset0 [interface] (chProd 'pkey 'skey) ;
+    KEM_encap : 'pkey → code fset0 [interface] (chProd 'key 'ekey) ;
+    KEM_decap : 'skey → 'ekey → code fset0 [interface] 'key
   }.
 
   (** DEM scheme *)
 
   Record DEM_scheme := {
-    DEM_enc : 'key → 'plain → code fset0 [interface] 'clen ;
-    DEM_dec : 'key → 'clen → code fset0 [interface] 'plain
+    DEM_enc : 'key → 'plain → code fset0 [interface] 'cipher ;
+    DEM_dec : 'key → 'cipher → code fset0 [interface] 'plain
   }.
 
   Context (η : KEM_scheme).
@@ -149,7 +166,7 @@ Section KEMDEM.
   (** KEY Package *)
 
   Definition KEY_loc :=
-    fset [:: key ].
+    fset [:: k_loc ].
 
   Definition KEY_out :=
     [interface
@@ -161,20 +178,20 @@ Section KEMDEM.
   Definition KEY : package KEY_loc [interface] KEY_out :=
     [package
       def #[ GEN ] (_ : 'unit) : 'unit {
-        k ← get key ;;
+        k ← get k_loc ;;
         #assert (k == None) ;;
         k ← sample uniform i_key ;;
-        put key := Some k ;;
+        put k_loc := Some k ;;
         @ret 'unit Datatypes.tt
       } ;
       def #[ SET ] (k : 'key) : 'unit {
-        k' ← get key ;;
+        k' ← get k_loc ;;
         #assert (k' == None) ;;
-        put key := Some k ;;
+        put k_loc := Some k ;;
         @ret 'unit Datatypes.tt
       } ;
       def #[ GET ] (_ : 'unit) : 'key {
-        k ← get key ;;
+        k ← get k_loc ;;
         #assert (isSome k) as kSome ;;
         @ret 'key (getSome k kSome)
       }
@@ -182,16 +199,16 @@ Section KEMDEM.
 
   (** KEM package *)
 
-  Definition KEM_loc := fset [:: pk_loc ; sk_loc ; ce_loc ].
+  Definition KEM_loc := fset [:: pk_loc ; sk_loc ; ek_loc ].
 
   Definition KEM_in b :=
     if b then ISET else IGEN.
 
   Definition KEM_out :=
     [interface
-      val #[ KEMGEN ] : 'unit → 'key ;
-      val #[ ENCAP ] : 'unit → 'elen ;
-      val #[ DECAP ] : 'elen → 'key
+      val #[ KEMGEN ] : 'unit → 'pkey ;
+      val #[ ENCAP ] : 'unit → 'ekey ;
+      val #[ DECAP ] : 'ekey → 'key
     ].
 
   Hint Extern 10 (ValidCode ?L ?I ?c.(prog)) =>
@@ -200,43 +217,45 @@ Section KEMDEM.
 
   Definition KEM (b : bool) : package KEM_loc (KEM_in b) KEM_out :=
     [package
-      def #[ KEMGEN ] (_ : 'unit) : 'key {
+      def #[ KEMGEN ] (_ : 'unit) : 'pkey {
         sk ← get sk_loc ;;
         #assert (sk == None) ;;
         '(pk, sk) ← η.(KEM_kgen) ;;
         put pk_loc := Some pk ;;
         put sk_loc := Some sk ;;
-        @ret 'key pk
+        @ret 'pkey pk
       } ;
-      def #[ ENCAP ] (_ : 'unit) : 'elen {
+      def #[ ENCAP ] (_ : 'unit) : 'ekey {
         #import {sig #[ SET ] : 'key → 'unit } as SET ;;
         #import {sig #[ GEN ] : 'unit → 'unit } as GEN ;;
         pk ← get pk_loc ;;
         #assert (isSome pk) as pkSome ;;
         let pk := getSome pk pkSome in
-        c ← get ce_loc ;;
-        #assert (c == None) ;;
-        if b return raw_code 'elen
+        ek ← get ek_loc ;;
+        #assert (ek == None) ;;
+        if b return raw_code 'ekey
         then (
-          '(k, c) ← η.(KEM_encap) pk ;;
-          put ce_loc := Some c ;;
+          '(k, ek) ← η.(KEM_encap) pk ;;
+          put ek_loc := Some ek ;;
           SET k ;;
-          ret c
+          ret ek
         )
         else (
-          c ← sample uniform i_elen ;;
-          put ce_loc := Some c ;;
+          ek ← sample uniform i_ek ;;
+          put ek_loc := Some ek ;;
           GEN Datatypes.tt ;;
-          ret c
+          ret ek
         )
       } ;
-      def #[ DECAP ] (c' : 'elen) : 'key {
+      def #[ DECAP ] (ek' : 'ekey) : 'key {
         sk ← get sk_loc ;;
         #assert (isSome sk) as skSome ;;
         let sk := getSome sk skSome in
-        c ← get ce_loc ;;
-        #assert (c != Some c') ;;
-        k ← η.(KEM_decap) sk c' ;;
+        ek ← get ek_loc ;;
+        #assert (isSome ek) as ekSome ;;
+        let ek := getSome ek ekSome in
+        #assert (ek != ek') ;;
+        k ← η.(KEM_decap) sk ek' ;;
         ret k
       }
     ].
@@ -245,9 +264,9 @@ Section KEMDEM.
 
   Definition KEM_CCA_out :=
     [interface
-      val #[ KEMGEN ] : 'unit → 'key ;
-      val #[ ENCAP ] : 'unit → 'elen ;
-      val #[ DECAP ] : 'elen → 'key ;
+      val #[ KEMGEN ] : 'unit → 'pkey ;
+      val #[ ENCAP ] : 'unit → 'ekey ;
+      val #[ DECAP ] : 'ekey → 'key ;
       val #[GET] : 'unit → 'key
     ].
 
@@ -302,39 +321,41 @@ Section KEMDEM.
 
   (** DEM package *)
 
-  Definition DEM_loc := fset [:: cc_loc ].
+  Definition DEM_loc := fset [:: c_loc ].
 
   Definition DEM_in := IGET.
 
   Definition DEM_out :=
     [interface
-      val #[ ENC ] : 'plain → 'clen ;
-      val #[ DEC ] : 'clen → 'plain
+      val #[ ENC ] : 'plain → 'cipher ;
+      val #[ DEC ] : 'cipher → 'plain
     ].
 
   Definition DEM (b : bool) : package DEM_loc DEM_in DEM_out :=
     [package
-      def #[ ENC ] (m : 'plain) : 'clen {
+      def #[ ENC ] (m : 'plain) : 'cipher {
         #import {sig #[ GET ] : 'unit → 'key } as GET ;;
-        c ← get cc_loc ;;
+        c ← get c_loc ;;
         #assert (c == None) ;;
         k ← GET Datatypes.tt ;;
         if b
         then (
           c ← θ.(DEM_enc) k m ;;
-          put cc_loc := Some c ;;
+          put c_loc := Some c ;;
           ret c
         )
         else (
-          c ← sample uniform i_clen ;;
-          put cc_loc := Some c ;;
+          c ← sample uniform i_c ;;
+          put c_loc := Some c ;;
           ret c
         )
       } ;
-      def #[ DEC ] (c' : 'clen) : 'plain {
+      def #[ DEC ] (c' : 'cipher) : 'plain {
         #import {sig #[ GET ] : 'unit → 'key } as GET ;;
-        c ← get cc_loc ;;
-        #assert (c != Some c') ;;
+        c ← get c_loc ;;
+        #assert (isSome c) as cSome ;;
+        let c := getSome c cSome in
+        #assert (c != c') ;;
         k ← GET Datatypes.tt ;;
         m ← θ.(DEM_dec) k c' ;;
         ret m
@@ -346,8 +367,8 @@ Section KEMDEM.
   Definition DEM_CCA_out :=
     [interface
       val #[ GEN ] : 'unit → 'unit ;
-      val #[ ENC ] : 'plain → 'clen ;
-      val #[ DEC ] : 'clen → 'plain
+      val #[ ENC ] : 'plain → 'cipher ;
+      val #[ DEC ] : 'cipher → 'plain
     ].
 
   (* Maybe inline? *)
@@ -395,19 +416,19 @@ Section KEMDEM.
 
   (** PKE-CCA *)
 
-  Definition PKE_loc := fset [:: pk_loc ; sk_loc ; c_loc ].
+  Definition PKE_CCA_loc := fset [:: pk_loc ; sk_loc ; c_loc ; ek_loc ].
 
   Definition PKE_CCA_out :=
     [interface
-      val #[ PKGEN ] : 'unit → 'key ;
-      val #[ PKENC ] : 'plain → 'elen × 'clen ;
-      val #[ PKDEC ] : 'elen × 'clen → 'plain
+      val #[ PKGEN ] : 'unit → 'pkey ;
+      val #[ PKENC ] : 'plain → 'ekey × 'cipher ;
+      val #[ PKDEC ] : 'ekey × 'cipher → 'plain
     ].
 
   Definition PKE_CCA_pkg (ζ : PKE_scheme) b :
-    package PKE_loc [interface] PKE_CCA_out :=
+    package PKE_CCA_loc [interface] PKE_CCA_out :=
     [package
-      def #[ PKGEN ] (_ : 'unit) : 'key {
+      def #[ PKGEN ] (_ : 'unit) : 'pkey {
         (** In the original SSP paper, there is only a check that the location
             sk_loc is empty, for simplicity, we check also that pk_loc is empty.
             In the future, we can probably ensure that pk_loc is empty iff
@@ -420,28 +441,40 @@ Section KEMDEM.
         '(pk, sk) ← ζ.(PKE_kgen) ;;
         put pk_loc := Some pk ;;
         put sk_loc := Some sk ;;
-        @ret 'key pk
+        @ret 'pkey pk
       } ;
-      def #[ PKENC ] (m : 'plain) : 'elen × 'clen {
+      def #[ PKENC ] (m : 'plain) : 'ekey × 'cipher {
         pk ← get pk_loc ;;
         #assert (isSome pk) as pkSome ;;
         let pk := getSome pk pkSome in
+        ek ← get ek_loc ;;
+        #assert (ek == None) ;;
         c ← get c_loc ;;
         #assert (c == None) ;;
-        c ← (
-          if b return raw_code _
+        '(ek, c) ← (
+          if b return raw_code (chProd 'ekey 'cipher)
           then ζ.(PKE_enc) pk m
-          else c ← sample uniform i_clen ;; ret (gfin 0, c)
+          else (
+            ek ← sample uniform i_ek ;;
+            c ← sample uniform i_c ;;
+            ret (ek, c)
+          )
         ) ;;
+        put ek_loc := Some ek ;;
         put c_loc := Some c ;;
-        ret c
+        @ret (chProd 'ekey 'cipher) (ek, c)
       } ;
-      def #[ PKDEC ] (c' : 'elen × 'clen) : 'plain {
+      def #[ PKDEC ] (c' : 'ekey × 'cipher) : 'plain {
         sk ← get sk_loc ;;
         #assert (isSome sk) as skSome ;;
         let sk := getSome sk skSome in
+        ek ← get ek_loc ;;
+        #assert (isSome ek) as ekSome ;;
+        let ek := getSome ek ekSome in
         c ← get c_loc ;;
-        #assert (Some c' != c) ;;
+        #assert (isSome c) as cSome ;;
+        let c := getSome c cSome in
+        #assert ((ek, c) != c') ;;
         m ← ζ.(PKE_dec) sk c' ;;
         ret m
       }
@@ -456,15 +489,15 @@ Section KEMDEM.
   (** MOD-CCA *)
 
   Definition MOD_CCA_loc :=
-    fset [:: pk_loc ; c_loc ].
+    fset [:: pk_loc ; c_loc ; ek_loc ].
 
   Definition MOD_CCA_in :=
     [interface
-      val #[ KEMGEN ] : 'unit → 'key ;
-      val #[ ENCAP ] : 'unit → 'elen ;
-      val #[ DECAP ] : 'elen → 'key ;
-      val #[ ENC ] : 'plain → 'clen ;
-      val #[ DEC ] : 'clen → 'plain
+      val #[ KEMGEN ] : 'unit → 'pkey ;
+      val #[ ENCAP ] : 'unit → 'ekey ;
+      val #[ DECAP ] : 'ekey → 'key ;
+      val #[ ENC ] : 'plain → 'cipher ;
+      val #[ DEC ] : 'cipher → 'plain
     ].
 
   Definition MOD_CCA_out :=
@@ -473,41 +506,48 @@ Section KEMDEM.
   Definition MOD_CCA (ζ : PKE_scheme) :
     package MOD_CCA_loc MOD_CCA_in MOD_CCA_out :=
     [package
-      def #[ PKGEN ] (_ : 'unit) : 'key {
-        #import {sig #[ KEMGEN ] : 'unit → 'key } as KEMGEN ;;
+      def #[ PKGEN ] (_ : 'unit) : 'pkey {
+        #import {sig #[ KEMGEN ] : 'unit → 'pkey } as KEMGEN ;;
         pk ← get pk_loc ;;
         #assert (pk == None) ;;
         pk ← KEMGEN Datatypes.tt ;;
         ret pk
       } ;
-      def #[ PKENC ] (m : 'plain) : 'elen × 'clen {
-        #import {sig #[ ENCAP ] : 'unit → 'elen } as ENCAP ;;
-        #import {sig #[ ENC ] : 'plain → 'clen } as ENC ;;
+      def #[ PKENC ] (m : 'plain) : 'ekey × 'cipher {
+        #import {sig #[ ENCAP ] : 'unit → 'ekey } as ENCAP ;;
+        #import {sig #[ ENC ] : 'plain → 'cipher } as ENC ;;
         pk ← get pk_loc ;;
         #assert (isSome pk) ;;
+        ek ← get ek_loc ;;
+        #assert (ek == None) ;;
         c ← get c_loc ;;
         #assert (c ==  None) ;;
-        c₁ ← ENCAP Datatypes.tt ;;
-        c₂ ← ENC m ;;
-        put c_loc := Some (c₁, c₂) ;;
-        @ret (chProd 'elen 'clen) (c₁, c₂)
+        ek ← ENCAP Datatypes.tt ;;
+        put ek_loc := Some ek ;;
+        c ← ENC m ;;
+        put c_loc := Some c ;;
+        @ret (chProd 'ekey 'cipher) (ek, c)
       } ;
-      def #[ PKDEC ] (c' : 'elen × 'clen) : 'plain {
-        #import {sig #[ DECAP ] : 'elen → 'key } as DECAP ;;
-        #import {sig #[ DEC ] : 'clen → 'plain } as DEC ;;
+      def #[ PKDEC ] ('(ek', c') : 'ekey × 'cipher) : 'plain {
+        #import {sig #[ DECAP ] : 'ekey → 'key } as DECAP ;;
+        #import {sig #[ DEC ] : 'cipher → 'plain } as DEC ;;
         pk ← get pk_loc ;;
         #assert (isSome pk) ;;
+        ek ← get ek_loc ;;
+        #assert (isSome ek) as ekSome ;;
+        let ek := getSome ek ekSome in
         c ← get c_loc ;;
-        #assert (c != Some c') ;;
-        let '(c'₁, c'₂) := c' in
-        if testSome (λ '(c₁, c₂), c'₁ == c₁) c
+        #assert (isSome c) as cSome ;;
+        let c := getSome c cSome in
+        #assert ((ek, c) != (ek', c')) ;;
+        if ek == ek'
         then (
-          m ← DEC c'₂ ;;
+          m ← DEC c' ;;
           ret m
         )
         else (
-          k' ← DECAP c'₁ ;;
-          m ← θ.(DEM_dec) k' c'₂ ;;
+          k' ← DECAP ek' ;;
+          m ← θ.(DEM_dec) k' c' ;;
           ret m
         )
       }
@@ -517,14 +557,14 @@ Section KEMDEM.
   Definition KEM_DEM : PKE_scheme := {|
     PKE_kgen := η.(KEM_kgen) ;
     PKE_enc := λ pk m, {code
-      '(k, c₁) ← η.(KEM_encap) pk ;;
-      c₂ ← θ.(DEM_enc) k m ;;
-      ret (c₁, c₂)
+      '(k, ek) ← η.(KEM_encap) pk ;;
+      c ← θ.(DEM_enc) k m ;;
+      ret (ek, c)
     } ;
     PKE_dec := λ sk c, {code
-      let '(c₁, c₂) := c in
-      k ← η.(KEM_decap) sk c₁ ;;
-      m ← θ.(DEM_dec) k c₂ ;;
+      let '(ek, c) := c in
+      k ← η.(KEM_decap) sk ek ;;
+      m ← θ.(DEM_dec) k c ;;
       ret m
     }
   |}.
@@ -699,10 +739,6 @@ Section KEMDEM.
     (* We are now in the realm of program logic *)
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
-      ssprove_same_head_r. intro pk.
-      ssprove_same_head_r. intro pkNone.
-      ssprove_same_head_r. intro sk.
-      ssprove_same_head_r. intro skNone.
       eapply rpost_weaken_rule. 1: apply rreflexivity_rule.
       intros [] [] e. inversion e. auto.
     - ssprove_code_simpl_more.
@@ -713,6 +749,8 @@ Section KEMDEM.
       (* That was a lot of simpl. Would be good to have it all sorted out
         as one thing.
       *)
+      ssprove_swap_rhs 5%N.
+      ssprove_swap_rhs 4%N.
       ssprove_swap_rhs 3%N.
       ssprove_swap_rhs 2%N.
       ssprove_swap_rhs 1%N.
@@ -720,20 +758,55 @@ Section KEMDEM.
       ssprove_same_head_r. intro pk.
       ssprove_same_head_r. intro pkSome.
       rewrite pkSome. simpl.
+      ssprove_swap_rhs 3%N.
+      ssprove_swap_rhs 2%N.
+      ssprove_swap_rhs 1%N.
+      ssprove_contract_get_rhs.
+      ssprove_same_head_r. intro ek.
+      ssprove_same_head_r. intro ekNone.
+      rewrite ekNone. simpl.
+      ssprove_swap_rhs 8%N.
+      1:{
+        simpl.
+        (* TODO A lemma to swap get/put on different locs + a tactic
+          to solve the inequality afterwards, maybe by projecting the nat.
+        *)
+        admit.
+      }
+      ssprove_swap_rhs 7%N. 1: admit.
+      ssprove_swap_rhs 6%N.
+      ssprove_swap_rhs 5%N.
+      ssprove_swap_rhs 4%N.
+      ssprove_swap_rhs 3%N. 1: admit.
+      ssprove_swap_rhs 2%N.
+      ssprove_swap_rhs 1%N.
+      ssprove_contract_get_rhs.
       ssprove_same_head_r. intro c.
       ssprove_same_head_r. intro cNone.
-      (* Doesn't look very equivalent...
-        In the SSP proof, the package magically changes so...
-      *)
+      rewrite cNone. simpl.
+      ssprove_same_head_r. intro ek'.
+      ssprove_swap_lhs 0%N.
+      ssprove_swap_rhs 4%N.
+      1:{
+        simpl. (* Similar need for put/put *)
+        admit.
+      }
+      ssprove_swap_rhs 3%N.
+      (* The following doesn't work. Maybe a unificatin problem? *)
+      (* ssprove_swap_rhs 2%N.
+      ssprove_swap_rhs 1%N.
+      TODO: A contract rule for put/put
+      ssprove_same_head_r. intros _. *)
       admit.
     - (* ssprove_code_simpl. *)
       (* It seems the simplifications tactics did something weird to the let *)
       (* In the SSP paper proof, there is pk on the lhs instead of sk.
-        but changing it in the rhs means changing the locations of MOD-CCA to add
-        some sk which is never set, doesn't make much sense,
+        but changing it in the rhs means changing the locations of MOD-CCA to
+        add some sk which is never set, doesn't make much sense,
         and if we change it to pk in the lhs we don't have the info needed
         to actually read sk...
       *)
+      destruct m as [ek' c'].
       admit.
   Admitted.
 
@@ -747,7 +820,7 @@ Section KEMDEM.
   Theorem PKE_security :
     ∀ LA A,
       ValidPackage LA PKE_CCA_out A_export A →
-      fdisjoint LA PKE_loc →
+      fdisjoint LA PKE_CCA_loc →
       fdisjoint LA Aux_loc → (* Do we really need this? *)
       Advantage (PKE_CCA KEM_DEM) A <=
       Advantage KEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (ID KEM_out) (DEM true)) +
@@ -765,7 +838,7 @@ Section KEMDEM.
     rewrite !GRing.addrA in ineq.
     eapply ler_trans. 1: exact ineq.
     clear ineq.
-    (* Aux_loc is problematic here, can I make it equal to PKE_loc? *)
+    (* Aux_loc is problematic here, can I make it equal to PKE_CCA_loc? *)
     rewrite PKE_CCA_perf_false. 2,3: auto.
     rewrite PKE_CCA_perf_true. 2,3: auto.
     rewrite GRing.addr0. rewrite GRing.add0r.
