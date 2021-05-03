@@ -795,7 +795,7 @@ Section KEMDEM.
       (* The following doesn't work. Maybe a unificatin problem? *)
       (* ssprove_swap_rhs 2%N.
       ssprove_swap_rhs 1%N.
-      TODO: A contract rule for put/put
+      ssprove_contract_put_rhs.
       ssprove_same_head_r. intros _. *)
       admit.
     - (* ssprove_code_simpl. *)

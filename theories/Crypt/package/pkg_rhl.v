@@ -2987,3 +2987,41 @@ Proof.
   intros s. simpl.
   reflexivity.
 Qed.
+
+(* TODO MOVE *)
+Lemma heap_ext :
+  ∀ (h₀ h₁ : heap),
+    h₀ ∙1 = h₁ ∙1 →
+    h₀ = h₁.
+Proof.
+  intros [h₀ v₀] [h₁ v₁] e. simpl in e. subst.
+  f_equal. apply eq_irrelevance.
+Qed.
+
+Lemma set_heap_contract :
+  ∀ s ℓ v v',
+    set_heap (set_heap s ℓ v) ℓ v' = set_heap s ℓ v'.
+Proof.
+  intros s ℓ v v'.
+  apply heap_ext. destruct s as [h vh]. simpl.
+  apply setmxx.
+Qed.
+
+Lemma contract_put :
+  ∀ A ℓ v v' (r : raw_code A),
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      put ℓ := v' ;; r ≈
+      put ℓ := v ;; put ℓ := v' ;; r
+    ⦃ eq ⦄.
+Proof.
+  intros A ℓ v v' r.
+  eapply rrewrite_eqDistrR.
+  1: eapply rreflexivity_rule.
+  intros s. simpl.
+  unfold θ_dens, θ0. simpl.
+  unfold Theta_dens.unary_theta_dens_obligation_1.
+  unfold OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
+  simpl.
+  unfold UniversalFreeMap.outOfFree_obligation_1.
+  rewrite set_heap_contract. reflexivity.
+Qed.

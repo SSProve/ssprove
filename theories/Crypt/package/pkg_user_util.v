@@ -519,3 +519,18 @@ Ltac ssprove_contract_get_rhs :=
     ssprove_contract_get_aux
   | cmd_bind_simpl ; cbn beta
   ].
+
+Ltac ssprove_contract_put_aux :=
+  eapply contract_put.
+
+Ltac ssprove_contract_put_lhs :=
+  eapply r_transL ; [
+    ssprove_contract_put_aux
+  | cmd_bind_simpl ; cbn beta
+  ].
+
+Ltac ssprove_contract_put_rhs :=
+  eapply r_transR ; [
+    ssprove_contract_put_aux
+  | cmd_bind_simpl ; cbn beta
+  ].
