@@ -2381,6 +2381,44 @@ Proof.
   intros s₀ s₁ h. apply h. auto.
 Qed.
 
+Lemma cmd_put_preserve_pre :
+  ∀ ℓ v (pre : precond),
+    (∀ s₀ s₁, pre (s₀, s₁) → pre (set_heap s₀ ℓ v, set_heap s₁ ℓ v)) →
+    ⊢ ⦃ pre ⦄
+      x ← cmd (cmd_put ℓ v) ;; ret x ≈ x ← cmd (cmd_put ℓ v) ;; ret x
+    ⦃ λ '(a₀, s₀) '(a₁, s₁), pre (s₀, s₁) ∧ a₀ = a₁ ⦄.
+Proof.
+  intros ℓ v pre h. simpl.
+  eapply from_sem_jdg. simpl.
+  intros [s₀ s₁]. hnf. intro P. hnf.
+  intros [hpre hpost]. simpl.
+  eexists (SDistr_unit _ _).
+  split.
+  - apply SDistr_unit_F_choice_prod_coupling.
+    reflexivity.
+  - intros [] [] e.
+    unfold SDistr_unit in e. rewrite dunit1E in e.
+    apply ge0_eq in e. noconf e.
+    eapply hpost. intuition auto.
+Qed.
+
+Lemma cmd_put_preserve_heap_ignore :
+  ∀ ℓ v L,
+    ⊢ ⦃ heap_ignore L ⦄
+      x ← cmd (cmd_put ℓ v) ;; ret x ≈ x ← cmd (cmd_put ℓ v) ;; ret x
+    ⦃ λ '(a₀, s₀) '(a₁, s₁), heap_ignore L (s₀, s₁) ∧ a₀ = a₁ ⦄.
+Proof.
+  intros ℓ v L.
+  eapply cmd_put_preserve_pre.
+  intros s₀ s₁ h ℓ' hn.
+  destruct (ℓ' != ℓ) eqn:e.
+  - rewrite get_set_heap_neq. 2: auto.
+    rewrite get_set_heap_neq. 2: auto.
+    apply h. auto.
+  - move: e => /eqP e. subst.
+    rewrite !get_set_heap_eq. reflexivity.
+Qed.
+
 Lemma rswap_cmd :
   ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
     (c₀ : command A₀) (c₁ : command A₁)
