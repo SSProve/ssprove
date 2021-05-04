@@ -334,7 +334,6 @@ Fixpoint repr {A : choiceType} (p : raw_code A) :
       bindrFree
         (ropr gett (λ s, ropr (putt (set_heap s l v)) (λ s, retrFree tt)))
         (λ _, repr k)
-
   | sampler op k =>
       bindrFree
         (ropr (op_iota op) (λ v, retrFree v))
@@ -2352,6 +2351,38 @@ Proof.
     eapply rpre_weaken_rule. 1: eapply hf.
     simpl. intros ? ? [? ?]. subst. auto.
 Qed.
+
+(* TODO MOVE *)
+Lemma dlet_f_equal :
+  ∀ {R : realType} {T U : choiceType} (m : {distr T / R}) (f g : T → {distr U / R}),
+    f =1 g →
+    \dlet_(x <- m) f x =1 \dlet_(x <- m) g x.
+Proof.
+  intros R T U m f g e x.
+  apply functional_extensionality in e. subst.
+  reflexivity.
+Qed.
+
+Lemma cmd_sample_preserve_pre :
+  ∀ (op : Op) pre,
+    ⊢ ⦃ pre ⦄
+      x ← cmd (cmd_sample op) ;; ret x ≈ x ← cmd (cmd_sample op) ;; ret x
+    ⦃ λ '(a₀, s₀) '(a₁, s₁), pre (s₀, s₁) ∧ a₀ = a₁ ⦄.
+Proof.
+  (* intros op pre. simpl.
+  eapply from_sem_jdg. simpl.
+  intros [s₀ s₁]. hnf. intro P. hnf.
+  intros [hpre hpost]. simpl.
+  eexists (coupling_self_SDistr _). split.
+  - unfold coupling. unfold coupling_self_SDistr. split.
+    + unfold lmg. unfold dfst.
+      apply distr_ext. intro.
+      rewrite dlet_dlet.
+      unfold SDistr_bind, SDistr_unit.
+      rewrite dlet_dunit_id.
+    +
+  - *)
+Abort.
 
 Lemma rswap_cmd :
   ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
