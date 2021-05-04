@@ -2372,7 +2372,7 @@ Qed.
 Lemma cmd_get_preserve_heap_ignore :
   ∀ (ℓ : Location) (L : {fset Location}),
     ℓ \notin L →
-    ⊢ ⦃ heap_ignore L ⦄
+    ⊢ ⦃ λ '(s₀, s₁), heap_ignore L (s₀, s₁) ⦄
       x ← cmd (cmd_get ℓ) ;; ret x ≈ x ← cmd (cmd_get ℓ) ;; ret x
     ⦃ λ '(a₀, s₀) '(a₁, s₁), heap_ignore L (s₀, s₁) ∧ a₀ = a₁ ⦄.
 Proof.
@@ -2404,7 +2404,7 @@ Qed.
 
 Lemma cmd_put_preserve_heap_ignore :
   ∀ ℓ v L,
-    ⊢ ⦃ heap_ignore L ⦄
+    ⊢ ⦃ λ '(s₀, s₁), heap_ignore L (s₀, s₁) ⦄
       x ← cmd (cmd_put ℓ v) ;; ret x ≈ x ← cmd (cmd_put ℓ v) ;; ret x
     ⦃ λ '(a₀, s₀) '(a₁, s₁), heap_ignore L (s₀, s₁) ∧ a₀ = a₁ ⦄.
 Proof.

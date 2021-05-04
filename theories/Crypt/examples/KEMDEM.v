@@ -753,14 +753,25 @@ Section KEMDEM.
       ssprove_code_simpl.
       (* The reflexivitiy rule doesn't apply because of the invariant.
         Should we have a stronger one, or one for heap_ignore?
-
-        ssprove_same_head_r also doesn't like that we don't have equality
-        of heaps it seems.
       *)
       (* eapply rpost_weaken_rule. 1: eapply rpre_weaken_rule.
       + apply rreflexivity_rule.
       + simpl. intros. auto.
       + intros [] [] e. inversion e. auto. *)
+      ssprove_same_head_alt_r.
+      { rewrite in_fset. rewrite in_cons. rewrite in_nil.
+        (* How do I deal with this simply and automatically?
+          Anyway, would be better to have a reflexivity rule for heap_ignore
+        *)
+        unfold pk_loc, k_loc. simpl.
+        admit.
+      }
+      intro pk.
+      ssprove_same_head_alt_r. intro pkSome.
+      ssprove_same_head_alt_r.
+      { admit. }
+      intro sk.
+      ssprove_same_head_alt_r. intro skSome.
       admit.
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
@@ -776,15 +787,15 @@ Section KEMDEM.
       ssprove_swap_rhs 2%N.
       ssprove_swap_rhs 1%N.
       ssprove_contract_get_rhs.
-      (* ssprove_same_head_r. intro pk.
-      ssprove_same_head_r. intro pkSome.
+      ssprove_same_head_alt_r. 1: admit. intro pk.
+      ssprove_same_head_alt_r. intro pkSome.
       rewrite pkSome. simpl.
       ssprove_swap_rhs 3%N.
       ssprove_swap_rhs 2%N.
       ssprove_swap_rhs 1%N.
       ssprove_contract_get_rhs.
-      ssprove_same_head_r. intro ek.
-      ssprove_same_head_r. intro ekNone.
+      ssprove_same_head_alt_r. 1: admit. intro ek.
+      ssprove_same_head_alt_r. intro ekNone.
       rewrite ekNone. simpl.
       ssprove_swap_rhs 8%N.
       ssprove_swap_rhs 7%N.
@@ -795,27 +806,31 @@ Section KEMDEM.
       ssprove_swap_rhs 2%N.
       ssprove_swap_rhs 1%N.
       ssprove_contract_get_rhs.
-      ssprove_same_head_r. intro c.
-      ssprove_same_head_r. intro cNone.
+      ssprove_same_head_alt_r. 1: admit. intro c.
+      ssprove_same_head_alt_r. intro cNone.
       rewrite cNone. simpl.
-      ssprove_same_head_r. intro ek'.
+      ssprove_same_head_alt_r. intro ek'.
       ssprove_swap_lhs 0%N.
       ssprove_swap_rhs 4%N.
       ssprove_swap_rhs 3%N.
       ssprove_swap_rhs 2%N.
       ssprove_swap_rhs 1%N.
       ssprove_contract_put_rhs.
-      ssprove_same_head_r. intros _.
+      ssprove_same_head_alt_r. intros _.
       ssprove_swap_rhs 5%N.
       ssprove_swap_rhs 4%N.
       ssprove_swap_rhs 3%N.
       ssprove_swap_rhs 2%N.
       ssprove_swap_rhs 1%N.
       ssprove_swap_rhs 0%N.
-      ssprove_same_head_r. intros c'. *)
+      ssprove_same_head_alt_r. intros c'.
       (* For later it seems we might gain from a rule saying
         that get right after put is the same as put and then reusing that
         value.
+
+        But now, we probably want that we can ignore things related to
+        k_loc as we ignore it in the invariant. Considering the #assert
+        it's not a done deal...
       *)
       admit.
     - (* ssprove_code_simpl. *)

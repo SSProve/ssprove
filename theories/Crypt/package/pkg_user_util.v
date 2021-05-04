@@ -300,11 +300,11 @@ Ltac same_head_alt_side_cond :=
   lazymatch goal with
   | |- ⊢ ⦃ _ ⦄ _ ≈ x ← cmd (cmd_sample ?op) ;; ret x ⦃ _ ⦄ =>
     eapply cmd_sample_preserve_pre
-  | |- ⊢ ⦃ heap_ignore ?L ⦄ _ ≈ x ← cmd (cmd_get ?ℓ) ;; ret x ⦃ _ ⦄ =>
+  | |- ⊢ ⦃ λ '(s₀, s₁), heap_ignore ?L (s₀, s₁) ⦄ _ ≈ x ← cmd (cmd_get ?ℓ) ;; ret x ⦃ _ ⦄ =>
     eapply cmd_get_preserve_heap_ignore
   | |- ⊢ ⦃ _ ⦄ _ ≈ x ← cmd (cmd_get ?ℓ) ;; ret x ⦃ _ ⦄ =>
     eapply cmd_get_preserve_pre
-  | |- ⊢ ⦃ heap_ignore ?L ⦄ _ ≈ x ← cmd (cmd_put ?ℓ ?v) ;; ret x ⦃ _ ⦄ =>
+  | |- ⊢ ⦃ λ '(s₀, s₁), heap_ignore ?L (s₀, s₁) ⦄ _ ≈ x ← cmd (cmd_put ?ℓ ?v) ;; ret x ⦃ _ ⦄ =>
     eapply cmd_put_preserve_heap_ignore (* + something to infer \notin ?? *)
   | |- ⊢ ⦃ _ ⦄ _ ≈ x ← cmd (cmd_put ?ℓ ?v) ;; ret x ⦃ _ ⦄ =>
     eapply cmd_put_preserve_pre
