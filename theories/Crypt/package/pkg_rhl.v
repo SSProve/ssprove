@@ -106,10 +106,41 @@ Definition Game_op_import_S : Type := {_ : ident & void}.
 Definition Game_import_P : Game_op_import_S → choiceType :=
   λ v, let 'existT a b := v in match b with end.
 
+Lemma heap_ext :
+  ∀ (h₀ h₁ : heap),
+    h₀ ∙1 = h₁ ∙1 →
+    h₀ = h₁.
+Proof.
+  intros [h₀ v₀] [h₁ v₁] e. simpl in e. subst.
+  f_equal. apply eq_irrelevance.
+Qed.
+
 Definition cast_pointed_value {A} (p : pointed_value) (e : A = p.π1) : Value A.
 Proof.
   subst. exact p.π2.
 Defined.
+
+Lemma cast_pointed_value_K :
+  ∀ p e,
+    cast_pointed_value p e = p.π2.
+Proof.
+  intros p e.
+  assert (e = erefl).
+  { apply eq_irrelevance. }
+  subst. reflexivity.
+Qed.
+
+Lemma cast_pointed_value_ext :
+  ∀ A p e1 q e2,
+    p = q →
+    @cast_pointed_value A p e1 = @cast_pointed_value A q e2.
+Proof.
+  intros A p e1 q e2 e. subst.
+  cbn.
+  assert (ee : e2 = erefl).
+  { apply eq_irrelevance. }
+  rewrite ee. reflexivity.
+Qed.
 
 Lemma get_heap_helper :
   ∀ h ℓ p,
@@ -183,6 +214,100 @@ Next Obligation.
             assumption.
         ** assumption.
   - rewrite andbC. auto.
+Qed.
+
+Lemma get_set_heap_eq :
+  ∀ h ℓ v,
+    get_heap (set_heap h ℓ v) ℓ = v.
+Proof.
+  intros h ℓ v.
+  funelim (get_heap (set_heap h ℓ v) ℓ).
+  2:{
+    pose proof e as ep. simpl in ep.
+    rewrite setmE in ep. rewrite eqxx in ep. noconf ep.
+  }
+  rewrite -Heqcall. clear Heqcall.
+  pose proof e as ep. simpl in ep.
+  rewrite setmE in ep. rewrite eqxx in ep. noconf ep.
+  rewrite (cast_pointed_value_K (ℓ0.π1 ; v)).
+  reflexivity.
+Qed.
+
+Lemma get_set_heap_neq :
+  ∀ h ℓ v ℓ',
+    ℓ' != ℓ →
+    get_heap (set_heap h ℓ v) ℓ' = get_heap h ℓ'.
+Proof.
+  intros h ℓ v ℓ' ne.
+  funelim (get_heap (set_heap h ℓ v) ℓ').
+  - rewrite -Heqcall. clear Heqcall.
+    pose proof e as ep. simpl in ep.
+    rewrite setmE in ep.
+    eapply negbTE in ne. rewrite ne in ep.
+    funelim (get_heap h ℓ).
+    2:{
+      rewrite -e in ep. noconf ep.
+    }
+    rewrite -Heqcall. clear Heqcall.
+    apply cast_pointed_value_ext.
+    rewrite -e in ep. noconf ep. reflexivity.
+  - rewrite -Heqcall. clear Heqcall.
+    clear H. simpl in e. rewrite setmE in e.
+    eapply negbTE in ne. rewrite ne in e.
+    funelim (get_heap h ℓ).
+    1:{
+      rewrite -e in e0. noconf e0.
+    }
+    rewrite -Heqcall. reflexivity.
+Qed.
+
+Lemma set_heap_contract :
+  ∀ s ℓ v v',
+    set_heap (set_heap s ℓ v) ℓ v' = set_heap s ℓ v'.
+Proof.
+  intros s ℓ v v'.
+  apply heap_ext. destruct s as [h vh]. simpl.
+  apply setmxx.
+Qed.
+
+Lemma get_heap_set_heap :
+  ∀ s ℓ ℓ' v,
+    ℓ != ℓ' →
+    get_heap s ℓ = get_heap (set_heap s ℓ' v) ℓ.
+Proof.
+  intros s ℓ ℓ' v ne.
+  funelim (get_heap s ℓ).
+  - rewrite -Heqcall. clear Heqcall.
+    funelim (get_heap (set_heap map ℓ' v) ℓ).
+    + rewrite -Heqcall. clear Heqcall.
+      pose proof e as ep.
+      simpl in ep. rewrite setmE in ep.
+      eapply negbTE in ne.
+      rewrite ne in ep. rewrite -e0 in ep. noconf ep.
+      eapply cast_pointed_value_ext. reflexivity.
+    + pose proof e as ep.
+      simpl in ep. rewrite setmE in ep.
+      eapply negbTE in ne.
+      rewrite ne in ep. rewrite -e0 in ep. noconf ep.
+  - rewrite -Heqcall. clear Heqcall.
+    funelim (get_heap (set_heap map ℓ' v) ℓ).
+    + pose proof e as ep.
+      simpl in ep. rewrite setmE in ep.
+      eapply negbTE in ne.
+      rewrite ne in ep. rewrite -e0 in ep. noconf ep.
+    + rewrite -Heqcall. clear Heqcall.
+      reflexivity.
+Qed.
+
+Lemma set_heap_commut :
+  ∀ s ℓ v ℓ' v',
+    ℓ != ℓ' →
+    set_heap (set_heap s ℓ v) ℓ' v' =
+    set_heap (set_heap s ℓ' v') ℓ v.
+Proof.
+  intros s ℓ v ℓ' v' ne.
+  apply heap_ext. destruct s as [h vh]. simpl.
+  apply setmC. auto.
 Qed.
 
 Ltac revert_last :=
@@ -1589,6 +1714,57 @@ Proof.
     + intro e. rewrite e. auto.
     + intro e. rewrite e. auto.
   - reflexivity.
+  - assumption.
+Qed.
+
+Definition heap_ignore (L : {fset Location}) (hh : heap * heap) : Prop :=
+  let '(h₀, h₁) := hh in
+  ∀ (ℓ : Location), ℓ \notin L → get_heap h₀ ℓ = get_heap h₁ ℓ.
+
+Arguments heap_ignore : simpl never.
+
+Lemma heap_ignore_empty :
+  ∀ L,
+    heap_ignore L (empty_heap, empty_heap).
+Proof.
+  intros L ℓ hℓ. reflexivity.
+Qed.
+
+Lemma INV'_heap_ignore :
+  ∀ L L₀ L₁,
+    fsubset L (L₀ :|: L₁) →
+    INV' L₀ L₁ (heap_ignore L).
+Proof.
+  intros L L₀ L₁ hs h₀ h₁. split.
+  - intros hh ℓ n₀ n₁.
+    eapply hh.
+    apply /negP. intro h.
+    eapply injectSubset in h. 2: eauto.
+    rewrite in_fsetU in h. move: h => /orP [h | h].
+    + rewrite h in n₀. discriminate.
+    + rewrite h in n₁. discriminate.
+  - intros h ℓ v n₀ n₁ ℓ' n.
+    destruct (ℓ' != ℓ) eqn:e.
+    + rewrite get_set_heap_neq. 2: auto.
+      rewrite get_set_heap_neq. 2: auto.
+      apply h. auto.
+    + move: e => /eqP e. subst.
+      rewrite !get_set_heap_eq. reflexivity.
+Qed.
+
+(* Special case where the invariant is heap_ignore. *)
+Corollary eq_rel_perf_ind_ignore :
+  ∀ L {L₀ L₁ E} (p₀ p₁ : raw_package)
+    `{ValidPackage L₀ Game_import E p₀}
+    `{ValidPackage L₁ Game_import E p₁},
+    fsubset L (L₀ :|: L₁) →
+    eq_up_to_inv E (heap_ignore L) p₀ p₁ →
+    p₀ ≈₀ p₁.
+Proof.
+  intros L L₀ L₁ E p₀ p₁ v₀ v₁ hs h.
+  eapply eq_rel_perf_ind with (heap_ignore L).
+  - eapply INV'_heap_ignore. auto.
+  - apply heap_ignore_empty.
   - assumption.
 Qed.
 
@@ -3002,25 +3178,6 @@ Proof.
   reflexivity.
 Qed.
 
-(* TODO MOVE *)
-Lemma heap_ext :
-  ∀ (h₀ h₁ : heap),
-    h₀ ∙1 = h₁ ∙1 →
-    h₀ = h₁.
-Proof.
-  intros [h₀ v₀] [h₁ v₁] e. simpl in e. subst.
-  f_equal. apply eq_irrelevance.
-Qed.
-
-Lemma set_heap_contract :
-  ∀ s ℓ v v',
-    set_heap (set_heap s ℓ v) ℓ v' = set_heap s ℓ v'.
-Proof.
-  intros s ℓ v v'.
-  apply heap_ext. destruct s as [h vh]. simpl.
-  apply setmxx.
-Qed.
-
 Lemma contract_put :
   ∀ A ℓ v v' (r : raw_code A),
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
@@ -3038,17 +3195,6 @@ Proof.
   simpl.
   unfold UniversalFreeMap.outOfFree_obligation_1.
   rewrite set_heap_contract. reflexivity.
-Qed.
-
-Lemma set_heap_commut :
-  ∀ s ℓ v ℓ' v',
-    ℓ != ℓ' →
-    set_heap (set_heap s ℓ v) ℓ' v' =
-    set_heap (set_heap s ℓ' v') ℓ v.
-Proof.
-  intros s ℓ v ℓ' v' ne.
-  apply heap_ext. destruct s as [h vh]. simpl.
-  apply setmC. auto.
 Qed.
 
 Lemma r_put_swap :
@@ -3091,48 +3237,6 @@ Proof.
     subst.
     rewrite set_heap_commut. 2: auto.
     reflexivity.
-Qed.
-
-(* TODO MOVE *)
-Lemma cast_pointed_value_ext :
-  ∀ A p e1 q e2,
-    p = q →
-    @cast_pointed_value A p e1 = @cast_pointed_value A q e2.
-Proof.
-  intros A p e1 q e2 e. subst.
-  cbn.
-  assert (ee : e2 = erefl).
-  { apply eq_irrelevance. }
-  rewrite ee. reflexivity.
-Qed.
-
-Lemma get_heap_set_heap :
-  ∀ s ℓ ℓ' v,
-    ℓ != ℓ' →
-    get_heap s ℓ = get_heap (set_heap s ℓ' v) ℓ.
-Proof.
-  intros s ℓ ℓ' v ne.
-  funelim (get_heap s ℓ).
-  - rewrite -Heqcall. clear Heqcall.
-    funelim (get_heap (set_heap map ℓ' v) ℓ).
-    + rewrite -Heqcall. clear Heqcall.
-      pose proof e as ep.
-      simpl in ep. rewrite setmE in ep.
-      eapply negbTE in ne.
-      rewrite ne in ep. rewrite -e0 in ep. noconf ep.
-      eapply cast_pointed_value_ext. reflexivity.
-    + pose proof e as ep.
-      simpl in ep. rewrite setmE in ep.
-      eapply negbTE in ne.
-      rewrite ne in ep. rewrite -e0 in ep. noconf ep.
-  - rewrite -Heqcall. clear Heqcall.
-    funelim (get_heap (set_heap map ℓ' v) ℓ).
-    + pose proof e as ep.
-      simpl in ep. rewrite setmE in ep.
-      eapply negbTE in ne.
-      rewrite ne in ep. rewrite -e0 in ep. noconf ep.
-    + rewrite -Heqcall. clear Heqcall.
-      reflexivity.
 Qed.
 
 Lemma r_get_put_swap :
