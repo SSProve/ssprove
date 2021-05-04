@@ -276,27 +276,8 @@ Lemma get_heap_set_heap :
     get_heap s ℓ = get_heap (set_heap s ℓ' v) ℓ.
 Proof.
   intros s ℓ ℓ' v ne.
-  funelim (get_heap s ℓ).
-  - rewrite -Heqcall. clear Heqcall.
-    funelim (get_heap (set_heap map ℓ' v) ℓ).
-    + rewrite -Heqcall. clear Heqcall.
-      pose proof e as ep.
-      simpl in ep. rewrite setmE in ep.
-      eapply negbTE in ne.
-      rewrite ne in ep. rewrite -e0 in ep. noconf ep.
-      eapply cast_pointed_value_ext. reflexivity.
-    + pose proof e as ep.
-      simpl in ep. rewrite setmE in ep.
-      eapply negbTE in ne.
-      rewrite ne in ep. rewrite -e0 in ep. noconf ep.
-  - rewrite -Heqcall. clear Heqcall.
-    funelim (get_heap (set_heap map ℓ' v) ℓ).
-    + pose proof e as ep.
-      simpl in ep. rewrite setmE in ep.
-      eapply negbTE in ne.
-      rewrite ne in ep. rewrite -e0 in ep. noconf ep.
-    + rewrite -Heqcall. clear Heqcall.
-      reflexivity.
+  rewrite get_set_heap_neq. 2: auto.
+  reflexivity.
 Qed.
 
 Lemma set_heap_commut :
