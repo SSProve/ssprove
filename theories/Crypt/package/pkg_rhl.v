@@ -2343,6 +2343,41 @@ Proof.
     eapply hpost. intuition auto.
 Qed.
 
+(* Probably not true for any pre *)
+Lemma cmd_get_preserve_pre :
+  ∀ ℓ pre,
+    ⊢ ⦃ pre ⦄
+      x ← cmd (cmd_get ℓ) ;; ret x ≈ x ← cmd (cmd_get ℓ) ;; ret x
+    ⦃ λ '(a₀, s₀) '(a₁, s₁), pre (s₀, s₁) ∧ a₀ = a₁ ⦄.
+Proof.
+  intros ℓ pre. simpl.
+  eapply from_sem_jdg. simpl.
+  intros [s₀ s₁]. hnf. intro P. hnf.
+  intros [hpre hpost]. simpl.
+  exists (
+    SDistr_unit _ (
+      (get_heap s₀ ℓ, s₀),
+      (get_heap s₁ ℓ, s₁)
+    )
+  ).
+  split.
+  - apply SDistr_unit_F_choice_prod_coupling. reflexivity.
+  - intros [] [] e.
+    unfold SDistr_unit in e.
+    rewrite dunit1E in e.
+    apply ge0_eq in e. noconf e.
+    eapply hpost. intuition auto.
+    (* What do we want to require to do it?
+      Just the plain equality assuming pre?
+      In any case we probably want to have a special case where pre is
+      heap_ignore and ℓ isn't ignored.
+    *)
+    (* In get_case the proof is the following *)
+    (* unfold INV in hinv.
+    specialize (hinv s₁ s₂). destruct hinv as [hinv _].
+    eapply hinv. all: auto. *)
+Abort.
+
 Lemma rswap_cmd :
   ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
     (c₀ : command A₀) (c₁ : command A₁)
