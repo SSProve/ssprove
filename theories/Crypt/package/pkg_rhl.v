@@ -2331,6 +2331,28 @@ Proof.
     + simpl. intros s₀ s₁ e. noconf e. intuition auto.
 Qed.
 
+(* A slightly more general version where we don't fix the precondition *)
+Theorem rsame_head_cmd_alt :
+  ∀ {A B : ord_choiceType} {f₀ f₁ : A → raw_code B}
+    (m : command A) pre (post : postcond B B),
+    ⊢ ⦃ pre ⦄
+      x ← cmd m ;; ret x ≈ x ← cmd m ;; ret x
+    ⦃ λ '(a₀, s₀) '(a₁, s₁), pre (s₀, s₁) ∧ a₀ = a₁ ⦄ →
+    (∀ a, ⊢ ⦃ pre ⦄ f₀ a ≈ f₁ a ⦃ post ⦄) →
+    ⊢ ⦃ pre ⦄ x ← cmd m ;; f₀ x ≈ x ← cmd m ;; f₁ x ⦃ post ⦄.
+Proof.
+  intros A B f₀ f₁ m pre post hm hf.
+  eapply from_sem_jdg. rewrite !repr_cmd_bind.
+  eapply (bind_rule_pp (repr_cmd m) (repr_cmd m)).
+  - eapply to_sem_jdg in hm. rewrite !repr_cmd_bind in hm.
+    rewrite bindrFree_ret in hm. eauto.
+  - intros a₀ a₁. eapply to_sem_jdg.
+    eapply rpre_hypothesis_rule.
+    intros s₀ s₁ [h e]. subst.
+    eapply rpre_weaken_rule. 1: eapply hf.
+    simpl. intros ? ? [? ?]. subst. auto.
+Qed.
+
 Lemma rswap_cmd :
   ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
     (c₀ : command A₀) (c₁ : command A₁)
