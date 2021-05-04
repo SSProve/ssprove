@@ -2369,20 +2369,54 @@ Lemma cmd_sample_preserve_pre :
       x ← cmd (cmd_sample op) ;; ret x ≈ x ← cmd (cmd_sample op) ;; ret x
     ⦃ λ '(a₀, s₀) '(a₁, s₁), pre (s₀, s₁) ∧ a₀ = a₁ ⦄.
 Proof.
-  (* intros op pre. simpl.
+  intros op pre. simpl.
   eapply from_sem_jdg. simpl.
   intros [s₀ s₁]. hnf. intro P. hnf.
   intros [hpre hpost]. simpl.
-  eexists (coupling_self_SDistr _). split.
-  - unfold coupling. unfold coupling_self_SDistr. split.
+  destruct op as [opA opB].
+  pose (d :=
+    SDistr_bind (λ x, SDistr_unit _ ((x, s₀), (x, s₁)))
+      (Theta_dens.unary_ThetaDens0 _ (ropr (opA ; opB) (λ x : chElement opA, retrFree x)))
+  ).
+  exists d. split.
+  - unfold coupling. split.
     + unfold lmg. unfold dfst.
-      apply distr_ext. intro.
+      apply distr_ext. intro. simpl.
       rewrite dlet_dlet.
+      simpl.
       unfold SDistr_bind, SDistr_unit.
-      rewrite dlet_dunit_id.
-    +
-  - *)
-Abort.
+      rewrite dlet_dlet.
+      apply dlet_f_equal. intro.
+      apply distr_ext. intro.
+      rewrite dlet_unit. rewrite dlet_unit. simpl. reflexivity.
+    + unfold rmg. unfold dsnd.
+      apply distr_ext. intro. simpl.
+      rewrite dlet_dlet.
+      simpl.
+      unfold SDistr_bind, SDistr_unit.
+      rewrite dlet_dlet.
+      apply dlet_f_equal. intro.
+      apply distr_ext. intro.
+      rewrite dlet_unit. rewrite dlet_unit. simpl. reflexivity.
+  - intros [] [] e. subst d. simpl in e.
+    rewrite SDistr_rightneutral in e. simpl in e.
+    unfold SDistr_bind, SDistr_unit in e.
+    rewrite dletE in e.
+    erewrite eq_psum in e.
+    2:{
+      intro. rewrite dunit1E. reflexivity.
+    }
+    apply psum_exists in e.
+    2:{
+      intro. apply mulr_ge0.
+      - auto.
+      - apply ler0n.
+    }
+    destruct e as [? e].
+    apply pmulr_me in e. 2: auto.
+    apply ge0_eq in e. noconf e.
+    eapply hpost. intuition auto.
+Qed.
 
 Lemma rswap_cmd :
   ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
