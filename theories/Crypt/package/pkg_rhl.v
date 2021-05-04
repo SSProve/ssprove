@@ -1213,6 +1213,18 @@ Proof.
   - cbn in H. intuition.
 Qed.
 
+(* TODO MOVE *)
+Lemma dlet_f_equal :
+  ∀ {R : realType} {T U : choiceType} (m : {distr T / R}) (f g : T → {distr U / R}),
+    f =1 g →
+    \dlet_(x <- m) f x =1 \dlet_(x <- m) g x.
+Proof.
+  intros R T U m f g e x.
+  apply functional_extensionality in e. subst.
+  reflexivity.
+Qed.
+
+(* TODO This proof is really the same as cmd_sample_preserve_pre *)
 Lemma sampler_case :
   ∀ {LA} (I : heap_choiceType * heap_choiceType -> Prop) op,
     INV LA I →
@@ -1221,127 +1233,51 @@ Lemma sampler_case :
       ⦃ λ '(b1, s1) '(b2, s2), b1 = b2 ∧ I (s1, s2) ⦄.
 Proof.
   intros LA I op HINV.
-  cbn - [thetaFstd θ]. intros [s1 s2].
-  rewrite /SpecificationMonads.MonoCont_order /SPropMonadicStructures.SProp_op_order
-          /Morphisms.pointwise_relation /Basics.flip /SPropMonadicStructures.SProp_order.
-  intuition eauto. unfold θ. cbn - [justInterpState stT_thetaDex].
-  unfold justInterpState. unfold LaxComp.rlmm_comp.
-  simpl (nfst _). simpl (nsnd _). unfold stT_thetaDex.
-  simpl (TransformingLaxMorph.rlmm_from_lmla (stT_thetaDex_adj) ⟨ Arit op, Arit op ⟩).
-  unfold stT_thetaDex_adj.
-  cbn - [ThetaDex.thetaDex UniversalFreeMap.outOfFree_obligation_1].
-  unfold TransformingLaxMorph.Kl_beta_obligation_1.
-  simpl ((ThetaDex.thetaDex
-  ⟨ F_choice_prod_obj ⟨ Arit op, heap_choiceType ⟩,
-  F_choice_prod_obj ⟨ Arit op, heap_choiceType ⟩ ⟩) ∙1).
-  unfold Theta_exCP.θ0.
-  cbn - [Theta_dens.unary_theta_dens_obligation_1 ThetaDex.thetaDex UniversalFreeMap.outOfFree_obligation_1].
-  pose foo := (sigMap (op_iota op) s1).
-  cbn in foo.
-  unfold probopStP in foo. cbn in foo.
+  intros [s₀ s₁]. hnf. intro P. hnf.
+  intros [hpre hpost]. simpl.
   destruct op as [opA opB].
-  pose foo2 := SDistr_bind (fun x => SDistr_unit _ ((x, s1), (x, s2))) (Theta_dens.unary_ThetaDens0 _ (ropr (opA; opB) (λ x : chElement opA, retrFree x))).
-  exists foo2.
-  split.
-  - cbn. unfold coupling.
-    split.
-    + unfold lmg.
-      unfold foo2. apply distr_ext.
-      move => x0. unfold SDistr_bind, SDistr_unit.
-      cbn.
-      rewrite SDistr_rightneutral. cbn.
-      rewrite dfstE. rewrite dletE. cbn.
-      match goal with
-      | |- realsum.psum ?f = _ => eassert (f = _) end.
-      { extensionality y. rewrite dletE.
-        match goal with
-        | |- realsum.psum ?g = _ => eassert (g = _) end.
-        { extensionality x. rewrite dunit1E. reflexivity. }
-        rewrite H0. reflexivity. }
-      rewrite H0. clear H0.
-      rewrite realsum.psum_sum.
-      * destruct x0. rewrite (realsum.sum_seq1 (s, s2)).
-        ** f_equal.
-            extensionality x. rewrite dunit1E. f_equal.
-            rewrite destruct_pair_eq.
-            destruct ((x, s1) == (s, h)) eqn:Heq1.
-            2: by rewrite Heq1 GRing.mul0r.
-            rewrite Heq1. rewrite GRing.mul1r.
-            move: Heq1. move /eqP => Heq1. inversion Heq1. subst.
-              by rewrite eq_refl.
-        ** intros y.
-            move /eqP => Hneq.
-            apply realsum.neq0_psum in Hneq.
-            destruct Hneq as [x C].
-            unshelve eassert (((x, s1, (x, s2)) == (s, h, y))%:R ≠ 0).
-            { exact R. }
-            { unfold "_ ≠ _". intros Hne.
-              rewrite Hne in C. rewrite GRing.mulr0 in C. contradiction. }
-            apply ne0_eq in H0.
-            inversion H0. subst. auto.
-      * intros x. apply realsum.ge0_psum.
-    + unfold rmg.
-      unfold foo2. apply distr_ext.
-      move => x0. unfold SDistr_bind, SDistr_unit.
-      cbn.
-      rewrite SDistr_rightneutral. cbn.
-      rewrite dsndE. rewrite dletE. cbn.
-      match goal with
-      | |- realsum.psum ?f = _ => eassert (f = _) end.
-      { extensionality y. rewrite dletE.
-        match goal with
-        | |- realsum.psum ?g = _ => eassert (g = _) end.
-        { extensionality x. rewrite dunit1E. reflexivity. }
-        rewrite H0. reflexivity. }
-      rewrite H0. clear H0.
-      rewrite realsum.psum_sum.
-      * destruct x0. rewrite (realsum.sum_seq1 (s, s1)).
-        ** f_equal.
-            extensionality x. rewrite dunit1E. f_equal.
-            rewrite destruct_pair_eq.
-            destruct ((x, s2) == (s, h)) eqn:Heq1.
-            2: by rewrite Heq1 GRing.mulr0.
-            rewrite Heq1. rewrite GRing.mulr1.
-            move: Heq1. move /eqP => Heq1. inversion Heq1. subst.
-              by rewrite eq_refl.
-        ** intros y.
-            move /eqP => Hneq.
-            apply realsum.neq0_psum in Hneq.
-            destruct Hneq as [x C].
-            unshelve eassert (((x, s1, (x, s2)) == (y, (s, h)))%:R ≠ 0).
-            { exact R. }
-            { unfold "_ ≠ _". intros Hne.
-              rewrite Hne in C. rewrite GRing.mulr0 in C. contradiction. }
-            apply ne0_eq in H0.
-            inversion H0. subst. auto.
-      * intros x. apply realsum.ge0_psum.
-  - intros a1 a2.
-    unfold foo2. cbn.
-    intros Hd.
-    cbn in H.
-    destruct H as [HI H].
-    apply H.
-    destruct a1, a2.
-    rewrite SDistr_rightneutral in Hd.
-    cbn in Hd.
-    rewrite /SDistr_bind /SDistr_unit in Hd.
-    rewrite dletE in Hd.
-    eassert ((λ x : chElement opA,
-        opB x *
-        dunit
-                (x, s1, (x, s2)) (s, h, (s0, h0))) =
-              _).
-    { extensionality x. rewrite dunit1E. reflexivity. }
-    rewrite H0 in Hd. clear H0.
-    apply psum_exists in Hd.
-    + destruct Hd as [x Hx].
-      apply pmulr_me in Hx.
-      * apply ge0_eq in Hx. inversion Hx. subst.
-        intuition auto.
-      * auto.
-    + intros x. apply mulr_ge0.
-      * auto.
-      * apply ler0n.
+  pose (d :=
+    SDistr_bind (λ x, SDistr_unit _ ((x, s₀), (x, s₁)))
+      (Theta_dens.unary_ThetaDens0 _ (ropr (opA ; opB) (λ x : chElement opA, retrFree x)))
+  ).
+  exists d. split.
+  - unfold coupling. split.
+    + unfold lmg. unfold dfst.
+      apply distr_ext. intro. simpl.
+      rewrite dlet_dlet.
+      simpl.
+      unfold SDistr_bind, SDistr_unit.
+      rewrite dlet_dlet.
+      apply dlet_f_equal. intro.
+      apply distr_ext. intro.
+      rewrite dlet_unit. rewrite dlet_unit. simpl. reflexivity.
+    + unfold rmg. unfold dsnd.
+      apply distr_ext. intro. simpl.
+      rewrite dlet_dlet.
+      simpl.
+      unfold SDistr_bind, SDistr_unit.
+      rewrite dlet_dlet.
+      apply dlet_f_equal. intro.
+      apply distr_ext. intro.
+      rewrite dlet_unit. rewrite dlet_unit. simpl. reflexivity.
+  - intros [] [] e. subst d. simpl in e.
+    rewrite SDistr_rightneutral in e. simpl in e.
+    unfold SDistr_bind, SDistr_unit in e.
+    rewrite dletE in e.
+    erewrite eq_psum in e.
+    2:{
+      intro. rewrite dunit1E. reflexivity.
+    }
+    apply psum_exists in e.
+    2:{
+      intro. apply mulr_ge0.
+      - auto.
+      - apply ler0n.
+    }
+    destruct e as [? e].
+    apply pmulr_me in e. 2: auto.
+    apply ge0_eq in e. noconf e.
+    eapply hpost. intuition auto.
 Qed.
 
 (** Syntactic judgment *)
@@ -2350,17 +2286,6 @@ Proof.
     intros s₀ s₁ [h e]. subst.
     eapply rpre_weaken_rule. 1: eapply hf.
     simpl. intros ? ? [? ?]. subst. auto.
-Qed.
-
-(* TODO MOVE *)
-Lemma dlet_f_equal :
-  ∀ {R : realType} {T U : choiceType} (m : {distr T / R}) (f g : T → {distr U / R}),
-    f =1 g →
-    \dlet_(x <- m) f x =1 \dlet_(x <- m) g x.
-Proof.
-  intros R T U m f g e x.
-  apply functional_extensionality in e. subst.
-  reflexivity.
 Qed.
 
 Lemma cmd_sample_preserve_pre :
