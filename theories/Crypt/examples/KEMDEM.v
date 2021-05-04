@@ -727,20 +727,154 @@ Section KEMDEM.
     rewrite code_link_scheme
     : ssprove_code_simpl.
 
+  (** Program equivalences
+
+    In order to prove these equivalences, we will use an invariant that
+    dismisses any changes made to the symmetric key location as it is only
+    modified in one of the packages.
+
+    TODO Instead define some heap_ignore KEY_loc and show it is INV' as long
+    as fsubset.
+  *)
+
+  (* TODO MOVE *)
+  Definition heap_ignore (L : {fset Location}) (hh : heap * heap) : Prop :=
+    let '(h₀, h₁) := hh in
+    ∀ (ℓ : Location), ℓ \notin L → get_heap h₀ ℓ = get_heap h₁ ℓ.
+
+  Arguments heap_ignore : simpl never.
+
+  Lemma heap_ignore_empty :
+    ∀ L,
+      heap_ignore L (empty_heap, empty_heap).
+  Proof.
+    intros L ℓ hℓ. reflexivity.
+  Qed.
+
+  (* TODO MOVE *)
+  Lemma cast_pointed_value_K :
+    ∀ p e,
+      cast_pointed_value p e = p.π2.
+  Proof.
+    intros p e.
+    assert (e = erefl).
+    { apply eq_irrelevance. }
+    subst. reflexivity.
+  Qed.
+
+  (* TODO MOVE *)
+  Lemma get_set_heap_eq :
+    ∀ h ℓ v,
+      get_heap (set_heap h ℓ v) ℓ = v.
+  Proof.
+    intros h ℓ v.
+    funelim (get_heap (set_heap h ℓ v) ℓ).
+    2:{
+      pose proof e as ep. simpl in ep.
+      rewrite setmE in ep. rewrite eqxx in ep. noconf ep.
+    }
+    rewrite -Heqcall. clear Heqcall.
+    pose proof e as ep. simpl in ep.
+    rewrite setmE in ep. rewrite eqxx in ep. noconf ep.
+    rewrite (cast_pointed_value_K (ℓ0.π1 ; v)).
+    reflexivity.
+  Qed.
+
+  (* TODO MOVE *)
+  Lemma get_set_heap_neq :
+    ∀ h ℓ v ℓ',
+      ℓ' != ℓ →
+      get_heap (set_heap h ℓ v) ℓ' = get_heap h ℓ'.
+  Proof.
+    intros h ℓ v ℓ' ne.
+    funelim (get_heap (set_heap h ℓ v) ℓ').
+    - rewrite -Heqcall. clear Heqcall.
+      pose proof e as ep. simpl in ep.
+      rewrite setmE in ep.
+      eapply negbTE in ne. rewrite ne in ep.
+      funelim (get_heap h ℓ).
+      2:{
+        rewrite -e in ep. noconf ep.
+      }
+      rewrite -Heqcall. clear Heqcall.
+      apply cast_pointed_value_ext.
+      rewrite -e in ep. noconf ep. reflexivity.
+    - rewrite -Heqcall. clear Heqcall.
+      clear H4. simpl in e. rewrite setmE in e.
+      eapply negbTE in ne. rewrite ne in e.
+      funelim (get_heap h ℓ).
+      1:{
+        rewrite -e in e0. noconf e0.
+      }
+      rewrite -Heqcall. reflexivity.
+  Qed.
+
+  Lemma INV'_heap_ignore :
+    ∀ L L₀ L₁,
+      fsubset L (L₀ :|: L₁) →
+      INV' L₀ L₁ (heap_ignore L).
+  Proof.
+    intros L L₀ L₁ hs h₀ h₁. split.
+    - intros hh ℓ n₀ n₁.
+      eapply hh.
+      apply /negP. intro h.
+      eapply injectSubset in h. 2: eauto.
+      rewrite in_fsetU in h. move: h => /orP [h | h].
+      + rewrite h in n₀. discriminate.
+      + rewrite h in n₁. discriminate.
+    - intros h ℓ v n₀ n₁ ℓ' n.
+      destruct (ℓ' != ℓ) eqn:e.
+      + rewrite get_set_heap_neq. 2: auto.
+        rewrite get_set_heap_neq. 2: auto.
+        apply h. auto.
+      + move: e => /eqP e. subst.
+        rewrite !get_set_heap_eq. reflexivity.
+  Qed.
+
+  (* Special case where the invariant is heap_ignore. *)
+  Corollary eq_rel_perf_ind_ignore :
+    ∀ L {L₀ L₁ E} (p₀ p₁ : raw_package)
+      `{ValidPackage L₀ Game_import E p₀}
+      `{ValidPackage L₁ Game_import E p₁},
+      fsubset L (L₀ :|: L₁) →
+      eq_up_to_inv E (heap_ignore L) p₀ p₁ →
+      p₀ ≈₀ p₁.
+  Proof.
+    intros L L₀ L₁ E p₀ p₁ v₀ v₁ hs h.
+    eapply eq_rel_perf_ind with (heap_ignore L).
+    - eapply INV'_heap_ignore. auto.
+    - apply heap_ignore_empty.
+    - assumption.
+  Qed.
+
   Lemma PKE_CCA_perf_false :
-      (PKE_CCA KEM_DEM false) ≈₀ Aux false.
-      (* (MOD_CCA KEM_DEM ∘ par (KEM false) (DEM false) ∘ KEY). *)
+    (PKE_CCA KEM_DEM false) ≈₀ Aux false.
+    (* (MOD_CCA KEM_DEM ∘ par (KEM false) (DEM false) ∘ KEY). *)
   Proof.
     unfold Aux.
-    (* We go to the relation logic using equality as invariant. *)
-    eapply eq_rel_perf_ind_eq.
+    (* We go to the relation logic ignoring KEY_loc. *)
+    eapply (eq_rel_perf_ind_ignore KEY_loc).
+    1:{
+      simpl.
+      eapply fsubset_trans. 2: eapply fsubsetUr.
+      unfold Aux_loc. eapply fsubsetUr.
+    }
     simplify_eq_rel m.
     all: ssprove_code_simpl.
     (* We are now in the realm of program logic *)
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
-      eapply rpost_weaken_rule. 1: apply rreflexivity_rule.
-      intros [] [] e. inversion e. auto.
+      (* The reflexivitiy rule doesn't apply because of the invariant.
+        Should we have a stronger one, or one for heap_ignore?
+
+        ssprove_same_head_r also doesn't like that we don't have equality
+        of heaps it seems.
+      *)
+      (* eapply rpost_weaken_rule. 1: eapply rpre_weaken_rule.
+      + apply rreflexivity_rule.
+      + simpl. intros. auto.
+      + intros [] [] e. inversion e. auto. *)
+      admit.
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
       ssprove_code_simpl_more.
@@ -755,7 +889,7 @@ Section KEMDEM.
       ssprove_swap_rhs 2%N.
       ssprove_swap_rhs 1%N.
       ssprove_contract_get_rhs.
-      ssprove_same_head_r. intro pk.
+      (* ssprove_same_head_r. intro pk.
       ssprove_same_head_r. intro pkSome.
       rewrite pkSome. simpl.
       ssprove_swap_rhs 3%N.
@@ -791,15 +925,10 @@ Section KEMDEM.
       ssprove_swap_rhs 2%N.
       ssprove_swap_rhs 1%N.
       ssprove_swap_rhs 0%N.
-      ssprove_same_head_r. intros c'.
+      ssprove_same_head_r. intros c'. *)
       (* For later it seems we might gain from a rule saying
         that get right after put is the same as put and then reusing that
         value.
-
-        Sadly the problem we have right now is bigger than that!
-        The rhs talks about k_loc when the lhs doesn't at all.
-        Considering we have to show that the heaps are equal in the end,
-        it's problematic.
       *)
       admit.
     - (* ssprove_code_simpl. *)
