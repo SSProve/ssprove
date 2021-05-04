@@ -296,6 +296,56 @@ Ltac ssprove_same_head_r :=
   | |- _ => fail "The goal should be a syntactic judgment"
   end.
 
+Ltac same_head_alt_side_cond :=
+  lazymatch goal with
+  | |- ⊢ ⦃ _ ⦄ _ ≈ x ← cmd (cmd_sample ?op) ;; ret x ⦃ _ ⦄ =>
+    eapply cmd_sample_preserve_pre
+  | |- ⊢ ⦃ heap_ignore ?L ⦄ _ ≈ x ← cmd (cmd_get ?ℓ) ;; ret x ⦃ _ ⦄ =>
+    eapply cmd_get_preserve_heap_ignore
+  | |- ⊢ ⦃ _ ⦄ _ ≈ x ← cmd (cmd_get ?ℓ) ;; ret x ⦃ _ ⦄ =>
+    eapply cmd_get_preserve_pre
+  | |- ⊢ ⦃ heap_ignore ?L ⦄ _ ≈ x ← cmd (cmd_put ?ℓ ?v) ;; ret x ⦃ _ ⦄ =>
+    eapply cmd_put_preserve_heap_ignore (* + something to infer \notin ?? *)
+  | |- ⊢ ⦃ _ ⦄ _ ≈ x ← cmd (cmd_put ?ℓ ?v) ;; ret x ⦃ _ ⦄ =>
+    eapply cmd_put_preserve_pre
+  | |- _ =>
+    idtac
+  end.
+
+(* Right-biased same head, but more genenal *)
+(* TODO Use that instead of the one above, which would have _eq in the name *)
+Ltac ssprove_same_head_alt_r :=
+  lazymatch goal with
+  | |- ⊢ ⦃ _ ⦄ _ ≈ ?c ⦃ _ ⦄ =>
+    lazymatch c with
+    | x ← sample ?op ;; _ =>
+      (* Maybe make it one lemma, safer and probably less time consuming *)
+      eapply (rsame_head_cmd_alt (cmd_sample op)) ; [
+        eapply cmd_sample_preserve_pre
+      | idtac
+      ]
+    | put ?ℓ := ?v ;; _ =>
+      eapply (@rsame_head_cmd_alt _ _ (λ z, _) (λ z, _) (cmd_put ℓ v)) ; [
+        same_head_alt_side_cond
+      | idtac
+      ]
+    | x ← get ?ℓ ;; _ =>
+      eapply (rsame_head_cmd_alt (cmd_get ℓ)) ; [
+        same_head_alt_side_cond
+      | idtac
+      ]
+    | x ← cmd ?c ;; _ =>
+      eapply (rsame_head_cmd_alt c) ; [
+        same_head_alt_side_cond
+      | idtac
+      ]
+    | @assertD ?A ?b _ =>
+      eapply (r_assertD_same A b)
+    | _ => fail "No head found"
+    end
+  | |- _ => fail "The goal should be a syntactic judgment"
+  end.
+
 (* Apply rswap_cmd_eq by reading rhs *)
 (* TODO Guard it by checking post = eq and even pre? *)
 Ltac ssprove_rswap_cmd_eq_rhs :=
