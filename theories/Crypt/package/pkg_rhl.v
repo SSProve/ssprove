@@ -2419,6 +2419,30 @@ Proof.
     rewrite !get_set_heap_eq. reflexivity.
 Qed.
 
+Lemma r_reflexivity_heap_ignore :
+  ∀ {A : choiceType} {Lᵢ} L (c : raw_code A),
+    fdisjoint L Lᵢ →
+    ValidCode L [interface] c →
+    ⊢ ⦃ λ '(s₀, s₁), heap_ignore Lᵢ (s₀, s₁) ⦄
+      c ≈ c
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ heap_ignore Lᵢ (s₀, s₁) ⦄.
+Proof.
+  intros A Lᵢ L c hd h.
+  induction h.
+  - apply r_ret. auto.
+  - eapply fromEmpty. rewrite fset0E. eauto.
+  - eapply (rsame_head_cmd_alt (cmd_get _)).
+    + eapply cmd_get_preserve_heap_ignore.
+      move: hd => /fdisjointP hd. eapply hd. auto.
+    + eauto.
+  - eapply (@rsame_head_cmd_alt _ _ (λ z, _) (λ z, _) (cmd_put _ _)).
+    + eapply cmd_put_preserve_heap_ignore.
+    + eauto.
+  - eapply (rsame_head_cmd_alt (cmd_sample _)).
+    + eapply cmd_sample_preserve_pre.
+    + eauto.
+Qed.
+
 Lemma rswap_cmd :
   ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
     (c₀ : command A₀) (c₁ : command A₁)

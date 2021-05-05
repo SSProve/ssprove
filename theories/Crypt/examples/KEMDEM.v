@@ -751,20 +751,12 @@ Section KEMDEM.
     (* We are now in the realm of program logic *)
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
-      (* The reflexivitiy rule doesn't apply because of the invariant.
-        Should we have a stronger one, or one for heap_ignore?
-      *)
-      (* eapply rpost_weaken_rule. 1: eapply rpre_weaken_rule.
-      + apply rreflexivity_rule.
-      + simpl. intros. auto.
-      + intros [] [] e. inversion e. auto. *)
-      (* would be better to have a reflexivity rule for heap_ignore *)
-      ssprove_same_head_alt_r.
-      intro pk.
-      ssprove_same_head_alt_r. intro pkSome.
-      ssprove_same_head_alt_r. intro sk.
-      ssprove_same_head_alt_r. intro skSome.
-      admit.
+      eapply r_reflexivity_heap_ignore with (L := fset [:: pk_loc ; sk_loc]).
+      + apply /fdisjointP. simpl. intros ? h.
+        rewrite in_fset in h.
+        invert_in_seq h.
+        all: notin_fset_auto.
+      + ssprove_valid.
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
       ssprove_code_simpl_more.
