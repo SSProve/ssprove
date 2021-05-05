@@ -734,6 +734,18 @@ Section KEMDEM.
     modified in one of the packages.
   *)
 
+  (* TODO MOVE *)
+  Ltac notin_fset_auto :=
+    let bot := fresh "bot" in
+    rewrite in_fset ; apply /negP ; intro bot ;
+    repeat (
+      tryif (rewrite in_cons in bot)
+      then (
+        move: bot => /orP [/eqP bot | bot] ; [ noconf bot |]
+      )
+      else rewrite in_nil in bot ; discriminate
+    ).
+
   Lemma PKE_CCA_perf_false :
     (PKE_CCA KEM_DEM false) ≈₀ Aux false.
     (* (MOD_CCA KEM_DEM ∘ par (KEM false) (DEM false) ∘ KEY). *)
@@ -758,19 +770,11 @@ Section KEMDEM.
       + apply rreflexivity_rule.
       + simpl. intros. auto.
       + intros [] [] e. inversion e. auto. *)
-      ssprove_same_head_alt_r.
-      { rewrite in_fset. rewrite in_cons. rewrite in_nil.
-        (* How do I deal with this simply and automatically?
-          Anyway, would be better to have a reflexivity rule for heap_ignore
-        *)
-        unfold pk_loc, k_loc. simpl.
-        admit.
-      }
+      (* would be better to have a reflexivity rule for heap_ignore *)
+      ssprove_same_head_alt_r. 1: notin_fset_auto.
       intro pk.
       ssprove_same_head_alt_r. intro pkSome.
-      ssprove_same_head_alt_r.
-      { admit. }
-      intro sk.
+      ssprove_same_head_alt_r. 1: notin_fset_auto. intro sk.
       ssprove_same_head_alt_r. intro skSome.
       admit.
     - ssprove_code_simpl_more.
@@ -787,14 +791,14 @@ Section KEMDEM.
       ssprove_swap_rhs 2%N.
       ssprove_swap_rhs 1%N.
       ssprove_contract_get_rhs.
-      ssprove_same_head_alt_r. 1: admit. intro pk.
+      ssprove_same_head_alt_r. 1: notin_fset_auto. intro pk.
       ssprove_same_head_alt_r. intro pkSome.
       rewrite pkSome. simpl.
       ssprove_swap_rhs 3%N.
       ssprove_swap_rhs 2%N.
       ssprove_swap_rhs 1%N.
       ssprove_contract_get_rhs.
-      ssprove_same_head_alt_r. 1: admit. intro ek.
+      ssprove_same_head_alt_r. 1: notin_fset_auto. intro ek.
       ssprove_same_head_alt_r. intro ekNone.
       rewrite ekNone. simpl.
       ssprove_swap_rhs 8%N.
@@ -806,7 +810,7 @@ Section KEMDEM.
       ssprove_swap_rhs 2%N.
       ssprove_swap_rhs 1%N.
       ssprove_contract_get_rhs.
-      ssprove_same_head_alt_r. 1: admit. intro c.
+      ssprove_same_head_alt_r. 1: notin_fset_auto. intro c.
       ssprove_same_head_alt_r. intro cNone.
       rewrite cNone. simpl.
       ssprove_same_head_alt_r. intro ek'.
