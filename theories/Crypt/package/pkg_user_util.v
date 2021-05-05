@@ -296,16 +296,27 @@ Ltac ssprove_same_head_r :=
   | |- _ => fail "The goal should be a syntactic judgment"
   end.
 
+Ltac notin_fset_auto :=
+  let bot := fresh "bot" in
+  rewrite in_fset ; apply /negP ; intro bot ;
+  repeat (
+    tryif (rewrite in_cons in bot)
+    then (
+      move: bot => /orP [/eqP bot | bot] ; [ noconf bot |]
+    )
+    else rewrite in_nil in bot ; discriminate
+  ).
+
 Ltac same_head_alt_side_cond :=
   lazymatch goal with
   | |- ⊢ ⦃ _ ⦄ _ ≈ x ← cmd (cmd_sample ?op) ;; ret x ⦃ _ ⦄ =>
     eapply cmd_sample_preserve_pre
   | |- ⊢ ⦃ λ '(s₀, s₁), heap_ignore ?L (s₀, s₁) ⦄ _ ≈ x ← cmd (cmd_get ?ℓ) ;; ret x ⦃ _ ⦄ =>
-    eapply cmd_get_preserve_heap_ignore
+    eapply cmd_get_preserve_heap_ignore ; try solve [ notin_fset_auto ]
   | |- ⊢ ⦃ _ ⦄ _ ≈ x ← cmd (cmd_get ?ℓ) ;; ret x ⦃ _ ⦄ =>
     eapply cmd_get_preserve_pre
   | |- ⊢ ⦃ λ '(s₀, s₁), heap_ignore ?L (s₀, s₁) ⦄ _ ≈ x ← cmd (cmd_put ?ℓ ?v) ;; ret x ⦃ _ ⦄ =>
-    eapply cmd_put_preserve_heap_ignore (* + something to infer \notin ?? *)
+    eapply cmd_put_preserve_heap_ignore
   | |- ⊢ ⦃ _ ⦄ _ ≈ x ← cmd (cmd_put ?ℓ ?v) ;; ret x ⦃ _ ⦄ =>
     eapply cmd_put_preserve_pre
   | |- _ =>
