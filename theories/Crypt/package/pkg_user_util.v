@@ -503,6 +503,22 @@ Ltac ssprove_swap_lhs n :=
   | cmd_bind_simpl ; cbn beta
   ].
 
+Ltac ssprove_swap_seq_rhs l :=
+  lazymatch l with
+  | ?n :: ?l =>
+    ssprove_swap_rhs n ; [ .. | ssprove_swap_seq_rhs l ]
+  | _ =>
+    idtac
+  end.
+
+Ltac ssprove_swap_seq_lhs l :=
+  lazymatch l with
+  | ?n :: ?l =>
+    ssprove_swap_lhs n ; [ .. | ssprove_swap_seq_lhs l ]
+  | _ =>
+    idtac
+  end.
+
 (** Automation of flat proofs *)
 #[export] Hint Extern 3 (flat ?I) =>
   let n := fresh "n" in

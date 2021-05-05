@@ -765,48 +765,27 @@ Section KEMDEM.
       (* That was a lot of simpl. Would be good to have it all sorted out
         as one thing.
       *)
-      ssprove_swap_rhs 5%N.
-      ssprove_swap_rhs 4%N.
-      ssprove_swap_rhs 3%N.
-      ssprove_swap_rhs 2%N.
-      ssprove_swap_rhs 1%N.
+      ssprove_swap_seq_rhs [:: 5 ; 4 ; 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
       ssprove_same_head_alt_r. intro pk.
       ssprove_same_head_alt_r. intro pkSome.
       rewrite pkSome. simpl.
-      ssprove_swap_rhs 3%N.
-      ssprove_swap_rhs 2%N.
-      ssprove_swap_rhs 1%N.
+      ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
       ssprove_same_head_alt_r. intro ek.
       ssprove_same_head_alt_r. intro ekNone.
       rewrite ekNone. simpl.
-      ssprove_swap_rhs 8%N.
-      ssprove_swap_rhs 7%N.
-      ssprove_swap_rhs 6%N.
-      ssprove_swap_rhs 5%N.
-      ssprove_swap_rhs 4%N.
-      ssprove_swap_rhs 3%N.
-      ssprove_swap_rhs 2%N.
-      ssprove_swap_rhs 1%N.
+      ssprove_swap_seq_rhs [:: 8 ; 7 ; 6 ; 5 ; 4 ; 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
       ssprove_same_head_alt_r. intro c.
       ssprove_same_head_alt_r. intro cNone.
       rewrite cNone. simpl.
       ssprove_same_head_alt_r. intro ek'.
       ssprove_swap_lhs 0%N.
-      ssprove_swap_rhs 4%N.
-      ssprove_swap_rhs 3%N.
-      ssprove_swap_rhs 2%N.
-      ssprove_swap_rhs 1%N.
+      ssprove_swap_seq_rhs [:: 4 ; 3 ; 2 ; 1 ]%N.
       ssprove_contract_put_rhs.
       ssprove_same_head_alt_r. intros _.
-      ssprove_swap_rhs 5%N.
-      ssprove_swap_rhs 4%N.
-      ssprove_swap_rhs 3%N.
-      ssprove_swap_rhs 2%N.
-      ssprove_swap_rhs 1%N.
-      ssprove_swap_rhs 0%N.
+      ssprove_swap_seq_rhs [:: 5 ; 4 ; 3 ; 2 ; 1 ; 0 ]%N.
       ssprove_same_head_alt_r. intros c'.
       (* For later it seems we might gain from a rule saying
         that get right after put is the same as put and then reusing that
