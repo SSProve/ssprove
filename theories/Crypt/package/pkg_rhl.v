@@ -3422,3 +3422,22 @@ Proof.
   - simpl. intros. apply r_ret.
     intros ? ? e. inversion e. reflexivity.
 Qed.
+
+Lemma r_put_get :
+  ∀ A ℓ v (r : _ → raw_code A),
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      put ℓ := v ;; r v ≈
+      put ℓ := v ;; x ← get ℓ ;; r x
+    ⦃ eq ⦄.
+Proof.
+  intros A ℓ v r.
+  eapply rrewrite_eqDistrR.
+  1: eapply rreflexivity_rule.
+  intros s. simpl.
+  unfold θ_dens, θ0. simpl.
+  unfold Theta_dens.unary_theta_dens_obligation_1.
+  unfold OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
+  simpl.
+  unfold UniversalFreeMap.outOfFree_obligation_1.
+  rewrite get_set_heap_eq. reflexivity.
+Qed.
