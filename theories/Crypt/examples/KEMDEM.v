@@ -777,7 +777,11 @@ Section KEMDEM.
       rewrite ekNone. simpl.
       ssprove_swap_seq_rhs [:: 8 ; 7 ; 6 ; 5 ; 4 ; 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
-      ssprove_same_head_alt_r. intro c.
+      ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
+
+
+      (* Old version below *)
+      (* ssprove_same_head_alt_r. intro c.
       ssprove_same_head_alt_r. intro cNone.
       rewrite cNone. simpl.
       ssprove_same_head_alt_r. intro ek'.
@@ -786,14 +790,36 @@ Section KEMDEM.
       ssprove_contract_put_rhs.
       ssprove_same_head_alt_r. intros _.
       ssprove_swap_seq_rhs [:: 5 ; 4 ; 3 ; 2 ; 1 ; 0 ]%N.
-      ssprove_same_head_alt_r. intros c'.
-      (* For later it seems we might gain from a rule saying
-        that get right after put is the same as put and then reusing that
-        value.
+      ssprove_same_head_alt_r. intros c'. *)
 
-        But now, we probably want that we can ignore things related to
-        k_loc as we ignore it in the invariant. Considering the #assert
-        it's not a done deal...
+      (* Maybe what I should do first is try to get into a state where
+        the get for c_loc (or ek_loc) and k_loc are next to one another
+        to see whether we can conjure an extra invariant binding the two
+        locations together.
+        Then have this invariant and have rule for get/get and put/put.
+        Would then need to deal with conjunctions of invariants or at least
+        combinations of them.
+
+        We could also make do with breaking the invariant and restoring it
+        as we go. Probably more involved in terms of dealing with the invariant.
+
+        Doing the first one would help with pk/sk business as well.
+
+        Maybe we can deal with invariants with a class Invariant
+        (with INV' but also the empty_heap assumption).
+        This way things like same_head are user extensible.
+        We can see if we can do the same for precond preservation.
+
+        We should also make have rules saying we can ignore put/get
+        on heap_ignored locations.
+        We won't be using those anyway because we would have to maintain
+        the other invariant.
+        It might actually make more sense to have some invariant that
+        combines the two information since we want to ingnore the get/put
+        on k_loc, but not the one c/ek_loc.
+        It sounds difficult to have something generic here.
+        Maybe we'll have to craft our own tailored invariant, in which case
+        it's a good idea to have the tactics user-extensible.
       *)
       admit.
     - (* ssprove_code_simpl. *)
