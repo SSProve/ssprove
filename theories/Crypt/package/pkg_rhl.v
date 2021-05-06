@@ -1602,16 +1602,44 @@ Proof.
   apply Hzero.
 Qed.
 
+Class Invariant L₀ L₁ inv := {
+  inv_INV' : INV' L₀ L₁ inv ;
+  inv_empty : inv (empty_heap, empty_heap)
+}.
+
+Create HintDb ssprove_invariant.
+
+#[export] Hint Extern 100 =>
+  shelve
+  : ssprove_invariant.
+
+Ltac ssprove_invariant :=
+  (unshelve typeclasses eauto with ssprove_invariant) ; shelve_unifiable.
+
+Lemma Invariant_eq :
+  ∀ L₀ L₁,
+    Invariant L₀ L₁ (λ '(s₀, s₁), s₀ = s₁).
+Proof.
+  split.
+  - intros s₀ s₁. split.
+    + intro e. rewrite e. auto.
+    + intro e. rewrite e. auto.
+  - reflexivity.
+Qed.
+
+#[export] Hint Extern 10 (Invariant _ _ (λ '(s₀, s₁), s₀ = s₁)) =>
+  eapply Invariant_eq
+  : typeclass_instances ssprove_invariant.
+
 Lemma eq_rel_perf_ind :
   ∀ {L₀ L₁ E} (p₀ p₁ : raw_package) (I : precond)
     `{ValidPackage L₀ Game_import E p₀}
     `{ValidPackage L₁ Game_import E p₁},
-    INV' L₀ L₁ I →
-    I (empty_heap, empty_heap) →
+    Invariant L₀ L₁ I →
     eq_up_to_inv E I p₀ p₁ →
     p₀ ≈₀ p₁.
 Proof.
-  intros L₀ L₁ E p₀ p₁ I v₀ v₁ hI' hIe he.
+  intros L₀ L₁ E p₀ p₁ I v₀ v₁ [? ?] he.
   intros LA A vA hd₀ hd₁.
   eapply prove_relational. all: eauto.
 Qed.
@@ -1626,10 +1654,7 @@ Corollary eq_rel_perf_ind_eq :
 Proof.
   intros L₀ L₁ E p₀ p₁ v₀ v₁ h.
   eapply eq_rel_perf_ind with (λ '(h₀, h₁), h₀ = h₁).
-  - simpl. intros s₀ s₁. split.
-    + intro e. rewrite e. auto.
-    + intro e. rewrite e. auto.
-  - reflexivity.
+  - exact _.
   - assumption.
 Qed.
 
@@ -1668,6 +1693,20 @@ Proof.
       rewrite !get_set_heap_eq. reflexivity.
 Qed.
 
+Lemma Invariant_heap_ignore :
+  ∀ L L₀ L₁,
+    fsubset L (L₀ :|: L₁) →
+    Invariant L₀ L₁ (heap_ignore L).
+Proof.
+  intros L L₀ L₁ h. split.
+  - apply INV'_heap_ignore. auto.
+  - apply heap_ignore_empty.
+Qed.
+
+#[export] Hint Extern 10 (Invariant _ _ (heap_ignore _)) =>
+  eapply Invariant_heap_ignore
+  : (* typeclass_instances *) ssprove_invariant.
+
 (* Special case where the invariant is heap_ignore. *)
 Corollary eq_rel_perf_ind_ignore :
   ∀ L {L₀ L₁ E} (p₀ p₁ : raw_package)
@@ -1679,10 +1718,70 @@ Corollary eq_rel_perf_ind_ignore :
 Proof.
   intros L L₀ L₁ E p₀ p₁ v₀ v₁ hs h.
   eapply eq_rel_perf_ind with (heap_ignore L).
-  - eapply INV'_heap_ignore. auto.
-  - apply heap_ignore_empty.
+  - ssprove_invariant.
   - assumption.
 Qed.
+
+Lemma INV'_conj :
+  ∀ L₀ L₁ inv inv',
+    INV' L₀ L₁ inv →
+    INV' L₀ L₁ inv' →
+    INV' L₀ L₁ (λ '(s₀, s₁), inv (s₀, s₁) ∧ inv' (s₀, s₁)).
+Proof.
+  intros L₀ L₁ inv inv' h h'.
+  intros s₀ s₁.
+  specialize (h s₀ s₁). destruct h.
+  specialize (h' s₀ s₁). destruct h'.
+  split.
+  - intros []. eauto.
+  - intros []. eauto.
+Qed.
+
+Lemma Invariant_conj :
+  ∀ L₀ L₁ inv inv',
+    Invariant L₀ L₁ inv →
+    Invariant L₀ L₁ inv' →
+    Invariant L₀ L₁ (λ '(s₀, s₁), inv (s₀, s₁) ∧ inv' (s₀, s₁)).
+Proof.
+  intros L₀ L₁ inv inv' [] []. split.
+  - apply INV'_conj. all: auto.
+  - auto.
+Qed.
+
+#[export] Hint Extern 10 (Invariant _ _ (λ '(s₀, s₁), ?inv (s₀, s₁) ∧ ?inv' (s₀, s₁))) =>
+  eapply Invariant_conj
+  : typeclass_instances ssprove_invariant.
+
+Definition couple_rhs ℓ ℓ' (h : _ → _ → Prop) (s : heap * heap) :=
+  let '(s₀, s₁) := s in
+  h (get_heap s₁ ℓ) (get_heap s₁ ℓ').
+
+Lemma Invariant_couple_rhs :
+  ∀ L₀ L₁ ℓ ℓ' h,
+    Invariant L₀ L₁ (couple_rhs ℓ ℓ' h).
+Proof.
+  intros L₀ L₁ ℓ ℓ' h. split.
+  - intros s₀ s₁. split.
+    + simpl. (* We could here assume ℓ and ℓ' in L₀ :|: L₁
+        But it might be better to have different combinators?
+        Also it's not sufficient to just assume this on locations.
+        Equality of the heaps will globally be ensured by heap_ignore for
+        instance.
+        We probably have to go for combinators. The question then is how do
+        we deal with the multiplicity of couple_rhs in combination with
+        heap_ignore.
+      *)
+      give_up.
+    + simpl. admit.
+  - simpl. (* Won't work for any h, but we can simply assume this
+    and let the user prove it.
+    This suggests that we might actually want specialised instance to
+    isSome. No need to be so general for now.
+    TODO: Should prove get_empty_heap lemma.
+  *)
+Abort.
+
+Arguments couple_rhs : simpl never.
 
 (* Rules for packages *)
 (* same as in RulesStateprob.v with `r` at the beginning *)

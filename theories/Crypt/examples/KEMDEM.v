@@ -778,7 +778,12 @@ Section KEMDEM.
       ssprove_swap_seq_rhs [:: 8 ; 7 ; 6 ; 5 ; 4 ; 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
-
+      (* Just a sanity check below
+        We wouldn't need to do it now, and we would need to contract the two
+        put c_loc.
+      *)
+      ssprove_swap_seq_rhs [:: 11 ; 10 ; 9 ; 8 ; 7 ]%N.
+      ssprove_swap_seq_rhs [:: 12 ; 11 ; 10 ; 9 ]%N.
 
       (* Old version below *)
       (* ssprove_same_head_alt_r. intro c.
@@ -820,6 +825,15 @@ Section KEMDEM.
         It sounds difficult to have something generic here.
         Maybe we'll have to craft our own tailored invariant, in which case
         it's a good idea to have the tactics user-extensible.
+
+        What we can do is probably have some predicates/classes on preconditions
+        such as [ignores pre ℓ] or [couples_left h pre ℓ ℓ'] and then have
+        conditional rules that don't force the precondition into a certain
+        shape, but only to have certain properties.
+        Not very clear how it would work for [ignores] because we might have
+        [heap_ignore L ∧ eq] which would not work. Again, maybe a best-effort
+        will work in most cases. Proving ignores on conj would be fine and
+        we can show ingores (coouples_left) for instance.
       *)
       admit.
     - (* ssprove_code_simpl. *)
@@ -830,7 +844,7 @@ Section KEMDEM.
         and if we change it to pk in the lhs we don't have the info needed
         to actually read sk...
       *)
-      destruct m as [ek' c'].
+      destruct m as [ek' c']. simpl.
       admit.
   Admitted.
 
