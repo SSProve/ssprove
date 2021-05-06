@@ -48,92 +48,48 @@ Section Monotonic_spec.
 
 End Monotonic_spec.
 
-
-Section Permissive_theta'.
-
-(* Below our COMPUTATIONAL MONADs. Two subdistribution monads*)
-
-(* About SDistr_squ. *)
-
-
-(* Below our relational SPECIFICATION MONAD (backward predicates) *)
-
-(* About WRelProp. *)
+Section Clean_base_morphism.
 
 (*
-the old, "demonic" (non permissive with respect to asserts) semantic
-About θ_morph
-relativeLaxMonadMorphism Jprod ϕ SDistr_squ WRelProp
+About ϕ θ_morph
+ϕ uses the v functions of Theta_exCP.v which destruct choiceTypes.
+we redefine phi here so that it has a better behaviour
 *)
 
-(*
-I wanted to use the definition of the standard "harsh" semantics
-but it behaves badly (definition destructs choiceTypes at hand for no reason,
-and proofs based on it have to destruct those choiceTypes which creates confusion)
-*)
+Program Definition cleanϕ : natIso
+    (ord_functor_comp F_choice_prod chDiscr)
+    (ord_functor_comp (prod_functor choice_incl choice_incl) Jprod) :=
+  mkNatIso _ _ _ _ _ _ _.
+  Next Obligation.
+    move=> [A0 A1] ; cbn. unshelve econstructor.
+    move=> [a0 a1]. exact ⟨a0 , a1⟩.
+    cbn. rewrite /Morphisms.Proper /Morphisms.respectful.
+    move=> [a0 a1] [a0' a1']. move=> [H0 H1].
+    rewrite H0 H1. reflexivity.
+  Defined.
+  Next Obligation.
+    move=> [A0 A1]. cbn. unshelve econstructor.
+    move=> [a0 a1]. exact (a0 , a1). cbn.
+    move=> [a0 a1] [a0' a1']. move=> [H0 H1].
+    rewrite H0 H1. reflexivity.
+  Defined.
+  Next Obligation.
+    move=> [A0 A1] [B0 B1] /= [f0 f1].
+    apply sig_eq ; cbn. apply boolp.funext ; move=> [a0 a1] ; cbn.
+    reflexivity.
+  Qed.
+  Next Obligation.
+    move=> [A0 A1]. apply sig_eq ; cbn. apply boolp.funext ; move=> [a0 a1] ; cbn.
+    reflexivity.
+  Qed.
+  Next Obligation.
+    move=> [A0 A1]. apply sig_eq ; cbn. apply boolp.funext ; move=> [a0 a1] ; cbn.
+    reflexivity.
+  Qed.
 
-(*   Program Definition θ_perm' : relativeLaxMonadMorphism Jprod ϕ SDistr_squ WRelProp := *)
-(*     mkRelMonMorph _ _ _ _ _ _ _. *)
-(*   Next Obligation. *)
-(*     move=> [A0 A1]. cbn. *)
-(*     unshelve econstructor. move=> [c0 c1]. *)
-(*     unshelve econstructor. move=> post. *)
-(*     exact ( ( c0 <> dnull  /\ c1 <> dnull  ) -> *)
-(*             ( (θ_morph ⟨ A0 , A1 ⟩)∙1 ⟨c0,c1⟩)∙1 post ). *)
-(*     1:{ *)
-(*       cbn. move=> post post'. *)
-(*       rewrite /Morphisms.pointwise_relation.  *)
-(*       rewrite /SPropMonadicStructures.SProp_op_order /Basics.flip. *)
-(*       rewrite /SPropMonadicStructures.SProp_order. *)
-(*       move=> Hpost thing. *)
-(*       move=> Hzer. apply thing in Hzer. (* theta is monotonic *) *)
-(*       unshelve eapply monotonic_spec. *)
-(*         exact post'. assumption. assumption. } *)
-(*     1:{ *)
-(*       cbn. *)
-(*       rewrite /Morphisms.Proper /Morphisms.respectful. *)
-(*       rewrite /Morphisms.pointwise_relation.  *)
-(*       rewrite /SPropMonadicStructures.SProp_op_order /Basics.flip. *)
-(*       rewrite /SPropMonadicStructures.SProp_order. *)
-(*       move=> [c0 c1] [c0' c1']. move=> [H0 H1]. *)
-(*       rewrite /MonoCont_order /Morphisms.pointwise_relation //. *)
-(*       move=> post. cbn. rewrite H0 H1. by easy. } *)
-(*   Defined. *)
-(*   Next Obligation. *)
-(*     move=> [[A0 chA0][A1 chA1]]. apply sig_eq. cbn. apply boolp.funext ; move=> a01 ; cbn. *)
-(*     apply sig_eq ; cbn. apply boolp.funext ; move=> post ; cbn. *)
-(*     rewrite /SubDistr.SDistr_obligation_1. *)
-(*     assert ( truePrem : *)
-(*    ( SDistr_unit (Choice.Pack chA0) (nfst a01) <> dnull /\ *)
-(*    SDistr_unit (Choice.Pack chA1) (nsnd a01) <> dnull ) *)
-(*                                                  = *)
-(*     True). *)
-(*     { admit. } *)
-(*     { rewrite truePrem. *)
-(*       assert ( TrueImpl : forall (Q : Prop), (True -> Q) = Q ). *)
-(*       { move=> Q. apply boolp.propext. split. *)
-(*         - move=> HTQ. apply HTQ. by easy. *)
-(*         - move=> HQ. move=> _. assumption. } *)
-(*       rewrite TrueImpl. *)
-(*       unshelve etransitivity. *)
-(*         exact *)
-(* (( (θ_morph ⟨ (Choice.Pack chA0) , (Choice.Pack chA1) ⟩)∙1 *)
-(* ⟨ SDistr_unit (Choice.Pack chA0) (nfst a01)  , SDistr_unit (Choice.Pack chA1) (nsnd a01)  ⟩ )∙1 *)
-(* post ). *)
-(*      { cbn. reflexivity. } *)
-(*      { pose rlmm_unit :=  (rlmm_law1 _ _ _ _ θ_morph) *)
-(*        ⟨ Choice.Pack chA0 , Choice.Pack chA1 ⟩ a01. *)
-(*       cbn in rlmm_unit. *)
-(*       move: rlmm_unit. *)
-(*       rewrite /MonoCont_order. *)
-(*       rewrite /Morphisms.pointwise_relation.  *)
-(*       rewrite /SPropMonadicStructures.SProp_op_order /Basics.flip. *)
-(*       rewrite /SPropMonadicStructures.SProp_order. *)
-(*       move=> rlmm_unit. specialize (rlmm_unit post). *)
-(*   Abort. *)
-        
 
-End Permissive_theta'.
+End Clean_base_morphism.
+
 
 Section NonNullDistr.
 
@@ -160,6 +116,22 @@ End NonNullDistr.
 
 Section Permissive_theta.
 
+  Ltac my_unfolding :=
+    rewrite /Morphisms.Proper /Morphisms.respectful ;
+    rewrite /MonoCont_order /Morphisms.pointwise_relation ;
+    rewrite /SPropMonadicStructures.SProp_op_order ;
+    rewrite /Basics.flip ;
+    rewrite /SPropMonadicStructures.SProp_order.
+
+  Lemma some_mathcomp_lemma (b : bool) :
+    0 < @GRing.natmul (GRing.Ring.zmodType R) (GRing.one R) (nat_of_bool b) -> b.
+  Proof.
+    move: b => [bt | bf].
+      by easy.
+    cbn in bf. 
+    rewrite mc_1_10.Num.Theory.ltrr in bf. assumption.
+  Qed.
+
   Program Definition θ_perm_carrier :
   forall (A0 A1 : choiceType),
   {f
@@ -174,22 +146,59 @@ Section Permissive_theta.
     rewrite /MonoContCarrier. unshelve econstructor.
     move=> post.
     exact (
-      nonZer c0 /\ nonZer c1 -> 
+      nonZer c0 /\ nonZer c1 ->
       exists d, (coupling d c0 c1)  /\
       (forall (a0 : A0) (a1 : A1), (d (a0, a1)) > 0 -> post (a0, a1)) ).
     {
-      rewrite /Morphisms.Proper /Morphisms.respectful.
-      rewrite /Morphisms.pointwise_relation.
-      rewrite /SPropMonadicStructures.SProp_op_order /Basics.flip.
-      rewrite /SPropMonadicStructures.SProp_order.
+      my_unfolding.
       move=> post post'. move=> Hpost.
-  Abort.
+      move=> Hcoupl.
+      move=> Hnzer. apply Hcoupl in Hnzer.
+      destruct Hnzer as [d [dcoupl dprop]].
+      unshelve econstructor. exact d. split.
+      - exact dcoupl.
+      - move=> a0 a1 Hd. apply Hpost. apply dprop. assumption. }
+  Defined.
+  Next Obligation.
+    move=> A0 A1.
+    my_unfolding.
+    move=> [c0 c1] [c0' c1']. move=> [H0 H1]. move=> post.
+    rewrite H0 H1. move=> H ; assumption.
+  Qed.
     
 
-  Program Definition θ_perm: relativeLaxMonadMorphism Jprod ϕ SDistr_squ WRelProp :=
-    mkRelMonMorph _ _ _ _ _ _ _.
+
+  Program Definition θ_perm: relativeLaxMonadMorphism Jprod cleanϕ SDistr_squ WRelProp :=
+    mkRelLaxMonMorph _ _ _ _ _ _ _.
   Next Obligation.
     move=> [A0 A1]. cbn.
-    unshelve econstructor. move=> [c0 c1].
-    unshelve econstructor. move=> post.
+    exact (θ_perm_carrier A0 A1).
+  Defined.
+  Next Obligation.
+    move=> [A0 A1] ; cbn. move=> [a0 a1].
+    my_unfolding.
+    move=> post. cbn. move=> Hpost.
+    rewrite /SubDistr.SDistr_obligation_1. move=> _.
+    unshelve econstructor.
+      exact ( SDistr_unit (F_choice_prod (npair A0 A1)) (a0,a1) ).
+    split.
+    apply SDistr_unit_F_choice_prod_coupling. reflexivity.
+    move=> a0' a1'. rewrite /SDistr_unit. rewrite dunit1E.
+    move=> Bnonzer. apply some_mathcomp_lemma in Bnonzer.
+    move: Bnonzer  => /eqP [H0 H1]. rewrite -H0 -H1.
+    move: Hpost. by easy.
+  Qed.
+  Next Obligation.
+    move=> [A0 A1] [B0 B1] ; cbn. move=> [f0 f1] [c0 c1].
+    rewrite /MonoCont_order. my_unfolding.
+    move=> post. rewrite /MonoCont_bind ; cbn.
+    move=> H.
+    rewrite /SubDistr.SDistr_obligation_2.
+    move=> [HnonzerBind0 HnonzerBind1].
+    assert (HnonzerC01 : nonZer c0 /\ nonZer c1).
+    { admit. }
+    apply H in HnonzerC01.
+    rename HnonzerC01 into Hecoupl.
+    move: Hecoupl => [dc [dc_coupl dc_rest]].
   Abort.
+    
