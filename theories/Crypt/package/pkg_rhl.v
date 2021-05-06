@@ -216,6 +216,18 @@ Next Obligation.
   - rewrite andbC. auto.
 Qed.
 
+#[program] Definition empty_heap : heap := emptym.
+Next Obligation.
+  by rewrite /valid_heap domm0 /fset_filter -fset0E.
+Qed.
+
+Lemma get_empty_heap :
+  ∀ ℓ,
+    get_heap empty_heap ℓ = heap_init (ℓ.π1).
+Proof.
+  intros ℓ. reflexivity.
+Qed.
+
 Lemma get_set_heap_eq :
   ∀ h ℓ v,
     get_heap (set_heap h ℓ v) ℓ = v.
@@ -674,11 +686,6 @@ Definition Pr_raw_func_code {A B} (p : A → raw_code B) :
 Definition Pr_op (p : raw_package) (o : opsig) (x : src o) :
   heap_choiceType → SDistr (F_choice_prod_obj ⟨ tgt o , heap_choiceType ⟩) :=
   Pr_code (get_op_default p o x).
-
-#[program] Definition empty_heap : heap := emptym.
-Next Obligation.
-  by rewrite /valid_heap domm0 /fset_filter -fset0E.
-Qed.
 
 Arguments SDistr_bind {_ _}.
 
@@ -1770,6 +1777,8 @@ Proof.
         We probably have to go for combinators. The question then is how do
         we deal with the multiplicity of couple_rhs in combination with
         heap_ignore.
+
+        Maybe something combining a carrier like eq or heap_ignore and couplings?
       *)
       give_up.
     + simpl. admit.
@@ -1777,7 +1786,6 @@ Proof.
     and let the user prove it.
     This suggests that we might actually want specialised instance to
     isSome. No need to be so general for now.
-    TODO: Should prove get_empty_heap lemma.
   *)
 Abort.
 
