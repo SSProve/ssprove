@@ -1639,14 +1639,14 @@ Qed.
   : typeclass_instances ssprove_invariant.
 
 Lemma eq_rel_perf_ind :
-  ∀ {L₀ L₁ E} (p₀ p₁ : raw_package) (I : precond)
+  ∀ {L₀ L₁ E} (p₀ p₁ : raw_package) (inv : precond)
     `{ValidPackage L₀ Game_import E p₀}
     `{ValidPackage L₁ Game_import E p₁},
-    Invariant L₀ L₁ I →
-    eq_up_to_inv E I p₀ p₁ →
+    Invariant L₀ L₁ inv →
+    eq_up_to_inv E inv p₀ p₁ →
     p₀ ≈₀ p₁.
 Proof.
-  intros L₀ L₁ E p₀ p₁ I v₀ v₁ [? ?] he.
+  intros L₀ L₁ E p₀ p₁ inv v₀ v₁ [? ?] he.
   intros LA A vA hd₀ hd₁.
   eapply prove_relational. all: eauto.
 Qed.

@@ -734,29 +734,43 @@ Section KEMDEM.
     modified in one of the packages.
   *)
 
+  (* TODO MOVE *)
+  Definition sameSome {A B} (x : option A) (y : option B) :=
+    isSome x = isSome y.
+
   Lemma PKE_CCA_perf_false :
     (PKE_CCA KEM_DEM false) ≈₀ Aux false.
     (* (MOD_CCA KEM_DEM ∘ par (KEM false) (DEM false) ∘ KEY). *)
   Proof.
     unfold Aux.
     (* We go to the relation logic ignoring KEY_loc. *)
-    eapply (eq_rel_perf_ind_ignore KEY_loc).
+    eapply eq_rel_perf_ind
+    with (inv := heap_ignore KEY_loc ⋊ couple_rhs c_loc k_loc sameSome).
     1:{
-      simpl.
-      eapply fsubset_trans. 2: eapply fsubsetUr.
-      unfold Aux_loc. eapply fsubsetUr.
+      ssprove_invariant.
+      - simpl.
+        eapply fsubset_trans. 2: eapply fsubsetUr.
+        unfold Aux_loc. eapply fsubsetUr.
+      - simpl. rewrite in_fsetU. apply /orP. left.
+        unfold PKE_CCA_loc. auto_in_fset.
+      - simpl. rewrite in_fsetU. apply /orP. right.
+        unfold Aux_loc. rewrite in_fsetU. apply /orP. right.
+        auto_in_fset.
+      - reflexivity.
     }
     simplify_eq_rel m.
     all: ssprove_code_simpl.
     (* We are now in the realm of program logic *)
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
-      eapply r_reflexivity_heap_ignore with (L := fset [:: pk_loc ; sk_loc]).
+      (* TODO A r_reflexivity for ⋊ *)
+      (* eapply r_reflexivity_heap_ignore with (L := fset [:: pk_loc ; sk_loc]).
       + apply /fdisjointP. simpl. intros ? h.
         rewrite in_fset in h.
         invert_in_seq h.
         all: notin_fset_auto.
-      + ssprove_valid.
+      + ssprove_valid. *)
+      admit.
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
       ssprove_code_simpl_more.
@@ -767,7 +781,10 @@ Section KEMDEM.
       *)
       ssprove_swap_seq_rhs [:: 5 ; 4 ; 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
-      ssprove_same_head_alt_r. intro pk.
+      (* Sadly same_head doesn't work, I expected it to give me a subgoal.
+        We'll need to fix it.
+      *)
+      (* ssprove_same_head_alt_r. intro pk.
       ssprove_same_head_alt_r. intro pkSome.
       rewrite pkSome. simpl.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
@@ -777,13 +794,13 @@ Section KEMDEM.
       rewrite ekNone. simpl.
       ssprove_swap_seq_rhs [:: 8 ; 7 ; 6 ; 5 ; 4 ; 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
-      ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
+      ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N. *)
       (* Just a sanity check below
         We wouldn't need to do it now, and we would need to contract the two
         put c_loc.
       *)
-      ssprove_swap_seq_rhs [:: 11 ; 10 ; 9 ; 8 ; 7 ]%N.
-      ssprove_swap_seq_rhs [:: 12 ; 11 ; 10 ; 9 ]%N.
+      (* ssprove_swap_seq_rhs [:: 11 ; 10 ; 9 ; 8 ; 7 ]%N.
+      ssprove_swap_seq_rhs [:: 12 ; 11 ; 10 ; 9 ]%N. *)
 
       (* Old version below *)
       (* ssprove_same_head_alt_r. intro c.
