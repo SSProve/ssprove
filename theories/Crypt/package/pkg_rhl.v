@@ -2490,9 +2490,12 @@ Proof.
     eapply hpost. intuition auto.
 Qed.
 
+Definition get_pre_cond ℓ (pre : precond) :=
+  ∀ s₀ s₁, pre (s₀, s₁) → get_heap s₀ ℓ = get_heap s₁ ℓ.
+
 Lemma cmd_get_preserve_pre :
   ∀ ℓ (pre : precond),
-    (∀ s₀ s₁, pre (s₀, s₁) → get_heap s₀ ℓ = get_heap s₁ ℓ) →
+    get_pre_cond ℓ pre →
     ⊢ ⦃ pre ⦄
       x ← cmd (cmd_get ℓ) ;; ret x ≈ x ← cmd (cmd_get ℓ) ;; ret x
     ⦃ λ '(a₀, s₀) '(a₁, s₁), pre (s₀, s₁) ∧ a₀ = a₁ ⦄.
@@ -2544,9 +2547,12 @@ Proof.
   intros s₀ s₁ []. eapply h. auto.
 Qed.
 
+Definition put_pre_cond ℓ v (pre : precond) :=
+  ∀ s₀ s₁, pre (s₀, s₁) → pre (set_heap s₀ ℓ v, set_heap s₁ ℓ v).
+
 Lemma cmd_put_preserve_pre :
   ∀ ℓ v (pre : precond),
-    (∀ s₀ s₁, pre (s₀, s₁) → pre (set_heap s₀ ℓ v, set_heap s₁ ℓ v)) →
+    put_pre_cond ℓ v pre →
     ⊢ ⦃ pre ⦄
       x ← cmd (cmd_put ℓ v) ;; ret x ≈ x ← cmd (cmd_put ℓ v) ;; ret x
     ⦃ λ '(a₀, s₀) '(a₁, s₁), pre (s₀, s₁) ∧ a₀ = a₁ ⦄.
@@ -2616,6 +2622,32 @@ Proof.
   intros ℓ₀ ℓ₁ ℓ₂ v h n₀ n₁ s₀ s₁ hc.
   unfold couple_rhs in *.
   rewrite !get_set_heap_neq. all: auto.
+Qed.
+
+Lemma r_reflexivity_alt :
+  ∀ {A : choiceType} {L} pre (c : raw_code A),
+    ValidCode L [interface] c →
+    (∀ ℓ, ℓ \in L → get_pre_cond ℓ pre) →
+    (∀ ℓ v, ℓ \in L → put_pre_cond ℓ v pre) →
+    ⊢ ⦃ pre ⦄
+      c ≈ c
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
+Proof.
+  intros A L pre c h hget hput.
+  induction h.
+  - apply r_ret. auto.
+  - eapply fromEmpty. rewrite fset0E. eauto.
+  - eapply (rsame_head_cmd_alt (cmd_get _)).
+    + eapply cmd_get_preserve_pre.
+      apply hget. auto.
+    + eauto.
+  - eapply (@rsame_head_cmd_alt _ _ (λ z, _) (λ z, _) (cmd_put _ _)).
+    + eapply cmd_put_preserve_pre.
+      apply hput. auto.
+    + eauto.
+  - eapply (rsame_head_cmd_alt (cmd_sample _)).
+    + eapply cmd_sample_preserve_pre.
+    + eauto.
 Qed.
 
 Lemma r_reflexivity_heap_ignore :

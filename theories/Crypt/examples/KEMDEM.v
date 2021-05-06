@@ -763,7 +763,11 @@ Section KEMDEM.
     (* We are now in the realm of program logic *)
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
-      (* TODO A r_reflexivity for ⋊ *)
+      (* TODO A r_reflexivity for ⋊
+        Proabbly a general one which requires the preserve_eq like same_head
+        because that's the proof basically is, meaning we can leverage
+        the same automation for both!
+      *)
       (* eapply r_reflexivity_heap_ignore with (L := fset [:: pk_loc ; sk_loc]).
       + apply /fdisjointP. simpl. intros ? h.
         rewrite in_fset in h.
