@@ -768,13 +768,20 @@ Section KEMDEM.
         because that's the proof basically is, meaning we can leverage
         the same automation for both!
       *)
+      eapply @r_reflexivity_alt with (L := fset [:: pk_loc ; sk_loc]).
+      + ssprove_valid.
+      + (* Here it would be nice to have some automation! *)
+        intros ℓ hℓ.
+        (* We should have lemmata on get_pre_cond instead of preserve stuff *)
+        admit.
+      + (* Automate as well! Probably in the style of ssprove_invariant/valid *)
+        admit.
       (* eapply r_reflexivity_heap_ignore with (L := fset [:: pk_loc ; sk_loc]).
       + apply /fdisjointP. simpl. intros ? h.
         rewrite in_fset in h.
         invert_in_seq h.
         all: notin_fset_auto.
       + ssprove_valid. *)
-      admit.
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
       ssprove_code_simpl_more.
@@ -787,6 +794,11 @@ Section KEMDEM.
       ssprove_contract_get_rhs.
       (* Sadly same_head doesn't work, I expected it to give me a subgoal.
         We'll need to fix it.
+        Maybe it doesn't work because cmd_get_preserve_pre
+        for instance doesn't have the right shape
+        see proof of r_reflexivity_alt
+        we could do the same trick as the proof, or fix the theorem
+        for good.
       *)
       (* ssprove_same_head_alt_r. intro pk.
       ssprove_same_head_alt_r. intro pkSome.

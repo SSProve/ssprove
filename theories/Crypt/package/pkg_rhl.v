@@ -2629,7 +2629,7 @@ Lemma r_reflexivity_alt :
     ValidCode L [interface] c →
     (∀ ℓ, ℓ \in L → get_pre_cond ℓ pre) →
     (∀ ℓ v, ℓ \in L → put_pre_cond ℓ v pre) →
-    ⊢ ⦃ pre ⦄
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
       c ≈ c
     ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
 Proof.
@@ -2638,15 +2638,15 @@ Proof.
   - apply r_ret. auto.
   - eapply fromEmpty. rewrite fset0E. eauto.
   - eapply (rsame_head_cmd_alt (cmd_get _)).
-    + eapply cmd_get_preserve_pre.
+    + eapply cmd_get_preserve_pre with (pre := λ '(s₀, s₁), pre (s₀, s₁)).
       apply hget. auto.
     + eauto.
   - eapply (@rsame_head_cmd_alt _ _ (λ z, _) (λ z, _) (cmd_put _ _)).
-    + eapply cmd_put_preserve_pre.
+    + eapply cmd_put_preserve_pre with (pre := λ '(s₀, s₁), pre (s₀, s₁)).
       apply hput. auto.
     + eauto.
   - eapply (rsame_head_cmd_alt (cmd_sample _)).
-    + eapply cmd_sample_preserve_pre.
+    + eapply cmd_sample_preserve_pre with (pre := λ '(s₀, s₁), pre (s₀, s₁)).
     + eauto.
 Qed.
 
