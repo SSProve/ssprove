@@ -1730,7 +1730,7 @@ Proof.
 Qed.
 
 (* Not-really-symmetric (in use) conjunction of invariants *)
-Definition inv_conj (inv inv' : heap * heap → Prop) :=
+Definition inv_conj (inv inv' : precond) :=
   λ s, inv s ∧ inv' s.
 
 Notation "I ⋊ J" :=
@@ -1738,7 +1738,7 @@ Notation "I ⋊ J" :=
 
 Arguments inv_conj : simpl never.
 
-Class SemiInvariant (L₀ L₁ : {fset Location}) (sinv : heap * heap → Prop) := {
+Class SemiInvariant (L₀ L₁ : {fset Location}) (sinv : precond) := {
   sinv_set :
     ∀ s₀ s₁ ℓ v,
       ℓ \notin L₀ →
@@ -1824,7 +1824,18 @@ Arguments couple_rhs : simpl never.
   eapply SemiInvariant_couple_rhs
   : (* typeclass_instances *) ssprove_invariant.
 
-(* Rules for packages *)
+(** Predicates on invariants
+
+  The idea is to use them as side-conditions for rules.
+*)
+
+(* TODO: Should try to infer what it should be from use *)
+(* Definition ignores ℓ inv :=
+  ? *)
+
+(* TODO: One for couple_rhs *)
+
+(** Rules for packages *)
 (* same as in RulesStateprob.v with `r` at the beginning *)
 
 (* Alternative to rbind_rule *)
@@ -1900,7 +1911,7 @@ Proof.
   - eauto.
 Qed.
 
-Local Open Scope package_scope.
+#[local] Open Scope package_scope.
 
 Lemma rreflexivity_rule :
   ∀ {A : ord_choiceType} (c : raw_code A),
@@ -1986,10 +1997,6 @@ Proof.
   destruct b. all: reflexivity.
 Qed.
 
-(* TW: The (∀ s, pre s → b₀ = b₁) hypothesis is really weird.
-  The booleans do not depend on s, is that to say that they must be equal
-  unless pre is empty?
-*)
 Theorem rif_rule :
   ∀ {A₀ A₁ : ord_choiceType}
     (c₀ c₀' : raw_code A₀) (c₁ c₁' : raw_code A₁)
@@ -2521,6 +2528,22 @@ Proof.
   intros s₀ s₁ h. apply h. auto.
 Qed.
 
+(* TODO Exploit this with automation
+But it's good, it means for heap_ignore or eq ⋊ anything, we can introduce
+get.
+*)
+Lemma cmd_get_preserve_pre_conj :
+  ∀ ℓ (pre spre : precond),
+    (∀ s₀ s₁, pre (s₀, s₁) → get_heap s₀ ℓ = get_heap s₁ ℓ) →
+    ⊢ ⦃ pre ⋊ spre ⦄
+      x ← cmd (cmd_get ℓ) ;; ret x ≈ x ← cmd (cmd_get ℓ) ;; ret x
+    ⦃ λ '(a₀, s₀) '(a₁, s₁), (pre ⋊ spre) (s₀, s₁) ∧ a₀ = a₁ ⦄.
+Proof.
+  intros ℓ pre spre h.
+  eapply cmd_get_preserve_pre.
+  intros s₀ s₁ []. eapply h. auto.
+Qed.
+
 Lemma cmd_put_preserve_pre :
   ∀ ℓ v (pre : precond),
     (∀ s₀ s₁, pre (s₀, s₁) → pre (set_heap s₀ ℓ v, set_heap s₁ ℓ v)) →
@@ -2557,6 +2580,42 @@ Proof.
     apply h. auto.
   - move: e => /eqP e. subst.
     rewrite !get_set_heap_eq. reflexivity.
+Qed.
+
+(* TODO Use for automation
+Here we need to show it for couple_rhs for instance.
+Maybe we want to stay at the level of "preserves pre" rather than go
+to (∀ s₀ s₁, pre (s₀, s₁) → pre (set_heap s₀ ℓ v, set_heap s₁ ℓ v)
+in which case, we should give a name to the predicate "preserves pre" maybe
+or put_preserve_pre.
+Or we asume that we are only ever going to use cmd_put_preserve_pre
+and then use the heap statement instead. => Maybe do this for now,
+we can always roll back later.
+*)
+Lemma cmd_put_preserve_pre_conj :
+  ∀ ℓ v (pre spre : precond),
+    (∀ s₀ s₁, pre (s₀, s₁) → pre (set_heap s₀ ℓ v, set_heap s₁ ℓ v)) →
+    (∀ s₀ s₁, spre (s₀, s₁) → spre (set_heap s₀ ℓ v, set_heap s₁ ℓ v)) →
+    ⊢ ⦃ pre ⋊ spre ⦄
+      x ← cmd (cmd_put ℓ v) ;; ret x ≈ x ← cmd (cmd_put ℓ v) ;; ret x
+    ⦃ λ '(a₀, s₀) '(a₁, s₁), (pre ⋊ spre) (s₀, s₁) ∧ a₀ = a₁ ⦄.
+Proof.
+  intros ℓ v pre spre h hs.
+  eapply cmd_put_preserve_pre.
+  intros s₀ s₁ []. split. all: auto.
+Qed.
+
+Lemma put_preserve_pre_couple_rhs :
+  ∀ ℓ₀ ℓ₁ ℓ₂ v h,
+    ℓ₀ != ℓ₂ →
+    ℓ₁ != ℓ₂ →
+    ∀ s₀ s₁,
+      couple_rhs ℓ₀ ℓ₁ h (s₀, s₁) →
+      couple_rhs ℓ₀ ℓ₁ h (set_heap s₀ ℓ₂ v, set_heap s₁ ℓ₂ v).
+Proof.
+  intros ℓ₀ ℓ₁ ℓ₂ v h n₀ n₁ s₀ s₁ hc.
+  unfold couple_rhs in *.
+  rewrite !get_set_heap_neq. all: auto.
 Qed.
 
 Lemma r_reflexivity_heap_ignore :
