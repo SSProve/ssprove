@@ -1729,7 +1729,43 @@ Proof.
   - assumption.
 Qed.
 
-Lemma INV'_conj :
+(* Not-really-symmetric (in use) conjunction of invariants *)
+Definition inv_conj (inv inv' : heap * heap → Prop) :=
+  λ s, inv s ∧ inv' s.
+
+Notation "I ⋊ J" :=
+  (inv_conj I J) (at level 20, right associativity) : package_scope.
+
+Arguments inv_conj : simpl never.
+
+Class SemiInvariant (L₀ L₁ : {fset Location}) (sinv : heap * heap → Prop) := {
+  sinv_set :
+    ∀ s₀ s₁ ℓ v,
+      ℓ \notin L₀ →
+      ℓ \notin L₁ →
+      sinv (s₀, s₁) →
+      sinv (set_heap s₀ ℓ v, set_heap s₁ ℓ v) ;
+  sinv_empty : sinv (empty_heap, empty_heap)
+}.
+
+Lemma Invariant_inv_conj :
+  ∀ L₀ L₁ inv sinv,
+    Invariant L₀ L₁ inv →
+    SemiInvariant L₀ L₁ sinv →
+    Invariant L₀ L₁ (inv ⋊ sinv).
+Proof.
+  intros L₀ L₁ inv sinv [his hie] [hss hse]. split.
+  - intros s₀ s₁. specialize (his s₀ s₁). destruct his. split.
+    + intros []. eauto.
+    + intros [] ℓ v h₀ h₁. split. all: eauto.
+  - split. all: eauto.
+Qed.
+
+#[export] Hint Extern 10 (Invariant _ _ (_ ⋊ _)) =>
+  eapply Invariant_inv_conj
+  : typeclass_instances ssprove_invariant.
+
+(* Lemma INV'_conj :
   ∀ L₀ L₁ inv inv',
     INV' L₀ L₁ inv →
     INV' L₀ L₁ inv' →
@@ -1757,39 +1793,36 @@ Qed.
 
 #[export] Hint Extern 10 (Invariant _ _ (λ '(s₀, s₁), ?inv (s₀, s₁) ∧ ?inv' (s₀, s₁))) =>
   eapply Invariant_conj
-  : typeclass_instances ssprove_invariant.
+  : typeclass_instances ssprove_invariant. *)
 
 Definition couple_rhs ℓ ℓ' (h : _ → _ → Prop) (s : heap * heap) :=
   let '(s₀, s₁) := s in
   h (get_heap s₁ ℓ) (get_heap s₁ ℓ').
 
-Lemma Invariant_couple_rhs :
-  ∀ L₀ L₁ ℓ ℓ' h,
-    Invariant L₀ L₁ (couple_rhs ℓ ℓ' h).
+Lemma SemiInvariant_couple_rhs :
+  ∀ L₀ L₁ ℓ ℓ' (h : _ → _ → Prop),
+    ℓ \in L₀ :|: L₁ →
+    ℓ' \in L₀ :|: L₁ →
+    h (get_heap empty_heap ℓ) (get_heap empty_heap ℓ') →
+    SemiInvariant L₀ L₁ (couple_rhs ℓ ℓ' h).
 Proof.
-  intros L₀ L₁ ℓ ℓ' h. split.
-  - intros s₀ s₁. split.
-    + simpl. (* We could here assume ℓ and ℓ' in L₀ :|: L₁
-        But it might be better to have different combinators?
-        Also it's not sufficient to just assume this on locations.
-        Equality of the heaps will globally be ensured by heap_ignore for
-        instance.
-        We probably have to go for combinators. The question then is how do
-        we deal with the multiplicity of couple_rhs in combination with
-        heap_ignore.
-
-        Maybe something combining a carrier like eq or heap_ignore and couplings?
-      *)
-      give_up.
-    + simpl. admit.
-  - simpl. (* Won't work for any h, but we can simply assume this
-    and let the user prove it.
-    This suggests that we might actually want specialised instance to
-    isSome. No need to be so general for now.
-  *)
-Abort.
+  intros L₀ L₁ ℓ ℓ' h hℓ hℓ' he. split.
+  - intros s₀ s₁ l v hl₀ hl₁ ?.
+    assert (hl : l \notin L₀ :|: L₁).
+    { rewrite in_fsetU. rewrite (negbTE hl₀) (negbTE hl₁). reflexivity. }
+    unfold couple_rhs.
+    rewrite !get_set_heap_neq.
+    + auto.
+    + apply /negP => /eqP e. subst. rewrite hℓ' in hl. discriminate.
+    + apply /negP => /eqP e. subst. rewrite hℓ in hl. discriminate.
+  - simpl. auto.
+Qed.
 
 Arguments couple_rhs : simpl never.
+
+#[export] Hint Extern 10 (SemiInvariant _ _ (couple_rhs _ _ _)) =>
+  eapply SemiInvariant_couple_rhs
+  : (* typeclass_instances *) ssprove_invariant.
 
 (* Rules for packages *)
 (* same as in RulesStateprob.v with `r` at the beginning *)
