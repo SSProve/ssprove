@@ -766,20 +766,13 @@ Section KEMDEM.
       (* TODO ssprove_reflexivity tactic *)
       eapply @r_reflexivity_alt with (L := fset [:: pk_loc ; sk_loc]).
       + ssprove_valid.
-      + (* Here it would be nice to have some automation! *)
-        intros ℓ hℓ.
-        apply get_pre_cond_conj.
-        apply get_pre_cond_heap_ignore.
+      + intros ℓ hℓ. ssprove_invariant.
         rewrite in_fset in hℓ. invert_in_seq hℓ.
         all: notin_fset_auto.
-      + (* Automate as well! Probably in the style of ssprove_invariant/valid *)
-        intros ℓ v hℓ.
-        apply put_pre_cond_conj.
-        * apply put_pre_cond_heap_ignore.
-        * apply put_pre_cond_couple_rhs.
-          all: rewrite in_fset in hℓ.
-          all: invert_in_seq hℓ.
-          all: neq_loc_auto.
+      + intros ℓ v hℓ. ssprove_invariant.
+        all: rewrite in_fset in hℓ.
+        all: invert_in_seq hℓ.
+        all: neq_loc_auto.
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
       ssprove_code_simpl_more.
@@ -794,8 +787,6 @@ Section KEMDEM.
         we have a neater goal.
       *)
       ssprove_same_head_alt_r. 1:{
-        apply get_pre_cond_conj.
-        apply get_pre_cond_heap_ignore.
         notin_fset_auto.
       } intro pk.
       ssprove_same_head_alt_r. intro pkSome.
@@ -803,8 +794,6 @@ Section KEMDEM.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
       ssprove_same_head_alt_r. 1:{
-        apply get_pre_cond_conj.
-        apply get_pre_cond_heap_ignore.
         notin_fset_auto.
       } intro ek.
       ssprove_same_head_alt_r. intro ekNone.

@@ -307,25 +307,6 @@ Ltac notin_fset_auto :=
     else rewrite in_nil in bot ; discriminate
   ).
 
-(* TODO In the end we probably want to remove this and have something
-  to deal with get_pre_cond and put_pre_cond.
-*)
-Ltac same_head_alt_side_cond :=
-  lazymatch goal with
-  | |- ⊢ ⦃ _ ⦄ _ ≈ x ← cmd (cmd_sample ?op) ;; ret x ⦃ _ ⦄ =>
-    eapply cmd_sample_preserve_pre
-  | |- ⊢ ⦃ λ '(s₀, s₁), heap_ignore ?L (s₀, s₁) ⦄ _ ≈ x ← cmd (cmd_get ?ℓ) ;; ret x ⦃ _ ⦄ =>
-    eapply cmd_get_preserve_heap_ignore ; try solve [ notin_fset_auto ]
-  | |- ⊢ ⦃ _ ⦄ _ ≈ x ← cmd (cmd_get ?ℓ) ;; ret x ⦃ _ ⦄ =>
-    eapply cmd_get_preserve_pre
-  | |- ⊢ ⦃ λ '(s₀, s₁), heap_ignore ?L (s₀, s₁) ⦄ _ ≈ x ← cmd (cmd_put ?ℓ ?v) ;; ret x ⦃ _ ⦄ =>
-    eapply cmd_put_preserve_heap_ignore
-  | |- ⊢ ⦃ _ ⦄ _ ≈ x ← cmd (cmd_put ?ℓ ?v) ;; ret x ⦃ _ ⦄ =>
-    eapply cmd_put_preserve_pre
-  | |- _ =>
-    idtac
-  end.
-
 (* Right-biased same head, but more genenal *)
 (* TODO Use that instead of the one above, which would have _eq in the name *)
 Ltac ssprove_same_head_alt_r :=
@@ -340,19 +321,16 @@ Ltac ssprove_same_head_alt_r :=
       ]
     | put ?ℓ := ?v ;; _ =>
       eapply (@rsame_head_cmd_alt _ _ (λ z, _) (λ z, _) (cmd_put ℓ v)) ; [
-        same_head_alt_side_cond
+        eapply cmd_put_preserve_pre ; ssprove_invariant
       | idtac
       ]
     | x ← get ?ℓ ;; _ =>
       eapply (rsame_head_cmd_alt (cmd_get ℓ)) ; [
-        same_head_alt_side_cond
+        eapply cmd_get_preserve_pre ; ssprove_invariant
       | idtac
       ]
     | x ← cmd ?c ;; _ =>
-      eapply (rsame_head_cmd_alt c) ; [
-        same_head_alt_side_cond
-      | idtac
-      ]
+      eapply (rsame_head_cmd_alt c)
     | @assertD ?A ?b _ =>
       eapply (r_assertD_same A b)
     | _ => fail "No head found"

@@ -2527,8 +2527,14 @@ Proof.
   intros ℓ L hℓ s₀ s₁ h. apply h. auto.
 Qed.
 
-(* TODO Use the above instead? *)
-Lemma cmd_get_preserve_heap_ignore :
+(* TODO Add solve notin_fset_auto to hints *)
+
+#[export] Hint Extern 10 (get_pre_cond _ (heap_ignore _)) =>
+  apply get_pre_cond_heap_ignore
+  : ssprove_invariant.
+
+(* Use the above instead *)
+(* Lemma cmd_get_preserve_heap_ignore :
   ∀ (ℓ : Location) (L : {fset Location}),
     ℓ \notin L →
     ⊢ ⦃ λ '(s₀, s₁), heap_ignore L (s₀, s₁) ⦄
@@ -2538,12 +2544,8 @@ Proof.
   intros ℓ L hℓ.
   eapply cmd_get_preserve_pre.
   apply get_pre_cond_heap_ignore. auto.
-Qed.
+Qed. *)
 
-(* TODO Exploit this with automation
-But it's good, it means for heap_ignore or eq ⋊ anything, we can introduce
-get.
-*)
 Lemma get_pre_cond_conj :
   ∀ ℓ (pre spre : precond),
     get_pre_cond ℓ pre →
@@ -2551,6 +2553,10 @@ Lemma get_pre_cond_conj :
 Proof.
   intros ℓ pre spre h s₀ s₁ []. apply h. auto.
 Qed.
+
+#[export] Hint Extern 10 (get_pre_cond _ (_ ⋊ _)) =>
+  apply get_pre_cond_conj
+  : ssprove_invariant.
 
 (* TODO Use the above instead *)
 (* Lemma cmd_get_preserve_pre_conj :
@@ -2602,8 +2608,12 @@ Proof.
     rewrite !get_set_heap_eq. reflexivity.
 Qed.
 
+#[export] Hint Extern 10 (put_pre_cond _ _ (heap_ignore _)) =>
+  apply put_pre_cond_heap_ignore
+  : ssprove_invariant.
+
 (* TODO Use the above *)
-Lemma cmd_put_preserve_heap_ignore :
+(* Lemma cmd_put_preserve_heap_ignore :
   ∀ ℓ v L,
     ⊢ ⦃ λ '(s₀, s₁), heap_ignore L (s₀, s₁) ⦄
       x ← cmd (cmd_put ℓ v) ;; ret x ≈ x ← cmd (cmd_put ℓ v) ;; ret x
@@ -2612,7 +2622,7 @@ Proof.
   intros ℓ v L.
   eapply cmd_put_preserve_pre.
   apply put_pre_cond_heap_ignore.
-Qed.
+Qed. *)
 
 Lemma put_pre_cond_conj :
   ∀ ℓ v pre spre,
@@ -2623,6 +2633,10 @@ Proof.
   intros ℓ v pre spre h hs.
   intros s₀ s₁ []. split. all: auto.
 Qed.
+
+#[export] Hint Extern 10 (put_pre_cond _ _ (_ ⋊ _)) =>
+  apply put_pre_cond_conj
+  : ssprove_invariant.
 
 (* TODO Use for automation
 Here we need to show it for couple_rhs for instance.
@@ -2658,6 +2672,12 @@ Proof.
   rewrite !get_set_heap_neq. all: auto.
 Qed.
 
+(* TODO Use neq_loc_auto with hints *)
+
+#[export] Hint Extern 10 (put_pre_cond _ _ (couple_rhs _ _ _)) =>
+  apply put_pre_cond_couple_rhs
+  : ssprove_invariant.
+
 Lemma r_reflexivity_alt :
   ∀ {A : choiceType} {L} pre (c : raw_code A),
     ValidCode L [interface] c →
@@ -2684,7 +2704,8 @@ Proof.
     + eauto.
 Qed.
 
-Lemma r_reflexivity_heap_ignore :
+(* TODO Use r_reflexivity_alt instead *)
+(* Lemma r_reflexivity_heap_ignore :
   ∀ {A : choiceType} {Lᵢ} L (c : raw_code A),
     fdisjoint L Lᵢ →
     ValidCode L [interface] c →
@@ -2706,7 +2727,7 @@ Proof.
   - eapply (rsame_head_cmd_alt (cmd_sample _)).
     + eapply cmd_sample_preserve_pre.
     + eauto.
-Qed.
+Qed. *)
 
 Lemma rswap_cmd :
   ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
