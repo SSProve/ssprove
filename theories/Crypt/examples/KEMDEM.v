@@ -734,29 +734,6 @@ Section KEMDEM.
     modified in one of the packages.
   *)
 
-  (* TODO MOVE *)
-  Definition sameSome {A B} (x : option A) (y : option B) :=
-    isSome x = isSome y.
-
-  (* TODO MOVE *)
-  Lemma sameSome_None_l :
-    ∀ {A B : eqType} (x : option A) (y : option B),
-      sameSome x y →
-      x == None →
-      y == None.
-  Proof.
-    intros A B x y hs hN.
-    move: hN => /eqP hN. subst.
-    apply /eqP. unfold sameSome in hs.
-    destruct y. 1: discriminate.
-    reflexivity.
-  Qed.
-
-  (* TODO MOVE *)
-  (* #[export] *) Hint Extern 20 (is_true (_ != _)) =>
-    solve [ neq_loc_auto ]
-    : ssprove_invariant.
-
   Lemma PKE_CCA_perf_false :
     (PKE_CCA KEM_DEM false) ≈₀ Aux false.
     (* (MOD_CCA KEM_DEM ∘ par (KEM false) (DEM false) ∘ KEY). *)

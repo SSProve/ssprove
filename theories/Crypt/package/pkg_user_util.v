@@ -419,6 +419,10 @@ Ltac neq_loc_auto :=
   move /eqP => e ;
   noconf e.
 
+#[export] Hint Extern 20 (is_true (_ != _)) =>
+  solve [ neq_loc_auto ]
+  : ssprove_invariant.
+
 (* TODO: Are there more cases we can consider? *)
 Ltac ssprove_swap_side_cond :=
   lazymatch goal with
@@ -620,3 +624,19 @@ Ltac ssprove_contract_put_rhs :=
     ssprove_contract_put_aux
   | cmd_bind_simpl ; cbn beta
   ].
+
+Definition sameSome {A B} (x : option A) (y : option B) :=
+  isSome x = isSome y.
+
+Lemma sameSome_None_l :
+  ∀ {A B : eqType} (x : option A) (y : option B),
+    sameSome x y →
+    x == None →
+    y == None.
+Proof.
+  intros A B x y hs hN.
+  move: hN => /eqP hN. subst.
+  apply /eqP. unfold sameSome in hs.
+  destruct y. 1: discriminate.
+  reflexivity.
+Qed.
