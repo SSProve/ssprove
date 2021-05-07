@@ -307,18 +307,21 @@ Ltac notin_fset_auto :=
     else rewrite in_nil in bot ; discriminate
   ).
 
+(* TODO In the end we probably want to remove this and have something
+  to deal with get_pre_cond and put_pre_cond.
+*)
 Ltac same_head_alt_side_cond :=
   lazymatch goal with
   | |- ⊢ ⦃ _ ⦄ _ ≈ x ← cmd (cmd_sample ?op) ;; ret x ⦃ _ ⦄ =>
     eapply cmd_sample_preserve_pre
   | |- ⊢ ⦃ λ '(s₀, s₁), heap_ignore ?L (s₀, s₁) ⦄ _ ≈ x ← cmd (cmd_get ?ℓ) ;; ret x ⦃ _ ⦄ =>
     eapply cmd_get_preserve_heap_ignore ; try solve [ notin_fset_auto ]
-  | |- ⊢ ⦃ _ ⦄ _ ≈ x ← cmd (cmd_get ?ℓ) ;; ret x ⦃ _ ⦄ =>
-    eapply cmd_get_preserve_pre
+  | |- ⊢ ⦃ ?inv ⦄ _ ≈ x ← cmd (cmd_get ?ℓ) ;; ret x ⦃ _ ⦄ =>
+    eapply cmd_get_preserve_pre with (pre := inv)
   | |- ⊢ ⦃ λ '(s₀, s₁), heap_ignore ?L (s₀, s₁) ⦄ _ ≈ x ← cmd (cmd_put ?ℓ ?v) ;; ret x ⦃ _ ⦄ =>
     eapply cmd_put_preserve_heap_ignore
-  | |- ⊢ ⦃ _ ⦄ _ ≈ x ← cmd (cmd_put ?ℓ ?v) ;; ret x ⦃ _ ⦄ =>
-    eapply cmd_put_preserve_pre
+  | |- ⊢ ⦃ ?inv ⦄ _ ≈ x ← cmd (cmd_put ?ℓ ?v) ;; ret x ⦃ _ ⦄ =>
+    eapply cmd_put_preserve_pre with (pre := inv)
   | |- _ =>
     idtac
   end.

@@ -2519,6 +2519,15 @@ Proof.
     eapply hpost. intuition auto.
 Qed.
 
+Lemma get_pre_cond_heap_ignore :
+  ∀ (ℓ : Location) (L : {fset Location}),
+    ℓ \notin L →
+    get_pre_cond ℓ (heap_ignore L).
+Proof.
+  intros ℓ L hℓ s₀ s₁ h. apply h. auto.
+Qed.
+
+(* TODO Use the above instead? *)
 Lemma cmd_get_preserve_heap_ignore :
   ∀ (ℓ : Location) (L : {fset Location}),
     ℓ \notin L →
@@ -2528,23 +2537,32 @@ Lemma cmd_get_preserve_heap_ignore :
 Proof.
   intros ℓ L hℓ.
   eapply cmd_get_preserve_pre.
-  intros s₀ s₁ h. apply h. auto.
+  apply get_pre_cond_heap_ignore. auto.
 Qed.
 
 (* TODO Exploit this with automation
 But it's good, it means for heap_ignore or eq ⋊ anything, we can introduce
 get.
 *)
+Lemma get_pre_cond_conj :
+  ∀ ℓ (pre spre : precond),
+    get_pre_cond ℓ pre →
+    get_pre_cond ℓ (pre ⋊ spre).
+Proof.
+  intros ℓ pre spre h s₀ s₁ []. apply h. auto.
+Qed.
+
+(* TODO Use the above instead *)
 Lemma cmd_get_preserve_pre_conj :
   ∀ ℓ (pre spre : precond),
-    (∀ s₀ s₁, pre (s₀, s₁) → get_heap s₀ ℓ = get_heap s₁ ℓ) →
+    get_pre_cond ℓ pre →
     ⊢ ⦃ pre ⋊ spre ⦄
       x ← cmd (cmd_get ℓ) ;; ret x ≈ x ← cmd (cmd_get ℓ) ;; ret x
     ⦃ λ '(a₀, s₀) '(a₁, s₁), (pre ⋊ spre) (s₀, s₁) ∧ a₀ = a₁ ⦄.
 Proof.
   intros ℓ pre spre h.
   eapply cmd_get_preserve_pre.
-  intros s₀ s₁ []. eapply h. auto.
+  apply get_pre_cond_conj. auto.
 Qed.
 
 Definition put_pre_cond ℓ v (pre : precond) :=

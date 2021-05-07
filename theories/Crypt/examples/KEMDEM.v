@@ -763,7 +763,9 @@ Section KEMDEM.
     (* We are now in the realm of program logic *)
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
-      (* TODO A r_reflexivity for ⋊
+      (* TODO ssprove_reflexivity tactic
+
+      OLD:
         Proabbly a general one which requires the preserve_eq like same_head
         because that's the proof basically is, meaning we can leverage
         the same automation for both!
@@ -792,25 +794,20 @@ Section KEMDEM.
       *)
       ssprove_swap_seq_rhs [:: 5 ; 4 ; 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
-      (* Sadly same_head doesn't work, I expected it to give me a subgoal.
-        We'll need to fix it.
-        Maybe it doesn't work because cmd_get_preserve_pre
-        for instance doesn't have the right shape
-        see proof of r_reflexivity_alt
-        we could do the same trick as the proof, or fix the theorem
-        for good.
+      (* Maybe we want to specialised the lemma to use λ '(s₀, s₁) so that
+        we have a neater goal.
       *)
-      (* ssprove_same_head_alt_r. intro pk.
+      ssprove_same_head_alt_r. 1:admit. intro pk.
       ssprove_same_head_alt_r. intro pkSome.
       rewrite pkSome. simpl.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
-      ssprove_same_head_alt_r. intro ek.
+      ssprove_same_head_alt_r. 1:admit. intro ek.
       ssprove_same_head_alt_r. intro ekNone.
       rewrite ekNone. simpl.
       ssprove_swap_seq_rhs [:: 8 ; 7 ; 6 ; 5 ; 4 ; 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
-      ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N. *)
+      ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
       (* Just a sanity check below
         We wouldn't need to do it now, and we would need to contract the two
         put c_loc.
