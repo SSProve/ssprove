@@ -316,12 +316,12 @@ Ltac same_head_alt_side_cond :=
     eapply cmd_sample_preserve_pre
   | |- ⊢ ⦃ λ '(s₀, s₁), heap_ignore ?L (s₀, s₁) ⦄ _ ≈ x ← cmd (cmd_get ?ℓ) ;; ret x ⦃ _ ⦄ =>
     eapply cmd_get_preserve_heap_ignore ; try solve [ notin_fset_auto ]
-  | |- ⊢ ⦃ ?inv ⦄ _ ≈ x ← cmd (cmd_get ?ℓ) ;; ret x ⦃ _ ⦄ =>
-    eapply cmd_get_preserve_pre with (pre := inv)
+  | |- ⊢ ⦃ _ ⦄ _ ≈ x ← cmd (cmd_get ?ℓ) ;; ret x ⦃ _ ⦄ =>
+    eapply cmd_get_preserve_pre
   | |- ⊢ ⦃ λ '(s₀, s₁), heap_ignore ?L (s₀, s₁) ⦄ _ ≈ x ← cmd (cmd_put ?ℓ ?v) ;; ret x ⦃ _ ⦄ =>
     eapply cmd_put_preserve_heap_ignore
-  | |- ⊢ ⦃ ?inv ⦄ _ ≈ x ← cmd (cmd_put ?ℓ ?v) ;; ret x ⦃ _ ⦄ =>
-    eapply cmd_put_preserve_pre with (pre := inv)
+  | |- ⊢ ⦃ _ ⦄ _ ≈ x ← cmd (cmd_put ?ℓ ?v) ;; ret x ⦃ _ ⦄ =>
+    eapply cmd_put_preserve_pre
   | |- _ =>
     idtac
   end.

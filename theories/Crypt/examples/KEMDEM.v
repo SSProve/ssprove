@@ -763,27 +763,23 @@ Section KEMDEM.
     (* We are now in the realm of program logic *)
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
-      (* TODO ssprove_reflexivity tactic
-
-      OLD:
-        Proabbly a general one which requires the preserve_eq like same_head
-        because that's the proof basically is, meaning we can leverage
-        the same automation for both!
-      *)
+      (* TODO ssprove_reflexivity tactic *)
       eapply @r_reflexivity_alt with (L := fset [:: pk_loc ; sk_loc]).
       + ssprove_valid.
       + (* Here it would be nice to have some automation! *)
         intros ℓ hℓ.
-        (* We should have lemmata on get_pre_cond instead of preserve stuff *)
-        admit.
-      + (* Automate as well! Probably in the style of ssprove_invariant/valid *)
-        admit.
-      (* eapply r_reflexivity_heap_ignore with (L := fset [:: pk_loc ; sk_loc]).
-      + apply /fdisjointP. simpl. intros ? h.
-        rewrite in_fset in h.
-        invert_in_seq h.
+        apply get_pre_cond_conj.
+        apply get_pre_cond_heap_ignore.
+        rewrite in_fset in hℓ. invert_in_seq hℓ.
         all: notin_fset_auto.
-      + ssprove_valid. *)
+      + (* Automate as well! Probably in the style of ssprove_invariant/valid *)
+        intros ℓ v hℓ.
+        apply put_pre_cond_conj.
+        * apply put_pre_cond_heap_ignore.
+        * apply put_pre_cond_couple_rhs.
+          all: rewrite in_fset in hℓ.
+          all: invert_in_seq hℓ.
+          all: neq_loc_auto.
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
       ssprove_code_simpl_more.
@@ -797,12 +793,20 @@ Section KEMDEM.
       (* Maybe we want to specialised the lemma to use λ '(s₀, s₁) so that
         we have a neater goal.
       *)
-      ssprove_same_head_alt_r. 1:admit. intro pk.
+      ssprove_same_head_alt_r. 1:{
+        apply get_pre_cond_conj.
+        apply get_pre_cond_heap_ignore.
+        notin_fset_auto.
+      } intro pk.
       ssprove_same_head_alt_r. intro pkSome.
       rewrite pkSome. simpl.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
-      ssprove_same_head_alt_r. 1:admit. intro ek.
+      ssprove_same_head_alt_r. 1:{
+        apply get_pre_cond_conj.
+        apply get_pre_cond_heap_ignore.
+        notin_fset_auto.
+      } intro ek.
       ssprove_same_head_alt_r. intro ekNone.
       rewrite ekNone. simpl.
       ssprove_swap_seq_rhs [:: 8 ; 7 ; 6 ; 5 ; 4 ; 3 ; 2 ; 1 ]%N.

@@ -2496,7 +2496,7 @@ Definition get_pre_cond ℓ (pre : precond) :=
 Lemma cmd_get_preserve_pre :
   ∀ ℓ (pre : precond),
     get_pre_cond ℓ pre →
-    ⊢ ⦃ pre ⦄
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
       x ← cmd (cmd_get ℓ) ;; ret x ≈ x ← cmd (cmd_get ℓ) ;; ret x
     ⦃ λ '(a₀, s₀) '(a₁, s₁), pre (s₀, s₁) ∧ a₀ = a₁ ⦄.
 Proof.
@@ -2553,7 +2553,7 @@ Proof.
 Qed.
 
 (* TODO Use the above instead *)
-Lemma cmd_get_preserve_pre_conj :
+(* Lemma cmd_get_preserve_pre_conj :
   ∀ ℓ (pre spre : precond),
     get_pre_cond ℓ pre →
     ⊢ ⦃ pre ⋊ spre ⦄
@@ -2563,7 +2563,7 @@ Proof.
   intros ℓ pre spre h.
   eapply cmd_get_preserve_pre.
   apply get_pre_cond_conj. auto.
-Qed.
+Qed. *)
 
 Definition put_pre_cond ℓ v (pre : precond) :=
   ∀ s₀ s₁, pre (s₀, s₁) → pre (set_heap s₀ ℓ v, set_heap s₁ ℓ v).
@@ -2571,7 +2571,7 @@ Definition put_pre_cond ℓ v (pre : precond) :=
 Lemma cmd_put_preserve_pre :
   ∀ ℓ v (pre : precond),
     put_pre_cond ℓ v pre →
-    ⊢ ⦃ pre ⦄
+    ⊢ ⦃ λ '(s₀, s₁),  pre (s₀, s₁) ⦄
       x ← cmd (cmd_put ℓ v) ;; ret x ≈ x ← cmd (cmd_put ℓ v) ;; ret x
     ⦃ λ '(a₀, s₀) '(a₁, s₁), pre (s₀, s₁) ∧ a₀ = a₁ ⦄.
 Proof.
@@ -2589,6 +2589,20 @@ Proof.
     eapply hpost. intuition auto.
 Qed.
 
+Lemma put_pre_cond_heap_ignore :
+  ∀ ℓ v L,
+    put_pre_cond ℓ v (heap_ignore L).
+Proof.
+  intros ℓ v L s₀ s₁ h ℓ' hn.
+  destruct (ℓ' != ℓ) eqn:e.
+  - rewrite get_set_heap_neq. 2: auto.
+    rewrite get_set_heap_neq. 2: auto.
+    apply h. auto.
+  - move: e => /eqP e. subst.
+    rewrite !get_set_heap_eq. reflexivity.
+Qed.
+
+(* TODO Use the above *)
 Lemma cmd_put_preserve_heap_ignore :
   ∀ ℓ v L,
     ⊢ ⦃ λ '(s₀, s₁), heap_ignore L (s₀, s₁) ⦄
@@ -2597,13 +2611,17 @@ Lemma cmd_put_preserve_heap_ignore :
 Proof.
   intros ℓ v L.
   eapply cmd_put_preserve_pre.
-  intros s₀ s₁ h ℓ' hn.
-  destruct (ℓ' != ℓ) eqn:e.
-  - rewrite get_set_heap_neq. 2: auto.
-    rewrite get_set_heap_neq. 2: auto.
-    apply h. auto.
-  - move: e => /eqP e. subst.
-    rewrite !get_set_heap_eq. reflexivity.
+  apply put_pre_cond_heap_ignore.
+Qed.
+
+Lemma put_pre_cond_conj :
+  ∀ ℓ v pre spre,
+    put_pre_cond ℓ v pre →
+    put_pre_cond ℓ v spre →
+    put_pre_cond ℓ v (pre ⋊ spre).
+Proof.
+  intros ℓ v pre spre h hs.
+  intros s₀ s₁ []. split. all: auto.
 Qed.
 
 (* TODO Use for automation
@@ -2616,7 +2634,7 @@ Or we asume that we are only ever going to use cmd_put_preserve_pre
 and then use the heap statement instead. => Maybe do this for now,
 we can always roll back later.
 *)
-Lemma cmd_put_preserve_pre_conj :
+(* Lemma cmd_put_preserve_pre_conj :
   ∀ ℓ v (pre spre : precond),
     (∀ s₀ s₁, pre (s₀, s₁) → pre (set_heap s₀ ℓ v, set_heap s₁ ℓ v)) →
     (∀ s₀ s₁, spre (s₀, s₁) → spre (set_heap s₀ ℓ v, set_heap s₁ ℓ v)) →
@@ -2627,17 +2645,15 @@ Proof.
   intros ℓ v pre spre h hs.
   eapply cmd_put_preserve_pre.
   intros s₀ s₁ []. split. all: auto.
-Qed.
+Qed. *)
 
-Lemma put_preserve_pre_couple_rhs :
-  ∀ ℓ₀ ℓ₁ ℓ₂ v h,
-    ℓ₀ != ℓ₂ →
-    ℓ₁ != ℓ₂ →
-    ∀ s₀ s₁,
-      couple_rhs ℓ₀ ℓ₁ h (s₀, s₁) →
-      couple_rhs ℓ₀ ℓ₁ h (set_heap s₀ ℓ₂ v, set_heap s₁ ℓ₂ v).
+Lemma put_pre_cond_couple_rhs :
+  ∀ ℓ v ℓ₀ ℓ₁ h,
+    ℓ₀ != ℓ →
+    ℓ₁ != ℓ →
+    put_pre_cond ℓ v (couple_rhs ℓ₀ ℓ₁ h).
 Proof.
-  intros ℓ₀ ℓ₁ ℓ₂ v h n₀ n₁ s₀ s₁ hc.
+  intros ℓ v ℓ₀ ℓ₁ h n₀ n₁ s₀ s₁ hc.
   unfold couple_rhs in *.
   rewrite !get_set_heap_neq. all: auto.
 Qed.
@@ -2656,11 +2672,11 @@ Proof.
   - apply r_ret. auto.
   - eapply fromEmpty. rewrite fset0E. eauto.
   - eapply (rsame_head_cmd_alt (cmd_get _)).
-    + eapply cmd_get_preserve_pre with (pre := λ '(s₀, s₁), pre (s₀, s₁)).
+    + eapply cmd_get_preserve_pre.
       apply hget. auto.
     + eauto.
   - eapply (@rsame_head_cmd_alt _ _ (λ z, _) (λ z, _) (cmd_put _ _)).
-    + eapply cmd_put_preserve_pre with (pre := λ '(s₀, s₁), pre (s₀, s₁)).
+    + eapply cmd_put_preserve_pre.
       apply hput. auto.
     + eauto.
   - eapply (rsame_head_cmd_alt (cmd_sample _)).
