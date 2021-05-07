@@ -1639,14 +1639,14 @@ Qed.
   : typeclass_instances ssprove_invariant.
 
 Lemma eq_rel_perf_ind :
-  ∀ {L₀ L₁ E} (p₀ p₁ : raw_package) (I : precond)
+  ∀ {L₀ L₁ E} (p₀ p₁ : raw_package) (inv : precond)
     `{ValidPackage L₀ Game_import E p₀}
     `{ValidPackage L₁ Game_import E p₁},
-    Invariant L₀ L₁ I →
-    eq_up_to_inv E I p₀ p₁ →
+    Invariant L₀ L₁ inv →
+    eq_up_to_inv E inv p₀ p₁ →
     p₀ ≈₀ p₁.
 Proof.
-  intros L₀ L₁ E p₀ p₁ I v₀ v₁ [? ?] he.
+  intros L₀ L₁ E p₀ p₁ inv v₀ v₁ [? ?] he.
   intros LA A vA hd₀ hd₁.
   eapply prove_relational. all: eauto.
 Qed.
@@ -1729,7 +1729,43 @@ Proof.
   - assumption.
 Qed.
 
-Lemma INV'_conj :
+(* Not-really-symmetric (in use) conjunction of invariants *)
+Definition inv_conj (inv inv' : precond) :=
+  λ s, inv s ∧ inv' s.
+
+Notation "I ⋊ J" :=
+  (inv_conj I J) (at level 20, right associativity) : package_scope.
+
+Arguments inv_conj : simpl never.
+
+Class SemiInvariant (L₀ L₁ : {fset Location}) (sinv : precond) := {
+  sinv_set :
+    ∀ s₀ s₁ ℓ v,
+      ℓ \notin L₀ →
+      ℓ \notin L₁ →
+      sinv (s₀, s₁) →
+      sinv (set_heap s₀ ℓ v, set_heap s₁ ℓ v) ;
+  sinv_empty : sinv (empty_heap, empty_heap)
+}.
+
+Lemma Invariant_inv_conj :
+  ∀ L₀ L₁ inv sinv,
+    Invariant L₀ L₁ inv →
+    SemiInvariant L₀ L₁ sinv →
+    Invariant L₀ L₁ (inv ⋊ sinv).
+Proof.
+  intros L₀ L₁ inv sinv [his hie] [hss hse]. split.
+  - intros s₀ s₁. specialize (his s₀ s₁). destruct his. split.
+    + intros []. eauto.
+    + intros [] ℓ v h₀ h₁. split. all: eauto.
+  - split. all: eauto.
+Qed.
+
+#[export] Hint Extern 10 (Invariant _ _ (_ ⋊ _)) =>
+  eapply Invariant_inv_conj
+  : typeclass_instances ssprove_invariant.
+
+(* Lemma INV'_conj :
   ∀ L₀ L₁ inv inv',
     INV' L₀ L₁ inv →
     INV' L₀ L₁ inv' →
@@ -1757,41 +1793,49 @@ Qed.
 
 #[export] Hint Extern 10 (Invariant _ _ (λ '(s₀, s₁), ?inv (s₀, s₁) ∧ ?inv' (s₀, s₁))) =>
   eapply Invariant_conj
-  : typeclass_instances ssprove_invariant.
+  : typeclass_instances ssprove_invariant. *)
 
 Definition couple_rhs ℓ ℓ' (h : _ → _ → Prop) (s : heap * heap) :=
   let '(s₀, s₁) := s in
   h (get_heap s₁ ℓ) (get_heap s₁ ℓ').
 
-Lemma Invariant_couple_rhs :
-  ∀ L₀ L₁ ℓ ℓ' h,
-    Invariant L₀ L₁ (couple_rhs ℓ ℓ' h).
+Lemma SemiInvariant_couple_rhs :
+  ∀ L₀ L₁ ℓ ℓ' (h : _ → _ → Prop),
+    ℓ \in L₀ :|: L₁ →
+    ℓ' \in L₀ :|: L₁ →
+    h (get_heap empty_heap ℓ) (get_heap empty_heap ℓ') →
+    SemiInvariant L₀ L₁ (couple_rhs ℓ ℓ' h).
 Proof.
-  intros L₀ L₁ ℓ ℓ' h. split.
-  - intros s₀ s₁. split.
-    + simpl. (* We could here assume ℓ and ℓ' in L₀ :|: L₁
-        But it might be better to have different combinators?
-        Also it's not sufficient to just assume this on locations.
-        Equality of the heaps will globally be ensured by heap_ignore for
-        instance.
-        We probably have to go for combinators. The question then is how do
-        we deal with the multiplicity of couple_rhs in combination with
-        heap_ignore.
-
-        Maybe something combining a carrier like eq or heap_ignore and couplings?
-      *)
-      give_up.
-    + simpl. admit.
-  - simpl. (* Won't work for any h, but we can simply assume this
-    and let the user prove it.
-    This suggests that we might actually want specialised instance to
-    isSome. No need to be so general for now.
-  *)
-Abort.
+  intros L₀ L₁ ℓ ℓ' h hℓ hℓ' he. split.
+  - intros s₀ s₁ l v hl₀ hl₁ ?.
+    assert (hl : l \notin L₀ :|: L₁).
+    { rewrite in_fsetU. rewrite (negbTE hl₀) (negbTE hl₁). reflexivity. }
+    unfold couple_rhs.
+    rewrite !get_set_heap_neq.
+    + auto.
+    + apply /negP => /eqP e. subst. rewrite hℓ' in hl. discriminate.
+    + apply /negP => /eqP e. subst. rewrite hℓ in hl. discriminate.
+  - simpl. auto.
+Qed.
 
 Arguments couple_rhs : simpl never.
 
-(* Rules for packages *)
+#[export] Hint Extern 10 (SemiInvariant _ _ (couple_rhs _ _ _)) =>
+  eapply SemiInvariant_couple_rhs
+  : (* typeclass_instances *) ssprove_invariant.
+
+(** Predicates on invariants
+
+  The idea is to use them as side-conditions for rules.
+*)
+
+(* TODO: Should try to infer what it should be from use *)
+(* Definition ignores ℓ inv :=
+  ? *)
+
+(* TODO: One for couple_rhs *)
+
+(** Rules for packages *)
 (* same as in RulesStateprob.v with `r` at the beginning *)
 
 (* Alternative to rbind_rule *)
@@ -1867,7 +1911,7 @@ Proof.
   - eauto.
 Qed.
 
-Local Open Scope package_scope.
+#[local] Open Scope package_scope.
 
 Lemma rreflexivity_rule :
   ∀ {A : ord_choiceType} (c : raw_code A),
@@ -1953,10 +1997,6 @@ Proof.
   destruct b. all: reflexivity.
 Qed.
 
-(* TW: The (∀ s, pre s → b₀ = b₁) hypothesis is really weird.
-  The booleans do not depend on s, is that to say that they must be equal
-  unless pre is empty?
-*)
 Theorem rif_rule :
   ∀ {A₀ A₁ : ord_choiceType}
     (c₀ c₀' : raw_code A₀) (c₁ c₁' : raw_code A₁)
@@ -2450,10 +2490,13 @@ Proof.
     eapply hpost. intuition auto.
 Qed.
 
+Definition get_pre_cond ℓ (pre : precond) :=
+  ∀ s₀ s₁, pre (s₀, s₁) → get_heap s₀ ℓ = get_heap s₁ ℓ.
+
 Lemma cmd_get_preserve_pre :
   ∀ ℓ (pre : precond),
-    (∀ s₀ s₁, pre (s₀, s₁) → get_heap s₀ ℓ = get_heap s₁ ℓ) →
-    ⊢ ⦃ pre ⦄
+    get_pre_cond ℓ pre →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
       x ← cmd (cmd_get ℓ) ;; ret x ≈ x ← cmd (cmd_get ℓ) ;; ret x
     ⦃ λ '(a₀, s₀) '(a₁, s₁), pre (s₀, s₁) ∧ a₀ = a₁ ⦄.
 Proof.
@@ -2476,7 +2519,22 @@ Proof.
     eapply hpost. intuition auto.
 Qed.
 
-Lemma cmd_get_preserve_heap_ignore :
+Lemma get_pre_cond_heap_ignore :
+  ∀ (ℓ : Location) (L : {fset Location}),
+    ℓ \notin L →
+    get_pre_cond ℓ (heap_ignore L).
+Proof.
+  intros ℓ L hℓ s₀ s₁ h. apply h. auto.
+Qed.
+
+(* TODO Add solve notin_fset_auto to hints *)
+
+#[export] Hint Extern 10 (get_pre_cond _ (heap_ignore _)) =>
+  apply get_pre_cond_heap_ignore
+  : ssprove_invariant.
+
+(* Use the above instead *)
+(* Lemma cmd_get_preserve_heap_ignore :
   ∀ (ℓ : Location) (L : {fset Location}),
     ℓ \notin L →
     ⊢ ⦃ λ '(s₀, s₁), heap_ignore L (s₀, s₁) ⦄
@@ -2485,13 +2543,41 @@ Lemma cmd_get_preserve_heap_ignore :
 Proof.
   intros ℓ L hℓ.
   eapply cmd_get_preserve_pre.
-  intros s₀ s₁ h. apply h. auto.
+  apply get_pre_cond_heap_ignore. auto.
+Qed. *)
+
+Lemma get_pre_cond_conj :
+  ∀ ℓ (pre spre : precond),
+    get_pre_cond ℓ pre →
+    get_pre_cond ℓ (pre ⋊ spre).
+Proof.
+  intros ℓ pre spre h s₀ s₁ []. apply h. auto.
 Qed.
+
+#[export] Hint Extern 10 (get_pre_cond _ (_ ⋊ _)) =>
+  apply get_pre_cond_conj
+  : ssprove_invariant.
+
+(* TODO Use the above instead *)
+(* Lemma cmd_get_preserve_pre_conj :
+  ∀ ℓ (pre spre : precond),
+    get_pre_cond ℓ pre →
+    ⊢ ⦃ pre ⋊ spre ⦄
+      x ← cmd (cmd_get ℓ) ;; ret x ≈ x ← cmd (cmd_get ℓ) ;; ret x
+    ⦃ λ '(a₀, s₀) '(a₁, s₁), (pre ⋊ spre) (s₀, s₁) ∧ a₀ = a₁ ⦄.
+Proof.
+  intros ℓ pre spre h.
+  eapply cmd_get_preserve_pre.
+  apply get_pre_cond_conj. auto.
+Qed. *)
+
+Definition put_pre_cond ℓ v (pre : precond) :=
+  ∀ s₀ s₁, pre (s₀, s₁) → pre (set_heap s₀ ℓ v, set_heap s₁ ℓ v).
 
 Lemma cmd_put_preserve_pre :
   ∀ ℓ v (pre : precond),
-    (∀ s₀ s₁, pre (s₀, s₁) → pre (set_heap s₀ ℓ v, set_heap s₁ ℓ v)) →
-    ⊢ ⦃ pre ⦄
+    put_pre_cond ℓ v pre →
+    ⊢ ⦃ λ '(s₀, s₁),  pre (s₀, s₁) ⦄
       x ← cmd (cmd_put ℓ v) ;; ret x ≈ x ← cmd (cmd_put ℓ v) ;; ret x
     ⦃ λ '(a₀, s₀) '(a₁, s₁), pre (s₀, s₁) ∧ a₀ = a₁ ⦄.
 Proof.
@@ -2509,15 +2595,11 @@ Proof.
     eapply hpost. intuition auto.
 Qed.
 
-Lemma cmd_put_preserve_heap_ignore :
+Lemma put_pre_cond_heap_ignore :
   ∀ ℓ v L,
-    ⊢ ⦃ λ '(s₀, s₁), heap_ignore L (s₀, s₁) ⦄
-      x ← cmd (cmd_put ℓ v) ;; ret x ≈ x ← cmd (cmd_put ℓ v) ;; ret x
-    ⦃ λ '(a₀, s₀) '(a₁, s₁), heap_ignore L (s₀, s₁) ∧ a₀ = a₁ ⦄.
+    put_pre_cond ℓ v (heap_ignore L).
 Proof.
-  intros ℓ v L.
-  eapply cmd_put_preserve_pre.
-  intros s₀ s₁ h ℓ' hn.
+  intros ℓ v L s₀ s₁ h ℓ' hn.
   destruct (ℓ' != ℓ) eqn:e.
   - rewrite get_set_heap_neq. 2: auto.
     rewrite get_set_heap_neq. 2: auto.
@@ -2526,7 +2608,104 @@ Proof.
     rewrite !get_set_heap_eq. reflexivity.
 Qed.
 
-Lemma r_reflexivity_heap_ignore :
+#[export] Hint Extern 10 (put_pre_cond _ _ (heap_ignore _)) =>
+  apply put_pre_cond_heap_ignore
+  : ssprove_invariant.
+
+(* TODO Use the above *)
+(* Lemma cmd_put_preserve_heap_ignore :
+  ∀ ℓ v L,
+    ⊢ ⦃ λ '(s₀, s₁), heap_ignore L (s₀, s₁) ⦄
+      x ← cmd (cmd_put ℓ v) ;; ret x ≈ x ← cmd (cmd_put ℓ v) ;; ret x
+    ⦃ λ '(a₀, s₀) '(a₁, s₁), heap_ignore L (s₀, s₁) ∧ a₀ = a₁ ⦄.
+Proof.
+  intros ℓ v L.
+  eapply cmd_put_preserve_pre.
+  apply put_pre_cond_heap_ignore.
+Qed. *)
+
+Lemma put_pre_cond_conj :
+  ∀ ℓ v pre spre,
+    put_pre_cond ℓ v pre →
+    put_pre_cond ℓ v spre →
+    put_pre_cond ℓ v (pre ⋊ spre).
+Proof.
+  intros ℓ v pre spre h hs.
+  intros s₀ s₁ []. split. all: auto.
+Qed.
+
+#[export] Hint Extern 10 (put_pre_cond _ _ (_ ⋊ _)) =>
+  apply put_pre_cond_conj
+  : ssprove_invariant.
+
+(* TODO Use for automation
+Here we need to show it for couple_rhs for instance.
+Maybe we want to stay at the level of "preserves pre" rather than go
+to (∀ s₀ s₁, pre (s₀, s₁) → pre (set_heap s₀ ℓ v, set_heap s₁ ℓ v)
+in which case, we should give a name to the predicate "preserves pre" maybe
+or put_preserve_pre.
+Or we asume that we are only ever going to use cmd_put_preserve_pre
+and then use the heap statement instead. => Maybe do this for now,
+we can always roll back later.
+*)
+(* Lemma cmd_put_preserve_pre_conj :
+  ∀ ℓ v (pre spre : precond),
+    (∀ s₀ s₁, pre (s₀, s₁) → pre (set_heap s₀ ℓ v, set_heap s₁ ℓ v)) →
+    (∀ s₀ s₁, spre (s₀, s₁) → spre (set_heap s₀ ℓ v, set_heap s₁ ℓ v)) →
+    ⊢ ⦃ pre ⋊ spre ⦄
+      x ← cmd (cmd_put ℓ v) ;; ret x ≈ x ← cmd (cmd_put ℓ v) ;; ret x
+    ⦃ λ '(a₀, s₀) '(a₁, s₁), (pre ⋊ spre) (s₀, s₁) ∧ a₀ = a₁ ⦄.
+Proof.
+  intros ℓ v pre spre h hs.
+  eapply cmd_put_preserve_pre.
+  intros s₀ s₁ []. split. all: auto.
+Qed. *)
+
+Lemma put_pre_cond_couple_rhs :
+  ∀ ℓ v ℓ₀ ℓ₁ h,
+    ℓ₀ != ℓ →
+    ℓ₁ != ℓ →
+    put_pre_cond ℓ v (couple_rhs ℓ₀ ℓ₁ h).
+Proof.
+  intros ℓ v ℓ₀ ℓ₁ h n₀ n₁ s₀ s₁ hc.
+  unfold couple_rhs in *.
+  rewrite !get_set_heap_neq. all: auto.
+Qed.
+
+(* TODO Use neq_loc_auto with hints *)
+
+#[export] Hint Extern 10 (put_pre_cond _ _ (couple_rhs _ _ _)) =>
+  apply put_pre_cond_couple_rhs
+  : ssprove_invariant.
+
+Lemma r_reflexivity_alt :
+  ∀ {A : choiceType} {L} pre (c : raw_code A),
+    ValidCode L [interface] c →
+    (∀ ℓ, ℓ \in L → get_pre_cond ℓ pre) →
+    (∀ ℓ v, ℓ \in L → put_pre_cond ℓ v pre) →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      c ≈ c
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
+Proof.
+  intros A L pre c h hget hput.
+  induction h.
+  - apply r_ret. auto.
+  - eapply fromEmpty. rewrite fset0E. eauto.
+  - eapply (rsame_head_cmd_alt (cmd_get _)).
+    + eapply cmd_get_preserve_pre.
+      apply hget. auto.
+    + eauto.
+  - eapply (@rsame_head_cmd_alt _ _ (λ z, _) (λ z, _) (cmd_put _ _)).
+    + eapply cmd_put_preserve_pre.
+      apply hput. auto.
+    + eauto.
+  - eapply (rsame_head_cmd_alt (cmd_sample _)).
+    + eapply cmd_sample_preserve_pre with (pre := λ '(s₀, s₁), pre (s₀, s₁)).
+    + eauto.
+Qed.
+
+(* TODO Use r_reflexivity_alt instead *)
+(* Lemma r_reflexivity_heap_ignore :
   ∀ {A : choiceType} {Lᵢ} L (c : raw_code A),
     fdisjoint L Lᵢ →
     ValidCode L [interface] c →
@@ -2548,7 +2727,7 @@ Proof.
   - eapply (rsame_head_cmd_alt (cmd_sample _)).
     + eapply cmd_sample_preserve_pre.
     + eauto.
-Qed.
+Qed. *)
 
 Lemma rswap_cmd :
   ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
