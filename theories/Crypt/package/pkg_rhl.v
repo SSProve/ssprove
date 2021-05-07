@@ -2729,6 +2729,58 @@ Proof.
     + eauto.
 Qed. *)
 
+Definition tracks ℓ pre :=
+  ∀ s₀ s₁, pre (s₀, s₁) → get_heap s₀ ℓ = get_heap s₁ ℓ.
+
+Definition couples_rhs ℓ ℓ' R pre :=
+  ∀ s, pre s → couple_rhs ℓ ℓ' R s.
+
+Lemma r_get_tracks_couple_rhs :
+  ∀ {A} ℓ ℓ' (R : _ → _ → Prop)
+    (r₀ : _ → raw_code A) (r₁ : _ → _ → raw_code A) (pre : precond),
+    tracks ℓ pre →
+    couples_rhs ℓ ℓ' R pre →
+    (∀ x y,
+      R x y →
+      ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+        r₀ x ≈ r₁ x y
+      ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄
+    ) →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      x ← get ℓ ;; r₀ x ≈
+      x ← get ℓ ;; y ← get ℓ' ;; r₁ x y
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
+Proof.
+  intros A ℓ ℓ' R r₀ r₁ pre ht hc h.
+  change (
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      x ← (x ← get ℓ ;; ret x) ;; r₀ x ≈
+      '(x,y) ← (x ← get ℓ ;; y ← get ℓ' ;; ret (x,y)) ;; r₁ x y
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄
+  ).
+  eapply r_bind with (mid :=
+    λ '(b₀, s₀) '(b₁, s₁),
+      b₀ = b₁.1 ∧ b₁.1 = get_heap s₁ ℓ ∧ b₁.2 = get_heap s₁ ℓ' ∧ pre (s₀, s₁)
+  ).
+  - apply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
+    intros [hpre hpost]. simpl.
+    eexists (dunit (_,_)). split.
+    + unfold coupling. split.
+      * unfold lmg, dfst. apply distr_ext. intro.
+        rewrite dlet_unit. reflexivity.
+      * unfold rmg, dsnd. apply distr_ext. intro.
+        rewrite dlet_unit. reflexivity.
+    + intros [] [] e.
+      rewrite dunit1E in e.
+      apply ge0_eq in e. noconf e.
+      eapply hpost. simpl. intuition auto.
+  - intros x₀ [x₁ y]. simpl.
+    apply rpre_hypothesis_rule. intros s₀ s₁ [? [? [? hpre]]]. subst.
+    eapply rpre_weaken_rule.
+    + eapply h. eapply hc in hpre. auto.
+    + simpl. intuition subst. auto.
+Qed.
+
 Lemma rswap_cmd :
   ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
     (c₀ : command A₀) (c₁ : command A₁)
@@ -2738,11 +2790,11 @@ Lemma rswap_cmd :
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       a₀ ← cmd c₀ ;; a₁ ← cmd c₁ ;; ret (a₀, a₁) ≈
       a₁ ← cmd c₁ ;; a₀ ← cmd c₀ ;; ret (a₀, a₁)
-      ⦃ eq ⦄ →
+    ⦃ eq ⦄ →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       a₀ ← cmd c₀ ;; a₁ ← cmd c₁ ;; r a₀ a₁ ≈
       a₁ ← cmd c₁ ;; a₀ ← cmd c₀ ;; r a₀ a₁
-      ⦃ post ⦄.
+    ⦃ post ⦄.
 Proof.
   intros A₀ A₁ B post c₀ c₁ r hpost hr h.
   eapply from_sem_jdg.

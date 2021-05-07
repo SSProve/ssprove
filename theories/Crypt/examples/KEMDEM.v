@@ -738,6 +738,20 @@ Section KEMDEM.
   Definition sameSome {A B} (x : option A) (y : option B) :=
     isSome x = isSome y.
 
+  (* TODO MOVE *)
+  Lemma sameSome_None_l :
+    ∀ {A B : eqType} (x : option A) (y : option B),
+      sameSome x y →
+      x == None →
+      y == None.
+  Proof.
+    intros A B x y hs hN.
+    move: hN => /eqP hN. subst.
+    apply /eqP. unfold sameSome in hs.
+    destruct y. 1: discriminate.
+    reflexivity.
+  Qed.
+
   Lemma PKE_CCA_perf_false :
     (PKE_CCA KEM_DEM false) ≈₀ Aux false.
     (* (MOD_CCA KEM_DEM ∘ par (KEM false) (DEM false) ∘ KEY). *)
@@ -783,9 +797,6 @@ Section KEMDEM.
       *)
       ssprove_swap_seq_rhs [:: 5 ; 4 ; 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
-      (* Maybe we want to specialised the lemma to use λ '(s₀, s₁) so that
-        we have a neater goal.
-      *)
       ssprove_same_head_alt_r. intro pk.
       ssprove_same_head_alt_r. intro pkSome.
       rewrite pkSome. simpl.
@@ -803,12 +814,17 @@ Section KEMDEM.
       *)
       (* ssprove_swap_seq_rhs [:: 11 ; 10 ; 9 ; 8 ; 7 ]%N.
       ssprove_swap_seq_rhs [:: 12 ; 11 ; 10 ; 9 ]%N. *)
-
-      (* Old version below *)
-      (* ssprove_same_head_alt_r. intro c.
+      eapply r_get_tracks_couple_rhs.
+      (* Make these guys into classes so that they are automatically infered *)
+      1,2: admit.
+      instantiate (1 := sameSome).
+      intros c k eck.
       ssprove_same_head_alt_r. intro cNone.
       rewrite cNone. simpl.
-      ssprove_same_head_alt_r. intro ek'.
+      eapply sameSome_None_l in cNone as kNone. 2: eauto.
+      rewrite kNone. simpl.
+      (* Below, doesn't work. *)
+      (* ssprove_same_head_alt_r. intro ek'.
       ssprove_swap_lhs 0%N.
       ssprove_swap_seq_rhs [:: 4 ; 3 ; 2 ; 1 ]%N.
       ssprove_contract_put_rhs.
