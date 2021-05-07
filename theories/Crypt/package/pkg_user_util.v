@@ -307,6 +307,10 @@ Ltac notin_fset_auto :=
     else rewrite in_nil in bot ; discriminate
   ).
 
+#[export] Hint Extern 20 (is_true (_ \notin _)) =>
+  solve [ notin_fset_auto ]
+  : ssprove_invariant.
+
 (* Right-biased same head, but more genenal *)
 (* TODO Use that instead of the one above, which would have _eq in the name *)
 Ltac ssprove_same_head_alt_r :=

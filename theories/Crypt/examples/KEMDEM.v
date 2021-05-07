@@ -786,16 +786,12 @@ Section KEMDEM.
       (* Maybe we want to specialised the lemma to use λ '(s₀, s₁) so that
         we have a neater goal.
       *)
-      ssprove_same_head_alt_r. 1:{
-        notin_fset_auto.
-      } intro pk.
+      ssprove_same_head_alt_r. intro pk.
       ssprove_same_head_alt_r. intro pkSome.
       rewrite pkSome. simpl.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
-      ssprove_same_head_alt_r. 1:{
-        notin_fset_auto.
-      } intro ek.
+      ssprove_same_head_alt_r. intro ek.
       ssprove_same_head_alt_r. intro ekNone.
       rewrite ekNone. simpl.
       ssprove_swap_seq_rhs [:: 8 ; 7 ; 6 ; 5 ; 4 ; 3 ; 2 ; 1 ]%N.
