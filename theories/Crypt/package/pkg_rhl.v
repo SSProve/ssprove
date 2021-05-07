@@ -1824,17 +1824,6 @@ Arguments couple_rhs : simpl never.
   eapply SemiInvariant_couple_rhs
   : (* typeclass_instances *) ssprove_invariant.
 
-(** Predicates on invariants
-
-  The idea is to use them as side-conditions for rules.
-*)
-
-(* TODO: Should try to infer what it should be from use *)
-(* Definition ignores ℓ inv :=
-  ? *)
-
-(* TODO: One for couple_rhs *)
-
 (** Rules for packages *)
 (* same as in RulesStateprob.v with `r` at the beginning *)
 
@@ -2729,17 +2718,95 @@ Proof.
     + eauto.
 Qed. *)
 
-Definition tracks ℓ pre :=
-  ∀ s₀ s₁, pre (s₀, s₁) → get_heap s₀ ℓ = get_heap s₁ ℓ.
+(** Predicates on invariants
 
-Definition couples_rhs ℓ ℓ' R pre :=
-  ∀ s, pre s → couple_rhs ℓ ℓ' R s.
+  The idea is to use them as side-conditions for rules.
+*)
+
+Class Tracks ℓ pre :=
+  is_tracking : ∀ s₀ s₁, pre (s₀, s₁) → get_heap s₀ ℓ = get_heap s₁ ℓ.
+
+Class Couples_rhs ℓ ℓ' R pre :=
+  is_coupling : ∀ s, pre s → couple_rhs ℓ ℓ' R s.
+
+Lemma Tracks_eq :
+  ∀ ℓ, Tracks ℓ (λ '(s₀, s₁), s₀ = s₁).
+Proof.
+  intros ℓ s₀ s₁ e. subst. reflexivity.
+Qed.
+
+#[export] Hint Extern 10 (Tracks _ (λ '(s₀, s₁), s₀ = s₁)) =>
+  apply Tracks_eq
+  : typeclass_instances ssprove_invariant.
+
+Lemma Tracks_heap_ignore :
+  ∀ ℓ L,
+    ℓ \notin L →
+    Tracks ℓ (heap_ignore L).
+Proof.
+  intros ℓ L hn s₀ s₁ h.
+  apply h. auto.
+Qed.
+
+#[export] Hint Extern 10 (Tracks _ (heap_ignore _)) =>
+  apply Tracks_heap_ignore
+  : typeclass_instances ssprove_invariant.
+
+Lemma Tracks_conj :
+  ∀ ℓ (pre spre : precond),
+    Tracks ℓ pre →
+    Tracks ℓ (pre ⋊ spre).
+Proof.
+  intros ℓ pre spre hpre s₀ s₁ [].
+  apply hpre. auto.
+Qed.
+
+#[export] Hint Extern 10 (Tracks _ (_ ⋊ _)) =>
+  apply Tracks_conj
+  : typeclass_instances ssprove_invariant.
+
+Lemma Couples_couple_rhs :
+  ∀ ℓ ℓ' R,
+    Couples_rhs ℓ ℓ' R (couple_rhs ℓ ℓ' R).
+Proof.
+  intros ℓ ℓ' R s h. auto.
+Qed.
+
+#[export] Hint Extern 10 (Couples_rhs _ _ _ (couple_rhs _ _ _)) =>
+  eapply Couples_couple_rhs
+  : typeclass_instances ssprove_invariant.
+
+Lemma Couples_rhs_conj_right :
+  ∀ ℓ ℓ' R (pre spre : precond),
+    Couples_rhs ℓ ℓ' R spre →
+    Couples_rhs ℓ ℓ' R (pre ⋊ spre).
+Proof.
+  intros ℓ ℓ' R pre spre h s [].
+  apply h. auto.
+Qed.
+
+Lemma Couples_rhs_conj_left :
+  ∀ ℓ ℓ' R (pre spre : precond),
+    Couples_rhs ℓ ℓ' R pre →
+    Couples_rhs ℓ ℓ' R (pre ⋊ spre).
+Proof.
+  intros ℓ ℓ' R pre spre h s [].
+  apply h. auto.
+Qed.
+
+#[export] Hint Extern 9 (Couples_rhs _ _ _ (_ ⋊ _)) =>
+  eapply Couples_rhs_conj_right
+  : typeclass_instances ssprove_invariant.
+
+#[export] Hint Extern 11 (Couples_rhs _ _ _ (_ ⋊ _)) =>
+  eapply Couples_rhs_conj_left
+  : typeclass_instances ssprove_invariant.
 
 Lemma r_get_tracks_couple_rhs :
   ∀ {A} ℓ ℓ' (R : _ → _ → Prop)
     (r₀ : _ → raw_code A) (r₁ : _ → _ → raw_code A) (pre : precond),
-    tracks ℓ pre →
-    couples_rhs ℓ ℓ' R pre →
+    Tracks ℓ pre →
+    Couples_rhs ℓ ℓ' R pre →
     (∀ x y,
       R x y →
       ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄

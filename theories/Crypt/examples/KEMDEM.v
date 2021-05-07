@@ -815,9 +815,7 @@ Section KEMDEM.
       (* ssprove_swap_seq_rhs [:: 11 ; 10 ; 9 ; 8 ; 7 ]%N.
       ssprove_swap_seq_rhs [:: 12 ; 11 ; 10 ; 9 ]%N. *)
       eapply r_get_tracks_couple_rhs.
-      (* Make these guys into classes so that they are automatically infered *)
-      1,2: admit.
-      instantiate (1 := sameSome).
+      1,2: ssprove_invariant.
       intros c k eck.
       ssprove_same_head_alt_r. intro cNone.
       rewrite cNone. simpl.
