@@ -2426,7 +2426,7 @@ Qed.
 
 Lemma cmd_sample_preserve_pre :
   ∀ (op : Op) pre,
-    ⊢ ⦃ pre ⦄
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
       x ← cmd (cmd_sample op) ;; ret x ≈ x ← cmd (cmd_sample op) ;; ret x
     ⦃ λ '(a₀, s₀) '(a₁, s₁), pre (s₀, s₁) ∧ a₀ = a₁ ⦄.
 Proof.

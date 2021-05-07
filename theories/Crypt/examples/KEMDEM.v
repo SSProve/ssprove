@@ -752,6 +752,11 @@ Section KEMDEM.
     reflexivity.
   Qed.
 
+  (* TODO MOVE *)
+  (* #[export] *) Hint Extern 20 (is_true (_ != _)) =>
+    solve [ neq_loc_auto ]
+    : ssprove_invariant.
+
   Lemma PKE_CCA_perf_false :
     (PKE_CCA KEM_DEM false) ≈₀ Aux false.
     (* (MOD_CCA KEM_DEM ∘ par (KEM false) (DEM false) ∘ KEY). *)
@@ -821,52 +826,16 @@ Section KEMDEM.
       rewrite cNone. simpl.
       eapply sameSome_None_l in cNone as kNone. 2: eauto.
       rewrite kNone. simpl.
-      (* Below, doesn't work. *)
-      (* ssprove_same_head_alt_r. intro ek'.
+      ssprove_same_head_alt_r. intro ek'.
       ssprove_swap_lhs 0%N.
-      ssprove_swap_seq_rhs [:: 4 ; 3 ; 2 ; 1 ]%N.
+      ssprove_swap_seq_rhs [:: 2 ; 1 ]%N.
       ssprove_contract_put_rhs.
       ssprove_same_head_alt_r. intros _.
-      ssprove_swap_seq_rhs [:: 5 ; 4 ; 3 ; 2 ; 1 ; 0 ]%N.
-      ssprove_same_head_alt_r. intros c'. *)
-
-      (* Maybe what I should do first is try to get into a state where
-        the get for c_loc (or ek_loc) and k_loc are next to one another
-        to see whether we can conjure an extra invariant binding the two
-        locations together.
-        Then have this invariant and have rule for get/get and put/put.
-        Would then need to deal with conjunctions of invariants or at least
-        combinations of them.
-
-        We could also make do with breaking the invariant and restoring it
-        as we go. Probably more involved in terms of dealing with the invariant.
-
-        Doing the first one would help with pk/sk business as well.
-
-        Maybe we can deal with invariants with a class Invariant
-        (with INV' but also the empty_heap assumption).
-        This way things like same_head are user extensible.
-        We can see if we can do the same for precond preservation.
-
-        We should also make have rules saying we can ignore put/get
-        on heap_ignored locations.
-        We won't be using those anyway because we would have to maintain
-        the other invariant.
-        It might actually make more sense to have some invariant that
-        combines the two information since we want to ingnore the get/put
-        on k_loc, but not the one c/ek_loc.
-        It sounds difficult to have something generic here.
-        Maybe we'll have to craft our own tailored invariant, in which case
-        it's a good idea to have the tactics user-extensible.
-
-        What we can do is probably have some predicates/classes on preconditions
-        such as [ignores pre ℓ] or [couples_left h pre ℓ ℓ'] and then have
-        conditional rules that don't force the precondition into a certain
-        shape, but only to have certain properties.
-        Not very clear how it would work for [ignores] because we might have
-        [heap_ignore L ∧ eq] which would not work. Again, maybe a best-effort
-        will work in most cases. Proving ignores on conj would be fine and
-        we can show ingores (coouples_left) for instance.
+      ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ; 0 ]%N.
+      ssprove_same_head_alt_r. intros c'.
+      (* Now we have a sampling on one side that's not on the other.
+        What does it mean for us? Since the final result doesn't depend on it
+        maybe we can "ignore" it?
       *)
       admit.
     - (* ssprove_code_simpl. *)
