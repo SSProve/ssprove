@@ -863,7 +863,11 @@ Section KEMDEM.
         destruct (c != c') eqn: e.
         2:{ move: e => /eqP e. subst. exfalso. apply ee. reflexivity. }
         rewrite e. simpl.
-        (* TODO Some rule to drop useless scheme *)
+        rewrite bind_ret.
+        (* TODO Some rule to drop useless scheme
+          Sadly, schemes can still sample, so it is again a case of dead
+          sampling which needs to be figured out.
+        *)
         admit.
       + rewrite eek. ssprove_code_simpl_more.
         ssprove_swap_seq_rhs [:: 6 ; 5 ; 4 ; 3 ; 2 ; 1 ; 0 ]%N.
