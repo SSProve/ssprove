@@ -3201,6 +3201,28 @@ Qed.
   eapply Remembers_rhs_conj_left
   : typeclass_instances ssprove_invariant.
 
+(* TODO Might be a good idea to use that instead of proving it by hand
+  every time.
+*)
+Lemma r_rem_couple_lhs :
+  ∀ {A B : choiceType} ℓ ℓ' v v' R (pre : precond) c₀ c₁ (post : postcond A B),
+    Couples_lhs ℓ ℓ' R pre →
+    Remembers_lhs ℓ v pre →
+    Remembers_lhs ℓ' v' pre →
+    (R v v' → ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄) →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄.
+Proof.
+  intros A B ℓ ℓ' v v' R pre c₀ c₁ post hc hl hr h.
+  apply rpre_hypothesis_rule.
+  intros s₀ s₁ hpre.
+  eapply rpre_weaken_rule.
+  - eapply h.
+    specialize (hc _ hpre). specialize (hl _ _ hpre). specialize (hr _ _ hpre).
+    simpl in hl, hr. subst.
+    apply hc.
+  - simpl. intuition subst. auto.
+Qed.
+
 (* Weaker than Invariant *)
 Definition preserve_set_set ℓ v ℓ' v' pre :=
   ∀ s₀ s₁,
