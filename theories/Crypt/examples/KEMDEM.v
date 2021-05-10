@@ -830,7 +830,7 @@ Section KEMDEM.
     - destruct m as [ek' c']. simpl.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
       ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
-      eapply r_get_remember_lhs. 1: ssprove_invariant.
+      eapply r_get_remember_rhs. 1: ssprove_invariant.
       intros ek.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
       ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
@@ -839,7 +839,7 @@ Section KEMDEM.
       simpl. destruct (ek == ek') eqn:eek.
       + rewrite eek.
         ssprove_code_simpl_more. ssprove_code_simpl. ssprove_code_simpl_more.
-        apply r_forget_lhs.
+        apply r_forget_rhs.
         eapply r_get_vs_get_couple_lhs.
         2: exact _.
         1: ssprove_invariant.
@@ -867,7 +867,11 @@ Section KEMDEM.
         admit.
       + rewrite eek. ssprove_code_simpl_more.
         ssprove_swap_seq_rhs [:: 6 ; 5 ; 4 ; 3 ; 2 ; 1 ; 0 ]%N.
-        (* TODO FIX and use rem_rhs *)
+        eapply r_get_remind_rhs. 1: exact _.
+        simpl.
+        apply r_forget_rhs.
+        ssprove_swap_seq_rhs [:: 4 ; 3 ; 2 ; 1 ; 0 ]%N.
+        (* NEED some rule for this *)
         admit.
   Admitted.
 
