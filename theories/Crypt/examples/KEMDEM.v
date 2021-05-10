@@ -881,7 +881,28 @@ Section KEMDEM.
           - ssprove_invariant.
         }
         intro eps.
-        admit.
+        rewrite eps.
+        apply r_forget_rhs.
+        apply r_forget_rhs.
+        apply r_forget_lhs.
+        ssprove_same_head_alt_r. intro skSome.
+        ssprove_same_head_alt_r. intro c.
+        ssprove_same_head_alt_r. intro cSome.
+        ssprove_same_head_alt_r. intro ee.
+        destruct sk as [sk|]. 2: discriminate.
+        simpl.
+        destruct c as [c|]. 2: discriminate.
+        simpl.
+        simpl in ee.
+        move: ee => /eqP ee.
+        move: eek => /eqP eek.
+        destruct (ek != ek') eqn:e.
+        2:{ move: e => /eqP e. subst. exfalso. eapply eek. reflexivity. }
+        rewrite e. simpl.
+        eapply @r_reflexivity_alt with (L := fset [::]).
+        * ssprove_valid.
+        * intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
+        * intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
   Admitted.
 
   Lemma PKE_CCA_perf_true :
