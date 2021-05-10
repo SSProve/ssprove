@@ -828,30 +828,46 @@ Section KEMDEM.
       *)
       admit.
     - destruct m as [ek' c']. simpl.
-      eapply r_get_vs_get_couple_lhs.
-      2: exact _.
-      1: ssprove_invariant.
-      intros pk sk eps.
-      rewrite eps.
-      ssprove_same_head_alt_r. intro skSome.
-      ssprove_same_head_alt_r. intro ek.
+      ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
+      ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
+      eapply r_get_remember_lhs. 1: ssprove_invariant.
+      intros ek.
+      ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
+      ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
       ssprove_same_head_alt_r. intro ekSome.
-      ssprove_same_head_alt_r. intro c.
-      ssprove_same_head_alt_r. intro cSome.
-      ssprove_same_head_alt_r. intro ee.
       destruct ek as [ek|]. 2: discriminate.
       simpl. destruct (ek == ek') eqn:eek.
-      + rewrite eek. ssprove_code_simpl_more. ssprove_code_simpl.
-        ssprove_code_simpl_more.
-        (* Here we get c again, it would be better to contract it
-          but the if is blocking us.
-          Can we swap things around to do the if before introducing c?
-          Otherwise, maybe I should have a semi-invariant to remember
-          the value of c.
-        *)
+      + rewrite eek.
+        ssprove_code_simpl_more. ssprove_code_simpl. ssprove_code_simpl_more.
+        apply r_forget_lhs.
+        eapply r_get_vs_get_couple_lhs.
+        2: exact _.
+        1: ssprove_invariant.
+        intros pk sk eps.
+        rewrite eps.
+        ssprove_same_head_alt_r. intro skSome.
+        ssprove_swap_seq_rhs [:: 2 ; 1 ; 0 ]%N.
+        ssprove_contract_get_rhs.
+        ssprove_swap_seq_rhs [:: 4 ; 3 ; 2 ; 1 ]%N.
+        eapply r_get_tracks_couple_rhs.
+        2: exact _.
+        1: ssprove_invariant.
+        intros c k eck.
+        ssprove_same_head_alt_r. intro cSome.
+        destruct c as [c|]. 2: discriminate.
+        destruct k as [k|]. 2: discriminate.
+        simpl.
+        ssprove_same_head_alt_r. intro ee.
+        move: ee => /eqP ee.
+        move: eek => /eqP eek. subst.
+        destruct (c != c') eqn: e.
+        2:{ move: e => /eqP e. subst. exfalso. apply ee. reflexivity. }
+        rewrite e. simpl.
+        (* TODO Some rule to drop useless scheme *)
         admit.
       + rewrite eek. ssprove_code_simpl_more.
-        (* Similar here with sk/ek that was already introduced *)
+        ssprove_swap_seq_rhs [:: 6 ; 5 ; 4 ; 3 ; 2 ; 1 ; 0 ]%N.
+        (* TODO FIX and use rem_rhs *)
         admit.
   Admitted.
 
