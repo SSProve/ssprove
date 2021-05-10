@@ -255,8 +255,7 @@ Section KEMDEM.
         #assert (isSome ek) as ekSome ;;
         let ek := getSome ek ekSome in
         #assert (ek != ek') ;;
-        k ← η.(KEM_decap) sk ek' ;;
-        ret k
+        η.(KEM_decap) sk ek'
       }
     ].
 
@@ -357,8 +356,7 @@ Section KEMDEM.
         let c := getSome c cSome in
         #assert (c != c') ;;
         k ← GET Datatypes.tt ;;
-        m ← θ.(DEM_dec) k c' ;;
-        ret m
+        θ.(DEM_dec) k c'
       }
     ].
 
@@ -475,8 +473,7 @@ Section KEMDEM.
         #assert (isSome c) as cSome ;;
         let c := getSome c cSome in
         #assert ((ek, c) != c') ;;
-        m ← ζ.(PKE_dec) sk c' ;;
-        ret m
+        ζ.(PKE_dec) sk c'
       }
     ].
 
@@ -510,8 +507,7 @@ Section KEMDEM.
         #import {sig #[ KEMGEN ] : 'unit → 'pkey } as KEMGEN ;;
         pk ← get pk_loc ;;
         #assert (pk == None) ;;
-        pk ← KEMGEN Datatypes.tt ;;
-        ret pk
+        KEMGEN Datatypes.tt
       } ;
       def #[ PKENC ] (m : 'plain) : 'ekey × 'cipher {
         #import {sig #[ ENCAP ] : 'unit → 'ekey } as ENCAP ;;
@@ -542,13 +538,11 @@ Section KEMDEM.
         #assert ((ek, c) != (ek', c')) ;;
         if ek == ek'
         then (
-          m ← DEC c' ;;
-          ret m
+          DEC c'
         )
         else (
           k' ← DECAP ek' ;;
-          m ← θ.(DEM_dec) k' c' ;;
-          ret m
+          θ.(DEM_dec) k' c'
         )
       }
     ].
@@ -564,8 +558,7 @@ Section KEMDEM.
     PKE_dec := λ sk c, {code
       let '(ek, c) := c in
       k ← η.(KEM_decap) sk ek ;;
-      m ← θ.(DEM_dec) k c ;;
-      ret m
+      θ.(DEM_dec) k c
     }
   |}.
 
