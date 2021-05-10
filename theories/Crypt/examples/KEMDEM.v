@@ -849,6 +849,10 @@ Section KEMDEM.
         ssprove_swap_seq_rhs [:: 2 ; 1 ; 0 ]%N.
         ssprove_contract_get_rhs.
         ssprove_swap_seq_rhs [:: 4 ; 3 ; 2 ; 1 ]%N.
+        (* TODO Maybe we should get rid of these ad-hoc rules and use remember
+          instead. Sounds more robust and modular.
+          We wouldn't need to swap so much aroung either;
+        *)
         eapply r_get_tracks_couple_rhs.
         2: exact _.
         1: ssprove_invariant.
@@ -864,9 +868,14 @@ Section KEMDEM.
         2:{ move: e => /eqP e. subst. exfalso. apply ee. reflexivity. }
         rewrite e. simpl.
         rewrite bind_ret.
-        (* TODO Some rule to drop useless scheme
-          Sadly, schemes can still sample, so it is again a case of dead
-          sampling which needs to be figured out.
+        (* TODO This bit is actually explained in the SSP paper
+          Now, we have to see how to actually exploit it. It seems
+          to involve correctness of the KEM, so we might need to do
+          something about that.
+
+          We have ek = ek' (now subst).
+          We should use this information to conclude that ek decrypted to k
+          probably.
         *)
         admit.
       + rewrite eek. ssprove_code_simpl_more.
@@ -886,7 +895,7 @@ Section KEMDEM.
         }
         intro eps.
         rewrite eps.
-        apply r_forget_rhs.
+        apply r_forget_rhs. (* TODO Some ssprove_forget tactic *)
         apply r_forget_rhs.
         apply r_forget_lhs.
         ssprove_same_head_alt_r. intro skSome.
