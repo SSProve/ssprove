@@ -830,7 +830,7 @@ Section KEMDEM.
     - destruct m as [ek' c']. simpl.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
       ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
-      eapply r_get_remember_rhs. 1: ssprove_invariant.
+      eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant.
       intros ek.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
       ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.

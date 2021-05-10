@@ -2866,28 +2866,26 @@ Definition rem_rhs ℓ v : precond :=
   λ '(s₀, s₁), get_heap s₁ ℓ = v.
 
 Lemma r_get_remember_lhs :
-  ∀ {A} ℓ (r₀ r₁ : _ → raw_code A) (pre : precond),
-    Tracks ℓ pre →
+  ∀ {A B : choiceType} ℓ r₀ r₁ (pre : precond) (post : postcond A B),
     (∀ x,
       ⊢ ⦃ λ '(s₀, s₁), (pre ⋊ rem_lhs ℓ x) (s₀, s₁) ⦄
-        r₀ x ≈ r₁ x
-      ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄
+        r₀ x ≈ r₁
+      ⦃ post ⦄
     ) →
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      x ← get ℓ ;; r₀ x ≈
-      x ← get ℓ ;; r₁ x
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
+      x ← get ℓ ;; r₀ x ≈ r₁
+    ⦃ post ⦄.
 Proof.
-  intros A ℓ r₀ r₁ pre ht h.
+  intros A B ℓ r₀ r₁ pre post h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
       x ← (x ← get ℓ ;; ret x) ;; r₀ x ≈
-      x ← (x ← get ℓ ;; ret x) ;; r₁ x
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄
+      ret Datatypes.tt ;; r₁
+    ⦃ post ⦄
   ).
   eapply r_bind with (mid :=
     λ '(b₀, s₀) '(b₁, s₁),
-      b₀ = get_heap s₀ ℓ ∧ b₁ = get_heap s₁ ℓ ∧ pre (s₀, s₁)
+      b₀ = get_heap s₀ ℓ ∧ pre (s₀, s₁)
   ).
   - apply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
     intros [hpre hpost]. simpl.
@@ -2901,9 +2899,8 @@ Proof.
       rewrite dunit1E in e.
       apply ge0_eq in e. noconf e.
       eapply hpost. intuition auto.
-  - intros x y.
-    apply rpre_hypothesis_rule. intros s₀ s₁ [? [? hpre]]. subst.
-    eapply ht in hpre as e. rewrite -e.
+  - intros x _.
+    apply rpre_hypothesis_rule. intros s₀ s₁ [? hpre]. subst.
     eapply rpre_weaken_rule.
     + eapply h.
     + simpl. intuition subst. split. 1: auto.
@@ -2911,28 +2908,27 @@ Proof.
 Qed.
 
 Lemma r_get_remember_rhs :
-  ∀ {A} ℓ (r₀ r₁ : _ → raw_code A) (pre : precond),
-    Tracks ℓ pre →
+  ∀ {A B : choiceType} ℓ r₀ r₁ (pre : precond) (post : postcond A B),
     (∀ x,
       ⊢ ⦃ λ '(s₀, s₁), (pre ⋊ rem_rhs ℓ x) (s₀, s₁) ⦄
-        r₀ x ≈ r₁ x
-      ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄
+        r₀ ≈ r₁ x
+      ⦃ post ⦄
     ) →
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      x ← get ℓ ;; r₀ x ≈
+      r₀ ≈
       x ← get ℓ ;; r₁ x
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
+    ⦃ post ⦄.
 Proof.
-  intros A ℓ r₀ r₁ pre ht h.
+  intros A B ℓ r₀ r₁ pre post h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      x ← (x ← get ℓ ;; ret x) ;; r₀ x ≈
+      ret Datatypes.tt ;; r₀ ≈
       x ← (x ← get ℓ ;; ret x) ;; r₁ x
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄
+    ⦃ post ⦄
   ).
   eapply r_bind with (mid :=
     λ '(b₀, s₀) '(b₁, s₁),
-      b₀ = get_heap s₀ ℓ ∧ b₁ = get_heap s₁ ℓ ∧ pre (s₀, s₁)
+      b₁ = get_heap s₁ ℓ ∧ pre (s₀, s₁)
   ).
   - apply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
     intros [hpre hpost]. simpl.
@@ -2946,13 +2942,89 @@ Proof.
       rewrite dunit1E in e.
       apply ge0_eq in e. noconf e.
       eapply hpost. intuition auto.
-  - intros x y.
-    apply rpre_hypothesis_rule. intros s₀ s₁ [? [? hpre]]. subst.
-    eapply ht in hpre as e. rewrite e.
+  - intros _ x.
+    apply rpre_hypothesis_rule. intros s₀ s₁ [? hpre]. subst.
     eapply rpre_weaken_rule.
     + eapply h.
     + simpl. intuition subst. split. 1: auto.
       simpl. reflexivity.
+Qed.
+
+Lemma r_get_vs_get_remember_lhs :
+  ∀ {A B : choiceType} ℓ r₀ r₁ (pre : precond) (post : postcond A B),
+    Tracks ℓ pre →
+    (∀ x,
+      ⊢ ⦃ λ '(s₀, s₁), (pre ⋊ rem_lhs ℓ x) (s₀, s₁) ⦄
+        r₀ x ≈ r₁ x
+      ⦃ post ⦄
+    ) →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      x ← get ℓ ;; r₀ x ≈
+      x ← get ℓ ;; r₁ x
+    ⦃ post ⦄.
+Proof.
+  intros A B ℓ r₀ r₁ pre post ht h.
+  eapply r_get_remember_lhs. intro x.
+  eapply r_get_remember_rhs. intro y.
+  eapply rpre_hypothesis_rule. intros s₀ s₁ [[hpre e1] e2].
+  simpl in e1, e2.
+  eapply ht in hpre as e. rewrite -e in e2. subst.
+  eapply rpre_weaken_rule.
+  - eapply h.
+  - simpl. intuition subst. split. 1: auto.
+    reflexivity.
+Qed.
+
+Lemma r_get_vs_get_remember_rhs :
+  ∀ {A B : choiceType} ℓ r₀ r₁ (pre : precond) (post : postcond A B),
+    Tracks ℓ pre →
+    (∀ x,
+      ⊢ ⦃ λ '(s₀, s₁), (pre ⋊ rem_rhs ℓ x) (s₀, s₁) ⦄
+        r₀ x ≈ r₁ x
+      ⦃ post ⦄
+    ) →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      x ← get ℓ ;; r₀ x ≈
+      x ← get ℓ ;; r₁ x
+    ⦃ post ⦄.
+Proof.
+  intros A B ℓ r₀ r₁ pre post ht h.
+  eapply r_get_remember_lhs. intro x.
+  eapply r_get_remember_rhs. intro y.
+  eapply rpre_hypothesis_rule. intros s₀ s₁ [[hpre e1] e2].
+  simpl in e1, e2.
+  eapply ht in hpre as e. rewrite e in e1. subst.
+  eapply rpre_weaken_rule.
+  - eapply h.
+  - simpl. intuition subst. split. 1: auto.
+    reflexivity.
+Qed.
+
+Lemma r_get_vs_get_remember :
+  ∀ {A B : choiceType} ℓ r₀ r₁ (pre : precond) (post : postcond A B),
+    Tracks ℓ pre →
+    (∀ x,
+      ⊢ ⦃ λ '(s₀, s₁), (pre ⋊ rem_lhs ℓ x ⋊ rem_rhs ℓ x) (s₀, s₁) ⦄
+        r₀ x ≈ r₁ x
+      ⦃ post ⦄
+    ) →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      x ← get ℓ ;; r₀ x ≈
+      x ← get ℓ ;; r₁ x
+    ⦃ post ⦄.
+Proof.
+  intros A B ℓ r₀ r₁ pre post ht h.
+  eapply r_get_remember_lhs. intro x.
+  eapply r_get_remember_rhs. intro y.
+  eapply rpre_hypothesis_rule. intros s₀ s₁ [[hpre e1] e2].
+  simpl in e1, e2.
+  eapply ht in hpre as e. rewrite e in e1. subst.
+  eapply rpre_weaken_rule.
+  - eapply h.
+  - simpl. intuition subst. split. 1: split.
+    + auto.
+    + simpl. auto.
+    + reflexivity.
 Qed.
 
 Lemma r_forget_lhs :
