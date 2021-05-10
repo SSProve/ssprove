@@ -727,35 +727,37 @@ Section KEMDEM.
     modified in one of the packages.
   *)
 
+  Notation inv :=
+    (heap_ignore KEY_loc ⋊
+    couple_rhs c_loc k_loc sameSome ⋊
+    couple_lhs pk_loc sk_loc sameSome).
+
+  Instance Invariant_inv : Invariant PKE_CCA_loc Aux_loc inv.
+  Proof.
+    ssprove_invariant.
+    - simpl.
+      eapply fsubset_trans. 2: eapply fsubsetUr.
+      unfold Aux_loc. eapply fsubsetUr.
+    - simpl. rewrite in_fsetU. apply /orP. left.
+      unfold PKE_CCA_loc. auto_in_fset.
+    - simpl. rewrite in_fsetU. apply /orP. right.
+      unfold Aux_loc. rewrite in_fsetU. apply /orP. right.
+      auto_in_fset.
+    - reflexivity.
+    - simpl. rewrite in_fsetU. apply /orP. left.
+      auto_in_fset.
+    - simpl. rewrite in_fsetU. apply /orP. left.
+      auto_in_fset.
+    - reflexivity.
+  Qed.
+
   Lemma PKE_CCA_perf_false :
     (PKE_CCA KEM_DEM false) ≈₀ Aux false.
     (* (MOD_CCA KEM_DEM ∘ par (KEM false) (DEM false) ∘ KEY). *)
   Proof.
     unfold Aux.
     (* We go to the relation logic ignoring KEY_loc. *)
-    eapply eq_rel_perf_ind
-    with (inv :=
-      heap_ignore KEY_loc ⋊
-      couple_rhs c_loc k_loc sameSome ⋊
-      couple_lhs pk_loc sk_loc sameSome
-    ).
-    1:{
-      ssprove_invariant.
-      - simpl.
-        eapply fsubset_trans. 2: eapply fsubsetUr.
-        unfold Aux_loc. eapply fsubsetUr.
-      - simpl. rewrite in_fsetU. apply /orP. left.
-        unfold PKE_CCA_loc. auto_in_fset.
-      - simpl. rewrite in_fsetU. apply /orP. right.
-        unfold Aux_loc. rewrite in_fsetU. apply /orP. right.
-        auto_in_fset.
-      - reflexivity.
-      - simpl. rewrite in_fsetU. apply /orP. left.
-        auto_in_fset.
-      - simpl. rewrite in_fsetU. apply /orP. left.
-        auto_in_fset.
-      - reflexivity.
-    }
+    eapply eq_rel_perf_ind with (inv := inv). 1: exact _.
     simplify_eq_rel m.
     all: ssprove_code_simpl.
     (* We are now in the realm of program logic *)
@@ -766,8 +768,7 @@ Section KEMDEM.
       ssprove_same_head_alt_r. intro sk.
       ssprove_same_head_alt_r. intro skNone.
       eapply r_bind.
-      + (* TODO ssprove_reflexivity tactic *)
-        eapply @r_reflexivity_alt with (L := fset [::]).
+      + eapply @r_reflexivity_alt with (L := fset [::]).
         * ssprove_valid.
         * intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
         * intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
@@ -776,7 +777,9 @@ Section KEMDEM.
         noconf e.
         eapply rpre_weaken_rule.
         1: eapply r_put_put.
-        * (* Follows from Invariant? *) admit.
+        * (* intros h₀ h₁ hi. *)
+          (* Maybe a predicate and preservation proof instead *)
+          admit.
         * apply r_ret. auto.
         * simpl. intuition subst. auto.
     - ssprove_code_simpl_more.

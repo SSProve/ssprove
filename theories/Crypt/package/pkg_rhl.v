@@ -2851,6 +2851,7 @@ Proof.
   - intros _ _. auto.
 Qed.
 
+(* Maybe useless *)
 Lemma r_put_put_inv :
   ∀ {A} L₀ L₁ ℓ ℓ' v v' (r₀ r₁ : raw_code A) (pre : precond),
     Invariant L₀ L₁ pre →
