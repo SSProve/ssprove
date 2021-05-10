@@ -815,6 +815,10 @@ Section KEMDEM.
         add some sk which is never set, doesn't make much sense,
         and if we change it to pk in the lhs we don't have the info needed
         to actually read sk...
+
+        Best option seems to be having a [couple_lhs pk sk sameSome] and then
+        a special get rule where you get pk on one side and sk on the other,
+        when both are tracked.
       *)
       destruct m as [ek' c']. simpl.
       admit.
