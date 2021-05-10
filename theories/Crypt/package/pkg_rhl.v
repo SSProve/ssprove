@@ -1734,7 +1734,7 @@ Definition inv_conj (inv inv' : precond) :=
   λ s, inv s ∧ inv' s.
 
 Notation "I ⋊ J" :=
-  (inv_conj I J) (at level 20, right associativity) : package_scope.
+  (inv_conj I J) (at level 19, left associativity) : package_scope.
 
 Arguments inv_conj : simpl never.
 
