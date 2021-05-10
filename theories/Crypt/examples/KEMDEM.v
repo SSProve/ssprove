@@ -777,9 +777,13 @@ Section KEMDEM.
         noconf e.
         eapply rpre_weaken_rule.
         1: eapply r_put_put.
-        * (* intros h₀ h₁ hi. *)
-          (* Maybe a predicate and preservation proof instead *)
-          admit.
+        * {
+          ssprove_invariant.
+          - apply preserve_set_set_couple_rhs_neq. all: neq_loc_auto.
+          - apply preserve_set_set_couple_lhs_eq.
+            + neq_loc_auto.
+            + reflexivity.
+        }
         * apply r_ret. auto.
         * simpl. intuition subst. auto.
     - ssprove_code_simpl_more.

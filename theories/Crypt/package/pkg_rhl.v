@@ -2903,14 +2903,38 @@ Qed.
   eapply preserve_set_set_conj
   : ssprove_invariant.
 
-(* Is there anything smart we can do? Some special case for sameSome? *)
-(* Lemma preserve_set_set_couple_lhs :
-  ∀ ℓ₀ ℓ₁ R ℓ ℓ' v v',
-    preserve_set_set ℓ v ℓ' v' (couple_lhs ℓ₀ ℓ₁ R).
+Lemma preserve_set_set_couple_lhs_eq :
+  ∀ ℓ ℓ' v v' (R : _ → _ → Prop),
+    ℓ != ℓ' →
+    R v v' →
+    preserve_set_set ℓ v ℓ' v' (couple_lhs ℓ ℓ' R).
 Proof.
-  intros ℓ₀ ℓ₁ R ℓ ℓ' v v'.
+  intros ℓ ℓ' v v' R hn hR.
   intros s₀ s₁ h.
-  unfold couple_lhs in *. *)
+  unfold couple_lhs in *.
+  rewrite get_set_heap_neq. 2: auto.
+  rewrite get_set_heap_eq.
+  rewrite get_set_heap_eq.
+  auto.
+Qed.
+
+Lemma preserve_set_set_couple_rhs_neq :
+  ∀ ℓ ℓ' v v' ℓ₀ ℓ₁ (R : _ → _ → Prop),
+    ℓ₀ != ℓ →
+    ℓ₀ != ℓ' →
+    ℓ₁ != ℓ →
+    ℓ₁ != ℓ' →
+    preserve_set_set ℓ v ℓ' v' (couple_rhs ℓ₀ ℓ₁ R).
+Proof.
+  intros ℓ ℓ' v v' ℓ₀ ℓ₁ R ? ? ? ?.
+  intros s₀ s₁ h.
+  unfold couple_rhs in *.
+  rewrite get_set_heap_neq. 2: auto.
+  rewrite get_set_heap_neq. 2: auto.
+  rewrite get_set_heap_neq. 2: auto.
+  rewrite get_set_heap_neq. 2: auto.
+  auto.
+Qed.
 
 (* Maybe useless *)
 Lemma r_put_put_inv :
