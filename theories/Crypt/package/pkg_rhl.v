@@ -2812,12 +2812,15 @@ Proof.
     + simpl. intuition subst. auto.
 Qed.
 
+(* Weaker than Invariant *)
+Definition preserve_set_set ℓ v ℓ' v' pre :=
+  ∀ s₀ s₁,
+    pre (s₀, s₁) →
+    pre (set_heap (set_heap s₀ ℓ v) ℓ' v', set_heap (set_heap s₁ ℓ v) ℓ' v').
+
 Lemma r_put_put :
   ∀ {A} ℓ ℓ' v v' (r₀ r₁ : raw_code A) (pre : precond),
-    (∀ s₀ s₁,
-      pre (s₀, s₁) →
-      pre (set_heap (set_heap s₀ ℓ v) ℓ' v', set_heap (set_heap s₁ ℓ v) ℓ' v')
-    ) →
+    preserve_set_set ℓ v ℓ' v' pre →
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
       r₀ ≈ r₁
     ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄ →
@@ -2850,6 +2853,64 @@ Proof.
       eapply hpost. apply hp. auto.
   - intros _ _. auto.
 Qed.
+
+Lemma preserve_set_set_eq :
+  ∀ ℓ v ℓ' v',
+    preserve_set_set ℓ v ℓ' v' (λ '(s₀, s₁), s₀ = s₁).
+Proof.
+  intros ℓ v ℓ' v' s₀ s₁ e. subst. reflexivity.
+Qed.
+
+#[export] Hint Extern 10 (preserve_set_set _ _ _ _ (λ '(s₀, s₁), s₀ = s₁)) =>
+  eapply preserve_set_set_eq
+  : ssprove_invariant.
+
+Lemma preserve_set_set_heap_ignore :
+  ∀ ℓ v ℓ' v' L,
+    preserve_set_set ℓ v ℓ' v' (heap_ignore L).
+Proof.
+  intros ℓ v ℓ' v' L.
+  intros s₀ s₁ h.
+  intros ℓ₀ hℓ₀.
+  destruct (ℓ₀ != ℓ') eqn:e1.
+  - rewrite get_set_heap_neq. 2: auto.
+    rewrite [RHS]get_set_heap_neq. 2: auto.
+    destruct (ℓ₀ != ℓ) eqn:e2.
+    + rewrite !get_set_heap_neq. 2,3: auto.
+      apply h. auto.
+    + move: e2 => /eqP e2. subst.
+      rewrite !get_set_heap_eq. reflexivity.
+  - move: e1 => /eqP e1. subst.
+    rewrite !get_set_heap_eq. reflexivity.
+Qed.
+
+#[export] Hint Extern 10 (preserve_set_set _ _ _ _ (heap_ignore _)) =>
+  eapply preserve_set_set_heap_ignore
+  : ssprove_invariant.
+
+Lemma preserve_set_set_conj :
+  ∀ (pre spre : precond) ℓ ℓ' v v',
+    preserve_set_set ℓ v ℓ' v' pre →
+    preserve_set_set ℓ v ℓ' v' spre →
+    preserve_set_set ℓ v ℓ' v' (pre ⋊ spre).
+Proof.
+  intros pre spre ℓ ℓ' v v' h hs.
+  intros s₀ s₁ []. split.
+  all: auto.
+Qed.
+
+#[export] Hint Extern 10 (preserve_set_set _ _ _ _ (_ ⋊ _)) =>
+  eapply preserve_set_set_conj
+  : ssprove_invariant.
+
+(* Is there anything smart we can do? Some special case for sameSome? *)
+(* Lemma preserve_set_set_couple_lhs :
+  ∀ ℓ₀ ℓ₁ R ℓ ℓ' v v',
+    preserve_set_set ℓ v ℓ' v' (couple_lhs ℓ₀ ℓ₁ R).
+Proof.
+  intros ℓ₀ ℓ₁ R ℓ ℓ' v v'.
+  intros s₀ s₁ h.
+  unfold couple_lhs in *. *)
 
 (* Maybe useless *)
 Lemma r_put_put_inv :
