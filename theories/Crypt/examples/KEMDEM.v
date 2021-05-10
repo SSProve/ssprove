@@ -827,20 +827,32 @@ Section KEMDEM.
         maybe we can "ignore" it?
       *)
       admit.
-    - (* ssprove_code_simpl. *)
-      (* It seems the simplifications tactics did something weird to the let *)
-      (* In the SSP paper proof, there is pk on the lhs instead of sk.
-        but changing it in the rhs means changing the locations of MOD-CCA to
-        add some sk which is never set, doesn't make much sense,
-        and if we change it to pk in the lhs we don't have the info needed
-        to actually read sk...
-
-        Best option seems to be having a [couple_lhs pk sk sameSome] and then
-        a special get rule where you get pk on one side and sk on the other,
-        when both are tracked.
-      *)
-      destruct m as [ek' c']. simpl.
-      admit.
+    - destruct m as [ek' c']. simpl.
+      eapply r_get_vs_get_couple_lhs.
+      2: exact _.
+      1: ssprove_invariant.
+      intros pk sk eps.
+      rewrite eps.
+      ssprove_same_head_alt_r. intro skSome.
+      ssprove_same_head_alt_r. intro ek.
+      ssprove_same_head_alt_r. intro ekSome.
+      ssprove_same_head_alt_r. intro c.
+      ssprove_same_head_alt_r. intro cSome.
+      ssprove_same_head_alt_r. intro ee.
+      destruct ek as [ek|]. 2: discriminate.
+      simpl. destruct (ek == ek') eqn:eek.
+      + rewrite eek. ssprove_code_simpl_more. ssprove_code_simpl.
+        ssprove_code_simpl_more.
+        (* Here we get c again, it would be better to contract it
+          but the if is blocking us.
+          Can we swap things around to do the if before introducing c?
+          Otherwise, maybe I should have a semi-invariant to remember
+          the value of c.
+        *)
+        admit.
+      + rewrite eek. ssprove_code_simpl_more.
+        (* Similar here with sk/ek that was already introduced *)
+        admit.
   Admitted.
 
   Lemma PKE_CCA_perf_true :
