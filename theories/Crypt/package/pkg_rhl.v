@@ -3223,6 +3223,30 @@ Proof.
   - simpl. intuition subst. auto.
 Qed.
 
+Lemma Remembers_lhs_from_tracked_rhs :
+  ∀ ℓ v pre,
+    Remembers_rhs ℓ v pre →
+    Tracks ℓ pre →
+    Remembers_lhs ℓ v pre.
+Proof.
+  intros ℓ v pre hr ht.
+  intros s₀ s₁ hpre. simpl.
+  specialize (hr _ _ hpre). specialize (ht _ _ hpre).
+  rewrite ht. apply hr.
+Qed.
+
+Lemma Remembers_rhs_from_tracked_lhs :
+  ∀ ℓ v pre,
+    Remembers_lhs ℓ v pre →
+    Tracks ℓ pre →
+    Remembers_rhs ℓ v pre.
+Proof.
+  intros ℓ v pre hr ht.
+  intros s₀ s₁ hpre. simpl.
+  specialize (hr _ _ hpre). specialize (ht _ _ hpre).
+  rewrite -ht. apply hr.
+Qed.
+
 (* Weaker than Invariant *)
 Definition preserve_set_set ℓ v ℓ' v' pre :=
   ∀ s₀ s₁,

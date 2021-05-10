@@ -871,7 +871,16 @@ Section KEMDEM.
         simpl.
         apply r_forget_rhs.
         ssprove_swap_seq_rhs [:: 4 ; 3 ; 2 ; 1 ; 0 ]%N.
-        (* NEED some rule for this *)
+        apply r_get_vs_get_remember. 1: ssprove_invariant.
+        intros sk.
+        apply r_get_remember_rhs. intro pk.
+        eapply (r_rem_couple_lhs pk_loc sk_loc). 1,3: exact _.
+        1:{
+          apply Remembers_lhs_from_tracked_rhs.
+          - exact _.
+          - ssprove_invariant.
+        }
+        intro eps.
         admit.
   Admitted.
 
