@@ -2851,6 +2851,35 @@ Proof.
   - intros _ _. auto.
 Qed.
 
+Lemma r_put_put_inv :
+  ∀ {A} L₀ L₁ ℓ ℓ' v v' (r₀ r₁ : raw_code A) (pre : precond),
+    Invariant L₀ L₁ pre →
+    ℓ \notin L₀ →
+    ℓ \notin L₁ →
+    ℓ' \notin L₀ →
+    ℓ' \notin L₁ →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      r₀ ≈ r₁
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      put ℓ := v ;; put ℓ' := v' ;; r₀ ≈
+      put ℓ := v ;; put ℓ' := v' ;; r₁
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
+Proof.
+  intros A L₀ L₁ ℓ ℓ' v v' r₀ r₁ pre hp ? ? ? ? h.
+  eapply r_put_put.
+  2: auto.
+  intros s₀ s₁ hpre.
+  destruct hp as [hI he].
+  specialize (hI s₀ s₁) as h1.
+  destruct h1 as [_ h1].
+  eapply h1 in hpre.
+  1: edestruct hI as [_ h2].
+  1: eapply h2 in hpre.
+  1: eapply hpre.
+  all: auto.
+Qed.
+
 Lemma rswap_cmd :
   ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
     (c₀ : command A₀) (c₁ : command A₁)
