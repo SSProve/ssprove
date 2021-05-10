@@ -2859,6 +2859,141 @@ Proof.
     + simpl. intuition subst. auto.
 Qed.
 
+Definition rem_lhs ℓ v : precond :=
+  λ '(s₀, s₁), get_heap s₀ ℓ = v.
+
+Lemma r_get_remember_lhs :
+  ∀ {A} ℓ (r₀ r₁ : _ → raw_code A) (pre : precond),
+    Tracks ℓ pre →
+    (∀ x,
+      ⊢ ⦃ λ '(s₀, s₁), (pre ⋊ rem_lhs ℓ x) (s₀, s₁) ⦄
+        r₀ x ≈ r₁ x
+      ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄
+    ) →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      x ← get ℓ ;; r₀ x ≈
+      x ← get ℓ ;; r₁ x
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
+Proof.
+  intros A ℓ r₀ r₁ pre ht h.
+  change (
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      x ← (x ← get ℓ ;; ret x) ;; r₀ x ≈
+      x ← (x ← get ℓ ;; ret x) ;; r₁ x
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄
+  ).
+  eapply r_bind with (mid :=
+    λ '(b₀, s₀) '(b₁, s₁),
+      b₀ = get_heap s₀ ℓ ∧ b₁ = get_heap s₁ ℓ ∧ pre (s₀, s₁)
+  ).
+  - apply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
+    intros [hpre hpost]. simpl.
+    eexists (dunit (_,_)). split.
+    + unfold coupling. split.
+      * unfold lmg, dfst. apply distr_ext. intro.
+        rewrite dlet_unit. reflexivity.
+      * unfold rmg, dsnd. apply distr_ext. intro.
+        rewrite dlet_unit. reflexivity.
+    + intros [] [] e.
+      rewrite dunit1E in e.
+      apply ge0_eq in e. noconf e.
+      eapply hpost. intuition auto.
+  - intros x y.
+    apply rpre_hypothesis_rule. intros s₀ s₁ [? [? hpre]]. subst.
+    eapply ht in hpre as e. rewrite -e.
+    eapply rpre_weaken_rule.
+    + eapply h.
+    + simpl. intuition subst. split. 1: auto.
+      simpl. reflexivity.
+Qed.
+
+Lemma r_forget_lhs :
+  ∀ {A B : choiceType} c₀ c₁ (pre : precond) (post : postcond A B) ℓ v,
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), (pre ⋊ rem_lhs ℓ v) (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄.
+Proof.
+  intros A B c₀ c₁ pre post ℓ v h.
+  eapply rpre_weaken_rule.
+  - eapply h.
+  - simpl. intros ? ? []. auto.
+Qed.
+
+Class Remembers_lhs ℓ v pre :=
+  is_remembering_lhs : ∀ s₀ s₁, pre (s₀, s₁) → rem_lhs ℓ v (s₀, s₁).
+
+Lemma r_get_remind_lhs :
+  ∀ {A B : choiceType} ℓ v r₀ r₁ (pre : precond) (post : postcond A B),
+    Remembers_lhs ℓ v pre →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ r₀ v ≈ r₁ ⦃ post ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ x ← get ℓ ;; r₀ x ≈ r₁ ⦃ post ⦄.
+Proof.
+  intros A B ℓ v r₀ r₁ pre post hr h.
+  change (
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      x ← (x ← get ℓ ;; ret x) ;; r₀ x ≈ ret Datatypes.tt ;; r₁
+    ⦃ post ⦄
+  ).
+  eapply r_bind with (mid :=
+    λ '(b₀, s₀) '(b₁, s₁),
+      b₀ = get_heap s₀ ℓ ∧ pre (s₀, s₁)
+  ).
+  - apply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
+    intros [hpre hpost]. simpl.
+    eexists (dunit (_,_)). split.
+    + unfold coupling. split.
+      * unfold lmg, dfst. apply distr_ext. intro.
+        rewrite dlet_unit. reflexivity.
+      * unfold rmg, dsnd. apply distr_ext. intro.
+        rewrite dlet_unit. reflexivity.
+    + intros [] [] e.
+      rewrite dunit1E in e.
+      apply ge0_eq in e. noconf e.
+      eapply hpost. intuition auto.
+  - intros x _.
+    eapply rpre_hypothesis_rule. intros s₀ s₁ [? hpre]. subst.
+    eapply hr in hpre as e. simpl in e. rewrite e.
+    eapply rpre_weaken_rule.
+    + eapply h.
+    + simpl. intuition subst. auto.
+Qed.
+
+Lemma Remembers_lhs_rem_lhs :
+  ∀ ℓ v,
+    Remembers_lhs ℓ v (rem_lhs ℓ v).
+Proof.
+  intros ℓ v. intros s₀ s₁ h. auto.
+Qed.
+
+#[export] Hint Extern 10 (Remembers_lhs _ _ (rem_lhs _ _)) =>
+  eapply Remembers_lhs_rem_lhs
+  : typeclass_instances ssprove_invariant.
+
+Lemma Remembers_lhs_conj_right :
+  ∀ ℓ v (pre spre : precond),
+    Remembers_lhs ℓ v spre →
+    Remembers_lhs ℓ v (pre ⋊ spre).
+Proof.
+  intros ℓ v pre spre h.
+  intros s₀ s₁ []. apply h. auto.
+Qed.
+
+Lemma Remembers_lhs_conj_left :
+  ∀ ℓ v (pre spre : precond),
+    Remembers_lhs ℓ v pre →
+    Remembers_lhs ℓ v (pre ⋊ spre).
+Proof.
+  intros ℓ v pre spre h.
+  intros s₀ s₁ []. apply h. auto.
+Qed.
+
+#[export] Hint Extern 9 (Remembers_lhs _ _ (_ ⋊ _)) =>
+  eapply Remembers_lhs_conj_right
+  : typeclass_instances ssprove_invariant.
+
+#[export] Hint Extern 11 (Remembers_lhs _ _ (_ ⋊ _)) =>
+  eapply Remembers_lhs_conj_left
+  : typeclass_instances ssprove_invariant.
+
 (* Weaker than Invariant *)
 Definition preserve_set_set ℓ v ℓ' v' pre :=
   ∀ s₀ s₁,
