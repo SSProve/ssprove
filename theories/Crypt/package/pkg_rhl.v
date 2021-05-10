@@ -2812,6 +2812,53 @@ Proof.
     + simpl. intuition subst. auto.
 Qed.
 
+Lemma r_get_vs_get_couple_lhs :
+  ∀ {A} ℓ ℓ' (R : _ → _ → Prop)
+    (r₀ r₁ : _ → raw_code A) (pre : precond),
+    Tracks ℓ pre →
+    Couples_lhs ℓ ℓ' R pre →
+    (∀ x y,
+      R x y →
+      ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+        r₀ y ≈ r₁ x
+      ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄
+    ) →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      y ← get ℓ' ;; r₀ y ≈
+      x ← get ℓ ;; r₁ x
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
+Proof.
+  intros A ℓ ℓ' R r₀ r₁ pre ht hc h.
+  change (
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      y ← (y ← get ℓ' ;; ret y) ;; r₀ y ≈
+      x ← (x ← get ℓ ;; ret x) ;; r₁ x
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄
+  ).
+  eapply r_bind with (mid :=
+    λ '(b₀, s₀) '(b₁, s₁),
+      b₀ = get_heap s₀ ℓ' ∧ b₁ = get_heap s₀ ℓ ∧ pre (s₀, s₁)
+  ).
+  - apply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
+    intros [hpre hpost]. simpl.
+    eexists (dunit (_,_)). split.
+    + unfold coupling. split.
+      * unfold lmg, dfst. apply distr_ext. intro.
+        rewrite dlet_unit. reflexivity.
+      * unfold rmg, dsnd. apply distr_ext. intro.
+        rewrite dlet_unit. reflexivity.
+    + intros [] [] e.
+      rewrite dunit1E in e.
+      apply ge0_eq in e. noconf e.
+      eapply hpost. intuition auto.
+      symmetry. apply ht. auto.
+  - intros y x.
+    apply rpre_hypothesis_rule. intros s₀ s₁ [? [? hpre]]. subst.
+    eapply rpre_weaken_rule.
+    + eapply h. eapply hc in hpre. auto.
+    + simpl. intuition subst. auto.
+Qed.
+
 (* Weaker than Invariant *)
 Definition preserve_set_set ℓ v ℓ' v' pre :=
   ∀ s₀ s₁,
@@ -2936,7 +2983,7 @@ Proof.
   auto.
 Qed.
 
-(* Maybe useless *)
+(* TODO Maybe useless *)
 Lemma r_put_put_inv :
   ∀ {A} L₀ L₁ ℓ ℓ' v v' (r₀ r₁ : raw_code A) (pre : precond),
     Invariant L₀ L₁ pre →
