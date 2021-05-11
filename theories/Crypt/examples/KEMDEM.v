@@ -753,7 +753,6 @@ Section KEMDEM.
 
   Lemma PKE_CCA_perf_false :
     (PKE_CCA KEM_DEM false) ≈₀ Aux false.
-    (* (MOD_CCA KEM_DEM ∘ par (KEM false) (DEM false) ∘ KEY). *)
   Proof.
     unfold Aux.
     (* We go to the relation logic ignoring KEY_loc. *)
@@ -839,7 +838,7 @@ Section KEMDEM.
       simpl. destruct (ek == ek') eqn:eek.
       + rewrite eek.
         ssprove_code_simpl_more. ssprove_code_simpl. ssprove_code_simpl_more.
-        apply r_forget_rhs.
+        ssprove_forget.
         eapply r_get_vs_get_couple_lhs.
         2: exact _.
         1: ssprove_invariant.
@@ -876,13 +875,28 @@ Section KEMDEM.
           We have ek = ek' (now subst).
           We should use this information to conclude that ek decrypted to k
           probably.
+
+          The idea is to remember that ek is obtained from
+          encap and thus that decap on it will be the identity.
+          Don't we have a problem when they are randomly generated
+          (the present case)?
+          ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
+            '(k, ek) ← KEM_encap pk ;;
+            KEM_decap sk ek
+            ≈
+            '(k, ek) ← KEM_encap pk ;;
+            ret k
+          ⦃ eq ⦄
+
+          The problem is that this information is not available in this branch
+          anyway because the boolean is false and ek is obtained at random.
         *)
         admit.
       + rewrite eek. ssprove_code_simpl_more.
         ssprove_swap_seq_rhs [:: 6 ; 5 ; 4 ; 3 ; 2 ; 1 ; 0 ]%N.
         eapply r_get_remind_rhs. 1: exact _.
         simpl.
-        apply r_forget_rhs.
+        ssprove_forget.
         ssprove_swap_seq_rhs [:: 4 ; 3 ; 2 ; 1 ; 0 ]%N.
         apply r_get_vs_get_remember. 1: ssprove_invariant.
         intros sk.
@@ -895,9 +909,7 @@ Section KEMDEM.
         }
         intro eps.
         rewrite eps.
-        apply r_forget_rhs. (* TODO Some ssprove_forget tactic *)
-        apply r_forget_rhs.
-        apply r_forget_lhs.
+        ssprove_forget_all.
         ssprove_same_head_alt_r. intro skSome.
         ssprove_same_head_alt_r. intro c.
         ssprove_same_head_alt_r. intro cSome.
@@ -921,6 +933,40 @@ Section KEMDEM.
   Lemma PKE_CCA_perf_true :
     (Aux true) ≈₀ (PKE_CCA KEM_DEM true).
   Proof.
+    apply adv_equiv_sym.
+    unfold Aux.
+    (* We go to the relation logic ignoring KEY_loc. *)
+    eapply eq_rel_perf_ind with (inv := inv). 1: exact _.
+    simplify_eq_rel m.
+    all: ssprove_code_simpl.
+    (* We are now in the realm of program logic *)
+    - ssprove_code_simpl_more.
+      ssprove_code_simpl.
+      ssprove_same_head_alt_r. intro pk.
+      ssprove_same_head_alt_r. intro pkNone.
+      ssprove_same_head_alt_r. intro sk.
+      ssprove_same_head_alt_r. intro skNone.
+      eapply r_bind.
+      + eapply @r_reflexivity_alt with (L := fset [::]).
+        * ssprove_valid.
+        * intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
+        * intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
+      + intros [] [].
+        eapply rpre_hypothesis_rule. intros s₀ s₁ [e ?].
+        noconf e.
+        eapply rpre_weaken_rule.
+        1: eapply r_put_put.
+        * {
+          ssprove_invariant.
+          - apply preserve_set_set_couple_rhs_neq. all: neq_loc_auto.
+          - apply preserve_set_set_couple_lhs_eq.
+            + neq_loc_auto.
+            + reflexivity.
+        }
+        * apply r_ret. auto.
+        * simpl. intuition subst. auto.
+    - admit.
+    - admit.
   Admitted.
 
   (** Security theorem *)

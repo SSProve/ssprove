@@ -44,6 +44,19 @@
   - [ssprove_swap_lhs n]
     Similar but in the left-hand side.
 
+  - [ssprove_swap_seq_rhs s]
+    Applies [ssprove_swap_rhs] in sucession, starting from the first element
+    of the sequence [s].
+
+  - [ssprove_swap_seq_lhs s]
+    Similar but in the left-hand side.
+
+  - [ssprove_forget]
+    Remove the last rem_lhs/rem_rhs from the precondition.
+
+  - [ssprove_forget_all]
+    Remove all reminders from precondition.
+
 **)
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
@@ -640,3 +653,14 @@ Proof.
   destruct y. 1: discriminate.
   reflexivity.
 Qed.
+
+Ltac ssprove_forget :=
+  lazymatch goal with
+  | |- ⊢ ⦃ λ '(s₀, s₁), (_ ⋊ rem_rhs _ _) (s₀, s₁) ⦄ _ ≈ _ ⦃ _ ⦄ =>
+    apply r_forget_rhs
+  | |- ⊢ ⦃ λ '(s₀, s₁), (_ ⋊ rem_lhs _ _) (s₀, s₁) ⦄ _ ≈ _ ⦃ _ ⦄ =>
+    apply r_forget_lhs
+  end.
+
+Ltac ssprove_forget_all :=
+  repeat ssprove_forget.
