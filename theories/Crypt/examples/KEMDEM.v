@@ -806,10 +806,10 @@ Section KEMDEM.
       ssprove_swap_seq_rhs [:: 8 ; 7 ; 6 ; 5 ; 4 ; 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
-      eapply r_get_tracks_couple_rhs.
-      2: exact _.
-      1: ssprove_invariant.
-      intros c k eck.
+      eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intro c.
+      eapply r_get_remember_rhs. intro k.
+      eapply (r_rem_couple_rhs c_loc k_loc). 1-3: exact _. intro eck.
+      ssprove_forget_all.
       ssprove_same_head_alt_r. intro cNone.
       rewrite cNone. simpl.
       eapply sameSome_None_l in cNone as kNone. 2: eauto.
@@ -848,14 +848,10 @@ Section KEMDEM.
         ssprove_swap_seq_rhs [:: 2 ; 1 ; 0 ]%N.
         ssprove_contract_get_rhs.
         ssprove_swap_seq_rhs [:: 4 ; 3 ; 2 ; 1 ]%N.
-        (* TODO Maybe we should get rid of these ad-hoc rules and use remember
-          instead. Sounds more robust and modular.
-          We wouldn't need to swap so much aroung either;
-        *)
-        eapply r_get_tracks_couple_rhs.
-        2: exact _.
-        1: ssprove_invariant.
-        intros c k eck.
+        eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intro c.
+        eapply r_get_remember_rhs. intro k.
+        eapply (r_rem_couple_rhs c_loc k_loc). 1-3: exact _. intro eck.
+        ssprove_forget_all.
         ssprove_same_head_alt_r. intro cSome.
         destruct c as [c|]. 2: discriminate.
         destruct k as [k|]. 2: discriminate.

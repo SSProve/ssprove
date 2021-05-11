@@ -2766,7 +2766,7 @@ Qed.
   eapply Couples_rhs_conj_left
   : typeclass_instances ssprove_invariant.
 
-Lemma r_get_tracks_couple_rhs :
+(* Lemma r_get_tracks_couple_rhs :
   ∀ {A} ℓ ℓ' (R : _ → _ → Prop)
     (r₀ : _ → raw_code A) (r₁ : _ → _ → raw_code A) (pre : precond),
     Tracks ℓ pre →
@@ -2810,7 +2810,7 @@ Proof.
     eapply rpre_weaken_rule.
     + eapply h. eapply hc in hpre. auto.
     + simpl. intuition subst. auto.
-Qed.
+Qed. *)
 
 Lemma r_get_vs_get_couple_lhs :
   ∀ {A} ℓ ℓ' (R : _ → _ → Prop)
@@ -3209,6 +3209,25 @@ Lemma r_rem_couple_lhs :
     Couples_lhs ℓ ℓ' R pre →
     Remembers_lhs ℓ v pre →
     Remembers_lhs ℓ' v' pre →
+    (R v v' → ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄) →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄.
+Proof.
+  intros A B ℓ ℓ' v v' R pre c₀ c₁ post hc hl hr h.
+  apply rpre_hypothesis_rule.
+  intros s₀ s₁ hpre.
+  eapply rpre_weaken_rule.
+  - eapply h.
+    specialize (hc _ hpre). specialize (hl _ _ hpre). specialize (hr _ _ hpre).
+    simpl in hl, hr. subst.
+    apply hc.
+  - simpl. intuition subst. auto.
+Qed.
+
+Lemma r_rem_couple_rhs :
+  ∀ {A B : choiceType} ℓ ℓ' v v' R (pre : precond) c₀ c₁ (post : postcond A B),
+    Couples_rhs ℓ ℓ' R pre →
+    Remembers_rhs ℓ v pre →
+    Remembers_rhs ℓ' v' pre →
     (R v v' → ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄) →
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄.
 Proof.
