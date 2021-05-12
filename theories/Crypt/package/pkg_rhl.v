@@ -2423,6 +2423,22 @@ Proof.
     simpl. intros ? ? [? ?]. subst. auto.
 Qed.
 
+Lemma rsame_head_alt_pre :
+  ∀ {A B : choiceType} {f₀ f₁ : A → raw_code B}
+    (m : raw_code A) pre (post : postcond B B),
+    ⊢ ⦃ pre ⦄ m ≈ m ⦃ λ '(a₀, s₀) '(a₁, s₁), pre (s₀, s₁) ∧ a₀ = a₁ ⦄ →
+    (∀ a, ⊢ ⦃ pre ⦄ f₀ a ≈ f₁ a ⦃ post ⦄) →
+    ⊢ ⦃ pre ⦄ x ← m ;; f₀ x ≈ x ← m ;; f₁ x ⦃ post ⦄.
+Proof.
+  intros A B f₀ f₁ m pre post hm hf.
+  eapply r_bind.
+  - eapply hm.
+  - intros ? ?. eapply rpre_hypothesis_rule. intros ? ? [hpre e]. subst.
+    eapply rpre_weaken_rule.
+    + eapply hf.
+    + simpl. intuition subst. auto.
+Qed.
+
 Lemma cmd_sample_preserve_pre :
   ∀ (op : Op) pre,
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
@@ -2640,6 +2656,23 @@ Proof.
   - eapply (rsame_head_cmd_alt (cmd_sample _)).
     + eapply cmd_sample_preserve_pre with (pre := λ '(s₀, s₁), pre (s₀, s₁)).
     + eauto.
+Qed.
+
+Lemma rsame_head_alt :
+  ∀ {A B : choiceType} {L} {f₀ f₁ : A → raw_code B}
+    (m : raw_code A) pre (post : postcond B B),
+    ValidCode L [interface] m →
+    (∀ ℓ, ℓ \in L → get_pre_cond ℓ pre) →
+    (∀ ℓ v, ℓ \in L → put_pre_cond ℓ v pre) →
+    (∀ a, ⊢ ⦃ pre ⦄ f₀ a ≈ f₁ a ⦃ post ⦄) →
+    ⊢ ⦃ pre ⦄ x ← m ;; f₀ x ≈ x ← m ;; f₁ x ⦃ post ⦄.
+Proof.
+  intros A B L f₀ f₁ m pre post hm hget hput hf.
+  eapply rsame_head_alt_pre. 2: auto.
+  eapply rpre_weaken_rule. 1: eapply rpost_weaken_rule.
+  - eapply r_reflexivity_alt. all: eauto.
+  - intros [] [] []. intuition eauto.
+  - simpl. auto.
 Qed.
 
 (** Predicates on invariants
