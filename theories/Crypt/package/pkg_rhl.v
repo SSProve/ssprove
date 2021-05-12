@@ -2812,7 +2812,7 @@ Proof.
     + simpl. intuition subst. auto.
 Qed. *)
 
-Lemma r_get_vs_get_couple_lhs :
+(* Lemma r_get_vs_get_couple_lhs :
   ∀ {A} ℓ ℓ' (R : _ → _ → Prop)
     (r₀ r₁ : _ → raw_code A) (pre : precond),
     Tracks ℓ pre →
@@ -2857,7 +2857,7 @@ Proof.
     eapply rpre_weaken_rule.
     + eapply h. eapply hc in hpre. auto.
     + simpl. intuition subst. auto.
-Qed.
+Qed. *)
 
 Definition rem_lhs ℓ v : precond :=
   λ '(s₀, s₁), get_heap s₀ ℓ = v.

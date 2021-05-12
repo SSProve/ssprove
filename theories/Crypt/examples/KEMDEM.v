@@ -838,10 +838,15 @@ Section KEMDEM.
       + rewrite eek.
         ssprove_code_simpl_more. ssprove_code_simpl. ssprove_code_simpl_more.
         ssprove_forget.
-        eapply r_get_vs_get_couple_lhs.
-        2: exact _.
-        1: ssprove_invariant.
-        intros pk sk eps.
+        eapply r_get_remember_rhs. intro pk.
+        eapply r_get_remember_lhs. intro sk.
+        eapply (r_rem_couple_lhs pk_loc sk_loc). 1,3: exact _.
+        1:{
+          eapply Remembers_lhs_from_tracked_rhs.
+          - exact _.
+          - ssprove_invariant.
+        }
+        intro eps.
         rewrite eps.
         ssprove_same_head_alt_r. intro skSome.
         ssprove_swap_seq_rhs [:: 2 ; 1 ; 0 ]%N.
@@ -1013,8 +1018,89 @@ Section KEMDEM.
         In order to factorise a bit. We'll still have to deal with
         cmd vs bind, assert vs bind and symmetric.
       *)
+      (* Once this is done, the goal is ok! *)
       admit.
-    - admit.
+    - destruct m as [ek' c']. simpl.
+      ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
+      ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
+      eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant.
+      intros ek.
+      ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
+      ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
+      ssprove_same_head_alt_r. intro ekSome.
+      destruct ek as [ek|]. 2: discriminate.
+      simpl. destruct (ek == ek') eqn:eek.
+      + rewrite eek. ssprove_code_simpl_more.
+        ssprove_code_simpl. ssprove_code_simpl_more.
+        ssprove_forget.
+        eapply r_get_remember_rhs. intro pk.
+        eapply r_get_remember_lhs. intro sk.
+        eapply (r_rem_couple_lhs pk_loc sk_loc). 1,3: exact _.
+        1:{
+          eapply Remembers_lhs_from_tracked_rhs.
+          - exact _.
+          - ssprove_invariant.
+        }
+        intro eps.
+        rewrite eps.
+        ssprove_same_head_alt_r. intro skSome.
+        ssprove_swap_seq_rhs [:: 2 ; 1 ; 0 ]%N.
+        ssprove_contract_get_rhs.
+        ssprove_swap_seq_rhs [:: 4 ; 3 ; 2 ; 1 ]%N.
+        eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intro c.
+        eapply r_get_remember_rhs. intro k.
+        eapply (r_rem_couple_rhs c_loc k_loc). 1-3: exact _. intro eck.
+        ssprove_forget_all.
+        ssprove_same_head_alt_r. intro cSome.
+        destruct c as [c|]. 2: discriminate.
+        destruct k as [k|]. 2: discriminate.
+        simpl.
+        ssprove_same_head_alt_r. intro ee.
+        move: ee => /eqP ee.
+        move: eek => /eqP eek. subst.
+        destruct (c != c') eqn: e.
+        2:{ move: e => /eqP e. subst. exfalso. apply ee. reflexivity. }
+        rewrite e. simpl.
+        rewrite bind_ret.
+        (* Here we probably need validity, but as long as the other one
+          isn't solved, it's not clear it's worth it.
+        *)
+        admit.
+      + rewrite eek. ssprove_code_simpl_more.
+        ssprove_swap_seq_rhs [:: 6 ; 5 ; 4 ; 3 ; 2 ; 1 ; 0 ]%N.
+        eapply r_get_remind_rhs. 1: exact _.
+        simpl.
+        ssprove_forget.
+        ssprove_swap_seq_rhs [:: 4 ; 3 ; 2 ; 1 ; 0 ]%N.
+        apply r_get_vs_get_remember. 1: ssprove_invariant.
+        intros sk.
+        apply r_get_remember_rhs. intro pk.
+        eapply (r_rem_couple_lhs pk_loc sk_loc). 1,3: exact _.
+        1:{
+          apply Remembers_lhs_from_tracked_rhs.
+          - exact _.
+          - ssprove_invariant.
+        }
+        intro eps.
+        rewrite eps.
+        ssprove_forget_all.
+        ssprove_same_head_alt_r. intro skSome.
+        ssprove_same_head_alt_r. intro c.
+        ssprove_same_head_alt_r. intro cSome.
+        ssprove_same_head_alt_r. intro ee.
+        destruct sk as [sk|]. 2: discriminate.
+        simpl.
+        destruct c as [c|]. 2: discriminate.
+        simpl in ee.
+        move: ee => /eqP ee.
+        move: eek => /eqP eek.
+        destruct (ek != ek') eqn:e.
+        2:{ move: e => /eqP e. subst. exfalso. eapply eek. reflexivity. }
+        rewrite e. simpl.
+        eapply @r_reflexivity_alt with (L := fset [::]).
+        * ssprove_valid.
+        * intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
+        * intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
   Admitted.
 
   (** Security theorem *)
