@@ -767,24 +767,23 @@ Section KEMDEM.
       ssprove_same_head_alt_r. intro sk.
       ssprove_same_head_alt_r. intro skNone.
       eapply r_bind.
-      + eapply @r_reflexivity_alt with (L := fset [::]).
-        * ssprove_valid.
-        * intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-        * intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-      + intros [] [].
-        eapply rpre_hypothesis_rule. intros s₀ s₁ [e ?].
-        noconf e.
-        eapply rpre_weaken_rule.
-        1: eapply r_put_put.
-        * {
-          ssprove_invariant.
-          - apply preserve_set_set_couple_rhs_neq. all: neq_loc_auto.
-          - apply preserve_set_set_couple_lhs_eq.
-            + neq_loc_auto.
-            + reflexivity.
-        }
-        * apply r_ret. auto.
-        * simpl. intuition subst. auto.
+      { eapply @r_reflexivity_alt with (L := fset [::]).
+        - ssprove_valid.
+        - intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
+        - intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
+      }
+      intros [] [].
+      eapply rpre_hypothesis_rule. intros s₀ s₁ [e ?].
+      noconf e.
+      eapply rpre_weaken_rule.
+      1: eapply r_put_put.
+      + ssprove_invariant.
+        * apply preserve_set_set_couple_rhs_neq. all: neq_loc_auto.
+        * apply preserve_set_set_couple_lhs_eq.
+          -- neq_loc_auto.
+          -- reflexivity.
+      + apply r_ret. auto.
+      + simpl. intuition subst. auto.
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
       ssprove_code_simpl_more.
@@ -943,25 +942,78 @@ Section KEMDEM.
       ssprove_same_head_alt_r. intro sk.
       ssprove_same_head_alt_r. intro skNone.
       eapply r_bind.
-      + eapply @r_reflexivity_alt with (L := fset [::]).
-        * ssprove_valid.
-        * intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-        * intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-      + intros [] [].
-        eapply rpre_hypothesis_rule. intros s₀ s₁ [e ?].
-        noconf e.
-        eapply rpre_weaken_rule.
-        1: eapply r_put_put.
-        * {
-          ssprove_invariant.
-          - apply preserve_set_set_couple_rhs_neq. all: neq_loc_auto.
-          - apply preserve_set_set_couple_lhs_eq.
-            + neq_loc_auto.
-            + reflexivity.
-        }
-        * apply r_ret. auto.
-        * simpl. intuition subst. auto.
-    - admit.
+      { eapply @r_reflexivity_alt with (L := fset [::]).
+        - ssprove_valid.
+        - intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
+        - intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
+      }
+      intros [] [].
+      eapply rpre_hypothesis_rule. intros s₀ s₁ [e ?].
+      noconf e.
+      eapply rpre_weaken_rule.
+      1: eapply r_put_put.
+      + ssprove_invariant.
+        * apply preserve_set_set_couple_rhs_neq. all: neq_loc_auto.
+        * apply preserve_set_set_couple_lhs_eq.
+          -- neq_loc_auto.
+          -- reflexivity.
+      + apply r_ret. auto.
+      + simpl. intuition subst. auto.
+    - ssprove_code_simpl_more.
+      ssprove_code_simpl.
+      ssprove_swap_seq_rhs [:: 5 ; 4 ; 3 ; 2 ; 1 ]%N.
+      ssprove_contract_get_rhs.
+      ssprove_same_head_alt_r. intro pk.
+      ssprove_same_head_alt_r. intro pkSome.
+      destruct pk as [pk|]. 2: discriminate.
+      simpl.
+      ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
+      ssprove_contract_get_rhs.
+      ssprove_same_head_alt_r. intro ek.
+      ssprove_same_head_alt_r. intro ekNone.
+      rewrite ekNone. simpl.
+      eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intro c.
+      ssprove_same_head_alt_r. intro cNone.
+      (* TODO A rsame_head_alt *)
+      (* eapply rsame_head. *)
+      eapply r_bind.
+      { eapply @r_reflexivity_alt with (L := fset [::]).
+        - ssprove_valid.
+        - intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
+        - intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
+      }
+      intros [k₀ ek₀] [k₁ ek₁].
+      eapply rpre_hypothesis_rule. intros s₀ s₁ [e hpre]. noconf e.
+      eapply rpre_weaken_rule
+      with (pre := λ '(s₀, s₁), (inv ⋊ rem_rhs c_loc c) (s₀, s₁)).
+      2:{ simpl. intuition subst. auto. }
+      clear s₀ s₁ hpre.
+      (* END TODO *)
+      ssprove_code_simpl_more. ssprove_code_simpl.
+      ssprove_code_simpl_more.
+      ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
+      ssprove_contract_put_rhs.
+      ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ; 0 ]%N.
+      eapply r_get_remind_rhs. 1: exact _.
+      ssprove_swap_seq_rhs [:: 0 ]%N.
+      eapply r_get_remember_rhs. intros k.
+      eapply (r_rem_couple_rhs c_loc k_loc). 1-3: exact _. intro eck.
+      eapply sameSome_None_l in cNone as kNone. 2: eauto.
+      rewrite cNone. rewrite kNone. simpl.
+      ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
+      ssprove_contract_put_get_rhs. simpl.
+      ssprove_forget_all.
+      (* TODO r_put_rhs, but we don't want to use it, we want r_put_put here
+        to preserve the invariant with c.
+        Rather a variant of r_put_put with only one put on one side.
+      *)
+      (* TODO Add ways to swap schemes
+        Might be good to be able to extend the swap commands.
+        Maybe I should have a treatment of goals to make the head into a cmd?
+        In order to factorise a bit. We'll still have to deal with
+        cmd vs bind, assert vs bind and symmetric.
+      *)
+      admit.
     - admit.
   Admitted.
 

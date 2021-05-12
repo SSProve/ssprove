@@ -638,6 +638,21 @@ Ltac ssprove_contract_put_rhs :=
   | cmd_bind_simpl ; cbn beta
   ].
 
+Ltac ssprove_contact_put_get_aux :=
+  eapply r_put_get.
+
+Ltac ssprove_contract_put_get_lhs :=
+  eapply r_transL ; [
+    ssprove_contact_put_get_aux
+  | cmd_bind_simpl ; cbn beta
+  ].
+
+Ltac ssprove_contract_put_get_rhs :=
+  eapply r_transR ; [
+    ssprove_contact_put_get_aux
+  | cmd_bind_simpl ; cbn beta
+  ].
+
 Definition sameSome {A B} (x : option A) (y : option B) :=
   isSome x = isSome y.
 
