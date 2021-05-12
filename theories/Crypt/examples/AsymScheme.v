@@ -243,44 +243,42 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
   Definition L_pk_ots_L :
     package L_locs_counter
       [interface]
-      [interface val #[challenge_id] : chPlain × chPlain → 'option chCipher ] :=
+      [interface val #[challenge_id] : chPlain × chPlain → chCipher ] :=
     [package
-      def #[challenge_id] ( mL_mR : chPlain × chPlain ) : 'option chCipher
+      def #[challenge_id] ( mL_mR : chPlain × chPlain ) : chCipher
       {
         count ← get counter_loc ;;
         put counter_loc := (count + 1)%N;;
-        if ((count == 0)%N) then
-          '(pk, sk) ← KeyGen ;;
-          put pk_loc := pk ;;
-          put sk_loc := sk ;;
-          c ← Enc pk (fst mL_mR) ;;
-          ret (some c)
-        else ret None
+        #assert ((count == 0)%N) ;;
+        '(pk, sk) ← KeyGen ;;
+        put pk_loc := pk ;;
+        put sk_loc := sk ;;
+        c ← Enc pk (fst mL_mR) ;;
+        ret c
       }
     ].
 
   Definition L_pk_ots_R :
     package L_locs_counter
       [interface]
-      [interface val #[challenge_id] : chPlain × chPlain → 'option chCipher ] :=
+      [interface val #[challenge_id] : chPlain × chPlain → chCipher ] :=
     [package
-      def #[challenge_id] ( mL_mR :  chPlain × chPlain ) : 'option chCipher
+      def #[challenge_id] ( mL_mR :  chPlain × chPlain ) : chCipher
       {
         count ← get counter_loc ;;
         put counter_loc := (count + 1)%N;;
-        if ((count == 0)%N) then
-          '(pk, sk) ← KeyGen ;;
-          put pk_loc := pk ;;
-          put sk_loc := sk ;;
-          c ← Enc pk (snd mL_mR) ;;
-          ret (some c)
-        else ret None
+        #assert (count == 0)%N ;;
+        '(pk, sk) ← KeyGen ;;
+        put pk_loc := pk ;;
+        put sk_loc := sk ;;
+        c ← Enc pk (snd mL_mR) ;;
+        ret c
       }
     ].
 
   Definition ots_L_vs_R :
     loc_GamePair [interface
-      val #[challenge_id] :chPlain × chPlain → 'option chCipher
+      val #[challenge_id] :chPlain × chPlain → chCipher
     ] :=
     λ b, if b then {locpackage L_pk_ots_L } else {locpackage L_pk_ots_R }.
 
@@ -304,43 +302,41 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
   Definition L_pk_ots_real :
     package L_locs_counter
       [interface]
-      [interface val #[challenge_id'] : chPlain → 'option chCipher ] :=
+      [interface val #[challenge_id'] : chPlain → chCipher ] :=
     [package
-      def #[challenge_id'] ( m : chPlain  ) : 'option chCipher
+      def #[challenge_id'] (m : chPlain) : chCipher
       {
         count ← get counter_loc ;;
         put counter_loc := (count + 1)%N;;
-        if ((count == 0)%N) then
-          '(pk, sk) ← KeyGen ;;
-          put pk_loc := pk ;;
-          put sk_loc := sk ;;
-          c ← Enc pk m ;;
-          ret (some c)
-        else ret None
+        #assert (count == 0)%N ;;
+        '(pk, sk) ← KeyGen ;;
+        put pk_loc := pk ;;
+        put sk_loc := sk ;;
+        c ← Enc pk m ;;
+        ret c
       }
     ].
 
   Definition L_pk_ots_rnd :
     package L_locs_counter
       [interface]
-      [interface val #[challenge_id'] : chPlain → 'option chCipher ] :=
+      [interface val #[challenge_id'] : chPlain → chCipher ] :=
     [package
-      def #[challenge_id'] ( m : chPlain ) : 'option chCipher
+      def #[challenge_id'] (m : chPlain) : chCipher
       {
         count ← get counter_loc ;;
         put counter_loc := (count + 1)%N;;
-        if ((count == 0)%N) then
-          '(pk, sk) ← KeyGen ;;
-          put pk_loc := pk ;;
-          put sk_loc := sk ;;
-          c ← sample uniform i_cipher ;;
-          ret (Some c)
-        else ret None
+        #assert (count == 0)%N ;;
+        '(pk, sk) ← KeyGen ;;
+        put pk_loc := pk ;;
+        put sk_loc := sk ;;
+        c ← sample uniform i_cipher ;;
+        ret c
       }
     ].
 
   Definition ots_real_vs_rnd :
-    loc_GamePair [interface val #[challenge_id'] : chPlain → 'option chCipher] :=
+    loc_GamePair [interface val #[challenge_id'] : chPlain → chCipher] :=
     λ b, if b then {locpackage L_pk_ots_real } else {locpackage L_pk_ots_rnd }.
 
 End AsymmetricScheme.
