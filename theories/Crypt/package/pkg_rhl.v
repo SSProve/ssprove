@@ -2424,7 +2424,7 @@ Proof.
 Qed.
 
 Lemma rsame_head_alt_pre :
-  ∀ {A B : choiceType} {f₀ f₁ : A → raw_code B}
+  ∀ {A B : ord_choiceType} {f₀ f₁ : A → raw_code B}
     (m : raw_code A) pre (post : postcond B B),
     ⊢ ⦃ pre ⦄ m ≈ m ⦃ λ '(a₀, s₀) '(a₁, s₁), pre (s₀, s₁) ∧ a₀ = a₁ ⦄ →
     (∀ a, ⊢ ⦃ pre ⦄ f₀ a ≈ f₁ a ⦃ post ⦄) →
@@ -2659,15 +2659,15 @@ Proof.
 Qed.
 
 Lemma rsame_head_alt :
-  ∀ {A B : choiceType} {L} {f₀ f₁ : A → raw_code B}
-    (m : raw_code A) pre (post : postcond B B),
+  ∀ {A B : ord_choiceType} {L}
+    (m : raw_code A) (f₀ f₁ : A → raw_code B) pre (post : postcond B B),
     ValidCode L [interface] m →
-    (∀ ℓ, ℓ \in L → get_pre_cond ℓ pre) →
-    (∀ ℓ v, ℓ \in L → put_pre_cond ℓ v pre) →
+    (∀ (ℓ : Location), ℓ \in L → get_pre_cond ℓ pre) →
+    (∀ (ℓ : Location) v, ℓ \in L → put_pre_cond ℓ v pre) →
     (∀ a, ⊢ ⦃ pre ⦄ f₀ a ≈ f₁ a ⦃ post ⦄) →
     ⊢ ⦃ pre ⦄ x ← m ;; f₀ x ≈ x ← m ;; f₁ x ⦃ post ⦄.
 Proof.
-  intros A B L f₀ f₁ m pre post hm hget hput hf.
+  intros A B L m f₀ f₁ pre post hm hget hput hf.
   eapply rsame_head_alt_pre. 2: auto.
   eapply rpre_weaken_rule. 1: eapply rpost_weaken_rule.
   - eapply r_reflexivity_alt. all: eauto.

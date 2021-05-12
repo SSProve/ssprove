@@ -979,8 +979,15 @@ Section KEMDEM.
       rewrite ekNone. simpl.
       eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intro c.
       ssprove_same_head_alt_r. intro cNone.
-      (* TODO A rsame_head_alt *)
-      (* eapply rsame_head. *)
+      (** For some reason the following masks the chUniverses
+          I would still like to use that, rather than what we currently use.
+      *)
+      (* eapply @rsame_head_alt with (L := fset [::]).
+      1: ssprove_valid.
+      1:{ intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto. }
+      1:{ intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto. }
+      intros [k' ek']. *)
+      (* *** *)
       eapply r_bind.
       { eapply @r_reflexivity_alt with (L := fset [::]).
         - ssprove_valid.
@@ -993,7 +1000,7 @@ Section KEMDEM.
       with (pre := λ '(s₀, s₁), (inv ⋊ rem_rhs c_loc c) (s₀, s₁)).
       2:{ simpl. intuition subst. auto. }
       clear s₀ s₁ hpre.
-      (* END TODO *)
+      (* * *)
       ssprove_code_simpl_more. ssprove_code_simpl.
       ssprove_code_simpl_more.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
