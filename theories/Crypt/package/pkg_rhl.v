@@ -1730,6 +1730,56 @@ Proof.
   - intros [? ?] [? ?] e. inversion e. intuition auto.
 Qed.
 
+Lemma r_dead_sample :
+  ∀ (A : choiceType) (op : Op) (t : A),
+    psum op.π2 = 1 →
+    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ _ ← sample op ;; ret t ≈ ret t ⦃ eq ⦄.
+Proof.
+  intros A op t hop.
+  apply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
+  intros [hpre hpost]. simpl.
+  eexists (dunit (_,_)). split.
+  - unfold coupling. split.
+    + unfold lmg, dfst. apply distr_ext. intro.
+      rewrite dlet_unit. simpl.
+      unfold SDistr_bind, SDistr_unit.
+      rewrite [RHS]dletE. simpl in x.
+      erewrite eq_psum.
+      2:{ intro. rewrite GRing.mulrC. reflexivity. }
+      rewrite psumZ.
+      2:{ rewrite dunit1E. apply ler0n. }
+      rewrite hop. rewrite GRing.mulr1.
+      reflexivity.
+    + unfold rmg, dsnd. apply distr_ext. intro.
+      rewrite dlet_unit. simpl.
+      unfold SDistr_bind, SDistr_unit.
+      reflexivity.
+  - intros [] [] e. rewrite dunit1E in e. apply ge0_eq in e.
+    noconf e. apply hpost. subst. reflexivity.
+Qed.
+
+Lemma r_dead_sample_uniform :
+  ∀ (A : choiceType) i `{Positive i} (t : A),
+    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ _ ← sample uniform i ;; ret t ≈ ret t ⦃ eq ⦄.
+Proof.
+  intros A i pi t.
+  apply r_dead_sample. simpl.
+  unfold r. rewrite psumZ. 2: apply ler0n.
+  simpl. rewrite GRing.mul1r.
+  rewrite psum_fin. rewrite cardE. rewrite size_enum_ord. simpl.
+  rewrite GRing.sumr_const. rewrite cardE. rewrite size_enum_ord.
+  rewrite -mc_1_10.Num.Theory.normrMn.
+  rewrite -GRing.Theory.mulr_natr.
+  rewrite GRing.mulVf.
+  2:{
+    apply /negP => e.
+    rewrite intr_eq0 in e.
+    move: e => /eqP e.
+    destruct i. all: discriminate.
+  }
+  rewrite normr1. reflexivity.
+Qed.
+
 Theorem rdead_sampler_elimL :
   ∀ {A : ord_choiceType} {D}
     (c₀ c₁ : raw_code A) (pre : precond) (post : postcond A A),
