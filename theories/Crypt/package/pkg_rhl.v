@@ -359,85 +359,6 @@ Definition eq_up_to_inv (E : Interface) (I : precond) (p₀ p₁ : raw_package) 
       get_op_default p₀ (id, (S, T)) x ≈ get_op_default p₁ (id, (S, T)) x
       ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ I (s₀, s₁) ⦄.
 
-(* The version below works as well, but is weaker *)
-(* Definition eq_up_to_inv (I : precond) (p₀ p₁ : raw_package) :=
-  ∀ (id : ident) (S T : chUniverse) (x : S),
-    r⊨ ⦃ λ '(s₀, s₁), I (s₀, s₁) ⦄
-      get_op_default p₀ (id, (S, T)) x ≈ get_op_default p₁ (id, (S, T)) x
-      ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ I (s₀, s₁) ⦄. *)
-
-(* TODO MOVE *)
-Lemma lookup_op_spec_inv :
-  ∀ (p : raw_package) id S T f,
-    p id = Some (S ; T ; f) →
-    lookup_op p (id, (S, T)) = Some f.
-Proof.
-  intros p id S T f e.
-  unfold lookup_op.
-  destruct (p id) as [[S' [T' g]]|] eqn:e1. 2: discriminate.
-  destruct chUniverse_eqP.
-  2:{ noconf e. contradiction. }
-  destruct chUniverse_eqP.
-  2:{ noconf e. contradiction. }
-  subst.
-  noconf e.
-  reflexivity.
-Qed.
-
-Lemma get_op_default_spec :
-  ∀ (p : raw_package) id S T f,
-    p id = Some (S ; T ; f) →
-    get_op_default p (id, (S, T)) = f.
-Proof.
-  intros p id S T f e.
-  unfold get_op_default.
-  eapply lookup_op_spec_inv in e. rewrite e.
-  reflexivity.
-Qed.
-
-(* TODO MOVE *)
-
-(* Slightly more expensive version that allows to change parameters *)
-(* #[export] Hint Extern 3 (ValidCode ?L ?I ?p) =>
-  match goal with
-  | h : is_true (fsubset ?x ?y) |- _ =>
-    eapply valid_injectLocations with (1 := h) ;
-    eapply valid_code_from_class ; exact _
-  end
-  : typeclass_instances. *)
-
-(* #[export] Hint Extern 3 (ValidCode ?L ?I ?p) =>
-  match goal with
-  | h : is_true (fsubset ?x ?y) |- _ =>
-    eapply valid_injectMap with (1 := h) ;
-    eapply valid_code_from_class ; exact _
-  end
-  : typeclass_instances. *)
-
-(* #[export] Hint Extern 3 (ValidPackage ?L ?I ?E ?p) =>
-  match goal with
-  | h : is_true (fsubset ?x ?y) |- _ =>
-    eapply valid_package_inject_locations with (1 := h) ;
-    eapply valid_package_from_class ; exact _
-  end
-  : typeclass_instances. *)
-
-(* #[export] Hint Extern 3 (ValidPackage ?L ?I ?E ?p) =>
-  match goal with
-  | h : is_true (fsubset ?x ?y) |- _ =>
-    eapply valid_package_inject_export with (1 := h) ;
-    eapply valid_package_from_class ; exact _
-  end
-  : typeclass_instances. *)
-
-(* #[export] Hint Extern 3 (ValidPackage ?L ?I ?E ?p) =>
-  match goal with
-  | h : is_true (fsubset ?x ?y) |- _ =>
-    eapply valid_package_inject_import with (1 := h) ;
-    eapply valid_package_from_class ; exact _
-  end
-  : typeclass_instances. *)
-
 Lemma Pr_eq_empty :
   ∀ {X Y : ord_choiceType}
     {A : pred (X * heap_choiceType)} {B : pred (Y * heap_choiceType)}
@@ -1074,46 +995,6 @@ Section For_loop_rule.
 
 End For_loop_rule.
 
-(* alternative, more imperative version (weaker)*)
-(* Section For_loop_rule. *)
-(* (*for i = 0 to N : do c*) *)
-(*   Fixpoint for_loop (c : nat -> raw_code 'unit) *)
-(*                     (N : nat) : raw_code 'unit := *)
-(*   match N with *)
-(*   | 0 => c 0%nat *)
-(*   | S m => bind (for_loop c m) (λ _, c (S m)) *)
-(*   end. *)
-
-(*   Context (I : nat -> precond) *)
-(*           (N : nat). *)
-
-(*   Context (c0 c1 : raw_code 'unit). *)
-
-(*   (* hypothesis : *) *)
-(*   (*body maintains the loop invariant I*) *)
-(*   (* to ease the proof we forget about this condition (0 <= n <= N)%nat -> *) *)
-
-(*   Lemma for_loop_rule : *)
-(*   (forall n : nat, *)
-(*    ⊢ ⦃ I n ⦄ c0 ≈ c1 ⦃ λ '(_, s0) '(_, s1), I n.+1 (s0,s1) ⦄ ) -> *)
-(*   ⊢ ⦃ I 0%nat ⦄ for_loop (λ _, c0) N ≈ for_loop (λ _, c1) N ⦃ λ '(_,s0) '(_,s1), I N.+1 (s0,s1) ⦄. *)
-(*   Proof. *)
-(*   move=> Hbody. *)
-(*   elim: N. *)
-(*   - rewrite /=. apply (Hbody 0%nat). *)
-(*   - move=> /= n IH. *)
-(*     rewrite rel_jdgE in IH. rewrite rel_jdgE. *)
-(*     unshelve eapply (  @rbind_rule _ _ _ _ (λ _, c0) (λ _, c1) *)
-(*           (for_loop (fun=> c0) n) (for_loop (fun=> c1) n) ). *)
-(*     1:{ exact ( λ '(_, s0) '(_, s2), I n.+1 (s0, s2) ). } *)
-(*     1:{ assumption. } *)
-(*     move=> tt1 tt2. rewrite /=. *)
-(*     pose (Hbody_suc := (Hbody n.+1)). rewrite -rel_jdgE. *)
-(*     assumption. *)
-(*   Qed. *)
-
-(* End For_loop_rule. *)
-
 Lemma valid_for_loop :
   ∀ L I c N,
     (∀ i, valid_code L I (c i)) →
@@ -1355,14 +1236,6 @@ Proof.
     cbn. intros ? ? [? ?]. subst. reflexivity.
 Qed.
 
-(* CA: not more useful than sampler_case *)
-(* Lemma rsample_rule { B1 B2 : ord_choiceType} { L : {fset Location}}  { o } *)
-(*       c1 c2  *)
-(*       pre (post : B1 * heap -> B2 * heap -> Prop) *)
-(*       (H : ⊢ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄) : *)
-(*          ⊨ ⦃ pre ⦄ repr (locs := L ) (x <$ o ;; c1) ≈ repr (locs := L) (x <$ o ;; c2) ⦃ post ⦄. *)
-(* Proof. Admitted.  *)
-
 Lemma rf_preserves_eq :
   ∀ {A B : ord_choiceType} {c₀ c₁ : raw_code A}
     (f : A → B),
@@ -1377,8 +1250,6 @@ Proof.
     eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
     cbn. intros ? ? [? ?]. subst. reflexivity.
 Qed.
-
-(* Rules I added *)
 
 (* Similar to rrewrite_eqDistr but with program logic. *)
 Lemma r_transL :
@@ -1827,99 +1698,6 @@ Qed.
   eapply Couples_rhs_conj_left
   : typeclass_instances ssprove_invariant.
 
-(* Lemma r_get_tracks_couple_rhs :
-  ∀ {A} ℓ ℓ' (R : _ → _ → Prop)
-    (r₀ : _ → raw_code A) (r₁ : _ → _ → raw_code A) (pre : precond),
-    Tracks ℓ pre →
-    Couples_rhs ℓ ℓ' R pre →
-    (∀ x y,
-      R x y →
-      ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-        r₀ x ≈ r₁ x y
-      ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄
-    ) →
-    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      x ← get ℓ ;; r₀ x ≈
-      x ← get ℓ ;; y ← get ℓ' ;; r₁ x y
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
-Proof.
-  intros A ℓ ℓ' R r₀ r₁ pre ht hc h.
-  change (
-    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      x ← (x ← get ℓ ;; ret x) ;; r₀ x ≈
-      '(x,y) ← (x ← get ℓ ;; y ← get ℓ' ;; ret (x,y)) ;; r₁ x y
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄
-  ).
-  eapply r_bind with (mid :=
-    λ '(b₀, s₀) '(b₁, s₁),
-      b₀ = b₁.1 ∧ b₁.1 = get_heap s₁ ℓ ∧ b₁.2 = get_heap s₁ ℓ' ∧ pre (s₀, s₁)
-  ).
-  - apply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
-    intros [hpre hpost]. simpl.
-    eexists (dunit (_,_)). split.
-    + unfold coupling. split.
-      * unfold lmg, dfst. apply distr_ext. intro.
-        rewrite dlet_unit. reflexivity.
-      * unfold rmg, dsnd. apply distr_ext. intro.
-        rewrite dlet_unit. reflexivity.
-    + intros [] [] e.
-      rewrite dunit1E in e.
-      apply ge0_eq in e. noconf e.
-      eapply hpost. simpl. intuition auto.
-  - intros x₀ [x₁ y]. simpl.
-    apply rpre_hypothesis_rule. intros s₀ s₁ [? [? [? hpre]]]. subst.
-    eapply rpre_weaken_rule.
-    + eapply h. eapply hc in hpre. auto.
-    + simpl. intuition subst. auto.
-Qed. *)
-
-(* Lemma r_get_vs_get_couple_lhs :
-  ∀ {A} ℓ ℓ' (R : _ → _ → Prop)
-    (r₀ r₁ : _ → raw_code A) (pre : precond),
-    Tracks ℓ pre →
-    Couples_lhs ℓ ℓ' R pre →
-    (∀ x y,
-      R x y →
-      ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-        r₀ y ≈ r₁ x
-      ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄
-    ) →
-    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      y ← get ℓ' ;; r₀ y ≈
-      x ← get ℓ ;; r₁ x
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
-Proof.
-  intros A ℓ ℓ' R r₀ r₁ pre ht hc h.
-  change (
-    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      y ← (y ← get ℓ' ;; ret y) ;; r₀ y ≈
-      x ← (x ← get ℓ ;; ret x) ;; r₁ x
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄
-  ).
-  eapply r_bind with (mid :=
-    λ '(b₀, s₀) '(b₁, s₁),
-      b₀ = get_heap s₀ ℓ' ∧ b₁ = get_heap s₀ ℓ ∧ pre (s₀, s₁)
-  ).
-  - apply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
-    intros [hpre hpost]. simpl.
-    eexists (dunit (_,_)). split.
-    + unfold coupling. split.
-      * unfold lmg, dfst. apply distr_ext. intro.
-        rewrite dlet_unit. reflexivity.
-      * unfold rmg, dsnd. apply distr_ext. intro.
-        rewrite dlet_unit. reflexivity.
-    + intros [] [] e.
-      rewrite dunit1E in e.
-      apply ge0_eq in e. noconf e.
-      eapply hpost. intuition auto.
-      symmetry. apply ht. auto.
-  - intros y x.
-    apply rpre_hypothesis_rule. intros s₀ s₁ [? [? hpre]]. subst.
-    eapply rpre_weaken_rule.
-    + eapply h. eapply hc in hpre. auto.
-    + simpl. intuition subst. auto.
-Qed. *)
-
 Definition rem_lhs ℓ v : precond :=
   λ '(s₀, s₁), get_heap s₀ ℓ = v.
 
@@ -2262,9 +2040,6 @@ Qed.
   eapply Remembers_rhs_conj_left
   : typeclass_instances ssprove_invariant.
 
-(* TODO Might be a good idea to use that instead of proving it by hand
-  every time.
-*)
 Lemma r_rem_couple_lhs :
   ∀ {A B : choiceType} ℓ ℓ' v v' R (pre : precond) c₀ c₁ (post : postcond A B),
     Couples_lhs ℓ ℓ' R pre →

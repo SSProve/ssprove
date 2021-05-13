@@ -334,3 +334,31 @@ Proof.
   rewrite e in eg. noconf eg.
   eapply hg.
 Defined.
+
+Lemma lookup_op_spec_inv :
+  ∀ (p : raw_package) id S T f,
+    p id = Some (S ; T ; f) →
+    lookup_op p (id, (S, T)) = Some f.
+Proof.
+  intros p id S T f e.
+  unfold lookup_op.
+  destruct (p id) as [[S' [T' g]]|] eqn:e1. 2: discriminate.
+  destruct chUniverse_eqP.
+  2:{ noconf e. contradiction. }
+  destruct chUniverse_eqP.
+  2:{ noconf e. contradiction. }
+  subst.
+  noconf e.
+  reflexivity.
+Qed.
+
+Lemma get_op_default_spec :
+  ∀ (p : raw_package) id S T f,
+    p id = Some (S ; T ; f) →
+    get_op_default p (id, (S, T)) = f.
+Proof.
+  intros p id S T f e.
+  unfold get_op_default.
+  eapply lookup_op_spec_inv in e. rewrite e.
+  reflexivity.
+Qed.
