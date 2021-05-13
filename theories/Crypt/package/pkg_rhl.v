@@ -1731,11 +1731,12 @@ Proof.
 Qed.
 
 Lemma r_dead_sample :
-  ∀ (A : choiceType) (op : Op) (t : A),
+  ∀ (A : choiceType) (op : Op) (t : A) (pre : precond) (post : postcond _ _),
     psum op.π2 = 1 →
-    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ _ ← sample op ;; ret t ≈ ret t ⦃ eq ⦄.
+    (∀ s₀ s₁, pre (s₀, s₁) → post (t, s₀) (t, s₁)) →
+    ⊢ ⦃ pre ⦄ _ ← sample op ;; ret t ≈ ret t ⦃ post ⦄.
 Proof.
-  intros A op t hop.
+  intros A op t pre post hop hpp.
   apply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
   intros [hpre hpost]. simpl.
   eexists (dunit (_,_)). split.
@@ -1755,15 +1756,21 @@ Proof.
       unfold SDistr_bind, SDistr_unit.
       reflexivity.
   - intros [] [] e. rewrite dunit1E in e. apply ge0_eq in e.
-    noconf e. apply hpost. subst. reflexivity.
+    noconf e. apply hpost. apply hpp. auto.
 Qed.
 
+(* TODO Prove the psum = 1 as a lemma first, maybe give it a name
+lossless_op?
+*)
 Lemma r_dead_sample_uniform :
-  ∀ (A : choiceType) i `{Positive i} (t : A),
-    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ _ ← sample uniform i ;; ret t ≈ ret t ⦃ eq ⦄.
+  ∀ (A : choiceType) i `{Positive i} (t : A)
+    (pre : precond) (post : postcond _ _),
+    (∀ s₀ s₁, pre (s₀, s₁) → post (t, s₀) (t, s₁)) →
+    ⊢ ⦃ pre ⦄ _ ← sample uniform i ;; ret t ≈ ret t ⦃ post ⦄.
 Proof.
-  intros A i pi t.
-  apply r_dead_sample. simpl.
+  intros A i pi t pre post hpp.
+  apply r_dead_sample. 2: auto.
+  simpl.
   unfold r. rewrite psumZ. 2: apply ler0n.
   simpl. rewrite GRing.mul1r.
   rewrite psum_fin. rewrite cardE. rewrite size_enum_ord. simpl.
