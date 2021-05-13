@@ -591,12 +591,10 @@ Section KEMDEM.
   Proof.
     intros LD₀ LK₀ CK₀ CK₁ CD₀ CD₁ EK ED A K₀ K₁ D₀ D₁.
     intros fEK fED pCK₀ pCK₁ pCD₀ pCD₁ hCD₀ hCD₁ tCD₀ tCD₁ hCK₀ hCK₁ tCK₀ tCK₁.
-    pose proof (
-      Advantage_triangle_chain (par CK₀ CD₀ ∘ KEY) [::
-        par CK₁ CD₀ ∘ KEY
-      ] (par CK₁ CD₁ ∘ KEY) A
-    ) as ineq.
-    advantage_sum simpl in ineq.
+    ssprove triangle (par CK₀ CD₀ ∘ KEY) [::
+      par CK₁ CD₀ ∘ KEY
+    ] (par CK₁ CD₁ ∘ KEY) A
+    as ineq.
     eapply ler_trans. 1: exact ineq.
     clear ineq.
     eapply ler_add.
@@ -1123,14 +1121,11 @@ Section KEMDEM.
   Proof.
     intros LA A hA hA' hd.
     rewrite Advantage_E.
-    pose proof (
-      Advantage_triangle_chain (PKE_CCA KEM_DEM false) [::
-        (MOD_CCA KEM_DEM) ∘ par (KEM false) (DEM false) ∘ KEY ;
-        (MOD_CCA KEM_DEM) ∘ par (KEM true) (DEM true) ∘ KEY
-      ] (PKE_CCA KEM_DEM true) A
-    ) as ineq.
-    advantage_sum simpl in ineq.
-    rewrite !GRing.addrA in ineq.
+    ssprove triangle (PKE_CCA KEM_DEM false) [::
+      (MOD_CCA KEM_DEM) ∘ par (KEM false) (DEM false) ∘ KEY ;
+      (MOD_CCA KEM_DEM) ∘ par (KEM true) (DEM true) ∘ KEY
+    ] (PKE_CCA KEM_DEM true) A
+    as ineq.
     eapply ler_trans. 1: exact ineq.
     clear ineq.
     (* Aux_loc is problematic here, can I make it equal to PKE_CCA_loc? *)

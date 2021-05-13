@@ -416,14 +416,11 @@ Proof.
   intros LA A vA hd₀ hd₁.
   simpl in hd₀, hd₁. clear hd₁. rename hd₀ into hd.
   rewrite Advantage_E.
-  pose proof (
-    Advantage_triangle_chain (ots_real_vs_rnd false) [::
-      Aux ∘ DH_rnd ;
-      Aux ∘ DH_real
-    ] (ots_real_vs_rnd true) A
-  ) as ineq.
-  advantage_sum simpl in ineq.
-  rewrite !GRing.addrA in ineq.
+  ssprove triangle (ots_real_vs_rnd false) [::
+    Aux ∘ DH_rnd ;
+    Aux ∘ DH_real
+  ] (ots_real_vs_rnd true) A
+  as ineq.
   eapply ler_trans. 1: exact ineq.
   clear ineq.
   rewrite ots_real_vs_rnd_equiv_true. 3: auto.

@@ -321,16 +321,6 @@ Proof.
       * eapply ih.
 Qed.
 
-Ltac advantage_sum_simpl_in h :=
-  repeat
-    change (advantage_sum ?P (?R :: ?l) ?Q ?A)
-    with (AdvantageE P R A + advantage_sum R l Q A) in h ;
-  change (advantage_sum ?P [::] ?Q ?A) with (AdvantageE P Q A) in h.
-
-(* TODO MOVE? And rather have a tactic to do the whole thing. *)
-Tactic Notation "advantage_sum" "simpl" "in" hyp(h) :=
-  advantage_sum_simpl_in h.
-
 Lemma AdvantageE_le_0 :
   ∀ G₀ G₁ A,
     AdvantageE G₀ G₁ A <= 0 →
@@ -390,3 +380,19 @@ Proof.
   unfold adv_equiv. intros LA A vA hd₀ hd₁. rewrite Advantage_E.
   unfold AdvantageE. rewrite !link_assoc. reflexivity.
 Qed.
+
+Ltac advantage_sum_simpl_in h :=
+  repeat
+    change (advantage_sum ?P (?R :: ?l) ?Q ?A)
+    with (AdvantageE P R A + advantage_sum R l Q A) in h ;
+  change (advantage_sum ?P [::] ?Q ?A) with (AdvantageE P Q A) in h.
+
+Ltac ssprove_triangle_as p₀ l p₁ A ineq :=
+  pose proof (Advantage_triangle_chain p₀ l p₁ A) as ineq ;
+  advantage_sum_simpl_in ineq ;
+  rewrite ?ssralg.GRing.addrA in ineq.
+
+Tactic Notation
+  "ssprove" "triangle" constr(p₀) constr(l) constr(p₁) constr(A)
+  "as" ident(ineq) :=
+  ssprove_triangle_as p₀ l p₁ A ineq.
