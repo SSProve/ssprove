@@ -63,6 +63,7 @@ theories/Crypt/package/pkg_semantics.v
 theories/Crypt/package/pkg_lookup.v
 theories/Crypt/package/pkg_advantage.v
 theories/Crypt/package/pkg_invariants.v
+theories/Crypt/package/pkg_distr.v
 theories/Crypt/package/pkg_rhl.v
 theories/Crypt/package/pkg_user_util.v
 theories/Crypt/Package.v
