@@ -110,3 +110,11 @@ Proof.
   intros A B c k.
   destruct c. all: reflexivity.
 Qed.
+
+Lemma repr_if :
+  ∀ {A b} (c₀ c₁ : raw_code A),
+    repr (if b then c₀ else c₁) = if b then repr c₀ else repr c₁.
+Proof.
+  intros A b c₀ c₁.
+  destruct b. all: reflexivity.
+Qed.
