@@ -718,6 +718,11 @@ Section KEMDEM.
     rewrite code_link_scheme
     : ssprove_code_simpl.
 
+  (* We extend swapping to schemes *)
+  Hint Extern 40 (⊢ ⦃ _ ⦄ x ← ?s ;; y ← cmd _ ;; _ ≈ _ ⦃ _ ⦄) =>
+    eapply r_swap_scheme_cmd ; ssprove_valid
+    : ssprove_swap.
+
   (** Program equivalences
 
     In order to prove these equivalences, we will use an invariant that
@@ -1020,7 +1025,7 @@ Section KEMDEM.
       ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
       ssprove_contract_put_get_rhs. simpl.
       ssprove_forget_all.
-      ssprove_swap_seq_rhs [:: 1 ; 0 ]%N. 1,2: admit.
+      ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
       (* bind again *)
       eapply r_bind.
       { eapply @r_reflexivity_alt with (L := fset [::]).

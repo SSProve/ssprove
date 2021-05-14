@@ -1829,6 +1829,48 @@ Proof.
   - intros [? ?] [? ?] e. inversion e. intuition auto.
 Qed.
 
+Lemma r_swap_scheme_cmd :
+  ∀ {A B : choiceType} (s : raw_code A) (c : command B),
+    ValidCode fset0 [interface] s →
+    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
+      x ← s ;; y ← cmd c ;; ret (x,y) ≈
+      y ← cmd c ;; x ← s ;; ret (x,y)
+    ⦃ eq ⦄.
+Proof.
+  intros A B s c h.
+  induction h.
+  all: try discriminate.
+  2:{ eapply fromEmpty. rewrite fset0E. eauto. }
+  - simpl. apply rreflexivity_rule.
+  - simpl.
+    eapply r_transR.
+    + eapply (rswap_cmd_eq _ _ _ (cmd_sample _) _). simpl.
+      eapply rsamplerC'_cmd.
+    + simpl. eapply (rsame_head_cmd (cmd_sample _)). intro a.
+      eauto.
+Qed.
+
+Lemma r_swap_cmd_scheme :
+  ∀ {A B : choiceType} (s : raw_code A) (c : command B),
+    ValidCode fset0 [interface] s →
+    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
+      x ← cmd c ;; y ← s ;; ret (x,y) ≈
+      y ← s ;; x ← cmd c ;; ret (x,y)
+    ⦃ eq ⦄.
+Proof.
+  intros A B s c h.
+  induction h.
+  all: try discriminate.
+  2:{ eapply fromEmpty. rewrite fset0E. eauto. }
+  - simpl. apply rreflexivity_rule.
+  - simpl.
+    eapply r_transL.
+    + eapply (rswap_cmd_eq _ _ _ (cmd_sample _) _). simpl.
+      eapply rsamplerC'_cmd.
+    + simpl. eapply (rsame_head_cmd (cmd_sample _)). intro a.
+      eauto.
+Qed.
+
 Lemma r_dead_sample :
   ∀ (A B : choiceType) (op : Op) r₀ r₁ (pre : precond) (post : postcond A B),
     LosslessOp op →
