@@ -220,13 +220,13 @@ Qed.
 Notation "'#assert' b 'as' id ;; k" :=
   (assertD b (λ id, k))
   (at level 100, id name, b at next level, right associativity,
-  format "#assert  b  as  id  ;;  '/' k")
+  format "#assert  b  as  id  ;;  '//' k")
   : package_scope.
 
 Notation "'#assert' b ;; k" :=
   (assertD b (λ _, k))
   (at level 100, b at next level, right associativity,
-  format "#assert  b  ;;  '/' k")
+  format "#assert  b  ;;  '//' k")
   : package_scope.
 
 (** Notion of losslessness for distributions *)

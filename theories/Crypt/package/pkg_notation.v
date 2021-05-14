@@ -227,81 +227,81 @@ Module PackageNotation.
   Notation "x ← c1 ;; c2" :=
     (bind c1 (λ x, c2))
     (at level 100, c1 at next level, right associativity,
-    format "x  ←  c1  ;;  '/' c2")
+    format "x  ←  c1  ;;  '//' c2")
     : package_scope.
 
   Notation "' p ← c1 ;; c2" :=
     (bind c1 (λ x, let p := x in c2))
     (at level 100, p pattern, c1 at next level, right associativity,
-    format "' p  ←  c1  ;;  '/' c2")
+    format "' p  ←  c1  ;;  '//' c2")
     : package_scope.
 
   Notation "e1 ;; e2" :=
     (_ ← e1 ;; e2)%pack
     (at level 100, right associativity,
-    format "e1  ;;  '/' e2")
+    format "e1  ;;  '//' e2")
     : package_scope.
 
   Notation "'put' n ':=' u ;; c" :=
     (putr n u c)
     (at level 100, u at next level, right associativity,
-    format "put  n  :=  u  ;;  '/' c")
+    format "put  n  :=  u  ;;  '//' c")
     : package_scope.
 
   Notation "x ← 'get' n ;; c" :=
     (getr n (λ x, c))
     (at level 100, n at next level, right associativity,
-    format "x  ←  get  n  ;;  '/' c")
+    format "x  ←  get  n  ;;  '//' c")
     : package_scope.
 
   Notation "' p ← 'get' n ;; c" :=
     (getr n (λ x, let p := x in c))
     (at level 100, p pattern, n at next level, right associativity,
-    format "' p  ←  get  n  ;;  '/' c")
+    format "' p  ←  get  n  ;;  '//' c")
     : package_scope.
 
   Notation "x ← 'op' o ⋅ n ;; c" :=
     (opr o n (λ x, c))
     (at level 100, n at next level, o at next level,
     right associativity,
-    format "x  ←  op  o  ⋅  n  ;;  '/' c")
+    format "x  ←  op  o  ⋅  n  ;;  '//' c")
     : package_scope.
 
   Notation "' p ← 'op' o ⋅ n ;; c" :=
     (opr o n (λ x, let p := x in c))
     (at level 100, p pattern, n at next level, o at next level,
     right associativity,
-    format "' p  ←  op  o  ⋅  n  ;;  '/' c")
+    format "' p  ←  op  o  ⋅  n  ;;  '//' c")
     : package_scope.
 
   Notation "x ← 'sample' o ;; c" :=
     (sampler o (λ x, c))
     (at level 100, o at next level, right associativity,
-    format "x  ←  sample  o  ;;  '/' c")
+    format "x  ←  sample  o  ;;  '//' c")
     : package_scope.
 
   Notation "' p ← 'sample' o ;; c" :=
     (sampler o (λ x, let p := x in c))
     (at level 100, p pattern, o at next level, right associativity,
-    format "' p  ←  sample  o  ;;  '/' c")
+    format "' p  ←  sample  o  ;;  '//' c")
     : package_scope.
 
   Notation "x <$ o ;; c" :=
     (x ← sample o ;; c)%pack
     (at level 100, o at next level, right associativity,
-    (* format "x  <$  o  ;;  '/' c", *) only parsing)
+    (* format "x  <$  o  ;;  '//' c", *) only parsing)
     : package_scope.
 
   Notation "x ← 'cmd' o ;; c" :=
     (cmd_bind o (λ x, c))
     (at level 100, o at next level, right associativity,
-    format "x  ←  cmd  o  ;;  '/' c")
+    format "x  ←  cmd  o  ;;  '//' c")
     : package_scope.
 
   Notation "' p ← 'cmd' o ;; c" :=
     (cmd_bind o (λ x, let p := x in c))
     (at level 100, p pattern, o at next level, right associativity,
-    format "' p  ←  cmd  o  ;;  '/' c")
+    format "' p  ←  cmd  o  ;;  '//' c")
     : package_scope.
 
   (* TODO Use ;; for this, and a longer notation or none at all for
@@ -312,13 +312,13 @@ Module PackageNotation.
   Notation "e1 ;' e2" :=
     (_ ← cmd e1 ;; e2)%pack
     (at level 100, right associativity,
-    format "e1  ;'  '/' e2")
+    format "e1  ;'  '//' e2")
     : package_scope.
 
   Notation "'#import' s 'as' id ;; t" :=
     (let id := λ x, opr s x (λ y, ret y) in t)
     (at level 100, id name, s at next level, right associativity,
-    format "#import  s  as  id  ;;  '/' t")
+    format "#import  s  as  id  ;;  '//' t")
     : package_scope.
 
   (** Utility for fin types *)
