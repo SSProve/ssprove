@@ -675,3 +675,70 @@ Definition preserve_set_setR ℓ v ℓ' v' pre :=
   ∀ s₀ s₁,
     pre (s₀, s₁) →
     pre (set_heap s₀ ℓ v, set_heap (set_heap s₁ ℓ v) ℓ' v').
+
+Lemma preserve_set_setR_heap_ignore :
+  ∀ ℓ v ℓ' v' L,
+    ℓ' \in L →
+    preserve_set_setR ℓ v ℓ' v' (heap_ignore L).
+Proof.
+  intros ℓ v ℓ' v' L hℓ'.
+  intros s₀ s₁ h.
+  intros ℓ₀ hℓ₀.
+  destruct (ℓ₀ != ℓ') eqn:e1.
+  - rewrite [RHS]get_set_heap_neq. 2: auto.
+    destruct (ℓ₀ != ℓ) eqn:e2.
+    + rewrite !get_set_heap_neq. 2,3: auto.
+      apply h. auto.
+    + move: e2 => /eqP e2. subst.
+      rewrite !get_set_heap_eq. reflexivity.
+  - move: e1 => /eqP e1. subst.
+    rewrite hℓ' in hℓ₀. discriminate.
+Qed.
+
+#[export] Hint Extern 10 (preserve_set_setR _ _ _ _ (heap_ignore _)) =>
+  eapply preserve_set_setR_heap_ignore
+  : ssprove_invariant.
+
+Lemma preserve_set_setR_conj :
+  ∀ (pre spre : precond) ℓ ℓ' v v',
+    preserve_set_setR ℓ v ℓ' v' pre →
+    preserve_set_setR ℓ v ℓ' v' spre →
+    preserve_set_setR ℓ v ℓ' v' (pre ⋊ spre).
+Proof.
+  intros pre spre ℓ ℓ' v v' h hs.
+  intros s₀ s₁ []. split.
+  all: auto.
+Qed.
+
+#[export] Hint Extern 10 (preserve_set_setR _ _ _ _ (_ ⋊ _)) =>
+  eapply preserve_set_setR_conj
+  : ssprove_invariant.
+
+Lemma preserve_set_setR_couple_rhs_eq :
+  ∀ ℓ ℓ' v v' (R : _ → _ → Prop),
+    ℓ != ℓ' →
+    R v v' →
+    preserve_set_setR ℓ v ℓ' v' (couple_rhs ℓ ℓ' R).
+Proof.
+  intros ℓ ℓ' v v' R hn hR.
+  intros s₀ s₁ h.
+  unfold couple_rhs in *.
+  rewrite get_set_heap_neq. 2: auto.
+  rewrite get_set_heap_eq.
+  rewrite get_set_heap_eq.
+  auto.
+Qed.
+
+Lemma preserve_set_setR_couple_lhs_neq :
+  ∀ ℓ ℓ' v v' ℓ₀ ℓ₁ (R : _ → _ → Prop),
+    ℓ₀ != ℓ →
+    ℓ₁ != ℓ →
+    preserve_set_setR ℓ v ℓ' v' (couple_lhs ℓ₀ ℓ₁ R).
+Proof.
+  intros ℓ ℓ' v v' ℓ₀ ℓ₁ R ? ?.
+  intros s₀ s₁ h.
+  unfold couple_lhs in *.
+  rewrite get_set_heap_neq. 2: auto.
+  rewrite get_set_heap_neq. 2: auto.
+  auto.
+Qed.
