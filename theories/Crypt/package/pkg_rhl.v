@@ -1681,7 +1681,7 @@ Proof.
 Qed.
 
 Lemma rswap_cmd_bind_eq :
-  ∀ (A₀ A₁ B : choiceType) c₀ c₁ (r : A₀ → A₁ → raw_code B),
+  ∀ {A₀ A₁ B : choiceType} c₀ c₁ (r : A₀ → A₁ → raw_code B),
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       a₀ ← cmd c₀ ;; a₁ ← c₁ ;; ret (a₀, a₁) ≈
       a₁ ← c₁ ;; a₀ ← cmd c₀ ;; ret (a₀, a₁)
@@ -1711,7 +1711,7 @@ Proof.
 Qed.
 
 Lemma rswap_bind_cmd_eq :
-  ∀ (A₀ A₁ B : choiceType) c₀ c₁ (r : A₀ → A₁ → raw_code B),
+  ∀ {A₀ A₁ B : choiceType} c₀ c₁ (r : A₀ → A₁ → raw_code B),
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       a₀ ← c₀ ;; a₁ ← cmd c₁ ;; ret (a₀, a₁) ≈
       a₁ ← cmd c₁ ;; a₀ ← c₀ ;; ret (a₀, a₁)

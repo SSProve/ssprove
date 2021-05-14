@@ -1020,15 +1020,34 @@ Section KEMDEM.
       ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
       ssprove_contract_put_get_rhs. simpl.
       ssprove_forget_all.
-      (* TODO eapply r_put_putR *)
-      (* TODO Add ways to swap schemes
-        Might be good to be able to extend the swap commands.
-        Maybe I should have a treatment of goals to make the head into a cmd?
-        In order to factorise a bit. We'll still have to deal with
-        cmd vs bind, assert vs bind and symmetric.
-      *)
-      (* Once this is done, the goal is ok! *)
-      admit.
+      ssprove_swap_seq_rhs [:: 1 ; 0 ]%N. 1,2: admit.
+      (* bind again *)
+      eapply r_bind.
+      { eapply @r_reflexivity_alt with (L := fset [::]).
+        - ssprove_valid.
+        - intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
+        - intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
+      }
+      intros ? c'.
+      eapply rpre_hypothesis_rule. intros s₀ s₁ [e hpre]. noconf e.
+      eapply rpre_weaken_rule
+      with (pre := λ '(s₀, s₁), inv (s₀, s₁)).
+      2:{ simpl. intuition subst. auto. }
+      clear s₀ s₁ hpre.
+      (* * *)
+      ssprove_swap_seq_rhs [:: 0 ]%N.
+      ssprove_same_head_alt_r. intros _.
+      ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
+      ssprove_contract_put_rhs.
+      eapply r_put_putR.
+      1:{
+        ssprove_invariant.
+        - eapply preserve_set_setR_couple_rhs_eq.
+          + neq_loc_auto.
+          + reflexivity.
+        - eapply preserve_set_setR_couple_lhs_neq. all: neq_loc_auto.
+      }
+      apply r_ret. auto.
     - destruct m as [ek' c']. simpl.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
       ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
