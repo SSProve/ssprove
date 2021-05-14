@@ -822,7 +822,14 @@ Section KEMDEM.
       ssprove_contract_put_get_rhs. simpl.
       ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
       ssprove_contract_put_rhs.
-      eapply r_put_putR. 1: admit.
+      eapply r_put_putR. 1:{
+        ssprove_invariant.
+        - (* TODO ADD to ssprove_invariant *) auto_in_fset.
+        - eapply preserve_set_setR_couple_rhs_eq.
+          + neq_loc_auto.
+          + reflexivity.
+        - eapply preserve_set_setR_couple_lhs_neq. all: neq_loc_auto.
+      }
       apply r_ret. auto.
     - destruct m as [ek' c']. simpl.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
