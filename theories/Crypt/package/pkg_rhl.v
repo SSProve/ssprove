@@ -1730,30 +1730,6 @@ Proof.
   - intros [? ?] [? ?] e. inversion e. intuition auto.
 Qed.
 
-(* TODO MOVE to pkg_distr *)
-Class LosslessOp (op : Op) :=
-  is_lossless_op : psum op.π2 = 1.
-
-Instance LosslessOp_uniform i `{Positive i} : LosslessOp (uniform i).
-Proof.
-  unfold LosslessOp.
-  simpl.
-  unfold r. rewrite psumZ. 2: apply ler0n.
-  simpl. rewrite GRing.mul1r.
-  rewrite psum_fin. rewrite cardE. rewrite size_enum_ord. simpl.
-  rewrite GRing.sumr_const. rewrite cardE. rewrite size_enum_ord.
-  rewrite -mc_1_10.Num.Theory.normrMn.
-  rewrite -GRing.Theory.mulr_natr.
-  rewrite GRing.mulVf.
-  2:{
-    apply /negP => e.
-    rewrite intr_eq0 in e.
-    move: e => /eqP e.
-    destruct i. all: discriminate.
-  }
-  rewrite normr1. reflexivity.
-Qed.
-
 Lemma r_dead_sample :
   ∀ (A B : choiceType) (op : Op) r₀ r₁ (pre : precond) (post : postcond A B),
     LosslessOp op →
