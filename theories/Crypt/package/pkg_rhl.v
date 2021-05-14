@@ -1710,17 +1710,6 @@ Proof.
     + reflexivity.
 Qed.
 
-(* TODO MOVE *)
-Lemma bind_cmd_bind :
-  ∀ {A B C : choiceType}
-    (c : command A) (k1 : _ → raw_code B) (k2 : _ → raw_code C),
-    (x ← (y ← cmd c ;; k1 y) ;; k2 x) =
-    (y ← cmd c ;; x ← k1 y ;; k2 x).
-Proof.
-  intros A B C c k1 k2.
-  destruct c. all: simpl. all: reflexivity.
-Qed.
-
 Lemma rswap_bind_cmd_eq :
   ∀ (A₀ A₁ B : choiceType) c₀ c₁ (r : A₀ → A₁ → raw_code B),
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄

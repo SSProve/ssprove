@@ -360,6 +360,16 @@ Section FreeModule.
     f_equal. auto.
   Qed.
 
+  Lemma bind_cmd_bind :
+    ∀ {A B C : choiceType}
+      (c : command A) (k1 : _ → raw_code B) (k2 : _ → raw_code C),
+      bind (cmd_bind c k1) k2 =
+      cmd_bind c (λ x, bind (k1 x) k2).
+  Proof.
+    intros A B C c k1 k2.
+    destruct c. all: simpl. all: reflexivity.
+  Qed.
+
   Lemma prove_code :
     ∀ {A} (P : code A → Type) p q,
       P p →
