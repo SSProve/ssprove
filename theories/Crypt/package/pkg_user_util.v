@@ -455,52 +455,48 @@ Ltac neq_loc_auto :=
   solve [ neq_loc_auto ]
   : ssprove_invariant.
 
-(* TODO: Are there more cases we can consider?
-  TODO: Deal with it using typeclasses eauto so that it becomes extensible
-*)
-Ltac ssprove_swap_side_cond :=
-  lazymatch goal with
-  | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_sample _) ;; _ ← cmd (cmd_sample _) ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply rsamplerC_cmd
-  | |- ⊢ ⦃ _ ⦄ _ ← cmd _ ;; _ ← cmd (cmd_sample _) ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply rsamplerC_cmd
-  | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_sample _) ;; _ ← cmd _ ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply rsamplerC'_cmd
-  | |- ⊢ ⦃ _ ⦄ _ ← sample _ ;; _ ← sample _ ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply rsamplerC_cmd
-  | |- ⊢ ⦃ _ ⦄ _ ← cmd _ ;; _ ← sample _ ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply rsamplerC_cmd
-  | |- ⊢ ⦃ _ ⦄ _ ← sample _ ;; _ ← cmd _ ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply rsamplerC'_cmd
-  | |- ⊢ ⦃ _ ⦄ _ ← get _ ;; _ ← get _ ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply r_get_swap
-  | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_get _) ;; _ ← cmd (cmd_get _) ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply r_get_swap
-  | |- ⊢ ⦃ _ ⦄ _ ← get ?ℓ' ;; put ?ℓ := ?v ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply (r_get_put_swap' ℓ ℓ' v) ;
-    neq_loc_auto
-  | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_get ?ℓ') ;; _ ← cmd (cmd_put ?ℓ ?v) ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply (r_get_put_swap' ℓ ℓ' v) ;
-    neq_loc_auto
-  | |- ⊢ ⦃ _ ⦄ put ?ℓ := ?v ;; _ ← get ?ℓ' ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply (r_put_get_swap' ℓ ℓ' v) ;
-    neq_loc_auto
-  | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_put ?ℓ ?v) ;; _ ← cmd (cmd_get ?ℓ') ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply (r_put_get_swap' ℓ ℓ' v) ;
-    neq_loc_auto
-  | |- ⊢ ⦃ _ ⦄ put _ := _ ;; put _ := _ ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply r_put_swap ;
-    neq_loc_auto
-  | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_put _ _) ;; _ ← cmd (cmd_put _ _) ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply r_put_swap ;
-    neq_loc_auto
-  end.
+(** Extensible database to deal with swapping side conditions *)
+Create HintDb ssprove_swap.
+
+#[export] Hint Extern 100 =>
+  shelve
+  : ssprove_swap.
+
+Ltac ssprove_swap_auto :=
+  (unshelve typeclasses eauto with ssprove_swap) ; shelve_unifiable.
+
+#[export] Hint Extern 10 (⊢ ⦃ _ ⦄ _ ← cmd _ ;; _ ← cmd (cmd_sample _) ;; _ ≈ _ ⦃ _ ⦄) =>
+  apply rsamplerC_cmd
+  : ssprove_swap.
+
+#[export] Hint Extern 10 (⊢ ⦃ _ ⦄ _ ← cmd (cmd_sample _) ;; _ ← cmd _ ;; _ ≈ _ ⦃ _ ⦄) =>
+  apply rsamplerC'_cmd
+  : ssprove_swap.
+
+#[export] Hint Extern 10 (⊢ ⦃ _ ⦄ _ ← cmd (cmd_get _) ;; _ ← cmd (cmd_get _) ;; _ ≈ _ ⦃ _ ⦄) =>
+  apply r_get_swap
+  : ssprove_swap.
+
+#[export] Hint Extern 10 (⊢ ⦃ _ ⦄ _ ← cmd (cmd_get ?ℓ') ;; _ ← cmd (cmd_put ?ℓ ?v) ;; _ ≈ _ ⦃ _ ⦄) =>
+  apply (r_get_put_swap' ℓ ℓ' v) ;
+  neq_loc_auto
+  : ssprove_swap.
+
+#[export] Hint Extern 10 (⊢ ⦃ _ ⦄ _ ← cmd (cmd_put ?ℓ ?v) ;; _ ← cmd (cmd_get ?ℓ') ;; _ ≈ _ ⦃ _ ⦄) =>
+  apply (r_put_get_swap' ℓ ℓ' v) ;
+  neq_loc_auto
+  : ssprove_swap.
+
+#[export] Hint Extern 10 (⊢ ⦃ _ ⦄ _ ← cmd (cmd_put _ _) ;; _ ← cmd (cmd_put _ _) ;; _ ≈ _ ⦃ _ ⦄) =>
+  apply r_put_swap ;
+  neq_loc_auto
+  : ssprove_swap.
 
 (* TODO Tactic to solve automatically condition when possible *)
 Ltac ssprove_swap_aux n :=
   lazymatch eval cbv in n with
   | S ?n => ssprove_same_head_r ; intro ; ssprove_swap_aux n
-  | 0%N => ssprove_rswap_cmd_eq_rhs ; try ssprove_swap_side_cond
+  | 0%N => ssprove_rswap_cmd_eq_rhs ; ssprove_swap_auto
   | _ => fail "Wrong number: " n
   end.
 
