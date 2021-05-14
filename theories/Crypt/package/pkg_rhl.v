@@ -1730,13 +1730,36 @@ Proof.
   - intros [? ?] [? ?] e. inversion e. intuition auto.
 Qed.
 
-Lemma r_dead_sample :
-  ∀ (A : choiceType) (op : Op) (t : A) (pre : precond) (post : postcond _ _),
-    psum op.π2 = 1 →
-    (∀ s₀ s₁, pre (s₀, s₁) → post (t, s₀) (t, s₁)) →
-    ⊢ ⦃ pre ⦄ _ ← sample op ;; ret t ≈ ret t ⦃ post ⦄.
+Class LosslessOp (op : Op) :=
+  is_lossless_op : psum op.π2 = 1.
+
+Instance LosslessOp_uniform i `{Positive i} : LosslessOp (uniform i).
 Proof.
-  intros A op t pre post hop hpp.
+  unfold LosslessOp.
+  simpl.
+  unfold r. rewrite psumZ. 2: apply ler0n.
+  simpl. rewrite GRing.mul1r.
+  rewrite psum_fin. rewrite cardE. rewrite size_enum_ord. simpl.
+  rewrite GRing.sumr_const. rewrite cardE. rewrite size_enum_ord.
+  rewrite -mc_1_10.Num.Theory.normrMn.
+  rewrite -GRing.Theory.mulr_natr.
+  rewrite GRing.mulVf.
+  2:{
+    apply /negP => e.
+    rewrite intr_eq0 in e.
+    move: e => /eqP e.
+    destruct i. all: discriminate.
+  }
+  rewrite normr1. reflexivity.
+Qed.
+
+Lemma r_dead_sample :
+  ∀ (A B : choiceType) (op : Op) r₀ r₁ (pre : precond) (post : postcond A B),
+    LosslessOp op →
+    (∀ s₀ s₁, pre (s₀, s₁) → post (r₀, s₀) (r₁, s₁)) →
+    ⊢ ⦃ pre ⦄ _ ← sample op ;; ret r₀ ≈ ret r₁ ⦃ post ⦄.
+Proof.
+  intros A B op r₀ r₁ pre post hop hpp.
   apply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
   intros [hpre hpost]. simpl.
   eexists (dunit (_,_)). split.
@@ -1759,69 +1782,60 @@ Proof.
     noconf e. apply hpost. apply hpp. auto.
 Qed.
 
-(* TODO Prove the psum = 1 as a lemma first, maybe give it a name
-lossless_op?
-*)
-Lemma r_dead_sample_uniform :
-  ∀ (A : choiceType) i `{Positive i} (t : A)
-    (pre : precond) (post : postcond _ _),
-    (∀ s₀ s₁, pre (s₀, s₁) → post (t, s₀) (t, s₁)) →
-    ⊢ ⦃ pre ⦄ _ ← sample uniform i ;; ret t ≈ ret t ⦃ post ⦄.
+Theorem r_dead_sample_L :
+  ∀ {A B : choiceType} (op : Op)
+    c₀ c₁ (pre : precond) (post : postcond A B),
+    LosslessOp op →
+    ⊢ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄ →
+    ⊢ ⦃ pre ⦄ _ ← sample op ;; c₀ ≈ c₁ ⦃ post ⦄.
 Proof.
-  intros A i pi t pre post hpp.
-  apply r_dead_sample. 2: auto.
-  simpl.
-  unfold r. rewrite psumZ. 2: apply ler0n.
-  simpl. rewrite GRing.mul1r.
-  rewrite psum_fin. rewrite cardE. rewrite size_enum_ord. simpl.
-  rewrite GRing.sumr_const. rewrite cardE. rewrite size_enum_ord.
-  rewrite -mc_1_10.Num.Theory.normrMn.
-  rewrite -GRing.Theory.mulr_natr.
-  rewrite GRing.mulVf.
-  2:{
-    apply /negP => e.
-    rewrite intr_eq0 in e.
-    move: e => /eqP e.
-    destruct i. all: discriminate.
-  }
-  rewrite normr1. reflexivity.
+  intros A B op c₀ c₁ pre post hop h.
+  change (
+    ⊢ ⦃ pre ⦄
+      (_ ← sample op ;; ret Datatypes.tt) ;; c₀ ≈
+      ret Datatypes.tt ;; c₁
+    ⦃ post ⦄
+  ).
+  eapply r_bind with (mid := λ '(b₀, s₀) '(b₁, s₁), pre (s₀, s₁)).
+  - eapply r_dead_sample. all: auto.
+  - intros _ _. eapply rpre_weaken_rule. all: eauto.
 Qed.
 
-Theorem rdead_sampler_elimL :
-  ∀ {A : ord_choiceType} {D}
-    (c₀ c₁ : raw_code A) (pre : precond) (post : postcond A A),
+Theorem r_dead_sample_R :
+  ∀ {A B : ord_choiceType} (op : Op)
+    c₀ c₁ (pre : precond) (post : postcond A B),
+    LosslessOp op →
     ⊢ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄ →
-    ⊢ ⦃ pre ⦄ (x ← sample D ;; ret x) ;; c₀ ≈ c₁ ⦃ post ⦄.
+    ⊢ ⦃ pre ⦄ c₀ ≈ _ ← sample op ;; c₁ ⦃ post ⦄.
 Proof.
-  intros A D c₀ c₁ pre post h.
-  eapply rrewrite_eqDistrL. 1: exact h.
-  admit.
-Admitted.
+  intros A B op c₀ c₁ pre post hop h.
+  change (
+    ⊢ ⦃ pre ⦄
+      ret Datatypes.tt ;; c₀ ≈
+      (_ ← sample op ;; ret Datatypes.tt) ;; c₁
+    ⦃ post ⦄
+  ).
+  eapply r_bind with (mid := λ '(b₀, s₀) '(b₁, s₁), pre (s₀, s₁)).
+  - eapply rsymmetry.
+    eapply r_dead_sample. all: auto.
+  - intros _ _. eapply rpre_weaken_rule. all: eauto.
+Qed.
 
-Theorem rdead_sampler_elimR :
-  ∀ {A : ord_choiceType} {D}
-    (c₀ c₁ : raw_code A) (pre : precond) (post : postcond A A),
-    ⊢ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄ →
-    ⊢ ⦃ pre ⦄ c₀ ≈ (x ← sample D ;; ret x) ;; c₁ ⦃ post ⦄.
-Proof.
-  intros A D c₀ c₁ pre post h.
-  eapply rrewrite_eqDistrR. 1: exact h.
-  admit.
-Admitted.
-
+(* TODO Have pre and postcond A B? *)
+(* TODO R version *)
 (* One-sided sampling rule. *)
 (* Removes the need for intermediate games in some cases. *)
-Lemma rconst_samplerL :
-  ∀ {A : ord_choiceType} {D : Op}
-    (c₀ : Arit D -> raw_code A) (c₁ : raw_code A) (post : postcond A A),
+Lemma r_const_sample_L :
+  ∀ {A : choiceType} (op : Op) c₀ c₁ (post : postcond A A),
+    LosslessOp op →
     (∀ x, ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ c₀ x ≈ c₁ ⦃ post ⦄) →
-    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ x ← sample D ;; c₀ x ≈ c₁ ⦃ post ⦄.
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ x ← sample op ;; c₀ x ≈ c₁ ⦃ post ⦄.
 Proof.
-  intros A D c₀ c₁ post h.
-  eapply r_transR with (x ← sample D ;; (λ _, c₁) x).
-  - apply rdead_sampler_elimL.
+  intros A op c₀ c₁ post hop h.
+  eapply r_transR with (x ← sample op ;; (λ _, c₁) x).
+  - apply r_dead_sample_L. 1: auto.
     apply rreflexivity_rule.
-  - apply (rsame_head_cmd (cmd_sample D)).
+  - apply (rsame_head_cmd (cmd_sample op)).
     apply h.
 Qed.
 

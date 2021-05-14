@@ -337,7 +337,7 @@ Section OTP_example.
     eapply eq_rel_perf_ind_eq.
     simplify_eq_rel m.
     (* TODO Why doesn't it infer this? *)
-    eapply (@rconst_samplerL _ (uniform (2 ^ n))). intro m_val.
+    eapply r_const_sample_L with (op := uniform _). 1: exact _. intro m_val.
     pose (f :=
       λ (k : Arit (uniform i_key)),
         words2ch (ch2key k ⊕ ch2words m ⊕ (ch2words m_val))
