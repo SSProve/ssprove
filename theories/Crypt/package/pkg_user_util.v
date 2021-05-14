@@ -325,6 +325,10 @@ Ltac notin_fset_auto :=
   solve [ notin_fset_auto ]
   : ssprove_invariant.
 
+#[export] Hint Extern 20 (is_true (_ \in _)) =>
+  solve [ auto_in_fset ]
+  : ssprove_invariant.
+
 (* Right-biased same head, but more genenal *)
 (* TODO Use that instead of the one above, which would have _eq in the name *)
 Ltac ssprove_same_head_alt_r :=
