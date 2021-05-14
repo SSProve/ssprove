@@ -818,11 +818,12 @@ Section KEMDEM.
       ssprove_same_head_alt_r. intros _.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ; 0 ]%N.
       ssprove_same_head_alt_r. intros c'.
-      (* Now we have a sampling on one side that's not on the other.
-        What does it mean for us? Since the final result doesn't depend on it
-        maybe we can "ignore" it?
-      *)
-      admit.
+      eapply r_const_sample_R with (op := uniform _). 1: exact _. intro k'.
+      ssprove_contract_put_get_rhs. simpl.
+      ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
+      ssprove_contract_put_rhs.
+      eapply r_put_putR. 1: admit.
+      apply r_ret. auto.
     - destruct m as [ek' c']. simpl.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
       ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.

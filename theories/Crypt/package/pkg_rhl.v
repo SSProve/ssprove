@@ -1593,6 +1593,42 @@ Proof.
   - intros _ _. auto.
 Qed.
 
+Lemma r_put_putR :
+  ∀ {A} ℓ ℓ' v v' (r₀ r₁ : raw_code A) (pre : precond),
+    preserve_set_setR ℓ v ℓ' v' pre →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      r₀ ≈ r₁
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      put ℓ := v ;; r₀ ≈
+      put ℓ := v ;; put ℓ' := v' ;; r₁
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
+Proof.
+  intros A ℓ ℓ' v v' r₀ r₁ pre hp h.
+  change (
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      (put ℓ := v ;; ret Datatypes.tt) ;; r₀ ≈
+      (put ℓ := v ;; put ℓ' := v' ;; ret Datatypes.tt) ;; r₁
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄
+  ).
+  eapply r_bind with (mid :=
+    λ '(b₀, s₀) '(b₁, s₁), pre (s₀, s₁)
+  ).
+  - apply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
+    intros [hpre hpost]. simpl.
+    eexists (dunit (_,_)). split.
+    + unfold coupling. split.
+      * unfold lmg, dfst. apply distr_ext. intro.
+        rewrite dlet_unit. reflexivity.
+      * unfold rmg, dsnd. apply distr_ext. intro.
+        rewrite dlet_unit. reflexivity.
+    + intros [] [] e.
+      rewrite dunit1E in e.
+      apply ge0_eq in e. noconf e.
+      eapply hpost. apply hp. auto.
+  - intros _ _. auto.
+Qed.
+
 Lemma rswap_cmd :
   ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
     (c₀ : command A₀) (c₁ : command A₁)

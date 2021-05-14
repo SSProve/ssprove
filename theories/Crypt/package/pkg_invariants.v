@@ -670,3 +670,8 @@ Proof.
   rewrite get_set_heap_neq. 2: auto.
   auto.
 Qed.
+
+Definition preserve_set_setR ℓ v ℓ' v' pre :=
+  ∀ s₀ s₁,
+    pre (s₀, s₁) →
+    pre (set_heap s₀ ℓ v, set_heap (set_heap s₁ ℓ v) ℓ' v').
