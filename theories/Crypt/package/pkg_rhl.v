@@ -1648,14 +1648,14 @@ Proof.
   eapply from_sem_jdg.
   repeat setoid_rewrite repr_cmd_bind.
   eapply (swap_ruleR (λ a₀ a₁, repr (r a₀ a₁)) (repr_cmd c₀) (repr_cmd c₁)).
-  + intros a₀ a₁. eapply to_sem_jdg. eapply hr.
-  + intros ? ? []. eauto.
-  + intro s. unshelve eapply coupling_eq.
-    * exact: (λ '(h1, h2), h1 = h2).
-    * eapply to_sem_jdg in h.
+  - intros a₀ a₁. eapply to_sem_jdg. eapply hr.
+  - intros ? ? []. eauto.
+  - intro s. unshelve eapply coupling_eq.
+    + exact: (λ '(h1, h2), h1 = h2).
+    + eapply to_sem_jdg in h.
       repeat (setoid_rewrite repr_cmd_bind in h).
       auto.
-    * reflexivity.
+    + reflexivity.
 Qed.
 
 (* Specialised version to use when post = eq *)
@@ -1666,11 +1666,11 @@ Lemma rswap_cmd_eq :
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       a₀ ← cmd c₀ ;; a₁ ← cmd c₁ ;; ret (a₀, a₁) ≈
       a₁ ← cmd c₁ ;; a₀ ← cmd c₀ ;; ret (a₀, a₁)
-      ⦃ eq ⦄ →
+    ⦃ eq ⦄ →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       a₀ ← cmd c₀ ;; a₁ ← cmd c₁ ;; r a₀ a₁ ≈
       a₁ ← cmd c₁ ;; a₀ ← cmd c₀ ;; r a₀ a₁
-      ⦃ eq ⦄.
+    ⦃ eq ⦄.
 Proof.
   intros A₀ A₁ B c₀ c₁ r h.
   eapply rswap_cmd.
@@ -1678,6 +1678,80 @@ Proof.
   - intros a₀ a₁. eapply rsym_pre. 1: auto.
     apply rreflexivity_rule.
   - auto.
+Qed.
+
+Lemma rswap_cmd_bind_eq :
+  ∀ (A₀ A₁ B : choiceType) c₀ c₁ (r : A₀ → A₁ → raw_code B),
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      a₀ ← cmd c₀ ;; a₁ ← c₁ ;; ret (a₀, a₁) ≈
+      a₁ ← c₁ ;; a₀ ← cmd c₀ ;; ret (a₀, a₁)
+    ⦃ eq ⦄ →
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      a₀ ← cmd c₀ ;; a₁ ← c₁ ;; r a₀ a₁ ≈
+      a₁ ← c₁ ;; a₀ ← cmd c₀ ;; r a₀ a₁
+    ⦃ eq ⦄.
+Proof.
+  intros A₀ A₁ B c₀ c₁ r h.
+  eapply from_sem_jdg. simpl.
+  setoid_rewrite repr_cmd_bind. setoid_rewrite repr_bind.
+  simpl. setoid_rewrite repr_cmd_bind.
+  eapply (swap_ruleR (λ a₀ a₁, repr (r a₀ a₁)) (repr_cmd c₀) (repr c₁)).
+  - intros a₀ a₁. eapply to_sem_jdg.
+    apply rsym_pre. 1: auto.
+    apply rreflexivity_rule.
+  - auto.
+  - intro s. unshelve eapply coupling_eq.
+    + exact: (λ '(h₀, h₁), h₀ = h₁).
+    + eapply to_sem_jdg in h.
+      setoid_rewrite repr_cmd_bind in h. simpl in h.
+      setoid_rewrite repr_bind in h. simpl in h.
+      setoid_rewrite repr_cmd_bind in h. simpl in h.
+      auto.
+    + reflexivity.
+Qed.
+
+(* TODO MOVE *)
+Lemma bind_cmd_bind :
+  ∀ {A B C : choiceType}
+    (c : command A) (k1 : _ → raw_code B) (k2 : _ → raw_code C),
+    (x ← (y ← cmd c ;; k1 y) ;; k2 x) =
+    (y ← cmd c ;; x ← k1 y ;; k2 x).
+Proof.
+  intros A B C c k1 k2.
+  destruct c. all: simpl. all: reflexivity.
+Qed.
+
+Lemma rswap_bind_cmd_eq :
+  ∀ (A₀ A₁ B : choiceType) c₀ c₁ (r : A₀ → A₁ → raw_code B),
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      a₀ ← c₀ ;; a₁ ← cmd c₁ ;; ret (a₀, a₁) ≈
+      a₁ ← cmd c₁ ;; a₀ ← c₀ ;; ret (a₀, a₁)
+    ⦃ eq ⦄ →
+    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+      a₀ ← c₀ ;; a₁ ← cmd c₁ ;; r a₀ a₁ ≈
+      a₁ ← cmd c₁ ;; a₀ ← c₀ ;; r a₀ a₁
+    ⦃ eq ⦄.
+Proof.
+  intros A₀ A₁ B c₀ c₁ r h.
+  apply rsymmetry. apply rsym_pre. 1: auto.
+  eapply rpost_weaken_rule. 1: eapply rswap_cmd_bind_eq.
+  - eapply r_bind with
+    (f₀ := λ '(x, y), ret (y,x)) (f₁ := λ '(x, y), ret (y,x)) in h.
+    2:{
+      simpl. intros [] [].
+      eapply rpre_hypothesis_rule. intros ? ? e. noconf e.
+      eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
+      simpl. intuition subst. reflexivity.
+    }
+    rewrite bind_assoc in h.
+    rewrite bind_cmd_bind in h.
+    setoid_rewrite bind_cmd_bind in h.
+    setoid_rewrite bind_assoc in h.
+    simpl in h.
+    apply rsymmetry. apply rsym_pre. 1: auto.
+    eapply rpost_weaken_rule. 1: eauto.
+    intuition subst. reflexivity.
+  - intuition subst. reflexivity.
 Qed.
 
 Theorem rswap_ruleR_cmd :
@@ -1688,11 +1762,11 @@ Theorem rswap_ruleR_cmd :
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       a₀ ← cmd c₀ ;; a₁ ← cmd c₁ ;; ret (a₀, a₁) ≈
       a₁ ← cmd c₁ ;; a₀ ← cmd c₀ ;; ret (a₀, a₁)
-      ⦃ eq ⦄ →
+    ⦃ eq ⦄ →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       a₀ ← cmd c₀ ;; a₁ ← cmd c₁ ;; r a₀ a₁ ≈
       a₁ ← cmd c₁ ;; a₀ ← cmd c₀ ;; r a₀ a₁
-      ⦃ post ⦄.
+    ⦃ post ⦄.
 Proof.
   intros A₀ A₁ B post c₀ c₁ r postr hr h.
   eapply from_sem_jdg.

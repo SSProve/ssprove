@@ -1020,10 +1020,7 @@ Section KEMDEM.
       ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
       ssprove_contract_put_get_rhs. simpl.
       ssprove_forget_all.
-      (* TODO r_put_rhs, but we don't want to use it, we want r_put_put here
-        to preserve the invariant with c.
-        Rather a variant of r_put_put with only one put on one side.
-      *)
+      (* TODO eapply r_put_putR *)
       (* TODO Add ways to swap schemes
         Might be good to be able to extend the swap commands.
         Maybe I should have a treatment of goals to make the head into a cmd?

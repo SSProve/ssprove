@@ -362,6 +362,7 @@ Ltac ssprove_same_head_alt_r :=
 
 (* Apply rswap_cmd_eq by reading rhs *)
 (* TODO Guard it by checking post = eq and even pre? *)
+(* TODO: Maybe forget about the redundant bits? *)
 Ltac ssprove_rswap_cmd_eq_rhs :=
   lazymatch goal with
   | |- ⊢ ⦃ _ ⦄ _ ≈ ?c ⦃ _ ⦄ =>
@@ -404,7 +405,8 @@ Ltac ssprove_rswap_cmd_eq_rhs :=
   end.
 
 (* Apply rswap_cmd by reading rhs *)
-Ltac ssprove_rswap_cmd_rhs :=
+(* TODO: Still useful? *)
+(* Ltac ssprove_rswap_cmd_rhs :=
   lazymatch goal with
   | |- ⊢ ⦃ _ ⦄ _ ≈ ?c ⦃ _ ⦄ =>
     lazymatch c with
@@ -429,7 +431,7 @@ Ltac ssprove_rswap_cmd_rhs :=
     | _ => fail "No swappable pair found"
     end
   | |- _ => fail "The goal should be a syntactic judgment"
-  end.
+  end. *)
 
 Ltac neq_loc_auto :=
   let e := fresh "e" in
@@ -441,7 +443,9 @@ Ltac neq_loc_auto :=
   solve [ neq_loc_auto ]
   : ssprove_invariant.
 
-(* TODO: Are there more cases we can consider? *)
+(* TODO: Are there more cases we can consider?
+  TODO: Deal with it using typeclasses eauto so that it becomes extensible
+*)
 Ltac ssprove_swap_side_cond :=
   lazymatch goal with
   | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_sample _) ;; _ ← cmd (cmd_sample _) ;; _ ≈ _ ⦃ _ ⦄ =>
