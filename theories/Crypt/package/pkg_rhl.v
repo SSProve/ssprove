@@ -1730,6 +1730,7 @@ Proof.
   - intros [? ?] [? ?] e. inversion e. intuition auto.
 Qed.
 
+(* TODO MOVE to pkg_distr *)
 Class LosslessOp (op : Op) :=
   is_lossless_op : psum op.π2 = 1.
 
@@ -1821,22 +1822,38 @@ Proof.
   - intros _ _. eapply rpre_weaken_rule. all: eauto.
 Qed.
 
-(* TODO Have pre and postcond A B? *)
-(* TODO R version *)
 (* One-sided sampling rule. *)
 (* Removes the need for intermediate games in some cases. *)
 Lemma r_const_sample_L :
-  ∀ {A : choiceType} (op : Op) c₀ c₁ (post : postcond A A),
+  ∀ {A : choiceType} (op : Op) c₀ c₁ (pre : precond) (post : postcond A A),
     LosslessOp op →
-    (∀ x, ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ c₀ x ≈ c₁ ⦃ post ⦄) →
-    ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄ x ← sample op ;; c₀ x ≈ c₁ ⦃ post ⦄.
+    (∀ x, ⊢ ⦃ pre ⦄ c₀ x ≈ c₁ ⦃ post ⦄) →
+    ⊢ ⦃ pre ⦄ x ← sample op ;; c₀ x ≈ c₁ ⦃ post ⦄.
 Proof.
-  intros A op c₀ c₁ post hop h.
+  intros A op c₀ c₁ pre post hop h.
   eapply r_transR with (x ← sample op ;; (λ _, c₁) x).
   - apply r_dead_sample_L. 1: auto.
     apply rreflexivity_rule.
-  - apply (rsame_head_cmd (cmd_sample op)).
-    apply h.
+  - apply (rsame_head_cmd_alt (cmd_sample op)).
+    + eapply rpre_weaken_rule. 1: eapply cmd_sample_preserve_pre.
+      auto.
+    + apply h.
+Qed.
+
+Lemma r_const_sample_R :
+  ∀ {A : choiceType} (op : Op) c₀ c₁ (pre : precond) (post : postcond A A),
+    LosslessOp op →
+    (∀ x, ⊢ ⦃ pre ⦄ c₀ ≈ c₁ x ⦃ post ⦄) →
+    ⊢ ⦃ pre ⦄ c₀ ≈ x ← sample op ;; c₁ x ⦃ post ⦄.
+Proof.
+  intros A op c₀ c₁ pre post hop h.
+  eapply r_transL with (x ← sample op ;; (λ _, c₀) x).
+  - apply r_dead_sample_L. 1: auto.
+    apply rreflexivity_rule.
+  - apply (rsame_head_cmd_alt (cmd_sample op)).
+    + eapply rpre_weaken_rule. 1: eapply cmd_sample_preserve_pre.
+      auto.
+    + apply h.
 Qed.
 
 (** Rules on uniform distributions  *)
