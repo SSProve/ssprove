@@ -66,10 +66,7 @@ Section KEMDEM.
   Definition chKey := keyD.π1.
 
   (** Public and secret key  *)
-  Context pkeyD `{LosslessOp pkeyD}. (* TODO Not needed? *)
-  Context skeyD `{LosslessOp skeyD}. (* TODO Not needed? *)
-  Definition chPKey := pkeyD.π1.
-  Definition chSKey := skeyD.π1.
+  Context (chPKey chSKey : chUniverse).
 
   (** Plain text *)
   Context (chPlain : chUniverse).
