@@ -54,48 +54,52 @@ Section KEMDEM.
   Obligation Tactic := idtac.
   Set Equations Transparent.
 
-  (** In the SSP paper, we have λ.
-      key_length would 2^λ because we do not use bitstrings.
-      This also applies for things like cipher and encapsulation lengths.
-      Instead we will have dedicated types for objects.
-      We still use cardinals when we need them to be finite types for
-      uniform sampling.
+  (** In the SSP paper, bitstrings are used.
+      Instead we go for a more abstract types.
+      In the cases where we need to be able to sample on these data types,
+      we will instead assume we have a lossless distribution, as they come
+      with their domain.
   *)
 
-  (** Symmetric key length *)
-  Context (key_length : nat) `{Positive key_length}.
+  (** Symmetric key *)
+  Context keyD `{LosslessOp keyD}.
+  Definition chKey := keyD.π1.
 
-  (** Public and secret key lengths  *)
-  Context (pkey_length : nat) `{Positive pkey_length}.
-  Context (skey_length : nat) `{Positive skey_length}.
+  (** Public and secret key  *)
+  Context pkeyD `{LosslessOp pkeyD}. (* TODO Not needed? *)
+  Context skeyD `{LosslessOp skeyD}. (* TODO Not needed? *)
+  Definition chPKey := pkeyD.π1.
+  Definition chSKey := skeyD.π1.
 
   (** Plain text *)
   Context (chPlain : chUniverse).
 
   (** Ecrypted key *)
-  Context (ekey_length : nat) `{Positive ekey_length}.
+  Context ekeyD `{LosslessOp ekeyD}.
+  Definition chEKey := ekeyD.π1.
 
   (** Cipher text *)
-  Context (cipher_length : nat) `{Positive cipher_length}.
+  Context cipherD `{LosslessOp cipherD}.
+  Definition chCipher := cipherD.π1.
 
   (** Types *)
-  Notation "'key" := ('fin key_length) (in custom pack_type at level 2).
-  Notation "'key" := ('fin key_length) (at level 2) : package_scope.
+  Notation "'key" := (chKey) (in custom pack_type at level 2).
+  Notation "'key" := (chKey) (at level 2) : package_scope.
 
-  Notation "'pkey" := ('fin pkey_length) (in custom pack_type at level 2).
-  Notation "'pkey" := ('fin pkey_length) (at level 2) : package_scope.
+  Notation "'pkey" := (chPKey) (in custom pack_type at level 2).
+  Notation "'pkey" := (chPKey) (at level 2) : package_scope.
 
-  Notation "'skey" := ('fin skey_length) (in custom pack_type at level 2).
-  Notation "'skey" := ('fin skey_length) (at level 2) : package_scope.
+  Notation "'skey" := (chSKey) (in custom pack_type at level 2).
+  Notation "'skey" := (chSKey) (at level 2) : package_scope.
 
   Notation "'plain" := (chPlain) (in custom pack_type at level 2).
   Notation "'plain" := (chPlain) (at level 2) : package_scope.
 
-  Notation "'ekey" := ('fin ekey_length) (in custom pack_type at level 2).
-  Notation "'ekey" := ('fin ekey_length) (at level 2) : package_scope.
+  Notation "'ekey" := (chEKey) (in custom pack_type at level 2).
+  Notation "'ekey" := (chEKey) (at level 2) : package_scope.
 
-  Notation "'cipher" := ('fin cipher_length) (in custom pack_type at level 2).
-  Notation "'cipher" := ('fin cipher_length) (at level 2) : package_scope.
+  Notation "'cipher" := (chCipher) (in custom pack_type at level 2).
+  Notation "'cipher" := (chCipher) (at level 2) : package_scope.
 
   (** Procedure names *)
 
@@ -124,13 +128,6 @@ Section KEMDEM.
   Definition sk_loc : Location := ('option 'skey ; 2%N).
   Definition ek_loc : Location := ('option 'ekey ; 3%N).
   Definition c_loc : Location := ('option 'cipher ; 4%N).
-
-  (** Uniform distributions *)
-  Definition i_key := key_length.
-  Definition i_pk := pkey_length.
-  Definition i_sk := skey_length.
-  Definition i_ek := ekey_length.
-  Definition i_c := cipher_length.
 
   (** Some shorthands *)
   Definition IGEN := [interface val #[ GEN ] : 'unit → 'unit ].
@@ -180,7 +177,7 @@ Section KEMDEM.
       def #[ GEN ] (_ : 'unit) : 'unit {
         k ← get k_loc ;;
         #assert (k == None) ;;
-        k ← sample uniform i_key ;;
+        k ← sample keyD ;;
         put k_loc := Some k ;;
         @ret 'unit Datatypes.tt
       } ;
@@ -241,7 +238,7 @@ Section KEMDEM.
           ret ek
         )
         else (
-          ek ← sample uniform i_ek ;;
+          ek ← sample ekeyD ;;
           put ek_loc := Some ek ;;
           GEN Datatypes.tt ;;
           ret ek
@@ -344,7 +341,7 @@ Section KEMDEM.
           ret c
         )
         else (
-          c ← sample uniform i_c ;;
+          c ← sample cipherD ;;
           put c_loc := Some c ;;
           ret c
         )
@@ -453,8 +450,8 @@ Section KEMDEM.
           if b return raw_code (chProd 'ekey 'cipher)
           then ζ.(PKE_enc) pk m
           else (
-            ek ← sample uniform i_ek ;;
-            c ← sample uniform i_c ;;
+            ek ← sample ekeyD ;;
+            c ← sample cipherD ;;
             ret (ek, c)
           )
         ) ;;
@@ -823,7 +820,7 @@ Section KEMDEM.
       ssprove_same_head_alt_r. intros _.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ; 0 ]%N.
       ssprove_same_head_alt_r. intros c'.
-      eapply r_const_sample_R with (op := uniform _). 1: exact _. intro k'.
+      eapply r_const_sample_R. 1: exact _. intro k'.
       ssprove_contract_put_get_rhs. simpl.
       ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
       ssprove_contract_put_rhs.
