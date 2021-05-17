@@ -2630,3 +2630,19 @@ Notation "⊢ₛ c ⦃ post ⦄" :=
   (scheme_spec c post)
   (format "⊢ₛ  '[' c  ']' '/' ⦃  post  ⦄")
   : package_scope.
+
+Lemma r_scheme_bind_spec :
+  ∀ {A B : choiceType} (φ : A → Prop) (pre : precond) (post : postcond B B)
+    s c₀ c₁,
+    ⊢ₛ s ⦃ φ ⦄ →
+    (∀ x, φ x → ⊢ ⦃ pre ⦄ c₀ x ≈ c₁ x ⦃ post ⦄) →
+    ⊢ ⦃ pre ⦄ x ← s ;; c₀ x ≈ x ← s ;; c₁ x ⦃ post ⦄.
+Proof.
+  intros A B φ pre post s c₀ c₁ hs hc.
+  eapply r_bind. 1: eapply hs.
+  intros ? x.
+  apply rpre_hypothesis_rule. intuition subst.
+  eapply rpre_weaken_rule.
+  - eapply hc. auto.
+  - simpl. intuition subst. auto.
+Qed.

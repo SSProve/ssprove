@@ -172,12 +172,12 @@ Section KEMDEM.
 
   Context (pkey_pair : (chProd 'pkey 'skey) → Prop).
   Context (KEM_kgen_spec : ⊢ₛ η.(KEM_kgen) ⦃ pkey_pair ⦄).
-  (* TODO A rule for this. + sameSome_and semi-inv? *)
+  (* TODO sameSome_and semi-inv? *)
 
   Definition encap_spec (pk : 'pkey) (kek : chProd 'key 'ekey) : Prop :=
     ∀ sk, pkey_pair (pk, sk) → η.(KEM_decap) sk kek.2 = kek.1.
 
-  Context ( KEM_encap_spec : ∀ pk, ⊢ₛ η.(KEM_encap) pk ⦃ encap_spec pk ⦄).
+  Context (KEM_encap_spec : ∀ pk, ⊢ₛ η.(KEM_encap) pk ⦃ encap_spec pk ⦄).
 
   (** KEY package *)
 
@@ -816,24 +816,16 @@ Section KEMDEM.
       ssprove_same_head_alt_r. intro pkNone.
       ssprove_same_head_alt_r. intro sk.
       ssprove_same_head_alt_r. intro skNone.
-      eapply r_bind.
-      { eapply @r_reflexivity_alt with (L := fset [::]).
-        - ssprove_valid.
-        - intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-        - intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
+      eapply r_scheme_bind_spec. 1: eapply KEM_kgen_spec. intros [pk' sk'] pps.
+      eapply r_put_put.
+      1:{
+        ssprove_invariant.
+        - apply preserve_set_set_couple_rhs_neq. all: neq_loc_auto.
+        - apply preserve_set_set_couple_lhs_eq.
+          + neq_loc_auto.
+          + reflexivity.
       }
-      intros [] [].
-      eapply rpre_hypothesis_rule. intros s₀ s₁ [e ?].
-      noconf e.
-      eapply rpre_weaken_rule.
-      1: eapply r_put_put.
-      + ssprove_invariant.
-        * apply preserve_set_set_couple_rhs_neq. all: neq_loc_auto.
-        * apply preserve_set_set_couple_lhs_eq.
-          -- neq_loc_auto.
-          -- reflexivity.
-      + apply r_ret. auto.
-      + simpl. intuition subst. auto.
+      apply r_ret. auto.
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
       ssprove_swap_seq_rhs [:: 5 ; 4 ; 3 ; 2 ; 1 ]%N.
@@ -849,20 +841,7 @@ Section KEMDEM.
       rewrite ekNone. simpl.
       eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intro c.
       ssprove_same_head_alt_r. intro cNone.
-      (* *** *)
-      eapply r_bind.
-      { eapply @r_reflexivity_alt with (L := fset [::]).
-        - ssprove_valid.
-        - intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-        - intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-      }
-      intros [k₀ ek₀] [k₁ ek₁].
-      eapply rpre_hypothesis_rule. intros s₀ s₁ [e hpre]. noconf e.
-      eapply rpre_weaken_rule
-      with (pre := λ '(s₀, s₁), (inv ⋊ rem_rhs c_loc c) (s₀, s₁)).
-      2:{ simpl. intuition subst. auto. }
-      clear s₀ s₁ hpre.
-      (* * *)
+      eapply r_scheme_bind_spec. 1: eapply KEM_encap_spec. intros [k' ek'] hkek.
       ssprove_code_simpl_more. ssprove_code_simpl.
       ssprove_code_simpl_more.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
@@ -946,7 +925,7 @@ Section KEMDEM.
         2:{ move: e => /eqP e. subst. exfalso. apply ee. reflexivity. }
         rewrite e. simpl.
         rewrite bind_ret.
-        (* TODO This should be fixed now, I might still need more info. *)
+        (* TODO We simply need to keep the invariants and it should be ok. *)
         admit.
       + rewrite eek. ssprove_code_simpl_more.
         ssprove_swap_seq_rhs [:: 6 ; 5 ; 4 ; 3 ; 2 ; 1 ; 0 ]%N.
@@ -996,24 +975,16 @@ Section KEMDEM.
       ssprove_same_head_alt_r. intro pkNone.
       ssprove_same_head_alt_r. intro sk.
       ssprove_same_head_alt_r. intro skNone.
-      eapply r_bind.
-      { eapply @r_reflexivity_alt with (L := fset [::]).
-        - ssprove_valid.
-        - intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-        - intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
+      eapply r_scheme_bind_spec. 1: eapply KEM_kgen_spec. intros [pk' sk'] pps.
+      eapply r_put_put.
+      1:{
+        ssprove_invariant.
+        - apply preserve_set_set_couple_rhs_neq. all: neq_loc_auto.
+        - apply preserve_set_set_couple_lhs_eq.
+          + neq_loc_auto.
+          + reflexivity.
       }
-      intros [] [].
-      eapply rpre_hypothesis_rule. intros s₀ s₁ [e ?].
-      noconf e.
-      eapply rpre_weaken_rule.
-      1: eapply r_put_put.
-      + ssprove_invariant.
-        * apply preserve_set_set_couple_rhs_neq. all: neq_loc_auto.
-        * apply preserve_set_set_couple_lhs_eq.
-          -- neq_loc_auto.
-          -- reflexivity.
-      + apply r_ret. auto.
-      + simpl. intuition subst. auto.
+      apply r_ret. auto.
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
       ssprove_swap_seq_rhs [:: 5 ; 4 ; 3 ; 2 ; 1 ]%N.
@@ -1029,28 +1000,7 @@ Section KEMDEM.
       rewrite ekNone. simpl.
       eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intro c.
       ssprove_same_head_alt_r. intro cNone.
-      (** For some reason the following masks the chUniverses
-          I would still like to use that, rather than what we currently use.
-      *)
-      (* eapply @rsame_head_alt with (L := fset [::]).
-      1: ssprove_valid.
-      1:{ intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto. }
-      1:{ intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto. }
-      intros [k' ek']. *)
-      (* *** *)
-      eapply r_bind.
-      { eapply @r_reflexivity_alt with (L := fset [::]).
-        - ssprove_valid.
-        - intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-        - intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-      }
-      intros [k₀ ek₀] [k₁ ek₁].
-      eapply rpre_hypothesis_rule. intros s₀ s₁ [e hpre]. noconf e.
-      eapply rpre_weaken_rule
-      with (pre := λ '(s₀, s₁), (inv ⋊ rem_rhs c_loc c) (s₀, s₁)).
-      2:{ simpl. intuition subst. auto. }
-      clear s₀ s₁ hpre.
-      (* * *)
+      eapply r_scheme_bind_spec. 1: eapply KEM_encap_spec. intros [k' ek'] hkek.
       ssprove_code_simpl_more. ssprove_code_simpl.
       ssprove_code_simpl_more.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
@@ -1135,9 +1085,7 @@ Section KEMDEM.
         2:{ move: e => /eqP e. subst. exfalso. apply ee. reflexivity. }
         rewrite e. simpl.
         rewrite bind_ret.
-        (* Here we probably need validity, but as long as the other one
-          isn't solved, it's not clear it's worth it.
-        *)
+        (* TODO Will be the same as the other branch probably *)
         admit.
       + rewrite eek. ssprove_code_simpl_more.
         ssprove_swap_seq_rhs [:: 6 ; 5 ; 4 ; 3 ; 2 ; 1 ; 0 ]%N.
