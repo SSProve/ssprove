@@ -2613,3 +2613,20 @@ Proof.
   unfold UniversalFreeMap.outOfFree_obligation_1.
   rewrite get_set_heap_eq. reflexivity.
 Qed.
+
+(** Unary specifications
+
+  Defined as the diagonal of the relational judgment.
+
+*)
+
+Definition scheme_spec {A : choiceType} (c : raw_code A) (φ : A → Prop) :=
+  ∀ (pre : precond),
+    ⊢ ⦃ pre ⦄
+      c ≈ c
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ∧ φ b₀ ⦄.
+
+Notation "⊢ₛ c ⦃ post ⦄" :=
+  (scheme_spec c post)
+  (format "⊢ₛ  '[' c  ']' '/' ⦃  post  ⦄")
+  : package_scope.
