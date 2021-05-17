@@ -147,7 +147,7 @@ Section KEMDEM.
   Record KEM_scheme := {
     KEM_kgen : code fset0 [interface] (chProd 'pkey 'skey) ;
     KEM_encap : 'pkey → code fset0 [interface] (chProd 'key 'ekey) ;
-    KEM_decap : 'skey → 'ekey → code fset0 [interface] 'key (* det? *)
+    KEM_decap : 'skey → 'ekey → 'key
   }.
 
   (** DEM scheme *)
@@ -243,7 +243,7 @@ Section KEMDEM.
         #assert (isSome ek) as ekSome ;;
         let ek := getSome ek ekSome in
         #assert (ek != ek') ;;
-        η.(KEM_decap) sk ek'
+        ret (η.(KEM_decap) sk ek')
       }
     ].
 
@@ -528,7 +528,7 @@ Section KEMDEM.
     } ;
     PKE_dec := λ sk c, {code
       let '(ek, c) := c in
-      k ← η.(KEM_decap) sk ek ;;
+      let k := η.(KEM_decap) sk ek in
       θ.(DEM_dec) k c
     }
   |}.
