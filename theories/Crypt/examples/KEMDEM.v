@@ -1182,10 +1182,10 @@ Section KEMDEM.
     rewrite PKE_CCA_perf_true. 2,3: auto.
     rewrite GRing.addr0. rewrite GRing.add0r.
     (* Now we massage the expression to apply the single key lemma *)
-    (* eapply ler_trans.
+    eapply ler_trans.
     - rewrite Advantage_sym.
       rewrite -Advantage_link.
-      eapply single_key.
+      eapply single_key_b with (CK₁ := (KEM false).(pack)).
       7,8: ssprove_valid.
       9,10: ssprove_valid.
       1-2: ssprove_valid.
@@ -1218,7 +1218,8 @@ Section KEMDEM.
       change ({locpackage ?p }.(pack)) with p.
       change ({package ?p }.(pack)) with p.
       apply eq_ler. rewrite !link_assoc. f_equal.
-      all: rewrite Advantage_sym. 1: reflexivity.
+      all: rewrite Advantage_sym. 2: reflexivity.
+      f_equal. rewrite Advantage_sym.
       f_equal. all: f_equal.
       all: apply par_commut.
       (* TODO Can we do better than what follows? *)
@@ -1240,7 +1241,6 @@ Section KEMDEM.
       all: rewrite in_fset.
       all: invert_in_seq hx.
       all: reflexivity.
-  Qed. *)
-  Admitted.
+  Qed.
 
 End KEMDEM.
