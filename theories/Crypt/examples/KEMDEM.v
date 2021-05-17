@@ -136,7 +136,7 @@ Section KEMDEM.
   Record PKE_scheme := {
     PKE_kgen : code fset0 [interface] (chProd 'pkey 'skey) ;
     PKE_enc : 'pkey → 'plain → code fset0 [interface] (chProd 'ekey 'cipher) ;
-    PKE_dec : 'skey → chProd 'ekey 'cipher → code fset0 [interface] 'plain
+    PKE_dec : 'skey → chProd 'ekey 'cipher → code fset0 [interface] 'plain (* det if KEM_decap and DEM_dec *)
   }.
 
   (** KEM scheme *)
@@ -144,14 +144,14 @@ Section KEMDEM.
   Record KEM_scheme := {
     KEM_kgen : code fset0 [interface] (chProd 'pkey 'skey) ;
     KEM_encap : 'pkey → code fset0 [interface] (chProd 'key 'ekey) ;
-    KEM_decap : 'skey → 'ekey → code fset0 [interface] 'key
+    KEM_decap : 'skey → 'ekey → code fset0 [interface] 'key (* det? *)
   }.
 
   (** DEM scheme *)
 
   Record DEM_scheme := {
-    DEM_enc : 'key → 'plain → code fset0 [interface] 'cipher ;
-    DEM_dec : 'key → 'cipher → code fset0 [interface] 'plain
+    DEM_enc : 'key → 'plain → code fset0 [interface] 'cipher ; (* det *)
+    DEM_dec : 'key → 'cipher → code fset0 [interface] 'plain (* det? *)
   }.
 
   Context (η : KEM_scheme).
