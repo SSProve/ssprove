@@ -172,7 +172,6 @@ Section KEMDEM.
 
   Context (pkey_pair : (chProd 'pkey 'skey) → Prop).
   Context (KEM_kgen_spec : ⊢ₛ η.(KEM_kgen) ⦃ pkey_pair ⦄).
-  (* TODO sameSome_and semi-inv? *)
 
   Definition encap_spec (pk : 'pkey) (kek : chProd 'key 'ekey) : Prop :=
     ∀ sk, pkey_pair (pk, sk) → η.(KEM_decap) sk kek.2 = kek.1.
@@ -777,10 +776,13 @@ Section KEMDEM.
     modified in one of the packages.
   *)
 
-  Notation inv :=
-    (heap_ignore KEY_loc ⋊
+  Notation inv := (
+    heap_ignore KEY_loc ⋊
     couple_rhs c_loc k_loc sameSome ⋊
-    couple_lhs pk_loc sk_loc sameSome).
+    couple_lhs
+      pk_loc sk_loc
+      (sameSomeRel (λ (pk : 'pkey) (sk : 'skey), pkey_pair (pk, sk)))
+  ).
 
   Instance Invariant_inv : Invariant PKE_CCA_loc Aux_loc inv.
   Proof.
@@ -823,7 +825,7 @@ Section KEMDEM.
         - apply preserve_set_set_couple_rhs_neq. all: neq_loc_auto.
         - apply preserve_set_set_couple_lhs_eq.
           + neq_loc_auto.
-          + reflexivity.
+          + simpl. auto.
       }
       apply r_ret. auto.
     - ssprove_code_simpl_more.
@@ -905,7 +907,7 @@ Section KEMDEM.
           - ssprove_invariant.
         }
         intro eps.
-        rewrite eps.
+        eapply sameSomeRel_sameSome in eps as eps'. rewrite eps'.
         ssprove_same_head_alt_r. intro skSome.
         ssprove_swap_seq_rhs [:: 2 ; 1 ; 0 ]%N.
         ssprove_contract_get_rhs.
@@ -942,7 +944,7 @@ Section KEMDEM.
           - ssprove_invariant.
         }
         intro eps.
-        rewrite eps.
+        eapply sameSomeRel_sameSome in eps as eps'. rewrite eps'.
         ssprove_forget_all.
         ssprove_same_head_alt_r. intro skSome.
         ssprove_same_head_alt_r. intro c.
@@ -982,7 +984,7 @@ Section KEMDEM.
         - apply preserve_set_set_couple_rhs_neq. all: neq_loc_auto.
         - apply preserve_set_set_couple_lhs_eq.
           + neq_loc_auto.
-          + reflexivity.
+          + simpl. auto.
       }
       apply r_ret. auto.
     - ssprove_code_simpl_more.
@@ -1065,7 +1067,7 @@ Section KEMDEM.
           - ssprove_invariant.
         }
         intro eps.
-        rewrite eps.
+        eapply sameSomeRel_sameSome in eps as eps'. rewrite eps'.
         ssprove_same_head_alt_r. intro skSome.
         ssprove_swap_seq_rhs [:: 2 ; 1 ; 0 ]%N.
         ssprove_contract_get_rhs.
@@ -1103,7 +1105,7 @@ Section KEMDEM.
           - ssprove_invariant.
         }
         intro eps.
-        rewrite eps.
+        eapply sameSomeRel_sameSome in eps as eps'. rewrite eps'.
         ssprove_forget_all.
         ssprove_same_head_alt_r. intro skSome.
         ssprove_same_head_alt_r. intro c.

@@ -686,6 +686,24 @@ Proof.
   reflexivity.
 Qed.
 
+(* TODO Find better name *)
+Definition sameSomeRel {A B} (R : A → B → Prop) x y :=
+  match x, y with
+  | Some x, Some y => R x y
+  | None, None => True
+  | _, _ => False
+  end.
+
+Lemma sameSomeRel_sameSome :
+  ∀ {A B} R x y,
+    @sameSomeRel A B R x y →
+    sameSome x y.
+Proof.
+  intros A B R x y h.
+  destruct x, y. all: try contradiction.
+  all: reflexivity.
+Qed.
+
 Ltac ssprove_forget :=
   lazymatch goal with
   | |- ⊢ ⦃ λ '(s₀, s₁), (_ ⋊ rem_rhs _ _) (s₀, s₁) ⦄ _ ≈ _ ⦃ _ ⦄ =>
