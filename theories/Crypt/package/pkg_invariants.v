@@ -742,3 +742,44 @@ Proof.
   rewrite get_set_heap_neq. 2: auto.
   auto.
 Qed.
+
+(** Dually to rem_lhs/rem_rhs we create "invariants" to represent a deviation
+    of invariant, or a deficit which will need to be paid later to restore
+    the proper invariant.
+
+    TODO: Kill the above
+*)
+
+Definition set_lhs ℓ v (pre : precond) : precond :=
+  λ '(s₀, s₁),
+    ∃ s₀', pre (s₀', s₁) ∧ s₀ = set_heap s₀' ℓ v.
+
+Arguments set_lhs : simpl never.
+
+Definition set_rhs ℓ v (pre : precond) : precond :=
+  λ '(s₀, s₁),
+    ∃ s₁', pre (s₀, s₁') ∧ s₁ = set_heap s₁' ℓ v.
+
+Arguments set_rhs : simpl never.
+
+Lemma restore_set_lhs :
+  ∀ ℓ v pre s₀ s₁,
+    set_lhs ℓ v pre (s₀, s₁) →
+    (∀ s₀', pre (s₀', s₁) → pre (set_heap s₀' ℓ v, s₁)) →
+    pre (s₀, s₁).
+Proof.
+  intros ℓ v pre s₀ s₁ h hpre.
+  destruct h as [? [? ?]]. subst.
+  eapply hpre. auto.
+Qed.
+
+Lemma restore_set_rhs :
+  ∀ ℓ v pre s₀ s₁,
+    set_rhs ℓ v pre (s₀, s₁) →
+    (∀ s₁', pre (s₀, s₁') → pre (s₀, set_heap s₁' ℓ v)) →
+    pre (s₀, s₁).
+Proof.
+  intros ℓ v pre s₀ s₁ h hpre.
+  destruct h as [? [? ?]]. subst.
+  eapply hpre. auto.
+Qed.

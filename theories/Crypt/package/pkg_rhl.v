@@ -1557,6 +1557,107 @@ Proof.
   - simpl. intuition subst. auto.
 Qed.
 
+Lemma r_put_lhs :
+  ∀ {A} ℓ v (r₀ r₁ : raw_code A) (pre : precond),
+    ⊢ ⦃ λ '(s₀, s₁), (set_lhs ℓ v pre) (s₀, s₁) ⦄
+      r₀ ≈ r₁
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      put ℓ := v ;; r₀ ≈ r₁
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
+Proof.
+  intros A ℓ v r₀ r₁ pre h.
+  change (
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      (put ℓ := v ;; ret Datatypes.tt) ;; r₀ ≈ ret Datatypes.tt ;; r₁
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄
+  ).
+  eapply r_bind with (mid :=
+    λ '(b₀, s₀) '(b₁, s₁), (set_lhs ℓ v pre) (s₀, s₁)
+  ).
+  - apply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
+    intros [hpre hpost]. simpl.
+    eexists (dunit (_,_)). split.
+    + unfold coupling. split.
+      * unfold lmg, dfst. apply distr_ext. intro.
+        rewrite dlet_unit. reflexivity.
+      * unfold rmg, dsnd. apply distr_ext. intro.
+        rewrite dlet_unit. reflexivity.
+    + intros [] [] e.
+      rewrite dunit1E in e.
+      apply ge0_eq in e. noconf e.
+      eapply hpost. eexists. intuition eauto.
+  - intros _ _. auto.
+Qed.
+
+Lemma r_put_rhs :
+  ∀ {A} ℓ v (r₀ r₁ : raw_code A) (pre : precond),
+    ⊢ ⦃ λ '(s₀, s₁), (set_rhs ℓ v pre) (s₀, s₁) ⦄
+      r₀ ≈ r₁
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      r₀ ≈ put ℓ := v ;; r₁
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
+Proof.
+  intros A ℓ v r₀ r₁ pre h.
+  change (
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      ret Datatypes.tt ;; r₀ ≈ (put ℓ := v ;; ret Datatypes.tt) ;; r₁
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄
+  ).
+  eapply r_bind with (mid :=
+    λ '(b₀, s₀) '(b₁, s₁), (set_rhs ℓ v pre) (s₀, s₁)
+  ).
+  - apply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
+    intros [hpre hpost]. simpl.
+    eexists (dunit (_,_)). split.
+    + unfold coupling. split.
+      * unfold lmg, dfst. apply distr_ext. intro.
+        rewrite dlet_unit. reflexivity.
+      * unfold rmg, dsnd. apply distr_ext. intro.
+        rewrite dlet_unit. reflexivity.
+    + intros [] [] e.
+      rewrite dunit1E in e.
+      apply ge0_eq in e. noconf e.
+      eapply hpost. eexists. intuition eauto.
+  - intros _ _. auto.
+Qed.
+
+Lemma r_restore_lhs :
+  ∀ {A} ℓ v (r₀ r₁ : raw_code A) (pre : precond),
+    (∀ s₀ s₁, pre (s₀, s₁) → pre (set_heap s₀ ℓ v, s₁)) →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      r₀ ≈ r₁
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), (set_lhs ℓ v pre) (s₀, s₁) ⦄
+      r₀ ≈ r₁
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
+Proof.
+  intros A ℓ v r₀ r₁ pre hpre h.
+  eapply rpre_hypothesis_rule. intros s₀ s₁ [? [? ?]]. subst.
+  eapply rpre_weaken_rule.
+  - eapply h.
+  - simpl. intuition subst. apply hpre. auto.
+Qed.
+
+Lemma r_restore_rhs :
+  ∀ {A} ℓ v (r₀ r₁ : raw_code A) (pre : precond),
+    (∀ s₀ s₁, pre (s₀, s₁) → pre (s₀, set_heap s₁ ℓ v)) →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      r₀ ≈ r₁
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), (set_rhs ℓ v pre) (s₀, s₁) ⦄
+      r₀ ≈ r₁
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
+Proof.
+  intros A ℓ v r₀ r₁ pre hpre h.
+  eapply rpre_hypothesis_rule. intros s₀ s₁ [? [? ?]]. subst.
+  eapply rpre_weaken_rule.
+  - eapply h.
+  - simpl. intuition subst. apply hpre. auto.
+Qed.
+
+(* TODO REMOVE *)
 Lemma r_put_put :
   ∀ {A} ℓ ℓ' v v' (r₀ r₁ : raw_code A) (pre : precond),
     preserve_set_set ℓ v ℓ' v' pre →
@@ -1593,6 +1694,7 @@ Proof.
   - intros _ _. auto.
 Qed.
 
+(* TODO REMOVE *)
 Lemma r_put_putR :
   ∀ {A} ℓ ℓ' v v' (r₀ r₁ : raw_code A) (pre : precond),
     preserve_set_setR ℓ v ℓ' v' pre →

@@ -778,6 +778,28 @@ Section KEMDEM.
 
   Notation inv := (
     heap_ignore KEY_loc ⋊
+    (* couple_rhs
+      k_loc ek_loc *)
+      (* TODO How to deal with pk here? Probably have to "couple" three locs
+        Might be nice to have something a bit generic then...
+        Like some abstract rule for many puts on both sides.
+        Or even better put_l put_r and put_both with some notion of deficit
+        of invariant like [put_l ℓ v] - pre.
+        And you stack debts like this, and then you can pay it all at once.
+        Would be nice. A sort of dual to what we have for get.
+        Can be ∃ (s₀', s₁'), inv (s₀', s₁') ∧ (s₀, s₁) = (update s₀', update s₁')
+        might work!
+        Could be called deviation.
+        In anycase we would need a tactic to pay.
+        Then we can remove r_put_put and r_put_putR
+
+        TODO First keep the current sameSome and change the way we deal with
+        put before having a better invariant.
+
+        An intermediary solution could be to couple k_loc and ek_loc
+        instead of c_loc
+      *)
+      (* (sameSomeRel (λ (k : 'key) (ek : 'ekey), encap_spec pk (k, ek))) ⋊ *)
     couple_rhs c_loc k_loc sameSome ⋊
     couple_lhs
       pk_loc sk_loc
@@ -800,7 +822,7 @@ Section KEMDEM.
       auto_in_fset.
     - simpl. rewrite in_fsetU. apply /orP. left.
       auto_in_fset.
-    - reflexivity.
+    - simpl. auto.
   Qed.
 
   Lemma PKE_CCA_perf_false :
@@ -819,6 +841,9 @@ Section KEMDEM.
       ssprove_same_head_alt_r. intro sk.
       ssprove_same_head_alt_r. intro skNone.
       eapply r_scheme_bind_spec. 1: eapply KEM_kgen_spec. intros [pk' sk'] pps.
+      (* TODO Have any post! *)
+      (* eapply r_put_lhs. eapply r_put_lhs.
+      eapply r_put_rhs. eapply r_put_rhs. *)
       eapply r_put_put.
       1:{
         ssprove_invariant.
