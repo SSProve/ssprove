@@ -160,7 +160,37 @@ Section KEMDEM.
   Context (η : KEM_scheme).
   Context (θ : DEM_scheme).
 
-  (** KEY Package *)
+  (** Specification of assumed schemes
+
+    We assume the existence of a relation capturing which public key correspond
+    to which secret key. We furthermore require KEM_kgen to ensure that the
+    keys it generates verify this relation.
+
+    We use this relation to state the correctness of KEM_encap.
+
+  *)
+
+  Context (pkey_pair : (chProd 'pkey 'skey) → Prop).
+  Context (
+    KEM_kgen_spec :
+      ∀ (pre : precond),
+        ⊢ ⦃ pre ⦄
+          η.(KEM_kgen) ≈ η.(KEM_kgen)
+        ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ∧ pkey_pair b₀ ⦄
+  ). (* TODO A notation for this! + A rule for this. + sameSome_and semi-inv? *)
+
+  Definition encap_spec (pk : 'pkey) (kek : chProd 'key 'ekey) : Prop :=
+    ∀ sk, pkey_pair (pk, sk) → η.(KEM_decap) sk kek.2 = kek.1.
+
+  Context (
+    KEM_encap_spec :
+      ∀ pk (pre : precond),
+        ⊢ ⦃ pre ⦄
+          η.(KEM_encap) pk ≈ η.(KEM_encap) pk
+        ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ∧ encap_spec pk b₀ ⦄
+  ).
+
+  (** KEY package *)
 
   Definition KEY_loc :=
     fset [:: k_loc ].
@@ -1198,7 +1228,8 @@ Section KEMDEM.
       3,4: rewrite fdisjointC.
       all:
         eapply fdisjoint_trans ; [
-          eapply domm_trimmed ; unfold KEM, DEM ; cbn - [mkdef mkfmap] ; ssprove_valid
+          eapply domm_trimmed ; unfold KEM, DEM ;
+          cbn - [mkdef mkfmap] ; ssprove_valid
         |].
       all: simpl.
       all: unfold idents, KEM_out, DEM_out.
