@@ -167,15 +167,19 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
 
   Notation " 'chSecurityParameter' " :=
     ('nat) (in custom pack_type at level 2).
+
   Notation " 'chPlain' " :=
     choicePlain
     (in custom pack_type at level 2).
+
   Notation " 'chCipher' " :=
     choiceCipher
     (in custom pack_type at level 2).
+
   Notation " 'chPubKey' " :=
     choicePubKey
     (in custom pack_type at level 2).
+
   Notation " 'chSecKey' " :=
     choiceSecKey
     (in custom pack_type at level 2).
@@ -245,17 +249,16 @@ Definition DH_rnd :
 Definition Aux :
   package (fset [:: counter_loc])
     [interface val #[10] : 'unit → chPubKey × chCipher]
-    [interface val #[challenge_id'] : chPlain → 'option chCipher] :=
+    [interface val #[challenge_id'] : chPlain → chCipher] :=
     [package
-      def #[challenge_id'] (m : chPlain) : 'option chCipher
+      def #[challenge_id'] (m : chPlain) : chCipher
       {
         #import {sig #[10] : 'unit → chPubKey × chCipher } as query ;;
         count ← get counter_loc ;;
         put counter_loc := (count + 1)%N ;;
-        if (count == 0)%N then
-          '(pk, c) ← query Datatypes.tt ;;
-          ret (Some (fto ((otf c).1 , (otf m) * ((otf c).2))))
-        else ret None
+        #assert (count == 0)%N ;;
+        '(pk, c) ← query Datatypes.tt ;;
+        @ret choiceCipher (fto ((otf c).1 , (otf m) * ((otf c).2)))
       }
     ].
 
@@ -265,23 +268,21 @@ Proof.
   (* We go to the relation logic using equality as invariant. *)
   eapply eq_rel_perf_ind_eq.
   simplify_eq_rel m.
-  ssprove_code_simpl. simpl.
-  (* simplify_linking. *)
+  ssprove_code_simpl.
   (* We are now in the realm of program logic *)
   ssprove_same_head_r. intro count.
   ssprove_same_head_r. intros _.
-  destruct count.
-  2:{ simpl. eapply r_ret. intuition eauto. }
-  simpl. ssprove_same_head_r. intro a.
+  ssprove_same_head_r. move => /eqP e. subst.
+  ssprove_same_head_r. intro a.
   ssprove_swap_lhs 0%N.
   ssprove_same_head_r. intros _.
   ssprove_swap_lhs 0%N.
   ssprove_same_head_r. intros _.
   ssprove_same_head_r. intro b.
-  rewrite !otf_fto.
+  rewrite !otf_fto. simpl.
   eapply r_ret. intuition eauto.
-  f_equal. f_equal. f_equal.
-  rewrite group_prodC. f_equal. simpl.
+  f_equal. f_equal.
+  rewrite group_prodC. f_equal.
   apply expgM.
 Qed.
 
@@ -407,7 +408,7 @@ Qed.
 
 Theorem ElGamal_OT :
   ∀ LA A,
-    ValidPackage LA [interface val #[challenge_id'] : chPlain → 'option chCipher] A_export A →
+    ValidPackage LA [interface val #[challenge_id'] : chPlain → chCipher] A_export A →
     fdisjoint LA (ots_real_vs_rnd true).(locs) →
     fdisjoint LA (ots_real_vs_rnd false).(locs) →
     Advantage ots_real_vs_rnd A <= AdvantageE DH_rnd DH_real (A ∘ Aux).
@@ -415,14 +416,11 @@ Proof.
   intros LA A vA hd₀ hd₁.
   simpl in hd₀, hd₁. clear hd₁. rename hd₀ into hd.
   rewrite Advantage_E.
-  pose proof (
-    Advantage_triangle_chain (ots_real_vs_rnd false) [::
-      Aux ∘ DH_rnd ;
-      Aux ∘ DH_real
-    ] (ots_real_vs_rnd true) A
-  ) as ineq.
-  advantage_sum simpl in ineq.
-  rewrite !GRing.addrA in ineq.
+  ssprove triangle (ots_real_vs_rnd false) [::
+    Aux ∘ DH_rnd ;
+    Aux ∘ DH_real
+  ] (ots_real_vs_rnd true) A
+  as ineq.
   eapply ler_trans. 1: exact ineq.
   clear ineq.
   rewrite ots_real_vs_rnd_equiv_true. 3: auto.

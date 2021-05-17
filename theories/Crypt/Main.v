@@ -1,5 +1,5 @@
-From Crypt Require Import pkg_composition PRF ElGamal pkg_rhl UniformStateProb
-  RulesStateProb.
+From Crypt Require Import pkg_composition pkg_advantage PRF ElGamal pkg_rhl
+  UniformStateProb RulesStateProb.
 
 (* Notation to chain lets and end with 0 *)
 Notation "[ 'let' ]" :=

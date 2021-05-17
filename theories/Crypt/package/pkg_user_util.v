@@ -64,7 +64,8 @@ From mathcomp Require Import all_ssreflect ssrbool eqtype seq eqtype choice.
 Set Warnings "notation-overridden,ambiguous-paths".
 From extructures Require Import ord fset fmap.
 From Crypt Require Import Prelude pkg_core_definition pkg_composition
-  pkg_notation RulesStateProb pkg_rhl pkg_tactics chUniverse.
+  pkg_notation RulesStateProb pkg_advantage pkg_lookup pkg_semantics
+  pkg_invariants pkg_distr pkg_rhl pkg_tactics chUniverse.
 From Coq Require Import Utf8 FunctionalExtensionality
   Setoids.Setoid Classes.Morphisms.
 
@@ -324,6 +325,10 @@ Ltac notin_fset_auto :=
   solve [ notin_fset_auto ]
   : ssprove_invariant.
 
+#[export] Hint Extern 20 (is_true (_ \in _)) =>
+  solve [ auto_in_fset ]
+  : ssprove_invariant.
+
 (* Right-biased same head, but more genenal *)
 (* TODO Use that instead of the one above, which would have _eq in the name *)
 Ltac ssprove_same_head_alt_r :=
@@ -357,6 +362,7 @@ Ltac ssprove_same_head_alt_r :=
 
 (* Apply rswap_cmd_eq by reading rhs *)
 (* TODO Guard it by checking post = eq and even pre? *)
+(* TODO: Maybe forget about the redundant bits? *)
 Ltac ssprove_rswap_cmd_eq_rhs :=
   lazymatch goal with
   | |- ⊢ ⦃ _ ⦄ _ ≈ ?c ⦃ _ ⦄ =>
@@ -393,13 +399,26 @@ Ltac ssprove_rswap_cmd_eq_rhs :=
       eapply (rswap_assertD_cmd_eq _ A b (cmd_put ℓ v) (λ x y, _))
     | @assertD ?A ?b (λ e, #assert _ as e' ;; _) =>
       eapply (rswap_assertD_assertD_eq A _ _ (λ e' e, _))
+    | x ← ?c ;; y ← sample ?op ;; _ =>
+      eapply (rswap_cmd_bind_eq (cmd_sample op) c)
+    | x ← ?c ;; y ← get ?ℓ ;; _ =>
+      eapply (rswap_cmd_bind_eq (cmd_get ℓ) c)
+    | x ← ?c ;; put ?ℓ := ?v ;; _ =>
+      eapply (rswap_cmd_bind_eq (cmd_put ℓ v) c (λ x y, _))
+    | x ← sample ?op ;; y ← ?c ;; _ =>
+      eapply (rswap_bind_cmd_eq c (cmd_sample op))
+    | x ← get ?ℓ ;; y ← ?c ;; _ =>
+      eapply (rswap_bind_cmd_eq c (cmd_get ℓ))
+    | put ?ℓ := ?v ;; y ← ?c ;; _ =>
+      eapply (rswap_bind_cmd_eq c (cmd_put ℓ v) (λ x y, _))
     | _ => fail "No swappable pair found."
     end
   | |- _ => fail "The goal should be a syntactic judgment."
   end.
 
 (* Apply rswap_cmd by reading rhs *)
-Ltac ssprove_rswap_cmd_rhs :=
+(* TODO: Still useful? *)
+(* Ltac ssprove_rswap_cmd_rhs :=
   lazymatch goal with
   | |- ⊢ ⦃ _ ⦄ _ ≈ ?c ⦃ _ ⦄ =>
     lazymatch c with
@@ -424,7 +443,7 @@ Ltac ssprove_rswap_cmd_rhs :=
     | _ => fail "No swappable pair found"
     end
   | |- _ => fail "The goal should be a syntactic judgment"
-  end.
+  end. *)
 
 Ltac neq_loc_auto :=
   let e := fresh "e" in
@@ -436,50 +455,48 @@ Ltac neq_loc_auto :=
   solve [ neq_loc_auto ]
   : ssprove_invariant.
 
-(* TODO: Are there more cases we can consider? *)
-Ltac ssprove_swap_side_cond :=
-  lazymatch goal with
-  | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_sample _) ;; _ ← cmd (cmd_sample _) ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply rsamplerC_cmd
-  | |- ⊢ ⦃ _ ⦄ _ ← cmd _ ;; _ ← cmd (cmd_sample _) ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply rsamplerC_cmd
-  | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_sample _) ;; _ ← cmd _ ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply rsamplerC'_cmd
-  | |- ⊢ ⦃ _ ⦄ _ ← sample _ ;; _ ← sample _ ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply rsamplerC_cmd
-  | |- ⊢ ⦃ _ ⦄ _ ← cmd _ ;; _ ← sample _ ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply rsamplerC_cmd
-  | |- ⊢ ⦃ _ ⦄ _ ← sample _ ;; _ ← cmd _ ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply rsamplerC'_cmd
-  | |- ⊢ ⦃ _ ⦄ _ ← get _ ;; _ ← get _ ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply r_get_swap
-  | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_get _) ;; _ ← cmd (cmd_get _) ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply r_get_swap
-  | |- ⊢ ⦃ _ ⦄ _ ← get ?ℓ' ;; put ?ℓ := ?v ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply (r_get_put_swap' ℓ ℓ' v) ;
-    neq_loc_auto
-  | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_get ?ℓ') ;; _ ← cmd (cmd_put ?ℓ ?v) ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply (r_get_put_swap' ℓ ℓ' v) ;
-    neq_loc_auto
-  | |- ⊢ ⦃ _ ⦄ put ?ℓ := ?v ;; _ ← get ?ℓ' ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply (r_put_get_swap' ℓ ℓ' v) ;
-    neq_loc_auto
-  | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_put ?ℓ ?v) ;; _ ← cmd (cmd_get ?ℓ') ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply (r_put_get_swap' ℓ ℓ' v) ;
-    neq_loc_auto
-  | |- ⊢ ⦃ _ ⦄ put _ := _ ;; put _ := _ ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply r_put_swap ;
-    neq_loc_auto
-  | |- ⊢ ⦃ _ ⦄ _ ← cmd (cmd_put _ _) ;; _ ← cmd (cmd_put _ _) ;; _ ≈ _ ⦃ _ ⦄ =>
-    apply r_put_swap ;
-    neq_loc_auto
-  end.
+(** Extensible database to deal with swapping side conditions *)
+Create HintDb ssprove_swap.
+
+#[export] Hint Extern 100 =>
+  shelve
+  : ssprove_swap.
+
+Ltac ssprove_swap_auto :=
+  (unshelve typeclasses eauto with ssprove_swap) ; shelve_unifiable.
+
+#[export] Hint Extern 10 (⊢ ⦃ _ ⦄ _ ← cmd _ ;; _ ← cmd (cmd_sample _) ;; _ ≈ _ ⦃ _ ⦄) =>
+  apply rsamplerC_cmd
+  : ssprove_swap.
+
+#[export] Hint Extern 10 (⊢ ⦃ _ ⦄ _ ← cmd (cmd_sample _) ;; _ ← cmd _ ;; _ ≈ _ ⦃ _ ⦄) =>
+  apply rsamplerC'_cmd
+  : ssprove_swap.
+
+#[export] Hint Extern 10 (⊢ ⦃ _ ⦄ _ ← cmd (cmd_get _) ;; _ ← cmd (cmd_get _) ;; _ ≈ _ ⦃ _ ⦄) =>
+  apply r_get_swap
+  : ssprove_swap.
+
+#[export] Hint Extern 10 (⊢ ⦃ _ ⦄ _ ← cmd (cmd_get ?ℓ') ;; _ ← cmd (cmd_put ?ℓ ?v) ;; _ ≈ _ ⦃ _ ⦄) =>
+  apply (r_get_put_swap' ℓ ℓ' v) ;
+  neq_loc_auto
+  : ssprove_swap.
+
+#[export] Hint Extern 10 (⊢ ⦃ _ ⦄ _ ← cmd (cmd_put ?ℓ ?v) ;; _ ← cmd (cmd_get ?ℓ') ;; _ ≈ _ ⦃ _ ⦄) =>
+  apply (r_put_get_swap' ℓ ℓ' v) ;
+  neq_loc_auto
+  : ssprove_swap.
+
+#[export] Hint Extern 10 (⊢ ⦃ _ ⦄ _ ← cmd (cmd_put _ _) ;; _ ← cmd (cmd_put _ _) ;; _ ≈ _ ⦃ _ ⦄) =>
+  apply r_put_swap ;
+  neq_loc_auto
+  : ssprove_swap.
 
 (* TODO Tactic to solve automatically condition when possible *)
 Ltac ssprove_swap_aux n :=
   lazymatch eval cbv in n with
   | S ?n => ssprove_same_head_r ; intro ; ssprove_swap_aux n
-  | 0%N => ssprove_rswap_cmd_eq_rhs ; try ssprove_swap_side_cond
+  | 0%N => ssprove_rswap_cmd_eq_rhs ; ssprove_swap_auto
   | _ => fail "Wrong number: " n
   end.
 

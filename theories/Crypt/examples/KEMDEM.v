@@ -54,48 +54,49 @@ Section KEMDEM.
   Obligation Tactic := idtac.
   Set Equations Transparent.
 
-  (** In the SSP paper, we have λ.
-      key_length would 2^λ because we do not use bitstrings.
-      This also applies for things like cipher and encapsulation lengths.
-      Instead we will have dedicated types for objects.
-      We still use cardinals when we need them to be finite types for
-      uniform sampling.
+  (** In the SSP paper, bitstrings are used.
+      Instead we go for a more abstract types.
+      In the cases where we need to be able to sample on these data types,
+      we will instead assume we have a lossless distribution, as they come
+      with their domain.
   *)
 
-  (** Symmetric key length *)
-  Context (key_length : nat) `{Positive key_length}.
+  (** Symmetric key *)
+  Context keyD `{LosslessOp keyD}.
+  Definition chKey := keyD.π1.
 
-  (** Public and secret key lengths  *)
-  Context (pkey_length : nat) `{Positive pkey_length}.
-  Context (skey_length : nat) `{Positive skey_length}.
+  (** Public and secret key  *)
+  Context (chPKey chSKey : chUniverse).
 
   (** Plain text *)
   Context (chPlain : chUniverse).
 
   (** Ecrypted key *)
-  Context (ekey_length : nat) `{Positive ekey_length}.
+  Context (ekeyD : Op).
+  Definition chEKey := ekeyD.π1.
 
   (** Cipher text *)
-  Context (cipher_length : nat) `{Positive cipher_length}.
+  Context (cipherD : Op).
+  Definition chCipher := cipherD.π1.
 
   (** Types *)
-  Notation "'key" := ('fin key_length) (in custom pack_type at level 2).
-  Notation "'key" := ('fin key_length) (at level 2) : package_scope.
+  Notation "'key" := (chKey) (in custom pack_type at level 2).
+  Notation "'key" := (chKey) (at level 2) : package_scope.
 
-  Notation "'pkey" := ('fin pkey_length) (in custom pack_type at level 2).
-  Notation "'pkey" := ('fin pkey_length) (at level 2) : package_scope.
+  Notation "'pkey" := (chPKey) (in custom pack_type at level 2).
+  Notation "'pkey" := (chPKey) (at level 2) : package_scope.
 
-  Notation "'skey" := ('fin skey_length) (in custom pack_type at level 2).
-  Notation "'skey" := ('fin skey_length) (at level 2) : package_scope.
+  Notation "'skey" := (chSKey) (in custom pack_type at level 2).
+  Notation "'skey" := (chSKey) (at level 2) : package_scope.
 
   Notation "'plain" := (chPlain) (in custom pack_type at level 2).
   Notation "'plain" := (chPlain) (at level 2) : package_scope.
 
-  Notation "'ekey" := ('fin ekey_length) (in custom pack_type at level 2).
-  Notation "'ekey" := ('fin ekey_length) (at level 2) : package_scope.
+  Notation "'ekey" := (chEKey) (in custom pack_type at level 2).
+  Notation "'ekey" := (chEKey) (at level 2) : package_scope.
 
-  Notation "'cipher" := ('fin cipher_length) (in custom pack_type at level 2).
-  Notation "'cipher" := ('fin cipher_length) (at level 2) : package_scope.
+  Notation "'cipher" := (chCipher) (in custom pack_type at level 2).
+  Notation "'cipher" := (chCipher) (at level 2) : package_scope.
 
   (** Procedure names *)
 
@@ -125,13 +126,6 @@ Section KEMDEM.
   Definition ek_loc : Location := ('option 'ekey ; 3%N).
   Definition c_loc : Location := ('option 'cipher ; 4%N).
 
-  (** Uniform distributions *)
-  Definition i_key := key_length.
-  Definition i_pk := pkey_length.
-  Definition i_sk := skey_length.
-  Definition i_ek := ekey_length.
-  Definition i_c := cipher_length.
-
   (** Some shorthands *)
   Definition IGEN := [interface val #[ GEN ] : 'unit → 'unit ].
   Definition ISET := [interface val #[ SET ] : 'key → 'unit ].
@@ -142,7 +136,7 @@ Section KEMDEM.
   Record PKE_scheme := {
     PKE_kgen : code fset0 [interface] (chProd 'pkey 'skey) ;
     PKE_enc : 'pkey → 'plain → code fset0 [interface] (chProd 'ekey 'cipher) ;
-    PKE_dec : 'skey → chProd 'ekey 'cipher → code fset0 [interface] 'plain
+    PKE_dec : 'skey → chProd 'ekey 'cipher → code fset0 [interface] 'plain (* det if KEM_decap and DEM_dec *)
   }.
 
   (** KEM scheme *)
@@ -150,14 +144,14 @@ Section KEMDEM.
   Record KEM_scheme := {
     KEM_kgen : code fset0 [interface] (chProd 'pkey 'skey) ;
     KEM_encap : 'pkey → code fset0 [interface] (chProd 'key 'ekey) ;
-    KEM_decap : 'skey → 'ekey → code fset0 [interface] 'key
+    KEM_decap : 'skey → 'ekey → code fset0 [interface] 'key (* det? *)
   }.
 
   (** DEM scheme *)
 
   Record DEM_scheme := {
-    DEM_enc : 'key → 'plain → code fset0 [interface] 'cipher ;
-    DEM_dec : 'key → 'cipher → code fset0 [interface] 'plain
+    DEM_enc : 'key → 'plain → code fset0 [interface] 'cipher ; (* det *)
+    DEM_dec : 'key → 'cipher → code fset0 [interface] 'plain (* det? *)
   }.
 
   Context (η : KEM_scheme).
@@ -180,7 +174,7 @@ Section KEMDEM.
       def #[ GEN ] (_ : 'unit) : 'unit {
         k ← get k_loc ;;
         #assert (k == None) ;;
-        k ← sample uniform i_key ;;
+        k ← sample keyD ;;
         put k_loc := Some k ;;
         @ret 'unit Datatypes.tt
       } ;
@@ -241,7 +235,7 @@ Section KEMDEM.
           ret ek
         )
         else (
-          ek ← sample uniform i_ek ;;
+          ek ← sample ekeyD ;;
           put ek_loc := Some ek ;;
           GEN Datatypes.tt ;;
           ret ek
@@ -344,7 +338,7 @@ Section KEMDEM.
           ret c
         )
         else (
-          c ← sample uniform i_c ;;
+          c ← sample cipherD ;;
           put c_loc := Some c ;;
           ret c
         )
@@ -453,8 +447,8 @@ Section KEMDEM.
           if b return raw_code (chProd 'ekey 'cipher)
           then ζ.(PKE_enc) pk m
           else (
-            ek ← sample uniform i_ek ;;
-            c ← sample uniform i_c ;;
+            ek ← sample ekeyD ;;
+            c ← sample cipherD ;;
             ret (ek, c)
           )
         ) ;;
@@ -591,12 +585,10 @@ Section KEMDEM.
   Proof.
     intros LD₀ LK₀ CK₀ CK₁ CD₀ CD₁ EK ED A K₀ K₁ D₀ D₁.
     intros fEK fED pCK₀ pCK₁ pCD₀ pCD₁ hCD₀ hCD₁ tCD₀ tCD₁ hCK₀ hCK₁ tCK₀ tCK₁.
-    pose proof (
-      Advantage_triangle_chain (par CK₀ CD₀ ∘ KEY) [::
-        par CK₁ CD₀ ∘ KEY
-      ] (par CK₁ CD₁ ∘ KEY) A
-    ) as ineq.
-    advantage_sum simpl in ineq.
+    ssprove triangle (par CK₀ CD₀ ∘ KEY) [::
+      par CK₁ CD₀ ∘ KEY
+    ] (par CK₁ CD₁ ∘ KEY) A
+    as ineq.
     eapply ler_trans. 1: exact ineq.
     clear ineq.
     eapply ler_add.
@@ -720,6 +712,11 @@ Section KEMDEM.
     rewrite code_link_scheme
     : ssprove_code_simpl.
 
+  (* We extend swapping to schemes *)
+  Hint Extern 40 (⊢ ⦃ _ ⦄ x ← ?s ;; y ← cmd _ ;; _ ≈ _ ⦃ _ ⦄) =>
+    eapply r_swap_scheme_cmd ; ssprove_valid
+    : ssprove_swap.
+
   (** Program equivalences
 
     In order to prove these equivalences, we will use an invariant that
@@ -820,11 +817,18 @@ Section KEMDEM.
       ssprove_same_head_alt_r. intros _.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ; 0 ]%N.
       ssprove_same_head_alt_r. intros c'.
-      (* Now we have a sampling on one side that's not on the other.
-        What does it mean for us? Since the final result doesn't depend on it
-        maybe we can "ignore" it?
-      *)
-      admit.
+      eapply r_const_sample_R. 1: exact _. intro k'.
+      ssprove_contract_put_get_rhs. simpl.
+      ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
+      ssprove_contract_put_rhs.
+      eapply r_put_putR. 1:{
+        ssprove_invariant.
+        - eapply preserve_set_setR_couple_rhs_eq.
+          + neq_loc_auto.
+          + reflexivity.
+        - eapply preserve_set_setR_couple_lhs_neq. all: neq_loc_auto.
+      }
+      apply r_ret. auto.
     - destruct m as [ek' c']. simpl.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
       ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
@@ -1015,18 +1019,34 @@ Section KEMDEM.
       ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
       ssprove_contract_put_get_rhs. simpl.
       ssprove_forget_all.
-      (* TODO r_put_rhs, but we don't want to use it, we want r_put_put here
-        to preserve the invariant with c.
-        Rather a variant of r_put_put with only one put on one side.
-      *)
-      (* TODO Add ways to swap schemes
-        Might be good to be able to extend the swap commands.
-        Maybe I should have a treatment of goals to make the head into a cmd?
-        In order to factorise a bit. We'll still have to deal with
-        cmd vs bind, assert vs bind and symmetric.
-      *)
-      (* Once this is done, the goal is ok! *)
-      admit.
+      ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
+      (* bind again *)
+      eapply r_bind.
+      { eapply @r_reflexivity_alt with (L := fset [::]).
+        - ssprove_valid.
+        - intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
+        - intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
+      }
+      intros ? c'.
+      eapply rpre_hypothesis_rule. intros s₀ s₁ [e hpre]. noconf e.
+      eapply rpre_weaken_rule
+      with (pre := λ '(s₀, s₁), inv (s₀, s₁)).
+      2:{ simpl. intuition subst. auto. }
+      clear s₀ s₁ hpre.
+      (* * *)
+      ssprove_swap_seq_rhs [:: 0 ]%N.
+      ssprove_same_head_alt_r. intros _.
+      ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
+      ssprove_contract_put_rhs.
+      eapply r_put_putR.
+      1:{
+        ssprove_invariant.
+        - eapply preserve_set_setR_couple_rhs_eq.
+          + neq_loc_auto.
+          + reflexivity.
+        - eapply preserve_set_setR_couple_lhs_neq. all: neq_loc_auto.
+      }
+      apply r_ret. auto.
     - destruct m as [ek' c']. simpl.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
       ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
@@ -1123,14 +1143,11 @@ Section KEMDEM.
   Proof.
     intros LA A hA hA' hd.
     rewrite Advantage_E.
-    pose proof (
-      Advantage_triangle_chain (PKE_CCA KEM_DEM false) [::
-        (MOD_CCA KEM_DEM) ∘ par (KEM false) (DEM false) ∘ KEY ;
-        (MOD_CCA KEM_DEM) ∘ par (KEM true) (DEM true) ∘ KEY
-      ] (PKE_CCA KEM_DEM true) A
-    ) as ineq.
-    advantage_sum simpl in ineq.
-    rewrite !GRing.addrA in ineq.
+    ssprove triangle (PKE_CCA KEM_DEM false) [::
+      (MOD_CCA KEM_DEM) ∘ par (KEM false) (DEM false) ∘ KEY ;
+      (MOD_CCA KEM_DEM) ∘ par (KEM true) (DEM true) ∘ KEY
+    ] (PKE_CCA KEM_DEM true) A
+    as ineq.
     eapply ler_trans. 1: exact ineq.
     clear ineq.
     (* Aux_loc is problematic here, can I make it equal to PKE_CCA_loc? *)

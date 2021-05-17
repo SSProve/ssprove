@@ -403,16 +403,13 @@ Section PRF_example.
   Proof.
     intros LA A vA hd₀ hd₁. unfold prf_epsilon, statistical_gap.
     rewrite !Advantage_E.
-    pose proof (
-      Advantage_triangle_chain (IND_CPA false) [::
-        MOD_CPA_ff_pkg ∘ EVAL true ;
-        MOD_CPA_ff_pkg ∘ EVAL false ;
-        MOD_CPA_tt_pkg ∘ EVAL false ;
-        MOD_CPA_tt_pkg ∘ EVAL true
-      ] (IND_CPA true) A
-    ) as ineq.
-    advantage_sum simpl in ineq.
-    rewrite !GRing.addrA in ineq.
+    ssprove triangle (IND_CPA false) [::
+      MOD_CPA_ff_pkg ∘ EVAL true ;
+      MOD_CPA_ff_pkg ∘ EVAL false ;
+      MOD_CPA_tt_pkg ∘ EVAL false ;
+      MOD_CPA_tt_pkg ∘ EVAL true
+    ] (IND_CPA true) A
+    as ineq.
     eapply ler_trans. 1: exact ineq.
     clear ineq.
     erewrite IND_CPA_equiv_false. all: eauto.
