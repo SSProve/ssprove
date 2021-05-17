@@ -72,11 +72,11 @@ Section KEMDEM.
   Context (chPlain : chUniverse).
 
   (** Ecrypted key *)
-  Context ekeyD `{LosslessOp ekeyD}.
+  Context (ekeyD : Op).
   Definition chEKey := ekeyD.π1.
 
   (** Cipher text *)
-  Context cipherD `{LosslessOp cipherD}.
+  Context (cipherD : Op).
   Definition chCipher := cipherD.π1.
 
   (** Types *)
