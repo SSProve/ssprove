@@ -826,27 +826,12 @@ Section KEMDEM.
       ssprove_code_simpl.
       eapply r_get_vs_get_remember. 1: ssprove_invariant. intro pk.
       ssprove_same_head_alt_r. intro pkNone.
-      (* TODO To do that, I would need some r_shadow_get_rhs
-        the idea is to query the memory and conclude on it even when the
-        programs don't look at it themselves.
-      *)
-      (* eapply r_rem_triple_rhs. *)
-      (* ssprove_forget_all. *)
       ssprove_same_head_alt_r. intro sk.
       ssprove_same_head_alt_r. intro skNone.
       eapply r_scheme_bind_spec. 1: eapply KEM_kgen_spec. intros [pk' sk'] pps.
       eapply r_put_vs_put.
       eapply r_put_vs_put.
-
-      update_pre_fold.
-      repeat change (?pre ⋊ rem_lhs ?ℓ ?v) with (remember_pre [:: upd_l ℓ v ] pre).
-      repeat change (?pre ⋊ rem_rhs ?ℓ ?v) with (remember_pre [:: upd_r ℓ v ] pre).
-      repeat change (remember_pre ?l1 (remember_pre ?l2 ?pre))
-      with (remember_pre (l1 ++ l2) pre).
-      eapply r_restore_mem.
-
-
-      (* ssprove_restore_pre. *)
+      ssprove_restore_mem.
       1:{
         simpl.
         ssprove_invariant.

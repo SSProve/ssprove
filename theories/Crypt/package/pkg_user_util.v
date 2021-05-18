@@ -721,9 +721,23 @@ Ltac update_pre_fold :=
   repeat change (update_pre ?l1 (update_pre ?l2 ?pre))
   with (update_pre (l1 ++ l2) pre).
 
+Ltac remember_pre_fold :=
+  repeat change (?pre ⋊ rem_lhs ?ℓ ?v) with (remember_pre [:: upd_l ℓ v ] pre) ;
+  repeat change (?pre ⋊ rem_rhs ?ℓ ?v) with (remember_pre [:: upd_r ℓ v ] pre) ;
+  repeat change (remember_pre ?l1 (remember_pre ?l2 ?pre))
+  with (remember_pre (l1 ++ l2) pre).
+
 Ltac ssprove_restore_pre :=
   update_pre_fold ;
   eapply r_restore_pre ; [
+    cbn
+  | idtac
+  ].
+
+Ltac ssprove_restore_mem :=
+  update_pre_fold ;
+  remember_pre_fold ;
+  eapply r_restore_mem ; [
     cbn
   | idtac
   ].
