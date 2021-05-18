@@ -842,36 +842,14 @@ Section KEMDEM.
       ssprove_same_head_alt_r. intro sk.
       ssprove_same_head_alt_r. intro skNone.
       eapply r_scheme_bind_spec. 1: eapply KEM_kgen_spec. intros [pk' sk'] pps.
-
       eapply r_put_vs_put.
       eapply r_put_vs_put.
-      (* Now we pay the debt, let's automate
-        First let's find a way to only pay once, the whole amount...
-      *)
-      repeat change (set_lhs ?ℓ ?v ?pre) with (update_pre [:: upd_l ℓ v ] pre).
-      repeat change (set_rhs ?ℓ ?v ?pre) with (update_pre [:: upd_r ℓ v ] pre).
-      repeat change (update_pre ?l1 (update_pre ?l2 ?pre))
-      with (update_pre (l1 ++ l2) pre).
-      eapply r_restore_pre.
+      ssprove_restore_pre.
       1:{
-        cbn - [update_heaps].
         ssprove_invariant.
-        - (* TODO Something with lookup_upd_r or the like
-          TODO Also, onlhs and onrhs semi-invariants rahter than the specific
-          couple stuff.
-          *)
-          intros s₀ s₁ hpre. simpl. admit.
+        - admit.
         - admit.
       }
-
-      (* eapply r_put_put.
-      1:{
-        ssprove_invariant.
-        - apply preserve_set_set_couple_rhs_neq. all: neq_loc_auto.
-        - apply preserve_set_set_couple_lhs_eq.
-          + neq_loc_auto.
-          + simpl. auto.
-      } *)
       apply r_ret. auto.
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
