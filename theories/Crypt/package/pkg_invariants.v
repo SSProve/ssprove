@@ -942,6 +942,13 @@ Proof.
     rewrite hin in hℓ₀. discriminate.
 Qed.
 
+#[export] Hint Extern 10 (preserve_update_pre _ (heap_ignore _)) =>
+  eapply preserve_update_l_ignored_heap_ignore ; [
+    solve [ auto_in_fset ]
+  | idtac
+  ]
+  : ssprove_invariant.
+
 Lemma preserve_update_r_ignored_heap_ignore :
   ∀ L ℓ v l,
     ℓ \in L →
@@ -959,6 +966,13 @@ Proof.
   - move: e1 => /eqP e1. subst.
     rewrite hin in hℓ₀. discriminate.
 Qed.
+
+#[export] Hint Extern 10 (preserve_update_pre _ (heap_ignore _)) =>
+  eapply preserve_update_r_ignored_heap_ignore ; [
+    solve [ auto_in_fset ]
+  | idtac
+  ]
+  : ssprove_invariant.
 
 Definition is_upd_l u :=
   match u with

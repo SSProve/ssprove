@@ -899,13 +899,7 @@ Section KEMDEM.
       apply r_put_vs_put.
       apply r_put_rhs.
       ssprove_restore_pre.
-      1:{
-        ssprove_invariant.
-        - eapply preserve_update_r_ignored_heap_ignore.
-          1: auto_in_fset.
-          ssprove_invariant.
-        - auto.
-      }
+      1:{ ssprove_invariant. auto. }
       apply r_ret. auto.
     - destruct m as [ek' c']. simpl.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
