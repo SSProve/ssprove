@@ -924,6 +924,42 @@ Qed.
   eapply preserve_update_cons_sym_heap_ignore
   : ssprove_invariant.
 
+Lemma preserve_update_l_ignored_heap_ignore :
+  ∀ L ℓ v l,
+    ℓ \in L →
+    preserve_update_pre l (heap_ignore L) →
+    preserve_update_pre (upd_l ℓ v :: l) (heap_ignore L).
+Proof.
+  intros L ℓ v l hin h.
+  intros s₀ s₁ hh.
+  simpl. destruct update_heaps eqn:e.
+  intros ℓ₀ hℓ₀.
+  destruct (ℓ₀ != ℓ) eqn:e1.
+  - rewrite get_set_heap_neq. 2: auto.
+    eapply h in hh. rewrite e in hh.
+    apply hh. auto.
+  - move: e1 => /eqP e1. subst.
+    rewrite hin in hℓ₀. discriminate.
+Qed.
+
+Lemma preserve_update_r_ignored_heap_ignore :
+  ∀ L ℓ v l,
+    ℓ \in L →
+    preserve_update_pre l (heap_ignore L) →
+    preserve_update_pre (upd_r ℓ v :: l) (heap_ignore L).
+Proof.
+  intros L ℓ v l hin h.
+  intros s₀ s₁ hh.
+  simpl. destruct update_heaps eqn:e.
+  intros ℓ₀ hℓ₀.
+  destruct (ℓ₀ != ℓ) eqn:e1.
+  - rewrite get_set_heap_neq. 2: auto.
+    eapply h in hh. rewrite e in hh.
+    apply hh. auto.
+  - move: e1 => /eqP e1. subst.
+    rewrite hin in hℓ₀. discriminate.
+Qed.
+
 Definition is_upd_l u :=
   match u with
   | upd_l _ _ => true

@@ -896,13 +896,15 @@ Section KEMDEM.
       ssprove_same_head_alt_r. intros _.
       ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
       ssprove_contract_put_rhs.
-      eapply r_put_putR.
+      apply r_put_vs_put.
+      apply r_put_rhs.
+      ssprove_restore_pre.
       1:{
         ssprove_invariant.
-        - eapply preserve_set_setR_couple_rhs_eq.
-          + neq_loc_auto.
-          + reflexivity.
-        - eapply preserve_set_setR_couple_lhs_neq. all: neq_loc_auto.
+        - eapply preserve_update_r_ignored_heap_ignore.
+          1: auto_in_fset.
+          ssprove_invariant.
+        - auto.
       }
       apply r_ret. auto.
     - destruct m as [ek' c']. simpl.
