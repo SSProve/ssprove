@@ -732,9 +732,23 @@ Ltac lookup_upd_l_eq_solve :=
     else rewrite lookup_upd_l_neq
   ) ; neq_loc_auto.
 
+Ltac lookup_upd_r_eq_solve :=
+  repeat (
+    tryif rewrite lookup_upd_r_eq
+    then reflexivity
+    else rewrite lookup_upd_r_neq
+  ) ; neq_loc_auto.
+
 #[export] Hint Extern 11 (preserve_update_pre _ (couple_lhs _ _ _)) =>
   eapply preserve_update_couple_lhs_lookup ; [
     lookup_upd_l_eq_solve ..
+  | idtac
+  ]
+  : ssprove_invariant.
+
+#[export] Hint Extern 11 (preserve_update_pre _ (couple_rhs _ _ _)) =>
+  eapply preserve_update_couple_rhs_lookup ; [
+    lookup_upd_r_eq_solve ..
   | idtac
   ]
   : ssprove_invariant.

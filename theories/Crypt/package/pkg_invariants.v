@@ -1048,6 +1048,18 @@ Proof.
   move: e => /eqP e. subst. reflexivity.
 Qed.
 
+Equations? lookup_upd_r (ℓ : Location) (l : seq heap_upd) : option ℓ :=
+  lookup_upd_r ℓ (upd_r ℓ' v' :: l) with inspect (ℓ == ℓ') := {
+  | @exist true e := Some (cast_loc_val _ v') ;
+  | @exist false e := lookup_upd_r ℓ l
+  } ;
+  lookup_upd_r ℓ (upd_l _ _ :: l) := lookup_upd_r ℓ l ;
+  lookup_upd_r ℓ [::] := None.
+Proof.
+  symmetry in e.
+  move: e => /eqP e. subst. reflexivity.
+Qed.
+
 Lemma lookup_upd_l_eq :
   ∀ ℓ v l,
     lookup_upd_l ℓ (upd_l ℓ v :: l) = Some v.
@@ -1066,6 +1078,28 @@ Lemma lookup_upd_l_neq :
 Proof.
   intros ℓ ℓ' v l hn.
   funelim (lookup_upd_l ℓ' (upd_l ℓ v :: l)).
+  - exfalso. rewrite -e in hn. discriminate.
+  - rewrite -Heqcall. reflexivity.
+Qed.
+
+Lemma lookup_upd_r_eq :
+  ∀ ℓ v l,
+    lookup_upd_r ℓ (upd_r ℓ v :: l) = Some v.
+Proof.
+  intros ℓ v l.
+  funelim (lookup_upd_r ℓ (upd_r ℓ v :: l)).
+  - rewrite -Heqcall. rewrite cast_loc_val_K. reflexivity.
+  - exfalso. pose proof e as e'. symmetry in e'. move: e' => /eqP e'.
+    contradiction.
+Qed.
+
+Lemma lookup_upd_r_neq :
+  ∀ ℓ ℓ' v l,
+    ℓ' != ℓ →
+    lookup_upd_r ℓ' (upd_r ℓ v :: l) = lookup_upd_r ℓ' l.
+Proof.
+  intros ℓ ℓ' v l hn.
+  funelim (lookup_upd_r ℓ' (upd_r ℓ v :: l)).
   - exfalso. rewrite -e in hn. discriminate.
   - rewrite -Heqcall. reflexivity.
 Qed.
@@ -1095,6 +1129,31 @@ Proof.
     rewrite -Heqcall in hl. eauto.
 Qed.
 
+Lemma lookup_upd_r_spec :
+  ∀ ℓ v l s₀ s₁ h₀ h₁,
+    lookup_upd_r ℓ l = Some v →
+    update_heaps l s₀ s₁ = (h₀, h₁) →
+    get_heap h₁ ℓ = v.
+Proof.
+  intros ℓ v l s₀ s₁ h₀ h₁ hl e.
+  funelim (lookup_upd_r ℓ l).
+  - discriminate.
+  - simpl in *.
+    destruct update_heaps eqn:e1. noconf e.
+    eauto.
+  - rewrite -Heqcall in hl. noconf hl.
+    simpl in e0.
+    destruct update_heaps eqn:e1. noconf e0.
+    pose proof e as e'.
+    symmetry in e'. move: e' => /eqP ?. subst.
+    rewrite cast_loc_val_K.
+    apply get_set_heap_eq.
+  - simpl in e0.
+    destruct update_heaps eqn:e1. noconf e0.
+    rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
+    rewrite -Heqcall in hl. eauto.
+Qed.
+
 Lemma preserve_update_couple_lhs_lookup :
   ∀ ℓ ℓ' (R : _ → _ → Prop) v v' (l : seq heap_upd),
     lookup_upd_l ℓ l = Some v →
@@ -1107,5 +1166,20 @@ Proof.
   destruct update_heaps eqn:e.
   erewrite lookup_upd_l_spec. 2,3: eauto.
   erewrite lookup_upd_l_spec. 2,3: eauto.
+  auto.
+Qed.
+
+Lemma preserve_update_couple_rhs_lookup :
+  ∀ ℓ ℓ' (R : _ → _ → Prop) v v' (l : seq heap_upd),
+    lookup_upd_r ℓ l = Some v →
+    lookup_upd_r ℓ' l = Some v' →
+    R v v' →
+    preserve_update_pre l (couple_rhs ℓ ℓ' R).
+Proof.
+  intros ℓ ℓ' R v v' l hl hr h.
+  intros s₀ s₁ hh. unfold couple_rhs in *.
+  destruct update_heaps eqn:e.
+  erewrite lookup_upd_r_spec. 2,3: eauto.
+  erewrite lookup_upd_r_spec. 2,3: eauto.
   auto.
 Qed.
