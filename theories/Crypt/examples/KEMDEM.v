@@ -848,7 +848,21 @@ Section KEMDEM.
       1:{
         ssprove_invariant.
         - admit.
-        - admit.
+        - (* TODO Hintify where equalities are solve *)
+          eapply preserve_update_couple_lhs_lookup.
+          + (* TODO tactify *)
+            repeat (
+              tryif rewrite lookup_upd_l_eq
+              then reflexivity
+              else rewrite lookup_upd_l_neq
+            ).
+            all: neq_loc_auto.
+          + repeat (
+                tryif rewrite lookup_upd_l_eq
+                then reflexivity
+                else rewrite lookup_upd_l_neq
+            ) ; neq_loc_auto.
+          + auto.
       }
       apply r_ret. auto.
     - ssprove_code_simpl_more.

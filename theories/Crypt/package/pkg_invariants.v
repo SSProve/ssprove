@@ -788,6 +788,35 @@ Inductive heap_upd :=
 | upd_l (ℓ : Location) (v : ℓ)
 | upd_r (ℓ : Location) (v : ℓ).
 
+Definition loc_val_pair (ℓ : Location) (v : ℓ) : ∑ ℓ : Location, ℓ :=
+  (ℓ ; v).
+
+Definition heap_upd_eq : rel heap_upd :=
+  λ u v,
+    match u, v with
+    | upd_l ℓ v, upd_l ℓ' v' => loc_val_pair ℓ v == (ℓ' ; v')
+    | upd_r ℓ v, upd_r ℓ' v' => loc_val_pair ℓ v == (ℓ' ; v')
+    | _, _ => false
+    end.
+
+Lemma heap_upd_eqP : Equality.axiom heap_upd_eq.
+Proof.
+  intros u v.
+  destruct u, v. all: simpl. 2,3: constructor. 2,3: discriminate.
+  all: unfold loc_val_pair.
+  all: destruct eq_op eqn:e.
+  all: move: e => /eqP e. all: noconf e.
+  all: constructor.
+  all: try reflexivity.
+  all: intro h. all: inversion h. all: contradiction.
+Qed.
+
+Canonical heap_upd_eqMixin := EqMixin heap_upd_eqP.
+Canonical heap_upd_eqType :=
+  Eval hnf in EqType heap_upd heap_upd_eqMixin.
+
+Derive NoConfusion for heap_upd.
+
 Fixpoint update_pre (l : list heap_upd) (pre : precond) :=
   match l with
   | upd_l ℓ v :: l => set_lhs ℓ v (update_pre l pre)
@@ -990,4 +1019,93 @@ Proof.
   intros l pre s₀ s₁ hu hp.
   eapply update_pre_spec in hu. destruct hu as [s₀' [s₁' [hpre e]]].
   rewrite e. eapply hp. auto.
+Qed.
+
+Definition cast_loc_val {ℓ ℓ' : Location} (e : ℓ = ℓ') (v : ℓ) : ℓ'.
+Proof.
+  subst. auto.
+Defined.
+
+Lemma cast_loc_val_K :
+  ∀ ℓ e v,
+    @cast_loc_val ℓ ℓ e v = v.
+Proof.
+  intros ℓ e v.
+  assert (e = erefl).
+  { apply eq_irrelevance. }
+  subst. reflexivity.
+Qed.
+
+Equations? lookup_upd_l (ℓ : Location) (l : seq heap_upd) : option ℓ :=
+  lookup_upd_l ℓ (upd_l ℓ' v' :: l) with inspect (ℓ == ℓ') := {
+  | @exist true e := Some (cast_loc_val _ v') ;
+  | @exist false e := lookup_upd_l ℓ l
+  } ;
+  lookup_upd_l ℓ (upd_r _ _ :: l) := lookup_upd_l ℓ l ;
+  lookup_upd_l ℓ [::] := None.
+Proof.
+  symmetry in e.
+  move: e => /eqP e. subst. reflexivity.
+Qed.
+
+Lemma lookup_upd_l_eq :
+  ∀ ℓ v l,
+    lookup_upd_l ℓ (upd_l ℓ v :: l) = Some v.
+Proof.
+  intros ℓ v l.
+  funelim (lookup_upd_l ℓ (upd_l ℓ v :: l)).
+  - rewrite -Heqcall. rewrite cast_loc_val_K. reflexivity.
+  - exfalso. pose proof e as e'. symmetry in e'. move: e' => /eqP e'.
+    contradiction.
+Qed.
+
+Lemma lookup_upd_l_neq :
+  ∀ ℓ ℓ' v l,
+    ℓ' != ℓ →
+    lookup_upd_l ℓ' (upd_l ℓ v :: l) = lookup_upd_l ℓ' l.
+Proof.
+  intros ℓ ℓ' v l hn.
+  funelim (lookup_upd_l ℓ' (upd_l ℓ v :: l)).
+  - exfalso. rewrite -e in hn. discriminate.
+  - rewrite -Heqcall. reflexivity.
+Qed.
+
+Lemma lookup_upd_l_spec :
+  ∀ ℓ v l s₀ s₁ h₀ h₁,
+    lookup_upd_l ℓ l = Some v →
+    update_heaps l s₀ s₁ = (h₀, h₁) →
+    get_heap h₀ ℓ = v.
+Proof.
+  intros ℓ v l s₀ s₁ h₀ h₁ hl e.
+  funelim (lookup_upd_l ℓ l).
+  - discriminate.
+  - simpl in *.
+    destruct update_heaps eqn:e1. noconf e.
+    eauto.
+  - rewrite -Heqcall in hl. noconf hl.
+    simpl in e0.
+    destruct update_heaps eqn:e1. noconf e0.
+    pose proof e as e'.
+    symmetry in e'. move: e' => /eqP ?. subst.
+    rewrite cast_loc_val_K.
+    apply get_set_heap_eq.
+  - simpl in e0.
+    destruct update_heaps eqn:e1. noconf e0.
+    rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
+    rewrite -Heqcall in hl. eauto.
+Qed.
+
+Lemma preserve_update_couple_lhs_lookup :
+  ∀ ℓ ℓ' (R : _ → _ → Prop) v v' (l : seq heap_upd),
+    lookup_upd_l ℓ l = Some v →
+    lookup_upd_l ℓ' l = Some v' →
+    R v v' →
+    preserve_update_pre l (couple_lhs ℓ ℓ' R).
+Proof.
+  intros ℓ ℓ' R v v' l hl hr h.
+  intros s₀ s₁ hh. unfold couple_lhs in *.
+  destruct update_heaps eqn:e.
+  erewrite lookup_upd_l_spec. 2,3: eauto.
+  erewrite lookup_upd_l_spec. 2,3: eauto.
+  auto.
 Qed.
