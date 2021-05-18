@@ -1183,3 +1183,69 @@ Proof.
   erewrite lookup_upd_r_spec. 2,3: eauto.
   auto.
 Qed.
+
+Lemma lookup_upd_l_None_spec :
+  ∀ ℓ l s₀ s₁ h₀ h₁,
+    lookup_upd_l ℓ l = None →
+    update_heaps l s₀ s₁ = (h₀, h₁) →
+    get_heap h₀ ℓ = get_heap s₀ ℓ.
+Proof.
+  intros ℓ l s₀ s₁ h₀ h₁ hl e.
+  funelim (lookup_upd_l ℓ l).
+  - simpl in e. noconf e. reflexivity.
+  - simpl in *.
+    destruct update_heaps eqn:e1. noconf e.
+    eauto.
+  - rewrite -Heqcall in hl. noconf hl.
+  - simpl in e0.
+    destruct update_heaps eqn:e1. noconf e0.
+    rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
+    rewrite -Heqcall in hl. eauto.
+Qed.
+
+Lemma preserve_update_couple_lhs_lookup_None :
+  ∀ ℓ ℓ' (R : _ → _ → Prop) (l : seq heap_upd),
+    lookup_upd_l ℓ l = None →
+    lookup_upd_l ℓ' l = None →
+    preserve_update_pre l (couple_lhs ℓ ℓ' R).
+Proof.
+  intros ℓ ℓ' R l h h'.
+  intros s₀ s₁ hh. unfold couple_lhs in *.
+  destruct update_heaps eqn:e.
+  erewrite lookup_upd_l_None_spec. 2,3: eauto.
+  erewrite lookup_upd_l_None_spec with (ℓ := ℓ'). 2,3: eauto.
+  auto.
+Qed.
+
+Lemma lookup_upd_r_None_spec :
+  ∀ ℓ l s₀ s₁ h₀ h₁,
+    lookup_upd_r ℓ l = None →
+    update_heaps l s₀ s₁ = (h₀, h₁) →
+    get_heap h₁ ℓ = get_heap s₁ ℓ.
+Proof.
+  intros ℓ l s₀ s₁ h₀ h₁ hl e.
+  funelim (lookup_upd_r ℓ l).
+  - simpl in e. noconf e. reflexivity.
+  - simpl in *.
+    destruct update_heaps eqn:e1. noconf e.
+    eauto.
+  - rewrite -Heqcall in hl. noconf hl.
+  - simpl in e0.
+    destruct update_heaps eqn:e1. noconf e0.
+    rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
+    rewrite -Heqcall in hl. eauto.
+Qed.
+
+Lemma preserve_update_couple_rhs_lookup_None :
+  ∀ ℓ ℓ' (R : _ → _ → Prop) (l : seq heap_upd),
+    lookup_upd_r ℓ l = None →
+    lookup_upd_r ℓ' l = None →
+    preserve_update_pre l (couple_rhs ℓ ℓ' R).
+Proof.
+  intros ℓ ℓ' R l h h'.
+  intros s₀ s₁ hh. unfold couple_rhs in *.
+  destruct update_heaps eqn:e.
+  erewrite lookup_upd_r_None_spec. 2,3: eauto.
+  erewrite lookup_upd_r_None_spec with (ℓ := ℓ'). 2,3: eauto.
+  auto.
+Qed.

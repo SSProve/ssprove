@@ -845,11 +845,7 @@ Section KEMDEM.
       eapply r_put_vs_put.
       eapply r_put_vs_put.
       ssprove_restore_pre.
-      1:{
-        ssprove_invariant.
-        - admit.
-        - auto.
-      }
+      1:{ ssprove_invariant. auto. }
       apply r_ret. auto.
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
