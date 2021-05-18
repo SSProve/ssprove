@@ -762,18 +762,27 @@ Ltac lookup_upd_r_eq_solve :=
 
 #[export] Hint Extern 12 (preserve_update_pre _ (couple_lhs _ _ _)) =>
   eapply preserve_update_couple_lhs_lookup_None ; [
-    repeat rewrite lookup_upd_l_neq ; [ reflexivity | neq_loc_auto .. ] ..
+    repeat rewrite lookup_upd_l_neq ; [
+      reflexivity
+    | solve [ neq_loc_auto ] ..
+    ] ..
   ]
   : ssprove_invariant.
 
 #[export] Hint Extern 12 (preserve_update_pre _ (couple_rhs _ _ _)) =>
   eapply preserve_update_couple_rhs_lookup_None ; [
-    repeat rewrite lookup_upd_r_neq ; [ reflexivity | neq_loc_auto .. ] ..
+    repeat rewrite lookup_upd_r_neq ; [
+      reflexivity
+    | solve [ neq_loc_auto ] ..
+    ] ..
   ]
   : ssprove_invariant.
 
 #[export] Hint Extern 12 (preserve_update_pre _ (triple_rhs _ _ _ _)) =>
   eapply preserve_update_triple_rhs_lookup_None ; [
-    repeat rewrite lookup_upd_r_neq ; [ reflexivity | neq_loc_auto .. ] ..
+    repeat rewrite lookup_upd_r_neq ; [
+      reflexivity
+    | solve [ neq_loc_auto ] ..
+    ] ..
   ]
   : ssprove_invariant.
