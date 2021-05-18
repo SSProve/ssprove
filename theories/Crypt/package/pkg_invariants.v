@@ -783,3 +783,211 @@ Proof.
   destruct h as [? [? ?]]. subst.
   eapply hpre. auto.
 Qed.
+
+Inductive heap_upd :=
+| upd_l (ℓ : Location) (v : ℓ)
+| upd_r (ℓ : Location) (v : ℓ).
+
+Fixpoint update_pre (l : list heap_upd) (pre : precond) :=
+  match l with
+  | upd_l ℓ v :: l => set_lhs ℓ v (update_pre l pre)
+  | upd_r ℓ v :: l => set_rhs ℓ v (update_pre l pre)
+  | [::] => pre
+  end.
+
+Fixpoint update_heaps (l : list heap_upd) s₀ s₁ :=
+  match l with
+  | upd_l ℓ v :: l =>
+    let '(s₀, s₁) := update_heaps l s₀ s₁ in
+    (set_heap s₀ ℓ v, s₁)
+  | upd_r ℓ v :: l =>
+    let '(s₀, s₁) := update_heaps l s₀ s₁ in
+    (s₀, set_heap s₁ ℓ v)
+  | [::] => (s₀, s₁)
+  end.
+
+Lemma update_pre_spec :
+  ∀ l pre s₀ s₁,
+    update_pre l pre (s₀, s₁) →
+    ∃ s₀' s₁', pre (s₀', s₁') ∧ (s₀, s₁) = update_heaps l s₀' s₁'.
+Proof.
+  intros l pre s₀ s₁ h.
+  induction l as [| [] l ih] in pre, s₀, s₁, h |- *.
+  - simpl in h. simpl.
+    eexists _, _. intuition eauto.
+  - simpl in h. simpl.
+    destruct h as [s [h ?]]. subst.
+    eapply ih in h. destruct h as [? [? [? e]]].
+    eexists _, _. split. 1: eauto.
+    rewrite -e. reflexivity.
+  - simpl in h. simpl.
+    destruct h as [s [h ?]]. subst.
+    eapply ih in h. destruct h as [? [? [? e]]].
+    eexists _, _. split. 1: eauto.
+    rewrite -e. reflexivity.
+Qed.
+
+Definition preserve_update_pre l pre :=
+  ∀ s₀ s₁, pre (s₀, s₁) → pre (update_heaps l s₀ s₁).
+
+Lemma preserve_update_pre_nil :
+  ∀ (pre : precond),
+    preserve_update_pre [::] pre.
+Proof.
+  intro pre.
+  intros s₀ s₁ h. auto.
+Qed.
+
+#[export] Hint Extern 9 (preserve_update_pre [::] _) =>
+eapply preserve_update_pre_nil
+: ssprove_invariant.
+
+Lemma preserve_update_conj :
+  ∀ (pre spre : precond) l,
+    preserve_update_pre l pre →
+    preserve_update_pre l spre →
+    preserve_update_pre l (pre ⋊ spre).
+Proof.
+  intros pre spre l h hs.
+  intros s₀ s₁ []. split.
+  all: auto.
+Qed.
+
+#[export] Hint Extern 10 (preserve_update_pre _ (_ ⋊ _)) =>
+  eapply preserve_update_conj
+  : ssprove_invariant.
+
+Lemma preserve_update_cons_sym_eq :
+  ∀ ℓ v l,
+    preserve_update_pre l (λ '(h₀, h₁), h₀ = h₁) →
+    preserve_update_pre (upd_r ℓ v :: upd_l ℓ v :: l) (λ '(h₀, h₁), h₀ = h₁).
+Proof.
+  intros ℓ v l h.
+  intros ? s e.
+  simpl. destruct (update_heaps l s s) eqn:e'.
+  eapply h in e as h'. subst.
+  rewrite e' in h'.
+  rewrite e'. subst. reflexivity.
+Qed.
+
+#[export] Hint Extern 10 (preserve_update_pre _ (λ '(h₀, h₁), h₀ = h₁)) =>
+  eapply preserve_update_cons_sym_eq
+  : ssprove_invariant.
+
+Lemma preserve_update_cons_sym_heap_ignore :
+  ∀ L ℓ v l,
+    preserve_update_pre l (heap_ignore L) →
+    preserve_update_pre (upd_r ℓ v :: upd_l ℓ v :: l) (heap_ignore L).
+Proof.
+  intros L ℓ v l h.
+  intros s₀ s₁ hh.
+  simpl. destruct (update_heaps l s₀ s₁) eqn:e.
+  intros ℓ₀ hℓ₀.
+  destruct (ℓ₀ != ℓ) eqn:e1.
+  - rewrite !get_set_heap_neq. 2,3: auto.
+    eapply h in hh. rewrite e in hh.
+    apply hh. auto.
+  - move: e1 => /eqP e1. subst.
+    rewrite !get_set_heap_eq. reflexivity.
+Qed.
+
+#[export] Hint Extern 10 (preserve_update_pre _ (heap_ignore _)) =>
+  eapply preserve_update_cons_sym_heap_ignore
+  : ssprove_invariant.
+
+Definition is_upd_l u :=
+  match u with
+  | upd_l _ _ => true
+  | _ => false
+  end.
+
+Definition is_upd_r u :=
+  match u with
+  | upd_r _ _ => true
+  | _ => false
+  end.
+
+Lemma update_heaps_filter_l :
+  ∀ l s₀ s₁,
+    (update_heaps (filter is_upd_l l) s₀ s₁).1 =
+    (update_heaps l s₀ s₁).1.
+Proof.
+  intros l s₀ s₁.
+  induction l as [| [] l ih] in s₀, s₁ |- *.
+  - reflexivity.
+  - simpl. destruct update_heaps eqn:e1.
+    destruct (update_heaps l s₀ s₁) eqn:e2.
+    simpl. specialize (ih s₀ s₁).
+    rewrite e2 e1 in ih. simpl in ih. subst. reflexivity.
+  - simpl. destruct update_heaps eqn:e1.
+    destruct (update_heaps l s₀ s₁) eqn:e2.
+    simpl. specialize (ih s₀ s₁).
+    rewrite e2 e1 in ih. simpl in ih. auto.
+Qed.
+
+Lemma update_heaps_filter_r :
+  ∀ l s₀ s₁,
+    (update_heaps (filter is_upd_r l) s₀ s₁).2 =
+    (update_heaps l s₀ s₁).2.
+Proof.
+  intros l s₀ s₁.
+  induction l as [| [] l ih] in s₀, s₁ |- *.
+  - reflexivity.
+  - simpl. destruct update_heaps eqn:e1.
+    destruct (update_heaps l s₀ s₁) eqn:e2.
+    simpl. specialize (ih s₀ s₁).
+    rewrite e2 e1 in ih. simpl in ih. auto.
+  - simpl. destruct update_heaps eqn:e1.
+    destruct (update_heaps l s₀ s₁) eqn:e2.
+    simpl. specialize (ih s₀ s₁).
+    rewrite e2 e1 in ih. simpl in ih. subst. reflexivity.
+Qed.
+
+Lemma preserve_update_filter_couple_lhs :
+  ∀ ℓ v R l,
+    preserve_update_pre (filter is_upd_l l) (couple_lhs ℓ v R) →
+    preserve_update_pre l (couple_lhs ℓ v R).
+Proof.
+  intros ℓ v R l h.
+  intros s₀ s₁ hh.
+  eapply h in hh.
+  destruct update_heaps eqn:e1.
+  destruct (update_heaps l s₀ s₁) eqn:e2.
+  apply (f_equal (λ x, x.1)) in e1.
+  rewrite update_heaps_filter_l in e1. rewrite e2 in e1.
+  simpl in e1. subst. auto.
+Qed.
+
+#[export] Hint Extern 10 (preserve_update_pre _ (couple_lhs _ _ _)) =>
+  progress (eapply preserve_update_filter_couple_lhs ; simpl)
+: ssprove_invariant.
+
+Lemma preserve_update_filter_couple_rhs :
+  ∀ ℓ v R l,
+    preserve_update_pre (filter is_upd_r l) (couple_rhs ℓ v R) →
+    preserve_update_pre l (couple_rhs ℓ v R).
+Proof.
+  intros ℓ v R l h.
+  intros s₀ s₁ hh.
+  eapply h in hh.
+  destruct update_heaps eqn:e1.
+  destruct (update_heaps l s₀ s₁) eqn:e2.
+  apply (f_equal (λ x, x.2)) in e1.
+  rewrite update_heaps_filter_r in e1. rewrite e2 in e1.
+  simpl in e1. subst. auto.
+Qed.
+
+#[export] Hint Extern 10 (preserve_update_pre _ (couple_rhs _ _ _)) =>
+  progress (eapply preserve_update_filter_couple_rhs ; simpl)
+: ssprove_invariant.
+
+Lemma restore_update_pre :
+  ∀ l pre s₀ s₁,
+    update_pre l pre (s₀, s₁) →
+    preserve_update_pre l pre →
+    pre (s₀, s₁).
+Proof.
+  intros l pre s₀ s₁ hu hp.
+  eapply update_pre_spec in hu. destruct hu as [s₀' [s₁' [hpre e]]].
+  rewrite e. eapply hp. auto.
+Qed.

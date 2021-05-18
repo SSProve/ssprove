@@ -1615,6 +1615,21 @@ Proof.
   - intros _ _. auto.
 Qed.
 
+Lemma r_put_vs_put :
+  ∀ {A B : choiceType} ℓ v ℓ' v' r₀ r₁ (pre : precond) (post : postcond A B),
+    ⊢ ⦃ λ '(s₀, s₁), (set_rhs ℓ' v' (set_lhs ℓ v pre)) (s₀, s₁) ⦄
+      r₀ ≈ r₁
+    ⦃ post ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      put ℓ := v ;; r₀ ≈ put ℓ' := v' ;; r₁
+    ⦃ post ⦄.
+Proof.
+  intros A B ℓ v ℓ' v' r₀ r₁ pre post h.
+  eapply r_put_lhs. eapply r_put_rhs.
+  auto.
+Qed.
+
+(* TODO Probably not very useful *)
 Lemma r_restore_lhs :
   ∀ {A B : choiceType} ℓ v r₀ r₁ (pre : precond) (post : postcond A B),
     (∀ s₀ s₁, pre (s₀, s₁) → pre (set_heap s₀ ℓ v, s₁)) →
@@ -1628,6 +1643,7 @@ Proof.
   - simpl. intuition subst. apply hpre. auto.
 Qed.
 
+(* TODO Probably not very useful *)
 Lemma r_restore_rhs :
   ∀ {A B : choiceType} ℓ v r₀ r₁ (pre : precond) (post : postcond A B),
     (∀ s₀ s₁, pre (s₀, s₁) → pre (s₀, set_heap s₁ ℓ v)) →
@@ -1639,6 +1655,20 @@ Proof.
   eapply rpre_weaken_rule.
   - eapply h.
   - simpl. intuition subst. apply hpre. auto.
+Qed.
+
+Lemma r_restore_pre :
+  ∀ {A B : choiceType} l r₀ r₁ (pre : precond) (post : postcond A B),
+    preserve_update_pre l pre →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), (update_pre l pre) (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄.
+Proof.
+  intros A B l r₀ r₁ pre post hpre h.
+  eapply rpre_hypothesis_rule. intros s₀ s₁ e.
+  eapply rpre_weaken_rule.
+  - eapply h.
+  - simpl. intuition subst.
+    eapply restore_update_pre. all: eauto.
 Qed.
 
 (* TODO REMOVE *)
