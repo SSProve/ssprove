@@ -825,6 +825,193 @@ Section KEMDEM.
     - simpl. auto.
   Qed.
 
+  (* TODO MOVE *)
+  Inductive heap_upd :=
+  | upd_l (ℓ : Location) (v : ℓ)
+  | upd_r (ℓ : Location) (v : ℓ).
+
+  Fixpoint update_pre (l : list heap_upd) (pre : precond) :=
+    match l with
+    | upd_l ℓ v :: l => set_lhs ℓ v (update_pre l pre)
+    | upd_r ℓ v :: l => set_rhs ℓ v (update_pre l pre)
+    | [::] => pre
+    end.
+
+  Fixpoint update_heaps (l : list heap_upd) s₀ s₁ :=
+    match l with
+    | upd_l ℓ v :: l =>
+      let '(s₀, s₁) := update_heaps l s₀ s₁ in
+      (pkg_heap.set_heap s₀ ℓ v, s₁)
+    | upd_r ℓ v :: l =>
+      let '(s₀, s₁) := update_heaps l s₀ s₁ in
+      (s₀, pkg_heap.set_heap s₁ ℓ v)
+    | [::] => (s₀, s₁)
+    end.
+
+  Lemma update_pre_spec :
+    ∀ l pre s₀ s₁,
+      update_pre l pre (s₀, s₁) →
+      ∃ s₀' s₁', pre (s₀', s₁') ∧ (s₀, s₁) = update_heaps l s₀' s₁'.
+  Proof.
+    intros l pre s₀ s₁ h.
+    induction l as [| [] l ih] in pre, s₀, s₁, h |- *.
+    - simpl in h. simpl.
+      eexists _, _. intuition eauto.
+    - simpl in h. simpl.
+      destruct h as [s [h ?]]. subst.
+      eapply ih in h. destruct h as [? [? [? e]]].
+      eexists _, _. split. 1: eauto.
+      rewrite -e. reflexivity.
+    - simpl in h. simpl.
+      destruct h as [s [h ?]]. subst.
+      eapply ih in h. destruct h as [? [? [? e]]].
+      eexists _, _. split. 1: eauto.
+      rewrite -e. reflexivity.
+  Qed.
+
+  Definition preserve_update_pre l pre :=
+    ∀ s₀ s₁, pre (s₀, s₁) → pre (update_heaps l s₀ s₁).
+
+  Lemma preserve_update_pre_nil :
+    ∀ (pre : precond),
+      preserve_update_pre [::] pre.
+  Proof.
+    intro pre.
+    intros s₀ s₁ h. auto.
+  Qed.
+
+  (* #[export] *) Hint Extern 9 (preserve_update_pre [::] _) =>
+  eapply preserve_update_pre_nil
+  : ssprove_invariant.
+
+  Lemma preserve_update_conj :
+    ∀ (pre spre : precond) l,
+      preserve_update_pre l pre →
+      preserve_update_pre l spre →
+      preserve_update_pre l (pre ⋊ spre).
+  Proof.
+    intros pre spre l h hs.
+    intros s₀ s₁ []. split.
+    all: auto.
+  Qed.
+
+  (* #[export] *) Hint Extern 10 (preserve_update_pre _ (_ ⋊ _)) =>
+    eapply preserve_update_conj
+    : ssprove_invariant.
+
+  Lemma preserve_update_cons_sym_eq :
+    ∀ ℓ v l,
+      preserve_update_pre l (λ '(h₀, h₁), h₀ = h₁) →
+      preserve_update_pre (upd_r ℓ v :: upd_l ℓ v :: l) (λ '(h₀, h₁), h₀ = h₁).
+  Proof.
+    intros ℓ v l h.
+    intros ? s e.
+    simpl. destruct (update_heaps l s s) eqn:e'.
+    eapply h in e as h'. subst.
+    rewrite e' in h'.
+    rewrite e'. subst. reflexivity.
+  Qed.
+
+  (* #[export] *) Hint Extern 10 (preserve_update_pre _ (λ '(h₀, h₁), h₀ = h₁)) =>
+    eapply preserve_update_cons_sym_eq
+    : ssprove_invariant.
+
+  Lemma preserve_update_cons_sym_heap_ignore :
+    ∀ L ℓ v l,
+      preserve_update_pre l (heap_ignore L) →
+      preserve_update_pre (upd_r ℓ v :: upd_l ℓ v :: l) (heap_ignore L).
+  Proof.
+    intros L ℓ v l h.
+    intros s₀ s₁ hh.
+    simpl. destruct (update_heaps l s₀ s₁) eqn:e.
+    intros ℓ₀ hℓ₀.
+    destruct (ℓ₀ != ℓ) eqn:e1.
+    - rewrite !pkg_heap.get_set_heap_neq. 2,3: auto.
+      eapply h in hh. rewrite e in hh.
+      apply hh. auto.
+    - move: e1 => /eqP e1. subst.
+      rewrite !pkg_heap.get_set_heap_eq. reflexivity.
+  Qed.
+
+  (* #[export] *) Hint Extern 10 (preserve_update_pre _ (heap_ignore _)) =>
+    eapply preserve_update_cons_sym_heap_ignore
+    : ssprove_invariant.
+
+  (* TODO Replace these two with filters, or rather use these two to get filters
+    Then we can also have rules for couple_l/rhs where it takes the two
+    first updates? Or maybe lookup in list of updates
+  *)
+
+  Lemma preserve_update_lhs_couple_rhs :
+    ∀ ℓ v R ℓ' v' l,
+      preserve_update_pre l (couple_rhs ℓ v R) →
+      preserve_update_pre (upd_l ℓ' v' :: l) (couple_rhs ℓ v R).
+  Proof.
+    intros ℓ v R ℓ' v' l h.
+    intros s₀ s₁ hh. simpl.
+    destruct (update_heaps l s₀ s₁) eqn:e.
+    eapply h in hh as h'. rewrite e in h'. auto.
+  Qed.
+
+  (* #[export] *) Hint Extern 10 (preserve_update_pre _ (couple_rhs _ _ _)) =>
+  eapply preserve_update_lhs_couple_rhs
+  : ssprove_invariant.
+
+  Lemma preserve_update_rhs_couple_lhs :
+    ∀ ℓ v R ℓ' v' l,
+      preserve_update_pre l (couple_lhs ℓ v R) →
+      preserve_update_pre (upd_r ℓ' v' :: l) (couple_lhs ℓ v R).
+  Proof.
+    intros ℓ v R ℓ' v' l h.
+    intros s₀ s₁ hh. simpl.
+    destruct (update_heaps l s₀ s₁) eqn:e.
+    eapply h in hh as h'. rewrite e in h'. auto.
+  Qed.
+
+  (* #[export] *) Hint Extern 10 (preserve_update_pre _ (couple_lhs _ _ _)) =>
+  eapply preserve_update_rhs_couple_lhs
+  : ssprove_invariant.
+
+  Lemma restore_update_pre :
+    ∀ l pre s₀ s₁,
+      update_pre l pre (s₀, s₁) →
+      preserve_update_pre l pre →
+      pre (s₀, s₁).
+  Proof.
+    intros l pre s₀ s₁ hu hp.
+    eapply update_pre_spec in hu. destruct hu as [s₀' [s₁' [hpre e]]].
+    rewrite e. eapply hp. auto.
+  Qed.
+
+  Lemma r_restore_pre :
+    ∀ {A B : choiceType} l r₀ r₁ (pre : precond) (post : postcond A B),
+      preserve_update_pre l pre →
+      ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄ →
+      ⊢ ⦃ λ '(s₀, s₁), (update_pre l pre) (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄.
+  Proof.
+    intros A B l r₀ r₁ pre post hpre h.
+    eapply rpre_hypothesis_rule. intros s₀ s₁ e.
+    eapply rpre_weaken_rule.
+    - eapply h.
+    - simpl. intuition subst.
+      eapply restore_update_pre. all: eauto.
+  Qed.
+
+  (* TODO MOVE *)
+  Lemma r_put_vs_put :
+    ∀ {A B : choiceType} ℓ v ℓ' v' r₀ r₁ (pre : precond) (post : postcond A B),
+      ⊢ ⦃ λ '(s₀, s₁), (set_rhs ℓ' v' (set_lhs ℓ v pre)) (s₀, s₁) ⦄
+        r₀ ≈ r₁
+      ⦃ post ⦄ →
+      ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+        put ℓ := v ;; r₀ ≈ put ℓ' := v' ;; r₁
+      ⦃ post ⦄.
+  Proof.
+    intros A B ℓ v ℓ' v' r₀ r₁ pre post h.
+    eapply r_put_lhs. eapply r_put_rhs.
+    auto.
+  Qed.
+
   Lemma PKE_CCA_perf_false :
     (PKE_CCA KEM_DEM false) ≈₀ Aux false.
   Proof.
@@ -836,22 +1023,40 @@ Section KEMDEM.
     (* We are now in the realm of program logic *)
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
+      (* TODO Why isn't inv shown anymore?
+        Probably because of hidden casts. Maybe give a name to the rel.
+      *)
       ssprove_same_head_alt_r. intro pk.
       ssprove_same_head_alt_r. intro pkNone.
       ssprove_same_head_alt_r. intro sk.
       ssprove_same_head_alt_r. intro skNone.
       eapply r_scheme_bind_spec. 1: eapply KEM_kgen_spec. intros [pk' sk'] pps.
-      (* TODO Have any post! *)
-      (* eapply r_put_lhs. eapply r_put_lhs.
-      eapply r_put_rhs. eapply r_put_rhs. *)
-      eapply r_put_put.
+
+      eapply r_put_vs_put.
+      eapply r_put_vs_put.
+      (* Now we pay the debt, let's automate
+        First let's find a way to only pay once, the whole amount...
+      *)
+      repeat change (set_lhs ?ℓ ?v ?pre) with (update_pre [:: upd_l ℓ v ] pre).
+      repeat change (set_rhs ?ℓ ?v ?pre) with (update_pre [:: upd_r ℓ v ] pre).
+      repeat change (update_pre ?l1 (update_pre ?l2 ?pre))
+      with (update_pre (l1 ++ l2) pre).
+      eapply r_restore_pre.
+      1:{
+        cbn - [update_heaps].
+        ssprove_invariant.
+        - intros s₀ s₁ hpre. simpl. admit.
+        - admit.
+      }
+
+      (* eapply r_put_put.
       1:{
         ssprove_invariant.
         - apply preserve_set_set_couple_rhs_neq. all: neq_loc_auto.
         - apply preserve_set_set_couple_lhs_eq.
           + neq_loc_auto.
           + simpl. auto.
-      }
+      } *)
       apply r_ret. auto.
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
