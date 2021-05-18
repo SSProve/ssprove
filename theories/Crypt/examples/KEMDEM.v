@@ -779,49 +779,36 @@ Section KEMDEM.
   Definition PkeyPair :=
     λ (pk : 'pkey) (sk : 'skey), pkey_pair (pk, sk).
 
+  Definition PKE_inv (pk : 'option 'pkey) (k : 'option 'key) (ek : 'option 'ekey) :=
+    match pk, k, ek with
+    | Some pk, Some k, Some ek => encap_spec pk (k, ek)
+    | Some pk, None, None => True
+    | None, None, None => True
+    | _, _, _ => False
+    end.
+
   Notation inv := (
     heap_ignore KEY_loc ⋊
-    (* couple_rhs
-      k_loc ek_loc *)
-      (* TODO How to deal with pk here? Probably have to "couple" three locs
-        Might be nice to have something a bit generic then...
-        Like some abstract rule for many puts on both sides.
-        Or even better put_l put_r and put_both with some notion of deficit
-        of invariant like [put_l ℓ v] - pre.
-        And you stack debts like this, and then you can pay it all at once.
-        Would be nice. A sort of dual to what we have for get.
-        Can be ∃ (s₀', s₁'), inv (s₀', s₁') ∧ (s₀, s₁) = (update s₀', update s₁')
-        might work!
-        Could be called deviation.
-        In anycase we would need a tactic to pay.
-        Then we can remove r_put_put and r_put_putR
-
-        TODO First keep the current sameSome and change the way we deal with
-        put before having a better invariant.
-
-        An intermediary solution could be to couple k_loc and ek_loc
-        instead of c_loc
-      *)
-      (* (sameSomeRel (λ (k : 'key) (ek : 'ekey), encap_spec pk (k, ek))) ⋊ *)
-    couple_rhs c_loc k_loc sameSome ⋊
+    triple_rhs pk_loc k_loc ek_loc PKE_inv ⋊
     couple_lhs pk_loc sk_loc (sameSomeRel PkeyPair)
   ).
 
   Instance Invariant_inv : Invariant PKE_CCA_loc Aux_loc inv.
   Proof.
     ssprove_invariant.
-    - simpl.
-      eapply fsubset_trans. 2: eapply fsubsetUr.
+    - eapply fsubset_trans. 2: eapply fsubsetUr.
       unfold Aux_loc. eapply fsubsetUr.
-    - simpl. rewrite in_fsetU. apply /orP. left.
-      unfold PKE_CCA_loc. auto_in_fset.
-    - simpl. rewrite in_fsetU. apply /orP. right.
+    - rewrite in_fsetU. apply /orP. left.
+      auto_in_fset.
+    - rewrite in_fsetU. apply /orP. right.
       unfold Aux_loc. rewrite in_fsetU. apply /orP. right.
       auto_in_fset.
-    - reflexivity.
-    - simpl. rewrite in_fsetU. apply /orP. left.
+    - rewrite in_fsetU. apply /orP. left.
       auto_in_fset.
-    - simpl. rewrite in_fsetU. apply /orP. left.
+    - simpl. auto.
+    - rewrite in_fsetU. apply /orP. left.
+      auto_in_fset.
+    - rewrite in_fsetU. apply /orP. left.
       auto_in_fset.
     - simpl. auto.
   Qed.
@@ -837,27 +824,46 @@ Section KEMDEM.
     (* We are now in the realm of program logic *)
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
-      ssprove_same_head_alt_r. intro pk.
+      eapply r_get_vs_get_remember. 1: ssprove_invariant. intro pk.
       ssprove_same_head_alt_r. intro pkNone.
+      (* TODO To do that, I would need some r_shadow_get_rhs
+        the idea is to query the memory and conclude on it even when the
+        programs don't look at it themselves.
+      *)
+      (* eapply r_rem_triple_rhs. *)
+      ssprove_forget_all.
       ssprove_same_head_alt_r. intro sk.
       ssprove_same_head_alt_r. intro skNone.
       eapply r_scheme_bind_spec. 1: eapply KEM_kgen_spec. intros [pk' sk'] pps.
       eapply r_put_vs_put.
       eapply r_put_vs_put.
       ssprove_restore_pre.
-      1:{ ssprove_invariant. auto. }
+      1:{
+        ssprove_invariant.
+        - intros s₀ s₁ hh. unfold triple_rhs in *.
+          simpl.
+          rewrite get_set_heap_neq. 2: neq_loc_auto.
+          rewrite get_set_heap_eq.
+          rewrite !get_set_heap_neq. 2-5: neq_loc_auto.
+          (* Here we forgot that pk was None.
+            This means, we might need the shadow/ghost get above.
+            Or maybe does this mean I need a different invariant?
+          *)
+          admit.
+        - auto.
+      }
       apply r_ret. auto.
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
       ssprove_swap_seq_rhs [:: 5 ; 4 ; 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
-      ssprove_same_head_alt_r. intro pk.
+      eapply r_get_vs_get_remember. 1: ssprove_invariant. intro pk.
       ssprove_same_head_alt_r. intro pkSome.
       destruct pk as [pk|]. 2: discriminate.
       simpl.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
-      ssprove_same_head_alt_r. intro ek.
+      eapply r_get_vs_get_remember. 1: ssprove_invariant. intro ek.
       ssprove_same_head_alt_r. intro ekNone.
       rewrite ekNone. simpl.
       eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intro c.
@@ -869,11 +875,13 @@ Section KEMDEM.
       ssprove_contract_put_rhs.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ; 0 ]%N.
       eapply r_get_remind_rhs. 1: exact _.
+      rewrite cNone. simpl.
       ssprove_swap_seq_rhs [:: 0 ]%N.
       eapply r_get_remember_rhs. intros k.
-      eapply (r_rem_couple_rhs c_loc k_loc). 1-3: exact _. intro eck.
-      eapply sameSome_None_l in cNone as kNone. 2: eauto.
-      rewrite cNone. rewrite kNone. simpl.
+      eapply (r_rem_triple_rhs pk_loc k_loc ek_loc). 1-4: exact _. intro hpke.
+      destruct ek. 1: discriminate.
+      destruct k. 1: contradiction.
+      simpl.
       ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
       ssprove_contract_put_get_rhs. simpl.
       ssprove_forget_all.
@@ -892,16 +900,32 @@ Section KEMDEM.
       2:{ simpl. intuition subst. auto. }
       clear s₀ s₁ hpre.
       (* * *)
-      ssprove_swap_seq_rhs [:: 0 ]%N.
-      ssprove_same_head_alt_r. intros _.
-      ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
+      ssprove_swap_seq_lhs [:: 0 ]%N.
+      ssprove_swap_seq_rhs [:: 1 ; 0 ; 2 ; 1 ]%N.
       ssprove_contract_put_rhs.
-      apply r_put_vs_put.
+      ssprove_same_head_alt_r. intros _.
       apply r_put_rhs.
+      apply r_put_vs_put.
       ssprove_restore_pre.
-      1:{ ssprove_invariant. auto. }
+      1:{
+        ssprove_invariant.
+        intros s₀ s₁ hh. unfold triple_rhs in *.
+        simpl.
+        rewrite -> 2!get_set_heap_neq. 2,3: neq_loc_auto.
+        rewrite  get_set_heap_neq. 2: neq_loc_auto.
+        rewrite get_set_heap_eq.
+        rewrite get_set_heap_eq.
+        (* Similar as above,
+          in fact knowing hpke doesn't help at all...
+          Does it mean we need to be able to shadow put instead of shadow get?
+          Maybe we can improve automation to work even with rem_rhs and so on?
+          This would mean we should still forget the memory that is overwritten.
+          Annoying but maybe the only solution?
+        *)
+        admit.
+      }
       apply r_ret. auto.
-    - destruct m as [ek' c']. simpl.
+    - (* destruct m as [ek' c']. simpl.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
       ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
       eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intros ek.
@@ -973,13 +997,13 @@ Section KEMDEM.
         eapply @r_reflexivity_alt with (L := fset [::]).
         * ssprove_valid.
         * intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-        * intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
+        * intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto. *)
   Admitted.
 
   Lemma PKE_CCA_perf_true :
     (Aux true) ≈₀ (PKE_CCA KEM_DEM true).
   Proof.
-    apply adv_equiv_sym.
+    (* apply adv_equiv_sym.
     unfold Aux.
     (* We go to the relation logic ignoring KEY_loc. *)
     eapply eq_rel_perf_ind with (inv := inv). 1: exact _.
@@ -1130,7 +1154,7 @@ Section KEMDEM.
         eapply @r_reflexivity_alt with (L := fset [::]).
         * ssprove_valid.
         * intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-        * intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
+        * intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto. *)
   Admitted.
 
   (** Security theorem *)
