@@ -993,14 +993,10 @@ Section KEMDEM.
       ssprove_same_head_alt_r. intro sk.
       ssprove_same_head_alt_r. intro skNone.
       eapply r_scheme_bind_spec. 1: eapply KEM_kgen_spec. intros [pk' sk'] pps.
-      eapply r_put_put.
-      1:{
-        ssprove_invariant.
-        - apply preserve_set_set_couple_rhs_neq. all: neq_loc_auto.
-        - apply preserve_set_set_couple_lhs_eq.
-          + neq_loc_auto.
-          + simpl. auto.
-      }
+      eapply r_put_vs_put.
+      eapply r_put_vs_put.
+      ssprove_restore_pre.
+      1:{ ssprove_invariant. auto. }
       apply r_ret. auto.
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
@@ -1051,14 +1047,10 @@ Section KEMDEM.
       ssprove_same_head_alt_r. intros _.
       ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
       ssprove_contract_put_rhs.
-      eapply r_put_putR.
-      1:{
-        ssprove_invariant.
-        - eapply preserve_set_setR_couple_rhs_eq.
-          + neq_loc_auto.
-          + reflexivity.
-        - eapply preserve_set_setR_couple_lhs_neq. all: neq_loc_auto.
-      }
+      eapply r_put_vs_put.
+      eapply r_put_rhs.
+      ssprove_restore_pre.
+      1:{ ssprove_invariant. auto. }
       apply r_ret. auto.
     - destruct m as [ek' c']. simpl.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
