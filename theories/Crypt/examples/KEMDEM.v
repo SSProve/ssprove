@@ -833,7 +833,6 @@ Section KEMDEM.
       eapply r_put_vs_put.
       ssprove_restore_mem.
       1:{
-        simpl.
         ssprove_invariant.
         1,3: eapply preserve_update_pre_mem ; ssprove_invariant.
         - auto.
@@ -883,48 +882,41 @@ Section KEMDEM.
       simpl.
       ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
       ssprove_contract_put_get_rhs. simpl.
-      ssprove_forget_all.
+      (* ssprove_forget_all. *)
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
-      (* bind again *)
-      eapply r_bind.
-      { eapply @r_reflexivity_alt with (L := fset [::]).
-        - ssprove_valid.
-        - intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-        - intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-      }
-      intros ? c'.
-      eapply rpre_hypothesis_rule. intros s₀ s₁ [e hpre]. noconf e.
-      eapply rpre_weaken_rule
-      with (pre := λ '(s₀, s₁), inv (s₀, s₁)).
-      2:{ simpl. intuition subst. auto. }
-      clear s₀ s₁ hpre.
-      (* * *)
+      eapply @rsame_head_alt with (L := fset [::]).
+      1: ssprove_valid.
+      1:{ intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto. }
+      1:{ intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto. }
+      intro c'.
       ssprove_swap_seq_lhs [:: 0 ]%N.
       ssprove_swap_seq_rhs [:: 1 ; 0 ; 2 ; 1 ]%N.
       ssprove_contract_put_rhs.
-      ssprove_same_head_alt_r. intros _.
+      (* TODO Maybe we can make something like this, but otherwise we can
+        simply remember
+      *)
+      (* ssprove_same_head_alt_r. intros _. *)
+      eapply r_put_vs_put.
       apply r_put_rhs.
       apply r_put_vs_put.
-      ssprove_restore_pre.
+      ssprove_restore_mem.
       1:{
         ssprove_invariant.
-        intros s₀ s₁ hh. unfold triple_rhs in *.
-        simpl.
+        1,3: eapply preserve_update_pre_mem ; ssprove_invariant.
+        intros s₀ s₁ hh. unfold triple_rhs in *. simpl in *.
+        destruct hh as [[[[[[hi ?] epk] ?] ?] ?] ?]. simpl in *.
         rewrite -> 2!get_set_heap_neq. 2,3: neq_loc_auto.
         rewrite  get_set_heap_neq. 2: neq_loc_auto.
         rewrite get_set_heap_eq.
+        rewrite get_set_heap_neq. 2: neq_loc_auto.
         rewrite get_set_heap_eq.
-        (* Similar as above,
-          in fact knowing hpke doesn't help at all...
-          Does it mean we need to be able to shadow put instead of shadow get?
-          Maybe we can improve automation to work even with rem_rhs and so on?
-          This would mean we should still forget the memory that is overwritten.
-          Annoying but maybe the only solution?
-        *)
-        admit.
+        rewrite epk. simpl. auto.
       }
       apply r_ret. auto.
-    - (* destruct m as [ek' c']. simpl.
+    - (* The rest should hopefully be easier, and work with ssprove_restore_pre
+        which would be cool.
+      *)
+      (* destruct m as [ek' c']. simpl.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
       ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
       eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intros ek.
