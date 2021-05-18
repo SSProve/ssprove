@@ -781,7 +781,7 @@ Proof.
     rewrite -e. reflexivity.
 Qed.
 
-Definition preserve_update_pre l pre :=
+Definition preserve_update_pre l (pre : precond) :=
   ∀ s₀ s₁, pre (s₀, s₁) → pre (update_heaps l s₀ s₁).
 
 Lemma preserve_update_pre_nil :
@@ -1275,4 +1275,117 @@ Proof.
   erewrite lookup_upd_r_None_spec with (ℓ := ℓ₂). 2,3: eauto.
   erewrite lookup_upd_r_None_spec with (ℓ := ℓ₃). 2,3: eauto.
   auto.
+Qed.
+
+(** Culmination of both approaches, we deal with the case where the precondition
+    contains some rem_lhs/rem_rhs which we assume of the intial memory but which
+    we do not require of the final one.
+
+    TODO: Can we leverage what is already proven by using a (costly) instance
+    that will use [preserve_update_pre] instead of [preserve_update_mem]?
+
+    TODO: We can imagine something stronger even which would still retain memory
+    of what has not been overwritten. It could also remember what has been set
+    for that matter. All this would require some better way to treat this
+    memory, for instance by having the ability to swap these assumptions.
+
+    TODO: To avoid duplication, we could also replace the above by this one.
+*)
+
+(* TODO Maybe rename heap_upd *)
+Fixpoint remember_pre (l : list heap_upd) (pre : precond) :=
+  match l with
+  | upd_l ℓ v :: l => remember_pre l pre ⋊ rem_lhs ℓ v
+  | upd_r ℓ v :: l => remember_pre l pre ⋊ rem_rhs ℓ v
+  | [::] => pre
+  end.
+
+Lemma remember_pre_pre :
+  ∀ m pre s₀ s₁,
+    remember_pre m pre (s₀, s₁) →
+    pre (s₀, s₁).
+Proof.
+  intros m pre s₀ s₁ h.
+  induction m as [| [] m ih] in pre, s₀, s₁, h |- *.
+  - auto.
+  - simpl in h. destruct h as [h _].
+    eapply ih. auto.
+  - simpl in h. destruct h as [h _].
+    eapply ih. auto.
+Qed.
+
+Lemma remember_pre_conj :
+  ∀ m pre spre s₀ s₁,
+    remember_pre m (pre ⋊ spre) (s₀, s₁) →
+    remember_pre m pre (s₀, s₁) ∧
+    remember_pre m spre (s₀, s₁).
+Proof.
+  intros m pre spre s₀ s₁ h.
+  induction m as [| [] m ih] in pre, spre, s₀, s₁, h |- *.
+  - simpl. auto.
+  - simpl in h. simpl. destruct h as [h hm].
+    eapply ih in h. destruct h.
+    split. all: split. all: auto.
+  - simpl in h. simpl. destruct h as [h hm].
+    eapply ih in h. destruct h.
+    split. all: split. all: auto.
+Qed.
+
+Definition preserve_update_mem l m (pre : precond) :=
+  ∀ s₀ s₁, (remember_pre m pre) (s₀, s₁) → pre (update_heaps l s₀ s₁).
+
+Lemma preserve_update_pre_mem :
+  ∀ l m pre,
+    preserve_update_pre l pre →
+    preserve_update_mem l m pre.
+Proof.
+  intros l m pre h.
+  intros s₀ s₁ hi.
+  eapply remember_pre_pre in hi. apply h. auto.
+Qed.
+
+(* Maybe not, unless we can force it to suceed *)
+(* #[export] Hint Extern 40 (preserve_update_pre_mem _ _ _) =>
+  eapply preserve_update_pre_mem
+  : ssprove_invariant. *)
+
+Lemma preserve_update_mem_nil :
+  ∀ m pre,
+    preserve_update_mem [::] m pre.
+Proof.
+  intros m pre.
+  intros s₀ s₁ h.
+  apply remember_pre_pre in h. auto.
+Qed.
+
+#[export] Hint Extern 9 (preserve_update_mem [::] _ _) =>
+  eapply preserve_update_mem_nil
+  : ssprove_invariant.
+
+Lemma preserve_update_mem_conj :
+  ∀ (pre spre : precond) l m,
+    preserve_update_mem l m pre →
+    preserve_update_mem l m spre →
+    preserve_update_mem l m (pre ⋊ spre).
+Proof.
+  intros pre spre l m h hs.
+  intros s₀ s₁ hh. eapply remember_pre_conj in hh.
+  split. all: intuition auto.
+Qed.
+
+#[export] Hint Extern 10 (preserve_update_mem _ _ (_ ⋊ _)) =>
+  eapply preserve_update_mem_conj
+  : ssprove_invariant.
+
+(* TODO MORE *)
+
+Lemma restore_update_mem :
+  ∀ l m pre s₀ s₁,
+    update_pre l (remember_pre m pre) (s₀, s₁) →
+    preserve_update_mem l m pre →
+    pre (s₀, s₁).
+Proof.
+  intros l m pre s₀ s₁ hu hp.
+  eapply update_pre_spec in hu. destruct hu as [s₀' [s₁' [hpre e]]].
+  rewrite e. eapply hp. auto.
 Qed.

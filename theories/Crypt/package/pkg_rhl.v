@@ -1695,6 +1695,22 @@ Proof.
     eapply restore_update_pre. all: eauto.
 Qed.
 
+Lemma r_restore_mem :
+  ∀ {A B : choiceType} l m r₀ r₁ (pre : precond) (post : postcond A B),
+    preserve_update_mem l m pre →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), (update_pre l (remember_pre m pre)) (s₀, s₁) ⦄
+      r₀ ≈ r₁
+    ⦃ post ⦄.
+Proof.
+  intros A B l m r₀ r₁ pre post hpre h.
+  eapply rpre_hypothesis_rule. intros s₀ s₁ e.
+  eapply rpre_weaken_rule.
+  - eapply h.
+  - simpl. intuition subst.
+    eapply restore_update_mem. all: eauto.
+Qed.
+
 Lemma rswap_cmd :
   ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
     (c₀ : command A₀) (c₁ : command A₁)

@@ -831,26 +831,40 @@ Section KEMDEM.
         programs don't look at it themselves.
       *)
       (* eapply r_rem_triple_rhs. *)
-      ssprove_forget_all.
+      (* ssprove_forget_all. *)
       ssprove_same_head_alt_r. intro sk.
       ssprove_same_head_alt_r. intro skNone.
       eapply r_scheme_bind_spec. 1: eapply KEM_kgen_spec. intros [pk' sk'] pps.
       eapply r_put_vs_put.
       eapply r_put_vs_put.
-      ssprove_restore_pre.
+
+      update_pre_fold.
+      repeat change (?pre ⋊ rem_lhs ?ℓ ?v) with (remember_pre [:: upd_l ℓ v ] pre).
+      repeat change (?pre ⋊ rem_rhs ?ℓ ?v) with (remember_pre [:: upd_r ℓ v ] pre).
+      repeat change (remember_pre ?l1 (remember_pre ?l2 ?pre))
+      with (remember_pre (l1 ++ l2) pre).
+      eapply r_restore_mem.
+
+
+      (* ssprove_restore_pre. *)
       1:{
+        simpl.
         ssprove_invariant.
-        - intros s₀ s₁ hh. unfold triple_rhs in *.
-          simpl.
+        1,3: eapply preserve_update_pre_mem ; ssprove_invariant.
+        - auto.
+        - intros s₀ s₁ hh. unfold triple_rhs in *. simpl in *.
+          destruct hh as [[hi e1] e2]. simpl in *.
+          (* TODO Some get_heap_simpl? *)
           rewrite get_set_heap_neq. 2: neq_loc_auto.
           rewrite get_set_heap_eq.
           rewrite !get_set_heap_neq. 2-5: neq_loc_auto.
-          (* Here we forgot that pk was None.
-            This means, we might need the shadow/ghost get above.
-            Or maybe does this mean I need a different invariant?
-          *)
-          admit.
-        - auto.
+          move: pkNone => /eqP pkNone.
+          rewrite pkNone in e2. rewrite e2 in hi.
+          set (x := get_heap s₁ k_loc) in *.
+          set (y := get_heap s₁ ek_loc) in *.
+          clearbody x y.
+          destruct x, y. all: try contradiction.
+          simpl. auto.
       }
       apply r_ret. auto.
     - ssprove_code_simpl_more.

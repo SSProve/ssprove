@@ -715,11 +715,14 @@ Ltac ssprove_forget :=
 Ltac ssprove_forget_all :=
   repeat ssprove_forget.
 
-Ltac ssprove_restore_pre :=
+Ltac update_pre_fold :=
   repeat change (set_lhs ?ℓ ?v ?pre) with (update_pre [:: upd_l ℓ v ] pre) ;
   repeat change (set_rhs ?ℓ ?v ?pre) with (update_pre [:: upd_r ℓ v ] pre) ;
   repeat change (update_pre ?l1 (update_pre ?l2 ?pre))
-  with (update_pre (l1 ++ l2) pre) ;
+  with (update_pre (l1 ++ l2) pre).
+
+Ltac ssprove_restore_pre :=
+  update_pre_fold ;
   eapply r_restore_pre ; [
     cbn
   | idtac
