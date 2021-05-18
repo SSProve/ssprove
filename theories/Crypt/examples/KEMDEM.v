@@ -776,6 +776,9 @@ Section KEMDEM.
     modified in one of the packages.
   *)
 
+  Definition PkeyPair :=
+    λ (pk : 'pkey) (sk : 'skey), pkey_pair (pk, sk).
+
   Notation inv := (
     heap_ignore KEY_loc ⋊
     (* couple_rhs
@@ -801,9 +804,7 @@ Section KEMDEM.
       *)
       (* (sameSomeRel (λ (k : 'key) (ek : 'ekey), encap_spec pk (k, ek))) ⋊ *)
     couple_rhs c_loc k_loc sameSome ⋊
-    couple_lhs
-      pk_loc sk_loc
-      (sameSomeRel (λ (pk : 'pkey) (sk : 'skey), pkey_pair (pk, sk)))
+    couple_lhs pk_loc sk_loc (sameSomeRel PkeyPair)
   ).
 
   Instance Invariant_inv : Invariant PKE_CCA_loc Aux_loc inv.
@@ -1104,9 +1105,6 @@ Section KEMDEM.
     (* We are now in the realm of program logic *)
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
-      (* TODO Why isn't inv shown anymore?
-        Probably because of hidden casts. Maybe give a name to the rel.
-      *)
       ssprove_same_head_alt_r. intro pk.
       ssprove_same_head_alt_r. intro pkNone.
       ssprove_same_head_alt_r. intro sk.
