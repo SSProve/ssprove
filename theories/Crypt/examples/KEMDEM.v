@@ -937,12 +937,7 @@ Section KEMDEM.
     eapply preserve_update_cons_sym_heap_ignore
     : ssprove_invariant.
 
-  (* TODO Replace these two with filters, or rather use these two to get filters
-    Then we can also have rules for couple_l/rhs where it takes the two
-    first updates? Or maybe lookup in list of updates
-  *)
-
-  Lemma preserve_update_lhs_couple_rhs :
+  (* Lemma preserve_update_lhs_couple_rhs :
     ∀ ℓ v R ℓ' v' l,
       preserve_update_pre l (couple_rhs ℓ v R) →
       preserve_update_pre (upd_l ℓ' v' :: l) (couple_rhs ℓ v R).
@@ -955,9 +950,9 @@ Section KEMDEM.
 
   (* #[export] *) Hint Extern 10 (preserve_update_pre _ (couple_rhs _ _ _)) =>
   eapply preserve_update_lhs_couple_rhs
-  : ssprove_invariant.
+  : ssprove_invariant. *)
 
-  Lemma preserve_update_rhs_couple_lhs :
+  (* Lemma preserve_update_rhs_couple_lhs :
     ∀ ℓ v R ℓ' v' l,
       preserve_update_pre l (couple_lhs ℓ v R) →
       preserve_update_pre (upd_r ℓ' v' :: l) (couple_lhs ℓ v R).
@@ -970,6 +965,92 @@ Section KEMDEM.
 
   (* #[export] *) Hint Extern 10 (preserve_update_pre _ (couple_lhs _ _ _)) =>
   eapply preserve_update_rhs_couple_lhs
+  : ssprove_invariant. *)
+
+  Definition is_upd_l u :=
+    match u with
+    | upd_l _ _ => true
+    | _ => false
+    end.
+
+  Definition is_upd_r u :=
+    match u with
+    | upd_r _ _ => true
+    | _ => false
+    end.
+
+  Lemma update_heaps_filter_l :
+    ∀ l s₀ s₁,
+      (update_heaps (filter is_upd_l l) s₀ s₁).1 =
+      (update_heaps l s₀ s₁).1.
+  Proof.
+    intros l s₀ s₁.
+    induction l as [| [] l ih] in s₀, s₁ |- *.
+    - reflexivity.
+    - simpl. destruct update_heaps eqn:e1.
+      destruct (update_heaps l s₀ s₁) eqn:e2.
+      simpl. specialize (ih s₀ s₁).
+      rewrite e2 e1 in ih. simpl in ih. subst. reflexivity.
+    - simpl. destruct update_heaps eqn:e1.
+      destruct (update_heaps l s₀ s₁) eqn:e2.
+      simpl. specialize (ih s₀ s₁).
+      rewrite e2 e1 in ih. simpl in ih. auto.
+  Qed.
+
+  Lemma update_heaps_filter_r :
+    ∀ l s₀ s₁,
+      (update_heaps (filter is_upd_r l) s₀ s₁).2 =
+      (update_heaps l s₀ s₁).2.
+  Proof.
+    intros l s₀ s₁.
+    induction l as [| [] l ih] in s₀, s₁ |- *.
+    - reflexivity.
+    - simpl. destruct update_heaps eqn:e1.
+      destruct (update_heaps l s₀ s₁) eqn:e2.
+      simpl. specialize (ih s₀ s₁).
+      rewrite e2 e1 in ih. simpl in ih. auto.
+    - simpl. destruct update_heaps eqn:e1.
+      destruct (update_heaps l s₀ s₁) eqn:e2.
+      simpl. specialize (ih s₀ s₁).
+      rewrite e2 e1 in ih. simpl in ih. subst. reflexivity.
+  Qed.
+
+  Lemma preserve_update_filter_couple_lhs :
+    ∀ ℓ v R l,
+      preserve_update_pre (filter is_upd_l l) (couple_lhs ℓ v R) →
+      preserve_update_pre l (couple_lhs ℓ v R).
+  Proof.
+    intros ℓ v R l h.
+    intros s₀ s₁ hh.
+    eapply h in hh.
+    destruct update_heaps eqn:e1.
+    destruct (update_heaps l s₀ s₁) eqn:e2.
+    apply (f_equal (λ x, x.1)) in e1.
+    rewrite update_heaps_filter_l in e1. rewrite e2 in e1.
+    simpl in e1. subst. auto.
+  Qed.
+
+  (* #[export] *) Hint Extern 10 (preserve_update_pre _ (couple_lhs _ _ _)) =>
+    progress (eapply preserve_update_filter_couple_lhs ; simpl)
+  : ssprove_invariant.
+
+  Lemma preserve_update_filter_couple_rhs :
+    ∀ ℓ v R l,
+      preserve_update_pre (filter is_upd_r l) (couple_rhs ℓ v R) →
+      preserve_update_pre l (couple_rhs ℓ v R).
+  Proof.
+    intros ℓ v R l h.
+    intros s₀ s₁ hh.
+    eapply h in hh.
+    destruct update_heaps eqn:e1.
+    destruct (update_heaps l s₀ s₁) eqn:e2.
+    apply (f_equal (λ x, x.2)) in e1.
+    rewrite update_heaps_filter_r in e1. rewrite e2 in e1.
+    simpl in e1. subst. auto.
+  Qed.
+
+  (* #[export] *) Hint Extern 10 (preserve_update_pre _ (couple_rhs _ _ _)) =>
+    progress (eapply preserve_update_filter_couple_rhs ; simpl)
   : ssprove_invariant.
 
   Lemma restore_update_pre :
@@ -1045,7 +1126,11 @@ Section KEMDEM.
       1:{
         cbn - [update_heaps].
         ssprove_invariant.
-        - intros s₀ s₁ hpre. simpl. admit.
+        - (* TODO Something with lookup_upd_r or the like
+          TODO Also, onlhs and onrhs semi-invariants rahter than the specific
+          couple stuff.
+          *)
+          intros s₀ s₁ hpre. simpl. admit.
         - admit.
       }
 
