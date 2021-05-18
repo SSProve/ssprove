@@ -258,6 +258,37 @@ Arguments couple_rhs : simpl never.
   eapply SemiInvariant_couple_rhs
   : (* typeclass_instances *) ssprove_invariant.
 
+(* TODO triple_lhs, or even better, something more generic *)
+Definition triple_rhs ℓ₁ ℓ₂ ℓ₃ (R : _ → _ → _ → Prop) : precond :=
+  λ '(s₀, s₁), R (get_heap s₁ ℓ₁) (get_heap s₁ ℓ₂) (get_heap s₁ ℓ₃).
+
+Lemma SemiInvariant_triple_rhs :
+  ∀ L₀ L₁ ℓ₁ ℓ₂ ℓ₃ (R : _ → _ → _ → Prop),
+    ℓ₁ \in L₀ :|: L₁ →
+    ℓ₂ \in L₀ :|: L₁ →
+    ℓ₃ \in L₀ :|: L₁ →
+    R (get_heap empty_heap ℓ₁) (get_heap empty_heap ℓ₂) (get_heap empty_heap ℓ₃) →
+    SemiInvariant L₀ L₁ (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
+Proof.
+  intros L₀ L₁ ℓ₁ ℓ₂ ℓ₃ R h₁ h₂ h₃ he. split.
+  - intros s₀ s₁ ℓ v hℓ₀ hℓ₁ ?.
+    assert (hℓ : ℓ \notin L₀ :|: L₁).
+    { rewrite in_fsetU. rewrite (negbTE hℓ₀) (negbTE hℓ₁). reflexivity. }
+    unfold triple_rhs.
+    rewrite !get_set_heap_neq.
+    + auto.
+    + apply /negP => /eqP e. subst. rewrite h₃ in hℓ. discriminate.
+    + apply /negP => /eqP e. subst. rewrite h₂ in hℓ. discriminate.
+    + apply /negP => /eqP e. subst. rewrite h₁ in hℓ. discriminate.
+  - simpl. auto.
+Qed.
+
+Arguments triple_rhs : simpl never.
+
+#[export] Hint Extern 10 (SemiInvariant _ _ (triple_rhs _ _ _ _)) =>
+  eapply SemiInvariant_triple_rhs
+  : (* typeclass_instances *) ssprove_invariant.
+
 Definition get_pre_cond ℓ (pre : precond) :=
   ∀ s₀ s₁, pre (s₀, s₁) → get_heap s₀ ℓ = get_heap s₁ ℓ.
 
@@ -349,6 +380,22 @@ Qed.
   apply put_pre_cond_couple_rhs
   : ssprove_invariant.
 
+Lemma put_pre_cond_triple_rhs :
+  ∀ ℓ v ℓ₁ ℓ₂ ℓ₃ h,
+    ℓ₁ != ℓ →
+    ℓ₂ != ℓ →
+    ℓ₃ != ℓ →
+    put_pre_cond ℓ v (triple_rhs ℓ₁ ℓ₂ ℓ₃ h).
+Proof.
+  intros ℓ v ℓ₁ ℓ₂ ℓ₃ h n₁ n₂ n₃ s₀ s₁ hc.
+  unfold triple_rhs in *.
+  rewrite !get_set_heap_neq. all: auto.
+Qed.
+
+#[export] Hint Extern 10 (put_pre_cond _ _ (triple_rhs _ _ _ _)) =>
+  apply put_pre_cond_triple_rhs
+  : ssprove_invariant.
+
 (** Predicates on invariants
 
   The idea is to use them as side-conditions for rules.
@@ -362,6 +409,9 @@ Class Couples_lhs ℓ ℓ' R pre :=
 
 Class Couples_rhs ℓ ℓ' R pre :=
   is_coupling_rhs : ∀ s, pre s → couple_rhs ℓ ℓ' R s.
+
+Class Triple_rhs ℓ₁ ℓ₂ ℓ₃ R pre :=
+  is_triple_rhs : ∀ s, pre s → triple_rhs ℓ₁ ℓ₂ ℓ₃ R s.
 
 Lemma Tracks_eq :
   ∀ ℓ, Tracks ℓ (λ '(s₀, s₁), s₀ = s₁).
@@ -421,6 +471,17 @@ Qed.
   eapply Couples_couple_rhs
   : typeclass_instances ssprove_invariant.
 
+Lemma Triple_triple_rhs :
+  ∀ ℓ₁ ℓ₂ ℓ₃ R,
+    Triple_rhs ℓ₁ ℓ₂ ℓ₃ R (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
+Proof.
+  intros ℓ₁ ℓ₂ ℓ₃ R s h. auto.
+Qed.
+
+#[export] Hint Extern 10 (Triple_rhs _ _ _ _ (triple_rhs _ _ _ _)) =>
+  eapply Triple_triple_rhs
+  : typeclass_instances ssprove_invariant.
+
 Lemma Couples_lhs_conj_right :
   ∀ ℓ ℓ' R (pre spre : precond),
     Couples_lhs ℓ ℓ' R spre →
@@ -471,6 +532,32 @@ Qed.
 
 #[export] Hint Extern 11 (Couples_rhs _ _ _ (_ ⋊ _)) =>
   eapply Couples_rhs_conj_left
+  : typeclass_instances ssprove_invariant.
+
+Lemma Triple_rhs_conj_right :
+  ∀ ℓ₁ ℓ₂ ℓ₃ R (pre spre : precond),
+    Triple_rhs ℓ₁ ℓ₂ ℓ₃ R spre →
+    Triple_rhs ℓ₁ ℓ₂ ℓ₃ R (pre ⋊ spre).
+Proof.
+  intros ℓ₁ ℓ₂ ℓ₃ R pre spre h s [].
+  apply h. auto.
+Qed.
+
+Lemma Triple_rhs_conj_left :
+  ∀ ℓ₁ ℓ₂ ℓ₃ R (pre spre : precond),
+    Triple_rhs ℓ₁ ℓ₂ ℓ₃ R pre →
+    Triple_rhs ℓ₁ ℓ₂ ℓ₃ R (pre ⋊ spre).
+Proof.
+  intros ℓ₁ ℓ₂ ℓ₃ R pre spre h s [].
+  apply h. auto.
+Qed.
+
+#[export] Hint Extern 9 (Triple_rhs _ _ _ _ (_ ⋊ _)) =>
+  eapply Triple_rhs_conj_right
+  : typeclass_instances ssprove_invariant.
+
+#[export] Hint Extern 11 (Triple_rhs _ _ _ _ (_ ⋊ _)) =>
+  eapply Triple_rhs_conj_left
   : typeclass_instances ssprove_invariant.
 
 Definition rem_lhs ℓ v : precond :=
@@ -861,11 +948,11 @@ Proof.
 Qed.
 
 Lemma preserve_update_filter_couple_lhs :
-  ∀ ℓ v R l,
-    preserve_update_pre (filter is_upd_l l) (couple_lhs ℓ v R) →
-    preserve_update_pre l (couple_lhs ℓ v R).
+  ∀ ℓ ℓ' R l,
+    preserve_update_pre (filter is_upd_l l) (couple_lhs ℓ ℓ' R) →
+    preserve_update_pre l (couple_lhs ℓ ℓ' R).
 Proof.
-  intros ℓ v R l h.
+  intros ℓ ℓ' R l h.
   intros s₀ s₁ hh.
   eapply h in hh.
   destruct update_heaps eqn:e1.
@@ -880,11 +967,11 @@ Qed.
 : ssprove_invariant.
 
 Lemma preserve_update_filter_couple_rhs :
-  ∀ ℓ v R l,
-    preserve_update_pre (filter is_upd_r l) (couple_rhs ℓ v R) →
-    preserve_update_pre l (couple_rhs ℓ v R).
+  ∀ ℓ ℓ' R l,
+    preserve_update_pre (filter is_upd_r l) (couple_rhs ℓ ℓ' R) →
+    preserve_update_pre l (couple_rhs ℓ ℓ' R).
 Proof.
-  intros ℓ v R l h.
+  intros ℓ ℓ' R l h.
   intros s₀ s₁ hh.
   eapply h in hh.
   destruct update_heaps eqn:e1.
@@ -896,6 +983,25 @@ Qed.
 
 #[export] Hint Extern 10 (preserve_update_pre _ (couple_rhs _ _ _)) =>
   progress (eapply preserve_update_filter_couple_rhs ; simpl)
+: ssprove_invariant.
+
+Lemma preserve_update_filter_triple_rhs :
+  ∀ ℓ₁ ℓ₂ ℓ₃ R l,
+    preserve_update_pre (filter is_upd_r l) (triple_rhs ℓ₁ ℓ₂ ℓ₃ R) →
+    preserve_update_pre l (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
+Proof.
+  intros ℓ₁ ℓ₂ ℓ₃ R l h.
+  intros s₀ s₁ hh.
+  eapply h in hh.
+  destruct update_heaps eqn:e1.
+  destruct (update_heaps l s₀ s₁) eqn:e2.
+  apply (f_equal (λ x, x.2)) in e1.
+  rewrite update_heaps_filter_r in e1. rewrite e2 in e1.
+  simpl in e1. subst. auto.
+Qed.
+
+#[export] Hint Extern 10 (preserve_update_pre _ (triple_rhs _ _ _ _)) =>
+  progress (eapply preserve_update_filter_triple_rhs ; simpl)
 : ssprove_invariant.
 
 Lemma restore_update_pre :
@@ -1072,6 +1178,23 @@ Proof.
   auto.
 Qed.
 
+Lemma preserve_update_triple_rhs_lookup :
+  ∀ ℓ₁ ℓ₂ ℓ₃ (R : _ → _ → _ → Prop) v₁ v₂ v₃ (l : seq heap_upd),
+    lookup_upd_r ℓ₁ l = Some v₁ →
+    lookup_upd_r ℓ₂ l = Some v₂ →
+    lookup_upd_r ℓ₃ l = Some v₃ →
+    R v₁ v₂ v₃ →
+    preserve_update_pre l (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
+Proof.
+  intros ℓ₁ ℓ₂ ℓ₃ R v₁ v₂ v₃ l h₁ h₂ h₃ h.
+  intros s₀ s₁ hh. unfold triple_rhs in *.
+  destruct update_heaps eqn:e.
+  erewrite lookup_upd_r_spec. 2,3: eauto.
+  erewrite lookup_upd_r_spec. 2,3: eauto.
+  erewrite lookup_upd_r_spec. 2,3: eauto.
+  auto.
+Qed.
+
 Lemma lookup_upd_l_None_spec :
   ∀ ℓ l s₀ s₁ h₀ h₁,
     lookup_upd_l ℓ l = None →
@@ -1135,5 +1258,21 @@ Proof.
   destruct update_heaps eqn:e.
   erewrite lookup_upd_r_None_spec. 2,3: eauto.
   erewrite lookup_upd_r_None_spec with (ℓ := ℓ'). 2,3: eauto.
+  auto.
+Qed.
+
+Lemma preserve_update_triple_rhs_lookup_None :
+  ∀ ℓ₁ ℓ₂ ℓ₃ (R : _ → _ → _ → Prop) (l : seq heap_upd),
+    lookup_upd_r ℓ₁ l = None →
+    lookup_upd_r ℓ₂ l = None →
+    lookup_upd_r ℓ₃ l = None →
+    preserve_update_pre l (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
+Proof.
+  intros ℓ₁ ℓ₂ ℓ₃ R l h₁ h₂ h₃.
+  intros s₀ s₁ hh. unfold triple_rhs in *.
+  destruct update_heaps eqn:e.
+  erewrite lookup_upd_r_None_spec. 2,3: eauto.
+  erewrite lookup_upd_r_None_spec with (ℓ := ℓ₂). 2,3: eauto.
+  erewrite lookup_upd_r_None_spec with (ℓ := ℓ₃). 2,3: eauto.
   auto.
 Qed.

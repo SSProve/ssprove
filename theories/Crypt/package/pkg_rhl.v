@@ -1557,6 +1557,30 @@ Proof.
   - simpl. intuition subst. auto.
 Qed.
 
+Lemma r_rem_triple_rhs :
+  ∀ {A B : choiceType} ℓ₁ ℓ₂ ℓ₃ v₁ v₂ v₃ R
+    (pre : precond) c₀ c₁ (post : postcond A B),
+    Triple_rhs ℓ₁ ℓ₂ ℓ₃ R pre →
+    Remembers_rhs ℓ₁ v₁ pre →
+    Remembers_rhs ℓ₂ v₂ pre →
+    Remembers_rhs ℓ₃ v₃ pre →
+    (R v₁ v₂ v₃ → ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄) →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄.
+Proof.
+  intros A B ℓ₁ ℓ₂ ℓ₃ v₁ v₂ v₃ R pre c₀ c₁ post hc h₁ h₂ h₃ h.
+  apply rpre_hypothesis_rule.
+  intros s₀ s₁ hpre.
+  eapply rpre_weaken_rule.
+  - eapply h.
+    specialize (hc _ hpre).
+    specialize (h₁ _ _ hpre).
+    specialize (h₂ _ _ hpre).
+    specialize (h₃ _ _ hpre).
+    simpl in h₁, h₂, h₃. subst.
+    apply hc.
+  - simpl. intuition subst. auto.
+Qed.
+
 Lemma r_put_lhs :
   ∀ {A B : choiceType} ℓ v r₀ r₁ (pre : precond) (post : postcond A B),
     ⊢ ⦃ λ '(s₀, s₁), (set_lhs ℓ v pre) (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄ →
