@@ -1558,19 +1558,15 @@ Proof.
 Qed.
 
 Lemma r_put_lhs :
-  ∀ {A} ℓ v (r₀ r₁ : raw_code A) (pre : precond),
-    ⊢ ⦃ λ '(s₀, s₁), (set_lhs ℓ v pre) (s₀, s₁) ⦄
-      r₀ ≈ r₁
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄ →
-    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      put ℓ := v ;; r₀ ≈ r₁
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
+  ∀ {A B : choiceType} ℓ v r₀ r₁ (pre : precond) (post : postcond A B),
+    ⊢ ⦃ λ '(s₀, s₁), (set_lhs ℓ v pre) (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ put ℓ := v ;; r₀ ≈ r₁ ⦃ post ⦄.
 Proof.
-  intros A ℓ v r₀ r₁ pre h.
+  intros A B ℓ v r₀ r₁ pre post h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
       (put ℓ := v ;; ret Datatypes.tt) ;; r₀ ≈ ret Datatypes.tt ;; r₁
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄
+    ⦃ post ⦄
   ).
   eapply r_bind with (mid :=
     λ '(b₀, s₀) '(b₁, s₁), (set_lhs ℓ v pre) (s₀, s₁)
@@ -1591,19 +1587,15 @@ Proof.
 Qed.
 
 Lemma r_put_rhs :
-  ∀ {A} ℓ v (r₀ r₁ : raw_code A) (pre : precond),
-    ⊢ ⦃ λ '(s₀, s₁), (set_rhs ℓ v pre) (s₀, s₁) ⦄
-      r₀ ≈ r₁
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄ →
-    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      r₀ ≈ put ℓ := v ;; r₁
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
+  ∀ {A B : choiceType} ℓ v r₀ r₁ (pre : precond) (post : postcond A B),
+    ⊢ ⦃ λ '(s₀, s₁), (set_rhs ℓ v pre) (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ r₀ ≈ put ℓ := v ;; r₁ ⦃ post ⦄.
 Proof.
-  intros A ℓ v r₀ r₁ pre h.
+  intros A B ℓ v r₀ r₁ pre post h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
       ret Datatypes.tt ;; r₀ ≈ (put ℓ := v ;; ret Datatypes.tt) ;; r₁
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄
+    ⦃ post ⦄
   ).
   eapply r_bind with (mid :=
     λ '(b₀, s₀) '(b₁, s₁), (set_rhs ℓ v pre) (s₀, s₁)
@@ -1624,16 +1616,12 @@ Proof.
 Qed.
 
 Lemma r_restore_lhs :
-  ∀ {A} ℓ v (r₀ r₁ : raw_code A) (pre : precond),
+  ∀ {A B : choiceType} ℓ v r₀ r₁ (pre : precond) (post : postcond A B),
     (∀ s₀ s₁, pre (s₀, s₁) → pre (set_heap s₀ ℓ v, s₁)) →
-    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      r₀ ≈ r₁
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄ →
-    ⊢ ⦃ λ '(s₀, s₁), (set_lhs ℓ v pre) (s₀, s₁) ⦄
-      r₀ ≈ r₁
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), (set_lhs ℓ v pre) (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄.
 Proof.
-  intros A ℓ v r₀ r₁ pre hpre h.
+  intros A B ℓ v r₀ r₁ pre post hpre h.
   eapply rpre_hypothesis_rule. intros s₀ s₁ [? [? ?]]. subst.
   eapply rpre_weaken_rule.
   - eapply h.
@@ -1641,16 +1629,12 @@ Proof.
 Qed.
 
 Lemma r_restore_rhs :
-  ∀ {A} ℓ v (r₀ r₁ : raw_code A) (pre : precond),
+  ∀ {A B : choiceType} ℓ v r₀ r₁ (pre : precond) (post : postcond A B),
     (∀ s₀ s₁, pre (s₀, s₁) → pre (s₀, set_heap s₁ ℓ v)) →
-    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      r₀ ≈ r₁
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄ →
-    ⊢ ⦃ λ '(s₀, s₁), (set_rhs ℓ v pre) (s₀, s₁) ⦄
-      r₀ ≈ r₁
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), (set_rhs ℓ v pre) (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄.
 Proof.
-  intros A ℓ v r₀ r₁ pre hpre h.
+  intros A B ℓ v r₀ r₁ pre post hpre h.
   eapply rpre_hypothesis_rule. intros s₀ s₁ [? [? ?]]. subst.
   eapply rpre_weaken_rule.
   - eapply h.
