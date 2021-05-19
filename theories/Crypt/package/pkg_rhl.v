@@ -1557,26 +1557,43 @@ Proof.
   - simpl. intuition subst. auto.
 Qed.
 
-Lemma r_put_put :
-  ∀ {A} ℓ ℓ' v v' (r₀ r₁ : raw_code A) (pre : precond),
-    preserve_set_set ℓ v ℓ' v' pre →
-    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      r₀ ≈ r₁
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄ →
-    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      put ℓ := v ;; put ℓ' := v' ;; r₀ ≈
-      put ℓ := v ;; put ℓ' := v' ;; r₁
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
+Lemma r_rem_triple_rhs :
+  ∀ {A B : choiceType} ℓ₁ ℓ₂ ℓ₃ v₁ v₂ v₃ R
+    (pre : precond) c₀ c₁ (post : postcond A B),
+    Triple_rhs ℓ₁ ℓ₂ ℓ₃ R pre →
+    Remembers_rhs ℓ₁ v₁ pre →
+    Remembers_rhs ℓ₂ v₂ pre →
+    Remembers_rhs ℓ₃ v₃ pre →
+    (R v₁ v₂ v₃ → ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄) →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄.
 Proof.
-  intros A ℓ ℓ' v v' r₀ r₁ pre hp h.
+  intros A B ℓ₁ ℓ₂ ℓ₃ v₁ v₂ v₃ R pre c₀ c₁ post hc h₁ h₂ h₃ h.
+  apply rpre_hypothesis_rule.
+  intros s₀ s₁ hpre.
+  eapply rpre_weaken_rule.
+  - eapply h.
+    specialize (hc _ hpre).
+    specialize (h₁ _ _ hpre).
+    specialize (h₂ _ _ hpre).
+    specialize (h₃ _ _ hpre).
+    simpl in h₁, h₂, h₃. subst.
+    apply hc.
+  - simpl. intuition subst. auto.
+Qed.
+
+Lemma r_put_lhs :
+  ∀ {A B : choiceType} ℓ v r₀ r₁ (pre : precond) (post : postcond A B),
+    ⊢ ⦃ λ '(s₀, s₁), (set_lhs ℓ v pre) (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ put ℓ := v ;; r₀ ≈ r₁ ⦃ post ⦄.
+Proof.
+  intros A B ℓ v r₀ r₁ pre post h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      (put ℓ := v ;; put ℓ' := v' ;; ret Datatypes.tt) ;; r₀ ≈
-      (put ℓ := v ;; put ℓ' := v' ;; ret Datatypes.tt) ;; r₁
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄
+      (put ℓ := v ;; ret Datatypes.tt) ;; r₀ ≈ ret Datatypes.tt ;; r₁
+    ⦃ post ⦄
   ).
   eapply r_bind with (mid :=
-    λ '(b₀, s₀) '(b₁, s₁), pre (s₀, s₁)
+    λ '(b₀, s₀) '(b₁, s₁), (set_lhs ℓ v pre) (s₀, s₁)
   ).
   - apply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
     intros [hpre hpost]. simpl.
@@ -1589,30 +1606,23 @@ Proof.
     + intros [] [] e.
       rewrite dunit1E in e.
       apply ge0_eq in e. noconf e.
-      eapply hpost. apply hp. auto.
+      eapply hpost. eexists. intuition eauto.
   - intros _ _. auto.
 Qed.
 
-Lemma r_put_putR :
-  ∀ {A} ℓ ℓ' v v' (r₀ r₁ : raw_code A) (pre : precond),
-    preserve_set_setR ℓ v ℓ' v' pre →
-    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      r₀ ≈ r₁
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄ →
-    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      put ℓ := v ;; r₀ ≈
-      put ℓ := v ;; put ℓ' := v' ;; r₁
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
+Lemma r_put_rhs :
+  ∀ {A B : choiceType} ℓ v r₀ r₁ (pre : precond) (post : postcond A B),
+    ⊢ ⦃ λ '(s₀, s₁), (set_rhs ℓ v pre) (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ r₀ ≈ put ℓ := v ;; r₁ ⦃ post ⦄.
 Proof.
-  intros A ℓ ℓ' v v' r₀ r₁ pre hp h.
+  intros A B ℓ v r₀ r₁ pre post h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      (put ℓ := v ;; ret Datatypes.tt) ;; r₀ ≈
-      (put ℓ := v ;; put ℓ' := v' ;; ret Datatypes.tt) ;; r₁
-    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄
+      ret Datatypes.tt ;; r₀ ≈ (put ℓ := v ;; ret Datatypes.tt) ;; r₁
+    ⦃ post ⦄
   ).
   eapply r_bind with (mid :=
-    λ '(b₀, s₀) '(b₁, s₁), pre (s₀, s₁)
+    λ '(b₀, s₀) '(b₁, s₁), (set_rhs ℓ v pre) (s₀, s₁)
   ).
   - apply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
     intros [hpre hpost]. simpl.
@@ -1625,8 +1635,80 @@ Proof.
     + intros [] [] e.
       rewrite dunit1E in e.
       apply ge0_eq in e. noconf e.
-      eapply hpost. apply hp. auto.
+      eapply hpost. eexists. intuition eauto.
   - intros _ _. auto.
+Qed.
+
+Lemma r_put_vs_put :
+  ∀ {A B : choiceType} ℓ v ℓ' v' r₀ r₁ (pre : precond) (post : postcond A B),
+    ⊢ ⦃ λ '(s₀, s₁), (set_rhs ℓ' v' (set_lhs ℓ v pre)) (s₀, s₁) ⦄
+      r₀ ≈ r₁
+    ⦃ post ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      put ℓ := v ;; r₀ ≈ put ℓ' := v' ;; r₁
+    ⦃ post ⦄.
+Proof.
+  intros A B ℓ v ℓ' v' r₀ r₁ pre post h.
+  eapply r_put_lhs. eapply r_put_rhs.
+  auto.
+Qed.
+
+(* TODO Probably not very useful *)
+Lemma r_restore_lhs :
+  ∀ {A B : choiceType} ℓ v r₀ r₁ (pre : precond) (post : postcond A B),
+    (∀ s₀ s₁, pre (s₀, s₁) → pre (set_heap s₀ ℓ v, s₁)) →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), (set_lhs ℓ v pre) (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄.
+Proof.
+  intros A B ℓ v r₀ r₁ pre post hpre h.
+  eapply rpre_hypothesis_rule. intros s₀ s₁ [? [? ?]]. subst.
+  eapply rpre_weaken_rule.
+  - eapply h.
+  - simpl. intuition subst. apply hpre. auto.
+Qed.
+
+(* TODO Probably not very useful *)
+Lemma r_restore_rhs :
+  ∀ {A B : choiceType} ℓ v r₀ r₁ (pre : precond) (post : postcond A B),
+    (∀ s₀ s₁, pre (s₀, s₁) → pre (s₀, set_heap s₁ ℓ v)) →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), (set_rhs ℓ v pre) (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄.
+Proof.
+  intros A B ℓ v r₀ r₁ pre post hpre h.
+  eapply rpre_hypothesis_rule. intros s₀ s₁ [? [? ?]]. subst.
+  eapply rpre_weaken_rule.
+  - eapply h.
+  - simpl. intuition subst. apply hpre. auto.
+Qed.
+
+Lemma r_restore_pre :
+  ∀ {A B : choiceType} l r₀ r₁ (pre : precond) (post : postcond A B),
+    preserve_update_pre l pre →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), (update_pre l pre) (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄.
+Proof.
+  intros A B l r₀ r₁ pre post hpre h.
+  eapply rpre_hypothesis_rule. intros s₀ s₁ e.
+  eapply rpre_weaken_rule.
+  - eapply h.
+  - simpl. intuition subst.
+    eapply restore_update_pre. all: eauto.
+Qed.
+
+Lemma r_restore_mem :
+  ∀ {A B : choiceType} l m r₀ r₁ (pre : precond) (post : postcond A B),
+    preserve_update_mem l m pre →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), (update_pre l (remember_pre m pre)) (s₀, s₁) ⦄
+      r₀ ≈ r₁
+    ⦃ post ⦄.
+Proof.
+  intros A B l m r₀ r₁ pre post hpre h.
+  eapply rpre_hypothesis_rule. intros s₀ s₁ e.
+  eapply rpre_weaken_rule.
+  - eapply h.
+  - simpl. intuition subst.
+    eapply restore_update_mem. all: eauto.
 Qed.
 
 Lemma rswap_cmd :
@@ -2612,4 +2694,37 @@ Proof.
   simpl.
   unfold UniversalFreeMap.outOfFree_obligation_1.
   rewrite get_set_heap_eq. reflexivity.
+Qed.
+
+(** Unary specifications
+
+  Defined as the diagonal of the relational judgment.
+
+*)
+
+Definition scheme_spec {A : choiceType} (c : raw_code A) (φ : A → Prop) :=
+  ∀ (pre : precond),
+    ⊢ ⦃ pre ⦄
+      c ≈ c
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ∧ φ b₀ ⦄.
+
+Notation "⊢ₛ c ⦃ post ⦄" :=
+  (scheme_spec c post)
+  (format "⊢ₛ  '[' c  ']' '/' ⦃  post  ⦄")
+  : package_scope.
+
+Lemma r_scheme_bind_spec :
+  ∀ {A B : choiceType} (φ : A → Prop) (pre : precond) (post : postcond B B)
+    s c₀ c₁,
+    ⊢ₛ s ⦃ φ ⦄ →
+    (∀ x, φ x → ⊢ ⦃ pre ⦄ c₀ x ≈ c₁ x ⦃ post ⦄) →
+    ⊢ ⦃ pre ⦄ x ← s ;; c₀ x ≈ x ← s ;; c₁ x ⦃ post ⦄.
+Proof.
+  intros A B φ pre post s c₀ c₁ hs hc.
+  eapply r_bind. 1: eapply hs.
+  intros ? x.
+  apply rpre_hypothesis_rule. intuition subst.
+  eapply rpre_weaken_rule.
+  - eapply hc. auto.
+  - simpl. intuition subst. auto.
 Qed.

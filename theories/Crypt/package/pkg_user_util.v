@@ -686,6 +686,24 @@ Proof.
   reflexivity.
 Qed.
 
+(* TODO Find better name *)
+Definition sameSomeRel {A B} (R : A → B → Prop) x y :=
+  match x, y with
+  | Some x, Some y => R x y
+  | None, None => True
+  | _, _ => False
+  end.
+
+Lemma sameSomeRel_sameSome :
+  ∀ {A B} R x y,
+    @sameSomeRel A B R x y →
+    sameSome x y.
+Proof.
+  intros A B R x y h.
+  destruct x, y. all: try contradiction.
+  all: reflexivity.
+Qed.
+
 Ltac ssprove_forget :=
   lazymatch goal with
   | |- ⊢ ⦃ λ '(s₀, s₁), (_ ⋊ rem_rhs _ _) (s₀, s₁) ⦄ _ ≈ _ ⦃ _ ⦄ =>
@@ -696,3 +714,92 @@ Ltac ssprove_forget :=
 
 Ltac ssprove_forget_all :=
   repeat ssprove_forget.
+
+Ltac update_pre_fold :=
+  repeat change (set_lhs ?ℓ ?v ?pre) with (update_pre [:: upd_l ℓ v ] pre) ;
+  repeat change (set_rhs ?ℓ ?v ?pre) with (update_pre [:: upd_r ℓ v ] pre) ;
+  repeat change (update_pre ?l1 (update_pre ?l2 ?pre))
+  with (update_pre (l1 ++ l2) pre).
+
+Ltac remember_pre_fold :=
+  repeat change (?pre ⋊ rem_lhs ?ℓ ?v) with (remember_pre [:: upd_l ℓ v ] pre) ;
+  repeat change (?pre ⋊ rem_rhs ?ℓ ?v) with (remember_pre [:: upd_r ℓ v ] pre) ;
+  repeat change (remember_pre ?l1 (remember_pre ?l2 ?pre))
+  with (remember_pre (l1 ++ l2) pre).
+
+Ltac ssprove_restore_pre :=
+  update_pre_fold ;
+  eapply r_restore_pre ; [
+    cbn
+  | idtac
+  ].
+
+Ltac ssprove_restore_mem :=
+  update_pre_fold ;
+  remember_pre_fold ;
+  eapply r_restore_mem ; [
+    cbn
+  | idtac
+  ].
+
+Ltac lookup_upd_l_eq_solve :=
+  repeat (
+    tryif rewrite lookup_upd_l_eq
+    then reflexivity
+    else rewrite lookup_upd_l_neq
+  ) ; neq_loc_auto.
+
+Ltac lookup_upd_r_eq_solve :=
+  repeat (
+    tryif rewrite lookup_upd_r_eq
+    then reflexivity
+    else rewrite lookup_upd_r_neq
+  ) ; neq_loc_auto.
+
+#[export] Hint Extern 11 (preserve_update_pre _ (couple_lhs _ _ _)) =>
+  eapply preserve_update_couple_lhs_lookup ; [
+    lookup_upd_l_eq_solve ..
+  | idtac
+  ]
+  : ssprove_invariant.
+
+#[export] Hint Extern 11 (preserve_update_pre _ (couple_rhs _ _ _)) =>
+  eapply preserve_update_couple_rhs_lookup ; [
+    lookup_upd_r_eq_solve ..
+  | idtac
+  ]
+  : ssprove_invariant.
+
+#[export] Hint Extern 11 (preserve_update_pre _ (triple_rhs _ _ _ _)) =>
+  eapply preserve_update_triple_rhs_lookup ; [
+    lookup_upd_r_eq_solve ..
+  | idtac
+  ]
+  : ssprove_invariant.
+
+#[export] Hint Extern 12 (preserve_update_pre _ (couple_lhs _ _ _)) =>
+  eapply preserve_update_couple_lhs_lookup_None ; [
+    repeat rewrite lookup_upd_l_neq ; [
+      reflexivity
+    | solve [ neq_loc_auto ] ..
+    ] ..
+  ]
+  : ssprove_invariant.
+
+#[export] Hint Extern 12 (preserve_update_pre _ (couple_rhs _ _ _)) =>
+  eapply preserve_update_couple_rhs_lookup_None ; [
+    repeat rewrite lookup_upd_r_neq ; [
+      reflexivity
+    | solve [ neq_loc_auto ] ..
+    ] ..
+  ]
+  : ssprove_invariant.
+
+#[export] Hint Extern 12 (preserve_update_pre _ (triple_rhs _ _ _ _)) =>
+  eapply preserve_update_triple_rhs_lookup_None ; [
+    repeat rewrite lookup_upd_r_neq ; [
+      reflexivity
+    | solve [ neq_loc_auto ] ..
+    ] ..
+  ]
+  : ssprove_invariant.

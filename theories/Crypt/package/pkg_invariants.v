@@ -258,6 +258,37 @@ Arguments couple_rhs : simpl never.
   eapply SemiInvariant_couple_rhs
   : (* typeclass_instances *) ssprove_invariant.
 
+(* TODO triple_lhs, or even better, something more generic *)
+Definition triple_rhs ℓ₁ ℓ₂ ℓ₃ (R : _ → _ → _ → Prop) : precond :=
+  λ '(s₀, s₁), R (get_heap s₁ ℓ₁) (get_heap s₁ ℓ₂) (get_heap s₁ ℓ₃).
+
+Lemma SemiInvariant_triple_rhs :
+  ∀ L₀ L₁ ℓ₁ ℓ₂ ℓ₃ (R : _ → _ → _ → Prop),
+    ℓ₁ \in L₀ :|: L₁ →
+    ℓ₂ \in L₀ :|: L₁ →
+    ℓ₃ \in L₀ :|: L₁ →
+    R (get_heap empty_heap ℓ₁) (get_heap empty_heap ℓ₂) (get_heap empty_heap ℓ₃) →
+    SemiInvariant L₀ L₁ (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
+Proof.
+  intros L₀ L₁ ℓ₁ ℓ₂ ℓ₃ R h₁ h₂ h₃ he. split.
+  - intros s₀ s₁ ℓ v hℓ₀ hℓ₁ ?.
+    assert (hℓ : ℓ \notin L₀ :|: L₁).
+    { rewrite in_fsetU. rewrite (negbTE hℓ₀) (negbTE hℓ₁). reflexivity. }
+    unfold triple_rhs.
+    rewrite !get_set_heap_neq.
+    + auto.
+    + apply /negP => /eqP e. subst. rewrite h₃ in hℓ. discriminate.
+    + apply /negP => /eqP e. subst. rewrite h₂ in hℓ. discriminate.
+    + apply /negP => /eqP e. subst. rewrite h₁ in hℓ. discriminate.
+  - simpl. auto.
+Qed.
+
+Arguments triple_rhs : simpl never.
+
+#[export] Hint Extern 10 (SemiInvariant _ _ (triple_rhs _ _ _ _)) =>
+  eapply SemiInvariant_triple_rhs
+  : (* typeclass_instances *) ssprove_invariant.
+
 Definition get_pre_cond ℓ (pre : precond) :=
   ∀ s₀ s₁, pre (s₀, s₁) → get_heap s₀ ℓ = get_heap s₁ ℓ.
 
@@ -349,6 +380,22 @@ Qed.
   apply put_pre_cond_couple_rhs
   : ssprove_invariant.
 
+Lemma put_pre_cond_triple_rhs :
+  ∀ ℓ v ℓ₁ ℓ₂ ℓ₃ h,
+    ℓ₁ != ℓ →
+    ℓ₂ != ℓ →
+    ℓ₃ != ℓ →
+    put_pre_cond ℓ v (triple_rhs ℓ₁ ℓ₂ ℓ₃ h).
+Proof.
+  intros ℓ v ℓ₁ ℓ₂ ℓ₃ h n₁ n₂ n₃ s₀ s₁ hc.
+  unfold triple_rhs in *.
+  rewrite !get_set_heap_neq. all: auto.
+Qed.
+
+#[export] Hint Extern 10 (put_pre_cond _ _ (triple_rhs _ _ _ _)) =>
+  apply put_pre_cond_triple_rhs
+  : ssprove_invariant.
+
 (** Predicates on invariants
 
   The idea is to use them as side-conditions for rules.
@@ -362,6 +409,9 @@ Class Couples_lhs ℓ ℓ' R pre :=
 
 Class Couples_rhs ℓ ℓ' R pre :=
   is_coupling_rhs : ∀ s, pre s → couple_rhs ℓ ℓ' R s.
+
+Class Triple_rhs ℓ₁ ℓ₂ ℓ₃ R pre :=
+  is_triple_rhs : ∀ s, pre s → triple_rhs ℓ₁ ℓ₂ ℓ₃ R s.
 
 Lemma Tracks_eq :
   ∀ ℓ, Tracks ℓ (λ '(s₀, s₁), s₀ = s₁).
@@ -421,6 +471,17 @@ Qed.
   eapply Couples_couple_rhs
   : typeclass_instances ssprove_invariant.
 
+Lemma Triple_triple_rhs :
+  ∀ ℓ₁ ℓ₂ ℓ₃ R,
+    Triple_rhs ℓ₁ ℓ₂ ℓ₃ R (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
+Proof.
+  intros ℓ₁ ℓ₂ ℓ₃ R s h. auto.
+Qed.
+
+#[export] Hint Extern 10 (Triple_rhs _ _ _ _ (triple_rhs _ _ _ _)) =>
+  eapply Triple_triple_rhs
+  : typeclass_instances ssprove_invariant.
+
 Lemma Couples_lhs_conj_right :
   ∀ ℓ ℓ' R (pre spre : precond),
     Couples_lhs ℓ ℓ' R spre →
@@ -471,6 +532,32 @@ Qed.
 
 #[export] Hint Extern 11 (Couples_rhs _ _ _ (_ ⋊ _)) =>
   eapply Couples_rhs_conj_left
+  : typeclass_instances ssprove_invariant.
+
+Lemma Triple_rhs_conj_right :
+  ∀ ℓ₁ ℓ₂ ℓ₃ R (pre spre : precond),
+    Triple_rhs ℓ₁ ℓ₂ ℓ₃ R spre →
+    Triple_rhs ℓ₁ ℓ₂ ℓ₃ R (pre ⋊ spre).
+Proof.
+  intros ℓ₁ ℓ₂ ℓ₃ R pre spre h s [].
+  apply h. auto.
+Qed.
+
+Lemma Triple_rhs_conj_left :
+  ∀ ℓ₁ ℓ₂ ℓ₃ R (pre spre : precond),
+    Triple_rhs ℓ₁ ℓ₂ ℓ₃ R pre →
+    Triple_rhs ℓ₁ ℓ₂ ℓ₃ R (pre ⋊ spre).
+Proof.
+  intros ℓ₁ ℓ₂ ℓ₃ R pre spre h s [].
+  apply h. auto.
+Qed.
+
+#[export] Hint Extern 9 (Triple_rhs _ _ _ _ (_ ⋊ _)) =>
+  eapply Triple_rhs_conj_right
+  : typeclass_instances ssprove_invariant.
+
+#[export] Hint Extern 11 (Triple_rhs _ _ _ _ (_ ⋊ _)) =>
+  eapply Triple_rhs_conj_left
   : typeclass_instances ssprove_invariant.
 
 Definition rem_lhs ℓ v : precond :=
@@ -583,162 +670,722 @@ Proof.
   rewrite -ht. apply hr.
 Qed.
 
-(* Weaker than Invariant *)
-Definition preserve_set_set ℓ v ℓ' v' pre :=
-  ∀ s₀ s₁,
-    pre (s₀, s₁) →
-    pre (set_heap (set_heap s₀ ℓ v) ℓ' v', set_heap (set_heap s₁ ℓ v) ℓ' v').
+(** Dually to rem_lhs/rem_rhs we create "invariants" to represent a deviation
+    of invariant, or a deficit which will need to be paid later to restore
+    the proper invariant.
+*)
 
-Lemma preserve_set_set_eq :
-  ∀ ℓ v ℓ' v',
-    preserve_set_set ℓ v ℓ' v' (λ '(s₀, s₁), s₀ = s₁).
+Definition set_lhs ℓ v (pre : precond) : precond :=
+  λ '(s₀, s₁),
+    ∃ s₀', pre (s₀', s₁) ∧ s₀ = set_heap s₀' ℓ v.
+
+Arguments set_lhs : simpl never.
+
+Definition set_rhs ℓ v (pre : precond) : precond :=
+  λ '(s₀, s₁),
+    ∃ s₁', pre (s₀, s₁') ∧ s₁ = set_heap s₁' ℓ v.
+
+Arguments set_rhs : simpl never.
+
+Lemma restore_set_lhs :
+  ∀ ℓ v pre s₀ s₁,
+    set_lhs ℓ v pre (s₀, s₁) →
+    (∀ s₀', pre (s₀', s₁) → pre (set_heap s₀' ℓ v, s₁)) →
+    pre (s₀, s₁).
 Proof.
-  intros ℓ v ℓ' v' s₀ s₁ e. subst. reflexivity.
+  intros ℓ v pre s₀ s₁ h hpre.
+  destruct h as [? [? ?]]. subst.
+  eapply hpre. auto.
 Qed.
 
-#[export] Hint Extern 10 (preserve_set_set _ _ _ _ (λ '(s₀, s₁), s₀ = s₁)) =>
-  eapply preserve_set_set_eq
+Lemma restore_set_rhs :
+  ∀ ℓ v pre s₀ s₁,
+    set_rhs ℓ v pre (s₀, s₁) →
+    (∀ s₁', pre (s₀, s₁') → pre (s₀, set_heap s₁' ℓ v)) →
+    pre (s₀, s₁).
+Proof.
+  intros ℓ v pre s₀ s₁ h hpre.
+  destruct h as [? [? ?]]. subst.
+  eapply hpre. auto.
+Qed.
+
+Inductive heap_upd :=
+| upd_l (ℓ : Location) (v : ℓ)
+| upd_r (ℓ : Location) (v : ℓ).
+
+Definition loc_val_pair (ℓ : Location) (v : ℓ) : ∑ ℓ : Location, ℓ :=
+  (ℓ ; v).
+
+Definition heap_upd_eq : rel heap_upd :=
+  λ u v,
+    match u, v with
+    | upd_l ℓ v, upd_l ℓ' v' => loc_val_pair ℓ v == (ℓ' ; v')
+    | upd_r ℓ v, upd_r ℓ' v' => loc_val_pair ℓ v == (ℓ' ; v')
+    | _, _ => false
+    end.
+
+Lemma heap_upd_eqP : Equality.axiom heap_upd_eq.
+Proof.
+  intros u v.
+  destruct u, v. all: simpl. 2,3: constructor. 2,3: discriminate.
+  all: unfold loc_val_pair.
+  all: destruct eq_op eqn:e.
+  all: move: e => /eqP e. all: noconf e.
+  all: constructor.
+  all: try reflexivity.
+  all: intro h. all: inversion h. all: contradiction.
+Qed.
+
+Canonical heap_upd_eqMixin := EqMixin heap_upd_eqP.
+Canonical heap_upd_eqType :=
+  Eval hnf in EqType heap_upd heap_upd_eqMixin.
+
+Derive NoConfusion for heap_upd.
+
+Fixpoint update_pre (l : list heap_upd) (pre : precond) :=
+  match l with
+  | upd_l ℓ v :: l => set_lhs ℓ v (update_pre l pre)
+  | upd_r ℓ v :: l => set_rhs ℓ v (update_pre l pre)
+  | [::] => pre
+  end.
+
+Fixpoint update_heaps (l : list heap_upd) s₀ s₁ :=
+  match l with
+  | upd_l ℓ v :: l =>
+    let '(s₀, s₁) := update_heaps l s₀ s₁ in
+    (set_heap s₀ ℓ v, s₁)
+  | upd_r ℓ v :: l =>
+    let '(s₀, s₁) := update_heaps l s₀ s₁ in
+    (s₀, set_heap s₁ ℓ v)
+  | [::] => (s₀, s₁)
+  end.
+
+Lemma update_pre_spec :
+  ∀ l pre s₀ s₁,
+    update_pre l pre (s₀, s₁) →
+    ∃ s₀' s₁', pre (s₀', s₁') ∧ (s₀, s₁) = update_heaps l s₀' s₁'.
+Proof.
+  intros l pre s₀ s₁ h.
+  induction l as [| [] l ih] in pre, s₀, s₁, h |- *.
+  - simpl in h. simpl.
+    eexists _, _. intuition eauto.
+  - simpl in h. simpl.
+    destruct h as [s [h ?]]. subst.
+    eapply ih in h. destruct h as [? [? [? e]]].
+    eexists _, _. split. 1: eauto.
+    rewrite -e. reflexivity.
+  - simpl in h. simpl.
+    destruct h as [s [h ?]]. subst.
+    eapply ih in h. destruct h as [? [? [? e]]].
+    eexists _, _. split. 1: eauto.
+    rewrite -e. reflexivity.
+Qed.
+
+Definition preserve_update_pre l (pre : precond) :=
+  ∀ s₀ s₁, pre (s₀, s₁) → pre (update_heaps l s₀ s₁).
+
+Lemma preserve_update_pre_nil :
+  ∀ (pre : precond),
+    preserve_update_pre [::] pre.
+Proof.
+  intro pre.
+  intros s₀ s₁ h. auto.
+Qed.
+
+#[export] Hint Extern 9 (preserve_update_pre [::] _) =>
+eapply preserve_update_pre_nil
+: ssprove_invariant.
+
+Lemma preserve_update_conj :
+  ∀ (pre spre : precond) l,
+    preserve_update_pre l pre →
+    preserve_update_pre l spre →
+    preserve_update_pre l (pre ⋊ spre).
+Proof.
+  intros pre spre l h hs.
+  intros s₀ s₁ []. split.
+  all: auto.
+Qed.
+
+#[export] Hint Extern 10 (preserve_update_pre _ (_ ⋊ _)) =>
+  eapply preserve_update_conj
   : ssprove_invariant.
 
-Lemma preserve_set_set_heap_ignore :
-  ∀ ℓ v ℓ' v' L,
-    preserve_set_set ℓ v ℓ' v' (heap_ignore L).
+Lemma preserve_update_cons_sym_eq :
+  ∀ ℓ v l,
+    preserve_update_pre l (λ '(h₀, h₁), h₀ = h₁) →
+    preserve_update_pre (upd_r ℓ v :: upd_l ℓ v :: l) (λ '(h₀, h₁), h₀ = h₁).
 Proof.
-  intros ℓ v ℓ' v' L.
-  intros s₀ s₁ h.
+  intros ℓ v l h.
+  intros ? s e.
+  simpl. destruct (update_heaps l s s) eqn:e'.
+  eapply h in e as h'. subst.
+  rewrite e' in h'.
+  rewrite e'. subst. reflexivity.
+Qed.
+
+#[export] Hint Extern 10 (preserve_update_pre _ (λ '(h₀, h₁), h₀ = h₁)) =>
+  eapply preserve_update_cons_sym_eq
+  : ssprove_invariant.
+
+Lemma preserve_update_cons_sym_heap_ignore :
+  ∀ L ℓ v l,
+    preserve_update_pre l (heap_ignore L) →
+    preserve_update_pre (upd_r ℓ v :: upd_l ℓ v :: l) (heap_ignore L).
+Proof.
+  intros L ℓ v l h.
+  intros s₀ s₁ hh.
+  simpl. destruct (update_heaps l s₀ s₁) eqn:e.
   intros ℓ₀ hℓ₀.
-  destruct (ℓ₀ != ℓ') eqn:e1.
-  - rewrite get_set_heap_neq. 2: auto.
-    rewrite [RHS]get_set_heap_neq. 2: auto.
-    destruct (ℓ₀ != ℓ) eqn:e2.
-    + rewrite !get_set_heap_neq. 2,3: auto.
-      apply h. auto.
-    + move: e2 => /eqP e2. subst.
-      rewrite !get_set_heap_eq. reflexivity.
+  destruct (ℓ₀ != ℓ) eqn:e1.
+  - rewrite !get_set_heap_neq. 2,3: auto.
+    eapply h in hh. rewrite e in hh.
+    apply hh. auto.
   - move: e1 => /eqP e1. subst.
     rewrite !get_set_heap_eq. reflexivity.
 Qed.
 
-#[export] Hint Extern 10 (preserve_set_set _ _ _ _ (heap_ignore _)) =>
-  eapply preserve_set_set_heap_ignore
+#[export] Hint Extern 10 (preserve_update_pre _ (heap_ignore _)) =>
+  eapply preserve_update_cons_sym_heap_ignore
   : ssprove_invariant.
 
-Lemma preserve_set_set_conj :
-  ∀ (pre spre : precond) ℓ ℓ' v v',
-    preserve_set_set ℓ v ℓ' v' pre →
-    preserve_set_set ℓ v ℓ' v' spre →
-    preserve_set_set ℓ v ℓ' v' (pre ⋊ spre).
+Lemma preserve_update_l_ignored_heap_ignore :
+  ∀ L ℓ v l,
+    ℓ \in L →
+    preserve_update_pre l (heap_ignore L) →
+    preserve_update_pre (upd_l ℓ v :: l) (heap_ignore L).
 Proof.
-  intros pre spre ℓ ℓ' v v' h hs.
-  intros s₀ s₁ []. split.
-  all: auto.
-Qed.
-
-#[export] Hint Extern 10 (preserve_set_set _ _ _ _ (_ ⋊ _)) =>
-  eapply preserve_set_set_conj
-  : ssprove_invariant.
-
-Lemma preserve_set_set_couple_lhs_eq :
-  ∀ ℓ ℓ' v v' (R : _ → _ → Prop),
-    ℓ != ℓ' →
-    R v v' →
-    preserve_set_set ℓ v ℓ' v' (couple_lhs ℓ ℓ' R).
-Proof.
-  intros ℓ ℓ' v v' R hn hR.
-  intros s₀ s₁ h.
-  unfold couple_lhs in *.
-  rewrite get_set_heap_neq. 2: auto.
-  rewrite get_set_heap_eq.
-  rewrite get_set_heap_eq.
-  auto.
-Qed.
-
-Lemma preserve_set_set_couple_rhs_neq :
-  ∀ ℓ ℓ' v v' ℓ₀ ℓ₁ (R : _ → _ → Prop),
-    ℓ₀ != ℓ →
-    ℓ₀ != ℓ' →
-    ℓ₁ != ℓ →
-    ℓ₁ != ℓ' →
-    preserve_set_set ℓ v ℓ' v' (couple_rhs ℓ₀ ℓ₁ R).
-Proof.
-  intros ℓ ℓ' v v' ℓ₀ ℓ₁ R ? ? ? ?.
-  intros s₀ s₁ h.
-  unfold couple_rhs in *.
-  rewrite get_set_heap_neq. 2: auto.
-  rewrite get_set_heap_neq. 2: auto.
-  rewrite get_set_heap_neq. 2: auto.
-  rewrite get_set_heap_neq. 2: auto.
-  auto.
-Qed.
-
-Definition preserve_set_setR ℓ v ℓ' v' pre :=
-  ∀ s₀ s₁,
-    pre (s₀, s₁) →
-    pre (set_heap s₀ ℓ v, set_heap (set_heap s₁ ℓ v) ℓ' v').
-
-Lemma preserve_set_setR_heap_ignore :
-  ∀ ℓ v ℓ' v' L,
-    ℓ' \in L →
-    preserve_set_setR ℓ v ℓ' v' (heap_ignore L).
-Proof.
-  intros ℓ v ℓ' v' L hℓ'.
-  intros s₀ s₁ h.
+  intros L ℓ v l hin h.
+  intros s₀ s₁ hh.
+  simpl. destruct update_heaps eqn:e.
   intros ℓ₀ hℓ₀.
-  destruct (ℓ₀ != ℓ') eqn:e1.
-  - rewrite [RHS]get_set_heap_neq. 2: auto.
-    destruct (ℓ₀ != ℓ) eqn:e2.
-    + rewrite !get_set_heap_neq. 2,3: auto.
-      apply h. auto.
-    + move: e2 => /eqP e2. subst.
-      rewrite !get_set_heap_eq. reflexivity.
+  destruct (ℓ₀ != ℓ) eqn:e1.
+  - rewrite get_set_heap_neq. 2: auto.
+    eapply h in hh. rewrite e in hh.
+    apply hh. auto.
   - move: e1 => /eqP e1. subst.
-    rewrite hℓ' in hℓ₀. discriminate.
+    rewrite hin in hℓ₀. discriminate.
 Qed.
 
-#[export] Hint Extern 10 (preserve_set_setR _ _ _ _ (heap_ignore _)) =>
-  eapply preserve_set_setR_heap_ignore
+#[export] Hint Extern 10 (preserve_update_pre _ (heap_ignore _)) =>
+  eapply preserve_update_l_ignored_heap_ignore ; [
+    solve [ auto_in_fset ]
+  | idtac
+  ]
   : ssprove_invariant.
 
-Lemma preserve_set_setR_conj :
-  ∀ (pre spre : precond) ℓ ℓ' v v',
-    preserve_set_setR ℓ v ℓ' v' pre →
-    preserve_set_setR ℓ v ℓ' v' spre →
-    preserve_set_setR ℓ v ℓ' v' (pre ⋊ spre).
+Lemma preserve_update_r_ignored_heap_ignore :
+  ∀ L ℓ v l,
+    ℓ \in L →
+    preserve_update_pre l (heap_ignore L) →
+    preserve_update_pre (upd_r ℓ v :: l) (heap_ignore L).
 Proof.
-  intros pre spre ℓ ℓ' v v' h hs.
-  intros s₀ s₁ []. split.
-  all: auto.
+  intros L ℓ v l hin h.
+  intros s₀ s₁ hh.
+  simpl. destruct update_heaps eqn:e.
+  intros ℓ₀ hℓ₀.
+  destruct (ℓ₀ != ℓ) eqn:e1.
+  - rewrite get_set_heap_neq. 2: auto.
+    eapply h in hh. rewrite e in hh.
+    apply hh. auto.
+  - move: e1 => /eqP e1. subst.
+    rewrite hin in hℓ₀. discriminate.
 Qed.
 
-#[export] Hint Extern 10 (preserve_set_setR _ _ _ _ (_ ⋊ _)) =>
-  eapply preserve_set_setR_conj
+#[export] Hint Extern 10 (preserve_update_pre _ (heap_ignore _)) =>
+  eapply preserve_update_r_ignored_heap_ignore ; [
+    solve [ auto_in_fset ]
+  | idtac
+  ]
   : ssprove_invariant.
 
-Lemma preserve_set_setR_couple_rhs_eq :
-  ∀ ℓ ℓ' v v' (R : _ → _ → Prop),
-    ℓ != ℓ' →
+Definition is_upd_l u :=
+  match u with
+  | upd_l _ _ => true
+  | _ => false
+  end.
+
+Definition is_upd_r u :=
+  match u with
+  | upd_r _ _ => true
+  | _ => false
+  end.
+
+Lemma update_heaps_filter_l :
+  ∀ l s₀ s₁,
+    (update_heaps (filter is_upd_l l) s₀ s₁).1 =
+    (update_heaps l s₀ s₁).1.
+Proof.
+  intros l s₀ s₁.
+  induction l as [| [] l ih] in s₀, s₁ |- *.
+  - reflexivity.
+  - simpl. destruct update_heaps eqn:e1.
+    destruct (update_heaps l s₀ s₁) eqn:e2.
+    simpl. specialize (ih s₀ s₁).
+    rewrite e2 e1 in ih. simpl in ih. subst. reflexivity.
+  - simpl. destruct update_heaps eqn:e1.
+    destruct (update_heaps l s₀ s₁) eqn:e2.
+    simpl. specialize (ih s₀ s₁).
+    rewrite e2 e1 in ih. simpl in ih. auto.
+Qed.
+
+Lemma update_heaps_filter_r :
+  ∀ l s₀ s₁,
+    (update_heaps (filter is_upd_r l) s₀ s₁).2 =
+    (update_heaps l s₀ s₁).2.
+Proof.
+  intros l s₀ s₁.
+  induction l as [| [] l ih] in s₀, s₁ |- *.
+  - reflexivity.
+  - simpl. destruct update_heaps eqn:e1.
+    destruct (update_heaps l s₀ s₁) eqn:e2.
+    simpl. specialize (ih s₀ s₁).
+    rewrite e2 e1 in ih. simpl in ih. auto.
+  - simpl. destruct update_heaps eqn:e1.
+    destruct (update_heaps l s₀ s₁) eqn:e2.
+    simpl. specialize (ih s₀ s₁).
+    rewrite e2 e1 in ih. simpl in ih. subst. reflexivity.
+Qed.
+
+Lemma preserve_update_filter_couple_lhs :
+  ∀ ℓ ℓ' R l,
+    preserve_update_pre (filter is_upd_l l) (couple_lhs ℓ ℓ' R) →
+    preserve_update_pre l (couple_lhs ℓ ℓ' R).
+Proof.
+  intros ℓ ℓ' R l h.
+  intros s₀ s₁ hh.
+  eapply h in hh.
+  destruct update_heaps eqn:e1.
+  destruct (update_heaps l s₀ s₁) eqn:e2.
+  apply (f_equal (λ x, x.1)) in e1.
+  rewrite update_heaps_filter_l in e1. rewrite e2 in e1.
+  simpl in e1. subst. auto.
+Qed.
+
+#[export] Hint Extern 10 (preserve_update_pre _ (couple_lhs _ _ _)) =>
+  progress (eapply preserve_update_filter_couple_lhs ; simpl)
+: ssprove_invariant.
+
+Lemma preserve_update_filter_couple_rhs :
+  ∀ ℓ ℓ' R l,
+    preserve_update_pre (filter is_upd_r l) (couple_rhs ℓ ℓ' R) →
+    preserve_update_pre l (couple_rhs ℓ ℓ' R).
+Proof.
+  intros ℓ ℓ' R l h.
+  intros s₀ s₁ hh.
+  eapply h in hh.
+  destruct update_heaps eqn:e1.
+  destruct (update_heaps l s₀ s₁) eqn:e2.
+  apply (f_equal (λ x, x.2)) in e1.
+  rewrite update_heaps_filter_r in e1. rewrite e2 in e1.
+  simpl in e1. subst. auto.
+Qed.
+
+#[export] Hint Extern 10 (preserve_update_pre _ (couple_rhs _ _ _)) =>
+  progress (eapply preserve_update_filter_couple_rhs ; simpl)
+: ssprove_invariant.
+
+Lemma preserve_update_filter_triple_rhs :
+  ∀ ℓ₁ ℓ₂ ℓ₃ R l,
+    preserve_update_pre (filter is_upd_r l) (triple_rhs ℓ₁ ℓ₂ ℓ₃ R) →
+    preserve_update_pre l (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
+Proof.
+  intros ℓ₁ ℓ₂ ℓ₃ R l h.
+  intros s₀ s₁ hh.
+  eapply h in hh.
+  destruct update_heaps eqn:e1.
+  destruct (update_heaps l s₀ s₁) eqn:e2.
+  apply (f_equal (λ x, x.2)) in e1.
+  rewrite update_heaps_filter_r in e1. rewrite e2 in e1.
+  simpl in e1. subst. auto.
+Qed.
+
+#[export] Hint Extern 10 (preserve_update_pre _ (triple_rhs _ _ _ _)) =>
+  progress (eapply preserve_update_filter_triple_rhs ; simpl)
+: ssprove_invariant.
+
+Lemma restore_update_pre :
+  ∀ l pre s₀ s₁,
+    update_pre l pre (s₀, s₁) →
+    preserve_update_pre l pre →
+    pre (s₀, s₁).
+Proof.
+  intros l pre s₀ s₁ hu hp.
+  eapply update_pre_spec in hu. destruct hu as [s₀' [s₁' [hpre e]]].
+  rewrite e. eapply hp. auto.
+Qed.
+
+Definition cast_loc_val {ℓ ℓ' : Location} (e : ℓ = ℓ') (v : ℓ) : ℓ'.
+Proof.
+  subst. auto.
+Defined.
+
+Lemma cast_loc_val_K :
+  ∀ ℓ e v,
+    @cast_loc_val ℓ ℓ e v = v.
+Proof.
+  intros ℓ e v.
+  assert (e = erefl).
+  { apply eq_irrelevance. }
+  subst. reflexivity.
+Qed.
+
+Equations? lookup_upd_l (ℓ : Location) (l : seq heap_upd) : option ℓ :=
+  lookup_upd_l ℓ (upd_l ℓ' v' :: l) with inspect (ℓ == ℓ') := {
+  | @exist true e := Some (cast_loc_val _ v') ;
+  | @exist false e := lookup_upd_l ℓ l
+  } ;
+  lookup_upd_l ℓ (upd_r _ _ :: l) := lookup_upd_l ℓ l ;
+  lookup_upd_l ℓ [::] := None.
+Proof.
+  symmetry in e.
+  move: e => /eqP e. subst. reflexivity.
+Qed.
+
+Equations? lookup_upd_r (ℓ : Location) (l : seq heap_upd) : option ℓ :=
+  lookup_upd_r ℓ (upd_r ℓ' v' :: l) with inspect (ℓ == ℓ') := {
+  | @exist true e := Some (cast_loc_val _ v') ;
+  | @exist false e := lookup_upd_r ℓ l
+  } ;
+  lookup_upd_r ℓ (upd_l _ _ :: l) := lookup_upd_r ℓ l ;
+  lookup_upd_r ℓ [::] := None.
+Proof.
+  symmetry in e.
+  move: e => /eqP e. subst. reflexivity.
+Qed.
+
+Lemma lookup_upd_l_eq :
+  ∀ ℓ v l,
+    lookup_upd_l ℓ (upd_l ℓ v :: l) = Some v.
+Proof.
+  intros ℓ v l.
+  funelim (lookup_upd_l ℓ (upd_l ℓ v :: l)).
+  - rewrite -Heqcall. rewrite cast_loc_val_K. reflexivity.
+  - exfalso. pose proof e as e'. symmetry in e'. move: e' => /eqP e'.
+    contradiction.
+Qed.
+
+Lemma lookup_upd_l_neq :
+  ∀ ℓ ℓ' v l,
+    ℓ' != ℓ →
+    lookup_upd_l ℓ' (upd_l ℓ v :: l) = lookup_upd_l ℓ' l.
+Proof.
+  intros ℓ ℓ' v l hn.
+  funelim (lookup_upd_l ℓ' (upd_l ℓ v :: l)).
+  - exfalso. rewrite -e in hn. discriminate.
+  - rewrite -Heqcall. reflexivity.
+Qed.
+
+Lemma lookup_upd_r_eq :
+  ∀ ℓ v l,
+    lookup_upd_r ℓ (upd_r ℓ v :: l) = Some v.
+Proof.
+  intros ℓ v l.
+  funelim (lookup_upd_r ℓ (upd_r ℓ v :: l)).
+  - rewrite -Heqcall. rewrite cast_loc_val_K. reflexivity.
+  - exfalso. pose proof e as e'. symmetry in e'. move: e' => /eqP e'.
+    contradiction.
+Qed.
+
+Lemma lookup_upd_r_neq :
+  ∀ ℓ ℓ' v l,
+    ℓ' != ℓ →
+    lookup_upd_r ℓ' (upd_r ℓ v :: l) = lookup_upd_r ℓ' l.
+Proof.
+  intros ℓ ℓ' v l hn.
+  funelim (lookup_upd_r ℓ' (upd_r ℓ v :: l)).
+  - exfalso. rewrite -e in hn. discriminate.
+  - rewrite -Heqcall. reflexivity.
+Qed.
+
+Lemma lookup_upd_l_spec :
+  ∀ ℓ v l s₀ s₁ h₀ h₁,
+    lookup_upd_l ℓ l = Some v →
+    update_heaps l s₀ s₁ = (h₀, h₁) →
+    get_heap h₀ ℓ = v.
+Proof.
+  intros ℓ v l s₀ s₁ h₀ h₁ hl e.
+  funelim (lookup_upd_l ℓ l).
+  - discriminate.
+  - simpl in *.
+    destruct update_heaps eqn:e1. noconf e.
+    eauto.
+  - rewrite -Heqcall in hl. noconf hl.
+    simpl in e0.
+    destruct update_heaps eqn:e1. noconf e0.
+    pose proof e as e'.
+    symmetry in e'. move: e' => /eqP ?. subst.
+    rewrite cast_loc_val_K.
+    apply get_set_heap_eq.
+  - simpl in e0.
+    destruct update_heaps eqn:e1. noconf e0.
+    rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
+    rewrite -Heqcall in hl. eauto.
+Qed.
+
+Lemma lookup_upd_r_spec :
+  ∀ ℓ v l s₀ s₁ h₀ h₁,
+    lookup_upd_r ℓ l = Some v →
+    update_heaps l s₀ s₁ = (h₀, h₁) →
+    get_heap h₁ ℓ = v.
+Proof.
+  intros ℓ v l s₀ s₁ h₀ h₁ hl e.
+  funelim (lookup_upd_r ℓ l).
+  - discriminate.
+  - simpl in *.
+    destruct update_heaps eqn:e1. noconf e.
+    eauto.
+  - rewrite -Heqcall in hl. noconf hl.
+    simpl in e0.
+    destruct update_heaps eqn:e1. noconf e0.
+    pose proof e as e'.
+    symmetry in e'. move: e' => /eqP ?. subst.
+    rewrite cast_loc_val_K.
+    apply get_set_heap_eq.
+  - simpl in e0.
+    destruct update_heaps eqn:e1. noconf e0.
+    rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
+    rewrite -Heqcall in hl. eauto.
+Qed.
+
+Lemma preserve_update_couple_lhs_lookup :
+  ∀ ℓ ℓ' (R : _ → _ → Prop) v v' (l : seq heap_upd),
+    lookup_upd_l ℓ l = Some v →
+    lookup_upd_l ℓ' l = Some v' →
     R v v' →
-    preserve_set_setR ℓ v ℓ' v' (couple_rhs ℓ ℓ' R).
+    preserve_update_pre l (couple_lhs ℓ ℓ' R).
 Proof.
-  intros ℓ ℓ' v v' R hn hR.
-  intros s₀ s₁ h.
-  unfold couple_rhs in *.
-  rewrite get_set_heap_neq. 2: auto.
-  rewrite get_set_heap_eq.
-  rewrite get_set_heap_eq.
+  intros ℓ ℓ' R v v' l hl hr h.
+  intros s₀ s₁ hh. unfold couple_lhs in *.
+  destruct update_heaps eqn:e.
+  erewrite lookup_upd_l_spec. 2,3: eauto.
+  erewrite lookup_upd_l_spec. 2,3: eauto.
   auto.
 Qed.
 
-Lemma preserve_set_setR_couple_lhs_neq :
-  ∀ ℓ ℓ' v v' ℓ₀ ℓ₁ (R : _ → _ → Prop),
-    ℓ₀ != ℓ →
-    ℓ₁ != ℓ →
-    preserve_set_setR ℓ v ℓ' v' (couple_lhs ℓ₀ ℓ₁ R).
+Lemma preserve_update_couple_rhs_lookup :
+  ∀ ℓ ℓ' (R : _ → _ → Prop) v v' (l : seq heap_upd),
+    lookup_upd_r ℓ l = Some v →
+    lookup_upd_r ℓ' l = Some v' →
+    R v v' →
+    preserve_update_pre l (couple_rhs ℓ ℓ' R).
 Proof.
-  intros ℓ ℓ' v v' ℓ₀ ℓ₁ R ? ?.
-  intros s₀ s₁ h.
-  unfold couple_lhs in *.
-  rewrite get_set_heap_neq. 2: auto.
-  rewrite get_set_heap_neq. 2: auto.
+  intros ℓ ℓ' R v v' l hl hr h.
+  intros s₀ s₁ hh. unfold couple_rhs in *.
+  destruct update_heaps eqn:e.
+  erewrite lookup_upd_r_spec. 2,3: eauto.
+  erewrite lookup_upd_r_spec. 2,3: eauto.
   auto.
+Qed.
+
+Lemma preserve_update_triple_rhs_lookup :
+  ∀ ℓ₁ ℓ₂ ℓ₃ (R : _ → _ → _ → Prop) v₁ v₂ v₃ (l : seq heap_upd),
+    lookup_upd_r ℓ₁ l = Some v₁ →
+    lookup_upd_r ℓ₂ l = Some v₂ →
+    lookup_upd_r ℓ₃ l = Some v₃ →
+    R v₁ v₂ v₃ →
+    preserve_update_pre l (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
+Proof.
+  intros ℓ₁ ℓ₂ ℓ₃ R v₁ v₂ v₃ l h₁ h₂ h₃ h.
+  intros s₀ s₁ hh. unfold triple_rhs in *.
+  destruct update_heaps eqn:e.
+  erewrite lookup_upd_r_spec. 2,3: eauto.
+  erewrite lookup_upd_r_spec. 2,3: eauto.
+  erewrite lookup_upd_r_spec. 2,3: eauto.
+  auto.
+Qed.
+
+Lemma lookup_upd_l_None_spec :
+  ∀ ℓ l s₀ s₁ h₀ h₁,
+    lookup_upd_l ℓ l = None →
+    update_heaps l s₀ s₁ = (h₀, h₁) →
+    get_heap h₀ ℓ = get_heap s₀ ℓ.
+Proof.
+  intros ℓ l s₀ s₁ h₀ h₁ hl e.
+  funelim (lookup_upd_l ℓ l).
+  - simpl in e. noconf e. reflexivity.
+  - simpl in *.
+    destruct update_heaps eqn:e1. noconf e.
+    eauto.
+  - rewrite -Heqcall in hl. noconf hl.
+  - simpl in e0.
+    destruct update_heaps eqn:e1. noconf e0.
+    rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
+    rewrite -Heqcall in hl. eauto.
+Qed.
+
+Lemma preserve_update_couple_lhs_lookup_None :
+  ∀ ℓ ℓ' (R : _ → _ → Prop) (l : seq heap_upd),
+    lookup_upd_l ℓ l = None →
+    lookup_upd_l ℓ' l = None →
+    preserve_update_pre l (couple_lhs ℓ ℓ' R).
+Proof.
+  intros ℓ ℓ' R l h h'.
+  intros s₀ s₁ hh. unfold couple_lhs in *.
+  destruct update_heaps eqn:e.
+  erewrite lookup_upd_l_None_spec. 2,3: eauto.
+  erewrite lookup_upd_l_None_spec with (ℓ := ℓ'). 2,3: eauto.
+  auto.
+Qed.
+
+Lemma lookup_upd_r_None_spec :
+  ∀ ℓ l s₀ s₁ h₀ h₁,
+    lookup_upd_r ℓ l = None →
+    update_heaps l s₀ s₁ = (h₀, h₁) →
+    get_heap h₁ ℓ = get_heap s₁ ℓ.
+Proof.
+  intros ℓ l s₀ s₁ h₀ h₁ hl e.
+  funelim (lookup_upd_r ℓ l).
+  - simpl in e. noconf e. reflexivity.
+  - simpl in *.
+    destruct update_heaps eqn:e1. noconf e.
+    eauto.
+  - rewrite -Heqcall in hl. noconf hl.
+  - simpl in e0.
+    destruct update_heaps eqn:e1. noconf e0.
+    rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
+    rewrite -Heqcall in hl. eauto.
+Qed.
+
+Lemma preserve_update_couple_rhs_lookup_None :
+  ∀ ℓ ℓ' (R : _ → _ → Prop) (l : seq heap_upd),
+    lookup_upd_r ℓ l = None →
+    lookup_upd_r ℓ' l = None →
+    preserve_update_pre l (couple_rhs ℓ ℓ' R).
+Proof.
+  intros ℓ ℓ' R l h h'.
+  intros s₀ s₁ hh. unfold couple_rhs in *.
+  destruct update_heaps eqn:e.
+  erewrite lookup_upd_r_None_spec. 2,3: eauto.
+  erewrite lookup_upd_r_None_spec with (ℓ := ℓ'). 2,3: eauto.
+  auto.
+Qed.
+
+Lemma preserve_update_triple_rhs_lookup_None :
+  ∀ ℓ₁ ℓ₂ ℓ₃ (R : _ → _ → _ → Prop) (l : seq heap_upd),
+    lookup_upd_r ℓ₁ l = None →
+    lookup_upd_r ℓ₂ l = None →
+    lookup_upd_r ℓ₃ l = None →
+    preserve_update_pre l (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
+Proof.
+  intros ℓ₁ ℓ₂ ℓ₃ R l h₁ h₂ h₃.
+  intros s₀ s₁ hh. unfold triple_rhs in *.
+  destruct update_heaps eqn:e.
+  erewrite lookup_upd_r_None_spec. 2,3: eauto.
+  erewrite lookup_upd_r_None_spec with (ℓ := ℓ₂). 2,3: eauto.
+  erewrite lookup_upd_r_None_spec with (ℓ := ℓ₃). 2,3: eauto.
+  auto.
+Qed.
+
+(** Culmination of both approaches, we deal with the case where the precondition
+    contains some rem_lhs/rem_rhs which we assume of the intial memory but which
+    we do not require of the final one.
+
+    TODO: Can we leverage what is already proven by using a (costly) instance
+    that will use [preserve_update_pre] instead of [preserve_update_mem]?
+
+    TODO: We can imagine something stronger even which would still retain memory
+    of what has not been overwritten. It could also remember what has been set
+    for that matter. All this would require some better way to treat this
+    memory, for instance by having the ability to swap these assumptions.
+
+    TODO: To avoid duplication, we could also replace the above by this one.
+*)
+
+(* TODO Maybe rename heap_upd *)
+Fixpoint remember_pre (l : list heap_upd) (pre : precond) :=
+  match l with
+  | upd_l ℓ v :: l => remember_pre l pre ⋊ rem_lhs ℓ v
+  | upd_r ℓ v :: l => remember_pre l pre ⋊ rem_rhs ℓ v
+  | [::] => pre
+  end.
+
+Lemma remember_pre_pre :
+  ∀ m pre s₀ s₁,
+    remember_pre m pre (s₀, s₁) →
+    pre (s₀, s₁).
+Proof.
+  intros m pre s₀ s₁ h.
+  induction m as [| [] m ih] in pre, s₀, s₁, h |- *.
+  - auto.
+  - simpl in h. destruct h as [h _].
+    eapply ih. auto.
+  - simpl in h. destruct h as [h _].
+    eapply ih. auto.
+Qed.
+
+Lemma remember_pre_conj :
+  ∀ m pre spre s₀ s₁,
+    remember_pre m (pre ⋊ spre) (s₀, s₁) →
+    remember_pre m pre (s₀, s₁) ∧
+    remember_pre m spre (s₀, s₁).
+Proof.
+  intros m pre spre s₀ s₁ h.
+  induction m as [| [] m ih] in pre, spre, s₀, s₁, h |- *.
+  - simpl. auto.
+  - simpl in h. simpl. destruct h as [h hm].
+    eapply ih in h. destruct h.
+    split. all: split. all: auto.
+  - simpl in h. simpl. destruct h as [h hm].
+    eapply ih in h. destruct h.
+    split. all: split. all: auto.
+Qed.
+
+Definition preserve_update_mem l m (pre : precond) :=
+  ∀ s₀ s₁, (remember_pre m pre) (s₀, s₁) → pre (update_heaps l s₀ s₁).
+
+Lemma preserve_update_pre_mem :
+  ∀ l m pre,
+    preserve_update_pre l pre →
+    preserve_update_mem l m pre.
+Proof.
+  intros l m pre h.
+  intros s₀ s₁ hi.
+  eapply remember_pre_pre in hi. apply h. auto.
+Qed.
+
+(* Maybe not, unless we can force it to suceed *)
+(* #[export] Hint Extern 40 (preserve_update_pre_mem _ _ _) =>
+  eapply preserve_update_pre_mem
+  : ssprove_invariant. *)
+
+Lemma preserve_update_mem_nil :
+  ∀ m pre,
+    preserve_update_mem [::] m pre.
+Proof.
+  intros m pre.
+  intros s₀ s₁ h.
+  apply remember_pre_pre in h. auto.
+Qed.
+
+#[export] Hint Extern 9 (preserve_update_mem [::] _ _) =>
+  eapply preserve_update_mem_nil
+  : ssprove_invariant.
+
+Lemma preserve_update_mem_conj :
+  ∀ (pre spre : precond) l m,
+    preserve_update_mem l m pre →
+    preserve_update_mem l m spre →
+    preserve_update_mem l m (pre ⋊ spre).
+Proof.
+  intros pre spre l m h hs.
+  intros s₀ s₁ hh. eapply remember_pre_conj in hh.
+  split. all: intuition auto.
+Qed.
+
+#[export] Hint Extern 10 (preserve_update_mem _ _ (_ ⋊ _)) =>
+  eapply preserve_update_mem_conj
+  : ssprove_invariant.
+
+(* TODO MORE *)
+
+Lemma restore_update_mem :
+  ∀ l m pre s₀ s₁,
+    update_pre l (remember_pre m pre) (s₀, s₁) →
+    preserve_update_mem l m pre →
+    pre (s₀, s₁).
+Proof.
+  intros l m pre s₀ s₁ hu hp.
+  eapply update_pre_spec in hu. destruct hu as [s₀' [s₁' [hpre e]]].
+  rewrite e. eapply hp. auto.
 Qed.
