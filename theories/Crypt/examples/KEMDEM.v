@@ -996,36 +996,56 @@ Section KEMDEM.
   Lemma PKE_CCA_perf_true :
     (Aux true) ≈₀ (PKE_CCA KEM_DEM true).
   Proof.
-    (* apply adv_equiv_sym.
+    apply adv_equiv_sym.
     unfold Aux.
     (* We go to the relation logic ignoring KEY_loc. *)
     eapply eq_rel_perf_ind with (inv := inv). 1: exact _.
     simplify_eq_rel m.
     all: ssprove_code_simpl.
     (* We are now in the realm of program logic *)
+    (* TODO Below is a exactly the same prove as the false case, would be good
+      to factorise.
+    *)
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
-      ssprove_same_head_alt_r. intro pk.
+      eapply r_get_vs_get_remember. 1: ssprove_invariant. intro pk.
       ssprove_same_head_alt_r. intro pkNone.
       ssprove_same_head_alt_r. intro sk.
       ssprove_same_head_alt_r. intro skNone.
       eapply r_scheme_bind_spec. 1: eapply KEM_kgen_spec. intros [pk' sk'] pps.
       eapply r_put_vs_put.
       eapply r_put_vs_put.
-      ssprove_restore_pre.
-      1:{ ssprove_invariant. auto. }
+      ssprove_restore_mem.
+      1:{
+        ssprove_invariant.
+        1,3: eapply preserve_update_pre_mem ; ssprove_invariant.
+        - auto.
+        - intros s₀ s₁ hh. unfold triple_rhs in *. simpl in *.
+          destruct hh as [[hi e1] e2]. simpl in *.
+          (* TODO Some get_heap_simpl? *)
+          rewrite get_set_heap_neq. 2: neq_loc_auto.
+          rewrite get_set_heap_eq.
+          rewrite !get_set_heap_neq. 2-5: neq_loc_auto.
+          move: pkNone => /eqP pkNone.
+          rewrite pkNone in e2. rewrite e2 in hi.
+          set (x := get_heap s₁ k_loc) in *.
+          set (y := get_heap s₁ ek_loc) in *.
+          clearbody x y.
+          destruct x, y. all: try contradiction.
+          simpl. auto.
+      }
       apply r_ret. auto.
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
       ssprove_swap_seq_rhs [:: 5 ; 4 ; 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
-      ssprove_same_head_alt_r. intro pk.
+      eapply r_get_vs_get_remember. 1: ssprove_invariant. intro pk.
       ssprove_same_head_alt_r. intro pkSome.
       destruct pk as [pk|]. 2: discriminate.
       simpl.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
-      ssprove_same_head_alt_r. intro ek.
+      eapply r_get_vs_get_remember. 1: ssprove_invariant. intro ek.
       ssprove_same_head_alt_r. intro ekNone.
       rewrite ekNone. simpl.
       eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intro c.
@@ -1037,51 +1057,56 @@ Section KEMDEM.
       ssprove_contract_put_rhs.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ; 0 ]%N.
       eapply r_get_remind_rhs. 1: exact _.
+      rewrite cNone. simpl.
       ssprove_swap_seq_rhs [:: 0 ]%N.
       eapply r_get_remember_rhs. intros k.
-      eapply (r_rem_couple_rhs c_loc k_loc). 1-3: exact _. intro eck.
-      eapply sameSome_None_l in cNone as kNone. 2: eauto.
-      rewrite cNone. rewrite kNone. simpl.
+      eapply (r_rem_triple_rhs pk_loc k_loc ek_loc). 1-4: exact _. intro hpke.
+      destruct ek. 1: discriminate.
+      destruct k. 1: contradiction.
+      simpl.
       ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
       ssprove_contract_put_get_rhs. simpl.
-      ssprove_forget_all.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
-      (* bind again *)
-      eapply r_bind.
-      { eapply @r_reflexivity_alt with (L := fset [::]).
-        - ssprove_valid.
-        - intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-        - intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-      }
-      intros ? c'.
-      eapply rpre_hypothesis_rule. intros s₀ s₁ [e hpre]. noconf e.
-      eapply rpre_weaken_rule
-      with (pre := λ '(s₀, s₁), inv (s₀, s₁)).
-      2:{ simpl. intuition subst. auto. }
-      clear s₀ s₁ hpre.
-      (* * *)
-      ssprove_swap_seq_rhs [:: 0 ]%N.
-      ssprove_same_head_alt_r. intros _.
-      ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
+      eapply @rsame_head_alt with (L := fset [::]).
+      1: ssprove_valid.
+      1:{ intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto. }
+      1:{ intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto. }
+      intro c'.
+      ssprove_swap_seq_lhs [:: 0 ]%N.
+      ssprove_swap_seq_rhs [:: 1 ; 0 ; 2 ; 1 ]%N.
       ssprove_contract_put_rhs.
+      (* TODO Maybe we can make something like this, but otherwise we can
+        simply remember
+      *)
+      (* ssprove_same_head_alt_r. intros _. *)
       eapply r_put_vs_put.
-      eapply r_put_rhs.
-      ssprove_restore_pre.
-      1:{ ssprove_invariant. auto. }
+      apply r_put_rhs.
+      apply r_put_vs_put.
+      ssprove_restore_mem.
+      1:{
+        ssprove_invariant.
+        1,3: eapply preserve_update_pre_mem ; ssprove_invariant.
+        intros s₀ s₁ hh. unfold triple_rhs in *. simpl in *.
+        destruct hh as [[[[[[hi ?] epk] ?] ?] ?] ?]. simpl in *.
+        rewrite -> 2!get_set_heap_neq. 2,3: neq_loc_auto.
+        rewrite  get_set_heap_neq. 2: neq_loc_auto.
+        rewrite get_set_heap_eq.
+        rewrite get_set_heap_neq. 2: neq_loc_auto.
+        rewrite get_set_heap_eq.
+        rewrite epk. simpl. auto.
+      }
       apply r_ret. auto.
     - destruct m as [ek' c']. simpl.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
       ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
-      eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant.
-      intros ek.
+      eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intros ek.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
       ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
       ssprove_same_head_alt_r. intro ekSome.
       destruct ek as [ek|]. 2: discriminate.
       simpl. destruct (ek == ek') eqn:eek.
-      + rewrite eek. ssprove_code_simpl_more.
-        ssprove_code_simpl. ssprove_code_simpl_more.
-        ssprove_forget.
+      + rewrite eek.
+        ssprove_code_simpl_more. ssprove_code_simpl. ssprove_code_simpl_more.
         eapply r_get_remember_rhs. intro pk.
         eapply r_get_remember_lhs. intro sk.
         eapply (r_rem_couple_lhs pk_loc sk_loc). 1,3: exact _.
@@ -1095,32 +1120,36 @@ Section KEMDEM.
         ssprove_same_head_alt_r. intro skSome.
         ssprove_swap_seq_rhs [:: 2 ; 1 ; 0 ]%N.
         ssprove_contract_get_rhs.
-        ssprove_swap_seq_rhs [:: 4 ; 3 ; 2 ; 1 ]%N.
-        eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intro c.
-        eapply r_get_remember_rhs. intro k.
-        eapply (r_rem_couple_rhs c_loc k_loc). 1-3: exact _. intro eck.
-        ssprove_forget_all.
+        ssprove_same_head_alt_r. intro c.
         ssprove_same_head_alt_r. intro cSome.
         destruct c as [c|]. 2: discriminate.
-        destruct k as [k|]. 2: discriminate.
         simpl.
         ssprove_same_head_alt_r. intro ee.
         move: ee => /eqP ee.
-        move: eek => /eqP eek. subst.
-        destruct (c != c') eqn: e.
-        2:{ move: e => /eqP e. subst. exfalso. apply ee. reflexivity. }
+        move: eek => /eqP eek. subst ek'.
+        destruct (c != c') eqn:e.
+        2:{ move: e => /eqP e. subst. contradiction. }
         rewrite e. simpl.
+        eapply r_get_remember_rhs. intro k.
+        eapply (r_rem_triple_rhs pk_loc k_loc ek_loc). 1-4: exact _. intro hpke.
+        destruct sk as [sk|]. 2: discriminate.
+        destruct pk as [pk|]. 2: contradiction.
+        destruct k as [k|]. 2: contradiction.
+        simpl. simpl in hpke. simpl in eps. unfold PkeyPair in eps.
+        eapply hpke in eps as h. simpl in h. subst.
         rewrite bind_ret.
-        (* TODO Will be the same as the other branch probably *)
-        admit.
+        ssprove_forget_all.
+        eapply @r_reflexivity_alt with (L := fset0).
+        * ssprove_valid.
+        * intros ℓ h. eapply fromEmpty. eauto.
+        * intros ℓ v h. eapply fromEmpty. eauto.
       + rewrite eek. ssprove_code_simpl_more.
         ssprove_swap_seq_rhs [:: 6 ; 5 ; 4 ; 3 ; 2 ; 1 ; 0 ]%N.
         eapply r_get_remind_rhs. 1: exact _.
         simpl.
         ssprove_forget.
         ssprove_swap_seq_rhs [:: 4 ; 3 ; 2 ; 1 ; 0 ]%N.
-        apply r_get_vs_get_remember. 1: ssprove_invariant.
-        intros sk.
+        apply r_get_vs_get_remember. 1: ssprove_invariant. intros sk.
         apply r_get_remember_rhs. intro pk.
         eapply (r_rem_couple_lhs pk_loc sk_loc). 1,3: exact _.
         1:{
@@ -1139,16 +1168,14 @@ Section KEMDEM.
         simpl.
         destruct c as [c|]. 2: discriminate.
         simpl in ee.
-        move: ee => /eqP ee.
-        move: eek => /eqP eek.
-        destruct (ek != ek') eqn:e.
-        2:{ move: e => /eqP e. subst. exfalso. eapply eek. reflexivity. }
-        rewrite e. simpl.
-        eapply @r_reflexivity_alt with (L := fset [::]).
+        rewrite eek. simpl.
+        eapply @r_reflexivity_alt with (L := fset0).
         * ssprove_valid.
-        * intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-        * intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto. *)
-  Admitted.
+        * intros ℓ hℓ. eapply fromEmpty. eauto.
+        * intros ℓ v hℓ. eapply fromEmpty. eauto.
+    (* These remaining opsig are quite odd *)
+    Unshelve. all: exact ({sig #[ 0%N ] : 'unit → 'unit }).
+  Qed.
 
   (** Security theorem *)
 
