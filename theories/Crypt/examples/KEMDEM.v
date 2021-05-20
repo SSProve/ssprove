@@ -848,7 +848,7 @@ Section KEMDEM.
       ssprove_contract_put_rhs.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ; 0 ]%N.
       eapply r_get_remind_rhs. 1: exact _.
-      rewrite cNone. simpl.
+      rewrite cNone. simpl. ssprove_forget.
       ssprove_swap_seq_rhs [:: 0 ]%N.
       eapply r_get_remember_rhs. intros k.
       eapply (r_rem_triple_rhs pk_loc k_loc ek_loc). 1-4: exact _. intro hpke.
@@ -866,11 +866,7 @@ Section KEMDEM.
       ssprove_swap_seq_lhs [:: 0 ]%N.
       ssprove_swap_seq_rhs [:: 1 ; 0 ; 2 ; 1 ]%N.
       ssprove_contract_put_rhs.
-      (* TODO Maybe we can make something like this, but otherwise we can
-        simply remember
-      *)
-      (* ssprove_same_head_alt_r. intros _. *)
-      eapply r_put_vs_put.
+      ssprove_same_head_alt_r. intros _.
       apply r_put_rhs.
       apply r_put_vs_put.
       ssprove_restore_mem.
@@ -878,7 +874,7 @@ Section KEMDEM.
         ssprove_invariant.
         1,3: eapply preserve_update_pre_mem ; ssprove_invariant.
         intros s₀ s₁ hh. unfold triple_rhs in *. simpl in *.
-        destruct hh as [[[[[[hi ?] epk] ?] ?] ?] ?]. simpl in *.
+        destruct hh as [[[[[hi ?] epk] ?] ?] ?]. simpl in *.
         get_heap_simpl.
         rewrite epk. simpl. auto.
       }
@@ -1000,8 +996,7 @@ Section KEMDEM.
     - rewrite Advantage_sym.
       rewrite -Advantage_link.
       eapply single_key_b with (CK₁ := (KEM false).(pack)).
-      7,8: ssprove_valid.
-      9,10: ssprove_valid.
+      7,8,11,12: ssprove_valid.
       1-2: ssprove_valid.
       (* Sad we have to do this before. *)
       5-8: unfold KEM, DEM.

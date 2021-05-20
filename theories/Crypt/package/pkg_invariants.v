@@ -670,6 +670,34 @@ Proof.
   rewrite -ht. apply hr.
 Qed.
 
+Lemma put_pre_cond_rem_lhs :
+  ∀ ℓ v ℓ' v',
+    ℓ' != ℓ →
+    put_pre_cond ℓ v (rem_lhs ℓ' v').
+Proof.
+  intros ℓ v ℓ' v' hn s₀ s₁ hc.
+  unfold rem_lhs in *.
+  rewrite get_set_heap_neq. all: auto.
+Qed.
+
+#[export] Hint Extern 10 (put_pre_cond _ _ (rem_lhs _ _)) =>
+  apply put_pre_cond_rem_lhs
+  : ssprove_invariant.
+
+Lemma put_pre_cond_rem_rhs :
+  ∀ ℓ v ℓ' v',
+    ℓ' != ℓ →
+    put_pre_cond ℓ v (rem_rhs ℓ' v').
+Proof.
+  intros ℓ v ℓ' v' hn s₀ s₁ hc.
+  unfold rem_rhs in *.
+  rewrite get_set_heap_neq. all: auto.
+Qed.
+
+#[export] Hint Extern 10 (put_pre_cond _ _ (rem_rhs _ _)) =>
+  apply put_pre_cond_rem_rhs
+  : ssprove_invariant.
+
 (** Dually to rem_lhs/rem_rhs we create "invariants" to represent a deviation
     of invariant, or a deficit which will need to be paid later to restore
     the proper invariant.
