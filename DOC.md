@@ -198,7 +198,66 @@ We provide the following nicer notation:
 
 ### Distributions
 
+The user can sample using pretty much any distribution that can be expressed
+in `mathcomp-analysis` provided that its support is in `chUniverse`.
+Writing them by hand might not be very convenient.
+
+For the time being we provide `uniform n` which represents a uniform
+distribution landing in `'fin n`. As such `n` must be positive
+(Coq will look for an instance of `Positive n`).
+
 ### Valid code
+
+[Raw code] as described above is well-typed but does not have any guarantees
+with respect to what it imports and which location it uses. We therefore
+define a notion a validity with respect to an import interface and a set of
+locations.
+
+#### Set of locations
+
+The set of locations is expected as an `{fset Location }` using the finite
+sets of the [extructures] library. For our purposes, it is advisable to write
+them directly as list which of locations which is then cast to an `fset` using
+the `fset` operation, as below:
+```coq
+fset [:: ℓ₀ ; ℓ₁ ; ℓ₂ ]
+```
+This is the best way to leverage the automation that we introduced.
+Nevertheless, in some cases it might be more convenient to use the union
+(`:|:`) operator of [extructures].
+
+#### Interfaces
+
+An interface is a set of signatures (`opsig`) corresponding to the procedures
+that a piece of code *can* import and use.
+Rather than writing them as `fset` directly, we provide special convenient
+notations, as well the type `Interface`.
+
+Interfaces are wrapped in the `[interface]` container which behaves like lists.
+They are of the form
+```coq
+[interface d₀ ; d₁ ; … ; dₙ ]
+```
+where the `dᵢ` are signatures, given using a special syntax:
+```coq
+val #[ id ] : src → tgt
+```
+where `id` is a natural number / identifier, and `src` and `tgt` are codes of
+types in `chUniverse` given using the special syntax (see [Specialised types]).
+
+Here are examples of interfaces:
+```coq
+[interface]
+```
+
+```coq
+[interface
+  val #[ 0 ] : 'nat → 'nat ;
+  val #[ 1 ] : 'option 'bool → 'unit × {map 'nat → 'bool }
+]
+```
+
+#### Validity of code
 
 ### Packages
 
@@ -211,3 +270,5 @@ We provide the following nicer notation:
 [Packages]: #packages
 [High-level SSP proofs]: #high-level-ssp-proofs
 [Probabilistic relational program logic]: #probabilistic-relational-program-logic
+
+[extructures]: https://github.com/arthuraa/extructures
