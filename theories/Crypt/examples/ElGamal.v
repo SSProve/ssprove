@@ -270,15 +270,15 @@ Proof.
   simplify_eq_rel m.
   ssprove_code_simpl.
   (* We are now in the realm of program logic *)
-  ssprove_same_head_r. intro count.
-  ssprove_same_head_r. intros _.
-  ssprove_same_head_r. move => /eqP e. subst.
-  ssprove_same_head_r. intro a.
+  ssprove_sync_eq. intro count.
+  ssprove_sync_eq. intros _.
+  ssprove_sync_eq. move => /eqP e. subst.
+  ssprove_sync_eq. intro a.
   ssprove_swap_lhs 0%N.
-  ssprove_same_head_r. intros _.
+  ssprove_sync_eq. intros _.
   ssprove_swap_lhs 0%N.
-  ssprove_same_head_r. intros _.
-  ssprove_same_head_r. intro b.
+  ssprove_sync_eq. intros _.
+  ssprove_sync_eq. intro b.
   rewrite !otf_fto. simpl.
   eapply r_ret. intuition eauto.
   f_equal. f_equal.
@@ -377,21 +377,21 @@ Proof.
   simplify_eq_rel m.
   ssprove_code_simpl.
   (* We are now in the realm of program logic *)
-  ssprove_same_head_r. intro count.
-  ssprove_same_head_r. intros _.
+  ssprove_sync_eq. intro count.
+  ssprove_sync_eq. intros _.
   destruct count.
   2:{
     cbn. eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
     cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
   }
   simpl.
-  ssprove_same_head_r. intro a.
+  ssprove_sync_eq. intro a.
   ssprove_swap_rhs 1%N.
   ssprove_swap_rhs 0%N.
-  ssprove_same_head_r. intros _.
+  ssprove_sync_eq. intros _.
   ssprove_swap_rhs 1%N.
   ssprove_swap_rhs 0%N.
-  ssprove_same_head_r. intros _.
+  ssprove_sync_eq. intros _.
   eapply r_transR.
   1:{ eapply r_uniform_prod. intros x y. eapply rreflexivity_rule. }
   simpl.

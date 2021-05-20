@@ -30,11 +30,21 @@
   Tools for relation program logic
   --------------------------------
 
-  - [ssprove_same_head_r]
+  - [ssprove_sync]
     Applies the rule that states that both pieces of code have the same head
     (meaning the same command at top-level).
     It is right-biased and as such will work even if the left-hand side is
     an evar.
+
+    Note: This tactic also tries to preserve the precondition automatically.
+    It is not always possible and it will sometimes require you to prove
+    preservation of the precondition manually.
+    Extension to the [ssprove_invariant] hint database can extend automation.
+
+  - [ssprove_sync_eq]
+    Specialised version of [ssprove_sync] where the precondition is merely
+    equality of heaps. No precondition preservation is needed in this particular
+    case.
 
   - [ssprove_swap_rhs n]
     Swap in the right-hand side.
@@ -297,7 +307,7 @@ Ltac cmd_bind_simpl :=
   (if b as b' return b = b' → raw_code A then k else λ _, fail) erefl. *)
 
 (* Right-biased application of rsame_head *)
-Ltac ssprove_same_head_r :=
+Ltac ssprove_sync_eq :=
   lazymatch goal with
   | |- ⊢ ⦃ _ ⦄ _ ≈ ?c ⦃ _ ⦄ =>
     lazymatch c with
@@ -337,7 +347,7 @@ Ltac notin_fset_auto :=
 
 (* Right-biased same head, but more genenal *)
 (* TODO Use that instead of the one above, which would have _eq in the name *)
-Ltac ssprove_same_head_alt_r :=
+Ltac ssprove_sync :=
   lazymatch goal with
   | |- ⊢ ⦃ _ ⦄ _ ≈ ?c ⦃ _ ⦄ =>
     lazymatch c with
@@ -501,7 +511,7 @@ Ltac ssprove_swap_auto :=
 (* TODO Tactic to solve automatically condition when possible *)
 Ltac ssprove_swap_aux n :=
   lazymatch eval cbv in n with
-  | S ?n => ssprove_same_head_r ; intro ; ssprove_swap_aux n
+  | S ?n => ssprove_sync_eq ; intro ; ssprove_swap_aux n
   | 0%N => ssprove_rswap_cmd_eq_rhs ; ssprove_swap_auto
   | _ => fail "Wrong number: " n
   end.
@@ -602,18 +612,18 @@ Ltac ssprove_code_simpl_more_aux :=
       ]
     | x ← sample ?op ;; _ =>
       let x' := fresh x in
-      ssprove_same_head_r ; intro x'
+      ssprove_sync_eq ; intro x'
     | put ?ℓ := ?v ;; _ =>
-      ssprove_same_head_r ; intro
+      ssprove_sync_eq ; intro
     | x ← get ?ℓ ;; _ =>
       let x' := fresh x in
-      ssprove_same_head_r ; intro x'
+      ssprove_sync_eq ; intro x'
     | x ← cmd ?c ;; _ =>
       let x' := fresh x in
-      ssprove_same_head_r ; intro x'
+      ssprove_sync_eq ; intro x'
     | @assertD ?A ?b (λ x, _) =>
       let x' := fresh x in
-      ssprove_same_head_r ; intro x'
+      ssprove_sync_eq ; intro x'
     | _ => eapply rreflexivity_rule
     end
   | |- _ => fail "The goal should be a syntactic judgment"

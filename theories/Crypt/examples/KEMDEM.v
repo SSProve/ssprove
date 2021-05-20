@@ -740,7 +740,7 @@ Section KEMDEM.
       ssprove_code_simpl.
       ssprove_swap_seq_rhs [:: 1 ; 0 ; 2 ; 1 ]%N.
       eapply r_get_vs_get_remember. 1: ssprove_invariant. intro sk.
-      ssprove_same_head_alt_r. intro skNone.
+      ssprove_sync. intro skNone.
       eapply r_get_remember_rhs. intro pk.
       eapply (r_rem_couple_lhs pk_loc sk_loc). 1,3: exact _.
       1:{ eapply Remembers_lhs_from_tracked_rhs. all: ssprove_invariant. }
@@ -767,16 +767,16 @@ Section KEMDEM.
       ssprove_swap_seq_rhs [:: 5 ; 4 ; 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
       eapply r_get_vs_get_remember. 1: ssprove_invariant. intro pk.
-      ssprove_same_head_alt_r. intro pkSome.
+      ssprove_sync. intro pkSome.
       destruct pk as [pk|]. 2: discriminate.
       simpl.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
       eapply r_get_vs_get_remember. 1: ssprove_invariant. intro ek.
-      ssprove_same_head_alt_r. intro ekNone.
+      ssprove_sync. intro ekNone.
       rewrite ekNone. simpl.
       eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intro c.
-      ssprove_same_head_alt_r. intro cNone.
+      ssprove_sync. intro cNone.
       eapply r_scheme_bind_spec. 1: eapply KEM_encap_spec. intros [k' ek'] hkek.
       ssprove_code_simpl_more. ssprove_code_simpl.
       ssprove_code_simpl_more.
@@ -802,7 +802,7 @@ Section KEMDEM.
       ssprove_swap_seq_lhs [:: 0 ]%N.
       ssprove_swap_seq_rhs [:: 1 ; 0 ; 2 ; 1 ]%N.
       ssprove_contract_put_rhs.
-      ssprove_same_head_alt_r. intros _.
+      ssprove_sync. intros _.
       apply r_put_rhs.
       apply r_put_vs_put.
       ssprove_restore_mem.
@@ -821,7 +821,7 @@ Section KEMDEM.
       eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intros ek.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
       ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
-      ssprove_same_head_alt_r. intro ekSome.
+      ssprove_sync. intro ekSome.
       destruct ek as [ek|]. 2: discriminate.
       simpl. destruct (ek == ek') eqn:eek.
       + rewrite eek.
@@ -836,14 +836,14 @@ Section KEMDEM.
         }
         intro eps.
         eapply sameSomeRel_sameSome in eps as eps'. rewrite eps'.
-        ssprove_same_head_alt_r. intro skSome.
+        ssprove_sync. intro skSome.
         ssprove_swap_seq_rhs [:: 2 ; 1 ; 0 ]%N.
         ssprove_contract_get_rhs.
-        ssprove_same_head_alt_r. intro c.
-        ssprove_same_head_alt_r. intro cSome.
+        ssprove_sync. intro c.
+        ssprove_sync. intro cSome.
         destruct c as [c|]. 2: discriminate.
         simpl.
-        ssprove_same_head_alt_r. intro ee.
+        ssprove_sync. intro ee.
         move: ee => /eqP ee.
         move: eek => /eqP eek. subst ek'.
         destruct (c != c') eqn:e.
@@ -874,10 +874,10 @@ Section KEMDEM.
         1:{ apply Remembers_lhs_from_tracked_rhs. all: ssprove_invariant. }
         intro eps. eapply sameSomeRel_sameSome in eps as eps'. rewrite eps'.
         ssprove_forget_all.
-        ssprove_same_head_alt_r. intro skSome.
-        ssprove_same_head_alt_r. intro c.
-        ssprove_same_head_alt_r. intro cSome.
-        ssprove_same_head_alt_r. intro ee.
+        ssprove_sync. intro skSome.
+        ssprove_sync. intro c.
+        ssprove_sync. intro cSome.
+        ssprove_sync. intro ee.
         destruct sk as [sk|]. 2: discriminate.
         simpl.
         destruct c as [c|]. 2: discriminate.
