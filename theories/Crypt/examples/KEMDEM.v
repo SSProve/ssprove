@@ -37,15 +37,6 @@ Import PackageNotation.
 #[local] Open Scope ring_scope.
 #[local] Open Scope package_scope.
 
-(* TODO MOVE *)
-Lemma eq_ler :
-  ∀ (x y : R),
-    x = y →
-    x <= y.
-Proof.
-  intros x y e. subst. apply lerr.
-Qed.
-
 Section KEMDEM.
 
   (** As we are in a section, we can safely kill the obligation tactic.

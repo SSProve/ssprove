@@ -59,11 +59,13 @@
 
 **)
 
-Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import all_ssreflect ssrbool eqtype seq eqtype choice.
-Set Warnings "notation-overridden,ambiguous-paths".
+Set Warnings "-notation-overridden,-ambiguous-paths,-notation-incompatible-format".
+From mathcomp Require Import all_ssreflect all_algebra reals distr
+  fingroup.fingroup realsum ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice
+  seq.
+Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
-From Crypt Require Import Prelude pkg_core_definition pkg_composition
+From Crypt Require Import Axioms Prelude pkg_core_definition pkg_composition
   pkg_notation RulesStateProb pkg_advantage pkg_lookup pkg_semantics
   pkg_heap pkg_invariants pkg_distr pkg_rhl pkg_tactics chUniverse.
 From Coq Require Import Utf8 FunctionalExtensionality
@@ -71,6 +73,10 @@ From Coq Require Import Utf8 FunctionalExtensionality
 
 From Equations Require Import Equations.
 Require Equations.Prop.DepElim.
+
+Import Num.Def.
+Import Num.Theory.
+Import mc_1_10.Num.Theory.
 
 Set Equations With UIP.
 
@@ -809,3 +815,13 @@ Ltac get_heap_simpl :=
   tryif rewrite get_set_heap_eq
   then idtac
   else (rewrite get_set_heap_neq ; [| neq_loc_auto ]).
+
+#[local] Open Scope ring_scope.
+
+Lemma eq_ler :
+  ∀ (x y : R),
+    x = y →
+    x <= y.
+Proof.
+  intros x y e. subst. apply lerr.
+Qed.
