@@ -32,7 +32,8 @@ On macOS, `gsed` is additionally required for this.
 ## Running verification
 
 Run `make` from this directory to verify all the Coq files.
-This should succeed displaying only warnings.
+This should succeed displaying only the list of axioms used for our listed
+results.
 
 Run `make graph` to build a graph of dependencies between sources.
 
