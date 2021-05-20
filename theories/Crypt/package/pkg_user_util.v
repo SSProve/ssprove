@@ -732,14 +732,14 @@ Ltac ssprove_forget_all :=
   repeat ssprove_forget.
 
 Ltac update_pre_fold :=
-  repeat change (set_lhs ?ℓ ?v ?pre) with (update_pre [:: upd_l ℓ v ] pre) ;
-  repeat change (set_rhs ?ℓ ?v ?pre) with (update_pre [:: upd_r ℓ v ] pre) ;
+  repeat change (set_lhs ?ℓ ?v ?pre) with (update_pre [:: hpv_l ℓ v ] pre) ;
+  repeat change (set_rhs ?ℓ ?v ?pre) with (update_pre [:: hpv_r ℓ v ] pre) ;
   repeat change (update_pre ?l1 (update_pre ?l2 ?pre))
   with (update_pre (l1 ++ l2) pre).
 
 Ltac remember_pre_fold :=
-  repeat change (?pre ⋊ rem_lhs ?ℓ ?v) with (remember_pre [:: upd_l ℓ v ] pre) ;
-  repeat change (?pre ⋊ rem_rhs ?ℓ ?v) with (remember_pre [:: upd_r ℓ v ] pre) ;
+  repeat change (?pre ⋊ rem_lhs ?ℓ ?v) with (remember_pre [:: hpv_l ℓ v ] pre) ;
+  repeat change (?pre ⋊ rem_rhs ?ℓ ?v) with (remember_pre [:: hpv_r ℓ v ] pre) ;
   repeat change (remember_pre ?l1 (remember_pre ?l2 ?pre))
   with (remember_pre (l1 ++ l2) pre).
 
@@ -758,44 +758,44 @@ Ltac ssprove_restore_mem :=
   | idtac
   ].
 
-Ltac lookup_upd_l_eq_solve :=
+Ltac lookup_hpv_l_eq_solve :=
   repeat (
-    tryif rewrite lookup_upd_l_eq
+    tryif rewrite lookup_hpv_l_eq
     then reflexivity
-    else rewrite lookup_upd_l_neq
+    else rewrite lookup_hpv_l_neq
   ) ; neq_loc_auto.
 
-Ltac lookup_upd_r_eq_solve :=
+Ltac lookup_hpv_r_eq_solve :=
   repeat (
-    tryif rewrite lookup_upd_r_eq
+    tryif rewrite lookup_hpv_r_eq
     then reflexivity
-    else rewrite lookup_upd_r_neq
+    else rewrite lookup_hpv_r_neq
   ) ; neq_loc_auto.
 
 #[export] Hint Extern 11 (preserve_update_pre _ (couple_lhs _ _ _)) =>
   eapply preserve_update_couple_lhs_lookup ; [
-    lookup_upd_l_eq_solve ..
+    lookup_hpv_l_eq_solve ..
   | idtac
   ]
   : ssprove_invariant.
 
 #[export] Hint Extern 11 (preserve_update_pre _ (couple_rhs _ _ _)) =>
   eapply preserve_update_couple_rhs_lookup ; [
-    lookup_upd_r_eq_solve ..
+    lookup_hpv_r_eq_solve ..
   | idtac
   ]
   : ssprove_invariant.
 
 #[export] Hint Extern 11 (preserve_update_pre _ (triple_rhs _ _ _ _)) =>
   eapply preserve_update_triple_rhs_lookup ; [
-    lookup_upd_r_eq_solve ..
+    lookup_hpv_r_eq_solve ..
   | idtac
   ]
   : ssprove_invariant.
 
 #[export] Hint Extern 12 (preserve_update_pre _ (couple_lhs _ _ _)) =>
   eapply preserve_update_couple_lhs_lookup_None ; [
-    repeat rewrite lookup_upd_l_neq ; [
+    repeat rewrite lookup_hpv_l_neq ; [
       reflexivity
     | solve [ neq_loc_auto ] ..
     ] ..
@@ -804,7 +804,7 @@ Ltac lookup_upd_r_eq_solve :=
 
 #[export] Hint Extern 12 (preserve_update_pre _ (couple_rhs _ _ _)) =>
   eapply preserve_update_couple_rhs_lookup_None ; [
-    repeat rewrite lookup_upd_r_neq ; [
+    repeat rewrite lookup_hpv_r_neq ; [
       reflexivity
     | solve [ neq_loc_auto ] ..
     ] ..
@@ -813,7 +813,7 @@ Ltac lookup_upd_r_eq_solve :=
 
 #[export] Hint Extern 12 (preserve_update_pre _ (triple_rhs _ _ _ _)) =>
   eapply preserve_update_triple_rhs_lookup_None ; [
-    repeat rewrite lookup_upd_r_neq ; [
+    repeat rewrite lookup_hpv_r_neq ; [
       reflexivity
     | solve [ neq_loc_auto ] ..
     ] ..

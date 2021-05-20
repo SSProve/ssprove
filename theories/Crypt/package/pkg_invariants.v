@@ -737,22 +737,22 @@ Proof.
   eapply hpre. auto.
 Qed.
 
-Inductive heap_upd :=
-| upd_l (ℓ : Location) (v : ℓ)
-| upd_r (ℓ : Location) (v : ℓ).
+Inductive heap_val :=
+| hpv_l (ℓ : Location) (v : ℓ)
+| hpv_r (ℓ : Location) (v : ℓ).
 
 Definition loc_val_pair (ℓ : Location) (v : ℓ) : ∑ ℓ : Location, ℓ :=
   (ℓ ; v).
 
-Definition heap_upd_eq : rel heap_upd :=
+Definition heap_val_eq : rel heap_val :=
   λ u v,
     match u, v with
-    | upd_l ℓ v, upd_l ℓ' v' => loc_val_pair ℓ v == (ℓ' ; v')
-    | upd_r ℓ v, upd_r ℓ' v' => loc_val_pair ℓ v == (ℓ' ; v')
+    | hpv_l ℓ v, hpv_l ℓ' v' => loc_val_pair ℓ v == (ℓ' ; v')
+    | hpv_r ℓ v, hpv_r ℓ' v' => loc_val_pair ℓ v == (ℓ' ; v')
     | _, _ => false
     end.
 
-Lemma heap_upd_eqP : Equality.axiom heap_upd_eq.
+Lemma heap_val_eqP : Equality.axiom heap_val_eq.
 Proof.
   intros u v.
   destruct u, v. all: simpl. 2,3: constructor. 2,3: discriminate.
@@ -764,25 +764,25 @@ Proof.
   all: intro h. all: inversion h. all: contradiction.
 Qed.
 
-Canonical heap_upd_eqMixin := EqMixin heap_upd_eqP.
-Canonical heap_upd_eqType :=
-  Eval hnf in EqType heap_upd heap_upd_eqMixin.
+Canonical heap_val_eqMixin := EqMixin heap_val_eqP.
+Canonical heap_val_eqType :=
+  Eval hnf in EqType heap_val heap_val_eqMixin.
 
-Derive NoConfusion for heap_upd.
+Derive NoConfusion for heap_val.
 
-Fixpoint update_pre (l : list heap_upd) (pre : precond) :=
+Fixpoint update_pre (l : list heap_val) (pre : precond) :=
   match l with
-  | upd_l ℓ v :: l => set_lhs ℓ v (update_pre l pre)
-  | upd_r ℓ v :: l => set_rhs ℓ v (update_pre l pre)
+  | hpv_l ℓ v :: l => set_lhs ℓ v (update_pre l pre)
+  | hpv_r ℓ v :: l => set_rhs ℓ v (update_pre l pre)
   | [::] => pre
   end.
 
-Fixpoint update_heaps (l : list heap_upd) s₀ s₁ :=
+Fixpoint update_heaps (l : list heap_val) s₀ s₁ :=
   match l with
-  | upd_l ℓ v :: l =>
+  | hpv_l ℓ v :: l =>
     let '(s₀, s₁) := update_heaps l s₀ s₁ in
     (set_heap s₀ ℓ v, s₁)
-  | upd_r ℓ v :: l =>
+  | hpv_r ℓ v :: l =>
     let '(s₀, s₁) := update_heaps l s₀ s₁ in
     (s₀, set_heap s₁ ℓ v)
   | [::] => (s₀, s₁)
@@ -842,7 +842,7 @@ Qed.
 Lemma preserve_update_cons_sym_eq :
   ∀ ℓ v l,
     preserve_update_pre l (λ '(h₀, h₁), h₀ = h₁) →
-    preserve_update_pre (upd_r ℓ v :: upd_l ℓ v :: l) (λ '(h₀, h₁), h₀ = h₁).
+    preserve_update_pre (hpv_r ℓ v :: hpv_l ℓ v :: l) (λ '(h₀, h₁), h₀ = h₁).
 Proof.
   intros ℓ v l h.
   intros ? s e.
@@ -859,7 +859,7 @@ Qed.
 Lemma preserve_update_cons_sym_heap_ignore :
   ∀ L ℓ v l,
     preserve_update_pre l (heap_ignore L) →
-    preserve_update_pre (upd_r ℓ v :: upd_l ℓ v :: l) (heap_ignore L).
+    preserve_update_pre (hpv_r ℓ v :: hpv_l ℓ v :: l) (heap_ignore L).
 Proof.
   intros L ℓ v l h.
   intros s₀ s₁ hh.
@@ -881,7 +881,7 @@ Lemma preserve_update_l_ignored_heap_ignore :
   ∀ L ℓ v l,
     ℓ \in L →
     preserve_update_pre l (heap_ignore L) →
-    preserve_update_pre (upd_l ℓ v :: l) (heap_ignore L).
+    preserve_update_pre (hpv_l ℓ v :: l) (heap_ignore L).
 Proof.
   intros L ℓ v l hin h.
   intros s₀ s₁ hh.
@@ -906,7 +906,7 @@ Lemma preserve_update_r_ignored_heap_ignore :
   ∀ L ℓ v l,
     ℓ \in L →
     preserve_update_pre l (heap_ignore L) →
-    preserve_update_pre (upd_r ℓ v :: l) (heap_ignore L).
+    preserve_update_pre (hpv_r ℓ v :: l) (heap_ignore L).
 Proof.
   intros L ℓ v l hin h.
   intros s₀ s₁ hh.
@@ -927,21 +927,21 @@ Qed.
   ]
   : ssprove_invariant.
 
-Definition is_upd_l u :=
+Definition is_hpv_l u :=
   match u with
-  | upd_l _ _ => true
+  | hpv_l _ _ => true
   | _ => false
   end.
 
-Definition is_upd_r u :=
+Definition is_hpv_r u :=
   match u with
-  | upd_r _ _ => true
+  | hpv_r _ _ => true
   | _ => false
   end.
 
 Lemma update_heaps_filter_l :
   ∀ l s₀ s₁,
-    (update_heaps (filter is_upd_l l) s₀ s₁).1 =
+    (update_heaps (filter is_hpv_l l) s₀ s₁).1 =
     (update_heaps l s₀ s₁).1.
 Proof.
   intros l s₀ s₁.
@@ -959,7 +959,7 @@ Qed.
 
 Lemma update_heaps_filter_r :
   ∀ l s₀ s₁,
-    (update_heaps (filter is_upd_r l) s₀ s₁).2 =
+    (update_heaps (filter is_hpv_r l) s₀ s₁).2 =
     (update_heaps l s₀ s₁).2.
 Proof.
   intros l s₀ s₁.
@@ -977,7 +977,7 @@ Qed.
 
 Lemma preserve_update_filter_couple_lhs :
   ∀ ℓ ℓ' R l,
-    preserve_update_pre (filter is_upd_l l) (couple_lhs ℓ ℓ' R) →
+    preserve_update_pre (filter is_hpv_l l) (couple_lhs ℓ ℓ' R) →
     preserve_update_pre l (couple_lhs ℓ ℓ' R).
 Proof.
   intros ℓ ℓ' R l h.
@@ -996,7 +996,7 @@ Qed.
 
 Lemma preserve_update_filter_couple_rhs :
   ∀ ℓ ℓ' R l,
-    preserve_update_pre (filter is_upd_r l) (couple_rhs ℓ ℓ' R) →
+    preserve_update_pre (filter is_hpv_r l) (couple_rhs ℓ ℓ' R) →
     preserve_update_pre l (couple_rhs ℓ ℓ' R).
 Proof.
   intros ℓ ℓ' R l h.
@@ -1015,7 +1015,7 @@ Qed.
 
 Lemma preserve_update_filter_triple_rhs :
   ∀ ℓ₁ ℓ₂ ℓ₃ R l,
-    preserve_update_pre (filter is_upd_r l) (triple_rhs ℓ₁ ℓ₂ ℓ₃ R) →
+    preserve_update_pre (filter is_hpv_r l) (triple_rhs ℓ₁ ℓ₂ ℓ₃ R) →
     preserve_update_pre l (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
 Proof.
   intros ℓ₁ ℓ₂ ℓ₃ R l h.
@@ -1058,82 +1058,82 @@ Proof.
   subst. reflexivity.
 Qed.
 
-Equations? lookup_upd_l (ℓ : Location) (l : seq heap_upd) : option ℓ :=
-  lookup_upd_l ℓ (upd_l ℓ' v' :: l) with inspect (ℓ == ℓ') := {
+Equations? lookup_hpv_l (ℓ : Location) (l : seq heap_val) : option ℓ :=
+  lookup_hpv_l ℓ (hpv_l ℓ' v' :: l) with inspect (ℓ == ℓ') := {
   | @exist true e := Some (cast_loc_val _ v') ;
-  | @exist false e := lookup_upd_l ℓ l
+  | @exist false e := lookup_hpv_l ℓ l
   } ;
-  lookup_upd_l ℓ (upd_r _ _ :: l) := lookup_upd_l ℓ l ;
-  lookup_upd_l ℓ [::] := None.
+  lookup_hpv_l ℓ (hpv_r _ _ :: l) := lookup_hpv_l ℓ l ;
+  lookup_hpv_l ℓ [::] := None.
 Proof.
   symmetry in e.
   move: e => /eqP e. subst. reflexivity.
 Qed.
 
-Equations? lookup_upd_r (ℓ : Location) (l : seq heap_upd) : option ℓ :=
-  lookup_upd_r ℓ (upd_r ℓ' v' :: l) with inspect (ℓ == ℓ') := {
+Equations? lookup_hpv_r (ℓ : Location) (l : seq heap_val) : option ℓ :=
+  lookup_hpv_r ℓ (hpv_r ℓ' v' :: l) with inspect (ℓ == ℓ') := {
   | @exist true e := Some (cast_loc_val _ v') ;
-  | @exist false e := lookup_upd_r ℓ l
+  | @exist false e := lookup_hpv_r ℓ l
   } ;
-  lookup_upd_r ℓ (upd_l _ _ :: l) := lookup_upd_r ℓ l ;
-  lookup_upd_r ℓ [::] := None.
+  lookup_hpv_r ℓ (hpv_l _ _ :: l) := lookup_hpv_r ℓ l ;
+  lookup_hpv_r ℓ [::] := None.
 Proof.
   symmetry in e.
   move: e => /eqP e. subst. reflexivity.
 Qed.
 
-Lemma lookup_upd_l_eq :
+Lemma lookup_hpv_l_eq :
   ∀ ℓ v l,
-    lookup_upd_l ℓ (upd_l ℓ v :: l) = Some v.
+    lookup_hpv_l ℓ (hpv_l ℓ v :: l) = Some v.
 Proof.
   intros ℓ v l.
-  funelim (lookup_upd_l ℓ (upd_l ℓ v :: l)).
+  funelim (lookup_hpv_l ℓ (hpv_l ℓ v :: l)).
   - rewrite -Heqcall. rewrite cast_loc_val_K. reflexivity.
   - exfalso. pose proof e as e'. symmetry in e'. move: e' => /eqP e'.
     contradiction.
 Qed.
 
-Lemma lookup_upd_l_neq :
+Lemma lookup_hpv_l_neq :
   ∀ ℓ ℓ' v l,
     ℓ' != ℓ →
-    lookup_upd_l ℓ' (upd_l ℓ v :: l) = lookup_upd_l ℓ' l.
+    lookup_hpv_l ℓ' (hpv_l ℓ v :: l) = lookup_hpv_l ℓ' l.
 Proof.
   intros ℓ ℓ' v l hn.
-  funelim (lookup_upd_l ℓ' (upd_l ℓ v :: l)).
+  funelim (lookup_hpv_l ℓ' (hpv_l ℓ v :: l)).
   - exfalso. rewrite -e in hn. discriminate.
   - rewrite -Heqcall. reflexivity.
 Qed.
 
-Lemma lookup_upd_r_eq :
+Lemma lookup_hpv_r_eq :
   ∀ ℓ v l,
-    lookup_upd_r ℓ (upd_r ℓ v :: l) = Some v.
+    lookup_hpv_r ℓ (hpv_r ℓ v :: l) = Some v.
 Proof.
   intros ℓ v l.
-  funelim (lookup_upd_r ℓ (upd_r ℓ v :: l)).
+  funelim (lookup_hpv_r ℓ (hpv_r ℓ v :: l)).
   - rewrite -Heqcall. rewrite cast_loc_val_K. reflexivity.
   - exfalso. pose proof e as e'. symmetry in e'. move: e' => /eqP e'.
     contradiction.
 Qed.
 
-Lemma lookup_upd_r_neq :
+Lemma lookup_hpv_r_neq :
   ∀ ℓ ℓ' v l,
     ℓ' != ℓ →
-    lookup_upd_r ℓ' (upd_r ℓ v :: l) = lookup_upd_r ℓ' l.
+    lookup_hpv_r ℓ' (hpv_r ℓ v :: l) = lookup_hpv_r ℓ' l.
 Proof.
   intros ℓ ℓ' v l hn.
-  funelim (lookup_upd_r ℓ' (upd_r ℓ v :: l)).
+  funelim (lookup_hpv_r ℓ' (hpv_r ℓ v :: l)).
   - exfalso. rewrite -e in hn. discriminate.
   - rewrite -Heqcall. reflexivity.
 Qed.
 
-Lemma lookup_upd_l_spec :
+Lemma lookup_hpv_l_spec :
   ∀ ℓ v l s₀ s₁ h₀ h₁,
-    lookup_upd_l ℓ l = Some v →
+    lookup_hpv_l ℓ l = Some v →
     update_heaps l s₀ s₁ = (h₀, h₁) →
     get_heap h₀ ℓ = v.
 Proof.
   intros ℓ v l s₀ s₁ h₀ h₁ hl e.
-  funelim (lookup_upd_l ℓ l).
+  funelim (lookup_hpv_l ℓ l).
   - discriminate.
   - simpl in *.
     destruct update_heaps eqn:e1. noconf e.
@@ -1151,14 +1151,14 @@ Proof.
     rewrite -Heqcall in hl. eauto.
 Qed.
 
-Lemma lookup_upd_r_spec :
+Lemma lookup_hpv_r_spec :
   ∀ ℓ v l s₀ s₁ h₀ h₁,
-    lookup_upd_r ℓ l = Some v →
+    lookup_hpv_r ℓ l = Some v →
     update_heaps l s₀ s₁ = (h₀, h₁) →
     get_heap h₁ ℓ = v.
 Proof.
   intros ℓ v l s₀ s₁ h₀ h₁ hl e.
-  funelim (lookup_upd_r ℓ l).
+  funelim (lookup_hpv_r ℓ l).
   - discriminate.
   - simpl in *.
     destruct update_heaps eqn:e1. noconf e.
@@ -1177,60 +1177,60 @@ Proof.
 Qed.
 
 Lemma preserve_update_couple_lhs_lookup :
-  ∀ ℓ ℓ' (R : _ → _ → Prop) v v' (l : seq heap_upd),
-    lookup_upd_l ℓ l = Some v →
-    lookup_upd_l ℓ' l = Some v' →
+  ∀ ℓ ℓ' (R : _ → _ → Prop) v v' (l : seq heap_val),
+    lookup_hpv_l ℓ l = Some v →
+    lookup_hpv_l ℓ' l = Some v' →
     R v v' →
     preserve_update_pre l (couple_lhs ℓ ℓ' R).
 Proof.
   intros ℓ ℓ' R v v' l hl hr h.
   intros s₀ s₁ hh. unfold couple_lhs in *.
   destruct update_heaps eqn:e.
-  erewrite lookup_upd_l_spec. 2,3: eauto.
-  erewrite lookup_upd_l_spec. 2,3: eauto.
+  erewrite lookup_hpv_l_spec. 2,3: eauto.
+  erewrite lookup_hpv_l_spec. 2,3: eauto.
   auto.
 Qed.
 
 Lemma preserve_update_couple_rhs_lookup :
-  ∀ ℓ ℓ' (R : _ → _ → Prop) v v' (l : seq heap_upd),
-    lookup_upd_r ℓ l = Some v →
-    lookup_upd_r ℓ' l = Some v' →
+  ∀ ℓ ℓ' (R : _ → _ → Prop) v v' (l : seq heap_val),
+    lookup_hpv_r ℓ l = Some v →
+    lookup_hpv_r ℓ' l = Some v' →
     R v v' →
     preserve_update_pre l (couple_rhs ℓ ℓ' R).
 Proof.
   intros ℓ ℓ' R v v' l hl hr h.
   intros s₀ s₁ hh. unfold couple_rhs in *.
   destruct update_heaps eqn:e.
-  erewrite lookup_upd_r_spec. 2,3: eauto.
-  erewrite lookup_upd_r_spec. 2,3: eauto.
+  erewrite lookup_hpv_r_spec. 2,3: eauto.
+  erewrite lookup_hpv_r_spec. 2,3: eauto.
   auto.
 Qed.
 
 Lemma preserve_update_triple_rhs_lookup :
-  ∀ ℓ₁ ℓ₂ ℓ₃ (R : _ → _ → _ → Prop) v₁ v₂ v₃ (l : seq heap_upd),
-    lookup_upd_r ℓ₁ l = Some v₁ →
-    lookup_upd_r ℓ₂ l = Some v₂ →
-    lookup_upd_r ℓ₃ l = Some v₃ →
+  ∀ ℓ₁ ℓ₂ ℓ₃ (R : _ → _ → _ → Prop) v₁ v₂ v₃ (l : seq heap_val),
+    lookup_hpv_r ℓ₁ l = Some v₁ →
+    lookup_hpv_r ℓ₂ l = Some v₂ →
+    lookup_hpv_r ℓ₃ l = Some v₃ →
     R v₁ v₂ v₃ →
     preserve_update_pre l (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
 Proof.
   intros ℓ₁ ℓ₂ ℓ₃ R v₁ v₂ v₃ l h₁ h₂ h₃ h.
   intros s₀ s₁ hh. unfold triple_rhs in *.
   destruct update_heaps eqn:e.
-  erewrite lookup_upd_r_spec. 2,3: eauto.
-  erewrite lookup_upd_r_spec. 2,3: eauto.
-  erewrite lookup_upd_r_spec. 2,3: eauto.
+  erewrite lookup_hpv_r_spec. 2,3: eauto.
+  erewrite lookup_hpv_r_spec. 2,3: eauto.
+  erewrite lookup_hpv_r_spec. 2,3: eauto.
   auto.
 Qed.
 
-Lemma lookup_upd_l_None_spec :
+Lemma lookup_hpv_l_None_spec :
   ∀ ℓ l s₀ s₁ h₀ h₁,
-    lookup_upd_l ℓ l = None →
+    lookup_hpv_l ℓ l = None →
     update_heaps l s₀ s₁ = (h₀, h₁) →
     get_heap h₀ ℓ = get_heap s₀ ℓ.
 Proof.
   intros ℓ l s₀ s₁ h₀ h₁ hl e.
-  funelim (lookup_upd_l ℓ l).
+  funelim (lookup_hpv_l ℓ l).
   - simpl in e. noconf e. reflexivity.
   - simpl in *.
     destruct update_heaps eqn:e1. noconf e.
@@ -1243,27 +1243,27 @@ Proof.
 Qed.
 
 Lemma preserve_update_couple_lhs_lookup_None :
-  ∀ ℓ ℓ' (R : _ → _ → Prop) (l : seq heap_upd),
-    lookup_upd_l ℓ l = None →
-    lookup_upd_l ℓ' l = None →
+  ∀ ℓ ℓ' (R : _ → _ → Prop) (l : seq heap_val),
+    lookup_hpv_l ℓ l = None →
+    lookup_hpv_l ℓ' l = None →
     preserve_update_pre l (couple_lhs ℓ ℓ' R).
 Proof.
   intros ℓ ℓ' R l h h'.
   intros s₀ s₁ hh. unfold couple_lhs in *.
   destruct update_heaps eqn:e.
-  erewrite lookup_upd_l_None_spec. 2,3: eauto.
-  erewrite lookup_upd_l_None_spec with (ℓ := ℓ'). 2,3: eauto.
+  erewrite lookup_hpv_l_None_spec. 2,3: eauto.
+  erewrite lookup_hpv_l_None_spec with (ℓ := ℓ'). 2,3: eauto.
   auto.
 Qed.
 
-Lemma lookup_upd_r_None_spec :
+Lemma lookup_hpv_r_None_spec :
   ∀ ℓ l s₀ s₁ h₀ h₁,
-    lookup_upd_r ℓ l = None →
+    lookup_hpv_r ℓ l = None →
     update_heaps l s₀ s₁ = (h₀, h₁) →
     get_heap h₁ ℓ = get_heap s₁ ℓ.
 Proof.
   intros ℓ l s₀ s₁ h₀ h₁ hl e.
-  funelim (lookup_upd_r ℓ l).
+  funelim (lookup_hpv_r ℓ l).
   - simpl in e. noconf e. reflexivity.
   - simpl in *.
     destruct update_heaps eqn:e1. noconf e.
@@ -1276,55 +1276,39 @@ Proof.
 Qed.
 
 Lemma preserve_update_couple_rhs_lookup_None :
-  ∀ ℓ ℓ' (R : _ → _ → Prop) (l : seq heap_upd),
-    lookup_upd_r ℓ l = None →
-    lookup_upd_r ℓ' l = None →
+  ∀ ℓ ℓ' (R : _ → _ → Prop) (l : seq heap_val),
+    lookup_hpv_r ℓ l = None →
+    lookup_hpv_r ℓ' l = None →
     preserve_update_pre l (couple_rhs ℓ ℓ' R).
 Proof.
   intros ℓ ℓ' R l h h'.
   intros s₀ s₁ hh. unfold couple_rhs in *.
   destruct update_heaps eqn:e.
-  erewrite lookup_upd_r_None_spec. 2,3: eauto.
-  erewrite lookup_upd_r_None_spec with (ℓ := ℓ'). 2,3: eauto.
+  erewrite lookup_hpv_r_None_spec. 2,3: eauto.
+  erewrite lookup_hpv_r_None_spec with (ℓ := ℓ'). 2,3: eauto.
   auto.
 Qed.
 
 Lemma preserve_update_triple_rhs_lookup_None :
-  ∀ ℓ₁ ℓ₂ ℓ₃ (R : _ → _ → _ → Prop) (l : seq heap_upd),
-    lookup_upd_r ℓ₁ l = None →
-    lookup_upd_r ℓ₂ l = None →
-    lookup_upd_r ℓ₃ l = None →
+  ∀ ℓ₁ ℓ₂ ℓ₃ (R : _ → _ → _ → Prop) (l : seq heap_val),
+    lookup_hpv_r ℓ₁ l = None →
+    lookup_hpv_r ℓ₂ l = None →
+    lookup_hpv_r ℓ₃ l = None →
     preserve_update_pre l (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
 Proof.
   intros ℓ₁ ℓ₂ ℓ₃ R l h₁ h₂ h₃.
   intros s₀ s₁ hh. unfold triple_rhs in *.
   destruct update_heaps eqn:e.
-  erewrite lookup_upd_r_None_spec. 2,3: eauto.
-  erewrite lookup_upd_r_None_spec with (ℓ := ℓ₂). 2,3: eauto.
-  erewrite lookup_upd_r_None_spec with (ℓ := ℓ₃). 2,3: eauto.
+  erewrite lookup_hpv_r_None_spec. 2,3: eauto.
+  erewrite lookup_hpv_r_None_spec with (ℓ := ℓ₂). 2,3: eauto.
+  erewrite lookup_hpv_r_None_spec with (ℓ := ℓ₃). 2,3: eauto.
   auto.
 Qed.
 
-(** Culmination of both approaches, we deal with the case where the precondition
-    contains some rem_lhs/rem_rhs which we assume of the intial memory but which
-    we do not require of the final one.
-
-    TODO: Can we leverage what is already proven by using a (costly) instance
-    that will use [preserve_update_pre] instead of [preserve_update_mem]?
-
-    TODO: We can imagine something stronger even which would still retain memory
-    of what has not been overwritten. It could also remember what has been set
-    for that matter. All this would require some better way to treat this
-    memory, for instance by having the ability to swap these assumptions.
-
-    TODO: To avoid duplication, we could also replace the above by this one.
-*)
-
-(* TODO Maybe rename heap_upd *)
-Fixpoint remember_pre (l : list heap_upd) (pre : precond) :=
+Fixpoint remember_pre (l : list heap_val) (pre : precond) :=
   match l with
-  | upd_l ℓ v :: l => remember_pre l pre ⋊ rem_lhs ℓ v
-  | upd_r ℓ v :: l => remember_pre l pre ⋊ rem_rhs ℓ v
+  | hpv_l ℓ v :: l => remember_pre l pre ⋊ rem_lhs ℓ v
+  | hpv_r ℓ v :: l => remember_pre l pre ⋊ rem_rhs ℓ v
   | [::] => pre
   end.
 
@@ -1371,11 +1355,6 @@ Proof.
   intros s₀ s₁ hi.
   eapply remember_pre_pre in hi. apply h. auto.
 Qed.
-
-(* Maybe not, unless we can force it to suceed *)
-(* #[export] Hint Extern 40 (preserve_update_pre_mem _ _ _) =>
-  eapply preserve_update_pre_mem
-  : ssprove_invariant. *)
 
 Lemma preserve_update_mem_nil :
   ∀ m pre,
