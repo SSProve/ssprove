@@ -410,12 +410,6 @@ Section KEMDEM.
     package PKE_CCA_loc [interface] PKE_CCA_out :=
     [package
       def #[ PKGEN ] (_ : 'unit) : 'pkey {
-        (** In the original SSP paper, there is only a check that the location
-            sk_loc is empty, for simplicity, we check also that pk_loc is empty.
-            TODO: Prove it since we have an invariant for this.
-        *)
-        pk ← get pk_loc ;;
-        #assert (pk == None) ;;
         sk ← get sk_loc ;;
         #assert (sk == None) ;;
         '(pk, sk) ← ζ.(PKE_kgen) ;;
@@ -807,10 +801,14 @@ Section KEMDEM.
     (* We are now in the realm of program logic *)
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
-      eapply r_get_vs_get_remember. 1: ssprove_invariant. intro pk.
-      ssprove_same_head_alt_r. intro pkNone.
-      ssprove_same_head_alt_r. intro sk.
+      ssprove_swap_seq_rhs [:: 1 ; 0 ; 2 ; 1 ]%N.
+      eapply r_get_vs_get_remember. 1: ssprove_invariant. intro sk.
       ssprove_same_head_alt_r. intro skNone.
+      eapply r_get_remember_rhs. intro pk.
+      eapply (r_rem_couple_lhs pk_loc sk_loc). 1,3: exact _.
+      1:{ eapply Remembers_lhs_from_tracked_rhs. all: ssprove_invariant. }
+      intro eps. destruct sk. 1: discriminate.
+      destruct pk. 1: contradiction. simpl.
       eapply r_scheme_bind_spec. 1: eapply KEM_kgen_spec. intros [pk' sk'] pps.
       eapply r_put_vs_put.
       eapply r_put_vs_put.
@@ -820,10 +818,9 @@ Section KEMDEM.
         1,3: eapply preserve_update_pre_mem ; ssprove_invariant.
         - auto.
         - intros s₀ s₁ hh. unfold triple_rhs in *. simpl in *.
-          destruct hh as [[hi e1] e2]. simpl in *.
+          destruct hh as [[[hi ?] ?] e]. simpl in *.
+          rewrite e in hi.
           get_heap_simpl.
-          move: pkNone => /eqP pkNone.
-          rewrite pkNone in e2. rewrite e2 in hi.
           destruct (get_heap s₁ k_loc), (get_heap s₁ ek_loc).
           all: try contradiction.
           auto.
