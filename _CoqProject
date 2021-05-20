@@ -67,18 +67,21 @@ theories/Crypt/package/pkg_distr.v
 theories/Crypt/package/pkg_rhl.v
 theories/Crypt/package/pkg_user_util.v
 theories/Crypt/Package.v
-theories/Crypt/package/package_usage_example.v
 
 # State + Prob
 theories/Crypt/rules/RulesStateProb.v
 theories/Crypt/rules/UniformStateProb.v
+
+#std. distributions
+# theories/Crypt/only_prob/SymmetricSchemeStateProbStdDistr.v
+
+# Examples
+theories/Crypt/examples/package_usage_example.v
 theories/Crypt/examples/PRF.v
 theories/Crypt/examples/AsymScheme.v
 theories/Crypt/examples/ElGamal.v
 theories/Crypt/examples/OTP.v
 theories/Crypt/examples/KEMDEM.v
-#std. distributions
-# theories/Crypt/only_prob/SymmetricSchemeStateProbStdDistr.v
 
 # Printing the axioms of all results from the paper
 theories/Crypt/Main.v
