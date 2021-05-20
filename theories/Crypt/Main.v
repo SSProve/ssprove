@@ -37,7 +37,7 @@ Definition results_from_the_paper := [let
   @for_loop_rule ;
   Advantage_triangle ;
   Advantage_link ;
-  @prove_relational ;
+  @eq_upto_inv_perf_ind ;
   @Pr_eq_empty ;
   PKE_security
 ].

@@ -334,8 +334,7 @@ Proof.
   apply (Pr_eq Ψ Φ). all: assumption.
 Qed.
 
-(* TODO Rename *)
-Lemma some_lemma_for_prove_relational :
+Lemma eq_up_to_inv_adversary_link :
   ∀ {L₀ L₁ LA E} (p₀ p₁ : raw_package) (I : precond) {B} (A : raw_code B)
     `{ValidPackage L₀ Game_import E p₀}
     `{ValidPackage L₁ Game_import E p₁}
@@ -414,8 +413,7 @@ Proof.
       * cbn. intros s₀' s₁' [? ?]. subst. auto.
 Qed.
 
-(* TODO RENAME *)
-Lemma prove_relational :
+Lemma eq_upto_inv_perf_ind :
   ∀ {L₀ L₁ LA E} (p₀ p₁ : raw_package) (I : precond) (A : raw_package)
     `{ValidPackage L₀ Game_import E p₀}
     `{ValidPackage L₁ Game_import E p₁}
@@ -441,7 +439,7 @@ Proof.
       + move: hd₀ => /fdisjointP hd₀. apply hd₀. assumption.
       + move: hd₁ => /fdisjointP hd₁. apply hd₁. assumption.
   }
-  unshelve epose proof (some_lemma_for_prove_relational p₀ p₁ I r hI hp) as h.
+  unshelve epose proof (eq_up_to_inv_adversary_link p₀ p₁ I r hI hp) as h.
   1:{
     eapply valid_get_op_default.
     - eauto.
@@ -532,7 +530,7 @@ Lemma eq_rel_perf_ind :
 Proof.
   intros L₀ L₁ E p₀ p₁ inv v₀ v₁ [? ?] he.
   intros LA A vA hd₀ hd₁.
-  eapply prove_relational. all: eauto.
+  eapply eq_upto_inv_perf_ind. all: eauto.
 Qed.
 
 (* Special case where the invariant is equality of state. *)

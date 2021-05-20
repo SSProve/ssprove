@@ -359,7 +359,7 @@ Proof.
   apply: GRing.subr0_eq. apply: normr0_eq0.
   fold (@AdvantageE [interface val #[i1] : chWords → chWords] (IND_CPA_pkg_ff ∘ ENC_pkg) (MOD_CPA_ff_pkg ∘ EVAL true) A Hdisjoint1 Hdisjoint2).
   rewrite /IND_CPA_pkg_ff /IND_CPA_opkg_ff /MOD_CPA_ff_pkg /MOD_CPA_ff_pkg /MOD_CPA_ff.
-  rewrite (prove_relational' _ _  (fun '(L1, L2) => L1 = L2) _ _ _ ).
+  rewrite (eq_upto_inv_perf_ind' _ _  (fun '(L1, L2) => L1 = L2) _ _ _ ).
   1,3: auto.
   1:{
     rewrite /=.
@@ -453,7 +453,7 @@ Proof.
 (*     rewrite -link_assoc. *)
 (*     apply: GRing.subr0_eq. apply: normr0_eq0. *)
 (*     fold (@AdvantageE [interface val #[i1] : chWords → chWords] (IND_CPA_pkg_ff ∘ ENC_pkg) (MOD_CPA_ff_pkg ∘ EVAL true) A Hdisjoint1 Hdisjoint2). *)
-(*     rewrite (prove_relational _ _  (fun '(L1, L2) => L1 = L2) _ _ _ ). *)
+(*     rewrite (eq_upto_inv_perf_ind _ _  (fun '(L1, L2) => L1 = L2) _ _ _ ). *)
 (*     1,3: auto. *)
 (*     1:{ *)
 (*       rewrite /=. *)
@@ -631,7 +631,7 @@ Proof.
   apply: GRing.subr0_eq. apply: normr0_eq0.
   rewrite /IND_CPA.
   fold (@AdvantageE [interface val #[i1] : chWords → chWords] (IND_CPA_pkg_tt ∘ ENC_pkg) (MOD_CPA_tt_pkg ∘ EVAL true) A Hdisjoint1 Hdisjoint2).
-  rewrite (prove_relational _ _  (fun '(L1, L2) => L1 = L2) _ _ _ ).
+  rewrite (eq_upto_inv_perf_ind _ _  (fun '(L1, L2) => L1 = L2) _ _ _ ).
   1,3 : auto.
   1:{
       rewrite /=.

@@ -486,7 +486,7 @@ Proof.
     (@AdvantageE [interface val #[challenge_id'] : chPlain → 'option chCipher ]
                  (ots_real_vs_rnd false) (Aux ∘ DH_rnd) A Hdisj1 Hdisj1') by [].
     rewrite Hfool.
-    rewrite (prove_relational' _ _  (fun '(L1, L2) => L1 = L2) _ _ _ ).
+    rewrite (eq_upto_inv_perf_ind' _ _  (fun '(L1, L2) => L1 = L2) _ _ _ ).
     1,3: auto.
     1:{
       rewrite /=.
@@ -655,7 +655,7 @@ Proof.
     (@AdvantageE [interface val #[challenge_id'] : chPlain → 'option chCipher ]
                  (ots_real_vs_rnd true) (Aux ∘ DH_real) A Hdisj1 Hdisj1') by [].
     rewrite Hfool.
-    rewrite (prove_relational' _ _  (fun '(L1, L2) => L1 = L2) _ _ _ ).
+    rewrite (eq_upto_inv_perf_ind' _ _  (fun '(L1, L2) => L1 = L2) _ _ _ ).
     1,3: auto.
     1:{
       rewrite /=.
