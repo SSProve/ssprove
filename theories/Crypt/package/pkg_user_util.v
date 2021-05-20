@@ -825,3 +825,12 @@ Lemma eq_ler :
 Proof.
   intros x y e. subst. apply lerr.
 Qed.
+
+Ltac fdisjoint_auto :=
+  let h := fresh "h" in
+  apply /fdisjointP ;
+  intros ? h ;
+  rewrite in_fset in h ;
+  rewrite in_fset ;
+  invert_in_seq h ;
+  reflexivity.

@@ -1019,14 +1019,8 @@ Section KEMDEM.
       all: unfold idents, KEM_out, DEM_out.
       all: rewrite imfset_fset.
       all: simpl.
-      (* TODO Can we do better than what follows? *)
       all: rewrite fdisjointC.
-      all: apply/fdisjointP.
-      all: intros x hx.
-      all: rewrite in_fset in hx.
-      all: rewrite in_fset.
-      all: invert_in_seq hx.
-      all: reflexivity.
+      all: fdisjoint_auto.
     - rewrite !Advantage_E.
       unfold KEM_CCA. unfold KEM_CCA_pkg.
       unfold DEM_CCA. unfold DEM_CCA_pkg.
@@ -1037,25 +1031,20 @@ Section KEMDEM.
       f_equal. rewrite Advantage_sym.
       f_equal. all: f_equal.
       all: apply par_commut.
-      (* TODO Can we do better than what follows? *)
       all: unfold Parable.
       all: rewrite domm_ID_fset.
       all: rewrite fdisjointC.
       all:
         eapply fdisjoint_trans ; [
-          eapply domm_trimmed ; unfold KEM, DEM ; cbn - [mkdef mkfmap] ; ssprove_valid
+          eapply domm_trimmed ; unfold KEM, DEM ;
+          cbn - [mkdef mkfmap] ; ssprove_valid
         |].
       all: simpl.
       all: unfold idents, DEM_out.
       all: rewrite imfset_fset.
       all: simpl.
       all: rewrite fdisjointC.
-      all: apply/fdisjointP.
-      all: intros x hx.
-      all: rewrite in_fset in hx.
-      all: rewrite in_fset.
-      all: invert_in_seq hx.
-      all: reflexivity.
+      all: fdisjoint_auto.
   Qed.
 
 End KEMDEM.
