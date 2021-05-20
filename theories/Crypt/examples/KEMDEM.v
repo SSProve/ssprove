@@ -830,17 +830,12 @@ Section KEMDEM.
         - auto.
         - intros s₀ s₁ hh. unfold triple_rhs in *. simpl in *.
           destruct hh as [[hi e1] e2]. simpl in *.
-          (* TODO Some get_heap_simpl? *)
-          rewrite get_set_heap_neq. 2: neq_loc_auto.
-          rewrite get_set_heap_eq.
-          rewrite !get_set_heap_neq. 2-5: neq_loc_auto.
+          get_heap_simpl.
           move: pkNone => /eqP pkNone.
           rewrite pkNone in e2. rewrite e2 in hi.
-          set (x := get_heap s₁ k_loc) in *.
-          set (y := get_heap s₁ ek_loc) in *.
-          clearbody x y.
-          destruct x, y. all: try contradiction.
-          simpl. auto.
+          destruct (get_heap s₁ k_loc), (get_heap s₁ ek_loc).
+          all: try contradiction.
+          auto.
       }
       apply r_ret. auto.
     - ssprove_code_simpl_more.
@@ -896,11 +891,7 @@ Section KEMDEM.
         1,3: eapply preserve_update_pre_mem ; ssprove_invariant.
         intros s₀ s₁ hh. unfold triple_rhs in *. simpl in *.
         destruct hh as [[[[[[hi ?] epk] ?] ?] ?] ?]. simpl in *.
-        rewrite -> 2!get_set_heap_neq. 2,3: neq_loc_auto.
-        rewrite  get_set_heap_neq. 2: neq_loc_auto.
-        rewrite get_set_heap_eq.
-        rewrite get_set_heap_neq. 2: neq_loc_auto.
-        rewrite get_set_heap_eq.
+        get_heap_simpl.
         rewrite epk. simpl. auto.
       }
       apply r_ret. auto.

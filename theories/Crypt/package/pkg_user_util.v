@@ -65,7 +65,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 From extructures Require Import ord fset fmap.
 From Crypt Require Import Prelude pkg_core_definition pkg_composition
   pkg_notation RulesStateProb pkg_advantage pkg_lookup pkg_semantics
-  pkg_invariants pkg_distr pkg_rhl pkg_tactics chUniverse.
+  pkg_heap pkg_invariants pkg_distr pkg_rhl pkg_tactics chUniverse.
 From Coq Require Import Utf8 FunctionalExtensionality
   Setoids.Setoid Classes.Morphisms.
 
@@ -803,3 +803,9 @@ Ltac lookup_upd_r_eq_solve :=
     ] ..
   ]
   : ssprove_invariant.
+
+Ltac get_heap_simpl :=
+  repeat
+  tryif rewrite get_set_heap_eq
+  then idtac
+  else (rewrite get_set_heap_neq ; [| neq_loc_auto ]).
