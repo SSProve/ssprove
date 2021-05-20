@@ -319,10 +319,7 @@ Section KEMDEM.
   Qed.
 
   Definition KEM_CCA : loc_GamePair KEM_CCA_out :=
-    λ b,
-      if b
-      then {locpackage KEM_CCA_pkg true }
-      else {locpackage KEM_CCA_pkg false }.
+    λ b, {locpackage KEM_CCA_pkg b }.
 
   (** DEM package *)
 
@@ -405,10 +402,7 @@ Section KEMDEM.
   Qed.
 
   Definition DEM_CCA : loc_GamePair DEM_CCA_out :=
-    λ b,
-      if b
-      then {locpackage DEM_CCA_pkg true }
-      else {locpackage DEM_CCA_pkg false }.
+    λ b, {locpackage DEM_CCA_pkg b }.
 
   (** PKE-CCA *)
 
@@ -467,10 +461,7 @@ Section KEMDEM.
     ].
 
   Definition PKE_CCA (ζ : PKE_scheme) : loc_GamePair PKE_CCA_out :=
-    λ b,
-      if b
-      then {locpackage PKE_CCA_pkg ζ true }
-      else {locpackage PKE_CCA_pkg ζ false }.
+    λ b, {locpackage PKE_CCA_pkg ζ b }.
 
   (** MOD-CCA *)
 
