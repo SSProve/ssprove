@@ -209,8 +209,7 @@ Section OTP_example.
   Definition i_words : positive := mkpos (2^n)%N.
   Definition i_key : positive := mkpos (2^n)%N.
 
-  Notation " 'chWords' " := ('fin (2^n)%N) (in custom pack_type at level 2).
-  Notation " 'chKey' " := ('fin (2^n)%N) (in custom pack_type at level 2).
+  Notation " 'word " := ('fin (2^n)%N) (in custom pack_type at level 2).
 
   Definition key2ch : Key → 'fin (2^n)%N.
   Proof.
@@ -302,9 +301,9 @@ Section OTP_example.
   Definition IND_CPA_real :
     package IND_CPA_location
       [interface]
-      [interface val #[i1] : chWords → chWords ] :=
+      [interface val #[i1] : 'word → 'word ] :=
     [package
-        def #[i1] (m : chWords) : chWords
+        def #[i1] (m : 'word) : 'word
         {
           k_val ← sample uniform i_key ;;
           r ← Enc (ch2words m) (ch2key k_val) ;;
@@ -315,9 +314,9 @@ Section OTP_example.
   Definition IND_CPA_ideal :
     package IND_CPA_location
       [interface ]
-      [interface val #[i1] : chWords → chWords ] :=
+      [interface val #[i1] : 'word → 'word ] :=
     [package
-      def #[i1] (m : chWords) : chWords
+      def #[i1] (m : 'word) : 'word
       {
         m'    ← sample uniform i_words ;;
         k_val ← sample uniform i_key ;;
@@ -326,7 +325,7 @@ Section OTP_example.
       }
     ].
 
-  Definition IND_CPA : loc_GamePair [interface val #[i1] : chWords → chWords ] :=
+  Definition IND_CPA : loc_GamePair [interface val #[i1] : 'word → 'word ] :=
     λ b, if b then {locpackage IND_CPA_real } else {locpackage IND_CPA_ideal }.
 
   #[local] Open Scope ring_scope.
@@ -363,7 +362,7 @@ Section OTP_example.
   Theorem unconditional_secrecy :
     ∀ LA A,
       ValidPackage LA
-        [interface val #[i1] : chWords → chWords ] A_export A →
+        [interface val #[i1] : 'word → 'word ] A_export A →
       Advantage IND_CPA A = 0.
   Proof.
     intros LA A vA.

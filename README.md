@@ -206,7 +206,7 @@ The security theorem is the following:
 Theorem security_based_on_prf :
   ∀ LA A,
     ValidPackage LA
-      [interface val #[i1] : chWords → chWords × chWords ] A_export A →
+      [interface val #[i1] : 'word → 'word × 'word ] A_export A →
     fdisjoint LA (IND_CPA false).(locs) →
     fdisjoint LA (IND_CPA true).(locs) →
     Advantage IND_CPA A <=
@@ -230,7 +230,7 @@ The security theorem is the following:
 ```coq
 Theorem ElGamal_OT :
   ∀ LA A,
-    ValidPackage LA [interface val #[challenge_id'] : chPlain → 'option chCipher] A_export A →
+    ValidPackage LA [interface val #[challenge_id'] : 'plain → 'cipher] A_export A →
     fdisjoint LA (ots_real_vs_rnd true).(locs) →
     fdisjoint LA (ots_real_vs_rnd false).(locs) →
     Advantage ots_real_vs_rnd A <= AdvantageE DH_rnd DH_real (A ∘ Aux).

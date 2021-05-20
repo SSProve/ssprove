@@ -117,16 +117,16 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
     exact _.
   Qed.
 
-  Definition choicePlain  : chUniverse := 'fin #|gT|.
-  Definition choicePubKey : chUniverse := 'fin #|gT|.
-  Definition choiceCipher : chUniverse := 'fin #|Cipher|.
-  Definition choiceSecKey : chUniverse := 'fin #|SecKey|.
+  Definition chPlain  : chUniverse := 'fin #|gT|.
+  Definition chPubKey : chUniverse := 'fin #|gT|.
+  Definition chCipher : chUniverse := 'fin #|Cipher|.
+  Definition chSecKey : chUniverse := 'fin #|SecKey|.
 
   Definition counter_loc : Location := ('nat ; 0%N).
-  Definition pk_loc : Location := (choicePubKey ; 1%N).
-  Definition sk_loc : Location := (choiceSecKey ; 2%N).
-  Definition m_loc  : Location := (choicePlain ; 3%N).
-  Definition c_loc  : Location := (choiceCipher ; 4%N).
+  Definition pk_loc : Location := (chPubKey ; 1%N).
+  Definition sk_loc : Location := (chSecKey ; 2%N).
+  Definition m_loc  : Location := (chPlain ; 3%N).
+  Definition c_loc  : Location := (chCipher ; 4%N).
 
   Definition kg_id : nat := 5.
   Definition enc_id : nat := 6.
@@ -142,7 +142,7 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
 
   (** Key Generation algorithm *)
   Definition KeyGen {L : {fset Location}} :
-    code L [interface] (choicePubKey × choiceSecKey) :=
+    code L [interface] (chPubKey × chSecKey) :=
     {code
       x ← sample uniform i_sk ;;
       let x := otf x in
@@ -150,8 +150,8 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
     }.
 
   (** Encryption algorithm *)
-  Definition Enc {L : {fset Location}} (pk : choicePubKey) (m : choicePlain) :
-    code L [interface] choiceCipher :=
+  Definition Enc {L : {fset Location}} (pk : chPubKey) (m : chPlain) :
+    code L [interface] chCipher :=
     {code
       y ← sample uniform i_sk ;;
       let y := otf y in
@@ -159,29 +159,22 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
     }.
 
   (** Decryption algorithm *)
-  Definition Dec_open {L : {fset Location}} (sk : choiceSecKey) (c : choiceCipher) :
-    code L [interface] choicePlain :=
+  Definition Dec_open {L : {fset Location}} (sk : chSecKey) (c : chCipher) :
+    code L [interface] chPlain :=
     {code
       ret (fto ((fst (otf c)) * ((snd (otf c))^-(otf sk))))
     }.
 
-  Notation " 'chSecurityParameter' " :=
-    ('nat) (in custom pack_type at level 2).
-
-  Notation " 'chPlain' " :=
-    choicePlain
+  Notation " 'plain " :=
+    chPlain
     (in custom pack_type at level 2).
 
-  Notation " 'chCipher' " :=
-    choiceCipher
+  Notation " 'cipher " :=
+    chCipher
     (in custom pack_type at level 2).
 
-  Notation " 'chPubKey' " :=
-    choicePubKey
-    (in custom pack_type at level 2).
-
-  Notation " 'chSecKey' " :=
-    choiceSecKey
+  Notation " 'pubkey " :=
+    chPubKey
     (in custom pack_type at level 2).
 
 End MyAlg.
@@ -214,9 +207,9 @@ Definition DH_loc := fset [:: pk_loc ; sk_loc].
 
 Definition DH_real :
   package DH_loc [interface]
-    [interface val #[10] : 'unit → chPubKey × chCipher ] :=
+    [interface val #[10] : 'unit → 'pubkey × 'cipher ] :=
     [package
-      def #[10] (_ : 'unit) : chPubKey × chCipher
+      def #[10] (_ : 'unit) : 'pubkey × 'cipher
       {
         a ← sample uniform i_sk ;;
         let a := otf a in
@@ -230,9 +223,9 @@ Definition DH_real :
 
 Definition DH_rnd :
   package DH_loc [interface]
-    [interface val #[10] : 'unit → chPubKey × chCipher ] :=
+    [interface val #[10] : 'unit → 'pubkey × 'cipher ] :=
     [package
-      def #[10] (_ : 'unit) : chPubKey × chCipher
+      def #[10] (_ : 'unit) : 'pubkey × 'cipher
       {
         a ← sample uniform i_sk ;;
         let a := otf a in
@@ -248,17 +241,17 @@ Definition DH_rnd :
 
 Definition Aux :
   package (fset [:: counter_loc])
-    [interface val #[10] : 'unit → chPubKey × chCipher]
-    [interface val #[challenge_id'] : chPlain → chCipher] :=
+    [interface val #[10] : 'unit → 'pubkey × 'cipher]
+    [interface val #[challenge_id'] : 'plain → 'cipher] :=
     [package
-      def #[challenge_id'] (m : chPlain) : chCipher
+      def #[challenge_id'] (m : 'plain) : 'cipher
       {
-        #import {sig #[10] : 'unit → chPubKey × chCipher } as query ;;
+        #import {sig #[10] : 'unit → 'pubkey × 'cipher } as query ;;
         count ← get counter_loc ;;
         put counter_loc := (count + 1)%N ;;
         #assert (count == 0)%N ;;
         '(pk, c) ← query Datatypes.tt ;;
-        @ret choiceCipher (fto ((otf c).1 , (otf m) * ((otf c).2)))
+        @ret chCipher (fto ((otf c).1 , (otf m) * ((otf c).2)))
       }
     ].
 
@@ -344,7 +337,7 @@ Proof.
     reflexivity.
 Qed.
 
-#[local] Definition f' (m : choicePlain) :
+#[local] Definition f' (m : chPlain) :
   Arit (uniform (i_sk * i_sk)) → Arit (uniform i_cipher) :=
   λ x,
     let '(a, b) := ch2prod x in
@@ -408,7 +401,7 @@ Qed.
 
 Theorem ElGamal_OT :
   ∀ LA A,
-    ValidPackage LA [interface val #[challenge_id'] : chPlain → chCipher] A_export A →
+    ValidPackage LA [interface val #[challenge_id'] : 'plain → 'cipher] A_export A →
     fdisjoint LA (ots_real_vs_rnd true).(locs) →
     fdisjoint LA (ots_real_vs_rnd false).(locs) →
     Advantage ots_real_vs_rnd A <= AdvantageE DH_rnd DH_real (A ∘ Aux).

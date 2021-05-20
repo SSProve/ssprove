@@ -179,8 +179,8 @@ Section PRF_example.
 
   Context (PRF : Words → Key → Key).
 
-  Notation " 'chWords' " := ('fin (2^n)%N) (in custom pack_type at level 2).
-  Notation " 'chKey' " := ('fin (2^n)%N) (in custom pack_type at level 2).
+  Notation " 'word " := ('fin (2^n)%N) (in custom pack_type at level 2).
+  Notation " 'key " := ('fin (2^n)%N) (in custom pack_type at level 2).
   Definition i_key : nat := 2^n.
   Definition i_words : nat := 2^n.
 
@@ -211,9 +211,9 @@ Section PRF_example.
 
   Definition EVAL_pkg_tt :
     package EVAL_location_tt [interface]
-      [interface val #[i0] : chWords → chKey ] :=
+      [interface val #[i0] : 'word → 'key ] :=
     [package
-      def #[i0] (r : chWords) : chKey
+      def #[i0] (r : 'word) : 'key
       {
         k_init ← get key_location ;;
         match k_init with
@@ -229,9 +229,9 @@ Section PRF_example.
 
   Definition EVAL_pkg_ff :
     package EVAL_location_ff [interface]
-      [interface val #[i0] : chWords → chKey ] :=
+      [interface val #[i0] : 'word → 'key ] :=
     [package
-      def #[i0] (r : chWords) : chKey
+      def #[i0] (r : 'word) : 'key
       {
         T ← get table_location ;;
         match getm T r with
@@ -247,18 +247,18 @@ Section PRF_example.
   (* TODO Not the most satisfying, it would be nice to think of something else
     This might come with more automation to deal with the GamePair type.
   *)
-  Definition EVAL : loc_GamePair [interface val #[i0] : chWords → chKey ] :=
+  Definition EVAL : loc_GamePair [interface val #[i0] : 'word → 'key ] :=
     λ b, if b then {locpackage EVAL_pkg_tt } else {locpackage EVAL_pkg_ff }.
 
   Definition MOD_CPA_location : {fset Location} := fset0.
 
   Definition MOD_CPA_tt_pkg :
-    package MOD_CPA_location [interface val #[i0] : chWords → chKey ]
-      [interface val #[i1] : chWords → chWords × chWords ] :=
+    package MOD_CPA_location [interface val #[i0] : 'word → 'key ]
+      [interface val #[i1] : 'word → 'word × 'word ] :=
     [package
-      def #[i1] (m : chWords) : chWords × chWords
+      def #[i1] (m : 'word) : 'word × 'word
       {
-        #import {sig #[i0] : chWords → chKey } as eval ;;
+        #import {sig #[i0] : 'word → 'key } as eval ;;
         r ← sample uniform i_words ;;
         pad ← eval r ;;
         let c := m ⊕ pad in
@@ -267,12 +267,12 @@ Section PRF_example.
     ].
 
   Definition MOD_CPA_ff_pkg :
-    package MOD_CPA_location [interface val #[i0] : chWords → chKey]
-      [interface val #[i1] : chWords → chWords × chWords ]:=
+    package MOD_CPA_location [interface val #[i0] : 'word → 'key]
+      [interface val #[i1] : 'word → 'word × 'word ]:=
     [package
-      def #[i1] (m : chWords) : chWords × chWords
+      def #[i1] (m : 'word) : 'word × 'word
       {
-        #import {sig #[i0] : chWords → chKey } as eval ;;
+        #import {sig #[i0] : 'word → 'key } as eval ;;
         r ← sample uniform i_words ;;
         m' ← sample uniform i_words ;;
         pad ← eval r ;;
@@ -286,9 +286,9 @@ Section PRF_example.
   Definition IND_CPA_pkg_tt :
     package IND_CPA_location
       [interface]
-      [interface val #[i1] : chWords → chWords × chWords ] :=
+      [interface val #[i1] : 'word → 'word × 'word ] :=
     [package
-      def #[i1] (m : chWords) : chWords × chWords
+      def #[i1] (m : 'word) : 'word × 'word
       {
         k ← get key_location ;;
         match k with
@@ -305,9 +305,9 @@ Section PRF_example.
   Definition IND_CPA_pkg_ff :
     package IND_CPA_location
       [interface]
-      [interface val #[i1] : chWords → chWords × chWords ] :=
+      [interface val #[i1] : 'word → 'word × 'word ] :=
     [package
-      def #[i1] (m : chWords) : chWords × chWords
+      def #[i1] (m : 'word) : 'word × 'word
       {
         k ← get key_location ;;
         match k with
@@ -324,7 +324,7 @@ Section PRF_example.
     ].
 
   Definition IND_CPA :
-    loc_GamePair [interface val #[i1] : chWords → chWords × chWords ] :=
+    loc_GamePair [interface val #[i1] : 'word → 'word × 'word ] :=
     λ b,
       if b then {locpackage IND_CPA_pkg_tt } else {locpackage IND_CPA_pkg_ff }.
 
@@ -393,7 +393,7 @@ Section PRF_example.
   Theorem security_based_on_prf :
     ∀ LA A,
       ValidPackage LA
-        [interface val #[i1] : chWords → chWords × chWords ] A_export A →
+        [interface val #[i1] : 'word → 'word × 'word ] A_export A →
       fdisjoint LA (IND_CPA false).(locs) →
       fdisjoint LA (IND_CPA true).(locs) →
       Advantage IND_CPA A <=
