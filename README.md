@@ -68,7 +68,8 @@ In Coq, we call `link p1 p2` the sequential composition of `p1` and `p2`
 Definition link (p1 p2 : raw_package) : raw_package.
 ```
 
-Linking is valid if the export and import match:
+Linking is valid if the export and import match, and its set of locations
+is the union of those from both packages (`:|:` denotes union of sets):
 ```coq
 Lemma valid_link :
   ∀ L1 L2 I M E p1 p2,
@@ -115,7 +116,7 @@ Lemma par_commut :
     Parable p1 p2 →
     par p1 p2 = par p2 p1.
 ```
-This lemma does not work on arbitrary raw packages, it is requires that the
+This lemma does not work on arbitrary raw packages, it requires that the
 packages implement disjoint signatures.
 
 Associativity on the other hand is free from this requirement:
@@ -142,7 +143,7 @@ Lemma valid_ID :
 
 The extra `flat I` condition on the interface essentially forbids overloading:
 there cannot be two procedures in `I` that share the same name, but have
-different types. While the types of our interfaces could in theory allow such
+different types. While our type of interface could in theory allow such
 overloading, the way we build packages forbids us from ever implementing them,
 hence the restriction.
 
@@ -166,7 +167,8 @@ Lemma id_link :
 
 In both cases, we ask that the package we link the identity package with is
 `trimmed`, meaning that it implements *exactly* its export interface and nothing
-more. Packages created through our operations always verify this property.
+more. Packages created through our operations always verify this property
+(as such it can be checked automatically on those).
 
 #### Interchange between sequential and parallel composition
 
@@ -227,7 +229,6 @@ Theorem ElGamal_OT :
     fdisjoint LA (ots_real_vs_rnd false).(locs) →
     Advantage ots_real_vs_rnd A <= AdvantageE DH_rnd DH_real (A ∘ Aux).
 ```
-where `Aux` is called `L` in the paper.
 
 
 ### Probabilistic relational program logic
@@ -245,15 +246,9 @@ rules directly with `code`.
 | eqDistrL      | `rrewrite_eqDistrL`   |
 | symmetry      | `rsymmetry`           |
 | for-loop      | `for_loop_rule`       |
-
-Some rules are for now only proven in the logic but have not been lifted
-to packages, they can be found in `theories/Crypt/rules/UniformStateProb.v`:
-
-| Rule in paper | Rule in Coq             |
-|---------------|-------------------------|
-| uniform       | `Uniform_bij_rule`      |
-| asrt          | `assert_rule`           |
-| asrtL         | `assert_rule_left`      |
+| uniform       | `r_uniform_bij`       |
+| asrt          | `r_assert'`           |
+| asrtL         | `r_assertL`           |
 
 Finally the "bwhile" rule is proven as `bounded_do_while_rule` in
 `theories/Crypt/rules/RulesStateProb.v`.
@@ -262,7 +257,8 @@ Finally the "bwhile" rule is proven as `bounded_do_while_rule` in
 
 We now list the lemmas and theorems about packages from the paper and in the
 case of Theorems 1 & 2 proven using our probabilistic relational program
-logic. They can all be found in `theories/Crypt/package/pkg_rhl.v`.
+logic. The first two can be found in `theories/Crypt/package/pkg_advantage.v`,
+the other two in `theories/Crypt/package/pkg_rhl.v`.
 
 **Lemma 1 (Triangle Inequality)**
 ```coq
