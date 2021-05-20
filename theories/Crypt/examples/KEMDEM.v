@@ -130,7 +130,7 @@ Section KEMDEM.
   Record PKE_scheme := {
     PKE_kgen : code fset0 [interface] (chProd 'pkey 'skey) ;
     PKE_enc : 'pkey → 'plain → code fset0 [interface] (chProd 'ekey 'cipher) ;
-    PKE_dec : 'skey → chProd 'ekey 'cipher → code fset0 [interface] 'plain (* det if KEM_decap and DEM_dec *)
+    PKE_dec : 'skey → chProd 'ekey 'cipher → 'plain
   }.
 
   (** KEM scheme *)
@@ -144,8 +144,8 @@ Section KEMDEM.
   (** DEM scheme *)
 
   Record DEM_scheme := {
-    DEM_enc : 'key → 'plain → code fset0 [interface] 'cipher ; (* det *)
-    DEM_dec : 'key → 'cipher → code fset0 [interface] 'plain (* det? *)
+    DEM_enc : 'key → 'plain → 'cipher ;
+    DEM_dec : 'key → 'cipher → 'plain
   }.
 
   Context (η : KEM_scheme).
@@ -311,7 +311,7 @@ Section KEMDEM.
         c ← get c_loc ;;
         #assert (c == None) ;;
         k ← GET Datatypes.tt ;;
-        c ← θ.(DEM_enc) k (if b then m else nullPlain) ;;
+        let c := θ.(DEM_enc) k (if b then m else nullPlain) in
         put c_loc := Some c ;;
         ret c
       } ;
@@ -322,7 +322,7 @@ Section KEMDEM.
         let c := getSome c cSome in
         #assert (c != c') ;;
         k ← GET Datatypes.tt ;;
-        θ.(DEM_dec) k c'
+        ret (θ.(DEM_dec) k c')
       }
     ].
 
@@ -403,7 +403,7 @@ Section KEMDEM.
         #assert (isSome c) as cSome ;;
         let c := getSome c cSome in
         #assert ((ek, c) != c') ;;
-        ζ.(PKE_dec) sk c'
+        ret (ζ.(PKE_dec) sk c')
       }
     ].
 
@@ -469,7 +469,7 @@ Section KEMDEM.
         )
         else (
           k' ← DECAP ek' ;;
-          θ.(DEM_dec) k' c'
+          ret (θ.(DEM_dec) k' c')
         )
       }
     ].
@@ -479,14 +479,13 @@ Section KEMDEM.
     PKE_kgen := η.(KEM_kgen) ;
     PKE_enc := λ pk m, {code
       '(k, ek) ← η.(KEM_encap) pk ;;
-      c ← θ.(DEM_enc) k m ;;
+      let c := θ.(DEM_enc) k m in
       ret (ek, c)
     } ;
-    PKE_dec := λ sk c, {code
+    PKE_dec := λ sk c,
       let '(ek, c) := c in
       let k := η.(KEM_decap) sk ek in
       θ.(DEM_dec) k c
-    }
   |}.
 
   (** Single key lemma *)
@@ -793,15 +792,9 @@ Section KEMDEM.
       simpl.
       ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
       ssprove_contract_put_get_rhs. simpl.
-      ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
-      eapply @rsame_head_alt with (L := fset0).
-      1: ssprove_valid.
-      1:{ intros ℓ hℓ. eapply fromEmpty. eauto. }
-      1:{ intros ℓ v hℓ. eapply fromEmpty. eauto. }
-      intro c'.
-      ssprove_swap_seq_lhs [:: 0 ]%N.
       ssprove_swap_seq_rhs [:: 1 ; 0 ; 2 ; 1 ]%N.
       ssprove_contract_put_rhs.
+      ssprove_swap_seq_lhs [:: 0 ]%N.
       ssprove_sync. intros _.
       apply r_put_rhs.
       apply r_put_vs_put.
@@ -856,12 +849,8 @@ Section KEMDEM.
         destruct k as [k|]. 2: contradiction.
         simpl. simpl in hpke. simpl in eps. unfold PkeyPair in eps.
         eapply hpke in eps as h. simpl in h. subst.
-        rewrite bind_ret.
         ssprove_forget_all.
-        eapply @r_reflexivity_alt with (L := fset0).
-        * ssprove_valid.
-        * intros ℓ h. eapply fromEmpty. eauto.
-        * intros ℓ v h. eapply fromEmpty. eauto.
+        apply r_ret. auto.
       + rewrite eek. ssprove_code_simpl_more.
         ssprove_swap_seq_rhs [:: 6 ; 5 ; 4 ; 3 ; 2 ; 1 ; 0 ]%N.
         eapply r_get_remind_rhs. 1: exact _.
