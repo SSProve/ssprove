@@ -195,6 +195,8 @@ It once again requires some validity and trimming properties.
 
 ### Examples
 
+#### PRF
+
 The PRF example is developed in `theories/Crypt/examples/PRF.v`.
 The security theorem is the following:
 
@@ -218,6 +220,7 @@ game pair `IND_CPA` by the sum of the statistical gap and the advantages against
 Note that we require some state separation hypotheses here, as such disjointness
 of state is not required by our package definitions and laws.
 
+#### ElGamal
 
 The ElGamal example is developed in `theories/Crypt/examples/ElGamal.v`
 The security theorem is the following:
@@ -230,6 +233,11 @@ Theorem ElGamal_OT :
     fdisjoint LA (ots_real_vs_rnd false).(locs) →
     Advantage ots_real_vs_rnd A <= AdvantageE DH_rnd DH_real (A ∘ Aux).
 ```
+
+#### KEM-DEM
+
+As stated in the paper, we also formalised the KEM-DEM example, whose definition
+and proof can be found in `theories/Crypt/examples/KEMDEM.v`.
 
 
 ### Probabilistic relational program logic
