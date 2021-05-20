@@ -751,14 +751,13 @@ Section KEMDEM.
       ssprove_restore_mem.
       1:{
         ssprove_invariant.
-        1,3: eapply preserve_update_pre_mem ; ssprove_invariant.
-        - auto.
         - intros s₀ s₁ hh. unfold triple_rhs in *. simpl in *.
           destruct hh as [[[hi ?] ?] e]. simpl in *.
           rewrite e in hi. get_heap_simpl.
           destruct (get_heap s₁ k_loc), (get_heap s₁ ek_loc).
           all: try contradiction.
           auto.
+        - auto.
       }
       apply r_ret. auto.
     - ssprove_code_simpl_more.
@@ -801,7 +800,6 @@ Section KEMDEM.
       ssprove_restore_mem.
       1:{
         ssprove_invariant.
-        1,3: eapply preserve_update_pre_mem ; ssprove_invariant.
         intros s₀ s₁ hh. unfold triple_rhs in *. simpl in *.
         destruct hh as [[[[[hi ?] epk] ?] ?] ?]. simpl in *.
         get_heap_simpl.
