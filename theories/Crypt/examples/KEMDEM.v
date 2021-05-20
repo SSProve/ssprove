@@ -276,33 +276,13 @@ Section KEMDEM.
     {package (par (KEM b) (ID IGET)) ∘ KEY }.
   Proof.
     ssprove_valid.
-    - (* Maybe we can automate this better *)
-      apply/fdisjointP.
-      intros n h.
-      rewrite domm_mkfmap in h. simpl in h.
-      rewrite domm_ID_fset. rewrite in_fset. simpl.
-      invert_in_seq h.
-      all: reflexivity.
+    - rewrite domm_ID_fset.
+      fdisjoint_auto.
     - erewrite fsetU0. apply fsubsetxx.
-    - destruct b.
-      all: unfold KEM_in.
-      all: unfold ISET, IGET.
+    - unfold KEM_in. unfold ISET, IGET.
+      destruct b.
       all: rewrite -fset_cat. all: simpl.
-      + apply /fsubsetP. simpl.
-        intros n h. rewrite in_fset. rewrite in_fset in h.
-        invert_in_seq h.
-        * rewrite in_cons. apply/orP. right. rewrite in_cons.
-          apply/orP. left. apply eqxx.
-        * rewrite in_cons. apply/orP. right.
-          rewrite in_cons. apply/orP. right.
-          rewrite mem_seq1. apply eqxx.
-      + apply /fsubsetP. simpl.
-        intros n h. rewrite in_fset. rewrite in_fset in h.
-        invert_in_seq h.
-        * rewrite in_cons. apply/orP. left. apply eqxx.
-        * rewrite in_cons. apply/orP. right.
-          rewrite in_cons. apply/orP. right.
-          rewrite mem_seq1. apply eqxx.
+      all: fsubset_auto.
     - unfold KEM_CCA_out. rewrite -fset_cat. simpl.
       apply fsubsetxx.
     - apply fsubsetUl.
@@ -365,29 +345,11 @@ Section KEMDEM.
     {package (par (DEM b) (ID IGEN)) ∘ KEY }.
   Proof.
     ssprove_valid.
-    - (* Maybe we can automate this better *)
-      apply/fdisjointP.
-      intros n h.
-      rewrite domm_mkfmap in h. simpl in h.
-      rewrite domm_ID_fset. rewrite in_fset. simpl.
-      invert_in_seq h.
-      all: reflexivity.
+    - rewrite domm_ID_fset. fdisjoint_auto.
     - erewrite fsetU0. apply fsubsetxx.
-    - apply/fsubsetP.
-      rewrite -fset_cat. simpl.
-      unfold KEY_out.
-      intros n h. rewrite in_fset. rewrite in_fset in h.
-      invert_in_seq h.
-      + rewrite in_cons. apply/orP. right.
-        rewrite in_cons. apply/orP. right.
-        rewrite in_cons. apply/orP. left.
-        apply eqxx.
-      + rewrite in_cons. apply/orP. left.
-        apply eqxx.
+    - rewrite -fset_cat. fsubset_auto.
     - unfold DEM_CCA_out, IGEN.
-      rewrite fsetUC.
-      rewrite -fset_cat. simpl.
-      apply fsubsetxx.
+      rewrite fsetUC. rewrite -fset_cat. simpl. apply fsubsetxx.
     - apply fsubsetUl.
     - apply fsubsetUr.
   Qed.
@@ -697,30 +659,11 @@ Section KEMDEM.
     {package (MOD_CCA KEM_DEM ∘ par (KEM true) (DEM b) ∘ KEY) }.
   Proof.
     ssprove_valid.
-    - (* Maybe we can automate this better *)
-      apply/fdisjointP.
-      intros n h.
-      rewrite domm_mkfmap in h. simpl in h.
-      rewrite domm_mkfmap. simpl.
-      invert_in_seq h.
-      all: reflexivity.
     - apply fsubsetxx.
-    - unfold KEM_in, DEM_in, KEY_out.
-      unfold ISET, IGET.
-      rewrite -fset_cat. simpl.
-      apply/fsubsetP. intros n hn.
-      rewrite in_fset. rewrite in_fset in hn.
-      invert_in_seq hn.
-      + rewrite in_cons. apply/orP. right.
-        rewrite in_cons. apply/orP. left.
-        apply eqxx.
-      + rewrite in_cons. apply/orP. right.
-        rewrite in_cons. apply/orP. right.
-        rewrite in_cons. apply/orP. left.
-        apply eqxx.
+    - unfold KEM_in, DEM_in, KEY_out. unfold ISET, IGET.
+      rewrite -fset_cat. simpl. fsubset_auto.
     - unfold MOD_CCA_in, KEM_out, DEM_out.
-      rewrite -fset_cat. simpl.
-      apply fsubsetxx.
+      rewrite -fset_cat. simpl. apply fsubsetxx.
     - instantiate (1 := Aux_loc).
       unfold Aux_loc.
       eapply fsubset_trans. 1: eapply fsubsetUr.
@@ -729,9 +672,7 @@ Section KEMDEM.
     - unfold Aux_loc.
       eapply fsubset_trans. 1: eapply fsubsetUr.
       apply fsubsetxx.
-    - unfold Aux_loc.
-      rewrite -!fsetUA.
-      eapply fsubsetUl.
+    - unfold Aux_loc. rewrite -!fsetUA. eapply fsubsetUl.
     - apply fsubsetxx.
   Qed.
 
@@ -774,18 +715,14 @@ Section KEMDEM.
     ssprove_invariant.
     - eapply fsubset_trans. 2: eapply fsubsetUr.
       unfold Aux_loc. eapply fsubsetUr.
-    - rewrite in_fsetU. apply /orP. left.
-      auto_in_fset.
+    - rewrite in_fsetU. apply /orP. left. auto_in_fset.
     - rewrite in_fsetU. apply /orP. right.
       unfold Aux_loc. rewrite in_fsetU. apply /orP. right.
       auto_in_fset.
-    - rewrite in_fsetU. apply /orP. left.
-      auto_in_fset.
+    - rewrite in_fsetU. apply /orP. left. auto_in_fset.
     - simpl. auto.
-    - rewrite in_fsetU. apply /orP. left.
-      auto_in_fset.
-    - rewrite in_fsetU. apply /orP. left.
-      auto_in_fset.
+    - rewrite in_fsetU. apply /orP. left. auto_in_fset.
+    - rewrite in_fsetU. apply /orP. left. auto_in_fset.
     - simpl. auto.
   Qed.
 
@@ -819,8 +756,7 @@ Section KEMDEM.
         - auto.
         - intros s₀ s₁ hh. unfold triple_rhs in *. simpl in *.
           destruct hh as [[[hi ?] ?] e]. simpl in *.
-          rewrite e in hi.
-          get_heap_simpl.
+          rewrite e in hi. get_heap_simpl.
           destruct (get_heap s₁ k_loc), (get_heap s₁ ek_loc).
           all: try contradiction.
           auto.
@@ -858,10 +794,10 @@ Section KEMDEM.
       ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
       ssprove_contract_put_get_rhs. simpl.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
-      eapply @rsame_head_alt with (L := fset [::]).
+      eapply @rsame_head_alt with (L := fset0).
       1: ssprove_valid.
-      1:{ intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto. }
-      1:{ intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto. }
+      1:{ intros ℓ hℓ. eapply fromEmpty. eauto. }
+      1:{ intros ℓ v hℓ. eapply fromEmpty. eauto. }
       intro c'.
       ssprove_swap_seq_lhs [:: 0 ]%N.
       ssprove_swap_seq_rhs [:: 1 ; 0 ; 2 ; 1 ]%N.
@@ -935,13 +871,8 @@ Section KEMDEM.
         apply r_get_vs_get_remember. 1: ssprove_invariant. intros sk.
         apply r_get_remember_rhs. intro pk.
         eapply (r_rem_couple_lhs pk_loc sk_loc). 1,3: exact _.
-        1:{
-          apply Remembers_lhs_from_tracked_rhs.
-          - exact _.
-          - ssprove_invariant.
-        }
-        intro eps.
-        eapply sameSomeRel_sameSome in eps as eps'. rewrite eps'.
+        1:{ apply Remembers_lhs_from_tracked_rhs. all: ssprove_invariant. }
+        intro eps. eapply sameSomeRel_sameSome in eps as eps'. rewrite eps'.
         ssprove_forget_all.
         ssprove_same_head_alt_r. intro skSome.
         ssprove_same_head_alt_r. intro c.
@@ -963,8 +894,7 @@ Section KEMDEM.
   Corollary PKE_CCA_perf_true :
     (Aux true) ≈₀ (PKE_CCA KEM_DEM true).
   Proof.
-    apply adv_equiv_sym.
-    apply PKE_CCA_perf.
+    apply adv_equiv_sym. apply PKE_CCA_perf.
   Qed.
 
   (** Security theorem *)

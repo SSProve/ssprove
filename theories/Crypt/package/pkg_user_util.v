@@ -834,3 +834,15 @@ Ltac fdisjoint_auto :=
   rewrite in_fset ;
   invert_in_seq h ;
   reflexivity.
+
+#[export] Hint Extern 15 (FDisjoint _ _) =>
+  fdisjoint_auto
+  : typeclass_instances packages.
+
+Ltac fsubset_auto :=
+  let h := fresh "h" in
+  apply /fsubsetP ;
+  intros ? h ;
+  rewrite in_fset ; rewrite in_fset in h ;
+  invert_in_seq h ;
+  inseq_try.
