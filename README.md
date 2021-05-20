@@ -46,8 +46,8 @@ Run `make graph` to build a graph of dependencies between sources.
 | [theories/Relational] | External development coming from "The Next 700 Relational Program Logics"|
 | [theories/Crypt]      | This paper                                           |
 
-We will drop the `theories/Crypt` prefix in paths as all files considered in
-this README will be in that directory.
+Unless specified with a full path, all files considered in this README can
+safely be assumed to be in [theories/Crypt].
 
 ## Mapping between paper and formalisation
 
