@@ -158,3 +158,24 @@ Definition test₄ : package fset0 [interface] _ :=
       if b then ret 0 else ret 13
     }
   ].
+
+Section MoreTests.
+
+  (** As we are in a section, we can safely kill the obligation tactic.
+      It will restored after we leave the section.
+  *)
+  Obligation Tactic := idtac.
+  Set Equations Transparent.
+
+  Definition ℓ : Location := ('nat ; 0).
+
+  Equations? foo : code fset0 [interface] 'nat :=
+    foo := {code
+      n ← get ℓ ;;
+      ret n
+    }.
+  Proof.
+    ssprove_valid.
+  Abort.
+
+End MoreTests.

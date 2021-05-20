@@ -259,6 +259,52 @@ Here are examples of interfaces:
 
 #### Validity of code
 
+Validity of code `c` with respect to set of locations `L` and import interface
+`I` is denoted by the class `ValidCode L I c`.
+We derive from it the type `code L I A` of valid code.
+
+Raw code `c` can be cast to `code` by using the notation
+```coq
+{code c }
+```
+
+For instance, in the following, we declare a simple `code` by just giving
+the `raw_code` and using the `{code}` notation:
+```coq
+Definition foo : code fset0 [interface] bool :=
+  {code ret true }.
+```
+
+The fact that this is a class means that in practice, the validity proof
+should automatically be inferred by Coq.
+In case where automation doesn't work, it is still possible to leverage it to
+find which sub-goal it did not solve for you by using the `ssprove_valid`
+tactic.
+
+Here is an example using `Equations` that allows us to use the proof mode to
+fill in the validity proof.
+```coq
+Obligation Tactic := idtac.
+
+Definition ℓ : Location := ('nat ; 0).
+
+Equations? foo : code fset0 [interface] 'nat :=
+  foo := {code
+    n ← get ℓ ;;
+    ret n
+  }.
+Proof.
+  ssprove_valid.
+  (* We have to prove ℓ \in fset0 which does not hold. *)
+Abort.
+```
+We can then see where the mistake was and change the empty interface to
+something containing `ℓ` like `fset [:: ℓ ]`.
+
+Note that `ssprove_valid` and the inference for `ValidCode` can be extended
+with hints. The former using the `packages` database, the latter with the
+`typeclass_instances` database.
+
 ### Packages
 
 
