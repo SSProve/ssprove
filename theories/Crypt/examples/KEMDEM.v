@@ -37,15 +37,6 @@ Import PackageNotation.
 #[local] Open Scope ring_scope.
 #[local] Open Scope package_scope.
 
-(* TODO MOVE *)
-Lemma eq_ler :
-  ∀ (x y : R),
-    x = y →
-    x <= y.
-Proof.
-  intros x y e. subst. apply lerr.
-Qed.
-
 Section KEMDEM.
 
   (** As we are in a section, we can safely kill the obligation tactic.
@@ -70,6 +61,9 @@ Section KEMDEM.
 
   (** Plain text *)
   Context (chPlain : chUniverse).
+
+  (** We additionally require a "zero" in chPlain *)
+  Context (nullPlain : chPlain).
 
   (** Ecrypted key *)
   Context (ekeyD : Op).
@@ -136,7 +130,7 @@ Section KEMDEM.
   Record PKE_scheme := {
     PKE_kgen : code fset0 [interface] (chProd 'pkey 'skey) ;
     PKE_enc : 'pkey → 'plain → code fset0 [interface] (chProd 'ekey 'cipher) ;
-    PKE_dec : 'skey → chProd 'ekey 'cipher → code fset0 [interface] 'plain (* det if KEM_decap and DEM_dec *)
+    PKE_dec : 'skey → chProd 'ekey 'cipher → 'plain
   }.
 
   (** KEM scheme *)
@@ -144,20 +138,38 @@ Section KEMDEM.
   Record KEM_scheme := {
     KEM_kgen : code fset0 [interface] (chProd 'pkey 'skey) ;
     KEM_encap : 'pkey → code fset0 [interface] (chProd 'key 'ekey) ;
-    KEM_decap : 'skey → 'ekey → code fset0 [interface] 'key (* det? *)
+    KEM_decap : 'skey → 'ekey → 'key
   }.
 
   (** DEM scheme *)
 
   Record DEM_scheme := {
-    DEM_enc : 'key → 'plain → code fset0 [interface] 'cipher ; (* det *)
-    DEM_dec : 'key → 'cipher → code fset0 [interface] 'plain (* det? *)
+    DEM_enc : 'key → 'plain → 'cipher ;
+    DEM_dec : 'key → 'cipher → 'plain
   }.
 
   Context (η : KEM_scheme).
   Context (θ : DEM_scheme).
 
-  (** KEY Package *)
+  (** Specification of assumed schemes
+
+    We assume the existence of a relation capturing which public key correspond
+    to which secret key. We furthermore require KEM_kgen to ensure that the
+    keys it generates verify this relation.
+
+    We use this relation to state the correctness of KEM_encap.
+
+  *)
+
+  Context (pkey_pair : (chProd 'pkey 'skey) → Prop).
+  Context (KEM_kgen_spec : ⊢ₛ η.(KEM_kgen) ⦃ pkey_pair ⦄).
+
+  Definition encap_spec (pk : 'pkey) (kek : chProd 'key 'ekey) : Prop :=
+    ∀ sk, pkey_pair (pk, sk) → η.(KEM_decap) sk kek.2 = kek.1.
+
+  Context (KEM_encap_spec : ∀ pk, ⊢ₛ η.(KEM_encap) pk ⦃ encap_spec pk ⦄).
+
+  (** KEY package *)
 
   Definition KEY_loc :=
     fset [:: k_loc ].
@@ -227,19 +239,10 @@ Section KEMDEM.
         let pk := getSome pk pkSome in
         ek ← get ek_loc ;;
         #assert (ek == None) ;;
-        if b return raw_code 'ekey
-        then (
-          '(k, ek) ← η.(KEM_encap) pk ;;
-          put ek_loc := Some ek ;;
-          SET k ;;
-          ret ek
-        )
-        else (
-          ek ← sample ekeyD ;;
-          put ek_loc := Some ek ;;
-          GEN Datatypes.tt ;;
-          ret ek
-        )
+        '(k, ek) ← η.(KEM_encap) pk ;;
+        put ek_loc := Some ek ;;
+        (if b then SET k else GEN Datatypes.tt) ;;
+        ret ek
       } ;
       def #[ DECAP ] (ek' : 'ekey) : 'key {
         sk ← get sk_loc ;;
@@ -249,7 +252,7 @@ Section KEMDEM.
         #assert (isSome ek) as ekSome ;;
         let ek := getSome ek ekSome in
         #assert (ek != ek') ;;
-        η.(KEM_decap) sk ek'
+        ret (η.(KEM_decap) sk ek')
       }
     ].
 
@@ -273,33 +276,13 @@ Section KEMDEM.
     {package (par (KEM b) (ID IGET)) ∘ KEY }.
   Proof.
     ssprove_valid.
-    - (* Maybe we can automate this better *)
-      apply/fdisjointP.
-      intros n h.
-      rewrite domm_mkfmap in h. simpl in h.
-      rewrite domm_ID_fset. rewrite in_fset. simpl.
-      invert_in_seq h.
-      all: reflexivity.
+    - rewrite domm_ID_fset.
+      fdisjoint_auto.
     - erewrite fsetU0. apply fsubsetxx.
-    - destruct b.
-      all: unfold KEM_in.
-      all: unfold ISET, IGET.
+    - unfold KEM_in. unfold ISET, IGET.
+      destruct b.
       all: rewrite -fset_cat. all: simpl.
-      + apply /fsubsetP. simpl.
-        intros n h. rewrite in_fset. rewrite in_fset in h.
-        invert_in_seq h.
-        * rewrite in_cons. apply/orP. right. rewrite in_cons.
-          apply/orP. left. apply eqxx.
-        * rewrite in_cons. apply/orP. right.
-          rewrite in_cons. apply/orP. right.
-          rewrite mem_seq1. apply eqxx.
-      + apply /fsubsetP. simpl.
-        intros n h. rewrite in_fset. rewrite in_fset in h.
-        invert_in_seq h.
-        * rewrite in_cons. apply/orP. left. apply eqxx.
-        * rewrite in_cons. apply/orP. right.
-          rewrite in_cons. apply/orP. right.
-          rewrite mem_seq1. apply eqxx.
+      all: fsubset_auto.
     - unfold KEM_CCA_out. rewrite -fset_cat. simpl.
       apply fsubsetxx.
     - apply fsubsetUl.
@@ -307,10 +290,7 @@ Section KEMDEM.
   Qed.
 
   Definition KEM_CCA : loc_GamePair KEM_CCA_out :=
-    λ b,
-      if b
-      then {locpackage KEM_CCA_pkg true }
-      else {locpackage KEM_CCA_pkg false }.
+    λ b, {locpackage KEM_CCA_pkg b }.
 
   (** DEM package *)
 
@@ -331,17 +311,9 @@ Section KEMDEM.
         c ← get c_loc ;;
         #assert (c == None) ;;
         k ← GET Datatypes.tt ;;
-        if b
-        then (
-          c ← θ.(DEM_enc) k m ;;
-          put c_loc := Some c ;;
-          ret c
-        )
-        else (
-          c ← sample cipherD ;;
-          put c_loc := Some c ;;
-          ret c
-        )
+        let c := θ.(DEM_enc) k (if b then m else nullPlain) in
+        put c_loc := Some c ;;
+        ret c
       } ;
       def #[ DEC ] (c' : 'cipher) : 'plain {
         #import {sig #[ GET ] : 'unit → 'key } as GET ;;
@@ -350,7 +322,7 @@ Section KEMDEM.
         let c := getSome c cSome in
         #assert (c != c') ;;
         k ← GET Datatypes.tt ;;
-        θ.(DEM_dec) k c'
+        ret (θ.(DEM_dec) k c')
       }
     ].
 
@@ -373,38 +345,17 @@ Section KEMDEM.
     {package (par (DEM b) (ID IGEN)) ∘ KEY }.
   Proof.
     ssprove_valid.
-    - (* Maybe we can automate this better *)
-      apply/fdisjointP.
-      intros n h.
-      rewrite domm_mkfmap in h. simpl in h.
-      rewrite domm_ID_fset. rewrite in_fset. simpl.
-      invert_in_seq h.
-      all: reflexivity.
+    - rewrite domm_ID_fset. fdisjoint_auto.
     - erewrite fsetU0. apply fsubsetxx.
-    - apply/fsubsetP.
-      rewrite -fset_cat. simpl.
-      unfold KEY_out.
-      intros n h. rewrite in_fset. rewrite in_fset in h.
-      invert_in_seq h.
-      + rewrite in_cons. apply/orP. right.
-        rewrite in_cons. apply/orP. right.
-        rewrite in_cons. apply/orP. left.
-        apply eqxx.
-      + rewrite in_cons. apply/orP. left.
-        apply eqxx.
+    - rewrite -fset_cat. fsubset_auto.
     - unfold DEM_CCA_out, IGEN.
-      rewrite fsetUC.
-      rewrite -fset_cat. simpl.
-      apply fsubsetxx.
+      rewrite fsetUC. rewrite -fset_cat. simpl. apply fsubsetxx.
     - apply fsubsetUl.
     - apply fsubsetUr.
   Qed.
 
   Definition DEM_CCA : loc_GamePair DEM_CCA_out :=
-    λ b,
-      if b
-      then {locpackage DEM_CCA_pkg true }
-      else {locpackage DEM_CCA_pkg false }.
+    λ b, {locpackage DEM_CCA_pkg b }.
 
   (** PKE-CCA *)
 
@@ -421,13 +372,6 @@ Section KEMDEM.
     package PKE_CCA_loc [interface] PKE_CCA_out :=
     [package
       def #[ PKGEN ] (_ : 'unit) : 'pkey {
-        (** In the original SSP paper, there is only a check that the location
-            sk_loc is empty, for simplicity, we check also that pk_loc is empty.
-            In the future, we can probably ensure that pk_loc is empty iff
-            sk_loc is empty, by using a stronger invariant.
-        *)
-        pk ← get pk_loc ;;
-        #assert (pk == None) ;;
         sk ← get sk_loc ;;
         #assert (sk == None) ;;
         '(pk, sk) ← ζ.(PKE_kgen) ;;
@@ -443,15 +387,7 @@ Section KEMDEM.
         #assert (ek == None) ;;
         c ← get c_loc ;;
         #assert (c == None) ;;
-        '(ek, c) ← (
-          if b return raw_code (chProd 'ekey 'cipher)
-          then ζ.(PKE_enc) pk m
-          else (
-            ek ← sample ekeyD ;;
-            c ← sample cipherD ;;
-            ret (ek, c)
-          )
-        ) ;;
+        '(ek, c) ← ζ.(PKE_enc) pk (if b then m else nullPlain) ;;
         put ek_loc := Some ek ;;
         put c_loc := Some c ;;
         @ret (chProd 'ekey 'cipher) (ek, c)
@@ -467,15 +403,12 @@ Section KEMDEM.
         #assert (isSome c) as cSome ;;
         let c := getSome c cSome in
         #assert ((ek, c) != c') ;;
-        ζ.(PKE_dec) sk c'
+        ret (ζ.(PKE_dec) sk c')
       }
     ].
 
   Definition PKE_CCA (ζ : PKE_scheme) : loc_GamePair PKE_CCA_out :=
-    λ b,
-      if b
-      then {locpackage PKE_CCA_pkg ζ true }
-      else {locpackage PKE_CCA_pkg ζ false }.
+    λ b, {locpackage PKE_CCA_pkg ζ b }.
 
   (** MOD-CCA *)
 
@@ -536,7 +469,7 @@ Section KEMDEM.
         )
         else (
           k' ← DECAP ek' ;;
-          θ.(DEM_dec) k' c'
+          ret (θ.(DEM_dec) k' c')
         )
       }
     ].
@@ -546,20 +479,19 @@ Section KEMDEM.
     PKE_kgen := η.(KEM_kgen) ;
     PKE_enc := λ pk m, {code
       '(k, ek) ← η.(KEM_encap) pk ;;
-      c ← θ.(DEM_enc) k m ;;
+      let c := θ.(DEM_enc) k m in
       ret (ek, c)
     } ;
-    PKE_dec := λ sk c, {code
+    PKE_dec := λ sk c,
       let '(ek, c) := c in
-      k ← η.(KEM_decap) sk ek ;;
+      let k := η.(KEM_decap) sk ek in
       θ.(DEM_dec) k c
-    }
   |}.
 
   (** Single key lemma *)
 
   (* Corresponds to Lemma 19.a in the SSP paper *)
-  Lemma single_key :
+  Lemma single_key_a :
     ∀ LD₀ LK₀ CK₀ CK₁ CD₀ CD₁ EK ED A,
       let K₀ := (par CK₀ (ID IGET)) ∘ KEY in
       let K₁ := (par CK₁ (ID IGET)) ∘ KEY in
@@ -649,6 +581,73 @@ Section KEMDEM.
     Unshelve. all: exact fset0.
   Qed.
 
+  (* Corresponds to Lemma 19.b in the SSP paper *)
+  Lemma single_key_b :
+    ∀ LD₀ LK₀ CK₀ CK₁ CD₀ CD₁ EK ED A,
+      let K₀ := (par CK₀ (ID IGET)) ∘ KEY in
+      let K₁ := (par CK₁ (ID IGET)) ∘ KEY in
+      let D₀ := (par (ID IGEN) CD₀) ∘ KEY in
+      let D₁ := (par (ID IGEN) CD₁) ∘ KEY in
+      flat EK →
+      flat ED →
+      Parable CK₀ (ID IGET) →
+      Parable CK₁ (ID IGET) →
+      Parable (ID IGEN) CD₀ →
+      Parable (ID IGEN) CD₁ →
+      ValidPackage LD₀ IGET ED CD₀ →
+      ValidPackage LD₀ IGET ED CD₁ →
+      trimmed ED CD₀ →
+      trimmed ED CD₁ →
+      ValidPackage LK₀ ISET EK CK₀ →
+      ValidPackage LK₀ IGEN EK CK₁ →
+      trimmed EK CK₀ →
+      trimmed EK CK₁ →
+      AdvantageE ((par CK₀ CD₀) ∘ KEY) ((par CK₀ CD₁) ∘ KEY) A <=
+      AdvantageE K₀ K₁ (A ∘ (par (ID EK) CD₀)) +
+      AdvantageE D₀ D₁ (A ∘ (par CK₁ (ID ED))) +
+      AdvantageE K₀ K₁ (A ∘ (par (ID EK) CD₁)).
+  Proof.
+    intros LD₀ LK₀ CK₀ CK₁ CD₀ CD₁ EK ED A K₀ K₁ D₀ D₁.
+    intros fEK fED pCK₀ pCK₁ pCD₀ pCD₁ hCD₀ hCD₁ tCD₀ tCD₁ hCK₀ hCK₁ tCK₀ tCK₁.
+    ssprove triangle (par CK₀ CD₀ ∘ KEY) [::
+      par CK₁ CD₁ ∘ KEY
+    ] (par CK₀ CD₁ ∘ KEY) A
+    as ineq.
+    eapply ler_trans. 1: exact ineq.
+    clear ineq.
+    eapply ler_add.
+    - eapply single_key_a. all: eauto.
+    (* De-idealising the core keying package *)
+    - replace (par CK₀ CD₁) with ((par (ID EK) CD₁) ∘ (par CK₀ (ID IGET))).
+      2:{
+        erewrite <- interchange.
+        all: eauto.
+        2-3: ssprove_valid.
+        2: apply trimmed_ID.
+        erewrite link_id. all: eauto.
+        2: ssprove_valid.
+        erewrite id_link.
+        all: eauto.
+      }
+      replace (par CK₁ CD₁) with ((par (ID EK) CD₁) ∘ (par CK₁ (ID IGET))).
+      2:{
+        erewrite <- interchange.
+        all: eauto.
+        2-3: ssprove_valid.
+        2: apply trimmed_ID.
+        erewrite link_id. all: eauto.
+        2: ssprove_valid.
+        erewrite id_link.
+        all: eauto.
+      }
+      rewrite Advantage_link.
+      unfold K₀, K₁.
+      rewrite !link_assoc.
+      rewrite Advantage_sym.
+      apply lerr.
+    Unshelve. all: exact fset0.
+  Qed.
+
   (** Perfect indistinguishability with PKE-CCA *)
 
   Definition Aux_loc :=
@@ -656,43 +655,14 @@ Section KEMDEM.
 
   Equations? Aux b : package Aux_loc [interface] PKE_CCA_out :=
     Aux b :=
-    {package (MOD_CCA KEM_DEM ∘ par (KEM b) (DEM b) ∘ KEY) }.
+    {package (MOD_CCA KEM_DEM ∘ par (KEM true) (DEM b) ∘ KEY) }.
   Proof.
     ssprove_valid.
-    - (* Maybe we can automate this better *)
-      apply/fdisjointP.
-      intros n h.
-      rewrite domm_mkfmap in h. simpl in h.
-      rewrite domm_mkfmap. simpl.
-      invert_in_seq h.
-      all: reflexivity.
     - apply fsubsetxx.
-    - destruct b.
-      all: unfold KEM_in, DEM_in, KEY_out.
-      all: unfold ISET, IGET, IGEN.
-      all: rewrite -fset_cat. all: simpl.
-      + apply/fsubsetP. intros n hn.
-        rewrite in_fset. rewrite in_fset in hn.
-        invert_in_seq hn.
-        * rewrite in_cons. apply/orP. right.
-          rewrite in_cons. apply/orP. left.
-          apply eqxx.
-        * rewrite in_cons. apply/orP. right.
-          rewrite in_cons. apply/orP. right.
-          rewrite in_cons. apply/orP. left.
-          apply eqxx.
-      + apply/fsubsetP. intros n hn.
-        rewrite in_fset. rewrite in_fset in hn.
-        invert_in_seq hn.
-        * rewrite in_cons. apply/orP. left.
-          apply eqxx.
-        * rewrite in_cons. apply/orP. right.
-          rewrite in_cons. apply/orP. right.
-          rewrite in_cons. apply/orP. left.
-          apply eqxx.
+    - unfold KEM_in, DEM_in, KEY_out. unfold ISET, IGET.
+      rewrite -fset_cat. simpl. fsubset_auto.
     - unfold MOD_CCA_in, KEM_out, DEM_out.
-      rewrite -fset_cat. simpl.
-      apply fsubsetxx.
+      rewrite -fset_cat. simpl. apply fsubsetxx.
     - instantiate (1 := Aux_loc).
       unfold Aux_loc.
       eapply fsubset_trans. 1: eapply fsubsetUr.
@@ -701,9 +671,7 @@ Section KEMDEM.
     - unfold Aux_loc.
       eapply fsubset_trans. 1: eapply fsubsetUr.
       apply fsubsetxx.
-    - unfold Aux_loc.
-      rewrite -!fsetUA.
-      eapply fsubsetUl.
+    - unfold Aux_loc. rewrite -!fsetUA. eapply fsubsetUl.
     - apply fsubsetxx.
   Qed.
 
@@ -724,342 +692,131 @@ Section KEMDEM.
     modified in one of the packages.
   *)
 
-  Notation inv :=
-    (heap_ignore KEY_loc ⋊
-    couple_rhs c_loc k_loc sameSome ⋊
-    couple_lhs pk_loc sk_loc sameSome).
+  Definition PkeyPair :=
+    λ (pk : 'pkey) (sk : 'skey), pkey_pair (pk, sk).
+
+  Definition PKE_inv (pk : 'option 'pkey) (k : 'option 'key) (ek : 'option 'ekey) :=
+    match pk, k, ek with
+    | Some pk, Some k, Some ek => encap_spec pk (k, ek)
+    | Some pk, None, None => True
+    | None, None, None => True
+    | _, _, _ => False
+    end.
+
+  Notation inv := (
+    heap_ignore KEY_loc ⋊
+    triple_rhs pk_loc k_loc ek_loc PKE_inv ⋊
+    couple_lhs pk_loc sk_loc (sameSomeRel PkeyPair)
+  ).
 
   Instance Invariant_inv : Invariant PKE_CCA_loc Aux_loc inv.
   Proof.
     ssprove_invariant.
-    - simpl.
-      eapply fsubset_trans. 2: eapply fsubsetUr.
+    - eapply fsubset_trans. 2: eapply fsubsetUr.
       unfold Aux_loc. eapply fsubsetUr.
-    - simpl. rewrite in_fsetU. apply /orP. left.
-      unfold PKE_CCA_loc. auto_in_fset.
-    - simpl. rewrite in_fsetU. apply /orP. right.
+    - rewrite in_fsetU. apply /orP. left. auto_in_fset.
+    - rewrite in_fsetU. apply /orP. right.
       unfold Aux_loc. rewrite in_fsetU. apply /orP. right.
       auto_in_fset.
-    - reflexivity.
-    - simpl. rewrite in_fsetU. apply /orP. left.
-      auto_in_fset.
-    - simpl. rewrite in_fsetU. apply /orP. left.
-      auto_in_fset.
-    - reflexivity.
+    - rewrite in_fsetU. apply /orP. left. auto_in_fset.
+    - simpl. auto.
+    - rewrite in_fsetU. apply /orP. left. auto_in_fset.
+    - rewrite in_fsetU. apply /orP. left. auto_in_fset.
+    - simpl. auto.
   Qed.
 
-  Lemma PKE_CCA_perf_false :
-    (PKE_CCA KEM_DEM false) ≈₀ Aux false.
+  Lemma PKE_CCA_perf :
+    ∀ b, (PKE_CCA KEM_DEM b) ≈₀ Aux b.
   Proof.
+    intro b.
     unfold Aux.
-    (* We go to the relation logic ignoring KEY_loc. *)
+    (* We go to the relation logic with our invariant. *)
     eapply eq_rel_perf_ind with (inv := inv). 1: exact _.
     simplify_eq_rel m.
     all: ssprove_code_simpl.
     (* We are now in the realm of program logic *)
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
-      ssprove_same_head_alt_r. intro pk.
-      ssprove_same_head_alt_r. intro pkNone.
-      ssprove_same_head_alt_r. intro sk.
-      ssprove_same_head_alt_r. intro skNone.
-      eapply r_bind.
-      { eapply @r_reflexivity_alt with (L := fset [::]).
-        - ssprove_valid.
-        - intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-        - intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-      }
-      intros [] [].
-      eapply rpre_hypothesis_rule. intros s₀ s₁ [e ?].
-      noconf e.
-      eapply rpre_weaken_rule.
-      1: eapply r_put_put.
-      + ssprove_invariant.
-        * apply preserve_set_set_couple_rhs_neq. all: neq_loc_auto.
-        * apply preserve_set_set_couple_lhs_eq.
-          -- neq_loc_auto.
-          -- reflexivity.
-      + apply r_ret. auto.
-      + simpl. intuition subst. auto.
-    - ssprove_code_simpl_more.
-      ssprove_code_simpl.
-      ssprove_code_simpl_more.
-      ssprove_code_simpl.
-      ssprove_code_simpl_more.
-      (* That was a lot of simpl. Would be good to have it all sorted out
-        as one thing.
-      *)
-      ssprove_swap_seq_rhs [:: 5 ; 4 ; 3 ; 2 ; 1 ]%N.
-      ssprove_contract_get_rhs.
-      ssprove_same_head_alt_r. intro pk.
-      ssprove_same_head_alt_r. intro pkSome.
-      rewrite pkSome. simpl.
-      ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
-      ssprove_contract_get_rhs.
-      ssprove_same_head_alt_r. intro ek.
-      ssprove_same_head_alt_r. intro ekNone.
-      rewrite ekNone. simpl.
-      ssprove_swap_seq_rhs [:: 8 ; 7 ; 6 ; 5 ; 4 ; 3 ; 2 ; 1 ]%N.
-      ssprove_contract_get_rhs.
-      ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
-      eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intro c.
-      eapply r_get_remember_rhs. intro k.
-      eapply (r_rem_couple_rhs c_loc k_loc). 1-3: exact _. intro eck.
-      ssprove_forget_all.
-      ssprove_same_head_alt_r. intro cNone.
-      rewrite cNone. simpl.
-      eapply sameSome_None_l in cNone as kNone. 2: eauto.
-      rewrite kNone. simpl.
-      ssprove_same_head_alt_r. intro ek'.
-      ssprove_swap_lhs 0%N.
-      ssprove_swap_seq_rhs [:: 2 ; 1 ]%N.
-      ssprove_contract_put_rhs.
-      ssprove_same_head_alt_r. intros _.
-      ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ; 0 ]%N.
-      ssprove_same_head_alt_r. intros c'.
-      eapply r_const_sample_R. 1: exact _. intro k'.
-      ssprove_contract_put_get_rhs. simpl.
-      ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
-      ssprove_contract_put_rhs.
-      eapply r_put_putR. 1:{
+      ssprove_swap_seq_rhs [:: 1 ; 0 ; 2 ; 1 ]%N.
+      eapply r_get_vs_get_remember. 1: ssprove_invariant. intro sk.
+      ssprove_sync. intro skNone.
+      eapply r_get_remember_rhs. intro pk.
+      eapply (r_rem_couple_lhs pk_loc sk_loc). 1,3: exact _.
+      1:{ eapply Remembers_lhs_from_tracked_rhs. all: ssprove_invariant. }
+      intro eps. destruct sk. 1: discriminate.
+      destruct pk. 1: contradiction. simpl.
+      eapply r_scheme_bind_spec. 1: eapply KEM_kgen_spec. intros [pk' sk'] pps.
+      eapply r_put_vs_put.
+      eapply r_put_vs_put.
+      ssprove_restore_mem.
+      1:{
         ssprove_invariant.
-        - eapply preserve_set_setR_couple_rhs_eq.
-          + neq_loc_auto.
-          + reflexivity.
-        - eapply preserve_set_setR_couple_lhs_neq. all: neq_loc_auto.
+        - intros s₀ s₁ hh. unfold triple_rhs in *. simpl in *.
+          destruct hh as [[[hi ?] ?] e]. simpl in *.
+          rewrite e in hi. get_heap_simpl.
+          destruct (get_heap s₁ k_loc), (get_heap s₁ ek_loc).
+          all: try contradiction.
+          auto.
+        - auto.
       }
       apply r_ret. auto.
-    - destruct m as [ek' c']. simpl.
-      ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
-      ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
-      eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant.
-      intros ek.
-      ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
-      ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
-      ssprove_same_head_alt_r. intro ekSome.
-      destruct ek as [ek|]. 2: discriminate.
-      simpl. destruct (ek == ek') eqn:eek.
-      + rewrite eek.
-        ssprove_code_simpl_more. ssprove_code_simpl. ssprove_code_simpl_more.
-        ssprove_forget.
-        eapply r_get_remember_rhs. intro pk.
-        eapply r_get_remember_lhs. intro sk.
-        eapply (r_rem_couple_lhs pk_loc sk_loc). 1,3: exact _.
-        1:{
-          eapply Remembers_lhs_from_tracked_rhs.
-          - exact _.
-          - ssprove_invariant.
-        }
-        intro eps.
-        rewrite eps.
-        ssprove_same_head_alt_r. intro skSome.
-        ssprove_swap_seq_rhs [:: 2 ; 1 ; 0 ]%N.
-        ssprove_contract_get_rhs.
-        ssprove_swap_seq_rhs [:: 4 ; 3 ; 2 ; 1 ]%N.
-        eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intro c.
-        eapply r_get_remember_rhs. intro k.
-        eapply (r_rem_couple_rhs c_loc k_loc). 1-3: exact _. intro eck.
-        ssprove_forget_all.
-        ssprove_same_head_alt_r. intro cSome.
-        destruct c as [c|]. 2: discriminate.
-        destruct k as [k|]. 2: discriminate.
-        simpl.
-        ssprove_same_head_alt_r. intro ee.
-        move: ee => /eqP ee.
-        move: eek => /eqP eek. subst.
-        destruct (c != c') eqn: e.
-        2:{ move: e => /eqP e. subst. exfalso. apply ee. reflexivity. }
-        rewrite e. simpl.
-        rewrite bind_ret.
-        (* TODO This bit is actually explained in the SSP paper
-          Now, we have to see how to actually exploit it. It seems
-          to involve correctness of the KEM, so we might need to do
-          something about that.
-
-          We have ek = ek' (now subst).
-          We should use this information to conclude that ek decrypted to k
-          probably.
-
-          The idea is to remember that ek is obtained from
-          encap and thus that decap on it will be the identity.
-          Don't we have a problem when they are randomly generated
-          (the present case)?
-          ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
-            '(k, ek) ← KEM_encap pk ;;
-            KEM_decap sk ek
-            ≈
-            '(k, ek) ← KEM_encap pk ;;
-            ret k
-          ⦃ eq ⦄
-
-          The problem is that this information is not available in this branch
-          anyway because the boolean is false and ek is obtained at random.
-        *)
-        admit.
-      + rewrite eek. ssprove_code_simpl_more.
-        ssprove_swap_seq_rhs [:: 6 ; 5 ; 4 ; 3 ; 2 ; 1 ; 0 ]%N.
-        eapply r_get_remind_rhs. 1: exact _.
-        simpl.
-        ssprove_forget.
-        ssprove_swap_seq_rhs [:: 4 ; 3 ; 2 ; 1 ; 0 ]%N.
-        apply r_get_vs_get_remember. 1: ssprove_invariant.
-        intros sk.
-        apply r_get_remember_rhs. intro pk.
-        eapply (r_rem_couple_lhs pk_loc sk_loc). 1,3: exact _.
-        1:{
-          apply Remembers_lhs_from_tracked_rhs.
-          - exact _.
-          - ssprove_invariant.
-        }
-        intro eps.
-        rewrite eps.
-        ssprove_forget_all.
-        ssprove_same_head_alt_r. intro skSome.
-        ssprove_same_head_alt_r. intro c.
-        ssprove_same_head_alt_r. intro cSome.
-        ssprove_same_head_alt_r. intro ee.
-        destruct sk as [sk|]. 2: discriminate.
-        simpl.
-        destruct c as [c|]. 2: discriminate.
-        simpl.
-        simpl in ee.
-        move: ee => /eqP ee.
-        move: eek => /eqP eek.
-        destruct (ek != ek') eqn:e.
-        2:{ move: e => /eqP e. subst. exfalso. eapply eek. reflexivity. }
-        rewrite e. simpl.
-        eapply @r_reflexivity_alt with (L := fset [::]).
-        * ssprove_valid.
-        * intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-        * intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-  Admitted.
-
-  Lemma PKE_CCA_perf_true :
-    (Aux true) ≈₀ (PKE_CCA KEM_DEM true).
-  Proof.
-    apply adv_equiv_sym.
-    unfold Aux.
-    (* We go to the relation logic ignoring KEY_loc. *)
-    eapply eq_rel_perf_ind with (inv := inv). 1: exact _.
-    simplify_eq_rel m.
-    all: ssprove_code_simpl.
-    (* We are now in the realm of program logic *)
-    - ssprove_code_simpl_more.
-      ssprove_code_simpl.
-      ssprove_same_head_alt_r. intro pk.
-      ssprove_same_head_alt_r. intro pkNone.
-      ssprove_same_head_alt_r. intro sk.
-      ssprove_same_head_alt_r. intro skNone.
-      eapply r_bind.
-      { eapply @r_reflexivity_alt with (L := fset [::]).
-        - ssprove_valid.
-        - intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-        - intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-      }
-      intros [] [].
-      eapply rpre_hypothesis_rule. intros s₀ s₁ [e ?].
-      noconf e.
-      eapply rpre_weaken_rule.
-      1: eapply r_put_put.
-      + ssprove_invariant.
-        * apply preserve_set_set_couple_rhs_neq. all: neq_loc_auto.
-        * apply preserve_set_set_couple_lhs_eq.
-          -- neq_loc_auto.
-          -- reflexivity.
-      + apply r_ret. auto.
-      + simpl. intuition subst. auto.
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
       ssprove_swap_seq_rhs [:: 5 ; 4 ; 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
-      ssprove_same_head_alt_r. intro pk.
-      ssprove_same_head_alt_r. intro pkSome.
+      eapply r_get_vs_get_remember. 1: ssprove_invariant. intro pk.
+      ssprove_sync. intro pkSome.
       destruct pk as [pk|]. 2: discriminate.
       simpl.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
-      ssprove_same_head_alt_r. intro ek.
-      ssprove_same_head_alt_r. intro ekNone.
+      eapply r_get_vs_get_remember. 1: ssprove_invariant. intro ek.
+      ssprove_sync. intro ekNone.
       rewrite ekNone. simpl.
       eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intro c.
-      ssprove_same_head_alt_r. intro cNone.
-      (** For some reason the following masks the chUniverses
-          I would still like to use that, rather than what we currently use.
-      *)
-      (* eapply @rsame_head_alt with (L := fset [::]).
-      1: ssprove_valid.
-      1:{ intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto. }
-      1:{ intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto. }
-      intros [k' ek']. *)
-      (* *** *)
-      eapply r_bind.
-      { eapply @r_reflexivity_alt with (L := fset [::]).
-        - ssprove_valid.
-        - intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-        - intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-      }
-      intros [k₀ ek₀] [k₁ ek₁].
-      eapply rpre_hypothesis_rule. intros s₀ s₁ [e hpre]. noconf e.
-      eapply rpre_weaken_rule
-      with (pre := λ '(s₀, s₁), (inv ⋊ rem_rhs c_loc c) (s₀, s₁)).
-      2:{ simpl. intuition subst. auto. }
-      clear s₀ s₁ hpre.
-      (* * *)
+      ssprove_sync. intro cNone.
+      eapply r_scheme_bind_spec. 1: eapply KEM_encap_spec. intros [k' ek'] hkek.
       ssprove_code_simpl_more. ssprove_code_simpl.
       ssprove_code_simpl_more.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
       ssprove_contract_put_rhs.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ; 0 ]%N.
       eapply r_get_remind_rhs. 1: exact _.
+      rewrite cNone. simpl. ssprove_forget.
       ssprove_swap_seq_rhs [:: 0 ]%N.
       eapply r_get_remember_rhs. intros k.
-      eapply (r_rem_couple_rhs c_loc k_loc). 1-3: exact _. intro eck.
-      eapply sameSome_None_l in cNone as kNone. 2: eauto.
-      rewrite cNone. rewrite kNone. simpl.
+      eapply (r_rem_triple_rhs pk_loc k_loc ek_loc). 1-4: exact _. intro hpke.
+      destruct ek. 1: discriminate.
+      destruct k. 1: contradiction.
+      simpl.
       ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
       ssprove_contract_put_get_rhs. simpl.
-      ssprove_forget_all.
-      ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
-      (* bind again *)
-      eapply r_bind.
-      { eapply @r_reflexivity_alt with (L := fset [::]).
-        - ssprove_valid.
-        - intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-        - intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-      }
-      intros ? c'.
-      eapply rpre_hypothesis_rule. intros s₀ s₁ [e hpre]. noconf e.
-      eapply rpre_weaken_rule
-      with (pre := λ '(s₀, s₁), inv (s₀, s₁)).
-      2:{ simpl. intuition subst. auto. }
-      clear s₀ s₁ hpre.
-      (* * *)
-      ssprove_swap_seq_rhs [:: 0 ]%N.
-      ssprove_same_head_alt_r. intros _.
-      ssprove_swap_seq_rhs [:: 0 ; 1 ]%N.
+      ssprove_swap_seq_rhs [:: 1 ; 0 ; 2 ; 1 ]%N.
       ssprove_contract_put_rhs.
-      eapply r_put_putR.
+      ssprove_swap_seq_lhs [:: 0 ]%N.
+      ssprove_sync. intros _.
+      apply r_put_rhs.
+      apply r_put_vs_put.
+      ssprove_restore_mem.
       1:{
         ssprove_invariant.
-        - eapply preserve_set_setR_couple_rhs_eq.
-          + neq_loc_auto.
-          + reflexivity.
-        - eapply preserve_set_setR_couple_lhs_neq. all: neq_loc_auto.
+        intros s₀ s₁ hh. unfold triple_rhs in *. simpl in *.
+        destruct hh as [[[[[hi ?] epk] ?] ?] ?]. simpl in *.
+        get_heap_simpl.
+        rewrite epk. simpl. auto.
       }
       apply r_ret. auto.
     - destruct m as [ek' c']. simpl.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
       ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
-      eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant.
-      intros ek.
+      eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intros ek.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
       ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
-      ssprove_same_head_alt_r. intro ekSome.
+      ssprove_sync. intro ekSome.
       destruct ek as [ek|]. 2: discriminate.
       simpl. destruct (ek == ek') eqn:eek.
-      + rewrite eek. ssprove_code_simpl_more.
-        ssprove_code_simpl. ssprove_code_simpl_more.
-        ssprove_forget.
+      + rewrite eek.
+        ssprove_code_simpl_more. ssprove_code_simpl. ssprove_code_simpl_more.
         eapply r_get_remember_rhs. intro pk.
         eapply r_get_remember_lhs. intro sk.
         eapply (r_rem_couple_lhs pk_loc sk_loc). 1,3: exact _.
@@ -1069,66 +826,63 @@ Section KEMDEM.
           - ssprove_invariant.
         }
         intro eps.
-        rewrite eps.
-        ssprove_same_head_alt_r. intro skSome.
+        eapply sameSomeRel_sameSome in eps as eps'. rewrite eps'.
+        ssprove_sync. intro skSome.
         ssprove_swap_seq_rhs [:: 2 ; 1 ; 0 ]%N.
         ssprove_contract_get_rhs.
-        ssprove_swap_seq_rhs [:: 4 ; 3 ; 2 ; 1 ]%N.
-        eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intro c.
-        eapply r_get_remember_rhs. intro k.
-        eapply (r_rem_couple_rhs c_loc k_loc). 1-3: exact _. intro eck.
-        ssprove_forget_all.
-        ssprove_same_head_alt_r. intro cSome.
+        ssprove_sync. intro c.
+        ssprove_sync. intro cSome.
         destruct c as [c|]. 2: discriminate.
-        destruct k as [k|]. 2: discriminate.
         simpl.
-        ssprove_same_head_alt_r. intro ee.
+        ssprove_sync. intro ee.
         move: ee => /eqP ee.
-        move: eek => /eqP eek. subst.
-        destruct (c != c') eqn: e.
-        2:{ move: e => /eqP e. subst. exfalso. apply ee. reflexivity. }
+        move: eek => /eqP eek. subst ek'.
+        destruct (c != c') eqn:e.
+        2:{ move: e => /eqP e. subst. contradiction. }
         rewrite e. simpl.
-        rewrite bind_ret.
-        (* Here we probably need validity, but as long as the other one
-          isn't solved, it's not clear it's worth it.
-        *)
-        admit.
+        eapply r_get_remember_rhs. intro k.
+        eapply (r_rem_triple_rhs pk_loc k_loc ek_loc). 1-4: exact _. intro hpke.
+        destruct sk as [sk|]. 2: discriminate.
+        destruct pk as [pk|]. 2: contradiction.
+        destruct k as [k|]. 2: contradiction.
+        simpl. simpl in hpke. simpl in eps. unfold PkeyPair in eps.
+        eapply hpke in eps as h. simpl in h. subst.
+        ssprove_forget_all.
+        apply r_ret. auto.
       + rewrite eek. ssprove_code_simpl_more.
         ssprove_swap_seq_rhs [:: 6 ; 5 ; 4 ; 3 ; 2 ; 1 ; 0 ]%N.
         eapply r_get_remind_rhs. 1: exact _.
         simpl.
         ssprove_forget.
         ssprove_swap_seq_rhs [:: 4 ; 3 ; 2 ; 1 ; 0 ]%N.
-        apply r_get_vs_get_remember. 1: ssprove_invariant.
-        intros sk.
+        apply r_get_vs_get_remember. 1: ssprove_invariant. intros sk.
         apply r_get_remember_rhs. intro pk.
         eapply (r_rem_couple_lhs pk_loc sk_loc). 1,3: exact _.
-        1:{
-          apply Remembers_lhs_from_tracked_rhs.
-          - exact _.
-          - ssprove_invariant.
-        }
-        intro eps.
-        rewrite eps.
+        1:{ apply Remembers_lhs_from_tracked_rhs. all: ssprove_invariant. }
+        intro eps. eapply sameSomeRel_sameSome in eps as eps'. rewrite eps'.
         ssprove_forget_all.
-        ssprove_same_head_alt_r. intro skSome.
-        ssprove_same_head_alt_r. intro c.
-        ssprove_same_head_alt_r. intro cSome.
-        ssprove_same_head_alt_r. intro ee.
+        ssprove_sync. intro skSome.
+        ssprove_sync. intro c.
+        ssprove_sync. intro cSome.
+        ssprove_sync. intro ee.
         destruct sk as [sk|]. 2: discriminate.
         simpl.
         destruct c as [c|]. 2: discriminate.
         simpl in ee.
-        move: ee => /eqP ee.
-        move: eek => /eqP eek.
-        destruct (ek != ek') eqn:e.
-        2:{ move: e => /eqP e. subst. exfalso. eapply eek. reflexivity. }
-        rewrite e. simpl.
-        eapply @r_reflexivity_alt with (L := fset [::]).
+        rewrite eek. simpl.
+        eapply @r_reflexivity_alt with (L := fset0).
         * ssprove_valid.
-        * intros ℓ hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-        * intros ℓ v hℓ. rewrite -fset0E in hℓ. eapply fromEmpty. eauto.
-  Admitted.
+        * intros ℓ hℓ. eapply fromEmpty. eauto.
+        * intros ℓ v hℓ. eapply fromEmpty. eauto.
+    (* These remaining opsig are quite odd *)
+    Unshelve. all: exact ({sig #[ 0%N ] : 'unit → 'unit }).
+  Qed.
+
+  Corollary PKE_CCA_perf_true :
+    (Aux true) ≈₀ (PKE_CCA KEM_DEM true).
+  Proof.
+    apply adv_equiv_sym. apply PKE_CCA_perf.
+  Qed.
 
   (** Security theorem *)
 
@@ -1139,28 +893,27 @@ Section KEMDEM.
       fdisjoint LA Aux_loc → (* Do we really need this? *)
       Advantage (PKE_CCA KEM_DEM) A <=
       Advantage KEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (ID KEM_out) (DEM true)) +
-      Advantage DEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (KEM false) (ID DEM_out)).
+      Advantage DEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (KEM false) (ID DEM_out)) +
+      Advantage KEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (ID KEM_out) (DEM false)).
   Proof.
     intros LA A hA hA' hd.
     rewrite Advantage_E.
     ssprove triangle (PKE_CCA KEM_DEM false) [::
-      (MOD_CCA KEM_DEM) ∘ par (KEM false) (DEM false) ∘ KEY ;
+      (MOD_CCA KEM_DEM) ∘ par (KEM true) (DEM false) ∘ KEY ;
       (MOD_CCA KEM_DEM) ∘ par (KEM true) (DEM true) ∘ KEY
     ] (PKE_CCA KEM_DEM true) A
     as ineq.
     eapply ler_trans. 1: exact ineq.
     clear ineq.
-    (* Aux_loc is problematic here, can I make it equal to PKE_CCA_loc? *)
-    rewrite PKE_CCA_perf_false. 2,3: auto.
+    rewrite PKE_CCA_perf. 2,3: auto.
     rewrite PKE_CCA_perf_true. 2,3: auto.
     rewrite GRing.addr0. rewrite GRing.add0r.
     (* Now we massage the expression to apply the single key lemma *)
     eapply ler_trans.
     - rewrite Advantage_sym.
       rewrite -Advantage_link.
-      eapply single_key.
-      7,8: ssprove_valid.
-      9,10: ssprove_valid.
+      eapply single_key_b with (CK₁ := (KEM false).(pack)).
+      7,8,11,12: ssprove_valid.
       1-2: ssprove_valid.
       (* Sad we have to do this before. *)
       5-8: unfold KEM, DEM.
@@ -1171,48 +924,39 @@ Section KEMDEM.
       3,4: rewrite fdisjointC.
       all:
         eapply fdisjoint_trans ; [
-          eapply domm_trimmed ; unfold KEM, DEM ; cbn - [mkdef mkfmap] ; ssprove_valid
+          eapply domm_trimmed ; unfold KEM, DEM ;
+          cbn - [mkdef mkfmap] ; ssprove_valid
         |].
       all: simpl.
       all: unfold idents, KEM_out, DEM_out.
       all: rewrite imfset_fset.
       all: simpl.
-      (* TODO Can we do better than what follows? *)
       all: rewrite fdisjointC.
-      all: apply/fdisjointP.
-      all: intros x hx.
-      all: rewrite in_fset in hx.
-      all: rewrite in_fset.
-      all: invert_in_seq hx.
-      all: reflexivity.
+      all: fdisjoint_auto.
     - rewrite !Advantage_E.
       unfold KEM_CCA. unfold KEM_CCA_pkg.
       unfold DEM_CCA. unfold DEM_CCA_pkg.
       change ({locpackage ?p }.(pack)) with p.
       change ({package ?p }.(pack)) with p.
       apply eq_ler. rewrite !link_assoc. f_equal.
-      all: rewrite Advantage_sym. 1: reflexivity.
+      all: rewrite Advantage_sym. 2: reflexivity.
+      f_equal. rewrite Advantage_sym.
       f_equal. all: f_equal.
       all: apply par_commut.
-      (* TODO Can we do better than what follows? *)
       all: unfold Parable.
       all: rewrite domm_ID_fset.
       all: rewrite fdisjointC.
       all:
         eapply fdisjoint_trans ; [
-          eapply domm_trimmed ; unfold KEM, DEM ; cbn - [mkdef mkfmap] ; ssprove_valid
+          eapply domm_trimmed ; unfold KEM, DEM ;
+          cbn - [mkdef mkfmap] ; ssprove_valid
         |].
       all: simpl.
       all: unfold idents, DEM_out.
       all: rewrite imfset_fset.
       all: simpl.
       all: rewrite fdisjointC.
-      all: apply/fdisjointP.
-      all: intros x hx.
-      all: rewrite in_fset in hx.
-      all: rewrite in_fset.
-      all: invert_in_seq hx.
-      all: reflexivity.
+      all: fdisjoint_auto.
   Qed.
 
 End KEMDEM.

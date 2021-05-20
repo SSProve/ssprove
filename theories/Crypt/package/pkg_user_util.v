@@ -30,11 +30,21 @@
   Tools for relation program logic
   --------------------------------
 
-  - [ssprove_same_head_r]
+  - [ssprove_sync]
     Applies the rule that states that both pieces of code have the same head
     (meaning the same command at top-level).
     It is right-biased and as such will work even if the left-hand side is
     an evar.
+
+    Note: This tactic also tries to preserve the precondition automatically.
+    It is not always possible and it will sometimes require you to prove
+    preservation of the precondition manually.
+    Extension to the [ssprove_invariant] hint database can extend automation.
+
+  - [ssprove_sync_eq]
+    Specialised version of [ssprove_sync] where the precondition is merely
+    equality of heaps. No precondition preservation is needed in this particular
+    case.
 
   - [ssprove_swap_rhs n]
     Swap in the right-hand side.
@@ -59,18 +69,24 @@
 
 **)
 
-Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import all_ssreflect ssrbool eqtype seq eqtype choice.
-Set Warnings "notation-overridden,ambiguous-paths".
+Set Warnings "-notation-overridden,-ambiguous-paths,-notation-incompatible-format".
+From mathcomp Require Import all_ssreflect all_algebra reals distr
+  fingroup.fingroup realsum ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice
+  seq.
+Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
-From Crypt Require Import Prelude pkg_core_definition pkg_composition
+From Crypt Require Import Axioms Prelude pkg_core_definition pkg_composition
   pkg_notation RulesStateProb pkg_advantage pkg_lookup pkg_semantics
-  pkg_invariants pkg_distr pkg_rhl pkg_tactics chUniverse.
+  pkg_heap pkg_invariants pkg_distr pkg_rhl pkg_tactics chUniverse.
 From Coq Require Import Utf8 FunctionalExtensionality
   Setoids.Setoid Classes.Morphisms.
 
 From Equations Require Import Equations.
 Require Equations.Prop.DepElim.
+
+Import Num.Def.
+Import Num.Theory.
+Import mc_1_10.Num.Theory.
 
 Set Equations With UIP.
 
@@ -291,7 +307,7 @@ Ltac cmd_bind_simpl :=
   (if b as b' return b = b' → raw_code A then k else λ _, fail) erefl. *)
 
 (* Right-biased application of rsame_head *)
-Ltac ssprove_same_head_r :=
+Ltac ssprove_sync_eq :=
   lazymatch goal with
   | |- ⊢ ⦃ _ ⦄ _ ≈ ?c ⦃ _ ⦄ =>
     lazymatch c with
@@ -331,7 +347,7 @@ Ltac notin_fset_auto :=
 
 (* Right-biased same head, but more genenal *)
 (* TODO Use that instead of the one above, which would have _eq in the name *)
-Ltac ssprove_same_head_alt_r :=
+Ltac ssprove_sync :=
   lazymatch goal with
   | |- ⊢ ⦃ _ ⦄ _ ≈ ?c ⦃ _ ⦄ =>
     lazymatch c with
@@ -495,7 +511,7 @@ Ltac ssprove_swap_auto :=
 (* TODO Tactic to solve automatically condition when possible *)
 Ltac ssprove_swap_aux n :=
   lazymatch eval cbv in n with
-  | S ?n => ssprove_same_head_r ; intro ; ssprove_swap_aux n
+  | S ?n => ssprove_sync_eq ; intro ; ssprove_swap_aux n
   | 0%N => ssprove_rswap_cmd_eq_rhs ; ssprove_swap_auto
   | _ => fail "Wrong number: " n
   end.
@@ -596,18 +612,18 @@ Ltac ssprove_code_simpl_more_aux :=
       ]
     | x ← sample ?op ;; _ =>
       let x' := fresh x in
-      ssprove_same_head_r ; intro x'
+      ssprove_sync_eq ; intro x'
     | put ?ℓ := ?v ;; _ =>
-      ssprove_same_head_r ; intro
+      ssprove_sync_eq ; intro
     | x ← get ?ℓ ;; _ =>
       let x' := fresh x in
-      ssprove_same_head_r ; intro x'
+      ssprove_sync_eq ; intro x'
     | x ← cmd ?c ;; _ =>
       let x' := fresh x in
-      ssprove_same_head_r ; intro x'
+      ssprove_sync_eq ; intro x'
     | @assertD ?A ?b (λ x, _) =>
       let x' := fresh x in
-      ssprove_same_head_r ; intro x'
+      ssprove_sync_eq ; intro x'
     | _ => eapply rreflexivity_rule
     end
   | |- _ => fail "The goal should be a syntactic judgment"
@@ -686,6 +702,24 @@ Proof.
   reflexivity.
 Qed.
 
+(* TODO Find better name *)
+Definition sameSomeRel {A B} (R : A → B → Prop) x y :=
+  match x, y with
+  | Some x, Some y => R x y
+  | None, None => True
+  | _, _ => False
+  end.
+
+Lemma sameSomeRel_sameSome :
+  ∀ {A B} R x y,
+    @sameSomeRel A B R x y →
+    sameSome x y.
+Proof.
+  intros A B R x y h.
+  destruct x, y. all: try contradiction.
+  all: reflexivity.
+Qed.
+
 Ltac ssprove_forget :=
   lazymatch goal with
   | |- ⊢ ⦃ λ '(s₀, s₁), (_ ⋊ rem_rhs _ _) (s₀, s₁) ⦄ _ ≈ _ ⦃ _ ⦄ =>
@@ -696,3 +730,129 @@ Ltac ssprove_forget :=
 
 Ltac ssprove_forget_all :=
   repeat ssprove_forget.
+
+Ltac update_pre_fold :=
+  repeat change (set_lhs ?ℓ ?v ?pre) with (update_pre [:: hpv_l ℓ v ] pre) ;
+  repeat change (set_rhs ?ℓ ?v ?pre) with (update_pre [:: hpv_r ℓ v ] pre) ;
+  repeat change (update_pre ?l1 (update_pre ?l2 ?pre))
+  with (update_pre (l1 ++ l2) pre).
+
+Ltac remember_pre_fold :=
+  repeat change (?pre ⋊ rem_lhs ?ℓ ?v) with (remember_pre [:: hpv_l ℓ v ] pre) ;
+  repeat change (?pre ⋊ rem_rhs ?ℓ ?v) with (remember_pre [:: hpv_r ℓ v ] pre) ;
+  repeat change (remember_pre ?l1 (remember_pre ?l2 ?pre))
+  with (remember_pre (l1 ++ l2) pre).
+
+Ltac ssprove_restore_pre :=
+  update_pre_fold ;
+  eapply r_restore_pre ; [
+    cbn
+  | idtac
+  ].
+
+Ltac ssprove_restore_mem :=
+  update_pre_fold ;
+  remember_pre_fold ;
+  eapply r_restore_mem ; [
+    cbn
+  | idtac
+  ].
+
+Ltac lookup_hpv_l_eq_solve :=
+  repeat (
+    tryif rewrite lookup_hpv_l_eq
+    then reflexivity
+    else rewrite lookup_hpv_l_neq
+  ) ; neq_loc_auto.
+
+Ltac lookup_hpv_r_eq_solve :=
+  repeat (
+    tryif rewrite lookup_hpv_r_eq
+    then reflexivity
+    else rewrite lookup_hpv_r_neq
+  ) ; neq_loc_auto.
+
+#[export] Hint Extern 11 (preserve_update_mem _ _ (couple_lhs _ _ _)) =>
+  eapply preserve_update_couple_lhs_lookup ; [
+    lookup_hpv_l_eq_solve ..
+  | idtac
+  ]
+  : ssprove_invariant.
+
+#[export] Hint Extern 11 (preserve_update_mem _ _ (couple_rhs _ _ _)) =>
+  eapply preserve_update_couple_rhs_lookup ; [
+    lookup_hpv_r_eq_solve ..
+  | idtac
+  ]
+  : ssprove_invariant.
+
+#[export] Hint Extern 11 (preserve_update_mem _ _ (triple_rhs _ _ _ _)) =>
+  eapply preserve_update_triple_rhs_lookup ; [
+    lookup_hpv_r_eq_solve ..
+  | idtac
+  ]
+  : ssprove_invariant.
+
+#[export] Hint Extern 12 (preserve_update_mem _ _ (couple_lhs _ _ _)) =>
+  eapply preserve_update_couple_lhs_lookup_None ; [
+    repeat rewrite lookup_hpv_l_neq ; [
+      reflexivity
+    | solve [ neq_loc_auto ] ..
+    ] ..
+  ]
+  : ssprove_invariant.
+
+#[export] Hint Extern 12 (preserve_update_mem _ _ (couple_rhs _ _ _)) =>
+  eapply preserve_update_couple_rhs_lookup_None ; [
+    repeat rewrite lookup_hpv_r_neq ; [
+      reflexivity
+    | solve [ neq_loc_auto ] ..
+    ] ..
+  ]
+  : ssprove_invariant.
+
+#[export] Hint Extern 12 (preserve_update_mem _ _ (triple_rhs _ _ _ _)) =>
+  eapply preserve_update_triple_rhs_lookup_None ; [
+    repeat rewrite lookup_hpv_r_neq ; [
+      reflexivity
+    | solve [ neq_loc_auto ] ..
+    ] ..
+  ]
+  : ssprove_invariant.
+
+Ltac get_heap_simpl :=
+  repeat
+  tryif rewrite get_set_heap_eq
+  then idtac
+  else (rewrite get_set_heap_neq ; [| neq_loc_auto ]).
+
+#[local] Open Scope ring_scope.
+
+Lemma eq_ler :
+  ∀ (x y : R),
+    x = y →
+    x <= y.
+Proof.
+  intros x y e. subst. apply lerr.
+Qed.
+
+Ltac fdisjoint_auto :=
+  let h := fresh "h" in
+  apply /fdisjointP ;
+  intros ? h ;
+  rewrite in_fset in h ;
+  rewrite in_fset ;
+  invert_in_seq h ;
+  reflexivity.
+
+#[export] Hint Extern 15 (FDisjoint _ _) =>
+  fdisjoint_auto
+  : typeclass_instances packages.
+
+Ltac fsubset_auto :=
+  let h := fresh "h" in
+  apply /fsubsetP ;
+  intros ? h ;
+  rewrite in_fset ; rewrite in_fset in h ;
+  invert_in_seq h ;
+  inseq_try.

@@ -345,7 +345,7 @@ Section PRF_example.
     (* We now conduct the proof in relational logic. *)
     ssprove_swap_rhs 1%N.
     ssprove_swap_rhs 0%N.
-    ssprove_same_head_r. cbn. intros [k|].
+    ssprove_sync_eq. cbn. intros [k|].
     - cbn. ssprove_swap_rhs 0%N.
       eapply rpost_weaken_rule.
       1: eapply rreflexivity_rule.
@@ -369,7 +369,7 @@ Section PRF_example.
     simplify_linking.
     (* We now conduct the proof in relational logic. *)
     ssprove_swap_lhs 0%N.
-    ssprove_same_head_r. cbn. intros [k|].
+    ssprove_sync_eq. cbn. intros [k|].
     - cbn. eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
       cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
     - cbn.

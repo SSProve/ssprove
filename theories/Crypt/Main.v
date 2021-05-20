@@ -1,5 +1,5 @@
 From Crypt Require Import pkg_composition pkg_advantage PRF ElGamal pkg_rhl
-  UniformStateProb RulesStateProb.
+  UniformStateProb RulesStateProb KEMDEM.
 
 (* Notation to chain lets and end with 0 *)
 Notation "[ 'let' ]" :=
@@ -38,7 +38,8 @@ Definition results_from_the_paper := [let
   Advantage_triangle ;
   Advantage_link ;
   @prove_relational ;
-  @Pr_eq_empty
+  @Pr_eq_empty ;
+  PKE_security
 ].
 
 Print Assumptions results_from_the_paper.

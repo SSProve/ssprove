@@ -32,7 +32,8 @@ On macOS, `gsed` is additionally required for this.
 ## Running verification
 
 Run `make` from this directory to verify all the Coq files.
-This should succeed displaying only warnings.
+This should succeed displaying only the list of axioms used for our listed
+results.
 
 Run `make graph` to build a graph of dependencies between sources.
 
@@ -40,24 +41,26 @@ Run `make graph` to build a graph of dependencies between sources.
 
 | Directory             | Description                                          |
 |-----------------------|------------------------------------------------------|
-| `theories/`           | Root of all the Coq files                            |
-| `theories/Mon`        | External development coming from "Dijkstra Monads For All" |
-| `theories/Relational` | External development coming from "The Next 700 Relational Program Logics"|
-| `theories/Crypt`      | This paper                                           |
+| [theories]           | Root of all the Coq files                            |
+| [theories/Mon]        | External development coming from "Dijkstra Monads For All" |
+| [theories/Relational] | External development coming from "The Next 700 Relational Program Logics"|
+| [theories/Crypt]      | This paper                                           |
+
+Unless specified with a full path, all files considered in this README can
+safely be assumed to be in [theories/Crypt].
 
 ## Mapping between paper and formalisation
 
 ### Package definition and laws
 
-The formalisation of packages can be found in the directory
-`theories/Crypt/package`.
+The formalisation of packages can be found in the [package] directory.
 
-The definition of packages can be found in `pkg_core_definition.v`.
+The definition of packages can be found in [pkg_core_definition.v].
 Herein, `package L I E` is the type of packages with set of locations `L`,
 import interface `I` and export interface `E`.
 
 Package laws, as introduced in the paper, are all stated and proven in
-`pkg_composition.v` directly on raw packages.
+[pkg_composition.v] directly on raw packages.
 
 #### Sequential composition
 
@@ -68,7 +71,8 @@ In Coq, we call `link p1 p2` the sequential composition of `p1` and `p2`
 Definition link (p1 p2 : raw_package) : raw_package.
 ```
 
-Linking is valid if the export and import match:
+Linking is valid if the export and import match, and its set of locations
+is the union of those from both packages (`:|:` denotes union of sets):
 ```coq
 Lemma valid_link :
   ∀ L1 L2 I M E p1 p2,
@@ -115,7 +119,7 @@ Lemma par_commut :
     Parable p1 p2 →
     par p1 p2 = par p2 p1.
 ```
-This lemma does not work on arbitrary raw packages, it is requires that the
+This lemma does not work on arbitrary raw packages, it requires that the
 packages implement disjoint signatures.
 
 Associativity on the other hand is free from this requirement:
@@ -142,7 +146,7 @@ Lemma valid_ID :
 
 The extra `flat I` condition on the interface essentially forbids overloading:
 there cannot be two procedures in `I` that share the same name, but have
-different types. While the types of our interfaces could in theory allow such
+different types. While our type of interface could in theory allow such
 overloading, the way we build packages forbids us from ever implementing them,
 hence the restriction.
 
@@ -166,7 +170,8 @@ Lemma id_link :
 
 In both cases, we ask that the package we link the identity package with is
 `trimmed`, meaning that it implements *exactly* its export interface and nothing
-more. Packages created through our operations always verify this property.
+more. Packages created through our operations always verify this property
+(as such it can be checked automatically on those).
 
 #### Interchange between sequential and parallel composition
 
@@ -192,7 +197,9 @@ It once again requires some validity and trimming properties.
 
 ### Examples
 
-The PRF example is developed in `theories/Crypt/examples/PRF.v`.
+#### PRF
+
+The PRF example is developed in [examples/PRF.v].
 The security theorem is the following:
 
 ```coq
@@ -215,8 +222,9 @@ game pair `IND_CPA` by the sum of the statistical gap and the advantages against
 Note that we require some state separation hypotheses here, as such disjointness
 of state is not required by our package definitions and laws.
 
+#### ElGamal
 
-The ElGamal example is developed in `theories/Crypt/examples/ElGamal.v`
+The ElGamal example is developed in [examples/ElGamal.v].
 The security theorem is the following:
 
 ```coq
@@ -227,14 +235,18 @@ Theorem ElGamal_OT :
     fdisjoint LA (ots_real_vs_rnd false).(locs) →
     Advantage ots_real_vs_rnd A <= AdvantageE DH_rnd DH_real (A ∘ Aux).
 ```
-where `Aux` is called `L` in the paper.
+
+#### KEM-DEM
+
+As stated in the paper, we also formalised the KEM-DEM example, whose definition
+and proof can be found in [examples/KEMDEM.v].
 
 
 ### Probabilistic relational program logic
 
 Figure 13 presents a selection of rules for our probabilistic relational
 program logic. Most of them can be found in
-`theories/Crypt/package/pkg_rhl.v` which provides an interface for using these
+[package/pkg_rhl.v] which provides an interface for using these
 rules directly with `code`.
 
 | Rule in paper | Rule in Coq           |
@@ -245,24 +257,19 @@ rules directly with `code`.
 | eqDistrL      | `rrewrite_eqDistrL`   |
 | symmetry      | `rsymmetry`           |
 | for-loop      | `for_loop_rule`       |
-
-Some rules are for now only proven in the logic but have not been lifted
-to packages, they can be found in `theories/Crypt/rules/UniformStateProb.v`:
-
-| Rule in paper | Rule in Coq             |
-|---------------|-------------------------|
-| uniform       | `Uniform_bij_rule`      |
-| asrt          | `assert_rule`           |
-| asrtL         | `assert_rule_left`      |
+| uniform       | `r_uniform_bij`       |
+| asrt          | `r_assert'`           |
+| asrtL         | `r_assertL`           |
 
 Finally the "bwhile" rule is proven as `bounded_do_while_rule` in
-`theories/Crypt/rules/RulesStateProb.v`.
+[rules/RulesStateProb.v].
 
 ### Lemmas 1 & 2 and Theorems 1 & 2 from the paper
 
 We now list the lemmas and theorems about packages from the paper and in the
 case of Theorems 1 & 2 proven using our probabilistic relational program
-logic. They can all be found in `theories/Crypt/package/pkg_rhl.v`.
+logic. The first two can be found in [package/pkg_advantage.v],
+the other two in [package/pkg_rhl.v].
 
 **Lemma 1 (Triangle Inequality)**
 ```coq
@@ -314,33 +321,33 @@ This part of the mapping corresponds to section 5.
 
 #### 5.1 Relational effect observation
 
-In `theories/Relational/OrderEnrichedCategory.v` we introduce some abstract
+In [theories/Relational/OrderEnrichedCategory.v] we introduce some abstract
 notions such as categories, functors, relative monads, lax morphisms of relative
 monads and isomorphisms of functors, all of which are order-enriched.
-The file `theories/Relational/OrderEnrichedCategory.v` instantiates all of these
+The file [theories/Relational/OrderEnrichedCategory.v] instantiates all of these
 abstract notions.
 
 Free monads are defined in
-`theories/Crypt/rhl_semantics/free_monad/FreeProbProg.v`.
+[rhl_semantics/free_monad/FreeProbProg.v].
 
-In `theories/Crypt/rhl_semantics/ChoiceAsOrd.v` we introduce the category of
+In [rhl_semantics/ChoiceAsOrd.v] we introduce the category of
 choice types (`choiceType`) which are useful for sub-distributions:
 they are basically the types from which we can sample.
 They are one of the reasons why our monads are always relative.
 
 More basic categories can be found in the directory
-`theories/Crypt/rhl_semantics/more_categories/`, namely in the files
-`RelativeMonadMorph_prod.v`, `LaxComp.v`, `LaxFunctorsAndTransf.v` and
-`InitialRelativeMonad.v`.
+[rhl_semantics/more_categories/], namely in the files
+[RelativeMonadMorph_prod.v], [LaxComp.v], [LaxFunctorsAndTransf.v] and
+[InitialRelativeMonad.v].
 
 
 #### 5.2 The probabilistic relational effect observation
 
 The theory for §5.2 is developed in the following files:
-`theories/Crypt/rhl_semantics/only_prob/Couplings.v`
-`theories/Crypt/rhl_semantics/only_prob/Theta_dens.v`
-`(theories/Crypt/rhl_semantics/only_prob/Theta_exCP.v)`
-`theories/Crypt/rhl_semantics/only_prob/ThetaDex.v`
+[rhl_semantics/only_prob/Couplings.v],
+[rhl_semantics/only_prob/Theta_dens.v],
+([rhl_semantics/only_prob/Theta_exCP.v]),
+[rhl_semantics/only_prob/ThetaDex.v].
 
 
 #### 5.3 The stateful and probabilistic relational effect observation
@@ -348,16 +355,16 @@ The theory for §5.2 is developed in the following files:
 The theory for §5.3 is developed in the following files, divided in two
 lists, one for abstract results, and one for the instances we use.
 
-Abstract (in `theories/Crypt/rhl_semantics/more_categories/`):
-`OrderEnrichedRelativeAdjunctions.v`
-`LaxMorphismOfRelAdjunctions.v`
-`TransformingLaxMorph.v`
+Abstract (in [rhl_semantics/more_categories/]):
+[OrderEnrichedRelativeAdjunctions.v],
+[LaxMorphismOfRelAdjunctions.v],
+[TransformingLaxMorph.v].
 
-Instances (in `theories/Crypt/rhl_semantics/state_prob/`):
-`OrderEnrichedRelativeAdjunctionsExamples.v`
-`StateTransformingLaxMorph.v`
-`StateTransfThetaDens.v`
-`LiftStateful.v`
+Instances (in [rhl_semantics/state_prob/]):
+[OrderEnrichedRelativeAdjunctionsExamples.v],
+[StateTransformingLaxMorph.v],
+[StateTransfThetaDens.v],
+[LiftStateful.v].
 
 
 ## Axioms
@@ -414,7 +421,7 @@ admitted, but none of them is used to show the results from the paper above.
 ### How to find axioms/admits
 
 We use the `Print Assumptions`command of Coq to list the axioms/admits on which
-a definition, lemma, or theorem depends. In `theories/Crypt/Main.v` we run this
+a definition, lemma, or theorem depends. In [Main.v] we run this
 command on all the results above at once:
 ```coq
 Print Assumptions results_from_the_paper.
@@ -452,3 +459,41 @@ The ElGamal example is parametrized by a cyclic group using a Coq functor.
 To print its axioms we have to provide an instance of this functor, and for
 simplicity we chose to use ℤ₃ as an instance even if it is not realistic.
 The axioms we use do not depend on the instance itself.
+
+
+
+
+[theories]: theories
+[theories/Mon]: theories/Mon
+[theories/Relational]: theories/Relational
+[theories/Crypt]: theories/Crypt
+[package]: theories/Crypt/package
+[pkg_core_definition.v]: theories/Crypt/package/pkg_core_definition.v
+[pkg_composition.v]: theories/Crypt/package/pkg_composition.v
+[examples/PRF.v]: theories/Crypt/examples/PRF.v
+[examples/ElGamal.v]: theories/Crypt/examples/ElGamal.v
+[examples/KEMDEM.v]: theories/Crypt/examples/KEMDEM.v
+[package/pkg_rhl.v]: theories/Crypt/package/pkg_rhl.v
+[rules/RulesStateProb.v]: theories/Crypt/rules/RulesStateProb.v
+[package/pkg_advantage.v]: theories/Crypt/package/pkg_advantage.v
+[theories/Relational/OrderEnrichedCategory.v]: theories/Relational/OrderEnrichedCategory.v
+[rhl_semantics/free_monad/FreeProbProg.v]: theories/Crypt/rhl_semantics/free_monad/FreeProbProg.v
+[rhl_semantics/ChoiceAsOrd.v]: theories/Crypt/rhl_semantics/ChoiceAsOrd.v
+[rhl_semantics/more_categories/]: theories/Crypt/rhl_semantics/more_categories/
+[RelativeMonadMorph_prod.v]: theories/Crypt/rhl_semantics/more_categories/RelativeMonadMorph_prod.v
+[LaxComp.v]: theories/Crypt/rhl_semantics/more_categories/LaxComp.v
+[LaxFunctorsAndTransf.v]: theories/Crypt/rhl_semantics/more_categories/LaxFunctorsAndTransf.v
+[InitialRelativeMonad.v]: theories/Crypt/rhl_semantics/more_categories/InitialRelativeMonad.v
+[rhl_semantics/only_prob/Couplings.v]: theories/Crypt/rhl_semantics/only_prob/Couplings.v
+[rhl_semantics/only_prob/Theta_dens.v]: theories/Crypt/rhl_semantics/only_prob/Theta_dens.v
+[rhl_semantics/only_prob/Theta_exCP.v]: theories/Crypt/rhl_semantics/only_prob/Theta_exCP.v
+[rhl_semantics/only_prob/ThetaDex.v]: theories/Crypt/rhl_semantics/only_prob/ThetaDex.v
+[OrderEnrichedRelativeAdjunctions.v]: theories/Crypt/rhl_semantics/more_categories/OrderEnrichedRelativeAdjunctions.v
+[LaxMorphismOfRelAdjunctions.v]: theories/Crypt/rhl_semantics/more_categories/LaxMorphismOfRelAdjunctions.v
+[TransformingLaxMorph.v]: theories/Crypt/rhl_semantics/more_categories/TransformingLaxMorph.v
+[rhl_semantics/state_prob/]: theories/Crypt/rhl_semantics/state_prob/
+[OrderEnrichedRelativeAdjunctionsExamples.v]: theories/Crypt/rhl_semantics/state_prob/OrderEnrichedRelativeAdjunctionsExamples.v
+[StateTransformingLaxMorph.v]: theories/Crypt/rhl_semantics/state_prob/StateTransformingLaxMorph.v
+[StateTransfThetaDens.v]: theories/Crypt/rhl_semantics/state_prob/StateTransfThetaDens.v
+[LiftStateful.v]: theories/Crypt/rhl_semantics/state_prob/LiftStateful.v
+[Main.v]: theories/Crypt/Main.v
