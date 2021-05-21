@@ -19,6 +19,7 @@ some knowledge of Coq.*
    1. [Package algebra]
    1. [Adversarial advantage]
 1. [Probabilistic relational program logic]
+   1. [Proving perfect indistinguishability]
 
 ## Writing packages
 
@@ -616,6 +617,59 @@ procedure `RUN` of type `'unit → 'bool`.*
 
 ## Probabilistic relational program logic
 
+To prove perfect indistinguishability of two packages, we propose a low-level
+probabilistic relational Hoare logic. We first show how to prove a statement
+of the form `P ≈₀ Q` and then how to reason in this program logic.
+
+### Proving perfect indistinguishability
+
+The lemma of interest here is the following:
+```coq
+Lemma eq_rel_perf_ind :
+  ∀ {L₀ L₁ E} (p₀ p₁ : raw_package) (inv : precond)
+    `{ValidPackage L₀ Game_import E p₀}
+    `{ValidPackage L₁ Game_import E p₁},
+    Invariant L₀ L₁ inv →
+    eq_up_to_inv E inv p₀ p₁ →
+    p₀ ≈₀ p₁.
+```
+Most conditions are for `p₀ ≈₀ p₁` to even make sense. The important part is
+that to prove `p₀ ≈₀ p₁` it suffices to prove that their procedures are related
+in our program logic, while preserving an invariant `inv`.
+An invariant relates the two heaps (state) used by `p₀` and `p₁` respectively.
+The simplest example of invariant simply state equality of the two:
+```coq
+λ '(s₀, s₁), s₀ = s₁
+```
+To use it, one case use the following special case.
+```coq
+Corollary eq_rel_perf_ind_eq :
+  ∀ {L₀ L₁ E} (p₀ p₁ : raw_package)
+    `{ValidPackage L₀ Game_import E p₀}
+    `{ValidPackage L₁ Game_import E p₁},
+    eq_up_to_inv E (λ '(h₀, h₁), h₀ = h₁) p₀ p₁ →
+    p₀ ≈₀ p₁.
+```
+We will say more about invariants later.
+
+Once this lemma is applied, we need to simplify the `eq_up_to_inv` expression.
+We have a set of tactics that help us achieve that automatically.
+
+```coq
+eapply eq_rel_perf_ind_eq.
+simplify_eq_rel x. (* x is a name *)
+all: ssprove_code_simpl.
+```
+
+`simplify_eq_rel x` will turn `eq_upto_inv` into one goal for each procedure,
+`x` being the name for the argument in each case.
+The goals it returns can be quite massive, with typically linking that is not
+reduced (not inlined).
+For each sub-goal (hence the goal selector `all:`), we apply the
+`ssprove_code_simpl` tactic which we will describe in the next section.
+
+### 🚧 **TODO** 🚧
+
 🚧 **TODO** 🚧
 
 
@@ -630,5 +684,6 @@ procedure `RUN` of type `'unit → 'bool`.*
 [Package algebra]: #package-algebra
 [Adversarial advantage]: #adversarial-advantage
 [Probabilistic relational program logic]: #probabilistic-relational-program-logic
+[Proving perfect indistinguishability]: #proving-perfect-indistinguishability
 
 [extructures]: https://github.com/arthuraa/extructures
