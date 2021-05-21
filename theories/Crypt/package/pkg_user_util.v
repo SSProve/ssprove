@@ -346,7 +346,6 @@ Ltac notin_fset_auto :=
   : ssprove_invariant.
 
 (* Right-biased same head, but more genenal *)
-(* TODO Use that instead of the one above, which would have _eq in the name *)
 Ltac ssprove_sync :=
   lazymatch goal with
   | |- ⊢ ⦃ _ ⦄ _ ≈ ?c ⦃ _ ⦄ =>

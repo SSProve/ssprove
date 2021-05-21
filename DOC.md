@@ -21,6 +21,8 @@ some knowledge of Coq.*
 1. [Probabilistic relational program logic]
    1. [Proving perfect indistinguishability]
    1. [Massaging relational judgments]
+   1. [Proving relational judgments]
+   1. [Crafting invariants]
 
 ## Writing packages
 
@@ -651,7 +653,7 @@ Corollary eq_rel_perf_ind_eq :
     eq_up_to_inv E (λ '(h₀, h₁), h₀ = h₁) p₀ p₁ →
     p₀ ≈₀ p₁.
 ```
-We will say more about invariants later.
+We will say more about invariants later in [[Crafting invariants]].
 
 Once this lemma is applied, we need to simplify the `eq_up_to_inv` expression.
 We have a set of tactics that help us achieve that automatically.
@@ -713,7 +715,141 @@ Lemma code_link_scheme :
 stating that code which does not import anything (here we add the unnecessary
 requirement that it must be state-less as well) remains unchanged after linking.
 
-### 🚧 **TODO** 🚧
+### Proving relational judgments
+
+Now that our goal is pretty enough to read, we can try and prove it. For this
+a lot of rules are introduced in the `pkg_rhl` module (which you import simply
+by importing `Package`). Not all of them are useful for the user experience,
+some are simply used to prove other ones.
+
+We will present the most important ones as well as tactics that can help apply
+certain rules.
+
+#### Synchronous rules
+
+The most basic tactic deals with judgment with the same first instruction on
+both sides, for instance
+```coq
+⊢ ⦃ pre ⦄ x ← sample D ;; k₀ x ≈ x ← sample D ;; k₁ x ⦃ post ⦄
+```
+Applying the `ssprove_sync` tactic will reduce the goal to
+```coq
+∀ x, ⊢ ⦃ pre ⦄ k₀ x ≈ k₁ x ⦃ post ⦄
+```
+
+In the case of sampling there is no extra requirement, but when the first
+operation is a `get` or a `put`, there is *a priori* no guarantee that the
+precondition `pre` will be preserved. `ssprove_sync` will try to solve this
+extra condition on its own but will ask the user for it if it doesn't manage.
+To solve it, it calls the extensible `ssprove_invariant` tactic that we will
+see in [[Crafting invariants]].
+
+There is also a more specialised tactic **`ssprove_sync_eq`** which solves the
+same problem when the precondition is equality: `λ '(s₀, s₁), s₀ = s₁`. This one
+never generates extra conditions.
+
+#### Bind
+
+Sometimes, the head is not a command stem, but a `bind`. In this case we have
+the `r_bind` rule. It is also more general than the above in that the two
+head expression can differ, provided they are still related.
+```coq
+Lemma r_bind :
+  ∀ {A₀ A₁ B₀ B₁ : ord_choiceType} m₀ m₁ f₀ f₁
+    (pre : precond) (mid : postcond A₀ A₁) (post : postcond B₀ B₁),
+    ⊢ ⦃ pre ⦄ m₀ ≈ m₁ ⦃ mid ⦄ →
+    (∀ a₀ a₁, ⊢ ⦃ λ '(s₀, s₁), mid (a₀, s₀) (a₁, s₁) ⦄ f₀ a₀ ≈ f₁ a₁ ⦃ post ⦄) →
+    ⊢ ⦃ pre ⦄ bind m₀ f₀ ≈ bind m₁ f₁ ⦃ post ⦄.
+```
+
+#### Return
+
+The tactics above only apply when the code has a head command, this excludes
+programs like `ret t`. To deal with them, we have the specialised `r_ret` rule.
+
+```coq
+Lemma r_ret :
+  ∀ {A₀ A₁ : ord_choiceType} u₀ u₁ (pre : precond) (post : postcond A₀ A₁),
+    (∀ s₀ s₁, pre (s₀, s₁) → post (u₀, s₀) (u₁, s₁)) →
+    ⊢ ⦃ pre ⦄ ret u₀ ≈ ret u₁ ⦃ post ⦄.
+```
+
+#### Swapping
+
+Sometimes, two expressions are similar but don't have the same head symbol.
+In this case, it might prove useful to *swap* commands.
+Say we have the following goal:
+```coq
+⊢ ⦃ pre ⦄ x ← sample D ;; y ← get ℓ ;; r₀ x y ≈ c₁ ⦃ post ⦄
+```
+then applying `ssprove_swap_lhs 0%N` will leave us to prove
+```coq
+⊢ ⦃ pre ⦄ y ← get ℓ ;; x ← sample D ;; r₀ x y ≈ c₁ ⦃ post ⦄
+```
+instead.
+
+Not any two commands are swappable however. The tactic will try to infer the
+swappability condition automatically, this is the case for sampling which can
+always be swapped (if dependencies permit), or for `get`/`put` when they talk
+about distinct locations. If automation proves insufficient, the user will have
+to provide the proof themselves. There is also the option of enriching the
+`ssprove_swap` database, as in the example below.
+
+```coq
+Hint Extern 40 (⊢ ⦃ _ ⦄ x ← ?s ;; y ← cmd _ ;; _ ≈ _ ⦃ _ ⦄) =>
+  eapply r_swap_scheme_cmd ; ssprove_valid
+  : ssprove_swap.
+```
+Here we provide a hint to swap a bind with a regular command (`get`, `sample`
+or `put`), in the case where the program that we bind is a scheme, *i.e.* a
+stateless, import-less program:
+```coq
+Lemma r_swap_scheme_cmd :
+  ∀ {A B : choiceType} (s : raw_code A) (c : command B),
+    ValidCode fset0 [interface] s →
+    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
+      x ← s ;; y ← cmd c ;; ret (x,y) ≈
+      y ← cmd c ;; x ← s ;; ret (x,y)
+    ⦃ eq ⦄.
+```
+
+The tactics we provide are
+* `ssprove_swap_lhs n` for swapping in the left-hand side at depth `n`;
+* `ssprove_swap_rhs n` for swapping in the right-hand side;
+* `ssprove_swap_seq_lhs s` for swapping in the lhs using a sequence `s` of
+swapping instructions given as a list of natural numbers;
+* `ssprove_swap_seq_rhs s` for the same in the rhs.
+
+#### Reflexivity rule
+
+We have a very simple reflexivity rule in the case where the invariant is
+equality:
+```coq
+Lemma rreflexivity_rule :
+  ∀ {A : ord_choiceType} (c : raw_code A),
+    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ c ≈ c ⦃ eq ⦄.
+```
+
+In case the invariant is not equality, there is still a reflexivity rule, but
+it is more constrained:
+```coq
+Lemma r_reflexivity_alt :
+  ∀ {A : choiceType} {L} pre (c : raw_code A),
+    ValidCode L [interface] c →
+    (∀ ℓ, ℓ \in L → get_pre_cond ℓ pre) →
+    (∀ ℓ v, ℓ \in L → put_pre_cond ℓ v pre) →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      c ≈ c
+    ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
+```
+Validity can be handled with `ssprove_valid` and the other `get_pre_cond`
+and `put_pre_cond` are goals dealt with `ssprove_invariant`.
+
+#### Dealing with memory
+
+🚧 **TODO** 🚧
+
+### Crafting invariants
 
 🚧 **TODO** 🚧
 
@@ -731,5 +867,7 @@ requirement that it must be state-less as well) remains unchanged after linking.
 [Probabilistic relational program logic]: #probabilistic-relational-program-logic
 [Proving perfect indistinguishability]: #proving-perfect-indistinguishability
 [Massaging relational judgments]: #massaging-relational-judgments
+[Proving relational judgments]: #proving-relational-judgments
+[Crafting invariants]: #crafting-invariants
 
 [extructures]: https://github.com/arthuraa/extructures
