@@ -16,6 +16,8 @@ some knowledge of Coq.*
    1. [Valid code]
    1. [Packages]
 1. [High-level SSP proofs]
+   1. [Package algebra]
+   1. [Adversarial advantage]
 1. [Probabilistic relational program logic]
 
 ## Writing packages
@@ -431,8 +433,96 @@ if the interfaces match.
 
 ## High-level SSP proofs
 
+To reason at the high-level of state-separating proofs, we have two main
+options.
+The first one is the package algebra which involves laws on sequential and
+parallel composition as well as on the identity package.
+The second is when talking about advantage and corresponds mainly to the
+triangle inequality and the reduction lemma.
+
+Most of those apply to `raw_package` directly, but some will still have
+some extra conditions which might be validity of some bits.
+
+### Package algebra
+
+The algebraic laws on packages are expressed as equalities (using Coq's equality
+type `=`) on `raw_package`.
+
+#### Associativity of sequential composition / linking
+
+```coq
+Lemma link_assoc :
+  ∀ p₁ p₂ p₃,
+    p₁ ∘ (p₂ ∘ p₃) = (p₁ ∘ p₂) ∘ p₃.
+```
+
+#### Commutativity of parallel composition
+
+```coq
+Lemma par_commut :
+  ∀ p1 p2,
+    Parable p1 p2 →
+    par p1 p2 = par p2 p1.
+```
+
+#### Associativity of parallel composition
+
+```coq
+Lemma par_assoc :
+  ∀ p1 p2 p3,
+    par p1 (par p2 p3) = par (par p1 p2) p3.
+```
+
+#### Identity law
+
+```coq
+Lemma link_id :
+  ∀ L I E p,
+    ValidPackage L I E p →
+    flat I →
+    trimmed E p →
+    link p (ID I) = p.
+```
+
+```coq
+Lemma id_link :
+  ∀ L I E p,
+    ValidPackage L I E p →
+    trimmed E p →
+    link (ID E) p = p.
+```
+
+These laws require the package `p` to be valid but also to be `trimmed` which
+means that it doesn't implement more than it exports. For packages constructed
+as in [[Packages]], this is always the case.
+
+#### Interchange between sequential and parallel composition
+
+```coq
+Lemma interchange :
+  ∀ A B C D E F L₁ L₂ L₃ L₄ p₁ p₂ p₃ p₄,
+    ValidPackage L₁ B A p₁ →
+    ValidPackage L₂ E D p₂ →
+    ValidPackage L₃ C B p₃ →
+    ValidPackage L₄ F E p₄ →
+    trimmed A p₁ →
+    trimmed D p₂ →
+    Parable p₃ p₄ →
+    par (p₁ ∘ p₃) (p₂ ∘ p₄) = (par p₁ p₂) ∘ (par p₃ p₄).
+```
+The last line can be read as
+```
+(p₁ ∘ p₃) || (p₂ ∘ p₄) = (p₁ || p₂) ∘ (p₃ || p₄)
+```
+
+### Adversarial advantage
+
+🚧 **TODO** 🚧
+
 
 ## Probabilistic relational program logic
+
+🚧 **TODO** 🚧
 
 
 
@@ -443,6 +533,8 @@ if the interfaces match.
 [Valid code]: #valid-code
 [Packages]: #packages
 [High-level SSP proofs]: #high-level-ssp-proofs
+[Package algebra]: #package-algebra
+[Adversarial advantage]: #adversarial-advantage
 [Probabilistic relational program logic]: #probabilistic-relational-program-logic
 
 [extructures]: https://github.com/arthuraa/extructures
