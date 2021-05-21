@@ -20,6 +20,7 @@ some knowledge of Coq.*
    1. [Adversarial advantage]
 1. [Probabilistic relational program logic]
    1. [Proving perfect indistinguishability]
+   1. [Massaging relational judgments]
 
 ## Writing packages
 
@@ -668,6 +669,50 @@ reduced (not inlined).
 For each sub-goal (hence the goal selector `all:`), we apply the
 `ssprove_code_simpl` tactic which we will describe in the next section.
 
+### Massaging relational judgments
+
+A relational goal obtained after `simplify_eq_rel` will be of the form
+```coq
+⊢ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄
+```
+where `pre` is a precondition, `post` a postcondition, and `c₀` and `c₁` are
+both raw code.
+As stated above, the expressions `c₀` and `c₁` may not be in their best shape.
+For instance, linking might be stuck because of a `match` expression.
+
+**`ssprove_code_simpl`** will simplify such a goal by traversing both `c₀` and
+`c₁` and performing simplifications such as commutation of linking with `match`,
+or associativity of `bind`. In some rare cases, two applications of this tactic
+might be necessary. While it performs most possible simplifications, it only
+works syntactically.
+
+**`ssprove_code_simpl_more`** on the other hand will operate semantically,
+exploiting the fact that we are proving a relational judgment. One of the main
+points of it is that it can deal with associativity of `#assert`.
+
+`ssprove_code_simpl` is actually extensible by adding hints to the
+`ssprove_code_simpl` database.
+Consider for instance the following extension:
+```coq
+Hint Extern 50 (_ = code_link _ _) =>
+  rewrite code_link_scheme
+  : ssprove_code_simpl.
+```
+The hints must be able to solve goals where the left-hand side is an evar and
+the right-hand side is the expression to simplify.
+Here we state that whenever the expression to simplify is `code_link` we can
+rewrite using `code_link_scheme` before continuing the simplification.
+
+The lemma in question is
+```coq
+Lemma code_link_scheme :
+  ∀ A c p,
+    @ValidCode fset0 [interface] A c →
+    code_link c p = c.
+```
+stating that code which does not import anything (here we add the unnecessary
+requirement that it must be state-less as well) remains unchanged after linking.
+
 ### 🚧 **TODO** 🚧
 
 🚧 **TODO** 🚧
@@ -685,5 +730,6 @@ For each sub-goal (hence the goal selector `all:`), we apply the
 [Adversarial advantage]: #adversarial-advantage
 [Probabilistic relational program logic]: #probabilistic-relational-program-logic
 [Proving perfect indistinguishability]: #proving-perfect-indistinguishability
+[Massaging relational judgments]: #massaging-relational-judgments
 
 [extructures]: https://github.com/arthuraa/extructures
