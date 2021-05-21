@@ -517,7 +517,101 @@ The last line can be read as
 
 ### Adversarial advantage
 
-🚧 **TODO** 🚧
+Security theorems in SSP will often conclude on an inequality of advantages.
+We offer several ways to reason about them, but first we will show how to even
+state such theorems.
+
+#### Advantage and games
+
+The simplest notion of advantage we have is `AdvantageE` of the following type
+```coq
+AdvantageE (G₀ G₁ A : raw_package) : R
+```
+`G₀` and `G₁` are the packages compared by the distinguisher/adversary `A`.
+The result is a real number, of type `R`.
+
+We also have an alternative version simply style `Advantage` which takes in a
+`GamePair`:
+```coq
+Definition GamePair :=
+  bool → raw_package.
+```
+
+```coq
+Advantage (G : GamePair) (A : raw_package) : R
+```
+
+The two definitions are equivalent, as stated by the following. `AdvantageE`
+should be preferred as it is slightly less constrained.
+```coq
+Lemma Advantage_E :
+  ∀ (G : GamePair) A,
+    Advantage G A = AdvantageE (G false) (G true) A.
+```
+
+We have several useful lemmata on advantage. We will list the important ones
+below.
+
+```coq
+Lemma Advantage_link :
+  ∀ G₀ G₁ A P,
+    AdvantageE G₀ G₁ (A ∘ P) =
+    AdvantageE (P ∘ G₀) (P ∘ G₁) A.
+```
+This one corresponds to the **reduction lemma** and is very useful.
+
+```coq
+Lemma Advantage_sym :
+  ∀ P Q A,
+    AdvantageE P Q A = AdvantageE Q P A.
+```
+
+```coq
+Lemma Advantage_triangle :
+  ∀ P Q R A,
+    AdvantageE P Q A <= AdvantageE P R A + AdvantageE R Q A.
+```
+The **triangle inequality** is also very useful when reasoning about advantage.
+As such we provide the user with an n-ary version of it which allows the user
+to simulate game-hopping, in the form of a convenient tactic.
+
+```coq
+ssprove triangle p₀ [:: p₁ ; p₂ ; p₃ ] p₄ A as ineq.
+```
+will produce an inequality
+```coq
+ineq :
+  AdvantageE p₀ p₄ A <= AdvantageE p₀ p₁ A +
+                        AdvantageE p₁ p₂ A +
+                        AdvantageE p₂ p₃ A +
+                        AdvantageE p₃ p₄ A
+```
+
+#### Perfect indistinguishability
+
+When the advantage of an adversary `A` (with disjoint state) against a game pair
+`(G₀, G₁)` is `0`, we say that `G₀` and `G₁` are perfectly indistinguishable
+and we write `G₀ ≈₀ G₁`.
+Because this definition needs to talk about state, it can only apply to valid
+packages. This notation indeed implicitly asks for the following:
+```coq
+ValidPackage L₀ Game_import E G₀
+ValidPackage L₁ Game_import E G₁
+```
+for some `L₀`, `L₁` and `E`.
+It is equivalent to the following:
+
+```coq
+∀ LA A,
+  ValidPackage LA E A_export A →
+  fdisjoint LA L₀ →
+  fdisjoint LA L₁ →
+  AdvantageE G₀ G₁ A = 0.
+```
+So one can use `G₀ ≈₀ G₁` to rewrite an advantage to `0`, typically after using
+the triangle inequality, to eliminate some terms.
+*Herein `A_export` is the export interface of an adversary, it contains a single
+procedure `RUN` of type `'unit → 'bool`.*
 
 
 ## Probabilistic relational program logic

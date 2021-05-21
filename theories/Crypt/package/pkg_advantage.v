@@ -93,7 +93,7 @@ Definition loc_GamePair (Game_export : Interface) :=
 
 (* TODO Again, why not an actual pair? *)
 Definition GamePair :=
-    bool → raw_package.
+  bool → raw_package.
 
 Definition Advantage (G : GamePair) (A : raw_package) : R :=
   `| Pr (A ∘ (G false)) true - Pr (A ∘ (G true)) true |.
