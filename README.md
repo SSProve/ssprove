@@ -49,6 +49,10 @@ Run `make graph` to build a graph of dependencies between sources.
 Unless specified with a full path, all files considered in this README can
 safely be assumed to be in [theories/Crypt].
 
+## Documentation
+
+A documentation is available in [DOC.md].
+
 ## Mapping between paper and formalisation
 
 ### Package definition and laws
@@ -288,7 +292,7 @@ Lemma Advantage_link :
 
 **Theorem 1**
 ```coq
-Lemma prove_relational :
+Lemma eq_upto_inv_perf_ind :
   ∀ {L₀ L₁ LA E} (p₀ p₁ : raw_package) (I : precond) (A : raw_package)
     `{ValidPackage L₀ Game_import E p₀}
     `{ValidPackage L₁ Game_import E p₁}
@@ -497,3 +501,4 @@ The axioms we use do not depend on the instance itself.
 [StateTransfThetaDens.v]: theories/Crypt/rhl_semantics/state_prob/StateTransfThetaDens.v
 [LiftStateful.v]: theories/Crypt/rhl_semantics/state_prob/LiftStateful.v
 [Main.v]: theories/Crypt/Main.v
+[DOC.md]: ./DOC.md
