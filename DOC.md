@@ -5,7 +5,8 @@ This document shall serve as a non-exhaustive guide to **SSProve**.
 *This document assumes that you have Coq and SSProve installed and have already
 some knowledge of Coq.*
 
-🚧 **This document is very much work in progress** 🚧
+🚧 **This document is not yet complete, what is already written is still
+accurate however.** 🚧
 
 ## Overview
 
@@ -846,6 +847,60 @@ Validity can be handled with `ssprove_valid` and the other `get_pre_cond`
 and `put_pre_cond` are goals dealt with `ssprove_invariant`.
 
 #### Dealing with memory
+
+There are ways to deal with memory is an asynchronous way. We tried to make it
+as idiomatic as possible.
+
+#### Reading or writing twice
+
+When faced with the goal
+```coq
+⊢ ⦃ pre ⦄ x ← get ℓ ;; r₀ x ≈ x ← get ℓ ;; r₁ x ⦃ post ⦄
+```
+one can use `ssprove_sync` to introduce the `x` and continue proving equivalence
+between `r₀` and `r₁`. The information that `x` comes from location `ℓ` however
+is lost.
+
+The first solution to this problem comes from *contraction rules*, or rather
+tactics.
+
+**`ssprove_contract_get_lhs`** will take a goal of the form
+```coq
+⊢ ⦃ pre ⦄ x ← get ℓ ;; y ← get ℓ ;; r₀ x y ≈ c₁ ⦃ post ⦄
+```
+and turn it into
+```coq
+⊢ ⦃ pre ⦄ x ← get ℓ ;; r₀ x x ≈ c₁ ⦃ post ⦄
+```
+
+
+**`ssprove_contract_put_lhs`** will take a goal of the form
+```coq
+⊢ ⦃ pre ⦄ put ℓ := v ;; put ℓ := v' ;; c₀ ≈ c₁ ⦃ post ⦄
+```
+and turn it into
+```coq
+⊢ ⦃ pre ⦄ put ℓ := v' ;; c₀ ≈ c₁ ⦃ post ⦄
+```
+
+
+**`ssprove_contract_put_get_lhs`** will take a goal of the form
+```coq
+⊢ ⦃ pre ⦄ put ℓ := v ;; x ← get ℓ ;; r₀ x ≈ c₁ ⦃ post ⦄
+```
+and turn it into
+```coq
+⊢ ⦃ pre ⦄ put ℓ := v ;; r₀ v ≈ c₁ ⦃ post ⦄
+```
+
+**`ssprove_contract_get_rhs`**, **`ssprove_contract_put_rhs`** and
+**`ssprove_contract_put_get_rhs`** are their right-hand side counterparts.
+
+#### Remember after reading
+
+🚧 **TODO** 🚧
+
+#### Invariant debts after writing
 
 🚧 **TODO** 🚧
 
