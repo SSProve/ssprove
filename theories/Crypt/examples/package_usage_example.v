@@ -132,7 +132,10 @@ Definition test₃ :
       val #[0] : 'nat → 'bool ;
       val #[1] : 'bool → 'unit
     ]
-    [interface val #[2] : 'nat → 'nat ]
+    [interface
+      val #[2] : 'nat → 'nat ;
+      val #[3] : 'bool × 'bool → 'bool
+    ]
   :=
   [package
     def #[2] (n : 'nat) : 'nat {
@@ -140,9 +143,12 @@ Definition test₃ :
       #import {sig #[1] : 'bool → 'unit } as g ;;
       b ← f n ;;
       if b then
-        _ ← g false ;;
+        g false ;;
         ret 0
       else ret n
+    } ;
+    def #[3] ('(b₀,b₁) : 'bool × 'bool) : 'bool {
+      ret b₀
     }
   ].
 

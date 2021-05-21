@@ -305,7 +305,135 @@ Note that `ssprove_valid` and the inference for `ValidCode` can be extended
 with hints. The former using the `packages` database, the latter with the
 `typeclass_instances` database.
 
+**Note:** There is an implicit coercion from `code` to `raw_code`.
+
 ### Packages
+
+#### Package construction
+
+We have a notion of `raw_package` which is a collection of procedures of the
+form `src → raw_code tgt` distinguished by their signatures. This notion of
+`raw_package` will prove the most efficient when proving results about packages,
+such as advantages.
+However, we provide a syntax to define valid packages by construction, *i.e.*
+of type `package L I E` where each procedure must be `ValidCode L I tgt` and
+the lot of them must implement export interface `E`.
+
+The syntax for valid packages is similar to that of interfaces. Better explained
+on an example:
+
+```coq
+Definition test :
+  package
+    fset0
+    [interface
+      val #[0] : 'nat → 'bool ;
+      val #[1] : 'bool → 'unit
+    ]
+    [interface
+      val #[2] : 'nat → 'nat ;
+      val #[3] : 'bool × 'bool → 'bool
+    ]
+  :=
+  [package
+    def #[2] (n : 'nat) : 'nat {
+      #import {sig #[0] : 'nat → 'bool } as f ;;
+      #import {sig #[1] : 'bool → 'unit } as g ;;
+      b ← f n ;;
+      if b then
+        g false ;;
+        ret 0
+      else ret n
+    } ;
+    def #[3] ('(b₀,b₁) : 'bool × 'bool) : 'bool {
+      ret b₀
+    }
+  ].
+```
+
+Packages are wrapped in the `[package]` container which behaves like lists.
+They are of the form
+```coq
+[package d₀ ; d₁ ; … ; dₙ ]
+```
+where the `dᵢ` are declarations, given using a special syntax:
+```coq
+def #[ id ] (x : src) : tgt { e }
+```
+where `id` is a natural number / identifier, and `src` and `tgt` are codes of
+types in `chUniverse` given using the special syntax (see [Specialised types]),
+while `e` is a regular Coq expression corresponding to the body of the function,
+with `x` bound inside it.
+As seen in the example, `x` can be matched against in the declaration by using
+the `'p` notation where `p` is a pattern.
+
+Similarly to `ValidCode`, there is an underlying `ValidPackage` class and we can
+call its best effort version with `ssprove_valid`, for instance using
+`Equations` (see [Valid code]).
+
+In the example above we also explicitly gave an export interface while the
+information is already present in the declaration. As such in can be omitted
+as on the simpler example below:
+```coq
+Definition test' : package fset0 [interface] _ :=
+  [package
+    def #[ 0 ] (n : 'nat) : 'nat {
+      ret (n + n)%N
+    } ;
+    def #[ 1 ] (b : 'bool) : 'nat {
+      if b then ret 0 else ret 13
+    }
+  ].
+```
+The locations and import interface should however be given explicitly since
+they are what the programs *can* use, not what they *exactly* use.
+
+#### Composition of packages
+
+One of the key points of SSP is its package algebra with sequential and parallel
+composition as well as the identity package. All these operations are defined on
+`raw_packages` directly but extend to `package` with the `{package}` and
+`{locpackage}` notations.
+
+Sequential composition is called `link` in SSProve and can be written
+`p₀ ∘ p₁`. It represents `p₀` where all *imports* are replaced by the inlined
+procedures of `p₁`. It is valid when the export interface of `p₁` matches the
+import interface of `p₀`.
+
+Parallel composition of (raw) packages `p₀` and `p₁` is written `par p₀ p₁`.
+It is valid if we have `Parable p₀ p₁` (which is a class).
+The resulting package must have the union of locations of its components, as
+such automation can be lacking on that front, so it might be a good idea to rely
+on `Equations` again:
+```coq
+Equations? pkg : package L I E :=
+  pkg := {package (par p₀ p₁) ∘ p₂ }.
+Proof.
+  ssprove_valid.
+  (* Now deal with the goals *)
+```
+
+Finally the identity package is defined as `ID I` where `I` is an interface.
+It both imports and exports `I` by simply forwarding the calls.
+It is valid as long as `I` does not include two signatures sharing the same
+identifier, as overloading is not possible in our packages. This property is
+written `flat I` and can be inferred automatically by `ssprove_ valid`.
+
+As illustrated above, `{package p }` casts a raw package to some
+`package L I E`, trying to infer the proof. We also have `{locpackage p }`
+which will cast to `loc_package I E` which is essentially the same as `package`
+but where the set of locations is internalised.
+
+**Note:** `loc_package` and `package` both have implicit coercions to
+`raw_package`. This means that, for instance, if `p₀` and `p₁` are both
+`package` then, `{package p₀ ∘ p₁ }` is a valid expression, and will be complete
+if the interfaces match.
+
+## High-level SSP proofs
+
+
+## Probabilistic relational program logic
+
 
 
 [Writing packages]: #writing-packages
