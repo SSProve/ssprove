@@ -973,7 +973,76 @@ We will see later, in [[Crafting invariants]], how we can also leverage these
 
 #### Invariant debts after writing
 
-🚧 **TODO** 🚧
+Dually to how we *remember* read values, we propose a way to write to a memory
+location, even when it might temporarily break the invariant. As we will se in
+[[Crafting invariants]], a lot of invariants will involve several locations at
+once, meaning the most of the time, writing a value will break them.
+Thus our machinery to write to the memory freely and then, at the user's
+command, to restore the invariant.
+
+These debts to the precondition are incurred by using one of the following
+rules.
+```coq
+Lemma r_put_lhs :
+  ∀ {A B : choiceType} ℓ v r₀ r₁ (pre : precond) (post : postcond A B),
+    ⊢ ⦃ λ '(s₀, s₁), (set_lhs ℓ v pre) (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ put ℓ := v ;; r₀ ≈ r₁ ⦃ post ⦄.
+```
+or its rhs counterpart `r_put_rhs`. We can deal with a `put` on both sides
+with `r_put_vs_put`.
+
+Now we either have `set_lhs` or `set_rhs` *around* our invariant. This means
+that temporarily we cannot remember read values or use the invariant as it
+might no longer hold. Once we believe that the invariant has been restored,
+we can use one of the two tactics `ssprove_restore_pre` and
+`ssprove_restore_mem`.
+
+**`ssprove_restore_pre`** is the simplest and typically applies to a goal where
+the precondition has been *hidden* by several `set_lhs`/`set_rhs`. Under the
+hood it applies the rule
+```coq
+Lemma r_restore_pre :
+  ∀ {A B : choiceType} l r₀ r₁ (pre : precond) (post : postcond A B),
+    preserve_update_pre l pre →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), (update_pre l pre) (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄.
+```
+So it will restore `pre` as a precondition, assuming that the predicate
+`preserve_update_pre` holds. Automation in this case is also performed with
+`ssprove_invariant`. It might not solve all goals, but should generally give
+you to prove the specific invariants that you used.
+
+**Note** that if your precondition contains some `rem_lhs`/`rem_rhs`, you will
+have to prove that those are preserved too. This will not be the case if you
+have written to those very memory locations. In which case, it is recommended
+to use the following tactic instead.
+
+**`ssprove_restore_mem`** is similar but will also take into account the
+remembered read values. Under the hood it applies the rule
+```coq
+Lemma r_restore_mem :
+  ∀ {A B : choiceType} l m r₀ r₁ (pre : precond) (post : postcond A B),
+    preserve_update_mem l m pre →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), (update_pre l (remember_pre m pre)) (s₀, s₁) ⦄
+      r₀ ≈ r₁
+    ⦃ post ⦄.
+```
+The predicate `preserve_update_mem` generalises the one above (in fact
+`preserve_update_pre` is defined using the empty list for the remembered
+values, this means that automation is shared between the two).
+This can be very useful because it essentially means that you can use the
+assumptions you have on initial memory to restore the invariant.
+
+The predicate is defined as
+```coq
+Definition preserve_update_mem l m (pre : precond) :=
+  ∀ s₀ s₁, (remember_pre m pre) (s₀, s₁) → pre (update_heaps l s₀ s₁).
+```
+
+Note that restoring the invariant with this method will forget all assumptions
+you had on memory, only the proper invariant will remain.
+Feel free to [open an issue] if you would need something stronger.
 
 ### Crafting invariants
 
@@ -997,3 +1066,5 @@ We will see later, in [[Crafting invariants]], how we can also leverage these
 [Crafting invariants]: #crafting-invariants
 
 [extructures]: https://github.com/arthuraa/extructures
+
+[open an issue]: https://github.com/SSProve/ssprove/issues
