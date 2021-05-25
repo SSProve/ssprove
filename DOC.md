@@ -1046,7 +1046,135 @@ Feel free to [open an issue] if you would need something stronger.
 
 ### Crafting invariants
 
-🚧 **TODO** 🚧
+#### Proper invariants
+
+As already stated, the easiest to use invariant is equality of heaps. The fact
+that it is an invariant is summarised in the lemma below:
+```coq
+Lemma Invariant_eq :
+  ∀ L₀ L₁,
+    Invariant L₀ L₁ (λ '(s₀, s₁), s₀ = s₁).
+```
+where `L₀` and `L₁` represent the sets of memory locations of both programs.
+While it can be enough for a lot of examples (our own examples mostly use
+equality as an invariant), it is not always sufficient.
+
+Another invariant the we propose is called `heap_ignore` and is defined as
+```coq
+Definition heap_ignore (L : {fset Location}) :=
+  λ '(h₀, h₁),
+    ∀ (ℓ : Location), ℓ \notin L → get_heap h₀ ℓ = get_heap h₁ ℓ.
+```
+It only states equality of heaps on locations that are not in `L`, the set of
+*ignored* locations. It is a valid invariant as long as the ignored locations
+are contained in the program location (in other words, one cannot ignore the
+locations of the adversary).
+```coq
+Lemma Invariant_heap_ignore :
+  ∀ L L₀ L₁,
+    fsubset L (L₀ :|: L₁) →
+    Invariant L₀ L₁ (heap_ignore L).
+```
+
+The two above are considered proper invariants, or support of an invariant,
+because they conclude on the whole heaps. However, invariants will often need
+to conclude about specific locations, like saying that two locations store
+values that are related in some way.
+For this purpose, we define a notion of *semi-invariant* (short of a better
+name) which do not conclude about the heaps globally but only about parts of it.
+Proper invariants (like `heap_ignore`) can then be combined with semi-invariants
+to produce new proper invariants; we do this with the notation `inv ⋊ sinv`
+which is a sort of fancy notation for conjunction.
+```coq
+Lemma Invariant_inv_conj :
+  ∀ L₀ L₁ inv sinv,
+    Invariant L₀ L₁ inv →
+    SemiInvariant L₀ L₁ sinv →
+    Invariant L₀ L₁ (inv ⋊ sinv).
+```
+A semi-invariant isn't as restrictive as an invariant.
+Note that we already used this notion in [[Proving relational judgments]]
+when talking about `rem_lhs`/`rem_rhs` which are semi-invariants.
+
+**Note:** Using `ssprove_invariant` is the recommended way for deriving
+automatically these properties. This tactic can be extended by adding hints
+to the `ssprove_invariant` database.
+
+We will now review the already defined semi-invariants.
+
+#### Location coupling
+
+One semi-invariant that we provide is `couple_lhs`:
+```coq
+Definition couple_lhs ℓ ℓ' R : precond :=
+  λ '(s₀, s₁), R (get_heap s₀ ℓ) (get_heap s₀ ℓ').
+```
+`couple_lhs ℓ ℓ' R` states that the values stored in locations `ℓ` and `ℓ'`
+of the lhs are related by relation `R`. Alternatively, we also provide
+`couple_rhs`.
+It is a semi-invariant provided that the locations belong to the programs:
+```coq
+Lemma SemiInvariant_couple_lhs :
+  ∀ L₀ L₁ ℓ ℓ' (R : _ → _ → Prop),
+    ℓ \in L₀ :|: L₁ →
+    ℓ' \in L₀ :|: L₁ →
+    R (get_heap empty_heap ℓ) (get_heap empty_heap ℓ') →
+    SemiInvariant L₀ L₁ (couple_lhs ℓ ℓ' h).
+```
+
+Now, to make use of this invariant, one can call the following rule:
+```coq
+Lemma r_rem_couple_lhs :
+  ∀ {A B : choiceType} ℓ ℓ' v v' R (pre : precond) c₀ c₁ (post : postcond A B),
+    Couples_lhs ℓ ℓ' R pre →
+    Remembers_lhs ℓ v pre →
+    Remembers_lhs ℓ' v' pre →
+    (R v v' → ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄) →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄.
+```
+It basically gives you the same goal you add, with the extra hypothesis that
+the relation holds for the values.
+When you typically do `eapply (r_rem_couple_lhs ℓ ℓ')`, you can try `exact _`
+or `ssprove_invariant` to infer `Couples_lhs` and `Remembers_lhs` that will
+check in the precondition that the two locations are indeed coupled on the left
+and that we have read them.
+
+Alternatively, one can use `r_rem_couple_rhs`.
+
+We also provide useful relations like
+```coq
+Definition sameSome {A B} (x : option A) (y : option B) :=
+  isSome x = isSome y.
+```
+
+#### Relating three locations
+
+Similarly to `couple_rhs` we also provide `triple_rhs` which works in
+essentially the same way.
+```coq
+Lemma SemiInvariant_triple_rhs :
+  ∀ L₀ L₁ ℓ₁ ℓ₂ ℓ₃ (R : _ → _ → _ → Prop),
+    ℓ₁ \in L₀ :|: L₁ →
+    ℓ₂ \in L₀ :|: L₁ →
+    ℓ₃ \in L₀ :|: L₁ →
+    R (get_heap empty_heap ℓ₁) (get_heap empty_heap ℓ₂) (get_heap empty_heap ℓ₃) →
+    SemiInvariant L₀ L₁ (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
+```
+
+```coq
+Lemma r_rem_triple_rhs :
+  ∀ {A B : choiceType} ℓ₁ ℓ₂ ℓ₃ v₁ v₂ v₃ R
+    (pre : precond) c₀ c₁ (post : postcond A B),
+    Triple_rhs ℓ₁ ℓ₂ ℓ₃ R pre →
+    Remembers_rhs ℓ₁ v₁ pre →
+    Remembers_rhs ℓ₂ v₂ pre →
+    Remembers_rhs ℓ₃ v₃ pre →
+    (R v₁ v₂ v₃ → ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄) →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄.
+```
+
+🚧 For the moment we only deal with the right-hand side, as we might want to
+develop something more general. 🚧
 
 
 

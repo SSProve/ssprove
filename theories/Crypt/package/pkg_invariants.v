@@ -115,9 +115,9 @@ Qed.
   eapply Invariant_eq
   : typeclass_instances ssprove_invariant.
 
-Definition heap_ignore (L : {fset Location}) (hh : heap * heap) : Prop :=
-  let '(h₀, h₁) := hh in
-  ∀ (ℓ : Location), ℓ \notin L → get_heap h₀ ℓ = get_heap h₁ ℓ.
+Definition heap_ignore (L : {fset Location}) : precond :=
+  λ '(h₀, h₁),
+    ∀ (ℓ : Location), ℓ \notin L → get_heap h₀ ℓ = get_heap h₁ ℓ.
 
 Arguments heap_ignore : simpl never.
 
@@ -200,16 +200,15 @@ Qed.
   eapply Invariant_inv_conj
   : typeclass_instances ssprove_invariant.
 
-Definition couple_lhs ℓ ℓ' (h : _ → _ → Prop) (s : heap * heap) :=
-  let '(s₀, s₁) := s in
-  h (get_heap s₀ ℓ) (get_heap s₀ ℓ').
+Definition couple_lhs ℓ ℓ' (R : _ → _ → Prop) : precond :=
+  λ '(s₀, s₁), R (get_heap s₀ ℓ) (get_heap s₀ ℓ').
 
 Lemma SemiInvariant_couple_lhs :
-  ∀ L₀ L₁ ℓ ℓ' (h : _ → _ → Prop),
+  ∀ L₀ L₁ ℓ ℓ' (R : _ → _ → Prop),
     ℓ \in L₀ :|: L₁ →
     ℓ' \in L₀ :|: L₁ →
-    h (get_heap empty_heap ℓ) (get_heap empty_heap ℓ') →
-    SemiInvariant L₀ L₁ (couple_lhs ℓ ℓ' h).
+    R (get_heap empty_heap ℓ) (get_heap empty_heap ℓ') →
+    SemiInvariant L₀ L₁ (couple_lhs ℓ ℓ' R).
 Proof.
   intros L₀ L₁ ℓ ℓ' h hℓ hℓ' he. split.
   - intros s₀ s₁ l v hl₀ hl₁ ?.
@@ -229,16 +228,15 @@ Arguments couple_lhs : simpl never.
   eapply SemiInvariant_couple_lhs
   : (* typeclass_instances *) ssprove_invariant.
 
-Definition couple_rhs ℓ ℓ' (h : _ → _ → Prop) (s : heap * heap) :=
-  let '(s₀, s₁) := s in
-  h (get_heap s₁ ℓ) (get_heap s₁ ℓ').
+Definition couple_rhs ℓ ℓ' (R : _ → _ → Prop) : precond :=
+  λ '(s₀, s₁), R (get_heap s₁ ℓ) (get_heap s₁ ℓ').
 
 Lemma SemiInvariant_couple_rhs :
-  ∀ L₀ L₁ ℓ ℓ' (h : _ → _ → Prop),
+  ∀ L₀ L₁ ℓ ℓ' (R : _ → _ → Prop),
     ℓ \in L₀ :|: L₁ →
     ℓ' \in L₀ :|: L₁ →
-    h (get_heap empty_heap ℓ) (get_heap empty_heap ℓ') →
-    SemiInvariant L₀ L₁ (couple_rhs ℓ ℓ' h).
+    R (get_heap empty_heap ℓ) (get_heap empty_heap ℓ') →
+    SemiInvariant L₀ L₁ (couple_rhs ℓ ℓ' R).
 Proof.
   intros L₀ L₁ ℓ ℓ' h hℓ hℓ' he. split.
   - intros s₀ s₁ l v hl₀ hl₁ ?.
