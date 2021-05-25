@@ -5,8 +5,9 @@ This document shall serve as a non-exhaustive guide to **SSProve**.
 *This document assumes that you have Coq and SSProve installed and have already
 some knowledge of Coq.*
 
-🚧 **This document is not yet complete, what is already written is still
-accurate however.** 🚧
+🚧 This document tries to be as exhaustive as possible, but can still be
+improved. If you find something missing or not clear enough, feel free to
+[open an issue]. 🚧
 
 ## Overview
 
