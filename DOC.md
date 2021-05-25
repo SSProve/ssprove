@@ -898,7 +898,78 @@ and turn it into
 
 #### Remember after reading
 
-🚧 **TODO** 🚧
+Sometimes, swapping and contracting is not possible, even when the code makes
+two reads to the same location. It can happen for instance if the the value read
+is branched upon before being read again.
+
+For this we have several rules that will *remember* which location was read.
+```coq
+Lemma r_get_remember_lhs :
+  ∀ {A B : choiceType} ℓ r₀ r₁ (pre : precond) (post : postcond A B),
+    (∀ x,
+      ⊢ ⦃ λ '(s₀, s₁), (pre ⋊ rem_lhs ℓ x) (s₀, s₁) ⦄ r₀ x ≈ r₁ ⦃ post ⦄
+    ) →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ x ← get ℓ ;; r₀ x ≈ r₁ ⦃ post ⦄.
+```
+It behaves like you would expect an asynchronous rule for `get` except that the
+precondition gets extended with `rem_lhs ℓ x` stating that the location `ℓ`
+contained value `x` on the left-hand side.
+In this fashion we have `r_get_remember_rhs` which will add `rem_rhs ℓ x`
+instead, but also synchronous rules that will also remember, for instance
+```coq
+Lemma r_get_vs_get_remember_lhs :
+  ∀ {A B : choiceType} ℓ r₀ r₁ (pre : precond) (post : postcond A B),
+    Tracks ℓ pre →
+    (∀ x,
+      ⊢ ⦃ λ '(s₀, s₁), (pre ⋊ rem_lhs ℓ x) (s₀, s₁) ⦄
+        r₀ x ≈ r₁ x
+      ⦃ post ⦄
+    ) →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
+      x ← get ℓ ;; r₀ x ≈
+      x ← get ℓ ;; r₁ x
+    ⦃ post ⦄.
+```
+
+Here we have an additional `Tracks ℓ pre` condition which states that `ℓ` should
+point to the same value on both sides (or more precisely that this should be
+ensured by the precondition `pre`). `exact _` (type-class inference) or
+`ssprove_invariant` should deal with it.
+
+We also have the right-hand side variant `r_get_vs_get_remember_rhs`
+and the do-all rule `r_get_vs_get_remember` which remembers on both sides.
+
+Now, that we have stored information in the precondition, we have several ways
+of using it, or discarding it. Indeed, this precondition will not always be
+preserved by rules, in particular writing memory (`put`) does not necessarily
+preserve `rem_lhs`/`rem_rhs`. As such, one can call `ssprove_forget` to discard
+the most recent *remember*, and `ssprove_forget_all` will discard all of them.
+
+More importantly, one can make use of remembered values with, for instance,
+the following rule
+```coq
+Lemma r_get_remind_lhs :
+  ∀ {A B : choiceType} ℓ v r₀ r₁ (pre : precond) (post : postcond A B),
+    Remembers_lhs ℓ v pre →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ r₀ v ≈ r₁ ⦃ post ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ x ← get ℓ ;; r₀ x ≈ r₁ ⦃ post ⦄.
+```
+Here `Remembers_lhs` is also a class that can be inferred using
+`ssprove_invariant`. It basically checks that `pre` contains some `rem_lhs ℓ v`.
+The right-hand side counterpart is `r_get_remind_rhs`.
+In some cases, one has remembered the value of something on the left, and needs
+it on the right, in which case the following lemma is useful:
+```coq
+Lemma Remembers_rhs_from_tracked_lhs :
+  ∀ ℓ v pre,
+    Remembers_lhs ℓ v pre →
+    Tracks ℓ pre →
+    Remembers_rhs ℓ v pre.
+```
+and similarly `Remembers_lhs_from_tracked_rhs`.
+
+We will see later, in [[Crafting invariants]], how we can also leverage these
+*remembered* values with invariants.
 
 #### Invariant debts after writing
 
