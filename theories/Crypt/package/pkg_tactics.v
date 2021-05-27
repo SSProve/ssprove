@@ -253,7 +253,7 @@ Defined.
 
 Lemma valid_empty_package :
   ∀ L I,
-    valid_package L I [interface] emptym.
+    ValidPackage L I [interface] emptym.
 Proof.
   intros L I.
   rewrite -fset0E.
@@ -268,8 +268,8 @@ Qed.
 
 Lemma valid_package1 :
   ∀ L I i A B f,
-    (∀ x, valid_code L I (f x)) →
-    valid_package L I (fset [:: (i, (A, B))]) (mkfmap [:: (i, mkdef A B f)]).
+    (∀ x, ValidCode L I (f x)) →
+    ValidPackage L I (fset [:: (i, (A, B))]) (mkfmap [:: (i, mkdef A B f)]).
 Proof.
   intros L I i A B f hf.
   apply prove_valid_package.
@@ -289,7 +289,7 @@ Qed.
 
 Lemma flat_valid_package :
   ∀ L I E p,
-    valid_package L I E p →
+    ValidPackage L I E p →
     flat E.
 Proof.
   intros L I E p hp.
@@ -306,10 +306,10 @@ Qed.
 
 Lemma valid_package_cons :
   ∀ L I i A B f E p,
-    valid_package L I (fset E) (mkfmap p) →
-    (∀ x, valid_code L I (f x)) →
+    ValidPackage L I (fset E) (mkfmap p) →
+    (∀ x, ValidCode L I (f x)) →
     i \notin (λ '(i,_), i) @: fset E →
-    valid_package L I (fset ((i, (A, B)) :: E))
+    ValidPackage L I (fset ((i, (A, B)) :: E))
       (mkfmap ((i, mkdef A B f) :: p)).
 Proof.
   intros L I i A B f E p hp hf hi.
@@ -340,12 +340,12 @@ Qed.
 
 Lemma valid_package_cons_upto :
   ∀ L I i A B A' B' f E p,
-    valid_package L I (fset E) (mkfmap p) →
-    (∀ x, valid_code L I (f x)) →
+    ValidPackage L I (fset E) (mkfmap p) →
+    (∀ x, ValidCode L I (f x)) →
     i \notin (λ '(i,_), i) @: fset E →
     A = A' →
     B = B' →
-    valid_package L I (fset ((i, (A', B')) :: E))
+    ValidPackage L I (fset ((i, (A', B')) :: E))
       (mkfmap ((i, mkdef A B f) :: p)).
 Proof.
   intros L I i A B A' B' f E p hp hf hi eA eB. subst.
@@ -387,8 +387,8 @@ Qed.
 #[export] Hint Extern 2 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
   =>
   eapply valid_package_cons ; [
-    eapply valid_package_from_class
-  | intro ; eapply valid_code_from_class
+    idtac
+  | intro
   | rewrite imfset_fset ; rewrite notin_fset
   ]
   : typeclass_instances ssprove_valid_db.
@@ -441,8 +441,8 @@ Qed.
 
 Lemma valid_scheme :
   ∀ A L I c,
-    @valid_code fset0 [interface] A c →
-    valid_code L I c.
+    @ValidCode fset0 [interface] A c →
+    ValidCode L I c.
 Proof.
   intros A L I c h.
   eapply valid_injectMap. 2: eapply valid_injectLocations.
@@ -462,8 +462,8 @@ Ltac chUniverse_eq_prove :=
 #[export] Hint Extern 4 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
   =>
   eapply valid_package_cons_upto ; [
-    eapply valid_package_from_class
-  | intro ; eapply valid_code_from_class
+    idtac
+  | intro
   | rewrite imfset_fset ; rewrite notin_fset
   | chUniverse_eq_prove
   | chUniverse_eq_prove

@@ -148,7 +148,7 @@ Module PRF_example.
 
 
   (* Parameter PRF : forall (r: Words) (k : Key), raw_code Key. *)
-  (* Parameter PRF_valid : forall r k, valid_code rel_loc fset0 (PRF r k). *)
+  (* Parameter PRF_valid : forall r k, ValidCode rel_loc fset0 (PRF r k). *)
   Parameter PRF : Words -> Key -> Key.
   Parameter prf_epsilon : R.
 
@@ -473,7 +473,7 @@ Proof.
 (*     repeat (apply Eqdep.EqdepTheory.inj_pair2 in Heq). *)
 (*     subst. *)
 (*     (* *) *)
-(*     (* (*Rem.: the LHS of the judjement has the form { raw_code | valid_code }  *) *) *)
+(*     (* (*Rem.: the LHS of the judjement has the form { raw_code | ValidCode }  *) *) *)
 (*     (* (*       while we want a code to use the Rules *)  *) *)
 (*     have key_location_in_rel_loc : key_location \in rel_loc :|: rel_loc. *)
 (*     { rewrite in_fsetU. apply /orP. left. package_obtac. } *)
@@ -491,7 +491,7 @@ Proof.
 
 (*     (* rewrite /IND_CPA_pkg_ff.π1. *) *)
 (*     (* have hfoo : prgL = *) *)
-(*     (*             ((exist (valid_code (IND_CPA_pkg_ff.π1 :|: ENC_pkg.π1) Game_import) *) *)
+(*     (*             ((exist (ValidCode (IND_CPA_pkg_ff.π1 :|: ENC_pkg.π1) Game_import) *) *)
 (*     (*   (_getr key_location *) *)
 (*     (*      (λ x : option nat, *) *)
 (*     (*         raw_code_link *) *)

@@ -171,7 +171,7 @@ Definition assertD {A : chUniverse} b (k : b = true → raw_code A) : raw_code A
   (if b as b' return b = b' → raw_code A then k else λ _, fail) erefl.
 
 Lemma valid_fail_unit :
-  ∀ L I, valid_code L I fail_unit.
+  ∀ L I, ValidCode L I fail_unit.
 Proof.
   intros L I.
   unfold fail_unit. eapply valid_code_from_class. exact _.
@@ -182,7 +182,7 @@ Qed.
   : typeclass_instances ssprove_valid_db.
 
 Lemma valid_assert :
-  ∀ L I b, valid_code L I (assert b).
+  ∀ L I b, ValidCode L I (assert b).
 Proof.
   intros L I b. unfold assert. eapply valid_code_from_class. exact _.
 Qed.
@@ -203,8 +203,8 @@ Qed.
 
 Lemma valid_assertD :
   ∀ A L I b k,
-    (∀ x, valid_code L I (k x)) →
-    valid_code L I (@assertD A b k).
+    (∀ x, ValidCode L I (k x)) →
+    ValidCode L I (@assertD A b k).
 Proof.
   intros A L I b k h.
   destruct b.
@@ -214,7 +214,7 @@ Qed.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (@assertD ?A ?b ?k)) =>
   eapply (valid_assertD A _ _ b k) ;
-  intro ; eapply valid_code_from_class
+  intro
   : typeclass_instances ssprove_valid_db.
 
 Notation "'#assert' b 'as' id ;; k" :=

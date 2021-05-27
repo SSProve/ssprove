@@ -775,8 +775,8 @@ End For_loop_rule.
 
 Lemma valid_for_loop :
   ∀ L I c N,
-    (∀ i, valid_code L I (c i)) →
-    valid_code L I (for_loop c N).
+    (∀ i, ValidCode L I (c i)) →
+    ValidCode L I (for_loop c N).
 Proof.
   intros L I c N h.
   induction N. all: simpl.
@@ -786,7 +786,7 @@ Qed.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (for_loop ?c ?N)) =>
   eapply valid_for_loop ;
-  intro ; eapply valid_code_from_class
+  intro
   : typeclass_instances ssprove_valid_db.
 
 Lemma rcoupling_eq :

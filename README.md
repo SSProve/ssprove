@@ -80,9 +80,9 @@ is the union of those from both packages (`:|:` denotes union of sets):
 ```coq
 Lemma valid_link :
   ∀ L1 L2 I M E p1 p2,
-    valid_package L1 M E p1 →
-    valid_package L2 I M p2 →
-    valid_package (L1 :|: L2) I E (link p1 p2).
+    ValidPackage L1 M E p1 →
+    ValidPackage L2 I M p2 →
+    ValidPackage (L1 :|: L2) I E (link p1 p2).
 ```
 
 Associativity is stated as follows:
@@ -109,9 +109,9 @@ The validity of parallel composition can be proven with the following lemma:
 Lemma valid_par :
   ∀ L1 L2 I1 I2 E1 E2 p1 p2,
     Parable p1 p2 →
-    valid_package L1 I1 E1 p1 →
-    valid_package L2 I2 E2 p2 →
-    valid_package (L1 :|: L2) (I1 :|: I2) (E1 :|: E2) (par p1 p2).
+    ValidPackage L1 I1 E1 p1 →
+    ValidPackage L2 I2 E2 p2 →
+    ValidPackage (L1 :|: L2) (I1 :|: I2) (E1 :|: E2) (par p1 p2).
 ```
 
 The `Parable` condition checks that the export interfaces are indeed disjoint.
@@ -145,7 +145,7 @@ Its validity is stated as
 Lemma valid_ID :
   ∀ L I,
     flat I →
-    valid_package L I I (ID I).
+    ValidPackage L I I (ID I).
 ```
 
 The extra `flat I` condition on the interface essentially forbids overloading:
@@ -158,7 +158,7 @@ The two identity laws are as follows:
 ```coq
 Lemma link_id :
   ∀ L I E p,
-    valid_package L I E p →
+    ValidPackage L I E p →
     flat I →
     trimmed E p →
     link p (ID I) = p.
@@ -167,7 +167,7 @@ Lemma link_id :
 ```coq
 Lemma id_link :
   ∀ L I E p,
-    valid_package L I E p →
+    ValidPackage L I E p →
     trimmed E p →
     link (ID E) p = p.
 ```

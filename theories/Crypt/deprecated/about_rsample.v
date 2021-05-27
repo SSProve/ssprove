@@ -29,7 +29,7 @@ Section OriginalLemma_rSamplerC.
 
 (* -------------------- repr header ------------------ *)
     (* Equations? repr' {B : choiceType} {L : {fset Location}} *)
-    (*   (p : raw_code B) (h : valid_code L Game_import p) *)
+    (*   (p : raw_code B) (h : ValidCode L Game_import p) *)
     (* : rFreeF (ops_StP heap_choiceType) (ar_StP heap_choiceType) B := *)
 
 

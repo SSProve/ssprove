@@ -224,9 +224,9 @@ Section FreeModule.
 
   Lemma valid_bind :
     ∀ A B c k,
-      valid_code c →
-      (∀ x, valid_code (k x)) →
-      valid_code (@bind A B c k).
+      ValidCode c →
+      (∀ x, ValidCode (k x)) →
+      ValidCode (@bind A B c k).
   Proof.
     intros A B c k hc hk.
     induction hc. all: simpl.
@@ -235,10 +235,11 @@ Section FreeModule.
 
   Lemma inversion_valid_bind :
     ∀ {A B} {c : raw_code A} {k : A → raw_code B},
-      valid_code (bind c k) →
-      valid_code c.
+      ValidCode (bind c k) →
+      ValidCode c.
   Proof.
     intros A B c k h.
+    unfold ValidCode in *.
     induction c.
     - constructor.
     - simpl in h. apply inversion_valid_opr in h. destruct h as [h1 h2].
@@ -303,11 +304,12 @@ Section FreeModule.
 
   Lemma valid_cmd_bind :
     ∀ {A B} (c : command A) (k : A → raw_code B),
-      valid_command c →
-      (∀ x, valid_code (k x)) →
-      valid_code (cmd_bind c k).
+      ValidCommand c →
+      (∀ x, ValidCode (k x)) →
+      ValidCode (cmd_bind c k).
   Proof.
     intros A B c k hc hk.
+    unfold ValidCode in *.
     induction hc.
     - cbn. constructor. all: auto.
     - cbn. constructor. all: auto.
@@ -317,8 +319,8 @@ Section FreeModule.
 
   Lemma inversion_valid_cmd_bind :
     ∀ {A B} (c : command A) (k : A → raw_code B),
-      valid_code (cmd_bind c k) →
-      valid_command c ∧ (∀ x, valid_code (k x)).
+      ValidCode (cmd_bind c k) →
+      ValidCommand c ∧ (∀ x, ValidCode (k x)).
   Proof.
     intros A B c k h.
     destruct c.
@@ -492,8 +494,8 @@ Create HintDb ssprove_valid_db.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (bind ?p ?k)) =>
   eapply valid_bind ; [
-    eapply valid_code_from_class
-  | intro ; eapply valid_code_from_class
+    idtac
+  | intro
   ]
   : typeclass_instances ssprove_valid_db.
 
@@ -527,8 +529,8 @@ Arguments valid_command _ _ [_] _.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (cmd_bind ?c ?k)) =>
   eapply valid_cmd_bind ; [
-    eapply valid_command_from_class
-  | intro ; eapply valid_code_from_class
+    idtac
+  | intro
   ]
   : typeclass_instances ssprove_valid_db.
 
@@ -557,8 +559,8 @@ Section FreeLocations.
   Lemma valid_injectLocations :
     ∀ A L1 L2 (v : raw_code A),
       fsubset L1 L2 →
-      valid_code L1 import v →
-      valid_code L2 import v.
+      ValidCode L1 import v →
+      ValidCode L2 import v.
   Proof.
     intros A L1 L2 v h p.
     induction p.
@@ -572,8 +574,8 @@ Section FreeLocations.
   Lemma valid_cmd_injectLocations :
     ∀ A L1 L2 (v : command A),
       fsubset L1 L2 →
-      valid_command L1 import v →
-      valid_command L2 import v.
+      ValidCommand L1 import v →
+      ValidCommand L2 import v.
   Proof.
     intros A L1 L2 v h p.
     destruct p.
@@ -609,8 +611,8 @@ Section FreeMap.
   Lemma valid_injectMap :
     ∀ {A I1 I2} (v : raw_code A),
       fsubset I1 I2 →
-      valid_code Locs I1 v →
-      valid_code Locs I2 v.
+      ValidCode Locs I1 v →
+      ValidCode Locs I2 v.
   Proof.
     intros A I1 I2 v h p.
     induction p.
@@ -632,7 +634,7 @@ Definition valid_package_ext L I (E : Interface) (p : raw_package) :=
   ∀ o, o \in E →
     let '(id, (src, tgt)) := o in
     ∃ (f : src → raw_code tgt),
-      p id = Some (src ; tgt ; f) ∧ ∀ x, valid_code L I (f x).
+      p id = Some (src ; tgt ; f) ∧ ∀ x, ValidCode L I (f x).
 
 Inductive valid_package L I E p :=
 | prove_valid_package : valid_package_ext L I E p → valid_package L I E p.
@@ -718,8 +720,8 @@ Notation "{ 'locpackage' p '#with' h }" :=
 Lemma valid_package_inject_locations :
   ∀ I E L1 L2 p,
     fsubset L1 L2 →
-    valid_package L1 I E p →
-    valid_package L2 I E p.
+    ValidPackage L1 I E p →
+    ValidPackage L2 I E p.
 Proof.
   intros I E L1 L2 p hL h.
   apply prove_valid_package.
@@ -733,8 +735,8 @@ Qed.
 Lemma valid_package_inject_export :
   ∀ L I E1 E2 p,
     fsubset E1 E2 →
-    valid_package L I E2 p →
-    valid_package L I E1 p.
+    ValidPackage L I E2 p →
+    ValidPackage L I E1 p.
 Proof.
   intros L I E1 E2 p hE h.
   apply prove_valid_package.
@@ -750,8 +752,8 @@ Qed.
 Lemma valid_package_inject_import :
   ∀ L I1 I2 E p,
     fsubset I1 I2 →
-    valid_package L I1 E p →
-    valid_package L I2 E p.
+    ValidPackage L I1 E p →
+    ValidPackage L I2 E p.
 Proof.
   intros L I1 I2 E p hE h.
   apply prove_valid_package.

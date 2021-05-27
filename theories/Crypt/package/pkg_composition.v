@@ -77,11 +77,11 @@ Qed.
 
 Lemma lookup_op_valid :
   ∀ L I E p o,
-    valid_package L I E p →
+    ValidPackage L I E p →
     o \in E →
     ∃ f,
       lookup_op p o = Some f ∧
-      ∀ x, valid_code L I (f x).
+      ∀ x, ValidCode L I (f x).
 Proof.
   intros L I E p o hp ho.
   eapply from_valid_package in hp.
@@ -129,9 +129,9 @@ Fixpoint code_link {A} (v : raw_code A) (p : raw_package) :
 
 Lemma valid_code_link :
   ∀ A L Im Ir (v : raw_code A) p,
-    valid_code L Im v →
-    valid_package L Ir Im p →
-    valid_code L Ir (code_link v p).
+    ValidCode L Im v →
+    ValidPackage L Ir Im p →
+    ValidCode L Ir (code_link v p).
 Proof.
   intros A L Im Ir v p hv hp.
   induction hv.
@@ -143,10 +143,7 @@ Proof.
 Qed.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (code_link ?v ?p)) =>
-  eapply valid_code_link ; [
-    eapply valid_code_from_class
-  | eapply valid_package_from_class
-  ]
+  eapply valid_code_link
   : typeclass_instances ssprove_valid_db.
 
 (* Linking *)
@@ -160,9 +157,9 @@ Definition trim (E : Interface) (p : raw_package) :=
 
 Lemma valid_link :
   ∀ L1 L2 I M E p1 p2,
-    valid_package L1 M E p1 →
-    valid_package L2 I M p2 →
-    valid_package (L1 :|: L2) I E (link p1 p2).
+    ValidPackage L1 M E p1 →
+    ValidPackage L2 I M p2 →
+    ValidPackage (L1 :|: L2) I E (link p1 p2).
 Proof.
   intros L1 l2 I M E p1 p2 h1 h2.
   apply prove_valid_package.
@@ -185,11 +182,11 @@ Qed.
 
 Lemma valid_link_upto :
   ∀ L1 L2 L I M E p1 p2,
-    valid_package L1 M E p1 →
-    valid_package L2 I M p2 →
+    ValidPackage L1 M E p1 →
+    ValidPackage L2 I M p2 →
     fsubset L1 L →
     fsubset L2 L →
-    valid_package L I E (link p1 p2).
+    ValidPackage L I E (link p1 p2).
 Proof.
   intros L1 L2 L I M E p1 p2 h1 h2 hL1 hL2.
   eapply valid_package_inject_locations.
@@ -200,20 +197,12 @@ Qed.
 
 (* Only for typeclasses resolution to avoid bad unification of locations *)
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (link ?p1 ?p2)) =>
-  eapply valid_link ; [
-    eapply valid_package_from_class
-  | eapply valid_package_from_class
-  ]
+  eapply valid_link
   : typeclass_instances.
 
 (* Only for ssprove_valid because it will never completely succeed *)
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (link ?p1 ?p2)) =>
-  eapply valid_link_upto ; [
-    eapply valid_package_from_class
-  | eapply valid_package_from_class
-  |
-  |
-  ]
+  eapply valid_link_upto
   : ssprove_valid_db.
 
 Lemma code_link_bind :
@@ -266,8 +255,8 @@ Qed.
 
 Lemma valid_trim :
   ∀ L I E p,
-    valid_package L I E p →
-    valid_package L I E (trim E p).
+    ValidPackage L I E p →
+    ValidPackage L I E (trim E p).
 Proof.
   intros L I E p h.
   apply prove_valid_package.
@@ -279,8 +268,7 @@ Proof.
 Qed.
 
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (trim ?E ?p)) =>
-  eapply valid_trim ;
-  eapply valid_package_from_class
+  eapply valid_trim
   : typeclass_instances ssprove_valid_db.
 
 (* Technical lemma before proving assoc *)
@@ -337,7 +325,7 @@ Qed.
 
 Lemma code_link_trim_right :
   ∀ A L E (v : raw_code A) p,
-    valid_code L E v →
+    ValidCode L E v →
     code_link v (trim E p) = code_link v p.
 Proof.
   intros A L E v p h.
@@ -371,7 +359,7 @@ Qed.
 
 Lemma link_trim_right :
   ∀ L I E p1 p2,
-    valid_package L I E p1 →
+    ValidPackage L I E p1 →
     link (trim E p1) (trim I p2) =
     link (trim E p1) p2.
 Proof.
@@ -457,9 +445,9 @@ Class Parable (p1 p2 : raw_package) :=
 Lemma valid_par :
   ∀ L1 L2 I1 I2 E1 E2 p1 p2,
     Parable p1 p2 →
-    valid_package L1 I1 E1 p1 →
-    valid_package L2 I2 E2 p2 →
-    valid_package (L1 :|: L2) (I1 :|: I2) (E1 :|: E2) (par p1 p2).
+    ValidPackage L1 I1 E1 p1 →
+    ValidPackage L2 I2 E2 p2 →
+    ValidPackage (L1 :|: L2) (I1 :|: I2) (E1 :|: E2) (par p1 p2).
 Proof.
   intros L1 L2 I1 I2 E1 E2 p1 p2 h h1 h2.
   apply prove_valid_package.
@@ -499,12 +487,12 @@ Qed.
 Lemma valid_par_upto :
   ∀ L I E L1 L2 I1 I2 E1 E2 p1 p2,
     Parable p1 p2 →
-    valid_package L1 I1 E1 p1 →
-    valid_package L2 I2 E2 p2 →
+    ValidPackage L1 I1 E1 p1 →
+    ValidPackage L2 I2 E2 p2 →
     fsubset (L1 :|: L2) L →
     fsubset (I1 :|: I2) I →
     fsubset E (E1 :|: E2) →
-    valid_package L I E (par p1 p2).
+    ValidPackage L I E (par p1 p2).
 Proof.
   intros L I E L1 L2 I1 I2 E1 E2 p1 p2 h h1 h2 hL hI hE.
   eapply valid_package_inject_locations. 1: eauto.
@@ -517,11 +505,7 @@ Qed.
     locations and interfaces.
 *)
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (par ?p1 ?p2)) =>
-  eapply valid_par ; [
-    idtac
-  | eapply valid_package_from_class
-  | eapply valid_package_from_class
-  ]
+  eapply valid_par
   : typeclass_instances.
 
 (** This one is only in ssprove_valid_db and not typeclass_instances
@@ -529,14 +513,7 @@ Qed.
     At least for now.
 *)
 #[export] Hint Extern 3 (ValidPackage ?L ?I ?E (par ?p1 ?p2)) =>
-  eapply valid_par_upto ; [
-    idtac
-  | eapply valid_package_from_class
-  | eapply valid_package_from_class
-  | (* try eapply fsubsetxx *)
-  | (* try eapply fsubsetxx *)
-  | (* try eapply fsubsetxx *)
-  ]
+  eapply valid_par_upto
   : ssprove_valid_db.
 
 Class FDisjoint {A : ordType} s1 s2 :=
@@ -706,7 +683,7 @@ Qed.
 
 Lemma trimmed_valid_Some_in :
   ∀ L I E p n S T f,
-    valid_package L I E p →
+    ValidPackage L I E p →
     trimmed E p →
     p n = Some (S ; T ; f) →
     (n, (S, T)) \in E.
@@ -754,7 +731,6 @@ Proof.
       destruct h2 as [g [eg hg]].
       rewrite e2 in eg. noconf eg. cbn in hg.
       erewrite code_link_par_right. all: eauto.
-      eapply hg.
     + simpl. reflexivity.
 Qed.
 
@@ -979,7 +955,7 @@ Qed.
 Lemma valid_ID :
   ∀ L I,
     flat I →
-    valid_package L I I (ID I).
+    ValidPackage L I I (ID I).
 Proof.
   intros L I hI.
   apply prove_valid_package.
@@ -990,7 +966,7 @@ Proof.
   eapply hI in hi. specialize (hi ho). noconf hi.
   simpl. eexists. split. 1: reflexivity.
   simpl. intro x.
-  eapply valid_code_from_class. exact _.
+  exact _.
 Qed.
 
 (* Only for pacakages because we don't expect to infer a flat proof *)
@@ -1016,7 +992,7 @@ Qed.
 Lemma code_link_id :
   ∀ A (v : raw_code A) L I,
     flat I →
-    valid_code L I v →
+    ValidCode L I v →
     code_link v (ID I) = v.
 Proof.
   intros A v L I h hv.
@@ -1033,7 +1009,7 @@ Qed.
 
 Lemma link_id :
   ∀ L I E p,
-    valid_package L I E p →
+    ValidPackage L I E p →
     flat I →
     trimmed E p →
     link p (ID I) = p.
@@ -1053,7 +1029,7 @@ Qed.
 
 Lemma id_link :
   ∀ L I E p,
-    valid_package L I E p →
+    ValidPackage L I E p →
     trimmed E p →
     link (ID E) p = p.
 Proof.

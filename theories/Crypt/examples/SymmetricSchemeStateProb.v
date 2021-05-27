@@ -230,7 +230,7 @@ Module PRF_example.
 
 
   (* Parameter PRF : forall (r: Words) (k : Key), raw_code Key. *)
-  (* Parameter PRF_valid : forall r k, valid_code rel_loc fset0 (PRF r k). *)
+  (* Parameter PRF_valid : forall r k, ValidCode rel_loc fset0 (PRF r k). *)
   Parameter PRF : Words -> Key -> Key.
   Parameter prf_epsilon : R.
 

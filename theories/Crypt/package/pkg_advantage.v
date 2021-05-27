@@ -170,10 +170,12 @@ Proof.
 Defined.
 
 Definition state_pass__valid {A} {L} {I} (p : raw_code A)
-  (h : valid_code L I p) :
-  ∀ hp, valid_code fset0 I (state_pass_ p hp).
+  (h : ValidCode L I p) :
+  ∀ hp, ValidCode fset0 I (state_pass_ p hp).
 Proof.
-  intro hp. induction h in hp |- *.
+  intro hp.
+  unfold ValidCode in *.
+  induction h in hp |- *.
   - cbn. constructor.
   - simpl. constructor.
     + assumption.
@@ -188,8 +190,8 @@ Definition state_pass {A} (p : raw_code A) : raw_code A :=
   bind (state_pass_ p empty_heap) (λ '(r, _), ret r).
 
 Definition state_pass_valid {A} {L} {I} (p : raw_code A)
-  (h : valid_code L I p) :
-  valid_code fset0 I (state_pass p).
+  (h : ValidCode L I p) :
+  ValidCode fset0 I (state_pass p).
 Proof.
   apply valid_bind.
   - apply (state_pass__valid p h empty_heap).

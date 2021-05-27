@@ -64,7 +64,7 @@ Proof.
 Qed.
 
 Equations? get_raw_package_op {L} {I E : Interface} (p : raw_package)
-  (hp : valid_package L I E p)
+  (hp : ValidPackage L I E p)
   (o : opsig) (ho : o \in E) (arg : src o) : code L I (tgt o) :=
   get_raw_package_op p hp o ho arg with inspect (lookup_op p o) := {
   | @exist (Some f) e1 := {code f arg } ;
@@ -82,7 +82,7 @@ Defined.
 
 Lemma get_raw_package_op_lookup :
   ∀ {L} {I E : Interface} (p : raw_package)
-    (hp : valid_package L I E p)
+    (hp : ValidPackage L I E p)
     (o : opsig) (ho : o \in E) (arg : src o)
     (f : src o -> raw_code (tgt o))
     (H : lookup_op p o = Some f),
@@ -140,8 +140,8 @@ Qed.
 
 Lemma get_raw_package_op_link {L} {I M E} {o : opsig}
   (hin : o \in E) (arg : src o) (p1 p2 : raw_package)
-  (hp1 : valid_package L M E p1)
-  (hpl : valid_package L I E (link p1 p2))
+  (hp1 : ValidPackage L M E p1)
+  (hpl : ValidPackage L I E (link p1 p2))
   : (get_raw_package_op (link p1 p2) hpl o hin arg).(prog) =
     code_link ((get_raw_package_op p1 hp1 o hin arg).(prog)) p2.
 Proof.
@@ -180,8 +180,8 @@ Qed.
 
 Lemma get_raw_package_op_trim {L} {I E} {o : opsig}
       (hin : o \in E) (arg : src o) (p : raw_package)
-      (hp : valid_package L I E p)
-      (hpt : valid_package L I E (trim E p))
+      (hp : ValidPackage L I E p)
+      (hpt : ValidPackage L I E (trim E p))
   : get_raw_package_op (trim E p) hpt o hin arg =
     get_raw_package_op p hp o hin arg.
 Proof.
@@ -210,8 +210,8 @@ Qed.
 
 Lemma get_raw_package_op_ext {L1 L2} {I E} {o : opsig}
       (hin : o \in E) (arg : src o) (p : raw_package)
-      (hp1 : valid_package L1 I E p)
-      (hp2 : valid_package L2 I E p)
+      (hp1 : ValidPackage L1 I E p)
+      (hp2 : ValidPackage L2 I E p)
   : (get_raw_package_op p hp1 o hin arg).(prog) =
     (get_raw_package_op p hp2 o hin arg).(prog).
 Proof.
@@ -256,9 +256,9 @@ Definition get_op_default (p : raw_package) (o : opsig) :
 
 Lemma valid_get_op_default :
   ∀ L I E p o x,
-    valid_package L I E p →
+    ValidPackage L I E p →
     o \in E →
-    valid_code L I (get_op_default p o x).
+    ValidCode L I (get_op_default p o x).
 Proof.
   intros L I E p o x hp ho.
   unfold get_op_default.
@@ -274,7 +274,7 @@ Qed.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (get_op_default ?p ?o ?x)) =>
   eapply valid_get_op_default ; [
-    eapply valid_package_from_class
+    idtac
   | auto_in_fset
   ]
   : typeclass_instances ssprove_valid_db.
