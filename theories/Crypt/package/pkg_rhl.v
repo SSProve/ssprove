@@ -1348,7 +1348,7 @@ Qed.
 
 Lemma r_get_vs_get_remember_lhs :
   ∀ {A B : choiceType} ℓ r₀ r₁ (pre : precond) (post : postcond A B),
-    Tracks ℓ pre →
+    Syncs ℓ pre →
     (∀ x,
       ⊢ ⦃ λ '(s₀, s₁), (pre ⋊ rem_lhs ℓ x) (s₀, s₁) ⦄
         r₀ x ≈ r₁ x
@@ -1373,7 +1373,7 @@ Qed.
 
 Lemma r_get_vs_get_remember_rhs :
   ∀ {A B : choiceType} ℓ r₀ r₁ (pre : precond) (post : postcond A B),
-    Tracks ℓ pre →
+    Syncs ℓ pre →
     (∀ x,
       ⊢ ⦃ λ '(s₀, s₁), (pre ⋊ rem_rhs ℓ x) (s₀, s₁) ⦄
         r₀ x ≈ r₁ x
@@ -1398,7 +1398,7 @@ Qed.
 
 Lemma r_get_vs_get_remember :
   ∀ {A B : choiceType} ℓ r₀ r₁ (pre : precond) (post : postcond A B),
-    Tracks ℓ pre →
+    Syncs ℓ pre →
     (∀ x,
       ⊢ ⦃ λ '(s₀, s₁), (pre ⋊ rem_lhs ℓ x ⋊ rem_rhs ℓ x) (s₀, s₁) ⦄
         r₀ x ≈ r₁ x

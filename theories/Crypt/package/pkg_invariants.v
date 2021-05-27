@@ -399,7 +399,7 @@ Qed.
   The idea is to use them as side-conditions for rules.
 *)
 
-Class Tracks ℓ pre :=
+Class Syncs ℓ pre :=
   is_tracking : ∀ s₀ s₁, pre (s₀, s₁) → get_heap s₀ ℓ = get_heap s₁ ℓ.
 
 Class Couples_lhs ℓ ℓ' R pre :=
@@ -411,40 +411,40 @@ Class Couples_rhs ℓ ℓ' R pre :=
 Class Triple_rhs ℓ₁ ℓ₂ ℓ₃ R pre :=
   is_triple_rhs : ∀ s, pre s → triple_rhs ℓ₁ ℓ₂ ℓ₃ R s.
 
-Lemma Tracks_eq :
-  ∀ ℓ, Tracks ℓ (λ '(s₀, s₁), s₀ = s₁).
+Lemma Syncs_eq :
+  ∀ ℓ, Syncs ℓ (λ '(s₀, s₁), s₀ = s₁).
 Proof.
   intros ℓ s₀ s₁ e. subst. reflexivity.
 Qed.
 
-#[export] Hint Extern 10 (Tracks _ (λ '(s₀, s₁), s₀ = s₁)) =>
-  apply Tracks_eq
+#[export] Hint Extern 10 (Syncs _ (λ '(s₀, s₁), s₀ = s₁)) =>
+  apply Syncs_eq
   : typeclass_instances ssprove_invariant.
 
-Lemma Tracks_heap_ignore :
+Lemma Syncs_heap_ignore :
   ∀ ℓ L,
     ℓ \notin L →
-    Tracks ℓ (heap_ignore L).
+    Syncs ℓ (heap_ignore L).
 Proof.
   intros ℓ L hn s₀ s₁ h.
   apply h. auto.
 Qed.
 
-#[export] Hint Extern 10 (Tracks _ (heap_ignore _)) =>
-  apply Tracks_heap_ignore
+#[export] Hint Extern 10 (Syncs _ (heap_ignore _)) =>
+  apply Syncs_heap_ignore
   : typeclass_instances ssprove_invariant.
 
-Lemma Tracks_conj :
+Lemma Syncs_conj :
   ∀ ℓ (pre spre : precond),
-    Tracks ℓ pre →
-    Tracks ℓ (pre ⋊ spre).
+    Syncs ℓ pre →
+    Syncs ℓ (pre ⋊ spre).
 Proof.
   intros ℓ pre spre hpre s₀ s₁ [].
   apply hpre. auto.
 Qed.
 
-#[export] Hint Extern 10 (Tracks _ (_ ⋊ _)) =>
-  apply Tracks_conj
+#[export] Hint Extern 10 (Syncs _ (_ ⋊ _)) =>
+  apply Syncs_conj
   : typeclass_instances ssprove_invariant.
 
 Lemma Couples_couple_lhs :
@@ -647,7 +647,7 @@ Qed.
 Lemma Remembers_lhs_from_tracked_rhs :
   ∀ ℓ v pre,
     Remembers_rhs ℓ v pre →
-    Tracks ℓ pre →
+    Syncs ℓ pre →
     Remembers_lhs ℓ v pre.
 Proof.
   intros ℓ v pre hr ht.
@@ -659,7 +659,7 @@ Qed.
 Lemma Remembers_rhs_from_tracked_lhs :
   ∀ ℓ v pre,
     Remembers_lhs ℓ v pre →
-    Tracks ℓ pre →
+    Syncs ℓ pre →
     Remembers_rhs ℓ v pre.
 Proof.
   intros ℓ v pre hr ht.

@@ -920,7 +920,7 @@ instead, but also synchronous rules that will also remember, for instance
 ```coq
 Lemma r_get_vs_get_remember_lhs :
   ∀ {A B : choiceType} ℓ r₀ r₁ (pre : precond) (post : postcond A B),
-    Tracks ℓ pre →
+    Syncs ℓ pre →
     (∀ x,
       ⊢ ⦃ λ '(s₀, s₁), (pre ⋊ rem_lhs ℓ x) (s₀, s₁) ⦄
         r₀ x ≈ r₁ x
@@ -932,7 +932,7 @@ Lemma r_get_vs_get_remember_lhs :
     ⦃ post ⦄.
 ```
 
-Here we have an additional `Tracks ℓ pre` condition which states that `ℓ` should
+Here we have an additional `Syncs ℓ pre` condition which states that `ℓ` should
 point to the same value on both sides (or more precisely that this should be
 ensured by the precondition `pre`). `exact _` (type-class inference) or
 `ssprove_invariant` should deal with it.
@@ -964,7 +964,7 @@ it on the right, in which case the following lemma is useful:
 Lemma Remembers_rhs_from_tracked_lhs :
   ∀ ℓ v pre,
     Remembers_lhs ℓ v pre →
-    Tracks ℓ pre →
+    Syncs ℓ pre →
     Remembers_rhs ℓ v pre.
 ```
 and similarly `Remembers_lhs_from_tracked_rhs`.
