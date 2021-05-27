@@ -147,7 +147,7 @@ Qed.
     eapply valid_code_from_class
   | eapply valid_package_from_class
   ]
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 (* Linking *)
 Definition link (p1 p2 : raw_package) : raw_package :=
@@ -214,7 +214,7 @@ Qed.
   |
   |
   ]
-  : packages.
+  : ssprove_valid_db.
 
 Lemma code_link_bind :
   ∀ {A B : choiceType} (v : raw_code A)
@@ -281,7 +281,7 @@ Qed.
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (trim ?E ?p)) =>
   eapply valid_trim ;
   eapply valid_package_from_class
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 (* Technical lemma before proving assoc *)
 Lemma link_trim_commut :
@@ -513,7 +513,7 @@ Proof.
   eapply valid_par. all: eauto.
 Qed.
 
-(** This one is not in packages because it might progress with the wrong
+(** This one is not in ssprove_valid_db because it might progress with the wrong
     locations and interfaces.
 *)
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (par ?p1 ?p2)) =>
@@ -524,7 +524,7 @@ Qed.
   ]
   : typeclass_instances.
 
-(** This one is only in packages and not typeclass_instances
+(** This one is only in ssprove_valid_db and not typeclass_instances
     because I don't expect it to ever find the fsubset automatically.
     At least for now.
 *)
@@ -537,7 +537,7 @@ Qed.
   | (* try eapply fsubsetxx *)
   | (* try eapply fsubsetxx *)
   ]
-  : packages.
+  : ssprove_valid_db.
 
 Class FDisjoint {A : ordType} s1 s2 :=
   are_disjoint : @fdisjoint A s1 s2.
@@ -600,20 +600,20 @@ Qed.
 
 #[export] Hint Extern 1 (FDisjoint _ _) =>
   reflexivity
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 1 (FDisjoint (fset ?l1) (fset ?l2)) =>
   repeat rewrite [fset]unlock
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 1 (Parable _ _) =>
   eapply fdisjoint_from_class
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 1 (Parable (trim ?E1 ?p1) (trim ?E2 ?p2)) =>
   eapply parable_trim ;
   eapply fdisjoint_from_class
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 (* TODO MOVE *)
 (** To circumvent the very annoying lemmata that conclude on equality
@@ -996,7 +996,7 @@ Qed.
 (* Only for pacakages because we don't expect to infer a flat proof *)
 #[export] Hint Extern 2 (ValidPackage ?L ?I ?E (ID ?I')) =>
   eapply valid_ID
-  : packages.
+  : ssprove_valid_db.
 
 Lemma trimmed_ID :
   ∀ I, trimmed I (ID I).

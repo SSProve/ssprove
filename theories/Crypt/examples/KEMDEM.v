@@ -219,7 +219,7 @@ Section KEMDEM.
 
   Hint Extern 10 (ValidCode ?L ?I ?c.(prog)) =>
     eapply valid_scheme ; eapply c.(prog_valid)
-    : typeclass_instances packages.
+    : typeclass_instances ssprove_valid_db.
 
   Definition KEM (b : bool) : package KEM_loc (KEM_in b) KEM_out :=
     [package

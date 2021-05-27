@@ -787,7 +787,7 @@ Qed.
 #[export] Hint Extern 1 (ValidCode ?L ?I (for_loop ?c ?N)) =>
   eapply valid_for_loop ;
   intro ; eapply valid_code_from_class
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 Lemma rcoupling_eq :
   ∀ {A : ord_choiceType} (K₀ K₁ : raw_code A) (ψ : precond),

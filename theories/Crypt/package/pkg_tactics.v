@@ -264,7 +264,7 @@ Qed.
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap [::])) =>
   try (replace E with [interface] by eapply fset0E) ;
   eapply valid_empty_package
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 Lemma valid_package1 :
   ∀ L I i A B f,
@@ -362,27 +362,27 @@ Proof.
 Qed.
 
 #[export] Hint Extern 100 =>
-  shelve : packages.
+  shelve : ssprove_valid_db.
 
 #[export] Hint Extern 2 (is_true (?x \in fset ?I)) =>
   rewrite in_fset
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 3 (is_true (?x \in ?I)) =>
   reflexivity
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 3 (is_true (?x \in ?I)) =>
   inseq_try
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 2 (is_true (?x \notin fset ?I)) =>
   rewrite notin_fset
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 3 (is_true (?x \notin ?I)) =>
   reflexivity
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 2 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
   =>
@@ -391,7 +391,7 @@ Qed.
   | intro ; eapply valid_code_from_class
   | rewrite imfset_fset ; rewrite notin_fset
   ]
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 Lemma trimmed_empty_package :
   trimmed [interface] (mkfmap nil).
@@ -433,11 +433,11 @@ Qed.
 
 #[export] Hint Extern 1 (trimmed ?E (mkfmap [::])) =>
   eapply trimmed_empty_package
-: typeclass_instances packages.
+: typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 2 (trimmed ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p))) =>
   eapply trimmed_package_cons
-: typeclass_instances packages.
+: typeclass_instances ssprove_valid_db.
 
 Lemma valid_scheme :
   ∀ A L I c,
@@ -468,15 +468,15 @@ Ltac chUniverse_eq_prove :=
   | chUniverse_eq_prove
   | chUniverse_eq_prove
   ]
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 10 (ValidCode ?L ?I (let u := _ in _)) =>
   cbv zeta
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 2 (ValidCode ?L ?I (match ?t with _ => _ end)) =>
   destruct t
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 (** Variant of the cons case where we unify Positive proofs beforehand
   This is—I hope—the only thing that might cause a discrepancy between
@@ -488,4 +488,4 @@ Ltac chUniverse_eq_prove :=
   : typeclass_instances. *)
 
 Ltac ssprove_valid :=
-  (unshelve typeclasses eauto with packages) ; shelve_unifiable.
+  (unshelve typeclasses eauto with ssprove_valid_db) ; shelve_unifiable.

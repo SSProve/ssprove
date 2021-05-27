@@ -179,7 +179,7 @@ Qed.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I fail_unit) =>
   eapply valid_fail_unit
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 Lemma valid_assert :
   ∀ L I b, valid_code L I (assert b).
@@ -189,7 +189,7 @@ Qed.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (assert ?b)) =>
   eapply valid_assert
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 Lemma valid_fail :
   ∀ A L I, valid_code L I (@fail A).
@@ -199,7 +199,7 @@ Qed.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I fail) =>
   eapply valid_fail
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 Lemma valid_assertD :
   ∀ A L I b k,
@@ -215,7 +215,7 @@ Qed.
 #[export] Hint Extern 1 (ValidCode ?L ?I (@assertD ?A ?b ?k)) =>
   eapply (valid_assertD A _ _ b k) ;
   intro ; eapply valid_code_from_class
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 Notation "'#assert' b 'as' id ;; k" :=
   (assertD b (λ id, k))

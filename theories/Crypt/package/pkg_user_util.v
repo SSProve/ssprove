@@ -562,7 +562,7 @@ Ltac ssprove_swap_seq_lhs l :=
   invert_interface_in h₀ ;
   invert_interface_in h₁ ;
   chUniverse_eq_prove
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 (* Could be more general with no fset0 for locations *)
 Lemma code_link_scheme :
@@ -846,7 +846,7 @@ Ltac fdisjoint_auto :=
 
 #[export] Hint Extern 15 (FDisjoint _ _) =>
   fdisjoint_auto
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 Ltac fsubset_auto :=
   let h := fresh "h" in

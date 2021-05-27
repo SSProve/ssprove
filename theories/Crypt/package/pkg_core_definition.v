@@ -461,41 +461,41 @@ Proof.
   apply valid_ret.
 Qed. *)
 
-Create HintDb packages.
+Create HintDb ssprove_valid_db.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (ret ?x)) =>
   apply valid_ret
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (opr ?o ?x ?k)) =>
   eapply valid_opr ; [
     auto_in_fset
   | intro ; eapply valid_code_from_class
-  ] : typeclass_instances packages.
+  ] : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (getr ?o ?k)) =>
   eapply valid_getr ; [
     auto_in_fset
   | intro ; eapply valid_code_from_class
-  ] : typeclass_instances packages.
+  ] : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (putr ?o ?x ?k)) =>
   eapply valid_putr ; [
     auto_in_fset
   | eapply valid_code_from_class
-  ] : typeclass_instances packages.
+  ] : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (sampler ?op ?k)) =>
   eapply valid_sampler ;
   intro ; eapply valid_code_from_class
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (bind ?p ?k)) =>
   eapply valid_bind ; [
     eapply valid_code_from_class
   | intro ; eapply valid_code_from_class
   ]
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 Coercion prog : code >-> raw_code.
 
@@ -509,28 +509,28 @@ Arguments valid_command _ _ [_] _.
 #[export] Hint Extern 1 (ValidCommand ?L ?I (cmd_op ?o ?x)) =>
   eapply valid_cmd_op ;
   auto_in_fset
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 1 (ValidCommand ?L ?I (cmd_get ?l)) =>
   eapply valid_cmd_get ;
   auto_in_fset
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (cmd_put ?l ?v)) =>
   eapply valid_cmd_put ;
   auto_in_fset
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (cmd_sample ?op)) =>
   eapply valid_cmd_sample
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (cmd_bind ?c ?k)) =>
   eapply valid_cmd_bind ; [
     eapply valid_command_from_class
   | intro ; eapply valid_code_from_class
   ]
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 Section FreeLocations.
 
@@ -695,7 +695,7 @@ Coercion pack : package >-> raw_package.
 
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (?p.(pack))) =>
   eapply p.(pack_valid)
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 Lemma valid_package_from_class :
   ∀ L I E (p : raw_package),

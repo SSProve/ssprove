@@ -310,7 +310,7 @@ We can then see where the mistake was and change the empty interface to
 something containing `ℓ` like `fset [:: ℓ ]`.
 
 Note that `ssprove_valid` and the inference for `ValidCode` can be extended
-with hints. The former using the `packages` database, the latter with the
+with hints. The former using the `ssprove_valid_db` database, the latter with the
 `typeclass_instances` database.
 
 **Note:** There is an implicit coercion from `code` to `raw_code`.

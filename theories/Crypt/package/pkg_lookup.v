@@ -277,7 +277,7 @@ Qed.
     eapply valid_package_from_class
   | auto_in_fset
   ]
-  : typeclass_instances packages.
+  : typeclass_instances ssprove_valid_db.
 
 Lemma lookup_op_link :
   ∀ p q o,
