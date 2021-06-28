@@ -11,6 +11,17 @@ correspondence between the claims in the paper and the formal proofs in Coq, as
 well as listing the small set of axioms on which the formalisation relies
 (either entirely standard ones or transitive ones from `mathcomp-analysis`).
 
+## Documentation
+
+A documentation is available in [DOC.md].
+
+## Additional material
+
+- [CSF'21](https://youtu.be/MlwQ7CfNH5Q): Video accompanying the publication introducing the general framework (speaker: Philipp Haselwarter)
+<!-- - [TYPES'21](https://todo): Video focused on semantics and programming logic (speaker: Antoine Van Muylder) -->
+<!-- placeholder: -->
+<!-- - [Coq Workshop '21](https://todo): Video illustrating the formalisation (speaker: Théo Winterhalter) -->
+
 ## Prerequisites
 
 - OCaml `>=4.05.0 & <4.12`
@@ -48,10 +59,6 @@ Run `make graph` to build a graph of dependencies between sources.
 
 Unless specified with a full path, all files considered in this README can
 safely be assumed to be in [theories/Crypt].
-
-## Documentation
-
-A documentation is available in [DOC.md].
 
 ## Mapping between paper and formalisation
 
