@@ -22,7 +22,9 @@ A documentation is available in [DOC.md].
 <!-- placeholder: -->
 <!-- - [Coq Workshop '21](https://todo): Video illustrating the formalisation (speaker: Théo Winterhalter) -->
 
-## Prerequisites
+## Installation
+
+#### Prerequisites
 
 - OCaml `>=4.05.0 & <4.12`
 - Coq `8.13.1`
@@ -40,7 +42,7 @@ opam install coq.8.13.1 coq-equations.1.2.4+8.13 coq-mathcomp-analysis.0.3.7 coq
 To build the dependency graph, you can optionally install `graphviz`.
 On macOS, `gsed` is additionally required for this.
 
-## Running verification
+#### Running verification
 
 Run `make` from this directory to verify all the Coq files.
 This should succeed displaying only the list of axioms used for our listed
