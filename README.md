@@ -4,7 +4,7 @@ This repository contains the Coq formalisation of the paper:
 - **[SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq](https://eprint.iacr.org/2021/397).**
   Carmine Abate, Philipp G. Haselwarter, Exequiel Rivas, Antoine Van Muylder,
   Théo Winterhalter, Cătălin Hrițcu, Kenji Maillard, and Bas Spitters.
-  Cryptology ePrint Archive, Report 2021/397. March 2021.
+  CSF 2021 **distinguished paper**.
 
 This README serves as a guide to running verification and finding the
 correspondence between the claims in the paper and the formal proofs in Coq, as
