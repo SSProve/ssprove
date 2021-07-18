@@ -627,7 +627,7 @@ Definition typed_raw_function :=
   ∑ (S T : chUniverse), S → raw_code T.
 
 Definition raw_package :=
-  {fmap ident -> typed_raw_function}.
+  {fmap ident -> typed_raw_function }.
 
 (* To avoid unification troubles, we wrap this definition in an inductive. *)
 Definition valid_package_ext L I (E : Interface) (p : raw_package) :=
