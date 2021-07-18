@@ -287,6 +287,69 @@ Arguments triple_rhs : simpl never.
   eapply SemiInvariant_triple_rhs
   : (* typeclass_instances *) ssprove_invariant.
 
+Inductive side := lhs | rhs.
+
+Definition choose_heap s₀ s₁ (s : side) : heap :=
+  match s with
+  | lhs => s₀
+  | rhs => s₁
+  end.
+
+Lemma choose_heap_same :
+  ∀ s si,
+    choose_heap s s si = s.
+Proof.
+  intros s si.
+  destruct si.
+  all: reflexivity.
+Qed.
+
+Fixpoint locRel (l : list (Location * side)) :=
+  match l with
+  | (ℓ, _) :: l => ℓ → locRel l
+  | [::] => Prop
+  end.
+
+Fixpoint heapLocRel (s₀ s₁ : heap) l (R : locRel l) : Prop :=
+  match l return locRel l → Prop with
+  | (ℓ, s) :: l =>
+    λ R, heapLocRel s₀ s₁ l (R (get_heap (choose_heap s₀ s₁ s) ℓ))
+  | [::] => λ R, R
+  end R.
+
+Definition loc_rel (l : list (Location * side)) (R : locRel l) : precond :=
+  λ '(s₀, s₁), heapLocRel s₀ s₁ l R.
+
+Lemma SemiInvariant_loc_rel :
+  ∀ L₀ L₁ l (R : locRel l),
+    List.forallb (λ '(ℓ,_), ℓ \in L₀ :|: L₁) l →
+    heapLocRel empty_heap empty_heap l R →
+    SemiInvariant L₀ L₁ (loc_rel l R).
+Proof.
+  intros L₀ L₁ l R h he. split.
+  - intros s₀ s₁ ℓ v hℓ₀ hℓ₁ hh.
+    assert (hℓ : ℓ \notin L₀ :|: L₁).
+    { rewrite in_fsetU. rewrite (negbTE hℓ₀) (negbTE hℓ₁). reflexivity. }
+    unfold loc_rel.
+    induction l as [| [ℓ' si] l ih] in s₀, s₁, R, hh, h(* , he *) |- *.
+    + assumption.
+    + simpl. apply ih.
+      * simpl in h. move: h => /andP [_ h]. assumption.
+      * simpl in h. move: h => /andP [h _].
+        destruct si. all: simpl.
+        all: rewrite !get_set_heap_neq.
+        1,3: assumption.
+        -- apply /negP => /eqP e. subst. rewrite h in hℓ. discriminate.
+        -- apply /negP => /eqP e. subst. rewrite h in hℓ. discriminate.
+  - simpl. assumption.
+Qed.
+
+Arguments loc_rel : simpl never.
+
+#[export] Hint Extern 10 (SemiInvariant _ _ (loc_rel _ _)) =>
+  eapply SemiInvariant_loc_rel
+  : (* typeclass_instances *) ssprove_invariant.
+
 Definition get_pre_cond ℓ (pre : precond) :=
   ∀ s₀ s₁, pre (s₀, s₁) → get_heap s₀ ℓ = get_heap s₁ ℓ.
 
