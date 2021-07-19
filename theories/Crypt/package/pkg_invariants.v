@@ -1175,6 +1175,18 @@ Proof.
     rewrite -Heqcall in hl. eauto.
 Qed.
 
+Lemma lookup_hpv_spec :
+  ∀ ℓ s v l s₀ s₁ h₀ h₁,
+    lookup_hpv ℓ s l = Some v →
+    update_heaps l s₀ s₁ = (h₀, h₁) →
+    get_heap (choose_heap h₀ h₁ s) ℓ = v.
+Proof.
+  intros ℓ s v l s₀ s₁ h₀ h₁ hl e.
+  destruct s.
+  - eapply lookup_hpv_l_spec. all: eauto.
+  - eapply lookup_hpv_r_spec. all: eauto.
+Qed.
+
 Lemma lookup_hpv_l_None_spec :
   ∀ ℓ l s₀ s₁ h₀ h₁,
     lookup_hpv_l ℓ l = None →
@@ -1473,28 +1485,34 @@ Proof.
   auto.
 Qed.
 
-(* Fixpoint heapLocRel (s₀ s₁ : heap) l (R : locRel l) : Prop :=
-  match l return locRel l → Prop with
-  | (ℓ, s) :: l =>
-    λ R, heapLocRel s₀ s₁ l (R (get_heap (choose_heap s₀ s₁ s) ℓ))
+(* TODO MOVE? *)
+Fixpoint hpv_locRel (l : seq heap_val) ll (R : locRel ll) :=
+  match ll return locRel ll → Prop with
+  | (ℓ, s) :: ll =>
+    λ R,
+    match lookup_hpv ℓ s l with
+    | Some v => hpv_locRel l ll (R v)
+    | None => False
+    end
   | [::] => λ R, R
-  end R. *)
+  end R.
 
-(* Lemma preserve_update_loc_rel_lookup :
-  ∀ ll (R : locRel ll) lv (l : seq heap_val) m,
-    (* lookup_hpv_all ll l = Some lv → *)
-    (* and respect R, maybe instead of the above, combine lookup
-      and something a la heapLocRel
-    *)
+Lemma preserve_update_loc_rel_lookup :
+  ∀ ll (R : locRel ll) (l : seq heap_val) m,
+    hpv_locRel l ll R →
     preserve_update_mem l m (loc_rel ll R).
 Proof.
-  intros ℓ ℓ' R v v' l m hl hr h.
-  intros s₀ s₁ hh. unfold couple_lhs in *.
-  destruct update_heaps eqn:e.
-  erewrite lookup_hpv_l_spec. 2,3: eauto.
-  erewrite lookup_hpv_l_spec. 2,3: eauto.
-  auto.
-Qed. *)
+  intros ll R l m h.
+  unfold loc_rel in *.
+  induction ll as [| [ℓ si] ll ih] in R, l, m, h |- *.
+  - intros s₀ s₁ hh. simpl. simpl in h.
+    destruct update_heaps.
+    assumption.
+  - intros s₀ s₁ hh. simpl in *.
+    destruct lookup_hpv eqn:e1. 2: contradiction.
+    destruct update_heaps eqn:e.
+    erewrite lookup_hpv_spec. 2,3: eauto.
+Abort.
 
 Lemma preserve_update_couple_lhs_lookup_None :
   ∀ ℓ ℓ' (R : _ → _ → Prop) (l : seq heap_val) m,
