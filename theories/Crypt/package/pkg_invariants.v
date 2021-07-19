@@ -1225,6 +1225,18 @@ Proof.
     rewrite -Heqcall in hl. eauto.
 Qed.
 
+Lemma lookup_hpv_None_spec :
+  ∀ ℓ s l s₀ s₁ h₀ h₁,
+    lookup_hpv ℓ s l = None →
+    update_heaps l s₀ s₁ = (h₀, h₁) →
+    get_heap (choose_heap h₀ h₁ s) ℓ = get_heap (choose_heap s₀ s₁ s) ℓ.
+Proof.
+  intros ℓ s l s₀ s₁ h₀ h₁ hl e.
+  destruct s.
+  - eapply lookup_hpv_l_None_spec. all: eauto.
+  - eapply lookup_hpv_r_None_spec. all: eauto.
+Qed.
+
 (** Predicate of preservation of precond after updates, retaining memory *)
 
 Definition preserve_update_mem l m (pre : precond) :=
@@ -1563,4 +1575,27 @@ Proof.
   erewrite lookup_hpv_r_None_spec with (ℓ := ℓ₃). 2,3: eauto.
   eapply remember_pre_pre in hh.
   auto.
+Qed.
+
+Lemma preserve_update_loc_rel_lookup_None :
+  ∀ ll (R : locRel ll) (l : seq heap_val) m,
+    List.forallb (λ '(ℓ, s), ~~ isSome (lookup_hpv ℓ s l)) ll →
+    preserve_update_mem l m (loc_rel ll R).
+Proof.
+  intros ll R l m h.
+  intros s₀ s₁ hh.
+  unfold loc_rel in *.
+  eapply remember_pre_pre in hh.
+  induction ll as [| [ℓ si] ll ih] in R, l, h, s₀, s₁, hh |- *.
+  - simpl. simpl in hh.
+    destruct update_heaps.
+    assumption.
+  - simpl in *.
+    move: h => /andP [hl h].
+    destruct lookup_hpv eqn:e1. 1: discriminate.
+    destruct update_heaps eqn:e.
+    erewrite lookup_hpv_None_spec. 2,3: eauto.
+    specialize ih with (1 := h).
+    specialize ih with (1 := hh).
+    rewrite e in ih. apply ih.
 Qed.
