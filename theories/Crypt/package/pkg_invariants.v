@@ -1503,16 +1503,20 @@ Lemma preserve_update_loc_rel_lookup :
     preserve_update_mem l m (loc_rel ll R).
 Proof.
   intros ll R l m h.
+  intros s₀ s₁ hh.
   unfold loc_rel in *.
-  induction ll as [| [ℓ si] ll ih] in R, l, m, h |- *.
-  - intros s₀ s₁ hh. simpl. simpl in h.
+  induction ll as [| [ℓ si] ll ih] in R, l, h, s₀, s₁ |- *.
+  - simpl. simpl in h.
     destruct update_heaps.
     assumption.
-  - intros s₀ s₁ hh. simpl in *.
+  - simpl in *.
     destruct lookup_hpv eqn:e1. 2: contradiction.
     destruct update_heaps eqn:e.
     erewrite lookup_hpv_spec. 2,3: eauto.
-Abort.
+    specialize ih with (1 := h).
+    specialize (ih s₀ s₁).
+    rewrite e in ih. apply ih.
+Qed.
 
 Lemma preserve_update_couple_lhs_lookup_None :
   ∀ ℓ ℓ' (R : _ → _ → Prop) (l : seq heap_val) m,
