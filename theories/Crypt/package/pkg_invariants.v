@@ -331,7 +331,7 @@ Proof.
     assert (hℓ : ℓ \notin L₀ :|: L₁).
     { rewrite in_fsetU. rewrite (negbTE hℓ₀) (negbTE hℓ₁). reflexivity. }
     unfold loc_rel.
-    induction l as [| [ℓ' si] l ih] in s₀, s₁, R, hh, h(* , he *) |- *.
+    induction l as [| [ℓ' si] l ih] in s₀, s₁, R, hh, h |- *.
     + assumption.
     + simpl. apply ih.
       * simpl in h. move: h => /andP [_ h]. assumption.
@@ -457,6 +457,41 @@ Qed.
   apply put_pre_cond_triple_rhs
   : ssprove_invariant.
 
+(* TODO MOVE *)
+Lemma notin_cons :
+  ∀ (T : eqType) (y : T) (s : seq T) (x : T),
+    (x \notin y :: s) = (x != y) && (x \notin s).
+Proof.
+  intros T y s x.
+  rewrite in_cons.
+  rewrite Bool.negb_orb. reflexivity.
+Qed.
+
+Lemma put_pre_cond_loc_rel :
+  ∀ ℓ v l (R : locRel l),
+    ℓ \notin (map fst l) →
+    put_pre_cond ℓ v (loc_rel l R).
+Proof.
+  intros ℓ v l R h s₀ s₁ hc.
+  unfold loc_rel in *.
+  induction l as [| [ℓ' si] l ih].
+  - assumption.
+  - simpl. simpl in h. simpl in hc.
+    rewrite notin_cons in h.
+    move: h => /andP [hn h].
+    apply ih.
+    + assumption.
+    + destruct si.
+      all: rewrite !get_set_heap_neq.
+      1,3: auto.
+      all: rewrite eq_sym.
+      all: auto.
+Qed.
+
+#[export] Hint Extern 10 (put_pre_cond _ _ (loc_rel _ _)) =>
+  apply put_pre_cond_loc_rel
+  : ssprove_invariant.
+
 (** Predicates on invariants
 
   The idea is to use them as side-conditions for rules.
@@ -473,6 +508,9 @@ Class Couples_rhs ℓ ℓ' R pre :=
 
 Class Triple_rhs ℓ₁ ℓ₂ ℓ₃ R pre :=
   is_triple_rhs : ∀ s, pre s → triple_rhs ℓ₁ ℓ₂ ℓ₃ R s.
+
+Class LocRel l R pre :=
+  has_loc_rel : ∀ s, pre s → loc_rel l R s.
 
 Lemma Syncs_eq :
   ∀ ℓ, Syncs ℓ (λ '(s₀, s₁), s₀ = s₁).
@@ -541,6 +579,17 @@ Qed.
 
 #[export] Hint Extern 10 (Triple_rhs _ _ _ _ (triple_rhs _ _ _ _)) =>
   eapply Triple_triple_rhs
+  : typeclass_instances ssprove_invariant.
+
+Lemma LocRel_loc_rel :
+  ∀ l R,
+    LocRel l R (loc_rel l R).
+Proof.
+  intros l R s h. auto.
+Qed.
+
+#[export] Hint Extern 10 (LocRel _ _ (loc_rel _ _)) =>
+  eapply LocRel_loc_rel
   : typeclass_instances ssprove_invariant.
 
 Lemma Couples_lhs_conj_right :
@@ -619,6 +668,32 @@ Qed.
 
 #[export] Hint Extern 11 (Triple_rhs _ _ _ _ (_ ⋊ _)) =>
   eapply Triple_rhs_conj_left
+  : typeclass_instances ssprove_invariant.
+
+Lemma LocRel_conj_right :
+  ∀ l R (pre spre : precond),
+    LocRel l R spre →
+    LocRel l R (pre ⋊ spre).
+Proof.
+  intros l R pre spre h s [].
+  apply h. auto.
+Qed.
+
+Lemma LocRel_conj_left :
+  ∀ l R (pre spre : precond),
+    LocRel l R pre →
+    LocRel l R (pre ⋊ spre).
+Proof.
+  intros l R pre spre h s [].
+  apply h. auto.
+Qed.
+
+#[export] Hint Extern 9 (LocRel _ _ (_ ⋊ _)) =>
+  eapply LocRel_conj_right
+  : typeclass_instances ssprove_invariant.
+
+#[export] Hint Extern 11 (LocRel _ _ (_ ⋊ _)) =>
+  eapply LocRel_conj_left
   : typeclass_instances ssprove_invariant.
 
 Definition rem_lhs ℓ v : precond :=
@@ -999,6 +1074,12 @@ Proof.
   symmetry in e.
   move: e => /eqP e. subst. reflexivity.
 Qed.
+
+Definition lookup_hpv (ℓ : Location) (s : side) (l : seq heap_val) : option ℓ :=
+  match s with
+  | lhs => lookup_hpv_l ℓ l
+  | rhs => lookup_hpv_r ℓ l
+  end.
 
 Lemma lookup_hpv_l_eq :
   ∀ ℓ v l,
@@ -1391,6 +1472,29 @@ Proof.
   erewrite lookup_hpv_r_spec. 2,3: eauto.
   auto.
 Qed.
+
+(* Fixpoint heapLocRel (s₀ s₁ : heap) l (R : locRel l) : Prop :=
+  match l return locRel l → Prop with
+  | (ℓ, s) :: l =>
+    λ R, heapLocRel s₀ s₁ l (R (get_heap (choose_heap s₀ s₁ s) ℓ))
+  | [::] => λ R, R
+  end R. *)
+
+(* Lemma preserve_update_loc_rel_lookup :
+  ∀ ll (R : locRel ll) lv (l : seq heap_val) m,
+    (* lookup_hpv_all ll l = Some lv → *)
+    (* and respect R, maybe instead of the above, combine lookup
+      and something a la heapLocRel
+    *)
+    preserve_update_mem l m (loc_rel ll R).
+Proof.
+  intros ℓ ℓ' R v v' l m hl hr h.
+  intros s₀ s₁ hh. unfold couple_lhs in *.
+  destruct update_heaps eqn:e.
+  erewrite lookup_hpv_l_spec. 2,3: eauto.
+  erewrite lookup_hpv_l_spec. 2,3: eauto.
+  auto.
+Qed. *)
 
 Lemma preserve_update_couple_lhs_lookup_None :
   ∀ ℓ ℓ' (R : _ → _ → Prop) (l : seq heap_val) m,
