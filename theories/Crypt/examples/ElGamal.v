@@ -133,6 +133,7 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Definition dec_id : nat := 7.
   Definition challenge_id : nat := 8. (*challenge for LR *)
   Definition challenge_id' : nat := 9. (*challenge for real rnd *)
+  Definition getpk_id : nat := 42. (* routine to get the public key *)
 
   Definition i_plain := #|Plain|.
   Definition i_cipher := #|Cipher|.
@@ -240,10 +241,19 @@ Definition DH_rnd :
     ].
 
 Definition Aux :
-  package (fset [:: counter_loc])
+  package (fset [:: counter_loc ; pk_loc])
     [interface val #[10] : 'unit → 'pubkey × 'cipher]
-    [interface val #[challenge_id'] : 'plain → 'cipher] :=
+    [interface
+       val #[getpk_id] : 'unit → 'pubkey ;
+       val #[challenge_id'] : 'plain → 'cipher] :=
     [package
+      def #[getpk_id] (_ : 'unit) : 'pubkey
+      {
+         #import {sig #[10] : 'unit → 'pubkey × 'cipher } as query ;;
+          pk ← get pk_loc ;;
+          ret pk                                                    
+      };
+                                       
       def #[challenge_id'] (m : 'plain) : 'cipher
       {
         #import {sig #[10] : 'unit → 'pubkey × 'cipher } as query ;;
@@ -258,26 +268,36 @@ Definition Aux :
 Lemma ots_real_vs_rnd_equiv_true :
   Aux ∘ DH_real ≈₀ ots_real_vs_rnd true.
 Proof.
-  (* We go to the relation logic using equality as invariant. *)
+  (* We go to the relation logic using equality as invariant. *) 
   eapply eq_rel_perf_ind_eq.
-  simplify_eq_rel m.
-  ssprove_code_simpl.
-  (* We are now in the realm of program logic *)
-  ssprove_sync_eq. intro count.
-  ssprove_sync_eq. intros _.
-  ssprove_sync_eq. move => /eqP e. subst.
-  ssprove_sync_eq. intro a.
-  ssprove_swap_lhs 0%N.
-  ssprove_sync_eq. intros _.
-  ssprove_swap_lhs 0%N.
-  ssprove_sync_eq. intros _.
-  ssprove_sync_eq. intro b.
-  rewrite !otf_fto. simpl.
-  eapply r_ret. intuition eauto.
-  f_equal. f_equal.
-  rewrite group_prodC. f_equal.
-  apply expgM.
-Qed.
+  (* *)
+  Print simplify_eq_rel. 
+  intros id So To m hin;
+  invert_interface_in hin;
+  rewrite get_op_default_link; 
+  unfold get_op_default;
+  lookup_op_squeeze;
+  [ simpl | lookup_op_squeeze; simpl]; ssprove_code_simpl. (* for the branch corresponding
+  to getPK we don't have to lookup_op_squeeze*)
+  (* *)
+  + eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
+    move  => [a1 h1] [a2 h2] [Heqa Heqh]. by rewrite Heqa Heqh.   
+ (* We are now in the realm of program logic *)  
+  + ssprove_sync_eq. intro count.   
+    ssprove_sync_eq. intros myunit.
+    ssprove_sync_eq. move => /eqP e. subst.
+    ssprove_sync_eq. intro a.  
+    ssprove_swap_lhs 0%N.  
+    ssprove_sync_eq. intros _. 
+    ssprove_swap_lhs 0%N.  
+    ssprove_sync_eq. intros _. 
+    ssprove_sync_eq. intro b.  
+    rewrite !otf_fto. simpl. 
+    eapply r_ret. intuition eauto. 
+    f_equal. f_equal.  
+    rewrite group_prodC. f_equal.  
+    apply expgM. 
+Qed.  
 
 Lemma bijective_expgn :
   bijective (λ (a : 'Z_q), g ^+ a).
@@ -365,43 +385,52 @@ Qed.
 Lemma ots_real_vs_rnd_equiv_false :
   ots_real_vs_rnd false ≈₀ Aux ∘ DH_rnd.
 Proof.
-  (* We go to the relation logic using equality as invariant. *)
-  eapply eq_rel_perf_ind_eq.
-  simplify_eq_rel m.
-  ssprove_code_simpl.
-  (* We are now in the realm of program logic *)
-  ssprove_sync_eq. intro count.
-  ssprove_sync_eq. intros _.
-  destruct count.
-  2:{
-    cbn. eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
-    cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
-  }
-  simpl.
-  ssprove_sync_eq. intro a.
-  ssprove_swap_rhs 1%N.
-  ssprove_swap_rhs 0%N.
-  ssprove_sync_eq. intros _.
-  ssprove_swap_rhs 1%N.
-  ssprove_swap_rhs 0%N.
-  ssprove_sync_eq. intros _.
-  eapply r_transR.
-  1:{ eapply r_uniform_prod. intros x y. eapply rreflexivity_rule. }
-  simpl.
-  eapply rsymmetry.
-  eapply @r_uniform_bij with (f := f' m). 1: apply bijective_f'.
-  simpl. intros x.
-  unfold f'. set (z := ch2prod x). clearbody z. clear x.
-  destruct z as [x y]. simpl.
-  eapply r_ret. intros s ? e. subst.
-  intuition auto.
-  rewrite !otf_fto. simpl.
-  reflexivity.
-Qed.
+ (* We go to the relation logic using equality as invariant. *) 
+   eapply eq_rel_perf_ind_eq. 
+   (* simplify_eq_rel m. *) 
+   (* We are now in the realm of program logic *)
+ intros id So To m hin;
+  invert_interface_in hin;
+  rewrite get_op_default_link; 
+  unfold get_op_default;
+  lookup_op_squeeze;
+  [ simpl | lookup_op_squeeze; simpl]; ssprove_code_simpl.
+   +  eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
+      cbn. intros [? ?] [? ?] e. by inversion e.
+   + ssprove_sync_eq. intro count. 
+     ssprove_sync_eq. intros _. 
+     destruct count. 
+    2:{ 
+      cbn. eapply rpost_weaken_rule. 1: eapply rreflexivity_rule. 
+      cbn. intros [? ?] [? ?] e. inversion e. intuition auto. 
+      } 
+     simpl. 
+     ssprove_sync_eq. intro a.
+     ssprove_swap_rhs 1%N. 
+     ssprove_swap_rhs 0%N.
+     ssprove_sync_eq. intros _.
+     ssprove_swap_rhs 1%N.
+     ssprove_swap_rhs 0%N. 
+     ssprove_sync_eq. intros _. 
+     eapply r_transR. 
+     1:{ eapply r_uniform_prod. intros x y. eapply rreflexivity_rule. } 
+     simpl. 
+     eapply rsymmetry. 
+     eapply @r_uniform_bij with (f := f' m). 1: apply bijective_f'. 
+     simpl. intros x. 
+     unfold f'. set (z := ch2prod x). clearbody z. clear x. 
+     destruct z as [x y]. simpl. 
+     eapply r_ret. intros s ? e. subst.
+     intuition auto. 
+     rewrite !otf_fto. simpl. 
+     reflexivity. 
+Qed. 
 
 Theorem ElGamal_OT :
   ∀ LA A,
-    ValidPackage LA [interface val #[challenge_id'] : 'plain → 'cipher] A_export A →
+    ValidPackage LA [interface
+                       val #[getpk_id] : 'unit → 'pubkey ;                                        
+                       val #[challenge_id'] : 'plain → 'cipher] A_export A →
     fdisjoint LA (ots_real_vs_rnd true).(locs) →
     fdisjoint LA (ots_real_vs_rnd false).(locs) →
     Advantage ots_real_vs_rnd A <= AdvantageE DH_rnd DH_real (A ∘ Aux).
@@ -423,8 +452,10 @@ Proof.
       rewrite fdisjointC.
       eapply fdisjoint_trans. 2:{ rewrite fdisjointC. exact hd. }
       rewrite [X in fsubset _ X]fset_cons.
-      rewrite fset_cons. rewrite -fset0E. rewrite fsetU0.
-      apply fsubsetUl.
+      rewrite fset_cons. apply fsetUS.
+      rewrite !fset_cons -fset0E.
+      apply fsetUS.
+      apply fsub0set.
     - unfold DH_loc. unfold L_locs_counter in hd.
       rewrite fdisjointC.
       eapply fdisjoint_trans. 2:{ rewrite fdisjointC. exact hd. }
@@ -438,8 +469,10 @@ Proof.
       rewrite fdisjointC.
       eapply fdisjoint_trans. 2:{ rewrite fdisjointC. exact hd. }
       rewrite [X in fsubset _ X]fset_cons.
-      rewrite fset_cons. rewrite -fset0E. rewrite fsetU0.
-      apply fsubsetUl.
+      rewrite fset_cons. apply fsetUS.
+      rewrite !fset_cons -fset0E.
+      apply fsetUS.
+      apply fsub0set.
     - unfold DH_loc. unfold L_locs_counter in hd.
       rewrite fdisjointC.
       eapply fdisjoint_trans. 2:{ rewrite fdisjointC. exact hd. }
