@@ -88,7 +88,7 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
   Definition challenge_id : nat := 8. (*challenge for LR *)
   Definition challenge_id' : nat := 9. (*challenge for real rnd *)
   Definition getpk_id : nat := 42. (* routine to get the public key *)
-  
+
   (* Key Generation *)
   Parameter KeyGen :
     ∀ {L : {fset Location}},
@@ -107,7 +107,7 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
   Notation " 'plain " := chPlain (in custom pack_type at level 2).
   Notation " 'cipher " :=  chCipher (in custom pack_type at level 2).
   Notation " 'pubkey " :=  chPubKey (in custom pack_type at level 2).
-  
+
 End AsymmetricSchemeAlgorithms.
 
 (* A Module for Asymmetric Encryption Schemes, inspired to Joy of Crypto *)
@@ -135,23 +135,22 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
     If I put _ instead of L_locs, the following loops.
     So probably some problem with how I try to infer \in?
    *)
-Locate " 'unit ". 
-Locate " 'pubkey ". 
-
   Definition L_pk_cpa_L :
-    package 
+    package
       L_locs
       [interface]
       [interface
-         val #[getpk_id] : 'unit → 'pubkey ; 
-         val #[challenge_id] : 'plain × 'plain → 'cipher ] :=
+        val #[getpk_id] : 'unit → 'pubkey ;
+        val #[challenge_id] : 'plain × 'plain → 'cipher
+      ]
+    :=
     [package
-       def  #[getpk_id] (_ : 'unit ) : 'pubkey
-       {
-         pk ← get pk_loc ;;
-         ret pk
-       } ;
-       
+      def  #[getpk_id] (_ : 'unit) : 'pubkey
+      {
+        pk ← get pk_loc ;;
+        ret pk
+      } ;
+
       def #[challenge_id] ( mL_mR : 'plain × 'plain ) : 'cipher
       {
         '(pk, sk) ← KeyGen ;;
@@ -167,15 +166,17 @@ Locate " 'pubkey ".
       L_locs
       [interface]
       [interface
-         val #[getpk_id] : 'unit → 'pubkey ; 
-         val #[challenge_id] : 'plain × 'plain → 'cipher ] :=
+        val #[getpk_id] : 'unit → 'pubkey ;
+        val #[challenge_id] : 'plain × 'plain → 'cipher
+      ]
+    :=
     [package
-      def  #[getpk_id] (_ : 'unit ) : 'pubkey
-       {
-         pk ← get pk_loc ;;
-         ret pk
-       } ;
-  
+      def  #[getpk_id] (_ : 'unit) : 'pubkey
+      {
+        pk ← get pk_loc ;;
+        ret pk
+      } ;
+
       def #[challenge_id] ( mL_mR : 'plain × 'plain ) : 'cipher
       {
         '(pk, sk) ← KeyGen ;;
@@ -188,8 +189,9 @@ Locate " 'pubkey ".
 
   Definition cpa_L_vs_R :
     loc_GamePair [interface
-                    val #[getpk_id] : 'unit → 'pubkey ; 
-                    val #[challenge_id] : 'plain × 'plain → 'cipher] :=
+      val #[getpk_id] : 'unit → 'pubkey ;
+      val #[challenge_id] : 'plain × 'plain → 'cipher
+    ] :=
     λ b, if b then {locpackage L_pk_cpa_L} else {locpackage L_pk_cpa_R}.
 
   (** [The Joy of Cryptography] Definition 15.1
@@ -201,12 +203,13 @@ Locate " 'pubkey ".
   Definition CPA_security : Prop :=
     ∀ LA A,
       ValidPackage LA [interface
-                         val #[getpk_id] : 'unit → 'pubkey ; 
-                         val #[challenge_id] : 'plain × 'plain → 'cipher] A_export A →
+        val #[getpk_id] : 'unit → 'pubkey ;
+        val #[challenge_id] : 'plain × 'plain → 'cipher
+      ] A_export A →
       fdisjoint LA (cpa_L_vs_R true).(locs) →
       fdisjoint LA (cpa_L_vs_R false).(locs) →
       Advantage cpa_L_vs_R A = 0.
-  
+
   (* Define what it means for an asymmetric encryption scheme to: *)
   (** HAVE PSEUDORND CIPHERTEXT IN PRESENCE OF CHOSEN PLAINTEXT ATTACKS **)
 
@@ -214,15 +217,17 @@ Locate " 'pubkey ".
     package L_locs
       [interface]
       [interface
-         val #[getpk_id] : 'unit → 'pubkey ;
-         val #[challenge_id] : 'plain → 'cipher ] :=
+        val #[getpk_id] : 'unit → 'pubkey ;
+        val #[challenge_id] : 'plain → 'cipher
+      ]
+    :=
     [package
-        def  #[getpk_id] (_ : 'unit ) : 'pubkey
-       {
-         pk ← get pk_loc ;;
-         ret pk
-       } ;
-       
+      def  #[getpk_id] (_ : 'unit) : 'pubkey
+      {
+        pk ← get pk_loc ;;
+        ret pk
+      } ;
+
       def #[challenge_id] (m : 'plain) : 'cipher
       {
         '(pk, sk) ← KeyGen ;;
@@ -237,15 +242,17 @@ Locate " 'pubkey ".
     package L_locs
       [interface]
       [interface
-         val #[getpk_id] : 'unit → 'pubkey ;
-         val #[challenge_id] : 'plain → 'cipher ] :=
+        val #[getpk_id] : 'unit → 'pubkey ;
+        val #[challenge_id] : 'plain → 'cipher
+      ]
+    :=
     [package
-       def  #[getpk_id] (_ : 'unit ) : 'pubkey
-       {
-         pk ← get pk_loc ;;
-         ret pk
-       } ;
-     
+      def  #[getpk_id] (_ : 'unit) : 'pubkey
+      {
+        pk ← get pk_loc ;;
+        ret pk
+      } ;
+
       def #[challenge_id] (m : 'plain) : 'cipher
       {
         '(pk, sk) ← KeyGen ;;
@@ -258,8 +265,9 @@ Locate " 'pubkey ".
 
   Definition cpa_real_vs_rand :
     loc_GamePair [interface
-                    val #[getpk_id] : 'unit → 'pubkey ;
-                    val #[challenge_id] : 'plain → 'cipher] :=
+      val #[getpk_id] : 'unit → 'pubkey ;
+      val #[challenge_id] : 'plain → 'cipher
+    ] :=
     λ b, if b then {locpackage L_pk_cpa_real } else {locpackage L_pk_cpa_rand }.
 
   (** [The Joy of Cryptography] Definition 15.2
@@ -271,8 +279,9 @@ Locate " 'pubkey ".
   Definition CPA_rnd_cipher : Prop :=
     ∀ LA A,
       ValidPackage LA [interface
-                          val #[getpk_id] : 'unit → 'pubkey ;
-                          val #[challenge_id] : 'plain → 'cipher] A_export A →
+        val #[getpk_id] : 'unit → 'pubkey ;
+        val #[challenge_id] : 'plain → 'cipher
+      ] A_export A →
       fdisjoint LA (cpa_real_vs_rand true).(locs) →
       fdisjoint LA (cpa_real_vs_rand false).(locs) →
       Advantage cpa_real_vs_rand A = 0.
@@ -280,25 +289,27 @@ Locate " 'pubkey ".
   (* Define what it means for an asymmetric encryption scheme to have: *)
   (** ONE-TIME SECRECY **)
 
-  Definition L_locs_counter := fset [:: counter_loc ; pk_loc ; sk_loc].
+  Definition L_locs_counter := fset [:: counter_loc ; pk_loc ; sk_loc ].
 
   Definition L_pk_ots_L :
     package L_locs_counter
       [interface]
       [interface
-         val #[getpk_id] : 'unit → 'pubkey ;
-         val #[challenge_id] : 'plain × 'plain → 'cipher ] :=
+        val #[getpk_id] : 'unit → 'pubkey ;
+        val #[challenge_id] : 'plain × 'plain → 'cipher
+      ]
+    :=
     [package
-       def  #[getpk_id] (_ : 'unit ) : 'pubkey
-       {
-         pk ← get pk_loc ;;
-         ret pk
-       } ;
-      def #[challenge_id] ( mL_mR : 'plain × 'plain ) : 'cipher
+      def #[getpk_id] (_ : 'unit) : 'pubkey
+      {
+        pk ← get pk_loc ;;
+        ret pk
+      } ;
+      def #[challenge_id] (mL_mR : 'plain × 'plain) : 'cipher
       {
         count ← get counter_loc ;;
         put counter_loc := (count + 1)%N;;
-        #assert ((count == 0)%N) ;;
+        #assert (count == 0)%N ;;
         '(pk, sk) ← KeyGen ;;
         put pk_loc := pk ;;
         put sk_loc := sk ;;
@@ -311,15 +322,17 @@ Locate " 'pubkey ".
     package L_locs_counter
       [interface]
       [interface
-         val #[getpk_id] : 'unit → 'pubkey ;
-         val #[challenge_id] : 'plain × 'plain → 'cipher ] :=
+        val #[getpk_id] : 'unit → 'pubkey ;
+        val #[challenge_id] : 'plain × 'plain → 'cipher
+      ]
+    :=
     [package
-        def  #[getpk_id] (_ : 'unit ) : 'pubkey
-       {
-         pk ← get pk_loc ;;
-         ret pk
-       } ;
-      def #[challenge_id] ( mL_mR :  'plain × 'plain ) : 'cipher
+      def  #[getpk_id] (_ : 'unit) : 'pubkey
+      {
+        pk ← get pk_loc ;;
+        ret pk
+      } ;
+      def #[challenge_id] (mL_mR :  'plain × 'plain) : 'cipher
       {
         count ← get counter_loc ;;
         put counter_loc := (count + 1)%N;;
@@ -334,8 +347,9 @@ Locate " 'pubkey ".
 
   Definition ots_L_vs_R :
     loc_GamePair [interface
-                    val #[getpk_id] : 'unit → 'pubkey ;
-                    val #[challenge_id] :'plain × 'plain → 'cipher ] :=
+      val #[getpk_id] : 'unit → 'pubkey ;
+      val #[challenge_id] :'plain × 'plain → 'cipher
+    ] :=
     λ b, if b then {locpackage L_pk_ots_L } else {locpackage L_pk_ots_R }.
 
   (** [The Joy of Cryptography] Definition 15.4
@@ -347,8 +361,9 @@ Locate " 'pubkey ".
   Definition OT_secrecy : Prop :=
     ∀ LA A,
       ValidPackage LA [interface
-                         val #[getpk_id] : 'unit → 'pubkey ;                 
-                         val #[challenge_id] :'plain × 'plain → 'option 'cipher ] A_export A →
+        val #[getpk_id] : 'unit → 'pubkey ;
+        val #[challenge_id] :'plain × 'plain → 'option 'cipher
+      ] A_export A →
       fdisjoint LA (ots_L_vs_R true).(locs) →
       fdisjoint LA (ots_L_vs_R false).(locs) →
       Advantage ots_L_vs_R A = 0.
@@ -359,15 +374,17 @@ Locate " 'pubkey ".
     package L_locs_counter
       [interface]
       [interface
-          val #[getpk_id] : 'unit → 'pubkey ;
-          val #[challenge_id'] : 'plain → 'cipher ] :=
+        val #[getpk_id] : 'unit → 'pubkey ;
+        val #[challenge_id'] : 'plain → 'cipher
+      ]
+    :=
     [package
-        def  #[getpk_id] (_ : 'unit ) : 'pubkey
-       {
-         pk ← get pk_loc ;;
-         ret pk
-       } ;
-       
+      def  #[getpk_id] (_ : 'unit) : 'pubkey
+      {
+        pk ← get pk_loc ;;
+        ret pk
+      } ;
+
       def #[challenge_id'] (m : 'plain) : 'cipher
       {
         count ← get counter_loc ;;
@@ -385,15 +402,17 @@ Locate " 'pubkey ".
     package L_locs_counter
       [interface]
       [interface
-         val #[getpk_id] : 'unit → 'pubkey ;
-         val #[challenge_id'] : 'plain → 'cipher ] :=
+        val #[getpk_id] : 'unit → 'pubkey ;
+        val #[challenge_id'] : 'plain → 'cipher
+      ]
+    :=
     [package
-       def  #[getpk_id] (_ : 'unit ) : 'pubkey
-       {
-         pk ← get pk_loc ;;
-         ret pk
-       } ;
-       
+      def  #[getpk_id] (_ : 'unit) : 'pubkey
+      {
+        pk ← get pk_loc ;;
+        ret pk
+      } ;
+
       def #[challenge_id'] (m : 'plain) : 'cipher
       {
         count ← get counter_loc ;;
@@ -409,8 +428,9 @@ Locate " 'pubkey ".
 
   Definition ots_real_vs_rnd :
     loc_GamePair [interface
-                    val #[getpk_id] : 'unit → 'pubkey ;
-                    val #[challenge_id'] : 'plain → 'cipher] :=
+      val #[getpk_id] : 'unit → 'pubkey ;
+      val #[challenge_id'] : 'plain → 'cipher
+    ] :=
     λ b, if b then {locpackage L_pk_ots_real } else {locpackage L_pk_ots_rnd }.
 
 End AsymmetricScheme.
