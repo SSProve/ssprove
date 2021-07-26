@@ -169,8 +169,7 @@ Ltac simplify_eq_rel m :=
   rewrite ?get_op_default_link ;
   (* First we need to squeeze the codes out of the packages *)
   unfold get_op_default ;
-  lookup_op_squeeze ;
-  lookup_op_squeeze ;
+  repeat lookup_op_squeeze ;
   simpl.
 
 Create HintDb ssprove_code_simpl.

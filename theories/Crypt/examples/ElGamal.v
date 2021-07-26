@@ -271,19 +271,12 @@ Lemma ots_real_vs_rnd_equiv_true :
 Proof.
   (* We go to the relation logic using equality as invariant. *)
   eapply eq_rel_perf_ind_eq.
-  (* *)
-  intros id So To m hin;
-  invert_interface_in hin;
-  rewrite get_op_default_link;
-  unfold get_op_default;
-  lookup_op_squeeze;
-  [ simpl | lookup_op_squeeze; simpl]; ssprove_code_simpl. (* for the branch corresponding
-  to getPK we don't have to lookup_op_squeeze*)
-  (* *)
-  + eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
-    move  => [a1 h1] [a2 h2] [Heqa Heqh]. by rewrite Heqa Heqh.
- (* We are now in the realm of program logic *)
-  + ssprove_sync_eq. intro count.
+  simplify_eq_rel m.
+  all: ssprove_code_simpl.
+  (* We are now in the realm of program logic *)
+  - eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
+    move => [a1 h1] [a2 h2] [Heqa Heqh]. intuition auto.
+  - ssprove_sync_eq. intro count.
     ssprove_sync_eq. intros myunit.
     ssprove_sync_eq. move => /eqP e. subst.
     ssprove_sync_eq. intro a.
@@ -385,45 +378,40 @@ Qed.
 Lemma ots_real_vs_rnd_equiv_false :
   ots_real_vs_rnd false ≈₀ Aux ∘ DH_rnd.
 Proof.
- (* We go to the relation logic using equality as invariant. *)
-   eapply eq_rel_perf_ind_eq.
-   (* simplify_eq_rel m. *)
-   (* We are now in the realm of program logic *)
- intros id So To m hin;
-  invert_interface_in hin;
-  rewrite get_op_default_link;
-  unfold get_op_default;
-  lookup_op_squeeze;
-  [ simpl | lookup_op_squeeze; simpl]; ssprove_code_simpl.
-   +  eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
-      cbn. intros [? ?] [? ?] e. by inversion e.
-   + ssprove_sync_eq. intro count.
-     ssprove_sync_eq. intros _.
-     destruct count.
+  (* We go to the relation logic using equality as invariant. *)
+  eapply eq_rel_perf_ind_eq.
+  simplify_eq_rel m.
+  all: ssprove_code_simpl.
+  (* We are now in the realm of program logic *)
+  - eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
+    cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
+  - ssprove_sync_eq. intro count.
+    ssprove_sync_eq. intros _.
+    destruct count.
     2:{
       cbn. eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
       cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
-      }
-     simpl.
-     ssprove_sync_eq. intro a.
-     ssprove_swap_rhs 1%N.
-     ssprove_swap_rhs 0%N.
-     ssprove_sync_eq. intros _.
-     ssprove_swap_rhs 1%N.
-     ssprove_swap_rhs 0%N.
-     ssprove_sync_eq. intros _.
-     eapply r_transR.
-     1:{ eapply r_uniform_prod. intros x y. eapply rreflexivity_rule. }
-     simpl.
-     eapply rsymmetry.
-     eapply @r_uniform_bij with (f := f' m). 1: apply bijective_f'.
-     simpl. intros x.
-     unfold f'. set (z := ch2prod x). clearbody z. clear x.
-     destruct z as [x y]. simpl.
-     eapply r_ret. intros s ? e. subst.
-     intuition auto.
-     rewrite !otf_fto. simpl.
-     reflexivity.
+    }
+    simpl.
+    ssprove_sync_eq. intro a.
+    ssprove_swap_rhs 1%N.
+    ssprove_swap_rhs 0%N.
+    ssprove_sync_eq. intros _.
+    ssprove_swap_rhs 1%N.
+    ssprove_swap_rhs 0%N.
+    ssprove_sync_eq. intros _.
+    eapply r_transR.
+    1:{ eapply r_uniform_prod. intros x y. eapply rreflexivity_rule. }
+    simpl.
+    eapply rsymmetry.
+    eapply @r_uniform_bij with (f := f' m). 1: apply bijective_f'.
+    simpl. intros x.
+    unfold f'. set (z := ch2prod x). clearbody z. clear x.
+    destruct z as [x y]. simpl.
+    eapply r_ret. intros s ? e. subst.
+    intuition auto.
+    rewrite !otf_fto. simpl.
+    reflexivity.
 Qed.
 
 Theorem ElGamal_OT :
