@@ -19,8 +19,7 @@ A documentation is available in [DOC.md].
 
 - [CSF'21](https://youtu.be/MlwQ7CfNH5Q): Video accompanying the publication introducing the general framework (speaker: Philipp Haselwarter)
 - [TYPES'21](https://youtu.be/FdMRB1mnyUA): Video focused on semantics and programming logic (speaker: Antoine Van Muylder)
-<!-- placeholder: -->
-<!-- - [Coq Workshop '21](https://todo): Video illustrating the formalisation (speaker: Théo Winterhalter) -->
+- [Coq Workshop '21](https://youtu.be/uYhItPhA-Y8): Video illustrating the formalisation (speaker: Théo Winterhalter)
 
 ## Installation
 
