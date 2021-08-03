@@ -367,6 +367,8 @@ Ltac ssprove_sync :=
       ]
     | x ← cmd ?c ;; _ =>
       eapply (rsame_head_cmd_alt c)
+    | x ← cmd ?c ;; _ =>
+      eapply (rsame_head_cmd_alt c)
     | @assertD ?A ?b _ =>
       eapply (r_assertD_same A b)
     | _ => fail "No head found"
@@ -563,13 +565,12 @@ Ltac ssprove_swap_seq_lhs l :=
   chUniverse_eq_prove
   : typeclass_instances ssprove_valid_db.
 
-(* Could be more general with no fset0 for locations *)
 Lemma code_link_scheme :
-  ∀ A c p,
-    @ValidCode fset0 [interface] A c →
+  ∀ {L} A c p,
+    @ValidCode L [interface] A c →
     code_link c p = c.
 Proof.
-  intros A c p h.
+  intros L A c p h.
   induction h.
   - reflexivity.
   - eapply fromEmpty. rewrite fset0E. eauto.
