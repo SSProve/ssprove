@@ -67,7 +67,7 @@ Module RO (π : ROParams).
         match (queries q) with
         | Some r => ret r
         | None   => r ← sample uniform i_random ;;
-                    (* put queries_loc := (setm queries q r) ;; *)
+                    put queries_loc := (setm queries q r) ;;
                     ret r
         end
       }
