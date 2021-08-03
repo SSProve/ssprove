@@ -205,7 +205,7 @@ Qed.
 (* Proves that Schnorr is a ∑-protocol with perfect special honest-verifier zero-knowledge *)
 Theorem schnorr_SHVZK:
   ∀ LA A, 
-    ValidPackage LA [interface val #[ RUN ] : chInput → 'option chTranscript] A_export A →
+    ValidPackage LA [interface val #[ TRANSCRIPT ] : chInput → 'option chTranscript] A_export A →
     Advantage SHVZK A = 0.
 Proof.
   intros LA A Hvalid. 
@@ -214,8 +214,8 @@ Proof.
   2,3: apply fdisjoints0.
   simplify_eq_rel hwe.
   (* Programming logic part *)
-  destruct hwe as [[statement witness] challenge].
-  case_eq (R (otf statement) (otf witness)).
+  destruct hwe as [[h w] e].
+  case_eq (R (otf h) (otf w)).
   (* We can only simulate if the relation is valid *)
   2: { intros _.
        apply r_ret.
@@ -223,7 +223,7 @@ Proof.
 
   (* When relation holds we can reconstruct the first message from the response *)
   unfold R=> rel. apply reflection_nonsense in rel.
-  eapply r_uniform_bij with (1 := bij_f (otf witness) (otf challenge))=> z_val.
+  eapply r_uniform_bij with (1 := bij_f (otf w) (otf e))=> z_val.
   apply r_ret.
   (* Ambient logic proof of post condition *)
   intros s0 s1 Hs.
@@ -270,8 +270,8 @@ Qed.
 (* is perfectly indistinguishable from real protocol execution. *)
 Lemma extractor_success:
   ∀ LA A LAdv Adv,
-    ValidPackage LA [interface val #[ SOUNDNESS ] : chStatement → chBool] A_export A →
-    ValidPackage LAdv [interface] [interface val #[ ADV ] : chStatement → chBinding] Adv →
+    ValidPackage LA [interface val #[ SOUNDNESS ] : chStatement → 'bool] A_export A →
+    ValidPackage LAdv [interface] [interface val #[ ADV ] : chStatement → chSoundness] Adv →
     fdisjoint LA (Sigma_locs :|: LAdv) →
     ɛ_soundness A Adv = 0.
 Proof.
@@ -285,14 +285,14 @@ Proof.
   1: destruct t, s; repeat destruct (chUniverse_eqP).
   2-4: apply r_ret; auto.
   apply rsame_head=> run.
-  rewrite !code_link_scheme.
-  destruct run, s0, s0, s1.
-  match goal with
-      | [ |- context[if ?b then _ else _]] => case b eqn:rel
-  end.
-  2: apply r_ret; auto.
+  ssprove_code_simpl.
+  destruct run, s0, s1, s2, s0.
+  ssprove_code_simpl.
+  apply rif_rule.
+  { done. }
+  2: apply r_ret; intuition.
   apply r_ret.
-  intros ?? s_eq.
+  intros ?? [s_eq rel].
   split; [| apply s_eq].
   (* Algebraic proof that the produced witness satisfies the relation. *)
   unfold R.
@@ -302,10 +302,10 @@ Proof.
       | [ |- context[if ?b then _ else _]] => case b eqn:?
   end.
   2,3: discriminate.
-  rewrite otf_fto in Heqs4.
+  rewrite otf_fto in Heqs3.
   rewrite otf_fto in rel.
   apply reflection_nonsense in rel.
-  apply reflection_nonsense in Heqs4.
+  apply reflection_nonsense in Heqs3.
   rewrite H0.
   f_equal.
   rewrite otf_fto expg_mod.
@@ -314,7 +314,7 @@ Proof.
   2: rewrite order_ge1; apply expg_order.
   rewrite expgD -FinRing.zmodVgE expg_zneg.
   2: apply cycle_id.
-  rewrite Heqs4 rel !expgMn.
+  rewrite Heqs3 rel !expgMn.
   2-3: apply group_prodC.
   rewrite invMg !expgMn.
   2: apply group_prodC.
@@ -408,7 +408,6 @@ Proof.
   apply: eq_rel_perf_ind_eq.
   2,3 : rewrite ?fset0U; apply fdisjoints0.
   simplify_eq_rel hwe.
-  simplify_linking.
   ssprove_code_simpl.
   destruct hwe as [[h w] e].
   eapply r_uniform_bij.
@@ -498,8 +497,8 @@ Qed.
 (* (I.e. how hard is it to produce a valid witness for a fixed public input)*)
 Theorem schnorr_com_binding:
   ∀ LA A LAdv Adv,
-    ValidPackage LA [interface val #[ SOUNDNESS ] : chStatement → chBool] A_export A →
-    ValidPackage LAdv [interface] [interface val #[ ADV ] : chStatement → chBinding] Adv →
+    ValidPackage LA [interface val #[ SOUNDNESS ] : chStatement → 'bool] A_export A →
+    ValidPackage LAdv [interface] [interface val #[ ADV ] : chStatement → chSoundness] Adv →
     fdisjoint LA (Sigma_locs :|: LAdv) →
     AdvantageE (Com_Binding ∘ Adv) (Special_Soundness_f ∘ Adv) A <= 0.
 Proof.

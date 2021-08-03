@@ -245,15 +245,13 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
     Definition HIDING : nat := 5.
 
-    Notation " 'chBool' " := choiceBool (in custom pack_type at level 2).
     Notation " 'chOpen' " := (chProd choiceStatement 'option choiceTranscript) (in custom pack_type at level 2).
-    Notation " 'chRel' " := (chProd choiceStatement choiceWitness) (in custom pack_type at level 2).
 
     Definition Sigma_to_Com:
       package Sigma_locs
         [interface val #[ TRANSCRIPT ] : chInput → 'option chTranscript]
         [interface val #[ COM ] : chInput → 'option chTranscript ;
-                   val #[ VER ] : chOpen → chBool] :=
+                   val #[ VER ] : chOpen → 'bool] :=
       [package
       def #[ COM ] (hwe : chInput) : 'option chTranscript
       {
@@ -262,11 +260,11 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         ret t
       }
       ;
-      def #[ VER ] (open : chOpen) : chBool
+      def #[ VER ] (open : chOpen) : 'bool
       {
         match open with
-          | (h, Some (a,e,z)) => ret (Verify h a e z)
-          | _ => ret (fto false)
+          | (h, Some (a,e,z)) => ret (otf (Verify h a e z))
+          | _ => ret false
         end
       }
       ].
@@ -275,7 +273,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Definition Hiding_real :
       package Sigma_locs
         [interface val #[ COM ] : chInput → 'option chTranscript ;
-                  val #[ VER ] : chOpen → chBool]
+                  val #[ VER ] : chOpen → 'bool]
         [interface val #[ HIDING ] : chInput → 'option chMessage] :=
       [package
       def #[ HIDING ] (hwe : chInput) : 'option chMessage
@@ -294,7 +292,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Definition Hiding_ideal :
       package Sigma_locs
         [interface val #[ COM ] : chInput → 'option chTranscript ;
-                  val #[ VER ] : chOpen → chBool]
+                  val #[ VER ] : chOpen → 'bool]
         [interface val #[ HIDING ] : chInput → 'option chMessage] :=
       [package
       def #[ HIDING ] (hwe : chInput) : 'option chMessage
@@ -312,6 +310,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
     Definition ɛ_hiding A :=
       AdvantageE (Hiding_real ∘ Sigma_to_Com ∘ SHVZK false) (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK false) A.
+
 
     Theorem commitment_hiding :
       ∀ LA A eps,
@@ -340,7 +339,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
           have -> : LA :|: Sigma_locs = LA :|: Sigma_locs :|: Sigma_locs.
           { rewrite - fsetUA fsetUid. reflexivity. }
           eapply valid_link with [interface val #[ COM ] : chInput → 'option chTranscript ;
-                                            val #[ VER ] : chOpen → chBool].
+                                            val #[ VER ] : chOpen → 'bool].
           2 : { apply valid_package_from_class; apply Sigma_to_Com. }
           eapply valid_link with [interface val #[ HIDING ] : chInput → 'option chMessage].
           ++ assumption.
@@ -355,7 +354,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
           have -> : LA :|: Sigma_locs = LA :|: Sigma_locs :|: Sigma_locs.
           { rewrite - fsetUA fsetUid. reflexivity. }
           eapply valid_link with [interface val #[ COM ] : chInput → 'option chTranscript ;
-                                            val #[ VER ] : chOpen → chBool].
+                                            val #[ VER ] : chOpen → 'bool].
           2 : { apply valid_package_from_class; apply Sigma_to_Com. }
           eapply valid_link with [interface val #[ HIDING ] : chInput → 'option chMessage].
           ++ assumption.
@@ -615,6 +614,8 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       destruct m as [a st].
       ssprove_contract_put_get_lhs.
       rewrite emptymE.
+      apply r_put_lhs.
+      ssprove_sync=>e.
       apply r_put_lhs.
       ssprove_restore_pre.
       { ssprove_invariant. }
