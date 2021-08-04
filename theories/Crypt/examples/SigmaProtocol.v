@@ -112,9 +112,6 @@ Module SigmaProtocol (π : SigmaProtocolParams)
   Notation " 'chSoundness' " := (chProd choiceMessage (chProd Opening Opening))
                                   (in custom pack_type at level 2).
 
-
-
-
   Definition i_challenge := #|Challenge|.
   Definition TRANSCRIPT : nat := 0.
   Definition COM : nat := 1.
@@ -160,10 +157,8 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       }
     ].
 
-  (* Main security game for Special Honest-Verifier Zero-Knowledge. *)
-  Definition SHVZK:
-    loc_GamePair [interface val #[ TRANSCRIPT ] : chInput → 'option chTranscript] :=
-    fun b => if b then {locpackage SHVZK_ideal} else {locpackage SHVZK_real }.
+  (* Main security statement for Special Honest-Verifier Zero-Knowledge. *)
+  Definition ɛ_SHVZK A := AdvantageE SHVZK_real SHVZK_ideal A.
 
   Definition Special_Soundness_f:
     package Sigma_locs
@@ -179,7 +174,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         let '(e', z') := c2 in
         let v1 := Verify h a e z in
         let v2 := Verify h a e' z' in
-        if (andb (e != e') (andb (otf v1) (otf v2))) then
+        if [&& (e != e'), (otf v1) & (otf v2)] then
             match Extractor h a e e' z z' with
             | Some w => ret (R (otf h) (otf w))
             | None => ret false
@@ -202,15 +197,12 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         let '(e', z') := c2 in
         let v1 := Verify h a e z in
         let v2 := Verify h a e' z' in
-        if (andb (e != e') (andb (otf v1) (otf v2))) then
-            ret true
-        else ret false
+        ret [&& (e != e'), (otf v1) & (otf v2)]
       }
     ].
 
   (* Main security statement for 2-special soundness. *)
   Definition ɛ_soundness A Adv := AdvantageE (Special_Soundness_t ∘ Adv) (Special_Soundness_f ∘ Adv) A.
-
 
   (**************************************)
   (* Start of Commitment Scheme Section *)
@@ -283,7 +275,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       ].
 
     Definition ɛ_hiding A :=
-      AdvantageE (Hiding_real ∘ Sigma_to_Com ∘ SHVZK false) (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK false) A.
+      AdvantageE (Hiding_real ∘ Sigma_to_Com ∘ SHVZK_real) (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK_real) A.
 
 
     Theorem commitment_hiding :
@@ -291,52 +283,28 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         ValidPackage LA [interface val #[ HIDING ] : chInput → 'option chMessage] A_export A →
         (∀ A',
           ValidPackage (fsetU LA Sigma_locs) [interface val #[ TRANSCRIPT ] : chInput → 'option chTranscript] A_export A' →
-          Advantage SHVZK A' <= eps) →
-        AdvantageE (Hiding_real ∘ Sigma_to_Com ∘ SHVZK true) (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK true) A <= (ɛ_hiding A) + eps + eps.
+          ɛ_SHVZK A' <= eps) →
+        AdvantageE (Hiding_real ∘ Sigma_to_Com ∘ SHVZK_ideal) (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK_ideal) A <= (ɛ_hiding A) + eps + eps.
     Proof.
+      unfold ɛ_hiding, ɛ_SHVZK.
       intros LA A eps Va Hadv.
-      ssprove triangle (Hiding_real ∘ Sigma_to_Com ∘ SHVZK true) [::
-              (Hiding_real ∘ Sigma_to_Com ∘ SHVZK false) ;
-              (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK false)
-            ] (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK true) A
+      ssprove triangle (Hiding_real ∘ Sigma_to_Com ∘ SHVZK_ideal) [::
+              (Hiding_real ∘ Sigma_to_Com ∘ SHVZK_real) ;
+              (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK_real)
+            ] (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK_ideal) A
         as ineq.
       apply: ler_trans. 1: exact ineq.
       clear ineq.
-      unfold ɛ_hiding.
       rewrite -!Advantage_link.
       eapply ler_add.
       1: rewrite GRing.addrC; eapply ler_add.
       1: apply lerr.
-      - have := Hadv (A ∘ Hiding_real ∘ Sigma_to_Com).
-        assert (ValidPackage (fsetU LA Sigma_locs) [interface val #[TRANSCRIPT] : chInput → 'option (chTranscript) ] A_export (A ∘ Hiding_real ∘ Sigma_to_Com)).
-        + rewrite link_assoc.
-          have -> : LA :|: Sigma_locs = LA :|: Sigma_locs :|: Sigma_locs.
-          { rewrite - fsetUA fsetUid. reflexivity. }
-          eapply valid_link with [interface val #[ COM ] : chInput → 'option chTranscript ;
-                                            val #[ VER ] : chOpen → 'bool].
-          2 : { apply valid_package_from_class; apply Sigma_to_Com. }
-          eapply valid_link with [interface val #[ HIDING ] : chInput → 'option chMessage].
-          ++ assumption.
-          ++ apply Hiding_real.
-        + move=> Hadv'.
-          apply Hadv' in H.
-          rewrite Advantage_sym -link_assoc.
-          assumption.
-      - have := Hadv (A ∘ Hiding_ideal ∘ Sigma_to_Com).
-        assert (ValidPackage (fsetU LA Sigma_locs) [interface val #[TRANSCRIPT] : chInput → 'option (chTranscript) ] A_export (A ∘ Hiding_ideal ∘ Sigma_to_Com)).
-        + rewrite link_assoc.
-          have -> : LA :|: Sigma_locs = LA :|: Sigma_locs :|: Sigma_locs.
-          { rewrite - fsetUA fsetUid. reflexivity. }
-          eapply valid_link with [interface val #[ COM ] : chInput → 'option chTranscript ;
-                                            val #[ VER ] : chOpen → 'bool].
-          2 : { apply valid_package_from_class; apply Sigma_to_Com. }
-          eapply valid_link with [interface val #[ HIDING ] : chInput → 'option chMessage].
-          ++ assumption.
-          ++ apply Hiding_ideal.
-        + move=> Hadv'.
-          apply Hadv' in H.
-          rewrite -link_assoc.
-          assumption.
+      1: have := Hadv (A ∘ Hiding_real ∘ Sigma_to_Com).
+      2: have := Hadv (A ∘ Hiding_ideal ∘ Sigma_to_Com).
+      all: rewrite -link_assoc Advantage_sym;
+           intros H; apply H;
+           ssprove_valid.
+      all: auto using fsubsetUl, fsubsetUr, fsubsetxx.
     Qed.
 
     Definition Com_Binding:
@@ -353,7 +321,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
           let '(e', z') := c2 in
           let v1 := Verify h a e z in
           let v2 := Verify h a e' z' in
-          ret (andb (e != e') (andb (otf v1) (otf v2)))
+          ret [&& (e != e'), (otf v1) & (otf v2)]
         }
       ].
 
@@ -369,10 +337,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
             ] (Special_Soundness_f ∘ Adv) A as ineq.
       apply: ler_trans. 1: exact ineq.
       rewrite ger_addr.
-
-      assert (AdvantageE (Com_Binding ∘ Adv) (Special_Soundness_t ∘ Adv) A = 0) as ɛ_Adv.
-      2: rewrite ɛ_Adv; apply lerr.
-
+      apply eq_ler.
       eapply eq_rel_perf_ind_eq.
       4: apply VA.
       1,2: eapply valid_link; last first; [apply VAdv | trivial].
@@ -388,14 +353,12 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       repeat destruct chUniverse_eqP.
       2,3:  apply r_ret=> ?? ->; split; reflexivity.
       apply rsame_head=> run.
+      ssprove_code_simpl.
       destruct run.
       destruct s0.
       destruct s0, s1.
-
-      match goal with
-          | [ |- context[if ?b then _ else _]] => case b eqn:rel
-      end.
-      all: apply r_ret; auto.
+      apply r_ret.
+      auto.
     Qed.
 
   End Commitments.
@@ -564,9 +527,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
            2: discriminate.
            apply eq. }
       5: apply Va.
-      1: { eapply valid_link.
-           - apply RUN_non_interactive.
-           - apply RO. }
+      1: ssprove_valid; [apply fsubsetUl |apply fsubsetUr].
       1: apply RUN_interactive.
       1: { apply fsubsetU.
            by erewrite fsubsetUr. }
@@ -577,10 +538,10 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       2: apply r_ret; intros ???; split; [done | assumption].
       ssprove_code_simpl.
       eapply rsame_head_alt.
-      1: apply Commit.
-      { intros locs Iloc.
+      1: exact _.
+      { intros l Il.
         apply get_pre_cond_heap_ignore.
-        move: locs Iloc.
+        move: l Il.
         apply /fdisjointP.
         assumption. }
       { intros; apply put_pre_cond_heap_ignore. }
@@ -592,7 +553,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       ssprove_sync=>e.
       apply r_put_lhs.
       ssprove_restore_pre.
-      { ssprove_invariant. }
+      1: ssprove_invariant.
       eapply r_reflexivity_alt.
       - exact _.
       - intros l Il.

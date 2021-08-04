@@ -12,7 +12,7 @@ From Mon Require Import SPropBase.
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
   pkg_core_definition chUniverse pkg_composition pkg_rhl Package Prelude
-  pkg_notation SigmaProtocol.
+  SigmaProtocol.
 
 From Coq Require Import Utf8.
 From extructures Require Import ord fset fmap.
@@ -206,10 +206,9 @@ Qed.
 Theorem schnorr_SHVZK:
   ∀ LA A, 
     ValidPackage LA [interface val #[ TRANSCRIPT ] : chInput → 'option chTranscript] A_export A →
-    Advantage SHVZK A = 0.
+    ɛ_SHVZK A = 0.
 Proof.
   intros LA A Hvalid. 
-  rewrite Advantage_E.
   apply: eq_rel_perf_ind_eq.
   2,3: apply fdisjoints0.
   simplify_eq_rel hwe.
@@ -288,11 +287,13 @@ Proof.
   ssprove_code_simpl.
   destruct run, s0, s1, s2, s0.
   ssprove_code_simpl.
-  apply rif_rule.
-  { done. }
+  simpl.
+  match goal with
+    | [ |- context[if ?b then _ else _]] => case b eqn:rel
+  end.
   2: apply r_ret; intuition.
   apply r_ret.
-  intros ?? [s_eq rel].
+  intros ?? s_eq.
   split; [| apply s_eq].
   (* Algebraic proof that the produced witness satisfies the relation. *)
   unfold R.
@@ -476,19 +477,17 @@ Qed.
 Theorem schnorr_com_hiding :
   ∀ LA A,
     ValidPackage LA [interface val #[ HIDING ] : chInput → 'option chMessage] A_export A →
-    AdvantageE (Hiding_real ∘ Sigma_to_Com ∘ SHVZK true) (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK true) A <= 0.
+    AdvantageE (Hiding_real ∘ Sigma_to_Com ∘ SHVZK_ideal) (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK_ideal) A <= 0.
 Proof.
   intros LA A Va.
   have H := commitment_hiding LA A 0 Va.
-  rewrite GRing.addr0 in H.
+  rewrite !GRing.addr0 in H.
   have HS := schnorr_SHVZK _ _ _.
   rewrite hiding_adv in H.
-  rewrite GRing.addr0 in H.
   apply AdvantageE_le_0 in H.
   1: rewrite H; trivial.
   move=> A' Va'.
-  have -> := HS (LA :|: Sigma_locs) A' Va'.
-  trivial.
+  by have -> := HS (LA :|: Sigma_locs) A' Va'.
 Qed.
 
 (* Main theorem *)
