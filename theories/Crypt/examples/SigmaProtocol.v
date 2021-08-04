@@ -103,32 +103,6 @@ Module SigmaProtocol (π : SigmaProtocolParams)
   Import π.
   Import Alg.
 
-  Definition Commit':
-    ∀ {L} (h : choiceStatement) (w : choiceWitness),
-      code Sigma_locs L (choiceMessage × choiceState).
-  Proof.
-    intros L h w.
-    have H := @Commit h w.
-    eapply mkprog with H.
-    eapply valid_injectMap.
-    2: apply H.
-    rewrite -fset0E.
-    apply fsub0set.
-  Defined.
-
-  Definition Response':
-    ∀ {L} (h : choiceStatement) (w : choiceWitness) (s : choiceState) (a : choiceMessage) (e : choiceChallenge),
-      code Sigma_locs L choiceResponse.
-  Proof.
-    intros L h w s a e.
-    have H := @Response h w s a e.
-    eapply mkprog with H.
-    eapply valid_injectMap.
-    2: apply H.
-    rewrite -fset0E.
-    apply fsub0set.
-  Defined.
-
   Notation " 'chStatement' " := choiceStatement (in custom pack_type at level 2).
   Notation " 'chRelation' " := (chProd choiceStatement choiceWitness) (in custom pack_type at level 2).
   Notation " 'chInput' " := (chProd (chProd choiceStatement choiceWitness) choiceChallenge) (in custom pack_type at level 2).
@@ -494,10 +468,10 @@ Module SigmaProtocol (π : SigmaProtocolParams)
            #import {sig #[ QUERY ] : 'query → 'random} as RO_query ;;
            let '(h,w) := hw in
            if (R (otf h) (otf w))
-             then '(m,st) ← Commit' h w ;;
+             then '(m,st) ← Commit h w ;;
                   RO_init Datatypes.tt ;;
                   e ← RO_query (prod_assoc (h, m)) ;;
-                  z ← Response' h w st m e ;;
+                  z ← Response h w st m e ;;
                   ret (Some (m,e,z))
              else ret None
          }
@@ -512,9 +486,9 @@ Module SigmaProtocol (π : SigmaProtocolParams)
          {
            let '(h,w) := hw in
            if (R (otf h) (otf w))
-             then '(m,st) ← Commit' h w ;;
+             then '(m,st) ← Commit h w ;;
                   e ← sample uniform i_random ;;
-                  z ← Response' h w st m e ;;
+                  z ← Response h w st m e ;;
                   ret (Some (m,e,z))
              else ret None
          }
