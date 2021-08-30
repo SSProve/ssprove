@@ -24,6 +24,7 @@ Import mc_1_10.Num.Theory.
 Import PackageNotation.
 
 Module Type ROParams.
+
   Parameter Query : finType.
   Parameter Random : finType.
 
@@ -33,7 +34,9 @@ Module Type ROParams.
 End ROParams.
 
 Module RO (π : ROParams).
+
   Import π.
+
   #[local] Existing Instance Query_pos.
   #[local] Existing Instance Random_pos.
 
@@ -46,29 +49,32 @@ Module RO (π : ROParams).
   Definition INIT : nat := 0.
   Definition QUERY : nat := 1.
 
-  Definition queries_loc : Location := (chMap chQuery chRandom ; 2%N).
+  Definition queries_loc : Location := (chMap chQuery chRandom ; 2).
   Definition RO_locs : {fset Location} := fset [:: queries_loc].
 
-  Definition RO_exports := [interface val #[ INIT ] : 'unit → 'unit ;
-                                      val #[ QUERY ] : 'query → 'random].
+  Definition RO_exports :=
+    [interface
+      val #[ INIT ] : 'unit → 'unit ;
+      val #[ QUERY ] : 'query → 'random
+    ].
 
-  Definition RO :
-    package RO_locs
-      [interface]
-      RO_exports :=
+  Definition RO : package RO_locs [interface] RO_exports :=
     [package
       def #[ INIT ] (_ : 'unit) : 'unit
       {
-        put queries_loc := emptym ;; ret Datatypes.tt
-      };
+        put queries_loc := emptym ;;
+        ret Datatypes.tt
+      } ;
       def #[ QUERY ] (q : 'query) : 'random
       {
         queries ← get queries_loc ;;
         match (queries q) with
-        | Some r => ret r
-        | None   => r ← sample uniform i_random ;;
-                    put queries_loc := (setm queries q r) ;;
-                    ret r
+        | Some r =>
+          ret r
+        | None =>
+          r ← sample uniform i_random ;;
+          put queries_loc := setm queries q r ;;
+          ret r
         end
       }
     ].

@@ -46,7 +46,7 @@ Qed.
 Definition q : nat := #[g].
 
 Lemma group_prodC :
-  ∀ x y : gT, x * y = y * x.
+  ∀ (x y : gT), x * y = y * x.
 Proof.
   move => x y.
   have Hx: exists ix, x = g^+ix.
@@ -62,7 +62,7 @@ Proof.
 Qed.
 
 Lemma group_prodA :
-  ∀ x y z : gT, x * (y * z) = (x * y) * z.
+  ∀ (x y z : gT), x * (y * z) = (x * y) * z.
 Proof.
   move => x y z.
   have Hx: exists ix, x = g^+ix.
@@ -98,7 +98,7 @@ Module MyParam <: SigmaProtocolParams.
   Definition z0 : Response := 0.
 
   Definition R : Statement -> Witness -> bool :=
-    (fun (h : Statement) (w : Witness) => h == (g ^+ w)).
+    (λ (h : Statement) (w : Witness), h == (g ^+ w)).
 
 End MyParam.
 
@@ -133,7 +133,8 @@ Module MyAlg <: SigmaProtocolAlgorithms MyParam.
   Definition choiceMessage : chUniverse := 'fin #|Message|.
   Definition choiceChallenge : chUniverse := 'fin #|Challenge|.
   Definition choiceResponse : chUniverse := 'fin #|Response|.
-  Definition choiceTranscript : chUniverse := chProd (chProd choiceMessage choiceChallenge) choiceResponse.
+  Definition choiceTranscript : chUniverse :=
+    chProd (chProd choiceMessage choiceChallenge) choiceResponse.
   Definition choiceState := 'fin #|State|.
   Definition choiceBool := 'fin #|bool_choiceType|.
 
@@ -148,35 +149,37 @@ Module MyAlg <: SigmaProtocolAlgorithms MyParam.
   Definition Commit (h : choiceStatement) (w : choiceWitness):
     code Sigma_locs [interface] (choiceMessage × choiceState) :=
     {code
-       r ← sample uniform i_witness ;;
-       ret (fto (g ^+ otf r), r)
+      r ← sample uniform i_witness ;;
+      ret (fto (g ^+ otf r), r)
     }.
 
-  Definition Response (h : choiceStatement) (w : choiceWitness) (r : choiceState) (a : choiceMessage) (e : choiceChallenge):
+  Definition Response (h : choiceStatement) (w : choiceWitness)
+    (r : choiceState) (a : choiceMessage) (e : choiceChallenge) :
     code Sigma_locs [interface] choiceResponse :=
     {code
-       ret (fto (otf r + otf e * otf w))
+      ret (fto (otf r + otf e * otf w))
     }.
 
-  Definition Simulate (h : choiceStatement) (e : choiceChallenge):
+  Definition Simulate (h : choiceStatement) (e : choiceChallenge) :
     code Simulator_locs [interface] choiceTranscript :=
     {code
-       z ← sample uniform i_witness ;;
-       ret (fto (g ^+ (otf z) * (otf h ^- (otf e))), e, z)
+      z ← sample uniform i_witness ;;
+      ret (fto (g ^+ (otf z) * (otf h ^- (otf e))), e, z)
     }.
 
-  Definition Verify (h : choiceStatement) (a : choiceMessage) (e : choiceChallenge) (z : choiceResponse) : choiceBool
-             := (fto (g ^+ (otf z) == (otf a) * (otf h) ^+ (otf e))).
+  Definition Verify (h : choiceStatement) (a : choiceMessage)
+    (e : choiceChallenge) (z : choiceResponse) : choiceBool :=
+    fto (g ^+ (otf z) == (otf a) * (otf h) ^+ (otf e)).
 
   Definition Extractor (h : choiceStatement) (a : choiceMessage)
-                       (e : choiceChallenge) (e' : choiceChallenge)
-                       (z : choiceResponse)  (z' : choiceResponse) : 'option choiceWitness :=
+    (e : choiceChallenge) (e' : choiceChallenge)
+    (z : choiceResponse)  (z' : choiceResponse) : 'option choiceWitness :=
     Some (fto ((otf z - otf z') / (otf e - otf e'))).
 
 End MyAlg.
 
 
-Local Open Scope package_scope.
+#[local] Open Scope package_scope.
 
 Module Schnorr := SigmaProtocol MyParam MyAlg.
 
@@ -184,7 +187,7 @@ Import MyParam MyAlg Schnorr.
 
 #[local] Definition f (e w : Witness) :
   Arit (uniform i_witness) → Arit (uniform i_witness) :=
-  fun z => fto ((otf z) + e * w).
+  λ z, fto (otf z + e * w).
 
 Lemma order_ge1 : succn (succn (Zp_trunc q)) = q.
 Proof.
@@ -194,21 +197,25 @@ Qed.
 Lemma bij_f w e : bijective (f w e).
 Proof.
   unfold f.
-  exists (fun x => (fto (otf x - w * e))).
-  all: intro x; unfold fto, otf; rewrite !enum_rankK.
+  exists (λ x, fto (otf x - w * e)).
+  all: intro x ; unfold fto, otf ; rewrite !enum_rankK.
   - by rewrite addrK enum_valK.
   - by rewrite subrK enum_valK.
 Qed.
 
 
 (* Main theorem. *)
-(* Proves that Schnorr is a ∑-protocol with perfect special honest-verifier zero-knowledge *)
-Theorem schnorr_SHVZK:
-  ∀ LA A, 
-    ValidPackage LA [interface val #[ TRANSCRIPT ] : chInput → 'option chTranscript] A_export A →
+(* Proves that Schnorr is a ∑-protocol with perfect special honest-verifier
+  zero-knowledge
+*)
+Theorem schnorr_SHVZK :
+  ∀ LA A,
+    ValidPackage LA [interface
+      val #[ TRANSCRIPT ] : chInput → 'option chTranscript
+    ] A_export A →
     ɛ_SHVZK A = 0.
 Proof.
-  intros LA A Hvalid. 
+  intros LA A Hvalid.
   apply: eq_rel_perf_ind_eq.
   2,3: apply fdisjoints0.
   simplify_eq_rel hwe.
@@ -216,27 +223,29 @@ Proof.
   destruct hwe as [[h w] e].
   case_eq (R (otf h) (otf w)).
   (* We can only simulate if the relation is valid *)
-  2: { intros _.
-       apply r_ret.
-       intuition. }
+  2:{
+    intros _.
+    apply r_ret.
+    intuition auto.
+  }
 
   (* When relation holds we can reconstruct the first message from the response *)
-  unfold R=> rel. apply reflection_nonsense in rel.
-  eapply r_uniform_bij with (1 := bij_f (otf w) (otf e))=> z_val.
+  unfold R => rel. apply reflection_nonsense in rel.
+  eapply r_uniform_bij with (1 := bij_f (otf w) (otf e)) => z_val.
   apply r_ret.
   (* Ambient logic proof of post condition *)
   intros s0 s1 Hs.
   unfold f.
   rewrite rel.
   split.
-  2: apply Hs. 
+  2: apply Hs.
   simpl.
   rewrite otf_fto expg_mod.
-  2: rewrite order_ge1; apply expg_order.
+  2: rewrite order_ge1 ; apply expg_order.
   rewrite expgD - !expgVn.
   rewrite group_prodC group_prodA group_prodC group_prodA /=.
   rewrite expg_mod.
-  2 : rewrite order_ge1; apply expg_order.
+  2: rewrite order_ge1 ; apply expg_order.
   rewrite -expgM -expgMn.
   2: apply group_prodC.
   rewrite mulgV expg1n mul1g.
@@ -244,33 +253,45 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma otf_neq (a b : choiceChallenge) :
-  a != b -> otf a != otf b.
+Lemma otf_neq :
+  ∀ (a b : choiceChallenge),
+    a != b → otf a != otf b.
 Proof.
-  apply: contra=> H.
-  rewrite bij_eq in H; [assumption| apply enum_val_bij].
+  intros a b.
+  apply: contra => H.
+  rewrite bij_eq in H.
+  - assumption.
+  - apply enum_val_bij.
 Qed.
 
-Lemma neq_pos (q : nat) (a b : Zp_finZmodType q):
-  a != b ->
-  (a - b != 0).
+Lemma neq_pos :
+  ∀ (q : nat) (a b : Zp_finZmodType q),
+    a != b →
+    a - b != 0.
 Proof.
-  apply contraPneq=> H_eq.
-  have H : (a - b == 0) by rewrite H_eq.
+  intros q a b.
+  apply contraPneq => H_eq.
+  assert (H : (a - b == 0)).
+  { by rewrite H_eq. }
   rewrite subr_eq0 in H.
   apply reflection_nonsense in H.
   rewrite H.
-  unfold not=> contra.
+  unfold not => contra.
   rewrite eq_refl in contra.
   discriminate.
 Qed.
 
-(* Lemma proving that the output of the extractor defined for Schnorr's protocol *)
-(* is perfectly indistinguishable from real protocol execution. *)
+(* Lemma proving that the output of the extractor defined for Schnorr's
+  protocol is perfectly indistinguishable from real protocol execution.
+*)
 Lemma extractor_success:
   ∀ LA A LAdv Adv,
-    ValidPackage LA [interface val #[ SOUNDNESS ] : chStatement → 'bool] A_export A →
-    ValidPackage LAdv [interface] [interface val #[ ADV ] : chStatement → chSoundness] Adv →
+    ValidPackage LA [interface
+      val #[ SOUNDNESS ] : chStatement → 'bool
+    ] A_export A →
+    ValidPackage LAdv [interface] [interface
+      val #[ ADV ] : chStatement → chSoundness
+    ] Adv →
     fdisjoint LA (Sigma_locs :|: LAdv) →
     ɛ_soundness A Adv = 0.
 Proof.
@@ -281,26 +302,26 @@ Proof.
   (* This program is composed with abstract adversarial code. *)
   (* We need to ensure that the composition is valid. *)
   destruct (Adv ADV).
-  1: destruct t, s; repeat destruct (chUniverse_eqP).
-  2-4: apply r_ret; auto.
-  apply rsame_head=> run.
+  1: destruct t, s ; repeat destruct (chUniverse_eqP).
+  2-4: apply r_ret ; auto.
+  apply rsame_head => run.
   ssprove_code_simpl.
   destruct run, s0, s1, s2, s0.
   ssprove_code_simpl.
   simpl.
   match goal with
-    | [ |- context[if ?b then _ else _]] => case b eqn:rel
+  | |- context [ if ?b then _ else _ ] => case b eqn:rel
   end.
-  2: apply r_ret; intuition.
+  2: apply r_ret ; intuition auto.
   apply r_ret.
   intros ?? s_eq.
-  split; [| apply s_eq].
+  split. 2: apply s_eq.
   (* Algebraic proof that the produced witness satisfies the relation. *)
   unfold R.
   unfold "&&" in rel.
   inversion rel.
   repeat match goal with
-      | [ |- context[if ?b then _ else _]] => case b eqn:?
+  | |- context [ if ?b then _ else _ ] => case b eqn:?
   end.
   2,3: discriminate.
   rewrite otf_fto in Heqs3.
@@ -310,9 +331,9 @@ Proof.
   rewrite H0.
   f_equal.
   rewrite otf_fto expg_mod.
-  2: rewrite order_ge1; apply expg_order.
+  2: rewrite order_ge1 ; apply expg_order.
   rewrite expgM expg_mod.
-  2: rewrite order_ge1; apply expg_order.
+  2: rewrite order_ge1 ; apply expg_order.
   rewrite expgD -FinRing.zmodVgE expg_zneg.
   2: apply cycle_id.
   rewrite Heqs3 rel !expgMn.
@@ -323,20 +344,24 @@ Proof.
   rewrite group_prodC 2!group_prodA -expgMn.
   2: apply group_prodC.
   rewrite mulVg expg1n mul1g -expg_zneg.
-  2: { have Hx : exists ix, otf h = g ^+ ix.
-       { apply /cycleP. rewrite -g_gen. apply: in_setT. }
-       destruct Hx as [ix ->].
-       apply mem_cycle. }
+  2:{
+    have Hx : exists ix, otf h = g ^+ ix.
+    { apply /cycleP. rewrite -g_gen. apply: in_setT. }
+    destruct Hx as [ix ->].
+    apply mem_cycle.
+  }
   rewrite expgAC.
   rewrite [otf h ^+ (- otf s1) ^+ _] expgAC.
   rewrite -expgD -expgM.
   have <- := @expg_mod _ q.
-  2: { have Hx : exists ix, otf h = g ^+ ix.
-       { apply /cycleP. rewrite -g_gen. apply: in_setT. }
-       destruct Hx as [ix ->].
-       rewrite expgAC /q.
-       rewrite expg_order.
-       apply expg1n. }
+  2:{
+    have Hx : exists ix, otf h = g ^+ ix.
+    { apply /cycleP. rewrite -g_gen. apply: in_setT. }
+    destruct Hx as [ix ->].
+    rewrite expgAC /q.
+    rewrite expg_order.
+    apply expg1n.
+  }
   rewrite -modnMmr.
   have -> :
     (modn
@@ -359,7 +384,8 @@ Proof.
     - simpl.
       rewrite <- order_ge1 at 4.
       rewrite modnDmr.
-      reflexivity. }
+      reflexivity.
+  }
   have -> :
     (modn
        (muln (@nat_of_ord (S (S (Zp_trunc q)))
@@ -381,9 +407,10 @@ Proof.
     rewrite modnDmr.
     rewrite <- order_ge1 at 9.
     rewrite modnMmr.
-    reflexivity. }
+    reflexivity.
+  }
   rewrite Zp_mulVz.
-  1: cbn; by rewrite eq_refl.
+  1: cbn ; by rewrite eq_refl.
   rewrite -> order_ge1 at 1.
   apply otf_neq in Heqb.
   rewrite prime_coprime.
@@ -401,82 +428,92 @@ Qed.
 
 Lemma hiding_adv :
   ∀ LA A,
-    ValidPackage LA [interface val #[ HIDING ] : chInput → 'option chMessage] A_export A →
+    ValidPackage LA [interface
+      val #[ HIDING ] : chInput → 'option chMessage
+    ] A_export A →
     ɛ_hiding A = 0.
 Proof.
   intros LA A Va.
   unfold ɛ_hiding.
   apply: eq_rel_perf_ind_eq.
-  2,3 : rewrite ?fset0U; apply fdisjoints0.
+  2,3: rewrite ?fset0U ; apply fdisjoints0.
   simplify_eq_rel hwe.
   ssprove_code_simpl.
   destruct hwe as [[h w] e].
   eapply r_uniform_bij.
-  1: { assert (bij_f : bijective (fun (e : choiceChallenge) => e)).
-       - exists id; done.
-       - exact bij_f. }
-  move=> e'.
+  1:{
+    instantiate (1 := λ (e : choiceChallenge), e).
+    exists id. all: done.
+  }
+  intro e'.
   rewrite !cast_fun_K.
-  case_eq (R (otf h) (otf w))=> rel.
-  - eapply r_bind with (λ '(b₀, s₀) '(b₁, s₁), match (b₀, b₁) with
-                                                 | (Some (a,_,_), Some(a',_,_)) => a' = a
-                                                 | _ => false
-                                               end ∧ s₀ = s₁ ).
+  case_eq (R (otf h) (otf w)) => rel.
+  - eapply r_bind with (λ '(b₀, s₀) '(b₁, s₁),
+      match (b₀, b₁) with
+      | (Some (a,_,_), Some(a',_,_)) => a' = a
+      | _ => false
+      end ∧ s₀ = s₁
+    ).
     1: eapply r_bind with (λ '(b₀, s₀) '(b₁, s₁),
-                                                  match (b₀, b₁) with
-                                                    | (Some (a,_,_), Some(a',_,_)) => a' = a
-                                                    | _ => false
-                                                  end ∧ s₀ = s₁ ).
-    + ssprove_sync_eq=> a.
+      match (b₀, b₁) with
+        | (Some (a,_,_), Some(a',_,_)) => a' = a
+        | _ => false
+      end ∧ s₀ = s₁
+    ).
+    + ssprove_sync_eq => a.
       apply r_ret.
       move=> ???.
       auto.
     + move=> a a'.
       eapply r_ret.
       move=> ???.
-      destruct a, a'; auto.
+      destruct a, a'. all: auto.
     + move=> a a'.
       apply rpre_hypothesis_rule.
       move=> s0 s1 [Ha Hs].
       destruct a, a'.
-      ++ destruct s,s2.
-         destruct s,s2.
-         rewrite Ha.
-         apply r_ret=>?? Hs0.
-         inversion Hs0.
-         simpl in H, H0.
-         rewrite H H0 Hs.
-         split; reflexivity.
-      ++ destruct s,s2.
-         destruct s,s2.
-         exfalso; rewrite - boolp.falseE; assumption.
-      ++ exfalso; rewrite - boolp.falseE; assumption.
-      ++ exfalso; rewrite - boolp.falseE; assumption.
+      * destruct s,s2.
+        destruct s,s2.
+        rewrite Ha.
+        apply r_ret => ?? Hs0.
+        inversion Hs0.
+        simpl in H, H0.
+        rewrite H H0 Hs.
+        split. all: reflexivity.
+      * destruct s,s2.
+        destruct s,s2.
+        exfalso ; rewrite - boolp.falseE ; assumption.
+      * exfalso ; rewrite - boolp.falseE ; assumption.
+      * exfalso ; rewrite - boolp.falseE ; assumption.
   - eapply r_bind.
-    1: { apply r_ret=>?? ->.
-         reflexivity. }
-    move=> a a'.
-    apply rpre_hypothesis_rule=> s0 s1 H.
+    1:{
+      apply r_ret => ?? ->.
+      reflexivity.
+    }
+    intros a a'.
+    apply rpre_hypothesis_rule => s0 s1 H.
     inversion H.
     destruct a,a'.
     + destruct s, s2.
       destruct s, s2.
-      apply r_ret=> ?? [Hs1 Hs2].
+      apply r_ret => ?? [Hs1 Hs2].
       simpl in Hs1, Hs2.
       rewrite Hs1 Hs2.
-      split; reflexivity.
+      split. all: reflexivity.
     + discriminate.
     + discriminate.
-    + apply r_ret=> ?? [Hs1 Hs2].
+    + apply r_ret => ?? [Hs1 Hs2].
       simpl in Hs1, Hs2.
       rewrite Hs1 Hs2.
-      split; reflexivity.
+      split. all: reflexivity.
 Qed.
 
 (* Main theorem proving that the Schnorr protocol has perfect hiding. *)
 Theorem schnorr_com_hiding :
   ∀ LA A,
-    ValidPackage LA [interface val #[ HIDING ] : chInput → 'option chMessage] A_export A →
+    ValidPackage LA [interface
+      val #[ HIDING ] : chInput → 'option chMessage
+    ] A_export A →
     AdvantageE (Hiding_real ∘ Sigma_to_Com ∘ SHVZK_ideal) (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK_ideal) A <= 0.
 Proof.
   intros LA A Va.
@@ -485,8 +522,8 @@ Proof.
   have HS := schnorr_SHVZK _ _ _.
   rewrite hiding_adv in H.
   apply AdvantageE_le_0 in H.
-  1: rewrite H; trivial.
-  move=> A' Va'.
+  1: rewrite H ; trivial.
+  intros A' Va'.
   by have -> := HS (LA :|: Sigma_locs) A' Va'.
 Qed.
 
@@ -496,14 +533,17 @@ Qed.
 (* (I.e. how hard is it to produce a valid witness for a fixed public input)*)
 Theorem schnorr_com_binding:
   ∀ LA A LAdv Adv,
-    ValidPackage LA [interface val #[ SOUNDNESS ] : chStatement → 'bool] A_export A →
-    ValidPackage LAdv [interface] [interface val #[ ADV ] : chStatement → chSoundness] Adv →
+    ValidPackage LA [interface
+      val #[ SOUNDNESS ] : chStatement → 'bool
+    ] A_export A →
+    ValidPackage LAdv [interface] [interface
+      val #[ ADV ] : chStatement → chSoundness
+    ] Adv →
     fdisjoint LA (Sigma_locs :|: LAdv) →
     AdvantageE (Com_Binding ∘ Adv) (Special_Soundness_f ∘ Adv) A <= 0.
 Proof.
   intros LA A LAdv Adv VA VAdv Hdisj.
   have H := commitment_binding LA A LAdv Adv VA VAdv Hdisj.
-  rewrite extractor_success in H.
-  - apply H.
-  - apply Hdisj.
+  rewrite extractor_success in H. 2: apply Hdisj.
+  apply H.
 Qed.
