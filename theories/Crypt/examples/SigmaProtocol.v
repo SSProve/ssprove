@@ -419,13 +419,11 @@ Module SigmaProtocol (π : SigmaProtocolParams)
          }
       ].
 
-    (* TW: I moved it here because:
-      - it is calling [eauto]
-      - might induce back-tracking and we want to avoid it because of
-        time-consumption
+    (* TW: I moved it here because it might induce back-tracking and we want to
+      avoid it because of time-consumption.
     *)
     Hint Extern 20 (ValidCode ?L ?I ?c.(prog)) =>
-      eapply valid_injectMap ; [ eauto | eapply c.(prog_valid) ]
+      eapply valid_injectMap ; [| eapply c.(prog_valid) ]
       : typeclass_instances ssprove_valid_db.
 
     Definition RUN_non_interactive:
