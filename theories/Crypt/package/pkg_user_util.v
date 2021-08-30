@@ -367,8 +367,6 @@ Ltac ssprove_sync :=
       ]
     | x ← cmd ?c ;; _ =>
       eapply (rsame_head_cmd_alt c)
-    | x ← cmd ?c ;; _ =>
-      eapply (rsame_head_cmd_alt c)
     | @assertD ?A ?b _ =>
       eapply (r_assertD_same A b)
     | _ => fail "No head found"
