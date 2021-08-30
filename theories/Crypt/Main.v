@@ -1,3 +1,4 @@
+From Coq Require Import Utf8.
 From Crypt Require Import pkg_composition pkg_advantage PRF ElGamal pkg_rhl
   UniformStateProb RulesStateProb KEMDEM.
 
