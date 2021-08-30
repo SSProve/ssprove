@@ -239,7 +239,7 @@ Qed.
   : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 3 (is_true (fsubset [interface] ?L)) =>
-  rewrite <- fset0E; eapply fsub0set
+  rewrite <- fset0E ; eapply fsub0set
   : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 2 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
@@ -308,15 +308,6 @@ Proof.
   rewrite -fset0E in h. auto.
 Qed.
 
-Lemma valid_subset_import:
-  ∀ A L I1 I2 c,
-    fsubset I1 I2 →
-    @ValidCode L I1 A c →
-    ValidCode L I2 c.
-Proof.
-  intros A L I c Hvalid; eapply valid_injectMap.
-Qed.
-
 Ltac chUniverse_eq_prove :=
   lazymatch goal with
   | |- chProd _ _ = chProd _ _ => f_equal ; chUniverse_eq_prove
@@ -346,7 +337,7 @@ Ltac chUniverse_eq_prove :=
   : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 10 (ValidCode ?L ?I ?c.(prog)) =>
-  eapply valid_subset_import; [ eauto | eapply c.(prog_valid)]
+  eapply valid_injectMap ; [ eauto | eapply c.(prog_valid) ]
   : typeclass_instances ssprove_valid_db.
 
 Ltac ssprove_valid :=
