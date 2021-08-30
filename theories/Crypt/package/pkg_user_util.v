@@ -564,7 +564,7 @@ Ltac ssprove_swap_seq_lhs l :=
   : typeclass_instances ssprove_valid_db.
 
 Lemma code_link_scheme :
-  ∀ {L} A c p,
+  ∀ L A c p,
     @ValidCode L [interface] A c →
     code_link c p = c.
 Proof.
