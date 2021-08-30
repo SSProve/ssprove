@@ -1,7 +1,11 @@
 (** KEM-DEM example
 
-  From the original SSP paper https://eprint.iacr.org/2018/306*
+  In this example, we follow the original SSP paper available at:
+  https://eprint.iacr.org/2018/306
 
+  In this file we first define the KEY pacakges and prove the single key lemma
+  of the SSP paper. We then proceed to define the KEM-DEM packages and proving
+  its security relative to that of the KEM and the DEM.
 *)
 
 From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
@@ -39,33 +43,45 @@ Import PackageNotation.
 
 Section KEMDEM.
 
-  (** As we are in a section, we can safely kill the obligation tactic.
+  (** We open a section in order to make local changes to global settings
+      in the unlikely event that this module is imported somewhere else.
+
+      We can thus safely change obligation tactic to [idtac] (which does
+      nothing). The idea being that [Equations] definition will not simplify
+      the obligations they generate, which interacts badly with our automation.
       It will restored after we leave the section.
   *)
   Obligation Tactic := idtac.
   Set Equations Transparent.
 
-  (** In the SSP paper, bitstrings are used.
+  (** In the SSP paper, bitstrings are used for the different data types.
       Instead we go for a more abstract types.
       In the cases where we need to be able to sample on these data types,
-      we will instead assume we have a lossless distribution, as they come
-      with their domain.
+      we will first assume we have a (lossless) sub-distribution, and then
+      define the types as the domain of these sub-distributions.
   *)
 
   (** Symmetric key *)
   Context keyD `{LosslessOp keyD}.
   Definition chKey := keyD.π1.
 
-  (** Public and secret key  *)
+  (** Public and secret key *)
   Context (chPKey chSKey : chUniverse).
 
   (** Plain text *)
   Context (chPlain : chUniverse).
 
-  (** We additionally require a "zero" in chPlain *)
+  (** We additionally require a "zero" in chPlain.
+
+    Note that we don't require any structure on chPlain so this "zero" is only
+    a "zero" in name a priori. Can be thought of as the 0 bitstring.
+  *)
   Context (nullPlain : chPlain).
 
-  (** Ecrypted key *)
+  (** Encrypted key
+
+    This corresponds to the type of symmetric keys once encrypted.
+  *)
   Context (ekeyD : Op).
   Definition chEKey := ekeyD.π1.
 
@@ -73,7 +89,8 @@ Section KEMDEM.
   Context (cipherD : Op).
   Definition chCipher := cipherD.π1.
 
-  (** Types *)
+  (** Type notations *)
+
   Notation "'key" := (chKey) (in custom pack_type at level 2).
   Notation "'key" := (chKey) (at level 2) : package_scope.
 
@@ -92,7 +109,11 @@ Section KEMDEM.
   Notation "'cipher" := (chCipher) (in custom pack_type at level 2).
   Notation "'cipher" := (chCipher) (at level 2) : package_scope.
 
-  (** Procedure names *)
+  (** Procedure names
+
+    Under the hood, procedures are identified by natural numbers so we abstract
+    them away by using distrinct coq-level identifiers.
+  *)
 
   (* KEY *)
   Definition GEN := 0%N.
@@ -125,7 +146,14 @@ Section KEMDEM.
   Definition ISET := [interface val #[ SET ] : 'key → 'unit ].
   Definition IGET := [interface val #[GET] : 'unit → 'key ].
 
-  (** PKE scheme *)
+  (** PKE scheme
+
+    A public-key encryption scheme comes with a key generation (a public and
+    private key pair) and an encryption procedures (in the sense that they can
+    use effects, typically sampling for the key generation procedure). It also
+    comes with a pure (in particular deterministric) decryption function.
+    The purity is denoted by the abscence of [code] in the return type.
+  *)
 
   Record PKE_scheme := {
     PKE_kgen : code fset0 [interface] (chProd 'pkey 'skey) ;
@@ -133,7 +161,12 @@ Section KEMDEM.
     PKE_dec : 'skey → chProd 'ekey 'cipher → 'plain
   }.
 
-  (** KEM scheme *)
+  (** KEM scheme
+
+    A key encapsulation mechanism comes with a key generation
+    (public/private pair) and an encapsulation procedures as well as with a
+    pure / deterministic decapsulation function.
+  *)
 
   Record KEM_scheme := {
     KEM_kgen : code fset0 [interface] (chProd 'pkey 'skey) ;
@@ -141,24 +174,32 @@ Section KEMDEM.
     KEM_decap : 'skey → 'ekey → 'key
   }.
 
-  (** DEM scheme *)
+  (** DEM scheme
+
+    A data encapsulation mechanism comes with deterministric pure encryption
+    and decryption functions. Both use a symmetric key.
+  *)
 
   Record DEM_scheme := {
     DEM_enc : 'key → 'plain → 'cipher ;
     DEM_dec : 'key → 'cipher → 'plain
   }.
 
+  (** We assume we are given a KEM and DEM schemes. *)
   Context (η : KEM_scheme).
   Context (θ : DEM_scheme).
 
   (** Specification of assumed schemes
 
-    We assume the existence of a relation capturing which public key correspond
+    We assume the existence of a relation capturing which public key corresponds
     to which secret key. We furthermore require KEM_kgen to ensure that the
     keys it generates verify this relation.
 
     We use this relation to state the correctness of KEM_encap.
 
+    The [⊢ₛ _ ⦃ _ ⦄] notation corresponds to unary specifications with only a
+    post-condition. They correspond to the diagonal of relational
+    specifications.
   *)
 
   Context (pkey_pair : (chProd 'pkey 'skey) → Prop).
@@ -171,9 +212,18 @@ Section KEMDEM.
 
   (** KEY package *)
 
+  (** The KEY package will only use one location: [k_loc] corresponding the
+    stored key.
+  *)
   Definition KEY_loc :=
     fset [:: k_loc ].
 
+  (** Similarly, we define the export / output interface of the KEY package.
+
+    The KEY package can generate a key [GEN] and then store its result in the
+    location [k_loc] or alternatively it can set [SET] a key provided by the
+    caller, finally in can return the stored key using [GET].
+  *)
   Definition KEY_out :=
     [interface
       val #[ GEN ] : 'unit → 'unit ;
@@ -181,6 +231,7 @@ Section KEMDEM.
       val #[ GET ] : 'unit → 'key
     ].
 
+  (** Definition of the KEY package *)
   Definition KEY : package KEY_loc [interface] KEY_out :=
     [package
       def #[ GEN ] (_ : 'unit) : 'unit {
@@ -205,11 +256,25 @@ Section KEMDEM.
 
   (** KEM package *)
 
+  (** The KEM pacakge can refer to locations corresponding to a public and
+    private asymetric keys, and to an encrypted symmetric key.
+  *)
   Definition KEM_loc := fset [:: pk_loc ; sk_loc ; ek_loc ].
 
+  (** The KEM packaee is parametrised by a boolean [b] depedning on which
+    its import interface differs. If [b] is [true] it will be able to call
+    the [SET] procedure, and if [b] is [false] it will be able to call the
+    [GEN] one. In the paper [KEM true] corresponds to KEM⁰, while [KEM false]
+    corresponds to KEM¹.
+  *)
   Definition KEM_in b :=
     if b then ISET else IGEN.
 
+  (** The KEM package will export a public and private key generation procedure
+    [KEMGEM] that only returns the public one, an ecapsulation procedure [ENCAP]
+    which will generate and encrypt a symmetric key, and a decpasulation
+    procedure [DECAP] which returns a symmetric key given its encryption.
+  *)
   Definition KEM_out :=
     [interface
       val #[ KEMGEN ] : 'unit → 'pkey ;
@@ -217,6 +282,14 @@ Section KEMDEM.
       val #[ DECAP ] : 'ekey → 'key
     ].
 
+  (** Here we add a hint to the [ssprove_valid_db] and [typeclass_instances]
+    databases. The former database corresponds to what is used by the
+    [ssprove_valid] tactic, while the latter corresponds to the built-in
+    database used by type-class inference.
+    This means that when Coq will have to prove the validity of a scheme, it
+    will try to make use of the [valid_scheme] lemma that is a special case
+    when the code does not import anything or use any state.
+  *)
   Hint Extern 10 (ValidCode ?L ?I ?c.(prog)) =>
     eapply valid_scheme ; eapply c.(prog_valid)
     : typeclass_instances ssprove_valid_db.
@@ -256,7 +329,15 @@ Section KEMDEM.
       }
     ].
 
-  (** KEM-CCA game *)
+  (** KEM-CCA game
+
+    The KEM-CCA game is obtained by composing the KEM and KEY packages, as well
+    as the identity package. A game pair is described using a boolean-indexed
+    function. Here, the only part that changes is the KEM package which is
+    already indexed by a boolean.
+
+    KEM-CCAᵇ = (KEMᵇ || ID) ∘ KEY
+  *)
 
   Definition KEM_CCA_out :=
     [interface
@@ -266,10 +347,14 @@ Section KEMDEM.
       val #[GET] : 'unit → 'key
     ].
 
-  (* Maybe inline? *)
   Definition KEM_CCA_loc :=
     KEM_loc :|: KEY_loc.
 
+  (** Here we use Equations to generate a goal corresponding to the validity of
+    the composed package as it is not inferred automatically.
+    We call [ssprove_valid] which progresses as much as possible and then asks
+    us to prove the remanining bits.
+  *)
   Equations? KEM_CCA_pkg b :
     package KEM_CCA_loc [interface] KEM_CCA_out :=
     KEM_CCA_pkg b :=
@@ -289,15 +374,21 @@ Section KEMDEM.
     - apply fsubsetUr.
   Qed.
 
+  (** We finally package the above into a game pair. *)
   Definition KEM_CCA : loc_GamePair KEM_CCA_out :=
     λ b, {locpackage KEM_CCA_pkg b }.
 
   (** DEM package *)
 
+  (** The DEM package only stores a cipher. *)
   Definition DEM_loc := fset [:: c_loc ].
 
+  (** The DEM package can refer to the [GET] procedure. *)
   Definition DEM_in := IGET.
 
+  (** The DEM package, produced from the DEM scheme θ, exports an encryption
+    and a decryption procedures.
+  *)
   Definition DEM_out :=
     [interface
       val #[ ENC ] : 'plain → 'cipher ;
@@ -326,7 +417,13 @@ Section KEMDEM.
       }
     ].
 
-  (** DEM-CCA game *)
+  (** DEM-CCA game
+
+    The DEM-CCA game is obtained by composing the DEM and KEY packages, as
+    well as the indentity package.
+
+    DEM-CCAᵇ = (DEMᵇ || ID) ∘ KEY
+  *)
 
   Definition DEM_CCA_out :=
     [interface
@@ -335,7 +432,6 @@ Section KEMDEM.
       val #[ DEC ] : 'cipher → 'plain
     ].
 
-  (* Maybe inline? *)
   Definition DEM_CCA_loc :=
     DEM_loc :|: KEY_loc.
 
@@ -490,7 +586,7 @@ Section KEMDEM.
 
   (** Single key lemma *)
 
-  (* Corresponds to Lemma 19.a in the SSP paper *)
+  (** Corresponds to Lemma 19.a in the SSP paper *)
   Lemma single_key_a :
     ∀ LD₀ LK₀ CK₀ CK₁ CD₀ CD₁ EK ED A,
       let K₀ := (par CK₀ (ID IGET)) ∘ KEY in
@@ -581,7 +677,7 @@ Section KEMDEM.
     Unshelve. all: exact fset0.
   Qed.
 
-  (* Corresponds to Lemma 19.b in the SSP paper *)
+  (** Corresponds to Lemma 19.b in the SSP paper *)
   Lemma single_key_b :
     ∀ LD₀ LK₀ CK₀ CK₁ CD₀ CD₁ EK ED A,
       let K₀ := (par CK₀ (ID IGET)) ∘ KEY in
@@ -648,7 +744,14 @@ Section KEMDEM.
     Unshelve. all: exact fset0.
   Qed.
 
-  (** Perfect indistinguishability with PKE-CCA *)
+  (** Perfect indistinguishability with PKE-CCA
+
+    We show that the package given by
+    MOD_CCA KEM_DEM ∘ (KEM⁰ || DEMᵇ) ∘ KEY
+    and which we call [Aux b], is perfectly indistinguishable from
+    [PKE_CCA KEM_DEM b], which is the PKE-CCA game instantiated with the
+    KEM-DEM instance we have.
+  *)
 
   Definition Aux_loc :=
     MOD_CCA_loc :|: KEM_loc :|: DEM_loc :|: KEY_loc.
@@ -675,12 +778,18 @@ Section KEMDEM.
     - apply fsubsetxx.
   Qed.
 
-  (* We extend ssprove_code_simpl to use code_link_scheme *)
+  (** We extend ssprove_code_simpl to use code_link_scheme.
+    It says that linking a scheme with anything results in the scheme itself
+    as a scheme does not import anything.
+  *)
   Hint Extern 50 (_ = code_link _ _) =>
     rewrite code_link_scheme
     : ssprove_code_simpl.
 
-  (* We extend swapping to schemes *)
+  (** We extend swapping to schemes.
+    This means that the ssprove_swap tactic will be able to swap any command
+    with a scheme without asking a proof from the user.
+  *)
   Hint Extern 40 (⊢ ⦃ _ ⦄ x ← ?s ;; y ← cmd _ ;; _ ≈ _ ⦃ _ ⦄) =>
     eapply r_swap_scheme_cmd ; ssprove_valid
     : ssprove_swap.
@@ -689,12 +798,32 @@ Section KEMDEM.
 
     In order to prove these equivalences, we will use an invariant that
     dismisses any changes made to the symmetric key location as it is only
-    modified in one of the packages.
+    modified in one of the packages. This will be the [heap_ignore KEY_loc] bit
+    in the following [inv] invariant.
+    We need to extend this invariant with knowlegde about how the contents of
+    some locations are related.
+    With [triple_rhs pk_loc k_loc ek_loc PKE_inv] we say that the values
+    corresponding to the public key, symmetric key and the encrypted symmetric
+    key are always related by [PKE_inv] (described below).
+    Similarly, [couple_lhs pk_loc sk_loc (sameSomeRel PkeyPair)] relates the
+    public and secret keys by the relation [sameSomeRel PkeyPair]. It states
+    that both must be [None], or both must be [Some pk] and [Some sk] such
+    that [pk] and [sk] are related by [PkeyPair pk sk].
   *)
 
+  (** This rephrasing of [pkey_pair] simply states that the stored public
+    and private keys are indeed part of the same key pair, according to the
+    specification of the KEM.
+  *)
   Definition PkeyPair :=
     λ (pk : 'pkey) (sk : 'skey), pkey_pair (pk, sk).
 
+  (** This states two things:
+    - [k] and [ek] must both be set ([Some]) or unset ([None]);
+    - whenever they are set, then the public key [pk] must as well and the three
+    should be related by the functional specification [encap_spec] stating that
+    [ek] is indeed the encryption of [k] using public key [pk].
+  *)
   Definition PKE_inv (pk : 'option 'pkey) (k : 'option 'key) (ek : 'option 'ekey) :=
     match pk, k, ek with
     | Some pk, Some k, Some ek => encap_spec pk (k, ek)
@@ -709,6 +838,11 @@ Section KEMDEM.
     couple_lhs pk_loc sk_loc (sameSomeRel PkeyPair)
   ).
 
+  (** We have to show that [inv] is a valid invariant and while the
+    [ssprove_invariant] does most of the work for us we still have some
+    properties regarding the sets involved to prove
+    (otherwise type inference would have solved it).
+  *)
   Instance Invariant_inv : Invariant PKE_CCA_loc Aux_loc inv.
   Proof.
     ssprove_invariant.
@@ -725,12 +859,15 @@ Section KEMDEM.
     - simpl. auto.
   Qed.
 
+  (** We show perfect equivalence in the general case where [b] stay abstract.
+    This spares us the burden of proving roughly the same equivalence twice.
+  *)
   Lemma PKE_CCA_perf :
     ∀ b, (PKE_CCA KEM_DEM b) ≈₀ Aux b.
   Proof.
     intro b.
     unfold Aux.
-    (* We go to the relation logic with our invariant. *)
+    (* We go to the relational logic with our invariant. *)
     eapply eq_rel_perf_ind with (inv := inv). 1: exact _.
     simplify_eq_rel m.
     all: ssprove_code_simpl.
@@ -915,7 +1052,7 @@ Section KEMDEM.
       eapply single_key_b with (CK₁ := (KEM false).(pack)).
       7,8,11,12: ssprove_valid.
       1-2: ssprove_valid.
-      (* Sad we have to do this before. *)
+      (* Sadly we have to do this before. *)
       5-8: unfold KEM, DEM.
       5-8: cbn - [mkdef mkfmap].
       5-8: ssprove_valid.
