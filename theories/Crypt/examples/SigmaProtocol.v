@@ -141,7 +141,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         else ret None
       }
     ].
-  
+
   Definition SHVZK_ideal:
     package Simulator_locs
       [interface]
@@ -418,6 +418,15 @@ Module SigmaProtocol (π : SigmaProtocolParams)
            ret (otf (Verify h a e z))
          }
       ].
+
+    (* TW: I moved it here because:
+      - it is calling [eauto]
+      - might induce back-tracking and we want to avoid it because of
+        time-consumption
+    *)
+    Hint Extern 20 (ValidCode ?L ?I ?c.(prog)) =>
+      eapply valid_injectMap ; [ eauto | eapply c.(prog_valid) ]
+      : typeclass_instances ssprove_valid_db.
 
     Definition RUN_non_interactive:
       package Sigma_locs

@@ -336,9 +336,5 @@ Ltac chUniverse_eq_prove :=
   destruct t
   : typeclass_instances ssprove_valid_db.
 
-#[export] Hint Extern 10 (ValidCode ?L ?I ?c.(prog)) =>
-  eapply valid_injectMap ; [ eauto | eapply c.(prog_valid) ]
-  : typeclass_instances ssprove_valid_db.
-
 Ltac ssprove_valid :=
   (unshelve typeclasses eauto with ssprove_valid_db) ; shelve_unifiable.
