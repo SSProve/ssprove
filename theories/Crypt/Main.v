@@ -1,6 +1,6 @@
 From Coq Require Import Utf8.
 From Crypt Require pkg_composition pkg_advantage PRF ElGamal pkg_rhl
-  UniformStateProb RulesStateProb KEMDEM.
+  UniformStateProb RulesStateProb KEMDEM SigmaProtocol Schnorr.
 
 (* Notation to chain lets and end with 0 *)
 Notation "[ 'let' ]" :=
@@ -40,7 +40,9 @@ Definition results_from_the_paper := [let
   pkg_advantage.Advantage_link ;
   @pkg_rhl.eq_upto_inv_perf_ind ;
   @pkg_rhl.Pr_eq_empty ;
-  KEMDEM.PKE_security
+  KEMDEM.PKE_security ;
+  Schnorr.Schnorr.fiat_shamir_correct ;
+  Schnorr.schnorr_com_binding
 ].
 
 Print Assumptions results_from_the_paper.

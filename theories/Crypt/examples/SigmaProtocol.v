@@ -573,7 +573,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       rewrite code_link_scheme
       : ssprove_code_simpl.
 
-    Theorem fiat_shamir_correct:
+    Theorem fiat_shamir_correct :
       ∀ LA A ,
         ValidPackage LA [interface
           val #[ RUN ] : chRelation → 'option chTranscript

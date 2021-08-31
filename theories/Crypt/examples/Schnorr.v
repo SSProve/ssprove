@@ -531,7 +531,7 @@ Qed.
 (* The commitment scheme instantiated from Schnorr' protocol *)
 (* is binding equal to the hardness of the relation *)
 (* (I.e. how hard is it to produce a valid witness for a fixed public input)*)
-Theorem schnorr_com_binding:
+Theorem schnorr_com_binding :
   ∀ LA A LAdv Adv,
     ValidPackage LA [interface
       val #[ SOUNDNESS ] : chStatement → 'bool
