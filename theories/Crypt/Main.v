@@ -1,5 +1,5 @@
 From Coq Require Import Utf8.
-From Crypt Require Import pkg_composition pkg_advantage PRF ElGamal pkg_rhl
+From Crypt Require pkg_composition pkg_advantage PRF ElGamal pkg_rhl
   UniformStateProb RulesStateProb KEMDEM.
 
 (* Notation to chain lets and end with 0 *)
@@ -16,31 +16,31 @@ Notation "[ 'let' x ; .. ; z ]" :=
   (at level 0, only parsing).
 
 Definition results_from_the_paper := [let
-  valid_link ;
-  link_assoc ;
-  valid_par ;
-  par_commut ;
-  par_assoc ;
-  valid_ID ;
-  link_id ;
-  id_link ;
-  interchange ;
-  security_based_on_prf ;
-  ElGamal_Z3.ElGamal_OT ;
-  @rreflexivity_rule ;
-  @rbind_rule ;
-  @rswap_rule ;
-  @rrewrite_eqDistrL ;
-  @Uniform_bij_rule ;
-  @assert_rule ;
-  @assert_rule_left ;
-  @bounded_do_while_rule ;
-  @for_loop_rule ;
-  Advantage_triangle ;
-  Advantage_link ;
-  @eq_upto_inv_perf_ind ;
-  @Pr_eq_empty ;
-  PKE_security
+  pkg_composition.valid_link ;
+  pkg_composition.link_assoc ;
+  pkg_composition.valid_par ;
+  pkg_composition.par_commut ;
+  pkg_composition.par_assoc ;
+  pkg_composition.valid_ID ;
+  pkg_composition.link_id ;
+  pkg_composition.id_link ;
+  pkg_composition.interchange ;
+  PRF.security_based_on_prf ;
+  ElGamal.ElGamal_Z3.ElGamal_OT ;
+  @pkg_rhl.rreflexivity_rule ;
+  @pkg_rhl.rbind_rule ;
+  @pkg_rhl.rswap_rule ;
+  @pkg_rhl.rrewrite_eqDistrL ;
+  @UniformStateProb.Uniform_bij_rule ;
+  @UniformStateProb.assert_rule ;
+  @UniformStateProb.assert_rule_left ;
+  @RulesStateProb.bounded_do_while_rule ;
+  @pkg_rhl.for_loop_rule ;
+  pkg_advantage.Advantage_triangle ;
+  pkg_advantage.Advantage_link ;
+  @pkg_rhl.eq_upto_inv_perf_ind ;
+  @pkg_rhl.Pr_eq_empty ;
+  KEMDEM.PKE_security
 ].
 
 Print Assumptions results_from_the_paper.
