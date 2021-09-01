@@ -41,8 +41,8 @@ Definition results_from_the_paper := [let
   @pkg_rhl.eq_upto_inv_perf_ind ;
   @pkg_rhl.Pr_eq_empty ;
   KEMDEM.PKE_security ;
-  Schnorr.Schnorr.fiat_shamir_correct ;
-  Schnorr.schnorr_com_binding
+  Schnorr.Schnorr_Z3.schnorr_com_hiding ;
+  Schnorr.Schnorr_Z3.schnorr_com_binding
 ].
 
 Print Assumptions results_from_the_paper.

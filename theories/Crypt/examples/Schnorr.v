@@ -31,19 +31,128 @@ Import GroupScope GRing.Theory.
 
 Import PackageNotation.
 
-Parameter gT : finGroupType.
-Definition ζ : {set gT} := [set : gT].
-Parameter g :  gT.
-Parameter g_gen : ζ = <[g]>.
-Parameter prime_order : prime #[g].
+Module Type GroupParam.
+
+  Parameter gT : finGroupType.
+  Definition ζ : {set gT} := [set : gT].
+  Parameter g :  gT.
+  Parameter g_gen : ζ = <[g]>.
+  Parameter prime_order : prime #[g].
+
+End GroupParam.
+
+Module Schnorr (GP : GroupParam).
+
+Import GP.
+
+(* order of g *)
+Definition q : nat := #[g].
+
+Module MyParam <: SigmaProtocolParams.
+
+  Definition Witness : finType := [finType of 'Z_q].
+  Definition Statement : finType := FinGroup.arg_finType gT.
+  Definition Message : finType := FinGroup.arg_finType gT.
+  Definition Challenge : finType := [finType of 'Z_q].
+  Definition Response : finType :=  [finType of 'Z_q].
+  Definition Transcript := prod_finType (prod_finType Message Challenge) Response.
+  Definition State := Witness.
+
+  Definition w0 : Witness := 0.
+  Definition e0 : Challenge := 0.
+  Definition z0 : Response := 0.
+
+  Definition R : Statement -> Witness -> bool :=
+    (λ (h : Statement) (w : Witness), h == (g ^+ w)).
+
+  Instance positive_gT : Positive #|gT|.
+  Proof.
+    apply /card_gt0P. exists g. auto.
+  Qed.
+
+  Instance Witness_pos : Positive #|Witness|.
+  Proof.
+    apply /card_gt0P. exists w0. auto.
+  Qed.
+
+  Definition Statement_pos : Positive #|Statement| := _.
+  Definition Message_pos : Positive #|Message| := _.
+  Definition Challenge_pos : Positive #|Challenge| := _.
+  Definition Response_pos : Positive #|Response| := _.
+  Definition State_pos : Positive #|State| := _.
+  Definition Bool_pos : Positive #|bool_choiceType|.
+  Proof.
+    rewrite card_bool. done.
+  Defined.
+
+End MyParam.
+
+Module MyAlg <: SigmaProtocolAlgorithms MyParam.
+
+  Import MyParam.
+
+  #[local] Existing Instance Bool_pos.
+
+  Definition choiceWitness : chUniverse := 'fin #|Witness|.
+  Definition choiceStatement : chUniverse := 'fin #|Statement|.
+  Definition choiceMessage : chUniverse := 'fin #|Message|.
+  Definition choiceChallenge : chUniverse := 'fin #|Challenge|.
+  Definition choiceResponse : chUniverse := 'fin #|Response|.
+  Definition choiceTranscript : chUniverse := chProd (chProd (chProd choiceStatement choiceMessage) choiceChallenge) choiceResponse.
+  Definition choiceState := 'fin #|State|.
+  Definition choiceBool := 'fin #|bool_choiceType|.
+
+  Definition i_witness := #|Witness|.
+
+  Definition HIDING : nat := 0.
+  Definition SOUNDNESS : nat := 1.
+
+  Definition Sigma_locs : {fset Location} := fset0.
+  Definition Simulator_locs : {fset Location} := fset0.
+
+  Definition Commit (h : choiceStatement) (w : choiceWitness):
+    code Sigma_locs [interface] (choiceMessage × choiceState) :=
+    {code
+      r ← sample uniform i_witness ;;
+      ret (fto (g ^+ otf r), r)
+    }.
+
+  Definition Response (h : choiceStatement) (w : choiceWitness)
+    (r : choiceState) (a : choiceMessage) (e : choiceChallenge) :
+    code Sigma_locs [interface] choiceResponse :=
+    {code
+      ret (fto (otf r + otf e * otf w))
+    }.
+
+  Definition Simulate (h : choiceStatement) (e : choiceChallenge) :
+    code Simulator_locs [interface] choiceTranscript :=
+    {code
+      z ← sample uniform i_witness ;;
+      ret (h, fto (g ^+ (otf z) * (otf h ^- (otf e))), e, z)
+    }.
+
+  Definition Verify (h : choiceStatement) (a : choiceMessage)
+    (e : choiceChallenge) (z : choiceResponse) : choiceBool :=
+    fto (g ^+ (otf z) == (otf a) * (otf h) ^+ (otf e)).
+
+  Definition Extractor (h : choiceStatement) (a : choiceMessage)
+    (e : choiceChallenge) (e' : choiceChallenge)
+    (z : choiceResponse)  (z' : choiceResponse) : 'option choiceWitness :=
+    Some (fto ((otf z - otf z') / (otf e - otf e'))).
+
+End MyAlg.
+
+
+#[local] Open Scope package_scope.
+
+Module Sigma := SigmaProtocol MyParam MyAlg.
+
+Import MyParam MyAlg Sigma.
 
 Lemma cyclic_zeta: cyclic ζ.
 Proof.
   apply /cyclicP. exists g. exact: g_gen.
 Qed.
-
-(* order of g *)
-Definition q : nat := #[g].
 
 Lemma group_prodC :
   ∀ (x y : gT), x * y = y * x.
@@ -76,114 +185,12 @@ Proof.
     apply: in_setT. }
   destruct Hx as [ix Hx].
   destruct Hy as [iy Hy].
-  destruct Hz as [iz Hz].
+
   subst.
   repeat rewrite -expgD addnC addnA.
   rewrite mulgA.
   reflexivity.
 Qed.
-
-Module MyParam <: SigmaProtocolParams.
-
-  Definition Witness : finType := [finType of 'Z_q].
-  Definition Statement : finType := FinGroup.arg_finType gT.
-  Definition Message : finType := FinGroup.arg_finType gT.
-  Definition Challenge : finType := [finType of 'Z_q].
-  Definition Response : finType :=  [finType of 'Z_q].
-  Definition Transcript := prod_finType (prod_finType Message Challenge) Response.
-  Definition State := Witness.
-
-  Definition w0 : Witness := 0.
-  Definition e0 : Challenge := 0.
-  Definition z0 : Response := 0.
-
-  Definition R : Statement -> Witness -> bool :=
-    (λ (h : Statement) (w : Witness), h == (g ^+ w)).
-
-End MyParam.
-
-Module MyAlg <: SigmaProtocolAlgorithms MyParam.
-
-  Import MyParam.
-
-  Instance positive_gT : Positive #|gT|.
-  Proof.
-    apply /card_gt0P. exists g. auto.
-  Qed.
-
-  Instance Witness_pos : Positive #|Witness|.
-  Proof.
-    apply /card_gt0P. exists w0. auto.
-  Qed.
-
-  Definition Statement_pos : Positive #|Statement| := _.
-  Definition Message_pos : Positive #|Message| := _.
-  Definition Challenge_pos : Positive #|Challenge| := _.
-  Definition Response_pos : Positive #|Response| := _.
-  Definition State_pos : Positive #|State| := _.
-  Definition Bool_pos : Positive #|bool_choiceType|.
-  Proof.
-    rewrite card_bool. done.
-  Defined.
-
-  #[local] Existing Instance Bool_pos.
-
-  Definition choiceWitness : chUniverse := 'fin #|Witness|.
-  Definition choiceStatement : chUniverse := 'fin #|Statement|.
-  Definition choiceMessage : chUniverse := 'fin #|Message|.
-  Definition choiceChallenge : chUniverse := 'fin #|Challenge|.
-  Definition choiceResponse : chUniverse := 'fin #|Response|.
-  Definition choiceTranscript : chUniverse :=
-    chProd (chProd choiceMessage choiceChallenge) choiceResponse.
-  Definition choiceState := 'fin #|State|.
-  Definition choiceBool := 'fin #|bool_choiceType|.
-
-  Definition i_witness := #|Witness|.
-
-  Definition HIDING : nat := 0.
-  Definition SOUNDNESS : nat := 1.
-
-  Definition Sigma_locs : {fset Location} := fset0.
-  Definition Simulator_locs : {fset Location} := fset0.
-
-  Definition Commit (h : choiceStatement) (w : choiceWitness):
-    code Sigma_locs [interface] (choiceMessage × choiceState) :=
-    {code
-      r ← sample uniform i_witness ;;
-      ret (fto (g ^+ otf r), r)
-    }.
-
-  Definition Response (h : choiceStatement) (w : choiceWitness)
-    (r : choiceState) (a : choiceMessage) (e : choiceChallenge) :
-    code Sigma_locs [interface] choiceResponse :=
-    {code
-      ret (fto (otf r + otf e * otf w))
-    }.
-
-  Definition Simulate (h : choiceStatement) (e : choiceChallenge) :
-    code Simulator_locs [interface] choiceTranscript :=
-    {code
-      z ← sample uniform i_witness ;;
-      ret (fto (g ^+ (otf z) * (otf h ^- (otf e))), e, z)
-    }.
-
-  Definition Verify (h : choiceStatement) (a : choiceMessage)
-    (e : choiceChallenge) (z : choiceResponse) : choiceBool :=
-    fto (g ^+ (otf z) == (otf a) * (otf h) ^+ (otf e)).
-
-  Definition Extractor (h : choiceStatement) (a : choiceMessage)
-    (e : choiceChallenge) (e' : choiceChallenge)
-    (z : choiceResponse)  (z' : choiceResponse) : 'option choiceWitness :=
-    Some (fto ((otf z - otf z') / (otf e - otf e'))).
-
-End MyAlg.
-
-
-#[local] Open Scope package_scope.
-
-Module Schnorr := SigmaProtocol MyParam MyAlg.
-
-Import MyParam MyAlg Schnorr.
 
 #[local] Definition f (e w : Witness) :
   Arit (uniform i_witness) → Arit (uniform i_witness) :=
@@ -206,12 +213,11 @@ Qed.
 
 (* Main theorem. *)
 (* Proves that Schnorr is a ∑-protocol with perfect special honest-verifier
-  zero-knowledge
-*)
+  zero-knowledge *)
 Theorem schnorr_SHVZK :
   ∀ LA A,
     ValidPackage LA [interface
-      val #[ TRANSCRIPT ] : chInput → 'option chTranscript
+      val #[ TRANSCRIPT ] : chInput → chTranscript
     ] A_export A →
     ɛ_SHVZK A = 0.
 Proof.
@@ -221,17 +227,11 @@ Proof.
   simplify_eq_rel hwe.
   (* Programming logic part *)
   destruct hwe as [[h w] e].
-  case_eq (R (otf h) (otf w)).
   (* We can only simulate if the relation is valid *)
-  2:{
-    intros _.
-    apply r_ret.
-    intuition auto.
-  }
-
+  ssprove_sync_eq=> rel.
   (* When relation holds we can reconstruct the first message from the response *)
-  unfold R => rel. apply reflection_nonsense in rel.
-  eapply r_uniform_bij with (1 := bij_f (otf w) (otf e)) => z_val.
+  unfold R in rel. apply reflection_nonsense in rel.
+  eapply r_uniform_bij with (1 := bij_f (otf w) (otf e))=> z_val.
   apply r_ret.
   (* Ambient logic proof of post condition *)
   intros s0 s1 Hs.
@@ -429,14 +429,23 @@ Qed.
 Lemma hiding_adv :
   ∀ LA A,
     ValidPackage LA [interface
-      val #[ HIDING ] : chInput → 'option chMessage
+      val #[ HIDING ] : chInput → chMessage
     ] A_export A →
+    fdisjoint LA Com_locs →
     ɛ_hiding A = 0.
 Proof.
-  intros LA A Va.
+  intros LA A Va Hdisj.
   unfold ɛ_hiding.
-  apply: eq_rel_perf_ind_eq.
-  2,3: rewrite ?fset0U ; apply fdisjoints0.
+  eapply eq_rel_perf_ind.
+  1,2: exact _.
+  1:{ instantiate (1 := (heap_ignore Com_locs)).
+      ssprove_invariant.
+      unfold Sigma_locs.
+      rewrite !fsetU0 !fset0U.
+      apply fsubsetUl. }
+  3,4: rewrite ?fset0U ; unfold Sigma_locs;
+       rewrite !fsetU0; apply Hdisj.
+  2: apply Va.
   simplify_eq_rel hwe.
   ssprove_code_simpl.
   destruct hwe as [[h w] e].
@@ -447,84 +456,38 @@ Proof.
   }
   intro e'.
   rewrite !cast_fun_K.
-  case_eq (R (otf h) (otf w)) => rel.
-  - eapply r_bind with (λ '(b₀, s₀) '(b₁, s₁),
-      match (b₀, b₁) with
-      | (Some (a,_,_), Some(a',_,_)) => a' = a
-      | _ => false
-      end ∧ s₀ = s₁
-    ).
-    1: eapply r_bind with (λ '(b₀, s₀) '(b₁, s₁),
-      match (b₀, b₁) with
-        | (Some (a,_,_), Some(a',_,_)) => a' = a
-        | _ => false
-      end ∧ s₀ = s₁
-    ).
-    + ssprove_sync_eq => a.
-      apply r_ret.
-      move=> ???.
-      auto.
-    + move=> a a'.
-      eapply r_ret.
-      move=> ???.
-      destruct a, a'. all: auto.
-    + move=> a a'.
-      apply rpre_hypothesis_rule.
-      move=> s0 s1 [Ha Hs].
-      destruct a, a'.
-      * destruct s,s2.
-        destruct s,s2.
-        rewrite Ha.
-        apply r_ret => ?? Hs0.
-        inversion Hs0.
-        simpl in H, H0.
-        rewrite H H0 Hs.
-        split. all: reflexivity.
-      * destruct s,s2.
-        destruct s,s2.
-        exfalso ; rewrite - boolp.falseE ; assumption.
-      * exfalso ; rewrite - boolp.falseE ; assumption.
-      * exfalso ; rewrite - boolp.falseE ; assumption.
-  - eapply r_bind.
-    1:{
-      apply r_ret => ?? ->.
-      reflexivity.
-    }
-    intros a a'.
-    apply rpre_hypothesis_rule => s0 s1 H.
-    inversion H.
-    destruct a,a'.
-    + destruct s, s2.
-      destruct s, s2.
-      apply r_ret => ?? [Hs1 Hs2].
-      simpl in Hs1, Hs2.
-      rewrite Hs1 Hs2.
-      split. all: reflexivity.
-    + discriminate.
-    + discriminate.
-    + apply r_ret => ?? [Hs1 Hs2].
-      simpl in Hs1, Hs2.
-      rewrite Hs1 Hs2.
-      split. all: reflexivity.
+  ssprove_code_simpl.
+  ssprove_code_simpl_more.
+  ssprove_sync_eq=> rel.
+  ssprove_sync=> x.
+  eapply r_put_vs_put.
+  eapply r_put_vs_put.
+  ssprove_restore_pre.
+  1: ssprove_invariant.
+  eapply r_ret.
+  move=> ?? H.
+  split; [done | apply H].
 Qed.
 
 (* Main theorem proving that the Schnorr protocol has perfect hiding. *)
 Theorem schnorr_com_hiding :
   ∀ LA A,
     ValidPackage LA [interface
-      val #[ HIDING ] : chInput → 'option chMessage
+      val #[ HIDING ] : chInput → chMessage
     ] A_export A →
+    fdisjoint LA Com_locs →
     AdvantageE (Hiding_real ∘ Sigma_to_Com ∘ SHVZK_ideal) (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK_ideal) A <= 0.
 Proof.
-  intros LA A Va.
+  intros LA A Va Hdisj.
   have H := commitment_hiding LA A 0 Va.
   rewrite !GRing.addr0 in H.
   have HS := schnorr_SHVZK _ _ _.
   rewrite hiding_adv in H.
+  2: assumption.
   apply AdvantageE_le_0 in H.
   1: rewrite H ; trivial.
   intros A' Va'.
-  by have -> := HS (LA :|: Sigma_locs) A' Va'.
+  by have -> := HS _ A' Va'.
 Qed.
 
 (* Main theorem *)
@@ -547,3 +510,27 @@ Proof.
   rewrite extractor_success in H. 2: apply Hdisj.
   apply H.
 Qed.
+
+End Schnorr.
+
+Module GP_Z3 <: GroupParam.
+
+  Definition gT : finGroupType := Zp_finGroupType 2.
+  Definition ζ : {set gT} := [set : gT].
+  Definition g :  gT := Zp1.
+
+  Lemma g_gen : ζ = <[g]>.
+  Proof.
+    unfold ζ, g. apply Zp_cycle.
+  Qed.
+
+  Lemma prime_order : prime #[g].
+  Proof.
+    unfold g.
+    rewrite order_Zp1.
+    reflexivity.
+  Qed.
+
+End GP_Z3.
+
+Module Schnorr_Z3 := Schnorr GP_Z3.
