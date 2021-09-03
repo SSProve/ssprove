@@ -487,6 +487,14 @@ Ltac ssprove_swap_auto :=
   apply rsamplerC'_cmd
   : ssprove_swap.
 
+#[export] Hint Extern 10 (⊢ ⦃ _ ⦄ _ ← _ ;; _ ← cmd (cmd_sample _) ;; _ ≈ _ ⦃ _ ⦄) =>
+  apply rsamplerC
+  : ssprove_swap.
+
+#[export] Hint Extern 10 (⊢ ⦃ _ ⦄ _ ← cmd (cmd_sample _) ;; _ ← _ ;; _ ≈ _ ⦃ _ ⦄) =>
+  apply rsamplerC'
+  : ssprove_swap.
+
 #[export] Hint Extern 10 (⊢ ⦃ _ ⦄ _ ← cmd (cmd_get _) ;; _ ← cmd (cmd_get _) ;; _ ≈ _ ⦃ _ ⦄) =>
   apply r_get_swap
   : ssprove_swap.

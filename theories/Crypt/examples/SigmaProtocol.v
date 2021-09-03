@@ -431,7 +431,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       2:{ apply r_ret. intuition auto. }
 
       ssprove_code_simpl.
-      apply rsame_head. intros [? [[] []]]. (* TODO Simplify here *)
+      apply rsame_head. intros [? [[] []]].
       apply r_ret. auto.
     Qed.
 
@@ -586,11 +586,10 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       ssprove_code_simpl_more. ssprove_code_simpl.
       ssprove_swap_rhs 0%N.
       ssprove_sync_eq. intro rel.
-      ssprove_swap_rhs 0%N. (* TODO Simplify here *)
-      1: eapply rsamplerC.
-      apply rsame_head. intros [a st]. (* TODO Simplify here *)
+      ssprove_swap_rhs 0%N.
+      apply rsame_head. intros [a st].
       ssprove_sync_eq. intro e.
-      apply rsame_head. intro z. (* TODO Simplify here *)
+      apply rsame_head. intro z.
       apply r_ret. intuition auto.
     Qed.
 
@@ -635,7 +634,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       ssprove_code_simpl.
       destruct hw as [h w].
       ssprove_sync. intros rel.
-      eapply rsame_head_alt. (* TODO Simplify here? *)
+      eapply rsame_head_alt.
       1: exact _.
       1:{
         intros l Il.

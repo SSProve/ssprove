@@ -314,7 +314,7 @@ Proof.
   2:{ apply r_ret. auto. }
   repeat destruct chUniverse_eqP.
   2,3: apply r_ret ; auto.
-  apply rsame_head. intros [s [[s0 s3] [s1 s2]]]. (* TODO Simplify *)
+  apply rsame_head. intros [s [[s0 s3] [s1 s2]]].
   ssprove_code_simpl. simpl.
   match goal with
   | |- context [ if ?b then _ else _ ] => case b eqn:rel
