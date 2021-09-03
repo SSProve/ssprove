@@ -33,7 +33,7 @@ Import PackageNotation.
 
 Module Type SigmaProtocolParams.
 
-  Parameter Witness Statement Message Challenge Response State : finType.
+  Parameter Witness Statement Message Challenge Response : finType.
   Parameter w0 : Witness.
   Parameter e0 : Challenge.
   Parameter z0 : Response.
@@ -44,7 +44,6 @@ Module Type SigmaProtocolParams.
   Parameter Message_pos : Positive #|Message|.
   Parameter Challenge_pos : Positive #|Challenge|.
   Parameter Response_pos : Positive #|Response|.
-  Parameter State_pos : Positive #|State|.
   Parameter Bool_pos : Positive #|bool_choiceType|.
 
 End SigmaProtocolParams.
@@ -61,7 +60,6 @@ Module Type SigmaProtocolAlgorithms (π : SigmaProtocolParams).
   #[local] Existing Instance Message_pos.
   #[local] Existing Instance Challenge_pos.
   #[local] Existing Instance Response_pos.
-  #[local] Existing Instance State_pos.
 
   Definition choiceWitness := 'fin #|Witness|.
   Definition choiceStatement := 'fin #|Statement|.
@@ -70,7 +68,6 @@ Module Type SigmaProtocolAlgorithms (π : SigmaProtocolParams).
   Definition choiceResponse := 'fin #|Response|.
   Definition choiceTranscript :=
     chProd (chProd (chProd choiceStatement choiceMessage) choiceChallenge) choiceResponse.
-  Definition choiceState := 'fin #|State|.
   Definition choiceBool := 'fin #|bool_choiceType|.
 
   Parameter Sigma_locs : {fset Location}.
@@ -78,10 +75,10 @@ Module Type SigmaProtocolAlgorithms (π : SigmaProtocolParams).
 
   Parameter Commit :
     ∀ (h : choiceStatement) (w : choiceWitness),
-      code Sigma_locs [interface] (choiceMessage × choiceState).
+      code Sigma_locs [interface] choiceMessage.
 
   Parameter Response :
-    ∀ (h : choiceStatement) (w : choiceWitness) (s : choiceState)
+    ∀ (h : choiceStatement) (w : choiceWitness)
       (a : choiceMessage) (e : choiceChallenge),
       code Sigma_locs [interface] choiceResponse.
 
@@ -150,9 +147,8 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       {
         let '(h,w,e) := hwe in
         #assert (R (otf h) (otf w)) ;;
-        m ← Commit h w ;;
-        let '(a, s) := m in
-        z ← Response h w s a e ;;
+        a ← Commit h w ;;
+        z ← Response h w a e ;;
         @ret choiceTranscript (h,a,e,z)
       }
     ].
@@ -246,9 +242,9 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       apply in_fset_left; solve [auto_in_fset]
       : typeclass_instances ssprove_valid_db.
 
-    Definition Sigma_to_Com :
-      package (Com_locs :|: Sigma_locs)
-        [interface val #[ TRANSCRIPT ] : chInput → chTranscript ]
+    Definition Sigma_to_Com:
+      package Com_locs
+        [interface val #[ TRANSCRIPT ] : chInput → chTranscript]
         [interface
           val #[ COM ] : chInput → chMessage ;
           val #[ OPEN ] : 'unit → chOpen ;
@@ -332,11 +328,11 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         ValidPackage LA [interface
           val #[ HIDING ] : chInput → chMessage
         ] A_export A →
-        (∀ A',
-          ValidPackage (LA :|: Com_locs :|: Sigma_locs) [interface
+        (∀ B,
+          ValidPackage (LA :|: Com_locs) [interface
             val #[ TRANSCRIPT ] : chInput → chTranscript
-          ] A_export A' →
-          ɛ_SHVZK A' <= eps
+          ] A_export B →
+          ɛ_SHVZK B <= eps
         ) →
         AdvantageE
           (Hiding_real ∘ Sigma_to_Com ∘ SHVZK_ideal)
@@ -361,17 +357,15 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         apply Hadv. ssprove_valid.
         + apply fsub0set.
         + apply fsubsetxx.
-        + eapply fsubset_trans. 2: eapply fsubsetUl.
-          apply fsubsetUl.
-        + apply fsetSU. apply fsubsetUr.
+        + apply fsubsetUl.
+        + apply fsubsetUr.
       - specialize (Hadv (A ∘ Hiding_ideal ∘ Sigma_to_Com)).
         rewrite <- link_assoc.
         apply Hadv. ssprove_valid.
         + apply fsub0set.
         + apply fsubsetxx.
-        + eapply fsubset_trans. 2: eapply fsubsetUl.
-          apply fsubsetUl.
-        + apply fsetSU. apply fsubsetUr.
+        + apply fsubsetUl.
+        + apply fsubsetUr.
     Qed.
 
     Definition Com_Binding :
@@ -506,10 +500,10 @@ Module SigmaProtocol (π : SigmaProtocolParams)
           #import {sig #[ QUERY ] : 'query → 'random } as RO_query ;;
           let '(h,w) := hw in
           #assert (R (otf h) (otf w)) ;;
-          '(a,st) ← Commit h w ;;
+          a ← Commit h w ;;
           RO_init Datatypes.tt ;;
           e ← RO_query (prod_assoc (h, a)) ;;
-          z ← Response h w st a e ;;
+          z ← Response h w a e ;;
           @ret choiceTranscript (h,a,e,z)
         }
       ].
@@ -532,9 +526,9 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         {
           let '(h,w) := hw in
           #assert (R (otf h) (otf w)) ;;
-          '(a,st) ← Commit h w ;;
+          a ← Commit h w ;;
           e ← sample uniform i_random ;;
-          z ← Response h w st a e ;;
+          z ← Response h w a e ;;
           @ret choiceTranscript (h,a,e,z)
         }
       ].

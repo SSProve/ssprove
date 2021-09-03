@@ -57,7 +57,6 @@ Module MyParam <: SigmaProtocolParams.
   Definition Response : finType :=  [finType of 'Z_q].
   Definition Transcript :=
     prod_finType (prod_finType Message Challenge) Response.
-  Definition State := Witness.
 
   Definition w0 : Witness := 0.
   Definition e0 : Challenge := 0.
@@ -80,7 +79,6 @@ Module MyParam <: SigmaProtocolParams.
   Definition Message_pos : Positive #|Message| := _.
   Definition Challenge_pos : Positive #|Challenge| := _.
   Definition Response_pos : Positive #|Response| := _.
-  Definition State_pos : Positive #|State| := _.
   Definition Bool_pos : Positive #|bool_choiceType|.
   Proof.
     rewrite card_bool. done.
@@ -103,7 +101,6 @@ Module MyAlg <: SigmaProtocolAlgorithms MyParam.
     chProd
       (chProd (chProd choiceStatement choiceMessage) choiceChallenge)
       choiceResponse.
-  Definition choiceState := 'fin #|State|.
   Definition choiceBool := 'fin #|bool_choiceType|.
 
   Definition i_witness := #|Witness|.
@@ -111,20 +108,23 @@ Module MyAlg <: SigmaProtocolAlgorithms MyParam.
   Definition HIDING : nat := 0.
   Definition SOUNDNESS : nat := 1.
 
-  Definition Sigma_locs : {fset Location} := fset0.
+  Definition commit_loc : Location := (choiceWitness; 2%N).
+
+  Definition Sigma_locs : {fset Location} := fset [:: commit_loc].
   Definition Simulator_locs : {fset Location} := fset0.
 
   Definition Commit (h : choiceStatement) (w : choiceWitness):
-    code Sigma_locs [interface] (choiceMessage × choiceState) :=
+    code Sigma_locs [interface] choiceMessage :=
     {code
       r ← sample uniform i_witness ;;
-      ret (fto (g ^+ otf r), r)
+      put commit_loc := r ;;
+      ret (fto (g ^+ (otf r)))
     }.
 
-  Definition Response (h : choiceStatement) (w : choiceWitness)
-    (r : choiceState) (a : choiceMessage) (e : choiceChallenge) :
+  Definition Response (h : choiceStatement) (w : choiceWitness) (a : choiceMessage) (e : choiceChallenge) :
     code Sigma_locs [interface] choiceResponse :=
     {code
+      r ← get commit_loc ;;
       ret (fto (otf r + otf e * otf w))
     }.
 
@@ -228,11 +228,16 @@ Theorem schnorr_SHVZK :
     ValidPackage LA [interface
       val #[ TRANSCRIPT ] : chInput → chTranscript
     ] A_export A →
+    fdisjoint LA Sigma_locs →
     ɛ_SHVZK A = 0.
 Proof.
-  intros LA A Hvalid.
-  apply: eq_rel_perf_ind_eq.
-  2,3: apply fdisjoints0.
+  intros LA A Va Hdisj.
+  apply: eq_rel_perf_ind.
+  all: ssprove_valid.
+  3: apply fdisjoints0.
+  1:{ instantiate (1 := heap_ignore Sigma_locs).
+      ssprove_invariant.
+      apply fsubsetUl. }
   simplify_eq_rel hwe.
   (* Programming logic part *)
   destruct hwe as [[h w] e].
@@ -241,6 +246,10 @@ Proof.
   (* When relation holds we can reconstruct the first message from the response *)
   unfold R in rel. apply reflection_nonsense in rel.
   eapply r_uniform_bij with (1 := bij_f (otf w) (otf e)). intros z_val.
+  ssprove_contract_put_get_lhs.
+  apply r_put_lhs.
+  ssprove_restore_pre.
+  1: ssprove_invariant.
   apply r_ret.
   (* Ambient logic proof of post condition *)
   intros s₀ s₁ Hs.
@@ -437,9 +446,10 @@ Lemma hiding_adv :
       val #[ HIDING ] : chInput → chMessage
     ] A_export A →
     fdisjoint LA Com_locs →
+    fdisjoint LA Sigma_locs →
     ɛ_hiding A = 0.
 Proof.
-  intros LA A Va Hdisj.
+  intros LA A Va Hdisj0 Hdisj1.
   unfold ɛ_hiding.
   eapply eq_rel_perf_ind.
   1,2: exact _.
@@ -447,12 +457,17 @@ Proof.
     instantiate (1 := (heap_ignore Com_locs)).
     ssprove_invariant.
     unfold Sigma_locs.
-    rewrite !fsetU0 !fset0U.
-    apply fsubsetUl.
+    rewrite !fset0U.
+    apply fsubsetU.
+    apply /orP. left.
+    apply fsubsetU.
+    apply /orP. left.
+    apply fsubsetxx.
   }
   3,4:
     rewrite ?fset0U ; unfold Sigma_locs;
-    rewrite !fsetU0; apply Hdisj.
+    repeat rewrite fdisjointUr ;
+    apply /andP ; split ; eassumption.
   2: apply Va.
   simplify_eq_rel hwe.
   ssprove_code_simpl.
@@ -464,9 +479,13 @@ Proof.
   }
   intro e'.
   rewrite !cast_fun_K.
-  ssprove_code_simpl. ssprove_code_simpl_more.
-  ssprove_sync_eq. intro rel.
-  ssprove_sync. intro x.
+  ssprove_code_simpl.
+  ssprove_code_simpl_more.
+  ssprove_sync_eq=> rel.
+  ssprove_sync=> x.
+  ssprove_contract_put_get_lhs.
+  ssprove_contract_put_get_rhs.
+  eapply r_put_vs_put.
   eapply r_put_vs_put.
   eapply r_put_vs_put.
   ssprove_restore_pre. 1: ssprove_invariant.
@@ -480,18 +499,28 @@ Theorem schnorr_com_hiding :
       val #[ HIDING ] : chInput → chMessage
     ] A_export A →
     fdisjoint LA Com_locs →
+    fdisjoint LA Sigma_locs →
     AdvantageE (Hiding_real ∘ Sigma_to_Com ∘ SHVZK_ideal) (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK_ideal) A <= 0.
 Proof.
-  intros LA A Va Hdisj.
+  intros LA A Va Hdisj0 Hdisj1.
   have H := commitment_hiding LA A 0 Va.
   rewrite !GRing.addr0 in H.
   have HS := schnorr_SHVZK _ _ _.
   rewrite hiding_adv in H.
-  2: assumption.
+  2,3: assumption.
   apply AdvantageE_le_0 in H.
   1: rewrite H ; trivial.
-  intros A' Va'.
-  by have -> := HS _ A' Va'.
+  intros B Vb.
+  have -> := HS _ B Vb.
+  2:{ erewrite fdisjointUl.
+      apply /andP.
+      split.
+      - assumption.
+      - unfold Com_locs, Sigma_locs.
+        rewrite -fset1E.
+        rewrite fdisjoints1.
+        in_fset_auto. }
+  done.
 Qed.
 
 (* Main theorem *)
