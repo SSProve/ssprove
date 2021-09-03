@@ -198,8 +198,8 @@ Section KEMDEM.
     We use this relation to state the correctness of KEM_encap.
 
     The [⊢ₛ _ ⦃ _ ⦄] notation corresponds to unary specifications with only a
-    post-condition. They correspond to the diagonal of relational
-    specifications.
+    post-condition on the result. They correspond to the diagonal of relational
+    specifications, with the addition that state must be preserved.
   *)
 
   Context (pkey_pair : (chProd 'pkey 'skey) → Prop).
