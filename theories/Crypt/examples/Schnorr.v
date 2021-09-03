@@ -55,7 +55,8 @@ Module MyParam <: SigmaProtocolParams.
   Definition Message : finType := FinGroup.arg_finType gT.
   Definition Challenge : finType := [finType of 'Z_q].
   Definition Response : finType :=  [finType of 'Z_q].
-  Definition Transcript := prod_finType (prod_finType Message Challenge) Response.
+  Definition Transcript :=
+    prod_finType (prod_finType Message Challenge) Response.
   Definition State := Witness.
 
   Definition w0 : Witness := 0.
@@ -98,7 +99,10 @@ Module MyAlg <: SigmaProtocolAlgorithms MyParam.
   Definition choiceMessage : chUniverse := 'fin #|Message|.
   Definition choiceChallenge : chUniverse := 'fin #|Challenge|.
   Definition choiceResponse : chUniverse := 'fin #|Response|.
-  Definition choiceTranscript : chUniverse := chProd (chProd (chProd choiceStatement choiceMessage) choiceChallenge) choiceResponse.
+  Definition choiceTranscript : chUniverse :=
+    chProd
+      (chProd (chProd choiceStatement choiceMessage) choiceChallenge)
+      choiceResponse.
   Definition choiceState := 'fin #|State|.
   Definition choiceBool := 'fin #|bool_choiceType|.
 
@@ -160,10 +164,12 @@ Proof.
   move => x y.
   have Hx: exists ix, x = g^+ix.
   { apply /cycleP. rewrite -g_gen.
-    apply: in_setT. }
+    apply: in_setT.
+  }
   have Hy: exists iy, y = g^+iy.
   { apply /cycleP. rewrite -g_gen.
-    apply: in_setT. }
+    apply: in_setT.
+  }
   destruct Hx as [ix Hx].
   destruct Hy as [iy Hy].
   subst.
@@ -176,13 +182,16 @@ Proof.
   move => x y z.
   have Hx: exists ix, x = g^+ix.
   { apply /cycleP. rewrite -g_gen.
-    apply: in_setT. }
+    apply: in_setT.
+  }
   have Hy: exists iy, y = g^+iy.
   { apply /cycleP. rewrite -g_gen.
-    apply: in_setT. }
+    apply: in_setT.
+  }
   have Hz: exists iz, z = g^+iz.
   { apply /cycleP. rewrite -g_gen.
-    apply: in_setT. }
+    apply: in_setT.
+  }
   destruct Hx as [ix Hx].
   destruct Hy as [iy Hy].
 
@@ -228,13 +237,13 @@ Proof.
   (* Programming logic part *)
   destruct hwe as [[h w] e].
   (* We can only simulate if the relation is valid *)
-  ssprove_sync_eq=> rel.
+  ssprove_sync_eq. intros rel.
   (* When relation holds we can reconstruct the first message from the response *)
   unfold R in rel. apply reflection_nonsense in rel.
-  eapply r_uniform_bij with (1 := bij_f (otf w) (otf e))=> z_val.
+  eapply r_uniform_bij with (1 := bij_f (otf w) (otf e)). intros z_val.
   apply r_ret.
   (* Ambient logic proof of post condition *)
-  intros s0 s1 Hs.
+  intros s₀ s₁ Hs.
   unfold f.
   rewrite rel.
   split.
@@ -301,21 +310,18 @@ Proof.
   simplify_eq_rel h.
   (* This program is composed with abstract adversarial code. *)
   (* We need to ensure that the composition is valid. *)
-  destruct (Adv ADV).
-  1: destruct t, s ; repeat destruct (chUniverse_eqP).
-  2-4: apply r_ret ; auto.
-  apply rsame_head => run.
-  ssprove_code_simpl.
-  destruct run, s0, s1, s2, s0.
-  ssprove_code_simpl.
-  simpl.
+  destruct (Adv ADV) as [[? []]|].
+  2:{ apply r_ret. auto. }
+  repeat destruct chUniverse_eqP.
+  2,3: apply r_ret ; auto.
+  apply rsame_head. intros [s [[s0 s3] [s1 s2]]]. (* TODO Simplify *)
+  ssprove_code_simpl. simpl.
   match goal with
   | |- context [ if ?b then _ else _ ] => case b eqn:rel
   end.
   2: apply r_ret ; intuition auto.
   apply r_ret.
-  intros ?? s_eq.
-  split. 2: apply s_eq.
+  intros. intuition auto.
   (* Algebraic proof that the produced witness satisfies the relation. *)
   unfold R.
   unfold "&&" in rel.
@@ -324,19 +330,18 @@ Proof.
   | |- context [ if ?b then _ else _ ] => case b eqn:?
   end.
   2,3: discriminate.
-  rewrite otf_fto in Heqs3.
+  rewrite otf_fto in Heqs4.
   rewrite otf_fto in rel.
   apply reflection_nonsense in rel.
-  apply reflection_nonsense in Heqs3.
-  rewrite H0.
-  f_equal.
+  apply reflection_nonsense in Heqs4.
+  rewrite H1.
   rewrite otf_fto expg_mod.
   2: rewrite order_ge1 ; apply expg_order.
   rewrite expgM expg_mod.
   2: rewrite order_ge1 ; apply expg_order.
   rewrite expgD -FinRing.zmodVgE expg_zneg.
   2: apply cycle_id.
-  rewrite Heqs3 rel !expgMn.
+  rewrite Heqs4 rel !expgMn.
   2-3: apply group_prodC.
   rewrite invMg !expgMn.
   2: apply group_prodC.
@@ -438,13 +443,16 @@ Proof.
   unfold ɛ_hiding.
   eapply eq_rel_perf_ind.
   1,2: exact _.
-  1:{ instantiate (1 := (heap_ignore Com_locs)).
-      ssprove_invariant.
-      unfold Sigma_locs.
-      rewrite !fsetU0 !fset0U.
-      apply fsubsetUl. }
-  3,4: rewrite ?fset0U ; unfold Sigma_locs;
-       rewrite !fsetU0; apply Hdisj.
+  1:{
+    instantiate (1 := (heap_ignore Com_locs)).
+    ssprove_invariant.
+    unfold Sigma_locs.
+    rewrite !fsetU0 !fset0U.
+    apply fsubsetUl.
+  }
+  3,4:
+    rewrite ?fset0U ; unfold Sigma_locs;
+    rewrite !fsetU0; apply Hdisj.
   2: apply Va.
   simplify_eq_rel hwe.
   ssprove_code_simpl.
@@ -456,17 +464,13 @@ Proof.
   }
   intro e'.
   rewrite !cast_fun_K.
-  ssprove_code_simpl.
-  ssprove_code_simpl_more.
-  ssprove_sync_eq=> rel.
-  ssprove_sync=> x.
+  ssprove_code_simpl. ssprove_code_simpl_more.
+  ssprove_sync_eq. intro rel.
+  ssprove_sync. intro x.
   eapply r_put_vs_put.
   eapply r_put_vs_put.
-  ssprove_restore_pre.
-  1: ssprove_invariant.
-  eapply r_ret.
-  move=> ?? H.
-  split; [done | apply H].
+  ssprove_restore_pre. 1: ssprove_invariant.
+  apply r_ret. intuition auto.
 Qed.
 
 (* Main theorem proving that the Schnorr protocol has perfect hiding. *)

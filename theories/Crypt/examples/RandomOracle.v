@@ -68,7 +68,7 @@ Module RO (π : ROParams).
       def #[ QUERY ] (q : 'query) : 'random
       {
         queries ← get queries_loc ;;
-        match (queries q) with
+        match queries q with
         | Some r =>
           ret r
         | None =>
