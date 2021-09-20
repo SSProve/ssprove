@@ -77,7 +77,7 @@ Package laws, as introduced in the paper, are all stated and proven in
 #### Sequential composition
 
 In Coq, we call `link p1 p2` the sequential composition of `p1` and `p2`
-(written `p1 ∘ p2` in the paper).
+(written `p1 ∘ p2` in the paper, but also in Coq thanks to notations).
 
 ```coq
 Definition link (p1 p2 : raw_package) : raw_package.
@@ -105,7 +105,7 @@ It holds directly on raw packages, even if they are ill-formed.
 
 #### Parallel composition
 
-In Coq, we write `par p1 p2` for the parallel composition of `p1` and `p2`:
+In Coq, we write `par p1 p2` for the parallel composition of `p1` and `p2`
 (written `p1 || p2` in the paper).
 
 ```coq
@@ -250,8 +250,44 @@ Theorem ElGamal_OT :
 
 #### KEM-DEM
 
-As stated in the paper, we also formalised the KEM-DEM example, whose definition
-and proof can be found in [examples/KEMDEM.v].
+The KEM-DEM case-study can be found in [examples/KEMDEM.v].
+
+The single key lemma is identified by `single_key_a` and `single_key_b`,
+corresponding to the two inequalities of the paper. Their statements are
+really verbose because of a lot of side-conditions pertaining to the validity
+of the composed packages so we refer the user to the file.
+
+The invariant used to prove perfect indistinguishability is given by
+```coq
+Notation inv := (
+  heap_ignore KEY_loc ⋊
+  triple_rhs pk_loc k_loc ek_loc PKE_inv ⋊
+  couple_lhs pk_loc sk_loc (sameSomeRel PkeyPair)
+).
+```
+We one again refer the use to the commented file for details.
+Said perfect indistinguishability is stated as
+```coq
+Lemma PKE_CCA_perf :
+  ∀ b, (PKE_CCA KEM_DEM b) ≈₀ Aux b.
+```
+while the final security theorem is the following:
+```coq
+Theorem PKE_security :
+  ∀ LA A,
+    ValidPackage LA PKE_CCA_out A_export A →
+    fdisjoint LA PKE_CCA_loc →
+    fdisjoint LA Aux_loc →
+    Advantage (PKE_CCA KEM_DEM) A <=
+    Advantage KEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (ID KEM_out) (DEM true)) +
+    Advantage DEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (KEM false) (ID DEM_out)) +
+    Advantage KEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (ID KEM_out) (DEM false)).
+```
+
+#### Σ-protocols
+
+The Σ-protocols case-study is divided over three files:
+[examples/RandomOracle.v], [examples/SigmaProtocol.v] and [examples/Schnorr.v].
 
 
 ### Probabilistic relational program logic
@@ -485,6 +521,9 @@ The axioms we use do not depend on the instance itself.
 [examples/PRF.v]: theories/Crypt/examples/PRF.v
 [examples/ElGamal.v]: theories/Crypt/examples/ElGamal.v
 [examples/KEMDEM.v]: theories/Crypt/examples/KEMDEM.v
+[examples/RandomOracle.v]: theories/Crypt/examples/RandomOracle.v
+[examples/SigmaProtocol.v]: theories/Crypt/examples/SigmaProtocol.v
+[examples/Schnorr.v]: theories/Crypt/examples/Schnorr.v
 [package/pkg_rhl.v]: theories/Crypt/package/pkg_rhl.v
 [rules/RulesStateProb.v]: theories/Crypt/rules/RulesStateProb.v
 [package/pkg_advantage.v]: theories/Crypt/package/pkg_advantage.v
