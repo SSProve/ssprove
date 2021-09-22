@@ -2244,7 +2244,7 @@ Qed.
 
 Lemma r_fail_unit :
   ∀ pre post,
-    ⊢ ⦃ pre ⦄ fail_unit ≈ fail_unit ⦃ post ⦄.
+    ⊢ ⦃ pre ⦄ @fail 'unit ≈ @fail 'unit ⦃ post ⦄.
 Proof.
   intros pre post.
   eapply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.

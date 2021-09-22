@@ -156,29 +156,25 @@ Qed.
 
 (** Fail and Assert *)
 
-Definition fail_unit : raw_code 'unit :=
-  x ← sample ('unit ; dnull) ;; ret x.
-
-Definition assert b : raw_code 'unit :=
-  if b then ret Datatypes.tt else fail_unit.
-
 (* fail at any type in the chUniverse *)
 Definition fail {A : chUniverse} : raw_code A :=
   x ← sample (A ; dnull) ;; ret x.
+
+Definition assert b : raw_code 'unit :=
+  if b then ret Datatypes.tt else @fail 'unit.
 
 (* Dependent version of assert *)
 Definition assertD {A : chUniverse} b (k : b = true → raw_code A) : raw_code A :=
   (if b as b' return b = b' → raw_code A then k else λ _, fail) erefl.
 
-Lemma valid_fail_unit :
-  ∀ L I, ValidCode L I fail_unit.
+Lemma valid_fail :
+  ∀ A L I, valid_code L I (@fail A).
 Proof.
-  intros L I.
-  unfold fail_unit. eapply valid_code_from_class. exact _.
+  intros A L I. unfold fail. eapply valid_code_from_class. exact _.
 Qed.
 
-#[export] Hint Extern 1 (ValidCode ?L ?I fail_unit) =>
-  eapply valid_fail_unit
+#[export] Hint Extern 1 (ValidCode ?L ?I fail) =>
+  eapply valid_fail
   : typeclass_instances ssprove_valid_db.
 
 Lemma valid_assert :
@@ -189,16 +185,6 @@ Qed.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (assert ?b)) =>
   eapply valid_assert
-  : typeclass_instances ssprove_valid_db.
-
-Lemma valid_fail :
-  ∀ A L I, valid_code L I (@fail A).
-Proof.
-  intros A L I. unfold fail. eapply valid_code_from_class. exact _.
-Qed.
-
-#[export] Hint Extern 1 (ValidCode ?L ?I fail) =>
-  eapply valid_fail
   : typeclass_instances ssprove_valid_db.
 
 Lemma valid_assertD :
