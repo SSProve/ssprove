@@ -287,9 +287,70 @@ Theorem PKE_security :
 
 #### Σ-protocols
 
-The Σ-protocols case-study is divided over three files:
-[examples/RandomOracle.v], [examples/SigmaProtocol.v] and [examples/Schnorr.v].
+The Σ-protocols case-study is divided over two files: 
+[examples/SigmaProtocol.v] and [examples/Schnorr.v].
 
+The security theorem for hiding of commitment scheme from Σ-protocols is:
+
+```coq
+Theorem commitment_hiding :
+  ∀ LA A eps,
+    ValidPackage LA [interface
+      val #[ HIDING ] : chInput → chMessage
+    ] A_export A →
+    (∀ B,
+      ValidPackage (LA :|: Com_locs) [interface
+        val #[ TRANSCRIPT ] : chInput → chTranscript
+      ] A_export B →
+      ɛ_SHVZK B <= eps
+    ) →
+    AdvantageE (Hiding_real ∘ Sigma_to_Com ∘ SHVZK_ideal) (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK_ideal) A <=
+    (ɛ_hiding A) + eps + eps.
+```
+
+And the corresponding theorem for binding:
+
+```coq
+Theorem commitment_binding :
+  ∀ LA A LAdv Adv,
+    ValidPackage LA [interface
+      val #[ SOUNDNESS ] : chStatement → 'bool
+    ] A_export A →
+    ValidPackage LAdv [interface] [interface
+      val #[ ADV ] : chStatement → chSoundness
+    ] Adv →
+    fdisjoint LA (Sigma_locs :|: LAdv) →
+    AdvantageE (Com_Binding ∘ Adv) (Special_Soundness_f ∘ Adv) A <=
+    ɛ_soundness A Adv.
+```
+
+Combining the above theorems with the instatiation of Schnorr's protocol we get a commitment scheme given by:
+
+```coq
+Theorem schnorr_com_hiding :
+  ∀ LA A,
+    ValidPackage LA [interface
+      val #[ HIDING ] : chInput → chMessage
+    ] A_export A →
+    fdisjoint LA Com_locs →
+    fdisjoint LA Sigma_locs →
+    AdvantageE (Hiding_real ∘ Sigma_to_Com ∘ SHVZK_ideal) (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK_ideal) A <= 0.
+```
+
+and
+
+```coq
+Theorem schnorr_com_binding :
+  ∀ LA A LAdv Adv,
+    ValidPackage LA [interface
+      val #[ SOUNDNESS ] : chStatement → 'bool
+    ] A_export A →
+    ValidPackage LAdv [interface] [interface
+      val #[ ADV ] : chStatement → chSoundness
+    ] Adv →
+    fdisjoint LA (Sigma_locs :|: LAdv) →
+    AdvantageE (Com_Binding ∘ Adv) (Special_Soundness_f ∘ Adv) A <= 0.
+```
 
 ### Probabilistic relational program logic
 
