@@ -62,7 +62,7 @@ Section KEMDEM.
   *)
 
   (** Symmetric key *)
-  Context keyD `{LosslessOp keyD}.
+  Context (keyD : Op).
   Definition chKey := keyD.π1.
 
   (** Public and secret key *)
