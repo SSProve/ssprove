@@ -291,7 +291,6 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         def #[ HIDING ] (hwe : chInput) : chMessage
         {
           #import {sig #[ COM ] : chInput → chMessage } as com ;;
-          _ ← sample uniform i_challenge ;;
           a ← com hwe ;;
           ret a
         }

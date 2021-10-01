@@ -471,13 +471,11 @@ Proof.
   2: apply Va.
   simplify_eq_rel hwe.
   ssprove_code_simpl.
+  simplify_linking.
   destruct hwe as [[h w] e].
-  eapply r_uniform_bij.
-  1:{
-    instantiate (1 := λ (e : choiceChallenge), e).
-    exists id. all: done.
-  }
-  intro e'.
+  apply r_const_sample_R.
+  1: apply LosslessOp_uniform.
+  intros e'.
   rewrite !cast_fun_K.
   ssprove_code_simpl.
   ssprove_code_simpl_more.
