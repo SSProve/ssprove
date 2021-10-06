@@ -1,11 +1,15 @@
 ![SSProve](https://user-images.githubusercontent.com/5850655/111436014-c6811f00-8701-11eb-9363-3f2a1b9e9da1.png)
 
-This repository contains the Coq formalisation of the paper:
+This repository contains the Coq formalisation of the paper(s):
 - **[SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq](https://www.computer.org/csdl/proceedings-article/csf/2021/760700a608/1uvIdwNa5Ne).**
   Carmine Abate, Philipp G. Haselwarter, Exequiel Rivas, Antoine Van Muylder,
   Théo Winterhalter, Cătălin Hrițcu, Kenji Maillard, and Bas Spitters.
   CSF 2021 **distinguished paper**.
-- [content-identical preprint without publisher paywall](https://eprint.iacr.org/2021/397)
+- [content-identical preprint without publisher paywall](https://eprint.iacr.org/2021/397).
+- **A future journal version (not yet available).**
+  Carmine Abate, Philipp G. Haselwarter, Exequiel Rivas, Antoine Van Muylder,
+  Théo Winterhalter, Nikolaj Sidorenco, Cătălin Hrițcu, Kenji Maillard, and
+  Bas Spitters.
 
 This README serves as a guide to running verification and finding the
 correspondence between the claims in the paper and the formal proofs in Coq, as
@@ -287,7 +291,7 @@ Theorem PKE_security :
 
 #### Σ-protocols
 
-The Σ-protocols case-study is divided over two files: 
+The Σ-protocols case-study is divided over two files:
 [examples/SigmaProtocol.v] and [examples/Schnorr.v].
 
 The security theorem for hiding of commitment scheme from Σ-protocols is:
@@ -354,41 +358,51 @@ Theorem schnorr_com_binding :
 
 ### Probabilistic relational program logic
 
-Figure 13 presents a selection of rules for our probabilistic relational
-program logic. Most of them can be found in
-[package/pkg_rhl.v] which provides an interface for using these
-rules directly with `code`.
+The paper version (CSF: Figure 13, journal: section 4.1) introduces a selection
+of rules for our probabilistic relational program logic.
+Most of them can be found in [package/pkg_rhl.v] which provides an interface for
+using these rules directly with `code`.
+We separate by a slash (/) rule names that differ in the CSF (left) and journal
+(right) version.
 
-| Rule in paper | Rule in Coq           |
-|---------------|-----------------------|
-| reflexivity   | `rreflexivity_rule`   |
-| seq           | `rbind_rule`          |
-| swap          | `rswap_rule`          |
-| eqDistrL      | `rrewrite_eqDistrL`   |
-| symmetry      | `rsymmetry`           |
-| for-loop      | `for_loop_rule`       |
-| uniform       | `r_uniform_bij`       |
-| asrt          | `r_assert'`           |
-| asrtL         | `r_assertL`           |
+| Rule in paper     | Rule in Coq           |
+|-------------------|-----------------------|
+| reflexivity       | `rreflexivity_rule`   |
+| seq               | `rbind_rule`          |
+| swap              | `rswap_rule`          |
+| eqDistrL          | `rrewrite_eqDistrL`   |
+| symmetry          | `rsymmetry`           |
+| for-loop          | `for_loop_rule`       |
+| uniform           | `r_uniform_bij`       |
+| dead-sample       | `r_dead_sample`       |
+| const-sample      | `r_const_sample`      |
+| asrt / assert     | `r_assert'`           |
+| asrtL / assertL   | `r_assertL`           |
+| assertD           | `r_assertD`           |
+| put-get           | `r_put_get`           |
+| async-get-lhs     | `r_get_remember_lhs`  |
+| async-get-lhs-rem | `r_get_remind_lhs`    |
+| async-put-lhs     | `r_put_lhs`           |
+| restore-pre-lhs   | `r_restore_lhs`       |
 
-Finally the "bwhile" rule is proven as `bounded_do_while_rule` in
-[rules/RulesStateProb.v].
+Finally the "bwhile" / "do-while" rule is proven as
+`bounded_do_while_rule` in [rules/RulesStateProb.v].
 
-### Lemmas 1 & 2 and Theorems 1 & 2 from the paper
+### Lemmas and Theorems from the paper
 
 We now list the lemmas and theorems about packages from the paper and in the
-case of Theorems 1 & 2 proven using our probabilistic relational program
-logic. The first two can be found in [package/pkg_advantage.v],
-the other two in [package/pkg_rhl.v].
+case of Theorems 1 and 2 (CSF) / Theorems 2.4 and 4.1 (journal) proven using our
+probabilistic relational program logic. The first two can be found in
+[package/pkg_advantage.v], the other two in [package/pkg_rhl.v].
 
-**Lemma 1 (Triangle Inequality)**
+**Lemma 1 / 2.2 (Triangle Inequality)**
 ```coq
 Lemma Advantage_triangle :
   ∀ P Q R A,
     AdvantageE P Q A <= AdvantageE P R A + AdvantageE R Q A.
 ```
 
-**Lemma 2 (Reduction)**
+**Lemma 2 / 2.3 (Reduction)**
 ```coq
 Lemma Advantage_link :
   ∀ G₀ G₁ A P,
@@ -396,7 +410,7 @@ Lemma Advantage_link :
     AdvantageE (P ∘ G₀) (P ∘ G₁) A.
 ```
 
-**Theorem 1**
+**Theorem 1 / 2.4**
 ```coq
 Lemma eq_upto_inv_perf_ind :
   ∀ {L₀ L₁ LA E} (p₀ p₁ : raw_package) (I : precond) (A : raw_package)
@@ -411,7 +425,7 @@ Lemma eq_upto_inv_perf_ind :
     AdvantageE p₀ p₁ A = 0.
 ```
 
-**Theorem 2**
+**Theorem 2 / 4.1**
 ```coq
 Lemma Pr_eq_empty :
   ∀ {X Y : ord_choiceType}
@@ -569,6 +583,7 @@ The ElGamal example is parametrized by a cyclic group using a Coq functor.
 To print its axioms we have to provide an instance of this functor, and for
 simplicity we chose to use ℤ₃ as an instance even if it is not realistic.
 The axioms we use do not depend on the instance itself.
+We do something similar for Schnorr's protocol.
 
 
 
