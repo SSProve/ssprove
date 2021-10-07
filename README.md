@@ -375,7 +375,7 @@ We separate by a slash (/) rule names that differ in the CSF (left) and journal
 | for-loop          | `for_loop_rule`       |
 | uniform           | `r_uniform_bij`       |
 | dead-sample       | `r_dead_sample`       |
-| const-sample      | `r_const_sample`      |
+| sample-irrelevant | `r_const_sample`      |
 | asrt / assert     | `r_assert'`           |
 | asrtL / assertL   | `r_assertL`           |
 | assertD           | `r_assertD`           |
