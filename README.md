@@ -442,23 +442,34 @@ Lemma Pr_eq_empty :
 
 ### Semantic model and soundness of rules
 
-This part of the mapping corresponds to section 5.
+This part of the mapping corresponds to section 5. Once again,
+we refer to results in the paper like so: CSF numbering/journal version numbering.
 
 #### 5.1 Relational effect observation
 
-In [theories/Relational/OrderEnrichedCategory.v] we introduce some abstract
-notions such as categories, functors, relative monads, lax morphisms of relative
+In our framework, a relational effect observation is defined
+as some kind of *lax morphism between order-enriched relative monads*.
+This general definition as well as the ingredients it requires are provided
+in [theories/Relational/OrderEnrichedCategory.v]. There we introduce
+categories, functors, relative monads, lax morphisms of relative
 monads and isomorphisms of functors, all of which are order-enriched.
-The file [theories/Relational/OrderEnrichedCategory.v] instantiates all of these
-abstract notions.
 
-Free monads are defined in
-[rhl_semantics/free_monad/FreeProbProg.v].
+Relational effect observations are lax morphisms between
+the following special cases of order-enriched relative monads:
+1. A product of Type valued order-enriched relative monads,
+   corresponding to pairs of effectful computations.
+2. A relational specification monad
 
-In [rhl_semantics/ChoiceAsOrd.v] we introduce the category of
-choice types (`choiceType`) which are useful for sub-distributions:
-they are basically the types from which we can sample.
-They are one of the reasons why our monads are always relative.
+To build the above computation part (1) of an effect observation,
+the file [theories/Relational/OrderEnrichedRelativeMonadExamples.v]
+equips Type with a structure of order-enriched category.
+Often we use free monads to package effectful computations.
+Those are defined in [rhl_semantics/free_monad/FreeProbProg.v].
+
+Since a relational specification monad as in (2) is by definition
+an order-enriched monad with codomain PreOrder, the latter
+category has to be endowed with an order-enrichment. This
+is done in [theories/Relational/OrderEnrichedRelativeMonadExamples.v].
 
 More basic categories can be found in the directory
 [rhl_semantics/more_categories/], namely in the files
@@ -467,6 +478,27 @@ More basic categories can be found in the directory
 
 
 #### 5.2 The probabilistic relational effect observation
+
+The files of interest are mainly contained in the
+[rhl_semantics/only_prob/] directory.
+
+This relational effect observation is defined in the
+file [rhl_semantics/only_prob/ThetaDex.v] as a composition:
+FreeProb² ---`unary_theta_dens²`---> SDistr² ---`θ_morph`---> Wrelprop
+
+The first part `unary_theta_dens²` consists in intepreting pairs
+of probabilistic programs into pairs of actual subdistributions.
+This unary semantics for probabilistic programs `unary_theta_dens`
+is defined in [rhl_semantics/only_prob/Theta_dens.v].
+It is defined by pattern matching on the given probabilistic program
+(which can be viewed as a tree).
+The free relative monad over a probabilistic signature is defined
+in [rhl_semantics/free_monad/FreeProbProg.v].
+
+In [rhl_semantics/ChoiceAsOrd.v] we introduce the category of
+choice types (`choiceType`) which are useful for sub-distributions:
+they are basically the types from which we can sample.
+They are one of the reasons why our monads are always relative.
 
 The theory for §5.2 is developed in the following files:
 [rhl_semantics/only_prob/Couplings.v],
@@ -606,6 +638,7 @@ We do something similar for Schnorr's protocol.
 [rules/RulesStateProb.v]: theories/Crypt/rules/RulesStateProb.v
 [package/pkg_advantage.v]: theories/Crypt/package/pkg_advantage.v
 [theories/Relational/OrderEnrichedCategory.v]: theories/Relational/OrderEnrichedCategory.v
+[theories/Relational/OrderEnrichedRelativeMonadExamples.v]: theories/Relational/OrderEnrichedRelativeMonadExamples.v
 [rhl_semantics/free_monad/FreeProbProg.v]: theories/Crypt/rhl_semantics/free_monad/FreeProbProg.v
 [rhl_semantics/ChoiceAsOrd.v]: theories/Crypt/rhl_semantics/ChoiceAsOrd.v
 [rhl_semantics/more_categories/]: theories/Crypt/rhl_semantics/more_categories/
@@ -613,6 +646,7 @@ We do something similar for Schnorr's protocol.
 [LaxComp.v]: theories/Crypt/rhl_semantics/more_categories/LaxComp.v
 [LaxFunctorsAndTransf.v]: theories/Crypt/rhl_semantics/more_categories/LaxFunctorsAndTransf.v
 [InitialRelativeMonad.v]: theories/Crypt/rhl_semantics/more_categories/InitialRelativeMonad.v
+[rhl_semantics/only_prob/]: theories/Crypt/rhl_semantics/only_prob/
 [rhl_semantics/only_prob/Couplings.v]: theories/Crypt/rhl_semantics/only_prob/Couplings.v
 [rhl_semantics/only_prob/Theta_dens.v]: theories/Crypt/rhl_semantics/only_prob/Theta_dens.v
 [rhl_semantics/only_prob/Theta_exCP.v]: theories/Crypt/rhl_semantics/only_prob/Theta_exCP.v
