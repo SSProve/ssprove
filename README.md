@@ -521,7 +521,7 @@ The important files are contained in this directory:
 
 
 Again the effect observation is defined as a composition:
-`thetaFstdex:` FrStP² → stT(Frp²) → stT(Wrel)
+`thetaFstdex:` FrStP² → stT(Frp²) → stT(Wrel).
 See file [StateTransformingLaxMorph.v].
 
 The first part uses `unaryIntState:`  FrStP → stT(Frp)
@@ -541,7 +541,7 @@ in the next section.
 #### CSF state transformer/ section 5.4 of journal version
 
 For the definition of relative monad (Def 5.1 journal),
-see previous sections of the present file.
+see section "5.1 Relational effect observation" of the present file.
 
 The general definitions and theorems regarding the state transformer
 can be found in [rhl_semantics/more_categories/]:
@@ -584,9 +584,9 @@ Kl(θ) is a lax morphism between left relative adjunctions,
 (see [LaxMorphismOfRelAdjunctions.v]) and we can
 transform such morphisms of adjunctions using
 the theory developped in [TransformingLaxMorph.v].
-Finallly a morphism between adjunction induces
-a morphism between the monads induced by the (co)domain
-adjunctions.
+Finallly out of this transformed morphism of adjunction we can
+extract a lax morphism between monads Tθ : T M1 → T M2, as expected.
+
 
 ## Axioms
 
