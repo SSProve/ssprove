@@ -464,7 +464,7 @@ To build the above computation part (1) of an effect observation,
 the file [theories/Relational/OrderEnrichedRelativeMonadExamples.v]
 equips Type with a structure of order-enriched category.
 Often we use free monads to package effectful computations.
-Those are defined in [rhl_semantics/free_monad/FreeProbProg.v].
+Those are defined in [rhl_semantics/free_monad/].
 
 Since a relational specification monad as in (2) is by definition
 an order-enriched monad with codomain PreOrder, the latter
@@ -482,7 +482,8 @@ More basic categories can be found in the directory
 The files of interest are mainly contained in the
 [rhl_semantics/only_prob/] directory.
 
-This relational effect observation is defined in the
+This relational effect observation is called
+`thetaDex` in the development and is defined in the
 file [rhl_semantics/only_prob/ThetaDex.v] as a composition:
 FreeProb² ---`unary_theta_dens²`---> SDistr² ---`θ_morph`---> Wrelprop
 
@@ -494,23 +495,47 @@ It is defined by pattern matching on the given probabilistic program
 (which can be viewed as a tree).
 The free relative monad over a probabilistic signature is defined
 in [rhl_semantics/free_monad/FreeProbProg.v].
+The codomain of `unary_theta_dens` is defined in
+[rhl_semantics/only_prob/SubDistr.v].
+Since subdistributions `SDistr(A)` only make sense
+when `A` is a `choiceType`, both the domain and codomain
+of `unary_theta_dens` are relative monads over
+appropriate inclusion functors `choiceType` -> `Type`.
+The required order-enrichment for the category of choiceTypes
+and this inclusion are defined in the file [rhl_semantics/ChoiceAsOrd.v].
 
-In [rhl_semantics/ChoiceAsOrd.v] we introduce the category of
-choice types (`choiceType`) which are useful for sub-distributions:
-they are basically the types from which we can sample.
-They are one of the reasons why our monads are always relative.
-
-The theory for §5.2 is developed in the following files:
-[rhl_semantics/only_prob/Couplings.v],
-[rhl_semantics/only_prob/Theta_dens.v],
-([rhl_semantics/only_prob/Theta_exCP.v]),
-[rhl_semantics/only_prob/ThetaDex.v].
+The second part `θ_morph` is conceptually more important.
+It is defined in the file [rhl_semantics/only_prob/Theta_exCP.v].
+`θ_morph` is "really" lax: it satisfies the morphism laws only
+up to inequalities.
+The definition of `θ_morph` relies on the notion of couplings,
+defined in this file [rhl_semantics/only_prob/Couplings.v].
+The prove that it constitutes a lax morphism depends on lemmas
+for couplings that can be found in the same file.
 
 
 #### 5.3 The stateful and probabilistic relational effect observation
 
-The theory for §5.3 is developed in the following files, divided in two
-lists, one for abstract results, and one for the instances we use.
+The important files are contained in this directory:
+[rhl_semantics/state_prob/].
+
+
+Again the effect observation is defined as a composition:
+`thetaFstdex:` FrStP² → stT(Frp²) → stT(Wrel)
+See file [StateTransformingLaxMorph.v].
+
+The first part uses `unaryIntState:`  FrStP → stT(Frp)
+from the same file which interprets state related instructions
+as actual state manipulating functions S → Frp( - x S ).
+Probabilistic instructions are left untouched by this morphism.
+
+The more interesting part is the second one (same file)
+`stT_thetaDex:` stT(Frp²) → stT(Wrel)
+This morphism is obtained by state-transforming the
+relational effect observation `thetaDex` from the previous section.
+
+More details about the state transformer implementation are provided
+in the next section.
 
 Abstract (in [rhl_semantics/more_categories/]):
 [OrderEnrichedRelativeAdjunctions.v],
@@ -522,6 +547,15 @@ Instances (in [rhl_semantics/state_prob/]):
 [StateTransformingLaxMorph.v],
 [StateTransfThetaDens.v],
 [LiftStateful.v].
+
+#### CSF state transformer/ section 5.4 of journal version
+
+For the definition of specification monads and relational effect observations,
+see previous sections.
+
+##### The state transformer on relative monads (i.e. on objects)
+
+
 
 
 ## Axioms
@@ -639,6 +673,7 @@ We do something similar for Schnorr's protocol.
 [package/pkg_advantage.v]: theories/Crypt/package/pkg_advantage.v
 [theories/Relational/OrderEnrichedCategory.v]: theories/Relational/OrderEnrichedCategory.v
 [theories/Relational/OrderEnrichedRelativeMonadExamples.v]: theories/Relational/OrderEnrichedRelativeMonadExamples.v
+[rhl_semantics/free_monad/]: theories/Crypt/rhl_semantics/free_monad/
 [rhl_semantics/free_monad/FreeProbProg.v]: theories/Crypt/rhl_semantics/free_monad/FreeProbProg.v
 [rhl_semantics/ChoiceAsOrd.v]: theories/Crypt/rhl_semantics/ChoiceAsOrd.v
 [rhl_semantics/more_categories/]: theories/Crypt/rhl_semantics/more_categories/
@@ -651,6 +686,7 @@ We do something similar for Schnorr's protocol.
 [rhl_semantics/only_prob/Theta_dens.v]: theories/Crypt/rhl_semantics/only_prob/Theta_dens.v
 [rhl_semantics/only_prob/Theta_exCP.v]: theories/Crypt/rhl_semantics/only_prob/Theta_exCP.v
 [rhl_semantics/only_prob/ThetaDex.v]: theories/Crypt/rhl_semantics/only_prob/ThetaDex.v
+[rhl_semantics/only_prob/SubDistr.v]: theories/Crypt/rhl_semantics/only_prob/SubDistr.v
 [OrderEnrichedRelativeAdjunctions.v]: theories/Crypt/rhl_semantics/more_categories/OrderEnrichedRelativeAdjunctions.v
 [LaxMorphismOfRelAdjunctions.v]: theories/Crypt/rhl_semantics/more_categories/LaxMorphismOfRelAdjunctions.v
 [TransformingLaxMorph.v]: theories/Crypt/rhl_semantics/more_categories/TransformingLaxMorph.v
@@ -659,5 +695,6 @@ We do something similar for Schnorr's protocol.
 [StateTransformingLaxMorph.v]: theories/Crypt/rhl_semantics/state_prob/StateTransformingLaxMorph.v
 [StateTransfThetaDens.v]: theories/Crypt/rhl_semantics/state_prob/StateTransfThetaDens.v
 [LiftStateful.v]: theories/Crypt/rhl_semantics/state_prob/LiftStateful.v
+[rhl_semantics/state_prob/]: theories/Crypt/rhl_semantics/state_prob/
 [Main.v]: theories/Crypt/Main.v
 [DOC.md]: ./DOC.md
