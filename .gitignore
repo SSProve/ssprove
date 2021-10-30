@@ -28,6 +28,7 @@ Makefile.coq.conf
 *~
 *\#
 .\#*
+*.md.tmp
 
 # Latex
 *.aux

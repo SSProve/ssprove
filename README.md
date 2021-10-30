@@ -388,11 +388,11 @@ We separate by a slash (/) rule names that differ in the CSF (left) and journal
 Finally the "bwhile" / "do-while" rule is proven as
 `bounded_do_while_rule` in [rules/RulesStateProb.v].
 
-### Lemmas and Theorems from the paper
+### More Lemmas and Theorems for packages
 
-We now list the lemmas and theorems about packages from the paper and in the
-case of Theorems 1 and 2 (CSF) / Theorems 2.4 and 4.1 (journal) proven using our
-probabilistic relational program logic. The first two can be found in
+We now list the lemmas and theorems about packages from the paper.
+Theorems 1 and 2 (CSF) / Theorems 2.4 and 4.1 (journal) were proven using our
+probabilistic relational program logic. The first two lemmas below can be found in
 [package/pkg_advantage.v], the other two in [package/pkg_rhl.v].
 
 **Lemma 1 / 2.2 (Triangle Inequality)**
