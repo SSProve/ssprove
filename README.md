@@ -537,26 +537,56 @@ relational effect observation `thetaDex` from the previous section.
 More details about the state transformer implementation are provided
 in the next section.
 
-Abstract (in [rhl_semantics/more_categories/]):
+
+#### CSF state transformer/ section 5.4 of journal version
+
+For the definition of relative monad (Def 5.1 journal),
+see previous sections of the present file.
+
+The general definitions and theorems regarding the state transformer
+can be found in [rhl_semantics/more_categories/]:
 [OrderEnrichedRelativeAdjunctions.v],
 [LaxMorphismOfRelAdjunctions.v],
 [TransformingLaxMorph.v].
 
-Instances (in [rhl_semantics/state_prob/]):
+On the other hand our instances can be found in [rhl_semantics/state_prob/]:
 [OrderEnrichedRelativeAdjunctionsExamples.v],
 [StateTransformingLaxMorph.v],
 [StateTransfThetaDens.v],
 [LiftStateful.v].
 
-#### CSF state transformer/ section 5.4 of journal version
-
-For the definition of specification monads and relational effect observations,
-see previous sections.
 
 ##### The state transformer on relative monads (i.e. on objects)
 
+The concerned file is [OrderEnrichedRelativeAdjunctions.v],
+section `TransformationViaRelativeAdjunction`.
+There we transform an arbitrary order-enriched relative monad
+using a "transforming adjunction" (Thm 5.5 journal). The notion of transforming
+adjunction (Def 5.4 journal) is a generalization of the notion of state adjunction.
 
 
+State adjunctions for transforming computations/specifications
+are built in [OrderEnrichedRelativeAdjunctionsExamples.v].
+
+All of our adjunctions are left relative adjunctions (Def 5.2 journal).
+This notion is defined and studied in
+[OrderEnrichedRelativeAdjunctions.v] and this includes
+Kleisli adjunctions of relative monads (Def 5.3 journal).
+
+##### The state transformer for lax morphisms (i.e. on arrows)
+
+See file [TransformingLaxMorph.v].
+Given a lax morphism of relative monads θ : M1 → M2,
+both M1 and M2 factor through their Kleisli and
+give rise to Kleisli adjunctions. θ induces
+a lax morphism Kl(θ) between those Kleisli adjunctions.
+Kl(θ) is a lax morphism between left relative adjunctions,
+(see [LaxMorphismOfRelAdjunctions.v]) and we can
+transform such morphisms of adjunctions using
+the theory developped in [TransformingLaxMorph.v].
+Finallly a morphism between adjunction induces
+a morphism between the monads induced by the (co)domain
+adjunctions.
 
 ## Axioms
 
