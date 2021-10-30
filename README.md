@@ -530,7 +530,7 @@ as actual state manipulating functions S → Frp( - x S ).
 Probabilistic instructions are left untouched by this morphism.
 
 The more interesting part is the second one (same file)
-`stT_thetaDex:` stT(Frp²) → stT(Wrel)
+`stT_thetaDex:` stT(Frp²) → stT(Wrel).
 This morphism is obtained by state-transforming the
 relational effect observation `thetaDex` from the previous section.
 
@@ -584,8 +584,9 @@ Kl(θ) is a lax morphism between left relative adjunctions,
 (see [LaxMorphismOfRelAdjunctions.v]) and we can
 transform such morphisms of adjunctions using
 the theory developped in [TransformingLaxMorph.v].
-Finallly out of this transformed morphism of adjunction we can
+Finallly, out of this transformed morphism of adjunctions we can
 extract a lax morphism between monads Tθ : T M1 → T M2, as expected.
+This last step is also performed in [TransformingLaxMorph.v].
 
 
 ## Axioms
