@@ -203,10 +203,17 @@ Proof.
   auto.
 Qed.
 
-#[export] Instance PositiveInFin n m (h : Lt n m) : Positive m.
+Definition PositiveInFin n m (h : Lt n m) : Positive m.
 Proof.
   unfold Lt in h. exact _.
 Qed.
+
+(* We use a hint to avoid a loop with Positive_Lt *)
+#[export] Hint Extern 8 (Positive ?m) =>
+  match goal with
+  | h : Lt ?n m |- _ => exact (PositiveInFin n m h)
+  end
+  : typeclass_instances.
 
 Lemma positive_ext :
   ∀ (p q : positive),
