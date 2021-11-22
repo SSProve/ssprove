@@ -228,7 +228,7 @@ Proof.
   simpl. rewrite GRing.mul1r.
   rewrite psum_fin. rewrite cardE. rewrite size_enum_ord. simpl.
   rewrite GRing.sumr_const. rewrite cardE. rewrite size_enum_ord.
-  rewrite -mc_1_10.Num.Theory.normrMn.
+  rewrite -normrMn.
   rewrite -GRing.Theory.mulr_natr.
   rewrite GRing.mulVf.
   2:{

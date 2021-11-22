@@ -35,7 +35,7 @@ From Crypt Require Import
 
 Import SPropNotations.
 Import Num.Theory.
-Import mc_1_10.Num.Theory.
+Import Order.POrderTheory.
 
 Local Open Scope ring_scope.
 
@@ -642,7 +642,7 @@ Proof.
     intuition. rewrite H0. reflexivity. auto.
     reflexivity.
     assert (d (x, y) = 0).
-    rewrite ltr_def in Hd.
+    rewrite lt_def in Hd.
     apply Bool.andb_false_iff in Hd.
     destruct Hd.
     ++ move: H. move/eqP. auto.
@@ -743,7 +743,7 @@ Proof.
        --- by inversion d.
     -- have Hd0 : 0 <= d(x1,x2) by inversion d.
        have [Hdor1 | Hdor2]: 0 == d(x1,x2) \/ 0 < d(x1,x2).
-       { rewrite ler_eqVlt in Hd0.
+       { rewrite le_eqVlt in Hd0.
            by move/orP: Hd0. }
        --- move/eqP : Hdor1 => Hdor1.
            by rewrite -Hdor1 !GRing.mulr0.

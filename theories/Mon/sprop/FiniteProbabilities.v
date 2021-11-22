@@ -10,7 +10,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 From Relational Require Import Commutativity.
 
 Import GRing.Theory Num.Theory.
-Import mc_1_10.Num.Theory.
+Import Order.POrderTheory.
 
 Local Open Scope ring_scope.
 
@@ -28,9 +28,9 @@ Section FinProb.
   Global Instance Irel_preorder : PreOrder Irel.
   Proof.
     constructor.
-    move=> ?; rewrite /Irel lerr //.
+    move=> ?; rewrite /Irel lexx //.
     move=> x y z ; rewrite /Irel.
-    apply ler_trans.
+    apply le_trans.
   Qed.
 
   Definition WI := @MonoCont I Irel _.

@@ -32,7 +32,7 @@ Set Default Goal Selector "!".
 Set Primitive Projections.
 
 Import Num.Theory.
-Import mc_1_10.Num.Theory.
+Import Order.POrderTheory.
 
 Local Open Scope ring_scope.
 Import GroupScope GRing.Theory.
@@ -432,7 +432,7 @@ Proof.
     Aux ∘ DH_real
   ] (ots_real_vs_rnd true) A
   as ineq.
-  eapply ler_trans. 1: exact ineq.
+  eapply le_trans. 1: exact ineq.
   clear ineq.
   rewrite ots_real_vs_rnd_equiv_true. 3: auto.
   2:{

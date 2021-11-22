@@ -19,7 +19,6 @@ From Crypt Require Import
      UniformDistr.
 
 Import Num.Theory.
-Import mc_1_10.Num.Theory.
 
 Local Open Scope ring_scope.
 

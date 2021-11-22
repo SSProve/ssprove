@@ -7,7 +7,8 @@ From Crypt Require Import ChoiceAsOrd SubDistr Couplings Axioms.
 
 Import SPropNotations.
 Import Num.Theory.
-Import mc_1_10.Num.Theory.
+Import Order.POrderTheory.
+
 Local Open Scope ring_scope.
 
 
@@ -178,7 +179,7 @@ Proof.
   intuition. rewrite /SDistr_unit in H. rewrite dunit1E in H.
   case Hxy: (x==y).
     move: Hxy => /eqP Hxy //=.
-  rewrite Hxy /= in H. rewrite (ltrr 0) in H. discriminate.
+  rewrite Hxy /= in H. rewrite (ltxx 0) in H. discriminate.
 Qed.
 
 Import OrderEnrichedRelativeMonadExamplesNotation.

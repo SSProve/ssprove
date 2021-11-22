@@ -86,7 +86,7 @@ Require Equations.Prop.DepElim.
 
 Import Num.Def.
 Import Num.Theory.
-Import mc_1_10.Num.Theory.
+Import Order.POrderTheory.
 
 Set Equations With UIP.
 
@@ -838,7 +838,7 @@ Lemma eq_ler :
     x = y →
     x <= y.
 Proof.
-  intros x y e. subst. apply lerr.
+  intros x y e. subst. apply lexx.
 Qed.
 
 Ltac fdisjoint_auto :=

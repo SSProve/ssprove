@@ -108,7 +108,7 @@ Proof.
   2:{
     destruct (s == st). all: cbn.
     - apply (@ler01 R).
-    - apply mc_1_10.Num.Theory.lerr.
+    - apply Order.POrderTheory.lexx.
   }
   rewrite -dletE.
   rewrite dlet_dunit_id.
@@ -216,7 +216,7 @@ Proof.
     subst I. rewrite size_map in e3.
     rewrite -cardE in e3.
     rewrite item_addr0_mulr.
-    eapply mc_1_10.Num.Theory.ler_trans with (y := @r _ w0 *~ #|F1|).
+    eapply Order.POrderTheory.le_trans with (y := @r _ w0 *~ #|F1|).
     + rewrite -mulrzr. rewrite -[X in _<=X]mulrzr.
       rewrite ler_pmul2l.
       * rewrite ler_int. auto.
@@ -337,13 +337,13 @@ Proof.
     rewrite /UniformFsq_f /= in H.
     have hfoo1 : (st1 == s1).
     { destruct (st1 == s1) eqn:Heq; auto.
-      by rewrite Bool.andb_false_l  mc_1_10.Num.Theory.ltrr in H. }
+      by rewrite Bool.andb_false_l  Order.POrderTheory.ltxx in H. }
     have hfoo2 : (st2 == s2).
     { destruct (st2 == s2) eqn:Heq; auto.
-      by rewrite Bool.andb_false_r mc_1_10.Num.Theory.ltrr in H. }
+      by rewrite Bool.andb_false_r Order.POrderTheory.ltxx in H. }
     have hfoo3 : (f w1 == w2).
     { destruct (f w1 == w2) eqn:Heq; auto.
-      by rewrite Bool.andb_false_r  mc_1_10.Num.Theory.ltrr in H. }
+      by rewrite Bool.andb_false_r  Order.POrderTheory.ltxx in H. }
     move /eqP : hfoo1. move /eqP : hfoo2. move /eqP : hfoo3.
     move => hfoo3 hfoo2 hfoo1. subst.
     split; [assumption |  by rewrite refl_true ].
@@ -450,7 +450,7 @@ Proof.
         reflexivity.
     + intros [a1 s1'] [a2 s2'].
       rewrite dnullE.
-      rewrite mc_1_10.Num.Theory.ltrr.
+      rewrite Order.POrderTheory.ltxx.
       auto.
 Qed.
 

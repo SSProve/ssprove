@@ -98,7 +98,7 @@ Proof.
     { destruct ((get_heap s₁ ℓ, s₁, (get_heap s₂ ℓ, s₂)) == (b₁, s₃, (b₂, s₄))) eqn:e.
       - move: e => /eqP e. assumption.
       - rewrite e in hd. cbn in hd.
-        rewrite mc_1_10.Num.Theory.ltrr in hd. discriminate.
+        rewrite order.Order.POrderTheory.ltxx in hd. discriminate.
     }
     inversion e. subst. intuition auto.
 Qed.
@@ -130,7 +130,7 @@ Proof.
     { destruct ((tt, set_heap s1 l v, (tt, set_heap s2 l v)) == (b1, s3, (b2, s4))) eqn:Heqd.
       - move: Heqd. move /eqP => Heqd. assumption.
       - rewrite Heqd in Hd. simpl in Hd.
-        rewrite mc_1_10.Num.Theory.ltrr in Hd. discriminate.
+        rewrite order.Order.POrderTheory.ltxx in Hd. discriminate.
     }
     inversion Heqs.
     intuition eauto.
@@ -178,21 +178,21 @@ Proof.
   assert (realsum.psum f ≠ 0) as Hneq.
   { intros Hgt.
     rewrite Hgt in H.
-    rewrite mc_1_10.Num.Theory.ltrr in H.
+    rewrite order.Order.POrderTheory.ltxx in H.
     auto. }
   destruct (realsum.neq0_psum (R:=R) Hneq) as [x Hx].
   exists x. specialize (Hpos x).
-  rewrite mc_1_10.Num.Theory.ler_eqVlt in Hpos.
+  rewrite order.Order.POrderTheory.le_eqVlt in Hpos.
   move: Hpos. move /orP => [H1 | H2].
   - move: H1. move /eqP => H1. rewrite -H1.
-    rewrite mc_1_10.Num.Theory.ltrr. auto.
+    rewrite order.Order.POrderTheory.ltxx. auto.
   - assumption.
 Qed.
 
 Lemma pmulr_me (x y : R) : 0 <= y -> (0 < y * x) -> (0 < x).
 Proof.
   rewrite le0r => /orP[/eqP->|].
-  - by rewrite GRing.mul0r mc_1_10.Num.Theory.ltrr.
+  - by rewrite GRing.mul0r order.Order.POrderTheory.ltxx.
   - intros. by rewrite -(pmulr_rgt0 x b).
 Qed.
 
@@ -201,7 +201,7 @@ Lemma ge0_eq {R : realType} {A : eqType} {x y : A} (H : 0 < ((x == y)%:R) :> R) 
 Proof.
   destruct (x == y) eqn:Heq.
   - move: Heq. by move /eqP.
-  - by rewrite mc_1_10.Num.Theory.ltrr in H.
+  - by rewrite order.Order.POrderTheory.ltxx in H.
 Qed.
 
 Lemma ne0_eq {R : ringType} {A : eqType} {x y : A} (H : ((x == y)%:R) ≠ (0 : R)) :
@@ -515,7 +515,7 @@ Proof.
   { intros x.
     assert (x - x = 0) as H3.
     { apply /eqP. rewrite GRing.subr_eq0. intuition. }
-    rewrite H3. apply mc_1_10.Num.Theory.normr0.
+    rewrite H3. apply normr0.
   }
   apply Hzero.
 Qed.
@@ -2260,7 +2260,7 @@ Proof.
       unfold SDistr_bind. rewrite dlet_null.
       reflexivity.
   - intros [? ?] [? ?]. rewrite dnullE.
-    rewrite mc_1_10.Num.Theory.ltrr. discriminate.
+    rewrite order.Order.POrderTheory.ltxx. discriminate.
 Qed.
 
 Lemma r_assert' :
@@ -2326,7 +2326,7 @@ Proof.
       unfold SDistr_bind. rewrite dlet_null.
       reflexivity.
   - intros [? ?] [? ?]. rewrite dnullE.
-    rewrite mc_1_10.Num.Theory.ltrr. discriminate.
+    rewrite order.Order.POrderTheory.ltxx. discriminate.
 Qed.
 
 Theorem r_assertD :
@@ -2381,7 +2381,7 @@ Proof.
         unfold SDistr_bind. rewrite dlet_null.
         reflexivity.
     + intros [? ?] [? ?]. rewrite dnullE.
-      rewrite mc_1_10.Num.Theory.ltrr. discriminate.
+      rewrite order.Order.POrderTheory.ltxx. discriminate.
 Qed.
 
 Lemma rswap_assertD_cmd_eq :
@@ -2453,7 +2453,7 @@ Proof.
         unfold SDistr_bind. rewrite dlet_null.
         reflexivity.
     + intros [? ?] [? ?]. rewrite dnullE.
-      rewrite mc_1_10.Num.Theory.ltrr. discriminate.
+      rewrite order.Order.POrderTheory.ltxx. discriminate.
 Qed.
 
 Lemma r_bind_assertD_sym :
@@ -2503,7 +2503,7 @@ Proof.
     end.
     2:{
       rewrite e in hh. simpl in hh.
-      rewrite mc_1_10.Num.Theory.ltrr in hh. discriminate.
+      rewrite order.Order.POrderTheory.ltxx in hh. discriminate.
     }
     move: e => /eqP e. inversion e.
     subst. reflexivity.
@@ -2576,7 +2576,7 @@ Proof.
     end.
     2:{
       rewrite e in hh. simpl in hh.
-      rewrite mc_1_10.Num.Theory.ltrr in hh. discriminate.
+      rewrite order.Order.POrderTheory.ltxx in hh. discriminate.
     }
     move: e => /eqP e. inversion e.
     subst.
@@ -2620,7 +2620,7 @@ Proof.
     end.
     2:{
       rewrite e in hh. simpl in hh.
-      rewrite mc_1_10.Num.Theory.ltrr in hh. discriminate.
+      rewrite order.Order.POrderTheory.ltxx in hh. discriminate.
     }
     move: e => /eqP e. noconf e.
     subst. f_equal.

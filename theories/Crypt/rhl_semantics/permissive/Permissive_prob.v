@@ -31,7 +31,7 @@ Section Monotonic_spec.
     unfold SPropMonadicStructures.SProp_order in w.
   Abort.
 
-  Lemma monotonic_spec : forall (post post' : A0 * A1 -> Prop), 
+  Lemma monotonic_spec : forall (post post' : A0 * A1 -> Prop),
   (forall a01 : A0 * A1, post' a01 -> post a01) ->
   w∙1 post' -> w∙1 post.
   Proof.
@@ -39,9 +39,9 @@ Section Monotonic_spec.
     destruct w as [wmap wprop]. cbn.
     move: wprop.
     rewrite /Morphisms.Proper /Morphisms.respectful.
-    rewrite /Morphisms.pointwise_relation. 
+    rewrite /Morphisms.pointwise_relation.
     rewrite /SPropMonadicStructures.SProp_op_order /Basics.flip.
-    rewrite /SPropMonadicStructures.SProp_order.    
+    rewrite /SPropMonadicStructures.SProp_order.
     move=> wprop.
     apply wprop. assumption.
   Qed.
@@ -128,8 +128,8 @@ Section Permissive_theta.
   Proof.
     move: b => [bt | bf].
       by easy.
-    cbn in bf. 
-    rewrite mc_1_10.Num.Theory.ltrr in bf. assumption.
+    cbn in bf.
+    rewrite Order.POrderTheory.ltxx in bf. assumption.
   Qed.
 
   Program Definition θ_perm_carrier :
@@ -165,7 +165,7 @@ Section Permissive_theta.
     move=> [c0 c1] [c0' c1']. move=> [H0 H1]. move=> post.
     rewrite H0 H1. move=> H ; assumption.
   Qed.
-    
+
 
 
   Program Definition θ_perm: relativeLaxMonadMorphism Jprod cleanϕ SDistr_squ WRelProp :=
@@ -201,4 +201,4 @@ Section Permissive_theta.
     rename HnonzerC01 into Hecoupl.
     move: Hecoupl => [dc [dc_coupl dc_rest]].
   Abort.
-    
+
