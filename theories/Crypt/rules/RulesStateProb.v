@@ -650,7 +650,7 @@ Proof.
     intuition. rewrite H0. reflexivity. auto.
     reflexivity.
     assert (d (x, y) = 0).
-    rewrite mc_1_10.Num.Theory.ltr_def in Hd.
+    rewrite Order.POrderTheory.lt_def in Hd.
     apply Bool.andb_false_iff in Hd.
     destruct Hd.
     ++ move: H. move/eqP. auto.
@@ -778,7 +778,7 @@ Proof.
   move=> a1 a2. unfold coupling_self_SDistr. rewrite dmargin_psumE.
   move=> Hpsum.
   have Hpsum' : psum (fun x : A => ((x, x) == (a1, a2))%:R * d x) <> 0.
-    move=> abs. rewrite -abs in Hpsum. rewrite mc_1_10.Num.Theory.ltrr in Hpsum.
+    move=> abs. rewrite -abs in Hpsum. rewrite Order.POrderTheory.ltxx in Hpsum.
     discriminate.
   clear Hpsum.
   eapply neq0_psum in Hpsum'. destruct Hpsum'.
@@ -1589,7 +1589,7 @@ Proof.
   (f:=fun x0 => psum (fun y0 : Y => q y0 * dunit (T:=prod_choiceType X Y) (x0, y0) (x, y))) p).
   move=> x0. apply /andP. split.
   apply ge0_psum.
-  unshelve eapply mc_1_10.Num.Theory.ler_trans.
+  unshelve eapply Order.POrderTheory.le_trans.
     exact (psum q).
   eapply le_psum.
   move=> y0. apply/andP. split.

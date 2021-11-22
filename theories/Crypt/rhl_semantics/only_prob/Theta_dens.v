@@ -8,7 +8,6 @@ From Crypt Require Import ChoiceAsOrd Axioms RelativeMonadMorph_prod FreeProbPro
 
 Import SPropNotations.
 Import Num.Theory.
-Import mc_1_10.Num.Theory.
 
 Local Open Scope ring_scope.
 

@@ -6,7 +6,8 @@ From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadE
 From Crypt Require Import ChoiceAsOrd Axioms.
 
 Import Num.Theory.
-Import mc_1_10.Num.Theory.
+Import Order.POrderTheory.
+
 Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
 
 (*
@@ -57,10 +58,10 @@ Section Carrier.
   Proof.
     constructor.
       vm_compute. intros de a. rewrite unlock_absord.
-      apply lerr.
+      apply lexx.
     vm_compute. intros de1 de2 de3 H12 H23 a.
     (* apply its_true_anyway. *) rewrite unlock_absord.
-    unshelve eapply ler_trans.
+    unshelve eapply le_trans.
       exact (de2 a).
     - pose (fromH12 := (H12 a)). (* apply since_its_true  in fromH12. *)
       erewrite unlock_absord in fromH12. assumption.

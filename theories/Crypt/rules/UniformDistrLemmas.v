@@ -35,7 +35,7 @@ From Crypt Require Import
 
 Import SPropNotations.
 Import Num.Theory.
-Import mc_1_10.Num.Theory.
+Import Order.POrderTheory.
 
 (* Notation "⟦ b ⟧" := (is_true_sprop b). *)
 (* Infix "-s>" := (s_impl) (right associativity, at level 86, only parsing). *)
@@ -117,7 +117,7 @@ Proof.
   split.
   - move => w; apply: r_nonneg.
   - move => J uniq_J. apply /idP.
-    apply: ler_trans.
+    apply: le_trans.
     -- by apply: (cardinality_bound J uniq_J r r_nonneg).
     -- rewrite /r -GRing.invf_div GRing.divr1 GRing.divff.
          by [].
@@ -245,7 +245,7 @@ Proof.
     -- exact r_nonneg.
     -- trivial.
   - move => J uniq_J.
-    apply: ler_trans.
+    apply: le_trans.
     apply: (gen_cardinality_bound J uniq_J _).
     -- move => [t1 t2] /=.
        destruct (f t1 == t2) eqn:Heq; auto. exact r_nonneg.
@@ -296,7 +296,7 @@ Lemma sampleFsq_support { F : finType} { w0 : F }
 Proof.
   simpl in H. rewrite /f_dprod /= in H.
   case (f a1 == a2) eqn:Heq; auto.
-    by rewrite ltrr in H.
+    by rewrite ltxx in H.
 Qed.
 
 Lemma support_sub_diag_mgs { A : choiceType }
@@ -312,7 +312,7 @@ Proof.
     + reflexivity.
     + move => y Hdd. specialize (Hsupp a y).
       assert (0 < d (a, y)) as Hd.
-      { rewrite ltr_def. apply /andP.
+      { rewrite lt_def. apply /andP.
         split.
         - assumption.
         - apply (ge0_mu d). }
@@ -323,7 +323,7 @@ Proof.
     + reflexivity.
     + move => y Hdd. specialize (Hsupp y a).
       assert (0 < d (y, a)) as Hd.
-      { rewrite ltr_def. apply /andP.
+      { rewrite lt_def. apply /andP.
         split.
         - assumption.
         - apply (ge0_mu d).  }
