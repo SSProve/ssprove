@@ -97,12 +97,12 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
 
   Import MyParam.
 
-  Instance positive_gT : Positive #|gT|.
+  #[export] Instance positive_gT : Positive #|gT|.
   Proof.
     apply /card_gt0P. exists g. auto.
   Qed.
 
-  Instance positive_SecKey : Positive #|SecKey|.
+  #[export] Instance positive_SecKey : Positive #|SecKey|.
   Proof.
     apply /card_gt0P. exists sec0. auto.
   Qed.
@@ -111,7 +111,7 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Definition PubKey_pos : Positive #|PubKey| := _.
   Definition SecKey_pos : Positive #|SecKey| := _.
 
-  Instance Cipher_pos : Positive #|Cipher|.
+  #[export] Instance Cipher_pos : Positive #|Cipher|.
   Proof.
     unfold Cipher. rewrite card_prod.
     exact _.

@@ -32,7 +32,7 @@ A documentation is available in [DOC.md].
 #### Prerequisites
 
 - OCaml `>=4.05.0 & <4.12`
-- Coq `8.13.1`
+- Coq `8.14.0`
 - Equations `1.2.4+8.13`
 - Mathcomp `1.13.0`
 - Mathcomp analysis `0.3.11`
@@ -42,7 +42,7 @@ You can get them all from the `opam` package manager for OCaml:
 ```sh
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam update
-opam install coq.8.13.1 coq-equations.1.2.4+8.13 coq-mathcomp-ssreflect.1.13.0 coq-mathcomp-analysis.0.3.11 coq-extructures.0.3.1
+opam install coq.8.14.0 coq-equations.1.3+8.14 coq-mathcomp-ssreflect.1.13.0 coq-mathcomp-analysis.0.3.11 coq-extructures.0.3.1
 ```
 
 To build the dependency graph, you can optionally install `graphviz`.

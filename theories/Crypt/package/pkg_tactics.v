@@ -57,7 +57,7 @@ Ltac package_obtac :=
 
 (* With the following, one can rewrite under λ with setoid_rewrite *)
 
-Instance pointwise_eq_ext {A B : Type} {RB : relation B} (sb : subrelation RB eq) :
+#[export] Instance pointwise_eq_ext {A B : Type} {RB : relation B} (sb : subrelation RB eq) :
   subrelation (pointwise_relation A RB) eq.
 Proof.
   intros f g Hfg.
@@ -67,28 +67,28 @@ Qed.
 
 (** Rewriting under binders with setoid_rewrite *)
 
-Instance opr_morphism (A : choiceType) o :
+#[export] Instance opr_morphism (A : choiceType) o :
   Proper (eq ==> pointwise_relation (tgt o) eq ==> eq) (@opr A o).
 Proof.
   simpl_relation.
   f_equal. apply functional_extensionality. auto.
 Qed.
 
-Instance getr_morphism (A : choiceType) l :
+#[export] Instance getr_morphism (A : choiceType) l :
   Proper (pointwise_relation (Value l.π1) eq ==> eq) (@getr A l).
 Proof.
   simpl_relation.
   f_equal. apply functional_extensionality. auto.
 Qed.
 
-Instance sampler_morphism (A : choiceType) o :
+#[export] Instance sampler_morphism (A : choiceType) o :
   Proper (pointwise_relation (Arit o) eq ==> eq) (@sampler A o).
 Proof.
   simpl_relation.
   f_equal. apply functional_extensionality. auto.
 Qed.
 
-Instance bind_morphism (A B : choiceType) :
+#[export] Instance bind_morphism (A B : choiceType) :
   Proper (eq ==> pointwise_relation A eq ==> eq) (@bind A B).
 Proof.
   simpl_relation.

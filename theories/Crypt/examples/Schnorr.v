@@ -65,12 +65,12 @@ Module MyParam <: SigmaProtocolParams.
   Definition R : Statement -> Witness -> bool :=
     (λ (h : Statement) (w : Witness), h == (g ^+ w)).
 
-  Instance positive_gT : Positive #|gT|.
+  #[export] Instance positive_gT : Positive #|gT|.
   Proof.
     apply /card_gt0P. exists g. auto.
   Qed.
 
-  Instance Witness_pos : Positive #|Witness|.
+  #[export] Instance Witness_pos : Positive #|Witness|.
   Proof.
     apply /card_gt0P. exists w0. auto.
   Qed.
