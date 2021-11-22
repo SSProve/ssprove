@@ -40,7 +40,7 @@ Set Primitive Projections.
 
 Import Num.Def.
 Import Num.Theory.
-Import mc_1_10.Num.Theory.
+Import Order.POrderTheory.
 
 Section PRF_example.
 
@@ -410,7 +410,7 @@ Section PRF_example.
       MOD_CPA_tt_pkg ∘ EVAL true
     ] (IND_CPA true) A
     as ineq.
-    eapply ler_trans. 1: exact ineq.
+    eapply le_trans. 1: exact ineq.
     clear ineq.
     erewrite IND_CPA_equiv_false. all: eauto.
     2:{ simpl. unfold MOD_CPA_location. rewrite fset0U. auto. }

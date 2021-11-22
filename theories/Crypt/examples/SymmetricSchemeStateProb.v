@@ -64,7 +64,6 @@ Set Primitive Projections.
 
 Import Num.Def.
 Import Num.Theory.
-Import mc_1_10.Num.Theory.
 
 (* Local Open Scope ring_scope. *)
 

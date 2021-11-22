@@ -25,7 +25,7 @@ Set Primitive Projections.
 
 Import Num.Def.
 Import Num.Theory.
-Import mc_1_10.Num.Theory.
+Import Order.POrderTheory.
 
 Import PackageNotation.
 
@@ -346,11 +346,11 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK_real)
       ] (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK_ideal) A
       as ineq.
-      eapply ler_trans. 1: exact ineq.
+      eapply le_trans. 1: exact ineq.
       clear ineq.
       rewrite <- !Advantage_link.
       eapply ler_add.
-      - rewrite GRing.addrC. eapply ler_add. 1: apply lerr.
+      - rewrite GRing.addrC. eapply ler_add. 1: apply lexx.
         specialize (Hadv (A ∘ Hiding_real ∘ Sigma_to_Com)).
         rewrite <- link_assoc. rewrite Advantage_sym.
         apply Hadv. ssprove_valid.
@@ -399,7 +399,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       ssprove triangle (Com_Binding ∘ Adv) [::
         (Special_Soundness_t ∘ Adv)
       ] (Special_Soundness_f ∘ Adv) A as ineq.
-      eapply ler_trans. 1: exact ineq.
+      eapply le_trans. 1: exact ineq.
       clear ineq.
       rewrite ger_addr.
       apply eq_ler.
