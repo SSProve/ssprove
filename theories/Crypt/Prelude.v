@@ -91,7 +91,7 @@ Ltac falso :=
 
 
 (** mathcomp: derive EqDec for any ordType *)
-Instance ordType_EqDec {A : ordType} : EqDec A.
+#[export] Instance ordType_EqDec {A : ordType} : EqDec A.
 Proof.
   intros x y. destruct (x == y) eqn:e.
   - move: e => /eqP. auto.
@@ -123,7 +123,7 @@ Ltac nat_reify :=
 #[export] Hint Extern 4 (Positive ?n) =>
   unfold Positive ; apply/ltP ; nat_reify ; lia : typeclass_instances.
 
-Instance PositiveExp2 n : Positive (2^n)%N.
+#[export] Instance PositiveExp2 n : Positive (2^n)%N.
 Proof.
   unfold Positive. apply/ltP. induction n.
   - auto.
@@ -198,12 +198,12 @@ Class Lt n m :=
 #[export] Hint Extern 4 (Lt ?n) =>
   unfold Lt ; apply/ltP ; nat_reify ; lia : typeclass_instances.
 
-Instance Positive_Lt n `{h : Positive n} : Lt 0 n.
+#[export] Instance Positive_Lt n `{h : Positive n} : Lt 0 n.
 Proof.
   auto.
 Qed.
 
-Instance PositiveInFin n m (h : Lt n m) : Positive m.
+#[export] Instance PositiveInFin n m (h : Lt n m) : Positive m.
 Proof.
   unfold Lt in h. exact _.
 Qed.
@@ -228,7 +228,7 @@ Ltac unfold_positives :=
     repeat change (pos {| pos := n ; cond_pos := h |}) with n in *
   end.
 
-Instance PositiveEqDec n : EqDec (Positive n).
+#[export] Instance PositiveEqDec n : EqDec (Positive n).
 Proof.
   left. apply eq_irrelevance.
 Qed.

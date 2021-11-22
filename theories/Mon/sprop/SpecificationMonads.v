@@ -450,7 +450,7 @@ Module PrePost.
 
   Program Definition PP_rel A : relation (PP A) :=
     fun m1 m2 => (nfst m2 -> nfst m1) /\ forall x, nsnd m1 x -> nsnd m2 x.
-  Instance PP_rel_preorder A : PreOrder (@PP_rel A).
+  #[export] Instance PP_rel_preorder A : PreOrder (@PP_rel A).
   Proof. constructor ; cbv ; dintuition. Qed.
 
   Program Definition PPSpecMonad : OrderedMonad :=

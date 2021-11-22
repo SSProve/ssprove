@@ -16,20 +16,20 @@ Set Polymorphic Inductive Cumulativity.
 
 
 Definition SProp_order : relation Prop := fun x y => (x -> y).
-Instance SProp_order_preorder : PreOrder SProp_order.
+#[export] Instance SProp_order_preorder : PreOrder SProp_order.
 Proof. constructor ; cbv ; intuition. Qed.
 
 Definition SProp_op_order : relation Prop := Basics.flip SProp_order.
-Instance SProp_op_order_preorder : PreOrder SProp_op_order.
+#[export] Instance SProp_op_order_preorder : PreOrder SProp_op_order.
 Proof. unfold SProp_op_order. typeclasses eauto. Qed.
 
-Instance pointwise_preorder A {B} (R:relation B) `{PreOrder _ R} :
+#[export] Instance pointwise_preorder A {B} (R:relation B) `{PreOrder _ R} :
   PreOrder (pointwise_relation A R).
 Proof. constructor ; cbv ; intuition ; transitivity (y a) ; auto. Qed.
 
 Definition Pred_op_order A : relation (A -> Prop) :=
   pointwise_relation A SProp_op_order.
-Instance Pred_op_order_prorder A : PreOrder (@Pred_op_order A).
+#[export] Instance Pred_op_order_prorder A : PreOrder (@Pred_op_order A).
 Proof. unfold Pred_op_order ; typeclasses eauto. Qed.
 
 (***************************************************************)
@@ -107,7 +107,7 @@ Record OrderedMonad : Type :=
           Proper (@omon_rel A ==> pointwise_relation A (@omon_rel B) ==> @omon_rel B) bind
     }.
 
-Existing Instance omon_order.
+#[export] Existing Instance omon_order.
 
 Declare Scope SPropMonadicStructures_scope.
 Delimit Scope SPropMonadicStructures_scope with SMS.
@@ -280,7 +280,7 @@ Section MonadMorphismRefinement.
     forall A, pointwise_relation (M A) (@omon_rel W A) (ϕ A) (ψ A).
 End MonadMorphismRefinement.
 
-Instance mon_morph_refines_preorder M W : PreOrder (@monad_morph_refines M W).
+#[export] Instance mon_morph_refines_preorder M W : PreOrder (@monad_morph_refines M W).
 Proof.
   constructor ; cbv ; intuition.
   transitivity (y A a) ; auto.

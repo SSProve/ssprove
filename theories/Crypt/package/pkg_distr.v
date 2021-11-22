@@ -220,7 +220,7 @@ Notation "'#assert' b ;; k" :=
 Class LosslessOp (op : Op) :=
   is_lossless_op : psum op.π2 = 1.
 
-Instance LosslessOp_uniform i `{Positive i} : LosslessOp (uniform i).
+#[export] Instance LosslessOp_uniform i `{Positive i} : LosslessOp (uniform i).
 Proof.
   unfold LosslessOp.
   simpl.

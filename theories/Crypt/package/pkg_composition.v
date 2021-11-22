@@ -571,7 +571,7 @@ Proof.
   intros. auto.
 Qed.
 
-Instance FDisjointUr {A : ordType} (s1 s2 s3 : {fset A}) :
+#[export] Instance FDisjointUr {A : ordType} (s1 s2 s3 : {fset A}) :
   FDisjoint s1 s2 →
   FDisjoint s1 s3 →
   FDisjoint s1 (s2 :|: s3).
