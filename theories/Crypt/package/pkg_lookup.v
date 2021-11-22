@@ -90,9 +90,9 @@ Lemma get_raw_package_op_lookup :
 Proof.
   intros L I E p hp o ho arg f e.
   funelim (get_raw_package_op p hp o ho arg).
-  2:{ rewrite <- e in e0. discriminate. }
-  rewrite <- Heqcall. cbn. rewrite <- e in e0.
-  noconf e0. reflexivity.
+  2:{ rewrite <- e1 in e. discriminate. }
+  rewrite <- Heqcall. cbn. rewrite <- e1 in e.
+  noconf e. reflexivity.
 Qed.
 
 (* TODO Needed? MOVE? *)
