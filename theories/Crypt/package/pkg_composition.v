@@ -402,13 +402,20 @@ Notation "p1 ∘ p2" :=
 (* TODO Probably move somewhere else? *)
 Section fset_par_facts.
 
-  Fact disjoint_in_both {T : ordType} (s1 s2 : {fset T}) :
-    fdisjoint s1 s2 → ∀ x, x \in s1 → x \in s2 → False.
+  Lemma disjoint_in_both :
+    ∀ {T : ordType} (s1 s2 : {fset T}),
+      fdisjoint s1 s2 →
+      ∀ x,
+        x \in s1 →
+        x \in s2 →
+        False.
   Proof.
-    move => Hdisjoint x x_in_s1 x_in_s2.
-    assert (x \notin s2) as H.
-    { exact (fdisjointP s1 s2 Hdisjoint x x_in_s1). }
-    rewrite x_in_s2 in H. by [].
+    intros T s1 s2 hd x h1 h2.
+    assert (x \notin s2) as h.
+    { move: hd => /fdisjointP hd.
+      apply hd. assumption.
+    }
+    rewrite h2 in h. discriminate.
   Qed.
 
   Lemma fsubset_ext :
