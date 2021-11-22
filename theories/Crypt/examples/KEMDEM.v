@@ -34,7 +34,6 @@ Set Primitive Projections.
 
 Import Num.Def.
 Import Num.Theory.
-Import mc_1_10.Num.Theory.
 
 Import PackageNotation.
 
@@ -617,7 +616,7 @@ Section KEMDEM.
       par CK₁ CD₀ ∘ KEY
     ] (par CK₁ CD₁ ∘ KEY) A
     as ineq.
-    eapply ler_trans. 1: exact ineq.
+    eapply Order.POrderTheory.le_trans. 1: exact ineq.
     clear ineq.
     eapply ler_add.
     (* Idealising the core keying package *)
@@ -646,7 +645,7 @@ Section KEMDEM.
       rewrite Advantage_link.
       unfold K₀, K₁.
       rewrite !link_assoc.
-      apply lerr.
+      apply Order.POrderTheory.lexx.
     (* Idealising the core keyed package *)
     - replace (par CK₁ CD₀) with ((par CK₁ (ID ED)) ∘ (par (ID IGEN) CD₀)).
       2:{
@@ -673,7 +672,7 @@ Section KEMDEM.
       rewrite Advantage_link.
       unfold D₀, D₁.
       rewrite !link_assoc.
-      apply lerr.
+      apply Order.POrderTheory.lexx.
     Unshelve. all: exact fset0.
   Qed.
 
@@ -709,7 +708,7 @@ Section KEMDEM.
       par CK₁ CD₁ ∘ KEY
     ] (par CK₀ CD₁ ∘ KEY) A
     as ineq.
-    eapply ler_trans. 1: exact ineq.
+    eapply Order.POrderTheory.le_trans. 1: exact ineq.
     clear ineq.
     eapply ler_add.
     - eapply single_key_a. all: eauto.
@@ -740,7 +739,7 @@ Section KEMDEM.
       unfold K₀, K₁.
       rewrite !link_assoc.
       rewrite Advantage_sym.
-      apply lerr.
+      apply Order.POrderTheory.lexx.
     Unshelve. all: exact fset0.
   Qed.
 
@@ -1040,13 +1039,13 @@ Section KEMDEM.
       (MOD_CCA KEM_DEM) ∘ par (KEM true) (DEM true) ∘ KEY
     ] (PKE_CCA KEM_DEM true) A
     as ineq.
-    eapply ler_trans. 1: exact ineq.
+    eapply Order.POrderTheory.le_trans. 1: exact ineq.
     clear ineq.
     rewrite PKE_CCA_perf. 2,3: auto.
     rewrite PKE_CCA_perf_true. 2,3: auto.
     rewrite GRing.addr0. rewrite GRing.add0r.
     (* Now we massage the expression to apply the single key lemma *)
-    eapply ler_trans.
+    eapply Order.POrderTheory.le_trans.
     - rewrite Advantage_sym.
       rewrite -Advantage_link.
       eapply single_key_b with (CK₁ := (KEM false).(pack)).
