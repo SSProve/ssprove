@@ -316,7 +316,7 @@ Proof.
   intros P l Q A.
   induction l as [| R l ih] in P, Q |- *.
   - simpl. auto.
-  - simpl. eapply mc_1_10.Num.Theory.ler_trans.
+  - simpl. eapply order.Order.POrderTheory.le_trans.
     + eapply Advantage_triangle.
     + eapply ler_add.
       * auto.
@@ -330,8 +330,8 @@ Lemma AdvantageE_le_0 :
 Proof.
   intros G₀ G₁ A h.
   unfold AdvantageE in *.
-  rewrite mc_1_10.Num.Theory.normr_le0 in h.
-  apply/mc_1_10.Num.Theory.normr0P. auto.
+  rewrite normr_le0 in h.
+  apply/normr0P. auto.
 Qed.
 
 Lemma Advantage_le_0 :
