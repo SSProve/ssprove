@@ -1053,8 +1053,8 @@ Qed.
 
 Equations? lookup_hpv_l (ℓ : Location) (l : seq heap_val) : option ℓ :=
   lookup_hpv_l ℓ (hpv_l ℓ' v' :: l) with inspect (ℓ == ℓ') := {
-  | @exist true e := Some (cast_loc_val _ v') ;
-  | @exist false e := lookup_hpv_l ℓ l
+  | @exist true e => Some (cast_loc_val _ v')
+  | @exist false e => lookup_hpv_l ℓ l
   } ;
   lookup_hpv_l ℓ (hpv_r _ _ :: l) := lookup_hpv_l ℓ l ;
   lookup_hpv_l ℓ [::] := None.
@@ -1065,8 +1065,8 @@ Qed.
 
 Equations? lookup_hpv_r (ℓ : Location) (l : seq heap_val) : option ℓ :=
   lookup_hpv_r ℓ (hpv_r ℓ' v' :: l) with inspect (ℓ == ℓ') := {
-  | @exist true e := Some (cast_loc_val _ v') ;
-  | @exist false e := lookup_hpv_r ℓ l
+  | @exist true e => Some (cast_loc_val _ v')
+  | @exist false e => lookup_hpv_r ℓ l
   } ;
   lookup_hpv_r ℓ (hpv_l _ _ :: l) := lookup_hpv_r ℓ l ;
   lookup_hpv_r ℓ [::] := None.

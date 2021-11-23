@@ -67,8 +67,8 @@ Equations? get_raw_package_op {L} {I E : Interface} (p : raw_package)
   (hp : ValidPackage L I E p)
   (o : opsig) (ho : o \in E) (arg : src o) : code L I (tgt o) :=
   get_raw_package_op p hp o ho arg with inspect (lookup_op p o) := {
-  | @exist (Some f) e1 := {code f arg } ;
-  | @exist None e1 := False_rect _ _
+  | @exist (Some f) e1 => {code f arg }
+  | @exist None e1 => False_rect _ _
   }.
 Proof.
   - destruct o as [n [S T]].

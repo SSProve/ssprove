@@ -128,8 +128,8 @@ Qed.
 
 Equations? get_heap (map : heap) (ℓ : Location) : Value ℓ.π1 :=
   get_heap map ℓ with inspect (map ∙1 ℓ) := {
-  | @exist (Some p) e := cast_pointed_value p _ ;
-  | @exist None e := heap_init (ℓ.π1)
+  | @exist (Some p) e => cast_pointed_value p _
+  | @exist None e => heap_init (ℓ.π1)
   }.
 Proof.
   destruct map as [h vh]. simpl in e.
