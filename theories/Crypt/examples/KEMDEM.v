@@ -45,13 +45,7 @@ Section KEMDEM.
 
   (** We open a section in order to make local changes to global settings
       in the unlikely event that this module is imported somewhere else.
-
-      We can thus safely change obligation tactic to [idtac] (which does
-      nothing). The idea being that [Equations] definition will not simplify
-      the obligations they generate, which interacts badly with our automation.
-      It will restored after we leave the section.
   *)
-  Obligation Tactic := idtac.
   Set Equations Transparent.
 
   (** In the SSP paper, bitstrings are used for the different data types.
@@ -354,8 +348,11 @@ Section KEMDEM.
     the composed package as it is not inferred automatically.
     We call [ssprove_valid] which progresses as much as possible and then asks
     us to prove the remanining bits.
+
+    Here and afterwards we use #[tactic=notac] to tell Equations not to
+    preprocess the generated goals.
   *)
-  Equations? KEM_CCA_pkg b :
+  #[tactic=notac] Equations? KEM_CCA_pkg b :
     package KEM_CCA_loc [interface] KEM_CCA_out :=
     KEM_CCA_pkg b :=
     {package (par (KEM b) (ID IGET)) ∘ KEY }.
@@ -435,7 +432,7 @@ Section KEMDEM.
   Definition DEM_CCA_loc :=
     DEM_loc :|: KEY_loc.
 
-  Equations? DEM_CCA_pkg b :
+  #[tactic=notac] Equations? DEM_CCA_pkg b :
     package DEM_CCA_loc [interface] DEM_CCA_out :=
     DEM_CCA_pkg b :=
     {package (par (DEM b) (ID IGEN)) ∘ KEY }.
@@ -756,7 +753,7 @@ Section KEMDEM.
   Definition Aux_loc :=
     MOD_CCA_loc :|: KEM_loc :|: DEM_loc :|: KEY_loc.
 
-  Equations? Aux b : package Aux_loc [interface] PKE_CCA_out :=
+  #[tactic=notac] Equations? Aux b : package Aux_loc [interface] PKE_CCA_out :=
     Aux b :=
     {package (MOD_CCA KEM_DEM ∘ par (KEM true) (DEM b) ∘ KEY) }.
   Proof.

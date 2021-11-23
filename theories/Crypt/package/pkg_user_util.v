@@ -861,3 +861,6 @@ Ltac fsubset_auto :=
   rewrite in_fset ; rewrite in_fset in h ;
   invert_in_seq h ;
   inseq_try.
+
+(* To be able to use with Equations *)
+Ltac notac := idtac.
