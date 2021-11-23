@@ -1,6 +1,6 @@
 From Coq Require Import ssreflect ssrfun FunctionalExtensionality.
 From Mon Require Export Base.
-From Mon Require Import sprop.SPropBase.
+From Mon Require Import SPropBase.
 From Coq Require Import Relation_Definitions Morphisms.
 
 Set Implicit Arguments.

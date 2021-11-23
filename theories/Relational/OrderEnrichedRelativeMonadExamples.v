@@ -2,7 +2,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require Import FunctionalExtensionality.
 From Mon Require Export Base.
 From Coq Require Import Relation_Definitions Morphisms RelationPairs.
-From Mon.sprop Require Import SPropBase SPropMonadicStructures.
+From Mon Require Import SPropBase SPropMonadicStructures.
 From Relational Require Import OrderEnrichedCategory Rel.
 
 Set Primitive Projections.

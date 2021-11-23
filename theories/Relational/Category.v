@@ -2,7 +2,7 @@ From Coq Require Import ssreflect ssrfun.
 From Mon Require Export Base.
 From Coq.Relations Require Import Relation_Definitions.
 From Coq.Classes Require Import RelationClasses Morphisms.
-From Mon.sprop Require Import SPropBase.
+From Mon Require Import SPropBase.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
@@ -179,7 +179,7 @@ End NaturalTransformationId.
 Section NaturalTransformationComp.
   Context {C D : category} {F G H : functor C D}
           (phi : natTrans F G) (psi : natTrans G H).
-  
+
   Program Definition natTrans_comp : natTrans F H :=
     mkNatTrans _ _ (fun A => psi A ∙ phi A) _.
   Next Obligation.
@@ -200,7 +200,7 @@ Section NaturalTransformationRightWhiskering.
 End NaturalTransformationRightWhiskering.
 
 Section NaturalTransformationLeftWhiskering.
-  Context {C D E: category} {F G : functor D E} 
+  Context {C D E: category} {F G : functor D E}
           (phi : natTrans F G) (H : functor C D).
 
   Program Definition natTrans_whisker_left : natTrans (functor_comp H F) (functor_comp H G) :=
@@ -225,7 +225,7 @@ Section NaturalIso.
       ; ni_leftinv : forall {A}, ni_inv ∙ ni_map ∼ Id (F A)
       }.
 
-  Lemma natIso_inv_natural (phi:natIso) {A B} (f : C⦅A ; B⦆) : 
+  Lemma natIso_inv_natural (phi:natIso) {A B} (f : C⦅A ; B⦆) :
     ni_inv phi ∙ fmap G f ∼ fmap F f ∙ ni_inv phi.
   Proof.
     symmetry.
@@ -265,7 +265,7 @@ End NaturalIsoToNaturalTrans.
 
 Section IdToNaturalIso.
   Context {C D : category} (F: functor C D).
-  
+
   Program Definition natIso_id : natIso F F :=
     mkNatIso F F (fun=> Id _) (fun=> Id _) _ _ _.
   Next Obligation. rewrite cat_law1 cat_law2 ; reflexivity. Qed.
@@ -276,7 +276,7 @@ End IdToNaturalIso.
 Section NaturalIsoComp.
   Context {C D : category} {F G H : functor C D}
           (phi : natIso F G) (psi : natIso G H).
-  
+
   Program Definition natIso_comp : natIso F H :=
     mkNatIso _ _ (fun A => psi A ∙ phi A)
              (fun A => ni_inv phi A ∙ ni_inv psi A) _ _ _.
@@ -296,7 +296,7 @@ Section NaturalIsoComp.
 End NaturalIsoComp.
 
 Section NaturalIsoLeftWhiskering.
-  Context {C D E: category} {F G : functor D E} 
+  Context {C D E: category} {F G : functor D E}
           (phi : natIso F G) (H : functor C D).
 
   Program Definition natIso_whisker_left : natIso (functor_comp H F) (functor_comp H G) :=
@@ -326,7 +326,7 @@ Section FunctorCompId.
   Next Obligation. rewrite cat_law1 cat_law2 ; reflexivity. Qed.
   Next Obligation. rewrite cat_law1 ; reflexivity. Qed.
   Next Obligation. rewrite cat_law1 ; reflexivity. Qed.
-  
+
   Program Definition functor_unit_right
     : natIso (functor_comp F (functor_id _)) F
     := mkNatIso _ _ (fun=> Id _) (fun=> Id _) _ _ _.
