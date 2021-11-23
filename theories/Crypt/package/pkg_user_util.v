@@ -313,7 +313,7 @@ Ltac ssprove_sync_eq :=
     | x ← sample ?op ;; _ =>
       eapply (rsame_head_cmd (cmd_sample op))
     | put ?ℓ := ?v ;; _ =>
-      eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put ℓ v))
+      eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put ℓ v)) ; intros _
     | x ← get ?ℓ ;; _ =>
       eapply (rsame_head_cmd (cmd_get ℓ))
     | x ← cmd ?c ;; _ =>
@@ -358,7 +358,7 @@ Ltac ssprove_sync :=
     | put ?ℓ := ?v ;; _ =>
       eapply (@rsame_head_cmd_alt _ _ (λ z, _) (λ z, _) (cmd_put ℓ v)) ; [
         eapply cmd_put_preserve_pre ; ssprove_invariant
-      | idtac
+      | intros _
       ]
     | x ← get ?ℓ ;; _ =>
       eapply (rsame_head_cmd_alt (cmd_get ℓ)) ; [
@@ -517,7 +517,7 @@ Ltac ssprove_swap_auto :=
 (* TODO Tactic to solve automatically condition when possible *)
 Ltac ssprove_swap_aux n :=
   lazymatch eval cbv in n with
-  | S ?n => ssprove_sync_eq ; intro ; ssprove_swap_aux n
+  | S ?n => ssprove_sync_eq ; try intro ; ssprove_swap_aux n
   | 0%N => ssprove_rswap_cmd_eq_rhs ; ssprove_swap_auto
   | _ => fail "Wrong number: " n
   end.
@@ -619,7 +619,7 @@ Ltac ssprove_code_simpl_more_aux :=
       let x' := fresh x in
       ssprove_sync_eq ; intro x'
     | put ?ℓ := ?v ;; _ =>
-      ssprove_sync_eq ; intro
+      ssprove_sync_eq
     | x ← get ?ℓ ;; _ =>
       let x' := fresh x in
       ssprove_sync_eq ; intro x'

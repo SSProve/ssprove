@@ -277,13 +277,13 @@ Proof.
   - eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
     move => [a1 h1] [a2 h2] [Heqa Heqh]. intuition auto.
   - ssprove_sync_eq. intro count.
-    ssprove_sync_eq. intros myunit.
+    ssprove_sync_eq.
     ssprove_sync_eq. move => /eqP e. subst.
     ssprove_sync_eq. intro a.
     ssprove_swap_lhs 0%N.
-    ssprove_sync_eq. intros _.
+    ssprove_sync_eq.
     ssprove_swap_lhs 0%N.
-    ssprove_sync_eq. intros _.
+    ssprove_sync_eq.
     ssprove_sync_eq. intro b.
     rewrite !otf_fto. simpl.
     eapply r_ret. intuition eauto.
@@ -386,7 +386,7 @@ Proof.
   - eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
     cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
   - ssprove_sync_eq. intro count.
-    ssprove_sync_eq. intros _.
+    ssprove_sync_eq.
     destruct count.
     2:{
       cbn. eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
@@ -396,10 +396,10 @@ Proof.
     ssprove_sync_eq. intro a.
     ssprove_swap_rhs 1%N.
     ssprove_swap_rhs 0%N.
-    ssprove_sync_eq. intros _.
+    ssprove_sync_eq.
     ssprove_swap_rhs 1%N.
     ssprove_swap_rhs 0%N.
-    ssprove_sync_eq. intros _.
+    ssprove_sync_eq.
     eapply r_transR.
     1:{ eapply r_uniform_prod. intros x y. eapply rreflexivity_rule. }
     simpl.

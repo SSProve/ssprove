@@ -931,7 +931,7 @@ Section KEMDEM.
       ssprove_swap_seq_rhs [:: 1 ; 0 ; 2 ; 1 ]%N.
       ssprove_contract_put_rhs.
       ssprove_swap_seq_lhs [:: 0 ]%N.
-      ssprove_sync. intros _.
+      ssprove_sync.
       apply r_put_rhs.
       apply r_put_vs_put.
       ssprove_restore_mem.
