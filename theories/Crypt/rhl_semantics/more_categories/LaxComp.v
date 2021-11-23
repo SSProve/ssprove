@@ -1,5 +1,5 @@
 From Coq Require Import ssreflect.
-From Mon.sprop Require Import SPropBase.
+From Mon Require Import SPropBase.
 From Relational Require Import OrderEnrichedCategory.
 
 Import SPropNotations.
@@ -122,7 +122,7 @@ Section Assoc.
           {J34 : ord_functor C3 C4}
           {phi12 : natIso J2 (ord_functor_comp J1 J12)} (psi12 := ni_inv phi12)
           {phi23 : natIso J3 (ord_functor_comp J2 J23)} (psi23 := ni_inv phi23)
-          {phi34 : natIso J4 (ord_functor_comp J3 J34)} (psi34 := ni_inv phi34)          
+          {phi34 : natIso J4 (ord_functor_comp J3 J34)} (psi34 := ni_inv phi34)
           {M1 : ord_relativeMonad J1} {M2: ord_relativeMonad J2}
           {M3: ord_relativeMonad J3} {M4 : ord_relativeMonad J4}.
 

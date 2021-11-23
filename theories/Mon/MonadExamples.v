@@ -1,6 +1,6 @@
 From Coq Require Import ssreflect List.
 From Mon Require Export Base.
-From Mon.sprop Require Import SPropBase SPropMonadicStructures Monoid.
+From Mon Require Import SPropBase SPropMonadicStructures Monoid.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

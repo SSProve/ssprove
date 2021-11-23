@@ -1,6 +1,6 @@
 From Coq Require Import ssreflect ssrfun.
 From Mon Require Export Base.
-From Mon.sprop Require Import SPropBase SPropMonadicStructures Monoid SpecificationMonads MonadExamples.
+From Mon Require Import SPropBase SPropMonadicStructures Monoid SpecificationMonads MonadExamples.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -341,7 +341,7 @@ End SumOfTheories.
 (** Deactivated temporarily *)
 
 (* From Equations Require Import Equations. *)
-(* From Mon.sprop Require Import WellFounded. *)
+(* From Mon Require Import WellFounded. *)
 
 (* Derive NoConfusion for FreeF. *)
 (* Derive Subterm for FreeF. *)

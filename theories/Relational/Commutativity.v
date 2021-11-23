@@ -3,7 +3,7 @@ From Coq Require FunctionalExtensionality.
 
 From Mon Require Export Base.
 From Coq Require Import Relation_Definitions Morphisms.
-From Mon.sprop Require Import SPropBase SPropMonadicStructures
+From Mon Require Import SPropBase SPropMonadicStructures
   MonadExamples SpecificationMonads DijkstraMonadExamples.
 From Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples.
