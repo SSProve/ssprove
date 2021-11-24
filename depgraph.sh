@@ -9,6 +9,7 @@ base_style="rounded,filled"
 # Some categorical color schemes recognised by dot: pastel19, set312
 # http://www.graphviz.org/doc/info/colors.html#brewer
 color_scheme=pastel19
+n_colors_max=9
 
 function help_msg() {
     echo "`basename $0`: Print dependency graph for \"$fn_project\" according to coqdep."
@@ -21,25 +22,37 @@ fi
 ( echo "digraph interval_deps {" ;
   echo 'node [shape=box, style="'$base_style'", URL="html/\N.html", colorscheme='$color_scheme'];';
   coqdep -vos -dyndep var -f $fn_project |
-      # drop prefix, turn '/' into '.' ,
-      $SED -n -e 's,theories/,,g' -e 's,/,.,g' \
+      # rewrite prefixes
+      $SED -f <(sed -nr 's/^ *-Q +(\S+) +(\S+)/s,\1,\2,g/p' < _CoqProject) |
+      # turn '/' into '.' ,
+      $SED -n -e 's,/,.,g' \
           `# keep lines with [src].vo : [x].v [dst]* , drop [x].v` \
           -e 's/[.]vo.*: [^ ]*[.]v//p' |
-      while read src dst; do
-          # pick a color number based on the src node name
-          color=$(echo "$src" | $SED -r \
-                                    -e 's,Crypt[.]only_prob.*,2,' \
-                                    -e 's,Crypt[.]package[.].*,3,' \
-                                    -e 's,Crypt[.]state[.].*,4,' \
-                                    -e 's,Crypt[.].*,5,' \
-                                    -e 's,Mon[.].*,6,' \
-                                    -e 's,Relational[.].*,7,' \
-                                    -e 's,.*\..*,1,') # default
-          echo "\"$src\" [fillcolor=$color];"
-          for d in $dst; do
-              echo "\"$src\" -> \"${d%.vo*}\" ;"
-          done
-      done;
+      {
+          declare -A colmap
+          while read src dst; do
+              # pick a color number based on the src node name
+              prefix=$(echo "$src" | $SED -e '/^[^\.]*$/s/.*/__/' -e '/\./s/\..*//')
+              color=${colmap[$prefix]}
+              if [ -z "$color" ] ; then
+                  color=$(( ${#colmap[*]} + 1))
+                  color=$(( color < n_colors_max ? color : n_colors_max ))
+                  colmap[$prefix]=$color
+              fi
+              # color=$(echo "$src" | $SED -r \
+              #                            -e 's,Crypt[.]examples.*,2,' \
+              #                            -e 's,Crypt[.]package[.].*,3,' \
+              #                            -e 's,Crypt[.]rhl_semantics[.].*,4,' \
+              #                            -e 's,Crypt[.]rules.*,5,' \
+              #                            -e 's,Mon[.].*,6,' \
+              #                            -e 's,Relational[.].*,7,' \
+              #                            -e 's,.*\..*,1,') # default
+              echo "\"$src\" [fillcolor=$color];"
+              for d in $dst; do
+                  echo "\"$src\" -> \"${d%.vo*}\" ;"
+              done
+          done;
+      }
   echo "}" ) |
     # transitively reduce graph
     tred |
