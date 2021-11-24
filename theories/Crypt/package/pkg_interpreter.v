@@ -1,6 +1,7 @@
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect.
 Set Warnings "notation-overridden,ambiguous-paths".
+Require Arith ZArith.
 
 From Crypt Require Import Prelude choice_type
      pkg_core_definition pkg_tactics pkg_distr pkg_notation.
@@ -76,51 +77,14 @@ Section Interpreter.
       | _ => true
     end.
   Proof.
-    induction l.
-    - rewrite ch_nat_equation_1.
-      simpl.
-      rewrite nat_ch_aux_equation_1.
-      by destruct v.
-    - rewrite ch_nat_equation_2.
-      simpl.
-      rewrite nat_ch_aux_equation_9.
-      reflexivity.
-    - rewrite ch_nat_equation_3.
-      simpl.
-      rewrite nat_ch_aux_equation_10.
-      destruct v ; reflexivity.
-    - destruct v.
-      rewrite ch_nat_equation_4.
-      simpl.
-      specialize (IHl1 s).
-      specialize (IHl2 s0).
-      move: IHl1 IHl2.
-      case (ch_nat l1 s) ;
-      case (ch_nat l2 s0).
-      + simpl.
-        intros.
-        rewrite nat_ch_aux_equation_32.
-        by rewrite IHl1 IHl2.
-      + by simpl ; intros ; try inversion IHl1 ; try inversion IHl2.
-      + by simpl ; intros ; try inversion IHl1 ; try inversion IHl2.
-      + by simpl ; intros ; try inversion IHl1 ; try inversion IHl2.
-    - rewrite ch_nat_equation_5.
-      done.
-    - destruct v eqn:e ; simpl.
-      + rewrite ch_nat_equation_6.
-        specialize (IHl s).
-        case (ch_nat l s) eqn:e'.
-        ++ simpl.
-           intros.
-           rewrite nat_ch_aux_equation_20.
-           f_equal.
-           done.
-        ++ done.
-      + rewrite ch_nat_equation_7.
-        done.
-    - rewrite ch_nat_equation_8.
-      simpl.
-      rewrite nat_ch_aux_equation_14.
+    funelim (ch_nat l v). all: try easy.
+    - simpl. by destruct v.
+    - simp ch_nat. simpl. simp nat_ch_aux. by destruct v.
+    - simp ch_nat. destruct (ch_nat l1 v1), (ch_nat l2 v2); try easy.
+      cbn. simp nat_ch_aux. simpl in *. now rewrite H H0.
+    - simp ch_nat. destruct ch_nat; try easy.
+      simpl in *. simp nat_ch_aux. now f_equal.
+    - simp ch_nat. simpl. simp nat_ch_aux.
       f_equal.
       unfold nat_ch_aux_obligation_1.
       have lv := ltn_ord v.
@@ -163,7 +127,6 @@ Section Interpreter.
   Definition Run {A} :=
     (fun c seed => @Run_aux A c seed (fun (l : Location) => Some NSUnit)).
 
-
   #[program] Fixpoint sampler (e : choice_type) seed : option (nat * e):=
     match e with
       chUnit => Some (seed, Datatypes.tt)
@@ -184,12 +147,32 @@ Section Interpreter.
         | _ => None
         end
     | chFin n => Some ((seed + 1)%N, _)
+    | chWord n => Some ((seed + 1)%N, _)
     end.
   Next Obligation.
     eapply Ordinal.
     instantiate (1 := (seed %% n)%N).
     rewrite ltn_mod.
     apply n.
+  Defined.
+
+  Set Warnings "-notation-overridden,-ambiguous-paths".
+  Import ZArith.
+  Import all_algebra.
+  Set Warnings "notation-overridden,ambiguous-paths".
+  Local Open Scope Z_scope.
+  Local Open Scope ring_scope.
+
+  Next Obligation.
+    eapply word.mkWord.
+    instantiate (1 := ((Z.of_nat seed) mod word.modulus n)%Z).
+    pose (Z.mod_bound_pos (Z.of_nat seed) (word.modulus n)
+         (Zle_0_nat seed)).
+    pose (word.modulus_gt0 n).
+    apply / word.iswordZP.
+    apply a.
+    move : i => / ssrZ.ltzP.
+    auto.
   Defined.
 
 End Interpreter.

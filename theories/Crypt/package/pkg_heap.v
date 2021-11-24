@@ -19,6 +19,7 @@ From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   pkg_tactics pkg_composition.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
+From CoqWord Require Import word.
 
 (* Must come after importing Equations.Equations, who knows why. *)
 From Crypt Require Import FreeProbProg.
@@ -63,6 +64,7 @@ Proof.
   - exact emptym.
   - exact None.
   - exact (fintype.Ordinal n.(cond_pos)).
+  - exact word0.
 Defined.
 
 Definition heap := { h : raw_heap | valid_heap h }.
