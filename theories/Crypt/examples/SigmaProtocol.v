@@ -71,6 +71,7 @@ Module Type SigmaProtocolAlgorithms (π : SigmaProtocolParams).
   Definition choiceBool := 'fin #|bool_choiceType|.
 
   Parameter Sigma_locs : {fset Location}.
+
   Parameter Simulator_locs : {fset Location}.
 
   Parameter Commit :
@@ -242,6 +243,112 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       apply in_fset_left; solve [auto_in_fset]
       : typeclass_instances ssprove_valid_db.
 
+    (* Lemma test n m k I: (is_true *)
+    (*                        ((n + m) *)
+    (*                           \notin [seq (let '(i, _) := x in i) *)
+    (*                                     | x <- [:: (n + k , I)]])). *)
+
+    (* Lemma test n m k : *)
+    (*   m <> k → *)
+    (*   (is_true ((n + m)%N \notin [:: (n + k)%N])). *)
+    (* Proof. *)
+    (*   intros h. *)
+    (*   unfold "\notin", "\in". *)
+    (*   simpl. *)
+    (*   apply /orP. *)
+    (*   unfold not. *)
+    (*   intros contra. *)
+    (*   destruct contra=>//. *)
+    (*   rewrite eqn_add2l in H. *)
+    (*   apply h. apply /eqP. *)
+    (*   assumption. *)
+    (* Qed. *)
+
+    (* #[local] Hint Extern 20 (is_true *)
+    (*                            (?I1 \notin [seq (let '(i, _) := x in i) *)
+    (*                                        | x <- [:: (?I2, ?E)]])) => *)
+    (*   unfold I1, I2 ; simpl ; apply test ; auto *)
+    (*   : typeclass_instances ssprove_valid_db. *)
+
+
+    (* Hint Extern 20 (is_true ((?n+?m)%N \notin [:: (?n + ?k)])) => *)
+    (*   apply test ; auto *)
+    (*   : typeclass_instances ssprove_valid_db. *)
+
+    (* Lemma notin_cons : *)
+    (*   ∀ (T : eqType) (y : T) (s : seq T) (x : T), *)
+    (*     (x \notin y :: s) = (x != y) && (x \notin s). *)
+    (* Proof. *)
+    (*   intros T y s x. *)
+    (*   rewrite in_cons. *)
+    (*   rewrite Bool.negb_orb. reflexivity. *)
+    (* Qed. *)
+
+    (* Lemma add_neq (m n k : nat): *)
+    (*   n <> k -> *)
+    (*   (m + n)%N != (m + k)%N. *)
+    (* Proof. *)
+    (*   intros h. *)
+    (*   rewrite eqn_add2l. *)
+    (*   apply /negP. *)
+    (*   unfold not. *)
+    (*   intros contra. *)
+    (*   apply h. *)
+    (*   apply /eqP. *)
+    (*   assumption. *)
+    (* Qed. *)
+
+    (* Hint Extern 20 (is_true (?m + ?n)%N != (?m + ?k)%N) => *)
+    (*   simpl ; try apply add_neq ; auto *)
+    (*   : typeclass_instances ssprove_valid_db. *)
+
+    (* Lemma test2 (m n : nat): *)
+    (*   m != n → *)
+    (*   (is_true (m \notin [:: n])). *)
+    (* Proof. *)
+    (*   unfold "\notin", "\in". *)
+    (*   intros h. *)
+    (*   apply /orP. *)
+    (*   intros contra. *)
+    (*   destruct contra=>//. *)
+    (*   rewrite H in h. *)
+    (*   rewrite boolp.falseE in h. *)
+    (*   apply h. *)
+    (* Qed. *)
+
+    (* Lemma test3 (m n k : nat): *)
+    (*   n <> k → *)
+    (*   (m + n)%N <> (m + k)%N. *)
+    (* Proof. *)
+    (*   intros. *)
+    (*   intros contra. *)
+    (*   apply H. *)
+    (* Admitted. *)
+
+    (* Ltac imports_disjoint_auto := *)
+    (*   match goal with *)
+    (*     | [ |- is_true ((?m + ?n)%N <> (?m + ?n)%N) ] => apply test3 *)
+    (*     | [ |- is_true ((?m + ?n)%N != (?m + ?n)%N) ] => apply add_neq ; auto *)
+    (*     | [ |- is_true (?m != ?n) ] => unfold m ; unfold n *)
+    (*   end. *)
+
+    (* Hint Extern 20 (is_true ((?m + ?n)%N != (?m + ?k))) => *)
+    (*   simpl ; try apply test3 *)
+    (*   : typeclass_instances ssprove_valid_db. *)
+
+    (* Hint Extern 20 (is_true (?m != ?n)) => *)
+    (*   imports_disjoint_auto *)
+    (*   : typeclass_instances ssprove_valid_db. *)
+
+    (* Hint Extern 20 (is_true (?m \notin [:: ?n])) => *)
+    (*   simpl ; try apply test2 ; auto *)
+    (*   : typeclass_instances ssprove_valid_db. *)
+
+    (* Hint Extern 20 (is_true (?A \notin [seq (let '(i, _) := x in i) *)
+    (*                                    | x <- ?xs])) => *)
+    (*   simpl ; rewrite in_cons ; rewrite Bool.negb_orb ; apply /andP ; split ; auto ; simpl *)
+    (*   : typeclass_instances ssprove_valid_db. *)
+
     Definition Sigma_to_Com:
       package Com_locs
         [interface val #[ TRANSCRIPT ] : chInput → chTranscript]
@@ -322,6 +429,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         (Hiding_real ∘ Sigma_to_Com ∘ SHVZK_real)
         (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK_real) A.
 
+
     Theorem commitment_hiding :
       ∀ LA A eps,
         ValidPackage LA [interface
@@ -383,7 +491,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         }
       ].
 
-    Lemma commitment_binding :
+    Theorem commitment_binding :
       ∀ LA A LAdv Adv,
         ValidPackage LA [interface
           val #[ SOUNDNESS ] : chStatement → 'bool
@@ -432,7 +540,6 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
   (* This section aim to prove an automatic conversation between the sampling of the random challenge and a random oracle. *)
   (* The main difference is that the random oracle is a query parametrized by the context of the execution. *)
-  Import RandomOracle.
 
   Module OracleParams <: ROParams.
 
@@ -457,8 +564,12 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
   Section FiatShamir.
 
-    Definition RUN : nat := 6.
-    Definition VERIFY : nat := 7.
+    Definition RUN : nat := 7.
+    Definition VERIFY : nat := 8.
+    Definition SIM : nat := 9.
+
+    Context (Sim_locs : {fset Location}).
+    Context (Sim : choiceStatement → code Sim_locs [interface] choiceTranscript).
 
     Definition prod_assoc : chProd choiceStatement choiceMessage → chQuery.
     Proof.
@@ -467,9 +578,9 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       apply mxvec_index. all: assumption.
     Qed.
 
-    (* TW: I moved it here because it might induce back-tracking and we want to
-      avoid it because of time-consumption.
-    *)
+    (* TW: I moved it here because it might induce back-tracking and we want to *)
+  (*     avoid it because of time-consumption. *)
+  (*   *)
     Hint Extern 20 (ValidCode ?L ?I ?c.(prog)) =>
       eapply valid_injectMap ; [| eapply c.(prog_valid) ]
       : typeclass_instances ssprove_valid_db.
@@ -477,7 +588,6 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Definition Fiat_Shamir :
       package Sigma_locs
         [interface
-          val #[ INIT ] : 'unit → 'unit ;
           val #[ QUERY ] : 'query → 'random
         ]
         [interface
@@ -495,21 +605,21 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         } ;
         def #[ RUN ] (hw : chRelation) : chTranscript
         {
-          #import {sig #[ INIT ] : 'unit → 'unit } as RO_init ;;
           #import {sig #[ QUERY ] : 'query → 'random } as RO_query ;;
           let '(h,w) := hw in
           #assert (R (otf h) (otf w)) ;;
           a ← Commit h w ;;
-          RO_init Datatypes.tt ;;
           e ← RO_query (prod_assoc (h, a)) ;;
           z ← Response h w a e ;;
           @ret choiceTranscript (h,a,e,z)
         }
       ].
 
-    Definition RUN_interactive :
-      package Sigma_locs
-        [interface]
+    Definition Fiat_Shamir_SIM :
+      package Sim_locs
+        [interface
+          val #[ QUERY ] : 'query → 'random
+        ]
         [interface
           val #[ VERIFY ] : chTranscript → 'bool ;
           val #[ RUN ] : chRelation → chTranscript
@@ -518,142 +628,22 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       [package
         def #[ VERIFY ] (t : chTranscript) : 'bool
         {
+          #import {sig #[ QUERY ] : 'query → 'random } as RO_query ;;
           let '(h,a,e,z) := t in
+          e ← RO_query (prod_assoc (h, a)) ;;
           ret (otf (Verify h a e z))
         } ;
         def #[ RUN ] (hw : chRelation) : chTranscript
         {
           let '(h,w) := hw in
           #assert (R (otf h) (otf w)) ;;
-          a ← Commit h w ;;
-          e ← sample uniform i_random ;;
-          z ← Response h w a e ;;
-          @ret choiceTranscript (h,a,e,z)
-        }
-      ].
-
-    Definition SHVZK_real_aux :
-      package Sigma_locs
-        [interface val #[ TRANSCRIPT ] : chInput → chTranscript ]
-        [interface val #[ RUN ] : chRelation → chTranscript ]
-      :=
-      [package
-        def #[ RUN ] (hw : chRelation) : chTranscript
-        {
-          #import {sig #[ TRANSCRIPT ] : chInput → chTranscript } as SHVZK ;;
-          e ← sample uniform i_random ;;
-          t ← SHVZK (hw, e) ;;
+          t ← Sim h ;;
           ret t
         }
       ].
 
-    Lemma run_interactive_shvzk :
-      ∀ LA A,
-        ValidPackage LA [interface
-          val #[ RUN ] : chRelation → chTranscript
-        ] A_export A →
-        fdisjoint LA Sigma_locs →
-        AdvantageE RUN_interactive (SHVZK_real_aux ∘ SHVZK_real) A = 0.
-    Proof.
-      intros LA A Va Hdisj.
-      eapply eq_rel_perf_ind_eq.
-      5,6: apply Hdisj.
-      4: apply Va.
-      2:{
-        rewrite <- fsetUid.
-        eapply valid_link.
-        - apply SHVZK_real_aux.
-        - apply SHVZK_real.
-      }
-      1:{
-        eapply valid_package_inject_export.
-        2: apply RUN_interactive.
-        apply fsubset_ext. intros ? ?.
-        rewrite fset_cons. apply /fsetUP. right. assumption.
-      }
-      simplify_eq_rel hw.
-      ssprove_code_simpl.
-      rewrite cast_fun_K.
-      ssprove_code_simpl.
-      destruct hw as [h w].
-      ssprove_code_simpl_more. ssprove_code_simpl.
-      ssprove_swap_rhs 0%N.
-      ssprove_sync_eq. intro rel.
-      ssprove_swap_rhs 0%N.
-      apply rsame_head. intros [a st].
-      ssprove_sync_eq. intro e.
-      apply rsame_head. intro z.
-      apply r_ret. intuition auto.
-    Qed.
-
-    Hint Extern 50 (_ = code_link _ _) =>
-      rewrite code_link_scheme
-      : ssprove_code_simpl.
-
-    Theorem fiat_shamir_correct :
-      ∀ LA A ,
-        ValidPackage LA [interface
-          val #[ RUN ] : chRelation → chTranscript
-        ] A_export A →
-        fdisjoint LA (Sigma_locs :|: RO_locs) →
-        fdisjoint Sigma_locs RO_locs →
-        AdvantageE (Fiat_Shamir ∘ RO) RUN_interactive A = 0.
-    Proof.
-      intros LA A Va Hdisj Hdisj_oracle.
-      eapply eq_rel_perf_ind_ignore.
-      6: apply Hdisj.
-      6:{
-        rewrite fdisjointUr in Hdisj. move: Hdisj => /andP [h _].
-        apply h.
-      }
-      5: apply Va.
-      1:{
-        ssprove_valid.
-        2: apply fsubsetUl.
-        2: apply fsubsetUr.
-        eapply valid_package_inject_export.
-        2: apply Fiat_Shamir.
-        apply fsubset_ext. intros.
-        rewrite fset_cons. apply /fsetUP. right. assumption.
-      }
-      1:{
-        eapply valid_package_inject_export.
-        2: apply RUN_interactive.
-        apply fsubset_ext. intros.
-        rewrite fset_cons. apply /fsetUP. right. assumption.
-      }
-      1:{ apply fsubsetU. erewrite fsubsetUr. auto. }
-      simplify_eq_rel hw.
-      ssprove_code_simpl.
-      destruct hw as [h w].
-      ssprove_sync. intros rel.
-      eapply rsame_head_alt.
-      1: exact _.
-      1:{
-        intros l Il.
-        apply get_pre_cond_heap_ignore.
-        revert l Il.
-        apply /fdisjointP.
-        assumption.
-      }
-      1:{ intros. apply put_pre_cond_heap_ignore. }
-      intros [a st].
-      ssprove_contract_put_get_lhs.
-      rewrite emptymE.
-      apply r_put_lhs.
-      ssprove_sync. intro e.
-      apply r_put_lhs.
-      ssprove_restore_pre. 1: ssprove_invariant.
-      eapply r_reflexivity_alt.
-      - exact _.
-      - intros l Il.
-        ssprove_invariant.
-        revert l Il.
-        apply /fdisjointP. assumption.
-      - intros. ssprove_invariant.
-    Qed.
-
-    (* GOAL: reason about ZK property *)
+    Definition ϵ_fiat_shamir_zk A :=
+      AdvantageE (Fiat_Shamir ∘ Oracle.RO) (Fiat_Shamir_SIM ∘ Oracle.RO) A.
 
   End FiatShamir.
 
