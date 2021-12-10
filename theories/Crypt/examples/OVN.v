@@ -9,7 +9,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_composition Package Prelude SigmaProtocol Schnorr.
+  pkg_composition Package Prelude SigmaProtocol Schnorr DDH.
 
 From Coq Require Import Utf8 Lia.
 From extructures Require Import ord fset fmap.
@@ -103,7 +103,7 @@ Qed.
 Definition Public_pos : Positive #|Public|.
 Proof.
   apply /card_gt0P. exists g. auto.
-Qed.
+Defined.
 
 #[local] Existing Instance Pid_pos.
 #[local] Existing Instance Secret_pos.
@@ -245,6 +245,8 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
   Definition GET_PK i : nat := 10 + N + i.
   Definition SET_VOTE : nat := 13.
   Definition GET_VOTE : nat := 13.
+
+  Definition P (i : nat) : nat := 14 + i.
 
   #[local] Hint Extern 1 (is_true (_ \in all_locs)) =>
     unfold all_locs; rewrite - fset_cat; auto_in_fset : typeclass_instances ssprove_valid_db.
@@ -1071,32 +1073,11 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
       apply H'.
   Qed.
 
-  Definition KEY_GAME b (i j : pid):
-    package all_locs
-      [interface]
-      [interface val #[ QUERY ] : 'public → ('public × 'public)]
-    :=
-    [package
-       def #[ QUERY ] (h : 'public) : ('public × 'public)
-       {
-         x_i ← sample uniform i_secret ;;
-         x_j ← sample uniform i_secret ;;
-         pkeys ← get public_keys_loc ;;
-         let pkeys' := mapm fst pkeys in
-         let y_i := (fto (g ^+ (otf x_i))) in
-         let y_j := (fto (g ^+ (otf x_j))) in
-           if b then
-             ret (y_i, (fto (compute_key_no_zkp (setm pkeys' j y_j) i)))
-           else
-             ret (y_i, y_j)
-       }
-    ].
-
   Definition Init (id : pid) :
     code all_locs
       [interface
-         val #[ Sigma1.Sigma.RUN ] : chRelation1 → chTranscript1 ;
-         val #[ Sigma1.Sigma.VERIFY ] : chTranscript1 → 'bool
+         val #[ Sigma1.Sigma.VERIFY ] : chTranscript1 → 'bool ;
+         val #[ Sigma1.Sigma.RUN ] : chRelation1 → chTranscript1
       ] (chProd public choiceTranscript1) :=
     {code
       #import {sig #[ Sigma1.Sigma.RUN ] : chRelation1 → chTranscript1} as ZKP ;;
@@ -1128,8 +1109,8 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
 
   Definition SETUP_I :=
       [interface
-         val #[ Sigma1.Sigma.RUN ] : chRelation1 → chTranscript1 ;
-         val #[ Sigma1.Sigma.VERIFY ] : chTranscript1 → 'bool
+         val #[ Sigma1.Sigma.VERIFY ] : chTranscript1 → 'bool ;
+         val #[ Sigma1.Sigma.RUN ] : chRelation1 → chTranscript1
       ].
 
   Definition SETUP_E := [interface val #[ INIT ] : 'unit → 'unit].
@@ -1170,8 +1151,8 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     [package
         def #[ INIT ] (_ : 'unit) : 'unit
         {
-        #import {sig #[ Sigma1.Sigma.RUN ] : chRelation1 → chTranscript1} as ZKP ;;
         #import {sig #[ Sigma1.Sigma.VERIFY ] : chTranscript1 → 'bool} as VER ;;
+        #import {sig #[ Sigma1.Sigma.RUN ] : chRelation1 → chTranscript1} as ZKP ;;
         zkp1 ← Init i ;;
         x ← sample uniform i_secret ;;
         secrets ← get secret_keys_loc ;;
@@ -1190,6 +1171,133 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
         }
     ].
 
+  Definition VOTE_E := [interface val #[ VOTE ] : 'bool → 'public].
+
+  Definition Vote_i (i : pid) (b : bool) :
+    package all_locs
+      [interface]
+      VOTE_E
+    :=
+    [package
+        def #[ VOTE ] (v : 'bool) : 'public
+        {
+          skeys ← get secret_keys_loc ;;
+          #assert (isSome (skeys i)) as x_some ;;
+          pkeys ← get public_keys_loc ;;
+          #assert (isSome (pkeys i)) as y_some ;;
+          let x := (getSome (skeys i) x_some) in
+          let '(y, zkp) := (getSome (pkeys i) y_some) in
+          if b then
+            let vote := ((otf y) ^+ x * g ^+ v) in
+            @ret 'public (fto vote)
+          else
+            let vote := ((otf y) ^+ x * g ^+ (negb v)) in
+            @ret 'public (fto vote)
+        }
+    ].
+
+  Equations? P_i (i : pid):
+    package fset0
+      (VOTE_E :|: SETUP_E)
+      [interface val #[ P i ] : 'bool → 'public]
+    := P_i i :=
+    [package
+        def #[ P i ] (v : 'bool) : 'public
+        {
+          #import {sig #[ INIT ] : 'unit → 'unit} as Setup ;;
+          #import {sig #[ VOTE ] : 'bool → 'public} as Vote ;;
+          Setup Datatypes.tt ;;
+          vote ← Vote v ;;
+          @ret 'public vote
+        }
+    ].
+  Proof.
+    ssprove_valid.
+    - rewrite in_fsetU ; apply /orP ; right. in_fset_auto.
+    - rewrite in_fsetU ; apply /orP ; left.
+      unfold VOTE_E.
+      rewrite fset_cons -fset0E in_fset.
+      apply /fset1P.
+      done.
+  Qed.
+
+  Module DDHParams <: DDHParams.
+    Definition i_space := i_secret.
+    Definition SampleSpace_pos := Secret_pos.
+  End DDHParams.
+
+  Module DDH := DDH DDHParams GP.
+
+  #[tactic=notac] Equations? Aux (i j : pid) m:
+    package (DDH.DDH_locs :|: public_locs)
+      (DDH.DDH_E :|: SETUP_I)
+      [interface val #[ P i ] : 'bool → 'public]
+    := Aux i j m :=
+    [package
+        def #[ P i ] (v : 'bool) : 'public
+        {
+          #import {sig #[ DDH.SAMPLE ] : 'unit → 'public × 'public × 'public} as DDH ;;
+          #import {sig #[ Sigma1.Sigma.RUN ] : chRelation1 → chTranscript1} as ZKP ;;
+          #import {sig #[ Sigma1.Sigma.VERIFY ] : chTranscript1 → 'bool} as VER ;;
+          abc ← DDH Datatypes.tt ;;
+          x_i ← get DDH.secret_loc1 ;;
+          x_j ← get DDH.secret_loc2 ;;
+          let '(y_i, (y_j, c)) := abc in
+            zkp1 ← ZKP (y_i, x_i) ;;
+            pks ← get public_keys_loc ;;
+            put public_keys_loc := setm pks i (y_i, zkp1) ;;
+            zkp2 ← ZKP (y_j, x_j) ;;
+            pks ← get public_keys_loc ;;
+            put public_keys_loc := setm pks j (y_j, zkp2) ;;
+            put public_keys_loc := (setm (setm m j (y_j, zkp2)) i (y_i, zkp1)) ;;
+            keys ← get public_keys_loc ;;
+            #assert (size (domm keys) == n) ;;
+              constructed_keys ← get constructed_keys_loc ;;
+              put constructed_keys_loc := setm constructed_keys i y_j ;;
+              @ret 'public (fto ((otf c) *  g ^+ v))
+        }
+    ].
+  Proof.
+    ssprove_valid.
+    all: rewrite in_fsetU.
+    {
+      apply /orP ; left.
+      unfold DDH.DDH_E.
+      rewrite fset_cons -fset0E fsetU0.
+      by apply /fset1P.
+    }
+    1,2 : apply /orP ; left ; unfold DDH.DDH_locs.
+    {
+      rewrite fset_cons in_fsetU ; apply /orP ; left.
+      by apply /fset1P.
+    }
+    {
+      rewrite !fset_cons.
+      rewrite !in_fsetU.
+      apply /orP ; right.
+      apply /orP ; left.
+      by apply /fset1P.
+    }
+    all: apply /orP ; right ; unfold SETUP_I, public_locs.
+    all: rewrite !fset_cons -fset0E fsetU0 in_fsetU.
+    all: apply /orP.
+    2,3,5-8: left ; by apply /fset1P.
+    1,2: right; by apply /fset1P.
+    - right.
+      rewrite in_fsetU.
+      apply /orP ; right.
+      by apply /fset1P.
+    - right.
+      rewrite in_fsetU.
+      apply /orP ; right.
+      by apply /fset1P.
+  Qed.
+
+  (* Proof overview: *)
+  (* 1: In Setup, the constructed vote can be replace by an random vote *)
+  (* 2: P_i \circ (par VOTE_real SETUP_real) ≈ Aux \circ DDH_real *)
+  (* 3: P_i \circ (par VOTE_ideal SETUP_real) ≈ Aux \circ DDH_ideal *)
+
   Module RO1 := Sigma1.Sigma.Oracle.
   Module RO2 := Sigma2.Oracle.
 
@@ -1207,23 +1315,83 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     ssprove_valid.
     5: apply fsubsetxx.
     {
-    eapply valid_package_inject_export.
-    2: eapply valid_package_inject_import.
-    3: apply Sigma1.Sigma.Fiat_Shamir.
-    all: fsubset_auto.
+      eapply valid_package_inject_export.
+      2: apply RO1.RO.
+      fsubset_auto.
     }
     + unfold combined_locations, all_locs.
-    rewrite -!fsetUA.
-    do 2 (apply fsubsetU; apply /orP ; right).
-    apply fsubsetUl.
+      rewrite -!fsetUA.
+      do 2 (apply fsubsetU; apply /orP ; right).
+      apply fsubsetUl.
     + unfold combined_locations, all_locs.
-    rewrite -!fsetUA.
-    do 4 (apply fsubsetU; apply /orP ; right).
-    apply fsubsetUl.
+      rewrite -!fsetUA.
+      do 4 (apply fsubsetU; apply /orP ; right).
+      apply fsubsetUl.
     + unfold combined_locations, all_locs.
-    rewrite -!fsetUA.
-    apply fsetUS.
-    apply fsubsetUl.
+      rewrite -!fsetUA.
+      apply fsetUS.
+      apply fsubsetUl.
+  Qed.
+
+  #[tactic=notac] Equations? Aux_realised (i j : pid) m :
+    package (DDH.DDH_locs :|: combined_locations) Game_import [interface val #[ P i ] : 'bool → 'public] :=
+    Aux_realised i j m := {package Aux i j m ∘ (par DDH.DDH_real (Sigma1.Sigma.Fiat_Shamir ∘ RO1.RO)) }.
+  Proof.
+    ssprove_valid.
+    1: {
+      eapply valid_package_inject_export.
+      2: apply RO1.RO.
+      fsubset_auto.
+    }
+    4: rewrite -fset0E.
+    4: rewrite fsetU0.
+    4: apply fsub0set.
+    3,6: apply fsubsetxx.
+    - unfold combined_locations. rewrite -!fsetUA.
+      do 2 (apply fsubsetU ; apply /orP ; right).
+      apply fsubsetUl.
+    - unfold combined_locations. rewrite -!fsetUA.
+      do 4 (apply fsubsetU ; apply /orP ; right).
+      apply fsubsetUl.
+    - unfold DDH.DDH_E.
+      apply fsetUS.
+      unfold SETUP_I.
+      apply fsubsetxx.
+    - unfold combined_locations. rewrite -!fsetUA.
+      apply fsetUS.
+      do 1 (apply fsubsetU ; apply /orP ; right).
+      apply fsubsetUl.
+  Qed.
+
+  #[tactic=notac] Equations? P_i_realised (i j : pid) (b : bool) m f:
+    package combined_locations Game_import [interface val #[ P i ] : 'bool → 'public] :=
+    P_i_realised i j b m f :=
+      {package P_i i ∘ (par (Vote_i i b)
+                            (if b then SETUP_real m i j else SETUP_ideal m i j f)
+                            ∘ (Sigma1.Sigma.Fiat_Shamir) ∘ RO1.RO)}.
+                            (* (SETUP_realised false m i j f))}. *)
+  Proof.
+    ssprove_valid.
+    2,4,11: apply fsubsetxx.
+    3: {
+      eapply valid_package_inject_export.
+      2: apply RO1.RO.
+      fsubset_auto.
+    }
+    7: apply fsub0set.
+    6: apply fsubsetxx.
+    - case b; fdisjoint_auto.
+    - rewrite -fset0E fset0U. fsubset_auto.
+    - unfold combined_locations. rewrite -!fsetUA.
+      do 2 (apply fsubsetU ; apply /orP ; right).
+      apply fsubsetUl.
+    - unfold combined_locations. rewrite -!fsetUA.
+      do 4 (apply fsubsetU ; apply /orP ; right).
+      apply fsubsetUl.
+    - rewrite fsetUid.
+      unfold combined_locations, all_locs. rewrite -!fsetUA.
+      apply fsetUS.
+      apply fsubsetUl.
   Qed.
 
   Notation inv := (heap_ignore secret_locs).
@@ -1251,6 +1419,37 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
   Hint Extern 40 (⊢ ⦃ _ ⦄ x ← ?s ;; y ← cmd _ ;; _ ≈ _ ⦃ _ ⦄) =>
     eapply r_swap_scheme_cmd ; ssprove_valid
     : ssprove_swap.
+
+  Lemma P_i_aux (i j : pid) m f':
+    (P_i_realised i j false m f') ≈₀ Aux_realised i j m.
+  Proof.
+    eapply eq_rel_perf_ind with (inv := inv).
+    {
+      ssprove_invariant.
+      unfold combined_locations.
+      rewrite -!fsetUA.
+      apply fsubsetUl.
+      (* do 1 (apply fsubsetU ; apply /orP ; right). *)
+    }
+    simplify_eq_rel v.
+    rewrite !setmE.
+    rewrite !eq_refl.
+    simpl.
+    repeat simplify_linking.
+    rewrite !cast_fun_K.
+    ssprove_code_simpl.
+    ssprove_code_simpl_more.
+    ssprove_sync=>x_i.
+    apply r_get_remember_lhs.
+    intro skeys.
+    apply r_put_lhs.
+    ssprove_restore_mem.
+    1: ssprove_invariant.
+    unfold Sigma1.MyParam.R.
+    rewrite otf_fto eq_refl.
+    simpl.
+    ssprove_code_simpl.
+
 
   Lemma constructed_key_random m (i j : pid):
     (i != j)%N →

@@ -43,8 +43,8 @@ Module Type GroupParam.
 End GroupParam.
 
 Module Type DDHParams.
-  Parameter SampleSpace : finType.
-  Parameter SampleSpace_pos : Positive #|SampleSpace|.
+  Parameter i_space : nat.
+  Parameter SampleSpace_pos : Positive i_space.
 End DDHParams.
 
 Module DDH (DDHP : DDHParams) (GP : GroupParam).
@@ -56,41 +56,54 @@ Module DDH (DDHP : DDHParams) (GP : GroupParam).
 
   #[local] Existing Instance SampleSpace_pos.
 
-  Definition i_space := #|SampleSpace|.
-
   Definition GroupSpace : finType := FinGroup.arg_finType gT.
   #[local] Instance GroupSpace_pos : Positive #|GroupSpace|.
   Proof.
     apply /card_gt0P; by exists g.
-  Qed.
+  (* Needs to be transparent to unify with local positivity proof? *)
+  Defined.
 
   Definition chGroup : chUniverse := 'fin #|GroupSpace|.
+  Definition chElem : chUniverse := 'fin i_space.
 
   Notation " 'group " :=
     chGroup
     (in custom pack_type at level 2).
 
+  Definition secret_loc1 : Location := (chElem ; 0%N).
+  Definition secret_loc2 : Location := (chElem ; 1%N).
+  Definition secret_loc3 : Location := (chElem ; 2%N).
+
+  Definition DDH_locs := (fset [:: secret_loc1 ; secret_loc2 ; secret_loc3]).
+
+
   Definition DDH_real :
-    package fset0 [interface]
+    package DDH_locs [interface]
       [interface val #[ SAMPLE ] : 'unit → 'group × 'group × 'group ] :=
       [package
         def #[ SAMPLE ] (_ : 'unit) : 'group × 'group × 'group
         {
           a ← sample uniform i_space ;;
           b ← sample uniform i_space ;;
+          put secret_loc1 := a ;;
+          put secret_loc2 := b ;;
           ret (fto (g^+a), (fto (g^+b), fto (g^+(a * b))))
         }
       ].
 
+  Definition DDH_E := [interface val #[ SAMPLE ] : 'unit → 'group × 'group × 'group ].
+
   Definition DDH_ideal :
-    package fset0 [interface]
-      [interface val #[ SAMPLE ] : 'unit → 'group × 'group × 'group ] :=
+    package DDH_locs [interface] DDH_E :=
       [package
         def #[ SAMPLE ] (_ : 'unit) : 'group × 'group × 'group
         {
           a ← sample uniform i_space ;;
           b ← sample uniform i_space ;;
           c ← sample uniform i_space ;;
+          put secret_loc1 := a ;;
+          put secret_loc2 := b ;;
+          put secret_loc3 := c ;;
           ret (fto (g^+a), (fto (g^+b), fto (g^+c)))
         }
       ].
