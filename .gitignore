@@ -30,6 +30,9 @@ Makefile.coq.conf
 .\#*
 *.md.tmp
 
+# markdown preview
+*.html
+
 # Latex
 *.aux
 *.bbl
