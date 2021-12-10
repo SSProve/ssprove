@@ -9,3 +9,6 @@ Makefile.coq:
 
 graph:
 	./depgraph.sh
+
+install:
+	$(MAKE) -f Makefile.coq install
