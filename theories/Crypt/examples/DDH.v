@@ -43,8 +43,8 @@ Module Type GroupParam.
 End GroupParam.
 
 Module Type DDHParams.
-  Parameter i_space : nat.
-  Parameter SampleSpace_pos : Positive i_space.
+  Parameter Space : finType.
+  Parameter Space_pos : Positive #|Space|.
 End DDHParams.
 
 Module DDH (DDHP : DDHParams) (GP : GroupParam).
@@ -54,7 +54,7 @@ Module DDH (DDHP : DDHParams) (GP : GroupParam).
 
   Definition SAMPLE := 0%N.
 
-  #[local] Existing Instance SampleSpace_pos.
+  #[local] Existing Instance Space_pos.
 
   Definition GroupSpace : finType := FinGroup.arg_finType gT.
   #[local] Instance GroupSpace_pos : Positive #|GroupSpace|.
@@ -64,7 +64,9 @@ Module DDH (DDHP : DDHParams) (GP : GroupParam).
   Defined.
 
   Definition chGroup : chUniverse := 'fin #|GroupSpace|.
-  Definition chElem : chUniverse := 'fin i_space.
+
+  Definition i_space := #|Space|.
+  Definition chElem : chUniverse := 'fin #|Space|.
 
   Notation " 'group " :=
     chGroup
@@ -76,7 +78,6 @@ Module DDH (DDHP : DDHParams) (GP : GroupParam).
 
   Definition DDH_locs := (fset [:: secret_loc1 ; secret_loc2 ; secret_loc3]).
 
-
   Definition DDH_real :
     package DDH_locs [interface]
       [interface val #[ SAMPLE ] : 'unit → 'group × 'group × 'group ] :=
@@ -87,7 +88,7 @@ Module DDH (DDHP : DDHParams) (GP : GroupParam).
           b ← sample uniform i_space ;;
           put secret_loc1 := a ;;
           put secret_loc2 := b ;;
-          ret (fto (g^+a), (fto (g^+b), fto (g^+(a * b))))
+          ret (fto (g^+ a), (fto (g^+ b), fto (g^+(a * b))))
         }
       ].
 

@@ -84,7 +84,7 @@ Proof.
 Qed.
 
 Definition Pid : finType := [finType of 'I_n].
-Definition Secret := Zp_finComRingType q'.
+Definition Secret : finType := Zp_finComRingType q'.
 Definition Public : finType := FinGroup.arg_finType gT.
 Definition s0 : Secret := 0.
 
@@ -1183,10 +1183,10 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
         {
           skeys ← get secret_keys_loc ;;
           #assert (isSome (skeys i)) as x_some ;;
-          pkeys ← get public_keys_loc ;;
-          #assert (isSome (pkeys i)) as y_some ;;
+          ckeys ← get constructed_keys_loc ;;
+          #assert (isSome (ckeys i)) as y_some ;;
           let x := (getSome (skeys i) x_some) in
-          let '(y, zkp) := (getSome (pkeys i) y_some) in
+          let 'y := (getSome (ckeys i) y_some) in
           if b then
             let vote := ((otf y) ^+ x * g ^+ v) in
             @ret 'public (fto vote)
@@ -1222,17 +1222,17 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
   Qed.
 
   Module DDHParams <: DDHParams.
-    Definition i_space := i_secret.
-    Definition SampleSpace_pos := Secret_pos.
+    Definition Space := Secret.
+    Definition Space_pos := Secret_pos.
   End DDHParams.
 
   Module DDH := DDH DDHParams GP.
 
-  #[tactic=notac] Equations? Aux (i j : pid) m:
+  #[tactic=notac] Equations? Aux (i j : pid) m f':
     package (DDH.DDH_locs :|: public_locs)
       (DDH.DDH_E :|: SETUP_I)
       [interface val #[ P i ] : 'bool → 'public]
-    := Aux i j m :=
+    := Aux i j m f' :=
     [package
         def #[ P i ] (v : 'bool) : 'public
         {
@@ -1243,13 +1243,14 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
           x_i ← get DDH.secret_loc1 ;;
           x_j ← get DDH.secret_loc2 ;;
           let '(y_i, (y_j, c)) := abc in
+          let y_j' := fto (g ^+ ((finv f') x_j)) in
             zkp1 ← ZKP (y_i, x_i) ;;
             pks ← get public_keys_loc ;;
             put public_keys_loc := setm pks i (y_i, zkp1) ;;
-            zkp2 ← ZKP (y_j, x_j) ;;
+            zkp2 ← ZKP (y_j', (finv f') x_j) ;;
             pks ← get public_keys_loc ;;
-            put public_keys_loc := setm pks j (y_j, zkp2) ;;
-            put public_keys_loc := (setm (setm m j (y_j, zkp2)) i (y_i, zkp1)) ;;
+            put public_keys_loc := setm pks j (y_j', zkp2) ;;
+            put public_keys_loc := (setm (setm m j (y_j', zkp2)) i (y_i, zkp1)) ;;
             keys ← get public_keys_loc ;;
             #assert (size (domm keys) == n) ;;
               constructed_keys ← get constructed_keys_loc ;;
@@ -1333,9 +1334,9 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
       apply fsubsetUl.
   Qed.
 
-  #[tactic=notac] Equations? Aux_realised (i j : pid) m :
+  #[tactic=notac] Equations? Aux_realised (i j : pid) m f' :
     package (DDH.DDH_locs :|: combined_locations) Game_import [interface val #[ P i ] : 'bool → 'public] :=
-    Aux_realised i j m := {package Aux i j m ∘ (par DDH.DDH_real (Sigma1.Sigma.Fiat_Shamir ∘ RO1.RO)) }.
+    Aux_realised i j m f' := {package Aux i j m f' ∘ (par DDH.DDH_real (Sigma1.Sigma.Fiat_Shamir ∘ RO1.RO)) }.
   Proof.
     ssprove_valid.
     1: {
@@ -1363,49 +1364,91 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
       apply fsubsetUl.
   Qed.
 
-  #[tactic=notac] Equations? P_i_realised (i j : pid) (b : bool) m f:
+  #[tactic=notac] Equations? P_i_realised (i j : pid) (b : bool) m:
     package combined_locations Game_import [interface val #[ P i ] : 'bool → 'public] :=
-    P_i_realised i j b m f :=
+    P_i_realised i j b m :=
       {package P_i i ∘ (par (Vote_i i b)
-                            (if b then SETUP_real m i j else SETUP_ideal m i j f)
-                            ∘ (Sigma1.Sigma.Fiat_Shamir) ∘ RO1.RO)}.
-                            (* (SETUP_realised false m i j f))}. *)
+                            (SETUP_real m i j ∘ (Sigma1.Sigma.Fiat_Shamir) ∘ RO1.RO))}.
   Proof.
     ssprove_valid.
-    2,4,11: apply fsubsetxx.
-    3: {
+    10: apply fsubsetxx.
+    {
       eapply valid_package_inject_export.
       2: apply RO1.RO.
       fsubset_auto.
     }
-    7: apply fsub0set.
-    6: apply fsubsetxx.
-    - case b; fdisjoint_auto.
-    - rewrite -fset0E fset0U. fsubset_auto.
+    8: apply fsub0set.
+    4,7: apply fsubsetxx.
+    4: {
+      instantiate (1 := combined_locations).
+      rewrite fsubUset.
+      apply /andP ; split.
+      2: apply fsubsetxx.
+      unfold combined_locations, all_locs. rewrite -!fsetUA.
+      apply fsetUS.
+      apply fsubsetUl.
+    }
     - unfold combined_locations. rewrite -!fsetUA.
       do 2 (apply fsubsetU ; apply /orP ; right).
       apply fsubsetUl.
     - unfold combined_locations. rewrite -!fsetUA.
       do 4 (apply fsubsetU ; apply /orP ; right).
       apply fsubsetUl.
-    - rewrite fsetUid.
+    - unfold combined_locations, all_locs.
+      rewrite -!fsetUA.
+      apply fsetUS.
+      apply fsubsetUl.
+    - rewrite -fset0E fset0U. apply fsub0set.
+  Qed.
+
+  #[tactic=notac] Equations? P_i_aux (i j : pid) m f:
+    package combined_locations Game_import [interface val #[ P i ] : 'bool → 'public] :=
+    P_i_aux i j m f :=
+      {package P_i i ∘ (par (Vote_i i true)
+                            (SETUP_ideal m i j f ∘ (Sigma1.Sigma.Fiat_Shamir) ∘ RO1.RO))}.
+  Proof.
+    ssprove_valid.
+    {
+      eapply valid_package_inject_export.
+      2: exact _.
+      fsubset_auto.
+    }
+    4,7,9: apply fsubsetxx.
+    6: apply fsub0set.
+    4: {
+      rewrite fsubUset.
+      apply /andP ; split.
+      2: apply fsubsetxx.
       unfold combined_locations, all_locs. rewrite -!fsetUA.
       apply fsetUS.
       apply fsubsetUl.
+    }
+    - unfold combined_locations. rewrite -!fsetUA.
+      do 2 (apply fsubsetU ; apply /orP ; right).
+      apply fsubsetUl.
+    - unfold combined_locations. rewrite -!fsetUA.
+      do 4 (apply fsubsetU ; apply /orP ; right).
+      apply fsubsetUl.
+    - unfold combined_locations, all_locs.
+      rewrite -!fsetUA.
+      apply fsetUS.
+      apply fsubsetUl.
+    - rewrite -fset0E fset0U. apply fsub0set.
   Qed.
 
-  Notation inv := (heap_ignore secret_locs).
-  Instance Invariant_inv : Invariant combined_locations combined_locations inv.
+  Notation inv := (heap_ignore (secret_locs :|: DDH.DDH_locs)).
+  Instance Invariant_inv : Invariant combined_locations
+                                     (DDH.DDH_locs :|: combined_locations)
+                                     inv.
   Proof.
     ssprove_invariant.
     unfold combined_locations, all_locs, secret_locs.
     rewrite fset_cons.
     rewrite -!fsetUA.
-    apply fsetUSS.
-    - rewrite fset1E. apply fsubsetxx.
-    - apply fsubsetU.
-      apply /orP ; left.
-      apply fsubsetxx.
+    rewrite -fset0E !fset0U.
+    apply fsetUS.
+    do 13 (apply fsubsetU ; apply /orP ; right).
+    apply fsubsetUl.
   Qed.
 
   Hint Extern 50 (_ = code_link _ _) =>
@@ -1420,17 +1463,21 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     eapply r_swap_scheme_cmd ; ssprove_valid
     : ssprove_swap.
 
-  Lemma P_i_aux (i j : pid) m f':
-    (P_i_realised i j false m f') ≈₀ Aux_realised i j m.
+  Lemma P_i_aux_equiv (i j : pid) m f':
+    fdisjoint Sigma1.MyAlg.Sigma_locs DDH.DDH_locs →
+    bijective f' →
+    i != j →
+    (P_i_aux i j m f') ≈₀ Aux_realised i j m f'.
   Proof.
-    eapply eq_rel_perf_ind with (inv := inv).
+    intros Hdisj bij_f' ij_neq.
+    have Hne : (i == j) = false.
     {
-      ssprove_invariant.
-      unfold combined_locations.
-      rewrite -!fsetUA.
-      apply fsubsetUl.
-      (* do 1 (apply fsubsetU ; apply /orP ; right). *)
+      case (eq_op) eqn:e.
+      - discriminate.
+      - reflexivity.
     }
+    clear ij_neq.
+    eapply eq_rel_perf_ind with (inv := inv). 1: exact _.
     simplify_eq_rel v.
     rewrite !setmE.
     rewrite !eq_refl.
@@ -1442,41 +1489,427 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     ssprove_sync=>x_i.
     apply r_get_remember_lhs.
     intro skeys.
-    apply r_put_lhs.
-    ssprove_restore_mem.
-    1: ssprove_invariant.
+    ssprove_swap_seq_lhs [:: 0 ; 1 ; 2 ; 3]%N.
+    ssprove_swap_seq_rhs [:: 4 ; 5 ; 6 ; 7]%N.
+    ssprove_swap_seq_rhs [:: 2 ; 3 ; 4 ; 5 ; 6]%N.
+    ssprove_swap_seq_rhs [:: 0 ; 1 ; 2 ; 3 ; 4 ; 5]%N.
+    ssprove_contract_put_get_rhs.
     unfold Sigma1.MyParam.R.
-    rewrite otf_fto eq_refl.
+    have Hord : ∀ x, (nat_of_ord x) = (nat_of_ord (otf x)).
+    {
+      unfold otf.
+      intros n x.
+      rewrite enum_val_ord.
+      done.
+    }
+    rewrite -Hord !otf_fto !eq_refl.
     simpl.
-    ssprove_code_simpl.
-
+    apply r_put_rhs.
+    ssprove_sync=>r_i.
+    apply r_put_vs_put.
+    ssprove_restore_mem.
+    {
+      ssprove_invariant.
+      apply preserve_update_r_ignored_heap_ignore.
+      {
+        unfold DDH.DDH_locs.
+        rewrite in_fsetU.
+        apply /orP ; right.
+        rewrite fset_cons.
+        rewrite in_fsetU.
+        apply /orP ; left.
+        by apply /fset1P.
+      }
+      apply preserve_update_mem_nil.
+    }
+    ssprove_sync=>queries.
+    destruct (queries (Sigma1.Sigma.prod_assoc (fto (g ^+ x_i), fto (g ^+ otf r_i)))) eqn:e.
+    all: rewrite e.
+    all: simpl.
+    all: ssprove_code_simpl ; ssprove_code_simpl_more.
+    - ssprove_swap_seq_rhs [:: 2 ; 3 ; 4 ]%N.
+      ssprove_swap_seq_rhs [:: 1 ; 2 ; 3 ]%N.
+      ssprove_swap_seq_rhs [:: 0 ; 1 ; 2 ]%N.
+      ssprove_swap_seq_lhs [:: 0 ; 1 ; 2 ; 3 ]%N.
+      apply r_get_vs_get_remember_lhs.
+      { ssprove_invariant.
+        move: Hdisj => /fdisjointP Hdisj.
+        apply Hdisj.
+        unfold Sigma1.MyAlg.Sigma_locs.
+        rewrite -fset1E in_fset1.
+        apply eq_refl.
+      }
+      intro e_i.
+      ssprove_forget.
+      ssprove_sync=>pkeys.
+      apply r_put_vs_put.
+      ssprove_restore_pre.
+      1: ssprove_invariant.
+      ssprove_sync=>x_j.
+      ssprove_contract_put_get_lhs.
+      ssprove_contract_put_get_rhs.
+      apply r_put_lhs.
+      apply r_put_rhs.
+      ssprove_forget_all.
+      ssprove_restore_pre.
+      {
+        apply preserve_update_r_ignored_heap_ignore.
+        {
+          unfold DDH.DDH_locs.
+          rewrite in_fsetU.
+          apply /orP ; right.
+          rewrite fset_cons.
+          rewrite in_fsetU.
+          apply /orP ; right.
+          rewrite fset_cons.
+          rewrite in_fsetU.
+          apply /orP ; left.
+          by apply /fset1P.
+        }
+        apply preserve_update_l_ignored_heap_ignore.
+        {
+          unfold secret_locs.
+          rewrite in_fsetU.
+          apply /orP ; left.
+          rewrite -fset1E.
+          by apply /fset1P.
+        }
+        apply preserve_update_mem_nil.
+      }
+      rewrite -!Hord !otf_fto !eq_refl.
+      simpl.
+      ssprove_swap_seq_lhs [:: 0 ; 1 ; 2]%N.
+      ssprove_sync=>r_j.
+      apply r_put_vs_put.
+      clear e queries.
+      ssprove_restore_pre.
+      1: ssprove_invariant.
+      ssprove_sync=>queries.
+      case (queries (Sigma1.Sigma.prod_assoc (fto (g ^+ (finv f') x_j), fto (g ^+ otf r_j)))) eqn:e.
+      + rewrite !e.
+        simpl.
+        ssprove_code_simpl_more.
+        ssprove_swap_seq_lhs [:: 0 ; 1 ; 2 ; 3 ; 4 ; 5 ; 6 ; 7 ]%N.
+        apply r_get_vs_get_remember.
+        {
+          ssprove_invariant.
+          move: Hdisj => /fdisjointP Hdisj.
+          apply Hdisj.
+          unfold Sigma1.MyAlg.Sigma_locs.
+          rewrite -fset1E in_fset1.
+          apply eq_refl.
+        }
+        intro e_j.
+        ssprove_forget_all.
+        apply r_get_vs_get_remember.
+        1: ssprove_invariant.
+        clear pkeys. intro pkeys.
+        ssprove_forget_all.
+        ssprove_contract_put_lhs.
+        ssprove_contract_put_rhs.
+        ssprove_contract_put_get_lhs.
+        ssprove_contract_put_get_rhs.
+        apply r_put_vs_put.
+        ssprove_restore_pre.
+        1: ssprove_invariant.
+        ssprove_sync=>all_votes.
+        apply r_get_vs_get_remember.
+        1: ssprove_invariant.
+        intro ckeys.
+        ssprove_forget_all.
+        ssprove_swap_seq_lhs [:: 0 ; 1 ; 2]%N.
+        ssprove_contract_put_get_lhs.
+        apply r_put_lhs.
+        ssprove_restore_pre.
+        {
+          apply preserve_update_l_ignored_heap_ignore.
+          {
+            unfold secret_locs.
+            rewrite in_fsetU.
+            apply /orP ; left.
+            rewrite -fset1E.
+            by apply /fset1P.
+          }
+          apply preserve_update_mem_nil.
+        }
+        ssprove_swap_seq_lhs [:: 0 ; 1]%N.
+        ssprove_contract_put_get_lhs.
+        apply r_put_vs_put.
+        ssprove_restore_pre.
+        1: ssprove_invariant.
+        rewrite !setmE !eq_refl Hne.
+        simpl.
+        apply r_ret.
+        rewrite otf_fto -expgM.
+        rewrite mulnC.
+        done.
+      + rewrite e.
+        simpl.
+        ssprove_code_simpl_more.
+        ssprove_swap_seq_lhs [:: 0 ; 1 ; 2 ; 3 ; 4 ; 5 ; 6 ; 7 ; 8 ; 9]%N.
+        ssprove_sync=>e_j.
+        apply r_put_vs_put.
+        ssprove_restore_pre.
+        1: ssprove_invariant.
+        apply r_get_vs_get_remember.
+        {
+          ssprove_invariant.
+          move: Hdisj => /fdisjointP Hdisj.
+          apply Hdisj.
+          unfold Sigma1.MyAlg.Sigma_locs.
+          rewrite -fset1E in_fset1.
+          apply eq_refl.
+        }
+        intros ?.
+        ssprove_forget_all.
+        apply r_get_vs_get_remember.
+        1: ssprove_invariant.
+        clear pkeys. intros pkeys.
+        ssprove_forget_all.
+        ssprove_contract_put_lhs.
+        ssprove_contract_put_rhs.
+        ssprove_contract_put_get_lhs.
+        ssprove_contract_put_get_rhs.
+        apply r_put_vs_put.
+        ssprove_restore_pre.
+        1: ssprove_invariant.
+        ssprove_sync=>all_votes.
+        ssprove_sync=>ckeys.
+        ssprove_swap_seq_lhs [:: 0 ; 1 ; 2 ]%N.
+        ssprove_contract_put_get_lhs.
+        apply r_put_lhs.
+        ssprove_restore_pre.
+        {
+          apply preserve_update_l_ignored_heap_ignore.
+          {
+            unfold secret_locs.
+            rewrite in_fsetU.
+            apply /orP ; left.
+            rewrite -fset1E.
+            by apply /fset1P.
+          }
+          apply preserve_update_mem_nil.
+        }
+        rewrite !setmE !eq_refl Hne.
+        simpl.
+        ssprove_contract_put_get_lhs.
+        apply r_put_vs_put.
+        ssprove_restore_pre.
+        1: ssprove_invariant.
+        rewrite !setmE !eq_refl.
+        simpl.
+        apply r_ret.
+        rewrite otf_fto -expgM mulnC.
+        done.
+    - ssprove_swap_seq_rhs [:: 2 ; 3 ; 4 ]%N.
+      ssprove_swap_seq_rhs [:: 1 ; 2 ; 3 ]%N.
+      ssprove_swap_seq_rhs [:: 0 ; 1 ; 2 ]%N.
+      ssprove_swap_seq_lhs [:: 0 ; 1 ; 2 ; 3 ]%N.
+      ssprove_sync=>e_i.
+      apply r_put_vs_put.
+      ssprove_restore_pre.
+      1: ssprove_invariant.
+      apply r_get_vs_get_remember_lhs.
+      { ssprove_invariant.
+        move: Hdisj => /fdisjointP Hdisj.
+        apply Hdisj.
+        unfold Sigma1.MyAlg.Sigma_locs.
+        rewrite -fset1E in_fset1.
+        apply eq_refl.
+      }
+      intros ?.
+      ssprove_swap_seq_lhs [:: 2 ; 1 ; 0]%N.
+      ssprove_sync=>x_j.
+      ssprove_swap_seq_lhs [:: 2 ; 0 ; 1]%N.
+      ssprove_contract_put_get_lhs.
+      ssprove_contract_put_get_rhs.
+      ssprove_swap_seq_lhs [:: 2 ; 1]%N.
+      ssprove_contract_put_lhs.
+      apply r_put_rhs.
+      ssprove_forget_all.
+      ssprove_restore_mem.
+      {
+        apply preserve_update_r_ignored_heap_ignore.
+        {
+          unfold DDH.DDH_locs.
+          rewrite in_fsetU.
+          apply /orP ; right.
+          rewrite fset_cons.
+          rewrite in_fsetU.
+          apply /orP ; right.
+          rewrite fset_cons.
+          rewrite in_fsetU.
+          apply /orP ; left.
+          by apply /fset1P.
+        }
+        apply preserve_update_mem_nil.
+      }
+      ssprove_swap_seq_lhs [:: 0 ; 1 ; 2 ; 3 ; 4 ; 5]%N.
+      ssprove_sync=>pkeys.
+      apply r_put_vs_put.
+      rewrite -!Hord !otf_fto !eq_refl.
+      simpl.
+      ssprove_sync=>r_j.
+      apply r_put_vs_put.
+      clear e queries.
+      ssprove_restore_pre.
+      1: ssprove_invariant.
+      ssprove_sync=>queries.
+      case (queries (Sigma1.Sigma.prod_assoc (fto (g ^+ finv f' x_j), fto (g ^+ otf r_j)))) eqn:e.
+      + rewrite !e.
+        simpl.
+        ssprove_code_simpl_more.
+        ssprove_swap_seq_lhs [:: 0 ; 1 ; 2 ; 3 ; 4 ; 5 ; 6 ; 7]%N.
+        apply r_get_vs_get_remember.
+        {
+          ssprove_invariant.
+          move: Hdisj => /fdisjointP Hdisj.
+          apply Hdisj.
+          unfold Sigma1.MyAlg.Sigma_locs.
+          rewrite -fset1E in_fset1.
+          apply eq_refl.
+        }
+        intro e_j.
+        ssprove_forget_all.
+        apply r_get_vs_get_remember.
+        1: ssprove_invariant.
+        clear pkeys. intro pkeys.
+        ssprove_contract_put_lhs.
+        ssprove_contract_put_rhs.
+        ssprove_contract_put_get_lhs.
+        ssprove_contract_put_get_rhs.
+        ssprove_forget_all.
+        apply r_put_vs_put.
+        ssprove_restore_pre.
+        1: ssprove_invariant.
+        ssprove_sync=>all_votes.
+        apply r_get_vs_get_remember.
+        1: ssprove_invariant.
+        intro ckeys.
+        ssprove_forget_all.
+        ssprove_swap_seq_lhs [:: 0 ; 1 ; 2]%N.
+        ssprove_contract_put_get_lhs.
+        apply r_put_lhs.
+        ssprove_restore_pre.
+        {
+          apply preserve_update_l_ignored_heap_ignore.
+          {
+            unfold secret_locs.
+            rewrite in_fsetU.
+            apply /orP ; left.
+            rewrite -fset1E.
+            by apply /fset1P.
+          }
+          apply preserve_update_mem_nil.
+        }
+        ssprove_swap_seq_lhs [:: 0 ; 1]%N.
+        ssprove_contract_put_get_lhs.
+        apply r_put_vs_put.
+        ssprove_restore_pre.
+        1: ssprove_invariant.
+        rewrite !setmE !eq_refl Hne.
+        simpl.
+        apply r_ret.
+        rewrite otf_fto -expgM.
+        rewrite mulnC.
+        done.
+      + rewrite e.
+        simpl.
+        ssprove_code_simpl_more.
+        ssprove_swap_seq_lhs [:: 0 ; 1 ; 2 ; 3 ; 4 ; 5 ; 6 ; 7 ; 8 ; 9]%N.
+        ssprove_sync=>e_j.
+        apply r_put_vs_put.
+        ssprove_restore_pre.
+        1: ssprove_invariant.
+        apply r_get_vs_get_remember.
+        {
+          ssprove_invariant.
+          move: Hdisj => /fdisjointP Hdisj.
+          apply Hdisj.
+          unfold Sigma1.MyAlg.Sigma_locs.
+          rewrite -fset1E in_fset1.
+          apply eq_refl.
+        }
+        intros ?.
+        ssprove_forget_all.
+        apply r_get_vs_get_remember.
+        1: ssprove_invariant.
+        clear pkeys. intros pkeys.
+        ssprove_forget_all.
+        ssprove_contract_put_lhs.
+        ssprove_contract_put_rhs.
+        ssprove_contract_put_get_lhs.
+        ssprove_contract_put_get_rhs.
+        apply r_put_vs_put.
+        ssprove_restore_pre.
+        1: ssprove_invariant.
+        ssprove_sync=>all_votes.
+        ssprove_sync=>ckeys.
+        ssprove_swap_seq_lhs [:: 0 ; 1 ; 2 ]%N.
+        ssprove_contract_put_get_lhs.
+        apply r_put_lhs.
+        ssprove_restore_pre.
+        {
+          apply preserve_update_l_ignored_heap_ignore.
+          {
+            unfold secret_locs.
+            rewrite in_fsetU.
+            apply /orP ; left.
+            rewrite -fset1E.
+            by apply /fset1P.
+          }
+          apply preserve_update_mem_nil.
+        }
+        rewrite !setmE !eq_refl Hne.
+        simpl.
+        ssprove_contract_put_get_lhs.
+        apply r_put_vs_put.
+        ssprove_restore_pre.
+        1: ssprove_invariant.
+        rewrite !setmE !eq_refl.
+        simpl.
+        apply r_ret.
+        rewrite otf_fto -expgM mulnC.
+        done.
+  Qed.
 
   Lemma constructed_key_random m (i j : pid):
     (i != j)%N →
     ∃ f,
-    ∀ LA A LSim Sim,
+      bijective f /\
+    ∀ LA A LSim Sim ϵ_zk,
       ValidPackage LA SETUP_E A_export A →
       fdisjoint LA (LSim :|: combined_locations) →
       fdisjoint LSim secret_locs →
-    AdvantageE (SETUP_realised true m i j f) (SETUP_realised false m i j f) A <=
-      (Sigma1.Sigma.ϵ_fiat_shamir_zk LSim Sim (A ∘ SETUP_real m i j))
-      + (Sigma1.Sigma.ϵ_fiat_shamir_zk LSim Sim (A ∘ SETUP_ideal m i j f)).
+      (∀ D, Sigma1.Sigma.ϵ_fiat_shamir_zk LSim Sim D <= ϵ_zk) →
+        AdvantageE (SETUP_realised true m i j f) (SETUP_realised false m i j f) A <=
+          ϵ_zk + ϵ_zk.
     (* (SETUP_realised true m i j f) ≈₀ (SETUP_realised false m i j f). *)
   Proof.
     intro ne.
     have [f' Hf] := test_bij' i j m ne.
     simpl in Hf.
     exists f'.
-    intros LA A LSim Sim Va Hdisj Hdisj_secret.
+    split.
+    {
+      assert ('I_#|'I_q'.+2|) as x.
+      - rewrite card_ord.
+        eapply Ordinal.
+        instantiate (1 := q'.+1).
+        rewrite ltnS.
+        apply ltnSn.
+      - specialize (Hf x).
+        destruct Hf.
+        assumption.
+    }
+    intros LA A LSim Sim ϵ_zk Va Hdisj Hdisj_secret Dadv.
     ssprove triangle (SETUP_realised true m i j f') [::
       (SETUP_real m i j ∘ (Sigma1.Sigma.Fiat_Shamir_SIM LSim Sim) ∘ RO1.RO) ;
       (SETUP_ideal m i j f' ∘ (Sigma1.Sigma.Fiat_Shamir_SIM LSim Sim) ∘ RO1.RO)
     ] (SETUP_realised false m i j f') A as ineq.
     eapply le_trans.
     2: {
-      instantiate (1 := Sigma1.Sigma.ϵ_fiat_shamir_zk LSim Sim (A ∘ SETUP_real m i j)
-                        + 0
-                        + Sigma1.Sigma.ϵ_fiat_shamir_zk LSim Sim (A ∘ SETUP_ideal m i j f')).
+      instantiate (1 := ϵ_zk + 0 + ϵ_zk).
       by rewrite GRing.addr0.
     }
     eapply le_trans. 1: exact ineq.
@@ -1485,18 +1918,25 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     {
       unfold SETUP_realised.
       rewrite -Advantage_link.
+      specialize (Dadv (A ∘ SETUP_real m i j)).
+      eapply le_trans.
+      2: apply Dadv.
       done.
     }
     2:{
       unfold SETUP_realised.
       rewrite -Advantage_link.
-      rewrite Advantage_sym.
+      rewrite -Advantage_sym.
+      specialize (Dadv (A ∘ SETUP_ideal m i j f')).
+      eapply le_trans.
+      2: apply Dadv.
       done.
     }
     apply eq_ler.
-    eapply eq_rel_perf_ind with (inv := inv).
+    eapply eq_rel_perf_ind.
     6,7: apply Hdisj.
     3: {
+      instantiate (1 := heap_ignore secret_locs).
       ssprove_invariant.
       erewrite fsetUid.
       unfold combined_locations, all_locs, secret_locs.
@@ -1513,9 +1953,8 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     {
       ssprove_valid.
       {
-        eapply valid_package_inject_import.
-        2: eapply valid_package_inject_export.
-        3: apply (Sigma1.Sigma.Fiat_Shamir_SIM LSim Sim).
+        eapply valid_package_inject_export.
+        2: exact _.
         all: fsubset_auto.
       }
       1: eapply fsubsetUl.
@@ -1538,9 +1977,8 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     {
       ssprove_valid.
       {
-        eapply valid_package_inject_import.
-        2: eapply valid_package_inject_export.
-        3: apply (Sigma1.Sigma.Fiat_Shamir_SIM LSim Sim).
+        eapply valid_package_inject_export.
+        2: exact _.
         all: fsubset_auto.
       }
       1: eapply fsubsetUl.
@@ -1671,6 +2109,59 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     apply r_ret ; done.
   Qed.
 
+  Lemma vote_random m (i j : pid):
+    (i != j)%N →
+    ∀ LA A LSim Sim ϵ_zk,
+      ValidPackage LA [interface val #[ P i ] : 'bool → 'public] A_export A →
+      fdisjoint LA combined_locations →
+      fdisjoint LA LSim →
+      fdisjoint LA DDH.DDH_locs →
+      fdisjoint LSim secret_locs →
+      fdisjoint Sigma1.MyAlg.Sigma_locs DDH.DDH_locs →
+      (∀ D, Sigma1.Sigma.ϵ_fiat_shamir_zk LSim Sim D <= ϵ_zk) →
+    AdvantageE (P_i_realised i j true m) (P_i_realised i j false m) A <=
+      ϵ_zk + ϵ_zk.
+    (* (SETUP_realised true m i j f) ≈₀ (SETUP_realised false m i j f). *)
+  Proof.
+    intros ij_neq LA A LSim Sim ϵ_zk Va Hdisj1 Hdisj2 Hdisj3 Hdisj4 Hdisj5 Dadv.
+    have [f' [bij_f' H]] := constructed_key_random m i j ij_neq.
+    ssprove triangle (P_i_realised i j true m) [::
+      (P_i_aux i j m f').(pack) ;
+      (Aux_realised i j m f').(pack)
+    ] (P_i_realised i j false m) A as ineq.
+    eapply le_trans.
+    2: {
+      instantiate (1 := 0 + 0 + (ϵ_zk + ϵ_zk)).
+      by rewrite !GRing.addr0 !GRing.add0r.
+    }
+    eapply le_trans. 1: exact ineq.
+    clear ineq.
+    repeat eapply ler_add.
+    2: {
+      have H' := P_i_aux_equiv i j m f' Hdisj5 bij_f' ij_neq.
+      specialize (H' LA A Va).
+      apply eq_ler.
+      apply H'.
+      - assumption.
+      - rewrite fdisjointUr.
+        apply /andP ; split ; assumption.
+    }
+    {
+      (* unfold P_i_realised. *)
+      (* unfold P_i_aux. *)
+      rewrite -!Advantage_link.
+      rewrite Advantage_sym.
+      erewrite interchange.
+      rewrite !link_assoc.
+      rewrite Advantage_par.
+    }
+    eapply le_trans. 1: exact: ineq.
+    clear ineq.
+    apply ler_naddr; last first.
+    {
+      have :=
+    }
+    all: apply eq_ler.
 
   Notation inv := (heap_ignore secret_locs).
 
