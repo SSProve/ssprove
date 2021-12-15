@@ -1,0 +1,15 @@
+inline
+fn addn (reg u64 r, inline u64 n) -> reg u64 {
+  r = r + n;
+  r = r + (n + n);
+  return r;
+}
+
+export fn f(reg u64 r1) -> reg u64 {
+reg u64 r;
+r = r1;
+r  = addn(r, 6);
+r  = addn(r, 3);
+r  = addn(r, 5);
+return r;
+}
