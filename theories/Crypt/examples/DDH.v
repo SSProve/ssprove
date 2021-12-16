@@ -72,9 +72,9 @@ Module DDH (DDHP : DDHParams) (GP : GroupParam).
     chGroup
     (in custom pack_type at level 2).
 
-  Definition secret_loc1 : Location := (chElem ; 0%N).
-  Definition secret_loc2 : Location := (chElem ; 1%N).
-  Definition secret_loc3 : Location := (chElem ; 2%N).
+  Definition secret_loc1 : Location := (chElem ; 33%N).
+  Definition secret_loc2 : Location := (chElem ; 34%N).
+  Definition secret_loc3 : Location := (chElem ; 35%N).
 
   Definition DDH_locs := (fset [:: secret_loc1 ; secret_loc2 ; secret_loc3]).
 
