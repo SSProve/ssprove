@@ -64,8 +64,15 @@ Proof.
 Qed.
 
 (* order of g *)
-Definition q' := #[g].-2.
+Definition q' := Zp_trunc (pdiv #[g]).
 Definition q : nat := q'.+2.
+
+Lemma q_order_g : q = #[g].
+Proof.
+  unfold q, q'.
+  apply Fp_cast.
+  apply prime_order.
+Qed.
 
 Lemma group_prodC :
   @commutative gT gT mulg.
@@ -84,7 +91,7 @@ Proof.
 Qed.
 
 Definition Pid : finType := [finType of 'I_n].
-Definition Secret : finType := Zp_finComRingType q'.
+Definition Secret : finType := Zp_finComUnitRingType q'.
 Definition Public : finType := FinGroup.arg_finType gT.
 Definition s0 : Secret := 0.
 
@@ -691,8 +698,10 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
   Lemma compute_key_bij:
     ∀ (m : chMap pid (chProd public choiceTranscript1)) (i j: pid),
       (i != j)%ord →
-      exists (a b : nat), ∀ (x : Secret) zk,
-        compute_key (setm m j (fto (g ^+ x), zk)) i = g ^+ ((a * x + b) %% q).
+      exists (a b : nat),
+        (a != 0)%N /\ (a < q)%N /\
+      (∀ (x : Secret) zk,
+        compute_key (setm m j (fto (g ^+ x), zk)) i = g ^+ ((a * x + b) %% q)).
   Proof.
     simpl.
     intros m i j ne.
@@ -709,6 +718,8 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     case (j < i)%ord eqn:ij_rel.
     - exists 1%N.
       exists (ilow + (ihi * #[g ^+ ihi].-1))%N.
+      do 2 split.
+      1: rewrite q_order_g ; apply (prime_gt1 prime_order).
       intros x zk.
       rewrite compute_key'_equiv.
       2: assumption.
@@ -768,13 +779,32 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
       f_equal.
       f_equal.
       2: {
-        unfold q. rewrite Zp_cast;
-        [reflexivity | apply (prime_gt1 prime_order)].
+        unfold q. rewrite Fp_cast;
+        [reflexivity | apply prime_order].
       }
       rewrite mul1n.
       done.
     - exists #[g].-1.
       exists (ilow + (ihi * #[g ^+ ihi].-1))%N.
+      repeat split.
+      { unfold negb.
+        rewrite -leqn0.
+        case (#[g].-1 <= 0)%N eqn:e.
+        2: done.
+        have Hgt1 := (prime_gt1 prime_order).
+        rewrite -ltn_predRL in Hgt1.
+        rewrite -ltnS in Hgt1.
+        rewrite -addn1 in Hgt1.
+        rewrite leq_add2l in Hgt1.
+        eapply leq_trans in e.
+        2: apply Hgt1.
+        discriminate.
+      }
+      {
+        rewrite q_order_g.
+        rewrite ltn_predL.
+        apply (prime_gt0 prime_order).
+      }
       intros x zk.
       rewrite compute_key'_equiv.
       2: assumption.
@@ -837,59 +867,14 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
       f_equal.
       f_equal.
       2: {
-        unfold q. rewrite Zp_cast;
-        [reflexivity | apply (prime_gt1 prime_order)].
+        unfold q. rewrite Fp_cast;
+        [reflexivity | apply prime_order].
       }
       rewrite addnAC.
       rewrite addnC.
       rewrite addnA.
       done.
   Qed.
-
-  Lemma filterm_remove_i_lt
-        (i : pid) (v : (chProd public choiceTranscript1))
-        (keys : chMap pid (chProd public choiceTranscript1)) :
-    filterm (fun k v => Ord.lt k i) (setm keys i v) =
-    filterm (fun k v => Ord.lt k i) keys.
-  Proof.
-    simpl.
-    rewrite -eq_fmap => k.
-    case (k == i) eqn:eq_k.
-    - rewrite !filtermE setmE.
-      simpl.
-      rewrite eq_k.
-      move: eq_k => /eqP eq_k.
-      rewrite -eq_k.
-      rewrite Ord.ltxx.
-      destruct (keys k) eqn:eq.
-      all: by rewrite eq.
-    - rewrite !filtermE setmE.
-      rewrite eq_k.
-      done.
-  Qed.
-
-  Lemma filterm_remove_i_gt
-        (i : pid) (v : (chProd public choiceTranscript1))
-        (keys : chMap pid (chProd public choiceTranscript1)) :
-    filterm (fun k v => Ord.lt i k) (setm keys i v) =
-    filterm (fun k v => Ord.lt i k) keys.
-  Proof.
-    simpl.
-    rewrite -eq_fmap => k.
-    case (k == i) eqn:eq_k.
-    - rewrite !filtermE setmE.
-      simpl.
-      rewrite eq_k.
-      move: eq_k => /eqP eq_k.
-      rewrite -eq_k.
-      rewrite Ord.ltxx.
-      destruct (keys k) eqn:eq.
-      all: by rewrite eq.
-    - rewrite !filtermE setmE.
-      rewrite eq_k.
-      done.
-  Qed.
-
 
   Lemma compute_key_set_i
         (i : pid)
@@ -996,38 +981,107 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     intros ne.
     have H := compute_key_bij m i j ne.
     simpl in H.
-    destruct H as [a [b H]].
-    pose f' := (fun (x : Secret) => @inZp q'.+1 (a * x + b)).
+    destruct H as [a [b [a_pos [a_leq_q H]]]].
+    set a_ord := @inZp (q'.+1) a.
+    set b_ord := @inZp (q'.+1) b.
+    pose f' := (fun (x : Secret) => Zp_add (Zp_mul x a_ord) b_ord).
     exists f'.
     unfold f'. clear f'.
     intros x.
+    have := q_order_g.
+    unfold q.
+    intros Hq.
     split.
-    {
-      assert ('I_#|gT| * 'I_#|gT| * 'I_#|'Z_Sigma1.q| * 'I_#|'Z_Sigma1.q|) as zk.
-      {
-        repeat apply pair.
-        1,2: eapply Ordinal ; apply /card_gt0P ; by exists g.
-        - rewrite card_ord Zp_cast.
-          1: eapply Ordinal.
-          1,2: apply (prime_gt1 prime_order).
-        - rewrite card_ord Zp_cast.
-          1: eapply Ordinal.
-          1,2: apply (prime_gt1 prime_order).
+    2: {
+      intro zk.
+      rewrite (H x zk).
+      apply /eqP.
+      rewrite eq_expg_mod_order.
+      apply /eqP.
+      simpl.
+      rewrite modn_small.
+      2: {
+        rewrite q_order_g.
+        apply ltn_pmod.
+        apply (prime_gt0 prime_order).
       }
-      specialize (H x zk).
-      pose f' := (fun (x : Secret) => @inZp q'.+1 (x - b)).
-      exists f'.
-      - intro z.
-        unfold f'.
-        rewrite -!Zp_nat.
-        intuition simpl.
-        admit.
-      - admit.
+      symmetry.
+      rewrite modn_small.
+      2: {
+        repeat rewrite -> Hq at 2.
+        apply ltn_pmod.
+        apply (prime_gt0 prime_order).
+      }
+      simpl.
+      repeat rewrite -> Hq at 2.
+      unfold q.
+      rewrite -> Hq at 3.
+      rewrite modnMmr.
+      rewrite modnDm.
+      rewrite mulnC.
+      reflexivity.
     }
-    intro zk.
-    rewrite (H x zk).
-    done.
-  Admitted.
+    assert (coprime q'.+2 a_ord) as a_ord_coprime.
+    {
+      rewrite -unitFpE.
+      2: rewrite Hq ; apply prime_order.
+      rewrite unitfE. simpl.
+      rewrite modn_small.
+      2: apply a_leq_q.
+      erewrite <- inj_eq.
+      2: apply ord_inj.
+      rewrite val_Zp_nat.
+      2: {
+        rewrite pdiv_id.
+        1: apply prime_gt1.
+        1,2: rewrite Hq ; apply prime_order.
+      }
+      rewrite -> pdiv_id at 1.
+      1,2: rewrite Hq.
+      2: apply prime_order.
+      unfold q in a_leq_q.
+      rewrite Hq in a_leq_q.
+      rewrite modn_small.
+      2: apply a_leq_q.
+      assumption.
+    }
+    pose f' := (fun (x : Secret) => Zp_mul (Zp_add (Zp_opp b_ord) x) (Zp_inv a_ord)).
+    exists f'.
+    - intro z.
+      unfold f'. clear f'.
+      simpl.
+      rewrite Zp_addC.
+      rewrite -Zp_addA.
+      have -> : (Zp_add b_ord (Zp_opp b_ord)) = Zp0.
+      1: by rewrite Zp_addC Zp_addNz.
+      rewrite Zp_addC.
+      rewrite Zp_add0z.
+      rewrite -Zp_mulA.
+      rewrite Zp_mulzV.
+      2: assumption.
+      rewrite Zp_mulz1.
+      reflexivity.
+    - intro z.
+      unfold f'. clear f'.
+      simpl.
+      rewrite Zp_addC.
+      rewrite -Zp_mulA.
+      rewrite Zp_mul_addl.
+      have -> : (Zp_mul (Zp_inv a_ord) a_ord) = Zp1.
+      {
+        rewrite Zp_mulC.
+        rewrite Zp_mulzV.
+        + reflexivity.
+        + assumption.
+      }
+      rewrite -Zp_mul_addl.
+      rewrite Zp_mulz1.
+      rewrite Zp_addA.
+      have -> : (Zp_add b_ord (Zp_opp b_ord)) = Zp0.
+      1: by rewrite Zp_addC Zp_addNz.
+      rewrite Zp_add0z.
+      reflexivity.
+  Qed.
 
   Lemma test_bij'
         (i j : pid)
