@@ -5,10 +5,11 @@ From Crypt Require Import Axioms.
 
 Import Num.Theory Order.LTheory.
 
+(** Extensionality lemmas *)
 Lemma distr_ext : forall (A : choiceType) (mu nu : {distr A/R}),
     distr.mu mu =1 distr.mu nu -> mu = nu.
 Proof.
-  move=> A [mu +++] [nu +++] /= /boolp.funext mu_eq_nu.
+  move=> A [mu +++] [nu +++] /= /funext mu_eq_nu.
   rewrite {}mu_eq_nu; move=> *; f_equal.
   all: apply proof_irrelevance.
 Qed.
@@ -21,9 +22,13 @@ Proof.
   apply: eq_psum=> a; f_equal; by rewrite fg.
 Qed.
 
+(** Definition of the model for the unary semantics *)
+
 Section Def.
   Context (S : choiceType).
 
+  (* carrier for unary specifications /
+     model for single probabilistic programs with state space S *)
   Definition stsubdistr (A : choiceType) := S -> {distr (A * S) /R}.
 
   Definition ret [A : choiceType] (a : A) : stsubdistr A :=
@@ -32,11 +37,10 @@ Section Def.
   Definition bind [A B : choiceType] (m : stsubdistr A) (f : A -> stsubdistr B) :=
     fun s0 => \dlet_(p <- m s0) f p.1 p.2.
 
+  (* Monadic laws -- wrapper around existing lemmas *)
   Lemma bind_ret [A B : choiceType] (a : A) (f : A -> stsubdistr B)
     : bind (ret a) f = f a.
-  Proof.
-    extensionality s; apply: distr_ext ; apply: dlet_unit.
-  Qed.
+  Proof. extensionality s; apply: distr_ext ; apply: dlet_unit. Qed.
 
   Lemma ret_bind [A : choiceType] (m : stsubdistr A) : bind m (@ret _) = m.
   Proof.
@@ -55,52 +59,23 @@ Section Def.
     by rewrite dlet_dlet.
   Qed.
 
-  (* Section Equality. *)
-  (*   Context [A : choiceType]. *)
-
-  (*   (* Definition stsubdistr_eq : rel (stsubdistr A) := *) *)
-  (*   (*   fun f g =>`[< f =2 g >]. *) *)
-
-  (*   (* Lemma stsubdistr_eq_axiom : Equality.axiom stsubdistr_eq. *) *)
-  (*   (* Proof. *) *)
-  (*   (*   move=> f g; apply (iffP idP). *) *)
-  (*   (*   - move=> /asboolP fg; extensionality s; apply: distr_ext=> a; apply: fg. *) *)
-  (*   (*   - move=> ->; apply/asboolP=> ??; reflexivity. *) *)
-  (*   (* Qed. *) *)
-
-  (*   (* Definition stsubdistr_eq_mixin := *) *)
-  (*   (*   @Equality.Mixin _ stsubdistr_eq stsubdistr_eq_axiom. *) *)
-  (*   Definition stsubdistr_eqType := EqType (stsubdistr A) *)
-  (*                                          (equality_mixin_of_Type (stsubdistr A)). *)
-  (*                                          (* stsubdistr_eq_mixin. *) *)
-  (*   Canonical stsubdistr_eqType. *)
-  (* End Equality. *)
 
   Section Order.
     Context [A : choiceType].
 
+    (* The eqType and choiceType instances are given
+       by excluded-middle and the axiom of choice *)
     Canonical stsubdistr_eqType :=
       EqType (stsubdistr A) (equality_mixin_of_Type (stsubdistr A)).
     Canonical stsubdistr_choiceType := choice_of_Type (stsubdistr A).
 
+    (** Order between specifications *)
     Definition stsubdistr_le : rel (stsubdistr A) :=
-      fun d0 d1 =>
-        `[< forall s0 a s1, (mu (d0 s0) (a, s1) <= mu (d1 s0) (a, s1))%O>].
+      fun d0 d1 => `[< forall s0 a s1, (mu (d0 s0) (a, s1) <= mu (d1 s0) (a, s1))%O>].
 
     (* I don't think I really care about lt so let's put the tautological def *)
     Definition stsubdistr_lt : rel (stsubdistr A) :=
       fun d0 d1 => (d1 != d0) && stsubdistr_le d0 d1.
-
-    (* Lemma bool_equiv_eq (b1 b2 : bool) : b1 <-> b2 -> b1 = b2. *)
-    (* Proof. case: b1; case: b2=> //= -[h0 h1]; first symmetry; intuition. Qed. *)
-
-    (* Lemma stsubdistr_le_lt : forall x y, stsubdistr_lt x y = (x != y) && stsubdistr_le x y. *)
-    (* Proof. *)
-    (*   move=> f g; apply: bool_equiv_eq; split. *)
-    (*   - move=> /andP [? /asboolP [s0 [a [s1 h]]]]; apply/andP; split=> //. *)
-    (*     move: h; apply contraPneq. *)
-    (*     move=> ->; rewrite lt_def eq_refl //. *)
-    (*   - move=>/andP. *)
 
     Lemma stsubdistr_le_refl : reflexive stsubdistr_le.
     Proof. move=> g; apply/asboolP=> *; apply: le_refl. Qed.
@@ -131,12 +106,12 @@ Section Def.
 
   Open Scope order_scope.
 
+  (** Bind is monotone with respect to the order we endowed the specs with *)
   Lemma bind_monotone [A B : choiceType]
         (m0 m1 : stsubdistr A) (f0 f1 : A -> stsubdistr B) :
     m0 <= m1 -> (forall a, f0 a <= f1 a) -> bind m0 f0 <= bind m1 f1 :> stsubdistr B.
   Proof.
     move=> /asboolP m01 f01; apply/asboolP=> s0 b s1.
-    (* move: {f01}(f01 a) => /asboolP f01. *)
     rewrite /bind 2!dletE.
     apply: le_psum; last apply: summable_mlet.
     move=> [a ?]; apply/andP;split.
