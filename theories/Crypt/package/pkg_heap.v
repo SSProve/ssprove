@@ -15,7 +15,7 @@ From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
-  StateTransformingLaxMorph chUniverse pkg_core_definition pkg_notation
+  StateTransformingLaxMorph choice_code pkg_core_definition pkg_notation
   pkg_tactics pkg_composition.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
@@ -34,7 +34,7 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
-Definition pointed_value := ∑ (t : chUniverse), t.
+Definition pointed_value := ∑ (t : choice_code), t.
 
 Definition raw_heap := {fmap Location -> pointed_value}.
 Definition raw_heap_choiceType := [choiceType of raw_heap].
@@ -51,7 +51,7 @@ Definition valid_location (h : raw_heap) (l : Location) :=
 Definition valid_heap : pred raw_heap :=
   λ h, domm h == fset_filter (valid_location h) (domm h).
 
-Definition heap_defaults := ∀ a : chUniverse, a.
+Definition heap_defaults := ∀ a : choice_code, a.
 
 Definition heap_init : heap_defaults.
 Proof.
@@ -155,7 +155,7 @@ Next Obligation.
     unfold valid_location.
     rewrite setmE.
     destruct (x == l) eqn:H.
-    + cbn. move: H. move /eqP => H. subst. apply chUniverse_refl.
+    + cbn. move: H. move /eqP => H. subst. apply choice_code_refl.
     + move: Heq. move /idP /fsetU1P => Heq.
       destruct Heq.
       * move: H. move /eqP => H. contradiction.

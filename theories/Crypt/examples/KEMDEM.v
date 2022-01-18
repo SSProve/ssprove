@@ -60,10 +60,10 @@ Section KEMDEM.
   Definition chKey := keyD.π1.
 
   (** Public and secret key *)
-  Context (chPKey chSKey : chUniverse).
+  Context (chPKey chSKey : choice_code).
 
   (** Plain text *)
-  Context (chPlain : chUniverse).
+  Context (chPlain : choice_code).
 
   (** We additionally require a "zero" in chPlain.
 

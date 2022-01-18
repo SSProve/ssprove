@@ -16,7 +16,7 @@ Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd
-  StateTransformingLaxMorph chUniverse pkg_core_definition
+  StateTransformingLaxMorph choice_code pkg_core_definition
   RulesStateProb.
 From Equations Require Import Equations.
 Require Equations.Prop.DepElim.
@@ -29,7 +29,7 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
-Definition cast_fun {So To St Tt : chUniverse}
+Definition cast_fun {So To St Tt : choice_code}
   (hS : St = So) (hT : Tt = To) (f : St → raw_code Tt) :
   So → raw_code To.
 Proof.
@@ -41,7 +41,7 @@ Definition lookup_op (p: raw_package) (o : opsig) :
   let '(n, (So, To)) := o in
   match p n with
   | Some (St ; Tt ; f) =>
-    match chUniverse_eqP St So, chUniverse_eqP Tt To with
+    match choice_code_eqP St So, choice_code_eqP Tt To with
     | ReflectT hS, ReflectT hT => Some (cast_fun hS hT f)
     | _,_ => None
     end
@@ -69,8 +69,8 @@ Proof.
   intros p o f e.
   destruct o as [id [S T]]. cbn in *.
   destruct (p id) as [[S' [T' g]]|] eqn:e1. 2: discriminate.
-  destruct chUniverse_eqP. 2: discriminate.
-  destruct chUniverse_eqP. 2: discriminate.
+  destruct choice_code_eqP. 2: discriminate.
+  destruct choice_code_eqP. 2: discriminate.
   noconf e. subst.
   reflexivity.
 Qed.
@@ -90,9 +90,9 @@ Proof.
   destruct hp as [f [ef hf]].
   exists f. intuition auto. cbn.
   destruct (p n) as [[St [Tt ft]]|] eqn:e. 2: discriminate.
-  destruct chUniverse_eqP.
+  destruct choice_code_eqP.
   2:{ inversion ef. congruence. }
-  destruct chUniverse_eqP.
+  destruct choice_code_eqP.
   2:{ inversion ef. congruence. }
   subst. cbn. noconf ef.
   reflexivity.
@@ -106,8 +106,8 @@ Proof.
   intros p [n [So To]] f. unfold lookup_op.
   rewrite mapmE. destruct (p n) as [[St [Tt ft]]|] eqn:e.
   2:{ cbn. reflexivity. }
-  cbn. destruct chUniverse_eqP. 2: reflexivity.
-  destruct chUniverse_eqP. 2: reflexivity.
+  cbn. destruct choice_code_eqP. 2: reflexivity.
+  destruct choice_code_eqP. 2: reflexivity.
   cbn. subst. cbn. reflexivity.
 Qed.
 
@@ -314,12 +314,12 @@ Proof.
   destruct (p n) as [[S1 [T1 f1]]|] eqn:e. 2: reflexivity.
   cbn.
   destruct ((n, (S1, T1)) \in E) eqn:e1.
-  - rewrite e1. destruct chUniverse_eqP. 2: reflexivity.
-    destruct chUniverse_eqP. 2: reflexivity.
+  - rewrite e1. destruct choice_code_eqP. 2: reflexivity.
+    destruct choice_code_eqP. 2: reflexivity.
     cbn. subst. cbn. rewrite e1. reflexivity.
   - rewrite e1.
-    destruct chUniverse_eqP. 2: reflexivity.
-    destruct chUniverse_eqP. 2: reflexivity.
+    destruct choice_code_eqP. 2: reflexivity.
+    destruct choice_code_eqP. 2: reflexivity.
     subst. rewrite e1. cbn. reflexivity.
 Qed.
 
@@ -747,7 +747,7 @@ Local Open Scope type_scope.
 (* TODO: Still works, but outdated. *)
 
 Definition typed_function L I :=
-  ∑ (S T : chUniverse), S → code L I T.
+  ∑ (S T : choice_code), S → code L I T.
 
 Equations? map_interface (I : seq opsig) {A} (f : ∀ x, x \in I → A) :
   seq A :=
@@ -861,7 +861,7 @@ Defined.
 (* Identity package *)
 
 (* Maybe lock this definition? *)
-Definition mkdef (A B : chUniverse) (f : A → raw_code B)
+Definition mkdef (A B : choice_code) (f : A → raw_code B)
   : typed_raw_function :=
   (A ; B ; f).
 
@@ -938,13 +938,13 @@ Proof.
   unfold lookup_op. rewrite IDE.
   destruct getm_def as [[So To]|] eqn:e.
   - cbn. apply getm_def_in in e as h1.
-    destruct chUniverse_eqP.
+    destruct choice_code_eqP.
     2:{
       destruct ((n, (S, T)) \in I) eqn:e1.
       2:{ rewrite e1. reflexivity. }
       specialize (h _ _ _ h1 e1). noconf h. congruence.
     }
-    destruct chUniverse_eqP.
+    destruct choice_code_eqP.
     2:{
       destruct ((n, (S, T)) \in I) eqn:e1.
       2:{ rewrite e1. reflexivity. }
@@ -1049,8 +1049,8 @@ Proof.
     specialize (hp _ hi) as h'. cbn in h'.
     destruct h' as [f [ef hf]].
     cbn. destruct (p n) as [[St [Tt g]]|] eqn:e1. 2: discriminate.
-    destruct chUniverse_eqP. 2:{ noconf ef. contradiction. }
-    destruct chUniverse_eqP. 2:{ noconf ef. contradiction. }
+    destruct choice_code_eqP. 2:{ noconf ef. contradiction. }
+    destruct choice_code_eqP. 2:{ noconf ef. contradiction. }
     subst. cbn.
     f_equal. f_equal. f_equal.
     extensionality x.

@@ -38,7 +38,7 @@ will expose below.
 
 The main notion of code is defined as the type `raw_code A` which represents
 a program returning a value of type `A`. This type `A` is typically—but not
-limited to—of type `chUniverse`.
+limited to—of type `choice_code`.
 
 
 Before detailing how to construct them, here is a first example with no
@@ -83,7 +83,7 @@ Injects any pure value into `raw_code`.
 
 #### Memory access
 
-A `Location` is a pair of a type in `chUniverse` and a natural number
+A `Location` is a pair of a type in `choice_code` and a natural number
 representing an identifier, for instance `('nat ; 12) : Location`.
 One can *read* memory as follows:
 ```coq
@@ -111,7 +111,7 @@ Here `op : Op` is a (sub-)distribution. See [Distributions].
 
 #### Failure
 ```coq
-fail : ∀ {A : chUniverse}, raw_code A
+fail : ∀ {A : choice_code}, raw_code A
 ```
 Represents a failure in a program. It is obtained by sampling on the null
 sub-distribution.
@@ -162,7 +162,7 @@ constructions when `v` is concrete.
 
 ### Specialised types
 
-We have a special type called `chUniverse` which contains *codes* for specific
+We have a special type called `choice_code` which contains *codes* for specific
 types that we use in our packages. These are the types used in `Location`
 and in `opsig` or even in `Op`.
 
@@ -196,7 +196,7 @@ When defining signatures (`opsig`), interfaces (see [Valid code]), or packages
 #### Signatures
 
 A signature (`opsig`) is given by an identifier (a natural number), an
-argument type and a return type (both in `chUniverse`).
+argument type and a return type (both in `choice_code`).
 Once can for instance write `(37, ('nat, chProd 'unit 'unit))`.
 
 We provide the following nicer notation:
@@ -207,7 +207,7 @@ We provide the following nicer notation:
 ### Distributions
 
 The user can sample using pretty much any distribution that can be expressed
-in `mathcomp-analysis` provided that its support is in `chUniverse`.
+in `mathcomp-analysis` provided that its support is in `choice_code`.
 Writing them by hand might not be very convenient.
 
 For the time being we provide `uniform n` which represents a uniform
@@ -251,7 +251,7 @@ where the `dᵢ` are signatures, given using a special syntax:
 val #[ id ] : src → tgt
 ```
 where `id` is a natural number / identifier, and `src` and `tgt` are codes of
-types in `chUniverse` given using the special syntax (see [Specialised types]).
+types in `choice_code` given using the special syntax (see [Specialised types]).
 
 Here are examples of interfaces:
 ```coq
@@ -369,7 +369,7 @@ where the `dᵢ` are declarations, given using a special syntax:
 def #[ id ] (x : src) : tgt { e }
 ```
 where `id` is a natural number / identifier, and `src` and `tgt` are codes of
-types in `chUniverse` given using the special syntax (see [Specialised types]),
+types in `choice_code` given using the special syntax (see [Specialised types]),
 while `e` is a regular Coq expression corresponding to the body of the function,
 with `x` bound inside it.
 As seen in the example, `x` can be matched against in the declaration by using

@@ -94,7 +94,7 @@ Definition pure {X : ord_choiceType} (x : X) := ord_relmon_unit MFreePr _ x.
 
 Definition retF { A : choiceType } (a : A) := retrFree Ops Arit A a.
 
-(* Notation " A <$ c " := (@sample_from probE chUniverse chElement Hch A c) (at level 100). *)
+(* Notation " A <$ c " := (@sample_from probE choice_code chElement Hch A c) (at level 100). *)
 
 
 Definition M_d := (@RelativeMonadMorph_prod.Mprod _ _ _  MFreePr _ _ _ MFreePr ).

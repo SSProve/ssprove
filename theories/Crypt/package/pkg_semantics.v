@@ -15,7 +15,7 @@ From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
-  StateTransformingLaxMorph chUniverse pkg_core_definition pkg_notation
+  StateTransformingLaxMorph choice_code pkg_core_definition pkg_notation
   pkg_tactics pkg_composition pkg_heap.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
@@ -48,7 +48,7 @@ Arguments ropr {_ _ _} _ _.
 (** Interpretation of raw codes into the semantic model
 
   Note that we don't require any validity proof to do so,
-  instead we rely on the fact that types in the chUniverse are all
+  instead we rely on the fact that types in the choice_code are all
   inhabited.
 
 *)

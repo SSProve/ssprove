@@ -21,7 +21,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_core_definition chUniverse pkg_composition pkg_rhl
+  pkg_core_definition choice_code pkg_composition pkg_rhl
   Package Prelude.
 
 From Coq Require Import Utf8.
@@ -58,8 +58,8 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
 
   Local Open Scope package_scope.
 
-  (* chX is the chUniverse in bijection with X  *)
-  (* Parameters chPlain chCipher chPubKey chSecKey : chUniverse. *)
+  (* chX is the choice_code in bijection with X  *)
+  (* Parameters chPlain chCipher chPubKey chSecKey : choice_code. *)
   Parameter Plain_pos : Positive #|Plain|.
   Parameter Cipher_pos : Positive #|Cipher|.
   Parameter PubKey_pos : Positive #|PubKey|.

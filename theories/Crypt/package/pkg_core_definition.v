@@ -15,7 +15,7 @@ Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd RulesStateProb StateTransformingLaxMorph
-     chUniverse.
+     choice_code.
 
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
@@ -38,35 +38,35 @@ Set Primitive Projections.
 Definition ident := nat.
 
 (* Signature of an operation, including the identifier *)
-Definition opsig := ident * (chUniverse * chUniverse).
+Definition opsig := ident * (choice_code * choice_code).
 (* Record opsig := mkop {
 ident : nat ;
-src : chUniverse ;
-tgt : chUniverse
+src : choice_code ;
+tgt : choice_code
 }. *)
 
 Definition mkopsig id S T : opsig := (id, (S, T)).
 
-Definition Location := ∑ (t : chUniverse), nat.
+Definition Location := ∑ (t : choice_code), nat.
 
 Definition loc_type (l : Location) := l.π1.
 
-Coercion loc_type : Location >-> chUniverse.
+Coercion loc_type : Location >-> choice_code.
 
-Definition Value (t : chUniverse) := chElement t.
+Definition Value (t : choice_code) := chElement t.
 
 Definition Interface := {fset opsig}.
 
 Definition ide (v : opsig) : ident :=
   let '(n, _) := v in n.
 
-Definition chsrc (v : opsig) : chUniverse :=
+Definition chsrc (v : opsig) : choice_code :=
   let '(n, (s, t)) := v in s.
 
 Definition src (v : opsig) : choiceType :=
   chsrc v.
 
-Definition chtgt (v : opsig) : chUniverse :=
+Definition chtgt (v : opsig) : choice_code :=
   let '(n, (s, t)) := v in t.
 
 Definition tgt (v : opsig) : choiceType :=
@@ -131,7 +131,7 @@ Section FreeModule.
         valid_code (sampler op k)
   .
 
-  Derive NoConfusion NoConfusionHom for chUniverse.
+  Derive NoConfusion NoConfusionHom for choice_code.
   Derive NoConfusion NoConfusionHom EqDec for nat.
   Derive NoConfusion NoConfusionHom for raw_code.
   Derive Signature for valid_code.
@@ -624,7 +624,7 @@ Section FreeMap.
 End FreeMap.
 
 Definition typed_raw_function :=
-  ∑ (S T : chUniverse), S → raw_code T.
+  ∑ (S T : choice_code), S → raw_code T.
 
 Definition raw_package :=
   {fmap ident -> typed_raw_function }.

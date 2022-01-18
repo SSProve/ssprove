@@ -1,6 +1,8 @@
-(*
-  This file defines an inductive type [chUniverse] and a total order on that type, which
-  is then used to show that [chUniverse] forms a [choiceType].
+(**
+  This file defines an inductive type [choice_code] corresponding to codes for
+  choice types.
+  We give a total order on this type, which is then used to show that
+  [choice_code] forms a [choiceType].
  *)
 
 
@@ -31,16 +33,16 @@ Open Scope type_scope.
 
 (* Basic structure *)
 
-Inductive chUniverse :=
+Inductive choice_code :=
 | chUnit
 | chNat
 | chBool
-| chProd (A B : chUniverse)
-| chMap (A B : chUniverse)
-| chOption (A : chUniverse)
+| chProd (A B : choice_code)
+| chMap (A B : choice_code)
+| chOption (A : choice_code)
 | chFin (n : positive).
 
-Derive NoConfusion NoConfusionHom for chUniverse.
+Derive NoConfusion NoConfusionHom for choice_code.
 
 (* Definition void_leq (x y : void) := true. *)
 
@@ -50,7 +52,7 @@ Derive NoConfusion NoConfusionHom for chUniverse.
 (* Definition void_ordMixin := OrdMixin void_leqP. *)
 (* Canonical void_ordType := Eval hnf in OrdType void void_ordMixin. *)
 
-Fixpoint chElement_ordType (U : chUniverse) : ordType :=
+Fixpoint chElement_ordType (U : choice_code) : ordType :=
   match U with
   | chUnit => unit_ordType
   | chNat => nat_ordType
@@ -61,7 +63,7 @@ Fixpoint chElement_ordType (U : chUniverse) : ordType :=
   | chFin n => [ordType of ordinal n.(pos) ]
   end.
 
-Fixpoint chElement (U : chUniverse) : choiceType :=
+Fixpoint chElement (U : choice_code) : choiceType :=
   match U with
   | chUnit => unit_choiceType
   | chNat => nat_choiceType
@@ -72,10 +74,10 @@ Fixpoint chElement (U : chUniverse) : choiceType :=
   | chFin n => [choiceType of ordinal n.(pos) ]
   end.
 
-Coercion chElement : chUniverse >-> choiceType.
+Coercion chElement : choice_code >-> choiceType.
 
-(* Canonical element in a type of the chUniverse *)
-#[program] Fixpoint chCanonical (T : chUniverse) : T :=
+(* Canonical element in a type of the choice_code *)
+#[program] Fixpoint chCanonical (T : choice_code) : T :=
   match T with
   | chUnit => Datatypes.tt
   | chNat => 0
@@ -93,24 +95,24 @@ Next Obligation.
   unfold Positive in h. auto.
 Defined.
 
-Section chUniverseTypes.
+Section choice_codeTypes.
 
-  Fixpoint chUniverse_test (u v : chUniverse) : bool :=
+  Fixpoint choice_code_test (u v : choice_code) : bool :=
     match u, v with
     | chNat , chNat => true
     | chUnit , chUnit => true
     | chBool , chBool => true
-    | chProd a b , chProd a' b' => chUniverse_test a a' && chUniverse_test b b'
-    | chMap a b , chMap a' b' => chUniverse_test a a' && chUniverse_test b b'
-    | chOption a, chOption a' => chUniverse_test a a'
+    | chProd a b , chProd a' b' => choice_code_test a a' && choice_code_test b b'
+    | chMap a b , chMap a' b' => choice_code_test a a' && choice_code_test b b'
+    | chOption a, chOption a' => choice_code_test a a'
     | chFin n, chFin n' => n == n'
     | _ , _ => false
     end.
 
-  Definition chUniverse_eq : rel chUniverse :=
-    fun u v => chUniverse_test u v.
+  Definition choice_code_eq : rel choice_code :=
+    fun u v => choice_code_test u v.
 
-  Lemma chUniverse_eqP : Equality.axiom chUniverse_eq.
+  Lemma choice_code_eqP : Equality.axiom choice_code_eq.
   Proof.
     move=> x y.
     induction x as [ | | | x1 ih1 x2 ih2 | x1 ih1 x2 ih2 | x1 ih1 | x1]
@@ -139,19 +141,19 @@ Section chUniverseTypes.
         apply e. inversion h. reflexivity.
   Qed.
 
-  Lemma chUniverse_refl :
-    ∀ u, chUniverse_eq u u.
+  Lemma choice_code_refl :
+    ∀ u, choice_code_eq u u.
   Proof.
-    intros u. destruct chUniverse_eq eqn:e.
+    intros u. destruct choice_code_eq eqn:e.
     - constructor.
-    - move: e => /chUniverse_eqP []. reflexivity.
+    - move: e => /choice_code_eqP []. reflexivity.
   Qed.
 
-  Canonical chUniverse_eqMixin := EqMixin chUniverse_eqP.
-  Canonical chUniverse_eqType :=
-    Eval hnf in EqType chUniverse chUniverse_eqMixin.
+  Canonical choice_code_eqMixin := EqMixin choice_code_eqP.
+  Canonical choice_code_eqType :=
+    Eval hnf in EqType choice_code choice_code_eqMixin.
 
-  Fixpoint chUniverse_lt (t1 t2 : chUniverse) :=
+  Fixpoint choice_code_lt (t1 t2 : choice_code) :=
   match t1, t2 with
   | chUnit, chUnit => false
   | chUnit, _ => true
@@ -166,23 +168,23 @@ Section chUniverseTypes.
   | chProd _ _, chBool => false
   | chProd _ _, chNat => false
   | chProd u1 u2, chProd w1 w2 =>
-    (chUniverse_lt u1 w1) ||
-    (chUniverse_eq u1 w1 && chUniverse_lt u2 w2)
+    (choice_code_lt u1 w1) ||
+    (choice_code_eq u1 w1 && choice_code_lt u2 w2)
   | chProd _ _, _ => true
   | chMap _ _, chUnit => false
   | chMap _ _, chBool => false
   | chMap _ _, chNat => false
   | chMap _ _, chProd _ _ => false
   | chMap u1 u2, chMap w1 w2 =>
-    (chUniverse_lt u1 w1) ||
-    (chUniverse_eq u1 w1 && chUniverse_lt u2 w2)
+    (choice_code_lt u1 w1) ||
+    (choice_code_eq u1 w1 && choice_code_lt u2 w2)
   | chMap _ _, _ => true
   | chOption _, chUnit => false
   | chOption _, chBool => false
   | chOption _, chNat => false
   | chOption _, chProd _ _ => false
   | chOption _, chMap _ _ => false
-  | chOption u, chOption w => chUniverse_lt u w
+  | chOption u, chOption w => choice_code_lt u w
   | chOption _, _ => true
   | chFin n, chUnit => false
   | chFin n, chBool => false
@@ -193,10 +195,10 @@ Section chUniverseTypes.
   | chFin n, chFin n' => n < n'
   end.
 
-  Definition chUniverse_leq (t1 t2 : chUniverse) :=
-    chUniverse_eq t1 t2 || chUniverse_lt t1 t2.
+  Definition choice_code_leq (t1 t2 : choice_code) :=
+    choice_code_eq t1 t2 || choice_code_lt t1 t2.
 
-  Lemma chUniverse_lt_transitive : transitive (T:=chUniverse) chUniverse_lt.
+  Lemma choice_code_lt_transitive : transitive (T:=choice_code) choice_code_lt.
   Proof.
     intros v u w h1 h2.
     induction u as [ | | | u1 ih1 u2 ih2 | u1 ih1 u2 ih2 | u ih | u]
@@ -247,8 +249,8 @@ Section chUniverseTypes.
       eapply ltn_trans. all: eauto.
   Qed.
 
-  Lemma chUniverse_lt_areflexive :
-    ∀ x, ~~ chUniverse_lt x x.
+  Lemma choice_code_lt_areflexive :
+    ∀ x, ~~ choice_code_lt x x.
   Proof.
     intros x.
     induction x as [ | | | x1 ih1 x2 ih2 | x1 ih1 x2 ih2 | x ih | x] in |- *.
@@ -266,9 +268,9 @@ Section chUniverseTypes.
     - rewrite ltnn. auto.
   Qed.
 
-  Lemma chUniverse_lt_total_holds :
+  Lemma choice_code_lt_total_holds :
     ∀ x y,
-      ~~ (chUniverse_test x y) ==> (chUniverse_lt x y || chUniverse_lt y x).
+      ~~ (choice_code_test x y) ==> (choice_code_lt x y || choice_code_lt y x).
   Proof.
     intros x y.
     induction x as [ | | | x1 ih1 x2 ih2| x1 ih1 x2 ih2| x ih| x]
@@ -280,7 +282,7 @@ Section chUniverseTypes.
       apply/implyP.
       move /nandP => H.
       apply/orP.
-      destruct (chUniverse_test x1 y1) eqn:Heq.
+      destruct (choice_code_test x1 y1) eqn:Heq.
       + destruct H. 1: discriminate.
         move: ih2. move /implyP => ih2.
         specialize (ih2 H).
@@ -315,7 +317,7 @@ Section chUniverseTypes.
       apply/implyP.
       move /nandP => H.
       apply/orP.
-      destruct (chUniverse_test x1 y1) eqn:Heq.
+      destruct (choice_code_test x1 y1) eqn:Heq.
       + destruct H. 1: discriminate.
         move: ih2. move /implyP => ih2.
         specialize (ih2 H).
@@ -345,64 +347,64 @@ Section chUniverseTypes.
               +++ left. apply/orP. left. assumption.
               +++ right. apply/orP. left. assumption.
     - destruct y. all: try (intuition; reflexivity).
-      unfold chUniverse_lt.
-      unfold chUniverse_test.
+      unfold choice_code_lt.
+      unfold choice_code_test.
       rewrite -neq_ltn.
       apply /implyP. auto.
   Qed.
 
-  Lemma chUniverse_lt_asymmetric :
+  Lemma choice_code_lt_asymmetric :
     ∀ x y,
-      (chUniverse_lt x y ==> ~~ chUniverse_lt y x).
+      (choice_code_lt x y ==> ~~ choice_code_lt y x).
   Proof.
     intros x y.
     apply /implyP. move => H.
-    destruct (~~ chUniverse_lt y x) eqn:Heq.
+    destruct (~~ choice_code_lt y x) eqn:Heq.
     - intuition.
     - move: Heq. move /negP /negP => Heq.
-      pose  (chUniverse_lt_areflexive x) as Harefl.
+      pose  (choice_code_lt_areflexive x) as Harefl.
       move: Harefl. apply /implyP. rewrite implyNb.
       apply /orP. left.
-      apply (chUniverse_lt_transitive _ _ _ H Heq).
+      apply (choice_code_lt_transitive _ _ _ H Heq).
   Qed.
 
-  Lemma chUniverse_lt_total_not_holds :
+  Lemma choice_code_lt_total_not_holds :
     ∀ x y,
-      ~~ (chUniverse_test x y) ==> (~~ (chUniverse_lt x y && chUniverse_lt y x)).
+      ~~ (choice_code_test x y) ==> (~~ (choice_code_lt x y && choice_code_lt y x)).
   Proof.
     intros x y. apply /implyP. intros Hneq.
-    pose (chUniverse_lt_total_holds x y) as Htot.
+    pose (choice_code_lt_total_holds x y) as Htot.
     move: Htot. move /implyP => Htot. specialize (Htot Hneq).
     move: Htot. move /orP => Htot. apply /nandP. destruct Htot.
-    - right. pose (chUniverse_lt_asymmetric x y) as Hasym.
+    - right. pose (choice_code_lt_asymmetric x y) as Hasym.
       move: Hasym. move /implyP => Hasym. specialize (Hasym H). assumption.
-    - left. pose (chUniverse_lt_asymmetric y x) as Hasym.
+    - left. pose (choice_code_lt_asymmetric y x) as Hasym.
       move: Hasym. move /implyP => Hasym. specialize (Hasym H). assumption.
   Qed.
 
-  Lemma chUniverse_lt_tot :
+  Lemma choice_code_lt_tot :
     ∀ x y,
-      (chUniverse_lt x y || chUniverse_lt y x || chUniverse_eq x y).
+      (choice_code_lt x y || choice_code_lt y x || choice_code_eq x y).
   Proof.
     intros x y.
-    destruct (chUniverse_eq x y) eqn:H.
+    destruct (choice_code_eq x y) eqn:H.
     - intuition.
     - apply/orP.
       left.
-      unfold chUniverse_eq in H.
-      pose (chUniverse_lt_total_holds x y).
+      unfold choice_code_eq in H.
+      pose (choice_code_lt_total_holds x y).
       move: i. move /implyP => i.
       apply i. apply/negP.
       intuition. move: H0. rewrite H. intuition.
   Qed.
 
-  Lemma chUniverse_leqP : Ord.axioms chUniverse_leq.
+  Lemma choice_code_leqP : Ord.axioms choice_code_leq.
   Proof.
     split => //.
-    - intro x. unfold chUniverse_leq.
+    - intro x. unfold choice_code_leq.
       apply/orP. left. apply /eqP. reflexivity.
     - intros v u w h1 h2.
-      move: h1 h2. unfold chUniverse_leq.
+      move: h1 h2. unfold choice_code_leq.
       move /orP => h1. move /orP => h2.
       destruct h1.
       + move: H. move /eqP => H. destruct H.
@@ -410,18 +412,18 @@ Section chUniverseTypes.
       + destruct h2.
         * move: H0. move /eqP => H0. destruct H0.
           apply/orP. right. assumption.
-        * apply/orP. right. exact (chUniverse_lt_transitive _ _ _ H H0).
+        * apply/orP. right. exact (choice_code_lt_transitive _ _ _ H H0).
     - unfold antisymmetric.
-      move => x y. unfold chUniverse_leq. move/andP => [h1 h2].
-      move: h1 h2. unfold chUniverse_leq.
+      move => x y. unfold choice_code_leq. move/andP => [h1 h2].
+      move: h1 h2. unfold choice_code_leq.
       move /orP => h1. move /orP => h2.
       destruct h1.
       1:{ move: H. move /eqP. intuition auto. }
       destruct h2.
       1:{ move: H0. move /eqP. intuition auto. }
-      destruct (~~ (chUniverse_test x y)) eqn:Heq.
+      destruct (~~ (choice_code_test x y)) eqn:Heq.
       + move: Heq. move /idP => Heq.
-        pose (chUniverse_lt_total_not_holds x y) as Hp.
+        pose (choice_code_lt_total_not_holds x y) as Hp.
         move: Hp. move /implyP => Hp. specialize (Hp Heq).
         move: Hp. move /nandP => Hp.
         destruct Hp.
@@ -431,8 +433,8 @@ Section chUniverseTypes.
           discriminate.
       + move: Heq. move /eqP. auto.
     - unfold total.
-      intros x y. unfold chUniverse_leq.
-      pose (chUniverse_lt_tot x y).
+      intros x y. unfold choice_code_leq.
+      pose (choice_code_lt_tot x y).
       move: i. move /orP => H.
       destruct H.
       + move: H. move /orP => H.
@@ -443,7 +445,7 @@ Section chUniverseTypes.
   Qed.
 
 
-  Fixpoint encode (t : chUniverse) : GenTree.tree nat :=
+  Fixpoint encode (t : choice_code) : GenTree.tree nat :=
   match t with
   | chUnit => GenTree.Leaf 1
   | chBool => GenTree.Leaf 2
@@ -454,7 +456,7 @@ Section chUniverseTypes.
   | chFin n => GenTree.Leaf ((4 + n) - 1)%N
   end.
 
-  Fixpoint decode (t : GenTree.tree nat) : option chUniverse :=
+  Fixpoint decode (t : GenTree.tree nat) : option choice_code :=
     match t with
     | GenTree.Leaf 1 => Some chUnit
     | GenTree.Leaf 2 => Some chBool
@@ -494,12 +496,12 @@ Section chUniverseTypes.
         rewrite -subnE subn0. repeat f_equal. apply eq_irrelevance.
   Defined.
 
-  Definition chUniverse_choiceMixin := PcanChoiceMixin codeK.
-  Canonical chUniverse_choiceType :=
-    ChoiceType chUniverse chUniverse_choiceMixin.
+  Definition choice_code_choiceMixin := PcanChoiceMixin codeK.
+  Canonical choice_code_choiceType :=
+    ChoiceType choice_code choice_code_choiceMixin.
 
-  Definition chUniverse_ordMixin := OrdMixin chUniverse_leqP.
-  Canonical chUniverse_ordType :=
-    Eval hnf in OrdType chUniverse chUniverse_ordMixin.
+  Definition choice_code_ordMixin := OrdMixin choice_code_leqP.
+  Canonical choice_code_ordType :=
+    Eval hnf in OrdType choice_code choice_code_ordMixin.
 
-End chUniverseTypes.
+End choice_codeTypes.

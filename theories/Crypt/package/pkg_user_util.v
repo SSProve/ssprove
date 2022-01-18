@@ -24,7 +24,7 @@
     [ssprove_code_simpl].
 
   - [simplify_linking]
-    Will deal with residual [chUniverse_eqP] coming from linking.
+    Will deal with residual [choice_code_eqP] coming from linking.
 
 
   Tools for relation program logic
@@ -77,7 +77,7 @@ Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From Crypt Require Import Axioms Prelude pkg_core_definition pkg_composition
   pkg_notation RulesStateProb pkg_advantage pkg_lookup pkg_semantics
-  pkg_heap pkg_invariants pkg_distr pkg_rhl pkg_tactics chUniverse.
+  pkg_heap pkg_invariants pkg_distr pkg_rhl pkg_tactics choice_code.
 From Coq Require Import Utf8 FunctionalExtensionality
   Setoids.Setoid Classes.Morphisms.
 
@@ -133,7 +133,7 @@ Ltac lookup_op_squeeze :=
   destruct lookup_op as [f|] eqn:e ; [
   | exfalso ;
     simpl in e ;
-    repeat (destruct chUniverse_eqP ; [| contradiction ]) ;
+    repeat (destruct choice_code_eqP ; [| contradiction ]) ;
     discriminate
   ] ;
   eapply lookup_op_spec in e ; simpl in e ;
@@ -149,14 +149,14 @@ Ltac lookup_op_squeeze :=
   ) ;
   noconf e.
 
-Ltac chUniverse_eqP_handle :=
+Ltac choice_code_eqP_handle :=
   let e := fresh "e" in
-  destruct chUniverse_eqP as [e|] ; [| contradiction ] ;
+  destruct choice_code_eqP as [e|] ; [| contradiction ] ;
   assert (e = erefl) by eapply uip ;
   subst e.
 
 Ltac simplify_linking :=
-  repeat chUniverse_eqP_handle ;
+  repeat choice_code_eqP_handle ;
   simpl.
 
 Ltac simplify_eq_rel m :=
@@ -302,7 +302,7 @@ Ltac cmd_bind_simpl :=
   repeat cmd_bind_simpl_once.
 
 (* No clear way of having cmd_assertD *)
-(* Definition cmd_assertD {A : chUniverse} (b : bool) : command A :=
+(* Definition cmd_assertD {A : choice_code} (b : bool) : command A :=
   (if b as b' return b = b' → raw_code A then k else λ _, fail) erefl. *)
 
 (* Right-biased application of rsame_head *)
@@ -568,7 +568,7 @@ Ltac ssprove_swap_seq_lhs l :=
   intros n ? ? h₀ h₁ ;
   invert_interface_in h₀ ;
   invert_interface_in h₁ ;
-  chUniverse_eq_prove
+  choice_code_eq_prove
   : typeclass_instances ssprove_valid_db.
 
 Lemma code_link_scheme :
@@ -606,7 +606,7 @@ Ltac ssprove_code_simpl_more_aux :=
     lazymatch c with
     | @bind _ (chElement ?B) (@assertD ?A ?b ?k1) ?k2 =>
       eapply r_transR ; [
-        (* How do I recover the other chUniverse otherwise? *)
+        (* How do I recover the other choice_code otherwise? *)
         eapply (r_bind_assertD_sym A B b k1 k2)
       | simpl
       ]

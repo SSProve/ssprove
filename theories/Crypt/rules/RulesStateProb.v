@@ -13,7 +13,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings Theta_dens
   Theta_exCP LaxComp FreeProbProg RelativeMonadMorph_prod
-  StateTransformingLaxMorph chUniverse.
+  StateTransformingLaxMorph choice_code.
 
 Import SPropNotations.
 Import Num.Theory.
