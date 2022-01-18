@@ -136,9 +136,9 @@ Section KEMDEM.
   Definition c_loc : Location := ('option 'cipher ; 4%N).
 
   (** Some shorthands *)
-  Definition IGEN := [interface val #[ GEN ] : 'unit → 'unit ].
-  Definition ISET := [interface val #[ SET ] : 'key → 'unit ].
-  Definition IGET := [interface val #[GET] : 'unit → 'key ].
+  Definition IGEN := [interface #val #[ GEN ] : 'unit → 'unit ].
+  Definition ISET := [interface #val #[ SET ] : 'key → 'unit ].
+  Definition IGET := [interface #val #[GET] : 'unit → 'key ].
 
   (** PKE scheme
 
@@ -220,28 +220,28 @@ Section KEMDEM.
   *)
   Definition KEY_out :=
     [interface
-      val #[ GEN ] : 'unit → 'unit ;
-      val #[ SET ] : 'key → 'unit ;
-      val #[ GET ] : 'unit → 'key
+      #val #[ GEN ] : 'unit → 'unit ;
+      #val #[ SET ] : 'key → 'unit ;
+      #val #[ GET ] : 'unit → 'key
     ].
 
   (** Definition of the KEY package *)
   Definition KEY : package KEY_loc [interface] KEY_out :=
     [package
-      def #[ GEN ] (_ : 'unit) : 'unit {
+      #def #[ GEN ] (_ : 'unit) : 'unit {
         k ← get k_loc ;;
         #assert (k == None) ;;
         k ← sample keyD ;;
-        put k_loc := Some k ;;
+        #put k_loc := Some k ;;
         @ret 'unit Datatypes.tt
       } ;
-      def #[ SET ] (k : 'key) : 'unit {
+      #def #[ SET ] (k : 'key) : 'unit {
         k' ← get k_loc ;;
         #assert (k' == None) ;;
-        put k_loc := Some k ;;
+        #put k_loc := Some k ;;
         @ret 'unit Datatypes.tt
       } ;
-      def #[ GET ] (_ : 'unit) : 'key {
+      #def #[ GET ] (_ : 'unit) : 'key {
         k ← get k_loc ;;
         #assert (isSome k) as kSome ;;
         @ret 'key (getSome k kSome)
@@ -271,9 +271,9 @@ Section KEMDEM.
   *)
   Definition KEM_out :=
     [interface
-      val #[ KEMGEN ] : 'unit → 'pkey ;
-      val #[ ENCAP ] : 'unit → 'ekey ;
-      val #[ DECAP ] : 'ekey → 'key
+      #val #[ KEMGEN ] : 'unit → 'pkey ;
+      #val #[ ENCAP ] : 'unit → 'ekey ;
+      #val #[ DECAP ] : 'ekey → 'key
     ].
 
   (** Here we add a hint to the [ssprove_valid_db] and [typeclass_instances]
@@ -290,15 +290,15 @@ Section KEMDEM.
 
   Definition KEM (b : bool) : package KEM_loc (KEM_in b) KEM_out :=
     [package
-      def #[ KEMGEN ] (_ : 'unit) : 'pkey {
+      #def #[ KEMGEN ] (_ : 'unit) : 'pkey {
         sk ← get sk_loc ;;
         #assert (sk == None) ;;
         '(pk, sk) ← η.(KEM_kgen) ;;
-        put pk_loc := Some pk ;;
-        put sk_loc := Some sk ;;
+        #put pk_loc := Some pk ;;
+        #put sk_loc := Some sk ;;
         @ret 'pkey pk
       } ;
-      def #[ ENCAP ] (_ : 'unit) : 'ekey {
+      #def #[ ENCAP ] (_ : 'unit) : 'ekey {
         #import {sig #[ SET ] : 'key → 'unit } as SET ;;
         #import {sig #[ GEN ] : 'unit → 'unit } as GEN ;;
         pk ← get pk_loc ;;
@@ -307,11 +307,11 @@ Section KEMDEM.
         ek ← get ek_loc ;;
         #assert (ek == None) ;;
         '(k, ek) ← η.(KEM_encap) pk ;;
-        put ek_loc := Some ek ;;
+        #put ek_loc := Some ek ;;
         (if b then SET k else GEN Datatypes.tt) ;;
         ret ek
       } ;
-      def #[ DECAP ] (ek' : 'ekey) : 'key {
+      #def #[ DECAP ] (ek' : 'ekey) : 'key {
         sk ← get sk_loc ;;
         #assert (isSome sk) as skSome ;;
         let sk := getSome sk skSome in
@@ -335,10 +335,10 @@ Section KEMDEM.
 
   Definition KEM_CCA_out :=
     [interface
-      val #[ KEMGEN ] : 'unit → 'pkey ;
-      val #[ ENCAP ] : 'unit → 'ekey ;
-      val #[ DECAP ] : 'ekey → 'key ;
-      val #[GET] : 'unit → 'key
+      #val #[ KEMGEN ] : 'unit → 'pkey ;
+      #val #[ ENCAP ] : 'unit → 'ekey ;
+      #val #[ DECAP ] : 'ekey → 'key ;
+      #val #[GET] : 'unit → 'key
     ].
 
   Definition KEM_CCA_loc :=
@@ -388,22 +388,22 @@ Section KEMDEM.
   *)
   Definition DEM_out :=
     [interface
-      val #[ ENC ] : 'plain → 'cipher ;
-      val #[ DEC ] : 'cipher → 'plain
+      #val #[ ENC ] : 'plain → 'cipher ;
+      #val #[ DEC ] : 'cipher → 'plain
     ].
 
   Definition DEM (b : bool) : package DEM_loc DEM_in DEM_out :=
     [package
-      def #[ ENC ] (m : 'plain) : 'cipher {
+      #def #[ ENC ] (m : 'plain) : 'cipher {
         #import {sig #[ GET ] : 'unit → 'key } as GET ;;
         c ← get c_loc ;;
         #assert (c == None) ;;
         k ← GET Datatypes.tt ;;
         let c := θ.(DEM_enc) k (if b then m else nullPlain) in
-        put c_loc := Some c ;;
+        #put c_loc := Some c ;;
         ret c
       } ;
-      def #[ DEC ] (c' : 'cipher) : 'plain {
+      #def #[ DEC ] (c' : 'cipher) : 'plain {
         #import {sig #[ GET ] : 'unit → 'key } as GET ;;
         c ← get c_loc ;;
         #assert (isSome c) as cSome ;;
@@ -424,9 +424,9 @@ Section KEMDEM.
 
   Definition DEM_CCA_out :=
     [interface
-      val #[ GEN ] : 'unit → 'unit ;
-      val #[ ENC ] : 'plain → 'cipher ;
-      val #[ DEC ] : 'cipher → 'plain
+      #val #[ GEN ] : 'unit → 'unit ;
+      #val #[ ENC ] : 'plain → 'cipher ;
+      #val #[ DEC ] : 'cipher → 'plain
     ].
 
   Definition DEM_CCA_loc :=
@@ -456,23 +456,23 @@ Section KEMDEM.
 
   Definition PKE_CCA_out :=
     [interface
-      val #[ PKGEN ] : 'unit → 'pkey ;
-      val #[ PKENC ] : 'plain → 'ekey × 'cipher ;
-      val #[ PKDEC ] : 'ekey × 'cipher → 'plain
+      #val #[ PKGEN ] : 'unit → 'pkey ;
+      #val #[ PKENC ] : 'plain → 'ekey × 'cipher ;
+      #val #[ PKDEC ] : 'ekey × 'cipher → 'plain
     ].
 
   Definition PKE_CCA_pkg (ζ : PKE_scheme) b :
     package PKE_CCA_loc [interface] PKE_CCA_out :=
     [package
-      def #[ PKGEN ] (_ : 'unit) : 'pkey {
+      #def #[ PKGEN ] (_ : 'unit) : 'pkey {
         sk ← get sk_loc ;;
         #assert (sk == None) ;;
         '(pk, sk) ← ζ.(PKE_kgen) ;;
-        put pk_loc := Some pk ;;
-        put sk_loc := Some sk ;;
+        #put pk_loc := Some pk ;;
+        #put sk_loc := Some sk ;;
         @ret 'pkey pk
       } ;
-      def #[ PKENC ] (m : 'plain) : 'ekey × 'cipher {
+      #def #[ PKENC ] (m : 'plain) : 'ekey × 'cipher {
         pk ← get pk_loc ;;
         #assert (isSome pk) as pkSome ;;
         let pk := getSome pk pkSome in
@@ -481,11 +481,11 @@ Section KEMDEM.
         c ← get c_loc ;;
         #assert (c == None) ;;
         '(ek, c) ← ζ.(PKE_enc) pk (if b then m else nullPlain) ;;
-        put ek_loc := Some ek ;;
-        put c_loc := Some c ;;
+        #put ek_loc := Some ek ;;
+        #put c_loc := Some c ;;
         @ret (chProd 'ekey 'cipher) (ek, c)
       } ;
-      def #[ PKDEC ] (c' : 'ekey × 'cipher) : 'plain {
+      #def #[ PKDEC ] (c' : 'ekey × 'cipher) : 'plain {
         sk ← get sk_loc ;;
         #assert (isSome sk) as skSome ;;
         let sk := getSome sk skSome in
@@ -510,11 +510,11 @@ Section KEMDEM.
 
   Definition MOD_CCA_in :=
     [interface
-      val #[ KEMGEN ] : 'unit → 'pkey ;
-      val #[ ENCAP ] : 'unit → 'ekey ;
-      val #[ DECAP ] : 'ekey → 'key ;
-      val #[ ENC ] : 'plain → 'cipher ;
-      val #[ DEC ] : 'cipher → 'plain
+      #val #[ KEMGEN ] : 'unit → 'pkey ;
+      #val #[ ENCAP ] : 'unit → 'ekey ;
+      #val #[ DECAP ] : 'ekey → 'key ;
+      #val #[ ENC ] : 'plain → 'cipher ;
+      #val #[ DEC ] : 'cipher → 'plain
     ].
 
   Definition MOD_CCA_out :=
@@ -523,13 +523,13 @@ Section KEMDEM.
   Definition MOD_CCA (ζ : PKE_scheme) :
     package MOD_CCA_loc MOD_CCA_in MOD_CCA_out :=
     [package
-      def #[ PKGEN ] (_ : 'unit) : 'pkey {
+      #def #[ PKGEN ] (_ : 'unit) : 'pkey {
         #import {sig #[ KEMGEN ] : 'unit → 'pkey } as KEMGEN ;;
         pk ← get pk_loc ;;
         #assert (pk == None) ;;
         KEMGEN Datatypes.tt
       } ;
-      def #[ PKENC ] (m : 'plain) : 'ekey × 'cipher {
+      #def #[ PKENC ] (m : 'plain) : 'ekey × 'cipher {
         #import {sig #[ ENCAP ] : 'unit → 'ekey } as ENCAP ;;
         #import {sig #[ ENC ] : 'plain → 'cipher } as ENC ;;
         pk ← get pk_loc ;;
@@ -539,12 +539,12 @@ Section KEMDEM.
         c ← get c_loc ;;
         #assert (c ==  None) ;;
         ek ← ENCAP Datatypes.tt ;;
-        put ek_loc := Some ek ;;
+        #put ek_loc := Some ek ;;
         c ← ENC m ;;
-        put c_loc := Some c ;;
+        #put c_loc := Some c ;;
         @ret (chProd 'ekey 'cipher) (ek, c)
       } ;
-      def #[ PKDEC ] ('(ek', c') : 'ekey × 'cipher) : 'plain {
+      #def #[ PKDEC ] ('(ek', c') : 'ekey × 'cipher) : 'plain {
         #import {sig #[ DECAP ] : 'ekey → 'key } as DECAP ;;
         #import {sig #[ DEC ] : 'cipher → 'plain } as DEC ;;
         pk ← get pk_loc ;;
