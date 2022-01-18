@@ -208,25 +208,25 @@ Definition DH_loc := fset [:: pk_loc ; sk_loc].
 
 Definition DH_real :
   package DH_loc [interface]
-    [interface val #[10] : 'unit → 'pubkey × 'cipher ] :=
+    [interface #val #[10] : 'unit → 'pubkey × 'cipher ] :=
     [package
-      def #[10] (_ : 'unit) : 'pubkey × 'cipher
+      #def #[10] (_ : 'unit) : 'pubkey × 'cipher
       {
         a ← sample uniform i_sk ;;
         let a := otf a in
         b ← sample uniform i_sk ;;
         let b := otf b in
-        put pk_loc := fto (g^+a) ;;
-        put sk_loc := fto a ;;
+        #put pk_loc := fto (g^+a) ;;
+        #put sk_loc := fto a ;;
         ret (fto (g^+a), fto (g^+b, g^+(a * b)))
       }
     ].
 
 Definition DH_rnd :
   package DH_loc [interface]
-    [interface val #[10] : 'unit → 'pubkey × 'cipher ] :=
+    [interface #val #[10] : 'unit → 'pubkey × 'cipher ] :=
     [package
-      def #[10] (_ : 'unit) : 'pubkey × 'cipher
+      #def #[10] (_ : 'unit) : 'pubkey × 'cipher
       {
         a ← sample uniform i_sk ;;
         let a := otf a in
@@ -234,32 +234,32 @@ Definition DH_rnd :
         let b := otf b in
         c ← sample uniform i_sk ;;
         let c := otf c  in
-        put pk_loc := fto (g^+a) ;;
-        put sk_loc := fto a ;;
+        #put pk_loc := fto (g^+a) ;;
+        #put sk_loc := fto a ;;
         ret (fto (g^+a), fto (g^+b, g^+c))
       }
     ].
 
 Definition Aux :
   package (fset [:: counter_loc ; pk_loc ])
-    [interface val #[10] : 'unit → 'pubkey × 'cipher]
+    [interface #val #[10] : 'unit → 'pubkey × 'cipher]
     [interface
-      val #[getpk_id] : 'unit → 'pubkey ;
-      val #[challenge_id'] : 'plain → 'cipher
+      #val #[getpk_id] : 'unit → 'pubkey ;
+      #val #[challenge_id'] : 'plain → 'cipher
     ]
   :=
   [package
-    def #[getpk_id] (_ : 'unit) : 'pubkey
+    #def #[getpk_id] (_ : 'unit) : 'pubkey
     {
       pk ← get pk_loc ;;
       ret pk
     } ;
 
-    def #[challenge_id'] (m : 'plain) : 'cipher
+    #def #[challenge_id'] (m : 'plain) : 'cipher
     {
       #import {sig #[10] : 'unit → 'pubkey × 'cipher } as query ;;
       count ← get counter_loc ;;
-      put counter_loc := (count + 1)%N ;;
+      #put counter_loc := (count + 1)%N ;;
       #assert (count == 0)%N ;;
       '(pk, c) ← query Datatypes.tt ;;
       @ret chCipher (fto ((otf c).1 , (otf m) * ((otf c).2)))
@@ -417,8 +417,8 @@ Qed.
 Theorem ElGamal_OT :
   ∀ LA A,
     ValidPackage LA [interface
-      val #[getpk_id] : 'unit → 'pubkey ;
-      val #[challenge_id'] : 'plain → 'cipher
+      #val #[getpk_id] : 'unit → 'pubkey ;
+      #val #[challenge_id'] : 'plain → 'cipher
     ] A_export A →
     fdisjoint LA (ots_real_vs_rnd true).(locs) →
     fdisjoint LA (ots_real_vs_rnd false).(locs) →

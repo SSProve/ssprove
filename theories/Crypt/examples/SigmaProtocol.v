@@ -140,10 +140,10 @@ Module SigmaProtocol (π : SigmaProtocolParams)
   Definition SHVZK_real:
     package Sigma_locs
       [interface]
-      [interface val #[ TRANSCRIPT ] : chInput → chTranscript]
+      [interface #val #[ TRANSCRIPT ] : chInput → chTranscript]
     :=
     [package
-      def #[ TRANSCRIPT ] (hwe : chInput) : chTranscript
+      #def #[ TRANSCRIPT ] (hwe : chInput) : chTranscript
       {
         let '(h,w,e) := hwe in
         #assert (R (otf h) (otf w)) ;;
@@ -156,10 +156,10 @@ Module SigmaProtocol (π : SigmaProtocolParams)
   Definition SHVZK_ideal:
     package Simulator_locs
       [interface]
-      [interface val #[ TRANSCRIPT ] : chInput → chTranscript]
+      [interface #val #[ TRANSCRIPT ] : chInput → chTranscript]
     :=
     [package
-      def #[ TRANSCRIPT ] (hwe : chInput) : chTranscript
+      #def #[ TRANSCRIPT ] (hwe : chInput) : chTranscript
       {
         let '(h, w, e) := hwe in
         #assert (R (otf h) (otf w)) ;;
@@ -173,11 +173,11 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
   Definition Special_Soundness_f :
     package Sigma_locs
-      [interface val #[ ADV ] : chStatement → chSoundness ]
-      [interface val #[ SOUNDNESS ] : chStatement → 'bool ]
+      [interface #val #[ ADV ] : chStatement → chSoundness ]
+      [interface #val #[ SOUNDNESS ] : chStatement → 'bool ]
     :=
     [package
-      def #[ SOUNDNESS ] (h : chStatement) : 'bool
+      #def #[ SOUNDNESS ] (h : chStatement) : 'bool
       {
         #import {sig #[ ADV ] : chStatement → chSoundness } as A ;;
         '(a, ((e, z), (e', z'))) ← A h ;;
@@ -194,11 +194,11 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
   Definition Special_Soundness_t :
     package Sigma_locs
-      [interface val #[ ADV ] : chStatement → chSoundness ]
-      [interface val #[ SOUNDNESS ] : chStatement → 'bool ]
+      [interface #val #[ ADV ] : chStatement → chSoundness ]
+      [interface #val #[ SOUNDNESS ] : chStatement → 'bool ]
     :=
     [package
-      def #[ SOUNDNESS ] (h : chStatement) : 'bool
+      #def #[ SOUNDNESS ] (h : chStatement) : 'bool
       {
         #import {sig #[ ADV ] : chStatement → chSoundness } as A ;;
         '(a, ((e, z), (e', z'))) ← A(h) ;;
@@ -244,23 +244,23 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
     Definition Sigma_to_Com:
       package Com_locs
-        [interface val #[ TRANSCRIPT ] : chInput → chTranscript]
+        [interface #val #[ TRANSCRIPT ] : chInput → chTranscript]
         [interface
-          val #[ COM ] : chInput → chMessage ;
-          val #[ OPEN ] : 'unit → chOpen ;
-          val #[ VER ] : chTranscript → 'bool
+          #val #[ COM ] : chInput → chMessage ;
+          #val #[ OPEN ] : 'unit → chOpen ;
+          #val #[ VER ] : chTranscript → 'bool
         ]
       :=
       [package
-        def #[ COM ] (hwe : chInput) : chMessage
+        #def #[ COM ] (hwe : chInput) : chMessage
         {
           #import {sig #[ TRANSCRIPT ] : chInput → chTranscript } as run ;;
           '(h,a,e,z) ← run hwe ;;
-          put challenge_loc := Some e ;;
-          put response_loc := Some z ;;
+          #put challenge_loc := Some e ;;
+          #put response_loc := Some z ;;
           ret a
         } ;
-        def #[ OPEN ] (_ : 'unit) : chOpen
+        #def #[ OPEN ] (_ : 'unit) : chOpen
         {
           o_e ← get challenge_loc ;;
           o_z ← get response_loc ;;
@@ -270,7 +270,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
           end
         }
         ;
-        def #[ VER ] (t : chTranscript) : 'bool
+        #def #[ VER ] (t : chTranscript) : 'bool
         {
           let '(h,a,e,z) := t in
           ret (otf (Verify h a e z))
@@ -281,14 +281,14 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Definition Hiding_real :
       package fset0
         [interface
-          val #[ COM ] : chInput → chMessage ;
-          val #[ OPEN ] : 'unit → chOpen ;
-          val #[ VER ] : chTranscript → 'bool
+          #val #[ COM ] : chInput → chMessage ;
+          #val #[ OPEN ] : 'unit → chOpen ;
+          #val #[ VER ] : chTranscript → 'bool
         ]
-        [interface val #[ HIDING ] : chInput → chMessage ]
+        [interface #val #[ HIDING ] : chInput → chMessage ]
       :=
       [package
-        def #[ HIDING ] (hwe : chInput) : chMessage
+        #def #[ HIDING ] (hwe : chInput) : chMessage
         {
           #import {sig #[ COM ] : chInput → chMessage } as com ;;
           a ← com hwe ;;
@@ -300,14 +300,14 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Definition Hiding_ideal :
       package fset0
         [interface
-          val #[ COM ] : chInput → chMessage ;
-          val #[ OPEN ] : 'unit → chOpen ;
-          val #[ VER ] : chTranscript → 'bool
+          #val #[ COM ] : chInput → chMessage ;
+          #val #[ OPEN ] : 'unit → chOpen ;
+          #val #[ VER ] : chTranscript → 'bool
         ]
-        [interface val #[ HIDING ] : chInput → chMessage]
+        [interface #val #[ HIDING ] : chInput → chMessage]
       :=
       [package
-        def #[ HIDING ] (hwe : chInput) : chMessage
+        #def #[ HIDING ] (hwe : chInput) : chMessage
         {
           #import {sig #[ COM ] : chInput → chMessage } as com ;;
           let '(h,w,_) := hwe in
@@ -325,11 +325,11 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Theorem commitment_hiding :
       ∀ LA A eps,
         ValidPackage LA [interface
-          val #[ HIDING ] : chInput → chMessage
+          #val #[ HIDING ] : chInput → chMessage
         ] A_export A →
         (∀ B,
           ValidPackage (LA :|: Com_locs) [interface
-            val #[ TRANSCRIPT ] : chInput → chTranscript
+            #val #[ TRANSCRIPT ] : chInput → chTranscript
           ] A_export B →
           ɛ_SHVZK B <= eps
         ) →
@@ -369,11 +369,11 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
     Definition Com_Binding :
       package Sigma_locs
-        [interface val #[ ADV ] : chStatement → chSoundness ]
-        [interface val #[ SOUNDNESS ] : chStatement → 'bool ]
+        [interface #val #[ ADV ] : chStatement → chSoundness ]
+        [interface #val #[ SOUNDNESS ] : chStatement → 'bool ]
       :=
       [package
-        def #[ SOUNDNESS ] (h : chStatement) : 'bool
+        #def #[ SOUNDNESS ] (h : chStatement) : 'bool
         {
           #import {sig #[ ADV ] : chStatement → chSoundness} as A ;;
           '(a, ((e, z), (e', z'))) ← A h ;;
@@ -386,10 +386,10 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Lemma commitment_binding :
       ∀ LA A LAdv Adv,
         ValidPackage LA [interface
-          val #[ SOUNDNESS ] : chStatement → 'bool
+          #val #[ SOUNDNESS ] : chStatement → 'bool
         ] A_export A →
         ValidPackage LAdv [interface] [interface
-          val #[ ADV ] : chStatement → chSoundness
+          #val #[ ADV ] : chStatement → chSoundness
         ] Adv →
         fdisjoint LA (Sigma_locs :|: LAdv) →
         AdvantageE (Com_Binding ∘ Adv) (Special_Soundness_f ∘ Adv) A <=
@@ -477,23 +477,23 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Definition Fiat_Shamir :
       package Sigma_locs
         [interface
-          val #[ INIT ] : 'unit → 'unit ;
-          val #[ QUERY ] : 'query → 'random
+          #val #[ INIT ] : 'unit → 'unit ;
+          #val #[ QUERY ] : 'query → 'random
         ]
         [interface
-          val #[ VERIFY ] : chTranscript → 'bool ;
-          val #[ RUN ] : chRelation → chTranscript
+          #val #[ VERIFY ] : chTranscript → 'bool ;
+          #val #[ RUN ] : chRelation → chTranscript
         ]
       :=
       [package
-        def #[ VERIFY ] (t : chTranscript) : 'bool
+        #def #[ VERIFY ] (t : chTranscript) : 'bool
         {
           #import {sig #[ QUERY ] : 'query → 'random } as RO_query ;;
           let '(h,a,e,z) := t in
           e ← RO_query (prod_assoc (h, a)) ;;
           ret (otf (Verify h a e z))
         } ;
-        def #[ RUN ] (hw : chRelation) : chTranscript
+        #def #[ RUN ] (hw : chRelation) : chTranscript
         {
           #import {sig #[ INIT ] : 'unit → 'unit } as RO_init ;;
           #import {sig #[ QUERY ] : 'query → 'random } as RO_query ;;
@@ -511,17 +511,17 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       package Sigma_locs
         [interface]
         [interface
-          val #[ VERIFY ] : chTranscript → 'bool ;
-          val #[ RUN ] : chRelation → chTranscript
+          #val #[ VERIFY ] : chTranscript → 'bool ;
+          #val #[ RUN ] : chRelation → chTranscript
         ]
       :=
       [package
-        def #[ VERIFY ] (t : chTranscript) : 'bool
+        #def #[ VERIFY ] (t : chTranscript) : 'bool
         {
           let '(h,a,e,z) := t in
           ret (otf (Verify h a e z))
         } ;
-        def #[ RUN ] (hw : chRelation) : chTranscript
+        #def #[ RUN ] (hw : chRelation) : chTranscript
         {
           let '(h,w) := hw in
           #assert (R (otf h) (otf w)) ;;
@@ -534,11 +534,11 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
     Definition SHVZK_real_aux :
       package Sigma_locs
-        [interface val #[ TRANSCRIPT ] : chInput → chTranscript ]
-        [interface val #[ RUN ] : chRelation → chTranscript ]
+        [interface #val #[ TRANSCRIPT ] : chInput → chTranscript ]
+        [interface #val #[ RUN ] : chRelation → chTranscript ]
       :=
       [package
-        def #[ RUN ] (hw : chRelation) : chTranscript
+        #def #[ RUN ] (hw : chRelation) : chTranscript
         {
           #import {sig #[ TRANSCRIPT ] : chInput → chTranscript } as SHVZK ;;
           e ← sample uniform i_random ;;
@@ -550,7 +550,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Lemma run_interactive_shvzk :
       ∀ LA A,
         ValidPackage LA [interface
-          val #[ RUN ] : chRelation → chTranscript
+          #val #[ RUN ] : chRelation → chTranscript
         ] A_export A →
         fdisjoint LA Sigma_locs →
         AdvantageE RUN_interactive (SHVZK_real_aux ∘ SHVZK_real) A = 0.
@@ -593,7 +593,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Theorem fiat_shamir_correct :
       ∀ LA A ,
         ValidPackage LA [interface
-          val #[ RUN ] : chRelation → chTranscript
+          #val #[ RUN ] : chRelation → chTranscript
         ] A_export A →
         fdisjoint LA (Sigma_locs :|: RO_locs) →
         fdisjoint Sigma_locs RO_locs →

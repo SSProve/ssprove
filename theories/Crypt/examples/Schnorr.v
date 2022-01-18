@@ -117,7 +117,7 @@ Module MyAlg <: SigmaProtocolAlgorithms MyParam.
     code Sigma_locs [interface] choiceMessage :=
     {code
       r ← sample uniform i_witness ;;
-      put commit_loc := r ;;
+      #put commit_loc := r ;;
       ret (fto (g ^+ (otf r)))
     }.
 
@@ -226,7 +226,7 @@ Qed.
 Theorem schnorr_SHVZK :
   ∀ LA A,
     ValidPackage LA [interface
-      val #[ TRANSCRIPT ] : chInput → chTranscript
+      #val #[ TRANSCRIPT ] : chInput → chTranscript
     ] A_export A →
     fdisjoint LA Sigma_locs →
     ɛ_SHVZK A = 0.
@@ -305,10 +305,10 @@ Qed.
 Lemma extractor_success:
   ∀ LA A LAdv Adv,
     ValidPackage LA [interface
-      val #[ SOUNDNESS ] : chStatement → 'bool
+      #val #[ SOUNDNESS ] : chStatement → 'bool
     ] A_export A →
     ValidPackage LAdv [interface] [interface
-      val #[ ADV ] : chStatement → chSoundness
+      #val #[ ADV ] : chStatement → chSoundness
     ] Adv →
     fdisjoint LA (Sigma_locs :|: LAdv) →
     ɛ_soundness A Adv = 0.
@@ -443,7 +443,7 @@ Qed.
 Lemma hiding_adv :
   ∀ LA A,
     ValidPackage LA [interface
-      val #[ HIDING ] : chInput → chMessage
+      #val #[ HIDING ] : chInput → chMessage
     ] A_export A →
     fdisjoint LA Com_locs →
     fdisjoint LA Sigma_locs →
@@ -494,7 +494,7 @@ Qed.
 Theorem schnorr_com_hiding :
   ∀ LA A,
     ValidPackage LA [interface
-      val #[ HIDING ] : chInput → chMessage
+      #val #[ HIDING ] : chInput → chMessage
     ] A_export A →
     fdisjoint LA Com_locs →
     fdisjoint LA Sigma_locs →
@@ -528,10 +528,10 @@ Qed.
 Theorem schnorr_com_binding :
   ∀ LA A LAdv Adv,
     ValidPackage LA [interface
-      val #[ SOUNDNESS ] : chStatement → 'bool
+      #val #[ SOUNDNESS ] : chStatement → 'bool
     ] A_export A →
     ValidPackage LAdv [interface] [interface
-      val #[ ADV ] : chStatement → chSoundness
+      #val #[ ADV ] : chStatement → chSoundness
     ] Adv →
     fdisjoint LA (Sigma_locs :|: LAdv) →
     AdvantageE (Com_Binding ∘ Adv) (Special_Soundness_f ∘ Adv) A <= 0.
