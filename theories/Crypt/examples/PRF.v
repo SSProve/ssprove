@@ -20,7 +20,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 From Mon Require Import SPropBase.
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb
-  pkg_core_definition chUniverse pkg_composition pkg_rhl Package Prelude.
+  pkg_core_definition choice_type pkg_composition pkg_rhl Package Prelude.
 
 From Coq Require Import Utf8.
 From extructures Require Import ord fset fmap.
@@ -48,10 +48,10 @@ Section PRF_example.
 
   Definition Words_N : nat := 2^n.
   Definition Words_N_pos : Positive Words_N := _.
-  Definition Words : chUniverse := chFin (mkpos Words_N).
+  Definition Words : choice_type := chFin (mkpos Words_N).
   Definition Key_N : nat := 2^n.
   Definition Key_N_pos : Positive Key_N := _.
-  Definition Key : chUniverse := chFin (mkpos Key_N).
+  Definition Key : choice_type := chFin (mkpos Key_N).
 
   (* TW: Is this normal that this definition is so big? *)
   #[program] Definition plus : Words → Key → Words :=

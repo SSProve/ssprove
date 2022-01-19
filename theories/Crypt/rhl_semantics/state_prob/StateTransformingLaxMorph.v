@@ -5,7 +5,7 @@ From Mon Require Import SPropBase.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect (*boolp*).
 Set Warnings "notation-overridden,ambiguous-paths".
-From Crypt Require Import Axioms OrderEnrichedRelativeAdjunctions LaxFunctorsAndTransf LaxMorphismOfRelAdjunctions TransformingLaxMorph OrderEnrichedRelativeAdjunctionsExamples ThetaDex SubDistr Theta_exCP ChoiceAsOrd FreeProbProg UniversalFreeMap RelativeMonadMorph_prod LaxComp chUniverse.
+From Crypt Require Import Axioms OrderEnrichedRelativeAdjunctions LaxFunctorsAndTransf LaxMorphismOfRelAdjunctions TransformingLaxMorph OrderEnrichedRelativeAdjunctionsExamples ThetaDex SubDistr Theta_exCP ChoiceAsOrd FreeProbProg UniversalFreeMap RelativeMonadMorph_prod LaxComp choice_type.
 (* From Crypt Require Import only_prob.Rules. *)
 
 Import SPropNotations.
@@ -219,7 +219,7 @@ Section UnaryInterpretState.
     retrFree_filled (F_choice_prod ⟨ unit_choiceType, S ⟩) (tt, new_s).
 
 
-  Definition probopStP {T : chUniverse} (sd: SDistr T) : stT_Frp (chElement T).
+  Definition probopStP {T : choice_type} (sd: SDistr T) : stT_Frp (chElement T).
     move=> s. simpl.
     unshelve eapply ropr.
       unshelve econstructor. exact T. exact sd.

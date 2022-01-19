@@ -32,7 +32,7 @@ From mathcomp Require Import ssreflect ssrbool ssrnat eqtype seq eqtype
 Set Warnings "notation-overridden,ambiguous-paths".
 From extructures Require Import ord fset fmap.
 From Crypt Require Import Prelude pkg_core_definition
-  pkg_composition pkg_notation chUniverse
+  pkg_composition pkg_notation choice_type
   RulesStateProb.
 From Coq Require Import Utf8 FunctionalExtensionality
   Setoids.Setoid Classes.Morphisms.
@@ -308,11 +308,11 @@ Proof.
   rewrite -fset0E in h. auto.
 Qed.
 
-Ltac chUniverse_eq_prove :=
+Ltac choice_type_eq_prove :=
   lazymatch goal with
-  | |- chProd _ _ = chProd _ _ => f_equal ; chUniverse_eq_prove
-  | |- chMap _ _ = chMap _ _ => f_equal ; chUniverse_eq_prove
-  | |- chOption _ = chOption _ => f_equal ; chUniverse_eq_prove
+  | |- chProd _ _ = chProd _ _ => f_equal ; choice_type_eq_prove
+  | |- chMap _ _ = chMap _ _ => f_equal ; choice_type_eq_prove
+  | |- chOption _ = chOption _ => f_equal ; choice_type_eq_prove
   | |- chFin _ = chFin _ => f_equal ; apply positive_ext ; reflexivity
   | |- _ = _ => reflexivity
   end.
@@ -323,8 +323,8 @@ Ltac chUniverse_eq_prove :=
     idtac
   | intro
   | rewrite imfset_fset ; rewrite notin_fset
-  | chUniverse_eq_prove
-  | chUniverse_eq_prove
+  | choice_type_eq_prove
+  | choice_type_eq_prove
   ]
   : typeclass_instances ssprove_valid_db.
 

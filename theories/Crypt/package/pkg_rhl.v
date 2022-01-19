@@ -16,7 +16,7 @@ From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
-  StateTransformingLaxMorph chUniverse pkg_core_definition pkg_notation
+  StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
   pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_lookup pkg_advantage
   pkg_invariants pkg_distr.
 Require Import Equations.Prop.DepElim.
@@ -313,7 +313,7 @@ Qed.
 (** Equivalence of packages in the program logic *)
 
 Definition eq_up_to_inv (E : Interface) (I : precond) (p₀ p₁ : raw_package) :=
-  ∀ (id : ident) (S T : chUniverse) (x : S),
+  ∀ (id : ident) (S T : choice_type) (x : S),
     (id, (S, T)) \in E →
     ⊢ ⦃ λ '(s₀, s₁), I (s₀, s₁) ⦄
       get_op_default p₀ (id, (S, T)) x ≈ get_op_default p₁ (id, (S, T)) x
@@ -2330,7 +2330,7 @@ Proof.
 Qed.
 
 Theorem r_assertD :
-  ∀ {A₀ A₁ : chUniverse} b₀ b₁ (pre : precond) (post : postcond A₀ A₁) k₀ k₁,
+  ∀ {A₀ A₁ : choice_type} b₀ b₁ (pre : precond) (post : postcond A₀ A₁) k₀ k₁,
     (∀ s, pre s → b₀ = b₁) →
     (∀ e₀ e₁, ⊢ ⦃ pre ⦄ k₀ e₀ ≈ k₁ e₁ ⦃ post ⦄) →
     ⊢ ⦃ pre ⦄ #assert b₀ as x ;; k₀ x ≈ #assert b₁ as x ;; k₁ x ⦃ post ⦄.
@@ -2347,7 +2347,7 @@ Qed.
 
 (* Simpler version for same_head *)
 Lemma r_assertD_same :
-  ∀ (A : chUniverse) b (pre : precond) (post : postcond A A) k₀ k₁,
+  ∀ (A : choice_type) b (pre : precond) (post : postcond A A) k₀ k₁,
     (∀ e, ⊢ ⦃ pre ⦄ k₀ e ≈ k₁ e ⦃ post ⦄) →
     ⊢ ⦃ pre ⦄ #assert b as x ;; k₀ x ≈ #assert b as x ;; k₁ x ⦃ post ⦄.
 Proof.
@@ -2359,7 +2359,7 @@ Proof.
 Qed.
 
 Lemma r_cmd_fail :
-  ∀ A (B : chUniverse) (c : command A) (pre : precond) (post : postcond B B),
+  ∀ A (B : choice_type) (c : command A) (pre : precond) (post : postcond B B),
     ⊢ ⦃ pre ⦄ fail ≈ c ;' fail ⦃ post ⦄.
 Proof.
   intros A B c pre post.
@@ -2385,7 +2385,7 @@ Proof.
 Qed.
 
 Lemma rswap_assertD_cmd_eq :
-  ∀ A (B : chUniverse) b (c : command A) (r : _ → _ → raw_code B),
+  ∀ A (B : choice_type) b (c : command A) (r : _ → _ → raw_code B),
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       #assert b as e ;; x ← cmd c ;; r e x ≈
       x ← cmd c ;; #assert b as e ;; r e x
@@ -2399,7 +2399,7 @@ Qed.
 
 (* Symmetric of the above. *)
 Lemma rswap_cmd_assertD_eq :
-  ∀ A (B : chUniverse) b (c : command A) (r : _ → _ → raw_code B),
+  ∀ A (B : choice_type) b (c : command A) (r : _ → _ → raw_code B),
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       x ← cmd c ;; #assert b as e ;; r e x ≈
       #assert b as e ;; x ← cmd c ;; r e x
@@ -2414,7 +2414,7 @@ Proof.
 Qed.
 
 Lemma rswap_assertD_assertD_eq :
-  ∀ (A : chUniverse) b₀ b₁ (r : _ → _ → raw_code A),
+  ∀ (A : choice_type) b₀ b₁ (r : _ → _ → raw_code A),
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       #assert b₀ as e₀ ;; #assert b₁ as e₁ ;; r e₀ e₁ ≈
       #assert b₁ as e₁ ;; #assert b₀ as e₀ ;; r e₀ e₁
@@ -2430,7 +2430,7 @@ Qed.
 
 (* Unfortunately, this doesn't hold syntactically *)
 Lemma r_bind_assertD :
-  ∀ (A B : chUniverse) b k1 (k2 : _ → raw_code B),
+  ∀ (A B : choice_type) b k1 (k2 : _ → raw_code B),
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       x ← (@assertD A b (λ z, k1 z)) ;; k2 x ≈
       @assertD B b (λ z, x ← k1 z ;; k2 x)
@@ -2457,7 +2457,7 @@ Proof.
 Qed.
 
 Lemma r_bind_assertD_sym :
-  ∀ (A B : chUniverse) b k1 (k2 : _ → raw_code B),
+  ∀ (A B : choice_type) b k1 (k2 : _ → raw_code B),
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       @assertD B b (λ z, x ← k1 z ;; k2 x) ≈
       x ← (@assertD A b (λ z, k1 z)) ;; k2 x

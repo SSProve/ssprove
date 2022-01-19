@@ -100,7 +100,7 @@ From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
 Set Warnings "notation-overridden,ambiguous-paths".
 From extructures Require Import ord fset fmap.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd RulesStateProb
-  chUniverse pkg_core_definition pkg_composition.
+  choice_type pkg_core_definition pkg_composition.
 
 
 #[local] Open Scope fset.
