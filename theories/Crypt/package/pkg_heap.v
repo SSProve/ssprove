@@ -20,14 +20,13 @@ From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
-(* Must come after importing Equations.Equations, who knows why. *)
-From Crypt Require Import FreeProbProg.
+(* (* Must come after importing Equations.Equations, who knows why. *) *)
+(* From Crypt Require Import FreeProbProg. *)
 
 Set Equations With UIP.
 Set Equations Transparent.
 
-Import SPropNotations.
-Import PackageNotation.
+(* Import PackageNotation. *)
 Import RSemanticNotation.
 
 Set Bullet Behavior "Strict Subproofs".
@@ -71,7 +70,7 @@ Definition heap_choiceType := [choiceType of heap].
 
 Lemma heap_ext :
   ∀ (h₀ h₁ : heap),
-    h₀ ∙1 = h₁ ∙1 →
+    val h₀ = val h₁ →
     h₀ = h₁.
 Proof.
   intros [h₀ v₀] [h₁ v₁] e. simpl in e. subst.
@@ -127,7 +126,7 @@ Proof.
 Qed.
 
 Equations? get_heap (map : heap) (ℓ : Location) : Value ℓ.π1 :=
-  get_heap map ℓ with inspect (map ∙1 ℓ) := {
+  get_heap map ℓ with inspect (val map ℓ) := {
   | @exist (Some p) e => cast_pointed_value p _
   | @exist None e => heap_init (ℓ.π1)
   }.
@@ -140,7 +139,6 @@ Program Definition set_heap (map : heap) (l : Location) (v : Value l.π1)
 : heap :=
   setm map l (l.π1 ; v).
 Next Obligation.
-  intros map l v.
   unfold valid_heap.
   destruct map as [rh valid_rh].
   cbn - ["_ == _"].

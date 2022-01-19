@@ -10,19 +10,17 @@
 From Coq Require Import Utf8.
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
-From mathcomp Require Import ssreflect eqtype choice seq ssrfun ssrbool.
+From mathcomp Require Import ssreflect eqtype choice seq ssrfun ssrbool distr reals.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
-From Mon Require Import SPropBase.
-From Crypt Require Import Prelude Axioms ChoiceAsOrd RulesStateProb StateTransformingLaxMorph
+(* From Mon Require Import SPropBase. *)
+From Crypt Require Import Prelude Axioms (* ChoiceAsOrd RulesStateProb StateTransformingLaxMorph *)
      choice_type.
 
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
 Set Equations With UIP.
-
-Import SPropNotations.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
@@ -72,17 +70,20 @@ Definition chtgt (v : opsig) : choice_type :=
 Definition tgt (v : opsig) : choiceType :=
   chtgt v.
 
-Section Translation.
+(* Section Translation. *)
 
-  Definition Prob_ops_collection := FreeProbProg.P_OP.
+(*   Definition Prob_ops_collection := FreeProbProg.P_OP. *)
 
-  Definition Prob_arities : Prob_ops_collection → choiceType :=
-    FreeProbProg.P_AR.
+(*   Definition Prob_arities : Prob_ops_collection → choiceType := *)
+(*     FreeProbProg.P_AR. *)
 
-End Translation.
+(* End Translation. *)
 
-Definition Op := Prob_ops_collection.
-Definition Arit := Prob_arities.
+(* Definition Op := Prob_ops_collection. *)
+(* Definition Arit := Prob_arities. *)
+
+Definition Op := ∑ (X : chUniverse) , {distr (chElement X) / R}.
+Definition Arit : Op -> choiceType := chElement \o (@projT1 _ _).
 
 Section FreeModule.
 
@@ -384,7 +385,7 @@ Section FreeModule.
 
   Open Scope package_scope.
 
-  Import SPropAxioms. Import FunctionalExtensionality.
+  (* Import SPropAxioms. Import FunctionalExtensionality. *)
 
   (* TODO: NEEDED? *)
   (* Program Definition rFree : ord_relativeMonad choice_incl :=
