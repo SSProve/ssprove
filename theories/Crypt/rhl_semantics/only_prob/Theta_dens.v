@@ -3,7 +3,7 @@ From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadE
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum.
 Set Warnings "notation-overridden,ambiguous-paths".
-From Crypt Require Import ChoiceAsOrd Axioms RelativeMonadMorph_prod FreeProbProg SubDistr choice_code.
+From Crypt Require Import ChoiceAsOrd Axioms RelativeMonadMorph_prod FreeProbProg SubDistr choice_type.
 
 
 Import SPropNotations.
@@ -27,7 +27,7 @@ SDistr.
 
 (* Section test. *)
 (*   (*In this section we implement a probability handler, ie something of type *)
-(*   forall T : choice_code, probE T -> SDistr T*) *)
+(*   forall T : choice_type, probE T -> SDistr T*) *)
 (*   (*This kind of handler is exactly the data needed to define a universal map exiting *)
 (*   the free probablistic relative monad defined in FreeProbProg.v. Is abstracted over *)
 (*   in the subsequent sections. *) *)
@@ -42,14 +42,14 @@ SDistr.
 (*     |Bern : unit_interval R -> concrete_probE bool *)
 (*     |Poiss : unit_interval R -> concrete_probE nat. *)
 
-(*   Record my_choice_code : Type := mk_choice_code *)
+(*   Record my_choice_type : Type := mk_choice_type *)
 (*     { abs_chTy :> choiceType ; *)
 (*       unlock_absChTy : ((abs_chTy = bool_choiceType) + ( abs_chTy = nat_choiceType))%type *)
 (*     }. *)
 
-(*   Definition my_chElement : my_choice_code -> choiceType := fun relChTy => *)
+(*   Definition my_chElement : my_choice_type -> choiceType := fun relChTy => *)
 (*     match relChTy with *)
-(*     |mk_choice_code T unlock_T => *)
+(*     |mk_choice_type T unlock_T => *)
 (*     match unlock_T with *)
 (*     |inl unlock_bool => bool_choiceType *)
 (*     |inr unlock_nat => nat_choiceType *)

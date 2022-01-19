@@ -15,7 +15,7 @@ From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
-  StateTransformingLaxMorph choice_code pkg_core_definition pkg_notation
+  StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
   pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_lookup pkg_advantage.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
@@ -156,15 +156,15 @@ Qed.
 
 (** Fail and Assert *)
 
-(* fail at any type in the choice_code *)
-Definition fail {A : choice_code} : raw_code A :=
+(* fail at any type in the choice_type *)
+Definition fail {A : choice_type} : raw_code A :=
   x ← sample (A ; dnull) ;; ret x.
 
 Definition assert b : raw_code 'unit :=
   if b then ret Datatypes.tt else @fail 'unit.
 
 (* Dependent version of assert *)
-Definition assertD {A : choice_code} b (k : b = true → raw_code A) : raw_code A :=
+Definition assertD {A : choice_type} b (k : b = true → raw_code A) : raw_code A :=
   (if b as b' return b = b' → raw_code A then k else λ _, fail) erefl.
 
 Lemma valid_fail :

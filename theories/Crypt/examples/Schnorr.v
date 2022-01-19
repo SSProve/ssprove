@@ -11,7 +11,7 @@ From Mon Require Import SPropBase.
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_core_definition choice_code pkg_composition pkg_rhl Package Prelude
+  pkg_core_definition choice_type pkg_composition pkg_rhl Package Prelude
   SigmaProtocol.
 
 From Coq Require Import Utf8.
@@ -92,12 +92,12 @@ Module MyAlg <: SigmaProtocolAlgorithms MyParam.
 
   #[local] Existing Instance Bool_pos.
 
-  Definition choiceWitness : choice_code := 'fin #|Witness|.
-  Definition choiceStatement : choice_code := 'fin #|Statement|.
-  Definition choiceMessage : choice_code := 'fin #|Message|.
-  Definition choiceChallenge : choice_code := 'fin #|Challenge|.
-  Definition choiceResponse : choice_code := 'fin #|Response|.
-  Definition choiceTranscript : choice_code :=
+  Definition choiceWitness : choice_type := 'fin #|Witness|.
+  Definition choiceStatement : choice_type := 'fin #|Statement|.
+  Definition choiceMessage : choice_type := 'fin #|Message|.
+  Definition choiceChallenge : choice_type := 'fin #|Challenge|.
+  Definition choiceResponse : choice_type := 'fin #|Response|.
+  Definition choiceTranscript : choice_type :=
     chProd
       (chProd (chProd choiceStatement choiceMessage) choiceChallenge)
       choiceResponse.
@@ -321,7 +321,7 @@ Proof.
   (* We need to ensure that the composition is valid. *)
   destruct (Adv ADV) as [[? []]|].
   2:{ apply r_ret. auto. }
-  repeat destruct choice_code_eqP.
+  repeat destruct choice_type_eqP.
   2,3: apply r_ret ; auto.
   apply rsame_head. intros [s [[s0 s3] [s1 s2]]].
   ssprove_code_simpl. simpl.

@@ -12,7 +12,7 @@ From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
-  StateTransformingLaxMorph choice_code pkg_core_definition pkg_notation
+  StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
   pkg_tactics pkg_composition pkg_heap pkg_semantics.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
@@ -56,9 +56,9 @@ Proof.
   specialize (hp _ ho). cbn in hp. destruct hp as [f [ef hf]].
   cbn in e. destruct (p n) as [[St [Tt g]]|] eqn:e2.
   2: discriminate.
-  destruct choice_code_eqP.
+  destruct choice_type_eqP.
   2:{ noconf ef. congruence. }
-  destruct choice_code_eqP.
+  destruct choice_type_eqP.
   2:{ noconf ef. congruence. }
   discriminate.
 Qed.
@@ -119,17 +119,17 @@ Proof.
       destruct (p1 id) eqn:Hp1id.
       2: { inversion Hf. }
       destruct t as [S' [T' f']].
-      destruct choice_code_eqP.
+      destruct choice_type_eqP.
       2:{ noconf ef. congruence. }
-      destruct choice_code_eqP.
+      destruct choice_type_eqP.
       2:{ noconf ef. congruence. }
       noconf e. noconf e0.
       repeat f_equal. inversion Hf.
       rewrite -H0. reflexivity. }
     rewrite H in Hg.
-    destruct choice_code_eqP.
+    destruct choice_type_eqP.
     2:{ noconf ef. congruence. }
-    destruct choice_code_eqP.
+    destruct choice_type_eqP.
     2:{ noconf ef. congruence. }
     noconf e. noconf e0.
     inversion Hg.
@@ -153,9 +153,9 @@ Proof.
     destruct H as [f [H1 H2]].
     unfold lookup_op in e.
     rewrite H1 in e.
-    destruct choice_code_eqP.
+    destruct choice_type_eqP.
     2:{ noconf ef. congruence. }
-    destruct choice_code_eqP.
+    destruct choice_type_eqP.
     2:{ noconf ef. congruence. }
     discriminate.
   }
@@ -168,9 +168,9 @@ Proof.
     destruct H as [f' [H1 H2]].
     unfold lookup_op in el.
     rewrite H1 in el.
-    destruct choice_code_eqP.
+    destruct choice_type_eqP.
     2:{ noconf ef. congruence. }
-    destruct choice_code_eqP.
+    destruct choice_type_eqP.
     2:{ noconf ef. congruence. }
     discriminate.
   }
@@ -194,9 +194,9 @@ Proof.
     destruct H as [f [H1 H2]].
     unfold lookup_op in e.
     rewrite H1 in e.
-    destruct choice_code_eqP.
+    destruct choice_type_eqP.
     2:{ noconf ef. congruence. }
-    destruct choice_code_eqP.
+    destruct choice_type_eqP.
     2:{ noconf ef. congruence. }
     discriminate.
   }
@@ -223,9 +223,9 @@ Proof.
     destruct H as [f [H1 H2]].
     unfold lookup_op in e.
     rewrite H1 in e.
-    destruct choice_code_eqP.
+    destruct choice_type_eqP.
     2:{ noconf ef. congruence. }
-    destruct choice_code_eqP.
+    destruct choice_type_eqP.
     2:{ noconf ef. congruence. }
     discriminate.
   }
@@ -287,8 +287,8 @@ Proof.
   unfold lookup_op. unfold link.
   rewrite mapmE.
   destruct (p id) as [[S' [T' g]]|] eqn:e. 2: reflexivity.
-  simpl. destruct choice_code_eqP. 2: reflexivity.
-  destruct choice_code_eqP. 2: reflexivity.
+  simpl. destruct choice_type_eqP. 2: reflexivity.
+  destruct choice_type_eqP. 2: reflexivity.
   subst. cbn. reflexivity.
 Qed.
 
@@ -319,9 +319,9 @@ Proof.
     specialize (hp _ ho). cbn in hp. destruct hp as [f [ef hf]].
     cbn in e. destruct (p n) as [[St [Tt g]]|] eqn:e2.
     2: discriminate.
-    destruct choice_code_eqP.
+    destruct choice_type_eqP.
     2:{ noconf ef. congruence. }
-    destruct choice_code_eqP.
+    destruct choice_type_eqP.
     2:{ noconf ef. congruence. }
     discriminate.
   }
@@ -343,9 +343,9 @@ Proof.
   intros p id S T f e.
   unfold lookup_op.
   destruct (p id) as [[S' [T' g]]|] eqn:e1. 2: discriminate.
-  destruct choice_code_eqP.
+  destruct choice_type_eqP.
   2:{ noconf e. contradiction. }
-  destruct choice_code_eqP.
+  destruct choice_type_eqP.
   2:{ noconf e. contradiction. }
   subst.
   noconf e.

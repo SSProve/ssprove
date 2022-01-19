@@ -8,7 +8,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_core_definition choice_code pkg_composition pkg_rhl
+  pkg_core_definition choice_type pkg_composition pkg_rhl
   Package Prelude RandomOracle.
 
 From Coq Require Import Utf8.
@@ -419,7 +419,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       destruct (Adv ADV) as [[? []]|].
       2:{ apply r_ret. intuition auto. }
 
-      repeat destruct choice_code_eqP.
+      repeat destruct choice_type_eqP.
       2:{ apply r_ret. intuition auto. }
       2:{ apply r_ret. intuition auto. }
 

@@ -12,7 +12,7 @@ From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
-  StateTransformingLaxMorph choice_code pkg_core_definition pkg_notation
+  StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
   pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_lookup.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.

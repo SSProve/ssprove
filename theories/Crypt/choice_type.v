@@ -1,8 +1,8 @@
 (**
-  This file defines an inductive type [choice_code] corresponding to codes for
+  This file defines an inductive type [choice_type] corresponding to codes for
   choice types.
   We give a total order on this type, which is then used to show that
-  [choice_code] forms a [choiceType].
+  [choice_type] forms a [choiceType].
  *)
 
 
@@ -33,16 +33,16 @@ Open Scope type_scope.
 
 (* Basic structure *)
 
-Inductive choice_code :=
+Inductive choice_type :=
 | chUnit
 | chNat
 | chBool
-| chProd (A B : choice_code)
-| chMap (A B : choice_code)
-| chOption (A : choice_code)
+| chProd (A B : choice_type)
+| chMap (A B : choice_type)
+| chOption (A : choice_type)
 | chFin (n : positive).
 
-Derive NoConfusion NoConfusionHom for choice_code.
+Derive NoConfusion NoConfusionHom for choice_type.
 
 (* Definition void_leq (x y : void) := true. *)
 
@@ -52,7 +52,7 @@ Derive NoConfusion NoConfusionHom for choice_code.
 (* Definition void_ordMixin := OrdMixin void_leqP. *)
 (* Canonical void_ordType := Eval hnf in OrdType void void_ordMixin. *)
 
-Fixpoint chElement_ordType (U : choice_code) : ordType :=
+Fixpoint chElement_ordType (U : choice_type) : ordType :=
   match U with
   | chUnit => unit_ordType
   | chNat => nat_ordType
@@ -63,7 +63,7 @@ Fixpoint chElement_ordType (U : choice_code) : ordType :=
   | chFin n => [ordType of ordinal n.(pos) ]
   end.
 
-Fixpoint chElement (U : choice_code) : choiceType :=
+Fixpoint chElement (U : choice_type) : choiceType :=
   match U with
   | chUnit => unit_choiceType
   | chNat => nat_choiceType
@@ -74,10 +74,10 @@ Fixpoint chElement (U : choice_code) : choiceType :=
   | chFin n => [choiceType of ordinal n.(pos) ]
   end.
 
-Coercion chElement : choice_code >-> choiceType.
+Coercion chElement : choice_type >-> choiceType.
 
-(* Canonical element in a type of the choice_code *)
-#[program] Fixpoint chCanonical (T : choice_code) : T :=
+(* Canonical element in a type of the choice_type *)
+#[program] Fixpoint chCanonical (T : choice_type) : T :=
   match T with
   | chUnit => Datatypes.tt
   | chNat => 0
@@ -95,24 +95,24 @@ Next Obligation.
   unfold Positive in h. auto.
 Defined.
 
-Section choice_codeTypes.
+Section choice_typeTypes.
 
-  Fixpoint choice_code_test (u v : choice_code) : bool :=
+  Fixpoint choice_type_test (u v : choice_type) : bool :=
     match u, v with
     | chNat , chNat => true
     | chUnit , chUnit => true
     | chBool , chBool => true
-    | chProd a b , chProd a' b' => choice_code_test a a' && choice_code_test b b'
-    | chMap a b , chMap a' b' => choice_code_test a a' && choice_code_test b b'
-    | chOption a, chOption a' => choice_code_test a a'
+    | chProd a b , chProd a' b' => choice_type_test a a' && choice_type_test b b'
+    | chMap a b , chMap a' b' => choice_type_test a a' && choice_type_test b b'
+    | chOption a, chOption a' => choice_type_test a a'
     | chFin n, chFin n' => n == n'
     | _ , _ => false
     end.
 
-  Definition choice_code_eq : rel choice_code :=
-    fun u v => choice_code_test u v.
+  Definition choice_type_eq : rel choice_type :=
+    fun u v => choice_type_test u v.
 
-  Lemma choice_code_eqP : Equality.axiom choice_code_eq.
+  Lemma choice_type_eqP : Equality.axiom choice_type_eq.
   Proof.
     move=> x y.
     induction x as [ | | | x1 ih1 x2 ih2 | x1 ih1 x2 ih2 | x1 ih1 | x1]
@@ -141,19 +141,19 @@ Section choice_codeTypes.
         apply e. inversion h. reflexivity.
   Qed.
 
-  Lemma choice_code_refl :
-    ∀ u, choice_code_eq u u.
+  Lemma choice_type_refl :
+    ∀ u, choice_type_eq u u.
   Proof.
-    intros u. destruct choice_code_eq eqn:e.
+    intros u. destruct choice_type_eq eqn:e.
     - constructor.
-    - move: e => /choice_code_eqP []. reflexivity.
+    - move: e => /choice_type_eqP []. reflexivity.
   Qed.
 
-  Canonical choice_code_eqMixin := EqMixin choice_code_eqP.
-  Canonical choice_code_eqType :=
-    Eval hnf in EqType choice_code choice_code_eqMixin.
+  Canonical choice_type_eqMixin := EqMixin choice_type_eqP.
+  Canonical choice_type_eqType :=
+    Eval hnf in EqType choice_type choice_type_eqMixin.
 
-  Fixpoint choice_code_lt (t1 t2 : choice_code) :=
+  Fixpoint choice_type_lt (t1 t2 : choice_type) :=
   match t1, t2 with
   | chUnit, chUnit => false
   | chUnit, _ => true
@@ -168,23 +168,23 @@ Section choice_codeTypes.
   | chProd _ _, chBool => false
   | chProd _ _, chNat => false
   | chProd u1 u2, chProd w1 w2 =>
-    (choice_code_lt u1 w1) ||
-    (choice_code_eq u1 w1 && choice_code_lt u2 w2)
+    (choice_type_lt u1 w1) ||
+    (choice_type_eq u1 w1 && choice_type_lt u2 w2)
   | chProd _ _, _ => true
   | chMap _ _, chUnit => false
   | chMap _ _, chBool => false
   | chMap _ _, chNat => false
   | chMap _ _, chProd _ _ => false
   | chMap u1 u2, chMap w1 w2 =>
-    (choice_code_lt u1 w1) ||
-    (choice_code_eq u1 w1 && choice_code_lt u2 w2)
+    (choice_type_lt u1 w1) ||
+    (choice_type_eq u1 w1 && choice_type_lt u2 w2)
   | chMap _ _, _ => true
   | chOption _, chUnit => false
   | chOption _, chBool => false
   | chOption _, chNat => false
   | chOption _, chProd _ _ => false
   | chOption _, chMap _ _ => false
-  | chOption u, chOption w => choice_code_lt u w
+  | chOption u, chOption w => choice_type_lt u w
   | chOption _, _ => true
   | chFin n, chUnit => false
   | chFin n, chBool => false
@@ -195,10 +195,10 @@ Section choice_codeTypes.
   | chFin n, chFin n' => n < n'
   end.
 
-  Definition choice_code_leq (t1 t2 : choice_code) :=
-    choice_code_eq t1 t2 || choice_code_lt t1 t2.
+  Definition choice_type_leq (t1 t2 : choice_type) :=
+    choice_type_eq t1 t2 || choice_type_lt t1 t2.
 
-  Lemma choice_code_lt_transitive : transitive (T:=choice_code) choice_code_lt.
+  Lemma choice_type_lt_transitive : transitive (T:=choice_type) choice_type_lt.
   Proof.
     intros v u w h1 h2.
     induction u as [ | | | u1 ih1 u2 ih2 | u1 ih1 u2 ih2 | u ih | u]
@@ -249,8 +249,8 @@ Section choice_codeTypes.
       eapply ltn_trans. all: eauto.
   Qed.
 
-  Lemma choice_code_lt_areflexive :
-    ∀ x, ~~ choice_code_lt x x.
+  Lemma choice_type_lt_areflexive :
+    ∀ x, ~~ choice_type_lt x x.
   Proof.
     intros x.
     induction x as [ | | | x1 ih1 x2 ih2 | x1 ih1 x2 ih2 | x ih | x] in |- *.
@@ -268,9 +268,9 @@ Section choice_codeTypes.
     - rewrite ltnn. auto.
   Qed.
 
-  Lemma choice_code_lt_total_holds :
+  Lemma choice_type_lt_total_holds :
     ∀ x y,
-      ~~ (choice_code_test x y) ==> (choice_code_lt x y || choice_code_lt y x).
+      ~~ (choice_type_test x y) ==> (choice_type_lt x y || choice_type_lt y x).
   Proof.
     intros x y.
     induction x as [ | | | x1 ih1 x2 ih2| x1 ih1 x2 ih2| x ih| x]
@@ -282,7 +282,7 @@ Section choice_codeTypes.
       apply/implyP.
       move /nandP => H.
       apply/orP.
-      destruct (choice_code_test x1 y1) eqn:Heq.
+      destruct (choice_type_test x1 y1) eqn:Heq.
       + destruct H. 1: discriminate.
         move: ih2. move /implyP => ih2.
         specialize (ih2 H).
@@ -317,7 +317,7 @@ Section choice_codeTypes.
       apply/implyP.
       move /nandP => H.
       apply/orP.
-      destruct (choice_code_test x1 y1) eqn:Heq.
+      destruct (choice_type_test x1 y1) eqn:Heq.
       + destruct H. 1: discriminate.
         move: ih2. move /implyP => ih2.
         specialize (ih2 H).
@@ -347,64 +347,64 @@ Section choice_codeTypes.
               +++ left. apply/orP. left. assumption.
               +++ right. apply/orP. left. assumption.
     - destruct y. all: try (intuition; reflexivity).
-      unfold choice_code_lt.
-      unfold choice_code_test.
+      unfold choice_type_lt.
+      unfold choice_type_test.
       rewrite -neq_ltn.
       apply /implyP. auto.
   Qed.
 
-  Lemma choice_code_lt_asymmetric :
+  Lemma choice_type_lt_asymmetric :
     ∀ x y,
-      (choice_code_lt x y ==> ~~ choice_code_lt y x).
+      (choice_type_lt x y ==> ~~ choice_type_lt y x).
   Proof.
     intros x y.
     apply /implyP. move => H.
-    destruct (~~ choice_code_lt y x) eqn:Heq.
+    destruct (~~ choice_type_lt y x) eqn:Heq.
     - intuition.
     - move: Heq. move /negP /negP => Heq.
-      pose  (choice_code_lt_areflexive x) as Harefl.
+      pose  (choice_type_lt_areflexive x) as Harefl.
       move: Harefl. apply /implyP. rewrite implyNb.
       apply /orP. left.
-      apply (choice_code_lt_transitive _ _ _ H Heq).
+      apply (choice_type_lt_transitive _ _ _ H Heq).
   Qed.
 
-  Lemma choice_code_lt_total_not_holds :
+  Lemma choice_type_lt_total_not_holds :
     ∀ x y,
-      ~~ (choice_code_test x y) ==> (~~ (choice_code_lt x y && choice_code_lt y x)).
+      ~~ (choice_type_test x y) ==> (~~ (choice_type_lt x y && choice_type_lt y x)).
   Proof.
     intros x y. apply /implyP. intros Hneq.
-    pose (choice_code_lt_total_holds x y) as Htot.
+    pose (choice_type_lt_total_holds x y) as Htot.
     move: Htot. move /implyP => Htot. specialize (Htot Hneq).
     move: Htot. move /orP => Htot. apply /nandP. destruct Htot.
-    - right. pose (choice_code_lt_asymmetric x y) as Hasym.
+    - right. pose (choice_type_lt_asymmetric x y) as Hasym.
       move: Hasym. move /implyP => Hasym. specialize (Hasym H). assumption.
-    - left. pose (choice_code_lt_asymmetric y x) as Hasym.
+    - left. pose (choice_type_lt_asymmetric y x) as Hasym.
       move: Hasym. move /implyP => Hasym. specialize (Hasym H). assumption.
   Qed.
 
-  Lemma choice_code_lt_tot :
+  Lemma choice_type_lt_tot :
     ∀ x y,
-      (choice_code_lt x y || choice_code_lt y x || choice_code_eq x y).
+      (choice_type_lt x y || choice_type_lt y x || choice_type_eq x y).
   Proof.
     intros x y.
-    destruct (choice_code_eq x y) eqn:H.
+    destruct (choice_type_eq x y) eqn:H.
     - intuition.
     - apply/orP.
       left.
-      unfold choice_code_eq in H.
-      pose (choice_code_lt_total_holds x y).
+      unfold choice_type_eq in H.
+      pose (choice_type_lt_total_holds x y).
       move: i. move /implyP => i.
       apply i. apply/negP.
       intuition. move: H0. rewrite H. intuition.
   Qed.
 
-  Lemma choice_code_leqP : Ord.axioms choice_code_leq.
+  Lemma choice_type_leqP : Ord.axioms choice_type_leq.
   Proof.
     split => //.
-    - intro x. unfold choice_code_leq.
+    - intro x. unfold choice_type_leq.
       apply/orP. left. apply /eqP. reflexivity.
     - intros v u w h1 h2.
-      move: h1 h2. unfold choice_code_leq.
+      move: h1 h2. unfold choice_type_leq.
       move /orP => h1. move /orP => h2.
       destruct h1.
       + move: H. move /eqP => H. destruct H.
@@ -412,18 +412,18 @@ Section choice_codeTypes.
       + destruct h2.
         * move: H0. move /eqP => H0. destruct H0.
           apply/orP. right. assumption.
-        * apply/orP. right. exact (choice_code_lt_transitive _ _ _ H H0).
+        * apply/orP. right. exact (choice_type_lt_transitive _ _ _ H H0).
     - unfold antisymmetric.
-      move => x y. unfold choice_code_leq. move/andP => [h1 h2].
-      move: h1 h2. unfold choice_code_leq.
+      move => x y. unfold choice_type_leq. move/andP => [h1 h2].
+      move: h1 h2. unfold choice_type_leq.
       move /orP => h1. move /orP => h2.
       destruct h1.
       1:{ move: H. move /eqP. intuition auto. }
       destruct h2.
       1:{ move: H0. move /eqP. intuition auto. }
-      destruct (~~ (choice_code_test x y)) eqn:Heq.
+      destruct (~~ (choice_type_test x y)) eqn:Heq.
       + move: Heq. move /idP => Heq.
-        pose (choice_code_lt_total_not_holds x y) as Hp.
+        pose (choice_type_lt_total_not_holds x y) as Hp.
         move: Hp. move /implyP => Hp. specialize (Hp Heq).
         move: Hp. move /nandP => Hp.
         destruct Hp.
@@ -433,8 +433,8 @@ Section choice_codeTypes.
           discriminate.
       + move: Heq. move /eqP. auto.
     - unfold total.
-      intros x y. unfold choice_code_leq.
-      pose (choice_code_lt_tot x y).
+      intros x y. unfold choice_type_leq.
+      pose (choice_type_lt_tot x y).
       move: i. move /orP => H.
       destruct H.
       + move: H. move /orP => H.
@@ -445,7 +445,7 @@ Section choice_codeTypes.
   Qed.
 
 
-  Fixpoint encode (t : choice_code) : GenTree.tree nat :=
+  Fixpoint encode (t : choice_type) : GenTree.tree nat :=
   match t with
   | chUnit => GenTree.Leaf 1
   | chBool => GenTree.Leaf 2
@@ -456,7 +456,7 @@ Section choice_codeTypes.
   | chFin n => GenTree.Leaf ((4 + n) - 1)%N
   end.
 
-  Fixpoint decode (t : GenTree.tree nat) : option choice_code :=
+  Fixpoint decode (t : GenTree.tree nat) : option choice_type :=
     match t with
     | GenTree.Leaf 1 => Some chUnit
     | GenTree.Leaf 2 => Some chBool
@@ -496,12 +496,12 @@ Section choice_codeTypes.
         rewrite -subnE subn0. repeat f_equal. apply eq_irrelevance.
   Defined.
 
-  Definition choice_code_choiceMixin := PcanChoiceMixin codeK.
-  Canonical choice_code_choiceType :=
-    ChoiceType choice_code choice_code_choiceMixin.
+  Definition choice_type_choiceMixin := PcanChoiceMixin codeK.
+  Canonical choice_type_choiceType :=
+    ChoiceType choice_type choice_type_choiceMixin.
 
-  Definition choice_code_ordMixin := OrdMixin choice_code_leqP.
-  Canonical choice_code_ordType :=
-    Eval hnf in OrdType choice_code choice_code_ordMixin.
+  Definition choice_type_ordMixin := OrdMixin choice_type_leqP.
+  Canonical choice_type_ordType :=
+    Eval hnf in OrdType choice_type choice_type_ordMixin.
 
-End choice_codeTypes.
+End choice_typeTypes.

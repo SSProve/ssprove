@@ -33,7 +33,7 @@ From Crypt Require Import
      FreeProbProg
      RulesProb
      UniformDistrLemmas
-     choice_code
+     choice_type
      Prelude.
 
 Import SPropNotations.

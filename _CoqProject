@@ -22,7 +22,7 @@ theories/Relational/Commutativity.v
 
 theories/Crypt/Prelude.v
 theories/Crypt/Axioms.v
-theories/Crypt/choice_code.v
+theories/Crypt/choice_type.v
 
 # Categorical semantics
 

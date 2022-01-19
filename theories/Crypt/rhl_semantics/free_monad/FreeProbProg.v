@@ -2,7 +2,7 @@ Set Warnings "-notation-overridden".
 From mathcomp Require Import all_ssreflect boolp.
 Set Warnings "notation-overridden".
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
-From Crypt Require Import ChoiceAsOrd choice_code.
+From Crypt Require Import ChoiceAsOrd choice_type.
 From Crypt Require Import SubDistr.
 
 
@@ -24,8 +24,8 @@ the arity predicate (ar : S -> choiceType) would map each operation to bool
 Indeed we expect the environment to either return true or false after
 a Bernouilli sampling operation has been issued to it.
 
-We take S = { X: choice_code & SDistr X }, that is, each subdistribution
-sampling from a choiceType present in choice_code (a small universe of choiceTypes)
+We take S = { X: choice_type & SDistr X }, that is, each subdistribution
+sampling from a choiceType present in choice_type (a small universe of choiceTypes)
 is considered as being part of our probabilistic signature (S,P)
 where P : S -> choiceType is the first projection.
 
@@ -124,7 +124,7 @@ End RelativeFreeMonad.
 Section Unary_free_prob_monad.
 
   (* the type of probabilistic operations*)
-  Definition P_OP  := { X : choice_code & SDistr X }.
+  Definition P_OP  := { X : choice_type & SDistr X }.
 
   (* the arities for operations in OPP*)
   Definition P_AR : P_OP -> choiceType :=

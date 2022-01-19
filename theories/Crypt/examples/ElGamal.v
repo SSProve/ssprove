@@ -16,7 +16,7 @@ From Mon Require Import SPropBase.
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_core_definition choice_code pkg_composition pkg_rhl Package Prelude
+  pkg_core_definition choice_type pkg_composition pkg_rhl Package Prelude
   AsymScheme.
 
 From Coq Require Import Utf8.
@@ -117,10 +117,10 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
     exact _.
   Qed.
 
-  Definition chPlain  : choice_code := 'fin #|gT|.
-  Definition chPubKey : choice_code := 'fin #|gT|.
-  Definition chCipher : choice_code := 'fin #|Cipher|.
-  Definition chSecKey : choice_code := 'fin #|SecKey|.
+  Definition chPlain  : choice_type := 'fin #|gT|.
+  Definition chPubKey : choice_type := 'fin #|gT|.
+  Definition chCipher : choice_type := 'fin #|Cipher|.
+  Definition chSecKey : choice_type := 'fin #|SecKey|.
 
   Definition counter_loc : Location := ('nat ; 0%N).
   Definition pk_loc : Location := (chPubKey ; 1%N).
