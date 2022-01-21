@@ -52,6 +52,7 @@ theories/Crypt/rules/RulesProb.v
 
 # Decategorified semantics
 theories/Crypt/semantics/unary.v
+theories/Crypt/semantics/binary.v
 
 
 # Crypto

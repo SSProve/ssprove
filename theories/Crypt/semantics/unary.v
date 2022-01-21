@@ -32,6 +32,42 @@ Proof.
   apply: eq_psum=> a; f_equal; by rewrite fg.
 Qed.
 
+(* Lemma dlet_restr [A B : choiceType] (m : {distr A/R}) *)
+(*       (f : A -> {distr B /R}) : *)
+(*   \dlet_(x <- m) f x = \dlet_(x <- m) drestr [pred _ | m x != 0%R] (f x). *)
+(* Proof. *)
+(*   apply: distr_ext=> z; rewrite 2!dletE. *)
+(*   apply: eq_psum=> a; case E: (m a == 0)%R=> /=; last by rewrite drestrE. *)
+(*   move: E=> /eqP ->; by rewrite 2!GRing.mul0r. *)
+(* Qed. *)
+
+Lemma eq_dlet_partial [A B : choiceType] (m : {distr A/R})
+      (f g : A -> {distr B /R}) :
+  (forall x, m x <> 0%R -> f x = g x) -> \dlet_(x <- m) f x = \dlet_(x <- m) g x.
+Proof.
+  move=> fg; apply: distr_ext=> i; rewrite 2!dletE.
+  apply: eq_psum=> a; case E: (m a == 0)%R=> /=.
+  + move: E=> /eqP ->; by rewrite 2!GRing.mul0r.
+  + f_equal; rewrite fg=> //; apply/(_ =P _); exact (negbT E).
+Qed.
+
+
+
+
+(* two helper functions to help with convoy patterns on bool
+   (is there an idiomatic ssreflect/mathcomp way to do that ?) *)
+Definition bool_depelim (X : Type) (b : bool) (htrue : b = true -> X) (hfalse : b = false -> X) : X :=
+  (if b as b0 return b = b0 -> X then htrue else hfalse) erefl.
+
+Lemma bool_depelim_true (X : Type) (b : bool) (htrue : b = true -> X) (hfalse : b = false -> X) (e : b = true) : bool_depelim X b htrue hfalse = htrue e.
+Proof. by depelim e. Qed.
+
+(* helper lemma for multiplication of reals *)
+Lemma R_no0div : forall u v : R, (u * v <> 0 -> u <> 0 /\ v <> 0)%R.
+Proof.
+  move=> u v uv; split; move: uv; apply contra_not=> ->; [apply: GRing.mul0r|apply: GRing.mulr0].
+Qed.
+
 (** Definition of the model for the unary semantics *)
 
 Module Def.
@@ -70,6 +106,26 @@ Section Def.
     by rewrite dlet_dlet.
   Qed.
 
+
+  Lemma bind_not_null [A B : choiceType] (m : stsubdistr A) (f : A -> stsubdistr B)
+    : forall map p, bind m f map p <> 0%R -> exists p0, m map p0 <> 0%R /\ f p0.1 p0.2 p <> 0%R.
+  Proof.
+    move=> map p; rewrite /bind dletE=> /neq0_psum [p0] /R_no0div ? ;by exists p0.
+  Qed.
+
+  Definition bind_restr [A B : choiceType] (m : stsubdistr A) (P : pred A) (f : forall (a : A), P a -> stsubdistr B) : stsubdistr B :=
+    let f' (a : A) := bool_depelim (stsubdistr B) (P a) (fun h => f a h) (fun _ _ => dnull) in
+    Def.bind m f'.
+
+  Lemma bind_restr_not_null [A B : choiceType] (m : stsubdistr A) (P : pred A) (f : forall (a : A), P a -> stsubdistr B)
+        (hP : forall map p, m map p <> 0%R -> P p.1) :
+    forall map p, bind_restr m P f map p <> 0%R -> exists p0, {hm : m map p0 <> 0%R | f p0.1 (hP _ _ hm) p0.2 p <> 0%R }.
+  Proof.
+    move=> map p /bind_not_null [p0 [hm0 hf0]].
+    exists p0; exists hm0; move: hf0.
+    rewrite bool_depelim_true; first apply: (hP _ _ hm0).
+    move=> hb; by rewrite (bool_irrelevance (hP _ _ _) hb).
+  Qed.
 
   Section Order.
     Context [A : choiceType].
@@ -155,12 +211,6 @@ Section Evaluation.
      defining evaluation on raw_code, and providing the adequate
      rules/hoare triples only on valid code.
    *)
-  (* two helper functions for the convoy pattern (is there an idiomatic ssreflect/mathcomp way to do that ?) *)
-  Definition bool_depelim (X : Type) (b : bool) (htrue : b = true -> X) (hfalse : b = false -> X) : X :=
-    (if b as b0 return b = b0 -> X then htrue else hfalse) erefl.
-
-  Lemma bool_depelim_true (X : Type) (b : bool) (htrue : b = true -> X) (hfalse : b = false -> X) (e : b = true) : bool_depelim X b htrue hfalse = htrue e.
-  Proof. by depelim e. Qed.
 
   Definition eval [A : choiceType] : raw_code A -> M A.
   Proof.
@@ -272,17 +322,6 @@ Section Evaluation.
       extensionality x; rewrite (ih x _) //.
   Qed.
 
-  (* Two helper lemmas *)
-  Lemma R_no0div : forall u v : R, (u * v <> 0 -> u <> 0 /\ v <> 0)%R.
-  Proof.
-    move=> u v uv; split; move: uv; apply contra_not=> ->; [apply: GRing.mul0r|apply: GRing.mulr0].
-  Qed.
-
-  Lemma bind_not_null [A B : choiceType] (m : M A) (f : A -> M B)
-    : forall map p, Def.bind m f map p <> 0%R -> exists p0, m map p0 <> 0%R /\ f p0.1 p0.2 p <> 0%R.
-  Proof.
-    move=> map p; rewrite /Def.bind dletE=> /neq0_psum [p0] /R_no0div ? ;by exists p0.
-  Qed.
 
   Lemma bind_rule [A B : choiceType] (m : C A) (f : A -> C B) prem postm pref postf:
     ⊨ ⦃ prem ⦄ m ⦃ p, postm p ⦄ ->
@@ -290,7 +329,7 @@ Section Evaluation.
     ⊨ ⦃ bind_pre prem postm pref ⦄ bind m f ⦃ p, bind_post postm postf p ⦄.
   Proof.
     move=> hm hf map /andP[/= hprem /asboolP hpostmpref].
-    rewrite eval_bind => p /bind_not_null [p0 [hevm hevf]].
+    rewrite eval_bind => p /Def.bind_not_null [p0 [hevm hevf]].
     apply/asboolP; exists p0. apply/implyP=> hpostm.
     move: (hpostmpref p0); rewrite hpostm /= => hpref.
     apply: (hf _ _ hpref)=> //.
