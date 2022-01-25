@@ -101,7 +101,6 @@ Section Executor.
       then (ch_nat l v)
       else st l'.
 
-
   Fixpoint Run_aux {A : choiceType}
            (c : raw_code A) (seed : nat) (st : Location → NatState)
     : option A :=
@@ -109,8 +108,8 @@ Section Executor.
       ret x => Some x
     | sampler o k =>
         match sample (projT1 o) seed with
-          | Some (seed', x) => Run_aux (k x) seed' st
-          | _ => None
+        | Some (seed', x) => Run_aux (k x) seed' st
+        | _ => None
         end
     | opr o x k => None (* Calls should be inlined before we can run the program *)
     | putr l v k => Run_aux k seed (new_state st l v)
@@ -187,5 +186,23 @@ Section Test.
   Proof.
     done.
   Qed.
+
+  Definition E :=
+    [interface
+       val #[ 0 ] : 'nat → 'nat
+    ].
+
+  Definition test_pack:
+    package locs [interface] E :=
+    [package
+       def #[ 0 ] (x : 'nat) : 'nat
+       {
+         k ← sample uniform 20 ;;
+         let y := (x + k)%N in
+         put loc := y ;;
+         y' ← get loc ;;
+         ret y'
+       }
+    ].
 
 End Test.

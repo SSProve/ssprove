@@ -139,7 +139,7 @@ Definition i_public := #|Public|.
 
 Module Type CDSParams <: SigmaProtocolParams.
   Definition Witness : finType := Secret.
-  Definition Statement : finType := (prod_finType (prod_finType Public Public) Public).
+  Definition Statement : finType := prod_finType (prod_finType Public Public) Public.
 
   Definition Witness_pos : Positive #|Witness| := Secret_pos.
   Definition Statement_pos : Positive #|Statement|.
@@ -152,9 +152,8 @@ Module Type CDSParams <: SigmaProtocolParams.
 
   Definition R : Statement -> Witness -> bool :=
     λ (h : Statement) (x : Witness),
-      let '(gx, gy, gyv) := h in
-      (gx * g ^+ invg x == gyv ^+ invg x * invg gy * invg (g ^+ 0)) ||
-      (gx == gyv * invg gy * invg (g ^+ 1)).
+      let '(gx, gy, gyxv) := h in
+      (gy^+x * g^+0 == gyxv) || (gy^+x * g^+1 == gyxv).
 
   Lemma relation_valid_left:
     ∀ (x : Secret) (gy : Public),
@@ -162,15 +161,9 @@ Module Type CDSParams <: SigmaProtocolParams.
   Proof.
     intros x gy.
     unfold R.
-    rewrite expg0.
-    rewrite mulg1.
     apply /orP ; left.
-    rewrite invg1 mulg1.
-    have Hgy: exists y, gy = g^+y.
-    { apply /cycleP. rewrite -g_gen. apply: in_setT. }
-    destruct Hgy as [y Hgy]. subst.
-    simpl.
-  Admitted.
+    done.
+  Qed.
 
   Lemma relation_valid_right:
     ∀ (x : Secret) (gy : Public),
@@ -178,12 +171,9 @@ Module Type CDSParams <: SigmaProtocolParams.
   Proof.
     intros x y.
     unfold R.
-    rewrite expg0.
-    rewrite invg1.
-    rewrite mulg1.
     apply /orP ; right.
-  Admitted.
-
+    done.
+  Qed.
 
   Parameter Message Challenge Response State : finType.
   Parameter w0 : Witness.
@@ -252,48 +242,11 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
   #[local] Hint Extern 3 (is_true (?l \notin ?L0 :|: ?L1)) =>
     apply not_in_fsetU : typeclass_instances ssprove_valid_db ssprove_invariant.
 
-  Definition prod_gT (xs : list gT) : gT :=
-    foldr (λ a b, a * b) 1 xs.
-
-  Lemma prod_gT_aux xs ys y:
-    prod_gT (xs ++ y :: ys) = prod_gT (y :: xs ++ ys).
-  Proof.
-    induction xs.
-    - done.
-    - simpl.
-      rewrite IHxs.
-      simpl.
-      rewrite group_prodC.
-      rewrite -mulgA.
-      f_equal.
-      rewrite group_prodC.
-      done.
-  Qed.
-
-  Lemma prod_gT_cat xs ys:
-    prod_gT (xs ++ ys) = prod_gT xs * prod_gT ys.
-  Proof.
-    induction ys.
-    - simpl.
-      by rewrite cats0 mulg1.
-    - simpl.
-      have -> : prod_gT xs * (a * prod_gT ys) = prod_gT xs * prod_gT ys * a.
-      { rewrite -mulgA. f_equal. by rewrite group_prodC. }
-      rewrite -IHys.
-      rewrite prod_gT_aux.
-      simpl.
-      rewrite group_prodC.
-      done.
-  Qed.
-
   Definition get_value (m : chMap pid (chProd public choiceTranscript1)) (i : pid) :=
     match m i with
     | Some (v, _) => otf v
     | _ => 1
     end.
-
-  Definition map_prod (m : chMap pid (chProd public choiceTranscript1)) :=
-    \prod_(i <- domm m) (get_value m i).
 
   Lemma helper
         (i : pid)
@@ -310,85 +263,6 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
 
   Canonical finGroup_com_law := Monoid.ComLaw group_prodC.
 
-  Lemma map_prod_setm
-        (i : pid)
-        (v : chProd public choiceTranscript1)
-        (m : chMap pid (chProd public choiceTranscript1)):
-    map_prod (setm m i v) = map_prod (remm m i) * (otf v.1).
-  Proof.
-    unfold map_prod.
-    simpl.
-    rewrite helper.
-    rewrite domm_set.
-    simpl.
-    set X := domm _.
-    rewrite big_fsetU1.
-    2: {
-      subst X.
-      rewrite domm_rem.
-      unfold not.
-      apply /negPn.
-      unfold not.
-      rewrite in_fsetD => H.
-      move: H => /andP H.
-      destruct H as [H _].
-      move: H => /negPn H.
-      apply H.
-      by rewrite in_fset1.
-    }
-    simpl.
-    unfold get_value.
-    rewrite !setmE.
-    rewrite eq_refl.
-    destruct v as [x ?].
-    rewrite group_prodC.
-    f_equal.
-    rewrite !big_seq.
-    subst X.
-    rewrite domm_rem.
-    erewrite eq_bigr.
-    1: done.
-    intros k k_in.
-    rewrite -helper.
-    simpl.
-    rewrite setmE remmE.
-    case (eq_op) eqn:eq.
-    - move: eq => /eqP eq.
-      rewrite eq in k_in.
-      rewrite in_fsetD1 in k_in.
-      move: k_in => /andP [contra].
-      unfold negb in contra.
-      rewrite eq_refl in contra.
-      discriminate.
-    - done.
-  Qed.
-
-  Lemma domm_set':
-    ∀ (T : ordType) (S : Type) (m : {fmap T → S}) (k : T) (v : S), domm (T:=T) (S:=S) (setm (T:=T) m k v) = k |: domm (T:=T) (S:=S) (remm m k).
-  Proof.
-    intros T S m k v.
-    apply/eq_fset => k';
-    apply /(sameP dommP) /(iffP idP);
-    rewrite setmE in_fsetU1.
-    - case /orP=> [->|].
-      + eauto.
-      + move=> /dommP.
-        rewrite remmE.
-        intros [v' ?].
-        case eq_op in H.
-        ++ discriminate.
-        ++ case eq_op; eauto.
-    - rewrite mem_domm.
-      rewrite remmE.
-      intros H.
-      apply /orP.
-      case (k' == k) eqn:eq.
-      + by left.
-      + right.
-        destruct H as [v' ->].
-        done.
-  Qed.
-
   Definition compute_key
              (m : chMap pid (chProd public choiceTranscript1))
              (i : pid)
@@ -396,58 +270,6 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     let low := \prod_(k <- domm m | (k < i)%ord) (get_value m k) in
     let high := \prod_(k <- domm m | (i < k)%ord) (get_value m k) in
     low * invg high.
-
-  Definition get_value_no_zkp (m : chMap pid public) (i : pid) :=
-    match m i with
-    | Some v => otf v
-    | _ => 1
-    end.
-
-  Definition compute_key_no_zkp
-             (m : chMap pid public)
-             (i : pid)
-    :=
-    let low := \prod_(k <- domm m | (k < i)%ord) (get_value_no_zkp m k) in
-    let high := \prod_(k <- domm m | (i < k)%ord) (get_value_no_zkp m k) in
-    low * invg high.
-
-  Lemma compute_key_ignore_zkp
-             (m : chMap pid (chProd public choiceTranscript1))
-             (i j : pid)
-             zk x:
-    compute_key (setm m j (x, zk)) i = compute_key_no_zkp (setm (mapm fst m) j x) i.
-  Proof.
-    unfold compute_key, compute_key_no_zkp.
-    simpl.
-    rewrite !domm_set.
-    rewrite domm_map.
-    f_equal.
-    - erewrite eq_bigr.
-      1: done.
-      intros k k_lt.
-      unfold get_value, get_value_no_zkp.
-      rewrite !setmE mapmE.
-      case (eq_op).
-      1: reflexivity.
-      destruct (m k) eqn:eq_m.
-      + rewrite eq_m.
-        destruct s.
-        done.
-      + by rewrite eq_m.
-    - f_equal.
-      erewrite eq_bigr.
-      1: done.
-      intros k k_lt.
-      unfold get_value, get_value_no_zkp.
-      rewrite !setmE mapmE.
-      case (eq_op).
-      1: reflexivity.
-      destruct (m k) eqn:eq_m.
-      + rewrite eq_m.
-        destruct s.
-        done.
-      + by rewrite eq_m.
-  Qed.
 
   Definition compute_key'
              (m : chMap pid (chProd public choiceTranscript1))
@@ -463,51 +285,6 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
       let high := \prod_(k <- domm m | (i < k)%ord) (get_value m k) in
       low * invg (high * (g ^+ x)).
 
-  Lemma filterm_step
-        (i : pid)
-        (keys : chMap pid (chProd public choiceTranscript1))
-        (pred : pid → (chProd public choiceTranscript1) → bool)
-    :
-    filterm pred keys =
-      match (keys i) with
-      | Some e => if (pred i e) then setm (filterm (λ k v, (pred k v) && (k != i)) keys) i e
-                               else (filterm (λ k v, (pred k v)) keys)
-      | _ => (filterm (λ k v, (pred k v)) keys)
-      end.
-  Proof.
-    simpl.
-    case (keys i) eqn:eq ; rewrite eq.
-    2: done.
-    case (pred i s) eqn:eq_pred.
-    2: done.
-    rewrite -eq_fmap.
-    intros k.
-    case (k == i) eqn:eq_k.
-    + rewrite filtermE.
-      rewrite setmE.
-      rewrite filtermE.
-      rewrite eq_k.
-      move: eq_k => /eqP eq_k.
-      rewrite -eq_k in eq.
-      rewrite -eq_k in eq_pred.
-      rewrite eq.
-      simpl.
-      rewrite eq_pred.
-      done.
-    + rewrite filtermE.
-      rewrite setmE.
-      rewrite filtermE.
-      rewrite eq_k.
-      simpl.
-      case (keys k) eqn:eq'.
-      ++ rewrite eq'.
-         simpl.
-         rewrite Bool.andb_true_r.
-         done.
-      ++ rewrite eq'.
-         done.
-  Qed.
-
   Lemma compute_key'_equiv
         (i j : pid)
         (x : Secret)
@@ -520,10 +297,7 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     unfold compute_key, compute_key'.
     simpl.
     case (j < i)%ord eqn:e.
-    - rewrite e.
-      rewrite helper.
-      simpl.
-      rewrite domm_set domm_rem.
+    - rewrite e helper domm_set domm_rem.
       set X := domm _.
       rewrite !big_fsetU1.
       2: {
@@ -546,16 +320,12 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
         apply H.
         by rewrite in_fset1.
       }
-      rewrite -helper.
-      rewrite e.
-      simpl.
-      rewrite -mulgA.
-      rewrite -mulgA.
+      rewrite -helper e.
+      rewrite -2!mulgA.
       f_equal.
-      { unfold get_value. by rewrite setmE eq_refl otf_fto. }
+      1: unfold get_value ; by rewrite setmE eq_refl otf_fto.
       f_equal.
-      + simpl.
-        rewrite big_seq_cond.
+      + rewrite big_seq_cond.
         rewrite [RHS] big_seq_cond.
         unfold get_value.
         erewrite eq_bigr.
@@ -571,8 +341,7 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
            rewrite eq_refl in contra.
            discriminate.
         ++ by rewrite eq.
-    + rewrite Ord.ltNge in e.
-      rewrite Ord.leq_eqVlt in e.
+    + rewrite Ord.ltNge Ord.leq_eqVlt in e.
       rewrite negb_or in e.
       move: e => /andP e.
       destruct e as [_ e].
@@ -587,7 +356,6 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
       1: done.
       intros k k_in.
       move: k_in => /andP [k_in k_lt].
-      simpl.
       rewrite setmE remmE.
       case (k == j) eqn:eq.
       ++ move: eq => /eqP eq.
@@ -596,10 +364,7 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
           rewrite eq_refl in contra.
           discriminate.
       ++ by rewrite eq.
-    - rewrite e.
-      rewrite helper.
-      simpl.
-      rewrite domm_set domm_rem.
+    - rewrite e helper domm_set domm_rem.
       set X := domm _.
       rewrite !big_fsetU1.
       2: {
@@ -629,9 +394,7 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
       rewrite Ord.leq_eqVlt in e.
       move: e => /orP [contra|e].
       1: by rewrite contra in ij_neq.
-      rewrite e.
-      simpl.
-      rewrite !invMg.
+      rewrite e !invMg.
       f_equal.
       {
         rewrite big_seq_cond.
@@ -661,7 +424,6 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
       1: done.
       intros k k_in.
       move: k_in => /andP [k_in k_lt].
-      simpl.
       rewrite setmE remmE.
       case (k == j) eqn:eq.
       ++ move: eq => /eqP eq.
@@ -1191,153 +953,6 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
         }
     ].
 
-  (* Definition Init (id : pid) : *)
-  (*   code fset0 *)
-  (*     [interface *)
-  (*        val #[ Sigma1.Sigma.VERIFY ] : chTranscript1 → 'bool ; *)
-  (*        val #[ Sigma1.Sigma.RUN ] : chRelation1 → chTranscript1 *)
-  (*     ] (chProd secret (chProd public choiceTranscript1)) := *)
-  (*   {code *)
-  (*     #import {sig #[ Sigma1.Sigma.RUN ] : chRelation1 → chTranscript1} as ZKP ;; *)
-  (*     #import {sig #[ Sigma1.Sigma.VERIFY ] : chTranscript1 → 'bool} as VER ;; *)
-  (*     x ← sample uniform i_secret ;; *)
-  (*     let y := (fto (g ^+ (otf x))) : public in *)
-  (*       zkp ← ZKP (y, x) ;; *)
-  (*       ret (x, (y, zkp)) *)
-  (*   }. *)
-
-  (* Definition Construct_key (i : pid) (m : chMap pid (chProd public choiceTranscript1)): *)
-  (*   code fset0 *)
-  (*     [interface *)
-  (*        val #[ Sigma1.Sigma.VERIFY ] : chTranscript1 → 'bool *)
-  (*     ] 'public := *)
-  (*   {code *)
-  (*     #import {sig #[ Sigma1.Sigma.VERIFY ] : chTranscript1 → 'bool} as VER ;; *)
-  (*     #assert (size (domm m) == n) ;; *)
-  (*     let key := compute_key m i in *)
-  (*     @ret 'public (fto key) *)
-  (*   }. *)
-
-  (* Definition SETUP_I := *)
-  (*     [interface *)
-  (*        val #[ Sigma1.Sigma.VERIFY ] : chTranscript1 → 'bool ; *)
-  (*        val #[ Sigma1.Sigma.RUN ] : chRelation1 → chTranscript1 *)
-  (*     ]. *)
-
-  (* Definition SETUP_E := [interface val #[ INIT ] : 'unit → 'unit]. *)
-
-  (* Notation " 'setup " := (chProd secret public) (in custom pack_type at level 2). *)
-
-  (* Equations? SETUP_real (m : chMap pid (chProd public choiceTranscript1)) *)
-  (*          (i j : pid) : *)
-  (*   package public_locs *)
-  (*     SETUP_I *)
-  (*     SETUP_E := *)
-  (*   SETUP_real m i j := *)
-  (*   [package *)
-  (*       def #[ INIT ] (_ : 'unit) : 'setup *)
-  (*       { *)
-  (*         r1 ← Init i ;; *)
-  (*         r2 ← Init j ;; *)
-  (*         let '(x1, zkp1) := r1 in *)
-  (*         let '(x2, zkp2) := r2 in *)
-  (*         let m' := (setm (setm m j zkp2) i zkp1) in *)
-  (*         put public_keys_loc := m' ;; *)
-  (*         ckey ← Construct_key i m' ;; *)
-  (*         ret (x1, ckey) *)
-  (*       } *)
-  (*   ]. *)
-  (* Proof. *)
-  (*   ssprove_valid. *)
-  (*   unfold ValidPackage. *)
-  (*   eapply pack_valid. *)
-  (*   all: eapply valid_injectMap. *)
-  (*   2,4,6: eapply valid_injectLocations. *)
-  (*   3,5: apply Init. *)
-  (*   5: apply Construct_key. *)
-  (*   all: try fsubset_auto. *)
-  (*   all: apply fsubsetxx. *)
-  (* Qed. *)
-
-  (* Definition SETUP_ideal (m : chMap pid (chProd public choiceTranscript1)) *)
-  (*            (i j : pid) *)
-  (*            (f : secret → secret): *)
-  (*   package all_locs *)
-  (*     SETUP_I *)
-  (*     SETUP_E := *)
-  (*   [package *)
-  (*       def #[ INIT ] (_ : 'unit) : 'unit *)
-  (*       { *)
-  (*       #import {sig #[ Sigma1.Sigma.VERIFY ] : chTranscript1 → 'bool} as VER ;; *)
-  (*       #import {sig #[ Sigma1.Sigma.RUN ] : chRelation1 → chTranscript1} as ZKP ;; *)
-  (*       zkp1 ← Init i ;; *)
-  (*       x ← sample uniform i_secret ;; *)
-  (*       secrets ← get secret_keys_loc ;; *)
-  (*       put secret_keys_loc := setm secrets j x ;; *)
-  (*       let y := (fto (g ^+ (otf ((finv f) x)))) : public in *)
-  (*         zkp2 ← ZKP (y, (finv f) x) ;; *)
-  (*         public ← get public_keys_loc ;; *)
-  (*         put public_keys_loc := setm public j (y, zkp2) ;; *)
-  (*         put public_keys_loc := (setm (setm m j (y, zkp2)) i zkp1) ;; *)
-  (*         keys ← get public_keys_loc ;; *)
-  (*         #assert (size (domm keys) == n) ;; *)
-  (*         let key := g ^+ (otf x) in *)
-  (*           constructed_keys ← get constructed_keys_loc ;; *)
-  (*           put constructed_keys_loc := setm constructed_keys i (fto key) ;; *)
-  (*           @ret 'unit Datatypes.tt *)
-  (*       } *)
-  (*   ]. *)
-
-  (* Definition VOTE_E := [interface val #[ VOTE ] : 'bool → 'public]. *)
-
-  (* Definition Vote_i (i : pid) (b : bool) : *)
-  (*   package all_locs *)
-  (*     [interface] *)
-  (*     VOTE_E *)
-  (*   := *)
-  (*   [package *)
-  (*       def #[ VOTE ] (v : 'bool) : 'public *)
-  (*       { *)
-  (*         skeys ← get secret_keys_loc ;; *)
-  (*         #assert (isSome (skeys i)) as x_some ;; *)
-  (*         ckeys ← get constructed_keys_loc ;; *)
-  (*         #assert (isSome (ckeys i)) as y_some ;; *)
-  (*         let x := (getSome (skeys i) x_some) in *)
-  (*         let 'y := (getSome (ckeys i) y_some) in *)
-  (*         if b then *)
-  (*           let vote := ((otf y) ^+ x * g ^+ v) in *)
-  (*           @ret 'public (fto vote) *)
-  (*         else *)
-  (*           let vote := ((otf y) ^+ x * g ^+ (negb v)) in *)
-  (*           @ret 'public (fto vote) *)
-  (*       } *)
-  (*   ]. *)
-
-  (* Equations? P_i (i : pid): *)
-  (*   package fset0 *)
-  (*     (VOTE_E :|: SETUP_E) *)
-  (*     [interface val #[ P i ] : 'bool → 'public] *)
-  (*   := P_i i := *)
-  (*   [package *)
-  (*       def #[ P i ] (v : 'bool) : 'public *)
-  (*       { *)
-  (*         #import {sig #[ INIT ] : 'unit → 'unit} as Setup ;; *)
-  (*         #import {sig #[ VOTE ] : 'bool → 'public} as Vote ;; *)
-  (*         Setup Datatypes.tt ;; *)
-  (*         vote ← Vote v ;; *)
-  (*         @ret 'public vote *)
-  (*       } *)
-  (*   ]. *)
-  (* Proof. *)
-  (*   ssprove_valid. *)
-  (*   - rewrite in_fsetU ; apply /orP ; right. in_fset_auto. *)
-  (*   - rewrite in_fsetU ; apply /orP ; left. *)
-  (*     unfold VOTE_E. *)
-  (*     rewrite fset_cons -fset0E in_fset. *)
-  (*     apply /fset1P. *)
-  (*     done. *)
-  (* Qed. *)
-
   Module DDHParams <: DDHParams.
     Definition Space := Secret.
     Definition Space_pos := Secret_pos.
@@ -1389,11 +1004,6 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
       by apply /fset1P.
     }
   Qed.
-
-  (* Proof overview: *)
-  (* 1: In Setup, the constructed vote can be replace by an random vote *)
-  (* 2: P_i \circ (par VOTE_real SETUP_real) ≈ Aux \circ DDH_real *)
-  (* 3: P_i \circ (par VOTE_ideal SETUP_real) ≈ Aux \circ DDH_ideal *)
 
   Module RO1 := Sigma1.Sigma.Oracle.
   Module RO2 := Sigma2.Oracle.
@@ -1447,6 +1057,273 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
       rewrite -fset0E fsetU0 fset0U.
       apply fsubsetUr.
   Qed.
+
+
+  Lemma loc_helper_commit i:
+    Sigma1.MyAlg.commit_loc \in P_i_locs i :|: combined_locations.
+  Proof.
+    unfold combined_locations.
+    unfold Sigma1.MyAlg.Sigma_locs.
+    rewrite in_fsetU.
+    apply /orP ; right.
+    rewrite fset_cons.
+    rewrite in_fsetU.
+    apply /orP ; left.
+    rewrite in_fsetU1.
+    apply /orP ; left.
+    done.
+  Qed.
+
+  Lemma loc_helper_queries i:
+    RO1.queries_loc \in P_i_locs i :|: combined_locations.
+  Proof.
+    unfold combined_locations.
+    unfold RO1.RO_locs.
+    rewrite in_fsetU.
+    apply /orP ; right.
+    rewrite fset_cons.
+    rewrite in_fsetU.
+    apply /orP ; right.
+    rewrite in_fsetU1.
+    apply /orP ; left.
+    done.
+  Qed.
+
+  Lemma loc_helper_skey i:
+    skey_loc i \in P_i_locs i :|: combined_locations.
+  Proof.
+    unfold P_i_locs.
+    rewrite in_fsetU.
+    apply /orP ; left.
+    rewrite fset_cons.
+    rewrite in_fsetU1.
+    apply /orP ; left.
+    done.
+  Qed.
+
+  Lemma loc_helper_ckey i:
+    ckey_loc i \in P_i_locs i :|: combined_locations.
+  Proof.
+    unfold P_i_locs.
+    rewrite in_fsetU.
+    apply /orP ; left.
+    rewrite !fset_cons.
+    rewrite in_fsetU1.
+    apply /orP ; right.
+    rewrite in_fsetU1.
+    apply /orP ; left.
+    done.
+  Qed.
+
+  #[local] Hint Resolve loc_helper_commit : loc_db.
+  #[local] Hint Resolve loc_helper_queries : loc_db.
+  #[local] Hint Resolve loc_helper_skey: loc_db.
+  #[local] Hint Resolve loc_helper_ckey: loc_db.
+
+  #[program] Definition Exec_i_realised_code m (i j : pid) (vote : 'bool):
+    code (P_i_locs i :|: combined_locations) [interface] 'public :=
+    {code
+     x ← sample uniform i_secret ;;
+     put skey_loc i := x ;;
+     #assert Sigma1.MyParam.R (otf (fto (expgn_rec (T:=gT) g (otf x)))) (otf x) ;;
+     x1 ← sample uniform Sigma1.MyAlg.i_witness ;;
+     put Sigma1.MyAlg.commit_loc := x1 ;;
+     x2 ← get RO1.queries_loc ;;
+     match x2 (Sigma1.Sigma.prod_assoc (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)))) with
+     | Some a =>
+         v ← get Sigma1.MyAlg.commit_loc ;;
+         x3 ← sample uniform i_secret ;;
+         #assert Sigma1.MyParam.R (otf (fto (expgn_rec (T:=gT) g (otf x3)))) (otf x3) ;;
+         x5 ← sample uniform Sigma1.MyAlg.i_witness ;;
+         put Sigma1.MyAlg.commit_loc := x5 ;;
+         v0 ← get RO1.queries_loc ;;
+         match v0 (Sigma1.Sigma.prod_assoc (fto (expgn_rec (T:=gT) g (otf x3)), fto (expgn_rec (T:=gT) g (otf x5)))) with
+         | Some a0 =>
+             x6 ← get Sigma1.MyAlg.commit_loc ;;
+             let x4 :=
+             (fto (expgn_rec (T:=gT) g (otf x3)), fto (expgn_rec (T:=gT) g (otf x5)), a0, fto (Zp_add (otf x6) (Zp_mul (otf a0) (otf x3))))
+             in
+         #assert eqn
+                    (size
+                       (domm (T:=[ordType of 'I_#|'I_n|]) (S:='I_#|gT| * ('I_#|gT| * 'I_#|gT| * 'I_#|'Z_Sigma1.q| * 'I_#|'Z_Sigma1.q|))
+                          (setm (T:=[ordType of 'I_#|'I_n|]) (setm (T:=[ordType of 'I_#|'I_n|]) m j (fto (expgn_rec (T:=gT) g (otf x3)), x4)) i
+                             (fto (expgn_rec (T:=gT) g (otf x)),
+                             (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)), a, fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))))) n ;;
+          put ckey_loc i := fto
+                              (compute_key
+                                 (setm (T:=[ordType of 'I_#|'I_n|]) (setm (T:=[ordType of 'I_#|'I_n|]) m j (fto (expgn_rec (T:=gT) g (otf x3)), x4)) i
+                                    (fto (expgn_rec (T:=gT) g (otf x)),
+                                    (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)), a,
+                                    fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))) i) ;;
+         v0 ← get skey_loc i ;;
+         v1 ← get ckey_loc i ;;
+         @ret 'public (fto (expgn_rec (T:=gT) (otf v1) v0 * expgn_rec (T:=gT) g vote))
+         | None =>
+             a0 ← sample uniform RO1.i_random ;;
+             put RO1.queries_loc := setm v0
+                                      (Sigma1.Sigma.prod_assoc (fto (expgn_rec (T:=gT) g (otf x3)), fto (expgn_rec (T:=gT) g (otf x5)))) a0 ;;
+             x6 ← get Sigma1.MyAlg.commit_loc ;;
+             let x4 := (fto (expgn_rec (T:=gT) g (otf x3)), fto (expgn_rec (T:=gT) g (otf x5)), a0, fto (Zp_add (otf x6) (Zp_mul (otf a0) (otf x3)))) in
+         #assert eqn
+                    (size
+                       (domm (T:=[ordType of 'I_#|'I_n|]) (S:='I_#|gT| * ('I_#|gT| * 'I_#|gT| * 'I_#|'Z_Sigma1.q| * 'I_#|'Z_Sigma1.q|))
+                          (setm (T:=[ordType of 'I_#|'I_n|]) (setm (T:=[ordType of 'I_#|'I_n|]) m j (fto (expgn_rec (T:=gT) g (otf x3)), x4)) i
+                             (fto (expgn_rec (T:=gT) g (otf x)),
+                             (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)), a, fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))))) n ;;
+          put ckey_loc i := fto
+                              (compute_key
+                                 (setm (T:=[ordType of 'I_#|'I_n|]) (setm (T:=[ordType of 'I_#|'I_n|]) m j (fto (expgn_rec (T:=gT) g (otf x3)), x4)) i
+                                    (fto (expgn_rec (T:=gT) g (otf x)),
+                                    (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)), a,
+                                    fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))) i) ;;
+         v0 ← get skey_loc i ;;
+         v1 ← get ckey_loc i ;;
+         @ret 'public (fto (expgn_rec (T:=gT) (otf v1) v0 * expgn_rec (T:=gT) g vote))
+         end
+     | None =>
+         a ← sample uniform RO1.i_random ;;
+         put RO1.queries_loc := setm x2
+                                  (Sigma1.Sigma.prod_assoc (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)))) a ;;
+         v ← get Sigma1.MyAlg.commit_loc ;;
+         x3 ← sample uniform i_secret ;;
+         #assert Sigma1.MyParam.R (otf (fto (expgn_rec (T:=gT) g (otf x3)))) (otf x3) ;;
+         x5 ← sample uniform Sigma1.MyAlg.i_witness ;;
+         put Sigma1.MyAlg.commit_loc := x5 ;;
+         v0 ← get RO1.queries_loc ;;
+         match v0 (Sigma1.Sigma.prod_assoc (fto (expgn_rec (T:=gT) g (otf x3)), fto (expgn_rec (T:=gT) g (otf x5)))) with
+         | Some a0 =>
+             x6 ← get Sigma1.MyAlg.commit_loc ;;
+             let x4 := (fto (expgn_rec (T:=gT) g (otf x3)), fto (expgn_rec (T:=gT) g (otf x5)), a0, fto (Zp_add (otf x6) (Zp_mul (otf a0) (otf x3)))) in
+             #assert eqn
+                 (size
+                 (domm (T:=[ordType of 'I_#|'I_n|]) (S:='I_#|gT| * ('I_#|gT| * 'I_#|gT| * 'I_#|'Z_Sigma1.q| * 'I_#|'Z_Sigma1.q|))
+                         (setm (T:=[ordType of 'I_#|'I_n|]) (setm (T:=[ordType of 'I_#|'I_n|]) m j (fto (expgn_rec (T:=gT) g (otf x3)), x4)) i
+                             (fto (expgn_rec (T:=gT) g (otf x)),
+                                 (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)), a, fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))))) n ;;
+             put ckey_loc i := fto
+                                 (compute_key
+                                     (setm (T:=[ordType of 'I_#|'I_n|]) (setm (T:=[ordType of 'I_#|'I_n|]) m j (fto (expgn_rec (T:=gT) g (otf x3)), x4)) i
+                                             (fto (expgn_rec (T:=gT) g (otf x)),
+                                             (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)), a,
+                                                 fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))) i) ;;
+            v0 ← get skey_loc i ;;
+            v1 ← get ckey_loc i ;;
+            @ret 'public (fto (expgn_rec (T:=gT) (otf v1) v0 * expgn_rec (T:=gT) g vote))
+        | None =>
+                   a0 ← sample uniform RO1.i_random ;;
+                   put RO1.queries_loc := setm v0
+                                            (Sigma1.Sigma.prod_assoc (fto (expgn_rec (T:=gT) g (otf x3)), fto (expgn_rec (T:=gT) g (otf x5)))) a0 ;;
+                   x6 ← get Sigma1.MyAlg.commit_loc ;;
+                   let x4 := (fto (expgn_rec (T:=gT) g (otf x3)), fto (expgn_rec (T:=gT) g (otf x5)), a0, fto (Zp_add (otf x6) (Zp_mul (otf a0) (otf x3)))) in
+         #assert eqn
+                    (size
+                       (domm (T:=[ordType of 'I_#|'I_n|]) (S:='I_#|gT| * ('I_#|gT| * 'I_#|gT| * 'I_#|'Z_Sigma1.q| * 'I_#|'Z_Sigma1.q|))
+                          (setm (T:=[ordType of 'I_#|'I_n|]) (setm (T:=[ordType of 'I_#|'I_n|]) m j (fto (expgn_rec (T:=gT) g (otf x3)), x4)) i
+                             (fto (expgn_rec (T:=gT) g (otf x)),
+                             (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)), a, fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))))) n ;;
+          put ckey_loc i := fto
+                              (compute_key
+                                 (setm (T:=[ordType of 'I_#|'I_n|]) (setm (T:=[ordType of 'I_#|'I_n|]) m j (fto (expgn_rec (T:=gT) g (otf x3)), x4)) i
+                                    (fto (expgn_rec (T:=gT) g (otf x)),
+                                    (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)), a,
+                                    fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))) i) ;;
+         v0 ← get skey_loc i ;;
+         v1 ← get ckey_loc i ;;
+         @ret 'public (fto (expgn_rec (T:=gT) (otf v1) v0 * expgn_rec (T:=gT) g vote))
+               end
+     end
+    }.
+  Next Obligation.
+    intros.
+    ssprove_valid ; auto with loc_db.
+    destruct (v1 _) ; ssprove_valid ; auto with loc_db.
+    - destruct (v5 _) ; ssprove_valid ; auto with loc_db.
+    - destruct (v6 _) ; ssprove_valid ; auto with loc_db.
+  Qed.
+
+  #[program] Definition Exec_i_realised_code_runnable m (i j : pid) (vote : 'bool):
+    code (P_i_locs i :|: combined_locations) [interface] 'public :=
+    {code
+     x ← sample uniform i_secret ;;
+     put skey_loc i := x ;;
+     #assert Sigma1.MyParam.R (otf (fto (expgn_rec (T:=gT) g (otf x)))) (otf x) ;;
+     x1 ← sample uniform Sigma1.MyAlg.i_witness ;;
+     put Sigma1.MyAlg.commit_loc := x1 ;;
+     x2 ← get RO1.queries_loc ;;
+         a ← sample uniform RO1.i_random ;;
+         put RO1.queries_loc := setm x2
+                                  (Sigma1.Sigma.prod_assoc (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)))) a ;;
+         v ← get Sigma1.MyAlg.commit_loc ;;
+         x3 ← sample uniform i_secret ;;
+         #assert Sigma1.MyParam.R (otf (fto (expgn_rec (T:=gT) g (otf x3)))) (otf x3) ;;
+         x5 ← sample uniform Sigma1.MyAlg.i_witness ;;
+         put Sigma1.MyAlg.commit_loc := x5 ;;
+         v0 ← get RO1.queries_loc ;;
+                   a0 ← sample uniform RO1.i_random ;;
+                   put RO1.queries_loc := setm v0
+                                            (Sigma1.Sigma.prod_assoc (fto (expgn_rec (T:=gT) g (otf x3)), fto (expgn_rec (T:=gT) g (otf x5)))) a0 ;;
+                   x6 ← get Sigma1.MyAlg.commit_loc ;;
+                   let x4 := (fto (expgn_rec (T:=gT) g (otf x3)), fto (expgn_rec (T:=gT) g (otf x5)), a0, fto (Zp_add (otf x6) (Zp_mul (otf a0) (otf x3)))) in
+         #assert eqn
+                    (size
+                       (domm (T:=[ordType of 'I_#|'I_n|]) (S:='I_#|gT| * ('I_#|gT| * 'I_#|gT| * 'I_#|'Z_Sigma1.q| * 'I_#|'Z_Sigma1.q|))
+                          (setm (T:=[ordType of 'I_#|'I_n|]) (setm (T:=[ordType of 'I_#|'I_n|]) m j (fto (expgn_rec (T:=gT) g (otf x3)), x4)) i
+                             (fto (expgn_rec (T:=gT) g (otf x)),
+                             (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)), a, fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))))) n ;;
+          put ckey_loc i := fto
+                              (compute_key
+                                 (setm (T:=[ordType of 'I_#|'I_n|]) (setm (T:=[ordType of 'I_#|'I_n|]) m j (fto (expgn_rec (T:=gT) g (otf x3)), x4)) i
+                                    (fto (expgn_rec (T:=gT) g (otf x)),
+                                    (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)), a,
+                                    fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))) i) ;;
+         v0 ← get skey_loc i ;;
+         v1 ← get ckey_loc i ;;
+         @ret 'public (fto (expgn_rec (T:=gT) (otf v1) v0 * expgn_rec (T:=gT) g vote))
+    }.
+  Next Obligation.
+    intros.
+    ssprove_valid ; auto with loc_db.
+  Qed.
+
+  Lemma code_pkg_equiv m i j (vote : 'bool):
+    ⊢
+    ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
+    get_op_default (Exec_i_realised true m i j) ((Exec i), ('bool, 'public)) vote
+    ≈
+    Exec_i_realised_code m i j vote
+    ⦃ eq ⦄.
+  Proof.
+    unfold Exec_i_realised.
+    rewrite get_op_default_link.
+    erewrite get_op_default_spec.
+    2: {
+      cbn.
+      rewrite eqnE eq_refl.
+      done.
+    }
+    ssprove_code_simpl.
+    simpl.
+    repeat chUniverse_eqP_handle.
+    rewrite !cast_fun_K.
+    ssprove_code_simpl.
+    simpl.
+    ssprove_code_simpl.
+    ssprove_code_simpl_more.
+    simpl.
+    ssprove_sync_eq=>x.
+    simpl.
+    ssprove_code_simpl_more.
+    ssprove_sync_eq.
+    ssprove_sync_eq=>rel1.
+    ssprove_sync_eq=>r1.
+    ssprove_sync_eq.
+    ssprove_sync_eq=>queries.
+    destruct (queries (Sigma1.Sigma.prod_assoc (fto (g ^+ otf x), fto (g ^+ otf r1)))) eqn:e.
+    all: rewrite e.
+    - simpl.
+      ssprove_code_simpl.
+      ssprove_sync_eq=>?.
+    Admitted.
 
   #[tactic=notac] Equations? Aux_realised (b : bool) (i j : pid) m f' :
     package (DDH.DDH_locs :|: P_i_locs i :|: combined_locations) Game_import [interface val #[ Exec i ] : 'bool → 'public] :=
@@ -1519,19 +1396,6 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
   Qed.
 
   Notation inv i := (heap_ignore (P_i_locs i :|: DDH.DDH_locs)).
-  (* Instance Invariant_inv : Invariant combined_locations *)
-  (*                                    (DDH.DDH_locs :|: combined_locations) *)
-  (*                                    inv. *)
-  (* Proof. *)
-  (*   ssprove_invariant. *)
-  (*   unfold combined_locations, all_locs, secret_locs. *)
-  (*   rewrite fset_cons. *)
-  (*   rewrite -!fsetUA. *)
-  (*   rewrite -fset0E !fset0U. *)
-  (*   apply fsetUS. *)
-  (*   do 13 (apply fsubsetU ; apply /orP ; right). *)
-  (*   apply fsubsetUl. *)
-  (* Qed. *)
 
   Hint Extern 50 (_ = code_link _ _) =>
     rewrite code_link_scheme
