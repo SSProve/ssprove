@@ -135,46 +135,36 @@ Proof.
   eapply get_heap_helper. all: eauto.
 Defined.
 
-Program Definition set_heap (map : heap) (l : Location) (v : Value l.π1)
-: heap :=
-  setm map l (l.π1 ; v).
-Next Obligation.
+Equations? set_heap (map : heap) (l : Location) (v : Value l.π1) : heap :=
+  set_heap map l v := exist _ (setm (val map) l (l.π1 ; v)) _.
+Proof.
   unfold valid_heap.
   destruct map as [rh valid_rh].
   cbn - ["_ == _"].
-  apply /eqP.
-  apply eq_fset.
-  move => x.
-  rewrite domm_set.
-  rewrite in_fset_filter.
+  apply /eqP. apply eq_fset. intro x.
+  rewrite domm_set. rewrite in_fset_filter.
   destruct ((x \in l |: domm rh)) eqn:Heq.
   - rewrite andbC. cbn.
     symmetry. apply /idP.
-    unfold valid_location.
-    rewrite setmE.
+    unfold valid_location. rewrite setmE.
     destruct (x == l) eqn:H.
-    + cbn. move: H. move /eqP => H. subst. apply choice_type_refl.
-    + move: Heq. move /idP /fsetU1P => Heq.
-      destruct Heq.
-      * move: H. move /eqP => H. contradiction.
-      * destruct x, l. rewrite mem_domm in H0.
-        unfold isSome in H0.
-        destruct (rh (x; s)) eqn:Hrhx.
-        ** cbn. unfold valid_heap in valid_rh.
-            move: valid_rh. move /eqP /eq_fset => valid_rh.
-            specialize (valid_rh (x; s)).
-            rewrite in_fset_filter in valid_rh.
-            rewrite mem_domm in valid_rh.
-            assert (valid_location rh (x;s)) as Hvl.
-            { rewrite Hrhx in valid_rh. cbn in valid_rh.
-              rewrite andbC in valid_rh. cbn in valid_rh.
-              rewrite -valid_rh. auto. }
-            unfold valid_location in Hvl.
-            rewrite Hrhx in Hvl.
-            cbn in Hvl.
-            assumption.
-        ** assumption.
-  - rewrite andbC. auto.
+    + cbn. move: H => /eqP H. subst. apply choice_type_refl.
+    + move: Heq => /idP /fsetU1P Heq.
+      destruct Heq as [| H0].
+      1:{ move: H => /eqP H. contradiction. }
+      destruct x, l.
+      rewrite mem_domm in H0. unfold isSome in H0.
+      destruct (rh (x ; s)) eqn:Hrhx. 2: discriminate.
+      cbn. unfold valid_heap in valid_rh.
+      move: valid_rh => /eqP /eq_fset valid_rh.
+      specialize (valid_rh (x; s)).
+      rewrite in_fset_filter in valid_rh.
+      rewrite mem_domm in valid_rh.
+      rewrite Hrhx in valid_rh. simpl in valid_rh.
+      rewrite andbC in valid_rh. simpl in valid_rh. symmetry in valid_rh.
+      unfold valid_location in valid_rh. rewrite Hrhx in valid_rh.
+      assumption.
+  - rewrite andbC. reflexivity.
 Qed.
 
 #[program] Definition empty_heap : heap := emptym.

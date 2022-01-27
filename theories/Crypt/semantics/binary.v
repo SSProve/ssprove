@@ -2,7 +2,7 @@ Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra boolp reals realsum distr.
 Set Warnings "notation-overridden,ambiguous-paths".
 From extructures Require Import ord fset fmap.
-From Crypt Require Import Axioms chUniverse pkg_core_definition pkg_heap unary.
+From Crypt Require Import Axioms choice_type pkg_core_definition pkg_heap unary.
 
 Import Num.Theory Order.LTheory.
 

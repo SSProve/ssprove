@@ -1,8 +1,9 @@
+From Coq Require Import Utf8.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra distr reals realsum boolp.
 Set Warnings "notation-overridden,ambiguous-paths".
 From extructures Require Import ord fset fmap.
-From Crypt Require Import Axioms chUniverse pkg_core_definition pkg_heap.
+From Crypt Require Import Axioms choice_type pkg_core_definition pkg_heap.
 
 Import Num.Theory Order.LTheory.
 
@@ -16,20 +17,27 @@ Set Default Goal Selector "!".
 Set Primitive Projections.
 
 (** Extensionality lemmas *)
-Lemma distr_ext : forall (A : choiceType) (mu nu : {distr A/R}),
-    distr.mu mu =1 distr.mu nu -> mu = nu.
+
+Lemma distr_ext :
+  ∀ (A : choiceType) (mu nu : {distr A/R}),
+    distr.mu mu =1 distr.mu nu →
+    mu = nu.
 Proof.
   move=> A [mu +++] [nu +++] /= /funext mu_eq_nu.
-  rewrite {}mu_eq_nu; move=> *; f_equal.
+  rewrite {}mu_eq_nu. move=> *. f_equal.
   all: apply proof_irrelevance.
 Qed.
 
-Lemma eq_dlet [A B : choiceType] (m : {distr A/R})
-      (f g : A -> {distr B /R}) :
-  f =1 g -> \dlet_(x <- m) f x = \dlet_(x <- m) g x.
+Lemma eq_dlet [A B : choiceType] :
+  ∀ (m : {distr A/R}) (f g : A -> {distr B /R}),
+    f =1 g →
+    \dlet_(x <- m) f x = \dlet_(x <- m) g x.
 Proof.
-  move=> fg; apply: distr_ext=> i; rewrite 2!dletE.
-  apply: eq_psum=> a; f_equal; by rewrite fg.
+  intros m f g fg.
+  apply distr_ext. intro i.
+  rewrite 2!dletE.
+  apply eq_psum. intro a.
+  f_equal. rewrite fg. reflexivity.
 Qed.
 
 (* Lemma dlet_restr [A B : choiceType] (m : {distr A/R}) *)
@@ -41,14 +49,18 @@ Qed.
 (*   move: E=> /eqP ->; by rewrite 2!GRing.mul0r. *)
 (* Qed. *)
 
-Lemma eq_dlet_partial [A B : choiceType] (m : {distr A/R})
-      (f g : A -> {distr B /R}) :
-  (forall x, m x <> 0%R -> f x = g x) -> \dlet_(x <- m) f x = \dlet_(x <- m) g x.
+Lemma eq_dlet_partial [A B : choiceType] :
+  ∀ (m : {distr A/R}) (f g : A -> {distr B /R}),
+    (∀ x, m x ≠ 0%R → f x = g x) →
+    \dlet_(x <- m) f x = \dlet_(x <- m) g x.
 Proof.
-  move=> fg; apply: distr_ext=> i; rewrite 2!dletE.
-  apply: eq_psum=> a; case E: (m a == 0)%R=> /=.
-  + move: E=> /eqP ->; by rewrite 2!GRing.mul0r.
-  + f_equal; rewrite fg=> //; apply/(_ =P _); exact (negbT E).
+  intros m f g h.
+  apply distr_ext. intro i.
+  rewrite 2!dletE. apply eq_psum. intro a.
+  destruct (m a == 0)%R eqn:e.
+  - move: e => /eqP e. rewrite e. rewrite 2!GRing.mul0r. reflexivity.
+  - f_equal. rewrite h. 2:{ apply /eqP. rewrite e. reflexivity. }
+    reflexivity.
 Qed.
 
 
@@ -56,78 +68,110 @@ Qed.
 
 (* two helper functions to help with convoy patterns on bool
    (is there an idiomatic ssreflect/mathcomp way to do that ?) *)
-Definition bool_depelim (X : Type) (b : bool) (htrue : b = true -> X) (hfalse : b = false -> X) : X :=
-  (if b as b0 return b = b0 -> X then htrue else hfalse) erefl.
+Definition bool_depelim (X : Type) (b : bool)
+  (htrue : b = true → X) (hfalse : b = false → X) : X :=
+  (if b as b0 return b = b0 → X then htrue else hfalse) erefl.
 
-Lemma bool_depelim_true (X : Type) (b : bool) (htrue : b = true -> X) (hfalse : b = false -> X) (e : b = true) : bool_depelim X b htrue hfalse = htrue e.
-Proof. by depelim e. Qed.
+Lemma bool_depelim_true :
+  ∀ (X : Type) (b : bool) (htrue : b = true → X) (hfalse : b = false → X)
+    (e : b = true),
+    bool_depelim X b htrue hfalse = htrue e.
+Proof.
+  intros. subst. reflexivity.
+Qed.
 
 (* helper lemma for multiplication of reals *)
-Lemma R_no0div : forall u v : R, (u * v <> 0 -> u <> 0 /\ v <> 0)%R.
+Lemma R_no0div : ∀ (u v : R), (u * v ≠ 0 → u ≠ 0 ∧ v ≠ 0)%R.
 Proof.
-  move=> u v uv; split; move: uv; apply contra_not=> ->; [apply: GRing.mul0r|apply: GRing.mulr0].
+  intros u v h.
+  split. all: revert h. all: apply contra_not. all: intro h. all: subst.
+  - apply GRing.mul0r.
+  - apply GRing.mulr0.
 Qed.
 
 (** Definition of the model for the unary semantics *)
 
 Module Def.
+
 Section Def.
+
   Context (S : choiceType).
 
   (* carrier for unary specifications /
      model for single probabilistic programs with state space S *)
-  Definition stsubdistr (A : choiceType) := S -> {distr (A * S) /R}.
+  Definition stsubdistr (A : choiceType) := S → {distr (A * S) / R}.
 
   Definition ret [A : choiceType] (a : A) : stsubdistr A :=
-    fun s => dunit (a,s).
+    λ s, dunit (a,s).
 
-  Definition bind [A B : choiceType] (m : stsubdistr A) (f : A -> stsubdistr B) :=
-    fun s0 => \dlet_(p <- m s0) f p.1 p.2.
+  Definition bind [A B : choiceType] (m : stsubdistr A) (f : A → stsubdistr B) :=
+    λ s₀, \dlet_(p <- m s₀) f p.1 p.2.
 
   (* Monadic laws -- wrapper around existing lemmas *)
-  Lemma bind_ret [A B : choiceType] (a : A) (f : A -> stsubdistr B)
-    : bind (ret a) f = f a.
-  Proof. extensionality s; apply: distr_ext ; apply: dlet_unit. Qed.
-
-  Lemma ret_bind [A : choiceType] (m : stsubdistr A) : bind m (@ret _) = m.
+  Lemma bind_ret [A B : choiceType] :
+    ∀ (a : A) (f : A → stsubdistr B),
+      bind (ret a) f = f a.
   Proof.
-    extensionality s ; apply: distr_ext=> a; rewrite /bind /ret.
+    intros a f.
+    extensionality s. apply distr_ext. apply: dlet_unit.
+  Qed.
+
+  Lemma ret_bind [A : choiceType] :
+    ∀ (m : stsubdistr A), bind m (@ret _) = m.
+  Proof.
+    intros m.
+    extensionality s. apply distr_ext. intro a.
+    rewrite /bind /ret.
     under eq_dlet do rewrite -surjective_pairing.
-    apply: dlet_dunit_id.
+    apply dlet_dunit_id.
   Qed.
 
-  Lemma bind_bind [A B C : choiceType]
-        (m : stsubdistr A)
-        (f : A -> stsubdistr B)
-        (g : B -> stsubdistr C) :
-    bind m (fun a => bind (f a) g) = bind (bind m f) g.
+  Lemma bind_bind [A B C : choiceType] :
+    ∀ (m : stsubdistr A)
+      (f : A → stsubdistr B)
+      (g : B → stsubdistr C),
+      bind m (λ a, bind (f a) g) = bind (bind m f) g.
   Proof.
-    extensionality s; apply distr_ext=> a; rewrite /bind.
-    by rewrite dlet_dlet.
+    intros m f g.
+    extensionality s. apply distr_ext. intro a.
+    rewrite /bind. rewrite dlet_dlet. reflexivity.
   Qed.
 
-
-  Lemma bind_not_null [A B : choiceType] (m : stsubdistr A) (f : A -> stsubdistr B)
-    : forall map p, bind m f map p <> 0%R -> exists p0, m map p0 <> 0%R /\ f p0.1 p0.2 p <> 0%R.
+  Lemma bind_not_null [A B : choiceType] :
+    ∀ (m : stsubdistr A) (f : A → stsubdistr B) map p,
+      bind m f map p ≠ 0%R →
+      ∃ p₀, m map p₀ ≠ 0%R ∧ f p₀.1 p₀.2 p ≠ 0%R.
   Proof.
-    move=> map p; rewrite /bind dletE=> /neq0_psum [p0] /R_no0div ? ;by exists p0.
+    intros m f map p.
+    unfold bind. rewrite dletE.
+    move /neq0_psum => [p₀]. move /R_no0div => h.
+    exists p₀. assumption.
   Qed.
 
-  Definition bind_restr [A B : choiceType] (m : stsubdistr A) (P : pred A) (f : forall (a : A), P a -> stsubdistr B) : stsubdistr B :=
-    let f' (a : A) := bool_depelim (stsubdistr B) (P a) (fun h => f a h) (fun _ _ => dnull) in
+  Definition bind_restr [A B : choiceType]
+    (m : stsubdistr A) (P : pred A) (f : ∀ (a : A), P a → stsubdistr B) :
+    stsubdistr B :=
+    let f' (a : A) :=
+      bool_depelim (stsubdistr B) (P a) (λ h, f a h) (λ _ _, dnull)
+    in
     Def.bind m f'.
 
-  Lemma bind_restr_not_null [A B : choiceType] (m : stsubdistr A) (P : pred A) (f : forall (a : A), P a -> stsubdistr B)
-        (hP : forall map p, m map p <> 0%R -> P p.1) :
-    forall map p, bind_restr m P f map p <> 0%R -> exists p0, {hm : m map p0 <> 0%R | f p0.1 (hP _ _ hm) p0.2 p <> 0%R }.
+  Lemma bind_restr_not_null [A B : choiceType] :
+    ∀ (m : stsubdistr A) (P : pred A) (f : ∀ (a : A), P a → stsubdistr B)
+      (hP : ∀ map p, m map p ≠ 0%R → P p.1) map p,
+      bind_restr m P f map p ≠ 0%R →
+      ∃ p₀, { hm : m map p₀ ≠ 0%R | f p₀.1 (hP _ _ hm) p₀.2 p ≠ 0%R }.
   Proof.
-    move=> map p /bind_not_null [p0 [hm0 hf0]].
-    exists p0; exists hm0; move: hf0.
-    rewrite bool_depelim_true; first apply: (hP _ _ hm0).
-    move=> hb; by rewrite (bool_irrelevance (hP _ _ _) hb).
+    intros m P f hP map p.
+    move => /bind_not_null [p₀ [hm₀ hf₀]].
+    exists p₀, hm₀.
+    revert hf₀. rewrite bool_depelim_true.
+    1:{ eapply hP. eassumption. }
+    intro hb. rewrite (bool_irrelevance (hP _ _ _) hb). auto.
   Qed.
 
   Section Order.
+
     Context [A : choiceType].
 
     (* The eqType and choiceType instances are given
@@ -138,20 +182,24 @@ Section Def.
 
     (** Order between specifications *)
     Definition stsubdistr_le : rel (stsubdistr A) :=
-      fun d0 d1 => `[< forall s0 a s1, (mu (d0 s0) (a, s1) <= mu (d1 s0) (a, s1))%O>].
+      λ d₀ d₁, `[< ∀ s₀ a s₁, (mu (d₀ s₀) (a, s₁) <= mu (d₁ s₀) (a, s₁))%O >].
 
     (* I don't think I really care about lt so let's put the tautological def *)
     Definition stsubdistr_lt : rel (stsubdistr A) :=
-      fun d0 d1 => (d1 != d0) && stsubdistr_le d0 d1.
+      λ d₀ d₁, (d₁ != d₀) && stsubdistr_le d₀ d₁.
 
     Lemma stsubdistr_le_refl : reflexive stsubdistr_le.
-    Proof. move=> g; apply/asboolP=> *; apply: le_refl. Qed.
+    Proof.
+      intros g.
+      apply /asboolP. intros.
+      apply le_refl.
+    Qed.
 
     Lemma stsubdistr_le_anti : antisymmetric stsubdistr_le.
     Proof.
       move=> f g /andP [] /asboolP fg /asboolP gf.
-      extensionality s; apply: distr_ext=> -[a s'].
-      apply: le_anti; rewrite fg gf //.
+      extensionality s. apply: distr_ext => -[a s'].
+      apply: le_anti. rewrite fg gf //.
     Qed.
 
     Lemma stsubdistr_le_trans : transitive stsubdistr_le.
@@ -165,7 +213,8 @@ Section Def.
                           ltac:(reflexivity) stsubdistr_le_refl
                           stsubdistr_le_anti stsubdistr_le_trans.
 
-    Canonical stsubdistr_porderType := POrderType ring_display (stsubdistr A) stsubdistr_porderMixin.
+    Canonical stsubdistr_porderType :=
+      POrderType ring_display (stsubdistr A) stsubdistr_porderMixin.
 
     (* Lemma stsubdistr_distinct (d0 d1 : stsubdistr A) : d0 < d1 ->  exists s0 a s1, (mu (d0 s0) (a, s1) < mu (d1 s0) (a, s1))%O. *)
 
@@ -174,10 +223,13 @@ Section Def.
   #[local] Open Scope order_scope.
 
   (** Bind is monotone with respect to the order we endowed the specs with *)
-  Lemma bind_monotone [A B : choiceType]
-        (m0 m1 : stsubdistr A) (f0 f1 : A -> stsubdistr B) :
-    m0 <= m1 -> (forall a, f0 a <= f1 a) -> bind m0 f0 <= bind m1 f1 :> stsubdistr B.
+  Lemma bind_monotone [A B : choiceType] :
+    ∀ (m₀ m₁ : stsubdistr A) (f₀ f₁ : A → stsubdistr B),
+      m₀ <= m₁ →
+      (∀ a, f₀ a <= f₁ a) →
+      bind m₀ f₁ <= bind m₁ f₁ :> stsubdistr B.
   Proof.
+    intros m₀ m₁ f₀ f₁.
     move=> /asboolP m01 f01; apply/asboolP=> s0 b s1.
     rewrite /bind 2!dletE.
     apply: le_psum; last apply: summable_mlet.
@@ -186,48 +238,50 @@ Section Def.
     - apply: ler_pmul; try apply: ge0_mu; first apply: m01.
       move: {f01}(f01 a)=> /asboolP //.
   Qed.
+
 End Def.
 
 Arguments ret [_ _] _.
 Arguments bind [_ _ _] _ _.
+
 End Def.
 
 
 (** Semantic evaluation of code and commands *)
 Section Evaluation.
+
   #[local] Open Scope fset.
   #[local] Open Scope fset_scope.
+
   Context (Loc : {fset Location}).
   Context (import : Interface).
 
   (* Local shorter names for code and semantics *)
   Let C := code Loc import.
-  Let M := (Def.stsubdistr heap_choiceType).
+  Let M := Def.stsubdistr heap_choiceType.
 
   (** Taking an interpretation of the imported operation as assumption *)
-  Context (import_eval : forall o, o \in import -> src o -> M (tgt o)).
+  Context (import_eval : ∀ o, o \in import → src o → M (tgt o)).
 
   (* Multiple attempts for evaluation. In the end it looks simpler
      defining evaluation on raw_code, and providing the adequate
      rules/hoare triples only on valid code.
    *)
 
-  Definition eval [A : choiceType] : raw_code A -> M A.
+  Definition eval [A : choiceType] : raw_code A → M A.
   Proof.
     elim.
     - apply: Def.ret.
-    - move=> o x k ih.
-      apply: (bool_depelim _ (o \in import) _ (fun _ _=> dnull))=> oval.
+    - intros o x k ih.
+      apply: (bool_depelim _ (o \in import) _ (λ _ _, dnull)) => oval.
       exact (Def.bind (import_eval o oval x) ih).
-    - move=> l k ih.
-      exact (fun map => let v := get_heap map l in ih v map).
-    - move=> l v k ih.
-      exact (fun map => ih (set_heap map l v)).
-    - move=> [X sampleX] k ih.
-      exact (fun map => \dlet_(x <- sampleX) ih x map).
+    - intros l k ih.
+      exact (λ map, let v := get_heap map l in ih v map).
+    - intros l v k ih.
+      exact (λ map, ih (set_heap map l v)).
+    - intros [X sampleX] k ih.
+      exact (λ map, \dlet_(x <- sampleX) ih x map).
   Defined.
-
-
 
   (* Definition eval [A : choiceType] : C A -> M A. *)
   (* Proof. *)

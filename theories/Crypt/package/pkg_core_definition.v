@@ -82,8 +82,8 @@ Definition tgt (v : opsig) : choiceType :=
 (* Definition Op := Prob_ops_collection. *)
 (* Definition Arit := Prob_arities. *)
 
-Definition Op := ∑ (X : chUniverse) , {distr (chElement X) / R}.
-Definition Arit : Op -> choiceType := chElement \o (@projT1 _ _).
+Definition Op := ∑ (X : choice_type) , {distr (chElement X) / R}.
+Definition Arit : Op → choiceType := chElement \o (@projT1 _ _).
 
 Section FreeModule.
 
