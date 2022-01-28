@@ -71,6 +71,14 @@ Proof.
   intros. subst. reflexivity.
 Qed.
 
+Lemma bool_depelim_false :
+  ∀ (X : Type) (b : bool) (htrue : b = true → X) (hfalse : b = false → X)
+    (e : b = false),
+    bool_depelim X b htrue hfalse = hfalse e.
+Proof.
+  intros. subst. reflexivity.
+Qed.
+
 (* helper lemma for multiplication of reals *)
 Lemma R_no0div : ∀ (u v : R), (u * v ≠ 0 → u ≠ 0 ∧ v ≠ 0)%R.
 Proof.
@@ -223,6 +231,8 @@ Arguments bind [_ _ _] _ _.
 
 End Def.
 
+Class EvalOp :=
+  eval_interface_operations : forall o, src o -> Def.stsubdistr heap_choiceType (tgt o).
 
 (** Semantic evaluation of code and commands *)
 Section Evaluation.
@@ -230,14 +240,14 @@ Section Evaluation.
   Notation M := (Def.stsubdistr heap_choiceType).
 
   (** Assume an interpretation of operations *)
-  Context (eval_op : ∀ o, src o → M (tgt o)).
+  Context `{EvalOp}.
 
   Definition eval [A : choiceType] : raw_code A → M A.
   Proof.
     elim.
     - apply: Def.ret.
     - intros o x k ih.
-      exact (Def.bind (eval_op o x) ih).
+      exact (Def.bind (eval_interface_operations o x) ih).
     - intros l k ih.
       exact (λ map, let v := get_heap map l in ih v map).
     - intros l v k ih.
@@ -252,8 +262,10 @@ Section Evaluation.
   Definition precondition := pred heap.
   Definition postcondition A := pred (A * heap).
 
-  Definition unary_judgement [A : choiceType] (pre : precondition) (c : raw_code A) (post : postcondition A) : Prop :=
-    forall map, pre map -> forall p, (eval c map p <> 0)%R -> post p.
+  Definition spec_valid [A : choiceType] (pre : precondition) (m : M A) (post : postcondition A) : Prop :=
+    forall map, pre map -> forall p, (m map p <> 0)%R -> post p.
+
+  Definition unary_judgement [A : choiceType] (pre : precondition) (c : raw_code A) (post : postcondition A) : Prop := spec_valid pre (eval c) post.
 
   Declare Scope Rules_scope.
 
@@ -336,6 +348,18 @@ Section Evaluation.
 
 End Evaluation.
 
+Module UnaryNotations.
+  Notation "⊨ ⦃ pre ⦄ c ⦃ p , post ⦄" :=
+    (unary_judgement pre c (fun p => post))
+      (p pattern) : Rules_scope.
+  Open Scope Rules_scope.
+End UnaryNotations.
+
+
+(** Default interpretation for operations *)
+Definition eval_op_null : EvalOp :=
+  fun o _ => Def.stsubnull _ _.
+
 
 Section ScopedImportEval.
   #[local] Open Scope fset.
@@ -349,15 +373,43 @@ Section ScopedImportEval.
   (** Taking an interpretation of the imported operation as assumption *)
   Context (import_eval : ∀ o, o \in import → src o → M (tgt o)).
 
-  Definition eval_op : forall o, src o -> M (tgt o) :=
-    fun o => bool_depelim _ (o \in import) (fun oval => import_eval o oval) (fun _ _ => Def.stsubnull _ _).
+  #[local]
+  Instance eval_op : EvalOp :=
+    fun o => bool_depelim _ (o \in import)
+                       (fun oval => import_eval o oval)
+                       (fun _ _ => Def.stsubnull _ _).
 
-  Let eval := (eval eval_op).
+  Import UnaryNotations.
 
-  (* Problem: the notation for the judgement is parametrized by eval, how can I
-  have access to this notation instantiated with eval without redefining it ?
-  Use a functor ?*)
+  Context (op_precondition : forall o, o \in import -> src o -> precondition)
+          (op_postcondition : forall o, o \in import -> src o -> postcondition (tgt o))
+          (import_eval_valid : forall o (oval : o \in import) (s : src o),
+              spec_valid (op_precondition o oval s)
+                         (import_eval o oval s)
+                         (op_postcondition o oval s)).
 
-  (* TODO: Add spec and Rule for imported operations *)
+  Definition op_pre : forall o, src o -> precondition :=
+    fun o s => bool_depelim _ (o \in import)
+                         (fun oval => op_precondition o oval s)
+                         (fun _ => pred0).
+
+  Definition op_post : forall o, src o -> postcondition (tgt o) :=
+    fun o s => bool_depelim _ (o \in import)
+                         (fun oval => op_postcondition o oval s)
+                         (fun _ => predT).
+
+  Lemma opr_rule [A : choiceType] (post : postcondition A) :
+    forall o (s : src o) (k : tgt o -> raw_code A)
+    (spec_k : forall r, ⊨ ⦃ [pred map | op_post o s (r, map)] ⦄ k r ⦃ p , post p ⦄),
+      ⊨ ⦃ op_pre o s ⦄ opr o s k ⦃ p , post p ⦄.
+  Proof.
+    move=> o s k; case oval: (o \in import); rewrite /op_pre /op_post.
+    2: move=> _; by rewrite bool_depelim_false.
+    rewrite !bool_depelim_true // => spec_k map hpre p /=.
+    move=> /Def.bind_not_null [[r map0] []].
+    rewrite /eval_interface_operations/eval_op bool_depelim_true=> ??.
+    apply: (spec_k r map0)=> //=.
+    apply: import_eval_valid; first apply: hpre; move => //.
+  Qed.
 
 End ScopedImportEval.
