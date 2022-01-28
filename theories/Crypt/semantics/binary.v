@@ -87,20 +87,17 @@ End BindCoupling.
 Section Def.
   #[local] Open Scope fset.
   #[local] Open Scope fset_scope.
-  Context (Loc : {fset Location}).
-  Context (import : Interface).
 
   (* Local shorter names for code and semantics *)
-  Let C := code Loc import.
+  Let C := raw_code.
   Let M := (Def.stsubdistr heap_choiceType).
 
   Definition stsubdistr_rel [A1 A2 : choiceType] : M A1 -> M A2 -> Type :=
     fun d1 d2 => forall map1 map2, { d |  d ~[ d1 map1 , d2 map2 ] }.
 
-  (** Taking an interpretation of the imported operation as assumption *)
-  Context (import_eval : forall o, o \in import -> src o -> M (tgt o)).
+  Context (eval_op : forall o, src o -> M (tgt o)).
 
-  Let eval [A] := eval import import_eval (A:=A).
+  Let eval [A] := eval eval_op (A:=A).
 
   Definition prerelation := rel heap.
   Definition postrelation A1 A2 := (A1 * heap) -> pred (A2 * heap).
@@ -113,11 +110,10 @@ Section Def.
                  exists d, d ~[eval c1 map1, eval c2 map2] /\
                       forall p1 p2, d (p1,p2) <> 0%R -> post p1 p2.
 
-  Open Scope package_scope.
 
   (* Bindings in the pre/postcondition looks annoying here *)
   Notation "⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄" :=
-    (binary_judgement pre {code c1} {code c2} post) : Rules_scope.
+    (binary_judgement pre c1 c2 post) : Rules_scope.
   Open Scope Rules_scope.
 
   (** Ret rule *)
