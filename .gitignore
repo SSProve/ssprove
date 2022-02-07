@@ -53,3 +53,5 @@ Makefile.coq.conf
 
 # macOS
 .DS_store
+
+.Makefile.coq 2.d
