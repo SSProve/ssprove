@@ -35,7 +35,7 @@ A documentation is available in [DOC.md].
 - Coq `8.14.0`
 - Equations `1.3+8.14`
 - Mathcomp `1.13.0`
-- Mathcomp analysis `0.3.11`
+- Mathcomp analysis `0.3.12`
 - Coq Extructures `0.3.1`
 
 You can get them all from the `opam` package manager for OCaml:
