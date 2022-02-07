@@ -46,6 +46,10 @@ supported_coq_versions:
   text: Coq 8.14
   opam: '{>= "8.14"}'
 
+tested_coq_opam_versions:
+- version: '1.13.0-coq-8.14'
+  repo: 'mathcomp/mathcomp'
+
 dependencies:
 - opam:
     name: coq-mathcomp-ssreflect
