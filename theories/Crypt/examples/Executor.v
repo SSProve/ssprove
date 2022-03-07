@@ -35,23 +35,22 @@ Section Executor.
 
   Inductive NatState :=
   | NSUnit
-  | NSMap
   | NSNat (n : nat)
   | NSOption (A : option NatState)
   | NSProd (A B : NatState).
 
-  Equations? nat_ch (x : NatState) (l : chUniverse) : option (Value l) :=
-    nat_ch (NSUnit) 'unit := Some Datatypes.tt ;
-    nat_ch (NSNat n) 'nat := Some n ;
-    nat_ch (NSNat n) 'bool := Some (Nat.odd n) ;
-    nat_ch (NSNat n) 'fin n' := Some _ ;
-    nat_ch (NSOption (Some a)) ('option l) := Some (nat_ch a l) ;
-    nat_ch (NSOption None) ('option l) := Some None ;
-    nat_ch (NSProd a b) (l1 × l2) with (nat_ch a l1, nat_ch b l2) := {
-         nat_ch (NSProd a b) (l1 × l2) (Some v1, Some v2) := Some (v1, v2) ;
-         nat_ch (NSProd a b) (l1 × l2) _ := None ;
+  Equations? nat_ch_aux (x : NatState) (l : chUniverse) : option (Value l) :=
+    nat_ch_aux (NSUnit) 'unit := Some Datatypes.tt ;
+    nat_ch_aux (NSNat n) 'nat := Some n ;
+    nat_ch_aux (NSNat n) 'bool := Some (Nat.odd n) ;
+    nat_ch_aux (NSNat n) 'fin n' := Some _ ;
+    nat_ch_aux (NSOption (Some a)) ('option l) := Some (nat_ch_aux a l) ;
+    nat_ch_aux (NSOption None) ('option l) := Some None ;
+    nat_ch_aux (NSProd a b) (l1 × l2) with (nat_ch_aux a l1, nat_ch_aux b l2) := {
+         nat_ch_aux (NSProd a b) (l1 × l2) (Some v1, Some v2) := Some (v1, v2) ;
+         nat_ch_aux (NSProd a b) (l1 × l2) _ := None ;
       } ;
-    nat_ch _ _ := None.
+    nat_ch_aux _ _ := None.
   Proof.
     - eapply @Ordinal.
       instantiate (1 := n %% n').
@@ -59,42 +58,96 @@ Section Executor.
       apply cond_pos0.
   Defined.
 
-  Equations ch_nat (l : chUniverse) (v : l) : NatState :=
-    ch_nat 'unit v := NSUnit ;
-    ch_nat 'nat v := NSNat v ;
-    ch_nat 'bool v := NSNat v ;
-    ch_nat 'fin n v := NSNat v ;
-    ch_nat (l1 × l2) (pair v1 v2) := NSProd (ch_nat l1 v1) (ch_nat l2 v2) ;
-    ch_nat 'option l (Some v) := NSOption (Some (ch_nat l v)) ;
-    ch_nat 'option l None := NSOption None ;
-    ch_nat _ v := NSMap.
+  Definition nat_ch (x : option NatState) (l : chUniverse) : option (Value l) :=
+    match x with
+    | Some v => nat_ch_aux v l
+    | None => None
+    end.
+
+  Equations ch_nat (l : chUniverse) (v : l) : option NatState :=
+    ch_nat 'unit v := Some NSUnit ;
+    ch_nat 'nat v := Some (NSNat v) ;
+    ch_nat 'bool v := Some (NSNat v) ;
+    ch_nat 'fin n v := Some (NSNat v) ;
+    ch_nat (l1 × l2) (pair v1 v2) :=
+      match (ch_nat l1 v1, ch_nat l2 v2) with
+        | (Some v, Some v') => Some (NSProd v v')
+        | _ => None
+      end ;
+    ch_nat 'option l (Some v) :=
+      match (ch_nat l v) with
+        | Some v' => Some (NSOption (Some v'))
+        | _ => None
+      end ;
+    ch_nat 'option l None := Some (NSOption None) ;
+    ch_nat _ _ := None.
 
   Compute (nat_ch (ch_nat 'unit Datatypes.tt) 'unit).
   Lemma ch_nat_ch l v:
-    let r := nat_ch (ch_nat l v) l in
-    if (isSome r) then
-      r = Some v
-    else true.
+    match (ch_nat l v) with
+      | Some k => nat_ch (Some k) l = Some v
+      | _ => true
+    end.
   Proof.
     induction l.
     - rewrite ch_nat_equation_1.
-      rewrite nat_ch_equation_1.
+      simpl.
+      rewrite nat_ch_aux_equation_1.
       by destruct v.
     - rewrite ch_nat_equation_2.
-      rewrite nat_ch_equation_10.
+      simpl.
+      rewrite nat_ch_aux_equation_9.
       reflexivity.
     - rewrite ch_nat_equation_3.
-      rewrite nat_ch_equation_11.
+      simpl.
+      rewrite nat_ch_aux_equation_10.
       destruct v ; reflexivity.
     - destruct v.
       rewrite ch_nat_equation_4.
-      rewrite nat_ch_equation_33.
+      simpl.
       specialize (IHl1 s).
       specialize (IHl2 s0).
-  Admitted.
+      move: IHl1 IHl2.
+      case (ch_nat l1 s) ;
+      case (ch_nat l2 s0).
+      + simpl.
+        intros.
+        rewrite nat_ch_aux_equation_32.
+        by rewrite IHl1 IHl2.
+      + by simpl ; intros ; try inversion IHl1 ; try inversion IHl2.
+      + by simpl ; intros ; try inversion IHl1 ; try inversion IHl2.
+      + by simpl ; intros ; try inversion IHl1 ; try inversion IHl2.
+    - rewrite ch_nat_equation_5.
+      done.
+    - destruct v eqn:e ; simpl.
+      + rewrite ch_nat_equation_6.
+        specialize (IHl s).
+        case (ch_nat l s) eqn:e'.
+        ++ simpl.
+           intros.
+           rewrite nat_ch_aux_equation_20.
+           f_equal.
+           done.
+        ++ done.
+      + rewrite ch_nat_equation_7.
+        done.
+    - rewrite ch_nat_equation_8.
+      simpl.
+      rewrite nat_ch_aux_equation_14.
+      f_equal.
+      unfold nat_ch_aux_obligation_1.
+      have lv := ltn_ord v.
+      apply /eqP.
+      erewrite <- inj_eq.
+      2: apply ord_inj.
+      simpl.
+      rewrite modn_small.
+      2: assumption.
+      done.
+  Qed.
 
   Definition new_state
-             (st : Location → NatState) (l : Location) (v : l) : (Location → NatState)
+             (st : Location → option NatState) (l : Location) (v : l) : (Location → option NatState)
     :=
     fun (l' : Location) =>
       if l.π2 == l'.π2
@@ -102,7 +155,7 @@ Section Executor.
       else st l'.
 
   Fixpoint Run_aux {A : choiceType}
-           (c : raw_code A) (seed : nat) (st : Location → NatState)
+           (c : raw_code A) (seed : nat) (st : Location → option NatState)
     : option A :=
     match c with
       ret x => Some x
@@ -121,7 +174,7 @@ Section Executor.
     end.
 
   Definition Run {A} :=
-    (fun c seed => @Run_aux A c seed (fun (l : Location) => NSUnit)).
+    (fun c seed => @Run_aux A c seed (fun (l : Location) => Some NSUnit)).
 
 End Executor.
 
