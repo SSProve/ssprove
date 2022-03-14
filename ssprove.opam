@@ -13,6 +13,7 @@ depends: [
   "coq-mathcomp-ssreflect" {(>= "1.13.0" & < "1.14~")}
   "coq-mathcomp-analysis" {= "0.3.13"}
   "coq-extructures" {(>= "0.3.1" & < "dev")}
+  "coq-deriving" {(>= "0.1" & < "dev")}
 ]
 build: [
   [make "-j%{jobs}%"]

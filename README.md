@@ -37,6 +37,7 @@ A documentation is available in [DOC.md].
 - Mathcomp `1.13.0`
 - Mathcomp analysis `0.3.13`
 - Coq Extructures `0.3.1`
+- Coq Deriving `0.1`
 
 You can get them all from the `opam` package manager for OCaml:
 ```sh
