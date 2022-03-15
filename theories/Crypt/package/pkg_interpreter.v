@@ -1,37 +1,25 @@
-
-From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
-
 Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
-  ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
+From mathcomp Require Import all_ssreflect.
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
-  UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_core_definition chUniverse pkg_composition pkg_rhl
-  Package Prelude RandomOracle.
+From Crypt Require Import Prelude choice_type
+     pkg_core_definition pkg_tactics pkg_distr pkg_notation.
 
 From Coq Require Import Utf8.
 From extructures Require Import ord fset fmap.
 
 From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
 
 Set Equations With UIP.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
-Set Primitive Projections.
-
-Import Num.Def.
-Import Num.Theory.
-Import Order.POrderTheory.
-
-Import PackageNotation.
 
 Section Interpreter.
+  Import PackageNotation.
+  #[local] Open Scope package_scope.
 
-  Context (sample : ∀ (e : chUniverse), nat → option (nat * e)).
+  Context (sample : ∀ (e : choice_type), nat → option (nat * e)).
 
   Inductive NatState :=
   | NSUnit
@@ -39,7 +27,7 @@ Section Interpreter.
   | NSOption (A : option NatState)
   | NSProd (A B : NatState).
 
-  Equations? nat_ch_aux (x : NatState) (l : chUniverse) : option (Value l) :=
+  Equations? nat_ch_aux (x : NatState) (l : choice_type) : option (Value l) :=
     nat_ch_aux (NSUnit) 'unit := Some Datatypes.tt ;
     nat_ch_aux (NSNat n) 'nat := Some n ;
     nat_ch_aux (NSNat n) 'bool := Some (Nat.odd n) ;
@@ -58,13 +46,13 @@ Section Interpreter.
       apply cond_pos0.
   Defined.
 
-  Definition nat_ch (x : option NatState) (l : chUniverse) : option (Value l) :=
+  Definition nat_ch (x : option NatState) (l : choice_type) : option (Value l) :=
     match x with
     | Some v => nat_ch_aux v l
     | None => None
     end.
 
-  Equations ch_nat (l : chUniverse) (v : l) : option NatState :=
+  Equations ch_nat (l : choice_type) (v : l) : option NatState :=
     ch_nat 'unit v := Some NSUnit ;
     ch_nat 'nat v := Some (NSNat v) ;
     ch_nat 'bool v := Some (NSNat v) ;
@@ -82,7 +70,6 @@ Section Interpreter.
     ch_nat 'option l None := Some (NSOption None) ;
     ch_nat _ _ := None.
 
-  Compute (nat_ch (ch_nat 'unit Datatypes.tt) 'unit).
   Lemma ch_nat_ch l v:
     match (ch_nat l v) with
       | Some k => nat_ch (Some k) l = Some v
@@ -176,86 +163,33 @@ Section Interpreter.
   Definition Run {A} :=
     (fun c seed => @Run_aux A c seed (fun (l : Location) => Some NSUnit)).
 
-End Interpreter.
 
-#[program] Fixpoint sampler (e : chUniverse) seed : option (nat * e):=
-  match e with
-    chUnit => Some (seed, Datatypes.tt)
-  | chNat => Some ((seed + 1)%N, seed)
-  | chBool => Some ((seed + 1)%N, Nat.even seed)
-  | chProd A B =>
-      match sampler A seed with
-      | Some (seed' , x) => match sampler B seed' with
-                           | Some (seed'', y) => Some (seed'', (x, y))
-                           | _ => None
-                           end
-      | _ => None
-      end
-  | chMap A B => None
-  | chOption A =>
-      match sampler A seed with
-      | Some (seed', x) => Some (seed', Some x)
-      | _ => None
-      end
-  | chFin n => Some ((seed + 1)%N, _)
-  end.
-Next Obligation.
-  eapply Ordinal.
-  instantiate (1 := (seed %% n)%N).
-  rewrite ltn_mod.
-  apply n.
-Defined.
-
-Section Test.
-
-  Definition loc : Location :=  ('nat ; 1)%N.
-  Definition locs : {fset Location} := fset [:: loc].
-
-  Definition test_prog_sub (x : nat):
-    code fset0 [interface] 'nat :=
-    {code
-       k ← sample uniform 20 ;;
-       let y := (x + k)%N in
-       ret y
-    }.
-
-  #[program] Definition test_prog (x : nat):
-    code locs [interface] 'nat :=
-    {code
-       k ← test_prog_sub x ;;
-       put loc := k ;;
-       k' ← get loc ;;
-       ret k'
-    }.
+  #[program] Fixpoint sampler (e : choice_type) seed : option (nat * e):=
+    match e with
+      chUnit => Some (seed, Datatypes.tt)
+    | chNat => Some ((seed + 1)%N, seed)
+    | chBool => Some ((seed + 1)%N, Nat.even seed)
+    | chProd A B =>
+        match sampler A seed with
+        | Some (seed' , x) => match sampler B seed' with
+                              | Some (seed'', y) => Some (seed'', (x, y))
+                              | _ => None
+                              end
+        | _ => None
+        end
+    | chMap A B => None
+    | chOption A =>
+        match sampler A seed with
+        | Some (seed', x) => Some (seed', Some x)
+        | _ => None
+        end
+    | chFin n => Some ((seed + 1)%N, _)
+    end.
   Next Obligation.
-    ssprove_valid.
+    eapply Ordinal.
+    instantiate (1 := (seed %% n)%N).
+    rewrite ltn_mod.
+    apply n.
   Defined.
 
-  Compute (Run sampler (test_prog 2) 54).
-
-  Lemma interpretation_test1:
-    ∀ seed input,
-      (Run sampler (test_prog input) seed) = Some (input + seed %% 20)%N.
-  Proof.
-    done.
-  Qed.
-
-  Definition E :=
-    [interface
-       val #[ 0 ] : 'nat → 'nat
-    ].
-
-  Definition test_pack:
-    package locs [interface] E :=
-    [package
-       def #[ 0 ] (x : 'nat) : 'nat
-       {
-         k ← sample uniform 20 ;;
-         let y := (x + k)%N in
-         put loc := y ;;
-         y' ← get loc ;;
-         ret y'
-       }
-    ].
-
-End Test.
+End Interpreter.
