@@ -11,7 +11,6 @@ From Coq Require Import Utf8.
 From Crypt Require Import Prelude Package.
 Import PackageNotation.
 
-
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -96,9 +95,9 @@ Definition ssprove_write_lval (l : lval) (tr_p : typed_code)
   := projT2 unsupported
 .
 
-Definition translate_instr (i : instr) : raw_code chUnit.
+Definition translate_instr_r (i : instr_r) : raw_code chUnit.
 Proof.
-  destruct i as [iinfo i]. destruct i.
+  destruct i.
   - (* Cassgn *)
     (* l :a=_s p *)
     pose (translate_pexpr p) as tr_p.
@@ -125,9 +124,9 @@ Proof.
   exact (projT2 unsupported).
 Defined.
 
-Record fdef := { _ : typed_raw_function ; _ : {fset Location} ; _ : Interface ; _ : Interface }.
+Record fdef := { ffun : typed_raw_function ; locs : {fset Location} ; imp : Interface ; exp : Interface }.
 
-Definition translate_fundef (fd : _fun_decl extra_fun_t) : funname * fdef.
+Definition translate_fundef (fd : _ufun_decl (* extra_fun_t *)) : funname * fdef.
 Proof.
   destruct fd. destruct _f.
   split. 1: exact f.
@@ -142,9 +141,9 @@ Proof.
   - exact [interface].
 Defined.
 
-Fixpoint satisfies_globs (globs : glob_decls) : heap -> Prop.
+Fixpoint satisfies_globs (globs : glob_decls) : heap * heap -> Prop.
 Proof.
-  exact (fun x => False).
+  exact (fun '(x, y) => False).
 Defined.
 
 Fixpoint collect_globs (globs : glob_decls) : seq Location.
@@ -152,20 +151,150 @@ Proof.
   exact nil.
 Defined.
 
-Definition ssprove_prog {T} := seq (funname * T).
+Definition ssprove_prog := seq (funname * fdef).
 
-Definition translate_prog (p:expr.prog) : ssprove_prog :=
+Definition translate_prog (p:uprog) : ssprove_prog :=
   let globs := collect_globs (p_globs p) in
   let fds := map translate_fundef (p_funcs p) in
   fds.
+Print typed_raw_function.
+Check Interface.
+About rel_jdg.
+About package.
+Check value.
 
-(* Theorem translate_correct entries (p : prog) (fn : funname) m va m' vr rf : *)
-(*   fn \in entries → *)
-(*   sem.sem_call p m fn va m' vr → *)
-(*   let sp := (translate_prog p) in *)
-(*   get_fundef fn sp = Some rf → *)
-(*   { satisfies_globs (p_globs p) } rf (fix_types rf (translate_values va)) ~ ret vr *)
-(*                                   { λ (v1,s1) (v2,s2), v1 = v2} *)
-(* Proof. *)
+Definition type_of_val : value -> choice_type.
+Proof.
+  intros.
+  exact chUnit.
+Defined.
+
+Fixpoint lchtuple (ts:seq choice_type) : choice_type :=
+  match ts with
+  | [::]   => chUnit
+  | [::t1] => t1
+  | t1::ts => chProd t1 (lchtuple ts)
+  end.
+
+Definition get_fundef_ssp (sp : seq (funname * fdef)) (fn : funname) (dom cod : choice_type) : option (dom -> raw_code cod).
+Proof.
+  exact None.
+Defined.
+
+Definition translate_value : value -> ∑ (T: choice_type), T.
+Proof.
+  intros. exists chUnit. exact.
+Defined.
+
+(* Definition seq_prod ls := *)
+(*   map translate_value ls *)
+(*   foldr chProd ls *)
+
+Definition translate_values (vs : seq value) : lchtuple (map type_of_val vs).
+Proof. Admitted.
+
+Definition translate_mem (h : mem) : heap.
+Proof. Admitted.
+
+Definition instr_d i :=
+  match i with
+  | MkI ii i => i
+  end.
+
+Theorem translate_correct (p : expr.uprog) (fn : funname) m va m' vr f :
+  sem.sem_call p m fn va m' vr →
+  let sp := (translate_prog p) in
+  let dom := lchtuple (map type_of_val va) in
+  let cod := lchtuple (map type_of_val vr) in
+  get_fundef_ssp sp fn dom cod = Some f →
+  satisfies_globs (p_globs p) (translate_mem m, translate_mem m') -> ⊢ ⦃ satisfies_globs (p_globs p) ⦄ f (translate_values va) ≈ ret (translate_values vr) ⦃ λ '(v1, s1) '(v2,s2), v1 = v2 ⦄.
+Proof.
+  (* intros H H1 H2 H3 H4. *)
+  (* unshelve eapply sem_call_Ind. *)
+  (* all: shelve_unifiable. *)
+  intros H.
+  set (Pfun :=
+         λ (m : mem) (fn : funname) (va : seq value)  (m' : mem) (vr : seq value),
+         forall f,
+         let sp := translate_prog p in
+         let dom := lchtuple [seq type_of_val i | i <- va] in
+         let cod := lchtuple [seq type_of_val i | i <- vr] in
+         get_fundef_ssp sp fn dom cod = Some f ->
+         satisfies_globs (p_globs p) (translate_mem m, translate_mem m') → ⊢ ⦃ satisfies_globs (p_globs p) ⦄ f (translate_values va) ≈
+     ret (translate_values vr) ⦃ λ '(v1, _) '(v2, _), v1 = v2 ⦄
+      ).
+
+  set (Pi_r :=
+         λ (s1 : estate) (i : instr_r) (s2 : estate),
+         ⊢ ⦃ λ '(h1,h2), False ⦄ translate_instr_r i ≈ ret tt ⦃ λ '(v1, _) '(v2, _), True ⦄
+      ).
+
+  set (Pi := λ s1 i s2, (Pi_r s1 (instr_d i) s2)).
+  set (Pc :=
+         λ (s1 : estate) (c : cmd) (s2 : estate),
+         ⊢ ⦃ λ '(h1,h2), False ⦄ translate_cmd c ≈ ret tt ⦃ λ '(v1, _) '(v2, _), True ⦄
+      ).
+
+  (* FIXME *)
+  set (Pfor := λ (v : var_i) (ls : seq Z) (s1 : estate) (c : cmd) (s2 : estate),
+         ⊢ ⦃ λ '(h1,h2), False ⦄ (* ssprove_for *) translate_cmd c ≈ ret tt ⦃ λ '(v1, _) '(v2, _), True ⦄).
+
+
+  unshelve eapply (@sem_call_Ind _ _ _ _ Pc Pi_r Pi Pfor Pfun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H).
+  - red. intros.
+    red. unfold translate_cmd. simpl.
+    admit.
+  - red. intros.
+    red. unfold translate_cmd. simpl.
+    admit.
+  - red. intros.
+    apply H1.
+  - red. intros.
+    red.
+    unfold translate_instr_r.
+    unfold ssprove_write_lval.
+    simpl.
+    admit.
+  - red. intros.
+    red.
+    unfold translate_instr_r.
+    admit.
+  - red. intros.
+    red.
+    unfold translate_instr_r.
+    admit.
+  - red. intros.
+    red.
+    unfold translate_instr_r.
+    admit.
+  - red. intros.
+    red.
+    unfold translate_instr_r.
+    admit.
+  - red. intros.
+    red.
+    unfold translate_instr_r.
+    admit.
+  - red. intros.
+    red.
+    unfold translate_instr_r.
+    admit.
+  - red. intros.
+    red.
+    unfold translate_instr_r.
+    admit.
+  - red. intros.
+    red.
+    unfold translate_cmd.
+    admit.
+  - red. intros.
+    red.
+    unfold translate_instr_r.
+    admit.
+  - red. intros.
+    unfold Pfun. intros.
+    unfold get_fundef_ssp in H7.
+    admit.
+Admitted.
 
 End Section.
