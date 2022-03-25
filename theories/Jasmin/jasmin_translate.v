@@ -40,20 +40,27 @@ Notation gd := (p_globs P).
 Context {encode : stype -> choice_type}.
 Context (embed : forall t, sem_t t -> encode t).
 
-Definition tr_var : (gvar -> Location).
-  intros X. destruct X.
-           destruct gv.
-           destruct v_var.
-           constructor.
-           - apply encode.
-             exact vtype0.
-           - assert (Ident.ident -> nat) as db_of_ident.
-             { intros id.
-               induction id.
-               - exact 1.
-               - exact (256 * IHid + (Ascii.nat_of_ascii a))%nat.
-             }
-             exact (db_of_ident vname0).
+Definition nat_of_ident (id : Ident.ident) : nat.
+Proof.
+  induction id.
+  - exact 1.
+  - exact (256 * IHid + (Ascii.nat_of_ascii a))%nat.
+Defined.
+
+(* injection *)
+Definition nat_of_fun_ident (f : funname) (id : Ident.ident) : nat.
+Proof.
+  exact (3^(nat_of_pos f) * 2^(nat_of_ident id))%nat.
+Defined.
+
+Definition translate_var (f : funname) (gv : gvar) : Location.
+  destruct gv.
+  destruct gv.
+  destruct v_var.
+  constructor.
+  - apply encode.
+    exact vtype0.
+  - exact (nat_of_fun_ident f vname0).
 Defined.
 
 Definition typed_code := ∑ (a : choice_type), raw_code a.
