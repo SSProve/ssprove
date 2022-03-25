@@ -186,17 +186,35 @@ Defined.
 Definition translate_values (vs : seq value) : lchtuple (map type_of_val vs).
 Proof. Admitted.
 
+Definition translate_mem (h : mem) : heap.
+Proof. Admitted.
+
 Theorem translate_correct (p : expr.uprog) (fn : funname) m va m' vr f :
   sem.sem_call p m fn va m' vr →
   let sp := (translate_prog p) in
   let dom := lchtuple (map type_of_val va) in
   let cod := lchtuple (map type_of_val vr) in
   get_fundef_ssp sp fn dom cod = Some f →
-  (* let f := ffun rf in *)
-  (* let (S, f) := f in *)
-  (* let (T, f) := f in *)
-  ⊢ ⦃ satisfies_globs (p_globs p) ⦄ f (translate_values va) ≈ ret (translate_values vr) ⦃ λ '(v1, s1) '(v2,s2), v1 = v2 ⦄.
+  satisfies_globs (p_globs p) (translate_mem m, translate_mem m') -> ⊢ ⦃ satisfies_globs (p_globs p) ⦄ f (translate_values va) ≈ ret (translate_values vr) ⦃ λ '(v1, s1) '(v2,s2), v1 = v2 ⦄.
 Proof.
-  Admitted.
+  (* intros H H1 H2 H3 H4. *)
+  (* unshelve eapply sem_call_Ind. *)
+  (* all: shelve_unifiable. *)
+  intros H.
+  set (P_fun :=
+         λ (m : mem) (fn : funname) (va : seq value)  (m' : mem) (vr : seq value),
+         forall f,
+         let sp := translate_prog p in
+         let dom := lchtuple [seq type_of_val i | i <- va] in
+         let cod := lchtuple [seq type_of_val i | i <- vr] in
+         get_fundef_ssp sp fn dom cod = Some f ->
+         satisfies_globs (p_globs p) (translate_mem m, translate_mem m') → ⊢ ⦃ satisfies_globs (p_globs p) ⦄ f (translate_values va) ≈
+     ret (translate_values vr) ⦃ λ '(v1, _) '(v2, _), v1 = v2 ⦄
+      ).
+
+  unshelve eapply (@sem_call_Ind _ _ _ _ _ _ _ _ P_fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H).
+  1-4: intros; exact True.
+  all: try easy.
+Qed.
 
 End Section.
