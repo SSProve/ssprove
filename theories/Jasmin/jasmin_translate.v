@@ -88,9 +88,9 @@ Definition ssprove_write_lval (l : lval) (tr_p : typed_code)
   := projT2 unsupported
 .
 
-Definition translate_instr (i : instr) : raw_code chUnit.
+Definition translate_instr_r (i : instr_r) : raw_code chUnit.
 Proof.
-  destruct i as [iinfo i]. destruct i.
+  destruct i.
   - (* Cassgn *)
     (* l :a=_s p *)
     pose (translate_pexpr p) as tr_p.
@@ -189,6 +189,11 @@ Proof. Admitted.
 Definition translate_mem (h : mem) : heap.
 Proof. Admitted.
 
+Definition instr_d i :=
+  match i with
+  | MkI ii i => i
+  end.
+
 Theorem translate_correct (p : expr.uprog) (fn : funname) m va m' vr f :
   sem.sem_call p m fn va m' vr →
   let sp := (translate_prog p) in
@@ -201,7 +206,7 @@ Proof.
   (* unshelve eapply sem_call_Ind. *)
   (* all: shelve_unifiable. *)
   intros H.
-  set (P_fun :=
+  set (Pfun :=
          λ (m : mem) (fn : funname) (va : seq value)  (m' : mem) (vr : seq value),
          forall f,
          let sp := translate_prog p in
@@ -212,9 +217,77 @@ Proof.
      ret (translate_values vr) ⦃ λ '(v1, _) '(v2, _), v1 = v2 ⦄
       ).
 
-  unshelve eapply (@sem_call_Ind _ _ _ _ _ _ _ _ P_fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H).
-  1-4: intros; exact True.
-  all: try easy.
-Qed.
+  set (Pi_r :=
+         λ (s1 : estate) (i : instr_r) (s2 : estate),
+         ⊢ ⦃ λ '(h1,h2), False ⦄ translate_instr_r i ≈ ret tt ⦃ λ '(v1, _) '(v2, _), True ⦄
+      ).
+
+  set (Pi := λ s1 i s2, (Pi_r s1 (instr_d i) s2)).
+  set (Pc :=
+         λ (s1 : estate) (c : cmd) (s2 : estate),
+         ⊢ ⦃ λ '(h1,h2), False ⦄ translate_cmd c ≈ ret tt ⦃ λ '(v1, _) '(v2, _), True ⦄
+      ).
+
+  (* FIXME *)
+  set (Pfor := λ (v : var_i) (ls : seq Z) (s1 : estate) (c : cmd) (s2 : estate),
+         ⊢ ⦃ λ '(h1,h2), False ⦄ (* ssprove_for *) translate_cmd c ≈ ret tt ⦃ λ '(v1, _) '(v2, _), True ⦄).
+
+
+  unshelve eapply (@sem_call_Ind _ _ _ _ Pc Pi_r Pi Pfor Pfun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H).
+  - red. intros.
+    red. unfold translate_cmd. simpl.
+    admit.
+  - red. intros.
+    red. unfold translate_cmd. simpl.
+    admit.
+  - red. intros.
+    apply H1.
+  - red. intros.
+    red.
+    unfold translate_instr_r.
+    unfold ssprove_write_lval.
+    simpl.
+    admit.
+  - red. intros.
+    red.
+    unfold translate_instr_r.
+    admit.
+  - red. intros.
+    red.
+    unfold translate_instr_r.
+    admit.
+  - red. intros.
+    red.
+    unfold translate_instr_r.
+    admit.
+  - red. intros.
+    red.
+    unfold translate_instr_r.
+    admit.
+  - red. intros.
+    red.
+    unfold translate_instr_r.
+    admit.
+  - red. intros.
+    red.
+    unfold translate_instr_r.
+    admit.
+  - red. intros.
+    red.
+    unfold translate_instr_r.
+    admit.
+  - red. intros.
+    red.
+    unfold translate_cmd.
+    admit.
+  - red. intros.
+    red.
+    unfold translate_instr_r.
+    admit.
+  - red. intros.
+    unfold Pfun. intros.
+    unfold get_fundef_ssp in H7.
+    admit.
+Admitted.
 
 End Section.
