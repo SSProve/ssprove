@@ -49,6 +49,22 @@ opam install ./ssprove-opam
 To build the dependency graph, you can optionally install `graphviz`.
 On macOS, `gsed` is additionally required for this.
 
+#### Jasmin
+
+In order to build the `jasmin` branch, a recent version of `https://github.com/jasmin-lang/jasmin` should be installed. This can be done via `opam`, by cloning the `jasmin` repo and running
+```sh
+cd jasmin
+opam install .
+```
+The last version of Jasmin that is known to work is `ca721130dd`, but we try to track `main`.
+
+To install a local copy of Jasmin, one may use
+```sh
+cd jasmin
+make
+opam install --assume-built --working-dir ./opam
+```
+
 #### Running verification
 
 Run `make` from this directory to verify all the Coq files.

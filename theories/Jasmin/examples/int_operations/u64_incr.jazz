@@ -1,0 +1,11 @@
+inline fn incr(reg u64 n) -> reg u64 {
+   reg u64 m;
+   m = (n+2);
+   return m;
+   }
+
+export fn f() -> reg u64 {
+  reg u64 x;
+  x = incr(0);
+  return x;
+  }

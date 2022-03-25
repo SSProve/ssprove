@@ -1,0 +1,5 @@
+fn foo (reg int k) -> reg int {
+   reg int x;
+   x = k;
+   return x;
+   }

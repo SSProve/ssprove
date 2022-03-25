@@ -1,6 +1,7 @@
 -Q theories/Mon Mon
 -Q theories/Relational Relational
 -Q theories/Crypt Crypt
+-Q theories/Jasmin JasminSSProve
 
 theories/Mon/Base.v
 theories/Mon/SPropBase.v
@@ -75,6 +76,9 @@ theories/Crypt/rules/UniformStateProb.v
 
 #std. distributions
 # theories/Crypt/only_prob/SymmetricSchemeStateProbStdDistr.v
+
+# Jasmin
+theories/Jasmin/jasmin_translate.v
 
 # Examples
 theories/Crypt/examples/package_usage_example.v

@@ -11,6 +11,7 @@ _namecheck_ssprove_csf2021/
 *.vos
 *.glob
 .coqdeps.d
+.coq-native/
 
 # coq_makefile
 .Makefile.d
@@ -55,3 +56,10 @@ Makefile.coq.conf
 .DS_store
 
 .Makefile.coq 2.d
+
+# OCaml
+*.cmo
+*.cmi
+
+# Assembly (ignored because we expect them to be jasminc generated)
+*.s

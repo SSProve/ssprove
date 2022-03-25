@@ -1,0 +1,16 @@
+fn odd (reg u64 n, reg u64 m) -> reg u64 {
+   inline int i;
+   for i = 0 to n {
+       m = m + 1;
+   }
+   return m;
+}
+
+
+inline fn add (inline int n, inline int m) -> inline int {
+   inline int i;
+   for i = 0 to n {
+       m = m + 1;
+   }
+   return m;
+}

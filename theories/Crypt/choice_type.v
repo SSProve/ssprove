@@ -37,6 +37,7 @@ Open Scope type_scope.
 Inductive choice_type :=
 | chUnit
 | chNat
+(* | chInt *)
 | chBool
 | chProd (A B : choice_type)
 | chMap (A B : choice_type)
