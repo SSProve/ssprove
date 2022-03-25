@@ -5,6 +5,7 @@ Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 
 From Jasmin Require Import expr compiler_util values sem.
+From Jasmin Require Import expr_facts.
 
 From Coq Require Import Utf8.
 
@@ -52,14 +53,18 @@ Proof.
   exact (3^(nat_of_pos f) * 2^(nat_of_ident id))%nat.
 Defined.
 
-Definition translate_var (f : funname) (gv : gvar) : Location.
-  destruct gv.
-  destruct gv.
-  destruct v_var.
+Definition translate_var (f : funname) (x : var) : Location.
+  destruct x.
   constructor.
   - apply encode.
     exact vtype0.
   - exact (nat_of_fun_ident f vname0).
+Defined.
+
+Definition translate_gvar (f : funname) (gv : gvar) : Location.
+  destruct gv.
+  destruct gv.
+  now apply translate_var.
 Defined.
 
 Definition typed_code := ∑ (a : choice_type), raw_code a.
@@ -181,25 +186,55 @@ Proof.
   exact None.
 Defined.
 
-Definition translate_value : value -> ∑ (T: choice_type), T.
+Definition typed_chElement := ∑ (T: choice_type), T.
+
+Definition translate_value : value -> typed_chElement.
 Proof.
-  intros. exists chUnit. exact.
+  intros.
+  destruct X.
+  - exists chBool. exact b.
+  - exists chUnit. exact tt.      (* exists chInt *)
+  - exists chUnit. exact tt.      (* exists chMap chInt (chWord 8) *)
+  - exists (chWord s). exact s0.
+  - exists chUnit. exact tt.      (* maybe return something real? *)
 Defined.
 
 (* Definition seq_prod ls := *)
 (*   map translate_value ls *)
 (*   foldr chProd ls *)
+From mathcomp Require Import all_algebra.
+Search (GRing.ComRing.sort _ -> Z).
+
+Definition translate_ptr (ptr : pointer) : Location := (chWord Uptr ; Z.to_nat (wunsigned ptr)).
+
+Definition coerce_to_choice_type (t : choice_type) (v : typed_chElement) : t.
+  destruct v.
+  destruct (x == t) eqn:E.
+  - move: E => /eqP E.
+    subst. exact s.
+  - apply chCanonical.
+Defined.
+
+Definition rel_mem (m : mem) (h : heap) :=
+  forall ptr sz v, read m ptr sz = ok v -> get_heap h (translate_ptr ptr) = coerce_to_choice_type _ (translate_value (@to_val (sword sz) v)).
+Search (vmap -> _).
+Search (var -> _).
+From Jasmin Require Import expr.
+Local Open Scope vmap_scope.
+Search value vtype.
+(* Set Printing All. *)
+Search vtype sem_t.
+
+
+Definition rel_vmap (vm : vmap) (h : heap) (fn : funname) :=
+  forall (i : var) v, vm.[i] = ok v
+    -> get_heap h (translate_var fn i) = coerce_to_choice_type _ (encode (vtype i) ; @embed _ v).
+
+Definition rel_estate (s : estate) (h : heap) (fn : funname) :=
+  rel_mem s.(emem) h /\ rel_vmap s.(evm) h fn.
 
 Definition translate_values (vs : seq value) : lchtuple (map type_of_val vs).
 Proof. Admitted.
-
-Definition translate_mem (h : mem) : heap.
-Proof. Admitted.
-
-Definition instr_d i :=
-  match i with
-  | MkI ii i => i
-  end.
 
 Theorem translate_correct (p : expr.uprog) (fn : funname) m va m' vr f :
   sem.sem_call p m fn va m' vr →
@@ -252,6 +287,8 @@ Proof.
   - red. intros.
     red.
     unfold translate_instr_r.
+    induction e.
+    + simpl.
     unfold ssprove_write_lval.
     simpl.
     admit.

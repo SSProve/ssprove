@@ -47,15 +47,28 @@ Inductive choice_type :=
 
 Derive NoConfusion NoConfusionHom for choice_type.
 
-(* Definition void_leq (x y : void) := true. *)
+Check word_ordMixin.
 
-(* Lemma void_leqP : Ord.axioms void_leq. *)
-(* Proof. split; by do ![case]. Qed. *)
+Definition void_leq (x y : void) := true.
+Lemma void_leqP : Ord.axioms void_leq.
+Proof. split; by do ![case]. Qed.
 
-(* Definition void_ordMixin := OrdMixin void_leqP. *)
-(* Canonical void_ordType := Eval hnf in OrdType void void_ordMixin. *)
+Definition void_ordMixin := OrdMixin void_leqP.
+Canonical void_ordType := Eval hnf in OrdType void void_ordMixin.
 
-Axiom WordOrd : ordType.        (* fixme *)
+
+
+(* Check OrdMixin _ int. *)
+(* Check sig_ordMixin. *)
+
+Definition word_ordMixin nbits := [ ordMixin of word nbits by <: ].
+Canonical word_ordType nbits := Eval hnf in OrdType (word nbits) (word_ordMixin nbits).
+
+(* Locate "ordType". *)
+(* Check fun nbits => Ord.clone (word_ordType nbits). nbits). *)
+(* Axiom WordOrd : ordType.        (* fixme *) *)
+
+Check ordMixin.
 
 Fixpoint chElement_ordType (U : choice_type) : ordType :=
   match U with
@@ -66,7 +79,7 @@ Fixpoint chElement_ordType (U : choice_type) : ordType :=
   | chMap U1 U2 => fmap_ordType (chElement_ordType U1) (chElement_ordType U2)
   | chOption U => option_ordType (chElement_ordType U)
   | chFin n => [ordType of ordinal n.(pos) ]
-  | chWord nbits => WordOrd      (* fixme *)
+  | chWord nbits => word_ordType nbits
   end.
 
 Fixpoint chElement (U : choice_type) : choiceType :=
