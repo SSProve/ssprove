@@ -1,5 +1,5 @@
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
-From mathcomp Require Import all_ssreflect.
+From mathcomp Require Import all_ssreflect all_algebra.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 
 From extructures Require Import ord fset fmap.
@@ -170,8 +170,13 @@ Check value.
 
 Definition type_of_val : value -> choice_type.
 Proof.
-  intros.
-  exact chUnit.
+  intros val.
+  destruct val as [b | z | size a | size wd | ?].
+  - exact chBool.
+  - exact chInt.
+  - exact (chMap chInt (chWord 8)).
+  - exact (chWord size).
+  - exact chUnit.
 Defined.
 
 Fixpoint lchtuple (ts:seq choice_type) : choice_type :=
@@ -188,53 +193,64 @@ Defined.
 
 Definition typed_chElement := ∑ (T: choice_type), T.
 
-Definition translate_value : value -> typed_chElement.
+Definition translate_value (v : value) : type_of_val v.
 Proof.
-  intros.
-  destruct X.
-  - exists chBool. exact b.
-  - exists chUnit. exact tt.      (* exists chInt *)
-  - exists chUnit. exact tt.      (* exists chMap chInt (chWord 8) *)
-  - exists (chWord s). exact s0.
-  - exists chUnit. exact tt.      (* maybe return something real? *)
+  destruct v as [b | z | size a | size wd | ?].
+  - exact b.
+  - exact z.
+  - destruct a as [arr_data].
+    eapply Mz.fold with (2 := arr_data) (3 := emptym).
+    intros k v m.
+    exact (setm m k v).
+  - exact wd.
+  - exact tt.      (* Vundef: maybe return something real? *)
+Defined.
+
+
+Fixpoint type_of_values vs : choice_type :=
+  match vs with
+  | [::]   => chUnit
+  | [::v] => type_of_val v
+  | hd::tl => chProd (type_of_val hd) (type_of_values tl)
+  end.
+
+(* lchtuple (map type_of_val vs) *)
+
+Definition translate_values (vs : seq value) : lchtuple (map type_of_val vs).
+Proof.
+  induction vs as [|v vs tr_vs].
+  - exact tt.
+  - destruct vs as [|v' vs'].
+    + exact (translate_value v).
+    + exact (translate_value v, tr_vs).
 Defined.
 
 (* Definition seq_prod ls := *)
 (*   map translate_value ls *)
 (*   foldr chProd ls *)
-From mathcomp Require Import all_algebra.
-Search (GRing.ComRing.sort _ -> Z).
 
 Definition translate_ptr (ptr : pointer) : Location := (chWord Uptr ; Z.to_nat (wunsigned ptr)).
 
-Definition coerce_to_choice_type (t : choice_type) (v : typed_chElement) : t.
-  destruct v.
-  destruct (x == t) eqn:E.
+Definition coerce_to_choice_type (t : choice_type) {tv : choice_type} (v : tv) : t.
+  destruct (tv == t) eqn:E.
   - move: E => /eqP E.
-    subst. exact s.
+    subst. exact v.
   - apply chCanonical.
 Defined.
 
 Definition rel_mem (m : mem) (h : heap) :=
   forall ptr sz v, read m ptr sz = ok v -> get_heap h (translate_ptr ptr) = coerce_to_choice_type _ (translate_value (@to_val (sword sz) v)).
-Search (vmap -> _).
-Search (var -> _).
+
 From Jasmin Require Import expr.
 Local Open Scope vmap_scope.
-Search value vtype.
-(* Set Printing All. *)
-Search vtype sem_t.
-
 
 Definition rel_vmap (vm : vmap) (h : heap) (fn : funname) :=
   forall (i : var) v, vm.[i] = ok v
-    -> get_heap h (translate_var fn i) = coerce_to_choice_type _ (encode (vtype i) ; @embed _ v).
+    -> get_heap h (translate_var fn i) = coerce_to_choice_type _ (embed v).
+
 
 Definition rel_estate (s : estate) (h : heap) (fn : funname) :=
   rel_mem s.(emem) h /\ rel_vmap s.(evm) h fn.
-
-Definition translate_values (vs : seq value) : lchtuple (map type_of_val vs).
-Proof. Admitted.
 
 Theorem translate_correct (p : expr.uprog) (fn : funname) m va m' vr f :
   sem.sem_call p m fn va m' vr →
