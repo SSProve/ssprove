@@ -298,6 +298,41 @@ Lemma ch_ty_val_enc (sty : stype) (v : sem_t sty) :
 Proof.
   admit. Admitted.
 
+Require Import Coq.Program.Equality.
+
+(* prove using equations, see pkg_invariants and the proof of lookup_hpv_l *)
+Lemma coerce_cast_code (ty vty : choice_type) (v : vty) :
+  ret (coerce_to_choice_type ty v)
+  = cast_typed_code ty (vty ; ret v).
+Proof.
+  (* Admitted. *)
+
+  simpl. unfold coerce_to_choice_type.
+  set (H := (vty == ty) ).
+  dependent destruction H.
+  - destruct vty, ty; simpl; try easy.
+      + match goal with
+        | |- context[elimTF ?e1 ?e2] => set A:=(elimTF e1 e2) (* with (@erefl choice_type chUnit) *)
+        end. simpl in A.
+        assert (A = erefl) by (apply eq_irrelevance).
+        clearbody A.
+        subst; reflexivity.
+      +
+        match goal with
+        | |- context[elimTF ?e1 ?e2] => set A:=(elimTF e1 e2) (* with (@erefl choice_type chUnit) *)
+        end. simpl in A.
+        assert (A = erefl) by (apply eq_irrelevance).
+        clearbody A.
+        subst. cbn. reflexivity.
+      +
+        match goal with
+        | |- context[elimTF ?e1 ?e2] => set A:=(elimTF e1 e2) (* with (@erefl choice_type chUnit) *)
+        end. simpl in A.
+        assert (A = erefl) by (apply eq_irrelevance).
+        clearbody A.
+        subst. cbn. reflexivity.
+Admitted.
+
 Lemma translate_pexpr_correct fn (e : pexpr) (pg : glob_decls) s1 v ty v' ty'
   (H0 : sem_pexpr pg s1 e = ok v)
   (H1 : truncate_val ty v = ok v') :
@@ -310,34 +345,28 @@ Lemma translate_pexpr_correct fn (e : pexpr) (pg : glob_decls) s1 v ty v' ty'
   ⦃ eq ⦄
 .
 Proof.
-  induction e in H0, H1, v, v', ty, ty' |- *.
-  all: simpl in H0.
-  - inversion H0. subst. simpl in H1.
-    unfold truncate_val in H1.
-    destruct of_val eqn:E.
-    2: discriminate.
-    apply of_vint in E as E'.
-    subst. simpl in H1, E. inversion H1. inversion E. subst.
-    simpl.
-    destruct ty'.
-    + unfold coerce_to_choice_type.
-
-      coerce_to_choice_type ty s
-      pose (@ch_ty_val_enc _ s).
-
-Set Nested Proofs Allowed.
-
-
-
-    destruct ty'. all: simpl; try easy.
-    + unfold coerce_to_choice_type.
-
-    unfold translate_pexpr. simpl.
-    +
-
-  revert H1.
-  sem_pexpr pg s1 e
-  induction H0.
+  Admitted.
+(* induction e in H0, H1, v, v', ty, ty' |- *. *)
+(* all: simpl in H0. *)
+(* - inversion H0. subst. simpl in H1. *)
+(*   unfold truncate_val in H1. *)
+(*   destruct of_val eqn:E. *)
+(*   2: discriminate. *)
+(*   apply of_vint in E as E'. *)
+(*   subst. simpl in H1, E. inversion H1. inversion E. subst. *)
+(*   simpl. *)
+(*   destruct ty'. *)
+(*   + unfold coerce_to_choice_type. *)
+(*       coerce_to_choice_type ty s *)
+(*       pose (@ch_ty_val_enc _ s). *)
+(* Set Nested Proofs Allowed. *)
+(*     destruct ty'. all: simpl; try easy. *)
+(*     + unfold coerce_to_choice_type. *)
+(*     unfold translate_pexpr. simpl. *)
+(*     + *)
+(*   revert H1. *)
+(*   sem_pexpr pg s1 e *)
+(*   induction H0. *)
 
 Theorem translate_prog_correct (p : expr.uprog) (fn : funname) m va m' vr f :
   sem.sem_call p m fn va m' vr →
