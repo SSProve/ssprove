@@ -102,19 +102,54 @@ Defined.
 (* FIXME: actually perform the truncation *)
 Definition truncate_code (s : stype) (c : typed_code) : typed_code := c.
 
-Definition ssprove_write_lval (l : lval) (tr_p : typed_code)
-  : raw_code chUnit
-  := projT2 unsupported
-.
+Definition cast_typed_code (ty : choice_type) (tc : typed_code) : raw_code ty.
+Proof.
+  destruct tc as [t c].
+  destruct (t == ty) eqn:E.
+  - move : E => /eqP E. subst; exact c.
+  - apply ret. apply chCanonical.
+Defined.
 
-Definition translate_instr_r (i : instr_r) : raw_code chUnit.
+Definition ssprove_write_lval (fn : funname) (l : lval) (tc : typed_code)
+  : raw_code chUnit
+  :=
+  match l with
+  | Lnone _ ty => ret tt
+  | Lvar x =>
+      (* write_var x v s *)
+      let l := translate_var fn (v_var x) in
+      let c := cast_typed_code l tc in
+      (x ← c ;; #put l := x ;; ret tt)%pack
+  | _ => projT2 unsupported
+  (* | Lmem sz x e => *)
+  (*   Let vx := get_var (evm s) x >>= to_pointer in *)
+  (*   Let ve := sem_pexpr s e >>= to_pointer in *)
+  (*   let p := (vx + ve)%R in (* should we add the size of value, i.e vx + sz * se *) *)
+  (*   Let w := to_word sz v in *)
+  (*   Let m :=  write s.(emem) p w in *)
+  (*   ok {| emem := m;  evm := s.(evm) |} *)
+  (* | Laset aa ws x i => *)
+  (*   Let (n,t) := s.[x] in *)
+  (*   Let i := sem_pexpr s i >>= to_int in *)
+  (*   Let v := to_word ws v in *)
+  (*   Let t := WArray.set t aa i v in *)
+  (*   write_var x (@to_val (sarr n) t) s *)
+  (* | Lasub aa ws len x i => *)
+  (*   Let (n,t) := s.[x] in *)
+  (*   Let i := sem_pexpr s i >>= to_int in *)
+  (*   Let t' := to_arr (Z.to_pos (arr_size ws len)) v in  *)
+  (*   Let t := @WArray.set_sub n aa ws len t i t' in *)
+  (*   write_var x (@to_val (sarr n) t) s *)
+  end.
+
+Definition translate_instr_r (fn : funname) (i : instr_r) : raw_code chUnit.
 Proof.
   destruct i.
   - (* Cassgn *)
     (* l :a=_s p *)
     pose (translate_pexpr p) as tr_p.
     pose (truncate_code s tr_p) as tr_p'.
-    exact (ssprove_write_lval l tr_p').
+    exact (ssprove_write_lval fn l tr_p').
   - exact (projT2 unsupported). (* Copn *)
   - exact (projT2 unsupported). (* Cif *)
   - exact (projT2 unsupported). (* Cfor *)
@@ -253,13 +288,16 @@ Definition rel_vmap (vm : vmap) (h : heap) (fn : funname) :=
 Definition rel_estate (s : estate) (h : heap) (fn : funname) :=
   rel_mem s.(emem) h /\ rel_vmap s.(evm) h fn.
 
+Definition instr_d (i : instr) : instr_r := match i with | MkI _ i => i end.
+
 Theorem translate_correct (p : expr.uprog) (fn : funname) m va m' vr f :
   sem.sem_call p m fn va m' vr →
   let sp := (translate_prog p) in
   let dom := lchtuple (map choice_type_of_val va) in
   let cod := lchtuple (map choice_type_of_val vr) in
   get_fundef_ssp sp fn dom cod = Some f →
-  satisfies_globs (p_globs p) (translate_mem m, translate_mem m') -> ⊢ ⦃ satisfies_globs (p_globs p) ⦄ f (translate_values va) ≈ ret (translate_values vr) ⦃ λ '(v1, s1) '(v2,s2), v1 = v2 ⦄.
+  (* satisfies_globs (p_globs p) (translate_mem m, translate_mem m') -> *)
+  ⊢ ⦃ satisfies_globs (p_globs p) ⦄ f (translate_values va) ≈ ret (translate_values vr) ⦃ λ '(v1, s1) '(v2,s2), v1 = v2 ⦄.
 Proof.
   (* intros H H1 H2 H3 H4. *)
   (* unshelve eapply sem_call_Ind. *)
@@ -272,13 +310,14 @@ Proof.
          let dom := lchtuple [seq choice_type_of_val i | i <- va] in
          let cod := lchtuple [seq choice_type_of_val i | i <- vr] in
          get_fundef_ssp sp fn dom cod = Some f ->
-         satisfies_globs (p_globs p) (translate_mem m, translate_mem m') → ⊢ ⦃ satisfies_globs (p_globs p) ⦄ f (translate_values va) ≈
+         (* satisfies_globs (p_globs p) (translate_mem m, translate_mem m') → *)
+         ⊢ ⦃ satisfies_globs (p_globs p) ⦄ f (translate_values va) ≈
      ret (translate_values vr) ⦃ λ '(v1, _) '(v2, _), v1 = v2 ⦄
       ).
 
   set (Pi_r :=
          λ (s1 : estate) (i : instr_r) (s2 : estate),
-         ⊢ ⦃ λ '(h1,h2), False ⦄ translate_instr_r i ≈ ret tt ⦃ λ '(v1, _) '(v2, _), True ⦄
+         ⊢ ⦃ λ '(h1,h2), False ⦄ translate_instr_r fn i ≈ ret tt ⦃ λ '(v1, _) '(v2, _), True ⦄
       ).
 
   set (Pi := λ s1 i s2, (Pi_r s1 (instr_d i) s2)).
@@ -304,11 +343,30 @@ Proof.
   - red. intros.
     red.
     unfold translate_instr_r.
-    induction e.
+    destruct x.
+    + simpl. admit.
     + simpl.
-    unfold ssprove_write_lval.
-    simpl.
-    admit.
+      eapply r_transL.
+      * eapply r_bind with (mid := eq).
+        -- instantiate (1 := ret (coerce_to_choice_type _
+                         (translate_value v'))).
+           admit.               (* by H0: sem_pexpr e = ok v *)
+        -- intros.
+           eapply rpre_hypothesis_rule.
+           intros ? ? E. From Equations Require Import Equations.
+           noconf E.
+           eapply rpre_weaken_rule.
+           1: refine (rreflexivity_rule _).
+           simpl.
+           intros. by intuition subst.
+      * simpl.
+        eapply r_put_lhs with (pre := (λ '(_, _), False)).
+        apply r_ret.
+        intros.
+        admit.
+    + admit.
+    + admit.
+    + admit.
   - red. intros.
     red.
     unfold translate_instr_r.
