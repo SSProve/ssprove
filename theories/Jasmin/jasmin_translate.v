@@ -12,6 +12,8 @@ From Coq Require Import Utf8.
 From Crypt Require Import Prelude Package.
 Import PackageNotation.
 
+From Equations Require Import Equations.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -81,15 +83,17 @@ Proof.
   exact (pkg_distr.assert false).
 Defined.
 
-Fixpoint translate_pexpr (e : pexpr) : typed_code.
+Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code.
 Proof.
   destruct e.
-  - exact unsupported.
+  - exists chInt. apply ret. exact z.
   - exists chBool. exact (ret b).
   - (* Parr_init only gets produced by ArrayInit() in jasmin source; the EC
        export asserts false on it, so we don't support it for now. *)
     exact unsupported.
-  - exact unsupported.
+  - pose (translate_gvar fn g).
+    exists (projT1 l).
+    apply (getr l). apply ret.
   - exact unsupported.
   - exact unsupported.
   - exact unsupported.
@@ -147,7 +151,7 @@ Proof.
   destruct i.
   - (* Cassgn *)
     (* l :a=_s p *)
-    pose (translate_pexpr p) as tr_p.
+    pose (translate_pexpr fn p) as tr_p.
     pose (truncate_code s tr_p) as tr_p'.
     exact (ssprove_write_lval fn l tr_p').
   - exact (projT2 unsupported). (* Copn *)
@@ -156,7 +160,7 @@ Proof.
   - exact (projT2 unsupported). (* Cwhile *)
   - (* Ccall i l f l0 *)
     (* translate arguments *)
-    pose (map translate_pexpr l0) as tr_l0.
+    pose (map (translate_pexpr fn) l0) as tr_l0.
     (* "perform" the call via `opr` *)
     (* probably we'd look up the function signature in the current ambient program *)
 
@@ -277,7 +281,6 @@ Defined.
 Definition rel_mem (m : mem) (h : heap) :=
   forall ptr sz v, read m ptr sz = ok v -> get_heap h (translate_ptr ptr) = coerce_to_choice_type _ (translate_value (@to_val (sword sz) v)).
 
-From Jasmin Require Import expr.
 Local Open Scope vmap_scope.
 
 Definition rel_vmap (vm : vmap) (h : heap) (fn : funname) :=
@@ -290,7 +293,53 @@ Definition rel_estate (s : estate) (h : heap) (fn : funname) :=
 
 Definition instr_d (i : instr) : instr_r := match i with | MkI _ i => i end.
 
-Theorem translate_correct (p : expr.uprog) (fn : funname) m va m' vr f :
+Lemma ch_ty_val_enc (sty : stype) (v : sem_t sty) :
+  @choice_type_of_val (to_val v) = encode sty.
+Proof.
+  admit. Admitted.
+
+Lemma translate_pexpr_correct fn (e : pexpr) (pg : glob_decls) s1 v ty v' ty'
+  (H0 : sem_pexpr pg s1 e = ok v)
+  (H1 : truncate_val ty v = ok v') :
+
+  ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
+     ret (coerce_to_choice_type ty' (translate_value v'))
+  ≈
+     cast_typed_code ty'
+       (truncate_code ty (translate_pexpr fn e))
+  ⦃ eq ⦄
+.
+Proof.
+  induction e in H0, H1, v, v', ty, ty' |- *.
+  all: simpl in H0.
+  - inversion H0. subst. simpl in H1.
+    unfold truncate_val in H1.
+    destruct of_val eqn:E.
+    2: discriminate.
+    apply of_vint in E as E'.
+    subst. simpl in H1, E. inversion H1. inversion E. subst.
+    simpl.
+    destruct ty'.
+    + unfold coerce_to_choice_type.
+
+      coerce_to_choice_type ty s
+      pose (@ch_ty_val_enc _ s).
+
+Set Nested Proofs Allowed.
+
+
+
+    destruct ty'. all: simpl; try easy.
+    + unfold coerce_to_choice_type.
+
+    unfold translate_pexpr. simpl.
+    +
+
+  revert H1.
+  sem_pexpr pg s1 e
+  induction H0.
+
+Theorem translate_prog_correct (p : expr.uprog) (fn : funname) m va m' vr f :
   sem.sem_call p m fn va m' vr →
   let sp := (translate_prog p) in
   let dom := lchtuple (map choice_type_of_val va) in
@@ -350,10 +399,11 @@ Proof.
       * eapply r_bind with (mid := eq).
         -- instantiate (1 := ret (coerce_to_choice_type _
                          (translate_value v'))).
+           by eapply translate_pexpr_sound.
            admit.               (* by H0: sem_pexpr e = ok v *)
         -- intros.
            eapply rpre_hypothesis_rule.
-           intros ? ? E. From Equations Require Import Equations.
+           intros ? ? E.
            noconf E.
            eapply rpre_weaken_rule.
            1: refine (rreflexivity_rule _).
