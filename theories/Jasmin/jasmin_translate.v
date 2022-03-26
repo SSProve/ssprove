@@ -13,8 +13,10 @@ From Crypt Require Import Prelude Package.
 Import PackageNotation.
 
 From Equations Require Import Equations.
+Set Equations With UIP.
+Set Equations Transparent.
 
-Set Implicit Arguments.
+(* Set Implicit Arguments. *)
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
@@ -106,13 +108,38 @@ Defined.
 (* FIXME: actually perform the truncation *)
 Definition truncate_code (s : stype) (c : typed_code) : typed_code := c.
 
-Definition cast_typed_code (ty : choice_type) (tc : typed_code) : raw_code ty.
+Definition cast_typed_code (t' : choice_type) (c : typed_code) (e : projT1 c = t') : raw_code t'.
 Proof.
-  destruct tc as [t c].
-  destruct (t == ty) eqn:E.
-  - move : E => /eqP E. subst; exact c.
-  - apply ret. apply chCanonical.
+  subst. exact (projT2 c).
 Defined.
+
+Lemma cast_typed_code_K :
+  ∀ t c e,
+    @cast_typed_code t (t; c) e = c.
+Proof.
+  intros t c e.
+  assert (e = erefl).
+  { apply eq_irrelevance. }
+  subst. reflexivity.
+Qed.
+
+Equations? coerce_typed_code (ty : choice_type) (tc : typed_code) : raw_code ty :=
+  @coerce_typed_code ty tc with inspect (projT1 tc == ty) := {
+    | @exist true e => @cast_typed_code ty tc _
+    | @exist false e => ret (chCanonical ty)
+    }.
+Proof.
+  symmetry in e.
+  move: e => /eqP e. subst. reflexivity.
+Qed.
+
+(* Definition cast_typed_code (ty : choice_type) (tc : typed_code) : raw_code ty. *)
+(* Proof. *)
+(*   destruct tc as [t c]. *)
+(*   destruct (t == ty) eqn:E. *)
+(*   - move : E => /eqP E. subst; exact c. *)
+(*   - apply ret. apply chCanonical. *)
+(* Defined. *)
 
 Definition ssprove_write_lval (fn : funname) (l : lval) (tc : typed_code)
   : raw_code chUnit
@@ -122,7 +149,7 @@ Definition ssprove_write_lval (fn : funname) (l : lval) (tc : typed_code)
   | Lvar x =>
       (* write_var x v s *)
       let l := translate_var fn (v_var x) in
-      let c := cast_typed_code l tc in
+      let c := coerce_typed_code l tc in
       (x ← c ;; #put l := x ;; ret tt)%pack
   | _ => projT2 unsupported
   (* | Lmem sz x e => *)
@@ -271,12 +298,31 @@ Defined.
 
 Definition translate_ptr (ptr : pointer) : Location := (chWord Uptr ; Z.to_nat (wunsigned ptr)).
 
-Definition coerce_to_choice_type (t : choice_type) {tv : choice_type} (v : tv) : t.
-  destruct (tv == t) eqn:E.
-  - move: E => /eqP E.
-    subst. exact v.
-  - apply chCanonical.
+(* from pkg_invariants *)
+Definition cast_ct_val {t t' : choice_type} (e : t = t') (v : t) : t'.
+Proof.
+  subst. auto.
 Defined.
+
+Lemma cast_ct_val_K :
+  ∀ t e v,
+    @cast_ct_val t t e v = v.
+Proof.
+  intros t e v.
+  assert (e = erefl).
+  { apply eq_irrelevance. }
+  subst. reflexivity.
+Qed.
+
+Equations? coerce_to_choice_type (t : choice_type) {tv : choice_type} (v : tv) : t :=
+  @coerce_to_choice_type t tv v with inspect (tv == t) := {
+    | @exist true e => cast_ct_val _ v
+    | @exist false e => chCanonical t
+    }.
+Proof.
+  symmetry in e.
+  move: e => /eqP e. subst. reflexivity.
+Qed.
 
 Definition rel_mem (m : mem) (h : heap) :=
   forall ptr sz v, read m ptr sz = ok v -> get_heap h (translate_ptr ptr) = coerce_to_choice_type _ (translate_value (@to_val (sword sz) v)).
@@ -285,7 +331,7 @@ Local Open Scope vmap_scope.
 
 Definition rel_vmap (vm : vmap) (h : heap) (fn : funname) :=
   forall (i : var) v, vm.[i] = ok v
-    -> get_heap h (translate_var fn i) = coerce_to_choice_type _ (embed v).
+    -> get_heap h (translate_var fn i) = coerce_to_choice_type _ (embed _ v).
 
 
 Definition rel_estate (s : estate) (h : heap) (fn : funname) :=
@@ -293,45 +339,29 @@ Definition rel_estate (s : estate) (h : heap) (fn : funname) :=
 
 Definition instr_d (i : instr) : instr_r := match i with | MkI _ i => i end.
 
-Lemma ch_ty_val_enc (sty : stype) (v : sem_t sty) :
-  @choice_type_of_val (to_val v) = encode sty.
-Proof.
-  admit. Admitted.
-
-Require Import Coq.Program.Equality.
-
-(* prove using equations, see pkg_invariants and the proof of lookup_hpv_l *)
 Lemma coerce_cast_code (ty vty : choice_type) (v : vty) :
   ret (coerce_to_choice_type ty v)
-  = cast_typed_code ty (vty ; ret v).
+  = coerce_typed_code ty (vty ; ret v).
 Proof.
-  (* Admitted. *)
-
-  simpl. unfold coerce_to_choice_type.
-  set (H := (vty == ty) ).
-  dependent destruction H.
-  - destruct vty, ty; simpl; try easy.
-      + match goal with
-        | |- context[elimTF ?e1 ?e2] => set A:=(elimTF e1 e2) (* with (@erefl choice_type chUnit) *)
-        end. simpl in A.
-        assert (A = erefl) by (apply eq_irrelevance).
-        clearbody A.
-        subst; reflexivity.
-      +
-        match goal with
-        | |- context[elimTF ?e1 ?e2] => set A:=(elimTF e1 e2) (* with (@erefl choice_type chUnit) *)
-        end. simpl in A.
-        assert (A = erefl) by (apply eq_irrelevance).
-        clearbody A.
-        subst. cbn. reflexivity.
-      +
-        match goal with
-        | |- context[elimTF ?e1 ?e2] => set A:=(elimTF e1 e2) (* with (@erefl choice_type chUnit) *)
-        end. simpl in A.
-        assert (A = erefl) by (apply eq_irrelevance).
-        clearbody A.
-        subst. cbn. reflexivity.
-Admitted.
+  simpl.
+  funelim (coerce_to_choice_type ty v);
+    funelim (coerce_typed_code t (tv; ret v)).
+  - rewrite <- Heqcall, <- Heqcall0.
+    pose proof e as e'.
+    symmetry in e'.
+    move: e' => /eqP e'. subst.
+    rewrite cast_ct_val_K.
+    simpl. cbn.
+    rewrite cast_typed_code_K. reflexivity.
+  - simpl in *.
+    exfalso.
+    clear -e e0. rewrite <- e in e0. congruence.
+  - simpl in *.
+    exfalso.
+    clear -e e0. rewrite <- e in e0. congruence.
+  - rewrite <- Heqcall, <- Heqcall0.
+    reflexivity.
+Qed.
 
 Lemma translate_pexpr_correct fn (e : pexpr) (pg : glob_decls) s1 v ty v' ty'
   (H0 : sem_pexpr pg s1 e = ok v)
@@ -340,33 +370,28 @@ Lemma translate_pexpr_correct fn (e : pexpr) (pg : glob_decls) s1 v ty v' ty'
   ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
      ret (coerce_to_choice_type ty' (translate_value v'))
   ≈
-     cast_typed_code ty'
+     coerce_typed_code ty'
        (truncate_code ty (translate_pexpr fn e))
   ⦃ eq ⦄
 .
 Proof.
+  rewrite coerce_cast_code.
   Admitted.
-(* induction e in H0, H1, v, v', ty, ty' |- *. *)
-(* all: simpl in H0. *)
-(* - inversion H0. subst. simpl in H1. *)
-(*   unfold truncate_val in H1. *)
-(*   destruct of_val eqn:E. *)
-(*   2: discriminate. *)
-(*   apply of_vint in E as E'. *)
-(*   subst. simpl in H1, E. inversion H1. inversion E. subst. *)
-(*   simpl. *)
-(*   destruct ty'. *)
-(*   + unfold coerce_to_choice_type. *)
-(*       coerce_to_choice_type ty s *)
-(*       pose (@ch_ty_val_enc _ s). *)
-(* Set Nested Proofs Allowed. *)
-(*     destruct ty'. all: simpl; try easy. *)
-(*     + unfold coerce_to_choice_type. *)
-(*     unfold translate_pexpr. simpl. *)
-(*     + *)
-(*   revert H1. *)
-(*   sem_pexpr pg s1 e *)
-(*   induction H0. *)
+
+(* something like this *)
+(* Lemma translate_pexpr_correct fn (e : pexpr) (pg : glob_decls) s1 v ty v' ty' *)
+(*   (H0 : sem_pexpr pg s1 e = ok v) *)
+(*   (H1 : truncate_val ty v = ok v') : *)
+
+(*   ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ *)
+(*       ret (translate_value v') *)
+(*   ≈ *)
+(*   projT2 (truncate_code ty (translate_pexpr fn e)) *)
+(*   ⦃ eq ⦄ *)
+(* . *)
+(* Proof. *)
+(*   rewrite coerce_cast_code. *)
+(*   Admitted. *)
 
 Theorem translate_prog_correct (p : expr.uprog) (fn : funname) m va m' vr f :
   sem.sem_call p m fn va m' vr →
