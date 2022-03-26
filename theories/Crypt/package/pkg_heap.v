@@ -5,6 +5,7 @@
 
 
 From Coq Require Import Utf8.
+Require Import ZArith.
 From Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
@@ -59,6 +60,7 @@ Proof.
   intros a. induction a.
   - exact tt.
   - exact 0.
+  - exact Z0.
   - exact false.
   - exact (IHa1, IHa2).
   - exact emptym.

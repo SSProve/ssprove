@@ -12,13 +12,14 @@ From Relational Require Import OrderEnrichedCategory
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr realsum seq all_algebra fintype.
+From CoqWord Require Import word ssrZ.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From Crypt Require Import Prelude Axioms.
 From extructures Require Import ord fset fmap.
+From deriving Require Import deriving.
 From Mon Require Import SPropBase.
 Require Equations.Prop.DepElim.
 From Equations Require Import Equations.
-From CoqWord Require Import word ssrZ.
 
 Set Equations With UIP.
 
@@ -37,7 +38,7 @@ Open Scope type_scope.
 Inductive choice_type :=
 | chUnit
 | chNat
-(* | chInt *)
+| chInt
 | chBool
 | chProd (A B : choice_type)
 | chMap (A B : choice_type)
@@ -47,33 +48,14 @@ Inductive choice_type :=
 
 Derive NoConfusion NoConfusionHom for choice_type.
 
-Check word_ordMixin.
-
-Definition void_leq (x y : void) := true.
-Lemma void_leqP : Ord.axioms void_leq.
-Proof. split; by do ![case]. Qed.
-
-Definition void_ordMixin := OrdMixin void_leqP.
-Canonical void_ordType := Eval hnf in OrdType void void_ordMixin.
-
-
-
-(* Check OrdMixin _ int. *)
-(* Check sig_ordMixin. *)
-
 Definition word_ordMixin nbits := [ ordMixin of word nbits by <: ].
 Canonical word_ordType nbits := Eval hnf in OrdType (word nbits) (word_ordMixin nbits).
-
-(* Locate "ordType". *)
-(* Check fun nbits => Ord.clone (word_ordType nbits). nbits). *)
-(* Axiom WordOrd : ordType.        (* fixme *) *)
-
-Check ordMixin.
 
 Fixpoint chElement_ordType (U : choice_type) : ordType :=
   match U with
   | chUnit => unit_ordType
   | chNat => nat_ordType
+  | chInt => Z_ordType
   | chBool => bool_ordType
   | chProd U1 U2 => prod_ordType (chElement_ordType U1) (chElement_ordType U2)
   | chMap U1 U2 => fmap_ordType (chElement_ordType U1) (chElement_ordType U2)
@@ -86,6 +68,7 @@ Fixpoint chElement (U : choice_type) : choiceType :=
   match U with
   | chUnit => unit_choiceType
   | chNat => nat_choiceType
+  | chInt => Z_choiceType
   | chBool => bool_choiceType
   | chProd U1 U2 => prod_choiceType (chElement U1) (chElement U2)
   | chMap U1 U2 => fmap_choiceType (chElement_ordType U1) (chElement U2)
@@ -101,6 +84,7 @@ Coercion chElement : choice_type >-> choiceType.
   match T with
   | chUnit => Datatypes.tt
   | chNat => 0
+  | chInt => 0
   | chBool => false
   | chProd A B => (chCanonical A, chCanonical B)
   | chMap A B => _
@@ -118,9 +102,21 @@ Defined.
 
 Section choice_typeTypes.
 
+  (* Definition choice_type_indDef := [indDef for choice_type_rect]. *)
+  (* Canonical choice_type_indType := IndType choice_type choice_type_indDef. *)
+  (* Definition choice_type_eqMixin := [derive eqMixin for choice_type]. *)
+  (* Canonical choice_type_eqType := EqType choice_type choice_type_eqMixin. *)
+
+  (* Definition choice_type_eq := *)
+  (*   match choice_type_eqMixin with *)
+  (*   | EqMixin  op => op *)
+  (*   end. *)
+
+
   Fixpoint choice_type_test (u v : choice_type) : bool :=
     match u, v with
     | chNat , chNat => true
+    | chInt , chInt => true
     | chUnit , chUnit => true
     | chBool , chBool => true
     | chProd a b , chProd a' b' => choice_type_test a a' && choice_type_test b b'
@@ -137,9 +133,9 @@ Section choice_typeTypes.
   Lemma choice_type_eqP : Equality.axiom choice_type_eq.
   Proof.
     move=> x y.
-    induction x as [ | | | x1 ih1 x2 ih2 | x1 ih1 x2 ih2 | x1 ih1 | x1 | x1 ]
+    induction x as [ | | | | x1 ih1 x2 ih2 | x1 ih1 x2 ih2 | x1 ih1 | x1 | x1 ]
     in y |- *.
-    all: destruct y as [ | | | y1 y2 | y1 y2 | y1 | y1 | y1 ].
+    all: destruct y as [ | | | | y1 y2 | y1 y2 | y1 | y1 | y1 ].
     all: simpl.
     all: try solve [ right ; discriminate ].
     all: try solve [ left ; reflexivity ].
@@ -190,24 +186,32 @@ Section choice_typeTypes.
   | chNat, chBool => false
   | chNat, chNat => false
   | chNat, _ => true
+  | chInt, chUnit => false
+  | chInt, chBool => false
+  | chInt, chNat => false
+  | chInt, chInt => false
+  | chInt, _ => true
   | chProd _ _, chUnit => false
   | chProd _ _, chBool => false
   | chProd _ _, chNat => false
+  | chProd _ _, chInt => false
   | chProd u1 u2, chProd w1 w2 =>
     (choice_type_lt u1 w1) ||
-    (choice_type_eq u1 w1 && choice_type_lt u2 w2)
+    (choice_type_test u1 w1 && choice_type_lt u2 w2)
   | chProd _ _, _ => true
   | chMap _ _, chUnit => false
   | chMap _ _, chBool => false
   | chMap _ _, chNat => false
+  | chMap _ _, chInt => false
   | chMap _ _, chProd _ _ => false
   | chMap u1 u2, chMap w1 w2 =>
     (choice_type_lt u1 w1) ||
-    (choice_type_eq u1 w1 && choice_type_lt u2 w2)
+    (choice_type_test u1 w1 && choice_type_lt u2 w2)
   | chMap _ _, _ => true
   | chOption _, chUnit => false
   | chOption _, chBool => false
   | chOption _, chNat => false
+  | chOption _, chInt => false
   | chOption _, chProd _ _ => false
   | chOption _, chMap _ _ => false
   | chOption u, chOption w => choice_type_lt u w
@@ -215,6 +219,7 @@ Section choice_typeTypes.
   | chFin n, chUnit => false
   | chFin n, chBool => false
   | chFin n, chNat => false
+  | chFin n, chInt => false
   | chFin n, chProd _ _ => false
   | chFin n, chMap _ _ => false
   | chFin n, chOption _ => false
@@ -223,6 +228,7 @@ Section choice_typeTypes.
   | chWord n, chUnit => false
   | chWord n, chBool => false
   | chWord n, chNat => false
+  | chWord n, chInt => false
   | chWord n, chProd _ _ => false
   | chWord n, chMap _ _ => false
   | chWord n, chOption _ => false
@@ -236,10 +242,12 @@ Section choice_typeTypes.
   Lemma choice_type_lt_transitive : transitive (T:=choice_type) choice_type_lt.
   Proof.
     intros v u w h1 h2.
-    induction u as [ | | | u1 ih1 u2 ih2 | u1 ih1 u2 ih2 | u ih | u | u ]
+    induction u as [ | | | | u1 ih1 u2 ih2 | u1 ih1 u2 ih2 | u ih | u | u ]
     in v, w, h1, h2 |- *.
     - destruct w. all: try auto.
       destruct v. all: discriminate.
+    - destruct w. all: try auto.
+      all: destruct v. all: discriminate.
     - destruct w. all: try auto.
       all: destruct v. all: discriminate.
     - destruct w. all: try auto.
@@ -292,7 +300,7 @@ Section choice_typeTypes.
     ∀ x, ~~ choice_type_lt x x.
   Proof.
     intros x.
-    induction x as [ | | | x1 ih1 x2 ih2 | x1 ih1 x2 ih2 | x ih | x | x] in |- *.
+    induction x as [ | | | | x1 ih1 x2 ih2 | x1 ih1 x2 ih2 | x ih | x | x] in |- *.
     all: intuition; simpl.
     - simpl.
       apply/norP. split.
@@ -313,7 +321,7 @@ Section choice_typeTypes.
       ~~ (choice_type_test x y) ==> (choice_type_lt x y || choice_type_lt y x).
   Proof.
     intros x y.
-    induction x as [ | | | x1 ih1 x2 ih2| x1 ih1 x2 ih2| x ih| x | x]
+    induction x as [ | | | | x1 ih1 x2 ih2| x1 ih1 x2 ih2| x ih| x | x]
     in y |- *.
     all: try solve [ destruct y ; intuition ; reflexivity ].
     - destruct y. all: try (intuition; reflexivity).
@@ -495,11 +503,12 @@ Section choice_typeTypes.
   | chUnit => GenTree.Leaf 1
   | chBool => GenTree.Leaf 2
   | chNat => GenTree.Leaf 3
+  | chInt => GenTree.Leaf 4
   | chProd l r => GenTree.Node 1 [:: encode l ; encode r]
   | chMap l r => GenTree.Node 2 [:: encode l ; encode r]
   | chOption u => GenTree.Node 3 [:: encode u]
-  | chFin n => GenTree.Leaf ((4 + n) - 1)%N
-  | chWord n => GenTree.Leaf ((4 + n) - 1)%N (* fixme *)
+  | chFin n => GenTree.Node 4 [:: GenTree.Leaf (pos n)]
+  | chWord n => GenTree.Node 5 [:: GenTree.Leaf n]
   end.
 
   Fixpoint decode (t : GenTree.tree nat) : option choice_type :=
@@ -507,8 +516,7 @@ Section choice_typeTypes.
     | GenTree.Leaf 1 => Some chUnit
     | GenTree.Leaf 2 => Some chBool
     | GenTree.Leaf 3 => Some chNat
-    | GenTree.Leaf n =>
-      Some ( chFin (mkpos ((n - 4).+1)%N) )
+    | GenTree.Leaf 4 => Some chInt
     | GenTree.Node 1 [:: l ; r] =>
       match decode l, decode r with
       | Some l, Some r => Some (chProd l r)
@@ -524,13 +532,15 @@ Section choice_typeTypes.
       | Some l => Some (chOption l)
       | _ => None
       end
+    | GenTree.Node 4 [:: GenTree.Leaf (S n)] => Some (chFin (mkpos (S n)))
+    | GenTree.Node 5 [:: GenTree.Leaf n] => Some (chWord n)
     | _ => None
     end.
 
   Lemma codeK : pcancel encode decode.
   Proof.
     intro t. induction t.
-    all: intuition.
+    all: intuition eauto.
     all: simpl.
     - rewrite IHt1. rewrite IHt2. reflexivity.
     - rewrite IHt1. rewrite IHt2. reflexivity.
@@ -538,10 +548,8 @@ Section choice_typeTypes.
     - destruct n as [n npos]. cbn.
       destruct n.
       + discriminate.
-      + cbn.
-        rewrite -subnE subn0. repeat f_equal. apply eq_irrelevance.
-    Admitted.
-  (* Defined. *)
+      + cbn. repeat f_equal. apply eq_irrelevance.
+  Defined.
 
   Definition choice_type_choiceMixin := PcanChoiceMixin codeK.
   Canonical choice_type_choiceType :=

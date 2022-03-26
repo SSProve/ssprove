@@ -130,8 +130,9 @@ Section Interpreter.
   #[program] Fixpoint sampler (e : choice_type) seed : option (nat * e):=
     match e with
       chUnit => Some (seed, Datatypes.tt)
-    | chNat => Some ((seed + 1)%N, seed)
-    | chBool => Some ((seed + 1)%N, Nat.even seed)
+    | chNat => Some ((seed + 1)%nat, seed)
+    | chInt => Some ((seed + 1)%nat, BinInt.Z.of_nat seed) (* FIXME: also generate negative numbers *)
+    | chBool => Some ((seed + 1)%nat, Nat.even seed)
     | chProd A B =>
         match sampler A seed with
         | Some (seed' , x) => match sampler B seed' with
