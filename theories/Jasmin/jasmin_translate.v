@@ -37,7 +37,14 @@ Variable P:uprog.
 
 Notation gd := (p_globs P).
 
-Context {encode : stype -> choice_type}.
+Definition encode (t : stype) : choice_type :=
+  match t with
+  | sbool => chBool
+  | sint => chInt
+  | sarr n => chMap chInt (chWord 8)
+  | sword n => chWord n
+  end.
+
 Context (embed : forall t, sem_t t -> encode t).
 
 Definition nat_of_ident (id : Ident.ident) : nat.
@@ -168,16 +175,7 @@ About rel_jdg.
 About package.
 Check value.
 
-Definition type_of_val : value -> choice_type.
-Proof.
-  intros val.
-  destruct val as [b | z | size a | size wd | ?].
-  - exact chBool.
-  - exact chInt.
-  - exact (chMap chInt (chWord 8)).
-  - exact (chWord size).
-  - exact chUnit.
-Defined.
+Definition choice_type_of_val (val : value) : choice_type := encode (type_of_val val).
 
 Fixpoint lchtuple (ts:seq choice_type) : choice_type :=
   match ts with
@@ -193,9 +191,9 @@ Defined.
 
 Definition typed_chElement := ∑ (T: choice_type), T.
 
-Definition translate_value (v : value) : type_of_val v.
+Definition translate_value (v : value) : choice_type_of_val v.
 Proof.
-  destruct v as [b | z | size a | size wd | ?].
+  destruct v as [b | z | size a | size wd | undef_ty].
   - exact b.
   - exact z.
   - destruct a as [arr_data].
@@ -203,20 +201,23 @@ Proof.
     intros k v m.
     exact (setm m k v).
   - exact wd.
-  - exact tt.      (* Vundef: maybe return something real? *)
+  - apply chCanonical.
+    (* It shouldn't matter which value we pick, because when coercing an undef
+       value at type ty back to ty via to_{bool,int,word,arr} (defined in
+       values.v), all of these functions raise an error on Vundef. *)
 Defined.
 
 
 Fixpoint type_of_values vs : choice_type :=
   match vs with
   | [::]   => chUnit
-  | [::v] => type_of_val v
-  | hd::tl => chProd (type_of_val hd) (type_of_values tl)
+  | [::v] => choice_type_of_val v
+  | hd::tl => chProd (choice_type_of_val hd) (type_of_values tl)
   end.
 
-(* lchtuple (map type_of_val vs) *)
+(* lchtuple (map choice_type_of_val vs) *)
 
-Definition translate_values (vs : seq value) : lchtuple (map type_of_val vs).
+Definition translate_values (vs : seq value) : lchtuple (map choice_type_of_val vs).
 Proof.
   induction vs as [|v vs tr_vs].
   - exact tt.
@@ -255,8 +256,8 @@ Definition rel_estate (s : estate) (h : heap) (fn : funname) :=
 Theorem translate_correct (p : expr.uprog) (fn : funname) m va m' vr f :
   sem.sem_call p m fn va m' vr →
   let sp := (translate_prog p) in
-  let dom := lchtuple (map type_of_val va) in
-  let cod := lchtuple (map type_of_val vr) in
+  let dom := lchtuple (map choice_type_of_val va) in
+  let cod := lchtuple (map choice_type_of_val vr) in
   get_fundef_ssp sp fn dom cod = Some f →
   satisfies_globs (p_globs p) (translate_mem m, translate_mem m') -> ⊢ ⦃ satisfies_globs (p_globs p) ⦄ f (translate_values va) ≈ ret (translate_values vr) ⦃ λ '(v1, s1) '(v2,s2), v1 = v2 ⦄.
 Proof.
@@ -268,8 +269,8 @@ Proof.
          λ (m : mem) (fn : funname) (va : seq value)  (m' : mem) (vr : seq value),
          forall f,
          let sp := translate_prog p in
-         let dom := lchtuple [seq type_of_val i | i <- va] in
-         let cod := lchtuple [seq type_of_val i | i <- vr] in
+         let dom := lchtuple [seq choice_type_of_val i | i <- va] in
+         let cod := lchtuple [seq choice_type_of_val i | i <- vr] in
          get_fundef_ssp sp fn dom cod = Some f ->
          satisfies_globs (p_globs p) (translate_mem m, translate_mem m') → ⊢ ⦃ satisfies_globs (p_globs p) ⦄ f (translate_values va) ≈
      ret (translate_values vr) ⦃ λ '(v1, _) '(v2, _), v1 = v2 ⦄
