@@ -24,20 +24,15 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
-Section Section.
+Section Translation.
 
-Context `{asmop:asmOp}.
-Context (fresh_counter: Ident.ident).
+Context `{asmop : asmOp}.
 
-Context {T} {pT:progT T}.
+Context {T} {pT : progT T}.
 
+Context {pd : PointerData}.
 
-Context {Loc : {fset Location}}.
-Context {import : Interface}.
-
-Context {pd: PointerData}.
-
-Variable P:uprog.
+Context (P : uprog).
 
 Notation gd := (p_globs P).
 
@@ -49,7 +44,13 @@ Definition encode (t : stype) : choice_type :=
   | sword n => chWord n
   end.
 
-Context (embed : forall t, sem_t t -> encode t).
+Definition embed {t} : sem_t t → encode t :=
+  match t with
+  | sbool => λ x, x
+  | sint => λ x, x
+  | sarr n => λ x, Mz.fold (λ k v m, setm m k v) x.(WArray.arr_data) emptym
+  | sword n => λ x, x
+  end.
 
 Definition nat_of_ident (id : Ident.ident) : nat.
 Proof.
@@ -235,11 +236,6 @@ Definition translate_prog (p:uprog) : ssprove_prog :=
   let globs := collect_globs (p_globs p) in
   let fds := map translate_fundef (p_funcs p) in
   fds.
-Print typed_raw_function.
-Check Interface.
-About rel_jdg.
-About package.
-Check value.
 
 Definition choice_type_of_val (val : value) : choice_type := encode (type_of_val val).
 
@@ -258,7 +254,7 @@ Defined.
 Definition typed_chElement := ∑ (T: choice_type), T.
 
 Definition translate_value (v : value) : choice_type_of_val v.
-Proof.
+Proof. (* Can we use embed here instead? *)
   destruct v as [b | z | size a | size wd | undef_ty].
   - exact b.
   - exact z.
@@ -513,4 +509,4 @@ Proof.
     admit.
 Admitted.
 
-End Section.
+End Translation.
