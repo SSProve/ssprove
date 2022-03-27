@@ -63,3 +63,5 @@ Makefile.coq.conf
 
 # Assembly (ignored because we expect them to be jasminc generated)
 *.s
+
+.Makefile.coq 3.d
