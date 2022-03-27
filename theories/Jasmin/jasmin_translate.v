@@ -122,6 +122,19 @@ Proof.
   move: e => /eqP e. subst. reflexivity.
 Qed.
 
+Lemma coerce_typed_code_neq :
+  ∀ (ty ty' : choice_type) c,
+    ty ≠ ty' →
+    coerce_typed_code ty' (ty ; c) = ret (chCanonical _).
+Proof.
+  intros ty ty' c ne.
+  funelim (coerce_typed_code ty' (ty ; c)).
+  1:{
+    clear - e ne. symmetry in e. move: e => /eqP e. simpl in e. contradiction.
+  }
+  symmetry. assumption.
+Qed.
+
 (* Definition cast_typed_code (ty : choice_type) (tc : typed_code) : raw_code ty. *)
 (* Proof. *)
 (*   destruct tc as [t c]. *)
@@ -352,6 +365,8 @@ Proof.
     reflexivity.
 Qed.
 
+Derive NoConfusion for result.
+
 Lemma translate_pexpr_correct :
   ∀ fn (e : pexpr) (pg : glob_decls) s₁ v ty v' ty',
     sem_pexpr pg s₁ e = ok v →
@@ -359,12 +374,24 @@ Lemma translate_pexpr_correct :
     ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
       ret (coerce_to_choice_type ty' (translate_value v'))
     ≈
-      coerce_typed_code ty'
-        (truncate_code ty (translate_pexpr fn e))
+      coerce_typed_code ty' (truncate_code ty (translate_pexpr fn e))
     ⦃ eq ⦄.
 Proof.
   intros fn e pg s₁ v ty v' ty' h1 h2.
   rewrite coerce_cast_code.
+  unfold choice_type_of_val.
+  (* TODO unfold truncate_code, but for this we need a proper def *)
+  (* assert (e2 : ty = encode (type_of_val v')). *)
+  destruct (ty' == encode (type_of_val v')) eqn:e1.
+  2:{
+    rewrite coerce_typed_code_neq.
+    2:{ move: e1 => /eqP e1. congruence. }
+    (* Ideally we should conclude the other coercion fails too. *)
+    admit.
+  }
+  unfold truncate_val in h2. destruct of_val eqn:ev. 2: discriminate.
+  simpl in h2. noconf h2.
+  (* rewrite type_of_to_val. *)
 Admitted.
 
 (* something like this *)
