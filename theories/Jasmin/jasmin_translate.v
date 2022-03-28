@@ -473,11 +473,11 @@ Lemma translate_pexpr_correct :
   ∀ fn (e : pexpr) s₁ v ty v' ty',
     sem_pexpr gd s₁ e = ok v →
     truncate_val ty v = ok v' →
-    ⊢ ⦃ λ '(h₀, h₁), rel_estate s₁ h₀ fn ∧ h₀ = h₁ ⦄
+    ⊢ ⦃ λ '(h₀, h₁), rel_estate s₁ h₁ fn ⦄
       ret (coerce_to_choice_type ty' (translate_value v'))
     ≈
       coerce_typed_code ty' (truncate_code ty (translate_pexpr fn e))
-    ⦃ eq ⦄.
+    ⦃ λ '(a₀, h₀) '(a₁, h₁), a₀ = a₁ ∧ rel_estate s₁ h₁ fn ⦄.
 Proof.
   intros fn e s₁ v ty v' ty' h1 h2.
   rewrite coerce_cast_code.
@@ -495,7 +495,7 @@ Proof.
     2:{ move: e1 => /eqP e1. congruence. }
     rewrite coerce_typed_code_neq.
     2:{ move: e1 => /eqP e1. congruence. }
-    apply r_ret. intuition subst. reflexivity.
+    apply r_ret. intuition subst.
   }
   pose proof e1 as e2. move: e2 => /eqP e2. subst.
   rewrite 2!coerce_typed_code_K.
@@ -510,7 +510,7 @@ Proof.
     simpl. simp coerce_to_choice_type. simpl.
     rewrite cast_ct_val_K.
     simpl in ev. noconf ev.
-    apply r_ret. intuition subst. reflexivity.
+    apply r_ret. intuition subst.
   - simpl. simpl in h1. noconf h1.
     apply of_vbool in ev as es.
     destruct es as [es _].
@@ -518,7 +518,7 @@ Proof.
     simpl. simp coerce_to_choice_type. simpl.
     rewrite cast_ct_val_K.
     simpl in ev. noconf ev.
-    apply r_ret. intuition subst. reflexivity.
+    apply r_ret. intuition subst.
   - simpl. simpl in h1. noconf h1.
     apply of_varr in ev as es.
     move: es => /values.subtypeE es.
@@ -528,7 +528,7 @@ Proof.
     rewrite cast_ct_val_K.
     simpl in ev. apply WArray.cast_empty_ok in ev. subst.
     simpl. rewrite Mz.foldP. simpl.
-    apply r_ret. intuition subst. reflexivity.
+    apply r_ret. intuition subst.
   - simpl. simpl in h1.
     apply type_of_get_gvar in h1 as es.
     unfold translate_gvar. unfold translate_var.
@@ -540,12 +540,13 @@ Proof.
       unfold on_vu in h1. destruct Fv.get as [sx |] eqn:e1.
       2:{ destruct e. all: discriminate. }
       noconf h1.
-      eapply r_get_remember_rhs with (pre := λ '(h₀, h₁), rel_estate s₁ h₀ fn ∧ h₀ = h₁).
+      eapply r_get_remember_rhs with (pre := λ '(h₀, h₁), rel_estate s₁ h₁ fn).
       intro vx. simpl in vx.
-      apply r_ret. intros ? he [[[hmem hvmap] ?] h]. subst.
-      f_equal.
+      apply r_ret. intros ? he [[hmem hvmap] h].
       apply hvmap in e1. simpl in h.
       rewrite h in e1. clear h. subst.
+      split.
+      2:{ split. all: assumption. }
       simpl. rewrite coerce_to_choice_type_K.
       set (ty := type_of_val v') in *. clearbody ty.
       clear - ev. set (ty' := vtype gx) in *. clearbody ty'. clear - ev.
@@ -609,6 +610,74 @@ Proof.
         2:{ destruct t. all: discriminate. }
         subst. simpl. rewrite ev. reflexivity.
   -
+Admitted.
+
+Lemma r_bind_unary :
+  ∀ {A B : choiceType} m f v fv
+    (pre : precond) (mid : postcond A A) (post : postcond B B),
+    ⊢ ⦃ pre ⦄ m ≈ ret v ⦃ λ '(a₀, h₀) '(a₁, h₁), mid (a₀, h₀) (a₁, h₁) ∧ a₀ = a₁ ⦄ →
+    (∀ a, ⊢ ⦃ λ '(s₀, s₁), mid (a, s₀) (a, s₁) ⦄ f a ≈ ret (fv a) ⦃ post ⦄) →
+    ⊢ ⦃ pre ⦄ bind m f ≈ ret (fv v) ⦃ post ⦄.
+Proof.
+  intros A B m f v fv pre mid post hm hf.
+  change (ret (fv v)) with (x ← ret v ;; ret (fv x)).
+  eapply r_bind.
+  - exact hm.
+  - intros a₀ a₁.
+    eapply rpre_hypothesis_rule.
+    intros ? ? [? ?]. subst.
+    eapply rpre_weaken_rule.
+    1: apply hf.
+    simpl. intuition subst. assumption.
+Qed.
+
+Lemma translate_instr_r_correct :
+  ∀ (fn : funname) (i : instr_r) (s₁ s₂ : estate),
+  sem_i P s₁ i s₂ →
+  ⊢ ⦃ λ '(h₀, h₁), rel_estate s₁ h₀ fn ⦄
+    translate_instr_r fn i ≈ ret tt
+  ⦃ λ '(_, h₀) '(_, _), rel_estate s₂ h₀ fn ⦄.
+Proof.
+  intros fn i s₁ s₂ h.
+  induction h as [? ? x ? ? ? ? ? ? ? hw | | | | | | |].
+  - simpl. destruct x.
+    + simpl. apply r_ret. intros h₀ _ hr.
+      simpl in hw. unfold write_none in hw.
+      destruct is_sbool eqn:eb.
+      * unfold on_vu in hw. destruct of_val as [| []].
+        all: noconf hw. all: assumption.
+      * unfold on_vu in hw. destruct of_val as [| []].
+        all: noconf hw. assumption.
+    + simpl. simpl in hw. unfold write_var in hw.
+      destruct set_var eqn:eset. 2: discriminate.
+      simpl in hw. noconf hw.
+      evar (cty : choice_type).
+      (* change (ret tt) with ((λ _, ret tt) (chCanonical cty)) at 2. *)
+      epose proof r_bind_unary as thm.
+      specialize thm with (fv := λ _, tt).
+      simpl in thm.
+      specialize thm with (m := coerce_typed_code (encode (vtype H1))
+      (truncate_code ty (translate_pexpr fn e))).
+      eapply thm. all: clear thm.
+      * eapply rsymmetry.
+        1: eapply rpost_weaken_rule.
+        1: eapply translate_pexpr_correct.
+        1,2: eassumption.
+        intros [] []. intuition auto. subst.
+        admit.
+      * intros a.
+        (* eapply r_put_lhs. *)
+        admit.
+    + admit.
+    + admit.
+    + admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
+  - admit.
 Admitted.
 
 Theorem translate_prog_correct (p : expr.uprog) (fn : funname) m va m' vr f :
