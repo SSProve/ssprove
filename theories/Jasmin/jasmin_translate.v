@@ -456,6 +456,8 @@ Proof.
 Qed.
 
 Derive NoConfusion for result.
+Derive NoConfusion for value.
+Derive NoConfusion for wsize.
 
 Lemma translate_pexpr_correct :
   ∀ fn (e : pexpr) (pg : glob_decls) s₁ v ty v' ty',
@@ -535,23 +537,45 @@ Proof.
       apply hvmap in e1. simpl in h.
       rewrite h in e1. clear h. subst.
       simpl. rewrite coerce_to_choice_type_K.
-      set (ty := type_of_val v') in *. clearbody ty. clear v' es.
+      set (ty := type_of_val v') in *. clearbody ty.
+      clear - ev. set (ty' := vtype gx) in *. clearbody ty'. clear - ev.
+      pose proof (type_of_to_val s) as ety.
+      destruct ty.
+      * simpl. simpl in ev.
+        unfold to_bool in ev. destruct to_val eqn:esx. all: try discriminate.
+        2:{ destruct t. all: discriminate. }
+        noconf ev. pose proof (type_of_to_val sx) as ety'.
+        rewrite esx in ety'. subst.
+        rewrite coerce_to_choice_type_K.
+        simpl. noconf esx. reflexivity.
+      * simpl. simpl in ev.
+        unfold to_int in ev. destruct to_val eqn:esx. all: try discriminate.
+        2:{ destruct t. all: discriminate. }
+        noconf ev. pose proof (type_of_to_val sx) as ety'.
+        rewrite esx in ety'. subst.
+        rewrite coerce_to_choice_type_K.
+        simpl. noconf esx. reflexivity.
+      * simpl. simpl in ev.
+        unfold to_arr in ev. destruct to_val eqn:esx. all: try discriminate.
+        pose proof (type_of_to_val sx) as ety'.
+        rewrite esx in ety'. subst.
+        rewrite coerce_to_choice_type_K.
+        simpl. noconf esx.
+        unfold WArray.cast in ev. destruct (_ <=? _)%Z. 2: discriminate.
+        noconf ev. simpl. reflexivity.
+      * simpl. simpl in ev.
+        pose proof (type_of_to_val sx) as ety'.
+        unfold to_word in ev. destruct to_val eqn:esx. all: try discriminate.
+        --- subst. noconf esx. inversion H. subst.
+            (* rewrite coerce_to_choice_type_K.
+            simpl. noconf esx.
+            unfold WArray.cast in ev. destruct (_ <=? _)%Z. 2: discriminate.
+            noconf ev. simpl. reflexivity.
+
+
+      unfold truncate_el.
+      rewrite type_of_to_val. *)
 Admitted.
-
-(* something like this *)
-(* Lemma translate_pexpr_correct fn (e : pexpr) (pg : glob_decls) s1 v ty v' ty' *)
-(*   (H0 : sem_pexpr pg s1 e = ok v) *)
-(*   (H1 : truncate_val ty v = ok v') : *)
-
-(*   ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄ *)
-(*       ret (translate_value v') *)
-(*   ≈ *)
-(*   projT2 (truncate_code ty (translate_pexpr fn e)) *)
-(*   ⦃ eq ⦄ *)
-(* . *)
-(* Proof. *)
-(*   rewrite coerce_cast_code. *)
-(*   Admitted. *)
 
 Theorem translate_prog_correct (p : expr.uprog) (fn : funname) m va m' vr f :
   sem.sem_call p m fn va m' vr →
