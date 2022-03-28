@@ -1,10 +1,9 @@
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import all_ssreflect all_algebra.
+From Jasmin Require Import expr compiler_util values sem.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 
 From extructures Require Import ord fset fmap.
-
-From Jasmin Require Import expr compiler_util values sem.
 From Jasmin Require Import expr_facts.
 
 From Coq Require Import Utf8.
@@ -16,7 +15,6 @@ From Equations Require Import Equations.
 Set Equations With UIP.
 Set Equations Transparent.
 
-(* Set Implicit Arguments. *)
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
@@ -68,60 +66,10 @@ Definition nat_of_fun_ident (f : funname) (id : Ident.ident) : nat :=
 Definition translate_var (f : funname) (x : var) : Location :=
   ( encode x.(vtype) ; nat_of_fun_ident f x.(vname)).
 
-Definition translate_gvar (f : funname) (x : gvar) : Location :=
-  translate_var f x.(gv).(v_var).
-
 Definition typed_code := ∑ (a : choice_type), raw_code a.
 
 #[local] Definition unsupported : typed_code :=
   ('unit ; assert false).
-
-Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code.
-Proof.
-  destruct e as [z|b| |x|aa ws x e| | | | | | ].
-  - exists chInt. apply ret. exact z.
-  - exists chBool. exact (ret b).
-  - (* Parr_init only gets produced by ArrayInit() in jasmin source; the EC
-       export asserts false on it. *)
-    exists 'array.
-    exact (ret emptym).
-  - pose (translate_gvar fn x) as l.
-    exists (projT1 l).
-    apply (getr l). apply ret.
-  - (* exists 'array. *)
-  (* | Pget aa ws x e => *)
-  (*     Let (n, t) := gd, s.[x] in *)
-
-    exact unsupported.
-
-(* Look up x amongst the evm part of the estate and the globals gd. Monadic Let
-   because we might find None. If (Some val) is found, fail with type error
-   unless (val = Varr n t). We obtain (n: positive) and (t: array n). *)
-
-  (*     Let i := sem_pexpr s e >>= to_int in *)
-
-  (* Evaluate the indexing expression `e` and coerce it to Z. *)
-
-  (*     Let w := WArray.get aa ws t i in *)
-
-  (* array look-up, where
-     WArray.get aa ws t i =
-       CoreMem.read t a (i * (if aa == AAscale then (ws/8) else 1)) ws
-   *)
-
-  (*     ok (Vword w) *)
-
-    (* pose (translate_gvar fn x) as lx. *)
-    (* pose (v ← get lx ;; @ret _ (coerce_to_array v))%pack. *)
-    (* pose (r ;; ret tt). *)
-
-  - exact unsupported.
-  - exact unsupported.
-  - exact unsupported.
-  - exact unsupported.
-  - exact unsupported.
-  - exact unsupported.
-Defined.
 
 (* from pkg_invariants *)
 Definition cast_ct_val {t t' : choice_type} (e : t = t') (v : t) : t'.
@@ -149,6 +97,17 @@ Proof.
   move: e => /eqP e. subst. reflexivity.
 Qed.
 
+Definition truncate_chWord {t : choice_type} (n : wsize) : t → 'word n :=
+  match t with
+  | chWord m =>
+      λ w,
+        match truncate_word n w with
+        | Ok w' => w'
+        | _ => chCanonical _
+        end
+  | _ => λ x, chCanonical _
+  end.
+
 Definition truncate_el {t : choice_type} (s : stype) : t → encode s :=
   match s return t → encode s with
   | sbool => λ b, coerce_to_choice_type 'bool b
@@ -159,12 +118,7 @@ Definition truncate_el {t : choice_type} (s : stype) : t → encode s :=
       *)
       λ a, coerce_to_choice_type 'array a
   | sword n =>
-      λ w,
-        let w' := coerce_to_choice_type ('word n) w in
-        match truncate_word n w' with
-        | Ok w'' => w''
-        | _ => chCanonical _
-        end
+      λ w, truncate_chWord n w
   end.
 
 Definition truncate_code (s : stype) (c : typed_code) : typed_code :=
@@ -262,6 +216,93 @@ Definition ssprove_write_lval (fn : funname) (l : lval) (tc : typed_code)
   (*   write_var x (@to_val (sarr n) t) s *)
   end.
 
+Fixpoint satisfies_globs (globs : glob_decls) : heap * heap → Prop.
+Proof.
+  exact (λ '(x, y), False). (* TODO *)
+Defined.
+
+Fixpoint collect_globs (globs : glob_decls) : seq Location.
+Proof.
+  exact [::]. (* TODO *)
+Defined.
+
+Definition typed_chElement := pointed_value.
+
+Definition choice_type_of_val (val : value) : choice_type :=
+  encode (type_of_val val).
+
+Definition translate_value (v : value) : choice_type_of_val v.
+Proof.
+  (* Feels like we could apply embed first, but I don't know what to do with
+    the undefined case.
+  *)
+  destruct v as [b | z | size a | size wd | undef_ty].
+  - apply embed. exact b.
+  - apply embed. exact z.
+  - apply embed. exact a.
+  - apply embed. exact wd.
+  - apply chCanonical.
+    (* It shouldn't matter which value we pick, because when coercing an undef
+       value at type ty back to ty via to_{bool,int,word,arr} (defined in
+       values.v), all of these functions raise an error on Vundef. *)
+Defined.
+
+Definition translate_gvar (f : funname) (x : gvar) : typed_code :=
+  if is_lvar x
+  then (_ ; x ← get (translate_var f x.(gv).(v_var)) ;; ret x)
+  else
+    (encode (vtype x.(gv)) ;
+    match get_global gd x.(gv).(v_var) with
+    | Ok v => ret (coerce_to_choice_type _ (translate_value v))
+    | _ => ret (chCanonical _)
+    end
+    ).
+
+Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code.
+Proof.
+  destruct e as [z|b| |x|aa ws x e| | | | | | ].
+  - exists chInt. apply ret. exact z.
+  - exists chBool. exact (ret b).
+  - (* Parr_init only gets produced by ArrayInit() in jasmin source; the EC
+       export asserts false on it. *)
+    exists 'array.
+    exact (ret emptym).
+  - exact (translate_gvar fn x).
+  - (* exists 'array. *)
+  (* | Pget aa ws x e => *)
+  (*     Let (n, t) := gd, s.[x] in *)
+
+    exact unsupported.
+
+(* Look up x amongst the evm part of the estate and the globals gd. Monadic Let
+   because we might find None. If (Some val) is found, fail with type error
+   unless (val = Varr n t). We obtain (n: positive) and (t: array n). *)
+
+  (*     Let i := sem_pexpr s e >>= to_int in *)
+
+  (* Evaluate the indexing expression `e` and coerce it to Z. *)
+
+  (*     Let w := WArray.get aa ws t i in *)
+
+  (* array look-up, where
+     WArray.get aa ws t i =
+       CoreMem.read t a (i * (if aa == AAscale then (ws/8) else 1)) ws
+   *)
+
+  (*     ok (Vword w) *)
+
+    (* pose (translate_gvar fn x) as lx. *)
+    (* pose (v ← get lx ;; @ret _ (coerce_to_array v))%pack. *)
+    (* pose (r ;; ret tt). *)
+
+  - exact unsupported.
+  - exact unsupported.
+  - exact unsupported.
+  - exact unsupported.
+  - exact unsupported.
+  - exact unsupported.
+Defined.
+
 Definition translate_instr_r (fn : funname) (i : instr_r) : raw_code 'unit.
 Proof.
   destruct i.
@@ -313,25 +354,12 @@ Proof.
   - exact [interface].
 Defined.
 
-Fixpoint satisfies_globs (globs : glob_decls) : heap * heap → Prop.
-Proof.
-  exact (λ '(x, y), False). (* TODO *)
-Defined.
-
-Fixpoint collect_globs (globs : glob_decls) : seq Location.
-Proof.
-  exact [::]. (* TODO *)
-Defined.
-
 Definition ssprove_prog := seq (funname * fdef).
 
 Definition translate_prog (p : uprog) : ssprove_prog :=
   let globs := collect_globs (p_globs p) in
   let fds := map translate_fundef (p_funcs p) in
   fds.
-
-Definition choice_type_of_val (val : value) : choice_type :=
-  encode (type_of_val val).
 
 Fixpoint lchtuple (ts : seq choice_type) : choice_type :=
   match ts with
@@ -344,24 +372,6 @@ Definition get_fundef_ssp (sp : seq (funname * fdef)) (fn : funname) (dom cod : 
   option (dom → raw_code cod).
 Proof.
   exact None. (* TODO *)
-Defined.
-
-Definition typed_chElement := pointed_value.
-
-Definition translate_value (v : value) : choice_type_of_val v.
-Proof.
-  (* Feels like we could apply embed first, but I don't know what to do with
-    the undefined case.
-  *)
-  destruct v as [b | z | size a | size wd | undef_ty].
-  - apply embed. exact b.
-  - apply embed. exact z.
-  - apply embed. exact a.
-  - apply embed. exact wd.
-  - apply chCanonical.
-    (* It shouldn't matter which value we pick, because when coercing an undef
-       value at type ty back to ty via to_{bool,int,word,arr} (defined in
-       values.v), all of these functions raise an error on Vundef. *)
 Defined.
 
 Lemma eq_rect_r_K :
@@ -460,8 +470,8 @@ Derive NoConfusion for value.
 Derive NoConfusion for wsize.
 
 Lemma translate_pexpr_correct :
-  ∀ fn (e : pexpr) (pg : glob_decls) s₁ v ty v' ty',
-    sem_pexpr pg s₁ e = ok v →
+  ∀ fn (e : pexpr) s₁ v ty v' ty',
+    sem_pexpr gd s₁ e = ok v →
     truncate_val ty v = ok v' →
     ⊢ ⦃ λ '(h₀, h₁), rel_estate s₁ h₀ fn ∧ h₀ = h₁ ⦄
       ret (coerce_to_choice_type ty' (translate_value v'))
@@ -469,7 +479,7 @@ Lemma translate_pexpr_correct :
       coerce_typed_code ty' (truncate_code ty (translate_pexpr fn e))
     ⦃ eq ⦄.
 Proof.
-  intros fn e pg s₁ v ty v' ty' h1 h2.
+  intros fn e s₁ v ty v' ty' h1 h2.
   rewrite coerce_cast_code.
   unfold choice_type_of_val.
   unfold truncate_code.
@@ -566,15 +576,39 @@ Proof.
       * simpl. simpl in ev.
         pose proof (type_of_to_val sx) as ety'.
         unfold to_word in ev. destruct to_val eqn:esx. all: try discriminate.
-        --- subst. noconf esx. inversion H. subst.
-            (* rewrite coerce_to_choice_type_K.
-            simpl. noconf esx.
-            unfold WArray.cast in ev. destruct (_ <=? _)%Z. 2: discriminate.
-            noconf ev. simpl. reflexivity.
-
-
-      unfold truncate_el.
-      rewrite type_of_to_val. *)
+        2:{ destruct t. all: discriminate. }
+        subst. simpl. noconf esx. inversion H. rewrite ev. reflexivity.
+    + simpl. rewrite h1. simpl.
+      apply r_ret. intuition subst. f_equal.
+      rewrite -es. rewrite coerce_to_choice_type_K.
+      pose proof (type_of_to_val s) as ety.
+      set (ty := type_of_val v') in *. clearbody ty.
+      clear - ev.
+      destruct ty.
+      * simpl. simpl in ev.
+        unfold to_bool in ev. destruct v eqn:e. all: try discriminate.
+        2:{ destruct t. all: discriminate. }
+        noconf ev. subst.
+        rewrite coerce_to_choice_type_K. reflexivity.
+      * simpl. simpl in ev.
+        unfold to_int in ev. destruct v eqn:e. all: try discriminate.
+        2:{ destruct t. all: discriminate. }
+        noconf ev. subst.
+        rewrite coerce_to_choice_type_K.
+        reflexivity.
+      * simpl. simpl in ev.
+        unfold to_arr in ev. destruct v eqn:e. all: try discriminate.
+        (* pose proof (type_of_to_val sx) as ety'.
+        rewrite esx in ety'. subst. *)
+        rewrite coerce_to_choice_type_K.
+        simpl. subst.
+        unfold WArray.cast in ev. destruct (_ <=? _)%Z. 2: discriminate.
+        noconf ev. simpl. reflexivity.
+      * simpl. simpl in ev.
+        unfold to_word in ev. destruct v eqn:e. all: try discriminate.
+        2:{ destruct t. all: discriminate. }
+        subst. simpl. rewrite ev. reflexivity.
+  -
 Admitted.
 
 Theorem translate_prog_correct (p : expr.uprog) (fn : funname) m va m' vr f :
