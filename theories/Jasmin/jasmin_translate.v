@@ -122,11 +122,52 @@ Proof.
   - exact unsupported.
 Defined.
 
+(* from pkg_invariants *)
+Definition cast_ct_val {t t' : choice_type} (e : t = t') (v : t) : t'.
+Proof.
+  subst. auto.
+Defined.
 
+Lemma cast_ct_val_K :
+  ∀ t e v,
+    @cast_ct_val t t e v = v.
+Proof.
+  intros t e v.
+  assert (e = erefl).
+  { apply eq_irrelevance. }
+  subst. reflexivity.
+Qed.
 
+Equations? coerce_to_choice_type (t : choice_type) {tv : choice_type} (v : tv) : t :=
+  @coerce_to_choice_type t tv v with inspect (tv == t) := {
+    | @exist true e => cast_ct_val _ v
+    | @exist false e => chCanonical t
+    }.
+Proof.
+  symmetry in e.
+  move: e => /eqP e. subst. reflexivity.
+Qed.
 
-(* FIXME: actually perform the truncation *)
-Definition truncate_code (s : stype) (c : typed_code) : typed_code := c.
+Definition truncate_el {t : choice_type} (s : stype) : t → encode s :=
+  match s return t → encode s with
+  | sbool => λ b, coerce_to_choice_type 'bool b
+  | sint => λ i, coerce_to_choice_type 'int i
+  | sarr n =>
+      (* Here we do not perform the check on the length of the array as
+        performed by to_arr n
+      *)
+      λ a, coerce_to_choice_type 'array a
+  | sword n =>
+      λ w,
+        let w' := coerce_to_choice_type ('word n) w in
+        match truncate_word n w' with
+        | Ok w'' => w''
+        | _ => chCanonical _
+        end
+  end.
+
+Definition truncate_code (s : stype) (c : typed_code) : typed_code :=
+  (encode s ; x ← c.π2 ;; ret (truncate_el s x)).
 
 Definition cast_typed_code (t' : choice_type) (c : typed_code) (e : c.π1 = t') :
   raw_code t'.
@@ -334,32 +375,6 @@ Defined.
 
 Definition translate_ptr (ptr : pointer) : Location :=
   ('word Uptr ; Z.to_nat (wunsigned ptr)).
-
-(* from pkg_invariants *)
-Definition cast_ct_val {t t' : choice_type} (e : t = t') (v : t) : t'.
-Proof.
-  subst. auto.
-Defined.
-
-Lemma cast_ct_val_K :
-  ∀ t e v,
-    @cast_ct_val t t e v = v.
-Proof.
-  intros t e v.
-  assert (e = erefl).
-  { apply eq_irrelevance. }
-  subst. reflexivity.
-Qed.
-
-Equations? coerce_to_choice_type (t : choice_type) {tv : choice_type} (v : tv) : t :=
-  @coerce_to_choice_type t tv v with inspect (tv == t) := {
-    | @exist true e => cast_ct_val _ v
-    | @exist false e => chCanonical t
-    }.
-Proof.
-  symmetry in e.
-  move: e => /eqP e. subst. reflexivity.
-Qed.
 
 Definition rel_mem (m : mem) (h : heap) :=
   ∀ ptr sz v,
