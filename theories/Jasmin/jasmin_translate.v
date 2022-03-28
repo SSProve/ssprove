@@ -36,8 +36,8 @@ Context (P : uprog).
 
 Notation gd := (p_globs P).
 
-Notation " 'array " := (chMap 'int ('word 8)) (at level 2) : package_scope.
-Notation " 'array " := (chMap 'int ('word 8)) (in custom pack_type at level 2).
+Notation " 'array " := (chMap 'int ('word U8)) (at level 2) : package_scope.
+Notation " 'array " := (chMap 'int ('word U8)) (in custom pack_type at level 2).
 
 Definition encode (t : stype) : choice_type :=
   match t with

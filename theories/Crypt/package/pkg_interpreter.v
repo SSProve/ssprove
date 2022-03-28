@@ -129,7 +129,7 @@ Section Interpreter.
 
   #[program] Fixpoint sampler (e : choice_type) seed : option (nat * e):=
     match e with
-      chUnit => Some (seed, Datatypes.tt)
+    | chUnit => Some (seed, Datatypes.tt)
     | chNat => Some ((seed + 1)%nat, seed)
     | chInt => Some ((seed + 1)%nat, BinInt.Z.of_nat seed) (* FIXME: also generate negative numbers *)
     | chBool => Some ((seed + 1)%nat, Nat.even seed)
@@ -166,10 +166,10 @@ Section Interpreter.
 
   Next Obligation.
     eapply word.mkWord.
-    instantiate (1 := ((Z.of_nat seed) mod word.modulus n)%Z).
-    pose (Z.mod_bound_pos (Z.of_nat seed) (word.modulus n)
+    instantiate (1 := ((Z.of_nat seed) mod word.modulus (word.nat_of_wsize n))%Z).
+    pose (Z.mod_bound_pos (Z.of_nat seed) (word.modulus (word.nat_of_wsize n))
          (Zle_0_nat seed)).
-    pose (word.modulus_gt0 n).
+    pose (word.modulus_gt0 (word.nat_of_wsize n)).
     apply / word.iswordZP.
     apply a.
     move : i => / ssrZ.ltzP.
