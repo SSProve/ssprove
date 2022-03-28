@@ -9,6 +9,8 @@ From Crypt Require Import Prelude choice_type
 From Coq Require Import Utf8.
 From extructures Require Import ord fset fmap.
 
+From Jasmin Require Import word.
+
 From Equations Require Import Equations.
 
 Set Equations With UIP.
@@ -166,8 +168,8 @@ Section Interpreter.
 
   Next Obligation.
     eapply word.mkWord.
-    instantiate (1 := ((Z.of_nat seed) mod word.modulus (word.nat_of_wsize n))%Z).
-    pose (Z.mod_bound_pos (Z.of_nat seed) (word.modulus (word.nat_of_wsize n))
+    instantiate (1 := ((Z.of_nat seed) mod (word.modulus (nat_of_wsize n) ))%Z).
+    pose (Z.mod_bound_pos (Z.of_nat seed) (word.modulus n)
          (Zle_0_nat seed)).
     pose (word.modulus_gt0 (word.nat_of_wsize n)).
     apply / word.iswordZP.

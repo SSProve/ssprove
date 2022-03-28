@@ -13,7 +13,7 @@ Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-forma
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr realsum seq all_algebra fintype.
 From CoqWord Require Import word ssrZ.
-From Jasmin Require Import wsize word utils.
+From Jasmin Require Import utils word.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From Crypt Require Import Prelude Axioms.
 From extructures Require Import ord fset fmap.
@@ -404,22 +404,13 @@ Section choice_typeTypes.
     - destruct y. all: try (intuition; reflexivity).
       unfold choice_type_lt.
       unfold choice_type_test.
-      unshelve apply /implyP.
-      intro.
-      pose proof (cmp_le_eq_lt x nbits).
-      destruct (x < nbits)%CMP eqn:E.
-      + easy.
-      + apply /orP. right.
-        rewrite E in H0. simpl in *.
-      (* intuition eauto. *)
-      (* unshelve apply /implyP. *)
-      (* Set Printing All. *)
-      (* rewrite -neq_ltn. *)
-      (* unshelve apply /implyP. *)
-      (* intros. Set Printing All. *)
-      (* auto. *)
-        admit.
-  Admitted.
+      apply /implyP.
+      move => H. apply /orP.
+      destruct (gcmp x nbits) eqn:E.
+      + by move: E H => /cmp_eq -> /negP.
+      + left. by apply /eqP.
+      + right. unfold cmp_lt. rewrite cmp_sym. by move: E => ->.
+  Qed.
 
   Lemma choice_type_lt_asymmetric :
     ∀ x y,
