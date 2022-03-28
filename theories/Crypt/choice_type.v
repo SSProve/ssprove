@@ -13,6 +13,7 @@ Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-forma
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr realsum seq all_algebra fintype.
 From CoqWord Require Import word ssrZ.
+From Jasmin Require Import utils word.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From Crypt Require Import Prelude Axioms.
 From extructures Require Import ord fset fmap.
@@ -44,7 +45,7 @@ Inductive choice_type :=
 | chMap (A B : choice_type)
 | chOption (A : choice_type)
 | chFin (n : positive)
-| chWord (nbits : nat).
+| chWord (nbits : wsize).
 
 Derive NoConfusion NoConfusionHom for choice_type.
 
@@ -233,7 +234,7 @@ Section choice_typeTypes.
   | chWord n, chMap _ _ => false
   | chWord n, chOption _ => false
   | chWord n, chFin _ => false
-  | chWord n, chWord n' => n < n'
+  | chWord n, chWord n' => (n < n')%CMP
   end.
 
   Definition choice_type_leq (t1 t2 : choice_type) :=
@@ -293,7 +294,7 @@ Section choice_typeTypes.
     - destruct v. all: try discriminate.
       all: destruct w; try discriminate; auto.
       simpl in *.
-      eapply ltn_trans. all: eauto.
+      eapply cmp_lt_trans. all: eauto.
   Qed.
 
   Lemma choice_type_lt_areflexive :
@@ -313,7 +314,7 @@ Section choice_typeTypes.
       + apply/nandP.
         right. apply ih2.
     - rewrite ltnn. auto.
-    - rewrite ltnn. auto.
+    - by rewrite /cmp_lt /gcmp cmp_refl. 
   Qed.
 
   Lemma choice_type_lt_total_holds :
@@ -402,8 +403,14 @@ Section choice_typeTypes.
     - destruct y. all: try (intuition; reflexivity).
       unfold choice_type_lt.
       unfold choice_type_test.
-      rewrite -neq_ltn.
-      apply /implyP. auto.
+      (* Search implb. *)
+      (* Locate "==>". *)
+      apply /implyP.
+      move => H. apply /orP.
+      destruct (gcmp x nbits) eqn:E.
+      + by move: E H => /cmp_eq -> /negP.
+      + left. by apply /eqP.
+      + right. unfold cmp_lt. rewrite cmp_sym. by move: E => ->.
   Qed.
 
   Lemma choice_type_lt_asymmetric :
@@ -508,9 +515,20 @@ Section choice_typeTypes.
   | chMap l r => GenTree.Node 2 [:: encode l ; encode r]
   | chOption u => GenTree.Node 3 [:: encode u]
   | chFin n => GenTree.Node 4 [:: GenTree.Leaf (pos n)]
-  | chWord n => GenTree.Node 5 [:: GenTree.Leaf n]
+  | chWord n => GenTree.Node 5 [:: GenTree.Leaf (nat_of_wsize n)]
   end.
 
+  Definition wsize_of_nat n : wsize :=
+      match n with
+      | 8%nat => U8
+      | 16%nat => U16
+      | 32%nat => U32
+      | 64%nat => U64
+      | 128%nat => U128
+      | 256%nat => U256
+      | _ => U8
+      end.
+  
   Fixpoint decode (t : GenTree.tree nat) : option choice_type :=
     match t with
     | GenTree.Leaf 1 => Some chUnit
@@ -533,7 +551,7 @@ Section choice_typeTypes.
       | _ => None
       end
     | GenTree.Node 4 [:: GenTree.Leaf (S n)] => Some (chFin (mkpos (S n)))
-    | GenTree.Node 5 [:: GenTree.Leaf n] => Some (chWord n)
+    | GenTree.Node 5 [:: GenTree.Leaf n] => Some (chWord (wsize_of_nat n))
     | _ => None
     end.
 
@@ -549,6 +567,7 @@ Section choice_typeTypes.
       destruct n.
       + discriminate.
       + cbn. repeat f_equal. apply eq_irrelevance.
+    - destruct nbits; reflexivity.
   Defined.
 
   Definition choice_type_choiceMixin := PcanChoiceMixin codeK.
