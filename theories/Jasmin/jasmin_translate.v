@@ -416,7 +416,7 @@ Defined.
 (*   foldr chProd ls *)
 
 Definition translate_ptr (ptr : pointer) : Location :=
-  ('word Uptr ; Z.to_nat (wunsigned ptr)).
+  ('word U8 ; (5 ^ Z.to_nat (wunsigned ptr))%nat).
 
 Definition rel_mem (m : mem) (h : heap) :=
   ∀ ptr sz v,
@@ -631,6 +631,13 @@ Proof.
     simpl. intuition subst. assumption.
 Qed.
 
+Lemma ptr_var_neq (ptr : pointer) (fn : funname) (v : var) : translate_ptr ptr != translate_var fn v.
+Proof.
+  unfold translate_ptr.
+  unfold translate_var.
+  unfold nat_of_fun_ident.
+  Admitted.
+
 Lemma translate_instr_r_correct :
   ∀ (fn : funname) (i : instr_r) (s₁ s₂ : estate),
   sem_i P s₁ i s₂ →
@@ -684,8 +691,23 @@ Proof.
         subst.
         split.
         -- simpl.
-           admit.
+           unfold rel_mem.
+           intros.
+           apply hmem in H.
+           rewrite get_set_heap_neq. 2: apply ptr_var_neq.
+           apply H.
         -- simpl.
+           (* unfold rel_vmap in *. *)
+           (* intros. simpl. *)
+           (* Search set_var. *)
+           (* unfold set_var in eset. *)
+           (* destruct (is_sbool (vtype y)). *)
+           (* --- simpl in eset. *)
+           (*     unfold on_vu in eset. *)
+           (*     noconf eset. *)
+           (*     apply hvmap in H. *)
+
+           (*     apply hvmap. *)
            admit.
     + admit.
     + admit.
