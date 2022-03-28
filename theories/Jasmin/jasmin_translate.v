@@ -36,11 +36,14 @@ Context (P : uprog).
 
 Notation gd := (p_globs P).
 
+Notation " 'array " := (chMap 'int ('word 8)) (at level 2) : package_scope.
+Notation " 'array " := (chMap 'int ('word 8)) (in custom pack_type at level 2).
+
 Definition encode (t : stype) : choice_type :=
   match t with
   | sbool => 'bool
   | sint => 'int
-  | sarr n => chMap 'int ('word 8)
+  | sarr n => 'array
   | sword n => 'word n
   end.
 
@@ -75,16 +78,42 @@ Definition typed_code := ∑ (a : choice_type), raw_code a.
 
 Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code.
 Proof.
-  destruct e.
+  destruct e as [z|b| |x|aa ws x e| | | | | | ].
   - exists chInt. apply ret. exact z.
   - exists chBool. exact (ret b).
   - (* Parr_init only gets produced by ArrayInit() in jasmin source; the EC
        export asserts false on it, so we don't support it for now. *)
     exact unsupported.
-  - pose (translate_gvar fn g).
+  - pose (translate_gvar fn x) as l.
     exists (projT1 l).
     apply (getr l). apply ret.
-  - exact unsupported.
+  - (* exists 'array. *)
+  (* | Pget aa ws x e => *)
+  (*     Let (n, t) := gd, s.[x] in *)
+
+    exact unsupported.
+
+(* Look up x amongst the evm part of the estate and the globals gd. Monadic Let
+   because we might find None. If (Some val) is found, fail with type error
+   unless (val = Varr n t). We obtain (n: positive) and (t: array n). *)
+
+  (*     Let i := sem_pexpr s e >>= to_int in *)
+
+  (* Evaluate the indexing expression `e` and coerce it to Z. *)
+
+  (*     Let w := WArray.get aa ws t i in *)
+
+  (* array look-up, where
+     WArray.get aa ws t i =
+       CoreMem.read t a (i * (if aa == AAscale then (ws/8) else 1)) ws
+   *)
+
+  (*     ok (Vword w) *)
+
+    (* pose (translate_gvar fn x) as lx. *)
+    (* pose (v ← get lx ;; @ret _ (coerce_to_array v))%pack. *)
+    (* pose (r ;; ret tt). *)
+
   - exact unsupported.
   - exact unsupported.
   - exact unsupported.
@@ -92,6 +121,9 @@ Proof.
   - exact unsupported.
   - exact unsupported.
 Defined.
+
+
+
 
 (* FIXME: actually perform the truncation *)
 Definition truncate_code (s : stype) (c : typed_code) : typed_code := c.
