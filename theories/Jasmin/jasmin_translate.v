@@ -639,8 +639,8 @@ Lemma translate_instr_r_correct :
   ⦃ λ '(_, h₀) '(_, _), rel_estate s₂ h₀ fn ⦄.
 Proof.
   intros fn i s₁ s₂ h.
-  induction h as [? ? x ? ? ? ? ? ? ? hw | | | | | | |].
-  - simpl. destruct x.
+  induction h as [s₁ s₂ y tag sty e v v' sem_e trunc hw | | | | | | |].
+  - simpl. destruct y as [ | y | | | ].
     + simpl. apply r_ret. intros h₀ _ hr.
       simpl in hw. unfold write_none in hw.
       destruct is_sbool eqn:eb.
@@ -656,18 +656,37 @@ Proof.
       epose proof r_bind_unary as thm.
       specialize thm with (fv := λ _, tt).
       simpl in thm.
-      specialize thm with (m := coerce_typed_code (encode (vtype H1))
-      (truncate_code ty (translate_pexpr fn e))).
+      specialize thm with
+        (m := coerce_typed_code (encode (vtype y))
+                                (truncate_code sty (translate_pexpr fn e))).
+      pose (( λ '(_, h₀) '(_, _), rel_estate s₁ h₀ fn ) : postcond
+                                                 (encode (vtype y))
+                                                 (encode (vtype y))) as mid.
+      specialize thm with (mid := mid).
       eapply thm. all: clear thm.
       * eapply rsymmetry.
         1: eapply rpost_weaken_rule.
         1: eapply translate_pexpr_correct.
         1,2: eassumption.
-        intros [] []. intuition auto. subst.
-        admit.
+        intros [] []; intuition subst. reflexivity.
       * intros a.
-        (* eapply r_put_lhs. *)
-        admit.
+        epose proof r_put_lhs as thm.
+        specialize thm with (ℓ := translate_var fn y).
+        specialize thm with (v0 := a).
+        specialize thm with (r₁ := ret tt).
+        specialize thm with (r₀ := ret tt).
+        specialize thm with (pre := λ '(s₀, s₁0), mid (a, s₀) (a, s₁0) ).
+        eapply thm.
+        apply r_ret.
+        intros.
+        simpl in H.
+        destruct H as [h [[hmem hvmap] Hs₀]].
+        subst.
+        split.
+        -- simpl.
+           admit.
+        -- simpl.
+           admit.
     + admit.
     + admit.
     + admit.
