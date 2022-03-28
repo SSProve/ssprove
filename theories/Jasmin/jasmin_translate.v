@@ -82,8 +82,9 @@ Proof.
   - exists chInt. apply ret. exact z.
   - exists chBool. exact (ret b).
   - (* Parr_init only gets produced by ArrayInit() in jasmin source; the EC
-       export asserts false on it, so we don't support it for now. *)
-    exact unsupported.
+       export asserts false on it. *)
+    exists 'array.
+    exact (ret emptym).
   - pose (translate_gvar fn x) as l.
     exists (projT1 l).
     apply (getr l). apply ret.
@@ -206,6 +207,19 @@ Proof.
     clear - e ne. symmetry in e. move: e => /eqP e. simpl in e. contradiction.
   }
   symmetry. assumption.
+Qed.
+
+Lemma coerce_typed_code_K :
+  ∀ (ty : choice_type) c,
+    coerce_typed_code ty (ty ; c) = c.
+Proof.
+  intros ty c.
+  funelim (coerce_typed_code ty (ty ; c)).
+  2:{
+    clear - e. symmetry in e. move: e => /eqP e. simpl in e. contradiction.
+  }
+  rewrite <- Heqcall.
+  apply cast_typed_code_K.
 Qed.
 
 (* Definition cast_typed_code (ty : choice_type) (tc : typed_code) : raw_code ty. *)
@@ -350,6 +364,24 @@ Proof.
        values.v), all of these functions raise an error on Vundef. *)
 Defined.
 
+Lemma eq_rect_r_K :
+  ∀ (A : eqType) (x : A) (P : A → Type) h e,
+    @eq_rect_r A x P h x e = h.
+Proof.
+  intros A x P' h e.
+  replace e with (@erefl A x) by apply eq_irrelevance.
+  reflexivity.
+Qed.
+
+Lemma translate_value_to_val :
+  ∀ (s : stype) (v : sem_t s),
+    translate_value (to_val v) = eq_rect_r encode (embed v) (type_of_to_val v).
+Proof.
+  intros s v.
+  destruct s as [| | size | size].
+  all: simpl ; rewrite eq_rect_r_K ; reflexivity.
+Qed.
+
 Fixpoint type_of_values vs : choice_type :=
   match vs with
   | [::]   => 'unit
@@ -412,13 +444,24 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma coerce_to_choice_type_K :
+  ∀ (t : choice_type) (v : t),
+    coerce_to_choice_type t v = v.
+Proof.
+  intros t v.
+  funelim (coerce_to_choice_type t v).
+  2:{ clear - e. rewrite eqxx in e. discriminate. }
+  rewrite <- Heqcall.
+  apply cast_ct_val_K.
+Qed.
+
 Derive NoConfusion for result.
 
 Lemma translate_pexpr_correct :
   ∀ fn (e : pexpr) (pg : glob_decls) s₁ v ty v' ty',
     sem_pexpr pg s₁ e = ok v →
     truncate_val ty v = ok v' →
-    ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
+    ⊢ ⦃ λ '(h₀, h₁), rel_estate s₁ h₀ fn ∧ h₀ = h₁ ⦄
       ret (coerce_to_choice_type ty' (translate_value v'))
     ≈
       coerce_typed_code ty' (truncate_code ty (translate_pexpr fn e))
@@ -427,18 +470,72 @@ Proof.
   intros fn e pg s₁ v ty v' ty' h1 h2.
   rewrite coerce_cast_code.
   unfold choice_type_of_val.
-  (* TODO unfold truncate_code, but for this we need a proper def *)
-  (* assert (e2 : ty = encode (type_of_val v')). *)
+  unfold truncate_code.
+  assert (e2 : ty = type_of_val v').
+  { unfold truncate_val in h2. destruct of_val eqn:ev. 2: discriminate.
+    simpl in h2. noconf h2.
+    symmetry. apply type_of_to_val.
+  }
+  subst.
   destruct (ty' == encode (type_of_val v')) eqn:e1.
   2:{
     rewrite coerce_typed_code_neq.
     2:{ move: e1 => /eqP e1. congruence. }
-    (* Ideally we should conclude the other coercion fails too. *)
-    admit.
+    rewrite coerce_typed_code_neq.
+    2:{ move: e1 => /eqP e1. congruence. }
+    apply r_ret. intuition subst. reflexivity.
   }
+  pose proof e1 as e2. move: e2 => /eqP e2. subst.
+  rewrite 2!coerce_typed_code_K.
   unfold truncate_val in h2. destruct of_val eqn:ev. 2: discriminate.
-  simpl in h2. noconf h2.
-  (* rewrite type_of_to_val. *)
+  simpl in h2. noconf h2. destruct H.
+  clear e1.
+  (* Now we can actually look at the pexpr *)
+  induction e as [z|b| |x|aa ws x e| | | | | | ].
+  - simpl. simpl in h1. noconf h1.
+    apply of_vint in ev as es.
+    revert s ev. rewrite es. intros s ev.
+    simpl. simp coerce_to_choice_type. simpl.
+    rewrite cast_ct_val_K.
+    simpl in ev. noconf ev.
+    apply r_ret. intuition subst. reflexivity.
+  - simpl. simpl in h1. noconf h1.
+    apply of_vbool in ev as es.
+    destruct es as [es _].
+    revert s ev. rewrite es. intros s ev.
+    simpl. simp coerce_to_choice_type. simpl.
+    rewrite cast_ct_val_K.
+    simpl in ev. noconf ev.
+    apply r_ret. intuition subst. reflexivity.
+  - simpl. simpl in h1. noconf h1.
+    apply of_varr in ev as es.
+    move: es => /values.subtypeE es.
+    destruct es as [m [es hm]].
+    revert s ev. rewrite es. intros s ev.
+    simpl. simp coerce_to_choice_type. simpl.
+    rewrite cast_ct_val_K.
+    simpl in ev. apply WArray.cast_empty_ok in ev. subst.
+    simpl. rewrite Mz.foldP. simpl.
+    apply r_ret. intuition subst. reflexivity.
+  - simpl. simpl in h1.
+    apply type_of_get_gvar in h1 as es.
+    unfold translate_gvar. unfold translate_var.
+    unfold get_gvar in h1.
+    destruct is_lvar eqn:hlvar.
+    + destruct x as [gx gs]. simpl in *.
+      unfold is_lvar in hlvar. simpl in hlvar. move: hlvar => /eqP hlvar. subst.
+      unfold get_var in h1.
+      unfold on_vu in h1. destruct Fv.get as [sx |] eqn:e1.
+      2:{ destruct e. all: discriminate. }
+      noconf h1.
+      eapply r_get_remember_rhs with (pre := λ '(h₀, h₁), rel_estate s₁ h₀ fn ∧ h₀ = h₁).
+      intro vx. simpl in vx.
+      apply r_ret. intros ? he [[[hmem hvmap] ?] h]. subst.
+      f_equal.
+      apply hvmap in e1. simpl in h.
+      rewrite h in e1. clear h. subst.
+      simpl. rewrite coerce_to_choice_type_K.
+      set (ty := type_of_val v') in *. clearbody ty. clear v' es.
 Admitted.
 
 (* something like this *)
