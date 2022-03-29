@@ -639,8 +639,8 @@ Lemma translate_instr_r_correct :
   ⦃ λ '(_, h₀) '(_, _), rel_estate s₂ h₀ fn ⦄.
 Proof.
   intros fn i s₁ s₂ h.
-  induction h as [s₁ s₂ y tag sty e v v' sem_e trunc hw | | | | | | |].
-  - simpl. destruct y as [ | y | | | ].
+  induction h as [es₁ es₂ y tag sty e v v' sem_e trunc hw | | | | | | |].
+  - simpl. destruct y as [ | yl | | | ] eqn:case_lval.
     + simpl. apply r_ret. intros h₀ _ hr.
       simpl in hw. unfold write_none in hw.
       destruct is_sbool eqn:eb.
@@ -651,42 +651,112 @@ Proof.
     + simpl. simpl in hw. unfold write_var in hw.
       destruct set_var eqn:eset. 2: discriminate.
       simpl in hw. noconf hw.
-      evar (cty : choice_type).
-      (* change (ret tt) with ((λ _, ret tt) (chCanonical cty)) at 2. *)
       epose proof r_bind_unary as thm.
       specialize thm with (fv := λ _, tt).
       simpl in thm.
       specialize thm with
-        (m := coerce_typed_code (encode (vtype y))
+        (m := coerce_typed_code (encode (vtype yl))
                                 (truncate_code sty (translate_pexpr fn e))).
-      pose (( λ '(_, h₀) '(_, _), rel_estate s₁ h₀ fn ) : postcond
-                                                 (encode (vtype y))
-                                                 (encode (vtype y))) as mid.
+      pose (( λ '(a, h₀) '(b, _), rel_estate es₁ h₀ fn ) : postcond
+                                                 (encode (vtype yl))
+                                                 (encode (vtype yl))) as mid.
       specialize thm with (mid := mid).
       eapply thm. all: clear thm.
       * eapply rsymmetry.
         1: eapply rpost_weaken_rule.
         1: eapply translate_pexpr_correct.
         1,2: eassumption.
-        intros [] []; intuition subst. reflexivity.
-      * intros a.
+        intros [] []; intuition subst.
+        -- unfold mid. intuition reflexivity.
+      * simpl. intros a.
+        clear sem_e trunc tag sty e v.
         epose proof r_put_lhs as thm.
-        specialize thm with (ℓ := translate_var fn y).
-        specialize thm with (v0 := a).
+        specialize thm with (ℓ := translate_var fn yl).
         specialize thm with (r₁ := ret tt).
         specialize thm with (r₀ := ret tt).
-        specialize thm with (pre := λ '(s₀, s₁0), mid (a, s₀) (a, s₁0) ).
+        specialize thm with (v := a).
+        (* specialize thm with *)
+        (*   (pre := λ '(s₀, h₁), mid (a, s₀) *)
+        (*                         (coerce_to_choice_type (encode (vtype y)) *)
+        (*                                            (translate_value v'), h₁)). *)
+        specialize thm with (pre := λ '(s₀, h₁), mid (a, s₀) (a, h₁)).
+
+        (* v' instead of a ? *)
+        simpl in thm.
         eapply thm.
+        clear thm. simpl. clear mid.
         apply r_ret.
         intros.
+        unfold set_lhs in H.
         simpl in H.
-        destruct H as [h [[hmem hvmap] Hs₀]].
+        destruct H as [h [rs Hs₀]].
+        (* we're in the *local* var case (cf eset), can only prove
+           that the vmaps are related *)
         subst.
-        split.
+        split ; destruct rs as [rm rv].
         -- simpl.
-           admit.
+           (* Morally speaking, this holds because
+
+              - any pointers in `emem es₁` besides `tr(fn,yl)` is related via
+                `rm`, and
+
+              - `set_heap h (fn,yl) a` will only affect bindings in the `evm`
+                part of the heap *)
+           unfold rel_mem.
+           intros.
+           destruct ((translate_ptr ptr) == (translate_var fn yl)) eqn:E.
+           ++ move: E => /eqP E. rewrite E.
+              unfold rel_mem in rm.
+              specialize rm with (ptr := ptr) (sz := sz) (v := v) (1 := H).
+              rewrite E in rm.
+              simpl. simpl in rm.
+              get_heap_simpl.
+              admit.
+           ++ rewrite get_set_heap_neq.
+              2: {
+                apply /eqP. move: E => /eqP E. assumption.
+              }
+              apply rm. assumption.
         -- simpl.
-           admit.
+           unfold rel_vmap.
+           intros.
+           destruct ((translate_var fn i) == (translate_var fn yl)) eqn:E.
+           ++ move: E => /eqP E.
+              rewrite E.
+              get_heap_simpl; simpl.
+              admit.
+           ++ rewrite get_set_heap_neq.
+              2: {
+                apply /eqP. move: E => /eqP E. assumption.
+              }
+              apply rv. rewrite -H.
+              eapply set_varP. 3: exact eset.
+              ** intros. subst.
+                 symmetry.
+                 eapply (@Fv.setP_neq _ (evm es₁) _ i).
+                 unshelve apply /eqP. move: E => /eqP E.
+                 assert (injective (translate_var fn)) by admit.
+                 unfold injective in H0.
+                 intro.
+                 epose (H1 yl i).
+                 clearbody e.
+                 subst. apply E. reflexivity.
+              ** intros.
+                 unfold set_var in eset.
+                 subst.
+                 destruct yl.
+                 destruct v_var. destruct vtype0.
+                 {
+                  - simpl in *.
+                    noconf eset.
+                    symmetry.
+                    eapply (@Fv.setP_neq _ (evm es₁) _ i).
+                    unshelve apply /eqP. move: E => /eqP E.
+                    assert (injective (translate_var fn)) by admit.
+                    unfold injective in H2.
+                    intro. subst. eauto.
+                 }
+                 all: discriminate.
     + admit.
     + admit.
     + admit.
