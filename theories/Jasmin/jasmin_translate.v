@@ -192,7 +192,8 @@ Definition ssprove_write_lval (fn : funname) (l : lval) (tc : typed_code)
   | Lvar x =>
       (* write_var x v s *)
       let l := translate_var fn (v_var x) in
-      let c := coerce_typed_code l tc in
+      let c' := truncate_code x.(vtype) tc in
+      let c := coerce_typed_code l c' in
       (x ← c ;; #put l := x ;; ret tt)%pack
   | _ => unsupported.π2
   (* | Lmem sz x e => *)
@@ -672,21 +673,43 @@ Proof.
       epose proof r_bind_unary as thm.
       specialize thm with (fv := λ _, tt).
       simpl in thm.
-      specialize thm with
-        (m := coerce_typed_code (encode (vtype yl))
-                                (truncate_code sty (translate_pexpr fn e))).
       pose (( λ '(a, h₀) '(b, _),
-        a = coerce_to_choice_type _ (translate_value v') ∧
         rel_estate es₁ h₀ fn ) : postcond
                                                  (encode (vtype yl))
                                                  (encode (vtype yl))) as mid.
       specialize thm with (mid := mid).
+      rewrite truncate_code_idemp.
+      (* Other attempt *)
+(*       unfold truncate_val in trunc. destruct of_val eqn:ev. 2: discriminate.
+      simpl in trunc. noconf trunc.
+      eapply set_varP. 3: exact eset.
+      2:{
+        intros hbo hof hset. subst.
+        eapply rpre_hypothesis_rule.
+        intros ? ? [hmem hvmap].
+        red in hvmap.
+        rewrite Fv.setP_eq in hof.
+        unfold undef_addr in H.
+        destruct (vtype yl) eqn:e. all: try noconf H.
+        discriminate H0.
+      } *)
+      (* * *)
       eapply thm. all: clear thm. all: simpl.
       * eapply rsymmetry.
         eapply rpost_weaken_rule.
         1: eapply translate_pexpr_correct.
-        1,2: eassumption.
-        simpl. intros [] []. intuition subst. all: reflexivity.
+(*         -- eassumption.
+        -- {
+          unfold truncate_val in *.
+          destruct of_val eqn:ev. 2: discriminate.
+          simpl in trunc. noconf trunc.
+          eapply set_varP. 3: exact eset.
+          - intros. rewrite
+          -
+        } *)
+        (* 1,2: eassumption.
+        simpl. intros [] []. intuition eauto. *)
+        all: admit.
       * clear sem_e tag e.
         epose proof r_put_lhs as thm.
         (* specialize thm with (ℓ := translate_var fn yl).
@@ -706,7 +729,7 @@ Proof.
         apply r_ret.
         intros ? ? hs.
         unfold set_lhs in hs.
-        destruct hs as [h [[_ [rm rv]] Hs₀]].
+        (* destruct hs as [h [[_ [rm rv]] Hs₀]].
         (* we're in the *local* var case (cf eset), can only prove
            that the vmaps are related *)
         subst. split.
@@ -771,7 +794,7 @@ Proof.
                     unfold injective in H2.
                     intro. subst. eauto.
                  }
-                 all: discriminate.
+                 all: discriminate. *)
            (* unfold rel_vmap in *. *)
            (* intros. simpl. *)
            (* Search set_var. *)
@@ -783,6 +806,7 @@ Proof.
            (*     apply hvmap in H. *)
 
            (*     apply hvmap. *)
+        admit.
     + admit.
     + admit.
     + admit.
