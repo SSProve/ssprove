@@ -477,7 +477,7 @@ Lemma translate_pexpr_correct :
       ret (coerce_to_choice_type ty' (translate_value v'))
     ≈
       coerce_typed_code ty' (truncate_code ty (translate_pexpr fn e))
-    ⦃ λ '(a₀, h₀) '(a₁, h₁), a₀ = a₁ ∧ rel_estate s₁ h₁ fn ⦄.
+    ⦃ λ '(a₀, h₀) '(a₁, h₁), a₀ = a₁ ∧ a₀ = coerce_to_choice_type ty' (translate_value v') ∧ rel_estate s₁ h₁ fn ⦄.
 Proof.
   intros fn e s₁ v ty v' ty' h1 h2.
   rewrite coerce_cast_code.
@@ -508,7 +508,7 @@ Proof.
     apply of_vint in ev as es.
     revert s ev. rewrite es. intros s ev.
     simpl. simp coerce_to_choice_type. simpl.
-    rewrite cast_ct_val_K.
+    rewrite !cast_ct_val_K.
     simpl in ev. noconf ev.
     apply r_ret. intuition subst.
   - simpl. simpl in h1. noconf h1.
@@ -516,7 +516,7 @@ Proof.
     destruct es as [es _].
     revert s ev. rewrite es. intros s ev.
     simpl. simp coerce_to_choice_type. simpl.
-    rewrite cast_ct_val_K.
+    rewrite !cast_ct_val_K.
     simpl in ev. noconf ev.
     apply r_ret. intuition subst.
   - simpl. simpl in h1. noconf h1.
@@ -525,7 +525,7 @@ Proof.
     destruct es as [m [es hm]].
     revert s ev. rewrite es. intros s ev.
     simpl. simp coerce_to_choice_type. simpl.
-    rewrite cast_ct_val_K.
+    rewrite !cast_ct_val_K.
     simpl in ev. apply WArray.cast_empty_ok in ev. subst.
     simpl. rewrite Mz.foldP. simpl.
     apply r_ret. intuition subst.
@@ -545,9 +545,9 @@ Proof.
       apply r_ret. intros ? he [[hmem hvmap] h].
       apply hvmap in e1. simpl in h.
       rewrite h in e1. clear h. subst.
-      split.
-      2:{ split. all: assumption. }
-      simpl. rewrite coerce_to_choice_type_K.
+      split. 2: split.
+      3:{ split. all: assumption. }
+(*       simpl. rewrite coerce_to_choice_type_K.
       set (ty := type_of_val v') in *. clearbody ty.
       clear - ev. set (ty' := vtype gx) in *. clearbody ty'. clear - ev.
       pose proof (type_of_to_val s) as ety.
@@ -608,15 +608,14 @@ Proof.
       * simpl. simpl in ev.
         unfold to_word in ev. destruct v eqn:e. all: try discriminate.
         2:{ destruct t. all: discriminate. }
-        subst. simpl. rewrite ev. reflexivity.
-  -
+        subst. simpl. rewrite ev. reflexivity. *)
 Admitted.
 
 Lemma r_bind_unary :
   ∀ {A B : choiceType} m f v fv
     (pre : precond) (mid : postcond A A) (post : postcond B B),
-    ⊢ ⦃ pre ⦄ m ≈ ret v ⦃ λ '(a₀, h₀) '(a₁, h₁), mid (a₀, h₀) (a₁, h₁) ∧ a₀ = a₁ ⦄ →
-    (∀ a, ⊢ ⦃ λ '(s₀, s₁), mid (a, s₀) (a, s₁) ⦄ f a ≈ ret (fv a) ⦃ post ⦄) →
+    ⊢ ⦃ pre ⦄ m ≈ ret v ⦃ λ '(a₀, h₀) '(a₁, h₁), mid (a₀, h₀) (a₁, h₁) ∧ a₀ = a₁ ∧ a₁ = v ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), mid (v, s₀) (v, s₁) ⦄ f v ≈ ret (fv v) ⦃ post ⦄ →
     ⊢ ⦃ pre ⦄ bind m f ≈ ret (fv v) ⦃ post ⦄.
 Proof.
   intros A B m f v fv pre mid post hm hf.
@@ -625,18 +624,22 @@ Proof.
   - exact hm.
   - intros a₀ a₁.
     eapply rpre_hypothesis_rule.
-    intros ? ? [? ?]. subst.
+    intuition subst.
     eapply rpre_weaken_rule.
     1: apply hf.
     simpl. intuition subst. assumption.
 Qed.
 
-Lemma ptr_var_neq (ptr : pointer) (fn : funname) (v : var) : translate_ptr ptr != translate_var fn v.
+Lemma ptr_var_neq (ptr : pointer) (fn : funname) (v : var) :
+  translate_ptr ptr != translate_var fn v.
 Proof.
   unfold translate_ptr.
   unfold translate_var.
   unfold nat_of_fun_ident.
-  Admitted.
+  apply /eqP. intro e.
+  noconf e.
+  apply (f_equal (λ n, n %% 3)) in H0.
+Admitted.
 
 Lemma translate_instr_r_correct :
   ∀ (fn : funname) (i : instr_r) (s₁ s₂ : estate),
@@ -664,43 +667,41 @@ Proof.
       specialize thm with
         (m := coerce_typed_code (encode (vtype yl))
                                 (truncate_code sty (translate_pexpr fn e))).
-      pose (( λ '(a, h₀) '(b, _), rel_estate es₁ h₀ fn ) : postcond
+      pose (( λ '(a, h₀) '(b, _),
+        a = coerce_to_choice_type _ (translate_value v') ∧
+        rel_estate es₁ h₀ fn ) : postcond
                                                  (encode (vtype yl))
                                                  (encode (vtype yl))) as mid.
       specialize thm with (mid := mid).
-      eapply thm. all: clear thm.
+      eapply thm. all: clear thm. all: simpl.
       * eapply rsymmetry.
-        1: eapply rpost_weaken_rule.
+        eapply rpost_weaken_rule.
         1: eapply translate_pexpr_correct.
         1,2: eassumption.
-        intros [] []; intuition subst.
-        -- unfold mid. intuition reflexivity.
-      * simpl. intros a.
-        clear sem_e trunc tag sty e v.
+        simpl. intros [] []. intuition subst. all: reflexivity.
+      * clear sem_e tag e.
         epose proof r_put_lhs as thm.
-        specialize thm with (ℓ := translate_var fn yl).
+        (* specialize thm with (ℓ := translate_var fn yl).
         specialize thm with (r₁ := ret tt).
         specialize thm with (r₀ := ret tt).
-        specialize thm with (v := a).
+        specialize thm with (v := a). *)
         (* specialize thm with *)
         (*   (pre := λ '(s₀, h₁), mid (a, s₀) *)
         (*                         (coerce_to_choice_type (encode (vtype y)) *)
         (*                                            (translate_value v'), h₁)). *)
-        specialize thm with (pre := λ '(s₀, h₁), mid (a, s₀) (a, h₁)).
+        specialize thm with (pre := λ '(s₀, h₁), mid (coerce_to_choice_type _ (translate_value v'), s₀) (coerce_to_choice_type _ (translate_value v'), h₁)).
 
         (* v' instead of a ? *)
         simpl in thm.
         eapply thm.
-        clear thm. simpl. clear mid.
+        clear thm. clear mid.
         apply r_ret.
-        intros.
-        unfold set_lhs in H.
-        simpl in H.
-        destruct H as [h [rs Hs₀]].
+        intros ? ? hs.
+        unfold set_lhs in hs.
+        destruct hs as [h [[_ [rm rv]] Hs₀]].
         (* we're in the *local* var case (cf eset), can only prove
            that the vmaps are related *)
-        subst.
-        split ; destruct rs as [rm rv].
+        subst. split.
         -- simpl.
            unfold rel_mem.
            intros.
@@ -712,9 +713,25 @@ Proof.
            intros.
            destruct ((translate_var fn i) == (translate_var fn yl)) eqn:E.
            ++ move: E => /eqP E.
-              rewrite E.
+              assert (hinj : injective (translate_var fn)) by admit.
+              apply hinj in E. subst.
               get_heap_simpl; simpl.
-              admit.
+              move: eset => /set_varP eset.
+              apply eset. all: clear eset.
+              ** intros v'' ev' er. subst.
+                 rewrite Fv.setP_eq in H. noconf H.
+                 unfold truncate_val in trunc.
+                 destruct of_val eqn:ev. 2: discriminate.
+                 simpl in trunc. noconf trunc.
+                 (* assert (to_val v0 = v') by admit. *) (* truncate twice (are the types equal though?) *)
+                 (* subst. rewrite translate_value_to_val.
+                 rewrite coerce_to_choice_type_K. *)
+                 give_up.
+              ** intros. subst.
+                 rewrite Fv.setP_eq in H.
+                 unfold undef_addr in H.
+                 destruct (vtype yl) eqn:e. all: try noconf H.
+                 discriminate H0.
            ++ rewrite get_set_heap_neq.
               2: {
                 apply /eqP. move: E => /eqP E. assumption.
