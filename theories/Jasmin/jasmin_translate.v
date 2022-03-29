@@ -320,7 +320,22 @@ Proof.
     epose (r := cast_typed_code (encode (type_of_op1 s).1) e' _).
     epose (c := x ← r ;; ret (embed (f (unembed x)))).
     exact (_ ; c).
-  - exact unsupported.
+  - pose proof (sem_sop2_typed s) as f. simpl in f.
+    pose (e1' := translate_pexpr fn e1).
+    pose (e2' := translate_pexpr fn e2).
+    pose (e1'' := truncate_code (type_of_op2 s).1.1 e1').
+    pose (e2'' := truncate_code (type_of_op2 s).1.2 e2').
+    epose (r1 := cast_typed_code (encode (type_of_op2 s).1.1) e1'' _).
+    epose (r2 := cast_typed_code (encode (type_of_op2 s).1.2) e2'' _).
+    epose (c :=
+      x1 ← r1 ;;
+      x2 ← r2 ;;
+      ret match f (unembed x1) (unembed x2) with
+      | Ok y => embed y
+      | _ => chCanonical _
+      end
+    ).
+    exact (_ ; c).
   - exact unsupported.
   - exact unsupported.
 Defined.
