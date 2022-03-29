@@ -53,6 +53,22 @@ Definition embed {t} : sem_t t → encode t :=
   | sword n => λ x, x
   end.
 
+Definition unembed {t : stype} : encode t → sem_t t :=
+  match t return encode t → sem_t t with
+  | sbool => λ x, x
+  | sint => λ x, x
+  | sarr n => λ x,
+    match
+      foldr
+        (λ kv m, Let m' := m in WArray.set m' AAscale kv.1 kv.2)
+        (Ok _ (WArray.empty _)) x
+    with
+    | Ok ar => ar
+    | _ => WArray.empty _
+    end
+  | sword n => λ x, x
+  end.
+
 Fixpoint nat_of_ident (id : Ident.ident) : nat :=
   match id with
   | EmptyString => 1
@@ -298,7 +314,12 @@ Proof.
 
   - exact unsupported.
   - exact unsupported.
-  - exact unsupported.
+  - pose proof (sem_sop1_typed s) as f. simpl in f.
+    pose (e' := translate_pexpr fn e).
+    pose (e2 := truncate_code (type_of_op1 s).1 e').
+    epose (r := cast_typed_code (encode (type_of_op1 s).1) e' _).
+    epose (c := x ← r ;; ret (embed (f (unembed x)))).
+    exact (_ ; c).
   - exact unsupported.
   - exact unsupported.
   - exact unsupported.
