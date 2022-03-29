@@ -327,11 +327,17 @@ Proof.
     exact (unsupported.π2).
 Defined.
 
-Definition translate_cmd (c : cmd) : raw_code 'unit.
-Proof.
-  (* fold bind translate_instr *)
-  exact (unsupported.π2).
-Defined.
+Definition instr_d (i : instr) : instr_r :=
+  match i with MkI _ i => i end.
+
+Definition translate_instr (fn : funname) (i : instr) : raw_code 'unit :=
+  translate_instr_r fn (instr_d i).
+
+Fixpoint translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
+  match c with
+  | [::] => ret tt
+  | i :: c => translate_instr fn i ;; translate_cmd fn c
+  end.
 
 Record fdef := {
   ffun : typed_raw_function ;
@@ -348,7 +354,7 @@ Proof.
   - exists chUnit. exists chUnit.
     intros u.
     (* TODO: store function arguments in their locations *)
-    exact (translate_cmd f_body).
+    exact (translate_cmd f f_body).
     (* TODO: read return values from their locations *)
   - exact fset0.
   - exact [interface].
@@ -434,9 +440,6 @@ Definition rel_vmap (vm : vmap) (h : heap) (fn : funname) :=
 
 Definition rel_estate (s : estate) (h : heap) (fn : funname) :=
   rel_mem s.(emem) h ∧ rel_vmap s.(evm) h fn.
-
-Definition instr_d (i : instr) : instr_r :=
-  match i with MkI _ i => i end.
 
 Lemma coerce_cast_code (ty vty : choice_type) (v : vty) :
   ret (coerce_to_choice_type ty v) = coerce_typed_code ty (vty ; ret v).
@@ -856,13 +859,13 @@ Proof.
   set (Pi := λ s1 i s2, (Pi_r s1 (instr_d i) s2)).
   set (Pc :=
     λ (s1 : estate) (c : cmd) (s2 : estate),
-      ⊢ ⦃ λ '(h1,h2), False ⦄ translate_cmd c ≈ ret tt ⦃ λ '(v1, _) '(v2, _), True ⦄
+      ⊢ ⦃ λ '(h1,h2), False ⦄ translate_cmd fn c ≈ ret tt ⦃ λ '(v1, _) '(v2, _), True ⦄
   ).
   (* FIXME *)
   set (Pfor :=
     λ (v : var_i) (ls : seq Z) (s1 : estate) (c : cmd) (s2 : estate),
       ⊢ ⦃ λ '(h1,h2), False ⦄
-        (* ssprove_for *) translate_cmd c ≈
+        (* ssprove_for *) translate_cmd fn c ≈
         ret tt
       ⦃ λ '(v1, _) '(v2, _), True ⦄
   ).
