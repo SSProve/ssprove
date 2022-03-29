@@ -416,7 +416,7 @@ Defined.
 (*   foldr chProd ls *)
 
 Definition translate_ptr (ptr : pointer) : Location :=
-  ('word Uptr ; Z.to_nat (wunsigned ptr)).
+  ('word U8 ; (5 ^ Z.to_nat (wunsigned ptr))%nat).
 
 Definition rel_mem (m : mem) (h : heap) :=
   ∀ ptr sz v,
@@ -631,6 +631,13 @@ Proof.
     simpl. intuition subst. assumption.
 Qed.
 
+Lemma ptr_var_neq (ptr : pointer) (fn : funname) (v : var) : translate_ptr ptr != translate_var fn v.
+Proof.
+  unfold translate_ptr.
+  unfold translate_var.
+  unfold nat_of_fun_ident.
+  Admitted.
+
 Lemma translate_instr_r_correct :
   ∀ (fn : funname) (i : instr_r) (s₁ s₂ : estate),
   sem_i P s₁ i s₂ →
@@ -695,28 +702,11 @@ Proof.
         subst.
         split ; destruct rs as [rm rv].
         -- simpl.
-           (* Morally speaking, this holds because
-
-              - any pointers in `emem es₁` besides `tr(fn,yl)` is related via
-                `rm`, and
-
-              - `set_heap h (fn,yl) a` will only affect bindings in the `evm`
-                part of the heap *)
            unfold rel_mem.
            intros.
-           destruct ((translate_ptr ptr) == (translate_var fn yl)) eqn:E.
-           ++ move: E => /eqP E. rewrite E.
-              unfold rel_mem in rm.
-              specialize rm with (ptr := ptr) (sz := sz) (v := v) (1 := H).
-              rewrite E in rm.
-              simpl. simpl in rm.
-              get_heap_simpl.
-              admit.
-           ++ rewrite get_set_heap_neq.
-              2: {
-                apply /eqP. move: E => /eqP E. assumption.
-              }
-              apply rm. assumption.
+           apply rm in H.
+           rewrite get_set_heap_neq. 2: apply ptr_var_neq.
+           apply H.
         -- simpl.
            unfold rel_vmap.
            intros.
@@ -757,6 +747,17 @@ Proof.
                     intro. subst. eauto.
                  }
                  all: discriminate.
+           (* unfold rel_vmap in *. *)
+           (* intros. simpl. *)
+           (* Search set_var. *)
+           (* unfold set_var in eset. *)
+           (* destruct (is_sbool (vtype y)). *)
+           (* --- simpl in eset. *)
+           (*     unfold on_vu in eset. *)
+           (*     noconf eset. *)
+           (*     apply hvmap in H. *)
+
+           (*     apply hvmap. *)
     + admit.
     + admit.
     + admit.
