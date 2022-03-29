@@ -641,6 +641,14 @@ Proof.
   apply (f_equal (λ n, n %% 3)) in H0.
 Admitted.
 
+Notation coe_cht := coerce_to_choice_type.
+Notation coe_tyc := coerce_typed_code.
+
+Lemma truncate_code_idemp :
+  ∀ (sty sty' : stype) (c : typed_code),
+    truncate_code sty' (truncate_code sty c) = truncate_code sty' c.
+Admitted.
+
 Lemma translate_instr_r_correct :
   ∀ (fn : funname) (i : instr_r) (s₁ s₂ : estate),
   sem_i P s₁ i s₂ →
