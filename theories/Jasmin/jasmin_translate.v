@@ -500,6 +500,7 @@ Proof.
     rewrite coerce_typed_code_neq.
     2:{ move: e1 => /eqP e1. congruence. }
     apply r_ret. intuition subst.
+    admit. (* coerce_to_choice_type_neq *)
   }
   pose proof e1 as e2. move: e2 => /eqP e2. subst.
   rewrite 2!coerce_typed_code_K.
