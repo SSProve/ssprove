@@ -549,7 +549,7 @@ Proof.
     rewrite coerce_typed_code_neq.
     2:{ move: e1 => /eqP e1. congruence. }
     apply r_ret. intuition subst.
-    admit. (* coerce_to_choice_type_neq *)
+    symmetry; apply coerce_to_choice_type_neq. move: e1 => /eqP; auto.
   }
   pose proof e1 as e2. move: e2 => /eqP e2. subst.
   rewrite 2!coerce_typed_code_K.
@@ -601,7 +601,8 @@ Proof.
       rewrite h in e1. clear h. subst.
       split. 2: split.
       3:{ split. all: assumption. }
-(*       simpl. rewrite coerce_to_choice_type_K.
+      2: { by rewrite coerce_to_choice_type_K. }
+      simpl. rewrite coerce_to_choice_type_K.
       set (ty := type_of_val v') in *. clearbody ty.
       clear - ev. set (ty' := vtype gx) in *. clearbody ty'. clear - ev.
       pose proof (type_of_to_val s) as ety.
@@ -634,7 +635,9 @@ Proof.
         2:{ destruct t. all: discriminate. }
         subst. simpl. noconf esx. inversion H. rewrite ev. reflexivity.
     + simpl. rewrite h1. simpl.
-      apply r_ret. intuition subst. f_equal.
+      apply r_ret. intuition subst.
+      2: { by rewrite coerce_to_choice_type_K. }
+      f_equal.
       rewrite -es. rewrite coerce_to_choice_type_K.
       pose proof (type_of_to_val s) as ety.
       set (ty := type_of_val v') in *. clearbody ty.
@@ -662,7 +665,7 @@ Proof.
       * simpl. simpl in ev.
         unfold to_word in ev. destruct v eqn:e. all: try discriminate.
         2:{ destruct t. all: discriminate. }
-        subst. simpl. rewrite ev. reflexivity. *)
+        subst. simpl. rewrite ev. reflexivity.
 Admitted.
 
 Lemma r_bind_unary :
