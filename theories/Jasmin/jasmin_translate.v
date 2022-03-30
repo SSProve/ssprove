@@ -316,17 +316,14 @@ Proof.
   - exact unsupported.
   - pose proof (sem_sop1_typed s) as f. simpl in f.
     pose (e' := translate_pexpr fn e).
-    pose (e2 := truncate_code (type_of_op1 s).1 e').
-    pose (r := coerce_typed_code (encode (type_of_op1 s).1) e2).
+    pose (r := (truncate_code (type_of_op1 s).1 e').π2).
     pose (c := x ← r ;; ret (embed (f (unembed x)))).
     exact (_ ; c).
   - pose proof (sem_sop2_typed s) as f. simpl in f.
     pose (e1' := translate_pexpr fn e1).
     pose (e2' := translate_pexpr fn e2).
-    pose (e1'' := truncate_code (type_of_op2 s).1.1 e1').
-    pose (e2'' := truncate_code (type_of_op2 s).1.2 e2').
-    pose (r1 := coerce_typed_code (encode (type_of_op2 s).1.1) e1'').
-    pose (r2 := coerce_typed_code (encode (type_of_op2 s).1.2) e2'').
+    pose (r1 := (truncate_code (type_of_op2 s).1.1 e1').π2).
+    pose (r2 := (truncate_code (type_of_op2 s).1.2 e2').π2).
     pose (c :=
       x1 ← r1 ;;
       x2 ← r2 ;;
