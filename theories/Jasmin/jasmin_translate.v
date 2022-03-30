@@ -494,6 +494,19 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma coerce_to_choice_type_neq :
+  ∀ (ty ty' : choice_type) (v : ty),
+    ty ≠ ty' →
+    coerce_to_choice_type ty' v = chCanonical _.
+Proof.
+  intros ty ty' v ne.
+  funelim (coerce_to_choice_type ty' v).
+  1:{
+    clear - e ne. symmetry in e. move: e => /eqP e. simpl in e. contradiction.
+  }
+  symmetry. assumption.
+Qed.
+
 Lemma coerce_to_choice_type_K :
   ∀ (t : choice_type) (v : t),
     coerce_to_choice_type t v = v.
