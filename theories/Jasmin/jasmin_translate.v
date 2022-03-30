@@ -317,17 +317,17 @@ Proof.
   - pose proof (sem_sop1_typed s) as f. simpl in f.
     pose (e' := translate_pexpr fn e).
     pose (e2 := truncate_code (type_of_op1 s).1 e').
-    epose (r := cast_typed_code (encode (type_of_op1 s).1) e' _).
-    epose (c := x ← r ;; ret (embed (f (unembed x)))).
+    pose (r := coerce_typed_code (encode (type_of_op1 s).1) e2).
+    pose (c := x ← r ;; ret (embed (f (unembed x)))).
     exact (_ ; c).
   - pose proof (sem_sop2_typed s) as f. simpl in f.
     pose (e1' := translate_pexpr fn e1).
     pose (e2' := translate_pexpr fn e2).
     pose (e1'' := truncate_code (type_of_op2 s).1.1 e1').
     pose (e2'' := truncate_code (type_of_op2 s).1.2 e2').
-    epose (r1 := cast_typed_code (encode (type_of_op2 s).1.1) e1'' _).
-    epose (r2 := cast_typed_code (encode (type_of_op2 s).1.2) e2'' _).
-    epose (c :=
+    pose (r1 := coerce_typed_code (encode (type_of_op2 s).1.1) e1'').
+    pose (r2 := coerce_typed_code (encode (type_of_op2 s).1.2) e2'').
+    pose (c :=
       x1 ← r1 ;;
       x2 ← r2 ;;
       ret match f (unembed x1) (unembed x2) with
