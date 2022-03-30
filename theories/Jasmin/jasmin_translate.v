@@ -321,8 +321,22 @@ Proof.
 
     exact (a ← arr ;; ptr ← i ;; ret (chArray_get ws a ptr scale)).
 
-  - exact unsupported.
-  - exact unsupported.
+  - (* | Psub aa ws len x e => *)
+    exists 'array.
+    (* Let (n, t) := gd, s.[x] in *)
+    (* Let i := sem_pexpr s e >>= to_int in *)
+    (* Let t' := WArray.get_sub aa ws len t i in *)
+    (* ok (Varr t') *)
+
+    exact (ret (chCanonical _)).
+    (* TODO: still unsupported *)
+  - (* | Pload sz x e => *)
+    (* Let w1 := get_var s.(evm) x >>= to_pointer in *)
+    (* Let w2 := sem_pexpr s e >>= to_pointer in *)
+    (* Let w  := read s.(emem) (w1 + w2)%R sz in *)
+    (* ok (@to_val (sword sz) w) *)
+    exists ('word w). exact (ret (chCanonical _)).
+    (* TODO: still unsupported *)
   - pose proof (sem_sop1_typed s) as f. simpl in f.
     pose (e' := translate_pexpr fn e).
     pose (r := (truncate_code (type_of_op1 s).1 e').π2).
@@ -339,11 +353,37 @@ Proof.
       ret match f (unembed x1) (unembed x2) with
       | Ok y => embed y
       | _ => chCanonical _
-      end
-    ).
+      end).
     exact (_ ; c).
-  - exact unsupported.
-  - exact unsupported.
+  - (* | PappN op es => *)
+    (*   Let vs := mapM (sem_pexpr s) es in *)
+    (*   sem_opN op vs *)
+    pose (vs := map (translate_pexpr fn) l).
+    pose proof (sem_opN_typed o) as f. simpl in f.
+
+(* Fixpoint app_sopn T ts : sem_prod ts (exec T) → values → exec T := *)
+(*   match ts return sem_prod ts (exec T) → values → exec T with *)
+(*   | [::] => λ (o : exec T) (vs: values), if vs is [::] then o else type_error *)
+(*   | t :: ts => λ (o: sem_t t → sem_prod ts (exec T)) (vs: values), *)
+(*     if vs is v :: vs *)
+(*     then Let v := of_val t v in app_sopn (o v) vs *)
+(*     else type_error *)
+(*   end. *)
+
+    (* pose (vs' := fold (fun x => y ← x ;; unembed y) f vs). *)
+    exact unsupported.
+  - (* | Pif t e e1 e2 => *)
+    (*   Let b := sem_pexpr s e >>= to_bool in *)
+    (*   Let v1 := sem_pexpr s e1 >>= truncate_val t in *)
+    (*   Let v2 := sem_pexpr s e2 >>= truncate_val t in *)
+    (*   ok (if b then v1 else v2) *)
+    pose (eb := coerce_typed_code 'bool (translate_pexpr fn e1)).
+    pose (e1' := translate_pexpr fn e1).
+    pose (e2' := translate_pexpr fn e2).
+    pose (r1 := (truncate_code s e1').π2).
+    pose (r2 := (truncate_code s e2').π2).
+    pose (c := b ← eb ;; if b then r1 else r2).
+    exact (_ ; c).
 Defined.
 
 Definition translate_instr_r (fn : funname) (i : instr_r) : raw_code 'unit.
