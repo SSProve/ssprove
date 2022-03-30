@@ -275,6 +275,18 @@ Definition translate_gvar (f : funname) (x : gvar) : typed_code :=
     end
     ).
 
+Definition chArray_get ws (a : 'array) ptr scale :=
+  (* Jasmin fails if ptr is not aligned; we may not need it. *)
+  (* if negb (is_align ptr sz) then chCanonical ws else *)
+    let f k :=
+      match assoc a (scale * ptr + k)%Z with
+      | None => chCanonical ('word U8)
+      | Some x => x
+      end in
+    let l := map f (ziota 0 (wsize_size ws)) in
+    Jasmin.memory_model.LE.decode ws l.
+
+
 Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code.
 Proof.
   destruct e as [z|b| |x|aa ws x e| | | | | | ].
@@ -285,32 +297,29 @@ Proof.
     exists 'array.
     exact (ret emptym).
   - exact (translate_gvar fn x).
-  - (* exists 'array. *)
-  (* | Pget aa ws x e => *)
+  - (* | Pget aa ws x e => *)
+    exists 'word ws.
+    (* Look up x amongst the evm part of the estate and the globals gd. Monadic
+       Let because we might find None. If (Some val) is found, fail with type
+       error unless (val = Varr n t). We obtain (n: positive) and (t: array n). *)
   (*     Let (n, t) := gd, s.[x] in *)
 
-    exact unsupported.
-
-(* Look up x amongst the evm part of the estate and the globals gd. Monadic Let
-   because we might find None. If (Some val) is found, fail with type error
-   unless (val = Varr n t). We obtain (n: positive) and (t: array n). *)
-
-  (*     Let i := sem_pexpr s e >>= to_int in *)
+    pose (x' := translate_gvar fn x).
+    pose (arr := y ← x'.π2 ;; @ret _ (coerce_to_choice_type 'array y)).
 
   (* Evaluate the indexing expression `e` and coerce it to Z. *)
+  (*     Let i := sem_pexpr s e >>= to_int in *)
+    pose (i := coerce_typed_code 'int (translate_pexpr fn e)).
+
+  (* The actual array look-up, where
+       WArray.get aa ws t i = CoreMem.read t a (i * (mk_scale aa ws)) ws
+     and
+       mk_scale = (if aa == AAscale then (ws/8) else 1) *)
 
   (*     Let w := WArray.get aa ws t i in *)
+    pose (scale := mk_scale aa ws).
 
-  (* array look-up, where
-     WArray.get aa ws t i =
-       CoreMem.read t a (i * (if aa == AAscale then (ws/8) else 1)) ws
-   *)
-
-  (*     ok (Vword w) *)
-
-    (* pose (translate_gvar fn x) as lx. *)
-    (* pose (v ← get lx ;; @ret _ (coerce_to_array v))%pack. *)
-    (* pose (r ;; ret tt). *)
+    exact (a ← arr ;; ptr ← i ;; ret (chArray_get ws a ptr scale)).
 
   - exact unsupported.
   - exact unsupported.
@@ -519,6 +528,25 @@ Derive NoConfusion for result.
 Derive NoConfusion for value.
 Derive NoConfusion for wsize.
 
+Lemma r_bind_unary :
+  ∀ {A B : choiceType} m f v fv
+    (pre : precond) (mid : postcond A A) (post : postcond B B),
+    ⊢ ⦃ pre ⦄ m ≈ ret v ⦃ λ '(a₀, h₀) '(a₁, h₁), mid (a₀, h₀) (a₁, h₁) ∧ a₀ = a₁ ∧ a₁ = v ⦄ →
+    ⊢ ⦃ λ '(s₀, s₁), mid (v, s₀) (v, s₁) ⦄ f v ≈ ret (fv v) ⦃ post ⦄ →
+    ⊢ ⦃ pre ⦄ bind m f ≈ ret (fv v) ⦃ post ⦄.
+Proof.
+  intros A B m f v fv pre mid post hm hf.
+  change (ret (fv v)) with (x ← ret v ;; ret (fv x)).
+  eapply r_bind.
+  - exact hm.
+  - intros a₀ a₁.
+    eapply rpre_hypothesis_rule.
+    intuition subst.
+    eapply rpre_weaken_rule.
+    1: apply hf.
+    simpl. intuition subst. assumption.
+Qed.
+
 Lemma translate_pexpr_correct :
   ∀ fn (e : pexpr) s₁ v ty v' ty',
     sem_pexpr gd s₁ e = ok v →
@@ -663,26 +691,84 @@ Proof.
         unfold to_word in ev. destruct v eqn:e. all: try discriminate.
         2:{ destruct t. all: discriminate. }
         subst. simpl. rewrite ev. reflexivity.
-Admitted.
+  - (* array access *)
 
-Lemma r_bind_unary :
-  ∀ {A B : choiceType} m f v fv
-    (pre : precond) (mid : postcond A A) (post : postcond B B),
-    ⊢ ⦃ pre ⦄ m ≈ ret v ⦃ λ '(a₀, h₀) '(a₁, h₁), mid (a₀, h₀) (a₁, h₁) ∧ a₀ = a₁ ∧ a₁ = v ⦄ →
-    ⊢ ⦃ λ '(s₀, s₁), mid (v, s₀) (v, s₁) ⦄ f v ≈ ret (fv v) ⦃ post ⦄ →
-    ⊢ ⦃ pre ⦄ bind m f ≈ ret (fv v) ⦃ post ⦄.
-Proof.
-  intros A B m f v fv pre mid post hm hf.
-  change (ret (fv v)) with (x ← ret v ;; ret (fv x)).
-  eapply r_bind.
-  - exact hm.
-  - intros a₀ a₁.
-    eapply rpre_hypothesis_rule.
-    intuition subst.
-    eapply rpre_weaken_rule.
-    1: apply hf.
-    simpl. intuition subst. assumption.
-Qed.
+    (* massage the hypotheses into something more usable *)
+    simpl in h1.
+    pose proof on_arr_gvarP as p.
+    unshelve eapply (p _ _ _ _ _ _ _ _ h1)  ; clear p h1.
+    intros. simpl in H1. simpl.
+    unshelve eapply (@rbindP _ _ _ _ _ _ _ _ H1).
+    intros. clear H1.
+    simpl in H2, H3.
+    unshelve eapply (@rbindP _ _ _ _ _ _ _ _ H2).
+    intros; clear H2.
+    unshelve eapply (@rbindP _ _ _ _ _ _ _ _ H3).
+    intros; clear H3.
+    simpl in *.
+    noconf H5.
+    unfold get_gvar in H0.
+    apply type_of_get_gvar in H0 as tarr.
+
+    (* Now the actual proof should begin. Instead, here is some mindless mess
+       following my nose along the structure of the goal. *)
+    unfold translate_gvar. unfold translate_var.
+    destruct is_lvar eqn:hlvar.
+    + simpl in *.
+      eapply r_get_remember_rhs with (pre := λ '(_, h₁), rel_estate s₁ h₁ fn).
+      rewrite H. simpl. intros arr.
+      rewrite bind_assoc.
+      eapply rsymmetry.
+      epose r_bind_unary as rbu.
+      (* specialize rbu with (post := (λ '(a₁, h₁) '(a₀, _), *)
+      (* a₀ = a₁ *)
+      (* ∧ a₀ = *)
+      (*   coerce_to_choice_type (encode (type_of_val (to_val s))) *)
+      (*     (translate_value (to_val s)) ∧ rel_estate s₁ h₁ fn)). *)
+      (* specialize rbu with (pre := (λ '(h₁, h₀), *)
+      (*   ((λ '(_, h₁0), rel_estate s₁ h₁0 fn) *)
+      (*    ⋊ rem_rhs ('array; nat_of_fun_ident fn (vname (gv x))) arr) *)
+      (*     (h₀, h₁))). *)
+      specialize rbu with (mid := (λ '(_, h₁) '(_, h₀),
+        ((λ '(_, h₁0), rel_estate s₁ h₁0 fn)
+         ⋊ rem_rhs ('array; nat_of_fun_ident fn (vname (gv x))) arr)
+          (h₀, h₁))).
+      (* specialize rbu with (m := coerce_typed_code 'int (translate_pexpr fn e)). *)
+      (* specialize rbu with (v := z). *)
+      specialize rbu with (fv := λ _i, (translate_value (to_val s))).
+      eapply rbu; clear rbu.
+      * simpl.
+        simp coerce_typed_code.
+        give_up.
+      * simpl. eapply r_ret.
+        intuition subst.
+        -- simpl. give_up.
+        -- simpl. give_up.
+        -- apply H3.
+    + simpl in *. rewrite H0.
+      simpl. rewrite bind_assoc.
+      eapply rsymmetry.
+      epose r_bind_unary as rbu.
+      specialize rbu with (post := (λ '(a₁, h₁) '(a₀, _),
+      a₀ = a₁
+      ∧ a₀ =
+        coerce_to_choice_type (encode (type_of_val (to_val s)))
+          (translate_value (to_val s)) ∧ rel_estate s₁ h₁ fn)).
+      specialize rbu with (pre := ( λ '(h₁, _), rel_estate s₁ h₁ fn )).
+      specialize rbu with (mid := (λ '(_, h₁) '(_, h₀), rel_estate s₁ h₁ fn)).
+      specialize rbu with (m := coerce_typed_code 'int (translate_pexpr fn e)).
+      specialize rbu with (v := z).
+      specialize rbu with (fv := λ _i, (translate_value (to_val s))).
+      simpl in rbu.
+      eapply rbu; clear rbu.
+      * simp coerce_typed_code.
+        give_up.
+      * simpl. eapply r_ret.
+        intuition subst.
+        -- simpl in *. give_up.
+        -- simpl in *. try reflexivity. admit.
+  -
+Admitted.
 
 Lemma ptr_var_neq (ptr : pointer) (fn : funname) (v : var) :
   translate_ptr ptr != translate_var fn v.
