@@ -80,9 +80,10 @@ Definition nat_of_fun_ident (f : funname) (id : Ident.ident) : nat :=
   3^(nat_of_pos f) * 2^(nat_of_ident id).
 
 Definition translate_var (f : funname) (x : var) : Location :=
-  ( encode x.(vtype) ; nat_of_fun_ident f x.(vname)).
+  (encode x.(vtype) ; nat_of_fun_ident f x.(vname)).
 
-Definition typed_code := ∑ (a : choice_type), raw_code a.
+Definition typed_code :=
+  ∑ (a : choice_type), raw_code a.
 
 #[local] Definition unsupported : typed_code :=
   ('unit ; assert false).
@@ -130,7 +131,7 @@ Definition truncate_el {t : choice_type} (s : stype) : t → encode s :=
   | sint => λ i, coerce_to_choice_type 'int i
   | sarr n =>
       (* Here we do not perform the check on the length of the array as
-        performed by to_arr n
+        performed by to_arr n.
       *)
       λ a, coerce_to_choice_type 'array a
   | sword n =>
@@ -192,14 +193,6 @@ Proof.
   apply cast_typed_code_K.
 Qed.
 
-(* Definition cast_typed_code (ty : choice_type) (tc : typed_code) : raw_code ty. *)
-(* Proof. *)
-(*   destruct tc as [t c]. *)
-(*   destruct (t == ty) eqn:E. *)
-(*   - move : E => /eqP E. subst; exact c. *)
-(*   - apply ret. apply chCanonical. *)
-(* Defined. *)
-
 Definition ssprove_write_lval (fn : funname) (l : lval) (tc : typed_code)
   : raw_code chUnit
   :=
@@ -233,26 +226,25 @@ Definition ssprove_write_lval (fn : funname) (l : lval) (tc : typed_code)
   (*   write_var x (@to_val (sarr n) t) s *)
   end.
 
+(* TW: We can remove it right? *)
 Fixpoint satisfies_globs (globs : glob_decls) : heap * heap → Prop.
 Proof.
   exact (λ '(x, y), False). (* TODO *)
 Defined.
 
-Fixpoint collect_globs (globs : glob_decls) : seq Location.
+(* Fixpoint collect_globs (globs : glob_decls) : seq Location.
 Proof.
   exact [::]. (* TODO *)
-Defined.
+Defined. *)
 
-Definition typed_chElement := pointed_value.
+Definition typed_chElement :=
+  pointed_value.
 
 Definition choice_type_of_val (val : value) : choice_type :=
   encode (type_of_val val).
 
 Definition translate_value (v : value) : choice_type_of_val v.
 Proof.
-  (* Feels like we could apply embed first, but I don't know what to do with
-    the undefined case.
-  *)
   destruct v as [b | z | size a | size wd | undef_ty].
   - apply embed. exact b.
   - apply embed. exact z.
@@ -267,25 +259,25 @@ Defined.
 Definition translate_gvar (f : funname) (x : gvar) : typed_code :=
   if is_lvar x
   then (_ ; x ← get (translate_var f x.(gv).(v_var)) ;; ret x)
-  else
-    (encode (vtype x.(gv)) ;
+  else (
+    encode (vtype x.(gv)) ;
     match get_global gd x.(gv).(v_var) with
     | Ok v => ret (coerce_to_choice_type _ (translate_value v))
     | _ => ret (chCanonical _)
     end
-    ).
+  ).
 
 Definition chArray_get ws (a : 'array) ptr scale :=
   (* Jasmin fails if ptr is not aligned; we may not need it. *)
   (* if negb (is_align ptr sz) then chCanonical ws else *)
-    let f k :=
-      match assoc a (scale * ptr + k)%Z with
-      | None => chCanonical ('word U8)
-      | Some x => x
-      end in
-    let l := map f (ziota 0 (wsize_size ws)) in
-    Jasmin.memory_model.LE.decode ws l.
-
+  let f k :=
+    match assoc a (scale * ptr + k)%Z with
+    | None => chCanonical ('word U8)
+    | Some x => x
+    end
+  in
+  let l := map f (ziota 0 (wsize_size ws)) in
+  Jasmin.memory_model.LE.decode ws l.
 
 Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code.
 Proof.
@@ -446,15 +438,15 @@ Defined.
 Definition ssprove_prog := seq (funname * fdef).
 
 Definition translate_prog (p : uprog) : ssprove_prog :=
-  let globs := collect_globs (p_globs p) in
+  (* let globs := collect_globs (p_globs p) in *)
   let fds := map translate_fundef (p_funcs p) in
   fds.
 
 Fixpoint lchtuple (ts : seq choice_type) : choice_type :=
   match ts with
-  | [::]   => chUnit
-  | [::t1] => t1
-  | t1::ts => chProd t1 (lchtuple ts)
+  | [::] => 'unit
+  | [:: t1 ] => t1
+  | t1 :: ts => t1 × (lchtuple ts)
   end.
 
 Definition get_fundef_ssp (sp : seq (funname * fdef)) (fn : funname) (dom cod : choice_type) :
@@ -483,9 +475,9 @@ Qed.
 
 Fixpoint type_of_values vs : choice_type :=
   match vs with
-  | [::]   => 'unit
-  | [::v] => choice_type_of_val v
-  | hd::tl => choice_type_of_val hd × type_of_values tl
+  | [::] => 'unit
+  | [:: v ] => choice_type_of_val v
+  | hd :: tl => choice_type_of_val hd × type_of_values tl
   end.
 
 (* lchtuple (map choice_type_of_val vs) *)
@@ -499,10 +491,6 @@ Proof.
     + exact (translate_value v).
     + exact (translate_value v, tr_vs).
 Defined.
-
-(* Definition seq_prod ls := *)
-(*   map translate_value ls *)
-(*   foldr chProd ls *)
 
 Definition translate_ptr (ptr : pointer) : Location :=
   ('word U8 ; (5 ^ Z.to_nat (wunsigned ptr))%nat).
