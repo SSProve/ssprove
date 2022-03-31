@@ -653,26 +653,6 @@ Proof.
   simpl. intuition eauto.
 Qed.
 
-(* Keeping for compat for now *)
-Lemma r_bind_unary :
-  ∀ {A B : choiceType} m f v fv
-    (pre : precond) (mid : postcond A A) (post : postcond B B),
-    ⊢ ⦃ pre ⦄ m ≈ ret v ⦃ λ '(a₀, h₀) '(a₁, h₁), mid (a₀, h₀) (a₁, h₁) ∧ a₀ = a₁ ∧ a₁ = v ⦄ →
-    ⊢ ⦃ λ '(s₀, s₁), mid (v, s₀) (v, s₁) ⦄ f v ≈ ret (fv v) ⦃ post ⦄ →
-    ⊢ ⦃ pre ⦄ bind m f ≈ ret (fv v) ⦃ post ⦄.
-Proof.
-  intros A B m f v fv pre mid post hm hf.
-  change (ret (fv v)) with (x ← ret v ;; ret (fv x)).
-  eapply r_bind.
-  - exact hm.
-  - intros a₀ a₁.
-    eapply rpre_hypothesis_rule.
-    intuition subst.
-    eapply rpre_weaken_rule.
-    1: apply hf.
-    simpl. intuition subst. assumption.
-Qed.
-
 Lemma translate_pexpr_correct :
   ∀ fn (e : pexpr) s₁ v ty v' ty',
     sem_pexpr gd s₁ e = ok v →
