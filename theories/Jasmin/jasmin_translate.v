@@ -279,17 +279,66 @@ Definition chArray_get ws (a : 'array) ptr scale :=
   let l := map f (ziota 0 (wsize_size ws)) in
   Jasmin.memory_model.LE.decode ws l.
 
-Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code.
-Proof.
-  destruct e as [z|b| |x|aa ws x e| | | | | | ].
-  - exists chInt. apply ret. exact z.
-  - exists chBool. exact (ret b).
-  - (* Parr_init only gets produced by ArrayInit() in jasmin source; the EC
-       export asserts false on it. *)
-    exists 'array.
-    exact (ret emptym).
-  - exact (translate_gvar fn x).
-  - (* | Pget aa ws x e => *)
+Definition totc (ty : choice_type) (c : raw_code ty) : typed_code :=
+  (ty ; c).
+
+Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
+  match e with
+  | Pconst z => totc 'int (@ret 'int z) (* Why do we need to give 'int twice? *)
+  | Pbool b => totc 'bool (ret b)
+  | Parr_init n =>
+    (* Parr_init only gets produced by ArrayInit() in jasmin source. *)
+    (* The EC export asserts false on it. *)
+    totc 'array (ret emptym)
+  | Pvar v => translate_gvar fn v
+  | Pget aa ws x e =>
+    totc ('word ws) (
+      arr ← (translate_gvar fn x).π2 ;; (* Performs the lookup in gd *)
+      let a := coerce_to_choice_type 'array arr in
+      i ← (truncate_code sint (translate_pexpr fn e)).π2 ;; (* to_int *)
+      let scale := mk_scale aa ws in
+      ret (chArray_get ws a i scale)
+    )
+  | Psub aa ws len x e =>
+    totc 'array (
+      arr ← (translate_gvar fn x).π2 ;; (* Performs the lookup in gd *)
+      let a := coerce_to_choice_type 'array arr in
+      i ← (truncate_code sint (translate_pexpr fn e)).π2 ;; (* to_int *)
+      ret (chCanonical _) (* TODO *)
+    )
+  | Pload sz x e =>
+    totc ('word sz) (
+      ret (chCanonical _) (* TODO *)
+    )
+  | Papp1 o e =>
+    totc _ (
+      (* We truncate and call sem_sop1_typed instead of calling sem_sop1
+        which does the truncation and then calls sem_sop1_typed.
+      *)
+      x ← (truncate_code (type_of_op1 o).1 (translate_pexpr fn e)).π2 ;;
+      ret (embed (sem_sop1_typed o (unembed x)))
+    )
+  | Papp2 o e1 e2 =>
+    totc _ (
+      (* Same here *)
+      r1 ← (truncate_code (type_of_op2 o).1.1 (translate_pexpr fn e1)).π2 ;;
+      r2 ← (truncate_code (type_of_op2 o).1.2 (translate_pexpr fn e2)).π2 ;;
+      ret match sem_sop2_typed o (unembed r1) (unembed r2) with
+      | Ok y => embed y
+      | _ => chCanonical _
+      end
+    )
+  | PappN op es => unsupported
+  | Pif t eb e1 e2 =>
+    totc _ (
+      b ← (truncate_code sbool (translate_pexpr fn eb)).π2 ;; (* to_bool *)
+      if b
+      then (truncate_code t (translate_pexpr fn e1)).π2
+      else (truncate_code t (translate_pexpr fn e2)).π2
+    )
+  end.
+
+(*   (* | Pget aa ws x e => *)
     exists 'word ws.
     (* Look up x amongst the evm part of the estate and the globals gd. Monadic
        Let because we might find None. If (Some val) is found, fail with type
@@ -311,47 +360,25 @@ Proof.
   (*     Let w := WArray.get aa ws t i in *)
     pose (scale := mk_scale aa ws).
 
-    exact (a ← arr ;; ptr ← i ;; ret (chArray_get ws a ptr scale)).
+    exact (a ← arr ;; ptr ← i ;; ret (chArray_get ws a ptr scale)). *)
 
-  - (* | Psub aa ws len x e => *)
-    exists 'array.
+  (* | Psub aa ws len x e => *)
     (* Let (n, t) := gd, s.[x] in *)
     (* Let i := sem_pexpr s e >>= to_int in *)
     (* Let t' := WArray.get_sub aa ws len t i in *)
     (* ok (Varr t') *)
 
-    exact (ret (chCanonical _)).
-    (* TODO: still unsupported *)
-  - (* | Pload sz x e => *)
+  (* | Pload sz x e => *)
     (* Let w1 := get_var s.(evm) x >>= to_pointer in *)
     (* Let w2 := sem_pexpr s e >>= to_pointer in *)
     (* Let w  := read s.(emem) (w1 + w2)%R sz in *)
     (* ok (@to_val (sword sz) w) *)
-    exists ('word w). exact (ret (chCanonical _)).
-    (* TODO: still unsupported *)
-  - pose proof (sem_sop1_typed s) as f. simpl in f.
-    pose (e' := translate_pexpr fn e).
-    pose (r := (truncate_code (type_of_op1 s).1 e').π2).
-    pose (c := x ← r ;; ret (embed (f (unembed x)))).
-    exact (_ ; c).
-  - pose proof (sem_sop2_typed s) as f. simpl in f.
-    pose (e1' := translate_pexpr fn e1).
-    pose (e2' := translate_pexpr fn e2).
-    pose (r1 := (truncate_code (type_of_op2 s).1.1 e1').π2).
-    pose (r2 := (truncate_code (type_of_op2 s).1.2 e2').π2).
-    pose (c :=
-      x1 ← r1 ;;
-      x2 ← r2 ;;
-      ret match f (unembed x1) (unembed x2) with
-      | Ok y => embed y
-      | _ => chCanonical _
-      end).
-    exact (_ ; c).
-  - (* | PappN op es => *)
+
+  (* | PappN op es => *)
     (*   Let vs := mapM (sem_pexpr s) es in *)
     (*   sem_opN op vs *)
-    pose (vs := map (translate_pexpr fn) l).
-    pose proof (sem_opN_typed o) as f. simpl in f.
+    (* pose (vs := map (translate_pexpr fn) l).
+    pose proof (sem_opN_typed o) as f. simpl in f. *)
 
 (* Fixpoint app_sopn T ts : sem_prod ts (exec T) → values → exec T := *)
 (*   match ts return sem_prod ts (exec T) → values → exec T with *)
@@ -363,21 +390,6 @@ Proof.
 (*   end. *)
 
     (* pose (vs' := fold (fun x => y ← x ;; unembed y) f vs). *)
-    exact unsupported.
-  - (* | Pif t e e1 e2 => *)
-    (*   Let b := sem_pexpr s e >>= to_bool in *)
-    (*   Let v1 := sem_pexpr s e1 >>= truncate_val t in *)
-    (*   Let v2 := sem_pexpr s e2 >>= truncate_val t in *)
-    (*   ok (if b then v1 else v2) *)
-    pose (eb := coerce_typed_code 'bool (translate_pexpr fn e1)).
-    pose (e1' := translate_pexpr fn e1).
-    pose (e2' := translate_pexpr fn e2).
-    pose (r1 := (truncate_code s e1').π2).
-    pose (r2 := (truncate_code s e2').π2).
-    pose (c := b ← eb ;; if b then r1 else r2).
-    exact (_ ; c).
-Defined.
-
 
 Definition instr_d (i : instr) : instr_r :=
   match i with MkI _ i => i end.
@@ -901,6 +913,7 @@ Lemma truncate_code_idemp :
     truncate_code sty' (truncate_code sty c) = truncate_code sty' c.
 Admitted.
 
+(* TODO Make fixpoint too! *)
 Lemma translate_instr_r_correct :
   ∀ (fn : funname) (i : instr_r) (s₁ s₂ : estate),
   sem_i P s₁ i s₂ →
