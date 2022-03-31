@@ -875,14 +875,14 @@ Admitted.
 Lemma translate_instr_r_correct :
   ∀ (fn : funname) (i : instr_r) (s₁ s₂ : estate),
   sem_i P s₁ i s₂ →
-  ⊢ ⦃ λ '(h₀, h₁), rel_estate s₁ fn h₀ ⦄
-    translate_instr_r fn i ≈ ret tt
-  ⦃ λ '(_, h₀) '(_, _), rel_estate s₂ fn h₀ ⦄.
+  ⊢ ⦃ rel_estate s₁ fn ⦄
+    translate_instr_r fn i ⇓ tt
+  ⦃ rel_estate s₂ fn ⦄.
 Proof.
   intros fn i s₁ s₂ h.
   induction h as [es₁ es₂ y tag sty e v v' sem_e trunc hw | | | | | | |].
   - simpl. destruct y as [ | yl | | | ] eqn:case_lval.
-    + simpl. apply r_ret. intros h₀ _ hr.
+    + simpl. apply u_ret_eq. intros hp hr.
       simpl in hw. unfold write_none in hw.
       destruct is_sbool eqn:eb.
       * unfold on_vu in hw. destruct of_val as [| []].
@@ -892,14 +892,6 @@ Proof.
     + simpl. simpl in hw. unfold write_var in hw.
       destruct set_var eqn:eset. 2: discriminate.
       simpl in hw. noconf hw.
-      epose proof r_bind_unary as thm.
-      specialize thm with (fv := λ _, tt).
-      simpl in thm.
-      pose (( λ '(a, h₀) '(b, _),
-        rel_estate es₁ fn h₀ ) : postcond
-                                                 (encode (vtype yl))
-                                                 (encode (vtype yl))) as mid.
-      specialize thm with (mid := mid).
       rewrite truncate_code_idemp.
       (* Other attempt *)
 (*       unfold truncate_val in trunc. destruct of_val eqn:ev. 2: discriminate.
@@ -916,7 +908,7 @@ Proof.
         discriminate H0.
       } *)
       (* * *)
-      eapply thm. all: clear thm. all: simpl.
+      eapply u_bind.
       * eapply translate_pexpr_correct.
 (*         -- eassumption.
         -- {
@@ -930,25 +922,22 @@ Proof.
         (* 1,2: eassumption.
         simpl. intros [] []. intuition eauto. *)
         all: admit.
-      * clear sem_e tag e.
-        epose proof r_put_lhs as thm.
-        (* specialize thm with (ℓ := translate_var fn yl).
-        specialize thm with (r₁ := ret tt).
-        specialize thm with (r₀ := ret tt).
-        specialize thm with (v := a). *)
-        (* specialize thm with *)
-        (*   (pre := λ '(s₀, h₁), mid (a, s₀) *)
-        (*                         (coerce_to_choice_type (encode (vtype y)) *)
-        (*                                            (translate_value v'), h₁)). *)
-        specialize thm with (pre := λ '(s₀, h₁), mid (coerce_to_choice_type _ (translate_value v'), s₀) (coerce_to_choice_type _ (translate_value v'), h₁)).
+      * {
+        clear sem_e tag e.
+        eapply u_put.
+        apply u_ret_eq.
+        intros m' [m [hm e]]. subst.
+        destruct hm as [hm hv].
+        split.
+        - simpl. unfold rel_mem.
+          intros ptr sz w hrw.
+          rewrite get_set_heap_neq. 2: apply ptr_var_neq.
+          apply hm. assumption.
+        - simpl. unfold rel_vmap.
+          intros i vi ei.
+          admit. (* TODO Fix the admit above before! *)
+      }
 
-        (* v' instead of a ? *)
-        simpl in thm.
-        eapply thm.
-        clear thm. clear mid.
-        apply r_ret.
-        intros ? ? hs.
-        unfold set_lhs in hs.
         (* destruct hs as [h [[_ [rm rv]] Hs₀]].
         (* we're in the *local* var case (cf eset), can only prove
            that the vmaps are related *)
@@ -1026,7 +1015,6 @@ Proof.
            (*     apply hvmap in H. *)
 
            (*     apply hvmap. *)
-        admit.
     + admit.
     + admit.
     + admit.
