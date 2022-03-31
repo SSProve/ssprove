@@ -570,6 +570,28 @@ Notation "⊢ ⦃ pre ⦄ c ⇓ v ⦃ post ⦄" :=
   (format "⊢  ⦃  pre  ⦄ '/  '  '[' c  ']' '/' ⇓ '/  '  '[' v  ']' '/' ⦃  post  ⦄")
   : package_scope.
 
+Lemma u_ret :
+  ∀ {A : choiceType} (v v' : A) (p q : heap → Prop),
+    (∀ hp, p hp → q hp ∧ v = v') →
+    ⊢ ⦃ p ⦄ ret v ⇓ v' ⦃ q ⦄.
+Proof.
+  intros A v v' p q h.
+  unfold eval_jdg.
+  apply r_ret.
+  intros hp hp' hhp.
+  specialize (h hp).
+  intuition eauto.
+Qed.
+
+Lemma u_ret_eq :
+  ∀ {A : choiceType} (v : A) (p q : heap → Prop),
+    (∀ hp, p hp → q hp) →
+    ⊢ ⦃ p ⦄ ret v ⇓ v ⦃ q ⦄.
+Proof.
+  intros A v p q h.
+  apply u_ret. intuition eauto.
+Qed.
+
 Lemma u_bind :
   ∀ {A B : choiceType} m f v₁ v₂ (p q r : heap → Prop),
     ⊢ ⦃ p ⦄ m ⇓ v₁ ⦃ q ⦄ →
