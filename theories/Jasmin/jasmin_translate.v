@@ -611,6 +611,23 @@ Proof.
     simpl. intuition subst. assumption.
 Qed.
 
+(* Unary variant of set_lhs *)
+Definition u_set_pre (ℓ : Location) (v : ℓ) (pre : heap → Prop): heap → Prop :=
+  λ m, ∃ m', pre m' ∧ m = set_heap m' ℓ v.
+
+Lemma u_put :
+  ∀ {A : choiceType} (ℓ : Location) (v : ℓ) (r : raw_code A) (v' : A) p q,
+    ⊢ ⦃ u_set_pre ℓ v p ⦄ r ⇓ v' ⦃ q ⦄ →
+    ⊢ ⦃ p ⦄ #put ℓ := v ;; r ⇓ v' ⦃ q ⦄.
+Proof.
+  intros A ℓ v r v' p q h.
+  eapply r_put_lhs with (pre := λ '(_,_), _).
+  eapply rpre_weaken_rule. 1: eapply h.
+  intros m₀ m₁ hm. simpl.
+  destruct hm as [m' hm].
+  exists m'. exact hm.
+Qed.
+
 (* Keeping for compat for now *)
 Lemma r_bind_unary :
   ∀ {A B : choiceType} m f v fv
