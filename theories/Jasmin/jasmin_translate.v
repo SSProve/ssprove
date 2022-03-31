@@ -571,14 +571,14 @@ Notation "⊢ ⦃ pre ⦄ c ⇓ v ⦃ post ⦄" :=
   : package_scope.
 
 Lemma u_bind :
-  ∀ {A B : choiceType} m f v fv (p q r : heap → Prop),
-    ⊢ ⦃ p ⦄ m ⇓ v ⦃ q ⦄ →
-    ⊢ ⦃ q ⦄ f v ⇓ fv v ⦃ r ⦄ →
-    ⊢ ⦃ p ⦄ @bind A B m f ⇓ fv v ⦃ r ⦄.
+  ∀ {A B : choiceType} m f v₁ v₂ (p q r : heap → Prop),
+    ⊢ ⦃ p ⦄ m ⇓ v₁ ⦃ q ⦄ →
+    ⊢ ⦃ q ⦄ f v₁ ⇓ v₂ ⦃ r ⦄ →
+    ⊢ ⦃ p ⦄ @bind A B m f ⇓ v₂ ⦃ r ⦄.
 Proof.
-  intros A B m f v fv p q r hm hf.
+  intros A B m f v₁ v₂ p q r hm hf.
   unfold eval_jdg.
-  change (ret (fv v)) with (x ← ret v ;; ret (fv x)).
+  change (ret v₂) with (ret v₁ ;; ret v₂).
   eapply r_bind.
   - exact hm.
   - intros a₀ a₁.
