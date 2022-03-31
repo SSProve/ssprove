@@ -653,6 +653,39 @@ Proof.
   simpl. intuition eauto.
 Qed.
 
+Lemma translate_pexpr_correct_new :
+  ∀ fn (e : pexpr) s₁ v,
+    sem_pexpr gd s₁ e = ok v →
+    ⊢ ⦃ rel_estate s₁ fn ⦄
+      coerce_typed_code _ (translate_pexpr fn e) ⇓
+      translate_value v
+    ⦃ rel_estate s₁ fn ⦄.
+Proof.
+  intros fn e s1 v h1.
+  induction e as [z|b| |x|aa ws x e| | | | | | ].
+  - simpl in h1. noconf h1.
+    rewrite coerce_typed_code_K.
+    apply u_ret_eq. auto.
+  - simpl in h1. noconf h1.
+    rewrite coerce_typed_code_K.
+    apply u_ret_eq. auto.
+  - simpl in h1. noconf h1.
+    rewrite coerce_typed_code_K.
+    apply u_ret_eq. auto.
+  - simpl in h1.
+    apply type_of_get_gvar in h1 as es.
+    unfold translate_pexpr.
+    unfold translate_gvar. unfold translate_var.
+    unfold get_gvar in h1.
+    destruct is_lvar eqn:hlvar.
+    + destruct x as [gx gs]. simpl in *.
+      unfold is_lvar in hlvar. simpl in hlvar. move: hlvar => /eqP hlvar. subst.
+      unfold get_var in h1.
+      unfold on_vu in h1. destruct Fv.get as [sx | e] eqn:e1.
+      2:{ destruct e. all: discriminate. }
+      noconf h1.
+      Admitted.
+
 Lemma translate_pexpr_correct :
   ∀ fn (e : pexpr) s₁ v ty v' ty',
     sem_pexpr gd s₁ e = ok v →
