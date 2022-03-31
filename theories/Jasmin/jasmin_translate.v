@@ -378,34 +378,52 @@ Proof.
     exact (_ ; c).
 Defined.
 
-Definition translate_instr_r (fn : funname) (i : instr_r) : raw_code 'unit.
-Proof.
-  destruct i.
-  - (* Cassgn *)
-    (* l :a=_s p *)
-    pose (translate_pexpr fn p) as tr_p.
-    pose (truncate_code s tr_p) as tr_p'.
-    exact (ssprove_write_lval fn l tr_p').
-  - exact (unsupported.π2). (* Copn *)
-  - exact (unsupported.π2). (* Cif *)
-  - exact (unsupported.π2). (* Cfor *)
-  - exact (unsupported.π2). (* Cwhile *)
-  - (* Ccall i l f l0 *)
-    (* translate arguments *)
-    pose (map (translate_pexpr fn) l0) as tr_l0.
-    (* "perform" the call via `opr` *)
-    (* probably we'd look up the function signature in the current ambient program *)
-
-    (* write_lvals the result of the call into lvals `l` *)
-
-    exact (unsupported.π2).
-Defined.
 
 Definition instr_d (i : instr) : instr_r :=
   match i with MkI _ i => i end.
 
-Definition translate_instr (fn : funname) (i : instr) : raw_code 'unit :=
-  translate_instr_r fn (instr_d i).
+Fixpoint translate_instr_r (fn : funname) (i : instr_r) {struct i} : raw_code 'unit
+with translate_instr (fn : funname) (i : instr) {struct i} : raw_code 'unit.
+Proof.
+  (* translate_instr_r *)
+  {
+    pose proof (translate_cmd :=
+            (fix translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
+               match c with
+               | [::] => ret tt
+               | i :: c => translate_instr fn i ;; translate_cmd fn c
+               end)).
+
+    destruct i as [ | | e c1 c2 | | | ].
+    - (* Cassgn *)
+      (* l :a=_s p *)
+      pose (translate_pexpr fn p) as tr_p.
+      pose (truncate_code s tr_p) as tr_p'.
+      exact (ssprove_write_lval fn l tr_p').
+    - exact (unsupported.π2). (* Copn *)
+    - (* Cif e c1 c2 *)
+      pose (e' := translate_pexpr fn e).
+      pose (c1' := translate_cmd fn c1).
+      pose (c2' := translate_cmd fn c2).
+      pose (rb := coerce_typed_code 'bool e').
+      exact (b ← rb ;; if b then c1' else c2').
+    - exact (unsupported.π2). (* Cfor *)
+    - exact (unsupported.π2). (* Cwhile *)
+    - (* Ccall i l f l0 *)
+      (* translate arguments *)
+      pose (map (translate_pexpr fn) l0) as tr_l0.
+      (* "perform" the call via `opr` *)
+      (* probably we'd look up the function signature in the current ambient program *)
+
+      (* write_lvals the result of the call into lvals `l` *)
+
+      exact (unsupported.π2).
+  }
+  (* translate_instr *)
+  {
+    exact (translate_instr_r fn (instr_d i)).
+  }
+Defined.
 
 Fixpoint translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
   match c with
@@ -696,8 +714,6 @@ Lemma translate_pexpr_correct :
     ⦃ rel_estate s₁ fn ⦄.
 Proof.
   intros fn e s₁ v ty v' ty' h1 h2.
-  (* rewrite coerce_cast_code.
-  unfold choice_type_of_val. *)
   unfold truncate_code.
   assert (e2 : ty = type_of_val v').
   { unfold truncate_val in h2. destruct of_val eqn:ev. 2: discriminate.
@@ -727,7 +743,7 @@ Proof.
   rewrite h2.
   set (ty := type_of_val v') in *. clearbody ty. subst.
   (* Now we can actually look at the pexpr *)
-  induction e as [z|b| |x|aa ws x e| | | | | | ].
+  induction e as [z|b| |x|aa ws x e| | | | | | ] in v, s₁, h1, ty, vv, ev |- *.
   - simpl. simpl in h1. noconf h1.
     apply of_vint in ev as es. subst.
     simpl. rewrite coerce_to_choice_type_K.
@@ -837,9 +853,12 @@ Proof.
     unfold to_int in ev'. destruct v'. all: try discriminate.
     2:{ destruct t. all: discriminate. }
     noconf ev'.
-    (* TW: The IH might be wrong, could be worth it to use induction in *)
+    specialize IHe with (1 := hv').
+    specialize IHe with (ty := sint) (vv := z).
+    forward IHe. 1: reflexivity.
+
     (* TW: It would be nice to conclude here that e is translated to an 'int
-      Might come from IH though.
+      Is there any way to know it though?
     *)
 
     (* Now the actual proof should begin. Instead, here is some mindless mess
