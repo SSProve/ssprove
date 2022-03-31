@@ -378,16 +378,35 @@ Proof.
     exact (_ ; c).
 Defined.
 
-Definition translate_instr_r (fn : funname) (i : instr_r) : raw_code 'unit.
+
+Definition instr_d (i : instr) : instr_r :=
+  match i with MkI _ i => i end.
+
+Fixpoint translate_instr_r (fn : funname) (i : instr_r) {struct i} : raw_code 'unit
+with
+translate_instr (fn : funname) (i : instr) {struct i} : raw_code 'unit.
 Proof.
-  destruct i.
+  {
+    pose proof (translate_cmd :=
+            (fix translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
+               match c with
+               | [::] => ret tt
+               | i :: c => translate_instr fn i ;; translate_cmd fn c
+               end)).
+
+  destruct i as [ | | e c1 c2 | | | ].
   - (* Cassgn *)
     (* l :a=_s p *)
     pose (translate_pexpr fn p) as tr_p.
     pose (truncate_code s tr_p) as tr_p'.
     exact (ssprove_write_lval fn l tr_p').
   - exact (unsupported.π2). (* Copn *)
-  - exact (unsupported.π2). (* Cif *)
+  - (* Cif e c1 c2 *)
+    pose (e' := translate_pexpr fn e).
+    pose (c1' := translate_cmd fn c1).
+    pose (c2' := translate_cmd fn c2).
+    pose (rb := coerce_typed_code 'bool e').
+    exact (b ← rb ;; if b then c1' else c2').
   - exact (unsupported.π2). (* Cfor *)
   - exact (unsupported.π2). (* Cwhile *)
   - (* Ccall i l f l0 *)
@@ -399,13 +418,12 @@ Proof.
     (* write_lvals the result of the call into lvals `l` *)
 
     exact (unsupported.π2).
+  }
+  {
+(* Definition translate_instr (fn : funname) (i : instr) : raw_code 'unit := *)
+  exact (translate_instr_r fn (instr_d i)).
+  }
 Defined.
-
-Definition instr_d (i : instr) : instr_r :=
-  match i with MkI _ i => i end.
-
-Definition translate_instr (fn : funname) (i : instr) : raw_code 'unit :=
-  translate_instr_r fn (instr_d i).
 
 Fixpoint translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
   match c with
