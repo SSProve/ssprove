@@ -503,13 +503,13 @@ Definition rel_mem (m : mem) (h : heap) :=
 
 #[local] Open Scope vmap_scope.
 
-Definition rel_vmap (vm : vmap) (h : heap) (fn : funname) :=
+Definition rel_vmap (vm : vmap) (fn : funname) (h : heap) :=
   ∀ (i : var) v,
     vm.[i] = ok v →
     get_heap h (translate_var fn i) = coerce_to_choice_type _ (embed v).
 
-Definition rel_estate (s : estate) (h : heap) (fn : funname) :=
-  rel_mem s.(emem) h ∧ rel_vmap s.(evm) h fn.
+Definition rel_estate (s : estate) (fn : funname) (h : heap) :=
+  rel_mem s.(emem) h ∧ rel_vmap s.(evm) fn h.
 
 Lemma coerce_cast_code (ty vty : choice_type) (v : vty) :
   ret (coerce_to_choice_type ty v) = coerce_typed_code ty (vty ; ret v).
@@ -556,6 +556,40 @@ Derive NoConfusion for result.
 Derive NoConfusion for value.
 Derive NoConfusion for wsize.
 
+(* Unary judgment concluding on evaluation of program *)
+
+Definition eval_jdg {A : choiceType}
+  (pre : heap → Prop) (post : heap → Prop)
+  (c : raw_code A) (v : A) :=
+  ⊢ ⦃ λ '(h₀, h₁), pre h₀ ⦄
+    c ≈ ret v
+  ⦃ λ '(a₀, h₀) '(a₁, h₁), post h₀ ∧ a₀ = a₁ ∧ a₁ = v ⦄.
+
+Notation "⊢ ⦃ pre ⦄ c ⇓ v ⦃ post ⦄" :=
+  (eval_jdg pre post c v)
+  (format "⊢  ⦃  pre  ⦄ '/  '  '[' c  ']' '/' ⇓ '/  '  '[' v  ']' '/' ⦃  post  ⦄")
+  : package_scope.
+
+Lemma u_bind :
+  ∀ {A B : choiceType} m f v fv (p q r : heap → Prop),
+    ⊢ ⦃ p ⦄ m ⇓ v ⦃ q ⦄ →
+    ⊢ ⦃ q ⦄ f v ⇓ fv v ⦃ r ⦄ →
+    ⊢ ⦃ p ⦄ @bind A B m f ⇓ fv v ⦃ r ⦄.
+Proof.
+  intros A B m f v fv p q r hm hf.
+  unfold eval_jdg.
+  change (ret (fv v)) with (x ← ret v ;; ret (fv x)).
+  eapply r_bind.
+  - exact hm.
+  - intros a₀ a₁.
+    eapply rpre_hypothesis_rule.
+    intuition subst.
+    eapply rpre_weaken_rule.
+    1: apply hf.
+    simpl. intuition subst. assumption.
+Qed.
+
+(* Keeping for compat for now *)
 Lemma r_bind_unary :
   ∀ {A B : choiceType} m f v fv
     (pre : precond) (mid : postcond A A) (post : postcond B B),
@@ -579,13 +613,13 @@ Lemma translate_pexpr_correct :
   ∀ fn (e : pexpr) s₁ v ty v' ty',
     sem_pexpr gd s₁ e = ok v →
     truncate_val ty v = ok v' →
-    ⊢ ⦃ λ '(h₀, h₁), rel_estate s₁ h₁ fn ⦄
-      ret (coerce_to_choice_type ty' (translate_value v'))
-    ≈
-      coerce_typed_code ty' (truncate_code ty (translate_pexpr fn e))
-    ⦃ λ '(a₀, h₀) '(a₁, h₁), a₀ = a₁ ∧ a₀ = coerce_to_choice_type ty' (translate_value v') ∧ rel_estate s₁ h₁ fn ⦄.
+    ⊢ ⦃ rel_estate s₁ fn ⦄
+      coerce_typed_code ty' (truncate_code ty (translate_pexpr fn e)) ⇓
+      coerce_to_choice_type ty' (translate_value v')
+    ⦃ rel_estate s₁ fn ⦄.
 Proof.
   intros fn e s₁ v ty v' ty' h1 h2.
+  unfold eval_jdg.
   rewrite coerce_cast_code.
   unfold choice_type_of_val.
   unfold truncate_code.
@@ -647,13 +681,13 @@ Proof.
       unfold on_vu in h1. destruct Fv.get as [sx |] eqn:e1.
       2:{ destruct e. all: discriminate. }
       noconf h1.
-      eapply r_get_remember_rhs with (pre := λ '(h₀, h₁), rel_estate s₁ h₁ fn).
+      eapply r_get_remember_lhs with (pre := λ '(h₀, h₁), _).
       intro vx. simpl in vx.
-      apply r_ret. intros ? he [[hmem hvmap] h].
+      apply r_ret. intros he ? [[hmem hvmap] h].
       apply hvmap in e1. simpl in h.
       rewrite h in e1. clear h. subst.
       split. 2: split.
-      3:{ split. all: assumption. }
+      1:{ split. all: assumption. }
       2: { by rewrite coerce_to_choice_type_K. }
       simpl. rewrite coerce_to_choice_type_K.
       set (ty := type_of_val v') in *. clearbody ty.
@@ -743,58 +777,40 @@ Proof.
     unfold translate_gvar. unfold translate_var.
     destruct is_lvar eqn:hlvar.
     + simpl in *.
-      eapply r_get_remember_rhs with (pre := λ '(_, h₁), rel_estate s₁ h₁ fn).
+      eapply r_get_remember_lhs with (pre := λ '(_, _), _).
       rewrite H. simpl. intros arr.
       rewrite bind_assoc.
-      eapply rsymmetry.
       epose r_bind_unary as rbu.
-      (* specialize rbu with (post := (λ '(a₁, h₁) '(a₀, _), *)
-      (* a₀ = a₁ *)
-      (* ∧ a₀ = *)
-      (*   coerce_to_choice_type (encode (type_of_val (to_val s))) *)
-      (*     (translate_value (to_val s)) ∧ rel_estate s₁ h₁ fn)). *)
-      (* specialize rbu with (pre := (λ '(h₁, h₀), *)
-      (*   ((λ '(_, h₁0), rel_estate s₁ h₁0 fn) *)
-      (*    ⋊ rem_rhs ('array; nat_of_fun_ident fn (vname (gv x))) arr) *)
-      (*     (h₀, h₁))). *)
-      specialize rbu with (mid := (λ '(_, h₁) '(_, h₀),
-        ((λ '(_, h₁0), rel_estate s₁ h₁0 fn)
-         ⋊ rem_rhs ('array; nat_of_fun_ident fn (vname (gv x))) arr)
-          (h₀, h₁))).
-      (* specialize rbu with (m := coerce_typed_code 'int (translate_pexpr fn e)). *)
-      (* specialize rbu with (v := z). *)
+      lazymatch goal with
+      | |- ⊢ ⦃ ?pre ⦄ _ ≈ _ ⦃ _ ⦄ =>
+        specialize rbu with (mid := λ '(_, h₀) '(_, h₁), pre (h₀, h₁))
+      end.
       specialize rbu with (fv := λ _i, (translate_value (to_val s))).
-      eapply rbu; clear rbu.
-      * simpl.
-        simp coerce_typed_code.
-        give_up.
-      * simpl. eapply r_ret.
-        intuition subst.
-        -- simpl. give_up.
-        -- simpl. give_up.
-        -- apply H3.
-    + simpl in *. rewrite H0.
-      simpl. rewrite bind_assoc.
-      eapply rsymmetry.
-      epose r_bind_unary as rbu.
-      specialize rbu with (post := (λ '(a₁, h₁) '(a₀, _),
-      a₀ = a₁
-      ∧ a₀ =
-        coerce_to_choice_type (encode (type_of_val (to_val s)))
-          (translate_value (to_val s)) ∧ rel_estate s₁ h₁ fn)).
-      specialize rbu with (pre := ( λ '(h₁, _), rel_estate s₁ h₁ fn )).
-      specialize rbu with (mid := (λ '(_, h₁) '(_, h₀), rel_estate s₁ h₁ fn)).
-      specialize rbu with (m := coerce_typed_code 'int (translate_pexpr fn e)).
-      specialize rbu with (v := z).
-      specialize rbu with (fv := λ _i, (translate_value (to_val s))).
-      simpl in rbu.
-      eapply rbu; clear rbu.
+      eapply rbu. all: clear rbu.
       * simp coerce_typed_code.
         give_up.
       * simpl. eapply r_ret.
         intuition subst.
-        -- simpl in *. give_up.
+        -- apply H3.
+        -- give_up.
+        -- give_up.
+    + simpl in *. rewrite H0.
+      simpl. rewrite bind_assoc.
+      epose proof @r_bind_unary as rbu.
+      specialize rbu with (A := 'int).
+      lazymatch goal with
+      | |- ⊢ ⦃ ?pre ⦄ _ ≈ _ ⦃ _ ⦄ =>
+        specialize rbu with (mid := λ '(_, h₀) '(_, h₁), pre (h₀, h₁))
+      end.
+      specialize rbu with (v := z).
+      specialize rbu with (fv := λ _i, (translate_value (to_val s))).
+      eapply rbu with (pre := λ '(_, _), _). all: clear rbu.
+      * simp coerce_typed_code.
+        give_up.
+      * simpl. eapply r_ret.
+        intuition subst.
         -- simpl in *. try reflexivity. admit.
+        -- simpl in *. give_up.
   -
 Admitted.
 
@@ -820,9 +836,9 @@ Admitted.
 Lemma translate_instr_r_correct :
   ∀ (fn : funname) (i : instr_r) (s₁ s₂ : estate),
   sem_i P s₁ i s₂ →
-  ⊢ ⦃ λ '(h₀, h₁), rel_estate s₁ h₀ fn ⦄
+  ⊢ ⦃ λ '(h₀, h₁), rel_estate s₁ fn h₀ ⦄
     translate_instr_r fn i ≈ ret tt
-  ⦃ λ '(_, h₀) '(_, _), rel_estate s₂ h₀ fn ⦄.
+  ⦃ λ '(_, h₀) '(_, _), rel_estate s₂ fn h₀ ⦄.
 Proof.
   intros fn i s₁ s₂ h.
   induction h as [es₁ es₂ y tag sty e v v' sem_e trunc hw | | | | | | |].
@@ -841,7 +857,7 @@ Proof.
       specialize thm with (fv := λ _, tt).
       simpl in thm.
       pose (( λ '(a, h₀) '(b, _),
-        rel_estate es₁ h₀ fn ) : postcond
+        rel_estate es₁ fn h₀ ) : postcond
                                                  (encode (vtype yl))
                                                  (encode (vtype yl))) as mid.
       specialize thm with (mid := mid).
@@ -862,9 +878,7 @@ Proof.
       } *)
       (* * *)
       eapply thm. all: clear thm. all: simpl.
-      * eapply rsymmetry.
-        eapply rpost_weaken_rule.
-        1: eapply translate_pexpr_correct.
+      * eapply translate_pexpr_correct.
 (*         -- eassumption.
         -- {
           unfold truncate_val in *.
