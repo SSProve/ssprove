@@ -628,6 +628,29 @@ Proof.
   exists m'. exact hm.
 Qed.
 
+(* Unary variant of inv_conj (⋊) *)
+Definition u_pre_conj (p q : heap → Prop) : heap → Prop :=
+  λ m, p m ∧ q m.
+
+Notation "p ≪ q" :=
+  (u_pre_conj p q) (at level 19, left associativity) : package_scope.
+
+(* Unary variant of rem_lhs *)
+Definition u_get (ℓ : Location) (v : ℓ) : heap → Prop :=
+  λ m, get_heap m ℓ = v.
+
+Lemma u_get_remember :
+  ∀ (A : choiceType) (ℓ : Location) (k : ℓ → raw_code A) (v : A) p q,
+    (∀ x, ⊢ ⦃ p ≪ u_get ℓ x ⦄ k x ⇓ v ⦃ q ⦄) →
+    ⊢ ⦃ p ⦄ x ← get ℓ ;; k x ⇓ v ⦃ q ⦄.
+Proof.
+  intros A ℓ k v p q h.
+  eapply r_get_remember_lhs with (pre := λ '(_,_), _).
+  intro x.
+  eapply rpre_weaken_rule. 1: eapply h.
+  simpl. intuition eauto.
+Qed.
+
 (* Keeping for compat for now *)
 Lemma r_bind_unary :
   ∀ {A B : choiceType} m f v fv
