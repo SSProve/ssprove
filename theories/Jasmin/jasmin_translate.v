@@ -788,20 +788,20 @@ Lemma translate_pexpr_correct_new :
   ∀ fn (e : pexpr) s₁ v,
     sem_pexpr gd s₁ e = ok v →
     ⊢ ⦃ rel_estate s₁ fn ⦄
-      coerce_typed_code _ (translate_pexpr fn e) ⇓
-      translate_value v
+      (translate_pexpr fn e).π2 ⇓
+      coerce_to_choice_type _ (translate_value v)
     ⦃ rel_estate s₁ fn ⦄.
 Proof.
   intros fn e s1 v h1.
-  induction e as [z|b| |x|aa ws x e| | | | | | ].
+  induction e as [z|b| |x|aa ws x e| | | | | | ] in s1, v, h1 |- *.
   - simpl in h1. noconf h1.
-    rewrite coerce_typed_code_K.
+    rewrite coerce_to_choice_type_K.
     apply u_ret_eq. auto.
   - simpl in h1. noconf h1.
-    rewrite coerce_typed_code_K.
+    rewrite coerce_to_choice_type_K.
     apply u_ret_eq. auto.
   - simpl in h1. noconf h1.
-    rewrite coerce_typed_code_K.
+    rewrite coerce_to_choice_type_K.
     apply u_ret_eq. auto.
   - simpl in h1.
     apply type_of_get_gvar in h1 as es.
@@ -815,7 +815,7 @@ Proof.
       unfold on_vu in h1. destruct Fv.get as [sx | e] eqn:e1.
       2:{ destruct e. all: discriminate. }
       noconf h1.
-      Admitted.
+Admitted.
 
 Lemma translate_pexpr_correct :
   ∀ fn (e : pexpr) s₁ v ty v' ty',
@@ -1054,8 +1054,7 @@ Proof.
         - eapply translate_truncate.
           + eassumption.
           + eapply translate_pexpr_type. eassumption.
-          + (* eapply translate_pexpr_correct_new. *)
-            admit.
+          + eapply translate_pexpr_correct_new. assumption.
         - apply u_ret_eq. eauto.
       }
       * {
@@ -1064,7 +1063,7 @@ Proof.
         eapply u_put.
         apply u_ret_eq.
         intros m' [m [hm e]]. subst.
-        (* destruct hm as [hm hv].
+        destruct hm as [hm hv].
         split.
         - simpl. unfold rel_mem.
           intros ptr sz w hrw.
@@ -1072,8 +1071,16 @@ Proof.
           apply hm. assumption.
         - simpl. unfold rel_vmap.
           intros i vi ei.
-          admit. *)
-        admit.
+          simpl. rewrite coerce_to_choice_type_K.
+          destruct (i == yl) eqn:evar.
+          all: move: evar => /eqP evar.
+          + subst. rewrite get_set_heap_eq.
+            eapply set_varP. 3: exact eset.
+            * admit.
+            * admit.
+          + rewrite get_set_heap_neq. 2: admit. (* Injectivity *)
+            (* Maybe use set_varP one level up. *)
+            admit.
       }
 
         (* destruct hs as [h [[_ [rm rv]] Hs₀]].
