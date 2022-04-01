@@ -1066,6 +1066,11 @@ Proof.
     WRONG, should just have coercion in the conclusions, including the value
 Abort. *)
 
+Lemma injective_translate_var :
+  ∀ fn, injective (translate_var fn).
+Proof.
+Admitted.
+
 (* TODO Make fixpoint too! *)
 Lemma translate_instr_r_correct :
   ∀ (fn : funname) (i : instr_r) (s₁ s₂ : estate),
@@ -1125,7 +1130,12 @@ Proof.
               admit.
             * rewrite Fv.setP_neq in ei.
               2:{ apply /eqP. eauto. }
-              rewrite get_set_heap_neq. 2: admit. (* Injectivity *)
+              rewrite get_set_heap_neq.
+              2:{
+                apply /eqP. intro e.
+                apply injective_translate_var in e.
+                contradiction.
+              }
               eapply hv in ei. rewrite ei.
               rewrite coerce_to_choice_type_K. reflexivity.
           + intros hbo hyl hset.
@@ -1136,7 +1146,12 @@ Proof.
               clear - ei hbo. destruct (vtype yl). all: discriminate.
             * rewrite Fv.setP_neq in ei.
               2:{ apply /eqP. eauto. }
-              rewrite get_set_heap_neq. 2: admit. (* Injectivity *)
+              rewrite get_set_heap_neq.
+              2:{
+                apply /eqP. intro e.
+                apply injective_translate_var in e.
+                contradiction.
+              }
               eapply hv in ei. rewrite ei.
               rewrite coerce_to_choice_type_K. reflexivity.
       }
