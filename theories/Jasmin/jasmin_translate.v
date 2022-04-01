@@ -729,22 +729,14 @@ Proof.
     noconf H. split; [ assumption | reflexivity ].
 Qed.
 
-Lemma translate_truncate :
-  ∀ (c : typed_code) (ty : stype) v v' p q,
-    truncate_val ty v =  ok v' →
-    c.π1 = choice_type_of_val v →
-    ⊢ ⦃ p ⦄ c.π2 ⇓ coerce_to_choice_type _ (translate_value v) ⦃ q ⦄ →
-    ⊢ ⦃ p ⦄ (truncate_code ty c).π2 ⇓ coerce_to_choice_type _ (translate_value v') ⦃ q ⦄.
+Lemma translate_of_val :
+  ∀ ty v v',
+    of_val ty v = ok v' →
+    truncate_el ty (translate_value v) =
+    coerce_to_choice_type (encode ty) (translate_value (to_val v')).
 Proof.
-  intros c ty v v' p q hv e h.
-  destruct c as [ty' c]. simpl in *. subst.
-  eapply u_bind. 1: eapply h.
-  eapply u_ret. intros m hm.
-  split. 1: assumption.
-  unfold truncate_val in hv.
-  destruct of_val as [vx |] eqn:e. 2: discriminate.
-  simpl in hv. noconf hv.
-  clear h. destruct ty, v. all: simpl in e. all: try discriminate.
+  intros ty v v' e.
+  destruct ty, v. all: simpl in e. all: try discriminate.
   all: try solve [
     lazymatch type of e with
     | match ?t with _ => _ end = _ => destruct t ; discriminate
@@ -757,6 +749,35 @@ Proof.
     noconf e. simpl. reflexivity.
   - simpl. rewrite !coerce_to_choice_type_K.
     rewrite e. reflexivity.
+Qed.
+
+Lemma translate_truncate_val :
+  ∀ ty v v',
+    truncate_val ty v = ok v' →
+    truncate_el ty (translate_value v) =
+    coerce_to_choice_type (encode ty) (translate_value v').
+Proof.
+  intros ty v v' h.
+  unfold truncate_val in h.
+  destruct of_val as [vx |] eqn:e. 2: discriminate.
+  simpl in h. noconf h.
+  apply translate_of_val. assumption.
+Qed.
+
+Lemma translate_truncate_code :
+  ∀ (c : typed_code) (ty : stype) v v' p q,
+    truncate_val ty v =  ok v' →
+    c.π1 = choice_type_of_val v →
+    ⊢ ⦃ p ⦄ c.π2 ⇓ coerce_to_choice_type _ (translate_value v) ⦃ q ⦄ →
+    ⊢ ⦃ p ⦄ (truncate_code ty c).π2 ⇓ coerce_to_choice_type _ (translate_value v') ⦃ q ⦄.
+Proof.
+  intros c ty v v' p q hv e h.
+  destruct c as [ty' c]. simpl in *. subst.
+  eapply u_bind. 1: eapply h.
+  eapply u_ret. intros m hm.
+  split. 1: assumption.
+  rewrite coerce_to_choice_type_K.
+  apply translate_truncate_val. assumption.
 Qed.
 
 Lemma translate_pexpr_type fn s₁ e v :
@@ -820,6 +841,16 @@ Proof with try discriminate; simpl in *.
     destruct b; noconf H; by rewrite type_of_to_val.
 Admitted.
 
+Lemma coerce_to_choice_type_translate_value_to_val :
+  ∀ ty (v : sem_t ty),
+    coerce_to_choice_type (encode ty) (translate_value (to_val v)) =
+    embed v.
+Proof.
+  intros ty v.
+  destruct ty.
+  all: simpl. all: rewrite coerce_to_choice_type_K. all: reflexivity.
+Qed.
+
 Lemma translate_pexpr_correct_new :
   ∀ fn (e : pexpr) s₁ v,
     sem_pexpr gd s₁ e = ok v →
@@ -858,9 +889,8 @@ Proof.
       destruct hm as [hm hv].
       apply hv in e1. rewrite e1. clear e1.
       simpl. rewrite coerce_to_choice_type_K.
-      set (ty := vtype gx) in *. clearbody ty.
-      destruct ty.
-      all: simpl. all: rewrite coerce_to_choice_type_K. all: reflexivity.
+      rewrite coerce_to_choice_type_translate_value_to_val.
+      reflexivity.
 Admitted.
 
 Lemma translate_pexpr_correct :
@@ -1072,6 +1102,11 @@ Proof.
     WRONG, should just have coercion in the conclusions, including the value
 Abort. *)
 
+Lemma injective_translate_var :
+  ∀ fn, injective (translate_var fn).
+Proof.
+Admitted.
+
 (* TODO Make fixpoint too! *)
 Lemma translate_instr_r_correct :
   ∀ (fn : funname) (i : instr_r) (s₁ s₂ : estate),
@@ -1097,7 +1132,7 @@ Proof.
       eapply u_bind.
       * {
         eapply u_bind.
-        - eapply translate_truncate.
+        - eapply translate_truncate_code.
           + eassumption.
           + eapply translate_pexpr_type. eassumption.
           + eapply translate_pexpr_correct_new. assumption.
@@ -1118,94 +1153,44 @@ Proof.
         - simpl. unfold rel_vmap.
           intros i vi ei.
           simpl. rewrite coerce_to_choice_type_K.
-          destruct (i == yl) eqn:evar.
-          all: move: evar => /eqP evar.
-          + subst. rewrite get_set_heap_eq.
-            eapply set_varP. 3: exact eset.
-            * admit.
-            * admit.
-          + rewrite get_set_heap_neq. 2: admit. (* Injectivity *)
-            (* Maybe use set_varP one level up. *)
-            admit.
-      }
-
-        (* destruct hs as [h [[_ [rm rv]] Hs₀]].
-        (* we're in the *local* var case (cf eset), can only prove
-           that the vmaps are related *)
-        subst. split.
-        -- simpl.
-           unfold rel_mem.
-           intros.
-           apply rm in H.
-           rewrite get_set_heap_neq. 2: apply ptr_var_neq.
-           apply H.
-        -- simpl.
-           unfold rel_vmap.
-           intros.
-           destruct ((translate_var fn i) == (translate_var fn yl)) eqn:E.
-           ++ move: E => /eqP E.
-              assert (hinj : injective (translate_var fn)) by admit.
-              apply hinj in E. subst.
-              get_heap_simpl; simpl.
-              move: eset => /set_varP eset.
-              apply eset. all: clear eset.
-              ** intros v'' ev' er. subst.
-                 rewrite Fv.setP_eq in H. noconf H.
-                 unfold truncate_val in trunc.
-                 destruct of_val eqn:ev. 2: discriminate.
-                 simpl in trunc. noconf trunc.
-                 (* assert (to_val v0 = v') by admit. *) (* truncate twice (are the types equal though?) *)
-                 (* subst. rewrite translate_value_to_val.
-                 rewrite coerce_to_choice_type_K. *)
-                 give_up.
-              ** intros. subst.
-                 rewrite Fv.setP_eq in H.
-                 unfold undef_addr in H.
-                 destruct (vtype yl) eqn:e. all: try noconf H.
-                 discriminate H0.
-           ++ rewrite get_set_heap_neq.
-              2: {
-                apply /eqP. move: E => /eqP E. assumption.
+          eapply set_varP. 3: exact eset. all: clear eset.
+          + intros v₁ hv₁ eyl. subst.
+            destruct (i == yl) eqn:evar.
+            all: move: evar => /eqP evar.
+            * subst.
+              rewrite Fv.setP_eq in ei. noconf ei.
+              rewrite get_set_heap_eq.
+              eapply translate_truncate_val in trunc.
+              eapply translate_of_val in hv₁.
+              (* Are we missing one truncation in the goal? *)
+              admit.
+            * rewrite Fv.setP_neq in ei.
+              2:{ apply /eqP. eauto. }
+              rewrite get_set_heap_neq.
+              2:{
+                apply /eqP. intro e.
+                apply injective_translate_var in e.
+                contradiction.
               }
-              apply rv. rewrite -H.
-              eapply set_varP. 3: exact eset.
-              ** intros. subst.
-                 symmetry.
-                 eapply (@Fv.setP_neq _ (evm es₁) _ i).
-                 unshelve apply /eqP. move: E => /eqP E.
-                 assert (injective (translate_var fn)) by admit.
-                 unfold injective in H0.
-                 intro.
-                 epose (H1 yl i).
-                 clearbody e.
-                 subst. apply E. reflexivity.
-              ** intros.
-                 unfold set_var in eset.
-                 subst.
-                 destruct yl.
-                 destruct v_var. destruct vtype0.
-                 {
-                  - simpl in *.
-                    noconf eset.
-                    symmetry.
-                    eapply (@Fv.setP_neq _ (evm es₁) _ i).
-                    unshelve apply /eqP. move: E => /eqP E.
-                    assert (injective (translate_var fn)) by admit.
-                    unfold injective in H2.
-                    intro. subst. eauto.
-                 }
-                 all: discriminate. *)
-           (* unfold rel_vmap in *. *)
-           (* intros. simpl. *)
-           (* Search set_var. *)
-           (* unfold set_var in eset. *)
-           (* destruct (is_sbool (vtype y)). *)
-           (* --- simpl in eset. *)
-           (*     unfold on_vu in eset. *)
-           (*     noconf eset. *)
-           (*     apply hvmap in H. *)
-
-           (*     apply hvmap. *)
+              eapply hv in ei. rewrite ei.
+              rewrite coerce_to_choice_type_K. reflexivity.
+          + intros hbo hyl hset.
+            subst.
+            destruct (i == yl) eqn:evar.
+            all: move: evar => /eqP evar.
+            * exfalso. subst. rewrite Fv.setP_eq in ei.
+              clear - ei hbo. destruct (vtype yl). all: discriminate.
+            * rewrite Fv.setP_neq in ei.
+              2:{ apply /eqP. eauto. }
+              rewrite get_set_heap_neq.
+              2:{
+                apply /eqP. intro e.
+                apply injective_translate_var in e.
+                contradiction.
+              }
+              eapply hv in ei. rewrite ei.
+              rewrite coerce_to_choice_type_K. reflexivity.
+      }
     + admit.
     + admit.
     + admit.
