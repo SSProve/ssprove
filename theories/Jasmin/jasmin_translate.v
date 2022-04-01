@@ -695,33 +695,35 @@ Qed.
 
 (* Unary rpre_weaken_rule *)
 Lemma upre_weaken_rule :
-  ∀ A (r : raw_code A) v (p1 p2 : heap -> Prop) q,
-    ⊢ ⦃ p1 ⦄ r ⇓ v ⦃ q ⦄ → (∀ h : heap, p2 h → p1 h) → ⊢ ⦃ p2 ⦄ r ⇓ v ⦃ q ⦄.
+  ∀ A (r : raw_code A) v (p1 p2 : heap → Prop) q,
+    ⊢ ⦃ p1 ⦄ r ⇓ v ⦃ q ⦄ →
+    (∀ h, p2 h → p1 h) →
+    ⊢ ⦃ p2 ⦄ r ⇓ v ⦃ q ⦄.
 Proof.
-  intros.
+  intros A r v p1 p2 q h hp.
   eapply rpre_weaken_rule.
-  - eapply H.
-  - intros. apply H0. assumption.
+  - eapply h.
+  - intros. apply hp. assumption.
 Qed.
 
 (* Unary rpost_weaken_rule *)
 Lemma upost_weaken_rule :
-  ∀ A (r : raw_code A) v p (q1 q2 : heap -> Prop),
-    ⊢ ⦃ p ⦄ r ⇓ v ⦃ q1 ⦄ → (∀ h : heap, q1 h → q2 h) → ⊢ ⦃ p ⦄ r ⇓ v ⦃ q2 ⦄.
+  ∀ A (r : raw_code A) v p (q1 q2 : heap → Prop),
+    ⊢ ⦃ p ⦄ r ⇓ v ⦃ q1 ⦄ →
+    (∀ h, q1 h → q2 h) →
+    ⊢ ⦃ p ⦄ r ⇓ v ⦃ q2 ⦄.
 Proof.
-  intros.
+  intros A r v p q1 q2 h hq.
   eapply rpost_weaken_rule.
-  - eapply H.
-  - intros [] []. split.
-    + apply H0. easy.
-    + easy.
+  - eapply h.
+  - intros [] []. intuition eauto.
 Qed.
 
 Lemma translate_gvar_correct (f : funname) (x : gvar) (v : value) vm :
-  get_gvar gd vm x = ok v ->
+  get_gvar gd vm x = ok v →
   ⊢ ⦃ rel_vmap vm f ⦄
       (translate_gvar f x).π2 ⇓ coerce_to_choice_type _ (translate_value v)
-    ⦃ rel_vmap vm f ⦄.
+  ⦃ rel_vmap vm f ⦄.
 Proof.
   intros.
   unfold translate_gvar.
