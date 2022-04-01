@@ -296,6 +296,7 @@ Definition chArray_get_sub ws len (a : 'array) ptr scale :=
 Definition totc (ty : choice_type) (c : raw_code ty) : typed_code :=
   (ty ; c).
 
+(* Following sem_pexpr *)
 Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
   match e with
   | Pconst z => totc 'int (@ret 'int z) (* Why do we need to give 'int twice? *)
@@ -318,7 +319,8 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
       arr ← (translate_gvar fn x).π2 ;; (* Performs the lookup in gd *)
       let a := coerce_to_choice_type 'array arr in
       i ← (truncate_code sint (translate_pexpr fn e)).π2 ;; (* to_int *)
-      ret (chCanonical _) (* TODO *)
+      let scale := mk_scale aa ws in
+      ret (chArray_get_sub ws len a i scale)
     )
   | Pload sz x e =>
     totc ('word sz) (
@@ -375,12 +377,6 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
     pose (scale := mk_scale aa ws).
 
     exact (a ← arr ;; ptr ← i ;; ret (chArray_get ws a ptr scale)). *)
-
-  (* | Psub aa ws len x e => *)
-    (* Let (n, t) := gd, s.[x] in *)
-    (* Let i := sem_pexpr s e >>= to_int in *)
-    (* Let t' := WArray.get_sub aa ws len t i in *)
-    (* ok (Varr t') *)
 
   (* | Pload sz x e => *)
     (* Let w1 := get_var s.(evm) x >>= to_pointer in *)
