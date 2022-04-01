@@ -271,13 +271,27 @@ Definition chArray_get ws (a : 'array) ptr scale :=
   (* Jasmin fails if ptr is not aligned; we may not need it. *)
   (* if negb (is_align ptr sz) then chCanonical ws else *)
   let f k :=
-    match assoc a (scale * ptr + k)%Z with
+    match a (scale * ptr + k)%Z with
     | None => chCanonical ('word U8)
     | Some x => x
     end
   in
   let l := map f (ziota 0 (wsize_size ws)) in
   Jasmin.memory_model.LE.decode ws l.
+
+Definition chArray_get_sub ws len (a : 'array) ptr scale :=
+  let size := arr_size ws len in
+  let start := (ptr * scale)%Z in
+  if (0 <=? start)%Z (* && (start + size <=? ) *)
+  then (
+    foldr (λ (i : Z) (data : 'array),
+      match assoc a (start + i)%Z with
+      | Some w => setm data i w
+      | None => data
+      end
+    ) emptym (ziota 0 size)
+  )
+  else chCanonical 'array.
 
 Definition totc (ty : choice_type) (c : raw_code ty) : typed_code :=
   (ty ; c).
