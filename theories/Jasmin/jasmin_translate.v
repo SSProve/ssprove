@@ -693,22 +693,17 @@ Proof.
   simpl. intuition eauto.
 Qed.
 
-Lemma translate_truncate :
-  ∀ (c : typed_code) (ty : stype) v v' p q,
-    truncate_val ty v =  ok v' →
-    c.π1 = choice_type_of_val v →
-    ⊢ ⦃ p ⦄ c.π2 ⇓ coerce_to_choice_type _ (translate_value v) ⦃ q ⦄ →
-    ⊢ ⦃ p ⦄ (truncate_code ty c).π2 ⇓ coerce_to_choice_type _ (translate_value v') ⦃ q ⦄.
+Lemma translate_truncate_val :
+  ∀ ty v v',
+    truncate_val ty v = ok v' →
+    truncate_el ty (translate_value v) =
+    coerce_to_choice_type (encode ty) (translate_value v').
 Proof.
-  intros c ty v v' p q hv e h.
-  destruct c as [ty' c]. simpl in *. subst.
-  eapply u_bind. 1: eapply h.
-  eapply u_ret. intros m hm.
-  split. 1: assumption.
-  unfold truncate_val in hv.
+  intros ty v v' h.
+  unfold truncate_val in h.
   destruct of_val as [vx |] eqn:e. 2: discriminate.
-  simpl in hv. noconf hv.
-  clear h. destruct ty, v. all: simpl in e. all: try discriminate.
+  simpl in h. noconf h.
+  destruct ty, v. all: simpl in e. all: try discriminate.
   all: try solve [
     lazymatch type of e with
     | match ?t with _ => _ end = _ => destruct t ; discriminate
@@ -721,6 +716,22 @@ Proof.
     noconf e. simpl. reflexivity.
   - simpl. rewrite !coerce_to_choice_type_K.
     rewrite e. reflexivity.
+Qed.
+
+Lemma translate_truncate_code :
+  ∀ (c : typed_code) (ty : stype) v v' p q,
+    truncate_val ty v =  ok v' →
+    c.π1 = choice_type_of_val v →
+    ⊢ ⦃ p ⦄ c.π2 ⇓ coerce_to_choice_type _ (translate_value v) ⦃ q ⦄ →
+    ⊢ ⦃ p ⦄ (truncate_code ty c).π2 ⇓ coerce_to_choice_type _ (translate_value v') ⦃ q ⦄.
+Proof.
+  intros c ty v v' p q hv e h.
+  destruct c as [ty' c]. simpl in *. subst.
+  eapply u_bind. 1: eapply h.
+  eapply u_ret. intros m hm.
+  split. 1: assumption.
+  rewrite coerce_to_choice_type_K.
+  apply translate_truncate_val. assumption.
 Qed.
 
 Lemma translate_pexpr_type fn s₁ e v :
@@ -1061,7 +1072,7 @@ Proof.
       eapply u_bind.
       * {
         eapply u_bind.
-        - eapply translate_truncate.
+        - eapply translate_truncate_code.
           + eassumption.
           + eapply translate_pexpr_type. eassumption.
           + eapply translate_pexpr_correct_new. assumption.
@@ -1089,7 +1100,8 @@ Proof.
             * subst.
               rewrite Fv.setP_eq in ei. noconf ei.
               rewrite get_set_heap_eq.
-              (* Should be embedded in the translate_truncate proof *)
+              eapply translate_truncate_val in trunc.
+              (* Are we missing one truncation in the goal? *)
               admit.
             * rewrite Fv.setP_neq in ei.
               2:{ apply /eqP. eauto. }
