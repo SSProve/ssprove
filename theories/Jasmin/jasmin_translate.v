@@ -979,9 +979,56 @@ Admitted.
 Notation coe_cht := coerce_to_choice_type.
 Notation coe_tyc := coerce_typed_code.
 
-Lemma truncate_code_idemp :
-  ∀ (sty sty' : stype) (c : typed_code),
-    truncate_code sty' (truncate_code sty c) = truncate_code sty' c.
+(* TODO MOVE *)
+(* Lemma u_coerce_typed_code :
+  ∀ (c : typed_code) (ty : choice_type) (v : ty) p q,
+    ⊢ ⦃ p ⦄ c.π2 ⇓ coerce_to_choice_type c.π1 v ⦃ q ⦄ →
+    ⊢ ⦃ p ⦄ coerce_typed_code ty c ⇓ v ⦃ q ⦄.
+Proof.
+  intros c ty v p q h.
+  destruct c as [ty' c]. simpl in h.
+  destruct (ty' == ty) eqn:e.
+  all: move: e => /eqP e.
+  - subst. rewrite coerce_typed_code_K. rewrite coerce_to_choice_type_K in h.
+    assumption.
+  - rewrite coerce_typed_code_neq. 2: assumption.
+    rewrite coerce_to_choice_type_neq in h. 2: eauto.
+    WRONG, should just have coercion in the conclusions, including the value
+Abort. *)
+
+Lemma translate_truncate :
+  ∀ (c : typed_code) (ty : stype) v v' p q,
+    truncate_val ty v =  ok v' →
+    c.π1 = encode ty →
+    ⊢ ⦃ p ⦄ c.π2 ⇓ coerce_to_choice_type _ (translate_value v) ⦃ q ⦄ →
+    ⊢ ⦃ p ⦄ (truncate_code ty c).π2 ⇓ coerce_to_choice_type _ (translate_value v') ⦃ q ⦄.
+Proof.
+  intros c ty v v' p q hv e h.
+  destruct c as [ty' c]. simpl in *. subst.
+  eapply u_bind. 1: eapply h.
+  eapply u_ret. intros m hm.
+  split. 1: assumption.
+  unfold truncate_val in hv.
+  destruct of_val as [vx |] eqn:e. 2: discriminate.
+  simpl in hv. noconf hv.
+  clear h. destruct ty, v. all: simpl in e. all: try discriminate.
+  all: try solve [
+    lazymatch type of e with
+    | match ?t with _ => _ end = _ => destruct t ; discriminate
+    end
+  ].
+  - noconf e. simpl. rewrite !coerce_to_choice_type_K. reflexivity.
+  - noconf e. simpl. rewrite !coerce_to_choice_type_K. reflexivity.
+  - simpl. rewrite !coerce_to_choice_type_K.
+    unfold WArray.cast in e. destruct (_ <=? _)%Z. 2: discriminate.
+    noconf e. simpl. reflexivity.
+  - simpl. rewrite coerce_to_choice_type_K.
+    unfold choice_type_of_val. simpl.
+    (* Set Printing All. *)
+    (* Fail rewrite coerce_to_choice_type_K. *)
+    (* We have s0 : word s so we can't cast it to word w *)
+    (* We should not have this cast probably. *)
+    give_up.
 Admitted.
 
 (* TODO Make fixpoint too! *)
@@ -1005,42 +1052,24 @@ Proof.
     + simpl. simpl in hw. unfold write_var in hw.
       destruct set_var eqn:eset. 2: discriminate.
       simpl in hw. noconf hw.
-      rewrite truncate_code_idemp.
-      (* Other attempt *)
-(*       unfold truncate_val in trunc. destruct of_val eqn:ev. 2: discriminate.
-      simpl in trunc. noconf trunc.
-      eapply set_varP. 3: exact eset.
-      2:{
-        intros hbo hof hset. subst.
-        eapply rpre_hypothesis_rule.
-        intros ? ? [hmem hvmap].
-        red in hvmap.
-        rewrite Fv.setP_eq in hof.
-        unfold undef_addr in H.
-        destruct (vtype yl) eqn:e. all: try noconf H.
-        discriminate H0.
-      } *)
-      (* * *)
+      rewrite coerce_typed_code_K.
       eapply u_bind.
-      * eapply translate_pexpr_correct.
-(*         -- eassumption.
-        -- {
-          unfold truncate_val in *.
-          destruct of_val eqn:ev. 2: discriminate.
-          simpl in trunc. noconf trunc.
-          eapply set_varP. 3: exact eset.
-          - intros. rewrite
-          -
-        } *)
-        (* 1,2: eassumption.
-        simpl. intros [] []. intuition eauto. *)
-        all: admit.
+      * {
+        eapply u_bind.
+        - eapply translate_truncate.
+          + eassumption.
+          + erewrite translate_pexpr_type. 2: eassumption.
+            admit. (* Is it correct? Seems off. *)
+          + (* eapply translate_pexpr_correct_new. *)
+            admit.
+        - admit.
+      }
       * {
         clear sem_e tag e.
         eapply u_put.
         apply u_ret_eq.
         intros m' [m [hm e]]. subst.
-        destruct hm as [hm hv].
+        (* destruct hm as [hm hv].
         split.
         - simpl. unfold rel_mem.
           intros ptr sz w hrw.
@@ -1048,7 +1077,8 @@ Proof.
           apply hm. assumption.
         - simpl. unfold rel_vmap.
           intros i vi ei.
-          admit. (* TODO Fix the admit above before! *)
+          admit. *)
+        admit.
       }
 
         (* destruct hs as [h [[_ [rm rv]] Hs₀]].
