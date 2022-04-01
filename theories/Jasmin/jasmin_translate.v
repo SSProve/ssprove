@@ -22,6 +22,12 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
+Derive NoConfusion for result.
+Derive NoConfusion for value.
+Derive NoConfusion for wsize.
+Derive NoConfusion for CoqWord.word.word.
+Derive EqDec for wsize.
+
 Section Translation.
 
 Context `{asmop : asmOp}.
@@ -87,6 +93,18 @@ Definition typed_code :=
 
 #[local] Definition unsupported : typed_code :=
   ('unit ; assert false).
+
+Lemma truncate_val_type :
+  ∀ ty v v',
+    truncate_val ty v = ok v' →
+    type_of_val v' = ty.
+Proof.
+  intros ty v v' e.
+  unfold truncate_val in e.
+  destruct of_val eqn:ev. 2: discriminate.
+  simpl in e. noconf e.
+  apply type_of_to_val.
+Qed.
 
 (* from pkg_invariants *)
 Definition cast_ct_val {t t' : choice_type} (e : t = t') (v : t) : t'.
@@ -193,17 +211,37 @@ Proof.
   apply cast_typed_code_K.
 Qed.
 
-Definition ssprove_write_lval (fn : funname) (l : lval) (tc : typed_code)
-  : raw_code chUnit
+Definition typed_chElement :=
+  pointed_value.
+
+Definition choice_type_of_val (val : value) : choice_type :=
+  encode (type_of_val val).
+
+Definition translate_value (v : value) : choice_type_of_val v.
+Proof.
+  destruct v as [b | z | size a | size wd | undef_ty].
+  - apply embed. exact b.
+  - apply embed. exact z.
+  - apply embed. exact a.
+  - apply embed. exact wd.
+  - apply chCanonical.
+    (* It shouldn't matter which value we pick, because when coercing an undef
+       value at type ty back to ty via to_{bool,int,word,arr} (defined in
+       values.v), all of these functions raise an error on Vundef. *)
+Defined.
+
+Definition translate_write_var (fn : funname) (x : var_i) (v : typed_code) :=
+  let l := translate_var fn (v_var x) in
+  x ← (truncate_code x.(vtype) v).π2 ;;
+  #put l := x ;;
+  ret tt.
+
+Definition translate_write_lval (fn : funname) (l : lval) (v : typed_code)
+  : raw_code 'unit
   :=
   match l with
   | Lnone _ ty => ret tt
-  | Lvar x =>
-      (* write_var x v s *)
-      let l := translate_var fn (v_var x) in
-      let c' := truncate_code x.(vtype) tc in
-      let c := coerce_typed_code l c' in
-      (x ← c ;; #put l := x ;; ret tt)%pack
+  | Lvar x => translate_write_var fn x v
   | _ => unsupported.π2
   (* | Lmem sz x e => *)
   (*   Let vx := get_var (evm s) x >>= to_pointer in *)
@@ -236,25 +274,6 @@ Defined.
 Proof.
   exact [::]. (* TODO *)
 Defined. *)
-
-Definition typed_chElement :=
-  pointed_value.
-
-Definition choice_type_of_val (val : value) : choice_type :=
-  encode (type_of_val val).
-
-Definition translate_value (v : value) : choice_type_of_val v.
-Proof.
-  destruct v as [b | z | size a | size wd | undef_ty].
-  - apply embed. exact b.
-  - apply embed. exact z.
-  - apply embed. exact a.
-  - apply embed. exact wd.
-  - apply chCanonical.
-    (* It shouldn't matter which value we pick, because when coercing an undef
-       value at type ty back to ty via to_{bool,int,word,arr} (defined in
-       values.v), all of these functions raise an error on Vundef. *)
-Defined.
 
 Definition translate_gvar (f : funname) (x : gvar) : typed_code :=
   if is_lvar x
@@ -421,7 +440,7 @@ Proof.
       (* l :a=_s p *)
       pose (translate_pexpr fn p) as tr_p.
       pose (truncate_code s tr_p) as tr_p'.
-      exact (ssprove_write_lval fn l tr_p').
+      exact (translate_write_lval fn l tr_p').
     - exact (unsupported.π2). (* Copn *)
     - (* Cif e c1 c2 *)
       pose (e' := translate_pexpr fn e).
@@ -592,12 +611,6 @@ Proof.
   apply cast_ct_val_K.
 Qed.
 
-Derive NoConfusion for result.
-Derive NoConfusion for value.
-Derive NoConfusion for wsize.
-Derive NoConfusion for CoqWord.word.word.
-Derive EqDec for wsize.
-
 (* Unary judgment concluding on evaluation of program *)
 
 Definition eval_jdg {A : choiceType}
@@ -695,33 +708,35 @@ Qed.
 
 (* Unary rpre_weaken_rule *)
 Lemma upre_weaken_rule :
-  ∀ A (r : raw_code A) v (p1 p2 : heap -> Prop) q,
-    ⊢ ⦃ p1 ⦄ r ⇓ v ⦃ q ⦄ → (∀ h : heap, p2 h → p1 h) → ⊢ ⦃ p2 ⦄ r ⇓ v ⦃ q ⦄.
+  ∀ A (r : raw_code A) v (p1 p2 : heap → Prop) q,
+    ⊢ ⦃ p1 ⦄ r ⇓ v ⦃ q ⦄ →
+    (∀ h, p2 h → p1 h) →
+    ⊢ ⦃ p2 ⦄ r ⇓ v ⦃ q ⦄.
 Proof.
-  intros.
+  intros A r v p1 p2 q h hp.
   eapply rpre_weaken_rule.
-  - eapply H.
-  - intros. apply H0. assumption.
+  - eapply h.
+  - intros. apply hp. assumption.
 Qed.
 
 (* Unary rpost_weaken_rule *)
 Lemma upost_weaken_rule :
-  ∀ A (r : raw_code A) v p (q1 q2 : heap -> Prop),
-    ⊢ ⦃ p ⦄ r ⇓ v ⦃ q1 ⦄ → (∀ h : heap, q1 h → q2 h) → ⊢ ⦃ p ⦄ r ⇓ v ⦃ q2 ⦄.
+  ∀ A (r : raw_code A) v p (q1 q2 : heap → Prop),
+    ⊢ ⦃ p ⦄ r ⇓ v ⦃ q1 ⦄ →
+    (∀ h, q1 h → q2 h) →
+    ⊢ ⦃ p ⦄ r ⇓ v ⦃ q2 ⦄.
 Proof.
-  intros.
+  intros A r v p q1 q2 h hq.
   eapply rpost_weaken_rule.
-  - eapply H.
-  - intros [] []. split.
-    + apply H0. easy.
-    + easy.
+  - eapply h.
+  - intros [] []. intuition eauto.
 Qed.
 
 Lemma translate_gvar_correct (f : funname) (x : gvar) (v : value) s :
   get_gvar gd (evm s) x = ok v ->
   ⊢ ⦃ rel_estate s f ⦄
       (translate_gvar f x).π2 ⇓ coerce_to_choice_type _ (translate_value v)
-    ⦃ rel_estate s f ⦄.
+  ⦃ rel_estate s f ⦄.
 Proof.
   intros.
   unfold translate_gvar.
@@ -1229,45 +1244,39 @@ Proof.
         all: noconf hw. all: assumption.
       * unfold on_vu in hw. destruct of_val as [| []].
         all: noconf hw. assumption.
-    + simpl. simpl in hw. unfold write_var in hw.
+    + simpl. unfold translate_write_var. simpl in hw. unfold write_var in hw.
       destruct set_var eqn:eset. 2: discriminate.
       simpl in hw. noconf hw.
-      rewrite coerce_typed_code_K.
+      simpl. rewrite !bind_assoc. simpl.
       eapply u_bind.
+      * eapply translate_pexpr_correct_new. eassumption.
       * {
-        eapply u_bind.
-        - eapply translate_truncate_code.
-          + eassumption.
-          + eapply translate_pexpr_type. eassumption.
-          + eapply translate_pexpr_correct_new. assumption.
-        - apply u_ret_eq. eauto.
-      }
-      * {
-        simpl.
+        erewrite translate_pexpr_type. 2: eassumption.
         clear sem_e tag e.
         eapply u_put.
         apply u_ret_eq.
         intros m' [m [hm e]]. subst.
         destruct hm as [hm hv].
         split.
-        - simpl. unfold rel_mem.
+        - unfold rel_mem.
           intros ptr sz w hrw.
           rewrite get_set_heap_neq. 2: apply ptr_var_neq.
           apply hm. assumption.
         - simpl. unfold rel_vmap.
           intros i vi ei.
-          simpl. rewrite coerce_to_choice_type_K.
-          eapply set_varP. 3: exact eset. all: clear eset.
+          simpl. rewrite !coerce_to_choice_type_K.
+          eapply set_varP. 3: exact eset. (* all: clear eset. *)
           + intros v₁ hv₁ eyl. subst.
             destruct (i == yl) eqn:evar.
             all: move: evar => /eqP evar.
             * subst.
               rewrite Fv.setP_eq in ei. noconf ei.
               rewrite get_set_heap_eq.
+              apply truncate_val_type in trunc as ety. subst.
               eapply translate_truncate_val in trunc.
               eapply translate_of_val in hv₁.
-              (* Are we missing one truncation in the goal? *)
-              admit.
+              rewrite trunc. rewrite coerce_to_choice_type_K.
+              rewrite hv₁. apply coerce_to_choice_type_translate_value_to_val.
             * rewrite Fv.setP_neq in ei.
               2:{ apply /eqP. eauto. }
               rewrite get_set_heap_neq.
