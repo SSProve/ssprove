@@ -717,11 +717,11 @@ Proof.
     + easy.
 Qed.
 
-Lemma translate_gvar_correct (f : funname) (x : gvar) (v : value) vm :
-  get_gvar gd vm x = ok v ->
-  ⊢ ⦃ rel_vmap vm f ⦄
+Lemma translate_gvar_correct (f : funname) (x : gvar) (v : value) s :
+  get_gvar gd (evm s) x = ok v ->
+  ⊢ ⦃ rel_estate s f ⦄
       (translate_gvar f x).π2 ⇓ coerce_to_choice_type _ (translate_value v)
-    ⦃ rel_vmap vm f ⦄.
+    ⦃ rel_estate s f ⦄.
 Proof.
   intros.
   unfold translate_gvar.
@@ -865,6 +865,51 @@ Proof with try discriminate; simpl in *.
     destruct b; noconf H; by rewrite type_of_to_val.
 Admitted.
 
+Lemma mapM_nil {eT aT bT} f l : @mapM eT aT bT f l = ok [::] -> l = [::].
+Proof.
+  induction l; intros.
+  - reflexivity.
+  - simpl in H.
+    destruct f. 2: discriminate.
+    destruct mapM; discriminate.
+Qed.
+
+Lemma chArray_get_correct (len : BinNums.positive) (a : WArray.array len) (z z0 : Z) ws aa s :
+  to_int z0 = ok z ->
+  WArray.get aa ws a z = ok s ->
+  chArray_get ws (translate_value (Varr a)) (translate_value z0) (mk_scale aa ws) = translate_value (Vword s).
+Proof.
+  Search WArray.get.
+  intros.
+  destruct to_int. 2: discriminate.
+  noconf H.
+  simpl in *.
+  unfold WArray.get in H0.
+  unfold read in H0.
+  destruct is_align. 2: discriminate.
+  simpl in H0.
+  destruct mapM eqn:E. 2: discriminate.
+  simpl in H0.
+  noconf H0.
+  unfold chArray_get.
+  f_equal.
+  revert l E.
+  apply ziota_ind.
+  - simpl.
+    intros.
+    noconf E. reflexivity.
+  - intros.
+    destruct l0.
+    { apply mapM_nil in E. discriminate. }
+    apply mapM_cons in E as [].
+    simpl.
+    rewrite (H0 l0). 2: assumption.
+    apply f_equal2. 2: reflexivity.
+
+    (* What remains to prove should perhaps be a lemma like `chArray_get8_correct` *)
+
+    Admitted.
+
 Lemma coerce_to_choice_type_translate_value_to_val :
   ∀ ty (v : sem_t ty),
     coerce_to_choice_type (encode ty) (translate_value (to_val v)) =
@@ -911,10 +956,45 @@ Proof.
       intros m [hm e]. unfold u_get in e. subst.
       split. 1: auto.
       destruct hm as [hm hv].
-      apply hv in e1. rewrite e1. clear e1.
+      apply hv in e1. rewrite e1.
       simpl. rewrite coerce_to_choice_type_K.
       rewrite coerce_to_choice_type_translate_value_to_val.
       reflexivity.
+    + simpl.
+      rewrite h1.
+      apply u_ret. auto.
+  - simpl in *.
+    destruct get_gvar eqn:E00. 2: discriminate.
+    destruct v0. all: try discriminate.
+    destruct sem_pexpr eqn:E. 2: discriminate.
+    simpl in h1.
+    destruct to_int eqn:E0. 2: discriminate.
+    simpl in h1.
+    destruct WArray.get eqn:E2. 2: discriminate.
+    simpl in h1. noconf h1.
+    rewrite coerce_to_choice_type_K.
+    apply IHe in E as E3.
+    eapply u_bind.
+    + apply translate_gvar_correct.
+      eassumption.
+    + rewrite !bind_assoc.
+      eapply u_bind.
+      * apply E3.
+      * eapply u_ret.
+        intros. split; [assumption|].
+        apply translate_pexpr_type with (fn:=fn) in E as typ.
+        rewrite typ.
+        rewrite coerce_to_choice_type_K.
+        destruct v0. all: try discriminate.
+        ** rewrite !coerce_to_choice_type_K.
+           assert ((translate_gvar fn x).π1 = encode (sarr len)).
+           *** admit.           (* this should be provable (`translate_gvar_type`) *)
+           *** rewrite H0.
+               rewrite !coerce_to_choice_type_K.
+               simpl.
+               apply (chArray_get_correct _ _ _ _ _ _ _ E0 E2). (* TODO: prove this lemma *)
+        ** destruct t. all: discriminate.
+  -
 Admitted.
 
 Lemma translate_pexpr_correct :
