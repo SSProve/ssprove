@@ -1082,15 +1082,35 @@ Proof.
         - simpl. unfold rel_vmap.
           intros i vi ei.
           simpl. rewrite coerce_to_choice_type_K.
-          destruct (i == yl) eqn:evar.
-          all: move: evar => /eqP evar.
-          + subst. rewrite get_set_heap_eq.
-            eapply set_varP. 3: exact eset.
-            * admit.
-            * admit.
-          + rewrite get_set_heap_neq. 2: admit. (* Injectivity *)
-            (* Maybe use set_varP one level up. *)
-            admit.
+          eapply set_varP. 3: exact eset. all: clear eset.
+          + intros v₁ hv₁ eyl. subst.
+            destruct (i == yl) eqn:evar.
+            all: move: evar => /eqP evar.
+            * subst.
+              rewrite Fv.setP_eq in ei. noconf ei.
+              rewrite get_set_heap_eq.
+              (* Should be embedded in the translate_truncate proof *)
+              admit.
+            * rewrite Fv.setP_neq in ei.
+              2:{ apply /eqP. eauto. }
+              rewrite get_set_heap_neq. 2: admit. (* Injectivity *)
+              eapply hv in ei. rewrite ei.
+              rewrite coerce_to_choice_type_K. reflexivity.
+          + intros hbo hyl hset. exfalso.
+            subst.
+            (* destruct yl as [[vty vna] vinfo]. simpl in *.
+            move: hbo => /is_sboolP ebo. subst.
+            simpl in *. *)
+            destruct (i == yl) eqn:evar.
+            all: move: evar => /eqP evar.
+            * subst. rewrite Fv.setP_eq in ei.
+              clear - ei hbo. destruct (vtype yl). all: discriminate.
+            * rewrite Fv.setP_neq in ei.
+              2:{ apply /eqP. eauto. }
+              destruct yl as [[vty vna] vinfo]. simpl in *.
+              move: hbo => /is_sboolP ebo. subst.
+              (* Did we lose information by clearing eset? *)
+              admit.
       }
 
         (* destruct hs as [h [[_ [rm rv]] Hs₀]].
