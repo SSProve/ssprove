@@ -805,6 +805,16 @@ Proof with try discriminate; simpl in *.
     destruct b; noconf H; by rewrite type_of_to_val.
 Admitted.
 
+Lemma coerce_to_choice_type_translate_value_to_val :
+  ∀ ty (v : sem_t ty),
+    coerce_to_choice_type (encode ty) (translate_value (to_val v)) =
+    embed v.
+Proof.
+  intros ty v.
+  destruct ty.
+  all: simpl. all: rewrite coerce_to_choice_type_K. all: reflexivity.
+Qed.
+
 Lemma translate_pexpr_correct_new :
   ∀ fn (e : pexpr) s₁ v,
     sem_pexpr gd s₁ e = ok v →
@@ -843,9 +853,8 @@ Proof.
       destruct hm as [hm hv].
       apply hv in e1. rewrite e1. clear e1.
       simpl. rewrite coerce_to_choice_type_K.
-      set (ty := vtype gx) in *. clearbody ty.
-      destruct ty.
-      all: simpl. all: rewrite coerce_to_choice_type_K. all: reflexivity.
+      rewrite coerce_to_choice_type_translate_value_to_val.
+      reflexivity.
 Admitted.
 
 Lemma translate_pexpr_correct :
