@@ -999,7 +999,7 @@ Abort. *)
 Lemma translate_truncate :
   ∀ (c : typed_code) (ty : stype) v v' p q,
     truncate_val ty v =  ok v' →
-    c.π1 = encode ty →
+    c.π1 = choice_type_of_val v →
     ⊢ ⦃ p ⦄ c.π2 ⇓ coerce_to_choice_type _ (translate_value v) ⦃ q ⦄ →
     ⊢ ⦃ p ⦄ (truncate_code ty c).π2 ⇓ coerce_to_choice_type _ (translate_value v') ⦃ q ⦄.
 Proof.
@@ -1022,14 +1022,9 @@ Proof.
   - simpl. rewrite !coerce_to_choice_type_K.
     unfold WArray.cast in e. destruct (_ <=? _)%Z. 2: discriminate.
     noconf e. simpl. reflexivity.
-  - simpl. rewrite coerce_to_choice_type_K.
-    unfold choice_type_of_val. simpl.
-    (* Set Printing All. *)
-    (* Fail rewrite coerce_to_choice_type_K. *)
-    (* We have s0 : word s so we can't cast it to word w *)
-    (* We should not have this cast probably. *)
-    give_up.
-Admitted.
+  - simpl. rewrite !coerce_to_choice_type_K.
+    rewrite e. reflexivity.
+Qed.
 
 (* TODO Make fixpoint too! *)
 Lemma translate_instr_r_correct :
@@ -1058,13 +1053,13 @@ Proof.
         eapply u_bind.
         - eapply translate_truncate.
           + eassumption.
-          + erewrite translate_pexpr_type. 2: eassumption.
-            admit. (* Is it correct? Seems off. *)
+          + eapply translate_pexpr_type. eassumption.
           + (* eapply translate_pexpr_correct_new. *)
             admit.
-        - admit.
+        - apply u_ret_eq. eauto.
       }
       * {
+        simpl.
         clear sem_e tag e.
         eapply u_put.
         apply u_ret_eq.
