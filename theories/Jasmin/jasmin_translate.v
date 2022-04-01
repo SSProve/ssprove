@@ -693,6 +693,30 @@ Proof.
   simpl. intuition eauto.
 Qed.
 
+(* Unary rpre_weaken_rule *)
+Lemma upre_weaken_rule :
+  ∀ A (r : raw_code A) v (p1 p2 : heap -> Prop) q,
+    ⊢ ⦃ p1 ⦄ r ⇓ v ⦃ q ⦄ → (∀ h : heap, p2 h → p1 h) → ⊢ ⦃ p2 ⦄ r ⇓ v ⦃ q ⦄.
+Proof.
+  intros.
+  eapply rpre_weaken_rule.
+  - eapply H.
+  - intros. apply H0. assumption.
+Qed.
+
+(* Unary rpost_weaken_rule *)
+Lemma upost_weaken_rule :
+  ∀ A (r : raw_code A) v p (q1 q2 : heap -> Prop),
+    ⊢ ⦃ p ⦄ r ⇓ v ⦃ q1 ⦄ → (∀ h : heap, q1 h → q2 h) → ⊢ ⦃ p ⦄ r ⇓ v ⦃ q2 ⦄.
+Proof.
+  intros.
+  eapply rpost_weaken_rule.
+  - eapply H.
+  - intros [] []. split.
+    + apply H0. easy.
+    + easy.
+Qed.
+
 Lemma translate_gvar_correct (f : funname) (x : gvar) (v : value) vm :
   get_gvar gd vm x = ok v ->
   ⊢ ⦃ rel_vmap vm f ⦄
