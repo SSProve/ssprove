@@ -693,6 +693,42 @@ Proof.
   simpl. intuition eauto.
 Qed.
 
+Lemma translate_gvar_correct (f : funname) (x : gvar) (v : value) vm :
+  get_gvar gd vm x = ok v ->
+  ⊢ ⦃ rel_vmap vm f ⦄
+      (translate_gvar f x).π2 ⇓ coerce_to_choice_type _ (translate_value v)
+    ⦃ rel_vmap vm f ⦄.
+Proof.
+  intros.
+  unfold translate_gvar.
+  unfold get_gvar in H.
+  destruct is_lvar.
+  - simpl in *.
+    eapply u_get_remember.
+    intros.
+    eapply u_ret.
+    intros h [].
+    split.
+    + assumption.
+    + unfold u_get in H1.
+      unfold get_var in H.
+      unfold on_vu in H. destruct Fv.get as [sx | e] eqn:e1.
+      2:{ destruct e. all: discriminate. }
+      noconf H.
+      apply H0 in e1. subst.
+      rewrite e1.
+      clear e1.
+      simpl.
+      rewrite coerce_to_choice_type_K.
+      destruct (vtype (gv x));
+        rewrite coerce_to_choice_type_K; reflexivity.
+  - simpl in *.
+    destruct get_global; [|discriminate].
+    eapply u_ret.
+    intros.
+    noconf H. split; [ assumption | reflexivity ].
+Qed.
+
 Lemma translate_truncate :
   ∀ (c : typed_code) (ty : stype) v v' p q,
     truncate_val ty v =  ok v' →
