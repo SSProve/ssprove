@@ -22,6 +22,12 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
+Derive NoConfusion for result.
+Derive NoConfusion for value.
+Derive NoConfusion for wsize.
+Derive NoConfusion for CoqWord.word.word.
+Derive EqDec for wsize.
+
 Section Translation.
 
 Context `{asmop : asmOp}.
@@ -87,6 +93,18 @@ Definition typed_code :=
 
 #[local] Definition unsupported : typed_code :=
   ('unit ; assert false).
+
+Lemma truncate_val_type :
+  ∀ ty v v',
+    truncate_val ty v = ok v' →
+    type_of_val v' = ty.
+Proof.
+  intros ty v v' e.
+  unfold truncate_val in e.
+  destruct of_val eqn:ev. 2: discriminate.
+  simpl in e. noconf e.
+  apply type_of_to_val.
+Qed.
 
 (* from pkg_invariants *)
 Definition cast_ct_val {t t' : choice_type} (e : t = t') (v : t) : t'.
@@ -592,12 +610,6 @@ Proof.
   rewrite <- Heqcall.
   apply cast_ct_val_K.
 Qed.
-
-Derive NoConfusion for result.
-Derive NoConfusion for value.
-Derive NoConfusion for wsize.
-Derive NoConfusion for CoqWord.word.word.
-Derive EqDec for wsize.
 
 (* Unary judgment concluding on evaluation of program *)
 
@@ -1133,18 +1145,6 @@ Lemma injective_translate_var :
   ∀ fn, injective (translate_var fn).
 Proof.
 Admitted.
-
-Lemma truncate_val_type :
-  ∀ ty v v',
-    truncate_val ty v = ok v' →
-    type_of_val v' = ty.
-Proof.
-  intros ty v v' e.
-  unfold truncate_val in e.
-  destruct of_val eqn:ev. 2: discriminate.
-  simpl in e. noconf e.
-  apply type_of_to_val.
-Qed.
 
 (* TODO Make fixpoint too! *)
 Lemma translate_instr_r_correct :
