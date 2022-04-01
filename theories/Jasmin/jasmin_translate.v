@@ -693,6 +693,36 @@ Proof.
   simpl. intuition eauto.
 Qed.
 
+Lemma translate_truncate :
+  ∀ (c : typed_code) (ty : stype) v v' p q,
+    truncate_val ty v =  ok v' →
+    c.π1 = choice_type_of_val v →
+    ⊢ ⦃ p ⦄ c.π2 ⇓ coerce_to_choice_type _ (translate_value v) ⦃ q ⦄ →
+    ⊢ ⦃ p ⦄ (truncate_code ty c).π2 ⇓ coerce_to_choice_type _ (translate_value v') ⦃ q ⦄.
+Proof.
+  intros c ty v v' p q hv e h.
+  destruct c as [ty' c]. simpl in *. subst.
+  eapply u_bind. 1: eapply h.
+  eapply u_ret. intros m hm.
+  split. 1: assumption.
+  unfold truncate_val in hv.
+  destruct of_val as [vx |] eqn:e. 2: discriminate.
+  simpl in hv. noconf hv.
+  clear h. destruct ty, v. all: simpl in e. all: try discriminate.
+  all: try solve [
+    lazymatch type of e with
+    | match ?t with _ => _ end = _ => destruct t ; discriminate
+    end
+  ].
+  - noconf e. simpl. rewrite !coerce_to_choice_type_K. reflexivity.
+  - noconf e. simpl. rewrite !coerce_to_choice_type_K. reflexivity.
+  - simpl. rewrite !coerce_to_choice_type_K.
+    unfold WArray.cast in e. destruct (_ <=? _)%Z. 2: discriminate.
+    noconf e. simpl. reflexivity.
+  - simpl. rewrite !coerce_to_choice_type_K.
+    rewrite e. reflexivity.
+Qed.
+
 Lemma translate_pexpr_type fn s₁ e v :
   sem_pexpr gd s₁ e = ok v →
   (translate_pexpr fn e).π1 = choice_type_of_val v.
@@ -995,36 +1025,6 @@ Proof.
     rewrite coerce_to_choice_type_neq in h. 2: eauto.
     WRONG, should just have coercion in the conclusions, including the value
 Abort. *)
-
-Lemma translate_truncate :
-  ∀ (c : typed_code) (ty : stype) v v' p q,
-    truncate_val ty v =  ok v' →
-    c.π1 = choice_type_of_val v →
-    ⊢ ⦃ p ⦄ c.π2 ⇓ coerce_to_choice_type _ (translate_value v) ⦃ q ⦄ →
-    ⊢ ⦃ p ⦄ (truncate_code ty c).π2 ⇓ coerce_to_choice_type _ (translate_value v') ⦃ q ⦄.
-Proof.
-  intros c ty v v' p q hv e h.
-  destruct c as [ty' c]. simpl in *. subst.
-  eapply u_bind. 1: eapply h.
-  eapply u_ret. intros m hm.
-  split. 1: assumption.
-  unfold truncate_val in hv.
-  destruct of_val as [vx |] eqn:e. 2: discriminate.
-  simpl in hv. noconf hv.
-  clear h. destruct ty, v. all: simpl in e. all: try discriminate.
-  all: try solve [
-    lazymatch type of e with
-    | match ?t with _ => _ end = _ => destruct t ; discriminate
-    end
-  ].
-  - noconf e. simpl. rewrite !coerce_to_choice_type_K. reflexivity.
-  - noconf e. simpl. rewrite !coerce_to_choice_type_K. reflexivity.
-  - simpl. rewrite !coerce_to_choice_type_K.
-    unfold WArray.cast in e. destruct (_ <=? _)%Z. 2: discriminate.
-    noconf e. simpl. reflexivity.
-  - simpl. rewrite !coerce_to_choice_type_K.
-    rewrite e. reflexivity.
-Qed.
 
 (* TODO Make fixpoint too! *)
 Lemma translate_instr_r_correct :
