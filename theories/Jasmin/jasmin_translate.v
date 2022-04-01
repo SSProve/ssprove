@@ -193,17 +193,37 @@ Proof.
   apply cast_typed_code_K.
 Qed.
 
-Definition ssprove_write_lval (fn : funname) (l : lval) (tc : typed_code)
-  : raw_code chUnit
+Definition typed_chElement :=
+  pointed_value.
+
+Definition choice_type_of_val (val : value) : choice_type :=
+  encode (type_of_val val).
+
+Definition translate_value (v : value) : choice_type_of_val v.
+Proof.
+  destruct v as [b | z | size a | size wd | undef_ty].
+  - apply embed. exact b.
+  - apply embed. exact z.
+  - apply embed. exact a.
+  - apply embed. exact wd.
+  - apply chCanonical.
+    (* It shouldn't matter which value we pick, because when coercing an undef
+       value at type ty back to ty via to_{bool,int,word,arr} (defined in
+       values.v), all of these functions raise an error on Vundef. *)
+Defined.
+
+Definition translate_write_var (fn : funname) (x : var_i) (v : typed_code) :=
+  let l := translate_var fn (v_var x) in
+  x ← (truncate_code x.(vtype) v).π2 ;;
+  #put l := x ;;
+  ret tt.
+
+Definition translate_write_lval (fn : funname) (l : lval) (v : typed_code)
+  : raw_code 'unit
   :=
   match l with
   | Lnone _ ty => ret tt
-  | Lvar x =>
-      (* write_var x v s *)
-      let l := translate_var fn (v_var x) in
-      let c' := truncate_code x.(vtype) tc in
-      let c := coerce_typed_code l c' in
-      (x ← c ;; #put l := x ;; ret tt)%pack
+  | Lvar x => translate_write_var fn x v
   | _ => unsupported.π2
   (* | Lmem sz x e => *)
   (*   Let vx := get_var (evm s) x >>= to_pointer in *)
@@ -236,25 +256,6 @@ Defined.
 Proof.
   exact [::]. (* TODO *)
 Defined. *)
-
-Definition typed_chElement :=
-  pointed_value.
-
-Definition choice_type_of_val (val : value) : choice_type :=
-  encode (type_of_val val).
-
-Definition translate_value (v : value) : choice_type_of_val v.
-Proof.
-  destruct v as [b | z | size a | size wd | undef_ty].
-  - apply embed. exact b.
-  - apply embed. exact z.
-  - apply embed. exact a.
-  - apply embed. exact wd.
-  - apply chCanonical.
-    (* It shouldn't matter which value we pick, because when coercing an undef
-       value at type ty back to ty via to_{bool,int,word,arr} (defined in
-       values.v), all of these functions raise an error on Vundef. *)
-Defined.
 
 Definition translate_gvar (f : funname) (x : gvar) : typed_code :=
   if is_lvar x
@@ -421,7 +422,7 @@ Proof.
       (* l :a=_s p *)
       pose (translate_pexpr fn p) as tr_p.
       pose (truncate_code s tr_p) as tr_p'.
-      exact (ssprove_write_lval fn l tr_p').
+      exact (translate_write_lval fn l tr_p').
     - exact (unsupported.π2). (* Copn *)
     - (* Cif e c1 c2 *)
       pose (e' := translate_pexpr fn e).
@@ -1151,35 +1152,28 @@ Proof.
         all: noconf hw. all: assumption.
       * unfold on_vu in hw. destruct of_val as [| []].
         all: noconf hw. assumption.
-    + simpl. simpl in hw. unfold write_var in hw.
+    + simpl. unfold translate_write_var. simpl in hw. unfold write_var in hw.
       destruct set_var eqn:eset. 2: discriminate.
       simpl in hw. noconf hw.
-      rewrite coerce_typed_code_K.
+      simpl. rewrite !bind_assoc. simpl.
       eapply u_bind.
+      * eapply translate_pexpr_correct_new. eassumption.
       * {
-        eapply u_bind.
-        - eapply translate_truncate_code.
-          + eassumption.
-          + eapply translate_pexpr_type. eassumption.
-          + eapply translate_pexpr_correct_new. assumption.
-        - apply u_ret_eq. eauto.
-      }
-      * {
-        simpl.
+        erewrite translate_pexpr_type. 2: eassumption.
         clear sem_e tag e.
         eapply u_put.
         apply u_ret_eq.
         intros m' [m [hm e]]. subst.
         destruct hm as [hm hv].
         split.
-        - simpl. unfold rel_mem.
+        - unfold rel_mem.
           intros ptr sz w hrw.
           rewrite get_set_heap_neq. 2: apply ptr_var_neq.
           apply hm. assumption.
         - simpl. unfold rel_vmap.
           intros i vi ei.
-          simpl. rewrite coerce_to_choice_type_K.
-          eapply set_varP. 3: exact eset. all: clear eset.
+          simpl. rewrite !coerce_to_choice_type_K.
+          eapply set_varP. 3: exact eset. (* all: clear eset. *)
           + intros v₁ hv₁ eyl. subst.
             destruct (i == yl) eqn:evar.
             all: move: evar => /eqP evar.
@@ -1188,7 +1182,8 @@ Proof.
               rewrite get_set_heap_eq.
               eapply translate_truncate_val in trunc.
               eapply translate_of_val in hv₁.
-              (* Are we missing one truncation in the goal? *)
+              rewrite trunc.
+              (* Did I lose info? Like sty = type_of_val v' *)
               admit.
             * rewrite Fv.setP_neq in ei.
               2:{ apply /eqP. eauto. }
