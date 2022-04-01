@@ -693,16 +693,13 @@ Proof.
   simpl. intuition eauto.
 Qed.
 
-Lemma translate_truncate_val :
+Lemma translate_of_val :
   ∀ ty v v',
-    truncate_val ty v = ok v' →
+    of_val ty v = ok v' →
     truncate_el ty (translate_value v) =
-    coerce_to_choice_type (encode ty) (translate_value v').
+    coerce_to_choice_type (encode ty) (translate_value (to_val v')).
 Proof.
-  intros ty v v' h.
-  unfold truncate_val in h.
-  destruct of_val as [vx |] eqn:e. 2: discriminate.
-  simpl in h. noconf h.
+  intros ty v v' e.
   destruct ty, v. all: simpl in e. all: try discriminate.
   all: try solve [
     lazymatch type of e with
@@ -716,6 +713,19 @@ Proof.
     noconf e. simpl. reflexivity.
   - simpl. rewrite !coerce_to_choice_type_K.
     rewrite e. reflexivity.
+Qed.
+
+Lemma translate_truncate_val :
+  ∀ ty v v',
+    truncate_val ty v = ok v' →
+    truncate_el ty (translate_value v) =
+    coerce_to_choice_type (encode ty) (translate_value v').
+Proof.
+  intros ty v v' h.
+  unfold truncate_val in h.
+  destruct of_val as [vx |] eqn:e. 2: discriminate.
+  simpl in h. noconf h.
+  apply translate_of_val. assumption.
 Qed.
 
 Lemma translate_truncate_code :
@@ -1101,6 +1111,7 @@ Proof.
               rewrite Fv.setP_eq in ei. noconf ei.
               rewrite get_set_heap_eq.
               eapply translate_truncate_val in trunc.
+              eapply translate_of_val in hv₁.
               (* Are we missing one truncation in the goal? *)
               admit.
             * rewrite Fv.setP_neq in ei.
