@@ -1134,6 +1134,18 @@ Lemma injective_translate_var :
 Proof.
 Admitted.
 
+Lemma truncate_val_type :
+  ∀ ty v v',
+    truncate_val ty v = ok v' →
+    type_of_val v' = ty.
+Proof.
+  intros ty v v' e.
+  unfold truncate_val in e.
+  destruct of_val eqn:ev. 2: discriminate.
+  simpl in e. noconf e.
+  apply type_of_to_val.
+Qed.
+
 (* TODO Make fixpoint too! *)
 Lemma translate_instr_r_correct :
   ∀ (fn : funname) (i : instr_r) (s₁ s₂ : estate),
@@ -1180,11 +1192,11 @@ Proof.
             * subst.
               rewrite Fv.setP_eq in ei. noconf ei.
               rewrite get_set_heap_eq.
+              apply truncate_val_type in trunc as ety. subst.
               eapply translate_truncate_val in trunc.
               eapply translate_of_val in hv₁.
-              rewrite trunc.
-              (* Did I lose info? Like sty = type_of_val v' *)
-              admit.
+              rewrite trunc. rewrite coerce_to_choice_type_K.
+              rewrite hv₁. apply coerce_to_choice_type_translate_value_to_val.
             * rewrite Fv.setP_neq in ei.
               2:{ apply /eqP. eauto. }
               rewrite get_set_heap_neq.
