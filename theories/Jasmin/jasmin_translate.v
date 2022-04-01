@@ -815,6 +815,16 @@ Proof.
       unfold on_vu in h1. destruct Fv.get as [sx | e] eqn:e1.
       2:{ destruct e. all: discriminate. }
       noconf h1.
+      eapply u_get_remember. simpl.
+      intro v. apply u_ret.
+      intros m [hm e]. unfold u_get in e. subst.
+      split. 1: auto.
+      destruct hm as [hm hv].
+      apply hv in e1. rewrite e1. clear e1.
+      simpl. rewrite coerce_to_choice_type_K.
+      set (ty := vtype gx) in *. clearbody ty.
+      destruct ty.
+      all: simpl. all: rewrite coerce_to_choice_type_K. all: reflexivity.
 Admitted.
 
 Lemma translate_pexpr_correct :
