@@ -1096,100 +1096,18 @@ Proof.
               rewrite get_set_heap_neq. 2: admit. (* Injectivity *)
               eapply hv in ei. rewrite ei.
               rewrite coerce_to_choice_type_K. reflexivity.
-          + intros hbo hyl hset. exfalso.
+          + intros hbo hyl hset.
             subst.
-            (* destruct yl as [[vty vna] vinfo]. simpl in *.
-            move: hbo => /is_sboolP ebo. subst.
-            simpl in *. *)
             destruct (i == yl) eqn:evar.
             all: move: evar => /eqP evar.
-            * subst. rewrite Fv.setP_eq in ei.
+            * exfalso. subst. rewrite Fv.setP_eq in ei.
               clear - ei hbo. destruct (vtype yl). all: discriminate.
             * rewrite Fv.setP_neq in ei.
               2:{ apply /eqP. eauto. }
-              destruct yl as [[vty vna] vinfo]. simpl in *.
-              move: hbo => /is_sboolP ebo. subst.
-              (* Did we lose information by clearing eset? *)
-              admit.
+              rewrite get_set_heap_neq. 2: admit. (* Injectivity *)
+              eapply hv in ei. rewrite ei.
+              rewrite coerce_to_choice_type_K. reflexivity.
       }
-
-        (* destruct hs as [h [[_ [rm rv]] Hs₀]].
-        (* we're in the *local* var case (cf eset), can only prove
-           that the vmaps are related *)
-        subst. split.
-        -- simpl.
-           unfold rel_mem.
-           intros.
-           apply rm in H.
-           rewrite get_set_heap_neq. 2: apply ptr_var_neq.
-           apply H.
-        -- simpl.
-           unfold rel_vmap.
-           intros.
-           destruct ((translate_var fn i) == (translate_var fn yl)) eqn:E.
-           ++ move: E => /eqP E.
-              assert (hinj : injective (translate_var fn)) by admit.
-              apply hinj in E. subst.
-              get_heap_simpl; simpl.
-              move: eset => /set_varP eset.
-              apply eset. all: clear eset.
-              ** intros v'' ev' er. subst.
-                 rewrite Fv.setP_eq in H. noconf H.
-                 unfold truncate_val in trunc.
-                 destruct of_val eqn:ev. 2: discriminate.
-                 simpl in trunc. noconf trunc.
-                 (* assert (to_val v0 = v') by admit. *) (* truncate twice (are the types equal though?) *)
-                 (* subst. rewrite translate_value_to_val.
-                 rewrite coerce_to_choice_type_K. *)
-                 give_up.
-              ** intros. subst.
-                 rewrite Fv.setP_eq in H.
-                 unfold undef_addr in H.
-                 destruct (vtype yl) eqn:e. all: try noconf H.
-                 discriminate H0.
-           ++ rewrite get_set_heap_neq.
-              2: {
-                apply /eqP. move: E => /eqP E. assumption.
-              }
-              apply rv. rewrite -H.
-              eapply set_varP. 3: exact eset.
-              ** intros. subst.
-                 symmetry.
-                 eapply (@Fv.setP_neq _ (evm es₁) _ i).
-                 unshelve apply /eqP. move: E => /eqP E.
-                 assert (injective (translate_var fn)) by admit.
-                 unfold injective in H0.
-                 intro.
-                 epose (H1 yl i).
-                 clearbody e.
-                 subst. apply E. reflexivity.
-              ** intros.
-                 unfold set_var in eset.
-                 subst.
-                 destruct yl.
-                 destruct v_var. destruct vtype0.
-                 {
-                  - simpl in *.
-                    noconf eset.
-                    symmetry.
-                    eapply (@Fv.setP_neq _ (evm es₁) _ i).
-                    unshelve apply /eqP. move: E => /eqP E.
-                    assert (injective (translate_var fn)) by admit.
-                    unfold injective in H2.
-                    intro. subst. eauto.
-                 }
-                 all: discriminate. *)
-           (* unfold rel_vmap in *. *)
-           (* intros. simpl. *)
-           (* Search set_var. *)
-           (* unfold set_var in eset. *)
-           (* destruct (is_sbool (vtype y)). *)
-           (* --- simpl in eset. *)
-           (*     unfold on_vu in eset. *)
-           (*     noconf eset. *)
-           (*     apply hvmap in H. *)
-
-           (*     apply hvmap. *)
     + admit.
     + admit.
     + admit.
