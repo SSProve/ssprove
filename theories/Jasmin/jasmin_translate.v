@@ -829,6 +829,17 @@ Proof.
   - intros [] []. intuition eauto.
 Qed.
 
+Lemma translate_gvar_type fn vm v x :
+  get_gvar gd vm x = ok v ->
+  (translate_gvar fn x).π1 = encode (type_of_val v).
+Proof.
+  intros H.
+  apply type_of_get_gvar in H.
+  rewrite H.
+  unfold translate_gvar.
+  now destruct is_lvar.
+Qed.
+
 Lemma translate_gvar_correct (f : funname) (x : gvar) (v : value) s :
   get_gvar gd (evm s) x = ok v ->
   ⊢ ⦃ rel_estate s f ⦄
@@ -1094,15 +1105,13 @@ Proof.
         rewrite typ.
         rewrite coerce_to_choice_type_K.
         destruct v0. all: try discriminate.
-        ** rewrite !coerce_to_choice_type_K.
-           assert ((translate_gvar fn x).π1 = encode (sarr len)).
-           *** admit.           (* this should be provable (`translate_gvar_type`) *)
-           *** rewrite H0.
-               noconf E0.
-               rewrite !coerce_to_choice_type_K.
-               apply chArray_get_correct.
-               assumption.
-        ** destruct t. all: discriminate.
+        2: { destruct t. all: discriminate. }
+        rewrite !coerce_to_choice_type_K.
+        rewrite (translate_gvar_type _ (evm s1) (Varr a)); [|assumption].
+        rewrite !coerce_to_choice_type_K.
+        apply chArray_get_correct.
+        noconf E0.
+        assumption.
   -
 Admitted.
 
