@@ -59,6 +59,103 @@ Definition embed {t} : sem_t t → encode t :=
   | sword n => λ x, x
   end.
 
+Lemma elementsNIn :
+  ∀ (T : Type) (k : Z) (v : T) (m : Mz.Map.t T), Mz.get m k = None -> ~ List.In (k, v) (Mz.elements m).
+Proof.
+  intros S k v m H contra.
+  apply Mz.elementsIn in contra.
+  rewrite H in contra.
+  discriminate.
+Qed.
+
+Lemma In_rcons {A} x y (l : seq A) :
+  List.In x (rcons l y) -> y = x \/ List.In x l.
+Proof.
+  induction l; intros; simpl in *; intuition subst.
+Qed.
+
+Lemma NIn_rcons {A} x y (l : seq A) :
+  ~ List.In x (rcons l y) -> y <> x /\ ~ List.In x l.
+Proof.
+  induction l; intros; simpl in *; intuition subst.
+Qed.
+
+Lemma foldl_In_uniq {S : eqType} (k : Mz.K.t) (v : S) (data : seq (Mz.K.t * S)) :
+  List.In (k, v) data ->
+  @uniq Mz.K.t [seq i.1 | i <- data] ->
+  foldl (λ (a : {fmap Mz.K.t → S}) (kv : Mz.K.t * S), setm a kv.1 kv.2) emptym data k = Some v.
+Proof.
+  intros.
+  replace data with (rev (rev data)) in * by apply revK.
+  set (data' := rev data) in *.
+  induction data'.
+  - easy.
+  - rewrite rev_cons.
+    rewrite rev_cons in H.
+    apply In_rcons in H.
+    rewrite foldl_rcons.
+    destruct H.
+    + subst. simpl.
+      rewrite setmE.
+      rewrite eq_refl.
+      reflexivity.
+    + rewrite rev_cons in H0.
+      rewrite map_rcons in H0.
+      rewrite rcons_uniq in H0.
+      move: H0 => /andP [H1 H2].
+      move: H1 => /in_map H3.
+      assert (negb (@eq_op Z_ordType k a.1)). {
+        apply /eqP => contra; case: H3; exists (a.1, v); by move: contra <-. }.
+      rewrite setmE.
+      rewrite <- negbK.
+      rewrite H0.
+      simpl.
+      apply IHdata'; assumption.
+Qed.
+
+Lemma foldl_NIn {S : eqType} (k : Mz.K.t) (data : seq (Mz.K.t * S)) :
+  (forall w, ~ List.In (k, w) data) ->
+  foldl (λ (a : {fmap Mz.K.t → S}) (kv : Mz.K.t * S), setm a kv.1 kv.2) emptym data k = None.
+Proof.
+  intros.
+  replace data with (rev (rev data)) in * by apply revK.
+  set (data' := rev data) in *.
+  induction data'.
+  - easy.
+  - rewrite rev_cons.
+    rewrite rev_cons in H.
+    specialize (H a.2) as H0.
+    rewrite foldl_rcons.
+    apply NIn_rcons in H0 as [H1].
+    assert (negb (@eq_op Z_ordType k a.1)). {
+      apply /eqP => contra. apply H1. move: contra ->. apply surjective_pairing. }
+    rewrite setmE.
+    rewrite <- negbK.
+    rewrite H2.
+    simpl.
+    apply IHdata'.
+    intros.
+    specialize (H w).
+    apply NIn_rcons in H. easy.
+Qed.
+
+Lemma fold_get {S : eqType} (data : Mz.Map.t S) i :
+  Mz.fold (λ k v m, setm m k v) data emptym i = Mz.get data i.
+Proof.
+  rewrite Mz.foldP.
+  destruct Mz.get eqn:E.
+  - set (kv := (i, s)).
+    replace i with kv.1 in * by reflexivity.
+    replace s with kv.2 in * by reflexivity.
+    apply Mz.elementsIn in E. subst kv.
+    eapply foldl_In_uniq.
+    + assumption.
+    + apply Mz.elementsU.
+  - assert (forall v, ~ List.In (i, v) (Mz.elements data)).
+    + intros. apply elementsNIn with (v:=v) in E. assumption.
+    + apply foldl_NIn. assumption.
+Qed.
+
 Definition unembed {t : stype} : encode t → sem_t t :=
   match t return encode t → sem_t t with
   | sbool => λ x, x
@@ -290,7 +387,7 @@ Definition chArray_get ws (a : 'array) ptr scale :=
   (* Jasmin fails if ptr is not aligned; we may not need it. *)
   (* if negb (is_align ptr sz) then chCanonical ws else *)
   let f k :=
-    match a (scale * ptr + k)%Z with
+    match a (ptr * scale + k)%Z with
     | None => chCanonical ('word U8)
     | Some x => x
     end
@@ -889,41 +986,37 @@ Proof.
     destruct mapM; discriminate.
 Qed.
 
-Lemma chArray_get_correct (len : BinNums.positive) (a : WArray.array len) (z z0 : Z) ws aa s :
-  to_int z0 = ok z ->
+Lemma chArray_get_correct (len : BinNums.positive) (a : WArray.array len) (z : Z) ws aa s :
   WArray.get aa ws a z = ok s ->
-  chArray_get ws (translate_value (Varr a)) (translate_value z0) (mk_scale aa ws) = translate_value (Vword s).
+  chArray_get ws (translate_value (Varr a)) z (mk_scale aa ws) = translate_value (Vword s).
 Proof.
-  Search WArray.get.
-  intros.
-  destruct to_int. 2: discriminate.
-  noconf H.
+  intros H.
   simpl in *.
-  unfold WArray.get in H0.
-  unfold read in H0.
+  unfold WArray.get, read in H.
   destruct is_align. 2: discriminate.
-  simpl in H0.
+  simpl in H.
   destruct mapM eqn:E. 2: discriminate.
-  simpl in H0.
-  noconf H0.
+  noconf H.
   unfold chArray_get.
   f_equal.
   revert l E.
   apply ziota_ind.
-  - simpl.
-    intros.
-    noconf E. reflexivity.
-  - intros.
+  - intros l E. noconf E. reflexivity.
+  - intros i l E IH l0 H.
     destruct l0.
-    { apply mapM_nil in E. discriminate. }
-    apply mapM_cons in E as [].
+    { apply mapM_nil in H. discriminate. }
+    apply mapM_cons in H as [H H0].
     simpl.
-    rewrite (H0 l0). 2: assumption.
+    rewrite (IH l0). 2: assumption.
     apply f_equal2. 2: reflexivity.
-
-    (* What remains to prove should perhaps be a lemma like `chArray_get8_correct` *)
-
-    Admitted.
+    unfold WArray.get8 in H.
+    destruct WArray.in_bound. 2: discriminate.
+    destruct WArray.is_init. 2: discriminate.
+    noconf H.
+    unfold odflt, oapp.
+    rewrite <- fold_get.
+    reflexivity.
+Qed.
 
 Lemma coerce_to_choice_type_translate_value_to_val :
   ∀ ty (v : sem_t ty),
@@ -986,7 +1079,7 @@ Proof.
     destruct to_int eqn:E0. 2: discriminate.
     simpl in h1.
     destruct WArray.get eqn:E2. 2: discriminate.
-    simpl in h1. noconf h1.
+    noconf h1.
     rewrite coerce_to_choice_type_K.
     apply IHe in E as E3.
     eapply u_bind.
@@ -1005,9 +1098,10 @@ Proof.
            assert ((translate_gvar fn x).π1 = encode (sarr len)).
            *** admit.           (* this should be provable (`translate_gvar_type`) *)
            *** rewrite H0.
+               noconf E0.
                rewrite !coerce_to_choice_type_K.
-               simpl.
-               apply (chArray_get_correct _ _ _ _ _ _ _ E0 E2). (* TODO: prove this lemma *)
+               apply chArray_get_correct.
+               assumption.
         ** destruct t. all: discriminate.
   -
 Admitted.
