@@ -40,6 +40,13 @@ Context (P : uprog).
 
 Notation gd := (p_globs P).
 
+(* Tactic to deal with Let _ := _ in _ = ok _ in assumption h *)
+(* x and hx are introduced names for the value and its property *)
+Ltac jbind h x hx :=
+  eapply rbindP ; [| exact h ] ;
+  clear h ; intros x hx h ;
+  cbn beta in h.
+
 Notation " 'array " := (chMap 'int ('word U8)) (at level 2) : package_scope.
 Notation " 'array " := (chMap 'int ('word U8)) (in custom pack_type at level 2).
 Notation " 'mem " := (chMap ('word Uptr) ('word U8)) (at level 2) : package_scope.
@@ -210,8 +217,7 @@ Lemma truncate_val_type :
 Proof.
   intros ty v v' e.
   unfold truncate_val in e.
-  destruct of_val eqn:ev. 2: discriminate.
-  simpl in e. noconf e.
+  jbind e x ev. noconf e.
   apply type_of_to_val.
 Qed.
 
@@ -959,8 +965,7 @@ Lemma translate_truncate_val :
 Proof.
   intros ty v v' h.
   unfold truncate_val in h.
-  destruct of_val as [vx |] eqn:e. 2: discriminate.
-  simpl in h. noconf h.
+  jbind h vx e. noconf h.
   apply translate_of_val. assumption.
 Qed.
 
@@ -1045,12 +1050,11 @@ Lemma mapM_nil {eT aT bT} f l :
   @mapM eT aT bT f l = ok [::] →
   l = [::].
 Proof.
-  intro H.
-  induction l in H |- *.
+  intro h.
+  induction l in h |- *.
   - reflexivity.
-  - simpl in H.
-    destruct f. 2: discriminate.
-    destruct mapM. all: discriminate.
+  - simpl in h.
+    jbind h y hy. jbind h ys hys. noconf h.
 Qed.
 
 Lemma chArray_get_correct (len : BinNums.positive) (a : WArray.array len) (z : Z) ws aa s :
@@ -1062,8 +1066,7 @@ Proof.
   unfold WArray.get, read in H.
   destruct is_align. 2: discriminate.
   simpl in H.
-  destruct mapM eqn:E. 2: discriminate.
-  noconf H.
+  jbind H l E. noconf H.
   unfold chArray_get.
   f_equal.
   revert l E.
@@ -1130,33 +1133,26 @@ Proof.
       rewrite h1.
       apply u_ret. auto.
   - simpl in *.
-    destruct get_gvar eqn:E00. 2: discriminate.
-    destruct v0. all: try discriminate.
-    destruct sem_pexpr eqn:E. 2: discriminate.
-    simpl in h1.
-    destruct to_int eqn:E0. 2: discriminate.
-    simpl in h1.
-    destruct WArray.get eqn:E2. 2: discriminate.
-    noconf h1.
+    jbind h1 nt ent. destruct nt. all: try discriminate.
+    jbind h1 i ei. jbind ei i' ei'.
+    jbind h1 w ew. noconf h1.
     rewrite coerce_to_choice_type_K.
-    eapply IHe in E as E3. 2: exact hcond.
     eapply u_bind.
     + eapply translate_gvar_correct. all: eassumption.
     + rewrite !bind_assoc.
       eapply u_bind.
-      * apply E3.
+      * eapply IHe. all: eassumption.
       * eapply u_ret.
-        intros. split; [assumption|].
-        apply translate_pexpr_type with (fn:=fn) in E as typ.
-        rewrite typ.
+        intros m hm.
+        split. 1: assumption.
+        erewrite translate_pexpr_type. 2: eassumption.
         rewrite coerce_to_choice_type_K.
-        destruct v0. all: try discriminate.
-        2: { destruct t. all: discriminate. }
+        eapply type_of_get_gvar in ent as ety. rewrite <- ety.
         rewrite !coerce_to_choice_type_K.
-        eapply type_of_get_gvar in E00 as ety.
-        rewrite <- ety.
-        rewrite !coerce_to_choice_type_K.
-        noconf E0.
+        destruct i'. all: try discriminate.
+        2:{ destruct t. all: discriminate. }
+        simpl in ei. noconf ei.
+        rewrite coerce_to_choice_type_K.
         apply chArray_get_correct. assumption.
   -
 Admitted.
@@ -1197,11 +1193,6 @@ Lemma injective_translate_var :
 Proof.
 Admitted.
 
-Ltac jbind h x hx :=
-  eapply rbindP ; [| exact h ] ;
-  clear h ; intros x hx h ;
-  cbn beta in h.
-
 (* TODO Make fixpoint too! *)
 Lemma translate_instr_r_correct :
   ∀ (fn : funname) (i : instr_r) (s₁ s₂ : estate),
@@ -1221,8 +1212,7 @@ Proof.
       * unfold on_vu in hw. destruct of_val as [| []].
         all: noconf hw. assumption.
     + simpl. unfold translate_write_var. simpl in hw. unfold write_var in hw.
-      destruct set_var eqn:eset. 2: discriminate.
-      simpl in hw. noconf hw.
+      jbind hw vm eset. noconf hw.
       simpl. rewrite !bind_assoc. simpl.
       eapply u_bind.
       * eapply translate_pexpr_correct. all: eauto.
