@@ -1085,7 +1085,7 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma translate_pexpr_correct_new :
+Lemma translate_pexpr_correct :
   ∀ fn (e : pexpr) s₁ v (cond : heap → Prop),
     sem_pexpr gd s₁ e = ok v →
     (∀ m, cond m → rel_estate s₁ fn m) →
@@ -1161,158 +1161,6 @@ Proof.
   -
 Admitted.
 
-Lemma translate_pexpr_correct :
-  ∀ fn (e : pexpr) s₁ v ty v' ty',
-    sem_pexpr gd s₁ e = ok v →
-    truncate_val ty v = ok v' →
-    ⊢ ⦃ rel_estate s₁ fn ⦄
-      coerce_typed_code ty' (truncate_code ty (translate_pexpr fn e)) ⇓
-      coerce_to_choice_type ty' (translate_value v')
-    ⦃ rel_estate s₁ fn ⦄.
-Proof.
-  intros fn e s₁ v ty v' ty' h1 h2.
-  unfold truncate_code.
-  assert (e2 : ty = type_of_val v').
-  { unfold truncate_val in h2. destruct of_val eqn:ev. 2: discriminate.
-    simpl in h2. noconf h2.
-    symmetry. apply type_of_to_val.
-  }
-  subst.
-  destruct (ty' == encode (type_of_val v')) eqn:e1.
-  2:{
-    rewrite coerce_typed_code_neq.
-    2:{ move: e1 => /eqP e1. congruence. }
-    rewrite coerce_to_choice_type_neq.
-    2:{
-      move: e1 => /eqP e1. intros ?. subst.
-      apply e1.
-      unfold choice_type_of_val. reflexivity.
-    }
-    apply u_ret_eq. auto.
-  }
-  pose proof e1 as e2. move: e2 => /eqP e2. subst.
-  rewrite coerce_typed_code_K. rewrite coerce_to_choice_type_K. clear e1.
-  unfold truncate_val in h2. destruct of_val as [vv|] eqn:ev. 2: discriminate.
-  simpl in h2. symmetry in h2. noconf h2.
-  lazymatch goal with
-  | h : _ = to_val _ |- _ => rename h into h2
-  end.
-  rewrite h2.
-  set (ty := type_of_val v') in *. clearbody ty. subst.
-  (* Now we can actually look at the pexpr *)
-  induction e as [z|b| |x|aa ws x e| | | | | | ] in v, s₁, h1, ty, vv, ev |- *.
-  - simpl. simpl in h1. noconf h1.
-    apply of_vint in ev as es. subst.
-    simpl. rewrite coerce_to_choice_type_K.
-    simpl in ev. noconf ev.
-    apply u_ret_eq. auto.
-  - simpl. simpl in h1. noconf h1.
-    apply of_vbool in ev as es.
-    destruct es as [es _]. subst.
-    simpl. rewrite coerce_to_choice_type_K.
-    simpl in ev. noconf ev.
-    apply u_ret_eq. auto.
-  - simpl. simpl in h1. noconf h1.
-    apply of_varr in ev as es.
-    move: es => /values.subtypeE es.
-    destruct es as [m [es hm]]. subst.
-    simpl. rewrite coerce_to_choice_type_K.
-    simpl in ev. apply WArray.cast_empty_ok in ev. subst.
-    simpl. rewrite Mz.foldP. simpl.
-    apply u_ret_eq. auto.
-  - simpl. simpl in h1.
-    apply type_of_get_gvar in h1 as es.
-    unfold translate_gvar. unfold translate_var.
-    unfold get_gvar in h1.
-    destruct is_lvar eqn:hlvar.
-    + destruct x as [gx gs]. simpl in *.
-      unfold is_lvar in hlvar. simpl in hlvar. move: hlvar => /eqP hlvar. subst.
-      unfold get_var in h1.
-      unfold on_vu in h1. destruct Fv.get as [sx | e] eqn:e1.
-      2:{ destruct e. all: discriminate. }
-      noconf h1.
-      eapply u_get_remember. simpl. intro vx.
-      apply u_ret. intros m [[hmem hvmap] h].
-      apply hvmap in e1. unfold u_get in h.
-      rewrite h in e1. clear h. subst.
-      split.
-      1:{ split. all: assumption. }
-      rewrite coerce_to_choice_type_K.
-      clear - ev. set (ty' := vtype gx) in *. clearbody ty'. clear - ev.
-      pose proof (type_of_to_val sx) as ety.
-      destruct ty.
-      * simpl. simpl in ev.
-        unfold to_bool in ev. destruct to_val eqn:esx. all: try discriminate.
-        2:{ destruct t. all: discriminate. }
-        noconf ev. subst.
-        rewrite coerce_to_choice_type_K.
-        simpl. noconf esx. reflexivity.
-      * simpl. simpl in ev.
-        unfold to_int in ev. destruct to_val eqn:esx. all: try discriminate.
-        2:{ destruct t. all: discriminate. }
-        noconf ev. subst.
-        rewrite coerce_to_choice_type_K.
-        simpl. noconf esx. reflexivity.
-      * simpl. simpl in ev.
-        unfold to_arr in ev. destruct to_val eqn:esx. all: try discriminate.
-        subst.
-        rewrite coerce_to_choice_type_K.
-        simpl. noconf esx.
-        unfold WArray.cast in ev. destruct (_ <=? _)%Z. 2: discriminate.
-        noconf ev. simpl. reflexivity.
-      * simpl. simpl in ev.
-        unfold to_word in ev. destruct to_val eqn:esx. all: try discriminate.
-        2:{ destruct t. all: discriminate. }
-        subst. simpl. noconf esx. rewrite ev. reflexivity.
-    + simpl. rewrite h1. simpl.
-      apply u_ret. intros m hm.
-      split. 1: auto.
-      rewrite -es. rewrite coerce_to_choice_type_K.
-      clear - ev.
-      destruct ty.
-      * simpl. simpl in ev.
-        unfold to_bool in ev. destruct v eqn:e. all: try discriminate.
-        2:{ destruct t. all: discriminate. }
-        noconf ev. subst.
-        rewrite coerce_to_choice_type_K. reflexivity.
-      * simpl. simpl in ev.
-        unfold to_int in ev. destruct v eqn:e. all: try discriminate.
-        2:{ destruct t. all: discriminate. }
-        noconf ev. subst.
-        rewrite coerce_to_choice_type_K.
-        reflexivity.
-      * simpl. simpl in ev.
-        unfold to_arr in ev. destruct v eqn:e. all: try discriminate.
-        rewrite coerce_to_choice_type_K.
-        simpl. subst.
-        unfold WArray.cast in ev. destruct (_ <=? _)%Z. 2: discriminate.
-        noconf ev. simpl. reflexivity.
-      * simpl. simpl in ev.
-        unfold to_word in ev. destruct v eqn:e. all: try discriminate.
-        2:{ destruct t. all: discriminate. }
-        subst. simpl. rewrite ev. reflexivity.
-  - (* array access *)
-
-    (* massage the hypotheses into something more usable *)
-    simpl in h1.
-    eapply on_arr_gvarP. 2: exact h1. clear h1.
-    intros n ar evty hgd h. simpl in h. simpl.
-    eapply rbindP. 2: exact h.
-    clear h. simpl. intros z h1 h2.
-    eapply rbindP. 2: exact h1.
-    clear h1. intros v' hv' ev'.
-    eapply rbindP. 2: exact h2.
-    clear h2. simpl. intros w ha ew.
-    noconf ew.
-    rewrite bind_assoc.
-    eapply u_bind.
-    1:{ eapply translate_gvar_correct. 1: eassumption. 1: auto. }
-    rewrite !bind_assoc.
-    eapply u_bind.
-    all: admit.
-  -
-Admitted.
-
 Lemma ptr_var_neq (ptr : pointer) (fn : funname) (v : var) :
   translate_ptr ptr != translate_var fn v.
 Proof.
@@ -1377,7 +1225,7 @@ Proof.
       simpl in hw. noconf hw.
       simpl. rewrite !bind_assoc. simpl.
       eapply u_bind.
-      * eapply translate_pexpr_correct_new. all: eauto.
+      * eapply translate_pexpr_correct. all: eauto.
       * {
         erewrite translate_pexpr_type. 2: eassumption.
         clear sem_e tag e.
@@ -1440,14 +1288,14 @@ Proof.
       eapply u_get_remember. intros tv.
       eapply u_bind.
       1:{
-        eapply translate_pexpr_correct_new.
+        eapply translate_pexpr_correct.
         - eassumption.
         - intros ? []. assumption.
       }
       rewrite bind_assoc.
       eapply u_bind.
       1:{
-        eapply translate_pexpr_correct_new.
+        eapply translate_pexpr_correct.
         - eassumption.
         - intros ? []. assumption.
       }
