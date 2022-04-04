@@ -886,13 +886,14 @@ Proof.
 Qed.
 
 Lemma translate_get_var_correct :
-  ∀ fn x s v,
+  ∀ fn x s v (cond : heap → Prop),
     get_var (evm s) x = ok v →
-    ⊢ ⦃ rel_estate s fn ⦄
+    (∀ m, cond m → rel_estate s fn m) →
+    ⊢ ⦃ cond ⦄
       translate_get_var fn x ⇓ coerce_to_choice_type _ (translate_value v)
-    ⦃ rel_estate s fn ⦄.
+    ⦃ cond ⦄.
 Proof.
-  intros fn x s v ev.
+  intros fn x s v cond ev hcond.
   unfold translate_get_var.
   eapply u_get_remember. intros vx.
   eapply u_ret. intros m [hm hx].
@@ -900,22 +901,23 @@ Proof.
   unfold u_get in hx. unfold get_var in ev.
   eapply on_vuP. 3: exact ev. 2: discriminate.
   intros sx esx esv.
-  eapply hm in esx. subst.
+  eapply hcond in hm. eapply hm in esx. subst.
   rewrite coerce_to_choice_type_translate_value_to_val.
   rewrite esx. rewrite coerce_to_choice_type_K. reflexivity.
 Qed.
 
-Lemma translate_gvar_correct (f : funname) (x : gvar) (v : value) s :
+Lemma translate_gvar_correct (f : funname) (x : gvar) (v : value) s (cond : heap → Prop) :
   get_gvar gd (evm s) x = ok v →
-  ⊢ ⦃ rel_estate s f ⦄
+  (∀ m, cond m → rel_estate s f m) →
+  ⊢ ⦃ cond ⦄
     translate_gvar f x ⇓ coerce_to_choice_type _ (translate_value v)
-  ⦃ rel_estate s f ⦄.
+  ⦃ cond ⦄.
 Proof.
-  intros ev.
+  intros ev hcond.
   unfold translate_gvar.
   unfold get_gvar in ev.
   destruct is_lvar.
-  - apply translate_get_var_correct. assumption.
+  - eapply translate_get_var_correct. all: eassumption.
   - rewrite ev.
     apply u_ret. intros m hm.
     split. 1: assumption.
@@ -1079,15 +1081,16 @@ Proof.
 Qed.
 
 Lemma translate_pexpr_correct_new :
-  ∀ fn (e : pexpr) s₁ v,
+  ∀ fn (e : pexpr) s₁ v (cond : heap → Prop),
     sem_pexpr gd s₁ e = ok v →
-    ⊢ ⦃ rel_estate s₁ fn ⦄
+    (∀ m, cond m → rel_estate s₁ fn m) →
+    ⊢ ⦃ cond ⦄
       (translate_pexpr fn e).π2 ⇓
       coerce_to_choice_type _ (translate_value v)
-    ⦃ rel_estate s₁ fn ⦄.
+    ⦃ cond ⦄.
 Proof.
-  intros fn e s1 v h1.
-  induction e as [z|b| |x|aa ws x e| | | | | | ] in s1, v, h1 |- *.
+  intros fn e s1 v cond h1 hcond.
+  induction e as [z|b| |x|aa ws x e| | | | | | ] in s1, v, h1, cond, hcond |- *.
   - simpl in h1. noconf h1.
     rewrite coerce_to_choice_type_K.
     apply u_ret_eq. auto.
@@ -1112,8 +1115,8 @@ Proof.
       eapply u_get_remember. simpl.
       intro v. apply u_ret.
       intros m [hm e]. unfold u_get in e. subst.
-      split. 1: auto.
-      destruct hm as [hm hv].
+      split. 1: assumption.
+      apply hcond in hm. destruct hm as [hm hv].
       apply hv in e1. rewrite e1.
       simpl. rewrite coerce_to_choice_type_K.
       rewrite coerce_to_choice_type_translate_value_to_val.
@@ -1131,10 +1134,9 @@ Proof.
     destruct WArray.get eqn:E2. 2: discriminate.
     noconf h1.
     rewrite coerce_to_choice_type_K.
-    apply IHe in E as E3.
+    eapply IHe in E as E3. 2: exact hcond.
     eapply u_bind.
-    + apply translate_gvar_correct.
-      eassumption.
+    + eapply translate_gvar_correct. all: eassumption.
     + rewrite !bind_assoc.
       eapply u_bind.
       * apply E3.
@@ -1299,7 +1301,7 @@ Proof.
     noconf ew.
     rewrite bind_assoc.
     eapply u_bind.
-    1:{ eapply translate_gvar_correct. eassumption. }
+    1:{ eapply translate_gvar_correct. 1: eassumption. 1: auto. }
     rewrite !bind_assoc.
     eapply u_bind.
     all: admit.
@@ -1370,7 +1372,7 @@ Proof.
       simpl in hw. noconf hw.
       simpl. rewrite !bind_assoc. simpl.
       eapply u_bind.
-      * eapply translate_pexpr_correct_new. eassumption.
+      * eapply translate_pexpr_correct_new. all: eauto.
       * {
         erewrite translate_pexpr_type. 2: eassumption.
         clear sem_e tag e.
