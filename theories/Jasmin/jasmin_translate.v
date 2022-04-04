@@ -339,20 +339,26 @@ Definition translate_write_var (fn : funname) (x : var_i) (v : typed_code) :=
   #put l := x ;;
   ret tt.
 
+Definition translate_get_var (f : funname) (x : var) : raw_code (encode x.(vtype)) :=
+  x ← get (translate_var f x) ;; ret x.
+
 Definition translate_write_lval (fn : funname) (l : lval) (v : typed_code)
   : raw_code 'unit
   :=
   match l with
   | Lnone _ ty => ret tt
   | Lvar x => translate_write_var fn x v
+  | Lmem sz x e =>
+    vx ← translate_get_var fn x ;; (* Missing to pointer *)
+    unsupported.π2 (* TODO *)
   | _ => unsupported.π2
-  (* | Lmem sz x e => *)
-  (*   Let vx := get_var (evm s) x >>= to_pointer in *)
-  (*   Let ve := sem_pexpr s e >>= to_pointer in *)
-  (*   let p := (vx + ve)%R in (* should we add the size of value, i.e vx + sz * se *) *)
-  (*   Let w := to_word sz v in *)
-  (*   Let m :=  write s.(emem) p w in *)
-  (*   ok {| emem := m;  evm := s.(evm) |} *)
+  (* | Lmem sz x e =>
+    Let vx := get_var (evm s) x >>= to_pointer in
+    Let ve := sem_pexpr s e >>= to_pointer in
+    let p := (vx + ve)%R in (* should we add the size of value, i.e vx + sz * se *)
+    Let w := to_word sz v in
+    Let m :=  write s.(emem) p w in
+    ok {| emem := m;  evm := s.(evm) |} *)
   (* | Laset aa ws x i => *)
   (*   Let (n,t) := s.[x] in *)
   (*   Let i := sem_pexpr s i >>= to_int in *)
@@ -378,16 +384,15 @@ Proof.
   exact [::]. (* TODO *)
 Defined. *)
 
-Definition translate_gvar (f : funname) (x : gvar) : typed_code :=
+Definition translate_gvar (f : funname) (x : gvar) : raw_code (encode x.(gv).(vtype)) :=
   if is_lvar x
-  then (_ ; x ← get (translate_var f x.(gv).(v_var)) ;; ret x)
-  else (
-    encode (vtype x.(gv)) ;
+  then translate_get_var f x.(gv).(v_var)
+  else
     match get_global gd x.(gv).(v_var) with
     | Ok v => ret (coerce_to_choice_type _ (translate_value v))
     | _ => ret (chCanonical _)
     end
-  ).
+  .
 
 Definition chArray_get ws (a : 'array) ptr scale :=
   (* Jasmin fails if ptr is not aligned; we may not need it. *)
@@ -427,10 +432,10 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
     (* Parr_init only gets produced by ArrayInit() in jasmin source. *)
     (* The EC export asserts false on it. *)
     totc 'array (ret emptym)
-  | Pvar v => translate_gvar fn v
+  | Pvar v => totc _ (translate_gvar fn v)
   | Pget aa ws x e =>
     totc ('word ws) (
-      arr ← (translate_gvar fn x).π2 ;; (* Performs the lookup in gd *)
+      arr ← translate_gvar fn x ;; (* Performs the lookup in gd *)
       let a := coerce_to_choice_type 'array arr in
       i ← (truncate_code sint (translate_pexpr fn e)).π2 ;; (* to_int *)
       let scale := mk_scale aa ws in
@@ -438,7 +443,7 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
     )
   | Psub aa ws len x e =>
     totc 'array (
-      arr ← (translate_gvar fn x).π2 ;; (* Performs the lookup in gd *)
+      arr ← translate_gvar fn x ;; (* Performs the lookup in gd *)
       let a := coerce_to_choice_type 'array arr in
       i ← (truncate_code sint (translate_pexpr fn e)).π2 ;; (* to_int *)
       let scale := mk_scale aa ws in
@@ -835,53 +840,51 @@ Proof.
   - intros [] []. intuition eauto.
 Qed.
 
-Lemma translate_gvar_type fn vm v x :
-  get_gvar gd vm x = ok v →
-  (translate_gvar fn x).π1 = encode (type_of_val v).
+Lemma coerce_to_choice_type_translate_value_to_val :
+  ∀ ty (v : sem_t ty),
+    coerce_to_choice_type (encode ty) (translate_value (to_val v)) =
+    embed v.
 Proof.
-  intros H.
-  apply type_of_get_gvar in H.
-  rewrite H.
-  unfold translate_gvar.
-  now destruct is_lvar.
+  intros ty v.
+  destruct ty.
+  all: simpl. all: rewrite coerce_to_choice_type_K. all: reflexivity.
+Qed.
+
+Lemma translate_get_var_correct :
+  ∀ fn x s v,
+    get_var (evm s) x = ok v →
+    ⊢ ⦃ rel_estate s fn ⦄
+      translate_get_var fn x ⇓ coerce_to_choice_type _ (translate_value v)
+    ⦃ rel_estate s fn ⦄.
+Proof.
+  intros fn x s v ev.
+  unfold translate_get_var.
+  eapply u_get_remember. intros vx.
+  eapply u_ret. intros m [hm hx].
+  split. 1: assumption.
+  unfold u_get in hx. unfold get_var in ev.
+  eapply on_vuP. 3: exact ev. 2: discriminate.
+  intros sx esx esv.
+  eapply hm in esx. subst.
+  rewrite coerce_to_choice_type_translate_value_to_val.
+  rewrite esx. rewrite coerce_to_choice_type_K. reflexivity.
 Qed.
 
 Lemma translate_gvar_correct (f : funname) (x : gvar) (v : value) s :
   get_gvar gd (evm s) x = ok v →
   ⊢ ⦃ rel_estate s f ⦄
-    (translate_gvar f x).π2 ⇓ coerce_to_choice_type _ (translate_value v)
+    translate_gvar f x ⇓ coerce_to_choice_type _ (translate_value v)
   ⦃ rel_estate s f ⦄.
 Proof.
-  intros H.
+  intros ev.
   unfold translate_gvar.
-  unfold get_gvar in H.
+  unfold get_gvar in ev.
   destruct is_lvar.
-  - simpl in *.
-    eapply u_get_remember.
-    intros.
-    eapply u_ret.
-    intros h [].
-    split.
-    + assumption.
-    + unfold u_get in H1.
-      unfold get_var in H.
-      unfold on_vu in H. destruct Fv.get as [sx | e] eqn:e1.
-      2:{ destruct e. all: discriminate. }
-      noconf H.
-      apply H0 in e1. subst.
-      rewrite e1.
-      clear e1.
-      simpl.
-      rewrite coerce_to_choice_type_K.
-      destruct (vtype (gv x));
-        rewrite coerce_to_choice_type_K; reflexivity.
-  - simpl in *.
-    destruct get_global. 2: discriminate.
-    eapply u_ret.
-    intros.
-    noconf H. split.
-    + assumption.
-    + reflexivity.
+  - apply translate_get_var_correct. assumption.
+  - rewrite ev.
+    apply u_ret. intros m hm.
+    split. 1: assumption.
+    reflexivity.
 Qed.
 
 Lemma translate_of_val :
@@ -947,7 +950,7 @@ Proof with try discriminate; simpl in *.
     unfold choice_type_of_val.
     rewrite H.
     unfold translate_gvar.
-    destruct is_lvar; reflexivity.
+    reflexivity.
   - simpl in H.
     destruct get_gvar...
     + destruct v0...
@@ -1040,16 +1043,6 @@ Proof.
     reflexivity.
 Qed.
 
-Lemma coerce_to_choice_type_translate_value_to_val :
-  ∀ ty (v : sem_t ty),
-    coerce_to_choice_type (encode ty) (translate_value (to_val v)) =
-    embed v.
-Proof.
-  intros ty v.
-  destruct ty.
-  all: simpl. all: rewrite coerce_to_choice_type_K. all: reflexivity.
-Qed.
-
 Lemma translate_pexpr_correct_new :
   ∀ fn (e : pexpr) s₁ v,
     sem_pexpr gd s₁ e = ok v →
@@ -1118,11 +1111,11 @@ Proof.
         destruct v0. all: try discriminate.
         2: { destruct t. all: discriminate. }
         rewrite !coerce_to_choice_type_K.
-        rewrite (translate_gvar_type _ (evm s1) (Varr a)); [|assumption].
+        eapply type_of_get_gvar in E00 as ety.
+        rewrite <- ety.
         rewrite !coerce_to_choice_type_K.
-        apply chArray_get_correct.
         noconf E0.
-        assumption.
+        apply chArray_get_correct. assumption.
   -
 Admitted.
 
@@ -1260,8 +1253,7 @@ Proof.
 
     (* massage the hypotheses into something more usable *)
     simpl in h1.
-    pose proof on_arr_gvarP as p.
-    unshelve eapply (p _ _ _ _ _ _ _ _ h1). clear p h1.
+    eapply on_arr_gvarP. 2: exact h1. clear h1.
     intros n ar evty hgd h. simpl in h. simpl.
     eapply rbindP. 2: exact h.
     clear h. simpl. intros z h1 h2.
@@ -1270,37 +1262,12 @@ Proof.
     eapply rbindP. 2: exact h2.
     clear h2. simpl. intros w ha ew.
     noconf ew.
-    unfold get_gvar in hgd.
-
-    unfold to_int in ev'. destruct v'. all: try discriminate.
-    2:{ destruct t. all: discriminate. }
-    noconf ev'.
-    specialize IHe with (1 := hv').
-    specialize IHe with (ty := sint) (vv := z).
-    forward IHe. 1: reflexivity.
-
-    (* TW: It would be nice to conclude here that e is translated to an 'int
-      Is there any way to know it though?
-    *)
-
-    (* Now the actual proof should begin. Instead, here is some mindless mess
-       following my nose along the structure of the goal. *)
-    unfold translate_gvar. unfold translate_var.
-    destruct is_lvar eqn:hlvar.
-    + simpl.
-      eapply u_get_remember.
-      rewrite evty. simpl. intros arr.
-      rewrite bind_assoc.
-      eapply u_bind.
-      * give_up.
-      * simpl. eapply u_ret.
-        give_up.
-    + simpl. rewrite hgd.
-      simpl. rewrite bind_assoc.
-      eapply u_bind.
-      * give_up.
-      * simpl. eapply u_ret.
-        give_up.
+    rewrite bind_assoc.
+    eapply u_bind.
+    1:{ eapply translate_gvar_correct. eassumption. }
+    rewrite !bind_assoc.
+    eapply u_bind.
+    all: admit.
   -
 Admitted.
 
