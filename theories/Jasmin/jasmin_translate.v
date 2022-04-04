@@ -1319,6 +1319,11 @@ Lemma injective_translate_var :
 Proof.
 Admitted.
 
+Ltac jbind h x hx :=
+  eapply rbindP ; [| exact h ] ;
+  clear h ; intros x hx h ;
+  cbn beta in h.
+
 (* TODO Make fixpoint too! *)
 Lemma translate_instr_r_correct :
   ∀ (fn : funname) (i : instr_r) (s₁ s₂ : estate),
@@ -1397,7 +1402,18 @@ Proof.
               eapply hv in ei. rewrite ei.
               rewrite coerce_to_choice_type_K. reflexivity.
       }
-    + admit.
+    + simpl. simpl in hw.
+      jbind hw vx hvx. jbind hvx vx' hvx'. jbind hw ve hve.
+      jbind hve ve' hve'. jbind hw w hw'. jbind hw m hm.
+      noconf hw.
+      eapply u_get_remember. intros tv.
+      eapply u_bind. (* 2: eapply translate_pexpr_correct_new. *)
+      (* The condition on translate_pexpr_correct_new is too strict and cannot
+        accomodate for the added u_get in the pre.
+        Perhaps its pre and post should be an invariant that entails
+        rel_estate.
+      *)
+      all: admit.
     + admit.
     + admit.
   - admit.
