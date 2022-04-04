@@ -345,37 +345,6 @@ Definition translate_write_var (fn : funname) (x : var_i) (v : typed_code) :=
 Definition translate_get_var (f : funname) (x : var) : raw_code (encode x.(vtype)) :=
   x ← get (translate_var f x) ;; ret x.
 
-Definition translate_write_lval (fn : funname) (l : lval) (v : typed_code)
-  : raw_code 'unit
-  :=
-  match l with
-  | Lnone _ ty => ret tt
-  | Lvar x => translate_write_var fn x v
-  | Lmem sz x e =>
-    vx ← translate_get_var fn x ;; (* Missing to pointer *)
-    unsupported.π2 (* TODO *)
-  | _ => unsupported.π2
-  (* | Lmem sz x e =>
-    Let vx := get_var (evm s) x >>= to_pointer in
-    Let ve := sem_pexpr s e >>= to_pointer in
-    let p := (vx + ve)%R in (* should we add the size of value, i.e vx + sz * se *)
-    Let w := to_word sz v in
-    Let m :=  write s.(emem) p w in
-    ok {| emem := m;  evm := s.(evm) |} *)
-  (* | Laset aa ws x i => *)
-  (*   Let (n,t) := s.[x] in *)
-  (*   Let i := sem_pexpr s i >>= to_int in *)
-  (*   Let v := to_word ws v in *)
-  (*   Let t := WArray.set t aa i v in *)
-  (*   write_var x (@to_val (sarr n) t) s *)
-  (* | Lasub aa ws len x i => *)
-  (*   Let (n,t) := s.[x] in *)
-  (*   Let i := sem_pexpr s i >>= to_int in *)
-  (*   Let t' := to_arr (Z.to_pos (arr_size ws len)) v in  *)
-  (*   Let t := @WArray.set_sub n aa ws len t i t' in *)
-  (*   write_var x (@to_val (sarr n) t) s *)
-  end.
-
 (* TW: We can remove it right? *)
 Fixpoint satisfies_globs (globs : glob_decls) : heap * heap → Prop.
 Proof.
@@ -394,8 +363,7 @@ Definition translate_gvar (f : funname) (x : gvar) : raw_code (encode x.(gv).(vt
     match get_global gd x.(gv).(v_var) with
     | Ok v => ret (coerce_to_choice_type _ (translate_value v))
     | _ => ret (chCanonical _)
-    end
-  .
+    end.
 
 Definition chArray_get ws (a : 'array) ptr scale :=
   (* Jasmin fails if ptr is not aligned; we may not need it. *)
@@ -530,6 +498,44 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
 (*   end. *)
 
     (* pose (vs' := fold (fun x => y ← x ;; unembed y) f vs). *)
+
+Definition translate_write_lval (fn : funname) (l : lval) (v : typed_code)
+  : raw_code 'unit
+  :=
+  match l with
+  | Lnone _ ty => ret tt
+  | Lvar x => translate_write_var fn x v
+  | Lmem sz x e =>
+    vx' ← translate_get_var fn x ;;
+    let vx : word _ := translate_to_pointer vx' in
+    ve' ← (translate_pexpr fn e).π2 ;;
+    let ve := translate_to_pointer ve' in
+    let p := (vx + ve)%R in (* should we add the size of value, i.e vx + sz * se *) (* Is it from us or them? *)
+    v ← v.π2 ;;
+    let w := truncate_chWord sz v in
+    (* Need translate_write *)
+    unsupported.π2 (* TODO *)
+  | _ => unsupported.π2
+  (* | Lmem sz x e =>
+    Let vx := get_var (evm s) x >>= to_pointer in
+    Let ve := sem_pexpr s e >>= to_pointer in
+    let p := (vx + ve)%R in (* should we add the size of value, i.e vx + sz * se *)
+    Let w := to_word sz v in
+    Let m :=  write s.(emem) p w in
+    ok {| emem := m;  evm := s.(evm) |} *)
+  (* | Laset aa ws x i => *)
+  (*   Let (n,t) := s.[x] in *)
+  (*   Let i := sem_pexpr s i >>= to_int in *)
+  (*   Let v := to_word ws v in *)
+  (*   Let t := WArray.set t aa i v in *)
+  (*   write_var x (@to_val (sarr n) t) s *)
+  (* | Lasub aa ws len x i => *)
+  (*   Let (n,t) := s.[x] in *)
+  (*   Let i := sem_pexpr s i >>= to_int in *)
+  (*   Let t' := to_arr (Z.to_pos (arr_size ws len)) v in  *)
+  (*   Let t := @WArray.set_sub n aa ws len t i t' in *)
+  (*   write_var x (@to_val (sarr n) t) s *)
+  end.
 
 Definition instr_d (i : instr) : instr_r :=
   match i with MkI _ i => i end.
