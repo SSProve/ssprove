@@ -969,6 +969,30 @@ Proof.
   apply translate_of_val. assumption.
 Qed.
 
+Lemma translate_to_bool :
+  ∀ v b,
+    to_bool v = ok b →
+    coerce_to_choice_type 'bool (translate_value v) = b.
+Proof.
+  intros v b e.
+  destruct v as [| | | | t]. all: try discriminate.
+  2:{ destruct t. all: discriminate. }
+  simpl in e. noconf e.
+  rewrite coerce_to_choice_type_K. reflexivity.
+Qed.
+
+Lemma translate_to_int :
+  ∀ v z,
+    to_int v = ok z →
+    coerce_to_choice_type 'int (translate_value v) = z.
+Proof.
+  intros v z e.
+  destruct v as [| | | | t]. all: try discriminate.
+  2:{ destruct t. all: discriminate. }
+  simpl in e. noconf e.
+  rewrite coerce_to_choice_type_K. reflexivity.
+Qed.
+
 Lemma translate_truncate_code :
   ∀ (c : typed_code) (ty : stype) v v' p q,
     truncate_val ty v =  ok v' →
