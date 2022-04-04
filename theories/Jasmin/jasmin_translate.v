@@ -42,6 +42,11 @@ Notation gd := (p_globs P).
 
 Notation " 'array " := (chMap 'int ('word U8)) (at level 2) : package_scope.
 Notation " 'array " := (chMap 'int ('word U8)) (in custom pack_type at level 2).
+Notation " 'mem " := (chMap ('word Uptr) ('word U8)) (at level 2) : package_scope.
+Notation " 'mem " := (chMap ('word Uptr) ('word U8)) (in custom pack_type at level 2).
+
+Parameter mem_index : nat.
+Definition mem_loc : Location := ('mem ; mem_index).
 
 Definition encode (t : stype) : choice_type :=
   match t with
@@ -154,12 +159,13 @@ Proof.
     replace i with kv.1 in * by reflexivity.
     replace s with kv.2 in * by reflexivity.
     apply Mz.elementsIn in E. subst kv.
-    eapply foldl_In_uniq.
+    apply foldl_In_uniq.
     + assumption.
     + apply Mz.elementsU.
-  - assert (forall v, ~ List.In (i, v) (Mz.elements data)).
-    + intros. apply elementsNIn with (v:=v) in E. assumption.
-    + apply foldl_NIn. assumption.
+  - apply foldl_NIn.
+    intros.
+    apply elementsNIn.
+    assumption.
 Qed.
 
 Definition unembed {t : stype} : encode t → sem_t t :=
@@ -369,7 +375,7 @@ Definition chArray_get ws (a : 'array) ptr scale :=
   (* Jasmin fails if ptr is not aligned; we may not need it. *)
   (* if negb (is_align ptr sz) then chCanonical ws else *)
   let f k :=
-    match a (ptr * scale + k)%Z with
+    match a (ptr * scale + k)%Z with (* BSH: maybe abstract this matchee with chArray_get8? *)
     | None => chCanonical ('word U8)
     | Some x => x
     end
@@ -393,6 +399,20 @@ Definition chArray_get_sub ws len (a : 'array) ptr scale :=
 
 Definition totc (ty : choice_type) (c : raw_code ty) : typed_code :=
   (ty ; c).
+
+Definition chRead ptr ws : typed_code :=
+  (* memory as array *)
+  totc ('word ws)
+       (mem ← get mem_loc ;;
+        let f k :=
+          match mem (ptr + (wrepr Uptr k))%R with
+          | None => chCanonical ('word U8)
+          | Some x => x
+          end
+        in
+        let l := map f (ziota 0 (wsize_size ws)) in
+        ret (Jasmin.memory_model.LE.decode ws l)
+       ).
 
 (* Following sem_pexpr *)
 Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
@@ -421,8 +441,11 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
       ret (chArray_get_sub ws len a i scale)
     )
   | Pload sz x e =>
-    totc ('word sz) (
-      ret (chCanonical _) (* TODO *)
+      totc ('word sz) (
+      w ← translate_get_var fn x ;;
+      let w1 := truncate_el (sword Uptr) w in
+      w2 ← (truncate_code (sword Uptr) (translate_pexpr fn e)).π2 ;;
+      (truncate_code (sword sz) (chRead (wpmaddwd w1 w2) sz)).π2 (* BSH: i wish to write w1 + w2 instead of wpmaddwd, but it does not typecheck? *)
     )
   | Papp1 o e =>
     totc _ (
