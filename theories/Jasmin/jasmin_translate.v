@@ -499,6 +499,10 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
 
     (* pose (vs' := fold (fun x => y ← x ;; unembed y) f vs). *)
 
+Definition translate_write {n} (p : word Uptr) (w : word n) : raw_code 'unit :=
+  (* For now we do not worry about alignment *)
+  unsupported.π2. (* Do we really have to slice the word into 8bit parts? *)
+
 Definition translate_write_lval (fn : funname) (l : lval) (v : typed_code)
   : raw_code 'unit
   :=
@@ -513,8 +517,7 @@ Definition translate_write_lval (fn : funname) (l : lval) (v : typed_code)
     let p := (vx + ve)%R in (* should we add the size of value, i.e vx + sz * se *) (* Is it from us or them? *)
     v ← v.π2 ;;
     let w := truncate_chWord sz v in
-    (* Need translate_write *)
-    unsupported.π2 (* TODO *)
+    translate_write p w
   | _ => unsupported.π2
   (* | Lmem sz x e =>
     Let vx := get_var (evm s) x >>= to_pointer in
