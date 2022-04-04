@@ -1173,10 +1173,7 @@ Proof.
         rewrite coerce_to_choice_type_K.
         eapply type_of_get_gvar in ent as ety. rewrite <- ety.
         rewrite !coerce_to_choice_type_K.
-        destruct i'. all: try discriminate.
-        2:{ destruct t. all: discriminate. }
-        simpl in ei. noconf ei.
-        rewrite coerce_to_choice_type_K.
+        erewrite translate_to_int. 2: eassumption.
         apply chArray_get_correct. assumption.
   - (* Psub *) admit.
   - (* Pload *) admit.
@@ -1213,10 +1210,14 @@ Proof.
     1:{ eapply IHe1. all: eauto. }
     simpl. erewrite translate_pexpr_type. 2: eassumption.
     rewrite coerce_to_choice_type_K.
-    (* We can't always destruct b' etc. as for destruct i' above
-      we need a lemma, probably similar to translate_of_val or
-      translate_truncate_val but specialised to to_bool, to_int etc.
-    *)
+    erewrite translate_to_bool. 2: eassumption.
+    destruct b.
+    + eapply u_bind.
+      1:{ eapply IHe2. all: eauto. }
+      simpl. eapply u_ret. intros m hm.
+      split. 1: assumption.
+      admit.
+    + admit.
 Admitted.
 
 Lemma ptr_var_neq (ptr : pointer) (fn : funname) (v : var) :
