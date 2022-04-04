@@ -1190,14 +1190,16 @@ Proof.
       jbind h1 v'' h3.
       noconf h1.
       rewrite coerce_to_choice_type_translate_value_to_val.
-      f_equal. f_equal.
       apply translate_pexpr_type with (fn:=fn) in h2.
       rewrite h2.
       rewrite !coerce_to_choice_type_K.
       erewrite translate_of_val.
       2: exact h3.
       rewrite coerce_to_choice_type_translate_value_to_val.
-      admit.                    (* prove unembed is inverse to embed *)
+      destruct op.
+      all: try reflexivity.
+      destruct o.
+      all: try reflexivity.
   - (* Papp2 *) admit.
   - (* PappN TODO *) admit.
   - (* Pif *)
