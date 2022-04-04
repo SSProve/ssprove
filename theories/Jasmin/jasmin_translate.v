@@ -60,7 +60,9 @@ Definition embed {t} : sem_t t → encode t :=
   end.
 
 Lemma elementsNIn :
-  ∀ (T : Type) (k : Z) (v : T) (m : Mz.Map.t T), Mz.get m k = None -> ~ List.In (k, v) (Mz.elements m).
+  ∀ (T : Type) (k : Z) (v : T) (m : Mz.Map.t T),
+    Mz.get m k = None →
+    ~ List.In (k, v) (Mz.elements m).
 Proof.
   intros S k v m H contra.
   apply Mz.elementsIn in contra.
@@ -69,20 +71,23 @@ Proof.
 Qed.
 
 Lemma In_rcons {A} x y (l : seq A) :
-  List.In x (rcons l y) -> y = x \/ List.In x l.
+  List.In x (rcons l y) →
+  y = x ∨ List.In x l.
 Proof.
-  induction l; intros; simpl in *; intuition subst.
+  intro h.
+  induction l in h |- *. all: simpl in *. all: intuition subst.
 Qed.
 
 Lemma NIn_rcons {A} x y (l : seq A) :
-  ~ List.In x (rcons l y) -> y <> x /\ ~ List.In x l.
+  ~ List.In x (rcons l y) →
+  y ≠ x ∧ ~ List.In x l.
 Proof.
   induction l; intros; simpl in *; intuition subst.
 Qed.
 
 Lemma foldl_In_uniq {S : eqType} (k : Mz.K.t) (v : S) (data : seq (Mz.K.t * S)) :
-  List.In (k, v) data ->
-  @uniq Mz.K.t [seq i.1 | i <- data] ->
+  List.In (k, v) data →
+  @uniq Mz.K.t [seq i.1 | i <- data] →
   foldl (λ (a : {fmap Mz.K.t → S}) (kv : Mz.K.t * S), setm a kv.1 kv.2) emptym data k = Some v.
 Proof.
   intros.
@@ -105,7 +110,8 @@ Proof.
       move: H0 => /andP [H1 H2].
       move: H1 => /in_map H3.
       assert (negb (@eq_op Z_ordType k a.1)). {
-        apply /eqP => contra; case: H3; exists (a.1, v); by move: contra <-. }.
+        apply /eqP => contra; case: H3; exists (a.1, v); by move: contra <-.
+      }
       rewrite setmE.
       rewrite <- negbK.
       rewrite H0.
@@ -114,7 +120,7 @@ Proof.
 Qed.
 
 Lemma foldl_NIn {S : eqType} (k : Mz.K.t) (data : seq (Mz.K.t * S)) :
-  (forall w, ~ List.In (k, w) data) ->
+  (∀ w, ~ List.In (k, w) data) →
   foldl (λ (a : {fmap Mz.K.t → S}) (kv : Mz.K.t * S), setm a kv.1 kv.2) emptym data k = None.
 Proof.
   intros.
@@ -830,7 +836,7 @@ Proof.
 Qed.
 
 Lemma translate_gvar_type fn vm v x :
-  get_gvar gd vm x = ok v ->
+  get_gvar gd vm x = ok v →
   (translate_gvar fn x).π1 = encode (type_of_val v).
 Proof.
   intros H.
@@ -841,12 +847,12 @@ Proof.
 Qed.
 
 Lemma translate_gvar_correct (f : funname) (x : gvar) (v : value) s :
-  get_gvar gd (evm s) x = ok v ->
+  get_gvar gd (evm s) x = ok v →
   ⊢ ⦃ rel_estate s f ⦄
-      (translate_gvar f x).π2 ⇓ coerce_to_choice_type _ (translate_value v)
+    (translate_gvar f x).π2 ⇓ coerce_to_choice_type _ (translate_value v)
   ⦃ rel_estate s f ⦄.
 Proof.
-  intros.
+  intros H.
   unfold translate_gvar.
   unfold get_gvar in H.
   destruct is_lvar.
@@ -870,10 +876,12 @@ Proof.
       destruct (vtype (gv x));
         rewrite coerce_to_choice_type_K; reflexivity.
   - simpl in *.
-    destruct get_global; [|discriminate].
+    destruct get_global. 2: discriminate.
     eapply u_ret.
     intros.
-    noconf H. split; [ assumption | reflexivity ].
+    noconf H. split.
+    + assumption.
+    + reflexivity.
 Qed.
 
 Lemma translate_of_val :
@@ -988,17 +996,20 @@ Proof with try discriminate; simpl in *.
     destruct b; noconf H; by rewrite type_of_to_val.
 Admitted.
 
-Lemma mapM_nil {eT aT bT} f l : @mapM eT aT bT f l = ok [::] -> l = [::].
+Lemma mapM_nil {eT aT bT} f l :
+  @mapM eT aT bT f l = ok [::] →
+  l = [::].
 Proof.
-  induction l; intros.
+  intro H.
+  induction l in H |- *.
   - reflexivity.
   - simpl in H.
     destruct f. 2: discriminate.
-    destruct mapM; discriminate.
+    destruct mapM. all: discriminate.
 Qed.
 
 Lemma chArray_get_correct (len : BinNums.positive) (a : WArray.array len) (z : Z) ws aa s :
-  WArray.get aa ws a z = ok s ->
+  WArray.get aa ws a z = ok s →
   chArray_get ws (translate_value (Varr a)) z (mk_scale aa ws) = translate_value (Vword s).
 Proof.
   intros H.
