@@ -1180,7 +1180,28 @@ Proof.
         apply chArray_get_correct. assumption.
   - (* Psub *) admit.
   - (* Pload *) admit.
-  - (* Papp1 *) admit.
+  - (* Papp1 *)
+    simpl in *.
+    jbind h1 v' h2.
+    rewrite bind_assoc. simpl.
+    eapply u_bind.
+    + eapply IHe; eauto.
+    + apply u_ret.
+      intros.
+      split. 1: assumption.
+      unfold sem_sop1 in h1.
+      jbind h1 v'' h3.
+      noconf h1.
+      rewrite coerce_to_choice_type_translate_value_to_val.
+      f_equal. f_equal.
+      Search truncate_el.
+      apply translate_pexpr_type with (fn:=fn) in h2.
+      rewrite h2.
+      rewrite !coerce_to_choice_type_K.
+      erewrite translate_of_val.
+      2: exact h3.
+      rewrite coerce_to_choice_type_translate_value_to_val.
+      admit.                    (* prove unembed is inverse to embed *)
   - (* Papp2 *) admit.
   - (* PappN TODO *) admit.
   - (* Pif *)
