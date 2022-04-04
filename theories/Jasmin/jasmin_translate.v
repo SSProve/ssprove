@@ -259,6 +259,9 @@ Definition truncate_el {t : choice_type} (s : stype) : t → encode s :=
       λ w, truncate_chWord n w
   end.
 
+Definition translate_to_pointer {t : choice_type} (c : t) : 'word Uptr :=
+  truncate_el (sword Uptr) c.
+
 Definition truncate_code (s : stype) (c : typed_code) : typed_code :=
   (encode s ; x ← c.π2 ;; ret (truncate_el s x)).
 
