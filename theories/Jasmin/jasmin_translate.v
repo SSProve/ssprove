@@ -534,26 +534,30 @@ Definition translate_write_lval (fn : funname) (l : lval) (v : typed_code)
     v ← v.π2 ;;
     let w := truncate_chWord sz v in
     translate_write p w
-  | _ => unsupported.π2
-  (* | Lmem sz x e =>
-    Let vx := get_var (evm s) x >>= to_pointer in
-    Let ve := sem_pexpr s e >>= to_pointer in
-    let p := (vx + ve)%R in (* should we add the size of value, i.e vx + sz * se *)
-    Let w := to_word sz v in
-    Let m :=  write s.(emem) p w in
-    ok {| emem := m;  evm := s.(evm) |} *)
-  (* | Laset aa ws x i => *)
-  (*   Let (n,t) := s.[x] in *)
-  (*   Let i := sem_pexpr s i >>= to_int in *)
-  (*   Let v := to_word ws v in *)
-  (*   Let t := WArray.set t aa i v in *)
-  (*   write_var x (@to_val (sarr n) t) s *)
-  (* | Lasub aa ws len x i => *)
-  (*   Let (n,t) := s.[x] in *)
-  (*   Let i := sem_pexpr s i >>= to_int in *)
-  (*   Let t' := to_arr (Z.to_pos (arr_size ws len)) v in  *)
-  (*   Let t := @WArray.set_sub n aa ws len t i t' in *)
-  (*   write_var x (@to_val (sarr n) t) s *)
+  | Laset aa ws x i =>
+    (* Let (n,t) := s.[x] in is a notation calling on_arr_varr on get_var *)
+    (* We just cast it since we do not track lengths *)
+    t' ← translate_get_var fn x ;;
+    let t := coerce_to_choice_type 'array t' in
+    i ← (truncate_code sint (translate_pexpr fn i)).π2 ;; (* to_int *)
+    v ← v.π2 ;;
+    let v := truncate_chWord ws v in
+    (* let t := setm t i v in *) (* WArray.set also calls write *)
+    unsupported.π2
+  | Lasub aa ws len x i =>
+    unsupported.π2
+  (* | Laset aa ws x i =>
+    Let (n,t) := s.[x] in
+    Let i := sem_pexpr s i >>= to_int in
+    Let v := to_word ws v in
+    Let t := WArray.set t aa i v in
+    write_var x (@to_val (sarr n) t) s *)
+  (* | Lasub aa ws len x i =>
+    Let (n,t) := s.[x] in
+    Let i := sem_pexpr s i >>= to_int in
+    Let t' := to_arr (Z.to_pos (arr_size ws len)) v in
+    Let t := @WArray.set_sub n aa ws len t i t' in
+    write_var x (@to_val (sarr n) t) s *)
   end.
 
 Definition instr_d (i : instr) : instr_r :=
