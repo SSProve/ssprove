@@ -1218,8 +1218,16 @@ Proof.
       1:{ eapply IHe2. all: eauto. }
       simpl. eapply u_ret. intros m hm.
       split. 1: assumption.
-      admit.
-    + admit.
+      erewrite translate_pexpr_type. 2: eassumption.
+      rewrite coerce_to_choice_type_K.
+      apply translate_truncate_val. assumption.
+    + eapply u_bind.
+      1:{ eapply IHe3. all: eauto. }
+      simpl. eapply u_ret. intros m hm.
+      split. 1: assumption.
+      erewrite translate_pexpr_type. 2: eassumption.
+      rewrite coerce_to_choice_type_K.
+      apply translate_truncate_val. assumption.
 Admitted.
 
 Lemma ptr_var_neq (ptr : pointer) (fn : funname) (v : var) :
