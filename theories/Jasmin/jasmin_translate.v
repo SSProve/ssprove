@@ -691,10 +691,10 @@ Definition translate_ptr (ptr : pointer) : Location :=
   ('word U8 ; (5 ^ Z.to_nat (wunsigned ptr))%nat).
 
 Definition rel_mem (m : mem) (h : heap) :=
-  ∀ ptr sz v,
-    read m ptr sz = ok v →
+  ∀ ptr v,
+    read m ptr U8 = ok v →
     get_heap h (translate_ptr ptr) =
-    coerce_to_choice_type _ (translate_value (@to_val (sword sz) v)).
+    coerce_to_choice_type _ (translate_value (@to_val (sword U8) v)).
 
 #[local] Open Scope vmap_scope.
 
