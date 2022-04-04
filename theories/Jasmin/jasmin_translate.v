@@ -400,19 +400,17 @@ Definition chArray_get_sub ws len (a : 'array) ptr scale :=
 Definition totc (ty : choice_type) (c : raw_code ty) : typed_code :=
   (ty ; c).
 
-Definition chRead ptr ws : typed_code :=
+Definition chRead ptr ws : raw_code ('word ws) :=
   (* memory as array *)
-  totc ('word ws)
-       (mem ← get mem_loc ;;
-        let f k :=
-          match mem (ptr + (wrepr Uptr k))%R with
-          | None => chCanonical ('word U8)
-          | Some x => x
-          end
-        in
-        let l := map f (ziota 0 (wsize_size ws)) in
-        ret (Jasmin.memory_model.LE.decode ws l)
-       ).
+  mem ← get mem_loc ;;
+  let f k :=
+    match mem (ptr + (wrepr Uptr k))%R with
+    | None => chCanonical ('word U8)
+    | Some x => x
+    end
+  in
+  let l := map f (ziota 0 (wsize_size ws)) in
+  ret (Jasmin.memory_model.LE.decode ws l).
 
 (* Following sem_pexpr *)
 Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
@@ -441,11 +439,12 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
       ret (chArray_get_sub ws len a i scale)
     )
   | Pload sz x e =>
-      totc ('word sz) (
+    totc ('word sz) (
       w ← translate_get_var fn x ;;
-      let w1 := truncate_el (sword Uptr) w in
+      let w1 : word _ := truncate_el (sword Uptr) w in
       w2 ← (truncate_code (sword Uptr) (translate_pexpr fn e)).π2 ;;
-      (truncate_code (sword sz) (chRead (wpmaddwd w1 w2) sz)).π2 (* BSH: i wish to write w1 + w2 instead of wpmaddwd, but it does not typecheck? *)
+      ww ← chRead (w1 + w2)%R sz ;;
+      ret (truncate_el (sword sz) ww)
     )
   | Papp1 o e =>
     totc _ (
@@ -498,12 +497,6 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
     pose (scale := mk_scale aa ws).
 
     exact (a ← arr ;; ptr ← i ;; ret (chArray_get ws a ptr scale)). *)
-
-  (* | Pload sz x e => *)
-    (* Let w1 := get_var s.(evm) x >>= to_pointer in *)
-    (* Let w2 := sem_pexpr s e >>= to_pointer in *)
-    (* Let w  := read s.(emem) (w1 + w2)%R sz in *)
-    (* ok (@to_val (sword sz) w) *)
 
   (* | PappN op es => *)
     (*   Let vs := mapM (sem_pexpr s) es in *)
