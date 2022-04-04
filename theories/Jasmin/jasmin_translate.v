@@ -1154,7 +1154,25 @@ Proof.
         simpl in ei. noconf ei.
         rewrite coerce_to_choice_type_K.
         apply chArray_get_correct. assumption.
-  -
+  - (* Psub *) admit.
+  - (* Pload *) admit.
+  - (* Papp1 *) admit.
+  - (* Papp2 *) admit.
+  - (* PappN TODO *) admit.
+  - (* Pif *)
+    simpl in h1. jbind h1 b eb. jbind eb b' eb'.
+    jbind h1 v1 ev1. jbind ev1 v1' ev1'.
+    jbind h1 v2 ev2. jbind ev2 v2' ev2'.
+    noconf h1.
+    simpl. rewrite bind_assoc.
+    eapply u_bind.
+    1:{ eapply IHe1. all: eauto. }
+    simpl. erewrite translate_pexpr_type. 2: eassumption.
+    rewrite coerce_to_choice_type_K.
+    (* We can't always destruct b' etc. as for destruct i' above
+      we need a lemma, probably similar to translate_of_val or
+      translate_truncate_val but specialised to to_bool, to_int etc.
+    *)
 Admitted.
 
 Lemma ptr_var_neq (ptr : pointer) (fn : funname) (v : var) :
