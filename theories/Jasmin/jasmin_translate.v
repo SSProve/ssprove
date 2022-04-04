@@ -1432,13 +1432,20 @@ Proof.
       jbind hve ve' hve'. jbind hw w hw'. jbind hw m hm.
       noconf hw.
       eapply u_get_remember. intros tv.
-      eapply u_bind. (* 2: eapply translate_pexpr_correct_new. *)
-      (* The condition on translate_pexpr_correct_new is too strict and cannot
-        accomodate for the added u_get in the pre.
-        Perhaps its pre and post should be an invariant that entails
-        rel_estate.
-      *)
-      all: admit.
+      eapply u_bind.
+      1:{
+        eapply translate_pexpr_correct_new.
+        - eassumption.
+        - intros ? []. assumption.
+      }
+      rewrite bind_assoc.
+      eapply u_bind.
+      1:{
+        eapply translate_pexpr_correct_new.
+        - eassumption.
+        - intros ? []. assumption.
+      }
+      simpl. admit.
     + admit.
     + admit.
   - admit.
@@ -1466,7 +1473,7 @@ Proof.
   (* all: shelve_unifiable. *)
   intros H.
   set (Pfun :=
-    λ (m : mem) (fn : funname) (va : seq value)  (m' : mem) (vr : seq value),
+    λ (m : mem) (fn : funname) (va : seq value) (m' : mem) (vr : seq value),
       ∀ f,
         let sp := translate_prog p in
         let dom := lchtuple [seq choice_type_of_val i | i <- va] in
