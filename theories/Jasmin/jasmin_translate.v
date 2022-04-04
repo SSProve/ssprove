@@ -545,6 +545,11 @@ Definition translate_write_lval (fn : funname) (l : lval) (v : typed_code)
     (* let t := setm t i v in *) (* WArray.set also calls write *)
     unsupported.π2
   | Lasub aa ws len x i =>
+    (* Same observation as Laset *)
+    t' ← translate_get_var fn x ;;
+    let t := coerce_to_choice_type 'array t' in
+    (* Again, we ignore the length *)
+    (* Let t' := to_arr (Z.to_pos (arr_size ws len)) v in *)
     unsupported.π2
   (* | Laset aa ws x i =>
     Let (n,t) := s.[x] in
