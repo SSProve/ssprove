@@ -1194,7 +1194,6 @@ Proof.
       noconf h1.
       rewrite coerce_to_choice_type_translate_value_to_val.
       f_equal. f_equal.
-      Search truncate_el.
       apply translate_pexpr_type with (fn:=fn) in h2.
       rewrite h2.
       rewrite !coerce_to_choice_type_K.
