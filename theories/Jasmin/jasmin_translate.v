@@ -1410,9 +1410,9 @@ Theorem translate_prog_correct (p : expr.uprog) (fn : funname) m va m' vr f :
   let cod := lchtuple (map choice_type_of_val vr) in
   get_fundef_ssp sp fn dom cod = Some f →
   (* satisfies_globs (p_globs p) (translate_mem m, translate_mem m') -> *)
-  ⊢ ⦃ satisfies_globs (p_globs p) ⦄
-    f (translate_values va) ≈ ret (translate_values vr)
-  ⦃ λ '(v1, s1) '(v2,s2), v1 = v2 ⦄.
+  ⊢ ⦃ λ m, True ⦄
+    f (translate_values va) ⇓ translate_values vr
+  ⦃ λ m, True ⦄.
 Proof.
   (* intros H H1 H2 H3 H4. *)
   (* unshelve eapply sem_call_Ind. *)
@@ -1424,105 +1424,77 @@ Proof.
         let sp := translate_prog p in
         let dom := lchtuple [seq choice_type_of_val i | i <- va] in
         let cod := lchtuple [seq choice_type_of_val i | i <- vr] in
-        get_fundef_ssp sp fn dom cod = Some f ->
+        get_fundef_ssp sp fn dom cod = Some f →
         (* satisfies_globs (p_globs p) (translate_mem m, translate_mem m') → *)
-        ⊢ ⦃ satisfies_globs (p_globs p) ⦄
-          f (translate_values va) ≈
-          ret (translate_values vr)
-        ⦃ λ '(v1, _) '(v2, _), v1 = v2 ⦄
+        ⊢ ⦃ λ m, True ⦄
+          f (translate_values va) ⇓ translate_values vr
+        ⦃ λ m, True ⦄
   ).
   set (Pi_r :=
     λ (s1 : estate) (i : instr_r) (s2 : estate),
-      ⊢ ⦃ λ '(h1,h2), False ⦄
-        translate_instr_r fn i ≈ ret tt
-      ⦃ λ '(v1, _) '(v2, _), True ⦄
+      ⊢ ⦃ rel_estate s1 fn ⦄
+        translate_instr_r fn i ⇓ tt
+      ⦃ rel_estate s2 fn ⦄
   ).
   set (Pi := λ s1 i s2, (Pi_r s1 (instr_d i) s2)).
   set (Pc :=
     λ (s1 : estate) (c : cmd) (s2 : estate),
-      ⊢ ⦃ λ '(h1,h2), False ⦄ translate_cmd fn c ≈ ret tt ⦃ λ '(v1, _) '(v2, _), True ⦄
+      ⊢ ⦃ rel_estate s1 fn ⦄ translate_cmd fn c ⇓ tt ⦃ rel_estate s2 fn ⦄
   ).
   (* FIXME *)
   set (Pfor :=
     λ (v : var_i) (ls : seq Z) (s1 : estate) (c : cmd) (s2 : estate),
-      ⊢ ⦃ λ '(h1,h2), False ⦄
-        (* ssprove_for *) translate_cmd fn c ≈
-        ret tt
-      ⦃ λ '(v1, _) '(v2, _), True ⦄
+      ⊢ ⦃ rel_estate s1 fn ⦄
+        (* ssprove_for *) translate_cmd fn c ⇓ tt
+      ⦃ rel_estate s2 fn ⦄
   ).
   unshelve eapply (@sem_call_Ind _ _ _ _ Pc Pi_r Pi Pfor Pfun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H).
   - red. intros.
-    red. unfold translate_cmd. simpl.
+    red. unfold translate_cmd.
     admit.
   - red. intros.
     red. unfold translate_cmd. simpl.
     admit.
   - red. intros.
     apply H1.
+  - red. intros s₁ s₂ x tag ty e v v' he hv hw.
+    red.
+    eapply translate_instr_r_correct.
+    (* Do we have to apply this lemma for each instance, seems wrong *)
+    econstructor. all: eauto.
+    (* Problem between p.(p_globs) and gd, this lemma should probably be
+      out of the section.
+    *)
+    all: admit.
+  - red. intros.
+    red. eapply translate_instr_r_correct.
+    econstructor. admit.
+  - red. intros.
+    red. eapply translate_instr_r_correct.
+    econstructor.
+    (* Two uprogs too *)
+    all: admit.
+  - red. intros.
+    red. eapply translate_instr_r_correct.
+    econstructor.
+    all: admit.
+  - red. intros.
+    red. eapply translate_instr_r_correct.
+    econstructor.
+    all: admit.
+  - red. intros.
+    red. eapply translate_instr_r_correct.
+    econstructor. all: admit.
+  - red. intros.
+    red. eapply translate_instr_r_correct.
+    econstructor. all: admit.
+  - admit.
   - red. intros.
     red.
-    unfold translate_instr_r.
-    destruct x.
-    + simpl. admit.
-    + simpl.
-      eapply r_transL.
-      * eapply r_bind with (mid := eq).
-        -- instantiate (1 := ret (coerce_to_choice_type _
-                         (translate_value v'))).
-           (* by eapply translate_pexpr_sound. *)
-           admit.               (* by H0: sem_pexpr e = ok v *)
-        -- intros.
-           eapply rpre_hypothesis_rule.
-           intros ? ? E.
-           noconf E.
-           eapply rpre_weaken_rule.
-           1: refine (rreflexivity_rule _).
-           simpl.
-           intros. by intuition subst.
-      * simpl.
-        eapply r_put_lhs with (pre := (λ '(_, _), False)).
-        apply r_ret.
-        intros.
-        admit.
-    + admit.
-    + admit.
-    + admit.
-  - red. intros.
-    red.
-    unfold translate_instr_r.
     admit.
   - red. intros.
-    red.
-    unfold translate_instr_r.
-    admit.
-  - red. intros.
-    red.
-    unfold translate_instr_r.
-    admit.
-  - red. intros.
-    red.
-    unfold translate_instr_r.
-    admit.
-  - red. intros.
-    red.
-    unfold translate_instr_r.
-    admit.
-  - red. intros.
-    red.
-    unfold translate_instr_r.
-    admit.
-  - red. intros.
-    red.
-    unfold translate_instr_r.
-    admit.
-  - red. intros.
-    red.
-    unfold translate_cmd.
-    admit.
-  - red. intros.
-    red.
-    unfold translate_instr_r.
-    admit.
+    red. eapply translate_instr_r_correct.
+    econstructor. all: admit.
   - red. intros.
     unfold Pfun. intros.
     unfold get_fundef_ssp in H7.
