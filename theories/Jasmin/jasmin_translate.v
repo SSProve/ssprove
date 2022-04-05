@@ -1115,20 +1115,19 @@ Qed.
 Lemma sop1_unembed_embed op v :
   sem_sop1_typed op (unembed (embed v)) = sem_sop1_typed op v.
 Proof.
-  destruct op.
-  all: try reflexivity.
-  destruct o.
-  all: try reflexivity.
+  destruct op as [| | | | | | o]. 1-6: reflexivity.
+  destruct o. all: reflexivity.
 Qed.
 
 Lemma sop2_unembed_embed op v1 v2 :
-  sem_sop2_typed op (unembed (embed v1)) (unembed (embed v2)) = sem_sop2_typed op v1 v2.
+  sem_sop2_typed op (unembed (embed v1)) (unembed (embed v2)) =
+  sem_sop2_typed op v1 v2.
 Proof.
   destruct op.
   all: try reflexivity.
   all: try destruct o.
   all: try destruct c.
-  all: try reflexivity.
+  all: reflexivity.
 Qed.
 
 Lemma translate_pexpr_correct :
