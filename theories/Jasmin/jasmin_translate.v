@@ -296,42 +296,44 @@ Proof.
     assumption.
 Qed.
 
+Lemma eq_op_MzK :
+  ∀ (k x : Z_ordType),
+    @eq_op Mz.K.t k x = (k == x).
+Proof.
+  intros k x.
+  destruct (k == x) eqn: e.
+  - apply /eqP. move: e => /eqP. auto.
+  - apply /eqP. move: e => /eqP. auto.
+Qed.
+
 Lemma fold_set {S : eqType} (data : Mz.Map.t S) k v :
   setm (Mz.fold (λ (k : Mz.Map.key) (v : S) (m : {fmap Z → S}), setm m k v) data emptym) k v =
-    Mz.fold (λ (k : Mz.Map.key) (v : S) (m : {fmap Z → S}), setm m k v) (Mz.set data k v) emptym.
+  Mz.fold (λ (k : Mz.Map.key) (v : S) (m : {fmap Z → S}), setm m k v) (Mz.set data k v) emptym.
 Proof.
   apply eq_fmap.
   intros x.
   rewrite fold_get.
   rewrite setmE Mz.setP.
   rewrite eq_sym.
-  destruct (k == x) eqn:E.
-  - move: E => /eqP->. rewrite eq_refl. reflexivity.
-  - move: E => /eqP E.
-    assert (H : (@eq_op Mz.K.t k x) = false). (* BSH: why is this so painful? *)
-    { apply /eqP. assumption. }
-    rewrite H.
-    rewrite fold_get.
-    reflexivity.
+  rewrite eq_op_MzK.
+  destruct (k == x).
+  - reflexivity.
+  - rewrite fold_get. reflexivity.
 Qed.
 
 Lemma fold_rem {S : eqType} (data : Mz.Map.t S) k :
   remm (Mz.fold (λ (k : Mz.Map.key) (v : S) (m : {fmap Z → S}), setm m k v) data emptym) k =
-    Mz.fold (λ (k : Mz.Map.key) (v : S) (m : {fmap Z → S}), setm m k v) (Mz.remove data k) emptym.
+  Mz.fold (λ (k : Mz.Map.key) (v : S) (m : {fmap Z → S}), setm m k v) (Mz.remove data k) emptym.
 Proof.
   apply eq_fmap.
   intros x.
   rewrite fold_get.
   rewrite remmE Mz.removeP.
   rewrite eq_sym.
-  destruct (k == x) eqn:E.
-  - move: E => /eqP->. rewrite eq_refl. reflexivity.
-  - move: E => /eqP E.
-    assert (H : (@eq_op Mz.K.t k x) = false). (* BSH: why is this so painful? *)
-    { apply /eqP. assumption. }
-    rewrite H.
-    rewrite fold_get.
-    reflexivity.
+  rewrite eq_op_MzK.
+  destruct (k == x).
+  - reflexivity.
+  - rewrite fold_get. reflexivity.
 Qed.
 
 Definition unembed {t : stype} : encode t → sem_t t :=
