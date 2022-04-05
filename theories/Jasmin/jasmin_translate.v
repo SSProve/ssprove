@@ -1121,6 +1121,16 @@ Proof.
   all: try reflexivity.
 Qed.
 
+Lemma sop2_unembed_embed op v1 v2 :
+  sem_sop2_typed op (unembed (embed v1)) (unembed (embed v2)) = sem_sop2_typed op v1 v2.
+Proof.
+  destruct op.
+  all: try reflexivity.
+  all: try destruct o.
+  all: try destruct c.
+  all: try reflexivity.
+Qed.
+
 Lemma translate_pexpr_correct :
   ∀ fn (e : pexpr) s₁ v (cond : heap → Prop),
     sem_pexpr gd s₁ e = ok v →
@@ -1207,7 +1217,37 @@ Proof.
       rewrite coerce_to_choice_type_translate_value_to_val.
       f_equal.
       apply sop1_unembed_embed.
-  - (* Papp2 *) admit.
+  - (* Papp2 *)
+    simpl in *.
+    jbind h1 v' h2.
+    jbind h1 v'' h3.
+    rewrite bind_assoc. simpl.
+    eapply u_bind.
+    1: eapply IHe1; eauto.
+    rewrite bind_assoc. simpl.
+    eapply u_bind.
+    1: eapply IHe2; eauto.
+    apply u_ret.
+    intuition subst.
+    unfold sem_sop2 in h1.
+    jbind h1 v''' h4.
+    jbind h1 v'''' h5.
+    jbind h1 v''''' h6.
+    noconf h1.
+    rewrite coerce_to_choice_type_translate_value_to_val.
+    apply translate_pexpr_type with (fn:=fn) in h2.
+    apply translate_pexpr_type with (fn:=fn) in h3.
+    rewrite h2 h3.
+    rewrite !coerce_to_choice_type_K.
+    erewrite translate_of_val.
+    2: exact h4.
+    erewrite translate_of_val.
+    2: exact h5.
+    rewrite coerce_to_choice_type_translate_value_to_val.
+    rewrite coerce_to_choice_type_translate_value_to_val.
+    rewrite sop2_unembed_embed.
+    rewrite h6.
+    reflexivity.
   - (* PappN TODO *) admit.
   - (* Pif *)
     simpl in h1. jbind h1 b eb. jbind eb b' eb'.
