@@ -1112,6 +1112,15 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma sop1_unembed_embed op v :
+  sem_sop1_typed op (unembed (embed v)) = sem_sop1_typed op v.
+Proof.
+  destruct op.
+  all: try reflexivity.
+  destruct o.
+  all: try reflexivity.
+Qed.
+
 Lemma translate_pexpr_correct :
   ∀ fn (e : pexpr) s₁ v (cond : heap → Prop),
     sem_pexpr gd s₁ e = ok v →
@@ -1196,10 +1205,8 @@ Proof.
       erewrite translate_of_val.
       2: exact h3.
       rewrite coerce_to_choice_type_translate_value_to_val.
-      destruct op.
-      all: try reflexivity.
-      destruct o.
-      all: try reflexivity.
+      f_equal.
+      apply sop1_unembed_embed.
   - (* Papp2 *) admit.
   - (* PappN TODO *) admit.
   - (* Pif *)
