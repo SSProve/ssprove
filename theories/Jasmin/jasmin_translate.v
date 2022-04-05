@@ -1257,15 +1257,11 @@ Proof.
     erewrite translate_pexpr_type. 2: eassumption.
     rewrite coerce_to_choice_type_K.
     erewrite translate_to_word. 2: eassumption.
-    (* eapply translate_to_word in hw1 as e1. *)
-    eapply hcond in hm. destruct hm as [hmm hvm].
-    (* It feels like I shouldn't have to unfold get_var
-      and that somehow translate_get_var_correct should be of help here.
-      One possibility is to extract a lemma from it.
-    *)
-    (* unfold get_var in hvx.
-    eapply on_vuP. 3: exact hvx.
-    erewrite hvm. 2: eassumption. *)
+    eapply hcond in hm.
+    erewrite get_var_get_heap. 2-3: eassumption.
+    simpl. erewrite <- type_of_get_var. 2: eassumption.
+    rewrite coerce_to_choice_type_K.
+    eapply translate_to_word in hw1 as e1. rewrite e1. clear e1.
     admit.
   - (* Papp1 *)
     simpl in *.
