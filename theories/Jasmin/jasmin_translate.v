@@ -766,13 +766,6 @@ Proof.
   - exact [interface].
 Defined.
 
-Definition ssprove_prog := seq (funname * fdef).
-
-Definition translate_prog (p : uprog) : ssprove_prog :=
-  (* let globs := collect_globs (p_globs p) in *)
-  let fds := map translate_fundef (p_funcs p) in
-  fds.
-
 Fixpoint lchtuple (ts : seq choice_type) : choice_type :=
   match ts with
   | [::] => 'unit
@@ -1403,25 +1396,26 @@ Proof.
   - admit.
 Admitted.
 
-Theorem translate_prog_correct (p : expr.uprog) (fn : funname) m va m' vr f :
-  sem.sem_call p m fn va m' vr →
-  let sp := (translate_prog p) in
+Definition ssprove_prog := seq (funname * fdef).
+
+Definition translate_prog : ssprove_prog :=
+  map translate_fundef P.(p_funcs).
+
+Theorem translate_prog_correct (fn : funname) m va m' vr f :
+  sem.sem_call P m fn va m' vr →
+  let sp := translate_prog in
   let dom := lchtuple (map choice_type_of_val va) in
   let cod := lchtuple (map choice_type_of_val vr) in
   get_fundef_ssp sp fn dom cod = Some f →
-  (* satisfies_globs (p_globs p) (translate_mem m, translate_mem m') -> *)
   ⊢ ⦃ λ m, True ⦄
     f (translate_values va) ⇓ translate_values vr
   ⦃ λ m, True ⦄.
 Proof.
-  (* intros H H1 H2 H3 H4. *)
-  (* unshelve eapply sem_call_Ind. *)
-  (* all: shelve_unifiable. *)
   intros H.
   set (Pfun :=
     λ (m : mem) (fn : funname) (va : seq value) (m' : mem) (vr : seq value),
       ∀ f,
-        let sp := translate_prog p in
+        let sp := translate_prog in
         let dom := lchtuple [seq choice_type_of_val i | i <- va] in
         let cod := lchtuple [seq choice_type_of_val i | i <- vr] in
         get_fundef_ssp sp fn dom cod = Some f →
@@ -1461,40 +1455,35 @@ Proof.
     red.
     eapply translate_instr_r_correct.
     (* Do we have to apply this lemma for each instance, seems wrong *)
-    econstructor. all: eauto.
-    (* Problem between p.(p_globs) and gd, this lemma should probably be
-      out of the section.
-    *)
-    all: admit.
+    econstructor. all: eassumption.
   - red. intros.
     red. eapply translate_instr_r_correct.
-    econstructor. admit.
+    econstructor. assumption.
   - red. intros.
     red. eapply translate_instr_r_correct.
     econstructor.
-    (* Two uprogs too *)
-    all: admit.
+    all: assumption.
+  - red. intros.
+    red. eapply translate_instr_r_correct.
+    econstructor ; assumption. (* backtrack to select the right constructor *)
   - red. intros.
     red. eapply translate_instr_r_correct.
     econstructor.
-    all: admit.
+    all: eassumption.
   - red. intros.
     red. eapply translate_instr_r_correct.
-    econstructor.
-    all: admit.
+    econstructor ; eassumption. (* backtrack *)
   - red. intros.
     red. eapply translate_instr_r_correct.
-    econstructor. all: admit.
-  - red. intros.
-    red. eapply translate_instr_r_correct.
-    econstructor. all: admit.
-  - admit.
+    econstructor. all: eassumption.
+  - red. intros. red.
+    admit.
   - red. intros.
     red.
     admit.
   - red. intros.
     red. eapply translate_instr_r_correct.
-    econstructor. all: admit.
+    econstructor. all: eassumption.
   - red. intros.
     unfold Pfun. intros.
     unfold get_fundef_ssp in H7.
