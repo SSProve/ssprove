@@ -173,7 +173,7 @@ Notation " 'array " := (chMap 'int ('word U8)) (in custom pack_type at level 2).
 Notation " 'mem " := (chMap ('word Uptr) ('word U8)) (at level 2) : package_scope.
 Notation " 'mem " := (chMap ('word Uptr) ('word U8)) (in custom pack_type at level 2).
 
-Parameter mem_index : nat.
+Definition mem_index : nat := 0.
 Definition mem_loc : Location := ('mem ; mem_index).
 
 Definition encode (t : stype) : choice_type :=
@@ -1288,6 +1288,12 @@ Lemma injective_translate_var :
 Proof.
 Admitted.
 
+Lemma mem_loc_translate_var_neq :
+  ∀ fn x,
+    mem_loc != translate_var fn x.
+Proof.
+Admitted.
+
 (* TODO Make fixpoint too! *)
 Lemma translate_instr_r_correct :
   ∀ (fn : funname) (i : instr_r) (s₁ s₂ : estate),
@@ -1320,10 +1326,9 @@ Proof.
         destruct hm as [hm hv].
         split.
         - unfold rel_mem.
-          admit.
-          (* intros ptr sz w hrw. *)
-          (* rewrite get_set_heap_neq. 2: apply ptr_var_neq. *)
-          (* apply hm. assumption. *)
+          intros ptr byte hr.
+          rewrite get_set_heap_neq. 2: apply mem_loc_translate_var_neq.
+          apply hm. assumption.
         - simpl. unfold rel_vmap.
           intros i vi ei.
           simpl. rewrite !coerce_to_choice_type_K.
