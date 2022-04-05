@@ -1189,7 +1189,7 @@ Proof.
     jbind h1 i hi. jbind hi i' hi'. jbind h1 t ht. noconf h1.
     eapply u_bind.
     1:{ eapply translate_gvar_correct. all: eauto. }
-    rewrite bind_assoc. simpl.
+    rewrite bind_assoc.
     eapply u_bind.
     1:{ eapply IHe. all: eauto. }
     eapply u_ret. intros m hm.
@@ -1198,6 +1198,8 @@ Proof.
     erewrite translate_pexpr_type. 2: eassumption.
     rewrite coerce_to_choice_type_K.
     erewrite translate_to_int. 2: eassumption.
+    apply type_of_get_gvar in hnt. rewrite <- hnt.
+    rewrite !coerce_to_choice_type_K.
     (* Should we have a chArray_get_sub lemma involving Warray.get_sub? *)
     admit.
   - (* Pload *) admit.
