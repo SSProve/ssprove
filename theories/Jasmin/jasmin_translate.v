@@ -871,6 +871,25 @@ Definition rel_mem (m : mem) (h : heap) :=
     (* get_heap h (translate_ptr ptr) = *)
     (* coerce_to_choice_type _ (translate_value (@to_val (sword U8) v)). *)
 
+Lemma translate_read :
+  ∀ s ptr sz w m,
+    rel_mem s m →
+    read s ptr sz = ok w →
+    read_mem (get_heap m mem_loc) ptr sz = w.
+Proof.
+  intros s ptr sz w m hm h.
+  rewrite readE in h.
+  jbind h _u eb. apply assertP in eb.
+  jbind h l hl. noconf h.
+  unfold read_mem. f_equal.
+  revert l hl. apply ziota_ind.
+  - simpl. intros l h. noconf h. reflexivity.
+  - simpl. intros i l' hi ih l h.
+    jbind h y hy. jbind h ys hys. noconf h.
+    erewrite ih. 2: exact hys.
+    eapply hm in hy. rewrite hy. reflexivity.
+Qed.
+
 #[local] Open Scope vmap_scope.
 
 Definition rel_vmap (vm : vmap) (fn : funname) (h : heap) :=
@@ -880,6 +899,16 @@ Definition rel_vmap (vm : vmap) (fn : funname) (h : heap) :=
 
 Definition rel_estate (s : estate) (fn : funname) (h : heap) :=
   rel_mem s.(emem) h ∧ rel_vmap s.(evm) fn h.
+
+Lemma translate_read_estate :
+  ∀ fn s ptr sz w m,
+    rel_estate s fn m →
+    read (emem s) ptr sz = ok w →
+    read_mem (get_heap m mem_loc) ptr sz = w.
+Proof.
+  intros fn s ptr sz w m [] h.
+  eapply translate_read. all: eassumption.
+Qed.
 
 Lemma coerce_cast_code (ty vty : choice_type) (v : vty) :
   ret (coerce_to_choice_type ty v) = coerce_typed_code ty (vty ; ret v).
