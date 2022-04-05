@@ -28,6 +28,127 @@ Derive NoConfusion for wsize.
 Derive NoConfusion for CoqWord.word.word.
 Derive EqDec for wsize.
 
+(* Unary judgment concluding on evaluation of program *)
+
+Definition eval_jdg {A : choiceType}
+  (pre : heap → Prop) (post : heap → Prop)
+  (c : raw_code A) (v : A) :=
+  ⊢ ⦃ λ '(h₀, h₁), pre h₀ ⦄
+    c ≈ ret v
+  ⦃ λ '(a₀, h₀) '(a₁, h₁), post h₀ ∧ a₀ = a₁ ∧ a₁ = v ⦄.
+
+Notation "⊢ ⦃ pre ⦄ c ⇓ v ⦃ post ⦄" :=
+  (eval_jdg pre post c v)
+  (format "⊢  ⦃  pre  ⦄ '/  '  '[' c  ']' '/' ⇓ '/  '  '[' v  ']' '/' ⦃  post  ⦄")
+  : package_scope.
+
+Lemma u_ret :
+  ∀ {A : choiceType} (v v' : A) (p q : heap → Prop),
+    (∀ hp, p hp → q hp ∧ v = v') →
+    ⊢ ⦃ p ⦄ ret v ⇓ v' ⦃ q ⦄.
+Proof.
+  intros A v v' p q h.
+  unfold eval_jdg.
+  apply r_ret.
+  intros hp hp' hhp.
+  specialize (h hp).
+  intuition eauto.
+Qed.
+
+Lemma u_ret_eq :
+  ∀ {A : choiceType} (v : A) (p q : heap → Prop),
+    (∀ hp, p hp → q hp) →
+    ⊢ ⦃ p ⦄ ret v ⇓ v ⦃ q ⦄.
+Proof.
+  intros A v p q h.
+  apply u_ret. intuition eauto.
+Qed.
+
+Lemma u_bind :
+  ∀ {A B : choiceType} m f v₁ v₂ (p q r : heap → Prop),
+    ⊢ ⦃ p ⦄ m ⇓ v₁ ⦃ q ⦄ →
+    ⊢ ⦃ q ⦄ f v₁ ⇓ v₂ ⦃ r ⦄ →
+    ⊢ ⦃ p ⦄ @bind A B m f ⇓ v₂ ⦃ r ⦄.
+Proof.
+  intros A B m f v₁ v₂ p q r hm hf.
+  unfold eval_jdg.
+  change (ret v₂) with (ret v₁ ;; ret v₂).
+  eapply r_bind.
+  - exact hm.
+  - intros a₀ a₁.
+    eapply rpre_hypothesis_rule.
+    intuition subst.
+    eapply rpre_weaken_rule.
+    1: apply hf.
+    simpl. intuition subst. assumption.
+Qed.
+
+(* Unary variant of set_lhs *)
+Definition u_set_pre (ℓ : Location) (v : ℓ) (pre : heap → Prop): heap → Prop :=
+  λ m, ∃ m', pre m' ∧ m = set_heap m' ℓ v.
+
+Lemma u_put :
+  ∀ {A : choiceType} (ℓ : Location) (v : ℓ) (r : raw_code A) (v' : A) p q,
+    ⊢ ⦃ u_set_pre ℓ v p ⦄ r ⇓ v' ⦃ q ⦄ →
+    ⊢ ⦃ p ⦄ #put ℓ := v ;; r ⇓ v' ⦃ q ⦄.
+Proof.
+  intros A ℓ v r v' p q h.
+  eapply r_put_lhs with (pre := λ '(_,_), _).
+  eapply rpre_weaken_rule. 1: eapply h.
+  intros m₀ m₁ hm. simpl.
+  destruct hm as [m' hm].
+  exists m'. exact hm.
+Qed.
+
+(* Unary variant of inv_conj (⋊) *)
+Definition u_pre_conj (p q : heap → Prop) : heap → Prop :=
+  λ m, p m ∧ q m.
+
+Notation "p ≪ q" :=
+  (u_pre_conj p q) (at level 19, left associativity) : package_scope.
+
+(* Unary variant of rem_lhs *)
+Definition u_get (ℓ : Location) (v : ℓ) : heap → Prop :=
+  λ m, get_heap m ℓ = v.
+
+Lemma u_get_remember :
+  ∀ (A : choiceType) (ℓ : Location) (k : ℓ → raw_code A) (v : A) p q,
+    (∀ x, ⊢ ⦃ p ≪ u_get ℓ x ⦄ k x ⇓ v ⦃ q ⦄) →
+    ⊢ ⦃ p ⦄ x ← get ℓ ;; k x ⇓ v ⦃ q ⦄.
+Proof.
+  intros A ℓ k v p q h.
+  eapply r_get_remember_lhs with (pre := λ '(_,_), _).
+  intro x.
+  eapply rpre_weaken_rule. 1: eapply h.
+  simpl. intuition eauto.
+Qed.
+
+(* Unary rpre_weaken_rule *)
+Lemma upre_weaken_rule :
+  ∀ A (r : raw_code A) v (p1 p2 : heap → Prop) q,
+    ⊢ ⦃ p1 ⦄ r ⇓ v ⦃ q ⦄ →
+    (∀ h, p2 h → p1 h) →
+    ⊢ ⦃ p2 ⦄ r ⇓ v ⦃ q ⦄.
+Proof.
+  intros A r v p1 p2 q h hp.
+  eapply rpre_weaken_rule.
+  - eapply h.
+  - intros. apply hp. assumption.
+Qed.
+
+(* Unary rpost_weaken_rule *)
+Lemma upost_weaken_rule :
+  ∀ A (r : raw_code A) v p (q1 q2 : heap → Prop),
+    ⊢ ⦃ p ⦄ r ⇓ v ⦃ q1 ⦄ →
+    (∀ h, q1 h → q2 h) →
+    ⊢ ⦃ p ⦄ r ⇓ v ⦃ q2 ⦄.
+Proof.
+  intros A r v p q1 q2 h hq.
+  eapply rpost_weaken_rule.
+  - eapply h.
+  - intros [] []. intuition eauto.
+Qed.
+
 Section Translation.
 
 Context `{asmop : asmOp}.
@@ -763,127 +884,6 @@ Proof.
   2:{ clear - e. rewrite eqxx in e. discriminate. }
   rewrite <- Heqcall.
   apply cast_ct_val_K.
-Qed.
-
-(* Unary judgment concluding on evaluation of program *)
-
-Definition eval_jdg {A : choiceType}
-  (pre : heap → Prop) (post : heap → Prop)
-  (c : raw_code A) (v : A) :=
-  ⊢ ⦃ λ '(h₀, h₁), pre h₀ ⦄
-    c ≈ ret v
-  ⦃ λ '(a₀, h₀) '(a₁, h₁), post h₀ ∧ a₀ = a₁ ∧ a₁ = v ⦄.
-
-Notation "⊢ ⦃ pre ⦄ c ⇓ v ⦃ post ⦄" :=
-  (eval_jdg pre post c v)
-  (format "⊢  ⦃  pre  ⦄ '/  '  '[' c  ']' '/' ⇓ '/  '  '[' v  ']' '/' ⦃  post  ⦄")
-  : package_scope.
-
-Lemma u_ret :
-  ∀ {A : choiceType} (v v' : A) (p q : heap → Prop),
-    (∀ hp, p hp → q hp ∧ v = v') →
-    ⊢ ⦃ p ⦄ ret v ⇓ v' ⦃ q ⦄.
-Proof.
-  intros A v v' p q h.
-  unfold eval_jdg.
-  apply r_ret.
-  intros hp hp' hhp.
-  specialize (h hp).
-  intuition eauto.
-Qed.
-
-Lemma u_ret_eq :
-  ∀ {A : choiceType} (v : A) (p q : heap → Prop),
-    (∀ hp, p hp → q hp) →
-    ⊢ ⦃ p ⦄ ret v ⇓ v ⦃ q ⦄.
-Proof.
-  intros A v p q h.
-  apply u_ret. intuition eauto.
-Qed.
-
-Lemma u_bind :
-  ∀ {A B : choiceType} m f v₁ v₂ (p q r : heap → Prop),
-    ⊢ ⦃ p ⦄ m ⇓ v₁ ⦃ q ⦄ →
-    ⊢ ⦃ q ⦄ f v₁ ⇓ v₂ ⦃ r ⦄ →
-    ⊢ ⦃ p ⦄ @bind A B m f ⇓ v₂ ⦃ r ⦄.
-Proof.
-  intros A B m f v₁ v₂ p q r hm hf.
-  unfold eval_jdg.
-  change (ret v₂) with (ret v₁ ;; ret v₂).
-  eapply r_bind.
-  - exact hm.
-  - intros a₀ a₁.
-    eapply rpre_hypothesis_rule.
-    intuition subst.
-    eapply rpre_weaken_rule.
-    1: apply hf.
-    simpl. intuition subst. assumption.
-Qed.
-
-(* Unary variant of set_lhs *)
-Definition u_set_pre (ℓ : Location) (v : ℓ) (pre : heap → Prop): heap → Prop :=
-  λ m, ∃ m', pre m' ∧ m = set_heap m' ℓ v.
-
-Lemma u_put :
-  ∀ {A : choiceType} (ℓ : Location) (v : ℓ) (r : raw_code A) (v' : A) p q,
-    ⊢ ⦃ u_set_pre ℓ v p ⦄ r ⇓ v' ⦃ q ⦄ →
-    ⊢ ⦃ p ⦄ #put ℓ := v ;; r ⇓ v' ⦃ q ⦄.
-Proof.
-  intros A ℓ v r v' p q h.
-  eapply r_put_lhs with (pre := λ '(_,_), _).
-  eapply rpre_weaken_rule. 1: eapply h.
-  intros m₀ m₁ hm. simpl.
-  destruct hm as [m' hm].
-  exists m'. exact hm.
-Qed.
-
-(* Unary variant of inv_conj (⋊) *)
-Definition u_pre_conj (p q : heap → Prop) : heap → Prop :=
-  λ m, p m ∧ q m.
-
-Notation "p ≪ q" :=
-  (u_pre_conj p q) (at level 19, left associativity) : package_scope.
-
-(* Unary variant of rem_lhs *)
-Definition u_get (ℓ : Location) (v : ℓ) : heap → Prop :=
-  λ m, get_heap m ℓ = v.
-
-Lemma u_get_remember :
-  ∀ (A : choiceType) (ℓ : Location) (k : ℓ → raw_code A) (v : A) p q,
-    (∀ x, ⊢ ⦃ p ≪ u_get ℓ x ⦄ k x ⇓ v ⦃ q ⦄) →
-    ⊢ ⦃ p ⦄ x ← get ℓ ;; k x ⇓ v ⦃ q ⦄.
-Proof.
-  intros A ℓ k v p q h.
-  eapply r_get_remember_lhs with (pre := λ '(_,_), _).
-  intro x.
-  eapply rpre_weaken_rule. 1: eapply h.
-  simpl. intuition eauto.
-Qed.
-
-(* Unary rpre_weaken_rule *)
-Lemma upre_weaken_rule :
-  ∀ A (r : raw_code A) v (p1 p2 : heap → Prop) q,
-    ⊢ ⦃ p1 ⦄ r ⇓ v ⦃ q ⦄ →
-    (∀ h, p2 h → p1 h) →
-    ⊢ ⦃ p2 ⦄ r ⇓ v ⦃ q ⦄.
-Proof.
-  intros A r v p1 p2 q h hp.
-  eapply rpre_weaken_rule.
-  - eapply h.
-  - intros. apply hp. assumption.
-Qed.
-
-(* Unary rpost_weaken_rule *)
-Lemma upost_weaken_rule :
-  ∀ A (r : raw_code A) v p (q1 q2 : heap → Prop),
-    ⊢ ⦃ p ⦄ r ⇓ v ⦃ q1 ⦄ →
-    (∀ h, q1 h → q2 h) →
-    ⊢ ⦃ p ⦄ r ⇓ v ⦃ q2 ⦄.
-Proof.
-  intros A r v p q1 q2 h hq.
-  eapply rpost_weaken_rule.
-  - eapply h.
-  - intros [] []. intuition eauto.
 Qed.
 
 Lemma coerce_to_choice_type_translate_value_to_val :
