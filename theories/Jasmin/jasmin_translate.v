@@ -1005,7 +1005,7 @@ Qed.
 Lemma translate_pexpr_type fn s₁ e v :
   sem_pexpr gd s₁ e = ok v →
   (translate_pexpr fn e).π1 = choice_type_of_val v.
-Proof with try discriminate; simpl in *.
+Proof.
   intros.
   revert v H.
   destruct e; intros; simpl in *.
