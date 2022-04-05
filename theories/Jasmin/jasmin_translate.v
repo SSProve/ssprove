@@ -565,17 +565,20 @@ Definition chArray_get_sub ws len (a : 'array) ptr scale :=
 Definition totc (ty : choice_type) (c : raw_code ty) : typed_code :=
   (ty ; c).
 
-Definition chRead ptr ws : raw_code ('word ws) :=
-  (* memory as array *)
-  mem ← get mem_loc ;;
+Definition read_mem (m : 'mem) ptr ws : 'word ws :=
   let f k :=
-    match mem (ptr + (wrepr Uptr k))%R with
+    match m (ptr + (wrepr Uptr k))%R with
     | None => chCanonical ('word U8)
     | Some x => x
     end
   in
   let l := map f (ziota 0 (wsize_size ws)) in
-  ret (Jasmin.memory_model.LE.decode ws l).
+  Jasmin.memory_model.LE.decode ws l.
+
+Definition chRead ptr ws : raw_code ('word ws) :=
+  (* memory as array *)
+  mem ← get mem_loc ;;
+  ret (read_mem mem ptr ws).
 
 (* Following sem_pexpr *)
 Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
