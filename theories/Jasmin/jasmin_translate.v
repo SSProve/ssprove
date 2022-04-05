@@ -962,6 +962,27 @@ Proof.
   apply translate_of_val. assumption.
 Qed.
 
+Lemma translate_truncate_word :
+  ∀ sz sz' (w : word sz) (w' : word sz'),
+    truncate_word sz' w = ok w' →
+    truncate_chWord sz' (@embed (sword _) w) = w'.
+Proof.
+  intros sz sz' w w' h.
+  simpl. rewrite h. reflexivity.
+Qed.
+
+Lemma translate_to_word :
+  ∀ sz v w,
+    to_word sz v = ok w →
+    truncate_chWord sz (translate_value v) = w.
+Proof.
+  intros sz v w h.
+  destruct v as [| | | sz' w' | []]. all: try discriminate.
+  simpl in h.
+  unfold translate_value.
+  apply translate_truncate_word. assumption.
+Qed.
+
 Lemma translate_to_bool :
   ∀ v b,
     to_bool v = ok b →
@@ -1202,7 +1223,36 @@ Proof.
     rewrite !coerce_to_choice_type_K.
     (* Should we have a chArray_get_sub lemma involving Warray.get_sub? *)
     admit.
-  - (* Pload *) admit.
+  - (* Pload *)
+    simpl in h1. jbind h1 w1 hw1. jbind hw1 vx hvx.
+    jbind h1 w2 hw2. jbind hw2 v2 hv2. jbind h1 w hw. noconf h1.
+    simpl.
+    eapply u_get_remember. simpl. intros x'.
+    rewrite bind_assoc.
+    eapply u_bind.
+    1:{
+      eapply IHe. 1: eassumption.
+      intros ? []. eauto.
+    }
+    simpl.
+    eapply u_get_remember. intros mem.
+    eapply u_ret. unfold u_get. intros m [[hm e1] e2].
+    split. 1: assumption.
+    subst.
+    rewrite coerce_to_choice_type_K.
+    erewrite translate_pexpr_type. 2: eassumption.
+    rewrite coerce_to_choice_type_K.
+    erewrite translate_to_word. 2: eassumption.
+    (* eapply translate_to_word in hw1 as e1. *)
+    eapply hcond in hm. destruct hm as [hmm hvm].
+    (* It feels like I shouldn't have to unfold get_var
+      and that somehow translate_get_var_correct should be of help here.
+      One possibility is to extract a lemma from it.
+    *)
+    (* unfold get_var in hvx.
+    eapply on_vuP. 3: exact hvx.
+    erewrite hvm. 2: eassumption. *)
+    admit.
   - (* Papp1 *)
     simpl in *.
     jbind h1 v' h2.
