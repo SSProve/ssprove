@@ -1244,23 +1244,6 @@ Admitted.
 Notation coe_cht := coerce_to_choice_type.
 Notation coe_tyc := coerce_typed_code.
 
-(* TODO MOVE *)
-(* Lemma u_coerce_typed_code :
-  ∀ (c : typed_code) (ty : choice_type) (v : ty) p q,
-    ⊢ ⦃ p ⦄ c.π2 ⇓ coerce_to_choice_type c.π1 v ⦃ q ⦄ →
-    ⊢ ⦃ p ⦄ coerce_typed_code ty c ⇓ v ⦃ q ⦄.
-Proof.
-  intros c ty v p q h.
-  destruct c as [ty' c]. simpl in h.
-  destruct (ty' == ty) eqn:e.
-  all: move: e => /eqP e.
-  - subst. rewrite coerce_typed_code_K. rewrite coerce_to_choice_type_K in h.
-    assumption.
-  - rewrite coerce_typed_code_neq. 2: assumption.
-    rewrite coerce_to_choice_type_neq in h. 2: eauto.
-    WRONG, should just have coercion in the conclusions, including the value
-Abort. *)
-
 Lemma injective_translate_var :
   ∀ fn, injective (translate_var fn).
 Proof.
