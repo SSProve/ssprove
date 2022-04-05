@@ -889,6 +889,22 @@ Proof.
   all: simpl. all: rewrite coerce_to_choice_type_K. all: reflexivity.
 Qed.
 
+Lemma get_var_get_heap :
+  ∀ fn x s v m,
+    get_var (evm s) x = ok v →
+    rel_estate s fn m →
+    get_heap m (translate_var fn x) =
+    coerce_to_choice_type _ (translate_value v).
+Proof.
+  intros fn x s v m ev hm.
+  unfold get_var in ev.
+  eapply on_vuP. 3: exact ev. 2: discriminate.
+  intros sx esx esv.
+  eapply hm in esx. subst.
+  rewrite coerce_to_choice_type_translate_value_to_val.
+  rewrite esx. rewrite coerce_to_choice_type_K. reflexivity.
+Qed.
+
 Lemma translate_get_var_correct :
   ∀ fn x s v (cond : heap → Prop),
     get_var (evm s) x = ok v →
@@ -902,12 +918,10 @@ Proof.
   eapply u_get_remember. intros vx.
   eapply u_ret. intros m [hm hx].
   split. 1: assumption.
-  unfold u_get in hx. unfold get_var in ev.
-  eapply on_vuP. 3: exact ev. 2: discriminate.
-  intros sx esx esv.
-  eapply hcond in hm. eapply hm in esx. subst.
-  rewrite coerce_to_choice_type_translate_value_to_val.
-  rewrite esx. rewrite coerce_to_choice_type_K. reflexivity.
+  unfold u_get in hx. subst.
+  eapply get_var_get_heap.
+  - eassumption.
+  - eapply hcond. assumption.
 Qed.
 
 Lemma translate_gvar_correct (f : funname) (x : gvar) (v : value) s (cond : heap → Prop) :
