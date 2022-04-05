@@ -1622,12 +1622,14 @@ Proof.
       ⦃ rel_estate s2 fn ⦄
   ).
   unshelve eapply (@sem_call_Ind _ _ _ _ Pc Pi_r Pi Pfor Pfun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H).
+  - red. intros s.
+    red. simpl.
+    eapply u_ret_eq. auto.
   - red. intros.
-    red. unfold translate_cmd.
-    admit.
-  - red. intros.
-    red. unfold translate_cmd. simpl.
-    admit.
+    red. simpl.
+    eapply u_bind.
+    + (* eapply translate_instr_correct. *) admit.
+    + eassumption.
   - red. intros.
     apply H1.
   - red. intros s₁ s₂ x tag ty e v v' he hv hw.
