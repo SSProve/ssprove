@@ -296,6 +296,44 @@ Proof.
     assumption.
 Qed.
 
+Lemma fold_set {S : eqType} (data : Mz.Map.t S) k v :
+  setm (Mz.fold (λ (k : Mz.Map.key) (v : S) (m : {fmap Z → S}), setm m k v) data emptym) k v =
+    Mz.fold (λ (k : Mz.Map.key) (v : S) (m : {fmap Z → S}), setm m k v) (Mz.set data k v) emptym.
+Proof.
+  apply eq_fmap.
+  intros x.
+  rewrite fold_get.
+  rewrite setmE Mz.setP.
+  rewrite eq_sym.
+  destruct (k == x) eqn:E.
+  - move: E => /eqP->. rewrite eq_refl. reflexivity.
+  - move: E => /eqP E.
+    assert (H : (@eq_op Mz.K.t k x) = false). (* BSH: why is this so painful? *)
+    { apply /eqP. assumption. }
+    rewrite H.
+    rewrite fold_get.
+    reflexivity.
+Qed.
+
+Lemma fold_rem {S : eqType} (data : Mz.Map.t S) k :
+  remm (Mz.fold (λ (k : Mz.Map.key) (v : S) (m : {fmap Z → S}), setm m k v) data emptym) k =
+    Mz.fold (λ (k : Mz.Map.key) (v : S) (m : {fmap Z → S}), setm m k v) (Mz.remove data k) emptym.
+Proof.
+  apply eq_fmap.
+  intros x.
+  rewrite fold_get.
+  rewrite remmE Mz.removeP.
+  rewrite eq_sym.
+  destruct (k == x) eqn:E.
+  - move: E => /eqP->. rewrite eq_refl. reflexivity.
+  - move: E => /eqP E.
+    assert (H : (@eq_op Mz.K.t k x) = false). (* BSH: why is this so painful? *)
+    { apply /eqP. assumption. }
+    rewrite H.
+    rewrite fold_get.
+    reflexivity.
+Qed.
+
 Definition unembed {t : stype} : encode t → sem_t t :=
   match t return encode t → sem_t t with
   | sbool => λ x, x
@@ -516,9 +554,9 @@ Definition chArray_get_sub ws len (a : 'array) ptr scale :=
   if (0 <=? start)%Z (* && (start + size <=? ) *)
   then (
     foldr (λ (i : Z) (data : 'array),
-      match assoc a (start + i)%Z with
+      match a (start + i)%Z with
       | Some w => setm data i w
-      | None => data
+      | None => remm data i      (* BSH: this should maybe not be done; I added it to simplify the proof of equivalence *)
       end
     ) emptym (ziota 0 size)
   )
@@ -1137,6 +1175,34 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma chArray_get_sub_correct (lena len : BinNums.positive) a aa sz i t :
+  WArray.get_sub aa sz len a i = ok t ->
+  chArray_get_sub sz len (translate_value (@Varr lena a)) i (mk_scale aa sz) = translate_value (Varr t).
+Proof.
+  intros H.
+  unfold WArray.get_sub in H.
+  destruct (_ && _) eqn:E. 2: discriminate.
+  noconf H.
+  unfold chArray_get_sub.
+  unfold WArray.get_sub_data.
+  move: E => /andP []-> h2.
+  rewrite <- !foldl_rev.
+  apply ziota_ind.
+  - reflexivity.
+  - intros.
+    rewrite rev_cons.
+    rewrite !foldl_rcons.
+    rewrite H0.
+    rewrite fold_get.
+    destruct (Mz.get (WArray.arr_data a) (i * mk_scale aa sz + i0)%Z) eqn:E.
+    + rewrite E.
+      rewrite fold_set.
+      reflexivity.
+    + rewrite E.
+      rewrite fold_rem.
+      reflexivity.
+Qed.
+
 Lemma sop1_unembed_embed op v :
   sem_sop1_typed op (unembed (embed v)) = sem_sop1_typed op v.
 Proof.
@@ -1235,8 +1301,8 @@ Proof.
     erewrite translate_to_int. 2: eassumption.
     apply type_of_get_gvar in hnt. rewrite <- hnt.
     rewrite !coerce_to_choice_type_K.
-    (* Should we have a chArray_get_sub lemma involving Warray.get_sub? *)
-    admit.
+    apply chArray_get_sub_correct.
+    assumption.
   - (* Pload *)
     simpl in h1. jbind h1 w1 hw1. jbind hw1 vx hvx.
     jbind h1 w2 hw2. jbind hw2 v2 hv2. jbind h1 w hw. noconf h1.
