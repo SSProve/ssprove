@@ -1016,51 +1016,48 @@ Proof with try discriminate; simpl in *.
     unfold translate_gvar.
     reflexivity.
   - simpl in H.
-    destruct get_gvar...
-    + destruct v0...
-      destruct sem_pexpr...
-      destruct v0...
-      * destruct WArray.get...
-        noconf H.
-        reflexivity.
-      * destruct t...
-  - destruct get_gvar...
-    destruct v0...
-    destruct sem_pexpr...
-    destruct v0...
-    * destruct WArray.get_sub...
-      noconf H.
-      reflexivity.
-    * destruct t...
-  - destruct get_var...
-    destruct to_pointer...
-    destruct sem_pexpr...
-    destruct to_pointer...
-    destruct read...
-    noconf H. reflexivity.
-  - destruct sem_pexpr...
-    apply sem_sop1I in H as [].
-    rewrite H0.
+    jbind H x h1.
+    destruct x. all: try discriminate.
+    jbind H x h2.
+    jbind H y h3.
+    noconf H.
+    reflexivity.
+  - jbind H x h1.
+    destruct x. all: try discriminate.
+    jbind H x h2.
+    jbind H y h3.
+    noconf H.
+    reflexivity.
+  - jbind H x h1.
+    jbind H y h2.
+    jbind H z h3.
+    noconf H.
+    reflexivity.
+  - jbind H x h1.
+    jbind H y h2.
+    noconf H.
     unfold choice_type_of_val.
     rewrite type_of_to_val.
     reflexivity.
-  - destruct (sem_pexpr _ _ e1)...
-    destruct sem_pexpr...
-    apply sem_sop2I in H as [? [? [? []]]].
-    unfold choice_type_of_val. subst.
-    by rewrite type_of_to_val.
-  - admit.
-  - destruct (sem_pexpr _ _ e1)...
-    destruct to_bool...
-    destruct (sem_pexpr _ _ e2)...
-    destruct truncate_val eqn:E...
-    destruct sem_pexpr...
-    destruct (truncate_val s v3) eqn:E2...
-    unfold truncate_val in *.
-    repeat destruct of_val...
-    noconf E. noconf E2.
+  - jbind H v1 h1.
+    jbind H v2 h2.
+    jbind H v3 h3.
+    jbind H v4 h4.
+    jbind H v5 h5.
+    noconf H.
     unfold choice_type_of_val.
-    destruct b; noconf H; by rewrite type_of_to_val.
+    rewrite type_of_to_val.
+    reflexivity.
+  - admit.
+  - jbind H v1 h1.
+    jbind H v2 h2.
+    jbind H v3 h3.
+    noconf H.
+    jbind h2 v4 h4.
+    jbind h3 v5 h5.
+    unfold choice_type_of_val.
+    destruct v1.
+    all: erewrite truncate_val_type. 1,3: reflexivity. 1,2: eassumption.
 Admitted.
 
 Lemma mapM_nil {eT aT bT} f l :
