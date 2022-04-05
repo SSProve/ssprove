@@ -613,8 +613,7 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
       w ← translate_get_var fn x ;;
       let w1 : word _ := truncate_el (sword Uptr) w in
       w2 ← (truncate_code (sword Uptr) (translate_pexpr fn e)).π2 ;;
-      ww ← chRead (w1 + w2)%R sz ;;
-      ret (truncate_el (sword sz) ww)
+      chRead (w1 + w2)%R sz
     )
   | Papp1 o e =>
     totc _ (
@@ -1362,7 +1361,7 @@ Proof.
     simpl. erewrite <- type_of_get_var. 2: eassumption.
     rewrite coerce_to_choice_type_K.
     eapply translate_to_word in hw1 as e1. rewrite e1. clear e1.
-    admit.
+    eapply translate_read_estate. all: eassumption.
   - (* Papp1 *)
     simpl in *.
     jbind h1 v' h2.
