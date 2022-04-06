@@ -895,7 +895,40 @@ Proof.
   all: rewrite E; rewrite <- LE.encode8E; apply LE.decodeK.
 Qed.
 
+Lemma write_mem_get ws m p (w : word ws) p' :
+  write_mem m p w p' =
+    if (0 <=? sub p' p)%Z && (sub p' p <? wsize_size ws)%Z
+    then Some (LE.wread8 w (sub p' p))
+    else m p'.
+Proof.
+  unfold write_mem.
+  rewrite -in_ziota. unfold wsize_size.
+  apply ziota_ind.
+  - easy.
+  - intros i l h Ih.
+    rewrite (@in_cons ssrZ.Z_eqType).
+    intros. simpl.
+    rewrite <- addE.
+    destruct (@eq_op ssrZ.Z_eqType (sub p' p) i) eqn:eb.
+    + move: eb => /eqP <-.
+      rewrite setmE.
+      rewrite add_sub.
+      rewrite !eq_refl.
+      reflexivity.
+    + rewrite eb.
+      move: eb => /eqP.
+      rewrite setmE.
+      destruct (p' == add p i) eqn:E.
+      * rewrite E.
+        move: E => /eqP E eb.
+        rewrite E in eb.
+        rewrite sub_add in eb. 2: { destruct ws; unfold wsize_size; micromega.Lia.lia. }
+        contradiction.
+      * rewrite E. intros. apply Ih.
+Qed.
+
 (* Copy of write_read8 (probably not true without alignment stuff) *)
+(* BSH: i don't know if we need this any more (see write_mem_get) *)
 Lemma write_read_mem8 :
   ∀ m p ws w p',
     read_mem (write_mem (sz := ws) m p w) p' U8 =
@@ -905,47 +938,11 @@ Lemma write_read_mem8 :
     else read_mem m p' U8
     ).
 Proof.
-  (* BSH: this proof is more messy that it has to be *)
   intros m p ws w p'.
-  unfold write_mem.
-  rewrite -in_ziota.
-  unfold wsize_size.
-  apply ziota_ind.
-  - reflexivity.
-  - intros.
-    rewrite (@in_cons ssrZ.Z_eqType).
-    destruct (@eq_op ssrZ.Z_eqType (sub p' p) i) eqn:eb.
-    + simpl.
-      move: eb => /eqP eb.
-      rewrite <- addE.
-      rewrite get_mem_read8.
-      rewrite setmE.
-      destruct (@eq_op _ p' (add p i)) eqn:E.
-      * rewrite E. rewrite eb.
-        reflexivity.
-      * rewrite E.
-        move: E => /eqP E.
-        rewrite <- eb in E.
-        rewrite add_sub in E.
-        contradiction.
-    + rewrite Bool.orb_false_l.
-      simpl.
-      eapply eq_trans. 2: apply H0.
-      unfold read_mem .
-      simpl.
-      rewrite <- !LE.encode8E.
-      rewrite !LE.decodeK.
-      rewrite <- !addE.
-      rewrite add_0.
-      rewrite setmE.
-      destruct (p' == add p i) eqn:E.
-      * move: E => /eqP E.
-        move: eb => /eqP eb.
-        rewrite E in eb.
-        rewrite sub_add in eb. 2: { destruct ws; unfold wsize_size; micromega.Lia.lia. }
-        contradiction.
-      * rewrite E.
-        reflexivity.
+  simpl.
+  rewrite !get_mem_read8.
+  rewrite write_mem_get.
+  destruct (_ : bool) eqn:eb; reflexivity.
 Qed.
 
 Lemma translate_write_mem_correct :
@@ -958,21 +955,14 @@ Proof.
   intros ptr' v ev.
   rewrite get_set_heap_eq.
 
-  erewrite write_read8 in ev. 2: exact hw.
-  simpl in ev.
+  rewrite write_mem_get.
 
-  pose proof (write_read_mem8 (get_heap m mem_loc) ptr sz w ptr') as h.
-  rewrite get_mem_read8 in h.
-  destruct getm eqn:e.
-  2:{
-    (* Is there a contradiction here? *)
-    admit.
-  }
-  subst. simpl.
+  erewrite write_read8 in ev. 2: exact hw. simpl in ev.
+
   destruct (_ : bool) eqn:eb.
   - noconf ev. reflexivity.
-  - apply hr in ev. rewrite get_mem_read8. rewrite ev. reflexivity.
-Abort.
+  - apply hr. assumption.
+Qed.
 
 #[local] Open Scope vmap_scope.
 
