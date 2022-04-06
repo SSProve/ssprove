@@ -957,17 +957,21 @@ Proof.
   intros sz cm cm' ptr w m hw hr.
   intros ptr' v ev.
   rewrite get_set_heap_eq.
-  unfold write in hw. destruct is_align eqn:eal. 2: discriminate.
-  simpl in hw.
-  unfold write_mem.
-  revert cm cm' hw hr v ev. apply ziota_ind.
-  - simpl. intros cm cm' hw hr v ev.
-    noconf hw. apply hr. assumption.
-  - simpl. intros i l hi ih cm cm' hw hr v ev.
-    jbind hw acc hacc.
-    rewrite setmE.
-    destruct (_ == _) eqn:eb.
-    (* Maybe should prove stuff like writeP_eq/neq or write_read8 *)
+
+  erewrite write_read8 in ev. 2: exact hw.
+  simpl in ev.
+
+  pose proof (write_read_mem8 (get_heap m mem_loc) ptr sz w ptr') as h.
+  rewrite get_mem_read8 in h.
+  destruct getm eqn:e.
+  2:{
+    (* Is there a contradiction here? *)
+    admit.
+  }
+  subst. simpl.
+  destruct (_ : bool) eqn:eb.
+  - noconf ev. reflexivity.
+  - apply hr in ev. rewrite get_mem_read8. rewrite ev. reflexivity.
 Abort.
 
 #[local] Open Scope vmap_scope.
