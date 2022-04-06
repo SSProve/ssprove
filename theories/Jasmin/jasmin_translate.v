@@ -203,44 +203,22 @@ Proof.
   discriminate.
 Qed.
 
-Lemma In_rcons {A} x y (l : seq A) :
-  List.In x (rcons l y) →
-  y = x ∨ List.In x l.
-Proof.
-  intro h.
-  induction l in h |- *. all: simpl in *. all: intuition subst.
-Qed.
-
-Lemma NIn_rcons {A} x y (l : seq A) :
-  ~ List.In x (rcons l y) →
-  y ≠ x ∧ ~ List.In x l.
-Proof.
-  induction l; intros; simpl in *; intuition subst.
-Qed.
-
 Lemma foldl_In_uniq {S : eqType} (k : Mz.K.t) (v : S) (data : seq (Mz.K.t * S)) :
   List.In (k, v) data →
   @uniq Mz.K.t [seq i.1 | i <- data] →
-  foldl (λ (a : {fmap Mz.K.t → S}) (kv : Mz.K.t * S), setm a kv.1 kv.2) emptym data k = Some v.
+  foldr (λ (kv : Mz.K.t * S) (a : {fmap Mz.K.t → S}), setm a kv.1 kv.2) emptym data k = Some v.
 Proof.
   intros.
-  replace data with (rev (rev data)) in * by apply revK.
-  set (data' := rev data) in *.
-  induction data'.
+  induction data.
   - easy.
-  - rewrite rev_cons.
-    rewrite rev_cons in H.
-    apply In_rcons in H.
-    rewrite foldl_rcons.
+  - simpl in H.
+    simpl.
     destruct H.
     + subst. simpl.
       rewrite setmE.
       rewrite eq_refl.
       reflexivity.
-    + rewrite rev_cons in H0.
-      rewrite map_rcons in H0.
-      rewrite rcons_uniq in H0.
-      move: H0 => /andP [H1 H2].
+    + move: H0 => /andP [H1 H2].
       move: H1 => /in_map H3.
       assert (negb (@eq_op Z_ordType k a.1)). {
         apply /eqP => contra; case: H3; exists (a.1, v); by move: contra <-.
@@ -249,49 +227,55 @@ Proof.
       rewrite <- negbK.
       rewrite H0.
       simpl.
-      apply IHdata'; assumption.
+      apply IHdata; assumption.
 Qed.
 
 Lemma foldl_NIn {S : eqType} (k : Mz.K.t) (data : seq (Mz.K.t * S)) :
   (∀ w, ~ List.In (k, w) data) →
-  foldl (λ (a : {fmap Mz.K.t → S}) (kv : Mz.K.t * S), setm a kv.1 kv.2) emptym data k = None.
+  foldr (λ (kv : Mz.K.t * S) (a : {fmap Mz.K.t → S}), setm a kv.1 kv.2) emptym data k = None.
 Proof.
   intros.
-  replace data with (rev (rev data)) in * by apply revK.
-  set (data' := rev data) in *.
-  induction data'.
+  induction data.
   - easy.
-  - rewrite rev_cons.
-    rewrite rev_cons in H.
-    specialize (H a.2) as H0.
-    rewrite foldl_rcons.
-    apply NIn_rcons in H0 as [H1].
+  - specialize (H a.2) as H0.
+    simpl. apply List.not_in_cons in H0 as [H0 H1].
     assert (negb (@eq_op Z_ordType k a.1)). {
-      apply /eqP => contra. apply H1. move: contra ->. apply surjective_pairing. }
+      apply /eqP => contra. apply H0. move: contra ->. symmetry. apply surjective_pairing. }
     rewrite setmE.
     rewrite <- negbK.
     rewrite H2.
     simpl.
-    apply IHdata'.
+    apply IHdata.
     intros.
     specialize (H w).
-    apply NIn_rcons in H. easy.
+    apply List.not_in_cons in H. easy.
+Qed.
+
+Lemma rev_list_rev {S} :
+  forall l : seq S, List.rev l = rev l.
+Proof.
+  induction l; intuition subst; simpl.
+  rewrite rev_cons. rewrite IHl. rewrite <- cats1. reflexivity.
 Qed.
 
 Lemma fold_get {S : eqType} (data : Mz.Map.t S) i :
   Mz.fold (λ k v m, setm m k v) data emptym i = Mz.get data i.
 Proof.
   rewrite Mz.foldP.
+  replace (Mz.elements data) with (rev (rev (Mz.elements data))). 2: by rewrite revK.
+  rewrite foldl_rev.
   destruct Mz.get eqn:E.
   - set (kv := (i, s)).
     replace i with kv.1 in * by reflexivity.
     replace s with kv.2 in * by reflexivity.
     apply Mz.elementsIn in E. subst kv.
     apply foldl_In_uniq.
-    + assumption.
-    + apply Mz.elementsU.
+    + rewrite <- rev_list_rev. apply -> List.in_rev. assumption.
+    + rewrite map_rev. rewrite rev_uniq. apply Mz.elementsU.
   - apply foldl_NIn.
     intros.
+    rewrite <- rev_list_rev.
+    rewrite <- List.in_rev.
     apply elementsNIn.
     assumption.
 Qed.
@@ -895,6 +879,23 @@ Proof.
     eapply hm in hy. rewrite hy. reflexivity.
 Qed.
 
+Lemma get_mem_read8 :
+  ∀ m p,
+    read_mem m p U8 =
+      match m p with
+      | Some w => w
+      | None => chCanonical _
+      end.
+Proof.
+  intros.
+  unfold read_mem.
+  simpl.
+  rewrite <- addE.
+  rewrite add_0.
+  destruct (m p) eqn:E.
+  all: rewrite E; rewrite <- LE.encode8E; apply LE.decodeK.
+Qed.
+
 Lemma write_read_mem8 :
   ∀ m p ws w p',
     read_mem (write_mem (sz := ws) m p w) p' U8 =
@@ -905,21 +906,31 @@ Lemma write_read_mem8 :
     ).
 Proof.
   intros m p ws w p'.
-  unfold read_mem, write_mem.
+  unfold write_mem.
+  rewrite -in_ziota.
+  unfold wsize_size.
   apply ziota_ind.
-  - simpl. destruct getm eqn:e.
-    + destruct (_ : bool) eqn:eb.
-      * give_up. (* Lost the connection to w? *)
-      * reflexivity.
-    + destruct (_ : bool) eqn:eb.
-      * admit.
-      * reflexivity.
-  - simpl. intros i l ei ih.
-    rewrite <- ih. f_equal. f_equal.
-    rewrite setmE.
-    destruct (_ == _) eqn:eb.
-    + give_up.
-    + reflexivity.
+  - reflexivity.
+  - intros.
+    rewrite (@in_cons ssrZ.Z_eqType).
+    destruct (@eq_op ssrZ.Z_eqType (sub p' p) i) eqn:eb.
+    + simpl.
+      move: eb => /eqP eb.
+      rewrite <- addE.
+      rewrite get_mem_read8.
+      rewrite setmE.
+      destruct (@eq_op _ p' (add p i)) eqn:E.
+      * rewrite E. rewrite eb.
+        reflexivity.
+      * rewrite E.
+        move: E => /eqP E.
+        rewrite <- eb in E.
+        rewrite add_sub in E.
+        contradiction.
+    + rewrite Bool.orb_false_l.
+      simpl.
+      eapply eq_trans. 2: apply H0.
+      admit.
 Abort.
 
 Lemma translate_write_mem_correct :
