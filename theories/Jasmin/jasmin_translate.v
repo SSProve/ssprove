@@ -905,6 +905,7 @@ Lemma write_read_mem8 :
     else read_mem m p' U8
     ).
 Proof.
+  (* BSH: this proof is more messy that it has to be *)
   intros m p ws w p'.
   unfold write_mem.
   rewrite -in_ziota.
@@ -930,8 +931,22 @@ Proof.
     + rewrite Bool.orb_false_l.
       simpl.
       eapply eq_trans. 2: apply H0.
-      admit.
-Abort.
+      unfold read_mem .
+      simpl.
+      rewrite <- !LE.encode8E.
+      rewrite !LE.decodeK.
+      rewrite <- !addE.
+      rewrite add_0.
+      rewrite setmE.
+      destruct (p' == add p i) eqn:E.
+      * move: E => /eqP E.
+        move: eb => /eqP eb.
+        rewrite E in eb.
+        rewrite sub_add in eb. 2: { destruct ws; unfold wsize_size; micromega.Lia.lia. }
+        contradiction.
+      * rewrite E.
+        reflexivity.
+Qed.
 
 Lemma translate_write_mem_correct :
   ∀ sz cm cm' ptr w m,
