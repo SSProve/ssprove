@@ -252,7 +252,7 @@ Proof.
 Qed.
 
 Lemma rev_list_rev {S} :
-  forall l : seq S, List.rev l = rev l.
+  ∀ (l : seq S), List.rev l = rev l.
 Proof.
   induction l; intuition subst; simpl.
   rewrite rev_cons. rewrite IHl. rewrite <- cats1. reflexivity.
@@ -882,20 +882,20 @@ Qed.
 Lemma get_mem_read8 :
   ∀ m p,
     read_mem m p U8 =
-      match m p with
-      | Some w => w
-      | None => chCanonical _
-      end.
+    match m p with
+    | Some w => w
+    | None => chCanonical _
+    end.
 Proof.
-  intros.
-  unfold read_mem.
-  simpl.
+  intros m p.
+  unfold read_mem. simpl.
   rewrite <- addE.
   rewrite add_0.
   destruct (m p) eqn:E.
   all: rewrite E; rewrite <- LE.encode8E; apply LE.decodeK.
 Qed.
 
+(* Copy of write_read8 (probably not true without alignment stuff) *)
 Lemma write_read_mem8 :
   ∀ m p ws w p',
     read_mem (write_mem (sz := ws) m p w) p' U8 =
@@ -951,6 +951,7 @@ Proof.
   - simpl. intros i l hi ih cm cm' hw hr v ev.
     jbind hw acc hacc.
     rewrite setmE.
+    destruct (_ == _) eqn:eb.
     (* Maybe should prove stuff like writeP_eq/neq or write_read8 *)
 Abort.
 
