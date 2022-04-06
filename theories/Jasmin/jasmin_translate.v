@@ -895,6 +895,33 @@ Proof.
     eapply hm in hy. rewrite hy. reflexivity.
 Qed.
 
+Lemma write_read_mem8 :
+  ∀ m p ws w p',
+    read_mem (write_mem (sz := ws) m p w) p' U8 =
+    (let i := sub p' p in
+    if (0 <=? i)%Z && (i <? wsize_size ws)%Z
+    then LE.wread8 w i
+    else read_mem m p' U8
+    ).
+Proof.
+  intros m p ws w p'.
+  unfold read_mem, write_mem.
+  apply ziota_ind.
+  - simpl. destruct getm eqn:e.
+    + destruct (_ : bool) eqn:eb.
+      * give_up. (* Lost the connection to w? *)
+      * reflexivity.
+    + destruct (_ : bool) eqn:eb.
+      * admit.
+      * reflexivity.
+  - simpl. intros i l ei ih.
+    rewrite <- ih. f_equal. f_equal.
+    rewrite setmE.
+    destruct (_ == _) eqn:eb.
+    + give_up.
+    + reflexivity.
+Abort.
+
 Lemma translate_write_mem_correct :
   ∀ sz cm cm' ptr w m,
     write cm ptr (sz := sz) w = ok cm' →
