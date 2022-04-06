@@ -582,6 +582,16 @@ Definition chRead ptr ws : raw_code ('word ws) :=
   mem ← get mem_loc ;;
   ret (read_mem mem ptr ws).
 
+(* Behaviour of write from Jasmin *)
+Definition write_mem {sz} (m : 'mem) (ptr : word Uptr) (w : word sz) : 'mem :=
+  (* For now we do not worry about alignment *)
+  foldr (λ (k : Z) (m' : 'mem),
+    setm m' (ptr + (wrepr Uptr k))%R (LE.wread8 w k)
+  ) m (ziota 0 (wsize_size sz)).
+
+Definition translate_write {sz} (p : word Uptr) (w : word sz) : raw_code 'unit :=
+  m ← get mem_loc ;; #put mem_loc := write_mem m p w ;; ret tt.
+
 (* Following sem_pexpr *)
 Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
   match e with
@@ -683,10 +693,6 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
 (*   end. *)
 
     (* pose (vs' := fold (fun x => y ← x ;; unembed y) f vs). *)
-
-Definition translate_write {n} (p : word Uptr) (w : word n) : raw_code 'unit :=
-  (* For now we do not worry about alignment *)
-  unsupported.π2. (* Do we really have to slice the word into 8bit parts? *)
 
 Definition translate_write_lval (fn : funname) (l : lval) (v : typed_code)
   : raw_code 'unit
