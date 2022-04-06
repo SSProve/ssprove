@@ -895,6 +895,27 @@ Proof.
     eapply hm in hy. rewrite hy. reflexivity.
 Qed.
 
+Lemma translate_write_mem_correct :
+  ∀ sz cm cm' ptr w m,
+    write cm ptr (sz := sz) w = ok cm' →
+    rel_mem cm m →
+    rel_mem cm' (set_heap m mem_loc (write_mem (get_heap m mem_loc) ptr w)).
+Proof.
+  intros sz cm cm' ptr w m hw hr.
+  intros ptr' v ev.
+  rewrite get_set_heap_eq.
+  unfold write in hw. destruct is_align eqn:eal. 2: discriminate.
+  simpl in hw.
+  unfold write_mem.
+  revert cm cm' hw hr v ev. apply ziota_ind.
+  - simpl. intros cm cm' hw hr v ev.
+    noconf hw. apply hr. assumption.
+  - simpl. intros i l hi ih cm cm' hw hr v ev.
+    jbind hw acc hacc.
+    rewrite setmE.
+    (* Maybe should prove stuff like writeP_eq/neq or write_read8 *)
+Abort.
+
 #[local] Open Scope vmap_scope.
 
 Definition rel_vmap (vm : vmap) (fn : funname) (h : heap) :=
