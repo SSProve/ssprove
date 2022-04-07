@@ -568,11 +568,15 @@ Definition chRead ptr ws : raw_code ('word ws) :=
   ret (read_mem mem ptr ws).
 
 (* Jasmin's write on 'array *)
-Definition chArray_write {sz} (a : 'array) ptr scale (w : word sz) : 'array :=
+Definition chArray_write {sz} (a : 'array) ptr (w : word sz) : 'array :=
   (* For now we do not worry about alignment *)
   foldr (λ (k : Z) (a' : 'array),
-    setm a' (ptr * scale + k)%Z (LE.wread8 w k)
+    setm a' (ptr + k)%Z (LE.wread8 w k)
   ) a (ziota 0 (wsize_size sz)).
+
+(* From WArray.set *)
+Definition chArray_set {ws} (a : 'array) (aa : arr_access) (p : Z) (w : word ws) :=
+  chArray_write a (p * mk_scale aa ws)%Z w.
 
 (* Jasmin's write on 'mem *)
 Definition write_mem {sz} (m : 'mem) (ptr : word Uptr) (w : word sz) : 'mem :=
@@ -709,8 +713,8 @@ Definition translate_write_lval (fn : funname) (l : lval) (v : typed_code)
     i ← (truncate_code sint (translate_pexpr fn i)).π2 ;; (* to_int *)
     v ← v.π2 ;;
     let v := truncate_chWord ws v in
-    (* let t := setm t i v in *) (* WArray.set also calls write *)
-    unsupported.π2
+    let t := chArray_set t aa i v in
+    translate_write_var fn x (totc _ (ret t))
   | Lasub aa ws len x i =>
     (* Same observation as Laset *)
     t' ← translate_get_var fn x ;;
@@ -718,12 +722,7 @@ Definition translate_write_lval (fn : funname) (l : lval) (v : typed_code)
     (* Again, we ignore the length *)
     (* Let t' := to_arr (Z.to_pos (arr_size ws len)) v in *)
     unsupported.π2
-  (* | Laset aa ws x i =>
-    Let (n,t) := s.[x] in
-    Let i := sem_pexpr s i >>= to_int in
-    Let v := to_word ws v in
-    Let t := WArray.set t aa i v in
-    write_var x (@to_val (sarr n) t) s *)
+
   (* | Lasub aa ws len x i =>
     Let (n,t) := s.[x] in
     Let i := sem_pexpr s i >>= to_int in
