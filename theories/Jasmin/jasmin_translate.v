@@ -1693,7 +1693,29 @@ Proof.
       rewrite coerce_to_choice_type_K.
       eapply translate_to_word in hvx as ew. rewrite ew. clear ew.
       assumption.
-    + admit.
+    + simpl. simpl in hw.
+      jbind hw nt hnt. destruct nt. all: try discriminate.
+      jbind hw i hi. jbind hi i' hi'.
+      jbind hw w ew. jbind hw t ht.
+      eapply u_get_remember. simpl. intros vx.
+      rewrite !bind_assoc. simpl.
+      eapply u_bind.
+      1:{
+        eapply translate_pexpr_correct.
+        - eassumption.
+        - intros ? []. assumption.
+      }
+      rewrite !bind_assoc.
+      eapply u_bind.
+      1:{
+        eapply translate_pexpr_correct.
+        - eassumption.
+        - intros ? []. assumption.
+      }
+      simpl.
+      (* TODO Lemma needed, will also use above *)
+      (* eapply translate_write_var_correct. *)
+      admit.
     + admit.
   - admit.
   - admit.
