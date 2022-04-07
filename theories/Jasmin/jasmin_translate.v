@@ -1559,20 +1559,18 @@ Admitted.
 
 Lemma translate_write_correct :
   ∀ fn sz s p (w : word sz) cm (cond : heap → Prop),
-    write s.(emem) p w = ok cm →
-    (∀ m, cond m → rel_estate s fn m) →
+    (∀ m, cond m → write s.(emem) p w = ok cm ∧ rel_estate s fn m) →
     ⊢ ⦃ cond ⦄ translate_write p w ⇓ tt ⦃ rel_estate {| emem := cm ; evm := s.(evm) |} fn ⦄.
 Proof.
-  intros fn sz s p w cm cond h hcond.
+  intros fn sz s p w cm cond h.
   unfold translate_write.
   eapply u_get_remember. intros m.
   eapply u_put.
   eapply u_ret_eq.
   intros ? [m' [[h1 h2] ?]]. subst.
   unfold u_get in h2. subst.
-  eapply translate_write_estate.
-  - assumption.
-  - apply hcond. assumption.
+  eapply h in h1. destruct h1.
+  eapply translate_write_estate. all: assumption.
 Qed.
 
 (* TODO Make fixpoint too! *)
@@ -1671,7 +1669,9 @@ Proof.
         - intros ? []. assumption.
       }
       simpl.
-      eapply translate_write_correct. 2:{ intros ? []. auto. }
+      eapply translate_write_correct. intros m' [hm' em'].
+      unfold u_get in em'. subst.
+      split. 2: assumption.
       erewrite translate_pexpr_type. 2: eassumption.
       erewrite translate_pexpr_type. 2: eassumption.
       rewrite !coerce_to_choice_type_K.
@@ -1681,8 +1681,11 @@ Proof.
       eapply translate_to_word in hw' as ew. rewrite ew. clear ew.
       unfold translate_to_pointer. simpl.
       eapply translate_to_word in hve as ew. rewrite ew. clear ew.
-      simpl in tv. (* Missing something on tv to conclude *)
-      admit.
+      erewrite get_var_get_heap. 2,3: eassumption.
+      simpl. erewrite <- type_of_get_var. 2: eassumption.
+      rewrite coerce_to_choice_type_K.
+      eapply translate_to_word in hvx as ew. rewrite ew. clear ew.
+      assumption.
     + admit.
     + admit.
   - admit.
