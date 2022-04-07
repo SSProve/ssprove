@@ -897,37 +897,37 @@ Qed.
 
 Lemma write_mem_get ws m p (w : word ws) p' :
   write_mem m p w p' =
-    if (0 <=? sub p' p)%Z && (sub p' p <? wsize_size ws)%Z
-    then Some (LE.wread8 w (sub p' p))
-    else m p'.
+  if (0 <=? sub p' p)%Z && (sub p' p <? wsize_size ws)%Z
+  then Some (LE.wread8 w (sub p' p))
+  else m p'.
 Proof.
   unfold write_mem.
   rewrite -in_ziota. unfold wsize_size.
   apply ziota_ind.
-  - easy.
+  - auto.
   - intros i l h Ih.
     rewrite (@in_cons ssrZ.Z_eqType).
-    intros. simpl.
+    simpl.
     rewrite <- addE.
-    destruct (@eq_op ssrZ.Z_eqType (sub p' p) i) eqn:eb.
+    destruct (_ == _) eqn:eb.
     + move: eb => /eqP <-.
       rewrite setmE.
       rewrite add_sub.
       rewrite !eq_refl.
       reflexivity.
-    + rewrite eb.
-      move: eb => /eqP.
+    + move: eb => /eqP.
       rewrite setmE.
       destruct (p' == add p i) eqn:E.
       * rewrite E.
         move: E => /eqP E eb.
         rewrite E in eb.
-        rewrite sub_add in eb. 2: { destruct ws; unfold wsize_size; micromega.Lia.lia. }
+        rewrite sub_add in eb.
+        2:{ destruct ws. all: unfold wsize_size. all: micromega.Lia.lia. }
         contradiction.
       * rewrite E. intros. apply Ih.
 Qed.
 
-(* Copy of write_read8 (probably not true without alignment stuff) *)
+(* Copy of write_read8 *)
 (* BSH: i don't know if we need this any more (see write_mem_get) *)
 Lemma write_read_mem8 :
   ∀ m p ws w p',
@@ -942,7 +942,8 @@ Proof.
   simpl.
   rewrite !get_mem_read8.
   rewrite write_mem_get.
-  destruct (_ : bool) eqn:eb; reflexivity.
+  destruct (_ : bool) eqn:eb.
+  all: reflexivity.
 Qed.
 
 Lemma translate_write_mem_correct :
@@ -954,12 +955,10 @@ Proof.
   intros sz cm cm' ptr w m hw hr.
   intros ptr' v ev.
   rewrite get_set_heap_eq.
-
   rewrite write_mem_get.
-
-  erewrite write_read8 in ev. 2: exact hw. simpl in ev.
-
-  destruct (_ : bool) eqn:eb.
+  erewrite write_read8 in ev. 2: exact hw.
+  simpl in ev.
+  destruct (_ : bool).
   - noconf ev. reflexivity.
   - apply hr. assumption.
 Qed.
@@ -982,6 +981,27 @@ Lemma translate_read_estate :
 Proof.
   intros fn s ptr sz w m [] h.
   eapply translate_read. all: eassumption.
+Qed.
+
+Lemma mem_loc_translate_var_neq :
+  ∀ fn x,
+    mem_loc != translate_var fn x.
+Proof.
+Admitted.
+
+Lemma translate_write_estate :
+  ∀ fn sz s cm ptr w m,
+    write s.(emem) ptr (sz := sz) w = ok cm →
+    rel_estate s fn m →
+    rel_estate {| emem := cm ; evm := s.(evm) |} fn (set_heap m mem_loc (write_mem (get_heap m mem_loc) ptr w)).
+Proof.
+  intros fn sz s cm ptr w m hw [hrm hvm].
+  split.
+  - simpl. eapply translate_write_mem_correct. all: eassumption.
+  - simpl. intros i v ev.
+    rewrite get_set_heap_neq.
+    2:{ rewrite eq_sym. apply mem_loc_translate_var_neq. }
+    apply hvm. assumption.
 Qed.
 
 Lemma coerce_cast_code (ty vty : choice_type) (v : vty) :
@@ -1534,12 +1554,6 @@ Notation coe_tyc := coerce_typed_code.
 
 Lemma injective_translate_var :
   ∀ fn, injective (translate_var fn).
-Proof.
-Admitted.
-
-Lemma mem_loc_translate_var_neq :
-  ∀ fn x,
-    mem_loc != translate_var fn x.
 Proof.
 Admitted.
 
