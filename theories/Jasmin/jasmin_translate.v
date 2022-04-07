@@ -551,6 +551,7 @@ Definition chArray_get_sub ws len (a : 'array) ptr scale :=
 Definition totc (ty : choice_type) (c : raw_code ty) : typed_code :=
   (ty ; c).
 
+(* Almost chArray_get but with a different key type *)
 Definition read_mem (m : 'mem) ptr ws : 'word ws :=
   let f k :=
     match m (ptr + (wrepr Uptr k))%R with
@@ -566,7 +567,14 @@ Definition chRead ptr ws : raw_code ('word ws) :=
   mem ← get mem_loc ;;
   ret (read_mem mem ptr ws).
 
-(* Behaviour of write from Jasmin *)
+(* Jasmin's write on 'array *)
+Definition chArray_write {sz} (a : 'array) ptr scale (w : word sz) : 'array :=
+  (* For now we do not worry about alignment *)
+  foldr (λ (k : Z) (a' : 'array),
+    setm a' (ptr * scale + k)%Z (LE.wread8 w k)
+  ) a (ziota 0 (wsize_size sz)).
+
+(* Jasmin's write on 'mem *)
 Definition write_mem {sz} (m : 'mem) (ptr : word Uptr) (w : word sz) : 'mem :=
   (* For now we do not worry about alignment *)
   foldr (λ (k : Z) (m' : 'mem),
