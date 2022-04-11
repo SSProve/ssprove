@@ -1397,6 +1397,21 @@ Proof.
       apply ih.
 Qed.
 
+Lemma embed_read8 :
+  ∀ len (a : WArray.array len) (z : Z) v,
+    read a z U8 = ok v →
+    embed_array a z = Some v.
+Proof.
+  intros len a z v h.
+  unfold read in h. jbind h _u hb. jbind h l hl. noconf h.
+  simpl in hl. jbind hl y hy. noconf hl.
+  unfold WArray.get8 in hy. jbind hy _u1 hb1. jbind hy _u2 hb2. noconf hy.
+  unfold odflt, oapp. rewrite <- embed_array_get. rewrite add_0.
+  destruct getm eqn:e.
+  - admit.
+  - admit.
+Abort.
+
 Lemma chArray_write_correct :
   ∀ ws len (a : WArray.array len) i (w : word ws) t,
     write a i w = ok t →
