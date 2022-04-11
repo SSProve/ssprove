@@ -1362,7 +1362,7 @@ Proof.
   intros ws len a aa i w t h.
   unfold WArray.set in h.
   unfold chArray_set.
-Abort.
+Admitted.
 
 Lemma sop1_unembed_embed op v :
   sem_sop1_typed op (unembed (embed v)) = sem_sop1_typed op v.
@@ -1766,10 +1766,16 @@ Proof.
             rewrite trunc. rewrite coerce_to_choice_type_K.
             eapply translate_to_word in ew. rewrite ew.
             erewrite translate_to_int. 2: eassumption.
-            (* Need a lemma relating WArray.set and chArray_set probably *)
-            (* eapply translate_of_val in hv₁.
-            rewrite hv₁. apply coerce_to_choice_type_translate_value_to_val. *)
-            admit.
+            erewrite get_var_get_heap.
+            2: eassumption.
+            2:{ split. all: assumption. }
+            eapply translate_of_val in hv₁. (* simpl in hv₁. *)
+            rewrite coerce_to_choice_type_translate_value_to_val in hv₁.
+            rewrite <- hv₁. f_equal.
+            Opaque translate_value. simpl. Transparent translate_value.
+            eapply type_of_get_var in hnt as ety. simpl in ety.
+            rewrite -ety. rewrite !coerce_to_choice_type_K.
+            apply chArray_set_correct. assumption.
           + rewrite Fv.setP_neq in ej.
             2:{ apply /eqP. eauto. }
             rewrite get_set_heap_neq.
