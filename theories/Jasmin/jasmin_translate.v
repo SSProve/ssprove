@@ -1351,14 +1351,17 @@ Proof.
   - simpl. intros a t e. noconf e. reflexivity.
   - simpl. intros k l hk ih a t h.
     jbind h acc hacc.
-    eapply ih in h. rewrite <- h.
+    eapply ih in h. (* rewrite <- h. *)
     apply eq_fmap. intros z.
     rewrite setmE.
     eapply WArray.set8P with (p' := z) in hacc as e.
-    rewrite eq_sym in e. rewrite WArray.addE in e.
-    rewrite eq_op_MzK in e.
+    rewrite eq_sym in e. rewrite WArray.addE in e. rewrite eq_op_MzK in e.
     destruct (_ == _)%Z eqn: ez.
-    + admit.
+    + unfold WArray.get8 in e.
+      jbind e _u1 eb1. jbind e _u2 eb2.
+      unfold odflt, oapp in e. rewrite <- fold_get in e. simpl in e.
+      noconf e.
+      admit.
     + admit.
 Admitted.
 
