@@ -1352,7 +1352,15 @@ Proof.
   - simpl. intros k l hk ih a t h.
     jbind h acc hacc.
     eapply ih in h. rewrite <- h.
-Abort.
+    apply eq_fmap. intros z.
+    rewrite setmE.
+    eapply WArray.set8P with (p' := z) in hacc as e.
+    rewrite eq_sym in e. rewrite WArray.addE in e.
+    rewrite eq_op_MzK in e.
+    destruct (_ == _)%Z eqn: ez.
+    + admit.
+    + admit.
+Admitted.
 
 Lemma chArray_set_correct :
   ∀ ws len (a : WArray.array len) aa i (w : word ws) t,
@@ -1362,7 +1370,8 @@ Proof.
   intros ws len a aa i w t h.
   unfold WArray.set in h.
   unfold chArray_set.
-Admitted.
+  apply chArray_write_correct. assumption.
+Qed.
 
 Lemma sop1_unembed_embed op v :
   sem_sop1_typed op (unembed (embed v)) = sem_sop1_typed op v.
