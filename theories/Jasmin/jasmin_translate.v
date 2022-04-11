@@ -198,7 +198,7 @@ Definition embed {t} : sem_t t → encode t :=
 Lemma elementsNIn :
   ∀ (T : Type) (k : Z) (v : T) (m : Mz.Map.t T),
     Mz.get m k = None →
-    ~ List.In (k, v) (Mz.elements m).
+    ¬ List.In (k, v) (Mz.elements m).
 Proof.
   intros S k v m H contra.
   apply Mz.elementsIn in contra.
@@ -234,7 +234,7 @@ Proof.
 Qed.
 
 Lemma foldl_NIn {S : eqType} (k : Mz.K.t) (data : seq (Mz.K.t * S)) :
-  (∀ w, ~ List.In (k, w) data) →
+  (∀ w, ¬ List.In (k, w) data) →
   foldr (λ (kv : Mz.K.t * S) (a : {fmap Mz.K.t → S}), setm a kv.1 kv.2) emptym data k = None.
 Proof.
   intros.
@@ -283,6 +283,15 @@ Proof.
     assumption.
 Qed.
 
+Lemma embed_array_get :
+  ∀ len (a : WArray.array len) (k : Z),
+    embed_array a k = Mz.get a.(WArray.arr_data) k.
+Proof.
+  intros len a k.
+  unfold embed_array.
+  rewrite fold_get. reflexivity.
+Qed.
+
 Lemma eq_op_MzK :
   ∀ (k x : Z_ordType),
     @eq_op Mz.K.t k x = (k == x).
@@ -308,6 +317,16 @@ Proof.
   - rewrite fold_get. reflexivity.
 Qed.
 
+Lemma embed_array_set :
+  ∀ len (a : WArray.array len) (k : Z) v,
+    setm (embed_array a) k v =
+    embed_array (WArray.Build_array len (Mz.set a.(WArray.arr_data) k v)).
+Proof.
+  intros len a k v.
+  unfold embed_array.
+  rewrite fold_set. reflexivity.
+Qed.
+
 Lemma fold_rem {S : eqType} (data : Mz.Map.t S) k :
   remm (Mz.fold (λ (k : Mz.Map.key) (v : S) (m : {fmap Z → S}), setm m k v) data emptym) k =
   Mz.fold (λ (k : Mz.Map.key) (v : S) (m : {fmap Z → S}), setm m k v) (Mz.remove data k) emptym.
@@ -321,6 +340,16 @@ Proof.
   destruct (k == x).
   - reflexivity.
   - rewrite fold_get. reflexivity.
+Qed.
+
+Lemma embed_array_rem :
+  ∀ len (a : WArray.array len) (k : Z),
+    remm (embed_array a) k =
+    embed_array (WArray.Build_array len (Mz.remove a.(WArray.arr_data) k)).
+Proof.
+  intros len a k.
+  unfold embed_array.
+  rewrite fold_rem. reflexivity.
 Qed.
 
 Definition unembed {t : stype} : encode t → sem_t t :=
