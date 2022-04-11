@@ -184,11 +184,14 @@ Definition encode (t : stype) : choice_type :=
   | sword n => 'word n
   end.
 
+Definition embed_array {len} (a : WArray.array len) : 'array :=
+  Mz.fold (λ k v m, setm m k v) a.(WArray.arr_data) emptym.
+
 Definition embed {t} : sem_t t → encode t :=
   match t with
   | sbool => λ x, x
   | sint => λ x, x
-  | sarr n => λ x, Mz.fold (λ k v m, setm m k v) x.(WArray.arr_data) emptym
+  | sarr n => embed_array
   | sword n => λ x, x
   end.
 
@@ -1371,25 +1374,12 @@ Lemma chArray_write_correct :
     chArray_write (translate_value (Varr a)) i w = translate_value (Varr t).
 Proof.
   intros ws len a i w t h.
-  unfold write in h.
-  jbind h _u eb. apply assertP in eb.
-  unfold chArray_write.
-  revert a t h. eapply ziota_ind.
-  - simpl. intros a t e. noconf e. reflexivity.
-  - simpl. intros k l hk ih a t h.
-    jbind h acc hacc.
-    eapply ih in h. (* rewrite <- h. *)
-    apply eq_fmap. intros z. (* Should I go for a chArray_write_get or something like for write_mem? *)
-    rewrite setmE.
-    eapply WArray.set8P with (p' := z) in hacc as e.
-    rewrite eq_sym in e. rewrite WArray.addE in e. rewrite eq_op_MzK in e.
-    destruct (_ == _)%Z eqn: ez.
-    + unfold WArray.get8 in e.
-      jbind e _u1 eb1. jbind e _u2 eb2.
-      unfold odflt, oapp in e. rewrite <- fold_get in e. simpl in e.
-      noconf e. rewrite <- h.
-      admit.
-    + admit.
+  apply eq_fmap. intro z.
+  rewrite chArray_write_get.
+  eapply write_read8 with (k := z) in h as e. simpl in e.
+  destruct (_ : bool) eqn: eb.
+  - simpl. admit.
+  - simpl. admit.
 Admitted.
 
 Lemma chArray_set_correct :
