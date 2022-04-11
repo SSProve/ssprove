@@ -1338,6 +1338,33 @@ Proof.
       reflexivity.
 Qed.
 
+(* Like write_mem_get *)
+Lemma chArray_write_get :
+  ∀ ws (a : 'array) (w : word ws) (i j : Z),
+    chArray_write a i w j =
+    if (0 <=? j - i)%Z && (j - i <? wsize_size ws)%Z
+    then Some (LE.wread8 w (j - i))
+    else a j.
+Proof.
+  intros ws a w i j.
+  unfold chArray_write. rewrite -in_ziota. unfold wsize_size.
+  apply ziota_ind.
+  - simpl. reflexivity.
+  - simpl. intros k l h ih.
+    rewrite (@in_cons ssrZ.Z_eqType).
+    destruct (_ == _) eqn:eb.
+    + simpl. move: eb => /eqP eb. subst.
+      rewrite setmE.
+      replace (i + (j - i))%Z with j by micromega.Lia.lia.
+      rewrite eq_refl.
+      reflexivity.
+    + simpl. move: eb => /eqP eb.
+      rewrite setmE.
+      destruct (_ == _) eqn: e.
+      1:{ move: e => /eqP e. subst. micromega.Lia.lia. }
+      apply ih.
+Qed.
+
 Lemma chArray_write_correct :
   ∀ ws len (a : WArray.array len) i (w : word ws) t,
     write a i w = ok t →
@@ -1352,7 +1379,7 @@ Proof.
   - simpl. intros k l hk ih a t h.
     jbind h acc hacc.
     eapply ih in h. (* rewrite <- h. *)
-    apply eq_fmap. intros z.
+    apply eq_fmap. intros z. (* Should I go for a chArray_write_get or something like for write_mem? *)
     rewrite setmE.
     eapply WArray.set8P with (p' := z) in hacc as e.
     rewrite eq_sym in e. rewrite WArray.addE in e. rewrite eq_op_MzK in e.
@@ -1360,7 +1387,7 @@ Proof.
     + unfold WArray.get8 in e.
       jbind e _u1 eb1. jbind e _u2 eb2.
       unfold odflt, oapp in e. rewrite <- fold_get in e. simpl in e.
-      noconf e.
+      noconf e. rewrite <- h.
       admit.
     + admit.
 Admitted.
