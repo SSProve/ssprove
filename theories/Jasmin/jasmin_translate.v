@@ -1338,6 +1338,32 @@ Proof.
       reflexivity.
 Qed.
 
+Lemma chArray_write_correct :
+  ∀ ws len (a : WArray.array len) i (w : word ws) t,
+    write a i w = ok t →
+    chArray_write (translate_value (Varr a)) i w = translate_value (Varr t).
+Proof.
+  intros ws len a i w t h.
+  unfold write in h.
+  jbind h _u eb. apply assertP in eb.
+  unfold chArray_write.
+  revert a t h. eapply ziota_ind.
+  - simpl. intros a t e. noconf e. reflexivity.
+  - simpl. intros k l hk ih a t h.
+    jbind h acc hacc.
+    eapply ih in h. rewrite <- h.
+Abort.
+
+Lemma chArray_set_correct :
+  ∀ ws len (a : WArray.array len) aa i (w : word ws) t,
+    WArray.set a aa i w = ok t →
+    chArray_set (translate_value (Varr a)) aa i w = translate_value (Varr t).
+Proof.
+  intros ws len a aa i w t h.
+  unfold WArray.set in h.
+  unfold chArray_set.
+Abort.
+
 Lemma sop1_unembed_embed op v :
   sem_sop1_typed op (unembed (embed v)) = sem_sop1_typed op v.
 Proof.
