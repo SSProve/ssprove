@@ -1428,6 +1428,30 @@ Proof.
   (* They might differ on keys where one returns 0 and the other None *)
 Abort.
 
+Definition array_get8_eq (u v : 'array) :=
+  ∀ k, chArray_get U8 u k 1 = chArray_get U8 v k 1.
+
+Notation "u =⁸ v" := (array_get8_eq u v) (at level 80).
+
+Lemma chArray_write_correct :
+  ∀ ws len (a : WArray.array len) i (w : word ws) t,
+    write a i w = ok t →
+    chArray_write (translate_value (Varr a)) i w =⁸ translate_value (Varr t).
+Proof.
+  intros ws len a i w t h.
+  intro z.
+  eapply write_read8 with (k := z) in h as e. simpl in e.
+  unfold chArray_get. simpl.
+  replace (z * 1 + 0)%Z with z by micromega.Lia.lia.
+  rewrite chArray_write_get.
+  destruct (_ : bool) eqn: eb.
+  - simpl. eapply embed_read8 in e. simpl in e.
+    rewrite -e. unfold chArray_get. simpl.
+    replace (z * 1 + 0)%Z with z by micromega.Lia.lia.
+    admit.
+  - admit.
+Abort.
+
 Lemma chArray_write_correct :
   ∀ ws len (a : WArray.array len) i (w : word ws) t,
     write a i w = ok t →
