@@ -827,8 +827,7 @@ Proof.
   destruct fd. destruct _f.
   split. 1: exact f.
   constructor.
-  - exists chUnit. exists chUnit.
-    intros u.
+  - exists 'unit, 'unit. intros _.
     (* TODO: store function arguments in their locations *)
     exact (translate_cmd f f_body).
     (* TODO: read return values from their locations *)
@@ -844,11 +843,24 @@ Fixpoint lchtuple (ts : seq choice_type) : choice_type :=
   | t1 :: ts => t1 × (lchtuple ts)
   end.
 
-Definition get_fundef_ssp (sp : seq (funname * fdef)) (fn : funname) (dom cod : choice_type) :
-  option (dom → raw_code cod).
+(* Apply cast_fun or return default value, like lookup_op *)
+Equations? cast_typed_raw_function {dom cod : choice_type} (rf : typed_raw_function) : dom → raw_code cod :=
+  cast_typed_raw_function rf with inspect ((dom == rf.π1) && (cod == rf.π2.π1)) := {
+  | @exist true e => pkg_composition.cast_fun _ _ rf.π2.π2 ;
+  | @exist false e => λ _, ret (chCanonical _)
+  }.
 Proof.
-  exact None. (* TODO *)
+  all: symmetry in e.
+  all: move: e => /andP [/eqP e1 /eqP e2].
+  all: eauto.
 Defined.
+
+Definition get_fundef_ssp (sp : seq (funname * fdef)) (fn : funname) (dom cod : choice_type) :
+  option (dom → raw_code cod) :=
+  match assoc sp fn with
+  | Some fd => Some (cast_typed_raw_function fd.(ffun))
+  | None => None
+  end.
 
 Lemma eq_rect_r_K :
   ∀ (A : eqType) (x : A) (P : A → Type) h e,
@@ -1719,7 +1731,10 @@ Proof.
   eapply translate_write_estate. all: assumption.
 Qed.
 
-(* TODO Make fixpoint too! *)
+(* TODO Make fixpoint too!
+Another option is to inline it all in translate_prog_correct
+which given the goals is probably the way things are intended.
+*)
 Lemma translate_instr_r_correct :
   ∀ (fn : funname) (i : instr_r) (s₁ s₂ : estate),
   sem_i P s₁ i s₂ →
@@ -2018,9 +2033,11 @@ Proof.
   - red. intros.
     red. eapply translate_instr_r_correct.
     econstructor. all: eassumption.
-  - red. intros.
-    unfold Pfun. intros.
-    unfold get_fundef_ssp in H7.
+  - red. intros m1 m2 gn g vs vs' s1 vm2 vrs vrs'.
+    intros hg hvs ?????.
+    unfold Pfun. intros f' hf'.
+    (* Maybe have a dedicated lemma linking to hg? *)
+    unfold get_fundef_ssp in hf'.
     admit.
 Admitted.
 
