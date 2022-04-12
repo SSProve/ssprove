@@ -1316,7 +1316,7 @@ Lemma chArray_get_correct (len : BinNums.positive) (a : WArray.array len) (z : Z
   chArray_get ws (translate_value (Varr a)) z (mk_scale aa ws) = translate_value (Vword s).
 Proof.
   intros H.
-  simpl in *.
+  simpl.
   unfold WArray.get, read in H.
   destruct is_align. 2: discriminate.
   simpl in H.
@@ -1400,17 +1400,18 @@ Qed.
 Lemma embed_read8 :
   ∀ len (a : WArray.array len) (z : Z) v,
     read a z U8 = ok v →
-    embed_array a z = Some v.
+    chArray_get U8 (embed_array a) z 1 = translate_value (Vword v).
 Proof.
   intros len a z v h.
   unfold read in h. jbind h _u hb. jbind h l hl. noconf h.
   simpl in hl. jbind hl y hy. noconf hl.
   unfold WArray.get8 in hy. jbind hy _u1 hb1. jbind hy _u2 hb2. noconf hy.
   unfold odflt, oapp. rewrite <- embed_array_get. rewrite add_0.
-  destruct getm eqn:e.
-  - admit.
-  - admit.
-Abort.
+  simpl.
+  unfold chArray_get. simpl.
+  replace (z * 1 + 0)%Z with z by micromega.Lia.lia.
+  reflexivity.
+Qed.
 
 Lemma chArray_write_correct :
   ∀ ws len (a : WArray.array len) i (w : word ws) t,
