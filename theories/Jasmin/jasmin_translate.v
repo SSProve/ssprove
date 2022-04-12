@@ -1413,6 +1413,21 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma array_ext :
+  ∀ (u v : 'array),
+    (∀ k, chArray_get U8 u k 1 = chArray_get U8 v k 1) →
+    u = v.
+Proof.
+  intros u v e.
+  apply eq_fmap. intro k.
+  specialize (e k). unfold chArray_get in e.
+  apply LE.decode_inj in e. 2,3: reflexivity.
+  simpl in e.
+  replace (k * 1 + 0)%Z with k in e by micromega.Lia.lia.
+  destruct getm, getm. all: noconf e.
+  (* They might differ on keys where one returns 0 and the other None *)
+Abort.
+
 Lemma chArray_write_correct :
   ∀ ws len (a : WArray.array len) i (w : word ws) t,
     write a i w = ok t →
