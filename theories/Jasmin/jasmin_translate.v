@@ -7,6 +7,7 @@ From extructures Require Import ord fset fmap.
 From Jasmin Require Import expr_facts.
 
 From Coq Require Import Utf8.
+From CoqWord Require Import ssrZ.
 
 From Crypt Require Import Prelude Package.
 Import PackageNotation.
@@ -554,15 +555,30 @@ Definition translate_gvar (f : funname) (x : gvar) : raw_code (encode x.(gv).(vt
     | _ => ret (chCanonical _)
     end.
 
+Definition chArray_get8 (a : 'array) ptr :=
+  match a ptr with
+  | None => chCanonical ('word U8)
+  | Some x => x
+  end.
+
+Lemma chArray_get8_correct len (a : WArray.array len) s ptr :
+  WArray.get8 a ptr = ok s ->
+  chArray_get8 (embed_array a) ptr = translate_value (Vword s).
+Proof.
+  intros H. simpl.
+  unfold WArray.get8 in H.
+  jbind H x Hx.
+  jbind H y Hy.
+  noconf H.
+  unfold chArray_get8, odflt, oapp, embed_array.
+  rewrite fold_get.
+  reflexivity.
+Qed.
+
 Definition chArray_get ws (a : 'array) ptr scale :=
   (* Jasmin fails if ptr is not aligned; we may not need it. *)
   (* if negb (is_align ptr sz) then chCanonical ws else *)
-  let f k :=
-    match a (ptr * scale + k)%Z with (* BSH: maybe abstract this matchee with chArray_get8? *)
-    | None => chCanonical ('word U8)
-    | Some x => x
-    end
-  in
+  let f k := chArray_get8 a (ptr * scale + k)%Z in
   let l := map f (ziota 0 (wsize_size ws)) in
   Jasmin.memory_model.LE.decode ws l.
 
@@ -599,12 +615,132 @@ Definition chRead ptr ws : raw_code ('word ws) :=
   mem ← get mem_loc ;;
   ret (read_mem mem ptr ws).
 
+Definition chArray_set8 (a : 'array) ptr w :=
+  setm a ptr w.
+
+Lemma chArray_set8_correct {len} (a : WArray.array len) ptr w s :
+  WArray.set8 a ptr w = ok s
+  -> chArray_set8 (embed_array a) ptr w = embed_array s.
+Proof.
+  intros H. simpl.
+  unfold WArray.set8 in H.
+  jbind H x Hx.
+  noconf H.
+  unfold chArray_set8, embed_array.
+  simpl.
+  rewrite <- fold_set.
+  reflexivity.
+Qed.
+
 (* Jasmin's write on 'array *)
 Definition chArray_write {sz} (a : 'array) ptr (w : word sz) : 'array :=
   (* For now we do not worry about alignment *)
   foldr (λ (k : Z) (a' : 'array),
-    setm a' (ptr + k)%Z (LE.wread8 w k)
+    chArray_set8 a' (ptr + k)%Z (LE.wread8 w k)
   ) a (ziota 0 (wsize_size sz)).
+
+Definition chArray_write_foldl {sz} (a : 'array) ptr (w : word sz) : 'array :=
+  foldl (λ (a' : 'array) (k : Z),
+    chArray_set8 a' (ptr + k)%Z (LE.wread8 w k)
+  ) a (ziota 0 (wsize_size sz)).
+
+Lemma foldr_set_not_eq {K : ordType} {K' : eqType} {V : eqType} m f g (k : K) (v : V) (l : seq K') :
+  (forall k', k' \in l -> k <> f k') ->
+  setm (foldr (λ k m, setm m (f k) (g k)) m l) k v = foldr (λ k m, setm m (f k) (g k)) (setm m k v) l.
+Proof.
+  intros.
+  apply eq_fmap.
+  intros z. revert z.
+  induction l.
+  - reflexivity.
+  - simpl.
+    intros.
+    assert (k <> f a).
+    { apply H. unfold in_mem. simpl. rewrite eq_refl. auto. }
+    rewrite !setmE.
+    destruct (_ == _) eqn:E.
+    + move: E => /eqP. intros. subst.
+      assert (k == f a = false).
+      { apply /eqP. assumption. }
+      rewrite H1. rewrite <- IHl.
+      {
+        rewrite setmE.
+        rewrite eq_refl.
+        reflexivity.
+      }
+      intros. apply H.
+      rewrite in_cons.
+      rewrite H2.
+      rewrite Bool.orb_true_r. auto.
+    +
+      destruct (_ == f a). 1: reflexivity.
+      rewrite <- IHl.
+      { rewrite setmE.
+        rewrite E.
+        reflexivity.
+      }
+      intros.
+      apply H.
+      rewrite in_cons.
+      rewrite H1.
+      rewrite Bool.orb_true_r. auto.
+Qed.
+
+Lemma foldl_set_not_eq {K : ordType} {K' : eqType} {V : eqType} m f g (k : K) (v : V) (l : seq K') :
+  (forall k', k' \in l -> k <> f k') ->
+  setm (foldl (λ m k, setm m (f k) (g k)) m l) k v = foldl (λ m k, setm m (f k) (g k)) (setm m k v) l.
+Proof.
+  intros.
+  rewrite <- revK.
+  rewrite !foldl_rev.
+  apply foldr_set_not_eq.
+  intros.
+  rewrite <- rev_list_rev in H0.
+  move: H0 => /InP H0.
+  apply List.in_rev in H0.
+  apply H.
+  apply /InP. assumption.
+Qed.
+
+Lemma foldl_foldr_setm
+      {K : ordType} {K' : eqType} {V : eqType} m (f : K' -> K) (g : K' -> V) (l : seq K') :
+  uniq [seq f i | i <- l] ->
+  foldl (λ m k, setm m (f k) (g k)) m l = foldr (λ k m, setm m (f k) (g k)) m l.
+Proof.
+  intros.
+  induction l.
+  - reflexivity.
+  - simpl.
+    rewrite <- foldl_set_not_eq.
+    1: rewrite IHl.
+    1: reflexivity.
+    { intros. simpl in H. move: H => /andP. easy. }.
+    { intros. simpl in H. move: H => /andP [] H _.
+      clear -H0 H.
+      induction l.
+      { simpl in *. inversion H0. }
+      { simpl in *. rewrite in_cons in H0.
+        rewrite notin_cons in H.
+        move: H => /andP [] H1 H2.
+        move: H0 => /orP [/eqP -> | H0 ].
+        { apply /eqP. assumption. }
+        { apply IHl; assumption. } } }
+Qed.
+
+Lemma chArray_write_aux {sz} (a : 'array) ptr (w : word sz) :
+  chArray_write a ptr w = chArray_write_foldl a ptr w.
+Proof.
+  unfold chArray_write_foldl, chArray_write, chArray_set8.
+  rewrite foldl_foldr_setm. 1: reflexivity.
+  rewrite map_inj_uniq.
+  - unfold ziota.
+    rewrite map_inj_uniq.
+    + apply iota_uniq.
+    + intros n m H.
+      micromega.Lia.lia.
+  - intros n m H.
+    micromega.Lia.lia.
+Qed.
 
 (* From WArray.set *)
 Definition chArray_set {ws} (a : 'array) (aa : arr_access) (p : Z) (w : word ws) :=
@@ -1345,13 +1481,33 @@ Proof.
     simpl.
     rewrite (IH l0). 2: assumption.
     apply f_equal2. 2: reflexivity.
-    unfold WArray.get8 in H.
-    destruct WArray.in_bound. 2: discriminate.
-    destruct WArray.is_init. 2: discriminate.
+    apply chArray_get8_correct.
+    assumption.
+Qed.
+
+Lemma chArray_write_correct :
+  ∀ ws len (a : WArray.array len) i (w : word ws) t,
+    write a i w = ok t →
+    chArray_write (translate_value (Varr a)) i w = translate_value (Varr t).
+Proof.
+  intros.
+  unfold write in H.
+  jbind H x Hx.
+  rewrite chArray_write_aux.
+  unfold chArray_write_foldl.
+  revert a H.
+  apply ziota_ind.
+  - intros.
+    simpl in *.
     noconf H.
-    unfold odflt, oapp.
-    rewrite <- fold_get.
     reflexivity.
+  - intros.
+    simpl in *.
+    jbind H1 y Hy.
+    apply chArray_set8_correct in Hy.
+    rewrite Hy.
+    eapply H0.
+    assumption.
 Qed.
 
 Lemma chArray_get_sub_correct (lena len : BinNums.positive) a aa sz i t :
@@ -1398,6 +1554,7 @@ Proof.
     rewrite (@in_cons ssrZ.Z_eqType).
     destruct (_ == _) eqn:eb.
     + simpl. move: eb => /eqP eb. subst.
+      unfold chArray_set8.
       rewrite setmE.
       replace (i + (j - i))%Z with j by micromega.Lia.lia.
       rewrite eq_refl.
@@ -1424,59 +1581,6 @@ Proof.
   replace (z * 1 + 0)%Z with z by micromega.Lia.lia.
   reflexivity.
 Qed.
-
-Lemma array_ext :
-  ∀ (u v : 'array),
-    (∀ k, chArray_get U8 u k 1 = chArray_get U8 v k 1) →
-    u = v.
-Proof.
-  intros u v e.
-  apply eq_fmap. intro k.
-  specialize (e k). unfold chArray_get in e.
-  apply LE.decode_inj in e. 2,3: reflexivity.
-  simpl in e.
-  replace (k * 1 + 0)%Z with k in e by micromega.Lia.lia.
-  destruct getm, getm. all: noconf e.
-  (* They might differ on keys where one returns 0 and the other None *)
-Abort.
-
-Definition array_get8_eq (u v : 'array) :=
-  ∀ k, chArray_get U8 u k 1 = chArray_get U8 v k 1.
-
-Notation "u =⁸ v" := (array_get8_eq u v) (at level 80).
-
-Lemma chArray_write_correct :
-  ∀ ws len (a : WArray.array len) i (w : word ws) t,
-    write a i w = ok t →
-    chArray_write (translate_value (Varr a)) i w =⁸ translate_value (Varr t).
-Proof.
-  intros ws len a i w t h.
-  intro z.
-  eapply write_read8 with (k := z) in h as e. simpl in e.
-  unfold chArray_get. simpl.
-  replace (z * 1 + 0)%Z with z by micromega.Lia.lia.
-  rewrite chArray_write_get.
-  destruct (_ : bool) eqn: eb.
-  - simpl. eapply embed_read8 in e. simpl in e.
-    rewrite -e. unfold chArray_get. simpl.
-    replace (z * 1 + 0)%Z with z by micromega.Lia.lia.
-    admit.
-  - admit.
-Abort.
-
-Lemma chArray_write_correct :
-  ∀ ws len (a : WArray.array len) i (w : word ws) t,
-    write a i w = ok t →
-    chArray_write (translate_value (Varr a)) i w = translate_value (Varr t).
-Proof.
-  intros ws len a i w t h.
-  apply eq_fmap. intro z.
-  rewrite chArray_write_get.
-  eapply write_read8 with (k := z) in h as e. simpl in e.
-  destruct (_ : bool) eqn: eb.
-  - simpl. admit.
-  - simpl. admit.
-Admitted.
 
 Lemma chArray_set_correct :
   ∀ ws len (a : WArray.array len) aa i (w : word ws) t,
