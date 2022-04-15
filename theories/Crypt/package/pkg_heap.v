@@ -67,6 +67,7 @@ Proof.
   - exact None.
   - exact (fintype.Ordinal n.(cond_pos)).
   - exact word0.
+  - exact [::].
 Defined.
 
 Definition heap := { h : raw_heap | valid_heap h }.
