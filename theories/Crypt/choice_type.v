@@ -46,7 +46,7 @@ Inductive choice_type :=
 | chOption (A : choice_type)
 | chFin (n : positive)
 | chWord (nbits : wsize)
-| chSeq (A : choice_type)
+| chList (A : choice_type)
 .
 
 Derive NoConfusion NoConfusionHom for choice_type.
@@ -65,7 +65,7 @@ Fixpoint chElement_ordType (U : choice_type) : ordType :=
   | chOption U => option_ordType (chElement_ordType U)
   | chFin n => [ordType of ordinal n.(pos) ]
   | chWord nbits => word_ordType nbits
-  | chSeq U => seq_ordType (chElement_ordType U)
+  | chList U => seq_ordType (chElement_ordType U)
   end.
 
 Fixpoint chElement (U : choice_type) : choiceType :=
@@ -79,7 +79,7 @@ Fixpoint chElement (U : choice_type) : choiceType :=
   | chOption U => option_choiceType (chElement U)
   | chFin n => [choiceType of ordinal n.(pos) ]
   | chWord nbits => word_choiceType nbits
-  | chSeq U => seq_choiceType (chElement U)
+  | chList U => seq_choiceType (chElement U)
   end.
 
 Coercion chElement : choice_type >-> choiceType.
@@ -96,7 +96,7 @@ Coercion chElement : choice_type >-> choiceType.
   | chOption A => None
   | chFin n => _
   | chWord nbits => word0
-  | chSeq A => [::]
+  | chList A => [::]
   end.
 Next Obligation.
   eapply fmap_of_fmap. apply emptym.
@@ -130,7 +130,7 @@ Section choice_typeTypes.
     | chOption a, chOption a' => choice_type_test a a'
     | chFin n, chFin n' => n == n'
     | chWord nbits, chWord nbits' => nbits == nbits'
-    | chSeq a, chSeq b => choice_type_test a b
+    | chList a, chList b => choice_type_test a b
     | _ , _ => false
     end.
 
@@ -173,7 +173,7 @@ Section choice_typeTypes.
       + move: e => /eqP e. subst. left. reflexivity.
       + move: e => /eqP e. right. intro h.
         apply e. inversion h. reflexivity.
-    (* chSeq *)
+    (* chList *)
     - destruct (ih1 y1).
       all: subst.
       + left. reflexivity.
@@ -252,16 +252,16 @@ Section choice_typeTypes.
   | chWord _, chFin _ => false
   | chWord n, chWord n' => (n < n')%CMP
   | chWord _, _ => true
-  | chSeq _, chUnit => false
-  | chSeq _, chBool => false
-  | chSeq _, chNat => false
-  | chSeq _, chInt => false
-  | chSeq _, chProd _ _ => false
-  | chSeq _, chMap _ _ => false
-  | chSeq _, chOption _ => false
-  | chSeq _, chFin _ => false
-  | chSeq _, chWord _ => false
-  | chSeq u, chSeq w => choice_type_lt u w
+  | chList _, chUnit => false
+  | chList _, chBool => false
+  | chList _, chNat => false
+  | chList _, chInt => false
+  | chList _, chProd _ _ => false
+  | chList _, chMap _ _ => false
+  | chList _, chOption _ => false
+  | chList _, chFin _ => false
+  | chList _, chWord _ => false
+  | chList u, chList w => choice_type_lt u w
   end.
 
   Definition choice_type_leq (t1 t2 : choice_type) :=
@@ -331,7 +331,7 @@ Section choice_typeTypes.
       all: destruct w; try discriminate; auto.
       simpl in *.
       eapply cmp_lt_trans. all: eauto.
-    (* chSeq *)
+    (* chList *)
     - destruct v. all: try discriminate.
       all: destruct w. all: try reflexivity. all: try discriminate.
       simpl in *.
@@ -560,7 +560,7 @@ Section choice_typeTypes.
   | chOption u => GenTree.Node 3 [:: encode u]
   | chFin n => GenTree.Node 4 [:: GenTree.Leaf (pos n)]
   | chWord n => GenTree.Node 5 [:: GenTree.Leaf (wsize_log2 n)]
-  | chSeq u => GenTree.Node 6 [:: encode u]
+  | chList u => GenTree.Node 6 [:: encode u]
   end.
 
   Fixpoint decode (t : GenTree.tree nat) : option choice_type :=
@@ -588,7 +588,7 @@ Section choice_typeTypes.
     | GenTree.Node 5 [:: GenTree.Leaf n] => Some (chWord (nth U8 wsizes n))
     | GenTree.Node 6 [:: l] =>
       match decode l with
-      | Some l => Some (chSeq l)
+      | Some l => Some (chList l)
       | _ => None
       end
     | _ => None

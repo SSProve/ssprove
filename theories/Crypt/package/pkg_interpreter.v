@@ -151,7 +151,7 @@ Section Interpreter.
         end
     | chFin n => Some ((seed + 1)%N, _)
     | chWord n => Some ((seed + 1)%N, _)
-    | chSeq A =>
+    | chList A =>
         match sampler A seed with
         | Some (seed', x) => Some (seed', [:: x])
         | _ => None
