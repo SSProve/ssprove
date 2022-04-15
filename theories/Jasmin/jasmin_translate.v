@@ -756,6 +756,72 @@ Definition write_mem {sz} (m : 'mem) (ptr : word Uptr) (w : word sz) : 'mem :=
 Definition translate_write {sz} (p : word Uptr) (w : word sz) : raw_code 'unit :=
   m ← get mem_loc ;; #put mem_loc := write_mem m p w ;; ret tt.
 
+Fixpoint lchtuple (ts : seq choice_type) : choice_type :=
+  match ts with
+  | [::] => 'unit
+  | [:: t1 ] => t1
+  | t1 :: ts => t1 × (lchtuple ts)
+  end.
+
+Lemma lchtuple_cons_cons a b l :
+  (lchtuple (a :: b :: l)) = (a × lchtuple (b :: l)).
+Proof.
+  reflexivity.
+Qed.
+
+Lemma sem_prod_cons_cons a b l S :
+  (sem_prod (a :: b :: l) S) = (sem_t a -> sem_prod (b :: l) S).
+Proof.
+  reflexivity.
+Qed.
+
+Fixpoint bind_list (ts : list stype) (cs : list typed_code) {struct ts} : raw_code (lchtuple ([seq encode t | t <- ts])).
+  refine
+    (match ts with
+     | [::] =>
+         match cs with
+         | _ => _
+         end
+     | t :: ts' =>
+         _
+     end).
+  - exact (ret (chCanonical chUnit)).
+  - destruct ts' as [|t' ts''] eqn:E.
+    + exact (ret (chCanonical _)).
+    + destruct cs as [|c cs].
+      * exact (ret (chCanonical _)).
+      * eapply bind.
+        ** exact ((truncate_code t c).π2).
+        ** intros.
+           eapply bind.
+           *** exact (bind_list ts' cs).
+           *** intros.
+               cbn -[lchtuple].
+               rewrite lchtuple_cons_cons.
+               rewrite <- map_cons.
+               rewrite <- E.
+               exact (ret (X, X0)).
+Defined.
+
+Fixpoint ch_app_sopn {S} (ts : seq.seq stype) (op : sem_prod ts (exec (sem_t S))) (vs : lchtuple ([seq encode t | t <- ts])) {struct ts} : encode S.
+  destruct ts as [|t ts'].
+  - exact (chCanonical _).
+  - destruct ts' as [|t' ts''] eqn:E.
+    + simpl in *.
+      destruct (op (unembed vs)).
+      * exact (embed s).
+      * exact (chCanonical _).
+    + rewrite sem_prod_cons_cons in op.
+      destruct vs.
+      apply unembed in s.
+      apply op in s.
+      apply ch_app_sopn with (ts:=ts').
+      * rewrite E.
+        exact s.
+      * rewrite E.
+        exact s0.
+Defined.
+
 (* Following sem_pexpr *)
 Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
   match e with
@@ -807,7 +873,11 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
       | _ => chCanonical _
       end
     )
-  | PappN op es => unsupported
+  | PappN op es =>
+    totc _ (
+      vs ← bind_list (type_of_opN op).1 [seq translate_pexpr fn e | e <- es] ;;
+      ret (ch_app_sopn (type_of_opN op).1 (sem_opN_typed op) vs)
+    )
   | Pif t eb e1 e2 =>
     totc _ (
       b ← (truncate_code sbool (translate_pexpr fn eb)).π2 ;; (* to_bool *)
@@ -971,13 +1041,6 @@ Proof.
   - exact [interface].
   - exact [interface].
 Defined.
-
-Fixpoint lchtuple (ts : seq choice_type) : choice_type :=
-  match ts with
-  | [::] => 'unit
-  | [:: t1 ] => t1
-  | t1 :: ts => t1 × (lchtuple ts)
-  end.
 
 (* Apply cast_fun or return default value, like lookup_op *)
 Equations? cast_typed_raw_function {dom cod : choice_type} (rf : typed_raw_function) : dom → raw_code cod :=
