@@ -775,23 +775,20 @@ Proof.
   reflexivity.
 Qed.
 
+(* truncate and bind list of code *)
 Fixpoint bind_list (ts : list stype) (cs : list typed_code) {struct ts} : raw_code (lchtuple ([seq encode t | t <- ts])).
-  refine
-    (match ts with
-     | [::] =>
-         match cs with
-         | _ => _
-         end
-     | t :: ts' =>
-         _
-     end).
+  destruct ts as [|t ts'].
   - exact (ret (chCanonical chUnit)).
   - destruct ts' as [|t' ts''] eqn:E.
-    + exact (ret (chCanonical _)).
     + destruct cs as [|c cs].
       * exact (ret (chCanonical _)).
       * eapply bind.
-        ** exact ((truncate_code t c).π2).
+        ** exact (truncate_code t c).π2.
+        ** intros. exact (ret X).
+    + destruct cs as [|c cs].
+      * exact (ret (chCanonical _)).
+      * eapply bind.
+        ** exact (truncate_code t c).π2.
         ** intros.
            eapply bind.
            *** exact (bind_list ts' cs).
