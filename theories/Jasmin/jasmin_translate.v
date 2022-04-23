@@ -763,24 +763,6 @@ Fixpoint lchtuple (ts : seq choice_type) : choice_type :=
   | t1 :: ts => t1 × (lchtuple ts)
   end.
 
-Lemma lchtuple_cons_cons a b l :
-  (lchtuple (a :: b :: l)) = (a × lchtuple (b :: l)).
-Proof.
-  reflexivity.
-Qed.
-
-Lemma sem_prod_cons_cons a b l S :
-  (sem_prod (a :: b :: l) S) = (sem_t a -> sem_prod (b :: l) S).
-Proof.
-  reflexivity.
-Qed.
-
-Lemma sem_prod_cons a l S :
-  (sem_prod (a :: l) S) = (sem_t a -> sem_prod l S).
-Proof.
-  reflexivity.
-Qed.
-
 Definition to_typed_chElement {t : choice_type} (v : t) : typed_chElement := (t ; v).
 
 Fixpoint bind_list (cs : list typed_code) {struct cs} : raw_code ([choiceType of list typed_chElement]) :=
@@ -791,61 +773,6 @@ Fixpoint bind_list (cs : list typed_code) {struct cs} : raw_code ([choiceType of
       vs ← bind_list cs ;;
       ret (to_typed_chElement v :: vs)
   end.
-
-(* bind list of code to tuple *)
-Fixpoint bind_list_to_tuple (cs : list typed_code) {struct cs} : raw_code (lchtuple ([seq c.π1 | c <- cs])).
-  destruct cs as [|c cs'].
-  - exact (ret (chCanonical _)).
-  - destruct cs' as [|c' cs''] eqn:E.
-    + exact c.π2.
-    + eapply bind.
-      * exact c.π2.
-      * intros.
-        eapply bind.
-        ** exact (bind_list_to_tuple cs').
-        ** intros.
-           cbn -[lchtuple typed_code].
-           rewrite lchtuple_cons_cons.
-           rewrite <- map_cons.
-           fold typed_code. (* i don't know when this got unfolded *)
-           rewrite <- E.
-           exact (ret (X, X0)).
-Defined.
-
-Fixpoint bind_and_truncate_list_to_tuple (ts : list stype) (cs : list typed_code) : raw_code (lchtuple ([seq encode t | t <- ts])) :=
-  match cs with
-  | [::] => ret (chCanonical _)
-  | c :: cs' => match ts with
-              | [::] => ret (chCanonical _)
-              | t :: ts' => match ts' with
-                          | [::] => v ← (truncate_code t c).π2 ;;
-                                  ret v
-                          | t' :: ts'' =>
-                              v ← (truncate_code t c).π2 ;;
-                              vs ← bind_and_truncate_list_to_tuple (t' :: ts'') cs' ;;
-                              ret (v, vs)
-                          end
-              end
-  end.
-
-Fixpoint app_sopn_truncated_tuple {S} (ts : seq.seq stype) (op : sem_prod ts (exec (sem_t S))) (vs : lchtuple ([seq encode t | t <- ts])) {struct ts} : encode S.
-  destruct ts as [|t ts'].
-  - exact (chCanonical _).
-  - destruct ts' as [|t' ts''] eqn:E.
-    + simpl in *.
-      destruct (op (unembed vs)).
-      * exact (embed s).
-      * exact (chCanonical _).
-    + rewrite sem_prod_cons_cons in op.
-      destruct vs.
-      apply unembed in s.
-      apply op in s.
-      apply app_sopn_truncated_tuple with (ts:=ts').
-      * rewrite E.
-        exact s.
-      * rewrite E.
-        exact s0.
-Defined.
 
 Fixpoint type_of_values vs : choice_type :=
   match vs with
@@ -1438,43 +1365,6 @@ Proof.
   apply translate_of_val. assumption.
 Qed.
 
-Fixpoint list_to_chtuple (vs : values) : lchtuple [seq choice_type_of_val v | v <- vs].
-  destruct vs as [|v vs'].
-  - exact (chCanonical chUnit).
-  - destruct vs' as [|v' vs''] eqn:E.
-    + exact (translate_value v).
-    + split.
-      * exact (translate_value v).
-      * rewrite <- E. exact (list_to_chtuple vs').
-Defined.
-
-Lemma mapM2_cons {A B E R} e (f : A -> B -> result E R) v1 v2 v3 l1 l2 l3 :
-  mapM2 e f (v1 :: l1) (v2 :: l2) = ok (v3 :: l3) ->
-  mapM2 e f l1 l2 = ok l3.
-Proof.
-  intros.
-  jbind H v Hv.
-  jbind H v' Hv'.
-  noconf H.
-  destruct l1, l2, l3; auto.
-Qed.
-
-Lemma bind_list_to_tuple_cons_cons c1 c2 cs :
-  bind_list_to_tuple (c1 :: c2 :: cs) =
-    (v ← c1.π2 ;;
-     vs ← bind_list_to_tuple (c2 :: cs) ;;
-     ret (v, vs)).
-Proof.
-  reflexivity.
-Qed.
-
-Lemma list_to_chtuple_cons_cons v1 v2 vs :
-  list_to_chtuple (v1 :: v2 :: vs) =
-    (translate_value v1, list_to_chtuple (v2 :: vs)).
-Proof.
-  reflexivity.
-Qed.
-
 Lemma bind_list_correct cond cs vs :
   [seq c.π1 | c <- cs] = [seq choice_type_of_val v | v <- vs] ->
   List.Forall2 (λ c v, ⊢ ⦃ cond ⦄ c.π2 ⇓ coerce_to_choice_type _ (translate_value v) ⦃ cond ⦄) cs vs ->
@@ -1502,106 +1392,6 @@ Proof.
       rewrite coerce_to_choice_type_K.
       reflexivity.
 Qed.
-
-Lemma bind_list_to_tuple_correct cond cs vs :
-  [seq c.π1 | c <- cs] = [seq choice_type_of_val v | v <- vs] ->
-  List.Forall2 (λ c v, ⊢ ⦃ cond ⦄ c.π2 ⇓ coerce_to_choice_type _ (translate_value v) ⦃ cond ⦄) cs vs ->
-  ⊢ ⦃ cond ⦄ bind_list_to_tuple cs ⇓ coerce_to_choice_type _ (list_to_chtuple vs) ⦃ cond ⦄.
-Proof.
-  revert vs.
-  induction cs as [| c1 cs]; intros.
-  - simpl.
-    inversion H0; subst.
-    rewrite coerce_to_choice_type_K.
-    apply u_ret.
-    intros; auto.
-  - destruct cs as [|c2 cs'] eqn:Ec.
-    + simpl.
-      inversion H0; subst.
-      inversion H5.
-      exact H3.
-    + destruct vs as [|v1 vs].
-      1: discriminate.
-      destruct vs as [|v2 vs'] eqn:Ev.
-      1: discriminate.
-      rewrite bind_list_to_tuple_cons_cons.
-      rewrite list_to_chtuple_cons_cons.
-      rewrite <- Ev, <- Ec in H0.
-      rewrite <- Ev, <- Ec in H.
-      inversion H0.
-      inversion H.
-      rewrite Ev Ec in H9.
-      rewrite Ev Ec in H6.
-      eapply u_bind.
-      * exact H4.
-      * eapply u_bind.
-        ** eapply  IHcs.
-           1: eassumption.
-           1: eassumption.
-        **
-          eapply u_ret.
-          intros; split; auto.
-          Admitted.
-
-Lemma bind_and_truncate_list_to_tuple_correct cond ts cs vs vs' :
-  mapM2 ErrType truncate_val ts vs = ok vs' ->
-  [seq c.π1 | c <- cs] = [seq choice_type_of_val v | v <- vs] ->
-  List.Forall2 (λ c v, ⊢ ⦃ cond ⦄ c.π2 ⇓ coerce_to_choice_type _ (translate_value v) ⦃ cond ⦄) cs vs ->
-  ⊢ ⦃ cond ⦄ bind_and_truncate_list_to_tuple ts cs ⇓ coerce_to_choice_type _ (list_to_chtuple vs') ⦃ cond ⦄.
-Proof.
-  intros.
-  revert ts H.
-  revert vs vs' H0 H1.
-  induction cs; intros.
-  - inversion H1; subst.
-    destruct ts. 2: discriminate.
-    inversion H; subst.
-    simpl.
-    rewrite coerce_to_choice_type_K.
-    apply u_ret.
-    intros; split; auto.
-  - inversion H1; subst.
-    destruct ts. 1: discriminate.
-    destruct ts eqn:E.
-    + simpl.
-      rewrite bind_assoc.
-      eapply u_bind.
-      * exact H4.
-      * apply u_ret.
-        intros; split; auto.
-        jbind H x Hx.
-        inversion H.
-        destruct l'. 2: discriminate.
-        simpl in H.
-        noconf H.
-        simpl.
-        inversion H0.
-        rewrite H3.
-        rewrite coerce_to_choice_type_K.
-        apply translate_truncate_val.
-        assumption.
-    + destruct vs'.
-      { jbind H w Hw.
-        jbind H w' Hw'.
-        discriminate. }
-      cbn -[coerce_to_choice_type lchtuple list_to_chtuple].
-      rewrite bind_assoc.
-      eapply u_bind. 1: exact H4.
-      cbn -[coerce_to_choice_type lchtuple list_to_chtuple].
-      eapply u_bind.
-      * eapply IHcs with (ts:=s0 :: l).
-        ** inversion H0.
-           eassumption.
-        ** assumption.
-        **
-          eapply mapM2_cons.
-          exact H.
-      * apply u_ret.
-        intros; split; auto.
-        inversion H0.
-        rewrite H5.
-        rewrite coerce_to_choice_type_K.
-        Admitted.
 
 Lemma translate_truncate_word :
   ∀ sz sz' (w : word sz) (w' : word sz'),
