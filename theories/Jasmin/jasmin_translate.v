@@ -775,32 +775,60 @@ Proof.
   reflexivity.
 Qed.
 
-(* truncate and bind list of code *)
-Fixpoint bind_list (ts : list stype) (cs : list typed_code) {struct ts} : raw_code (lchtuple ([seq encode t | t <- ts])).
-  destruct ts as [|t ts'].
-  - exact (ret (chCanonical chUnit)).
-  - destruct ts' as [|t' ts''] eqn:E.
-    + destruct cs as [|c cs].
-      * exact (ret (chCanonical _)).
-      * eapply bind.
-        ** exact (truncate_code t c).π2.
-        ** intros. exact (ret X).
-    + destruct cs as [|c cs].
-      * exact (ret (chCanonical _)).
-      * eapply bind.
-        ** exact (truncate_code t c).π2.
+Lemma sem_prod_cons a l S :
+  (sem_prod (a :: l) S) = (sem_t a -> sem_prod l S).
+Proof.
+  reflexivity.
+Qed.
+
+Definition to_typed_chElement {t : choice_type} (v : t) : typed_chElement := (t ; v).
+
+Fixpoint bind_list (cs : list typed_code) {struct cs} : raw_code ([choiceType of list typed_chElement]) :=
+  match cs with
+  | [::] => ret [::]
+  | c :: cs =>
+      v ← c.π2 ;;
+      vs ← bind_list cs ;;
+      ret (to_typed_chElement v :: vs)
+  end.
+
+(* bind list of code to tuple *)
+Fixpoint bind_list_to_tuple (cs : list typed_code) {struct cs} : raw_code (lchtuple ([seq c.π1 | c <- cs])).
+  destruct cs as [|c cs'].
+  - exact (ret (chCanonical _)).
+  - destruct cs' as [|c' cs''] eqn:E.
+    + exact c.π2.
+    + eapply bind.
+      * exact c.π2.
+      * intros.
+        eapply bind.
+        ** exact (bind_list_to_tuple cs').
         ** intros.
-           eapply bind.
-           *** exact (bind_list ts' cs).
-           *** intros.
-               cbn -[lchtuple].
-               rewrite lchtuple_cons_cons.
-               rewrite <- map_cons.
-               rewrite <- E.
-               exact (ret (X, X0)).
+           cbn -[lchtuple typed_code].
+           rewrite lchtuple_cons_cons.
+           rewrite <- map_cons.
+           fold typed_code. (* i don't know when this got unfolded *)
+           rewrite <- E.
+           exact (ret (X, X0)).
 Defined.
 
-Fixpoint ch_app_sopn {S} (ts : seq.seq stype) (op : sem_prod ts (exec (sem_t S))) (vs : lchtuple ([seq encode t | t <- ts])) {struct ts} : encode S.
+Fixpoint bind_and_truncate_list_to_tuple (ts : list stype) (cs : list typed_code) : raw_code (lchtuple ([seq encode t | t <- ts])) :=
+  match cs with
+  | [::] => ret (chCanonical _)
+  | c :: cs' => match ts with
+              | [::] => ret (chCanonical _)
+              | t :: ts' => match ts' with
+                          | [::] => v ← (truncate_code t c).π2 ;;
+                                  ret v
+                          | t' :: ts'' =>
+                              v ← (truncate_code t c).π2 ;;
+                              vs ← bind_and_truncate_list_to_tuple (t' :: ts'') cs' ;;
+                              ret (v, vs)
+                          end
+              end
+  end.
+
+Fixpoint app_sopn_truncated_tuple {S} (ts : seq.seq stype) (op : sem_prod ts (exec (sem_t S))) (vs : lchtuple ([seq encode t | t <- ts])) {struct ts} : encode S.
   destruct ts as [|t ts'].
   - exact (chCanonical _).
   - destruct ts' as [|t' ts''] eqn:E.
@@ -812,12 +840,47 @@ Fixpoint ch_app_sopn {S} (ts : seq.seq stype) (op : sem_prod ts (exec (sem_t S))
       destruct vs.
       apply unembed in s.
       apply op in s.
-      apply ch_app_sopn with (ts:=ts').
+      apply app_sopn_truncated_tuple with (ts:=ts').
       * rewrite E.
         exact s.
       * rewrite E.
         exact s0.
 Defined.
+
+Fixpoint type_of_values vs : choice_type :=
+  match vs with
+  | [::] => 'unit
+  | [:: v ] => choice_type_of_val v
+  | hd :: tl => choice_type_of_val hd × type_of_values tl
+  end.
+
+(* lchtuple (map choice_type_of_val vs) *)
+Definition translate_values (vs : seq value) :
+  lchtuple (map choice_type_of_val vs).
+Proof.
+  induction vs as [| v vs tr_vs].
+  - exact tt.
+  - destruct vs as [| v' vs'].
+    + exact (translate_value v).
+    + exact (translate_value v, tr_vs).
+Defined.
+
+Fixpoint app_sopn_list {S} (ts : list stype) :=
+  match ts as ts0 return (sem_prod ts0 (exec (sem_t S)) → [choiceType of list typed_chElement] → encode S) with
+  | [::] => λ (o : exec (sem_t S)) (vs : list typed_chElement),
+      match vs with
+      | [::] => match o with
+              | Ok o => embed o
+              | _ => chCanonical _
+              end
+      | _ :: _ => chCanonical _
+      end
+  | t :: ts0 => λ (o : sem_t t → sem_prod ts0 (exec (sem_t S))) (vs : list typed_chElement),
+      match vs with
+      | [::] => chCanonical _
+      | v :: vs0 => app_sopn_list ts0 (o (unembed (truncate_el t v.π2))) vs0
+      end
+  end.
 
 (* Following sem_pexpr *)
 Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
@@ -871,9 +934,14 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
       end
     )
   | PappN op es =>
+      (* note that this is sligtly different from Papp2 and Papp1, in that
+         we don't truncate when we bind, but when we apply (in app_sopn_list).
+         This made the proof easier, but is also more faithful(maybe?) to
+         how it is done in jasmin. Maybe we should change Papp1/2.
+       *)
     totc _ (
-      vs ← bind_list (type_of_opN op).1 [seq translate_pexpr fn e | e <- es] ;;
-      ret (ch_app_sopn (type_of_opN op).1 (sem_opN_typed op) vs)
+      vs ← bind_list [seq translate_pexpr fn e | e <- es] ;;
+      ret (app_sopn_list (type_of_opN op).1 (sem_opN_typed op) vs)
     )
   | Pif t eb e1 e2 =>
     totc _ (
@@ -1075,25 +1143,6 @@ Proof.
   destruct s as [| | size | size].
   all: simpl ; rewrite eq_rect_r_K ; reflexivity.
 Qed.
-
-Fixpoint type_of_values vs : choice_type :=
-  match vs with
-  | [::] => 'unit
-  | [:: v ] => choice_type_of_val v
-  | hd :: tl => choice_type_of_val hd × type_of_values tl
-  end.
-
-(* lchtuple (map choice_type_of_val vs) *)
-
-Definition translate_values (vs : seq value) :
-  lchtuple (map choice_type_of_val vs).
-Proof.
-  induction vs as [| v vs tr_vs].
-  - exact tt.
-  - destruct vs as [| v' vs'].
-    + exact (translate_value v).
-    + exact (translate_value v, tr_vs).
-Defined.
 
 Definition translate_ptr (ptr : pointer) : Location :=
   ('word U8 ; (5 ^ Z.to_nat (wunsigned ptr))%nat).
@@ -1389,6 +1438,171 @@ Proof.
   apply translate_of_val. assumption.
 Qed.
 
+Fixpoint list_to_chtuple (vs : values) : lchtuple [seq choice_type_of_val v | v <- vs].
+  destruct vs as [|v vs'].
+  - exact (chCanonical chUnit).
+  - destruct vs' as [|v' vs''] eqn:E.
+    + exact (translate_value v).
+    + split.
+      * exact (translate_value v).
+      * rewrite <- E. exact (list_to_chtuple vs').
+Defined.
+
+Lemma mapM2_cons {A B E R} e (f : A -> B -> result E R) v1 v2 v3 l1 l2 l3 :
+  mapM2 e f (v1 :: l1) (v2 :: l2) = ok (v3 :: l3) ->
+  mapM2 e f l1 l2 = ok l3.
+Proof.
+  intros.
+  jbind H v Hv.
+  jbind H v' Hv'.
+  noconf H.
+  destruct l1, l2, l3; auto.
+Qed.
+
+Lemma bind_list_to_tuple_cons_cons c1 c2 cs :
+  bind_list_to_tuple (c1 :: c2 :: cs) =
+    (v ← c1.π2 ;;
+     vs ← bind_list_to_tuple (c2 :: cs) ;;
+     ret (v, vs)).
+Proof.
+  reflexivity.
+Qed.
+
+Lemma list_to_chtuple_cons_cons v1 v2 vs :
+  list_to_chtuple (v1 :: v2 :: vs) =
+    (translate_value v1, list_to_chtuple (v2 :: vs)).
+Proof.
+  reflexivity.
+Qed.
+
+Lemma bind_list_correct cond cs vs :
+  [seq c.π1 | c <- cs] = [seq choice_type_of_val v | v <- vs] ->
+  List.Forall2 (λ c v, ⊢ ⦃ cond ⦄ c.π2 ⇓ coerce_to_choice_type _ (translate_value v) ⦃ cond ⦄) cs vs ->
+  ⊢ ⦃ cond ⦄ bind_list cs ⇓ [seq to_typed_chElement (translate_value v) | v <- vs ] ⦃ cond ⦄.
+Proof.
+  revert vs.
+  induction cs; intros.
+  - destruct vs.
+    2: inversion H.
+    apply u_ret.
+    intros; auto.
+  - simpl.
+    destruct vs.
+    1: inversion H0.
+    inversion H0; subst.
+    inversion H; subst.
+    eapply u_bind.
+    1: eassumption.
+    eapply u_bind.
+    + apply IHcs; eassumption.
+    + apply u_ret.
+      intros; split; auto.
+      simpl.
+      rewrite H2.
+      rewrite coerce_to_choice_type_K.
+      reflexivity.
+Qed.
+
+Lemma bind_list_to_tuple_correct cond cs vs :
+  [seq c.π1 | c <- cs] = [seq choice_type_of_val v | v <- vs] ->
+  List.Forall2 (λ c v, ⊢ ⦃ cond ⦄ c.π2 ⇓ coerce_to_choice_type _ (translate_value v) ⦃ cond ⦄) cs vs ->
+  ⊢ ⦃ cond ⦄ bind_list_to_tuple cs ⇓ coerce_to_choice_type _ (list_to_chtuple vs) ⦃ cond ⦄.
+Proof.
+  revert vs.
+  induction cs as [| c1 cs]; intros.
+  - simpl.
+    inversion H0; subst.
+    rewrite coerce_to_choice_type_K.
+    apply u_ret.
+    intros; auto.
+  - destruct cs as [|c2 cs'] eqn:Ec.
+    + simpl.
+      inversion H0; subst.
+      inversion H5.
+      exact H3.
+    + destruct vs as [|v1 vs].
+      1: discriminate.
+      destruct vs as [|v2 vs'] eqn:Ev.
+      1: discriminate.
+      rewrite bind_list_to_tuple_cons_cons.
+      rewrite list_to_chtuple_cons_cons.
+      rewrite <- Ev, <- Ec in H0.
+      rewrite <- Ev, <- Ec in H.
+      inversion H0.
+      inversion H.
+      rewrite Ev Ec in H9.
+      rewrite Ev Ec in H6.
+      eapply u_bind.
+      * exact H4.
+      * eapply u_bind.
+        ** eapply  IHcs.
+           1: eassumption.
+           1: eassumption.
+        **
+          eapply u_ret.
+          intros; split; auto.
+          Admitted.
+
+Lemma bind_and_truncate_list_to_tuple_correct cond ts cs vs vs' :
+  mapM2 ErrType truncate_val ts vs = ok vs' ->
+  [seq c.π1 | c <- cs] = [seq choice_type_of_val v | v <- vs] ->
+  List.Forall2 (λ c v, ⊢ ⦃ cond ⦄ c.π2 ⇓ coerce_to_choice_type _ (translate_value v) ⦃ cond ⦄) cs vs ->
+  ⊢ ⦃ cond ⦄ bind_and_truncate_list_to_tuple ts cs ⇓ coerce_to_choice_type _ (list_to_chtuple vs') ⦃ cond ⦄.
+Proof.
+  intros.
+  revert ts H.
+  revert vs vs' H0 H1.
+  induction cs; intros.
+  - inversion H1; subst.
+    destruct ts. 2: discriminate.
+    inversion H; subst.
+    simpl.
+    rewrite coerce_to_choice_type_K.
+    apply u_ret.
+    intros; split; auto.
+  - inversion H1; subst.
+    destruct ts. 1: discriminate.
+    destruct ts eqn:E.
+    + simpl.
+      rewrite bind_assoc.
+      eapply u_bind.
+      * exact H4.
+      * apply u_ret.
+        intros; split; auto.
+        jbind H x Hx.
+        inversion H.
+        destruct l'. 2: discriminate.
+        simpl in H.
+        noconf H.
+        simpl.
+        inversion H0.
+        rewrite H3.
+        rewrite coerce_to_choice_type_K.
+        apply translate_truncate_val.
+        assumption.
+    + destruct vs'.
+      { jbind H w Hw.
+        jbind H w' Hw'.
+        discriminate. }
+      cbn -[coerce_to_choice_type lchtuple list_to_chtuple].
+      rewrite bind_assoc.
+      eapply u_bind. 1: exact H4.
+      cbn -[coerce_to_choice_type lchtuple list_to_chtuple].
+      eapply u_bind.
+      * eapply IHcs with (ts:=s0 :: l).
+        ** inversion H0.
+           eassumption.
+        ** assumption.
+        **
+          eapply mapM2_cons.
+          exact H.
+      * apply u_ret.
+        intros; split; auto.
+        inversion H0.
+        rewrite H5.
+        rewrite coerce_to_choice_type_K.
+        Admitted.
+
 Lemma translate_truncate_word :
   ∀ sz sz' (w : word sz) (w' : word sz'),
     truncate_word sz' w = ok w' →
@@ -1496,7 +1710,12 @@ Proof.
     unfold choice_type_of_val.
     rewrite type_of_to_val.
     reflexivity.
-  - admit.
+  - jbind H v1 h1.
+    jbind H v2 h2.
+    noconf H.
+    unfold choice_type_of_val.
+    rewrite type_of_to_val.
+    reflexivity.
   - jbind H v1 h1.
     jbind H v2 h2.
     jbind H v3 h3.
@@ -1506,7 +1725,7 @@ Proof.
     unfold choice_type_of_val.
     destruct v1.
     all: erewrite truncate_val_type. 1,3: reflexivity. 1,2: eassumption.
-Admitted.
+Qed.
 
 Lemma mapM_nil {eT aT bT} f l :
   @mapM eT aT bT f l = ok [::] →
@@ -1671,6 +1890,115 @@ Proof.
   all: reflexivity.
 Qed.
 
+Lemma translate_pexprs_types fn s1 es vs :
+  mapM (sem_pexpr gd s1) es = ok vs ->
+  [seq (translate_pexpr fn e).π1 | e <- es] = [seq choice_type_of_val v | v <- vs].
+Proof.
+  revert vs. induction es; intros.
+  - destruct vs. 2: discriminate.
+    reflexivity.
+  - inversion H.
+    jbind H1 v Hv.
+    jbind H1 vs' Hvs'.
+    noconf H1.
+    simpl.
+    erewrite IHes by eassumption.
+    erewrite translate_pexpr_type by eassumption.
+    reflexivity.
+Qed.
+
+(* jbind with fresh names *)
+Ltac jbind_fresh h :=
+  eapply rbindP ; [| exact h ] ;
+  let x := fresh in
+  let hx := fresh in
+  clear h ; intros x hx h ;
+  cbn beta in h.
+
+Lemma app_sopn_list_correct (op : opN) (v : sem_t (type_of_opN op).2) (vs : values) :
+  app_sopn (type_of_opN op).1 (sem_opN_typed op) vs = ok v ->
+  app_sopn_list (type_of_opN op).1 (sem_opN_typed op) [seq to_typed_chElement (translate_value v) | v <- vs] =
+    embed v.
+Proof.
+  intros; destruct op.
+  - simpl in *.
+    destruct vs.
+    + destruct w, p; try discriminate; simpl in *.
+      all: inversion H; reflexivity.
+    + destruct w, p; try discriminate.
+      Ltac solve_opn vs H :=
+        repeat (destruct vs; [repeat jbind_fresh H; discriminate|]);
+        destruct vs; [|repeat jbind_fresh H; discriminate];
+        repeat jbind_fresh H;
+        simpl;
+        inversion H;
+        erewrite !translate_to_int by eassumption;
+        reflexivity.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      (* U128 and PE1 !!very slow!! *)
+      * destruct vs. 1: jbind_fresh H; discriminate.
+        repeat (destruct vs; [repeat jbind_fresh H; discriminate|]).
+        destruct vs. 2: repeat jbind_fresh H; discriminate.
+        repeat jbind_fresh H.
+        inversion H.
+        simpl.
+        erewrite !translate_to_int by eassumption.
+        reflexivity.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      (* U256 and PE1 !!very slow!! *)
+      *  repeat (destruct vs; [repeat jbind_fresh H; discriminate|]).
+        destruct vs. 2: repeat jbind_fresh H; discriminate.
+        repeat jbind_fresh H.
+        inversion H.
+        simpl.
+        erewrite !translate_to_int by eassumption.
+        reflexivity.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+      * solve_opn vs H.
+  - simpl in *.
+    repeat (destruct vs; [repeat jbind_fresh H; discriminate|]).
+    destruct vs. 2: repeat jbind_fresh H; discriminate.
+    repeat jbind_fresh H.
+    inversion H.
+    destruct (cf_tbl c) as [[] []].
+    all: simpl in *; erewrite translate_to_bool; [|eassumption]; try reflexivity.
+    all: erewrite translate_to_bool; [|eassumption]; try reflexivity.
+    all: erewrite translate_to_bool; [|eassumption]; try reflexivity.
+Time Qed.
+(* Finished transaction in 309.626 secs (301.602u,4.741s) (successful) *)
+
 Lemma translate_pexpr_correct :
   ∀ fn (e : pexpr) s₁ v (cond : heap → Prop),
     sem_pexpr gd s₁ e = ok v →
@@ -1831,7 +2159,45 @@ Proof.
     rewrite sop2_unembed_embed.
     rewrite h6.
     reflexivity.
-  - (* PappN TODO *) admit.
+  - (* PappN *)
+    simpl in *.
+    jbind h1 v' h2.
+    jbind h1 v'' h3.
+    noconf h1.
+    (* jbind h3 v''' h4. *)
+    eapply u_bind.
+    + eapply bind_list_correct with (vs := v').
+      * rewrite <- map_comp.
+        unfold comp.
+        eapply translate_pexprs_types.
+        eassumption.
+      (* this should maybe be a lemma or the condition in bind_list_correct should be rewrote to match H *)
+      * clear -h2 H hcond.
+        revert v' h2 H.
+        induction es; intros.
+        ** inversion h2.
+           constructor.
+        ** inversion h2.
+           jbind H1 x Hx.
+           jbind H1 y Hy.
+           noconf H1.
+           constructor.
+           *** eapply H.
+               1: apply mem_head.
+               1: eassumption.
+               assumption.
+           *** eapply IHes.
+               1: assumption.
+               intros.
+               eapply H.
+               { rewrite in_cons. rewrite H0. by apply /orP; right. }
+               1: eassumption.
+               assumption.
+    + apply u_ret.
+      intros; split; auto.
+      rewrite coerce_to_choice_type_translate_value_to_val.
+      apply app_sopn_list_correct.
+      assumption.
   - (* Pif *)
     simpl in h1. jbind h1 b eb. jbind eb b' eb'.
     jbind h1 v1 ev1. jbind ev1 v1' ev1'.
@@ -1858,7 +2224,7 @@ Proof.
       erewrite translate_pexpr_type. 2: eassumption.
       rewrite coerce_to_choice_type_K.
       apply translate_truncate_val. assumption.
-Admitted.
+Qed.
 
 Lemma ptr_var_neq (ptr : pointer) (fn : funname) (v : var) :
   translate_ptr ptr != translate_var fn v.
