@@ -813,6 +813,62 @@ Fixpoint app_sopn_list {S} (ts : list stype) :=
       | v :: vs0 => app_sopn_list ts0 (o (unembed (truncate_el t v.π2))) vs0
       end
   end.
+Section bind_list_alt.
+  Definition bind_typed_list (cs : list typed_code)
+    : raw_code (lchtuple ([seq tc.π1 | tc <- cs])).
+  Proof.
+    induction cs as [| c cs bind_cs].
+    - exact (ret tt).
+    - destruct cs as [|c' cs'].
+      + exact c.π2.
+      + exact ( vs ← bind_cs ;;
+                v ← c.π2 ;;
+                ret (v, vs) ).
+  Defined.
+
+  Definition bind_list_truncate (l : list (stype * typed_code))
+    : raw_code (lchtuple ([seq encode ttc.1 | ttc <- l])).
+  Proof.
+    induction l as [| [t c] tcs bind_tcs].
+    - exact (ret tt).
+    - destruct tcs as [| [t' c'] tcs'].
+      + pose (truncate_code t c) as c'.
+        exact c'.π2.
+      + exact ( vs ← bind_tcs ;;
+                v ← (truncate_code t c).π2 ;;
+                ret (v, vs) ).
+  Defined.
+
+  Lemma map_fst {A B C} (xs : seq A) (ys : seq B) (f : A -> C) (H : size xs = size ys)
+    : [seq f xy.1 | xy <- zip xs ys] = [seq f x | x <- xs].
+  Proof.
+    set (f' := fun xy => f (fst xy)).
+    assert ([seq f' i | i <- zip xs ys] = map f (unzip1 (zip xs ys))) as mc by apply map_comp.
+    rewrite mc.
+    rewrite unzip1_zip.
+    1: reflexivity.
+    now rewrite H.
+  Qed.
+
+  Definition bind_list_trunc_aux (ts : list stype) (cs : list typed_code)
+             (H : size ts = size cs)
+    : raw_code (lchtuple ([seq encode t | t <- ts])).
+  Proof.
+    erewrite <- map_fst.
+    1: exact (bind_list_truncate (zip ts cs)).
+    assumption.
+  Defined.
+
+  Definition bind_list' (ts : list stype) (cs : list typed_code)
+    : raw_code (lchtuple ([seq encode t | t <- ts])).
+  Proof.
+    destruct (size ts == size cs) eqn:e.
+    - eapply bind_list_trunc_aux.
+      apply: eqP e.
+    - exact (ret (chCanonical _)).
+  Defined.
+
+End bind_list_alt.
 
 (* Following sem_pexpr *)
 Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
@@ -1013,7 +1069,7 @@ Proof.
       pose f_sg.2.1 as ts_in.
       pose (map (fun x => x.π1) tr_args) as ts_args.
 
-      pose (bind_list' tr_args) as es.
+      pose (bind_typed_list tr_args) as es.
       apply (bind es).
       intros vs.
       (* truncate arguments *)
@@ -1305,6 +1361,24 @@ Proof.
   destruct ty.
   all: simpl. all: rewrite coerce_to_choice_type_K. all: reflexivity.
 Qed.
+
+
+Section bind_list_test.
+  (* Quick test to see that the definition-via-tactics of bind_list' computes
+     as expected. *)
+  Definition cs : list typed_code :=
+    [:: ('bool; (ret false)) ; ('bool; (ret true)) ; ('nat; (ret 666)) ; ('int; ret 42%Z)].
+  Definition ts := [:: sbool; sbool; sint; sint].
+  Goal bind_list' ts cs = bind_list' ts cs.
+    unfold bind_list' at 2.
+    unfold bind_list_trunc_aux.
+    simpl.
+    rewrite !coerce_to_choice_type_K.
+    simp coerce_to_choice_type.
+    cbn.
+  Abort.
+End bind_list_test.
+
 
 Lemma get_var_get_heap :
   ∀ fn x s v m,
