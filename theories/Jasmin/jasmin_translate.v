@@ -562,7 +562,7 @@ Definition chArray_get8 (a : 'array) ptr :=
   end.
 
 Lemma chArray_get8_correct len (a : WArray.array len) s ptr :
-  WArray.get8 a ptr = ok s ->
+  WArray.get8 a ptr = ok s →
   chArray_get8 (embed_array a) ptr = translate_value (Vword s).
 Proof.
   intros H. simpl.
@@ -619,8 +619,8 @@ Definition chArray_set8 (a : 'array) ptr w :=
   setm a ptr w.
 
 Lemma chArray_set8_correct {len} (a : WArray.array len) ptr w s :
-  WArray.set8 a ptr w = ok s
-  -> chArray_set8 (embed_array a) ptr w = embed_array s.
+  WArray.set8 a ptr w = ok s →
+  chArray_set8 (embed_array a) ptr w = embed_array s.
 Proof.
   intros H. simpl.
   unfold WArray.set8 in H.
@@ -687,24 +687,24 @@ Proof.
 Qed.
 
 Lemma foldl_set_not_eq {K : ordType} {K' : eqType} {V : eqType} m f g (k : K) (v : V) (l : seq K') :
-  (forall k', k' \in l -> k <> f k') ->
+  (∀ k', k' \in l -> k ≠ f k') →
   setm (foldl (λ m k, setm m (f k) (g k)) m l) k v = foldl (λ m k, setm m (f k) (g k)) (setm m k v) l.
 Proof.
-  intros.
+  intros h.
   rewrite <- revK.
   rewrite !foldl_rev.
   apply foldr_set_not_eq.
-  intros.
-  rewrite <- rev_list_rev in H0.
-  move: H0 => /InP H0.
-  apply List.in_rev in H0.
-  apply H.
+  intros k' hk'.
+  rewrite <- rev_list_rev in hk'.
+  move: hk' => /InP hk'.
+  apply List.in_rev in hk'.
+  apply h.
   apply /InP. assumption.
 Qed.
 
 Lemma foldl_foldr_setm
-      {K : ordType} {K' : eqType} {V : eqType} m (f : K' -> K) (g : K' -> V) (l : seq K') :
-  uniq [seq f i | i <- l] ->
+  {K : ordType} {K' : eqType} {V : eqType} m (f : K' → K) (g : K' → V) (l : seq K') :
+  uniq [seq f i | i <- l] →
   foldl (λ m k, setm m (f k) (g k)) m l = foldr (λ k m, setm m (f k) (g k)) m l.
 Proof.
   intros.
@@ -714,7 +714,7 @@ Proof.
     rewrite <- foldl_set_not_eq.
     1: rewrite IHl.
     1: reflexivity.
-    { intros. simpl in H. move: H => /andP. easy. }.
+    { intros. simpl in H. move: H => /andP. easy. }
     { intros. simpl in H. move: H => /andP [] H _.
       clear -H0 H.
       induction l.
@@ -793,16 +793,21 @@ Proof.
 Defined.
 
 Fixpoint app_sopn_list {S} (ts : list stype) :=
-  match ts as ts0 return (sem_prod ts0 (exec (sem_t S)) → [choiceType of list typed_chElement] → encode S) with
-  | [::] => λ (o : exec (sem_t S)) (vs : list typed_chElement),
+  match ts as ts0
+  return (sem_prod ts0 (exec (sem_t S)) → [choiceType of list typed_chElement] → encode S)
+  with
+  | [::] =>
+    λ (o : exec (sem_t S)) (vs : list typed_chElement),
       match vs with
-      | [::] => match o with
-              | Ok o => embed o
-              | _ => chCanonical _
-              end
+      | [::] =>
+        match o with
+        | Ok o => embed o
+        | _ => chCanonical _
+        end
       | _ :: _ => chCanonical _
       end
-  | t :: ts0 => λ (o : sem_t t → sem_prod ts0 (exec (sem_t S))) (vs : list typed_chElement),
+  | t :: ts0 =>
+    λ (o : sem_t t → sem_prod ts0 (exec (sem_t S))) (vs : list typed_chElement),
       match vs with
       | [::] => chCanonical _
       | v :: vs0 => app_sopn_list ts0 (o (unembed (truncate_el t v.π2))) vs0
@@ -1366,8 +1371,8 @@ Proof.
 Qed.
 
 Lemma bind_list_correct cond cs vs :
-  [seq c.π1 | c <- cs] = [seq choice_type_of_val v | v <- vs] ->
-  List.Forall2 (λ c v, ⊢ ⦃ cond ⦄ c.π2 ⇓ coerce_to_choice_type _ (translate_value v) ⦃ cond ⦄) cs vs ->
+  [seq c.π1 | c <- cs] = [seq choice_type_of_val v | v <- vs] →
+  List.Forall2 (λ c v, ⊢ ⦃ cond ⦄ c.π2 ⇓ coerce_to_choice_type _ (translate_value v) ⦃ cond ⦄) cs vs →
   ⊢ ⦃ cond ⦄ bind_list cs ⇓ [seq to_typed_chElement (translate_value v) | v <- vs ] ⦃ cond ⦄.
 Proof.
   revert vs.
@@ -1681,7 +1686,7 @@ Proof.
 Qed.
 
 Lemma translate_pexprs_types fn s1 es vs :
-  mapM (sem_pexpr gd s1) es = ok vs ->
+  mapM (sem_pexpr gd s1) es = ok vs →
   [seq (translate_pexpr fn e).π1 | e <- es] = [seq choice_type_of_val v | v <- vs].
 Proof.
   revert vs. induction es; intros.
