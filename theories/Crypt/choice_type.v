@@ -9,6 +9,12 @@
 From Coq Require Import Utf8 Lia.
 From Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples GenericRulesSimple.
+
+(* !!! Import before mathcomp, to avoid overriding instances !!! *)
+(* specifically, importing after mathcomp results in conflicting instances for
+   Z_choiceType. *)
+From deriving Require Import deriving.
+
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr realsum seq all_algebra fintype.
@@ -17,7 +23,6 @@ From Jasmin Require Import utils word.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From Crypt Require Import Prelude Axioms.
 From extructures Require Import ord fset fmap.
-From deriving Require Import deriving.
 From Mon Require Import SPropBase.
 Require Equations.Prop.DepElim.
 From Equations Require Import Equations.
