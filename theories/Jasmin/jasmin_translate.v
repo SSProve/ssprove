@@ -969,8 +969,8 @@ Definition translate_write_lval (fn : funname) (l : lval) (v : typed_code)
 Definition instr_d (i : instr) : instr_r :=
   match i with MkI _ i => i end.
 
-Fixpoint translate_instr_r (fn : funname) (i : instr_r) {struct i} : raw_code 'unit
-with translate_instr (fn : funname) (i : instr) {struct i} : raw_code 'unit.
+Fixpoint translate_instr_r (prog_exports : {fmap funname -> opsig}) (fn : funname) (i : instr_r) {struct i} : raw_code 'unit
+with translate_instr (prog_exports : {fmap funname -> opsig}) (fn : funname) (i : instr) {struct i} : raw_code 'unit.
 Proof.
   (* translate_instr_r *)
   {
@@ -978,10 +978,11 @@ Proof.
             (fix translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
                match c with
                | [::] => ret tt
-               | i :: c => translate_instr fn i ;; translate_cmd fn c
+               | i :: c => translate_instr prog_exports fn i ;;
+                           translate_cmd fn c
                end)).
 
-    destruct i as [ | | e c1 c2 | | | ].
+    destruct i as [ | | e c1 c2 | | | ii xs f args ].
     - (* Cassgn *)
       (* l :a=_s p *)
       pose (translate_pexpr fn p) as tr_p.
@@ -996,11 +997,31 @@ Proof.
       exact (b ← rb ;; if b then c1' else c2').
     - exact (unsupported.π2). (* Cfor *)
     - exact (unsupported.π2). (* Cwhile *)
-    - (* Ccall i l f l0 *)
+    - (* Ccall ii xs f args *)
       (* translate arguments *)
-      pose (map (translate_pexpr fn) l0) as tr_l0.
+      pose (map (translate_pexpr f) args) as tr_args.
       (* "perform" the call via `opr` *)
       (* probably we'd look up the function signature in the current ambient program *)
+      destruct (prog_exports f) as [f_sg|].
+      2: {
+        (* The function `fn` wasn't found in the exports. This should mean that
+           the Jasmin semantics also failed at `sem_call` where
+           `get_fundef (p_funcs P) fn = Some f` is expected. *)
+        exact (unsupported.π2).
+      }
+      (* evaluate arguments *)
+      pose f_sg.2.1 as ts_in.
+      pose (map (fun x => x.π1) tr_args) as ts_args.
+
+      pose (bind_list' tr_args) as es.
+      apply (bind es).
+      intros vs.
+      (* truncate arguments *)
+
+      (* TODO: store function arguments in their locations *)
+      (* opr o vs ;; *)
+
+      (* apply (opr o). *)
 
       (* write_lvals the result of the call into lvals `l` *)
 
@@ -1008,35 +1029,37 @@ Proof.
   }
   (* translate_instr *)
   {
-    exact (translate_instr_r fn (instr_d i)).
+    exact (translate_instr_r prog_exports fn (instr_d i)).
   }
 Defined.
 
-Fixpoint translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
+Fixpoint translate_cmd (prog_exports : {fmap funname -> opsig}) (fn : funname) (c : cmd) : raw_code 'unit :=
   match c with
   | [::] => ret tt
-  | i :: c => translate_instr fn i ;; translate_cmd fn c
+  | i :: c => translate_instr prog_exports fn i ;; translate_cmd prog_exports fn c
   end.
 
 Record fdef := {
   ffun : typed_raw_function ;
   locs : {fset Location} ;
   imp : Interface ;
-  exp : Interface
+  ty_in : choice_type ;
+  ty_out : choice_type ;
 }.
 
-Definition translate_fundef (fd : _ufun_decl (* extra_fun_t *)) : funname * fdef.
+Definition translate_fundef (prog_exports : {fmap funname -> opsig})
+           (fd : _ufun_decl (* extra_fun_t *)) : funname * fdef.
 Proof.
   destruct fd. destruct _f.
   split. 1: exact f.
   constructor.
   - exists 'unit, 'unit. intros _.
-    (* TODO: store function arguments in their locations *)
-    exact (translate_cmd f f_body).
-    (* TODO: read return values from their locations *)
+    exact (translate_cmd prog_exports f f_body).
+    (* TODO: store return values in their locations *)
   - exact fset0.
   - exact [interface].
-  - exact [interface].
+  - exact 'unit.
+  - exact 'unit.
 Defined.
 
 (* Apply cast_fun or return default value, like lookup_op *)
@@ -2061,13 +2084,13 @@ Another option is to inline it all in translate_prog_correct
 which given the goals is probably the way things are intended.
 *)
 Lemma translate_instr_r_correct :
-  ∀ (fn : funname) (i : instr_r) (s₁ s₂ : estate),
+  ∀ (prog_exports : {fmap funname -> opsig}) (fn : funname) (i : instr_r) (s₁ s₂ : estate),
   sem_i P s₁ i s₂ →
   ⊢ ⦃ rel_estate s₁ fn ⦄
-    translate_instr_r fn i ⇓ tt
+    translate_instr_r prog_exports fn i ⇓ tt
   ⦃ rel_estate s₂ fn ⦄.
 Proof.
-  intros fn i s₁ s₂ h.
+  intros prog_exports fn i s₁ s₂ h.
   induction h as [es₁ es₂ y tag sty e v v' sem_e trunc hw | | | | | | |].
   - simpl. destruct y as [ | yl | | aa ws x ei | ] eqn:case_lval.
     + simpl. apply u_ret_eq. intros hp hr.
@@ -2270,8 +2293,14 @@ Admitted.
 
 Definition ssprove_prog := seq (funname * fdef).
 
+Definition exports_of_prog (p : ssprove_prog) : {fmap funname -> opsig} :=
+  foldl (λ m f, setm m f.1 (nat_of_pos f.1, (ty_in f.2, ty_out f.2)))
+        emptym p.
+
 Definition translate_prog : ssprove_prog :=
-  map translate_fundef P.(p_funcs).
+  foldl (λ p f, let f' := translate_fundef (exports_of_prog p) f in
+               f' :: p)
+    [::] P.(p_funcs).
 
 Theorem translate_prog_correct (fn : funname) m va m' vr f :
   sem.sem_call P m fn va m' vr →
@@ -2296,22 +2325,23 @@ Proof.
           f (translate_values va) ⇓ translate_values vr
         ⦃ λ m, True ⦄
   ).
+  set (ep := exports_of_prog translate_prog).
   set (Pi_r :=
     λ (s1 : estate) (i : instr_r) (s2 : estate),
       ⊢ ⦃ rel_estate s1 fn ⦄
-        translate_instr_r fn i ⇓ tt
+        translate_instr_r ep fn i ⇓ tt
       ⦃ rel_estate s2 fn ⦄
   ).
   set (Pi := λ s1 i s2, (Pi_r s1 (instr_d i) s2)).
   set (Pc :=
     λ (s1 : estate) (c : cmd) (s2 : estate),
-      ⊢ ⦃ rel_estate s1 fn ⦄ translate_cmd fn c ⇓ tt ⦃ rel_estate s2 fn ⦄
+      ⊢ ⦃ rel_estate s1 fn ⦄ translate_cmd ep fn c ⇓ tt ⦃ rel_estate s2 fn ⦄
   ).
   (* FIXME *)
   set (Pfor :=
     λ (v : var_i) (ls : seq Z) (s1 : estate) (c : cmd) (s2 : estate),
       ⊢ ⦃ rel_estate s1 fn ⦄
-        (* ssprove_for *) translate_cmd fn c ⇓ tt
+        (* ssprove_for *) translate_cmd ep fn c ⇓ tt
       ⦃ rel_estate s2 fn ⦄
   ).
   unshelve eapply (@sem_call_Ind _ _ _ _ Pc Pi_r Pi Pfor Pfun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H).
