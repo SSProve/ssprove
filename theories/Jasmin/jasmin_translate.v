@@ -813,7 +813,9 @@ Fixpoint app_sopn_list {S} (ts : list stype) :=
       | v :: vs0 => app_sopn_list ts0 (o (unembed (truncate_el t v.π2))) vs0
       end
   end.
+
 Section bind_list_alt.
+
   Definition bind_typed_list (cs : list typed_code)
     : raw_code (lchtuple ([seq tc.π1 | tc <- cs])).
   Proof.
@@ -1067,7 +1069,7 @@ Proof.
       }
       (* evaluate arguments *)
       pose f_sg.2.1 as ts_in.
-      pose (map (fun x => x.π1) tr_args) as ts_args.
+      pose (map (λ x, x.π1) tr_args) as ts_args.
 
       pose (bind_typed_list tr_args) as es.
       apply (bind es).
@@ -1364,6 +1366,7 @@ Qed.
 
 
 Section bind_list_test.
+
   (* Quick test to see that the definition-via-tactics of bind_list' computes
      as expected. *)
   Definition cs : list typed_code :=
