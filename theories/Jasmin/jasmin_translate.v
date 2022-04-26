@@ -1837,73 +1837,15 @@ Proof.
   intro H.
   destruct op as [w p | c].
   - simpl in *.
-    destruct vs as [| v' vs].
-    + apply app_sopn_nil_ok_size in H as hl.
-      simpl in hl. rewrite size_nseq in hl. rewrite hl. simpl.
-      rewrite hl in H. simpl in H. unfold curry in H. noconf H.
-      reflexivity.
-    + destruct w, p; try discriminate.
-      Ltac solve_opn vs H :=
-        repeat (destruct vs; [repeat jbind_fresh H; discriminate|]);
-        destruct vs; [|repeat jbind_fresh H; discriminate];
-        repeat jbind_fresh H;
-        simpl;
-        inversion H;
-        erewrite !translate_to_int by eassumption;
-        reflexivity.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      (* U128 and PE1 !!very slow!! *)
-      * destruct vs. 1: jbind_fresh H; discriminate.
-        repeat (destruct vs; [repeat jbind_fresh H; discriminate|]).
-        destruct vs. 2: repeat jbind_fresh H; discriminate.
-        repeat jbind_fresh H.
-        inversion H.
-        simpl.
-        erewrite !translate_to_int by eassumption.
-        reflexivity.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      (* U256 and PE1 !!very slow!! *)
-      *  repeat (destruct vs; [repeat jbind_fresh H; discriminate|]).
-        destruct vs. 2: repeat jbind_fresh H; discriminate.
-        repeat jbind_fresh H.
-        inversion H.
-        simpl.
-        erewrite !translate_to_int by eassumption.
-        reflexivity.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
-      * solve_opn vs H.
+    apply app_sopn_nil_ok_size in H as hl.
+    rewrite size_nseq in hl. rewrite hl.
+    rewrite hl in H.
+    set (f := curry _ _) in *. clearbody f.
+    induction vs as [| v' vs ih] in v, w, f, H |- *.
+    + simpl in *. rewrite H. reflexivity.
+    + simpl in *. jbind H v1 hv1.
+      eapply ih. eapply translate_to_int in hv1.
+      rewrite hv1. assumption.
   - simpl in *.
     repeat (destruct vs; [repeat jbind_fresh H; discriminate|]).
     destruct vs. 2: repeat jbind_fresh H; discriminate.
@@ -1913,8 +1855,7 @@ Proof.
     all: simpl in *; erewrite translate_to_bool; [|eassumption]; try reflexivity.
     all: erewrite translate_to_bool; [|eassumption]; try reflexivity.
     all: erewrite translate_to_bool; [|eassumption]; try reflexivity.
-Time Qed.
-(* Finished transaction in 309.626 secs (301.602u,4.741s) (successful) *)
+Qed.
 
 Lemma translate_pexpr_correct :
   ∀ fn (e : pexpr) s₁ v (cond : heap → Prop),
