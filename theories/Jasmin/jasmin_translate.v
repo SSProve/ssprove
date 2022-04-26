@@ -1810,16 +1810,38 @@ Ltac jbind_fresh h :=
   clear h ; intros x hx h ;
   cbn beta in h.
 
-Lemma app_sopn_list_correct (op : opN) (v : sem_t (type_of_opN op).2) (vs : values) :
-  app_sopn (type_of_opN op).1 (sem_opN_typed op) vs = ok v ->
-  app_sopn_list (type_of_opN op).1 (sem_opN_typed op) [seq to_typed_chElement (translate_value v) | v <- vs] =
-    embed v.
+Lemma app_sopn_nil_ok_size :
+  ∀ T ts (f : sem_prod ts (exec T)) vs v,
+    app_sopn ts f vs = ok v →
+    size ts = size vs.
 Proof.
-  intros; destruct op.
+  intros A ts f vs v h.
+  induction ts as [| t ts ih] in f, vs, v, h |- *.
+  - destruct vs. 2: discriminate.
+    reflexivity.
+  - destruct vs as [| v' vs]. 1: discriminate.
+    simpl in *.
+    jbind h v1 hv.
+    f_equal. eapply ih. eassumption.
+Qed.
+
+Lemma app_sopn_list_correct (op : opN) (v : sem_t (type_of_opN op).2) (vs : values) :
+  app_sopn (type_of_opN op).1 (sem_opN_typed op) vs = ok v →
+  app_sopn_list
+    (type_of_opN op).1
+    (sem_opN_typed op)
+    [seq to_typed_chElement (translate_value v) | v <- vs]
+  =
+  embed v.
+Proof.
+  intro H.
+  destruct op as [w p | c].
   - simpl in *.
-    destruct vs.
-    + destruct w, p; try discriminate; simpl in *.
-      all: inversion H; reflexivity.
+    destruct vs as [| v' vs].
+    + apply app_sopn_nil_ok_size in H as hl.
+      simpl in hl. rewrite size_nseq in hl. rewrite hl. simpl.
+      rewrite hl in H. simpl in H. unfold curry in H. noconf H.
+      reflexivity.
     + destruct w, p; try discriminate.
       Ltac solve_opn vs H :=
         repeat (destruct vs; [repeat jbind_fresh H; discriminate|]);
