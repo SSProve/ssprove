@@ -1,9 +1,27 @@
+Set Warnings "-notation-overridden,-ambiguous-paths".
+From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
+  fingroup.fingroup solvable.cyclic prime ssrnat ssreflect ssrfun ssrbool ssrnum
+  eqtype choice seq.
+Set Warnings "notation-overridden,ambiguous-paths".
+
 Require Import List.
 From Jasmin Require Import expr.
-From Jasmin Require Import x86_extra.
+(* From Jasmin Require Import x86_extra. *)
+From JasminSSProve Require Import jasmin_translate.
+From Crypt Require Import Prelude Package.
 
 Import ListNotations.
 Local Open Scope string.
+
+Context `{asmop : asmOp}.
+
+Context {T} {pT : progT T}.
+
+Context {pd : PointerData}.
+
+Context (P : uprog).
+
+Context (f : funname).
 
 Definition bigadd :=
   {| p_funcs :=
@@ -441,3 +459,83 @@ Definition bigadd :=
        f_extra := tt |})];
    p_globs := []; p_extra := tt |}
 .
+
+
+Import PackageNotation.
+Notation coe_cht := coerce_to_choice_type.
+Notation coe_tyc := coerce_typed_code.
+Notation " 'array " := (chMap 'int ('word U8)) (at level 2) : package_scope.
+Notation " 'array " := (chMap 'int ('word U8)) (in custom pack_type at level 2).
+Notation " 'mem " := (chMap ('word Uptr) ('word U8)) (at level 2) : package_scope.
+Notation " 'mem " := (chMap ('word Uptr) ('word U8)) (in custom pack_type at level 2).
+Notation " ⸨ ws ⸩ a .[ ptr * scale ] " := (chArray_get ws a ptr scale)
+    (format " ⸨ ws ⸩  a .[ ptr * scale ] ").
+Notation " a [ w / p ] " :=
+  (chArray_set a AAscale p w)
+    (at level 99, no associativity,
+      format " a [ w / p ] ").
+
+
+From Equations Require Import Equations.
+Set Equations With UIP.
+Set Equations Transparent.
+
+Definition tr_bigadd := translate_prog bigadd.
+Definition f_bigadd : ('array * 'array) -> raw_code 'array.
+Proof.
+  pose tr_bigadd. unfold tr_bigadd in s. unfold translate_prog in s.
+  simpl in s.
+  destruct s eqn:E.
+  - unfold s in E. discriminate.
+  - pose (ffun p.2).π2.π2.
+    simpl in r.
+    unfold s in E.
+    noconf E.
+    (* simpl in r. *)
+    exact r.
+Defined.
+
+Lemma eq_rect_K :
+  forall (A : eqType) (x : A) (P : A -> Type) h e,
+    @eq_rect A x P h x e = h.
+Proof.
+  intros A x P' h e.
+  replace e with (@erefl A x) by apply eq_irrelevance.
+  reflexivity.
+Qed.
+
+Eval cbn in tr_bigadd.
+Goal forall aa, f_bigadd aa = f_bigadd aa.
+
+  intros [a1 a2].
+  unfold f_bigadd at 2.
+  unfold apply_noConfusion.
+  simpl.
+  unfold translate_write_var. simpl.
+  unfold translate_var. simpl.
+  set (TODO := ('unit; distr.dnull)).
+  set (array32 := sarr 32%positive).
+  set (fn := 2%positive).
+  set (x := ('array; nat_of_fun_ident fn "x.140")).
+  set (xr := ('word U64; nat_of_fun_ident fn "xr.143")).
+  set (y := ('array; nat_of_fun_ident fn "y.141")).
+  set (yr := ('word U64; nat_of_fun_ident fn "yr.144")).
+  set (x_ := {| v_var := {| vtype := array32; vname := "x.140" |};
+               v_info := (fn~0)%positive |}).
+  set (y_ := {| v_var := {| vtype := array32; vname := "y.141" |};
+               v_info := (fn~1)%positive |}).
+
+  unfold coerce_chtuple_to_list; simpl.
+  rewrite eq_rect_r_K.
+  simpl.
+  fold x y.
+
+  unfold bind_list'. simpl.
+  unfold bind_list_trunc_aux. simpl.
+  rewrite eq_rect_K.
+  time repeat setoid_rewrite (@zero_extend_u U64).
+  unfold translate_var. simpl.
+  set (res := ('array; nat_of_fun_ident fn "res.142")).
+  unfold wsize_size.
+  rewrite !coerce_to_choice_type_K.
+  (* Strangely, some instances of coe_cht don't get simplified away here. *)
