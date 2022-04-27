@@ -1163,29 +1163,16 @@ Proof.
               (zip f_params
                    (map
                       (λ '(c, t),
-                        let c' := totc  (ret c) in
+                        let c' := totc c.π1 (ret c.π2) in
                         truncate_code t c')
                       (zip vargs' f_tyin)))
         ) as cargs.
 
-
-      pose (
-          map (λ '(x,v), translate_write_var f x v)
-              (zip f_params
-                   (map
-                      (λ '(c, t),
-                        let c' := translate_pexpr f c in
-                        truncate_code t c')
-                      (zip vargs' f_tyin)))
-        ) as cargs.
       pose (foldl (λ c k, c ;; k) (ret tt) cargs) as cargs'.
       apply (bind cargs') => _.
 
-      apply (opr f_sg).
-
-
-      pose f_sg.2.1 as ts_in.
-      pose (map (λ x, x.π1) tr_args) as ts_args.
+      (* pose f_sg.2.1 as ts_in. *)
+      (* pose (map (λ x, x.π1) tr_args) as ts_args. *)
 
 
       (* TODO: store function arguments in their locations *)
@@ -1195,10 +1182,12 @@ Proof.
 
       (* write_lvals the result of the call into lvals `l` *)
 
-      exact (unsupported.π2).
 
-    exact (translate_cmd prog_exports f f_body).
+    pose (translate_cmd prog_exports f f_body) as body.
+    apply (bind body) => _.
     (* TODO: store return values in their locations *)
+
+    exact (ret (chCanonical _)).
   - exact fset0.
   - exact [interface].
   - exact 'unit.
