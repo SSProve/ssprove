@@ -134,17 +134,61 @@ Notation " a [ w / p ] " :=
     (at level 99, no associativity,
       format " a [ w / p ] ").
 
+
+From Equations Require Import Equations.
+Set Equations With UIP.
+Set Equations Transparent.
+
 Definition tr_xor := translate_prog xor.
+Definition f_xor : 'word U64 × 'word U64 -> raw_code ('word U64).
+Proof.
+  pose tr_xor. unfold tr_xor in s. unfold translate_prog in s.
+  simpl in s.
+  destruct s eqn:E.
+  - unfold s in E. discriminate.
+  - pose (ffun p.2).π2.π2.
+    simpl in r.
+    unfold s in E.
+    noconf E.
+    (* simpl in r. *)
+    exact r.
+Defined.
+
+Lemma eq_rect_K :
+  forall (A : eqType) (x : A) (P : A -> Type) h e,
+    @eq_rect A x P h x e = h.
+Proof.
+  intros A x P' h e.
+  replace e with (@erefl A x) by apply eq_irrelevance.
+  reflexivity.
+Qed.
+
 
 Eval cbn in tr_xor.
-Goal tr_xor = tr_xor.
-  unfold tr_xor at 2.
-  unfold translate_prog, translate_fundef.
-  unfold translate_cmd.
+Goal forall w, f_xor w = f_xor w.
+  intros [w1 w2].
+  unfold f_xor at 2.
+  unfold apply_noConfusion.
   simpl.
+  unfold translate_write_var. simpl.
   unfold translate_var. simpl.
-  set (x := ('word U64; nat_of_fun_ident 2%positive "x.131")).
-  set (r := ('word U64; nat_of_fun_ident 2%positive "r.133")).
-  set (y := ('word U64; nat_of_fun_ident 2%positive "y.132")).
-  (* does nothing; too many binders? *)
-  (* repeat setoid_rewrite zero_extend_u. *)
+  set (fn := 2%positive).
+  set (x := ('word U64; nat_of_fun_ident fn "x.131")).
+  set (r := ('word U64; nat_of_fun_ident fn "r.133")).
+  set (y := ('word U64; nat_of_fun_ident fn "y.132")).
+  set (r_ := {| vtype := sword64; vname := "r.133" |}).
+  set (x_ := {| v_var := {| vtype := sword64; vname := "x.131" |};
+               v_info := (fn~0)%positive |}).
+  set (y_ := {| v_var := {| vtype := sword64; vname := "y.132" |};
+               v_info := (fn~1)%positive |}).
+
+  unfold coerce_chtuple_to_list; simpl.
+  rewrite eq_rect_r_K.
+  simpl.
+  fold x y.
+
+  unfold bind_list'. simpl.
+  unfold bind_list_trunc_aux. simpl.
+  rewrite eq_rect_K.
+  time repeat setoid_rewrite (@zero_extend_u U64).
+  unfold translate_var. simpl. fold r.
