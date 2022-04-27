@@ -1111,8 +1111,8 @@ Proof.
         apply (coerce_chtuple_to_list _ f_tyout) in vs.
         pose (zip f_tyout vs) as vs_f.
 
-        (* We coerce than truncating here. The truncation should happen in
-           sem_call; the coercion should never fail on well-translated
+        (* We coerce rather than truncating here. The truncation should happen
+           in sem_call; the coercion should never fail on well-translated
            functions. Presumably these results just got truncated in sem_call,
            so we could also truncate instead of coercing if convenient. *)
         pose (map (λ '(ty,c),
@@ -1140,9 +1140,10 @@ Record fdef := {
   ffun : typed_raw_function ;
   locs : {fset Location} ;
   imp : Interface ;
-  ty_in : choice_type ;
-  ty_out : choice_type ;
 }.
+
+#[local] Definition ty_in fd := (ffun fd).π1.
+#[local] Definition ty_out fd := ((ffun fd).π2).π1.
 
 Definition translate_fundef (prog_exports : {fmap funname -> opsig})
            (fd : _ufun_decl (* extra_fun_t *)) : funname * fdef.
@@ -1154,44 +1155,31 @@ Proof.
     pose (lchtuple (map encode f_tyout)) as tyout'.
     exists tyin', tyout'. intros vargs'.
 
-    (* TODO: need a version of coerce_chtuple_to_list that truncates instead *)
+    (* NB: We coerce rather than truncating here, i.e. we expect the arguments
+       provided to us to be of the correct type. This differs slightly from
+       Jasmin where the truncation is performed in `sem_call`. However, as
+       explained in the translation of `Ccall` in `translate_instr_r`, we need
+       the types of the arguments to match the function in order to write the
+       function application, so we truncate at the caller side. We thus expect
+       the arguments to already be of the type `f_tyin` prescribed by the
+       function `f`. *)
     apply (coerce_chtuple_to_list _ f_tyin) in vargs'.
 
+    (* Write the arguments to their locations. *)
+    pose (map (λ '(x, (ty; v)), translate_write_var f x (totc ty (ret v)))
+              (zip f_params vargs'))
+      as cargs.
+    apply (foldl (λ c k, c ;; k) (ret tt)) in cargs.
+    apply (bind cargs) => _.
 
-      pose (
-          map (λ '(x,v), translate_write_var f x v)
-              (zip f_params
-                   (map
-                      (λ '(c, t),
-                        let c' := totc c.π1 (ret c.π2) in
-                        truncate_code t c')
-                      (zip vargs' f_tyin)))
-        ) as cargs.
+    (* Perform the function body. *)
+    apply (bind (translate_cmd prog_exports f f_body)) => _.
 
-      pose (foldl (λ c k, c ;; k) (ret tt) cargs) as cargs'.
-      apply (bind cargs') => _.
-
-      (* pose f_sg.2.1 as ts_in. *)
-      (* pose (map (λ x, x.π1) tr_args) as ts_args. *)
-
-
-      (* TODO: store function arguments in their locations *)
-      (* opr o vs ;; *)
-
-      (* apply (opr o). *)
-
-      (* write_lvals the result of the call into lvals `l` *)
-
-
-    pose (translate_cmd prog_exports f f_body) as body.
-    apply (bind body) => _.
-    (* TODO: store return values in their locations *)
-
-    exact (ret (chCanonical _)).
+    (* Look up the results in their locations and return them. *)
+    pose (map (λ x, totc _ (translate_get_var f (v_var x))) f_res) as cres.
+    exact (bind_list' f_tyout cres).
   - exact fset0.
   - exact [interface].
-  - exact 'unit.
-  - exact 'unit.
 Defined.
 
 (* Apply cast_fun or return default value, like lookup_op *)
