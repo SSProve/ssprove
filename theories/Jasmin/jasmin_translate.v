@@ -1159,11 +1159,18 @@ Proof.
   }
 Defined.
 
-Fixpoint translate_cmd (prog_exports : {fmap funname -> opsig}) (fn : funname) (c : cmd) : raw_code 'unit :=
+(* Trick to have it expand to the same as the translate_cmd above *)
+Section TranslateCMD.
+
+Context (prog_exports : {fmap funname -> opsig}).
+
+Fixpoint translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
   match c with
   | [::] => ret tt
-  | i :: c => translate_instr prog_exports fn i ;; translate_cmd prog_exports fn c
+  | i :: c => translate_instr prog_exports fn i ;; translate_cmd fn c
   end.
+
+End TranslateCMD.
 
 Record fdef := {
   ffun : typed_raw_function ;
@@ -2508,10 +2515,39 @@ Proof.
   - red. intros.
     red. eapply translate_instr_r_correct.
     econstructor ; eassumption. (* backtrack *)
-  - red. intros.
-    red. eapply translate_instr_r_correct.
-    econstructor. all: eassumption.
+  - red. intros s1 s2 i d lo hi c vlo vhi hlo hhi hfor ihfor.
+    red. simpl.
+    lazymatch goal with
+    | |- context [ translate_for _ _ _ (?f ?fn ?c) ] =>
+      change (f fn c) with (translate_cmd ep fn c)
+    end.
+    eapply u_bind.
+    1:{
+      (* Make a lemma for all this stuff? *)
+      eapply translate_pexpr_correct with (fn := fn) in hlo as h. 2: eauto.
+      simpl in h.
+      eapply translate_pexpr_type with (fn := fn) in hlo.
+      unfold choice_type_of_val in hlo. simpl in hlo.
+      destruct (translate_pexpr) as [? exp] eqn:e. simpl in *. subst.
+      rewrite coerce_to_choice_type_K in h.
+      rewrite coerce_typed_code_K. eassumption.
+    }
+    eapply u_bind.
+    1:{
+      (* Make a lemma for all this stuff? *)
+      eapply translate_pexpr_correct with (fn := fn) in hhi as h. 2: eauto.
+      simpl in h.
+      eapply translate_pexpr_type with (fn := fn) in hhi.
+      unfold choice_type_of_val in hhi. simpl in hhi.
+      destruct (translate_pexpr) as [? exp] eqn:e. simpl in *. subst.
+      rewrite coerce_to_choice_type_K in h.
+      rewrite coerce_typed_code_K. eassumption.
+    }
+    red in ihfor.
+    (* apply ihfor. *)
+    admit.
   - red. intros. red.
+    (* Pfor is wrong indeed *)
     admit.
   - red. intros.
     red.
