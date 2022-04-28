@@ -7,7 +7,9 @@ From extructures Require Import ord fset fmap.
 From Jasmin Require Import expr_facts.
 
 From Coq Require Import Utf8.
+Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From CoqWord Require Import ssrZ.
+Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 
 From Crypt Require Import Prelude Package.
 Import PackageNotation.
