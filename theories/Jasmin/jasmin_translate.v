@@ -2475,11 +2475,10 @@ Proof.
     λ (s1 : estate) (c : cmd) (s2 : estate),
       ⊢ ⦃ rel_estate s1 fn ⦄ translate_cmd ep fn c ⇓ tt ⦃ rel_estate s2 fn ⦄
   ).
-  (* FIXME *)
   set (Pfor :=
-    λ (v : var_i) (ls : seq Z) (s1 : estate) (c : cmd) (s2 : estate),
+    λ (v : var_i) (ws : seq Z) (s1 : estate) (c : cmd) (s2 : estate),
       ⊢ ⦃ rel_estate s1 fn ⦄
-        (* ssprove_for *) translate_cmd ep fn c ⇓ tt
+        translate_for fn v ws (translate_cmd ep fn c) ⇓ tt
       ⦃ rel_estate s2 fn ⦄
   ).
   unshelve eapply (@sem_call_Ind _ _ _ _ Pc Pi_r Pi Pfor Pfun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H).
@@ -2543,15 +2542,15 @@ Proof.
       rewrite coerce_to_choice_type_K in h.
       rewrite coerce_typed_code_K. eassumption.
     }
-    red in ihfor.
-    (* apply ihfor. *)
-    admit.
+    apply ihfor.
   - red. intros. red.
-    (* Pfor is wrong indeed *)
-    admit.
-  - red. intros.
-    red.
-    admit.
+    simpl. apply u_ret_eq. auto.
+  - red. intros s1 s1' s2 s3 i w ws c hw hc ihc hfor ihfor.
+    red. simpl.
+    eapply u_put.
+    eapply u_bind.
+    1:{ red in ihc. (* Use write_var info, don't remember why no lemma *) admit. }
+    apply ihfor.
   - red. intros.
     red. eapply translate_instr_r_correct.
     econstructor. all: eassumption.
