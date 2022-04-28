@@ -1048,20 +1048,38 @@ Definition translate_write_lval (fn : funname) (l : lval) (v : typed_code)
 Definition instr_d (i : instr) : instr_r :=
   match i with MkI _ i => i end.
 
+(* Note c is translated from cmd, in the case ws = [], sem_for does not
+  guarantee it is well-formed.
+  Also note, it feels odd to get a var_i when I should translate before calling.
+  The problem comes from translate_write_var which expects var_i instead of
+  Location.
+*)
+Fixpoint translate_for fn (i : var_i) (ws : seq Z) (c : raw_code 'unit) : raw_code 'unit :=
+  match ws with
+  | [::] => ret tt
+  | w :: ws =>
+    translate_write_var fn i (totc _ (ret (translate_value w))) ;;
+    c ;;
+    translate_for fn i ws c
+  end.
+
 Fixpoint translate_instr_r (prog_exports : {fmap funname -> opsig}) (fn : funname) (i : instr_r) {struct i} : raw_code 'unit
 with translate_instr (prog_exports : {fmap funname -> opsig}) (fn : funname) (i : instr) {struct i} : raw_code 'unit.
 Proof.
   (* translate_instr_r *)
   {
     pose proof (translate_cmd :=
-            (fix translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
-               match c with
-               | [::] => ret tt
-               | i :: c => translate_instr prog_exports fn i ;;
-                           translate_cmd fn c
-               end)).
+      (fix translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
+        match c with
+        | [::] => ret tt
+        | i :: c =>
+          translate_instr prog_exports fn i ;;
+          translate_cmd fn c
+        end
+      )
+    ).
 
-    destruct i as [ | | e c1 c2 | | | ii xs f args ].
+    destruct i as [ | | e c1 c2 | i [[d lo] hi] c | | ii xs f args ].
     - (* Cassgn *)
       (* l :a=_s p *)
       pose (translate_pexpr fn p) as tr_p.
@@ -1074,7 +1092,16 @@ Proof.
       pose (c2' := translate_cmd fn c2).
       pose (rb := coerce_typed_code 'bool e').
       exact (b ← rb ;; if b then c1' else c2').
-    - exact (unsupported.π2). (* Cfor *)
+    - (* Cfor i (d, lo, hi) c *)
+      (* pose (iᵗ := translate_var fn i). *) (* Weird not to do it *)
+      pose (loᵗ := coerce_typed_code 'int (translate_pexpr fn lo)).
+      pose (hiᵗ := coerce_typed_code 'int (translate_pexpr fn hi)).
+      pose (cᵗ := translate_cmd fn c).
+      exact (
+        vlo ← loᵗ ;;
+        vhi ← hiᵗ ;;
+        translate_for fn i (wrange d vlo vhi) cᵗ
+      ).
     - exact (unsupported.π2). (* Cwhile *)
     - (* Ccall ii xs f args *)
       (* Translate arguments. *)
