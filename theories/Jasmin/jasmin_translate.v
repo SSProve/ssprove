@@ -1066,97 +1066,92 @@ Fixpoint translate_for fn (i : var_i) (ws : seq Z) (c : raw_code 'unit) : raw_co
   end.
 
 Fixpoint translate_instr_r (prog_exports : {fmap funname -> opsig}) (fn : funname) (i : instr_r) {struct i} : raw_code 'unit
-with translate_instr (prog_exports : {fmap funname -> opsig}) (fn : funname) (i : instr) {struct i} : raw_code 'unit.
+
+with translate_instr (prog_exports : {fmap funname -> opsig}) (fn : funname) (i : instr) {struct i} : raw_code 'unit :=
+  translate_instr_r prog_exports fn (instr_d i).
 Proof.
-  (* translate_instr_r *)
-  {
-    pose proof (translate_cmd :=
-      (fix translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
-        match c with
-        | [::] => ret tt
-        | i :: c =>
-          translate_instr prog_exports fn i ;;
-          translate_cmd fn c
-        end
-      )
+  pose proof (translate_cmd :=
+    (fix translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
+      match c with
+      | [::] => ret tt
+      | i :: c =>
+        translate_instr prog_exports fn i ;;
+        translate_cmd fn c
+      end
+    )
+  ).
+
+  destruct i as [ | | e c1 c2 | i [[d lo] hi] c | | ii xs f args ].
+  - (* Cassgn *)
+    (* l :a=_s p *)
+    pose (translate_pexpr fn p) as tr_p.
+    pose (truncate_code s tr_p) as tr_p'.
+    exact (translate_write_lval fn l tr_p').
+  - exact (unsupported.π2). (* Copn *)
+  - (* Cif e c1 c2 *)
+    pose (e' := translate_pexpr fn e).
+    pose (c1' := translate_cmd fn c1).
+    pose (c2' := translate_cmd fn c2).
+    pose (rb := coerce_typed_code 'bool e').
+    exact (b ← rb ;; if b then c1' else c2').
+  - (* Cfor i (d, lo, hi) c *)
+    (* pose (iᵗ := translate_var fn i). *) (* Weird not to do it *)
+    pose (loᵗ := coerce_typed_code 'int (translate_pexpr fn lo)).
+    pose (hiᵗ := coerce_typed_code 'int (translate_pexpr fn hi)).
+    pose (cᵗ := translate_cmd fn c).
+    exact (
+      vlo ← loᵗ ;;
+      vhi ← hiᵗ ;;
+      translate_for fn i (wrange d vlo vhi) cᵗ
     ).
+  - exact (unsupported.π2). (* Cwhile *)
+  - (* Ccall ii xs f args *)
+    (* Translate arguments. *)
+    pose (map (translate_pexpr f) args) as tr_args.
 
-    destruct i as [ | | e c1 c2 | i [[d lo] hi] c | | ii xs f args ].
-    - (* Cassgn *)
-      (* l :a=_s p *)
-      pose (translate_pexpr fn p) as tr_p.
-      pose (truncate_code s tr_p) as tr_p'.
-      exact (translate_write_lval fn l tr_p').
-    - exact (unsupported.π2). (* Copn *)
-    - (* Cif e c1 c2 *)
-      pose (e' := translate_pexpr fn e).
-      pose (c1' := translate_cmd fn c1).
-      pose (c2' := translate_cmd fn c2).
-      pose (rb := coerce_typed_code 'bool e').
-      exact (b ← rb ;; if b then c1' else c2').
-    - (* Cfor i (d, lo, hi) c *)
-      (* pose (iᵗ := translate_var fn i). *) (* Weird not to do it *)
-      pose (loᵗ := coerce_typed_code 'int (translate_pexpr fn lo)).
-      pose (hiᵗ := coerce_typed_code 'int (translate_pexpr fn hi)).
-      pose (cᵗ := translate_cmd fn c).
-      exact (
-        vlo ← loᵗ ;;
-        vhi ← hiᵗ ;;
-        translate_for fn i (wrange d vlo vhi) cᵗ
-      ).
-    - exact (unsupported.π2). (* Cwhile *)
-    - (* Ccall ii xs f args *)
-      (* Translate arguments. *)
-      pose (map (translate_pexpr f) args) as tr_args.
+    (* We need some typing about the translated and original f, let's look it
+        up. *)
+    destruct (prog_exports f) as [f_sg|].
+    2: {
+      (* The function `f` wasn't found in the exports. This should mean that
+          the Jasmin semantics also failed at `sem_call` where
+          `get_fundef (p_funcs P) f = Some f'` is expected. *)
+      exact (unsupported.π2).
+    }
+    destruct (get_fundef (p_funcs P) f) eqn:E.
+    2: exact (unsupported.π2).
 
-      (* We need some typing about the translated and original f, let's look it
-         up. *)
-      destruct (prog_exports f) as [f_sg|].
-      2: {
-        (* The function `f` wasn't found in the exports. This should mean that
-           the Jasmin semantics also failed at `sem_call` where
-           `get_fundef (p_funcs P) f = Some f'` is expected. *)
-        exact (unsupported.π2).
-      }
-      destruct (get_fundef (p_funcs P) f) eqn:E.
-      2: exact (unsupported.π2).
+    (* Evaluate & truncate arguments according to the Jasmin typing of `f`. *)
+    (* Note that in Ecall we do not need to truncate, as sem_call does not
+        enforce any relation between the types of the function and the
+        arguments. But we need the types to match. sem_call, however, does
+        truncate as soon as the type of `f` is looked up. *)
+    pose (bind_list' _f.(f_tyin) tr_args) as vargs'.
+    (* pose (bind_list [seq translate_pexpr fn e | e <- args]) as vargs'. *)
+    (* Bind the values. *)
+    apply (bind vargs'). intros vargs.
+    (* Now "perform" the call via `opr`. *)
+    apply (opr f_sg).
+    + exact (coerce_to_choice_type (chsrc f_sg) vargs).
+    + intros vs.
 
-      (* Evaluate & truncate arguments according to the Jasmin typing of `f`. *)
-      (* Note that in Ecall we do not need to truncate, as sem_call does not
-         enforce any relation between the types of the function and the
-         arguments. But we need the types to match. sem_call, however, does
-         truncate as soon as the type of `f` is looked up. *)
-      pose (bind_list' _f.(f_tyin) tr_args) as vargs'.
-      (* pose (bind_list [seq translate_pexpr fn e | e <- args]) as vargs'. *)
-      (* Bind the values. *)
-      apply (bind vargs'). intros vargs.
-      (* Now "perform" the call via `opr`. *)
-      apply (opr f_sg).
-      + exact (coerce_to_choice_type (chsrc f_sg) vargs).
-      + intros vs.
+      (* Unpack `vs : tgt f_sg` into a list in order to write `xs`. *)
+      pose (f_tyout _f) as f_tyout.
+      apply (coerce_chtuple_to_list _ f_tyout) in vs.
+      pose (zip f_tyout vs) as vs_f.
 
-        (* Unpack `vs : tgt f_sg` into a list in order to write `xs`. *)
-        pose (f_tyout _f) as f_tyout.
-        apply (coerce_chtuple_to_list _ f_tyout) in vs.
-        pose (zip f_tyout vs) as vs_f.
+      (* We coerce rather than truncating here. The truncation should happen
+          in sem_call; the coercion should never fail on well-translated
+          functions. Presumably these results just got truncated in sem_call,
+          so we could also truncate instead of coercing if convenient. *)
+      pose (map (λ '(ty,c),
+                  let ty' := encode ty in
+                            (ty'; ret (coerce_to_choice_type ty' c.π2)) : typed_code) vs_f)
+        as vres'.
+      (* pose (map (λ '(ty,c), (truncate_code ty (totc c.π1 (ret c.π2)))) l0) as vres'. *)
 
-        (* We coerce rather than truncating here. The truncation should happen
-           in sem_call; the coercion should never fail on well-translated
-           functions. Presumably these results just got truncated in sem_call,
-           so we could also truncate instead of coercing if convenient. *)
-        pose (map (λ '(ty,c),
-                    let ty' := encode ty in
-                             (ty'; ret (coerce_to_choice_type ty' c.π2)) : typed_code) vs_f)
-          as vres'.
-        (* pose (map (λ '(ty,c), (truncate_code ty (totc c.π1 (ret c.π2)))) l0) as vres'. *)
-
-        pose (map (λ '(x,v), translate_write_lval fn x v) (zip xs vres')) as vres''.
-        exact (foldl (λ c k, c ;; k) (ret tt) vres'').
-  }
-  (* translate_instr *)
-  {
-    exact (translate_instr_r prog_exports fn (instr_d i)).
-  }
+      pose (map (λ '(x,v), translate_write_lval fn x v) (zip xs vres')) as vres''.
+      exact (foldl (λ c k, c ;; k) (ret tt) vres'').
 Defined.
 
 (* translate_instr is blocked because it is a fixpoint *)
