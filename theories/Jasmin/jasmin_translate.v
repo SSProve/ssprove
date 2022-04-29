@@ -127,7 +127,7 @@ Proof.
 Qed.
 
 (* Unary rpre_weaken_rule *)
-Lemma upre_weaken_rule :
+Lemma u_pre_weaken_rule :
   ∀ A (r : raw_code A) v (p1 p2 : heap → Prop) q,
     ⊢ ⦃ p1 ⦄ r ⇓ v ⦃ q ⦄ →
     (∀ h, p2 h → p1 h) →
@@ -140,7 +140,7 @@ Proof.
 Qed.
 
 (* Unary rpost_weaken_rule *)
-Lemma upost_weaken_rule :
+Lemma u_post_weaken_rule :
   ∀ A (r : raw_code A) v p (q1 q2 : heap → Prop),
     ⊢ ⦃ p ⦄ r ⇓ v ⦃ q1 ⦄ →
     (∀ h, q1 h → q2 h) →
@@ -2549,7 +2549,52 @@ Proof.
     red. simpl.
     eapply u_put.
     eapply u_bind.
-    1:{ red in ihc. (* Use write_var info, don't remember why no lemma *) admit. }
+    1:{
+      red in ihc. eapply u_pre_weaken_rule.
+      1: eapply ihc.
+      intros ? [me [hme ?]]. subst.
+      (* TODO translate_write_var_estate like translate_write_estate? *)
+      unfold write_var in hw. jbind hw vm hvm. noconf hw.
+      destruct hme as [h1 h2]. split. all: simpl.
+      - intros ptr v er.
+        eapply h1 in er.
+        rewrite get_set_heap_neq. 2: apply mem_loc_translate_var_neq.
+        assumption.
+      - intros vi v ev.
+        eapply set_varP. 3: exact hvm.
+        + intros v₁ hv₁ eyl. subst.
+          destruct (vi == i) eqn:evar.
+          all: move: evar => /eqP evar.
+          * subst. rewrite Fv.setP_eq in ev. noconf ev.
+            rewrite get_set_heap_eq. rewrite coerce_to_choice_type_K.
+            eapply translate_of_val in hv₁ as e.
+            rewrite e. apply coerce_to_choice_type_translate_value_to_val.
+          * rewrite Fv.setP_neq in ev.
+            2:{ apply /eqP. eauto. }
+            rewrite get_set_heap_neq.
+            2:{
+              apply /eqP. intro ee.
+              apply injective_translate_var in ee.
+              contradiction.
+            }
+            eapply h2 in ev. assumption.
+        + intros hbo hyl hset. subst.
+          destruct (vi == i) eqn:evar.
+          all: move: evar => /eqP evar.
+          1:{
+            exfalso. subst. rewrite Fv.setP_eq in ev.
+            clear - ev hbo. destruct (vtype i). all: discriminate.
+          }
+          rewrite Fv.setP_neq in ev.
+          2:{ apply /eqP. eauto. }
+          rewrite get_set_heap_neq.
+          2:{
+            apply /eqP. intro ee.
+            apply injective_translate_var in ee.
+            contradiction.
+          }
+          eapply h2 in ev. assumption.
+    }
     apply ihfor.
   - red. intros.
     red. eapply translate_instr_r_correct.
