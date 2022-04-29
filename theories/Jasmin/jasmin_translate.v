@@ -2244,6 +2244,55 @@ Proof.
   eapply translate_write_estate. all: assumption.
 Qed.
 
+Lemma translate_write_var_estate :
+  ∀ fn i v s1 s2 m,
+    write_var i v s1 = ok s2 →
+    rel_estate s1 fn m →
+    rel_estate s2 fn (set_heap m (translate_var fn i) (truncate_el i.(vtype) (translate_value v))).
+Proof.
+  intros fn i v s1 s2 m hw [h1 h2].
+  unfold write_var in hw. jbind hw vm hvm. noconf hw.
+  split. all: simpl.
+  - intros ptr v' er.
+    eapply h1 in er.
+    rewrite get_set_heap_neq. 2: apply mem_loc_translate_var_neq.
+    assumption.
+  - intros vi v' ev.
+    eapply set_varP. 3: exact hvm.
+    + intros v₁ hv₁ eyl. subst.
+      destruct (vi == i) eqn:evar.
+      all: move: evar => /eqP evar.
+      * subst. rewrite Fv.setP_eq in ev. noconf ev.
+        rewrite get_set_heap_eq. rewrite coerce_to_choice_type_K.
+        eapply translate_of_val in hv₁ as e.
+        rewrite e. apply coerce_to_choice_type_translate_value_to_val.
+      * rewrite Fv.setP_neq in ev.
+        2:{ apply /eqP. eauto. }
+        rewrite get_set_heap_neq.
+        2:{
+          apply /eqP. intro ee.
+          apply injective_translate_var in ee.
+          contradiction.
+        }
+        eapply h2 in ev. assumption.
+    + intros hbo hyl hset. subst.
+      destruct (vi == i) eqn:evar.
+      all: move: evar => /eqP evar.
+      1:{
+        exfalso. subst. rewrite Fv.setP_eq in ev.
+        clear - ev hbo. destruct (vtype i). all: discriminate.
+      }
+      rewrite Fv.setP_neq in ev.
+      2:{ apply /eqP. eauto. }
+      rewrite get_set_heap_neq.
+      2:{
+        apply /eqP. intro ee.
+        apply injective_translate_var in ee.
+        contradiction.
+      }
+      eapply h2 in ev. assumption.
+Qed.
+
 Lemma translate_write_lval_correct :
   ∀ es₁ es₂ fn y sty e v v',
     sem_pexpr gd es₁ e = ok v →
@@ -2264,8 +2313,7 @@ Proof.
       all: noconf hw. all: assumption.
     + unfold on_vu in hw. destruct of_val as [| []].
       all: noconf hw. assumption.
-  - simpl. unfold translate_write_var. simpl in hw. unfold write_var in hw.
-    jbind hw vm eset. noconf hw.
+  - simpl. unfold translate_write_var. simpl in hw.
     simpl. rewrite !bind_assoc. simpl.
     eapply u_bind.
     1:{ eapply translate_pexpr_correct. all: eauto. }
@@ -2274,58 +2322,11 @@ Proof.
     eapply u_put.
     apply u_ret_eq.
     intros m' [m [hm e]]. subst.
-    (* TODO Apply translate_write_var_estate instead of unfolding write_var *)
-    destruct hm as [hm hv].
-    split.
-    + unfold rel_mem.
-      intros ptr byte hr.
-      rewrite get_set_heap_neq. 2: apply mem_loc_translate_var_neq.
-      apply hm. assumption.
-    + simpl. unfold rel_vmap.
-      intros i vi ei.
-      simpl. rewrite !coerce_to_choice_type_K.
-      eapply set_varP. 3: exact eset.
-      * {
-        intros v₁ hv₁ eyl. subst.
-        destruct (i == yl) eqn:evar.
-        all: move: evar => /eqP evar.
-        - subst.
-          rewrite Fv.setP_eq in ei. noconf ei.
-          rewrite get_set_heap_eq.
-          apply truncate_val_type in trunc as ety. subst.
-          eapply translate_truncate_val in trunc.
-          eapply translate_of_val in hv₁.
-          rewrite trunc. rewrite coerce_to_choice_type_K.
-          rewrite hv₁. apply coerce_to_choice_type_translate_value_to_val.
-        - rewrite Fv.setP_neq in ei.
-          2:{ apply /eqP. eauto. }
-          rewrite get_set_heap_neq.
-          2:{
-            apply /eqP. intro e.
-            apply injective_translate_var in e.
-            contradiction.
-          }
-          eapply hv in ei. rewrite ei.
-          rewrite coerce_to_choice_type_K. reflexivity.
-      }
-      * {
-        intros hbo hyl hset.
-        subst.
-        destruct (i == yl) eqn:evar.
-        all: move: evar => /eqP evar.
-        - exfalso. subst. rewrite Fv.setP_eq in ei.
-          clear - ei hbo. destruct (vtype yl). all: discriminate.
-        - rewrite Fv.setP_neq in ei.
-          2:{ apply /eqP. eauto. }
-          rewrite get_set_heap_neq.
-          2:{
-            apply /eqP. intro e.
-            apply injective_translate_var in e.
-            contradiction.
-          }
-          eapply hv in ei. rewrite ei.
-          rewrite coerce_to_choice_type_K. reflexivity.
-      }
+    rewrite coerce_to_choice_type_K.
+    apply truncate_val_type in trunc as ety. subst.
+    eapply translate_truncate_val in trunc.
+    rewrite trunc. rewrite coerce_to_choice_type_K.
+    eapply translate_write_var_estate. all: eassumption.
   - simpl. simpl in hw.
     jbind hw vx hvx. jbind hvx vx' hvx'. jbind hw ve hve.
     jbind hve ve' hve'. jbind hw w hw'. jbind hw m hm.
@@ -2450,55 +2451,6 @@ Proof.
         rewrite coerce_to_choice_type_K. reflexivity.
   - admit.
 Admitted.
-
-Lemma translate_write_var_estate :
-  ∀ fn i v s1 s2 m,
-    write_var i v s1 = ok s2 →
-    rel_estate s1 fn m →
-    rel_estate s2 fn (set_heap m (translate_var fn i) (truncate_el i.(vtype) (translate_value v))).
-Proof.
-  intros fn i v s1 s2 m hw [h1 h2].
-  unfold write_var in hw. jbind hw vm hvm. noconf hw.
-  split. all: simpl.
-  - intros ptr v' er.
-    eapply h1 in er.
-    rewrite get_set_heap_neq. 2: apply mem_loc_translate_var_neq.
-    assumption.
-  - intros vi v' ev.
-    eapply set_varP. 3: exact hvm.
-    + intros v₁ hv₁ eyl. subst.
-      destruct (vi == i) eqn:evar.
-      all: move: evar => /eqP evar.
-      * subst. rewrite Fv.setP_eq in ev. noconf ev.
-        rewrite get_set_heap_eq. rewrite coerce_to_choice_type_K.
-        eapply translate_of_val in hv₁ as e.
-        rewrite e. apply coerce_to_choice_type_translate_value_to_val.
-      * rewrite Fv.setP_neq in ev.
-        2:{ apply /eqP. eauto. }
-        rewrite get_set_heap_neq.
-        2:{
-          apply /eqP. intro ee.
-          apply injective_translate_var in ee.
-          contradiction.
-        }
-        eapply h2 in ev. assumption.
-    + intros hbo hyl hset. subst.
-      destruct (vi == i) eqn:evar.
-      all: move: evar => /eqP evar.
-      1:{
-        exfalso. subst. rewrite Fv.setP_eq in ev.
-        clear - ev hbo. destruct (vtype i). all: discriminate.
-      }
-      rewrite Fv.setP_neq in ev.
-      2:{ apply /eqP. eauto. }
-      rewrite get_set_heap_neq.
-      2:{
-        apply /eqP. intro ee.
-        apply injective_translate_var in ee.
-        contradiction.
-      }
-      eapply h2 in ev. assumption.
-Qed.
 
 Definition ssprove_prog := seq (funname * fdef).
 
