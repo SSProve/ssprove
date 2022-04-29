@@ -1159,6 +1159,15 @@ Proof.
   }
 Defined.
 
+(* translate_instr is blocked because it is a fixpoint *)
+Lemma translate_instr_unfold :
+  ∀ ep fn i,
+    translate_instr ep fn i = translate_instr_r ep fn (instr_d i).
+Proof.
+  intros ep fn i.
+  destruct i. reflexivity.
+Qed.
+
 (* Trick to have it expand to the same as the translate_cmd above *)
 Section TranslateCMD.
 
@@ -2482,13 +2491,15 @@ Proof.
       ⦃ rel_estate s2 fn ⦄
   ).
   unshelve eapply (@sem_call_Ind _ _ _ _ Pc Pi_r Pi Pfor Pfun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H).
-  - red. intros s.
+  - (* nil *)
+    red. intros s.
     red. simpl.
     eapply u_ret_eq. auto.
-  - red. intros.
+  - (* cons *)
+    red. intros s1 s2 s3 i c hi ihi hc ihc.
     red. simpl.
     eapply u_bind.
-    + (* eapply translate_instr_correct. *) admit.
+    + rewrite translate_instr_unfold. eapply ihi.
     + eassumption.
   - red. intros.
     apply H1.
