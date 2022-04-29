@@ -2191,6 +2191,24 @@ Proof.
       apply translate_truncate_val. assumption.
 Qed.
 
+Corollary translate_pexpr_correct_cast :
+  ∀ fn (e : pexpr) s₁ v (cond : heap → Prop),
+    sem_pexpr gd s₁ e = ok v →
+    (∀ m, cond m → rel_estate s₁ fn m) →
+    ⊢ ⦃ cond ⦄
+      coerce_typed_code _ (translate_pexpr fn e) ⇓
+      translate_value v
+    ⦃ cond ⦄.
+Proof.
+  intros fn e s v cond he hcond.
+  eapply translate_pexpr_correct with (fn := fn) in he as h. 2: exact hcond.
+  eapply translate_pexpr_type with (fn := fn) in he.
+  unfold choice_type_of_val in he.
+  destruct (translate_pexpr) as [? exp] eqn:?. simpl in *. subst.
+  rewrite coerce_to_choice_type_K in h.
+  rewrite coerce_typed_code_K. assumption.
+Qed.
+
 Lemma ptr_var_neq (ptr : pointer) (fn : funname) (v : var) :
   translate_ptr ptr != translate_var fn v.
 Proof.
@@ -2512,16 +2530,7 @@ Proof.
       change (f fn c) with (translate_cmd ep fn c)
     end.
     eapply u_bind.
-    1:{
-      (* Make a lemma for all this stuff? *)
-      eapply translate_pexpr_correct with (fn := fn) in he as h. 2: eauto.
-      simpl in h.
-      eapply translate_pexpr_type with (fn := fn) in he.
-      unfold choice_type_of_val in he. simpl in he.
-      destruct (translate_pexpr) as [? exp] eqn:?. simpl in *. subst.
-      rewrite coerce_to_choice_type_K in h.
-      rewrite coerce_typed_code_K. eassumption.
-    }
+    1:{ eapply translate_pexpr_correct_cast in he. all: eauto. }
     simpl. eapply ihc1.
   - (* if_false *)
     red. intros s1 s2 e c1 c2 he hc2 ihc2.
@@ -2531,16 +2540,7 @@ Proof.
       change (f fn c) with (translate_cmd ep fn c)
     end. *)
     eapply u_bind.
-    1:{
-      (* Make a lemma for all this stuff? *)
-      eapply translate_pexpr_correct with (fn := fn) in he as h. 2: eauto.
-      simpl in h.
-      eapply translate_pexpr_type with (fn := fn) in he.
-      unfold choice_type_of_val in he. simpl in he.
-      destruct (translate_pexpr) as [? exp] eqn:?. simpl in *. subst.
-      rewrite coerce_to_choice_type_K in h.
-      rewrite coerce_typed_code_K. eassumption.
-    }
+    1:{ eapply translate_pexpr_correct_cast in he. all: eauto. }
     simpl. eapply ihc2.
   - (* while_true *)
     red. intros s1 s2 s3 s4 a c e c' hc ihc he hc' ihc' h ih.
@@ -2560,27 +2560,9 @@ Proof.
       change (f fn c) with (translate_cmd ep fn c)
     end.
     eapply u_bind.
-    1:{
-      (* Make a lemma for all this stuff? *)
-      eapply translate_pexpr_correct with (fn := fn) in hlo as h. 2: eauto.
-      simpl in h.
-      eapply translate_pexpr_type with (fn := fn) in hlo.
-      unfold choice_type_of_val in hlo. simpl in hlo.
-      destruct (translate_pexpr) as [? exp] eqn:e. simpl in *. subst.
-      rewrite coerce_to_choice_type_K in h.
-      rewrite coerce_typed_code_K. eassumption.
-    }
+    1:{ eapply translate_pexpr_correct_cast in hlo. all: eauto. }
     eapply u_bind.
-    1:{
-      (* Make a lemma for all this stuff? *)
-      eapply translate_pexpr_correct with (fn := fn) in hhi as h. 2: eauto.
-      simpl in h.
-      eapply translate_pexpr_type with (fn := fn) in hhi.
-      unfold choice_type_of_val in hhi. simpl in hhi.
-      destruct (translate_pexpr) as [? exp] eqn:e. simpl in *. subst.
-      rewrite coerce_to_choice_type_K in h.
-      rewrite coerce_typed_code_K. eassumption.
-    }
+    1:{ eapply translate_pexpr_correct_cast in hhi. all: eauto. }
     apply ihfor.
   - (* for_nil *)
     red. intros. red.
