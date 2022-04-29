@@ -2226,198 +2226,181 @@ Proof.
   eapply translate_write_estate. all: assumption.
 Qed.
 
-(* TODO Make fixpoint too!
-Another option is to inline it all in translate_prog_correct
-which given the goals is probably the way things are intended.
-*)
-Lemma translate_instr_r_correct :
-  ∀ (prog_exports : {fmap funname -> opsig}) (fn : funname) (i : instr_r) (s₁ s₂ : estate),
-  sem_i P s₁ i s₂ →
-  ⊢ ⦃ rel_estate s₁ fn ⦄
-    translate_instr_r prog_exports fn i ⇓ tt
-  ⦃ rel_estate s₂ fn ⦄.
+Lemma translate_write_lval_correct :
+  ∀ es₁ es₂ fn y sty e v v',
+    sem_pexpr gd es₁ e = ok v →
+    truncate_val sty v = ok v' →
+    write_lval gd y v' es₁ = ok es₂ →
+    ⊢ ⦃ rel_estate es₁ fn ⦄
+      translate_write_lval fn y (truncate_code sty (translate_pexpr fn e))
+      ⇓ tt
+    ⦃ rel_estate es₂ fn ⦄.
 Proof.
-  intros prog_exports fn i s₁ s₂ h.
-  induction h as [es₁ es₂ y tag sty e v v' sem_e trunc hw | | | | | | |].
-  - simpl. destruct y as [ | yl | | aa ws x ei | ] eqn:case_lval.
-    + simpl. apply u_ret_eq. intros hp hr.
-      simpl in hw. unfold write_none in hw.
-      destruct is_sbool eqn:eb.
-      * unfold on_vu in hw. destruct of_val as [| []].
-        all: noconf hw. all: assumption.
-      * unfold on_vu in hw. destruct of_val as [| []].
-        all: noconf hw. assumption.
-    + simpl. unfold translate_write_var. simpl in hw. unfold write_var in hw.
-      jbind hw vm eset. noconf hw.
-      simpl. rewrite !bind_assoc. simpl.
-      eapply u_bind.
-      * eapply translate_pexpr_correct. all: eauto.
+  intros es₁ es₂ fn y sty e v v' sem_e trunc hw.
+  destruct y as [ | yl | | aa ws x ei | ] eqn:case_lval.
+  - simpl. apply u_ret_eq.
+    intros hp hr.
+    simpl in hw. unfold write_none in hw.
+    destruct is_sbool eqn:eb.
+    + unfold on_vu in hw. destruct of_val as [| []].
+      all: noconf hw. all: assumption.
+    + unfold on_vu in hw. destruct of_val as [| []].
+      all: noconf hw. assumption.
+  - simpl. unfold translate_write_var. simpl in hw. unfold write_var in hw.
+    jbind hw vm eset. noconf hw.
+    simpl. rewrite !bind_assoc. simpl.
+    eapply u_bind.
+    1:{ eapply translate_pexpr_correct. all: eauto. }
+    erewrite translate_pexpr_type. 2: eassumption.
+    clear sem_e e.
+    eapply u_put.
+    apply u_ret_eq.
+    intros m' [m [hm e]]. subst.
+    destruct hm as [hm hv].
+    split.
+    + unfold rel_mem.
+      intros ptr byte hr.
+      rewrite get_set_heap_neq. 2: apply mem_loc_translate_var_neq.
+      apply hm. assumption.
+    + simpl. unfold rel_vmap.
+      intros i vi ei.
+      simpl. rewrite !coerce_to_choice_type_K.
+      eapply set_varP. 3: exact eset.
       * {
-        erewrite translate_pexpr_type. 2: eassumption.
-        clear sem_e tag e.
-        eapply u_put.
-        apply u_ret_eq.
-        intros m' [m [hm e]]. subst.
-        destruct hm as [hm hv].
-        split.
-        - unfold rel_mem.
-          intros ptr byte hr.
-          rewrite get_set_heap_neq. 2: apply mem_loc_translate_var_neq.
-          apply hm. assumption.
-        - simpl. unfold rel_vmap.
-          intros i vi ei.
-          simpl. rewrite !coerce_to_choice_type_K.
-          eapply set_varP. 3: exact eset. (* all: clear eset. *)
-          + intros v₁ hv₁ eyl. subst.
-            destruct (i == yl) eqn:evar.
-            all: move: evar => /eqP evar.
-            * subst.
-              rewrite Fv.setP_eq in ei. noconf ei.
-              rewrite get_set_heap_eq.
-              apply truncate_val_type in trunc as ety. subst.
-              eapply translate_truncate_val in trunc.
-              eapply translate_of_val in hv₁.
-              rewrite trunc. rewrite coerce_to_choice_type_K.
-              rewrite hv₁. apply coerce_to_choice_type_translate_value_to_val.
-            * rewrite Fv.setP_neq in ei.
-              2:{ apply /eqP. eauto. }
-              rewrite get_set_heap_neq.
-              2:{
-                apply /eqP. intro e.
-                apply injective_translate_var in e.
-                contradiction.
-              }
-              eapply hv in ei. rewrite ei.
-              rewrite coerce_to_choice_type_K. reflexivity.
-          + intros hbo hyl hset.
-            subst.
-            destruct (i == yl) eqn:evar.
-            all: move: evar => /eqP evar.
-            * exfalso. subst. rewrite Fv.setP_eq in ei.
-              clear - ei hbo. destruct (vtype yl). all: discriminate.
-            * rewrite Fv.setP_neq in ei.
-              2:{ apply /eqP. eauto. }
-              rewrite get_set_heap_neq.
-              2:{
-                apply /eqP. intro e.
-                apply injective_translate_var in e.
-                contradiction.
-              }
-              eapply hv in ei. rewrite ei.
-              rewrite coerce_to_choice_type_K. reflexivity.
-      }
-    + simpl. simpl in hw.
-      jbind hw vx hvx. jbind hvx vx' hvx'. jbind hw ve hve.
-      jbind hve ve' hve'. jbind hw w hw'. jbind hw m hm.
-      noconf hw.
-      eapply u_get_remember. intros tv.
-      eapply u_bind.
-      1:{
-        eapply translate_pexpr_correct.
-        - eassumption.
-        - intros ? []. assumption.
-      }
-      rewrite bind_assoc.
-      eapply u_bind.
-      1:{
-        eapply translate_pexpr_correct.
-        - eassumption.
-        - intros ? []. assumption.
-      }
-      simpl.
-      eapply translate_write_correct. intros m' [hm' em'].
-      unfold u_get in em'. subst.
-      split. 2: assumption.
-      erewrite translate_pexpr_type. 2: eassumption.
-      erewrite translate_pexpr_type. 2: eassumption.
-      rewrite !coerce_to_choice_type_K.
-      erewrite translate_truncate_val. 2: eassumption.
-      eapply truncate_val_type in trunc as ety. subst.
-      rewrite coerce_to_choice_type_K.
-      eapply translate_to_word in hw' as ew. rewrite ew. clear ew.
-      unfold translate_to_pointer. simpl.
-      eapply translate_to_word in hve as ew. rewrite ew. clear ew.
-      erewrite get_var_get_heap. 2,3: eassumption.
-      simpl. erewrite <- type_of_get_var. 2: eassumption.
-      rewrite coerce_to_choice_type_K.
-      eapply translate_to_word in hvx as ew. rewrite ew. clear ew.
-      assumption.
-    + simpl. simpl in hw.
-      jbind hw nt hnt. destruct nt. all: try discriminate.
-      jbind hw i hi. jbind hi i' hi'.
-      jbind hw w ew. jbind hw t ht.
-      unfold write_var in hw. jbind hw vm hvm.
-      noconf hw.
-      eapply u_get_remember. simpl. intros vx.
-      rewrite !bind_assoc. simpl.
-      eapply u_bind.
-      1:{
-        eapply translate_pexpr_correct.
-        - eassumption.
-        - intros ? []. assumption.
-      }
-      rewrite !bind_assoc.
-      eapply u_bind.
-      1:{
-        eapply translate_pexpr_correct.
-        - eassumption.
-        - intros ? []. assumption.
-      }
-      simpl. unfold translate_write_var. simpl.
-      eapply u_put.
-      eapply u_ret_eq.
-      intros ? [m [[[hr hv] hm] ?]]. subst.
-      unfold u_get in hm. subst.
-      split.
-      * intros ptr byte hby.
-        rewrite get_set_heap_neq. 2: eapply mem_loc_translate_var_neq.
-        apply hr. assumption.
-      * {
-        simpl. intros j vj ej.
-        simpl. rewrite coerce_to_choice_type_K.
-        eapply set_varP. 3: exact hvm.
-        - intros v₁ hv₁ eyl. subst.
-          destruct (j == x) eqn:evar.
-          all: move: evar => /eqP evar.
-          + subst. rewrite Fv.setP_eq in ej. noconf ej.
-            rewrite get_set_heap_eq.
-            apply truncate_val_type in trunc as ety. subst.
-            erewrite translate_pexpr_type. 2: eassumption.
-            erewrite translate_pexpr_type. 2: eassumption.
-            rewrite !coerce_to_choice_type_K.
-            eapply translate_truncate_val in trunc.
-            rewrite trunc. rewrite coerce_to_choice_type_K.
-            eapply translate_to_word in ew. rewrite ew.
-            erewrite translate_to_int. 2: eassumption.
-            erewrite get_var_get_heap.
-            2: eassumption.
-            2:{ split. all: assumption. }
-            eapply translate_of_val in hv₁. (* simpl in hv₁. *)
-            rewrite coerce_to_choice_type_translate_value_to_val in hv₁.
-            rewrite <- hv₁. f_equal.
-            Opaque translate_value. simpl. Transparent translate_value.
-            eapply type_of_get_var in hnt as ety. simpl in ety.
-            rewrite -ety. rewrite !coerce_to_choice_type_K.
-            apply chArray_set_correct. assumption.
-          + rewrite Fv.setP_neq in ej.
-            2:{ apply /eqP. eauto. }
-            rewrite get_set_heap_neq.
-            2:{
-              apply /eqP. intro ee.
-              apply injective_translate_var in ee.
-              contradiction.
-            }
-            eapply hv in ej. rewrite ej.
-            rewrite coerce_to_choice_type_K. reflexivity.
-        - intros hbo hyl hset.
-          subst.
-          destruct (j == x) eqn:evar.
-          all: move: evar => /eqP evar.
-          1:{
-            exfalso. subst. rewrite Fv.setP_eq in ej.
-            clear - ej hbo. destruct (vtype x). all: discriminate.
+        intros v₁ hv₁ eyl. subst.
+        destruct (i == yl) eqn:evar.
+        all: move: evar => /eqP evar.
+        - subst.
+          rewrite Fv.setP_eq in ei. noconf ei.
+          rewrite get_set_heap_eq.
+          apply truncate_val_type in trunc as ety. subst.
+          eapply translate_truncate_val in trunc.
+          eapply translate_of_val in hv₁.
+          rewrite trunc. rewrite coerce_to_choice_type_K.
+          rewrite hv₁. apply coerce_to_choice_type_translate_value_to_val.
+        - rewrite Fv.setP_neq in ei.
+          2:{ apply /eqP. eauto. }
+          rewrite get_set_heap_neq.
+          2:{
+            apply /eqP. intro e.
+            apply injective_translate_var in e.
+            contradiction.
           }
-          rewrite Fv.setP_neq in ej.
+          eapply hv in ei. rewrite ei.
+          rewrite coerce_to_choice_type_K. reflexivity.
+      }
+      * {
+        intros hbo hyl hset.
+        subst.
+        destruct (i == yl) eqn:evar.
+        all: move: evar => /eqP evar.
+        - exfalso. subst. rewrite Fv.setP_eq in ei.
+          clear - ei hbo. destruct (vtype yl). all: discriminate.
+        - rewrite Fv.setP_neq in ei.
+          2:{ apply /eqP. eauto. }
+          rewrite get_set_heap_neq.
+          2:{
+            apply /eqP. intro e.
+            apply injective_translate_var in e.
+            contradiction.
+          }
+          eapply hv in ei. rewrite ei.
+          rewrite coerce_to_choice_type_K. reflexivity.
+      }
+  - simpl. simpl in hw.
+    jbind hw vx hvx. jbind hvx vx' hvx'. jbind hw ve hve.
+    jbind hve ve' hve'. jbind hw w hw'. jbind hw m hm.
+    noconf hw.
+    eapply u_get_remember. intros tv.
+    eapply u_bind.
+    1:{
+      eapply translate_pexpr_correct.
+      - eassumption.
+      - intros ? []. assumption.
+    }
+    rewrite bind_assoc.
+    eapply u_bind.
+    1:{
+      eapply translate_pexpr_correct.
+      - eassumption.
+      - intros ? []. assumption.
+    }
+    simpl.
+    eapply translate_write_correct. intros m' [hm' em'].
+    unfold u_get in em'. subst.
+    split. 2: assumption.
+    erewrite translate_pexpr_type. 2: eassumption.
+    erewrite translate_pexpr_type. 2: eassumption.
+    rewrite !coerce_to_choice_type_K.
+    erewrite translate_truncate_val. 2: eassumption.
+    eapply truncate_val_type in trunc as ety. subst.
+    rewrite coerce_to_choice_type_K.
+    eapply translate_to_word in hw' as ew. rewrite ew. clear ew.
+    unfold translate_to_pointer. simpl.
+    eapply translate_to_word in hve as ew. rewrite ew. clear ew.
+    erewrite get_var_get_heap. 2,3: eassumption.
+    simpl. erewrite <- type_of_get_var. 2: eassumption.
+    rewrite coerce_to_choice_type_K.
+    eapply translate_to_word in hvx as ew. rewrite ew. clear ew.
+    assumption.
+  - simpl. simpl in hw.
+    jbind hw nt hnt. destruct nt. all: try discriminate.
+    jbind hw i hi. jbind hi i' hi'.
+    jbind hw w ew. jbind hw t ht.
+    unfold write_var in hw. jbind hw vm hvm.
+    noconf hw.
+    eapply u_get_remember. simpl. intros vx.
+    rewrite !bind_assoc. simpl.
+    eapply u_bind.
+    1:{
+      eapply translate_pexpr_correct.
+      - eassumption.
+      - intros ? []. assumption.
+    }
+    rewrite !bind_assoc.
+    eapply u_bind.
+    1:{
+      eapply translate_pexpr_correct.
+      - eassumption.
+      - intros ? []. assumption.
+    }
+    simpl. unfold translate_write_var. simpl.
+    eapply u_put.
+    eapply u_ret_eq.
+    intros ? [m [[[hr hv] hm] ?]]. subst.
+    unfold u_get in hm. subst.
+    split.
+    + intros ptr byte hby.
+      rewrite get_set_heap_neq. 2: eapply mem_loc_translate_var_neq.
+      apply hr. assumption.
+    + simpl. intros j vj ej.
+      simpl. rewrite coerce_to_choice_type_K.
+      eapply set_varP. 3: exact hvm.
+      * {
+        intros v₁ hv₁ eyl. subst.
+        destruct (j == x) eqn:evar.
+        all: move: evar => /eqP evar.
+        - subst. rewrite Fv.setP_eq in ej. noconf ej.
+          rewrite get_set_heap_eq.
+          apply truncate_val_type in trunc as ety. subst.
+          erewrite translate_pexpr_type. 2: eassumption.
+          erewrite translate_pexpr_type. 2: eassumption.
+          rewrite !coerce_to_choice_type_K.
+          eapply translate_truncate_val in trunc.
+          rewrite trunc. rewrite coerce_to_choice_type_K.
+          eapply translate_to_word in ew. rewrite ew.
+          erewrite translate_to_int. 2: eassumption.
+          erewrite get_var_get_heap.
+          2: eassumption.
+          2:{ split. all: assumption. }
+          eapply translate_of_val in hv₁. (* simpl in hv₁. *)
+          rewrite coerce_to_choice_type_translate_value_to_val in hv₁.
+          rewrite <- hv₁. f_equal.
+          Opaque translate_value. simpl. Transparent translate_value.
+          eapply type_of_get_var in hnt as ety. simpl in ety.
+          rewrite -ety. rewrite !coerce_to_choice_type_K.
+          apply chArray_set_correct. assumption.
+        - rewrite Fv.setP_neq in ej.
           2:{ apply /eqP. eauto. }
           rewrite get_set_heap_neq.
           2:{
@@ -2428,13 +2411,24 @@ Proof.
           eapply hv in ej. rewrite ej.
           rewrite coerce_to_choice_type_K. reflexivity.
       }
-    + admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
-  - admit.
+      * intros hbo hyl hset.
+        subst.
+        destruct (j == x) eqn:evar.
+        all: move: evar => /eqP evar.
+        1:{
+          exfalso. subst. rewrite Fv.setP_eq in ej.
+          clear - ej hbo. destruct (vtype x). all: discriminate.
+        }
+        rewrite Fv.setP_neq in ej.
+        2:{ apply /eqP. eauto. }
+        rewrite get_set_heap_neq.
+        2:{
+          apply /eqP. intro ee.
+          apply injective_translate_var in ee.
+          contradiction.
+        }
+        eapply hv in ej. rewrite ej.
+        rewrite coerce_to_choice_type_K. reflexivity.
   - admit.
 Admitted.
 
@@ -2501,31 +2495,65 @@ Proof.
     eapply u_bind.
     + rewrite translate_instr_unfold. eapply ihi.
     + eassumption.
-  - red. intros.
-    apply H1.
-  - red. intros s₁ s₂ x tag ty e v v' he hv hw.
-    red.
-    eapply translate_instr_r_correct.
-    (* Do we have to apply this lemma for each instance, seems wrong *)
-    econstructor. all: eassumption.
-  - red. intros.
-    red. eapply translate_instr_r_correct.
-    econstructor. assumption.
-  - red. intros.
-    red. eapply translate_instr_r_correct.
-    econstructor.
-    all: assumption.
-  - red. intros.
-    red. eapply translate_instr_r_correct.
-    econstructor ; assumption. (* backtrack to select the right constructor *)
-  - red. intros.
-    red. eapply translate_instr_r_correct.
-    econstructor.
-    all: eassumption.
-  - red. intros.
-    red. eapply translate_instr_r_correct.
-    econstructor ; eassumption. (* backtrack *)
-  - red. intros s1 s2 i d lo hi c vlo vhi hlo hhi hfor ihfor.
+  - (* mkI *)
+    red. intros ii i s1 s2 hi ihi.
+    apply ihi.
+  - (* assgn *)
+    red. intros s₁ s₂ x tag ty e v v' he hv hw.
+    red. simpl. eapply translate_write_lval_correct. all: eauto.
+  - (* opn *)
+    red. intros s1 s2 tag o xs es ho.
+    red. simpl. admit.
+  - (* if_true *)
+    red. intros s1 s2 e c1 c2 he hc1 ihc1.
+    red. simpl.
+    lazymatch goal with
+    | |- context [ if _ then ?f ?fn ?c else _ ] =>
+      change (f fn c) with (translate_cmd ep fn c)
+    end.
+    eapply u_bind.
+    1:{
+      (* Make a lemma for all this stuff? *)
+      eapply translate_pexpr_correct with (fn := fn) in he as h. 2: eauto.
+      simpl in h.
+      eapply translate_pexpr_type with (fn := fn) in he.
+      unfold choice_type_of_val in he. simpl in he.
+      destruct (translate_pexpr) as [? exp] eqn:?. simpl in *. subst.
+      rewrite coerce_to_choice_type_K in h.
+      rewrite coerce_typed_code_K. eassumption.
+    }
+    simpl. eapply ihc1.
+  - (* if_false *)
+    red. intros s1 s2 e c1 c2 he hc2 ihc2.
+    red. simpl.
+    (* lazymatch goal with
+    | |- context [ if _ then _ else (?f ?fn ?c) ] =>
+      change (f fn c) with (translate_cmd ep fn c)
+    end. *)
+    eapply u_bind.
+    1:{
+      (* Make a lemma for all this stuff? *)
+      eapply translate_pexpr_correct with (fn := fn) in he as h. 2: eauto.
+      simpl in h.
+      eapply translate_pexpr_type with (fn := fn) in he.
+      unfold choice_type_of_val in he. simpl in he.
+      destruct (translate_pexpr) as [? exp] eqn:?. simpl in *. subst.
+      rewrite coerce_to_choice_type_K in h.
+      rewrite coerce_typed_code_K. eassumption.
+    }
+    simpl. eapply ihc2.
+  - (* while_true *)
+    red. intros s1 s2 s3 s4 a c e c' hc ihc he hc' ihc' h ih.
+    red in ih. simpl in ih.
+    (* TODO Lemma to draw a contradiction from ih *)
+    admit.
+  - (* while_false *)
+    red. intros s1 s2 a c e c' hc ihc he.
+    red. simpl.
+    (* We could replace while by an if to solve this case *)
+    give_up.
+  - (* for *)
+    red. intros s1 s2 i d lo hi c vlo vhi hlo hhi hfor ihfor.
     red. simpl.
     lazymatch goal with
     | |- context [ translate_for _ _ _ (?f ?fn ?c) ] =>
@@ -2554,9 +2582,11 @@ Proof.
       rewrite coerce_typed_code_K. eassumption.
     }
     apply ihfor.
-  - red. intros. red.
+  - (* for_nil *)
+    red. intros. red.
     simpl. apply u_ret_eq. auto.
-  - red. intros s1 s1' s2 s3 i w ws c hw hc ihc hfor ihfor.
+  - (* for_cons *)
+    red. intros s1 s1' s2 s3 i w ws c hw hc ihc hfor ihfor.
     red. simpl.
     eapply u_put.
     eapply u_bind.
@@ -2607,9 +2637,9 @@ Proof.
           eapply h2 in ev. assumption.
     }
     apply ihfor.
-  - red. intros.
-    red. eapply translate_instr_r_correct.
-    econstructor. all: eassumption.
+  - (* call *)
+    red. intros s1 m2 s2 ii xs gn args vargs vs hargs hvs ihvs hw.
+    red. simpl. admit.
   - red. intros m1 m2 gn g vs vs' s1 vm2 vrs vrs'.
     intros hg hvs ?????.
     unfold Pfun. intros f' hf'.
