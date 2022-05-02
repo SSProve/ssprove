@@ -528,10 +528,9 @@ Proof.
        values.v), all of these functions raise an error on Vundef. *)
 Defined.
 
-Definition translate_write_var (fn : funname) (x : var_i) (v : typed_code) :=
+Definition translate_write_var (fn : funname) (x : var_i) (v : typed_chElement) :=
   let l := translate_var fn (v_var x) in
-  x ← (truncate_code x.(vtype) v).π2 ;;
-  #put l := x ;;
+  #put l := truncate_el x.(vtype) v.π2 ;;
   ret tt.
 
 Definition translate_get_var (f : funname) (x : var) : raw_code (encode x.(vtype)) :=
@@ -895,6 +894,9 @@ Section bind_list_alt.
 
 End bind_list_alt.
 
+Notation totce := to_typed_chElement.
+
+
 (* Following sem_pexpr *)
 Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
   match e with
@@ -1006,7 +1008,7 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
 
     (* pose (vs' := fold (fun x => y ← x ;; unembed y) f vs). *)
 
-Definition translate_write_lval (fn : funname) (l : lval) (v : typed_code)
+Definition translate_write_lval (fn : funname) (l : lval) (v : typed_chElement)
   : raw_code 'unit
   :=
   match l with
@@ -1018,8 +1020,7 @@ Definition translate_write_lval (fn : funname) (l : lval) (v : typed_code)
     ve' ← (translate_pexpr fn e).π2 ;;
     let ve := translate_to_pointer ve' in
     let p := (vx + ve)%R in (* should we add the size of value, i.e vx + sz * se *) (* Is it from us or them? *)
-    v ← v.π2 ;;
-    let w := truncate_chWord sz v in
+    let w := truncate_chWord sz v.π2 in
     translate_write p w
   | Laset aa ws x i =>
     (* Let (n,t) := s.[x] in is a notation calling on_arr_varr on get_var *)
@@ -1027,10 +1028,9 @@ Definition translate_write_lval (fn : funname) (l : lval) (v : typed_code)
     t' ← translate_get_var fn x ;;
     let t := coerce_to_choice_type 'array t' in
     i ← (truncate_code sint (translate_pexpr fn i)).π2 ;; (* to_int *)
-    v ← v.π2 ;;
-    let v := truncate_chWord ws v in
+    let v := truncate_chWord ws v.π2 in
     let t := chArray_set t aa i v in
-    translate_write_var fn x (totc _ (ret t))
+    translate_write_var fn x (totce t)
   | Lasub aa ws len x i =>
     (* Same observation as Laset *)
     t' ← translate_get_var fn x ;;
@@ -1060,10 +1060,46 @@ Fixpoint translate_for fn (i : var_i) (ws : seq Z) (c : raw_code 'unit) : raw_co
   match ws with
   | [::] => ret tt
   | w :: ws =>
-    translate_write_var fn i (totc _ (ret (translate_value w))) ;;
+    translate_write_var fn i (totce (translate_value w)) ;;
     c ;;
     translate_for fn i ws c
   end.
+(* sem_i *)
+(* Fixpoint translate_instr_r (fn : funname) (i : instr_r) {struct i} : raw_code 'unit *)
+(* with translate_instr (fn : funname) (i : instr) {struct i} : raw_code 'unit. *)
+(* Proof. *)
+(*   (* translate_instr_r *) *)
+(*   { *)
+(*     pose proof (translate_cmd := *)
+(*             (fix translate_cmd (fn : funname) (c : cmd) : raw_code 'unit := *)
+(*                match c with *)
+(*                | [::] => ret tt *)
+(*                | i :: c => translate_instr fn i ;; translate_cmd fn c *)
+(*                end)). *)
+
+(*     destruct i as [ | | e c1 c2 | | | ]. *)
+(*     - (* Cassgn *) *)
+(*       (* l :a=_s p *) *)
+(*       pose (translate_pexpr fn p) as tr_p. *)
+(*       pose (truncate_code s tr_p) as tr_p'. *)
+(*       eapply bind. 1: exact tr_p'.π2. intros. *)
+(*       exact (translate_write_lval fn l (totce X)). *)
+(*     - exact (unsupported.π2). (* Copn *) *)
+(*     - (* Cif e c1 c2 *) *)
+(*       pose (e' := translate_pexpr fn e). *)
+(*       pose (c1' := translate_cmd fn c1). *)
+(*       pose (c2' := translate_cmd fn c2). *)
+(*       pose (rb := coerce_typed_code 'bool e'). *)
+(*       exact (b ← rb ;; if b then c1' else c2'). *)
+(*     - exact (unsupported.π2). (* Cfor *) *)
+(*     - exact (unsupported.π2). (* Cwhile *) *)
+(*     - (* Ccall i l f l0 *) *)
+(*       (* translate arguments *) *)
+(*       pose (map (translate_pexpr fn) l0) as tr_l0. *)
+(*       (* "perform" the call via `opr` *) *)
+(*       (* probably we'd look up the function signature in the current ambient program *) *)
+
+(*       (* write_lvals the result of the call into lvals `l` *) *)
 
 Fixpoint translate_instr_r (prog_exports : {fmap funname -> opsig}) (fn : funname) (i : instr_r) {struct i} : raw_code 'unit
 
@@ -1085,8 +1121,9 @@ Proof.
   - (* Cassgn *)
     (* l :a=_s p *)
     pose (translate_pexpr fn p) as tr_p.
-    pose (truncate_code s tr_p) as tr_p'.
-    exact (translate_write_lval fn l tr_p').
+    eapply bind. 1: exact (tr_p.π2).
+    intros v. pose (truncate_el s v) as tr_v.
+    exact (translate_write_lval fn l (totce tr_v)).
   - exact (unsupported.π2). (* Copn *)
   - (* Cif e c1 c2 *)
     pose (e' := translate_pexpr fn e).
@@ -1146,7 +1183,7 @@ Proof.
           so we could also truncate instead of coercing if convenient. *)
       pose (map (λ '(ty,c),
                   let ty' := encode ty in
-                            (ty'; ret (coerce_to_choice_type ty' c.π2)) : typed_code) vs_f)
+                            (totce (coerce_to_choice_type ty' c.π2)) : typed_chElement) vs_f)
         as vres'.
       (* pose (map (λ '(ty,c), (truncate_code ty (totc c.π1 (ret c.π2)))) l0) as vres'. *)
 
@@ -1206,7 +1243,7 @@ Proof.
     apply (coerce_chtuple_to_list _ f_tyin) in vargs'.
 
     (* Write the arguments to their locations. *)
-    pose (map (λ '(x, (ty; v)), translate_write_var f x (totc ty (ret v)))
+    pose (map (λ '(x, (ty; v)), translate_write_var f x (totce v))
               (zip f_params vargs'))
       as cargs.
     apply (foldl (λ c k, c ;; k) (ret tt)) in cargs.
@@ -1466,19 +1503,25 @@ Proof.
   all: simpl. all: rewrite coerce_to_choice_type_K. all: reflexivity.
 Qed.
 
+Lemma totce_coerce t (tv : choice_type) (v : tv) :
+  t = tv -> totce (coerce_to_choice_type t v) = totce v.
+Proof.
+  intros. rewrite H. rewrite coerce_to_choice_type_K.
+  reflexivity.
+Qed.
 
 Section bind_list_test.
 
   (* Quick test to see that the definition-via-tactics of bind_list' computes
      as expected. *)
   Definition cs : list typed_code :=
-    [:: ('bool; (ret false)) ; ('bool; (ret true)) ; ('nat; (ret 666)) ; ('int; ret 42%Z)].
+    [:: ('bool; (ret false)) ; ('bool; (ret true)) ; ('nat; (ret 666))].
   Definition ts := [:: sbool; sbool; sint; sint].
   Goal bind_list' ts cs = bind_list' ts cs.
     unfold bind_list' at 2.
     unfold bind_list_trunc_aux.
     simpl.
-    rewrite !coerce_to_choice_type_K.
+    (* rewrite !coerce_to_choice_type_K. *)
     simp coerce_to_choice_type.
     cbn.
   Abort.
@@ -1570,6 +1613,19 @@ Proof.
   unfold truncate_val in h.
   jbind h vx e. noconf h.
   apply translate_of_val. assumption.
+Qed.
+
+Lemma totce_truncate_translate :
+  ∀ ty v v',
+    truncate_val ty v = ok v' ->
+    totce (truncate_el ty (translate_value v)) = totce (translate_value v').
+Proof.
+  intros ty v v' h.
+  erewrite translate_truncate_val by eassumption.
+  apply totce_coerce.
+  unfold choice_type_of_val.
+  erewrite truncate_val_type by eassumption.
+  reflexivity.
 Qed.
 
 Lemma bind_list_correct cond cs vs :
@@ -2289,16 +2345,14 @@ Proof.
 Qed.
 
 Lemma translate_write_lval_correct :
-  ∀ es₁ es₂ fn y sty e v v',
-    sem_pexpr gd es₁ e = ok v →
-    truncate_val sty v = ok v' →
-    write_lval gd y v' es₁ = ok es₂ →
+  ∀ es₁ es₂ fn y v,
+    write_lval gd y v es₁ = ok es₂ →
     ⊢ ⦃ rel_estate es₁ fn ⦄
-      translate_write_lval fn y (truncate_code sty (translate_pexpr fn e))
+      translate_write_lval fn y (totce (translate_value v))
       ⇓ tt
     ⦃ rel_estate es₂ fn ⦄.
 Proof.
-  intros es₁ es₂ fn y sty e v v' sem_e trunc hw.
+  intros es₁ es₂ fn y v hw.
   destruct y as [ | yl | | aa ws x ei | ] eqn:case_lval.
   - simpl. apply u_ret_eq.
     intros hp hr.
@@ -2309,18 +2363,10 @@ Proof.
     + unfold on_vu in hw. destruct of_val as [| []].
       all: noconf hw. assumption.
   - simpl. unfold translate_write_var. simpl in hw.
-    simpl. rewrite !bind_assoc. simpl.
-    eapply u_bind.
-    1:{ eapply translate_pexpr_correct. all: eauto. }
-    erewrite translate_pexpr_type. 2: eassumption.
-    clear sem_e e.
+    simpl.
     eapply u_put.
     apply u_ret_eq.
     intros m' [m [hm e]]. subst.
-    rewrite coerce_to_choice_type_K.
-    apply truncate_val_type in trunc as ety. subst.
-    eapply translate_truncate_val in trunc.
-    rewrite trunc. rewrite coerce_to_choice_type_K.
     eapply translate_write_var_estate. all: eassumption.
   - simpl. simpl in hw.
     jbind hw vx hvx. jbind hvx vx' hvx'. jbind hw ve hve.
@@ -2333,23 +2379,12 @@ Proof.
       - eassumption.
       - intros ? []. assumption.
     }
-    rewrite bind_assoc.
-    eapply u_bind.
-    1:{
-      eapply translate_pexpr_correct.
-      - eassumption.
-      - intros ? []. assumption.
-    }
     simpl.
     eapply translate_write_correct. intros m' [hm' em'].
     unfold u_get in em'. subst.
     split. 2: assumption.
     erewrite translate_pexpr_type. 2: eassumption.
-    erewrite translate_pexpr_type. 2: eassumption.
     rewrite !coerce_to_choice_type_K.
-    erewrite translate_truncate_val. 2: eassumption.
-    eapply truncate_val_type in trunc as ety. subst.
-    rewrite coerce_to_choice_type_K.
     eapply translate_to_word in hw' as ew. rewrite ew. clear ew.
     unfold translate_to_pointer. simpl.
     eapply translate_to_word in hve as ew. rewrite ew. clear ew.
@@ -2370,24 +2405,13 @@ Proof.
       - eassumption.
       - intros ? []. assumption.
     }
-    rewrite !bind_assoc.
-    eapply u_bind.
-    1:{
-      eapply translate_pexpr_correct.
-      - eassumption.
-      - intros ? []. assumption.
-    }
     simpl. unfold translate_write_var. simpl.
     eapply u_put.
     eapply u_ret_eq.
     intros ? [m [[hs hm] ?]]. subst.
     unfold u_get in hm. subst.
-    apply truncate_val_type in trunc as ety. subst.
-    erewrite translate_pexpr_type. 2: eassumption.
     erewrite translate_pexpr_type. 2: eassumption.
     rewrite !coerce_to_choice_type_K.
-    eapply translate_truncate_val in trunc.
-    rewrite trunc. rewrite coerce_to_choice_type_K.
     eapply translate_to_word in ew. rewrite ew.
     erewrite translate_to_int. 2: eassumption.
     erewrite get_var_get_heap. 2,3: eassumption.
@@ -2469,7 +2493,12 @@ Proof.
     apply ihi.
   - (* assgn *)
     red. intros s₁ s₂ x tag ty e v v' he hv hw.
-    red. simpl. eapply translate_write_lval_correct. all: eauto.
+    red. simpl.
+    eapply u_bind. 1: eapply translate_pexpr_correct. 1: eassumption. 1: easy.
+    erewrite translate_pexpr_type by eassumption.
+    rewrite coerce_to_choice_type_K.
+    erewrite totce_truncate_translate by eassumption.
+    eapply translate_write_lval_correct. all: eauto.
   - (* opn *)
     red. intros s1 s2 tag o xs es ho.
     red. simpl. admit.
