@@ -2970,7 +2970,7 @@ Proof.
     erewrite totce_truncate_translate by eassumption.
     eapply translate_write_lval_correct. all: eauto.
   - (* opn *)
-    red. intros s1 s2 tag o xs es ho.
+    red. intros s1 s2 tag o xs es ho _.
     red. simpl.
     jbind ho vs hv.
     jbind hv vs' hv'.
