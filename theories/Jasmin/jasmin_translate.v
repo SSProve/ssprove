@@ -1556,9 +1556,11 @@ Proof.
 Qed.
 
 Lemma totce_coerce t (tv : choice_type) (v : tv) :
-  t = tv -> totce (coerce_to_choice_type t v) = totce v.
+  t = tv →
+  totce (coerce_to_choice_type t v) = totce v.
 Proof.
-  intros. rewrite H. rewrite coerce_to_choice_type_K.
+  intro e.
+  rewrite e. rewrite coerce_to_choice_type_K.
   reflexivity.
 Qed.
 
@@ -1669,7 +1671,7 @@ Qed.
 
 Lemma totce_truncate_translate :
   ∀ ty v v',
-    truncate_val ty v = ok v' ->
+    truncate_val ty v = ok v' →
     totce (truncate_el ty (translate_value v)) = totce (translate_value v').
 Proof.
   intros ty v v' h.
@@ -2805,7 +2807,8 @@ Proof.
   - (* assgn *)
     red. intros s₁ s₂ x tag ty e v v' he hv hw.
     red. simpl.
-    eapply u_bind. 1: eapply translate_pexpr_correct. 1: eassumption. 1: easy.
+    eapply u_bind.
+    1:{ eapply translate_pexpr_correct. all: eauto. }
     erewrite translate_pexpr_type by eassumption.
     rewrite coerce_to_choice_type_K.
     erewrite totce_truncate_translate by eassumption.
