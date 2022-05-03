@@ -1159,6 +1159,16 @@ Fixpoint list_lchtuple {ts} : lchtuple ([seq encode t | t <- ts]) -> [choiceType
 Definition translate_exec_sopn (o : sopn) (vs : seq typed_chElement) :=
   list_lchtuple (app_sopn_list_tuple _ (sopn_sem o) vs).
 
+Fixpoint translate_write_lvals (fn : funname) (ls : lvals) (vs : list typed_chElement) :=
+  match ls with
+  | [::] => ret tt
+  | l :: ls => match vs with
+             | [::] => ret tt
+             | v :: vs => translate_write_lval fn l v ;;
+                        translate_write_lvals fn ls vs
+             end
+  end.
+
 Fixpoint translate_instr_r (prog_exports : {fmap funname -> opsig}) (fn : funname) (i : instr_r) {struct i} : raw_code 'unit
 
 with translate_instr (prog_exports : {fmap funname -> opsig}) (fn : funname) (i : instr) {struct i} : raw_code 'unit :=
@@ -1175,14 +1185,19 @@ Proof.
     )
   ).
 
-  destruct i as [ | | e c1 c2 | i [[d lo] hi] c | | ii xs f args ].
+  destruct i as [ | ls _ o es | e c1 c2 | i [[d lo] hi] c | | ii xs f args ].
   - (* Cassgn *)
     (* l :a=_s p *)
     pose (translate_pexpr fn p) as tr_p.
     eapply bind. 1: exact (tr_p.π2).
     intros v. pose (truncate_el s v) as tr_v.
     exact (translate_write_lval fn l (totce tr_v)).
-  - exact (unsupported.π2). (* Copn *)
+  - (* Copn *)
+    pose (cs := [seq (translate_pexpr fn e) | e <- es]).
+    pose (vs := bind_list cs).
+    eapply bind. 1: exact vs. intros bvs.
+    pose (out := translate_exec_sopn o bvs).
+    exact (translate_write_lvals fn ls out). (* BSH: I'm not sure if the outputs should be truncated? *)
   - (* Cif e c1 c2 *)
     pose (e' := translate_pexpr fn e).
     pose (c1' := translate_cmd fn c1).
@@ -2295,12 +2310,8 @@ Proof.
     noconf H.
 
     reflexivity.
-  - apply app_sopn_nil_ok_size in H as Hs.
-    simpl in Hs.
-    simpl in *.
-    destruct asmop.
-    simpl in *.
-    Admitted.
+  (* assume this case is correct wrt to the chosen set of assemnly operations *)
+  - Admitted.
 
 Lemma app_sopn_list_correct (op : opN) (v : sem_t (type_of_opN op).2) (vs : values) :
   app_sopn (type_of_opN op).1 (sem_opN_typed op) vs = ok v →
