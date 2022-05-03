@@ -360,7 +360,9 @@ Definition unembed {t : stype} : encode t → sem_t t :=
   | sbool => λ x, x
   | sint => λ x, x
   | sarr n => λ x,
-      foldr (λ kv m, {| WArray.arr_data := Mz.set m.(WArray.arr_data) kv.1 kv.2 |}) (WArray.empty _) x
+    foldr (λ kv m,
+      {| WArray.arr_data := Mz.set m.(WArray.arr_data) kv.1 kv.2 |}
+    ) (WArray.empty _) x
   (* (λ kv m, Let m' := m in WArray.set8 m' kv.1 kv.2) *)
   (* (Ok _ (WArray.empty _)) x *)
   | sword n => λ x, x
@@ -1105,16 +1107,21 @@ Definition embed_ot {t} : sem_ot t → encode t :=
   end.
 
 (* takes a tuple of jasmin values and embeds each component *)
-Fixpoint embed_tuple {ts} : sem_tuple ts -> lchtuple [seq encode t | t <- ts] :=
-  match ts as ts0 return sem_tuple ts0 -> lchtuple [seq encode t | t <- ts0] with
+Fixpoint embed_tuple {ts} : sem_tuple ts → lchtuple [seq encode t | t <- ts] :=
+  match ts as ts0
+  return sem_tuple ts0 -> lchtuple [seq encode t | t <- ts0]
+  with
   | [::] => λ (_ : unit), tt
-  | t' :: ts' => let rec := @embed_tuple ts' in
-               match ts' as ts'0 return
-                     (sem_tuple ts'0 -> lchtuple [seq encode t | t <- ts'0]) ->
-                     sem_tuple (t'::ts'0) -> lchtuple [seq encode t | t <- (t'::ts'0)] with
-            | [::] => λ _ (v : sem_ot t'), embed_ot v
-            | t'' :: ts'' => λ rec (p : (sem_ot t') * (sem_tuple (t''::ts''))), (embed_ot p.1, rec p.2)
-            end rec
+  | t' :: ts' =>
+    let rec := @embed_tuple ts' in
+    match ts' as ts'0
+    return
+      (sem_tuple ts'0 -> lchtuple [seq encode t | t <- ts'0]) →
+      sem_tuple (t'::ts'0) -> lchtuple [seq encode t | t <- (t'::ts'0)]
+    with
+    | [::] => λ _ (v : sem_ot t'), embed_ot v
+    | t'' :: ts'' => λ rec (p : (sem_ot t') * (sem_tuple (t''::ts''))), (embed_ot p.1, rec p.2)
+    end rec
   end.
 
 (* this correcsponds to app_sopn, in the case where applied function can have several return values,
@@ -1123,16 +1130,17 @@ Fixpoint embed_tuple {ts} : sem_tuple ts -> lchtuple [seq encode t | t <- ts] :=
    use cases; i'm unsure if we can do the same
  *)
 Fixpoint app_sopn_list_tuple {ts_out : list stype} (ts_in  : list stype) :=
-  match ts_in as ts0 return (sem_prod ts0 (exec (sem_tuple ts_out))) → [choiceType of list typed_chElement] → lchtuple ([seq encode t | t <- ts_out]) with
+  match ts_in as ts0
+  return
+    (sem_prod ts0 (exec (sem_tuple ts_out))) →
+    [choiceType of list typed_chElement] →
+    lchtuple ([seq encode t | t <- ts_out])
+  with
   | [::] =>
     λ (o : exec (sem_tuple ts_out)) (vs : list typed_chElement),
-      match vs with
-      | [::] =>
-        match o with
-        | Ok o => embed_tuple o
-        | _ => chCanonical _
-        end
-      | _ :: _ => chCanonical _
+      match vs, o with
+      | [::], Ok o => embed_tuple o
+      | _, _ => chCanonical _
       end
   | t :: ts0 =>
     λ (o : sem_t t → sem_prod ts0 (exec (sem_tuple ts_out))) (vs : list typed_chElement),
@@ -1143,16 +1151,25 @@ Fixpoint app_sopn_list_tuple {ts_out : list stype} (ts_in  : list stype) :=
   end.
 
 (* list_ltuple *)
-Fixpoint list_lchtuple {ts} : lchtuple ([seq encode t | t <- ts]) -> [choiceType of list typed_chElement] :=
-  match ts as ts0 return lchtuple ([seq encode t | t <- ts0]) -> [choiceType of list typed_chElement] with
+Fixpoint list_lchtuple {ts} : lchtuple ([seq encode t | t <- ts]) → [choiceType of list typed_chElement] :=
+  match ts as ts0
+  return
+    lchtuple ([seq encode t | t <- ts0]) →
+    [choiceType of list typed_chElement]
+  with
   | [::] => λ _, [::]
-  | t' :: ts' => let rec := @list_lchtuple ts' in
-               match ts' as ts'0 return
-                     (lchtuple ([seq encode t | t <- ts'0]) -> [choiceType of list typed_chElement])
-                     -> lchtuple [seq encode t | t <- (t'::ts'0)] -> [choiceType of list typed_chElement] with
-                                 | [::] => λ _ (v : encode t'), [:: totce v]
-                                 | t'' :: ts'' => λ rec (p : (encode t') × (lchtuple [seq encode t | t <- (t''::ts'')])), totce p.1 :: rec p.2
-               end rec
+  | t' :: ts' =>
+    let rec := @list_lchtuple ts' in
+    match ts' as ts'0
+    return
+      (lchtuple ([seq encode t | t <- ts'0]) →
+      [choiceType of list typed_chElement]) →
+      lchtuple [seq encode t | t <- (t'::ts'0)] →
+      [choiceType of list typed_chElement]
+    with
+    | [::] => λ _ (v : encode t'), [:: totce v]
+    | t'' :: ts'' => λ rec (p : (encode t') × (lchtuple [seq encode t | t <- (t''::ts'')])), totce p.1 :: rec p.2
+    end rec
   end.
 
 (* corresponds to exec_sopn *)
@@ -2059,10 +2076,10 @@ Proof.
 Qed.
 
 Definition WArray_ext_eq {len} (a b : WArray.array len) :=
-  forall i, Mz.get a.(WArray.arr_data) i = Mz.get b.(WArray.arr_data) i.
+  ∀ i, Mz.get a.(WArray.arr_data) i = Mz.get b.(WArray.arr_data) i.
 
-Notation "a =e b" := (WArray_ext_eq a b) (at level 90).
-Notation "(=e)" := WArray_ext_eq (only parsing).
+Notation "a =ₑ b" := (WArray_ext_eq a b) (at level 90).
+Notation "(=ₑ)" := WArray_ext_eq (only parsing).
 
 Instance WArray_ext_eq_equiv {len} : Equivalence (@WArray_ext_eq len).
 Proof.
@@ -2087,7 +2104,7 @@ Qed.
 Lemma embed_unembed {t} (a : encode t) :
   embed (unembed a) = a.
 Proof.
-  destruct t; try reflexivity.
+  destruct t. 1,2,4: reflexivity.
   apply eq_fmap.
   intros x.
   unfold embed, embed_array, unembed.
@@ -2111,7 +2128,7 @@ Proof.
 Qed.
 
 Lemma unembed_embed {len} (a : sem_t (sarr len)) :
-  unembed (embed a) =e a.
+  unembed (embed a) =ₑ a.
 Proof.
   intros x.
   rewrite <- embed_array_get.
@@ -2122,21 +2139,21 @@ Proof.
   reflexivity.
 Qed.
 
-Instance unembed_embed_Proper {len} : Proper ((=e) ==> (=e)) (λ (a : sem_t (sarr len)), unembed (embed a)).
+Instance unembed_embed_Proper {len} : Proper ((=ₑ) ==> (=ₑ)) (λ (a : sem_t (sarr len)), unembed (embed a)).
 Proof.
   intros x y H.
   rewrite !unembed_embed.
   assumption.
 Qed.
 
-Instance WArray_get8_Proper {len} : Proper ((=e) ==> eq ==> eq) (@WArray.get8 len).
+Instance WArray_get8_Proper {len} : Proper ((=ₑ) ==> eq ==> eq) (@WArray.get8 len).
   intros a b H ? ? Hi.
   unfold WArray.get8, WArray.in_bound, WArray.is_init.
   rewrite H Hi.
   reflexivity.
 Qed.
 
-Instance WArray_get_Proper {len ws} : Proper ((=e) ==> eq ==> eq) (@WArray.get len AAscale ws).
+Instance WArray_get_Proper {len ws} : Proper ((=ₑ) ==> eq ==> eq) (@WArray.get len AAscale ws).
 Proof.
   intros a b H i j Hij.
   unfold WArray.get, read.
@@ -2160,7 +2177,7 @@ Proof.
 Qed.
 
 Lemma in_rcons_l {S : eqType} (a b : S) l :
-  a \in l -> a \in rcons l b.
+  a \in l → a \in rcons l b.
 Proof.
   induction l.
   - easy.
@@ -2178,20 +2195,19 @@ Proof.
       apply IHl; assumption.
 Qed.
 
-Lemma foldM_rcons eT (aT: eqType) bT (f: aT -> bT -> result eT bT) (a:aT) (b:bT) (l:list aT) :
+Lemma foldM_rcons eT (aT: eqType) bT (f: aT → bT → result eT bT) (a:aT) (b:bT) (l:list aT) :
   foldM f b (rcons l a) = Let b' := foldM f b l in f a b'.
 Proof.
-  revert a b.
-  induction l; intros.
-  - simpl; destruct (f a b); reflexivity.
+  induction l as [| c l ih] in a, b |- *.
+  - simpl. destruct (f a b). all: reflexivity.
   - simpl.
-    destruct (f a b).
-    + simpl. rewrite IHl. reflexivity.
+    destruct (f c b).
+    + simpl. rewrite ih. reflexivity.
     + reflexivity.
 Qed.
 
-Lemma eq_foldM eT (aT: eqType) bT (f1 f2: aT -> bT -> result eT bT) (b:bT) (l:list aT) :
-  (forall a b, a \in l -> f1 a b = f2 a b) ->
+Lemma eq_foldM eT (aT: eqType) bT (f1 f2: aT → bT → result eT bT) (b:bT) (l:list aT) :
+  (∀ a b, a \in l → f1 a b = f2 a b) →
   foldM f1 b l = foldM f2 b l.
 Proof.
   replace l with (rev (rev l)) by (apply revK).
@@ -2211,7 +2227,7 @@ Proof.
       assumption.
 Qed.
 
-Instance WArray_copy_Proper {ws p} : Proper ((=e) ==> eq) (@WArray.copy ws p).
+Instance WArray_copy_Proper {ws p} : Proper ((=ₑ) ==> eq) (@WArray.copy ws p).
 Proof.
   intros a b H.
   unfold WArray.copy, WArray.fcopy.
