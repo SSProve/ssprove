@@ -2778,9 +2778,40 @@ Definition exports_of_prog (p : ssprove_prog) : {fmap funname -> opsig} :=
         emptym p.
 
 Definition translate_prog : ssprove_prog :=
-  foldl (λ p f, let f' := translate_fundef (exports_of_prog p) f in
-               f' :: p)
-    [::] P.(p_funcs).
+  foldl (λ p f,
+    let f' := translate_fundef (exports_of_prog p) f in
+    f' :: p
+  ) [::] P.(p_funcs).
+
+(** Handled programs
+
+  This predicate eliminates programs that are currently not supported by the
+  translation. This is mainly used to disallow while loops.
+*)
+
+Fixpoint handled_instr (i : instr) :=
+  match i with
+  | MkI ii i => handled_instr_r i
+  end
+
+with handled_instr_r (i : instr_r) :=
+  match i with
+  | Cassgn l tag sty e => true
+  | Copn l tag o es => true
+  | Cif e c₁ c₂ => List.forallb handled_instr c₁ && List.forallb handled_instr c₂
+  | Cfor i r c => List.forallb handled_instr c
+  | Cwhile al cb e c => false
+  | Ccall ii l fn es => true
+  end.
+
+Definition handled_cmd (c : cmd) :=
+  List.forallb handled_instr c.
+
+Definition handled_fundecl (f : _ufun_decl) :=
+  handled_cmd f.2.(f_body).
+
+Definition handled_program :=
+  List.forallb handled_fundecl P.(p_funcs).
 
 Theorem translate_prog_correct (fn : funname) m va m' vr f :
   sem.sem_call P m fn va m' vr →
