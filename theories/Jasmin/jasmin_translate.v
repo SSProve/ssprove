@@ -152,6 +152,13 @@ Proof.
   - intros [] []. intuition eauto.
 Qed.
 
+(* Tactic to deal with Let _ := _ in _ = ok _ in assumption h *)
+(* x and hx are introduced names for the value and its property *)
+Ltac jbind h x hx :=
+  eapply rbindP ; [| exact h ] ;
+  clear h ; intros x hx h ;
+  cbn beta in h.
+
 Section Translation.
 
 Context `{asmop : asmOp}.
@@ -163,13 +170,6 @@ Context {pd : PointerData}.
 Context (P : uprog).
 
 Notation gd := (p_globs P).
-
-(* Tactic to deal with Let _ := _ in _ = ok _ in assumption h *)
-(* x and hx are introduced names for the value and its property *)
-Ltac jbind h x hx :=
-  eapply rbindP ; [| exact h ] ;
-  clear h ; intros x hx h ;
-  cbn beta in h.
 
 Notation " 'array " := (chMap 'int ('word U8)) (at level 2) : package_scope.
 Notation " 'array " := (chMap 'int ('word U8)) (in custom pack_type at level 2).
@@ -2097,7 +2097,7 @@ Definition WArray_ext_eq {len} (a b : WArray.array len) :=
 Notation "a =ₑ b" := (WArray_ext_eq a b) (at level 90).
 Notation "(=ₑ)" := WArray_ext_eq (only parsing).
 
-Instance WArray_ext_eq_equiv {len} : Equivalence (@WArray_ext_eq len).
+Global Instance WArray_ext_eq_equiv {len} : Equivalence (@WArray_ext_eq len).
 Proof.
   split.
   - intros x.
@@ -2155,21 +2155,21 @@ Proof.
   reflexivity.
 Qed.
 
-Instance unembed_embed_Proper {len} : Proper ((=ₑ) ==> (=ₑ)) (λ (a : sem_t (sarr len)), unembed (embed a)).
+Global Instance unembed_embed_Proper {len} : Proper ((=ₑ) ==> (=ₑ)) (λ (a : sem_t (sarr len)), unembed (embed a)).
 Proof.
   intros x y H.
   rewrite !unembed_embed.
   assumption.
 Qed.
 
-Instance WArray_get8_Proper {len} : Proper ((=ₑ) ==> eq ==> eq) (@WArray.get8 len).
+Global Instance WArray_get8_Proper {len} : Proper ((=ₑ) ==> eq ==> eq) (@WArray.get8 len).
   intros a b H ? ? Hi.
   unfold WArray.get8, WArray.in_bound, WArray.is_init.
   rewrite H Hi.
   reflexivity.
 Qed.
 
-Instance WArray_get_Proper {len ws} : Proper ((=ₑ) ==> eq ==> eq) (@WArray.get len AAscale ws).
+Global Instance WArray_get_Proper {len ws} : Proper ((=ₑ) ==> eq ==> eq) (@WArray.get len AAscale ws).
 Proof.
   intros a b H i j Hij.
   unfold WArray.get, read.
@@ -2243,7 +2243,7 @@ Proof.
       assumption.
 Qed.
 
-Instance WArray_copy_Proper {ws p} : Proper ((=ₑ) ==> eq) (@WArray.copy ws p).
+Global Instance WArray_copy_Proper {ws p} : Proper ((=ₑ) ==> eq) (@WArray.copy ws p).
 Proof.
   intros a b H.
   unfold WArray.copy, WArray.fcopy.
@@ -2252,6 +2252,9 @@ Proof.
   rewrite H.
   reflexivity.
 Qed.
+
+Context `{ asmop_correct : forall o vs vs', app_sopn (tin (asm_op_instr o)) (sopn_sem (Oasm o)) vs = ok vs'
+                                       -> app_sopn_list_tuple (tin (asm_op_instr o)) (sopn_sem (Oasm o)) [seq totce (translate_value v) | v <- vs] = embed_tuple vs' }.
 
 Lemma app_sopn_list_tuple_correct o vs vs' :
   app_sopn _ (sopn_sem o) vs = ok vs' →
@@ -2343,7 +2346,9 @@ Proof.
 
     reflexivity.
   (* assume this case is correct wrt to the chosen set of assemnly operations *)
-  - Admitted.
+  - apply asmop_correct.
+    assumption.
+Qed.
 
 Lemma list_tuple_cons_cons {t1 t2 : stype}  {ts : seq stype} (p : sem_tuple (t1 :: t2 :: ts)) :
   list_ltuple p = (oto_val p.1) :: (list_ltuple (p.2 : sem_tuple (t2 :: ts))).
@@ -3076,3 +3081,63 @@ Proof.
 Admitted.
 
 End Translation.
+
+From Jasmin Require Import x86_instr_decl x86_extra x86_gen x86_linear_sem.
+Import arch_decl.
+
+(* jbind with fresh names *)
+Ltac jbind_fresh h :=
+  eapply rbindP ; [| exact h ] ;
+  let x := fresh in
+  let hx := fresh in
+  clear h ; intros x hx h ;
+  cbn beta in h.
+
+Ltac solve_opn_intro vs H Hs :=
+  repeat (destruct vs; [progress inversion Hs|]);
+  destruct vs; [|inversion Hs];
+  simpl in *;
+  repeat jbind_fresh H;
+  noconf H.
+
+Ltac solve_opn_word vs H Hs := solve_opn_intro vs H Hs;
+                               try (erewrite translate_to_word by eassumption);
+                               reflexivity.
+
+Ltac solve_opn_inv vs H Hs := solve_opn_intro vs H Hs;
+                              repeat match goal with
+                                     | b : bool |- _ => destruct b
+                                     | H : check_size_8_64 _ = _ |- _ => noconf H
+                                     | H : check_size_16_64 _ = _ |- _ => noconf H
+                                     | H : check_size_32_64 _ = _ |- _ => noconf H
+                                     | H : id_semi _ _ = _ |- _ => noconf H
+                                     | H : id_semi _ _ _ = _ |- _ => noconf H
+                                     | H : id_semi _ _ _ _ = _ |- _ => noconf H
+                                     | H : type_error = ok _ |- _ => discriminate
+                                     | H : ok _ = ok _ |- _ => noconf H
+                                     | _ => progress erewrite ?translate_to_word, ?translate_to_bool by eassumption
+                              end; try reflexivity.
+
+Lemma x86_correct :
+  (∀ (o : asm_op_t) (vs : values) (vs' : sem_tuple (tout (sopn.get_instr_desc (Oasm o)))),
+     app_sopn (tin (asm_op_instr o)) (sopn_sem (Oasm o)) vs = ok vs'
+     → app_sopn_list_tuple (tin (asm_op_instr o)) (sopn_sem (Oasm o)) [seq to_typed_chElement (translate_value v) | v <- vs] = embed_tuple vs')  .
+Proof.
+  intros.
+  apply app_sopn_nil_ok_size in H as Hs.
+  simpl in Hs.
+  destruct o.
+  - destruct a.
+    destruct o.
+    + destruct x.
+      * destruct w, w0; solve_opn_inv vs H Hs.
+      * destruct w, w0, w1; solve_opn_inv vs H Hs.
+      * destruct w, w0, w1; solve_opn_inv vs H Hs.
+      * destruct w, w0; solve_opn_inv vs H Hs.
+      * destruct w, w0; solve_opn_inv vs H Hs.
+      * destruct w, w0; solve_opn_inv vs H Hs.
+      * destruct w, w0; solve_opn_inv vs H Hs.
+      * destruct w, w0; solve_opn_inv vs H Hs.
+      * destruct w, w0; solve_opn_inv vs H Hs.
+      * destruct w, w0; solve_opn_inv vs H Hs.
+      * Admitted.
