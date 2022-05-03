@@ -360,14 +360,9 @@ Definition unembed {t : stype} : encode t → sem_t t :=
   | sbool => λ x, x
   | sint => λ x, x
   | sarr n => λ x,
-    match
-      foldr
-        (λ kv m, Let m' := m in WArray.set m' AAscale kv.1 kv.2)
-        (Ok _ (WArray.empty _)) x
-    with
-    | Ok ar => ar
-    | _ => WArray.empty _
-    end
+      foldr (λ kv m, {| WArray.arr_data := Mz.set m.(WArray.arr_data) kv.1 kv.2 |}) (WArray.empty _) x
+  (* (λ kv m, Let m' := m in WArray.set8 m' kv.1 kv.2) *)
+  (* (Ok _ (WArray.empty _)) x *)
   | sword n => λ x, x
   end.
 
@@ -1100,6 +1095,63 @@ Fixpoint translate_for fn (i : var_i) (ws : seq Z) (c : raw_code 'unit) : raw_co
 (*       (* probably we'd look up the function signature in the current ambient program *) *)
 
 (*       (* write_lvals the result of the call into lvals `l` *) *)
+
+Definition embed_ot {t} : sem_ot t → encode t :=
+  match t with
+  | sbool => λ x, x              (* BSH: I'm not sure this will be correct? In jasmin this is an Option bool, perhaps because you don't have to specify all output flags *)
+  | sint => λ x, x
+  | sarr n => embed_array
+  | sword n => λ x, x
+  end.
+
+Fixpoint embed_tuple {ts} : sem_tuple ts -> lchtuple [seq encode t | t <- ts] :=
+  match ts as ts0 return sem_tuple ts0 -> lchtuple [seq encode t | t <- ts0] with
+  | [::] => λ (_ : unit), tt
+  | t' :: ts' => let rec := @embed_tuple ts' in
+               match ts' as ts'0 return
+                     (sem_tuple ts'0 -> lchtuple [seq encode t | t <- ts'0]) ->
+                     sem_tuple (t'::ts'0) -> lchtuple [seq encode t | t <- (t'::ts'0)] with
+            | [::] => λ _ (v : sem_ot t'), embed_ot v
+            | t'' :: ts'' => λ rec (p : (sem_ot t') * (sem_tuple (t''::ts''))), (embed_ot p.1, rec p.2)
+            end rec
+  end.
+
+Fixpoint app_sopn_list_tuple {ts_out : list stype} (ts_in  : list stype) :=
+  match ts_in as ts0 return (sem_prod ts0 (exec (sem_tuple ts_out))) → [choiceType of list typed_chElement] → lchtuple ([seq encode t | t <- ts_out]) with
+  | [::] =>
+    λ (o : exec (sem_tuple ts_out)) (vs : list typed_chElement),
+      match vs with
+      | [::] =>
+        match o with
+        | Ok o => embed_tuple o
+        | _ => chCanonical _
+        end
+      | _ :: _ => chCanonical _
+      end
+  | t :: ts0 =>
+    λ (o : sem_t t → sem_prod ts0 (exec (sem_tuple ts_out))) (vs : list typed_chElement),
+      match vs with
+      | [::] => chCanonical _
+      | v :: vs0 => app_sopn_list_tuple ts0 (o (unembed (truncate_el t v.π2))) vs0
+      end
+  end.
+
+(* list_ltuple *)
+Fixpoint list_lchtuple {ts} : lchtuple ([seq encode t | t <- ts]) -> [choiceType of list typed_chElement] :=
+  match ts as ts0 return lchtuple ([seq encode t | t <- ts0]) -> [choiceType of list typed_chElement] with
+  | [::] => λ _, [::]
+  | t' :: ts' => let rec := @list_lchtuple ts' in
+               match ts' as ts'0 return
+                     (lchtuple ([seq encode t | t <- ts'0]) -> [choiceType of list typed_chElement])
+                     -> lchtuple [seq encode t | t <- (t'::ts'0)] -> [choiceType of list typed_chElement] with
+                                 | [::] => λ _ (v : encode t'), [:: totce v]
+                                 | t'' :: ts'' => λ rec (p : (encode t') × (lchtuple [seq encode t | t <- (t''::ts'')])), totce p.1 :: rec p.2
+               end rec
+  end.
+
+(* corresponds to exec_sopn *)
+Definition translate_exec_sopn (o : sopn) (vs : seq typed_chElement) :=
+  list_lchtuple (app_sopn_list_tuple _ (sopn_sem o) vs).
 
 Fixpoint translate_instr_r (prog_exports : {fmap funname -> opsig}) (fn : funname) (i : instr_r) {struct i} : raw_code 'unit
 
@@ -1982,6 +2034,265 @@ Proof.
     jbind h v1 hv.
     f_equal. eapply ih. eassumption.
 Qed.
+
+Definition WArray_ext_eq {len} (a b : WArray.array len) :=
+  forall i, Mz.get a.(WArray.arr_data) i = Mz.get b.(WArray.arr_data) i.
+
+Notation "a =e b" := (WArray_ext_eq a b) (at level 90).
+Notation "(=e)" := WArray_ext_eq (only parsing).
+
+Instance WArray_ext_eq_equiv {len} : Equivalence (@WArray_ext_eq len).
+Proof.
+  split.
+  - intros x.
+    unfold WArray_ext_eq.
+    intros.
+    reflexivity.
+  - intros x y H.
+    unfold WArray_ext_eq.
+    intros.
+    rewrite H.
+    reflexivity.
+  - intros x y z H1 H2.
+    unfold WArray_ext_eq.
+    intros.
+    rewrite H1.
+    rewrite H2.
+    reflexivity.
+Qed.
+
+Lemma embed_unembed {t} (a : encode t) :
+  embed (unembed a) = a.
+Proof.
+  destruct t; try reflexivity.
+  apply eq_fmap.
+  intros x.
+  unfold embed, embed_array, unembed.
+  rewrite fold_get.
+  simpl in *.
+  destruct a.
+  cbn.
+  induction fmval; intros; simpl in *.
+  - rewrite Mz.get0. reflexivity.
+  - rewrite Mz.setP.
+    rewrite eq_sym.
+    destruct (_ == _)%B eqn:E.
+    + move: E => /eqP ->.
+      rewrite eq_refl.
+      reflexivity.
+    + destruct (@eq_op (Ord.eqType Z_ordType) _ _)%B eqn:E2.
+      { move: E2 E => /eqP ->. rewrite eq_refl. easy. }
+      apply IHfmval.
+      eapply path_sorted.
+      eassumption.
+Qed.
+
+Lemma unembed_embed {len} (a : sem_t (sarr len)) :
+  unembed (embed a) =e a.
+Proof.
+  intros x.
+  rewrite <- embed_array_get.
+  change (embed_array (unembed (embed a))) with (embed (unembed (embed a))).
+  rewrite embed_unembed.
+  unfold embed, embed_array.
+  rewrite fold_get.
+  reflexivity.
+Qed.
+
+Instance unembed_embed_Proper {len} : Proper ((=e) ==> (=e)) (λ (a : sem_t (sarr len)), unembed (embed a)).
+Proof.
+  intros x y H.
+  rewrite !unembed_embed.
+  assumption.
+Qed.
+
+Instance WArray_get8_Proper {len} : Proper ((=e) ==> eq ==> eq) (@WArray.get8 len).
+  intros a b H ? ? Hi.
+  unfold WArray.get8, WArray.in_bound, WArray.is_init.
+  rewrite H Hi.
+  reflexivity.
+Qed.
+
+Instance WArray_get_Proper {len ws} : Proper ((=e) ==> eq ==> eq) (@WArray.get len AAscale ws).
+Proof.
+  intros a b H i j Hij.
+  unfold WArray.get, read.
+  rewrite Hij.
+  destruct is_align. 2: reflexivity.
+  simpl. f_equal.
+  apply eq_mapM. intros.
+  rewrite H.
+  reflexivity.
+Qed.
+
+(* this should be moved to the jasmin repo *)
+Lemma in_rcons_r {S : eqType} (a : S) l :
+  a \in rcons l a.
+Proof.
+  induction l.
+  - apply mem_head.
+  - simpl.
+    rewrite in_cons IHl.
+    by apply /orP; right.
+Qed.
+
+Lemma in_rcons_l {S : eqType} (a b : S) l :
+  a \in l -> a \in rcons l b.
+Proof.
+  induction l.
+  - easy.
+  - intros.
+    rewrite in_cons in H.
+    move: H => /orP [].
+    + move=> /eqP ->.
+      rewrite rcons_cons.
+      rewrite in_cons.
+      by apply /orP; left.
+    + move=> H.
+      rewrite rcons_cons.
+      rewrite in_cons.
+      apply /orP; right.
+      apply IHl; assumption.
+Qed.
+
+Lemma foldM_rcons eT (aT: eqType) bT (f: aT -> bT -> result eT bT) (a:aT) (b:bT) (l:list aT) :
+  foldM f b (rcons l a) = Let b' := foldM f b l in f a b'.
+Proof.
+  revert a b.
+  induction l; intros.
+  - simpl; destruct (f a b); reflexivity.
+  - simpl.
+    destruct (f a b).
+    + simpl. rewrite IHl. reflexivity.
+    + reflexivity.
+Qed.
+
+Lemma eq_foldM eT (aT: eqType) bT (f1 f2: aT -> bT -> result eT bT) (b:bT) (l:list aT) :
+  (forall a b, a \in l -> f1 a b = f2 a b) ->
+  foldM f1 b l = foldM f2 b l.
+Proof.
+  replace l with (rev (rev l)) by (apply revK).
+  set (l' := rev l).
+  induction l'; intros.
+  - reflexivity.
+  - rewrite rev_cons.
+    rewrite !foldM_rcons.
+    rewrite IHl'.
+    + destruct (foldM f2 b (rev l')). 2: reflexivity.
+      apply H.
+      rewrite rev_cons.
+      apply in_rcons_r.
+    + intros. apply H.
+      rewrite rev_cons.
+      apply in_rcons_l.
+      assumption.
+Qed.
+
+Instance WArray_copy_Proper {ws p} : Proper ((=e) ==> eq) (@WArray.copy ws p).
+Proof.
+  intros a b H.
+  unfold WArray.copy, WArray.fcopy.
+  apply eq_foldM.
+  intros.
+  rewrite H.
+  reflexivity.
+Qed.
+
+Lemma app_sopn_list_tuple_correct o vs vs' :
+  app_sopn _ (sopn_sem o) vs = ok vs' →
+  app_sopn_list_tuple
+    _
+    (sopn_sem o)
+    [seq to_typed_chElement (translate_value v) | v <- vs]
+  =
+  embed_tuple vs'.
+Proof.
+  intro H.
+  destruct o as [ ws p | | | | | ].
+  - apply app_sopn_nil_ok_size in H as Hs.
+    simpl in Hs.
+    destruct vs. 1: inversion Hs.
+    destruct vs. 2: inversion Hs.
+    cbn -[wsize_size app_sopn_list_tuple].
+    cbn [app_sopn_list_tuple].
+
+    jbind H vs'' Hv''.
+    simpl in H.
+    unfold sopn_sem in H.
+
+    cbn -[wsize_size WArray.copy unembed truncate_el].
+    erewrite translate_of_val by eassumption.
+    rewrite coerce_to_choice_type_K.
+    rewrite translate_value_to_val.
+    rewrite eq_rect_r_K.
+    cbn -[wsize_size ziota] in H.
+    rewrite unembed_embed.
+    rewrite H.
+    reflexivity.
+  - simpl; destruct map; reflexivity.
+  - apply app_sopn_nil_ok_size in H as Hs.
+    simpl in Hs.
+    destruct vs. 1: inversion Hs.
+    destruct vs. 1: inversion Hs.
+    destruct vs. 2: inversion Hs.
+
+    simpl in *.
+    jbind H v' Hv'.
+    jbind H v'' Hv''.
+    erewrite translate_to_word by eassumption.
+    erewrite translate_to_word by eassumption.
+
+    unfold sopn_sem in H.
+    simpl in H.
+    noconf H.
+
+    reflexivity.
+  - apply app_sopn_nil_ok_size in H as Hs.
+    simpl in Hs.
+    destruct vs. 1: inversion Hs.
+    destruct vs. 1: inversion Hs.
+    destruct vs. 1: inversion Hs.
+    destruct vs. 2: inversion Hs.
+
+    simpl in *.
+    jbind H v' Hv'.
+    jbind H v'' Hv''.
+    jbind H v''' Hv'''.
+    erewrite translate_to_word by eassumption.
+    erewrite translate_to_word by eassumption.
+    erewrite translate_to_bool by eassumption.
+
+    unfold sopn_sem in H.
+    simpl in H.
+    noconf H.
+
+    reflexivity.
+  - apply app_sopn_nil_ok_size in H as Hs.
+    simpl in Hs.
+    destruct vs. 1: inversion Hs.
+    destruct vs. 1: inversion Hs.
+    destruct vs. 1: inversion Hs.
+    destruct vs. 2: inversion Hs.
+
+    simpl in *.
+    jbind H v' Hv'.
+    jbind H v'' Hv''.
+    jbind H v''' Hv'''.
+    erewrite translate_to_word by eassumption.
+    erewrite translate_to_word by eassumption.
+    erewrite translate_to_bool by eassumption.
+
+    unfold sopn_sem in H.
+    simpl in H.
+    noconf H.
+
+    reflexivity.
+  - apply app_sopn_nil_ok_size in H as Hs.
+    simpl in Hs.
+    simpl in *.
+    destruct asmop.
+    simpl in *.
+    Admitted.
 
 Lemma app_sopn_list_correct (op : opN) (v : sem_t (type_of_opN op).2) (vs : values) :
   app_sopn (type_of_opN op).1 (sem_opN_typed op) vs = ok v →
