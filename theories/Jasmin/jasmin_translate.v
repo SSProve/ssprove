@@ -2644,6 +2644,32 @@ Proof.
       apply translate_truncate_val. assumption.
 Qed.
 
+Lemma translate_pexprs_correct fn s vs es :
+  sem_pexprs gd s es = ok vs ->
+  List.Forall2 (λ c v, ⊢ ⦃ rel_estate s fn ⦄ c.π2 ⇓ coerce_to_choice_type _ (translate_value v) ⦃ rel_estate s fn ⦄) [seq translate_pexpr fn e | e <- es] vs.
+Proof.
+  revert vs. induction es; intros vs hvs.
+  - destruct vs.
+    + constructor.
+    + inversion hvs.
+  - destruct vs.
+    + inversion hvs.
+      jbind H0 vs' hvs'.
+      jbind H0 vs'' hvs''.
+      noconf H0.
+    + inversion hvs.
+      jbind H0 vs' hvs'.
+      jbind H0 vs'' hvs''.
+      noconf H0.
+      rewrite map_cons.
+      constructor.
+      * eapply translate_pexpr_correct.
+        1: eassumption.
+        easy.
+      * eapply IHes.
+        assumption.
+Qed.
+
 Corollary translate_pexpr_correct_cast :
   ∀ fn (e : pexpr) s₁ v (cond : heap → Prop),
     sem_pexpr gd s₁ e = ok v →
@@ -2979,28 +3005,8 @@ Proof.
       * rewrite <- map_comp. unfold comp.
         eapply translate_pexprs_types.
         eassumption.
-      * clear -vs' hv'.
-        revert vs' hv'.
-        induction es; intros vs hvs.
-        ** destruct vs.
-           *** constructor.
-           *** inversion hvs.
-        ** destruct vs.
-           *** inversion hvs.
-               jbind H0 vs' hvs'.
-               jbind H0 vs'' hvs''.
-               noconf H0.
-           *** inversion hvs.
-               jbind H0 vs' hvs'.
-               jbind H0 vs'' hvs''.
-               noconf H0.
-               rewrite map_cons.
-               constructor.
-               **** eapply translate_pexpr_correct.
-                    1: eassumption.
-                    easy.
-               **** eapply IHes.
-                    assumption.
+      * apply translate_pexprs_correct.
+        assumption.
     + erewrite translate_exec_sopn_correct by eassumption.
       apply translate_write_lvals_correct.
       assumption.
