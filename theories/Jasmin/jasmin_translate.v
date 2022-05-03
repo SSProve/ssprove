@@ -2865,11 +2865,43 @@ Definition exports_of_prog (p : ssprove_prog) : {fmap funname -> opsig} :=
         emptym p.
 
 Definition translate_prog : ssprove_prog :=
-  foldl (λ p f, let f' := translate_fundef (exports_of_prog p) f in
-               f' :: p)
-    [::] P.(p_funcs).
+  foldl (λ p f,
+    let f' := translate_fundef (exports_of_prog p) f in
+    f' :: p
+  ) [::] P.(p_funcs).
+
+(** Handled programs
+
+  This predicate eliminates programs that are currently not supported by the
+  translation. This is mainly used to disallow while loops.
+*)
+
+Fixpoint handled_instr (i : instr) :=
+  match i with
+  | MkI ii i => handled_instr_r i
+  end
+
+with handled_instr_r (i : instr_r) :=
+  match i with
+  | Cassgn l tag sty e => true
+  | Copn l tag o es => true
+  | Cif e c₁ c₂ => List.forallb handled_instr c₁ && List.forallb handled_instr c₂
+  | Cfor i r c => List.forallb handled_instr c
+  | Cwhile al cb e c => false
+  | Ccall ii l fn es => true
+  end.
+
+Definition handled_cmd (c : cmd) :=
+  List.forallb handled_instr c.
+
+Definition handled_fundecl (f : _ufun_decl) :=
+  handled_cmd f.2.(f_body).
+
+Definition handled_program :=
+  List.forallb handled_fundecl P.(p_funcs).
 
 Theorem translate_prog_correct (fn : funname) m va m' vr f :
+  handled_program →
   sem.sem_call P m fn va m' vr →
   let sp := translate_prog in
   let dom := lchtuple (map choice_type_of_val va) in
@@ -2879,15 +2911,15 @@ Theorem translate_prog_correct (fn : funname) m va m' vr f :
     f (translate_values va) ⇓ translate_values vr
   ⦃ λ m, True ⦄.
 Proof.
-  intros H.
+  intros hP H.
   set (Pfun :=
     λ (m : mem) (fn : funname) (va : seq value) (m' : mem) (vr : seq value),
       ∀ f,
+        handled_program →
         let sp := translate_prog in
         let dom := lchtuple [seq choice_type_of_val i | i <- va] in
         let cod := lchtuple [seq choice_type_of_val i | i <- vr] in
         get_fundef_ssp sp fn dom cod = Some f →
-        (* satisfies_globs (p_globs p) (translate_mem m, translate_mem m') → *)
         ⊢ ⦃ λ m, True ⦄
           f (translate_values va) ⇓ translate_values vr
         ⦃ λ m, True ⦄
@@ -2895,17 +2927,20 @@ Proof.
   set (ep := exports_of_prog translate_prog).
   set (Pi_r :=
     λ (s1 : estate) (i : instr_r) (s2 : estate),
+      handled_instr_r i →
       ⊢ ⦃ rel_estate s1 fn ⦄
         translate_instr_r ep fn i ⇓ tt
       ⦃ rel_estate s2 fn ⦄
   ).
-  set (Pi := λ s1 i s2, (Pi_r s1 (instr_d i) s2)).
+  set (Pi := λ s1 i s2, Pi_r s1 (instr_d i) s2).
   set (Pc :=
     λ (s1 : estate) (c : cmd) (s2 : estate),
+      handled_cmd c →
       ⊢ ⦃ rel_estate s1 fn ⦄ translate_cmd ep fn c ⇓ tt ⦃ rel_estate s2 fn ⦄
   ).
   set (Pfor :=
     λ (v : var_i) (ws : seq Z) (s1 : estate) (c : cmd) (s2 : estate),
+      handled_cmd c →
       ⊢ ⦃ rel_estate s1 fn ⦄
         translate_for fn v ws (translate_cmd ep fn c) ⇓ tt
       ⦃ rel_estate s2 fn ⦄
@@ -2913,20 +2948,21 @@ Proof.
   unshelve eapply (@sem_call_Ind _ _ _ _ Pc Pi_r Pi Pfor Pfun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H).
   - (* nil *)
     red. intros s.
-    red. simpl.
+    red. simpl. intros _.
     eapply u_ret_eq. auto.
   - (* cons *)
     red. intros s1 s2 s3 i c hi ihi hc ihc.
-    red. simpl.
+    red. simpl. move /andP => [hdi hdc].
     eapply u_bind.
     + rewrite translate_instr_unfold. eapply ihi.
-    + eassumption.
+      destruct i. apply hdi.
+    + apply ihc. assumption.
   - (* mkI *)
     red. intros ii i s1 s2 hi ihi.
     apply ihi.
   - (* assgn *)
     red. intros s₁ s₂ x tag ty e v v' he hv hw.
-    red. simpl.
+    red. simpl. intros _.
     eapply u_bind.
     1:{ eapply translate_pexpr_correct. all: eauto. }
     erewrite translate_pexpr_type by eassumption.
@@ -2970,37 +3006,33 @@ Proof.
       assumption.
   - (* if_true *)
     red. intros s1 s2 e c1 c2 he hc1 ihc1.
-    red. simpl.
+    red. simpl. move /andP => [hdc1 hdc2].
     lazymatch goal with
     | |- context [ if _ then ?f ?fn ?c else _ ] =>
       change (f fn c) with (translate_cmd ep fn c)
     end.
     eapply u_bind.
     1:{ eapply translate_pexpr_correct_cast in he. all: eauto. }
-    simpl. eapply ihc1.
+    simpl. apply ihc1. assumption.
   - (* if_false *)
     red. intros s1 s2 e c1 c2 he hc2 ihc2.
-    red. simpl.
+    red. simpl. move /andP => [hdc1 hdc2].
     (* lazymatch goal with
     | |- context [ if _ then _ else (?f ?fn ?c) ] =>
       change (f fn c) with (translate_cmd ep fn c)
     end. *)
     eapply u_bind.
     1:{ eapply translate_pexpr_correct_cast in he. all: eauto. }
-    simpl. eapply ihc2.
+    simpl. apply ihc2. assumption.
   - (* while_true *)
     red. intros s1 s2 s3 s4 a c e c' hc ihc he hc' ihc' h ih.
-    red in ih. simpl in ih.
-    (* TODO Lemma to draw a contradiction from ih *)
-    admit.
+    red. simpl. discriminate.
   - (* while_false *)
     red. intros s1 s2 a c e c' hc ihc he.
-    red. simpl.
-    (* We could replace while by an if to solve this case *)
-    give_up.
+    red. simpl. discriminate.
   - (* for *)
     red. intros s1 s2 i d lo hi c vlo vhi hlo hhi hfor ihfor.
-    red. simpl.
+    red. simpl. intros hdc.
     lazymatch goal with
     | |- context [ translate_for _ _ _ (?f ?fn ?c) ] =>
       change (f fn c) with (translate_cmd ep fn c)
@@ -3009,28 +3041,29 @@ Proof.
     1:{ eapply translate_pexpr_correct_cast in hlo. all: eauto. }
     eapply u_bind.
     1:{ eapply translate_pexpr_correct_cast in hhi. all: eauto. }
-    apply ihfor.
+    apply ihfor. assumption.
   - (* for_nil *)
-    red. intros. red.
+    red. intros. red. intros hdc.
     simpl. apply u_ret_eq. auto.
   - (* for_cons *)
     red. intros s1 s1' s2 s3 i w ws c hw hc ihc hfor ihfor.
-    red. simpl.
+    red. simpl. intros hdc.
     eapply u_put.
     eapply u_bind.
     1:{
       red in ihc. eapply u_pre_weaken_rule.
-      1: eapply ihc.
+      1: eapply ihc. 1: assumption.
       intros ? [me [hme ?]]. subst.
       eapply translate_write_var_estate. all: eassumption.
     }
-    apply ihfor.
+    apply ihfor. assumption.
   - (* call *)
     red. intros s1 m2 s2 ii xs gn args vargs vs hargs hvs ihvs hw.
-    red. simpl. admit.
+    red. simpl. intros _.
+    admit.
   - red. intros m1 m2 gn g vs vs' s1 vm2 vrs vrs'.
     intros hg hvs ?????.
-    unfold Pfun. intros f' hf'.
+    unfold Pfun. intros f' hdp hf'.
     (* Maybe have a dedicated lemma linking to hg? *)
     unfold get_fundef_ssp in hf'.
     admit.
