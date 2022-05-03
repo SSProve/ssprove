@@ -1100,7 +1100,11 @@ Fixpoint translate_for fn (i : var_i) (ws : seq Z) (c : raw_code 'unit) : raw_co
 
 Definition embed_ot {t} : sem_ot t → encode t :=
   match t with
-  | sbool => λ x, x              (* BSH: I'm not sure this will be correct? In jasmin this is an Option bool, perhaps because you don't have to specify all output flags *)
+  (* BSH: I'm not sure this will be correct? In jasmin this is an Option bool, perhaps because you don't have to specify all output flags *)
+  | sbool => λ x, match x with
+                 | Some b => b
+                 | None => false
+                 end
   | sint => λ x, x
   | sarr n => embed_array
   | sword n => λ x, x
@@ -1176,15 +1180,27 @@ Fixpoint list_lchtuple {ts} : lchtuple ([seq encode t | t <- ts]) → [choiceTyp
 Definition translate_exec_sopn (o : sopn) (vs : seq typed_chElement) :=
   list_lchtuple (app_sopn_list_tuple _ (sopn_sem o) vs).
 
-Fixpoint translate_write_lvals (fn : funname) (ls : lvals) (vs : list typed_chElement) :=
-  match ls with
-  | [::] => ret tt
-  | l :: ls => match vs with
-             | [::] => ret tt
-             | v :: vs => translate_write_lval fn l v ;;
-                        translate_write_lvals fn ls vs
-             end
+Fixpoint foldl2 {A B R} (f : R -> A -> B -> R) (la : seq A) (lb : seq B) r :=
+  match la with
+  | [::] => r
+  | a :: la0 => match lb with
+              | [::] => r
+              | b :: lb0 => foldl2 f la0 lb0 (f r a b)
+              end
   end.
+
+Fixpoint foldr2 {A B R} (f : A -> B -> R -> R) (la : seq A) (lb : seq B) r :=
+  match la with
+  | [::] => r
+  | a :: la0 => match lb with
+              | [::] => r
+              | b :: lb0 => f a b (foldr2 f la0 lb0 r)
+              end
+  end.
+
+Definition translate_write_lvals fn ls vs :=
+  (* foldl2 (λ c l v, translate_write_lval fn l v ;; c) ls vs (ret tt). *)
+  foldr2 (λ l v c, translate_write_lval fn l v ;; c) ls vs (ret tt).
 
 Fixpoint translate_instr_r (prog_exports : {fmap funname -> opsig}) (fn : funname) (i : instr_r) {struct i} : raw_code 'unit
 
@@ -2329,6 +2345,46 @@ Proof.
   (* assume this case is correct wrt to the chosen set of assemnly operations *)
   - Admitted.
 
+Lemma list_tuple_cons_cons {t1 t2 : stype}  {ts : seq stype} (p : sem_tuple (t1 :: t2 :: ts)) :
+  list_ltuple p = (oto_val p.1) :: (list_ltuple (p.2 : sem_tuple (t2 :: ts))).
+Proof. reflexivity. Qed.
+
+Lemma embed_tuple_cons_cons {t1 t2 : stype}  {ts : seq stype} (p : sem_tuple (t1 :: t2 :: ts)) :
+  embed_tuple p = (embed_ot p.1, embed_tuple (p.2 : sem_tuple (t2 :: ts))).
+Proof. reflexivity. Qed.
+
+Lemma list_lchtuple_cons_cons {t1 t2 : stype}  {ts : seq stype} (p1 : encode t1) (p2 : lchtuple [seq encode t | t <- (t2 :: ts)]) :
+  list_lchtuple ((p1, p2) : lchtuple [seq encode t | t <- (t1 :: t2 :: ts)]) = (totce p1) :: (list_lchtuple p2).
+Proof. reflexivity. Qed.
+
+Lemma translate_exec_sopn_correct (o : sopn) (ins outs : values) :
+  exec_sopn o ins = ok outs ->
+  translate_exec_sopn o [seq totce (translate_value v) | v <- ins] = [seq totce (translate_value v) | v <- outs].
+Proof.
+  intros.
+  unfold translate_exec_sopn.
+  jbind H vs Hvs.
+  noconf H.
+  erewrite app_sopn_list_tuple_correct by eassumption.
+  clear Hvs.
+  induction tout.
+  - reflexivity.
+  - destruct l.
+    + destruct a; destruct vs; reflexivity.
+    + rewrite list_tuple_cons_cons.
+      rewrite embed_tuple_cons_cons.
+      rewrite list_lchtuple_cons_cons.
+      rewrite map_cons.
+      rewrite IHl.
+      f_equal.
+      destruct vs; simpl.
+      destruct a.
+      * destruct s0; reflexivity.
+      * reflexivity.
+      * reflexivity.
+      * reflexivity.
+Qed.
+
 Lemma app_sopn_list_correct (op : opN) (v : sem_t (type_of_opN op).2) (vs : values) :
   app_sopn (type_of_opN op).1 (sem_opN_typed op) vs = ok v →
   app_sopn_list
@@ -2771,6 +2827,37 @@ Proof.
   - admit.
 Admitted.
 
+Lemma translate_write_lvals_cons fn l ls v vs :
+  translate_write_lvals fn (l :: ls) (v :: vs) = (translate_write_lval fn l v ;; translate_write_lvals fn ls vs).
+Proof. reflexivity. Qed.
+
+Lemma translate_write_lvals_correct fn s1 ls vs s2 :
+  write_lvals gd s1 ls vs = ok s2 ->
+  ⊢ ⦃ rel_estate s1 fn ⦄
+     translate_write_lvals fn ls [seq totce (translate_value v) | v <- vs]
+  ⇓
+     tt
+  ⦃ rel_estate s2 fn ⦄.
+Proof.
+  intros.
+  revert s1 vs H.
+  induction ls as [| l ls]; intros s1 vs H.
+  - destruct vs. 2: discriminate.
+    noconf H.
+    apply u_ret_eq.
+    easy.
+  - destruct vs. 1: inversion H.
+    inversion H.
+    jbind H1 s3 Hs3.
+    rewrite map_cons.
+    rewrite translate_write_lvals_cons.
+    eapply u_bind.
+    + eapply translate_write_lval_correct.
+      eassumption.
+    + apply IHls.
+      assumption.
+Qed.
+
 Definition ssprove_prog := seq (funname * fdef).
 
 Definition exports_of_prog (p : ssprove_prog) : {fmap funname -> opsig} :=
@@ -2848,7 +2935,39 @@ Proof.
     eapply translate_write_lval_correct. all: eauto.
   - (* opn *)
     red. intros s1 s2 tag o xs es ho.
-    red. simpl. admit.
+    red. simpl.
+    jbind ho vs hv.
+    jbind hv vs' hv'.
+    eapply u_bind.
+    + eapply bind_list_correct.
+      * rewrite <- map_comp. unfold comp.
+        eapply translate_pexprs_types.
+        eassumption.
+      * clear -vs' hv'.
+        revert vs' hv'.
+        induction es; intros vs hvs.
+        ** destruct vs.
+           *** constructor.
+           *** inversion hvs.
+        ** destruct vs.
+           *** inversion hvs.
+               jbind H0 vs' hvs'.
+               jbind H0 vs'' hvs''.
+               noconf H0.
+           *** inversion hvs.
+               jbind H0 vs' hvs'.
+               jbind H0 vs'' hvs''.
+               noconf H0.
+               rewrite map_cons.
+               constructor.
+               **** eapply translate_pexpr_correct.
+                    1: eassumption.
+                    easy.
+               **** eapply IHes.
+                    assumption.
+    + erewrite translate_exec_sopn_correct by eassumption.
+      apply translate_write_lvals_correct.
+      assumption.
   - (* if_true *)
     red. intros s1 s2 e c1 c2 he hc1 ihc1.
     red. simpl.
