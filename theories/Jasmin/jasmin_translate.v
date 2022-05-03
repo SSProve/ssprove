@@ -1104,6 +1104,7 @@ Definition embed_ot {t} : sem_ot t → encode t :=
   | sword n => λ x, x
   end.
 
+(* takes a tuple of jasmin values and embeds each component *)
 Fixpoint embed_tuple {ts} : sem_tuple ts -> lchtuple [seq encode t | t <- ts] :=
   match ts as ts0 return sem_tuple ts0 -> lchtuple [seq encode t | t <- ts0] with
   | [::] => λ (_ : unit), tt
@@ -1116,6 +1117,11 @@ Fixpoint embed_tuple {ts} : sem_tuple ts -> lchtuple [seq encode t | t <- ts] :=
             end rec
   end.
 
+(* this correcsponds to app_sopn, in the case where applied function can have several return values,
+   as opposed to app_sopn_list which is used in the case where there is only one return value
+   (e.g. in expressions). In jasmin they manage to only have one function (app_sopn) for these two
+   use cases; i'm unsure if we can do the same
+ *)
 Fixpoint app_sopn_list_tuple {ts_out : list stype} (ts_in  : list stype) :=
   match ts_in as ts0 return (sem_prod ts0 (exec (sem_tuple ts_out))) → [choiceType of list typed_chElement] → lchtuple ([seq encode t | t <- ts_out]) with
   | [::] =>
