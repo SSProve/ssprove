@@ -811,25 +811,25 @@ Proof.
     + exact (translate_value v, tr_vs).
 Defined.
 
-Fixpoint app_sopn_list {S} (ts : list stype) :=
+Fixpoint tr_app_sopn {R} {S : R} (dec : R -> Type) (enc : R -> Type) (can : enc S) (emb : dec S -> enc S) (ts : list stype) :=
   match ts as ts0
-  return (sem_prod ts0 (exec (sem_t S)) → [choiceType of list typed_chElement] → encode S)
+  return (sem_prod ts0 (exec (dec S)) → [choiceType of list typed_chElement] → enc S)
   with
   | [::] =>
-    λ (o : exec (sem_t S)) (vs : list typed_chElement),
+    λ (o : exec (dec S)) (vs : list typed_chElement),
       match vs with
       | [::] =>
         match o with
-        | Ok o => embed o
-        | _ => chCanonical _
+        | Ok o => emb o
+        | _ => can
         end
-      | _ :: _ => chCanonical _
+      | _ :: _ => can
       end
   | t :: ts0 =>
-    λ (o : sem_t t → sem_prod ts0 (exec (sem_t S))) (vs : list typed_chElement),
+    λ (o : sem_t t → sem_prod ts0 (exec (dec S))) (vs : list typed_chElement),
       match vs with
-      | [::] => chCanonical _
-      | v :: vs0 => app_sopn_list ts0 (o (unembed (truncate_el t v.π2))) vs0
+      | [::] => can
+      | v :: vs0 => tr_app_sopn dec enc can emb ts0 (o (unembed (truncate_el t v.π2))) vs0
       end
   end.
 
@@ -893,6 +893,41 @@ End bind_list_alt.
 
 Notation totce := to_typed_chElement.
 
+Definition embed_ot {t} : sem_ot t → encode t :=
+  match t with
+  (* BSH: I'm not sure this will be correct? In jasmin this is an Option bool, perhaps because you don't have to specify all output flags *)
+  | sbool => λ x,
+    match x with
+    | Some b => b
+    | None => false
+    end
+  | sint => λ x, x
+  | sarr n => embed_array
+  | sword n => λ x, x
+  end.
+
+(* takes a tuple of jasmin values and embeds each component *)
+Fixpoint embed_tuple {ts} : sem_tuple ts → lchtuple [seq encode t | t <- ts] :=
+  match ts as ts0
+  return sem_tuple ts0 -> lchtuple [seq encode t | t <- ts0]
+  with
+  | [::] => λ (_ : unit), tt
+  | t' :: ts' =>
+    let rec := @embed_tuple ts' in
+    match ts' as ts'0
+    return
+      (sem_tuple ts'0 -> lchtuple [seq encode t | t <- ts'0]) →
+      sem_tuple (t'::ts'0) -> lchtuple [seq encode t | t <- (t'::ts'0)]
+    with
+    | [::] => λ _ (v : sem_ot t'), embed_ot v
+    | t'' :: ts'' => λ rec (p : (sem_ot t') * (sem_tuple (t''::ts''))), (embed_ot p.1, rec p.2)
+    end rec
+  end.
+
+(* tr_app_sopn specialized to when there is only one return value *)
+Definition tr_app_sopn_single {S} := tr_app_sopn sem_t encode (chCanonical (encode S)) embed.
+(* tr_app_sopn specialized to when there is several return values *)
+Definition tr_app_sopn_tuple {ts_out} := tr_app_sopn sem_tuple (λ ts, lchtuple [seq encode t | t <- ts]) (chCanonical (lchtuple [seq encode t | t <- ts_out])) embed_tuple.
 
 (* Following sem_pexpr *)
 Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
@@ -953,7 +988,7 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
        *)
     totc _ (
       vs ← bind_list [seq translate_pexpr fn e | e <- es] ;;
-      ret (app_sopn_list (type_of_opN op).1 (sem_opN_typed op) vs)
+      ret (tr_app_sopn_single (type_of_opN op).1 (sem_opN_typed op) vs)
     )
   | Pif t eb e1 e2 =>
     totc _ (
@@ -1098,63 +1133,6 @@ Fixpoint translate_for fn (i : var_i) (ws : seq Z) (c : raw_code 'unit) : raw_co
 
 (*       (* write_lvals the result of the call into lvals `l` *) *)
 
-Definition embed_ot {t} : sem_ot t → encode t :=
-  match t with
-  (* BSH: I'm not sure this will be correct? In jasmin this is an Option bool, perhaps because you don't have to specify all output flags *)
-  | sbool => λ x,
-    match x with
-    | Some b => b
-    | None => false
-    end
-  | sint => λ x, x
-  | sarr n => embed_array
-  | sword n => λ x, x
-  end.
-
-(* takes a tuple of jasmin values and embeds each component *)
-Fixpoint embed_tuple {ts} : sem_tuple ts → lchtuple [seq encode t | t <- ts] :=
-  match ts as ts0
-  return sem_tuple ts0 -> lchtuple [seq encode t | t <- ts0]
-  with
-  | [::] => λ (_ : unit), tt
-  | t' :: ts' =>
-    let rec := @embed_tuple ts' in
-    match ts' as ts'0
-    return
-      (sem_tuple ts'0 -> lchtuple [seq encode t | t <- ts'0]) →
-      sem_tuple (t'::ts'0) -> lchtuple [seq encode t | t <- (t'::ts'0)]
-    with
-    | [::] => λ _ (v : sem_ot t'), embed_ot v
-    | t'' :: ts'' => λ rec (p : (sem_ot t') * (sem_tuple (t''::ts''))), (embed_ot p.1, rec p.2)
-    end rec
-  end.
-
-(* this correcsponds to app_sopn, in the case where applied function can have several return values,
-   as opposed to app_sopn_list which is used in the case where there is only one return value
-   (e.g. in expressions). In jasmin they manage to only have one function (app_sopn) for these two
-   use cases; i'm unsure if we can do the same
- *)
-Fixpoint app_sopn_list_tuple {ts_out : list stype} (ts_in  : list stype) :=
-  match ts_in as ts0
-  return
-    (sem_prod ts0 (exec (sem_tuple ts_out))) →
-    [choiceType of list typed_chElement] →
-    lchtuple ([seq encode t | t <- ts_out])
-  with
-  | [::] =>
-    λ (o : exec (sem_tuple ts_out)) (vs : list typed_chElement),
-      match vs, o with
-      | [::], Ok o => embed_tuple o
-      | _, _ => chCanonical _
-      end
-  | t :: ts0 =>
-    λ (o : sem_t t → sem_prod ts0 (exec (sem_tuple ts_out))) (vs : list typed_chElement),
-      match vs with
-      | [::] => chCanonical _
-      | v :: vs0 => app_sopn_list_tuple ts0 (o (unembed (truncate_el t v.π2))) vs0
-      end
-  end.
-
 (* list_ltuple *)
 Fixpoint list_lchtuple {ts} : lchtuple ([seq encode t | t <- ts]) → [choiceType of list typed_chElement] :=
   match ts as ts0
@@ -1179,7 +1157,7 @@ Fixpoint list_lchtuple {ts} : lchtuple ([seq encode t | t <- ts]) → [choiceTyp
 
 (* corresponds to exec_sopn *)
 Definition translate_exec_sopn (o : sopn) (vs : seq typed_chElement) :=
-  list_lchtuple (app_sopn_list_tuple _ (sopn_sem o) vs).
+  list_lchtuple (tr_app_sopn_tuple _ (sopn_sem o) vs).
 
 Fixpoint foldl2 {A B R} (f : R → A → B → R) (la : seq A) (lb : seq B) r :=
   match la with
@@ -2146,7 +2124,7 @@ Proof.
       eassumption.
 Qed.
 
-Lemma unembed_embed {len} (a : sem_t (sarr len)) :
+Lemma unembed_embed_sarr {len} (a : sem_t (sarr len)) :
   unembed (embed a) =ₑ a.
 Proof.
   intros x.
@@ -2158,10 +2136,25 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma unembed_embed t a :
+  match t as t0 return sem_t t0 -> Prop with
+  | sbool => λ a, unembed (embed a) = a
+  | sint => λ a, unembed (embed a) = a
+  | sarr p => λ a, unembed (embed a) =ₑ a
+  | sword s => λ a, unembed (embed a) = a
+  end a.
+Proof.
+  destruct t.
+  - reflexivity.
+  - reflexivity.
+  - apply unembed_embed_sarr.
+  - reflexivity.
+Qed.
+
 #[export] Instance unembed_embed_Proper {len} : Proper ((=ₑ) ==> (=ₑ)) (λ (a : sem_t (sarr len)), unembed (embed a)).
 Proof.
   intros x y H.
-  rewrite !unembed_embed.
+  rewrite !(unembed_embed (sarr len)).
   assumption.
 Qed.
 
@@ -2256,111 +2249,7 @@ Proof.
   reflexivity.
 Qed.
 
-Context {
-  asmop_correct :
-    ∀ o vs vs',
-      app_sopn (tin (asm_op_instr o)) (sopn_sem (Oasm o)) vs = ok vs' →
-      app_sopn_list_tuple
-        (tin (asm_op_instr o))
-        (sopn_sem (Oasm o))
-        [seq totce (translate_value v) | v <- vs]
-      = embed_tuple vs'
-}.
-
-Lemma app_sopn_list_tuple_correct o vs vs' :
-  app_sopn _ (sopn_sem o) vs = ok vs' →
-  app_sopn_list_tuple
-    _
-    (sopn_sem o)
-    [seq to_typed_chElement (translate_value v) | v <- vs]
-  =
-  embed_tuple vs'.
-Proof.
-  intro H.
-  destruct o as [ ws p | | | | | ].
-  - apply app_sopn_nil_ok_size in H as Hs.
-    simpl in Hs.
-    destruct vs. 1: inversion Hs.
-    destruct vs. 2: inversion Hs.
-    cbn -[wsize_size app_sopn_list_tuple].
-    cbn [app_sopn_list_tuple].
-
-    jbind H vs'' Hv''.
-    simpl in H.
-    unfold sopn_sem in H.
-
-    cbn -[wsize_size WArray.copy unembed truncate_el].
-    erewrite translate_of_val by eassumption.
-    rewrite coerce_to_choice_type_K.
-    rewrite translate_value_to_val.
-    rewrite eq_rect_r_K.
-    cbn -[wsize_size ziota] in H.
-    rewrite unembed_embed.
-    rewrite H.
-    reflexivity.
-  - simpl; destruct map; reflexivity.
-  - apply app_sopn_nil_ok_size in H as Hs.
-    simpl in Hs.
-    destruct vs. 1: inversion Hs.
-    destruct vs. 1: inversion Hs.
-    destruct vs. 2: inversion Hs.
-
-    simpl in *.
-    jbind H v' Hv'.
-    jbind H v'' Hv''.
-    erewrite translate_to_word by eassumption.
-    erewrite translate_to_word by eassumption.
-
-    unfold sopn_sem in H.
-    simpl in H.
-    noconf H.
-
-    reflexivity.
-  - apply app_sopn_nil_ok_size in H as Hs.
-    simpl in Hs.
-    destruct vs. 1: inversion Hs.
-    destruct vs. 1: inversion Hs.
-    destruct vs. 1: inversion Hs.
-    destruct vs. 2: inversion Hs.
-
-    simpl in *.
-    jbind H v' Hv'.
-    jbind H v'' Hv''.
-    jbind H v''' Hv'''.
-    erewrite translate_to_word by eassumption.
-    erewrite translate_to_word by eassumption.
-    erewrite translate_to_bool by eassumption.
-
-    unfold sopn_sem in H.
-    simpl in H.
-    noconf H.
-
-    reflexivity.
-  - apply app_sopn_nil_ok_size in H as Hs.
-    simpl in Hs.
-    destruct vs. 1: inversion Hs.
-    destruct vs. 1: inversion Hs.
-    destruct vs. 1: inversion Hs.
-    destruct vs. 2: inversion Hs.
-
-    simpl in *.
-    jbind H v' Hv'.
-    jbind H v'' Hv''.
-    jbind H v''' Hv'''.
-    erewrite translate_to_word by eassumption.
-    erewrite translate_to_word by eassumption.
-    erewrite translate_to_bool by eassumption.
-
-    unfold sopn_sem in H.
-    simpl in H.
-    noconf H.
-
-    reflexivity.
-
-  - apply asmop_correct.
-    assumption.
-Qed.
-
+(* BSH: I don't think these are necessary anymore *)
 Lemma list_tuple_cons_cons {t1 t2 : stype}  {ts : seq stype} (p : sem_tuple (t1 :: t2 :: ts)) :
   list_ltuple p = (oto_val p.1) :: (list_ltuple (p.2 : sem_tuple (t2 :: ts))).
 Proof. reflexivity. Qed.
@@ -2372,6 +2261,70 @@ Proof. reflexivity. Qed.
 Lemma list_lchtuple_cons_cons {t1 t2 : stype}  {ts : seq stype} (p1 : encode t1) (p2 : lchtuple [seq encode t | t <- (t2 :: ts)]) :
   list_lchtuple ((p1, p2) : lchtuple [seq encode t | t <- (t1 :: t2 :: ts)]) = (totce p1) :: (list_lchtuple p2).
 Proof. reflexivity. Qed.
+
+Lemma app_sopn_cons {rT} t ts v vs sem :
+  @app_sopn rT (t :: ts) sem (v :: vs) = Let v' := of_val t v in @app_sopn rT ts (sem v') vs.
+Proof. reflexivity. Qed.
+
+Lemma sem_prod_cons t ts S :
+  sem_prod (t :: ts) S = (sem_t t -> sem_prod ts S).
+Proof. reflexivity. Qed.
+
+Inductive sem_correct {R S} (enc : (R -> Type)) : forall (ts : (seq stype)), (sem_prod ts (exec (enc S))) -> Prop :=
+| sem_nil s : sem_correct enc [::] s
+| sem_cons t ts s : (forall v, (s (unembed (embed v)) = s v)) -> (forall v, sem_correct enc ts (s v)) -> sem_correct enc (t :: ts) s.
+
+Lemma tr_app_sopn_correct {R S} (enc dec : R -> Type) (can : dec S) emb ts vs vs' (s : sem_prod ts (exec (enc S))) :
+  sem_correct enc ts s ->
+  app_sopn ts s vs = ok vs' →
+  tr_app_sopn enc dec can emb ts s [seq to_typed_chElement (translate_value v) | v <- vs]
+  = emb vs'.
+Proof.
+  intros s_correct H.
+  induction ts as [|t ts'] in s, vs, vs', s_correct, H |- *.
+  - destruct vs. 2: discriminate.
+    destruct s. 2: discriminate.
+    noconf H. reflexivity.
+  - destruct vs. 1: discriminate.
+    simpl in H.
+    jbind H v' Hv'.
+    simpl in *.
+    specialize (IHts' vs vs' (s v')).
+    inversion s_correct.
+    apply Eqdep.EqdepTheory.inj_pairT2 in H3.
+    subst.
+    erewrite translate_of_val by eassumption.
+    rewrite coerce_to_choice_type_translate_value_to_val.
+    rewrite H2.
+    apply IHts'.
+    1: apply H4.
+    assumption.
+Qed.
+
+Context `{asm_correct : forall o, sem_correct sem_tuple (tin (get_instr_desc (Oasm o))) (sopn_sem (Oasm o))}.
+
+Lemma app_sopn_list_tuple_correct o vs vs' :
+  app_sopn _ (sopn_sem o) vs = ok vs' →
+  tr_app_sopn_tuple _ (sopn_sem o) [seq to_typed_chElement (translate_value v) | v <- vs]
+  =
+  embed_tuple vs'.
+Proof.
+  intros.
+  unfold tr_app_sopn_tuple.
+  erewrite tr_app_sopn_correct.
+  - reflexivity.
+  - destruct o.
+    + repeat constructor.
+      cbn -[wsize_size WArray.copy unembed embed truncate_el] in *; intros.
+      rewrite (unembed_embed (sarr _)).
+      reflexivity.
+    + repeat constructor.
+    + repeat constructor.
+    + repeat constructor.
+    + repeat constructor.
+    + apply asm_correct.
+  - assumption.
+Qed.
 
 Lemma translate_exec_sopn_correct (o : sopn) (ins outs : values) :
   exec_sopn o ins = ok outs →
@@ -2399,9 +2352,9 @@ Proof.
       destruct e. all: reflexivity.
 Qed.
 
-Lemma app_sopn_list_correct (op : opN) (v : sem_t (type_of_opN op).2) (vs : values) :
+Lemma tr_app_sopn_single_correct (op : opN) (v : sem_t (type_of_opN op).2) (vs : values) :
   app_sopn (type_of_opN op).1 (sem_opN_typed op) vs = ok v →
-  app_sopn_list
+  tr_app_sopn_single
     (type_of_opN op).1
     (sem_opN_typed op)
     [seq to_typed_chElement (translate_value v) | v <- vs]
@@ -2409,6 +2362,7 @@ Lemma app_sopn_list_correct (op : opN) (v : sem_t (type_of_opN op).2) (vs : valu
   embed v.
 Proof.
   intro H.
+  unfold tr_app_sopn_single.
   destruct op as [w p | c].
   - simpl in *.
     apply app_sopn_nil_ok_size in H as hl.
@@ -2628,7 +2582,7 @@ Proof.
     + apply u_ret.
       intros; split; auto.
       rewrite coerce_to_choice_type_translate_value_to_val.
-      apply app_sopn_list_correct.
+      apply tr_app_sopn_single_correct.
       assumption.
   - (* Pif *)
     simpl in h1. jbind h1 b eb. jbind eb b' eb'.
@@ -3096,67 +3050,28 @@ End Translation.
 From Jasmin Require Import x86_instr_decl x86_extra x86_gen x86_linear_sem.
 Import arch_decl.
 
-(* jbind with fresh names *)
-Ltac jbind_fresh h :=
-  eapply rbindP ; [| exact h ] ;
-  let x := fresh in
-  let hx := fresh in
-  clear h ; intros x hx h ;
-  cbn beta in h.
-
-Ltac solve_opn_intro vs H Hs :=
-  repeat (destruct vs; [progress inversion Hs|]);
-  destruct vs; [|inversion Hs];
-  simpl in *;
-  repeat jbind_fresh H;
-  noconf H.
-
-Ltac solve_opn_word vs H Hs :=
-  solve_opn_intro vs H Hs;
-  try (erewrite translate_to_word by eassumption);
-  reflexivity.
-
-Ltac solve_opn_inv vs H Hs :=
-  solve_opn_intro vs H Hs;
-  repeat match goal with
-  | b : bool |- _ => destruct b
-  | H : check_size_8_64 _ = _ |- _ => noconf H
-  | H : check_size_16_64 _ = _ |- _ => noconf H
-  | H : check_size_32_64 _ = _ |- _ => noconf H
-  | H : id_semi _ _ = _ |- _ => noconf H
-  | H : id_semi _ _ _ = _ |- _ => noconf H
-  | H : id_semi _ _ _ _ = _ |- _ => noconf H
-  | H : type_error = ok _ |- _ => discriminate
-  | H : ok _ = ok _ |- _ => noconf H
-  | _ => progress erewrite ?translate_to_word, ?translate_to_bool by eassumption
-  end; try reflexivity.
-
-Lemma x86_correct :
-  ∀ (o : asm_op_t) (vs : values) (vs' : sem_tuple (tout (sopn.get_instr_desc (Oasm o)))),
-    app_sopn (tin (asm_op_instr o)) (sopn_sem (Oasm o)) vs = ok vs' →
-    app_sopn_list_tuple
-      (tin (asm_op_instr o))
-      (sopn_sem (Oasm o))
-      [seq to_typed_chElement (translate_value v) | v <- vs]
-    = embed_tuple vs'.
+(* this is a stupid proof, since the only thing it does, is that it realizes all assembly instructions are defined on words
+   FIXME: do better
+*)
+Lemma x86_correct : ∀ (o : asm_op_t), sem_correct sem_tuple (tin (sopn.get_instr_desc (Oasm o))) (sopn_sem (Oasm o)).
 Proof.
-  intros o vs vs' H.
-  apply app_sopn_nil_ok_size in H as Hs.
-  simpl in Hs.
+  intros.
+  simpl.
   destruct o.
   - destruct a.
     destruct o.
-(* Clearly this isn't the way we want to go. *)
-(*     + destruct x.
-      * destruct w, w0; solve_opn_inv vs H Hs.
-      * destruct w, w0, w1; solve_opn_inv vs H Hs.
-      * destruct w, w0, w1; solve_opn_inv vs H Hs.
-      * destruct w, w0; solve_opn_inv vs H Hs.
-      * destruct w, w0; solve_opn_inv vs H Hs.
-      * destruct w, w0; solve_opn_inv vs H Hs.
-      * destruct w, w0; solve_opn_inv vs H Hs.
-      * destruct w, w0; solve_opn_inv vs H Hs.
-      * destruct w, w0; solve_opn_inv vs H Hs.
-      * destruct w, w0; solve_opn_inv vs H Hs.
-      * *)
-Admitted.
+(*     + destruct x; *)
+(*       repeat match goal with *)
+(*       | w : wsize |- _ => destruct w *)
+(*       end; repeat constructor. *)
+(*     + destruct x; *)
+(*       repeat match goal with *)
+(*       | w : wsize |- _ => destruct w *)
+(*       end; repeat constructor. *)
+(*   - destruct e; *)
+(*       repeat match goal with *)
+(*       | w : wsize |- _ => destruct w *)
+(*       end; repeat constructor. *)
+(* Qed. *)
+     (* admitted for efficiency (the proof takes approx ~30 to execute) *)
+Admitted
