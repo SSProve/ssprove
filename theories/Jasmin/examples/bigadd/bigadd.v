@@ -512,14 +512,22 @@ Goal forall aa, f_bigadd aa = f_bigadd aa.
   unfold apply_noConfusion.
   simpl.
   unfold translate_write_var. simpl.
+  unfold translate_instr. simpl.
+  Opaque translate_for.
+  (* unfold translate_for. simpl. *)
+  rewrite !coerce_typed_code_K.
+  simpl.
   unfold translate_var. simpl.
-  set (TODO := ('unit; distr.dnull)).
+  (* set (TODO := ('unit; distr.dnull)). *)
   set (array32 := sarr 32%positive).
   set (fn := 2%positive).
   set (x := ('array; nat_of_fun_ident fn "x.140")).
   set (xr := ('word U64; nat_of_fun_ident fn "xr.143")).
   set (y := ('array; nat_of_fun_ident fn "y.141")).
   set (yr := ('word U64; nat_of_fun_ident fn "yr.144")).
+  set (cf := ('bool; nat_of_fun_ident fn "cf.145")).
+  set (i := ('int; nat_of_fun_ident fn "i.146")).
+
   set (x_ := {| v_var := {| vtype := array32; vname := "x.140" |};
                v_info := (fn~0)%positive |}).
   set (y_ := {| v_var := {| vtype := array32; vname := "y.141" |};
@@ -533,9 +541,14 @@ Goal forall aa, f_bigadd aa = f_bigadd aa.
   unfold bind_list'. simpl.
   unfold bind_list_trunc_aux. simpl.
   rewrite eq_rect_K.
-  time repeat setoid_rewrite (@zero_extend_u U64).
+
   unfold translate_var. simpl.
   set (res := ('array; nat_of_fun_ident fn "res.142")).
+
+  time repeat setoid_rewrite (@zero_extend_u U64).
   unfold wsize_size.
   rewrite !coerce_to_choice_type_K.
+  setoid_rewrite coerce_to_choice_type_K.
+  setoid_rewrite coerce_to_choice_type_K.
+
   (* Strangely, some instances of coe_cht don't get simplified away here. *)
