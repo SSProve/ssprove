@@ -2841,7 +2841,9 @@ Lemma injective_nat_of_ident :
     x = y.
 Proof.
   intros x y e.
-  destruct x as [| a x], y as [| b y]. all: simpl in e.
+  induction x as [| a x] in y, e |- *.
+  all: destruct y as [| b y].
+  all: simpl in e.
   - reflexivity.
   - rewrite -mulP in e. rewrite -plusE in e.
     pose proof (nat_of_ident_pos y).
@@ -2849,8 +2851,8 @@ Proof.
   - rewrite -mulP in e. rewrite -plusE in e.
     pose proof (nat_of_ident_pos x).
     micromega.Lia.lia.
-  - give_up. (* Not true is it? *)
-Abort.
+  - (* Have to prove Ascii.nat_of_ascii is below 256 *)
+Admitted.
 
 Lemma injective_nat_of_fun_ident :
   ∀ fn x y,
@@ -2862,7 +2864,8 @@ Proof.
   apply injective_mulnl in e.
   2:{ apply nonzero_lt. apply pow_nonzero. micromega.Lia.lia. }
   apply injective_pow in e. 2: auto.
-Abort.
+  apply injective_nat_of_ident. assumption.
+Qed.
 
 Lemma injective_translate_var :
   ∀ fn, injective (translate_var fn).
@@ -2872,8 +2875,9 @@ Proof.
   destruct u as [uty u], v as [vty v].
   simpl in e. noconf e.
   f_equal.
-  (* We need injectivity of encode which is not true for sarr! *)
-  (* injective_nat_of_fun_ident might not be true either *)
+  - (* We need injectivity of encode which is not true for sarr! *)
+    give_up.
+  - eapply injective_nat_of_fun_ident. eassumption.
 Admitted.
 
 Lemma translate_write_correct :
