@@ -2761,70 +2761,6 @@ Qed.
 Notation coe_cht := coerce_to_choice_type.
 Notation coe_tyc := coerce_typed_code.
 
-Lemma injective_mulnl :
-  ∀ n x y,
-    0 < n →
-    (n * x)%nat = (n * y)%nat →
-    x = y.
-Proof.
-  intros n x y hn e.
-  apply (f_equal (λ m, m %/ n)) in e.
-  rewrite !mulKn in e. 2,3: assumption.
-  assumption.
-Qed.
-
-Lemma nonzero_lt :
-  ∀ n,
-    n ≠ 0 →
-    0 < n.
-Proof.
-  intros n h.
-  destruct n. 1: contradiction.
-  auto.
-Qed.
-
-Lemma pow_nonzero :
-  ∀ k n,
-    k ≠ 0 →
-    (k ^ n)%nat ≠ 0.
-Proof.
-  intros k n hk.
-  induction n as [| n ih].
-  - simpl. discriminate.
-  - simpl. micromega.Lia.lia.
-Qed.
-
-Lemma injective_pow :
-  ∀ k n m,
-    1 < k →
-    (k ^ n)%nat = (k ^ m)%nat →
-    n = m.
-Proof.
-  intros k n m hk e.
-  induction n as [| n ih] in m, e |- *.
-  - simpl in e. destruct m as [| m].
-    2:{
-      move: hk => /ltP hk.
-      simpl in e. exfalso.
-      assert ((k ^ m)%nat ≠ 0).
-      { apply pow_nonzero. micromega.Lia.lia. }
-      micromega.Lia.lia.
-    }
-    reflexivity.
-  - simpl in e.
-    destruct m as [| m].
-    1:{
-      move: hk => /ltP hk.
-      simpl in e. exfalso.
-      assert ((k ^ n)%nat ≠ 0).
-      { apply pow_nonzero. micromega.Lia.lia. }
-      micromega.Lia.lia.
-    }
-    f_equal. apply ih.
-    simpl in e. apply injective_mulnl in e. 2: auto.
-    assumption.
-Qed.
-
 Lemma nat_of_ident_pos :
   ∀ x, (0 < nat_of_ident x)%coq_nat.
 Proof.
@@ -2881,9 +2817,8 @@ Lemma injective_nat_of_fun_ident :
 Proof.
   intros fn x y e.
   unfold nat_of_fun_ident in e.
-  apply injective_mulnl in e.
-  2:{ apply nonzero_lt. apply pow_nonzero. micromega.Lia.lia. }
-  apply injective_pow in e. 2: auto.
+  apply Nat.mul_cancel_l in e. 2: apply Nat.pow_nonzero; auto.
+  eapply Nat.pow_inj_r in e. 2: auto.
   apply injective_nat_of_ident. assumption.
 Qed.
 
