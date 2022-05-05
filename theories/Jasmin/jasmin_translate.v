@@ -2703,6 +2703,52 @@ Proof.
   rewrite coerce_typed_code_K. assumption.
 Qed.
 
+Lemma Mpowmodn :
+  ∀ d n,
+    n ≠ 0 →
+    d ^ n %% d = 0.
+Proof.
+  intros d n hn.
+  destruct n as [| n]. 1: contradiction.
+  simpl. apply modnMr.
+Qed.
+
+Lemma nat_of_pos_nonzero :
+  ∀ p,
+    nat_of_pos p ≠ 0.
+Proof.
+  intros p. induction p as [p ih | p ih |].
+  - simpl. micromega.Lia.lia.
+  - simpl. rewrite NatTrec.doubleE.
+    move => /eqP. rewrite double_eq0. move /eqP. assumption.
+  - simpl. micromega.Lia.lia.
+Qed.
+
+(* Lemma mod1n :
+  ∀ d,
+    d ≠ 1 →
+    1 %% d = 1.
+Proof.
+  intros d hd.
+  unfold modn.
+  induction d as [| d ih].
+  - apply modn0.
+  -
+
+Lemma powmodn_eq0 :
+  ∀ k n d,
+    k ^ n = 0 %[mod d] →
+    k = 0 %[mod d].
+Proof.
+  intros k n d e.
+  rewrite mod0n in e. rewrite mod0n.
+  induction n as [| n ih] in k, d, e |- *.
+  - simpl in e.
+    destruct d as [| d].
+    1:{ rewrite modn0 in e. discriminate. }
+
+  - *)
+
 Lemma ptr_var_neq (ptr : pointer) (fn : funname) (v : var) :
   translate_ptr ptr != translate_var fn v.
 Proof.
@@ -2712,6 +2758,9 @@ Proof.
   apply /eqP. intro e.
   noconf e. rename H0 into e.
   apply (f_equal (λ n, n %% 3)) in e.
+  rewrite -modnMm in e. rewrite Mpowmodn in e. 2: apply nat_of_pos_nonzero.
+  rewrite mul0n in e.
+  (* modnXm: ∀ m n a : nat, expn (a %% n) m = expn a m %[mod n] *)
 Admitted.
 
 Notation coe_cht := coerce_to_choice_type.
@@ -3107,7 +3156,8 @@ Proof.
     red. intros s1 m2 s2 ii xs gn args vargs vs hargs hvs ihvs hw.
     red. simpl. intros _.
     admit.
-  - red. intros m1 m2 gn g vs vs' s1 vm2 vrs vrs'.
+  - (* proc *)
+    red. intros m1 m2 gn g vs vs' s1 vm2 vrs vrs'.
     intros hg hvs ?????.
     unfold Pfun. intros f' hdp hf'.
     (* Maybe have a dedicated lemma linking to hg? *)
