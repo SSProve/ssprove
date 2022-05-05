@@ -1942,7 +1942,7 @@ Proof.
 Qed.
 
 Lemma chArray_get_sub_correct (lena len : BinNums.positive) a aa sz i t :
-  WArray.get_sub aa sz len a i = ok t ->
+  WArray.get_sub aa sz len a i = ok t →
   chArray_get_sub sz len (translate_value (@Varr lena a)) i (mk_scale aa sz) = translate_value (Varr t).
 Proof.
   intros H.
@@ -1966,6 +1966,33 @@ Proof.
       reflexivity.
     + rewrite E.
       rewrite fold_rem.
+      reflexivity.
+Qed.
+
+Lemma chArray_set_sub_correct :
+  ∀ ws (lena len : BinNums.positive) a aa b p t,
+  @WArray.set_sub lena aa ws len a p b = ok t →
+  chArray_set_sub ws len aa (translate_value (Varr a)) p (translate_value (Varr b))
+  = translate_value (Varr t).
+Proof.
+  intros ws lena len a aa b p t e.
+  unfold WArray.set_sub in e.
+  destruct (_ : bool) eqn:eb. 2: discriminate.
+  noconf e.
+  unfold chArray_set_sub. unfold WArray.set_sub_data.
+  move: eb => /andP [e1 e2].
+  rewrite <- !foldl_rev.
+  apply ziota_ind.
+  - reflexivity.
+  - intros i l hi ih.
+    rewrite rev_cons.
+    rewrite !foldl_rcons.
+    rewrite ih.
+    rewrite fold_get.
+    destruct Mz.get eqn:e.
+    + rewrite fold_set.
+      reflexivity.
+    + rewrite fold_rem.
       reflexivity.
 Qed.
 
