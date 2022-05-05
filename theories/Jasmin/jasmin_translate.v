@@ -3155,9 +3155,25 @@ Proof.
   assumption.
 Qed.
 
-(* this is a stupid proof, since the only thing it does, is that it realizes all assembly instructions are defined on words
-   FIXME: do better
-*)
+Lemma no_arr_correct {R} ts s : List.Forall (λ t, forall len, t != sarr len) ts -> @sem_correct R ts s.
+Proof.
+  intros.
+  induction ts as [|t ts ih].
+  - constructor.
+  - constructor.
+    + intros.
+      pose proof unembed_embed t v.
+      destruct t.
+      1,2,4: rewrite H0; reflexivity.
+      inversion H.
+      specialize (H3 p).
+      move: H3 => /eqP.
+      contradiction.
+    + intros. apply ih.
+      inversion H.
+      assumption.
+Qed.
+
 Lemma x86_correct :
   ∀ (o : asm_op_t),
     sem_correct (tin (sopn.get_instr_desc (Oasm o))) (sopn_sem (Oasm o)).
@@ -3168,14 +3184,10 @@ Proof.
     pose proof (id_tin_instr_desc a) as e.
     eapply sem_correct_rewrite with (e := e).
     destruct a as [o x]. simpl in *.
-    destruct x.
-    all:
-      repeat match goal with
-      | w : wsize |- _ => destruct w
-      end ; repeat constructor.
+    eapply no_arr_correct.
+    destruct x; simpl.
+    all: repeat constructor.
     Transparent instr_desc.
-  - destruct e ;
-    repeat match goal with
-    | w : wsize |- _ => destruct w
-    end ; repeat constructor.
+  - destruct e; simpl; repeat constructor.
+    destruct w; repeat constructor.
 Qed.
