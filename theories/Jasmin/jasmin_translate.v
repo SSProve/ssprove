@@ -2703,6 +2703,16 @@ Proof.
   rewrite coerce_typed_code_K. assumption.
 Qed.
 
+Lemma Natpow_expn :
+  ∀ (n m : nat),
+    (n ^ m)%nat = expn n m.
+Proof.
+  intros n m.
+  induction m as [| m ih] in n |- *.
+  - cbn. reflexivity.
+  - simpl. rewrite expnS. rewrite -ih. reflexivity.
+Qed.
+
 Lemma Mpowmodn :
   ∀ d n,
     n ≠ 0 →
@@ -2724,31 +2734,6 @@ Proof.
   - simpl. micromega.Lia.lia.
 Qed.
 
-(* Lemma mod1n :
-  ∀ d,
-    d ≠ 1 →
-    1 %% d = 1.
-Proof.
-  intros d hd.
-  unfold modn.
-  induction d as [| d ih].
-  - apply modn0.
-  -
-
-Lemma powmodn_eq0 :
-  ∀ k n d,
-    k ^ n = 0 %[mod d] →
-    k = 0 %[mod d].
-Proof.
-  intros k n d e.
-  rewrite mod0n in e. rewrite mod0n.
-  induction n as [| n ih] in k, d, e |- *.
-  - simpl in e.
-    destruct d as [| d].
-    1:{ rewrite modn0 in e. discriminate. }
-
-  - *)
-
 Lemma ptr_var_neq (ptr : pointer) (fn : funname) (v : var) :
   translate_ptr ptr != translate_var fn v.
 Proof.
@@ -2760,8 +2745,13 @@ Proof.
   apply (f_equal (λ n, n %% 3)) in e.
   rewrite -modnMm in e. rewrite Mpowmodn in e. 2: apply nat_of_pos_nonzero.
   rewrite mul0n in e.
-  (* modnXm: ∀ m n a : nat, expn (a %% n) m = expn a m %[mod n] *)
-Admitted.
+  move: e => /eqP e. rewrite eqn_mod_dvd in e. 2: auto.
+  rewrite subn0 in e.
+  rewrite Natpow_expn in e. rewrite Euclid_dvdX in e. 2: auto.
+  move: e => /andP [e _].
+  rewrite dvdn_prime2 in e. 2,3: auto.
+  move: e => /eqP e. micromega.Lia.lia.
+Qed.
 
 Notation coe_cht := coerce_to_choice_type.
 Notation coe_tyc := coerce_typed_code.
