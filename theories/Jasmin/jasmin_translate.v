@@ -3120,24 +3120,60 @@ End Translation.
 From Jasmin Require Import x86_instr_decl x86_extra x86_gen x86_linear_sem.
 Import arch_decl.
 
+Lemma id_tin_instr_desc :
+  ∀ (a : asm_op_msb_t),
+    id_tin (instr_desc a) = id_tin (x86_instr_desc a.2).
+Proof.
+  intros [[ws|] a].
+  - simpl. destruct (_ == _). all: reflexivity.
+  - reflexivity.
+Qed.
+
+Definition cast_sem_prod_dom {ts tr} ts' (f : sem_prod ts tr) (e : ts = ts') :
+  sem_prod ts' tr.
+Proof.
+  subst. exact f.
+Defined.
+
+Lemma cast_sem_prod_dom_K :
+  ∀ ts tr f e,
+    @cast_sem_prod_dom ts tr ts f e = f.
+Proof.
+  intros ts tr f e.
+  assert (e = erefl).
+  { apply eq_irrelevance. }
+  subst. reflexivity.
+Qed.
+
+Lemma sem_correct_rewrite :
+  ∀ R ts ts' f e,
+    sem_correct ts' (cast_sem_prod_dom ts' f e) →
+    @sem_correct R ts f.
+Proof.
+  intros R ts ts' f e h.
+  subst. rewrite cast_sem_prod_dom_K in h.
+  assumption.
+Qed.
+
 (* this is a stupid proof, since the only thing it does, is that it realizes all assembly instructions are defined on words
    FIXME: do better
 *)
-Lemma x86_correct : ∀ (o : asm_op_t), sem_correct (tin (sopn.get_instr_desc (Oasm o))) (sopn_sem (Oasm o)).
+Lemma x86_correct :
+  ∀ (o : asm_op_t),
+    sem_correct (tin (sopn.get_instr_desc (Oasm o))) (sopn_sem (Oasm o)).
 Proof.
-  intros.
-  simpl.
-  destruct o.
-  - destruct a.
-    destruct o.
-(*     + destruct x; *)
-(*       repeat match goal with *)
-(*       | w : wsize |- _ => destruct w *)
-(*       end; repeat constructor. *)
-(*     + destruct x; *)
-(*       repeat match goal with *)
-(*       | w : wsize |- _ => destruct w *)
-(*       end; repeat constructor. *)
+  intros o.
+  simpl. destruct o as [a | e].
+  - Opaque instr_desc. simpl.
+    pose proof (id_tin_instr_desc a) as e.
+    eapply sem_correct_rewrite with (e := e).
+    destruct a as [o x]. simpl in *.
+    destruct x.
+    all:
+      repeat match goal with
+      | w : wsize |- _ => destruct w
+      end ; repeat constructor.
+    Transparent instr_desc.
 (*   - destruct e; *)
 (*       repeat match goal with *)
 (*       | w : wsize |- _ => destruct w *)
