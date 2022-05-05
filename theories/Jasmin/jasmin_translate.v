@@ -822,12 +822,12 @@ Proof.
     + exact (translate_value v, tr_vs).
 Defined.
 
-Fixpoint tr_app_sopn {R} {S : R} (dec : R → Type) (enc : R → Type) (can : enc S) (emb : dec S → enc S) (ts : list stype) :=
+Fixpoint tr_app_sopn {S R} (can : R) (emb : S → R) (ts : list stype) :=
   match ts as ts'
-  return (sem_prod ts' (exec (dec S)) → [choiceType of list typed_chElement] → enc S)
+  return (sem_prod ts' (exec S) → [choiceType of list typed_chElement] → R)
   with
   | [::] =>
-    λ (o : exec (dec S)) (vs : list typed_chElement),
+    λ (o : exec S) (vs : list typed_chElement),
       match vs with
       | [::] =>
         match o with
@@ -837,10 +837,10 @@ Fixpoint tr_app_sopn {R} {S : R} (dec : R → Type) (enc : R → Type) (can : en
       | _ :: _ => can
       end
   | t :: ts' =>
-    λ (o : sem_t t → sem_prod ts' (exec (dec S))) (vs : list typed_chElement),
+    λ (o : sem_t t → sem_prod ts' (exec S)) (vs : list typed_chElement),
       match vs with
       | [::] => can
-      | v :: vs' => tr_app_sopn dec enc can emb ts' (o (unembed (truncate_el t v.π2))) vs'
+      | v :: vs' => tr_app_sopn can emb ts' (o (unembed (truncate_el t v.π2))) vs'
       end
   end.
 
@@ -917,8 +917,10 @@ Definition embed_ot {t} : sem_ot t → encode t :=
   | sword n => λ x, x
   end.
 
+Definition encode_tuple (ts : list stype) : choice_type := lchtuple [seq encode t | t <- ts].
+
 (* takes a tuple of jasmin values and embeds each component *)
-Fixpoint embed_tuple {ts} : sem_tuple ts → lchtuple [seq encode t | t <- ts] :=
+Fixpoint embed_tuple {ts} : sem_tuple ts → encode_tuple ts :=
   match ts as ts0
   return sem_tuple ts0 -> lchtuple [seq encode t | t <- ts0]
   with
@@ -936,15 +938,12 @@ Fixpoint embed_tuple {ts} : sem_tuple ts → lchtuple [seq encode t | t <- ts] :
   end.
 
 (* tr_app_sopn specialized to when there is only one return value *)
-Definition tr_app_sopn_single {S} :=
-  tr_app_sopn sem_t encode (chCanonical (encode S)) embed.
+Definition tr_app_sopn_single {t} :=
+  tr_app_sopn (chCanonical (encode t)) embed.
 
 (* tr_app_sopn specialized to when there is several return values *)
-Definition tr_app_sopn_tuple {ts_out} :=
-  tr_app_sopn sem_tuple
-    (λ ts, lchtuple [seq encode t | t <- ts])
-    (chCanonical (lchtuple [seq encode t | t <- ts_out]))
-    embed_tuple.
+Definition tr_app_sopn_tuple {ts} :=
+  tr_app_sopn (chCanonical (encode_tuple ts)) embed_tuple.
 
 (* Following sem_pexpr *)
 Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
@@ -2282,14 +2281,14 @@ Lemma sem_prod_cons t ts S :
   sem_prod (t :: ts) S = (sem_t t → sem_prod ts S).
 Proof. reflexivity. Qed.
 
-Inductive sem_correct {R S} (enc : (R → Type)) : ∀ (ts : seq stype), (sem_prod ts (exec (enc S))) → Prop :=
-| sem_nil s : sem_correct enc [::] s
-| sem_cons t ts s : (∀ v, (s (unembed (embed v)) = s v)) → (∀ v, sem_correct enc ts (s v)) → sem_correct enc (t :: ts) s.
+Inductive sem_correct {R} : ∀ (ts : seq stype), (sem_prod ts (exec R)) → Prop :=
+| sem_nil s : sem_correct [::] s
+| sem_cons t ts s : (∀ v, (s (unembed (embed v)) = s v)) → (∀ v, sem_correct ts (s v)) → sem_correct (t :: ts) s.
 
-Lemma tr_app_sopn_correct {R S} (enc dec : R → Type) (can : dec S) emb ts vs vs' (s : sem_prod ts (exec (enc S))) :
-  sem_correct enc ts s →
+Lemma tr_app_sopn_correct {R S} (can : S) emb ts vs vs' (s : sem_prod ts (exec R)) :
+  sem_correct ts s →
   app_sopn ts s vs = ok vs' →
-  tr_app_sopn enc dec can emb ts s [seq to_typed_chElement (translate_value v) | v <- vs]
+  tr_app_sopn can emb ts s [seq to_typed_chElement (translate_value v) | v <- vs]
   = emb vs'.
 Proof.
   intros hs H.
@@ -2308,7 +2307,7 @@ Proof.
     assumption.
 Qed.
 
-Context `{asm_correct : ∀ o, sem_correct sem_tuple (tin (get_instr_desc (Oasm o))) (sopn_sem (Oasm o))}.
+Context `{asm_correct : ∀ o, sem_correct (tin (get_instr_desc (Oasm o))) (sopn_sem (Oasm o))}.
 
 Lemma app_sopn_list_tuple_correct o vs vs' :
   app_sopn _ (sopn_sem o) vs = ok vs' →
@@ -3055,7 +3054,7 @@ Import arch_decl.
 (* this is a stupid proof, since the only thing it does, is that it realizes all assembly instructions are defined on words
    FIXME: do better
 *)
-Lemma x86_correct : ∀ (o : asm_op_t), sem_correct sem_tuple (tin (sopn.get_instr_desc (Oasm o))) (sopn_sem (Oasm o)).
+Lemma x86_correct : ∀ (o : asm_op_t), sem_correct (tin (sopn.get_instr_desc (Oasm o))) (sopn_sem (Oasm o)).
 Proof.
   intros.
   simpl.
