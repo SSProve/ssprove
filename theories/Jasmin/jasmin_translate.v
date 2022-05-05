@@ -917,7 +917,8 @@ Definition embed_ot {t} : sem_ot t → encode t :=
   | sword n => λ x, x
   end.
 
-Definition encode_tuple (ts : list stype) : choice_type := lchtuple [seq encode t | t <- ts].
+Definition encode_tuple (ts : list stype) : choice_type :=
+  lchtuple [seq encode t | t <- ts].
 
 (* takes a tuple of jasmin values and embeds each component *)
 Fixpoint embed_tuple {ts} : sem_tuple ts → encode_tuple ts :=
