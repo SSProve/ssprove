@@ -2865,8 +2865,36 @@ Proof.
     erewrite chArray_set_correct. 2: eassumption.
     eapply translate_write_var_estate in hs. 2: eassumption.
     assumption.
-  - admit.
-Admitted.
+  - simpl. simpl in hw.
+    jbind hw nt hnt. destruct nt. all: try discriminate.
+    jbind hw i hi. jbind hi i' hi'.
+    jbind hw t' ht'. jbind hw t ht.
+    eapply u_get_remember. simpl. intros vx.
+    rewrite !bind_assoc. simpl.
+    eapply u_bind.
+    1:{
+      eapply translate_pexpr_correct.
+      - eassumption.
+      - intros ? []. assumption.
+    }
+    unfold translate_write_var. simpl.
+    eapply u_put.
+    eapply u_ret_eq.
+    intros ? [m [[hs hm] ?]]. subst.
+    unfold u_get in hm. subst.
+    erewrite translate_pexpr_type. 2: eassumption.
+    rewrite !coerce_to_choice_type_K.
+    erewrite translate_to_int. 2: eassumption.
+    erewrite translate_to_arr. 2: eassumption.
+    erewrite get_var_get_heap. 2,3: eassumption.
+    Opaque translate_value. simpl. Transparent translate_value.
+    eapply type_of_get_var in hnt as ety. simpl in ety.
+    apply (f_equal encode) in ety. simpl in ety.
+    rewrite -ety. rewrite !coerce_to_choice_type_K.
+    erewrite chArray_set_sub_correct. 2: eassumption.
+    eapply translate_write_var_estate in hs. 2: eassumption.
+    assumption.
+Qed.
 
 Lemma translate_write_lvals_cons fn l ls v vs :
   translate_write_lvals fn (l :: ls) (v :: vs) = (translate_write_lval fn l v ;; translate_write_lvals fn ls vs).
