@@ -1533,7 +1533,12 @@ Lemma mem_loc_translate_var_neq :
   ∀ fn x,
     mem_loc != translate_var fn x.
 Proof.
-Admitted.
+  intros fn x.
+  unfold mem_loc, translate_var.
+  apply /eqP. intro e.
+  destruct x as [ty i]. simpl in e. noconf e.
+  destruct ty. all: discriminate.
+Qed.
 
 Lemma translate_write_estate :
   ∀ fn sz s cm ptr w m,
