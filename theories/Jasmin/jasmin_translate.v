@@ -811,9 +811,9 @@ Proof.
     + exact (translate_value v, tr_vs).
 Defined.
 
-Fixpoint tr_app_sopn {R} {S : R} (dec : R -> Type) (enc : R -> Type) (can : enc S) (emb : dec S -> enc S) (ts : list stype) :=
-  match ts as ts0
-  return (sem_prod ts0 (exec (dec S)) → [choiceType of list typed_chElement] → enc S)
+Fixpoint tr_app_sopn {R} {S : R} (dec : R → Type) (enc : R → Type) (can : enc S) (emb : dec S → enc S) (ts : list stype) :=
+  match ts as ts'
+  return (sem_prod ts' (exec (dec S)) → [choiceType of list typed_chElement] → enc S)
   with
   | [::] =>
     λ (o : exec (dec S)) (vs : list typed_chElement),
@@ -825,11 +825,11 @@ Fixpoint tr_app_sopn {R} {S : R} (dec : R -> Type) (enc : R -> Type) (can : enc 
         end
       | _ :: _ => can
       end
-  | t :: ts0 =>
-    λ (o : sem_t t → sem_prod ts0 (exec (dec S))) (vs : list typed_chElement),
+  | t :: ts' =>
+    λ (o : sem_t t → sem_prod ts' (exec (dec S))) (vs : list typed_chElement),
       match vs with
       | [::] => can
-      | v :: vs0 => tr_app_sopn dec enc can emb ts0 (o (unembed (truncate_el t v.π2))) vs0
+      | v :: vs' => tr_app_sopn dec enc can emb ts' (o (unembed (truncate_el t v.π2))) vs'
       end
   end.
 
@@ -925,9 +925,15 @@ Fixpoint embed_tuple {ts} : sem_tuple ts → lchtuple [seq encode t | t <- ts] :
   end.
 
 (* tr_app_sopn specialized to when there is only one return value *)
-Definition tr_app_sopn_single {S} := tr_app_sopn sem_t encode (chCanonical (encode S)) embed.
+Definition tr_app_sopn_single {S} :=
+  tr_app_sopn sem_t encode (chCanonical (encode S)) embed.
+
 (* tr_app_sopn specialized to when there is several return values *)
-Definition tr_app_sopn_tuple {ts_out} := tr_app_sopn sem_tuple (λ ts, lchtuple [seq encode t | t <- ts]) (chCanonical (lchtuple [seq encode t | t <- ts_out])) embed_tuple.
+Definition tr_app_sopn_tuple {ts_out} :=
+  tr_app_sopn sem_tuple
+    (λ ts, lchtuple [seq encode t | t <- ts])
+    (chCanonical (lchtuple [seq encode t | t <- ts_out]))
+    embed_tuple.
 
 (* Following sem_pexpr *)
 Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
@@ -2263,45 +2269,41 @@ Lemma list_lchtuple_cons_cons {t1 t2 : stype}  {ts : seq stype} (p1 : encode t1)
 Proof. reflexivity. Qed.
 
 Lemma app_sopn_cons {rT} t ts v vs sem :
-  @app_sopn rT (t :: ts) sem (v :: vs) = Let v' := of_val t v in @app_sopn rT ts (sem v') vs.
+  @app_sopn rT (t :: ts) sem (v :: vs) =
+  Let v' := of_val t v in @app_sopn rT ts (sem v') vs.
 Proof. reflexivity. Qed.
 
 Lemma sem_prod_cons t ts S :
-  sem_prod (t :: ts) S = (sem_t t -> sem_prod ts S).
+  sem_prod (t :: ts) S = (sem_t t → sem_prod ts S).
 Proof. reflexivity. Qed.
 
-Inductive sem_correct {R S} (enc : (R -> Type)) : forall (ts : (seq stype)), (sem_prod ts (exec (enc S))) -> Prop :=
+Inductive sem_correct {R S} (enc : (R → Type)) : ∀ (ts : seq stype), (sem_prod ts (exec (enc S))) → Prop :=
 | sem_nil s : sem_correct enc [::] s
-| sem_cons t ts s : (forall v, (s (unembed (embed v)) = s v)) -> (forall v, sem_correct enc ts (s v)) -> sem_correct enc (t :: ts) s.
+| sem_cons t ts s : (∀ v, (s (unembed (embed v)) = s v)) → (∀ v, sem_correct enc ts (s v)) → sem_correct enc (t :: ts) s.
 
-Lemma tr_app_sopn_correct {R S} (enc dec : R -> Type) (can : dec S) emb ts vs vs' (s : sem_prod ts (exec (enc S))) :
-  sem_correct enc ts s ->
+Lemma tr_app_sopn_correct {R S} (enc dec : R → Type) (can : dec S) emb ts vs vs' (s : sem_prod ts (exec (enc S))) :
+  sem_correct enc ts s →
   app_sopn ts s vs = ok vs' →
   tr_app_sopn enc dec can emb ts s [seq to_typed_chElement (translate_value v) | v <- vs]
   = emb vs'.
 Proof.
-  intros s_correct H.
-  induction ts as [|t ts'] in s, vs, vs', s_correct, H |- *.
+  intros hs H.
+  induction hs as [s | t ts s es hs ih] in vs, vs', H |- *.
   - destruct vs. 2: discriminate.
-    destruct s. 2: discriminate.
-    noconf H. reflexivity.
-  - destruct vs. 1: discriminate.
-    simpl in H.
-    jbind H v' Hv'.
-    simpl in *.
-    specialize (IHts' vs vs' (s v')).
-    inversion s_correct.
-    apply Eqdep.EqdepTheory.inj_pairT2 in H3.
-    subst.
-    erewrite translate_of_val by eassumption.
+    simpl in *. subst.
+    reflexivity.
+  - simpl in *.
+    destruct vs as [| v₀ vs]. 1: discriminate.
+    jbind H v' hv'.
+    eapply ih in H.
+    simpl.
+    erewrite translate_of_val. 2: eassumption.
     rewrite coerce_to_choice_type_translate_value_to_val.
-    rewrite H2.
-    apply IHts'.
-    1: apply H4.
+    rewrite es.
     assumption.
 Qed.
 
-Context `{asm_correct : forall o, sem_correct sem_tuple (tin (get_instr_desc (Oasm o))) (sopn_sem (Oasm o))}.
+Context `{asm_correct : ∀ o, sem_correct sem_tuple (tin (get_instr_desc (Oasm o))) (sopn_sem (Oasm o))}.
 
 Lemma app_sopn_list_tuple_correct o vs vs' :
   app_sopn _ (sopn_sem o) vs = ok vs' →
