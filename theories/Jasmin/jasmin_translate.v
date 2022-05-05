@@ -1801,6 +1801,19 @@ Proof.
   rewrite coerce_to_choice_type_K. reflexivity.
 Qed.
 
+Lemma translate_to_arr :
+  ∀ len v a,
+    to_arr len v = ok a →
+    coerce_to_choice_type 'array (translate_value v) = translate_value (Varr a).
+Proof.
+  intros len v a e.
+  destruct v as [| | len' t' | |]. all: try discriminate.
+  simpl in e. unfold WArray.cast in e.
+  destruct (_ : bool) eqn:eb. 2: discriminate.
+  noconf e. simpl.
+  rewrite coerce_to_choice_type_K. reflexivity.
+Qed.
+
 Lemma translate_truncate_code :
   ∀ (c : typed_code) (ty : stype) v v' p q,
     truncate_val ty v =  ok v' →
