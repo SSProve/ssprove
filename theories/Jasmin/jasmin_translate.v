@@ -3174,10 +3174,8 @@ Proof.
       | w : wsize |- _ => destruct w
       end ; repeat constructor.
     Transparent instr_desc.
-(*   - destruct e; *)
-(*       repeat match goal with *)
-(*       | w : wsize |- _ => destruct w *)
-(*       end; repeat constructor. *)
-(* Qed. *)
-     (* admitted for efficiency (the proof takes approx ~30 to execute) *)
-Admitted.
+  - destruct e ;
+    repeat match goal with
+    | w : wsize |- _ => destruct w
+    end ; repeat constructor.
+Qed.
