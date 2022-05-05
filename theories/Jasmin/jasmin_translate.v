@@ -744,6 +744,17 @@ Qed.
 Definition chArray_set {ws} (a : 'array) (aa : arr_access) (p : Z) (w : word ws) :=
   chArray_write a (p * mk_scale aa ws)%Z w.
 
+(* WArray.set_sub *)
+Definition chArray_set_sub (ws : wsize) (len : BinNums.positive) (aa : arr_access) (a : 'array) (p : Z) (b : 'array) : 'array :=
+  let size := arr_size ws len in
+  let start := (p * mk_scale aa ws)%Z in
+  foldr (λ i data,
+    match b i with
+    | Some w => setm data (start + i)%Z w
+    | None => remm data (start + i)%Z
+    end
+  ) a (ziota 0 size).
+
 (* Jasmin's write on 'mem *)
 Definition write_mem {sz} (m : 'mem) (ptr : word Uptr) (w : word sz) : 'mem :=
   (* For now we do not worry about alignment *)
@@ -1071,18 +1082,12 @@ Definition translate_write_lval (fn : funname) (l : lval) (v : typed_chElement)
     translate_write_var fn x (totce t)
   | Lasub aa ws len x i =>
     (* Same observation as Laset *)
-    t' ← translate_get_var fn x ;;
-    let t := coerce_to_choice_type 'array t' in
-    (* Again, we ignore the length *)
-    (* Let t' := to_arr (Z.to_pos (arr_size ws len)) v in *)
-    unsupported.π2
-
-  (* | Lasub aa ws len x i =>
-    Let (n,t) := s.[x] in
-    Let i := sem_pexpr s i >>= to_int in
-    Let t' := to_arr (Z.to_pos (arr_size ws len)) v in
-    Let t := @WArray.set_sub n aa ws len t i t' in
-    write_var x (@to_val (sarr n) t) s *)
+    t ← translate_get_var fn x ;;
+    let t := coerce_to_choice_type 'array t in
+    i ← (truncate_code sint (translate_pexpr fn i)).π2 ;; (* to_int *)
+    let t' := truncate_el (sarr (Z.to_pos (arr_size ws len))) v.π2 in
+    let t := chArray_set_sub ws len aa t i t' in
+    translate_write_var fn x (totce t)
   end.
 
 Definition instr_d (i : instr) : instr_r :=
