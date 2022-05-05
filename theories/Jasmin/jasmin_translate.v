@@ -2759,6 +2759,12 @@ Notation coe_tyc := coerce_typed_code.
 Lemma injective_translate_var :
   ∀ fn, injective (translate_var fn).
 Proof.
+  intros fn u v e.
+  unfold translate_var in e.
+  destruct u as [uty u], v as [vty v].
+  simpl in e. noconf e.
+  f_equal.
+  (* We need injectivity of encode which is not true for sarr! *)
 Admitted.
 
 Lemma translate_write_correct :
