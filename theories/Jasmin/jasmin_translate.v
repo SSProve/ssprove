@@ -3071,4 +3071,4 @@ Proof.
 (*       end; repeat constructor. *)
 (* Qed. *)
      (* admitted for efficiency (the proof takes approx ~30 to execute) *)
-Admitted
+Admitted.
