@@ -2710,8 +2710,8 @@ Proof.
   unfold translate_var.
   unfold nat_of_fun_ident.
   apply /eqP. intro e.
-  noconf e.
-  apply (f_equal (λ n, n %% 3)) in H0.
+  noconf e. rename H0 into e.
+  apply (f_equal (λ n, n %% 3)) in e.
 Admitted.
 
 Notation coe_cht := coerce_to_choice_type.
@@ -3155,23 +3155,21 @@ Proof.
   assumption.
 Qed.
 
-Lemma no_arr_correct {R} ts s : List.Forall (λ t, forall len, t != sarr len) ts -> @sem_correct R ts s.
+Lemma no_arr_correct {R} ts s :
+  List.Forall (λ t, ∀ len, t != sarr len) ts →
+  @sem_correct R ts s.
 Proof.
-  intros.
-  induction ts as [|t ts ih].
+  intros h.
+  induction h as [| t ts ht h ih].
   - constructor.
   - constructor.
-    + intros.
-      pose proof unembed_embed t v.
-      destruct t.
-      1,2,4: rewrite H0; reflexivity.
-      inversion H.
-      specialize (H3 p).
-      move: H3 => /eqP.
-      contradiction.
-    + intros. apply ih.
-      inversion H.
-      assumption.
+    + intros v.
+      pose proof unembed_embed t v as e.
+      destruct t as [| | len |].
+      1,2,4: rewrite e ; reflexivity.
+      specialize (ht len). move: ht => /eqP. contradiction.
+    + intros v.
+      apply ih.
 Qed.
 
 Lemma x86_correct :
@@ -3185,9 +3183,9 @@ Proof.
     eapply sem_correct_rewrite with (e := e).
     destruct a as [o x]. simpl in *.
     eapply no_arr_correct.
-    destruct x; simpl.
+    destruct x ; simpl.
     all: repeat constructor.
     Transparent instr_desc.
-  - destruct e; simpl; repeat constructor.
-    destruct w; repeat constructor.
+  - destruct e ; simpl ; repeat constructor.
+    destruct w ; repeat constructor.
 Qed.
