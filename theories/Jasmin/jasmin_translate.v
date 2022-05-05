@@ -2374,15 +2374,10 @@ Proof.
     + simpl in *. jbind H v1 hv1.
       eapply ih. eapply translate_to_int in hv1.
       rewrite hv1. assumption.
-  - simpl in *.
-    repeat (destruct vs; [repeat jbind_fresh H; discriminate|]).
-    destruct vs. 2: repeat jbind_fresh H; discriminate.
-    repeat jbind_fresh H.
-    inversion H.
-    destruct (cf_tbl c) as [[] []].
-    all: simpl in *; erewrite translate_to_bool; [|eassumption]; try reflexivity.
-    all: erewrite translate_to_bool; [|eassumption]; try reflexivity.
-    all: erewrite translate_to_bool; [|eassumption]; try reflexivity.
+  - erewrite tr_app_sopn_correct.
+    + reflexivity.
+    + repeat constructor.
+    + assumption.
 Qed.
 
 Lemma translate_pexpr_correct :
