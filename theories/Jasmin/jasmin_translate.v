@@ -2851,8 +2851,28 @@ Proof.
   - rewrite -mulP in e. rewrite -plusE in e.
     pose proof (nat_of_ident_pos x).
     micromega.Lia.lia.
-  - (* Have to prove Ascii.nat_of_ascii is below 256 *)
-Admitted.
+  - (* BSH: there is a more principled way of doing this, but this'll do for now *)
+    apply (f_equal (λ a, Nat.modulo a 256)) in e as xy_eq.
+    rewrite -Nat.add_mod_idemp_l in xy_eq. 2: micromega.Lia.lia.
+    rewrite -Nat.mul_mod_idemp_l in xy_eq. 2: micromega.Lia.lia.
+    rewrite Nat.mod_same in xy_eq. 2: micromega.Lia.lia.
+    rewrite Nat.mul_0_l in xy_eq.
+    rewrite Nat.mod_0_l in xy_eq. 2: micromega.Lia.lia.
+    rewrite Nat.add_0_l in xy_eq.
+    rewrite -Nat.add_mod_idemp_l in xy_eq. 2: micromega.Lia.lia.
+    rewrite -Nat.mul_mod_idemp_l in xy_eq. 2: micromega.Lia.lia.
+    rewrite Nat.mod_same in xy_eq. 2: micromega.Lia.lia.
+    rewrite Nat.mul_0_l in xy_eq.
+    rewrite Nat.mod_0_l in xy_eq. 2: micromega.Lia.lia.
+    rewrite Nat.add_0_l in xy_eq.
+    rewrite !Nat.mod_small in xy_eq. 2,3: apply Ascii.nat_ascii_bounded.
+    apply OrderedTypeEx.String_as_OT.nat_of_ascii_inverse in xy_eq.
+    subst. f_equal.
+    apply IHx.
+    rewrite -!addP in e.
+    rewrite -!mulP in e.
+    micromega.Lia.lia.
+Qed.
 
 Lemma injective_nat_of_fun_ident :
   ∀ fn x y,
