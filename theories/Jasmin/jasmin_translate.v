@@ -2761,6 +2761,109 @@ Qed.
 Notation coe_cht := coerce_to_choice_type.
 Notation coe_tyc := coerce_typed_code.
 
+Lemma injective_mulnl :
+  ∀ n x y,
+    0 < n →
+    (n * x)%nat = (n * y)%nat →
+    x = y.
+Proof.
+  intros n x y hn e.
+  apply (f_equal (λ m, m %/ n)) in e.
+  rewrite !mulKn in e. 2,3: assumption.
+  assumption.
+Qed.
+
+Lemma nonzero_lt :
+  ∀ n,
+    n ≠ 0 →
+    0 < n.
+Proof.
+  intros n h.
+  destruct n. 1: contradiction.
+  auto.
+Qed.
+
+Lemma pow_nonzero :
+  ∀ k n,
+    k ≠ 0 →
+    (k ^ n)%nat ≠ 0.
+Proof.
+  intros k n hk.
+  induction n as [| n ih].
+  - simpl. discriminate.
+  - simpl. micromega.Lia.lia.
+Qed.
+
+Lemma injective_pow :
+  ∀ k n m,
+    1 < k →
+    (k ^ n)%nat = (k ^ m)%nat →
+    n = m.
+Proof.
+  intros k n m hk e.
+  induction n as [| n ih] in m, e |- *.
+  - simpl in e. destruct m as [| m].
+    2:{
+      move: hk => /ltP hk.
+      simpl in e. exfalso.
+      assert ((k ^ m)%nat ≠ 0).
+      { apply pow_nonzero. micromega.Lia.lia. }
+      micromega.Lia.lia.
+    }
+    reflexivity.
+  - simpl in e.
+    destruct m as [| m].
+    1:{
+      move: hk => /ltP hk.
+      simpl in e. exfalso.
+      assert ((k ^ n)%nat ≠ 0).
+      { apply pow_nonzero. micromega.Lia.lia. }
+      micromega.Lia.lia.
+    }
+    f_equal. apply ih.
+    simpl in e. apply injective_mulnl in e. 2: auto.
+    assumption.
+Qed.
+
+Lemma nat_of_ident_pos :
+  ∀ x, (0 < nat_of_ident x)%coq_nat.
+Proof.
+  intros x. induction x as [| a s ih].
+  - auto.
+  - simpl.
+    rewrite -mulP. rewrite -plusE.
+    micromega.Lia.lia.
+Qed.
+
+Lemma injective_nat_of_ident :
+  ∀ x y,
+    nat_of_ident x = nat_of_ident y →
+    x = y.
+Proof.
+  intros x y e.
+  destruct x as [| a x], y as [| b y]. all: simpl in e.
+  - reflexivity.
+  - rewrite -mulP in e. rewrite -plusE in e.
+    pose proof (nat_of_ident_pos y).
+    micromega.Lia.lia.
+  - rewrite -mulP in e. rewrite -plusE in e.
+    pose proof (nat_of_ident_pos x).
+    micromega.Lia.lia.
+  - give_up. (* Not true is it? *)
+Abort.
+
+Lemma injective_nat_of_fun_ident :
+  ∀ fn x y,
+    nat_of_fun_ident fn x = nat_of_fun_ident fn y →
+    x = y.
+Proof.
+  intros fn x y e.
+  unfold nat_of_fun_ident in e.
+  apply injective_mulnl in e.
+  2:{ apply nonzero_lt. apply pow_nonzero. micromega.Lia.lia. }
+  apply injective_pow in e. 2: auto.
+Abort.
+
 Lemma injective_translate_var :
   ∀ fn, injective (translate_var fn).
 Proof.
@@ -2770,6 +2873,7 @@ Proof.
   simpl in e. noconf e.
   f_equal.
   (* We need injectivity of encode which is not true for sarr! *)
+  (* injective_nat_of_fun_ident might not be true either *)
 Admitted.
 
 Lemma translate_write_correct :
