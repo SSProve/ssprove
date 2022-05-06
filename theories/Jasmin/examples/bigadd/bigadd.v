@@ -475,25 +475,16 @@ Notation " a [ w / p ] " :=
     (at level 99, no associativity,
       format " a [ w / p ] ").
 
-
 From Equations Require Import Equations.
 Set Equations With UIP.
 Set Equations Transparent.
 
-Definition tr_bigadd := translate_prog bigadd.
-Definition f_bigadd : ('array * 'array) -> raw_code 'array.
-Proof.
-  pose tr_bigadd. unfold tr_bigadd in s. unfold translate_prog in s.
-  simpl in s.
-  destruct s eqn:E.
-  - unfold s in E. discriminate.
-  - pose (ffun p.2).π2.π2.
-    simpl in r.
-    unfold s in E.
-    noconf E.
-    (* simpl in r. *)
-    exact r.
-Defined.
+From extructures Require Import ord fset fmap.
+
+Definition empty_ufun_decl := (1%positive, {| f_info := 1%positive; f_tyin := [::]; f_params := [::]; f_body := [::]; f_tyout := [::]; f_res := [::]; f_extra := tt |}) : _ufun_decl.
+Definition translate_simple_prog P := translate_fundef P emptym (List.nth_default empty_ufun_decl P.(p_funcs) 0).
+
+Definition fn_bigadd := Eval simpl in ((ffun (translate_simple_prog bigadd).2).π2).π2.
 
 Lemma eq_rect_K :
   forall (A : eqType) (x : A) (P : A -> Type) h e,
@@ -504,51 +495,45 @@ Proof.
   reflexivity.
 Qed.
 
-Eval cbn in tr_bigadd.
-Goal forall aa, f_bigadd aa = f_bigadd aa.
+From CoqWord Require Import word.
 
-  intros [a1 a2].
-  unfold f_bigadd at 2.
-  unfold apply_noConfusion.
-  simpl.
-  unfold translate_write_var. simpl.
-  unfold translate_instr. simpl.
-  Opaque translate_for.
-  (* unfold translate_for. simpl. *)
-  rewrite !coerce_typed_code_K.
-  simpl.
-  unfold translate_var. simpl.
-  (* set (TODO := ('unit; distr.dnull)). *)
+Notation "$ i" := (_ ; nat_of_fun_ident _ i) (at level 99,
+                                               format "$ i").
+
+Notation "$$ i" := ({| v_var := {| vtype := _; vname := i |}; v_info := _ |})
+                    (at level 99,
+                      format "$$ i").
+
+Notation "'for var ∈ seq" := (translate_for _ ($$var) seq)
+                                      (at level 99).
+
+Ltac prog_unfold := unfold translate_write_var, translate_instr, translate_var, coerce_chtuple_to_list, bind_list', bind_list_trunc_aux, wsize_size.
+Hint Rewrite coerce_typed_code_K eq_rect_K eq_rect_r_K : prog_rewrite.
+
+Opaque translate_for.
+Ltac simpl_fun :=
+  repeat (match goal with
+         | _ => progress autorewrite with prog_rewrite
+         | _ => prog_unfold; simpl
+         | [ |- context[nat_of_fun_ident ?fn _] ] => set (f_name := fn) in *
+         end).
+
+Goal forall aa goal, fn_bigadd aa = goal.
+  intros [a1 a2] goal.
+  unfold fn_bigadd.
+  simpl_fun.
+
+  (* BSH: the setoid_rewrites takes forever if we do not 'set' these names first *)
   set (array32 := sarr 32%positive).
-  set (fn := 2%positive).
-  set (x := ('array; nat_of_fun_ident fn "x.140")).
-  set (xr := ('word U64; nat_of_fun_ident fn "xr.143")).
-  set (y := ('array; nat_of_fun_ident fn "y.141")).
-  set (yr := ('word U64; nat_of_fun_ident fn "yr.144")).
-  set (cf := ('bool; nat_of_fun_ident fn "cf.145")).
-  set (i := ('int; nat_of_fun_ident fn "i.146")).
+  set (x := $"x.140").
+  set (xr := $"xr.143").
+  set (y := $"y.141").
+  set (yr := $"yr.144").
+  set (cf := $"cf.145").
+  set (i := $"i.146").
+  set (res := $"res.142").
 
-  set (x_ := {| v_var := {| vtype := array32; vname := "x.140" |};
-               v_info := (fn~0)%positive |}).
-  set (y_ := {| v_var := {| vtype := array32; vname := "y.141" |};
-               v_info := (fn~1)%positive |}).
-
-  unfold coerce_chtuple_to_list; simpl.
-  rewrite eq_rect_r_K.
-  simpl.
-  fold x y.
-
-  unfold bind_list'. simpl.
-  unfold bind_list_trunc_aux. simpl.
-  rewrite eq_rect_K.
-
-  unfold translate_var. simpl.
-  set (res := ('array; nat_of_fun_ident fn "res.142")).
-
+  setoid_rewrite coerce_to_choice_type_K.
+  setoid_rewrite coerce_to_choice_type_K.
   time repeat setoid_rewrite (@zero_extend_u U64).
-  unfold wsize_size.
-  rewrite !coerce_to_choice_type_K.
-  setoid_rewrite coerce_to_choice_type_K.
-  setoid_rewrite coerce_to_choice_type_K.
-
-  (* Strangely, some instances of coe_cht don't get simplified away here. *)
+Admitted.
