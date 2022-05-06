@@ -378,8 +378,17 @@ Fixpoint nat_of_ident (id : Ident.ident) : nat :=
 Definition nat_of_fun_ident (f : funname) (id : Ident.ident) : nat :=
   3^(nat_of_pos f) * 2^(nat_of_ident id).
 
+Definition nat_of_stype t : nat :=
+  match t with
+  | sarr len => 5 ^ ((Pos.to_nat len).+1)
+  | _ => 5 ^ 1
+  end.
+
+Definition nat_of_fun_var (f : funname) (x : var) : nat :=
+  (nat_of_stype x.(vtype) * (nat_of_fun_ident f x.(vname)))%coq_nat.
+
 Definition translate_var (f : funname) (x : var) : Location :=
-  (encode x.(vtype) ; nat_of_fun_ident f x.(vname)).
+  (encode x.(vtype) ; nat_of_fun_var f x).
 
 Definition typed_code :=
   ∑ (a : choice_type), raw_code a.
@@ -1394,8 +1403,11 @@ Proof.
   all: simpl ; rewrite eq_rect_r_K ; reflexivity.
 Qed.
 
+Definition nat_of_ptr (ptr : pointer) :=
+  (7 ^ Z.to_nat (wunsigned ptr))%nat.
+
 Definition translate_ptr (ptr : pointer) : Location :=
-  ('word U8 ; (5 ^ Z.to_nat (wunsigned ptr))%nat).
+  ('word U8 ; nat_of_ptr ptr).
 
 Definition rel_mem (m : mem) (h : heap) :=
   ∀ ptr v,
@@ -2739,6 +2751,27 @@ Proof.
   - simpl. micromega.Lia.lia.
 Qed.
 
+Lemma ptr_var_nat_neq (ptr : pointer) (fn : funname) (v : var) :
+  nat_of_ptr ptr != nat_of_fun_var fn v.
+Proof.
+  unfold nat_of_ptr.
+  unfold nat_of_fun_var.
+  apply /eqP. intro e.
+  apply (f_equal (λ n, n %% 3)) in e.
+  rewrite -modnMm in e.
+  rewrite -(modnMm (3 ^ _)) in e.
+  rewrite Mpowmodn in e. 2: apply nat_of_pos_nonzero.
+  rewrite mul0n in e.
+  rewrite mod0n in e.
+  rewrite muln0 in e.
+  move: e => /eqP e. rewrite eqn_mod_dvd in e. 2: auto.
+  rewrite subn0 in e.
+  rewrite Natpow_expn in e. rewrite Euclid_dvdX in e. 2: auto.
+  move: e => /andP [e _].
+  rewrite dvdn_prime2 in e. 2,3: auto.
+  move: e => /eqP e. micromega.Lia.lia.
+Qed.
+
 Lemma ptr_var_neq (ptr : pointer) (fn : funname) (v : var) :
   translate_ptr ptr != translate_var fn v.
 Proof.
@@ -2746,16 +2779,8 @@ Proof.
   unfold translate_var.
   unfold nat_of_fun_ident.
   apply /eqP. intro e.
-  noconf e. rename H0 into e.
-  apply (f_equal (λ n, n %% 3)) in e.
-  rewrite -modnMm in e. rewrite Mpowmodn in e. 2: apply nat_of_pos_nonzero.
-  rewrite mul0n in e.
-  move: e => /eqP e. rewrite eqn_mod_dvd in e. 2: auto.
-  rewrite subn0 in e.
-  rewrite Natpow_expn in e. rewrite Euclid_dvdX in e. 2: auto.
-  move: e => /andP [e _].
-  rewrite dvdn_prime2 in e. 2,3: auto.
-  move: e => /eqP e. micromega.Lia.lia.
+  noconf e.
+  move: (ptr_var_nat_neq ptr fn v) => /eqP; contradiction.
 Qed.
 
 Notation coe_cht := coerce_to_choice_type.
@@ -2822,6 +2847,61 @@ Proof.
   apply injective_nat_of_ident. assumption.
 Qed.
 
+Lemma coprime_mul_inj a b c d :
+  coprime a d -> coprime a b -> coprime c b -> coprime c d  -> (a * b = c * d)%nat -> a = c /\ b = d.
+Proof.
+  intros ad ab cb cd e.
+  move: e => /eqP. rewrite eqn_dvd. move=> /andP [d1 d2].
+  rewrite Gauss_dvd in d1. 2: assumption.
+  rewrite Gauss_dvd in d2. 2: assumption.
+  move: d1 d2 => /andP [d11 d12] /andP [d21 d22].
+  rewrite Gauss_dvdl in d11. 2: assumption.
+  rewrite Gauss_dvdr in d12. 2: rewrite coprime_sym; assumption.
+  rewrite Gauss_dvdl in d21. 2: assumption.
+  rewrite Gauss_dvdr in d22. 2: rewrite coprime_sym; assumption.
+  split.
+  - apply /eqP. rewrite eqn_dvd. by apply /andP.
+  - apply /eqP. rewrite eqn_dvd. by apply /andP.
+Qed.
+
+Lemma coprime_nat_of_stype_nat_of_fun_ident t fn v :
+ coprime (nat_of_stype t) (nat_of_fun_ident fn v).
+Proof.
+  unfold nat_of_fun_ident.
+  unfold nat_of_stype.
+  rewrite coprimeMr.
+  apply /andP.
+  destruct t.
+  - rewrite !Natpow_expn.
+    rewrite !coprime_pexpl.
+    2,3: auto.
+    rewrite !coprime_pexpr.
+    2: apply /ltP; apply nat_of_ident_pos.
+    2: apply /ltP; pose proof nat_of_pos_nonzero fn; micromega.Lia.lia.
+    auto.
+  - rewrite !Natpow_expn.
+    rewrite !coprime_pexpl.
+    2,3: auto.
+    rewrite !coprime_pexpr.
+    2: apply /ltP; apply nat_of_ident_pos.
+    2: apply /ltP; pose proof nat_of_pos_nonzero fn; micromega.Lia.lia.
+    auto.
+  - rewrite !Natpow_expn.
+    rewrite !coprime_pexpl.
+    2,3: auto.
+    rewrite !coprime_pexpr.
+    2: apply /ltP; apply nat_of_ident_pos.
+    2: apply /ltP; pose proof nat_of_pos_nonzero fn; micromega.Lia.lia.
+    auto.
+  - rewrite !Natpow_expn.
+    rewrite !coprime_pexpl.
+    2,3: auto.
+    rewrite !coprime_pexpr.
+    2: apply /ltP; apply nat_of_ident_pos.
+    2: apply /ltP; pose proof nat_of_pos_nonzero fn; micromega.Lia.lia.
+    auto.
+Qed.
+
 Lemma injective_translate_var :
   ∀ fn, injective (translate_var fn).
 Proof.
@@ -2829,11 +2909,20 @@ Proof.
   unfold translate_var in e.
   destruct u as [uty u], v as [vty v].
   simpl in e. noconf e.
+  unfold nat_of_fun_var in H0.
+  simpl in H0.
+  apply coprime_mul_inj in H0 as [e1 e2].
+  2,3,4,5: apply coprime_nat_of_stype_nat_of_fun_ident.
   f_equal.
-  - (* We need injectivity of encode which is not true for sarr! *)
-    give_up.
-  - eapply injective_nat_of_fun_ident. eassumption.
-Admitted.
+  - destruct uty, vty; auto; try discriminate.
+    + apply Nat.pow_inj_r in e1. 2: auto.
+      apply succn_inj in e1.
+      apply Pos2Nat.inj in e1.
+      subst; reflexivity.
+    + noconf H. reflexivity.
+  - eapply injective_nat_of_fun_ident.
+    eassumption.
+Qed.
 
 Lemma translate_write_correct :
   ∀ fn sz s p (w : word sz) cm (cond : heap → Prop),
