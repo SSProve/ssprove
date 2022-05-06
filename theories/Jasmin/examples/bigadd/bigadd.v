@@ -515,7 +515,6 @@ Ltac simpl_fun :=
   repeat (match goal with
          | _ => progress autorewrite with prog_rewrite
          | _ => prog_unfold; simpl
-         | [ |- context[nat_of_fun_ident ?fn _] ] => set (f_name := fn) in *
          end).
 
 Goal forall aa goal, fn_bigadd aa = goal.
