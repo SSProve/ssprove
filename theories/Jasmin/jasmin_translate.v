@@ -152,6 +152,13 @@ Proof.
   - intros [] []. intuition eauto.
 Qed.
 
+(* Tactic to deal with Let _ := _ in _ = ok _ in assumption h *)
+(* x and hx are introduced names for the value and its property *)
+Ltac jbind h x hx :=
+  eapply rbindP ; [| exact h ] ;
+  clear h ; intros x hx h ;
+  cbn beta in h.
+
 Section Translation.
 
 Context `{asmop : asmOp}.
@@ -163,13 +170,6 @@ Context {pd : PointerData}.
 Context (P : uprog).
 
 Notation gd := (p_globs P).
-
-(* Tactic to deal with Let _ := _ in _ = ok _ in assumption h *)
-(* x and hx are introduced names for the value and its property *)
-Ltac jbind h x hx :=
-  eapply rbindP ; [| exact h ] ;
-  clear h ; intros x hx h ;
-  cbn beta in h.
 
 Notation " 'array " := (chMap 'int ('word U8)) (at level 2) : package_scope.
 Notation " 'array " := (chMap 'int ('word U8)) (in custom pack_type at level 2).
@@ -378,8 +378,17 @@ Fixpoint nat_of_ident (id : Ident.ident) : nat :=
 Definition nat_of_fun_ident (f : funname) (id : Ident.ident) : nat :=
   3^(nat_of_pos f) * 2^(nat_of_ident id).
 
+Definition nat_of_stype t : nat :=
+  match t with
+  | sarr len => 5 ^ ((Pos.to_nat len).+1)
+  | _ => 5 ^ 1
+  end.
+
+Definition nat_of_fun_var (f : funname) (x : var) : nat :=
+  (nat_of_stype x.(vtype) * (nat_of_fun_ident f x.(vname)))%coq_nat.
+
 Definition translate_var (f : funname) (x : var) : Location :=
-  (encode x.(vtype) ; nat_of_fun_ident f x.(vname)).
+  (encode x.(vtype) ; nat_of_fun_var f x).
 
 Definition typed_code :=
   ∑ (a : choice_type), raw_code a.
@@ -744,6 +753,17 @@ Qed.
 Definition chArray_set {ws} (a : 'array) (aa : arr_access) (p : Z) (w : word ws) :=
   chArray_write a (p * mk_scale aa ws)%Z w.
 
+(* WArray.set_sub *)
+Definition chArray_set_sub (ws : wsize) (len : BinNums.positive) (aa : arr_access) (a : 'array) (p : Z) (b : 'array) : 'array :=
+  let size := arr_size ws len in
+  let start := (p * mk_scale aa ws)%Z in
+  foldr (λ i data,
+    match b i with
+    | Some w => setm data (start + i)%Z w
+    | None => remm data (start + i)%Z
+    end
+  ) a (ziota 0 size).
+
 (* Jasmin's write on 'mem *)
 Definition write_mem {sz} (m : 'mem) (ptr : word Uptr) (w : word sz) : 'mem :=
   (* For now we do not worry about alignment *)
@@ -811,25 +831,25 @@ Proof.
     + exact (translate_value v, tr_vs).
 Defined.
 
-Fixpoint app_sopn_list {S} (ts : list stype) :=
-  match ts as ts0
-  return (sem_prod ts0 (exec (sem_t S)) → [choiceType of list typed_chElement] → encode S)
+Fixpoint tr_app_sopn {S R} (can : R) (emb : S → R) (ts : list stype) :=
+  match ts as ts'
+  return (sem_prod ts' (exec S) → [choiceType of list typed_chElement] → R)
   with
   | [::] =>
-    λ (o : exec (sem_t S)) (vs : list typed_chElement),
+    λ (o : exec S) (vs : list typed_chElement),
       match vs with
       | [::] =>
         match o with
-        | Ok o => embed o
-        | _ => chCanonical _
+        | Ok o => emb o
+        | _ => can
         end
-      | _ :: _ => chCanonical _
+      | _ :: _ => can
       end
-  | t :: ts0 =>
-    λ (o : sem_t t → sem_prod ts0 (exec (sem_t S))) (vs : list typed_chElement),
+  | t :: ts' =>
+    λ (o : sem_t t → sem_prod ts' (exec S)) (vs : list typed_chElement),
       match vs with
-      | [::] => chCanonical _
-      | v :: vs0 => app_sopn_list ts0 (o (unembed (truncate_el t v.π2))) vs0
+      | [::] => can
+      | v :: vs' => tr_app_sopn can emb ts' (o (unembed (truncate_el t v.π2))) vs'
       end
   end.
 
@@ -893,6 +913,47 @@ End bind_list_alt.
 
 Notation totce := to_typed_chElement.
 
+Definition embed_ot {t} : sem_ot t → encode t :=
+  match t with
+  (* BSH: I'm not sure this will be correct? In jasmin this is an Option bool, perhaps because you don't have to specify all output flags *)
+  | sbool => λ x,
+    match x with
+    | Some b => b
+    | None => false
+    end
+  | sint => λ x, x
+  | sarr n => embed_array
+  | sword n => λ x, x
+  end.
+
+Definition encode_tuple (ts : list stype) : choice_type :=
+  lchtuple [seq encode t | t <- ts].
+
+(* takes a tuple of jasmin values and embeds each component *)
+Fixpoint embed_tuple {ts} : sem_tuple ts → encode_tuple ts :=
+  match ts as ts0
+  return sem_tuple ts0 -> lchtuple [seq encode t | t <- ts0]
+  with
+  | [::] => λ (_ : unit), tt
+  | t' :: ts' =>
+    let rec := @embed_tuple ts' in
+    match ts' as ts'0
+    return
+      (sem_tuple ts'0 -> lchtuple [seq encode t | t <- ts'0]) →
+      sem_tuple (t'::ts'0) -> lchtuple [seq encode t | t <- (t'::ts'0)]
+    with
+    | [::] => λ _ (v : sem_ot t'), embed_ot v
+    | t'' :: ts'' => λ rec (p : (sem_ot t') * (sem_tuple (t''::ts''))), (embed_ot p.1, rec p.2)
+    end rec
+  end.
+
+(* tr_app_sopn specialized to when there is only one return value *)
+Definition tr_app_sopn_single {t} :=
+  tr_app_sopn (chCanonical (encode t)) embed.
+
+(* tr_app_sopn specialized to when there is several return values *)
+Definition tr_app_sopn_tuple {ts} :=
+  tr_app_sopn (chCanonical (encode_tuple ts)) embed_tuple.
 
 (* Following sem_pexpr *)
 Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
@@ -953,7 +1014,7 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
        *)
     totc _ (
       vs ← bind_list [seq translate_pexpr fn e | e <- es] ;;
-      ret (app_sopn_list (type_of_opN op).1 (sem_opN_typed op) vs)
+      ret (tr_app_sopn_single (type_of_opN op).1 (sem_opN_typed op) vs)
     )
   | Pif t eb e1 e2 =>
     totc _ (
@@ -1030,18 +1091,12 @@ Definition translate_write_lval (fn : funname) (l : lval) (v : typed_chElement)
     translate_write_var fn x (totce t)
   | Lasub aa ws len x i =>
     (* Same observation as Laset *)
-    t' ← translate_get_var fn x ;;
-    let t := coerce_to_choice_type 'array t' in
-    (* Again, we ignore the length *)
-    (* Let t' := to_arr (Z.to_pos (arr_size ws len)) v in *)
-    unsupported.π2
-
-  (* | Lasub aa ws len x i =>
-    Let (n,t) := s.[x] in
-    Let i := sem_pexpr s i >>= to_int in
-    Let t' := to_arr (Z.to_pos (arr_size ws len)) v in
-    Let t := @WArray.set_sub n aa ws len t i t' in
-    write_var x (@to_val (sarr n) t) s *)
+    t ← translate_get_var fn x ;;
+    let t := coerce_to_choice_type 'array t in
+    i ← (truncate_code sint (translate_pexpr fn i)).π2 ;; (* to_int *)
+    let t' := truncate_el (sarr (Z.to_pos (arr_size ws len))) v.π2 in
+    let t := chArray_set_sub ws len aa t i t' in
+    translate_write_var fn x (totce t)
   end.
 
 Definition instr_d (i : instr) : instr_r :=
@@ -1098,58 +1153,6 @@ Fixpoint translate_for fn (i : var_i) (ws : seq Z) (c : raw_code 'unit) : raw_co
 
 (*       (* write_lvals the result of the call into lvals `l` *) *)
 
-Definition embed_ot {t} : sem_ot t → encode t :=
-  match t with
-  | sbool => λ x, x              (* BSH: I'm not sure this will be correct? In jasmin this is an Option bool, perhaps because you don't have to specify all output flags *)
-  | sint => λ x, x
-  | sarr n => embed_array
-  | sword n => λ x, x
-  end.
-
-(* takes a tuple of jasmin values and embeds each component *)
-Fixpoint embed_tuple {ts} : sem_tuple ts → lchtuple [seq encode t | t <- ts] :=
-  match ts as ts0
-  return sem_tuple ts0 -> lchtuple [seq encode t | t <- ts0]
-  with
-  | [::] => λ (_ : unit), tt
-  | t' :: ts' =>
-    let rec := @embed_tuple ts' in
-    match ts' as ts'0
-    return
-      (sem_tuple ts'0 -> lchtuple [seq encode t | t <- ts'0]) →
-      sem_tuple (t'::ts'0) -> lchtuple [seq encode t | t <- (t'::ts'0)]
-    with
-    | [::] => λ _ (v : sem_ot t'), embed_ot v
-    | t'' :: ts'' => λ rec (p : (sem_ot t') * (sem_tuple (t''::ts''))), (embed_ot p.1, rec p.2)
-    end rec
-  end.
-
-(* this correcsponds to app_sopn, in the case where applied function can have several return values,
-   as opposed to app_sopn_list which is used in the case where there is only one return value
-   (e.g. in expressions). In jasmin they manage to only have one function (app_sopn) for these two
-   use cases; i'm unsure if we can do the same
- *)
-Fixpoint app_sopn_list_tuple {ts_out : list stype} (ts_in  : list stype) :=
-  match ts_in as ts0
-  return
-    (sem_prod ts0 (exec (sem_tuple ts_out))) →
-    [choiceType of list typed_chElement] →
-    lchtuple ([seq encode t | t <- ts_out])
-  with
-  | [::] =>
-    λ (o : exec (sem_tuple ts_out)) (vs : list typed_chElement),
-      match vs, o with
-      | [::], Ok o => embed_tuple o
-      | _, _ => chCanonical _
-      end
-  | t :: ts0 =>
-    λ (o : sem_t t → sem_prod ts0 (exec (sem_tuple ts_out))) (vs : list typed_chElement),
-      match vs with
-      | [::] => chCanonical _
-      | v :: vs0 => app_sopn_list_tuple ts0 (o (unembed (truncate_el t v.π2))) vs0
-      end
-  end.
-
 (* list_ltuple *)
 Fixpoint list_lchtuple {ts} : lchtuple ([seq encode t | t <- ts]) → [choiceType of list typed_chElement] :=
   match ts as ts0
@@ -1174,22 +1177,36 @@ Fixpoint list_lchtuple {ts} : lchtuple ([seq encode t | t <- ts]) → [choiceTyp
 
 (* corresponds to exec_sopn *)
 Definition translate_exec_sopn (o : sopn) (vs : seq typed_chElement) :=
-  list_lchtuple (app_sopn_list_tuple _ (sopn_sem o) vs).
+  list_lchtuple (tr_app_sopn_tuple _ (sopn_sem o) vs).
 
-Fixpoint translate_write_lvals (fn : funname) (ls : lvals) (vs : list typed_chElement) :=
-  match ls with
-  | [::] => ret tt
-  | l :: ls => match vs with
-             | [::] => ret tt
-             | v :: vs => translate_write_lval fn l v ;;
-                        translate_write_lvals fn ls vs
-             end
+Fixpoint foldl2 {A B R} (f : R → A → B → R) (la : seq A) (lb : seq B) r :=
+  match la with
+  | [::] => r
+  | a :: la' =>
+    match lb with
+    | [::] => r
+    | b :: lb' => foldl2 f la' lb' (f r a b)
+    end
   end.
 
 Definition fdefs :=
   (* ∀ fn fdef, get_fundef (p_funcs P) fn = Some fdef -> raw_code 'unit. *)
   list (funname *
           ([choiceType of seq typed_chElement] -> raw_code [choiceType of seq typed_chElement])).
+Fixpoint foldr2 {A B R} (f : A → B → R → R) (la : seq A) (lb : seq B) r :=
+  match la with
+  | [::] => r
+  | a :: la' =>
+    match lb with
+    | [::] => r
+    | b :: lb' => f a b (foldr2 f la' lb' r)
+    end
+  end.
+
+Definition translate_write_lvals fn ls vs :=
+  (* foldl2 (λ c l v, translate_write_lval fn l v ;; c) ls vs (ret tt). *)
+  foldr2 (λ l v c, translate_write_lval fn l v ;; c) ls vs (ret tt).
+
 
 Definition trunc_list :=
   (λ tys (vs : seq typed_chElement),
@@ -1440,8 +1457,11 @@ Proof.
   all: simpl ; rewrite eq_rect_r_K ; reflexivity.
 Qed.
 
+Definition nat_of_ptr (ptr : pointer) :=
+  (7 ^ Z.to_nat (wunsigned ptr))%nat.
+
 Definition translate_ptr (ptr : pointer) : Location :=
-  ('word U8 ; (5 ^ Z.to_nat (wunsigned ptr))%nat).
+  ('word U8 ; nat_of_ptr ptr).
 
 Definition rel_mem (m : mem) (h : heap) :=
   ∀ ptr v,
@@ -1579,7 +1599,12 @@ Lemma mem_loc_translate_var_neq :
   ∀ fn x,
     mem_loc != translate_var fn x.
 Proof.
-Admitted.
+  intros fn x.
+  unfold mem_loc, translate_var.
+  apply /eqP. intro e.
+  destruct x as [ty i]. simpl in e. noconf e.
+  destruct ty. all: discriminate.
+Qed.
 
 Lemma translate_write_estate :
   ∀ fn sz s cm ptr w m,
@@ -1847,6 +1872,19 @@ Proof.
   rewrite coerce_to_choice_type_K. reflexivity.
 Qed.
 
+Lemma translate_to_arr :
+  ∀ len v a,
+    to_arr len v = ok a →
+    coerce_to_choice_type 'array (translate_value v) = translate_value (Varr a).
+Proof.
+  intros len v a e.
+  destruct v as [| | len' t' | |]. all: try discriminate.
+  simpl in e. unfold WArray.cast in e.
+  destruct (_ : bool) eqn:eb. 2: discriminate.
+  noconf e. simpl.
+  rewrite coerce_to_choice_type_K. reflexivity.
+Qed.
+
 Lemma translate_truncate_code :
   ∀ (c : typed_code) (ty : stype) v v' p q,
     truncate_val ty v =  ok v' →
@@ -1989,7 +2027,7 @@ Proof.
 Qed.
 
 Lemma chArray_get_sub_correct (lena len : BinNums.positive) a aa sz i t :
-  WArray.get_sub aa sz len a i = ok t ->
+  WArray.get_sub aa sz len a i = ok t →
   chArray_get_sub sz len (translate_value (@Varr lena a)) i (mk_scale aa sz) = translate_value (Varr t).
 Proof.
   intros H.
@@ -2013,6 +2051,33 @@ Proof.
       reflexivity.
     + rewrite E.
       rewrite fold_rem.
+      reflexivity.
+Qed.
+
+Lemma chArray_set_sub_correct :
+  ∀ ws (lena len : BinNums.positive) a aa b p t,
+  @WArray.set_sub lena aa ws len a p b = ok t →
+  chArray_set_sub ws len aa (translate_value (Varr a)) p (translate_value (Varr b))
+  = translate_value (Varr t).
+Proof.
+  intros ws lena len a aa b p t e.
+  unfold WArray.set_sub in e.
+  destruct (_ : bool) eqn:eb. 2: discriminate.
+  noconf e.
+  unfold chArray_set_sub. unfold WArray.set_sub_data.
+  move: eb => /andP [e1 e2].
+  rewrite <- !foldl_rev.
+  apply ziota_ind.
+  - reflexivity.
+  - intros i l hi ih.
+    rewrite rev_cons.
+    rewrite !foldl_rcons.
+    rewrite ih.
+    rewrite fold_get.
+    destruct Mz.get eqn:e.
+    + rewrite fold_set.
+      reflexivity.
+    + rewrite fold_rem.
       reflexivity.
 Qed.
 
@@ -2135,7 +2200,7 @@ Definition WArray_ext_eq {len} (a b : WArray.array len) :=
 Notation "a =ₑ b" := (WArray_ext_eq a b) (at level 90).
 Notation "(=ₑ)" := WArray_ext_eq (only parsing).
 
-Instance WArray_ext_eq_equiv {len} : Equivalence (@WArray_ext_eq len).
+#[export] Instance WArray_ext_eq_equiv {len} : Equivalence (@WArray_ext_eq len).
 Proof.
   split.
   - intros x.
@@ -2181,7 +2246,7 @@ Proof.
       eassumption.
 Qed.
 
-Lemma unembed_embed {len} (a : sem_t (sarr len)) :
+Lemma unembed_embed_sarr {len} (a : sem_t (sarr len)) :
   unembed (embed a) =ₑ a.
 Proof.
   intros x.
@@ -2193,21 +2258,36 @@ Proof.
   reflexivity.
 Qed.
 
-Instance unembed_embed_Proper {len} : Proper ((=ₑ) ==> (=ₑ)) (λ (a : sem_t (sarr len)), unembed (embed a)).
+Lemma unembed_embed t a :
+  match t as t0 return sem_t t0 -> Prop with
+  | sbool => λ a, unembed (embed a) = a
+  | sint => λ a, unembed (embed a) = a
+  | sarr p => λ a, unembed (embed a) =ₑ a
+  | sword s => λ a, unembed (embed a) = a
+  end a.
+Proof.
+  destruct t.
+  - reflexivity.
+  - reflexivity.
+  - apply unembed_embed_sarr.
+  - reflexivity.
+Qed.
+
+#[export] Instance unembed_embed_Proper {len} : Proper ((=ₑ) ==> (=ₑ)) (λ (a : sem_t (sarr len)), unembed (embed a)).
 Proof.
   intros x y H.
-  rewrite !unembed_embed.
+  rewrite !(unembed_embed (sarr len)).
   assumption.
 Qed.
 
-Instance WArray_get8_Proper {len} : Proper ((=ₑ) ==> eq ==> eq) (@WArray.get8 len).
+#[export] Instance WArray_get8_Proper {len} : Proper ((=ₑ) ==> eq ==> eq) (@WArray.get8 len).
   intros a b H ? ? Hi.
   unfold WArray.get8, WArray.in_bound, WArray.is_init.
   rewrite H Hi.
   reflexivity.
 Qed.
 
-Instance WArray_get_Proper {len ws} : Proper ((=ₑ) ==> eq ==> eq) (@WArray.get len AAscale ws).
+#[export] Instance WArray_get_Proper {len ws} : Proper ((=ₑ) ==> eq ==> eq) (@WArray.get len AAscale ws).
 Proof.
   intros a b H i j Hij.
   unfold WArray.get, read.
@@ -2281,7 +2361,7 @@ Proof.
       assumption.
 Qed.
 
-Instance WArray_copy_Proper {ws p} : Proper ((=ₑ) ==> eq) (@WArray.copy ws p).
+#[export] Instance WArray_copy_Proper {ws p} : Proper ((=ₑ) ==> eq) (@WArray.copy ws p).
 Proof.
   intros a b H.
   unfold WArray.copy, WArray.fcopy.
@@ -2291,101 +2371,108 @@ Proof.
   reflexivity.
 Qed.
 
+(* BSH: I don't think these are necessary anymore *)
+Lemma list_tuple_cons_cons {t1 t2 : stype}  {ts : seq stype} (p : sem_tuple (t1 :: t2 :: ts)) :
+  list_ltuple p = (oto_val p.1) :: (list_ltuple (p.2 : sem_tuple (t2 :: ts))).
+Proof. reflexivity. Qed.
+
+Lemma embed_tuple_cons_cons {t1 t2 : stype}  {ts : seq stype} (p : sem_tuple (t1 :: t2 :: ts)) :
+  embed_tuple p = (embed_ot p.1, embed_tuple (p.2 : sem_tuple (t2 :: ts))).
+Proof. reflexivity. Qed.
+
+Lemma list_lchtuple_cons_cons {t1 t2 : stype}  {ts : seq stype} (p1 : encode t1) (p2 : lchtuple [seq encode t | t <- (t2 :: ts)]) :
+  list_lchtuple ((p1, p2) : lchtuple [seq encode t | t <- (t1 :: t2 :: ts)]) = (totce p1) :: (list_lchtuple p2).
+Proof. reflexivity. Qed.
+
+Lemma app_sopn_cons {rT} t ts v vs sem :
+  @app_sopn rT (t :: ts) sem (v :: vs) =
+  Let v' := of_val t v in @app_sopn rT ts (sem v') vs.
+Proof. reflexivity. Qed.
+
+Lemma sem_prod_cons t ts S :
+  sem_prod (t :: ts) S = (sem_t t → sem_prod ts S).
+Proof. reflexivity. Qed.
+
+Inductive sem_correct {R} : ∀ (ts : seq stype), (sem_prod ts (exec R)) → Prop :=
+| sem_nil s : sem_correct [::] s
+| sem_cons t ts s : (∀ v, (s (unembed (embed v)) = s v)) → (∀ v, sem_correct ts (s v)) → sem_correct (t :: ts) s.
+
+Lemma tr_app_sopn_correct {R S} (can : S) emb ts vs vs' (s : sem_prod ts (exec R)) :
+  sem_correct ts s →
+  app_sopn ts s vs = ok vs' →
+  tr_app_sopn can emb ts s [seq to_typed_chElement (translate_value v) | v <- vs]
+  = emb vs'.
+Proof.
+  intros hs H.
+  induction hs as [s | t ts s es hs ih] in vs, vs', H |- *.
+  - destruct vs. 2: discriminate.
+    simpl in *. subst.
+    reflexivity.
+  - simpl in *.
+    destruct vs as [| v₀ vs]. 1: discriminate.
+    jbind H v' hv'.
+    eapply ih in H.
+    simpl.
+    erewrite translate_of_val. 2: eassumption.
+    rewrite coerce_to_choice_type_translate_value_to_val.
+    rewrite es.
+    assumption.
+Qed.
+
+Context `{asm_correct : ∀ o, sem_correct (tin (get_instr_desc (Oasm o))) (sopn_sem (Oasm o))}.
+
 Lemma app_sopn_list_tuple_correct o vs vs' :
   app_sopn _ (sopn_sem o) vs = ok vs' →
-  app_sopn_list_tuple
-    _
-    (sopn_sem o)
-    [seq to_typed_chElement (translate_value v) | v <- vs]
+  tr_app_sopn_tuple _ (sopn_sem o) [seq to_typed_chElement (translate_value v) | v <- vs]
   =
   embed_tuple vs'.
 Proof.
-  intro H.
-  destruct o as [ ws p | | | | | ].
-  - apply app_sopn_nil_ok_size in H as Hs.
-    simpl in Hs.
-    destruct vs. 1: inversion Hs.
-    destruct vs. 2: inversion Hs.
-    cbn -[wsize_size app_sopn_list_tuple].
-    cbn [app_sopn_list_tuple].
+  intros.
+  unfold tr_app_sopn_tuple.
+  erewrite tr_app_sopn_correct.
+  - reflexivity.
+  - destruct o.
+    + repeat constructor.
+      cbn -[wsize_size WArray.copy unembed embed truncate_el] in *; intros.
+      rewrite (unembed_embed (sarr _)).
+      reflexivity.
+    + repeat constructor.
+    + repeat constructor.
+    + repeat constructor.
+    + repeat constructor.
+    + apply asm_correct.
+  - assumption.
+Qed.
 
-    jbind H vs'' Hv''.
-    simpl in H.
-    unfold sopn_sem in H.
+Lemma translate_exec_sopn_correct (o : sopn) (ins outs : values) :
+  exec_sopn o ins = ok outs →
+  translate_exec_sopn o [seq totce (translate_value v) | v <- ins] =
+  [seq totce (translate_value v) | v <- outs].
+Proof.
+  intros H.
+  unfold translate_exec_sopn.
+  jbind H vs Hvs.
+  noconf H.
+  erewrite app_sopn_list_tuple_correct by eassumption.
+  clear Hvs.
+  induction tout.
+  - reflexivity.
+  - destruct l.
+    + destruct a; destruct vs; reflexivity.
+    + rewrite list_tuple_cons_cons.
+      rewrite embed_tuple_cons_cons.
+      rewrite list_lchtuple_cons_cons.
+      rewrite map_cons.
+      rewrite IHl.
+      f_equal.
+      destruct vs as [e es]. simpl.
+      destruct a. 2-4: reflexivity.
+      destruct e. all: reflexivity.
+Qed.
 
-    cbn -[wsize_size WArray.copy unembed truncate_el].
-    erewrite translate_of_val by eassumption.
-    rewrite coerce_to_choice_type_K.
-    rewrite translate_value_to_val.
-    rewrite eq_rect_r_K.
-    cbn -[wsize_size ziota] in H.
-    rewrite unembed_embed.
-    rewrite H.
-    reflexivity.
-  - simpl; destruct map; reflexivity.
-  - apply app_sopn_nil_ok_size in H as Hs.
-    simpl in Hs.
-    destruct vs. 1: inversion Hs.
-    destruct vs. 1: inversion Hs.
-    destruct vs. 2: inversion Hs.
-
-    simpl in *.
-    jbind H v' Hv'.
-    jbind H v'' Hv''.
-    erewrite translate_to_word by eassumption.
-    erewrite translate_to_word by eassumption.
-
-    unfold sopn_sem in H.
-    simpl in H.
-    noconf H.
-
-    reflexivity.
-  - apply app_sopn_nil_ok_size in H as Hs.
-    simpl in Hs.
-    destruct vs. 1: inversion Hs.
-    destruct vs. 1: inversion Hs.
-    destruct vs. 1: inversion Hs.
-    destruct vs. 2: inversion Hs.
-
-    simpl in *.
-    jbind H v' Hv'.
-    jbind H v'' Hv''.
-    jbind H v''' Hv'''.
-    erewrite translate_to_word by eassumption.
-    erewrite translate_to_word by eassumption.
-    erewrite translate_to_bool by eassumption.
-
-    unfold sopn_sem in H.
-    simpl in H.
-    noconf H.
-
-    reflexivity.
-  - apply app_sopn_nil_ok_size in H as Hs.
-    simpl in Hs.
-    destruct vs. 1: inversion Hs.
-    destruct vs. 1: inversion Hs.
-    destruct vs. 1: inversion Hs.
-    destruct vs. 2: inversion Hs.
-
-    simpl in *.
-    jbind H v' Hv'.
-    jbind H v'' Hv''.
-    jbind H v''' Hv'''.
-    erewrite translate_to_word by eassumption.
-    erewrite translate_to_word by eassumption.
-    erewrite translate_to_bool by eassumption.
-
-    unfold sopn_sem in H.
-    simpl in H.
-    noconf H.
-
-    reflexivity.
-  (* assume this case is correct wrt to the chosen set of assemnly operations *)
-  - Admitted.
-
-Lemma app_sopn_list_correct (op : opN) (v : sem_t (type_of_opN op).2) (vs : values) :
+Lemma tr_app_sopn_single_correct (op : opN) (v : sem_t (type_of_opN op).2) (vs : values) :
   app_sopn (type_of_opN op).1 (sem_opN_typed op) vs = ok v →
-  app_sopn_list
+  tr_app_sopn_single
     (type_of_opN op).1
     (sem_opN_typed op)
     [seq to_typed_chElement (translate_value v) | v <- vs]
@@ -2393,6 +2480,7 @@ Lemma app_sopn_list_correct (op : opN) (v : sem_t (type_of_opN op).2) (vs : valu
   embed v.
 Proof.
   intro H.
+  unfold tr_app_sopn_single.
   destruct op as [w p | c].
   - simpl in *.
     apply app_sopn_nil_ok_size in H as hl.
@@ -2404,15 +2492,10 @@ Proof.
     + simpl in *. jbind H v1 hv1.
       eapply ih. eapply translate_to_int in hv1.
       rewrite hv1. assumption.
-  - simpl in *.
-    repeat (destruct vs; [repeat jbind_fresh H; discriminate|]).
-    destruct vs. 2: repeat jbind_fresh H; discriminate.
-    repeat jbind_fresh H.
-    inversion H.
-    destruct (cf_tbl c) as [[] []].
-    all: simpl in *; erewrite translate_to_bool; [|eassumption]; try reflexivity.
-    all: erewrite translate_to_bool; [|eassumption]; try reflexivity.
-    all: erewrite translate_to_bool; [|eassumption]; try reflexivity.
+  - erewrite tr_app_sopn_correct.
+    + reflexivity.
+    + repeat constructor.
+    + assumption.
 Qed.
 
 Lemma translate_pexpr_correct :
@@ -2612,7 +2695,7 @@ Proof.
     + apply u_ret.
       intros; split; auto.
       rewrite coerce_to_choice_type_translate_value_to_val.
-      apply app_sopn_list_correct.
+      apply tr_app_sopn_single_correct.
       assumption.
   - (* Pif *)
     simpl in h1. jbind h1 b eb. jbind eb b' eb'.
@@ -2642,6 +2725,37 @@ Proof.
       apply translate_truncate_val. assumption.
 Qed.
 
+Lemma translate_pexprs_correct fn s vs es :
+  sem_pexprs gd s es = ok vs →
+  List.Forall2 (λ c v,
+    ⊢ ⦃ rel_estate s fn ⦄
+      c.π2
+      ⇓ coerce_to_choice_type _ (translate_value v)
+    ⦃ rel_estate s fn ⦄
+  ) [seq translate_pexpr fn e | e <- es] vs.
+Proof.
+  intro hvs.
+  induction es in vs, hvs |- *.
+  - destruct vs.
+    + constructor.
+    + inversion hvs.
+  - destruct vs.
+    + simpl in hvs.
+      jbind hvs vs' hvs'.
+      jbind hvs vs'' hvs''.
+      noconf hvs.
+    + simpl in hvs.
+      jbind hvs vs' hvs'.
+      jbind hvs vs'' hvs''.
+      noconf hvs.
+      rewrite map_cons.
+      constructor.
+      * eapply translate_pexpr_correct. 1: eassumption.
+        auto.
+      * eapply IHes.
+        assumption.
+Qed.
+
 Corollary translate_pexpr_correct_cast :
   ∀ fn (e : pexpr) s₁ v (cond : heap → Prop),
     sem_pexpr gd s₁ e = ok v →
@@ -2660,6 +2774,58 @@ Proof.
   rewrite coerce_typed_code_K. assumption.
 Qed.
 
+Lemma Natpow_expn :
+  ∀ (n m : nat),
+    (n ^ m)%nat = expn n m.
+Proof.
+  intros n m.
+  induction m as [| m ih] in n |- *.
+  - cbn. reflexivity.
+  - simpl. rewrite expnS. rewrite -ih. reflexivity.
+Qed.
+
+Lemma Mpowmodn :
+  ∀ d n,
+    n ≠ 0 →
+    d ^ n %% d = 0.
+Proof.
+  intros d n hn.
+  destruct n as [| n]. 1: contradiction.
+  simpl. apply modnMr.
+Qed.
+
+Lemma nat_of_pos_nonzero :
+  ∀ p,
+    nat_of_pos p ≠ 0.
+Proof.
+  intros p. induction p as [p ih | p ih |].
+  - simpl. micromega.Lia.lia.
+  - simpl. rewrite NatTrec.doubleE.
+    move => /eqP. rewrite double_eq0. move /eqP. assumption.
+  - simpl. micromega.Lia.lia.
+Qed.
+
+Lemma ptr_var_nat_neq (ptr : pointer) (fn : funname) (v : var) :
+  nat_of_ptr ptr != nat_of_fun_var fn v.
+Proof.
+  unfold nat_of_ptr.
+  unfold nat_of_fun_var.
+  apply /eqP. intro e.
+  apply (f_equal (λ n, n %% 3)) in e.
+  rewrite -modnMm in e.
+  rewrite -(modnMm (3 ^ _)) in e.
+  rewrite Mpowmodn in e. 2: apply nat_of_pos_nonzero.
+  rewrite mul0n in e.
+  rewrite mod0n in e.
+  rewrite muln0 in e.
+  move: e => /eqP e. rewrite eqn_mod_dvd in e. 2: auto.
+  rewrite subn0 in e.
+  rewrite Natpow_expn in e. rewrite Euclid_dvdX in e. 2: auto.
+  move: e => /andP [e _].
+  rewrite dvdn_prime2 in e. 2,3: auto.
+  move: e => /eqP e. micromega.Lia.lia.
+Qed.
+
 Lemma ptr_var_neq (ptr : pointer) (fn : funname) (v : var) :
   translate_ptr ptr != translate_var fn v.
 Proof.
@@ -2668,16 +2834,149 @@ Proof.
   unfold nat_of_fun_ident.
   apply /eqP. intro e.
   noconf e.
-  apply (f_equal (λ n, n %% 3)) in H0.
-Admitted.
+  move: (ptr_var_nat_neq ptr fn v) => /eqP; contradiction.
+Qed.
 
 Notation coe_cht := coerce_to_choice_type.
 Notation coe_tyc := coerce_typed_code.
 
+Lemma nat_of_ident_pos :
+  ∀ x, (0 < nat_of_ident x)%coq_nat.
+Proof.
+  intros x. induction x as [| a s ih].
+  - auto.
+  - simpl.
+    rewrite -mulP. rewrite -plusE.
+    micromega.Lia.lia.
+Qed.
+
+Lemma injective_nat_of_ident :
+  ∀ x y,
+    nat_of_ident x = nat_of_ident y →
+    x = y.
+Proof.
+  intros x y e.
+  induction x as [| a x] in y, e |- *.
+  all: destruct y as [| b y].
+  all: simpl in e.
+  - reflexivity.
+  - rewrite -mulP in e. rewrite -plusE in e.
+    pose proof (nat_of_ident_pos y).
+    micromega.Lia.lia.
+  - rewrite -mulP in e. rewrite -plusE in e.
+    pose proof (nat_of_ident_pos x).
+    micromega.Lia.lia.
+  - (* BSH: there is a more principled way of doing this, but this'll do for now *)
+    apply (f_equal (λ a, Nat.modulo a 256)) in e as xy_eq.
+    rewrite -Nat.add_mod_idemp_l in xy_eq. 2: micromega.Lia.lia.
+    rewrite -Nat.mul_mod_idemp_l in xy_eq. 2: micromega.Lia.lia.
+    rewrite Nat.mod_same in xy_eq. 2: micromega.Lia.lia.
+    rewrite Nat.mul_0_l in xy_eq.
+    rewrite Nat.mod_0_l in xy_eq. 2: micromega.Lia.lia.
+    rewrite Nat.add_0_l in xy_eq.
+    rewrite -Nat.add_mod_idemp_l in xy_eq. 2: micromega.Lia.lia.
+    rewrite -Nat.mul_mod_idemp_l in xy_eq. 2: micromega.Lia.lia.
+    rewrite Nat.mod_same in xy_eq. 2: micromega.Lia.lia.
+    rewrite Nat.mul_0_l in xy_eq.
+    rewrite Nat.mod_0_l in xy_eq. 2: micromega.Lia.lia.
+    rewrite Nat.add_0_l in xy_eq.
+    rewrite !Nat.mod_small in xy_eq. 2,3: apply Ascii.nat_ascii_bounded.
+    apply OrderedTypeEx.String_as_OT.nat_of_ascii_inverse in xy_eq.
+    subst. f_equal.
+    apply IHx.
+    rewrite -!addP in e.
+    rewrite -!mulP in e.
+    micromega.Lia.lia.
+Qed.
+
+Lemma injective_nat_of_fun_ident :
+  ∀ fn x y,
+    nat_of_fun_ident fn x = nat_of_fun_ident fn y →
+    x = y.
+Proof.
+  intros fn x y e.
+  unfold nat_of_fun_ident in e.
+  apply Nat.mul_cancel_l in e. 2: apply Nat.pow_nonzero; auto.
+  eapply Nat.pow_inj_r in e. 2: auto.
+  apply injective_nat_of_ident. assumption.
+Qed.
+
+Lemma coprime_mul_inj a b c d :
+  coprime a d -> coprime a b -> coprime c b -> coprime c d  -> (a * b = c * d)%nat -> a = c /\ b = d.
+Proof.
+  intros ad ab cb cd e.
+  move: e => /eqP. rewrite eqn_dvd. move=> /andP [d1 d2].
+  rewrite Gauss_dvd in d1. 2: assumption.
+  rewrite Gauss_dvd in d2. 2: assumption.
+  move: d1 d2 => /andP [d11 d12] /andP [d21 d22].
+  rewrite Gauss_dvdl in d11. 2: assumption.
+  rewrite Gauss_dvdr in d12. 2: rewrite coprime_sym; assumption.
+  rewrite Gauss_dvdl in d21. 2: assumption.
+  rewrite Gauss_dvdr in d22. 2: rewrite coprime_sym; assumption.
+  split.
+  - apply /eqP. rewrite eqn_dvd. by apply /andP.
+  - apply /eqP. rewrite eqn_dvd. by apply /andP.
+Qed.
+
+Lemma coprime_nat_of_stype_nat_of_fun_ident t fn v :
+ coprime (nat_of_stype t) (nat_of_fun_ident fn v).
+Proof.
+  unfold nat_of_fun_ident.
+  unfold nat_of_stype.
+  rewrite coprimeMr.
+  apply /andP.
+  destruct t.
+  - rewrite !Natpow_expn.
+    rewrite !coprime_pexpl.
+    2,3: auto.
+    rewrite !coprime_pexpr.
+    2: apply /ltP; apply nat_of_ident_pos.
+    2: apply /ltP; pose proof nat_of_pos_nonzero fn; micromega.Lia.lia.
+    auto.
+  - rewrite !Natpow_expn.
+    rewrite !coprime_pexpl.
+    2,3: auto.
+    rewrite !coprime_pexpr.
+    2: apply /ltP; apply nat_of_ident_pos.
+    2: apply /ltP; pose proof nat_of_pos_nonzero fn; micromega.Lia.lia.
+    auto.
+  - rewrite !Natpow_expn.
+    rewrite !coprime_pexpl.
+    2,3: auto.
+    rewrite !coprime_pexpr.
+    2: apply /ltP; apply nat_of_ident_pos.
+    2: apply /ltP; pose proof nat_of_pos_nonzero fn; micromega.Lia.lia.
+    auto.
+  - rewrite !Natpow_expn.
+    rewrite !coprime_pexpl.
+    2,3: auto.
+    rewrite !coprime_pexpr.
+    2: apply /ltP; apply nat_of_ident_pos.
+    2: apply /ltP; pose proof nat_of_pos_nonzero fn; micromega.Lia.lia.
+    auto.
+Qed.
+
 Lemma injective_translate_var :
   ∀ fn, injective (translate_var fn).
 Proof.
-Admitted.
+  intros fn u v e.
+  unfold translate_var in e.
+  destruct u as [uty u], v as [vty v].
+  simpl in e. noconf e.
+  unfold nat_of_fun_var in H0.
+  simpl in H0.
+  apply coprime_mul_inj in H0 as [e1 e2].
+  2,3,4,5: apply coprime_nat_of_stype_nat_of_fun_ident.
+  f_equal.
+  - destruct uty, vty; auto; try discriminate.
+    + apply Nat.pow_inj_r in e1. 2: auto.
+      apply succn_inj in e1.
+      apply Pos2Nat.inj in e1.
+      subst; reflexivity.
+    + noconf H. reflexivity.
+  - eapply injective_nat_of_fun_ident.
+    eassumption.
+Qed.
 
 Lemma translate_write_correct :
   ∀ fn sz s p (w : word sz) cm (cond : heap → Prop),
@@ -2822,8 +3121,64 @@ Proof.
     erewrite chArray_set_correct. 2: eassumption.
     eapply translate_write_var_estate in hs. 2: eassumption.
     assumption.
-  - admit.
-Admitted.
+  - simpl. simpl in hw.
+    jbind hw nt hnt. destruct nt. all: try discriminate.
+    jbind hw i hi. jbind hi i' hi'.
+    jbind hw t' ht'. jbind hw t ht.
+    eapply u_get_remember. simpl. intros vx.
+    rewrite !bind_assoc. simpl.
+    eapply u_bind.
+    1:{
+      eapply translate_pexpr_correct.
+      - eassumption.
+      - intros ? []. assumption.
+    }
+    unfold translate_write_var. simpl.
+    eapply u_put.
+    eapply u_ret_eq.
+    intros ? [m [[hs hm] ?]]. subst.
+    unfold u_get in hm. subst.
+    erewrite translate_pexpr_type. 2: eassumption.
+    rewrite !coerce_to_choice_type_K.
+    erewrite translate_to_int. 2: eassumption.
+    erewrite translate_to_arr. 2: eassumption.
+    erewrite get_var_get_heap. 2,3: eassumption.
+    Opaque translate_value. simpl. Transparent translate_value.
+    eapply type_of_get_var in hnt as ety. simpl in ety.
+    apply (f_equal encode) in ety. simpl in ety.
+    rewrite -ety. rewrite !coerce_to_choice_type_K.
+    erewrite chArray_set_sub_correct. 2: eassumption.
+    eapply translate_write_var_estate in hs. 2: eassumption.
+    assumption.
+Qed.
+
+Lemma translate_write_lvals_cons fn l ls v vs :
+  translate_write_lvals fn (l :: ls) (v :: vs) = (translate_write_lval fn l v ;; translate_write_lvals fn ls vs).
+Proof. reflexivity. Qed.
+
+Lemma translate_write_lvals_correct fn s1 ls vs s2 :
+  write_lvals gd s1 ls vs = ok s2 →
+  ⊢ ⦃ rel_estate s1 fn ⦄
+    translate_write_lvals fn ls [seq totce (translate_value v) | v <- vs]
+    ⇓ tt
+  ⦃ rel_estate s2 fn ⦄.
+Proof.
+  intros h.
+  induction ls as [| l ls] in s1, vs, h |- *.
+  - destruct vs. 2: discriminate.
+    noconf h.
+    apply u_ret_eq. auto.
+  - destruct vs. 1: noconf h.
+    simpl in h.
+    jbind h s3 Hs3.
+    rewrite map_cons.
+    rewrite translate_write_lvals_cons.
+    eapply u_bind.
+    + eapply translate_write_lval_correct.
+      eassumption.
+    + apply IHls.
+      assumption.
+Qed.
 
 
 Definition ssprove_prog := fdefs.
@@ -2950,8 +3305,20 @@ Proof.
     erewrite totce_truncate_translate by eassumption.
     eapply translate_write_lval_correct. all: eauto.
   - (* opn *)
-    red. intros s1 s2 tag o xs es ho.
-    red. simpl. admit.
+    red. intros s1 s2 tag o xs es ho _.
+    red. simpl.
+    jbind ho vs hv.
+    jbind hv vs' hv'.
+    eapply u_bind.
+    + eapply bind_list_correct.
+      * rewrite <- map_comp. unfold comp.
+        eapply translate_pexprs_types.
+        eassumption.
+      * apply translate_pexprs_correct.
+        assumption.
+    + erewrite translate_exec_sopn_correct by eassumption.
+      apply translate_write_lvals_correct.
+      assumption.
   - (* if_true *)
     red. intros s1 s2 e c1 c2 he hc1 ihc1.
     red. simpl. move /andP => [hdc1 hdc2].
@@ -3052,7 +3419,8 @@ Proof.
       * (* should be similar to Copn, by appealing to correctness of write_lvals. *)
         simpl.
         admit.
-  - unfold sem_Ind_proc. red. intros m1 m2 gn g vs vs' s1 vm2 vrs vrs'.
+  - (* proc *)
+    unfold sem_Ind_proc. red. intros m1 m2 gn g vs vs' s1 vm2 vrs vrs'.
     intros hg hvs ?????.
     unfold Pfun, Translation.Pfun. intros hp hf.
     destruct H.
@@ -3083,3 +3451,76 @@ Proof.
 Admitted.
 
 End Translation.
+
+From Jasmin Require Import x86_instr_decl x86_extra x86_gen x86_linear_sem.
+Import arch_decl.
+
+Lemma id_tin_instr_desc :
+  ∀ (a : asm_op_msb_t),
+    id_tin (instr_desc a) = id_tin (x86_instr_desc a.2).
+Proof.
+  intros [[ws|] a].
+  - simpl. destruct (_ == _). all: reflexivity.
+  - reflexivity.
+Qed.
+
+Definition cast_sem_prod_dom {ts tr} ts' (f : sem_prod ts tr) (e : ts = ts') :
+  sem_prod ts' tr.
+Proof.
+  subst. exact f.
+Defined.
+
+Lemma cast_sem_prod_dom_K :
+  ∀ ts tr f e,
+    @cast_sem_prod_dom ts tr ts f e = f.
+Proof.
+  intros ts tr f e.
+  assert (e = erefl).
+  { apply eq_irrelevance. }
+  subst. reflexivity.
+Qed.
+
+Lemma sem_correct_rewrite :
+  ∀ R ts ts' f e,
+    sem_correct ts' (cast_sem_prod_dom ts' f e) →
+    @sem_correct R ts f.
+Proof.
+  intros R ts ts' f e h.
+  subst. rewrite cast_sem_prod_dom_K in h.
+  assumption.
+Qed.
+
+Lemma no_arr_correct {R} ts s :
+  List.Forall (λ t, ∀ len, t != sarr len) ts →
+  @sem_correct R ts s.
+Proof.
+  intros h.
+  induction h as [| t ts ht h ih].
+  - constructor.
+  - constructor.
+    + intros v.
+      pose proof unembed_embed t v as e.
+      destruct t as [| | len |].
+      1,2,4: rewrite e ; reflexivity.
+      specialize (ht len). move: ht => /eqP. contradiction.
+    + intros v.
+      apply ih.
+Qed.
+
+Lemma x86_correct :
+  ∀ (o : asm_op_t),
+    sem_correct (tin (sopn.get_instr_desc (Oasm o))) (sopn_sem (Oasm o)).
+Proof.
+  intros o.
+  simpl. destruct o as [a | e].
+  - Opaque instr_desc. simpl.
+    pose proof (id_tin_instr_desc a) as e.
+    eapply sem_correct_rewrite with (e := e).
+    destruct a as [o x]. simpl in *.
+    eapply no_arr_correct.
+    destruct x ; simpl.
+    all: repeat constructor.
+    Transparent instr_desc.
+  - destruct e ; simpl ; repeat constructor.
+    destruct w ; repeat constructor.
+Qed.
