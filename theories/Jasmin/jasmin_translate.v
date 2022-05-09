@@ -2946,30 +2946,27 @@ Qed.
 
 Definition fdefs :=
   (* ∀ fn fdef, get_fundef (p_funcs P) fn = Some fdef -> raw_code 'unit. *)
-  list (funname *
-          ([choiceType of seq typed_chElement] -> raw_code [choiceType of seq typed_chElement])).
+  list (funname * (raw_code 'unit)).
 
 Definition trunc_list :=
   (λ tys (vs : seq typed_chElement),
     [seq let '(ty, v) := ty_v in totce (truncate_el ty v.π2) | ty_v <- zip tys vs]).
 
-Definition set_up_funcall (fn : funname) (tr_f_body : fdefs)
+Definition translate_call (fn : funname) (tr_f_body : fdefs)
            (vargs : [choiceType of seq typed_chElement])
   : raw_code [choiceType of list typed_chElement].
 Proof.
   (* sem_call *)
   destruct (get_fundef (p_funcs P) fn) as [[]|] eqn:E ; [ | exact (ret [::])].
   apply (trunc_list f_tyin) in vargs.
-  pose (map (λ '(x, (ty; v)), translate_write_var fn x (totce v))
-            (zip f_params vargs))
+  pose (translate_write_lvals fn [seq Lvar x | x <- f_params] vargs)
     as cargs.
-  apply (foldl (λ c k, c ;; k) (ret tt)) in cargs.
   apply (bind cargs) => _.
   (* Perform the function body. *)
   destruct (assoc tr_f_body fn) as [tr_f|]. 2: exact (ret [::]).
   (* apply (bind (tr_f_body _ _ E)) => _. *)
   (* pose (tr_f_body _ _ E) as tr_f. *)
-  apply (bind (tr_f vargs)) => _.
+  apply (bind tr_f) => u.
   (* Look up the results in their locations and coerce them. *)
   pose (map (λ x, totc _ (translate_get_var fn (v_var x))) f_res) as cres.
   pose (bind_list cres) as vs.
@@ -3030,19 +3027,15 @@ Proof.
     ).
   - exact (unsupported.π2). (* Cwhile *)
   - (* Ccall ii xs f args *)
-    rename fn into fn_ambient. rename gn into fn.
+    rename fn into fn_ambient.
     (* Translate arguments. *)
     pose (cs := [seq (translate_pexpr fn_ambient e) | e <- args]).
-    pose (vs := bind_list cs).
-    eapply bind. 1: exact vs.
-    intros vargs. clear cs vs.
+    eapply bind. 1: exact (bind_list cs).
+    intros vargs. clear cs.
 
-    apply (bind (set_up_funcall fn tr_f_body vargs)) => vres.
+    apply (bind (translate_call gn tr_f_body vargs)) => vres.
 
-    pose (map (λ '(x, (ty; v)), translate_write_lval fn_ambient x (totce v))
-              (zip xs vres))
-      as cres.
-    apply (foldl (λ c k, c ;; k) (ret tt)) in cres.
+    pose (translate_write_lvals fn_ambient xs vres) as cres.
     exact cres.
 Defined.
 
@@ -3086,9 +3079,9 @@ Defined.
    - Each Jasmin function gets translated to a `'unit raw_code` corresponding to its body.
    - translate_instr takes a map from funnames to translated fun bodies.
    - There is an additional wrapper function
-     `set_up_funcall : funname → (args : seq value) → (f_tyin : seq stype) -> (f_tr_body : 'unit raw_code) -> 'unit raw_code`
+     `translate_call : funname → (args : seq value) → (f_tyin : seq stype) -> (f_tr_body : 'unit raw_code) -> 'unit raw_code`
      that does the work of truncating, and storing the function arguments as well as the returned results into their locations.
-   - the main theorem then talks not about running the translation of a function, but instead about set_up_funcall
+   - the main theorem then talks not about running the translation of a function, but instead about translate_call
 
  *)
 
@@ -3114,6 +3107,15 @@ Fixpoint translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
 
 End TranslateCMD.
 
+End Translation.
+
+Section Translation.
+Context `{asmop : asmOp}.
+
+Context {T} {pT : progT T}.
+
+Context {pd : PointerData}.
+
 Record fdef := {
   ffun : typed_raw_function ;
   locs : {fset Location} ;
@@ -3123,7 +3125,9 @@ Record fdef := {
 #[local] Definition ty_in fd := (ffun fd).π1.
 #[local] Definition ty_out fd := ((ffun fd).π2).π1.
 
-Definition translate_fundef
+Notation totce := to_typed_chElement.
+
+Definition translate_fundef (P : uprog)
            (tr_f_body : fdefs)
            (fd : _ufun_decl (* extra_fun_t *)) : funname * fdef.
 Proof.
@@ -3152,7 +3156,7 @@ Proof.
     apply (bind cargs) => _.
 
     (* Perform the function body. *)
-    apply (bind (translate_cmd tr_f_body f f_body)) => _.
+    apply (bind (translate_cmd P tr_f_body f f_body)) => _.
 
     (* Look up the results in their locations and return them. *)
     pose (map (λ x, totc _ (translate_get_var f (v_var x))) f_res) as cres.
@@ -3182,28 +3186,71 @@ Definition get_fundef_ssp (sp : seq (funname * fdef)) (fn : funname) (dom cod : 
 
 Definition ssprove_prog := fdefs.
 
-Definition translate_prog : ssprove_prog.
+Definition translate_prog (prog : uprog) : ssprove_prog.
 Proof.
-  destruct P.
+  destruct prog.
   induction p_funcs.
   - exact [::].
   - unfold ssprove_prog.
     apply cons. 2: exact IHp_funcs.
     pose a.1 as fn.
     split. 1: exact fn.
-    exact (set_up_funcall fn IHp_funcs).
+    destruct a. destruct _f.
+    exact (translate_cmd (Build__prog p_funcs p_globs p_extra) IHp_funcs fn f_body).
 Defined.
 
-Definition translate_prog' :=
+Definition translate_funs (P : uprog) :=
   let fix translate_funs (fs : seq _ufun_decl) : ssprove_prog :=
   match fs with
   [::] => [::]
   | f :: fs' =>
       let tr_fs' := translate_funs fs' in
       let fn := f.1 in
-      (fn, set_up_funcall fn tr_fs') :: tr_fs'
-  end in
-  translate_funs (p_funcs P).
+      (fn, (translate_cmd P tr_fs' fn (f_body f.2))) :: tr_fs'
+  end
+  in translate_funs.
+
+Definition translate_prog' P :=
+  translate_funs P (p_funcs P).
+
+Lemma tr_prog_inv P fn f :
+  get_fundef (p_funcs P) fn = Some f ->
+  ∑ fs',
+    assoc (translate_prog' P) fn =
+      let tr_fs' := translate_funs P fs' in
+      Some (translate_cmd P tr_fs' fn (f_body f)).
+Proof.
+  unfold translate_prog'.
+  induction (p_funcs P) as [|[gn g] fs' ih_fs'].
+  - move => //.
+  - simpl in *.
+    move => h //.
+    destruct (fn == gn) eqn:e.
+    + move /eqP in e. subst.
+      noconf h.
+      exists fs'. reflexivity.
+    + now apply ih_fs'.
+Qed.
+
+(* Lemma translate_prog_inv (prog : uprog) (fn : funname) f : assoc (translate_prog' prog) fn = Some f -> ∑ (prog' : uprog), f = translate_call fn (translate_prog' prog'). *)
+(* Proof. *)
+(*   destruct prog. induction p_funcs. *)
+(*   - move => // []. *)
+(*   - move => h //. *)
+(*     destruct (fn == a.1) eqn:Efn. *)
+(*     + simpl in h. *)
+(*       rewrite Efn in h. *)
+(*       noconf h. *)
+(*       exists (Build__prog p_funcs p_globs p_extra). *)
+(*       move /eqP in Efn. subst. *)
+(*       reflexivity. *)
+(*     + apply IHp_funcs. *)
+(*       simpl in h. *)
+(*       rewrite Efn in h. *)
+(*       rewrite -h. *)
+(*       reflexivity. *)
+(* Qed. *)
+
 
 (** Handled programs
 
@@ -3232,24 +3279,24 @@ Definition handled_cmd (c : cmd) :=
 Definition handled_fundecl (f : _ufun_decl) :=
   handled_cmd f.2.(f_body).
 
-Definition handled_program :=
+Definition handled_program (P : uprog) :=
   List.forallb handled_fundecl P.(p_funcs).
 
 Definition Pfun (fn : funname) m va m' vr :=
-  forall f,
-  handled_program →
-  let sp := translate_prog in
-  let dom := lchtuple (map choice_type_of_val va) in
-  let cod := lchtuple (map choice_type_of_val vr) in
+  forall (P : uprog),
+  handled_program P →
+  let sp := translate_prog' P in
+  (* let dom := lchtuple (map choice_type_of_val va) in *)
+  (* let cod := lchtuple (map choice_type_of_val vr) in *)
   (* get_fundef_ssp sp fn dom cod = Some f → *)
-  assoc sp fn = Some f →
+  (* assoc sp fn = Some f → *)
   ⊢ ⦃ rel_mem m ⦄
-    set_up_funcall fn sp [seq totce (translate_value v) | v <- va]
+    translate_call P fn sp [seq totce (translate_value v) | v <- va]
     (* f [seq totce (translate_value v) | v <- va] *)
     ⇓ [seq totce (translate_value v) | v <- vr]
   ⦃ rel_mem m' ⦄.
 
-Theorem translate_prog_correct (fn : funname) m va m' vr :
+Theorem translate_prog_correct P (fn : funname) m va m' vr :
   sem.sem_call P m fn va m' vr →
   Pfun fn m va m' vr.
 Proof.
@@ -3258,25 +3305,25 @@ Proof.
     λ (m : mem) (fn : funname) (va : seq value) (m' : mem) (vr : seq value),
          Pfun fn m va m' vr
   ).
-  set (SP := translate_prog).
+  set (SP := translate_prog' P).
   set (Pi_r :=
     λ (s1 : estate) (i : instr_r) (s2 : estate),
       handled_instr_r i →
       ⊢ ⦃ rel_estate s1 fn ⦄
-        translate_instr_r SP fn i ⇓ tt
+        translate_instr_r P SP fn i ⇓ tt
       ⦃ rel_estate s2 fn ⦄
   ).
   set (Pi := λ s1 i s2, Pi_r s1 (instr_d i) s2).
   set (Pc :=
     λ (s1 : estate) (c : cmd) (s2 : estate),
       handled_cmd c →
-      ⊢ ⦃ rel_estate s1 fn ⦄ translate_cmd SP fn c ⇓ tt ⦃ rel_estate s2 fn ⦄
+      ⊢ ⦃ rel_estate s1 fn ⦄ translate_cmd P SP fn c ⇓ tt ⦃ rel_estate s2 fn ⦄
   ).
   set (Pfor :=
     λ (v : var_i) (ws : seq Z) (s1 : estate) (c : cmd) (s2 : estate),
       handled_cmd c →
       ⊢ ⦃ rel_estate s1 fn ⦄
-        translate_for fn v ws (translate_cmd SP fn c) ⇓ tt
+        translate_for fn v ws (translate_cmd P SP fn c) ⇓ tt
       ⦃ rel_estate s2 fn ⦄
   ).
   unshelve eapply (@sem_call_Ind _ _ _ _ Pc Pi_r Pi Pfor Pfun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H).
@@ -3413,7 +3460,43 @@ Proof.
         (*                    _hwr_vargs _hbody _h_get_res _h_trunc_res]. *)
         eapply ihgn.
         1: give_up.
-        instantiate (1 := set_up_funcall gn translate_prog).
+        instantiate (1 := translate_call gn (translate_prog' P)).
+
+
+        destruct hgn.
+    set (SP := translate_prog' P).
+    rename fn0 into gn.
+    destruct (assoc SP gn) as [SP_gn|] eqn:E'.
+    2: { rename H into E''. unfold SP in E'.
+
+assert (
+forall (P : uprog) fn f,
+get_fundef (p_funcs P) fn = Some f
+->
+∑ prog' : uprog,
+           ∑ tl : uprog, p_funcs prog' ++ p_funcs tl = p_funcs P /\
+           assoc (translate_prog' prog') fn =
+             Some (translate_call fn (translate_prog' prog')))
+         by admit.
+
+         pose (X _ _ _ E'') as h_tr_g.
+         destruct h_tr_g as [prog' [tl [e' asc]]].
+         assert (forall (K : eqType) V l l' (k : K) (v : V),
+                    assoc l k = Some v ->
+                    assoc (l ++ l') k = Some v).
+         { pose (assoc_cat).
+           admit. }
+         assert
+           (assoc (translate_prog' P) gn =
+              Some (translate_call gn (translate_prog' prog'))).
+         { unfold translate_prog'. rewrite -e'.
+           admit. }
+         rewrite H5 in E'. noconf E'.
+    }
+
+    rewrite -E'.
+    unfold SP_gn in E'.
+    pose (translate_prog_inv P gn (translate_call gn SP) E').
         give_up.
       * (* should be similar to Copn, by appealing to correctness of write_lvals. *)
         simpl.
@@ -3421,22 +3504,22 @@ Proof.
   - (* proc *)
     unfold sem_Ind_proc. red. intros m1 m2 gn g vs vs' s1 vm2 vrs vrs'.
     intros hg hvs ?????.
-    unfold Pfun, Translation.Pfun. intros hp hf.
+    unfold Pfun, Translation.Pfun. intros tr_g hp.
     destruct H.
-    unfold set_up_funcall.
+    unfold translate_call.
     rewrite hg.
     destruct g eqn:E.
     rewrite -E in hg hvs H0 H1 H2 H3 H4.
     destruct (assoc SP gn) as [SP_gn|] eqn:E'.
     2: { move => E''. unfold SP in E'. rewrite E' in E''. discriminate. }
     rewrite E'. move => E''. noconf E''.
-    set (cargs := map (λ '(x, (ty; v)), translate_write_var gn x (totce v))
-            (zip f_params
-               [seq (let
-                           '(ty, v) := ty_v in totce (truncate_el ty v.π2))
-                        | ty_v <- zip f_tyin
-                                    [seq totce (translate_value v)
-                                       | v <- vs']]))
+    pose E' as e. unfold SP in e.
+    pose (translate_prog_inv _ _ _ e) as h_tr_g.
+    destruct h_tr_g as [p' e_tr_g].
+    set (cargs := [seq (let '(x, (ty; v)) := pat in translate_write_var gn x (totce v))
+          | pat <- zip f_params
+                     (trunc_list f_tyin
+                        [seq totce (translate_value v) | v <- vs'])])
     .
     eapply u_bind with (v₁ := tt) ; [unfold cargs|]; clear cargs.
     1: { idtac.
