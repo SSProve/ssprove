@@ -1189,10 +1189,6 @@ Fixpoint foldl2 {A B R} (f : R → A → B → R) (la : seq A) (lb : seq B) r :=
     end
   end.
 
-Definition fdefs :=
-  (* ∀ fn fdef, get_fundef (p_funcs P) fn = Some fdef -> raw_code 'unit. *)
-  list (funname *
-          ([choiceType of seq typed_chElement] -> raw_code [choiceType of seq typed_chElement])).
 Fixpoint foldr2 {A B R} (f : A → B → R → R) (la : seq A) (lb : seq B) r :=
   match la with
   | [::] => r
@@ -1206,238 +1202,6 @@ Fixpoint foldr2 {A B R} (f : A → B → R → R) (la : seq A) (lb : seq B) r :=
 Definition translate_write_lvals fn ls vs :=
   (* foldl2 (λ c l v, translate_write_lval fn l v ;; c) ls vs (ret tt). *)
   foldr2 (λ l v c, translate_write_lval fn l v ;; c) ls vs (ret tt).
-
-
-Definition trunc_list :=
-  (λ tys (vs : seq typed_chElement),
-    [seq let '(ty, v) := ty_v in totce (truncate_el ty v.π2) | ty_v <- zip tys vs]).
-
-Definition set_up_funcall (fn : funname) (tr_f_body : fdefs)
-           (vargs : [choiceType of seq typed_chElement])
-  : raw_code [choiceType of list typed_chElement].
-Proof.
-  (* sem_call *)
-  destruct (get_fundef (p_funcs P) fn) as [[]|] eqn:E ; [ | exact (ret [::])].
-  apply (trunc_list f_tyin) in vargs.
-  pose (map (λ '(x, (ty; v)), translate_write_var fn x (totce v))
-            (zip f_params vargs))
-    as cargs.
-  apply (foldl (λ c k, c ;; k) (ret tt)) in cargs.
-  apply (bind cargs) => _.
-  (* Perform the function body. *)
-  destruct (assoc tr_f_body fn) as [tr_f|]. 2: exact (ret [::]).
-  (* apply (bind (tr_f_body _ _ E)) => _. *)
-  (* pose (tr_f_body _ _ E) as tr_f. *)
-  apply (bind (tr_f vargs)) => _.
-  (* Look up the results in their locations and coerce them. *)
-  pose (map (λ x, totc _ (translate_get_var fn (v_var x))) f_res) as cres.
-  pose (bind_list cres) as vs.
-  eapply bind. 1: exact vs.
-  intros vres. clear cres vs.
-  apply (trunc_list f_tyout) in vres.
-  exact (ret vres).
-Defined.
-
-Fixpoint translate_instr_r
-  (tr_f_body : fdefs)
-  (fn : funname) (i : instr_r) {struct i}
-  : raw_code 'unit
-
-with translate_instr (tr_f_body : fdefs)
-                     (fn : funname) (i : instr) {struct i} : raw_code 'unit :=
-  translate_instr_r tr_f_body fn (instr_d i).
-Proof.
-  pose proof (translate_cmd :=
-    (fix translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
-      match c with
-      | [::] => ret tt
-      | i :: c =>
-        translate_instr tr_f_body fn i ;;
-        translate_cmd fn c
-      end
-    )
-  ).
-
-  destruct i as [ | ls _ o es | e c1 c2 | i [[d lo] hi] c | | ii xs gn args ].
-  - (* Cassgn *)
-    (* l :a=_s p *)
-    pose (translate_pexpr fn p) as tr_p.
-    eapply bind. 1: exact (tr_p.π2).
-    intros v. pose (truncate_el s v) as tr_v.
-    exact (translate_write_lval fn l (totce tr_v)).
-  - (* Copn *)
-    pose (cs := [seq (translate_pexpr fn e) | e <- es]).
-    pose (vs := bind_list cs).
-    eapply bind. 1: exact vs. intros bvs.
-    pose (out := translate_exec_sopn o bvs).
-    exact (translate_write_lvals fn ls out). (* BSH: I'm not sure if the outputs should be truncated? *)
-  - (* Cif e c1 c2 *)
-    pose (e' := translate_pexpr fn e).
-    pose (c1' := translate_cmd fn c1).
-    pose (c2' := translate_cmd fn c2).
-    pose (rb := coerce_typed_code 'bool e').
-    exact (b ← rb ;; if b then c1' else c2').
-  - (* Cfor i (d, lo, hi) c *)
-    (* pose (iᵗ := translate_var fn i). *) (* Weird not to do it *)
-    pose (loᵗ := coerce_typed_code 'int (translate_pexpr fn lo)).
-    pose (hiᵗ := coerce_typed_code 'int (translate_pexpr fn hi)).
-    pose (cᵗ := translate_cmd fn c).
-    exact (
-      vlo ← loᵗ ;;
-      vhi ← hiᵗ ;;
-      translate_for fn i (wrange d vlo vhi) cᵗ
-    ).
-  - exact (unsupported.π2). (* Cwhile *)
-  - (* Ccall ii xs f args *)
-    rename fn into fn_ambient. rename gn into fn.
-    (* Translate arguments. *)
-    pose (cs := [seq (translate_pexpr fn_ambient e) | e <- args]).
-    pose (vs := bind_list cs).
-    eapply bind. 1: exact vs.
-    intros vargs. clear cs vs.
-
-    apply (bind (set_up_funcall fn tr_f_body vargs)) => vres.
-
-    pose (map (λ '(x, (ty; v)), translate_write_lval fn_ambient x (totce v))
-              (zip xs vres))
-      as cres.
-    apply (foldl (λ c k, c ;; k) (ret tt)) in cres.
-    exact cres.
-Defined.
-
-(*
-   Questions to answer for the translation of functions and function calls:
-   - When does argument truncation happen?
-   - What does each function get translated to?
-
-   Idea 0: translate the function body each time it gets called.
-   This doesn't work if we look up the body in a dictionary à la `get_fundef`. If we try to apply `translate_cmd` to the result of a function call,
-   we have no guarantee this will terminate.
-
-   Idea 1:
-   - Each jasmin function gets translated into a typed_raw_function
-   - The translation of a jasmin instruction is parametrised by a dictionary associating to each function name such a typed_raw_function.
-   - Each function call can then look up the translated function.
-
-   The problem with this approach is that Jasmin functions don't expect their arguments to be of the right type.
-   Instead, they perform a truncation on the callee side.
-   To emulate this behaviour we would have to allow the application of a function to arguments of the wrong type.
-   This won't work with a `typed_raw_function = ∑ S T : choice_type, S → raw_code T` , as the arguments have to match the function type.
-
-   A workaround would be to pack the arguments into a list of `typed_chElement`, i.e. `list (∑ t : choice_type, t)`,
-   but this type is too large to live inside `choice_type`.
-   Instead, we could translate each jasmin function to a "large" `Typed_Raw_Function = Π S T : choiceType, S → raw_code T`,
-   or more precisely `Π S T : list stype, [seq encode s | s <- S] → raw_code [seq encode t | t <- T]`,
-   or equivalently `list (Σ s : stype, encode s) → list (Σ t : stype, encode t)`.
-
-   As a result, the translated functions do not fit `typed_raw_function`,
-   cannot directly be described by an `opsig`,
-   and thus can't be wrapped in a `raw_package`.
-   Question: Could we generalise the definition of `raw_package` to allow `Typed_Raw_Functions`?
-
-   Instead of modifying `raw_package`, we could add Σ-types to `choice_type`.
-   This could be done using Paulin-Mohring's trick for representing inductive-recursive definitions in Coq.
-   As a first test we could use `boolp.choice_of_Type` to get the choice structure on the universe.
-   The `ordType` structure could come from `order.Order.SigmaOrder.le`.
-   Question: Do we rely on the computational properties of the choice structure of `choice_universe`?
-
-   Idea 2:
-   - Each Jasmin function gets translated to a `'unit raw_code` corresponding to its body.
-   - translate_instr takes a map from funnames to translated fun bodies.
-   - There is an additional wrapper function
-     `set_up_funcall : funname → (args : seq value) → (f_tyin : seq stype) -> (f_tr_body : 'unit raw_code) -> 'unit raw_code`
-     that does the work of truncating, and storing the function arguments as well as the returned results into their locations.
-   - the main theorem then talks not about running the translation of a function, but instead about set_up_funcall
-
- *)
-
-(* translate_instr is blocked because it is a fixpoint *)
-Lemma translate_instr_unfold :
-  ∀ ep fn i,
-    translate_instr ep fn i = translate_instr_r ep fn (instr_d i).
-Proof.
-  intros ep fn i.
-  destruct i. reflexivity.
-Qed.
-
-(* Trick to have it expand to the same as the translate_cmd above *)
-Section TranslateCMD.
-
-Context (tr_f_body : fdefs).
-
-Fixpoint translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
-  match c with
-  | [::] => ret tt
-  | i :: c => translate_instr tr_f_body fn i ;; translate_cmd fn c
-  end.
-
-End TranslateCMD.
-
-Record fdef := {
-  ffun : typed_raw_function ;
-  locs : {fset Location} ;
-  imp : Interface ;
-}.
-
-#[local] Definition ty_in fd := (ffun fd).π1.
-#[local] Definition ty_out fd := ((ffun fd).π2).π1.
-
-Definition translate_fundef
-           (tr_f_body : fdefs)
-           (fd : _ufun_decl (* extra_fun_t *)) : funname * fdef.
-Proof.
-  destruct fd. destruct _f.
-  split. 1: exact f.
-  constructor.
-  - pose (lchtuple (map encode f_tyin)) as tyin'.
-    pose (lchtuple (map encode f_tyout)) as tyout'.
-    exists tyin', tyout'. intros vargs'.
-
-    (* NB: We coerce rather than truncating here, i.e. we expect the arguments
-       provided to us to be of the correct type. This differs slightly from
-       Jasmin where the truncation is performed in `sem_call`. However, as
-       explained in the translation of `Ccall` in `translate_instr_r`, we need
-       the types of the arguments to match the function in order to write the
-       function application, so we truncate at the caller side. We thus expect
-       the arguments to already be of the type `f_tyin` prescribed by the
-       function `f`. *)
-    apply (coerce_chtuple_to_list _ f_tyin) in vargs'.
-
-    (* Write the arguments to their locations. *)
-    pose (map (λ '(x, (ty; v)), translate_write_var f x (totce v))
-              (zip f_params vargs'))
-      as cargs.
-    apply (foldl (λ c k, c ;; k) (ret tt)) in cargs.
-    apply (bind cargs) => _.
-
-    (* Perform the function body. *)
-    apply (bind (translate_cmd tr_f_body f f_body)) => _.
-
-    (* Look up the results in their locations and return them. *)
-    pose (map (λ x, totc _ (translate_get_var f (v_var x))) f_res) as cres.
-    exact (bind_list' f_tyout cres).
-  - exact fset0.
-  - exact [interface].
-Defined.
-
-(* Apply cast_fun or return default value, like lookup_op *)
-Equations? cast_typed_raw_function {dom cod : choice_type} (rf : typed_raw_function) : dom → raw_code cod :=
-  cast_typed_raw_function rf with inspect ((dom == rf.π1) && (cod == rf.π2.π1)) := {
-  | @exist true e => pkg_composition.cast_fun _ _ rf.π2.π2 ;
-  | @exist false e => λ _, ret (chCanonical _)
-  }.
-Proof.
-  all: symmetry in e.
-  all: move: e => /andP [/eqP e1 /eqP e2].
-  all: eauto.
-Defined.
-
-Definition get_fundef_ssp (sp : seq (funname * fdef)) (fn : funname) (dom cod : choice_type) :
-  option (dom → raw_code cod) :=
-  match assoc sp fn with
-  | Some fd => Some (cast_typed_raw_function fd.(ffun))
-  | None => None
-  end.
 
 Lemma eq_rect_r_K :
   ∀ (A : eqType) (x : A) (P : A → Type) h e,
@@ -3180,6 +2944,241 @@ Proof.
       assumption.
 Qed.
 
+Definition fdefs :=
+  (* ∀ fn fdef, get_fundef (p_funcs P) fn = Some fdef -> raw_code 'unit. *)
+  list (funname *
+          ([choiceType of seq typed_chElement] -> raw_code [choiceType of seq typed_chElement])).
+
+Definition trunc_list :=
+  (λ tys (vs : seq typed_chElement),
+    [seq let '(ty, v) := ty_v in totce (truncate_el ty v.π2) | ty_v <- zip tys vs]).
+
+Definition set_up_funcall (fn : funname) (tr_f_body : fdefs)
+           (vargs : [choiceType of seq typed_chElement])
+  : raw_code [choiceType of list typed_chElement].
+Proof.
+  (* sem_call *)
+  destruct (get_fundef (p_funcs P) fn) as [[]|] eqn:E ; [ | exact (ret [::])].
+  apply (trunc_list f_tyin) in vargs.
+  pose (map (λ '(x, (ty; v)), translate_write_var fn x (totce v))
+            (zip f_params vargs))
+    as cargs.
+  apply (foldl (λ c k, c ;; k) (ret tt)) in cargs.
+  apply (bind cargs) => _.
+  (* Perform the function body. *)
+  destruct (assoc tr_f_body fn) as [tr_f|]. 2: exact (ret [::]).
+  (* apply (bind (tr_f_body _ _ E)) => _. *)
+  (* pose (tr_f_body _ _ E) as tr_f. *)
+  apply (bind (tr_f vargs)) => _.
+  (* Look up the results in their locations and coerce them. *)
+  pose (map (λ x, totc _ (translate_get_var fn (v_var x))) f_res) as cres.
+  pose (bind_list cres) as vs.
+  eapply bind. 1: exact vs.
+  intros vres. clear cres vs.
+  apply (trunc_list f_tyout) in vres.
+  exact (ret vres).
+Defined.
+
+Fixpoint translate_instr_r
+  (tr_f_body : fdefs)
+  (fn : funname) (i : instr_r) {struct i}
+  : raw_code 'unit
+
+with translate_instr (tr_f_body : fdefs)
+                     (fn : funname) (i : instr) {struct i} : raw_code 'unit :=
+  translate_instr_r tr_f_body fn (instr_d i).
+Proof.
+  pose proof (translate_cmd :=
+    (fix translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
+      match c with
+      | [::] => ret tt
+      | i :: c =>
+        translate_instr tr_f_body fn i ;;
+        translate_cmd fn c
+      end
+    )
+  ).
+
+  destruct i as [ | ls _ o es | e c1 c2 | i [[d lo] hi] c | | ii xs gn args ].
+  - (* Cassgn *)
+    (* l :a=_s p *)
+    pose (translate_pexpr fn p) as tr_p.
+    eapply bind. 1: exact (tr_p.π2).
+    intros v. pose (truncate_el s v) as tr_v.
+    exact (translate_write_lval fn l (totce tr_v)).
+  - (* Copn *)
+    pose (cs := [seq (translate_pexpr fn e) | e <- es]).
+    pose (vs := bind_list cs).
+    eapply bind. 1: exact vs. intros bvs.
+    pose (out := translate_exec_sopn o bvs).
+    exact (translate_write_lvals fn ls out). (* BSH: I'm not sure if the outputs should be truncated? *)
+  - (* Cif e c1 c2 *)
+    pose (e' := translate_pexpr fn e).
+    pose (c1' := translate_cmd fn c1).
+    pose (c2' := translate_cmd fn c2).
+    pose (rb := coerce_typed_code 'bool e').
+    exact (b ← rb ;; if b then c1' else c2').
+  - (* Cfor i (d, lo, hi) c *)
+    (* pose (iᵗ := translate_var fn i). *) (* Weird not to do it *)
+    pose (loᵗ := coerce_typed_code 'int (translate_pexpr fn lo)).
+    pose (hiᵗ := coerce_typed_code 'int (translate_pexpr fn hi)).
+    pose (cᵗ := translate_cmd fn c).
+    exact (
+      vlo ← loᵗ ;;
+      vhi ← hiᵗ ;;
+      translate_for fn i (wrange d vlo vhi) cᵗ
+    ).
+  - exact (unsupported.π2). (* Cwhile *)
+  - (* Ccall ii xs f args *)
+    rename fn into fn_ambient. rename gn into fn.
+    (* Translate arguments. *)
+    pose (cs := [seq (translate_pexpr fn_ambient e) | e <- args]).
+    pose (vs := bind_list cs).
+    eapply bind. 1: exact vs.
+    intros vargs. clear cs vs.
+
+    apply (bind (set_up_funcall fn tr_f_body vargs)) => vres.
+
+    pose (map (λ '(x, (ty; v)), translate_write_lval fn_ambient x (totce v))
+              (zip xs vres))
+      as cres.
+    apply (foldl (λ c k, c ;; k) (ret tt)) in cres.
+    exact cres.
+Defined.
+
+(*
+   Questions to answer for the translation of functions and function calls:
+   - When does argument truncation happen?
+   - What does each function get translated to?
+
+   Idea 0: translate the function body each time it gets called.
+   This doesn't work if we look up the body in a dictionary à la `get_fundef`. If we try to apply `translate_cmd` to the result of a function call,
+   we have no guarantee this will terminate.
+
+   Idea 1:
+   - Each jasmin function gets translated into a typed_raw_function
+   - The translation of a jasmin instruction is parametrised by a dictionary associating to each function name such a typed_raw_function.
+   - Each function call can then look up the translated function.
+
+   The problem with this approach is that Jasmin functions don't expect their arguments to be of the right type.
+   Instead, they perform a truncation on the callee side.
+   To emulate this behaviour we would have to allow the application of a function to arguments of the wrong type.
+   This won't work with a `typed_raw_function = ∑ S T : choice_type, S → raw_code T` , as the arguments have to match the function type.
+
+   A workaround would be to pack the arguments into a list of `typed_chElement`, i.e. `list (∑ t : choice_type, t)`,
+   but this type is too large to live inside `choice_type`.
+   Instead, we could translate each jasmin function to a "large" `Typed_Raw_Function = Π S T : choiceType, S → raw_code T`,
+   or more precisely `Π S T : list stype, [seq encode s | s <- S] → raw_code [seq encode t | t <- T]`,
+   or equivalently `list (Σ s : stype, encode s) → list (Σ t : stype, encode t)`.
+
+   As a result, the translated functions do not fit `typed_raw_function`,
+   cannot directly be described by an `opsig`,
+   and thus can't be wrapped in a `raw_package`.
+   Question: Could we generalise the definition of `raw_package` to allow `Typed_Raw_Functions`?
+
+   Instead of modifying `raw_package`, we could add Σ-types to `choice_type`.
+   This could be done using Paulin-Mohring's trick for representing inductive-recursive definitions in Coq.
+   As a first test we could use `boolp.choice_of_Type` to get the choice structure on the universe.
+   The `ordType` structure could come from `order.Order.SigmaOrder.le`.
+   Question: Do we rely on the computational properties of the choice structure of `choice_universe`?
+
+   Idea 2:
+   - Each Jasmin function gets translated to a `'unit raw_code` corresponding to its body.
+   - translate_instr takes a map from funnames to translated fun bodies.
+   - There is an additional wrapper function
+     `set_up_funcall : funname → (args : seq value) → (f_tyin : seq stype) -> (f_tr_body : 'unit raw_code) -> 'unit raw_code`
+     that does the work of truncating, and storing the function arguments as well as the returned results into their locations.
+   - the main theorem then talks not about running the translation of a function, but instead about set_up_funcall
+
+ *)
+
+(* translate_instr is blocked because it is a fixpoint *)
+Lemma translate_instr_unfold :
+  ∀ ep fn i,
+    translate_instr ep fn i = translate_instr_r ep fn (instr_d i).
+Proof.
+  intros ep fn i.
+  destruct i. reflexivity.
+Qed.
+
+(* Trick to have it expand to the same as the translate_cmd above *)
+Section TranslateCMD.
+
+Context (tr_f_body : fdefs).
+
+Fixpoint translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
+  match c with
+  | [::] => ret tt
+  | i :: c => translate_instr tr_f_body fn i ;; translate_cmd fn c
+  end.
+
+End TranslateCMD.
+
+Record fdef := {
+  ffun : typed_raw_function ;
+  locs : {fset Location} ;
+  imp : Interface ;
+}.
+
+#[local] Definition ty_in fd := (ffun fd).π1.
+#[local] Definition ty_out fd := ((ffun fd).π2).π1.
+
+Definition translate_fundef
+           (tr_f_body : fdefs)
+           (fd : _ufun_decl (* extra_fun_t *)) : funname * fdef.
+Proof.
+  destruct fd. destruct _f.
+  split. 1: exact f.
+  constructor.
+  - pose (lchtuple (map encode f_tyin)) as tyin'.
+    pose (lchtuple (map encode f_tyout)) as tyout'.
+    exists tyin', tyout'. intros vargs'.
+
+    (* NB: We coerce rather than truncating here, i.e. we expect the arguments
+       provided to us to be of the correct type. This differs slightly from
+       Jasmin where the truncation is performed in `sem_call`. However, as
+       explained in the translation of `Ccall` in `translate_instr_r`, we need
+       the types of the arguments to match the function in order to write the
+       function application, so we truncate at the caller side. We thus expect
+       the arguments to already be of the type `f_tyin` prescribed by the
+       function `f`. *)
+    apply (coerce_chtuple_to_list _ f_tyin) in vargs'.
+
+    (* Write the arguments to their locations. *)
+    pose (map (λ '(x, (ty; v)), translate_write_var f x (totce v))
+              (zip f_params vargs'))
+      as cargs.
+    apply (foldl (λ c k, c ;; k) (ret tt)) in cargs.
+    apply (bind cargs) => _.
+
+    (* Perform the function body. *)
+    apply (bind (translate_cmd tr_f_body f f_body)) => _.
+
+    (* Look up the results in their locations and return them. *)
+    pose (map (λ x, totc _ (translate_get_var f (v_var x))) f_res) as cres.
+    exact (bind_list' f_tyout cres).
+  - exact fset0.
+  - exact [interface].
+Defined.
+
+(* Apply cast_fun or return default value, like lookup_op *)
+Equations? cast_typed_raw_function {dom cod : choice_type} (rf : typed_raw_function) : dom → raw_code cod :=
+  cast_typed_raw_function rf with inspect ((dom == rf.π1) && (cod == rf.π2.π1)) := {
+  | @exist true e => pkg_composition.cast_fun _ _ rf.π2.π2 ;
+  | @exist false e => λ _, ret (chCanonical _)
+  }.
+Proof.
+  all: symmetry in e.
+  all: move: e => /andP [/eqP e1 /eqP e2].
+  all: eauto.
+Defined.
+
+Definition get_fundef_ssp (sp : seq (funname * fdef)) (fn : funname) (dom cod : choice_type) :
+  option (dom → raw_code cod) :=
+  match assoc sp fn with
+  | Some fd => Some (cast_typed_raw_function fd.(ffun))
+  | None => None
+  end.
 
 Definition ssprove_prog := fdefs.
 
