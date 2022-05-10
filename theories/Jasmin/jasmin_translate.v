@@ -2944,22 +2944,25 @@ Proof.
       assumption.
 Qed.
 
-Definition fdefs :=
-  (* ∀ fn fdef, get_fundef (p_funcs P) fn = Some fdef -> raw_code 'unit. *)
-  list (funname * (raw_code 'unit)).
-
 Definition trunc_list :=
   (λ tys (vs : seq typed_chElement),
     [seq let '(ty, v) := ty_v in totce (truncate_el ty v.π2) | ty_v <- zip tys vs]).
+
+Definition fdefs :=
+  (* ∀ fn fdef, get_fundef (p_funcs P) fn = Some fdef -> raw_code 'unit. *)
+  list (funname * (raw_code 'unit)).
 
 Definition translate_call (fn : funname) (tr_f_body : fdefs)
            (vargs : [choiceType of seq typed_chElement])
   : raw_code [choiceType of list typed_chElement].
 Proof.
   (* sem_call *)
-  destruct (get_fundef (p_funcs P) fn) as [[]|] eqn:E ; [ | exact (ret [::])].
-  apply (trunc_list f_tyin) in vargs.
-  pose (translate_write_lvals fn [seq Lvar x | x <- f_params] vargs)
+  destruct (get_fundef (p_funcs P) fn)
+    as [f|]
+         (* eqn:E *)
+  ; [ | exact (ret [::])].
+  apply (trunc_list (f_tyin f)) in vargs.
+  pose (translate_write_lvals fn [seq Lvar x | x <- (f_params f)] vargs)
     as cargs.
   apply (bind cargs) => _.
   (* Perform the function body. *)
@@ -2968,11 +2971,11 @@ Proof.
   (* pose (tr_f_body _ _ E) as tr_f. *)
   apply (bind tr_f) => u.
   (* Look up the results in their locations and coerce them. *)
-  pose (map (λ x, totc _ (translate_get_var fn (v_var x))) f_res) as cres.
+  pose (map (λ x, totc _ (translate_get_var fn (v_var x))) (f_res f)) as cres.
   pose (bind_list cres) as vs.
   eapply bind. 1: exact vs.
   intros vres. clear cres vs.
-  apply (trunc_list f_tyout) in vres.
+  apply (trunc_list (f_tyout f)) in vres.
   exact (ret vres).
 Defined.
 
@@ -3348,6 +3351,7 @@ Proof.
     1:{ eapply translate_pexpr_correct. all: eauto. }
     erewrite translate_pexpr_type by eassumption.
     rewrite coerce_to_choice_type_K.
+    cbn.
     erewrite totce_truncate_translate by eassumption.
     eapply translate_write_lval_correct. all: eauto.
   - (* opn *)
@@ -3368,9 +3372,10 @@ Proof.
   - (* if_true *)
     red. intros s1 s2 e c1 c2 he hc1 ihc1.
     red. simpl. move /andP => [hdc1 hdc2].
+    unfold translate_instr_r.
     lazymatch goal with
     | |- context [ if _ then ?f ?fn ?c else _ ] =>
-      change (f fn c) with (translate_cmd SP fn c)
+      change (f fn c) with (translate_cmd P SP fn c)
     end.
     eapply u_bind.
     1:{ eapply translate_pexpr_correct_cast in he. all: eauto. }
@@ -3394,9 +3399,10 @@ Proof.
   - (* for *)
     red. intros s1 s2 i d lo hi c vlo vhi hlo hhi hfor ihfor.
     red. simpl. intros hdc.
+    unfold translate_instr_r.
     lazymatch goal with
     | |- context [ translate_for _ _ _ (?f ?fn ?c) ] =>
-      change (f fn c) with (translate_cmd SP fn c)
+      change (f fn c) with (translate_cmd P SP fn c)
     end.
     eapply u_bind.
     1:{ eapply translate_pexpr_correct_cast in hlo. all: eauto. }
@@ -3460,76 +3466,80 @@ Proof.
         (*                    _hwr_vargs _hbody _h_get_res _h_trunc_res]. *)
         eapply ihgn.
         1: give_up.
-        instantiate (1 := translate_call gn (translate_prog' P)).
+(*         instantiate (1 := translate_call gn (translate_prog' P)). *)
 
 
-        destruct hgn.
-    set (SP := translate_prog' P).
-    rename fn0 into gn.
-    destruct (assoc SP gn) as [SP_gn|] eqn:E'.
-    2: { rename H into E''. unfold SP in E'.
+(*         destruct hgn. *)
+(*     set (SP := translate_prog' P). *)
+(*     rename fn0 into gn. *)
+(*     destruct (assoc SP gn) as [SP_gn|] eqn:E'. *)
+(*     2: { rename H into E''. unfold SP in E'. *)
 
-assert (
-forall (P : uprog) fn f,
-get_fundef (p_funcs P) fn = Some f
-->
-∑ prog' : uprog,
-           ∑ tl : uprog, p_funcs prog' ++ p_funcs tl = p_funcs P /\
-           assoc (translate_prog' prog') fn =
-             Some (translate_call fn (translate_prog' prog')))
-         by admit.
+(* assert ( *)
+(* forall (P : uprog) fn f, *)
+(* get_fundef (p_funcs P) fn = Some f *)
+(* -> *)
+(* ∑ prog' : uprog, *)
+(*            ∑ tl : uprog, p_funcs prog' ++ p_funcs tl = p_funcs P /\ *)
+(*            assoc (translate_prog' prog') fn = *)
+(*              Some (translate_call fn (translate_prog' prog'))) *)
+(*          by admit. *)
 
-         pose (X _ _ _ E'') as h_tr_g.
-         destruct h_tr_g as [prog' [tl [e' asc]]].
-         assert (forall (K : eqType) V l l' (k : K) (v : V),
-                    assoc l k = Some v ->
-                    assoc (l ++ l') k = Some v).
-         { pose (assoc_cat).
-           admit. }
-         assert
-           (assoc (translate_prog' P) gn =
-              Some (translate_call gn (translate_prog' prog'))).
-         { unfold translate_prog'. rewrite -e'.
-           admit. }
-         rewrite H5 in E'. noconf E'.
-    }
+(*          pose (X _ _ _ E'') as h_tr_g. *)
+(*          destruct h_tr_g as [prog' [tl [e' asc]]]. *)
+(*          assert (forall (K : eqType) V l l' (k : K) (v : V), *)
+(*                     assoc l k = Some v -> *)
+(*                     assoc (l ++ l') k = Some v). *)
+(*          { pose (assoc_cat). *)
+(*            admit. } *)
+(*          assert *)
+(*            (assoc (translate_prog' P) gn = *)
+(*               Some (translate_call gn (translate_prog' prog'))). *)
+(*          { unfold translate_prog'. rewrite -e'. *)
+(*            admit. } *)
+(*          rewrite H5 in E'. noconf E'. *)
+(*     } *)
 
-    rewrite -E'.
-    unfold SP_gn in E'.
-    pose (translate_prog_inv P gn (translate_call gn SP) E').
-        give_up.
+(*     rewrite -E'. *)
+(*     unfold SP_gn in E'. *)
+(*     pose (translate_prog_inv P gn (translate_call gn SP) E'). *)
+(*         give_up. *)
       * (* should be similar to Copn, by appealing to correctness of write_lvals. *)
         simpl.
         admit.
   - (* proc *)
     unfold sem_Ind_proc. red. intros m1 m2 gn g vs vs' s1 vm2 vrs vrs'.
     intros hg hvs ?????.
-    unfold Pfun, Translation.Pfun. intros tr_g hp.
+    unfold Pfun, Translation.Pfun. intros P' hp.
     destruct H.
     unfold translate_call.
-    rewrite hg.
-    destruct g eqn:E.
-    rewrite -E in hg hvs H0 H1 H2 H3 H4.
-    destruct (assoc SP gn) as [SP_gn|] eqn:E'.
-    2: { move => E''. unfold SP in E'. rewrite E' in E''. discriminate. }
-    rewrite E'. move => E''. noconf E''.
-    pose E' as e. unfold SP in e.
-    pose (translate_prog_inv _ _ _ e) as h_tr_g.
-    destruct h_tr_g as [p' e_tr_g].
-    set (cargs := [seq (let '(x, (ty; v)) := pat in translate_write_var gn x (totce v))
-          | pat <- zip f_params
-                     (trunc_list f_tyin
-                        [seq totce (translate_value v) | v <- vs'])])
-    .
-    eapply u_bind with (v₁ := tt) ; [unfold cargs|]; clear cargs.
+    (* rewrite hg. *)
+    destruct (get_fundef (p_funcs P') gn) as [g'|] eqn:E.
+    2: give_up.
+
+    destruct (tr_prog_inv _ _ _ E) as [fs' E''].
+    rewrite E''.
+    simpl.
+
+    eapply u_bind with (v₁ := tt).
     1: { idtac.
-         instantiate (1 := rel_estate s1 gn).
+         instantiate (1 := rel_mem m1).
          admit.
     }
-    eapply u_bind with (* (v₁ := [seq totce (translate_value v) | v <- vrs']) *)
-                       (q := rel_estate s1 gn).
-    + give_up.
-    + give_up.
+    eapply u_bind.
+    + assert (g = g') as eg by give_up. subst.
+      assert (P = P') as eP by give_up. subst.
+      assert (fn = gn) as en by give_up. subst.
+      assert (fs' = p_funcs P') as efs by give_up. subst.
+      unfold Pc, SP, translate_prog' in H2.
+      give_up.
+    + eapply u_bind.
+      * eapply bind_list_correct.
+        -- inversion H3.
+           admit.
+        -- admit.
+      * inversion H4.
+        admit.
 Admitted.
 
 End Translation.
