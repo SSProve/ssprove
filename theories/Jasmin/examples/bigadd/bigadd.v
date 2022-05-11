@@ -535,4 +535,13 @@ Goal forall aa goal, fn_bigadd aa = goal.
   setoid_rewrite coerce_to_choice_type_K.
   setoid_rewrite coerce_to_choice_type_K.
   time repeat setoid_rewrite (@zero_extend_u U64).
+
+  (* For comparison: unfold the for loop *)
+  Transparent translate_for.
+  unfold translate_for.
+  simpl_fun.
+  subst i.
+  set (i := $"i.146").
+  setoid_rewrite coerce_to_choice_type_K.
+
 Admitted.
