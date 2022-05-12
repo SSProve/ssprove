@@ -2598,7 +2598,7 @@ Proof.
   unfold nat_of_fun_ident.
   apply /eqP. intro e.
   noconf e.
-  move: (ptr_var_nat_neq ptr fn v) => /eqP; contradiction.
+  move: (ptr_var_nat_neq ptr fn v) => /eqP. contradiction.
 Qed.
 
 Notation coe_cht := coerce_to_choice_type.
@@ -2660,13 +2660,18 @@ Lemma injective_nat_of_fun_ident :
 Proof.
   intros fn x y e.
   unfold nat_of_fun_ident in e.
-  apply Nat.mul_cancel_l in e. 2: apply Nat.pow_nonzero; auto.
+  apply Nat.mul_cancel_l in e. 2: apply Nat.pow_nonzero ; auto.
   eapply Nat.pow_inj_r in e. 2: auto.
   apply injective_nat_of_ident. assumption.
 Qed.
 
 Lemma coprime_mul_inj a b c d :
-  coprime a d -> coprime a b -> coprime c b -> coprime c d  -> (a * b = c * d)%nat -> a = c /\ b = d.
+  coprime a d →
+  coprime a b →
+  coprime c b →
+  coprime c d →
+  (a * b = c * d)%nat →
+  a = c ∧ b = d.
 Proof.
   intros ad ab cb cd e.
   move: e => /eqP. rewrite eqn_dvd. move=> /andP [d1 d2].
@@ -2949,7 +2954,7 @@ Definition trunc_list :=
     [seq let '(ty, v) := ty_v in totce (truncate_el ty v.π2) | ty_v <- zip tys vs]).
 
 Definition fdefs :=
-  (* ∀ fn fdef, get_fundef (p_funcs P) fn = Some fdef -> raw_code 'unit. *)
+  (* ∀ fn fdef, get_fundef (p_funcs P) fn = Some fdef → raw_code 'unit. *)
   list (funname * (raw_code 'unit)).
 
 Definition translate_call (fn : funname) (tr_f_body : fdefs)
@@ -3113,6 +3118,7 @@ End TranslateCMD.
 End Translation.
 
 Section Translation.
+
 Context `{asmop : asmOp}.
 
 Context {T} {pT : progT T}.
@@ -3204,20 +3210,21 @@ Defined.
 
 Definition translate_funs (P : uprog) :=
   let fix translate_funs (fs : seq _ufun_decl) : ssprove_prog :=
-  match fs with
-  [::] => [::]
-  | f :: fs' =>
-      let tr_fs' := translate_funs fs' in
-      let fn := f.1 in
-      (fn, (translate_cmd P tr_fs' fn (f_body f.2))) :: tr_fs'
-  end
-  in translate_funs.
+    match fs with
+    | [::] => [::]
+    | f :: fs' =>
+        let tr_fs' := translate_funs fs' in
+        let fn := f.1 in
+        (fn, (translate_cmd P tr_fs' fn (f_body f.2))) :: tr_fs'
+    end
+  in
+  translate_funs.
 
 Definition translate_prog' P :=
   translate_funs P (p_funcs P).
 
 Lemma tr_prog_inv P fn f :
-  get_fundef (p_funcs P) fn = Some f ->
+  get_fundef (p_funcs P) fn = Some f →
   ∑ fs',
     assoc (translate_prog' P) fn =
       let tr_fs' := translate_funs P fs' in
@@ -3286,18 +3293,18 @@ Definition handled_program (P : uprog) :=
   List.forallb handled_fundecl P.(p_funcs).
 
 Definition Pfun (fn : funname) m va m' vr :=
-  forall (P : uprog),
-  handled_program P →
-  let sp := translate_prog' P in
-  (* let dom := lchtuple (map choice_type_of_val va) in *)
-  (* let cod := lchtuple (map choice_type_of_val vr) in *)
-  (* get_fundef_ssp sp fn dom cod = Some f → *)
-  (* assoc sp fn = Some f → *)
-  ⊢ ⦃ rel_mem m ⦄
-    translate_call P fn sp [seq totce (translate_value v) | v <- va]
-    (* f [seq totce (translate_value v) | v <- va] *)
-    ⇓ [seq totce (translate_value v) | v <- vr]
-  ⦃ rel_mem m' ⦄.
+  ∀ (P : uprog),
+    handled_program P →
+    let sp := translate_prog' P in
+    (* let dom := lchtuple (map choice_type_of_val va) in *)
+    (* let cod := lchtuple (map choice_type_of_val vr) in *)
+    (* get_fundef_ssp sp fn dom cod = Some f → *)
+    (* assoc sp fn = Some f → *)
+    ⊢ ⦃ rel_mem m ⦄
+      translate_call P fn sp [seq totce (translate_value v) | v <- va]
+      (* f [seq totce (translate_value v) | v <- va] *)
+      ⇓ [seq totce (translate_value v) | v <- vr]
+    ⦃ rel_mem m' ⦄.
 
 Theorem translate_prog_correct P (fn : funname) m va m' vr :
   sem.sem_call P m fn va m' vr →
