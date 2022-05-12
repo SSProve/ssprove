@@ -153,42 +153,21 @@ Proof.
   - intros [] []. intuition eauto.
 Qed.
 
-(* Tactic to deal with Let _ := _ in _ = ok _ in assumption h *)
-(* x and hx are introduced names for the value and its property *)
-Ltac jbind h x hx :=
-  eapply rbindP ; [| exact h ] ;
-  clear h ; intros x hx h ;
-  cbn beta in h.
+Definition typed_chElement := pointed_value.
 
-Section Translation.
+Definition to_typed_chElement {t : choice_type} (v : t) : typed_chElement := (t ; v).
 
-Context `{asmop : asmOp}.
-
-Context {T} {pT : progT T}.
-
-Context {pd : PointerData}.
-
-Context (P : uprog).
-
-Notation gd := (p_globs P).
-
-Notation " 'array " := (chMap 'int ('word U8)) (at level 2) : package_scope.
-Notation " 'array " := (chMap 'int ('word U8)) (in custom pack_type at level 2).
-Notation " 'mem " := (chMap ('word Uptr) ('word U8)) (at level 2) : package_scope.
-Notation " 'mem " := (chMap ('word Uptr) ('word U8)) (in custom pack_type at level 2).
-
-Definition mem_index : nat := 0.
-Definition mem_loc : Location := ('mem ; mem_index).
+Definition typed_code := ∑ (a : choice_type), raw_code a.
 
 Definition encode (t : stype) : choice_type :=
   match t with
   | sbool => 'bool
   | sint => 'int
-  | sarr n => 'array
+  | sarr n => (chMap 'int ('word U8))
   | sword n => 'word n
   end.
 
-Definition embed_array {len} (a : WArray.array len) : 'array :=
+Definition embed_array {len} (a : WArray.array len) : (chMap 'int ('word U8)) :=
   Mz.fold (λ k v m, setm m k v) a.(WArray.arr_data) emptym.
 
 Definition embed {t} : sem_t t → encode t :=
@@ -198,6 +177,118 @@ Definition embed {t} : sem_t t → encode t :=
   | sarr n => embed_array
   | sword n => λ x, x
   end.
+
+(* from pkg_invariants *)
+Definition cast_ct_val {t t' : choice_type} (e : t = t') (v : t) : t'.
+Proof.
+  subst. auto.
+Defined.
+
+Lemma cast_ct_val_K :
+  ∀ t e v,
+    @cast_ct_val t t e v = v.
+Proof.
+  intros t e v.
+  assert (e = erefl).
+  { apply eq_irrelevance. }
+  subst. reflexivity.
+Qed.
+
+Equations? coerce_to_choice_type (t : choice_type) {tv : choice_type} (v : tv) : t :=
+  @coerce_to_choice_type t tv v with inspect (tv == t) := {
+    | @exist true e => cast_ct_val _ v
+    | @exist false e => chCanonical t
+    }.
+Proof.
+  symmetry in e.
+  move: e => /eqP e. subst. reflexivity.
+Qed.
+
+Definition cast_typed_code (t' : choice_type) (c : typed_code) (e : c.π1 = t') :
+  raw_code t'.
+Proof.
+  subst. exact (projT2 c).
+Defined.
+
+Lemma cast_typed_code_K :
+  ∀ t c e,
+    @cast_typed_code t (t ; c) e = c.
+Proof.
+  intros t c e.
+  assert (e = erefl).
+  { apply eq_irrelevance. }
+  subst. reflexivity.
+Qed.
+
+Equations? coerce_typed_code (ty : choice_type) (tc : typed_code) : raw_code ty :=
+  @coerce_typed_code ty tc with inspect (tc.π1 == ty) := {
+    | @exist true e => @cast_typed_code ty tc _
+    | @exist false e => ret (chCanonical ty)
+    }.
+Proof.
+  symmetry in e.
+  move: e => /eqP e. subst. reflexivity.
+Qed.
+
+Lemma coerce_typed_code_neq :
+  ∀ (ty ty' : choice_type) c,
+    ty ≠ ty' →
+    coerce_typed_code ty' (ty ; c) = ret (chCanonical _).
+Proof.
+  intros ty ty' c ne.
+  funelim (coerce_typed_code ty' (ty ; c)).
+  1:{
+    clear - e ne. symmetry in e. move: e => /eqP e. simpl in e. contradiction.
+  }
+  symmetry. assumption.
+Qed.
+
+Lemma coerce_typed_code_K :
+  ∀ (ty : choice_type) c,
+    coerce_typed_code ty (ty ; c) = c.
+Proof.
+  intros ty c.
+  funelim (coerce_typed_code ty (ty ; c)).
+  2:{
+    clear - e. symmetry in e. move: e => /eqP e. simpl in e. contradiction.
+  }
+  rewrite <- Heqcall.
+  apply cast_typed_code_K.
+Qed.
+
+Definition choice_type_of_val (val : value) : choice_type :=
+  encode (type_of_val val).
+
+(* Tactic to deal with Let _ := _ in _ = ok _ in assumption h *)
+(* x and hx are introduced names for the value and its property *)
+Ltac jbind h x hx :=
+  eapply rbindP ; [| exact h ] ;
+  clear h ; intros x hx h ;
+  cbn beta in h.
+
+Module JasminNotation.
+  Notation " 'array " := (chMap 'int ('word U8)) (at level 2) : package_scope.
+  Notation " 'array " := (chMap 'int ('word U8)) (in custom pack_type at level 2).
+  Notation " 'mem " := (chMap ('word Uptr) ('word U8)) (at level 2) : package_scope.
+  Notation " 'mem " := (chMap ('word Uptr) ('word U8)) (in custom pack_type at level 2).
+  Notation totce := to_typed_chElement.
+  Notation coe_cht := coerce_to_choice_type.
+  Notation coe_tyc := coerce_typed_code.
+
+End JasminNotation.
+
+Import JasminNotation.
+
+Section Translation.
+
+Context `{asmop : asmOp}.
+
+Context {pd : PointerData}.
+
+Context (gd : glob_decls).
+
+Definition mem_index : nat := 0.
+Definition mem_loc : Location := ('mem ; mem_index).
 
 Lemma elementsNIn :
   ∀ (T : Type) (k : Z) (v : T) (m : Mz.Map.t T),
@@ -391,9 +482,6 @@ Definition nat_of_fun_var (f : funname) (x : var) : nat :=
 Definition translate_var (f : funname) (x : var) : Location :=
   (encode x.(vtype) ; nat_of_fun_var f x).
 
-Definition typed_code :=
-  ∑ (a : choice_type), raw_code a.
-
 #[local] Definition unsupported : typed_code :=
   ('unit ; assert false).
 
@@ -406,32 +494,6 @@ Proof.
   unfold truncate_val in e.
   jbind e x ev. noconf e.
   apply type_of_to_val.
-Qed.
-
-(* from pkg_invariants *)
-Definition cast_ct_val {t t' : choice_type} (e : t = t') (v : t) : t'.
-Proof.
-  subst. auto.
-Defined.
-
-Lemma cast_ct_val_K :
-  ∀ t e v,
-    @cast_ct_val t t e v = v.
-Proof.
-  intros t e v.
-  assert (e = erefl).
-  { apply eq_irrelevance. }
-  subst. reflexivity.
-Qed.
-
-Equations? coerce_to_choice_type (t : choice_type) {tv : choice_type} (v : tv) : t :=
-  @coerce_to_choice_type t tv v with inspect (tv == t) := {
-    | @exist true e => cast_ct_val _ v
-    | @exist false e => chCanonical t
-    }.
-Proof.
-  symmetry in e.
-  move: e => /eqP e. subst. reflexivity.
 Qed.
 
 Definition truncate_chWord {t : choice_type} (n : wsize) : t → 'word n :=
@@ -463,64 +525,6 @@ Definition translate_to_pointer {t : choice_type} (c : t) : 'word Uptr :=
 
 Definition truncate_code (s : stype) (c : typed_code) : typed_code :=
   (encode s ; x ← c.π2 ;; ret (truncate_el s x)).
-
-Definition cast_typed_code (t' : choice_type) (c : typed_code) (e : c.π1 = t') :
-  raw_code t'.
-Proof.
-  subst. exact (projT2 c).
-Defined.
-
-Lemma cast_typed_code_K :
-  ∀ t c e,
-    @cast_typed_code t (t ; c) e = c.
-Proof.
-  intros t c e.
-  assert (e = erefl).
-  { apply eq_irrelevance. }
-  subst. reflexivity.
-Qed.
-
-Equations? coerce_typed_code (ty : choice_type) (tc : typed_code) : raw_code ty :=
-  @coerce_typed_code ty tc with inspect (tc.π1 == ty) := {
-    | @exist true e => @cast_typed_code ty tc _
-    | @exist false e => ret (chCanonical ty)
-    }.
-Proof.
-  symmetry in e.
-  move: e => /eqP e. subst. reflexivity.
-Qed.
-
-Lemma coerce_typed_code_neq :
-  ∀ (ty ty' : choice_type) c,
-    ty ≠ ty' →
-    coerce_typed_code ty' (ty ; c) = ret (chCanonical _).
-Proof.
-  intros ty ty' c ne.
-  funelim (coerce_typed_code ty' (ty ; c)).
-  1:{
-    clear - e ne. symmetry in e. move: e => /eqP e. simpl in e. contradiction.
-  }
-  symmetry. assumption.
-Qed.
-
-Lemma coerce_typed_code_K :
-  ∀ (ty : choice_type) c,
-    coerce_typed_code ty (ty ; c) = c.
-Proof.
-  intros ty c.
-  funelim (coerce_typed_code ty (ty ; c)).
-  2:{
-    clear - e. symmetry in e. move: e => /eqP e. simpl in e. contradiction.
-  }
-  rewrite <- Heqcall.
-  apply cast_typed_code_K.
-Qed.
-
-Definition typed_chElement :=
-  pointed_value.
-
-Definition choice_type_of_val (val : value) : choice_type :=
-  encode (type_of_val val).
 
 Definition translate_value (v : value) : choice_type_of_val v.
 Proof.
@@ -803,8 +807,6 @@ Proof.
       exact (hd :: tl).
 Defined.
 
-Definition to_typed_chElement {t : choice_type} (v : t) : typed_chElement := (t ; v).
-
 Fixpoint bind_list (cs : list typed_code) {struct cs} : raw_code ([choiceType of list typed_chElement]) :=
   match cs with
   | [::] => ret [::]
@@ -911,8 +913,6 @@ Section bind_list_alt.
   Defined.
 
 End bind_list_alt.
-
-Notation totce := to_typed_chElement.
 
 Definition embed_ot {t} : sem_ot t → encode t :=
   match t with
@@ -1100,9 +1100,6 @@ Definition translate_write_lval (fn : funname) (l : lval) (v : typed_chElement)
     translate_write_var fn x (totce t)
   end.
 
-Definition instr_d (i : instr) : instr_r :=
-  match i with MkI _ i => i end.
-
 (* Note c is translated from cmd, in the case ws = [], sem_for does not
   guarantee it is well-formed.
   Also note, it feels odd to get a var_i when I should translate before calling.
@@ -1203,6 +1200,15 @@ Fixpoint foldr2 {A B R} (f : A → B → R → R) (la : seq A) (lb : seq B) r :=
 Definition translate_write_lvals fn ls vs :=
   (* foldl2 (λ c l v, translate_write_lval fn l v ;; c) ls vs (ret tt). *)
   foldr2 (λ l v c, translate_write_lval fn l v ;; c) ls vs (ret tt).
+
+Lemma eq_rect_K :
+  forall (A : eqType) (x : A) (P : A -> Type) h e,
+    @eq_rect A x P h x e = h.
+Proof.
+  intros A x P' h e.
+  replace e with (@erefl A x) by apply eq_irrelevance.
+  reflexivity.
+Qed.
 
 Lemma eq_rect_r_K :
   ∀ (A : eqType) (x : A) (P : A → Type) h e,
@@ -2602,9 +2608,6 @@ Proof.
   move: (ptr_var_nat_neq ptr fn v) => /eqP. contradiction.
 Qed.
 
-Notation coe_cht := coerce_to_choice_type.
-Notation coe_tyc := coerce_typed_code.
-
 Lemma nat_of_ident_pos :
   ∀ x, (0 < nat_of_ident x)%coq_nat.
 Proof.
@@ -2950,6 +2953,19 @@ Proof.
       assumption.
 Qed.
 
+End Translation.
+
+Section Translation.
+
+Context `{asmop : asmOp}.
+
+Context {pd : PointerData}.
+
+Context (P : uprog).
+
+Definition instr_d (i : instr) : instr_r :=
+  match i with MkI _ i => i end.
+
 Definition trunc_list :=
   (λ tys (vs : seq typed_chElement),
     [seq let '(ty, v) := ty_v in totce (truncate_el ty v.π2) | ty_v <- zip tys vs]).
@@ -2958,31 +2974,38 @@ Definition fdefs :=
   (* ∀ fn fdef, get_fundef (p_funcs P) fn = Some fdef → raw_code 'unit. *)
   list (funname * (raw_code 'unit)).
 
+
+Definition translate_call_body (fn : funname) (tr_f_body : raw_code 'unit)
+           (vargs' : [choiceType of seq typed_chElement])
+  : raw_code [choiceType of list typed_chElement].
+Proof using P asm_op asmop pd.
+  (* sem_call *)
+  refine (match (get_fundef (p_funcs P) fn) with
+          | Some f => _
+          | None => ret [::] end).
+  pose (trunc_list (f_tyin f) vargs') as vargs.
+  apply (bind
+           (translate_write_lvals (p_globs P) fn [seq Lvar x | x <- (f_params f)] vargs)) => _.
+  (* Perform the function body. *)
+  (* apply (bind (tr_f_body _ _ E)) => _. *)
+  (* pose (tr_f_body _ _ E) as tr_f. *)
+  apply (bind tr_f_body) => _.
+  eapply bind.
+  - (* Look up the results in their locations... *)
+    exact (bind_list [seq totc _ (translate_get_var fn (v_var x)) | x <- f_res f]).
+  - intros vres.
+    (* ...and coerce them to the codomain of f. *)
+    pose (trunc_list (f_tyout f) vres) as vres'.
+    exact (ret vres').
+Defined.
+
 Definition translate_call (fn : funname) (tr_f_body : fdefs)
            (vargs : [choiceType of seq typed_chElement])
   : raw_code [choiceType of list typed_chElement].
 Proof using P asm_op asmop pd.
-  (* sem_call *)
-  destruct (get_fundef (p_funcs P) fn)
-    as [f|]
-         (* eqn:E *)
-  ; [ | exact (ret [::])].
-  apply (trunc_list (f_tyin f)) in vargs.
-  pose (translate_write_lvals fn [seq Lvar x | x <- (f_params f)] vargs)
-    as cargs.
-  apply (bind cargs) => _.
-  (* Perform the function body. *)
-  destruct (assoc tr_f_body fn) as [tr_f|]. 2: exact (ret [::]).
-  (* apply (bind (tr_f_body _ _ E)) => _. *)
-  (* pose (tr_f_body _ _ E) as tr_f. *)
-  apply (bind tr_f) => u.
-  (* Look up the results in their locations and coerce them. *)
-  pose (map (λ x, totc _ (translate_get_var fn (v_var x))) (f_res f)) as cres.
-  pose (bind_list cres) as vs.
-  eapply bind. 1: exact vs.
-  intros vres. clear cres vs.
-  apply (trunc_list (f_tyout f)) in vres.
-  exact (ret vres).
+  refine (match assoc tr_f_body fn with
+          | Some tr_f => _ | None => ret [::] end).
+  exact (translate_call_body fn tr_f vargs).
 Defined.
 
 Fixpoint translate_instr_r
@@ -2991,7 +3014,7 @@ Fixpoint translate_instr_r
   : raw_code 'unit
 
 with translate_instr (tr_f_body : fdefs)
-                     (fn : funname) (i : instr) {struct i} : raw_code 'unit :=
+       (fn : funname) (i : instr) {struct i} : raw_code 'unit :=
   translate_instr_r tr_f_body fn (instr_d i).
 Proof using P asm_op asmop pd.
   pose proof (translate_cmd :=
@@ -3008,26 +3031,26 @@ Proof using P asm_op asmop pd.
   destruct i as [ | ls _ o es | e c1 c2 | i [[d lo] hi] c | | ii xs gn args ].
   - (* Cassgn *)
     (* l :a=_s p *)
-    pose (translate_pexpr fn p) as tr_p.
+    pose (translate_pexpr (p_globs P) fn p) as tr_p.
     eapply bind. 1: exact (tr_p.π2).
     intros v. pose (truncate_el s v) as tr_v.
-    exact (translate_write_lval fn l (totce tr_v)).
+    exact (translate_write_lval (p_globs P) fn l (totce tr_v)).
   - (* Copn *)
-    pose (cs := [seq (translate_pexpr fn e) | e <- es]).
+    pose (cs := [seq (translate_pexpr (p_globs P) fn e) | e <- es]).
     pose (vs := bind_list cs).
     eapply bind. 1: exact vs. intros bvs.
     pose (out := translate_exec_sopn o bvs).
-    exact (translate_write_lvals fn ls out). (* BSH: I'm not sure if the outputs should be truncated? *)
+    exact (translate_write_lvals (p_globs P) fn ls out). (* BSH: I'm not sure if the outputs should be truncated? *)
   - (* Cif e c1 c2 *)
-    pose (e' := translate_pexpr fn e).
+    pose (e' := translate_pexpr (p_globs P) fn e).
     pose (c1' := translate_cmd fn c1).
     pose (c2' := translate_cmd fn c2).
     pose (rb := coerce_typed_code 'bool e').
     exact (b ← rb ;; if b then c1' else c2').
   - (* Cfor i (d, lo, hi) c *)
     (* pose (iᵗ := translate_var fn i). *) (* Weird not to do it *)
-    pose (loᵗ := coerce_typed_code 'int (translate_pexpr fn lo)).
-    pose (hiᵗ := coerce_typed_code 'int (translate_pexpr fn hi)).
+    pose (loᵗ := coerce_typed_code 'int (translate_pexpr (p_globs P) fn lo)).
+    pose (hiᵗ := coerce_typed_code 'int (translate_pexpr (p_globs P) fn hi)).
     pose (cᵗ := translate_cmd fn c).
     exact (
       vlo ← loᵗ ;;
@@ -3038,13 +3061,13 @@ Proof using P asm_op asmop pd.
   - (* Ccall ii xs f args *)
     rename fn into fn_ambient.
     (* Translate arguments. *)
-    pose (cs := [seq (translate_pexpr fn_ambient e) | e <- args]).
+    pose (cs := [seq (translate_pexpr (p_globs P) fn_ambient e) | e <- args]).
     eapply bind. 1: exact (bind_list cs).
     intros vargs. clear cs.
 
     apply (bind (translate_call gn tr_f_body vargs)) => vres.
 
-    pose (translate_write_lvals fn_ambient xs vres) as cres.
+    pose (translate_write_lvals (p_globs P) fn_ambient xs vres) as cres.
     exact cres.
 Defined.
 
@@ -3116,15 +3139,6 @@ Fixpoint translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
 
 End TranslateCMD.
 
-End Translation.
-
-Section Translation.
-
-Context `{asmop : asmOp}.
-
-Context {T} {pT : progT T}.
-
-Context {pd : PointerData}.
 
 Record fdef := {
   ffun : typed_raw_function ;
@@ -3135,12 +3149,10 @@ Record fdef := {
 #[local] Definition ty_in fd := (ffun fd).π1.
 #[local] Definition ty_out fd := ((ffun fd).π2).π1.
 
-Notation totce := to_typed_chElement.
-
-Definition translate_fundef (P : uprog)
+Definition translate_fundef
            (tr_f_body : fdefs)
            (fd : _ufun_decl (* extra_fun_t *)) : funname * fdef.
-Proof using asm_op asmop pd.
+Proof using P asm_op asmop pd.
   destruct fd. destruct _f.
   split. 1: exact f.
   constructor.
@@ -3166,7 +3178,7 @@ Proof using asm_op asmop pd.
     apply (bind cargs) => _.
 
     (* Perform the function body. *)
-    apply (bind (translate_cmd P tr_f_body f f_body)) => _.
+    apply (bind (translate_cmd tr_f_body f f_body)) => _.
 
     (* Look up the results in their locations and return them. *)
     pose (map (λ x, totc _ (translate_get_var f (v_var x))) f_res) as cres.
@@ -3194,10 +3206,18 @@ Definition get_fundef_ssp (sp : seq (funname * fdef)) (fn : funname) (dom cod : 
   | None => None
   end.
 
-Definition ssprove_prog := fdefs.
+End Translation.
 
-Definition translate_prog (prog : uprog) : ssprove_prog.
-Proof.
+Section Translation.
+
+Context `{asmop : asmOp}.
+
+Context {pd : PointerData}.
+
+Definition ssprove_prog := seq (funname * ([choiceType of seq typed_chElement] → raw_code [choiceType of list typed_chElement])).
+
+Definition translate_prog (prog : uprog) : fdefs.
+Proof using asm_op asmop pd.
   destruct prog.
   induction p_funcs.
   - exact [::].
@@ -3209,8 +3229,35 @@ Proof.
     exact (translate_cmd (Build__prog p_funcs p_globs p_extra) IHp_funcs fn f_body).
 Defined.
 
+Definition tr_p (prog : uprog) : ssprove_prog.
+Proof using asm_op asmop pd.
+  pose (fs := translate_prog prog).
+  induction fs as [|f fs ?].
+- constructor 1.
+- constructor 2.
+  2: assumption.
+  exact (f.1, translate_call prog f.1 (f::fs)).
+Defined.
+
+(* Definition translate_funs (P : uprog) := *)
+(*   let fix translate_funs (fs : seq _ufun_decl) : fdefs := *)
+(*   match fs with *)
+(*   [::] => [::] *)
+(*   | f :: fs' => *)
+(*       let tr_fs' := translate_funs fs' in *)
+(*       let fn := f.1 in *)
+(*       (fn, *)
+(*         let tr_body := translate_cmd P tr_fs' fn (f_body f.2) in *)
+(*         translate_call P fn ((fn, tr_body) :: tr_fs') *)
+(*       ) :: tr_fs' *)
+(*   end *)
+(*   in translate_funs. *)
+
+(* Definition translate_prog' P := *)
+(*   translate_funs P (p_funcs P). *)
+
 Definition translate_funs (P : uprog) :=
-  let fix translate_funs (fs : seq _ufun_decl) : ssprove_prog :=
+  let fix translate_funs (fs : seq _ufun_decl) : fdefs :=
     match fs with
     | [::] => [::]
     | f :: fs' =>
@@ -3293,28 +3340,21 @@ Definition handled_fundecl (f : _ufun_decl) :=
 Definition handled_program (P : uprog) :=
   List.forallb handled_fundecl P.(p_funcs).
 
-Definition Pfun (fn : funname) m va m' vr :=
-  ∀ (P : uprog),
+Definition Pfun (P : uprog) (fn : funname) m va m' vr :=
     handled_program P →
-    let sp := translate_prog' P in
-    (* let dom := lchtuple (map choice_type_of_val va) in *)
-    (* let cod := lchtuple (map choice_type_of_val vr) in *)
-    (* get_fundef_ssp sp fn dom cod = Some f → *)
-    (* assoc sp fn = Some f → *)
     ⊢ ⦃ rel_mem m ⦄
-      translate_call P fn sp [seq totce (translate_value v) | v <- va]
-      (* f [seq totce (translate_value v) | v <- va] *)
+      translate_call P fn (translate_prog' P) [seq totce (translate_value v) | v <- va]
       ⇓ [seq totce (translate_value v) | v <- vr]
     ⦃ rel_mem m' ⦄.
 
 Theorem translate_prog_correct P (fn : funname) m va m' vr :
   sem.sem_call P m fn va m' vr →
-  Pfun fn m va m' vr.
+  Pfun P fn m va m' vr.
 Proof.
   intros H hP.
   set (Pfun :=
     λ (m : mem) (fn : funname) (va : seq value) (m' : mem) (vr : seq value),
-         Pfun fn m va m' vr
+         Pfun P fn m va m' vr
   ).
   set (SP := translate_prog' P).
   set (Pi_r :=
@@ -3433,7 +3473,7 @@ Proof.
     }
     apply ihfor. assumption.
   - (* call *)
-    clear -pT.
+    clear.
     red.
     intros s1 m2 s2 ii xs gn args vargs vres hargs hgn ihgn hwr_vres.
     unfold Pfun in ihgn.
@@ -3518,15 +3558,19 @@ Proof.
   - (* proc *)
     unfold sem_Ind_proc. red. intros m1 m2 gn g vs vs' s1 vm2 vrs vrs'.
     intros hg hvs ?????.
-    unfold Pfun, Translation.Pfun. intros P' hp.
+    unfold Pfun, Translation.Pfun. intros hp.
     destruct H.
-    unfold translate_call.
-    (* rewrite hg. *)
-    destruct (get_fundef (p_funcs P') gn) as [g'|] eqn:E.
-    2: give_up.
+    unfold translate_prog', translate_call.
 
-    destruct (tr_prog_inv _ _ _ E) as [fs' E''].
+    (* rewrite hg. *)
+    (* destruct (get_fundef (p_funcs P) gn) as [g'|] eqn:E. *)
+    (* 2: { inversion hg. } *)
+
+    destruct (tr_prog_inv _ _ _ hg) as [fs' E''].
+    unfold translate_prog' in E''.
     rewrite E''.
+    unfold translate_call_body.
+    rewrite hg.
     simpl.
 
     eapply u_bind with (v₁ := tt).
@@ -3534,12 +3578,12 @@ Proof.
          instantiate (1 := rel_mem m1).
          admit.
     }
-    eapply u_bind.
-    + assert (g = g') as eg by give_up. subst.
-      assert (P = P') as eP by give_up. subst.
-      assert (fn = gn) as en by give_up. subst.
-      assert (fs' = p_funcs P') as efs by give_up. subst.
-      unfold Pc, SP, translate_prog' in H2.
+    eapply u_bind with (v₁ := tt) (q := rel_mem m2).
+    + unfold Pc, SP, translate_prog' in H2.
+      assert (handled_cmd (f_body g)) as h_gbody.
+      { inversion hp.
+        give_up. }
+      apply H2 in h_gbody.
       give_up.
     + eapply u_bind.
       * eapply bind_list_correct.

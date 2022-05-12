@@ -1,23 +1,3 @@
-(* TODO: only needed to define eq_rect_K; move that to jasmin_translate. *)
-Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
-  fingroup.fingroup solvable.cyclic prime ssrnat ssreflect ssrfun ssrbool ssrnum
-  eqtype choice seq.
-Set Warnings "notation-overridden,ambiguous-paths".
-
-
-Lemma eq_rect_K :
-  forall (A : eqType) (x : A) (P : A -> Type) h e,
-    @eq_rect A x P h x e = h.
-Proof.
-  intros A x P' h e.
-  replace e with (@erefl A x) by apply eq_irrelevance.
-  reflexivity.
-Qed.
-
-
-
-
 From Coq Require String Ascii.
 
 From Jasmin Require Import expr.
@@ -29,16 +9,8 @@ From Ltac2 Require Ltac2 Printf.
 From Ltac2 Require String Char Fresh Ident.
 
 
-Module Jasmin_notations.
+Module JasminCodeNotation.
 
-  Notation coe_cht := coerce_to_choice_type.
-  Notation coe_tyc := coerce_typed_code.
-  Import PackageNotation.
-
-  Notation " 'array " := (chMap 'int ('word U8)) (at level 2) : package_scope.
-  Notation " 'array " := (chMap 'int ('word U8)) (in custom pack_type at level 2).
-  Notation " 'mem " := (chMap ('word Uptr) ('word U8)) (at level 2) : package_scope.
-  Notation " 'mem " := (chMap ('word Uptr) ('word U8)) (in custom pack_type at level 2).
   Notation " ⸨ ws ⸩ a .[ ptr * scale ] " := (chArray_get ws a ptr scale)
                                             (format " ⸨ ws ⸩  a .[ ptr * scale ] ").
   Notation " a [ w / p ] " :=
@@ -55,11 +27,11 @@ Module Jasmin_notations.
 
   Notation "'for var ∈ seq" := (translate_for _ ($$$var) seq)
                                 (at level 99).
-End Jasmin_notations.
+End JasminCodeNotation.
 
 Module jtac.
 
-Import Jasmin_notations.
+Import JasminNotation JasminCodeNotation.
 
 Import Ltac2.Ltac2 Ltac2.Printf.
 
@@ -147,7 +119,7 @@ End jtac.
 Ltac setjvars := ltac2:(jtac.setjvars ()).
 
 Ltac prog_unfold := unfold translate_prog', translate_prog,
-    translate_call,
+    translate_call, translate_call_body,
     translate_write_lvals, translate_write_var, translate_instr,
     translate_var,
     coerce_chtuple_to_list, bind_list', bind_list_trunc_aux,

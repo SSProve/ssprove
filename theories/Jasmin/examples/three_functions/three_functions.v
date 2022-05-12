@@ -12,7 +12,7 @@ From JasminSSProve Require Import jasmin_translate jasmin_utils.
 From Crypt Require Import Prelude Package.
 
 Import ListNotations.
-Import Jasmin_notations.
+Import JasminNotation JasminCodeNotation.
 Import PackageNotation.
 
 Local Open Scope string.
