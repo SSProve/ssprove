@@ -24,6 +24,7 @@ Unset Printing Implicit Defensive.
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
+Set Default Proof Using "Type".
 
 Derive NoConfusion for result.
 Derive NoConfusion for value.
@@ -2190,7 +2191,7 @@ Lemma app_sopn_list_tuple_correct o vs vs' :
   tr_app_sopn_tuple _ (sopn_sem o) [seq to_typed_chElement (translate_value v) | v <- vs]
   =
   embed_tuple vs'.
-Proof.
+Proof using asm_correct.
   intros.
   unfold tr_app_sopn_tuple.
   erewrite tr_app_sopn_correct.
@@ -2212,7 +2213,7 @@ Lemma translate_exec_sopn_correct (o : sopn) (ins outs : values) :
   exec_sopn o ins = ok outs →
   translate_exec_sopn o [seq totce (translate_value v) | v <- ins] =
   [seq totce (translate_value v) | v <- outs].
-Proof.
+Proof using asm_correct.
   intros H.
   unfold translate_exec_sopn.
   jbind H vs Hvs.
@@ -2960,7 +2961,7 @@ Definition fdefs :=
 Definition translate_call (fn : funname) (tr_f_body : fdefs)
            (vargs : [choiceType of seq typed_chElement])
   : raw_code [choiceType of list typed_chElement].
-Proof.
+Proof using P asm_op asmop pd.
   (* sem_call *)
   destruct (get_fundef (p_funcs P) fn)
     as [f|]
@@ -2992,7 +2993,7 @@ Fixpoint translate_instr_r
 with translate_instr (tr_f_body : fdefs)
                      (fn : funname) (i : instr) {struct i} : raw_code 'unit :=
   translate_instr_r tr_f_body fn (instr_d i).
-Proof.
+Proof using P asm_op asmop pd.
   pose proof (translate_cmd :=
     (fix translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
       match c with
@@ -3139,7 +3140,7 @@ Notation totce := to_typed_chElement.
 Definition translate_fundef (P : uprog)
            (tr_f_body : fdefs)
            (fd : _ufun_decl (* extra_fun_t *)) : funname * fdef.
-Proof.
+Proof using asm_op asmop pd.
   destruct fd. destruct _f.
   split. 1: exact f.
   constructor.
