@@ -2985,14 +2985,16 @@ Proof using P asm_op asmop pd.
           | None => ret [::] end).
   pose (trunc_list (f_tyin f) vargs') as vargs.
   apply (bind
-           (translate_write_lvals (p_globs P) fn [seq Lvar x | x <- (f_params f)] vargs)) => _.
+           (translate_write_lvals (p_globs P) fn
+              [seq Lvar x | x <- (f_params f)] vargs)) => _.
   (* Perform the function body. *)
   (* apply (bind (tr_f_body _ _ E)) => _. *)
   (* pose (tr_f_body _ _ E) as tr_f. *)
   apply (bind tr_f_body) => _.
   eapply bind.
   - (* Look up the results in their locations... *)
-    exact (bind_list [seq totc _ (translate_get_var fn (v_var x)) | x <- f_res f]).
+    exact (bind_list [seq totc _ (translate_get_var fn (v_var x))
+                     | x <- f_res f]).
   - intros vres.
     (* ...and coerce them to the codomain of f. *)
     pose (trunc_list (f_tyout f) vres) as vres'.
@@ -3239,75 +3241,67 @@ Proof using asm_op asmop pd.
   exact (f.1, translate_call prog f.1 (f::fs)).
 Defined.
 
-(* Definition translate_funs (P : uprog) := *)
-(*   let fix translate_funs (fs : seq _ufun_decl) : fdefs := *)
-(*   match fs with *)
-(*   [::] => [::] *)
-(*   | f :: fs' => *)
-(*       let tr_fs' := translate_funs fs' in *)
-(*       let fn := f.1 in *)
-(*       (fn, *)
-(*         let tr_body := translate_cmd P tr_fs' fn (f_body f.2) in *)
-(*         translate_call P fn ((fn, tr_body) :: tr_fs') *)
-(*       ) :: tr_fs' *)
-(*   end *)
-(*   in translate_funs. *)
-
-(* Definition translate_prog' P := *)
-(*   translate_funs P (p_funcs P). *)
-
-Definition translate_funs (P : uprog) :=
-  let fix translate_funs (fs : seq _ufun_decl) : fdefs :=
+(* PGH: TODO: do we need an ambient funname?  *)
+Definition translate_funs (P : uprog) : seq _ufun_decl → fdefs * ssprove_prog :=
+  let fix translate_funs (fs : seq _ufun_decl) : fdefs * ssprove_prog :=
     match fs with
-    | [::] => [::]
+    | [::] => ([::], [::])
     | f :: fs' =>
-        let tr_fs' := translate_funs fs' in
+        (* let '(tr_fs', tr_p') := translate_funs fs' in *)
+        let tr_tl := translate_funs fs' in
+        let '(tr_fs', tr_p') := (tr_tl.1, tr_tl.2) in
         let fn := f.1 in
-        (fn, (translate_cmd P tr_fs' fn (f_body f.2))) :: tr_fs'
+        let tr_body := translate_cmd P tr_fs' fn (f_body f.2) in
+        let tr_fs := (fn, tr_body) :: tr_fs' in
+        (* let tr_p := (fn, translate_call P fn tr_fs) :: tr_p' in *)
+        let tr_p := (fn, translate_call_body P fn tr_body) :: tr_p' in
+        (tr_fs, tr_p)
     end
-  in
-  translate_funs.
+  in translate_funs.
 
 Definition translate_prog' P :=
   translate_funs P (p_funcs P).
 
 Lemma tr_prog_inv P fn f :
   get_fundef (p_funcs P) fn = Some f →
-  ∑ fs',
-    assoc (translate_prog' P) fn =
-      let tr_fs' := translate_funs P fs' in
-      Some (translate_cmd P tr_fs' fn (f_body f)).
+  ∑ fs' l,
+    p_funcs P = l ++ (fn, f) :: fs' /\
+      assoc (translate_prog' P).1 fn =
+        Some (translate_cmd P (translate_funs P fs').1 fn (f_body f))
+    /\
+      assoc (translate_prog' P).2 fn =
+        let tr_fs' := translate_funs P ((fn, f) :: fs') in
+        Some (translate_call P fn tr_fs'.1).
 Proof.
   unfold translate_prog'.
   induction (p_funcs P) as [|[gn g] fs' ih_fs'].
   - move => //.
   - simpl in *.
     move => h //.
-    destruct (fn == gn) eqn:e.
+    destruct (gn == fn) eqn:e.
     + move /eqP in e. subst.
+      destruct (fn == fn) eqn:E.
+      2: { move /eqP in E. exfalso. apply E. reflexivity. }
       noconf h.
-      exists fs'. reflexivity.
-    + now apply ih_fs'.
+      exists fs'.
+      exists [::].
+      simpl.
+      unfold translate_call. simpl. rewrite E.
+      intuition auto.
+    + assert (fn == gn = false).
+      { apply /eqP. move => H. symmetry in H. revert H.
+        move /eqP in e. apply e.
+      }
+      rewrite H.
+      rewrite H in h.
+      specialize (ih_fs' h).
+      destruct ih_fs' as [fs'0 [l0 [ihl iha]]].
+      rewrite ihl.
+      exists fs'0. exists ((gn, g) :: l0).
+      split.
+      * easy.
+      * subst. easy.
 Qed.
-
-(* Lemma translate_prog_inv (prog : uprog) (fn : funname) f : assoc (translate_prog' prog) fn = Some f -> ∑ (prog' : uprog), f = translate_call fn (translate_prog' prog'). *)
-(* Proof. *)
-(*   destruct prog. induction p_funcs. *)
-(*   - move => // []. *)
-(*   - move => h //. *)
-(*     destruct (fn == a.1) eqn:Efn. *)
-(*     + simpl in h. *)
-(*       rewrite Efn in h. *)
-(*       noconf h. *)
-(*       exists (Build__prog p_funcs p_globs p_extra). *)
-(*       move /eqP in Efn. subst. *)
-(*       reflexivity. *)
-(*     + apply IHp_funcs. *)
-(*       simpl in h. *)
-(*       rewrite Efn in h. *)
-(*       rewrite -h. *)
-(*       reflexivity. *)
-(* Qed. *)
 
 
 (** Handled programs
@@ -3343,9 +3337,21 @@ Definition handled_program (P : uprog) :=
 Definition Pfun (P : uprog) (fn : funname) m va m' vr :=
     handled_program P →
     ⊢ ⦃ rel_mem m ⦄
-      translate_call P fn (translate_prog' P) [seq totce (translate_value v) | v <- va]
+      (* translate_call P fn (translate_prog' P) [seq totce (translate_value v) | v <- va] *)
+      match assoc (translate_prog' P).2 fn with
+      | None => ret [::]
+      | Some f => f [seq totce (translate_value v) | v <- va]
+      end
       ⇓ [seq totce (translate_value v) | v <- vr]
     ⦃ rel_mem m' ⦄.
+
+Fact smcget P s1 gn vargs m2 vres :
+  (sem_call P (emem s1) gn vargs m2 vres
+   → ∃ f, get_fundef (p_funcs P) gn = Some f ).
+Proof. intros.
+       inversion H.
+       exists f. easy.
+Qed.
 
 Theorem translate_prog_correct P (fn : funname) m va m' vr :
   sem.sem_call P m fn va m' vr →
@@ -3356,7 +3362,7 @@ Proof.
     λ (m : mem) (fn : funname) (va : seq value) (m' : mem) (vr : seq value),
          Pfun P fn m va m' vr
   ).
-  set (SP := translate_prog' P).
+  set (SP := (translate_prog' P).1).
   set (Pi_r :=
     λ (s1 : estate) (i : instr_r) (s2 : estate),
       handled_instr_r i →
@@ -3473,7 +3479,6 @@ Proof.
     }
     apply ihfor. assumption.
   - (* call *)
-    clear.
     red.
     intros s1 m2 s2 ii xs gn args vargs vres hargs hgn ihgn hwr_vres.
     unfold Pfun in ihgn.
@@ -3504,87 +3509,130 @@ Proof.
            *** simpl. eapply IHargs.
                1: assumption.
     + simpl.
-      (* unfold Pfun, Translation.Pfun in ihgn. *)
       eapply u_bind.
       * simpl.
         unshelve eapply u_pre_weaken_rule with (p1 := (rel_mem (emem s1))).
         2: move => h Hh; apply Hh.
-        unfold SP. unfold SP in Pi_r. clear SP.
+        unfold SP. unfold SP in Pi_r, Pc, Pfor. clear SP.
         (* destruct hgn as [_m1 _m2 _gn _g _vargs _vargs' _s1 _vm2 _vres _vres' get_g _hvargs *)
         (*                    _hwr_vargs _hbody _h_get_res _h_trunc_res]. *)
+
+        specialize (ihgn hP).
+
+        destruct (smcget _ _ _ _ _ _ hgn) as [f hf].
+        destruct (tr_prog_inv _ _ _ hf) as [fs' [l [hl [ef ep]]]].
+        simpl in ep.
+        rewrite ep in ihgn.
+        unfold translate_prog'.
+        rewrite hl.
+
+        (* it's not the case that
+             (translate_funs P (l ++ fs')).1 = (translate_funs P fs').1
+           but we should be able to show that... *)
+        assert (translate_call P gn (translate_funs P (l ++ ((gn,f) :: fs'))).1
+                = translate_call P gn (translate_funs P ((gn,f) :: fs')).1)
+          as H0.
+        {
+          clear -ef ep hl hf.
+          unfold translate_prog' in ep, ef.
+          rewrite hl in ep, ef.
+          unfold translate_call.
+          simpl in *.
+          rewrite ef.
+          destruct (gn == gn) eqn:E.
+          2: { move /eqP in E. exfalso. apply E. reflexivity. }
+          reflexivity.
+          }
+        rewrite H0.
         eapply ihgn.
-        1: give_up.
-(*         instantiate (1 := translate_call gn (translate_prog' P)). *)
+      * (* Should be similar to Copn, by appealing to correctness of
+           write_lvals, expect that we also need to restore `evm s1`. *)
+        clear ihgn.
 
-
-(*         destruct hgn. *)
-(*     set (SP := translate_prog' P). *)
-(*     rename fn0 into gn. *)
-(*     destruct (assoc SP gn) as [SP_gn|] eqn:E'. *)
-(*     2: { rename H into E''. unfold SP in E'. *)
-
-(* assert ( *)
-(* forall (P : uprog) fn f, *)
-(* get_fundef (p_funcs P) fn = Some f *)
-(* -> *)
-(* ∑ prog' : uprog, *)
-(*            ∑ tl : uprog, p_funcs prog' ++ p_funcs tl = p_funcs P /\ *)
-(*            assoc (translate_prog' prog') fn = *)
-(*              Some (translate_call fn (translate_prog' prog'))) *)
-(*          by admit. *)
-
-(*          pose (X _ _ _ E'') as h_tr_g. *)
-(*          destruct h_tr_g as [prog' [tl [e' asc]]]. *)
-(*          assert (forall (K : eqType) V l l' (k : K) (v : V), *)
-(*                     assoc l k = Some v -> *)
-(*                     assoc (l ++ l') k = Some v). *)
-(*          { pose (assoc_cat). *)
-(*            admit. } *)
-(*          assert *)
-(*            (assoc (translate_prog' P) gn = *)
-(*               Some (translate_call gn (translate_prog' prog'))). *)
-(*          { unfold translate_prog'. rewrite -e'. *)
-(*            admit. } *)
-(*          rewrite H5 in E'. noconf E'. *)
-(*     } *)
-
-(*     rewrite -E'. *)
-(*     unfold SP_gn in E'. *)
-(*     pose (translate_prog_inv P gn (translate_call gn SP) E'). *)
-(*         give_up. *)
-      * (* should be similar to Copn, by appealing to correctness of write_lvals. *)
-        simpl.
-        admit.
+        unshelve eapply u_pre_weaken_rule with
+          (p1 := (rel_estate {| emem := m2; evm := evm s1 |} fn)).
+        -- eapply translate_write_lvals_correct.
+           exact hwr_vres.
+        -- intros h hm. unfold rel_estate. split; try easy.
+           simpl. unfold rel_vmap.
+           give_up.
   - (* proc *)
+    rename fn into fn_ambient.
     unfold sem_Ind_proc. red. intros m1 m2 gn g vs vs' s1 vm2 vrs vrs'.
     intros hg hvs ?????.
     unfold Pfun, Translation.Pfun. intros hp.
-    destruct H.
+    (* destruct H. *)
     unfold translate_prog', translate_call.
 
     (* rewrite hg. *)
     (* destruct (get_fundef (p_funcs P) gn) as [g'|] eqn:E. *)
     (* 2: { inversion hg. } *)
 
-    destruct (tr_prog_inv _ _ _ hg) as [fs' E''].
-    unfold translate_prog' in E''.
-    rewrite E''.
-    unfold translate_call_body.
+    destruct (tr_prog_inv _ _ _ hg) as [fs' [l [hl [ef ep]]]].
+    unfold translate_prog' in ep.
+    rewrite ep.
+    unfold translate_call, translate_call_body.
     rewrite hg.
     simpl.
+    destruct (gn == gn) eqn:E.
+    2: { move /eqP in E. exfalso. apply E. reflexivity. }
 
     eapply u_bind with (v₁ := tt).
     1: { idtac.
-         instantiate (1 := rel_mem m1).
-         admit.
+         (* eapply translate_write_lvals_correct. *)
+         instantiate (1 := rel_estate s1 fn_ambient).
+         Fail eapply translate_write_lvals_correct.
+         give_up.
     }
     eapply u_bind with (v₁ := tt) (q := rel_mem m2).
     + unfold Pc, SP, translate_prog' in H2.
       assert (handled_cmd (f_body g)) as h_gbody.
       { inversion hp.
         give_up. }
-      apply H2 in h_gbody.
+      specialize (H2 h_gbody).
+      rewrite hl in H2.
+
+      (* maybe something similar to the prove of
+      assert (translate_call P gn (translate_funs P (l ++ ((gn,f) :: fs'))).1
+              = translate_call P gn (translate_funs P ((gn,f) :: fs')).1)
+       *)
+      assert (translate_cmd P (translate_funs P (l ++ ((gn,g) :: fs'))).1 fn_ambient (f_body g)
+              = translate_cmd P (translate_funs P ((gn,g) :: fs')).1 fn_ambient (f_body g))
+        as htr.
+      {
+        clear -ef ep hl hg.
+        unfold translate_prog' in ep, ef.
+        rewrite hl in ep, ef.
+        unfold translate_cmd.
+        unfold translate_instr.
+        simpl in *.
+        unfold translate_call, translate_call_body.
+        simpl.
+        destruct g. simpl.
+        destruct f_body.
+        - reflexivity.
+        - simpl.
+          destruct i. destruct i0 eqn:case_i.
+          + admit.
+          + admit.
+          + admit.
+          + admit.
+          + admit.
+          + simpl.
+
+            rewrite -hl.
+
+        rewrite -ef.
+        destruct (gn == gn) eqn:E.
+        2: { move /eqP in E. exfalso. apply E. reflexivity. }
+        simpl.
+        admit.
+      }
+      rewrite htr in H2.
+      (* PGH: something about the funnames in H2 and the goal is fishy. *)
+      subst.
       give_up.
+
     + eapply u_bind.
       * eapply bind_list_correct.
         -- inversion H3.
