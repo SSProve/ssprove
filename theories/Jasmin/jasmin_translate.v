@@ -153,11 +153,14 @@ Proof.
   - intros [] []. intuition eauto.
 Qed.
 
-Definition typed_chElement := pointed_value.
+Definition typed_chElement :=
+  pointed_value.
 
-Definition to_typed_chElement {t : choice_type} (v : t) : typed_chElement := (t ; v).
+Definition to_typed_chElement {t : choice_type} (v : t) : typed_chElement :=
+  (t ; v).
 
-Definition typed_code := ∑ (a : choice_type), raw_code a.
+Definition typed_code :=
+  ∑ (a : choice_type), raw_code a.
 
 Definition encode (t : stype) : choice_type :=
   match t with
@@ -1202,7 +1205,7 @@ Definition translate_write_lvals fn ls vs :=
   foldr2 (λ l v c, translate_write_lval fn l v ;; c) ls vs (ret tt).
 
 Lemma eq_rect_K :
-  forall (A : eqType) (x : A) (P : A -> Type) h e,
+  ∀ (A : eqType) (x : A) (P : A -> Type) h e,
     @eq_rect A x P h x e = h.
 Proof.
   intros A x P' h e.
@@ -2442,27 +2445,29 @@ Proof.
         eapply translate_pexprs_types.
         eassumption.
       (* this should maybe be a lemma or the condition in bind_list_correct should be rewrote to match H *)
-      * clear -h2 H hcond.
+      * {
+        clear -h2 H hcond.
         revert v' h2 H.
         induction es; intros.
-        ** inversion h2.
-           constructor.
-        ** inversion h2.
-           jbind H1 x Hx.
-           jbind H1 y Hy.
-           noconf H1.
-           constructor.
-           *** eapply H.
-               1: apply mem_head.
-               1: eassumption.
-               assumption.
-           *** eapply IHes.
-               1: assumption.
-               intros.
-               eapply H.
-               { rewrite in_cons. rewrite H0. by apply /orP; right. }
-               1: eassumption.
-               assumption.
+        - inversion h2.
+          constructor.
+        - inversion h2.
+          jbind H1 x Hx.
+          jbind H1 y Hy.
+          noconf H1.
+          constructor.
+          + eapply H.
+            1: apply mem_head.
+            1: eassumption.
+            assumption.
+          + eapply IHes.
+            1: assumption.
+            intros.
+            eapply H.
+            { rewrite in_cons. rewrite H0. by apply /orP; right. }
+            1: eassumption.
+            assumption.
+      }
     + apply u_ret.
       intros; split; auto.
       rewrite coerce_to_choice_type_translate_value_to_val.
@@ -2980,9 +2985,11 @@ Definition translate_call_body (fn : funname) (tr_f_body : raw_code 'unit)
   : raw_code [choiceType of list typed_chElement].
 Proof using P asm_op asmop pd.
   (* sem_call *)
-  refine (match (get_fundef (p_funcs P) fn) with
-          | Some f => _
-          | None => ret [::] end).
+  refine
+    match (get_fundef (p_funcs P) fn) with
+    | Some f => _
+    | None => ret [::]
+    end.
   pose (trunc_list (f_tyin f) vargs') as vargs.
   apply (bind
            (translate_write_lvals (p_globs P) fn
@@ -3235,10 +3242,10 @@ Definition tr_p (prog : uprog) : ssprove_prog.
 Proof using asm_op asmop pd.
   pose (fs := translate_prog prog).
   induction fs as [|f fs ?].
-- constructor 1.
-- constructor 2.
-  2: assumption.
-  exact (f.1, translate_call prog f.1 (f::fs)).
+  - constructor 1.
+  - constructor 2.
+    2: assumption.
+    exact (f.1, translate_call prog f.1 (f::fs)).
 Defined.
 
 (* PGH: TODO: do we need an ambient funname?  *)
@@ -3265,13 +3272,12 @@ Definition translate_prog' P :=
 Lemma tr_prog_inv P fn f :
   get_fundef (p_funcs P) fn = Some f →
   ∑ fs' l,
-    p_funcs P = l ++ (fn, f) :: fs' /\
-      assoc (translate_prog' P).1 fn =
-        Some (translate_cmd P (translate_funs P fs').1 fn (f_body f))
-    /\
-      assoc (translate_prog' P).2 fn =
-        let tr_fs' := translate_funs P ((fn, f) :: fs') in
-        Some (translate_call P fn tr_fs'.1).
+    p_funcs P = l ++ (fn, f) :: fs' ∧
+    assoc (translate_prog' P).1 fn =
+    Some (translate_cmd P (translate_funs P fs').1 fn (f_body f)) ∧
+    assoc (translate_prog' P).2 fn =
+    let tr_fs' := translate_funs P ((fn, f) :: fs') in
+    Some (translate_call P fn tr_fs'.1).
 Proof.
   unfold translate_prog'.
   induction (p_funcs P) as [|[gn g] fs' ih_fs'].
@@ -3346,11 +3352,12 @@ Definition Pfun (P : uprog) (fn : funname) m va m' vr :=
     ⦃ rel_mem m' ⦄.
 
 Fact smcget P s1 gn vargs m2 vres :
-  (sem_call P (emem s1) gn vargs m2 vres
-   → ∃ f, get_fundef (p_funcs P) gn = Some f ).
-Proof. intros.
-       inversion H.
-       exists f. easy.
+  sem_call P (emem s1) gn vargs m2 vres →
+  ∃ f, get_fundef (p_funcs P) gn = Some f.
+Proof.
+  intros h.
+  inversion h.
+  exists f. assumption.
 Qed.
 
 Theorem translate_prog_correct P (fn : funname) m va m' vr :
@@ -3360,7 +3367,7 @@ Proof.
   intros H hP.
   set (Pfun :=
     λ (m : mem) (fn : funname) (va : seq value) (m' : mem) (vr : seq value),
-         Pfun P fn m va m' vr
+      Pfun P fn m va m' vr
   ).
   set (SP := (translate_prog' P).1).
   set (Pi_r :=
@@ -3491,28 +3498,30 @@ Proof.
         eapply translate_pexprs_types.
         exact hargs.
       (* this should maybe be a lemma or the condition in bind_list_correct should be rewrote to match H *)
-      * (* clear -h2 H hcond. *)
+      * {
+        (* clear -h2 H hcond. *)
         (* revert v' h2 H. *)
         clear hgn ihgn.
         revert vargs hargs.
         induction args; intros.
-        ** inversion hargs.
-           constructor.
-        ** inversion hargs as [H1].
-           jbind H1 x Hx.
-           jbind H1 y Hy.
-           noconf H1.
-           constructor.
-           *** eapply translate_pexpr_correct.
-               1: eassumption.
-               easy.
-           *** simpl. eapply IHargs.
-               1: assumption.
+        - inversion hargs.
+          constructor.
+        - inversion hargs as [H1].
+          jbind H1 x Hx.
+          jbind H1 y Hy.
+          noconf H1.
+          constructor.
+          + eapply translate_pexpr_correct.
+            1: eassumption.
+            auto.
+          + simpl. eapply IHargs.
+            assumption.
+      }
     + simpl.
       eapply u_bind.
       * simpl.
         unshelve eapply u_pre_weaken_rule with (p1 := (rel_mem (emem s1))).
-        2: move => h Hh; apply Hh.
+        2:{ move => h Hh. apply Hh. }
         unfold SP. unfold SP in Pi_r, Pc, Pfor. clear SP.
         (* destruct hgn as [_m1 _m2 _gn _g _vargs _vargs' _s1 _vm2 _vres _vres' get_g _hvargs *)
         (*                    _hwr_vargs _hbody _h_get_res _h_trunc_res]. *)
@@ -3529,9 +3538,10 @@ Proof.
         (* it's not the case that
              (translate_funs P (l ++ fs')).1 = (translate_funs P fs').1
            but we should be able to show that... *)
-        assert (translate_call P gn (translate_funs P (l ++ ((gn,f) :: fs'))).1
-                = translate_call P gn (translate_funs P ((gn,f) :: fs')).1)
-          as H0.
+        assert (H0 :
+          translate_call P gn (translate_funs P (l ++ ((gn,f) :: fs'))).1 =
+          translate_call P gn (translate_funs P ((gn,f) :: fs')).1
+        ).
         {
           clear -ef ep hl hf.
           unfold translate_prog' in ep, ef.
@@ -3542,20 +3552,22 @@ Proof.
           destruct (gn == gn) eqn:E.
           2: { move /eqP in E. exfalso. apply E. reflexivity. }
           reflexivity.
-          }
+        }
         rewrite H0.
         eapply ihgn.
-      * (* Should be similar to Copn, by appealing to correctness of
+      * {
+        (* Should be similar to Copn, by appealing to correctness of
            write_lvals, expect that we also need to restore `evm s1`. *)
         clear ihgn.
 
         unshelve eapply u_pre_weaken_rule with
           (p1 := (rel_estate {| emem := m2; evm := evm s1 |} fn)).
-        -- eapply translate_write_lvals_correct.
-           exact hwr_vres.
-        -- intros h hm. unfold rel_estate. split; try easy.
-           simpl. unfold rel_vmap.
-           give_up.
+        - eapply translate_write_lvals_correct.
+          exact hwr_vres.
+        - intros h hm. unfold rel_estate. split; try easy.
+          simpl. unfold rel_vmap.
+          give_up.
+      }
   - (* proc *)
     rename fn into fn_ambient.
     unfold sem_Ind_proc. red. intros m1 m2 gn g vs vs' s1 vm2 vrs vrs'.
@@ -3588,7 +3600,8 @@ Proof.
     + unfold Pc, SP, translate_prog' in H2.
       assert (handled_cmd (f_body g)) as h_gbody.
       { inversion hp.
-        give_up. }
+        give_up.
+      }
       specialize (H2 h_gbody).
       rewrite hl in H2.
 
@@ -3596,9 +3609,10 @@ Proof.
       assert (translate_call P gn (translate_funs P (l ++ ((gn,f) :: fs'))).1
               = translate_call P gn (translate_funs P ((gn,f) :: fs')).1)
        *)
-      assert (translate_cmd P (translate_funs P (l ++ ((gn,g) :: fs'))).1 fn_ambient (f_body g)
-              = translate_cmd P (translate_funs P ((gn,g) :: fs')).1 fn_ambient (f_body g))
-        as htr.
+      assert (htr :
+        translate_cmd P (translate_funs P (l ++ ((gn,g) :: fs'))).1 fn_ambient (f_body g) =
+        translate_cmd P (translate_funs P ((gn,g) :: fs')).1 fn_ambient (f_body g)
+      ).
       {
         clear -ef ep hl hg.
         unfold translate_prog' in ep, ef.
@@ -3622,11 +3636,11 @@ Proof.
 
             rewrite -hl.
 
-        rewrite -ef.
-        destruct (gn == gn) eqn:E.
-        2: { move /eqP in E. exfalso. apply E. reflexivity. }
-        simpl.
-        admit.
+            rewrite -ef.
+            destruct (gn == gn) eqn:E.
+            2: { move /eqP in E. exfalso. apply E. reflexivity. }
+            simpl.
+            admit.
       }
       rewrite htr in H2.
       (* PGH: something about the funnames in H2 and the goal is fishy. *)
@@ -3634,10 +3648,12 @@ Proof.
       give_up.
 
     + eapply u_bind.
-      * eapply bind_list_correct.
-        -- inversion H3.
-           admit.
-        -- admit.
+      * {
+        eapply bind_list_correct.
+        - inversion H3.
+          admit.
+        - admit.
+      }
       * inversion H4.
         admit.
 Admitted.
