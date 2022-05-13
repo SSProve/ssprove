@@ -3003,21 +3003,23 @@ Definition trunc_list :=
   (λ tys (vs : seq typed_chElement),
     [seq let '(ty, v) := ty_v in totce (truncate_el ty v.π2) | ty_v <- zip tys vs]).
 
+(* The type of translated function *bodies* *)
 Definition fdefs :=
   (* ∀ fn fdef, get_fundef (p_funcs P) fn = Some fdef → raw_code 'unit. *)
   list (funname * (raw_code 'unit)).
 
+Definition tchlist := [choiceType of seq typed_chElement].
+
+(* The type of translated function "calls" *)
+Definition trfun := tchlist → raw_code tchlist.
 
 Definition translate_call_body (fn : funname) (tr_f_body : raw_code 'unit)
-           (vargs' : [choiceType of seq typed_chElement])
-  : raw_code [choiceType of list typed_chElement].
+           : trfun.
 Proof using P asm_op asmop pd.
   (* sem_call *)
-  refine
-    match (get_fundef (p_funcs P) fn) with
-    | Some f => _
-    | None => ret [::]
-    end.
+  refine (λ vargs', match (get_fundef (p_funcs P) fn) with
+          | Some f => _
+          | None => ret [::] end).
   pose (trunc_list (f_tyin f) vargs') as vargs.
   apply (bind
            (translate_write_lvals (p_globs P) fn
@@ -3036,11 +3038,9 @@ Proof using P asm_op asmop pd.
     exact (ret vres').
 Defined.
 
-Definition translate_call (fn : funname) (tr_f_body : fdefs)
-           (vargs : [choiceType of seq typed_chElement])
-  : raw_code [choiceType of list typed_chElement].
+Definition translate_call (fn : funname) (tr_f_body : fdefs) : trfun.
 Proof using P asm_op asmop pd.
-  refine (match assoc tr_f_body fn with
+  refine (λ vargs, match assoc tr_f_body fn with
           | Some tr_f => _ | None => ret [::] end).
   exact (translate_call_body fn tr_f vargs).
 Defined.
@@ -3177,15 +3177,16 @@ Fixpoint translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
 End TranslateCMD.
 
 
+(* PGH: CURRENTLY UNUSED. Keeping this around for when we want to package
+   functions into packages, as we'll have to bundle the arguments and results
+   into tuples. *)
 Record fdef := {
   ffun : typed_raw_function ;
   locs : {fset Location} ;
   imp : Interface ;
 }.
-
 #[local] Definition ty_in fd := (ffun fd).π1.
 #[local] Definition ty_out fd := ((ffun fd).π2).π1.
-
 Definition translate_fundef
            (tr_f_body : fdefs)
            (fd : _ufun_decl (* extra_fun_t *)) : funname * fdef.
@@ -3251,7 +3252,7 @@ Context `{asmop : asmOp}.
 
 Context {pd : PointerData}.
 
-Definition ssprove_prog := seq (funname * ([choiceType of seq typed_chElement] → raw_code [choiceType of list typed_chElement])).
+Definition ssprove_prog := seq (funname * trfun).
 
 Definition translate_prog (prog : uprog) : fdefs.
 Proof using asm_op asmop pd.
@@ -3365,10 +3366,7 @@ Fact sem_call_get_some {P m1 gn vargs m2 vres} :
 Proof. intros H. inversion H. exists f. easy.
 Qed.
 
-Definition chfun := [choiceType of seq typed_chElement]
-                    → raw_code [choiceType of seq typed_chElement].
-
-Definition get_translated_fun P fn : chfun :=
+Definition get_translated_fun P fn : trfun :=
   match assoc (translate_prog' P).2 fn with
   | Some f => f
   | None => λ _, ret [::]
@@ -3398,19 +3396,18 @@ Definition Pfun (P : uprog) (fn : funname) m va m' vr :=
       ⇓ [seq totce (translate_value v) | v <- vr]
     ⦃ rel_mem m' ⦄.
 
-Theorem translate_prog_correct P (fn : funname) m va m' vr :
-  sem.sem_call P m fn va m' vr →
-  Pfun P fn m va m' vr.
+Theorem translate_prog_correct P m vargs m' vres :
+  ∀ fn, sem.sem_call P m fn vargs m' vres →
+  Pfun P fn m vargs m' vres.
 Proof.
-  intros H hP.
-  set (Pfun :=
-    λ (m : mem) (fn : funname) (va : seq value) (m' : mem) (vr : seq value),
-      Pfun P fn m va m' vr
-  ).
+  intros fn H hP.
+  set (Pfun := λ (m : mem) (fn : funname) (va : seq value) (m' : mem) (vr : seq value),
+         Pfun P fn m va m' vr
+      ).
   set (SP := (translate_prog' P).1).
   set (Pi_r :=
     λ (s1 : estate) (i : instr_r) (s2 : estate),
-      handled_instr_r i →
+      ∀ fn, handled_instr_r i →
       ⊢ ⦃ rel_estate s1 fn ⦄
         translate_instr_r P SP fn i ⇓ tt
       ⦃ rel_estate s2 fn ⦄
@@ -3418,12 +3415,12 @@ Proof.
   set (Pi := λ s1 i s2, Pi_r s1 (instr_d i) s2).
   set (Pc :=
     λ (s1 : estate) (c : cmd) (s2 : estate),
-      handled_cmd c →
+      ∀ fn, handled_cmd c →
       ⊢ ⦃ rel_estate s1 fn ⦄ translate_cmd P SP fn c ⇓ tt ⦃ rel_estate s2 fn ⦄
   ).
   set (Pfor :=
     λ (v : var_i) (ws : seq Z) (s1 : estate) (c : cmd) (s2 : estate),
-      handled_cmd c →
+      ∀ fn, handled_cmd c →
       ⊢ ⦃ rel_estate s1 fn ⦄
         translate_for fn v ws (translate_cmd P SP fn c) ⇓ tt
       ⦃ rel_estate s2 fn ⦄
@@ -3431,10 +3428,10 @@ Proof.
   unshelve eapply (@sem_call_Ind _ _ _ _ Pc Pi_r Pi Pfor Pfun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H).
   - (* nil *)
     red. intros s.
-    red. simpl. intros _.
+    red. simpl. intros fn' _.
     eapply u_ret_eq. auto.
   - (* cons *)
-    red. intros s1 s2 s3 i c hi ihi hc ihc.
+    red. intros s1 s2 s3 i c hi ihi hc ihc fn'.
     red. simpl. move /andP => [hdi hdc].
     eapply u_bind.
     + rewrite translate_instr_unfold. eapply ihi.
@@ -3445,7 +3442,7 @@ Proof.
     apply ihi.
   - (* assgn *)
     red. intros s₁ s₂ x tag ty e v v' he hv hw.
-    red. simpl. intros _.
+    red. simpl. intros fn' _.
     eapply u_bind.
     1:{ eapply translate_pexpr_correct. all: eauto. }
     erewrite translate_pexpr_type by eassumption.
@@ -3454,7 +3451,7 @@ Proof.
     erewrite totce_truncate_translate by eassumption.
     eapply translate_write_lval_correct. all: eauto.
   - (* opn *)
-    red. intros s1 s2 tag o xs es ho _.
+    red. intros s1 s2 tag o xs es ho fn' _.
     red. simpl.
     jbind ho vs hv.
     jbind hv vs' hv'.
@@ -3464,7 +3461,7 @@ Proof.
       apply translate_write_lvals_correct.
       assumption.
   - (* if_true *)
-    red. intros s1 s2 e c1 c2 he hc1 ihc1.
+    red. intros s1 s2 e c1 c2 he hc1 ihc1 fn'.
     red. simpl. move /andP => [hdc1 hdc2].
     unfold translate_instr_r.
     lazymatch goal with
@@ -3475,7 +3472,7 @@ Proof.
     1:{ eapply translate_pexpr_correct_cast in he. all: eauto. }
     simpl. apply ihc1. assumption.
   - (* if_false *)
-    red. intros s1 s2 e c1 c2 he hc2 ihc2.
+    red. intros s1 s2 e c1 c2 he hc2 ihc2 fn'.
     red. simpl. move /andP => [hdc1 hdc2].
     (* lazymatch goal with
     | |- context [ if _ then _ else (?f ?fn ?c) ] =>
@@ -3491,7 +3488,7 @@ Proof.
     red. intros s1 s2 a c e c' hc ihc he.
     red. simpl. discriminate.
   - (* for *)
-    red. intros s1 s2 i d lo hi c vlo vhi hlo hhi hfor ihfor.
+    red. intros s1 s2 i d lo hi c vlo vhi hlo hhi hfor ihfor fn'.
     red. simpl. intros hdc.
     unfold translate_instr_r.
     lazymatch goal with
@@ -3504,10 +3501,10 @@ Proof.
     1:{ eapply translate_pexpr_correct_cast in hhi. all: eauto. }
     apply ihfor. assumption.
   - (* for_nil *)
-    red. intros. red. intros hdc.
+    red. intros. red. intros hdc fn'.
     simpl. apply u_ret_eq. auto.
   - (* for_cons *)
-    red. intros s1 s1' s2 s3 i w ws c hw hc ihc hfor ihfor.
+    red. intros s1 s1' s2 s3 i w ws c hw hc ihc hfor ihfor fn'.
     red. simpl. intros hdc.
     eapply u_put.
     eapply u_bind.
@@ -3520,7 +3517,8 @@ Proof.
     apply ihfor. assumption.
   - (* call *)
     red.
-    intros s1 m2 s2 ii xs gn args vargs vres hargs hgn ihgn hwr_vres.
+    clear H vargs vres.
+    intros s1 m2 s2 ii xs gn args vargs vres hargs hgn ihgn hwr_vres fn'.
     unfold Pfun, Translation.Pfun, get_translated_fun in ihgn.
     red. simpl. intros _. unfold translate_instr_r.
     eapply u_bind.
@@ -3543,7 +3541,7 @@ Proof.
          write_lvals, expect that we also need to restore `evm s1`. *)
       clear ihgn.
       unshelve eapply u_pre_weaken_rule with
-        (p1 := (rel_estate {| emem := m2; evm := evm s1 |} fn)).
+        (p1 := (rel_estate {| emem := m2; evm := evm s1 |} fn')).
       -- eapply translate_write_lvals_correct.
          exact hwr_vres.
       -- intros h hm. unfold rel_estate. split; try easy.
@@ -3551,34 +3549,48 @@ Proof.
          give_up.
   - (* proc *)
     rename fn into fn_ambient.
-    unfold sem_Ind_proc. red. intros m1 m2 gn g vs vs' s1 vm2 vrs vrs'.
-    intros hg hvs ?????.
+    rename vargs into vargs_amb. rename vres into vres_amb.
+    unfold sem_Ind_proc. red. intros m1 m2 gn g vargs vargs' s1 vm2 vres vres'.
+    intros hg hvars hwr hbody ihbody hget htrunc.
     unfold Translation.Pfun. intros hp.
 
     unfold get_translated_fun.
     destruct (tr_prog_inv hg) as [fs' [l [hl [ef ep]]]].
     unfold translate_prog' in ep.
     rewrite ep.
-    unfold translate_call, translate_call_body.
-    rewrite hg.
+    unfold translate_call.
     simpl.
     assert (E : gn == gn) by now apply /eqP.
     rewrite E; clear E.
-    eapply u_bind with (v₁ := tt).
-    1: { idtac.
+    unfold translate_call_body.
+    rewrite hg.
+    eapply u_bind with (v₁ := tt) (q := rel_estate s1 gn).
+    1: {
          (* eapply translate_write_lvals_correct. *)
-         instantiate (1 := rel_estate s1 fn_ambient).
          Fail eapply translate_write_lvals_correct.
          give_up.
     }
     eapply u_bind with (v₁ := tt) (q := rel_mem m2).
-    + unfold Pc, SP, translate_prog' in H2.
-      assert (handled_cmd (f_body g)) as h_gbody.
-      { inversion hp.
-        give_up.
+    + unfold Pc, SP, translate_prog' in ihbody.
+      assert (handled_cmd (f_body g)) as hpbody.
+      {
+        clear -hg hp.
+        pose (gd := (gn, g)).
+        unfold handled_program.
+        pose (hh := (List.forallb_forall handled_fundecl (p_funcs P)).1 hp gd).
+        destruct g.
+        apply hh. simpl.
+        now apply (assoc_mem' hg).
       }
-      specialize (H2 h_gbody).
-      rewrite hl in H2.
+      (* PGH (Fri 13 May 19:02:28 BST 2022):
+         Generalized the different Pc, Pi, ... to allow variation of the funname.
+         This should allow us to use the induction hypothesis on a different function,
+         gn in this case.
+       *)
+      specialize (ihbody gn hpbody). clear hpbody.
+      rewrite hl in ihbody.
+      (* TODO: strengthen post condition to
+         rel_estate {| emem := m2; evm := vm2 |} gn *)
 
       (* maybe something similar to the prove of
       assert (translate_call P gn (translate_funs P (l ++ ((gn,f) :: fs'))).1
@@ -3586,10 +3598,8 @@ Proof.
 
         just need to push the (translate_funs ...) in until they get to a funcall?
        *)
-      assert (htr :
-        translate_cmd P (translate_funs P (l ++ ((gn,g) :: fs'))).1 fn_ambient (f_body g) =
-        translate_cmd P (translate_funs P ((gn,g) :: fs')).1 fn_ambient (f_body g)
-      ).
+      assert (htr : translate_cmd P (translate_funs P (l ++ ((gn,g) :: fs'))).1 gn (f_body g)
+                    = translate_cmd P (translate_funs P ((gn,g) :: fs')).1 gn (f_body g)).
       {
         clear -ef ep hl hg.
         unfold translate_prog' in ep, ef.
@@ -3619,19 +3629,17 @@ Proof.
             simpl.
             admit.
       }
-      rewrite htr in H2.
+      rewrite htr in ihbody.
       (* PGH: something about the funnames in H2 and the goal is fishy. *)
       subst.
       give_up.
 
     + eapply u_bind.
-      * {
-        eapply bind_list_correct.
-        - inversion H3.
-          admit.
-        - admit.
-      }
-      * inversion H4.
+      * eapply bind_list_correct.
+        -- inversion hget.
+           admit.
+        -- admit.
+      * inversion htrunc.
         admit.
 Admitted.
 
