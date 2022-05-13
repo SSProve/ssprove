@@ -236,13 +236,13 @@ Definition three_functions :=
 
 
 
-Definition tr_P := Eval simpl in tr_p three_functions.
+Definition tr_P := Eval simpl in translate_prog' three_functions.
 Definition default_prog' := (1%positive, (ret tt)).
 Definition default_call := (1%positive, fun (x : [choiceType of seq typed_chElement]) => ret x).
 Definition get_tr sp n := List.nth_default default_call sp n.
-Definition tr_f := Eval simpl in (get_tr tr_P 2).
-Definition tr_g := Eval simpl in (get_tr tr_P 1).
-Definition tr_h := Eval simpl in (get_tr tr_P 0).
+Definition tr_f := Eval simpl in (get_tr tr_P.2 2).
+Definition tr_g := Eval simpl in (get_tr tr_P.2 1).
+Definition tr_h := Eval simpl in (get_tr tr_P.2 0).
 
 
 Opaque translate_for.

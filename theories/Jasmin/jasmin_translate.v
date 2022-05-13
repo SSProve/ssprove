@@ -2532,6 +2532,34 @@ Proof.
         assumption.
 Qed.
 
+Corollary bind_list_pexpr_correct (cond : heap → Prop) (es : pexprs) (vs : list value)
+  (s1 : estate) (fn : funname)
+  (hc : ∀ m : heap, cond m → rel_estate s1 fn m)
+  (h : sem_pexprs gd s1 es = ok vs)
+  : ⊢ ⦃ cond ⦄ bind_list [seq translate_pexpr fn e | e <- es] ⇓
+      [seq totce (translate_value v) | v <- vs] ⦃ cond ⦄.
+Proof.
+  eapply bind_list_correct with (vs := vs).
+  * rewrite <- map_comp.
+    unfold comp.
+    eapply translate_pexprs_types.
+    exact h.
+  * revert vs h.
+    induction es; intros.
+    ** inversion h.
+       constructor.
+    ** inversion h as [H1].
+       jbind H1 x Hx.
+       jbind H1 y Hy.
+       noconf H1.
+       constructor.
+       *** eapply translate_pexpr_correct.
+           1: eassumption.
+           easy.
+       *** simpl. eapply IHes.
+           1: assumption.
+Qed.
+
 Corollary translate_pexpr_correct_cast :
   ∀ fn (e : pexpr) s₁ v (cond : heap → Prop),
     sem_pexpr gd s₁ e = ok v →
@@ -3269,7 +3297,7 @@ Definition translate_funs (P : uprog) : seq _ufun_decl → fdefs * ssprove_prog 
 Definition translate_prog' P :=
   translate_funs P (p_funcs P).
 
-Lemma tr_prog_inv P fn f :
+Lemma tr_prog_inv {P fn f} :
   get_fundef (p_funcs P) fn = Some f →
   ∑ fs' l,
     p_funcs P = l ++ (fn, f) :: fs' ∧
@@ -3284,29 +3312,20 @@ Proof.
   - move => //.
   - simpl in *.
     move => h //.
-    destruct (gn == fn) eqn:e.
+    destruct (fn == gn) eqn:e.
     + move /eqP in e. subst.
-      destruct (fn == fn) eqn:E.
-      2: { move /eqP in E. exfalso. apply E. reflexivity. }
       noconf h.
       exists fs'.
       exists [::].
       simpl.
-      unfold translate_call. simpl. rewrite E.
-      intuition auto.
-    + assert (fn == gn = false).
-      { apply /eqP. move => H. symmetry in H. revert H.
-        move /eqP in e. apply e.
-      }
-      rewrite H.
-      rewrite H in h.
-      specialize (ih_fs' h).
+      unfold translate_call. simpl.
+      assert (E : gn == gn) by now apply /eqP.
+      rewrite E. easy.
+    + specialize (ih_fs' h).
       destruct ih_fs' as [fs'0 [l0 [ihl iha]]].
       rewrite ihl.
       exists fs'0. exists ((gn, g) :: l0).
-      split.
-      * easy.
-      * subst. easy.
+      subst. split; easy.
 Qed.
 
 
@@ -3340,25 +3359,44 @@ Definition handled_fundecl (f : _ufun_decl) :=
 Definition handled_program (P : uprog) :=
   List.forallb handled_fundecl P.(p_funcs).
 
+Fact sem_call_get_some {P m1 gn vargs m2 vres} :
+  (sem_call P m1 gn vargs m2 vres
+   → ∃ f, get_fundef (p_funcs P) gn = Some f ).
+Proof. intros H. inversion H. exists f. easy.
+Qed.
+
+Definition chfun := [choiceType of seq typed_chElement]
+                    → raw_code [choiceType of seq typed_chElement].
+
+Definition get_translated_fun P fn : chfun :=
+  match assoc (translate_prog' P).2 fn with
+  | Some f => f
+  | None => λ _, ret [::]
+  end.
+
+Lemma translate_call_head {P gn fs' f} :
+  assoc (translate_prog' P).1 gn =
+    Some (translate_cmd P (translate_funs P fs').1 gn (f_body f))
+  →
+    translate_call P gn (translate_funs P (p_funcs P)).1
+    = translate_call P gn (translate_funs P ((gn,f) :: fs')).1.
+Proof.
+  intros ef.
+  unfold translate_call at 1.
+  rewrite ef.
+  simpl.
+  unfold translate_call, assoc at 1.
+  assert (E : gn == gn) by now apply /eqP.
+  now rewrite E.
+Qed.
+
 Definition Pfun (P : uprog) (fn : funname) m va m' vr :=
     handled_program P →
     ⊢ ⦃ rel_mem m ⦄
       (* translate_call P fn (translate_prog' P) [seq totce (translate_value v) | v <- va] *)
-      match assoc (translate_prog' P).2 fn with
-      | None => ret [::]
-      | Some f => f [seq totce (translate_value v) | v <- va]
-      end
+      get_translated_fun P fn [seq totce (translate_value v) | v <- va]
       ⇓ [seq totce (translate_value v) | v <- vr]
     ⦃ rel_mem m' ⦄.
-
-Fact smcget P s1 gn vargs m2 vres :
-  sem_call P (emem s1) gn vargs m2 vres →
-  ∃ f, get_fundef (p_funcs P) gn = Some f.
-Proof.
-  intros h.
-  inversion h.
-  exists f. assumption.
-Qed.
 
 Theorem translate_prog_correct P (fn : funname) m va m' vr :
   sem.sem_call P m fn va m' vr →
@@ -3421,12 +3459,7 @@ Proof.
     jbind ho vs hv.
     jbind hv vs' hv'.
     eapply u_bind.
-    + eapply bind_list_correct.
-      * rewrite <- map_comp. unfold comp.
-        eapply translate_pexprs_types.
-        eassumption.
-      * apply translate_pexprs_correct.
-        assumption.
+    + eapply bind_list_pexpr_correct. 2: eassumption. easy.
     + erewrite translate_exec_sopn_correct by eassumption.
       apply translate_write_lvals_correct.
       assumption.
@@ -3488,107 +3521,49 @@ Proof.
   - (* call *)
     red.
     intros s1 m2 s2 ii xs gn args vargs vres hargs hgn ihgn hwr_vres.
-    unfold Pfun in ihgn.
-    unfold Translation.Pfun in ihgn.
-    red. simpl. intros _.
+    unfold Pfun, Translation.Pfun, get_translated_fun in ihgn.
+    red. simpl. intros _. unfold translate_instr_r.
     eapply u_bind.
-    + eapply bind_list_correct with (vs := vargs).
-      * rewrite <- map_comp.
-        unfold comp.
-        eapply translate_pexprs_types.
-        exact hargs.
-      (* this should maybe be a lemma or the condition in bind_list_correct should be rewrote to match H *)
-      * {
-        (* clear -h2 H hcond. *)
-        (* revert v' h2 H. *)
-        clear hgn ihgn.
-        revert vargs hargs.
-        induction args; intros.
-        - inversion hargs.
-          constructor.
-        - inversion hargs as [H1].
-          jbind H1 x Hx.
-          jbind H1 y Hy.
-          noconf H1.
-          constructor.
-          + eapply translate_pexpr_correct.
-            1: eassumption.
-            auto.
-          + simpl. eapply IHargs.
-            assumption.
-      }
-    + simpl.
-      eapply u_bind.
-      * simpl.
-        unshelve eapply u_pre_weaken_rule with (p1 := (rel_mem (emem s1))).
-        2:{ move => h Hh. apply Hh. }
-        unfold SP. unfold SP in Pi_r, Pc, Pfor. clear SP.
-        (* destruct hgn as [_m1 _m2 _gn _g _vargs _vargs' _s1 _vm2 _vres _vres' get_g _hvargs *)
-        (*                    _hwr_vargs _hbody _h_get_res _h_trunc_res]. *)
-
-        specialize (ihgn hP).
-
-        destruct (smcget _ _ _ _ _ _ hgn) as [f hf].
-        destruct (tr_prog_inv _ _ _ hf) as [fs' [l [hl [ef ep]]]].
-        simpl in ep.
-        rewrite ep in ihgn.
-        unfold translate_prog'.
-        rewrite hl.
-
-        (* it's not the case that
-             (translate_funs P (l ++ fs')).1 = (translate_funs P fs').1
-           but we should be able to show that... *)
-        assert (H0 :
-          translate_call P gn (translate_funs P (l ++ ((gn,f) :: fs'))).1 =
-          translate_call P gn (translate_funs P ((gn,f) :: fs')).1
-        ).
-        {
-          clear -ef ep hl hf.
-          unfold translate_prog' in ep, ef.
-          rewrite hl in ep, ef.
-          unfold translate_call.
-          simpl in *.
-          rewrite ef.
-          destruct (gn == gn) eqn:E.
-          2: { move /eqP in E. exfalso. apply E. reflexivity. }
-          reflexivity.
-        }
-        rewrite H0.
-        eapply ihgn.
-      * {
-        (* Should be similar to Copn, by appealing to correctness of
-           write_lvals, expect that we also need to restore `evm s1`. *)
-        clear ihgn.
-
-        unshelve eapply u_pre_weaken_rule with
-          (p1 := (rel_estate {| emem := m2; evm := evm s1 |} fn)).
-        - eapply translate_write_lvals_correct.
-          exact hwr_vres.
-        - intros h hm. unfold rel_estate. split; try easy.
-          simpl. unfold rel_vmap.
-          give_up.
-      }
+    1: eapply bind_list_pexpr_correct; try eassumption; easy.
+    eapply u_bind with (v₁ := [seq totce (translate_value v) | v <- vres])
+                       (q := rel_mem m2).
+    * unshelve eapply u_pre_weaken_rule with (p1 := (rel_mem (emem s1))).
+      2: move => h Hh; apply Hh.
+      unfold SP in *. clear SP.
+      specialize (ihgn hP).
+      unfold translate_prog'.
+      destruct (sem_call_get_some hgn) as [f hf].
+      destruct (tr_prog_inv hf) as [fs' [l [hl [ef ep]]]].
+      simpl in ep.
+      rewrite ep in ihgn.
+      pose (translate_call_head ef) as hc.
+      rewrite hc.
+      apply ihgn.
+    * (* Should be similar to Copn, by appealing to correctness of
+         write_lvals, expect that we also need to restore `evm s1`. *)
+      clear ihgn.
+      unshelve eapply u_pre_weaken_rule with
+        (p1 := (rel_estate {| emem := m2; evm := evm s1 |} fn)).
+      -- eapply translate_write_lvals_correct.
+         exact hwr_vres.
+      -- intros h hm. unfold rel_estate. split; try easy.
+         simpl. unfold rel_vmap.
+         give_up.
   - (* proc *)
     rename fn into fn_ambient.
     unfold sem_Ind_proc. red. intros m1 m2 gn g vs vs' s1 vm2 vrs vrs'.
     intros hg hvs ?????.
-    unfold Pfun, Translation.Pfun. intros hp.
-    (* destruct H. *)
-    unfold translate_prog', translate_call.
+    unfold Translation.Pfun. intros hp.
 
-    (* rewrite hg. *)
-    (* destruct (get_fundef (p_funcs P) gn) as [g'|] eqn:E. *)
-    (* 2: { inversion hg. } *)
-
-    destruct (tr_prog_inv _ _ _ hg) as [fs' [l [hl [ef ep]]]].
+    unfold get_translated_fun.
+    destruct (tr_prog_inv hg) as [fs' [l [hl [ef ep]]]].
     unfold translate_prog' in ep.
     rewrite ep.
     unfold translate_call, translate_call_body.
     rewrite hg.
     simpl.
-    destruct (gn == gn) eqn:E.
-    2: { move /eqP in E. exfalso. apply E. reflexivity. }
-
+    assert (E : gn == gn) by now apply /eqP.
+    rewrite E; clear E.
     eapply u_bind with (v₁ := tt).
     1: { idtac.
          (* eapply translate_write_lvals_correct. *)
@@ -3608,6 +3583,8 @@ Proof.
       (* maybe something similar to the prove of
       assert (translate_call P gn (translate_funs P (l ++ ((gn,f) :: fs'))).1
               = translate_call P gn (translate_funs P ((gn,f) :: fs')).1)
+
+        just need to push the (translate_funs ...) in until they get to a funcall?
        *)
       assert (htr :
         translate_cmd P (translate_funs P (l ++ ((gn,g) :: fs'))).1 fn_ambient (f_body g) =
