@@ -141,6 +141,7 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Definition i_sk := #|SecKey|.
   Definition i_bool := 2.
 
+
   (** Key Generation algorithm *)
   Definition KeyGen {L : {fset Location}} :
     code L [interface] (chPubKey × chSecKey) :=
@@ -259,8 +260,8 @@ Definition Aux :
     {
       #import {sig #[10] : 'unit → 'pubkey × 'cipher } as query ;;
       count ← get counter_loc ;;
-      #put counter_loc := (count + 1)%N ;;
       #assert (count == 0)%N ;;
+      #put counter_loc := (count + 1)%N ;;
       '(pk, c) ← query Datatypes.tt ;;
       @ret chCipher (fto ((otf c).1 , (otf m) * ((otf c).2)))
     }
@@ -277,8 +278,8 @@ Proof.
   - eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
     move => [a1 h1] [a2 h2] [Heqa Heqh]. intuition auto.
   - ssprove_sync_eq. intro count.
-    ssprove_sync_eq.
     ssprove_sync_eq. move => /eqP e. subst.
+    ssprove_sync_eq.
     ssprove_sync_eq. intro a.
     ssprove_swap_lhs 0%N.
     ssprove_sync_eq.
@@ -389,13 +390,9 @@ Proof.
     cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
   - ssprove_sync_eq. intro count.
     ssprove_sync_eq.
-    destruct count.
-    2:{
-      cbn. eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
-      cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
-    }
-    simpl.
-    ssprove_sync_eq. intro a.
+    intros h.
+    ssprove_sync_eq.
+    ssprove_sync_eq. intros a.
     ssprove_swap_rhs 1%N.
     ssprove_swap_rhs 0%N.
     ssprove_sync_eq.
@@ -410,10 +407,10 @@ Proof.
     simpl. intros x.
     unfold f'. set (z := ch2prod x). clearbody z. clear x.
     destruct z as [x y]. simpl.
-    eapply r_ret. intros s ? e. subst.
-    intuition auto.
-    rewrite !otf_fto. simpl.
-    reflexivity.
+    rewrite !otf_fto.
+    eapply r_ret.
+    intros s ? e.
+    subst. simpl. easy.
 Qed.
 
 Theorem ElGamal_OT :

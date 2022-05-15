@@ -307,8 +307,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
       #def #[challenge_id] (mL_mR : 'plain × 'plain) : 'cipher
       {
         count ← get counter_loc ;;
-        #put counter_loc := (count + 1)%N;;
         #assert (count == 0)%N ;;
+        #put counter_loc := (count + 1)%N;;
         '(pk, sk) ← KeyGen ;;
         #put pk_loc := pk ;;
         #put sk_loc := sk ;;
@@ -334,8 +334,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
       #def #[challenge_id] (mL_mR :  'plain × 'plain) : 'cipher
       {
         count ← get counter_loc ;;
-        #put counter_loc := (count + 1)%N;;
         #assert (count == 0)%N ;;
+        #put counter_loc := (count + 1)%N;;
         '(pk, sk) ← KeyGen ;;
         #put pk_loc := pk ;;
         #put sk_loc := sk ;;
@@ -387,8 +387,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
       #def #[challenge_id'] (m : 'plain) : 'cipher
       {
         count ← get counter_loc ;;
-        #put counter_loc := (count + 1)%N;;
         #assert (count == 0)%N ;;
+        #put counter_loc := (count + 1)%N;;
         '(pk, sk) ← KeyGen ;;
         #put pk_loc := pk ;;
         #put sk_loc := sk ;;
@@ -415,8 +415,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
       #def #[challenge_id'] (m : 'plain) : 'cipher
       {
         count ← get counter_loc ;;
-        #put counter_loc := (count + 1)%N;;
         #assert (count == 0)%N ;;
+        #put counter_loc := (count + 1)%N;;
         '(pk, sk) ← KeyGen ;;
         #put pk_loc := pk ;;
         #put sk_loc := sk ;;
