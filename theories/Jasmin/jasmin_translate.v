@@ -2871,30 +2871,16 @@ Proof.
       }
       eapply h2 in ev. assumption.
     }
+
     {
       intros vi v' ev.
       rewrite get_set_heap_neq.
-      + destruct (H fn0) as [h1 h2].
-        apply h2.
 
-        eapply set_varP; eauto.
-        * intros.
-          destruct (vi == i) eqn:evar.
-          all: move: evar => /eqP evar.
-          - eapply translate_of_val in H0 as e.
-
-    eapply set_varP. 3: exact hvm.
-    + intros v₁ hv₁ eyl. subst.
-      destruct (vi == i) eqn:evar.
-      all: move: evar => /eqP evar.
-      * subst. rewrite Fv.setP_eq in ev. noconf ev.
-        rewrite get_set_heap_neq.
-        2: admit.
-        eapply translate_of_val in hv₁ as e.
-        destruct (H fn0) as [h1 h2].
-        unfold rel_vmap in h2.
-        apply h2.
-        admit.
+      + rewrite coerce_to_choice_type_K.
+        erewrite (_ : rel_vmap _ _ _).
+        2: eassumption.
+        rewrite coerce_to_choice_type_K. reflexivity.
+      + admit.
 Admitted.
 
 Lemma translate_write_var_correct :
