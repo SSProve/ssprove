@@ -3608,9 +3608,46 @@ Proof.
     rewrite hg.
     eapply u_bind with (v₁ := tt) (q := rel_estate s1 gn).
     1: {
-         (* eapply translate_write_lvals_correct. *)
-         Fail eapply translate_write_lvals_correct.
-         give_up.
+         (* PGH: `translate_write_vars_correct` expects some `rel_estate`
+                 as pre, but we only have `rel_mem m1`.
+                 We strengthen the precondition, and show that
+                   `rel_mem m1 => rel_estate (Estate m1 vmap0)`
+                 *)
+         unshelve eapply u_pre_weaken_rule.
+         - exact (rel_estate (Estate m1 vmap0) gn).
+         - simpl.
+           assert
+             (Htr : (trunc_list (f_tyin g)
+                 [seq totce (translate_value v) | v <- vargs'])
+                = [seq totce (translate_value v) | v <- vargs])
+             by admit.
+           rewrite Htr.
+           now eapply translate_write_vars_correct.
+         - intros h hmem.
+           unfold rel_estate, rel_vmap.
+           split; auto. intros i v hvm.
+           rewrite coerce_to_choice_type_K.
+           simpl in hvm.
+           unfold vmap0 in hvm.
+           rewrite Fv.get0 in hvm.
+           (* We're reading an undefined address, and getting an `ok v`;
+              surely we can invert and exfalso on that. *)
+           unfold undef_addr in hvm.
+           (* It's not going to work on arrays. This is dumb.
+              Why did they define it like that? Is this really a
+              good spec for a memory model? *)
+           unfold translate_var.
+           destruct (vtype i); unfold undef_error in hvm;
+             try now inversion hvm.
+           noconf hvm. simpl.
+           (* Seems like we're forced to prove that h is the empty heap.
+              Maybe backtrack and think about an alternative to showing the
+              implication between the preconditions. Or convince Jasmin dev
+              to change their definition. *)
+           assert (hh : h = empty_heap) by give_up.
+           rewrite hh.
+           rewrite get_empty_heap.
+           simpl. easy.
     }
     eapply u_bind with (v₁ := tt) (q := rel_mem m2).
     + unfold Pc, SP, translate_prog' in ihbody.
