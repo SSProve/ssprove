@@ -1204,6 +1204,9 @@ Definition translate_write_lvals fn ls vs :=
   (* foldl2 (λ c l v, translate_write_lval fn l v ;; c) ls vs (ret tt). *)
   foldr2 (λ l v c, translate_write_lval fn l v ;; c) ls vs (ret tt).
 
+Definition translate_write_vars fn xs vs :=
+  foldr2 (λ x v c, translate_write_var fn x v ;; c) xs vs (ret tt).
+
 Lemma eq_rect_K :
   ∀ (A : eqType) (x : A) (P : A -> Type) h e,
     @eq_rect A x P h x e = h.
@@ -2849,6 +2852,23 @@ Proof.
       eapply h2 in ev. assumption.
 Qed.
 
+Lemma translate_write_var_correct :
+  ∀ es₁ es₂ fn y v,
+    write_var y v es₁ = ok es₂ →
+    ⊢ ⦃ rel_estate es₁ fn ⦄
+      translate_write_var fn y (totce (translate_value v))
+      ⇓ tt
+    ⦃ rel_estate es₂ fn ⦄.
+Proof.
+  intros es₁ es₂ fn y v hw.
+  simpl. unfold translate_write_var. simpl in hw.
+  simpl.
+  eapply u_put.
+  apply u_ret_eq.
+  intros m' [m [hm e]]. subst.
+  eapply translate_write_var_estate. all: eassumption.
+Qed.
+
 Lemma translate_write_lval_correct :
   ∀ es₁ es₂ fn y v,
     write_lval gd y v es₁ = ok es₂ →
@@ -2867,12 +2887,7 @@ Proof.
       all: noconf hw. all: assumption.
     + unfold on_vu in hw. destruct of_val as [| []].
       all: noconf hw. assumption.
-  - simpl. unfold translate_write_var. simpl in hw.
-    simpl.
-    eapply u_put.
-    apply u_ret_eq.
-    intros m' [m [hm e]]. subst.
-    eapply translate_write_var_estate. all: eassumption.
+  - now eapply translate_write_var_correct.
   - simpl. simpl in hw.
     jbind hw vx hvx. jbind hvx vx' hvx'. jbind hw ve hve.
     jbind hve ve' hve'. jbind hw w hw'. jbind hw m hm.
@@ -2986,6 +3001,35 @@ Proof.
       assumption.
 Qed.
 
+Lemma translate_write_vars_cons fn l ls v vs :
+  translate_write_vars fn (l :: ls) (v :: vs) = (translate_write_var fn l v ;; translate_write_vars fn ls vs).
+Proof. reflexivity. Qed.
+
+Lemma translate_write_vars_correct fn s1 ls vs s2 :
+  write_vars ls vs s1 = ok s2 →
+  ⊢ ⦃ rel_estate s1 fn ⦄
+    translate_write_vars fn ls [seq totce (translate_value v) | v <- vs]
+    ⇓ tt
+  ⦃ rel_estate s2 fn ⦄.
+Proof.
+  intros h.
+  induction ls as [| l ls] in s1, vs, h |- *.
+  - destruct vs. 2: discriminate.
+    noconf h.
+    apply u_ret_eq. auto.
+  - destruct vs. 1: noconf h.
+    simpl in h.
+    jbind h s3 Hs3.
+    rewrite map_cons.
+    rewrite translate_write_vars_cons.
+    eapply u_bind.
+    + simpl.
+      eapply translate_write_var_correct.
+      eassumption.
+    + apply IHls.
+      assumption.
+Qed.
+
 End Translation.
 
 Section Translation.
@@ -3021,9 +3065,7 @@ Proof using P asm_op asmop pd.
           | Some f => _
           | None => ret [::] end).
   pose (trunc_list (f_tyin f) vargs') as vargs.
-  apply (bind
-           (translate_write_lvals (p_globs P) fn
-              [seq Lvar x | x <- (f_params f)] vargs)) => _.
+  apply (bind (translate_write_vars fn (f_params f) vargs)) => _.
   (* Perform the function body. *)
   (* apply (bind (tr_f_body _ _ E)) => _. *)
   (* pose (tr_f_body _ _ E) as tr_f. *)
