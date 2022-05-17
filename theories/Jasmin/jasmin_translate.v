@@ -1362,17 +1362,6 @@ Definition rel_vmap (vm : vmap) (fn : funname) (h : heap) :=
 Definition rel_estate (s : estate) (fn : funname) (h : heap) :=
   rel_mem s.(emem) h ∧ rel_vmap s.(evm) fn h.
 
-Definition rel_estate_global (s : estate) (h : heap) :=
-  forall fn, rel_estate s fn h.
-
-Fact rel_estate_commute h s :
-  rel_estate_global s h <-> (rel_mem s.(emem) h ∧ forall fn, rel_vmap s.(evm) fn h).
-Proof.
-  unfold rel_estate_global, rel_estate. intuition auto.
-  - now destruct (H 1%positive).
-  - now destruct (H fn).
-Qed.
-
 Lemma translate_read_estate :
   ∀ fn s ptr sz w m,
     rel_estate s fn m →
@@ -1395,15 +1384,12 @@ Proof.
 Qed.
 
 Lemma translate_write_estate :
-  ∀ sz s cm ptr w m,
+  ∀ fn sz s cm ptr w m,
     write s.(emem) ptr (sz := sz) w = ok cm →
-    rel_estate_global s m →
-    rel_estate_global {| emem := cm ; evm := s.(evm) |}
-      (set_heap m mem_loc (write_mem (get_heap m mem_loc) ptr w)).
+    rel_estate s fn m →
+    rel_estate {| emem := cm ; evm := s.(evm) |} fn (set_heap m mem_loc (write_mem (get_heap m mem_loc) ptr w)).
 Proof.
-  intros sz s cm ptr w m hw hrm_hvm.
-  unfold rel_estate_global in hrm_hvm.
-  apply rel_estate_commute in hrm_hvm as [hrm hvm].
+  intros fn sz s cm ptr w m hw [hrm hvm].
   split.
   - simpl. eapply translate_write_mem_correct. all: eassumption.
   - simpl. intros i v ev.
@@ -1509,7 +1495,7 @@ Qed.
 Lemma translate_get_var_correct :
   ∀ fn x s v (cond : heap → Prop),
     get_var (evm s) x = ok v →
-    (∀ m, cond m → rel_estate_global s m) →
+    (∀ m, cond m → rel_estate s fn m) →
     ⊢ ⦃ cond ⦄
       translate_get_var fn x ⇓ coerce_to_choice_type _ (translate_value v)
     ⦃ cond ⦄.
@@ -1527,7 +1513,7 @@ Qed.
 
 Lemma translate_gvar_correct (f : funname) (x : gvar) (v : value) s (cond : heap → Prop) :
   get_gvar gd (evm s) x = ok v →
-  (∀ m, cond m → rel_estate_global s m) →
+  (∀ m, cond m → rel_estate s f m) →
   ⊢ ⦃ cond ⦄
     translate_gvar f x ⇓ coerce_to_choice_type _ (translate_value v)
   ⦃ cond ⦄.
@@ -2292,7 +2278,7 @@ Qed.
 Lemma translate_pexpr_correct :
   ∀ fn (e : pexpr) s₁ v (cond : heap → Prop),
     sem_pexpr gd s₁ e = ok v →
-    (∀ m, cond m → rel_estate_global s₁ m) →
+    (∀ m, cond m → rel_estate s₁ fn m) →
     ⊢ ⦃ cond ⦄
       (translate_pexpr fn e).π2 ⇓
       coerce_to_choice_type _ (translate_value v)
@@ -2325,8 +2311,8 @@ Proof.
       intro v. apply u_ret.
       intros m [hm e]. unfold u_get in e. subst.
       split. 1: assumption.
-      apply hcond in hm. apply rel_estate_commute in hm as [hm hv].
-      eapply hv in e1. rewrite e1.
+      apply hcond in hm. destruct hm as [hm hv].
+      apply hv in e1. rewrite e1.
       simpl. rewrite coerce_to_choice_type_K.
       rewrite coerce_to_choice_type_translate_value_to_val.
       reflexivity.
@@ -2392,13 +2378,11 @@ Proof.
     rewrite coerce_to_choice_type_K.
     erewrite translate_to_word. 2: eassumption.
     eapply hcond in hm.
-    apply rel_estate_commute in hm as [hm hv].
-    erewrite get_var_get_heap.
-    2-3: unfold rel_estate; eauto.
+    erewrite get_var_get_heap. 2-3: eassumption.
     simpl. erewrite <- type_of_get_var. 2: eassumption.
     rewrite coerce_to_choice_type_K.
     eapply translate_to_word in hw1 as e1. rewrite e1. clear e1.
-    eapply translate_read_estate. all: unfold rel_estate; eauto.
+    eapply translate_read_estate. all: eassumption.
   - (* Papp1 *)
     simpl in *.
     jbind h1 v' h2.
@@ -2518,16 +2502,15 @@ Proof.
       erewrite translate_pexpr_type. 2: eassumption.
       rewrite coerce_to_choice_type_K.
       apply translate_truncate_val. assumption.
-      Unshelve. all: exact fn.
 Qed.
 
 Lemma translate_pexprs_correct fn s vs es :
   sem_pexprs gd s es = ok vs →
   List.Forall2 (λ c v,
-    ⊢ ⦃ rel_estate_global s ⦄
+    ⊢ ⦃ rel_estate s fn ⦄
       c.π2
       ⇓ coerce_to_choice_type _ (translate_value v)
-    ⦃ rel_estate_global s ⦄
+    ⦃ rel_estate s fn ⦄
   ) [seq translate_pexpr fn e | e <- es] vs.
 Proof.
   intro hvs.
@@ -2554,7 +2537,7 @@ Qed.
 
 Corollary bind_list_pexpr_correct (cond : heap → Prop) (es : pexprs) (vs : list value)
   (s1 : estate) (fn : funname)
-  (hc : ∀ m : heap, cond m → rel_estate_global s1 m)
+  (hc : ∀ m : heap, cond m → rel_estate s1 fn m)
   (h : sem_pexprs gd s1 es = ok vs)
   : ⊢ ⦃ cond ⦄ bind_list [seq translate_pexpr fn e | e <- es] ⇓
       [seq totce (translate_value v) | v <- vs] ⦃ cond ⦄.
@@ -2583,7 +2566,7 @@ Qed.
 Corollary translate_pexpr_correct_cast :
   ∀ fn (e : pexpr) s₁ v (cond : heap → Prop),
     sem_pexpr gd s₁ e = ok v →
-    (∀ m, cond m → rel_estate_global s₁ m) →
+    (∀ m, cond m → rel_estate s₁ fn m) →
     ⊢ ⦃ cond ⦄
       coerce_typed_code _ (translate_pexpr fn e) ⇓
       translate_value v
@@ -2805,11 +2788,11 @@ Proof.
 Qed.
 
 Lemma translate_write_correct :
-  ∀ sz s p (w : word sz) cm (cond : heap → Prop),
-    (∀ m, cond m → write s.(emem) p w = ok cm ∧ rel_estate_global s m) →
-    ⊢ ⦃ cond ⦄ translate_write p w ⇓ tt ⦃ rel_estate_global {| emem := cm ; evm := s.(evm) |} ⦄.
+  ∀ fn sz s p (w : word sz) cm (cond : heap → Prop),
+    (∀ m, cond m → write s.(emem) p w = ok cm ∧ rel_estate s fn m) →
+    ⊢ ⦃ cond ⦄ translate_write p w ⇓ tt ⦃ rel_estate {| emem := cm ; evm := s.(evm) |} fn ⦄.
 Proof.
-  intros sz s p w cm cond h.
+  intros fn sz s p w cm cond h.
   unfold translate_write.
   eapply u_get_remember. intros m.
   eapply u_put.
@@ -2823,20 +2806,17 @@ Qed.
 Lemma translate_write_var_estate :
   ∀ fn i v s1 s2 m,
     write_var i v s1 = ok s2 →
-    rel_estate_global s1 m →
-    rel_estate_global s2 (set_heap m (translate_var fn i) (truncate_el i.(vtype) (translate_value v))).
+    rel_estate s1 fn m →
+    rel_estate s2 fn (set_heap m (translate_var fn i) (truncate_el i.(vtype) (translate_value v))).
 Proof.
-  intros fn i v s1 s2 m hw H.
+  intros fn i v s1 s2 m hw [h1 h2].
   unfold write_var in hw. jbind hw vm hvm. noconf hw.
   split. all: simpl.
-  - intros ptr v' er. destruct (H fn) as [h1 h2].
+  - intros ptr v' er.
     eapply h1 in er.
     rewrite get_set_heap_neq. 2: apply mem_loc_translate_var_neq.
     assumption.
-  - destruct (fn == fn0) eqn:efn.
-    { destruct (H fn) as [h1 h2].
-      move : efn => /eqP efn. subst.
-      intros vi v' ev.
+  - intros vi v' ev.
     eapply set_varP. 3: exact hvm.
     + intros v₁ hv₁ eyl. subst.
       destruct (vi == i) eqn:evar.
@@ -2870,32 +2850,7 @@ Proof.
         contradiction.
       }
       eapply h2 in ev. assumption.
-    }
-    {
-      intros vi v' ev.
-      rewrite get_set_heap_neq.
-      + destruct (H fn0) as [h1 h2].
-        apply h2.
-
-        eapply set_varP; eauto.
-        * intros.
-          destruct (vi == i) eqn:evar.
-          all: move: evar => /eqP evar.
-          - eapply translate_of_val in H0 as e.
-
-    eapply set_varP. 3: exact hvm.
-    + intros v₁ hv₁ eyl. subst.
-      destruct (vi == i) eqn:evar.
-      all: move: evar => /eqP evar.
-      * subst. rewrite Fv.setP_eq in ev. noconf ev.
-        rewrite get_set_heap_neq.
-        2: admit.
-        eapply translate_of_val in hv₁ as e.
-        destruct (H fn0) as [h1 h2].
-        unfold rel_vmap in h2.
-        apply h2.
-        admit.
-Admitted.
+Qed.
 
 Lemma translate_write_var_correct :
   ∀ es₁ es₂ fn y v,
@@ -3046,19 +3001,19 @@ Proof.
       assumption.
 Qed.
 
-Lemma translate_write_vars_cons fn x xs v vs :
-  translate_write_vars fn (x :: xs) (v :: vs) = (translate_write_var fn x v ;; translate_write_vars fn xs vs).
+Lemma translate_write_vars_cons fn l ls v vs :
+  translate_write_vars fn (l :: ls) (v :: vs) = (translate_write_var fn l v ;; translate_write_vars fn ls vs).
 Proof. reflexivity. Qed.
 
-Lemma translate_write_vars_correct fn s1 xs vs s2 :
-  write_vars xs vs s1 = ok s2 →
+Lemma translate_write_vars_correct fn s1 ls vs s2 :
+  write_vars ls vs s1 = ok s2 →
   ⊢ ⦃ rel_estate s1 fn ⦄
-    translate_write_vars fn xs [seq totce (translate_value v) | v <- vs]
+    translate_write_vars fn ls [seq totce (translate_value v) | v <- vs]
     ⇓ tt
   ⦃ rel_estate s2 fn ⦄.
 Proof.
   intros h.
-  induction xs as [| x xs] in s1, vs, h |- *.
+  induction ls as [| l ls] in s1, vs, h |- *.
   - destruct vs. 2: discriminate.
     noconf h.
     apply u_ret_eq. auto.
@@ -3071,7 +3026,7 @@ Proof.
     + simpl.
       eapply translate_write_var_correct.
       eassumption.
-    + apply IHxs.
+    + apply IHls.
       assumption.
 Qed.
 
@@ -3477,12 +3432,11 @@ Qed.
 
 Definition Pfun (P : uprog) (fn : funname) m va m' vr :=
     handled_program P →
-    forall vm fn_ambient,
-    ⊢ ⦃ rel_estate {| emem := m; evm := vm |} fn_ambient ⦄
+    ⊢ ⦃ rel_mem m ⦄
       (* translate_call P fn (translate_prog' P) [seq totce (translate_value v) | v <- va] *)
       get_translated_fun P fn [seq totce (translate_value v) | v <- va]
       ⇓ [seq totce (translate_value v) | v <- vr]
-    ⦃ rel_estate {| emem := m'; evm := vm |} fn_ambient ⦄.
+    ⦃ rel_mem m' ⦄.
 
 Theorem translate_prog_correct P m vargs m' vres :
   ∀ fn, sem.sem_call P m fn vargs m' vres →
@@ -3610,33 +3564,31 @@ Proof.
     unfold Pfun, Translation.Pfun, get_translated_fun in ihgn.
     red. simpl. intros _. unfold translate_instr_r.
     eapply u_bind.
-    (* evaluation of arguments *)
     1: eapply bind_list_pexpr_correct; try eassumption; easy.
-
     eapply u_bind with (v₁ := [seq totce (translate_value v) | v <- vres])
-                       (q := rel_estate {| emem := m2; evm := evm s1 |} fn').
-    (* execution of the procedure call *)
-    * (* unshelve eapply u_pre_weaken_rule with (p1 := (rel_mem (emem s1))). *)
-      (* 2: move => h Hh; apply Hh. *)
+                       (q := rel_mem m2).
+    * unshelve eapply u_pre_weaken_rule with (p1 := (rel_mem (emem s1))).
+      2: move => h Hh; apply Hh.
       unfold SP in *. clear SP.
-      specialize (ihgn hP (evm s1) fn').
+      specialize (ihgn hP).
       unfold translate_prog'.
       destruct (sem_call_get_some hgn) as [f hf].
       destruct (tr_prog_inv hf) as [fs' [l [hl [ef ep]]]].
       simpl in ep.
-      assert (hs1 : s1 = {| emem := emem s1; evm := evm s1 |}).
-      { clear. destruct s1. reflexivity. }
-      rewrite -hs1 in ihgn.
       rewrite ep in ihgn.
       pose (translate_call_head ef) as hc.
       rewrite hc.
       apply ihgn.
-
-    (* write results *)
     * (* Should be similar to Copn, by appealing to correctness of
          write_lvals, expect that we also need to restore `evm s1`. *)
       clear ihgn.
-      now eapply translate_write_lvals_correct.
+      unshelve eapply u_pre_weaken_rule with
+        (p1 := (rel_estate {| emem := m2; evm := evm s1 |} fn')).
+      -- eapply translate_write_lvals_correct.
+         exact hwr_vres.
+      -- intros h hm. unfold rel_estate. split; try easy.
+         simpl. unfold rel_vmap.
+         give_up.
   - (* proc *)
     rename fn into fn_ambient.
     rename vargs into vargs_amb. rename vres into vres_amb.
@@ -3654,8 +3606,7 @@ Proof.
     rewrite E; clear E.
     unfold translate_call_body.
     rewrite hg.
-    intros VM FN_AMB.
-    eapply u_bind with (v₁ := tt) (q := rel_estate s1 FN_AMB).
+    eapply u_bind with (v₁ := tt) (q := rel_estate s1 gn).
     1: {
          (* PGH: `translate_write_vars_correct` expects some `rel_estate`
                  as pre, but we only have `rel_mem m1`.
@@ -3673,10 +3624,10 @@ Proof.
            rewrite Htr.
            now eapply translate_write_vars_correct.
          - intros h hmem.
-           split; auto. simpl.
-           unfold rel_vmap.
-           intros i v hvm.
+           unfold rel_estate, rel_vmap.
+           split; auto. intros i v hvm.
            rewrite coerce_to_choice_type_K.
+           simpl in hvm.
            unfold vmap0 in hvm.
            rewrite Fv.get0 in hvm.
            (* We're reading an undefined address, and getting an `ok v`;
@@ -3698,9 +3649,7 @@ Proof.
            rewrite get_empty_heap.
            simpl. easy.
     }
-    eapply u_bind with (v₁ := tt)
-                       (q := rel_estate {| emem := m2; evm := vm2 |} gn)
-                       (* (q := rel_mem m2) *).
+    eapply u_bind with (v₁ := tt) (q := rel_mem m2).
     + unfold Pc, SP, translate_prog' in ihbody.
       assert (handled_cmd (f_body g)) as hpbody.
       {
