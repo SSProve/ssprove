@@ -29,6 +29,10 @@ Set Primitive Projections.
 Local Open Scope ring_scope.
 Import GroupScope GRing.Theory.
 
+Import Num.Def.
+Import Num.Theory.
+Import Order.POrderTheory.
+
 Import PackageNotation.
 
 Module Type GroupParam.
@@ -105,9 +109,6 @@ Module MyAlg <: SigmaProtocolAlgorithms MyParam.
 
   Definition i_witness := #|Witness|.
 
-  Definition HIDING : nat := 0.
-  Definition SOUNDNESS : nat := 1.
-
   Definition commit_loc : Location := (choiceWitness; 2%N).
 
   Definition Sigma_locs : {fset Location} := fset [:: commit_loc].
@@ -143,6 +144,8 @@ Module MyAlg <: SigmaProtocolAlgorithms MyParam.
     (e : choiceChallenge) (e' : choiceChallenge)
     (z : choiceResponse)  (z' : choiceResponse) : 'option choiceWitness :=
     Some (fto ((otf z - otf z') / (otf e - otf e'))).
+
+  Definition KeyGen (w : choiceWitness) := fto (g ^+ w).
 
 End MyAlg.
 
@@ -303,54 +306,41 @@ Qed.
   protocol is perfectly indistinguishable from real protocol execution.
 *)
 Lemma extractor_success:
-  ∀ LA A LAdv Adv,
+  ∀ LA A,
     ValidPackage LA [interface
-      #val #[ SOUNDNESS ] : chStatement → 'bool
+      #val #[ SOUNDNESS ] : chSoundness → 'bool
     ] A_export A →
-    ValidPackage LAdv [interface] [interface
-      #val #[ ADV ] : chStatement → chSoundness
-    ] Adv →
-    fdisjoint LA (Sigma_locs :|: LAdv) →
-    ɛ_soundness A Adv = 0.
+    ɛ_soundness A = 0.
 Proof.
-  intros LA A LAdv Adv VA VAdv Hdisj.
+  intros LA A VA.
   apply: eq_rel_perf_ind_eq.
-  2,3: apply Hdisj.
+  2,3: apply fdisjoints0.
   simplify_eq_rel h.
-  (* This program is composed with abstract adversarial code. *)
-  (* We need to ensure that the composition is valid. *)
-  destruct (Adv ADV) as [[? []]|].
-  2:{ apply r_ret. auto. }
-  repeat destruct choice_type_eqP.
-  2,3: apply r_ret ; auto.
-  apply rsame_head. intros [s [[s0 s3] [s1 s2]]].
-  ssprove_code_simpl. simpl.
-  match goal with
-  | |- context [ if ?b then _ else _ ] => case b eqn:rel
-  end.
-  2: apply r_ret ; intuition auto.
-  apply r_ret.
-  intros. intuition auto.
+  destruct h as [? [? [? [? [? ?]]]]].
+  destruct s1.
+  case [&& _ & _] eqn:e.
+  all: apply r_ret; auto.
+  intros h1 h2 ->.
   (* Algebraic proof that the produced witness satisfies the relation. *)
   unfold R.
-  unfold "&&" in rel.
-  inversion rel.
+  unfold "&&" in e.
+  inversion e.
   repeat match goal with
   | |- context [ if ?b then _ else _ ] => case b eqn:?
   end.
   2,3: discriminate.
   rewrite otf_fto in Heqs4.
-  rewrite otf_fto in rel.
-  apply reflection_nonsense in rel.
+  rewrite otf_fto in e.
+  apply reflection_nonsense in e.
   apply reflection_nonsense in Heqs4.
-  rewrite H1.
+  rewrite H0.
   rewrite otf_fto expg_mod.
   2: rewrite order_ge1 ; apply expg_order.
   rewrite expgM expg_mod.
   2: rewrite order_ge1 ; apply expg_order.
   rewrite expgD -FinRing.zmodVgE expg_zneg.
   2: apply cycle_id.
-  rewrite Heqs4 rel !expgMn.
+  rewrite Heqs4 e !expgMn.
   2-3: apply group_prodC.
   rewrite invMg !expgMn.
   2: apply group_prodC.
@@ -359,17 +349,17 @@ Proof.
   2: apply group_prodC.
   rewrite mulVg expg1n mul1g -expg_zneg.
   2:{
-    have Hx : exists ix, otf h = g ^+ ix.
+    have Hx : exists ix, otf s = g ^+ ix.
     { apply /cycleP. rewrite -g_gen. apply: in_setT. }
     destruct Hx as [ix ->].
     apply mem_cycle.
   }
   rewrite expgAC.
-  rewrite [otf h ^+ (- otf s1) ^+ _] expgAC.
+  rewrite [otf s ^+ (- otf s2) ^+ _] expgAC.
   rewrite -expgD -expgM.
   have <- := @expg_mod _ q.
   2:{
-    have Hx : exists ix, otf h = g ^+ ix.
+    have Hx : exists ix, otf s = g ^+ ix.
     { apply /cycleP. rewrite -g_gen. apply: in_setT. }
     destruct Hx as [ix ->].
     rewrite expgAC /q.
@@ -379,15 +369,15 @@ Proof.
   rewrite -modnMmr.
   have -> :
     (modn
-       (addn (@nat_of_ord (S (S (Zp_trunc q))) (@otf Challenge s0))
+       (addn (@nat_of_ord (S (S (Zp_trunc q))) (@otf Challenge s1))
              (@nat_of_ord (S (S (Zp_trunc q)))
                           (@GRing.opp (FinRing.Zmodule.zmodType (Zp_finZmodType (S (Zp_trunc q))))
-                                      (@otf Challenge s1)))) q) =
+                                      (@otf Challenge s2)))) q) =
     (@nat_of_ord (S (S (Zp_trunc q)))
-                   (@Zp_add (S (Zp_trunc q)) (@otf Challenge s0) (@Zp_opp (S (Zp_trunc q)) (@otf Challenge s1)))).
+                   (@Zp_add (S (Zp_trunc q)) (@otf Challenge s1) (@Zp_opp (S (Zp_trunc q)) (@otf Challenge s2)))).
   { simpl.
     rewrite modnDmr.
-    destruct (otf s1) as [a Ha].
+    destruct (otf s2) as [a Ha].
     destruct a as [| Pa].
     - simpl.
       rewrite subn0 modnn addn0 modnDr.
@@ -405,18 +395,18 @@ Proof.
        (muln (@nat_of_ord (S (S (Zp_trunc q)))
                           (@GRing.inv (FinRing.UnitRing.unitRingType (Zp_finUnitRingType (Zp_trunc q)))
                                       (@GRing.add (FinRing.Zmodule.zmodType (Zp_finZmodType (S (Zp_trunc q))))
-                                                  (@otf Challenge s0)
+                                                  (@otf Challenge s1)
                                                   (@GRing.opp (FinRing.Zmodule.zmodType (Zp_finZmodType (S (Zp_trunc q))))
-                                                              (@otf Challenge s1)))))
+                                                              (@otf Challenge s2)))))
              (@nat_of_ord (S (S (Zp_trunc q)))
-                          (@Zp_add (S (Zp_trunc q)) (@otf Challenge s0) (@Zp_opp (S (Zp_trunc q)) (@otf Challenge s1))))) q) =
+                          (@Zp_add (S (Zp_trunc q)) (@otf Challenge s1) (@Zp_opp (S (Zp_trunc q)) (@otf Challenge s2))))) q) =
     (Zp_mul
        (@GRing.inv (FinRing.UnitRing.unitRingType (Zp_finUnitRingType (Zp_trunc q)))
                    (@GRing.add (FinRing.Zmodule.zmodType (Zp_finZmodType (S (Zp_trunc q))))
-                               (@otf Challenge s0)
+                               (@otf Challenge s1)
                                (@GRing.opp (FinRing.Zmodule.zmodType (Zp_finZmodType (S (Zp_trunc q))))
-                                           (@otf Challenge s1))))
-       (@Zp_add (S (Zp_trunc q)) (@otf Challenge s0) (@Zp_opp (S (Zp_trunc q)) (@otf Challenge s1)))).
+                                           (@otf Challenge s2))))
+       (@Zp_add (S (Zp_trunc q)) (@otf Challenge s1) (@Zp_opp (S (Zp_trunc q)) (@otf Challenge s2)))).
   { simpl.
     rewrite modnDmr.
     rewrite <- order_ge1 at 9.
@@ -434,113 +424,242 @@ Proof.
   - rewrite lt0n.
     apply neq_pos.
     assumption.
-  - destruct (otf s0 - otf s1) as [k Hk].
+  - destruct (otf s1 - otf s2) as [k Hk].
     simpl.
     rewrite order_ge1 in Hk.
     apply Hk.
-Qed.
-
-Lemma hiding_adv :
-  ∀ LA A,
-    ValidPackage LA [interface
-      #val #[ HIDING ] : chInput → chMessage
-    ] A_export A →
-    fdisjoint LA Com_locs →
-    fdisjoint LA Sigma_locs →
-    ɛ_hiding A = 0.
-Proof.
-  intros LA A Va Hdisj0 Hdisj1.
-  unfold ɛ_hiding.
-  eapply eq_rel_perf_ind.
-  1,2: exact _.
-  1:{
-    instantiate (1 := (heap_ignore Com_locs)).
-    ssprove_invariant.
-    unfold Sigma_locs.
-    rewrite !fset0U.
-    apply fsubsetU.
-    apply /orP. left.
-    apply fsubsetU.
-    apply /orP. left.
-    apply fsubsetxx.
-  }
-  3,4:
-    rewrite ?fset0U ; unfold Sigma_locs;
-    repeat rewrite fdisjointUr ;
-    apply /andP ; split ; eassumption.
-  2: apply Va.
-  simplify_eq_rel hwe.
-  ssprove_code_simpl.
-  simplify_linking.
-  destruct hwe as [[h w] e].
-  apply r_const_sample_R.
-  1: apply LosslessOp_uniform.
-  intros e'.
-  rewrite !cast_fun_K.
-  ssprove_code_simpl.
-  ssprove_code_simpl_more.
-  ssprove_sync_eq=> rel.
-  ssprove_sync=> x.
-  ssprove_contract_put_get_lhs.
-  ssprove_contract_put_get_rhs.
-  eapply r_put_vs_put.
-  eapply r_put_vs_put.
-  eapply r_put_vs_put.
-  ssprove_restore_pre. 1: ssprove_invariant.
-  apply r_ret. intuition auto.
 Qed.
 
 (* Main theorem proving that the Schnorr protocol has perfect hiding. *)
 Theorem schnorr_com_hiding :
   ∀ LA A,
     ValidPackage LA [interface
-      #val #[ HIDING ] : chInput → chMessage
-    ] A_export A →
-    fdisjoint LA Com_locs →
-    fdisjoint LA Sigma_locs →
-    AdvantageE (Hiding_real ∘ Sigma_to_Com ∘ SHVZK_ideal) (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK_ideal) A <= 0.
+      #val #[HIDING] : (chChallenge) × (chChallenge) → chMessage
+    ] A_export (A ∘ par KEY (ID Hiding_E)) ->
+    fdisjoint LA KEY_locs ->
+    fdisjoint LA Sigma_to_Com_locs ->
+    fdisjoint LA (fset [:: setup_loc]) ->
+    fdisjoint LA Sigma_locs ->
+    fdisjoint LA Simulator_locs ->
+    ɛ_hiding A <= 0.
 Proof.
-  intros LA A Va Hdisj0 Hdisj1.
-  have H := commitment_hiding LA A 0 Va.
-  rewrite !GRing.addr0 in H.
-  have HS := schnorr_SHVZK _ _ _.
-  rewrite hiding_adv in H.
-  2,3: assumption.
-  apply AdvantageE_le_0 in H.
-  1: rewrite H ; trivial.
-  intros B Vb.
-  have -> := HS _ B Vb.
-  2:{ erewrite fdisjointUl.
-      apply /andP.
-      split.
-      - assumption.
-      - unfold Com_locs, Sigma_locs.
+  intros LA A VA Hd1 Hd2 Hd3 Hd4 Hd5.
+  eapply le_trans.
+  1: eapply commitment_hiding with (LA := LA).
+  all: try assumption.
+  1: apply fdisjoint0s.
+  {
+    unfold Sigma_locs.
+    unfold commit_loc.
+    unfold statement_loc.
+    unfold witness_loc.
+    rewrite !fset_cons.
+    rewrite -fset0E.
+    rewrite fdisjointUr ; apply /andP ; split.
+    - rewrite fdisjoints1.
+      rewrite fset1E.
+      rewrite fsetU0.
+      rewrite -fset1E.
+      unfold "\notin".
+      rewrite in_fset1.
+      case (_ == _) eqn:e.
+      2: done.
+      move: e => /eqP.
+      done.
+    - rewrite fdisjointUr ; apply /andP ; split.
+      + rewrite fdisjoints1.
+        rewrite fset1E.
+        rewrite fsetU0.
         rewrite -fset1E.
-        rewrite fdisjoints1.
-        in_fset_auto. }
-  done.
+        unfold "\notin".
+        rewrite in_fset1.
+        case (_ == _) eqn:e.
+        2: done.
+        move: e => /eqP.
+        done.
+      + apply fdisjoints0.
+  }
+  rewrite addr0.
+  rewrite add0r.
+  erewrite schnorr_SHVZK.
+  2: {
+    ssprove_valid.
+    1: instantiate (1 := (LA :|: (setup_loc |: Sigma_to_Com_locs))).
+    3: apply fsubsetxx.
+    2: apply fsub0set.
+    - apply fsubsetUl.
+    - apply fsubsetU ; apply /orP ; right.
+      apply fsubsetxx.
+  }
+  2: {
+    (* unfold Sigma_locs. *)
+    unfold Sigma_to_Com_locs.
+    unfold Simulator_locs.
+    rewrite fsetU0.
+    rewrite fdisjointUl ; apply /andP ; split.
+    - assumption.
+    - unfold Sigma_locs.
+      rewrite fdisjointUl ; apply /andP ; split.
+      + rewrite fdisjoint1s.
+        unfold "\notin".
+        rewrite -fset1E.
+        rewrite in_fset1.
+        done.
+      + unfold Com_locs.
+        rewrite fset_cons.
+        rewrite fdisjointUl ; apply /andP ; split.
+        ++ rewrite fdisjoint1s.
+           rewrite -fset1E.
+           unfold "\notin".
+           rewrite in_fset1.
+           done.
+        ++ 
+           rewrite -!fset1E.
+           rewrite fdisjoint1s.
+            unfold "\notin".
+            rewrite in_fset1.
+            done.
+  }
+  rewrite Advantage_sym.
+  erewrite schnorr_SHVZK.
+  2: {
+    ssprove_valid.
+    1: instantiate (1 := (LA :|: (setup_loc |: Sigma_to_Com_locs))).
+    3: apply fsubsetxx.
+    2: apply fsub0set.
+    - apply fsubsetUl.
+    - apply fsubsetU ; apply /orP ; right.
+      apply fsubsetxx.
+  }
+  2: {
+    (* unfold Sigma_locs. *)
+    unfold Sigma_to_Com_locs.
+    unfold Simulator_locs.
+    rewrite fsetU0.
+    rewrite fdisjointUl ; apply /andP ; split.
+    - assumption.
+    - unfold Sigma_locs.
+      rewrite fdisjointUl ; apply /andP ; split.
+      + rewrite fdisjoint1s.
+        unfold "\notin".
+        rewrite -fset1E.
+        rewrite in_fset1.
+        done.
+      + unfold Com_locs.
+        rewrite fset_cons.
+        rewrite fdisjointUl ; apply /andP ; split.
+        ++ rewrite fdisjoint1s.
+           rewrite -fset1E.
+           unfold "\notin".
+           rewrite in_fset1.
+           done.
+        ++ 
+           rewrite -!fset1E.
+           rewrite fdisjoint1s.
+            unfold "\notin".
+            rewrite in_fset1.
+            done.
+  }
+  rewrite addr0 add0r.
+  apply eq_ler.
+  eapply eq_rel_perf_ind.
+  1,2: exact _.
+  1:{
+    instantiate (1 := (heap_ignore Com_locs)).
+    ssprove_invariant.
+    unfold Sigma_to_Com_locs.
+    rewrite !fset0U.
+    apply fsubsetU; apply /orP; left.
+    apply fsubsetU; apply /orP; left.
+    apply fsubsetU; apply /orP; right.
+    apply fsubsetU; apply /orP; left.
+    apply fsubsetxx.
+  }
+  2: apply VA.
+  3: {
+    rewrite fset0U.
+    rewrite fdisjointUr ; apply /andP ; split.
+    2: assumption.
+    rewrite fdisjointUr ; apply /andP ; split.
+    2: assumption.
+    rewrite fset1E. assumption.
+  }
+  2: {
+    rewrite fset0U.
+    rewrite fdisjointUr ; apply /andP ; split.
+    2: assumption.
+    rewrite fdisjointUr ; apply /andP ; split.
+    2: assumption.
+    rewrite fset1E. assumption.
+  }
+  rewrite Sigma_to_Com_Aux_equation_1.
+  simplify_eq_rel hwe.
+  ssprove_code_simpl.
+  simplify_linking.
+  destruct hwe as [e e'].
+  apply r_const_sample_R.
+  1: apply LosslessOp_uniform.
+  intros e_rand.
+  rewrite !cast_fun_K.
+  ssprove_code_simpl.
+  ssprove_code_simpl_more.
+  apply r_const_sample_L.
+  1: apply LosslessOp_uniform.
+  intros b.
+  simpl.
+  case (Nat.even b) eqn:hb.
+  - rewrite hb ; clear hb.
+    ssprove_code_simpl.
+    ssprove_code_simpl_more.
+    ssprove_code_simpl.
+    ssprove_code_simpl_more.
+    ssprove_sync=>setup.
+    apply r_assertD.
+    1: done.
+    intros _ _.
+    ssprove_sync=> w.
+    apply r_assertD.
+    1: done.
+    intros _ _.
+    ssprove_sync.
+    apply r_assertD.
+    1: done.
+    intros _ rel.
+    ssprove_sync=>x.
+    ssprove_contract_put_get_lhs.
+    ssprove_contract_put_get_rhs.
+    eapply r_put_vs_put.
+    eapply r_put_vs_put.
+    eapply r_put_vs_put.
+    ssprove_restore_pre. 1: ssprove_invariant.
+    apply r_ret. intuition auto.
+  - rewrite hb ; clear hb.
+    ssprove_code_simpl.
+    ssprove_code_simpl_more.
+    ssprove_code_simpl.
+    ssprove_code_simpl_more.
+    ssprove_sync=>setup.
+    apply r_assertD.
+    1: done.
+    intros _ _.
+    ssprove_sync=> w.
+    apply r_assertD.
+    1: done.
+    intros _ _.
+    ssprove_sync.
+    apply r_assertD.
+    1: done.
+    intros _ rel.
+    ssprove_sync=>x.
+    ssprove_contract_put_get_lhs.
+    ssprove_contract_put_get_rhs.
+    eapply r_put_vs_put.
+    eapply r_put_vs_put.
+    eapply r_put_vs_put.
+    ssprove_restore_pre. 1: ssprove_invariant.
+    apply r_ret. intuition auto.
 Qed.
 
-(* Main theorem *)
-(* The commitment scheme instantiated from Schnorr' protocol *)
-(* is binding equal to the hardness of the relation *)
-(* (I.e. how hard is it to produce a valid witness for a fixed public input)*)
-Theorem schnorr_com_binding :
-  ∀ LA A LAdv Adv,
-    ValidPackage LA [interface
-      #val #[ SOUNDNESS ] : chStatement → 'bool
-    ] A_export A →
-    ValidPackage LAdv [interface] [interface
-      #val #[ ADV ] : chStatement → chSoundness
-    ] Adv →
-    fdisjoint LA (Sigma_locs :|: LAdv) →
-    AdvantageE (Com_Binding ∘ Adv) (Special_Soundness_f ∘ Adv) A <= 0.
-Proof.
-  intros LA A LAdv Adv VA VAdv Hdisj.
-  have H := commitment_binding LA A LAdv Adv VA VAdv Hdisj.
-  rewrite extractor_success in H. 2: apply Hdisj.
-  apply H.
-Qed.
 
 End Schnorr.
 
