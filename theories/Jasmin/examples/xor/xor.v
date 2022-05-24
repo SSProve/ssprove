@@ -6,22 +6,22 @@ Set Warnings "notation-overridden,ambiguous-paths".
 
 Require Import List.
 From Jasmin Require Import expr.
-(* From Jasmin Require Import x86_extra. *)
+From Jasmin Require Import x86_extra.
 From JasminSSProve Require Import jasmin_translate.
 From Crypt Require Import Prelude Package.
 
 Import ListNotations.
 Local Open Scope string.
 
-Context `{asmop : asmOp}.
+(* Context `{asmop : asmOp}. *)
 
-Context {T} {pT : progT T}.
+(* Context {T} {pT : progT T}. *)
 
-Context {pd : PointerData}.
+(* Context {pd : PointerData}. *)
 
-Context (P : uprog).
+(* Context (P : uprog). *)
 
-Context (f : funname).
+(* Context (f : funname). *)
 
 Definition xor :=
   {| p_funcs :=
@@ -163,32 +163,74 @@ Proof.
   reflexivity.
 Qed.
 
-
 Eval cbn in tr_xor.
-Goal forall w, f_xor w = f_xor w.
-  intros [w1 w2].
-  unfold f_xor at 2.
+
+Lemma injective_translate_var2 :
+  forall fn x y, x != y -> translate_var fn x != translate_var fn y.
+Proof.
+  intros.
+  apply /negP.
+  intros contra.
+  move: contra => /eqP contra.
+  eapply injective_translate_var in contra.
+  move: H => /eqP. easy.
+  exact xor.
+  apply x86_correct.
+  Unshelve.
+  2: exact progUnit.
+Qed.
+
+Lemma f_xor_correct : forall w1 w2, ⊢ ⦃ fun _ => True ⦄ f_xor (w1, w2) ⇓ wxor w1 w2 ⦃ fun _ => True ⦄.
+Proof.
+  (* preprocessing *)
+  unfold f_xor at 1.
   unfold apply_noConfusion.
   simpl.
   unfold translate_write_var. simpl.
-  unfold translate_var. simpl.
-  set (fn := 2%positive).
-  set (x := ('word U64; nat_of_fun_ident fn "x.131")).
-  set (r := ('word U64; nat_of_fun_ident fn "r.133")).
-  set (y := ('word U64; nat_of_fun_ident fn "y.132")).
-  set (r_ := {| vtype := sword64; vname := "r.133" |}).
-  set (x_ := {| v_var := {| vtype := sword64; vname := "x.131" |};
-               v_info := (fn~0)%positive |}).
-  set (y_ := {| v_var := {| vtype := sword64; vname := "y.132" |};
-               v_info := (fn~1)%positive |}).
-
   unfold coerce_chtuple_to_list; simpl.
   rewrite eq_rect_r_K.
   simpl.
-  fold x y.
-
   unfold bind_list'. simpl.
   unfold bind_list_trunc_aux. simpl.
   rewrite eq_rect_K.
-  time repeat setoid_rewrite (@zero_extend_u U64).
-  unfold translate_var. simpl. fold r.
+  set (fn := 2%positive).
+  set (x := translate_var fn {| vtype := sword64; vname := "x.131" |}).
+  set (r := translate_var fn {| vtype := sword64; vname := "r.133" |}).
+  set (y := translate_var fn {| vtype := sword64; vname := "y.132" |}).
+
+  (* proof *)
+  intros.
+  rewrite !zero_extend_u.
+  eapply u_put.
+  eapply u_put.
+  eapply u_get_remember.
+  intros.
+  apply u_put.
+  apply u_get_remember; intros.
+  apply u_get_remember; intros.
+  apply u_put.
+  apply u_get_remember; intros.
+  apply u_ret.
+  intros.
+  rewrite !zero_extend_u.
+  split. easy.
+  repeat destruct H.
+  rewrite !zero_extend_u in H1.
+  rewrite !zero_extend_u in H4.
+  subst.
+  unfold u_get in *.
+  rewrite get_set_heap_eq in H0.
+  rewrite get_set_heap_eq in H3.
+  erewrite <- get_heap_set_heap in H5.
+  erewrite <- get_heap_set_heap in H2.
+  rewrite get_set_heap_eq in H2.
+  rewrite get_set_heap_eq in H5.
+  rewrite H2.
+  rewrite H5.
+  rewrite <- H3 in H0.
+  easy.
+  apply injective_translate_var2.
+  reflexivity.
+  apply injective_translate_var2.
+  reflexivity.
+Qed.
