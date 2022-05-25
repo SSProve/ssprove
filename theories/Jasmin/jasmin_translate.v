@@ -3431,12 +3431,13 @@ Proof.
 Qed.
 
 Definition Pfun (P : uprog) (fn : funname) m va m' vr :=
-    handled_program P →
-    ⊢ ⦃ rel_mem m ⦄
+  handled_program P →
+  forall (pre post : heap -> Prop), (forall h, pre h -> rel_mem m h) -> (forall h, post h -> rel_mem m' h) ->
+    ⊢ ⦃ pre ⦄
       (* translate_call P fn (translate_prog' P) [seq totce (translate_value v) | v <- va] *)
       get_translated_fun P fn [seq totce (translate_value v) | v <- va]
       ⇓ [seq totce (translate_value v) | v <- vr]
-    ⦃ rel_mem m' ⦄.
+    ⦃ post ⦄.
 
 Theorem translate_prog_correct P m vargs m' vres :
   ∀ fn, sem.sem_call P m fn vargs m' vres →
@@ -3449,7 +3450,7 @@ Proof.
   set (SP := (translate_prog' P).1).
   set (Pi_r :=
     λ (s1 : estate) (i : instr_r) (s2 : estate),
-      ∀ fn, handled_instr_r i →
+      handled_instr_r i →
       ⊢ ⦃ rel_estate s1 fn ⦄
         translate_instr_r P SP fn i ⇓ tt
       ⦃ rel_estate s2 fn ⦄
@@ -3457,12 +3458,12 @@ Proof.
   set (Pi := λ s1 i s2, Pi_r s1 (instr_d i) s2).
   set (Pc :=
     λ (s1 : estate) (c : cmd) (s2 : estate),
-      ∀ fn, handled_cmd c →
+      handled_cmd c →
       ⊢ ⦃ rel_estate s1 fn ⦄ translate_cmd P SP fn c ⇓ tt ⦃ rel_estate s2 fn ⦄
   ).
   set (Pfor :=
     λ (v : var_i) (ws : seq Z) (s1 : estate) (c : cmd) (s2 : estate),
-      ∀ fn, handled_cmd c →
+      handled_cmd c →
       ⊢ ⦃ rel_estate s1 fn ⦄
         translate_for fn v ws (translate_cmd P SP fn c) ⇓ tt
       ⦃ rel_estate s2 fn ⦄
@@ -3470,10 +3471,10 @@ Proof.
   unshelve eapply (@sem_call_Ind _ _ _ _ Pc Pi_r Pi Pfor Pfun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H).
   - (* nil *)
     red. intros s.
-    red. simpl. intros fn' _.
+    red. simpl. intros _.
     eapply u_ret_eq. auto.
   - (* cons *)
-    red. intros s1 s2 s3 i c hi ihi hc ihc fn'.
+    red. intros s1 s2 s3 i c hi ihi hc ihc.
     red. simpl. move /andP => [hdi hdc].
     eapply u_bind.
     + rewrite translate_instr_unfold. eapply ihi.
@@ -3484,7 +3485,7 @@ Proof.
     apply ihi.
   - (* assgn *)
     red. intros s₁ s₂ x tag ty e v v' he hv hw.
-    red. simpl. intros fn' _.
+    red. simpl. intros _.
     eapply u_bind.
     1:{ eapply translate_pexpr_correct. all: eauto. }
     erewrite translate_pexpr_type by eassumption.
@@ -3493,7 +3494,7 @@ Proof.
     erewrite totce_truncate_translate by eassumption.
     eapply translate_write_lval_correct. all: eauto.
   - (* opn *)
-    red. intros s1 s2 tag o xs es ho fn' _.
+    red. intros s1 s2 tag o xs es ho _.
     red. simpl.
     jbind ho vs hv.
     jbind hv vs' hv'.
@@ -3503,7 +3504,7 @@ Proof.
       apply translate_write_lvals_correct.
       assumption.
   - (* if_true *)
-    red. intros s1 s2 e c1 c2 he hc1 ihc1 fn'.
+    red. intros s1 s2 e c1 c2 he hc1 ihc1.
     red. simpl. move /andP => [hdc1 hdc2].
     unfold translate_instr_r.
     lazymatch goal with
@@ -3514,7 +3515,7 @@ Proof.
     1:{ eapply translate_pexpr_correct_cast in he. all: eauto. }
     simpl. apply ihc1. assumption.
   - (* if_false *)
-    red. intros s1 s2 e c1 c2 he hc2 ihc2 fn'.
+    red. intros s1 s2 e c1 c2 he hc2 ihc2.
     red. simpl. move /andP => [hdc1 hdc2].
     (* lazymatch goal with
     | |- context [ if _ then _ else (?f ?fn ?c) ] =>
@@ -3530,7 +3531,7 @@ Proof.
     red. intros s1 s2 a c e c' hc ihc he.
     red. simpl. discriminate.
   - (* for *)
-    red. intros s1 s2 i d lo hi c vlo vhi hlo hhi hfor ihfor fn'.
+    red. intros s1 s2 i d lo hi c vlo vhi hlo hhi hfor ihfor.
     red. simpl. intros hdc.
     unfold translate_instr_r.
     lazymatch goal with
@@ -3543,10 +3544,10 @@ Proof.
     1:{ eapply translate_pexpr_correct_cast in hhi. all: eauto. }
     apply ihfor. assumption.
   - (* for_nil *)
-    red. intros. red. intros hdc fn'.
+    red. intros. red. intros hdc.
     simpl. apply u_ret_eq. auto.
   - (* for_cons *)
-    red. intros s1 s1' s2 s3 i w ws c hw hc ihc hfor ihfor fn'.
+    red. intros s1 s1' s2 s3 i w ws c hw hc ihc hfor ihfor.
     red. simpl. intros hdc.
     eapply u_put.
     eapply u_bind.
@@ -3560,14 +3561,15 @@ Proof.
   - (* call *)
     red.
     clear H vargs vres.
-    intros s1 m2 s2 ii xs gn args vargs vres hargs hgn ihgn hwr_vres fn'.
+    intros s1 m2 s2 ii xs gn args vargs vres hargs hgn ihgn hwr_vres.
     unfold Pfun, Translation.Pfun, get_translated_fun in ihgn.
     red. simpl. intros _. unfold translate_instr_r.
     eapply u_bind.
     1: eapply bind_list_pexpr_correct; try eassumption; easy.
     eapply u_bind with (v₁ := [seq totce (translate_value v) | v <- vres])
-                       (q := rel_mem m2).
-    * unshelve eapply u_pre_weaken_rule with (p1 := (rel_mem (emem s1))).
+                       (q := rel_estate {| emem := m2 ; evm := evm s1 |} fn).
+    *
+      unshelve eapply u_pre_weaken_rule with (p1 := fun h => (rel_mem (emem s1) h)).
       2: move => h Hh; apply Hh.
       unfold SP in *. clear SP.
       specialize (ihgn hP).
@@ -3578,17 +3580,15 @@ Proof.
       rewrite ep in ihgn.
       pose (translate_call_head ef) as hc.
       rewrite hc.
-      apply ihgn.
+      apply ihgn. 1: easy. intros. apply H.
     * (* Should be similar to Copn, by appealing to correctness of
          write_lvals, expect that we also need to restore `evm s1`. *)
       clear ihgn.
       unshelve eapply u_pre_weaken_rule with
-        (p1 := (rel_estate {| emem := m2; evm := evm s1 |} fn')).
+        (p1 := (rel_estate {| emem := m2; evm := evm s1 |} fn)).
       -- eapply translate_write_lvals_correct.
          exact hwr_vres.
-      -- intros h hm. unfold rel_estate. split; try easy.
-         simpl. unfold rel_vmap.
-         give_up.
+      -- easy.
   - (* proc *)
     rename fn into fn_ambient.
     rename vargs into vargs_amb. rename vres into vres_amb.
