@@ -2612,6 +2612,58 @@ Proof.
   - simpl. micromega.Lia.lia.
 Qed.
 
+Lemma injective_nat_of_pos :
+  forall p1 p2, nat_of_pos p1 = nat_of_pos p2 -> p1 = p2.
+Proof.
+  intros p1. induction p1 as [p1 ih | p1 ih |]; intros.
+  - destruct p2.
+    + inversion H.
+      f_equal. apply ih.
+      apply double_inj.
+      rewrite -!NatTrec.doubleE.
+      assumption.
+    + inversion H.
+      rewrite !NatTrec.doubleE in H1.
+      apply f_equal with (f:=odd) in H1.
+      simpl in H1.
+      rewrite !odd_double in H1.
+      easy.
+    + inversion H.
+      move: H1 => /eqP.
+      rewrite NatTrec.doubleE double_eq0 => /eqP H1.
+      apply nat_of_pos_nonzero in H1 as [].
+  - destruct p2.
+    + inversion H.
+      rewrite !NatTrec.doubleE in H1.
+      apply f_equal with (f:=odd) in H1.
+      simpl in H1.
+      rewrite !odd_double in H1.
+      easy.
+    + inversion H.
+      f_equal. apply ih.
+      apply double_inj.
+      rewrite -!NatTrec.doubleE.
+      assumption.
+    + inversion H.
+      rewrite !NatTrec.doubleE in H1.
+      apply f_equal with (f:=odd) in H1.
+      simpl in H1.
+      rewrite !odd_double in H1.
+      easy.
+  - destruct p2.
+    + inversion H.
+      move: H1 => /eqP.
+      rewrite eq_sym NatTrec.doubleE double_eq0 => /eqP H1.
+      apply nat_of_pos_nonzero in H1 as [].
+    + inversion H.
+      rewrite !NatTrec.doubleE in H1.
+      apply f_equal with (f:=odd) in H1.
+      simpl in H1.
+      rewrite !odd_double in H1.
+      easy.
+    + reflexivity.
+Qed.
+
 Lemma ptr_var_nat_neq (ptr : pointer) (fn : funname) (v : var) :
   nat_of_ptr ptr != nat_of_fun_var fn v.
 Proof.
@@ -2765,6 +2817,50 @@ Proof.
     auto.
 Qed.
 
+Lemma nat_of_pos_pos : forall p, (0 < nat_of_pos p)%coq_nat.
+Proof.
+  intros. pose proof nat_of_pos_nonzero p. micromega.Lia.lia.
+Qed.
+
+Lemma injective_nat_of_fun_ident2 :
+  ∀ fn gn x y,
+    nat_of_fun_ident fn x = nat_of_fun_ident gn y →
+    fn = gn /\ x = y.
+Proof.
+  intros fn gn x y e.
+  unfold nat_of_fun_ident in e.
+  apply coprime_mul_inj in e as [fn_gn x_y].
+  - apply Nat.pow_inj_r in fn_gn; [|micromega.Lia.lia].
+    apply Nat.pow_inj_r in x_y; [|micromega.Lia.lia].
+    split.
+    + apply injective_nat_of_pos. assumption.
+    + apply injective_nat_of_ident. assumption.
+  - rewrite !Natpow_expn.
+    rewrite !coprime_pexpl.
+    2: apply /ltP; apply nat_of_pos_pos.
+    rewrite !coprime_pexpr.
+    2: apply /ltP; apply nat_of_ident_pos.
+    reflexivity.
+  - rewrite !Natpow_expn.
+    rewrite !coprime_pexpl.
+    2: apply /ltP; apply nat_of_pos_pos.
+    rewrite !coprime_pexpr.
+    2: apply /ltP; apply nat_of_ident_pos.
+    reflexivity.
+  - rewrite !Natpow_expn.
+    rewrite !coprime_pexpl.
+    2: apply /ltP; apply nat_of_pos_pos.
+    rewrite !coprime_pexpr.
+    2: apply /ltP; apply nat_of_ident_pos.
+    reflexivity.
+  - rewrite !Natpow_expn.
+    rewrite !coprime_pexpl.
+    2: apply /ltP; apply nat_of_pos_pos.
+    rewrite !coprime_pexpr.
+    2: apply /ltP; apply nat_of_ident_pos.
+    reflexivity.
+Qed.
+
 Lemma injective_translate_var :
   ∀ fn, injective (translate_var fn).
 Proof.
@@ -2785,6 +2881,20 @@ Proof.
     + noconf H. reflexivity.
   - eapply injective_nat_of_fun_ident.
     eassumption.
+Qed.
+
+Lemma injective_translate_var2 :
+  forall fn gn v1 v2, fn != gn -> translate_var fn v1 != translate_var gn v2.
+Proof.
+  intros.
+  apply /eqP => contra.
+  unfold translate_var in contra.
+  noconf contra.
+  unfold nat_of_fun_var in H1.
+  apply coprime_mul_inj in H1 as [e1 e2].
+  2,3,4,5: apply coprime_nat_of_stype_nat_of_fun_ident.
+  apply injective_nat_of_fun_ident2 in e2 as [fn_gn _].
+  move: H => /eqP; easy.
 Qed.
 
 Lemma translate_write_correct :
