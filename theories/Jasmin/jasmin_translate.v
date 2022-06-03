@@ -2535,32 +2535,34 @@ Proof.
         assumption.
 Qed.
 
-Corollary bind_list_pexpr_correct (cond : heap → Prop) (es : pexprs) (vs : list value)
+Corollary bind_list_pexpr_correct
+  (cond : heap → Prop) (es : pexprs) (vs : list value)
   (s1 : estate) (fn : funname)
   (hc : ∀ m : heap, cond m → rel_estate s1 fn m)
-  (h : sem_pexprs gd s1 es = ok vs)
-  : ⊢ ⦃ cond ⦄ bind_list [seq translate_pexpr fn e | e <- es] ⇓
-      [seq totce (translate_value v) | v <- vs] ⦃ cond ⦄.
+  (h : sem_pexprs gd s1 es = ok vs) :
+  ⊢ ⦃ cond ⦄
+    bind_list [seq translate_pexpr fn e | e <- es] ⇓
+    [seq totce (translate_value v) | v <- vs]
+  ⦃ cond ⦄.
 Proof.
   eapply bind_list_correct with (vs := vs).
-  * rewrite <- map_comp.
+  - rewrite <- map_comp.
     unfold comp.
     eapply translate_pexprs_types.
     exact h.
-  * revert vs h.
+  - revert vs h.
     induction es; intros.
-    ** inversion h.
-       constructor.
-    ** inversion h as [H1].
-       jbind H1 x Hx.
-       jbind H1 y Hy.
-       noconf H1.
-       constructor.
-       *** eapply translate_pexpr_correct.
-           1: eassumption.
-           easy.
-       *** simpl. eapply IHes.
-           1: assumption.
+    + inversion h.
+      constructor.
+    + inversion h as [H1].
+      jbind H1 x Hx.
+      jbind H1 y Hy.
+      noconf H1.
+      constructor.
+      * eapply translate_pexpr_correct.
+        all: eassumption.
+      * simpl. eapply IHes.
+        assumption.
 Qed.
 
 Corollary translate_pexpr_correct_cast :
@@ -2613,7 +2615,9 @@ Proof.
 Qed.
 
 Lemma injective_nat_of_pos :
-  forall p1 p2, nat_of_pos p1 = nat_of_pos p2 -> p1 = p2.
+  ∀ p1 p2,
+    nat_of_pos p1 = nat_of_pos p2 →
+    p1 = p2.
 Proof.
   intros p1. induction p1 as [p1 ih | p1 ih |]; intros.
   - destruct p2.
@@ -2817,9 +2821,11 @@ Proof.
     auto.
 Qed.
 
-Lemma nat_of_pos_pos : forall p, (0 < nat_of_pos p)%coq_nat.
+Lemma nat_of_pos_pos :
+  ∀ p, (0 < nat_of_pos p)%coq_nat.
 Proof.
-  intros. pose proof nat_of_pos_nonzero p. micromega.Lia.lia.
+  intros p.
+  pose proof (nat_of_pos_nonzero p). micromega.Lia.lia.
 Qed.
 
 Lemma injective_nat_of_fun_ident2 :
@@ -2884,7 +2890,9 @@ Proof.
 Qed.
 
 Lemma injective_translate_var2 :
-  forall fn gn v1 v2, fn != gn -> translate_var fn v1 != translate_var gn v2.
+  ∀ fn gn v1 v2,
+    fn != gn →
+    translate_var fn v1 != translate_var gn v2.
 Proof.
   intros.
   apply /eqP => contra.
@@ -2892,9 +2900,9 @@ Proof.
   noconf contra.
   unfold nat_of_fun_var in H1.
   apply coprime_mul_inj in H1 as [e1 e2].
-  2,3,4,5: apply coprime_nat_of_stype_nat_of_fun_ident.
+  2-5: apply coprime_nat_of_stype_nat_of_fun_ident.
   apply injective_nat_of_fun_ident2 in e2 as [fn_gn _].
-  move: H => /eqP; easy.
+  move: H => /eqP. easy.
 Qed.
 
 Lemma translate_write_correct :
@@ -3112,8 +3120,11 @@ Proof.
 Qed.
 
 Lemma translate_write_vars_cons fn l ls v vs :
-  translate_write_vars fn (l :: ls) (v :: vs) = (translate_write_var fn l v ;; translate_write_vars fn ls vs).
-Proof. reflexivity. Qed.
+  translate_write_vars fn (l :: ls) (v :: vs) =
+  (translate_write_var fn l v ;; translate_write_vars fn ls vs).
+Proof.
+  reflexivity.
+Qed.
 
 Lemma translate_write_vars_correct fn s1 ls vs s2 :
   write_vars ls vs s1 = ok s2 →
@@ -3165,15 +3176,18 @@ Definition fdefs :=
 Definition tchlist := [choiceType of seq typed_chElement].
 
 (* The type of translated function "calls" *)
-Definition trfun := tchlist → raw_code tchlist.
+Definition trfun :=
+  tchlist → raw_code tchlist.
 
-Definition translate_call_body (fn : funname) (tr_f_body : raw_code 'unit)
-           : trfun.
+Definition translate_call_body (fn : funname) (tr_f_body : raw_code 'unit) :
+  trfun.
 Proof using P asm_op asmop pd.
   (* sem_call *)
-  refine (λ vargs', match (get_fundef (p_funcs P) fn) with
-          | Some f => _
-          | None => ret [::] end).
+  refine (λ vargs',
+    match (get_fundef (p_funcs P) fn) with
+    | Some f => _
+    | None => ret [::] end
+  ).
   pose (trunc_list (f_tyin f) vargs') as vargs.
   apply (bind (translate_write_vars fn (f_params f) vargs)) => _.
   (* Perform the function body. *)
@@ -3513,9 +3527,10 @@ Definition handled_program (P : uprog) :=
   List.forallb handled_fundecl P.(p_funcs).
 
 Fact sem_call_get_some {P m1 gn vargs m2 vres} :
-  (sem_call P m1 gn vargs m2 vres
-   → ∃ f, get_fundef (p_funcs P) gn = Some f ).
-Proof. intros H. inversion H. exists f. easy.
+  sem_call P m1 gn vargs m2 vres →
+  ∃ f, get_fundef (p_funcs P) gn = Some f.
+Proof.
+  intros H. inversion H. eexists. eassumption.
 Qed.
 
 Definition get_translated_fun P fn : trfun :=
@@ -3549,8 +3564,9 @@ Definition Pfun (P : uprog) (fn : funname) m va m' vr :=
     ⦃ rel_mem m' ⦄.
 
 Theorem translate_prog_correct P m vargs m' vres :
-  ∀ fn, sem.sem_call P m fn vargs m' vres →
-  Pfun P fn m vargs m' vres.
+  ∀ fn,
+    sem.sem_call P m fn vargs m' vres →
+    Pfun P fn m vargs m' vres.
 Proof.
   intros fn H hP.
   set (Pfun := λ (m : mem) (fn : funname) (va : seq value) (m' : mem) (vr : seq value),
@@ -3559,23 +3575,26 @@ Proof.
   set (SP := (translate_prog' P).1).
   set (Pi_r :=
     λ (s1 : estate) (i : instr_r) (s2 : estate),
-      ∀ fn, handled_instr_r i →
-      ⊢ ⦃ rel_estate s1 fn ⦄
-        translate_instr_r P SP fn i ⇓ tt
-      ⦃ rel_estate s2 fn ⦄
+      ∀ fn,
+        handled_instr_r i →
+        ⊢ ⦃ rel_estate s1 fn ⦄
+          translate_instr_r P SP fn i ⇓ tt
+        ⦃ rel_estate s2 fn ⦄
   ).
   set (Pi := λ s1 i s2, Pi_r s1 (instr_d i) s2).
   set (Pc :=
     λ (s1 : estate) (c : cmd) (s2 : estate),
-      ∀ fn, handled_cmd c →
-      ⊢ ⦃ rel_estate s1 fn ⦄ translate_cmd P SP fn c ⇓ tt ⦃ rel_estate s2 fn ⦄
+      ∀ fn,
+        handled_cmd c →
+        ⊢ ⦃ rel_estate s1 fn ⦄ translate_cmd P SP fn c ⇓ tt ⦃ rel_estate s2 fn ⦄
   ).
   set (Pfor :=
     λ (v : var_i) (ws : seq Z) (s1 : estate) (c : cmd) (s2 : estate),
-      ∀ fn, handled_cmd c →
-      ⊢ ⦃ rel_estate s1 fn ⦄
-        translate_for fn v ws (translate_cmd P SP fn c) ⇓ tt
-      ⦃ rel_estate s2 fn ⦄
+      ∀ fn,
+        handled_cmd c →
+        ⊢ ⦃ rel_estate s1 fn ⦄
+          translate_for fn v ws (translate_cmd P SP fn c) ⇓ tt
+        ⦃ rel_estate s2 fn ⦄
   ).
   unshelve eapply (@sem_call_Ind _ _ _ _ Pc Pi_r Pi Pfor Pfun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H).
   - (* nil *)
@@ -3608,7 +3627,8 @@ Proof.
     jbind ho vs hv.
     jbind hv vs' hv'.
     eapply u_bind.
-    + eapply bind_list_pexpr_correct. 2: eassumption. easy.
+    + eapply bind_list_pexpr_correct. 2: eassumption.
+      easy.
     + erewrite translate_exec_sopn_correct by eassumption.
       apply translate_write_lvals_correct.
       assumption.
