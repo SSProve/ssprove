@@ -32,6 +32,352 @@ Derive NoConfusion for wsize.
 Derive NoConfusion for CoqWord.word.word.
 Derive EqDec for wsize.
 
+Local Open Scope positive_scope.
+
+Notation p_id := BinNums.positive.
+
+Lemma nat_of_pos_nonzero :
+  ∀ p,
+    nat_of_pos p ≠ 0%nat.
+Proof.
+  intros p. induction p as [p ih | p ih |].
+  - simpl. micromega.Lia.lia.
+  - simpl. rewrite NatTrec.doubleE.
+    move => /eqP. rewrite double_eq0. move /eqP. assumption.
+  - simpl. micromega.Lia.lia.
+Qed.
+
+Lemma injective_nat_of_pos :
+  forall p1 p2, nat_of_pos p1 = nat_of_pos p2 -> p1 = p2.
+Proof.
+  intros p1. induction p1 as [p1 ih | p1 ih |]; intros.
+  - destruct p2.
+    + inversion H.
+      f_equal. apply ih.
+      apply double_inj.
+      rewrite -!NatTrec.doubleE.
+      assumption.
+    + inversion H.
+      rewrite !NatTrec.doubleE in H1.
+      apply f_equal with (f:=odd) in H1.
+      simpl in H1.
+      rewrite !odd_double in H1.
+      easy.
+    + inversion H.
+      move: H1 => /eqP.
+      rewrite NatTrec.doubleE double_eq0 => /eqP H1.
+      apply nat_of_pos_nonzero in H1 as [].
+  - destruct p2.
+    + inversion H.
+      rewrite !NatTrec.doubleE in H1.
+      apply f_equal with (f:=odd) in H1.
+      simpl in H1.
+      rewrite !odd_double in H1.
+      easy.
+    + inversion H.
+      f_equal. apply ih.
+      apply double_inj.
+      rewrite -!NatTrec.doubleE.
+      assumption.
+    + inversion H.
+      rewrite !NatTrec.doubleE in H1.
+      apply f_equal with (f:=odd) in H1.
+      simpl in H1.
+      rewrite !odd_double in H1.
+      easy.
+  - destruct p2.
+    + inversion H.
+      move: H1 => /eqP.
+      rewrite eq_sym NatTrec.doubleE double_eq0 => /eqP H1.
+      apply nat_of_pos_nonzero in H1 as [].
+    + inversion H.
+      rewrite !NatTrec.doubleE in H1.
+      apply f_equal with (f:=odd) in H1.
+      simpl in H1.
+      rewrite !odd_double in H1.
+      easy.
+    + reflexivity.
+Qed.
+
+Definition nat_of_p_id : p_id -> nat := nat_of_pos.
+Definition nat_of_p_id_nonzero : forall p, nat_of_p_id p <> 0%nat := nat_of_pos_nonzero.
+Definition nat_of_p_id_injective : injective nat_of_p_id := injective_nat_of_pos.
+
+Inductive preceq : p_id -> p_id -> Prop :=
+| preceqEq : forall i, preceq i i
+| preceqI : forall i1 i2, preceq i1 i2 -> preceq i1 i2~1
+| preceqO : forall i1 i2, preceq i1 i2 -> preceq i1 i2~0.
+Infix "⪯" := preceq (at level 70).
+
+Definition prec i1 i2 := i1 ⪯ i2 /\ i1 <> i2.
+Infix "≺" := prec (at level 70).
+
+Instance preceq_trans : Transitive preceq.
+Proof.
+  intros i1 i2 i3 hi1 hi2.
+  induction hi2.
+  - assumption.
+  - constructor.
+    apply IHhi2.
+    assumption.
+  - constructor.
+    apply IHhi2.
+    assumption.
+Qed.
+
+Instance preceq_refl : Reflexive preceq.
+Proof.
+  intros i. induction i; constructor; assumption.
+Qed.
+
+Lemma preceq_size :
+  forall i j, i ⪯ j -> Pos.size i <= Pos.size j.
+Proof.
+  intros i j h.
+  induction h.
+  - reflexivity.
+  - simpl; micromega.Lia.lia.
+  - simpl; micromega.Lia.lia.
+Qed.
+
+Lemma preceq_I :
+  forall i, i ⪯ i~1.
+Proof.
+  intros. constructor. reflexivity.
+Qed.
+
+Lemma preceq_O :
+  forall i, i ⪯ i~0.
+Proof.
+  intros. constructor. reflexivity.
+Qed.
+
+Lemma xO_neq :
+  forall i, i~0 <> i.
+Proof.
+  induction i; congruence.
+Qed.
+
+Lemma xI_neq :
+  forall i, i~1 <> i.
+Proof.
+  induction i; congruence.
+Qed.
+
+Lemma precneq_O :
+  forall i, ~ i~0 ⪯ i.
+Proof.
+  intros i contra.
+  apply preceq_size in contra.
+  simpl in contra.
+  micromega.Lia.lia.
+Qed.
+
+Lemma precneq_I :
+  forall i, ~ i~1 ⪯ i.
+Proof.
+  intros i contra.
+  apply preceq_size in contra.
+  simpl in contra.
+  micromega.Lia.lia.
+Qed.
+
+Lemma size_1 :
+  forall i, Pos.size i = 1 -> i = 1.
+Proof.
+  intros i h.
+  induction i.
+  - simpl in *.
+    micromega.Lia.lia.
+  - simpl in *.
+    micromega.Lia.lia.
+  - reflexivity.
+Qed.
+
+Lemma preceq_size_eq_eq :
+  forall i j, Pos.size i = Pos.size j -> i ⪯ j -> i = j.
+Proof.
+  intros i j; revert i; induction j; intros i hsize hprec.
+  - simpl in *.
+    inversion hprec; subst.
+    + reflexivity.
+    + destruct i.
+      * simpl in *.
+        apply Pos.succ_inj in hsize.
+        apply IHj in hsize.
+        1: subst; auto.
+        etransitivity.
+        1: eapply preceq_I.
+        assumption.
+      * simpl in *.
+        apply Pos.succ_inj in hsize.
+        apply IHj in hsize.
+        1: subst; auto.
+        1: apply precneq_O in H1; easy.
+        etransitivity.
+        1: eapply preceq_O.
+        assumption.
+      * simpl in hsize.
+        micromega.Lia.lia.
+  - simpl in *.
+    inversion hprec; subst.
+    + reflexivity.
+    + destruct i.
+      * simpl in *.
+        apply Pos.succ_inj in hsize.
+        apply IHj in hsize.
+        1: subst; auto.
+        1: apply precneq_I in H1; easy.
+        etransitivity.
+        1: eapply preceq_I.
+        assumption.
+      * simpl in *.
+        apply Pos.succ_inj in hsize.
+        apply IHj in hsize.
+        1: subst; auto.
+        etransitivity.
+        1: eapply preceq_O.
+        assumption.
+      * simpl in hsize.
+        micromega.Lia.lia.
+  - simpl in hsize.
+    apply size_1.
+    assumption.
+Qed.
+
+Instance preceq_antisym : Antisymmetric _ _ preceq.
+Proof.
+  intros i1 i2 h1 h2.
+  apply preceq_size in h1 as hsize1.
+  apply preceq_size in h2 as hsize2.
+  apply preceq_size_eq_eq.
+  1: micromega.Lia.lia.
+  assumption.
+Qed.
+
+Lemma preceq_prefix : forall i1 i2 i3, i1 ⪯ i3 -> i2 ⪯ i3 -> i1 ⪯ i2 \/ i2 ⪯ i1.
+Proof.
+  intros i1 i2 i3.  revert i1 i2.
+  induction i3; intros.
+  - inversion H; subst.
+    + right. assumption.
+    + inversion H0; subst.
+      * left; assumption.
+      * apply IHi3; assumption.
+  - inversion H; subst.
+    + right. assumption.
+    + inversion H0; subst.
+      * left; assumption.
+      * apply IHi3; assumption.
+  - inversion H; subst.
+    inversion H0; subst.
+    left; constructor.
+Qed.
+
+Definition fresh_id i :=
+  (i~0, i~1).
+
+Lemma prec_neq p fp : p ≺ fp -> p <> fp.
+Proof. unfold prec. easy. Qed.
+
+Instance prec_trans : Transitive prec.
+Proof.
+  intros i1 i2 i3.
+  intros [hpre1 hneq1] [hpre2 hneq2].
+  split.
+  - etransitivity; eauto.
+  - intro contra; subst.
+    apply hneq2.
+    apply antisymmetry; assumption.
+Qed.
+
+Lemma fresh1 i : i ≺ (fresh_id i).1.
+Proof.
+  simpl; split.
+  - apply preceq_O.
+  - apply nesym. apply xO_neq.
+Qed.
+
+Lemma fresh2 i : i ≺ (fresh_id i).2.
+Proof.
+  simpl; split.
+  - apply preceq_I.
+  - apply nesym. apply xI_neq.
+Qed.
+
+Lemma preceq_prec_trans : forall p1 p2 p3, p1 ⪯ p2 -> p2 ≺ p3 -> p1 ≺ p3.
+Proof.
+  intros p1 p2 p3 h1 [h2 h3].
+  split.
+  - etransitivity; eauto.
+  - intros contra; subst.
+    apply h3. apply antisymmetry; assumption.
+Qed.
+
+Lemma prec_preceq_trans : forall p1 p2 p3, p1 ≺ p2 -> p2 ⪯ p3 -> p1 ≺ p3.
+Proof.
+  intros p1 p2 p3 [h1 h2] h3.
+  split.
+  - etransitivity; eauto.
+  - intros contra; subst.
+    apply h2. apply antisymmetry; assumption.
+Qed.
+
+Lemma fresh1_weak s_id : s_id ⪯ s_id~0.
+Proof. apply fresh1. Qed.
+
+Lemma fresh2_weak s_id : s_id ⪯ s_id~1.
+Proof. apply fresh2. Qed.
+
+Definition disj i1 i2 :=
+  forall i3, i1 ⪯ i3 -> ~ i2 ⪯ i3.
+
+Instance disj_sym : Symmetric disj.
+Proof.
+  intros i1 i2 hi1 i3 hi2.
+  intros contra.
+  apply hi1 in contra.
+  contradiction.
+Qed.
+
+Lemma fresh_disj i :
+  disj (fresh_id i).1 (fresh_id i).2.
+Proof.
+  intros i' h contra.
+  simpl in *.
+  pose proof preceq_prefix i~0 i~1 i' h contra.
+  destruct H.
+  - inversion H; subst.
+    eapply precneq_O; eassumption.
+  - inversion H; subst.
+    eapply precneq_I; eassumption.
+Qed.
+
+Lemma disj_prec_l : forall id1 id2 id3, id1 ⪯ id2 -> disj id1 id3 -> disj id2 id3.
+Proof.
+  intros id1 id2 id3 hpre hdisj.
+  intros id' hprec.
+  apply hdisj.
+  etransitivity; eauto.
+Qed.
+
+Lemma disj_prec_r : forall id1 id2 id3, id1 ⪯ id2 -> disj id3 id1 -> disj id3 id2.
+Proof.
+  intros id1 id2 id3 hpre hdisj.
+  apply disj_sym.
+  eapply disj_prec_l; eauto.
+  apply disj_sym; assumption.
+Qed.
+
+Lemma disj_prec : forall id1 id2 id3 id4, id1 ⪯ id2 -> id3 ⪯ id4 -> disj id1 id3 -> disj id2 id4.
+Proof.
+  intros.
+  eapply disj_prec_l; eauto.
+  eapply disj_prec_r; eauto.
+Qed.
+
+Hint Resolve fresh1 fresh2 valid_prec fresh1_weak fresh2_weak preceq_refl preceq_trans prec_trans : prefix.
+
 (* Unary judgment concluding on evaluation of program *)
 
 Definition eval_jdg {A : choiceType}
