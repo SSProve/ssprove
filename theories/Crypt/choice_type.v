@@ -104,7 +104,7 @@ Coercion chElement : choice_type >-> choiceType.
   | chFin n => _
   | chWord nbits => word0
   | chList A => [::]
-  | chSum A B => inl (chCanonical A) (* TODO: better default *)
+  | chSum A B => inl (chCanonical A)
   end.
 Next Obligation.
   eapply fmap_of_fmap. apply emptym.
@@ -388,7 +388,7 @@ Section choice_typeTypes.
   Proof.
     intros x.
     induction x as [ | | | | x1 ih1 x2 ih2 | x1 ih1 x2 ih2 | x ih | x | x | x ih | x1 ih1 x2 ih2] in |- *.
-    all: intuition; simpl.
+    all: intuition auto; simpl.
     - simpl.
       apply/norP. split.
       + apply ih1.
@@ -416,9 +416,9 @@ Section choice_typeTypes.
     intros x y.
     induction x as [ | | | | x1 ih1 x2 ih2| x1 ih1 x2 ih2| x ih| x | x | x ih | x1 ih1 x2 ih2]
     in y |- *.
-    all: try solve [ destruct y ; intuition ; reflexivity ].
+    all: try solve [ destruct y ; intuition eauto ; reflexivity ].
     (* chProd *)
-    - destruct y. all: try (intuition; reflexivity).
+    - destruct y. all: try (intuition auto; reflexivity).
       cbn.
       specialize (ih1 y1). specialize (ih2 y2).
       apply/implyP.
@@ -432,7 +432,7 @@ Section choice_typeTypes.
         destruct ih2.
         * left. apply/orP. right. apply/andP. split.
           all: intuition auto.
-        * right. apply/orP. right. apply/andP. intuition.
+        * right. apply/orP. right. apply/andP. intuition auto.
           move: Heq. move /eqP => Heq. rewrite Heq. apply/eqP. reflexivity.
       + destruct H.
         * move: ih1. move /implyP => ih1.
@@ -454,7 +454,7 @@ Section choice_typeTypes.
               +++ left. apply/orP. left. assumption.
               +++ right. apply/orP. left. assumption.
     (* chMap *)
-    - destruct y. all: try (intuition; reflexivity).
+    - destruct y. all: try (intuition auto; reflexivity).
       cbn.
       specialize (ih1 y1). specialize (ih2 y2).
       apply/implyP.
@@ -468,7 +468,7 @@ Section choice_typeTypes.
         destruct ih2.
         * left. apply/orP. right. apply/andP. split.
           all: intuition auto.
-        * right. apply/orP. right. apply/andP. intuition.
+        * right. apply/orP. right. apply/andP. intuition auto.
           move: Heq. move /eqP => Heq. rewrite Heq. apply/eqP. reflexivity.
       + destruct H.
         * move: ih1. move /implyP => ih1.
@@ -490,13 +490,13 @@ Section choice_typeTypes.
               +++ left. apply/orP. left. assumption.
               +++ right. apply/orP. left. assumption.
     (* chFin *)
-    - destruct y. all: try (intuition; reflexivity).
+    - destruct y. all: try (intuition auto; reflexivity).
       unfold choice_type_lt.
       unfold choice_type_test.
       rewrite -neq_ltn.
       apply /implyP. auto.
     (* chWord *)
-    - destruct y. all: try (intuition; reflexivity).
+    - destruct y. all: try (intuition auto; reflexivity).
       unfold choice_type_lt.
       unfold choice_type_test.
       apply /implyP.
@@ -506,7 +506,7 @@ Section choice_typeTypes.
       + left. by apply /eqP.
       + right. unfold cmp_lt. rewrite cmp_sym. by move: E => ->.
     (* chSum *)
-    - destruct y. all: try (intuition; reflexivity).
+    - destruct y. all: try (intuition auto; reflexivity).
       cbn.
       specialize (ih1 y1). specialize (ih2 y2).
       apply/implyP.
@@ -520,7 +520,7 @@ Section choice_typeTypes.
         destruct ih2.
         * left. apply/orP. right. apply/andP. split.
           all: intuition auto.
-        * right. apply/orP. right. apply/andP. intuition.
+        * right. apply/orP. right. apply/andP. intuition auto.
           move: Heq. move /eqP => Heq. rewrite Heq. apply/eqP. reflexivity.
       + destruct H.
         * move: ih1. move /implyP => ih1.
@@ -550,7 +550,7 @@ Section choice_typeTypes.
     intros x y.
     apply /implyP. move => H.
     destruct (~~ choice_type_lt y x) eqn:Heq.
-    - intuition.
+    - intuition auto.
     - move: Heq. move /negP /negP => Heq.
       pose  (choice_type_lt_areflexive x) as Harefl.
       move: Harefl. apply /implyP. rewrite implyNb.
@@ -578,14 +578,14 @@ Section choice_typeTypes.
   Proof.
     intros x y.
     destruct (choice_type_eq x y) eqn:H.
-    - intuition.
+    - apply/orP. intuition auto. 
     - apply/orP.
       left.
       unfold choice_type_eq in H.
       pose (choice_type_lt_total_holds x y).
       move: i. move /implyP => i.
       apply i. apply/negP.
-      intuition. move: H0. rewrite H. intuition.
+      intuition auto. move: H0. rewrite H. intuition auto.
   Qed.
 
   Lemma choice_type_leqP : Ord.axioms choice_type_leq.
