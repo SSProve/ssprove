@@ -376,7 +376,7 @@ Proof.
   eapply disj_prec_r; eauto.
 Qed.
 
-Hint Resolve fresh1 fresh2 valid_prec fresh1_weak fresh2_weak preceq_refl preceq_trans prec_trans : prefix.
+Hint Resolve fresh1 fresh2 fresh1_weak fresh2_weak preceq_refl preceq_trans prec_trans : prefix.
 
 (* Unary judgment concluding on evaluation of program *)
 
