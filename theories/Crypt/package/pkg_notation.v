@@ -136,6 +136,7 @@ Module PackageNotation.
     (in custom pack_type at level 2, format "{map  x  →  y  }").
 
   Notation " x × y " := (chProd x y) (in custom pack_type at level 2).
+  Notation " x ∐ y " := (chSum x y) (in custom pack_type at level 2).
 
   Notation "( x )" := x (in custom pack_type, x at level 2).
 
@@ -157,6 +158,7 @@ Module PackageNotation.
     (at level 80, format "{map  x  →  y  }") : package_scope. *)
 
   Notation " x × y " := (chProd x y) (at level 80) : package_scope.
+  Notation " x ∐ y " := (chSum x y) (at level 80) : package_scope.
 
   Notation "[ 'interface' ]" :=
     (fset [::])
