@@ -280,6 +280,15 @@ Definition fresh_id i :=
 Lemma prec_neq p fp : p ≺ fp -> p <> fp.
 Proof. unfold prec. easy. Qed.
 
+Lemma prec_precneq i1 i2 : i1 ≺ i2 -> ~ i2 ⪯ i1.
+Proof.
+  intros H contra.
+  eapply prec_neq.
+  1: exact H.
+  apply antisymmetry; auto.
+  apply H.
+Qed.
+
 Instance prec_trans : Transitive prec.
 Proof.
   intros i1 i2 i3.
@@ -331,6 +340,14 @@ Proof. apply fresh2. Qed.
 
 Definition disj i1 i2 :=
   forall i3, i1 ⪯ i3 -> ~ i2 ⪯ i3.
+
+Lemma disj_antirefl i : ~ disj i i.
+Proof.
+  intros contra.
+  unfold disj in contra.
+  specialize (contra i ltac:(reflexivity)).
+  apply contra. reflexivity.
+Qed.
 
 Instance disj_sym : Symmetric disj.
 Proof.
