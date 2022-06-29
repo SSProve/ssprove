@@ -1941,48 +1941,523 @@ Qed.
 
 #[local] Open Scope vmap_scope.
 
-Definition rel_vmap (vm : vmap) (fn : funname) (h : heap) :=
+Definition rel_vmap (vm : vmap) (p : p_id) (h : heap) :=
   ∀ (i : var) v,
     vm.[i] = ok v →
-    get_heap h (translate_var fn i) = coerce_to_choice_type _ (embed v).
+    get_heap h (translate_var p i) = coerce_to_choice_type _ (embed v).
 
-Definition rel_estate (s : estate) (fn : funname) (h : heap) :=
-  rel_mem s.(emem) h ∧ rel_vmap s.(evm) fn h.
+Lemma rel_vmap_set_heap_neq vm m_id m_id' i v h :
+  m_id <> m_id' -> rel_vmap vm m_id h -> rel_vmap vm m_id (set_heap h (translate_var m_id' i) v).
+Proof.
+  intros hneq hrel i' v' H.
+  rewrite get_set_heap_neq.
+  1: apply hrel; auto.
+  apply injective_translate_var2.
+  assumption.
+Qed.
+
+(* empty stack/valid *)
+Definition empty_stack stack h : Prop := forall i, get_heap h (translate_var stack i) = chCanonical _.
+
+Lemma coerce_to_choice_type_K :
+  ∀ (t : choice_type) (v : t),
+    coerce_to_choice_type t v = v.
+Proof.
+  intros t v.
+  funelim (coerce_to_choice_type t v).
+  2:{ clear - e. rewrite eqxx in e. discriminate. }
+  rewrite <- Heqcall.
+  apply cast_ct_val_K.
+Qed.
+
+Lemma empty_stack_spec m_id :
+  forall h, empty_stack m_id h -> rel_vmap vmap0  m_id h.
+Proof.
+  intros h emp i v hv.
+  rewrite coerce_to_choice_type_K.
+  rewrite Fv.get0 in hv.
+  rewrite emp.
+  unfold translate_var.
+  destruct (vtype i); now inversion hv.
+Qed.
+
+Definition valid (sid : p_id) (h : heap) :=
+  forall i, sid ≺ i -> empty_stack i h.
+
+Lemma valid_prec : forall id1 id2 m, id1 ⪯ id2 -> valid id1 m -> valid id2 m.
+Proof.
+  intros id1 id2 m hpre hvalid.
+  intros id' hprec.
+  apply hvalid.
+  eapply preceq_prec_trans; eauto.
+Qed.
+
+Lemma valid_set_heap_disj m_id s_id i v h :
+  valid m_id h -> disj m_id s_id -> valid m_id (set_heap h (translate_var s_id i) v).
+Proof.
+  intros hvalid hdisj s_id' hpre i'.
+  rewrite get_set_heap_neq.
+  1: apply hvalid; assumption.
+  apply injective_translate_var2.
+  intros contra; subst.
+  eapply disj_antirefl.
+  eapply disj_prec_l.
+  1: eapply hpre.
+  assumption.
+Qed.
+
+Lemma valid_set_heap_prec m_id s_id i v h :
+  valid s_id h -> m_id ⪯ s_id -> valid s_id (set_heap h (translate_var m_id i) v).
+Proof.
+  intros hvalid hpre s_id' hpre' i'.
+  rewrite get_set_heap_neq.
+  1: apply hvalid; auto.
+  apply injective_translate_var2.
+  apply nesym.
+  apply prec_neq.
+  eapply preceq_prec_trans; eauto.
+Qed.
+
+Hint Resolve valid_prec : prefix.
+
+(* stack *)
+Definition stack_frame := (vmap * p_id * p_id * list p_id)%type.
+
+Definition stack := list stack_frame.
+
+Definition stack_cons s_id (stf : stack_frame) : stack_frame :=
+  (stf.1.1.1, stf.1.1.2, s_id, stf.1.2 :: stf.2).
+Notation "s_id ⊔ stf" := (stack_cons s_id stf) (at level 60).
+
+Inductive valid_stack : stack -> heap -> Prop :=
+| valid_stack_nil : forall h, valid_stack [::] h
+| valid_stack_new : forall st vm m_id s_id h,
+    valid_stack st h ->
+    rel_vmap vm m_id h ->
+    m_id ⪯ s_id ->
+    valid s_id h ->
+    (forall stf, List.In stf st -> disj m_id stf.1.2 /\ forall s_id', List.In s_id' stf.2 -> disj m_id s_id') ->
+    valid_stack ((vm, m_id, s_id, [::]) :: st) h
+| valid_stack_sub : forall st vm m_id s_id s_id' s_st h,
+    valid_stack ((vm, m_id, s_id, s_st) :: st) h ->
+    m_id ⪯ s_id' ->
+    valid s_id' h ->
+    ~ List.In s_id' s_st ->
+    disj s_id s_id' ->
+    (forall s_id'', List.In s_id'' s_st -> disj s_id' s_id'') ->
+    valid_stack ((vm, m_id, s_id', s_id :: s_st) :: st) h.
+
+Lemma valid_stack_single vm m_id s_id s_st h :
+  rel_vmap vm m_id h ->
+  m_id ⪯ s_id ->
+  valid s_id h ->
+  ~ List.In s_id s_st ->
+  List.NoDup s_st ->
+  (forall s_id', List.In s_id' s_st -> valid s_id' h) ->
+  (forall s_id', List.In s_id' s_st -> m_id ⪯ s_id') ->
+  (forall s_id', List.In s_id' s_st -> disj s_id s_id') ->
+  (forall s_id' s_id'', List.In s_id' s_st -> List.In s_id'' s_st -> s_id' <> s_id'' -> disj s_id' s_id'') ->
+  valid_stack [::(vm, m_id, s_id, s_st)] h.
+Proof.
+  revert s_id.
+  induction s_st; intros s_id hrel hpre1 hvalid hnin hnodup hvalid2 hpre2 hdisj1 hdisj2.
+  - constructor; auto.
+    + constructor.
+  - constructor; auto.
+    + eapply IHs_st; auto.
+      * eapply hpre2; left; auto.
+      * eapply hvalid2; left; auto.
+      * inversion hnodup; auto.
+      * inversion hnodup; auto.
+      * intros s_id' s_in'.
+        apply hvalid2; right; auto.
+      * intros s_id' s_in'.
+        apply hpre2; right; auto.
+      * intros s_id' s_in'.
+        apply hdisj2.
+        ** left; auto.
+        ** right; auto.
+        ** inversion hnodup; subst.
+           intros contra; subst.
+           easy.
+      * intros s_id' s_id'' s_in' s_in'' s_neq.
+        apply hdisj2.
+        ** right; auto.
+        ** right; auto.
+        ** assumption.
+    + intros contra.
+      apply hnin.
+      right; auto.
+    + apply disj_sym.
+      apply hdisj1.
+      left; auto.
+    + intros s_id' s_in'.
+      apply hdisj1.
+      right; auto.
+Qed.
+
+Lemma valid_stack_cons vm m_id s_id s_st st h :
+  valid_stack st h ->
+  rel_vmap vm m_id h ->
+  m_id ⪯ s_id ->
+  (forall stf, List.In stf st -> disj m_id stf.1.2 /\ forall s_id', List.In s_id' stf.2 -> disj m_id s_id') ->
+  valid s_id h ->
+  ~ List.In s_id s_st ->
+  List.NoDup s_st ->
+  (forall s_id', List.In s_id' s_st -> valid s_id' h) ->
+  (forall s_id', List.In s_id' s_st -> m_id ⪯ s_id') ->
+  (forall s_id', List.In s_id' s_st -> disj s_id s_id') ->
+  (forall s_id' s_id'', List.In s_id' s_st -> List.In s_id'' s_st -> s_id' <> s_id'' -> disj s_id' s_id'') ->
+  valid_stack ((vm, m_id, s_id, s_st) :: st) h.
+Proof.
+  revert vm m_id s_id st h.
+  intros vm m_id s_id st h hvs hrel hpre hdisj1 hvalid1 hnin hnodup hvalid2 hpre2 hdisj2 hdisj3.
+  revert s_id hpre hvalid1 hnin hdisj2. induction s_st.
+  - constructor; auto.
+  - constructor; auto.
+    + eapply IHs_st.
+      * inversion hnodup; auto.
+      * intros s_id' s_in'.
+        apply hvalid2; right; auto.
+      * intros s_id' s_in'.
+        apply hpre2; right; auto.
+      * intros s_id' s_id'' s_in' s_in'' s_neq.
+        eapply hdisj3.
+        ** right; auto.
+        ** right; auto.
+        ** assumption.
+      * apply hpre2.
+        left; auto.
+      * apply hvalid2.
+        left; auto.
+      * inversion hnodup.
+        auto.
+      *
+        intros s_id' s_in'.
+        apply hdisj3.
+        ** left; auto.
+        ** right; auto.
+        ** inversion hnodup; subst.
+           intros contra; subst.
+           auto.
+    + intros contra.
+      apply hnin.
+      right; auto.
+    + apply disj_sym.
+      apply hdisj2.
+      left; auto.
+    + intros s_id' s_in'.
+      apply hdisj2.
+      right; auto.
+Qed.
+
+Lemma valid_stack_valid_stack vm m_id s_id s_st st h : valid_stack ((vm, m_id, s_id, s_st) :: st) h -> valid_stack st h.
+Proof.
+  revert vm m_id s_id.
+  induction s_st; intros.
+  - inversion H; assumption.
+  - inversion H.
+    eapply IHs_st.
+    eassumption.
+Qed.
+
+Lemma valid_stack_rel_vmap vm m_id s_id s_st st h : valid_stack ((vm, m_id, s_id, s_st) :: st) h -> rel_vmap vm m_id h.
+Proof.
+  revert vm m_id s_id.
+  induction s_st; intros.
+  - inversion H; assumption.
+  - inversion H.
+    eapply IHs_st.
+    eassumption.
+Qed.
+
+Lemma valid_stack_disj vm m_id s_id s_st st h :
+  valid_stack ((vm, m_id, s_id, s_st) :: st) h ->
+  (forall stf, List.In stf st -> disj m_id stf.1.2 /\ forall s_id', List.In s_id' stf.2 -> disj m_id s_id').
+  revert vm m_id s_id.
+  induction s_st; intros vm m_id s_id H.
+  - inversion H.
+    assumption.
+  - inversion H.
+    eapply IHs_st.
+    eassumption.
+Qed.
+
+Ltac split_and :=
+  repeat lazymatch goal with
+  | |- _ /\ _ => split
+         end.
+
+Lemma invert_valid_stack st vm m_id s_id s_st h :
+  valid_stack ((vm, m_id, s_id, s_st) :: st) h ->
+  valid_stack st h
+  /\ rel_vmap vm m_id h
+  /\ m_id ⪯ s_id
+  /\ (forall stf, List.In stf st -> disj m_id stf.1.2 /\ forall s_id', List.In s_id' stf.2 -> disj m_id s_id')
+  /\ valid s_id h
+  /\ ~ List.In s_id s_st
+  /\ List.NoDup s_st
+  /\ (forall s_id', List.In s_id' s_st -> valid s_id' h)
+  /\ (forall s_id', List.In s_id' s_st -> m_id ⪯ s_id')
+  /\ (forall s_id', List.In s_id' s_st -> disj s_id s_id')
+  /\ (forall s_id' s_id'', List.In s_id' s_st -> List.In s_id'' s_st -> s_id' <> s_id'' -> disj s_id' s_id'').
+Proof.
+  intros H.
+  split_and; subst; auto.
+  - eapply valid_stack_valid_stack; eassumption.
+  - eapply valid_stack_rel_vmap; eassumption.
+  - inversion H; auto.
+  - revert s_id H.
+    induction s_st.
+    + intros.
+      inversion H; subst.
+      eapply H10; eauto.
+    + intros s_id H stf.
+      inversion H; subst.
+      eapply IHs_st; eauto.
+  - inversion H; auto.
+  - inversion H; subst; auto.
+    intros [contra|contra]; subst.
+    + eapply disj_antirefl; eauto.
+    + easy.
+  - revert s_id H. induction s_st.
+    + constructor.
+    + constructor.
+      * inversion H; subst; auto.
+        inversion H6; subst; auto.
+        intros [contra|contra]; subst.
+        **  eapply disj_antirefl; eauto.
+        **  eapply disj_antirefl.
+            eapply H17.
+            assumption.
+      * eapply IHs_st.
+        inversion H; eauto.
+  - revert s_id H. induction s_st.
+    + easy.
+    + intros s_id hvalid s_id' [|s_in']; subst.
+      * inversion hvalid; subst.
+        inversion H5; auto.
+      * eapply IHs_st.
+        ** inversion hvalid; eassumption.
+        ** assumption.
+  - revert s_id H. induction s_st.
+    + easy.
+    + intros s_id hvalid s_id' [|s_in']; subst.
+      * inversion hvalid; subst.
+        inversion H5; auto.
+      * eapply IHs_st.
+        ** inversion hvalid; eassumption.
+        ** assumption.
+  - inversion H; subst; auto.
+    + easy.
+    + intros s_id' [|s_in']; subst; auto.
+      inversion H; subst; auto.
+      apply disj_sym; auto.
+  - revert s_id H. induction s_st.
+    + easy.
+    + intros s_id hvalid s_id' s_id'' [|s_in'] [|s_in''] hneq; subst; auto.
+      * easy.
+      * inversion hvalid; subst; auto.
+        inversion H5; subst; auto.
+        ** easy.
+        ** destruct s_in'' as [|s_in'']; subst; auto.
+           apply disj_sym; auto.
+      * inversion hvalid; subst; auto.
+        inversion H5; subst; auto.
+        ** easy.
+        ** destruct s_in' as [|s_in']; subst; auto.
+           apply disj_sym; auto.
+      * inversion hvalid; subst.
+        eapply IHs_st; eauto.
+Qed.
+
+Ltac invert_stack st hst hevm hpre hdisj hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2 :=
+  apply invert_valid_stack in st as [hst [hevm [hpre [hdisj [hvalid [hnin [hnodup [hvalid1 [hpre1 [hdisj1 hdisj2]]]]]]]]]].
+
+Lemma valid_stack_pop stf st :
+  ∀ h, valid_stack (stf :: st) h ->
+       valid_stack st h.
+Proof.
+  intros h H.
+  destruct stf as [[[? ?] ?] ?].
+  eapply valid_stack_valid_stack; eassumption.
+Qed.
+
+Lemma valid_stack_push_sub vm m_id s_id s_st st :
+  ∀ h, valid_stack ((vm, m_id, s_id, s_st) :: st) h ->
+       valid_stack ((vm, m_id, s_id~1, s_id~0 :: s_st) :: st) h.
+Proof.
+  intros h vst.
+  invert_stack vst hst hevm hpre hdisj hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2.
+  constructor; eauto with prefix.
+  - eapply valid_stack_cons; eauto with prefix.
+    + intros contra.
+      eapply disj_antirefl.
+      eapply disj_prec_l.
+      1: eapply fresh1.
+      eapply hdisj1.
+      assumption.
+    + intros s_id' s_in'.
+      eapply disj_prec_l.
+      1: eapply fresh1.
+      apply hdisj1.
+      assumption.
+  - intros contra.
+      eapply disj_antirefl.
+      eapply disj_prec_l.
+      1: eapply fresh2.
+      eapply hdisj1.
+      assumption.
+  - apply fresh_disj.
+  - intros s_id' s_in'.
+      eapply disj_prec_l.
+      1: eapply fresh2.
+      apply hdisj1.
+      assumption.
+Qed.
+
+Lemma valid_stack_pop_sub vm m_id s_id s_id' s_st st :
+  ∀ h, valid_stack ((vm, m_id, s_id', s_id :: s_st) :: st) h ->
+       valid_stack ((vm, m_id, s_id, s_st) :: st) h.
+Proof.
+  intros h vst.
+  inversion vst.
+  assumption.
+Qed.
+
+Lemma valid_stack_push vm m_id s_id s_st st :
+  ∀ h, valid_stack ((vm, m_id, s_id, s_st) :: st) h ->
+       valid_stack ((vmap0, s_id~1, s_id~1, [::]) :: ((vm, m_id, s_id~0, s_st) :: st)) h.
+Proof.
+  intros h vst.
+  assert (vst2:=vst).
+  invert_stack vst2 hst hevm hpre hdisj hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2; auto.
+  eapply valid_stack_push_sub in vst.
+  eapply valid_stack_pop_sub in vst.
+  constructor; eauto with prefix.
+  - eapply empty_stack_spec.
+    eapply hvalid.
+    apply fresh2.
+  - intros stf [|stf_in]; subst; split.
+    + apply disj_sym. apply fresh_disj.
+    + intros s_id' s_in'.
+      eapply disj_prec_l.
+        1: apply fresh2.
+        eapply hdisj1.
+        assumption.
+    + eapply disj_prec_l.
+      1: etransitivity.
+      1: eapply hpre.
+      1: eapply fresh2.
+      eapply (proj1 (hdisj stf stf_in)).
+    + intros s_id' s_in'.
+      eapply disj_prec_l.
+      1: etransitivity.
+      1: eapply hpre.
+      1: eapply fresh2.
+      eapply hdisj; eauto.
+Qed.
+
+Lemma valid_stack_set_glob ptr sz (w : word sz) st m :
+  valid_stack st m ->
+  valid_stack st (set_heap m mem_loc (write_mem (get_heap m mem_loc) ptr w)).
+Proof.
+  intros val.
+  induction val; auto.
+  - constructor; auto.
+  - constructor; auto.
+    + intros v hv ev.
+      rewrite get_set_heap_neq.
+      2:{ rewrite eq_sym. apply mem_loc_translate_var_neq. }
+      apply H. assumption.
+    + intros i' hpre v.
+      rewrite get_set_heap_neq.
+      2:{ rewrite eq_sym. apply mem_loc_translate_var_neq. }
+      apply H1.
+      assumption.
+  - constructor; auto.
+     intros i' hpre v.
+      rewrite get_set_heap_neq.
+      2:{ rewrite eq_sym. apply mem_loc_translate_var_neq. }
+      apply H0.
+      assumption.
+Qed.
+
+Lemma valid_stack_set_heap i v vm m_id s_id s_st st m :
+  valid_stack ((vm, m_id, s_id, s_st) :: st) m ->
+  valid_stack st (set_heap m (translate_var m_id i) v).
+Proof.
+  intros vs.
+  invert_stack vs hst hevm hpre hdisj hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2.
+  induction hst as [
+    |st vm' m_id' s_id' h hst IH hevm' hpre' hvalid' hdisj'
+    |st vm' m_id' s_id' s_id'' s_st' h hst IH hpre' hvalid' hnin' hdisj1' hdisj2'].
+  - constructor.
+  - constructor; auto.
+    + eapply IH; auto; simpl.
+      intros stf stf_in.
+      apply hdisj.
+      right; auto.
+    + apply rel_vmap_set_heap_neq; auto.
+      intros contra; subst.
+      eapply disj_antirefl.
+      eapply disj_prec_r.
+      1: eapply hpre'.
+      apply disj_sym.
+      specialize (hdisj (vm', m_id, s_id', [::]) ltac:(left;auto)).
+      easy.
+    + apply valid_set_heap_disj; auto.
+      apply disj_sym.
+      specialize (hdisj (vm', m_id', s_id', [::]) ltac:(left;auto)).
+      easy.
+  - constructor; auto.
+    + eapply IH; auto.
+      intros stf [|stf_in]; subst; split.
+      * eapply hdisj.
+        1: left; auto.
+        left; auto.
+      * intros s_id''' s_in'''.
+       eapply hdisj.
+        1: left; auto.
+        right; auto.
+      * specialize (hdisj stf ltac:(right;auto)).
+        easy.
+      * intros s_id''' s_in'''.
+        eapply hdisj.
+        1: right; eauto.
+        assumption.
+    + eapply valid_set_heap_disj; auto.
+      eapply disj_sym .
+      specialize (hdisj (vm', m_id', s_id'', s_id' :: s_st') ltac:(left;auto)).
+      easy.
+Qed.
+
+Definition rel_estate (s : estate) (m_id : p_id) (s_id : p_id) (s_st : list p_id) (st : stack) (h : heap) :=
+  rel_mem s.(emem) h /\ valid_stack ((s.(evm), m_id, s_id, s_st) :: st) h.
 
 Lemma translate_read_estate :
-  ∀ fn s ptr sz w m,
-    rel_estate s fn m →
+  ∀ s ptr sz w m_id s_id s_st c_stack m,
+    rel_estate s m_id s_id s_st c_stack m →
     read (emem s) ptr sz = ok w →
     read_mem (get_heap m mem_loc) ptr sz = w.
 Proof.
-  intros fn s ptr sz w m [] h.
-  eapply translate_read. all: eassumption.
-Qed.
-
-Lemma mem_loc_translate_var_neq :
-  ∀ fn x,
-    mem_loc != translate_var fn x.
-Proof.
-  intros fn x.
-  unfold mem_loc, translate_var.
-  apply /eqP. intro e.
-  destruct x as [ty i]. simpl in e. noconf e.
-  destruct ty. all: discriminate.
+  intros s ptr sz w m m_id s_id s_st c_stack rel h.
+  eapply translate_read. 2: eassumption.
+  apply rel.
 Qed.
 
 Lemma translate_write_estate :
-  ∀ fn sz s cm ptr w m,
+  ∀ sz s cm ptr w m_id s_id s_st st m,
     write s.(emem) ptr (sz := sz) w = ok cm →
-    rel_estate s fn m →
-    rel_estate {| emem := cm ; evm := s.(evm) |} fn (set_heap m mem_loc (write_mem (get_heap m mem_loc) ptr w)).
+    rel_estate s m_id s_id s_st st m →
+    rel_estate {| emem := cm ; evm := s.(evm) |} m_id s_id s_st st (set_heap m mem_loc (write_mem (get_heap m mem_loc) ptr w)).
 Proof.
-  intros fn sz s cm ptr w m hw [hrm hvm].
+  intros sz s cm ptr w m_id s_id s_st st m hw [hmem hstack].
   split.
   - simpl. eapply translate_write_mem_correct. all: eassumption.
-  - simpl. intros i v ev.
-    rewrite get_set_heap_neq.
-    2:{ rewrite eq_sym. apply mem_loc_translate_var_neq. }
-    apply hvm. assumption.
+  - simpl.
+    apply valid_stack_set_glob.
+    assumption.
 Qed.
 
 Lemma coerce_cast_code (ty vty : choice_type) (v : vty) :
@@ -2015,17 +2490,6 @@ Proof.
   symmetry. assumption.
 Qed.
 
-Lemma coerce_to_choice_type_K :
-  ∀ (t : choice_type) (v : t),
-    coerce_to_choice_type t v = v.
-Proof.
-  intros t v.
-  funelim (coerce_to_choice_type t v).
-  2:{ clear - e. rewrite eqxx in e. discriminate. }
-  rewrite <- Heqcall.
-  apply cast_ct_val_K.
-Qed.
-
 Lemma coerce_to_choice_type_translate_value_to_val :
   ∀ ty (v : sem_t ty),
     coerce_to_choice_type (encode ty) (translate_value (to_val v)) =
@@ -2045,49 +2509,31 @@ Proof.
   reflexivity.
 Qed.
 
-Section bind_list_test.
-
-  (* Quick test to see that the definition-via-tactics of bind_list' computes
-     as expected. *)
-  Definition cs : list typed_code :=
-    [:: ('bool; (ret false)) ; ('bool; (ret true)) ; ('nat; (ret 666))].
-  Definition ts := [:: sbool; sbool; sint; sint].
-  Goal bind_list' ts cs = bind_list' ts cs.
-    unfold bind_list' at 2.
-    unfold bind_list_trunc_aux.
-    simpl.
-    (* rewrite !coerce_to_choice_type_K. *)
-    simp coerce_to_choice_type.
-    cbn.
-  Abort.
-End bind_list_test.
-
-
 Lemma get_var_get_heap :
-  ∀ fn x s v m,
+  ∀ x s v m_id m,
     get_var (evm s) x = ok v →
-    rel_estate s fn m →
-    get_heap m (translate_var fn x) =
+    rel_vmap (evm s) m_id m →
+    get_heap m (translate_var m_id x) =
     coerce_to_choice_type _ (translate_value v).
 Proof.
-  intros fn x s v m ev hm.
+  intros x s v m c_stack ev hevm.
   unfold get_var in ev.
   eapply on_vuP. 3: exact ev. 2: discriminate.
   intros sx esx esv.
-  eapply hm in esx. subst.
+  eapply hevm in esx. subst.
   rewrite coerce_to_choice_type_translate_value_to_val.
   rewrite esx. rewrite coerce_to_choice_type_K. reflexivity.
 Qed.
 
 Lemma translate_get_var_correct :
-  ∀ fn x s v (cond : heap → Prop),
+  ∀ x s v m_id s_id s_st st (cond : heap → Prop),
     get_var (evm s) x = ok v →
-    (∀ m, cond m → rel_estate s fn m) →
+    (∀ m, cond m → rel_estate s m_id s_id s_st st m) →
     ⊢ ⦃ cond ⦄
-      translate_get_var fn x ⇓ coerce_to_choice_type _ (translate_value v)
+      translate_get_var m_id x ⇓ coerce_to_choice_type _ (translate_value v)
     ⦃ cond ⦄.
 Proof.
-  intros fn x s v cond ev hcond.
+  intros x s v m_id s_id s_st st cond ev hcond.
   unfold translate_get_var.
   eapply u_get_remember. intros vx.
   eapply u_ret. intros m [hm hx].
@@ -2095,14 +2541,16 @@ Proof.
   unfold u_get in hx. subst.
   eapply get_var_get_heap.
   - eassumption.
-  - eapply hcond. assumption.
+  - apply hcond in hm as [_ hst].
+    invert_stack hst hst hevm hpre hdisj hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2.
+    assumption.
 Qed.
 
-Lemma translate_gvar_correct (f : funname) (x : gvar) (v : value) s (cond : heap → Prop) :
+Lemma translate_gvar_correct (x : gvar) (v : value) s (cond : heap → Prop) m_id s_id s_st st :
   get_gvar gd (evm s) x = ok v →
-  (∀ m, cond m → rel_estate s f m) →
+  (∀ m, cond m → rel_estate s m_id s_id s_st st m) →
   ⊢ ⦃ cond ⦄
-    translate_gvar f x ⇓ coerce_to_choice_type _ (translate_value v)
+    translate_gvar m_id x ⇓ coerce_to_choice_type _ (translate_value v)
   ⦃ cond ⦄.
 Proof.
   intros ev hcond.
@@ -2265,9 +2713,9 @@ Proof.
   apply translate_truncate_val. assumption.
 Qed.
 
-Lemma translate_pexpr_type fn s₁ e v :
+Lemma translate_pexpr_type p s₁ e v :
   sem_pexpr gd s₁ e = ok v →
-  (translate_pexpr fn e).π1 = choice_type_of_val v.
+  (translate_pexpr p e).π1 = choice_type_of_val v.
 Proof.
   intros.
   revert v H.
@@ -2518,9 +2966,9 @@ Proof.
   all: reflexivity.
 Qed.
 
-Lemma translate_pexprs_types fn s1 es vs :
+Lemma translate_pexprs_types p s1 es vs :
   mapM (sem_pexpr gd s1) es = ok vs →
-  [seq (translate_pexpr fn e).π1 | e <- es] = [seq choice_type_of_val v | v <- vs].
+  [seq (translate_pexpr p e).π1 | e <- es] = [seq choice_type_of_val v | v <- vs].
 Proof.
   revert vs. induction es; intros.
   - destruct vs. 2: discriminate.
@@ -2863,15 +3311,15 @@ Proof.
 Qed.
 
 Lemma translate_pexpr_correct :
-  ∀ fn (e : pexpr) s₁ v (cond : heap → Prop),
+  ∀ (e : pexpr) s₁ v (cond : heap → Prop) m_id s_id s_st st,
     sem_pexpr gd s₁ e = ok v →
-    (∀ m, cond m → rel_estate s₁ fn m) →
+    (∀ m, cond m → rel_estate s₁ m_id s_id s_st st m) →
     ⊢ ⦃ cond ⦄
-      (translate_pexpr fn e).π2 ⇓
+      (translate_pexpr m_id e).π2 ⇓
       coerce_to_choice_type _ (translate_value v)
     ⦃ cond ⦄.
 Proof.
-  intros fn e s1 v cond h1 hcond.
+  intros e s1 v cond m_id s_id s_st st h1 hcond.
   induction e as [z|b| |x|aa ws x e| | | | | | ] in s1, v, h1, cond, hcond |- *.
   - simpl in h1. noconf h1.
     rewrite coerce_to_choice_type_K.
@@ -2898,8 +3346,10 @@ Proof.
       intro v. apply u_ret.
       intros m [hm e]. unfold u_get in e. subst.
       split. 1: assumption.
-      apply hcond in hm. destruct hm as [hm hv].
-      apply hv in e1. rewrite e1.
+      apply hcond in hm.
+      destruct hm as [hm hst].
+      invert_stack hst hst hevm hpre hdisj hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2.
+      apply hevm in e1. rewrite e1.
       simpl. rewrite coerce_to_choice_type_K.
       rewrite coerce_to_choice_type_translate_value_to_val.
       reflexivity.
@@ -2908,7 +3358,7 @@ Proof.
       apply u_ret. auto.
   - simpl in *.
     jbind h1 nt ent. destruct nt. all: try discriminate.
-    jbind h1 i ei. jbind ei i' ei'.
+    jbind h1 j ej. jbind ej j' ej'.
     jbind h1 w ew. noconf h1.
     rewrite coerce_to_choice_type_K.
     eapply u_bind.
@@ -2928,7 +3378,7 @@ Proof.
   - (* Psub *)
     simpl. simpl in h1.
     jbind h1 nt hnt. destruct nt. all: try discriminate.
-    jbind h1 i hi. jbind hi i' hi'. jbind h1 t ht. noconf h1.
+    jbind h1 j hj. jbind hj j' hj'. jbind h1 t ht. noconf h1.
     eapply u_bind.
     1:{ eapply translate_gvar_correct. all: eauto. }
     rewrite bind_assoc.
@@ -2965,6 +3415,9 @@ Proof.
     rewrite coerce_to_choice_type_K.
     erewrite translate_to_word. 2: eassumption.
     eapply hcond in hm.
+    assert (hm2:=hm).
+    destruct hm2 as [hm2 hst].
+    invert_stack hst hst hevm hpre hdisj hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2.
     erewrite get_var_get_heap. 2-3: eassumption.
     simpl. erewrite <- type_of_get_var. 2: eassumption.
     rewrite coerce_to_choice_type_K.
@@ -2983,7 +3436,7 @@ Proof.
       jbind h1 v'' h3.
       noconf h1.
       rewrite coerce_to_choice_type_translate_value_to_val.
-      apply translate_pexpr_type with (fn:=fn) in h2.
+      apply translate_pexpr_type with (p:=m_id) in h2.
       rewrite h2.
       rewrite !coerce_to_choice_type_K.
       erewrite translate_of_val.
@@ -3009,8 +3462,8 @@ Proof.
     jbind h1 v''''' h6.
     noconf h1.
     rewrite coerce_to_choice_type_translate_value_to_val.
-    apply translate_pexpr_type with (fn:=fn) in h2.
-    apply translate_pexpr_type with (fn:=fn) in h3.
+    apply translate_pexpr_type with (p:=m_id) in h2.
+    apply translate_pexpr_type with (p:=m_id) in h3.
     rewrite h2 h3.
     rewrite !coerce_to_choice_type_K.
     erewrite translate_of_val.
@@ -3091,14 +3544,14 @@ Proof.
       apply translate_truncate_val. assumption.
 Qed.
 
-Lemma translate_pexprs_correct fn s vs es :
+Lemma translate_pexprs_correct s m_id s_id s_st st vs es :
   sem_pexprs gd s es = ok vs →
   List.Forall2 (λ c v,
-    ⊢ ⦃ rel_estate s fn ⦄
+    ⊢ ⦃ rel_estate s m_id s_id s_st st ⦄
       c.π2
       ⇓ coerce_to_choice_type _ (translate_value v)
-    ⦃ rel_estate s fn ⦄
-  ) [seq translate_pexpr fn e | e <- es] vs.
+    ⦃ rel_estate s m_id s_id s_st st ⦄
+  ) [seq translate_pexpr m_id e | e <- es] vs.
 Proof.
   intro hvs.
   induction es in vs, hvs |- *.
@@ -3117,16 +3570,16 @@ Proof.
       rewrite map_cons.
       constructor.
       * eapply translate_pexpr_correct. 1: eassumption.
-        auto.
+        eauto.
       * eapply IHes.
         assumption.
 Qed.
 
 Corollary bind_list_pexpr_correct (cond : heap → Prop) (es : pexprs) (vs : list value)
-  (s1 : estate) (fn : funname)
-  (hc : ∀ m : heap, cond m → rel_estate s1 fn m)
+  (s1 : estate) m_id s_id s_st st
+  (hc : ∀ m : heap, cond m → rel_estate s1 m_id s_id s_st st m)
   (h : sem_pexprs gd s1 es = ok vs)
-  : ⊢ ⦃ cond ⦄ bind_list [seq translate_pexpr fn e | e <- es] ⇓
+  : ⊢ ⦃ cond ⦄ bind_list [seq translate_pexpr m_id e | e <- es] ⇓
       [seq totce (translate_value v) | v <- vs] ⦃ cond ⦄.
 Proof.
   eapply bind_list_correct with (vs := vs).
@@ -3145,23 +3598,23 @@ Proof.
        constructor.
        *** eapply translate_pexpr_correct.
            1: eassumption.
-           easy.
+           eauto.
        *** simpl. eapply IHes.
            1: assumption.
 Qed.
 
 Corollary translate_pexpr_correct_cast :
-  ∀ fn (e : pexpr) s₁ v (cond : heap → Prop),
+  ∀ (e : pexpr) s₁ v m_id s_id s_st st (cond : heap → Prop),
     sem_pexpr gd s₁ e = ok v →
-    (∀ m, cond m → rel_estate s₁ fn m) →
+    (∀ m, cond m → rel_estate s₁ m_id s_id s_st st m) →
     ⊢ ⦃ cond ⦄
-      coerce_typed_code _ (translate_pexpr fn e) ⇓
+      coerce_typed_code _ (translate_pexpr m_id e) ⇓
       translate_value v
     ⦃ cond ⦄.
 Proof.
-  intros fn e s v cond he hcond.
-  eapply translate_pexpr_correct with (fn := fn) in he as h. 2: exact hcond.
-  eapply translate_pexpr_type with (fn := fn) in he.
+  intros e s v m_id s_id s_st st cond he hcond.
+  eapply translate_pexpr_correct in he as h. 2: exact hcond.
+  eapply translate_pexpr_type with (p := m_id) in he.
   unfold choice_type_of_val in he.
   destruct (translate_pexpr) as [? exp] eqn:?. simpl in *. subst.
   rewrite coerce_to_choice_type_K in h.
@@ -3170,11 +3623,11 @@ Qed.
 
 
 Lemma translate_write_correct :
-  ∀ fn sz s p (w : word sz) cm (cond : heap → Prop),
-    (∀ m, cond m → write s.(emem) p w = ok cm ∧ rel_estate s fn m) →
-    ⊢ ⦃ cond ⦄ translate_write p w ⇓ tt ⦃ rel_estate {| emem := cm ; evm := s.(evm) |} fn ⦄.
+  ∀ sz s ptr (w : word sz) cm m_id s_id s_st st (cond : heap → Prop),
+    (∀ m, cond m → write s.(emem) ptr w = ok cm ∧ rel_estate s m_id s_id s_st st m) →
+    ⊢ ⦃ cond ⦄ translate_write ptr w ⇓ tt ⦃ rel_estate {| emem := cm ; evm := s.(evm) |} m_id s_id s_st st ⦄.
 Proof.
-  intros fn sz s p w cm cond h.
+  intros sz s ptr w cm m_id s_id s_st st cond h.
   unfold translate_write.
   eapply u_get_remember. intros m.
   eapply u_put.
@@ -3185,27 +3638,25 @@ Proof.
   eapply translate_write_estate. all: assumption.
 Qed.
 
-Lemma translate_write_var_estate :
-  ∀ fn i v s1 s2 m,
-    write_var i v s1 = ok s2 →
-    rel_estate s1 fn m →
-    rel_estate s2 fn (set_heap m (translate_var fn i) (truncate_el i.(vtype) (translate_value v))).
+Lemma valid_stack_set_var i v vm s m_id s_id s_st st m :
+  valid_stack ((s.(evm), m_id, s_id, s_st) :: st) m ->
+  set_var (evm s) i v = ok vm ->
+  valid_stack ((vm, m_id, s_id, s_st) :: st) (set_heap m (translate_var m_id i) (truncate_el (vtype i) (translate_value v))).
 Proof.
-  intros fn i v s1 s2 m hw [h1 h2].
-  unfold write_var in hw. jbind hw vm hvm. noconf hw.
-  split. all: simpl.
-  - intros ptr v' er.
-    eapply h1 in er.
-    rewrite get_set_heap_neq. 2: apply mem_loc_translate_var_neq.
-    assumption.
-  - intros vi v' ev.
-    eapply set_varP. 3: exact hvm.
-    + intros v₁ hv₁ eyl. subst.
-      destruct (vi == i) eqn:evar.
+  intros vs hsv.
+  assert (vs':=vs).
+  invert_stack vs hst hevm hpre hdisj hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2.
+  eapply set_varP. 3: exact hsv.
+  - intros v1 hv1 eyl; subst.
+    eapply valid_stack_cons; eauto.
+    + eapply valid_stack_set_heap.
+      eassumption.
+    + intros vi vt ev.
+     destruct (vi == i) eqn:evar.
       all: move: evar => /eqP evar.
       * subst. rewrite Fv.setP_eq in ev. noconf ev.
         rewrite get_set_heap_eq. rewrite coerce_to_choice_type_K.
-        eapply translate_of_val in hv₁ as e.
+        eapply translate_of_val in hv1 as e.
         rewrite e. apply coerce_to_choice_type_translate_value_to_val.
       * rewrite Fv.setP_neq in ev.
         2:{ apply /eqP. eauto. }
@@ -3215,8 +3666,17 @@ Proof.
           apply injective_translate_var in ee.
           contradiction.
         }
-        eapply h2 in ev. assumption.
-    + intros hbo hyl hset. subst.
+        eapply hevm in ev. assumption.
+    + eapply valid_set_heap_prec; auto.
+    + intros s_id' s_in'.
+      eapply valid_set_heap_prec.
+      1: apply hvalid1; auto.
+      apply hpre1. assumption.
+  - intros hbo hyl hset; subst.
+    eapply valid_stack_cons; auto.
+    + eapply valid_stack_set_heap.
+      eassumption.
+    + intros vi vt ev.
       destruct (vi == i) eqn:evar.
       all: move: evar => /eqP evar.
       1:{
@@ -3231,18 +3691,40 @@ Proof.
         apply injective_translate_var in ee.
         contradiction.
       }
-      eapply h2 in ev. assumption.
+      eapply hevm in ev. assumption.
+    + eapply valid_set_heap_prec; auto.
+    + intros s_id' s_in'.
+      eapply valid_set_heap_prec.
+      1: apply hvalid1; auto.
+      apply hpre1. assumption.
+Qed.
+
+Lemma translate_write_var_estate :
+  ∀ i v s1 s2 m_id s_id s_st st m,
+    write_var i v s1 = ok s2 →
+    rel_estate s1 m_id s_id s_st st m →
+    rel_estate s2 m_id s_id s_st st (set_heap m (translate_var m_id i) (truncate_el i.(vtype) (translate_value v))).
+Proof using asm_correct gd.
+  intros i v s1 s2 m_id s_id s_st st m hw [hmem hst].
+  unfold write_var in hw. jbind hw vm hvm. noconf hw.
+  all: simpl.
+  split.
+  - intros ptr v' er.
+    eapply hmem in er.
+    rewrite get_set_heap_neq. 2: apply mem_loc_translate_var_neq.
+    assumption.
+  - eapply valid_stack_set_var; eauto.
 Qed.
 
 Lemma translate_write_var_correct :
-  ∀ es₁ es₂ fn y v,
+  ∀ es₁ es₂ m_id s_id s_st st y v,
     write_var y v es₁ = ok es₂ →
-    ⊢ ⦃ rel_estate es₁ fn ⦄
-      translate_write_var fn y (totce (translate_value v))
+    ⊢ ⦃ rel_estate es₁ m_id s_id s_st st ⦄
+      translate_write_var m_id y (totce (translate_value v))
       ⇓ tt
-    ⦃ rel_estate es₂ fn ⦄.
-Proof.
-  intros es₁ es₂ fn y v hw.
+    ⦃ rel_estate es₂ m_id s_id s_st st ⦄.
+Proof using asm_correct gd.
+  intros es₁ es₂ m_id s_id s_st st y v hw.
   simpl. unfold translate_write_var. simpl in hw.
   simpl.
   eapply u_put.
@@ -3252,14 +3734,14 @@ Proof.
 Qed.
 
 Lemma translate_write_lval_correct :
-  ∀ es₁ es₂ fn y v,
+  ∀ es₁ es₂ m_id s_id s_st st y v,
     write_lval gd y v es₁ = ok es₂ →
-    ⊢ ⦃ rel_estate es₁ fn ⦄
-      translate_write_lval fn y (totce (translate_value v))
+    ⊢ ⦃ rel_estate es₁ m_id s_id s_st st ⦄
+      translate_write_lval m_id y (totce (translate_value v))
       ⇓ tt
-    ⦃ rel_estate es₂ fn ⦄.
-Proof.
-  intros es₁ es₂ fn y v hw.
+    ⦃ rel_estate es₂ m_id s_id s_st st ⦄.
+Proof using asm_correct.
+  intros es₁ es₂ m_id s_id s_st st y v hw.
   destruct y as [ | yl | | aa ws x ei | ] eqn:case_lval.
   - simpl. apply u_ret_eq.
     intros hp hr.
@@ -3279,7 +3761,7 @@ Proof.
     1:{
       eapply translate_pexpr_correct.
       - eassumption.
-      - intros ? []. assumption.
+      - intros ? []. eassumption.
     }
     simpl.
     eapply translate_write_correct. intros m' [hm' em'].
@@ -3290,7 +3772,9 @@ Proof.
     eapply translate_to_word in hw' as ew. rewrite ew. clear ew.
     unfold translate_to_pointer. simpl.
     eapply translate_to_word in hve as ew. rewrite ew. clear ew.
-    erewrite get_var_get_heap. 2,3: eassumption.
+    erewrite get_var_get_heap.
+    3: eapply invert_valid_stack; apply hm'.
+    2: eassumption.
     simpl. erewrite <- type_of_get_var. 2: eassumption.
     rewrite coerce_to_choice_type_K.
     eapply translate_to_word in hvx as ew. rewrite ew. clear ew.
@@ -3305,7 +3789,7 @@ Proof.
     1:{
       eapply translate_pexpr_correct.
       - eassumption.
-      - intros ? []. assumption.
+      - intros ? []. eassumption.
     }
     simpl. unfold translate_write_var. simpl.
     eapply u_put.
@@ -3316,13 +3800,16 @@ Proof.
     rewrite !coerce_to_choice_type_K.
     eapply translate_to_word in ew. rewrite ew.
     erewrite translate_to_int. 2: eassumption.
-    erewrite get_var_get_heap. 2,3: eassumption.
+    erewrite get_var_get_heap.
+    3: eapply invert_valid_stack; apply hs.
+    2: eassumption.
     Opaque translate_value. simpl. Transparent translate_value.
     eapply type_of_get_var in hnt as ety. simpl in ety.
     apply (f_equal encode) in ety. simpl in ety.
     rewrite -ety. rewrite !coerce_to_choice_type_K.
     erewrite chArray_set_correct. 2: eassumption.
-    eapply translate_write_var_estate in hs. 2: eassumption.
+    eapply translate_write_var_estate in hs.
+    2: eassumption.
     assumption.
   - simpl. simpl in hw.
     jbind hw nt hnt. destruct nt. all: try discriminate.
@@ -3334,7 +3821,7 @@ Proof.
     1:{
       eapply translate_pexpr_correct.
       - eassumption.
-      - intros ? []. assumption.
+      - intros ? []. eassumption.
     }
     unfold translate_write_var. simpl.
     eapply u_put.
@@ -3345,27 +3832,30 @@ Proof.
     rewrite !coerce_to_choice_type_K.
     erewrite translate_to_int. 2: eassumption.
     erewrite translate_to_arr. 2: eassumption.
-    erewrite get_var_get_heap. 2,3: eassumption.
+    erewrite get_var_get_heap.
+    3: eapply invert_valid_stack; apply hs.
+    2: eassumption.
     Opaque translate_value. simpl. Transparent translate_value.
     eapply type_of_get_var in hnt as ety. simpl in ety.
     apply (f_equal encode) in ety. simpl in ety.
     rewrite -ety. rewrite !coerce_to_choice_type_K.
     erewrite chArray_set_sub_correct. 2: eassumption.
-    eapply translate_write_var_estate in hs. 2: eassumption.
+    eapply translate_write_var_estate in hs.
+    2: eassumption.
     assumption.
 Qed.
 
-Lemma translate_write_lvals_cons fn l ls v vs :
-  translate_write_lvals fn (l :: ls) (v :: vs) = (translate_write_lval fn l v ;; translate_write_lvals fn ls vs).
+Lemma translate_write_lvals_cons p l ls v vs :
+  translate_write_lvals p (l :: ls) (v :: vs) = (translate_write_lval p l v ;; translate_write_lvals p ls vs).
 Proof. reflexivity. Qed.
 
-Lemma translate_write_lvals_correct fn s1 ls vs s2 :
+Lemma translate_write_lvals_correct m_id s_id s_st st s1 ls vs s2 :
   write_lvals gd s1 ls vs = ok s2 →
-  ⊢ ⦃ rel_estate s1 fn ⦄
-    translate_write_lvals fn ls [seq totce (translate_value v) | v <- vs]
+  ⊢ ⦃ rel_estate s1 m_id s_id s_st st ⦄
+    translate_write_lvals m_id ls [seq totce (translate_value v) | v <- vs]
     ⇓ tt
-  ⦃ rel_estate s2 fn ⦄.
-Proof.
+  ⦃ rel_estate s2 m_id s_id s_st st ⦄.
+Proof using asm_correct.
   intros h.
   induction ls as [| l ls] in s1, vs, h |- *.
   - destruct vs. 2: discriminate.
@@ -3378,22 +3868,22 @@ Proof.
     rewrite translate_write_lvals_cons.
     eapply u_bind.
     + eapply translate_write_lval_correct.
-      eassumption.
+      all: eassumption.
     + apply IHls.
       assumption.
 Qed.
 
-Lemma translate_write_vars_cons fn l ls v vs :
-  translate_write_vars fn (l :: ls) (v :: vs) = (translate_write_var fn l v ;; translate_write_vars fn ls vs).
+Lemma translate_write_vars_cons p l ls v vs :
+  translate_write_vars p (l :: ls) (v :: vs) = (translate_write_var p l v ;; translate_write_vars p ls vs).
 Proof. reflexivity. Qed.
 
-Lemma translate_write_vars_correct fn s1 ls vs s2 :
+Lemma translate_write_vars_correct m_id s_id s_st st s1 ls vs s2 :
   write_vars ls vs s1 = ok s2 →
-  ⊢ ⦃ rel_estate s1 fn ⦄
-    translate_write_vars fn ls [seq totce (translate_value v) | v <- vs]
+  ⊢ ⦃ rel_estate s1 m_id s_id s_st st ⦄
+    translate_write_vars m_id ls [seq totce (translate_value v) | v <- vs]
     ⇓ tt
-  ⦃ rel_estate s2 fn ⦄.
-Proof.
+  ⦃ rel_estate s2 m_id s_id s_st st ⦄.
+Proof using asm_correct gd.
   intros h.
   induction ls as [| l ls] in s1, vs, h |- *.
   - destruct vs. 2: discriminate.
@@ -3407,7 +3897,7 @@ Proof.
     eapply u_bind.
     + simpl.
       eapply translate_write_var_correct.
-      eassumption.
+      all: eassumption.
     + apply IHls.
       assumption.
 Qed.
@@ -3729,33 +4219,37 @@ Lemma tr_prog_inv {P fn f} :
   get_fundef (p_funcs P) fn = Some f →
   ∑ fs' l,
     p_funcs P = l ++ (fn, f) :: fs' ∧
-    assoc (translate_prog' P).1 fn =
-    Some (translate_cmd P (translate_funs P fs').1 fn (f_body f)) ∧
-    assoc (translate_prog' P).2 fn =
-    let tr_fs' := translate_funs P ((fn, f) :: fs') in
-    Some (translate_call P fn tr_fs'.1).
+      assoc (translate_prog' P).1 fn = Some (fun sid => (translate_cmd P (translate_funs P fs').1 (f_body f) sid sid).2) /\
+      assoc (translate_prog' P).2 fn = Some (translate_call P fn (translate_funs P ((fn, f) :: fs')).1).
 Proof.
   unfold translate_prog'.
   induction (p_funcs P) as [|[gn g] fs' ih_fs'].
   - move => //.
-  - simpl in *.
+  - (* simpl in *. *)
     move => h //.
+    simpl in h.
     destruct (fn == gn) eqn:e.
-    + move /eqP in e. subst.
+    + move /eqP in e.
+      subst.
       noconf h.
       exists fs'.
       exists [::].
+      (* exists (fun p => (translate_cmd P (translate_funs P fs').1 p (f_body f) p p)). *)
+      simpl.
+      destruct (translate_funs P fs') as [f_body f_prog] eqn:E2.
       simpl.
       unfold translate_call. simpl.
       assert (E : gn == gn) by now apply /eqP.
       rewrite E. easy.
     + specialize (ih_fs' h).
-      destruct ih_fs' as [fs'0 [l0 [ihl iha]]].
+      simpl.
+      destruct (translate_funs P fs') as [fdefs ctrrogs] eqn:E2.
+      destruct ih_fs' as [fs'0 [l0 [ihl [iha ihb]]]]. simpl.
+      rewrite e.
       rewrite ihl.
       exists fs'0. exists ((gn, g) :: l0).
-      subst. split; easy.
+      subst. split; [|split]; try easy.
 Qed.
-
 
 (** Handled programs
 
@@ -3810,6 +4304,7 @@ Proof.
   unfold translate_call at 1.
   rewrite ef.
   simpl.
+  destruct (translate_funs P fs'). simpl.
   unfold translate_call, assoc at 1.
   assert (E : gn == gn) by now apply /eqP.
   now rewrite E.
