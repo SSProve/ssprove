@@ -815,21 +815,21 @@ Fixpoint nat_of_ident (id : Ident.ident) : nat :=
   | String a s => 256 * nat_of_ident s + (Ascii.nat_of_ascii a)
   end.
 
-(* injection *)
-Definition nat_of_fun_ident (f : funname) (id : Ident.ident) : nat :=
-  3^(nat_of_pos f) * 2^(nat_of_ident id).
-
 Definition nat_of_stype t : nat :=
   match t with
   | sarr len => 5 ^ ((Pos.to_nat len).+1)
   | _ => 5 ^ 1
   end.
 
-Definition nat_of_fun_var (f : funname) (x : var) : nat :=
-  (nat_of_stype x.(vtype) * (nat_of_fun_ident f x.(vname)))%coq_nat.
+(* injection *)
+Definition nat_of_p_id_ident (p : p_id) (id : Ident.ident) : nat :=
+  3^(nat_of_p_id p) * 2^(nat_of_ident id).
 
-Definition translate_var (f : funname) (x : var) : Location :=
-  (encode x.(vtype) ; nat_of_fun_var f x).
+Definition nat_of_p_id_var (p : p_id) (x : var) : nat :=
+  (nat_of_stype x.(vtype) * (nat_of_p_id_ident p x.(vname)))%coq_nat.
+
+Definition translate_var (p : p_id) (x : var) : Location :=
+  (encode x.(vtype) ; nat_of_p_id_var p x).
 
 #[local] Definition unsupported : typed_code :=
   ('unit ; assert false).
@@ -888,13 +888,13 @@ Proof.
        values.v), all of these functions raise an error on Vundef. *)
 Defined.
 
-Definition translate_write_var (fn : funname) (x : var_i) (v : typed_chElement) :=
-  let l := translate_var fn (v_var x) in
+Definition translate_write_var (p : p_id) (x : var_i) (v : typed_chElement) :=
+  let l := translate_var p (v_var x) in
   #put l := truncate_el x.(vtype) v.π2 ;;
   ret tt.
 
-Definition translate_get_var (f : funname) (x : var) : raw_code (encode x.(vtype)) :=
-  x ← get (translate_var f x) ;; ret x.
+Definition translate_get_var (p : p_id) (x : var) : raw_code (encode x.(vtype)) :=
+  x ← get (translate_var p x) ;; ret x.
 
 (* TW: We can remove it right? *)
 Fixpoint satisfies_globs (globs : glob_decls) : heap * heap → Prop.
@@ -907,9 +907,9 @@ Proof.
   exact [::]. (* TODO *)
 Defined. *)
 
-Definition translate_gvar (f : funname) (x : gvar) : raw_code (encode x.(gv).(vtype)) :=
+Definition translate_gvar (p : p_id) (x : gvar) : raw_code (encode x.(gv).(vtype)) :=
   if is_lvar x
-  then translate_get_var f x.(gv).(v_var)
+  then translate_get_var p x.(gv).(v_var)
   else
     match get_global gd x.(gv).(v_var) with
     | Ok v => ret (coerce_to_choice_type _ (translate_value v))
@@ -1306,7 +1306,7 @@ Definition tr_app_sopn_tuple {ts} :=
   tr_app_sopn (chCanonical (encode_tuple ts)) embed_tuple.
 
 (* Following sem_pexpr *)
-Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
+Fixpoint translate_pexpr (p : p_id) (e : pexpr) {struct e} : typed_code :=
   match e with
   | Pconst z => totc 'int (@ret 'int z) (* Why do we need to give 'int twice? *)
   | Pbool b => totc 'bool (ret b)
@@ -1314,28 +1314,28 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
     (* Parr_init only gets produced by ArrayInit() in jasmin source. *)
     (* The EC export asserts false on it. *)
     totc 'array (ret emptym)
-  | Pvar v => totc _ (translate_gvar fn v)
+  | Pvar v => totc _ (translate_gvar p v)
   | Pget aa ws x e =>
     totc ('word ws) (
-      arr ← translate_gvar fn x ;; (* Performs the lookup in gd *)
+      arr ← translate_gvar p x ;; (* Performs the lookup in gd *)
       let a := coerce_to_choice_type 'array arr in
-      i ← (truncate_code sint (translate_pexpr fn e)).π2 ;; (* to_int *)
+      i ← (truncate_code sint (translate_pexpr p e)).π2 ;; (* to_int *)
       let scale := mk_scale aa ws in
       ret (chArray_get ws a i scale)
     )
   | Psub aa ws len x e =>
     totc 'array (
-      arr ← translate_gvar fn x ;; (* Performs the lookup in gd *)
+      arr ← translate_gvar p x ;; (* Performs the lookup in gd *)
       let a := coerce_to_choice_type 'array arr in
-      i ← (truncate_code sint (translate_pexpr fn e)).π2 ;; (* to_int *)
+      i ← (truncate_code sint (translate_pexpr p e)).π2 ;; (* to_int *)
       let scale := mk_scale aa ws in
       ret (chArray_get_sub ws len a i scale)
     )
   | Pload sz x e =>
     totc ('word sz) (
-      w ← translate_get_var fn x ;;
+      w ← translate_get_var p x ;;
       let w1 : word _ := truncate_el (sword Uptr) w in
-      w2 ← (truncate_code (sword Uptr) (translate_pexpr fn e)).π2 ;;
+      w2 ← (truncate_code (sword Uptr) (translate_pexpr p e)).π2 ;;
       chRead (w1 + w2)%R sz
     )
   | Papp1 o e =>
@@ -1343,14 +1343,14 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
       (* We truncate and call sem_sop1_typed instead of calling sem_sop1
         which does the truncation and then calls sem_sop1_typed.
       *)
-      x ← (truncate_code (type_of_op1 o).1 (translate_pexpr fn e)).π2 ;;
+      x ← (truncate_code (type_of_op1 o).1 (translate_pexpr p e)).π2 ;;
       ret (embed (sem_sop1_typed o (unembed x)))
     )
   | Papp2 o e1 e2 =>
     totc _ (
       (* Same here *)
-      r1 ← (truncate_code (type_of_op2 o).1.1 (translate_pexpr fn e1)).π2 ;;
-      r2 ← (truncate_code (type_of_op2 o).1.2 (translate_pexpr fn e2)).π2 ;;
+      r1 ← (truncate_code (type_of_op2 o).1.1 (translate_pexpr p e1)).π2 ;;
+      r2 ← (truncate_code (type_of_op2 o).1.2 (translate_pexpr p e2)).π2 ;;
       ret match sem_sop2_typed o (unembed r1) (unembed r2) with
       | Ok y => embed y
       | _ => chCanonical _
@@ -1363,15 +1363,15 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
          how it is done in jasmin. Maybe we should change Papp1/2.
        *)
     totc _ (
-      vs ← bind_list [seq translate_pexpr fn e | e <- es] ;;
+      vs ← bind_list [seq translate_pexpr p e | e <- es] ;;
       ret (tr_app_sopn_single (type_of_opN op).1 (sem_opN_typed op) vs)
     )
   | Pif t eb e1 e2 =>
     totc _ (
-      b ← (truncate_code sbool (translate_pexpr fn eb)).π2 ;; (* to_bool *)
+      b ← (truncate_code sbool (translate_pexpr p eb)).π2 ;; (* to_bool *)
       if b
-      then (truncate_code t (translate_pexpr fn e1)).π2
-      else (truncate_code t (translate_pexpr fn e2)).π2
+      then (truncate_code t (translate_pexpr p e1)).π2
+      else (truncate_code t (translate_pexpr p e2)).π2
     )
   end.
 
@@ -1382,12 +1382,12 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
        error unless (val = Varr n t). We obtain (n: positive) and (t: array n). *)
   (*     Let (n, t) := gd, s.[x] in *)
 
-    pose (x' := translate_gvar fn x).
+    pose (x' := translate_gvar p x).
     pose (arr := y ← x'.π2 ;; @ret _ (coerce_to_choice_type 'array y)).
 
   (* Evaluate the indexing expression `e` and coerce it to Z. *)
   (*     Let i := sem_pexpr s e >>= to_int in *)
-    pose (i := coerce_typed_code 'int (translate_pexpr fn e)).
+    pose (i := coerce_typed_code 'int (translate_pexpr p e)).
 
   (* The actual array look-up, where
        WArray.get aa ws t i = CoreMem.read t a (i * (mk_scale aa ws)) ws
@@ -1402,7 +1402,7 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
   (* | PappN op es => *)
     (*   Let vs := mapM (sem_pexpr s) es in *)
     (*   sem_opN op vs *)
-    (* pose (vs := map (translate_pexpr fn) l).
+    (* pose (vs := map (translate_pexpr p) l).
     pose proof (sem_opN_typed o) as f. simpl in f. *)
 
 (* Fixpoint app_sopn T ts : sem_prod ts (exec T) → values → exec T := *)
@@ -1416,16 +1416,16 @@ Fixpoint translate_pexpr (fn : funname) (e : pexpr) {struct e} : typed_code :=
 
     (* pose (vs' := fold (fun x => y ← x ;; unembed y) f vs). *)
 
-Definition translate_write_lval (fn : funname) (l : lval) (v : typed_chElement)
+Definition translate_write_lval (p : p_id) (l : lval) (v : typed_chElement)
   : raw_code 'unit
   :=
   match l with
   | Lnone _ ty => ret tt
-  | Lvar x => translate_write_var fn x v
+  | Lvar x => translate_write_var p x v
   | Lmem sz x e =>
-    vx' ← translate_get_var fn x ;;
+    vx' ← translate_get_var p x ;;
     let vx : word _ := translate_to_pointer vx' in
-    ve' ← (translate_pexpr fn e).π2 ;;
+    ve' ← (translate_pexpr p e).π2 ;;
     let ve := translate_to_pointer ve' in
     let p := (vx + ve)%R in (* should we add the size of value, i.e vx + sz * se *) (* Is it from us or them? *)
     let w := truncate_chWord sz v.π2 in
@@ -1433,72 +1433,32 @@ Definition translate_write_lval (fn : funname) (l : lval) (v : typed_chElement)
   | Laset aa ws x i =>
     (* Let (n,t) := s.[x] in is a notation calling on_arr_varr on get_var *)
     (* We just cast it since we do not track lengths *)
-    t' ← translate_get_var fn x ;;
+    t' ← translate_get_var p x ;;
     let t := coerce_to_choice_type 'array t' in
-    i ← (truncate_code sint (translate_pexpr fn i)).π2 ;; (* to_int *)
+    i ← (truncate_code sint (translate_pexpr p i)).π2 ;; (* to_int *)
     let v := truncate_chWord ws v.π2 in
     let t := chArray_set t aa i v in
-    translate_write_var fn x (totce t)
+    translate_write_var p x (totce t)
   | Lasub aa ws len x i =>
     (* Same observation as Laset *)
-    t ← translate_get_var fn x ;;
+    t ← translate_get_var p x ;;
     let t := coerce_to_choice_type 'array t in
-    i ← (truncate_code sint (translate_pexpr fn i)).π2 ;; (* to_int *)
+    i ← (truncate_code sint (translate_pexpr p i)).π2 ;; (* to_int *)
     let t' := truncate_el (sarr (Z.to_pos (arr_size ws len))) v.π2 in
     let t := chArray_set_sub ws len aa t i t' in
-    translate_write_var fn x (totce t)
+    translate_write_var p x (totce t)
   end.
 
-(* Note c is translated from cmd, in the case ws = [], sem_for does not
-  guarantee it is well-formed.
-  Also note, it feels odd to get a var_i when I should translate before calling.
-  The problem comes from translate_write_var which expects var_i instead of
-  Location.
-*)
-Fixpoint translate_for fn (i : var_i) (ws : seq Z) (c : raw_code 'unit) : raw_code 'unit :=
+(* the argument to c is its (valid) sub id, the return is the resulting (valid) sub id *)
+Fixpoint translate_for (v : var_i) (ws : seq Z) (i : p_id) (c : p_id -> p_id * raw_code 'unit) (sid : p_id) : raw_code 'unit :=
   match ws with
   | [::] => ret tt
   | w :: ws =>
-    translate_write_var fn i (totce (translate_value w)) ;;
-    c ;;
-    translate_for fn i ws c
+      let (sid', c') := c sid in
+      translate_write_var i v (totce (translate_value w)) ;;
+      c' ;;
+      translate_for v ws i c sid'
   end.
-(* sem_i *)
-(* Fixpoint translate_instr_r (fn : funname) (i : instr_r) {struct i} : raw_code 'unit *)
-(* with translate_instr (fn : funname) (i : instr) {struct i} : raw_code 'unit. *)
-(* Proof. *)
-(*   (* translate_instr_r *) *)
-(*   { *)
-(*     pose proof (translate_cmd := *)
-(*             (fix translate_cmd (fn : funname) (c : cmd) : raw_code 'unit := *)
-(*                match c with *)
-(*                | [::] => ret tt *)
-(*                | i :: c => translate_instr fn i ;; translate_cmd fn c *)
-(*                end)). *)
-
-(*     destruct i as [ | | e c1 c2 | | | ]. *)
-(*     - (* Cassgn *) *)
-(*       (* l :a=_s p *) *)
-(*       pose (translate_pexpr fn p) as tr_p. *)
-(*       pose (truncate_code s tr_p) as tr_p'. *)
-(*       eapply bind. 1: exact tr_p'.π2. intros. *)
-(*       exact (translate_write_lval fn l (totce X)). *)
-(*     - exact (unsupported.π2). (* Copn *) *)
-(*     - (* Cif e c1 c2 *) *)
-(*       pose (e' := translate_pexpr fn e). *)
-(*       pose (c1' := translate_cmd fn c1). *)
-(*       pose (c2' := translate_cmd fn c2). *)
-(*       pose (rb := coerce_typed_code 'bool e'). *)
-(*       exact (b ← rb ;; if b then c1' else c2'). *)
-(*     - exact (unsupported.π2). (* Cfor *) *)
-(*     - exact (unsupported.π2). (* Cwhile *) *)
-(*     - (* Ccall i l f l0 *) *)
-(*       (* translate arguments *) *)
-(*       pose (map (translate_pexpr fn) l0) as tr_l0. *)
-(*       (* "perform" the call via `opr` *) *)
-(*       (* probably we'd look up the function signature in the current ambient program *) *)
-
-(*       (* write_lvals the result of the call into lvals `l` *) *)
 
 (* list_ltuple *)
 Fixpoint list_lchtuple {ts} : lchtuple ([seq encode t | t <- ts]) → [choiceType of list typed_chElement] :=
@@ -1546,12 +1506,12 @@ Fixpoint foldr2 {A B R} (f : A → B → R → R) (la : seq A) (lb : seq B) r :=
     end
   end.
 
-Definition translate_write_lvals fn ls vs :=
-  (* foldl2 (λ c l v, translate_write_lval fn l v ;; c) ls vs (ret tt). *)
-  foldr2 (λ l v c, translate_write_lval fn l v ;; c) ls vs (ret tt).
+Definition translate_write_lvals p ls vs :=
+  (* foldl2 (λ c l v, translate_write_lval p l v ;; c) ls vs (ret tt). *)
+  foldr2 (λ l v c, translate_write_lval p l v ;; c) ls vs (ret tt).
 
-Definition translate_write_vars fn xs vs :=
-  foldr2 (λ x v c, translate_write_var fn x v ;; c) xs vs (ret tt).
+Definition translate_write_vars p xs vs :=
+  foldr2 (λ x v c, translate_write_var p x v ;; c) xs vs (ret tt).
 
 Lemma eq_rect_K :
   ∀ (A : eqType) (x : A) (P : A -> Type) h e,
@@ -3505,30 +3465,30 @@ Definition trunc_list :=
 
 (* The type of translated function *bodies* *)
 Definition fdefs :=
-  (* ∀ fn fdef, get_fundef (p_funcs P) fn = Some fdef → raw_code 'unit. *)
-  list (funname * (raw_code 'unit)).
+  (* ∀ p fdef, get_fundef (p_funcs P) p = Some fdef → raw_code 'unit. *)
+  list (funname * (p_id -> raw_code 'unit)).
 
 Definition tchlist := [choiceType of seq typed_chElement].
 
 (* The type of translated function "calls" *)
-Definition trfun := tchlist → raw_code tchlist.
+Definition trfun := p_id -> tchlist → raw_code tchlist.
 
-Definition translate_call_body (fn : funname) (tr_f_body : raw_code 'unit)
+Definition translate_call_body (fn : funname) (tr_f_body : p_id -> raw_code 'unit)
            : trfun.
 Proof using P asm_op asmop pd.
   (* sem_call *)
-  refine (λ vargs', match (get_fundef (p_funcs P) fn) with
+  refine (λ sid vargs', match (get_fundef (p_funcs P) fn) with
           | Some f => _
           | None => ret [::] end).
   pose (trunc_list (f_tyin f) vargs') as vargs.
-  apply (bind (translate_write_vars fn (f_params f) vargs)) => _.
+  apply (bind (translate_write_vars sid (f_params f) vargs)) => _.
   (* Perform the function body. *)
   (* apply (bind (tr_f_body _ _ E)) => _. *)
   (* pose (tr_f_body _ _ E) as tr_f. *)
-  apply (bind tr_f_body) => _.
+  apply (bind (tr_f_body sid)) => _.
   eapply bind.
   - (* Look up the results in their locations... *)
-    exact (bind_list [seq totc _ (translate_get_var fn (v_var x))
+    exact (bind_list [seq totc _ (translate_get_var sid (v_var x))
                      | x <- f_res f]).
   - intros vres.
     (* ...and coerce them to the codomain of f. *)
@@ -3538,74 +3498,76 @@ Defined.
 
 Definition translate_call (fn : funname) (tr_f_body : fdefs) : trfun.
 Proof using P asm_op asmop pd.
-  refine (λ vargs, match assoc tr_f_body fn with
+  refine (λ sid vargs, match assoc tr_f_body fn with
           | Some tr_f => _ | None => ret [::] end).
-  exact (translate_call_body fn tr_f vargs).
+  exact (translate_call_body fn tr_f sid vargs).
 Defined.
 
 Fixpoint translate_instr_r
   (tr_f_body : fdefs)
-  (fn : funname) (i : instr_r) {struct i}
-  : raw_code 'unit
+  (i : instr_r) (id : p_id) (sid : p_id) {struct i}
+  : p_id * raw_code 'unit
 
 with translate_instr (tr_f_body : fdefs)
-       (fn : funname) (i : instr) {struct i} : raw_code 'unit :=
-  translate_instr_r tr_f_body fn (instr_d i).
+       (i : instr) (id : p_id) (sid : p_id) {struct i} : p_id * raw_code 'unit :=
+  translate_instr_r tr_f_body (instr_d i) id sid.
 Proof using P asm_op asmop pd.
   pose proof (translate_cmd :=
-    (fix translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
+    (fix translate_cmd (tr_f_body : fdefs) (c : cmd) (id : p_id) (sid : p_id) : p_id * raw_code 'unit :=
       match c with
-      | [::] => ret tt
+      | [::] => (sid, ret tt)
       | i :: c =>
-        translate_instr tr_f_body fn i ;;
-        translate_cmd fn c
+          let (sid', i') := translate_instr tr_f_body i id sid in
+          let (sid'', c') := translate_cmd tr_f_body c id sid' in
+          (sid'', i' ;; c')
       end
     )
-  ).
+             ).
+  refine
+    match i with
+    | Cassgn l _ s e =>
+        let tr_p := translate_pexpr (p_globs P) id e in
+        (sid,
+          v ← tr_p.π2 ;;
+          (translate_write_lval (p_globs P) id l (totce (truncate_el s v)))
+        )
+    | Copn ls _ o es =>
+        let cs := [seq (translate_pexpr (p_globs P) id e) | e <- es] in
+        let vs := bind_list cs in
 
-  destruct i as [ | ls _ o es | e c1 c2 | i [[d lo] hi] c | | ii xs gn args ].
-  - (* Cassgn *)
-    (* l :a=_s p *)
-    pose (translate_pexpr (p_globs P) fn p) as tr_p.
-    eapply bind. 1: exact (tr_p.π2).
-    intros v. pose (truncate_el s v) as tr_v.
-    exact (translate_write_lval (p_globs P) fn l (totce tr_v)).
-  - (* Copn *)
-    pose (cs := [seq (translate_pexpr (p_globs P) fn e) | e <- es]).
-    pose (vs := bind_list cs).
-    eapply bind. 1: exact vs. intros bvs.
-    pose (out := translate_exec_sopn o bvs).
-    exact (translate_write_lvals (p_globs P) fn ls out). (* BSH: I'm not sure if the outputs should be truncated? *)
-  - (* Cif e c1 c2 *)
-    pose (e' := translate_pexpr (p_globs P) fn e).
-    pose (c1' := translate_cmd fn c1).
-    pose (c2' := translate_cmd fn c2).
-    pose (rb := coerce_typed_code 'bool e').
-    exact (b ← rb ;; if b then c1' else c2').
-  - (* Cfor i (d, lo, hi) c *)
-    (* pose (iᵗ := translate_var fn i). *) (* Weird not to do it *)
-    pose (loᵗ := coerce_typed_code 'int (translate_pexpr (p_globs P) fn lo)).
-    pose (hiᵗ := coerce_typed_code 'int (translate_pexpr (p_globs P) fn hi)).
-    pose (cᵗ := translate_cmd fn c).
-    exact (
-      vlo ← loᵗ ;;
-      vhi ← hiᵗ ;;
-      translate_for fn i (wrange d vlo vhi) cᵗ
-    ).
-  - exact (unsupported.π2). (* Cwhile *)
-  - (* Ccall ii xs f args *)
-    rename fn into fn_ambient.
-    (* Translate arguments. *)
-    pose (cs := [seq (translate_pexpr (p_globs P) fn_ambient e) | e <- args]).
-    eapply bind. 1: exact (bind_list cs).
-    intros vargs. clear cs.
-
-    apply (bind (translate_call gn tr_f_body vargs)) => vres.
-
-    pose (translate_write_lvals (p_globs P) fn_ambient xs vres) as cres.
-    exact cres.
+        (sid,
+          bvs ← vs ;;
+          translate_write_lvals (p_globs P) id ls (translate_exec_sopn o bvs)
+        )
+    | Cif e c1 c2 =>
+        let (sid', c1') := translate_cmd tr_f_body c1 id sid in
+        let (sid'', c2') := translate_cmd tr_f_body c2 id sid' in
+        let e' := translate_pexpr (p_globs P) id e in
+        let rb := coerce_typed_code 'bool e' in
+        (sid'',
+          b ← rb ;; if b then c1' else c2'
+        )
+    | Cfor i r c =>
+        let '(d, lo, hi) := r in
+        let (sid', fresh) := fresh_id sid in
+        let loᵗ := coerce_typed_code 'int (translate_pexpr (p_globs P) id lo) in
+        let hiᵗ := coerce_typed_code 'int (translate_pexpr (p_globs P) id hi) in
+        let cᵗ := translate_cmd tr_f_body c id in
+        (sid',
+          vlo ← loᵗ ;;
+          vhi ← hiᵗ ;;
+          translate_for i (wrange d vlo vhi) id cᵗ fresh)
+    | Ccall ii xs f args =>
+        let (sid', fresh) := fresh_id sid in
+        let cs := [seq (translate_pexpr (p_globs P) id e) | e <- args] in
+        (sid',
+          vargs ← bind_list cs ;;
+          vres ← translate_call f tr_f_body fresh vargs ;;
+          translate_write_lvals (p_globs P) id xs vres
+        )
+    | _ => (sid, unsupported.π2)
+    end.
 Defined.
-
 (*
    Questions to answer for the translation of functions and function calls:
    - When does argument truncation happen?
@@ -3644,9 +3606,9 @@ Defined.
 
    Idea 2:
    - Each Jasmin function gets translated to a `'unit raw_code` corresponding to its body.
-   - translate_instr takes a map from funnames to translated fun bodies.
+   - translate_instr takes a map from p_ids to translated fun bodies.
    - There is an additional wrapper function
-     `translate_call : funname → (args : seq value) → (f_tyin : seq stype) -> (f_tr_body : 'unit raw_code) -> 'unit raw_code`
+     `translate_call : p_id → (args : seq value) → (f_tyin : seq stype) -> (f_tr_body : 'unit raw_code) -> 'unit raw_code`
      that does the work of truncating, and storing the function arguments as well as the returned results into their locations.
    - the main theorem then talks not about running the translation of a function, but instead about translate_call
 
@@ -3654,26 +3616,26 @@ Defined.
 
 (* translate_instr is blocked because it is a fixpoint *)
 Lemma translate_instr_unfold :
-  ∀ ep fn i,
-    translate_instr ep fn i = translate_instr_r ep fn (instr_d i).
+  ∀ ep i st,
+    translate_instr ep i st = translate_instr_r ep (instr_d i) st.
 Proof.
-  intros ep fn i.
+  intros ep i st.
   destruct i. reflexivity.
 Qed.
 
 (* Trick to have it expand to the same as the translate_cmd above *)
 Section TranslateCMD.
 
-Context (tr_f_body : fdefs).
-
-Fixpoint translate_cmd (fn : funname) (c : cmd) : raw_code 'unit :=
+Fixpoint translate_cmd (tr_f_body : fdefs) (c : cmd) (id : p_id) (sid : p_id) : p_id * raw_code 'unit :=
   match c with
-  | [::] => ret tt
-  | i :: c => translate_instr tr_f_body fn i ;; translate_cmd fn c
+  | [::] => (sid, ret tt)
+  | i :: c =>
+      let (sid', i') := translate_instr tr_f_body i id sid in
+      let (sid'', c') := translate_cmd tr_f_body c id sid' in
+      (sid'', i' ;; c')
   end.
 
 End TranslateCMD.
-
 
 (* PGH: CURRENTLY UNUSED. Keeping this around for when we want to package
    functions into packages, as we'll have to bundle the arguments and results
@@ -3687,6 +3649,7 @@ Record fdef := {
 #[local] Definition ty_out fd := ((ffun fd).π2).π1.
 Definition translate_fundef
            (tr_f_body : fdefs)
+           (p : p_id)
            (fd : _ufun_decl (* extra_fun_t *)) : funname * fdef.
 Proof using P asm_op asmop pd.
   destruct fd. destruct _f.
@@ -3707,14 +3670,14 @@ Proof using P asm_op asmop pd.
     apply (coerce_chtuple_to_list _ f_tyin) in vargs'.
 
     (* Write the arguments to their locations. *)
-    pose (map (λ '(x, (ty; v)), translate_write_var f x (totce v))
+    pose (map (λ '(x, (ty; v)), translate_write_var p x (totce v))
               (zip f_params vargs'))
       as cargs.
     apply (foldl (λ c k, c ;; k) (ret tt)) in cargs.
     apply (bind cargs) => _.
 
     (* Perform the function body. *)
-    apply (bind (translate_cmd tr_f_body f f_body)) => _.
+    apply (bind (translate_cmd tr_f_body f_body p p).2) => _.
 
     (* Look up the results in their locations and return them. *)
     pose (map (λ x, totc _ (translate_get_var f (v_var x))) f_res) as cres.
@@ -3757,12 +3720,13 @@ Proof using asm_op asmop pd.
   destruct prog.
   induction p_funcs.
   - exact [::].
-  - unfold ssprove_prog.
+  - unfold fdefs. unfold ssprove_prog.
     apply cons. 2: exact IHp_funcs.
     pose a.1 as fn.
     split. 1: exact fn.
     destruct a. destruct _f.
-    exact (translate_cmd (Build__prog p_funcs p_globs p_extra) IHp_funcs fn f_body).
+    intros s_id.
+    exact (translate_cmd (Build__prog p_funcs p_globs p_extra) IHp_funcs f_body s_id s_id).2.
 Defined.
 
 Definition tr_p (prog : uprog) : ssprove_prog.
@@ -3782,13 +3746,12 @@ Definition translate_funs (P : uprog) : seq _ufun_decl → fdefs * ssprove_prog 
     | [::] => ([::], [::])
     | f :: fs' =>
         (* let '(tr_fs', tr_p') := translate_funs fs' in *)
-        let tr_tl := translate_funs fs' in
-        let '(tr_fs', tr_p') := (tr_tl.1, tr_tl.2) in
-        let fn := f.1 in
-        let tr_body := translate_cmd P tr_fs' fn (f_body f.2) in
-        let tr_fs := (fn, tr_body) :: tr_fs' in
+        (* let '(tr_fs', tr_p') := translate_funs fs' in *)
+        let '(fn, f_extra) := f in
+        let tr_body := fun sid => (translate_cmd P (translate_funs fs').1 (f_body f_extra) sid sid).2 in
+        let tr_fs := (fn, tr_body) :: (translate_funs fs').1 in
         (* let tr_p := (fn, translate_call P fn tr_fs) :: tr_p' in *)
-        let tr_p := (fn, translate_call_body P fn tr_body) :: tr_p' in
+        let tr_p := (fn, translate_call_body P fn tr_body) :: (translate_funs fs').2 in
         (tr_fs, tr_p)
     end
   in translate_funs.
@@ -3867,12 +3830,12 @@ Qed.
 Definition get_translated_fun P fn : trfun :=
   match assoc (translate_prog' P).2 fn with
   | Some f => f
-  | None => λ _, ret [::]
+  | None => λ _ _, ret [::]
   end.
 
 Lemma translate_call_head {P gn fs' f} :
   assoc (translate_prog' P).1 gn =
-    Some (translate_cmd P (translate_funs P fs').1 gn (f_body f))
+    Some (fun sid => (translate_cmd P (translate_funs P fs').1 (f_body f) sid sid).2)
   →
     translate_call P gn (translate_funs P (p_funcs P)).1
     = translate_call P gn (translate_funs P ((gn,f) :: fs')).1.
