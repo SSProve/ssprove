@@ -460,7 +460,6 @@ Definition bigadd :=
    p_globs := []; p_extra := tt |}
 .
 
-
 Import PackageNotation.
 Notation coe_cht := coerce_to_choice_type.
 Notation coe_tyc := coerce_typed_code.
@@ -482,7 +481,7 @@ Set Equations Transparent.
 From extructures Require Import ord fset fmap.
 
 Definition empty_ufun_decl := (1%positive, {| f_info := 1%positive; f_tyin := [::]; f_params := [::]; f_body := [::]; f_tyout := [::]; f_res := [::]; f_extra := tt |}) : _ufun_decl.
-Definition translate_simple_prog P := translate_fundef P emptym (List.nth_default empty_ufun_decl P.(p_funcs) 0).
+Definition translate_simple_prog P := translate_fundef P emptym 1%positive (List.nth_default empty_ufun_decl P.(p_funcs) 0).
 
 Definition fn_bigadd := Eval simpl in ((ffun (translate_simple_prog bigadd).2).π2).π2.
 
@@ -497,7 +496,7 @@ Qed.
 
 From CoqWord Require Import word.
 
-Notation "$ i" := (_ ; nat_of_fun_var _ {| vtype := _; vname := i |})
+Notation "$ i" := (_ ; nat_of_p_id_var _ {| vtype := _; vname := i |})
                     (at level 99, format "$ i").
 
 Notation "$$ i" := ({| v_var := {| vtype := _; vname := i |}; v_info := _ |})
@@ -530,11 +529,13 @@ Goal forall aa goal, fn_bigadd aa = goal.
   set (yr := $"yr.144").
   set (cf := $"cf.145").
   set (i := $"i.146").
-  set (res := $"res.142").
 
-  setoid_rewrite coerce_to_choice_type_K.
-  setoid_rewrite coerce_to_choice_type_K.
-  time repeat setoid_rewrite (@zero_extend_u U64).
+  (* this hangs *)
+  (* set (res := $"res.142"). *)
+
+  (* setoid_rewrite coerce_to_choice_type_K. *)
+  (* setoid_rewrite coerce_to_choice_type_K. *)
+  (* time repeat setoid_rewrite (@zero_extend_u U64). *)
 
   (* For comparison: unfold the for loop *)
   Transparent translate_for.
@@ -543,5 +544,10 @@ Goal forall aa goal, fn_bigadd aa = goal.
   subst i.
   set (i := $"i.146").
   setoid_rewrite coerce_to_choice_type_K.
+  setoid_rewrite coerce_to_choice_type_K.
+  time repeat setoid_rewrite (@zero_extend_u U64).
+
+  (* this still hangs *)
+  (* set (res := $"res.142"). *)
 
 Admitted.

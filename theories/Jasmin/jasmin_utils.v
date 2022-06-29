@@ -18,7 +18,7 @@ Module JasminCodeNotation.
       (at level 99, no associativity,
         format " a [ w / p ] ").
 
-  Notation "$$ i" := (_ ; nat_of_fun_var _ {| vtype := _; vname := i |})
+  Notation "$$ i" := (_ ; nat_of_p_id_var _ {| vtype := _; vname := i |})
                        (at level 99, format "$$ i").
 
   Notation "$$$ i" := ({| v_var := {| vtype := _; vname := i |}; v_info := _ |})
