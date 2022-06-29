@@ -4310,227 +4310,462 @@ Proof.
   now rewrite E.
 Qed.
 
-Definition Pfun (P : uprog) (fn : funname) m va m' vr :=
-    handled_program P →
-    ⊢ ⦃ rel_mem m ⦄
+Context `{asm_correct : ∀ o, sem_correct (tin (get_instr_desc (Oasm o))) (sopn_sem (Oasm o))}.
+Context (gd : glob_decls).
+
+Lemma translate_instr_r_if P SP e c1 c2 id sid :
+  translate_instr_r P SP (Cif e c1 c2) id sid =
+    let (sid', c1') := translate_cmd P SP c1 id sid in
+    let (sid'', c2') := translate_cmd P SP c2 id sid' in
+    let e' := translate_pexpr (p_globs P) id e in
+    let rb := coe_tyc 'bool e' in (sid'', b ← rb ;;
+                                         if b
+                                         then c1'
+                                         else c2').
+Proof. reflexivity. Qed.
+
+Lemma translate_instr_r_for P SP i r c id sid :
+  translate_instr_r P SP (Cfor i r c) id sid =
+    let '(d, lo, hi) := r in
+    let (sid', fresh) := fresh_id sid in
+    let loᵗ := coe_tyc 'int (translate_pexpr (p_globs P) id lo) in
+    let hiᵗ := coe_tyc 'int (translate_pexpr (p_globs P) id hi) in
+    let cᵗ := translate_cmd P SP c id in (sid', vlo ← loᵗ ;;
+                                                   vhi ← hiᵗ ;;
+                                                   translate_for i (wrange d vlo vhi) id cᵗ fresh).
+Proof. reflexivity. Qed.
+
+Ltac invert_stack st hst hevm hpre hdisj hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2 := apply invert_valid_stack in st as [hst [hevm [hpre [hdisj [hvalid [hnin [hnodup [hvalid1 [hpre1 [hdisj1 hdisj2]]]]]]]]]].
+
+Lemma valid_stack_prec vm m_id s_id1 s_id2 s_st st h :
+    s_id1 ⪯ s_id2 ->
+    valid_stack ((vm, m_id, s_id1, s_st) :: st) h ->
+    valid_stack ((vm, m_id, s_id2, s_st) :: st) h.
+Proof.
+  intros hpre12 vst.
+  invert_stack vst hst hevm hpre hdisj hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2.
+  eapply valid_stack_cons; eauto with prefix.
+  - eapply valid_prec; eauto.
+  - intros contra.
+    eapply disj_antirefl.
+    eapply disj_prec_r.
+    1: eapply hpre12.
+    apply disj_sym.
+    apply hdisj1.
+    assumption.
+  - intros s_id' s_in'.
+    eapply disj_prec_l.
+    1: eapply hpre12.
+    apply hdisj1.
+    assumption.
+Qed.
+
+Lemma rel_estate_prec : forall h s m_id s_id1 s_id2 s_st st,
+    s_id1 ⪯ s_id2 ->
+    rel_estate s m_id s_id1 s_st st h ->
+    rel_estate s m_id s_id2 s_st st h.
+Proof.
+  intros h s m_id s_id1 s_id2 s_st st hpre12 [hmem hstack]; split; auto.
+  eapply valid_stack_prec; eauto.
+Qed.
+
+Lemma rel_estate_pop_sub s m_id s_id s_id' s_st st :
+  ∀ h, rel_estate s m_id s_id (s_id' :: s_st) st h → rel_estate s m_id s_id' s_st st h.
+Proof.
+  intros h [hmem hstack].
+  split.
+  - assumption.
+  - eapply valid_stack_pop_sub; eassumption.
+Qed.
+
+Lemma rel_estate_pop m vm vm' m_id m_id' s_id s_id' s_st s_st' st :
+  ∀ h, rel_estate {| emem := m ; evm := vm |} m_id s_id s_st ((vm',m_id',s_id',s_st') :: st) h →
+       rel_estate {| emem := m ; evm := vm' |} m_id' s_id' s_st' st h.
+Proof.
+  intros h [hmem hstack].
+  split.
+  - assumption.
+  - eapply valid_stack_pop; eassumption.
+Qed.
+
+Lemma rel_estate_push_sub s m_id s_id s_st st :
+  ∀ h : heap, rel_estate s m_id s_id s_st st h →
+              rel_estate s m_id s_id~1 (s_id~0 :: s_st) st h.
+Proof.
+  intros h [hmem hstack]; split.
+  - assumption.
+  - eapply valid_stack_push_sub; eassumption.
+Qed.
+
+Lemma rel_estate_push m vm m_id s_id s_st st :
+  ∀ h : heap, rel_estate {| emem := m ; evm := vm |} m_id s_id s_st st h →
+              rel_estate {| emem := m ; evm := vmap0 |} s_id~1 s_id~1 [::] ((vm, m_id, s_id~0, s_st) :: st) h.
+Proof.
+  intros h [hmem hstack]; split.
+  - assumption.
+  - eapply valid_stack_push; eassumption.
+Qed.
+
+Lemma translate_cmd_preceq P SP c m_id s_id :
+  let (s_id', _) := translate_cmd P SP c m_id s_id in s_id ⪯ s_id'.
+Proof.
+  revert s_id.
+  set (Pr := fun (i : instr_r) =>
+               forall s_id, let (s_id', _) := translate_instr_r P SP i m_id s_id in
+                 s_id ⪯ s_id').
+  set (Pi := fun (i : instr) =>
+               Pr (instr_d i)).
+  set (Pc := fun (c : cmd) =>
+               forall s_id,
+                 let (s_id', _) := translate_cmd P SP c m_id s_id in
+                 s_id ⪯ s_id').
+  eapply cmd_rect with
+    (Pr0 := Pr)
+    (Pi0 := Pi)
+    (Pc0 := Pc);
+    try easy
+  .
+  - intros s_id.
+    simpl; reflexivity.
+  - intros i c0 ihi ihc s_id.
+    simpl.
+    rewrite translate_instr_unfold.
+    specialize (ihi s_id).
+    destruct translate_instr_r as [s_id' ?].
+    specialize (ihc s_id').
+    destruct translate_cmd.
+    etransitivity; eauto.
+  - intros x tg ty e i; simpl; reflexivity.
+  - intros xs t o es i; simpl; reflexivity.
+  - intros e c1 c2 ihc1 ihc2 s_id.
+    rewrite translate_instr_r_if.
+    specialize (ihc1 s_id).
+    destruct translate_cmd as [s_id' ?].
+    specialize (ihc2 s_id').
+    destruct translate_cmd as [s_id'' ?].
+    simpl.
+    etransitivity; eauto.
+  - intros v dir lo hi c' ihc s_id.
+    rewrite translate_instr_r_for.
+    simpl.
+    apply fresh1.
+  - intros a c1 e c2 ihc1 ihc2 s_id.
+    simpl; reflexivity.
+  - intros i xs f es st'.
+    simpl.
+    apply fresh1.
+Qed.
+
+Lemma translate_instr_r_preceq P SP i id s_id :
+  let (s_id', _) := translate_instr_r P SP i id s_id in s_id ⪯ s_id'.
+Proof.
+  revert s_id.
+  set (Pr := fun (i : instr_r) =>
+               forall s_id, let (s_id', _) := translate_instr_r P SP i id s_id in
+                 s_id ⪯ s_id').
+  set (Pi := fun (i : instr) =>
+               Pr (instr_d i)).
+  set (Pc := fun (c : cmd) =>
+               forall s_id,
+                 let (s_id', _) := translate_cmd P SP c id s_id in
+                 s_id ⪯ s_id').
+  eapply instr_r_Rect with
+    (Pr0 := Pr)
+    (Pi0 := Pi)
+    (Pc0 := Pc);
+    try easy
+  .
+  - intros s_id.
+    simpl; reflexivity.
+  - intros i' c0 ihi ihc s_id.
+    simpl.
+    rewrite translate_instr_unfold.
+    specialize (ihi s_id).
+    destruct translate_instr_r as [s_id' ?].
+    specialize (ihc s_id').
+    destruct translate_cmd.
+    etransitivity; eauto.
+  - intros x tg ty e i'; simpl; reflexivity.
+  - intros xs t o es i'; simpl; reflexivity.
+  - intros e c1 c2 ihc1 ihc2 s_id.
+    rewrite translate_instr_r_if.
+    specialize (ihc1 s_id).
+    destruct translate_cmd as [s_id' ?].
+    specialize (ihc2 s_id').
+    destruct translate_cmd as [s_id'' ?].
+    simpl.
+    etransitivity; eauto.
+  - intros v dir lo hi c' ihc s_id.
+    rewrite translate_instr_r_for.
+    simpl.
+    apply fresh1.
+  - intros a c1 e c2 ihc1 ihc2 s_id.
+    simpl; reflexivity.
+  - intros i' xs f es st'.
+    simpl.
+    apply fresh1.
+Qed.
+
+Lemma translate_instr_r_pres P SP c s m_id s_id s_st st h :
+  let (s_id', _) := translate_instr_r P SP c m_id s_id in
+  rel_estate s m_id s_id s_st st h -> rel_estate s m_id s_id' s_st st h.
+Proof.
+  pose proof translate_instr_r_preceq P SP c m_id s_id.
+  destruct translate_instr_r as [s_id' ?].
+  apply rel_estate_prec; assumption.
+Qed.
+
+Lemma translate_cmd_pres P SP c s m_id s_id s_st st h :
+  let (s_id', _) := translate_cmd P SP c m_id s_id in
+  rel_estate s m_id s_id s_st st h -> rel_estate s m_id s_id' s_st st h.
+Proof.
+  pose proof translate_cmd_preceq P SP c m_id s_id.
+  destruct translate_cmd as [s_id' ?].
+  apply rel_estate_prec; assumption.
+Qed.
+
+Definition Pfun (P : uprog) (fn : funname) m va m' vr vm m_id s_id s_st st :=
+  ⊢ ⦃ rel_estate {| emem := m; evm := vmap0 |} s_id~1 s_id~1 [::] ((vm, m_id, s_id~0, s_st) :: st) ⦄
       (* translate_call P fn (translate_prog' P) [seq totce (translate_value v) | v <- va] *)
-      get_translated_fun P fn [seq totce (translate_value v) | v <- va]
+      get_translated_fun P fn s_id~1 [seq totce (translate_value v) | v <- va]
       ⇓ [seq totce (translate_value v) | v <- vr]
-    ⦃ rel_mem m' ⦄.
+      ⦃ rel_estate {| emem := m' ; evm := vm |} m_id s_id s_st st ⦄.
 
 Theorem translate_prog_correct P m vargs m' vres :
-  ∀ fn, sem.sem_call P m fn vargs m' vres →
-  Pfun P fn m vargs m' vres.
-Proof.
+  forall fn,
+    sem.sem_call P m fn vargs m' vres →
+    handled_program P ->
+    ∀ vm m_id s_id s_st st,
+    Pfun P fn m vargs m' vres vm m_id s_id s_st st.
+Proof using asm_correct.
   intros fn H hP.
-  set (Pfun := λ (m : mem) (fn : funname) (va : seq value) (m' : mem) (vr : seq value),
-         Pfun P fn m va m' vr
+  set (Pfun := λ(m : mem) (fn : funname) (va : seq value) (m' : mem) (vr : seq value),
+         handled_program P -> forall vm m_id s_id s_st st, Pfun P fn m va m' vr vm m_id s_id s_st st
       ).
   set (SP := (translate_prog' P).1).
   set (Pi_r :=
-    λ (s1 : estate) (i : instr_r) (s2 : estate),
-      ∀ fn, handled_instr_r i →
-      ⊢ ⦃ rel_estate s1 fn ⦄
-        translate_instr_r P SP fn i ⇓ tt
-      ⦃ rel_estate s2 fn ⦄
-  ).
+         λ (s1 : estate) (i : instr_r) (s2 : estate),
+         forall m_id s_id s_st st,
+           handled_instr_r i →
+           let (s_id', i') := translate_instr_r P SP i m_id s_id in
+           ⊢ ⦃ rel_estate s1 m_id s_id s_st st ⦄
+               i' ⇓ tt
+               ⦃ rel_estate s2 m_id s_id' s_st st ⦄).
   set (Pi := λ s1 i s2, Pi_r s1 (instr_d i) s2).
   set (Pc :=
-    λ (s1 : estate) (c : cmd) (s2 : estate),
-      ∀ fn, handled_cmd c →
-      ⊢ ⦃ rel_estate s1 fn ⦄ translate_cmd P SP fn c ⇓ tt ⦃ rel_estate s2 fn ⦄
-  ).
+         λ (s1 : estate) (c : cmd) (s2 : estate),
+         ∀ m_id s_id s_st st,
+           handled_cmd c →
+           let (s_id', c') := translate_cmd P SP c m_id s_id in
+           ⊢ ⦃ rel_estate s1 m_id s_id s_st st ⦄
+                  c' ⇓ tt
+               ⦃ rel_estate s2 m_id s_id' s_st st ⦄).
   set (Pfor :=
     λ (v : var_i) (ws : seq Z) (s1 : estate) (c : cmd) (s2 : estate),
-      ∀ fn, handled_cmd c →
-      ⊢ ⦃ rel_estate s1 fn ⦄
-        translate_for fn v ws (translate_cmd P SP fn c) ⇓ tt
-      ⦃ rel_estate s2 fn ⦄
+         ∀ m_id s_id s_id' s_st st,
+           handled_cmd c →
+           s_id~1 ⪯ s_id' ->
+           exists s_id'',
+      ⊢ ⦃ rel_estate s1 m_id s_id' (s_id~0 :: s_st) st ⦄
+        translate_for v ws m_id (translate_cmd P SP c m_id) s_id' ⇓ tt
+      ⦃ rel_estate s2 m_id s_id'' (s_id~0 :: s_st) st ⦄
   ).
   unshelve eapply (@sem_call_Ind _ _ _ _ Pc Pi_r Pi Pfor Pfun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H).
   - (* nil *)
-    red. intros s.
-    red. simpl. intros fn' _.
-    eapply u_ret_eq. auto.
+    intros s m_id s_id s_st st _. simpl.
+    eapply u_ret_eq.
+    intros h preh. auto.
   - (* cons *)
-    red. intros s1 s2 s3 i c hi ihi hc ihc fn'.
-    red. simpl. move /andP => [hdi hdc].
-    eapply u_bind.
-    + rewrite translate_instr_unfold. eapply ihi.
-      destruct i. apply hdi.
-    + apply ihc. assumption.
+    red.
+    intros s1 s2 s3 i c hi ihi hc ihc m_id s_id s_st st hp. (* sp fp ctr h fp_prec. *)
+    inversion hp.
+    move: H1 => /andP [hdi hdc].
+    unfold Pi in ihi. unfold Pi_r in ihi.
+    simpl.
+    rewrite translate_instr_unfold.
+    pose proof translate_instr_r_preceq P SP (instr_d i) m_id s_id.
+    specialize (ihi m_id s_id).
+    pose proof (translate_instr_r_pres P SP (instr_d i) s1 m_id s_id).
+    destruct translate_instr_r as [s_id' i'] eqn:E.
+    unfold Pc in ihc.
+    specialize (ihc m_id s_id').
+    pose proof (translate_cmd_preceq P SP c m_id s_id').
+    pose proof (translate_cmd_pres P SP c s1 m_id s_id').
+    destruct translate_cmd as [s_id'' c'] eqn:Ec.
+    split.
+    + eapply u_bind.
+      * eapply ihi.
+        1: destruct i; apply hdi.
+      * eapply ihc.
+        1: assumption.
   - (* mkI *)
     red. intros ii i s1 s2 hi ihi.
     apply ihi.
   - (* assgn *)
-    red. intros s₁ s₂ x tag ty e v v' he hv hw.
-    red. simpl. intros fn' _.
+    red. intros s₁ s₂ x tag ty e v v' he hv hw m_id s_id s_st st hp.
     eapply u_bind.
     1:{ eapply translate_pexpr_correct. all: eauto. }
     erewrite translate_pexpr_type by eassumption.
     rewrite coerce_to_choice_type_K.
-    cbn.
     erewrite totce_truncate_translate by eassumption.
-    eapply translate_write_lval_correct. all: eauto.
+    eapply u_post_weaken_rule.
+    1: eapply u_pre_weaken_rule.
+    1: eapply translate_write_lval_correct. all: eauto.
   - (* opn *)
-    red. intros s1 s2 tag o xs es ho fn' _.
-    red. simpl.
+    red.
+    (* easy. *)
+    intros s1 s2 tag o xs es ho m_id s_id s_st st hp.
     jbind ho vs hv.
     jbind hv vs' hv'.
     eapply u_bind.
-    + eapply bind_list_pexpr_correct. 2: eassumption. easy.
+    + eapply bind_list_pexpr_correct. 2: eassumption. eauto.
     + erewrite translate_exec_sopn_correct by eassumption.
-      apply translate_write_lvals_correct.
-      assumption.
+      eapply u_post_weaken_rule.
+      1: apply translate_write_lvals_correct.
+      all: eauto.
   - (* if_true *)
-    red. intros s1 s2 e c1 c2 he hc1 ihc1 fn'.
-    red. simpl. move /andP => [hdc1 hdc2].
-    unfold translate_instr_r.
-    lazymatch goal with
-    | |- context [ if _ then ?f ?fn ?c else _ ] =>
-      change (f fn c) with (translate_cmd P SP fn c)
-    end.
-    eapply u_bind.
-    1:{ eapply translate_pexpr_correct_cast in he. all: eauto. }
-    simpl. apply ihc1. assumption.
+    intros s1 s2 e c1 c2 he hc1 ihc1 m_id s_id s_st st hp.
+    inversion hp.
+    move: H1 => /andP [hdc1 hdc2].
+    rewrite translate_instr_r_if.
+    simpl.
+    unfold Pc in ihc1.
+    specialize (ihc1 m_id s_id s_st st).
+    pose proof translate_cmd_pres P SP c1 s1 m_id s_id s_st st.
+    destruct (translate_cmd P SP c1 m_id s_id) as [s_id'' c1'] eqn:E1.
+    pose proof translate_cmd_pres P SP c2 s2 m_id s_id'' s_st st.
+    destruct (translate_cmd P SP c2 m_id s_id'') as [s_id''' c2'] eqn:E2.
+    split.
+    + eapply u_bind.
+      1:{ eapply translate_pexpr_correct_cast in he. all: eauto. }
+    eapply u_post_weaken_rule.
+    1: eapply ihc1.
+    1: eapply hdc1.
+    1: assumption.
   - (* if_false *)
-    red. intros s1 s2 e c1 c2 he hc2 ihc2 fn'.
-    red. simpl. move /andP => [hdc1 hdc2].
-    (* lazymatch goal with
-    | |- context [ if _ then _ else (?f ?fn ?c) ] =>
-      change (f fn c) with (translate_cmd SP fn c)
-    end. *)
+  (* easy. *)
+    intros s1 s2 e c1 c2 he hc2 ihc2 m_id s_id s_st st hp.
+    inversion hp.
+    move: H1 => /andP [hdc1 hdc2].
+    rewrite translate_instr_r_if.
+    simpl.
+    unfold Pc in ihc2.
+    pose proof translate_cmd_pres P SP c1 s1 m_id s_id s_st st.
+    destruct (translate_cmd P SP c1 m_id s_id) as [s_id'' c1'] eqn:E1.
+    specialize (ihc2 m_id s_id'' s_st st).
+    destruct (translate_cmd P SP c2 m_id s_id'') as [s_id''' c2'] eqn:E2.
     eapply u_bind.
     1:{ eapply translate_pexpr_correct_cast in he. all: eauto. }
-    simpl. apply ihc2. assumption.
+    eapply u_pre_weaken_rule.
+    1: eapply u_post_weaken_rule.
+    1: eapply ihc2.
+    1: assumption.
+    1: { intros h rel. eapply rel_estate_prec. 1:reflexivity. 1: eassumption. }
+    assumption.
   - (* while_true *)
-    red. intros s1 s2 s3 s4 a c e c' hc ihc he hc' ihc' h ih.
-    red. simpl. discriminate.
+    easy.
   - (* while_false *)
-    red. intros s1 s2 a c e c' hc ihc he.
-    red. simpl. discriminate.
+    easy.
   - (* for *)
-    red. intros s1 s2 i d lo hi c vlo vhi hlo hhi hfor ihfor fn'.
-    red. simpl. intros hdc.
-    unfold translate_instr_r.
-    lazymatch goal with
-    | |- context [ translate_for _ _ _ (?f ?fn ?c) ] =>
-      change (f fn c) with (translate_cmd P SP fn c)
-    end.
+    intros s s2 i d lo hi c vlo vhi hlo hhi hfor ihfor m_id s_id s_st st hp.
+    rewrite translate_instr_r_for.
     eapply u_bind.
     1:{ eapply translate_pexpr_correct_cast in hlo. all: eauto. }
     eapply u_bind.
     1:{ eapply translate_pexpr_correct_cast in hhi. all: eauto. }
-    apply ihfor. assumption.
+    unfold Pfor in ihfor.
+    simpl in ihfor.
+    specialize (ihfor m_id s_id s_id~1 s_st st ltac:(apply hp) ltac:(reflexivity)).
+    destruct ihfor as [s_id''].
+    eapply u_pre_weaken_rule.
+    1: eapply u_post_weaken_rule.
+    1: exact H0.
+    1: apply rel_estate_pop_sub.
+    apply rel_estate_push_sub.
   - (* for_nil *)
-    red. intros. red. intros hdc fn'.
-    simpl. apply u_ret_eq. auto.
+    intros s i c m_id s_id s_id' s_st st hdc hpre.
+    simpl.
+    exists s_id'.
+    apply u_ret_eq.
+    easy.
   - (* for_cons *)
-    red. intros s1 s1' s2 s3 i w ws c hw hc ihc hfor ihfor fn'.
-    red. simpl. intros hdc.
+    intros s1 s1' s2 s3 i w ws c hw hc ihc hfor ihfor m_id s_id s_id' s_st st hdc hpre.
+    simpl.
+    specialize (ihc m_id s_id' (s_id~0 :: s_st) st hdc).
+    pose proof translate_cmd_preceq P SP c m_id s_id'.
+    destruct translate_cmd as [s_id'' c'] eqn:E.
+    specialize (ihfor m_id s_id s_id'' s_st st hdc ltac:(etransitivity;eauto)) as [s_id''' ihfor].
+    exists s_id'''.
     eapply u_put.
-    eapply u_bind.
-    1:{
-      red in ihc. eapply u_pre_weaken_rule.
-      1: eapply ihc. 1: assumption.
+    eapply u_pre_weaken_rule.
+    2: {
       intros ? [me [hme ?]]. subst.
-      eapply translate_write_var_estate. all: eassumption.
+      eapply translate_write_var_estate. all: try eassumption.
     }
-    apply ihfor. assumption.
-  - (* call *)
-    red.
-    clear H vargs vres.
-    intros s1 m2 s2 ii xs gn args vargs vres hargs hgn ihgn hwr_vres fn'.
-    unfold Pfun, Translation.Pfun, get_translated_fun in ihgn.
-    red. simpl. intros _. unfold translate_instr_r.
     eapply u_bind.
-    1: eapply bind_list_pexpr_correct; try eassumption; easy.
-    eapply u_bind with (v₁ := [seq totce (translate_value v) | v <- vres])
-                       (q := rel_mem m2).
-    * unshelve eapply u_pre_weaken_rule with (p1 := (rel_mem (emem s1))).
-      2: move => h Hh; apply Hh.
-      unfold SP in *. clear SP.
-      specialize (ihgn hP).
-      unfold translate_prog'.
-      destruct (sem_call_get_some hgn) as [f hf].
+    1: eapply ihc.
+    eapply ihfor.
+  - (* call *)
+    intros s1 m2 s2 ii xs gn args vargs' vres' hargs hgn ihgn hwr_vres m_id s_id s_st st hdi.
+    unfold Pfun, Translation.Pfun, get_translated_fun in ihgn.
+    simpl.
+    eapply u_bind.
+    1: eapply bind_list_pexpr_correct with (s_id0:=s_id) (s_st0:=s_st) (st0:=st); try eassumption; easy.
+    eapply u_bind with (v₁ := [seq totce (translate_value v) | v <- vres']).
+    1: specialize (ihgn hP (evm s1) m_id s_id s_st st).
+    1: eapply u_pre_weaken_rule.
+    * destruct (sem_call_get_some hgn) as [f hf].
       destruct (tr_prog_inv hf) as [fs' [l [hl [ef ep]]]].
       simpl in ep.
       rewrite ep in ihgn.
       pose (translate_call_head ef) as hc.
       rewrite hc.
-      apply ihgn.
-    * (* Should be similar to Copn, by appealing to correctness of
-         write_lvals, expect that we also need to restore `evm s1`. *)
-      clear ihgn.
-      unshelve eapply u_pre_weaken_rule with
-        (p1 := (rel_estate {| emem := m2; evm := evm s1 |} fn')).
+      eapply ihgn.
+    * eapply rel_estate_push.
+    * eapply u_pre_weaken_rule.
       -- eapply translate_write_lvals_correct.
+         1:assumption.
          exact hwr_vres.
-      -- intros h hm. unfold rel_estate. split; try easy.
-         simpl. unfold rel_vmap.
-         give_up.
+      -- intros h. eapply rel_estate_prec.
+         apply fresh1.
   - (* proc *)
-    rename fn into fn_ambient.
-    rename vargs into vargs_amb. rename vres into vres_amb.
-    unfold sem_Ind_proc. red. intros m1 m2 gn g vargs vargs' s1 vm2 vres vres'.
+    intros m1 m2 gn g vargs' vargs'' s1 vm2 vres' vres''.
     intros hg hvars hwr hbody ihbody hget htrunc.
-    unfold Translation.Pfun. intros hp.
-
+    intros hp vm m_id s_id s_st st.
+    unfold Translation.Pfun.
     unfold get_translated_fun.
-    destruct (tr_prog_inv hg) as [fs' [l [hl [ef ep]]]].
-    unfold translate_prog' in ep.
+    destruct (tr_prog_inv hg) as [fs' [l [hl ]]].
+    unfold Pc, SP, translate_prog' in ihbody.
+    unfold translate_prog' in *.
+    rewrite hl in ihbody.
+    rewrite hl.
+    destruct H0 as [ef ep].
+    rewrite hl in ef.
+    rewrite hl in ep.
+    subst SP.
     rewrite ep.
     unfold translate_call.
+    simpl.
+    destruct (translate_funs P fs') as [tr_fs' tsp'] eqn:Efuns.
     simpl.
     assert (E : gn == gn) by now apply /eqP.
     rewrite E; clear E.
     unfold translate_call_body.
     rewrite hg.
-    eapply u_bind with (v₁ := tt) (q := rel_estate s1 gn).
+    eapply u_bind.
     1: {
-         (* PGH: `translate_write_vars_correct` expects some `rel_estate`
-                 as pre, but we only have `rel_mem m1`.
-                 We strengthen the precondition, and show that
-                   `rel_mem m1 => rel_estate (Estate m1 vmap0)`
-                 *)
-         unshelve eapply u_pre_weaken_rule.
-         - exact (rel_estate (Estate m1 vmap0) gn).
-         - simpl.
-           assert
-             (Htr : (trunc_list (f_tyin g)
-                 [seq totce (translate_value v) | v <- vargs'])
-                = [seq totce (translate_value v) | v <- vargs])
-             by admit.
-           rewrite Htr.
-           now eapply translate_write_vars_correct.
-         - intros h hmem.
-           unfold rel_estate, rel_vmap.
-           split; auto. intros i v hvm.
-           rewrite coerce_to_choice_type_K.
-           simpl in hvm.
-           unfold vmap0 in hvm.
-           rewrite Fv.get0 in hvm.
-           (* We're reading an undefined address, and getting an `ok v`;
-              surely we can invert and exfalso on that. *)
-           unfold undef_addr in hvm.
-           (* It's not going to work on arrays. This is dumb.
-              Why did they define it like that? Is this really a
-              good spec for a memory model? *)
-           unfold translate_var.
-           destruct (vtype i); unfold undef_error in hvm;
-             try now inversion hvm.
-           noconf hvm. simpl.
-           (* Seems like we're forced to prove that h is the empty heap.
-              Maybe backtrack and think about an alternative to showing the
-              implication between the preconditions. Or convince Jasmin dev
-              to change their definition. *)
-           assert (hh : h = empty_heap) by give_up.
-           rewrite hh.
-           rewrite get_empty_heap.
-           simpl. easy.
+      1: {
+        assert
+          (Htr : (trunc_list (f_tyin g)
+                             [seq totce (translate_value v) | v <- vargs''])
+                 = [seq totce (translate_value v) | v <- vargs'])
+        by admit.
+        rewrite Htr.
+        eapply translate_write_vars_correct; try eassumption.
+      }
     }
-    eapply u_bind with (v₁ := tt) (q := rel_mem m2).
-    + unfold Pc, SP, translate_prog' in ihbody.
+    eapply u_bind with (v₁ := tt).
+    + unfold Pc, translate_prog' in ihbody.
       assert (handled_cmd (f_body g)) as hpbody.
       {
         clear -hg hp.
@@ -4546,23 +4781,22 @@ Proof.
          This should allow us to use the induction hypothesis on a different function,
          gn in this case.
        *)
-      specialize (ihbody gn hpbody). clear hpbody.
-      rewrite hl in ihbody.
-      (* TODO: strengthen post condition to
-         rel_estate {| emem := m2; evm := vm2 |} gn *)
-
+      specialize (ihbody s_id~1 s_id~1 s_st st hpbody). clear hpbody.
+      simpl in ihbody.
       (* maybe something similar to the prove of
       assert (translate_call P gn (translate_funs P (l ++ ((gn,f) :: fs'))).1
               = translate_call P gn (translate_funs P ((gn,f) :: fs')).1)
 
         just need to push the (translate_funs ...) in until they get to a funcall?
        *)
-      assert (htr : translate_cmd P (translate_funs P (l ++ ((gn,g) :: fs'))).1 gn (f_body g)
-                    = translate_cmd P (translate_funs P ((gn,g) :: fs')).1 gn (f_body g)).
+      (* assert (htr : translate_cmd P (translate_funs P (l ++ ((gn,g) :: fs'))).1 (f_body g) s_id~1 s_id~1 *)
+      (*               = translate_cmd P (translate_funs P ((gn,g) :: fs')).1 (f_body g) s_id~1 s_id~1). *)
+      unfold f_body in *.
+      assert (htr : translate_cmd P (translate_funs P (l ++ ((gn,g) :: fs'))).1 (f_body g) s_id~1 s_id~1
+                    = translate_cmd P (translate_funs P fs').1 (f_body g) s_id~1 s_id~1).
       {
         clear -ef ep hl hg.
         unfold translate_prog' in ep, ef.
-        rewrite hl in ep, ef.
         unfold translate_cmd.
         unfold translate_instr.
         simpl in *.
@@ -4581,14 +4815,15 @@ Proof.
           + simpl.
 
             rewrite -hl.
-
-            rewrite -ef.
-            destruct (gn == gn) eqn:E.
-            2: { move /eqP in E. exfalso. apply E. reflexivity. }
-            simpl.
             admit.
+            (* rewrite -ef. *)
+            (* destruct (gn == gn) eqn:E. *)
+            (* 2: { move /eqP in E. exfalso. apply E. reflexivity. } *)
+            (* simpl. *)
+            (* admit. *)
       }
       rewrite htr in ihbody.
+      simpl in ihbody.
       (* PGH: something about the funnames in H2 and the goal is fishy. *)
       subst.
       give_up.
