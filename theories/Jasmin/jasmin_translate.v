@@ -4533,11 +4533,76 @@ Proof.
 Qed.
 
 Definition Pfun (P : uprog) (fn : funname) m va m' vr vm m_id s_id s_st st :=
-  ⊢ ⦃ rel_estate {| emem := m; evm := vmap0 |} s_id~1 s_id~1 [::] ((vm, m_id, s_id~0, s_st) :: st) ⦄
+  ⊢ ⦃ rel_estate {| emem := m; evm := vm |} m_id s_id s_st st ⦄
       (* translate_call P fn (translate_prog' P) [seq totce (translate_value v) | v <- va] *)
       get_translated_fun P fn s_id~1 [seq totce (translate_value v) | v <- va]
       ⇓ [seq totce (translate_value v) | v <- vr]
-      ⦃ rel_estate {| emem := m' ; evm := vm |} m_id s_id s_st st ⦄.
+      ⦃ rel_estate {| emem := m' ; evm := vm |} m_id s_id~0 s_st st ⦄.
+
+Lemma hget_lemma (l : seq var_i) vm vres :
+  mapM (λ x : var_i, get_var vm x) l = ok vres ->
+  [seq encode (vtype (v_var x)) | x <- l] = [seq choice_type_of_val v | v <- vres].
+Proof.
+  revert vres vm.
+  induction l; intros.
+  - inversion H; reflexivity.
+  - inversion H.
+    jbind H1 v Hv.
+    jbind H1 v' Hv'.
+    noconf H1.
+    simpl.
+    unfold choice_type_of_val.
+    erewrite type_of_get_var by eassumption.
+    erewrite IHl by eassumption.
+    reflexivity.
+Qed.
+
+Lemma hget_lemma2 l m vm vres m_id s_id s_st st :
+  mapM (λ x : var_i, get_var vm x) l = ok vres ->
+  List.Forall2
+    (λ (c : ∑ a : choice_type, raw_code a) (v : value),
+      ⊢ ⦃ rel_estate {| emem := m; evm := vm |} m_id s_id s_st st ⦄
+          c.π2 ⇓ coe_cht c.π1 (translate_value v)
+          ⦃ rel_estate {| emem := m; evm := vm |} m_id s_id s_st st ⦄)
+    [seq totc (encode (vtype (v_var x))) (translate_get_var m_id x) | x <- l] vres.
+Proof.
+  revert m vm vres m_id s_id s_st st.
+  induction l; intros.
+  - inversion H. constructor.
+  - inversion H.
+    jbind H1 v Hv.
+    jbind H1 v' Hv'.
+    noconf H1.
+    constructor.
+    + simpl.
+      eapply translate_get_var_correct; eauto.
+      simpl. assumption.
+    + eapply IHl. assumption.
+Qed.
+
+Lemma htrunc_lemma1 l vargs vargs':
+  mapM2 ErrType truncate_val l vargs' = ok vargs
+  -> (trunc_list l [seq totce (translate_value v) | v <- vargs']) = [seq totce (translate_value v) | v <- vargs].
+Proof.
+  revert vargs vargs'.
+  induction l; intros.
+  - destruct vargs'.
+    + inversion H; reflexivity.
+    + inversion H.
+  - destruct vargs'.
+    + inversion H.
+    + inversion H.
+      jbind H1 v' Hv'.
+      jbind H1 v'' Hv''.
+      noconf H1.
+      simpl.
+      unfold trunc_list.
+      simpl.
+      erewrite totce_truncate_translate by eassumption.
+      f_equal.
+      apply IHl.
+      assumption.
+Qed.
 
 Theorem translate_prog_correct P m vargs m' vres :
   ∀ fn,
@@ -4566,7 +4631,7 @@ Proof using asm_correct.
            handled_cmd c →
            let (s_id', c') := translate_cmd P SP c m_id s_id in
            ⊢ ⦃ rel_estate s1 m_id s_id s_st st ⦄
-                  c' ⇓ tt
+                 c' ⇓ tt
                ⦃ rel_estate s2 m_id s_id' s_st st ⦄).
   set (Pfor :=
     λ (v : var_i) (ws : seq Z) (s1 : estate) (c : cmd) (s2 : estate),
@@ -4628,7 +4693,8 @@ Proof using asm_correct.
     eapply u_bind.
     + eapply bind_list_pexpr_correct. 2: eassumption.
       eauto.
-    + erewrite translate_exec_sopn_correct by eassumption.
+    + unshelve erewrite translate_exec_sopn_correct by eassumption.
+      1: assumption.
       eapply u_post_weaken_rule.
       1: apply translate_write_lvals_correct.
       all: eauto.
@@ -4730,13 +4796,10 @@ Proof using asm_correct.
       pose (translate_call_head ef) as hc.
       rewrite hc.
       eapply ihgn.
-    * eapply rel_estate_push.
-    * eapply u_pre_weaken_rule.
-      -- eapply translate_write_lvals_correct.
-         1:assumption.
-         exact hwr_vres.
-      -- intros h. eapply rel_estate_prec.
-         apply fresh1.
+    * easy.
+    * eapply translate_write_lvals_correct.
+      1:assumption.
+      exact hwr_vres.
   - (* proc *)
     intros m1 m2 gn g vargs' vargs'' s1 vm2 vres' vres''.
     intros hg hvars hwr hbody ihbody hget htrunc.
@@ -4763,35 +4826,41 @@ Proof using asm_correct.
     rewrite hg.
     eapply u_bind.
     1: {
-      1: {
-        assert
-          (Htr : (trunc_list (f_tyin g)
-                             [seq totce (translate_value v) | v <- vargs''])
-                 = [seq totce (translate_value v) | v <- vargs'])
-        by admit.
-        rewrite Htr.
-        eapply translate_write_vars_correct; try eassumption.
-      }
+      erewrite htrunc_lemma1 by eassumption.
+      eapply u_pre_weaken_rule.
+      1: eapply translate_write_vars_correct; eassumption.
+      eapply rel_estate_push.
     }
+    assert (handled_cmd (f_body g)) as hpbody.
+    {
+      clear -hg hp.
+      pose (gd := (gn, g)).
+      unfold handled_program.
+      pose (hh := (List.forallb_forall handled_fundecl (p_funcs P)).1 hp gd).
+      destruct g.
+      apply hh. simpl.
+      now apply (assoc_mem' hg).
+    }
+    specialize (ihbody s_id~1 s_id~1 [::] ((vm, m_id, s_id~0, s_st) :: st) hpbody). clear hpbody.
+    assert (htr : translate_cmd P (translate_funs P (l ++ ((gn,g) :: fs'))).1 (f_body g) s_id~1 s_id~1
+                  = translate_cmd P (translate_funs P fs').1 (f_body g) s_id~1 s_id~1).
+    { admit. }
+    rewrite htr in ihbody.
+    rewrite Efuns in ihbody.
+    destruct (translate_cmd P tr_fs' (f_body g) s_id~1 s_id~1) as [s_id' c'] eqn:E.
+    rewrite E in ihbody.
+    rewrite E.
+    simpl.
+
     eapply u_bind with (v₁ := tt).
-    + unfold Pc, translate_prog' in ihbody.
-      assert (handled_cmd (f_body g)) as hpbody.
-      {
-        clear -hg hp.
-        pose (gd := (gn, g)).
-        unfold handled_program.
-        pose (hh := (List.forallb_forall handled_fundecl (p_funcs P)).1 hp gd).
-        destruct g.
-        apply hh. simpl.
-        now apply (assoc_mem' hg).
-      }
+    + (* unfold Pc, translate_prog' in ihbody. *)
+
       (* PGH (Fri 13 May 19:02:28 BST 2022):
          Generalized the different Pc, Pi, ... to allow variation of the funname.
          This should allow us to use the induction hypothesis on a different function,
          gn in this case.
        *)
-      specialize (ihbody s_id~1 s_id~1 s_st st hpbody). clear hpbody.
-      simpl in ihbody.
+      (* simpl in ihbody. *)
       (* maybe something similar to the prove of
       assert (translate_call P gn (translate_funs P (l ++ ((gn,f) :: fs'))).1
               = translate_call P gn (translate_funs P ((gn,f) :: fs')).1)
@@ -4800,50 +4869,25 @@ Proof using asm_correct.
        *)
       (* assert (htr : translate_cmd P (translate_funs P (l ++ ((gn,g) :: fs'))).1 (f_body g) s_id~1 s_id~1 *)
       (*               = translate_cmd P (translate_funs P ((gn,g) :: fs')).1 (f_body g) s_id~1 s_id~1). *)
-      unfold f_body in *.
-      assert (htr : translate_cmd P (translate_funs P (l ++ ((gn,g) :: fs'))).1 (f_body g) s_id~1 s_id~1
-                    = translate_cmd P (translate_funs P fs').1 (f_body g) s_id~1 s_id~1).
-      {
-        clear -ef ep hl hg.
-        unfold translate_prog' in ep, ef.
-        unfold translate_cmd.
-        unfold translate_instr.
-        simpl in *.
-        unfold translate_call, translate_call_body.
-        simpl.
-        destruct g. simpl.
-        destruct f_body.
-        - reflexivity.
-        - simpl.
-          destruct i. destruct i0 eqn:case_i.
-          + admit.
-          + admit.
-          + admit.
-          + admit.
-          + admit.
-          + simpl.
-
-            rewrite -hl.
-            admit.
-            (* rewrite -ef. *)
-            (* destruct (gn == gn) eqn:E. *)
-            (* 2: { move /eqP in E. exfalso. apply E. reflexivity. } *)
-            (* simpl. *)
-            (* admit. *)
-      }
-      rewrite htr in ihbody.
-      simpl in ihbody.
-      (* PGH: something about the funnames in H2 and the goal is fishy. *)
-      subst.
-      give_up.
-
+      eapply u_pre_weaken_rule.
+      * eapply ihbody.
+      * easy.
     + eapply u_bind.
       * eapply bind_list_correct.
-        -- inversion hget.
-           admit.
-        -- admit.
-      * inversion htrunc.
-        admit.
+        -- rewrite <- map_comp.
+           unfold comp.
+           simpl.
+           eapply hget_lemma; eassumption.
+        -- eapply hget_lemma2.
+           assumption.
+      * clear -htrunc.
+        eapply u_ret.
+        split.
+        1: eapply rel_estate_pop.
+        1: eassumption.
+        eapply htrunc_lemma1.
+        eassumption.
+  - assumption.
 Admitted.
 
 End Translation.
