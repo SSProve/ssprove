@@ -150,12 +150,11 @@ Set Equations Transparent.
 From extructures Require Import ord fset fmap.
 
 Definition tr_P := Eval simpl in tr_p two_functions.
-Definition default_prog' := (1%positive, (ret tt)).
-Definition default_call := (1%positive, fun (x : [choiceType of seq typed_chElement]) => ret x).
+Definition default_prog' := (1%positive, fun s_id : p_id => (ret tt)).
+Definition default_call := (1%positive, fun (s_id : p_id) (x : [choiceType of seq typed_chElement]) => ret x).
 Definition get_tr sp n := List.nth_default default_call sp n.
 Definition tr_f := Eval simpl in (get_tr tr_P 1).
 Definition tr_g := Eval simpl in (get_tr tr_P 0).
-
 
 Lemma eq_rect_K :
   forall (A : eqType) (x : A) (P : A -> Type) h e,
@@ -168,7 +167,7 @@ Qed.
 
 From CoqWord Require Import word.
 
-Notation "$ i" := (_ ; nat_of_fun_var _ {| vtype := _; vname := i |})
+Notation "$ i" := (_ ; nat_of_p_id_var _ {| vtype := _; vname := i |})
                     (at level 99, format "$ i").
 
 Notation "$$ i" := ({| v_var := {| vtype := _; vname := i |}; v_info := _ |})
@@ -179,7 +178,7 @@ Notation "'for var ∈ seq" := (translate_for _ ($$var) seq)
                                       (at level 99).
 
 Ltac prog_unfold := unfold get_tr, translate_prog', tr_p, translate_prog,
-    translate_call,
+    translate_call, translate_call_body,
     translate_write_lvals, translate_write_var, translate_instr,
     translate_var,
     coerce_chtuple_to_list, bind_list', bind_list_trunc_aux,
@@ -194,11 +193,12 @@ Ltac simpl_fun :=
          | _ => prog_unfold; simpl
          end).
 
-Goal forall goal v, tr_g.2 [v] = goal.
+Goal forall goal v, tr_g.2 1%positive [v] = goal.
   intros goal v.
   unfold tr_g.
   unfold get_tr. unfold tr_P.
   simpl_fun.
+  simpl.
 
   (* BSH: the setoid_rewrites takes forever if we do not 'set' these names first *)
   set (array32 := sarr 32%positive).
@@ -214,7 +214,7 @@ Goal forall goal v, tr_g.2 [v] = goal.
 Admitted.
 
 
-Goal forall goal v, tr_f.2 [('word U64; v)] = goal .
+Goal forall goal v, tr_f.2 1%positive [('word U64; v)] = goal .
   intros goal v.
   unfold tr_f.
   unfold get_tr. unfold tr_P. unfold translate_prog'.
