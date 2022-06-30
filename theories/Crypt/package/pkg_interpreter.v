@@ -41,12 +41,15 @@ Section Interpreter.
          nat_ch_aux (NSProd a b) (l1 × l2) (Some v1, Some v2) := Some (v1, v2) ;
          nat_ch_aux (NSProd a b) (l1 × l2) _ := None ;
       } ;
+    nat_ch_aux (NSNat n) 'word u := Some _ ;
     nat_ch_aux _ _ := None.
   Proof.
     - eapply @Ordinal.
       instantiate (1 := n %% n').
       apply ltn_pmod.
       apply cond_pos0.
+    - apply wrepr.
+      apply (BinInt.Z.of_nat n).
   Defined.
 
   Definition nat_ch (x : option NatState) (l : choice_type) : option (Value l) :=
@@ -71,6 +74,7 @@ Section Interpreter.
         | _ => None
       end ;
     ch_nat 'option l None := Some (NSOption None) ;
+    ch_nat 'word u x := Some (NSNat (BinInt.Z.to_nat (word.wunsigned x))) ;
     ch_nat _ _ := None.
 
   Lemma ch_nat_ch l v:
@@ -97,6 +101,13 @@ Section Interpreter.
       rewrite modn_small.
       2: assumption.
       done.
+    - simp ch_nat. simpl. simp nat_ch_aux.
+      f_equal.
+      unfold nat_ch_aux_obligation_2.
+      rewrite @Znat.Z2Nat.id.
+      + rewrite wrepr_unsigned.
+        reflexivity.
+      + apply (@wunsigned_range u).
   Qed.
 
   Definition new_state
@@ -156,6 +167,19 @@ Section Interpreter.
         | Some (seed', x) => Some (seed', [:: x])
         | _ => None
         end
+    | chSum A B =>
+        let '(seed', b) := ((seed + 1)%nat, Nat.even seed) in
+        if b
+        then
+          match sampler A seed' with
+          | Some (seed'' , x) => Some (seed'', inl x)
+          | _ => None
+          end
+        else
+          match sampler B seed' with
+          | Some (seed'' , y) => Some (seed'', inr y)
+          | _ => None
+          end
     end.
   Next Obligation.
     eapply Ordinal.
