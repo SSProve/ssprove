@@ -1699,14 +1699,14 @@ Definition translate_write_lval (p : p_id) (l : lval) (v : typed_chElement)
   end.
 
 (* the argument to c is its (valid) sub id, the return is the resulting (valid) sub id *)
-Fixpoint translate_for (v : var_i) (ws : seq Z) (i : p_id) (c : p_id -> p_id * raw_code 'unit) (sid : p_id) : raw_code 'unit :=
+Fixpoint translate_for (v : var_i) (ws : seq Z) (m_id : p_id) (c : p_id -> p_id * raw_code 'unit) (s_id : p_id) : raw_code 'unit :=
   match ws with
   | [::] => ret tt
   | w :: ws =>
-      let (sid', c') := c sid in
-      translate_write_var i v (totce (translate_value w)) ;;
+      let (s_id', c') := c s_id in
+      translate_write_var m_id v (totce (translate_value w)) ;;
       c' ;;
-      translate_for v ws i c sid'
+      translate_for v ws m_id c s_id'
   end.
 
 (* list_ltuple *)
@@ -3961,67 +3961,67 @@ Defined.
 
 Fixpoint translate_instr_r
   (tr_f_body : fdefs)
-  (i : instr_r) (id : p_id) (sid : p_id) {struct i}
+  (i : instr_r) (m_id : p_id) (s_id : p_id) {struct i}
   : p_id * raw_code 'unit
 
 with translate_instr (tr_f_body : fdefs)
-       (i : instr) (id : p_id) (sid : p_id) {struct i} : p_id * raw_code 'unit :=
-  translate_instr_r tr_f_body (instr_d i) id sid.
+       (i : instr) (m_id : p_id) (s_id : p_id) {struct i} : p_id * raw_code 'unit :=
+  translate_instr_r tr_f_body (instr_d i) m_id s_id.
 Proof using P asm_op asmop pd.
   pose proof (translate_cmd :=
-    (fix translate_cmd (tr_f_body : fdefs) (c : cmd) (id : p_id) (sid : p_id) : p_id * raw_code 'unit :=
+    (fix translate_cmd (tr_f_body : fdefs) (c : cmd) (m_id : p_id) (s_id : p_id) : p_id * raw_code 'unit :=
       match c with
-      | [::] => (sid, ret tt)
+      | [::] => (s_id, ret tt)
       | i :: c =>
-          let (sid', i') := translate_instr tr_f_body i id sid in
-          let (sid'', c') := translate_cmd tr_f_body c id sid' in
-          (sid'', i' ;; c')
+          let (s_id', i') := translate_instr tr_f_body i m_id s_id in
+          let (s_id'', c') := translate_cmd tr_f_body c m_id s_id' in
+          (s_id'', i' ;; c')
       end
     )
              ).
   refine
     match i with
     | Cassgn l _ s e =>
-        let tr_p := translate_pexpr (p_globs P) id e in
-        (sid,
+        let tr_p := translate_pexpr (p_globs P) m_id e in
+        (s_id,
           v ← tr_p.π2 ;;
-          (translate_write_lval (p_globs P) id l (totce (truncate_el s v)))
+          (translate_write_lval (p_globs P) m_id l (totce (truncate_el s v)))
         )
     | Copn ls _ o es =>
-        let cs := [seq (translate_pexpr (p_globs P) id e) | e <- es] in
+        let cs := [seq (translate_pexpr (p_globs P) m_id e) | e <- es] in
         let vs := bind_list cs in
 
-        (sid,
+        (s_id,
           bvs ← vs ;;
-          translate_write_lvals (p_globs P) id ls (translate_exec_sopn o bvs)
+          translate_write_lvals (p_globs P) m_id ls (translate_exec_sopn o bvs)
         )
     | Cif e c1 c2 =>
-        let (sid', c1') := translate_cmd tr_f_body c1 id sid in
-        let (sid'', c2') := translate_cmd tr_f_body c2 id sid' in
-        let e' := translate_pexpr (p_globs P) id e in
+        let (s_id', c1') := translate_cmd tr_f_body c1 m_id s_id in
+        let (s_id'', c2') := translate_cmd tr_f_body c2 m_id s_id' in
+        let e' := translate_pexpr (p_globs P) m_id e in
         let rb := coerce_typed_code 'bool e' in
-        (sid'',
+        (s_id'',
           b ← rb ;; if b then c1' else c2'
         )
     | Cfor i r c =>
         let '(d, lo, hi) := r in
-        let (sid', fresh) := fresh_id sid in
-        let loᵗ := coerce_typed_code 'int (translate_pexpr (p_globs P) id lo) in
-        let hiᵗ := coerce_typed_code 'int (translate_pexpr (p_globs P) id hi) in
-        let cᵗ := translate_cmd tr_f_body c id in
-        (sid',
+        let (s_id', fresh) := fresh_id s_id in
+        let loᵗ := coerce_typed_code 'int (translate_pexpr (p_globs P) m_id lo) in
+        let hiᵗ := coerce_typed_code 'int (translate_pexpr (p_globs P) m_id hi) in
+        let cᵗ := translate_cmd tr_f_body c m_id in
+        (s_id',
           vlo ← loᵗ ;;
           vhi ← hiᵗ ;;
-          translate_for i (wrange d vlo vhi) id cᵗ fresh)
+          translate_for i (wrange d vlo vhi) m_id cᵗ fresh)
     | Ccall ii xs f args =>
-        let (sid', fresh) := fresh_id sid in
-        let cs := [seq (translate_pexpr (p_globs P) id e) | e <- args] in
-        (sid',
+        let (s_id', fresh) := fresh_id s_id in
+        let cs := [seq (translate_pexpr (p_globs P) m_id e) | e <- args] in
+        (s_id',
           vargs ← bind_list cs ;;
           vres ← translate_call f tr_f_body fresh vargs ;;
-          translate_write_lvals (p_globs P) id xs vres
+          translate_write_lvals (p_globs P) m_id xs vres
         )
-    | _ => (sid, unsupported.π2)
+    | _ => (s_id, unsupported.π2)
     end.
 Defined.
 (*
@@ -4255,7 +4255,50 @@ Qed.
 
   This predicate eliminates programs that are currently not supported by the
   translation. This is mainly used to disallow while loops.
+  It also checks programs for acyclicity and correct ordering.
 *)
+
+Fixpoint instr_r_fs
+  (i : instr_r) (fs : seq _ufun_decl) {struct i}
+  : bool
+with instr_fs  (i : instr) (fs : seq _ufun_decl) {struct i}
+  : bool  :=
+  instr_r_fs (instr_d i) fs.
+Proof.
+  pose proof (cmd_fs :=
+    (fix cmd_fs (c : cmd) (fs : seq _ufun_decl) : bool :=
+      match c with
+      | [::] => true
+      | i :: c =>
+          cmd_fs c fs && instr_fs i fs
+      end
+    )).
+  refine
+    match i with
+    | Cassgn l _ s e =>
+        true
+    | Copn ls _ o es =>
+        true
+    | Cif e c1 c2 =>
+        cmd_fs c1 fs && cmd_fs c2 fs
+    | Cfor i r c =>
+        cmd_fs c fs
+    | Cwhile _ c1 _ c2 => cmd_fs c1 fs && cmd_fs c2 fs
+    | Ccall ii xs f args =>
+        f \in [seq p.1 | p <- fs]
+    end.
+Defined.
+
+Section CmdFS.
+
+Fixpoint cmd_fs (c : cmd) (fs : seq _ufun_decl) : bool :=
+      match c with
+      | [::] => true
+      | i :: c =>
+          cmd_fs c fs && instr_fs i fs
+      end.
+
+End CmdFS.
 
 Fixpoint handled_instr (i : instr) :=
   match i with
@@ -4278,8 +4321,50 @@ Definition handled_cmd (c : cmd) :=
 Definition handled_fundecl (f : _ufun_decl) :=
   handled_cmd f.2.(f_body).
 
+(* FIXME: bad naming *)
+Lemma lemma3 suf pre :
+  (foldr (fun f '(b, l) => if b then (cmd_fs f.2.(f_body) l, f :: l) else (false, f :: l)) (true, [::]) (suf ++ pre)).1  ->
+  (foldr (fun f '(b, l) => if b then (cmd_fs f.2.(f_body) l, f :: l) else (false, f :: l)) (true, [::]) pre).1.
+Proof.
+  intros H.
+  induction suf.
+  - easy.
+  - simpl in *.
+    apply IHsuf.
+    destruct foldr.
+    destruct b.
+    + easy.
+    + easy.
+Qed.
+
+(* FIXME: bad naming *)
+Lemma lemma4 pre :
+  (foldr (fun f '(b, l) => if b then (cmd_fs f.2.(f_body) l, f :: l) else (false, f :: l)) (true, [::]) pre).2 = pre.
+Proof.
+  induction pre.
+  - reflexivity.
+  - simpl.
+    destruct foldr.
+    destruct b; simpl in *; congruence.
+Qed.
+
+(* FIXME: bad naming *)
+Lemma lemma2 g gn (pre suf : list _ufun_decl) :
+  (foldr (fun f '(b, l) => if b then (cmd_fs f.2.(f_body) l, f :: l) else (false, f :: l)) (true, [::]) (suf ++ (gn,g) :: pre)).1  ->
+  cmd_fs g.(f_body) pre.
+Proof.
+  intros.
+  eapply lemma3 in H.
+  simpl in H.
+  pose proof lemma4 pre.
+  destruct foldr.
+  destruct b; simpl in *; congruence.
+Qed.
+
 Definition handled_program (P : uprog) :=
-  List.forallb handled_fundecl P.(p_funcs).
+  List.forallb handled_fundecl P.(p_funcs) &&
+    (foldr (fun f '(b, l) => if b then (cmd_fs f.2.(f_body) l, f :: l) else (false, f :: l)) (true, [::]) P.(p_funcs)).1 &&
+    uniq [seq p.1 | p <- P.(p_funcs)].
 
 Fact sem_call_get_some {P m1 gn vargs m2 vres} :
   (sem_call P m1 gn vargs m2 vres
@@ -4549,6 +4634,7 @@ Proof.
     reflexivity.
 Qed.
 
+(* FIXME: bad naming *)
 Lemma hget_lemma2 l m vm vres m_id s_id s_st st :
   mapM (λ x : var_i, get_var vm x) l = ok vres ->
   List.Forall2
@@ -4572,6 +4658,7 @@ Proof.
     + eapply IHl. assumption.
 Qed.
 
+(* FIXME: bad naming *)
 Lemma htrunc_lemma1 l vargs vargs':
   mapM2 ErrType truncate_val l vargs' = ok vargs
   -> (trunc_list l [seq totce (translate_value v) | v <- vargs']) = [seq totce (translate_value v) | v <- vargs].
@@ -4596,13 +4683,198 @@ Proof.
       assumption.
 Qed.
 
+Lemma translate_for_ext v l m_id s_id c c' :
+  (forall s_id, c s_id = c' s_id) ->
+  translate_for v l m_id c s_id = translate_for v l m_id c' s_id.
+Proof.
+  revert s_id.
+  induction l; intros s_id hext.
+  - reflexivity.
+  - simpl.
+    rewrite hext.
+    destruct c'.
+    rewrite IHl; auto.
+Qed.
+
+(* FIXME: bad naming *)
+Lemma lemma1 P pre c suf m_id :
+  uniq [seq p.1 | p <- suf ++ pre] ->
+  forall s_id,
+  cmd_fs c pre ->
+  translate_cmd P (translate_funs P (suf ++ pre)).1 c m_id s_id
+  = translate_cmd P (translate_funs P pre).1 c m_id s_id.
+Proof.
+  intros huniq.
+  set (Pr := fun (i : instr_r) =>
+               forall s_id,
+                 instr_r_fs i pre ->
+               translate_instr_r P (translate_funs P (suf ++ pre)).1 i m_id s_id
+               = translate_instr_r P (translate_funs P pre).1 i m_id s_id).
+  set (Pi := fun (i : instr) =>
+               Pr (instr_d i)).
+  set (Pc := fun (c : cmd) =>
+               forall s_id,
+                 cmd_fs c pre ->
+               translate_cmd P (translate_funs P (suf ++ pre)).1 c m_id s_id
+               = translate_cmd P (translate_funs P pre).1 c m_id s_id).
+  eapply cmd_rect with
+    (Pr0 := Pr)
+    (Pi0 := Pi)
+    (Pc0 := Pc);
+    try easy
+  .
+  - intros i c' ihi ihc s_id' hpre.
+    unfold Pc.
+    simpl.
+    unfold Pi in ihi.
+    red in ihi.
+    rewrite !translate_instr_unfold.
+    simpl in hpre.
+    move: hpre => /andP [hi hc].
+    rewrite ihi.
+    2: destruct i; auto.
+    destruct translate_instr_r as [s_id'' i'].
+    rewrite ihc; auto.
+  - intros e c1 c2 ihc1 ihc2 s_id' hpre.
+    rewrite !translate_instr_r_if.
+    simpl in hpre.
+    fold cmd_fs in hpre.
+    move: hpre => /andP [hc1 hc2].
+    rewrite ihc1; auto.
+    destruct translate_cmd as [s_id'' c'].
+    rewrite ihc2; auto.
+  - intros v d lo hi c' ihc s_id hpre.
+    simpl in hpre.
+    fold cmd_fs in hpre.
+    rewrite !translate_instr_r_for.
+    red in ihc.
+    simpl.
+    f_equal.
+    f_equal.
+    apply functional_extensionality.
+    intros lb.
+    f_equal.
+    apply functional_extensionality.
+    intros ub.
+    erewrite translate_for_ext; eauto.
+  - intros i lvals f es s_id hpre.
+    simpl in hpre.
+    unfold translate_instr_r.
+    simpl.
+    f_equal.
+    unfold translate_call.
+    symmetry; destruct assoc eqn:E.
+    +  assert (H2 : exists r', assoc pre f = Some r').
+      * clear -E.
+        induction pre. 1: discriminate.
+        destruct a.
+        simpl in *.
+        destruct (f == s).
+        ** eexists. reflexivity.
+        ** apply IHpre; auto.
+      * destruct H2 as [r'].
+        assert (assoc (translate_funs P (suf ++ pre)).1 f = Some r).
+        ** eapply mem_uniq_assoc.
+           *** clear -E.
+               induction suf.
+               **** induction pre.
+                    ***** discriminate.
+                    *****
+                    destruct a.
+                    simpl in *.
+                    destruct (f==s) eqn:E2.
+                    ******
+                      move: E2 => /eqP ->. left. noconf E.
+                    reflexivity.
+                    ****** right.
+                    apply IHpre. assumption.
+               **** destruct a.
+                    simpl.
+                    right.
+                    assumption.
+           *** clear -huniq.
+               induction suf.
+               **** induction pre.
+                    ***** easy.
+                    ***** destruct a.
+                    simpl in *.
+                    move: huniq => /andP [huniq1 huniq2].
+                    apply /andP; split.
+                    ****** clear -huniq1. induction pre.
+                    ******* easy.
+                    ******* destruct a.
+                    Check [eqType of BinNums.positive].
+                    simpl in huniq1.
+                    pose proof notin_cons [eqType of BinNums.positive] p [seq p.1 | p <- pre] s.
+                    rewrite H in huniq1.
+                    move: huniq1 => /andP [huniq11 huniq12].
+                    simpl.
+                    pose proof notin_cons [eqType of BinNums.positive] p [seq p.1 | p <- (translate_funs P pre).1] s.
+                    rewrite H0.
+                    apply /andP.
+                    split; auto.
+                    ****** apply IHpre. assumption.
+               **** destruct a.
+                    simpl in *.
+                    move: huniq => /andP [huniq1 huniq2].
+                    apply /andP.
+                    split.
+                    ****** clear -huniq1. induction suf.
+                    ******* induction pre.
+                    ******** easy.
+                    ******** destruct a.
+                    simpl in *.
+                    pose proof notin_cons [eqType of BinNums.positive] p [seq p.1 | p <- pre] s.
+                    rewrite H in huniq1.
+                    move: huniq1 => /andP [huniq11 huniq12].
+                    simpl.
+                    pose proof notin_cons [eqType of BinNums.positive] p [seq p.1 | p <- (translate_funs P pre).1] s.
+                    rewrite H0.
+                    apply /andP.
+                    split; auto.
+                    *******
+                      destruct a.
+                    simpl in *.
+                    pose proof notin_cons [eqType of BinNums.positive] p [seq p.1 | p <- suf ++ pre] s.
+                    rewrite H in huniq1.
+                    move: huniq1 => /andP [huniq11 huniq12].
+                    pose proof notin_cons [eqType of BinNums.positive] p [seq p.1 | p <- (translate_funs P (suf ++ pre)).1] s.
+                    rewrite H0.
+                    apply /andP.
+                    split; auto.
+                    ****** apply IHsuf; auto.
+        ** rewrite H0. reflexivity.
+    + exfalso.
+      assert (H2 : assoc pre f = None).
+      * clear -E.
+        induction pre.
+        **  reflexivity.
+        **  simpl in *.
+            destruct a.
+            simpl in *.
+            destruct (f == p).
+            *** discriminate.
+            *** apply IHpre; auto.
+      * clear -H2 hpre.
+        induction pre.
+        ** easy.
+        ** destruct a.
+           simpl in *.
+           rewrite in_cons in hpre.
+           destruct (f == s).
+           *** simpl in *.
+               discriminate.
+           *** simpl in *.
+               apply IHpre; auto.
+Qed.
+
 Theorem translate_prog_correct P m vargs m' vres :
   forall fn,
     sem.sem_call P m fn vargs m' vres →
     handled_program P ->
     ∀ vm m_id s_id s_st st,
     Pfun P fn m vargs m' vres vm m_id s_id s_st st.
-Proof using asm_correct.
+Proof using gd asm_correct.
   intros fn H hP.
   set (Pfun := λ(m : mem) (fn : funname) (va : seq value) (m' : mem) (vr : seq value),
          handled_program P -> forall vm m_id s_id s_st st, Pfun P fn m va m' vr vm m_id s_id s_st st
@@ -4826,16 +5098,30 @@ Proof using asm_correct.
     {
       clear -hg hp.
       pose (gd := (gn, g)).
-      unfold handled_program.
-      pose (hh := (List.forallb_forall handled_fundecl (p_funcs P)).1 hp gd).
+      unfold handled_program in *.
+      move: hp => /andP [] /andP [] hp1 hp2 hp3.
+      pose (hh := (List.forallb_forall handled_fundecl (p_funcs P)).1 hp1 gd).
       destruct g.
       apply hh. simpl.
       now apply (assoc_mem' hg).
     }
     specialize (ihbody s_id~1 s_id~1 [::] ((vm, m_id, s_id~0, s_st) :: st) hpbody). clear hpbody.
+    assert ((l ++ (gn,g) :: fs') = ((l ++ [:: (gn,g)]) ++ fs')) by (rewrite <- List.app_assoc; reflexivity).
     assert (htr : translate_cmd P (translate_funs P (l ++ ((gn,g) :: fs'))).1 (f_body g) s_id~1 s_id~1
                   = translate_cmd P (translate_funs P fs').1 (f_body g) s_id~1 s_id~1).
-    { admit. }
+    { rewrite H0.
+      eapply lemma1.
+      { clear -hp hl H0.
+        unfold handled_program in *.
+        move: hp => /andP [] /andP [_ _].
+        now rewrite hl H0.
+      }
+      clear -hp hl.
+      move: hp => /andP [] /andP [_ hp2 _].
+      rewrite hl in hp2.
+      eapply lemma2.
+      eassumption.
+    }
     rewrite htr in ihbody.
     rewrite Efuns in ihbody.
     destruct (translate_cmd P tr_fs' (f_body g) s_id~1 s_id~1) as [s_id' c'] eqn:E.
@@ -4844,32 +5130,14 @@ Proof using asm_correct.
     simpl.
 
     eapply u_bind with (v₁ := tt).
-    + (* unfold Pc, translate_prog' in ihbody. *)
-
-      (* PGH (Fri 13 May 19:02:28 BST 2022):
-         Generalized the different Pc, Pi, ... to allow variation of the funname.
-         This should allow us to use the induction hypothesis on a different function,
-         gn in this case.
-       *)
-      (* simpl in ihbody. *)
-      (* maybe something similar to the prove of
-      assert (translate_call P gn (translate_funs P (l ++ ((gn,f) :: fs'))).1
-              = translate_call P gn (translate_funs P ((gn,f) :: fs')).1)
-
-        just need to push the (translate_funs ...) in until they get to a funcall?
-       *)
-      (* assert (htr : translate_cmd P (translate_funs P (l ++ ((gn,g) :: fs'))).1 (f_body g) s_id~1 s_id~1 *)
-      (*               = translate_cmd P (translate_funs P ((gn,g) :: fs')).1 (f_body g) s_id~1 s_id~1). *)
-      eapply u_pre_weaken_rule.
-      * eapply ihbody.
-      * easy.
+    + eapply ihbody.
     + eapply u_bind.
       * eapply bind_list_correct.
-        -- rewrite <- map_comp.
+        ** rewrite <- map_comp.
            unfold comp.
            simpl.
            eapply hget_lemma; eassumption.
-        -- eapply hget_lemma2.
+        ** eapply hget_lemma2.
            assumption.
       * clear -htrunc.
         eapply u_ret.
@@ -4879,7 +5147,7 @@ Proof using asm_correct.
         eapply htrunc_lemma1.
         eassumption.
   - assumption.
-Admitted.
+Qed.
 
 End Translation.
 
