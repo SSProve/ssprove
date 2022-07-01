@@ -77,10 +77,14 @@ The formalisation of packages can be found in the [package] directory.
 
 The definition of packages can be found in [pkg_core_definition.v].
 Herein, `package L I E` is the type of packages with set of locations `L`,
-import interface `I` and export interface `E`.
+import interface `I` and export interface `E`. It is defined on top of
+`raw_package` which does not contain the information about its interfaces
+and the locations it uses.
 
 Package laws, as introduced in the paper, are all stated and proven in
-[pkg_composition.v] directly on raw packages.
+[pkg_composition.v] directly on raw packages. This technical detail is not
+mentioned in the paper, but we are nonetheless only interested in these
+laws over proper packages whose interfaces match.
 
 #### Sequential composition
 
