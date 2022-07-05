@@ -6,22 +6,26 @@ Set Warnings "notation-overridden,ambiguous-paths".
 
 Require Import List.
 From Jasmin Require Import expr.
-From Jasmin Require Import x86_extra.
-From JasminSSProve Require Import jasmin_translate.
-From Crypt Require Import Prelude Package.
+From CoqWord Require Import word.
+(* From Jasmin Require Import x86_extra. *)
+From JasminSSProve Require Import jasmin_translate jasmin_utils.
+From Crypt Require Import Prelude Package pkg_user_util.
 
 Import ListNotations.
+Import JasminNotation JasminCodeNotation.
+Import PackageNotation.
+
 Local Open Scope string.
 
-(* Context `{asmop : asmOp}. *)
+Context `{asmop : asmOp}.
 
-(* Context {T} {pT : progT T}. *)
+Context {T} {pT : progT T}.
 
-(* Context {pd : PointerData}. *)
+Context {pd : PointerData}.
 
-(* Context (P : uprog). *)
+Context (P : uprog).
 
-(* Context (f : funname). *)
+Context (f : funname).
 
 Definition xor :=
   {| p_funcs :=
@@ -119,40 +123,26 @@ Definition xor :=
    p_globs := []; p_extra := tt |}
 .
 
+Definition tr_P := Eval simpl in translate_prog' xor.
+Definition default_prog' := (1%positive, fun s_id : p_id => (ret tt)).
+Definition default_call := (1%positive, fun (s_id : p_id) (x : [choiceType of seq typed_chElement]) => ret x).
+Definition get_tr sp n := List.nth_default default_call sp n.
+Definition tr_xor := Eval simpl in (get_tr tr_P.2 0).
 
-Import PackageNotation.
-Notation coe_cht := coerce_to_choice_type.
-Notation coe_tyc := coerce_typed_code.
-Notation " 'array " := (chMap 'int ('word U8)) (at level 2) : package_scope.
-Notation " 'array " := (chMap 'int ('word U8)) (in custom pack_type at level 2).
-Notation " 'mem " := (chMap ('word Uptr) ('word U8)) (at level 2) : package_scope.
-Notation " 'mem " := (chMap ('word Uptr) ('word U8)) (in custom pack_type at level 2).
-Notation " ⸨ ws ⸩ a .[ ptr * scale ] " := (chArray_get ws a ptr scale)
-    (format " ⸨ ws ⸩  a .[ ptr * scale ] ").
-Notation " a [ w / p ] " :=
-  (chArray_set a AAscale p w)
-    (at level 99, no associativity,
-      format " a [ w / p ] ").
+Opaque translate_for.
 
+Goal forall goal w1 w2, tr_xor.2 1%positive [('word U64; w1); ('word U64; w2)] = goal .
+  intros goal.
+  unfold tr_xor.
+  unfold get_tr.
+  simpl_fun.
 
-From Equations Require Import Equations.
-Set Equations With UIP.
-Set Equations Transparent.
+  repeat setjvars.
 
-Definition tr_xor := translate_prog xor.
-Definition f_xor : 'word U64 × 'word U64 -> raw_code ('word U64).
-Proof.
-  pose tr_xor. unfold tr_xor in s. unfold translate_prog in s.
-  simpl in s.
-  destruct s eqn:E.
-  - unfold s in E. discriminate.
-  - pose (ffun p.2).π2.π2.
-    simpl in r.
-    unfold s in E.
-    noconf E.
-    (* simpl in r. *)
-    exact r.
-Defined.
+  repeat setoid_rewrite coerce_to_choice_type_K.
+  repeat setoid_rewrite (@zero_extend_u U64).
+
+Admitted.
 
 Lemma eq_rect_K :
   forall (A : eqType) (x : A) (P : A -> Type) h e,
@@ -163,49 +153,44 @@ Proof.
   reflexivity.
 Qed.
 
-Eval cbn in tr_xor.
+(* Lemma injective_translate_var2 : *)
+(*   forall fn x y, x != y -> translate_var fn x != translate_var fn y. *)
+(* Proof. *)
+(*   intros. *)
+(*   apply /negP. *)
+(*   intros contra. *)
+(*   move: contra => /eqP contra. *)
+(*   eapply injective_translate_var in contra. *)
+(*   move: H => /eqP. easy. *)
+(*   exact xor. *)
+(*   apply x86_correct. *)
+(*   Unshelve. *)
+(*   2: exact progUnit. *)
+(* Qed. *)
 
-Lemma injective_translate_var2 :
-  forall fn x y, x != y -> translate_var fn x != translate_var fn y.
-Proof.
-  intros.
-  apply /negP.
-  intros contra.
-  move: contra => /eqP contra.
-  eapply injective_translate_var in contra.
-  move: H => /eqP. easy.
-  exact xor.
-  apply x86_correct.
-  Unshelve.
-  2: exact progUnit.
-Qed.
-
-Lemma f_xor_correct : forall w1 w2, ⊢ ⦃ fun _ => True ⦄ f_xor (w1, w2) ⇓ wxor w1 w2 ⦃ fun _ => True ⦄.
+Lemma f_xor_correct : forall w1 w2, ⊢ ⦃ fun _ => True ⦄ tr_xor.2 1%positive [('word U64; w1); ('word U64; w2)] ⇓ [('word U64; wxor w1 w2)] ⦃ fun _ => True ⦄.
 Proof.
   (* preprocessing *)
-  unfold f_xor at 1.
-  unfold apply_noConfusion.
-  simpl.
-  unfold translate_write_var. simpl.
-  unfold coerce_chtuple_to_list; simpl.
-  rewrite eq_rect_r_K.
-  simpl.
-  unfold bind_list'. simpl.
-  unfold bind_list_trunc_aux. simpl.
-  rewrite eq_rect_K.
-  set (fn := 2%positive).
-  set (x := translate_var fn {| vtype := sword64; vname := "x.131" |}).
-  set (r := translate_var fn {| vtype := sword64; vname := "r.133" |}).
-  set (y := translate_var fn {| vtype := sword64; vname := "y.132" |}).
+  intros w1 w2.
+  (* unfold tr_xor. *)
+  (* unfold get_tr. *)
+  simpl_fun.
+  repeat setjvars.
+
+  repeat setoid_rewrite coerce_to_choice_type_K.
+  repeat setoid_rewrite (@zero_extend_u U64).
 
   (* proof *)
   intros.
-  rewrite !zero_extend_u.
+
+  (* ssprove_swap_aux 1. *)
+  (* ssprove_swap_lhs 3. *)
   eapply u_put.
   eapply u_put.
   eapply u_get_remember.
   intros.
-  apply u_put.
+  (* eapply u_pre_weaken_rule. *)
+  (* eapply u_put. *)
   apply u_get_remember; intros.
   apply u_get_remember; intros.
   apply u_put.
