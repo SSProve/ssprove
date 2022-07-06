@@ -144,41 +144,8 @@ Goal forall goal w1 w2, tr_xor.2 1%positive [('word U64; w1); ('word U64; w2)] =
 
 Admitted.
 
-Lemma eq_rect_K :
-  forall (A : eqType) (x : A) (P : A -> Type) h e,
-    @eq_rect A x P h x e = h.
-Proof.
-  intros A x P' h e.
-  replace e with (@erefl A x) by apply eq_irrelevance.
-  reflexivity.
-Qed.
-
-(* Lemma injective_translate_var2 : *)
-(*   forall fn x y, x != y -> translate_var fn x != translate_var fn y. *)
-(* Proof. *)
-(*   intros. *)
-(*   apply /negP. *)
-(*   intros contra. *)
-(*   move: contra => /eqP contra. *)
-(*   eapply injective_translate_var in contra. *)
-(*   move: H => /eqP. easy. *)
-(*   exact xor. *)
-(*   apply x86_correct. *)
-(*   Unshelve. *)
-(*   2: exact progUnit. *)
-(* Qed. *)
-
-Hint Resolve injective_translate_var2 : ssprove_swap.
-
-(* #[export] Hint Extern 9 (⊢ ⦃ _ ⦄ _ ← cmd (cmd_put ?ℓ ?v) ;; _ ← cmd (cmd_get ?ℓ') ;; _ ≈ _ ⦃ _ ⦄) => *)
-(*   apply (r_put_get_swap' ℓ ℓ' v) *)
-(*   : ssprove_swap. *)
-(* #[export] Hint Extern 10 (⊢ ⦃ _ ⦄ _ ← cmd _ ;; _ ← cmd (cmd_sample _) ;; _ ≈ _ ⦃ _ ⦄) => *)
 Ltac neq_loc_auto ::= eapply injective_translate_var3; auto.
-  (* shelve. *)
-  (* repeat match goal with *)
-  (* | |- translate_var _ _ != translate_var _ _ => eapply injective_translate_var3; auto *)
-  (* end. *)
+
 Import ListNotations.
 Lemma f_xor_correct : forall w1 w2, ⊢ ⦃ fun _ => True ⦄ tr_xor.2 1%positive [('word U64; w1); ('word U64; w2)] ⇓ [('word U64; wxor w1 w2)] ⦃ fun _ => True ⦄.
 Proof.
@@ -187,12 +154,11 @@ Proof.
   simpl_fun.
   repeat setjvars.
 
-  repeat setoid_rewrite coerce_to_choice_type_K.
-  repeat setoid_rewrite (@zero_extend_u U64).
-  intros.
+  (* this makes Qed hang *)
+  (* repeat setoid_rewrite (@zero_extend_u U64). *)
 
   (* proof *)
-  ssprove_swap_lhs 1%nat.
+  ssprove_swap_lhs 1.
   ssprove_contract_put_get_lhs.
   ssprove_swap_seq_lhs [:: 1 ; 0 ; 2 ; 1].
   ssprove_contract_put_get_lhs.
@@ -203,6 +169,7 @@ Proof.
   ssprove_swap_seq_lhs [:: 2 ; 1 ].
   ssprove_contract_put_get_lhs.
   repeat eapply u_put.
-  eapply u_ret_eq.
+  eapply u_ret.
+  rewrite !zero_extend_u.
   easy.
 Qed.
