@@ -168,54 +168,41 @@ Qed.
 (*   2: exact progUnit. *)
 (* Qed. *)
 
+Hint Resolve injective_translate_var2 : ssprove_swap.
+
+(* #[export] Hint Extern 9 (⊢ ⦃ _ ⦄ _ ← cmd (cmd_put ?ℓ ?v) ;; _ ← cmd (cmd_get ?ℓ') ;; _ ≈ _ ⦃ _ ⦄) => *)
+(*   apply (r_put_get_swap' ℓ ℓ' v) *)
+(*   : ssprove_swap. *)
+(* #[export] Hint Extern 10 (⊢ ⦃ _ ⦄ _ ← cmd _ ;; _ ← cmd (cmd_sample _) ;; _ ≈ _ ⦃ _ ⦄) => *)
+Ltac neq_loc_auto ::= eapply injective_translate_var3; auto.
+  (* shelve. *)
+  (* repeat match goal with *)
+  (* | |- translate_var _ _ != translate_var _ _ => eapply injective_translate_var3; auto *)
+  (* end. *)
+Import ListNotations.
 Lemma f_xor_correct : forall w1 w2, ⊢ ⦃ fun _ => True ⦄ tr_xor.2 1%positive [('word U64; w1); ('word U64; w2)] ⇓ [('word U64; wxor w1 w2)] ⦃ fun _ => True ⦄.
 Proof.
   (* preprocessing *)
   intros w1 w2.
-  (* unfold tr_xor. *)
-  (* unfold get_tr. *)
   simpl_fun.
   repeat setjvars.
 
   repeat setoid_rewrite coerce_to_choice_type_K.
   repeat setoid_rewrite (@zero_extend_u U64).
+  intros.
 
   (* proof *)
-  intros.
-
-  (* ssprove_swap_aux 1. *)
-  (* ssprove_swap_lhs 3. *)
-  eapply u_put.
-  eapply u_put.
-  eapply u_get_remember.
-  intros.
-  (* eapply u_pre_weaken_rule. *)
-  (* eapply u_put. *)
-  apply u_get_remember; intros.
-  apply u_get_remember; intros.
-  apply u_put.
-  apply u_get_remember; intros.
-  apply u_ret.
-  intros.
-  rewrite !zero_extend_u.
-  split. easy.
-  repeat destruct H.
-  rewrite !zero_extend_u in H1.
-  rewrite !zero_extend_u in H4.
-  subst.
-  unfold u_get in *.
-  rewrite get_set_heap_eq in H0.
-  rewrite get_set_heap_eq in H3.
-  erewrite <- get_heap_set_heap in H5.
-  erewrite <- get_heap_set_heap in H2.
-  rewrite get_set_heap_eq in H2.
-  rewrite get_set_heap_eq in H5.
-  rewrite H2.
-  rewrite H5.
-  rewrite <- H3 in H0.
+  ssprove_swap_lhs 1%nat.
+  ssprove_contract_put_get_lhs.
+  ssprove_swap_seq_lhs [:: 1 ; 0 ; 2 ; 1].
+  ssprove_contract_put_get_lhs.
+  ssprove_swap_seq_lhs [:: 1 ; 0 ; 2 ; 1].
+  ssprove_contract_put_get_lhs.
+  ssprove_swap_seq_lhs [:: 0 ; 2 ; 1 ].
+  ssprove_contract_put_lhs.
+  ssprove_swap_seq_lhs [:: 2 ; 1 ].
+  ssprove_contract_put_get_lhs.
+  repeat eapply u_put.
+  eapply u_ret_eq.
   easy.
-  apply injective_translate_var2.
-  reflexivity.
-  apply injective_translate_var2.
-  reflexivity.
 Qed.

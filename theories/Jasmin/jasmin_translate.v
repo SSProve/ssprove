@@ -1069,6 +1069,21 @@ Proof.
   easy.
 Qed.
 
+Lemma injective_translate_var3 :
+  forall (p1 p2 : p_id) v1 v2, vname v1 != vname v2 -> translate_var p1 v1 != translate_var p2 v2.
+Proof.
+  intros.
+  apply /eqP => contra.
+  unfold translate_var in contra.
+  noconf contra.
+  unfold nat_of_p_id_var in H1.
+  apply coprime_mul_inj in H1 as [e1 e2].
+  2,3,4,5: apply coprime_nat_of_stype_nat_of_fun_ident.
+  apply injective_nat_of_p_id_ident2 in e2 as [p_gn ?].
+  move: H => /eqP contra.
+  easy.
+Qed.
+
 Lemma mem_loc_translate_var_neq :
   ∀ p x,
     mem_loc != translate_var p x.
