@@ -18,7 +18,7 @@ Module JasminCodeNotation.
       (at level 99, no associativity,
         format " a [ w / p ] ").
 
-  Notation "$$ i" := (_ ; nat_of_p_id_var _ {| vtype := _; vname := i |})
+  Notation "$$ i" := (translate_var _ {| vtype := _; vname := i |})
                        (at level 99, format "$$ i").
 
   Notation "$$$ i" := ({| v_var := {| vtype := _; vname := i |}; v_info := _ |})
@@ -121,7 +121,6 @@ Ltac setjvars := ltac2:(jtac.setjvars ()).
 Ltac prog_unfold := unfold translate_prog', translate_prog,
     translate_call, translate_call_body,
     translate_write_lvals, translate_write_var, translate_instr,
-    translate_var,
     coerce_chtuple_to_list, bind_list', bind_list_trunc_aux,
     wsize_size, trunc_list,
     List.nth_default.
