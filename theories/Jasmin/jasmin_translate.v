@@ -1,5 +1,6 @@
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import all_ssreflect all_algebra.
+From mathcomp.word Require Import ssrZ word.
 From Jasmin Require Import expr compiler_util values sem.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 
@@ -8,7 +9,6 @@ From Jasmin Require Import expr_facts.
 
 From Coq Require Import Utf8.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
-From CoqWord Require Import ssrZ.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 
 From Crypt Require Import Prelude Package.
@@ -29,7 +29,7 @@ Set Default Proof Using "Type".
 Derive NoConfusion for result.
 Derive NoConfusion for value.
 Derive NoConfusion for wsize.
-Derive NoConfusion for CoqWord.word.word.
+(* Derive NoConfusion for (word wsize). *)
 Derive EqDec for wsize.
 
 Local Open Scope positive_scope.
@@ -1845,7 +1845,7 @@ Proof.
 Qed.
 
 Definition rel_mem (m : mem) (h : heap) :=
-  ∀ ptr v,
+  ∀ (ptr : pointer) (v : (word U8)),
     (* mem as array model: *)
     read m ptr U8 = ok v →
     (get_heap h mem_loc) ptr = Some v.
@@ -1959,7 +1959,7 @@ Qed.
 #[local] Open Scope vmap_scope.
 
 Definition rel_vmap (vm : vmap) (p : p_id) (h : heap) :=
-  ∀ (i : var) v,
+  ∀ (i : var) (v : sem_t (vtype i)),
     vm.[i] = ok v →
     get_heap h (translate_var p i) = coerce_to_choice_type _ (embed v).
 
@@ -2064,24 +2064,27 @@ Inductive valid_stack : stack -> heap -> Prop :=
     (forall s_id'', List.In s_id'' s_st -> disj s_id' s_id'') ->
     valid_stack ((vm, m_id, s_id', s_id :: s_st) :: st) h.
 
+Definition valid_stack_frame '(vm, m_id, s_id, s_st) (h : heap) :=
+  rel_vmap vm m_id h /\
+  m_id ⪯ s_id /\
+  valid s_id h /\
+  ~ List.In s_id s_st /\
+  List.NoDup s_st /\
+  (forall s_id', List.In s_id' s_st -> valid s_id' h) /\
+  (forall s_id', List.In s_id' s_st -> m_id ⪯ s_id') /\
+  (forall s_id', List.In s_id' s_st -> disj s_id s_id') /\
+  (forall s_id' s_id'', List.In s_id' s_st -> List.In s_id'' s_st -> s_id' <> s_id'' -> disj s_id' s_id'').
+
 Lemma valid_stack_single vm m_id s_id s_st h :
-  rel_vmap vm m_id h ->
-  m_id ⪯ s_id ->
-  valid s_id h ->
-  ~ List.In s_id s_st ->
-  List.NoDup s_st ->
-  (forall s_id', List.In s_id' s_st -> valid s_id' h) ->
-  (forall s_id', List.In s_id' s_st -> m_id ⪯ s_id') ->
-  (forall s_id', List.In s_id' s_st -> disj s_id s_id') ->
-  (forall s_id' s_id'', List.In s_id' s_st -> List.In s_id'' s_st -> s_id' <> s_id'' -> disj s_id' s_id'') ->
+  valid_stack_frame (vm, m_id, s_id, s_st) h ->
   valid_stack [::(vm, m_id, s_id, s_st)] h.
 Proof.
   revert s_id.
-  induction s_st; intros s_id hrel hpre1 hvalid hnin hnodup hvalid2 hpre2 hdisj1 hdisj2.
+  induction s_st; intros s_id [hrel [hpre1 [hvalid [hnin [hnodup [hvalid2 [hpre2 [hdisj1 hdisj2]]]]]]]].
   - constructor; auto.
     + constructor.
   - constructor; auto.
-    + eapply IHs_st; auto.
+    + eapply IHs_st; repeat split; auto.
       * eapply hpre2; left; auto.
       * eapply hvalid2; left; auto.
       * inversion hnodup; auto.
@@ -2115,21 +2118,13 @@ Qed.
 
 Lemma valid_stack_cons vm m_id s_id s_st st h :
   valid_stack st h ->
-  rel_vmap vm m_id h ->
-  m_id ⪯ s_id ->
   (forall stf, List.In stf st -> disj m_id stf.1.2 /\ forall s_id', List.In s_id' stf.2 -> disj m_id s_id') ->
-  valid s_id h ->
-  ~ List.In s_id s_st ->
-  List.NoDup s_st ->
-  (forall s_id', List.In s_id' s_st -> valid s_id' h) ->
-  (forall s_id', List.In s_id' s_st -> m_id ⪯ s_id') ->
-  (forall s_id', List.In s_id' s_st -> disj s_id s_id') ->
-  (forall s_id' s_id'', List.In s_id' s_st -> List.In s_id'' s_st -> s_id' <> s_id'' -> disj s_id' s_id'') ->
+  valid_stack_frame (vm, m_id, s_id, s_st) h ->
   valid_stack ((vm, m_id, s_id, s_st) :: st) h.
 Proof.
   revert vm m_id s_id st h.
-  intros vm m_id s_id st h hvs hrel hpre hdisj1 hvalid1 hnin hnodup hvalid2 hpre2 hdisj2 hdisj3.
-  revert s_id hpre hvalid1 hnin hdisj2. induction s_st.
+  intros vm m_id s_id st h hvs hdisj1 [hrel [hpre1 [hvalid1 [hnin [hnodup [hvalid2 [hpre2 [hdisj2 hdisj3]]]]]]]].
+  revert s_id hpre1 hvalid1 hnin hdisj2. induction s_st.
   - constructor; auto.
   - constructor; auto.
     + eapply IHs_st.
@@ -2208,22 +2203,12 @@ Ltac split_and :=
 Lemma invert_valid_stack st vm m_id s_id s_st h :
   valid_stack ((vm, m_id, s_id, s_st) :: st) h ->
   valid_stack st h
-  /\ rel_vmap vm m_id h
-  /\ m_id ⪯ s_id
   /\ (forall stf, List.In stf st -> disj m_id stf.1.2 /\ forall s_id', List.In s_id' stf.2 -> disj m_id s_id')
-  /\ valid s_id h
-  /\ ~ List.In s_id s_st
-  /\ List.NoDup s_st
-  /\ (forall s_id', List.In s_id' s_st -> valid s_id' h)
-  /\ (forall s_id', List.In s_id' s_st -> m_id ⪯ s_id')
-  /\ (forall s_id', List.In s_id' s_st -> disj s_id s_id')
-  /\ (forall s_id' s_id'', List.In s_id' s_st -> List.In s_id'' s_st -> s_id' <> s_id'' -> disj s_id' s_id'').
+  /\  valid_stack_frame (vm, m_id, s_id, s_st) h.
 Proof.
-  intros H.
+  intros H. unfold valid_stack_frame.
   split_and; subst; auto.
   - eapply valid_stack_valid_stack; eassumption.
-  - eapply valid_stack_rel_vmap; eassumption.
-  - inversion H; auto.
   - revert s_id H.
     induction s_st.
     + intros.
@@ -2232,6 +2217,8 @@ Proof.
     + intros s_id H stf.
       inversion H; subst.
       eapply IHs_st; eauto.
+  - eapply valid_stack_rel_vmap; eassumption.
+  - inversion H; auto.
   - inversion H; auto.
   - inversion H; subst; auto.
     intros [contra|contra]; subst.
@@ -2288,8 +2275,8 @@ Proof.
         eapply IHs_st; eauto.
 Qed.
 
-Ltac invert_stack st hst hevm hpre hdisj hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2 :=
-  apply invert_valid_stack in st as [hst [hevm [hpre [hdisj [hvalid [hnin [hnodup [hvalid1 [hpre1 [hdisj1 hdisj2]]]]]]]]]].
+Ltac invert_stack st hst hdisj hevm hpre hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2 :=
+  apply invert_valid_stack in st as [hst [hdisj [hevm [hpre [hvalid [hnin [hnodup [hvalid1 [hpre1 [hdisj1 hdisj2]]]]]]]]]].
 
 Lemma valid_stack_pop stf st :
   ∀ h, valid_stack (stf :: st) h ->
@@ -2305,9 +2292,9 @@ Lemma valid_stack_push_sub vm m_id s_id s_st st :
        valid_stack ((vm, m_id, s_id~1, s_id~0 :: s_st) :: st) h.
 Proof.
   intros h vst.
-  invert_stack vst hst hevm hpre hdisj hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2.
+  invert_stack vst hst hdisj hevm hpre hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2; auto.
   constructor; eauto with prefix.
-  - eapply valid_stack_cons; eauto with prefix.
+  - eapply valid_stack_cons; unfold valid_stack_frame; split_and; eauto with prefix.
     + intros contra.
       eapply disj_antirefl.
       eapply disj_prec_l.
@@ -2348,7 +2335,7 @@ Lemma valid_stack_push vm m_id s_id s_st st :
 Proof.
   intros h vst.
   assert (vst2:=vst).
-  invert_stack vst2 hst hevm hpre hdisj hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2; auto.
+  invert_stack vst2 hst hdisj hevm hpre hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2; auto.
   eapply valid_stack_push_sub in vst.
   eapply valid_stack_pop_sub in vst.
   constructor; eauto with prefix.
@@ -2405,7 +2392,7 @@ Lemma valid_stack_set_heap i v vm m_id s_id s_st st m :
   valid_stack st (set_heap m (translate_var m_id i) v).
 Proof.
   intros vs.
-  invert_stack vs hst hevm hpre hdisj hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2.
+  invert_stack vs hst hdisj hevm hpre hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2; auto.
   induction hst as [
     |st vm' m_id' s_id' h hst IH hevm' hpre' hvalid' hdisj'
     |st vm' m_id' s_id' s_id'' s_st' h hst IH hpre' hvalid' hnin' hdisj1' hdisj2'].
@@ -2559,8 +2546,7 @@ Proof.
   eapply get_var_get_heap.
   - eassumption.
   - apply hcond in hm as [_ hst].
-    invert_stack hst hst hevm hpre hdisj hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2.
-    assumption.
+    invert_stack hst hst hdisj hevm hpre hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2; auto.
 Qed.
 
 Lemma translate_gvar_correct (x : gvar) (v : value) s (cond : heap → Prop) m_id s_id s_st st :
@@ -3365,7 +3351,7 @@ Proof.
       split. 1: assumption.
       apply hcond in hm.
       destruct hm as [hm hst].
-      invert_stack hst hst hevm hpre hdisj hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2.
+      invert_stack hst hst hdisj hevm hpre hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2; auto.
       apply hevm in e1. rewrite e1.
       simpl. rewrite coerce_to_choice_type_K.
       rewrite coerce_to_choice_type_translate_value_to_val.
@@ -3434,7 +3420,7 @@ Proof.
     eapply hcond in hm.
     assert (hm2:=hm).
     destruct hm2 as [hm2 hst].
-    invert_stack hst hst hevm hpre hdisj hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2.
+    invert_stack hst hst hdisj hevm hpre hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2; auto.
     erewrite get_var_get_heap. 2-3: eassumption.
     simpl. erewrite <- type_of_get_var. 2: eassumption.
     rewrite coerce_to_choice_type_K.
@@ -3665,10 +3651,10 @@ Lemma valid_stack_set_var i v vm s m_id s_id s_st st m :
 Proof.
   intros vs hsv.
   assert (vs':=vs).
-  invert_stack vs hst hevm hpre hdisj hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2.
+  invert_stack vs hst hdisj hevm hpre hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2; auto.
   eapply set_varP. 3: exact hsv.
   - intros v1 hv1 eyl; subst.
-    eapply valid_stack_cons; eauto.
+    eapply valid_stack_cons; unfold valid_stack_frame; split_and; eauto.
     + eapply valid_stack_set_heap.
       eassumption.
     + intros vi vt ev.
@@ -3693,7 +3679,7 @@ Proof.
       1: apply hvalid1; auto.
       apply hpre1. assumption.
   - intros hbo hyl hset; subst.
-    eapply valid_stack_cons; auto.
+    eapply valid_stack_cons; unfold valid_stack_frame; split_and; auto.
     + eapply valid_stack_set_heap.
       eassumption.
     + intros vi vt ev.
@@ -4449,7 +4435,14 @@ Lemma translate_instr_r_for P SP i r c id sid :
                                                    translate_for i (wrange d vlo vhi) id cᵗ fresh).
 Proof. reflexivity. Qed.
 
-Ltac invert_stack st hst hevm hpre hdisj hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2 := apply invert_valid_stack in st as [hst [hevm [hpre [hdisj [hvalid [hnin [hnodup [hvalid1 [hpre1 [hdisj1 hdisj2]]]]]]]]]].
+
+Ltac invert_stack st hst hdisj hevm hpre hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2 :=
+  apply invert_valid_stack in st as [hst [hdisj [hevm [hpre [hvalid [hnin [hnodup [hvalid1 [hpre1 [hdisj1 hdisj2]]]]]]]]]].
+
+Ltac split_and :=
+  repeat lazymatch goal with
+  | |- _ /\ _ => split
+         end.
 
 Lemma valid_stack_prec vm m_id s_id1 s_id2 s_st st h :
     s_id1 ⪯ s_id2 ->
@@ -4458,7 +4451,7 @@ Lemma valid_stack_prec vm m_id s_id1 s_id2 s_st st h :
 Proof.
   intros hpre12 vst.
   invert_stack vst hst hevm hpre hdisj hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2.
-  eapply valid_stack_cons; eauto with prefix.
+  eapply valid_stack_cons; unfold valid_stack_frame; split_and; eauto with prefix.
   - eapply valid_prec; eauto.
   - intros contra.
     eapply disj_antirefl.
@@ -4534,9 +4527,9 @@ Proof.
                  let (s_id', _) := translate_cmd P SP c m_id s_id in
                  s_id ⪯ s_id').
   eapply cmd_rect with
-    (Pr0 := Pr)
-    (Pi0 := Pi)
-    (Pc0 := Pc);
+    (Pr := Pr)
+    (Pi := Pi)
+    (Pc := Pc);
     try easy
   .
   - intros s_id.
@@ -4585,9 +4578,9 @@ Proof.
                  let (s_id', _) := translate_cmd P SP c id s_id in
                  s_id ⪯ s_id').
   eapply instr_r_Rect with
-    (Pr0 := Pr)
-    (Pi0 := Pi)
-    (Pc0 := Pc);
+    (Pr := Pr)
+    (Pi := Pi)
+    (Pc := Pc);
     try easy
   .
   - intros s_id.
@@ -4749,9 +4742,9 @@ Proof.
                translate_cmd P (translate_funs P (suf ++ pre)).1 c m_id s_id
                = translate_cmd P (translate_funs P pre).1 c m_id s_id).
   eapply cmd_rect with
-    (Pr0 := Pr)
-    (Pi0 := Pi)
-    (Pc0 := Pc);
+    (Pr := Pr)
+    (Pi := Pi)
+    (Pc := Pc);
     try easy
   .
   - intros i c' ihi ihc s_id' hpre.
@@ -5081,7 +5074,7 @@ Proof using gd asm_correct.
     unfold Pfun, Translation.Pfun, get_translated_fun in ihgn.
     simpl.
     eapply u_bind.
-    1: eapply bind_list_pexpr_correct with (s_id0:=s_id) (s_st0:=s_st) (st0:=st); try eassumption; easy.
+    1: eapply bind_list_pexpr_correct with (s_id:=s_id) (s_st:=s_st) (st:=st); try eassumption; easy.
     eapply u_bind with (v₁ := [seq totce (translate_value v) | v <- vres']).
     1: specialize (ihgn hP (evm s1) m_id s_id s_st st).
     1: eapply u_pre_weaken_rule.

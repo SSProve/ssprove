@@ -20,7 +20,7 @@ From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   pkg_tactics pkg_composition.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
-From CoqWord Require Import word.
+From mathcomp.word Require Import word.
 
 (* Must come after importing Equations.Equations, who knows why. *)
 From Crypt Require Import FreeProbProg.

@@ -2366,7 +2366,7 @@ Proof.
   eapply r_transR.
   - unfold fail.
     eapply rswap_cmd_eq with (c₀ := cmd_sample _) (c₁ := c).
-    eapply rsamplerC'_cmd with (c0 := c).
+    eapply rsamplerC'_cmd with (c := c).
   - simpl. unfold fail.
     eapply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
     intros [hpre hpost]. simpl.

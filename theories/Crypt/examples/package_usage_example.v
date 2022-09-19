@@ -117,7 +117,7 @@ Definition sig := {sig #[0] : 'nat → 'nat }.
     } ;
     #def #[2] (_ : 'unit) : 'option ('fin 2) {
       #put ('nat ; 0) := 0 ;;
-      ret (Some (gfin 1))
+      ret (Some (gfin 2))
     } ;
     #def #[3] (m : {map 'nat → 'nat}) : 'option 'nat {
       ret (getm m 0)

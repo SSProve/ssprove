@@ -52,7 +52,7 @@ Section FinProb.
 
   #[program] Definition addI (x y : I) : I := ⦑ (x∙1 + y∙1) / 2%:~R ⦒.
   Next Obligation.
-    simpl.
+    intros x y. simpl.
     rewrite divr_ge0 ?Bool.andb_true_l ?ler0n ?addr_ge0 //.
     rewrite ler_pdivr_mulr.
     rewrite mul1r [2%:~R]/(1+1) ler_add //.
@@ -81,7 +81,7 @@ Section FinProb.
   #[program] Definition barycentric_sum (p:I) (x y: I) : I :=
     ⦑ p∙1 * x∙1 + (1-p∙1) * y∙1 ⦒.
   Next Obligation.
-    simpl.
+    simpl. intros p x y.
     set p' : I := negI p; change (1-p∙1) with p'∙1.
     rewrite addr_ge0 ?mulr_ge0 //.
     have: (1 = p∙1*1 + (1 - p∙1)*1) by rewrite !mulr1 addrA [_+1]addrC addrK.
@@ -92,7 +92,7 @@ Section FinProb.
   #[program] Definition wopProb (p:ProbS) : WI (ProbAr p) :=
     ⦑ fun f => barycentric_sum p (f true) (f false) ⦒.
   Next Obligation.
-    intros ? ? H.
+    intros p ? ? H.
     rewrite /Irel /=.
     rewrite ler_add // ler_pmul //; try by apply H.
     by rewrite (I_ge0 (negI p)).
