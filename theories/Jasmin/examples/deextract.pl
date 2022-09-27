@@ -11,7 +11,7 @@ $string =~ s/{/{| /g ;
 $string =~ s/}/ |}/g ;
 $string =~ s/v_info :=[ \t\n]*[^{}]*{[^}]*}/v_info := dummy_var_info/g ;
 $string =~ s/(MkI[^(]*\()\(([^()]*(\([^)]*\))*)*\)/$1dummy_instr_info/g ;
-$string =~ s/([[:alnum:]]*\.[[:alnum:]]*)/"$1"/g ;
+$string =~ s/([[:graph:]]*\.[[:graph:]]*)/"$1"/g ;
 $string =~ s/\(\)/tt/g ;
 
 # curry functions

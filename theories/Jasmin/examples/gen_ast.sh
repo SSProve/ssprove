@@ -1,8 +1,10 @@
 #!/bin/bash
 
+# you might have install the perl module Regexp::Common via cpan
+
 # set path to jasminc.byte on command line by invoking the script with
 # JASMINC=... ./gen_ast.sh foo.jazz
-JASMINC=${JASMINC:-$(which jasminc.byte)}
+# JASMINC=${JASMINC:-$(which jasminc.byte)}
 
 # use this variable to e.g. include paths
 # e.g.: ./gen_ast.sh aes '-I AES:../examples'

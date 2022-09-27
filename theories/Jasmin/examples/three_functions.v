@@ -50,7 +50,7 @@ Definition three_functions :=  {| p_funcs :=
              {| v_var :=
                {| vtype :=
                  sword U64;
-                vname := res_"z.160" |};
+                vname := "res_z.160" |};
               v_info := dummy_var_info |}])
            (xI xH)
            ([Pvar
@@ -65,7 +65,7 @@ Definition three_functions :=  {| p_funcs :=
        f_res :=
         [{| v_var :=
            {| vtype := sword U64;
-            vname := res_"z.160" |};
+            vname := "res_z.160" |};
           v_info := dummy_var_info |}];
        f_extra := tt |});
      (xI xH,
@@ -85,7 +85,7 @@ Definition three_functions :=  {| p_funcs :=
              {| v_var :=
                {| vtype :=
                  sword U64;
-                vname := res_"y.162" |};
+                vname := "res_y.162" |};
               v_info := dummy_var_info |}])
            (xI
             (xO xH))
@@ -101,7 +101,7 @@ Definition three_functions :=  {| p_funcs :=
        f_res :=
         [{| v_var :=
            {| vtype := sword U64;
-            vname := res_"y.162" |};
+            vname := "res_y.162" |};
           v_info := dummy_var_info |}];
        f_extra := tt |});
      (xI (xO xH),
@@ -121,7 +121,7 @@ Definition three_functions :=  {| p_funcs :=
              {| v_var :=
                {| vtype :=
                  sword U64;
-                vname := res_"x.164" |};
+                vname := "res_x.164" |};
               v_info := dummy_var_info |})
            (AT_none) (sword U64)
            (Papp2
@@ -140,7 +140,7 @@ Definition three_functions :=  {| p_funcs :=
        f_res :=
         [{| v_var :=
            {| vtype := sword U64;
-            vname := res_"x.164" |};
+            vname := "res_x.164" |};
           v_info := dummy_var_info |}];
        f_extra := tt |})];
    p_globs := []; p_extra := tt |}

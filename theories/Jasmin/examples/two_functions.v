@@ -22,7 +22,7 @@ Definition two_functions :=  {| p_funcs :=
              {| v_var :=
                {| vtype :=
                  sword U64;
-                vname := res_"y.151" |};
+                vname := "res_y.151" |};
               v_info := dummy_var_info |}])
            (xI xH)
            ([Pvar
@@ -37,7 +37,7 @@ Definition two_functions :=  {| p_funcs :=
        f_res :=
         [{| v_var :=
            {| vtype := sword U64;
-            vname := res_"y.151" |};
+            vname := "res_y.151" |};
           v_info := dummy_var_info |}];
        f_extra := tt |});
      (xI xH,
@@ -57,7 +57,7 @@ Definition two_functions :=  {| p_funcs :=
              {| v_var :=
                {| vtype :=
                  sword U64;
-                vname := res_"x.153" |};
+                vname := "res_x.153" |};
               v_info := dummy_var_info |})
            (AT_none) (sword U64)
            (Papp2
@@ -76,7 +76,7 @@ Definition two_functions :=  {| p_funcs :=
        f_res :=
         [{| v_var :=
            {| vtype := sword U64;
-            vname := res_"x.153" |};
+            vname := "res_x.153" |};
           v_info := dummy_var_info |}];
        f_extra := tt |})];
    p_globs := []; p_extra := tt |}
