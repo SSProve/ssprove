@@ -1,0 +1,20 @@
+from AES require "aes.jinc"
+
+/* We typically pack all functions that may be used
+   by other jasmin programs in jinc files. 
+   Then we create jazz files just for entry-point
+   specific code */
+
+export
+fn aes_jazz(reg u128 key, reg u128 in) -> reg u128 {
+   reg u128 out;
+   out = aes(key,in);
+   return out;
+}
+
+export
+fn invaes_jazz(reg u128 key, reg u128 in) -> reg u128 {
+   reg u128 out;
+   out = invaes(key,in);
+   return out;
+}

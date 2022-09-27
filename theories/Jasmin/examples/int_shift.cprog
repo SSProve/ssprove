@@ -1,0 +1,120 @@
+  {Jasmin.Expr.p_funcs =
+    [(Jasmin.BinNums.Coq_xH,
+      {Jasmin.Expr.f_info = Jasmin.BinNums.Coq_xO Jasmin.BinNums.Coq_xH;
+       f_tyin = []; f_params = [];
+       f_body =
+        [Jasmin.Expr.MkI
+          (({Jasmin.Location.uid_loc = 3;
+             base_loc =
+              {Jasmin.Location.loc_fname = "int_shift.jazz";
+               loc_start = (10, 2); loc_end = (10, 14); loc_bchar = 155;
+               loc_echar = 167};
+             stack_loc = []},
+            []),
+          Jasmin.Expr.Ccall (Jasmin.Expr.InlineFun,
+           [Jasmin.Expr.Lvar
+             {Jasmin.Expr.v_var =
+               {Jasmin.Var0.Var.vtype = Jasmin.Type.Coq_sint; vname = x.151};
+              v_info =
+               {Jasmin.Location.loc_fname = "int_shift.jazz";
+                loc_start = (10, 2); loc_end = (10, 3); loc_bchar = 155;
+                loc_echar = 156}}],
+           Jasmin.BinNums.Coq_xI Jasmin.BinNums.Coq_xH,
+           [Jasmin.Expr.Pconst Jasmin.BinNums.Z0]));
+         Jasmin.Expr.MkI
+          (({Jasmin.Location.uid_loc = 4;
+             base_loc =
+              {Jasmin.Location.loc_fname = "int_shift.jazz";
+               loc_start = (11, 2); loc_end = (11, 15); loc_bchar = 170;
+               loc_echar = 183};
+             stack_loc = []},
+            []),
+          Jasmin.Expr.Cassgn
+           (Jasmin.Expr.Lvar
+             {Jasmin.Expr.v_var =
+               {Jasmin.Var0.Var.vtype =
+                 Jasmin.Type.Coq_sword Jasmin.Wsize.U64;
+                vname = y.150};
+              v_info =
+               {Jasmin.Location.loc_fname = "int_shift.jazz";
+                loc_start = (11, 2); loc_end = (11, 3); loc_bchar = 170;
+                loc_echar = 171}},
+           Jasmin.Expr.AT_none, Jasmin.Type.Coq_sword Jasmin.Wsize.U64,
+           Jasmin.Expr.Papp1 (Jasmin.Expr.Oword_of_int Jasmin.Wsize.U64,
+            Jasmin.Expr.Pvar
+             {Jasmin.Expr.gv =
+               {Jasmin.Expr.v_var =
+                 {Jasmin.Var0.Var.vtype = Jasmin.Type.Coq_sint;
+                  vname = x.151};
+                v_info =
+                 {Jasmin.Location.loc_fname = "int_shift.jazz";
+                  loc_start = (11, 12); loc_end = (11, 13); loc_bchar = 180;
+                  loc_echar = 181}};
+              gs = Jasmin.Expr.Slocal})))];
+       f_tyout = [Jasmin.Type.Coq_sword Jasmin.Wsize.U64];
+       f_res =
+        [{Jasmin.Expr.v_var =
+           {Jasmin.Var0.Var.vtype = Jasmin.Type.Coq_sword Jasmin.Wsize.U64;
+            vname = y.150};
+          v_info =
+           {Jasmin.Location.loc_fname = "int_shift.jazz";
+            loc_start = (12, 9); loc_end = (12, 10); loc_bchar = 193;
+            loc_echar = 194}}];
+       f_extra = ()});
+     (Jasmin.BinNums.Coq_xI Jasmin.BinNums.Coq_xH,
+      {Jasmin.Expr.f_info =
+        Jasmin.BinNums.Coq_xO (Jasmin.BinNums.Coq_xO Jasmin.BinNums.Coq_xH);
+       f_tyin = [Jasmin.Type.Coq_sint];
+       f_params =
+        [{Jasmin.Expr.v_var =
+           {Jasmin.Var0.Var.vtype = Jasmin.Type.Coq_sint; vname = n.152};
+          v_info =
+           {Jasmin.Location.loc_fname = ""; loc_start = (-1, -1);
+            loc_end = (-1, -1); loc_bchar = -1; loc_echar = -1}}];
+       f_body =
+        [Jasmin.Expr.MkI
+          (({Jasmin.Location.uid_loc = 2;
+             base_loc =
+              {Jasmin.Location.loc_fname = "int_shift.jazz";
+               loc_start = (3, 3); loc_end = (3, 15); loc_bchar = 65;
+               loc_echar = 77};
+             stack_loc = []},
+            []),
+          Jasmin.Expr.Cassgn
+           (Jasmin.Expr.Lvar
+             {Jasmin.Expr.v_var =
+               {Jasmin.Var0.Var.vtype = Jasmin.Type.Coq_sint; vname = m.153};
+              v_info =
+               {Jasmin.Location.loc_fname = "int_shift.jazz";
+                loc_start = (3, 3); loc_end = (3, 4); loc_bchar = 65;
+                loc_echar = 66}},
+           Jasmin.Expr.AT_inline, Jasmin.Type.Coq_sint,
+           Jasmin.Expr.Papp2 (Jasmin.Expr.Olsl Jasmin.Expr.Op_int,
+            Jasmin.Expr.Pvar
+             {Jasmin.Expr.gv =
+               {Jasmin.Expr.v_var =
+                 {Jasmin.Var0.Var.vtype = Jasmin.Type.Coq_sint;
+                  vname = n.152};
+                v_info =
+                 {Jasmin.Location.loc_fname = "int_shift.jazz";
+                  loc_start = (3, 7); loc_end = (3, 8); loc_bchar = 69;
+                  loc_echar = 70}};
+              gs = Jasmin.Expr.Slocal},
+            Jasmin.Expr.Pconst
+             (Jasmin.BinNums.Zpos
+               (Jasmin.BinNums.Coq_xI
+                 (Jasmin.BinNums.Coq_xO
+                   (Jasmin.BinNums.Coq_xO
+                     (Jasmin.BinNums.Coq_xO
+                       (Jasmin.BinNums.Coq_xO
+                         (Jasmin.BinNums.Coq_xO Jasmin.BinNums.Coq_xH))))))))))];
+       f_tyout = [Jasmin.Type.Coq_sint];
+       f_res =
+        [{Jasmin.Expr.v_var =
+           {Jasmin.Var0.Var.vtype = Jasmin.Type.Coq_sint; vname = m.153};
+          v_info =
+           {Jasmin.Location.loc_fname = "int_shift.jazz";
+            loc_start = (4, 10); loc_end = (4, 11); loc_bchar = 88;
+            loc_echar = 89}}];
+       f_extra = ()})];
+   p_globs = []; p_extra = ()}
