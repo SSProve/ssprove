@@ -81,7 +81,7 @@ Section FinProb.
   #[program] Definition barycentric_sum (p:I) (x y: I) : I :=
     ⦑ p∙1 * x∙1 + (1-p∙1) * y∙1 ⦒.
   Next Obligation.
-    simpl. intros p x y.
+    intros p x y. simpl.
     set p' : I := negI p; change (1-p∙1) with p'∙1.
     rewrite addr_ge0 ?mulr_ge0 //.
     have: (1 = p∙1*1 + (1 - p∙1)*1) by rewrite !mulr1 addrA [_+1]addrC addrK.
