@@ -5,11 +5,14 @@ From Jasmin Require Import expr compiler_util values sem.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 
 From extructures Require Import ord fset fmap.
+Set Warnings "-ambiguous-paths".
+(* Silencing the following warning: *)
+(* New coercion path [Pbool] : bool >-> pexpr is ambiguous with existing  *)
+(* [nat_of_bool; Posz; int_to_Z; Pconst] : bool >-> pexpr. *)
 From Jasmin Require Import expr_facts.
+Set Warnings "ambiguous-paths".
 
 From Coq Require Import Utf8.
-Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
-Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 
 From Crypt Require Import Prelude Package.
 Import PackageNotation.
@@ -112,7 +115,7 @@ Infix "⪯" := preceq (at level 70).
 Definition prec i1 i2 := i1 ⪯ i2 /\ i1 <> i2.
 Infix "≺" := prec (at level 70).
 
-Instance preceq_trans : Transitive preceq.
+#[export] Instance preceq_trans : Transitive preceq.
 Proof.
   intros i1 i2 i3 hi1 hi2.
   induction hi2.
@@ -125,7 +128,7 @@ Proof.
     assumption.
 Qed.
 
-Instance preceq_refl : Reflexive preceq.
+#[export] Instance preceq_refl : Reflexive preceq.
 Proof.
   intros i. induction i; constructor; assumption.
 Qed.
@@ -245,7 +248,7 @@ Proof.
     assumption.
 Qed.
 
-Instance preceq_antisym : Antisymmetric _ _ preceq.
+#[export] Instance preceq_antisym : Antisymmetric _ _ preceq.
 Proof.
   intros i1 i2 h1 h2.
   apply preceq_size in h1 as hsize1.
@@ -289,7 +292,7 @@ Proof.
   apply H.
 Qed.
 
-Instance prec_trans : Transitive prec.
+#[export] Instance prec_trans : Transitive prec.
 Proof.
   intros i1 i2 i3.
   intros [hpre1 hneq1] [hpre2 hneq2].
@@ -349,7 +352,7 @@ Proof.
   apply contra. reflexivity.
 Qed.
 
-Instance disj_sym : Symmetric disj.
+#[export] Instance disj_sym : Symmetric disj.
 Proof.
   intros i1 i2 hi1 i3 hi2.
   intros contra.
@@ -393,7 +396,7 @@ Proof.
   eapply disj_prec_r; eauto.
 Qed.
 
-Hint Resolve fresh1 fresh2 fresh1_weak fresh2_weak preceq_refl preceq_trans prec_trans : prefix.
+#[export] Hint Resolve fresh1 fresh2 fresh1_weak fresh2_weak preceq_refl preceq_trans prec_trans : prefix.
 
 (* Unary judgment concluding on evaluation of program *)
 

@@ -126,7 +126,7 @@ Ltac prog_unfold := unfold translate_prog', translate_prog,
     List.nth_default.
 
 
-Hint Rewrite coerce_typed_code_K eq_rect_K eq_rect_r_K : prog_rewrite.
+#[export] Hint Rewrite coerce_typed_code_K eq_rect_K eq_rect_r_K : prog_rewrite.
 
 Ltac simpl_fun :=
   repeat (match goal with
