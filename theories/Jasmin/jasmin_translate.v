@@ -839,8 +839,10 @@ Fixpoint nat_of_ident (id : Ident.ident) : nat :=
 
 Definition nat_of_stype t : nat :=
   match t with
-  | sarr len => 5 ^ ((Pos.to_nat len).+1)
-  | _ => 5 ^ 1
+  | sbool => 5
+  | sint => 7
+  | sarr len => 11 ^ (Pos.to_nat len)
+  | sword ws => 13 ^ ws
   end.
 
 (* injection *)
@@ -965,33 +967,29 @@ Proof.
   apply /andP.
   destruct t.
   - rewrite !Natpow_expn.
-    rewrite !coprime_pexpl.
-    2,3: auto.
     rewrite !coprime_pexpr.
-    2: apply /ltP; apply nat_of_ident_pos.
-    2: apply /ltP; pose proof nat_of_p_id_nonzero p; micromega.Lia.lia.
-    auto.
+    1: auto.
+    1: apply /ltP; apply nat_of_ident_pos.
+    1: apply /ltP; pose proof nat_of_p_id_nonzero p; micromega.Lia.lia.
+  - rewrite !Natpow_expn.
+    rewrite !coprime_pexpr.
+    1: auto.
+    1: apply /ltP; apply nat_of_ident_pos.
+    1: apply /ltP; pose proof nat_of_p_id_nonzero p; micromega.Lia.lia.
+  - rewrite !Natpow_expn.
+    rewrite !coprime_pexpl.
+    2,3: apply/ltP; micromega.Lia.lia.
+    rewrite !coprime_pexpr.
+    1: auto.
+    1: apply /ltP; apply nat_of_ident_pos.
+    1: apply /ltP; pose proof nat_of_p_id_nonzero p; micromega.Lia.lia.
   - rewrite !Natpow_expn.
     rewrite !coprime_pexpl.
     2,3: auto.
     rewrite !coprime_pexpr.
-    2: apply /ltP; apply nat_of_ident_pos.
-    2: apply /ltP; pose proof nat_of_p_id_nonzero p; micromega.Lia.lia.
-    auto.
-  - rewrite !Natpow_expn.
-    rewrite !coprime_pexpl.
-    2,3: auto.
-    rewrite !coprime_pexpr.
-    2: apply /ltP; apply nat_of_ident_pos.
-    2: apply /ltP; pose proof nat_of_p_id_nonzero p; micromega.Lia.lia.
-    auto.
-  - rewrite !Natpow_expn.
-    rewrite !coprime_pexpl.
-    2,3: auto.
-    rewrite !coprime_pexpr.
-    2: apply /ltP; apply nat_of_ident_pos.
-    2: apply /ltP; pose proof nat_of_p_id_nonzero p; micromega.Lia.lia.
-    auto.
+    1: auto.
+    1: apply /ltP; apply nat_of_ident_pos.
+    1: apply /ltP; pose proof nat_of_p_id_nonzero p; micromega.Lia.lia.
 Qed.
 
 Lemma nat_of_p_id_pos : forall p, (0 < nat_of_p_id p)%coq_nat.
@@ -999,10 +997,8 @@ Proof.
   intros. pose proof nat_of_p_id_nonzero p. micromega.Lia.lia.
 Qed.
 
-Lemma injective_nat_of_p_id_ident2 :
-  ∀ p1 p2 x y,
-    nat_of_p_id_ident p1 x = nat_of_p_id_ident p2 y →
-    p1 = p2 /\ x = y.
+Lemma injective2_nat_of_p_id_ident :
+  injective2 nat_of_p_id_ident.
 Proof.
   intros p gn x y e.
   unfold nat_of_p_id_ident in e.
@@ -1052,7 +1048,7 @@ Proof.
   f_equal.
   - destruct uty, vty; auto; try discriminate.
     + apply Nat.pow_inj_r in e1. 2: auto.
-      apply succn_inj in e1.
+      2: micromega.Lia.lia.
       apply Pos2Nat.inj in e1.
       subst; reflexivity.
     + noconf H. reflexivity.
@@ -1070,7 +1066,7 @@ Proof.
   unfold nat_of_p_id_var in H1.
   apply coprime_mul_inj in H1 as [e1 e2].
   2,3,4,5: apply coprime_nat_of_stype_nat_of_fun_ident.
-  apply injective_nat_of_p_id_ident2 in e2 as [p_gn _].
+  apply injective2_nat_of_p_id_ident in e2 as [p_gn _].
   easy.
 Qed.
 
@@ -1084,9 +1080,158 @@ Proof.
   unfold nat_of_p_id_var in H1.
   apply coprime_mul_inj in H1 as [e1 e2].
   2,3,4,5: apply coprime_nat_of_stype_nat_of_fun_ident.
-  apply injective_nat_of_p_id_ident2 in e2 as [p_gn ?].
+  apply injective2_nat_of_p_id_ident in e2 as [p_gn ?].
   move: H => /eqP contra.
   easy.
+Qed.
+
+Lemma coprimenn n : (coprime n n) = (n == 1%nat).
+Proof. by unfold coprime; rewrite gcdnn. Qed.
+
+Lemma coprime_neq p q : p != 1%nat -> coprime p q -> p <> q.
+Proof.
+  intros.
+  move=>contra; subst.
+  move: H=>/eqP H; apply H; apply/eqP.
+  by rewrite -coprimenn.
+Qed.
+
+Lemma nat_of_wsize_inj : injective nat_of_wsize.
+Proof. intros ws1 ws2. by case ws1; case ws2. Qed.
+
+Lemma nat_of_stype_injective : injective nat_of_stype.
+Proof.
+  intros s t.
+  case s; case t; try by [].
+  - intros p H.
+    exfalso.
+    eapply coprime_neq.
+    3: eapply H.
+    + reflexivity.
+    + unfold nat_of_stype. by rewrite Natpow_expn coprime_expr.
+  - intros ws H.
+    exfalso.
+    eapply coprime_neq.
+    3: eapply H.
+    + reflexivity.
+    + unfold nat_of_stype. by rewrite Natpow_expn coprime_expr.
+  - intros l H.
+    exfalso.
+    eapply coprime_neq.
+    3: eapply H.
+    + reflexivity.
+    + unfold nat_of_stype. by rewrite Natpow_expn coprime_expr.
+  - intros ws H.
+    exfalso.
+    eapply coprime_neq.
+    3: eapply H.
+    + reflexivity.
+    + unfold nat_of_stype. by rewrite Natpow_expn coprime_expr.
+  - intros l H.
+    exfalso.
+    eapply coprime_neq.
+    3: eapply H.
+    + unfold nat_of_stype. apply/eqP. apply nesym. apply Nat.lt_neq.
+      apply Nat.pow_gt_1.
+      all: micromega.Lia.lia.
+    + unfold nat_of_stype. by rewrite Natpow_expn coprime_expl.
+  - intros l H.
+    exfalso.
+    eapply coprime_neq.
+    3: eapply H.
+    + unfold nat_of_stype. apply/eqP. apply nesym. apply Nat.lt_neq.
+      apply Nat.pow_gt_1.
+      all: micromega.Lia.lia.
+    + unfold nat_of_stype. by rewrite Natpow_expn coprime_expl.
+  - intros l1 l2 H.
+    destruct (l2 == l1) eqn:E.
+    + by move: E=>/eqP ->.
+    + exfalso.
+      move: E=>/eqP=>contra; apply contra.
+      eapply Pos2Nat.inj. eapply Nat.pow_inj_r.
+      2: eapply H. micromega.Lia.lia.
+  - intros ws l H.
+    exfalso.
+    eapply coprime_neq.
+    3: eapply H.
+    + unfold nat_of_stype. apply/eqP. apply nesym. apply Nat.lt_neq.
+      apply Nat.pow_gt_1.
+      all: micromega.Lia.lia.
+    + unfold nat_of_stype. rewrite !Natpow_expn coprime_expl; auto.
+      by rewrite coprime_expr.
+  - intros ws H.
+    exfalso.
+    eapply coprime_neq.
+    3: eapply H.
+    + unfold nat_of_stype. apply/eqP. apply nesym. apply Nat.lt_neq.
+      apply Nat.pow_gt_1.
+      1: micromega.Lia.lia.
+      apply/eqP. by case ws.
+    + unfold nat_of_stype. by rewrite Natpow_expn coprime_expl.
+  - intros ws H.
+    exfalso.
+    eapply coprime_neq.
+    3: eapply H.
+    + unfold nat_of_stype. apply/eqP. apply nesym. apply Nat.lt_neq.
+      apply Nat.pow_gt_1.
+      1: micromega.Lia.lia.
+      apply/eqP. by case ws.
+    + unfold nat_of_stype. by rewrite Natpow_expn coprime_expl.
+  - intros l ws H.
+    exfalso.
+    eapply coprime_neq.
+    3: eapply H.
+    + unfold nat_of_stype. apply/eqP. apply nesym. apply Nat.lt_neq.
+      apply Nat.pow_gt_1.
+      1: micromega.Lia.lia.
+      apply/eqP. by case ws.
+    + unfold nat_of_stype. rewrite !Natpow_expn coprime_expl; auto.
+      by rewrite coprime_expr.
+  - intros ws1 ws2 H.
+    destruct (ws2 == ws1) eqn:E.
+    + by move: E=>/eqP ->.
+    + exfalso.
+      move: E=>/eqP=>contra; apply contra.
+      eapply nat_of_wsize_inj.
+      eapply Nat.pow_inj_r.
+      2: eapply H. micromega.Lia.lia.
+Qed.
+
+Lemma nat_of_p_id_var_injective2 :
+  injective2 nat_of_p_id_var.
+Proof.
+  intros i1 i2 v1 v2.
+  unfold nat_of_p_id_var.
+  intros H.
+  apply coprime_mul_inj in H as [].
+  2,3,4,5: apply coprime_nat_of_stype_nat_of_fun_ident.
+  apply nat_of_stype_injective in H.
+  apply injective2_nat_of_p_id_ident in H0 as [? ?].
+  destruct v1, v2. simpl in *; subst.
+  easy.
+Qed.
+
+Lemma translate_var_injective2 :
+  injective2 translate_var.
+Proof.
+  intros i1 i2 v1 v2.
+  unfold translate_var.
+  move=> H.
+  noconf H.
+  apply nat_of_p_id_var_injective2 in H0.
+  assumption.
+Qed.
+
+Lemma translate_var_eq i1 i2 v1 v2 :
+  (translate_var i1 v1 == translate_var i2 v2) = (i1 == i2) && (v1 == v2).
+Proof.
+  apply/eqP.
+  destruct (_ && _) eqn:E.
+  - by move: E=>/andP [] /eqP -> /eqP ->.
+  - move=>contra.
+    apply translate_var_injective2 in contra as [? ?].
+    subst.
+    move: E=>/andP []. split; by apply/eqP.
 Qed.
 
 Lemma mem_loc_translate_var_neq :
