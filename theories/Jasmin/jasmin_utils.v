@@ -133,3 +133,47 @@ Ltac simpl_fun :=
          | _ => progress autorewrite with prog_rewrite
          | _ => prog_unfold; simpl
          end).
+
+Import PackageNotation.
+
+Ltac swap_first_occ loc :=
+  lazymatch goal with
+  | |- ⊢ ⦃ _ ⦄ _ ≈ ?c1 ⦃ _ ⦄ =>
+      lazymatch c1 with
+      | #put _ := _ ;; #put loc := _ ;; _ => ssprove_rswap_cmd_eq_rhs; ssprove_swap_auto
+      | #put _ := _ ;; _ ← get loc ;; _ => ssprove_rswap_cmd_eq_rhs; ssprove_swap_auto
+      | _ ← get _ ;; #put loc := _ ;; _ => ssprove_rswap_cmd_eq_rhs; ssprove_swap_auto
+      | _ ← get _ ;; _ ← get loc ;; _ => ssprove_rswap_cmd_eq_rhs; ssprove_swap_auto
+      | _ => ssprove_sync_eq ; try intro ; swap_first_occ loc
+      end
+  end.
+
+Ltac swap_loc loc :=
+  eapply r_transL; [ solve [ swap_first_occ loc ] | cmd_bind_simpl ; cbn beta ].
+
+Ltac swap_loc_ignore_head loc :=
+  eapply r_transL; [ solve [ ssprove_sync_eq ; try intro ; swap_first_occ loc ] | cmd_bind_simpl ; cbn beta ].
+
+Ltac set_at_head loc :=
+  lazymatch goal with
+  | |- ⊢ ⦃ _ ⦄ ?c1 ≈ _ ⦃ _ ⦄ =>
+      lazymatch c1 with
+      | #put loc := _ ;; _ => idtac
+      | _ ← get loc ;; _ => idtac
+      | _ => swap_loc loc; set_at_head loc
+      end
+  end.
+
+Ltac set_at_snd loc :=
+  lazymatch goal with
+  | |- ⊢ ⦃ _ ⦄ ?c1 ≈ _ ⦃ _ ⦄ =>
+      lazymatch c1 with
+      | #put _ := _ ;; #put loc := _ ;; _ => idtac
+      | #put _ := _ ;; _ ← get loc ;; _ => idtac
+      | _ ← get _ ;; #put loc := _ ;; _ => idtac
+      | _ ← get _ ;; _ ← get loc ;; _ => idtac
+      | _ => swap_loc_ignore_head loc; set_at_snd loc
+      end
+  end.
+
+Ltac clear_loc loc := set_at_head loc; set_at_snd loc; first [ ssprove_contract_put_get_lhs | ssprove_contract_put_lhs ].
