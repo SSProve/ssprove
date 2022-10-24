@@ -177,3 +177,14 @@ Ltac set_at_snd loc :=
   end.
 
 Ltac clear_loc loc := set_at_head loc; set_at_snd loc; first [ ssprove_contract_put_get_lhs | ssprove_contract_put_lhs ].
+
+Ltac clear_get_aux c1 :=
+  lazymatch c1 with
+  | _ ← get ?loc ;; _ => clear_loc loc
+  | #put _ := _ ;; ?c2 => clear_get_aux c2
+  end.
+
+Ltac clear_get :=
+  lazymatch goal with
+  | |- ⊢ ⦃ _ ⦄ ?c1 ≈ _ ⦃ _ ⦄ => clear_get_aux c1
+  end.
