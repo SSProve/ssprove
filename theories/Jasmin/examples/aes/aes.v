@@ -1075,8 +1075,13 @@ From mathcomp.word Require Import word.
 Infix "^" := wxor.
 
 (* copy of the easycrypt functional definition *)
+Locate ".-tuple".
+
+Definition W4u8 : 4.-tuple u8 -> u32 := wcat.
+Definition W4u32 : 4.-tuple u32 -> u128 := wcat.
+
 Definition key_expand (wn1 : u128) (rcon : u8) : 'word U128 :=
-  let rcon := wpack U32 4 [toword rcon; 0%Z; 0%Z; 0%Z] in
+  let rcon := W4u8 (* U32 4 *) [tuple rcon ; 0%R; 0%R; 0%R] (* [toword rcon; 0%Z; 0%Z; 0%Z] *) in
   let w0 := subword 0 32 wn1 in
   let w1 := subword 1 32 wn1 in
   let w2 := subword 2 32 wn1 in
@@ -1088,11 +1093,11 @@ Definition key_expand (wn1 : u128) (rcon : u8) : 'word U128 :=
   let w5 := w1 ^ w4 in
   let w6 := w2 ^ w5 in
   let w7 := w3 ^ w6 in
-  wpack U128 4 [toword w4; toword w5; toword w6; toword w7].
+  W4u32 [tuple w4; w5; w6; w7].
 
 Ltac neq_loc_auto ::= eapply injective_translate_var3; auto.
 
-Notation "m ⊕ k" := (@word.wxor _ m k) (at level 70).
+Notation "m ⊕ k" := (@word.word.wxor _ m k) (at level 20).
 
 Lemma lsr_word0 {ws1} a : @lsr ws1 word0 a = word0.
 Proof.
@@ -1120,7 +1125,7 @@ Proof.
 Qed.
 
 (* Lemma wcat_r_zero_extend : *)
-  (* wcat_r [seq zero_extend a ] *)
+(* wcat_r [seq zero_extend a ] *)
 
 Lemma wpshufd_1280 : forall a,  wpshufd_128 a 0 = a.
 Proof.
@@ -1129,6 +1134,30 @@ Proof.
   rewrite wrepr0.
   unfold iota, map.
   rewrite !wpshufd10.
+Admitted.
+(* wpack *)
+
+(* Lemma wpack_w2t : *)
+  (* w2t (wpack ws n l) = *)
+    (* t2w [tuple  ] *)
+(* tuple *)
+
+Lemma wcat_eq ws p a t :
+  (forall (i : 'I_p), subword (i * ws) ws a = tnth t i) -> a = wcat t.
+Proof.
+  intros.
+  rewrite -[a]wcat_subwordK.
+  apply f_equal. apply eq_from_tnth.
+  intros i.
+  rewrite -H tnth_map tnth_ord_tuple.
+  reflexivity.
+Qed.
+
+Definition W4u32_eq : forall a t, (forall (i : 'I_4), subword (i * U32) U32 a = tnth t i) -> a = W4u32 t := wcat_eq U32 4.
+
+Lemma subword_xor {n} i ws (a b : n.-word) :
+  subword i ws (a ⊕ b) = (subword i ws a) ⊕ (subword i ws b).
+Proof.
 Admitted.
 
 Lemma key_expand_correct rcon rkey temp2 rcon_ :
@@ -1147,7 +1176,6 @@ Proof.
   rewrite !coerce_to_choice_type_K.
 
   unfold eval_jdg.
-
   repeat clear_get.
 
   unfold sopn_sem.
@@ -1163,4 +1191,31 @@ Proof.
   eapply u_ret.
 
   split. easy.
+
+
+  unfold totce.
+  f_equal.
+
+  apply W4u32_eq.
+  intros [[ | [ | [ | i]]] j]; simpl.
+  unfold tnth.
+  simpl.
+  rewrite mul0n.
+  unfold word.wxor.
+  rewrite !subword_xor.
+
+  simpl.
+  rewrite tnth_ord_tuple.
+  destruct i as [].
+
+  simpl.
+  pose proof (@wcat_subwordK 32 4).
+  change (32 * 4)%nat with 128%nat in H1.
+
+  rewrite <- H1.
+
+
+  wpack
+  lift2_vec
+  eapply val_inj.
   Admitted.
