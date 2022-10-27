@@ -1227,8 +1227,53 @@ Proof.
     all: eapply Z.pow_nonzero; lia.
   Qed.
 
+
 Lemma nat_of_wsize_m ws : (wsize_size_minus_1 ws).+1 = nat_of_wsize ws.
 Proof. destruct ws; reflexivity. Qed.
+
+(* this should be proven, since it does a lot of heavy lifting in the following proofs *)
+(* it should also be true, though there may be an off by one error somewhere (see e.g. the minus 1) *)
+Lemma subword_make_vec1 {ws1} i ws2 ws3 (l : seq (word.word ws1)) :
+  (* i + ws2 does 'reach across' a single word in the list *)
+  ((i + ws2 - 1) / ws1)%nat = (i / ws1)%nat ->
+      subword i ws2 (make_vec ws3 l) = subword (i mod ws1) ws2 (nth word0 l (i / ws1)%nat).
+Proof.
+  intros.
+Admitted.
+
+Lemma subword_0_128 (l : seq u128) :
+  subword 0 0 (make_vec U128 l) = subword 0 0 (nth word0 l 0).
+Proof.
+  by rewrite subword_make_vec1.
+Qed.
+
+Lemma subword_0_32_128 (l : seq u128) :
+  subword 0 U32 (make_vec U128 l) = subword 0 U32 (nth word0 l 0).
+Proof.
+  by rewrite subword_make_vec1.
+Qed.
+
+Lemma subword_1_32_128 (l : seq u128) :
+  subword 1 U32 (make_vec U128 l) = subword 1 U32 (nth word0 l 0).
+Proof.
+  by rewrite subword_make_vec1.
+Qed.
+
+Lemma subword_2_32_128 (l : seq u128) :
+  subword 2 U32 (make_vec U128 l) = subword 2 U32 (nth word0 l 0).
+Proof.
+  by rewrite subword_make_vec1.
+Qed.
+
+Lemma subword_3_32_128 (l : seq u128) :
+  subword 3 U32 (make_vec U128 l) = subword 3 U32 (nth word0 l 0).
+Proof.
+  by rewrite subword_make_vec1.
+Qed.
+
+(* use zify to use lia in a goal with ssr integers/naturals *)
+(* install via opam: coq-mathcomp-zify *)
+From mathcomp Require Import zify.
 
 Lemma subword_make_vec i (ws1 ws2 : wsize.wsize) l :
   (size l * ws1 <= ws2)%nat ->
@@ -1290,6 +1335,110 @@ Proof.
     (*   zify; simpl in *; nia. *)
 Admitted.
 
+
+  (* Lemma subword_make_vec_32_128 : *)
+    (* subword (i * ws1) ws1 (@make_vec ws1 ws2 l) = nth word0 l i     *)
+
+(*
+nth_map
+forall [T1 : Type] (x1 : T1) [T2 : Type] (x2 : T2) (f : T1 -> T2) [n : nat] [s : seq T1], (n < size s)%N -> nth x2 [seq f i | i <- s] n = f (nth x1 s n) *)
+
+Lemma subword_u {ws} (w : word.word ws) : subword 0 ws w = w.
+Proof. by rewrite subword0 zero_extend_u. Qed.
+
+Lemma nth_map2 {A B C} (a : A) (b : B) (c : C) la lb f n :
+  (n < Nat.min (size la) (size lb))%nat -> nth c (map2 f la lb) n = f (nth a la n) (nth b lb n).
+Proof.
+  revert la lb.
+  induction n; intros.
+  - destruct la.
+    + simpl in H; zify; lia.
+    + destruct lb.
+      * simpl in H; zify; lia.
+      * reflexivity.
+  - destruct la.
+    + simpl in H; zify; lia.
+    + destruct lb.
+      * simpl in H; zify; lia.
+      * simpl.
+        eapply IHn.
+        simpl in H.
+        zify; lia.
+Qed.
+
+Lemma subword_make_vec_32_0_32_128 (l : seq u32) : subword 0 U32 (make_vec U128 l) = nth word0 l 0.
+Proof.
+  rewrite subword_make_vec1.
+  rewrite subword_u.
+  all: auto.
+Qed.
+
+Lemma subword_make_vec_32_1_32_128 (l : seq u32) : subword U32 U32 (make_vec U128 l) = nth word0 l 1.
+Proof.
+  rewrite subword_make_vec1.
+  rewrite subword_u.
+  all: auto.
+Qed.
+
+Lemma subword_make_vec_32_2_32_128 (l : seq u32) : subword (2 * U32) U32 (make_vec U128 l) = nth word0 l 2.
+Proof.
+  rewrite subword_make_vec1.
+  rewrite subword_u.
+  all: auto.
+Qed.
+
+Lemma subword_make_vec_32_3_32_128 (l : seq u32) : subword (3 * U32) U32 (make_vec U128 l) = nth word0 l 3.
+Proof.
+  rewrite subword_make_vec1.
+  rewrite subword_u.
+  all: auto.
+Qed.
+
+(* Lemma subword_wshufps_0_32_128 o s1 s2 : subword 0 U32 (wshufps_128 o s1 s2) = wpshufd1 s1 o 0. *)
+(* Proof. *)
+(*   unfold wshufps_128. *)
+(*   rewrite subword_make_vec1. *)
+(*   rewrite subword_u. *)
+(*   reflexivity. *)
+(*   reflexivity. *)
+(* Qed. *)
+
+(* Lemma subword_wshufps_128 o s1 s2 : subword 0 U32 (wshufps_128 o s1 s2) = *)
+(*                               wpshufd1 s1 o 0. *)
+(* Proof. *)
+(*   unfold wshufps_128. *)
+(*   rewrite subword_make_vec1. *)
+(*   rewrite subword_u. *)
+(*   reflexivity. *)
+(*   reflexivity. *)
+(* Qed.   *)
+
+
+Arguments nat_of_wsize : simpl never.
+Arguments wsize_size_minus_1 : simpl never.
+
+(* Lemma wpshufd1 :  *)
+
+Lemma make_vec_single {ws1} ws2 (a : word.word ws1) :
+  make_vec ws2 [:: a] = zero_extend ws2 a.
+Proof.
+  unfold make_vec. cbn -[Z.of_nat].
+  by rewrite Z.shiftl_0_l Z.lor_0_r.
+Qed.
+
+Lemma wshr_word0 {ws} i : @wshr ws 0 i = word0.
+Proof.
+  unfold wshr.
+  by rewrite lsr_word0.
+Qed.
+
+Lemma wxor_0_r {n} (a : n.-word) : wxor a word0 = a.
+Proof.
+  unfold wxor.
+  apply val_inj. simpl.
+  by rewrite Z.lxor_0_r.
+Qed.
+
 Lemma key_expand_correct rcon rkey temp2 rcon_ :
   toword rcon_ = rcon ->
   ⊢ ⦃ fun _ => True ⦄
@@ -1328,26 +1477,36 @@ Proof.
 
   apply W4u32_eq.
   intros [[ | [ | [ | i]]] j]; simpl; unfold tnth; simpl.
-  rewrite mul0n.
   unfold word.wxor. rewrite !subword_xor.
-
-
-
-  Check lift2_vec.
-  Check wshufps_128.
-
+  rewrite mul0n.
+  unfold lift2_vec.
+  rewrite !subword_0_32_128.
+  erewrite !nth_map2.
   simpl.
-  (* rewrite tnth_ord_tuple. *)
-  (* destruct i as []. *)
+  rewrite mul0n.
+  rewrite !subword_u.
 
-  (* simpl. *)
-  (* pose proof (@wcat_subwordK 32 4). *)
-  (* change (32 * 4)%nat with 128%nat in H1. *)
+  rewrite !subword_make_vec_32_0_32_128.
+  simpl.
+  unfold wpack.
+  simpl.
+  unfold wpshufd1.
+  simpl.
 
-  (* rewrite <- H1. *)
+  rewrite make_vec_single.
 
+  rewrite zero_extend_u.
 
-  (* wpack *)
-  (* lift2_vec *)
-  (* eapply val_inj. *)
+  rewrite wrepr0.
+  rewrite !wshr0.
+  rewrite !subword_make_vec_32_0_32_128.
+  simpl.
+  rewrite wshr_word0.
+  rewrite subword_word0.
+  rewrite wxor_0_r.
+
+  (* this goal is probably false (e.g. the two sides depends on different variables)
+     i don't know where this went wrong, but possibly in AESKEYGENASSIST, though it looks like it does not affect the first 32 bits
+   *)
+
   Admitted.
