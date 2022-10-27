@@ -1056,6 +1056,8 @@ Definition Jkey_expand rcon rkey temp2 := get_tr (xO (xI (xO (xO xH)))) 1%positi
 
 Definition rcon (i : Z) := nth 54%Z [:: 1; 2; 4; 8; 16; 32; 64; 128; 27; 54]%Z ((Z.to_nat i) - 1).
 
+Require Import micromega.Lia.
+
 Lemma rcon_correct :
   forall (i : Z), (1 <= i < 10)%Z ->
              ⊢ ⦃ fun _ => True ⦄ Jrcon i ⇓ [('int ; rcon i)] ⦃ fun _ => True ⦄.
@@ -1068,7 +1070,7 @@ Proof.
          | |- _ => eapply r_put_lhs with (pre := fun _ => True); ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K; eapply r_ret; easy
          | |- _ => simpl; ssprove_contract_put_get_lhs; rewrite !coerce_to_choice_type_K
          end.
-  micromega.Lia.lia.
+  lia.
 Qed.
 From mathcomp.word Require Import word.
 
@@ -1160,6 +1162,134 @@ Lemma subword_xor {n} i ws (a b : n.-word) :
 Proof.
 Admitted.
 
+Local Open Scope Z_scope.
+
+Lemma wrepr_lsr (ws : wsize.wsize) a i :
+  (0 <= a < modulus ws)%Z ->
+  lsr (wrepr ws a) i = wrepr ws (Z.shiftr a (Z.of_nat i)).
+Proof.
+  intros H.
+  unfold lsr.
+  rewrite mkwordK.
+  unfold wrepr.
+  apply val_inj.
+  simpl.
+  rewrite [a mod _]Z.mod_small.
+  reflexivity.
+  assumption.
+Qed.
+
+Lemma modulus_gt0' n : (0 < modulus n)%Z.
+Proof.
+  apply Z.ltb_lt.
+  apply modulus_gt0.
+Qed.
+
+Lemma wcat_r_bound n (l : seq n.-word) :
+  (0 <= wcat_r l < modulus (size l * n))%Z.
+Proof.
+  induction l.
+  - simpl.
+    split.
+    + reflexivity.
+    + apply Z.ltb_lt.
+      apply modulus_gt0.
+  - simpl.
+    (* IHl implies that the wcat shifted is less than the modulus and then the lor is less than that *)
+    Admitted.
+
+(* following two lemmas are from fiat crypto, consider importing *)
+  Lemma mod_pow_same_base_larger a b n m :
+    0 <= n < m -> 0 < b ->
+    (a mod (b^n)) mod (b^m) = a mod b^n.
+  Proof.
+    intros.
+    pose proof Z.mod_pos_bound a (b^n) ltac:(auto with zarith).
+    assert (b^n <= b^m).
+    eapply Z.pow_le_mono_r; lia.
+    apply Z.mod_small. auto with zarith.
+  Qed.
+
+  Lemma mod_pow_same_base_smaller a b n m :
+    0 <= m <= n -> 0 < b ->
+    (a mod (b^n)) mod (b^m) = a mod b^m.
+  Proof.
+    intros. replace n with (m+(n-m)) by lia.
+    rewrite -> Z.pow_add_r, Z.rem_mul_r by auto with zarith.
+    rewrite <- Zplus_mod_idemp_r.
+    rewrite <- Zmult_mod_idemp_l.
+    rewrite Z.mod_same.
+    rewrite Z.mul_0_l.
+    rewrite Z.mod_0_l.
+    rewrite Z.add_0_r.
+    rewrite Z.mod_mod.
+    reflexivity.
+    all: eapply Z.pow_nonzero; lia.
+  Qed.
+
+Lemma nat_of_wsize_m ws : (wsize_size_minus_1 ws).+1 = nat_of_wsize ws.
+Proof. destruct ws; reflexivity. Qed.
+
+Lemma subword_make_vec i (ws1 ws2 : wsize.wsize) l :
+  (size l * ws1 <= ws2)%nat ->
+  subword (i * ws1) ws1 (@make_vec ws1 ws2 l) = nth word0 l i.
+Proof.
+  intros H.
+  simpl.
+  unfold subword.
+  simpl.
+  rewrite urepr_word.
+  apply val_inj.
+  rewrite -> nat_of_wsize_m at 2.
+  simpl.
+  (* rewrite [wcat_r _ mod _]Z.mod_small. *)
+  (* unfold subword. *)
+  (* unfold make_vec. *)
+  (* rewrite wrepr_lsr. *)
+  revert i.
+  induction l; intros i.
+  - rewrite Z.shiftr_0_l.
+    rewrite Z.mod_0_l.
+    rewrite nth_nil.
+    reflexivity.
+    pose proof modulus_gt0' ws2.
+    lia.
+  -
+    cbn [wcat_r].
+
+    (* the inner mod can be removed since we taking mod ws1 at the end anyway, but proving this is a bit tricky. *)
+    (* we need some commutativity between shiftr and mod a power of 2 *)
+
+    (* replace  *)
+
+    (* simpl. *)
+    (* simpl. *)
+    (* cbn -[Z.shiftl]. *)
+    (* rewrite Z.shiftr_lor. *)
+    (* rewrite Z.shiftr_shiftl_r. *)
+
+    (*   unfold modulus. *)
+    (*   rewrite !two_power_nat_equiv. *)
+    (*   rewrite mod_pow_same_base_smaller. *)
+    (*   From mathcomp Require Import zify. *)
+    (*   all: try (zify; nia). *)
+
+    (* destruct i. *)
+    (* +  *)
+    (*   simpl. *)
+    (*   rewrite Z.shiftr_0_r. *)
+    (*   (* this goal is true, but annoying, need lemma about lor and mod a power of 2 *) *)
+    (*   admit. *)
+    (* + *)
+    (*   replace (Z.of_nat (i.+1 * ws1)%Nrec - Pos.of_succ_nat (wsize_size_minus_1 ws1)) with *)
+    (*     (Z.of_nat (i * ws1)%nat). *)
+    (*   2: { zify; simpl; nia. } *)
+    (*   cbn -[Z.of_nat muln_rec]. *)
+    (*   (* this goal is true, but annoying, need lemma about lor and mod a power of 2 *) *)
+    (*   admit. *)
+    (*   zify; simpl in *; nia. *)
+Admitted.
+
 Lemma key_expand_correct rcon rkey temp2 rcon_ :
   toword rcon_ = rcon ->
   ⊢ ⦃ fun _ => True ⦄
@@ -1197,25 +1327,27 @@ Proof.
   f_equal.
 
   apply W4u32_eq.
-  intros [[ | [ | [ | i]]] j]; simpl.
-  unfold tnth.
-  simpl.
+  intros [[ | [ | [ | i]]] j]; simpl; unfold tnth; simpl.
   rewrite mul0n.
-  unfold word.wxor.
-  rewrite !subword_xor.
+  unfold word.wxor. rewrite !subword_xor.
+
+
+
+  Check lift2_vec.
+  Check wshufps_128.
 
   simpl.
-  rewrite tnth_ord_tuple.
-  destruct i as [].
+  (* rewrite tnth_ord_tuple. *)
+  (* destruct i as []. *)
 
-  simpl.
-  pose proof (@wcat_subwordK 32 4).
-  change (32 * 4)%nat with 128%nat in H1.
+  (* simpl. *)
+  (* pose proof (@wcat_subwordK 32 4). *)
+  (* change (32 * 4)%nat with 128%nat in H1. *)
 
-  rewrite <- H1.
+  (* rewrite <- H1. *)
 
 
-  wpack
-  lift2_vec
-  eapply val_inj.
+  (* wpack *)
+  (* lift2_vec *)
+  (* eapply val_inj. *)
   Admitted.
