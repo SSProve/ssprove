@@ -1082,15 +1082,16 @@ Locate ".-tuple".
 Definition W4u8 : 4.-tuple u8 -> u32 := wcat.
 Definition W4u32 : 4.-tuple u32 -> u128 := wcat.
 
-Definition key_expand (wn1 : u128) (rcon : u8) : 'word U128 :=
-  let rcon := W4u8 (* U32 4 *) [tuple rcon ; 0%R; 0%R; 0%R] (* [toword rcon; 0%Z; 0%Z; 0%Z] *) in
-  let w0 := subword 0 32 wn1 in
-  let w1 := subword 1 32 wn1 in
-  let w2 := subword 2 32 wn1 in
-  let w3 := subword 3 32 wn1 in
+(* Definition subword {s} (n : nat) (l : nat) (x : word s) : word l := subword n l x. *)
 
+Definition key_expand (wn1 : u128) (rcon : u8) : 'word U128 :=
+  let rcon := zero_extend U32 rcon (* W4u8 *) (* U32 4 *) (* [tuple rcon ; 0%R; 0%R; 0%R] *) (* [toword rcon; 0%Z; 0%Z; 0%Z] *) in
+  let w0 := subword 0 U32 wn1 in
+  let w1 := subword 1 U32 wn1 in
+  let w2 := subword 2 U32 wn1 in
+  let w3 := subword 3 U32 wn1 in
   let tmp := w3 in
-  let tmp := (rotr tmp 1) ^ rcon in
+  let tmp := substitute (wror tmp 1) ^ rcon in
   let w4 := w0 ^ tmp in
   let w5 := w1 ^ w4 in
   let w6 := w2 ^ w5 in
@@ -1198,9 +1199,14 @@ Proof.
     (* IHl implies that the wcat shifted is less than the modulus and then the lor is less than that *)
     Admitted.
 
+
+(* use zify to use lia in a goal with ssr integers/naturals *)
+(* install via opam: coq-mathcomp-zify *)
+From mathcomp Require Import zify.
+
 (* following two lemmas are from fiat crypto, consider importing *)
   Lemma mod_pow_same_base_larger a b n m :
-    0 <= n < m -> 0 < b ->
+    0 <= n <= m -> 0 < b ->
     (a mod (b^n)) mod (b^m) = a mod b^n.
   Proof.
     intros.
@@ -1227,6 +1233,25 @@ Proof.
     all: eapply Z.pow_nonzero; lia.
   Qed.
 
+  Lemma larger_modulus a n m :
+    (n <= m)%nat ->
+    (a mod modulus n) mod modulus m = a mod modulus n.
+  Proof.
+    intros H.
+    rewrite !modulusZE.
+    apply mod_pow_same_base_larger.
+    zify. simpl. lia. lia.
+  Qed.
+
+  Lemma smaller_modulus a n m :
+    (m <= n)%nat ->
+    (a mod modulus n) mod modulus m = a mod modulus m.
+  Proof.
+    intros H.
+    rewrite !modulusZE.
+    apply mod_pow_same_base_smaller.
+    zify. simpl. lia. lia.
+  Qed.
 
 Lemma nat_of_wsize_m ws : (wsize_size_minus_1 ws).+1 = nat_of_wsize ws.
 Proof. destruct ws; reflexivity. Qed.
@@ -1270,10 +1295,6 @@ Lemma subword_3_32_128 (l : seq u128) :
 Proof.
   by rewrite subword_make_vec1.
 Qed.
-
-(* use zify to use lia in a goal with ssr integers/naturals *)
-(* install via opam: coq-mathcomp-zify *)
-From mathcomp Require Import zify.
 
 Lemma subword_make_vec i (ws1 ws2 : wsize.wsize) l :
   (size l * ws1 <= ws2)%nat ->
@@ -1439,6 +1460,91 @@ Proof.
   by rewrite Z.lxor_0_r.
 Qed.
 
+Lemma wxor_0_l {n} (a : n.-word) : wxor word0 a = a.
+Proof.
+  apply val_inj.
+  reflexivity.
+Qed.
+
+(* Lemma lsr_add_r {n} (w : n.-word) i j : lsr (lsr w i) j = lsr w (i + j). *)
+(* Proof. *)
+(*   unfold lsr. *)
+(*   rewrite urepr_word; simpl. *)
+(*   apply val_inj. *)
+(*   simpl. *)
+
+(* from fiat crypto, but proof is more involved *)
+Lemma mod_pull_div a b c
+  : 0 <= c -> (a / b) mod c = a mod (c * b) / b.
+Admitted.
+
+Lemma shiftr_shiftr_mod w ws1 ws2 i j :
+  (ws2 + j <= ws1)%nat ->
+  Z.shiftr (Z.shiftr w (Z.of_nat i) mod modulus ws1) (Z.of_nat j) mod modulus ws2 =
+    Z.shiftr w (Z.of_nat (i + j)) mod modulus ws2.
+Proof.
+  intros H.
+  rewrite modulusZE.
+  simpl.
+  rewrite !modulusZE.
+  rewrite !Z.shiftr_div_pow2.
+  rewrite !mod_pull_div.
+  simpl.
+  rewrite -!Z.pow_add_r.
+  rewrite mod_pow_same_base_smaller.
+  rewrite Z.div_div.
+  rewrite -Z.pow_add_r.
+  rewrite Nat2Z.inj_add.
+  f_equal. f_equal. f_equal.
+  all: try lia.
+Qed.
+
+Lemma subword_wshr {ws1} i j ws2 (w : ws1.-word) :
+  (ws2 + i <= ws1)%nat ->
+  subword i ws2 (lsr w j) = subword (j + i) ws2 w.
+Proof.
+  intros H.
+  unfold subword; simpl.
+  apply val_inj; simpl.
+  rewrite urepr_word.
+  unfold lsr.
+  simpl.
+  rewrite urepr_word.
+  rewrite !smaller_modulus.
+  rewrite shiftr_shiftr_mod.
+  reflexivity.
+  all: lia.
+Qed.
+
+  Lemma wxor_involutive {n} : forall k : word n, k ⊕ k = word0.
+  Proof.
+    intros k.
+    apply/eqP/eq_from_wbit=> i.
+    rewrite !wxorE addbb.
+    unfold wbit.
+    rewrite Z.testbit_0_l.
+    reflexivity.
+  Qed.
+
+  (* Lemma wxorC : ∀ m k : word, (m ⊕ k) = (k ⊕ m). *)
+  (* Proof. *)
+  (*   intros m k. *)
+  (*   apply/eqP/eq_from_wbit=> i. *)
+  (*   by rewrite !wxorE addbC. *)
+  (* Qed. *)
+
+  Lemma wxorA {n} : forall m k l : word n, ((m ⊕ k) ⊕ l) = (m ⊕ (k ⊕ l)).
+  Proof.
+    intros m k l.
+    apply/eqP/eq_from_wbit=> i.
+    by rewrite !wxorE addbA.
+  Qed.
+
+  Lemma wror_substitute {n} (w : word.word n) k : wror (substitute w) k = substitute (wror w k).
+  Proof.
+    (* I would like to case on w, but not sure how to do this most efficiently? *)
+    Admitted.
+
 Lemma key_expand_correct rcon rkey temp2 rcon_ :
   toword rcon_ = rcon ->
   ⊢ ⦃ fun _ => True ⦄
@@ -1471,42 +1577,68 @@ Proof.
 
   split. easy.
 
-
   unfold totce.
   f_equal.
-
   apply W4u32_eq.
   intros [[ | [ | [ | i]]] j]; simpl; unfold tnth; simpl.
-  unfold word.wxor. rewrite !subword_xor.
-  rewrite mul0n.
-  unfold lift2_vec.
-  rewrite !subword_0_32_128.
-  erewrite !nth_map2.
-  simpl.
-  rewrite mul0n.
-  rewrite !subword_u.
+  -
+    unfold word.wxor. rewrite !subword_xor.
+    rewrite mul0n.
+    unfold lift2_vec.
+    rewrite !subword_0_32_128.
+    erewrite !nth_map2.
+    simpl.
+    rewrite mul0n.
+    rewrite !subword_u.
 
-  rewrite !subword_make_vec_32_0_32_128.
-  simpl.
-  unfold wpack.
-  simpl.
-  unfold wpshufd1.
-  simpl.
+    rewrite !subword_make_vec_32_0_32_128.
+    simpl.
+    unfold wpack.
+    simpl.
+    unfold wpshufd1.
+    simpl.
 
-  rewrite make_vec_single.
+    rewrite make_vec_single.
 
-  rewrite zero_extend_u.
+    rewrite zero_extend_u.
 
-  rewrite wrepr0.
-  rewrite !wshr0.
-  rewrite !subword_make_vec_32_0_32_128.
-  simpl.
-  rewrite wshr_word0.
-  rewrite subword_word0.
-  rewrite wxor_0_r.
+    (* rewrite wrepr0. *)
+    rewrite !wshr0.
+    rewrite !subword_make_vec_32_0_32_128.
+    simpl.
 
-  (* this goal is probably false (e.g. the two sides depends on different variables)
-     i don't know where this went wrong, but possibly in AESKEYGENASSIST, though it looks like it does not affect the first 32 bits
-   *)
+    unfold wAESKEYGENASSIST.
+    simpl.
+
+    rewrite subword_wshr.
+    rewrite subword_make_vec_32_3_32_128.
+    simpl.
+
+    rewrite !wxorA.
+    f_equal.
+
+    unfold wpshufd1.
+    simpl.
+    rewrite wshr0.
+    rewrite -wxorA.
+    rewrite wxor_involutive.
+
+    rewrite wxor_0_l.
+    rewrite wror_substitute.
+    unfold word.wxor.
+    f_equal.
+    f_equal.
+    simpl.
+    rewrite -H.
+    pose proof isword_word (rcon_).
+    apply val_inj.
+    simpl.
+    rewrite Z.mod_small.
+    reflexivity.
+    zify. lia.
+    zify. unfold wsize_size_minus_1. simpl. lia.
+    simpl. lia.
+    simpl. lia.
+  -
 
   Admitted.
