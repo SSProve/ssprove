@@ -4,7 +4,6 @@
   basic crypto-style reasoning notions.
 *)
 
-
 From Coq Require Import Utf8.
 From Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples.
@@ -1054,6 +1053,108 @@ Proof.
   eapply rrewrite_eqDistrR. 1: exact h.
   intro s. eapply rcoupling_eq. 1: exact he.
   cbn. reflexivity.
+Qed.
+
+(* Simpler semantics for deterministic programs *)
+
+Inductive deterministic {A : choiceType} : raw_code A → Type :=
+| deterministic_ret :
+    ∀ x, deterministic (ret x)
+| deterministic_get :
+    ∀ ℓ k, (∀ x, deterministic (k x)) → deterministic (getr ℓ k)
+| deterministic_put :
+    ∀ ℓ v k, deterministic k → deterministic (putr ℓ v k).
+
+Fixpoint det_run {A : choiceType} c [h : @deterministic A c] s : A * heap :=
+  match h with
+  | deterministic_ret x => (x, s)
+  | deterministic_get ℓ k hk => det_run (k (get_heap s ℓ)) (h := hk _) s
+  | deterministic_put ℓ v k hk => det_run k (h := hk) (set_heap s ℓ v)
+  end.
+
+Lemma det_run_sem :
+  ∀ {A : choiceType} (c : raw_code A) (hd : deterministic c) s,
+    θ_dens (θ0 (repr c) s) = dunit (det_run c (h := hd) s).
+Proof.
+  intros A c hd s.
+  induction hd as [x | ℓ k hk ihk | ℓ v k hk ihk] in s |- *.
+  - reflexivity.
+  - simpl. rewrite <- ihk. reflexivity.
+  - simpl. rewrite <- ihk. reflexivity.
+Qed.
+
+Definition det_jdg {A B : choiceType} (pre : precond) (post : postcond A B)
+  (p : raw_code A) (q : raw_code B) hp hq :=
+  ∀ (s₀ s₁ : heap),
+    pre (s₀, s₁) →
+    post (det_run p (h := hp) s₀) (det_run q (h := hq) s₁).
+
+Lemma det_to_sem :
+  ∀ {A₀ A₁ : ord_choiceType} pre post (c₀ : raw_code A₀) (c₁ : raw_code A₁)
+    (hd₀ : deterministic c₀)
+    (hd₁ : deterministic c₁),
+    det_jdg pre post c₀ c₁ hd₀ hd₁ →
+    ⊢ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄.
+Proof.
+  intros A₀ A₁ pre post c₀ c₁ dc₀ dc₁ h.
+  eapply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
+  intros [hpre hpost]. simpl.
+  unfold SDistr_carrier. unfold F_choice_prod_obj. simpl.
+
+  unfold det_jdg in h. specialize (h s₀ s₁ hpre).
+  set (u := det_run c₀ _) in *.
+  set (v := det_run c₁ _) in *.
+
+  eexists (dunit (u, v)).
+  split.
+  - unfold coupling. split.
+    + unfold lmg. unfold dfst.
+      apply distr_ext. intro.
+      rewrite dlet_unit. simpl.
+      rewrite - det_run_sem. reflexivity.
+    + unfold rmg. unfold dsnd.
+      apply distr_ext. intro.
+      rewrite dlet_unit. simpl.
+      rewrite - det_run_sem. reflexivity.
+  - intros [] [] hh.
+    eapply hpost.
+    rewrite dunit1E in hh.
+    lazymatch type of hh with
+    | context [ ?x == ?y ] =>
+      destruct (x == y) eqn:e
+    end.
+    2:{
+      rewrite e in hh. simpl in hh.
+      rewrite order.Order.POrderTheory.ltxx in hh. discriminate.
+    }
+    move: e => /eqP e. inversion e.
+    subst. assumption.
+Qed.
+
+Lemma sem_to_dem :
+  ∀ {A₀ A₁ : ord_choiceType} pre post (c₀ : raw_code A₀) (c₁ : raw_code A₁)
+    (hd₀ : deterministic c₀)
+    (hd₁ : deterministic c₁),
+    ⊢ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄ →
+    det_jdg pre post c₀ c₁ hd₀ hd₁.
+Proof.
+  intros A₀ A₁ pre post c₀ c₁ hd₀ hd₁ h.
+  intros s₀ s₁ hpre.
+  eapply to_sem_jdg in h. specialize (h (s₀, s₁)). hnf in h. simpl in h.
+  specialize (h (λ '(v₀, s₀', (v₁, s₁')), post (v₀, s₀') (v₁, s₁'))).
+  destruct h as [c [hc h]].
+  - split. 1: assumption.
+    intros [] []. tauto.
+  - set (u := det_run c₀ _) in *.
+    set (v := det_run c₁ _) in *.
+    specialize (h u v).
+    assert (hc' : coupling c (dunit u) (dunit v)).
+    { rewrite - !det_run_sem. exact hc. }
+    destruct u, v.
+    apply h.
+    apply coupling_SDistr_unit_F_choice_prod in hc'. subst.
+    unfold SDistr_unit. rewrite dunit1E. rewrite eq_refl. simpl.
+    apply ltr0n.
 Qed.
 
 (* Rules using commands instead of bind *)
