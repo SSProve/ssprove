@@ -1131,7 +1131,7 @@ Proof.
     subst. assumption.
 Qed.
 
-Lemma sem_to_dem :
+Lemma sem_to_det :
   ∀ {A₀ A₁ : ord_choiceType} pre post (c₀ : raw_code A₀) (c₁ : raw_code A₁)
     (hd₀ : deterministic c₀)
     (hd₁ : deterministic c₁),
@@ -1155,6 +1155,32 @@ Proof.
     apply coupling_SDistr_unit_F_choice_prod in hc'. subst.
     unfold SDistr_unit. rewrite dunit1E. rewrite eq_refl. simpl.
     apply ltr0n.
+Qed.
+
+(* Similar to r_transL but relaxed for deterministic programs and for
+  stateless conditions.
+*)
+Lemma r_transL_val :
+  ∀ {A₀ A₁ : ord_choiceType} {P Q}
+    (c₀ c₀' : raw_code A₀) (c₁ : raw_code A₁),
+    deterministic c₀' →
+    deterministic c₀ →
+    deterministic c₁ →
+    ⊢ ⦃ λ _, P ⦄ c₀ ≈ c₀' ⦃ λ '(v₀, _) '(v₁, _), v₀ = v₁ ⦄ →
+    ⊢ ⦃ λ _, P ⦄ c₀ ≈ c₁ ⦃ λ '(v₀, _) '(v₁, _), Q v₀ v₁ ⦄ →
+    ⊢ ⦃ λ _, P ⦄ c₀' ≈ c₁ ⦃ λ '(v₀, _) '(v₁, _), Q v₀ v₁ ⦄.
+Proof.
+  intros A₀ A₁ P Q c₀ c₀' c₁ hd₀' hd₀ hd₁ he h.
+  unshelve eapply det_to_sem. 1,2: assumption.
+  unshelve eapply sem_to_det in he. 1,2: assumption.
+  unshelve eapply sem_to_det in h. 1,2: assumption.
+  intros s₀ s₁ hP.
+  specialize (h s₀ s₁ hP). specialize (he s₀ s₀ hP).
+  destruct (det_run c₀ _).
+  destruct (det_run c₀' _).
+  destruct (det_run c₁ _).
+  subst.
+  assumption.
 Qed.
 
 (* Rules using commands instead of bind *)
