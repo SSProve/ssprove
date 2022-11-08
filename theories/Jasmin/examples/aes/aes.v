@@ -1077,8 +1077,6 @@ From mathcomp.word Require Import word.
 Infix "^" := wxor.
 
 (* copy of the easycrypt functional definition *)
-Locate ".-tuple".
-
 Definition W4u8 : 4.-tuple u8 -> u32 := wcat.
 Definition W4u32 : 4.-tuple u32 -> u128 := wcat.
 
@@ -1545,7 +1543,7 @@ Qed.
     (* I would like to case on w, but not sure how to do this most efficiently? *)
     Admitted.
 
-Lemma key_expand_correct rcon rkey temp2 rcon_ :
+Lemma key_expand1_correct rcon rkey temp2 rcon_ :
   toword rcon_ = rcon ->
   ⊢ ⦃ fun _ => True ⦄
     l ← (Jkey_expand rcon rkey temp2) ;;
@@ -1642,3 +1640,63 @@ Proof.
   -
 
   Admitted.
+
+Lemma key_expand2_correct rcon rkey temp2 :
+  subword 0 U32 temp2 = word0 ->
+  ⊢ ⦃ fun _ => True ⦄
+    l ← (Jkey_expand rcon rkey temp2) ;;
+  ret (subword 0 U32 (coerce_to_choice_type ('word U128) (nth ('word U128 ; word0) l 1%nat).π2))
+    ⇓ word0
+    ⦃ fun _ => True ⦄.
+Proof.
+  (* unfold Jkey_expand, get_tr, get_translated_fun. *)
+
+  intros H.
+  simpl_fun. repeat setjvars.
+  (* rewrite !zero_extend_u. *)
+  (* rewrite !coerce_to_choice_type_K. *)
+
+  unfold eval_jdg.
+  repeat clear_get.
+
+  unfold sopn_sem.
+  unfold tr_app_sopn_tuple.
+  unfold tr_app_sopn_single.
+
+  simpl.
+
+  rewrite !zero_extend_u.
+  rewrite !coerce_to_choice_type_K.
+
+  repeat eapply u_put.
+  eapply u_ret.
+
+  split. easy.
+
+  (* Set Printing All. *)
+  (* unfold lift2_vec. *)
+  rewrite subword_0_32_128.
+  simpl.
+  rewrite subword_make_vec_32_0_32_128.
+  simpl.
+  unfold wpshufd1.
+  simpl.
+  rewrite subword_wshr.
+  simpl.
+  rewrite addn0.
+  rewrite subword_u.
+  rewrite subword_0_32_128.
+  simpl.
+  rewrite subword_make_vec_32_0_32_128.
+  simpl.
+  rewrite subword_u.
+  unfold wpshufd1.
+  simpl.
+  rewrite subword_wshr.
+  rewrite add0n.
+  assumption.
+  unfold wsize_size_minus_1, nat127.
+  zify. lia.
+  unfold wsize_size_minus_1, nat127.
+  zify. lia.
+Qed.
