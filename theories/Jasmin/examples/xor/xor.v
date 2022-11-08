@@ -88,6 +88,7 @@ Definition default_prog' := (1%positive, fun s_id : p_id => (ret tt)).
 Definition default_call := (1%positive, fun (s_id : p_id) (x : [choiceType of seq typed_chElement]) => ret x).
 Definition get_tr sp n := List.nth_default default_call sp n.
 Definition tr_xor := Eval simpl in (get_tr tr_P.2 0).
+Eval simpl in (tr_P.1).
 
 Opaque translate_for.
 
@@ -104,19 +105,27 @@ Proof.
   (* repeat setoid_rewrite (@zero_extend_u U64). *)
 
   (* proof *)
+  unfold eval_jdg.
+  repeat clear_get.
+
   ssprove_swap_lhs 1.
-  ssprove_contract_put_get_lhs.
-  ssprove_swap_seq_lhs [:: 1 ; 0 ; 2 ; 1].
-  ssprove_contract_put_get_lhs.
-  ssprove_swap_seq_lhs [:: 1 ; 0 ; 2 ; 1].
-  ssprove_contract_put_get_lhs.
-  ssprove_swap_seq_lhs [:: 0 ; 2 ; 1 ].
-  ssprove_contract_put_lhs.
-  ssprove_swap_seq_lhs [:: 2 ; 1 ].
-  ssprove_contract_put_get_lhs.
+  ssprove_swap_lhs 0.
+  ssprove_swap_lhs 1.
+  rewrite !zero_extend_u.
+
+  (* ssprove_swap_lhs 1. *)
+  (* ssprove_contract_put_get_lhs. *)
+  (* ssprove_swap_seq_lhs [:: 1 ; 0 ; 2 ; 1]. *)
+  (* ssprove_contract_put_get_lhs. *)
+  (* ssprove_swap_seq_lhs [:: 1 ; 0 ; 2 ; 1]. *)
+  (* ssprove_contract_put_get_lhs. *)
+  (* ssprove_swap_seq_lhs [:: 0 ; 2 ; 1 ]. *)
+  (* ssprove_contract_put_lhs. *)
+  (* ssprove_swap_seq_lhs [:: 2 ; 1 ]. *)
+  (* ssprove_contract_put_get_lhs. *)
   repeat eapply u_put.
   eapply u_ret.
-  rewrite !zero_extend_u.
+  (* rewrite !zero_extend_u. *)
   easy.
 Qed.
 
@@ -125,12 +134,6 @@ Qed.
 *)
 
 From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
-
-Set Warnings "-notation-overridden,-ambiguous-paths,-notation-incompatible-format".
-From mathcomp Require Import all_ssreflect all_algebra reals distr
-  fingroup.fingroup realsum ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice
-  seq.
-Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-format".
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
@@ -171,28 +174,19 @@ Section word_fin.
     by apply/all_filterP/allP=> i; rewrite in_ziota isSome_insub.
   Qed.
 
+  From mathcomp Require Import zify.
+
   Lemma ltzS x y : (x < Z.succ y) = (x <= y).
-  Proof.
-    apply/idP. unfold le, lt=>//=.
-    destruct (Z.leb _ _) eqn:E.
-    - apply Z.ltb_lt. lia.
-    - intros contra.
-      apply Z.ltb_lt in contra. lia.
-  Qed.
+  Proof. zify; lia. Qed.
 
   Lemma ltSz x y : (Z.succ x <= y) = (x < y).
-    apply/idP. unfold le, lt=>//=.
-    destruct (Z.ltb _ _) eqn:E.
-    - apply Z.leb_le.
-      lia.
-    - intros contra.
-      apply Z.leb_le in contra. lia.
-  Qed.
+  Proof. zify; lia. Qed.
+
   Lemma addzS x y : (x + Z.succ y) = Z.succ (x + y).
-  Proof. by unfold add => //=; rewrite Z.add_succ_r. Qed.
+  Proof. zify; lia. Qed.
 
   Lemma addSz x y : (Z.succ x + y) = Z.succ (x + y).
-  Proof. by unfold add => //=; rewrite Z.add_succ_l. Qed.
+  Proof. zify; lia. Qed.
 
   Lemma mem_ziota m k i : (i \in ziota m k) = (m <= i < m + k).
   Proof.
@@ -335,7 +329,7 @@ Section OTP_example.
        ret (m ⊕ k)
     }.
 
-  Notation N := ((2 ^ n).-1.+1).
+  Notation N := ((expn 2 n).-1.+1).
 
   #[export] Instance : Positive N.
   Proof. red; by rewrite prednK_modulus expn_gt0. Qed.
@@ -442,7 +436,7 @@ Section Jasmin_OTP.
   Notation word := (word n).
   Notation " 'word " := (chWord n) : package_scope.
   Notation " 'word " := (chWord n) (in custom pack_type at level 2) : package_scope.
-  Notation N := ((2 ^ n).-1.+1).
+  Notation N := ((expn 2 n).-1.+1).
 
   Definition id0 : BinNums.positive := 1.
 
@@ -502,6 +496,7 @@ Section Jasmin_OTP.
     IND_CPA_jasmin_real_game false ≈₀ IND_CPA_jasmin_real_game true.
   Proof.
     eapply eq_rel_perf_ind_ignore with (L := xor_locs); [apply fsubsetUr|].
+
     Opaque n.
     simplify_eq_rel m.
     Transparent n.
@@ -510,18 +505,7 @@ Section Jasmin_OTP.
     intros x.
 
     (* note that this simpl chokes if called before ssprove_sync_eq *)
-    simpl.
-    ssprove_invariant.
-    ssprove_swap_seq_rhs [::1%nat].
-    ssprove_contract_put_get_rhs.
-    ssprove_swap_seq_rhs [::0%nat ; 3%nat ; 2%nat ; 1%nat ].
-    ssprove_contract_put_get_rhs.
-    ssprove_swap_seq_rhs [::1%nat ; 0%nat ; 2%nat ; 1%nat ].
-    ssprove_contract_put_get_rhs.
-    ssprove_swap_seq_rhs [::2%nat ; 1%nat ].
-    ssprove_contract_put_rhs.
-    ssprove_swap_seq_rhs [::2%nat ; 1%nat ].
-    ssprove_contract_put_get_rhs.
+    apply rsymmetry; repeat clear_get; apply rsymmetry.
     rewrite !zero_extend_u.
 
     (* why is this not inferred? *)
@@ -571,3 +555,118 @@ Section Jasmin_OTP.
       assumption.
   Qed.
 End Jasmin_OTP.
+
+From Hacspec Require Import Xor_Both.
+From Hacspec Require Import Hacspec_Lib_Pre.
+(* consider exporting this from Hacspec_Lib_Pre? Needed for int64 : Type coercion  *)
+From Hacspec Require Import ChoiceEquality.
+
+Section JasminHacspec.
+
+  Definition state_xor (x y : int64) : raw_code int64 :=
+    xor (x, y).
+
+  Definition pure_xor (x y : int64) : raw_code int64 :=
+    lift_to_code (L:=fset0) (I := [interface]) (is_pure (xor (x, y))).
+
+  Definition state_pure_xor x y := code_eq_proof_statement (xor (x, y)).
+  Notation jazz_xor w1 w2 := ((snd tr_xor) 1%positive [('word U64; w1); ('word U64; w2)]).
+  Notation hdtc res := (coerce_to_choice_type ('word U64) (hd ('word U64 ; chCanonical _) res).π2).
+
+  Lemma rxor_pure : forall w1 w2,
+      ⊢ ⦃ true_precond ⦄
+        res ← jazz_xor w1 w2 ;;
+      ret (hdtc res)
+        ≈
+        pure_xor w1 w2
+        ⦃ fun '(a, h₀) '(b, h₁) => (a = b) ⦄.
+  Proof.
+    intros w1 w2.
+    simpl_fun.
+
+    repeat setjvars.
+
+    Ltac neq_loc_auto ::= eapply injective_translate_var3; auto.
+
+    repeat clear_get.
+
+    rewrite !zero_extend_u.
+    eapply r_put_lhs with (pre := fun _ => Logic.True).
+    repeat eapply r_put_lhs.
+    eapply r_ret.
+
+    intros ? ? ?.
+    rewrite coerce_to_choice_type_K.
+    reflexivity.
+  Qed.
+
+  Lemma rxor_state : forall w1 w2,
+      ⊢ ⦃ true_precond ⦄
+        res ← ((snd tr_xor) 1%positive [('word U64; w1); ('word U64; w2)]) ;;
+      ret (coerce_to_choice_type ('word U64) (hd ('word U64 ; chCanonical _) res).π2)
+        ≈
+        state_xor w1 w2
+        ⦃ fun '(a, _) '(b, _) => (a = b) ⦄.
+  Proof.
+    intros w1 w2.
+    unfold state_xor.
+
+    simpl_fun.
+    repeat setjvars.
+    repeat clear_get.
+
+    rewrite !zero_extend_u.
+    rewrite coerce_to_choice_type_K.
+    eapply r_put_vs_put with (pre := fun _ => Logic.True).
+    repeat eapply r_put_vs_put.
+    repeat eapply r_put_rhs.
+    eapply r_ret.
+    easy.
+  Qed.
+
+  Lemma val_sym :
+    ∀ {A : ord_choiceType} {pre : precond}
+    {c₀ : raw_code A} {c₁ : raw_code A},
+      ⊢ ⦃ true_precond ⦄
+        c₀
+        ≈
+        c₁
+        ⦃ fun '(a, _) '(b, _) => a = b ⦄ ->
+    ⊢ ⦃ fun '(h0, h1) => true_precond (h0, h1) ⦄
+        c₁
+        ≈
+        c₀
+        ⦃ fun '(a, _) '(b, _) => a = b ⦄.
+  Proof.
+    intros.
+    eapply rsymmetry.
+    eapply rpost_weaken_rule.
+    1: exact H.
+    intros [] []; auto.
+  Qed.
+
+  Lemma rxor_pure_via_state : forall w1 w2,
+      ⊢ ⦃ true_precond ⦄
+        res ← ((snd tr_xor) 1%positive [('word U64; w1); ('word U64; w2)]) ;;
+      ret (coerce_to_choice_type ('word U64) (hd ('word U64 ; chCanonical _) res).π2)
+        ≈
+        pure_xor w1 w2
+        ⦃ fun '(a, _) '(b, _) => (a = b) ⦄.
+  Proof.
+    intros w1 w2.
+    eapply @r_transL_val with (c₀ := state_xor w1 w2) (P := Logic.True).
+    - repeat constructor.
+    - repeat constructor.
+    - repeat constructor.
+    - eapply rsymmetry.
+      eapply rpost_weaken_rule.
+      1: eapply rxor_state.
+      intros [] []; auto.
+    - pose proof state_pure_xor.
+      eapply rpre_weaken_rule.
+      1: eapply rpost_weaken_rule.
+      1: eapply state_pure_xor.
+      2: auto.
+      intros [] []. unfold pre_to_post_ret; intuition subst.
+  Qed.
+End JasminHacspec.

@@ -1166,9 +1166,9 @@ Lemma r_transL_val :
     deterministic c₀' →
     deterministic c₀ →
     deterministic c₁ →
-    ⊢ ⦃ λ _, P ⦄ c₀ ≈ c₀' ⦃ λ '(v₀, _) '(v₁, _), v₀ = v₁ ⦄ →
-    ⊢ ⦃ λ _, P ⦄ c₀ ≈ c₁ ⦃ λ '(v₀, _) '(v₁, _), Q v₀ v₁ ⦄ →
-    ⊢ ⦃ λ _, P ⦄ c₀' ≈ c₁ ⦃ λ '(v₀, _) '(v₁, _), Q v₀ v₁ ⦄.
+    ⊢ ⦃ λ '(_, _), P ⦄ c₀ ≈ c₀' ⦃ λ '(v₀, _) '(v₁, _), v₀ = v₁ ⦄ →
+    ⊢ ⦃ λ '(_, _), P ⦄ c₀ ≈ c₁ ⦃ λ '(v₀, _) '(v₁, _), Q v₀ v₁ ⦄ →
+    ⊢ ⦃ λ '(_, _), P ⦄ c₀' ≈ c₁ ⦃ λ '(v₀, _) '(v₁, _), Q v₀ v₁ ⦄.
 Proof.
   intros A₀ A₁ P Q c₀ c₀' c₁ hd₀' hd₀ hd₁ he h.
   unshelve eapply det_to_sem. 1,2: assumption.
