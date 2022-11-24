@@ -1053,8 +1053,8 @@ Definition get_tr := get_translated_fun ssprove_jasmin_prog.
 Definition Jrcon (i : Z) := get_tr (xI (xI (xO (xO xH)))) 1%positive [('int ; i)].
 Definition Jkey_combine rkey temp1 temp2 := get_tr (xO (xI (xI (xO xH)))) 1%positive [('word U128 ; rkey) ; ('word U128 ; temp1) ; ('word U128 ; temp2)].
 Definition Jkey_expand rcon rkey temp2 := get_tr (xO (xI (xO (xO xH)))) 1%positive [ ('int ; rcon) ; ('word U128 ; rkey) ; ('word U128 ; temp2) ].
-
-Definition rcon (i : Z) := nth 54%Z [:: 1; 2; 4; 8; 16; 32; 64; 128; 27; 54]%Z ((Z.to_nat i) - 1).
+Definition Jkeys_expand rkey := get_tr (xO (xO (xI xH))) 1%positive [('word U128 ; rkey)].
+Definition rcon (i : Z) : Z := nth 54%Z [:: 1; 2; 4; 8; 16; 32; 64; 128; 27; 54]%Z ((Z.to_nat i) - 1).
 
 Require Import micromega.Lia.
 
@@ -1700,3 +1700,46 @@ Proof.
   unfold wsize_size_minus_1, nat127.
   zify. lia.
 Qed.
+
+From extructures Require Import ord fset fmap.
+
+Definition getmd {T S} m d i := match @getm T S m i with Some a => a | _ => d end.
+
+Local Open Scope Z_scope.
+
+Definition rkeys : Location := ( chMap 'nat ('word U128) ; 0%nat ).
+
+Definition keyExpansion (key : u128) :=
+  #put rkeys := @emptym nat_ordType u128 ;;
+  rkeys0 ← get rkeys ;;
+  #put rkeys := setm rkeys0 0%nat word0 ;;
+  for_loop (fun i =>
+    rkeys0 ← get rkeys ;;
+    #put rkeys := setm rkeys0 i (key_expand (zero_extend _ (getmd rkeys0 word0 i - 1)) (wrepr U8 (rcon (Z.of_nat i)))) ;;
+     ret tt) 10 ;;
+  ret rkeys.
+
+Opaque translate_for.
+Notation hdtc res := (coerce_to_choice_type ('array) (hd ('word U64 ; chCanonical _) res).π2).
+Notation call fn := (translate_call _ fn _).
+
+Lemma keyExpansionE rkey :
+  ⊢ ⦃ fun '(_, _) => True ⦄
+    res ← Jkeys_expand rkey ;;
+    ret (hdtc res)
+    ≈
+    keyExpansion rkey
+    ⦃ fun '(_, _) '(_, _) => True ⦄.
+Proof.
+ unfold Jkeys_expand.
+ unfold get_tr, get_translated_fun, translate_prog', translate_funs.
+ Opaque translate_call.
+ simpl.
+
+ simpl_fun. repeat setjvars.
+
+ repeat clear_get.
+ unfold keyExpansion.
+ eapply r_put_vs_put with (pre := fun _ => Logic.True).
+ eapply r_get_vs_get_remember.
+
