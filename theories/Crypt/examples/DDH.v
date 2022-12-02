@@ -63,54 +63,53 @@ Module DDH (DDHP : DDHParams) (GP : GroupParam).
   (* Needs to be transparent to unify with local positivity proof? *)
   Defined.
 
-  Definition chGroup : chUniverse := 'fin #|GroupSpace|.
+  Definition chGroup : choice_type := 'fin #|GroupSpace|.
 
   Definition i_space := #|Space|.
-  Definition chElem : chUniverse := 'fin #|Space|.
+  Definition chElem : choice_type := 'fin #|Space|.
 
-  Notation " 'group " :=
-    chGroup
-    (in custom pack_type at level 2).
+  Notation " 'group " := (chGroup) (in custom pack_type at level 2).
 
   Definition secret_loc1 : Location := (chElem ; 33%N).
   Definition secret_loc2 : Location := (chElem ; 34%N).
   Definition secret_loc3 : Location := (chElem ; 35%N).
 
-  Definition DDH_locs := (fset [:: secret_loc1 ; secret_loc2 ; secret_loc3]).
+  Definition DDH_locs :=
+    fset [:: secret_loc1 ; secret_loc2 ; secret_loc3].
 
   Definition DDH_real :
     package DDH_locs [interface]
-      [interface val #[ SAMPLE ] : 'unit → 'group × 'group × 'group ] :=
+      [interface #val #[ SAMPLE ] : 'unit → 'group × 'group × 'group ] :=
       [package
-        def #[ SAMPLE ] (_ : 'unit) : 'group × 'group × 'group
+        #def #[ SAMPLE ] (_ : 'unit) : 'group × 'group × 'group
         {
           a ← sample uniform i_space ;;
           b ← sample uniform i_space ;;
-          put secret_loc1 := a ;;
-          put secret_loc2 := b ;;
+          #put secret_loc1 := a ;;
+          #put secret_loc2 := b ;;
           ret (fto (g^+ a), (fto (g^+ b), fto (g^+(a * b))))
         }
       ].
 
-  Definition DDH_E := [interface val #[ SAMPLE ] : 'unit → 'group × 'group × 'group ].
+  Definition DDH_E := [interface #val #[ SAMPLE ] : 'unit → 'group × 'group × 'group ].
 
   Definition DDH_ideal :
     package DDH_locs [interface] DDH_E :=
       [package
-        def #[ SAMPLE ] (_ : 'unit) : 'group × 'group × 'group
+        #def #[ SAMPLE ] (_ : 'unit) : 'group × 'group × 'group
         {
           a ← sample uniform i_space ;;
           b ← sample uniform i_space ;;
           c ← sample uniform i_space ;;
-          put secret_loc1 := a ;;
-          put secret_loc2 := b ;;
-          put secret_loc3 := c ;;
+          #put secret_loc1 := a ;;
+          #put secret_loc2 := b ;;
+          #put secret_loc3 := c ;;
           ret (fto (g^+a), (fto (g^+b), fto (g^+c)))
         }
       ].
 
   Definition DDH :
-    loc_GamePair [interface val #[ SAMPLE ] : 'unit → 'group × 'group × 'group ] :=
+    loc_GamePair [interface #val #[ SAMPLE ] : 'unit → 'group × 'group × 'group ] :=
     λ b,
       if b then {locpackage DDH_real } else {locpackage DDH_ideal }.
 

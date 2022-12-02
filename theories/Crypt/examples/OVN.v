@@ -124,9 +124,9 @@ Defined.
 #[local] Existing Instance Secret_pos.
 #[local] Existing Instance Public_pos.
 
-Definition pid : chUniverse := 'fin #|Pid|.
-Definition secret : chUniverse := 'fin #|Secret|.
-Definition public: chUniverse := 'fin #|Public|.
+Definition pid : choice_type := 'fin #|Pid|.
+Definition secret : choice_type := 'fin #|Secret|.
+Definition public: choice_type := 'fin #|Public|.
 
 Definition nat_to_pid : nat → pid.
 Proof.
@@ -1303,7 +1303,7 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     }
     ssprove_code_simpl.
     simpl.
-    repeat chUniverse_eqP_handle.
+    repeat choice_type_eqP_handle.
     rewrite !cast_fun_K.
     ssprove_code_simpl.
     simpl.

@@ -1,4 +1,3 @@
-
 From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
@@ -8,7 +7,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_core_definition chUniverse pkg_composition pkg_rhl
+  pkg_core_definition choice_type pkg_composition pkg_rhl
   Package Prelude RandomOracle.
 
 From Coq Require Import Utf8.
@@ -31,7 +30,7 @@ Import PackageNotation.
 
 Section Executor.
 
-  Context (sample : ∀ (e : chUniverse), nat → option (nat * e)).
+  Context (sample : ∀ (e : choice_type), nat → option (nat * e)).
 
   Inductive NatState :=
   | NSUnit
@@ -39,7 +38,7 @@ Section Executor.
   | NSOption (A : option NatState)
   | NSProd (A B : NatState).
 
-  Equations? nat_ch_aux (x : NatState) (l : chUniverse) : option (Value l) :=
+  Equations? nat_ch_aux (x : NatState) (l : choice_type) : option (Value l) :=
     nat_ch_aux (NSUnit) 'unit := Some Datatypes.tt ;
     nat_ch_aux (NSNat n) 'nat := Some n ;
     nat_ch_aux (NSNat n) 'bool := Some (Nat.odd n) ;
@@ -58,13 +57,13 @@ Section Executor.
       apply cond_pos0.
   Defined.
 
-  Definition nat_ch (x : option NatState) (l : chUniverse) : option (Value l) :=
+  Definition nat_ch (x : option NatState) (l : choice_type) : option (Value l) :=
     match x with
     | Some v => nat_ch_aux v l
     | None => None
     end.
 
-  Equations ch_nat (l : chUniverse) (v : l) : option NatState :=
+  Equations ch_nat (l : choice_type) (v : l) : option NatState :=
     ch_nat 'unit v := Some NSUnit ;
     ch_nat 'nat v := Some (NSNat v) ;
     ch_nat 'bool v := Some (NSNat v) ;
@@ -82,7 +81,6 @@ Section Executor.
     ch_nat 'option l None := Some (NSOption None) ;
     ch_nat _ _ := None.
 
-  Compute (nat_ch (ch_nat 'unit Datatypes.tt) 'unit).
   Lemma ch_nat_ch l v:
     match (ch_nat l v) with
       | Some k => nat_ch (Some k) l = Some v
@@ -154,11 +152,14 @@ Section Executor.
       then (ch_nat l v)
       else st l'.
 
+  (* I don't understand why it's needed again. *)
+  Import pkg_core_definition.
+
   Fixpoint Run_aux {A : choiceType}
            (c : raw_code A) (seed : nat) (st : Location → option NatState)
     : option A :=
     match c with
-      ret x => Some x
+    | ret x => Some x
     | sampler o k =>
         match sample (projT1 o) seed with
         | Some (seed', x) => Run_aux (k x) seed' st
@@ -178,7 +179,7 @@ Section Executor.
 
 End Executor.
 
-#[program] Fixpoint sampler (e : chUniverse) seed : option (nat * e):=
+#[program] Fixpoint sampler (e : choice_type) seed : option (nat * e):=
   match e with
     chUnit => Some (seed, Datatypes.tt)
   | chNat => Some ((seed + 1)%N, seed)
@@ -223,7 +224,7 @@ Section Test.
     code locs [interface] 'nat :=
     {code
        k ← test_prog_sub x ;;
-       put loc := k ;;
+       #put loc := k ;;
        k' ← get loc ;;
        ret k'
     }.
@@ -231,7 +232,7 @@ Section Test.
     ssprove_valid.
   Defined.
 
-  Compute (Run sampler (test_prog 2) 54).
+  (* Compute (Run sampler (test_prog 2) 54). *)
 
   Lemma interpretation_test1:
     ∀ seed input,
@@ -242,20 +243,20 @@ Section Test.
 
   Definition E :=
     [interface
-       val #[ 0 ] : 'nat → 'nat
+      #val #[ 0 ] : 'nat → 'nat
     ].
 
   Definition test_pack:
     package locs [interface] E :=
     [package
-       def #[ 0 ] (x : 'nat) : 'nat
-       {
-         k ← sample uniform 20 ;;
-         let y := (x + k)%N in
-         put loc := y ;;
-         y' ← get loc ;;
-         ret y'
-       }
+      #def #[ 0 ] (x : 'nat) : 'nat
+      {
+        k ← sample uniform 20 ;;
+        let y := (x + k)%N in
+        #put loc := y ;;
+        y' ← get loc ;;
+        ret y'
+      }
     ].
 
 End Test.
