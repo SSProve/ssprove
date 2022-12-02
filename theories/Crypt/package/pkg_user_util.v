@@ -358,7 +358,7 @@ Ltac ssprove_sync :=
     | #put ?ℓ := ?v ;; _ =>
       eapply (@rsame_head_cmd_alt _ _ (λ z, _) (λ z, _) (cmd_put ℓ v)) ; [
         eapply cmd_put_preserve_pre ; ssprove_invariant
-      | intros _
+      | intros []
       ]
     | x ← get ?ℓ ;; _ =>
       eapply (rsame_head_cmd_alt (cmd_get ℓ)) ; [
