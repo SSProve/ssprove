@@ -844,9 +844,9 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       apply mxvec_index. all: assumption.
     Qed.
 
-    (* TW: I moved it here because it might induce back-tracking and we want to *)
-  (*     avoid it because of time-consumption. *)
-  (*   *)
+    (* TW: I moved it here because it might induce back-tracking and we want to
+       avoid it because of time-consumption.
+    *)
     Hint Extern 20 (ValidCode ?L ?I ?c.(prog)) =>
       eapply valid_injectMap ; [| eapply c.(prog_valid) ]
       : typeclass_instances ssprove_valid_db.
@@ -872,10 +872,12 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         } ;
         #def #[ RUN ] (hw : chRelation) : chTranscript
         {
+          #import {sig #[ INIT ] : 'unit → 'unit } as RO_init ;;
           #import {sig #[ QUERY ] : 'query → 'random } as RO_query ;;
           let '(h,w) := hw in
           #assert (R (otf h) (otf w)) ;;
           a ← Commit h w ;;
+          RO_init Datatypes.tt ;;
           e ← RO_query (prod_assoc (h, a)) ;;
           z ← Response h w a e ;;
           @ret choiceTranscript (h,a,e,z)
@@ -884,6 +886,9 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
     Definition Fiat_Shamir_SIM :
       package Sim_locs
+        [interface
+          #val #[ QUERY ] : 'query → 'random
+        ]
         [interface
           #val #[ VERIFY ] : chTranscript → 'bool ;
           #val #[ RUN ] : chRelation → chTranscript
@@ -895,6 +900,29 @@ Module SigmaProtocol (π : SigmaProtocolParams)
           #import {sig #[ QUERY ] : 'query → 'random } as RO_query ;;
           let '(h,a,e,z) := t in
           e ← RO_query (prod_assoc (h, a)) ;;
+          ret (otf (Verify h a e z))
+        } ;
+        #def #[ RUN ] (hw : chRelation) : chTranscript
+        {
+          let '(h,w) := hw in
+          #assert (R (otf h) (otf w)) ;;
+          t ← Sim h ;;
+          ret t
+        }
+      ].
+
+    Definition RUN_interactive :
+      package Sigma_locs
+        [interface]
+        [interface
+          #val #[ VERIFY ] : chTranscript → 'bool ;
+          #val #[ RUN ] : chRelation → chTranscript
+        ]
+      :=
+      [package
+        #def #[ VERIFY ] (t : chTranscript) : 'bool
+        {
+          let '(h,a,e,z) := t in
           ret (otf (Verify h a e z))
         } ;
         #def #[ RUN ] (hw : chRelation) : chTranscript
