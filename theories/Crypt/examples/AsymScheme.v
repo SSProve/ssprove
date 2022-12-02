@@ -21,7 +21,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_core_definition chUniverse pkg_composition pkg_rhl
+  pkg_core_definition choice_type pkg_composition pkg_rhl
   Package Prelude.
 
 From Coq Require Import Utf8.
@@ -58,8 +58,8 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
 
   Local Open Scope package_scope.
 
-  (* chX is the chUniverse in bijection with X  *)
-  (* Parameters chPlain chCipher chPubKey chSecKey : chUniverse. *)
+  (* chX is the choice_type in bijection with X  *)
+  (* Parameters chPlain chCipher chPubKey chSecKey : choice_type. *)
   Parameter Plain_pos : Positive #|Plain|.
   Parameter Cipher_pos : Positive #|Cipher|.
   Parameter PubKey_pos : Positive #|PubKey|.
@@ -139,22 +139,22 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
       L_locs
       [interface]
       [interface
-        val #[getpk_id] : 'unit → 'pubkey ;
-        val #[challenge_id] : 'plain × 'plain → 'cipher
+        #val #[getpk_id] : 'unit → 'pubkey ;
+        #val #[challenge_id] : 'plain × 'plain → 'cipher
       ]
     :=
     [package
-      def  #[getpk_id] (_ : 'unit) : 'pubkey
+      #def  #[getpk_id] (_ : 'unit) : 'pubkey
       {
         pk ← get pk_loc ;;
         ret pk
       } ;
 
-      def #[challenge_id] ( mL_mR : 'plain × 'plain ) : 'cipher
+      #def #[challenge_id] ( mL_mR : 'plain × 'plain ) : 'cipher
       {
         '(pk, sk) ← KeyGen ;;
-        put pk_loc := pk ;;
-        put sk_loc := sk ;;
+        #put pk_loc := pk ;;
+        #put sk_loc := sk ;;
         c ← Enc pk (fst mL_mR) ;;
         ret c
       }
@@ -165,22 +165,22 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
       L_locs
       [interface]
       [interface
-        val #[getpk_id] : 'unit → 'pubkey ;
-        val #[challenge_id] : 'plain × 'plain → 'cipher
+        #val #[getpk_id] : 'unit → 'pubkey ;
+        #val #[challenge_id] : 'plain × 'plain → 'cipher
       ]
     :=
     [package
-      def  #[getpk_id] (_ : 'unit) : 'pubkey
+      #def  #[getpk_id] (_ : 'unit) : 'pubkey
       {
         pk ← get pk_loc ;;
         ret pk
       } ;
 
-      def #[challenge_id] ( mL_mR : 'plain × 'plain ) : 'cipher
+      #def #[challenge_id] ( mL_mR : 'plain × 'plain ) : 'cipher
       {
         '(pk, sk) ← KeyGen ;;
-        put pk_loc := pk ;;
-        put sk_loc := sk ;;
+        #put pk_loc := pk ;;
+        #put sk_loc := sk ;;
         c ← Enc pk (snd mL_mR) ;;
         ret c
       }
@@ -188,8 +188,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
 
   Definition cpa_L_vs_R :
     loc_GamePair [interface
-      val #[getpk_id] : 'unit → 'pubkey ;
-      val #[challenge_id] : 'plain × 'plain → 'cipher
+      #val #[getpk_id] : 'unit → 'pubkey ;
+      #val #[challenge_id] : 'plain × 'plain → 'cipher
     ] :=
     λ b, if b then {locpackage L_pk_cpa_L} else {locpackage L_pk_cpa_R}.
 
@@ -202,8 +202,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
   Definition CPA_security : Prop :=
     ∀ LA A,
       ValidPackage LA [interface
-        val #[getpk_id] : 'unit → 'pubkey ;
-        val #[challenge_id] : 'plain × 'plain → 'cipher
+        #val #[getpk_id] : 'unit → 'pubkey ;
+        #val #[challenge_id] : 'plain × 'plain → 'cipher
       ] A_export A →
       fdisjoint LA (cpa_L_vs_R true).(locs) →
       fdisjoint LA (cpa_L_vs_R false).(locs) →
@@ -216,22 +216,22 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
     package L_locs
       [interface]
       [interface
-        val #[getpk_id] : 'unit → 'pubkey ;
-        val #[challenge_id] : 'plain → 'cipher
+        #val #[getpk_id] : 'unit → 'pubkey ;
+        #val #[challenge_id] : 'plain → 'cipher
       ]
     :=
     [package
-      def  #[getpk_id] (_ : 'unit) : 'pubkey
+      #def  #[getpk_id] (_ : 'unit) : 'pubkey
       {
         pk ← get pk_loc ;;
         ret pk
       } ;
 
-      def #[challenge_id] (m : 'plain) : 'cipher
+      #def #[challenge_id] (m : 'plain) : 'cipher
       {
         '(pk, sk) ← KeyGen ;;
-        put pk_loc := pk ;;
-        put sk_loc := sk ;;
+        #put pk_loc := pk ;;
+        #put sk_loc := sk ;;
         c ← Enc pk m ;;
         ret c
       }
@@ -241,31 +241,31 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
     package L_locs
       [interface]
       [interface
-        val #[getpk_id] : 'unit → 'pubkey ;
-        val #[challenge_id] : 'plain → 'cipher
+        #val #[getpk_id] : 'unit → 'pubkey ;
+        #val #[challenge_id] : 'plain → 'cipher
       ]
     :=
     [package
-      def  #[getpk_id] (_ : 'unit) : 'pubkey
+      #def  #[getpk_id] (_ : 'unit) : 'pubkey
       {
         pk ← get pk_loc ;;
         ret pk
       } ;
 
-      def #[challenge_id] (m : 'plain) : 'cipher
+      #def #[challenge_id] (m : 'plain) : 'cipher
       {
         '(pk, sk) ← KeyGen ;;
-         put pk_loc := pk ;;
-         put sk_loc := sk ;;
-         c ← sample uniform i_cipher ;;
-         ret c
+        #put pk_loc := pk ;;
+        #put sk_loc := sk ;;
+        c ← sample uniform i_cipher ;;
+        ret c
       }
     ].
 
   Definition cpa_real_vs_rand :
     loc_GamePair [interface
-      val #[getpk_id] : 'unit → 'pubkey ;
-      val #[challenge_id] : 'plain → 'cipher
+      #val #[getpk_id] : 'unit → 'pubkey ;
+      #val #[challenge_id] : 'plain → 'cipher
     ] :=
     λ b, if b then {locpackage L_pk_cpa_real } else {locpackage L_pk_cpa_rand }.
 
@@ -278,8 +278,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
   Definition CPA_rnd_cipher : Prop :=
     ∀ LA A,
       ValidPackage LA [interface
-        val #[getpk_id] : 'unit → 'pubkey ;
-        val #[challenge_id] : 'plain → 'cipher
+        #val #[getpk_id] : 'unit → 'pubkey ;
+        #val #[challenge_id] : 'plain → 'cipher
       ] A_export A →
       fdisjoint LA (cpa_real_vs_rand true).(locs) →
       fdisjoint LA (cpa_real_vs_rand false).(locs) →
@@ -294,24 +294,24 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
     package L_locs_counter
       [interface]
       [interface
-        val #[getpk_id] : 'unit → 'pubkey ;
-        val #[challenge_id] : 'plain × 'plain → 'cipher
+        #val #[getpk_id] : 'unit → 'pubkey ;
+        #val #[challenge_id] : 'plain × 'plain → 'cipher
       ]
     :=
     [package
-      def #[getpk_id] (_ : 'unit) : 'pubkey
+      #def #[getpk_id] (_ : 'unit) : 'pubkey
       {
         pk ← get pk_loc ;;
         ret pk
       } ;
-      def #[challenge_id] (mL_mR : 'plain × 'plain) : 'cipher
+      #def #[challenge_id] (mL_mR : 'plain × 'plain) : 'cipher
       {
         count ← get counter_loc ;;
-        put counter_loc := (count + 1)%N;;
+        #put counter_loc := (count + 1)%N;;
         #assert (count == 0)%N ;;
         '(pk, sk) ← KeyGen ;;
-        put pk_loc := pk ;;
-        put sk_loc := sk ;;
+        #put pk_loc := pk ;;
+        #put sk_loc := sk ;;
         c ← Enc pk (fst mL_mR) ;;
         ret c
       }
@@ -321,24 +321,24 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
     package L_locs_counter
       [interface]
       [interface
-        val #[getpk_id] : 'unit → 'pubkey ;
-        val #[challenge_id] : 'plain × 'plain → 'cipher
+        #val #[getpk_id] : 'unit → 'pubkey ;
+        #val #[challenge_id] : 'plain × 'plain → 'cipher
       ]
     :=
     [package
-      def  #[getpk_id] (_ : 'unit) : 'pubkey
+      #def #[getpk_id] (_ : 'unit) : 'pubkey
       {
         pk ← get pk_loc ;;
         ret pk
       } ;
-      def #[challenge_id] (mL_mR :  'plain × 'plain) : 'cipher
+      #def #[challenge_id] (mL_mR :  'plain × 'plain) : 'cipher
       {
         count ← get counter_loc ;;
-        put counter_loc := (count + 1)%N;;
+        #put counter_loc := (count + 1)%N;;
         #assert (count == 0)%N ;;
         '(pk, sk) ← KeyGen ;;
-        put pk_loc := pk ;;
-        put sk_loc := sk ;;
+        #put pk_loc := pk ;;
+        #put sk_loc := sk ;;
         c ← Enc pk (snd mL_mR) ;;
         ret c
       }
@@ -346,8 +346,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
 
   Definition ots_L_vs_R :
     loc_GamePair [interface
-      val #[getpk_id] : 'unit → 'pubkey ;
-      val #[challenge_id] :'plain × 'plain → 'cipher
+      #val #[getpk_id] : 'unit → 'pubkey ;
+      #val #[challenge_id] :'plain × 'plain → 'cipher
     ] :=
     λ b, if b then {locpackage L_pk_ots_L } else {locpackage L_pk_ots_R }.
 
@@ -360,8 +360,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
   Definition OT_secrecy : Prop :=
     ∀ LA A,
       ValidPackage LA [interface
-        val #[getpk_id] : 'unit → 'pubkey ;
-        val #[challenge_id] :'plain × 'plain → 'option 'cipher
+        #val #[getpk_id] : 'unit → 'pubkey ;
+        #val #[challenge_id] :'plain × 'plain → 'option 'cipher
       ] A_export A →
       fdisjoint LA (ots_L_vs_R true).(locs) →
       fdisjoint LA (ots_L_vs_R false).(locs) →
@@ -373,25 +373,25 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
     package L_locs_counter
       [interface]
       [interface
-        val #[getpk_id] : 'unit → 'pubkey ;
-        val #[challenge_id'] : 'plain → 'cipher
+        #val #[getpk_id] : 'unit → 'pubkey ;
+        #val #[challenge_id'] : 'plain → 'cipher
       ]
     :=
     [package
-      def  #[getpk_id] (_ : 'unit) : 'pubkey
+      #def  #[getpk_id] (_ : 'unit) : 'pubkey
       {
         pk ← get pk_loc ;;
         ret pk
       } ;
 
-      def #[challenge_id'] (m : 'plain) : 'cipher
+      #def #[challenge_id'] (m : 'plain) : 'cipher
       {
         count ← get counter_loc ;;
-        put counter_loc := (count + 1)%N;;
+        #put counter_loc := (count + 1)%N;;
         #assert (count == 0)%N ;;
         '(pk, sk) ← KeyGen ;;
-        put pk_loc := pk ;;
-        put sk_loc := sk ;;
+        #put pk_loc := pk ;;
+        #put sk_loc := sk ;;
         c ← Enc pk m ;;
         ret c
       }
@@ -401,25 +401,25 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
     package L_locs_counter
       [interface]
       [interface
-        val #[getpk_id] : 'unit → 'pubkey ;
-        val #[challenge_id'] : 'plain → 'cipher
+        #val #[getpk_id] : 'unit → 'pubkey ;
+        #val #[challenge_id'] : 'plain → 'cipher
       ]
     :=
     [package
-      def  #[getpk_id] (_ : 'unit) : 'pubkey
+      #def  #[getpk_id] (_ : 'unit) : 'pubkey
       {
         pk ← get pk_loc ;;
         ret pk
       } ;
 
-      def #[challenge_id'] (m : 'plain) : 'cipher
+      #def #[challenge_id'] (m : 'plain) : 'cipher
       {
         count ← get counter_loc ;;
-        put counter_loc := (count + 1)%N;;
+        #put counter_loc := (count + 1)%N;;
         #assert (count == 0)%N ;;
         '(pk, sk) ← KeyGen ;;
-        put pk_loc := pk ;;
-        put sk_loc := sk ;;
+        #put pk_loc := pk ;;
+        #put sk_loc := sk ;;
         c ← sample uniform i_cipher ;;
         ret c
       }
@@ -427,8 +427,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
 
   Definition ots_real_vs_rnd :
     loc_GamePair [interface
-      val #[getpk_id] : 'unit → 'pubkey ;
-      val #[challenge_id'] : 'plain → 'cipher
+      #val #[getpk_id] : 'unit → 'pubkey ;
+      #val #[challenge_id'] : 'plain → 'cipher
     ] :=
     λ b, if b then {locpackage L_pk_ots_real } else {locpackage L_pk_ots_rnd }.
 

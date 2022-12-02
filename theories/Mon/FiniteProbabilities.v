@@ -20,7 +20,7 @@ Section FinProb.
 
   Import SPropNotations.
 
-  Definition unit_interval := { r : R | 0 <= r <= 1}.
+  Definition unit_interval := { r : R | 0 <= r <= 1 }.
   Let I := unit_interval.
 
 
@@ -50,26 +50,26 @@ Section FinProb.
   Hint Resolve I_ge0 : core.
   Hint Resolve I_le1 : core.
 
-  Program Definition addI (x y : I) : I := ⦑(x∙1 + y∙1) / 2%:~R ⦒.
+  #[program] Definition addI (x y : I) : I := ⦑ (x∙1 + y∙1) / 2%:~R ⦒.
   Next Obligation.
+    intros x y. simpl.
     rewrite divr_ge0 ?Bool.andb_true_l ?ler0n ?addr_ge0 //.
     rewrite ler_pdivr_mulr.
     rewrite mul1r [2%:~R]/(1+1) ler_add //.
     rewrite ltr0n //.
   Qed.
 
-  Program Definition mulI (x y:I) : I := ⦑x∙1 * y∙1⦒.
+  #[program] Definition mulI (x y:I) : I := ⦑ x∙1 * y∙1 ⦒.
   Next Obligation.
+    intros. simpl.
     rewrite mulr_ge0 //=.
-    (* move: (@mul1r R 1) => <-. *)
-    (* Unset Printing Notations. *)
-    (* Set Printing Implicit. *)
     rewrite -{3}(mul1r 1).
     rewrite ler_pmul //=.
   Qed.
 
-  Program Definition negI (x:I) : I := ⦑1 - x∙1⦒.
+  #[program] Definition negI (x:I) : I := ⦑ 1 - x∙1 ⦒.
   Next Obligation.
+    intros. simpl.
     rewrite subr_ge0 (I_le1 x) /= ler_subl_addr -{1}(addr0 1) ler_add ?lerr //.
   Qed.
 
@@ -78,9 +78,10 @@ Section FinProb.
 
   Definition ProbM : Monad := Free ProbAr.
 
-  Program Definition barycentric_sum (p:I) (x y: I) : I :=
-    ⦑p∙1 * x∙1 + (1-p∙1) * y∙1⦒.
+  #[program] Definition barycentric_sum (p:I) (x y: I) : I :=
+    ⦑ p∙1 * x∙1 + (1-p∙1) * y∙1 ⦒.
   Next Obligation.
+    intros p x y. simpl.
     set p' : I := negI p; change (1-p∙1) with p'∙1.
     rewrite addr_ge0 ?mulr_ge0 //.
     have: (1 = p∙1*1 + (1 - p∙1)*1) by rewrite !mulr1 addrA [_+1]addrC addrK.
@@ -88,13 +89,13 @@ Section FinProb.
     by rewrite ler_add // ler_pmul // (I_ge0 (negI p)).
   Qed.
 
-  Program Definition wopProb (p:ProbS) : WI (ProbAr p) :=
-    ⦑fun f => barycentric_sum p (f true) (f false) ⦒.
+  #[program] Definition wopProb (p:ProbS) : WI (ProbAr p) :=
+    ⦑ fun f => barycentric_sum p (f true) (f false) ⦒.
   Next Obligation.
-    move=> ? ? H.
-   rewrite /Irel /=.
-   rewrite ler_add // ler_pmul //; try by apply H.
-   by rewrite (I_ge0 (negI p)).
+    intros p ? ? H.
+    rewrite /Irel /=.
+    rewrite ler_add // ler_pmul //; try by apply H.
+    by rewrite (I_ge0 (negI p)).
   Qed.
 
   Definition θProb := OpSpecEffObs wopProb.

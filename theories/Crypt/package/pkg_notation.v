@@ -37,7 +37,7 @@
     An interface can be provided using the following sequence notation:
     [interface d1 ; ... ; dn]
     where d1 to dn are prototypes or function signatures of the form
-    val #[n] : S → T
+    #val #[n] : S → T
     where S and T are both given using the type syntax above
     and n is a natural number used as an identifier.
 
@@ -46,7 +46,7 @@
     A package can bve provided using the following sequence notation;
     [package d1 ; ... dn]
     where d1 to dn are function declarations of the form
-    def #[n] (x : A) : B {
+    #def #[n] (x : A) : B {
       e
     }
     where n is a natural number used as an identifier, A and B are types
@@ -68,7 +68,7 @@
       c ;; k
 
     - Managing state:
-      put n := u ;; c
+      #put n := u ;; c
       x ← get n ;; c
       correspond respectively to updating and reading the state location n.
 
@@ -100,7 +100,7 @@ From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
 Set Warnings "notation-overridden,ambiguous-paths".
 From extructures Require Import ord fset fmap.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd RulesStateProb
-  chUniverse pkg_core_definition pkg_composition.
+  choice_type pkg_core_definition pkg_composition.
 
 
 #[local] Open Scope fset.
@@ -174,11 +174,11 @@ Module PackageNotation.
     format "[ interface  '[' x1  ;  '/' x2  ;  '/' ..  ;  '/' xn ']'  ]")
     : package_scope.
 
-  Notation "'val' #[ f ] : A → B" :=
+  Notation "'#val' #[ f ] : A → B" :=
     (f, (A, B))
     (in custom interface at level 0,
     f constr, A custom pack_type, B custom pack_type,
-    format "val  #[ f ]  :  A  →  B").
+    format "#val  #[ f ]  :  A  →  B").
 
   Notation "[ 'package' ]" :=
     (mkpackage (mkfmap [::]) _)
@@ -199,18 +199,18 @@ Module PackageNotation.
     format "[ package  '[' x1  ;  '/' x2  ;  '/' ..  ;  '/' xn  ']' ]")
     : package_scope.
 
-  Notation " 'def' #[ f ] ( x : A ) : B { e }" :=
+  Notation " '#def' #[ f ] ( x : A ) : B { e }" :=
     ((f, mkdef A B (λ x, e)))
     (in custom package at level 0,
     f constr, e constr, x name, A custom pack_type, B custom pack_type,
-    format "def  #[ f ]  ( x : A )  :  B  { '[' '/'  e  '/' ']' }")
+    format "#def  #[ f ]  ( x : A )  :  B  { '[' '/'  e  '/' ']' }")
     : package_scope.
 
-  Notation " 'def' #[ f ] ( ' p : A ) : B { e }" :=
+  Notation " '#def' #[ f ] ( ' p : A ) : B { e }" :=
     ((f, mkdef A B (λ x, let p := x in e)))
     (in custom package at level 0,
     f constr, e constr, p pattern, A custom pack_type, B custom pack_type,
-    format "def  #[ f ]  ( ' p : A )  :  B  { '[' '/'  e  '/' ']' }")
+    format "#def  #[ f ]  ( ' p : A )  :  B  { '[' '/'  e  '/' ']' }")
     : package_scope.
 
   Notation "#[ f ] : A → B" :=
@@ -242,10 +242,10 @@ Module PackageNotation.
     format "e1  ;;  '//' e2")
     : package_scope.
 
-  Notation "'put' n ':=' u ;; c" :=
+  Notation "'#put' n ':=' u ;; c" :=
     (putr n u c)
     (at level 100, u at next level, right associativity,
-    format "put  n  :=  u  ;;  '//' c")
+    format "#put  n  :=  u  ;;  '//' c")
     : package_scope.
 
   Notation "x ← 'get' n ;; c" :=
@@ -307,7 +307,6 @@ Module PackageNotation.
   (* TODO Use ;; for this, and a longer notation or none at all for
     bind. Bind is just a tool to compose codes while this is to compose
     commands and code, much more practical.
-    TODO: Maybe not add things such as get/put/cmd to the grammar.
   *)
   Notation "e1 ;' e2" :=
     (_ ← cmd e1 ;; e2)%pack
@@ -329,6 +328,6 @@ Module PackageNotation.
     cbn. exists n. exact h.
   Defined.
 
-  Notation gfin n := (@give_fin _ n _).
+  Notation gfin n := (@give_fin n _).
 
 End PackageNotation.

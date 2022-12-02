@@ -24,7 +24,7 @@
     [ssprove_code_simpl].
 
   - [simplify_linking]
-    Will deal with residual [chUniverse_eqP] coming from linking.
+    Will deal with residual [choice_type_eqP] coming from linking.
 
 
   Tools for relation program logic
@@ -77,7 +77,7 @@ Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From Crypt Require Import Axioms Prelude pkg_core_definition pkg_composition
   pkg_notation RulesStateProb pkg_advantage pkg_lookup pkg_semantics
-  pkg_heap pkg_invariants pkg_distr pkg_rhl pkg_tactics chUniverse.
+  pkg_heap pkg_invariants pkg_distr pkg_rhl pkg_tactics choice_type.
 From Coq Require Import Utf8 FunctionalExtensionality
   Setoids.Setoid Classes.Morphisms.
 
@@ -133,7 +133,7 @@ Ltac lookup_op_squeeze :=
   destruct lookup_op as [f|] eqn:e ; [
   | exfalso ;
     simpl in e ;
-    repeat (destruct chUniverse_eqP ; [| contradiction ]) ;
+    repeat (destruct choice_type_eqP ; [| contradiction ]) ;
     discriminate
   ] ;
   eapply lookup_op_spec in e ; simpl in e ;
@@ -149,14 +149,14 @@ Ltac lookup_op_squeeze :=
   ) ;
   noconf e.
 
-Ltac chUniverse_eqP_handle :=
+Ltac choice_type_eqP_handle :=
   let e := fresh "e" in
-  destruct chUniverse_eqP as [e|] ; [| contradiction ] ;
+  destruct choice_type_eqP as [e|] ; [| contradiction ] ;
   assert (e = erefl) by eapply uip ;
   subst e.
 
 Ltac simplify_linking :=
-  repeat chUniverse_eqP_handle ;
+  repeat choice_type_eqP_handle ;
   simpl.
 
 Ltac simplify_eq_rel m :=
@@ -230,7 +230,7 @@ Ltac ssprove_match_commut_gen1 :=
       let x' := fresh x in
       eapply (f_equal (getr _)) ;
       eapply functional_extensionality with (f := λ x', _) ; intro x'
-    | put ?ℓ := ?v ;; _ =>
+    | #put ?ℓ := ?v ;; _ =>
       eapply (f_equal (putr _ _))
     | @assertD ?A ?b (λ x, _) =>
       let x' := fresh x in
@@ -296,13 +296,13 @@ Ltac ssprove_code_simpl :=
 Ltac cmd_bind_simpl_once :=
   try change (cmd_bind (cmd_sample ?op) ?k) with (sampler op k) ;
   try change (cmd_bind (cmd_get ?ℓ) ?k) with (getr ℓ k) ;
-  try change (cmd_bind (cmd_put ?ℓ ?v) ?k) with (put ℓ := v ;; k Datatypes.tt).
+  try change (cmd_bind (cmd_put ?ℓ ?v) ?k) with (#put ℓ := v ;; k Datatypes.tt).
 
 Ltac cmd_bind_simpl :=
   repeat cmd_bind_simpl_once.
 
 (* No clear way of having cmd_assertD *)
-(* Definition cmd_assertD {A : chUniverse} (b : bool) : command A :=
+(* Definition cmd_assertD {A : choice_type} (b : bool) : command A :=
   (if b as b' return b = b' → raw_code A then k else λ _, fail) erefl. *)
 
 (* Right-biased application of rsame_head *)
@@ -312,7 +312,7 @@ Ltac ssprove_sync_eq :=
     lazymatch c with
     | x ← sample ?op ;; _ =>
       eapply (rsame_head_cmd (cmd_sample op))
-    | put ?ℓ := ?v ;; _ =>
+    | #put ?ℓ := ?v ;; _ =>
       eapply (@rsame_head_cmd _ _ (λ z, _) (λ z, _) (cmd_put ℓ v)) ; intros _
     | x ← get ?ℓ ;; _ =>
       eapply (rsame_head_cmd (cmd_get ℓ))
@@ -355,7 +355,7 @@ Ltac ssprove_sync :=
         eapply cmd_sample_preserve_pre
       | idtac
       ]
-    | put ?ℓ := ?v ;; _ =>
+    | #put ?ℓ := ?v ;; _ =>
       eapply (@rsame_head_cmd_alt _ _ (λ z, _) (λ z, _) (cmd_put ℓ v)) ; [
         eapply cmd_put_preserve_pre ; ssprove_invariant
       | intros _
@@ -385,31 +385,31 @@ Ltac ssprove_rswap_cmd_eq_rhs :=
       eapply (rswap_cmd_eq _ _ _ (cmd_sample op') (cmd_sample op))
     | x ← sample ?op ;; y ← get ?ℓ ;;  _ =>
       eapply (rswap_cmd_eq _ _ _ (cmd_get ℓ) (cmd_sample op))
-    | x ← sample ?op ;; put ?ℓ := ?v ;;  _ =>
+    | x ← sample ?op ;; #put ?ℓ := ?v ;;  _ =>
       eapply (rswap_cmd_eq _ _ _ (cmd_put ℓ v) (cmd_sample op) (λ x y, _))
     | x ← get ?ℓ ;; y ← sample ?op ;;  _ =>
       eapply (rswap_cmd_eq _ _ _ (cmd_sample op) (cmd_get ℓ))
     | x ← get ?ℓ ;; y ← get ?ℓ' ;;  _ =>
       eapply (rswap_cmd_eq _ _ _ (cmd_get ℓ') (cmd_get ℓ))
-    | x ← get ?ℓ ;; put ?ℓ' := ?v ;;  _ =>
+    | x ← get ?ℓ ;; #put ?ℓ' := ?v ;;  _ =>
       eapply (rswap_cmd_eq _ _ _ (cmd_put ℓ' v) (cmd_get ℓ) (λ x y, _))
-    | put ?ℓ := ?v ;; x ← sample ?op ;;  _ =>
+    | #put ?ℓ := ?v ;; x ← sample ?op ;;  _ =>
       eapply (rswap_cmd_eq _ _ _ (cmd_sample op) (cmd_put ℓ v) (λ x y, _))
-    | put ?ℓ := ?v ;; x ← get ?ℓ' ;;  _ =>
+    | #put ?ℓ := ?v ;; x ← get ?ℓ' ;;  _ =>
       eapply (rswap_cmd_eq _ _ _ (cmd_get ℓ') (cmd_put ℓ v) (λ x y, _))
-    | put ?ℓ := ?v ;; put ?ℓ' := ?v' ;;  _ =>
+    | #put ?ℓ := ?v ;; #put ?ℓ' := ?v' ;;  _ =>
       eapply (rswap_cmd_eq _ _ _ (cmd_put ℓ' v') (cmd_put ℓ v) (λ x y, _))
     | @assertD ?A ?b (λ e, x ← sample ?op ;; _) =>
       eapply (rswap_cmd_assertD_eq _ A b (cmd_sample op) (λ x y, _))
     | @assertD ?A ?b (λ e, x ← get ?ℓ ;; _) =>
       eapply (rswap_cmd_assertD_eq _ A b (cmd_get ℓ) (λ x y, _))
-    | @assertD ?A ?b (λ e, put ?ℓ := ?v ;; _) =>
+    | @assertD ?A ?b (λ e, #put ?ℓ := ?v ;; _) =>
       eapply (rswap_cmd_assertD_eq _ A b (cmd_put ℓ v) (λ x y, _))
     | x ← sample ?op ;; @assertD ?A ?b _ =>
       eapply (rswap_assertD_cmd_eq _ A b (cmd_sample op) (λ x y, _))
     | x ← get ?ℓ ;; @assertD ?A ?b _ =>
       eapply (rswap_assertD_cmd_eq _ A b (cmd_get ℓ) (λ x y, _))
-    | put ?ℓ := ?v ;; @assertD ?A ?b _ =>
+    | #put ?ℓ := ?v ;; @assertD ?A ?b _ =>
       eapply (rswap_assertD_cmd_eq _ A b (cmd_put ℓ v) (λ x y, _))
     | @assertD ?A ?b (λ e, #assert _ as e' ;; _) =>
       eapply (rswap_assertD_assertD_eq A _ _ (λ e' e, _))
@@ -417,13 +417,13 @@ Ltac ssprove_rswap_cmd_eq_rhs :=
       eapply (rswap_cmd_bind_eq (cmd_sample op) c)
     | x ← ?c ;; y ← get ?ℓ ;; _ =>
       eapply (rswap_cmd_bind_eq (cmd_get ℓ) c)
-    | x ← ?c ;; put ?ℓ := ?v ;; _ =>
+    | x ← ?c ;; #put ?ℓ := ?v ;; _ =>
       eapply (rswap_cmd_bind_eq (cmd_put ℓ v) c (λ x y, _))
     | x ← sample ?op ;; y ← ?c ;; _ =>
       eapply (rswap_bind_cmd_eq c (cmd_sample op))
     | x ← get ?ℓ ;; y ← ?c ;; _ =>
       eapply (rswap_bind_cmd_eq c (cmd_get ℓ))
-    | put ?ℓ := ?v ;; y ← ?c ;; _ =>
+    | #put ?ℓ := ?v ;; y ← ?c ;; _ =>
       eapply (rswap_bind_cmd_eq c (cmd_put ℓ v) (λ x y, _))
     | _ => fail "No swappable pair found."
     end
@@ -568,7 +568,7 @@ Ltac ssprove_swap_seq_lhs l :=
   intros n ? ? h₀ h₁ ;
   invert_interface_in h₀ ;
   invert_interface_in h₁ ;
-  chUniverse_eq_prove
+  choice_type_eq_prove
   : typeclass_instances ssprove_valid_db.
 
 Lemma code_link_scheme :
@@ -606,7 +606,7 @@ Ltac ssprove_code_simpl_more_aux :=
     lazymatch c with
     | @bind _ (chElement ?B) (@assertD ?A ?b ?k1) ?k2 =>
       eapply r_transR ; [
-        (* How do I recover the other chUniverse otherwise? *)
+        (* How do I recover the other choice_type otherwise? *)
         eapply (r_bind_assertD_sym A B b k1 k2)
       | simpl
       ]
@@ -618,7 +618,7 @@ Ltac ssprove_code_simpl_more_aux :=
     | x ← sample ?op ;; _ =>
       let x' := fresh x in
       ssprove_sync_eq ; intro x'
-    | put ?ℓ := ?v ;; _ =>
+    | #put ?ℓ := ?v ;; _ =>
       ssprove_sync_eq
     | x ← get ?ℓ ;; _ =>
       let x' := fresh x in

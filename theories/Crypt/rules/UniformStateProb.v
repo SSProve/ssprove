@@ -10,7 +10,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings Theta_dens
   Theta_exCP LaxComp FreeProbProg UniformDistrLemmas
-  Prelude chUniverse StateTransformingLaxMorph RulesStateProb.
+  Prelude choice_type StateTransformingLaxMorph RulesStateProb.
 
 Import SPropNotations.
 Import Num.Theory.

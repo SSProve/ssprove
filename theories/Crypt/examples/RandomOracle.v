@@ -7,7 +7,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_core_definition chUniverse pkg_composition pkg_rhl
+  pkg_core_definition choice_type pkg_composition pkg_rhl
   Package Prelude.
 
 From Coq Require Import Utf8.
@@ -53,18 +53,18 @@ Module RO (π : ROParams).
 
   Definition RO_exports :=
     [interface
-      val #[ INIT ] : 'unit → 'unit ;
-      val #[ QUERY ] : 'query → 'random
+      #val #[ INIT ] : 'unit → 'unit ;
+      #val #[ QUERY ] : 'query → 'random
     ].
 
   Definition RO : package RO_locs [interface] RO_exports :=
     [package
-      def #[ INIT ] (_ : 'unit) : 'unit
+      #def #[ INIT ] (_ : 'unit) : 'unit
       {
-        put queries_loc := emptym ;;
+        #put queries_loc := emptym ;;
         ret Datatypes.tt
       } ;
-      def #[ QUERY ] (q : 'query) : 'random
+      #def #[ QUERY ] (q : 'query) : 'random
       {
         queries ← get queries_loc ;;
         match queries q with
@@ -72,7 +72,7 @@ Module RO (π : ROParams).
           ret r
         | None =>
           r ← sample uniform i_random ;;
-          put queries_loc := setm queries q r ;;
+          #put queries_loc := setm queries q r ;;
           ret r
         end
       }

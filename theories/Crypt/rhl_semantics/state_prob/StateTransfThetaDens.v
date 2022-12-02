@@ -36,8 +36,8 @@ End GetDomainAndCodomain.
 
 Section StT_unaryThetaDens.
   Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {chUniverse : Type}
-          {chElement : chUniverse -> choiceType}.
+  Context {choice_type : Type}
+          {chElement : choice_type -> choiceType}.
   Context (prob_handler : forall (T:choiceType),
     probE T -> SDistr T).
 
@@ -122,8 +122,8 @@ End StT_unaryThetaDens.
 
 Section MakeTheDomainFree.
   Context {probE : Type -> Type}. (*an interface for probabilistic events*)
-  Context {chUniverse : Type}
-          {chElement : chUniverse -> choiceType}.
+  Context {choice_type : Type}
+          {chElement : choice_type -> choiceType}.
   Context {prob_handler : forall (T:choiceType),
     probE T -> SDistr T}.
 

@@ -16,7 +16,7 @@ From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
-  StateTransformingLaxMorph chUniverse pkg_core_definition pkg_notation
+  StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
   pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_lookup pkg_advantage
   pkg_invariants pkg_distr.
 Require Import Equations.Prop.DepElim.
@@ -313,7 +313,7 @@ Qed.
 (** Equivalence of packages in the program logic *)
 
 Definition eq_up_to_inv (E : Interface) (I : precond) (p₀ p₁ : raw_package) :=
-  ∀ (id : ident) (S T : chUniverse) (x : S),
+  ∀ (id : ident) (S T : choice_type) (x : S),
     (id, (S, T)) \in E →
     ⊢ ⦃ λ '(s₀, s₁), I (s₀, s₁) ⦄
       get_op_default p₀ (id, (S, T)) x ≈ get_op_default p₁ (id, (S, T)) x
@@ -1582,12 +1582,12 @@ Qed.
 Lemma r_put_lhs :
   ∀ {A B : choiceType} ℓ v r₀ r₁ (pre : precond) (post : postcond A B),
     ⊢ ⦃ λ '(s₀, s₁), (set_lhs ℓ v pre) (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄ →
-    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ put ℓ := v ;; r₀ ≈ r₁ ⦃ post ⦄.
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ #put ℓ := v ;; r₀ ≈ r₁ ⦃ post ⦄.
 Proof.
   intros A B ℓ v r₀ r₁ pre post h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      (put ℓ := v ;; ret Datatypes.tt) ;; r₀ ≈ ret Datatypes.tt ;; r₁
+      (#put ℓ := v ;; ret Datatypes.tt) ;; r₀ ≈ ret Datatypes.tt ;; r₁
     ⦃ post ⦄
   ).
   eapply r_bind with (mid :=
@@ -1611,12 +1611,12 @@ Qed.
 Lemma r_put_rhs :
   ∀ {A B : choiceType} ℓ v r₀ r₁ (pre : precond) (post : postcond A B),
     ⊢ ⦃ λ '(s₀, s₁), (set_rhs ℓ v pre) (s₀, s₁) ⦄ r₀ ≈ r₁ ⦃ post ⦄ →
-    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ r₀ ≈ put ℓ := v ;; r₁ ⦃ post ⦄.
+    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ r₀ ≈ #put ℓ := v ;; r₁ ⦃ post ⦄.
 Proof.
   intros A B ℓ v r₀ r₁ pre post h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      ret Datatypes.tt ;; r₀ ≈ (put ℓ := v ;; ret Datatypes.tt) ;; r₁
+      ret Datatypes.tt ;; r₀ ≈ (#put ℓ := v ;; ret Datatypes.tt) ;; r₁
     ⦃ post ⦄
   ).
   eapply r_bind with (mid :=
@@ -1643,7 +1643,7 @@ Lemma r_put_vs_put :
       r₀ ≈ r₁
     ⦃ post ⦄ →
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      put ℓ := v ;; r₀ ≈ put ℓ' := v' ;; r₁
+      #put ℓ := v ;; r₀ ≈ #put ℓ' := v' ;; r₁
     ⦃ post ⦄.
 Proof.
   intros A B ℓ v ℓ' v' r₀ r₁ pre post h.
@@ -2330,7 +2330,7 @@ Proof.
 Qed.
 
 Theorem r_assertD :
-  ∀ {A₀ A₁ : chUniverse} b₀ b₁ (pre : precond) (post : postcond A₀ A₁) k₀ k₁,
+  ∀ {A₀ A₁ : choice_type} b₀ b₁ (pre : precond) (post : postcond A₀ A₁) k₀ k₁,
     (∀ s, pre s → b₀ = b₁) →
     (∀ e₀ e₁, ⊢ ⦃ pre ⦄ k₀ e₀ ≈ k₁ e₁ ⦃ post ⦄) →
     ⊢ ⦃ pre ⦄ #assert b₀ as x ;; k₀ x ≈ #assert b₁ as x ;; k₁ x ⦃ post ⦄.
@@ -2347,7 +2347,7 @@ Qed.
 
 (* Simpler version for same_head *)
 Lemma r_assertD_same :
-  ∀ (A : chUniverse) b (pre : precond) (post : postcond A A) k₀ k₁,
+  ∀ (A : choice_type) b (pre : precond) (post : postcond A A) k₀ k₁,
     (∀ e, ⊢ ⦃ pre ⦄ k₀ e ≈ k₁ e ⦃ post ⦄) →
     ⊢ ⦃ pre ⦄ #assert b as x ;; k₀ x ≈ #assert b as x ;; k₁ x ⦃ post ⦄.
 Proof.
@@ -2359,7 +2359,7 @@ Proof.
 Qed.
 
 Lemma r_cmd_fail :
-  ∀ A (B : chUniverse) (c : command A) (pre : precond) (post : postcond B B),
+  ∀ A (B : choice_type) (c : command A) (pre : precond) (post : postcond B B),
     ⊢ ⦃ pre ⦄ fail ≈ c ;' fail ⦃ post ⦄.
 Proof.
   intros A B c pre post.
@@ -2385,7 +2385,7 @@ Proof.
 Qed.
 
 Lemma rswap_assertD_cmd_eq :
-  ∀ A (B : chUniverse) b (c : command A) (r : _ → _ → raw_code B),
+  ∀ A (B : choice_type) b (c : command A) (r : _ → _ → raw_code B),
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       #assert b as e ;; x ← cmd c ;; r e x ≈
       x ← cmd c ;; #assert b as e ;; r e x
@@ -2399,7 +2399,7 @@ Qed.
 
 (* Symmetric of the above. *)
 Lemma rswap_cmd_assertD_eq :
-  ∀ A (B : chUniverse) b (c : command A) (r : _ → _ → raw_code B),
+  ∀ A (B : choice_type) b (c : command A) (r : _ → _ → raw_code B),
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       x ← cmd c ;; #assert b as e ;; r e x ≈
       #assert b as e ;; x ← cmd c ;; r e x
@@ -2414,7 +2414,7 @@ Proof.
 Qed.
 
 Lemma rswap_assertD_assertD_eq :
-  ∀ (A : chUniverse) b₀ b₁ (r : _ → _ → raw_code A),
+  ∀ (A : choice_type) b₀ b₁ (r : _ → _ → raw_code A),
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       #assert b₀ as e₀ ;; #assert b₁ as e₁ ;; r e₀ e₁ ≈
       #assert b₁ as e₁ ;; #assert b₀ as e₀ ;; r e₀ e₁
@@ -2430,7 +2430,7 @@ Qed.
 
 (* Unfortunately, this doesn't hold syntactically *)
 Lemma r_bind_assertD :
-  ∀ (A B : chUniverse) b k1 (k2 : _ → raw_code B),
+  ∀ (A B : choice_type) b k1 (k2 : _ → raw_code B),
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       x ← (@assertD A b (λ z, k1 z)) ;; k2 x ≈
       @assertD B b (λ z, x ← k1 z ;; k2 x)
@@ -2457,7 +2457,7 @@ Proof.
 Qed.
 
 Lemma r_bind_assertD_sym :
-  ∀ (A B : chUniverse) b k1 (k2 : _ → raw_code B),
+  ∀ (A B : choice_type) b k1 (k2 : _ → raw_code B),
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       @assertD B b (λ z, x ← k1 z ;; k2 x) ≈
       x ← (@assertD A b (λ z, k1 z)) ;; k2 x
@@ -2526,8 +2526,8 @@ Qed.
 Lemma contract_put :
   ∀ A ℓ v v' (r : raw_code A),
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
-      put ℓ := v' ;; r ≈
-      put ℓ := v ;; put ℓ := v' ;; r
+      #put ℓ := v' ;; r ≈
+      #put ℓ := v ;; #put ℓ := v' ;; r
     ⦃ eq ⦄.
 Proof.
   intros A ℓ v v' r.
@@ -2546,8 +2546,8 @@ Lemma r_put_swap :
   ∀ ℓ ℓ' v v' (A : choiceType) (u : A),
     ℓ != ℓ' →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
-      put ℓ := v ;; put ℓ' := v' ;; ret u ≈
-      put ℓ' := v' ;; put ℓ := v ;; ret u
+      #put ℓ := v ;; #put ℓ' := v' ;; ret u ≈
+      #put ℓ' := v' ;; #put ℓ := v ;; ret u
     ⦃ eq ⦄.
 Proof.
   intros ℓ ℓ' v v' A u ne.
@@ -2588,8 +2588,8 @@ Lemma r_get_put_swap :
   ∀ ℓ ℓ' v,
     ℓ' != ℓ →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
-      x ← get ℓ' ;; put ℓ := v ;; ret x ≈
-      put ℓ := v ;; x ← get ℓ' ;; ret x
+      x ← get ℓ' ;; #put ℓ := v ;; ret x ≈
+      #put ℓ := v ;; x ← get ℓ' ;; ret x
     ⦃ eq ⦄.
 Proof.
   intros ℓ ℓ' v ne.
@@ -2632,8 +2632,8 @@ Lemma r_put_get_swap :
   ∀ ℓ ℓ' v,
     ℓ' != ℓ →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
-      put ℓ := v ;; x ← get ℓ' ;; ret x ≈
-      x ← get ℓ' ;; put ℓ := v ;; ret x
+      #put ℓ := v ;; x ← get ℓ' ;; ret x ≈
+      x ← get ℓ' ;; #put ℓ := v ;; ret x
     ⦃ eq ⦄.
 Proof.
   intros ℓ ℓ' v ne.
@@ -2647,8 +2647,8 @@ Lemma r_get_put_swap' :
   ∀ ℓ ℓ' v,
     ℓ' != ℓ →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
-      x ← get ℓ' ;; put ℓ := v ;; ret (x, Datatypes.tt) ≈
-      put ℓ := v ;; x ← get ℓ' ;; ret (x, Datatypes.tt)
+      x ← get ℓ' ;; #put ℓ := v ;; ret (x, Datatypes.tt) ≈
+      #put ℓ := v ;; x ← get ℓ' ;; ret (x, Datatypes.tt)
     ⦃ eq ⦄.
 Proof.
   intros ℓ ℓ' v ne.
@@ -2663,8 +2663,8 @@ Lemma r_put_get_swap' :
   ∀ ℓ ℓ' v,
     ℓ' != ℓ →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
-      put ℓ := v ;; x ← get ℓ' ;; ret (Datatypes.tt, x) ≈
-      x ← get ℓ' ;; put ℓ := v ;; ret (Datatypes.tt, x)
+      #put ℓ := v ;; x ← get ℓ' ;; ret (Datatypes.tt, x) ≈
+      x ← get ℓ' ;; #put ℓ := v ;; ret (Datatypes.tt, x)
     ⦃ eq ⦄.
 Proof.
   intros ℓ ℓ' v ne.
@@ -2678,8 +2678,8 @@ Qed.
 Lemma r_put_get :
   ∀ A ℓ v (r : _ → raw_code A),
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
-      put ℓ := v ;; r v ≈
-      put ℓ := v ;; x ← get ℓ ;; r x
+      #put ℓ := v ;; r v ≈
+      #put ℓ := v ;; x ← get ℓ ;; r x
     ⦃ eq ⦄.
 Proof.
   intros A ℓ v r.

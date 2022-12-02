@@ -8,8 +8,8 @@ This repository contains the Coq formalisation of the paper:\
   ([ieee](https://www.computer.org/csdl/proceedings-article/csf/2021/760700a608/1uvIdwNa5Ne),
    [eprint](https://eprint.iacr.org/2021/397/20210526:113037))
 - Extended version under journal review.
-  Carmine Abate, Philipp G. Haselwarter, Exequiel Rivas, Antoine Van Muylder,
-  Théo Winterhalter, Nikolaj Sidorenco, Cătălin Hrițcu, Kenji Maillard, and
+  Philipp G. Haselwarter, Exequiel Rivas, Antoine Van Muylder, Théo Winterhalter,
+  Carmine Abate, Nikolaj Sidorenco, Cătălin Hrițcu, Kenji Maillard, and
   Bas Spitters. ([eprint](https://eprint.iacr.org/2021/397))
 
 This README serves as a guide to running verification and finding the
@@ -31,18 +31,19 @@ A documentation is available in [DOC.md].
 
 #### Prerequisites
 
-- OCaml `>=4.05.0 & <4.12`
+- OCaml `>=4.05.0 & <4.13.0`
 - Coq `8.14.0`
-- Equations `1.2.4+8.13`
+- Equations `1.3+8.14`
 - Mathcomp `1.13.0`
-- Mathcomp analysis `0.3.11`
+- Mathcomp analysis `0.3.13`
 - Coq Extructures `0.3.1`
+- Coq Deriving `0.1`
 
 You can get them all from the `opam` package manager for OCaml:
 ```sh
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam update
-opam install coq.8.14.0 coq-equations.1.3+8.14 coq-mathcomp-ssreflect.1.13.0 coq-mathcomp-analysis.0.3.11 coq-extructures.0.3.1
+opam install ./ssprove.opam
 ```
 
 To build the dependency graph, you can optionally install `graphviz`.
@@ -76,10 +77,14 @@ The formalisation of packages can be found in the [package] directory.
 
 The definition of packages can be found in [pkg_core_definition.v].
 Herein, `package L I E` is the type of packages with set of locations `L`,
-import interface `I` and export interface `E`.
+import interface `I` and export interface `E`. It is defined on top of
+`raw_package` which does not contain the information about its interfaces
+and the locations it uses.
 
 Package laws, as introduced in the paper, are all stated and proven in
-[pkg_composition.v] directly on raw packages.
+[pkg_composition.v] directly on raw packages. This technical detail is not
+mentioned in the paper, but we are nonetheless only interested in these
+laws over proper packages whose interfaces match.
 
 #### Sequential composition
 

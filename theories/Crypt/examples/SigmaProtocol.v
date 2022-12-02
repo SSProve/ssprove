@@ -3,12 +3,13 @@ From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
-  ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
+  fingroup.fingroup solvable.cyclic prime ssrnat ssreflect ssrfun ssrbool ssrnum
+  eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_core_definition chUniverse pkg_composition pkg_rhl
+  pkg_core_definition choice_type pkg_composition pkg_rhl
   Package Prelude RandomOracle.
 
 From Coq Require Import Utf8.
@@ -98,6 +99,8 @@ Module Type SigmaProtocolAlgorithms (π : SigmaProtocolParams).
       (z : choiceResponse) (z' : choiceResponse),
       'option choiceWitness.
 
+  Parameter KeyGen : ∀ (w : choiceWitness), choiceStatement.
+
 End SigmaProtocolAlgorithms.
 
 Module SigmaProtocol (π : SigmaProtocolParams)
@@ -108,20 +111,27 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
   Notation " 'chStatement' " :=
     choiceStatement (in custom pack_type at level 2).
+  Notation " 'chWitness' " :=
+    choiceWitness (in custom pack_type at level 2).
+  Notation " 'chChallenge' " :=
+    choiceChallenge (in custom pack_type at level 2).
   Notation " 'chRelation' " :=
     (chProd choiceStatement choiceWitness) (in custom pack_type at level 2).
+  Definition choiceInput := (chProd (chProd choiceStatement choiceWitness) choiceChallenge).
   Notation " 'chInput' " :=
-    (chProd (chProd choiceStatement choiceWitness) choiceChallenge)
+    choiceInput
     (in custom pack_type at level 2).
   Notation " 'chMessage' " := choiceMessage (in custom pack_type at level 2).
   Notation " 'chTranscript' " :=
     choiceTranscript (in custom pack_type at level 2).
   Definition Opening := chProd choiceChallenge choiceResponse.
   Notation " 'chSoundness' " :=
-    (chProd choiceMessage (chProd Opening Opening))
+    (chProd choiceStatement (chProd choiceMessage (chProd Opening Opening)))
     (in custom pack_type at level 2).
 
   Definition i_challenge := #|Challenge|.
+  Definition i_witness := #|Witness|.
+
   Definition TRANSCRIPT : nat := 0.
   Definition COM : nat := 1.
   Definition VER : nat := 2.
@@ -134,17 +144,24 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     apply Challenge_pos.
   Qed.
 
+  Definition i_witness_pos : Positive i_witness.
+  Proof.
+    unfold i_witness.
+    apply Witness_pos.
+  Qed.
+
   #[local] Existing Instance i_challenge_pos.
+  #[local] Existing Instance i_witness_pos.
 
   #[local] Open Scope package_scope.
 
   Definition SHVZK_real:
     package Sigma_locs
       [interface]
-      [interface val #[ TRANSCRIPT ] : chInput → chTranscript]
+      [interface #val #[ TRANSCRIPT ] : chInput → chTranscript]
     :=
     [package
-      def #[ TRANSCRIPT ] (hwe : chInput) : chTranscript
+      #def #[ TRANSCRIPT ] (hwe : chInput) : chTranscript
       {
         let '(h,w,e) := hwe in
         #assert (R (otf h) (otf w)) ;;
@@ -157,10 +174,10 @@ Module SigmaProtocol (π : SigmaProtocolParams)
   Definition SHVZK_ideal:
     package Simulator_locs
       [interface]
-      [interface val #[ TRANSCRIPT ] : chInput → chTranscript]
+      [interface #val #[ TRANSCRIPT ] : chInput → chTranscript]
     :=
     [package
-      def #[ TRANSCRIPT ] (hwe : chInput) : chTranscript
+      #def #[ TRANSCRIPT ] (hwe : chInput) : chTranscript
       {
         let '(h, w, e) := hwe in
         #assert (R (otf h) (otf w)) ;;
@@ -173,15 +190,14 @@ Module SigmaProtocol (π : SigmaProtocolParams)
   Definition ɛ_SHVZK A := AdvantageE SHVZK_real SHVZK_ideal A.
 
   Definition Special_Soundness_f :
-    package Sigma_locs
-      [interface val #[ ADV ] : chStatement → chSoundness ]
-      [interface val #[ SOUNDNESS ] : chStatement → 'bool ]
+    package fset0
+      [interface]
+      [interface #val #[ SOUNDNESS ] : chSoundness → 'bool ]
     :=
     [package
-      def #[ SOUNDNESS ] (h : chStatement) : 'bool
+      #def #[ SOUNDNESS ] (t : chSoundness) : 'bool
       {
-        #import {sig #[ ADV ] : chStatement → chSoundness } as A ;;
-        '(a, ((e, z), (e', z'))) ← A h ;;
+        let '(h, (a, ((e, z), (e', z')))) := t in
         let v1 := Verify h a e z in
         let v2 := Verify h a e' z' in
         if [&& (e != e') , (otf v1) & (otf v2) ] then
@@ -194,15 +210,14 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     ].
 
   Definition Special_Soundness_t :
-    package Sigma_locs
-      [interface val #[ ADV ] : chStatement → chSoundness ]
-      [interface val #[ SOUNDNESS ] : chStatement → 'bool ]
+    package fset0
+      [interface]
+      [interface #val #[ SOUNDNESS ] : chSoundness → 'bool ]
     :=
     [package
-      def #[ SOUNDNESS ] (h : chStatement) : 'bool
+      #def #[ SOUNDNESS ] (t : chSoundness) : 'bool
       {
-        #import {sig #[ ADV ] : chStatement → chSoundness } as A ;;
-        '(a, ((e, z), (e', z'))) ← A(h) ;;
+        let '(h, (a, ((e, z), (e', z')))) := t in
         let v1 := Verify h a e z in
         let v2 := Verify h a e' z' in
         ret [&& (e != e') , (otf v1) & (otf v2) ]
@@ -210,8 +225,8 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     ].
 
   (* Main security statement for 2-special soundness. *)
-  Definition ɛ_soundness A Adv :=
-    AdvantageE (Special_Soundness_t ∘ Adv) (Special_Soundness_f ∘ Adv) A.
+  Definition ɛ_soundness A :=
+    AdvantageE Special_Soundness_t Special_Soundness_f A.
 
   (**************************************)
   (* Start of Commitment Scheme Section *)
@@ -220,15 +235,24 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
     Definition HIDING : nat := 5.
     Definition OPEN : nat := 6.
+    Definition INIT : nat := 7.
+    Definition GET : nat := 8.
 
     Definition challenge_loc : Location := ('option choiceChallenge; 7%N).
     Definition response_loc : Location := ('option choiceResponse; 8%N).
 
     Definition Com_locs : {fset Location} :=
-      fset [:: challenge_loc ; response_loc].
+      fset [:: challenge_loc ; response_loc ].
+
+
+    Definition setup_loc : Location := ('bool; 10%N).
+    Definition statement_loc : Location := (choiceStatement; 11%N).
+    Definition witness_loc : Location := (choiceWitness; 12%N).
+    Definition KEY_locs : {fset Location} := fset [:: setup_loc; witness_loc ; statement_loc].
 
     Definition choiceOpen := (chProd choiceChallenge choiceResponse).
     Notation " 'chOpen' " := choiceOpen (in custom pack_type at level 2).
+    Notation " 'chKeys' " := (chProd choiceStatement choiceWitness) (in custom pack_type at level 2).
 
     Lemma in_fset_left l (L1 L2 : {fset Location}) :
       is_true (l \in L1) →
@@ -243,131 +267,68 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       apply in_fset_left; solve [auto_in_fset]
       : typeclass_instances ssprove_valid_db.
 
-    (* Lemma test n m k I: (is_true *)
-    (*                        ((n + m) *)
-    (*                           \notin [seq (let '(i, _) := x in i) *)
-    (*                                     | x <- [:: (n + k , I)]])). *)
-
-    (* Lemma test n m k : *)
-    (*   m <> k → *)
-    (*   (is_true ((n + m)%N \notin [:: (n + k)%N])). *)
-    (* Proof. *)
-    (*   intros h. *)
-    (*   unfold "\notin", "\in". *)
-    (*   simpl. *)
-    (*   apply /orP. *)
-    (*   unfold not. *)
-    (*   intros contra. *)
-    (*   destruct contra=>//. *)
-    (*   rewrite eqn_add2l in H. *)
-    (*   apply h. apply /eqP. *)
-    (*   assumption. *)
-    (* Qed. *)
-
-    (* #[local] Hint Extern 20 (is_true *)
-    (*                            (?I1 \notin [seq (let '(i, _) := x in i) *)
-    (*                                        | x <- [:: (?I2, ?E)]])) => *)
-    (*   unfold I1, I2 ; simpl ; apply test ; auto *)
-    (*   : typeclass_instances ssprove_valid_db. *)
-
-
-    (* Hint Extern 20 (is_true ((?n+?m)%N \notin [:: (?n + ?k)])) => *)
-    (*   apply test ; auto *)
-    (*   : typeclass_instances ssprove_valid_db. *)
-
-    (* Lemma notin_cons : *)
-    (*   ∀ (T : eqType) (y : T) (s : seq T) (x : T), *)
-    (*     (x \notin y :: s) = (x != y) && (x \notin s). *)
-    (* Proof. *)
-    (*   intros T y s x. *)
-    (*   rewrite in_cons. *)
-    (*   rewrite Bool.negb_orb. reflexivity. *)
-    (* Qed. *)
-
-    (* Lemma add_neq (m n k : nat): *)
-    (*   n <> k -> *)
-    (*   (m + n)%N != (m + k)%N. *)
-    (* Proof. *)
-    (*   intros h. *)
-    (*   rewrite eqn_add2l. *)
-    (*   apply /negP. *)
-    (*   unfold not. *)
-    (*   intros contra. *)
-    (*   apply h. *)
-    (*   apply /eqP. *)
-    (*   assumption. *)
-    (* Qed. *)
-
-    (* Hint Extern 20 (is_true (?m + ?n)%N != (?m + ?k)%N) => *)
-    (*   simpl ; try apply add_neq ; auto *)
-    (*   : typeclass_instances ssprove_valid_db. *)
-
-    (* Lemma test2 (m n : nat): *)
-    (*   m != n → *)
-    (*   (is_true (m \notin [:: n])). *)
-    (* Proof. *)
-    (*   unfold "\notin", "\in". *)
-    (*   intros h. *)
-    (*   apply /orP. *)
-    (*   intros contra. *)
-    (*   destruct contra=>//. *)
-    (*   rewrite H in h. *)
-    (*   rewrite boolp.falseE in h. *)
-    (*   apply h. *)
-    (* Qed. *)
-
-    (* Lemma test3 (m n k : nat): *)
-    (*   n <> k → *)
-    (*   (m + n)%N <> (m + k)%N. *)
-    (* Proof. *)
-    (*   intros. *)
-    (*   intros contra. *)
-    (*   apply H. *)
-    (* Admitted. *)
-
-    (* Ltac imports_disjoint_auto := *)
-    (*   match goal with *)
-    (*     | [ |- is_true ((?m + ?n)%N <> (?m + ?n)%N) ] => apply test3 *)
-    (*     | [ |- is_true ((?m + ?n)%N != (?m + ?n)%N) ] => apply add_neq ; auto *)
-    (*     | [ |- is_true (?m != ?n) ] => unfold m ; unfold n *)
-    (*   end. *)
-
-    (* Hint Extern 20 (is_true ((?m + ?n)%N != (?m + ?k))) => *)
-    (*   simpl ; try apply test3 *)
-    (*   : typeclass_instances ssprove_valid_db. *)
-
-    (* Hint Extern 20 (is_true (?m != ?n)) => *)
-    (*   imports_disjoint_auto *)
-    (*   : typeclass_instances ssprove_valid_db. *)
-
-    (* Hint Extern 20 (is_true (?m \notin [:: ?n])) => *)
-    (*   simpl ; try apply test2 ; auto *)
-    (*   : typeclass_instances ssprove_valid_db. *)
-
-    (* Hint Extern 20 (is_true (?A \notin [seq (let '(i, _) := x in i) *)
-    (*                                    | x <- ?xs])) => *)
-    (*   simpl ; rewrite in_cons ; rewrite Bool.negb_orb ; apply /andP ; split ; auto ; simpl *)
-    (*   : typeclass_instances ssprove_valid_db. *)
-
-    Definition Sigma_to_Com:
-      package Com_locs
-        [interface val #[ TRANSCRIPT ] : chInput → chTranscript]
+    Definition KEY:
+      package KEY_locs
+        [interface]
         [interface
-          val #[ COM ] : chInput → chMessage ;
-          val #[ OPEN ] : 'unit → chOpen ;
-          val #[ VER ] : chTranscript → 'bool
+           #val #[ INIT ] : 'unit → 'unit ;
+           #val #[ GET ] : 'unit → chStatement
         ]
       :=
       [package
-        def #[ COM ] (hwe : chInput) : chMessage
+         #def #[ INIT ] (_ : 'unit) : 'unit
+         {
+           b ← get setup_loc ;;
+           #assert (negb b) ;;
+           w ← sample uniform i_witness ;;
+           let h := KeyGen w in
+           #assert (R (otf h) (otf w)) ;;
+           #put setup_loc := true ;;
+           #put statement_loc := h ;;
+           #put witness_loc := w ;;
+           @ret 'unit Datatypes.tt
+         }
+         ;
+         #def #[ GET ] (_ : 'unit) : chStatement
+         {
+           b ← get setup_loc ;;
+           if b then
+             h ← get statement_loc ;;
+             w ← get witness_loc ;;
+             ret h
+           else
+             fail
+         }
+      ].
+
+    Definition Sigma_to_Com_locs := (Com_locs :|: Simulator_locs).
+
+    #[tactic=notac] Equations? Sigma_to_Com:
+      package Sigma_to_Com_locs
+        [interface
+          #val #[ INIT ] : 'unit → 'unit ;
+          #val #[ GET ] : 'unit → chStatement
+        ]
+        [interface
+          #val #[ COM ] : chChallenge → chMessage ;
+          #val #[ OPEN ] : 'unit → chOpen ;
+          #val #[ VER ] : chTranscript → 'bool
+        ]
+      := Sigma_to_Com :=
+      [package
+        #def #[ COM ] (e : chChallenge) : chMessage
         {
-          #import {sig #[ TRANSCRIPT ] : chInput → chTranscript } as run ;;
-          '(h,a,e,z) ← run hwe ;;
-          put challenge_loc := Some e ;;
-          put response_loc := Some z ;;
+          #import {sig #[ INIT ] : 'unit → 'unit } as key_gen_init ;;
+          #import {sig #[ GET ] : 'unit → chStatement } as key_gen_get ;;
+          _ ← key_gen_init Datatypes.tt ;;
+          h ← key_gen_get Datatypes.tt ;;
+          '(h,a,e,z) ← Simulate h e ;;
+          #put challenge_loc := Some e ;;
+          #put response_loc := Some z ;;
           ret a
-        } ;
-        def #[ OPEN ] (_ : 'unit) : chOpen
+        }
+       ;
+        #def #[ OPEN ] (_ : 'unit) : chOpen
         {
           o_e ← get challenge_loc ;;
           o_z ← get response_loc ;;
@@ -377,29 +338,104 @@ Module SigmaProtocol (π : SigmaProtocolParams)
           end
         }
         ;
-        def #[ VER ] (t : chTranscript) : 'bool
+        #def #[ VER ] (t : chTranscript) : 'bool
         {
           let '(h,a,e,z) := t in
           ret (otf (Verify h a e z))
         }
       ].
+    Proof.
+      unfold Sigma_to_Com_locs.
+      ssprove_valid.
+      eapply valid_injectLocations.
+      1: apply fsubsetUr.
+      eapply valid_injectMap.
+      2: apply (Simulate x1 x).
+      rewrite -fset0E.
+      apply fsub0set.
+    Qed.
+
+    #[tactic=notac] Equations? Sigma_to_Com_Aux:
+      package (setup_loc |: Sigma_to_Com_locs)
+        [interface
+          #val #[ TRANSCRIPT ] : chInput → chTranscript
+        ]
+        [interface
+          #val #[ COM ] : chChallenge → chMessage ;
+          #val #[ OPEN ] : 'unit → chOpen ;
+          #val #[ VER ] : chTranscript → 'bool
+        ]
+      := Sigma_to_Com_Aux :=
+      [package
+        #def #[ COM ] (e : chChallenge) : chMessage
+        {
+          #import {sig #[ TRANSCRIPT ] : chInput → chTranscript } as RUN ;;
+          b ← get setup_loc ;;
+          #assert (negb b) ;;
+          w ← sample uniform i_witness ;;
+          let h := KeyGen w in
+          #assert (R (otf h) (otf w)) ;;
+          #put setup_loc := true ;;
+          '(h, a, e, z) ← RUN (h, w, e) ;;
+          #put challenge_loc := Some e ;;
+          #put response_loc := Some z ;;
+          @ret choiceMessage a
+        }
+       ;
+        #def #[ OPEN ] (_ : 'unit) : chOpen
+        {
+          o_e ← get challenge_loc ;;
+          o_z ← get response_loc ;;
+          match (o_e, o_z) with
+          | (Some e, Some z) => @ret choiceOpen (e, z)
+          | _ => fail
+          end
+        }
+        ;
+        #def #[ VER ] (t : chTranscript) : 'bool
+        {
+          let '(h,a,e,z) := t in
+          ret (otf (Verify h a e z))
+        }
+      ].
+    Proof.
+      unfold Sigma_to_Com_locs, Com_locs.
+      ssprove_valid.
+      all: rewrite in_fsetU ; apply /orP ; right.
+      all: rewrite in_fsetU ; apply /orP ; left.
+      all: rewrite !fset_cons.
+      1,3 : rewrite in_fsetU ; apply /orP ; left ; rewrite in_fset1 ; done.
+      1,2 : rewrite in_fsetU ; apply /orP ; right ;
+            rewrite in_fsetU ; apply /orP ; left ;
+            rewrite in_fset1 ; done.
+    Qed.
+
+    Notation " 'chHiding' " := (chProd choiceChallenge choiceChallenge) (in custom pack_type at level 2).
+
+    Definition Hiding_E := [interface #val #[ HIDING ] : chHiding → chMessage ].
 
     (* Commitment to input value*)
-    Definition Hiding_real :
+    Definition Hiding_real:
       package fset0
         [interface
-          val #[ COM ] : chInput → chMessage ;
-          val #[ OPEN ] : 'unit → chOpen ;
-          val #[ VER ] : chTranscript → 'bool
+          #val #[ COM ] : chChallenge → chMessage ;
+          #val #[ OPEN ] : 'unit → chOpen ;
+          #val #[ VER ] : chTranscript → 'bool
         ]
-        [interface val #[ HIDING ] : chInput → chMessage ]
+        Hiding_E
       :=
       [package
-        def #[ HIDING ] (hwe : chInput) : chMessage
+        #def #[ HIDING ] (ms : chHiding) : chMessage
         {
-          #import {sig #[ COM ] : chInput → chMessage } as com ;;
-          a ← com hwe ;;
-          ret a
+          #import {sig #[ COM ] : chChallenge → chMessage } as com ;;
+          let '(m1, m2) := ms in
+          b ← sample uniform 1 ;;
+          if Nat.even b then
+            a ← com m1 ;;
+            ret a
+          else
+            a ← com m2 ;;
+            ret a
         }
       ].
 
@@ -407,132 +443,362 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Definition Hiding_ideal :
       package fset0
         [interface
-          val #[ COM ] : chInput → chMessage ;
-          val #[ OPEN ] : 'unit → chOpen ;
-          val #[ VER ] : chTranscript → 'bool
+          #val #[ COM ] : chChallenge → chMessage ;
+          #val #[ OPEN ] : 'unit → chOpen ;
+          #val #[ VER ] : chTranscript → 'bool
         ]
-        [interface val #[ HIDING ] : chInput → chMessage]
+        Hiding_E
       :=
       [package
-        def #[ HIDING ] (hwe : chInput) : chMessage
+        #def #[ HIDING ] (_ : chHiding) : chMessage
         {
-          #import {sig #[ COM ] : chInput → chMessage } as com ;;
-          let '(h,w,_) := hwe in
+          #import {sig #[ COM ] : chChallenge → chMessage } as com ;;
           e ← sample uniform i_challenge ;;
-          t ← com (h,w,e) ;;
+          t ← com e ;;
           ret t
         }
       ].
 
     Definition ɛ_hiding A :=
       AdvantageE
-        (Hiding_real ∘ Sigma_to_Com ∘ SHVZK_real)
-        (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK_real) A.
+        (Hiding_real ∘ Sigma_to_Com ∘ KEY)
+        (Hiding_ideal ∘ Sigma_to_Com ∘ KEY) (A ∘ (par KEY (ID Hiding_E))).
 
+    Notation inv := (
+      heap_ignore (fset [:: statement_loc ; witness_loc])
+    ).
+
+    Instance Invariant_inv : Invariant (Sigma_to_Com_locs :|: KEY_locs) (setup_loc |: Sigma_to_Com_locs) inv.
+    Proof.
+      ssprove_invariant.
+      unfold KEY_locs.
+      apply fsubsetU ; apply /orP ; left.
+      apply fsubsetU ; apply /orP ; right.
+      rewrite !fset_cons.
+      apply fsubsetU ; apply /orP ; right.
+      rewrite fsubUset ; apply /andP ; split.
+      - apply fsubsetU ; apply /orP ; right.
+        apply fsubsetU ; apply /orP ; left.
+        apply fsubsetxx.
+      - apply fsubsetU ; apply /orP ; left.
+        rewrite fsubUset ; apply /andP ; split.
+        + apply fsubsetxx.
+        + rewrite -fset0E. apply fsub0set.
+    Qed.
+
+    Hint Extern 50 (_ = code_link _ _) =>
+      rewrite code_link_scheme
+      : ssprove_code_simpl.
 
     Theorem commitment_hiding :
-      ∀ LA A eps,
+      ∀ LA A,
         ValidPackage LA [interface
-          val #[ HIDING ] : chInput → chMessage
-        ] A_export A →
-        (∀ B,
-          ValidPackage (LA :|: Com_locs) [interface
-            val #[ TRANSCRIPT ] : chInput → chTranscript
-          ] A_export B →
-          ɛ_SHVZK B <= eps
-        ) →
-        AdvantageE
-          (Hiding_real ∘ Sigma_to_Com ∘ SHVZK_ideal)
-          (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK_ideal) A
-        <=
-        (ɛ_hiding A) + eps + eps.
+          #val #[ HIDING ] : chHiding → chMessage
+        ] A_export (A ∘ (par KEY (ID Hiding_E))) →
+        fdisjoint LA KEY_locs ->
+        fdisjoint LA Sigma_to_Com_locs ->
+        fdisjoint LA (fset [:: setup_loc]) ->
+        fdisjoint LA Sigma_locs ->
+        fdisjoint LA Simulator_locs ->
+        fdisjoint Simulator_locs (fset [:: statement_loc ; witness_loc]) ->
+        fdisjoint Sigma_locs (fset [:: statement_loc ; witness_loc]) ->
+          (ɛ_hiding A) <= 0 +
+           AdvantageE SHVZK_ideal SHVZK_real (((A ∘ par KEY (ID Hiding_E)) ∘ Hiding_real) ∘ Sigma_to_Com_Aux) +
+           AdvantageE (Hiding_real ∘ Sigma_to_Com_Aux ∘ SHVZK_real)
+             (Hiding_ideal ∘ Sigma_to_Com_Aux ∘ SHVZK_real) (A ∘ par KEY (ID Hiding_E)) +
+           AdvantageE SHVZK_real SHVZK_ideal (((A ∘ par KEY (ID Hiding_E)) ∘ Hiding_ideal) ∘ Sigma_to_Com_Aux) +
+           0.
     Proof.
       unfold ɛ_hiding, ɛ_SHVZK.
-      intros LA A eps Va Hadv.
-      ssprove triangle (Hiding_real ∘ Sigma_to_Com ∘ SHVZK_ideal) [::
-        (Hiding_real ∘ Sigma_to_Com ∘ SHVZK_real) ;
-        (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK_real)
-      ] (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK_ideal) A
+      intros LA A VA Hd1 Hd2 Hd3 HdSigma HdSimulator Hd4 Hd5.
+      ssprove triangle (Hiding_real ∘ Sigma_to_Com ∘ KEY) [::
+        (Hiding_real ∘ Sigma_to_Com_Aux ∘ SHVZK_ideal) ;
+        (Hiding_real ∘ Sigma_to_Com_Aux ∘ SHVZK_real) ;
+        (Hiding_ideal ∘ Sigma_to_Com_Aux ∘ SHVZK_real) ;
+        (Hiding_ideal ∘ Sigma_to_Com_Aux ∘ SHVZK_ideal)
+      ] (Hiding_ideal ∘ Sigma_to_Com ∘ KEY) (A ∘ (par KEY (ID Hiding_E)))
       as ineq.
       eapply le_trans. 1: exact ineq.
       clear ineq.
-      rewrite <- !Advantage_link.
-      eapply ler_add.
-      - rewrite GRing.addrC. eapply ler_add. 1: apply lexx.
-        specialize (Hadv (A ∘ Hiding_real ∘ Sigma_to_Com)).
-        rewrite <- link_assoc. rewrite Advantage_sym.
-        apply Hadv. ssprove_valid.
-        + apply fsub0set.
-        + apply fsubsetxx.
-        + apply fsubsetUl.
-        + apply fsubsetUr.
-      - specialize (Hadv (A ∘ Hiding_ideal ∘ Sigma_to_Com)).
-        rewrite <- link_assoc.
-        apply Hadv. ssprove_valid.
-        + apply fsub0set.
-        + apply fsubsetxx.
-        + apply fsubsetUl.
-        + apply fsubsetUr.
+      repeat eapply ler_add.
+      - apply eq_ler.
+        eapply eq_rel_perf_ind with (inv := inv).
+        5: apply VA.
+        1:{
+          ssprove_valid.
+          3: apply fsub0set.
+          3: apply fsubsetxx.
+          1: instantiate (1 := (Sigma_to_Com_locs :|: KEY_locs)).
+          1: apply fsubsetUl.
+          1: apply fsubsetUr.
+        }
+        1:{
+          ssprove_valid.
+          1: apply fsubsetxx.
+          2: apply fsub0set.
+          2: apply fsubsetxx.
+          unfold Sigma_to_Com_locs.
+          apply fsubsetU ; apply /orP ; right.
+          apply fsubsetUr.
+        }
+        3,4: rewrite fdisjointUr ; apply /andP ; split.
+        3-4,6: assumption.
+        3: rewrite fset1E ; assumption.
+        1: exact _.
+        rewrite Sigma_to_Com_equation_1.
+        rewrite Sigma_to_Com_Aux_equation_1.
+        simplify_eq_rel h.
+        ssprove_code_simpl.
+        destruct h.
+        ssprove_code_simpl.
+        ssprove_code_simpl_more.
+        ssprove_sync=>b.
+        case (Nat.even b) eqn:Hb ; rewrite Hb.
+        + ssprove_sync=> setup.
+          ssprove_code_simpl.
+          ssprove_code_simpl_more.
+          apply r_assertD.
+          1: done.
+          intros _ _.
+          ssprove_sync=> w.
+          apply r_assertD.
+          1: done.
+          intros _ Rel.
+          ssprove_swap_seq_lhs [:: 2 ; 1]%N.
+          ssprove_contract_put_get_lhs.
+          rewrite !cast_fun_K.
+          rewrite Rel.
+          ssprove_code_simpl.
+          ssprove_code_simpl_more.
+          ssprove_sync.
+          ssprove_swap_lhs 1%N.
+          ssprove_contract_put_get_lhs.
+          ssprove_swap_seq_lhs [:: 0 ; 1]%N.
+          ssprove_contract_put_get_lhs.
+          apply r_put_lhs.
+          apply r_put_lhs.
+          ssprove_restore_pre.
+          1: ssprove_invariant.
+          eapply rsame_head_alt.
+          1: exact _.
+          {
+            unfold inv.
+            intros l lin h1 s' h2.
+            apply h2.
+            move: Hd4 => /fdisjointP Hd4.
+            apply Hd4.
+            apply lin.
+          }
+          {
+            unfold inv.
+            intros l v lin.
+            apply put_pre_cond_heap_ignore.
+          }
+          intros t.
+          destruct t.
+          destruct s1.
+          destruct s1.
+          ssprove_sync.
+          ssprove_sync.
+          apply r_ret.
+          done.
+        + ssprove_sync=>setup.
+          ssprove_code_simpl.
+          ssprove_code_simpl_more.
+          apply r_assertD.
+          1: done.
+          intros _ _.
+          ssprove_sync=>w.
+          apply r_assertD.
+          1: done.
+          intros _ Rel.
+          ssprove_swap_seq_lhs [:: 2 ; 1]%N.
+          ssprove_contract_put_get_lhs.
+          rewrite !cast_fun_K.
+          rewrite Rel.
+          ssprove_code_simpl.
+          ssprove_code_simpl_more.
+          ssprove_sync.
+          ssprove_swap_lhs 1%N.
+          ssprove_contract_put_get_lhs.
+          ssprove_swap_seq_lhs [:: 0 ; 1]%N.
+          ssprove_contract_put_get_lhs.
+          apply r_put_lhs.
+          apply r_put_lhs.
+          ssprove_restore_pre.
+          1: ssprove_invariant.
+          eapply rsame_head_alt.
+          1: exact _.
+          {
+            unfold inv.
+            intros l lin h1 s' h2.
+            apply h2.
+            move: Hd4 => /fdisjointP Hd4.
+            apply Hd4.
+            apply lin.
+          }
+          {
+            unfold inv.
+            intros l v lin.
+            apply put_pre_cond_heap_ignore.
+          }
+          intros t.
+          destruct t.
+          destruct s1.
+          destruct s1.
+          ssprove_sync.
+          ssprove_sync.
+          apply r_ret.
+          done.
+      - rewrite -!Advantage_link.
+        1: apply eq_ler ; done.
+      - done.
+      - rewrite -!Advantage_link.
+        1: apply eq_ler ; done.
+      - apply eq_ler.
+        eapply eq_rel_perf_ind with (inv := inv).
+        5: apply VA.
+        1:{
+          ssprove_valid.
+          4: apply fsubsetxx.
+          3: apply fsub0set.
+          2: instantiate (1 := (Simulator_locs :|: (setup_loc |: Sigma_to_Com_locs))).
+          - apply fsubsetUr.
+          - apply fsubsetUl.
+        }
+        1:{
+          ssprove_valid.
+          3: apply fsub0set.
+          3: apply fsubsetxx.
+          1: instantiate (1 := (Sigma_to_Com_locs :|: KEY_locs)).
+          - apply fsubsetUl.
+          - apply fsubsetUr.
+        }
+        3,4: rewrite fdisjointUr ; apply /andP ; split.
+        4: rewrite fdisjointUr ; apply /andP ; split.
+        3,5-7: assumption.
+        3: rewrite fset1E ; assumption.
+        {
+          ssprove_invariant.
+          unfold KEY_locs.
+          apply fsubsetU ; apply /orP ; right.
+          apply fsubsetU ; apply /orP ; right.
+          rewrite !fset_cons.
+          apply fsubsetU ; apply /orP ; right.
+          rewrite fsubUset ; apply /andP ; split.
+          - apply fsubsetU ; apply /orP ; right.
+            apply fsubsetU ; apply /orP ; left.
+            apply fsubsetxx.
+          - apply fsubsetU ; apply /orP ; left.
+            rewrite fsubUset ; apply /andP ; split.
+            + apply fsubsetxx.
+            + rewrite -fset0E. apply fsub0set.
+        }
+        rewrite Sigma_to_Com_equation_1.
+        rewrite Sigma_to_Com_Aux_equation_1.
+        simplify_eq_rel h.
+        ssprove_code_simpl.
+        destruct h.
+        ssprove_code_simpl.
+        ssprove_code_simpl_more.
+        ssprove_sync=>e.
+        ssprove_sync=> setup.
+        ssprove_code_simpl.
+        ssprove_code_simpl_more.
+        apply r_assertD.
+        1: done.
+        intros _ _.
+        ssprove_sync=> w.
+        apply r_assertD.
+        1: done.
+        intros _ Rel.
+        ssprove_swap_seq_rhs [:: 2 ; 1]%N.
+        ssprove_contract_put_get_rhs.
+        rewrite !cast_fun_K.
+        rewrite Rel.
+        ssprove_code_simpl.
+        ssprove_code_simpl_more.
+        ssprove_sync.
+        ssprove_swap_rhs 1%N.
+        ssprove_contract_put_get_rhs.
+        ssprove_swap_seq_rhs [:: 0 ; 1]%N.
+        ssprove_contract_put_get_rhs.
+        apply r_put_rhs.
+        apply r_put_rhs.
+        ssprove_restore_pre.
+        1: ssprove_invariant.
+        eapply rsame_head_alt.
+        1: exact _.
+        {
+          unfold inv.
+          intros l lin h1 s' h2.
+          apply h2.
+          move: Hd4 => /fdisjointP Hd4.
+          apply Hd4.
+          apply lin.
+        }
+        {
+          unfold inv.
+          intros l v lin.
+          apply put_pre_cond_heap_ignore.
+        }
+        intros t.
+        destruct t.
+        destruct s1.
+        destruct s1.
+        ssprove_sync.
+        ssprove_sync.
+        apply r_ret.
+        done.
     Qed.
 
-    Definition Com_Binding :
-      package Sigma_locs
-        [interface val #[ ADV ] : chStatement → chSoundness ]
-        [interface val #[ SOUNDNESS ] : chStatement → 'bool ]
+    Definition Com_Binding:
+      package fset0
+        [interface
+          #val #[ COM ] : chChallenge → chMessage ;
+          #val #[ OPEN ] : 'unit → chOpen ;
+          #val #[ VER ] : chTranscript → 'bool
+        ]
+        [interface #val #[ SOUNDNESS ] : chSoundness → 'bool ]
       :=
       [package
-        def #[ SOUNDNESS ] (h : chStatement) : 'bool
+        #def #[ SOUNDNESS ] (t : chSoundness) : 'bool
         {
-          #import {sig #[ ADV ] : chStatement → chSoundness} as A ;;
-          '(a, ((e, z), (e', z'))) ← A h ;;
-          let v1 := Verify h a e z in
-          let v2 := Verify h a e' z' in
-          ret [&& (e != e') , (otf v1) & (otf v2) ]
+          #import {sig #[ VER ] : chTranscript → 'bool } as Ver ;;
+          let '(h, (a, ((e, z), (e', z')))) := t in
+          v1 ← Ver (h, a, e, z) ;;
+          v2 ← Ver (h, a, e', z') ;;
+          ret [&& (e != e'), v1 & v2]
         }
       ].
 
-    Theorem commitment_binding :
-      ∀ LA A LAdv Adv,
+    Lemma commitment_binding :
+      ∀ LA A,
         ValidPackage LA [interface
-          val #[ SOUNDNESS ] : chStatement → 'bool
+          #val #[ SOUNDNESS ] : chSoundness → 'bool
         ] A_export A →
-        ValidPackage LAdv [interface] [interface
-          val #[ ADV ] : chStatement → chSoundness
-        ] Adv →
-        fdisjoint LA (Sigma_locs :|: LAdv) →
-        AdvantageE (Com_Binding ∘ Adv) (Special_Soundness_f ∘ Adv) A <=
-        ɛ_soundness A Adv.
+        fdisjoint LA (Sigma_to_Com_locs :|: KEY_locs) →
+        AdvantageE (Com_Binding ∘ Sigma_to_Com ∘ KEY) (Special_Soundness_t) A = 0.
     Proof.
-      intros LA A LAdv Adv VA VAdv Hdisj.
-      ssprove triangle (Com_Binding ∘ Adv) [::
-        (Special_Soundness_t ∘ Adv)
-      ] (Special_Soundness_f ∘ Adv) A as ineq.
-      eapply le_trans. 1: exact ineq.
-      clear ineq.
-      rewrite ger_addr.
-      apply eq_ler.
+      intros LA A VA Hdisj.
       eapply eq_rel_perf_ind_eq.
       4: apply VA.
       1:{
-        eapply valid_link. 2: apply VAdv.
         ssprove_valid.
+        3: apply fsub0set.
+        1: instantiate (1 := (Sigma_to_Com_locs :|: KEY_locs)).
+        2: apply fsubsetUr.
+        1: apply fsubsetUl.
+        apply fsubsetxx.
       }
-      1:{
-        eapply valid_link. 2: apply VAdv.
-        ssprove_valid.
-      }
-      2,3: assumption.
+      1: ssprove_valid.
+      2: assumption.
+      2: apply fdisjoints0.
+      rewrite Sigma_to_Com_equation_1.
       simplify_eq_rel h.
-
-      destruct (Adv ADV) as [[? []]|].
-      2:{ apply r_ret. intuition auto. }
-
-      repeat destruct chUniverse_eqP.
-      2:{ apply r_ret. intuition auto. }
-      2:{ apply r_ret. intuition auto. }
-
       ssprove_code_simpl.
-      apply rsame_head. intros [? [[] []]].
+      simpl.
+      destruct h, s0, s1, s1, s2.
       apply r_ret. auto.
     Qed.
 
@@ -588,22 +854,23 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Definition Fiat_Shamir :
       package Sigma_locs
         [interface
-          val #[ QUERY ] : 'query → 'random
+          #val #[ INIT ] : 'unit → 'unit ;
+          #val #[ QUERY ] : 'query → 'random
         ]
         [interface
-          val #[ VERIFY ] : chTranscript → 'bool ;
-          val #[ RUN ] : chRelation → chTranscript
+          #val #[ VERIFY ] : chTranscript → 'bool ;
+          #val #[ RUN ] : chRelation → chTranscript
         ]
       :=
       [package
-        def #[ VERIFY ] (t : chTranscript) : 'bool
+        #def #[ VERIFY ] (t : chTranscript) : 'bool
         {
           #import {sig #[ QUERY ] : 'query → 'random } as RO_query ;;
           let '(h,a,e,z) := t in
           e ← RO_query (prod_assoc (h, a)) ;;
           ret (otf (Verify h a e z))
         } ;
-        def #[ RUN ] (hw : chRelation) : chTranscript
+        #def #[ RUN ] (hw : chRelation) : chTranscript
         {
           #import {sig #[ QUERY ] : 'query → 'random } as RO_query ;;
           let '(h,w) := hw in
@@ -618,32 +885,151 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Definition Fiat_Shamir_SIM :
       package Sim_locs
         [interface
-          val #[ QUERY ] : 'query → 'random
-        ]
-        [interface
-          val #[ VERIFY ] : chTranscript → 'bool ;
-          val #[ RUN ] : chRelation → chTranscript
+          #val #[ VERIFY ] : chTranscript → 'bool ;
+          #val #[ RUN ] : chRelation → chTranscript
         ]
       :=
       [package
-        def #[ VERIFY ] (t : chTranscript) : 'bool
+        #def #[ VERIFY ] (t : chTranscript) : 'bool
         {
           #import {sig #[ QUERY ] : 'query → 'random } as RO_query ;;
           let '(h,a,e,z) := t in
           e ← RO_query (prod_assoc (h, a)) ;;
           ret (otf (Verify h a e z))
         } ;
-        def #[ RUN ] (hw : chRelation) : chTranscript
+        #def #[ RUN ] (hw : chRelation) : chTranscript
         {
           let '(h,w) := hw in
           #assert (R (otf h) (otf w)) ;;
-          t ← Sim h ;;
+          a ← Commit h w ;;
+          e ← sample uniform i_random ;;
+          z ← Response h w a e ;;
+          @ret choiceTranscript (h,a,e,z)
+        }
+      ].
+
+    Definition SHVZK_real_aux :
+      package Sigma_locs
+        [interface #val #[ TRANSCRIPT ] : chInput → chTranscript ]
+        [interface #val #[ RUN ] : chRelation → chTranscript ]
+      :=
+      [package
+        #def #[ RUN ] (hw : chRelation) : chTranscript
+        {
+          #import {sig #[ TRANSCRIPT ] : chInput → chTranscript } as SHVZK ;;
+          e ← sample uniform i_random ;;
+          t ← SHVZK (hw, e) ;;
           ret t
         }
       ].
 
-    Definition ϵ_fiat_shamir_zk A :=
-      AdvantageE (Fiat_Shamir ∘ Oracle.RO) (Fiat_Shamir_SIM ∘ Oracle.RO) A.
+    Lemma run_interactive_shvzk :
+      ∀ LA A,
+        ValidPackage LA [interface
+          #val #[ RUN ] : chRelation → chTranscript
+        ] A_export A →
+        fdisjoint LA Sigma_locs →
+        AdvantageE RUN_interactive (SHVZK_real_aux ∘ SHVZK_real) A = 0.
+    Proof.
+      intros LA A Va Hdisj.
+      eapply eq_rel_perf_ind_eq.
+      5,6: apply Hdisj.
+      4: apply Va.
+      2:{
+        rewrite <- fsetUid.
+        eapply valid_link.
+        - apply SHVZK_real_aux.
+        - apply SHVZK_real.
+      }
+      1:{
+        eapply valid_package_inject_export.
+        2: apply RUN_interactive.
+        apply fsubset_ext. intros ? ?.
+        rewrite fset_cons. apply /fsetUP. right. assumption.
+      }
+      simplify_eq_rel hw.
+      ssprove_code_simpl.
+      rewrite cast_fun_K.
+      ssprove_code_simpl.
+      destruct hw as [h w].
+      ssprove_code_simpl_more. ssprove_code_simpl.
+      ssprove_swap_rhs 0%N.
+      ssprove_sync_eq. intro rel.
+      ssprove_swap_rhs 0%N.
+      apply rsame_head. intros [a st].
+      ssprove_sync_eq. intro e.
+      apply rsame_head. intro z.
+      apply r_ret. intuition auto.
+    Qed.
+
+    Hint Extern 50 (_ = code_link _ _) =>
+      rewrite code_link_scheme
+      : ssprove_code_simpl.
+
+    Theorem fiat_shamir_correct :
+      ∀ LA A ,
+        ValidPackage LA [interface
+          #val #[ RUN ] : chRelation → chTranscript
+        ] A_export A →
+        fdisjoint LA (Sigma_locs :|: RO_locs) →
+        fdisjoint Sigma_locs RO_locs →
+        AdvantageE (Fiat_Shamir ∘ RO) RUN_interactive A = 0.
+    Proof.
+      intros LA A Va Hdisj Hdisj_oracle.
+      eapply eq_rel_perf_ind_ignore.
+      6: apply Hdisj.
+      6:{
+        rewrite fdisjointUr in Hdisj. move: Hdisj => /andP [h _].
+        apply h.
+      }
+      5: apply Va.
+      1:{
+        ssprove_valid.
+        2: apply fsubsetUl.
+        2: apply fsubsetUr.
+        eapply valid_package_inject_export.
+        2: apply Fiat_Shamir.
+        apply fsubset_ext. intros.
+        rewrite fset_cons. apply /fsetUP. right. assumption.
+      }
+      1:{
+        eapply valid_package_inject_export.
+        2: apply RUN_interactive.
+        apply fsubset_ext. intros.
+        rewrite fset_cons. apply /fsetUP. right. assumption.
+      }
+      1:{ apply fsubsetU. erewrite fsubsetUr. auto. }
+      simplify_eq_rel hw.
+      ssprove_code_simpl.
+      destruct hw as [h w].
+      ssprove_sync. intros rel.
+      eapply rsame_head_alt.
+      1: exact _.
+      1:{
+        intros l Il.
+        apply get_pre_cond_heap_ignore.
+        revert l Il.
+        apply /fdisjointP.
+        assumption.
+      }
+      1:{ intros. apply put_pre_cond_heap_ignore. }
+      intros [a st].
+      ssprove_contract_put_get_lhs.
+      rewrite emptymE.
+      apply r_put_lhs.
+      ssprove_sync. intro e.
+      apply r_put_lhs.
+      ssprove_restore_pre. 1: ssprove_invariant.
+      eapply r_reflexivity_alt.
+      - exact _.
+      - intros l Il.
+        ssprove_invariant.
+        revert l Il.
+        apply /fdisjointP. assumption.
+      - intros. ssprove_invariant.
+    Qed.
+
+    (* GOAL: reason about ZK property *)
 
   End FiatShamir.
 

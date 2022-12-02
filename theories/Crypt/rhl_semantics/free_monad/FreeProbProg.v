@@ -2,7 +2,7 @@ Set Warnings "-notation-overridden".
 From mathcomp Require Import all_ssreflect boolp.
 Set Warnings "notation-overridden".
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
-From Crypt Require Import ChoiceAsOrd chUniverse.
+From Crypt Require Import ChoiceAsOrd choice_type.
 From Crypt Require Import SubDistr.
 
 
@@ -24,8 +24,8 @@ the arity predicate (ar : S -> choiceType) would map each operation to bool
 Indeed we expect the environment to either return true or false after
 a Bernouilli sampling operation has been issued to it.
 
-We take S = { X: chUniverse & SDistr X }, that is, each subdistribution
-sampling from a choiceType present in chUniverse (a small universe of choiceTypes)
+We take S = { X: choice_type & SDistr X }, that is, each subdistribution
+sampling from a choiceType present in choice_type (a small universe of choiceTypes)
 is considered as being part of our probabilistic signature (S,P)
 where P : S -> choiceType is the first projection.
 
@@ -33,7 +33,7 @@ where P : S -> choiceType is the first projection.
 NOTE regarding ancient design:
 
 Note that before we were specifying a probabilistic operation with
-an ITree like event type 
+an ITree like event type
 Inductive probE : Type -> Type :=
   |Bern : unit_interval R -> probE bool
   |Poisson : (λ : unit_interval R) → probE nat.
@@ -43,7 +43,7 @@ parameters of the constructors are supposed to represent the information
 we would like to pass when we issue an operation. For instance when
 sampling uniformly a boolean we need to provide a probability p : [O,1].
 We were using this last way of specifying sampling operations generically
-and we were translating this signature 
+and we were translating this signature
 internally into a collection of operations S and an
 arity predicate ar : S -> choiceType
 *)
@@ -124,8 +124,8 @@ End RelativeFreeMonad.
 Section Unary_free_prob_monad.
 
   (* the type of probabilistic operations*)
-  Definition P_OP  := { X : chUniverse & SDistr X }.
-  
+  Definition P_OP  := { X : choice_type & SDistr X }.
+
   (* the arities for operations in OPP*)
   Definition P_AR : P_OP -> choiceType :=
     fun op => chElement ( projT1 op ).

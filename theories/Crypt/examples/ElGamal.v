@@ -16,7 +16,7 @@ From Mon Require Import SPropBase.
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_core_definition chUniverse pkg_composition pkg_rhl Package Prelude
+  pkg_core_definition choice_type pkg_composition pkg_rhl Package Prelude
   AsymScheme.
 
 From Coq Require Import Utf8.
@@ -45,7 +45,7 @@ Module Type ElGamalParam.
   Definition ζ : {set gT} := [set : gT].
   Parameter g :  gT.
   Parameter g_gen : ζ = <[g]>.
-  Parameter prime_order : prime #[g].
+  Parameter order_gt1 : (1 < #[g])%N.
 
 End ElGamalParam.
 
@@ -117,10 +117,10 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
     exact _.
   Qed.
 
-  Definition chPlain  : chUniverse := 'fin #|gT|.
-  Definition chPubKey : chUniverse := 'fin #|gT|.
-  Definition chCipher : chUniverse := 'fin #|Cipher|.
-  Definition chSecKey : chUniverse := 'fin #|SecKey|.
+  Definition chPlain  : choice_type := 'fin #|gT|.
+  Definition chPubKey : choice_type := 'fin #|gT|.
+  Definition chCipher : choice_type := 'fin #|Cipher|.
+  Definition chSecKey : choice_type := 'fin #|SecKey|.
 
   Definition counter_loc : Location := ('nat ; 0%N).
   Definition pk_loc : Location := (chPubKey ; 1%N).
@@ -208,25 +208,25 @@ Definition DH_loc := fset [:: pk_loc ; sk_loc].
 
 Definition DH_real :
   package DH_loc [interface]
-    [interface val #[10] : 'unit → 'pubkey × 'cipher ] :=
+    [interface #val #[10] : 'unit → 'pubkey × 'cipher ] :=
     [package
-      def #[10] (_ : 'unit) : 'pubkey × 'cipher
+      #def #[10] (_ : 'unit) : 'pubkey × 'cipher
       {
         a ← sample uniform i_sk ;;
         let a := otf a in
         b ← sample uniform i_sk ;;
         let b := otf b in
-        put pk_loc := fto (g^+a) ;;
-        put sk_loc := fto a ;;
+        #put pk_loc := fto (g^+a) ;;
+        #put sk_loc := fto a ;;
         ret (fto (g^+a), fto (g^+b, g^+(a * b)))
       }
     ].
 
 Definition DH_rnd :
   package DH_loc [interface]
-    [interface val #[10] : 'unit → 'pubkey × 'cipher ] :=
+    [interface #val #[10] : 'unit → 'pubkey × 'cipher ] :=
     [package
-      def #[10] (_ : 'unit) : 'pubkey × 'cipher
+      #def #[10] (_ : 'unit) : 'pubkey × 'cipher
       {
         a ← sample uniform i_sk ;;
         let a := otf a in
@@ -234,32 +234,32 @@ Definition DH_rnd :
         let b := otf b in
         c ← sample uniform i_sk ;;
         let c := otf c  in
-        put pk_loc := fto (g^+a) ;;
-        put sk_loc := fto a ;;
+        #put pk_loc := fto (g^+a) ;;
+        #put sk_loc := fto a ;;
         ret (fto (g^+a), fto (g^+b, g^+c))
       }
     ].
 
 Definition Aux :
   package (fset [:: counter_loc ; pk_loc ])
-    [interface val #[10] : 'unit → 'pubkey × 'cipher]
+    [interface #val #[10] : 'unit → 'pubkey × 'cipher]
     [interface
-      val #[getpk_id] : 'unit → 'pubkey ;
-      val #[challenge_id'] : 'plain → 'cipher
+      #val #[getpk_id] : 'unit → 'pubkey ;
+      #val #[challenge_id'] : 'plain → 'cipher
     ]
   :=
   [package
-    def #[getpk_id] (_ : 'unit) : 'pubkey
+    #def #[getpk_id] (_ : 'unit) : 'pubkey
     {
       pk ← get pk_loc ;;
       ret pk
     } ;
 
-    def #[challenge_id'] (m : 'plain) : 'cipher
+    #def #[challenge_id'] (m : 'plain) : 'cipher
     {
       #import {sig #[10] : 'unit → 'pubkey × 'cipher } as query ;;
       count ← get counter_loc ;;
-      put counter_loc := (count + 1)%N ;;
+      #put counter_loc := (count + 1)%N ;;
       #assert (count == 0)%N ;;
       '(pk, c) ← query Datatypes.tt ;;
       @ret chCipher (fto ((otf c).1 , (otf m) * ((otf c).2)))
@@ -295,8 +295,6 @@ Qed.
 Lemma bijective_expgn :
   bijective (λ (a : 'Z_q), g ^+ a).
 Proof.
-  assert (hq : (1 < q)%N).
-  { eapply prime_gt1. unfold q. apply prime_order. }
   unshelve eexists (λ x, (proj1_sig (@cyclePmin gT g x _) %% q)%:R).
   - rewrite -g_gen. unfold ζ. apply in_setT.
   - simpl. intros a.
@@ -308,18 +306,22 @@ Proof.
     destruct cyclePmin as [n hn e]. simpl.
     move: e => /eqP e. rewrite eq_expg_mod_order in e.
     move: e => /eqP e.
-    rewrite !modn_small in e. 2: auto.
+    rewrite -e.
+    (* case_eq (q == 1)%N.
+    1:{
+      fold q in *. set (q' := q) in *. clearbody q'.
+      move /eqP => ?. subst. rewrite modn1.
+      clear h n e hn.
+      destruct a as [a h]. unfold Zp_trunc in *. simpl in *.
+      (* So in the case where q = 1, we have 'Z_1 = {0, 1} but a mod 1 = 0. *)
+    } *)
+    rewrite modn_small.
     2:{
-      eapply leq_trans. 1: eapply ltn_ord. fold q.
-      unfold Zp_trunc.
-      erewrite <- Lt.S_pred. 2:{ eapply Lt.lt_pred. apply /leP. eauto. }
-      apply /leP.
-      rewrite PeanoNat.Nat.succ_pred_pos.
-      2:{ move: hq => /leP hq. auto with arith. }
+      fold q. eapply leq_trans. 1: eapply ltn_ord.
+      rewrite Zp_cast.
+      2: apply order_gt1.
       auto.
     }
-    subst.
-    rewrite modn_small. 2: auto.
     apply natr_Zp.
   - simpl. intro x.
     match goal with
@@ -329,7 +331,7 @@ Proof.
     clearbody h. simpl in h.
     destruct cyclePmin as [n hn e]. simpl. subst.
     rewrite modn_small. 2: auto.
-    f_equal. rewrite val_Zp_nat. 2: auto.
+    f_equal. rewrite val_Zp_nat. 2: apply order_gt1.
     apply modn_small. auto.
 Qed.
 
@@ -417,8 +419,8 @@ Qed.
 Theorem ElGamal_OT :
   ∀ LA A,
     ValidPackage LA [interface
-      val #[getpk_id] : 'unit → 'pubkey ;
-      val #[challenge_id'] : 'plain → 'cipher
+      #val #[getpk_id] : 'unit → 'pubkey ;
+      #val #[challenge_id'] : 'plain → 'cipher
     ] A_export A →
     fdisjoint LA (ots_real_vs_rnd true).(locs) →
     fdisjoint LA (ots_real_vs_rnd false).(locs) →
@@ -485,7 +487,7 @@ Module EGP_Z3 <: ElGamalParam.
     unfold ζ, g. apply Zp_cycle.
   Qed.
 
-  Lemma prime_order : prime #[g].
+  Lemma order_gt1 : (1 < #[g])%N.
   Proof.
     unfold g.
     rewrite order_Zp1.

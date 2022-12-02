@@ -22,7 +22,7 @@ theories/Relational/Commutativity.v
 
 theories/Crypt/Prelude.v
 theories/Crypt/Axioms.v
-theories/Crypt/chUniverse.v
+theories/Crypt/choice_type.v
 
 # Categorical semantics
 
@@ -66,6 +66,7 @@ theories/Crypt/package/pkg_invariants.v
 theories/Crypt/package/pkg_distr.v
 theories/Crypt/package/pkg_rhl.v
 theories/Crypt/package/pkg_user_util.v
+theories/Crypt/package/pkg_interpreter.v
 theories/Crypt/Package.v
 
 # State + Prob
@@ -77,6 +78,8 @@ theories/Crypt/rules/UniformStateProb.v
 
 # Examples
 theories/Crypt/examples/package_usage_example.v
+theories/Crypt/examples/interpreter_test.v
+theories/Crypt/examples/concrete_groups.v
 theories/Crypt/examples/PRF.v
 theories/Crypt/examples/AsymScheme.v
 theories/Crypt/examples/DDH.v
@@ -88,6 +91,16 @@ theories/Crypt/examples/SigmaProtocol.v
 theories/Crypt/examples/Schnorr.v
 theories/Crypt/examples/OVN.v
 theories/Crypt/examples/Executor.v
+
+# Examples from https://github.com/Som1Lse/joy-of-ssprove
+theories/Crypt/examples/MACCCA.v
+theories/Crypt/examples/PRFMAC.v
+theories/Crypt/examples/PRFPRG.v
+theories/Crypt/examples/PRPCCA.v
+theories/Crypt/examples/SecretSharing.v
+theories/Crypt/examples/ShamirSecretSharing.v
+theories/Crypt/examples/StretchPRG.v
+theories/Crypt/examples/SymmRatchet.v
 
 # Printing the axioms of all results from the paper
 theories/Crypt/Main.v
