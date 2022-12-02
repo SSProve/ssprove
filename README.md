@@ -32,8 +32,8 @@ A documentation is available in [DOC.md].
 #### Prerequisites
 
 - OCaml `>=4.05.0 & <4.13.0`
-- Coq `8.15.2
-- Equations `1.3+8.15
+- Coq `8.15.2`
+- Equations `1.3+8.15`
 - Mathcomp `1.13.0`
 - Mathcomp analysis `0.3.13`
 - Coq Extructures `0.3.1`
