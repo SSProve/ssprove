@@ -72,6 +72,7 @@ Module Type SigmaProtocolAlgorithms (π : SigmaProtocolParams).
   Definition choiceBool := 'fin #|bool_choiceType|.
 
   Parameter Sigma_locs : {fset Location}.
+
   Parameter Simulator_locs : {fset Location}.
 
   Parameter Commit :
@@ -805,7 +806,6 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
   (* This section aim to prove an automatic conversation between the sampling of the random challenge and a random oracle. *)
   (* The main difference is that the random oracle is a query parametrized by the context of the execution. *)
-  Import RandomOracle.
 
   Module OracleParams <: ROParams.
 
@@ -830,8 +830,12 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
   Section FiatShamir.
 
-    Definition RUN : nat := 6.
-    Definition VERIFY : nat := 7.
+    Definition RUN : nat := 7.
+    Definition VERIFY : nat := 8.
+    Definition SIM : nat := 9.
+
+    Context (Sim_locs : {fset Location}).
+    Context (Sim : choiceStatement → code Sim_locs [interface] choiceTranscript).
 
     Definition prod_assoc : chProd choiceStatement choiceMessage → chQuery.
     Proof.
@@ -841,7 +845,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Qed.
 
     (* TW: I moved it here because it might induce back-tracking and we want to
-      avoid it because of time-consumption.
+       avoid it because of time-consumption.
     *)
     Hint Extern 20 (ValidCode ?L ?I ?c.(prog)) =>
       eapply valid_injectMap ; [| eapply c.(prog_valid) ]
@@ -877,6 +881,33 @@ Module SigmaProtocol (π : SigmaProtocolParams)
           e ← RO_query (prod_assoc (h, a)) ;;
           z ← Response h w a e ;;
           @ret choiceTranscript (h,a,e,z)
+        }
+      ].
+
+    Definition Fiat_Shamir_SIM :
+      package Sim_locs
+        [interface
+          #val #[ QUERY ] : 'query → 'random
+        ]
+        [interface
+          #val #[ VERIFY ] : chTranscript → 'bool ;
+          #val #[ RUN ] : chRelation → chTranscript
+        ]
+      :=
+      [package
+        #def #[ VERIFY ] (t : chTranscript) : 'bool
+        {
+          #import {sig #[ QUERY ] : 'query → 'random } as RO_query ;;
+          let '(h,a,e,z) := t in
+          e ← RO_query (prod_assoc (h, a)) ;;
+          ret (otf (Verify h a e z))
+        } ;
+        #def #[ RUN ] (hw : chRelation) : chTranscript
+        {
+          let '(h,w) := hw in
+          #assert (R (otf h) (otf w)) ;;
+          t ← Sim h ;;
+          ret t
         }
       ].
 
