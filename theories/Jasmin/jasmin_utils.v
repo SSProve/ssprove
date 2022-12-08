@@ -110,7 +110,7 @@ Ltac2 setjvars () :=
       | None => Control.throw (Tactic_failure (Some (fprintf "Not a valid ident: %s (was: %t)" s i)))
       | Some id =>
           let x := Fresh.fresh (Fresh.Free.of_goal ()) id in
-          set ($x := $$ $i)
+          set ($x := $$ $i) in *
       end
   end.
 
