@@ -45,6 +45,6 @@ jobs:
       - name: Build
         run: |
           opam repo add coq-released https://coq.inria.fr/opam/released
-          opam install coq.8.14.0 coq-equations.1.3+8.14 coq-mathcomp-ssreflect.1.13.0 coq-mathcomp-analysis.0.3.13 coq-extructures.0.3.1 coq-deriving.0.1.0
+          opam install coq.8.15.2 coq-equations.1.3+8.15 coq-mathcomp-ssreflect.1.13.0 coq-mathcomp-analysis.0.3.13 coq-extructures.0.3.1 coq-deriving.0.1.0
           opam exec -- make -j4
 
