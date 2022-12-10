@@ -15,6 +15,9 @@ From Crypt Require Import Prelude Package.
 Import ListNotations.
 Local Open Scope string.
 
+Set Bullet Behavior "Strict Subproofs".
+(* Set Default Goal Selector "!". *) (* I give up on this for now. *)
+
 Definition ssprove_jasmin_prog : uprog.
 Proof.
   refine {| p_funcs :=
@@ -1132,20 +1135,22 @@ Proof.
          (* | |- _ => eapply r_put_lhs with (pre := fun _ => True); ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K; eapply r_ret; easy *)
          | |- _ => simpl; ssprove_contract_put_get_lhs; rewrite !coerce_to_choice_type_K
          end.
-  simpl. eapply r_put_lhs. ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K.
-  eapply r_restore_lhs. intros. unfold set_lhs in *.
-  destruct H0 as [s0 []].
-  exists (set_heap s0 c 1%Z). subst. split. apply Hpdisj.
-  solve_in.
-  assumption. rewrite set_heap_commut. reflexivity.
-  apply injective_translate_var3. auto.
-  eapply r_ret.
-  intros; split.
-  destruct H0 as [s0 []]. subst.
-  apply Hpdisj.
-  solve_in.
-  assumption.
-  split; easy.
+  - simpl. eapply r_put_lhs.
+    ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K.
+    eapply r_restore_lhs.
+    + intros. unfold set_lhs in *.
+      destruct H0 as [s0 []].
+      exists (set_heap s0 c 1%Z). subst. split.
+      * apply Hpdisj. 1: solve_in.
+        assumption.
+      * rewrite set_heap_commut. 1: reflexivity.
+        apply injective_translate_var3. auto.
+    + eapply r_ret.
+      intros; split.
+      * destruct H0 as [s0 []]. subst.
+        apply Hpdisj. 1: solve_in.
+        assumption.
+      * split. all: easy.
   (* the remaining cases are similar, but should be automated *)
 Admitted.
 (* Qed. *)
@@ -1221,9 +1226,11 @@ Proof.
   unfold modulus.
   rewrite !two_power_nat_equiv.
   rewrite Z.mod_pow2_bits_low.
-  rewrite Z.mod_pow2_bits_low.
-  rewrite Z.shiftr_spec.
-  f_equal. lia. lia. lia. lia.
+  { rewrite Z.mod_pow2_bits_low. 2: lia.
+    rewrite Z.shiftr_spec. 2: lia.
+    f_equal. lia.
+  }
+  lia.
 Qed.
 
 Lemma subword_xor {n} i ws (a b : n.-word) :
@@ -1233,11 +1240,10 @@ Lemma subword_xor {n} i ws (a b : n.-word) :
 Proof.
   intros H.
   apply/eqP/eq_from_wbit.
-  intros. rewrite !wbit_subword.
+  intros. rewrite !wbit_subword. 2,3: auto.
   rewrite !wxorE.
-  rewrite !wbit_subword.
+  rewrite !wbit_subword. 2-5: auto.
   reflexivity.
-  all: auto.
 Qed.
 
 Local Open Scope Z_scope.
@@ -1252,9 +1258,8 @@ Proof.
   unfold wrepr.
   apply val_inj.
   simpl.
-  rewrite [a mod _]Z.mod_small.
+  rewrite [a mod _]Z.mod_small. 2: assumption.
   reflexivity.
-  assumption.
 Qed.
 
 Lemma modulus_gt0' n : (0 < modulus n)%Z.
@@ -1284,7 +1289,7 @@ Proof.
   intros.
   pose proof Z.mod_pos_bound a (b^n) ltac:(auto with zarith).
   assert (b^n <= b^m).
-  eapply Z.pow_le_mono_r; lia.
+  { eapply Z.pow_le_mono_r; lia. }
   apply Z.mod_small. auto with zarith.
 Qed.
 
@@ -1296,13 +1301,12 @@ Proof.
   rewrite -> Z.pow_add_r, Z.rem_mul_r by auto with zarith.
   rewrite <- Zplus_mod_idemp_r.
   rewrite <- Zmult_mod_idemp_l.
-  rewrite Z.mod_same.
+  rewrite Z.mod_same. 2: eapply Z.pow_nonzero ; lia.
   rewrite Z.mul_0_l.
-  rewrite Z.mod_0_l.
+  rewrite Z.mod_0_l. 2: eapply Z.pow_nonzero ; lia.
   rewrite Z.add_0_r.
-  rewrite Z.mod_mod.
+  rewrite Z.mod_mod. 2: eapply Z.pow_nonzero ; lia.
   reflexivity.
-  all: eapply Z.pow_nonzero; lia.
 Qed.
 
 Lemma larger_modulus a n m :
@@ -1311,8 +1315,8 @@ Lemma larger_modulus a n m :
 Proof.
   intros H.
   rewrite !modulusZE.
-  apply mod_pow_same_base_larger.
-  zify. simpl. lia. lia.
+  apply mod_pow_same_base_larger. 2: lia.
+  zify. simpl. lia.
 Qed.
 
 Lemma smaller_modulus a n m :
@@ -1321,8 +1325,8 @@ Lemma smaller_modulus a n m :
 Proof.
   intros H.
   rewrite !modulusZE.
-  apply mod_pow_same_base_smaller.
-  zify. simpl. lia. lia.
+  apply mod_pow_same_base_smaller. 2: lia.
+  zify. simpl. lia.
 Qed.
 
 Lemma nat_of_wsize_m ws : (wsize_size_minus_1 ws).+1 = nat_of_wsize ws.
@@ -1348,9 +1352,8 @@ Proof.
   replace [seq nth a l (val i) | i <- enum 'I_(size l)] with [seq nth a l i | i <- [seq val i | i <- enum 'I_(size l)]].
   2: { rewrite -map_comp. reflexivity. }
   rewrite val_enum_ord.
-  rewrite map_nth_iota0.
+  rewrite map_nth_iota0. 2: lia.
   rewrite take_size. reflexivity.
-  lia.
 Qed.
 
 Lemma make_vec_wcat {ws1} (l : seq (word.word ws1)) :
@@ -1372,8 +1375,8 @@ Proof.
   simpl. unfold modulus.
   rewrite two_power_nat_equiv.
   rewrite Z.mod_pow2_bits_low.
+  2:{ unfold nat_of_wsize in *. lia. }
   reflexivity.
-  unfold nat_of_wsize in *. lia.
 Qed.
 
 Lemma wbit_make_vec {ws1} (ws2 : wsize.wsize) (l : seq (word.word ws1)) i :
@@ -1383,13 +1386,12 @@ Proof.
   intros H.
   unfold make_vec.
   rewrite make_vec_wcat.
-  rewrite wbit_wrepr.
+  rewrite wbit_wrepr. 2: assumption.
   rewrite wcat_wbitE.
   unfold urepr.
   simpl.
   repeat f_equal.
   apply nth_aux.
-  assumption.
 Qed.
 
 Lemma divn_aux j i n :
@@ -1398,12 +1400,9 @@ Lemma divn_aux j i n :
   (j + i) %/ n = i %/ n.
 Proof.
   intros H1 H2.
-  rewrite divnD.
+  rewrite divnD. 2: lia.
   rewrite H2.
-  rewrite divn_small.
-  lia.
-  assumption.
-  lia.
+  rewrite divn_small. all: lia.
 Qed.
 
 Lemma modn_aux j i n :
@@ -1412,12 +1411,9 @@ Lemma modn_aux j i n :
   (j + i) %% n = (j + i %% n)%nat.
 Proof.
   intros H1 H2.
-  rewrite modnD.
+  rewrite modnD. 2: lia.
   rewrite H2.
-  rewrite modn_small.
-  lia.
-  assumption.
-  lia.
+  rewrite modn_small. all: lia.
 Qed.
 
 Lemma subword_make_vec1 {ws1} i ws2 (ws3 : wsize.wsize) (l : seq (word.word ws1)) :
@@ -1435,16 +1431,17 @@ Proof.
   apply eq_mktuple.
   intros j.
   destruct j. simpl.
-  rewrite wbit_make_vec.
+  rewrite wbit_make_vec. 2: lia.
   f_equal.
-  f_equal.
-  f_equal.
-  apply divn_aux.
-  simpl. lia.
-  rewrite modn_small in H3. rewrite modn_small. lia. lia. lia.
-  apply modn_aux. lia.
-  rewrite modn_small in H3. rewrite modn_small. lia. lia. lia.
-  simpl. unfold nat_of_wsize in *. lia.
+  - f_equal. f_equal.
+    apply divn_aux. 1:{ simpl. lia. }
+    rewrite modn_small in H3. 2: lia.
+    rewrite modn_small. 2: lia.
+    lia.
+  - apply modn_aux. 1: lia.
+    rewrite modn_small in H3. 2: lia.
+    rewrite modn_small. 1: lia.
+    lia.
 Qed.
 
 Lemma make_vec_ws ws (l : seq (word.word ws)) :
@@ -1968,14 +1965,27 @@ Proof.
   assumption.
 Qed.
 
+Ltac pdisj_apply h :=
+  lazymatch goal with
+  | |- ?pre (set_heap _ _ _, _) =>
+    eapply h ; [ solve_in | pdisj_apply h ]
+  | |- _ => try assumption
+  end.
+
 Lemma key_expandP pre id0 rcon rkey temp2 rcon_ :
-  (pdisj pre (JKEY_EXPAND_vars id0)) ->
-  toword rcon_ = rcon ->
-  subword 0 U32 temp2 = word0 ->
-  ⊢ ⦃ fun '(s0, s1) => pre (s0, s1) ⦄
+  pdisj pre (JKEY_EXPAND_vars id0) →
+  toword rcon_ = rcon →
+  subword 0 U32 temp2 = word0 →
+  ⊢ ⦃ λ '(s0, s1), pre (s0, s1) ⦄
     JKEY_EXPAND id0 rcon rkey temp2
     ≈ ret tt
-    ⦃ fun '(v0, s0) '(v1, s1) => pre (s0, s1) /\ exists o1 o2, v0 = [ ('word U128 ; o1) ; ('word U128 ; o2) ] /\ o1 = key_expand rkey rcon_ /\ subword 0 U32 o2 = word0 ⦄.
+  ⦃ λ '(v0, s0) '(v1, s1),
+    pre (s0, s1) ∧
+    ∃ o1 o2,
+      v0 = [ ('word U128 ; o1) ; ('word U128 ; o2) ] ∧
+      o1 = key_expand rkey rcon_ ∧
+      subword 0 U32 o2 = word0
+  ⦄.
 Proof.
   intros disj Hrcon Htemp2.
   tvars disj.
@@ -1995,29 +2005,23 @@ Proof.
   repeat eapply r_put_lhs.
   eapply r_ret.
   intros s0 s1 Hpre.
-  repeat match goal with
-         | [ H : set_lhs _ _ _ _ |- _ ] => let sn := fresh in let Hsn := fresh in destruct H as [sn [Hsn]]
-         end.
+  repeat
+    match goal with
+    | [ H : set_lhs _ _ _ _ |- _ ] =>
+      let sn := fresh in
+      let Hsn := fresh in
+      destruct H as [sn [Hsn]]
+    end.
   split.
   (* Goal: prove pre is preserved by using disj; this should be automated *)
-  -
-    subst.
-    eapply disj; [|eapply disj; [|eapply disj; [|eapply disj; [|eapply disj; [|eapply disj; [|eapply disj]]]]]].
-    1-7: solve_in.
+  - subst.
+    pdisj_apply disj.
     (* TODO: Fix how the variable set is computed: It needs to include the called functions variables as well *)
-    1-3: admit.
-    assumption.
-  - eexists.
-    eexists.
-    split.
-    1: reflexivity.
-    split.
+    all: admit.
+  - eexists _, _. intuition eauto.
     (* this is key_expand_correct1 *)
-    +  apply key_expand_aux.
-       assumption.
-       assumption.
-    + apply key_expand_aux2.
-      assumption.
+    + apply key_expand_aux. all: assumption.
+    + apply key_expand_aux2. assumption.
 Admitted.
 
 Definition getmd {T S} m d i := match @getm T S m i with Some a => a | _ => d end.
