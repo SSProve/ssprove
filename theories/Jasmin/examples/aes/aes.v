@@ -1049,99 +1049,12 @@ Notation KEY_EXPAND := (xO (xI (xO (xO xH)))).
 Notation KEYS_EXPAND := (xO (xO (xI xH))).
 
 Infix "^" := wxor.
-
-Definition get_vars_Sv {eft ept} P fname : Sv.t :=
-match (assoc (@p_funcs _ _ eft ept P) fname) with
-  | Some f => vars_c (f_body f)
-  | None => Sv.empty
-  end.
-
-Definition fset_of_Sv (fc_id : p_id) (t : Sv.t) : {fset Location} :=
-  Sv.fold (fun e s => translate_var fc_id e |: s) t fset0.
-
-Fixpoint get_vars_for (ws : seq Z) (m_id : p_id) (c : {fset Location} -> p_id -> p_id * {fset Location}) (acc : {fset Location}) (s_id : p_id) :=
-  match ws with
-  | [] => acc
-  | w :: ws =>
-      let (s_id1, locs1) := c acc s_id in
-      get_vars_for ws m_id c locs1 s_id1
-  end.
-Definition fvars := seq (funname * (p_id -> {fset Location})).
-Definition get_vars_call (f : funname) (fs : fvars) :=
-  match (assoc fs f) with
-  | Some fv => fv
-  | None => (fun s_id => fset0)
-  end.
-Fixpoint get_vars_instr_r (ws_def : seq Z) (fs : fvars) (i : instr_r) (m_id : p_id) (acc : {fset Location}) (s_id : p_id) {struct i} : p_id * {fset Location}
-with get_vars_instr (ws_def : seq Z) (fs : fvars) (i : instr) (m_id : p_id) (acc : {fset Location}) (s_id : p_id) {struct i} : p_id * {fset Location} :=
-       get_vars_instr_r ws_def fs (instr_d i) m_id acc s_id.
-Proof.
-  pose proof
-    (get_vars_cmd :=
-       fix get_vars_cmd (ws_def : seq Z) (fs : fvars) (c : cmd) (m_id : p_id) (acc : {fset Location}) (s_id : p_id) {struct c} : p_id * {fset Location} :=
-          match c with
-          | [::] => (s_id, acc)
-          | i :: c =>
-              let (s_id1, acc') := get_vars_instr ws_def fs i m_id acc s_id in
-              let (s_id2, acc'') := get_vars_cmd ws_def fs c m_id acc' s_id1 in
-              (s_id2, acc'')
-          end).
-  refine
-    (match i with
-     | Cassgn l _ s e => (s_id, acc)
-     | Copn ls _ o es => (s_id, acc)
-     | Cif e c1 c2 =>
-         let (s_id1, locs1) := get_vars_cmd ws_def fs c1 m_id acc s_id in
-         let (s_id2, locs2) := get_vars_cmd ws_def fs c2 m_id locs1 s_id1 in
-         (s_id2, locs2)
-     | Cfor i r c =>
-        let '(d, lo, hi) := r in
-         let ws :=
-           match lo, hi with
-           | Pconst vlo, Pconst vhi => wrange d vlo vhi
-           | _, _ => ws_def
-           end in
-         let (s_id', fresh) := fresh_id s_id in
-         let cᵗ := get_vars_cmd ws fs c m_id in
-         (s_id', get_vars_for ws m_id cᵗ acc fresh)
-     | Ccall ii xs f args =>
-         let (s_id', fresh) := fresh_id s_id in
-         (s_id', acc :|: get_vars_call f fs fresh)
-     | _ => (s_id, acc)
-     end).
-Defined.
-
-Fixpoint get_vars_cmd (ws_def : seq Z) (fs : fvars) (c : cmd) (m_id : p_id) (acc : {fset Location}) (s_id : p_id) {struct c} : p_id * {fset Location} :=
-  match c with
-  | [::] => (s_id, acc)
-  | i :: c =>
-      let (s_id1, acc') := get_vars_instr ws_def fs i m_id acc s_id in
-      let (s_id2, acc'') := get_vars_cmd ws_def fs c m_id acc' s_id1 in
-      (s_id2, acc'')
-  end.
-
-Fixpoint get_vars_funs (ws_def : seq Z) (fs : seq _ufun_decl) : fvars :=
-  match fs with
-    | [::] => [::]
-    | f :: fs' =>
-        let '(fn, f_extra) := f in
-        let fvs := get_vars_funs ws_def fs' in
-        (* let fps := fun s_id => foldr (fun v locs => translate_var s_id (v_var v) |: locs) fset0 (f_params f_extra) in *)
-        let fv := fun s_id => (get_vars_cmd ws_def fvs (f_body f_extra) s_id (fset_of_Sv s_id (vars_c (f_body f_extra))) s_id).2 in
-        (fn, fv) :: fvs
-    end.
-Definition get_vars_prog {ept} (ws_def : seq Z) (P : _prog unit ept) :=
-  get_vars_funs ws_def (p_funcs P).
-
 Definition ws_def : seq Z := [::].
 
 Definition get_tr := get_translated_fun ssprove_jasmin_prog.
-Definition get_vars {eft ept} P fname fc_id := fset_of_Sv fc_id (@get_vars_Sv eft ept P fname).
 
-Definition pdisj (P : precond) (L : {fset Location}) :=
-  forall h1 h2 l v, l \in L -> ( (P ((set_heap h1 l v), h2)) <-> P (h1, h2)).
-
-Ltac tvars H := unfold get_vars, get_vars_Sv, fset_of_Sv, Sv.fold in H; simpl in H.
+Definition pdisj (P : precond) (s_id : p_id) :=
+  forall h1 h2 l a v s_id', l = translate_var s_id' v -> (s_id ⪯ s_id') ->  (P ((set_heap h1 l a), h2) <-> P (h1, h2)).
 
 Ltac solve_in :=
   repeat match goal with
@@ -1168,8 +1081,6 @@ Fixpoint list_to_chtuple (l : list typed_chElement) : lchtuple [seq t.π1 | t <-
 
 Notation trp := (translate_prog' ssprove_jasmin_prog).1.
 Notation trc := (fun fn i => translate_call ssprove_jasmin_prog fn trp i).
-Notation vp := (get_vars_prog ws_def ssprove_jasmin_prog).
-Notation vc := (fun fn i => get_vars_call fn vp i).
 
 (* I use trc to be able to reuse statements about the function inside other functions where theyll appear as translate_calls (and not get_translated_funs).
      Furthermore, I think this is necessary to assure that all calls gets the complete list of translated functions.
@@ -1179,36 +1090,15 @@ Notation vc := (fun fn i => get_vars_call fn vp i).
 
 Notation JRCON i j := (trc RCON i [('int ; j)]).
 (* Notation JRCON  (j : Z) := (get_tr RCON i [('int ; j)]). *)
-Notation JRCON_vars i := (vc RCON i).
-(* Notation JRCON_vars i := (get_vars ssprove_jasmin_prog RCON i). *)
-Goal JRCON_vars 1%positive = fset0.
-  unfold get_vars_call. simpl. cbn.
-  Abort.
 
 Notation JKEY_COMBINE i rkey temp1 temp2 := (trc KEY_COMBINE i [('word U128 ; rkey) ; ('word U128 ; temp1) ; ('word U128 ; temp2)]).
 (* Notation JKEY_COMBINE rkey temp1 temp2 := (get_tr KEY_COMBINE i [('word U128 ; rkey) ; ('word U128 ; temp1) ; ('word U128 ; temp2)]). *)
-Notation JKEY_COMBINE_vars i := (vc KEY_COMBINE i).
-(* Notation JKEY_COMBINE_vars i := (get_vars ssprove_jasmin_prog KEY_COMBINE i). *)
-Goal JKEY_COMBINE_vars 1%positive = fset0.
-  unfold get_vars_call. simpl. cbn.
-  Abort.
 
 Notation JKEY_EXPAND i rcon rkey temp2 := (trc KEY_EXPAND i [ ('int ; rcon) ; ('word U128 ; rkey) ; ('word U128 ; temp2) ]).
 (* Notation JKEY_EXPAND rcon rkey temp2 := (get_tr KEY_EXPAND i [ ('int ; rcon) ; ('word U128 ; rkey) ; ('word U128 ; temp2) ]). *)
-Notation JKEY_EXPAND_vars i := (vc KEY_EXPAND i).
-(* Notation JKEY_EXPAND_vars i := (get_vars ssprove_jasmin_prog KEY_EXPAND intro). *)
-(* this is slow and I'm not sure why. *)
-Goal JKEY_EXPAND_vars 1%positive = fset0.
-  unfold get_vars_call. simpl. cbn.
-  Abort.
 
 Notation JKEYS_EXPAND i rkey := (trc KEYS_EXPAND i [('word U128 ; rkey)]).
 (* Notation JKEYS_EXPAND rkey := (get_tr KEYS_EXPAND i [('word U128 ; rkey)]). *)
-Notation JKEYS_EXPAND_vars i := (vc KEYS_EXPAND i).
-(* Notation JKEYS_EXPAND_vars i := (get_vars ssprove_jasmin_prog KEYS_EXPAND i). *)
-Goal JKEYS_EXPAND_vars 1%positive = fset0.
-  unfold get_vars_call. simpl. cbn.
-  Abort.
 
 Definition rcon (i : Z) : Z := nth 54%Z [:: 1; 2; 4; 8; 16; 32; 64; 128; 27; 54]%Z ((Z.to_nat i) - 1).
 
@@ -1227,7 +1117,7 @@ Definition key_expand (wn1 : u128) (rcon : u8) : 'word U128 :=
   wcat [tuple w4; w5; w6; w7].
 
 Lemma rcon_correct id0 pre i :
-  (pdisj pre (JRCON_vars id0)) ->
+  (pdisj pre id0) ->
   (1 <= i < 10)%Z ->
   ⊢ ⦃ fun '(s0, s1) => pre (s0, s1) ⦄ JRCON id0 i
     ≈ ret ([('int ; rcon i)] : tchlist)
@@ -1236,7 +1126,6 @@ Proof.
   unfold  get_tr, get_translated_fun.
   intros Hpdisj H.
   simpl_fun.
-  tvars Hpdisj.
   repeat setjvars.
   repeat match goal with
          | |- context[(?a =? ?b)%Z] => let E := fresh in destruct (a =? b)%Z eqn:E; [rewrite ?Z.eqb_eq in E; subst|]
