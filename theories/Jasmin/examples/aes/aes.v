@@ -1141,19 +1141,146 @@ Proof.
     + intros. unfold set_lhs in *.
       destruct H0 as [s0 []].
       exists (set_heap s0 c 1%Z). subst. split.
-      * apply Hpdisj. 1: solve_in.
+      * eapply Hpdisj. 1-2: reflexivity.
         assumption.
       * rewrite set_heap_commut. 1: reflexivity.
         apply injective_translate_var3. auto.
     + eapply r_ret.
       intros; split.
       * destruct H0 as [s0 []]. subst.
-        apply Hpdisj. 1: solve_in.
+        eapply Hpdisj. 1-2: reflexivity.
         assumption.
       * split. all: easy.
-  (* the remaining cases are similar, but should be automated *)
-Admitted.
-(* Qed. *)
+  - simpl. eapply r_put_lhs.
+    ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K.
+    eapply r_restore_lhs.
+    + intros. unfold set_lhs in *.
+      destruct H1 as [s0 []].
+      exists (set_heap s0 c 2%Z). subst. split.
+      * eapply Hpdisj. 1-2: reflexivity.
+        assumption.
+      * rewrite set_heap_commut. 1: reflexivity.
+        apply injective_translate_var3. auto.
+    + eapply r_ret.
+      intros; split.
+      * destruct H1 as [s0 []]. subst.
+        eapply Hpdisj. 1-2: reflexivity.
+        assumption.
+      * split. all: easy.
+  - simpl. eapply r_put_lhs.
+    ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K.
+    eapply r_restore_lhs.
+    + intros s0 s1 Hheap. unfold set_lhs in *.
+      destruct Hheap as [s2 []].
+      exists (set_heap s2 c 4%Z). subst. split.
+      * eapply Hpdisj. 1-2: reflexivity.
+        assumption.
+      * rewrite set_heap_commut. 1: reflexivity.
+        apply injective_translate_var3. auto.
+    + eapply r_ret.
+      intros s0 s1 Hheap; split.
+      * destruct Hheap as [s2 []]. subst.
+        eapply Hpdisj. 1-2: reflexivity.
+        assumption.
+      * split. all: easy.
+  - simpl. eapply r_put_lhs.
+    ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K.
+    eapply r_restore_lhs.
+    + intros s0 s1 Hheap. unfold set_lhs in *.
+      destruct Hheap as [s2 []].
+      exists (set_heap s2 c 8%Z). subst. split.
+      * eapply Hpdisj. 1-2: reflexivity.
+        assumption.
+      * rewrite set_heap_commut. 1: reflexivity.
+        apply injective_translate_var3. auto.
+    + eapply r_ret.
+      intros s0 s1 Hheap; split.
+      * destruct Hheap as [s2 []]. subst.
+        eapply Hpdisj. 1-2: reflexivity.
+        assumption.
+      * split. all: easy.
+  - simpl. eapply r_put_lhs.
+    ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K.
+    eapply r_restore_lhs.
+    + intros s0 s1 Hheap. unfold set_lhs in *.
+      destruct Hheap as [s2 []].
+      exists (set_heap s2 c 16%Z). subst. split.
+      * eapply Hpdisj. 1-2: reflexivity.
+        assumption.
+      * rewrite set_heap_commut. 1: reflexivity.
+        apply injective_translate_var3. auto.
+    + eapply r_ret.
+      intros s0 s1 Hheap; split.
+      * destruct Hheap as [s2 []]. subst.
+        eapply Hpdisj. 1-2: reflexivity.
+        assumption.
+      * split. all: easy.
+  - simpl. eapply r_put_lhs.
+    ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K.
+    eapply r_restore_lhs.
+    + intros s0 s1 Hheap. unfold set_lhs in *.
+      destruct Hheap as [s2 []].
+      exists (set_heap s2 c 32%Z). subst. split.
+      * eapply Hpdisj. 1-2: reflexivity.
+        assumption.
+      * rewrite set_heap_commut. 1: reflexivity.
+        apply injective_translate_var3. auto.
+    + eapply r_ret.
+      intros s0 s1 Hheap; split.
+      * destruct Hheap as [s2 []]. subst.
+        eapply Hpdisj. 1-2: reflexivity.
+        assumption.
+      * split. all: easy.
+  - simpl. eapply r_put_lhs.
+    ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K.
+    eapply r_restore_lhs.
+    + intros s0 s1 Hheap. unfold set_lhs in *.
+      destruct Hheap as [s2 []].
+      exists (set_heap s2 c 64%Z). subst. split.
+      * eapply Hpdisj. 1-2: reflexivity.
+        assumption.
+      * rewrite set_heap_commut. 1: reflexivity.
+        apply injective_translate_var3. auto.
+    + eapply r_ret.
+      intros s0 s1 Hheap; split.
+      * destruct Hheap as [s2 []]. subst.
+        eapply Hpdisj. 1-2: reflexivity.
+        assumption.
+      * split. all: easy.
+  - simpl. eapply r_put_lhs.
+    ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K.
+    eapply r_restore_lhs.
+    + intros s0 s1 Hheap. unfold set_lhs in *.
+      destruct Hheap as [s2 []].
+      exists (set_heap s2 c 128%Z). subst. split.
+      * eapply Hpdisj. 1-2: reflexivity.
+        assumption.
+      * rewrite set_heap_commut. 1: reflexivity.
+        apply injective_translate_var3. auto.
+    + eapply r_ret.
+      intros s0 s1 Hheap; split.
+      * destruct Hheap as [s2 []]. subst.
+        eapply Hpdisj. 1-2: reflexivity.
+        assumption.
+      * split. all: easy.
+  - simpl. eapply r_put_lhs.
+    ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K.
+    eapply r_restore_lhs.
+    + intros s0 s1 Hheap. unfold set_lhs in *.
+      destruct Hheap as [s2 []].
+      exists (set_heap s2 c 27%Z). subst. split.
+      * eapply Hpdisj. 1-2: reflexivity.
+        assumption.
+      * rewrite set_heap_commut. 1: reflexivity.
+        apply injective_translate_var3. auto.
+    + eapply r_ret.
+      intros s0 s1 Hheap; split.
+      * destruct Hheap as [s2 []]. subst.
+        eapply Hpdisj. 1-2: reflexivity.
+        assumption.
+      * split. all: easy.
+  - lia.
+Qed.
 
 (* copy of the easycrypt functional definition *)
 Definition W4u8 : 4.-tuple u8 -> u32 := wcat.
