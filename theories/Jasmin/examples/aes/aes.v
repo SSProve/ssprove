@@ -1057,7 +1057,7 @@ Definition ws_def : seq Z := [::].
 Definition get_tr := get_translated_fun ssprove_jasmin_prog.
 
 Definition pdisj (P : precond) (s_id : p_id) :=
-  forall h1 h2 l a v s_id', l = translate_var s_id' v -> (s_id ⪯ s_id') ->  (P ((set_heap h1 l a), h2) <-> P (h1, h2)).
+  forall h1 h2 l a v s_id', l = translate_var s_id' v -> (s_id ⪯ s_id') ->  (P (h1, h2) -> P ((set_heap h1 l a), h2)).
 
 Ltac solve_in :=
   repeat match goal with
@@ -1120,7 +1120,7 @@ Definition key_expand (wn1 : u128) (rcon : u8) : 'word U128 :=
 
 Lemma rcon_correct id0 pre i :
   (pdisj pre id0) ->
-  (1 <= i < 10)%Z ->
+  (forall s0 s1, pre (s0, s1) -> (1 <= i < 11)%Z) ->
   ⊢ ⦃ fun '(s0, s1) => pre (s0, s1) ⦄ JRCON id0 i
     ≈ ret ([('int ; rcon i)] : tchlist)
     ⦃ fun '(v0, s0) '(v1, s1) => pre (s0, s1) /\ v0 = v1 /\ v1 = ([('int ; rcon i)] : tchlist) ⦄.
@@ -1278,7 +1278,24 @@ Proof.
         eapply Hpdisj. 1-2: reflexivity.
         assumption.
       * split. all: easy.
-  - lia.
+  - destruct (i =? 10)%Z eqn:E. rewrite Z.eqb_eq in E. subst.
+    simpl. eapply r_put_lhs.
+    ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K.
+    eapply r_restore_lhs.
+    + intros s0 s1 Hheap. unfold set_lhs in *.
+      destruct Hheap as [s2 []].
+      exists (set_heap s2 c 54%Z). subst. split.
+      * eapply Hpdisj. 1-2: reflexivity.
+        assumption.
+      * rewrite set_heap_commut. 1: reflexivity.
+        apply injective_translate_var3. auto.
+    + eapply r_ret.
+      intros s0 s1 Hheap; split.
+      * destruct Hheap as [s2 []]. subst.
+        eapply Hpdisj. 1-2: reflexivity.
+        assumption.
+      * split. all: easy.
+    + eapply rpre_hypothesis_rule. intros. apply H in H9. lia.
 Qed.
 
 (* copy of the easycrypt functional definition *)
@@ -2011,6 +2028,13 @@ Proof.
   auto. auto.
 Qed.
 
+#[global] Hint Resolve preceq_I preceq_O preceq_refl : preceq.
+Ltac solve_preceq :=
+  repeat lazymatch goal with
+    | |- ?a ⪯ ?a => reflexivity
+    | |- ?a ⪯ ?b~1 => etransitivity; [|apply preceq_I]
+    | |- ?a ⪯ ?b~0 => etransitivity; [|apply preceq_O]
+    end.
 
 Ltac pdisj_apply h :=
   lazymatch goal with
@@ -2020,56 +2044,49 @@ Ltac pdisj_apply h :=
   end.
 
 Lemma key_expandP pre id0 rcon rkey temp2 rcon_ :
-  pdisj pre (JKEY_EXPAND_vars id0) →
+  pdisj pre id0 →
   toword rcon_ = rcon →
-  subword 0 U32 temp2 = word0 →
+  (forall s0 s1, pre (s0, s1) -> subword 0 U32 temp2 = word0) →
   ⊢ ⦃ λ '(s0, s1), pre (s0, s1) ⦄
     JKEY_EXPAND id0 rcon rkey temp2
     ≈ ret tt
-  ⦃ λ '(v0, s0) '(v1, s1),
-    pre (s0, s1) ∧
-    ∃ o1 o2,
-      v0 = [ ('word U128 ; o1) ; ('word U128 ; o2) ] ∧
-      o1 = key_expand rkey rcon_ ∧
-      subword 0 U32 o2 = word0
-  ⦄.
+    ⦃ λ '(v0, s0) '(v1, s1),
+      pre (s0, s1) ∧
+        ∃ o1 o2,
+          v0 = [ ('word U128 ; o1) ; ('word U128 ; o2) ] ∧
+            o1 = key_expand rkey rcon_ ∧
+            subword 0 U32 o2 = word0
+    ⦄.
 Proof.
   intros disj Hrcon Htemp2.
-  tvars disj.
   simpl_fun.
   repeat setjvars.
   repeat clear_get.
-
   unfold sopn_sem.
   unfold tr_app_sopn_tuple.
   unfold tr_app_sopn_single.
 
   simpl.
-
   rewrite !zero_extend_u.
   rewrite !coerce_to_choice_type_K.
 
   repeat eapply r_put_lhs.
   eapply r_ret.
   intros s0 s1 Hpre.
+
   repeat
     match goal with
     | [ H : set_lhs _ _ _ _ |- _ ] =>
-      let sn := fresh in
-      let Hsn := fresh in
-      destruct H as [sn [Hsn]]
+        let sn := fresh in
+        let Hsn := fresh in
+        destruct H as [sn [Hsn]]
     end.
   split.
-  (* Goal: prove pre is preserved by using disj; this should be automated *)
-  - subst.
-    pdisj_apply disj.
-    (* TODO: Fix how the variable set is computed: It needs to include the called functions variables as well *)
-    all: admit.
+  - subst. pdisj_apply disj.
   - eexists _, _. intuition eauto.
-    (* this is key_expand_correct1 *)
-    + apply key_expand_aux. all: assumption.
-    + apply key_expand_aux2. assumption.
-Admitted.
+    + apply key_expand_aux. assumption. eapply Htemp2. eassumption.
+    + apply key_expand_aux2. eapply Htemp2. eassumption.
+Qed.
 
 Definition getmd {T S} m d i := match @getm T S m i with Some a => a | _ => d end.
 
