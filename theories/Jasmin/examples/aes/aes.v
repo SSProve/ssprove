@@ -1056,8 +1056,9 @@ Definition ws_def : seq Z := [::].
 
 Definition get_tr := get_translated_fun ssprove_jasmin_prog.
 
-Definition pdisj (P : precond) (s_id : p_id) :=
-  forall h1 h2 l a v s_id', l = translate_var s_id' v -> (s_id ⪯ s_id') ->  (P (h1, h2) -> P ((set_heap h1 l a), h2)).
+Definition pdisj (P : precond) (s_id : p_id) (rhs : {fset Location}) :=
+  (forall h1 h2 l a v s_id', l = translate_var s_id' v -> (s_id ⪯ s_id') -> (P (h1, h2) -> P (set_heap h1 l a, h2))) /\
+  (forall h1 h2 l a, l \in rhs -> (P (h1, h2) -> P (h1, set_heap h2 l a))).
 
 Ltac solve_in :=
   repeat match goal with
@@ -1102,6 +1103,78 @@ Notation JKEY_EXPAND i rcon rkey temp2 := (trc KEY_EXPAND i [ ('int ; rcon) ; ('
 Notation JKEYS_EXPAND i rkey := (trc KEYS_EXPAND i [('word U128 ; rkey)]).
 (* Notation JKEYS_EXPAND rkey := (get_tr KEYS_EXPAND i [('word U128 ; rkey)]). *)
 
+Ltac destruct_pre :=
+  repeat
+    match goal with
+    | [ H : set_lhs _ _ _ _ |- _ ] =>
+        let sn := fresh in
+        let Hsn := fresh in
+        destruct H as [sn [Hsn]]
+    | [ H : set_rhs _ _ _ _ |- _ ] =>
+        let sn := fresh in
+        let Hsn := fresh in
+        destruct H as [sn [Hsn]]
+    | [ H : _ /\ _ |- _ ] =>
+        let H1 := fresh in
+        let H2 := fresh in
+        destruct H as [H1 H2]
+    | [ H : (_ ⋊ _) _ |- _ ] =>
+        let H1 := fresh in
+        let H2 := fresh in
+        destruct H as [H1 H2]
+    | [ H : exists _, _ |- _ ] =>
+        let o := fresh in
+        destruct H as [o]
+    end; simpl in *; subst.
+
+Ltac split_post :=
+  repeat
+    match goal with
+    | |- (_ ⋊ _) _ => split
+    | |- _ /\ _ => split
+    | |- set_lhs _ _ _ _ => eexists
+    end.
+
+(* NB: this redefines neq_loc_auto, which helps some tactics, since checking for inequality by computation is not feasible for translated variables *)
+Ltac neq_loc_auto ::= solve [ eapply injective_translate_var3; auto | eapply injective_translate_var2; auto ].
+
+(* I don't know what rewrite * means, but this is much faster than regular rewrite, which also sometimes overflows the stack *)
+Ltac sheap :=
+  repeat first [ rewrite * get_set_heap_neq; [| neq_loc_auto ] |
+                 rewrite * get_set_heap_eq ].
+
+(* This works sometimes, but might be very slow *)
+Ltac simpl_heap :=
+  repeat lazymatch goal with
+    | |- context [ get_heap (set_heap _ ?l _) ?l ] => rewrite -> get_set_heap_eq
+    | |- context [ get_heap (set_heap (translate_var ?s_id _) (translate_var ?s_id _ ) _ ) _ ] => (rewrite -> get_set_heap_neq by (apply injective_translate_var3; auto))
+    | |- context [ get_heap (set_heap _ (translate_var _ _ ) _ ) _ ] => (rewrite -> get_set_heap_neq by (apply injective_translate_var2; assumption))
+    end.
+
+Ltac simpl_heap' :=
+  repeat lazymatch goal with
+    | |- context [ get_heap (set_heap _ _ _) _ ] =>
+        try rewrite -> get_set_heap_eq;
+        try (rewrite -> get_set_heap_neq by (apply injective_translate_var3; auto));
+        try (rewrite -> get_set_heap_neq by (apply injective_translate_var2; assumption))
+    end.
+
+#[global] Hint Resolve preceq_I preceq_O preceq_refl : preceq.
+Ltac solve_preceq :=
+  repeat lazymatch goal with
+    | |- ?a ⪯ ?a => reflexivity
+    | |- ?a ⪯ ?b~1 => etransitivity; [|apply preceq_I]
+    | |- ?a ⪯ ?b~0 => etransitivity; [|apply preceq_O]
+    end.
+
+Ltac pdisj_apply h :=
+  lazymatch goal with
+  | |- ?pre (set_heap _ _ _, set_heap _ _ _) => eapply h; [ solve_in | pdisj_apply h ]
+  | |- ?pre (set_heap _ _ _, _) =>
+      eapply h ; [ reflexivity | auto with preceq | pdisj_apply h ]
+  | |- _ => try assumption
+  end.
+
 Definition rcon (i : Z) : Z := nth 54%Z [:: 1; 2; 4; 8; 16; 32; 64; 128; 27; 54]%Z ((Z.to_nat i) - 1).
 
 Definition key_expand (wn1 : u128) (rcon : u8) : 'word U128 :=
@@ -1119,7 +1192,7 @@ Definition key_expand (wn1 : u128) (rcon : u8) : 'word U128 :=
   wcat [tuple w4; w5; w6; w7].
 
 Lemma rcon_correct id0 pre i :
-  (pdisj pre id0) ->
+  (pdisj pre id0 fset0) ->
   (forall s0 s1, pre (s0, s1) -> (1 <= i < 11)%Z) ->
   ⊢ ⦃ fun '(s0, s1) => pre (s0, s1) ⦄ JRCON id0 i
     ≈ ret ([('int ; rcon i)] : tchlist)
@@ -1131,178 +1204,18 @@ Proof.
   repeat setjvars.
   repeat match goal with
          | |- context[(?a =? ?b)%Z] => let E := fresh in destruct (a =? b)%Z eqn:E; [rewrite ?Z.eqb_eq in E; subst|]
-         (* | |- _ => eapply r_put_lhs with (pre := fun _ => True); ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K; eapply r_ret; easy *)
          | |- _ => simpl; ssprove_contract_put_get_lhs; rewrite !coerce_to_choice_type_K
          end.
-  - simpl. eapply r_put_lhs.
-    ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K.
-    eapply r_restore_lhs.
-    + intros. unfold set_lhs in *.
-      destruct H0 as [s0 []].
-      exists (set_heap s0 c 1%Z). subst. split.
-      * eapply Hpdisj. 1-2: reflexivity.
-        assumption.
-      * rewrite set_heap_commut. 1: reflexivity.
-        apply injective_translate_var3. auto.
-    + eapply r_ret.
-      intros; split.
-      * destruct H0 as [s0 []]. subst.
-        eapply Hpdisj. 1-2: reflexivity.
-        assumption.
-      * split. all: easy.
-  - simpl. eapply r_put_lhs.
-    ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K.
-    eapply r_restore_lhs.
-    + intros. unfold set_lhs in *.
-      destruct H1 as [s0 []].
-      exists (set_heap s0 c 2%Z). subst. split.
-      * eapply Hpdisj. 1-2: reflexivity.
-        assumption.
-      * rewrite set_heap_commut. 1: reflexivity.
-        apply injective_translate_var3. auto.
-    + eapply r_ret.
-      intros; split.
-      * destruct H1 as [s0 []]. subst.
-        eapply Hpdisj. 1-2: reflexivity.
-        assumption.
-      * split. all: easy.
-  - simpl. eapply r_put_lhs.
-    ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K.
-    eapply r_restore_lhs.
-    + intros s0 s1 Hheap. unfold set_lhs in *.
-      destruct Hheap as [s2 []].
-      exists (set_heap s2 c 4%Z). subst. split.
-      * eapply Hpdisj. 1-2: reflexivity.
-        assumption.
-      * rewrite set_heap_commut. 1: reflexivity.
-        apply injective_translate_var3. auto.
-    + eapply r_ret.
-      intros s0 s1 Hheap; split.
-      * destruct Hheap as [s2 []]. subst.
-        eapply Hpdisj. 1-2: reflexivity.
-        assumption.
-      * split. all: easy.
-  - simpl. eapply r_put_lhs.
-    ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K.
-    eapply r_restore_lhs.
-    + intros s0 s1 Hheap. unfold set_lhs in *.
-      destruct Hheap as [s2 []].
-      exists (set_heap s2 c 8%Z). subst. split.
-      * eapply Hpdisj. 1-2: reflexivity.
-        assumption.
-      * rewrite set_heap_commut. 1: reflexivity.
-        apply injective_translate_var3. auto.
-    + eapply r_ret.
-      intros s0 s1 Hheap; split.
-      * destruct Hheap as [s2 []]. subst.
-        eapply Hpdisj. 1-2: reflexivity.
-        assumption.
-      * split. all: easy.
-  - simpl. eapply r_put_lhs.
-    ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K.
-    eapply r_restore_lhs.
-    + intros s0 s1 Hheap. unfold set_lhs in *.
-      destruct Hheap as [s2 []].
-      exists (set_heap s2 c 16%Z). subst. split.
-      * eapply Hpdisj. 1-2: reflexivity.
-        assumption.
-      * rewrite set_heap_commut. 1: reflexivity.
-        apply injective_translate_var3. auto.
-    + eapply r_ret.
-      intros s0 s1 Hheap; split.
-      * destruct Hheap as [s2 []]. subst.
-        eapply Hpdisj. 1-2: reflexivity.
-        assumption.
-      * split. all: easy.
-  - simpl. eapply r_put_lhs.
-    ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K.
-    eapply r_restore_lhs.
-    + intros s0 s1 Hheap. unfold set_lhs in *.
-      destruct Hheap as [s2 []].
-      exists (set_heap s2 c 32%Z). subst. split.
-      * eapply Hpdisj. 1-2: reflexivity.
-        assumption.
-      * rewrite set_heap_commut. 1: reflexivity.
-        apply injective_translate_var3. auto.
-    + eapply r_ret.
-      intros s0 s1 Hheap; split.
-      * destruct Hheap as [s2 []]. subst.
-        eapply Hpdisj. 1-2: reflexivity.
-        assumption.
-      * split. all: easy.
-  - simpl. eapply r_put_lhs.
-    ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K.
-    eapply r_restore_lhs.
-    + intros s0 s1 Hheap. unfold set_lhs in *.
-      destruct Hheap as [s2 []].
-      exists (set_heap s2 c 64%Z). subst. split.
-      * eapply Hpdisj. 1-2: reflexivity.
-        assumption.
-      * rewrite set_heap_commut. 1: reflexivity.
-        apply injective_translate_var3. auto.
-    + eapply r_ret.
-      intros s0 s1 Hheap; split.
-      * destruct Hheap as [s2 []]. subst.
-        eapply Hpdisj. 1-2: reflexivity.
-        assumption.
-      * split. all: easy.
-  - simpl. eapply r_put_lhs.
-    ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K.
-    eapply r_restore_lhs.
-    + intros s0 s1 Hheap. unfold set_lhs in *.
-      destruct Hheap as [s2 []].
-      exists (set_heap s2 c 128%Z). subst. split.
-      * eapply Hpdisj. 1-2: reflexivity.
-        assumption.
-      * rewrite set_heap_commut. 1: reflexivity.
-        apply injective_translate_var3. auto.
-    + eapply r_ret.
-      intros s0 s1 Hheap; split.
-      * destruct Hheap as [s2 []]. subst.
-        eapply Hpdisj. 1-2: reflexivity.
-        assumption.
-      * split. all: easy.
-  - simpl. eapply r_put_lhs.
-    ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K.
-    eapply r_restore_lhs.
-    + intros s0 s1 Hheap. unfold set_lhs in *.
-      destruct Hheap as [s2 []].
-      exists (set_heap s2 c 27%Z). subst. split.
-      * eapply Hpdisj. 1-2: reflexivity.
-        assumption.
-      * rewrite set_heap_commut. 1: reflexivity.
-        apply injective_translate_var3. auto.
-    + eapply r_ret.
-      intros s0 s1 Hheap; split.
-      * destruct Hheap as [s2 []]. subst.
-        eapply Hpdisj. 1-2: reflexivity.
-        assumption.
-      * split. all: easy.
-  - destruct (i =? 10)%Z eqn:E. rewrite Z.eqb_eq in E. subst.
-    simpl. eapply r_put_lhs.
-    ssprove_contract_put_get_lhs; eapply r_put_lhs; rewrite ?coerce_to_choice_type_K.
-    eapply r_restore_lhs.
-    + intros s0 s1 Hheap. unfold set_lhs in *.
-      destruct Hheap as [s2 []].
-      exists (set_heap s2 c 54%Z). subst. split.
-      * eapply Hpdisj. 1-2: reflexivity.
-        assumption.
-      * rewrite set_heap_commut. 1: reflexivity.
-        apply injective_translate_var3. auto.
-    + eapply r_ret.
-      intros s0 s1 Hheap; split.
-      * destruct Hheap as [s2 []]. subst.
-        eapply Hpdisj. 1-2: reflexivity.
-        assumption.
-      * split. all: easy.
-    + eapply rpre_hypothesis_rule. intros. apply H in H9. lia.
+  all: ssprove_code_simpl; rewrite !coerce_to_choice_type_K; eapply r_put_lhs; ssprove_contract_put_get_lhs; eapply r_put_lhs; eapply r_ret.
+  all: intros; destruct_pre; split_post; [ pdisj_apply Hpdisj | rewrite coerce_to_choice_type_K; auto | easy ].
+  destruct (i =? 10)%Z eqn:E. rewrite Z.eqb_eq in E. subst. reflexivity.
+  apply H in H13. lia.
 Qed.
 
 (* copy of the easycrypt functional definition *)
 Definition W4u8 : 4.-tuple u8 -> u32 := wcat.
 Definition W4u32 : 4.-tuple u32 -> u128 := wcat.
 
-Ltac neq_loc_auto ::= eapply injective_translate_var3; auto.
 
 Notation "m ⊕ k" := (@word.word.wxor _ m k) (at level 20).
 
@@ -1410,19 +1323,6 @@ Proof.
   apply Z.ltb_lt.
   apply modulus_gt0.
 Qed.
-
-(* Lemma wcat_r_bound n (l : seq n.-word) : *)
-(*   (0 <= wcat_r l < modulus (size l * n))%Z. *)
-(* Proof. *)
-(*   induction l. *)
-(*   - simpl. *)
-(*     split. *)
-(*     + reflexivity. *)
-(*     + apply Z.ltb_lt. *)
-(*       apply modulus_gt0. *)
-(*   - simpl. *)
-(*     (* IHl implies that the wcat shifted is less than the modulus and then the lor is less than that *) *)
-(* Admitted. *)
 
 (* following two lemmas are from fiat crypto, consider importing *)
 Lemma mod_pow_same_base_larger a b n m :
@@ -1708,25 +1608,6 @@ Proof.
   all: auto.
 Qed.
 
-(* Lemma subword_wshufps_0_32_128 o s1 s2 : subword 0 U32 (wshufps_128 o s1 s2) = wpshufd1 s1 o 0. *)
-(* Proof. *)
-(*   unfold wshufps_128. *)
-(*   rewrite subword_make_vec1. *)
-(*   rewrite subword_u. *)
-(*   reflexivity. *)
-(*   reflexivity. *)
-(* Qed. *)
-
-(* Lemma subword_wshufps_128 o s1 s2 : subword 0 U32 (wshufps_128 o s1 s2) = *)
-(*                               wpshufd1 s1 o 0. *)
-(* Proof. *)
-(*   unfold wshufps_128. *)
-(*   rewrite subword_make_vec1. *)
-(*   rewrite subword_u. *)
-(*   reflexivity. *)
-(*   reflexivity. *)
-(* Qed.   *)
-
 Arguments nat_of_wsize : simpl never.
 Arguments wsize_size_minus_1 : simpl never.
 
@@ -1755,13 +1636,6 @@ Proof.
   apply val_inj.
   reflexivity.
 Qed.
-
-(* Lemma lsr_add_r {n} (w : n.-word) i j : lsr (lsr w i) j = lsr w (i + j). *)
-(* Proof. *)
-(*   unfold lsr. *)
-(*   rewrite urepr_word; simpl. *)
-(*   apply val_inj. *)
-(*   simpl. *)
 
 (* from fiat crypto, but proof is more involved *)
 Lemma mod_pull_div a b c
@@ -1816,13 +1690,6 @@ Proof.
   reflexivity.
 Qed.
 
-(* Lemma wxorC : ∀ m k : word, (m ⊕ k) = (k ⊕ m). *)
-(* Proof. *)
-(*   intros m k. *)
-(*   apply/eqP/eq_from_wbit=> i. *)
-(*   by rewrite !wxorE addbC. *)
-(* Qed. *)
-
 Lemma wxorA {n} : forall m k l : word n, ((m ⊕ k) ⊕ l) = (m ⊕ (k ⊕ l)).
 Proof.
   intros m k l.
@@ -1843,7 +1710,6 @@ Proof.
 Qed.
 
 Lemma wreprI ws (a : word.word ws) : wrepr ws (toword a) = a.
-
 Proof.
   apply val_inj. simpl. destruct a. rewrite Z.mod_small. reflexivity.
   simpl in *. lia.
@@ -1889,7 +1755,6 @@ Proof.
     rewrite wshr0.
     rewrite -wxorA.
     rewrite wxor_involutive.
-
     rewrite wxor_0_l.
     rewrite wror_substitute.
     unfold word.wxor.
@@ -2028,23 +1893,8 @@ Proof.
   auto. auto.
 Qed.
 
-#[global] Hint Resolve preceq_I preceq_O preceq_refl : preceq.
-Ltac solve_preceq :=
-  repeat lazymatch goal with
-    | |- ?a ⪯ ?a => reflexivity
-    | |- ?a ⪯ ?b~1 => etransitivity; [|apply preceq_I]
-    | |- ?a ⪯ ?b~0 => etransitivity; [|apply preceq_O]
-    end.
-
-Ltac pdisj_apply h :=
-  lazymatch goal with
-  | |- ?pre (set_heap _ _ _, _) =>
-      eapply h ; [ reflexivity | auto with preceq | pdisj_apply h ]
-  | |- _ => try assumption
-  end.
-
 Lemma key_expandP pre id0 rcon rkey temp2 rcon_ :
-  pdisj pre id0 →
+  pdisj pre id0 fset0 →
   toword rcon_ = rcon →
   (forall s0 s1, pre (s0, s1) -> subword 0 U32 temp2 = word0) →
   ⊢ ⦃ λ '(s0, s1), pre (s0, s1) ⦄
@@ -2062,10 +1912,7 @@ Proof.
   simpl_fun.
   repeat setjvars.
   repeat clear_get.
-  unfold sopn_sem.
-  unfold tr_app_sopn_tuple.
-  unfold tr_app_sopn_single.
-
+  unfold sopn_sem, tr_app_sopn_tuple, tr_app_sopn_single.
   simpl.
   rewrite !zero_extend_u.
   rewrite !coerce_to_choice_type_K.
@@ -2073,18 +1920,10 @@ Proof.
   repeat eapply r_put_lhs.
   eapply r_ret.
   intros s0 s1 Hpre.
-
-  repeat
-    match goal with
-    | [ H : set_lhs _ _ _ _ |- _ ] =>
-        let sn := fresh in
-        let Hsn := fresh in
-        destruct H as [sn [Hsn]]
-    end.
-  split.
-  - subst. pdisj_apply disj.
-  - eexists _, _. intuition eauto.
-    + apply key_expand_aux. assumption. eapply Htemp2. eassumption.
+  destruct_pre; split_post.
+  - pdisj_apply disj.
+  - eexists _, _. intuition auto.
+    + apply key_expand_aux. reflexivity. eapply Htemp2. eassumption.
     + apply key_expand_aux2. eapply Htemp2. eassumption.
 Qed.
 
@@ -2099,6 +1938,9 @@ Fixpoint for_list (c : Z → raw_code 'unit) (vs : seq Z) : raw_code 'unit :=
   end.
 
 Definition for_loop' (c : Z -> raw_code 'unit) lo hi := for_list c (wrange UpTo lo hi).
+
+Definition to_oarr ws len (a : 'array) : (chMap (chFin len) ('word ws)) :=
+  mkfmapf (fun (i : 'I_len) => chArray_get ws a i (wsize_size ws)) (ord_enum len).
 
 Definition to_arr ws len (a : 'array) :=
   mkfmapf (fun i => chArray_get ws a i (wsize_size ws)) (ziota 0 len).
@@ -2290,7 +2132,6 @@ Proof.
   unfold chArray_get.
   unfold chArray_set.
   rewrite <- LE.decodeK.
-
   f_equal.
   rewrite encode_aux.
   apply map_ext.
@@ -2345,6 +2186,15 @@ Proof.
   rewrite mkfmapfE.
 Admitted.                  (* figure out a proof that is less stupid than the one for getm_to_arr *)
 
+Lemma getm_to_oarr ws len a (i : 'I_(pos len)) :
+  to_oarr ws len a i = Some (chArray_get ws a i (wsize_size ws)).
+Proof.
+  unfold to_oarr.
+  rewrite mkfmapfE.
+  rewrite mem_ord_enum.
+  reflexivity.
+Qed.
+
 Lemma getm_to_arr ws len a i :
   (0 <= i < len) ->
   to_arr ws len a i = Some (chArray_get ws a i (wsize_size ws)).
@@ -2372,6 +2222,15 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma to_oarr_set_eq ws len a (i : 'I_(pos len)) w :
+  (* (0 <= i < len) -> *)
+  (to_oarr ws len (chArray_set a AAscale i w)) i = Some w.
+Proof.
+  rewrite getm_to_oarr.
+  rewrite chArray_get_set_eq.
+  reflexivity.
+Qed.
+
 Lemma to_arr_set_eq ws len a i w :
   (0 <= i < len) ->
   (to_arr ws len (chArray_set a AAscale i w)) i = Some w.
@@ -2388,7 +2247,7 @@ Lemma to_arr_set_neq' ws len a i j (w : 'word ws) :
   (0 <= j < len) ->
   (to_arr ws len (chArray_set a AAscale i w)) j = Some (chArray_get ws a j (wsize_size ws)).
 Proof.
-  intros Hneq Hi.
+  intros Hneq H.
   rewrite getm_to_arr.
   rewrite chArray_get_set_neq.
   reflexivity.
@@ -2401,7 +2260,7 @@ Lemma to_arr_set_neq ws len a i j (w : 'word ws) :
   (0 <= j < len) ->
   (to_arr ws len (chArray_set a AAscale i w)) j = (to_arr ws len a) j.
 Proof.
-  intros Hneq Hi.
+  intros Hneq H.
   rewrite !getm_to_arr.
   rewrite chArray_get_set_neq.
   reflexivity.
@@ -2438,67 +2297,24 @@ Proof.
   simpl. lia.
 Qed.
 
-Ltac destruct_pre :=
-  repeat
-    match goal with
-    | [ H : set_lhs _ _ _ _ |- _ ] =>
-        let sn := fresh in
-        let Hsn := fresh in
-        destruct H as [sn [Hsn]]
-    | [ H : set_rhs _ _ _ _ |- _ ] =>
-        let sn := fresh in
-        let Hsn := fresh in
-        destruct H as [sn [Hsn]]
-    | [ H : _ /\ _ |- _ ] =>
-        let H1 := fresh in
-        let H2 := fresh in
-        destruct H as [H1 H2]
-    | [ H : (_ ⋊ _) _ |- _ ] =>
-        let H1 := fresh in
-        let H2 := fresh in
-        destruct H as [H1 H2]
-    | [ H : exists _, _ |- _ ] =>
-        let o := fresh in
-        destruct H as [o]
-    end; simpl in *; subst.
+(* Notation " 'arr ws len " := (chMap (chFin len) ('word ws)) (at level 2) : package_scope. *)
 
-Ltac split_post :=
-  repeat
-    match goal with
-    | |- (_ ⋊ _) _ => split
-    | |- _ /\ _ => split
-    | |- set_lhs _ _ _ _ => eexists
-    end.
+(* Definition rkeys : Location := ( (chMap (chFin (mkpos 11)) ('word U128)) ; 0%nat ). *)
 
-Ltac neq_loc_auto := solve [ eapply injective_translate_var2; auto | eapply injective_translate_var3; auto ].
-
-(* I don't know what rewrite * means, but this is much faster than regular rewrite, which also sometimes overflows the stack *)
-Ltac sheap :=
-  repeat first [ rewrite * get_set_heap_neq; [| neq_loc_auto ] |
-                 rewrite * get_set_heap_eq ].
-
-(* This works sometimes, but might be very slow *)
-Ltac simpl_heap :=
-  repeat lazymatch goal with
-    | |- context [ get_heap (set_heap _ ?l _) ?l ] => rewrite -> get_set_heap_eq
-    | |- context [ get_heap (set_heap (translate_var ?s_id _) (translate_var ?s_id _ ) _ ) _ ] => (rewrite -> get_set_heap_neq by (apply injective_translate_var3; auto))
-    | |- context [ get_heap (set_heap _ (translate_var _ _ ) _ ) _ ] => (rewrite -> get_set_heap_neq by (apply injective_translate_var2; assumption))
-    end.
-
-Ltac simpl_heap' :=
-  repeat lazymatch goal with
-    | |- context [ get_heap (set_heap _ _ _) _ ] =>
-        try rewrite -> get_set_heap_eq;
-        try (rewrite -> get_set_heap_neq by (apply injective_translate_var3; auto));
-        try (rewrite -> get_set_heap_neq by (apply injective_translate_var2; assumption))
-    end.
+(* Definition keyExpansion (key : u128) : raw_code (chMap (chFin (mkpos 11)) ('word U128)):= *)
+(*  #put rkeys := @emptym (chElement_ordType (chFin (mkpos 11))) u128 ;; *)
+(*  rkeys0 ← get rkeys ;; *)
+(*  #put rkeys := setm rkeys0 (inord 0) key ;; *)
+(*  for_loop' (fun i => rkeys0 ← get rkeys ;; #put rkeys := setm rkeys0 (inord (Z.to_nat i)) (key_expand (zero_extend _ (getmd rkeys0 word0 (inord (Z.to_nat i - 1)))) (wrepr U8 (rcon i))) ;; ret tt) 1 11 ;; *)
+(*  rkeys0 ← get rkeys ;; *)
+(*  ret rkeys0. *)
 
 Notation " 'arr ws " := (chMap 'int ('word ws)) (at level 2) : package_scope.
 
 Definition rkeys : Location := ( 'arr U128 ; 0%nat ).
 
 Definition keyExpansion (key : u128) : raw_code ('arr U128) :=
- #put rkeys := @emptym Z_ordType u128 ;;
+ #put rkeys := @emptym (chElement_ordType 'int) u128 ;;
  rkeys0 ← get rkeys ;;
  #put rkeys := setm rkeys0 0 key ;;
  for_loop' (fun i => rkeys0 ← get rkeys ;; #put rkeys := setm rkeys0 i (key_expand (zero_extend _ (getmd rkeys0 word0 (i - 1))) (wrepr U8 (rcon i))) ;; ret tt) 1 11 ;;
@@ -2506,16 +2322,16 @@ Definition keyExpansion (key : u128) : raw_code ('arr U128) :=
  ret rkeys0.
 
 Lemma keyExpansionE pre id0 rkey :
-  (pdisj pre id0) ->
+  (pdisj pre id0 [fset rkeys]) ->
   ⊢ ⦃ fun '(h0, h1) => pre (h0, h1) ⦄
-    res ← JKEYS_EXPAND id0 rkey ;;
-  ret (to_arr U128 11 (hdtc res))
+    JKEYS_EXPAND id0 rkey
     ≈
     keyExpansion rkey
-    ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) /\ v0 = v1 ⦄.
+    ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) /\ (to_arr U128 (mkpos 11) (hdtc v0)) = v1 ⦄.
 Proof.
   intros disj.
   unfold translate_call.
+  unfold translate_call_body.
 
   Opaque translate_call.
   Opaque wrange.
@@ -2544,7 +2360,9 @@ Proof.
         (I := fun i => fun '(h0, h1) => pre (h0, h1)
                                         /\ subword 0 U32 (get_heap h0 temp2) = word0
                                         /\ (get_heap h0 key = chArray_get U128 (get_heap h0 rkeys) (i - 1) 16)
-                                        /\ forall j, 0 <= j < i -> (to_arr U128 11 (get_heap h0 rkeys)) j = (get_heap h1 aes.rkeys) j).
+                                        /\ (forall j, (0 <= j < i) -> (to_arr U128 (mkpos 11) (get_heap h0 rkeys)) j = (get_heap h1 aes.rkeys) j)
+                                        /\ (forall j, (j < 0) \/ (11 <= j) -> get_heap h1 aes.rkeys j = None)).
+
       (* the two following bullets are small assumptions of the translate_for rule *)
       * intros. simpl. solve_preceq.
       * lia.
@@ -2561,7 +2379,10 @@ Proof.
         eapply r_bind with (m₁ := ret _) (f₁ := fun _ => _).
         ** eapply rcon_correct with (id0 := (s_id~1)%positive) (i:=x).
            (* We have to prove the precond is disjoint from the variables of rcon, i.e. any variables stored locally in rcon does not change the precond *)
-           *** intros s0 s1 l a vr s_id' Hl Hs_id' H.
+           *** split.
+               (* rcon_correct does not use any variables on the rhs *)
+               2: { easy. }
+               intros s0 s1 l a vr s_id' Hl Hs_id' H.
                assert (id0_preceq : id0 ⪯ s_id'). {
                  etransitivity. eapply preceq_I. etransitivity. eassumption. etransitivity. eapply preceq_I. eassumption.
                }
@@ -2573,6 +2394,7 @@ Proof.
                { sheap. assumption. }
                { sheap. assumption. }
                { sheap. assumption. }
+               { assumption. }
                { rewrite set_heap_commut. reflexivity.
                  apply injective_translate_var2. assumption. }
                { simpl. sheap. reflexivity. }
@@ -2595,10 +2417,12 @@ Proof.
            (* First we apply correctness of key_expandP *)
            *** (* Here the rewrite is necessary. How should correctness be phrased in general such that this is not important? *)
                rewrite !coerce_to_choice_type_K.
-
                eapply key_expandP with (id0 := (s_id~0~1)%positive) (rcon :=(rcon i)) (rkey := x0) (temp2 := x1) (rcon_ := wrepr _ (rcon i)).
                (* again, we have to prove that our precond does not depend key_expand locations *)
-               { intros s0 s1 l a vr s_id' Hl Hs_id' H.
+               { split.
+                 (* key_expandP also does not use variables on the rhs *)
+                 2: { easy. }
+                 intros s0 s1 l a vr s_id' Hl Hs_id' H.
                  assert (id0_preceq : id0 ⪯ s_id'). {
                  etransitivity. eapply preceq_I. etransitivity. eassumption. etransitivity. eapply preceq_O. etransitivity. eapply preceq_I. eassumption.
                  }
@@ -2610,6 +2434,7 @@ Proof.
                  { sheap; assumption. }
                  { sheap; assumption. }
                  { sheap; assumption. }
+                 { assumption. }
                  { reflexivity. }
                  { simpl. sheap. reflexivity. }
                  { reflexivity. }
@@ -2649,7 +2474,7 @@ Proof.
 
                split_post.
                (* here we prove that the invariant is preserved after a single loop, assuming it holds before *)
-               { pdisj_apply disj. admit. (* rhs *) }
+               { pdisj_apply disj. }
                { assumption. }
                { replace (Z.succ i - 1) with i by lia.
                  rewrite chArray_get_set_eq.
@@ -2658,12 +2483,14 @@ Proof.
                  destruct (Z.eq_dec i j).
 
                  (* i = j *)
-                 subst.
+                 subst. simpl.
+                 pose proof to_arr_set_eq.
+                 simpl.
                  rewrite to_arr_set_eq.
                  rewrite setmE. rewrite eq_refl.
 
-                 f_equal. unfold getmd. rewrite -H42. rewrite getm_to_arr.
-                 f_equal. rewrite !get_set_heap_neq in H32. rewrite -H32. assumption.
+                 f_equal. unfold getmd. rewrite -H43. rewrite getm_to_arr.
+                 f_equal. rewrite !get_set_heap_neq in H34. rewrite -H34. assumption.
                  neq_loc_auto. neq_loc_auto. lia. lia. lia.
 
                  (* i <> j *)
@@ -2671,7 +2498,15 @@ Proof.
                  rewrite setmE.
                  assert (@eq bool (@eq_op Z_ordType j i) false). apply/eqP. auto.
                  rewrite H2.
-                 apply H42. lia. assumption. lia. }
+                 apply H43. lia. assumption. lia. }
+               { intros j Hj.
+
+                 rewrite setmE.
+                 (* why do I have to set printing off to realize this? Shouldn't j == i always mean the same on the same type? *)
+                 assert (@eq_op (Ord.eqType Z_ordType) j i = false). apply/eqP. lia.
+                 rewrite H2.
+                 apply H45.
+                 assumption. }
     (* the next bullet is the proof that the invariant of the for loop is true at the beginning (this goal is generated by pre_weaken rule and translate_for) *)
     + intros s0 s1 H.
       destruct_pre.
@@ -2683,8 +2518,6 @@ Proof.
       split_post.
       (* prove that pre is preserved *)
       * pdisj_apply disj.
-        (* the rhs *)
-        admit.
       (* first invariant *)
       * simpl. unfold tr_app_sopn_tuple. simpl. rewrite subword_word0. reflexivity.
       (* second invariant *)
@@ -2692,13 +2525,15 @@ Proof.
       (* third invariant *)
       * intros j Hj. assert (j = 0) by lia. subst.
         rewrite to_arr_set_eq. rewrite setmE. rewrite eq_refl. reflexivity. lia.
-
+      * intros. rewrite setmE.
+        (* Set Printing All. *)
+        replace (_ == _) with false.
+        apply emptymE. symmetry. apply/eqP. lia.
   (* after for loop *)
   - intros a0 a1.
     simpl.
     eapply r_get_remember_lhs with (pre := fun '(s0, s1) => _). intros x.
     eapply r_get_remember_rhs. intros x0.
-    rewrite !coerce_to_choice_type_K.
     eapply r_ret.
     intros s0 s1 H.
     destruct_pre. split_post.
@@ -2707,11 +2542,11 @@ Proof.
     + eapply eq_fmap. intros j.
       destruct ((0 <=? j) && (j <? 11)) eqn:E.
       (* within bounds, this follows from the precondition *)
-      * apply H5. lia.
+      * rewrite !coerce_to_choice_type_K. apply H4. lia.
       * rewrite -> getm_to_arr_None' by lia.
-        (* we need to preserve this invariant on the RHS, on add the length to array type *)
-        admit.
-Admitted.
+        rewrite H6. reflexivity.
+        lia.
+Qed.
 
 From Hacspec Require Import Hacspec_Aes_Jazz ChoiceEquality.
 
