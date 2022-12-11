@@ -1846,8 +1846,7 @@ Proof.
   unfold key_expand.
   apply W4u32_eq.
   intros [[ | [ | [ | [ | i]]]] j]; simpl; unfold tnth; simpl.
-  -
-    rewrite !subword_xor.
+  - rewrite !subword_xor.
     rewrite mul0n.
     unfold lift2_vec.
     rewrite !subword_0_32_128.
@@ -1863,15 +1862,12 @@ Proof.
     rewrite !wshr0.
     rewrite !subword_make_vec_32_0_32_128.
     simpl.
-
     unfold wAESKEYGENASSIST.
     rewrite subword_wshr.
     rewrite subword_make_vec_32_3_32_128.
     simpl.
-
     rewrite !wxorA.
     f_equal.
-
     unfold wpshufd1.
     simpl.
     rewrite wshr0.
@@ -1885,8 +1881,7 @@ Proof.
     rewrite wreprI.
     reflexivity.
     all: auto.
-  -
-    simpl.
+  - simpl.
     unfold lift2_vec.
     rewrite !make_vec_ws.
     rewrite mul1n.
@@ -1918,9 +1913,7 @@ Proof.
     rewrite wreprI.
     reflexivity.
     all: try auto.
-  -
-
-    simpl.
+  - simpl.
     unfold lift2_vec.
     rewrite !make_vec_ws.
     rewrite mul1n.
@@ -1955,8 +1948,7 @@ Proof.
     rewrite wreprI.
     reflexivity.
     all: try auto.
-  -
-    simpl.
+  - simpl.
     unfold lift2_vec.
     rewrite !make_vec_ws.
     rewrite mul1n.
@@ -1994,47 +1986,7 @@ Proof.
     rewrite wreprI.
     reflexivity.
     all: auto.
-    lia.
-Qed.
-
-Lemma key_expand1_correct id0 rcon rkey temp2 rcon_ :
-  toword rcon_ = rcon ->
-  subword 0 U32 temp2 = word0 ->
-  ⊢ ⦃ fun _ => True ⦄
-    l ← (JKEY_EXPAND id0 rcon rkey temp2) ;;
-  ret (nth ('word U128 ; chCanonical _) l 0%nat)
-    ⇓ ('word U128 ; (key_expand rkey rcon_))
-    ⦃ fun _ => True ⦄.
-Proof.
-  intros H1 H2.
-  unfold  get_tr, get_translated_fun.
-
-  simpl_fun. repeat setjvars.
-  rewrite !zero_extend_u.
-  rewrite !coerce_to_choice_type_K.
-
-  unfold eval_jdg.
-  repeat clear_get.
-
-  unfold sopn_sem.
-  unfold tr_app_sopn_tuple.
-  unfold tr_app_sopn_single.
-
-  simpl.
-
-  rewrite !zero_extend_u.
-  rewrite !coerce_to_choice_type_K.
-
-  repeat eapply u_put.
-  eapply u_ret.
-
-  split. easy.
-
-  unfold totce.
-  f_equal.
-  apply key_expand_aux.
-  assumption.
-  assumption.
+  - lia.
 Qed.
 
 Lemma key_expand_aux2 rkey temp2 :
@@ -2060,42 +2012,11 @@ Proof.
   auto. auto.
 Qed.
 
-Lemma key_expand2_correct id0 rcon rkey temp2 :
-  subword 0 U32 temp2 = word0 ->
-  ⊢ ⦃ fun _ => True ⦄
-    l ← (JKEY_EXPAND id0 rcon rkey temp2) ;;
-  ret (subword 0 U32 (pr ('word U128) l 1%nat))
-    ⇓ word0
-    ⦃ fun _ => True ⦄.
-Proof.
-  intros H.
-  simpl_fun.
-  repeat setjvars.
-
-  unfold eval_jdg.
-  repeat clear_get.
-
-  unfold sopn_sem.
-  unfold tr_app_sopn_tuple.
-  unfold tr_app_sopn_single.
-
-  simpl.
-
-  rewrite !zero_extend_u.
-  rewrite !coerce_to_choice_type_K.
-
-  repeat eapply u_put.
-  eapply u_ret.
-
-  split. easy.
-  apply key_expand_aux2.
-  assumption.
-Qed.
 
 Ltac pdisj_apply h :=
   lazymatch goal with
   | |- ?pre (set_heap _ _ _, _) =>
-    eapply h ; [ solve_in | pdisj_apply h ]
+      eapply h ; [ reflexivity | auto with preceq | pdisj_apply h ]
   | |- _ => try assumption
   end.
 
@@ -2389,7 +2310,6 @@ Proof.
   assert ((0 <=? j * wsize_size ws + a0 - i * mk_scale AAscale ws) && (j * wsize_size ws + a0 - i * mk_scale AAscale ws <? wsize_size ws) = false).
   simpl. move: Ha0=>/InP. rewrite in_ziota=>/andP [] H1 h2.
   nia.
-
   rewrite H0.
   reflexivity.
 Qed.
@@ -2415,14 +2335,16 @@ Proof.
     change (∀ z : Z, 0 <= z -> z <= i < z + len →
                      (is_true (@in_mem (Ord.sort Z_ordType) i (@ssrbool.mem (Equality.sort (Ord.eqType Z_ordType)) (seq_predType (Ord.eqType Z_ordType)) (ziota z len))))
            ) with ((fun len => ((forall z, 0 <= z -> z <= i < z + len ->
-                                   (is_true (@in_mem (Ord.sort Z_ordType) i (@ssrbool.mem (Equality.sort (Ord.eqType Z_ordType)) (seq_predType (Ord.eqType Z_ordType)) (ziota z len))))
+                                           (is_true (@in_mem (Ord.sort Z_ordType) i (@ssrbool.mem (Equality.sort (Ord.eqType Z_ordType)) (seq_predType (Ord.eqType Z_ordType)) (ziota z len))))
                    ))) len).
     apply natlike_ind.
     - intros z Hz Hz2. lia.
     - intros x Hx Ih z Hz Hz2. rewrite ziotaS_cons.
       destruct (Z.eq_dec z i).
       + rewrite in_cons. apply/orP. left. apply/eqP. easy.
-      + rewrite in_cons. apply/orP. right. apply Ih. lia. lia. lia. assumption. }
+      + rewrite in_cons. apply/orP. right. apply Ih. lia. lia.
+      + lia.
+    - assumption. }
   rewrite H0.
   reflexivity.
 Qed.
