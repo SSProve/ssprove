@@ -1066,29 +1066,28 @@ Ltac solve_in :=
     end.
 
 Fixpoint list_to_chtuple (l : list typed_chElement) : lchtuple [seq t.π1 | t <- l] :=
-  match l as l0
-  return lchtuple [seq t.π1 | t <- l0]
+  match l as l0 return lchtuple [seq t.π1 | t <- l0]
   with
   | [] => tt
   | tc' :: l' =>
-    let rec := @list_to_chtuple l' in
-    match l' as l'0
-          return
-          lchtuple [seq t.π1 | t <- l'0] ->
-          lchtuple [seq t.π1 | t <- (tc'::l'0)]
-    with
-    | [] => fun _ => tc'.π2
-    | tc'' :: l'' => fun rec => (tc'.π2, rec)
-    end rec
+      let rec := @list_to_chtuple l' in
+      match l' as l'0
+            return
+            lchtuple [seq t.π1 | t <- l'0] ->
+            lchtuple [seq t.π1 | t <- (tc'::l'0)]
+      with
+      | [] => fun _ => tc'.π2
+      | tc'' :: l'' => fun rec => (tc'.π2, rec)
+      end rec
   end.
 
 Notation trp := (translate_prog' ssprove_jasmin_prog).1.
 Notation trc := (fun fn i => translate_call ssprove_jasmin_prog fn trp i).
 
 (* I use trc to be able to reuse statements about the function inside other functions where theyll appear as translate_calls (and not get_translated_funs).
-     Furthermore, I think this is necessary to assure that all calls gets the complete list of translated functions.
-     Otherwise result might depend on which buffer of translated functions gets passed to the call.
-     In this construction we always use all of them, opposed to get_translated_fun which just uses the necessary ones (I believe).
+       Furthermore, I think this is necessary to assure that all calls gets the complete list of translated functions.
+       Otherwise result might depend on which buffer of translated functions gets passed to the call.
+       In this construction we always use all of them, opposed to get_translated_fun which just uses the necessary ones (I believe).
  *)
 
 Notation JRCON i j := (trc RCON i [('int ; j)]).
