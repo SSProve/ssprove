@@ -2103,18 +2103,6 @@ Definition for_loop' (c : Z -> raw_code 'unit) lo hi := for_list c (wrange UpTo 
 Definition to_arr ws len (a : 'array) :=
   mkfmapf (fun i => chArray_get ws a i (wsize_size ws)) (ziota 0 len).
 
-Notation " 'arr ws " := (chMap 'int ('word ws)) (at level 2) : package_scope.
-
-Definition rkeys : Location := ( 'arr U128 ; 0%nat ).
-
-Definition keyExpansion (key : u128) : raw_code ('arr U128) :=
-  #put rkeys := @emptym Z_ordType u128 ;;
-                rkeys0 ← get rkeys ;;
-                #put rkeys := setm rkeys0 0 key ;;
-                              for_loop' (fun i => rkeys0 ← get rkeys ;; #put rkeys := setm rkeys0 i (key_expand (zero_extend _ (getmd rkeys0 word0 (i - 1))) (wrepr U8 (rcon i))) ;; ret tt) 1 11 ;;
-                              rkeys0 ← get rkeys ;;
-                              ret rkeys0.
-
 Lemma iota_aux {A} k c n (f : nat -> A) g :
   (forall a, a \in (iota k n) -> f a = g (a + c)%nat) ->
   [seq f i | i <- iota k n] = [seq g i | i <- iota (k + c) n].
@@ -2129,7 +2117,6 @@ Proof.
     apply ex.
     simpl.
     rewrite in_cons.
-
     apply/orP. left. apply/eqP. reflexivity.
     intros a ain. apply ex.
     simpl. rewrite in_cons.
@@ -2175,18 +2162,20 @@ Proof.
 Qed.
 
 Lemma translate_for_rule I lo hi (v : var_i) m_id s_id (body1 : p_id -> p_id * raw_code 'unit) body2 :
+  (* it is annoying that this is a proof obligation, since its true for all translated programs, but I don't know how to prove the theorem without it *)
+  (forall s_id', s_id' ⪯ (body1 s_id').1) ->
   lo <= hi ->
-  (forall i s_id', (lo <= i <  hi) ->
-              ⊢ ⦃ λ '(s₀, s₁), set_lhs (translate_var m_id v) (truncate_el (vtype v) (i : chInt)) (I i) (s₀, s₁) ⦄
-                let (_, body1') := body1 s_id' in
-                body1'
-                  ≈ body2 i ⦃ λ '(_, s₀) '(_, s₁), I (Z.succ i) (s₀,s₁) ⦄) →
+  (forall i s_id', (s_id ⪯ s_id') -> (lo <= i <  hi) ->
+                   ⊢ ⦃ λ '(s₀, s₁), set_lhs (translate_var m_id v) (truncate_el (vtype v) (i : chInt)) (I i) (s₀, s₁) ⦄
+                     let (_, body1') := body1 s_id' in
+                     body1'
+                       ≈ body2 i ⦃ λ '(_, s₀) '(_, s₁), I (Z.succ i) (s₀,s₁) ⦄) →
   ⊢ ⦃ λ '(s₀,s₁), I lo (s₀, s₁)⦄
     translate_for v (wrange UpTo lo hi) m_id body1 s_id
     ≈ for_loop' body2 lo hi
     ⦃ λ '(_,s₀) '(_,s₁), I hi (s₀,s₁) ⦄.
 Proof.
-  intros Hle ih.
+  intros Hbody1 Hle ih.
   remember (Z.to_nat (hi - lo)).
   revert Heqn Hle ih. revert n lo hi s_id.
   induction n as [|n ih2]; intros.
@@ -2202,23 +2191,24 @@ Proof.
     rewrite -Heqn.
     simpl.
     specialize (ih lo s_id) as ih''.
+    specialize (Hbody1 s_id).
     destruct (body1 s_id).
     eapply r_put_lhs.
     eapply r_bind.
-    eapply r_transL.
-    2: rewrite Z.add_0_r; eapply ih''.
-    eapply rreflexivity_rule. lia.
-    intros a0 a1.
-    replace (iota 1 n) with (iota (0 + 1) n) by f_equal.
-    rewrite <- iota_aux with (f := fun i => Z.succ lo + Z.of_nat i).
-    fold translate_for.
-    replace n with (Z.to_nat (hi - Z.succ lo)) by lia.
-    specialize (ih2 (Z.succ lo) hi p ltac:(lia) ltac:(lia)).
-    eapply ih2.
-    intros i s_id' ile.
-    specialize (ih i s_id').
-    destruct (body1 s_id'). apply ih. lia.
-    intros a ain. lia.
+    + eapply r_transL.
+      2: rewrite Z.add_0_r; eapply ih''; [ reflexivity | lia ].
+      eapply rreflexivity_rule.
+    + intros a0 a1.
+      replace (iota 1 n) with (iota (0 + 1) n) by f_equal.
+      rewrite <- iota_aux with (f := fun i => Z.succ lo + Z.of_nat i) by lia.
+      replace n with (Z.to_nat (hi - Z.succ lo)) by lia.
+      specialize (ih2 (Z.succ lo) hi p ltac:(lia) ltac:(lia)).
+      eapply ih2.
+      intros i s_id' Hs_id' ile.
+      specialize (ih i s_id').
+      destruct (body1 s_id'). apply ih.
+      etransitivity. eassumption. assumption.
+      lia.
 Qed.
 
 Opaque translate_for.
@@ -2243,6 +2233,23 @@ Proof.
   eapply h.
   eassumption.
   easy.
+Qed.
+
+Theorem rpre_weak_hypothesis_rule' :
+  ∀ {A₀ A₁ : ord_choiceType} {p₀ : raw_code A₀} {p₁ : raw_code A₁}
+    (pre : precond) post,
+    (∀ s₀ s₁,
+      pre (s₀, s₁) → ⊢ ⦃ λ '(s0, s1), pre (s0, s1) ⦄ p₀ ≈ p₁ ⦃ post ⦄
+    ) →
+    ⊢ ⦃ pre ⦄ p₀ ≈ p₁ ⦃ post ⦄.
+Proof.
+  intros A₀ A₁ p₀ p₁ pre post h.
+  eapply rpre_hypothesis_rule'.
+  intros. eapply rpre_weaken_rule.
+  eapply h. eassumption.
+  intros s0' s1' [H0 H1].
+  subst.
+  assumption.
 Qed.
 
 Lemma wsize_size_aux (ws : wsize.wsize) :
@@ -2330,8 +2337,8 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma getm_to_arr' ws len a i :
-  (len <= i) ->
+Lemma getm_to_arr_None' ws len a (i: Z) :
+  ((len <=? i) || (i <? 0)) ->
   to_arr ws len a i = None.
 Proof.
   intros. unfold to_arr.
@@ -2403,8 +2410,103 @@ Proof.
   assumption.
 Qed.
 
+(* TODO: move these, note they are the same as fresh1 and fresh2 *)
+Lemma prec_O :
+  forall i, i ≺ i~0.
+Proof.
+  simpl; split.
+  - apply preceq_O.
+  - apply nesym. apply xO_neq.
+Qed.
+
+Lemma prec_I :
+  forall i, i ≺ i~1.
+Proof.
+  simpl; split.
+  - apply preceq_I.
+  - apply nesym. apply xI_neq.
+Qed.
+
+Lemma rcon_U8 i :
+  0 <= rcon i < wbase U8.
+Proof.
+  unfold rcon, wbase, modulus, two_power_nat; simpl.
+  destruct (10 <? Z.to_nat i)%nat eqn:E.
+  rewrite nth_default.  lia. simpl. lia.
+  eapply Forall_nth.
+  repeat constructor; try lia.
+  simpl. lia.
+Qed.
+
+Ltac destruct_pre :=
+  repeat
+    match goal with
+    | [ H : set_lhs _ _ _ _ |- _ ] =>
+        let sn := fresh in
+        let Hsn := fresh in
+        destruct H as [sn [Hsn]]
+    | [ H : set_rhs _ _ _ _ |- _ ] =>
+        let sn := fresh in
+        let Hsn := fresh in
+        destruct H as [sn [Hsn]]
+    | [ H : _ /\ _ |- _ ] =>
+        let H1 := fresh in
+        let H2 := fresh in
+        destruct H as [H1 H2]
+    | [ H : (_ ⋊ _) _ |- _ ] =>
+        let H1 := fresh in
+        let H2 := fresh in
+        destruct H as [H1 H2]
+    | [ H : exists _, _ |- _ ] =>
+        let o := fresh in
+        destruct H as [o]
+    end; simpl in *; subst.
+
+Ltac split_post :=
+  repeat
+    match goal with
+    | |- (_ ⋊ _) _ => split
+    | |- _ /\ _ => split
+    | |- set_lhs _ _ _ _ => eexists
+    end.
+
+Ltac neq_loc_auto := solve [ eapply injective_translate_var2; auto | eapply injective_translate_var3; auto ].
+
+(* I don't know what rewrite * means, but this is much faster than regular rewrite, which also sometimes overflows the stack *)
+Ltac sheap :=
+  repeat first [ rewrite * get_set_heap_neq; [| neq_loc_auto ] |
+                 rewrite * get_set_heap_eq ].
+
+(* This works sometimes, but might be very slow *)
+Ltac simpl_heap :=
+  repeat lazymatch goal with
+    | |- context [ get_heap (set_heap _ ?l _) ?l ] => rewrite -> get_set_heap_eq
+    | |- context [ get_heap (set_heap (translate_var ?s_id _) (translate_var ?s_id _ ) _ ) _ ] => (rewrite -> get_set_heap_neq by (apply injective_translate_var3; auto))
+    | |- context [ get_heap (set_heap _ (translate_var _ _ ) _ ) _ ] => (rewrite -> get_set_heap_neq by (apply injective_translate_var2; assumption))
+    end.
+
+Ltac simpl_heap' :=
+  repeat lazymatch goal with
+    | |- context [ get_heap (set_heap _ _ _) _ ] =>
+        try rewrite -> get_set_heap_eq;
+        try (rewrite -> get_set_heap_neq by (apply injective_translate_var3; auto));
+        try (rewrite -> get_set_heap_neq by (apply injective_translate_var2; assumption))
+    end.
+
+Notation " 'arr ws " := (chMap 'int ('word ws)) (at level 2) : package_scope.
+
+Definition rkeys : Location := ( 'arr U128 ; 0%nat ).
+
+Definition keyExpansion (key : u128) : raw_code ('arr U128) :=
+ #put rkeys := @emptym Z_ordType u128 ;;
+ rkeys0 ← get rkeys ;;
+ #put rkeys := setm rkeys0 0 key ;;
+ for_loop' (fun i => rkeys0 ← get rkeys ;; #put rkeys := setm rkeys0 i (key_expand (zero_extend _ (getmd rkeys0 word0 (i - 1))) (wrepr U8 (rcon i))) ;; ret tt) 1 11 ;;
+ rkeys0 ← get rkeys ;;
+ ret rkeys0.
+
 Lemma keyExpansionE pre id0 rkey :
-  (pdisj pre (JKEYS_EXPAND_vars id0)) ->
+  (pdisj pre id0) ->
   ⊢ ⦃ fun '(h0, h1) => pre (h0, h1) ⦄
     res ← JKEYS_EXPAND id0 rkey ;;
   ret (to_arr U128 11 (hdtc res))
@@ -2413,203 +2515,202 @@ Lemma keyExpansionE pre id0 rkey :
     ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) /\ v0 = v1 ⦄.
 Proof.
   intros disj.
-  (* unfold JKEYS_EXPAND. *)
-  unfold call. (* get_tr, get_translated_fun, translate_prog', translate_funs. *)
+  unfold translate_call.
+
   Opaque translate_call.
   Opaque wrange.
-  simpl.
+  Opaque for_loop'.
 
-  simpl_fun.
+  simpl. simpl_fun.
   repeat setjvars.
-
   repeat clear_get.
+  ssprove_code_simpl.
+  ssprove_code_simpl_more.
+
   eapply r_put_lhs.
-  eapply r_get_remember_lhs.
-  intros v.
+  eapply r_get_remember_lhs. intros v.
   eapply r_put_lhs.
   eapply r_put_lhs.
+
   unfold keyExpansion.
   eapply r_put_rhs.
-  eapply r_get_remember_rhs.
-  intros v0.
-  Opaque for_loop'.
+  eapply r_get_remember_rhs. intros v0.
   eapply r_put_rhs.
-  rewrite bind_assoc.
 
-  rewrite bind_assoc.
   eapply r_bind.
-  simpl.
-  eapply rpre_weaken_rule.
-  eapply translate_for_rule with (I := fun i => fun '(h0, h1) => pre (h0, h1) /\ (get_heap h0 key = chArray_get U128 (get_heap h0 rkeys) (i - 1) 16) /\ forall j, 0 <= j < i -> (to_arr U128 11 (get_heap h0 rkeys)) j = (get_heap h1 aes.rkeys) j). lia.
-  intros i s_id ile.
-  eapply r_get_remember_lhs.
-  intros x.
+  - simpl.
+    eapply rpre_weaken_rule.
+    + eapply translate_for_rule with
+        (I := fun i => fun '(h0, h1) => pre (h0, h1)
+                                        /\ subword 0 U32 (get_heap h0 temp2) = word0
+                                        /\ (get_heap h0 key = chArray_get U128 (get_heap h0 rkeys) (i - 1) 16)
+                                        /\ forall j, 0 <= j < i -> (to_arr U128 11 (get_heap h0 rkeys)) j = (get_heap h1 aes.rkeys) j).
+      (* the two following bullets are small assumptions of the translate_for rule *)
+      * intros. simpl. solve_preceq.
+      * lia.
+      (* Inductive step of the for loop rule, we have to prove the bodies are equivalent and imply the successor predicate *)
+      * intros i s_id Hs_id ile.
+        ssprove_code_simpl.
 
-  simpl.
-  rewrite bind_assoc.
-  eapply r_bind with (m₁ := ret _) (f₁ := fun _ => _).
+        (* NB: Do not rewrite here, since it breaks unification when trying to apply other correctness lemmas *)
+        (* rewrite !coerce_to_choice_type_K. *)
 
-  epose proof rcon_correct s_id~1 _ x _ _.
-  eapply H.
-  intros a0 a1.
-  simpl.
-  eapply rpre_hypothesis_rule'. intros s0 s1 [H1 [H2 H3]]. subst.
+        eapply r_get_remember_lhs. intros.
 
-  destruct H1 as [[s6 []]].
-  simpl in *.
-  subst.
+        (* Now we apply the correctnes of rcon *)
+        eapply r_bind with (m₁ := ret _) (f₁ := fun _ => _).
+        ** eapply rcon_correct with (id0 := (s_id~1)%positive) (i:=x).
+           (* We have to prove the precond is disjoint from the variables of rcon, i.e. any variables stored locally in rcon does not change the precond *)
+           *** intros s0 s1 l a vr s_id' Hl Hs_id' H.
+               assert (id0_preceq : id0 ⪯ s_id'). {
+                 etransitivity. eapply preceq_I. etransitivity. eassumption. etransitivity. eapply preceq_I. eassumption.
+               }
+               assert (id0_neq : id0 <> s_id'). {
+                 apply prec_neq. eapply prec_preceq_trans. eapply preceq_prec_trans. etransitivity. eapply preceq_I. eassumption. eapply prec_I. assumption.
+               }
+               intros. destruct_pre. split_post.
+               { eapply disj. reflexivity. eassumption. eassumption. }
+               { sheap. assumption. }
+               { sheap. assumption. }
+               { sheap. assumption. }
+               { rewrite set_heap_commut. reflexivity.
+                 apply injective_translate_var2. assumption. }
+               { simpl. sheap. reflexivity. }
+           (* this is an assumption of rcon_correct *)
+           *** intros; destruct_pre. fold round. sheap. rewrite coerce_to_choice_type_K. lia.
+        (* we continue after the rcon call *)
+        ** intros a0 a1.
+           simpl; ssprove_code_simpl.
+           (* we need to know the value of a0 here *)
+           eapply rpre_weak_hypothesis_rule'; intros.
+           destruct_pre; simpl.
+           repeat clear_get.
+           eapply r_put_lhs with (pre := λ '(s0',s1'), _ ).
+           eapply r_get_remember_lhs. intros x0.
+           eapply r_get_remember_lhs. intros x1.
+           sheap.
 
-  simpl. repeat clear_get.
-  eapply r_put_lhs with (pre := λ '(s0',s1'), _ ).
-  eapply r_get_remember_lhs. intros x0.
-  eapply r_get_remember_lhs. intros x1.
-  rewrite bind_assoc.
-  eapply r_bind with (m₁ := ret _) (f₁ := fun _ => _).
-  epose proof key_expandP _ (s_id~0~1)%positive (rcon (get_heap (set_heap s6 round i) round)) x0 x1 (wrepr _ (rcon (get_heap (set_heap s6 round i) round))) _ _ _.
-  rewrite !coerce_to_choice_type_K.
-  eapply H0.
-  intros a2 a3.
+           eapply r_bind with (m₁ := ret _) (f₁ := fun _ => _).
 
-  eapply rpre_hypothesis_rule'.
-  intros s2 s3 [H4 [o1 [o2 [H5 [H6 H7]]]]].
-  subst.
-  simpl in *.
+           (* First we apply correctness of key_expandP *)
+           *** (* Here the rewrite is necessary. How should correctness be phrased in general such that this is not important? *)
+               rewrite !coerce_to_choice_type_K.
 
-  destruct H4 as [[[s7 [[]]]]].
-  simpl in *.
-  subst.
+               eapply key_expandP with (id0 := (s_id~0~1)%positive) (rcon :=(rcon i)) (rkey := x0) (temp2 := x1) (rcon_ := wrepr _ (rcon i)).
+               (* again, we have to prove that our precond does not depend key_expand locations *)
+               { intros s0 s1 l a vr s_id' Hl Hs_id' H.
+                 assert (id0_preceq : id0 ⪯ s_id'). {
+                 etransitivity. eapply preceq_I. etransitivity. eassumption. etransitivity. eapply preceq_O. etransitivity. eapply preceq_I. eassumption.
+                 }
+                 assert (id0_neq : id0 <> s_id'). {
+                   apply prec_neq. eapply prec_preceq_trans. eapply preceq_prec_trans. etransitivity. eapply preceq_I. eassumption. eapply prec_O. etransitivity. eapply prec_I. assumption.
+                 }
+                 destruct_pre. sheap. split_post.
+                 { eapply disj. reflexivity. eassumption. eassumption. }
+                 { sheap; assumption. }
+                 { sheap; assumption. }
+                 { sheap; assumption. }
+                 { reflexivity. }
+                 { simpl. sheap. reflexivity. }
+                 { reflexivity. }
+                 { reflexivity. }
+                 { rewrite set_heap_commut; [ | neq_loc_auto ].
+                   rewrite [set_heap _ _ a](set_heap_commut); [ | neq_loc_auto ].
+                   reflexivity. }
+                 { simpl. sheap. reflexivity. }
+                 { simpl. sheap. reflexivity. }
+               }
+               (* this is an assumption of key_expandP, true by definition of rcon *)
+               { apply wunsigned_repr_small. apply rcon_U8. }
+               { intros. destruct_pre. sheap. assumption. }
+           (* we continue after the call *)
+           *** intros.
+               eapply rpre_weak_hypothesis_rule'.
+               intros; destruct_pre. simpl.
+               rewrite !zero_extend_u.
 
-  rewrite !zero_extend_u.
-  eapply r_put_lhs with (pre := λ '(s0',s1'), _).
-  eapply r_put_lhs.
+               eapply r_put_lhs with (pre := λ '(s0',s1'), _).
+               eapply r_put_lhs.
+               eapply r_get_remember_lhs. intros x2.
+               eapply r_get_remember_lhs. intros x3.
+               eapply r_get_remember_lhs. intros x4.
+               eapply r_put_lhs.
+               eapply r_get_remember_rhs. intros x5.
+               eapply r_put_rhs.
+               eapply r_ret.
 
-  eapply r_get_remember_lhs. intros x2.
-  eapply r_get_remember_lhs. intros x3.
-  eapply r_get_remember_lhs. intros x4.
-  eapply r_put_lhs.
-  eapply r_get_remember_rhs. intros x5.
-  eapply r_put_rhs.
-  eapply r_ret.
-  intros s4 s5 H8.
+               sheap.
+               rewrite !coerce_to_choice_type_K.
+               rewrite !zero_extend_u.
+               intros s6 s7 H25.
 
-  (* all this should be automated *)
-  destruct H8 as [s7 [[[s8 [[[[[s9 [[s10 [[]]]]]]]]]]]]].
-  simpl in *.
-  subst.
+               destruct_pre.
+               sheap.
 
-  rewrite get_set_heap_eq.
-  rewrite get_set_heap_eq.
-  rewrite get_set_heap_eq.
-  rewrite get_set_heap_neq.
-  rewrite get_set_heap_neq.
-  rewrite get_set_heap_neq.
-  rewrite get_set_heap_neq.
-  rewrite get_set_heap_neq.
-  rewrite get_set_heap_neq.
-  rewrite get_set_heap_neq.
-  rewrite get_set_heap_neq.
-  rewrite get_set_heap_neq.
-  rewrite get_set_heap_eq.
-  rewrite get_set_heap_neq.
-  rewrite get_set_heap_eq.
-  rewrite get_set_heap_neq.
-  rewrite get_set_heap_neq.
-  rewrite get_set_heap_eq.
+               split_post.
+               (* here we prove that the invariant is preserved after a single loop, assuming it holds before *)
+               { pdisj_apply disj. admit. (* rhs *) }
+               { assumption. }
+               { replace (Z.succ i - 1) with i by lia.
+                 rewrite chArray_get_set_eq.
+                 reflexivity. }
+               { intros j Hj.
+                 destruct (Z.eq_dec i j).
 
-  rewrite !coerce_to_choice_type_K.
-  rewrite !zero_extend_u.
-  split; [|split].
+                 (* i = j *)
+                 subst.
+                 rewrite to_arr_set_eq.
+                 rewrite setmE. rewrite eq_refl.
 
-  (* prove that pre is preserved in the inductive step *)
-  tvars disj.
-  apply disj. unfold rkeys.
-  solve_in.
-  apply disj. solve_in.
-  apply disj. solve_in.
-  apply disj. solve_in.
-  apply disj. solve_in.
-  (* what to do with the heap of the rhs? *) admit.
+                 f_equal. unfold getmd. rewrite -H42. rewrite getm_to_arr.
+                 f_equal. rewrite !get_set_heap_neq in H32. rewrite -H32. assumption.
+                 neq_loc_auto. neq_loc_auto. lia. lia. lia.
 
-  (* prove the first invariant *)
-  replace (Z.succ i - 1) with i by lia.
-  rewrite chArray_get_set_eq.
-  reflexivity.
+                 (* i <> j *)
+                 rewrite to_arr_set_neq.
+                 rewrite setmE.
+                 assert (@eq bool (@eq_op Z_ordType j i) false). apply/eqP. auto.
+                 rewrite H2.
+                 apply H42. lia. assumption. lia. }
+    (* the next bullet is the proof that the invariant of the for loop is true at the beginning (this goal is generated by pre_weaken rule and translate_for) *)
+    + intros s0 s1 H.
+      destruct_pre.
+      sheap.
 
-  (* prove the second invariant *)
-  intros j Hj.
-  destruct (Z.eq_dec i j).
+      rewrite !coerce_to_choice_type_K.
+      rewrite !zero_extend_u.
 
-  (* i = j *)
-  subst.
-  rewrite to_arr_set_eq.
-  rewrite setmE. rewrite eq_refl.
-  destruct H as []. destruct H0. rewrite H0.
-  f_equal. unfold getmd. rewrite -H1. rewrite getm_to_arr.
-  f_equal. lia. lia. lia.
-
-  (* i <> j *)
-  rewrite to_arr_set_neq.
-  rewrite setmE.
-  assert (@eq bool (@eq_op Z_ordType j i) false). apply/eqP. auto.
-  rewrite H0.
-  apply H. lia. assumption. lia.
-
-  (* trivial *)
-  1-12: neq_loc_auto.
-
-  (* prove base case *)
-  intros s0 s1 H.
-  destruct H as [s2 [[[s3 [[s4 [[s5 [[[s6 []]]]]]]]]]]].
-  simpl in *; subst.
-
-  rewrite get_set_heap_eq.
-  rewrite get_set_heap_neq.
-  rewrite get_set_heap_eq.
-  rewrite get_set_heap_neq.
-  rewrite get_set_heap_neq.
-  rewrite get_set_heap_eq.
-  rewrite get_set_heap_neq.
-  rewrite get_set_heap_eq.
-
-  rewrite !coerce_to_choice_type_K.
-  rewrite !zero_extend_u.
-  split; [|split].
-
-  (* prove that pre is preserved *) admit.
-
-  (* first invariant *)
-  rewrite chArray_get_set_eq. reflexivity.
-
-  (* second invariant *)
-  intros j Hj. assert (j = 0) by lia. subst.
-  rewrite to_arr_set_eq. rewrite setmE. rewrite eq_refl. reflexivity.
-  lia.
-  1-4: neq_loc_auto.
+      split_post.
+      (* prove that pre is preserved *)
+      * pdisj_apply disj.
+        (* the rhs *)
+        admit.
+      (* first invariant *)
+      * simpl. unfold tr_app_sopn_tuple. simpl. rewrite subword_word0. reflexivity.
+      (* second invariant *)
+      * rewrite chArray_get_set_eq. reflexivity.
+      (* third invariant *)
+      * intros j Hj. assert (j = 0) by lia. subst.
+        rewrite to_arr_set_eq. rewrite setmE. rewrite eq_refl. reflexivity. lia.
 
   (* after for loop *)
-  intros a0 a1.
-  simpl.
-  eapply r_get_remember_lhs with (pre := fun '(s0, s1) => _).
-  intros x.
-  eapply r_get_remember_rhs.
-  intros x0.
-  eapply r_ret.
-  intros s0 s1 H.
-  destruct H as [[[]]].
-  destruct H0.
-  simpl in *. subst.
-  split. assumption.
-  eapply eq_fmap.
-  intros j.
-
-  destruct ((0 <=? j) && (j <? 11)) eqn:E.
-  rewrite !coerce_to_choice_type_K.
-  apply H3. lia.
-
-  rewrite getm_to_arr'.
-  (* add this invariant to the rhs, or redefine the type of aes.rkeys. also generalize getm_to_arr' *)
-  admit.
-  admit.
+  - intros a0 a1.
+    simpl.
+    eapply r_get_remember_lhs with (pre := fun '(s0, s1) => _). intros x.
+    eapply r_get_remember_rhs. intros x0.
+    rewrite !coerce_to_choice_type_K.
+    eapply r_ret.
+    intros s0 s1 H.
+    destruct_pre. split_post.
+    (* prove the final post conditions: pre and that the values of rkeys agree *)
+    + assumption.
+    + eapply eq_fmap. intros j.
+      destruct ((0 <=? j) && (j <? 11)) eqn:E.
+      (* within bounds, this follows from the precondition *)
+      * apply H5. lia.
+      * rewrite -> getm_to_arr_None' by lia.
+        (* we need to preserve this invariant on the RHS, on add the length to array type *)
+        admit.
 Admitted.
 
 From Hacspec Require Import Hacspec_Aes_Jazz ChoiceEquality.
