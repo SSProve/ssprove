@@ -2021,7 +2021,7 @@ Proof.
   remember (Z.to_nat (hi - lo)).
   revert Heqn Hle ih. revert n lo hi s_id.
   induction n as [|n ih2]; intros.
-  - assert (hi = lo). { zify. lia. }.
+  - assert (hi = lo). { zify. lia. }
     subst.
     unfold translate_for, for_loop'. simpl.
     rewrite -Heqn.
