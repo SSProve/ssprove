@@ -27,6 +27,8 @@ From JasminSSProve Require Import aes_jazz jasmin_utils.
 Import JasminNotation JasminCodeNotation.
 Import PackageNotation.
 
+From mathcomp Require Import zify.
+
 Infix "^" := wxor.
 Definition ws_def : seq Z := [::].
 
