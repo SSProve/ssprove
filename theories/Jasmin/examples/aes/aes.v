@@ -1175,7 +1175,10 @@ Ltac pdisj_apply h :=
   | |- _ => try assumption
   end.
 
-Definition rcon (i : Z) : Z := nth 54%Z [:: 1; 2; 4; 8; 16; 32; 64; 128; 27; 54]%Z ((Z.to_nat i) - 1).
+Definition rcon (i : Z) : u8 := nth (wrepr U8 54%Z) [:: (wrepr U8 1%Z); (wrepr U8 2%Z); (wrepr U8 4%Z); (wrepr U8 8%Z); (wrepr U8 16%Z); (wrepr U8 32%Z); (wrepr U8 64%Z); (wrepr U8 128%Z); (wrepr U8 27%Z); (wrepr U8 54%Z)]%Z ((Z.to_nat i) - 1).
+
+Notation hdtc res := (coerce_to_choice_type ('array) (hd ('word U64 ; chCanonical _) res).π2).
+Notation call fn := (translate_call _ fn _).
 
 Definition key_expand (wn1 : u128) (rcon : u8) : 'word U128 :=
   let rcon := zero_extend U32 rcon (* W4u8 *) (* U32 4 *) (* [tuple rcon ; 0%R; 0%R; 0%R] *) (* [toword rcon; 0%Z; 0%Z; 0%Z] *) in
@@ -1195,8 +1198,8 @@ Lemma rcon_correct id0 pre i :
   (pdisj pre id0 fset0) ->
   (forall s0 s1, pre (s0, s1) -> (1 <= i < 11)%Z) ->
   ⊢ ⦃ fun '(s0, s1) => pre (s0, s1) ⦄ JRCON id0 i
-    ≈ ret ([('int ; rcon i)] : tchlist)
-    ⦃ fun '(v0, s0) '(v1, s1) => pre (s0, s1) /\ v0 = v1 /\ v1 = ([('int ; rcon i)] : tchlist) ⦄.
+    ≈ ret tt
+    ⦃ fun '(v0, s0) '(v1, s1) => pre (s0, s1) /\ exists o, v0 = ([('int ; o)] : tchlist) /\ o = wunsigned (rcon i) ⦄.
 Proof.
   unfold  get_tr, get_translated_fun.
   intros Hpdisj H.
@@ -1207,7 +1210,7 @@ Proof.
          | |- _ => simpl; ssprove_contract_put_get_lhs; rewrite !coerce_to_choice_type_K
          end.
   all: ssprove_code_simpl; rewrite !coerce_to_choice_type_K; eapply r_put_lhs; ssprove_contract_put_get_lhs; eapply r_put_lhs; eapply r_ret.
-  all: intros; destruct_pre; split_post; [ pdisj_apply Hpdisj | rewrite coerce_to_choice_type_K; auto | easy ].
+  all: intros; destruct_pre; split_post; [ pdisj_apply Hpdisj | rewrite coerce_to_choice_type_K; eexists; split; eauto ].
   destruct (i =? 10)%Z eqn:E. rewrite Z.eqb_eq in E. subst. reflexivity.
   apply H in H13. lia.
 Qed.
@@ -1965,6 +1968,67 @@ Proof.
     apply/orP. right. assumption.
 Qed.
 
+Lemma u_for_loop'_rule I c lo hi :
+  lo <= hi ->
+  (∀ i, (lo <= i < hi)%Z ->
+        ⊢ ⦃ λ '(s₀, _), I i s₀ ⦄
+          c i ≈ ret tt
+          ⦃ λ '(_, s₀) '(_, _), I (Z.succ i) s₀ ⦄) →
+  ⊢ ⦃ λ '(s₀, _), I lo s₀ ⦄
+    for_loop' c lo hi ≈ ret tt
+    ⦃ λ '(_,s₀) '(_,_), I hi s₀ ⦄.
+Proof.
+  intros hle h.
+  remember (Z.to_nat (hi - lo)).
+  revert hle h Heqn. revert lo hi.
+  induction n as [| n ih]; intros.
+  - simpl.
+    assert (hi = lo).
+    { zify. lia. }
+    unfold for_loop'.
+    simpl.
+    rewrite -Heqn.
+    simpl.
+    subst.
+    apply r_ret.
+    easy.
+  - unfold for_loop'.
+    simpl. rewrite -Heqn. simpl. rewrite Z.add_0_r.
+    eapply r_bind with (m₁ := ret tt) (f₁ := fun _ => _).
+    + eapply h. lia.
+    + intros a1 a2.
+      destruct a1, a2.
+      replace [seq lo + Z.of_nat i | i <- iota 1 n] with [seq (Z.succ lo) + Z.of_nat i | i <- iota 0 n].
+      replace n with (Z.to_nat (hi - Z.succ lo)).
+      eapply ih.
+      * lia.
+      * intros i hi2. apply h. lia.
+      * lia.
+      * lia.
+      * replace (iota 1 n) with (iota (0 + 1) n). apply iota_aux.
+        intros. lia.
+        f_equal.
+Qed.
+
+Lemma u_for_loop'_rule' (I : Z -> heap -> Prop) c lo hi (pre : precond) :
+  lo <= hi ->
+  (forall h1 h2, pre (h1, h2) -> I lo h1) ->
+  (∀ i, (lo <= i < hi)%Z ->
+        ⊢ ⦃ λ '(s₀, _), I i s₀ ⦄
+          c i ≈ ret tt
+          ⦃ λ '(_, s₀) '(_, _), I (Z.succ i) s₀ ⦄) →
+  ⊢ ⦃ pre ⦄
+    for_loop' c lo hi ≈ ret tt
+    ⦃ λ '(_,s₀) '(_,_), I hi s₀ ⦄.
+Proof.
+  intros.
+  eapply rpre_weaken_rule.
+  eapply u_for_loop'_rule.
+  assumption.
+  assumption.
+  apply H0.
+Qed.
+
 Lemma for_loop'_rule I c₀ c₁ lo hi :
   lo <= hi ->
   (∀ i, (lo <= i < hi)%Z -> ⊢ ⦃ λ '(s₀, s₁), I i (s₀, s₁) ⦄ c₀ i ≈ c₁ i ⦃ λ '(_, s₀) '(_, s₁), I (Z.succ i) (s₀,s₁) ⦄) →
@@ -2021,7 +2085,7 @@ Proof.
   remember (Z.to_nat (hi - lo)).
   revert Heqn Hle ih. revert n lo hi s_id.
   induction n as [|n ih2]; intros.
-  - assert (hi = lo). { zify. lia. }.
+  - assert (hi = lo). { zify. lia. }
     subst.
     unfold translate_for, for_loop'. simpl.
     rewrite -Heqn.
@@ -2054,8 +2118,6 @@ Proof.
 Qed.
 
 Opaque translate_for.
-Notation hdtc res := (coerce_to_choice_type ('array) (hd ('word U64 ; chCanonical _) res).π2).
-Notation call fn := (translate_call _ fn _).
 
 From Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples.
@@ -2286,17 +2348,6 @@ Proof.
   - apply nesym. apply xI_neq.
 Qed.
 
-Lemma rcon_U8 i :
-  0 <= rcon i < wbase U8.
-Proof.
-  unfold rcon, wbase, modulus, two_power_nat; simpl.
-  destruct (10 <? Z.to_nat i)%nat eqn:E.
-  rewrite nth_default.  lia. simpl. lia.
-  eapply Forall_nth.
-  repeat constructor; try lia.
-  simpl. lia.
-Qed.
-
 (* Notation " 'arr ws len " := (chMap (chFin len) ('word ws)) (at level 2) : package_scope. *)
 
 (* Definition rkeys : Location := ( (chMap (chFin (mkpos 11)) ('word U128)) ; 0%nat ). *)
@@ -2317,9 +2368,136 @@ Definition keyExpansion (key : u128) : raw_code ('arr U128) :=
  #put rkeys := @emptym (chElement_ordType 'int) u128 ;;
  rkeys0 ← get rkeys ;;
  #put rkeys := setm rkeys0 0 key ;;
- for_loop' (fun i => rkeys0 ← get rkeys ;; #put rkeys := setm rkeys0 i (key_expand (zero_extend _ (getmd rkeys0 word0 (i - 1))) (wrepr U8 (rcon i))) ;; ret tt) 1 11 ;;
+ for_loop' (fun i => rkeys0 ← get rkeys ;; #put rkeys := setm rkeys0 i (key_expand (zero_extend _ (getmd rkeys0 word0 (i - 1))) (rcon i)) ;; ret tt) 1 11 ;;
  rkeys0 ← get rkeys ;;
  ret rkeys0.
+
+Definition key_i  (k : u128) i :=
+  iteri i (fun i ki => key_expand ki (rcon (i + 1))) k.
+
+From extructures Require Import ord.
+
+Lemma aes_keyExpansion_h k :
+  ⊢ ⦃ fun '(h0, h1) => True ⦄
+    keyExpansion k
+    ≈
+    ret tt
+    ⦃ fun '(v0, h0) '(_, _) => forall i, 0 <= i < 11 -> (getmd v0 word0 i) = key_i k (Z.to_nat i) ⦄.
+Proof.
+  unfold keyExpansion.
+  eapply r_put_lhs with (pre := fun _ => _).
+  eapply r_get_remember_lhs. intros x.
+  eapply r_put_lhs.
+  eapply r_bind with (m₁ := ret _).
+  eapply u_for_loop'_rule' with
+    (I:= fun i => fun h => forall j, 0 <= j < i -> getmd (get_heap h rkeys) word0 j = key_i k (Z.to_nat j)).
+lia.
+  - intros i ile Hpre.
+    destruct_pre.
+    intros j Hj.
+    rewrite !get_set_heap_eq.
+    unfold getmd.
+    rewrite setmE.
+    assert (@eq_op (Ord.eqType Z_ordType) j Z0) by (apply/eqP; lia).
+    rewrite H.
+    move: H=>/eqP ->.
+    simpl.
+    reflexivity.
+  - intros i ile.
+    ssprove_code_simpl.
+    eapply r_get_remember_lhs with (pre := fun '(_, _) => _). intros x0.
+    eapply r_put_lhs.
+    eapply r_ret.
+    intros s0 s1 Hpre.
+    destruct_pre.
+    intros j Hj.
+    rewrite get_set_heap_eq.
+    rewrite -> H4 by lia.
+    unfold getmd in *.
+    rewrite setmE.
+    destruct (Z.eq_dec j i).
+    + subst.
+      rewrite eq_refl.
+      rewrite zero_extend_u.
+      replace (Z.to_nat i) with (Z.to_nat (i - 1)).+1 by lia.
+      unfold key_i at 2.
+      rewrite iteriS.
+      f_equal. f_equal. simpl. lia.
+    + assert (@eq_op (Ord.eqType Z_ordType) j i = false).
+      apply/eqP. assumption.
+      rewrite H0.
+      rewrite H4.
+      reflexivity.
+      lia.
+  - intros s0 s1.
+    eapply r_get_remember_lhs with (pre := fun '(_, _) => _). intros x0.
+    eapply r_ret.
+    intros s2 s3 Hpre i Hi.
+    destruct_pre.
+    apply H1. lia.
+Qed.
+(* hoare aes_keyExpansion_h k : *)
+(*   Aes.keyExpansion : key = k *)
+(*   ==> *)
+(*   forall i, 0 <= i < 11 => res.[i] = key_i k i. *)
+(* proof. *)
+(*   proc. *)
+(*   while (1 <= round <= 11 /\ forall i, 0 <= i < round => rkeys.[i] = key_i k i). *)
+(*   + by auto => />; smt (key_iE iteriS get_setE). *)
+(*   by auto => />; smt(key_iE iteri0 get_setE). *)
+(* qed. *)
+
+Lemma u_trans_det :
+  ∀ {A₀ A₁ : ord_choiceType}
+    (P P0 P1 : precond)
+    (Q : A₀ -> A₁ -> Prop) (Q0 : A₀ -> Prop) (Q1 : A₁ -> Prop)
+    (c₀ : raw_code A₀) (c₁ : raw_code A₁),
+    (forall h0 h1, P (h0, h1) -> P0 (h0, h1)) ->
+    (forall h0 h1, P1 (h1, h0) -> P (h0, h1)) ->
+    (forall v0 v1, Q v0 v1 -> Q0 v0 -> Q1 v1) ->
+    deterministic c₀ →
+    deterministic c₁ →
+    ⊢ ⦃ λ '(h₀, h₁), P (h₀, h₁) ⦄ c₀ ≈ c₁ ⦃ λ '(v₀, _) '(v₁, _), Q v₀ v₁ ⦄ →
+    ⊢ ⦃ λ '(h₀, h₁), P0 (h₀, h₁) ⦄ c₀ ≈ ret tt ⦃ λ '(v₀, _) '(_ , _), Q0 v₀ ⦄ ->
+    ⊢ ⦃ λ '(h₀, h₁), P1 (h₀, h₁) ⦄ c₁ ≈ ret tt ⦃ λ '(v₀, _) '(_ , _), Q1 v₀ ⦄.
+Proof.
+  intros A₀ A₁ P P0 P1 Q Q0 Q1 c0 c1 HP0 HP1 HQ Hd0 Hd1 Hc Hc0.
+  unshelve eapply det_to_sem. assumption. constructor.
+  unshelve eapply sem_to_det in Hc. 1,2: assumption.
+  unshelve eapply sem_to_det in Hc0. assumption. constructor.
+  intros s₀ s₁ hP1. eapply HP1 in hP1 as HP. eapply HP0 in HP as hP0.
+  specialize (Hc s₁ s₀ HP). specialize (Hc0 s₁ s₀ hP0).
+  destruct (det_run c0 _).
+  destruct (det_run c1 _).
+  simpl in *.
+  eapply HQ. eassumption. eassumption.
+Qed.
+
+Lemma u_trans_det' :
+  ∀ {A₀ A₁ : ord_choiceType}
+    (P P0 P1 : precond)
+    (Q : A₁ -> A₀ -> Prop) (Q0 : A₀ -> Prop) (Q1 : A₁ -> Prop)
+    (c₀ : raw_code A₀) (c₁ : raw_code A₁),
+    (forall h0 h1, P (h1, h0) -> P0 (h0, h1)) ->
+    (forall h0 h1, P1 (h1, h0) -> P (h1, h0)) ->
+    (forall v1 v0, Q v1 v0 -> Q0 v0 -> Q1 v1) ->
+    deterministic c₀ →
+    deterministic c₁ →
+    ⊢ ⦃ λ '(h₀, h₁), P (h₀, h₁) ⦄ c₁ ≈ c₀ ⦃ λ '(v₀, _) '(v₁, _), Q v₀ v₁ ⦄ →
+    ⊢ ⦃ λ '(h₀, h₁), P0 (h₀, h₁) ⦄ c₀ ≈ ret tt ⦃ λ '(v₀, _) '(_ , _), Q0 v₀ ⦄ ->
+    ⊢ ⦃ λ '(h₀, h₁), P1 (h₀, h₁) ⦄ c₁ ≈ ret tt ⦃ λ '(v₀, _) '(_ , _), Q1 v₀ ⦄.
+Proof.
+  intros A₀ A₁ P P0 P1 Q Q0 Q1 c0 c1 HP0 HP1 HQ Hd0 Hd1 Hc Hc0.
+  unshelve eapply det_to_sem. assumption. constructor.
+  unshelve eapply sem_to_det in Hc. 1,2: assumption.
+  unshelve eapply sem_to_det in Hc0. assumption. constructor.
+  intros s₀ s₁ hP1. eapply HP1 in hP1 as HP. eapply HP0 in HP as hP0.
+  specialize (Hc s₀ s₁ HP). specialize (Hc0 s₁ s₀ hP0).
+  destruct (det_run c0 _).
+  destruct (det_run c1 _).
+  simpl in *.
+  eapply HQ. eassumption. eassumption.
+Qed.
 
 Lemma keyExpansionE pre id0 rkey :
   (pdisj pre id0 [fset rkeys]) ->
@@ -2417,12 +2595,12 @@ Proof.
            (* First we apply correctness of key_expandP *)
            *** (* Here the rewrite is necessary. How should correctness be phrased in general such that this is not important? *)
                rewrite !coerce_to_choice_type_K.
-               eapply key_expandP with (id0 := (s_id~0~1)%positive) (rcon :=(rcon i)) (rkey := x0) (temp2 := x1) (rcon_ := wrepr _ (rcon i)).
+               eapply key_expandP with (id0 := (s_id~0~1)%positive) (rcon := (wunsigned (rcon i))) (rkey := x0) (temp2 := x1) (rcon_ := rcon i).
                (* again, we have to prove that our precond does not depend key_expand locations *)
                { split.
                  (* key_expandP also does not use variables on the rhs *)
                  2: { easy. }
-                 intros s0 s1 l a vr s_id' Hl Hs_id' H.
+                 intros s0 s1 l a vr s_id' Hl Hs_id' H1.
                  assert (id0_preceq : id0 ⪯ s_id'). {
                  etransitivity. eapply preceq_I. etransitivity. eassumption. etransitivity. eapply preceq_O. etransitivity. eapply preceq_I. eassumption.
                  }
@@ -2437,8 +2615,7 @@ Proof.
                  { assumption. }
                  { reflexivity. }
                  { simpl. sheap. reflexivity. }
-                 { reflexivity. }
-                 { reflexivity. }
+                 { eexists. eauto. }
                  { rewrite set_heap_commut; [ | neq_loc_auto ].
                    rewrite [set_heap _ _ a](set_heap_commut); [ | neq_loc_auto ].
                    reflexivity. }
@@ -2446,7 +2623,7 @@ Proof.
                  { simpl. sheap. reflexivity. }
                }
                (* this is an assumption of key_expandP, true by definition of rcon *)
-               { apply wunsigned_repr_small. apply rcon_U8. }
+               { reflexivity. }
                { intros. destruct_pre. sheap. assumption. }
            (* we continue after the call *)
            *** intros.
@@ -2467,7 +2644,7 @@ Proof.
                sheap.
                rewrite !coerce_to_choice_type_K.
                rewrite !zero_extend_u.
-               intros s6 s7 H25.
+               intros s6 s7 H24.
 
                destruct_pre.
                sheap.
@@ -2489,23 +2666,23 @@ Proof.
                  rewrite to_arr_set_eq.
                  rewrite setmE. rewrite eq_refl.
 
-                 f_equal. unfold getmd. rewrite -H43. rewrite getm_to_arr.
-                 f_equal. rewrite !get_set_heap_neq in H34. rewrite -H34. assumption.
+                 f_equal. unfold getmd. rewrite -H41. rewrite getm_to_arr.
+                 f_equal. rewrite !get_set_heap_neq in H33. rewrite -H33. assumption.
                  neq_loc_auto. neq_loc_auto. lia. lia. lia.
 
                  (* i <> j *)
                  rewrite to_arr_set_neq.
                  rewrite setmE.
                  assert (@eq bool (@eq_op Z_ordType j i) false). apply/eqP. auto.
-                 rewrite H2.
-                 apply H43. lia. assumption. lia. }
+                 rewrite H3.
+                 apply H41. lia. assumption. lia. }
                { intros j Hj.
 
                  rewrite setmE.
                  (* why do I have to set printing off to realize this? Shouldn't j == i always mean the same on the same type? *)
                  assert (@eq_op (Ord.eqType Z_ordType) j i = false). apply/eqP. lia.
-                 rewrite H2.
-                 apply H45.
+                 rewrite H3.
+                 apply H43.
                  assumption. }
     (* the next bullet is the proof that the invariant of the for loop is true at the beginning (this goal is generated by pre_weaken rule and translate_for) *)
     + intros s0 s1 H.
@@ -2547,6 +2724,45 @@ Proof.
         rewrite H6. reflexivity.
         lia.
 Qed.
+
+(* without the pre in the post, try to remove this and generalize lemmas instead *)
+Lemma keyExpansionE' pre id0 rkey :
+  (pdisj pre id0 [fset rkeys]) ->
+  ⊢ ⦃ fun '(h0, h1) => pre (h0, h1) ⦄
+    JKEYS_EXPAND id0 rkey
+    ≈
+    keyExpansion rkey
+    ⦃ fun '(v0, _) '(v1, _) => (to_arr U128 (mkpos 11) (hdtc v0)) = v1 ⦄.
+Proof.
+  intros.
+  eapply rpost_weaken_rule.
+  eapply keyExpansionE.
+  assumption.
+  intros.
+  destruct a₀, a₁.
+  easy.
+Qed.
+
+(* maybe extend this to also preserve a precond, to do this prove a similar `u_trans_det` *)
+Lemma keys_expand_jazz_correct pre id0 rkey :
+  (pdisj pre id0 [fset rkeys]) ->
+  ⊢ ⦃ fun '(h0, h1) => pre (h0, h1) ⦄
+    JKEYS_EXPAND id0 rkey
+    ≈
+    ret tt
+    ⦃ fun '(v0, _) '(_, _) => forall i, 0 <= i < 11 -> getmd (to_arr U128 (mkpos 11) (hdtc v0)) word0 i = key_i rkey (Z.to_nat i) ⦄.
+Proof.
+  intros h.
+  eapply u_trans_det' with (P0 := fun '(_, _) => True) (P1 := fun '(_, _) => _).
+  7: { eapply aes_keyExpansion_h. }
+  6: { eapply keyExpansionE'. eassumption. }
+  - easy.
+  - easy.
+  - intros. simpl in *. rewrite H. apply H0. assumption.
+  - unfold keyExpansion.
+    repeat constructor.
+  - admit.                      (* TODO: figure out how to do this *)
+Admitted.
 
 From Hacspec Require Import Hacspec_Aes_Jazz ChoiceEquality.
 
