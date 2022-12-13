@@ -1029,18 +1029,7 @@ Proof.
   p_extra := tt |}.
 Defined.
 
-(* use zify to use lia in a goal with ssr integers/naturals *)
-(* install via opam: coq-mathcomp-zify *)
-From mathcomp Require Import zify.
-
-From Coq Require Import Utf8.
-From extructures Require Import ord fset fmap.
-
-Require Import micromega.Lia.
-From mathcomp.word Require Import word.
-From mathcomp.word Require Import ssrZ.
 From JasminSSProve Require Import jasmin_utils.
-Import ListNotations.
 Import JasminNotation JasminCodeNotation.
 Import PackageNotation.
 
