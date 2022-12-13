@@ -37,17 +37,17 @@ Section Hacspec.
       JKEY_COMBINE id0 rcon rkey temp2
       ≈
       is_state (key_combine rcon rkey temp2)
-      ⦃ fun '(v0, _) '(v1, _) => 
-          exists o1 o2, v0 = [('word U128 ; o1) ; ('word U128 ; o2)] 
+      ⦃ fun '(v0, _) '(v1, _) =>
+          exists o1 o2, v0 = [('word U128 ; o1) ; ('word U128 ; o2)]
                    /\ (o1, o2) = v1 ⦄.
   Proof.
     unfold translate_call, translate_call_body.
     Opaque translate_call.
-    
+
     simpl.
     unfold sopn_sem, tr_app_sopn_tuple, tr_app_sopn_single.
     simpl.
-    
+
   Admitted.
 
 
@@ -56,12 +56,12 @@ Section Hacspec.
       JKEY_EXPAND id0 rcon rkey temp2
       ≈
       key_expand (wrepr U8 rcon) rkey temp2
-      ⦃ fun '(v0, _) '(v1, _) => 
-          exists o1 o2, v0 = [('word U128 ; o1) ; ('word U128 ; o2)] 
+      ⦃ fun '(v0, _) '(v1, _) =>
+          exists o1 o2, v0 = [('word U128 ; o1) ; ('word U128 ; o2)]
                    /\ (o1, o2) = v1 ⦄.
   Proof.
     Transparent translate_call.
     unfold translate_call, translate_call_body.
     Opaque translate_call.
     simpl.
-Admitted.    
+Admitted.
