@@ -1034,10 +1034,22 @@ Import JasminNotation JasminCodeNotation.
 Import PackageNotation.
 
 Notation RCON := (xI (xI (xO (xO xH)))).
+
 Notation KEY_COMBINE := (xO (xI (xI (xO xH)))).
 Notation KEY_EXPAND := (xO (xI (xO (xO xH)))).
+Notation KEY_EXPAND_INV := (xI (xO (xO xH))).
 Notation KEYS_EXPAND := (xO (xO (xI xH))).
+
 Notation ADDROUNDKEY := (xO (xI (xI xH))).
+
+Notation AES_ROUNDS := (xI (xI (xO xH))).
+Notation INVAES_ROUNDS := (xO (xO (xO xH))).
+
+Notation AES := (xO (xI xH)).
+Notation INVAES := (xI xH).
+
+Notation AES_JAZZ := (xO (xO xH)).
+Notation INVAES_JAZZ := (xH).
 
 Notation trp := (translate_prog' ssprove_jasmin_prog).1.
 Notation trc := (fun fn i => translate_call ssprove_jasmin_prog fn trp i).
@@ -1047,17 +1059,20 @@ Notation trc := (fun fn i => translate_call ssprove_jasmin_prog fn trp i).
        Otherwise result might depend on which buffer of translated functions gets passed to the call.
        In this construction we always use all of them, opposed to get_translated_fun which just uses the necessary ones (I believe).
  *)
-
 Notation JRCON i j := (trc RCON i [('int ; j)]).
-(* Notation JRCON  (j : Z) := (get_tr RCON i [('int ; j)]). *)
 
 Notation JKEY_COMBINE i rkey temp1 temp2 := (trc KEY_COMBINE i [('word U128 ; rkey) ; ('word U128 ; temp1) ; ('word U128 ; temp2)]).
-(* Notation JKEY_COMBINE rkey temp1 temp2 := (get_tr KEY_COMBINE i [('word U128 ; rkey) ; ('word U128 ; temp1) ; ('word U128 ; temp2)]). *)
-
 Notation JKEY_EXPAND i rcon rkey temp2 := (trc KEY_EXPAND i [ ('int ; rcon) ; ('word U128 ; rkey) ; ('word U128 ; temp2) ]).
-(* Notation JKEY_EXPAND rcon rkey temp2 := (get_tr KEY_EXPAND i [ ('int ; rcon) ; ('word U128 ; rkey) ; ('word U128 ; temp2) ]). *)
-
+Notation JKEY_EXPAND_INV i key := (trc KEY_EXPAND_INV i [('word U128 ; key)]).
 Notation JKEYS_EXPAND i rkey := (trc KEYS_EXPAND i [('word U128 ; rkey)]).
-(* Notation JKEYS_EXPAND rkey := (get_tr KEYS_EXPAND i [('word U128 ; rkey)]). *)
 
-Notation JADDROUNDKEY state rk := (trc KEYS_EXPAND i [('word U128 ; state) ; ('word U128 ; rk)]).
+Notation JADDROUNDKEY i state rk := (trc KEYS_EXPAND i [('word U128 ; state) ; ('word U128 ; rk)]).
+
+Notation JAES_ROUNDS i rkeys m := (trc AES_ROUNDS i [('array U128 ; rkeys) ; ('word U128 ; m)]).
+Notation JINVAES_ROUNDS i rkeys m := (trc INVAES_ROUNDS i [('array U128 ; rkeys) ; ('word U128 ; m)]).
+
+Notation JAES i key m := (trc AES i [('word U128 ; key) ; ('word U128 ; m)]).
+Notation JINVAES i key m := (trc INVAES i [('word U128 ; key) ; ('word U128 ; m)]).
+
+Notation JAES_JAZZ i key m := (trc AES i [('word U128 ; key) ; ('word U128 ; m)]).
+Notation JINVAES_JAZZ i key m := (trc AES i [('word U128 ; key) ; ('word U128 ; m)]).
