@@ -1050,6 +1050,7 @@ Notation RCON := (xI (xI (xO (xO xH)))).
 Notation KEY_COMBINE := (xO (xI (xI (xO xH)))).
 Notation KEY_EXPAND := (xO (xI (xO (xO xH)))).
 Notation KEYS_EXPAND := (xO (xO (xI xH))).
+Notation ADDROUNDKEY := (xO (xI (xI xH))).
 
 Infix "^" := wxor.
 Definition ws_def : seq Z := [::].
@@ -1102,6 +1103,8 @@ Notation JKEY_EXPAND i rcon rkey temp2 := (trc KEY_EXPAND i [ ('int ; rcon) ; ('
 
 Notation JKEYS_EXPAND i rkey := (trc KEYS_EXPAND i [('word U128 ; rkey)]).
 (* Notation JKEYS_EXPAND rkey := (get_tr KEYS_EXPAND i [('word U128 ; rkey)]). *)
+
+Notation JADDROUNDKEY state rk := (trc KEYS_EXPAND i [('word U128 ; state) ; ('word U128 ; rk)]).
 
 Ltac destruct_pre :=
   repeat
@@ -1187,7 +1190,7 @@ Definition key_expand (wn1 : u128) (rcon : u8) : 'word U128 :=
   let w2 := subword (2 * U32) U32 wn1 in
   let w3 := subword (3 * U32) U32 wn1 in
   let tmp := w3 in
-  let tmp := substitute (wror tmp 1) ^ rcon in
+  let tmp := SubWord (wror tmp 1) ^ rcon in
   let w4 := w0 ^ tmp in
   let w5 := w1 ^ w4 in
   let w6 := w2 ^ w5 in
@@ -1700,7 +1703,7 @@ Proof.
   by rewrite !wxorE addbA.
 Qed.
 
-Lemma wror_substitute {n} (w : word.word n) k : wror (substitute w) k = substitute (wror w k).
+Lemma wror_substitute w k : wror (SubWord w) k = SubWord (wror w k).
 Proof.
   (* I would like to case on w, but not sure how to do this most efficiently? *)
 Admitted.
@@ -2368,7 +2371,10 @@ Definition keyExpansion (key : u128) : raw_code ('arr U128) :=
  #put rkeys := @emptym (chElement_ordType 'int) u128 ;;
  rkeys0 ← get rkeys ;;
  #put rkeys := setm rkeys0 0 key ;;
- for_loop' (fun i => rkeys0 ← get rkeys ;; #put rkeys := setm rkeys0 i (key_expand (zero_extend _ (getmd rkeys0 word0 (i - 1))) (rcon i)) ;; ret tt) 1 11 ;;
+ for_loop' (fun i =>
+   rkeys0 ← get rkeys ;;
+   #put rkeys := setm rkeys0 i (key_expand (zero_extend _ (getmd rkeys0 word0 (i - 1))) (rcon i)) ;;
+   ret tt) 1 11 ;;
  rkeys0 ← get rkeys ;;
  ret rkeys0.
 
@@ -2763,6 +2769,77 @@ Proof.
     repeat constructor.
   - admit.                      (* TODO: figure out how to do this *)
 Admitted.
+
+Definition aes (key msg : u128) :=
+  let state := wxor msg (key_i key 0) in
+  let state := iteri 9 (fun i state => AESENC_ state (key_i key (i + 1))) state in
+  AESENCLAST_ state (key_i key 10).
+
+Definition invaes (key cipher : u128) :=
+  let state := wxor cipher (key_i key 10) in
+  let state := iteri 9 (fun i state => AESDEC_ state (key_i key (10 -(i + 1)))) state in
+  wAESDECLAST state (key_i key 0).
+
+(* Definition rkeys : Location := () *)
+(* Definition (rkeys : chMap 'int ('word U128)) (msg : 'word U128) := *)
+Definition state : Location := ( 'word U128 ; 0%nat).
+
+Definition aes_rounds (rkeys : 'arr U128) (msg : 'word U128) :=
+    #put state := wxor msg (getmd rkeys word0 0) ;;
+    for_loop' (fun i =>
+      state0 ← get state ;;
+      #put state := AESENC_ state0 (getmd rkeys word0 i) ;;
+      ret tt
+    ) 1 10 ;;
+    state0 ← get state ;;
+    #put state := AESENCLAST_ state0 (getmd rkeys word0 10) ;;
+    state0 ← get state ;;
+    ret state0.
+
+Lemma aes_rounds_h rkeys k m :
+  (forall i, 0 <= i < 11 -> getmd rkeys word0 i = key_i k (Z.to_nat i)) ->
+  ⊢ ⦃ fun '(_, _) => True ⦄
+  aes_rounds rkeys m
+  ≈
+  ret tt
+  ⦃ fun '(v0, _) '(_, _) => v0 = aes k m ⦄.
+Proof.
+  unfold aes_rounds.
+  intros H.
+  eapply r_put_lhs with (pre := fun _ => _).
+  eapply r_bind with (m₁ := ret _).
+  set (st0 := m ⊕ (key_i k 0%nat)).
+  eapply u_for_loop'_rule' with
+    (I := fun i => fun h => get_heap h state = iteri (Z.to_nat i - 1) (fun i state => AESENC_ state (key_i k (i + 1))) st0).
+  - lia.
+  - intros.
+    simpl.
+    destruct_pre. sheap. rewrite H. reflexivity. lia.
+  - intros i Hi.
+    eapply r_get_remember_lhs with (pre := fun '(_, _) => _). intros x.
+    eapply r_put_lhs. eapply r_ret.
+    intros s0 s1 pre.
+    destruct_pre; sheap.
+    replace (Z.to_nat (Z.succ i) - 1)%nat with ((Z.to_nat i - 1).+1) by lia.
+    rewrite iteriS.
+    rewrite H5.
+    rewrite H. repeat f_equal. lia. lia.
+  - intros a0 a1.
+    eapply r_get_remember_lhs with (pre := fun '(_, _) => _). intros x.
+    eapply r_put_lhs.
+    eapply r_get_remember_lhs. intros x0.
+    eapply r_ret.
+    intros s0 s1 pre.
+    Opaque getmd.
+    destruct pre as [[s2 [[H4 H3] H2]] H1].
+    simpl in H3, H1. subst.
+    sheap.
+    unfold aes.
+    rewrite H4.
+    rewrite H.
+    replace ((Z.to_nat 10) - 1)%nat with 9%nat by reflexivity.
+    reflexivity. lia.
+Qed.
 
 From Hacspec Require Import Hacspec_Aes_Jazz ChoiceEquality.
 
