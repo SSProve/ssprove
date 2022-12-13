@@ -1068,8 +1068,8 @@ Notation JKEYS_EXPAND i rkey := (trc KEYS_EXPAND i [('word U128 ; rkey)]).
 
 Notation JADDROUNDKEY i state rk := (trc KEYS_EXPAND i [('word U128 ; state) ; ('word U128 ; rk)]).
 
-Notation JAES_ROUNDS i rkeys m := (trc AES_ROUNDS i [('array U128 ; rkeys) ; ('word U128 ; m)]).
-Notation JINVAES_ROUNDS i rkeys m := (trc INVAES_ROUNDS i [('array U128 ; rkeys) ; ('word U128 ; m)]).
+Notation JAES_ROUNDS i rkeys m := (trc AES_ROUNDS i [('array ; rkeys) ; ('word U128 ; m)]).
+Notation JINVAES_ROUNDS i rkeys m := (trc INVAES_ROUNDS i [('array ; rkeys) ; ('word U128 ; m)]).
 
 Notation JAES i key m := (trc AES i [('word U128 ; key) ; ('word U128 ; m)]).
 Notation JINVAES i key m := (trc INVAES i [('word U128 ; key) ; ('word U128 ; m)]).
