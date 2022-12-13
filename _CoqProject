@@ -83,6 +83,7 @@ theories/Jasmin/jasmin_utils.v
 
 theories/Jasmin/examples/add1.v
 theories/Jasmin/examples/aes.v
+theories/Jasmin/examples/aes/aes_jazz.v
 theories/Jasmin/examples/bigadd.v
 theories/Jasmin/examples/ex.v
 theories/Jasmin/examples/int_add.v
