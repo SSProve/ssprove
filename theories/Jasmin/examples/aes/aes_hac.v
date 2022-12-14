@@ -84,7 +84,7 @@ Section Hacspec.
 
   Ltac bind_jazz_hac := match goal with
                         | [ |- context [ ⊢ ⦃ ?P ⦄ putr ?l ?jazz ?f ≈ _ ⦃ ?Q ⦄ ] ] =>
-                            apply (@r_bind _ _ _ _ (ret jazz) _ (fun x => putr l x f) _ _ (pre_to_post P) _) ; [ | intros ; unfold pre_to_post ]
+                            apply (@r_bind _ _ _ _ (ret jazz) _ (fun x => putr l x f) _ _ Q _) ; [ | intros ; unfold pre_to_post ]
                         end.
 
   Ltac remove_get_in_lhs :=
@@ -96,13 +96,15 @@ Section Hacspec.
       rewrite get_set_heap_eq ;
       reflexivity | ].
 
-  Lemma foo id0 rcon rkey temp2 :
+  Notation JVSHUFPS i rkey temp1 temp2 := (trc VSHUFPS i [('word U128 ; rkey) ; ('word U128 ; temp1) ; ('word U128 ; temp2)]).
+  
+  Lemma key_combined_eq id0 rcon rkey temp2 :
     ⊢ ⦃ fun '(_, _) => True ⦄
         JKEY_COMBINE id0 rcon rkey temp2
         ≈
         is_state (key_combine rcon rkey temp2)
-        ⦃ fun '(v0, _) '(v1, _) => 
-            exists o1 o2, v0 = [('word U128 ; o1) ; ('word U128 ; o2)] 
+        ⦃ fun '(v0, _) '(v1, _) =>
+            exists o1 o2, v0 = [('word U128 ; o1) ; ('word U128 ; o2)]
                      /\ (o1, o2) = v1 ⦄.
   Proof.
     set (JKEY_COMBINE _ _ _ _).
@@ -118,40 +120,170 @@ Section Hacspec.
     apply better_r_put_lhs.
     apply better_r_put_lhs.
     apply better_r_put_lhs.
+
+    remove_get_in_lhs.
+    match goal with
+    | [ |- context [ ⊢ ⦃ ?P ⦄ putr ?l ?jazz ?f ≈ _ ⦃ ?Q ⦄ ] ] =>
+        eapply (@r_bind _ _ _ _ (ret jazz) _ (fun x => putr l x f) _ _ (pre_to_post true_precond) _) ; [ | intros ; unfold pre_to_post ]
+    end.
+
+    {
+    apply forget_precond.
+    rewrite !zero_extend_u.
+
+    unfold tr_app_sopn_tuple.
+    unfold sopn_sem.
+    unfold sopn.get_instr_desc.
+    unfold asm_opI.
+    unfold asm_op_instr.
+    unfold semi, arch_extra.get_instr_desc.
+    unfold instr_desc, _asm_op_decl, instr_desc_op, _asm, x86_extra.
+    unfold x86_sem.x86.
+    unfold x86_op_decl.
+    unfold x86_instr_desc.
+    unfold id_semi.
+    unfold Ox86_VPSHUFD_instr.
+    unfold ".1".
+    unfold x86_VPSHUFD.
+    unfold wpshufd.
+
+    set (totce _) at 2.
+    cbn in t.
+    unfold totce in t.
+
+    set (chCanonical _).
+    cbn in s.
+    subst s.
+
+    set (tr_app_sopn _ _ _ _).
+    cbn in y.
+    subst y.
+    hnf.
+
+    unfold totce.
+    subst t.
+    unfold ".π2".
+
+    unfold wpshufd_128.
+    unfold iota.
+    unfold map.
+    set (wpshufd1 _ _ _).
+    set (wpshufd1 _ _ _).
+    set (wpshufd1 _ _ _).
+    set (wpshufd1 _ _ _).
+    unfold vpshufd.
+    set (fun _ : T Hacspec_Lib_Pre.int128 => _).
+    set (_ shift_right _).
+
+    apply (@r_bind _ _ _ _ (ret w) b (fun w => ret (wrepr U128 (wcat_r [w; w0; w1; w2]))) y true_precond (fun _ _ => True)).
+    - apply r_ret ; reflexivity.
+    - intros.
+      subst y. hnf. clear b.
+      set (fun _ : T Hacspec_Lib_Pre.int128 => _).
+      set (_ shift_right _).
+      apply (@r_bind _ _ _ _ (ret w0) b (fun _ => ret (wrepr U128 (wcat_r [_; _; _; _]))) y (fun '(_, _) => True) (fun _ _ => True)).
+      + apply r_ret ; reflexivity.
+      + intros.
+        subst y. hnf. clear b.
+
+        set (fun _ : T Hacspec_Lib_Pre.int128 => _).
+      set (_ shift_right _).
+      apply (@r_bind _ _ _ _ (ret w1) b (fun _ => ret (wrepr U128 (wcat_r [_; _; _; _]))) y (fun '(_, _) => True) (fun _ _ => True)).
+      * apply r_ret ; reflexivity.
+      * intros.
+        subst y. hnf. clear b.
+
+        
+        set (fun _ : T Hacspec_Lib_Pre.int128 => _).
+        set (_ shift_right _).
+        apply (@r_bind _ _ _ _ (ret w2) b (fun _ => ret (wrepr U128 (wcat_r [_; _; _; _]))) y (fun '(_, _) => True) (fun _ _ => True)).
+        -- apply r_ret ; reflexivity.
+        -- intros.
+           subst y. hnf. clear b.
+           unfold wcat_r.
+
+           Set Printing Coercions.
+
+           unfold lift_to_both0, lift_to_both.
+           unfold is_pure.
+           unfold "_ .| _".
+           unfold Hacspec_Lib_Pre.int_or.
+           unfold word.wor.
+           unfold lift_to_both.
+           unfold lift_scope.
+           unfold is_state.
+           unfold lift_to_code.
+           unfold lift_code_scope.
+           unfold prog.
+
+           apply r_ret.
+           intros.
+
+           unfold T_ct, eq_rect_r, Logic.eq_sym, Hacspec_Lib_Pre.int, ChoiceEq, Hacspec_Lib_Pre.int_obligation_1, ct, eq_rect.
+
+           unfold pre_to_post.
+           split ; [ | reflexivity ].
+           
+           rewrite Z.lor_comm.
+           rewrite (Z.lor_comm (urepr a₀0)).
+           rewrite (Z.lor_comm (urepr a₀1)).
+           rewrite (Z.lor_comm (urepr a₀2)).
+
+           unfold wor at 1.
+
+           
+           
+           simpl.
+           
+           replace (int_to_Z (Posz 32)) with (Hacspec_Lib_Pre.usize 32).
+                      
+           unfold "_ shift_left _".
+           unfold Hacspec_Lib_Pre.shift_left_.
+           unfold wshl.
+           unfold lsl.
+           
+           
+           unfold lift_scope, lift_to_both0, lift_to_both, is_pure, is_state.
+           
+           apply (@r_bind _ _ _ _ (ret w2) b (fun _ => ret (wrepr U128 (wcat_r [_; _; _; _]))) y (fun '(_, _) => True) (fun _ _ => True)).
+
+    }
     
-    remove_get_in_lhs.
-    bind_jazz_hac.
-    admit.
+    set (U8 %/ 2).
+    assert (n = 4). admit.
+    replace n with 4%nat in *.
+    unfold curry.
+    
+    Set Printing Coercions.
+    unfold nat_of_wsize.
+    unfold wsize_size_minus_1.
+    unfold nat7.
+    unfold "%/".
+    unfold edivn.
+    cbn.
+    
+    unfold embed_tuple.
+    
+    unfold encode_tuple.
+    unfold lchtuple.
+    unfold tr_app_sopn.
+    unfold embed_tuple.
+    cbn.
 
-    apply better_r_put_lhs.
-    remove_get_in_lhs.
-    remove_get_in_lhs.
-    bind_jazz_hac.
-    admit.
+    rewrite !zero_extend_u.
+    apply r_ret.
+    intros.
+    
+    
+    unfold tr_app_sopn.
 
-    apply better_r_put_lhs.
-    remove_get_in_lhs.
-    remove_get_in_lhs.
+    
     bind_jazz_hac.
-    admit.
+    Set Printing Implicit.
+    Set Printing Coercions.
+    shelve.
 
-    apply better_r_put_lhs.
-    remove_get_in_lhs.
-    remove_get_in_lhs.
-    bind_jazz_hac.
-    admit.
-
-    apply better_r_put_lhs.
-    remove_get_in_lhs.
-    remove_get_in_lhs.
-    bind_jazz_hac.
-    admit.
-
-    apply better_r_put_lhs.
-    remove_get_in_lhs.
-    remove_get_in_lhs.
-    bind_jazz_hac.
-    admit.
+    do 5 (apply better_r_put_lhs ; do 2 remove_get_in_lhs ; bind_jazz_hac ; [shelve | ]).
 
     apply better_r_put_lhs.
     remove_get_in_lhs.
@@ -166,6 +298,8 @@ Section Hacspec.
     cbn.
     rewrite !zero_extend_u.
     reflexivity.
+
+    
   Admitted.
 
   Lemma bar id0 rcon rkey temp2 :
@@ -173,12 +307,12 @@ Section Hacspec.
       JKEY_EXPAND id0 rcon rkey temp2
       ≈
       key_expand (wrepr U8 rcon) rkey temp2
-      ⦃ fun '(v0, _) '(v1, _) => 
-          exists o1 o2, v0 = [('word U128 ; o1) ; ('word U128 ; o2)] 
+      ⦃ fun '(v0, _) '(v1, _) =>
+          exists o1 o2, v0 = [('word U128 ; o1) ; ('word U128 ; o2)]
                    /\ (o1, o2) = v1 ⦄.
   Proof.
     Transparent translate_call.
     unfold translate_call, translate_call_body.
     Opaque translate_call.
     simpl.
-Admitted.    
+Admitted.
