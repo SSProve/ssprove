@@ -8,7 +8,7 @@ Require Import List.
 Set Warnings "-notation-overridden".
 From Jasmin Require Import expr.
 Set Warnings "notation-overridden".
-From Jasmin Require Import x86_instr_decl x86_extra.
+From Jasmin Require Import x86_instr_decl x86_extra waes.
 From JasminSSProve Require Import jasmin_translate.
 From Crypt Require Import Prelude Package.
 
@@ -28,9 +28,6 @@ Import JasminNotation JasminCodeNotation.
 Import PackageNotation.
 
 From mathcomp Require Import zify.
-
-Infix "^" := wxor.
-Definition ws_def : seq Z := [::].
 
 Definition get_tr := get_translated_fun ssprove_jasmin_prog.
 
@@ -136,6 +133,8 @@ Definition rcon (i : Z) : u8 := nth (wrepr U8 54%Z) [:: (wrepr U8 1%Z); (wrepr U
 
 Notation hdtcA res := (coerce_to_choice_type ('array) (hd ('word U64 ; chCanonical _) res).π2).
 
+Notation "m ⊕ k" := (@word.word.wxor _ m k) (at level 20).
+
 Definition key_expand (wn1 : u128) (rcon : u8) : 'word U128 :=
   let rcon := zero_extend U32 rcon (* W4u8 *) (* U32 4 *) (* [tuple rcon ; 0%R; 0%R; 0%R] *) (* [toword rcon; 0%Z; 0%Z; 0%Z] *) in
   let w0 := subword 0 U32 wn1 in
@@ -143,11 +142,11 @@ Definition key_expand (wn1 : u128) (rcon : u8) : 'word U128 :=
   let w2 := subword (2 * U32) U32 wn1 in
   let w3 := subword (3 * U32) U32 wn1 in
   let tmp := w3 in
-  let tmp := SubWord (wror tmp 1) ^ rcon in
-  let w4 := w0 ^ tmp in
-  let w5 := w1 ^ w4 in
-  let w6 := w2 ^ w5 in
-  let w7 := w3 ^ w6 in
+  let tmp := SubWord (wror tmp 1) ⊕ rcon in
+  let w4 := w0 ⊕ tmp in
+  let w5 := w1 ⊕ w4 in
+  let w6 := w2 ⊕ w5 in
+  let w7 := w3 ⊕ w6 in
   wcat [tuple w4; w5; w6; w7].
 
 Lemma rcon_correct id0 pre i :
@@ -176,8 +175,6 @@ Qed.
 (* copy of the easycrypt functional definition *)
 Definition W4u8 : 4.-tuple u8 -> u32 := wcat.
 Definition W4u32 : 4.-tuple u32 -> u128 := wcat.
-
-Notation "m ⊕ k" := (@word.word.wxor _ m k) (at level 20).
 
 Lemma lsr_word0 {ws1} a : @lsr ws1 word0 a = word0.
 Proof.
@@ -1609,7 +1606,7 @@ Lemma keyExpansion_E pre id0 rkey :
     JKEYS_EXPAND id0 rkey
     ≈
     keyExpansion rkey
-    ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) /\ (to_arr U128 (mkpos 11) (hdtcA v0)) = v1 ⦄.
+    ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) /\ exists o, v0 = [( 'array ; o)] /\ to_arr U128 (mkpos 11) o = v1 ⦄.
 Proof.
   intros disj.
 
@@ -1821,7 +1818,9 @@ Proof.
     destruct_pre. split_post.
     (* prove the final post conditions: pre and that the values of rkeys agree *)
     + assumption.
-    + eapply eq_fmap. intros j.
+    + eexists. split. 1: reflexivity.
+      eapply eq_fmap. intros j.
+      simpl.
       destruct ((0 <=? j) && (j <? 11)) eqn:E.
       (* within bounds, this follows from the precondition *)
       * rewrite !coerce_to_choice_type_K. apply H4. lia.
@@ -1975,7 +1974,7 @@ Lemma aes_rounds_E pre id0 rkeys msg :
     JAES_ROUNDS id0 rkeys msg
     ≈
     aes_rounds (to_arr U128 (mkpos 11) rkeys) msg
-    ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) /\ hdtc128 v0 = v1 ⦄.
+    ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) /\ exists o, v0 = [ ('word U128 ; o) ] /\ o = v1 ⦄.
 Proof.
   unfold JAES_ROUNDS.
   unfold get_translated_static_fun.
@@ -2055,6 +2054,10 @@ Proof.
       rewrite -> H6.
       rewrite getmd_to_arr.
       rewrite wAESENCLAST_wAESENCLAST_.
+      eexists. split.
+      1: reflexivity.
+      simpl.
+      rewrite zero_extend_u.
       reflexivity.
       lia.
 Qed.
@@ -2085,7 +2088,7 @@ Proof.
 Qed.
 
 Lemma aes_E pre id0 k m :
-  (pdisj pre id0 fset0) ->
+  (pdisj pre id0 [fset rkeys ; state]) ->
   ⊢ ⦃ fun '(h0, h1) => pre (h0, h1) ⦄
     JAES id0 k m
     ≈
@@ -2101,20 +2104,89 @@ Proof.
 
   simpl. simpl_fun.
   repeat setjvars.
+  ssprove_code_simpl.
+  repeat clear_get.
+  unfold Caes.
 
   eapply r_put_lhs.
   eapply r_put_lhs.
-  eapply r_get_remember_lhs. intros.
-  (* (* eapply r_bind. *) *)
-  (* rewrite !bind_assoc. *)
+  eapply r_bind.
+  - rewrite !zero_extend_u.
+    eapply keyExpansion_E.
+    split.
+    + intros s0 s1 l a vr s_id' Hl Hs_id' H.
+      assert (id0_preceq : id0 ⪯ s_id'). {
+        etransitivity. eapply preceq_I. eassumption.
+      }
+      assert (id0_neq : id0 <> s_id'). {
+        apply prec_neq. eapply prec_preceq_trans. eapply prec_I. eassumption.
+      }
+      destruct_pre. split_post.
+      * eapply disj. reflexivity. eassumption. eassumption.
+      * reflexivity.
+      * rewrite set_heap_commut. rewrite [set_heap (set_heap H2 _ _) _ _]set_heap_commut. reflexivity.
+        neq_loc_auto. neq_loc_auto.
+    + intros; destruct_pre; split_post.
+      * eapply disj.
+        ** move: H. rewrite in_fset in_cons=>/orP [];[|easy] => /eqP ->. solve_in.
+        ** eassumption.
+      * reflexivity.
+      * reflexivity.
+  - intros.
+    eapply rpre_weak_hypothesis_rule'.
+    Opaque aes_rounds.
+    intros; destruct_pre.
+    simpl.
+    rewrite !coerce_to_choice_type_K.
+    fold rkeys. clear_get.
 
-  (* ssprove_code_simpl. *)
-  (* ssprove_code_simpl_more. *)
-  (* unfold aes_rounds. *)
+    eapply r_put_lhs with (pre := fun _ => _).
+    eapply r_get_remember_lhs. intros.
+    (* this is a very brute force way of remembering the walu of 'in', should be done differently *)
+    eapply rpre_weak_hypothesis_rule'.
+    intros; destruct_pre. sheap.
+    eapply r_bind.
+    + eapply aes_rounds_E.
+      split.
+      * intros s0 s1 l a vr s_id' Hl Hs_id' H.
+        assert (id0_preceq : id0 ⪯ s_id'). {
+          etransitivity. eapply preceq_O. etransitivity. eapply preceq_I. eassumption.
+        }
+        assert (id0_neq : id0 <> s_id'). {
+          apply prec_neq. eapply prec_preceq_trans. etransitivity. eapply prec_O. eapply prec_I. eassumption.
+        }
+        destruct_pre. sheap. split_post.
+        ** eapply disj. reflexivity. eassumption. eassumption.
+        ** reflexivity.
+        ** reflexivity.
+        ** eexists. eauto.
+        ** rewrite set_heap_commut.
+           rewrite [set_heap (set_heap _ _ _) _ a]set_heap_commut.
+           rewrite [set_heap (set_heap _ _ _) _ a]set_heap_commut.
+           reflexivity.
+           all: neq_loc_auto.
+        ** simpl. sheap. reflexivity.
+      * intros; destruct_pre; split_post.
+        ** eapply disj.
+           *** move: H. rewrite in_fset in_cons=>/orP []. move=> /eqP ->. solve_in.
+               simpl. clear -l. easy.
+           *** eassumption.
+        ** reflexivity.
+        ** reflexivity.
+        ** eexists. eauto.
+        ** reflexivity.
+        ** simpl. sheap. reflexivity.
+    + intros.
 
-  (* repeat clear_get. *)
-  (* do 4 eapply r_put_lhs. *)
-  (* eapply r_put_rhs. *)
-
-  (* eapply r_bind. *)
-
+      eapply rpre_weak_hypothesis_rule'.
+      intros; destruct_pre.
+      simpl. fold out. clear_get.
+      eapply r_put_lhs with (pre := fun _ => _).
+      eapply r_ret.
+      intros.
+      destruct_pre; sheap; split_post.
+      * pdisj_apply disj.
+      * rewrite !coerce_to_choice_type_K.
+        rewrite !zero_extend_u.
+        reflexivity.
+Qed.
