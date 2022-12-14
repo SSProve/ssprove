@@ -1034,30 +1034,57 @@ Import JasminNotation JasminCodeNotation.
 Import PackageNotation.
 
 Notation RCON := (xI (xI (xO (xO xH)))).
+
 Notation KEY_COMBINE := (xO (xI (xI (xO xH)))).
 Notation KEY_EXPAND := (xO (xI (xO (xO xH)))).
+Notation KEY_EXPAND_INV := (xI (xO (xO xH))).
 Notation KEYS_EXPAND := (xO (xO (xI xH))).
+
 Notation ADDROUNDKEY := (xO (xI (xI xH))).
+
+Notation AES_ROUNDS := (xI (xI (xO xH))).
+Notation INVAES_ROUNDS := (xO (xO (xO xH))).
+
+Notation AES := (xO (xI xH)).
+Notation INVAES := (xI xH).
+
+Notation AES_JAZZ := (xO (xO xH)).
+Notation INVAES_JAZZ := (xH).
 
 Notation trp := (translate_prog' ssprove_jasmin_prog).1.
 Notation trc := (fun fn i => translate_call ssprove_jasmin_prog fn trp i).
 
-(* I use trc to be able to reuse statements about the function inside other functions where theyll appear as translate_calls (and not get_translated_funs).
-       Furthermore, I think this is necessary to assure that all calls gets the complete list of translated functions.
-       Otherwise result might depend on which buffer of translated functions gets passed to the call.
-       In this construction we always use all of them, opposed to get_translated_fun which just uses the necessary ones (I believe).
- *)
+Notation funlist := [seq f.1 | f <- p_funcs ssprove_jasmin_prog].
 
-Notation JRCON i j := (trc RCON i [('int ; j)]).
-(* Notation JRCON  (j : Z) := (get_tr RCON i [('int ; j)]). *)
+Definition static_fun fn := (fn, match assoc trp fn with Some c => c | None => fun _ => ret tt end).
 
-Notation JKEY_COMBINE i rkey temp1 temp2 := (trc KEY_COMBINE i [('word U128 ; rkey) ; ('word U128 ; temp1) ; ('word U128 ; temp2)]).
-(* Notation JKEY_COMBINE rkey temp1 temp2 := (get_tr KEY_COMBINE i [('word U128 ; rkey) ; ('word U128 ; temp1) ; ('word U128 ; temp2)]). *)
+Definition static_funs := [seq static_fun f | f <- funlist].
 
-Notation JKEY_EXPAND i rcon rkey temp2 := (trc KEY_EXPAND i [ ('int ; rcon) ; ('word U128 ; rkey) ; ('word U128 ; temp2) ]).
-(* Notation JKEY_EXPAND rcon rkey temp2 := (get_tr KEY_EXPAND i [ ('int ; rcon) ; ('word U128 ; rkey) ; ('word U128 ; temp2) ]). *)
+Definition strp := (translate_prog_static ssprove_jasmin_prog static_funs).
+Opaque strp.
 
-Notation JKEYS_EXPAND i rkey := (trc KEYS_EXPAND i [('word U128 ; rkey)]).
-(* Notation JKEYS_EXPAND rkey := (get_tr KEYS_EXPAND i [('word U128 ; rkey)]). *)
+Definition get_translated_static_fun P fn st_func :=
+  match assoc (translate_prog_static P st_func).2 fn with
+  | Some f => f
+  | None => fun _ _ => ret [::]
+  end.
 
-Notation JADDROUNDKEY state rk := (trc KEYS_EXPAND i [('word U128 ; state) ; ('word U128 ; rk)]).
+Definition call fn i := (get_translated_static_fun ssprove_jasmin_prog fn static_funs i).
+
+Notation JRCON i j := (call RCON i [('int ; j)]).
+
+Notation JKEY_COMBINE i rkey temp1 temp2 := (call KEY_COMBINE i [('word U128 ; rkey) ; ('word U128 ; temp1) ; ('word U128 ; temp2)]).
+Notation JKEY_EXPAND i rcon rkey temp2 := (call KEY_EXPAND i [ ('int ; rcon) ; ('word U128 ; rkey) ; ('word U128 ; temp2) ]).
+Notation JKEY_EXPAND_INV i key := (call KEY_EXPAND_INV i [('word U128 ; key)]).
+Notation JKEYS_EXPAND i rkey := (call KEYS_EXPAND i [('word U128 ; rkey)]).
+
+Notation JADDROUNDKEY i state rk := (call KEYS_EXPAND i [('word U128 ; state) ; ('word U128 ; rk)]).
+
+Notation JAES_ROUNDS i rkeys m := (call AES_ROUNDS i [('array ; rkeys) ; ('word U128 ; m)]).
+Notation JINVAES_ROUNDS i rkeys m := (call INVAES_ROUNDS i [('array ; rkeys) ; ('word U128 ; m)]).
+
+Notation JAES i key m := (call AES i [('word U128 ; key) ; ('word U128 ; m)]).
+Notation JINVAES i key m := (call INVAES i [('word U128 ; key) ; ('word U128 ; m)]).
+
+Notation JAES_JAZZ i key m := (call AES i [('word U128 ; key) ; ('word U128 ; m)]).
+Notation JINVAES_JAZZ i key m := (call AES i [('word U128 ; key) ; ('word U128 ; m)]).

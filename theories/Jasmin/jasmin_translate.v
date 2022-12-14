@@ -4374,6 +4374,21 @@ Definition translate_funs (P : uprog) : seq _ufun_decl → fdefs * ssprove_prog 
 Definition translate_prog' P :=
   translate_funs P (p_funcs P).
 
+Fixpoint translate_funs_static (P : uprog) (fs : seq _ufun_decl) (st_funcs : fdefs) : fdefs * ssprove_prog :=
+    match fs with
+    | [::] => ([::], [::])
+    | f :: fs' =>
+        let '(tr_fs', tr_p') := translate_funs_static P fs' st_funcs in
+        let '(fn, f_extra) := f in
+        let tr_body := fun sid => (translate_cmd P st_funcs (f_body f_extra) sid sid).2 in
+        let tr_fs := (fn, tr_body) :: tr_fs' in
+        let tr_p := (fn, translate_call_body P fn tr_body) :: tr_p' in
+        (tr_fs, tr_p)
+    end.
+
+Definition translate_prog_static P st_funcs :=
+  translate_funs_static P (p_funcs P) st_funcs.
+
 Lemma tr_prog_inv {P fn f} :
   get_fundef (p_funcs P) fn = Some f →
   ∑ fs' l,

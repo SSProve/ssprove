@@ -33,6 +33,7 @@ Notation call fn := (translate_call _ fn _).
 
 Section Hacspec.
 
+<<<<<<< HEAD
   (* NB: this redefines neq_loc_auto, which helps some tactics, since checking for inequality by computation is not feasible for translated variables *)
   Ltac neq_loc_auto ::= solve [ eapply injective_translate_var3; auto | eapply injective_translate_var2; auto ].
 
@@ -300,6 +301,24 @@ Section Hacspec.
     reflexivity.
 
     
+=======
+  Lemma foo id0 rcon rkey temp2 :
+    ⊢ ⦃ fun '(_, _) => True ⦄
+      JKEY_COMBINE id0 rcon rkey temp2
+      ≈
+      is_state (key_combine rcon rkey temp2)
+      ⦃ fun '(v0, _) '(v1, _) =>
+          exists o1 o2, v0 = [('word U128 ; o1) ; ('word U128 ; o2)]
+                   /\ (o1, o2) = v1 ⦄.
+  Proof.
+    unfold translate_call, translate_call_body.
+    Opaque translate_call.
+
+    simpl.
+    unfold sopn_sem, tr_app_sopn_tuple, tr_app_sopn_single.
+    simpl.
+
+>>>>>>> 1c0c1bbe99e9078b09debae9e69a87fc6b4915d9
   Admitted.
 
   Lemma bar id0 rcon rkey temp2 :
