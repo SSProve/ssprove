@@ -134,8 +134,8 @@ Ltac pdisj_apply h :=
 
 Definition rcon (i : Z) : u8 := nth (wrepr U8 54%Z) [:: (wrepr U8 1%Z); (wrepr U8 2%Z); (wrepr U8 4%Z); (wrepr U8 8%Z); (wrepr U8 16%Z); (wrepr U8 32%Z); (wrepr U8 64%Z); (wrepr U8 128%Z); (wrepr U8 27%Z); (wrepr U8 54%Z)]%Z ((Z.to_nat i) - 1).
 
-Notation hdtc res := (coerce_to_choice_type ('array) (hd ('word U64 ; chCanonical _) res).π2).
 Notation call fn := (translate_call _ fn _).
+Notation hdtcA res := (coerce_to_choice_type ('array) (hd ('word U64 ; chCanonical _) res).π2).
 
 Definition key_expand (wn1 : u128) (rcon : u8) : 'word U128 :=
   let rcon := zero_extend U32 rcon (* W4u8 *) (* U32 4 *) (* [tuple rcon ; 0%R; 0%R; 0%R] *) (* [toword rcon; 0%Z; 0%Z; 0%Z] *) in
@@ -158,7 +158,6 @@ Lemma rcon_correct id0 pre i :
     ≈ ret tt
     ⦃ fun '(v0, s0) '(v1, s1) => pre (s0, s1) /\ exists o, v0 = ([('int ; o)] : tchlist) /\ o = wunsigned (rcon i) ⦄.
 Proof.
-  unfold  get_tr, get_translated_fun.
   intros Hpdisj H.
   simpl_fun.
   repeat setjvars.
@@ -496,7 +495,7 @@ Qed.
 
 Lemma subword_make_vec {ws1} i (ws2 : wsize.wsize) (l : seq (word.word ws1)) :
   (ws1 <= ws2)%nat ->
-  ((i + 1) * ws1 < ws2)%nat ->
+  ((i + 1) * ws1 <= ws2)%nat ->
   subword (i * ws1) ws1 (make_vec ws2 l) = nth word0 l i.
 Proof.
   intros H1 H2.
@@ -1459,13 +1458,13 @@ Proof.
   eapply HQ. eassumption. eassumption.
 Qed.
 
-Lemma keyExpansionE pre id0 rkey :
+Lemma keyExpansion_E pre id0 rkey :
   (pdisj pre id0 [fset rkeys]) ->
   ⊢ ⦃ fun '(h0, h1) => pre (h0, h1) ⦄
     JKEYS_EXPAND id0 rkey
     ≈
     keyExpansion rkey
-    ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) /\ (to_arr U128 (mkpos 11) (hdtc v0)) = v1 ⦄.
+    ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) /\ (to_arr U128 (mkpos 11) (hdtcA v0)) = v1 ⦄.
 Proof.
   intros disj.
   unfold translate_call.
@@ -1686,17 +1685,17 @@ Proof.
 Qed.
 
 (* without the pre in the post, try to remove this and generalize lemmas instead *)
-Lemma keyExpansionE' pre id0 rkey :
+Lemma keyExpansion_E' pre id0 rkey :
   (pdisj pre id0 [fset rkeys]) ->
   ⊢ ⦃ fun '(h0, h1) => pre (h0, h1) ⦄
     JKEYS_EXPAND id0 rkey
     ≈
     keyExpansion rkey
-    ⦃ fun '(v0, _) '(v1, _) => (to_arr U128 (mkpos 11) (hdtc v0)) = v1 ⦄.
+    ⦃ fun '(v0, _) '(v1, _) => (to_arr U128 (mkpos 11) (hdtcA v0)) = v1 ⦄.
 Proof.
   intros.
   eapply rpost_weaken_rule.
-  eapply keyExpansionE.
+  eapply keyExpansion_E.
   assumption.
   intros.
   destruct a₀, a₁.
@@ -1710,12 +1709,12 @@ Lemma keys_expand_jazz_correct pre id0 rkey :
     JKEYS_EXPAND id0 rkey
     ≈
     ret tt
-    ⦃ fun '(v0, _) '(_, _) => forall i, 0 <= i < 11 -> getmd (to_arr U128 (mkpos 11) (hdtc v0)) word0 i = key_i rkey (Z.to_nat i) ⦄.
+    ⦃ fun '(v0, _) '(_, _) => forall i, 0 <= i < 11 -> getmd (to_arr U128 (mkpos 11) (hdtcA v0)) word0 i = key_i rkey (Z.to_nat i) ⦄.
 Proof.
   intros h.
   eapply u_trans_det' with (P0 := fun '(_, _) => True) (P1 := fun '(_, _) => _).
   7: { eapply aes_keyExpansion_h. }
-  6: { eapply keyExpansionE'. eassumption. }
+  6: { eapply keyExpansion_E'. eassumption. }
   - easy.
   - easy.
   - intros. simpl in *. rewrite H. apply H0. assumption.
