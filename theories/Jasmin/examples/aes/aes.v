@@ -656,6 +656,127 @@ Proof.
   by rewrite !wxorE addbA.
 Qed.
 
+Lemma nth_split_vec {ws1} ws2 n (d : word.word ws2) (w : word.word ws1) :
+  (n < ws1 %/ ws2 + ws1 %% ws2)%nat ->
+  nth d (split_vec ws2 w) n = subword (n * ws2) ws2 w.
+Proof.
+  intros H.
+  unfold split_vec.
+  erewrite nth_map.
+  f_equal.
+  rewrite nth_iota.
+  lia.
+  assumption.
+  rewrite size_iota.
+  assumption.
+  Unshelve. exact 0%nat.
+Qed.
+
+Lemma subword_U8_SubWord n w :
+  (0 <= n < 4)%nat ->
+  subword (n * U8) U8 (SubWord w) = Sbox (subword (n * U8) U8 w).
+Proof.
+  intros.
+  unfold SubWord.
+  rewrite subword_make_vec.
+  erewrite nth_map.
+  f_equal.
+  apply nth_split_vec.
+  cbn. simpl. lia.
+  simpl. lia. cbn. simpl. lia.
+  unfold nat_of_wsize, wsize_size_minus_1. zify. simpl. nia.
+  Unshelve. exact word0.
+Qed.
+
+Lemma split_vec_make_vec {ws1} (ws2 : wsize.wsize) (l : seq (word.word ws1)) :
+  (ws2 %% ws1 = 0)%nat ->
+  (size l = ws2 %/ ws1)%nat ->
+  split_vec ws1 (make_vec ws2 l) = l.
+Proof.
+  destruct l.
+  - simpl.
+    intros .
+    unfold make_vec.
+    simpl.
+    unfold split_vec.
+    rewrite -H0 H.
+    simpl.
+    reflexivity.
+  - intros Hmod Hsize.
+    simpl.
+    unfold split_vec.
+    rewrite <- take_size.
+    erewrite <- map_nth_iota0.
+    rewrite Hsize. rewrite Hmod.
+    rewrite addn0.
+    apply map_ext.
+    intros.
+    apply subword_make_vec.
+    simpl in Hsize. zify. nia.
+    move: H => /InP. rewrite mem_iota.
+    intros H. zify. nia.
+    easy.
+Qed.
+
+Lemma SubWord_make_vec l :
+  (size l = 4)%nat ->
+  SubWord (make_vec U32 l) = make_vec U32 [seq Sbox i | i <- l].
+Proof.
+  intros.
+  unfold SubWord.
+  rewrite split_vec_make_vec.
+  easy.
+  unfold nat_of_wsize, wsize_size_minus_1.
+  easy.
+  unfold nat_of_wsize, wsize_size_minus_1.
+  easy.
+Qed.
+
+Lemma ShiftRows_SubBytes s : ShiftRows (SubBytes s) = SubBytes (ShiftRows s).
+Proof.
+  unfold ShiftRows, SubBytes. simpl.
+  f_equal. f_equal.
+  rewrite !subword_make_vec_32_0_32_128. simpl.
+  rewrite !subword_make_vec_32_1_32_128. simpl.
+  rewrite !subword_make_vec_32_2_32_128. simpl.
+  rewrite !subword_make_vec_32_3_32_128. simpl.
+  rewrite -> !subword_U8_SubWord by lia.
+  rewrite -> !SubWord_make_vec by reflexivity.
+  simpl. reflexivity.
+  f_equal.
+  rewrite !subword_make_vec_32_0_32_128. simpl.
+  rewrite !subword_make_vec_32_1_32_128. simpl.
+  rewrite !subword_make_vec_32_2_32_128. simpl.
+  (* rewrite !subword_make_vec_32_3_32_128. simpl. *)
+  rewrite -> !subword_U8_SubWord by lia.
+  rewrite -> !SubWord_make_vec by reflexivity.
+  simpl. reflexivity.
+  f_equal.
+  rewrite !subword_make_vec_32_0_32_128. simpl.
+  rewrite !subword_make_vec_32_1_32_128. simpl.
+  rewrite !subword_make_vec_32_2_32_128. simpl.
+  rewrite !subword_make_vec_32_3_32_128. simpl.
+  rewrite -> !subword_U8_SubWord by lia.
+  rewrite -> !SubWord_make_vec by reflexivity.
+  simpl. reflexivity.
+  f_equal.
+  rewrite !subword_make_vec_32_0_32_128. simpl.
+  rewrite !subword_make_vec_32_1_32_128. simpl.
+  rewrite !subword_make_vec_32_2_32_128. simpl.
+  rewrite !subword_make_vec_32_3_32_128. simpl.
+  rewrite -> !subword_U8_SubWord by lia.
+  rewrite -> !SubWord_make_vec by reflexivity.
+  simpl. reflexivity.
+Qed.
+
+Lemma wAESENC_wAESENC_ s k : wAESENC s k = wAESENC_ s k.
+Proof.
+  unfold wAESENC, wAESENC_.
+  f_equal. f_equal.
+  rewrite ShiftRows_SubBytes.
+  reflexivity.
+Qed.
+
 Lemma wror_substitute w k : wror (SubWord w) k = SubWord (wror w k).
 Proof.
   (* I would like to case on w, but not sure how to do this most efficiently? *)
@@ -1071,6 +1192,27 @@ Proof.
       destruct (body1 s_id'). apply ih.
       etransitivity. eassumption. assumption.
       lia.
+Qed.
+
+Lemma translate_for_rule_weaken (pre : precond) (I : Z -> heap * heap -> Prop) lo hi (v : var_i) m_id s_id (body1 : p_id -> p_id * raw_code 'unit) body2 :
+  (forall h0 h1, pre (h0, h1) -> I lo (h0, h1)) ->
+  (* it is annoying that this is a proof obligation, since its true for all translated programs, but I don't know how to prove the theorem without it *)
+  (forall s_id', s_id' ⪯ (body1 s_id').1) ->
+  lo <= hi ->
+  (forall i s_id', (s_id ⪯ s_id') -> (lo <= i <  hi) ->
+                   ⊢ ⦃ λ '(s₀, s₁), set_lhs (translate_var m_id v) (truncate_el (vtype v) (i : chInt)) (I i) (s₀, s₁) ⦄
+                     let (_, body1') := body1 s_id' in
+                     body1'
+                       ≈ body2 i ⦃ λ '(_, s₀) '(_, s₁), I (Z.succ i) (s₀,s₁) ⦄) →
+  ⊢ ⦃ pre ⦄
+    translate_for v (wrange UpTo lo hi) m_id body1 s_id
+    ≈ for_loop' body2 lo hi
+    ⦃ λ '(_,s₀) '(_,s₁), I hi (s₀,s₁) ⦄.
+Proof.
+  intros.
+  eapply rpre_weaken_rule.
+  eapply translate_for_rule.
+  all: easy.
 Qed.
 
 Opaque translate_for.
@@ -1725,71 +1867,253 @@ Admitted.
 
 Definition aes (key msg : u128) :=
   let state := wxor msg (key_i key 0) in
-  let state := iteri 9 (fun i state => AESENC_ state (key_i key (i + 1))) state in
-  AESENCLAST_ state (key_i key 10).
+  let state := iteri 9 (fun i state => wAESENC_ state (key_i key (i + 1))) state in
+  wAESENCLAST_ state (key_i key 10).
 
 Definition invaes (key cipher : u128) :=
   let state := wxor cipher (key_i key 10) in
-  let state := iteri 9 (fun i state => AESDEC_ state (key_i key (10 -(i + 1)))) state in
+  let state := iteri 9 (fun i state => wAESDEC_ state (key_i key (10 -(i + 1)))) state in
   wAESDECLAST state (key_i key 0).
 
 (* Definition rkeys : Location := () *)
 (* Definition (rkeys : chMap 'int ('word U128)) (msg : 'word U128) := *)
 Definition state : Location := ( 'word U128 ; 0%nat).
 
-Definition aes_rounds (rkeys : 'arr U128) (msg : 'word U128) :=
+Definition aes_rounds (rkeys : 'arr U128) (msg : 'word U128) : raw_code u128 :=
     #put state := wxor msg (getmd rkeys word0 0) ;;
     for_loop' (fun i =>
       state0 ← get state ;;
-      #put state := AESENC_ state0 (getmd rkeys word0 i) ;;
+      #put state := wAESENC_ state0 (getmd rkeys word0 i) ;;
       ret tt
     ) 1 10 ;;
     state0 ← get state ;;
-    #put state := AESENCLAST_ state0 (getmd rkeys word0 10) ;;
+    #put state := wAESENCLAST_ state0 (getmd rkeys word0 10) ;;
     state0 ← get state ;;
     ret state0.
 
 Lemma aes_rounds_h rkeys k m :
-  (forall i, 0 <= i < 11 -> getmd rkeys word0 i = key_i k (Z.to_nat i)) ->
-  ⊢ ⦃ fun '(_, _) => True ⦄
+  ⊢ ⦃ fun '(_, _) => (forall i, 0 <= i < 11 -> getmd rkeys word0 i = key_i k (Z.to_nat i)) ⦄
   aes_rounds rkeys m
   ≈
   ret tt
   ⦃ fun '(v0, _) '(_, _) => v0 = aes k m ⦄.
 Proof.
   unfold aes_rounds.
-  intros H.
   eapply r_put_lhs with (pre := fun _ => _).
   eapply r_bind with (m₁ := ret _).
   set (st0 := m ⊕ (key_i k 0%nat)).
   eapply u_for_loop'_rule' with
-    (I := fun i => fun h => get_heap h state = iteri (Z.to_nat i - 1) (fun i state => AESENC_ state (key_i k (i + 1))) st0).
+    (I := fun i => fun h => get_heap h state = iteri (Z.to_nat i - 1) (fun i state => wAESENC_ state (key_i k (i + 1))) st0
+                      /\ (forall i, 0 <= i < 11 -> getmd rkeys word0 i = key_i k (Z.to_nat i))).
   - lia.
   - intros.
     simpl.
-    destruct_pre. sheap. rewrite H. reflexivity. lia.
+    destruct_pre. sheap. split_post.
+    + rewrite H1. reflexivity. lia.
+    + assumption.
   - intros i Hi.
     eapply r_get_remember_lhs with (pre := fun '(_, _) => _). intros x.
     eapply r_put_lhs. eapply r_ret.
     intros s0 s1 pre.
-    destruct_pre; sheap.
-    replace (Z.to_nat (Z.succ i) - 1)%nat with ((Z.to_nat i - 1).+1) by lia.
-    rewrite iteriS.
-    rewrite H5.
-    rewrite H. repeat f_equal. lia. lia.
+    destruct_pre; sheap; split_post.
+    + replace (Z.to_nat (Z.succ i) - 1)%nat with ((Z.to_nat i - 1).+1) by lia.
+      rewrite iteriS.
+      rewrite H0.
+      rewrite H6. repeat f_equal. lia. lia.
+    + assumption.
   - intros a0 a1.
     eapply r_get_remember_lhs with (pre := fun '(_, _) => _). intros x.
     eapply r_put_lhs.
     eapply r_get_remember_lhs. intros x0.
     eapply r_ret.
     intros s0 s1 pre.
-    Opaque getmd.
-    destruct pre as [[s2 [[H4 H3] H2]] H1].
+    destruct pre as [[s2 [[[H5 H4] H3] H2]] H1].
     simpl in H3, H1. subst.
     sheap.
     unfold aes.
     rewrite H4.
-    rewrite H.
+    rewrite H5.
     replace ((Z.to_nat 10) - 1)%nat with 9%nat by reflexivity.
     reflexivity. lia.
 Qed.
+
+Notation hdtc128 res := (coerce_to_choice_type ('word U128) (hd ('word U128 ; chCanonical _) res).π2).
+
+Lemma getmd_to_arr a ws len x i :
+  (0 <= i < len) ->
+  getmd (to_arr ws len a) x i = chArray_get ws a i (wsize_size ws).
+Proof.
+  intros.
+  unfold getmd.
+  rewrite getm_to_arr.
+  reflexivity.
+  assumption.
+Qed.
+
+(* NOTE: This is only so simple because InvMixColumns is not properly implemented *)
+Lemma AESDEC_AESDEC_ s k : wAESDEC s (InvMixColumns k) = wAESDEC_ s k.
+Proof.
+  unfold wAESDEC, wAESDEC_.
+  unfold InvMixColumns.
+  reflexivity.
+Qed.
+
+Lemma wAESENCLAST_wAESENCLAST_ s k : wAESENCLAST s k = wAESENCLAST_ s k.
+Proof.
+  unfold wAESENCLAST, wAESENCLAST_.
+  rewrite ShiftRows_SubBytes.
+  reflexivity.
+Qed.
+
+Lemma aes_rounds_E pre id0 rkeys msg :
+  (pdisj pre id0 [fset state]) ->
+  ⊢ ⦃ fun '(h0, h1) => pre (h0, h1) ⦄
+    JAES_ROUNDS id0 rkeys msg
+    ≈
+    aes_rounds (to_arr U128 (mkpos 11) rkeys) msg
+    ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) /\ hdtc128 v0 = v1 ⦄.
+Proof.
+
+  intros disj.
+  Transparent translate_call.
+  unfold translate_call.
+  unfold translate_call_body.
+
+  Opaque translate_call.
+  Opaque wrange.
+  Opaque for_loop'.
+
+  simpl. simpl_fun.
+  repeat setjvars.
+  ssprove_code_simpl.
+  ssprove_code_simpl_more.
+  unfold aes_rounds.
+
+  repeat clear_get.
+  do 4 eapply r_put_lhs.
+  eapply r_put_rhs.
+
+  eapply r_bind.
+  - eapply translate_for_rule_weaken with
+      (I := fun i => fun '(h0, h1) => pre (h0, h1)
+                                /\ get_heap h0 state = get_heap h1 aes.state
+                                /\ get_heap h0 rkeys0 = rkeys).
+    + intros; destruct_pre.
+      rewrite !zero_extend_u.
+      rewrite !coerce_to_choice_type_K.
+      sheap.
+      split_post.
+      * pdisj_apply disj.
+      * rewrite getmd_to_arr. reflexivity. lia.
+      * reflexivity.
+    + intros. simpl. auto with preceq.
+    + lia.
+    + intros.
+      repeat (eapply r_get_remember_lhs; intros).
+      eapply r_put_lhs.
+      eapply r_get_remember_rhs; intros.
+      eapply r_put_rhs.
+      eapply r_ret.
+      intros s0 s1 Hpre; destruct_pre.
+      unfold tr_app_sopn_tuple.
+      simpl.
+      rewrite !zero_extend_u.
+      rewrite !coerce_to_choice_type_K.
+      sheap.
+      split_post.
+      * pdisj_apply disj.
+      * rewrite -> H12.
+        rewrite wAESENC_wAESENC_.
+        rewrite getmd_to_arr.
+        reflexivity. lia.
+      * reflexivity.
+  - intros a0 a.
+    eapply r_get_remember_lhs with (pre := fun '(_, _) => _). intros x.
+    eapply r_get_remember_lhs. intros x0.
+    eapply r_put_lhs.
+    eapply r_get_remember_lhs. intros x1.
+
+    eapply r_get_remember_rhs. intros x2.
+    eapply r_put_rhs.
+    eapply r_get_remember_rhs. intros x3.
+    eapply r_ret.
+
+    intros s0 s1 Hpre; destruct_pre.
+    rewrite !coerce_to_choice_type_K.
+    rewrite !zero_extend_u.
+    sheap.
+    split_post.
+    + pdisj_apply disj.
+    + unfold tr_app_sopn_tuple.
+      simpl.
+      rewrite !zero_extend_u.
+      rewrite -> H6.
+      rewrite getmd_to_arr.
+      rewrite wAESENCLAST_wAESENCLAST_.
+      reflexivity.
+      lia.
+Qed.
+
+Definition Caes (key msg : u128) :=
+  rkeys ← keyExpansion key ;;
+  cipher ← aes_rounds rkeys msg ;;
+  ret cipher.
+
+Lemma aes_h k m :
+  (* (forall i, (0 <= i < 11)%nat -> rkeys i = Some (key_i k i)) -> *)
+  ⊢ ⦃ fun '(_, _) => True ⦄
+    Caes k m
+    ≈
+    ret tt
+    ⦃ fun '(v0, _) '(_, _) => v0 = aes k m ⦄.
+Proof.
+  unfold Caes.
+  eapply r_bind with (m₁ := ret _).
+  - eapply aes_keyExpansion_h.
+  - intros a0 [].
+    eapply r_bind with (m₁ := ret _).
+    eapply aes_rounds_h.
+    intros a1 [].
+    eapply r_ret.
+    intros.
+    assumption.
+Qed.
+
+Lemma aes_E pre id0 k m :
+  (pdisj pre id0 fset0) ->
+  ⊢ ⦃ fun '(h0, h1) => pre (h0, h1) ⦄
+    JAES id0 k m
+    ≈
+    Caes k m
+    ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) /\ hdtc128 v0 = v1 ⦄.
+Proof.
+  intros disj.
+  Transparent translate_call.
+  unfold translate_call.
+  unfold translate_call_body.
+
+  Opaque translate_call.
+  Opaque wrange.
+  Opaque for_loop'.
+
+  simpl.
+  (* a bit too slow *)
+  (* simpl_fun. *)
+  (* repeat setjvars. *)
+
+  (* eapply r_put_lhs. *)
+  (* eapply r_put_lhs. *)
+  (* eapply r_get_remember_lhs. intros. *)
+  (* (* eapply r_bind. *) *)
+  (* rewrite !bind_assoc. *)
+
+  (* ssprove_code_simpl. *)
+  (* ssprove_code_simpl_more. *)
+  (* unfold aes_rounds. *)
+
+  (* repeat clear_get. *)
+  (* do 4 eapply r_put_lhs. *)
+  (* eapply r_put_rhs. *)
+
+  (* eapply r_bind. *)
+
