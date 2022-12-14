@@ -134,7 +134,6 @@ Ltac pdisj_apply h :=
 
 Definition rcon (i : Z) : u8 := nth (wrepr U8 54%Z) [:: (wrepr U8 1%Z); (wrepr U8 2%Z); (wrepr U8 4%Z); (wrepr U8 8%Z); (wrepr U8 16%Z); (wrepr U8 32%Z); (wrepr U8 64%Z); (wrepr U8 128%Z); (wrepr U8 27%Z); (wrepr U8 54%Z)]%Z ((Z.to_nat i) - 1).
 
-Notation call fn := (translate_call _ fn _).
 Notation hdtcA res := (coerce_to_choice_type ('array) (hd ('word U64 ; chCanonical _) res).π2).
 
 Definition key_expand (wn1 : u128) (rcon : u8) : 'word U128 :=
@@ -158,6 +157,9 @@ Lemma rcon_correct id0 pre i :
     ≈ ret tt
     ⦃ fun '(v0, s0) '(v1, s1) => pre (s0, s1) /\ exists o, v0 = ([('int ; o)] : tchlist) /\ o = wunsigned (rcon i) ⦄.
 Proof.
+  unfold JRCON.
+  unfold get_translated_static_fun.
+  simpl.
   intros Hpdisj H.
   simpl_fun.
   repeat setjvars.
@@ -174,7 +176,6 @@ Qed.
 (* copy of the easycrypt functional definition *)
 Definition W4u8 : 4.-tuple u8 -> u32 := wcat.
 Definition W4u32 : 4.-tuple u32 -> u128 := wcat.
-
 
 Notation "m ⊕ k" := (@word.word.wxor _ m k) (at level 20).
 
@@ -988,6 +989,8 @@ Lemma key_expandP pre id0 rcon rkey temp2 rcon_ :
             subword 0 U32 o2 = word0
     ⦄.
 Proof.
+  unfold JKEY_EXPAND.
+  unfold get_translated_static_fun.
   intros disj Hrcon Htemp2.
   simpl_fun.
   repeat setjvars.
@@ -1609,9 +1612,12 @@ Lemma keyExpansion_E pre id0 rkey :
     ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) /\ (to_arr U128 (mkpos 11) (hdtcA v0)) = v1 ⦄.
 Proof.
   intros disj.
-  unfold translate_call.
-  unfold translate_call_body.
 
+  unfold JKEYS_EXPAND.
+  unfold get_translated_static_fun.
+  unfold translate_prog_static.
+  unfold translate_funs_static.
+  unfold translate_call_body.
   Opaque translate_call.
   Opaque wrange.
   Opaque for_loop'.
@@ -1649,9 +1655,6 @@ Proof.
       * intros i s_id Hs_id ile.
         ssprove_code_simpl.
 
-        (* NB: Do not rewrite here, since it breaks unification when trying to apply other correctness lemmas *)
-        (* rewrite !coerce_to_choice_type_K. *)
-
         eapply r_get_remember_lhs. intros.
 
         (* Now we apply the correctnes of rcon *)
@@ -1685,10 +1688,11 @@ Proof.
            (* we need to know the value of a0 here *)
            eapply rpre_weak_hypothesis_rule'; intros.
            destruct_pre; simpl.
+           fold rcon.
            repeat clear_get.
            eapply r_put_lhs with (pre := λ '(s0',s1'), _ ).
-           eapply r_get_remember_lhs. intros x0.
            eapply r_get_remember_lhs. intros x1.
+           eapply r_get_remember_lhs. intros x2.
            sheap.
 
            eapply r_bind with (m₁ := ret _) (f₁ := fun _ => _).
@@ -1696,7 +1700,7 @@ Proof.
            (* First we apply correctness of key_expandP *)
            *** (* Here the rewrite is necessary. How should correctness be phrased in general such that this is not important? *)
                rewrite !coerce_to_choice_type_K.
-               eapply key_expandP with (id0 := (s_id~0~1)%positive) (rcon := (wunsigned (rcon i))) (rkey := x0) (temp2 := x1) (rcon_ := rcon i).
+               eapply key_expandP with (id0 := (s_id~0~1)%positive) (rcon := (wunsigned (aes.rcon i))) (rkey := x1) (temp2 := x2) (rcon_ := aes.rcon i).
                (* again, we have to prove that our precond does not depend key_expand locations *)
                { split.
                  (* key_expandP also does not use variables on the rhs *)
@@ -1973,11 +1977,12 @@ Lemma aes_rounds_E pre id0 rkeys msg :
     aes_rounds (to_arr U128 (mkpos 11) rkeys) msg
     ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) /\ hdtc128 v0 = v1 ⦄.
 Proof.
-
-  intros disj.
-  Transparent translate_call.
-  unfold translate_call.
+  unfold JAES_ROUNDS.
+  unfold get_translated_static_fun.
+  unfold translate_prog_static.
+  unfold translate_funs_static.
   unfold translate_call_body.
+  intros disj.
 
   Opaque translate_call.
   Opaque wrange.
@@ -2087,23 +2092,19 @@ Lemma aes_E pre id0 k m :
     Caes k m
     ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) /\ hdtc128 v0 = v1 ⦄.
 Proof.
-  intros disj.
-  Transparent translate_call.
-  unfold translate_call.
+  unfold JAES.
+  unfold get_translated_static_fun.
+  unfold translate_prog_static.
+  unfold translate_funs_static.
   unfold translate_call_body.
+  intros disj.
 
-  Opaque translate_call.
-  Opaque wrange.
-  Opaque for_loop'.
+  simpl. simpl_fun.
+  repeat setjvars.
 
-  simpl.
-  (* a bit too slow *)
-  (* simpl_fun. *)
-  (* repeat setjvars. *)
-
-  (* eapply r_put_lhs. *)
-  (* eapply r_put_lhs. *)
-  (* eapply r_get_remember_lhs. intros. *)
+  eapply r_put_lhs.
+  eapply r_put_lhs.
+  eapply r_get_remember_lhs. intros.
   (* (* eapply r_bind. *) *)
   (* rewrite !bind_assoc. *)
 
