@@ -33,7 +33,6 @@ Notation call fn := (translate_call _ fn _).
 
 Section Hacspec.
 
-<<<<<<< HEAD
   (* NB: this redefines neq_loc_auto, which helps some tactics, since checking for inequality by computation is not feasible for translated variables *)
   Ltac neq_loc_auto ::= solve [ eapply injective_translate_var3; auto | eapply injective_translate_var2; auto ].
 
@@ -83,10 +82,16 @@ Section Hacspec.
                                                                                              end.
   Proof. destruct h ; reflexivity. Qed.
 
-  Ltac bind_jazz_hac := match goal with
-                        | [ |- context [ ⊢ ⦃ ?P ⦄ putr ?l ?jazz ?f ≈ _ ⦃ ?Q ⦄ ] ] =>
-                            apply (@r_bind _ _ _ _ (ret jazz) _ (fun x => putr l x f) _ _ Q _) ; [ | intros ; unfold pre_to_post ]
-                        end.
+  Ltac bind_jazz_hac :=
+    match goal with
+    | [ |- context [ ⊢ ⦃ ?P ⦄ putr ?l ?jazz ?f ≈ _ ⦃ ?Q ⦄ ] ] =>
+        eapply (@r_bind _ _ _ _ (ret jazz) _ (fun x => putr l x f) _ _ (fun '(v0, h0) '(v1, h1) => v0 = v1 /\ P (h0, h1)) _) ; [ | intros ; unfold pre_to_post ]
+    end.
+
+  (* match goal with *)
+  (* | [ |- context [ ⊢ ⦃ ?P ⦄ putr ?l ?jazz ?f ≈ _ ⦃ ?Q ⦄ ] ] => *)
+  (*     apply (@r_bind _ _ _ _ (ret jazz) _ (fun x => putr l x f) _ _ Q _) ; [ | intros ; unfold pre_to_post ] *)
+  (* end. *)
 
   Ltac remove_get_in_lhs :=
     eapply better_r_get_remind_lhs ;
@@ -98,7 +103,63 @@ Section Hacspec.
       reflexivity | ].
 
   Notation JVSHUFPS i rkey temp1 temp2 := (trc VSHUFPS i [('word U128 ; rkey) ; ('word U128 ; temp1) ; ('word U128 ; temp2)]).
-  
+
+  Lemma wpshupfd_eq :
+    forall (rkey : 'word U128)  (i : nat),
+      i < 4 ->
+      wpshufd1 rkey (wrepr U8 255) i =
+        is_pure (vpshufd1 rkey (Hacspec_Lib_Pre.repr 255) (Hacspec_Lib_Pre.repr i)).
+  Proof.
+      Opaque Z.mul.
+      clear.
+      intros.
+      unfold vpshufd1.
+      unfold wpshufd1.
+      simpl.
+      apply word_ext.
+      f_equal.
+      simpl.
+      rewrite Zmod_mod.
+      unfold Hacspec_Lib_Pre.shift_right_, wshr, lsr, Hacspec_Lib_Pre.unsigned, wunsigned ; rewrite mkwordK.
+      f_equal.
+      f_equal.
+      f_equal.
+      f_equal.
+      unfold Hacspec_Lib_Pre.repr.
+      unfold wrepr.
+      unfold toword at 1, mkword at 2.
+      unfold Hacspec_Lib_Pre.from_uint_size, Hacspec_Lib_Pre.Z_uint_sizeable, Hacspec_Lib_Pre.unsigned, wunsigned.
+      unfold Hacspec_Lib_Pre.int_mul, mul_word.
+      rewrite !mkwordK.
+      rewrite (Zmod_small _ (modulus nat127.+1)) ; [ | destruct i as [ | [ | [ | [] ]]] ; easy ].
+      rewrite (Zmod_small _ (modulus (wsize_size_minus_1 U32).+1)) ; [ | destruct i as [ | [ | [ | [] ]]] ; easy ].
+      f_equal.
+      rewrite (Zmod_small _ (modulus U32)) ; [ | destruct i as [ | [ | [ | [] ]]] ; easy ].
+      f_equal.
+      unfold wunsigned.
+      unfold Hacspec_Lib_Pre.usize_shift_right.
+      unfold wshr.
+      unfold urepr, val, word_subType.
+      Set Printing Coercions.
+      unfold toword, mkword.
+      unfold lsr.
+      unfold mkword.
+      simpl.
+      Compute modulus nat7.+1.
+      rewrite (Zmod_small) ; [ | destruct i as [ | [ | [ | [] ]]] ; easy ].
+      rewrite (Zmod_small _ (modulus nat31.+1)) ; [ | destruct i as [ | [ | [ | [] ]]] ; easy ].
+      f_equal.
+      f_equal.
+      Opaque Nat.mul.
+      cbn.
+      replace (2 mod (modulus (nat_of_wsize U32)))%Z with 2%Z by reflexivity.
+      cbn.
+      rewrite (Zmod_small) ; [ | destruct i as [ | [ | [ | [] ]]] ; easy ].
+      rewrite (Zmod_small) ; [ | destruct i as [ | [ | [ | [] ]]] ; easy ].
+      rewrite (Zmod_small) ; [ | destruct i as [ | [ | [ | [] ]]] ; easy ].
+      lia.
+  Qed.
+
   Lemma key_combined_eq id0 rcon rkey temp2 :
     ⊢ ⦃ fun '(_, _) => True ⦄
         JKEY_COMBINE id0 rcon rkey temp2
@@ -123,173 +184,190 @@ Section Hacspec.
     apply better_r_put_lhs.
 
     remove_get_in_lhs.
-    match goal with
-    | [ |- context [ ⊢ ⦃ ?P ⦄ putr ?l ?jazz ?f ≈ _ ⦃ ?Q ⦄ ] ] =>
-        eapply (@r_bind _ _ _ _ (ret jazz) _ (fun x => putr l x f) _ _ (pre_to_post true_precond) _) ; [ | intros ; unfold pre_to_post ]
-    end.
+    bind_jazz_hac.
+    (* match goal with *)
+    (* | [ |- context [ ⊢ ⦃ ?P ⦄ putr ?l ?jazz ?f ≈ _ ⦃ ?Q ⦄ ] ] => *)
+    (*     eapply (@r_bind _ _ _ _ (ret jazz) _ (fun x => putr l x f) _ _ (fun '(v0, h0) '(v1, h1) => v0 = v1 /\ P (h0, h1)) _) ; [ | intros ; unfold pre_to_post ] *)
+    (* end. *)
 
     {
-    apply forget_precond.
-    rewrite !zero_extend_u.
 
-    unfold tr_app_sopn_tuple.
-    unfold sopn_sem.
-    unfold sopn.get_instr_desc.
-    unfold asm_opI.
-    unfold asm_op_instr.
-    unfold semi, arch_extra.get_instr_desc.
-    unfold instr_desc, _asm_op_decl, instr_desc_op, _asm, x86_extra.
-    unfold x86_sem.x86.
-    unfold x86_op_decl.
-    unfold x86_instr_desc.
-    unfold id_semi.
-    unfold Ox86_VPSHUFD_instr.
-    unfold ".1".
-    unfold x86_VPSHUFD.
-    unfold wpshufd.
+      (* apply forget_precond. *)
+      rewrite !zero_extend_u.
 
-    set (totce _) at 2.
-    cbn in t.
-    unfold totce in t.
+      unfold tr_app_sopn_tuple.
+      unfold sopn_sem.
+      unfold sopn.get_instr_desc.
+      unfold asm_opI.
+      unfold asm_op_instr.
+      unfold semi, arch_extra.get_instr_desc.
+      unfold instr_desc, _asm_op_decl, instr_desc_op, _asm, x86_extra.
+      unfold x86_sem.x86.
+      unfold x86_op_decl.
+      unfold x86_instr_desc.
+      unfold id_semi.
+      unfold Ox86_VPSHUFD_instr.
+      unfold ".1".
+      unfold x86_VPSHUFD.
+      unfold wpshufd.
 
-    set (chCanonical _).
-    cbn in s.
-    subst s.
+      set (totce _) at 2.
+      cbn in t.
+      unfold totce in t.
 
-    set (tr_app_sopn _ _ _ _).
-    cbn in y.
-    subst y.
-    hnf.
+      set (chCanonical _).
+      cbn in s.
+      subst s.
 
-    unfold totce.
-    subst t.
-    unfold ".π2".
+      set (tr_app_sopn _ _ _ _).
+      cbn in y.
+      subst y.
+      hnf.
 
-    unfold wpshufd_128.
-    unfold iota.
-    unfold map.
-    set (wpshufd1 _ _ _).
-    set (wpshufd1 _ _ _).
-    set (wpshufd1 _ _ _).
-    set (wpshufd1 _ _ _).
-    unfold vpshufd.
-    set (fun _ : T Hacspec_Lib_Pre.int128 => _).
-    set (_ shift_right _).
+      unfold totce.
+      subst t.
+      unfold ".π2".
 
-    apply (@r_bind _ _ _ _ (ret w) b (fun w => ret (wrepr U128 (wcat_r [w; w0; w1; w2]))) y true_precond (fun _ _ => True)).
-    - apply r_ret ; reflexivity.
-    - intros.
-      subst y. hnf. clear b.
-      set (fun _ : T Hacspec_Lib_Pre.int128 => _).
-      set (_ shift_right _).
-      apply (@r_bind _ _ _ _ (ret w0) b (fun _ => ret (wrepr U128 (wcat_r [_; _; _; _]))) y (fun '(_, _) => True) (fun _ _ => True)).
-      + apply r_ret ; reflexivity.
-      + intros.
-        subst y. hnf. clear b.
+      unfold wpshufd_128.
+      unfold iota.
+      unfold map.
+      (* set (wpshufd1 _ _ _). *)
+      (* set (wpshufd1 _ _ _). *)
+      (* set (wpshufd1 _ _ _). *)
+      unfold vpshufd.
 
-        set (fun _ : T Hacspec_Lib_Pre.int128 => _).
-      set (_ shift_right _).
-      apply (@r_bind _ _ _ _ (ret w1) b (fun _ => ret (wrepr U128 (wcat_r [_; _; _; _]))) y (fun '(_, _) => True) (fun _ _ => True)).
-      * apply r_ret ; reflexivity.
-      * intros.
-        subst y. hnf. clear b.
+      do 4 (set (w := wpshufd1 _ _ _) ;
+            set (y := fun _ : Hacspec_Lib_Pre.int32 => _) ;
+            set (b := vpshufd1 _ _ _);
+            let k := fresh in
+            match goal with
+            | [ |- context [ ⊢ ⦃ ?P ⦄ _ ≈ _ ⦃ _ ⦄ ] ] => set (k := P)
+            end ;
+            apply (@r_bind _ _ _ _ (ret w) (prog (is_state b)) (fun w => ret (wrepr U128 (wcat_r [_ ; _ ; _ ; _]))) y _ (fun '(v0, h0) '(v1, h1) => v0 = v1 /\ k (h0, h1))) ; [ apply r_ret ; intros ; subst w ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K  ;cbn ; rewrite! zero_extend_u ; now rewrite wpshupfd_eq | intros ; subst w y b ; hnf  ]).
 
-        
-        set (fun _ : T Hacspec_Lib_Pre.int128 => _).
-        set (_ shift_right _).
-        apply (@r_bind _ _ _ _ (ret w2) b (fun _ => ret (wrepr U128 (wcat_r [_; _; _; _]))) y (fun '(_, _) => True) (fun _ _ => True)).
-        -- apply r_ret ; reflexivity.
-        -- intros.
-           subst y. hnf. clear b.
-           unfold wcat_r.
+      apply r_ret.
+      intros.
+      destruct H3 as [? [? [? [? []]]]].
+      subst.
+      subst H.
+      clear -H7.
+      split ; [ | eexists ; apply H7 ].
 
-           Set Printing Coercions.
+      apply word_ext.
+      unfold wcat_r.
 
-           unfold lift_to_both0, lift_to_both.
-           unfold is_pure.
-           unfold "_ .| _".
-           unfold Hacspec_Lib_Pre.int_or.
-           unfold word.wor.
-           unfold lift_to_both.
-           unfold lift_scope.
-           unfold is_state.
-           unfold lift_to_code.
-           unfold lift_code_scope.
-           unfold prog.
+      unfold ".|".
+      unfold "_ shift_left _".
+      unfold Hacspec_Lib_Pre.shift_left_.
+      unfold Hacspec_Lib_Pre.int_or.
+      unfold Hacspec_Lib_Pre.repr.
+      unfold Hacspec_Lib_Pre.from_uint_size.
+      unfold Hacspec_Lib_Pre.usize.
+      unfold Hacspec_Lib_Pre.Z_uint_sizeable.
+      unfold Hacspec_Lib_Pre.unsigned.
+      unfold lift_to_both0 , lift_to_both, is_pure.
+      unfold word.wor, wor.
+      unfold wshl, lsl.
+      unfold wrepr, wunsigned, urepr, val, word_subType, mkword, toword.
+      unfold wrepr.
+      unfold mkword.
+      unfold toword.
+      unfold Hacspec_Lib_Pre.unsigned.
+      rewrite !Zmod_small.
+      rewrite <- Z.lor_assoc.
+      rewrite <- Z.lor_assoc.
+      f_equal.
+      symmetry.
+      rewrite <- Z.lor_comm.
+      rewrite <- Z.lor_assoc.
+      rewrite <- Z.lor_comm.
+      rewrite <- Z.lor_assoc.
+      rewrite <- Z.lor_comm.
+      rewrite <- Z.lor_assoc.
+      rewrite Z.shiftl_lor.
+      rewrite Z.shiftl_lor.
+      rewrite Z.shiftl_lor.
+      rewrite Z.shiftl_lor.
+      rewrite Z.shiftl_lor.
+      rewrite Z.shiftl_lor.
+      f_equal.
+      f_equal.
+      rewrite Z.lor_0_r.
+      reflexivity.
 
-           apply r_ret.
-           intros.
+      all: try easy.
 
-           unfold T_ct, eq_rect_r, Logic.eq_sym, Hacspec_Lib_Pre.int, ChoiceEq, Hacspec_Lib_Pre.int_obligation_1, ct, eq_rect.
+      destruct a₁2.
+      split. lia.
+      apply (ssrbool.elimT (iswordZP _ _)) in i.
+      destruct i.
+      eapply Z.lt_trans ; [ apply H0 | easy ].
 
-           unfold pre_to_post.
-           split ; [ | reflexivity ].
-           
-           rewrite Z.lor_comm.
-           rewrite (Z.lor_comm (urepr a₀0)).
-           rewrite (Z.lor_comm (urepr a₀1)).
-           rewrite (Z.lor_comm (urepr a₀2)).
+      cbn.
+      destruct a₁2.
+      split. apply Z.shiftl_nonneg. lia.
+      apply (ssrbool.elimT (iswordZP _ _)) in i.
+      destruct i.
+      admit.
 
-           unfold wor at 1.
+      cbn.
+      destruct a₁2.
+      split. lia.
+      apply (ssrbool.elimT (iswordZP _ _)) in i.
+      destruct i.
+      eapply Z.lt_trans ; [ apply H0 | easy ].
 
-           
-           
-           simpl.
-           
-           replace (int_to_Z (Posz 32)) with (Hacspec_Lib_Pre.usize 32).
-                      
-           unfold "_ shift_left _".
-           unfold Hacspec_Lib_Pre.shift_left_.
-           unfold wshl.
-           unfold lsl.
-           
-           
-           unfold lift_scope, lift_to_both0, lift_to_both, is_pure, is_state.
-           
-           apply (@r_bind _ _ _ _ (ret w2) b (fun _ => ret (wrepr U128 (wcat_r [_; _; _; _]))) y (fun '(_, _) => True) (fun _ _ => True)).
 
+      cbn.
+      destruct a₁1.
+      split. lia.
+      apply (ssrbool.elimT (iswordZP _ _)) in i.
+      destruct i.
+      eapply Z.lt_trans ; [ apply H0 | easy ].
+
+      cbn.
+      destruct a₁1.
+      admit.
+
+      cbn.
+      destruct a₁1.
+      split. lia.
+      apply (ssrbool.elimT (iswordZP _ _)) in i.
+      destruct i.
+      eapply Z.lt_trans ; [ apply H0 | easy ].
+
+      cbn.
+      destruct a₁0.
+      split. lia.
+      apply (ssrbool.elimT (iswordZP _ _)) in i.
+      destruct i.
+      eapply Z.lt_trans ; [ apply H0 | easy ].
+
+      cbn.
+      destruct a₁0.
+      admit.
+
+      cbn.
+      destruct a₁0.
+      split. lia.
+      apply (ssrbool.elimT (iswordZP _ _)) in i.
+      destruct i.
+      eapply Z.lt_trans ; [ apply H0 | easy ].
+
+      cbn.
+      destruct a₁.
+      split. lia.
+      apply (ssrbool.elimT (iswordZP _ _)) in i.
+      destruct i.
+      eapply Z.lt_trans ; [ apply H0 | easy ].
+
+      cbn.
+      destruct a₁.
+      admit.
     }
-    
-    set (U8 %/ 2).
-    assert (n = 4). admit.
-    replace n with 4%nat in *.
-    unfold curry.
-    
-    Set Printing Coercions.
-    unfold nat_of_wsize.
-    unfold wsize_size_minus_1.
-    unfold nat7.
-    unfold "%/".
-    unfold edivn.
-    cbn.
-    
-    unfold embed_tuple.
-    
-    unfold encode_tuple.
-    unfold lchtuple.
-    unfold tr_app_sopn.
-    unfold embed_tuple.
-    cbn.
-
-    rewrite !zero_extend_u.
-    apply r_ret.
-    intros.
-    
-    
-    unfold tr_app_sopn.
-
-    
-    bind_jazz_hac.
-    Set Printing Implicit.
-    Set Printing Coercions.
-    shelve.
 
     do 5 (apply better_r_put_lhs ; do 2 remove_get_in_lhs ; bind_jazz_hac ; [shelve | ]).
-
-    apply better_r_put_lhs.
-    remove_get_in_lhs.
-    remove_get_in_lhs.
-    apply r_ret.
+    apply better_r_put_lhs ; do 2 remove_get_in_lhs ; apply r_ret.
 
     intros.
     destruct_pre.
@@ -299,9 +377,8 @@ Section Hacspec.
     cbn.
     rewrite !zero_extend_u.
     reflexivity.
+  Admitted.
 
-    
-=======
   Lemma foo id0 rcon rkey temp2 :
     ⊢ ⦃ fun '(_, _) => True ⦄
       JKEY_COMBINE id0 rcon rkey temp2
@@ -318,7 +395,6 @@ Section Hacspec.
     unfold sopn_sem, tr_app_sopn_tuple, tr_app_sopn_single.
     simpl.
 
->>>>>>> 1c0c1bbe99e9078b09debae9e69a87fc6b4915d9
   Admitted.
 
   Lemma bar id0 rcon rkey temp2 :
