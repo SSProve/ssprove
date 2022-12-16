@@ -308,8 +308,10 @@ Section Hacspec.
       split. apply Z.shiftl_nonneg. lia.
       apply (ssrbool.elimT (iswordZP _ _)) in i.
       destruct i.
-      admit.
-
+      rewrite Z.shiftl_mul_pow2 ; [ | easy].
+      rewrite (@Z.mul_lt_mono_pos_r (2 ^ Z.of_nat (Pos.to_nat 96)) toword) in H0 ; [ | easy].
+      apply H0.
+      
       cbn.
       destruct a₁2.
       split. lia.
@@ -327,8 +329,13 @@ Section Hacspec.
 
       cbn.
       destruct a₁1.
-      admit.
-
+      split. apply Z.shiftl_nonneg. lia.
+      apply (ssrbool.elimT (iswordZP _ _)) in i.
+      destruct i.
+      rewrite Z.shiftl_mul_pow2 ; [ | easy].
+      rewrite (@Z.mul_lt_mono_pos_r (2 ^ Z.of_nat (Pos.to_nat 64)) toword) in H0 ; [ | easy].
+      eapply Z.lt_trans ; [ apply H0 | easy ].
+      
       cbn.
       destruct a₁1.
       split. lia.
@@ -345,7 +352,12 @@ Section Hacspec.
 
       cbn.
       destruct a₁0.
-      admit.
+      split. apply Z.shiftl_nonneg. lia.
+      apply (ssrbool.elimT (iswordZP _ _)) in i.
+      destruct i.
+      rewrite Z.shiftl_mul_pow2 ; [ | easy].
+      rewrite (@Z.mul_lt_mono_pos_r (2 ^ Z.of_nat (Pos.to_nat 32)) toword) in H0 ; [ | easy].
+      eapply Z.lt_trans ; [ apply H0 | easy ].
 
       cbn.
       destruct a₁0.
@@ -361,9 +373,65 @@ Section Hacspec.
       destruct i.
       eapply Z.lt_trans ; [ apply H0 | easy ].
 
-      cbn.
-      destruct a₁.
-      admit.
+      destruct a₁, a₁0, a₁1, a₁2.
+      rewrite !Z.shiftl_lor.
+      rewrite !Z.shiftl_mul_pow2 ; try easy.
+      rewrite !Z.mul_0_l.
+      rewrite Z.lor_0_r.
+      replace (int_to_Z (Posz 32)) with 32%Z by reflexivity.
+
+      apply (ssrbool.elimT (iswordZP _ _)) in i, i0, i1, i2.
+      split.
+      {
+        apply Z.lor_nonneg. split. easy.
+        apply Z.lor_nonneg. split. apply Z.mul_nonneg_nonneg ; easy.
+        apply Z.lor_nonneg. split. repeat apply Z.mul_nonneg_nonneg ; easy.
+        repeat apply Z.mul_nonneg_nonneg ; easy.
+      }
+      {
+        rewrite <- !Z.mul_assoc.
+        rewrite <- !Z.pow_add_r ; try easy.
+        simpl.
+
+        assert (forall (x y : Z) (k : nat), (0 <= x < 2 ^ k)%Z -> (0 <= y < 2 ^ k)%Z -> (0 <= Z.lor x y < 2 ^ k)%Z).
+        {
+          clear.
+          intros.
+
+          split.
+          apply Z.lor_nonneg ; easy.
+          destruct x as [ | x | x ].
+          - apply H0.
+          - destruct y as [ | y | y ].
+            + apply H.
+            + simpl in *.
+              admit.
+            + easy.
+          - easy.
+        }
+
+        apply (H toword _ nat127.+1). split ; [ easy | ].
+        eapply Z.lt_trans ; [apply i | easy].
+
+        apply (H (toword0 * _)%Z _ nat127.+1). split ; [ apply Z.mul_nonneg_nonneg ; easy | ].
+        eapply Z.lt_le_trans.
+        rewrite (@Z.mul_lt_mono_pos_r (2 ^ Z.of_nat (Pos.to_nat 32)) toword0) in i0 ; [ | easy].
+        apply i0.
+        easy.
+
+        apply (H (toword1 * _)%Z _ nat127.+1). split ; [ apply Z.mul_nonneg_nonneg ; easy | ].
+
+        eapply Z.lt_le_trans.
+        rewrite (@Z.mul_lt_mono_pos_r (2 ^ Z.of_nat (Pos.to_nat 64)) toword1) in i1 ; [ | easy].
+        apply i1.
+        easy.
+
+        split ; [ apply Z.mul_nonneg_nonneg ; easy | ].
+        eapply Z.lt_le_trans.
+        rewrite (@Z.mul_lt_mono_pos_r (2 ^ Z.of_nat (Pos.to_nat 96)) toword2) in i2 ; [ | easy].
+        apply i2.
+        easy.
+      }
     }
 
     do 5 (apply better_r_put_lhs ; do 2 remove_get_in_lhs ; bind_jazz_hac ; [shelve | ]).
