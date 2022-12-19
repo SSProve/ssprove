@@ -158,7 +158,6 @@ Lemma rcon_correct id0 pre i :
 Proof.
   unfold JRCON.
   unfold get_translated_static_fun.
-  simpl.
   intros Hpdisj H.
   simpl_fun.
   repeat setjvars.
@@ -1844,6 +1843,9 @@ Proof.
   assumption.
   intros.
   destruct a₀, a₁.
+  destruct_pre.
+  rewrite coerce_to_choice_type_K.
+  simpl.
   easy.
 Qed.
 

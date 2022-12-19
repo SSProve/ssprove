@@ -22,53 +22,55 @@ Definition ssprove_jasmin_prog : uprog.
 Proof.
   refine {| p_funcs :=
  [ ( (* xor *) xH,
-     {| f_info := xO xH
+     {| f_info := FunInfo.witness
       ; f_tyin := [(sword U64); (sword U64)]
       ; f_params :=
           [{| v_var := {| vtype := (sword U64)
-                        ; vname := "x.143"  |}
+                        ; vname := "x.141"  |}
             ; v_info := dummy_var_info |};
             {| v_var := {| vtype := (sword U64)
-                         ; vname := "y.144"  |}
+                         ; vname := "y.142"  |}
              ; v_info := dummy_var_info |}]
       ; f_body :=
           [ MkI InstrInfo.witness
              (Cassgn
                 (Lvar
                    {| v_var := {| vtype := (sword U64)
-                                ; vname := "r.145"  |}
+                                ; vname := "r.143"  |}
                     ; v_info := dummy_var_info |})
                 AT_none ((sword U64))
                 ((Pvar
                     {| gv := {| v_var :=
                                   {| vtype := (sword U64)
-                                   ; vname := "x.143"  |}
+                                   ; vname := "x.141"  |}
                               ; v_info := dummy_var_info |} ; gs := Slocal |})));
             MkI InstrInfo.witness
              (Cassgn
                 (Lvar
                    {| v_var := {| vtype := (sword U64)
-                                ; vname := "r.145"  |}
+                                ; vname := "r.143"  |}
                     ; v_info := dummy_var_info |})
                 AT_none ((sword U64))
                 ((Papp2 (Olxor U64)
                     (Pvar
                        {| gv := {| v_var :=
                                      {| vtype := (sword U64)
-                                      ; vname := "r.145"  |}
+                                      ; vname := "r.143"  |}
                                  ; v_info := dummy_var_info |} ; gs := Slocal |})
                     (Pvar
                        {| gv := {| v_var :=
                                      {| vtype := (sword U64)
-                                      ; vname := "y.144"  |}
+                                      ; vname := "y.142"  |}
                                  ; v_info := dummy_var_info |} ; gs := Slocal |})))) ]
       ; f_tyout := [(sword U64)]
       ; f_res :=
           [{| v_var := {| vtype := (sword U64)
-                        ; vname := "r.145"  |}
+                        ; vname := "r.143"  |}
             ; v_info := dummy_var_info |}]
       ; f_extra := tt
       ; |} ) ] ;
   p_globs := [] ;
   p_extra := tt |}.
+
 Defined.
+Notation XOR := ( xH ).

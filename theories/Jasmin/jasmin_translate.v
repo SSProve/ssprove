@@ -1676,7 +1676,7 @@ Section bind_list_alt.
   Defined.
 
 End bind_list_alt.
-
+Context {fcp : FlagCombinationParams}.
 Definition embed_ot {t} : sem_ot t → encode t :=
   match t with
   (* BSH: I'm not sure this will be correct? In jasmin this is an Option bool, perhaps because you don't have to specify all output flags *)
@@ -3142,9 +3142,9 @@ Ltac jbind_fresh h :=
   clear h ; intros x hx h ;
   cbn beta in h.
 
-Lemma app_sopn_nil_ok_size :
-  ∀ T ts (f : sem_prod ts (exec T)) vs v,
-    app_sopn ts f vs = ok v →
+Lemma app_sopn_nil_ok_size {T} {of_T : forall t, T -> exec (sem_t t)} :
+  ∀ A ts (f : sem_prod ts (exec A)) vs v,
+    app_sopn of_T f vs = ok v →
     size ts = size vs.
 Proof.
   intros A ts f vs v h.
@@ -3348,8 +3348,8 @@ Lemma list_lchtuple_cons_cons {t1 t2 : stype}  {ts : seq stype} (p1 : encode t1)
 Proof. reflexivity. Qed.
 
 Lemma app_sopn_cons {rT} t ts v vs sem :
-  @app_sopn rT (t :: ts) sem (v :: vs) =
-  Let v' := of_val t v in @app_sopn rT ts (sem v') vs.
+  @app_sopn _ of_val rT (t :: ts) sem (v :: vs) =
+  Let v' := of_val t v in @app_sopn _ of_val rT ts (sem v') vs.
 Proof. reflexivity. Qed.
 
 Lemma sem_prod_cons t ts S :
@@ -3362,7 +3362,7 @@ Inductive sem_correct {R} : ∀ (ts : seq stype), (sem_prod ts (exec R)) → Pro
 
 Lemma tr_app_sopn_correct {R S} (can : S) emb ts vs vs' (s : sem_prod ts (exec R)) :
   sem_correct ts s →
-  app_sopn ts s vs = ok vs' →
+  app_sopn of_val s vs = ok vs' →
   tr_app_sopn can emb ts s [seq to_typed_chElement (translate_value v) | v <- vs]
   = emb vs'.
 Proof.
@@ -3385,7 +3385,7 @@ Qed.
 Context `{asm_correct : ∀ o, sem_correct (tin (get_instr_desc (Oasm o))) (sopn_sem (Oasm o))}.
 
 Lemma app_sopn_list_tuple_correct o vs vs' :
-  app_sopn _ (sopn_sem o) vs = ok vs' →
+  app_sopn of_val (sopn_sem o) vs = ok vs' →
   tr_app_sopn_tuple _ (sopn_sem o) [seq to_typed_chElement (translate_value v) | v <- vs]
   =
   embed_tuple vs'.
@@ -3434,7 +3434,7 @@ Proof using asm_correct.
 Qed.
 
 Lemma tr_app_sopn_single_correct (op : opN) (v : sem_t (type_of_opN op).2) (vs : values) :
-  app_sopn (type_of_opN op).1 (sem_opN_typed op) vs = ok v →
+  app_sopn of_val (sem_opN_typed op) vs = ok v →
   tr_app_sopn_single
     (type_of_opN op).1
     (sem_opN_typed op)
@@ -4066,6 +4066,7 @@ Section Translation.
 Context `{asmop : asmOp}.
 
 Context {pd : PointerData}.
+Context {fcp : FlagCombinationParams}.
 
 Context (P : uprog).
 
@@ -4126,7 +4127,7 @@ Fixpoint translate_instr_r
 with translate_instr (tr_f_body : fdefs)
        (i : instr) (m_id : p_id) (s_id : p_id) {struct i} : p_id * raw_code 'unit :=
   translate_instr_r tr_f_body (instr_d i) m_id s_id.
-Proof using P asm_op asmop pd.
+Proof using P asm_op asmop pd fcp.
   pose proof (translate_cmd :=
     (fix translate_cmd (tr_f_body : fdefs) (c : cmd) (m_id : p_id) (s_id : p_id) : p_id * raw_code 'unit :=
       match c with
@@ -4266,7 +4267,7 @@ Definition translate_fundef
            (tr_f_body : fdefs)
            (p : p_id)
            (fd : _ufun_decl (* extra_fun_t *)) : funname * fdef.
-Proof using P asm_op asmop pd.
+Proof using P asm_op asmop pd fcp.
   destruct fd. destruct _f.
   split. 1: exact f.
   constructor.
@@ -4327,11 +4328,12 @@ Section Translation.
 Context `{asmop : asmOp}.
 
 Context {pd : PointerData}.
+Context {fcp : FlagCombinationParams}.
 
 Definition ssprove_prog := seq (funname * trfun).
 
 Definition translate_prog (prog : uprog) : fdefs.
-Proof using asm_op asmop pd.
+Proof using asm_op asmop pd fcp.
   destruct prog.
   induction p_funcs.
   - exact [::].
@@ -4345,7 +4347,7 @@ Proof using asm_op asmop pd.
 Defined.
 
 Definition tr_p (prog : uprog) : ssprove_prog.
-Proof using asm_op asmop pd.
+Proof using asm_op asmop pd fcp.
   pose (fs := translate_prog prog).
   induction fs as [|f fs ?].
   - constructor 1.
@@ -4388,6 +4390,12 @@ Fixpoint translate_funs_static (P : uprog) (fs : seq _ufun_decl) (st_funcs : fde
 
 Definition translate_prog_static P st_funcs :=
   translate_funs_static P (p_funcs P) st_funcs.
+
+Definition get_translated_static_fun P fn st_func :=
+  match assoc (translate_prog_static P st_func).2 fn with
+  | Some f => f
+  | None => fun _ _ => ret [::]
+  end.
 
 Lemma tr_prog_inv {P fn f} :
   get_fundef (p_funcs P) fn = Some f →
@@ -5057,7 +5065,7 @@ Qed.
 
 Theorem translate_prog_correct P scs m vargs scs' m' vres :
   ∀ fn,
-    sem.sem_call P scs m fn vargs scs' m' vres →
+    sem.sem_call (P : @uprog asm_op asmop) scs m fn vargs scs' m' vres →
     handled_program P ->
     ∀ vm m_id s_id s_st st,
     Pfun P fn scs m vargs scs' m' vres vm m_id s_id s_st st.
@@ -5094,7 +5102,7 @@ Proof using gd asm_correct.
         translate_for v ws m_id (translate_cmd P SP c m_id) s_id' ⇓ tt
       ⦃ rel_estate s2 m_id s_id'' (s_id~0 :: s_st) st ⦄
   ).
-  unshelve eapply (@sem_call_Ind _ _ _ _ _ _ Pc Pi_r Pi Pfor Pfun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H).
+  unshelve eapply (@sem_call_Ind asm_op syscall_state mk_spp _ Pc Pi_r Pi Pfor Pfun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H).
   - (* nil *)
     intros s m_id s_id s_st st _. simpl.
     eapply u_ret_eq.

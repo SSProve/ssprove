@@ -22,18 +22,18 @@ Definition ssprove_jasmin_prog : uprog.
 Proof.
   refine {| p_funcs :=
  [ ( (* reduce *) xH,
-     {| f_info := xO xH
+     {| f_info := FunInfo.witness
       ; f_tyin := [(sword U64)]
       ; f_params :=
           [{| v_var := {| vtype := (sword U64)
-                        ; vname := "a.142"  |}
+                        ; vname := "a.140"  |}
             ; v_info := dummy_var_info |}]
       ; f_body :=
           [ MkI InstrInfo.witness
              (Cassgn
                 (Lvar
                    {| v_var := {| vtype := (sword U64)
-                                ; vname := "u.143"  |}
+                                ; vname := "u.141"  |}
                     ; v_info := dummy_var_info |})
                 AT_none ((sword U64))
                 ((Papp1 (Oword_of_int U64)
@@ -44,10 +44,12 @@ Proof.
       ; f_tyout := [(sword U64)]
       ; f_res :=
           [{| v_var := {| vtype := (sword U64)
-                        ; vname := "u.143"  |}
+                        ; vname := "u.141"  |}
             ; v_info := dummy_var_info |}]
       ; f_extra := tt
       ; |} ) ] ;
   p_globs := [] ;
   p_extra := tt |}.
+
 Defined.
+Notation REDUCE := ( xH ).

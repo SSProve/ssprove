@@ -21,94 +21,97 @@ Local Open Scope string.
 Definition ssprove_jasmin_prog : uprog.
 Proof.
   refine {| p_funcs :=
- [ ( (* odd *) xI xH,
-     {| f_info := xO (xO xH)
-      ; f_tyin := [(sword U64); (sword U64)]
-      ; f_params :=
-          [{| v_var := {| vtype := (sword U64)
-                        ; vname := "n.157"  |}
-            ; v_info := dummy_var_info |};
-            {| v_var := {| vtype := (sword U64)
-                         ; vname := "m.158"  |}
-             ; v_info := dummy_var_info |}]
-      ; f_body :=
-          [ MkI InstrInfo.witness
-             (Cfor
-                ({| v_var := {| vtype := sint
-                              ; vname := "i.159"  |}
-                  ; v_info := dummy_var_info |})
-                ((UpTo, (Pconst (Z0))),
-                  (Papp1 (Oint_of_word U64)
-                     (Pvar
-                        {| gv := {| v_var :=
-                                      {| vtype := (sword U64)
-                                       ; vname := "n.157"  |}
-                                  ; v_info := dummy_var_info |} ; gs := Slocal |})))
-                [MkI InstrInfo.witness
-                  (Cassgn
-                     (Lvar
-                        {| v_var :=
-                             {| vtype := (sword U64)
-                              ; vname := "m.158"  |}
-                         ; v_info := dummy_var_info |})
-                     AT_none ((sword U64))
-                     ((Papp2 (Oadd (Op_w U64))
-                         (Pvar
-                            {| gv := {| v_var :=
-                                          {| vtype := (sword U64)
-                                           ; vname := "m.158"  |}
-                                      ; v_info := dummy_var_info |} ; gs := Slocal |})
-                         (Papp1 (Oword_of_int U64) (Pconst (Zpos (xH)))))))]) ]
-      ; f_tyout := [(sword U64)]
-      ; f_res :=
-          [{| v_var := {| vtype := (sword U64)
-                        ; vname := "m.158"  |}
-            ; v_info := dummy_var_info |}]
-      ; f_extra := tt
-      ; |} )
- ; ( (* add *) xH,
-     {| f_info := xO xH
+ [ ( (* add *) xH,
+     {| f_info := FunInfo.witness
       ; f_tyin := [sint; sint]
       ; f_params :=
           [{| v_var := {| vtype := sint
-                        ; vname := "n.154"  |}
+                        ; vname := "n.152"  |}
             ; v_info := dummy_var_info |};
             {| v_var := {| vtype := sint
-                         ; vname := "m.155"  |}
+                         ; vname := "m.153"  |}
              ; v_info := dummy_var_info |}]
       ; f_body :=
           [ MkI InstrInfo.witness
              (Cfor
                 ({| v_var := {| vtype := sint
-                              ; vname := "i.156"  |}
+                              ; vname := "i.154"  |}
                   ; v_info := dummy_var_info |})
                 ((UpTo, (Pconst (Z0))),
                   (Pvar
                      {| gv := {| v_var :=
                                    {| vtype := sint
-                                    ; vname := "n.154"  |}
+                                    ; vname := "n.152"  |}
                                ; v_info := dummy_var_info |} ; gs := Slocal |}))
                 [MkI InstrInfo.witness
                   (Cassgn
                      (Lvar
                         {| v_var := {| vtype := sint
-                                     ; vname := "m.155"  |}
+                                     ; vname := "m.153"  |}
                          ; v_info := dummy_var_info |})
                      AT_inline (sint)
                      ((Papp2 (Oadd Op_int)
                          (Pvar
                             {| gv := {| v_var :=
                                           {| vtype := sint
-                                           ; vname := "m.155"  |}
+                                           ; vname := "m.153"  |}
                                       ; v_info := dummy_var_info |} ; gs := Slocal |})
                          (Pconst (Zpos (xH))))))]) ]
       ; f_tyout := [sint]
       ; f_res :=
           [{| v_var := {| vtype := sint
-                        ; vname := "m.155"  |}
+                        ; vname := "m.153"  |}
+            ; v_info := dummy_var_info |}]
+      ; f_extra := tt
+      ; |} )
+ ; ( (* odd *) xO xH,
+     {| f_info := FunInfo.witness
+      ; f_tyin := [(sword U64); (sword U64)]
+      ; f_params :=
+          [{| v_var := {| vtype := (sword U64)
+                        ; vname := "n.155"  |}
+            ; v_info := dummy_var_info |};
+            {| v_var := {| vtype := (sword U64)
+                         ; vname := "m.156"  |}
+             ; v_info := dummy_var_info |}]
+      ; f_body :=
+          [ MkI InstrInfo.witness
+             (Cfor
+                ({| v_var := {| vtype := sint
+                              ; vname := "i.157"  |}
+                  ; v_info := dummy_var_info |})
+                ((UpTo, (Pconst (Z0))),
+                  (Papp1 (Oint_of_word U64)
+                     (Pvar
+                        {| gv := {| v_var :=
+                                      {| vtype := (sword U64)
+                                       ; vname := "n.155"  |}
+                                  ; v_info := dummy_var_info |} ; gs := Slocal |})))
+                [MkI InstrInfo.witness
+                  (Cassgn
+                     (Lvar
+                        {| v_var :=
+                             {| vtype := (sword U64)
+                              ; vname := "m.156"  |}
+                         ; v_info := dummy_var_info |})
+                     AT_none ((sword U64))
+                     ((Papp2 (Oadd (Op_w U64))
+                         (Pvar
+                            {| gv := {| v_var :=
+                                          {| vtype := (sword U64)
+                                           ; vname := "m.156"  |}
+                                      ; v_info := dummy_var_info |} ; gs := Slocal |})
+                         (Papp1 (Oword_of_int U64) (Pconst (Zpos (xH)))))))]) ]
+      ; f_tyout := [(sword U64)]
+      ; f_res :=
+          [{| v_var := {| vtype := (sword U64)
+                        ; vname := "m.156"  |}
             ; v_info := dummy_var_info |}]
       ; f_extra := tt
       ; |} ) ] ;
   p_globs := [] ;
   p_extra := tt |}.
+
 Defined.
+Notation ADD := ( xH ).
+Notation ODD := ( xO xH ).
