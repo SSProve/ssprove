@@ -404,8 +404,13 @@ Section Hacspec.
           - apply H0.
           - destruct y as [ | y | y ].
             + apply H.
-            + simpl in *.
-              admit.
+            + destruct H as [_ ?].
+              destruct H0 as [_ ?].
+              apply Z.log2_lt_pow2 in H ; [ | easy ].
+              apply Z.log2_lt_pow2 in H0 ; [ | easy ].
+              apply Z.log2_lt_pow2 ; [ easy | ].
+              rewrite (Z.log2_lor) ; [ | easy | easy ].
+              apply Z.max_lub_lt ; easy.
             + easy.
           - easy.
         }
@@ -445,7 +450,7 @@ Section Hacspec.
     cbn.
     rewrite !zero_extend_u.
     reflexivity.
-  Admitted.
+  Qed.
 
   Lemma foo id0 rcon rkey temp2 :
     ⊢ ⦃ fun '(_, _) => True ⦄
