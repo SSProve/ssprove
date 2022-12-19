@@ -22,7 +22,7 @@ Definition ssprove_jasmin_prog : uprog.
 Proof.
   refine {| p_funcs :=
  [ ( (* zero *) xH,
-     {| f_info := xO xH
+     {| f_info := FunInfo.witness
       ; f_tyin := []
       ; f_params := []
       ; f_body :=
@@ -30,17 +30,19 @@ Proof.
              (Cassgn
                 (Lvar
                    {| v_var := {| vtype := (sword U64)
-                                ; vname := "z.139"  |}
+                                ; vname := "z.137"  |}
                     ; v_info := dummy_var_info |})
                 AT_none ((sword U64))
                 ((Papp1 (Oword_of_int U64) (Pconst (Z0))))) ]
       ; f_tyout := [(sword U64)]
       ; f_res :=
           [{| v_var := {| vtype := (sword U64)
-                        ; vname := "z.139"  |}
+                        ; vname := "z.137"  |}
             ; v_info := dummy_var_info |}]
       ; f_extra := tt
       ; |} ) ] ;
   p_globs := [] ;
   p_extra := tt |}.
+
 Defined.
+Notation ZERO := ( xH ).

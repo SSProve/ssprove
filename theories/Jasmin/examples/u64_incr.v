@@ -21,37 +21,8 @@ Local Open Scope string.
 Definition ssprove_jasmin_prog : uprog.
 Proof.
   refine {| p_funcs :=
- [ ( (* incr *) xI xH,
-     {| f_info := xO (xO xH)
-      ; f_tyin := [(sword U64)]
-      ; f_params :=
-          [{| v_var := {| vtype := (sword U64)
-                        ; vname := "n.149"  |}
-            ; v_info := dummy_var_info |}]
-      ; f_body :=
-          [ MkI InstrInfo.witness
-             (Cassgn
-                (Lvar
-                   {| v_var := {| vtype := (sword U64)
-                                ; vname := "m.150"  |}
-                    ; v_info := dummy_var_info |})
-                AT_none ((sword U64))
-                ((Papp2 (Oadd (Op_w U64))
-                    (Pvar
-                       {| gv := {| v_var :=
-                                     {| vtype := (sword U64)
-                                      ; vname := "n.149"  |}
-                                 ; v_info := dummy_var_info |} ; gs := Slocal |})
-                    (Papp1 (Oword_of_int U64) (Pconst (Zpos (xO xH))))))) ]
-      ; f_tyout := [(sword U64)]
-      ; f_res :=
-          [{| v_var := {| vtype := (sword U64)
-                        ; vname := "m.150"  |}
-            ; v_info := dummy_var_info |}]
-      ; f_extra := tt
-      ; |} )
- ; ( (* f *) xH,
-     {| f_info := xO xH
+ [ ( (* f *) xH,
+     {| f_info := FunInfo.witness
       ; f_tyin := []
       ; f_params := []
       ; f_body :=
@@ -59,16 +30,48 @@ Proof.
              (Ccall InlineFun
                 [Lvar
                    {| v_var := {| vtype := (sword U64)
-                                ; vname := "x.148"  |}
+                                ; vname := "x.146"  |}
                     ; v_info := dummy_var_info |}]
-                (xI xH) [(Papp1 (Oword_of_int U64) (Pconst (Z0)))]) ]
+                (xO xH) [(Papp1 (Oword_of_int U64) (Pconst (Z0)))]) ]
       ; f_tyout := [(sword U64)]
       ; f_res :=
           [{| v_var := {| vtype := (sword U64)
-                        ; vname := "x.148"  |}
+                        ; vname := "x.146"  |}
+            ; v_info := dummy_var_info |}]
+      ; f_extra := tt
+      ; |} )
+ ; ( (* incr *) xO xH,
+     {| f_info := FunInfo.witness
+      ; f_tyin := [(sword U64)]
+      ; f_params :=
+          [{| v_var := {| vtype := (sword U64)
+                        ; vname := "n.147"  |}
+            ; v_info := dummy_var_info |}]
+      ; f_body :=
+          [ MkI InstrInfo.witness
+             (Cassgn
+                (Lvar
+                   {| v_var := {| vtype := (sword U64)
+                                ; vname := "m.148"  |}
+                    ; v_info := dummy_var_info |})
+                AT_none ((sword U64))
+                ((Papp2 (Oadd (Op_w U64))
+                    (Pvar
+                       {| gv := {| v_var :=
+                                     {| vtype := (sword U64)
+                                      ; vname := "n.147"  |}
+                                 ; v_info := dummy_var_info |} ; gs := Slocal |})
+                    (Papp1 (Oword_of_int U64) (Pconst (Zpos (xO xH))))))) ]
+      ; f_tyout := [(sword U64)]
+      ; f_res :=
+          [{| v_var := {| vtype := (sword U64)
+                        ; vname := "m.148"  |}
             ; v_info := dummy_var_info |}]
       ; f_extra := tt
       ; |} ) ] ;
   p_globs := [] ;
   p_extra := tt |}.
+
 Defined.
+Notation F := ( xH ).
+Notation INCR := ( xO xH ).

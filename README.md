@@ -57,7 +57,9 @@ In order to build the `jasmin` branch, a recent version of `https://github.com/j
 cd jasmin
 opam install .
 ```
-The last version of Jasmin that is known to work is `ca721130dd`, but we try to track `main`.
+The last version of Jasmin that is known to work is `52624d84`, but we try to track `main`.
+For all proofs to work and a pretty printer for Coq AST's, the version available at `https://github.com/bshvass/jasmin` is currently necessary.
+The pretty printer is available via the `-coq` compiler flag.
 
 To install a local copy of Jasmin, one may use
 ```sh

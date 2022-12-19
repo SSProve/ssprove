@@ -22,32 +22,34 @@ Definition ssprove_jasmin_prog : uprog.
 Proof.
   refine {| p_funcs :=
  [ ( (* foo *) xH,
-     {| f_info := xO xH
+     {| f_info := FunInfo.witness
       ; f_tyin := [sint]
       ; f_params :=
           [{| v_var := {| vtype := sint
-                        ; vname := "k.141"  |}
+                        ; vname := "k.139"  |}
             ; v_info := dummy_var_info |}]
       ; f_body :=
           [ MkI InstrInfo.witness
              (Cassgn
                 (Lvar
                    {| v_var := {| vtype := sint
-                                ; vname := "x.142"  |}
+                                ; vname := "x.140"  |}
                     ; v_info := dummy_var_info |})
                 AT_none (sint)
                 ((Pvar
                     {| gv := {| v_var :=
                                   {| vtype := sint
-                                   ; vname := "k.141"  |}
+                                   ; vname := "k.139"  |}
                               ; v_info := dummy_var_info |} ; gs := Slocal |}))) ]
       ; f_tyout := [sint]
       ; f_res :=
           [{| v_var := {| vtype := sint
-                        ; vname := "x.142"  |}
+                        ; vname := "x.140"  |}
             ; v_info := dummy_var_info |}]
       ; f_extra := tt
       ; |} ) ] ;
   p_globs := [] ;
   p_extra := tt |}.
+
 Defined.
+Notation FOO := ( xH ).
