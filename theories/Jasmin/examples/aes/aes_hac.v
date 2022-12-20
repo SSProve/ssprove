@@ -85,9 +85,9 @@ Section Hacspec.
   Ltac bind_jazz_hac :=
     match goal with
     | [ |- context [ ⊢ ⦃ ?P ⦄ putr ?l ?jazz ?f ≈ _ ⦃ ?Q ⦄ ] ] =>
-        eapply (@r_bind _ _ _ _ (ret jazz) _ (fun x => putr l x f) _ _ (fun '(v0, h0) '(v1, h1) => v0 = v1 /\ P (h0, h1)) _) ; [ rewrite !zero_extend_u | intros ; unfold pre_to_post ]
+        eapply (@r_bind _ _ _ _ (ret jazz) _ (fun x => putr l x f) _ _ (fun '(v0, h0) '(v1, h1) => v0 = v1 /\ P (h0, h1)) _) ; [ rewrite !zero_extend_u | intros ]
     end.
-
+    
   (* match goal with *)
   (* | [ |- context [ ⊢ ⦃ ?P ⦄ putr ?l ?jazz ?f ≈ _ ⦃ ?Q ⦄ ] ] => *)
   (*     apply (@r_bind _ _ _ _ (ret jazz) _ (fun x => putr l x f) _ _ Q _) ; [ | intros ; unfold pre_to_post ] *)
@@ -975,7 +975,7 @@ rewrite !Z.shiftl_lor.
         apply (ssrbool.elimT (iswordZP _ _)).
         apply i.
       }
-      
+
       replace (wpack U8 2 _) with (wrepr U8 140) by now do 3 (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
 
       replace (Hacspec_Lib_Pre.pub_u8
@@ -1064,7 +1064,7 @@ rewrite !Z.shiftl_lor.
         apply (ssrbool.elimT (iswordZP _ _)).
         apply i.
       }
-      
+
       replace (wpack U8 2 _) with (wrepr U8 140) by now do 3 (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
       replace (Hacspec_Lib_Pre.pub_u8
                 (is_pure
@@ -1342,37 +1342,33 @@ rewrite !Z.shiftl_lor.
     }
     {
       apply r_ret.
-      intros.
-      split ; [ now destruct_pre | apply H ].
+      solve_post_from_pre.
     }
     {
       apply r_ret.
-      intros.
-      split ; [ now destruct_pre | apply H ].
+      solve_post_from_pre.
     }
     (* Cleanup *)
     Transparent translate_call.
   Qed.
 
-  Lemma foo id0 rcon rkey temp2 :
-    ⊢ ⦃ fun '(_, _) => True ⦄
-      JKEY_COMBINE id0 rcon rkey temp2
-      ≈
-      is_state (key_combine rcon rkey temp2)
-      ⦃ fun '(v0, _) '(v1, _) =>
-          exists o1 o2, v0 = [('word U128 ; o1) ; ('word U128 ; o2)]
-                   /\ (o1, o2) = v1 ⦄.
-  Proof.
-    unfold translate_call, translate_call_body.
-    Opaque translate_call.
+    Ltac bind_jazz_bind :=    
+    match goal with
+    | [ |- context [ ⊢ ⦃ ?P ⦄ putr ?l ?y ?g ≈ bind ?a ?f ⦃ ?Q ⦄ ] ] =>
+        let yv := fresh in
+        let gv := fresh in
+        let av := fresh in
+        let fv := fresh in
+        set l
+        ; set (yv := y)
+        ; set (gv := g)
+        ; set (av := a)
+        ; set (fv := f)
+        ; apply (r_bind (ret yv) (av) (fun x => putr l x gv) fv P (fun '(v0, h0) '(v1, h1) => v0 = v1 /\ P (h0, h1)) Q) ; [ | intros ]
+        ; subst yv gv av fv ; hnf
+    end.
 
-    simpl.
-    unfold sopn_sem, tr_app_sopn_tuple, tr_app_sopn_single.
-    simpl.
-
-  Admitted.
-
-  Lemma bar id0 rcon rkey temp2 :
+  Lemma key_expand_eq id0 rcon rkey temp2 :
     ⊢ ⦃ fun '(_, _) => True ⦄
       JKEY_EXPAND id0 rcon rkey temp2
       ≈
@@ -1381,8 +1377,109 @@ rewrite !Z.shiftl_lor.
           exists o1 o2, v0 = [('word U128 ; o1) ; ('word U128 ; o2)]
                    /\ (o1, o2) = v1 ⦄.
   Proof.
-    Transparent translate_call.
-    unfold translate_call, translate_call_body.
+    set (JKEY_EXPAND _ _ _ _).
+    unfold translate_call, translate_call_body in r |- *.
     Opaque translate_call.
+    simpl in r.
+    subst r.
+    rewrite !zero_extend_u.
+
+    apply better_r_put_lhs.
+    apply better_r_put_lhs.
+    apply better_r_put_lhs.
+
+    do 2 remove_get_in_lhs.
+    bind_jazz_hac ; [shelve | ].
+
+    apply better_r_put_lhs.
+    do 3 remove_get_in_lhs.
+
+    (* Unfold next call *)
+    Transparent translate_call.
+    match goal with
+    | [ |- context [ ⊢ ⦃ ?P ⦄ ?s ≈ _ ⦃ ?Q ⦄ ] ] =>
+        let H := fresh in
+        set (H := s)
+        ; unfold translate_call, translate_call_body in H
+        ; simpl in H
+        ; unfold tr_app_sopn, sopn_sem, tr_app_sopn_tuple, tr_app_sopn_single in H
+        ; simpl in H
+        ; subst H
+        ; rewrite !zero_extend_u
+    end.
+    Opaque translate_call.
+
+    apply better_r_put_lhs.
+    apply better_r_put_lhs.
+    apply better_r_put_lhs.
+
+    remove_get_in_lhs.
+    unfold key_combine.
+
+    rewrite !zero_extend_u.
+
+    setoid_rewrite bind_assoc ; bind_jazz_bind ; [shelve | ].
+    apply better_r_put_lhs.
+    do 2 remove_get_in_lhs.
+    rewrite !zero_extend_u.
+    
+    setoid_rewrite bind_assoc ; bind_jazz_bind ; [shelve | ].
+    apply better_r_put_lhs.
+    do 2 remove_get_in_lhs.
+    rewrite !zero_extend_u.
+
+    setoid_rewrite bind_assoc ; bind_jazz_bind ; [shelve | ].
+    apply better_r_put_lhs.
+    do 2 remove_get_in_lhs.
+    rewrite !zero_extend_u.
+
+    setoid_rewrite bind_assoc ; bind_jazz_bind ; [shelve | ].
+    apply better_r_put_lhs.
+    do 2 remove_get_in_lhs.
+    rewrite !zero_extend_u.
+
+    setoid_rewrite bind_assoc ; bind_jazz_bind ; [shelve | ].
+    apply better_r_put_lhs.
+    do 2 remove_get_in_lhs.
+    rewrite !zero_extend_u.
+
+    setoid_rewrite bind_assoc ; bind_jazz_bind ; [shelve | ].
+    apply better_r_put_lhs.
+    do 2 remove_get_in_lhs.
+    rewrite !zero_extend_u.
+    apply better_r_put_lhs.
+    apply better_r_put_lhs.
+    do 2 remove_get_in_lhs.
+
+    apply r_ret.
+    intros.
+    eexists.
+    eexists.
+    split.
+    reflexivity.
     simpl.
+    rewrite !T_ct_id.
+    rewrite !zero_extend_u.
+    reflexivity.
+
+    Unshelve.
+    {
+      (* Keygen assist *)
+      admit.
+    }
+    {
+      (* wpshufd_128 _ 255 *)
+      admit.
+    }
+    {
+      (* wshufps_128 _ 16 *)
+      admit.
+    }
+    {
+      (* xor *)
+      apply r_ret.
+      solve_post_from_pre.
+    }
+
+    Transparent translate_call.
 Admitted.
