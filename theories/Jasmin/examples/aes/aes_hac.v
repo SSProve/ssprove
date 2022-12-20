@@ -71,7 +71,7 @@ Section Hacspec.
     Transparent translate_call.
   Defined.
 
-  
+
   Lemma det_key_combine rcon rkey temp2 : deterministic (is_state (key_combine rcon rkey temp2)).
   Proof.
     repeat (apply deterministic_put || (apply deterministic_get ; intros) || apply deterministic_ret).
@@ -89,7 +89,7 @@ Section Hacspec.
     | [ |- context [ ⊢ ⦃ ?P ⦄ putr ?l ?jazz ?f ≈ _ ⦃ ?Q ⦄ ] ] =>
         eapply (@r_bind _ _ _ _ (ret jazz) _ (fun x => putr l x f) _ _ (fun '(v0, h0) '(v1, h1) => v0 = v1 /\ P (h0, h1)) _) ; [ rewrite !zero_extend_u | intros ]
     end.
-    
+
   (* match goal with *)
   (* | [ |- context [ ⊢ ⦃ ?P ⦄ putr ?l ?jazz ?f ≈ _ ⦃ ?Q ⦄ ] ] => *)
   (*     apply (@r_bind _ _ _ _ (ret jazz) _ (fun x => putr l x f) _ _ Q _) ; [ | intros ; unfold pre_to_post ] *)
@@ -121,7 +121,7 @@ Section Hacspec.
       rewrite Zpower_nat_Z.
       rewrite Nat2Z.inj_add.
       rewrite Z2Nat.id ; [ | assumption].
-      
+
       rewrite <- Z.pow_sub_r ; [ now rewrite Z.add_simpl_r | lia | ].
       split. assumption.
       lia.
@@ -177,7 +177,7 @@ Section Hacspec.
       cbn.
       lia.
   Qed.
-  
+
   Notation JVSHUFPS i rkey temp1 temp2 := (trc VSHUFPS i [('word U128 ; rkey) ; ('word U128 ; temp1) ; ('word U128 ; temp2)]).
 
   Lemma wpshufd1_eq :
@@ -300,7 +300,7 @@ Section Hacspec.
         apply Z_mod_nonneg_nonneg.
         lia.
         easy.
-        
+
         eapply Z.lt_le_trans.
         apply Z.mod_pos_bound.
         destruct i as [ | [ | [ | [] ]]] ; easy.
@@ -311,7 +311,7 @@ Section Hacspec.
         apply Z_mod_nonneg_nonneg.
         lia.
         easy.
-        
+
         eapply Z.lt_le_trans.
         apply Z.mod_pos_bound.
         destruct i as [ | [ | [ | [] ]]] ; easy.
@@ -424,7 +424,7 @@ Section Hacspec.
     (* set (wpshufd1 _ _ _). *)
     (* set (wpshufd1 _ _ _). *)
     unfold vpshufd.
-     
+
     solve_wpshufd1_vpshufd1 0 n.
     solve_wpshufd1_vpshufd1 1 n.
     solve_wpshufd1_vpshufd1 2 n.
@@ -500,7 +500,7 @@ Section Hacspec.
     (* set (wpshufd1 _ _ _). *)
     (* set (wpshufd1 _ _ _). *)
     unfold vpshufd.
-     
+
     solve_wpshufd1_vpshufd1 0 n.
     solve_wpshufd1_vpshufd1 1 n.
     solve_wpshufd1_vpshufd1 2 n.
@@ -550,7 +550,7 @@ Section Hacspec.
     simpl.
     reflexivity.
   Qed.
-    
+
   Lemma key_combined_eq id0 rcon rkey temp2 :
     ⊢ ⦃ fun '(_, _) => True ⦄
         JKEY_COMBINE id0 rcon rkey temp2
@@ -670,7 +670,7 @@ Section Hacspec.
         apply (ssrbool.elimT (iswordZP _ _)).
         apply i.
       }
-      
+
       replace (truncate_chWord _ _) with (wrepr U8 16) by now do 2 (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
 
       unfold make_vec.
@@ -678,8 +678,8 @@ Section Hacspec.
       rewrite Z.shiftl_0_l.
       rewrite Z.lor_0_r.
 
-      unfold mkword. 
-      
+      unfold mkword.
+
       epose (wshufps_128_eq_state temp2 rcon 16).
       unfold lift_scope.
       unfold is_state at 1.
@@ -773,7 +773,7 @@ Section Hacspec.
         apply (ssrbool.elimT (iswordZP _ _)).
         apply i.
       }
-      
+
       replace (truncate_chWord _ _) with (wrepr U8 140) by now repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
 
       rewrite <- bind_ret.
@@ -790,7 +790,7 @@ Section Hacspec.
       split.
       unfold make_vec.
       cbn.
-      rewrite Z.lor_0_r.      
+      rewrite Z.lor_0_r.
       destruct a₁2. cbn. unfold wrepr. cbn. apply word_ext.
       rewrite Zmod_small.
       cbn.
@@ -811,7 +811,7 @@ Section Hacspec.
     Transparent translate_call.
   Qed.
 
-  Ltac bind_jazz_bind :=    
+  Ltac bind_jazz_bind :=
     match goal with
     | [ |- context [ ⊢ ⦃ ?P ⦄ putr ?l ?y ?g ≈ bind ?a ?f ⦃ ?Q ⦄ ] ] =>
         let yv := fresh in
@@ -881,7 +881,7 @@ Section Hacspec.
     apply better_r_put_lhs.
     do 2 remove_get_in_lhs.
     rewrite !zero_extend_u.
-    
+
     setoid_rewrite bind_assoc ; bind_jazz_bind ; [shelve | ].
     apply better_r_put_lhs.
     do 2 remove_get_in_lhs.
@@ -928,7 +928,7 @@ Section Hacspec.
     }
     {
       (* wpshufd_128 _ 255 *)
-      
+
       replace (wpack U8 2 _) with (wrepr U8 255%Z) by now repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
       apply (@wpshufd_128_eq_state _ a₁ 255).
     }
