@@ -103,7 +103,7 @@ Section Hacspec.
       reflexivity | ].
 
   Notation JVSHUFPS i rkey temp1 temp2 := (trc VSHUFPS i [('word U128 ; rkey) ; ('word U128 ; temp1) ; ('word U128 ; temp2)]).
-  
+
   Lemma wpshufd_eq :
     forall (rkey : 'word U128)  (i : nat),
       i < 4 ->
@@ -174,7 +174,7 @@ Section Hacspec.
     rewrite wpshufd_eq ; [ | apply H0 ].
     now apply r_ret.
   Qed.
-  
+
 
   Ltac match_wpshufd1_vpshufd1 :=
     (let w := fresh in
@@ -226,7 +226,7 @@ Section Hacspec.
         destruct a.
         eapply Z.lt_trans ; [ apply H1 | apply H].
   Qed.
-  
+
   Lemma shift_left_4_byte_ok :
     (forall i (a : 'word U32),
         i < 4 ->
@@ -245,7 +245,7 @@ Section Hacspec.
     apply H1.
     destruct i as [ | [ | [ | [ | []] ]] ] ; easy.
   Qed.
-  
+
   Lemma key_combined_eq id0 rcon rkey temp2 :
     ⊢ ⦃ fun '(_, _) => True ⦄
         JKEY_COMBINE id0 rcon rkey temp2
@@ -287,7 +287,7 @@ Section Hacspec.
     Unshelve.
     {
       (* rewrite !zero_extend_u. *)
-      
+
       unfold tr_app_sopn_tuple.
       unfold sopn_sem.
       unfold sopn.get_instr_desc.
@@ -303,7 +303,7 @@ Section Hacspec.
       unfold ".1".
       unfold x86_VPSHUFD.
       unfold wpshufd.
-      
+
       set (totce _) at 2.
       cbn in t.
       unfold totce in t.
@@ -366,7 +366,7 @@ Section Hacspec.
       split ; [ | eexists ; apply H7 ].
 
       apply word_ext.
-      
+
       unfold wcat_r.
 
       unfold ".|".
@@ -390,7 +390,7 @@ Section Hacspec.
       unfold mkword.
       unfold toword.
       unfold Hacspec_Lib_Pre.unsigned.
-      
+
       rewrite !Zmod_small.
 
       all: try easy.
@@ -403,7 +403,7 @@ Section Hacspec.
       setoid_rewrite <- Z.lor_assoc.
       setoid_rewrite <- Z.lor_assoc.
       f_equal.
-      
+
       symmetry.
       rewrite <- Z.lor_comm.
       rewrite <- Z.lor_assoc.
@@ -510,52 +510,8 @@ Section Hacspec.
       subst n.
       hnf.
       unfold sopn_sem, tr_app_sopn_tuple, tr_app_sopn_single.
-      
+
       unfold vshufps.
-      
-      match_wpshufd1_vpshufd1.
-
-      set (ret _).
-      simpl in r.
-      subst r.
-      rewrite !zero_extend_u.
-      replace (word.subword _ _ temp2) with temp2.
-      2:{
-        destruct temp2.
-        cbn.
-        apply word_ext.
-        cbn.
-        rewrite Zmod_mod.
-        rewrite Zmod_small.
-        reflexivity.
-        apply (ssrbool.elimT (iswordZP _ _)).
-        apply i.
-      }
-      
-      replace (wpack U8 2 _) with (wrepr U8 16) by now do 2 (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
-      replace (Hacspec_Lib_Pre.pub_u8
-                (is_pure
-                   (lift_to_both0
-                      (is_pure (lift_to_both0 (Hacspec_Lib_Pre.usize 16)))))) with (Hacspec_Lib_Pre.repr (WS := U8) 16) by reflexivity.
-
-      apply r_ret.
-      intros.
-      split ; [ | assumption ].
-      remove_T_ct.
-      Opaque Z.mul.
-      clear.
-      intros.
-      unfold vpshufd1.
-      unfold wpshufd1.
-      simpl.
-      apply word_ext.
-      f_equal.
-      simpl.
-      rewrite Zmod_mod.
-      unfold Hacspec_Lib_Pre.shift_right_, wshr, lsr, Hacspec_Lib_Pre.unsigned, wunsigned ; rewrite mkwordK.
-      f_equal.
-
-      intros.
 
       match_wpshufd1_vpshufd1.
 
@@ -575,7 +531,7 @@ Section Hacspec.
         apply (ssrbool.elimT (iswordZP _ _)).
         apply i.
       }
-      
+
       replace (wpack U8 2 _) with (wrepr U8 16) by now do 2 (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
       replace (Hacspec_Lib_Pre.pub_u8
                 (is_pure
@@ -600,7 +556,51 @@ Section Hacspec.
       f_equal.
 
       intros.
-      
+
+      match_wpshufd1_vpshufd1.
+
+      set (ret _).
+      simpl in r.
+      subst r.
+      rewrite !zero_extend_u.
+      replace (word.subword _ _ temp2) with temp2.
+      2:{
+        destruct temp2.
+        cbn.
+        apply word_ext.
+        cbn.
+        rewrite Zmod_mod.
+        rewrite Zmod_small.
+        reflexivity.
+        apply (ssrbool.elimT (iswordZP _ _)).
+        apply i.
+      }
+
+      replace (wpack U8 2 _) with (wrepr U8 16) by now do 2 (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
+      replace (Hacspec_Lib_Pre.pub_u8
+                (is_pure
+                   (lift_to_both0
+                      (is_pure (lift_to_both0 (Hacspec_Lib_Pre.usize 16)))))) with (Hacspec_Lib_Pre.repr (WS := U8) 16) by reflexivity.
+
+      apply r_ret.
+      intros.
+      split ; [ | assumption ].
+      remove_T_ct.
+      Opaque Z.mul.
+      clear.
+      intros.
+      unfold vpshufd1.
+      unfold wpshufd1.
+      simpl.
+      apply word_ext.
+      f_equal.
+      simpl.
+      rewrite Zmod_mod.
+      unfold Hacspec_Lib_Pre.shift_right_, wshr, lsr, Hacspec_Lib_Pre.unsigned, wunsigned ; rewrite mkwordK.
+      f_equal.
+
+      intros.
+
       match_wpshufd1_vpshufd1.
 
       set (ret _).
@@ -619,7 +619,7 @@ Section Hacspec.
         apply (ssrbool.elimT (iswordZP _ _)).
         apply i.
       }
-      
+
       replace (wpack U8 2 _) with (wrepr U8 16) by now do 2 (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
       replace (Hacspec_Lib_Pre.pub_u8
                 (is_pure
@@ -662,7 +662,7 @@ Section Hacspec.
         apply (ssrbool.elimT (iswordZP _ _)).
         apply i.
       }
-      
+
       replace (wpack U8 2 _) with (wrepr U8 16) by now do 2 (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
       replace (Hacspec_Lib_Pre.pub_u8
                 (is_pure
@@ -687,7 +687,7 @@ Section Hacspec.
       f_equal.
 
       intros.
-      
+
       apply r_ret.
 
       intros.
@@ -723,7 +723,7 @@ Section Hacspec.
       unfold mkword.
       unfold toword.
       unfold Hacspec_Lib_Pre.unsigned.
-      
+
       rewrite !Zmod_small.
 
       all: try easy.
@@ -740,12 +740,12 @@ Section Hacspec.
 
       rewrite !Z.shiftl_lor.
       f_equal.
-      
+
       apply (shift_left_4_byte_ok 3) ; easy.
       apply (shift_left_4_byte_ok 2) ; easy.
       apply (shift_left_4_byte_ok 1) ; easy.
-      
-      
+
+
       destruct a₁0, a₁1, a₁2, a₁3.
       rewrite !Z.shiftl_lor.
       rewrite !Z.shiftl_mul_pow2 ; try easy.
@@ -904,15 +904,455 @@ rewrite !Z.shiftl_lor.
     }
     {
       (* TODO: Next vshufs *)
-      admit.
+          {
+
+      unfold tr_app_sopn_tuple.
+      unfold sopn_sem.
+      unfold sopn.get_instr_desc.
+      unfold asm_opI.
+      unfold asm_op_instr.
+      unfold semi, arch_extra.get_instr_desc.
+      unfold instr_desc, _asm_op_decl, instr_desc_op, _asm, x86_extra.
+      unfold x86_sem.x86.
+      unfold x86_op_decl.
+      unfold x86_instr_desc.
+      unfold id_semi.
+      unfold Ox86_VPSHUFD_instr.
+      unfold ".1".
+      unfold x86_VPSHUFD.
+      unfold wpshufd.
+
+      set (totce _) at 2.
+      cbn in t.
+      unfold totce in t.
+
+      set (chCanonical _).
+      cbn in s.
+      subst s.
+
+      set (tr_app_sopn _ _ _ _).
+      cbn in y.
+      subst y.
+      hnf.
+
+      unfold totce.
+      subst t.
+      unfold ".π2".
+
+      unfold wshufps_128.
+      unfold lift2_vec.
+      unfold make_vec.
+      rewrite map2E.
+      unfold zip.
+      unfold split_vec.
+      unfold map.
+      unfold iota.
+
+      set (nat_of_wsize U128 %/ nat_of_wsize U128 +
+             nat_of_wsize U128 %% nat_of_wsize U128).
+      cbn in n.
+      subst n.
+      hnf.
+      unfold sopn_sem, tr_app_sopn_tuple, tr_app_sopn_single.
+
+      unfold vshufps.
+
+      match_wpshufd1_vpshufd1.
+
+      set (ret _).
+      simpl in r.
+      subst r.
+      rewrite !zero_extend_u.
+      replace (word.subword _ _ a₁0) with a₁0.
+      2:{
+        destruct a₁0.
+        cbn.
+        apply word_ext.
+        cbn.
+        rewrite Zmod_mod.
+        rewrite Zmod_small.
+        reflexivity.
+        apply (ssrbool.elimT (iswordZP _ _)).
+        apply i.
+      }
+      
+      replace (wpack U8 2 _) with (wrepr U8 140) by now do 3 (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
+
+      replace (Hacspec_Lib_Pre.pub_u8
+                (is_pure
+                   (lift_to_both0
+                      (is_pure (lift_to_both0 (Hacspec_Lib_Pre.usize 140)))))) with (Hacspec_Lib_Pre.repr (WS := U8) 140) by reflexivity.
+
+      apply r_ret.
+      intros.
+      split ; [ | assumption ].
+      remove_T_ct.
+      Opaque Z.mul.
+      clear.
+      intros.
+      unfold vpshufd1.
+      unfold wpshufd1.
+      simpl.
+      apply word_ext.
+      f_equal.
+      simpl.
+      rewrite Zmod_mod.
+      unfold Hacspec_Lib_Pre.shift_right_, wshr, lsr, Hacspec_Lib_Pre.unsigned, wunsigned ; rewrite mkwordK.
+      f_equal.
+
+      intros.
+
+      match_wpshufd1_vpshufd1.
+
+      set (ret _).
+      simpl in r.
+      subst r.
+      rewrite !zero_extend_u.
+      replace (word.subword _ _ a₁0) with a₁0.
+      2:{
+        destruct a₁0.
+        cbn.
+        apply word_ext.
+        cbn.
+        rewrite Zmod_mod.
+        rewrite Zmod_small.
+        reflexivity.
+        apply (ssrbool.elimT (iswordZP _ _)).
+        apply i.
+      }
+
+      replace (wpack U8 2 _) with (wrepr U8 140) by now do 3 (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
+      replace (Hacspec_Lib_Pre.pub_u8
+                (is_pure
+                   (lift_to_both0
+                      (is_pure (lift_to_both0 (Hacspec_Lib_Pre.usize 140)))))) with (Hacspec_Lib_Pre.repr (WS := U8) 140) by reflexivity.
+
+      apply r_ret.
+      intros.
+      split ; [ | assumption ].
+      remove_T_ct.
+      Opaque Z.mul.
+      clear.
+      intros.
+      unfold vpshufd1.
+      unfold wpshufd1.
+      simpl.
+      apply word_ext.
+      f_equal.
+      simpl.
+      rewrite Zmod_mod.
+      unfold Hacspec_Lib_Pre.shift_right_, wshr, lsr, Hacspec_Lib_Pre.unsigned, wunsigned ; rewrite mkwordK.
+      f_equal.
+
+      intros.
+
+      match_wpshufd1_vpshufd1.
+
+      set (ret _).
+      simpl in r.
+      subst r.
+      rewrite !zero_extend_u.
+      replace (word.subword _ _ a₁1) with a₁1.
+      2:{
+        destruct a₁1.
+        cbn.
+        apply word_ext.
+        cbn.
+        rewrite Zmod_mod.
+        rewrite Zmod_small.
+        reflexivity.
+        apply (ssrbool.elimT (iswordZP _ _)).
+        apply i.
+      }
+      
+      replace (wpack U8 2 _) with (wrepr U8 140) by now do 3 (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
+      replace (Hacspec_Lib_Pre.pub_u8
+                (is_pure
+                   (lift_to_both0
+                      (is_pure (lift_to_both0 (Hacspec_Lib_Pre.usize 140)))))) with (Hacspec_Lib_Pre.repr (WS := U8) 140) by reflexivity.
+
+      apply r_ret.
+      intros.
+      split ; [ | assumption ].
+      remove_T_ct.
+      Opaque Z.mul.
+      clear.
+      intros.
+      unfold vpshufd1.
+      unfold wpshufd1.
+      simpl.
+      apply word_ext.
+      f_equal.
+      simpl.
+      rewrite Zmod_mod.
+      unfold Hacspec_Lib_Pre.shift_right_, wshr, lsr, Hacspec_Lib_Pre.unsigned, wunsigned ; rewrite mkwordK.
+      f_equal.
+
+      intros.
+      match_wpshufd1_vpshufd1.
+
+      set (ret _).
+      simpl in r.
+      subst r.
+      rewrite !zero_extend_u.
+      replace (word.subword _ _ a₁1) with a₁1.
+      2:{
+        destruct a₁1.
+        cbn.
+        apply word_ext.
+        cbn.
+        rewrite Zmod_mod.
+        rewrite Zmod_small.
+        reflexivity.
+        apply (ssrbool.elimT (iswordZP _ _)).
+        apply i.
+      }
+
+      replace (wpack U8 2 _) with (wrepr U8 140) by now do 3 (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
+      replace (Hacspec_Lib_Pre.pub_u8
+                (is_pure
+                   (lift_to_both0
+                      (is_pure (lift_to_both0 (Hacspec_Lib_Pre.usize 140)))))) with (Hacspec_Lib_Pre.repr (WS := U8) 140) by reflexivity.
+
+      apply r_ret.
+      intros.
+      split ; [ | assumption ].
+      remove_T_ct.
+      Opaque Z.mul.
+      clear.
+      intros.
+      unfold vpshufd1.
+      unfold wpshufd1.
+      simpl.
+      apply word_ext.
+      f_equal.
+      simpl.
+      rewrite Zmod_mod.
+      unfold Hacspec_Lib_Pre.shift_right_, wshr, lsr, Hacspec_Lib_Pre.unsigned, wunsigned ; rewrite mkwordK.
+      f_equal.
+
+      intros.
+
+      apply r_ret.
+
+      intros.
+      destruct H as [? [? [? [? [? [[]]]]]]].
+      subst.
+      split.
+      2:{
+        unfold H2.
+        exists x. easy.
+      }
+
+      apply word_ext.
+      unfold wcat_r.
+
+      unfold ".|".
+      unfold "_ shift_left _".
+      unfold Hacspec_Lib_Pre.shift_left_.
+      unfold Hacspec_Lib_Pre.int_or.
+      unfold Hacspec_Lib_Pre.repr.
+      unfold Hacspec_Lib_Pre.from_uint_size.
+      unfold Hacspec_Lib_Pre.usize.
+      unfold Hacspec_Lib_Pre.Z_uint_sizeable.
+      unfold Hacspec_Lib_Pre.unsigned.
+      unfold cast_int.
+      unfold lift_to_both0 , lift_to_both, is_pure.
+      unfold word.wor, wor.
+      unfold wshl, lsl.
+      unfold wrepr, wunsigned, urepr, val, word_subType, mkword, toword.
+      unfold Hacspec_Lib_Pre.repr.
+      unfold Hacspec_Lib_Pre.nat_uint_sizeable.
+      unfold Hacspec_Lib_Pre.repr.
+      unfold wrepr.
+      unfold mkword.
+      unfold toword.
+      unfold Hacspec_Lib_Pre.unsigned.
+
+      rewrite !Zmod_small.
+
+      all: try easy.
+      all: try (apply (num_smaller_if_modulus_smaller) ; easy).
+
+      setoid_rewrite <- Z.lor_assoc.
+      setoid_rewrite <- Z.lor_assoc.
+      f_equal.
+
+      rewrite Z.shiftl_0_l.
+      rewrite Z.lor_0_r.
+      rewrite Z.shiftl_0_l.
+      rewrite Z.lor_0_r.
+
+      rewrite !Z.shiftl_lor.
+      f_equal.
+
+      apply (shift_left_4_byte_ok 3) ; easy.
+      apply (shift_left_4_byte_ok 2) ; easy.
+      apply (shift_left_4_byte_ok 1) ; easy.
+
+
+      destruct a₁2, a₁3, a₁4, a₁5.
+      rewrite !Z.shiftl_lor.
+      rewrite !Z.shiftl_mul_pow2 ; try easy.
+      rewrite !Z.mul_0_l.
+      rewrite Z.lor_0_r.
+      replace (int_to_Z (Posz 32)) with 32%Z by reflexivity.
+
+      destruct (ssrbool.elimT (iswordZP _ _) i).
+      destruct (ssrbool.elimT (iswordZP _ _) i0).
+      destruct (ssrbool.elimT (iswordZP _ _) i1).
+      destruct (ssrbool.elimT (iswordZP _ _) i2).
+      split.
+      {
+        apply Z.lor_nonneg. split. easy.
+        apply Z.lor_nonneg. split. apply Z.mul_nonneg_nonneg ; easy.
+        apply Z.lor_nonneg. split. repeat apply Z.mul_nonneg_nonneg ; easy.
+        repeat apply Z.mul_nonneg_nonneg ; easy.
+      }
+      {
+        rewrite <- !Z.mul_assoc.
+        rewrite <- !Z.pow_add_r ; try easy.
+        simpl.
+
+        apply (Z_lor_pow2 toword _ nat127.+1). split ; [ easy | ].
+        eapply Z.lt_trans ; [apply H0 | easy].
+
+        apply (Z_lor_pow2 (toword0 * _)%Z _ nat127.+1). split ; [ apply Z.mul_nonneg_nonneg ; easy | ].
+        eapply Z.lt_le_trans.
+        apply (@Z.mul_lt_mono_pos_r (2 ^ Z.of_nat (Pos.to_nat 32)) toword0) in H6  ; [ | easy].
+        apply H6.
+        easy.
+
+        apply (Z_lor_pow2 (toword1 * _)%Z _ nat127.+1). split ; [ apply Z.mul_nonneg_nonneg ; easy | ].
+
+        eapply Z.lt_le_trans.
+        rewrite (@Z.mul_lt_mono_pos_r (2 ^ Z.of_nat (Pos.to_nat 64)) toword1) in H9 ; [ | easy].
+        apply H9.
+        easy.
+
+        split ; [ apply Z.mul_nonneg_nonneg ; easy | ].
+        eapply Z.lt_le_trans.
+        rewrite (@Z.mul_lt_mono_pos_r (2 ^ Z.of_nat (Pos.to_nat 96)) toword2) in H11 ; [ | easy].
+        apply H11.
+        easy.
+      }
+      {
+        destruct a₁2, a₁3, a₁4, a₁5.
+rewrite !Z.shiftl_lor.
+      rewrite !Z.shiftl_mul_pow2 ; try easy.
+      rewrite !Z.mul_0_l.
+      rewrite Z.lor_0_r.
+      replace (int_to_Z (Posz 32)) with 32%Z by reflexivity.
+
+      destruct (ssrbool.elimT (iswordZP _ _) i).
+      destruct (ssrbool.elimT (iswordZP _ _) i0).
+      destruct (ssrbool.elimT (iswordZP _ _) i1).
+      destruct (ssrbool.elimT (iswordZP _ _) i2).
+      split.
+      {
+        apply Z.lor_nonneg. split. easy.
+        apply Z.lor_nonneg. split. apply Z.mul_nonneg_nonneg ; easy.
+        apply Z.lor_nonneg. split. repeat apply Z.mul_nonneg_nonneg ; easy.
+        apply Z.lor_nonneg. split. repeat apply Z.mul_nonneg_nonneg ; easy.
+        easy.
+      }
+      {
+        rewrite <- !Z.mul_assoc.
+        rewrite <- !Z.pow_add_r ; try easy.
+        simpl.
+
+        apply (Z_lor_pow2 toword _ nat127.+1). split ; [ easy | ].
+        eapply Z.lt_trans ; [apply H0 | easy].
+
+        apply (Z_lor_pow2 (toword0 * _)%Z _ nat127.+1). split ; [ apply Z.mul_nonneg_nonneg ; easy | ].
+        eapply Z.lt_le_trans.
+        apply (@Z.mul_lt_mono_pos_r (2 ^ Z.of_nat (Pos.to_nat 32)) toword0) in H6  ; [ | easy].
+        apply H6.
+        easy.
+
+        apply (Z_lor_pow2 (toword1 * _)%Z _ nat127.+1). split ; [ apply Z.mul_nonneg_nonneg ; easy | ].
+
+        eapply Z.lt_le_trans.
+        rewrite (@Z.mul_lt_mono_pos_r (2 ^ Z.of_nat (Pos.to_nat 64)) toword1) in H9 ; [ | easy].
+        apply H9.
+        easy.
+
+        split.
+        apply Z.lor_nonneg. split. repeat apply Z.mul_nonneg_nonneg ; easy.
+        easy.
+
+        apply (Z_lor_pow2 (toword2 * _)%Z _ nat127.+1).
+
+        split ; [ apply Z.mul_nonneg_nonneg ; easy | ].
+        eapply Z.lt_le_trans.
+        rewrite (@Z.mul_lt_mono_pos_r (2 ^ Z.of_nat (Pos.to_nat 96)) toword2) in H11 ; [ | easy].
+        apply H11.
+        easy.
+        easy.
+      }
+      }
+      {
+        destruct a₁2, a₁3, a₁4, a₁5.
+        rewrite !Z.shiftl_lor.
+      rewrite !Z.shiftl_mul_pow2 ; try easy.
+      rewrite !Z.mul_0_l.
+      rewrite Z.lor_0_r.
+      replace (int_to_Z (Posz 32)) with 32%Z by reflexivity.
+
+      destruct (ssrbool.elimT (iswordZP _ _) i).
+      destruct (ssrbool.elimT (iswordZP _ _) i0).
+      destruct (ssrbool.elimT (iswordZP _ _) i1).
+      destruct (ssrbool.elimT (iswordZP _ _) i2).
+      split.
+      {
+        apply Z.lor_nonneg. split. easy.
+        apply Z.lor_nonneg. split. apply Z.mul_nonneg_nonneg ; easy.
+        apply Z.lor_nonneg. split. repeat apply Z.mul_nonneg_nonneg ; easy.
+        repeat apply Z.mul_nonneg_nonneg ; easy.
+      }
+      {
+        rewrite <- !Z.mul_assoc.
+        rewrite <- !Z.pow_add_r ; try easy.
+        simpl.
+
+        apply (Z_lor_pow2 toword _ nat127.+1). split ; [ easy | ].
+        eapply Z.lt_trans ; [apply H0 | easy].
+
+        apply (Z_lor_pow2 (toword0 * _)%Z _ nat127.+1). split ; [ apply Z.mul_nonneg_nonneg ; easy | ].
+        eapply Z.lt_le_trans.
+        apply (@Z.mul_lt_mono_pos_r (2 ^ Z.of_nat (Pos.to_nat 32)) toword0) in H6  ; [ | easy].
+        apply H6.
+        easy.
+
+        apply (Z_lor_pow2 (toword1 * _)%Z _ nat127.+1). split ; [ apply Z.mul_nonneg_nonneg ; easy | ].
+
+        eapply Z.lt_le_trans.
+        rewrite (@Z.mul_lt_mono_pos_r (2 ^ Z.of_nat (Pos.to_nat 64)) toword1) in H9 ; [ | easy].
+        apply H9.
+        easy.
+
+        split ; [ apply Z.mul_nonneg_nonneg ; easy | ].
+        eapply Z.lt_le_trans.
+        rewrite (@Z.mul_lt_mono_pos_r (2 ^ Z.of_nat (Pos.to_nat 96)) toword2) in H11 ; [ | easy].
+        apply H11.
+        easy.
+      }
+      }
+    }
     }
     {
-      admit.
+      apply r_ret.
+      intros.
+      split ; [ now destruct_pre | apply H ].
     }
     {
-      admit.
+      apply r_ret.
+      intros.
+      split ; [ now destruct_pre | apply H ].
     }
-  Admitted.
+    (* Cleanup *)
+    Transparent translate_call.
+  Qed.
 
   Lemma foo id0 rcon rkey temp2 :
     ⊢ ⦃ fun '(_, _) => True ⦄
