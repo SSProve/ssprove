@@ -499,13 +499,8 @@ Section JasminPRF.
       ret (chCanonical chUnit) 
       ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) /\ (exists o, (v0 = cons ('word U128 ; o ) nil ) /\ (o = x ⊕ y)) ⦄.
   Proof.
-    unfold JXOR.
-    unfold get_translated_static_fun.
-    unfold translate_prog_static.
-    unfold translate_funs_static.
-    unfold translate_call_body.
+    unfold JXOR, get_translated_static_fun, translate_prog_static, translate_funs_static, translate_call_body.
     intros disj.
-
     simpl. simpl_fun.
     repeat setjvars.
     ssprove_code_simpl.
@@ -548,7 +543,10 @@ Section JasminPRF.
       - eapply r_ret. easy.
       - ssprove_sync. intros.
         ssprove_sync.
-        { intros h0 h1 H1 H2 H. rewrite !get_set_heap_neq. 1: eapply H1; eauto. 1-2: admit. }
+        { intros h0 h1 Hh l H.
+          destruct (l == key_location) eqn:E.
+          - move: E => /eqP heq. subst. rewrite !get_set_heap_eq. reflexivity.
+          - move: E => /negP Hneq. rewrite !get_set_heap_neq; auto. 1-2: apply /negP; auto. }
         eapply r_ret. easy. }
     intros.
     (* TODO: find easier way to do next three lines *)
@@ -570,7 +568,7 @@ Section JasminPRF.
         1: do 2 eexists.
         1: instantiate (1 := set_heap H7 (translate_var s_id' v) a1).
         all: try reflexivity.
-        { intros l lnin. rewrite get_set_heap_neq. 1: eapply H8; auto. admit. }
+        { intros l lnin. rewrite get_set_heap_neq. 1: eapply H8; auto. eapply lnin. admit. }
         { repeat rewrite [set_heap _ _ a1]set_heap_commut; auto. 1-3: admit. }
       + intros.
         destruct_pre.
