@@ -134,8 +134,6 @@ Ltac clear_fset :=
 Ltac fix_lvals1 := clear_fset; eapply valid_translate_write_lvals1.
 Ltac fix_lvals2 := clear_fset; eapply valid_translate_write_lvals2.
 
-(* Definition Jvars {A} : raw_code -> {fset Location}. *)
-
 Lemma JRCON_valid id0 :
   ∑ L, forall I j, ValidCode (fset L) I (JRCON id0 j).
 Proof.
