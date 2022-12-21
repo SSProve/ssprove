@@ -101,6 +101,7 @@ theories/Jasmin/examples/two_functions.v
 theories/Jasmin/examples/u64_incr.v
 theories/Jasmin/examples/xor.v
 
+theories/Jasmin/examples/aes/aes.v
 theories/Jasmin/examples/aes/aes_valid.v
 
 theories/Jasmin/examples/xor/xor.v
