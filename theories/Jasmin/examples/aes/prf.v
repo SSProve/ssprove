@@ -328,7 +328,6 @@ Section PRF_example.
     rewrite GRing.add0r GRing.addr0.
     rewrite !Advantage_link. rewrite Advantage_sym. auto.
   Qed.
-
 End PRF_example.
 
 From JasminSSProve Require Import aes.aes aes_jazz jasmin_utils aes_valid.
@@ -639,57 +638,57 @@ Proof.
   intros P ℓ hℓ. reflexivity.
 Qed.
 
-Lemma INV''_heap_ignore_pred' (P : Location -> Prop) :
-  ∀ P0 P1 : Location -> Prop,
-    (forall ℓ : Location, ~ P0 ℓ /\ ~ P1 ℓ -> P ℓ) ->
-    INV'' P0 P1 (heap_ignore_pred' P).
-Proof.
-  intros P0 P1 hP h0 h1. split.
-  - intros hh l nin1 nin2.
-    eapply hh.
-    apply hP.
-    eauto.
-  - intros h ℓ v nin0 nin1 ℓ' n.
-    destruct (ℓ' != ℓ) eqn:e.
-    + rewrite get_set_heap_neq. 2: auto.
-      rewrite get_set_heap_neq. 2: auto.
-      apply h. auto.
-    + move: e => /eqP e. subst.
-      rewrite !get_set_heap_eq. reflexivity.
-Qed.
+(* Lemma pINV'_heap_ignore_pred' (P : Location -> Prop) : *)
+(*   ∀ P0 P1 : Location -> Prop, *)
+(*     (forall ℓ : Location, ~ P0 ℓ /\ ~ P1 ℓ -> P ℓ) -> *)
+(*     pINV' P0 P1 (heap_ignore_pred' P). *)
+(* Proof. *)
+(*   intros P0 P1 hP h0 h1. split. *)
+(*   - intros hh l nin1 nin2. *)
+(*     eapply hh. *)
+(*     apply hP. *)
+(*     eauto. *)
+(*   - intros h ℓ v nin0 nin1 ℓ' n. *)
+(*     destruct (ℓ' != ℓ) eqn:e. *)
+(*     + rewrite get_set_heap_neq. 2: auto. *)
+(*       rewrite get_set_heap_neq. 2: auto. *)
+(*       apply h. auto. *)
+(*     + move: e => /eqP e. subst. *)
+(*       rewrite !get_set_heap_eq. reflexivity. *)
+(* Qed. *)
 
-Lemma Invariant'_heap_ignore_pred' :
-  ∀ P0 P1 (P : Location -> Prop),
-    (forall ℓ : Location, ~ P0 ℓ /\ ~ P1 ℓ -> P ℓ) ->
-    Invariant' P0 P1 (heap_ignore_pred' P).
-Proof.
-  intros L P h. split.
-  - apply INV''_heap_ignore_pred'. auto.
-  - apply heap_ignore_pred'_empty.
-Qed.
+(* Lemma Invariant'_heap_ignore_pred' : *)
+(*   ∀ P0 P1 (P : Location -> Prop), *)
+(*     (forall ℓ : Location, ~ P0 ℓ /\ ~ P1 ℓ -> P ℓ) -> *)
+(*     Invariant' P0 P1 (heap_ignore_pred' P). *)
+(* Proof. *)
+(*   intros L P h. split. *)
+(*   - apply INV''_heap_ignore_pred'. auto. *)
+(*   - apply heap_ignore_pred'_empty. *)
+(* Qed. *)
 
-Definition adv_equiv' P0 P1 {L₀ L₁ E} (G₀ G₁ : raw_package)
-  `{ValidPackage L₀ Game_import E G₀} `{ValidPackage L₁ Game_import E G₁} ε :=
-  ∀ LA A,
-    ValidPackage LA E A_export A →
-    pdisjoint LA P0 →
-    pdisjoint LA P1 →
-    AdvantageE G₀ G₁ A = ε A.
+(* Definition adv_equiv' P0 P1 {L₀ L₁ E} (G₀ G₁ : raw_package) *)
+(*   `{ValidPackage L₀ Game_import E G₀} `{ValidPackage L₁ Game_import E G₁} ε := *)
+(*   ∀ LA A, *)
+(*     ValidPackage LA E A_export A → *)
+(*     pdisjoint LA P0 → *)
+(*     pdisjoint LA P1 → *)
+(*     AdvantageE G₀ G₁ A = ε A. *)
 
-Lemma eq_rel_perf_ind'' :
-  ∀ P0 P1 {L₀ L₁ E} (p₀ p₁ : raw_package) (inv : precond)
-    `{ValidPackage L₀ Game_import E p₀}
-    `{ValidPackage L₁ Game_import E p₁},
-    Invariant' P0 P1 inv →
-    eq_up_to_inv E inv p₀ p₁ →
-    adv_equiv' P0 P1 p₀ p₁ (λ _ : raw_package, 0%R).
-Proof.
-  intros P0 P1 L₀ L₁ E p₀ p₁ inv v₀ v₁ [? ?] he.
-  (* adv_equiv. *)
-  (* Locate "≈₀". *)
-  intros LA A vA hd₀ hd₁.
-  eapply eq_upto_inv_perf_ind'. all: eauto.
-Qed.
+(* Lemma eq_rel_perf_ind'' : *)
+(*   ∀ P0 P1 {L₀ L₁ E} (p₀ p₁ : raw_package) (inv : precond) *)
+(*     `{ValidPackage L₀ Game_import E p₀} *)
+(*     `{ValidPackage L₁ Game_import E p₁}, *)
+(*     Invariant' P0 P1 inv → *)
+(*     eq_up_to_inv E inv p₀ p₁ → *)
+(*     adv_equiv' P0 P1 p₀ p₁ (λ _ : raw_package, 0%R). *)
+(* Proof. *)
+(*   intros P0 P1 L₀ L₁ E p₀ p₁ inv v₀ v₁ [? ?] he. *)
+(*   (* adv_equiv. *) *)
+(*   (* Locate "≈₀". *) *)
+(*   intros LA A vA hd₀ hd₁. *)
+(*   eapply eq_upto_inv_perf_ind'. all: eauto. *)
+(* Qed. *)
 
 (* TODO: move *)
 Lemma JXOR_E pre id0 x y :
@@ -714,218 +713,150 @@ Proof.
   repeat eapply r_put_lhs.
   eapply r_ret.
   rewrite !zero_extend_u.
-  (* rewrite coerce_to_choice_type_K. *)
   intros.  destruct_pre; split_post.
   1: pdisj_apply disj.
   eexists; split; [reflexivity|]. reflexivity.
 Qed.
 
+(* TODO: move *)
+Arguments pheap_ignore : simpl never.
+
 Lemma IND_CPA_JENC_equiv_false id0 :
-    adv_equiv' (fun l => exists s_id v, id0 ⪯ s_id /\ l = translate_var s_id v) (fun l => l = state \/ l = rkeys) (IND_CPA_JENC id0 true) (IND_CPA_JENC id0 false) (λ _ : raw_package, 0%R).
-  Proof.
-    eapply eq_rel_perf_ind''.
-    1: eapply Invariant'_heap_ignore_pred' with
-    (* with (L := JENC_locs id0). *)
+  padv_equiv (fun l => exists s_id v, id0 ⪯ s_id /\ l = translate_var s_id v) (fun l => l = state \/ l = rkeys) (IND_CPA_JENC id0 true) (IND_CPA_JENC id0 false) (λ _ : raw_package, 0%R).
+Proof.
+  eapply eq_rel_perf_ind'.
+  (* invariant *)
+  { eapply pInvariant_pheap_ignore with
       (P := fun l => forall s_id v, id0 ⪯ s_id -> l != translate_var s_id v).
-
-     (* (id:=id0) *) (* (L:=fset0) *) (* (L:=(fset (JENC_valid id0 (fset [::])).π1)). *)
-(* _ignore with (L := fset Cenc_locs). *)
-    - intros. apply/eqP. intros contra.
-      destruct H.
-      apply H.
-      exists s_id, v. split; auto.
-      
-
-      (* admit. *)
-    (*     eapply fsubsetU. apply/orP; left. simpl. *)
-    (*   rewrite [fset (key_location :: _)]fset_cons. *)
-    (*   eapply fsubset_cons. *)
-    (*   eapply fsubsetxx. *)
-    -
-
-      unfold eq_up_to_inv.
-      unfold get_op_default.
-      unfold lookup_op.
-      unfold IND_CPA_JENC.
-      unfold IND_CPA_pkg_JENC.
-
-      (* unfold JENC. *)
-      (* unfold get_translated_static_fun. *)
-      (* unfold translate_prog_static. *)
-      (* unfold translate_funs_static. *)
-      (* unfold translate_call_body. *)
+    { intros. apply/eqP. intros contra.
+      destruct H. apply H.
+      exists s_id, v. split; auto. } }
+  unfold eq_up_to_inv, get_op_default, lookup_op, IND_CPA_JENC, IND_CPA_pkg_JENC.
   Opaque Caes.
   Opaque translate_call.
-  (* Opaque wrange. *)
   Opaque wrange.
   Opaque expn.
-  Arguments heap_ignore_pred' : simpl never.
   simpl.
-  (* simplify_linking. *)
-    simplify_eq_rel m.
-    simplify_linking.
-    rewrite !cast_fun_K.
-    ssprove_sync.
-    { intros h0 h1 hpre. apply hpre. admit. }
-      (* Transparent heap_ignore_later. *)
-    (* {  unfold get_pre_cond. intros. eapply H. left. admit. } intros. *)
-    (* ssprove_sync.  *)
-    destruct a.
-    + ssprove_code_simpl.
-      simpl.
-      ssprove_sync. intros.
-      rewrite !zero_extend_u.
-      repeat clear_get.
-      do 3 eapply r_put_lhs.
-      eapply r_bind.
-      * 
-(* eapply rpre_weak_hypothesis_rule'. *)
-        (* intros. *)
-        (* destruct_pre. *)
-        
-        eapply aes_E; split.
-        ** intros.
-           destruct_pre.
-           eexists.
-           eexists.
-           *** eexists.
-               eexists.
-               **** eexists.
-                    split.
-                    ***** instantiate (1 := set_heap H6 (translate_var s_id' v) a0).
-                    intros l lnin.
-                    rewrite get_set_heap_neq.
-                    1: eapply H7. 1: assumption.
-                    eapply lnin.
-                    admit.
-                    ***** reflexivity.
-               **** reflexivity.
-           *** rewrite set_heap_commut.
-               1: rewrite [set_heap _ _ a0]set_heap_commut.
-               1: rewrite [set_heap _ _ a0]set_heap_commut.
-               1: reflexivity.
-               (* 1: unfold heap_ignore_pred' in H7. *)
-               (* Unset Printing Notations. *)
-               1-3: admit.
-        ** intros.
-           destruct_pre.
-          
-           eexists.
-           eexists.
-           *** eexists.
-               eexists.
-               **** eexists.
-                    split.
-                    ***** instantiate (1 := H5).
-                    intros l2 lnin.
-                    rewrite get_set_heap_neq.
-                    1: eapply H6. 1: assumption.
-                    admit.
-                    ***** reflexivity.
-               **** reflexivity.
-           *** reflexivity.
-      * 
-        simpl.
-        intros.
-        
-        eapply rpre_weak_hypothesis_rule'; intros.
-           destruct_pre. 
-           simpl.
-           clear_get.
-           eapply r_put_lhs with (pre := fun _ => _).
-           eapply r_get_remember_lhs. intros.
+  simplify_eq_rel m.
+  simplify_linking.
+  rewrite !cast_fun_K.
+  ssprove_sync.
+  { intros h0 h1 hpre. apply hpre. admit. }
+  intros.
+  eapply r_bind with (mid := fun '(a₀, s₀) '(a₁, s₁) => pheap_ignore (λ l : ∑ _ : choice_type, nat, ∀ (s_id : p_id) (v : var), id0 ⪯ s_id → l != translate_var s_id v) (s₀, s₁) /\ a₀ = a₁). 
+  { destruct a.
+    - eapply r_ret. easy.
+    - ssprove_sync. intros.
+      ssprove_sync.
+      { intros h0 h1 H1 H2 H. rewrite !get_set_heap_neq. 1: eapply H1; eauto. 1-2: admit. }
+      eapply r_ret. easy. }
+  intros.
+  (* TODO: find easier way to do next three lines *)
+  eapply rpre_weak_hypothesis_rule'.
+  intros; destruct_pre.
+  eapply rpre_weaken_rule with (pre:= fun '(s₀, s₁) => pheap_ignore (λ l : ∑ _ : choice_type, nat, ∀ (s_id : p_id) (v : var), id0 ⪯ s_id → l != translate_var s_id v) (s₀, s₁)); try easy.
+  ssprove_code_simpl.
+  simpl.
+  ssprove_sync. intros.
+  rewrite !zero_extend_u.
+  repeat clear_get.
+  do 3 eapply r_put_lhs.
+  eapply r_bind.
+  - eapply aes_E; split.
+    + intros.
+      destruct_pre.
+      do 2 eexists.
+      1: do 2 eexists.
+      1: do 2 eexists.
+      1: instantiate (1 := set_heap H7 (translate_var s_id' v) a1).
+      all: try reflexivity.
+      { intros l lnin. rewrite get_set_heap_neq. 1: eapply H8; auto. admit. }
+      { repeat rewrite [set_heap _ _ a1]set_heap_commut; auto. 1-3: admit. }
+    + intros.
+      destruct_pre.
+      do 2 eexists.
+      1: do 2 eexists.
+      1: do 2 eexists.
+      1: instantiate (1 := H6).
+      all: try reflexivity.
+      intros l2 lnin.
+      rewrite get_set_heap_neq.
+      1: eapply H7. 1: assumption.
+      admit.
+  - simpl. intros.
+    eapply rpre_weak_hypothesis_rule'; intros.
+    destruct_pre. 
+    simpl.
+    clear_get.
+    eapply r_put_lhs with (pre := fun _ => _).
+    eapply r_get_remember_lhs. intros.
     eapply r_bind with (m₁ := ret (chCanonical chUnit)) (f₁ := fun _ => _).
     1: eapply JXOR_E; split.
-
-        ** intros.
-           unfold set_lhs.
-           simpl.
-           destruct_pre.
-           simpl.
-           eexists.
-           1: do 2 eexists.
-           1: do 7 eexists.
-           1: instantiate (1:= (set_heap H13 (translate_var s_id' v) a0)).
-           1: { intros l hl. rewrite get_set_heap_neq. 1: eapply H14. 1: assumption. apply hl.  admit. }
-           1: reflexivity.
-               1: rewrite [set_heap _ _ a0]set_heap_commut.
-               1: rewrite [set_heap _ _ a0]set_heap_commut.
-               1: rewrite [set_heap _ _ a0]set_heap_commut.
-               1: rewrite [set_heap _ _ a0]set_heap_commut.
-               1: reflexivity.
-               1-4: admit.
-               sheap. simpl. rewrite get_set_heap_neq. 1: sheap. 1:  reflexivity.
-               admit.
-        ** 
-          intros.
-          easy.
-        **
-          
-          intros.
-          eapply rpre_weak_hypothesis_rule'; intros.
-          destruct_pre; simpl.
-          clear_get.
-           eapply r_put_lhs with (pre := fun _ => _).
-           (* eapply rpost_weaken_rule. *)
-          eapply r_ret.
-          rewrite !coerce_to_choice_type_K.
-          rewrite !zero_extend_u.
-          intros.
-          destruct_pre; simpl; split_post.
-          1: sheap.
-          1: by rewrite wxorC.
-          intros l s_id.
-          rewrite !get_set_heap_neq.
-          (* Unset Printing Notations. *)
-          1: eapply H18.
-          1: eassumption.
-          1-5: apply s_id; reflexivity.
-    + admit.
+    + intros.
+      destruct_pre.
+      1: do 1 eexists.
+      1: do 2 eexists.
+      1: do 7 eexists.
+      1: instantiate (1:= (set_heap H14 (translate_var s_id' v) a1)).
+      all: try reflexivity.
+      { intros l hl. rewrite get_set_heap_neq. 1: eapply H15. 1: assumption. apply hl. admit. }
+      { repeat rewrite [set_heap _ _ a1]set_heap_commut; auto. 1-4: admit. }
+      { sheap. simpl. rewrite get_set_heap_neq. 1: sheap. 1: reflexivity. admit. }
+    + intros. easy.
+    + intros.
+      eapply rpre_weak_hypothesis_rule'; intros.
+      destruct_pre; simpl.
+      clear_get.
+      eapply r_put_lhs with (pre := fun _ => _).
+      eapply r_ret.
+      rewrite !coerce_to_choice_type_K.
+      rewrite !zero_extend_u.
+      intros.
+      destruct_pre; simpl; split_post.
+      { sheap. by rewrite wxorC. }
+      { intros l s_id.
+        rewrite !get_set_heap_neq.
+        1: eapply H19; auto.
+        1-5: apply s_id; reflexivity.
   Admitted.
   
   Lemma IND_CPA_jazz_equiv_false :
     (IND_CPA_Cenc) true ≈₀ (IND_CPA_Cenc) false.
   Proof.
     eapply eq_rel_perf_ind_ignore  with (L := fset Cenc_locs).
-    - eapply fsubsetU. apply/orP; left. simpl.
+    { eapply fsubsetU. apply/orP; left. simpl.
       rewrite [fset (key_location :: _)]fset_cons.
       eapply fsubset_cons.
-      eapply fsubsetxx.
-    -
-    (* We go to the relation logic using equality as invariant. *)
-    (* eapply eq_rel_perf_ind_eq. *)
+      eapply fsubsetxx. }
     unfold eq_up_to_inv.
-  Opaque Caes.
-  (* Opaque wrange. *)
-  Opaque wrange.
-  Opaque expn.
+    Opaque Caes.
+    Opaque wrange.
+    Opaque expn.
     simplify_eq_rel m.
     ssprove_sync. intros.
-    destruct a.
-    + simpl.  
-      ssprove_sync. intros x.
-       eapply r_bind with (m₁ := ret (chCanonical chUnit)) (f₁ := fun _ => _).
-      * 1: eapply aes_h.
-        intros h1 h2 l a lin h.
-        intros l2 lnin.
-        unfold Cenc_locs in *.
-        admit.
-      * intros. eapply r_ret.
-        intros. destruct_pre; split_post; auto.
-    + simpl.  
-      ssprove_sync. intros x.
-      ssprove_sync. 
-      ssprove_sync.  intros.
-       eapply r_bind with (m₁ := ret (chCanonical chUnit)) (f₁ := fun _ => _).
-      * 1: eapply aes_h.
-        intros h1 h2 l a2 lin h.
-        intros l2 lnin.
-        unfold Cenc_locs in *.
-        rewrite get_set_heap_neq.
-        1: eapply h. 1: assumption.
-        admit.
-      * intros. eapply r_ret.
-        intros. destruct_pre; split_post; auto.
+    eapply r_bind with (mid := fun '(a0, s0) '(a1, s1) => a0 = a1 /\ heap_ignore (fset Cenc_locs) (s0, s1)). 
+    { destruct a.
+      - eapply r_ret. easy.
+      - ssprove_sync. intros.
+        ssprove_sync.
+        (* { intros h0 h1 H1 H2 H. rewrite !get_set_heap_neq. 1: eapply H1; eauto. 1-2: admit. } *)
+        eapply r_ret. easy. }
+    intros. simpl.
+    (* TODO: find easier way to do next three lines *)
+    eapply rpre_weak_hypothesis_rule'.
+    intros; destruct_pre.
+    eapply rpre_weaken_rule with (pre:= fun '(s₀, s₁) => heap_ignore (fset Cenc_locs) (s₀, s₁)); try easy.
+    ssprove_sync. intros.
+    eapply r_bind with (m₁ := ret (chCanonical chUnit)) (f₁ := fun _ => _).
+    - 1: eapply aes_h.
+      intros h1 h2 l a2 lin h.
+      intros l2 lnin.
+      unfold Cenc_locs in *.
+      rewrite get_set_heap_neq.
+      1: apply h; auto.
+      admit.
+    - intros. eapply r_ret.
+      intros. destruct_pre; split_post; auto.
   Admitted.
 
   Definition JIND_CPA id0 :
@@ -958,143 +889,9 @@ Lemma IND_CPA_JENC_equiv_false id0 :
     2-3: admit.
     rewrite Advantage_sym.
     pose proof IND_CPA_JENC_equiv_false id0.
-    unfold adv_equiv' in H.
+    unfold padv_equiv in H.
     specialize (H LA A vA hd₀ hd₁).
     rewrite H.
     rewrite GRing.addr0.
     apply Order.POrderTheory.le_refl.
   Admitted.
-  (*   reflexivity. *)
-  (*   auto. *)
-
-  (*   erewrite IND_CPA_equiv_true. all: eauto. *)
-  (*   2:{ simpl. unfold MOD_CPA_location. rewrite fset0U. auto. } *)
-  (*   rewrite GRing.add0r GRing.addr0. *)
-  (*   rewrite !Advantage_link. rewrite Advantage_sym. auto. *)
-  (* Qed. *)
-  (*   + eapply rpre_weaken_rule. 1: eapply r_ret.  eapply rreflexivity_rule. *)
-  (*   -  intros. *)
-  (*      (* cbv zeta match. *) *)
-  (*      (* eapply cmd_sample_preserve_pre. *) *)
-  (*      (* eapply rsame_head. *) *)
-  (*      ssprove_code_simpl. *)
-  (*      eapply rpre_weaken_rule. *)
-  (*      1: ssprove_sync_eq. *)
-  (*      2: { intros. noconf H. easy. } *)
-  (*      intros. *)
-  (*      eapply r_bind with (m₁ := ret (chCanonical chUnit)) (f₁ := fun _ => _). *)
-  (*      + eapply rpre_weaken_rule. 1: eapply aes_h. *)
-  (*        easy. *)
-  (*      + intros. *)
-  (*        eapply r_ret. *)
-  (*        intros. subst. split. *)
-  (*        auto. *)
-  (*        rreflexivity_rule. *)
-         
-  (*      eapply r_bind. *)
-  (*      rewrite !zero_extend_u. *)
-  (*      eapply r_put_lhs with (pre := fun '(_, _) => _). *)
-  (*      eapply r_put_lhs. *)
-  (*      eapply r_put_lhs. *)
-  (*      eapply r_bind with (m₁ := ret (chCanonical chUnit)) (f₁ := fun _ => _). *)
-  (*      +  *)
-       
-  (*      eapply r_bind with (pre := fun _ => _). *)
-       
-  (*      (* eapply sampler_case. *) *)
-  (*      2: easy. *)
-  (*      eapply cmd_sample_preserve_pre. *)
-  (*      eapply r_bind. *)
-  (*      ssprove_code_simpl. *)
-  (*      eapply r_uniform_bij. *)
-  (*      eapply r_sample. *)
-  (*      ssprove_sync. *)
-  (*   ssprove_sync_eq. intros. *)
-  (*      eapply rsame_head. *)
-  (*      eapply r_bind. *)
-  (*   ssprove_sync. intros. *)
-
-  (*     1: ssprove_sync_eq. *)
-  (*     ssprove_code_simpl. *)
-  (*     simplify_linking. *)
-  (*     simpl. *)
-  (*     simplify_linking. *)
-  (*     unfold get_op_default. *)
-  (*     unfold lookup_op. *)
-  (*     cbv match zeta. *)
-  (*               unfold IND_CPA_jazz. *)
-  (*               (* cbn. *) *)
-  (*               (* cbn. *) *)
-  (*               (* unfold IND_CPA_pkg_ff. *) *)
-  (*               (* move: H; rewrite in_fset in_cons=>/orP []. 2: easy. *) *)
-  (*               (* move=> /eqP H. noconf H. *) *)
-
-
-  (*               unfold JKEYS_EXPAND. *)
-  (*               unfold get_translated_static_fun. *)
-  (*               unfold translate_prog_static. *)
-  (*               unfold translate_funs_static. *)
-  (*               unfold translate_call_body. *)
-                
-  (*               simplify_eq_rel m. *)
-  (*               simplify_linking. *)
-  (*               (* We now conduct the proof in relational logic. *) *)
-  (*               ssprove_swap_rhs 1%N. *)
-  (*               ssprove_swap_rhs 0%N. *)
-  (*               ssprove_sync_eq. cbn -[expn]. intros [k|]. *)
-  (*               - cbn -[expn]. ssprove_swap_rhs 0%N. *)
-  (*                 eapply rpost_weaken_rule. *)
-  (*                 1: eapply rreflexivity_rule. *)
-  (*                 cbn. intros [? ?] [? ?] e. inversion e. intuition auto. *)
-  (*               - cbn -[expn]. *)
-  (*                 ssprove_swap_rhs 0%N. *)
-  (*                 ssprove_swap_rhs 1%N. *)
-  (*                 ssprove_swap_rhs 0%N. *)
-  (*                 ssprove_swap_rhs 2%N. *)
-  (*                 ssprove_swap_rhs 1%N. *)
-  (*                 eapply rpost_weaken_rule. 1: eapply rreflexivity_rule. *)
-  (*                 cbn. intros [? ?] [? ?] e. inversion e. intuition auto. *)
-  (* Qed. *)
-  
-  (* Opaque translate_for. *)
-  (* Opaque translate_call. *)
-  (* simpl. *)
-  (* (* Opaque wrange. *) *)
-  (* (* Opaque for_loop'. *) *)
-  (* constructor. *)
-  (* 1: rewrite in_fset; apply/xseq.InP; apply List.in_eq.  *)
-  (* constructor. *)
-  (* 1: rewrite in_fset. 1: apply/xseq.InP; apply List.in_cons; eapply List.in_eq.  *)
-  (* constructor. *)
-  (* 1: rewrite in_fset; apply/xseq.InP; repeat lazymatch goal with | |- List.In _ (_ :: _) => eapply List.in_cons | |- _ => eapply List.in_eq end.  *)
-  (* constructor. *)
-  (* 1: rewrite in_fset; apply/xseq.InP; repeat lazymatch goal with | |- List.In _ (_ :: _) => eapply List.in_cons | |- _ => eapply List.in_eq end.  *)
-  (* constructor. *)
-  (* 1: rewrite in_fset; apply/xseq.InP; repeat lazymatch goal with | |- List.In _ (_ :: _) => eapply List.in_cons | |- _ => eapply List.in_eq end. *)
-  (* intros. rewrite 3!bind_assoc. *)
-  (* eapply valid_bind. *)
-  (* { Transparent translate_call. unfold translate_call. Opaque translate_call. simpl. constructor. *)
-  (*   Set Printing All. *)
-  (*   valid_code *)
-
-  (*     simpl. *)
-  (*   constructor. *)
-  (*   1: rewrite in_fset; apply/xseq.InP; repeat lazymatch goal with | |- List.In _ (_ :: _) => eapply List.in_cons | |- _ => eapply List.in_eq end.  *)
-  (*   constructor. *)
-  (*   1: rewrite in_fset; apply/xseq.InP; repeat lazymatch goal with | |- List.In _ (_ :: _) => eapply List.in_cons | |- _ => eapply List.in_eq end.  *)
-  (*   constructor. *)
-  (*   1: rewrite in_fset; apply/xseq.InP; repeat lazymatch goal with | |- List.In _ (_ :: _) => eapply List.in_cons | |- _ => eapply List.in_eq end.  *)
-  (*   1: erewrite -> in_cons. *)
-    
-  (*   cbn. simpl. *)
-  (*   2: easy. *)
-  (*   simpl. *)
-
-  (*   Program Definition jazz_enc id0 {L : { fset Location }} (m : pt U128) (k : key U128) : *)
-  (*     code L [interface] ('word U128 × 'word U128) := *)
-  (*     {code *)
-  (*        r ← sample uniform N ;; *)
-  (*      pad ← JAES id0 (word_of_ord r) k ;; *)
-  (*      let c := m ⊕ (hdtc128 pad) in *)
-  (*      ret (word_of_ord r, c) *)
-  (*     }. *)
