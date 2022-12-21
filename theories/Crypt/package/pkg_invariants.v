@@ -62,6 +62,43 @@ Definition INV' (L1 L2 : {fset Location})
     (I (s1, s2) → ∀ l v, l \notin L1 → l \notin L2 →
       I (set_heap s1 l v, set_heap s2 l v)).
 
+Definition pINV' (P1 P2 : Location -> Prop)
+  (I : heap_choiceType * heap_choiceType → Prop)
+   :=
+  ∀ s1 s2,
+    (I (s1, s2) → ∀ l, ~ P1 l → ~ P2 l →
+      get_heap s1 l = get_heap s2 l) ∧
+    (I (s1, s2) → ∀ l v, ~ P1 l -> ~ P2 l →
+      I (set_heap s1 l v, set_heap s2 l v)).
+
+(* TODO: move? *)
+Definition pdisjoint (L : {fset Location}) (P : Location -> Prop) := forall l, ~ (l \in L /\ P l).
+
+Lemma pINV'_to_INV (L : {fset Location}) P1 P2
+  (I : heap_choiceType * heap_choiceType → Prop)
+  (HpINV' : pINV' P1 P2 I)
+  (Hdisjoint1 : pdisjoint L P1)
+  (Hdisjoint2 : pdisjoint L P2) :
+  INV L I.
+Proof.
+  unfold INV.
+  intros s1 s2. split.
+  - intros hi l hin.
+    apply HpINV'.
+    + assumption.
+    + intros contra.
+      eapply Hdisjoint1. eauto.
+    + intros contra.
+      eapply Hdisjoint2. eauto.
+  - intros hi l v hin.
+    apply HpINV'.
+    + assumption.
+    + intros contra.
+      eapply Hdisjoint1. eauto.
+    + intros contra.
+      eapply Hdisjoint2. eauto.
+Qed.
+
 Lemma INV'_to_INV (L L1 L2 : {fset Location})
   (I : heap_choiceType * heap_choiceType → Prop)
   (HINV' : INV' L1 L2 I)
@@ -85,6 +122,12 @@ Proof.
     + move: Hdisjoint2. move /fdisjointP => Hdisjoint2.
       apply Hdisjoint2. assumption.
 Qed.
+
+(* TODO: add automation? *)
+Class pInvariant P₀ P₁ pinv := {
+  pinv_pINV' : pINV' P₀ P₁ pinv ;
+  pinv_empty : pinv (empty_heap, empty_heap)
+}.
 
 Class Invariant L₀ L₁ inv := {
   inv_INV' : INV' L₀ L₁ inv ;
@@ -119,13 +162,47 @@ Definition heap_ignore (L : {fset Location}) : precond :=
   λ '(h₀, h₁),
     ∀ (ℓ : Location), ℓ \notin L → get_heap h₀ ℓ = get_heap h₁ ℓ.
 
+Definition heap_ignore_pred (P : Location -> Prop) : precond :=
+  λ '(h₀, h₁),
+    forall (ℓ : Location), ~ P ℓ -> get_heap h₀ ℓ = get_heap h₁ ℓ.
+
 Arguments heap_ignore : simpl never.
+Arguments heap_ignore_pred : simpl never.
 
 Lemma heap_ignore_empty :
   ∀ L,
     heap_ignore L (empty_heap, empty_heap).
 Proof.
   intros L ℓ hℓ. reflexivity.
+Qed.
+
+Lemma heap_ignore_pred_empty :
+  ∀ P,
+    heap_ignore_pred P (empty_heap, empty_heap).
+Proof.
+  intros P ℓ hℓ. reflexivity.
+Qed.
+
+Lemma INV'_heap_ignore_pred (P : Location -> Prop) :
+  ∀ L0 L1 : {fset Location},
+    (forall ℓ : Location, P ℓ -> ℓ \in L0 :|: L1) ->
+    INV' L0 L1 (heap_ignore_pred P).
+Proof.
+  intros L0 L1 hP h0 h1. split.
+  - intros hh l nin0 nin1.
+    eapply hh.
+    intros contra.
+    apply hP in contra as h.
+    rewrite in_fsetU in h. move: h => /orP [h | h].
+    + rewrite h in nin0. discriminate.
+    + rewrite h in nin1. discriminate.
+  - intros h ℓ v n₀ n₁ ℓ' n.
+    destruct (ℓ' != ℓ) eqn:e.
+    + rewrite get_set_heap_neq. 2: auto.
+      rewrite get_set_heap_neq. 2: auto.
+      apply h. auto.
+    + move: e => /eqP e. subst.
+      rewrite !get_set_heap_eq. reflexivity.
 Qed.
 
 Lemma INV'_heap_ignore :
@@ -150,6 +227,16 @@ Proof.
       rewrite !get_set_heap_eq. reflexivity.
 Qed.
 
+Lemma Invariant_heap_ignore_pred :
+  ∀ L0 L1 (P : Location -> Prop),
+    (forall ℓ : Location, P ℓ -> ℓ \in L0 :|: L1) ->
+    Invariant L0 L1 (heap_ignore_pred P).
+Proof.
+  intros L P h. split.
+  - apply INV'_heap_ignore_pred. auto.
+  - apply heap_ignore_pred_empty.
+Qed.
+
 Lemma Invariant_heap_ignore :
   ∀ L L₀ L₁,
     fsubset L (L₀ :|: L₁) →
@@ -163,6 +250,45 @@ Qed.
 #[export] Hint Extern 10 (Invariant _ _ (heap_ignore _)) =>
   eapply Invariant_heap_ignore
   : (* typeclass_instances *) ssprove_invariant.
+
+(* TODO: naming? This doesn't seem to correspond to heap_ignore, due to the missing negation, but I use it that way *)
+Definition pheap_ignore (P : Location -> Prop) : precond :=
+  λ '(h₀, h₁),
+    forall (ℓ : Location), P ℓ -> get_heap h₀ ℓ = get_heap h₁ ℓ.
+
+Lemma pheap_ignore_empty :
+  ∀ P,
+    pheap_ignore P (empty_heap, empty_heap).
+Proof. intros P ℓ hℓ. reflexivity. Qed.
+
+Lemma pINV'_pheap_ignore (P : Location -> Prop) :
+  ∀ P0 P1 : Location -> Prop,
+    (forall ℓ : Location, ~ P0 ℓ /\ ~ P1 ℓ -> P ℓ) ->
+    pINV' P0 P1 (pheap_ignore P).
+Proof.
+  intros P0 P1 hP h0 h1. split.
+  - intros hh l nin1 nin2.
+    eapply hh.
+    apply hP.
+    eauto.
+  - intros h ℓ v nin0 nin1 ℓ' n.
+    destruct (ℓ' != ℓ) eqn:e.
+    + rewrite get_set_heap_neq. 2: auto.
+      rewrite get_set_heap_neq. 2: auto.
+      apply h. auto.
+    + move: e => /eqP e. subst.
+      rewrite !get_set_heap_eq. reflexivity.
+Qed.
+
+Lemma pInvariant_pheap_ignore :
+  ∀ P0 P1 (P : Location -> Prop),
+    (forall ℓ : Location, ~ P0 ℓ /\ ~ P1 ℓ -> P ℓ) ->
+    pInvariant P0 P1 (pheap_ignore P).
+Proof.
+  intros L P h. split.
+  - apply pINV'_pheap_ignore. auto.
+  - apply pheap_ignore_empty.
+Qed.
 
 (* Not-really-symmetric (in use) conjunction of invariants *)
 Definition inv_conj (inv inv' : precond) :=
