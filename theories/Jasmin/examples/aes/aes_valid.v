@@ -1,135 +1,17 @@
-From JasminSSProve Require Import jasmin_translate.
-
-From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
-
 Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
-  ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq word word.ssrZ.
+From mathcomp Require Import all_ssreflect seq.
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From Mon Require Import SPropBase.
-From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
-  UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb
-  pkg_core_definition choice_type pkg_composition pkg_rhl Package Prelude.
+From JasminSSProve Require Import jasmin_translate aes_utils aes_jazz.
+From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
+From Crypt Require Import Axioms ChoiceAsOrd pkg_core_definition choice_type Prelude.
 
-From Coq Require Import Utf8.
-From extructures Require Import ord fset fmap.
-
-Import SPropNotations.
-
-Import PackageNotation.
-
-From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
-
-Set Equations With UIP.
+From extructures Require Import fset ord.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
-Set Primitive Projections.
-
-Import Num.Def.
-Import Num.Theory.
-Import Order.POrderTheory.
-
-From JasminSSProve Require Import aes_jazz jasmin_utils.
-From Jasmin Require Import expr sem.
-
-Import JasminNotation JasminCodeNotation.
-
-Require Import String.
-Local Open Scope string.
 
 Local Open Scope positive_scope.
-
-Ltac esolve_in :=
-  rewrite in_fset; apply/xseq.InP;
-  repeat lazymatch goal with
-    | |- List.In _ (_ :: _) => eapply List.in_cons
-    | |- _ => eapply List.in_eq
-    end.
-
-Ltac tr_inseq_try :=
-  apply/orP ; first [ left ; rewrite translate_var_eq eq_refl ; reflexivity
-                    | right ; tr_inseq_try ].
-
-Ltac tr_inset_try :=
-  rewrite in_fset ; tr_inseq_try.
-
-Ltac tr_auto_in_fset :=
-  eauto ;
-  try tr_inset_try.
-
-Ltac until_call :=
-  simpl; repeat match goal with
-           | |- ValidCode _ _ _ => red
-           | |- valid_code _ _ (_ ← translate_call _ _ _ _ _ ;; _) => eapply valid_bind
-           | |- valid_code _ _ (_ ← (x ← _ ;; _) ;; _) => rewrite bind_assoc
-           | |- _ => constructor; [solve [ tr_auto_in_fset | esolve_in ]| ]; intros
-           | |- _ -> _ => intros
-           end.
-
-Lemma valid_code_cons {A} a l I (c : raw_code A) :
-  valid_code (fset l) I c -> valid_code (fset (a :: l)) I c.
-Proof.
-  intros.
-  induction c; econstructor.
-  - apply inversion_valid_opr in H as []. easy.
-  - intros. apply H0. apply inversion_valid_opr in H as []. easy.
-  - apply inversion_valid_getr in H as []. rewrite in_fset in_cons. apply/orP; right. rewrite -in_fset. easy.
-  - intros. apply H0. apply inversion_valid_getr in H as []. easy.
-  - apply inversion_valid_putr in H as []. rewrite in_fset in_cons. apply/orP; right. rewrite -in_fset. easy.
-  - apply inversion_valid_putr in H as []. apply IHc. easy.
-  - intros. apply H0. eapply inversion_valid_sampler. easy.
-Qed.
-
-Lemma valid_code_catC {A} l1 l2 I (c : raw_code A) :
-  valid_code (fset (l1 ++ l2)) I c -> valid_code (fset (l2 ++ l1)) I c.
-Proof. by rewrite !fset_cat fsetUC. Qed.
-
-Lemma valid_code_cat_r {A} l1 l2 I (c : raw_code A) :
-  valid_code (fset l1) I c -> valid_code (fset (l1 ++ l2)) I c.
-Proof.
-  intros.
-  induction l2.
-  - rewrite cats0. easy.
-  - apply valid_code_catC. simpl. apply valid_code_cons. apply valid_code_catC. easy.
-Qed.
-
-Lemma valid_code_cat_l {A} l1 l2 I (c : raw_code A) :
-  valid_code (fset l2) I c -> valid_code (fset (l1 ++ l2)) I c.
-Proof. intros; apply valid_code_catC. apply valid_code_cat_r. easy. Qed.
-
-Lemma valid_translate_write_lvals1 I id0 (v : var_i) vs :
-  valid_code (fset [:: translate_var id0 v]) I (translate_write_lvals [::] id0 [:: (Lvar v)] vs) .
-Proof.
-  destruct vs.
-  - constructor.
-  - constructor.
-    1: auto_in_fset.
-    constructor.
-Qed.
-
-Lemma valid_translate_write_lvals2 I id0 (v1 v2 : var_i) vs :
-  valid_code (fset [:: translate_var id0 v1 ; translate_var id0 v2]) I (translate_write_lvals [::] id0 [:: (Lvar v1) ; (Lvar v2)] vs) .
-Proof.
-  destruct vs.
-  - constructor.
-  - constructor.
-    1: auto_in_fset.
-    destruct vs.
-    + constructor.
-    + constructor.
-      1: auto_in_fset.
-      constructor.
-Qed.
-
-Ltac clear_fset :=
-  repeat match goal with
-    | |- ValidCode _ _ _ => red
-    | |- valid_code (fset (_ :: _)) _ _ => eapply valid_code_cons
-    | |- valid_code (fset (_ ++ _)) _ _ => eapply valid_code_cat_l
-    end; eapply valid_code_cat_r.
 
 Ltac fix_lvals1 := clear_fset; eapply valid_translate_write_lvals1.
 Ltac fix_lvals2 := clear_fset; eapply valid_translate_write_lvals2.

@@ -80,6 +80,7 @@ theories/Crypt/rules/UniformStateProb.v
 # Jasmin
 theories/Jasmin/jasmin_translate.v
 theories/Jasmin/jasmin_utils.v
+theories/Jasmin/word.v
 
 theories/Jasmin/examples/add1.v
 theories/Jasmin/examples/aes.v
@@ -102,7 +103,10 @@ theories/Jasmin/examples/u64_incr.v
 theories/Jasmin/examples/xor.v
 
 theories/Jasmin/examples/aes/aes.v
+theories/Jasmin/examples/aes/aes_prf.v
+theories/Jasmin/examples/aes/aes_utils.v
 theories/Jasmin/examples/aes/aes_valid.v
+theories/Jasmin/examples/aes/aes_spec.v
 
 theories/Jasmin/examples/xor/xor.v
 
