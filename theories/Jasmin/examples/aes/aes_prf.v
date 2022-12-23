@@ -69,17 +69,12 @@ Section PRF_example.
   #[local] Open Scope package_scope.
 
   Definition key_location : Location := ('option key ; 0).
-  Definition plain_location : Location := ( pt ; 1).
-  Definition cipher_location : Location := ( ct ; 2).
+
   Definition i0 : nat := 3.
   Definition i1 : nat := 4.
-  Definition i2 : nat := 5.
-  Definition salt_location : Location := ('nat ; 6).
+
   Definition table_location : Location :=
     (chMap 'nat ('word n) ; 7).
-
-  Definition rel_loc : {fset Location} :=
-    fset [:: key_location ; table_location ].
 
   Definition enc (m : pt) (k : key) :
     code fset0 [interface] ('word n) :=
@@ -102,10 +97,6 @@ Section PRF_example.
          ret k_val
        end
       }.
-
-  Definition dec (c : 'word n) (k : 'word n) :
-    code fset0 [interface] ('word n) :=
-    enc k c.
 
   Definition EVAL_location_tt := (fset [:: key_location]).
   Definition EVAL_location_ff := (fset [:: table_location]).
@@ -353,16 +344,6 @@ Section JasminPRF.
   Notation enc := (enc U128 aes).
   Notation kgen := (kgen U128).
   Notation key_location := (key_location U128).
-
-  Definition ltup2 (l : tchlist) :=
-    match l with
-    | [::] => (word0, word0)
-    | a1 :: l1 => 
-        match l with
-        | [::] => (word0, word0)
-        | a2 :: l2 => (coerce_to_choice_type ('word n) a1.π2, coerce_to_choice_type ('word n) a2.π2)
-        end
-    end.
 
   Definition Cenc (m : pt) (k : key) :
     code (fset [:: state ; rkeys]) [interface] ('word n). 
