@@ -412,6 +412,105 @@ Proof.
       * cbn. intros s₀' s₁' [? ?]. subst. auto.
 Qed.
 
+(* TODO: generalize, this proof is the same as for eq_upto_inv_perf_ind*)
+Lemma eq_upto_pinv_perf_ind :
+  ∀ {P0 P1 L₀ L₁ LA E} (p₀ p₁ : raw_package) (I : precond) (A : raw_package)
+    `{ValidPackage L₀ Game_import E p₀}
+    `{ValidPackage L₁ Game_import E p₁}
+    `{ValidPackage LA E A_export A},
+    pINV' P0 P1 I →
+    I (empty_heap, empty_heap) →
+    pdisjoint LA P0 →
+    pdisjoint LA P1 →
+    eq_up_to_inv E I p₀ p₁ →
+    AdvantageE p₀ p₁ A = 0.
+Proof.
+  intros P0 P1 L₀ L₁ LA E p₀ p₁ I A vp₀ vp₁ vA hI' hIe hd₀ hd₁ hp.
+  unfold AdvantageE, Pr.
+  pose r := get_op_default A RUN tt.
+  assert (hI : INV LA I). 1: eapply pINV'_to_INV; eauto.
+  unshelve epose proof (eq_up_to_inv_adversary_link p₀ p₁ I r hI hp) as h.
+  1:{
+    eapply valid_get_op_default.
+    - eauto.
+    - auto_in_fset.
+  }
+  assert (
+    ∀ x y : tgt RUN * heap_choiceType,
+      (let '(b₀, s₀) := x in λ '(b₁, s₁), b₀ = b₁ ∧ I (s₀, s₁)) y →
+      (fst x == true) ↔ (fst y == true)
+  ) as Ha.
+  { intros [b₀ s₀] [b₁ s₁]. simpl.
+    intros [e ?]. rewrite e. intuition auto.
+  }
+  unfold Pr_op.
+  unshelve epose (rhs := thetaFstd _ (repr (code_link r p₀)) empty_heap).
+  simpl in rhs.
+  epose (lhs := Pr_op (A ∘ p₀) RUN tt empty_heap).
+  assert (lhs = rhs) as he.
+  { subst lhs rhs.
+    unfold Pr_op. unfold Pr_code.
+    unfold thetaFstd. simpl. apply f_equal2. 2: reflexivity.
+    apply f_equal. apply f_equal.
+    rewrite get_op_default_link. reflexivity.
+  }
+  unfold lhs in he. unfold Pr_op in he.
+  rewrite he.
+  unshelve epose (rhs' := thetaFstd _ (repr (code_link r p₁)) empty_heap).
+  simpl in rhs'.
+  epose (lhs' := Pr_op (A ∘ p₁) RUN tt empty_heap).
+  assert (lhs' = rhs') as e'.
+  { subst lhs' rhs'.
+    unfold Pr_op. unfold Pr_code.
+    unfold thetaFstd. simpl. apply f_equal2. 2: reflexivity.
+    apply f_equal. apply f_equal.
+    rewrite get_op_default_link. reflexivity.
+  }
+  unfold lhs' in e'. unfold Pr_op in e'.
+  rewrite e'.
+  unfold rhs', rhs.
+  unfold SDistr_bind. unfold SDistr_unit.
+  rewrite !dletE.
+  assert (
+    ∀ x : bool_choiceType * heap_choiceType,
+      ((let '(b, _) := x in dunit (R:=R) (T:=bool_choiceType) b) true) ==
+      (x.1 == true)%:R
+  ) as h1.
+  { intros [b s].
+    simpl. rewrite dunit1E. apply/eqP. reflexivity.
+  }
+  assert (
+    ∀ y,
+      (λ x : prod_choiceType (tgt RUN) heap_choiceType, (y x) * (let '(b, _) := x in dunit (R:=R) (T:=tgt RUN) b) true) =
+      (λ x : prod_choiceType (tgt RUN) heap_choiceType, (x.1 == true)%:R * (y x))
+  ) as Hrew.
+
+  { intros y. extensionality x.
+    destruct x as [x1 x2].
+    rewrite dunit1E.
+    simpl. rewrite GRing.mulrC. reflexivity.
+  }
+  rewrite !Hrew.
+  unfold TransformingLaxMorph.rlmm_from_lmla_obligation_1. simpl.
+  unfold SubDistr.SDistr_obligation_2. simpl.
+  unfold OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
+  rewrite !SDistr_rightneutral. simpl.
+  pose proof (Pr_eq_empty _ _ _ _ h hIe Ha) as Heq.
+  simpl in Heq.
+  unfold θ_dens in Heq.
+  simpl in Heq. unfold pr in Heq.
+  simpl in Heq.
+  rewrite Heq.
+  rewrite /StateTransfThetaDens.unaryStateBeta'_obligation_1.
+  assert (∀ (x : R), `|x - x| = 0) as Hzero.
+  { intros x.
+    assert (x - x = 0) as H3.
+    { apply /eqP. rewrite GRing.subr_eq0. intuition. }
+    rewrite H3. apply normr0.
+  }
+  apply Hzero.
+Qed.
+
 Lemma eq_upto_inv_perf_ind :
   ∀ {L₀ L₁ LA E} (p₀ p₁ : raw_package) (I : precond) (A : raw_package)
     `{ValidPackage L₀ Game_import E p₀}
@@ -517,6 +616,29 @@ Proof.
     rewrite H3. apply normr0.
   }
   apply Hzero.
+Qed.
+
+(* TODO: move? to pkg_advantage *)
+Definition padv_equiv P₀ P₁ {L₀ L₁ E} (G₀ G₁ : raw_package)
+  `{ValidPackage L₀ Game_import E G₀} `{ValidPackage L₁ Game_import E G₁} ε :=
+  ∀ LA A,
+    ValidPackage LA E A_export A →
+    pdisjoint LA P₀ →
+    pdisjoint LA P₁ →
+    AdvantageE G₀ G₁ A = ε A.
+
+Lemma eq_rel_perf_ind' :
+  ∀ {P0 P1 L₀ L₁ E} (p₀ p₁ : raw_package) (inv : precond)
+    `{ValidPackage L₀ Game_import E p₀}
+    `{ValidPackage L₁ Game_import E p₁},
+    pInvariant P0 P1 inv →
+    eq_up_to_inv E inv p₀ p₁ →
+    padv_equiv P0 P1 p₀ p₁ (λ _ : raw_package, 0%R).
+    (* p₀ ≈₀ p₁. *)
+Proof.
+  intros P0 P1 L₀ L₁ E p₀ p₁ inv v₀ v₁ [? ?] he.
+  intros LA A vA hd₀ hd₁.
+  eapply eq_upto_pinv_perf_ind. all: eauto.
 Qed.
 
 Lemma eq_rel_perf_ind :
