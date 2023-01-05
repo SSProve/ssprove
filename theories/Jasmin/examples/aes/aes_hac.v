@@ -153,8 +153,8 @@ Section Hacspec.
       cbn. lia.
   Qed.
 
-  Theorem shiftl_bounds : forall x y z,
-      (le y z) ->
+  Theorem shiftl_bounds : forall x (y z : nat),
+      (y <= z)%Z ->
       (0 <= x < modulus (z - y))%Z ->
       (0 <= Z.shiftl x y < modulus z)%Z.
   Proof.
@@ -173,6 +173,7 @@ Section Hacspec.
       rewrite Nat2Z.inj_sub.
       rewrite Z.sub_simpl_r.
       reflexivity.
+      apply Nat2Z.inj_le.
       apply H.
     }
     split.
@@ -557,9 +558,9 @@ Section Hacspec.
     rewrite !Zmod_small.
     all: try apply (@num_smaller_if_modulus_lte U32).
     all: try easy.
-    2: apply (shiftl_bounds _ 96 128) ; [ lia |  cbn ; apply (@num_smaller_if_modulus_lte U32) ; easy ].
-    2: apply (shiftl_bounds _ 64 128) ; [ lia |  cbn ; apply (@num_smaller_if_modulus_lte U32) ; easy ].
-    2: apply (shiftl_bounds _ 32 128) ; [ lia |  cbn ; apply (@num_smaller_if_modulus_lte U32) ; easy ].
+    2: apply (shiftl_bounds _ 96 128) ; [ easy |  cbn ; apply (@num_smaller_if_modulus_lte U32) ; easy ].
+    2: apply (shiftl_bounds _ 64 128) ; [ easy |  cbn ; apply (@num_smaller_if_modulus_lte U32) ; easy ].
+    2: apply (shiftl_bounds _ 32 128) ; [ easy |  cbn ; apply (@num_smaller_if_modulus_lte U32) ; easy ].
 
     rewrite !Z.shiftl_lor.
     rewrite !Z.shiftl_mul_pow2 ; try easy.
@@ -969,7 +970,34 @@ Section Hacspec.
     rewrite Nat2Z.inj_mul.
     f_equal. now zify.
   Qed.
-  
+
+  Theorem modulus_exact : forall {WS : wsize.wsize} (x : 'word WS), (0 <= x < modulus WS)%Z.
+  Proof.
+    intros.
+    destruct x.
+    cbn.
+    apply (ssrbool.elimT (iswordZP _ _)) in i.
+    apply i.
+  Qed.
+
+  Theorem modulus_smaller : forall (WS : wsize.wsize) (m : nat) {x : 'word WS}, (WS <= m)%Z -> (0 <= x < modulus m)%Z.
+  Proof.
+    intros.
+    destruct x.
+    cbn.
+    apply (ssrbool.elimT (iswordZP _ _)) in i.
+    split.
+    - easy.
+    - eapply Z.lt_le_trans.
+      apply i.
+      rewrite modulusZE.
+      rewrite modulusZE.
+      apply (Z.pow_le_mono_r 2).
+      reflexivity.
+      (* apply Nat2Z.inj_le. *)
+      apply H.
+  Qed.
+
   Lemma sbox_eq :
     (forall n i, (i < 4)%nat ->
             @Hacspec_Lib_Pre.array_index int8 (@int_default U8)
@@ -982,36 +1010,35 @@ Section Hacspec.
             (Hacspec_Lib_Pre.u32_to_be_bytes n) U32
             (@repr U32 i)) = waes.Sbox (word.subword (i * U8) U8 n)).
   Proof.
-  Admitted.
-    (* intros. *)
+    intros.
 
-  (*   simpl. *)
-  (*   unfold Hacspec_Lib_Pre.u32_to_be_bytes. *)
-  (*   unfold to_be_bytes. *)
-  (*   rewrite !eq_rect_K. *)
-  (*   unfold Hacspec_Lib_Pre.array_index at 2. *)
-  (*   assert (H0 : forall (n : int32) i, i < 4 -> Hacspec_Lib_Pre.array_index (WS := U8) sbox_v (repr (nat_be_range 8 n i)) = waes.Sbox (word.subword (i * U8) U8 n)). *)
-  (*   2: do 4 (destruct i ; [ simpl ; apply H0 ; apply H | ]) ; discriminate. *)
-  (*   clear ; intros. *)
-  (*   rewrite (nat_to_be_range_is_subword (WS := U8) n i (H_WS := ltac:(easy))). *)
+    simpl.
+    unfold Hacspec_Lib_Pre.u32_to_be_bytes.
+    unfold to_be_bytes.
+    rewrite !eq_rect_K.
+    unfold Hacspec_Lib_Pre.array_index at 2.
+    assert (H0 : forall (n : int32) i, i < 4 -> Hacspec_Lib_Pre.array_index (WS := U8) sbox_v (repr (nat_be_range 8 n i)) = waes.Sbox (word.subword (i * U8) U8 n)).
+    2: do 4 (destruct i ; [ simpl ; apply H0 ; apply H | ]) ; discriminate.
+    clear ; intros.
+    rewrite (nat_to_be_range_is_subword (WS := U8) n i (H_WS := ltac:(easy))).
 
-  (*   destruct (word.subword (i * U8) U8 n). *)
-  (*   destruct toword. *)
-  (*   - reflexivity. *)
-  (*   - do 8 (destruct p ; [ | | shelve ]). *)
-  (*     all: destruct p ; easy. *)
-  (*     Unshelve. *)
-  (*     all: reflexivity. *)
-  (*   - easy. *)
-  (* Qed. *)
+    destruct (word.subword (i * U8) U8 n).
+    destruct toword.
+    - reflexivity.
+    - do 8 (destruct p ; [ | | shelve ]).
+      all: destruct p ; easy.
+      Unshelve.
+      all: reflexivity.
+    - easy.
+  Qed.
 
   Lemma array_to_list_upd_spec : (forall A WS n (a : nseq A n) (i : @int WS) x,
                                 array_to_list (Hacspec_Lib_Pre.array_upd a i x) =
                                   set_nth x (array_to_list a) (Z.to_nat (unsigned i)) x).
   Proof.
   Admitted.
-    
-  
+
+
   Lemma SubWord_eq id0 (n : int32) pre :
     (pdisj pre id0 (CEfset ([res_238_loc]))) ->
     ⊢ ⦃ pre ⦄
@@ -1067,7 +1094,7 @@ Section Hacspec.
       reflexivity.
       apply H2.
     }
-    
+
     unfold repr, unsigned.
     rewrite <- !sbox_eq ; try easy.
 
@@ -1119,17 +1146,17 @@ Section Hacspec.
     unfold wcat_r.
     unfold wunsigned, wrepr, mkword, urepr, val, word_subType.
 
-    
-    
+
+
     set (Hacspec_Lib_Pre.array_index _ _).
     set (Hacspec_Lib_Pre.array_index _ _).
     set (Hacspec_Lib_Pre.array_index _ _).
     set (Hacspec_Lib_Pre.array_index _ _).
-    
+
     unfold toword in |- *.
 
     rewrite !Z2Nat.id.
-    
+
     2: {
       destruct t3.
       apply (ssrbool.elimT (iswordZP _ _)) in i.
@@ -1164,7 +1191,7 @@ Section Hacspec.
     f_equal.
     apply word_ext.
 
-    Unset Printing Coercions. 
+    Unset Printing Coercions.
 
     (* rewrite !Zmod_small. *)
     rewrite !Z.shiftl_mul_pow2 ; try easy.
@@ -1247,12 +1274,12 @@ Section Hacspec.
           destruct i ; easy.
         }
       }
-      
+
       rewrite <- Z.lxor_lor ; [ | apply H0 ].
       rewrite <- Z.add_nocarry_lxor ; [ | apply H0 ].
       reflexivity.
     }
-    
+
     replace 1%Z with (modulus 0)%Z by reflexivity.
     replace 256%Z with (modulus 8)%Z by reflexivity.
     replace 65536%Z with  (modulus 16)%Z by reflexivity.
@@ -1282,10 +1309,9 @@ Section Hacspec.
         eapply Z.lt_trans.
         apply i.
         easy.
-        
+
         rewrite <- modulusZE.
-        apply shiftl_bounds.
-        lia.
+        apply shiftl_bounds. easy.
         apply i0.
       }
     2: {
@@ -1308,18 +1334,16 @@ Section Hacspec.
         eapply Z.lt_trans.
         apply i.
         easy.
-        
+
         rewrite <- modulusZE.
-        apply shiftl_bounds.
-        lia.
+        apply shiftl_bounds. easy.
         split. lia.
         eapply Z.lt_trans.
         apply i0.
         easy.
 
         rewrite <- modulusZE.
-        apply shiftl_bounds.
-        lia.
+        apply shiftl_bounds. easy.
         split. lia.
         eapply Z.lt_le_trans.
         apply i1.
@@ -1339,21 +1363,20 @@ Section Hacspec.
         eapply Z.lt_trans.
         apply i.
         easy.
-        
+
         rewrite <- modulusZE.
-        apply shiftl_bounds.
-        lia.
+        apply shiftl_bounds. easy.
         split. lia.
         eapply Z.lt_le_trans.
         apply i0.
         easy.
     }
 
-    
+
     rewrite !Z.shiftl_lor.
     rewrite <- !Z.lor_assoc.
     rewrite !Z.shiftl_shiftl.
-        
+
     reflexivity.
     all: try easy.
   Qed.
@@ -1401,7 +1424,7 @@ Section Hacspec.
               ]
         end
     end.
-
+  
   Lemma keygen_assist_eq id0 (v1 : 'word U128) (v2 : 'word U8) (pre : precond) :
     (pdisj pre id0 (CEfset [res_238_loc])) ->
     ⊢ ⦃ pre ⦄
@@ -1450,9 +1473,9 @@ Section Hacspec.
       apply r_ret.
       intros.
       rewrite (subword_eq v1) ; [ | easy ].
-      split. reflexivity. assumption. 
+      split. reflexivity. assumption.
     }
-      
+
 
     (* unfold let_both at 1, is_state at 1, prog. *)
     match_pattern_and_bind_repr (@word.subword (wsize_size_minus_1 U128).+1 (3 * U32) U32 v1).
@@ -1462,8 +1485,7 @@ Section Hacspec.
       rewrite (subword_eq v1) ; [ | easy ].
       split ; easy.
     }
-    
-    unfold let_both at 1, is_state at 1, prog.
+
     match_pattern_and_bind (waes.SubWord a₀).
     {
       subst.
@@ -1479,7 +1501,7 @@ Section Hacspec.
       apply r_ret.
       intros.
       split.
-      - (* TODO *) admit.
+      - reflexivity.
       - apply H0.
     }
 
@@ -1491,7 +1513,7 @@ Section Hacspec.
       hnf.
       eapply H.
     }
-    
+
     match_pattern_and_bind (word.wxor (wror (sz:=U32) a₀3 1)
                                   (zero_extend U32 (sz':=U8) v2)).
     {
@@ -1499,9 +1521,9 @@ Section Hacspec.
       apply r_ret.
       intros.
       split.
-      - (* TODO *) admit.
+      - reflexivity. 
       - apply H0.
-    }    
+    }
 
     apply r_ret.
     intros.
@@ -1519,9 +1541,54 @@ Section Hacspec.
       rewrite !Zmod_small.
       f_equal.
 
-      all: admit.
+      + apply (modulus_smaller U32 U128). easy.
+      + apply (shiftl_bounds _ 96 128). easy.
+        apply (modulus_exact a₁4).
+      + apply (modulus_smaller U32 U128). easy.
+      + apply (modulus_smaller U32 U128). easy.
+      + apply (shiftl_bounds _ 64 128). easy.
+        apply (modulus_smaller U32 U64). easy.
+      + apply (modulus_smaller U32 U128). easy.
+      + apply (modulus_smaller U32 U128). easy.
+      + apply (shiftl_bounds _ 32 128). easy.
+        apply (modulus_smaller U32 96). easy.
+      + apply (modulus_smaller U32 U128). easy.
+      + apply (modulus_smaller U32 U128). easy.
+      + (* destruct a₁1 , a₁2 , a₁3 , a₁4. *)
+        (* unfold urepr, val, word_subType, word.toword. *)
+        (* apply (ssrbool.elimT (iswordZP _ _)) in i, i0, i1, i2. *)
+        split.
+        * apply Z.lor_nonneg. split. apply word_geZ0.
+          apply Z.lor_nonneg. split. apply Z.shiftl_nonneg. apply word_geZ0.
+          apply Z.lor_nonneg. split. apply Z.shiftl_nonneg. apply word_geZ0.
+          apply Z.shiftl_nonneg. apply word_geZ0.
+        * rewrite modulusZE.
+          apply Z_lor_pow2.
+          split. apply word_geZ0.
+          eapply Z.lt_trans.
+          apply (modulus_exact a₁1).
+          easy.
+
+          apply Z_lor_pow2.
+          split. apply Z.shiftl_nonneg. apply word_geZ0.
+          rewrite <- modulusZE.
+          apply (shiftl_bounds _ U32 U128). easy.
+          apply num_smaller_if_modulus_lte. easy.
+
+          apply Z_lor_pow2.
+          split. apply Z.shiftl_nonneg. apply word_geZ0.
+          rewrite <- modulusZE.
+          apply (shiftl_bounds _ U64 U128). easy.
+          apply num_smaller_if_modulus_lte. easy.
+
+          rewrite <- modulusZE.
+          apply (shiftl_bounds _ 96 U128). easy.
+          apply num_smaller_if_modulus_lte. easy.
+      + easy.
+      + easy.
+      + easy.
     - apply H12.
-  Admitted.
+  Qed.
 
   Lemma key_expand_eq id0 rcon rkey temp2  (pre : precond) :
     (pdisj pre id0 (CEfset [res_238_loc])) ->
@@ -1704,7 +1771,7 @@ Section Hacspec.
           split.
           eapply H_pdisj.
           reflexivity.
-          
+
           etransitivity.
           apply fresh2_weak.
           apply H0.
