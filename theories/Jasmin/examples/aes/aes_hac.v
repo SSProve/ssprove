@@ -95,11 +95,6 @@ Section Hacspec.
         eapply (@r_bind _ _ _ _ (ret jazz) _ (fun x => putr l x f) _ _ (fun '(v0, h0) '(v1, h1) => v0 = v1 /\ P (h0, h1)) _) ; [ rewrite !zero_extend_u | intros ]
     end.
 
-  (* match goal with *)
-  (* | [ |- context [ ⊢ ⦃ ?P ⦄ putr ?l ?jazz ?f ≈ _ ⦃ ?Q ⦄ ] ] => *)
-  (*     apply (@r_bind _ _ _ _ (ret jazz) _ (fun x => putr l x f) _ _ Q _) ; [ | intros ; unfold pre_to_post ] *)
-  (* end. *)
-
   Ltac remove_get_in_lhs :=
     eapply better_r_get_remind_lhs ;
     unfold Remembers_lhs , rem_lhs ;
@@ -205,7 +200,6 @@ Section Hacspec.
   Lemma wpshufd1_eq :
     forall (rkey : 'word U128)  (i : nat) (n : nat),
       i < 4 ->
-      (* (Z.of_nat n mod modulus nat7.+1 < modulus (2 + 2 * i))%Z -> *)
       wpshufd1 rkey (wrepr U8 n) i =
         is_pure (vpshufd1 rkey (Hacspec_Lib_Pre.repr n) (Hacspec_Lib_Pre.repr i)).
   Proof.
@@ -442,9 +436,6 @@ Section Hacspec.
     unfold wpshufd_128.
     unfold iota.
     unfold map.
-    (* set (wpshufd1 _ _ _). *)
-    (* set (wpshufd1 _ _ _). *)
-    (* set (wpshufd1 _ _ _). *)
     unfold vpshufd.
 
     solve_wpshufd1_vpshufd1 0 n.
@@ -518,9 +509,6 @@ Section Hacspec.
     unfold vshufps.
     unfold iota.
     unfold map.
-    (* set (wpshufd1 _ _ _). *)
-    (* set (wpshufd1 _ _ _). *)
-    (* set (wpshufd1 _ _ _). *)
     unfold vpshufd.
 
     solve_wpshufd1_vpshufd1 0 n.
@@ -594,7 +582,6 @@ Section Hacspec.
     simpl in r.
     unfold translate_call, translate_call_body in r |- *.
     Opaque translate_call.
-    (* unfold ssprove_jasmin_prog in r. *)
     simpl in r.
 
     subst r.
@@ -930,9 +917,6 @@ Section Hacspec.
     intuition.
   Qed.
 
-  Check word.subword (1 * U32)%nat U32.
-  (* let x1 := subword (1 * U32) U32 v1 in *)
-  (* let x1 = (v1 >> 32) % (1_u128 << 32); *)
   Lemma subword_eq (n : int128) (i : nat):
     (i < 4) ->
     word.subword (i * U32)%nat U32 n =
@@ -994,7 +978,6 @@ Section Hacspec.
       rewrite modulusZE.
       apply (Z.pow_le_mono_r 2).
       reflexivity.
-      (* apply Nat2Z.inj_le. *)
       apply H.
   Qed.
 
@@ -1180,7 +1163,6 @@ Section Hacspec.
 
     Unset Printing Coercions.
 
-    (* rewrite !Zmod_small. *)
     rewrite !Z.shiftl_mul_pow2 ; try easy.
 
     simpl.
@@ -1217,9 +1199,6 @@ Section Hacspec.
     f_equal.
 
     all: try easy.
-
-    (* apply Z.bits_inj. *)
-    (* intros i. *)
 
     assert (H_lor_add : forall (a b : Z) (k : nat), (0 <= a < modulus k)%Z -> (a + Z.shiftl b k)%Z = Z.lor a (Z.shiftl b k)).
     {
@@ -1309,7 +1288,7 @@ Section Hacspec.
     all: try split.
     all: try apply Z.shiftl_nonneg.
     all: try easy.
-    
+
     all: try apply (modulus_exact t).
     all: try apply (modulus_exact t0).
     all: try apply (modulus_exact t1).
@@ -1337,7 +1316,7 @@ Section Hacspec.
             let fv := fresh in
             set (av := a)
             ; set (fv := f)
-            ; eapply (r_bind (ret p) av _ fv P (fun '(v0, h0) '(v1, h1) => v0 = repr v1 /\ P (h0, h1)) Q) (* (v0 = v1) *)
+            ; eapply (r_bind (ret p) av _ fv P (fun '(v0, h0) '(v1, h1) => v0 = repr v1 /\ P (h0, h1)) Q)
             ; subst av fv ; hnf ; [ | intros ; apply rpre_hypothesis_rule' ; intros ? ? [] ; apply rpre_weaken_rule with (pre := fun '(s₀, s₁) => P (s₀, s₁))
               ]
         end
@@ -1359,7 +1338,7 @@ Section Hacspec.
             let fv := fresh in
             set (av := a)
             ; set (fv := f)
-            ; eapply (r_bind (ret p) av _ fv P (fun '(v0, h0) '(v1, h1) => v0 = v1 /\ P (h0, h1)) Q) (* (v0 = v1) *)
+            ; eapply (r_bind (ret p) av _ fv P (fun '(v0, h0) '(v1, h1) => v0 = v1 /\ P (h0, h1)) Q)
             ; subst av fv ; hnf ; [ | intros ; apply rpre_hypothesis_rule' ; intros ? ? [] ; apply rpre_weaken_rule with (pre := fun '(s₀, s₁) => P (s₀, s₁))
               ]
         end
@@ -1369,33 +1348,11 @@ Section Hacspec.
     (pdisj pre id0 (CEfset [res_238_loc])) ->
     ⊢ ⦃ pre ⦄
         ret (waes.wAESKEYGENASSIST v1 v2)
-        (* (tr_app_sopn_tuple (w2_ty U128 U8) *)
-        (*                    (sopn_sem (Oasm (BaseOp (None, VAESKEYGENASSIST)))) *)
-        (*                    [totce v1; totce v2]) *)
         ≈
         prog (is_state (aeskeygenassist v1 v2))
         ⦃ fun '(v0, h0) '(v1, h1) => (v0 = v1) /\ pre (h0, h1) ⦄.
   Proof.
     intros.
-
-    (* let rcon := zero_extend U32 v2 in *)
-    (* let x1 := subword (1 * U32) U32 v1 in *)
-    (* let x3 := subword (3 * U32) U32 v1 in *)
-    (* let y0 := SubWord x1 in *)
-    (* let y1 := wxor (wror (SubWord x1) 1) rcon in *)
-    (* let y2 := SubWord x3 in *)
-    (* let y3 := wxor (wror (SubWord x3) 1) rcon in *)
-    (* make_vec U128 [:: y0; y1; y2; y3]. *)
-
-
-    (* let x1 = (v1 >> 32) % (1_u128 << 32); *)
-    (* let x3 = (v1 >> 96) % (1_u128 << 32); *)
-    (* let y0 = subword(x1 as u32); *)
-    (* let y1 = ror(subword(x1 as u32), 1) ^ (v2 as u32); *)
-    (* let y2 = subword(x3 as u32); *)
-    (* let y3 = ror(subword(x3 as u32), 1) ^ (v2 as u32); *)
-    (* (y0 as u128) | ((y1 as u128) << 32) | ((y2 as u128) << 64) | (((y3) as u128) << 96) *)
-
 
     unfold waes.wAESKEYGENASSIST.
 
@@ -1406,8 +1363,6 @@ Section Hacspec.
 
     unfold aeskeygenassist.
 
-    (* Unfold let both and match *)
-    (* unfold let_both at 1, is_state at 1, prog. *)
     match_pattern_and_bind_repr (@word.subword (wsize_size_minus_1 U128).+1 (1 * U32) U32 v1).
     {
       apply r_ret.
@@ -1416,8 +1371,6 @@ Section Hacspec.
       split. reflexivity. assumption.
     }
 
-
-    (* unfold let_both at 1, is_state at 1, prog. *)
     match_pattern_and_bind_repr (@word.subword (wsize_size_minus_1 U128).+1 (3 * U32) U32 v1).
     {
       apply r_ret.
@@ -1455,7 +1408,7 @@ Section Hacspec.
     }
 
     match_pattern_and_bind (word.wxor (wror (sz:=U32) a₀3 1)
-                                  (zero_extend U32 (sz':=U8) v2)).
+                                      (zero_extend U32 (sz':=U8) v2)).
     {
       subst.
       apply r_ret.
@@ -1488,10 +1441,7 @@ Section Hacspec.
         apply (modulus_smaller U32 U64). easy.
       + apply (shiftl_bounds _ 32 128). easy.
         apply (modulus_smaller U32 96). easy.
-      + (* destruct a₁1 , a₁2 , a₁3 , a₁4. *)
-        (* unfold urepr, val, word_subType, word.toword. *)
-        (* apply (ssrbool.elimT (iswordZP _ _)) in i, i0, i1, i2. *)
-        split.
+      + split.
         * apply Z.lor_nonneg. split. apply word_geZ0.
           apply Z.lor_nonneg. split. apply Z.shiftl_nonneg. apply word_geZ0.
           apply Z.lor_nonneg. split. apply Z.shiftl_nonneg. apply word_geZ0.
@@ -1553,16 +1503,6 @@ Section Hacspec.
 
     eapply rpre_weak_hypothesis_rule'.
     intros ? ? [? H].
-    (* set (set_lhs _ _ _) in H. *)
-    (* apply rpre_weaken_rule with (pre := λ s : heap * heap, s.1 = s₀ ∧ s.2 = s₁ /\ p s). *)
-    (* }  *)
-
-
-    (* apply H. *)
-    (* s.1 = s₀ ∧ s.2 = s₁ /\ set_lhs ($$"temp2.317") temp2 *)
-    (*   (set_lhs ($$"rkey.316") rkey *)
-    (*      (set_lhs ($$"rcon.315") (coe_cht 'int (coe_cht 'int rcon)) pre)) *)
-    (*   (s₀, s₁)). *)
 
     apply better_r_put_lhs.
     do 3 remove_get_in_lhs.
@@ -1585,7 +1525,6 @@ Section Hacspec.
       eexists.
       split.
       reflexivity.
-      (* reflexivity. *)
       inversion H25.
       subst.
       inversion H24.
@@ -1593,41 +1532,15 @@ Section Hacspec.
       cbn.
       now rewrite !zero_extend_u.
 
-      (* do 2 (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K). *)
-
-      (* CAN BE DONE WITH: pdisj_apply H_pdisj. *)
-      destruct H_pdisj.
-      repeat eapply H ; easy.
+      pdisj_apply H_pdisj.
     }
 
     subst.
     subst P.
 
-    (* eapply rpre_hypothesis_rule. *)
-    (* intros ? ? [? [[]]]. *)
-    (* subst. *)
-    (* (* apply rpre_weaken_rule with (pre := pre). *) *)
-
-    (* 2:{ *)
-    (*   intros ? ? []. *)
-    (*   destruct_pre. *)
-    (*   destruct H_pdisj. *)
-    (*   eapply H; try easy. *)
-    (*   eapply H; try easy. *)
-    (*   eapply H; try easy. *)
-    (*   eapply H; try easy. *)
-    (* } *)
-
-    (* (* eapply rpost_weaken_rule. *) *)
-
     intros.
     apply (key_combined_eq (id0~1)%positive rkey a₁ temp2).
 
-    (* Unset Printing Notations. *)
-
-    (* eapply H_pdisj. *)
-
-    (* destruct H_pdisj. *)
     split.
     - intros.
       subst.
@@ -1637,12 +1550,7 @@ Section Hacspec.
       subst.
       unfold set_lhs.
 
-      (* exists (set_heap x0 (translate_var id0~1 v) a). *)
       subst.
-      (* inversion H3. *)
-      (* subst. *)
-      (* exists (set_heap x0 (translate_var id0~1 v) a). *)
-      (* rewrite set_heap_contract. *)
       destruct_pre.
       repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
       eexists.
@@ -1654,9 +1562,7 @@ Section Hacspec.
       eexists.
       split.
       exists (set_heap H9 (translate_var s_id' v) a).
-      (* eexists. *)
       split.
-      (* apply H10. *)
       eapply H_pdisj.
       reflexivity.
       etransitivity.
@@ -1668,7 +1574,7 @@ Section Hacspec.
       reflexivity.
 
       rewrite ![set_heap _ (translate_var s_id' v) a]set_heap_commut
-      ; (reflexivity || 
+      ; (reflexivity ||
            (apply injective_translate_var2 ;
             red ;
             intros ;
@@ -1712,12 +1618,12 @@ Section Hacspec.
           reflexivity.
 
           rewrite ![set_heap _ (translate_var s_id' v) a]set_heap_commut ;
-          (reflexivity || 
-           (apply injective_translate_var2 ;
-            red ;
-            intros ;
-            subst ;
-            now apply (precneq_I s_id'))).
+            (reflexivity ||
+               (apply injective_translate_var2 ;
+                red ;
+                intros ;
+                subst ;
+                now apply (precneq_I s_id'))).
         - intros.
           subst.
           destruct_pre.
@@ -1737,6 +1643,6 @@ Section Hacspec.
       }
 
     - easy.
-Qed.
+  Qed.
 
 (* End Hacspec. *)
