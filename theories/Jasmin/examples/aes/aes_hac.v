@@ -26,7 +26,7 @@ From JasminSSProve Require Import aes_jazz jasmin_utils.
 Import JasminNotation JasminCodeNotation.
 Import PackageNotation.
 
-From Hacspec Require Import Hacspec_Aes_Jazz ChoiceEquality Hacspec_Lib Hacspec_Lib_Pre.
+From Hacspec Require Import Hacspec_Aes_Jazz ChoiceEquality Hacspec_Lib Hacspec_Lib_Pre Hacspec_Lib_Comparable.
 Open Scope hacspec_scope.
 
 Notation call fn := (translate_call _ fn _).
@@ -1008,10 +1008,11 @@ Section Hacspec.
     destruct (word.subword (i * U8) U8 n).
     destruct toword.
     - reflexivity.
-    - do 8 (destruct p ; [ | | reflexivity ]).
+    - (* SLOW! *) (* admit. *)
+      do 8 (destruct p ; [ | | reflexivity ]).
       all: destruct p ; easy.
     - easy.
-  Qed.
+  (* Admitted. *) Qed.
 
   Lemma SubWord_eq id0 (n : int32) pre :
     (pdisj pre id0 (CEfset ([res_238_loc]))) ->
@@ -1078,27 +1079,14 @@ Section Hacspec.
     unfold repr, unsigned.
     rewrite <- !sbox_eq ; try easy.
 
+    rewrite Hacspec_Lib_Pre.array_to_list_equation_2.
+    rewrite Hacspec_Lib_Pre.array_to_list_equation_2.
+    rewrite Hacspec_Lib_Pre.array_to_list_equation_2.
+    rewrite Hacspec_Lib_Pre.array_to_list_equation_2.
     rewrite Hacspec_Lib_Pre.array_to_list_equation_1.
-    unfold Hacspec_Lib_Pre.array_to_list_clause_1.
-    unfold Hacspec_Lib_Pre.array_to_list_obligations_obligation_1.
 
-    rewrite Hacspec_Lib_Pre.array_to_list_helper_equation_2.
-    unfold Hacspec_Lib_Pre.array_to_list_helper_clause_2.
-    unfold Hacspec_Lib_Pre.array_to_list_helper_clause_2_clause_1.
+    unfold nseq_hd.
 
-    rewrite Hacspec_Lib_Pre.array_to_list_helper_equation_2.
-    unfold Hacspec_Lib_Pre.array_to_list_helper_clause_2.
-    unfold Hacspec_Lib_Pre.array_to_list_helper_clause_2_clause_1.
-
-    rewrite Hacspec_Lib_Pre.array_to_list_helper_equation_2.
-    unfold Hacspec_Lib_Pre.array_to_list_helper_clause_2.
-    unfold Hacspec_Lib_Pre.array_to_list_helper_clause_2_clause_1.
-
-    rewrite Hacspec_Lib_Pre.array_to_list_helper_equation_2.
-    unfold Hacspec_Lib_Pre.array_to_list_helper_clause_2.
-    unfold Hacspec_Lib_Pre.array_to_list_helper_clause_2_clause_1.
-
-    rewrite Hacspec_Lib_Pre.array_to_list_helper_equation_1.
 
     set ([ _ ; _ ; _ ; _ ]).
     replace (make_vec U32 l) with (4, make_vec U32 l).2 by reflexivity.
@@ -1125,15 +1113,15 @@ Section Hacspec.
 
     unfold Hacspec_Lib_Pre.array_new_.
     simpl.
-    rewrite eq_rect_K.
-    set (getm _ _).
-    cbn in o.
-    subst o.
-    hnf.
-    set (_ ++ _).
-    cbn in l.
-    subst l.
-    hnf.
+    (* rewrite eq_rect_K. *)
+    (* set (getm _ _). *)
+    (* cbn in o. *)
+    (* subst o. *)
+    (* hnf. *)
+    (* set (_ ++ _). *)
+    (* cbn in l. *)
+    (* subst l. *)
+    (* hnf. *)
 
     unfold fold_right.
     unfold set_nth.
@@ -1645,4 +1633,4 @@ Section Hacspec.
     - easy.
   Qed.
 
-(* End Hacspec. *)
+End Hacspec.
