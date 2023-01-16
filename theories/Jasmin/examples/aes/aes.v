@@ -92,7 +92,7 @@ Proof.
     rewrite -wxorA.
     rewrite wxor_involutive.
     rewrite wxor_0_l.
-    rewrite wror_substitute.
+    rewrite RotWord_SubWord.
     unfold word.wxor.
     f_equal.
     rewrite wreprI.
@@ -123,7 +123,7 @@ Proof.
     rewrite H0.
     rewrite wxor_0_l.
     f_equal.
-    rewrite wror_substitute.
+    rewrite RotWord_SubWord.
     unfold word.wxor.
     f_equal.
     rewrite wreprI.
@@ -157,7 +157,7 @@ Proof.
     rewrite wxor_0_l.
     f_equal.
     f_equal.
-    rewrite wror_substitute.
+    rewrite RotWord_SubWord.
     unfold word.wxor.
     f_equal.
     rewrite wreprI.
@@ -192,7 +192,7 @@ Proof.
     rewrite subword_wshr; auto.
     rewrite addn0.
     f_equal.
-    rewrite wror_substitute.
+    rewrite RotWord_SubWord.
     rewrite wxorC.
     rewrite wxorA.
     f_equal.

@@ -75,41 +75,6 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma wbit_subword {ws1} i ws2 (w : word ws1) j :
-  (ws2 <= ws1)%nat ->
-  (j < ws2)%nat ->
-  wbit (subword i ws2 w) j = wbit w (i + j)%nat.
-Proof.
-  intros.
-  unfold subword.
-  simpl.
-  unfold urepr.
-  simpl.
-  unfold wbit.
-  simpl.
-  unfold modulus.
-  rewrite !two_power_nat_equiv.
-  rewrite Z.mod_pow2_bits_low.
-  { rewrite Z.mod_pow2_bits_low. 2: lia.
-    rewrite Z.shiftr_spec. 2: lia.
-    f_equal. lia.
-  }
-  lia.
-Qed.
-
-Lemma subword_xor {n} i ws (a b : n.-word) :
-  (* I don't know if the assumption is necessary *)
-  (ws <= n)%nat ->
-  subword i ws (a ⊕ b) = (subword i ws a) ⊕ (subword i ws b).
-Proof.
-  intros H.
-  apply/eqP/eq_from_wbit.
-  intros. rewrite !wbit_subword. 2,3: auto.
-  rewrite !wxorE.
-  rewrite !wbit_subword. 2-5: auto.
-  reflexivity.
-Qed.
-
 Lemma nth_aux {T} (a : T) l :
   [seq nth a l (val i) | i <- enum 'I_(size l)] = l.
 Proof.
@@ -216,10 +181,150 @@ Proof.
   rewrite shiftr_shiftr_mod; try lia.
 Qed.
 
+
+Lemma wbit_subword {ws1} i ws2 (w : word ws1) (j : 'I_ws2) :
+  (* (ws2 <= ws1)%nat -> *)
+  (* (j < ws2)%nat -> *)
+  wbit (subword i ws2 w) j = wbit w (i + j)%nat.
+Proof.
+  intros.
+  unfold subword.
+  rewrite wbit_mkword.
+  apply wbit_lsr.
+Qed.
+
+Lemma subword_xor {n} i ws (a b : n.-word) :
+  (* I don't know if the assumption is necessary *)
+  (* (ws <= n)%nat -> *)
+  subword i ws (a ⊕ b) = (subword i ws a) ⊕ (subword i ws b).
+Proof.
+  (* intros H. *)
+  apply/eqP/eq_from_wbit.
+  intros. rewrite !wbit_subword.
+  rewrite !wxorE.
+  rewrite !wbit_subword.
+  reflexivity.
+Qed.
+
+(** AES *)
+
+Lemma subword_subword {k} i j n m (w : k.-word) : (i + n <= m)%nat -> subword i n (subword j m w) = subword (i + j) n w.
+Proof.
+  intros.
+  apply/eqP/eq_from_wbit => l.
+  rewrite !wbit_subword.
+  assert (i + l < m)%nat. 1: destruct l; simpl; lia.
+  change (i + l)%nat with (@Ordinal m (i + l) H0 : nat).
+  rewrite wbit_subword.
+  f_equal.
+  simpl. lia.
+Qed.
+
+Locate "`_".
+
+Lemma divn_aux j i n :
+  (j < n)%nat ->
+  (n <= j %% n + i %% n)%nat = false ->
+  (j + i) %/ n = i %/ n.
+Proof.
+  intros H1 H2.
+  rewrite divnD. 2: lia.
+  rewrite H2.
+  rewrite divn_small. all: lia.
+Qed.
+
+Lemma modn_aux j i n :
+  (j < n)%nat ->
+  (n <= j %% n + i %% n)%nat = false ->
+  (j + i) %% n = (j + i %% n)%nat.
+Proof.
+  intros H1 H2.
+  rewrite modnD. 2: lia.
+  rewrite H2.
+  rewrite modn_small. all: lia.
+Qed.
+
+(* Local Open Scope ring_scope. *)
+Lemma subword_wcat {n p} i l (s : p.-tuple n.-word) :
+  (* i + l does 'reach across' a single word in the tuple *)
+  (l <= n)%nat ->
+  ((l - 1) %% n + i %% n < n)%nat ->
+  subword i l (wcat s) = subword (i %% n) l (s`_(i %/ n))%R.
+Proof.
+  intros H1 (* H2 *) H3.
+  rewrite !subwordE.
+  f_equal.
+  apply eq_mktuple => j.
+  rewrite wcat_wbitE.
+  destruct j.  simpl.
+  f_equal.
+  - f_equal. f_equal.
+    apply divn_aux. 1:{ simpl. lia. }
+    rewrite modn_small in H3. 2: lia.
+    rewrite modn_small. 2: lia.
+    lia.
+  - apply modn_aux. 1: lia.
+    rewrite modn_small in H3. 2: lia.
+    rewrite modn_small. 1: lia.
+    lia.
+Qed.
+
+(* Lemma nth_wsplitnec {n p} (i : 'I_p) (w : (n * p).-word) : *)
+(*   (* (n < n %/ l + n %% l)%nat -> *) *)
+(*   ((wsplitn w)`_i)%R = subword (i * n) n w. *)
+(* Proof. *)
+(*   (* intros H. *) *)
+(*   (* unfold split_vec. *) *)
+(*   unfold wsplitn. *)
+(*   (* Unset Printing Notations. *) *)
+(*   (* pose proof nth_mktuple . *) *)
+(*   rewrite  *)
+(*   rewrite (nth_map 0). *)
+(*   erewrite nth_map. *)
+(*   1: f_equal; rewrite nth_iota; try lia. *)
+(*   rewrite size_iota. *)
+(*   assumption. *)
+(*   Unshelve. exact 0%nat. *)
+(* Qed. *)
+
+Lemma mkword_word {n} (w : n.-word) :
+  mkword n w = w.
+Proof.
+  apply val_inj; simpl.
+  rewrite Z.mod_small.
+  1: reflexivity.
+  destruct w. simpl. lia.
+Qed.
+
+Lemma subword_u {n} (w : n.-word) : subword 0 n w = w.
+Proof.
+  unfold subword. unfold lsr. rewrite Z.shiftr_0_r. rewrite ureprK.
+  apply mkword_word.
+Qed.
+
 From Jasmin Require Import word.
 
-Lemma subword_u {ws : wsize} (w : word ws) : subword 0 ws w = w.
-Proof. by rewrite subword0 zero_extend_u. Qed.
+(* Lemma make_vec_eq {ws1 ws2 : wsize} {p : nat} a t : *)
+(*   (p * ws1 = ws2) -> *)
+(*   (forall (i : 'I_p), subword (i * ws1) ws1 a = nth word0 t i) -> a = make_vec ws2 t. *)
+(* Proof. *)
+(*   intros. *)
+(*   unfold make_vec. *)
+(*   unfold wrepr. *)
+(*   apply val_inj. *)
+(*   simpl. *)
+(*   rewrite wcat *)
+
+(* Lemma wcat_eq ws p a t : *)
+(*   (forall (i : 'I_p), subword (i * ws) ws a = tnth t i) -> a = wcat t. *)
+(* Proof. *)
+(*   intros. *)
+(*   rewrite -[a]wcat_subwordK. *)
+(*   apply f_equal. apply eq_from_tnth. *)
+(*   intros i. *)
+(*   rewrite -H tnth_map tnth_ord_tuple. *)
+(*   reflexivity. *)
+(* Qed. *)
 
 Lemma wbit_wrepr (ws : wsize.wsize) a i :
   (i < ws)%nat ->
@@ -242,26 +347,17 @@ Proof.
   apply nth_aux.
 Qed.
 
-Lemma divn_aux j i n :
-  (j < n)%nat ->
-  (n <= j %% n + i %% n)%nat = false ->
-  (j + i) %/ n = i %/ n.
+Lemma wbit_n_make_vec {ws1} (ws2 : wsize) (l : seq (word ws1)) i :
+  (i < ws2)%nat ->
+  wbit_n (make_vec ws2 l) i = wbit_n (nth word0 l (i %/ ws1)) (i %% ws1).
 Proof.
-  intros H1 H2.
-  rewrite divnD. 2: lia.
-  rewrite H2.
-  rewrite divn_small. all: lia.
-Qed.
-
-Lemma modn_aux j i n :
-  (j < n)%nat ->
-  (n <= j %% n + i %% n)%nat = false ->
-  (j + i) %% n = (j + i %% n)%nat.
-Proof.
-  intros H1 H2.
-  rewrite modnD. 2: lia.
-  rewrite H2.
-  rewrite modn_small. all: lia.
+  move=> H.
+  unfold wbit_n.
+  rewrite /make_vec wcat_r_wcat wbit_wrepr=>//.
+  rewrite wcat_wbitE=>/=.
+  repeat f_equal.
+  rewrite nth_aux.
+  reflexivity.
 Qed.
 
 Lemma subword_make_vec_full {ws1} i (ws2 ws3 : wsize.wsize) (l : seq (word.word ws1)) :
@@ -291,6 +387,8 @@ Proof.
     rewrite modn_small. 1: lia.
     lia.
 Qed.
+
+(* Lemma subw *)
 
 Lemma subword_make_vec {ws1} i (ws2 : wsize.wsize) (l : seq (word.word ws1)) :
   (ws1 <= ws2)%nat ->
@@ -395,6 +493,16 @@ Proof.
   all: unfold nat_of_wsize, wsize_size_minus_1; easy.
 Qed.
 
+Lemma SubBytes_make_vec l :
+  (size l = 4)%nat ->
+  SubBytes (make_vec U128 l) = make_vec U128 [seq SubWord i | i <- l].
+Proof.
+  intros.
+  unfold SubBytes.
+  rewrite split_vec_make_vec.
+  all: unfold nat_of_wsize, wsize_size_minus_1; easy.
+Qed.
+
 Lemma subword_make_vec_32_0_32_128 (l : seq u32) : subword 0 U32 (make_vec U128 l) = nth word0 l 0.
 Proof.
   rewrite subword_make_vec_full; rewrite ?subword_u.
@@ -419,28 +527,6 @@ Proof.
   all: auto.
 Qed.
 
-Lemma wbit_wror {ws} (a : word ws) n m : wbit_n (wror a n) m = wbit_n a (Z.to_nat (((Z.of_nat m) - n) mod (wsize_bits ws)))%Z.
-Proof.
-  unfold wror.
-  (* rewrite urepr_word. *)
-  (* wbit_n *)
-  rewrite worE.
-  rewrite wshrE.
-  rewrite wshlE.
-  destruct ((Z.to_nat (wsize_bits ws - n mod wsize_bits ws) <= m <= wsize_size_minus_1 ws))%nat eqn:E.
-  { cbn -[Z.sub].
-    rewrite Nat2Z.inj_add.
-    (* rewrite Z2Nat.inj_add. *)
-    rewrite Z2Nat.id.
-    2: admit. admit. }
-Admitted.
-
-Lemma wror_substitute w k : wror (SubWord w) k = SubWord (wror w k).
-Proof.
-  unfold SubWord.
-  unfold wror.
-  (* I would like to case on w, but not sure how to do this most efficiently? *)
-Admitted.
 
 Lemma wreprI ws (a : word.word ws) : wrepr ws (toword a) = a.
 Proof.
@@ -450,13 +536,47 @@ Qed.
 
 (** AES *)
 
+Lemma subword_SubWord n w :
+  (0 <= n < 4)%nat -> subword (n * U8) U8 (SubWord w) = Sbox (subword (n * U8) U8 w).
+Proof.
+  intros.
+  unfold SubWord.
+  rewrite subword_make_vec.
+  1: erewrite nth_map; f_equal.
+  all: try (unfold nat_of_wsize, wsize_size_minus_1; zify; simpl; lia).
+  apply nth_split_vec.
+  cbn. lia.
+  Unshelve. exact word0.
+Qed.
+
+Lemma subword_SubBytes n w : (0 <= n < 4)%nat -> subword (n * U32) U32 (SubBytes w) = SubWord (subword (n * U32) U32 w).
+Proof.
+  intros.
+  unfold SubBytes.
+  rewrite subword_make_vec.
+  1: erewrite nth_map; f_equal.
+  all: try (unfold nat_of_wsize, wsize_size_minus_1; zify; simpl; lia).
+  apply nth_split_vec.
+  cbn. lia.
+  Unshelve. exact word0.
+Qed.
+
+(* Check SubBytes. *)
+
 Lemma ShiftRows_SubBytes s : ShiftRows (SubBytes s) = SubBytes (ShiftRows s).
 Proof.
-  unfold ShiftRows, SubBytes. simpl.
-  f_equal. f_equal.
-  all: rewrite !subword_make_vec_32_0_32_128 !subword_make_vec_32_1_32_128 !subword_make_vec_32_2_32_128 !subword_make_vec_32_3_32_128; simpl;
-    rewrite -> !subword_U8_SubWord by lia;
-    rewrite -> !SubWord_make_vec by reflexivity; reflexivity.
+  unfold ShiftRows. simpl.
+  rewrite !subword_SubBytes; try reflexivity.
+  rewrite !subword_SubWord; try reflexivity.
+  rewrite SubBytes_make_vec; auto. simpl.
+  rewrite !SubWord_make_vec; auto.
+Qed.
+
+Lemma RotWord_SubWord w : RotWord (SubWord w) = SubWord (RotWord w).
+Proof.
+  unfold RotWord.
+  rewrite SubWord_make_vec; auto.
+  rewrite !subword_SubWord; auto.
 Qed.
 
 Lemma wAESENC_wAESENC_ s k : wAESENC s k = wAESENC_ s k.
@@ -467,13 +587,13 @@ Proof.
   reflexivity.
 Qed.
 
-(* NOTE: This is only so simple because InvMixColumns is not properly implemented *)
-Lemma AESDEC_AESDEC_ s k : wAESDEC s (InvMixColumns k) = wAESDEC_ s k.
-Proof.
-  unfold wAESDEC, wAESDEC_.
-  unfold InvMixColumns.
-  reflexivity.
-Qed.
+(* (* NOTE: This is only so simple because InvMixColumns is not properly implemented *) *)
+(* Lemma AESDEC_AESDEC_ s k : wAESDEC s (InvMixColumns k) = wAESDEC_ s k. *)
+(* Proof. *)
+(*   unfold wAESDEC, wAESDEC_. *)
+(*   unfold InvMixColumns. *)
+(*   reflexivity. *)
+(* Qed. *)
 
 Lemma wAESENCLAST_wAESENCLAST_ s k : wAESENCLAST s k = wAESENCLAST_ s k.
 Proof.
