@@ -123,28 +123,7 @@ Proof.
   rewrite Z.mod_mod. 2: eapply Z.pow_nonzero ; lia.
   reflexivity.
 Qed.
-
-Lemma mod_pull_div a b c : 0 <= c -> (a / b) mod c = a mod (c * b) / b.
-Admitted.
 (* end of fiat crypto lemmas *)
-
-Lemma shiftr_shiftr_mod w ws1 ws2 i j :
-  (ws2 + j <= ws1)%nat ->
-  Z.shiftr (Z.shiftr w (Z.of_nat i) mod modulus ws1) (Z.of_nat j) mod modulus ws2 =
-    Z.shiftr w (Z.of_nat (i + j)) mod modulus ws2.
-Proof.
-  intros H.
-  rewrite !modulusZE.
-  rewrite !Z.shiftr_div_pow2; try lia.
-  rewrite !mod_pull_div; try lia.
-  simpl.
-  rewrite -!Z.pow_add_r; try lia.
-  rewrite mod_pow_same_base_smaller; try lia.
-  rewrite Z.div_div; try lia.
-  rewrite -Z.pow_add_r; try lia.
-  rewrite Nat2Z.inj_add.
-  f_equal. f_equal. f_equal. lia.
-Qed.
 
 Lemma larger_modulus a n m :
   (n <= m)%nat ->
@@ -167,24 +146,19 @@ Proof.
 Qed.
 
 Lemma subword_wshr {n} i j m (w : word n) :
-  (m + i <= n)%nat ->
   subword i m (lsr w j) = subword (j + i) m w.
 Proof.
-  intros H.
-  unfold subword; simpl.
-  apply val_inj; simpl.
-  rewrite urepr_word.
-  unfold lsr.
-  simpl.
-  rewrite urepr_word.
-  rewrite !smaller_modulus; try lia.
-  rewrite shiftr_shiftr_mod; try lia.
+  intros.
+  apply/eqP/eq_from_wbit.
+  intros.
+  rewrite !wbit_subword.
+  rewrite wbit_lsr.
+  f_equal.
+  f_equal.
+  lia.
 Qed.
 
-
 Lemma wbit_subword {ws1} i ws2 (w : word ws1) (j : 'I_ws2) :
-  (* (ws2 <= ws1)%nat -> *)
-  (* (j < ws2)%nat -> *)
   wbit (subword i ws2 w) j = wbit w (i + j)%nat.
 Proof.
   intros.

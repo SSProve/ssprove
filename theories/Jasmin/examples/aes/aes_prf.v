@@ -736,4 +736,6 @@ Section JasminPRF.
     apply Order.POrderTheory.le_refl.
   Qed.
 
+  Print Assumptions jasmin_security_based_on_prf.
+
 End JasminPRF.
