@@ -291,13 +291,56 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma in_ziota' i p z :
+  @in_mem (Ord.sort Z_ordType) i (@mem (Equality.sort (Ord.eqType Z_ordType)) (seq_predType (Ord.eqType Z_ordType)) (ziota p z)) = (p <=? i) && (i <? p + z).
+Proof.
+  destruct (Z.le_decidable 0 z).
+  2: { rewrite ziota_neg. 2: lia. intros. rewrite in_nil. lia. }
+  move: z H p.
+  set (P := fun z => ∀ p : Z, @in_mem (Ord.sort Z_ordType) i (@mem (Equality.sort (Ord.eqType Z_ordType)) (seq_predType (Ord.eqType Z_ordType)) (ziota p z)) = (p <=? i) && (i <? p + z)).
+  assert (forall z : Z, 0 <= z -> P z).
+  1: { apply natlike_ind.
+       - unfold P. intros. rewrite in_nil. lia.
+       - unfold P. intros.
+         rewrite ziotaS_cons. 2: auto.
+         destruct (Z.eq_dec x i).
+         + subst.
+           simpl.
+           unfold in_mem.
+           simpl.
+           unfold in_mem in H0.
+           simpl in H0.
+           rewrite H0.
+           destruct (Z.eq_dec i p).
+           * subst. rewrite eq_refl. lia.
+           * assert ((@eq_op (Ord.eqType Z_ordType) i p) = false).
+             1: { apply/eqP. intros contra. subst. easy. }
+             rewrite H1. lia.
+         + simpl.
+           unfold in_mem.
+           simpl.
+           unfold in_mem in H0.
+           simpl in H0.
+           rewrite H0.
+           destruct (Z.eq_dec i p).
+           * subst. rewrite eq_refl. lia.
+           * assert ((@eq_op (Ord.eqType Z_ordType) i p) = false).
+             1: { apply/eqP. intros contra. subst. easy. }
+             rewrite H1. lia. }
+  assumption.
+Qed.
+
 Lemma getm_to_arr_None' ws len a (i: Z) :
   ((len <=? i) || (i <? 0)) ->
   to_arr ws len a i = None.
 Proof.
   intros. unfold to_arr.
   rewrite mkfmapfE.
-Admitted.                  (* figure out a proof that is less stupid than the one for getm_to_arr *)
+  rewrite in_ziota'.
+  assert ((0 <=? i) && (i <? 0 + len) = false) by lia.
+  rewrite H0.
+  reflexivity.
+Qed.
 
 Lemma getm_to_oarr ws len a (i : 'I_(pos len)) :
   to_oarr ws len a i = Some (chArray_get ws a i (wsize_size ws)).
@@ -315,21 +358,8 @@ Proof.
   unfold to_arr.
   rewrite mkfmapfE.
   intros H.
-  (* this is a stupid proof and should be true by in_ziota, though for some reason the \in's resolve differently (one uses Z_eqType the other Z_ordType) *)
-  assert (is_true (@in_mem (Ord.sort Z_ordType) i (@ssrbool.mem (Equality.sort (Ord.eqType Z_ordType)) (seq_predType (Ord.eqType Z_ordType)) (ziota Z0 len)))).
-  { assert (0 <= len) by lia. move: H. move: (Z.le_refl 0). replace len with (0 + len) at 1 by (now rewrite Z.add_0_l). generalize 0 at 2 3 4 5.
-    change (∀ z : Z, 0 <= z -> z <= i < z + len →
-                     (is_true (@in_mem (Ord.sort Z_ordType) i (@ssrbool.mem (Equality.sort (Ord.eqType Z_ordType)) (seq_predType (Ord.eqType Z_ordType)) (ziota z len))))
-           ) with ((fun len => ((forall z, 0 <= z -> z <= i < z + len ->
-                                           (is_true (@in_mem (Ord.sort Z_ordType) i (@ssrbool.mem (Equality.sort (Ord.eqType Z_ordType)) (seq_predType (Ord.eqType Z_ordType)) (ziota z len))))
-                   ))) len).
-    apply natlike_ind.
-    - intros z Hz Hz2. lia.
-    - intros x Hx Ih z Hz Hz2. rewrite ziotaS_cons. 2: lia.
-      destruct (Z.eq_dec z i).
-      + rewrite in_cons. apply/orP. left. apply/eqP. easy.
-      + rewrite in_cons. apply/orP. right. apply Ih. all: lia. 
-    - assumption. }
+  rewrite in_ziota'.
+  assert ((0 <=? i) && (i <? 0 + len)) by lia.
   rewrite H0.
   reflexivity.
 Qed.
@@ -604,5 +634,13 @@ Proof.
   - apply preceq_I.
   - apply nesym. apply xI_neq.
 Qed.
+
+Ltac solve_prec :=
+  repeat lazymatch goal with
+    | |- ?a ≺ ?a~1 => apply prec_I
+    | |- ?a ≺ ?a~0 => apply prec_O
+    | |- ?a ≺ ?b~1 => etransitivity; [|apply prec_I]
+    | |- ?a ≺ ?b~0 => etransitivity; [|apply prec_O]
+    end.
 
 (** *)

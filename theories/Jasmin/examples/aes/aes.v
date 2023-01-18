@@ -258,7 +258,7 @@ Proof.
 Qed.
 
 Lemma keyExpansion_E pre id0 rkey :
-  (pdisj pre id0 [fset rkeys]) ->
+  (pdisj pre id0 (fset [rkeys])) ->
   ⊢ ⦃ fun '(h0, h1) => pre (h0, h1) ⦄
     JKEYS_EXPAND id0 rkey
     ≈
@@ -405,7 +405,7 @@ Proof.
 
                split_post.
                (* here we prove that the invariant is preserved after a single loop, assuming it holds before *)
-               { pdisj_apply disj. }
+               { pdisj_apply disj. auto_in_fset. }
                { assumption. }
                { replace (Z.succ i - 1) with i by lia.
                  rewrite chArray_get_set_eq.
@@ -447,7 +447,7 @@ Proof.
 
       split_post.
       (* prove that pre is preserved *)
-      * pdisj_apply disj.
+      * pdisj_apply disj. all: auto_in_fset.
       (* first invariant *)
       * simpl. unfold tr_app_sopn_tuple. simpl. rewrite subword_word0. reflexivity.
       (* second invariant *)
@@ -481,7 +481,7 @@ Proof.
 Qed.
 
 Lemma aes_rounds_E pre id0 rkeys msg :
-  (pdisj pre id0 [fset state]) ->
+  (pdisj pre id0 (fset [state])) ->
   ⊢ ⦃ fun '(h0, h1) => pre (h0, h1) ⦄
     JAES_ROUNDS id0 rkeys msg
     ≈
@@ -515,7 +515,7 @@ Proof.
       rewrite !coerce_to_choice_type_K.
       sheap.
       split_post.
-      * pdisj_apply disj.
+      * pdisj_apply disj. auto_in_fset.
       * rewrite getmd_to_arr; auto. lia.
       * reflexivity.
     + intros. simpl. auto with preceq.
@@ -533,7 +533,7 @@ Proof.
       rewrite !coerce_to_choice_type_K.
       sheap.
       split_post.
-      * pdisj_apply disj.
+      * pdisj_apply disj. auto_in_fset.
       * rewrite -> H12.
         rewrite wAESENC_wAESENC_.
         rewrite getmd_to_arr; auto.
@@ -555,7 +555,7 @@ Proof.
     rewrite !zero_extend_u.
     sheap.
     split_post.
-    + pdisj_apply disj.
+    + pdisj_apply disj. auto_in_fset.
     + unfold tr_app_sopn_tuple.
       simpl.
       rewrite !zero_extend_u.
@@ -570,7 +570,7 @@ Proof.
 Qed.
 
 Lemma aes_E pre id0 k m :
-  (pdisj pre id0 [fset rkeys ; state]) ->
+  (pdisj pre id0 (fset Cenc_locs)) ->
   ⊢ ⦃ fun '(h0, h1) => pre (h0, h1) ⦄
     JAES id0 k m
     ≈
@@ -606,7 +606,7 @@ Proof.
         neq_loc_auto. 
     + intros; destruct_pre; split_post.
       * eapply disj.
-        ** move: H. rewrite in_fset in_cons=>/orP [];[|easy] => /eqP ->. solve_in.
+        ** move: H. rewrite !in_fset !in_cons=>/orP [] ;[|easy] => /eqP ->. simpl. apply/orP; auto.
         ** eassumption.
       * reflexivity.
       * reflexivity.
@@ -646,7 +646,8 @@ Proof.
         ** simpl. sheap. reflexivity.
       * intros; destruct_pre; split_post.
         ** eapply disj.
-           *** move: H. rewrite in_fset in_cons=>/orP []. 1: move=> /eqP ->; solve_in.
+           *** move: H. rewrite [l \in @fset _ [state]]in_fset in_cons =>/orP []. 1: move=> /eqP ->; solve_in.
+               1: unfold Cenc_locs; auto_in_fset.
                simpl. clear -l. easy.
            *** eassumption.
         ** reflexivity.

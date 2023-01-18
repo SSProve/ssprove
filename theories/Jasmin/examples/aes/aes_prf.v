@@ -359,7 +359,6 @@ Section JasminPRF.
     Unshelve. exact _.
   Defined.
 
-  Definition Cenc_locs := [:: state ; rkeys].
   Opaque wrange.
   Opaque expn.
 
@@ -496,16 +495,66 @@ Section JasminPRF.
   (* TODO: move *)
   Arguments pheap_ignore : simpl never.
 
+  Lemma translate_var_option {A} s_id v i : ( 'option A ; i ) != translate_var s_id v.
+  Proof.
+    unfold translate_var.
+    apply/eqP => contra.
+    apply EqdepFacts.eq_sigT_fst in contra.
+    destruct v.
+    destruct vtype0; simpl in contra; noconf contra.
+  Qed.
+
+  (* NOTE: the next 5 lemmas are not used, but might useful. Move *)
+  Lemma nat_of_stype_bound s : 5 <= nat_of_stype s.
+  Proof.
+    destruct s. 1-2: simpl; try micromega.Lia.lia.
+    - simpl. pose proof Pos2Nat.is_succ p as []. rewrite H.
+      pose proof Nat.pow_le_mono_r 11 1 (x.+1) ltac:(micromega.Lia.lia) ltac:(micromega.Lia.lia). simpl in *.  micromega.Lia.lia.
+    - cbn [nat_of_stype].
+      assert (0 < nat_of_wsize w). 1: destruct w; unfold nat_of_wsize; simpl; try micromega.Lia.lia.
+      pose proof Nat.pow_le_mono_r 13 1 w ltac:(micromega.Lia.lia) ltac:(micromega.Lia.lia). simpl in *.  micromega.Lia.lia.
+  Qed.
+
+  Lemma nat_of_p_id_ident_bound s_id v : 2 <= nat_of_p_id_ident s_id v.
+  Proof.
+    unfold nat_of_p_id_ident.
+    pose proof nat_of_p_id_pos s_id.
+    pose proof nat_of_ident_pos v.
+    pose proof Nat.pow_le_mono_r 3 1 (nat_of_p_id s_id) ltac:(micromega.Lia.lia) ltac:(micromega.Lia.lia).
+    pose proof Nat.pow_le_mono_r 2 1 (nat_of_ident v) ltac:(micromega.Lia.lia) ltac:(micromega.Lia.lia).
+    simpl in *; micromega.Lia.lia.
+  Qed.
+
+  Lemma nat_of_p_id_var_bound s_id v : 10 <= nat_of_p_id_var s_id v.
+  Proof.
+    unfold nat_of_p_id_var.
+    pose proof nat_of_stype_bound (vtype v).
+    pose proof nat_of_p_id_ident_bound s_id (vname v).
+    micromega.Lia.nia.
+  Qed.
+
+  Lemma translate_var_bound {A} s_id v i : i < 10 -> ( A ; i ) != translate_var s_id v.
+  Proof.
+    intros.
+    apply/eqP => contra.
+    inversion contra.
+    pose proof nat_of_p_id_var_bound s_id v.
+    micromega.Lia.lia.
+  Qed.
+
   Lemma IND_CPA_JENC_equiv_false id0 :
-    padv_equiv (fun l => exists s_id v, id0 ⪯ s_id /\ l = translate_var s_id v) (fun l => l = state \/ l = rkeys) (IND_CPA_JENC id0 true) (IND_CPA_JENC id0 false) (λ _ : raw_package, 0%R).
+    padv_equiv (fun l => exists s_id v, id0 ⪯ s_id /\ l = translate_var s_id v) (fun l => l \in fset Cenc_locs) (IND_CPA_JENC id0 true) (IND_CPA_JENC id0 false) (λ _ : raw_package, 0%R).
   Proof.
     eapply eq_rel_perf_ind'.
     (* invariant *)
     { eapply pInvariant_pheap_ignore with
-        (P := fun l => forall s_id v, id0 ⪯ s_id -> l != translate_var s_id v).
-      { intros. apply/eqP. intros contra.
-        destruct H. apply H.
-        exists s_id, v. split; auto. } }
+        (P := fun l => (forall s_id v, id0 ⪯ s_id -> l != translate_var s_id v) /\ l \notin fset Cenc_locs).
+      { intros.
+        split.
+        - intros. apply/eqP. intros contra.
+          destruct H. apply H.
+          exists s_id, v. split; auto.
+        - apply/negP; easy. } }
     unfold eq_up_to_inv, get_op_default, lookup_op, IND_CPA_JENC, IND_CPA_pkg_JENC.
     Opaque Caes.
     Opaque translate_call.
@@ -516,9 +565,11 @@ Section JasminPRF.
     simplify_linking.
     rewrite !cast_fun_K.
     ssprove_sync.
-    { intros h0 h1 hpre. apply hpre. admit. }
+    { intros h0 h1 hpre. apply hpre. split.
+      - intros. apply translate_var_option.
+      - unfold Cenc_locs. rewrite in_fset in_cons; auto. }
     intros.
-    eapply r_bind with (mid := fun '(a₀, s₀) '(a₁, s₁) => pheap_ignore (λ l : ∑ _ : choice_type, nat, ∀ (s_id : p_id) (v : var), id0 ⪯ s_id → l != translate_var s_id v) (s₀, s₁) /\ a₀ = a₁). 
+    eapply r_bind with (mid := fun '(a₀, s₀) '(a₁, s₁) => pheap_ignore (λ l : ∑ _ : choice_type, nat, (∀ (s_id : p_id) (v : var), id0 ⪯ s_id → l != translate_var s_id v) /\ l \notin fset Cenc_locs) (s₀, s₁) /\ a₀ = a₁).
     { destruct a.
       - eapply r_ret. easy.
       - ssprove_sync. intros.
@@ -532,7 +583,7 @@ Section JasminPRF.
     (* TODO: find easier way to do next three lines *)
     eapply rpre_weak_hypothesis_rule.
     intros; destruct_pre.
-    eapply rpre_weaken_rule with (pre:= fun '(s₀, s₁) => pheap_ignore (λ l : ∑ _ : choice_type, nat, ∀ (s_id : p_id) (v : var), id0 ⪯ s_id → l != translate_var s_id v) (s₀, s₁)); try easy.
+    eapply rpre_weaken_rule with (pre:= fun '(s₀, s₁) => pheap_ignore (λ l : ∑ _ : choice_type, nat, (∀ (s_id : p_id) (v : var), id0 ⪯ s_id → l != translate_var s_id v) /\ l \notin fset Cenc_locs) (s₀, s₁)); try easy.
     ssprove_code_simpl.
     simpl.
     ssprove_sync. intros.
@@ -548,8 +599,13 @@ Section JasminPRF.
         1: do 2 eexists.
         1: instantiate (1 := set_heap H7 (translate_var s_id' v) a1).
         all: try reflexivity.
-        { intros l lnin. rewrite get_set_heap_neq. 1: eapply H8; auto. eapply lnin. admit. }
-        { repeat rewrite [set_heap _ _ a1]set_heap_commut; auto. 1-3: admit. }
+        { intros l lnin. rewrite get_set_heap_neq. 1: eapply H8; auto.
+          apply lnin.
+          etransitivity.
+          2: eassumption.
+          solve_preceq. }
+        { repeat rewrite [set_heap _ _ a1]set_heap_commut; auto.
+          1-3: apply injective_translate_var2; apply prec_neq; eapply prec_preceq_trans; try eassumption; apply prec_I. }
       + intros.
         destruct_pre.
         do 2 eexists.
@@ -560,7 +616,9 @@ Section JasminPRF.
         intros l2 lnin.
         rewrite get_set_heap_neq.
         1: eapply H7. 1: assumption.
-        admit.
+        unfold Cenc_locs in lnin.
+        destruct lnin. apply /eqP => contra; subst.
+        rewrite H in H2. easy.
     - simpl. intros.
       eapply rpre_weak_hypothesis_rule; intros.
       destruct_pre. 
@@ -577,9 +635,13 @@ Section JasminPRF.
         1: do 7 eexists.
         1: instantiate (1:= (set_heap H14 (translate_var s_id' v) a1)).
         all: try reflexivity.
-        { intros l hl. rewrite get_set_heap_neq. 1: eapply H15. 1: assumption. apply hl. admit. }
-        { repeat rewrite [set_heap _ _ a1]set_heap_commut; auto. 1-4: admit. }
-        { sheap. simpl. rewrite get_set_heap_neq. 1: sheap. 1: reflexivity. admit. }
+        { intros l hl. rewrite get_set_heap_neq. 1: eapply H15. 1: assumption. apply hl.
+          etransitivity. 2: eauto.
+          solve_preceq. }
+        { repeat rewrite [set_heap _ _ a1]set_heap_commut; auto.
+          1-4: apply injective_translate_var2; apply prec_neq; eapply prec_preceq_trans; try eassumption; solve_prec. }
+        { sheap. simpl. rewrite get_set_heap_neq. 1: sheap. 1: reflexivity.
+          apply injective_translate_var2; apply prec_neq; eapply prec_preceq_trans; try eassumption; solve_prec. }
       + intros. easy.
       + intros.
         eapply rpre_weak_hypothesis_rule; intros.
@@ -595,9 +657,9 @@ Section JasminPRF.
         { intros l s_id.
           rewrite !get_set_heap_neq.
           1: eapply H19; auto.
-          1-5: apply s_id; reflexivity.
-  Admitted.
-  
+          1-5: apply s_id; reflexivity. }
+  Qed.
+
   Lemma IND_CPA_jazz_equiv_false :
     (IND_CPA_Cenc) true ≈₀ (IND_CPA_Cenc) false.
   Proof.
@@ -632,10 +694,11 @@ Section JasminPRF.
       unfold Cenc_locs in *.
       rewrite get_set_heap_neq.
       1: apply h; auto.
-      admit.
+      apply/eqP=>contra; subst.
+      move: lnin => /negP. easy.
     - intros. eapply r_ret.
       intros. destruct_pre; split_post; auto.
-  Admitted.
+  Qed.
 
   Definition JIND_CPA id0 :
     loc_GamePair [interface #val #[i1] : 'word → 'word ] :=
@@ -647,12 +710,12 @@ Section JasminPRF.
       ValidPackage LA
         [interface #val #[i1] : 'word → 'word ] A_export A →
       pdisjoint LA (λ l : Location, ∃ (s_id : p_id) (v : var), id0 ⪯ s_id ∧ l = translate_var s_id v) ->
-      pdisjoint LA (λ l : Location, l = state ∨ l = rkeys) ->
-      (* fdisjoint LA (JIND_CPA id0 false).(locs) → *)
-      (* fdisjoint LA (JIND_CPA id0 true).(locs) → *)
+      pdisjoint LA (λ l : Location, l \in fset Cenc_locs) ->
+      fdisjoint LA (IND_CPA_Cenc false).(locs) →
+      fdisjoint LA (IND_CPA_Cenc true).(locs) →
       Advantage (JIND_CPA id0) A = 0%R.
   Proof.
-    intros LA A vA hd₀ hd₁. unfold prf_epsilon, statistical_gap.
+    intros LA A vA hd₀ hd₁ hd2 hd3. unfold prf_epsilon, statistical_gap.
     rewrite !Advantage_E.
     eapply AdvantageE_le_0.
     ssprove triangle (JIND_CPA id0 false) [::
@@ -664,7 +727,6 @@ Section JasminPRF.
     clear ineq.
     rewrite Advantage_sym.
     erewrite IND_CPA_jazz_equiv_false. all: eauto.
-    2-3: admit.
     rewrite Advantage_sym.
     pose proof IND_CPA_JENC_equiv_false id0.
     unfold padv_equiv in H.
@@ -672,6 +734,6 @@ Section JasminPRF.
     rewrite H.
     rewrite GRing.addr0.
     apply Order.POrderTheory.le_refl.
-  Admitted.
+  Qed.
 
 End JasminPRF.

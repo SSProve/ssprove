@@ -208,7 +208,7 @@ Proof.
 Qed.
 
 Lemma aes_h k m pre :
-  (u_pdisj pre [fset state ; rkeys]) ->
+  (u_pdisj pre (fset Cenc_locs)) ->
   ⊢ ⦃ fun '(h0, h1) => pre (h0, h1) ⦄
     Caes k m
     ≈
@@ -222,15 +222,23 @@ Proof.
     u_pdisj_apply Hdisj.
     intros h1 h2 l a lin Hpre.
     eapply Hdisj; auto.
-    admit. }
+    rewrite in_fset in lin.
+    simpl in lin.
+    unfold Cenc_locs.
+    move: lin => /InP []; [move=> ->|by []].
+    auto_in_fset. }
   intros a0 [].
   eapply r_bind with (m₁ := ret _).
   { eapply aes_rounds_h.
     intros h1 h2 l a lin Hpre.
     eapply Hdisj; auto.
-    admit. }
+    rewrite in_fset in lin.
+    simpl in lin.
+    unfold Cenc_locs.
+    move: lin => /InP []; [move=> ->|by []].
+    auto_in_fset. }
   intros a1 [].
   eapply r_ret.
   intros.
   assumption.
-Admitted.
+Qed.
