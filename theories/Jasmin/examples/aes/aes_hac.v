@@ -29,7 +29,7 @@ Import PackageNotation.
 From Hacspec Require Import Hacspec_Aes_Jazz ChoiceEquality Hacspec_Lib Hacspec_Lib_Pre Hacspec_Lib_Comparable.
 Open Scope hacspec_scope.
 
-Notation call fn := (translate_call _ fn _).
+(* Notation call fn := (translate_call _ fn _). *)
 
 #[global] Hint Resolve preceq_I preceq_O preceq_refl : preceq.
 
@@ -1563,15 +1563,74 @@ Section Hacspec.
     lia.
   Qed.
 
+  Theorem loop_eq :
+    forall (acc : ChoiceEquality) id0 pre d i c id v I L y
+      (y0 : int -> acc -> code L I acc) id',
+      (i < d) ->
+      (i + d < modulus U32) ->
+      ⊢ ⦃ pre ⦄
+          translate_write_var id0 v
+          (totce (translate_value (values.Vint (1 + Z.of_nat i)))) ;;
+      y id ≈ y0 (repr i.+1) c ⦃ λ '(_, h0) '(_, h1), pre (h0, h1) ⦄ ->
+      ⊢ ⦃ pre ⦄
+          (translate_for v
+                         [seq (1 + Z.of_nat i)%Z | i <- iota i d] id0 (fun id => (id' id, y id)) id) ≈
+          (foldi_ (I := I) (L := L) (S d) (repr (S i)) y0 c )
+          ⦃ fun '(v0, h0) '(v1, h1) => True /\ pre (h0, h1) ⦄ .
+  Proof.
+    clear ; intros.
+    generalize dependent i.
+    generalize dependent c.
+    generalize dependent id.
+    induction d ; intros.
+    - discriminate.
+    - assert (forall j n, [seq (1 + Z.of_nat i)%Z | i <- iota j (S n)] =
+                       ((1 + Z.of_nat j)%Z :: [seq (1 + Z.of_nat i)%Z | i <- iota (S j) n])) by reflexivity.
+      replace (d.+1 - i) with (d - i).+1.
+      rewrite H2.
+      unfold translate_for ; fold translate_for.
+      rewrite <- foldi__move_S.
+      rewrite <- bind_assoc.
+      apply r_bind with (mid := fun '(v0, h0) '(v1, h1) => pre (h0, h1)).
+      2:{
+        intros.
+        rewrite bind_rewrite.
+        epose (IHd (id' id) (ct_T a₁) (S i) _ _ _).
+        replace (Hacspec_Lib_Pre.int_add (repr _) _) with (@repr U32 (S (S i))).
+        apply better_r.
+        apply r.
+        simpl.
+        cbn.
+        unfold Hacspec_Lib_Pre.int_add, add_word.
+        rewrite mkwordK.
+        rewrite Zmod_small.
+        easy.
+        easy.
+      } 
+      apply H1.
+      lia.
+
+      Unshelve.
+      easy.
+      easy.
+      easy.
+  Qed.
+
+  Locate key_list_t.
+  Print getm.
   Lemma keys_expand_eq id0 rkey  (pre : precond) :
-    (pdisj pre id0 (fset ((seq_choice uint8; 278) :: seq.map CE_loc_to_loc (
-      [])))) ->
+    (pdisj pre id0 (fset ([(seq_choice int128; 277) ; (@int_choice U128; 278) ; (@int_choice U128; 279) ; ('array ; 1)]))) ->
     ⊢ ⦃ pre ⦄
         JKEYS_EXPAND id0 rkey
         ≈
         is_state (keys_expand rkey)
         ⦃ fun '(v0, h0) '(v1, h1) =>
-            (exists o1, v0 = [('array; o1)] /\ True)  /\ pre (h0, h1) ⦄.
+            (exists o1, v0 = [('array; o1)]
+                   /\ (forall (j : nat),
+                       forall (a : 'word U8) (b : 'word U128),
+                         (getm o1 (Z.of_nat j) = Some a) ->
+                         (getm v1 (j / 16) = Some b) ->
+                         a = index_u8 (index_u32 b (repr ((j mod 16) / 4))) (repr (j mod 4))))  /\ pre (h0, h1) ⦄.
   Proof.
     intros H_pdisj.
     set (JKEYS_EXPAND _ _).
@@ -1586,8 +1645,9 @@ Section Hacspec.
 
     apply better_r, r_put_lhs, better_r.
     remove_get_in_lhs.
-    apply better_r, r_get_remember_lhs ; intros ; apply better_r.
+    apply better_r. eapply r_get_remember_lhs. intros.
 
+    
     unfold keys_expand.
 
     unfold let_mut_both at 1, is_state at 1, is_state at 1, is_state at 1.
@@ -1630,36 +1690,65 @@ Section Hacspec.
 
     set (set_lhs _ _ _).
     rewrite bind_assoc.
-    eapply (@r_bind _ _ _ _ _ _ _ _ _ (λ '(v0, h0) '(v1, h1), p (h0, h1))) ; [ shelve | ].
-    subst p.
-    intros.
-    (* rewrite bind_rewrite. *)
-    eapply better_r_get_remind_lhs. shelve.
-    destruct a₁.
-    simpl.
-    destruct s.
-    simpl.
 
-    apply r_ret.
-    intros.
-    destruct_pre.
-    split.
-    eexists.
-    split.
-    reflexivity.
-    reflexivity.
+    eapply (@r_bind _ _ _ _ _ _ _ _ _ (λ '(v0, h0) '(v1, h1), p (h0, h1))).
+    2:{
+      subst p.
+      intros.
+      (* rewrite bind_rewrite. *)
+      eapply r_get_remember_lhs. intros v.
+      destruct a₁.
+      simpl.
+      destruct s.
+      simpl.
 
-    apply H_pdisj.
-    admit.
-    apply H_pdisj.
-    admit.
-    eapply H_pdisj.
-    admit.
-    admit.
+      apply r_ret.
+      intros.
+      destruct_pre.
+      split.
+      {
+        eexists.
+        split.
+        - reflexivity.
+        - intros.
+          simpl in H.
+          rewrite !coerce_to_choice_type_K in H.
+          rewrite !zero_extend_u in H.
+          cbn.
+          admit.
+      }
+      {
+        apply H_pdisj.
+        rewrite in_fset.
+        now rewrite mem_head.
+        apply H_pdisj.
+        rewrite in_fset.
+        rewrite in_cons ; simpl.
+        now rewrite mem_head.
+        eapply H_pdisj.
+        rewrite in_fset.
+        rewrite in_cons ; simpl.
+        rewrite in_cons ; simpl.
+        rewrite mem_head.
+        now rewrite Bool.orb_true_r.
 
-    Unshelve.
-    2: apply x.
+        apply H_pdisj.
+        rewrite in_fset.
+        now rewrite mem_head.
 
+        eapply H_pdisj.
+        reflexivity.
+        reflexivity.
+        eapply H_pdisj.
+        reflexivity.
+        reflexivity.
+        eapply H_pdisj.
+        reflexivity.
+        reflexivity.
+        apply H15.
+      }
+    }
+    
     simpl.
 
     intros.
@@ -1675,48 +1764,198 @@ Section Hacspec.
     replace (Z.to_nat (11 - 1)) with 10 by reflexivity.
     replace (Pos.to_nat 11) with 11 by reflexivity.
 
+    epose (@loop_eq (( (seq int128) '× (@int U128) '× (@int U128))) _ p 10 0 _ _ _ _ _ (fun x => snd (y x)) y0 (fun x => fst (y x)) ).
+
+    eapply rpost_weaken_rule.
+    
+    hnf in r.
+    apply r.
+    easy.
+    setoid_rewrite Nat.add_0_l.
+    
+    
     assert (forall j n, [seq (1 + Z.of_nat i)%Z | i <- iota j (S n)] =
                      ((1 + Z.of_nat j)%Z :: [seq (1 + Z.of_nat i)%Z | i <- iota (S j) n])) by reflexivity.
+
+    rewrite H.
+    unfold translate_for ; fold translate_for.
+    rewrite <- foldi__move_S.
+
+    
+
+    
     
     rewrite H.
     unfold translate_for ; fold translate_for.
     rewrite <- foldi__move_S.
+      
+    }
+    
+    assert (forall i,
+               ⊢ ⦃ p ⦄
+               let (s_id', c') := y (id0~1)%positive in
+               translate_write_var id0 ($$$"round.337")
+                                   (totce (translate_value (values.Vint i))) ;;
+               c' =
+                 cur' ← y0 (repr i)
+                      (Hacspec_Lib_Pre.seq_push
+                         (Hacspec_Lib_Pre.seq_new_ (repr 0) (unsigned (repr 0)))
+                         rkey, rkey, repr 0) ;;
+                 Si ← (repr i)
+                    ⦃ λ '(_, h0) '(_, h1),  ⦄
+           ).
+    
     unfold y at 1.
     unfold y0 at 1.
-    rewrite <- bind_assoc.
-    eapply r_bind.
 
-    apply better_r_put_lhs.
-    remove_get_in_lhs.
-
-    rewrite bind_assoc.
+    assert (forall A B  (x : raw_code A) (y : raw_code B) l, (x ;; y) = ((x ;; v ← get l ;; ret v) ;; y)).
+    admit.
     
-    eapply r_bind with (mid := λ '(v0, h0) '(v1, h1),
-           (∃ o1 : (λ i : choice_type_choiceType, i) 'int,
-              v0 = [('int; o1)] ∧ repr o1 = v1) ∧ 
-             _ (h0, h1)).
+    rewrite <- bind_assoc.
+    erewrite (H0 _ _ _ _ ($$"rkeys.335")).
+    clear H0.
+
+    
+    
+    eapply r_bind with (mid := λ '(v0, h0) '(v1, h1), p (h0, h1)).
     {
+      rewrite bind_assoc.
+      apply better_r_put_lhs. 
+      remove_get_in_lhs. fold @bind.
+
+      rewrite bind_assoc.
+      rewrite bind_assoc.
       set (set_lhs _ _ _).
-      epose (rcon_eq (id0~1~1)%positive 1 p0).
-      unfold JRCON in r.
-      replace (call 12%positive (id0~1~1)%positive [totce (coe_cht 'int _)])
-        with
-        (get_translated_static_fun ssprove_jasmin_prog 12%positive
-                                   static_funs (id0~1~1)%positive [('int; Z.of_nat 1)]).
-      apply r.
-      admit.
-      easy.
-      Transparent translate_call.
-      unfold translate_call, translate_call_body in r.
+      eapply r_bind with (mid := λ '(v0, h0) '(v1, h1),
+                            (∃ o1 : (λ i : choice_type_choiceType, i) 'int,
+                                v0 = [('int; o1)] ∧ repr o1 = v1) ∧ 
+                              p0 (h0, h1)) ; subst p0.
+      {
+        replace (translate_call ssprove_jasmin_prog 12%positive static_funs (id0~1~1)%positive [totce (coe_cht 'int _)])
+          with
+          (get_translated_static_fun ssprove_jasmin_prog 12%positive
+                                     static_funs (id0~1~1)%positive [('int; Z.of_nat 1)]).
+        2:{
+          Transparent translate_call.
+          simpl.
+          cbn.
+          repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
+          reflexivity.
+          Opaque translate_call.
+        }
+        simpl.
+        apply (rcon_eq (id0~1~1)%positive 1).
+        admit.
+        easy.
+      }
+
+      intros.
+      apply rpre_hypothesis_rule.
+      intros.
+      destruct H0.
+      destruct H0.
+      destruct H0.
+      eapply rpre_weaken_rule.
+      2:{
+        intros ? ? []. subst.
+        apply H1.
+      }
+      clear H1.
+      rewrite H0.
+      rewrite <- H2.
+      clear H0 H2.
+      apply better_r_put_lhs.
+      remove_get_in_lhs.
+      subst p.
+      remove_get_in_lhs.
+      remove_get_in_lhs. fold @bind.
+
+      rewrite bind_assoc.
+      rewrite bind_assoc.
+      set (set_lhs _ _ _).
+      set (set_lhs _ _ _).
+      eapply r_bind with (mid := λ '(v0, h0) '(v1, h1),
+                            (∃ o1 o2 : 'word U128,
+                                v0 = [('word U128; o1); ('word U128; o2)] ∧ (o1, o2) = v1)
+                            ∧ p0 (h0, h1)).
+      {
+        
+        pose key_expand_eq.
+        replace (translate_call _ _ _ _ _)
+          with
+          (get_translated_static_fun ssprove_jasmin_prog 11%positive
+                                     static_funs (id0~1~0~1)%positive [('int; x0); ('word U128; rkey); ('word U128; repr 0)]).
+        2:{
+          Transparent translate_call.
+          simpl.
+          cbn.
+          repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
+          reflexivity.
+          Opaque translate_call.
+        }
+        unfold JKEY_EXPAND in r.
+        specialize (r (id0~1~0~1)%positive x0 rkey (repr 0) p0).
+        unfold repr at 1.
+        apply r.
+
+        admit.
+      }
+
+
+      intros.
+      apply rpre_hypothesis_rule.
+      intros.
+      destruct H0.
+      destruct H0.
+      destruct H0.
+      eapply rpre_weaken_rule.
+      2:{
+        intros ? ? []. subst.
+        apply H1.
+      }
+      clear H1.
+      destruct H0.
+      destruct a₁0.
+      rewrite ct_T_prod_propegate.
       simpl.
-      cbn.
-      repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
-      reflexivity.
+      inversion H1.
+      subst.
+      clear H1.
+      apply better_r_put_lhs ; fold @bind.
+      apply better_r_put_lhs ; fold @bind.
+      simpl in p.
+      subst p0.
+      subst p.
+      rewrite !coerce_to_choice_type_K.
+      rewrite !zero_extend_u.
+      remove_get_in_lhs.
+      apply better_r. eapply r_get_remember_lhs. intros.
+      remove_get_in_lhs.
+
+      rewrite !coerce_to_choice_type_K.
+      rewrite !zero_extend_u.
+      apply better_r_put_lhs.
+
+      
+      apply better_r_put_rhs.
+      apply better_r_put_rhs.
+      apply better_r_put_rhs.
+
+      apply better_r. eapply r_get_remember_lhs. intros.
+
+      apply r_ret.
+      intros.
+      admit.
     }
+
+    intros.
+    
+    
+    (* TODO Reamining rounds *)
   Admitted.
 
   Lemma addroundkey_eq id0 (rkeys : 'array) (rkeys' : seq uint8) m  (pre : precond) :
-    (pdisj pre id0 (fset [CE_loc_to_loc res_238_loc ; (CE_loc_to_loc ( nseq int8 1 ; 0%nat ) : Location) ])) ->
+    (pdisj pre id0 (fset [ (CE_loc_to_loc ( nseq int8 1 ; 0%nat ) : Location) ])) ->
     seq.unzip2 (FMap.fmval rkeys) = seq.unzip2 (FMap.fmval rkeys') ->
     ⊢ ⦃ pre ⦄
         JAES_ROUNDS id0 rkeys m
