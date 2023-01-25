@@ -100,7 +100,7 @@ Section Hacspec.
   Ltac remove_get_in_lhs :=
     eapply better_r_get_remind_lhs ;
     unfold Remembers_lhs , rem_lhs ;
-    [ intros ? ? k ;
+    [ intros ? ? ? ;
       destruct_pre ;
       repeat (rewrite get_set_heap_neq ; [ | apply injective_translate_var3 ; reflexivity ]) ;
       rewrite get_set_heap_eq ;
@@ -552,7 +552,7 @@ Section Hacspec.
     repeat solve_lower_bounds.
   Qed.
 
-  
+
   Lemma index_8_eq :
     forall (v : 'word U32) (i : nat),
       i < 4 ->
@@ -598,7 +598,7 @@ Section Hacspec.
     intros.
     unfold vpshufd1.
     unfold wpshufd1.
-    
+
     Opaque index_u32.
     unfold is_pure at 1, lift_scope ; simpl.
     rewrite (index_32_eq _ 0).
@@ -648,7 +648,7 @@ Section Hacspec.
     apply small_modulus_smaller.
     cbn ; now repeat solve_lower_bounds.
     easy.
-    
+
     apply (@num_smaller_if_modulus_le U32).
     easy.
   Qed.
@@ -734,7 +734,7 @@ Section Hacspec.
     solve_wpshufd1_vpshufd1 3.
 
     rewrite rebuild_128_eq.
-    
+
     intros.
     apply r_ret.
     intros ? ? [? [? [? []]]].
@@ -1487,46 +1487,13 @@ Section Hacspec.
       Transparent translate_call.
   Qed.
 
-  (* Lemma foldr_foldi : forall A (default : T A) L I (f : Z -> _ -> raw_code A) x g y pre, *)
-  (*     forall (n : nat), *)
-  (*     (f 1%Z (f 0%Z x)) = (y ← f 0%Z x ;; f 1%Z (ret y)) -> *)
-  (*     (forall n x y, *)
-  (*     ⊢ ⦃ pre ⦄ *)
-  (*         f n x ≈ is_state (g (usize n) y) *)
-  (*       ⦃ fun '(v0, h0) '(v1, h1) => *)
-  (*             True  /\ pre (h0, h1) ⦄) -> *)
-  (*     ⊢ ⦃ pre ⦄ *)
-  (*         (foldr f x (rev [seq Z.of_nat i | i <- iota 0 (S n)])) ≈ *)
-  (*         (foldi_both' (acc := seq A) (L := L) (I := I) (lift_to_both0 (repr 0)) (lift_to_both0 (repr (Z.of_nat (S n)))) *)
-  (*                                   y g)  *)
-  (*                        ⦃ fun '(v0, h0) '(v1, h1) => *)
-  (*                            True  /\ pre (h0, h1) ⦄. *)
-  (* Proof. *)
-  (*   intros. *)
-  (*   induction n. *)
-  (*   - cbn. *)
-  (*     simpl. *)
-  (*     rewrite <- (bind_ret _ (f _ _)). *)
-  (*     eapply r_bind. *)
-  (*     apply H0. *)
-  (*     intros. *)
-  (*     apply r_ret. *)
-  (*     easy. *)
-  (*   - rewrite <- foldl_rev. *)
-  (*     rewrite revK. *)
-  (*     cbn. *)
-  (*     rewrite <- revK. *)
-  (*     rewrite foldl_rev. *)
-  (*     admit. *)
-  (* Admitted. *)
-
   Lemma rcon_eq id0 (j : nat) (pre : precond) :
     (pdisj pre id0 fset0) ->
-    (0 < j < 11)%Z ->
+    (0 <= j < 10)%nat ->
     ⊢ ⦃ pre ⦄
-        JRCON id0 (Z.of_nat j)
+        JRCON id0 (Z.pos (Pos.of_succ_nat j))
         ≈
-        is_state (array_index (rcon_v) (@repr U8 j))
+        is_state (array_index (rcon_v) (@repr U32 (S j)))
         ⦃ fun '(v0, h0) '(v1, h1) =>
             (exists o1, v0 = [('int; o1)] /\ repr o1 = v1)  /\ pre (h0, h1) ⦄.
   Proof.
@@ -1548,78 +1515,212 @@ Section Hacspec.
     unfold array_index_clause_2.
     unfold array_index_clause_2_clause_1.
     simpl.
-    destruct j as [ | j ].
-    {
-      easy.
-    }
 
+    (* SLOW! *) (* admit. *)
     do 10 (destruct j as [ | j ] ; [ simpl ; repeat (remove_get_in_lhs ; simpl) ; apply better_r_put_lhs ; remove_get_in_lhs ; apply r_ret ; intros ; destruct_pre ; split ; [ eexists ; split ; [ | reflexivity] ; f_equal ; unfold totce ; repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K) ; reflexivity | eapply H ; [ reflexivity | reflexivity | ] ; eapply H ; [ reflexivity | reflexivity | ] ; apply H5 ] | ]).
+
     exfalso.
-    destruct H0.
-    simpl in H1.
-    rewrite !Pos2Z.inj_succ in H1.
-    eapply Z.lt_asymm.
-    apply H1.
     lia.
+  Qed.
+  (* Admitted. *)
+
+
+  (* Theorem loop_eq : *)
+  (*   forall (acc : ChoiceEquality) id0 pre d i c v I L y *)
+  (*     (y0 : int -> acc -> code L I acc) id' (inv : postcond _ _), *)
+  (*     (i < d)%nat -> *)
+  (*     (i + d < modulus U32)%Z -> *)
+  (*     (forall c j, (i <= j < d)%nat -> ⊢ ⦃ pre ⦄ *)
+  (*         translate_write_var id0 v *)
+  (*         (@existT choice_type (fun t : choice_type => Choice.sort (chElement t)) chInt (Z.of_nat (j.+1))) ;; *)
+  (*                     y id0 ≈ y0 (repr j.+1) c ⦃ λ '(s0, h0) '(s1, h1), (inv (s0, h0) (s1, h1)) /\ pre (h0, h1) ⦄) -> *)
+  (*     inv (emptym, empty_heap) (_, empty_heap) -> *)
+  (*     ⊢ ⦃ pre ⦄ *)
+  (*         (translate_for v *)
+  (*                        [seq (1 + Z.of_nat i)%Z | i <- iota i d] id0 (fun id => (id' id, y id)) id0~1) ≈ *)
+  (*         (foldi_ (I := I) (L := L) (S d) (repr (S i)) y0 c ) *)
+  (*         ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) ⦄ . *)
+  (* Proof. *)
+  (*   clear ; intros. *)
+  (*   generalize dependent i. *)
+  (*   generalize dependent c. *)
+  (*   generalize dependent id0. *)
+  (*   induction d ; intros. *)
+  (*   - discriminate. *)
+  (*   - assert (forall j n, [seq (1 + Z.of_nat i)%Z | i <- iota j (S n)] = *)
+  (*                      ((1 + Z.of_nat j)%Z :: [seq (1 + Z.of_nat i)%Z | i <- iota (S j) n])) by reflexivity. *)
+  (*     replace (d.+1 - i) with (d - i).+1 by lia. *)
+  (*     rewrite H3. *)
+  (*     unfold translate_for ; fold translate_for. *)
+  (*     rewrite <- foldi__move_S. *)
+  (*     rewrite <- bind_assoc. *)
+  (*     apply r_bind with (mid := fun '(v0, h0) '(v1, h1) => inv (v0, h0) (v1, h1) /\ pre (h0, h1)). *)
+  (*     2:{ *)
+  (*       intros. *)
+  (*       rewrite bind_rewrite. *)
+  (*       replace (Hacspec_Lib_Pre.int_add (repr _) _) with (@repr U32 (S (S i))). *)
+  (*       2:{ *)
+  (*         simpl. *)
+  (*         cbn. *)
+  (*         unfold Hacspec_Lib_Pre.int_add, add_word. *)
+  (*         rewrite mkwordK. *)
+  (*         rewrite Zmod_small. *)
+  (*         cbn. *)
+  (*         apply word_ext. *)
+  (*         f_equal. *)
+  (*         rewrite Pos.add_1_r. *)
+  (*         reflexivity. *)
+  (*         split. solve_lower_bounds. *)
+  (*         eapply Z.le_lt_trans. *)
+  (*         2: apply H1. *)
+  (*         zify. *)
+  (*         rewrite <- addn1. *)
+  (*         setoid_rewrite Nat2Z.inj_add. *)
+  (*         rewrite Z.add_assoc. *)
+  (*         apply Zplus_le_compat_r. *)
+  (*         apply le_add_right. *)
+  (*         easy. *)
+  (*         easy. *)
+  (*       } *)
+  (*       apply better_r. *)
+  (*       eapply rpre_hypothesis_rule. *)
+  (*       intros ? ? []. *)
+  (*       eapply rpre_weaken_rule ; [ | ]. *)
+  (*       - specialize (IHd id0). *)
+  (*         specialize (IHd (ct_T a₁)). *)
+  (*                admit. *)
+  (*         (* apply IHd. *)
+  (*         + apply H4. *)
+  (*         + admit. *)
+  (*         + setoid_rewrite <- Nat2Z.inj_add. *)
+  (*           setoid_rewrite addSnnS. *)
+  (*           rewrite Nat2Z.inj_add. *)
+  (*           apply H1. *)
+  (*         + intros. eapply H2. *)
+  (*           apply H6. *)
+  (*           lia. *)
+  (*       - now (intros ? ? [] ; subst). *)
+  (*     } *)
+  (*     replace (totce (translate_value (values.Vint (1 + Z.of_nat i)))) *)
+  (*       with (@existT choice_type (fun t : choice_type => Choice.sort (chElement t)) chInt (Z.of_nat (i.+1))). *)
+  (*     2:{ *)
+  (*       cbn. *)
+  (*       repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K). *)
+  (*       rewrite Zpos_P_of_succ_nat. *)
+  (*       unfold Z.succ. *)
+  (*       rewrite Z.add_comm. *)
+  (*       reflexivity. *)
+  (*     } *)
+  (*     specialize (H2 c (i)). *) *)
+  (*     (* apply H2. *)
+  (*     apply H. *)
+  (*     lia. *)
+  (* *) Admitted. *)
+
+  Definition unfold_translate_for : forall v j d id0 id' y,
+      (translate_for v [seq (1 + Z.of_nat i)%Z | i <- iota j (S d)] id0 y id') =
+      (translate_write_var id0 v (@existT choice_type (fun t : choice_type => Choice.sort (chElement t)) chInt (Z.of_nat (j.+1))) ;;
+      (snd (y id')) ;;
+      translate_for v [seq (1 + Z.of_nat i)%Z | i <- iota (S j) d] id0 y (fst (y id'))).
+  Proof.
+    intros.
+    assert (forall j n, [seq (1 + Z.of_nat i)%Z | i <- iota j (S n)] =
+                     ((1 + Z.of_nat j)%Z :: [seq (1 + Z.of_nat i)%Z | i <- iota (S j) n])) by reflexivity.
+    rewrite H.
+    unfold translate_for ; fold translate_for.
+    destruct (y id').
+    replace (totce (translate_value (values.Vint (1 + Z.of_nat j))))
+      with (@existT choice_type (fun t : choice_type => Choice.sort (chElement t)) chInt (Z.of_nat (j.+1))).
+    2:{
+      cbn.
+      repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
+      rewrite Zpos_P_of_succ_nat.
+      unfold Z.succ.
+      rewrite Z.add_comm.
+      reflexivity.
+    }
+    reflexivity.
   Qed.
 
   Theorem loop_eq :
-    forall (acc : ChoiceEquality) id0 pre d i c id v I L y
-      (y0 : int -> acc -> code L I acc) id',
-      (i < d) ->
-      (i + d < modulus U32) ->
-      ⊢ ⦃ pre ⦄
-          translate_write_var id0 v
-          (totce (translate_value (values.Vint (1 + Z.of_nat i)))) ;;
-      y id ≈ y0 (repr i.+1) c ⦃ λ '(_, h0) '(_, h1), pre (h0, h1) ⦄ ->
+    forall {acc : ChoiceEquality} v d (j : nat) id0 s_id id' y I L (y0 : @int U32 -> acc -> code L I acc) pre c,
+      (0 < d) ->
+      (forall k c s_id,
+          j <= k < j + d ->
+          ⊢ ⦃ set_lhs
+                (translate_var id0 (v_var v))
+                (@truncate_el chInt (vtype (v_var v)) (S k))
+                pre ⦄
+          y s_id
+              ≈ y0 (repr (Pos.of_succ_nat k)) c
+         ⦃ λ '(_, h0) '(_, h1), pre (h0, h1) ⦄) ->
       ⊢ ⦃ pre ⦄
           (translate_for v
-                         [seq (1 + Z.of_nat i)%Z | i <- iota i d] id0 (fun id => (id' id, y id)) id) ≈
-          (foldi_ (I := I) (L := L) (S d) (repr (S i)) y0 c )
-          ⦃ fun '(v0, h0) '(v1, h1) => True /\ pre (h0, h1) ⦄ .
+                         [seq (1 + Z.of_nat i)%Z | i <- iota j d] id0 (fun id => (id' id, y id)) s_id) ≈
+          (foldi_ (I := I) (L := L) (d) (repr (S j)) y0 c )
+     ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) ⦄ .
   Proof.
-    clear ; intros.
-    generalize dependent i.
+    intros.
+    generalize dependent j.
     generalize dependent c.
-    generalize dependent id.
+    generalize dependent s_id.
     induction d ; intros.
-    - discriminate.
-    - assert (forall j n, [seq (1 + Z.of_nat i)%Z | i <- iota j (S n)] =
-                       ((1 + Z.of_nat j)%Z :: [seq (1 + Z.of_nat i)%Z | i <- iota (S j) n])) by reflexivity.
-      replace (d.+1 - i) with (d - i).+1.
-      rewrite H2.
-      unfold translate_for ; fold translate_for.
-      rewrite <- foldi__move_S.
-      rewrite <- bind_assoc.
-      apply r_bind with (mid := fun '(v0, h0) '(v1, h1) => pre (h0, h1)).
-      2:{
-        intros.
-        rewrite bind_rewrite.
-        epose (IHd (id' id) (ct_T a₁) (S i) _ _ _).
-        replace (Hacspec_Lib_Pre.int_add (repr _) _) with (@repr U32 (S (S i))).
-        apply better_r.
-        apply r.
-        simpl.
-        cbn.
-        unfold Hacspec_Lib_Pre.int_add, add_word.
-        rewrite mkwordK.
-        rewrite Zmod_small.
-        easy.
-        easy.
-      } 
-      apply H1.
+    discriminate.
+
+    destruct d.
+    - rewrite unfold_translate_for.
+      simpl.
+      apply better_r_put_lhs.
+      setoid_rewrite T_ct_id.
+      eapply r_bind.
+      apply H0.
       lia.
 
-      Unshelve.
-      easy.
-      easy.
-      easy.
-  Qed.
+      intros.
+      apply r_ret.
+      intros. apply H1.
+    - rewrite <- foldi__move_S.
+      rewrite unfold_translate_for.
 
-  Locate key_list_t.
-  Print getm.
+      apply better_r_put_lhs.
+      setoid_rewrite bind_rewrite.
+      apply r_bind with (mid := λ '(_, h0) '(_, h1), pre (h0, h1)).
+
+      2:{
+        intros.
+        replace (Hacspec_Lib_Pre.int_add (repr j.+1) one)
+          with
+          (@repr U32 j.+2).
+        2:{
+          simpl.
+          cbn.
+          unfold Hacspec_Lib_Pre.int_add, add_word.
+          rewrite mkwordK.
+          cbn.
+          apply word_ext.
+          rewrite Zplus_mod.
+          rewrite Zmod_mod.
+          rewrite <- Zplus_mod.
+          f_equal.
+          now zify.
+        }
+  
+        apply better_r.
+        unfold ".1".
+        pose (IHd ltac:(easy) (id' s_id) (ct_T a₁) j.+1).
+        apply r.
+
+        intros.
+        apply H0.
+        lia.
+      }
+      unfold ".2".
+      apply H0.
+      lia.
+  Qed.
+    
   Lemma keys_expand_eq id0 rkey  (pre : precond) :
-    (pdisj pre id0 (fset ([(seq_choice int128; 277) ; (@int_choice U128; 278) ; (@int_choice U128; 279) ; ('array ; 1)]))) ->
+    (pdisj pre id0 (fset ([(seq_choice int128; 279) ; (@int_choice U128; 278) ; (@int_choice U128; 277)]))) ->
     ⊢ ⦃ pre ⦄
         JKEYS_EXPAND id0 rkey
         ≈
@@ -1647,7 +1748,7 @@ Section Hacspec.
     remove_get_in_lhs.
     apply better_r. eapply r_get_remember_lhs. intros.
 
-    
+
     unfold keys_expand.
 
     unfold let_mut_both at 1, is_state at 1, is_state at 1, is_state at 1.
@@ -1676,6 +1777,15 @@ Section Hacspec.
     apply better_r_put_rhs.
     apply better_r_put_rhs.
     apply better_r_put_lhs.
+
+    set (tr_app_sopn_tuple _ _ _).
+    cbn in s.
+    set (repr 0) at 8.
+    assert (s = t) by now apply word_ext. 
+    generalize dependent s.
+    generalize dependent t.
+    intros.
+    subst.
 
     apply better_r_put_lhs.
 
@@ -1748,8 +1858,8 @@ Section Hacspec.
         apply H15.
       }
     }
-    
-    simpl.
+
+    (* simpl. *)
 
     intros.
 
@@ -1760,144 +1870,119 @@ Section Hacspec.
     rewrite bind_rewrite.
     rewrite bind_rewrite.
 
-    unfold foldi_pre ; replace (unsigned (repr 12) - unsigned (repr 1))%Z with 11%Z by reflexivity.
+    unfold foldi_both', foldi_both, lift_scope, is_state at 1, lift_code_scope, prog, is_state at 1, foldi.
+    unfold foldi_pre ; replace (unsigned _ - unsigned _)%Z with 10%Z by reflexivity.
     replace (Z.to_nat (11 - 1)) with 10 by reflexivity.
-    replace (Pos.to_nat 11) with 11 by reflexivity.
-
-    epose (@loop_eq (( (seq int128) '× (@int U128) '× (@int U128))) _ p 10 0 _ _ _ _ _ (fun x => snd (y x)) y0 (fun x => fst (y x)) ).
-
-    eapply rpost_weaken_rule.
-    
-    hnf in r.
-    apply r.
-    easy.
-    setoid_rewrite Nat.add_0_l.
-    
-    
-    assert (forall j n, [seq (1 + Z.of_nat i)%Z | i <- iota j (S n)] =
-                     ((1 + Z.of_nat j)%Z :: [seq (1 + Z.of_nat i)%Z | i <- iota (S j) n])) by reflexivity.
-
-    rewrite H.
-    unfold translate_for ; fold translate_for.
-    rewrite <- foldi__move_S.
+    replace (Pos.to_nat 10) with 10 by reflexivity.
 
     
+    apply (@loop_eq (seq int128 '× int '× int) _ 10 0).
+    { easy. }
+    {
+    intros.
 
+    subst y.
+    subst y0.
+    subst p.
     
+    remove_get_in_lhs.
+    rewrite bind_assoc.
+    destruct c as [? []].
+    destruct t0 as [].
+
+    assert (t = t1). admit. subst.
+    assert (rkey = (mkWord (nbits:=U128) (toword:=toword) i)). admit. subst.
     
-    rewrite H.
-    unfold translate_for ; fold translate_for.
-    rewrite <- foldi__move_S.
-      
+    set (set_lhs _ _ _).
+    eapply r_bind with (mid := λ '(v0, h0) '(v1, h1),
+                          (∃ o1 : (λ i : choice_type_choiceType, i) 'int,
+                              v0 = [('int; o1)] ∧ repr o1 = v1) ∧
+                            p (h0, h1)) ; subst p.
+    {
+      (* replace (totce _) *)
+      (*   with (@existT choice_type (fun t : choice_type => Choice.sort (chElement t)) chInt (Z.of_nat (Pos.of_succ_nat j))). *)
+      set [ _ ].
+
+      replace (translate_call ssprove_jasmin_prog 12%positive
+                                   static_funs (s_id~1)%positive l)
+        with
+        (get_translated_static_fun ssprove_jasmin_prog 12%positive
+                                   static_funs (s_id~1)%positive l).
+      2:{
+        Transparent translate_call.
+        simpl.
+        cbn.
+        repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
+        reflexivity.
+        Opaque translate_call.
+      }
+      subst l.
+      replace (totce _)
+        with (@existT choice_type (fun t : choice_type => Choice.sort (chElement t)) chInt (Pos.of_succ_nat k)).
+      2:{
+        cbn.
+        repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
+        unfold totce.
+        rewrite Zpos_P_of_succ_nat.
+        reflexivity.
+      }
+      apply (rcon_eq (s_id~1)%positive k).
+      admit.
+      setoid_rewrite Nat.add_0_l in H.
+      apply H.
     }
     
-    assert (forall i,
-               ⊢ ⦃ p ⦄
-               let (s_id', c') := y (id0~1)%positive in
-               translate_write_var id0 ($$$"round.337")
-                                   (totce (translate_value (values.Vint i))) ;;
-               c' =
-                 cur' ← y0 (repr i)
-                      (Hacspec_Lib_Pre.seq_push
-                         (Hacspec_Lib_Pre.seq_new_ (repr 0) (unsigned (repr 0)))
-                         rkey, rkey, repr 0) ;;
-                 Si ← (repr i)
-                    ⦃ λ '(_, h0) '(_, h1),  ⦄
-           ).
-    
-    unfold y at 1.
-    unfold y0 at 1.
-
-    assert (forall A B  (x : raw_code A) (y : raw_code B) l, (x ;; y) = ((x ;; v ← get l ;; ret v) ;; y)).
-    admit.
-    
-    rewrite <- bind_assoc.
-    erewrite (H0 _ _ _ _ ($$"rkeys.335")).
-    clear H0.
-
-    
-    
-    eapply r_bind with (mid := λ '(v0, h0) '(v1, h1), p (h0, h1)).
-    {
-      rewrite bind_assoc.
-      apply better_r_put_lhs. 
-      remove_get_in_lhs. fold @bind.
+    intros.
+    apply rpre_hypothesis_rule.
+    intros.
+    destruct H0.
+    destruct H0.
+    destruct H0.
+    eapply rpre_weaken_rule.
+    2:{
+      intros ? ? []. subst.
+      apply H1.
+    }
+    clear H1.
+    rewrite H0.
+    rewrite <- H2.
+    clear H0 H2.
+    apply better_r_put_lhs.
+    remove_get_in_lhs.
+    remove_get_in_lhs.
+    remove_get_in_lhs. fold @bind.
 
       rewrite bind_assoc.
-      rewrite bind_assoc.
-      set (set_lhs _ _ _).
-      eapply r_bind with (mid := λ '(v0, h0) '(v1, h1),
-                            (∃ o1 : (λ i : choice_type_choiceType, i) 'int,
-                                v0 = [('int; o1)] ∧ repr o1 = v1) ∧ 
-                              p0 (h0, h1)) ; subst p0.
-      {
-        replace (translate_call ssprove_jasmin_prog 12%positive static_funs (id0~1~1)%positive [totce (coe_cht 'int _)])
-          with
-          (get_translated_static_fun ssprove_jasmin_prog 12%positive
-                                     static_funs (id0~1~1)%positive [('int; Z.of_nat 1)]).
-        2:{
-          Transparent translate_call.
-          simpl.
-          cbn.
-          repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
-          reflexivity.
-          Opaque translate_call.
-        }
-        simpl.
-        apply (rcon_eq (id0~1~1)%positive 1).
-        admit.
-        easy.
-      }
-
-      intros.
-      apply rpre_hypothesis_rule.
-      intros.
-      destruct H0.
-      destruct H0.
-      destruct H0.
-      eapply rpre_weaken_rule.
-      2:{
-        intros ? ? []. subst.
-        apply H1.
-      }
-      clear H1.
-      rewrite H0.
-      rewrite <- H2.
-      clear H0 H2.
-      apply better_r_put_lhs.
-      remove_get_in_lhs.
-      subst p.
-      remove_get_in_lhs.
-      remove_get_in_lhs. fold @bind.
-
-      rewrite bind_assoc.
-      rewrite bind_assoc.
-      set (set_lhs _ _ _).
       set (set_lhs _ _ _).
       eapply r_bind with (mid := λ '(v0, h0) '(v1, h1),
                             (∃ o1 o2 : 'word U128,
                                 v0 = [('word U128; o1); ('word U128; o2)] ∧ (o1, o2) = v1)
-                            ∧ p0 (h0, h1)).
+                            ∧ p (h0, h1)).
       {
-        
+
         pose key_expand_eq.
+        unfold JKEY_EXPAND in r.
+        specialize (r (s_id~0~1)%positive x0 t1  (mkWord (nbits:=U128) (toword:=toword) i)  p).
+
         replace (translate_call _ _ _ _ _)
           with
           (get_translated_static_fun ssprove_jasmin_prog 11%positive
-                                     static_funs (id0~1~0~1)%positive [('int; x0); ('word U128; rkey); ('word U128; repr 0)]).
+                                     static_funs (s_id~0~1)%positive [('int; x0); ('word U128; (mkWord (nbits:=U128) (toword:=toword) i)); ('word U128; t1) ]).
         2:{
           Transparent translate_call.
           simpl.
           cbn.
           repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
+          rewrite !zero_extend_u.
           reflexivity.
           Opaque translate_call.
         }
-        unfold JKEY_EXPAND in r.
-        specialize (r (id0~1~0~1)%positive x0 rkey (repr 0) p0).
-        unfold repr at 1.
-        apply r.
-
+        unfold lift_to_both0.
+        Set Printing Coercions.
+        unfold is_pure.
+        unfold lift_to_both.
+        unfold repr.
+        (* apply r. *) (* TODO?? *)
         admit.
       }
 
@@ -1924,7 +2009,6 @@ Section Hacspec.
       apply better_r_put_lhs ; fold @bind.
       apply better_r_put_lhs ; fold @bind.
       simpl in p.
-      subst p0.
       subst p.
       rewrite !coerce_to_choice_type_K.
       rewrite !zero_extend_u.
@@ -1936,27 +2020,24 @@ Section Hacspec.
       rewrite !zero_extend_u.
       apply better_r_put_lhs.
 
-      
-      apply better_r_put_rhs.
-      apply better_r_put_rhs.
-      apply better_r_put_rhs.
 
-      apply better_r. eapply r_get_remember_lhs. intros.
+      apply better_r_put_rhs.
+      apply better_r_put_rhs.
+      apply better_r_put_rhs.
 
       apply r_ret.
       intros.
       admit.
     }
-
-    intros.
-    
-    
-    (* TODO Reamining rounds *)
   Admitted.
 
-  Lemma addroundkey_eq id0 (rkeys : 'array) (rkeys' : seq uint8) m  (pre : precond) :
+  Lemma addroundkey_eq id0 (rkeys : 'array) (rkeys' : seq int128) m  (pre : precond) :
     (pdisj pre id0 (fset [ (CE_loc_to_loc ( nseq int8 1 ; 0%nat ) : Location) ])) ->
-    seq.unzip2 (FMap.fmval rkeys) = seq.unzip2 (FMap.fmval rkeys') ->
+    ((forall (j : nat),
+       forall (a : 'word U8) (b : 'word U128),
+         (getm rkeys (Z.of_nat j) = Some a) ->
+         (getm rkeys' (j / 16) = Some b) ->
+         a = index_u8 (index_u32 b (repr ((j mod 16) / 4))) (repr (j mod 4)))) ->
     ⊢ ⦃ pre ⦄
         JAES_ROUNDS id0 rkeys m
         ≈
@@ -2009,7 +2090,7 @@ Section Hacspec.
   Admitted.
 
   Lemma aes_eq id0 key m  (pre : precond) :
-    (pdisj pre id0 (fset [CE_loc_to_loc res_238_loc ; (CE_loc_to_loc ( nseq int8 1 ; 0%nat ) : Location) ])) ->
+    (pdisj pre id0 (fset [(CE_loc_to_loc ( nseq int8 1 ; 0%nat ) : Location) ])) ->
     ⊢ ⦃ pre ⦄
         JAES id0 key m
         ≈
