@@ -1618,11 +1618,8 @@ Section Hacspec.
         is_state (keys_expand rkey)
         ⦃ fun '(v0, h0) '(v1, h1) =>
             (exists o1, v0 = [('array; o1)]
-                   /\ (forall (j : nat),
-                       forall (a : 'word U8) (b : 'word U128),
-                         (getm o1 (Z.of_nat j) = Some a) ->
-                         (getm v1 (j / 16) = Some b) ->
-                         a = index_u8 (index_u32 b (repr ((j mod 16) / 4))) (repr (j mod 4))))  /\ pre (h0, h1) ⦄.
+                   /\ (forall k, ((chArray_get U128 o1 k (wsize_size U128))
+    = is_pure (seq_index (A := @int U128) v1 (lift_to_both0 (repr k))))))  /\ pre (h0, h1) ⦄.
   Proof.
     intros H_pdisj.
     set (JKEYS_EXPAND _ _).
@@ -1725,8 +1722,7 @@ Section Hacspec.
         split.
         - reflexivity.
         - intros.
-          simpl in H.
-          rewrite !coerce_to_choice_type_K in H.
+          destruct_pre.
           admit.
       }
       {
@@ -1953,12 +1949,14 @@ Section Hacspec.
 
 
   Lemma addroundkey_eq id0 (rkeys : 'array) (rkeys' : seq int128) m  (pre : precond) :
-    (pdisj pre id0 (fset [ (CE_loc_to_loc ( nseq int8 1 ; 0%nat ) : Location) ])) ->
-    ((forall (j : nat),
-       forall (a : 'word U8) (b : 'word U128),
-         (getm rkeys (Z.of_nat j) = Some a) ->
-         (getm rkeys' (j / 16) = Some b) ->
-         a = index_u8 (index_u32 b (repr ((j mod 16) / 4))) (repr (j mod 4)))) ->
+    (pdisj pre id0 (fset [ (@int_choice U128; 334) ])) ->
+    (forall k, ((chArray_get U128 rkeys k (wsize_size U128))
+    = is_pure (seq_index rkeys' (lift_to_both0 (repr k))))) ->
+    (* ((forall (j : nat), *)
+    (*    forall (a : 'word U8) (b : 'word U128), *)
+    (*      (getm rkeys (Z.of_nat j) = Some a) -> *)
+    (*      (getm rkeys' (j / 16) = Some b) -> *)
+    (*      a = index_u8 (index_u32 b (repr ((j mod 16) / 4))) (repr (j mod 4)))) -> *)
     ⊢ ⦃ pre ⦄
         JAES_ROUNDS id0 rkeys m
         ≈
@@ -2034,8 +2032,56 @@ Section Hacspec.
         remove_get_in_lhs.
 
         bind_jazz_hac.
-        - pose aes_enc_eq.
-          admit. (* AES Enc loop *)
+        - unfold sopn_sem.
+          unfold sopn.get_instr_desc.
+          unfold asm_op_instr.
+          unfold asm_opI.
+          unfold arch_extra.get_instr_desc.
+          unfold semi.
+          unfold instr_desc.
+          unfold instr_desc_op.
+          unfold _asm_op_decl.
+          unfold _asm.
+          unfold x86_extra.
+          unfold x86.x86.
+          unfold x86_op_decl.
+          unfold x86_instr_desc.
+          unfold id_semi.
+          unfold Ox86_AESENC_instr.
+          unfold mk_instr_aes2.
+          unfold ".1".
+          unfold x86_AESENC.
+          unfold tr_app_sopn_tuple.
+          unfold encode_tuple.
+          unfold jasmin_translate.encode.
+          unfold w_ty.
+          unfold map.
+          unfold lchtuple.
+          unfold chCanonical.
+          unfold w2_ty.
+          unfold tr_app_sopn.
+          unfold embed_tuple.
+          unfold embed_ot.
+          unfold unembed.
+          unfold truncate_el.
+          unfold totce.
+          unfold ".π2".
+
+          rewrite !coerce_to_choice_type_K.
+          set (truncate_chWord _ _).
+          set (truncate_chWord _ _).
+          cbn in s0.
+          cbn in s.
+          subst s0.
+          subst s.
+          rewrite !zero_extend_u.
+
+          (* AES Enc loop *)
+
+          rewrite <- rkeys_ext.
+          apply (aes_enc_eq id0 c (chArray_get U128 rkeys (Pos.of_succ_nat k) (wsize_size U128))).
+          admit.
+
         - apply better_r_put_rhs.
           apply better_r_put_lhs.
           apply r_ret.
@@ -2048,9 +2094,59 @@ Section Hacspec.
     intros.
     remove_get_in_lhs.
     remove_get_in_lhs.
+    rewrite <- bind_ret.
     bind_jazz_hac.
 
-    { admit. (* AES Enc last *) }
+    {
+      unfold sopn_sem.
+      unfold sopn.get_instr_desc.
+      unfold asm_op_instr.
+      unfold asm_opI.
+      unfold arch_extra.get_instr_desc.
+      unfold semi.
+      unfold instr_desc.
+      unfold instr_desc_op.
+      unfold _asm_op_decl.
+      unfold _asm.
+      unfold x86_extra.
+      unfold x86.x86.
+      unfold x86_op_decl.
+      unfold x86_instr_desc.
+      unfold id_semi.
+      unfold Ox86_AESENCLAST_instr.
+      unfold mk_instr_aes2.
+      unfold ".1".
+      unfold x86_AESENCLAST.
+      unfold tr_app_sopn_tuple.
+      unfold encode_tuple.
+      unfold jasmin_translate.encode.
+      unfold w_ty.
+      unfold map.
+      unfold lchtuple.
+      unfold chCanonical.
+      unfold w2_ty.
+      unfold tr_app_sopn.
+      unfold embed_tuple.
+      unfold embed_ot.
+      unfold unembed.
+      unfold truncate_el.
+      unfold totce.
+      unfold ".π2".
+
+      rewrite !coerce_to_choice_type_K.
+      set (truncate_chWord _ _).
+      set (truncate_chWord _ _).
+      cbn in s0.
+      cbn in s.
+      subst s0.
+      subst s.
+      rewrite !zero_extend_u.
+
+      rewrite <- rkeys_ext.
+
+      apply (aes_enc_last_eq id0 a₁0 (chArray_get U128 rkeys 10 (wsize_size U128))).
+      pdisj_apply H_pdisj.
+      admit. (* AES Enc last *) }
 
     apply better_r_put_lhs.
     remove_get_in_lhs.
@@ -2064,12 +2160,17 @@ Section Hacspec.
     - eexists.
       split.
       + reflexivity.
-      + admit.
+      + setoid_rewrite zero_extend_u.
+        reflexivity.
     - pdisj_apply H_pdisj.
+      rewrite in_fset.
+      now rewrite mem_head.
+  (* Qed. *)
   Admitted.
 
   Lemma aes_eq id0 key m  (pre : precond) :
-    (pdisj pre id0 (fset [(CE_loc_to_loc ( nseq int8 1 ; 0%nat ) : Location) ])) ->
+    (pdisj pre id0 (fset [(@int_choice U128; 334) ; (@seq_choice int128; 279); (@int_choice U128; 278);
+              (@int_choice U128; 277)])) ->
     ⊢ ⦃ pre ⦄
         JAES id0 key m
         ≈
@@ -2085,9 +2186,165 @@ Section Hacspec.
     subst r.
     rewrite !zero_extend_u.
 
+    unfold aes.
+
     apply better_r_put_lhs.
     apply better_r_put_lhs.
     remove_get_in_lhs.
-  Admitted.
+
+    rewrite bind_assoc.
+    rewrite bind_assoc.
+
+    eapply r_bind.
+    apply keys_expand_eq.
+
+    split.
+    {
+      intros.
+      destruct_pre.
+      unfold set_lhs.
+      eexists (set_heap (set_heap H4 ($$"key.314") _) (translate_var s_id' v) a).
+      split.
+      2:{
+        rewrite set_heap_commut.
+        f_equal.
+        f_equal.
+        apply f_equal.
+        reflexivity.
+        apply injective_translate_var2.
+        red ; intros.
+        subst.
+        now apply (precneq_I s_id').
+      }
+      exists (set_heap H4 (translate_var s_id' v) a).
+      split.
+      2:{
+        rewrite set_heap_commut.
+        reflexivity.
+        apply injective_translate_var2.
+        red ; intros.
+        subst.
+        now apply (precneq_I s_id').
+      }
+      pdisj_apply H_pdisj.
+      etransitivity.
+      apply preceq_I.
+      apply H0.
+    }
+    {
+      intros.
+      destruct_pre.
+      eexists.
+      split ; [ | reflexivity ].
+      eexists.
+      split ; [ | reflexivity ].
+      apply H_pdisj.
+
+      rewrite in_fset.
+      rewrite in_fset in H.
+      rewrite in_cons ; simpl.
+      rewrite H.
+      now rewrite Bool.orb_true_r.
+      apply H4.
+    }
+
+    intros.
+    apply rpre_hypothesis_rule.
+    intros ? ? [].
+    eapply rpre_weaken_rule.
+    2:{
+      intros ? ? []. subst.
+      apply H0.
+    }
+    clear H0.
+    destruct H.
+    destruct H.
+    subst.
+    apply better_r_put_lhs.
+    remove_get_in_lhs. fold @bind.
+    remove_get_in_lhs.
+
+    rewrite bind_assoc.
+    rewrite bind_assoc.
+
+    rewrite <- bind_ret.
+    eapply r_bind.
+
+    apply addroundkey_eq.
+    {
+      split.
+      - intros.
+        destruct_pre.
+        eexists.
+        split.
+        2:{
+          rewrite ![set_heap _ (translate_var s_id' v) a]set_heap_commut
+          ; (reflexivity ||
+               (apply injective_translate_var2 ;
+                red ; intros ; subst ;
+                apply (precneq_O s_id') ;
+                etransitivity ; [apply preceq_I | apply H1])).
+        }
+        eexists.
+        split ; [ | reflexivity ].
+        eexists.
+        split ; [ | reflexivity ].
+        pdisj_apply H_pdisj.
+        etransitivity.
+        apply preceq_O.
+        etransitivity.
+        apply preceq_I.
+        apply H1.
+      - intros.
+        destruct_pre.
+        eexists.
+        split ; [| reflexivity ].
+        eexists.
+        split ; [ | reflexivity ].
+        eexists.
+        split ; [ | reflexivity ].
+        eapply H_pdisj.
+
+        rewrite in_fset.
+        rewrite in_cons ; simpl.
+        rewrite in_fset in H.
+        rewrite mem_seq1 in H.
+        rewrite H.
+        now rewrite Bool.orb_true_l.
+        apply H7.
+    }
+    {
+      intros.
+      rewrite !coerce_to_choice_type_K.
+      apply H0.
+    }
+
+    intros.
+    apply rpre_hypothesis_rule.
+    intros ? ? [].
+    eapply rpre_weaken_rule.
+    2:{
+      intros ? ? []. subst.
+      apply H1.
+    }
+    clear H1.
+    destruct H.
+    destruct H.
+    subst.
+    apply better_r_put_lhs.
+    rewrite bind_rewrite.
+    remove_get_in_lhs.
+    apply r_ret.
+
+    intros.
+    destruct_pre.
+    split.
+    eexists.
+    split ; [reflexivity | ].
+    rewrite !zero_extend_u.
+    setoid_rewrite zero_extend_u.
+    reflexivity.
+    pdisj_apply H_pdisj.
+  Qed.
 
 End Hacspec.
