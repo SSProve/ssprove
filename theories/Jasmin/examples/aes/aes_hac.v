@@ -585,7 +585,7 @@ Section Hacspec.
   Qed.
 
   Theorem loop_eq :
-    forall {acc : ChoiceEquality} v d (j : nat) id0 s_id id' y I L (y0 : @int U32 -> acc -> code L I acc) (pre : _ -> _ -> precond) c,
+    forall {acc : ChoiceEquality} v d (j : nat) id0 s_id id' y I L (y0 : @int U32 -> acc -> code L I acc) (pre : _ -> _ -> precond) (inv : _ -> _ -> precond) c,
       (0 < d) ->
       (id0 ⪯ s_id) ->
       (forall id, id ⪯ id' id) ->
@@ -595,15 +595,16 @@ Section Hacspec.
           ⊢ ⦃ set_lhs
                 (translate_var id0 (v_var v))
                 (@truncate_el chInt (vtype (v_var v)) (S k))
-                (pre k c) ⦄
+                (fun '(h0, h1) => (inv k c) (h0, h1) /\ (pre k c) (h0, h1)) ⦄
           y s_id
               ≈ y0 (repr (Pos.of_succ_nat k)) c
-         ⦃ λ '(_, h0) '(v1, h1), (pre (S k) (ct_T v1)) (h0, h1) ⦄) ->
-      ⊢ ⦃ (pre j c) ⦄
+              ⦃ λ '(_, h0) '(v1, h1), (inv (S k) (ct_T v1) (h0, h1)) /\ (pre (S k) (ct_T v1)) (h0, h1) ⦄) ->
+      (forall j c, pdisj (pre j c) id0 fset0) ->
+      ⊢ ⦃ fun '(h0, h1) => inv j c (h0, h1) /\ (pre j c) (h0, h1) ⦄
           (translate_for v
                          [seq (1 + Z.of_nat i)%Z | i <- iota j d] id0 (fun id => (id' id, y id)) s_id) ≈
           (foldi_ (I := I) (L := L) (d) (repr (S j)) y0 c )
-     ⦃ fun '(v0, h0) '(v1, h1) => (pre (j + d) (ct_T v1)) (h0, h1) ⦄ .
+     ⦃ fun '(v0, h0) '(v1, h1) => (inv (j + d) (ct_T v1) (h0, h1)) /\ (pre (j + d) (ct_T v1)) (h0, h1) ⦄ .
   Proof.
     intros.
     generalize dependent j.
@@ -617,20 +618,29 @@ Section Hacspec.
       simpl.
       apply better_r_put_lhs.
       setoid_rewrite T_ct_id.
+      (* apply rpre_hypothesis_rule'. *)
+      (* intros. *)
+      (* destruct_pre. *)
+      (* clear H7. *)
+      (* eapply rpre_weaken_rule. *)
+      (* 2:{ intros ? ? []. subst. eapply H3. reflexivity. easy. apply H8. } *)
       eapply r_bind.
-      apply H2.
-      apply H0.
-      lia.
-
-      intros.
-      apply r_ret.
-      intros. rewrite addn1. apply H3.
+      {
+        apply H2.
+        apply H0.
+        lia.
+      }
+      {
+        intros.
+        apply r_ret.
+        intros. rewrite addn1. apply H4.
+      }
     - rewrite <- foldi__move_S.
       rewrite unfold_translate_for.
 
       apply better_r_put_lhs.
       setoid_rewrite bind_rewrite.
-      apply r_bind with (mid := λ '(_, h0) '(v1, h1), (pre (j.+1) (ct_T v1)) (h0, h1)).
+      apply r_bind with (mid := λ '(_, h0) '(v1, h1), (inv (j.+1) (ct_T v1) ((h0, h1)) /\ (pre (j.+1) (ct_T v1) (h0, h1)))).
 
       2:{
         intros.
@@ -660,14 +670,22 @@ Section Hacspec.
 
         apply better_r.
         unfold ".1".
-        pose (IHd ltac:(easy) (id' s_id) H3 (ct_T a₁) j.+1).
+        pose (IHd ltac:(easy) (id' s_id) H4 (ct_T a₁) j.+1 ).
         rewrite <- addSnnS.
-        apply r.
 
-        intros.
-        apply H2.
-        apply H4.
-        lia.
+        (* eapply rpre_weak_hypothesis_rule'. *)
+        (* intros ? ? []. *)
+        (* eapply rpre_weaken_rule. *)
+        (* 2:{ intros ? ? []. apply H8. }. *)
+        (* clear H6. *)
+
+        apply r ; clear r.
+        {
+          intros.
+          apply H2.
+          apply H5.
+          lia.
+        }
       }
       unfold ".2".
       apply H2.
@@ -1641,8 +1659,8 @@ Section Hacspec.
         is_state (keys_expand rkey)
         ⦃ fun '(v0, h0) '(v1, h1) =>
             (exists o1, v0 = [('array; o1)]
-                   /\ (((chArray_get U128 o1 10 (wsize_size U128))
-    = is_pure (seq_index (A := @int U128) v1 (lift_to_both0 (repr 10))))))  /\ pre (h0, h1) ⦄.
+                   /\ (forall k, k <= 10 -> ((chArray_get U128 o1 k (wsize_size U128))
+    = is_pure (seq_index (A := @int U128) v1 (lift_to_both0 (repr k))))))  /\ pre (h0, h1) ⦄.
   Proof.
     intros H_pdisj.
     set (JKEYS_EXPAND _ _).
@@ -1653,7 +1671,6 @@ Section Hacspec.
     simpl in r.
     subst r.
     rewrite !zero_extend_u.
-
 
     apply better_r, r_put_lhs, better_r.
     remove_get_in_lhs.
@@ -1682,21 +1699,25 @@ Section Hacspec.
     end.
     Transparent is_state. Transparent is_pure.
 
+    set (Hacspec_Lib_Pre.seq_new_ _ _).
+
+    rewrite !zero_extend_u.
+    rewrite !coerce_to_choice_type_K.
+
     rewrite bind_rewrite.
     apply better_r_put_rhs.
     rewrite bind_rewrite.
 
 
     apply better_r_put_rhs.
+    set (temp2 := repr 0) at 1 2.
     apply better_r_put_rhs.
     apply better_r_put_lhs.
 
     set (tr_app_sopn_tuple _ _ _).
     cbn in s.
-    set (repr 0) at 8.
-    assert (s = t) by now apply word_ext.
+    assert (s = temp2) by now apply word_ext.
     generalize dependent s.
-    generalize dependent t.
     intros.
     subst.
 
@@ -1713,238 +1734,660 @@ Section Hacspec.
 
     rewrite bind_assoc.
 
-    rewrite !coerce_to_choice_type_K.
-    rewrite !zero_extend_u.
+    (* rewrite !coerce_to_choice_type_K. *)
+    (* rewrite !zero_extend_u. *)
 
     set (set_lhs _ _ _).
-    set (Hacspec_Lib_Pre.seq_push _ _) in *.
-    set (set_lhs ($$"rkeys.335") _) in p.
-    pattern 0%Z in p0.
-    set 0%Z in p0.
-    subst p0.
-    pattern (t0) in p.
+
+    set (gl := _).
+
+    subst t.
+    (* set (set_lhs ($$"rkeys.335") _) in p. *)
+    (* pattern 0%Z in p0. *)
+    (* set 0%Z in p0. *)
+    (* subst p0. *)
+    pattern (rkey) in p.
     set (fun _ => _) in p.
-    pattern (rkey) in y.
+    set (rkeys := Hacspec_Lib_Pre.seq_push _ _) in *.
+    pattern (rkeys) in y.
     set (fun _ => _) in y.
     subst y.
-    pattern (t) in y0.
+    pattern (temp2) in y0.
     set (fun _ => _) in y0.
     subst y0.
-    pattern (z) in y.
-    set (fun _ => _) in y.
+    (* pattern (z) in y. *)
+    (* set (fun _ => _) in y. *)
+    (* subst y. *)
+    (* rename y into y0. *)
+    pose (p0 := fun (n : nat) '(rkeys, rkey, temp2) => y temp2 rkeys rkey).
+    (* subst y0. *)
     subst y.
-    pose (fun n '(t0, rkey, t) => y0 n t rkey t0).
-    replace p with (p0 0 (t0, rkey, t)) by reflexivity.
+    subst gl.
+    replace p with (p0 0 (rkeys, rkey, temp2)) by reflexivity.
+    subst p.
 
-    eapply (@r_bind _ _ _ _ _ _ _ _ _ (λ '(v0, h0) '(v1, h1), (p0 10 v1) (h0, h1))).
+    pose (fun n v1 '(s₀, s₁) =>
+            ⊢ ⦃ fun '(h0 , h1) => (p0 n v1) (s₀ , s₁) -> (p0 n v1) (h0 , h1) ⦄
+            v ← get (translate_var id0
+                {| vtype := sarr 176; vname := "rkeys.335" |}) ;;
+            ret (trunc_list [sarr 176] [totce v]) ≈
+            ret ((fst (fst v1)))
+            ⦃ λ '(v0, h0) '(v1, h1),
+      (exists o1, v0 = [('array; o1)]
+       /\ (forall k, k <= n ->
+        ((chArray_get U128 o1 k (wsize_size U128))
+    = is_pure (seq_index (A := @int U128) v1 (lift_to_both0 (repr k)))))) /\ pre (h0, h1) ⦄).
+
+    apply rpre_weaken_rule with (pre := (λ '(h0, h1), (P 0 (rkeys, rkey, temp2) (h0, h1)) /\ (p0 0 (rkeys, rkey, temp2)) (h0, h1))).
     2:{
-      intros.
-      subst p.
-      subst p0.
-      set 10.
-      subst y0.
+      subst P.
       hnf.
-      destruct a₁.
-      destruct s.
-      rewrite bind_rewrite.
-
-      apply better_r_get_remind_lhs with (v := chArray_set x AAscale n s1).
-      unfold Remembers_lhs , rem_lhs.
       intros ? ? ?.
+      split ; [ | apply H ].
+      apply rpre_hypothesis_rule'.
+      intros ? ? ?.
+      eapply rpre_weaken_rule.
+      2:{ intros ? ? [].  subst. apply H0. apply H. } clear H.
+      subst p0 ; hnf.
+
+      apply better_r.
+      apply r_get_remind_lhs with (v := chArray_set x AAscale 0 rkey).
+      unfold Remembers_lhs.
+      intros.
+      destruct_pre.
+      repeat (rewrite get_set_heap_neq ; [ | apply injective_translate_var3 ; reflexivity ]).
       destruct_pre.
       repeat (rewrite get_set_heap_neq ; [ | apply injective_translate_var3 ; reflexivity ]).
       rewrite get_set_heap_eq.
       reflexivity.
-      rewrite ct_T_prod_propegate.
-      rewrite ct_T_prod_propegate.
-
-      unfold trunc_list.
-      unfold map.
-      unfold zip.
-      unfold totce.
-      unfold jasmin_translate.encode.
-      unfold truncate_el.
-      rewrite !coerce_to_choice_type_K.
-      unfold ".π2".
-
       apply r_ret.
       intros.
+      destruct_pre.
+      destruct_pre.
       split.
-      {
-        destruct_pre.
-        eexists.
+      - eexists.
         split.
-        - repeat (rewrite get_set_heap_neq ; [ | apply injective_translate_var3 ; reflexivity ]).
-          reflexivity.
-        - intros.
-          set (get_heap H11 ($$"rkeys.335")).
-          simpl in s2.
-          pose (chArray_get_set_eq U128 s2 10 s1).
-          rewrite e.
-          admit.
-      }
-      {
-        destruct_pre.
-        pdisj_apply H_pdisj.
-        - rewrite in_fset.
+        reflexivity.
+        intros [] ; [ | discriminate ]. intros _.
+        simpl.
+        repeat (rewrite get_set_heap_neq ; [ | apply injective_translate_var3 ; reflexivity ]).
+        rewrite !coerce_to_choice_type_K.
+        pose chArray_get_set_eq.
+        rewrite e.
+        subst rkeys.
+        reflexivity.
+      - pdisj_apply H_pdisj.
+        + rewrite in_fset.
           now rewrite mem_head.
-        - rewrite in_fset.
+        + rewrite in_fset.
           rewrite in_cons ; simpl.
           now rewrite mem_head.
-        - rewrite in_fset.
+        + rewrite in_fset.
           rewrite in_cons ; simpl.
           rewrite in_cons ; simpl.
           rewrite mem_head.
           now rewrite Bool.orb_true_r.
-        - rewrite in_fset.
+        + rewrite in_fset.
           now rewrite mem_head.
-      }
     }
 
-    (* simpl. *)
+    eapply (r_bind) with (mid := (λ '(v0, h0) '(v1, h1), P 10 v1 (h0, h1) /\ (p0 10 v1) (h0, h1))).
+    2:{
+      intros.
+      subst P.
+      destruct a₁.
+      destruct s.
+      rewrite ct_T_prod_propegate.
+      rewrite ct_T_prod_propegate.
+      subst p0.
+      hnf.
 
-    intros.
+      rewrite bind_rewrite.
 
-    set (fun (_ : p_id) => _).
-    set (fun (_ : int_type) (_ : _ * _ * _) => _).
+      eapply rpre_weak_hypothesis_rule'.
+      intros ? ? [].
+      eapply rpre_weaken_rule.
+      2:{ intros ? ? []. apply H2. }.
+      clear H0.
+      unfold ".1" in H.
+      set (set_lhs _ _ _) in *.
+      eapply rpre_hypothesis_rule'.
+      intros.
+      eapply rpre_weaken_rule.
+      apply H.
+      intros ? ? [].
+      subst.
+      intros.
+      apply H0.
+    }
 
-    rewrite !coerce_typed_code_K.
-    rewrite bind_rewrite.
-    rewrite bind_rewrite.
-
-    unfold foldi_both', foldi_both, lift_scope, is_state at 1, lift_code_scope, prog, is_state at 1, foldi.
-    unfold foldi_pre ; replace (unsigned _ - unsigned _)%Z with 10%Z by reflexivity.
-    replace (Z.to_nat (11 - 1)) with 10 by reflexivity.
-    replace (Pos.to_nat 10) with 10 by reflexivity.
-
-    subst y1.
-    subst p.
-    subst t0.
-
-    apply (@loop_eq (seq int128 '× int '× int) _ 10 0 _ _ _ _ _ _ _ p0).
-    { easy. }
-    { apply preceq_I. }
-    { intros. etransitivity. apply preceq_O. apply preceq_O. }
     {
-    intros.
+      (* simpl. *)
 
-    subst y.
-    subst y0.
-    subst p0.
-    hnf.
+      intros.
 
-    remove_get_in_lhs.
-    rewrite bind_assoc.
-    destruct c as [? []].
-    destruct t0 as [].
+      set (fun (_ : p_id) => _).
+      set (fun (_ : int_type) (_ : _ * _ * _) => _).
 
-    set (set_lhs _ _ _).
-    eapply r_bind with (mid := λ '(v0, h0) '(v1, h1),
-                          (∃ o1 : (λ i : choice_type_choiceType, i) 'int,
-                              v0 = [('int; o1)] ∧ repr o1 = v1) ∧
-                            p (h0, h1)) ; subst p.
-    {
-      set [ _ ].
+      rewrite !coerce_typed_code_K.
+      rewrite bind_rewrite.
+      rewrite bind_rewrite.
 
-      replace (translate_call ssprove_jasmin_prog 12%positive
-                                   static_funs (s_id~1)%positive l)
-        with
-        (get_translated_static_fun ssprove_jasmin_prog 12%positive
-                                   static_funs (s_id~1)%positive l).
-      2:{
-        Transparent translate_call.
-        simpl.
-        cbn.
-        repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
-        reflexivity.
-        Opaque translate_call.
-      }
-      subst l.
-      replace (totce _)
-        with (@existT choice_type (fun t : choice_type => Choice.sort (chElement t)) chInt (Pos.of_succ_nat k)).
-      2:{
-        cbn.
-        repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
-        unfold totce.
-        rewrite Zpos_P_of_succ_nat.
-        reflexivity.
-      }
-      apply (rcon_eq (s_id~1)%positive k).
+      unfold foldi_both', foldi_both, lift_scope, is_state at 1, lift_code_scope, prog, is_state at 1, foldi.
+      unfold foldi_pre ; replace (unsigned _ - unsigned _)%Z with 10%Z by reflexivity.
+      replace (Z.to_nat (11 - 1)) with 10 by reflexivity.
+      replace (Pos.to_nat 10) with 10 by reflexivity.
+
+      (* subst rkeys. *)
+
+      apply (@loop_eq (seq int128 '× int '× int) _ 10 0 _ _ _ _ _ _ _ p0 P).
+      { easy. }
+      { apply preceq_I. }
+      { intros. etransitivity. apply preceq_O. apply preceq_O. }
       {
-        split ; [ | discriminate ].
         intros.
-        
-        destruct_pre.
-        eexists.
-        split.
-        2:{
-          rewrite [set_heap _ (translate_var s_id' v) a]set_heap_commut.
-          reflexivity.
-          (apply injective_translate_var2 ;
-                red ;
-                intros ;
-                subst ;
-                apply (precneq_I s_id)).
-          etransitivity.
-          apply H2.
-          apply H.
 
-        }
-        eexists.
-        split.
-        2:{
-          rewrite [set_heap _ (translate_var s_id' v) a]set_heap_commut.
-          reflexivity.
-          (apply injective_translate_var2 ;
-                red ;
-                intros ;
-                subst ;
-                apply (precneq_I s_id)).
-          etransitivity.
-          apply H2.
-          apply H.
+        subst y.
+        subst y0.
+        hnf.
 
-        }
-        eexists.
-        split.
-        2:{
-          rewrite [set_heap _ (translate_var s_id' v) a]set_heap_commut.
-          reflexivity.
-          (apply injective_translate_var2 ;
-                red ;
-                intros ;
-                subst ;
-                apply (precneq_I s_id)).
-          etransitivity.
-          apply H2.
-          apply H.
-        }
-        eexists.
-        split.
-        2:{
-          reflexivity.
-        }
-        eexists.
-        split.
-        2:{
-          reflexivity.
-        }
+        (* assert (pdisj (p0 k.+1 v1) id0 *)
+        (*               (fset *)
+        (*                  [(seq_choice int128; 279); (@int_choice U128; 278); *)
+        (*                   (@int_choice U128; 277)])). *)
+        (* split. intros. *)
+
         
-        split_post.
-        all: try reflexivity.
-        2:{
-          rewrite ![set_heap _ (translate_var s_id' v) a]set_heap_commut.
-          reflexivity.
-          (apply injective_translate_var2 ;
-                red ;
-                intros ;
-                subst ;
-                apply (precneq_I s_id)).
-          etransitivity.
-          apply H2.
-          apply H.
+        remove_get_in_lhs.
+        rewrite bind_assoc.
+        destruct c as [? []].
+        destruct t as [].
+
+        set (set_lhs _ _ _).
+        eapply r_bind with (mid := λ '(v0, h0) '(v1, h1),
+                              (∃ o1 : (λ i : choice_type_choiceType, i) 'int,
+                                  v0 = [('int; o1)] ∧ repr o1 = v1) ∧
+                                p (h0, h1)) ; subst p.
+        {
+          set [ _ ].
+
+          replace (translate_call ssprove_jasmin_prog 12%positive
+                                  static_funs (s_id~1)%positive l)
+            with
+            (get_translated_static_fun ssprove_jasmin_prog 12%positive
+                                       static_funs (s_id~1)%positive l).
+          2:{
+            Transparent translate_call.
+            simpl.
+            cbn.
+            repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
+            reflexivity.
+            Opaque translate_call.
+          }
+          subst l.
+          replace (totce _)
+            with (@existT choice_type (fun t : choice_type => Choice.sort (chElement t)) chInt (Pos.of_succ_nat k)).
+          2:{
+            cbn.
+            repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
+            unfold totce.
+            rewrite Zpos_P_of_succ_nat.
+            reflexivity.
+          }
+          apply (rcon_eq (s_id~1)%positive k).
+          {
+            split ; [ | discriminate ].
+            intros.
+
+            destruct_pre.
+            eexists.
+            split.
+            2:{
+              rewrite ![set_heap _ (translate_var s_id' v) a]set_heap_commut ;
+              (reflexivity ||
+                 (apply injective_translate_var2 ;
+                  red ;
+                  intros ;
+                  subst ;
+                  apply (precneq_I s_id) ;
+                  etransitivity ; [ apply H2 | apply H] )).
+            }
+            split.
+            {
+              set (set_lhs _ _ _ ) in *.
+              eapply rpre_weaken_rule.
+              apply H6. clear H6.
+              hnf.
+              intros.
+              apply H1 ; clear H1.
+              clear H7.
+              subst p.
+              destruct_pre.
+              eexists ; split.
+              2:{
+                rewrite set_heap_commut.
+                reflexivity.
+                (apply injective_translate_var2 ;
+                 red ;
+                 intros ;
+                 subst ;
+                 apply (precneq_I s_id)).
+                etransitivity.
+                apply H2.
+                apply H.
+              }
+              eexists ; split.
+              2:{
+                rewrite set_heap_commut.
+                reflexivity.
+                (apply injective_translate_var2 ;
+                 red ;
+                 intros ;
+                 subst ;
+                 apply (precneq_I s_id)).
+                etransitivity.
+                apply H2.
+                apply H.
+              }
+              eexists ; split.
+              2:{
+                reflexivity.
+              }
+              eexists ; split.
+              2:{
+                reflexivity.
+              }
+              eexists ; split.
+              2:{
+                reflexivity.
+              }
+              eexists ; split.
+              2:{
+                reflexivity.
+              }
+              split.
+              eexists ; split.
+              2:{
+                rewrite set_heap_commut.
+                reflexivity.
+                (apply injective_translate_var2 ;
+                 red ;
+                 intros ;
+                 subst ;
+                 apply (precneq_I s_id)).
+                etransitivity.
+                apply H2.
+                apply H.
+              }
+              eapply H_pdisj.
+              reflexivity.
+              etransitivity.
+              apply H.
+              etransitivity.
+              apply preceq_I.
+              apply H2.
+              eapply H18.
+
+              simpl.
+              rewrite get_set_heap_neq.
+              reflexivity.
+              (apply injective_translate_var2 ;
+                 red ;
+                 intros ;
+                 subst ;
+                 apply (precneq_I s_id)).
+                etransitivity.
+                apply H2.
+                apply H.
+            }
+            destruct_pre.
+            eexists ; split.
+            2:{
+              rewrite <- set_heap_commut.
+              reflexivity.
+              (apply injective_translate_var2 ;
+               red ;
+               intros ;
+               subst ;
+               apply (precneq_I s_id)).
+              etransitivity.
+              apply H2.
+              apply H.
+            }
+            eexists ; split.
+            2:{
+              rewrite <- set_heap_commut.
+              reflexivity.
+              (apply injective_translate_var2 ;
+               red ;
+               intros ;
+               subst ;
+               apply (precneq_I s_id)).
+              etransitivity.
+              apply H2.
+              apply H.
+            }
+            eexists ; split.
+            2:{
+              reflexivity.
+            }
+            eexists ; split.
+            2:{
+              reflexivity.
+            }
+            eexists ; split.
+            2:{
+              reflexivity.
+            }
+            eexists ; split.
+            2:{
+              reflexivity.
+            }
+            split.
+            eexists ; split.
+            2:{
+              rewrite <- set_heap_commut.
+              reflexivity.
+              (apply injective_translate_var2 ;
+               red ;
+               intros ;
+               subst ;
+               apply (precneq_I s_id)).
+              etransitivity.
+              apply H2.
+              apply H.
+            }
+            pdisj_apply H_pdisj.
+            etransitivity.
+            apply H.
+            etransitivity.
+            apply preceq_I.
+            apply H2.
+            simpl.
+            rewrite get_set_heap_neq.
+            reflexivity.
+            (apply injective_translate_var2 ;
+               red ;
+               intros ;
+               subst ;
+             apply (precneq_I s_id)).
+            etransitivity.
+            apply H2.
+            apply H.
+          }            
+          easy.
         }
+
+        intros.
+        apply rpre_hypothesis_rule.
+        intros.
+        destruct H1.
+        destruct H1.
+        destruct H1.
+        eapply rpre_weaken_rule.
         2:{
+          intros ? ? []. subst.
+          apply H2.
+        }
+        clear H2.
+        rewrite H1.
+        rewrite <- H3.
+        clear H1 H3.
+        apply better_r_put_lhs.
+        remove_get_in_lhs.
+        subst p0.
+        remove_get_in_lhs.
+        remove_get_in_lhs. fold @bind.
+
+        rewrite bind_assoc.
+        set (set_lhs _ _ _).
+        eapply r_bind with (mid := λ '(v0, h0) '(v1, h1),
+                              (∃ o1 o2 : 'word U128,
+                                  v0 = [('word U128; o1); ('word U128; o2)] ∧ (o1, o2) = v1)
+                              ∧ p (h0, h1)).
+        {
+
+          pose (key_expand_eq (s_id~0~1)%positive x0 t0  (mkWord (nbits:=U128) (toword:=toword) i)  p).
+          unfold JKEY_EXPAND in r.
+
+          replace (translate_call _ _ _ _ _)
+            with
+            (get_translated_static_fun ssprove_jasmin_prog 11%positive
+                                       static_funs (s_id~0~1)%positive [('int; x0); ('word U128; t0); ('word U128; (mkWord (nbits:=U128) (toword:=toword) i))]).
+          2:{
+            Transparent translate_call.
+            simpl.
+            cbn.
+            repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
+            rewrite !zero_extend_u.
+            reflexivity.
+            Opaque translate_call.
+          }
+          unfold lift_to_both0.
+
+          unfold is_pure.
+          unfold lift_to_both.
+          unfold repr.
+          apply r.
+
+          split ; [ | discriminate].
+          intros.
+          subst p.
+          destruct_pre.
+          eexists.
+          split.
+          2:{
+            rewrite [set_heap _ (translate_var s_id' v) a]set_heap_commut.
+            reflexivity.
+            (apply injective_translate_var2 ;
+             red ;
+             intros ;
+             subst ;
+             apply (precneq_O s_id)).
+            etransitivity.
+            apply preceq_I.
+            etransitivity.
+            apply H2.
+            apply H.
+          }
+          eexists.
+          split.
+          2:{
+            rewrite [set_heap _ (translate_var s_id' v) a]set_heap_commut.
+            reflexivity.
+            (apply injective_translate_var2 ;
+             red ;
+             intros ;
+             subst ;
+             apply (precneq_O s_id)).
+            etransitivity.
+            apply preceq_I.
+            etransitivity.
+            apply H2.
+            apply H.
+          }
+          split.
+          {
+            set (set_lhs _ _ _ ) in *.
+            eapply rpre_weaken_rule.
+            apply H8. clear H8.
+            hnf.
+            intros.
+            apply H1 ; clear H1.
+            subst p.
+            destruct_pre.
+            eexists ; split.
+            2:{
+              rewrite set_heap_commut.
+              reflexivity.
+              (apply injective_translate_var2 ;
+               red ;
+               intros ;
+               subst ;
+               apply (precneq_O s_id)).
+              etransitivity.
+              apply preceq_I.
+              etransitivity.
+              apply H2.
+              apply H.
+            }
+            eexists ; split.
+            2:{
+              rewrite set_heap_commut.
+              reflexivity.
+              (apply injective_translate_var2 ;
+               red ;
+               intros ;
+               subst ;
+               apply (precneq_O s_id)).
+              etransitivity.
+              apply preceq_I.
+              etransitivity.
+              apply H2.
+              apply H.
+            }
+            eexists ; split.
+            2:{
+              reflexivity.
+            }
+            eexists ; split.
+            2:{
+              reflexivity.
+            }
+            eexists ; split.
+            2:{
+              reflexivity.
+            }
+            eexists ; split.
+            2:{
+              reflexivity.
+            }
+            split.
+            eexists ; split.
+            2:{
+              rewrite set_heap_commut.
+              reflexivity.
+              (apply injective_translate_var2 ;
+               red ;
+               intros ;
+               subst ;
+               apply (precneq_O s_id)).
+              etransitivity.
+              apply preceq_I.
+              etransitivity.
+              apply H2.
+              apply H.
+            }
+            eapply H_pdisj.
+            reflexivity.
+            etransitivity.
+            apply H.
+            etransitivity.
+            apply preceq_O.
+            etransitivity.
+            apply preceq_I.
+            apply H2.
+            eapply H23.
+
+            simpl.
+            rewrite get_set_heap_neq.
+            reflexivity.
+            (apply injective_translate_var2 ;
+             red ;
+             intros ;
+             subst ;
+             apply (precneq_O s_id)).
+            etransitivity.
+            apply preceq_I.
+            etransitivity.
+            apply H2.
+            apply H.
+          }
+          eexists.
+          split.
+          2:{
+            rewrite [set_heap _ (translate_var s_id' v) a]set_heap_commut.
+            reflexivity.
+            (apply injective_translate_var2 ;
+             red ;
+             intros ;
+             subst ;
+             apply (precneq_O s_id)).
+            etransitivity.
+            apply preceq_I.
+            etransitivity.
+            apply H2.
+            apply H.
+          }
+          eexists.
+          split.
+          2:{
+            rewrite [set_heap _ (translate_var s_id' v) a]set_heap_commut.
+            reflexivity.
+            (apply injective_translate_var2 ;
+             red ;
+             intros ;
+             subst ;
+             apply (precneq_O s_id)).
+            etransitivity.
+            apply preceq_I.
+            etransitivity.
+            apply H2.
+            apply H.
+          }
+
+          eexists.
+          split.
+          2:{
+            reflexivity.
+          }.
+
+          eexists.
+          split.
+          2:{
+            reflexivity.
+          }.
+
+          eexists.
+          split.
+          2:{
+            reflexivity.
+          }.
+
+          eexists.
+          split.
+          2:{
+            reflexivity.
+          }
+
+          split.
+          eexists.
+          split.
+          2:{
+            rewrite [set_heap _ (translate_var s_id' v) a]set_heap_commut.
+            reflexivity.
+            (apply injective_translate_var2 ;
+             red ;
+             intros ;
+             subst ;
+             apply (precneq_O s_id)).
+            etransitivity.
+            apply preceq_I.
+            etransitivity.
+            apply H2.
+            apply H.
+          }
+          eapply H_pdisj.
+          reflexivity.
+          etransitivity.
+          apply H.
+          etransitivity.
+          apply preceq_O.
+          etransitivity.
+          apply preceq_I.
+          apply H2.
+          apply H23.
+
           rewrite ![set_heap _ (translate_var s_id' v) a]set_heap_commut.
           repeat (rewrite get_set_heap_neq ; [ | apply injective_translate_var3 ; reflexivity ]).
           symmetry.
@@ -1953,259 +2396,181 @@ Section Hacspec.
           rewrite get_set_heap_neq.
           reflexivity.
           (apply injective_translate_var2 ;
-                red ;
-                intros ;
-                subst ;
-                apply (precneq_I s_id)).
+           red ;
+           intros ;
+           subst ;
+           apply (precneq_O s_id)).
+          etransitivity.
+          apply preceq_I.
           etransitivity.
           apply H2.
           apply H.
           (apply injective_translate_var2 ;
-                red ;
-                intros ;
-                subst ;
-                apply (precneq_I s_id)).
+           red ;
+           intros ;
+           subst ;
+           apply (precneq_O s_id)).
+          etransitivity.
+          apply preceq_I.
           etransitivity.
           apply H2.
           apply H.
         }
 
-        pdisj_apply H_pdisj.
-        etransitivity.
-        apply H.
-        etransitivity.
-        apply preceq_I.
-        apply H2.
-      }
-      easy.
-    }
-
-    intros.
-    apply rpre_hypothesis_rule.
-    intros.
-    destruct H1.
-    destruct H1.
-    destruct H1.
-    eapply rpre_weaken_rule.
-    2:{
-      intros ? ? []. subst.
-      apply H2.
-    }
-    clear H2.
-    rewrite H1.
-    rewrite <- H3.
-    clear H1 H3.
-    apply better_r_put_lhs.
-    remove_get_in_lhs.
-    remove_get_in_lhs.
-    remove_get_in_lhs. fold @bind.
-
-      rewrite bind_assoc.
-      set (set_lhs _ _ _).
-      eapply r_bind with (mid := λ '(v0, h0) '(v1, h1),
-                            (∃ o1 o2 : 'word U128,
-                                v0 = [('word U128; o1); ('word U128; o2)] ∧ (o1, o2) = v1)
-                            ∧ p (h0, h1)).
-      {
-
-        pose key_expand_eq.
-        unfold JKEY_EXPAND in r.
-        specialize (r (s_id~0~1)%positive x0 t1  (mkWord (nbits:=U128) (toword:=toword) i)  p).
-
-        replace (translate_call _ _ _ _ _)
-          with
-          (get_translated_static_fun ssprove_jasmin_prog 11%positive
-                                     static_funs (s_id~0~1)%positive [('int; x0); ('word U128; t1); ('word U128; (mkWord (nbits:=U128) (toword:=toword) i))]).
-        2:{
-          Transparent translate_call.
-          simpl.
-          cbn.
-          repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
-          rewrite !zero_extend_u.
-          reflexivity.
-          Opaque translate_call.
-        }
-        unfold lift_to_both0.
-
-        unfold is_pure.
-        unfold lift_to_both.
-        unfold repr.
-        apply r.
-        
-        split ; [ | discriminate].
         intros.
+        apply rpre_hypothesis_rule.
+        intros.
+        destruct H1.
+        destruct H1.
+        destruct H1.
+        eapply rpre_weaken_rule.
+        2:{
+          intros ? ? []. subst.
+          apply H2.
+        }
+        clear H2.
+        destruct H1.
+        destruct a₁0.
+        rewrite ct_T_prod_propegate.
+        simpl.
+        inversion H2.
+        subst.
+        clear H2.
+        apply better_r_put_lhs ; fold @bind.
+        apply better_r_put_lhs ; fold @bind.
+        simpl in p.
         subst p.
+        rewrite !coerce_to_choice_type_K.
+        (* rewrite !zero_extend_u. *)
+        remove_get_in_lhs.
+        apply better_r. eapply r_get_remember_lhs. intros.
+        remove_get_in_lhs.
+
+        rewrite !coerce_to_choice_type_K.
+        rewrite !zero_extend_u.
+        apply better_r_put_lhs.
+
+
+        apply better_r_put_rhs.
+        apply better_r_put_rhs.
+        apply better_r_put_rhs.
+
+        apply r_ret.
+        intros.
         destruct_pre.
-        eexists.
+        rewrite !ct_T_id.
+        repeat remove_T_ct.
+        rewrite !zero_extend_u.
+
+        destruct_pre.
         split.
-        2:{
-          rewrite [set_heap _ (translate_var s_id' v) a]set_heap_commut.
-          reflexivity.
-          (apply injective_translate_var2 ;
-                red ;
-                intros ;
-                subst ;
-                apply (precneq_O s_id)).
-          etransitivity.
-          apply preceq_I.
-          etransitivity.
-          apply H2.
-          apply H.
+        {
+          admit.
         }
         eexists.
         split.
         2:{
-          rewrite [set_heap _ (translate_var s_id' v) a]set_heap_commut.
+          rewrite set_heap_commut.
           reflexivity.
-          (apply injective_translate_var2 ;
-                red ;
-                intros ;
-                subst ;
-                apply (precneq_O s_id)).
-          etransitivity.
-          apply preceq_I.
-          etransitivity.
-          apply H2.
-          apply H.
-        }        
+          apply injective_translate_var3.
+          easy.
+        }
         eexists.
         split.
         2:{
-          rewrite [set_heap _ (translate_var s_id' v) a]set_heap_commut.
-          reflexivity.
-          (apply injective_translate_var2 ;
-                red ;
-                intros ;
-                subst ;
-                apply (precneq_O s_id)).
-          etransitivity.
-          apply preceq_I.
-          etransitivity.
-          apply H2.
-          apply H.
-        }          
+          repeat (rewrite get_set_heap_neq ; [ | apply injective_translate_var3 ; reflexivity ]).
+          rewrite get_set_heap_eq.
+          admit.
+        }
         eexists.
         split.
         2:{
-          rewrite [set_heap _ (translate_var s_id' v) a]set_heap_commut.
           reflexivity.
-          (apply injective_translate_var2 ;
-                red ;
-                intros ;
-                subst ;
-                apply (precneq_O s_id)).
-          etransitivity.
-          apply preceq_I.
-          etransitivity.
-          apply H2.
-          apply H.
         }
 
         eexists.
         split.
         2:{
           reflexivity.
-        }.
-
-        eexists.
-        split.
-        2:{
-          reflexivity.
-        }.
-
-        eexists.
-        split.
-        2:{
-          reflexivity.
-        }.
-        
+        }
         eexists.
         split.
         2:{
           reflexivity.
         }
-
-        split.
-        eexists.
+        exists ( set_heap
+    (set_heap
+       ((set_heap H29 (int_choice; 277) t1)
+          ) (int_choice; 278)
+       (mkWord (nbits:=U128) (toword:=toword) i))
+    (seq_choice int128; 279) t0).
         split.
         2:{
-          rewrite [set_heap _ (translate_var s_id' v) a]set_heap_commut.
+          symmetry.
+          rewrite set_heap_commut.
+          f_equal.
+          rewrite set_heap_commut.
+          f_equal.
+          rewrite set_heap_commut.
           reflexivity.
+          easy.
+          easy.
+
           (apply injective_translate_var2 ;
-                red ;
-                intros ;
-                subst ;
-                apply (precneq_O s_id)).
+           red ;
+           intros ;
+           subst ;
+           apply (precneq_O s_id)).
           etransitivity.
           apply preceq_I.
           etransitivity.
           apply H2.
           apply H.
+          (apply injective_translate_var2 ;
+           red ;
+           intros ;
+           subst ;
+           apply (precneq_O s_id)).
+          etransitivity.
+          apply preceq_I.
+          etransitivity.
+          apply H2.
+          apply H.
+
+
         }
-        eapply H_pdisj.
-        reflexivity.
-        etransitivity.
-        apply H.
-        etransitivity.
-        apply preceq_O.
+        split.
+        eexists.
+        split.
+        2:{
+          reflexivity.
+        }
+        2:{
+          repeat (rewrite get_set_heap_neq ; [ | apply injective_translate_var3 ; reflexivity ]).
+          reflexivity.
+        }
+
+
+
+
+        (apply injective_translate_var2 ;
+         red ;
+         intros ;
+         subst ;
+         apply (precneq_O s_id)).
         etransitivity.
         apply preceq_I.
+        etransitivity.
         apply H2.
-        apply H22.
-        
-        all: try reflexivity.
-        apply H22.
-        admit.
+        apply H.
       }
 
 
-      intros.
-      apply rpre_hypothesis_rule.
-      intros.
-      destruct H1.
-      destruct H1.
-      destruct H1.
-      eapply rpre_weaken_rule.
-      2:{
-        intros ? ? []. subst.
-        apply H2.
-      }
-      clear H2.
-      destruct H1.
-      destruct a₁0.
-      rewrite ct_T_prod_propegate.
-      simpl.
-      inversion H2.
-      subst.
-      clear H2.
-      apply better_r_put_lhs ; fold @bind.
-      apply better_r_put_lhs ; fold @bind.
-      simpl in p.
-      subst p.
-      rewrite !coerce_to_choice_type_K.
-      (* rewrite !zero_extend_u. *)
-      remove_get_in_lhs.
-      apply better_r. eapply r_get_remember_lhs. intros.
-      remove_get_in_lhs.
 
-      rewrite !coerce_to_choice_type_K.
-      rewrite !zero_extend_u.
-      apply better_r_put_lhs.
-
-
-      apply better_r_put_rhs.
-      apply better_r_put_rhs.
-      apply better_r_put_rhs.
-
-      apply r_ret.
-      intros.
-      destruct_pre.
-      rewrite !ct_T_id.
-      repeat remove_T_ct.
-      rewrite !zero_extend_u.
 
       admit.
     }
+
   Admitted.
 
   Lemma aes_enc_eq id0 state key (pre : precond) :
