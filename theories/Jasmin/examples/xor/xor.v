@@ -600,11 +600,10 @@ Section JasminHacspec.
 
     rewrite !zero_extend_u.
     rewrite coerce_to_choice_type_K.
-    eapply r_put_vs_put with (pre := fun _ => _).
-    repeat eapply r_put_vs_put.
+    eapply r_put_lhs with (pre := fun _ => _).
+    repeat eapply r_put_lhs.
     Transparent Hacspec_Lib.lift3_both.
     simpl.
-    eapply r_put_rhs.
     eapply r_ret.
     easy.
   Qed.
