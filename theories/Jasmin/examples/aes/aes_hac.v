@@ -40,6 +40,8 @@ Ltac Zify.zify_post_hook ::= Z.div_mod_to_equations.
 
 Section Hacspec.
 
+(*** Helper definitions *)
+
   (* NB: this redefines neq_loc_auto, which helps some tactics, since checking for inequality by computation is not feasible for translated variables *)
   Ltac neq_loc_auto ::= solve [ eapply injective_translate_var3; auto | eapply injective_translate_var2; auto ].
 
@@ -343,13 +345,6 @@ Section Hacspec.
     apply Z_shiftl_mod_modulus_add.
   Qed.
 
-  (* Lemma Z_shiftr_mod_modulus : forall n m p, (m <= p) -> (Z.shiftr n (Z.of_nat m) mod modulus p = (n mod modulus (p - m)) / modulus m)%Z. *)
-  (* Proof. *)
-  (*   intros. *)
-  (*   replace p with (p - m + m) at 1 by now rewrite <- (subn_diag p m H). *)
-  (*   replace (m) with (0 + m) at 1 by reflexivity. *)
-  (* Admitted. *)
-
   Ltac solve_lower_bounds :=
     (simple apply Z.mul_nonneg_nonneg || simple apply Zle_0_pos || simple apply Z_mod_nonneg_nonneg || simple apply Nat2Z.is_nonneg || simple apply modulus_ge0_Z || simple apply (fun x y => proj2 (Z.shiftr_nonneg x y)) || simple apply (fun x y => proj2 (Z.shiftl_nonneg x y)) || simple apply word_geZ0 || (apply Z.lor_nonneg ; solve_upper_bound))
       with
@@ -405,6 +400,283 @@ Section Hacspec.
       + easy.
     - easy.
   Qed.
+
+  Definition pdisj (P : precond) (s_id : p_id) (rhs : {fset Location}) :=
+    (forall h1 h2 l a v s_id', l = translate_var s_id' v -> (s_id ⪯ s_id') -> (P (h1, h2) -> P (set_heap h1 l a, h2))) /\
+      (forall h1 h2 l a, l \in rhs -> (P (h1, h2) -> P (h1, set_heap h2 l a))).
+
+  Ltac solve_in :=
+    repeat match goal with
+           | |- is_true (?v \in fset1 ?v :|: _) => apply/fsetU1P; left; auto
+           | |- is_true (_ \in fsetU _ _) => apply/fsetU1P; right
+           end.
+
+  Ltac pdisj_apply h :=
+    lazymatch goal with
+    | |- ?pre (set_heap _ _ _, set_heap _ _ _) => eapply h; [ solve_in | pdisj_apply h ]
+    | |- ?pre (set_heap _ _ _, _) =>
+        eapply h ; [ reflexivity | auto with preceq | pdisj_apply h ]
+    | |- _ => try assumption
+    end.
+
+
+  Ltac bind_jazz_bind :=
+    match goal with
+    | [ |- context [ ⊢ ⦃ ?P ⦄ putr ?l ?y ?g ≈ bind ?a ?f ⦃ ?Q ⦄ ] ] =>
+        let yv := fresh in
+        let gv := fresh in
+        let av := fresh in
+        let fv := fresh in
+        set l
+        ; set (yv := y)
+        ; set (gv := g)
+        ; set (av := a)
+        ; set (fv := f)
+        ; apply (r_bind (ret yv) (av) (fun x => putr l x gv) fv P (fun '(v0, h0) '(v1, h1) => v0 = v1 /\ P (h0, h1)) Q) ; [ | intros ]
+        ; subst yv gv av fv ; hnf
+    end.
+
+  Theorem rpre_hypothesis_rule' :
+    ∀ {A₀ A₁ : _} {p₀ : raw_code A₀} {p₁ : raw_code A₁}
+      (pre : precond) post,
+      (∀ s₀ s₁,
+          pre (s₀, s₁) → ⊢ ⦃ λ '(s₀', s₁'), s₀' = s₀ ∧ s₁' = s₁ ⦄ p₀ ≈ p₁ ⦃ post ⦄
+      ) →
+      ⊢ ⦃ pre ⦄ p₀ ≈ p₁ ⦃ post ⦄.
+  Proof.
+    intros A₀ A₁ p₀ p₁ pre post h.
+    eapply rpre_hypothesis_rule.
+    intros s0 s1 H. eapply rpre_weaken_rule.
+    eapply h.
+    eassumption.
+    easy.
+  Qed.
+
+  Theorem rpre_weak_hypothesis_rule' :
+    ∀ {A₀ A₁ : _} {p₀ : raw_code A₀} {p₁ : raw_code A₁}
+      (pre : precond) post,
+      (∀ s₀ s₁,
+          pre (s₀, s₁) → ⊢ ⦃ λ '(s0, s1), pre (s0, s1) ⦄ p₀ ≈ p₁ ⦃ post ⦄
+      ) →
+      ⊢ ⦃ pre ⦄ p₀ ≈ p₁ ⦃ post ⦄.
+  Proof.
+    intros A₀ A₁ p₀ p₁ pre post h.
+    eapply rpre_hypothesis_rule'.
+    intros. eapply rpre_weaken_rule.
+    eapply h. eassumption.
+    intros s0' s1' [H0 H1].
+    subst.
+    assumption.
+  Qed.
+
+  Corollary better_r_put_rhs : forall {A B : choice.Choice.type} (ℓ : Location)
+                                 (v : choice.Choice.sort (Value (projT1 ℓ))) (r₀ : raw_code A)
+                                 (r₁ : raw_code B) (pre : precond)
+                                 (post : postcond (choice.Choice.sort A) (choice.Choice.sort B)),
+      ⊢ ⦃ set_rhs ℓ v pre ⦄ r₀ ≈ r₁ ⦃ post ⦄ ->
+      ⊢ ⦃ pre ⦄ r₀ ≈ #put ℓ := v ;; r₁ ⦃ post ⦄.
+  Proof.
+    intros.
+    eapply rpre_hypothesis_rule.
+    intros.
+    eapply rpre_weaken_rule.
+    apply r_put_rhs.
+    apply H.
+    intuition.
+    Unshelve.
+    subst.
+    intuition.
+  Qed.
+
+  Theorem modulus_exact : forall {WS : wsize.wsize} (x : 'word WS), (0 <= x < modulus WS)%Z.
+  Proof.
+    intros.
+    destruct x.
+    cbn.
+    apply (ssrbool.elimT (iswordZP _ _)) in i.
+    apply i.
+  Qed.
+
+  Theorem modulus_smaller : forall (WS : wsize.wsize) (m : nat) {x : 'word WS}, (WS <= m)%Z -> (0 <= x < modulus m)%Z.
+  Proof.
+    intros.
+    destruct x.
+    cbn.
+    apply (ssrbool.elimT (iswordZP _ _)) in i.
+    split.
+    - easy.
+    - eapply Z.lt_le_trans.
+      apply i.
+      rewrite modulusZE.
+      rewrite modulusZE.
+      apply (Z.pow_le_mono_r 2).
+      reflexivity.
+      apply H.
+  Qed.
+
+  Ltac match_pattern_and_bind_repr p :=
+    unfold let_both at 1, is_state at 1, prog ;
+    match goal with
+    | [ |- context [ ⊢ ⦃ ?P ⦄ ?x ≈ _ ⦃ ?Q ⦄ ] ] =>
+        let Hx := fresh in
+        set (Hx := x) ;
+        pattern p in Hx ;
+        subst Hx ;
+
+        (* Match bind and apply *)
+        match goal with
+        | [ |- context [ ⊢ ⦃ ?P ⦄ _ ≈ bind ?a ?f ⦃ ?Q ⦄ ] ] =>
+            let av := fresh in
+            let fv := fresh in
+            set (av := a)
+            ; set (fv := f)
+            ; eapply (r_bind (ret p) av _ fv P (fun '(v0, h0) '(v1, h1) => v0 = repr v1 /\ P (h0, h1)) Q)
+            ; subst av fv ; hnf ; [ | intros ; apply rpre_hypothesis_rule' ; intros ? ? [] ; apply rpre_weaken_rule with (pre := fun '(s₀, s₁) => P (s₀, s₁))
+              ]
+        end
+    end.
+
+  Ltac match_pattern_and_bind p :=
+    unfold let_both at 1, is_state at 1, prog ;
+    match goal with
+    | [ |- context [ ⊢ ⦃ ?P ⦄ ?x ≈ _ ⦃ ?Q ⦄ ] ] =>
+        let Hx := fresh in
+        set (Hx := x) ;
+        pattern p in Hx ;
+        subst Hx ;
+
+        (* Match bind and apply *)
+        match goal with
+        | [ |- context [ ⊢ ⦃ ?P ⦄ _ ≈ bind ?a ?f ⦃ ?Q ⦄ ] ] =>
+            let av := fresh in
+            let fv := fresh in
+            set (av := a)
+            ; set (fv := f)
+            ; eapply (r_bind (ret p) av _ fv P (fun '(v0, h0) '(v1, h1) => v0 = v1 /\ P (h0, h1)) Q)
+            ; subst av fv ; hnf ; [ | intros ; apply rpre_hypothesis_rule' ; intros ? ? [] ; apply rpre_weaken_rule with (pre := fun '(s₀, s₁) => P (s₀, s₁))
+              ]
+        end
+    end.
+
+  Definition unfold_translate_for : forall v j d id0 id' y,
+      (translate_for v [seq (1 + Z.of_nat i)%Z | i <- iota j (S d)] id0 y id') =
+      (translate_write_var id0 v (@existT choice_type (fun t : choice_type => Choice.sort (chElement t)) chInt (Z.of_nat (j.+1))) ;;
+      (snd (y id')) ;;
+      translate_for v [seq (1 + Z.of_nat i)%Z | i <- iota (S j) d] id0 y (fst (y id'))).
+  Proof.
+    intros.
+    assert (forall j n, [seq (1 + Z.of_nat i)%Z | i <- iota j (S n)] =
+                     ((1 + Z.of_nat j)%Z :: [seq (1 + Z.of_nat i)%Z | i <- iota (S j) n])) by reflexivity.
+    rewrite H.
+    unfold translate_for ; fold translate_for.
+    destruct (y id').
+    replace (totce (translate_value (values.Vint (1 + Z.of_nat j))))
+      with (@existT choice_type (fun t : choice_type => Choice.sort (chElement t)) chInt (Z.of_nat (j.+1))).
+    2:{
+      cbn.
+      repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
+      rewrite Zpos_P_of_succ_nat.
+      unfold Z.succ.
+      rewrite Z.add_comm.
+      reflexivity.
+    }
+    reflexivity.
+  Qed.
+
+  Theorem loop_eq :
+    forall {acc : ChoiceEquality} v d (j : nat) id0 s_id id' y I L (y0 : @int U32 -> acc -> code L I acc) (pre : _ -> precond) c,
+      (0 < d) ->
+      (forall k c s_id,
+          j <= k < j + d ->
+          ⊢ ⦃ set_lhs
+                (translate_var id0 (v_var v))
+                (@truncate_el chInt (vtype (v_var v)) (S k))
+                (pre c) ⦄
+          y s_id
+              ≈ y0 (repr (Pos.of_succ_nat k)) c
+         ⦃ λ '(_, h0) '(v1, h1), (pre (ct_T v1)) (h0, h1) ⦄) ->
+      ⊢ ⦃ (pre c) ⦄
+          (translate_for v
+                         [seq (1 + Z.of_nat i)%Z | i <- iota j d] id0 (fun id => (id' id, y id)) s_id) ≈
+          (foldi_ (I := I) (L := L) (d) (repr (S j)) y0 c )
+     ⦃ fun '(v0, h0) '(v1, h1) => (pre (ct_T v1)) (h0, h1) ⦄ .
+  Proof.
+    intros.
+    generalize dependent j.
+    generalize dependent c.
+    generalize dependent s_id.
+    induction d ; intros.
+    discriminate.
+
+    destruct d.
+    - rewrite unfold_translate_for.
+      simpl.
+      apply better_r_put_lhs.
+      setoid_rewrite T_ct_id.
+      eapply r_bind.
+      apply H0.
+      lia.
+
+      intros.
+      apply r_ret.
+      intros. apply H1.
+    - rewrite <- foldi__move_S.
+      rewrite unfold_translate_for.
+
+      apply better_r_put_lhs.
+      setoid_rewrite bind_rewrite.
+      apply r_bind with (mid := λ '(_, h0) '(v1, h1), (pre (ct_T v1)) (h0, h1)).
+
+      2:{
+        intros.
+        replace (Hacspec_Lib_Pre.int_add (repr j.+1) one)
+          with
+          (@repr U32 j.+2).
+        2:{
+          simpl.
+          cbn.
+          unfold Hacspec_Lib_Pre.int_add, add_word.
+          rewrite mkwordK.
+          cbn.
+          apply word_ext.
+          rewrite Zplus_mod.
+          rewrite Zmod_mod.
+          rewrite <- Zplus_mod.
+          f_equal.
+          now zify.
+        }
+
+        apply better_r.
+        unfold ".1".
+        pose (IHd ltac:(easy) (id' s_id) (ct_T a₁) j.+1).
+        apply r.
+
+        intros.
+        apply H0.
+        lia.
+      }
+      unfold ".2".
+      apply H0.
+      lia.
+  Qed.
+
+  Lemma nat_to_be_range_is_subword : forall {WS : wsize.wsize} {WS_inp : wsize.wsize} (n : @int WS_inp) i `{H_WS : WS <= WS_inp} , (@repr WS (nat_be_range WS (toword n) i) = word.subword (i * WS) WS n).
+  Proof.
+    intros.
+    apply word_ext.
+    cbn.
+    unfold nat_be_range.
+    replace (_ ^ WS)%Z with (modulus WS)%Z by (destruct WS ; reflexivity).
+    replace (modulus WS_inp) with (modulus (WS_inp - WS) * modulus WS)%Z by (destruct WS , WS_inp ; easy).
+    rewrite mod_pq_mod_q ; [ | easy | easy ].
+    rewrite !Zmod_mod.
+    f_equal.
+    rewrite <- Z.shiftr_div_pow2 ; [  | lia ].
+    rewrite Nat2Z.inj_mul.
+    f_equal. now zify.
+  Qed.
+
+  (*** Equality proofs *)
 
   Lemma rebuild_128_eq :
     forall (v0 v1 v2 v3 : 'word U32) ,
@@ -744,10 +1016,6 @@ Section Hacspec.
     reflexivity.
   Qed.
 
-  Definition pdisj (P : precond) (s_id : p_id) (rhs : {fset Location}) :=
-    (forall h1 h2 l a v s_id', l = translate_var s_id' v -> (s_id ⪯ s_id') -> (P (h1, h2) -> P (set_heap h1 l a, h2))) /\
-      (forall h1 h2 l a, l \in rhs -> (P (h1, h2) -> P (h1, set_heap h2 l a))).
-
   Lemma key_combined_eq id0 rcon rkey temp2 (pre : precond) :
     (pdisj pre id0 fset0) ->
     ⊢ ⦃ pre ⦄
@@ -792,8 +1060,7 @@ Section Hacspec.
     }
     {
       destruct_pre.
-      destruct H_pdisj.
-      repeat eapply H ; try easy.
+      pdisj_apply H_pdisj.
     }
 
     Unshelve.
@@ -1017,131 +1284,6 @@ Section Hacspec.
     Transparent translate_call.
   Qed.
 
-
-  Ltac bind_jazz_bind :=
-    match goal with
-    | [ |- context [ ⊢ ⦃ ?P ⦄ putr ?l ?y ?g ≈ bind ?a ?f ⦃ ?Q ⦄ ] ] =>
-        let yv := fresh in
-        let gv := fresh in
-        let av := fresh in
-        let fv := fresh in
-        set l
-        ; set (yv := y)
-        ; set (gv := g)
-        ; set (av := a)
-        ; set (fv := f)
-        ; apply (r_bind (ret yv) (av) (fun x => putr l x gv) fv P (fun '(v0, h0) '(v1, h1) => v0 = v1 /\ P (h0, h1)) Q) ; [ | intros ]
-        ; subst yv gv av fv ; hnf
-    end.
-
-  Ltac solve_in :=
-    repeat match goal with
-           | |- is_true (?v \in fset1 ?v :|: _) => apply/fsetU1P; left; auto
-           | |- is_true (_ \in fsetU _ _) => apply/fsetU1P; right
-           end.
-
-  Ltac pdisj_apply h :=
-    lazymatch goal with
-    | |- ?pre (set_heap _ _ _, set_heap _ _ _) => eapply h; [ solve_in | pdisj_apply h ]
-    | |- ?pre (set_heap _ _ _, _) =>
-        eapply h ; [ reflexivity | auto with preceq | pdisj_apply h ]
-    | |- _ => try assumption
-    end.
-
-  Theorem rpre_hypothesis_rule' :
-    ∀ {A₀ A₁ : _} {p₀ : raw_code A₀} {p₁ : raw_code A₁}
-      (pre : precond) post,
-      (∀ s₀ s₁,
-          pre (s₀, s₁) → ⊢ ⦃ λ '(s₀', s₁'), s₀' = s₀ ∧ s₁' = s₁ ⦄ p₀ ≈ p₁ ⦃ post ⦄
-      ) →
-      ⊢ ⦃ pre ⦄ p₀ ≈ p₁ ⦃ post ⦄.
-  Proof.
-    intros A₀ A₁ p₀ p₁ pre post h.
-    eapply rpre_hypothesis_rule.
-    intros s0 s1 H. eapply rpre_weaken_rule.
-    eapply h.
-    eassumption.
-    easy.
-  Qed.
-
-  Theorem rpre_weak_hypothesis_rule' :
-    ∀ {A₀ A₁ : _} {p₀ : raw_code A₀} {p₁ : raw_code A₁}
-      (pre : precond) post,
-      (∀ s₀ s₁,
-          pre (s₀, s₁) → ⊢ ⦃ λ '(s0, s1), pre (s0, s1) ⦄ p₀ ≈ p₁ ⦃ post ⦄
-      ) →
-      ⊢ ⦃ pre ⦄ p₀ ≈ p₁ ⦃ post ⦄.
-  Proof.
-    intros A₀ A₁ p₀ p₁ pre post h.
-    eapply rpre_hypothesis_rule'.
-    intros. eapply rpre_weaken_rule.
-    eapply h. eassumption.
-    intros s0' s1' [H0 H1].
-    subst.
-    assumption.
-  Qed.
-
-  Corollary better_r_put_rhs : forall {A B : choice.Choice.type} (ℓ : Location)
-                                 (v : choice.Choice.sort (Value (projT1 ℓ))) (r₀ : raw_code A)
-                                 (r₁ : raw_code B) (pre : precond)
-                                 (post : postcond (choice.Choice.sort A) (choice.Choice.sort B)),
-      ⊢ ⦃ set_rhs ℓ v pre ⦄ r₀ ≈ r₁ ⦃ post ⦄ ->
-      ⊢ ⦃ pre ⦄ r₀ ≈ #put ℓ := v ;; r₁ ⦃ post ⦄.
-  Proof.
-    intros.
-    eapply rpre_hypothesis_rule.
-    intros.
-    eapply rpre_weaken_rule.
-    apply r_put_rhs.
-    apply H.
-    intuition.
-    Unshelve.
-    subst.
-    intuition.
-  Qed.
-
-  Lemma nat_to_be_range_is_subword : forall {WS : wsize.wsize} {WS_inp : wsize.wsize} (n : @int WS_inp) i `{H_WS : WS <= WS_inp} , (@repr WS (nat_be_range WS (toword n) i) = word.subword (i * WS) WS n).
-  Proof.
-    intros.
-    apply word_ext.
-    cbn.
-    unfold nat_be_range.
-    replace (_ ^ WS)%Z with (modulus WS)%Z by (destruct WS ; reflexivity).
-    replace (modulus WS_inp) with (modulus (WS_inp - WS) * modulus WS)%Z by (destruct WS , WS_inp ; easy).
-    rewrite mod_pq_mod_q ; [ | easy | easy ].
-    rewrite !Zmod_mod.
-    f_equal.
-    rewrite <- Z.shiftr_div_pow2 ; [  | lia ].
-    rewrite Nat2Z.inj_mul.
-    f_equal. now zify.
-  Qed.
-
-  Theorem modulus_exact : forall {WS : wsize.wsize} (x : 'word WS), (0 <= x < modulus WS)%Z.
-  Proof.
-    intros.
-    destruct x.
-    cbn.
-    apply (ssrbool.elimT (iswordZP _ _)) in i.
-    apply i.
-  Qed.
-
-  Theorem modulus_smaller : forall (WS : wsize.wsize) (m : nat) {x : 'word WS}, (WS <= m)%Z -> (0 <= x < modulus m)%Z.
-  Proof.
-    intros.
-    destruct x.
-    cbn.
-    apply (ssrbool.elimT (iswordZP _ _)) in i.
-    split.
-    - easy.
-    - eapply Z.lt_le_trans.
-      apply i.
-      rewrite modulusZE.
-      rewrite modulusZE.
-      apply (Z.pow_le_mono_r 2).
-      reflexivity.
-      apply H.
-  Qed.
-
   Lemma sbox_eq :
     (forall n i, (i < 4)%nat ->
     is_pure (array_index sbox_v
@@ -1153,10 +1295,10 @@ Section Hacspec.
     destruct (is_pure (index_u8 _ _)).
     destruct toword.
     - reflexivity.
-    - (* SLOW! *) admit.
-      (* repeat (destruct p ; [ | | reflexivity ]) ; exfalso ; destruct p ; discriminate i0. *)
+    - (* SLOW! *) (* admit. *)
+      repeat (destruct p ; [ | | reflexivity ]) ; exfalso ; destruct p ; discriminate i0.
     - easy.
-  Admitted. (* Qed. *)
+  (* Admitted. *) Qed.
 
   Lemma SubWord_eq id0 (n : int32) pre :
     (pdisj pre id0 fset0) ->
@@ -1180,50 +1322,6 @@ Section Hacspec.
     apply r_ret.
     split ; easy.
   Qed.
-
-  Ltac match_pattern_and_bind_repr p :=
-    unfold let_both at 1, is_state at 1, prog ;
-    match goal with
-    | [ |- context [ ⊢ ⦃ ?P ⦄ ?x ≈ _ ⦃ ?Q ⦄ ] ] =>
-        let Hx := fresh in
-        set (Hx := x) ;
-        pattern p in Hx ;
-        subst Hx ;
-
-        (* Match bind and apply *)
-        match goal with
-        | [ |- context [ ⊢ ⦃ ?P ⦄ _ ≈ bind ?a ?f ⦃ ?Q ⦄ ] ] =>
-            let av := fresh in
-            let fv := fresh in
-            set (av := a)
-            ; set (fv := f)
-            ; eapply (r_bind (ret p) av _ fv P (fun '(v0, h0) '(v1, h1) => v0 = repr v1 /\ P (h0, h1)) Q)
-            ; subst av fv ; hnf ; [ | intros ; apply rpre_hypothesis_rule' ; intros ? ? [] ; apply rpre_weaken_rule with (pre := fun '(s₀, s₁) => P (s₀, s₁))
-              ]
-        end
-    end.
-
-  Ltac match_pattern_and_bind p :=
-    unfold let_both at 1, is_state at 1, prog ;
-    match goal with
-    | [ |- context [ ⊢ ⦃ ?P ⦄ ?x ≈ _ ⦃ ?Q ⦄ ] ] =>
-        let Hx := fresh in
-        set (Hx := x) ;
-        pattern p in Hx ;
-        subst Hx ;
-
-        (* Match bind and apply *)
-        match goal with
-        | [ |- context [ ⊢ ⦃ ?P ⦄ _ ≈ bind ?a ?f ⦃ ?Q ⦄ ] ] =>
-            let av := fresh in
-            let fv := fresh in
-            set (av := a)
-            ; set (fv := f)
-            ; eapply (r_bind (ret p) av _ fv P (fun '(v0, h0) '(v1, h1) => v0 = v1 /\ P (h0, h1)) Q)
-            ; subst av fv ; hnf ; [ | intros ; apply rpre_hypothesis_rule' ; intros ? ? [] ; apply rpre_weaken_rule with (pre := fun '(s₀, s₁) => P (s₀, s₁))
-              ]
-        end
-    end.
 
   Lemma keygen_assist_eq id0 (v1 : 'word U128) (v2 : 'word U8) (pre : precond) :
     (pdisj pre id0 fset0) ->
@@ -1396,23 +1494,17 @@ Section Hacspec.
       repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
       eexists.
       split.
-      split.
-      reflexivity.
+      split ; [ reflexivity | ].
       eexists.
-      split.
+      split ; [ | reflexivity ].
       eexists.
-      split.
+      split ; [ | reflexivity ].
       exists (set_heap H9 (translate_var s_id' v) a).
-      split.
-      eapply H_pdisj.
-      reflexivity.
+      split ; [ | reflexivity ].
+      pdisj_apply H_pdisj.
       etransitivity.
       apply fresh2_weak.
       assumption.
-      assumption.
-      reflexivity.
-      reflexivity.
-      reflexivity.
 
       rewrite ![set_heap _ (translate_var s_id' v) a]set_heap_commut
       ; (reflexivity ||
@@ -1448,13 +1540,11 @@ Section Hacspec.
           split.
           exists (set_heap H5 (translate_var s_id' v) a).
           split.
-          eapply H_pdisj.
-          reflexivity.
+          pdisj_apply H_pdisj.
 
           etransitivity.
           apply fresh2_weak.
           apply H0.
-          apply H6.
           reflexivity.
           reflexivity.
 
@@ -1470,17 +1560,14 @@ Section Hacspec.
           destruct_pre.
           unfold set_lhs.
           eexists.
+          split ; [ | reflexivity ].
           eexists.
+          split ; [ | reflexivity ].
           eexists.
-          split.
-          eexists.
-          split.
+          split ; [ | reflexivity ].
           eapply H_pdisj.
           apply H.
           apply H6.
-          reflexivity.
-          reflexivity.
-          reflexivity.
       }
 
     - easy.
@@ -1521,204 +1608,8 @@ Section Hacspec.
 
     exfalso.
     lia.
-  Qed.
-  (* Admitted. *)
+  (* Admitted. *) Qed.
 
-
-  (* Theorem loop_eq : *)
-  (*   forall (acc : ChoiceEquality) id0 pre d i c v I L y *)
-  (*     (y0 : int -> acc -> code L I acc) id' (inv : postcond _ _), *)
-  (*     (i < d)%nat -> *)
-  (*     (i + d < modulus U32)%Z -> *)
-  (*     (forall c j, (i <= j < d)%nat -> ⊢ ⦃ pre ⦄ *)
-  (*         translate_write_var id0 v *)
-  (*         (@existT choice_type (fun t : choice_type => Choice.sort (chElement t)) chInt (Z.of_nat (j.+1))) ;; *)
-  (*                     y id0 ≈ y0 (repr j.+1) c ⦃ λ '(s0, h0) '(s1, h1), (inv (s0, h0) (s1, h1)) /\ pre (h0, h1) ⦄) -> *)
-  (*     inv (emptym, empty_heap) (_, empty_heap) -> *)
-  (*     ⊢ ⦃ pre ⦄ *)
-  (*         (translate_for v *)
-  (*                        [seq (1 + Z.of_nat i)%Z | i <- iota i d] id0 (fun id => (id' id, y id)) id0~1) ≈ *)
-  (*         (foldi_ (I := I) (L := L) (S d) (repr (S i)) y0 c ) *)
-  (*         ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) ⦄ . *)
-  (* Proof. *)
-  (*   clear ; intros. *)
-  (*   generalize dependent i. *)
-  (*   generalize dependent c. *)
-  (*   generalize dependent id0. *)
-  (*   induction d ; intros. *)
-  (*   - discriminate. *)
-  (*   - assert (forall j n, [seq (1 + Z.of_nat i)%Z | i <- iota j (S n)] = *)
-  (*                      ((1 + Z.of_nat j)%Z :: [seq (1 + Z.of_nat i)%Z | i <- iota (S j) n])) by reflexivity. *)
-  (*     replace (d.+1 - i) with (d - i).+1 by lia. *)
-  (*     rewrite H3. *)
-  (*     unfold translate_for ; fold translate_for. *)
-  (*     rewrite <- foldi__move_S. *)
-  (*     rewrite <- bind_assoc. *)
-  (*     apply r_bind with (mid := fun '(v0, h0) '(v1, h1) => inv (v0, h0) (v1, h1) /\ pre (h0, h1)). *)
-  (*     2:{ *)
-  (*       intros. *)
-  (*       rewrite bind_rewrite. *)
-  (*       replace (Hacspec_Lib_Pre.int_add (repr _) _) with (@repr U32 (S (S i))). *)
-  (*       2:{ *)
-  (*         simpl. *)
-  (*         cbn. *)
-  (*         unfold Hacspec_Lib_Pre.int_add, add_word. *)
-  (*         rewrite mkwordK. *)
-  (*         rewrite Zmod_small. *)
-  (*         cbn. *)
-  (*         apply word_ext. *)
-  (*         f_equal. *)
-  (*         rewrite Pos.add_1_r. *)
-  (*         reflexivity. *)
-  (*         split. solve_lower_bounds. *)
-  (*         eapply Z.le_lt_trans. *)
-  (*         2: apply H1. *)
-  (*         zify. *)
-  (*         rewrite <- addn1. *)
-  (*         setoid_rewrite Nat2Z.inj_add. *)
-  (*         rewrite Z.add_assoc. *)
-  (*         apply Zplus_le_compat_r. *)
-  (*         apply le_add_right. *)
-  (*         easy. *)
-  (*         easy. *)
-  (*       } *)
-  (*       apply better_r. *)
-  (*       eapply rpre_hypothesis_rule. *)
-  (*       intros ? ? []. *)
-  (*       eapply rpre_weaken_rule ; [ | ]. *)
-  (*       - specialize (IHd id0). *)
-  (*         specialize (IHd (ct_T a₁)). *)
-  (*                admit. *)
-  (*         (* apply IHd. *)
-  (*         + apply H4. *)
-  (*         + admit. *)
-  (*         + setoid_rewrite <- Nat2Z.inj_add. *)
-  (*           setoid_rewrite addSnnS. *)
-  (*           rewrite Nat2Z.inj_add. *)
-  (*           apply H1. *)
-  (*         + intros. eapply H2. *)
-  (*           apply H6. *)
-  (*           lia. *)
-  (*       - now (intros ? ? [] ; subst). *)
-  (*     } *)
-  (*     replace (totce (translate_value (values.Vint (1 + Z.of_nat i)))) *)
-  (*       with (@existT choice_type (fun t : choice_type => Choice.sort (chElement t)) chInt (Z.of_nat (i.+1))). *)
-  (*     2:{ *)
-  (*       cbn. *)
-  (*       repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K). *)
-  (*       rewrite Zpos_P_of_succ_nat. *)
-  (*       unfold Z.succ. *)
-  (*       rewrite Z.add_comm. *)
-  (*       reflexivity. *)
-  (*     } *)
-  (*     specialize (H2 c (i)). *) *)
-  (*     (* apply H2. *)
-  (*     apply H. *)
-  (*     lia. *)
-  (* *) Admitted. *)
-
-  Definition unfold_translate_for : forall v j d id0 id' y,
-      (translate_for v [seq (1 + Z.of_nat i)%Z | i <- iota j (S d)] id0 y id') =
-      (translate_write_var id0 v (@existT choice_type (fun t : choice_type => Choice.sort (chElement t)) chInt (Z.of_nat (j.+1))) ;;
-      (snd (y id')) ;;
-      translate_for v [seq (1 + Z.of_nat i)%Z | i <- iota (S j) d] id0 y (fst (y id'))).
-  Proof.
-    intros.
-    assert (forall j n, [seq (1 + Z.of_nat i)%Z | i <- iota j (S n)] =
-                     ((1 + Z.of_nat j)%Z :: [seq (1 + Z.of_nat i)%Z | i <- iota (S j) n])) by reflexivity.
-    rewrite H.
-    unfold translate_for ; fold translate_for.
-    destruct (y id').
-    replace (totce (translate_value (values.Vint (1 + Z.of_nat j))))
-      with (@existT choice_type (fun t : choice_type => Choice.sort (chElement t)) chInt (Z.of_nat (j.+1))).
-    2:{
-      cbn.
-      repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K).
-      rewrite Zpos_P_of_succ_nat.
-      unfold Z.succ.
-      rewrite Z.add_comm.
-      reflexivity.
-    }
-    reflexivity.
-  Qed.
-
-  Theorem loop_eq :
-    forall {acc : ChoiceEquality} v d (j : nat) id0 s_id id' y I L (y0 : @int U32 -> acc -> code L I acc) pre c,
-      (0 < d) ->
-      (forall k c s_id,
-          j <= k < j + d ->
-          ⊢ ⦃ set_lhs
-                (translate_var id0 (v_var v))
-                (@truncate_el chInt (vtype (v_var v)) (S k))
-                pre ⦄
-          y s_id
-              ≈ y0 (repr (Pos.of_succ_nat k)) c
-         ⦃ λ '(_, h0) '(_, h1), pre (h0, h1) ⦄) ->
-      ⊢ ⦃ pre ⦄
-          (translate_for v
-                         [seq (1 + Z.of_nat i)%Z | i <- iota j d] id0 (fun id => (id' id, y id)) s_id) ≈
-          (foldi_ (I := I) (L := L) (d) (repr (S j)) y0 c )
-     ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) ⦄ .
-  Proof.
-    intros.
-    generalize dependent j.
-    generalize dependent c.
-    generalize dependent s_id.
-    induction d ; intros.
-    discriminate.
-
-    destruct d.
-    - rewrite unfold_translate_for.
-      simpl.
-      apply better_r_put_lhs.
-      setoid_rewrite T_ct_id.
-      eapply r_bind.
-      apply H0.
-      lia.
-
-      intros.
-      apply r_ret.
-      intros. apply H1.
-    - rewrite <- foldi__move_S.
-      rewrite unfold_translate_for.
-
-      apply better_r_put_lhs.
-      setoid_rewrite bind_rewrite.
-      apply r_bind with (mid := λ '(_, h0) '(_, h1), pre (h0, h1)).
-
-      2:{
-        intros.
-        replace (Hacspec_Lib_Pre.int_add (repr j.+1) one)
-          with
-          (@repr U32 j.+2).
-        2:{
-          simpl.
-          cbn.
-          unfold Hacspec_Lib_Pre.int_add, add_word.
-          rewrite mkwordK.
-          cbn.
-          apply word_ext.
-          rewrite Zplus_mod.
-          rewrite Zmod_mod.
-          rewrite <- Zplus_mod.
-          f_equal.
-          now zify.
-        }
-  
-        apply better_r.
-        unfold ".1".
-        pose (IHd ltac:(easy) (id' s_id) (ct_T a₁) j.+1).
-        apply r.
-
-        intros.
-        apply H0.
-        lia.
-      }
-      unfold ".2".
-      apply H0.
-      lia.
-  Qed.
-    
   Lemma keys_expand_eq id0 rkey  (pre : precond) :
     (pdisj pre id0 (fset ([(seq_choice int128; 279) ; (@int_choice U128; 278) ; (@int_choice U128; 277)]))) ->
     ⊢ ⦃ pre ⦄
@@ -1727,11 +1618,8 @@ Section Hacspec.
         is_state (keys_expand rkey)
         ⦃ fun '(v0, h0) '(v1, h1) =>
             (exists o1, v0 = [('array; o1)]
-                   /\ (forall (j : nat),
-                       forall (a : 'word U8) (b : 'word U128),
-                         (getm o1 (Z.of_nat j) = Some a) ->
-                         (getm v1 (j / 16) = Some b) ->
-                         a = index_u8 (index_u32 b (repr ((j mod 16) / 4))) (repr (j mod 4))))  /\ pre (h0, h1) ⦄.
+                   /\ (forall k, ((chArray_get U128 o1 k (wsize_size U128))
+    = is_pure (seq_index (A := @int U128) v1 (lift_to_both0 (repr k))))))  /\ pre (h0, h1) ⦄.
   Proof.
     intros H_pdisj.
     set (JKEYS_EXPAND _ _).
@@ -1781,7 +1669,7 @@ Section Hacspec.
     set (tr_app_sopn_tuple _ _ _).
     cbn in s.
     set (repr 0) at 8.
-    assert (s = t) by now apply word_ext. 
+    assert (s = t) by now apply word_ext.
     generalize dependent s.
     generalize dependent t.
     intros.
@@ -1798,10 +1686,23 @@ Section Hacspec.
     end.
     Transparent is_state. Transparent is_pure.
 
-    set (set_lhs _ _ _).
     rewrite bind_assoc.
 
-    eapply (@r_bind _ _ _ _ _ _ _ _ _ (λ '(v0, h0) '(v1, h1), p (h0, h1))).
+    set (set_lhs _ _ _).
+    set (Hacspec_Lib_Pre.seq_push _ _) in *.
+    pattern (t0) in p.
+    set (fun _ => _) in p.
+    pattern (rkey) in y.
+    set (fun _ => _) in y.
+    subst y.
+    pattern (t) in y0.
+    set (fun _ => _) in y0.
+    subst y0.
+    pose (fun '(t0, rkey, t) => y t rkey t0).
+    replace p with (p0 (t0, rkey, t)) by reflexivity.
+
+
+    eapply (@r_bind _ _ _ _ _ _ _ _ _ (λ '(v0, h0) '(v1, h1), (p0 v1) (h0, h1))).
     2:{
       subst p.
       intros.
@@ -1821,41 +1722,24 @@ Section Hacspec.
         split.
         - reflexivity.
         - intros.
-          simpl in H.
-          rewrite !coerce_to_choice_type_K in H.
-          rewrite !zero_extend_u in H.
-          cbn.
+          destruct_pre.
           admit.
       }
       {
-        apply H_pdisj.
-        rewrite in_fset.
-        now rewrite mem_head.
-        apply H_pdisj.
-        rewrite in_fset.
-        rewrite in_cons ; simpl.
-        now rewrite mem_head.
-        eapply H_pdisj.
-        rewrite in_fset.
-        rewrite in_cons ; simpl.
-        rewrite in_cons ; simpl.
-        rewrite mem_head.
-        now rewrite Bool.orb_true_r.
-
-        apply H_pdisj.
-        rewrite in_fset.
-        now rewrite mem_head.
-
-        eapply H_pdisj.
-        reflexivity.
-        reflexivity.
-        eapply H_pdisj.
-        reflexivity.
-        reflexivity.
-        eapply H_pdisj.
-        reflexivity.
-        reflexivity.
-        apply H15.
+        destruct_pre.
+        pdisj_apply H_pdisj.
+        - rewrite in_fset.
+          now rewrite mem_head.
+        - rewrite in_fset.
+          rewrite in_cons ; simpl.
+          now rewrite mem_head.
+        - rewrite in_fset.
+          rewrite in_cons ; simpl.
+          rewrite in_cons ; simpl.
+          rewrite mem_head.
+          now rewrite Bool.orb_true_r.
+        - rewrite in_fset.
+          now rewrite mem_head.
       }
     }
 
@@ -1875,24 +1759,29 @@ Section Hacspec.
     replace (Z.to_nat (11 - 1)) with 10 by reflexivity.
     replace (Pos.to_nat 10) with 10 by reflexivity.
 
-    
-    apply (@loop_eq (seq int128 '× int '× int) _ 10 0).
+    subst y1.
+    subst p.
+    subst t0.
+
+    apply (@loop_eq (seq int128 '× int '× int) _ 10 0 _ _ _ _ _ _ _ p0).
     { easy. }
     {
     intros.
 
     subst y.
     subst y0.
-    subst p.
-    
+    subst p0.
+    hnf.
+
     remove_get_in_lhs.
     rewrite bind_assoc.
     destruct c as [? []].
     destruct t0 as [].
 
-    assert (t = t1). admit. subst.
-    assert (rkey = (mkWord (nbits:=U128) (toword:=toword) i)). admit. subst.
-    
+    (* assert (t = t1). admit. subst. *)
+    (* assert (rkey = (mkWord (nbits:=U128) (toword:=toword) i)). admit. subst. *)
+
+
     set (set_lhs _ _ _).
     eapply r_bind with (mid := λ '(v0, h0) '(v1, h1),
                           (∃ o1 : (λ i : choice_type_choiceType, i) 'int,
@@ -1931,7 +1820,7 @@ Section Hacspec.
       setoid_rewrite Nat.add_0_l in H.
       apply H.
     }
-    
+
     intros.
     apply rpre_hypothesis_rule.
     intros.
@@ -1967,7 +1856,7 @@ Section Hacspec.
         replace (translate_call _ _ _ _ _)
           with
           (get_translated_static_fun ssprove_jasmin_prog 11%positive
-                                     static_funs (s_id~0~1)%positive [('int; x0); ('word U128; (mkWord (nbits:=U128) (toword:=toword) i)); ('word U128; t1) ]).
+                                     static_funs (s_id~0~1)%positive [('int; x0); ('word U128; t1); ('word U128; (mkWord (nbits:=U128) (toword:=toword) i))]).
         2:{
           Transparent translate_call.
           simpl.
@@ -1978,11 +1867,11 @@ Section Hacspec.
           Opaque translate_call.
         }
         unfold lift_to_both0.
-        Set Printing Coercions.
+
         unfold is_pure.
         unfold lift_to_both.
         unfold repr.
-        (* apply r. *) (* TODO?? *)
+        apply r.
         admit.
       }
 
@@ -2027,17 +1916,47 @@ Section Hacspec.
 
       apply r_ret.
       intros.
+
+      rewrite !ct_T_id.
+      repeat remove_T_ct.
+      rewrite !zero_extend_u.
+
       admit.
     }
   Admitted.
 
-  Lemma addroundkey_eq id0 (rkeys : 'array) (rkeys' : seq int128) m  (pre : precond) :
+  Lemma aes_enc_eq id0 state key (pre : precond) :
     (pdisj pre id0 (fset [ (CE_loc_to_loc ( nseq int8 1 ; 0%nat ) : Location) ])) ->
-    ((forall (j : nat),
-       forall (a : 'word U8) (b : 'word U128),
-         (getm rkeys (Z.of_nat j) = Some a) ->
-         (getm rkeys' (j / 16) = Some b) ->
-         a = index_u8 (index_u32 b (repr ((j mod 16) / 4))) (repr (j mod 4)))) ->
+    ⊢ ⦃ pre ⦄
+        ret (waes.wAESENC state key)
+        ≈
+        prog (is_state (aesenc state key))
+        ⦃ fun '(v0, h0) '(v1, h1) => (v0 = v1)  /\ pre (h0, h1) ⦄.
+  Proof.
+
+  Admitted.
+
+  Lemma aes_enc_last_eq id0 state key (pre : precond) :
+    (pdisj pre id0 (fset [ (CE_loc_to_loc ( nseq int8 1 ; 0%nat ) : Location) ])) ->
+    ⊢ ⦃ pre ⦄
+        ret (waes.wAESENCLAST state key)
+        ≈
+        prog (is_state (aesenclast state key))
+        ⦃ fun '(v0, h0) '(v1, h1) => (v0 = v1)  /\ pre (h0, h1) ⦄.
+  Proof.
+
+  Admitted.
+
+
+  Lemma addroundkey_eq id0 (rkeys : 'array) (rkeys' : seq int128) m  (pre : precond) :
+    (pdisj pre id0 (fset [ (@int_choice U128; 334) ])) ->
+    (forall k, ((chArray_get U128 rkeys k (wsize_size U128))
+    = is_pure (seq_index rkeys' (lift_to_both0 (repr k))))) ->
+    (* ((forall (j : nat), *)
+    (*    forall (a : 'word U8) (b : 'word U128), *)
+    (*      (getm rkeys (Z.of_nat j) = Some a) -> *)
+    (*      (getm rkeys' (j / 16) = Some b) -> *)
+    (*      a = index_u8 (index_u32 b (repr ((j mod 16) / 4))) (repr (j mod 4)))) -> *)
     ⊢ ⦃ pre ⦄
         JAES_ROUNDS id0 rkeys m
         ≈
@@ -2047,7 +1966,10 @@ Section Hacspec.
     intros H_pdisj rkeys_ext.
     set (JAES_ROUNDS _ _ _).
     unfold JAES_ROUNDS in r.
-    unfold get_translated_static_fun, JAES_ROUNDS, get_translated_static_fun, translate_prog_static, translate_funs_static, translate_call_body in r.
+    Transparent translate_call.
+    unfold get_translated_static_fun in r.
+    simpl in r.
+    unfold translate_call_body in r.
     Opaque translate_call.
     simpl in r.
     subst r.
@@ -2064,7 +1986,7 @@ Section Hacspec.
     unfold aes_rounds.
 
     rewrite !coerce_to_choice_type_K.
-    Set Printing Coercions.
+
     unfold lift_to_both0 at 1.
 
     unfold let_mut_both at 1, is_state at 1, is_state at 1, is_state at 1.
@@ -2082,15 +2004,173 @@ Section Hacspec.
     rewrite <- bind_assoc.
 
     eapply r_bind.
-    { admit. (* AES Enc loop *) }
+    {
+      set (fun (_ : p_id) => _).
+      set (fun (_ : int_type) (_ : _) => _).
+
+      rewrite !coerce_typed_code_K.
+      rewrite bind_rewrite.
+      rewrite bind_rewrite.
+
+      unfold foldi_both', foldi_both, lift_scope, is_state at 1, lift_code_scope, prog, is_state at 1, foldi.
+      unfold foldi_pre ; replace (unsigned _ - unsigned _)%Z with 9%Z by reflexivity.
+      replace (Z.to_nat (10 - 1)) with 9 by reflexivity.
+      replace (Pos.to_nat 9) with 9 by reflexivity.
+
+      set (set_rhs _ _ _).
+      pattern (a₁) in p.
+      set (fun _ => _) in p.
+      subst y0.
+      subst p.
+
+      apply (@loop_eq int _ 9 0 _ _ _ _ _ _ _ y1) ; subst y1 ; hnf.
+      { easy. }
+      {
+        intros.
+        remove_get_in_lhs.
+        remove_get_in_lhs.
+        remove_get_in_lhs.
+
+        bind_jazz_hac.
+        - unfold sopn_sem.
+          unfold sopn.get_instr_desc.
+          unfold asm_op_instr.
+          unfold asm_opI.
+          unfold arch_extra.get_instr_desc.
+          unfold semi.
+          unfold instr_desc.
+          unfold instr_desc_op.
+          unfold _asm_op_decl.
+          unfold _asm.
+          unfold x86_extra.
+          unfold x86.x86.
+          unfold x86_op_decl.
+          unfold x86_instr_desc.
+          unfold id_semi.
+          unfold Ox86_AESENC_instr.
+          unfold mk_instr_aes2.
+          unfold ".1".
+          unfold x86_AESENC.
+          unfold tr_app_sopn_tuple.
+          unfold encode_tuple.
+          unfold jasmin_translate.encode.
+          unfold w_ty.
+          unfold map.
+          unfold lchtuple.
+          unfold chCanonical.
+          unfold w2_ty.
+          unfold tr_app_sopn.
+          unfold embed_tuple.
+          unfold embed_ot.
+          unfold unembed.
+          unfold truncate_el.
+          unfold totce.
+          unfold ".π2".
+
+          rewrite !coerce_to_choice_type_K.
+          set (truncate_chWord _ _).
+          set (truncate_chWord _ _).
+          cbn in s0.
+          cbn in s.
+          subst s0.
+          subst s.
+          rewrite !zero_extend_u.
+
+          (* AES Enc loop *)
+
+          rewrite <- rkeys_ext.
+          apply (aes_enc_eq id0 c (chArray_get U128 rkeys (Pos.of_succ_nat k) (wsize_size U128))).
+          admit.
+
+        - apply better_r_put_rhs.
+          apply better_r_put_lhs.
+          apply r_ret.
+          intros.
+          destruct_pre.
+          admit.
+      }
+    }
+
+    intros.
+    remove_get_in_lhs.
+    remove_get_in_lhs.
+    rewrite <- bind_ret.
+    bind_jazz_hac.
+
+    {
+      unfold sopn_sem.
+      unfold sopn.get_instr_desc.
+      unfold asm_op_instr.
+      unfold asm_opI.
+      unfold arch_extra.get_instr_desc.
+      unfold semi.
+      unfold instr_desc.
+      unfold instr_desc_op.
+      unfold _asm_op_decl.
+      unfold _asm.
+      unfold x86_extra.
+      unfold x86.x86.
+      unfold x86_op_decl.
+      unfold x86_instr_desc.
+      unfold id_semi.
+      unfold Ox86_AESENCLAST_instr.
+      unfold mk_instr_aes2.
+      unfold ".1".
+      unfold x86_AESENCLAST.
+      unfold tr_app_sopn_tuple.
+      unfold encode_tuple.
+      unfold jasmin_translate.encode.
+      unfold w_ty.
+      unfold map.
+      unfold lchtuple.
+      unfold chCanonical.
+      unfold w2_ty.
+      unfold tr_app_sopn.
+      unfold embed_tuple.
+      unfold embed_ot.
+      unfold unembed.
+      unfold truncate_el.
+      unfold totce.
+      unfold ".π2".
+
+      rewrite !coerce_to_choice_type_K.
+      set (truncate_chWord _ _).
+      set (truncate_chWord _ _).
+      cbn in s0.
+      cbn in s.
+      subst s0.
+      subst s.
+      rewrite !zero_extend_u.
+
+      rewrite <- rkeys_ext.
+
+      apply (aes_enc_last_eq id0 a₁0 (chArray_get U128 rkeys 10 (wsize_size U128))).
+      pdisj_apply H_pdisj.
+      admit. (* AES Enc last *) }
+
+    apply better_r_put_lhs.
+    remove_get_in_lhs.
+
+    apply r_ret.
 
     intros.
 
-    { admit. (* AES Enc last *) }
+    destruct_pre.
+    split.
+    - eexists.
+      split.
+      + reflexivity.
+      + setoid_rewrite zero_extend_u.
+        reflexivity.
+    - pdisj_apply H_pdisj.
+      rewrite in_fset.
+      now rewrite mem_head.
+  (* Qed. *)
   Admitted.
 
   Lemma aes_eq id0 key m  (pre : precond) :
-    (pdisj pre id0 (fset [(CE_loc_to_loc ( nseq int8 1 ; 0%nat ) : Location) ])) ->
+    (pdisj pre id0 (fset [(@int_choice U128; 334) ; (@seq_choice int128; 279); (@int_choice U128; 278);
+              (@int_choice U128; 277)])) ->
     ⊢ ⦃ pre ⦄
         JAES id0 key m
         ≈
@@ -2106,11 +2186,165 @@ Section Hacspec.
     subst r.
     rewrite !zero_extend_u.
 
+    unfold aes.
+
     apply better_r_put_lhs.
     apply better_r_put_lhs.
     remove_get_in_lhs.
-  Admitted.
 
+    rewrite bind_assoc.
+    rewrite bind_assoc.
 
+    eapply r_bind.
+    apply keys_expand_eq.
+
+    split.
+    {
+      intros.
+      destruct_pre.
+      unfold set_lhs.
+      eexists (set_heap (set_heap H4 ($$"key.314") _) (translate_var s_id' v) a).
+      split.
+      2:{
+        rewrite set_heap_commut.
+        f_equal.
+        f_equal.
+        apply f_equal.
+        reflexivity.
+        apply injective_translate_var2.
+        red ; intros.
+        subst.
+        now apply (precneq_I s_id').
+      }
+      exists (set_heap H4 (translate_var s_id' v) a).
+      split.
+      2:{
+        rewrite set_heap_commut.
+        reflexivity.
+        apply injective_translate_var2.
+        red ; intros.
+        subst.
+        now apply (precneq_I s_id').
+      }
+      pdisj_apply H_pdisj.
+      etransitivity.
+      apply preceq_I.
+      apply H0.
+    }
+    {
+      intros.
+      destruct_pre.
+      eexists.
+      split ; [ | reflexivity ].
+      eexists.
+      split ; [ | reflexivity ].
+      apply H_pdisj.
+
+      rewrite in_fset.
+      rewrite in_fset in H.
+      rewrite in_cons ; simpl.
+      rewrite H.
+      now rewrite Bool.orb_true_r.
+      apply H4.
+    }
+
+    intros.
+    apply rpre_hypothesis_rule.
+    intros ? ? [].
+    eapply rpre_weaken_rule.
+    2:{
+      intros ? ? []. subst.
+      apply H0.
+    }
+    clear H0.
+    destruct H.
+    destruct H.
+    subst.
+    apply better_r_put_lhs.
+    remove_get_in_lhs. fold @bind.
+    remove_get_in_lhs.
+
+    rewrite bind_assoc.
+    rewrite bind_assoc.
+
+    rewrite <- bind_ret.
+    eapply r_bind.
+
+    apply addroundkey_eq.
+    {
+      split.
+      - intros.
+        destruct_pre.
+        eexists.
+        split.
+        2:{
+          rewrite ![set_heap _ (translate_var s_id' v) a]set_heap_commut
+          ; (reflexivity ||
+               (apply injective_translate_var2 ;
+                red ; intros ; subst ;
+                apply (precneq_O s_id') ;
+                etransitivity ; [apply preceq_I | apply H1])).
+        }
+        eexists.
+        split ; [ | reflexivity ].
+        eexists.
+        split ; [ | reflexivity ].
+        pdisj_apply H_pdisj.
+        etransitivity.
+        apply preceq_O.
+        etransitivity.
+        apply preceq_I.
+        apply H1.
+      - intros.
+        destruct_pre.
+        eexists.
+        split ; [| reflexivity ].
+        eexists.
+        split ; [ | reflexivity ].
+        eexists.
+        split ; [ | reflexivity ].
+        eapply H_pdisj.
+
+        rewrite in_fset.
+        rewrite in_cons ; simpl.
+        rewrite in_fset in H.
+        rewrite mem_seq1 in H.
+        rewrite H.
+        now rewrite Bool.orb_true_l.
+        apply H7.
+    }
+    {
+      intros.
+      rewrite !coerce_to_choice_type_K.
+      apply H0.
+    }
+
+    intros.
+    apply rpre_hypothesis_rule.
+    intros ? ? [].
+    eapply rpre_weaken_rule.
+    2:{
+      intros ? ? []. subst.
+      apply H1.
+    }
+    clear H1.
+    destruct H.
+    destruct H.
+    subst.
+    apply better_r_put_lhs.
+    rewrite bind_rewrite.
+    remove_get_in_lhs.
+    apply r_ret.
+
+    intros.
+    destruct_pre.
+    split.
+    eexists.
+    split ; [reflexivity | ].
+    rewrite !zero_extend_u.
+    setoid_rewrite zero_extend_u.
+    reflexivity.
+    pdisj_apply H_pdisj.
+  Qed.
 
 End Hacspec.
