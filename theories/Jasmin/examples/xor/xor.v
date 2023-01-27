@@ -540,117 +540,99 @@ Section Jasmin_OTP.
   Qed.
 End Jasmin_OTP.
 
-(* From Hacspec Require Import Xor_Both. *)
-(* From Hacspec Require Import Hacspec_Lib_Pre. *)
-(* consider exporting this from Hacspec_Lib_Pre? Needed for int64 : Type coercion  *)
-(* From Hacspec Require Import ChoiceEquality. *)
+From Hacspec Require Import Hacspec_Xor.
+From Hacspec Require Import Hacspec_Lib_Pre.
+(* consider exporting this from Hacspec_Lib_Pre? Needed for int64 : Type coercion *)
+From Hacspec Require Import ChoiceEquality.
 
-(* Section JasminHacspec. *)
+Section JasminHacspec.
 
-(*   Definition state_xor (x y : int64) : raw_code int64 := *)
-(*     xor (x, y). *)
+  Definition state_xor (x y : int64) : raw_code int64 :=
+    xor x y.
 
-(*   Definition pure_xor (x y : int64) : raw_code int64 := *)
-(*     lift_to_code (L:=fset0) (I := [interface]) (is_pure (xor (x, y))). *)
+  Definition pure_xor (x y : int64) : raw_code int64 :=
+    lift_to_code (L:=fset0) (I := [interface]) (is_pure (xor x y)).
 
-(*   Definition state_pure_xor x y := code_eq_proof_statement (xor (x, y)). *)
-(*   Notation jazz_xor w1 w2 := ((snd tr_xor) 1%positive [('word U64; w1); ('word U64; w2)]). *)
-(*   Notation hdtc res := (coerce_to_choice_type ('word U64) (hd ('word U64 ; chCanonical _) res).π2). *)
+  Definition state_pure_xor x y := code_eq_proof_statement (xor x y).
+  Notation hdtc res := (coerce_to_choice_type ('word U64) (hd ('word U64 ; chCanonical _) res).π2).
 
-(*   Lemma rxor_pure : forall w1 w2, *)
-(*       ⊢ ⦃ true_precond ⦄ *)
-(*         res ← jazz_xor w1 w2 ;; *)
-(*       ret (hdtc res) *)
-(*         ≈ *)
-(*         pure_xor w1 w2 *)
-(*         ⦃ fun '(a, h₀) '(b, h₁) => (a = b) ⦄. *)
-(*   Proof. *)
-(*     intros w1 w2. *)
-(*     simpl_fun. *)
+  Lemma rxor_pure : forall id0 w1 w2,
+      ⊢ ⦃ true_precond ⦄
+        res ← JXOR id0 w1 w2 ;;
+      ret (hdtc res)
+        ≈
+        pure_xor w1 w2
+        ⦃ fun '(a, h₀) '(b, h₁) => (a = b) ⦄.
+  Proof.
+    intros id0 w1 w2.
+    simpl_fun.
 
-(*     repeat setjvars. *)
+    repeat setjvars.
 
-(*     Ltac neq_loc_auto ::= eapply injective_translate_var3; auto. *)
+    Ltac neq_loc_auto ::= eapply injective_translate_var3; auto.
 
-(*     repeat clear_get. *)
+    repeat clear_get.
 
-(*     rewrite !zero_extend_u. *)
-(*     eapply r_put_lhs with (pre := fun _ => Logic.True). *)
-(*     repeat eapply r_put_lhs. *)
-(*     eapply r_ret. *)
+    rewrite !zero_extend_u.
+    repeat eapply better_r_put_lhs.
+    repeat eapply r_put_lhs.
+    eapply r_ret.
 
-(*     intros ? ? ?. *)
-(*     rewrite coerce_to_choice_type_K. *)
-(*     reflexivity. *)
-(*   Qed. *)
+    intros ? ? ?.
+    rewrite coerce_to_choice_type_K.
+    reflexivity.
+  Qed.
 
-(*   Lemma rxor_state : forall w1 w2, *)
-(*       ⊢ ⦃ true_precond ⦄ *)
-(*         res ← ((snd tr_xor) 1%positive [('word U64; w1); ('word U64; w2)]) ;; *)
-(*       ret (coerce_to_choice_type ('word U64) (hd ('word U64 ; chCanonical _) res).π2) *)
-(*         ≈ *)
-(*         state_xor w1 w2 *)
-(*         ⦃ fun '(a, _) '(b, _) => (a = b) ⦄. *)
-(*   Proof. *)
-(*     intros w1 w2. *)
-(*     unfold state_xor. *)
+  Lemma rxor_state : forall id0 w1 w2,
+      ⊢ ⦃ fun '(_, _) => Logic.True ⦄
+        res ← JXOR id0 w1 w2 ;;
+      ret (hdtc res)
+        ≈
+        state_xor w1 w2
+        ⦃ fun '(a, _) '(b, _) => (a = b) ⦄.
+  Proof.
+    intros id0 w1 w2.
+    unfold state_xor.
 
-(*     simpl_fun. *)
-(*     repeat setjvars. *)
-(*     repeat clear_get. *)
+    simpl_fun.
+    repeat setjvars.
+    repeat clear_get.
 
-(*     rewrite !zero_extend_u. *)
-(*     rewrite coerce_to_choice_type_K. *)
-(*     eapply r_put_vs_put with (pre := fun _ => Logic.True). *)
-(*     repeat eapply r_put_vs_put. *)
-(*     repeat eapply r_put_rhs. *)
-(*     eapply r_ret. *)
-(*     easy. *)
-(*   Qed. *)
+    rewrite !zero_extend_u.
+    rewrite coerce_to_choice_type_K.
+    eapply r_put_vs_put with (pre := fun _ => _).
+    repeat eapply r_put_vs_put.
+    Transparent Hacspec_Lib.lift3_both.
+    simpl.
+    eapply r_put_rhs.
+    eapply r_ret.
+    easy.
+  Qed.
 
-(*   Lemma val_sym : *)
-(*     ∀ {A : ord_choiceType} {pre : precond} *)
-(*     {c₀ : raw_code A} {c₁ : raw_code A}, *)
-(*       ⊢ ⦃ true_precond ⦄ *)
-(*         c₀ *)
-(*         ≈ *)
-(*         c₁ *)
-(*         ⦃ fun '(a, _) '(b, _) => a = b ⦄ -> *)
-(*     ⊢ ⦃ fun '(h0, h1) => true_precond (h0, h1) ⦄ *)
-(*         c₁ *)
-(*         ≈ *)
-(*         c₀ *)
-(*         ⦃ fun '(a, _) '(b, _) => a = b ⦄. *)
-(*   Proof. *)
-(*     intros. *)
-(*     eapply rsymmetry. *)
-(*     eapply rpost_weaken_rule. *)
-(*     1: exact H. *)
-(*     intros [] []; auto. *)
-(*   Qed. *)
-
-(*   Lemma rxor_pure_via_state : forall w1 w2, *)
-(*       ⊢ ⦃ true_precond ⦄ *)
-(*         res ← ((snd tr_xor) 1%positive [('word U64; w1); ('word U64; w2)]) ;; *)
-(*       ret (coerce_to_choice_type ('word U64) (hd ('word U64 ; chCanonical _) res).π2) *)
-(*         ≈ *)
-(*         pure_xor w1 w2 *)
-(*         ⦃ fun '(a, _) '(b, _) => (a = b) ⦄. *)
-(*   Proof. *)
-(*     intros w1 w2. *)
-(*     eapply @r_transL_val with (c₀ := state_xor w1 w2) (P := Logic.True). *)
-(*     - repeat constructor. *)
-(*     - repeat constructor. *)
-(*     - repeat constructor. *)
-(*     - eapply rsymmetry. *)
-(*       eapply rpost_weaken_rule. *)
-(*       1: eapply rxor_state. *)
-(*       intros [] []; auto. *)
-(*     - pose proof state_pure_xor. *)
-(*       eapply rpre_weaken_rule. *)
-(*       1: eapply rpost_weaken_rule. *)
-(*       1: eapply state_pure_xor. *)
-(*       2: auto. *)
-(*       intros [] []. unfold pre_to_post_ret; intuition subst. *)
-(*   Qed. *)
-(* End JasminHacspec. *)
+  Lemma rxor_pure_via_state : forall id0 w1 w2,
+      ⊢ ⦃ fun '(_, _) => Logic.True ⦄
+        res ← JXOR id0 w1 w2 ;;
+      ret (hdtc res)
+        ≈
+        pure_xor w1 w2
+        ⦃ fun '(a, _) '(b, _) => (a = b) ⦄.
+  Proof.
+    intros id0 w1 w2.
+    unfold true_precond.
+    (* eapply rpre_weaken_rule. *)
+    eapply r_transL_val with (c₀ := state_xor w1 w2).
+    - repeat constructor.
+    - repeat constructor.
+    - repeat constructor.
+    - eapply rsymmetry.
+      eapply rpost_weaken_rule.
+      1: eapply rxor_state.
+      intros [] []; auto.
+    - pose proof state_pure_xor.
+      eapply rpre_weaken_rule.
+      1: eapply rpost_weaken_rule.
+      1: eapply state_pure_xor.
+      2: auto.
+      intros [] []. unfold pre_to_post_ret; intuition subst.
+  Qed.
+End JasminHacspec.
