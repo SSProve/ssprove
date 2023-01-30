@@ -1756,14 +1756,6 @@ Section Hacspec.
       | |- set_rhs _ _ _ _ => eexists
       end.
 
-  Definition seq_to_list_id : forall {A} (t : seq A), fmap_of_seq (seq_to_list A t) = t.
-  Proof.
-  Admitted.
-
-  Definition fmap_of_seq_id : forall {A : ChoiceEquality} (t : list A), seq_to_list  A (fmap_of_seq t) = t.
-  Proof.
-  Admitted.
-
   Definition seq_push_list_app : forall {A} (t : seq A) (s : A), (seq_to_list A (Hacspec_Lib_Pre.seq_push t s) = seq_to_list A t ++ [s]).
   Proof.
     intros.
@@ -1777,18 +1769,6 @@ Section Hacspec.
     rewrite fmap_of_seq_id.
     reflexivity.
   Qed.
-
-  Theorem chArray_set_idemp : ∀ (ws : wsize.wsize) (a : 'array) (i : Z) (w : word.word ws), chArray_set (chArray_set a AAscale i w) AAscale i w = chArray_set a AAscale i w.
-  Proof.
-  Admitted.
-
-  Theorem chArray_set_neq : ∀ (ws : wsize.wsize) (a : 'array) (i j : Z) (v w : word.word ws),
-      i != j ->
-      chArray_set (chArray_set a AAscale i w) AAscale j v =
-      chArray_set (chArray_set a AAscale j v) AAscale i w.
-  Proof.
-  Admitted.
-
 
   Definition seq_to_arr (X : seq uint128) : FMap.fmap_type Z_ordType U8.-word :=
     let l0 := (unzip2 X) in
@@ -1806,9 +1786,6 @@ Section Hacspec.
     intros.
     unfold seq_upd_from_arr.
     simpl.
-
-    (* assert ((unzip2 (Hacspec_Lib_Pre.seq_push a b)) = unzip2 a ++ [b]) by admit. *)
-    (* rewrite H. *)
 
     rewrite seq_push_list_app.
     rewrite size_cat.
@@ -1864,8 +1841,11 @@ Section Hacspec.
     end ||
         rewrite get_set_heap_neq.
 
+  Notation rkeys_loc := (seq_choice int128; 70).
+  Notation temp2_loc := (@int_choice U128; 69).
+  Notation rkey_loc := (@int_choice U128; 68).
   Lemma keys_expand_eq id0 rkey  (pre : precond) :
-    (pdisj pre id0 (fset ([(seq_choice int128; 279) ; (@int_choice U128; 278) ; (@int_choice U128; 277)]))) ->
+    (pdisj pre id0 (fset ([rkeys_loc ; temp2_loc ; rkey_loc ]))) ->
     ⊢ ⦃ pre ⦄
         JKEYS_EXPAND id0 rkey
         ≈
@@ -1956,9 +1936,9 @@ Section Hacspec.
     pose (p0 := (λ (n : nat) '(rkeys, rkey, temp2) '(h0, h1),
           set_lhs (translate_var id0 {| vtype := sword U128; vname := "temp2.336" |}) temp2
             (set_lhs (translate_var id0 {| vtype := sarr 176; vname := "rkeys.335" |}) (seq_upd_from_arr rkeys x)
-               (set_rhs (seq_choice int128; 279) rkeys
-                  (set_rhs (int_choice; 278) temp2
-                     (set_rhs (int_choice; 277) rkey
+               (set_rhs rkeys_loc rkeys
+                  (set_rhs temp2_loc temp2
+                     (set_rhs rkey_loc rkey
                         (
                            (λ '(s₀, s₁),
                               (set_lhs (translate_var id0 {| vtype := sword U128; vname := "key.334" |}) rkey pre)
@@ -2000,7 +1980,9 @@ Section Hacspec.
       }
       eexists ; split.
       2:{
+        rewrite set_heap_commut.
         reflexivity.
+        easy.
       }
       eexists ; split.
       2:{
@@ -2643,31 +2625,150 @@ Section Hacspec.
     }
   Qed.
 
+  Lemma shift_rows_eq id0 (state : 'word U128) (pre : precond) :
+    (pdisj pre id0 fset0) ->
+    ⊢ ⦃ pre ⦄ ret (waes.ShiftRows state) ≈
+      prog (is_state (shiftrows state)) 
+      ⦃ λ '(v0, h0) '(v1, h1), v0 = v1 ∧ pre (h0, h1) ⦄.
+  Admitted.
+
+  Lemma sub_bytes_eq id0 (state : 'word U128) (pre : precond) :
+    (pdisj pre id0 fset0) ->
+  ⊢ ⦃ λ '(s₀0, s₁0), pre (s₀0, s₁0) ⦄ ret (waes.SubBytes state) ≈
+     prog (is_state (subbytes (state))) 
+     ⦃ λ '(v0, h0) '(v1, h1), v0 = v1 ∧ pre (h0, h1) ⦄.
+  Proof.
+  Admitted.
+
+  Lemma mix_columns_eq id0 (state : 'word U128) (pre : precond) :
+    (pdisj pre id0 fset0) ->
+  ⊢ ⦃ λ '(s₀0, s₁0), pre (s₀0, s₁0) ⦄ ret (waes.MixColumns state) ≈
+     prog (is_state (mixcolumns (state))) 
+     ⦃ λ '(v0, h0) '(v1, h1), v0 = v1 ∧ pre (h0, h1) ⦄.
+  Proof.
+  Admitted.
+  
   Lemma aes_enc_eq id0 state key (pre : precond) :
-    (pdisj pre id0 (fset [ (CE_loc_to_loc ( nseq int8 1 ; 0%nat ) : Location) ])) ->
+    (pdisj pre id0 fset0) ->
     ⊢ ⦃ pre ⦄
         ret (waes.wAESENC state key)
         ≈
         prog (is_state (aesenc state key))
         ⦃ fun '(v0, h0) '(v1, h1) => (v0 = v1)  /\ pre (h0, h1) ⦄.
   Proof.
+    intros.
+    unfold waes.wAESENC.
+    unfold aesenc.
 
-  Admitted.
+    match_pattern_and_bind (waes.ShiftRows state).
+    {
+      Set Printing Coercions.
+      unfold lift_to_both0.
+      unfold lift_to_both.
+      unfold is_pure.
+      unfold lift_scope.
+      unfold is_state at 1.
+      unfold lift_code_scope.
+
+      apply (shift_rows_eq id0).
+      apply H.
+    }
+
+    subst.
+
+    match_pattern_and_bind (waes.SubBytes a₁).
+    {
+      unfold lift_to_both0.
+      unfold lift_to_both.
+      unfold is_pure.
+      unfold lift_scope.
+      unfold is_state at 1.
+      unfold lift_code_scope.
+
+      apply (sub_bytes_eq id0).
+      apply H.
+    }
+
+    subst.
+    
+    match_pattern_and_bind (waes.MixColumns a₁0).
+    {
+      unfold lift_to_both0.
+      unfold lift_to_both.
+      unfold is_pure.
+      unfold lift_scope.
+      unfold is_state at 1.
+      unfold lift_code_scope.
+      
+      apply (mix_columns_eq id0).
+      apply H.
+    }
+
+    subst.
+    
+    all: try (intros ? ? [] ; subst ; assumption).
+
+    apply r_ret.
+    intros.
+    split.
+    - reflexivity.
+    - assumption.
+  Qed.
 
   Lemma aes_enc_last_eq id0 state key (pre : precond) :
-    (pdisj pre id0 (fset [ (CE_loc_to_loc ( nseq int8 1 ; 0%nat ) : Location) ])) ->
+    (pdisj pre id0 fset0) ->
     ⊢ ⦃ pre ⦄
         ret (waes.wAESENCLAST state key)
         ≈
         prog (is_state (aesenclast state key))
         ⦃ fun '(v0, h0) '(v1, h1) => (v0 = v1)  /\ pre (h0, h1) ⦄.
   Proof.
+    intros.
+    unfold waes.wAESENCLAST.
+    unfold aesenclast.
 
-  Admitted.
+    match_pattern_and_bind (waes.ShiftRows state).
+    {
+      unfold lift_to_both0.
+      unfold lift_to_both.
+      unfold is_pure.
+      unfold lift_scope.
+      unfold is_state at 1.
+      unfold lift_code_scope.
+
+      apply (shift_rows_eq id0).
+      apply H.
+    }
+
+    subst.
+
+    match_pattern_and_bind (waes.SubBytes a₁).
+    {
+      unfold lift_to_both0.
+      unfold lift_to_both.
+      unfold is_pure.
+      unfold lift_scope.
+      unfold is_state at 1.
+      unfold lift_code_scope.
+
+      apply (sub_bytes_eq id0).
+      apply H.
+    }
+
+    subst.
+
+    all: try (intros ? ? [] ; subst ; assumption).
+    apply r_ret.
+    intros.
+    split.
+    - reflexivity.
+    - assumption.
+  Qed.
 
 
+  Notation state_loc := (CE_loc_to_loc state_124_loc).
   Lemma addroundkey_eq id0 (rkeys : 'array) (rkeys' : seq int128) m  (pre : precond) :
-    (pdisj pre id0 (fset [ (@int_choice U128; 334) ; (chMap ('fin 1) (@int_choice U8); 0)])) ->
+    (pdisj pre id0 (fset [ state_loc ])) ->
     (forall k, k <= 10 -> ((chArray_get U128 rkeys k (wsize_size U128))
     = is_pure (seq_index rkeys' (lift_to_both0 (repr k))))) ->
     (* ((forall (j : nat), *)
@@ -2762,7 +2863,7 @@ Section Hacspec.
 
       set (y1 :=
       fun H : int =>
-        set_rhs (int_choice; 334) H
+        set_rhs state_loc H
           (set_lhs
              (translate_var id0
                 {| vtype := sword U128; vname := "state.327" |}) H
@@ -2911,38 +3012,7 @@ Section Hacspec.
             {
               intros.
               destruct_pre.
-              rewrite in_fset in H1.
-              rewrite mem_seq1 in H1.
-              apply (ssrbool.elimT eqP) in H1.
-              subst.
-              destruct_pre.
-              eexists ; split.
-              2:{
-                reflexivity.
-              }
-              eexists ; split.
-              2:{
-                rewrite set_heap_commut.
-                reflexivity.
-                easy.
-              }
-              eexists ; split.
-              2:{
-                reflexivity.
-              }
-              eexists ; split.
-              2:{
-                reflexivity.
-              }
-              eexists ; split.
-              2:{
-                reflexivity.
-              }
-              eapply H_pdisj.
-              rewrite in_fset.
-              rewrite in_cons ; simpl.
-              now rewrite mem_head.
-              assumption.
+              discriminate.
             }
           }
         - apply better_r_put_rhs.
@@ -3119,24 +3189,7 @@ Section Hacspec.
         {
           intros.
           destruct_pre.
-          rewrite in_fset in H.
-          rewrite mem_seq1 in H.
-          apply (ssrbool.elimT eqP) in H.
-          subst.
-
-          eexists ; split.
-          2:{
-            rewrite set_heap_commut.
-            reflexivity.
-            easy.
-          }
-          eexists_set_heap.
-          eexists_set_heap.
-          eexists_set_heap.
-
-          apply H_pdisj.
-          solve_in_fset.
-          apply H8.
+          discriminate.
         }
       }
     }
@@ -3161,8 +3214,7 @@ Section Hacspec.
   Qed.
 
   Lemma aes_eq id0 key m  (pre : precond) :
-    (pdisj pre id0 (fset [(@int_choice U128; 334) ; (chMap ('fin 1) (@int_choice U8); 0) ; (@seq_choice int128; 279); (@int_choice U128; 278);
-              (@int_choice U128; 277)])) ->
+    (pdisj pre id0 (fset [state_loc ; rkeys_loc; temp2_loc; rkey_loc])) ->
     ⊢ ⦃ pre ⦄
         JAES id0 key m
         ≈
@@ -3235,9 +3287,7 @@ Section Hacspec.
       rewrite in_fset.
       rewrite in_fset in H.
       rewrite in_cons ; simpl.
-      rewrite in_cons ; simpl.
       rewrite H.
-      rewrite Bool.orb_true_r.
       now rewrite Bool.orb_true_r.
       apply H4.
     }
@@ -3303,7 +3353,6 @@ Section Hacspec.
         rewrite in_cons ; simpl.
         rewrite in_cons ; simpl.
         rewrite in_fset in H.
-        rewrite in_cons in H ; simpl.
         rewrite in_cons in H ; simpl.
         rewrite Bool.orb_false_r in H.
         rewrite orbA.
