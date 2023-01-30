@@ -1433,17 +1433,13 @@ Section Hacspec.
     destruct (is_pure (index_u8 _ _)).
     destruct toword.
     - reflexivity.
-    - (* SLOW!  *)admit.
-      (* repeat (destruct p ; [ | | reflexivity ]) ; exfalso ; destruct p ; discriminate i0. *)
-    - (* easy. *)
-  Admitted. (* Qed. *)
+    - (* SLOW! *) (* admit. *)
+      repeat (destruct p ; [ | | reflexivity ]) ; exfalso ; destruct p ; discriminate i0.
+    - easy.
+  (* Admitted. *) Qed.
 
-  Lemma SubWord_eq id0 (n : int32) pre :
-    (pdisj pre id0 fset0) ->
-    ⊢ ⦃ pre ⦄
-    ret (waes.SubWord n) ≈
-      is_state (subword n)
-     ⦃ fun '(v0, h0) '(v1, h1) => (v0 = v1) /\ pre (h0, h1) ⦄.
+  Lemma SubWord_eq (n : int32) :
+    waes.SubWord n = is_pure (subword n).
   Proof.
     intros.
     unfold waes.SubWord.
@@ -1457,8 +1453,7 @@ Section Hacspec.
     unfold subword.
     do 4 (rewrite <- sbox_eq ; [ | easy ]).
 
-    apply r_ret.
-    split ; easy.
+    easy.
   Qed.
 
   Lemma keygen_assist_eq id0 (v1 : 'word U128) (v2 : 'word U8) (pre : precond) :
@@ -1503,8 +1498,8 @@ Section Hacspec.
         apply word_ext.
         now rewrite Zmod_small.
       }
-      eapply (SubWord_eq id0 (repr a₁) (λ '(s₀1, s₁1), pre (s₀1, s₁1))).
-      apply H.
+      rewrite (SubWord_eq (repr a₁)).
+      apply r_ret ; easy.
     }
 
     match_pattern_and_bind (word.wxor (wror (sz:=U32) a₀1 8) (zero_extend U32 (sz':=U8) v2)).
@@ -1527,8 +1522,8 @@ Section Hacspec.
         apply word_ext.
         now rewrite Zmod_small.
       }
-      apply (SubWord_eq id0 (repr a₁0) (λ '(s₀1, s₁1), pre (s₀1, s₁1))).
-      apply H.
+      rewrite (SubWord_eq (repr a₁0)).
+      apply r_ret ; easy.
     }
 
     match_pattern_and_bind (word.wxor (wror (sz:=U32) a₀3 8)
@@ -1741,11 +1736,11 @@ Section Hacspec.
     unfold array_index_clause_2_clause_1.
     simpl.
 
-    (* SLOW! *) admit.
-    (* do 10 (destruct j as [ | j ] ; [ simpl ; repeat (remove_get_in_lhs ; simpl) ; apply better_r_put_lhs ; remove_get_in_lhs ; apply r_ret ; intros ; destruct_pre ; split ; [ eexists ; split ; [ | reflexivity] ; f_equal ; unfold totce ; repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K) ; reflexivity | eapply H ; [ reflexivity | reflexivity | ] ; eapply H ; [ reflexivity | reflexivity | ] ; apply H5 ] | ]). *)
-    (* exfalso. *)
-    (* lia. *)
-  Admitted. (* Qed. *)
+    (* SLOW! *) (* admit. *)
+    do 10 (destruct j as [ | j ] ; [ simpl ; repeat (remove_get_in_lhs ; simpl) ; apply better_r_put_lhs ; remove_get_in_lhs ; apply r_ret ; intros ; destruct_pre ; split ; [ eexists ; split ; [ | reflexivity] ; f_equal ; unfold totce ; repeat (cbn ; rewrite <- !coerce_to_choice_type_clause_1_equation_1; rewrite <- coerce_to_choice_type_equation_1; rewrite coerce_to_choice_type_K) ; reflexivity | eapply H ; [ reflexivity | reflexivity | ] ; eapply H ; [ reflexivity | reflexivity | ] ; apply H5 ] | ]).
+    exfalso.
+    lia.
+  (* Admitted. *) Qed.
 
   Ltac split_post :=
     repeat
@@ -1841,9 +1836,9 @@ Section Hacspec.
     end ||
         rewrite get_set_heap_neq.
 
-  Notation rkeys_loc := (seq_choice int128; 70).
-  Notation temp2_loc := (@int_choice U128; 69).
-  Notation rkey_loc := (@int_choice U128; 68).
+  Notation rkeys_loc := (CE_loc_to_loc rkeys_65_loc).
+  Notation temp2_loc := (CE_loc_to_loc temp2_67_loc).
+  Notation rkey_loc := (CE_loc_to_loc key_66_loc).
   Lemma keys_expand_eq id0 rkey  (pre : precond) :
     (pdisj pre id0 (fset ([rkeys_loc ; temp2_loc ; rkey_loc ]))) ->
     ⊢ ⦃ pre ⦄
@@ -2630,7 +2625,34 @@ Section Hacspec.
     ⊢ ⦃ pre ⦄ ret (waes.ShiftRows state) ≈
       prog (is_state (shiftrows state)) 
       ⦃ λ '(v0, h0) '(v1, h1), v0 = v1 ∧ pre (h0, h1) ⦄.
-  Admitted.
+    intros.
+    unfold waes.ShiftRows.
+    unfold waes.to_matrix.
+    unfold waes.to_state.
+    rewrite rebuild_32_eq.
+    rewrite rebuild_32_eq.
+    rewrite rebuild_32_eq.
+    rewrite rebuild_32_eq.
+    rewrite rebuild_128_eq.
+    unfold shiftrows.
+    rewrite !index_32_eq.
+    rewrite !index_8_eq.
+    
+    set (rebuild_u32 _ _ _ _).
+    set (rebuild_u32 _ _ _ _).
+    set (rebuild_u32 _ _ _ _).
+    set (rebuild_u32 _ _ _ _).
+
+    apply r_ret.
+    {
+      intros.
+      split.
+      - reflexivity.
+      - easy.
+    }
+
+    all: lia.
+  Qed.
 
   Lemma sub_bytes_eq id0 (state : 'word U128) (pre : precond) :
     (pdisj pre id0 fset0) ->
@@ -2638,16 +2660,30 @@ Section Hacspec.
      prog (is_state (subbytes (state))) 
      ⦃ λ '(v0, h0) '(v1, h1), v0 = v1 ∧ pre (h0, h1) ⦄.
   Proof.
-  Admitted.
+    intros.
+    unfold waes.SubBytes.
+    unfold subbytes.
+
+    simpl map.
+    rewrite rebuild_128_eq.
+
+    rewrite !SubWord_eq.
+    rewrite !index_32_eq.
+    apply r_ret ; easy.
+    
+    all: lia.
+  Qed.
 
   Lemma mix_columns_eq id0 (state : 'word U128) (pre : precond) :
     (pdisj pre id0 fset0) ->
   ⊢ ⦃ λ '(s₀0, s₁0), pre (s₀0, s₁0) ⦄ ret (waes.MixColumns state) ≈
-     prog (is_state (mixcolumns (state))) 
+     prog (is_state (mixcolumns (state)))
      ⦃ λ '(v0, h0) '(v1, h1), v0 = v1 ∧ pre (h0, h1) ⦄.
   Proof.
+    (* Mix Columns is not defined in jasmin,
+       so we assume the equality for now *)
   Admitted.
-  
+
   Lemma aes_enc_eq id0 state key (pre : precond) :
     (pdisj pre id0 fset0) ->
     ⊢ ⦃ pre ⦄
@@ -2766,7 +2802,7 @@ Section Hacspec.
   Qed.
 
 
-  Notation state_loc := (CE_loc_to_loc state_124_loc).
+  Notation state_loc := (CE_loc_to_loc state_120_loc).
   Lemma addroundkey_eq id0 (rkeys : 'array) (rkeys' : seq int128) m  (pre : precond) :
     (pdisj pre id0 (fset [ state_loc ])) ->
     (forall k, k <= 10 -> ((chArray_get U128 rkeys k (wsize_size U128))
