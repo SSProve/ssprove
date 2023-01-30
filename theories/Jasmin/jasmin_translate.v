@@ -2194,6 +2194,35 @@ Definition stack_cons s_id (stf : stack_frame) : stack_frame :=
   (stf.1.1.1, stf.1.1.2, s_id, stf.1.2 :: stf.2).
 Notation "s_id ⊔ stf" := (stack_cons s_id stf) (at level 60).
 
+Definition stf_disjoint m_id s_id s_st := disj m_id s_id /\ forall s_id', List.In s_id' s_st -> disj m_id s_id'.
+  (* (forall stf : stack_frame, List.In stf st -> ). *)
+
+Definition valid_stack_frame '(vm, m_id, s_id, s_st) (h : heap) :=
+  rel_vmap vm m_id h /\
+  m_id ⪯ s_id /\
+  valid s_id h /\
+  ~ List.In s_id s_st /\
+  List.NoDup s_st /\
+  (forall s_id', List.In s_id' s_st -> valid s_id' h) /\
+  (forall s_id', List.In s_id' s_st -> m_id ⪯ s_id') /\
+  (forall s_id', List.In s_id' s_st -> disj s_id s_id') /\
+  (forall s_id' s_id'', List.In s_id' s_st -> List.In s_id'' s_st -> s_id' <> s_id'' -> disj s_id' s_id'').
+
+(* Lemma valid_stack_frame_push '(vm, m_id, s_id, s_st) (h : heap) : *)
+
+(*   valid_stack_frame (vm, m_id, s_id, s_st) h -> *)
+(*   valid_stack_frame (vm, m_id, s_id', s_id :: s_st). *)
+(*   cons *)
+
+Inductive valid_stack' : stack -> heap -> Prop :=
+| valid_stack'_nil : forall h, valid_stack' [::] h
+| valid_stack'_cons :
+  forall h stf st,
+    valid_stack' st h ->
+    (forall stf' : stack_frame, List.In stf' st -> stf_disjoint stf.1.1.2 stf'.1.2 stf'.2) ->
+    valid_stack_frame stf h ->
+    valid_stack' (stf :: st) h.
+
 Inductive valid_stack : stack -> heap -> Prop :=
 | valid_stack_nil : forall h, valid_stack [::] h
 | valid_stack_new : forall st vm m_id s_id h,
@@ -2211,17 +2240,6 @@ Inductive valid_stack : stack -> heap -> Prop :=
     disj s_id s_id' ->
     (forall s_id'', List.In s_id'' s_st -> disj s_id' s_id'') ->
     valid_stack ((vm, m_id, s_id', s_id :: s_st) :: st) h.
-
-Definition valid_stack_frame '(vm, m_id, s_id, s_st) (h : heap) :=
-  rel_vmap vm m_id h /\
-  m_id ⪯ s_id /\
-  valid s_id h /\
-  ~ List.In s_id s_st /\
-  List.NoDup s_st /\
-  (forall s_id', List.In s_id' s_st -> valid s_id' h) /\
-  (forall s_id', List.In s_id' s_st -> m_id ⪯ s_id') /\
-  (forall s_id', List.In s_id' s_st -> disj s_id s_id') /\
-  (forall s_id' s_id'', List.In s_id' s_st -> List.In s_id'' s_st -> s_id' <> s_id'' -> disj s_id' s_id'').
 
 Lemma valid_stack_single vm m_id s_id s_st h :
   valid_stack_frame (vm, m_id, s_id, s_st) h ->
@@ -2421,6 +2439,56 @@ Proof.
            apply disj_sym; auto.
       * inversion hvalid; subst.
         eapply IHs_st; eauto.
+Qed.
+
+Lemma valid_stack'_spec st h :
+  valid_stack' st h <-> valid_stack st h.
+Proof.
+  split.
+  - intros.
+    induction st.
+    + constructor.
+    + inversion H; subst.
+    destruct a as [[[vm m_id] s_id] s_st].
+    revert s_id H H3 H5.
+    induction s_st; intros; destruct H5 as [h1 [h2 [h3 [h4 [h5 [h6 [h7 [h8]]]]]]]]; auto.
+    * intros; constructor; auto; try easy.
+    * assert (valid_stack_frame (vm, m_id, a, s_st) h).
+      { repeat split; eauto.
+        { apply h7. left. auto. }
+        { apply h6; left; auto. }
+        { inversion h5; auto. }
+        { inversion h5; auto. }
+        { intros. eapply h6. right; auto. }
+        { intros; apply h7; right; auto. }
+        { intros. apply H0. 1: left; auto.
+          1: right; auto.
+          inversion h5; subst.
+          intros contra; subst. auto. }
+        { intros. apply H0. 1: right; auto.
+          1: right; auto.
+          auto. } }
+      constructor; auto.
+      ** apply IHs_st; auto.
+         constructor; auto.
+      ** intros contra. apply h4. right; auto.
+      ** apply disj_sym. eapply h8.
+         1: left; auto.
+      ** intros.
+         apply h8. right; auto.
+  - intros.
+    induction st.
+    1: constructor.
+    destruct a as [[[vm m_id] s_id] s_st].
+    eapply invert_valid_stack in H as [H [H1]].
+    constructor.
+    + apply IHst. easy.
+    + intros.
+      unfold stf_disjoint.
+      intros.
+      eapply H1.
+      easy.
+      + assumption.
 Qed.
 
 Ltac invert_stack st hst hdisj hevm hpre hvalid hnin hnodup hvalid1 hpre1 hdisj1 hdisj2 :=
