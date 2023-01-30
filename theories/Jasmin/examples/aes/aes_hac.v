@@ -16,7 +16,6 @@ Import ListNotations.
 Local Open Scope string.
 
 Set Bullet Behavior "Strict Subproofs".
-(* Set Default Goal Selector "!". *) (* I give up on this for now. *)
 
 From Coq Require Import Utf8.
 From extructures Require Import ord fset fmap.
@@ -29,8 +28,6 @@ Import PackageNotation.
 
 From Hacspec Require Import Hacspec_Aes_Jazz ChoiceEquality Hacspec_Lib Hacspec_Lib_Pre Hacspec_Lib_Comparable.
 Open Scope hacspec_scope.
-
-(* Notation call fn := (translate_call _ fn _). *)
 
 #[global] Hint Resolve preceq_I preceq_O preceq_refl : preceq.
 
@@ -797,7 +794,7 @@ Section Hacspec.
       apply H0.
       lia.
   Qed.
-  
+
   Lemma nat_to_be_range_is_subword : forall {WS : wsize.wsize} {WS_inp : wsize.wsize} (n : @int WS_inp) i `{H_WS : WS <= WS_inp} , (@repr WS (nat_be_range WS (toword n) i) = word.subword (i * WS) WS n).
   Proof.
     intros.
@@ -1434,7 +1431,7 @@ Section Hacspec.
     destruct toword.
     - reflexivity.
     - (* SLOW! *) (* admit. *)
-      repeat (destruct p ; [ | | reflexivity ]) ; exfalso ; destruct p ; discriminate i0.
+      do 8 (destruct p ; [ | | reflexivity ]) ; exfalso ; destruct p ; discriminate i0.
     - easy.
   (* Admitted. *) Qed.
 
@@ -1502,9 +1499,15 @@ Section Hacspec.
       apply r_ret ; easy.
     }
 
-    match_pattern_and_bind (word.wxor (wror (sz:=U32) a₀1 8) (zero_extend U32 (sz':=U8) v2)).
+    match_pattern_and_bind (word.wxor (waes.RotWord a₀1) (zero_extend U32 (sz':=U8) v2)).
     {
       subst.
+
+      unfold waes.RotWord.
+      rewrite rebuild_32_eq.
+      rewrite !index_8_eq ; try lia.
+      unfold rotword.
+
       apply r_ret.
       intros.
       split.
@@ -1526,10 +1529,15 @@ Section Hacspec.
       apply r_ret ; easy.
     }
 
-    match_pattern_and_bind (word.wxor (wror (sz:=U32) a₀3 8)
-                                      (zero_extend U32 (sz':=U8) v2)).
+    match_pattern_and_bind (word.wxor (waes.RotWord a₀3) (zero_extend U32 (sz':=U8) v2)).
     {
       subst.
+
+      unfold waes.RotWord.
+      rewrite rebuild_32_eq.
+      rewrite !index_8_eq ; try lia.
+      unfold rotword.
+
       apply r_ret.
       intros.
       split.
@@ -1760,8 +1768,9 @@ Section Hacspec.
       with
       (seq_to_list A (fmap_of_seq ((seq_to_list A t) ++ [s]))).
     reflexivity.
+    unfold seq_from_list in e.
     rewrite e.
-    rewrite fmap_of_seq_id.
+    rewrite seq_from_list_id.
     reflexivity.
   Qed.
 
@@ -2490,7 +2499,8 @@ Section Hacspec.
               simpl.
               replace (fmap_of_seq _) with t.
               reflexivity.
-              now rewrite seq_to_list_id.
+              pose seq_to_list_id. unfold seq_from_list in e.
+              now rewrite e.
             }
 
             rewrite H3.
@@ -2623,7 +2633,7 @@ Section Hacspec.
   Lemma shift_rows_eq id0 (state : 'word U128) (pre : precond) :
     (pdisj pre id0 fset0) ->
     ⊢ ⦃ pre ⦄ ret (waes.ShiftRows state) ≈
-      prog (is_state (shiftrows state)) 
+      prog (is_state (shiftrows state))
       ⦃ λ '(v0, h0) '(v1, h1), v0 = v1 ∧ pre (h0, h1) ⦄.
     intros.
     unfold waes.ShiftRows.
@@ -2637,7 +2647,7 @@ Section Hacspec.
     unfold shiftrows.
     rewrite !index_32_eq.
     rewrite !index_8_eq.
-    
+
     set (rebuild_u32 _ _ _ _).
     set (rebuild_u32 _ _ _ _).
     set (rebuild_u32 _ _ _ _).
@@ -2657,7 +2667,7 @@ Section Hacspec.
   Lemma sub_bytes_eq id0 (state : 'word U128) (pre : precond) :
     (pdisj pre id0 fset0) ->
   ⊢ ⦃ λ '(s₀0, s₁0), pre (s₀0, s₁0) ⦄ ret (waes.SubBytes state) ≈
-     prog (is_state (subbytes (state))) 
+     prog (is_state (subbytes (state)))
      ⦃ λ '(v0, h0) '(v1, h1), v0 = v1 ∧ pre (h0, h1) ⦄.
   Proof.
     intros.
@@ -2670,7 +2680,7 @@ Section Hacspec.
     rewrite !SubWord_eq.
     rewrite !index_32_eq.
     apply r_ret ; easy.
-    
+
     all: lia.
   Qed.
 
@@ -2726,7 +2736,7 @@ Section Hacspec.
     }
 
     subst.
-    
+
     match_pattern_and_bind (waes.MixColumns a₁0).
     {
       unfold lift_to_both0.
@@ -2735,13 +2745,13 @@ Section Hacspec.
       unfold lift_scope.
       unfold is_state at 1.
       unfold lift_code_scope.
-      
+
       apply (mix_columns_eq id0).
       apply H.
     }
 
     subst.
-    
+
     all: try (intros ? ? [] ; subst ; assumption).
 
     apply r_ret.
@@ -2849,7 +2859,7 @@ Section Hacspec.
     simpl. Transparent is_state. Transparent is_pure.
 
     rewrite (rkeys_ext 0) ; [ | lia ].
-    
+
     bind_jazz_bind.
     {
       (* xor *)
@@ -3020,7 +3030,7 @@ Section Hacspec.
               eexists_set_heap.
               eexists_set_heap.
               (* eexists_set_heap. *)
-              
+
               pdisj_apply H_pdisj.
 
               etransitivity.
@@ -3196,7 +3206,7 @@ Section Hacspec.
           eexists ; split.
           2:{
             reflexivity.
-          }            
+          }
           eexists ; split.
           2:{
             rewrite set_heap_commut.
