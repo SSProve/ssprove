@@ -145,6 +145,15 @@ Proof.
   zify. simpl. lia.
 Qed.
 
+Lemma wbit_subword {ws1} i ws2 (w : word ws1) (j : 'I_ws2) :
+  wbit (subword i ws2 w) j = wbit w (i + j)%nat.
+Proof.
+  intros.
+  unfold subword.
+  rewrite wbit_mkword.
+  apply wbit_lsr.
+Qed.
+
 Lemma subword_wshr {n} i j m (w : word n) :
   subword i m (lsr w j) = subword (j + i) m w.
 Proof.
@@ -154,17 +163,7 @@ Proof.
   rewrite !wbit_subword.
   rewrite wbit_lsr.
   f_equal.
-  f_equal.
   lia.
-Qed.
-
-Lemma wbit_subword {ws1} i ws2 (w : word ws1) (j : 'I_ws2) :
-  wbit (subword i ws2 w) j = wbit w (i + j)%nat.
-Proof.
-  intros.
-  unfold subword.
-  rewrite wbit_mkword.
-  apply wbit_lsr.
 Qed.
 
 Lemma subword_xor {n} i ws (a b : n.-word) :
