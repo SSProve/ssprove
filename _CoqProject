@@ -108,8 +108,6 @@ theories/Jasmin/examples/aes/aes_utils.v
 theories/Jasmin/examples/aes/aes_valid.v
 theories/Jasmin/examples/aes/aes_spec.v
 
-theories/Jasmin/examples/xor/xor.v
-
 # Examples
 theories/Crypt/examples/package_usage_example.v
 theories/Crypt/examples/interpreter_test.v
