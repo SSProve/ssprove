@@ -167,11 +167,8 @@ Proof.
 Qed.
 
 Lemma subword_xor {n} i ws (a b : n.-word) :
-  (* I don't know if the assumption is necessary *)
-  (* (ws <= n)%nat -> *)
   subword i ws (a ⊕ b) = (subword i ws a) ⊕ (subword i ws b).
 Proof.
-  (* intros H. *)
   apply/eqP/eq_from_wbit.
   intros. rewrite !wbit_subword.
   rewrite !wxorE.
@@ -534,8 +531,6 @@ Proof.
   Unshelve. exact word0.
 Qed.
 
-(* Check SubBytes. *)
-
 Lemma ShiftRows_SubBytes s : ShiftRows (SubBytes s) = SubBytes (ShiftRows s).
 Proof.
   unfold ShiftRows. simpl.
@@ -559,14 +554,6 @@ Proof.
   rewrite ShiftRows_SubBytes.
   reflexivity.
 Qed.
-
-(* (* NOTE: This is only so simple because InvMixColumns is not properly implemented *) *)
-(* Lemma AESDEC_AESDEC_ s k : wAESDEC s (InvMixColumns k) = wAESDEC_ s k. *)
-(* Proof. *)
-(*   unfold wAESDEC, wAESDEC_. *)
-(*   unfold InvMixColumns. *)
-(*   reflexivity. *)
-(* Qed. *)
 
 Lemma wAESENCLAST_wAESENCLAST_ s k : wAESENCLAST s k = wAESENCLAST_ s k.
 Proof.

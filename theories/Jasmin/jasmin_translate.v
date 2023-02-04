@@ -901,8 +901,7 @@ Proof.
   - rewrite -mulP in e. rewrite -plusE in e.
     pose proof (nat_of_ident_pos x).
     micromega.Lia.lia.
-  - (* BSH: there is a more principled way of doing this, but this'll do for now *)
-    apply (f_equal (λ a, Nat.modulo a 256)) in e as xy_eq.
+  - apply (f_equal (λ a, Nat.modulo a 256)) in e as xy_eq.
     rewrite -Nat.add_mod_idemp_l in xy_eq. 2: micromega.Lia.lia.
     rewrite -Nat.mul_mod_idemp_l in xy_eq. 2: micromega.Lia.lia.
     rewrite Nat.mod_same in xy_eq. 2: micromega.Lia.lia.
@@ -1310,16 +1309,10 @@ Definition translate_write_var (p : p_id) (x : var_i) (v : typed_chElement) :=
 Definition translate_get_var (p : p_id) (x : var) : raw_code (encode x.(vtype)) :=
   x ← get (translate_var p x) ;; ret x.
 
-(* TW: We can remove it right? *)
 Fixpoint satisfies_globs (globs : glob_decls) : heap * heap → Prop.
 Proof.
   exact (λ '(x, y), False). (* TODO *)
 Defined.
-
-(* Fixpoint collect_globs (globs : glob_decls) : seq Location.
-Proof.
-  exact [::]. (* TODO *)
-Defined. *)
 
 Definition translate_gvar (p : p_id) (x : gvar) : raw_code (encode x.(gv).(vtype)) :=
   if is_lvar x
@@ -1365,7 +1358,7 @@ Definition chArray_get_sub ws len (a : 'array) ptr scale :=
     foldr (λ (i : Z) (data : 'array),
       match a (start + i)%Z with
       | Some w => setm data i w
-      | None => remm data i      (* BSH: this should maybe not be done; I added it to simplify the proof of equivalence *)
+      | None => remm data i
       end
     ) emptym (ziota 0 size)
   )
@@ -1679,7 +1672,6 @@ End bind_list_alt.
 Context {fcp : FlagCombinationParams}.
 Definition embed_ot {t} : sem_ot t → encode t :=
   match t with
-  (* BSH: I'm not sure this will be correct? In jasmin this is an Option bool, perhaps because you don't have to specify all output flags *)
   | sbool => λ x,
     match x with
     | Some b => b
@@ -1773,8 +1765,8 @@ Fixpoint translate_pexpr (p : p_id) (e : pexpr) {struct e} : typed_code :=
   | PappN op es =>
       (* note that this is sligtly different from Papp2 and Papp1, in that
          we don't truncate when we bind, but when we apply (in app_sopn_list).
-         This made the proof easier, but is also more faithful(maybe?) to
-         how it is done in jasmin. Maybe we should change Papp1/2.
+         This made the proof easier, but is also more faithful to
+         how it is done in jasmin.
        *)
     totc _ (
       vs ← bind_list [seq translate_pexpr p e | e <- es] ;;
@@ -1789,46 +1781,6 @@ Fixpoint translate_pexpr (p : p_id) (e : pexpr) {struct e} : typed_code :=
     )
   end.
 
-(*   (* | Pget aa ws x e => *)
-    exists 'word ws.
-    (* Look up x amongst the evm part of the estate and the globals gd. Monadic
-       Let because we might find None. If (Some val) is found, fail with type
-       error unless (val = Varr n t). We obtain (n: positive) and (t: array n). *)
-  (*     Let (n, t) := gd, s.[x] in *)
-
-    pose (x' := translate_gvar p x).
-    pose (arr := y ← x'.π2 ;; @ret _ (coerce_to_choice_type 'array y)).
-
-  (* Evaluate the indexing expression `e` and coerce it to Z. *)
-  (*     Let i := sem_pexpr s e >>= to_int in *)
-    pose (i := coerce_typed_code 'int (translate_pexpr p e)).
-
-  (* The actual array look-up, where
-       WArray.get aa ws t i = CoreMem.read t a (i * (mk_scale aa ws)) ws
-     and
-       mk_scale = (if aa == AAscale then (ws/8) else 1) *)
-
-  (*     Let w := WArray.get aa ws t i in *)
-    pose (scale := mk_scale aa ws).
-
-    exact (a ← arr ;; ptr ← i ;; ret (chArray_get ws a ptr scale)). *)
-
-  (* | PappN op es => *)
-    (*   Let vs := mapM (sem_pexpr s) es in *)
-    (*   sem_opN op vs *)
-    (* pose (vs := map (translate_pexpr p) l).
-    pose proof (sem_opN_typed o) as f. simpl in f. *)
-
-(* Fixpoint app_sopn T ts : sem_prod ts (exec T) → values → exec T := *)
-(*   match ts return sem_prod ts (exec T) → values → exec T with *)
-(*   | [::] => λ (o : exec T) (vs: values), if vs is [::] then o else type_error *)
-(*   | t :: ts => λ (o: sem_t t → sem_prod ts (exec T)) (vs: values), *)
-(*     if vs is v :: vs *)
-(*     then Let v := of_val t v in app_sopn (o v) vs *)
-(*     else type_error *)
-(*   end. *)
-
-    (* pose (vs' := fold (fun x => y ← x ;; unembed y) f vs). *)
 
 Definition translate_write_lval (p : p_id) (l : lval) (v : typed_chElement)
   : raw_code 'unit
@@ -1841,7 +1793,7 @@ Definition translate_write_lval (p : p_id) (l : lval) (v : typed_chElement)
     let vx : word _ := translate_to_pointer vx' in
     ve' ← (translate_pexpr p e).π2 ;;
     let ve := translate_to_pointer ve' in
-    let p := (vx + ve)%R in (* should we add the size of value, i.e vx + sz * se *) (* Is it from us or them? *)
+    let p := (vx + ve)%R in
     let w := truncate_chWord sz v.π2 in
     translate_write p w
   | Laset aa ws x i =>
@@ -1921,7 +1873,6 @@ Fixpoint foldr2 {A B R} (f : A → B → R → R) (la : seq A) (lb : seq B) r :=
   end.
 
 Definition translate_write_lvals p ls vs :=
-  (* foldl2 (λ c l v, translate_write_lval p l v ;; c) ls vs (ret tt). *)
   foldr2 (λ l v c, translate_write_lval p l v ;; c) ls vs (ret tt).
 
 Definition translate_write_vars p xs vs :=
@@ -1997,9 +1948,6 @@ Definition rel_mem (m : mem) (h : heap) :=
     (* mem as array model: *)
     read m ptr U8 = ok v →
     (get_heap h mem_loc) ptr = Some v.
-    (* mem as locations model: *)
-    (* get_heap h (translate_ptr ptr) = *)
-    (* coerce_to_choice_type _ (translate_value (@to_val (sword U8) v)). *)
 
 Lemma translate_read :
   ∀ s ptr sz w m,
@@ -2069,7 +2017,6 @@ Proof.
 Qed.
 
 (* Copy of write_read8 *)
-(* BSH: i don't know if we need this any more (see write_mem_get) *)
 Lemma write_read_mem8 :
   ∀ m p ws w p',
     read_mem (write_mem (sz := ws) m p w) p' U8 =
@@ -2195,7 +2142,6 @@ Definition stack_cons s_id (stf : stack_frame) : stack_frame :=
 Notation "s_id ⊔ stf" := (stack_cons s_id stf) (at level 60).
 
 Definition stf_disjoint m_id s_id s_st := disj m_id s_id /\ forall s_id', List.In s_id' s_st -> disj m_id s_id'.
-  (* (forall stf : stack_frame, List.In stf st -> ). *)
 
 Definition valid_stack_frame '(vm, m_id, s_id, s_st) (h : heap) :=
   rel_vmap vm m_id h /\
@@ -2207,12 +2153,6 @@ Definition valid_stack_frame '(vm, m_id, s_id, s_st) (h : heap) :=
   (forall s_id', List.In s_id' s_st -> m_id ⪯ s_id') /\
   (forall s_id', List.In s_id' s_st -> disj s_id s_id') /\
   (forall s_id' s_id'', List.In s_id' s_st -> List.In s_id'' s_st -> s_id' <> s_id'' -> disj s_id' s_id'').
-
-(* Lemma valid_stack_frame_push '(vm, m_id, s_id, s_st) (h : heap) : *)
-
-(*   valid_stack_frame (vm, m_id, s_id, s_st) h -> *)
-(*   valid_stack_frame (vm, m_id, s_id', s_id :: s_st). *)
-(*   cons *)
 
 Inductive valid_stack' : stack -> heap -> Prop :=
 | valid_stack'_nil : forall h, valid_stack' [::] h
@@ -3402,7 +3342,6 @@ Proof.
   reflexivity.
 Qed.
 
-(* BSH: I don't think these are necessary anymore *)
 Lemma list_tuple_cons_cons {t1 t2 : stype}  {ts : seq stype} (p : sem_tuple (t1 :: t2 :: ts)) :
   list_ltuple p = (oto_val p.1) :: (list_ltuple (p.2 : sem_tuple (t2 :: ts))).
 Proof. reflexivity. Qed.
@@ -3706,7 +3645,6 @@ Proof.
         unfold comp.
         eapply translate_pexprs_types.
         eassumption.
-      (* this should maybe be a lemma or the condition in bind_list_correct should be rewrote to match H *)
       * {
         clear -h2 H hcond.
         revert v' h2 H.
@@ -3727,7 +3665,6 @@ Proof.
             intros.
             eapply H.
             { apply List.in_cons. assumption. }
-            (* { rewrite in_cons. rewrite H0. by apply /orP; right. } *)
             1: eassumption.
             assumption.
       }
@@ -4167,8 +4104,6 @@ Proof using P asm_op asmop pd.
   pose (trunc_list (f_tyin f) vargs') as vargs.
   apply (bind (translate_write_vars sid (f_params f) vargs)) => _.
   (* Perform the function body. *)
-  (* apply (bind (tr_f_body _ _ E)) => _. *)
-  (* pose (tr_f_body _ _ E) as tr_f. *)
   apply (bind (tr_f_body sid)) => _.
   eapply bind.
   - (* Look up the results in their locations... *)
@@ -4252,51 +4187,6 @@ Proof using P asm_op asmop pd fcp.
     | _ => (s_id, unsupported.π2)
     end.
 Defined.
-(*
-   Questions to answer for the translation of functions and function calls:
-   - When does argument truncation happen?
-   - What does each function get translated to?
-
-   Idea 0: translate the function body each time it gets called.
-   This doesn't work if we look up the body in a dictionary à la `get_fundef`. If we try to apply `translate_cmd` to the result of a function call,
-   we have no guarantee this will terminate.
-
-   Idea 1:
-   - Each jasmin function gets translated into a typed_raw_function
-   - The translation of a jasmin instruction is parametrised by a dictionary associating to each function name such a typed_raw_function.
-   - Each function call can then look up the translated function.
-
-   The problem with this approach is that Jasmin functions don't expect their arguments to be of the right type.
-   Instead, they perform a truncation on the callee side.
-   To emulate this behaviour we would have to allow the application of a function to arguments of the wrong type.
-   This won't work with a `typed_raw_function = ∑ S T : choice_type, S → raw_code T` , as the arguments have to match the function type.
-
-   A workaround would be to pack the arguments into a list of `typed_chElement`, i.e. `list (∑ t : choice_type, t)`,
-   but this type is too large to live inside `choice_type`.
-   Instead, we could translate each jasmin function to a "large" `Typed_Raw_Function = Π S T : choiceType, S → raw_code T`,
-   or more precisely `Π S T : list stype, [seq encode s | s <- S] → raw_code [seq encode t | t <- T]`,
-   or equivalently `list (Σ s : stype, encode s) → list (Σ t : stype, encode t)`.
-
-   As a result, the translated functions do not fit `typed_raw_function`,
-   cannot directly be described by an `opsig`,
-   and thus can't be wrapped in a `raw_package`.
-   Question: Could we generalise the definition of `raw_package` to allow `Typed_Raw_Functions`?
-
-   Instead of modifying `raw_package`, we could add Σ-types to `choice_type`.
-   This could be done using Paulin-Mohring's trick for representing inductive-recursive definitions in Coq.
-   As a first test we could use `boolp.choice_of_Type` to get the choice structure on the universe.
-   The `ordType` structure could come from `order.Order.SigmaOrder.le`.
-   Question: Do we rely on the computational properties of the choice structure of `choice_universe`?
-
-   Idea 2:
-   - Each Jasmin function gets translated to a `'unit raw_code` corresponding to its body.
-   - translate_instr takes a map from p_ids to translated fun bodies.
-   - There is an additional wrapper function
-     `translate_call : p_id → (args : seq value) → (f_tyin : seq stype) -> (f_tr_body : 'unit raw_code) -> 'unit raw_code`
-     that does the work of truncating, and storing the function arguments as well as the returned results into their locations.
-   - the main theorem then talks not about running the translation of a function, but instead about translate_call
-
- *)
 
 (* translate_instr is blocked because it is a fixpoint *)
 Lemma translate_instr_unfold :
@@ -4321,9 +4211,6 @@ Fixpoint translate_cmd (tr_f_body : fdefs) (c : cmd) (id : p_id) (sid : p_id) : 
 
 End TranslateCMD.
 
-(* PGH: CURRENTLY UNUSED. Keeping this around for when we want to package
-   functions into packages, as we'll have to bundle the arguments and results
-   into tuples. *)
 Record fdef := {
   ffun : typed_raw_function ;
   locs : {fset Location} ;
@@ -4424,18 +4311,14 @@ Proof using asm_op asmop pd fcp.
     exact (f.1, translate_call prog f.1 (f::fs)).
 Defined.
 
-(* PGH: TODO: do we need an ambient funname?  *)
 Definition translate_funs (P : uprog) : seq _ufun_decl → fdefs * ssprove_prog :=
   let fix translate_funs (fs : seq _ufun_decl) : fdefs * ssprove_prog :=
     match fs with
     | [::] => ([::], [::])
     | f :: fs' =>
-        (* let '(tr_fs', tr_p') := translate_funs fs' in *)
-        (* let '(tr_fs', tr_p') := translate_funs fs' in *)
         let '(fn, f_extra) := f in
         let tr_body := fun sid => (translate_cmd P (translate_funs fs').1 (f_body f_extra) sid sid).2 in
         let tr_fs := (fn, tr_body) :: (translate_funs fs').1 in
-        (* let tr_p := (fn, translate_call P fn tr_fs) :: tr_p' in *)
         let tr_p := (fn, translate_call_body P fn tr_body) :: (translate_funs fs').2 in
         (tr_fs, tr_p)
     end
@@ -4484,7 +4367,6 @@ Proof.
       noconf h.
       exists fs'.
       exists [::].
-      (* exists (fun p => (translate_cmd P (translate_funs P fs').1 p (f_body f) p p)). *)
       simpl.
       destruct (translate_funs P fs') as [f_body f_prog] eqn:E2.
       simpl.
@@ -4574,7 +4456,6 @@ Definition handled_cmd (c : cmd) :=
 Definition handled_fundecl (f : _ufun_decl) :=
   handled_cmd f.2.(f_body).
 
-(* FIXME: bad naming *)
 Lemma lemma3 suf pre :
   (foldr (fun f '(b, l) => if b then (cmd_fs f.2.(f_body) l, f :: l) else (false, f :: l)) (true, [::]) (suf ++ pre)).1  ->
   (foldr (fun f '(b, l) => if b then (cmd_fs f.2.(f_body) l, f :: l) else (false, f :: l)) (true, [::]) pre).1.
@@ -4590,7 +4471,6 @@ Proof.
     + easy.
 Qed.
 
-(* FIXME: bad naming *)
 Lemma lemma4 pre :
   (foldr (fun f '(b, l) => if b then (cmd_fs f.2.(f_body) l, f :: l) else (false, f :: l)) (true, [::]) pre).2 = pre.
 Proof.
@@ -4601,7 +4481,6 @@ Proof.
     destruct b; simpl in *; congruence.
 Qed.
 
-(* FIXME: bad naming *)
 Lemma lemma2 g gn (pre suf : list _ufun_decl) :
   (foldr (fun f '(b, l) => if b then (cmd_fs f.2.(f_body) l, f :: l) else (false, f :: l)) (true, [::]) (suf ++ (gn,g) :: pre)).1  ->
   cmd_fs g.(f_body) pre.
@@ -4874,7 +4753,6 @@ Qed.
 
 Definition Pfun (P : uprog) (fn : funname) scs m va scs' m' vr vm m_id s_id s_st st :=
   ⊢ ⦃ rel_estate {| escs := scs ; emem := m; evm := vm |} m_id s_id s_st st ⦄
-      (* translate_call P fn (translate_prog' P) [seq totce (translate_value v) | v <- va] *)
       get_translated_fun P fn s_id~1 [seq totce (translate_value v) | v <- va]
       ⇓ [seq totce (translate_value v) | v <- vr]
       ⦃ rel_estate {| escs := scs' ; emem := m' ; evm := vm |} m_id s_id~0 s_st st ⦄.
@@ -4897,7 +4775,6 @@ Proof.
     reflexivity.
 Qed.
 
-(* FIXME: bad naming *)
 Lemma hget_lemma2 l scs m vm vres m_id s_id s_st st :
   mapM (λ x : var_i, get_var vm x) l = ok vres ->
   List.Forall2
@@ -4921,7 +4798,6 @@ Proof.
     + eapply IHl. assumption.
 Qed.
 
-(* FIXME: bad naming *)
 Lemma htrunc_lemma1 l vargs vargs':
   mapM2 ErrType truncate_val l vargs' = ok vargs
   -> (trunc_list l [seq totce (translate_value v) | v <- vargs']) = [seq totce (translate_value v) | v <- vargs].
@@ -4959,7 +4835,6 @@ Proof.
     rewrite IHl; auto.
 Qed.
 
-(* FIXME: bad naming *)
 Lemma lemma1 P pre c suf m_id :
   uniq [seq p.1 | p <- suf ++ pre] ->
   forall s_id,
