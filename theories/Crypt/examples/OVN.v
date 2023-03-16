@@ -1297,13 +1297,14 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     ssprove_sync_eq=>rel1.
     ssprove_sync_eq=>r1.
     ssprove_sync_eq.
+
     (* ssprove_sync_eq=>queries.
     destruct (queries (Sigma1.Sigma.prod_assoc (fto (g ^+ otf x), fto (g ^+ otf r1)))) eqn:e.
     all: rewrite e.
     - simpl.
       ssprove_code_simpl.
       ssprove_sync_eq=>?. *)
-    Admitted.
+  Admitted.
 
   #[tactic=notac] Equations? Aux_realised (b : bool) (i j : pid) m f' :
     package (DDH.DDH_locs :|: P_i_locs i :|: combined_locations) Game_import [interface #val #[ Exec i ] : 'bool → 'public] :=
@@ -1431,7 +1432,10 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
         by apply /fset1P.
       - apply preserve_update_mem_nil.
     }
-    (* ssprove_sync.
+    ssprove_sync.
+    ssprove_swap_seq_lhs [:: 0 ]%N.
+    ssprove_swap_seq_rhs [:: 2 ; 1 ; 0]%N.
+    ssprove_sync => queries.
     destruct (queries (Sigma1.Sigma.prod_assoc (fto (g ^+ x_i), fto (g ^+ otf r_i)))) eqn:e.
     all: rewrite e; simpl.
     all: ssprove_code_simpl_more.
@@ -1477,6 +1481,8 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
       ssprove_restore_pre.
       1: ssprove_invariant.
       clear e queries.
+      ssprove_sync.
+      ssprove_swap_seq_lhs [:: 0]%N.
       ssprove_sync=>queries.
       destruct (queries (Sigma1.Sigma.prod_assoc (fto (g ^+ x), fto (g ^+ otf r_j)))) eqn:e.
       all: rewrite e.
@@ -1626,6 +1632,8 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
       ssprove_restore_pre.
       1: ssprove_invariant.
       clear e queries.
+      ssprove_sync.
+      ssprove_swap_seq_lhs [:: 0]%N.
       ssprove_sync=>queries.
       destruct (queries (Sigma1.Sigma.prod_assoc (fto (g ^+ x), fto (g ^+ otf r_j)))) eqn:e.
       all: rewrite e.
@@ -1729,8 +1737,7 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
         rewrite -expgM.
         rewrite mulnC.
         case b; apply r_ret ; done.
-  Qed. *)
-  Admitted.
+  Qed.
 
   Lemma Hord (x : secret): (nat_of_ord x) = (nat_of_ord (otf x)).
   Proof.
@@ -1882,7 +1889,7 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
         apply /andP ; split ; assumption.
     }
     {
-      (* unfold Aux_realised.
+      unfold Aux_realised.
       rewrite -Advantage_link.
       rewrite par_commut.
       have -> : (par DDH.DDH_ideal (Sigma1.Sigma.Fiat_Shamir ∘ RO1.RO)) =
@@ -1893,9 +1900,6 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
       3: apply DDH.DDH_ideal.
       2: {
         ssprove_valid.
-        - eapply valid_package_inject_export.
-          2: apply RO1.RO.
-          fsubset_auto.
         - eapply fsubsetUr.
         - apply fsubsetUl.
       }
@@ -1926,11 +1930,10 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
         simpl.
         rewrite !in_fset1 !eq_refl.
         rewrite filterm0.
-        done. *)
-        admit.
+        done.
     }
     2:{
-      (* unfold Aux_realised.
+      unfold Aux_realised.
       rewrite -Advantage_link.
       rewrite par_commut.
       have -> : (par DDH.DDH_real (Sigma1.Sigma.Fiat_Shamir ∘ RO1.RO)) =
@@ -1940,13 +1943,9 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
       3: apply DDH.DDH_ideal.
       3: apply DDH.DDH_real.
       2: {
-        (* ssprove_valid.
-        - eapply valid_package_inject_export.
-          2: apply RO1.RO.
-          fsubset_auto.
+        ssprove_valid.
         - eapply fsubsetUr.
-        - apply fsubsetUl. *)
-        admit.
+        - apply fsubsetUl.
       }
       1: apply Dadv.
       - ssprove_valid.
@@ -1977,8 +1976,7 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
         simpl.
         rewrite !in_fset1 !eq_refl.
         rewrite filterm0.
-        done. *)
-        admit.
+        done.
     }
     2: {
       apply eq_ler.
@@ -2123,7 +2121,8 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
       apply /orP ; right.
       by apply /fset1P.
     }
-    (* ssprove_sync=>queries.
+    ssprove_sync.
+    ssprove_sync=>queries.
     case (queries (Sigma1.Sigma.prod_assoc (fto (g ^+ x_i), fto (g ^+ otf r_i)))) eqn:e.
     all: rewrite e.
     all: ssprove_code_simpl ; simpl.
@@ -2141,6 +2140,7 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
       clear e queries.
       ssprove_restore_pre.
       1: ssprove_invariant.
+      ssprove_sync.
       ssprove_sync=>queries.
       case (queries (Sigma1.Sigma.prod_assoc (fto (g ^+ finv f' x_j), fto (g ^+ otf e_j)))) eqn:e.
       all: rewrite e.
@@ -2201,6 +2201,7 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
       apply r_put_rhs.
       ssprove_restore_pre.
       1: ssprove_invariant.
+      ssprove_sync.
       ssprove_sync=>queries'.
       case (queries' (Sigma1.Sigma.prod_assoc (fto (g ^+ finv f' x_j), fto (g ^+ otf r_j)))) eqn:e'.
       all: rewrite e'.
@@ -2246,8 +2247,7 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
         2: assumption.
         unfold f_v.
         apply vote_hiding_bij.
-  Qed. *)
-  Admitted.
+  Qed.
 
 End OVN.
 End OVN.
