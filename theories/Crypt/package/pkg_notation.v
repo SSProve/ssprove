@@ -328,6 +328,6 @@ Module PackageNotation.
     cbn. exists n. exact h.
   Defined.
 
-  Notation gfin n := (@give_fin n _).
+  Notation gfin n := (give_fin n).
 
 End PackageNotation.

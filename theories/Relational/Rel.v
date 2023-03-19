@@ -145,7 +145,6 @@ Section RelCat.
   Program Definition RelCat :=
     mkCategory Rel arrRel (fun _ _ f1 f2 => f1 = f2) _ idRel
                (fun _ _ _ f g => compRel g f) _ _ _ _.
-  Next Obligation. cbv ; intuition. induction H. induction H0=> //. Qed.
 
   Definition rel_one : Rel := ⦑unit, unit| fun _ _ => unit⦒.
   Definition to_rel_one X : RelCat⦅X;rel_one⦆ :=
