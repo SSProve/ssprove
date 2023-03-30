@@ -50,8 +50,9 @@ Section MonotoneContinuationsMonad.
     fun m1 m2 => pointwise_relation (A -> R) Rrel (proj1_sig m1) (proj1_sig m2).
   Instance MonoCont_order_preorder A : PreOrder (@MonoCont_order A).
   Proof.
-    constructor ; cbv ; intuition ;
-      eauto using PreOrder_Transitive.
+    constructor ; cbv.
+    - auto with crelations.
+    - eauto using PreOrder_Transitive.
   Qed.
 
   Program Definition MonoCont : OrderedMonad :=

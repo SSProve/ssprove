@@ -551,7 +551,8 @@ Section FreeLocations.
     move /eqP => Q.
     rewrite -Q.
     rewrite in_fsetU.
-    intuition.
+    apply/orP.
+    by left.
   Defined.
 
   Let codeI locs := code locs import.
@@ -603,7 +604,8 @@ Section FreeMap.
     unfold fsubset in hs.
     move: hs. move /eqP => hs. rewrite -hs.
     rewrite in_fsetU.
-    intuition.
+    apply/orP.
+    auto.
   Defined.
 
   Let codeL I := code Locs I.

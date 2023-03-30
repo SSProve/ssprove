@@ -24,10 +24,10 @@ Section ConstantFunctor.
 
   Program Definition mkConstFunc : ord_functor C D := mkOrdFunctor (fun c => d) _ _ _ _.
   Next Obligation.
-    intuition.
+    auto with solve_subterm.
   Defined.
   Next Obligation.
-    cbv. intuition.
+    cbv. auto with solve_subterm.
   Qed.
   Next Obligation.
     cbv. intuition. rewrite ord_cat_law1. reflexivity.

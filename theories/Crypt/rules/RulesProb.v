@@ -614,7 +614,7 @@ Proof.
   rewrite HeqH11.
   assert ((fun x : X => (A x)%:R * psum (fun w : Choice.Pack chY => d (x, w))) = (fun x : X => psum (fun w : Choice.Pack chY => (A x)%:R * d (x, w)))) as H4.
   { extensionality k. rewrite -psumZ. reflexivity.
-    case (A k); intuition. by rewrite ler01. }
+    case (A k); intuition; by rewrite ler01. }
   rewrite H4.
   assert ((fun x : Y => (B x)%:R * dsnd d x) = (fun y : Y => (B y)%:R * psum (fun w => d (w, y)))) as HeqH12.
   { extensionality K. rewrite dsndE. reflexivity. }
@@ -722,7 +722,7 @@ Proof.
   rewrite HeqH11.
   assert ((fun x : X => (A x)%:R * psum (fun w : Choice.Pack chY => d (x, w))) = (fun x : X => psum (fun w : Choice.Pack chY => (A x)%:R * d (x, w)))) as H4.
   { extensionality k. rewrite -psumZ. reflexivity.
-    case (A k); intuition. by rewrite ler01. }
+    case (A k); intuition; by rewrite ler01. }
   rewrite H4.
   assert ((fun x : Y => (B x)%:R * dsnd d x) = (fun y : Y => (B y)%:R * psum (fun w => d (w, y)))) as HeqH12.
   { extensionality K. rewrite dsndE. reflexivity. }
@@ -739,7 +739,7 @@ Proof.
   - move => [x1 x2] /=.
     apply /andP. split.
     -- apply: mulr_ge0.
-       --- case: (A x1); rewrite //=. exact ler01.
+       --- case: (A x1); rewrite //=; exact ler01.
        --- by inversion d.
     -- have Hd0 : 0 <= d(x1,x2) by inversion d.
        have [Hdor1 | Hdor2]: 0 == d(x1,x2) \/ 0 < d(x1,x2).
@@ -748,13 +748,12 @@ Proof.
        --- move/eqP : Hdor1 => Hdor1.
            by rewrite -Hdor1 !GRing.mulr0.
        --- apply: ler_pmul.
-           + case: (A x1); rewrite //=. exact ler01.
+           + case: (A x1); rewrite //=; exact ler01.
            + by inversion d.
            + move:  (H2 x1 x2 Hdor2) => HAB.
              destruct (A x1) eqn: Ax1; rewrite //=;
-             destruct (B x2) eqn : Bx2; rewrite //=.
+             destruct (B x2) eqn : Bx2; rewrite //=; try exact ler01.
              exfalso. by apply: true_false_False.
-             exact ler01.
              auto.
   (* summable B *)
     assert ((fun x : (prod_choiceType (Choice.Pack chX) (Choice.Pack chY)) =>

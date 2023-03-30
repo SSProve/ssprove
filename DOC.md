@@ -223,9 +223,9 @@ locations.
 
 #### Set of locations
 
-The set of locations is expected as a `{fset Location }` using the finite
+The set of locations is expected as an `{fset Location }` using the finite
 sets of the [extructures] library. For our purposes, it is advisable to write
-them directly as list which of locations which is then cast to a `fset` using
+them directly as list which of locations which is then cast to an `fset` using
 the `fset` operation, as below:
 ```coq
 fset [:: ℓ₀ ; ℓ₁ ; ℓ₂ ]

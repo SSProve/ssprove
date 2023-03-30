@@ -31,11 +31,11 @@ A documentation is available in [DOC.md].
 
 #### Prerequisites
 
-- OCaml `>=4.05.0 & <4.13.0`
-- Coq `8.14.0`
-- Equations `1.3+8.14`
-- Mathcomp `1.13.0`
-- Mathcomp analysis `0.3.13`
+- OCaml `>=4.05.0 & <5`
+- Coq `>=8.16.0 & <8.18.0`
+- Equations `1.3`
+- Mathcomp `>=1.15.0`
+- Mathcomp analysis `>=0.5.3`
 - Coq Extructures `0.3.1`
 - Coq Deriving `0.1`
 

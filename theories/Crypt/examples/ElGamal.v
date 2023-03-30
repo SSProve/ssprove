@@ -134,6 +134,7 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Definition challenge_id : nat := 8. (*challenge for LR *)
   Definition challenge_id' : nat := 9. (*challenge for real rnd *)
   Definition getpk_id : nat := 42. (* routine to get the public key *)
+  Definition query_id : nat := 10.
 
   Definition i_plain := #|Plain|.
   Definition i_cipher := #|Cipher|.
@@ -208,9 +209,9 @@ Definition DH_loc := fset [:: pk_loc ; sk_loc].
 
 Definition DH_real :
   package DH_loc [interface]
-    [interface #val #[10%nat] : 'unit → 'pubkey × 'cipher ] :=
+    [interface #val #[query_id] : 'unit → 'pubkey × 'cipher ] :=
     [package
-      #def #[10%nat] (_ : 'unit) : 'pubkey × 'cipher
+      #def #[query_id] (_ : 'unit) : 'pubkey × 'cipher
       {
         a ← sample uniform i_sk ;;
         let a := otf a in
@@ -224,9 +225,9 @@ Definition DH_real :
 
 Definition DH_rnd :
   package DH_loc [interface]
-    [interface #val #[10%nat] : 'unit → 'pubkey × 'cipher ] :=
+    [interface #val #[query_id] : 'unit → 'pubkey × 'cipher ] :=
     [package
-      #def #[10%nat] (_ : 'unit) : 'pubkey × 'cipher
+      #def #[query_id] (_ : 'unit) : 'pubkey × 'cipher
       {
         a ← sample uniform i_sk ;;
         let a := otf a in
@@ -242,7 +243,7 @@ Definition DH_rnd :
 
 Definition Aux :
   package (fset [:: counter_loc ; pk_loc ])
-    [interface #val #[10%nat] : 'unit → 'pubkey × 'cipher]
+    [interface #val #[query_id] : 'unit → 'pubkey × 'cipher]
     [interface
       #val #[getpk_id] : 'unit → 'pubkey ;
       #val #[challenge_id'] : 'plain → 'cipher
@@ -257,7 +258,7 @@ Definition Aux :
 
     #def #[challenge_id'] (m : 'plain) : 'cipher
     {
-      #import {sig #[10%nat] : 'unit → 'pubkey × 'cipher } as query ;;
+      #import {sig #[query_id] : 'unit → 'pubkey × 'cipher } as query ;;
       count ← get counter_loc ;;
       #put counter_loc := (count + 1)%N ;;
       #assert (count == 0)%N ;;

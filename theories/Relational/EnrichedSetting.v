@@ -15,7 +15,7 @@ Section CartesianCategory.
 
   Program Definition functor_const {C D : category} (X : D) : functor C D :=
     mkFunctor (fun=> X) (fun _ _ f => Id X) _ _ _.
-  Next Obligation. cbv ; intuition. Qed.
+  Next Obligation. cbv ; auto with relations. Qed.
   Next Obligation. reflexivity. Qed.
   Next Obligation. rewrite cat_law1 ; reflexivity. Qed.
 

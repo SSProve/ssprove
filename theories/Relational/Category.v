@@ -102,7 +102,7 @@ Section ProductCat.
                (fun _ _ _ f g => ⟨nfst f ∙ nfst g, nsnd f ∙ nsnd g⟩)
                _ _ _ _.
   Next Obligation.
-    constructor ; cbv ; intuition ; etransitivity ; eassumption.
+    constructor ; cbv ; intuition auto with relations ; etransitivity ; eassumption.
   Qed.
   Next Obligation.
     cbv ; intuition.
@@ -132,11 +132,11 @@ Section ProjectionsFunctors.
 
   Program Definition left_proj_functor : functor (prod_cat C D) C :=
     mkFunctor nfst (fun _ _ => nfst) _ _ _.
-  Solve All Obligations with cbv ; intuition.
+  Solve All Obligations with cbv ; intuition auto with relations.
 
   Program Definition right_proj_functor : functor (prod_cat C D) D :=
     mkFunctor nsnd (fun _ _ => nsnd) _ _ _.
-  Solve All Obligations with cbv ; intuition.
+  Solve All Obligations with cbv ; intuition auto with relations.
 End ProjectionsFunctors.
 
 Section ProductFunctor.
