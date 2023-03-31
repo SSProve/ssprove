@@ -121,7 +121,7 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
   Definition i_cipher := #|Cipher|.
   Definition i_pk := #|PubKey|.
   Definition i_sk := #|SecKey|.
-  Definition i_bool := 2.
+  Definition i_bool : nat := 2.
 
   Local Open Scope package_scope.
 

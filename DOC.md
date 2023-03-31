@@ -223,9 +223,9 @@ locations.
 
 #### Set of locations
 
-The set of locations is expected as an `{fset Location }` using the finite
+The set of locations is expected as a `{fset Location }` using the finite
 sets of the [extructures] library. For our purposes, it is advisable to write
-them directly as list which of locations which is then cast to an `fset` using
+them directly as list which of locations which is then cast to a `fset` using
 the `fset` operation, as below:
 ```coq
 fset [:: ℓ₀ ; ℓ₁ ; ℓ₂ ]
@@ -421,7 +421,7 @@ Proof.
   (* Now deal with the goals *)
 ```
 
-Finally the identity package is defined as `ID I` where `I` is an interface.
+Finally, the identity package is defined as `ID I` where `I` is an interface.
 It both imports and exports `I` by simply forwarding the calls.
 It is valid as long as `I` does not include two signatures sharing the same
 identifier, as overloading is not possible in our packages. This property is
@@ -790,7 +790,7 @@ then applying `ssprove_swap_lhs 0%N` will leave us to prove
 ```
 instead.
 
-Not any two commands are swappable however. The tactic will try to infer the
+However, not any two commands are swappable. The tactic will try to infer the
 swappability condition automatically, this is the case for sampling which can
 always be swapped (if dependencies permit), or for `get`/`put` when they talk
 about distinct locations. If automation proves insufficient, the user will have
@@ -900,7 +900,7 @@ and turn it into
 #### Remember after reading
 
 Sometimes, swapping and contracting is not possible, even when the code makes
-two reads to the same location. It can happen for instance if the the value read
+two reads to the same location. It can happen for instance if the value read
 is branched upon before being read again.
 
 For this we have several rules that will *remember* which location was read.
@@ -978,7 +978,7 @@ Dually to how we *remember* read values, we propose a way to write to a memory
 location, even when it might temporarily break the invariant. As we will se in
 [[Crafting invariants]], a lot of invariants will involve several locations at
 once, meaning the most of the time, writing a value will break them.
-Thus our machinery to write to the memory freely and then, at the user's
+Thus, our machinery to write to the memory freely and then, at the user's
 command, to restore the invariant.
 
 These debts to the precondition are incurred by using one of the following
@@ -1060,7 +1060,7 @@ where `L₀` and `L₁` represent the sets of memory locations of both programs.
 While it can be enough for a lot of examples (our own examples mostly use
 equality as an invariant), it is not always sufficient.
 
-Another invariant the we propose is called `heap_ignore` and is defined as
+Another invariant we propose is called `heap_ignore` and is defined as
 ```coq
 Definition heap_ignore (L : {fset Location}) :=
   λ '(h₀, h₁),
