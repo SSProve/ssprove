@@ -95,6 +95,20 @@ Proof.
   f_equal. apply functional_extensionality. auto.
 Qed.
 
+#[export] Instance cmd_bind_morphism (A B : choiceType) :
+  Proper (eq ==> pointwise_relation A eq ==> eq) (@cmd_bind A B).
+Proof.
+  simpl_relation.
+  f_equal. apply functional_extensionality. auto.
+Qed.
+
+#[export] Instance bindrFree_morphism (A B : choiceType) c k :
+  Proper (eq ==> pointwise_relation A eq ==> eq) (@FreeProbProg.bindrFree c k A B).
+Proof.
+  simpl_relation.
+  f_equal. apply functional_extensionality. auto.
+Qed.
+
 (** Some validity lemmata and hints *)
 (* TODO MOVE? *)
 

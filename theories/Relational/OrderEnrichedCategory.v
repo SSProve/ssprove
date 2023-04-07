@@ -106,7 +106,7 @@ Section ProductCat.
                   (fun _ _ _ f g => ⟨nfst f ∙ nfst g, nsnd f ∙ nsnd g⟩)
                   _ _ _ _.
   Next Obligation.
-    constructor ; cbv ; intuition ; etransitivity ; eassumption.
+    constructor ; cbv ; intuition auto with relations ; etransitivity ; eassumption.
   Qed.
   Next Obligation.
     cbv ; intuition; apply Comp_proper=> //.

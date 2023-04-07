@@ -31,11 +31,11 @@ A documentation is available in [DOC.md].
 
 #### Prerequisites
 
-- OCaml `>=4.05.0 & <4.13.0`
-- Coq `8.14.0`
-- Equations `1.3+8.14`
-- Mathcomp `1.13.0`
-- Mathcomp analysis `0.3.13`
+- OCaml `>=4.05.0 & <5`
+- Coq `>=8.16.0 & <8.18.0`
+- Equations `1.3`
+- Mathcomp `>=1.15.0`
+- Mathcomp analysis `>=0.5.3`
 - Coq Extructures `0.3.1`
 - Coq Deriving `0.1`
 
@@ -199,7 +199,7 @@ more. Packages created through our operations always verify this property
 
 #### Interchange between sequential and parallel composition
 
-Finally we prove a law involving sequential and parallel composition
+Finally, we prove a law involving sequential and parallel composition
 stating how we can interchange them:
 ```coq
 Lemma interchange :
@@ -335,7 +335,7 @@ Theorem commitment_binding :
     ɛ_soundness A Adv.
 ```
 
-Combining the above theorems with the instatiation of Schnorr's protocol we get a commitment scheme given by:
+Combining the above theorems with the instantiation of Schnorr's protocol we get a commitment scheme given by:
 
 ```coq
 Theorem schnorr_com_hiding :
@@ -392,7 +392,7 @@ We separate by a slash (/) rule names that differ in the CSF (left) and journal
 | async-put-lhs     | `r_put_lhs`           |
 | restore-pre-lhs   | `r_restore_lhs`       |
 
-Finally the "bwhile" / "do-while" rule is proven as
+Finally, the "bwhile" / "do-while" rule is proven as
 `bounded_do_while_rule` in [rules/RulesStateProb.v].
 
 ### More Lemmas and Theorems for packages
@@ -493,7 +493,7 @@ This relational effect observation is called
 file [rhl_semantics/only_prob/ThetaDex.v] as a composition:
 FreeProb² ---`unary_theta_dens²`---> SDistr² ---`θ_morph`---> Wrelprop
 
-The first part `unary_theta_dens²` consists in intepreting pairs
+The first part `unary_theta_dens²` consists in interpreting pairs
 of probabilistic programs into pairs of actual subdistributions.
 This unary semantics for probabilistic programs `unary_theta_dens`
 is defined in [rhl_semantics/only_prob/Theta_dens.v].
@@ -516,7 +516,7 @@ It is defined in the file [rhl_semantics/only_prob/Theta_exCP.v].
 up to inequalities.
 The definition of `θ_morph` relies on the notion of couplings,
 defined in this file [rhl_semantics/only_prob/Couplings.v].
-The prove that it constitutes a lax morphism depends on lemmas
+The proof that it constitutes a lax morphism depends on lemmas
 for couplings that can be found in the same file.
 
 
@@ -589,8 +589,8 @@ a lax morphism Kl(θ) between those Kleisli adjunctions.
 Kl(θ) is a lax morphism between left relative adjunctions,
 (see [LaxMorphismOfRelAdjunctions.v]) and we can
 transform such morphisms of adjunctions using
-the theory developped in [TransformingLaxMorph.v].
-Finallly, out of this transformed morphism of adjunctions we can
+the theory developed in [TransformingLaxMorph.v].
+Finally, out of this transformed morphism of adjunctions we can
 extract a lax morphism between monads Tθ : T M1 → T M2, as expected.
 This last step is also performed in [TransformingLaxMorph.v].
 

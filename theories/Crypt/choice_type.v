@@ -275,7 +275,7 @@ Section choice_typeTypes.
     intros x y.
     induction x as [ | | | x1 ih1 x2 ih2| x1 ih1 x2 ih2| x ih| x]
     in y |- *.
-    all: try solve [ destruct y ; intuition ; reflexivity ].
+    all: try solve [ destruct y ; auto with solve_subterm; reflexivity ].
     - destruct y. all: try (intuition; reflexivity).
       cbn.
       specialize (ih1 y1). specialize (ih2 y2).
@@ -388,7 +388,8 @@ Section choice_typeTypes.
   Proof.
     intros x y.
     destruct (choice_type_eq x y) eqn:H.
-    - intuition.
+    - apply/orP.
+      by right.
     - apply/orP.
       left.
       unfold choice_type_eq in H.

@@ -189,8 +189,8 @@ End CDSParams.
 
 Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
 
-  Module Sigma1 := (Schnorr GP).
-  Module Sigma2 := (SigmaProtocol π2 Alg2).
+  Module Sigma1 := Schnorr GP.
+  Module Sigma2 := SigmaProtocol π2 Alg2.
 
   Obligation Tactic := idtac.
   Set Equations Transparent.

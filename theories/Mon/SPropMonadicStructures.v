@@ -25,7 +25,7 @@ Proof. unfold SProp_op_order. typeclasses eauto. Qed.
 
 #[export] Instance pointwise_preorder A {B} (R:relation B) `{PreOrder _ R} :
   PreOrder (pointwise_relation A R).
-Proof. constructor ; cbv ; intuition ; transitivity (y a) ; auto. Qed.
+Proof. constructor ; cbv ; intuition auto with crelations ; transitivity (y a) ; auto. Qed.
 
 Definition Pred_op_order A : relation (A -> Prop) :=
   pointwise_relation A SProp_op_order.
@@ -130,10 +130,6 @@ Section DiscreteMonad.
   Import SPropNotations.
   Program Definition DiscreteMonad (M:Monad) : OrderedMonad :=
     @mkOrderedMonad M (fun A x y => x = y) _ _.
-  Next Obligation.
-    constructor. by cbv.
-    cbv. move=> *. etransitivity ; by eassumption.
-  Qed.
   Next Obligation.
     compute. move=> x y Exy x0 y0 pe_x0y0.
     rewrite Exy. apply functional_extensionality in pe_x0y0.
@@ -282,8 +278,9 @@ End MonadMorphismRefinement.
 
 #[export] Instance mon_morph_refines_preorder M W : PreOrder (@monad_morph_refines M W).
 Proof.
-  constructor ; cbv ; intuition.
-  transitivity (y A a) ; auto.
+  constructor ; cbv ; intros.
+  - reflexivity.
+  - transitivity (y A a) ; auto.
 Qed.
 
 Section MonadMorphismNatural.

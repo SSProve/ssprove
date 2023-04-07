@@ -236,7 +236,8 @@ Proof.
   - apply bind_rule with (wf := (fun '(a1, a2) => fromPrePost (fun '(s1, s2) => middle (a1, s1) (a2, s2)) post)).
     + exact judge_wm.
     + exact judge_wf.
-  - cbv. intuition.
+  - cbv.
+    intuition auto with funelim.
 Qed.
 
 (* Pre-condition manipulating rules *)
@@ -623,7 +624,7 @@ Proof.
   rewrite HeqH11. simpl in HeqH11.
   assert ((fun x : X * S1 => (A x)%:R * psum (fun w => d (x, w))) = (fun x : X * S1 => psum (fun w => (A x)%:R * d (x, w)))) as H4.
   { extensionality k. rewrite -psumZ. reflexivity.
-    case (A k); intuition. by rewrite ler01. }
+    case (A k); intuition; by rewrite ler01. }
   rewrite H4.
   assert ((fun x : Y * S2 => (B x)%:R * dsnd d x) = (fun y : Y * S2 => (B y)%:R * psum (fun w => d (w, y)))) as HeqH12.
   { extensionality K. rewrite dsndE. reflexivity. }
