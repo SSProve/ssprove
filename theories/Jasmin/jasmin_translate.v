@@ -5363,3 +5363,355 @@ Proof.
   - destruct e ; simpl ; repeat constructor.
     destruct w ; repeat constructor.
 Qed.
+
+Lemma deterministic_seq {A} (c1 : raw_code A) {B} (c2 : raw_code B) :
+  deterministic c1 ->
+  deterministic c2 ->
+  deterministic (c1 ;; c2).
+Proof.
+  intros.
+  revert X0. revert c2. (* generalize (B c1). *)
+  induction c1; eauto; intros.
+  - inversion X.
+  - simpl. constructor. inversion X.
+    noconf H1; subst; simpl in *. intros. eapply X0; eauto.
+  - simpl. constructor. inversion X.
+    noconf H1; subst; simpl in *. intros. eapply IHc1; eauto.
+  - inversion X.
+Qed.
+
+Lemma deterministic_bind {A} (c1 : raw_code A) {B} (c2 : A -> raw_code B) :
+  deterministic c1 ->
+  (forall x, deterministic (c2 x)) ->
+  deterministic (x ← c1 ;; c2 x).
+Proof.
+  intros.
+  revert X0. revert c2. (* generalize (B c1). *)
+  induction c1; eauto; intros.
+  - simpl. inversion X.
+  - simpl. constructor. inversion X.
+    noconf H1; subst; simpl in *. intros. eapply X0; eauto.
+  - simpl. constructor. inversion X.
+    noconf H1; subst; simpl in *. intros. eapply IHc1; eauto.
+  - inversion X.
+Qed.
+
+Lemma translate_write_vars_deterministic i vs ts :
+  deterministic (translate_write_vars i vs ts).
+Proof.
+  revert vs ts.
+  induction vs, ts.
+  1,2,3: unfold translate_write_vars; simpl; econstructor.
+  unfold translate_write_vars in *.  eapply deterministic_seq.
+  - unfold translate_write_var. constructor. constructor.
+  - eapply IHvs.
+Qed.
+
+Lemma translate_gvar_deterministic g i v :
+  deterministic (translate_gvar g i v).
+Proof.
+  unfold translate_gvar. destruct is_lvar.
+  * unfold translate_get_var. constructor. intros; constructor.
+  * destruct get_global; constructor.
+Qed.
+
+Lemma translate_pexpr_deterministic g i e :
+  deterministic (translate_pexpr g i e).π2.
+Proof.
+  revert i g.
+  refine (
+      (fix aux (e1 : pexpr) :=
+    match e1 with
+    | _ => _ end) e
+   ).
+  destruct e1; intros; simpl; try constructor.
+  - apply translate_gvar_deterministic.
+  - simpl.
+    eapply deterministic_bind.
+    + eapply translate_gvar_deterministic.
+    + intros. simpl.
+      rewrite bind_assoc.
+      eapply deterministic_bind.
+      * eapply aux.
+      * intros. constructor.
+  - eapply deterministic_bind.
+    + eapply translate_gvar_deterministic.
+    + intros. simpl.
+      rewrite bind_assoc.
+      eapply deterministic_bind.
+      * eapply aux.
+      * intros. constructor.
+  - intros.
+    rewrite bind_assoc.
+    eapply deterministic_bind; try constructor.
+    + eapply aux.
+    + intros. constructor.
+  - rewrite bind_assoc.
+    eapply deterministic_bind; try constructor.
+    eapply aux.
+  - rewrite !bind_assoc.
+    eapply deterministic_bind; try constructor.
+    + eapply aux.
+    + intros.
+      eapply deterministic_bind; try constructor.
+      intros.
+      eapply deterministic_bind; try constructor; auto.
+      eapply deterministic_bind; try constructor; auto.
+  - epose proof deterministic_bind (bind_list [seq translate_pexpr g i e0 | e0 <- l]) (fun vs => ret (tr_app_sopn_single (type_of_opN o).1 (sem_opN_typed o) vs)).
+    eapply X.
+    + clear -aux. induction l.
+      * constructor.
+      * simpl. eapply deterministic_bind.
+        ** eapply aux.
+        ** intros.
+           epose proof deterministic_bind (bind_list [seq translate_pexpr g i e0 | e0 <- l]).
+           eapply X.
+           *** assumption.
+           *** constructor.
+    + constructor.
+  - rewrite bind_assoc.
+    eapply deterministic_bind; try constructor.
+    + apply aux.
+    + intros.
+      eapply deterministic_bind; try constructor.
+      intros.
+      destruct x0.
+      * eapply deterministic_bind; try constructor; auto.
+      * eapply deterministic_bind; try constructor; auto.
+Qed.
+
+Lemma translate_write_var_deterministic i H v :
+  deterministic (translate_write_var i H v).
+Proof.
+  repeat constructor.
+Qed.
+
+Lemma translate_write_lval_deterministic g i l v :
+  deterministic (translate_write_lval g i l v).
+Proof.
+  destruct l; intros; simpl.
+  - constructor.
+  - eapply translate_write_var_deterministic.
+  - constructor; intros.
+    eapply deterministic_bind; try constructor; auto.
+    1: eapply translate_pexpr_deterministic. intros.
+    repeat constructor.
+  - constructor; intros.
+    eapply deterministic_bind; try constructor; auto.
+    + eapply deterministic_bind; try constructor.
+      eapply translate_pexpr_deterministic.
+    + constructor.
+  - constructor; intros.
+    eapply deterministic_bind; try constructor; auto.
+    + eapply deterministic_bind; try constructor.
+      eapply translate_pexpr_deterministic.
+    + constructor.
+Qed.
+
+Lemma translate_write_lvals_deterministic g i l vs :
+  deterministic (translate_write_lvals g i l vs).
+Proof.
+  revert l vs.
+  induction l, vs.
+  1,2,3: constructor.
+  unfold translate_write_lvals.
+  simpl.
+  eapply deterministic_seq.
+  1: eapply translate_write_lval_deterministic.
+  eapply IHl.
+Qed.
+
+Lemma translate_call_body_deterministic P f fd i vs :
+  deterministic (fd i) ->
+  deterministic (translate_call_body P f fd i vs).
+Proof.
+  intros.
+  unfold translate_call_body.
+  induction p_funcs.
+  - constructor.
+  - simpl. destruct a. destruct (f == f0) eqn:E.
+    + eapply deterministic_seq.
+      1: eapply translate_write_vars_deterministic.
+      eapply deterministic_seq.
+      1: eapply X.
+      eapply deterministic_bind with (c2:= (fun vres => ret (trunc_list (f_tyout _f) vres))).
+      * clear -_f. induction f_res.
+       ** constructor.
+       ** simpl. constructor.
+         intros. eapply deterministic_bind with (c2 := (fun vs => ret (totce x :: vs))).
+            1: eapply IHl.
+            constructor.
+      * constructor.
+    + eapply IHl.
+Qed.
+
+Lemma translate_call_deterministic P f (fd : fdefs) i vs :
+  deterministic (match assoc fd f with Some f => f i | _ => ret tt end) ->
+  deterministic (translate_call P f fd i vs).
+Proof.
+  intros.
+  unfold translate_call.
+  destruct assoc.
+  2: constructor.
+  eapply translate_call_body_deterministic.
+  assumption.
+Qed.
+
+Lemma coe_tyc_deterministic t c :
+  deterministic c.π2 -> deterministic (coe_tyc t c).
+Proof.
+  destruct c.
+  intros.
+  destruct (x == t) eqn:E.
+  + move: E => /eqP. intros; subst.
+    rewrite coerce_typed_code_K; try constructor.
+    assumption.
+  + rewrite coerce_typed_code_neq; try constructor.
+    move: E => /eqP //.
+Qed.
+
+Lemma translate_for_deterministic v l i0 f i1 :
+  (forall i, deterministic (f i).2) ->
+ deterministic (translate_for v l i0 f i1).
+Proof.
+  intros.
+  revert i1.
+  induction l; intros.
+  - constructor.
+  - simpl.
+    specialize (X i1).
+    destruct (f i1).
+    simpl in *.
+    constructor.
+    eapply deterministic_seq.
+    1: assumption.
+    eapply IHl.
+Qed.
+
+Fixpoint translate_instr_deterministic p (fd : fdefs) i i1 i2 {struct i} :
+  (forall f i, deterministic (match assoc fd f with Some f => f i | _ => ret tt end)) ->
+  deterministic (translate_instr p fd i i1 i2).2.
+Proof.
+  revert i1 i2.
+  intros.
+  epose proof (translate_cmd_deterministic :=
+            (fix translate_cmd (c : cmd) (s_id : p_id) : deterministic (translate_cmd p fd c i1 s_id).2 :=
+          match c with
+          | [::] => _
+          | i :: c => _
+          end
+            )
+    ).
+  destruct i; destruct i0; simpl in *; intros.
+  - simpl. eapply deterministic_bind.
+    + eapply translate_pexpr_deterministic.
+    + intros.
+      eapply translate_write_lval_deterministic.
+  - eapply deterministic_bind with (c1 := bind_list _).
+    + clear -i1.
+      induction l0.
+      * constructor.
+      * simpl.
+        eapply deterministic_bind.
+        1: eapply translate_pexpr_deterministic.
+        intros.
+        eapply deterministic_bind with (c1 := bind_list _).
+        1: eapply IHl0.
+        constructor.
+    + intros.
+      eapply translate_write_lvals_deterministic.
+  - constructor.
+  - rewrite translate_instr_unfold. simpl.
+    rewrite translate_instr_r_if.
+    pose proof (translate_cmd_deterministic l i2).
+    destruct translate_cmd. simpl.
+    pose proof (translate_cmd_deterministic l0 p1).
+    destruct translate_cmd. simpl.
+    eapply deterministic_bind.
+    + eapply coe_tyc_deterministic with (t := 'bool).
+      eapply translate_pexpr_deterministic.
+    + destruct x; assumption.
+  - rewrite translate_instr_unfold.
+    rewrite translate_instr_r_for.
+    destruct r as [[d lo] hi].
+    simpl.
+    eapply deterministic_bind.
+    1: eapply coe_tyc_deterministic with (t:= 'int); eapply translate_pexpr_deterministic.
+    intros; eapply deterministic_bind.
+    1: eapply coe_tyc_deterministic with (t:= 'int); eapply translate_pexpr_deterministic.
+    intros.
+    eapply translate_for_deterministic.
+    intros.
+    eapply translate_cmd_deterministic.
+  - constructor.
+  - eapply deterministic_bind with (c1 := bind_list _).
+    + clear -i1.
+      induction l0.
+      * constructor.
+      * simpl.
+        eapply deterministic_bind.
+        1: eapply translate_pexpr_deterministic.
+        intros.
+        eapply deterministic_bind with (c1 := bind_list _).
+        1: eapply IHl0.
+        constructor.
+      + intros; simpl.
+        eapply deterministic_bind with (c1 := translate_call _ _ _ _ _).
+        1: eapply translate_call_deterministic.
+        1: eapply X.
+        eapply translate_write_lvals_deterministic.
+        Unshelve.
+        1: constructor.
+        simpl.
+        specialize (translate_instr_deterministic p fd i i1 s_id).
+        destruct translate_instr.
+        specialize (translate_cmd c p0).
+        destruct jasmin_translate.translate_cmd.
+        eapply deterministic_seq.
+        1: eapply translate_instr_deterministic.
+        all: try assumption.
+Qed.
+
+Lemma translate_cmd_deterministic p fd c i1 i2 :
+  (forall f i, deterministic (match assoc fd f with Some f => f i | _ => ret tt end)) ->
+  deterministic (translate_cmd p fd c i1 i2).2.
+Proof.
+  revert i1 i2.
+  induction c; intros.
+  - constructor.
+  - simpl.
+    pose proof translate_instr_deterministic p fd a i1 i2 X.
+    destruct translate_instr.
+    specialize (IHc i1 p0 X).
+    destruct translate_cmd.
+    simpl in *.
+    eapply deterministic_seq; auto.
+Qed.
+
+Lemma translate_funs_deterministic P fn :
+  forall f i, deterministic (match assoc (translate_funs P fn).1 f with Some f => f i | _ => ret tt end).
+Proof.
+  induction fn; intros.
+  - constructor.
+  - simpl. destruct a. simpl.
+    destruct (f == f0).
+    + eapply translate_cmd_deterministic.
+      assumption.
+    + eapply IHfn.
+Qed.
+
+Lemma get_translated_fun_deterministic P fn i vs :
+  deterministic (get_translated_fun P fn i vs).
+Proof.
+  (* destruct P. *)
+  unfold get_translated_fun.
+  unfold translate_prog'. simpl.
+  induction p_funcs.
+  - simpl. constructor.
+  - simpl. destruct a. simpl.
+    destruct (fn == f).
+    + eapply translate_call_body_deterministic.
+      eapply translate_cmd_deterministic.
+      eapply translate_funs_deterministic.
+    + assumption.
+Qed.
