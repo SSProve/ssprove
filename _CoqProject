@@ -79,6 +79,7 @@ theories/Crypt/rules/UniformStateProb.v
 
 # Jasmin
 theories/Jasmin/jasmin_translate.v
+theories/Jasmin/jasmin_x86.v
 theories/Jasmin/jasmin_utils.v
 theories/Jasmin/word.v
 

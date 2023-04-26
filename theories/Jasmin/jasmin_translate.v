@@ -5289,81 +5289,6 @@ Proof using gd asm_correct.
   - assumption.
 Qed.
 
-End Translation.
-
-From Jasmin Require Import x86_instr_decl x86_extra (* x86_gen *) (* x86_linear_sem *).
-Import arch_decl.
-
-Lemma id_tin_instr_desc :
-  ∀ (a : asm_op_msb_t),
-    id_tin (instr_desc a) = id_tin (x86_instr_desc a.2).
-Proof.
-  intros [[ws|] a].
-  - simpl. destruct (_ == _). all: reflexivity.
-  - reflexivity.
-Qed.
-
-Definition cast_sem_prod_dom {ts tr} ts' (f : sem_prod ts tr) (e : ts = ts') :
-  sem_prod ts' tr.
-Proof.
-  subst. exact f.
-Defined.
-
-Lemma cast_sem_prod_dom_K :
-  ∀ ts tr f e,
-    @cast_sem_prod_dom ts tr ts f e = f.
-Proof.
-  intros ts tr f e.
-  assert (e = erefl).
-  { apply eq_irrelevance. }
-  subst. reflexivity.
-Qed.
-
-Lemma sem_correct_rewrite :
-  ∀ R ts ts' f e,
-    sem_correct ts' (cast_sem_prod_dom ts' f e) →
-    @sem_correct R ts f.
-Proof.
-  intros R ts ts' f e h.
-  subst. rewrite cast_sem_prod_dom_K in h.
-  assumption.
-Qed.
-
-Lemma no_arr_correct {R} ts s :
-  List.Forall (λ t, ∀ len, t != sarr len) ts →
-  @sem_correct R ts s.
-Proof.
-  intros h.
-  induction h as [| t ts ht h ih].
-  - constructor.
-  - constructor.
-    + intros v.
-      pose proof unembed_embed t v as e.
-      destruct t as [| | len |].
-      1,2,4: rewrite e ; reflexivity.
-      specialize (ht len). move: ht => /eqP. contradiction.
-    + intros v.
-      apply ih.
-Qed.
-
-Lemma x86_correct :
-  ∀ (o : asm_op_t),
-    sem_correct (tin (sopn.get_instr_desc (Oasm o))) (sopn_sem (Oasm o)).
-Proof.
-  intros o.
-  simpl. destruct o as [a | e].
-  - Opaque instr_desc. simpl.
-    pose proof (id_tin_instr_desc a) as e.
-    eapply sem_correct_rewrite with (e := e).
-    destruct a as [o x]. simpl in *.
-    eapply no_arr_correct.
-    destruct x ; simpl.
-    all: repeat constructor.
-    Transparent instr_desc.
-  - destruct e ; simpl ; repeat constructor.
-    destruct w ; repeat constructor.
-Qed.
-
 Lemma deterministic_seq {A} (c1 : raw_code A) {B} (c2 : raw_code B) :
   deterministic c1 ->
   deterministic c2 ->
@@ -5715,3 +5640,5 @@ Proof.
       eapply translate_funs_deterministic.
     + assumption.
 Qed.
+
+End Translation.
