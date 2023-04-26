@@ -1245,7 +1245,7 @@ Proof.
 Qed.
 
 #[local] Definition unsupported : typed_code :=
-  ('unit ; assert false).
+  ('unit ; ret (chCanonical 'unit)).
 
 Lemma truncate_val_type :
   ∀ ty v v',
