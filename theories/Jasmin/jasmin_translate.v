@@ -651,11 +651,8 @@ Import JasminNotation.
 Section Translation.
 
 Context `{asmop : asmOp}.
-
 Context {pd : PointerData}.
-
 Context (gd : glob_decls).
-
 Context `{sc_sem : syscall_sem }.
 
 Definition mem_index : nat := 0.
@@ -2594,6 +2591,7 @@ Qed.
 
 Definition rel_estate (s : estate) (m_id : p_id) (s_id : p_id) (s_st : list p_id) (st : stack) (h : heap) :=
   rel_mem s.(emem) h /\ valid_stack ((s.(evm), m_id, s_id, s_st) :: st) h.
+
 
 Lemma translate_read_estate :
   ∀ s ptr sz w m_id s_id s_st c_stack m,

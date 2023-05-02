@@ -28,12 +28,24 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 Set Default Proof Using "Type".
-From JasminSSProve Require Import jasmin_translate.
-From Jasmin Require Import x86_instr_decl x86_extra (* x86_gen *) (* x86_linear_sem *).
+
+From JasminSSProve Require Import jasmin_translate jasmin_asm.
+
+From Jasmin Require Import
+  x86_instr_decl
+  x86_extra
+  x86_params
+  x86_params_proof
+  x86_decl
+  x86_lowering
+  x86.
+
+From Jasmin Require Import
+  arch_sem
+  compiler
+  compiler_proof.
 
 Section x86_correct.
-
-  Import arch_decl.
 
   Lemma id_tin_instr_desc :
     ∀ (a : asm_op_msb_t),
@@ -104,5 +116,18 @@ Section x86_correct.
     - destruct e ; simpl ; repeat constructor.
       destruct w ; repeat constructor.
   Qed.
+
+Context
+  {syscall_state : Type}
+    {sc_sem : syscall.syscall_sem syscall_state}
+    {gf : glob_decls}
+    {asm_scsem : asm_syscall_sem (call_conv:=x86_linux_call_conv)}
+    (cparams : compiler_params fresh_vars lowering_options).
+
+  Hypothesis print_uprogP : forall s p, cparams.(print_uprog) s p = p.
+  Hypothesis print_sprogP : forall s p, cparams.(print_sprog) s p = p.
+  Hypothesis print_linearP : forall s p, cparams.(print_linear) s p = p.
+
+  Definition equiv_to_x86 := @equiv_to_asm syscall_state sc_sem gf _ _ _ _ _ _ _ _ x86_linux_call_conv _ _ _ _ x86_h_params cparams print_uprogP print_sprogP print_linearP x86_correct.
 
 End x86_correct.
