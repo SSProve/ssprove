@@ -2,7 +2,7 @@
 
 This repository contains the Coq formalisation of the paper:\
 **SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq**
-- Extended journal version accepted at TOPLAS (to appear).
+- Extended journal version accepted at TOPLAS ([DOI](https://dl.acm.org/doi/10.1145/3594735)).
   Philipp G. Haselwarter, Exequiel Rivas, Antoine Van Muylder, Théo Winterhalter,
   Carmine Abate, Nikolaj Sidorenco, Cătălin Hrițcu, Kenji Maillard, and
   Bas Spitters. ([eprint](https://eprint.iacr.org/2021/397))
