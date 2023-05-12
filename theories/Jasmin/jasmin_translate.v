@@ -1,6 +1,6 @@
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import all_ssreflect all_algebra.
-From mathcomp.word Require Import ssrZ word.
+From mathcomp Require Import ssrZ word.
 From Jasmin Require Import expr compiler_util values sem.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 
@@ -881,7 +881,7 @@ Proof.
   intros x. induction x as [| a s ih].
   - auto.
   - simpl.
-    rewrite -mulP. rewrite -plusE.
+    rewrite -word_ssrZ.mulP. rewrite -plusE.
     micromega.Lia.lia.
 Qed.
 
@@ -895,10 +895,10 @@ Proof.
   all: destruct y as [| b y].
   all: simpl in e.
   - reflexivity.
-  - rewrite -mulP in e. rewrite -plusE in e.
+  - rewrite -word_ssrZ.mulP in e. rewrite -plusE in e.
     pose proof (nat_of_ident_pos y).
     micromega.Lia.lia.
-  - rewrite -mulP in e. rewrite -plusE in e.
+  - rewrite -word_ssrZ.mulP in e. rewrite -plusE in e.
     pose proof (nat_of_ident_pos x).
     micromega.Lia.lia.
   - apply (f_equal (λ a, Nat.modulo a 256)) in e as xy_eq.
@@ -918,8 +918,8 @@ Proof.
     apply OrderedTypeEx.String_as_OT.nat_of_ascii_inverse in xy_eq.
     subst. f_equal.
     apply IHx.
-    rewrite -!addP in e.
-    rewrite -!mulP in e.
+    rewrite -!word_ssrZ.addP in e.
+    rewrite -!word_ssrZ.mulP in e.
     micromega.Lia.lia.
 Qed.
 
@@ -1995,7 +1995,7 @@ Proof.
   apply ziota_ind.
   - auto.
   - intros i l h Ih.
-    rewrite (@in_cons ssrZ.Z_eqType).
+    rewrite (@in_cons word_ssrZ.Z_eqType).
     simpl.
     rewrite <- addE.
     destruct (_ == _) eqn:eb.
@@ -2592,8 +2592,8 @@ Proof.
       easy.
 Qed.
 
-Definition rel_estate (s : estate) (m_id : p_id) (s_id : p_id) (s_st : list p_id) (st : stack) (h : heap) :=
-  rel_mem s.(emem) h /\ valid_stack ((s.(evm), m_id, s_id, s_st) :: st) h.
+Definition rel_estate (s : @estate syscall_state {| _pd := pd |}) (m_id : p_id) (s_id : p_id) (s_st : list p_id) (st : stack) (h : heap) :=
+  (rel_mem (s.(emem)) h /\ valid_stack ((s.(evm), m_id, s_id, s_st) :: st) h).
 
 Lemma translate_read_estate :
   ∀ s ptr sz w m_id s_id s_st c_stack m,
@@ -2670,7 +2670,7 @@ Proof.
 Qed.
 
 Lemma get_var_get_heap :
-  ∀ x s v m_id m,
+  ∀ x (s : @estate syscall_state {| _pd := pd |}) v m_id m,
     get_var (evm s) x = ok v →
     rel_vmap (evm s) m_id m →
     get_heap m (translate_var m_id x) =
@@ -2873,7 +2873,7 @@ Proof.
 Qed.
 
 Lemma translate_pexpr_type p s₁ e v :
-  sem_pexpr gd s₁ e = ok v →
+  @sem_pexpr syscall_state {| _pd := pd |} mk_spp gd s₁ e = ok v →
   (translate_pexpr p e).π1 = choice_type_of_val v.
 Proof.
   intros.
@@ -2974,7 +2974,7 @@ Qed.
 
 Lemma chArray_write_correct :
   ∀ ws len (a : WArray.array len) i (w : word ws) t,
-    write a i w = ok t →
+    write (Pointer := WArray.PointerZ) a i w = ok t →
     chArray_write (translate_value (Varr a)) i w = translate_value (Varr t).
 Proof.
   intros.
@@ -3065,7 +3065,7 @@ Proof.
   apply ziota_ind.
   - simpl. reflexivity.
   - simpl. intros k l h ih.
-    rewrite (@in_cons ssrZ.Z_eqType).
+    rewrite (@in_cons word_ssrZ.Z_eqType).
     destruct (_ == _) eqn:eb.
     + simpl. move: eb => /eqP eb. subst.
       unfold chArray_set8.
@@ -3082,7 +3082,7 @@ Qed.
 
 Lemma embed_read8 :
   ∀ len (a : WArray.array len) (z : Z) v,
-    read a z U8 = ok v →
+    read (Pointer := WArray.PointerZ) a z U8 = ok v →
     chArray_get U8 (embed_array a) z 1 = translate_value (Vword v).
 Proof.
   intros len a z v h.
@@ -3126,7 +3126,7 @@ Proof.
 Qed.
 
 Lemma translate_pexprs_types p s1 es vs :
-  mapM (sem_pexpr gd s1) es = ok vs →
+  mapM (@sem_pexpr syscall_state {| _pd := pd |} mk_spp gd s1) es = ok vs →
   [seq (translate_pexpr p e).π1 | e <- es] = [seq choice_type_of_val v | v <- vs].
 Proof.
   revert vs. induction es; intros.
@@ -3470,7 +3470,7 @@ Qed.
 
 Lemma translate_pexpr_correct :
   ∀ (e : pexpr) s₁ v (cond : heap → Prop) m_id s_id s_st st,
-    sem_pexpr gd s₁ e = ok v →
+    @sem_pexpr syscall_state {| _pd := pd |} mk_spp gd s₁ e = ok v →
     (∀ m, cond m → rel_estate s₁ m_id s_id s_st st m) →
     ⊢ ⦃ cond ⦄
       (translate_pexpr m_id e).π2 ⇓
@@ -3702,7 +3702,7 @@ Proof.
 Qed.
 
 Lemma translate_pexprs_correct s m_id s_id s_st st vs es :
-  sem_pexprs gd s es = ok vs →
+  @sem_pexprs syscall_state {| _pd := pd |} mk_spp gd s es = ok vs →
   List.Forall2 (λ c v,
     ⊢ ⦃ rel_estate s m_id s_id s_st st ⦄
       c.π2
@@ -3736,7 +3736,7 @@ Corollary bind_list_pexpr_correct
   (cond : heap → Prop) (es : pexprs) (vs : list value)
   (s1 : estate) m_id s_id s_st st
   (hc : ∀ m : heap, cond m → rel_estate s1 m_id s_id s_st st m)
-  (h : sem_pexprs gd s1 es = ok vs) :
+  (h : @sem_pexprs syscall_state {| _pd := pd |} mk_spp gd s1 es = ok vs) :
   ⊢ ⦃ cond ⦄
     bind_list [seq translate_pexpr m_id e | e <- es] ⇓
     [seq totce (translate_value v) | v <- vs]
@@ -3764,7 +3764,7 @@ Qed.
 
 Corollary translate_pexpr_correct_cast :
   ∀ (e : pexpr) s₁ v m_id s_id s_st st (cond : heap → Prop),
-    sem_pexpr gd s₁ e = ok v →
+    @sem_pexpr syscall_state {| _pd := pd |} mk_spp gd s₁ e = ok v →
     (∀ m, cond m → rel_estate s₁ m_id s_id s_st st m) →
     ⊢ ⦃ cond ⦄
       coerce_typed_code _ (translate_pexpr m_id e) ⇓
@@ -3797,7 +3797,7 @@ Proof.
   eapply translate_write_estate. all: assumption.
 Qed.
 
-Lemma valid_stack_set_var i v vm s m_id s_id s_st st m :
+Lemma valid_stack_set_var i v vm (s : @estate syscall_state {| _pd := pd |}) m_id s_id s_st st m :
   valid_stack ((s.(evm), m_id, s_id, s_st) :: st) m ->
   set_var (evm s) i v = ok vm ->
   valid_stack ((vm, m_id, s_id, s_st) :: st) (set_heap m (translate_var m_id i) (truncate_el (vtype i) (translate_value v))).
@@ -3894,7 +3894,7 @@ Qed.
 
 Lemma translate_write_lval_correct :
   ∀ es₁ es₂ m_id s_id s_st st y v,
-    write_lval gd y v es₁ = ok es₂ →
+    @write_lval syscall_state {| _pd := pd |} mk_spp gd y v es₁ = ok es₂ →
     ⊢ ⦃ rel_estate es₁ m_id s_id s_st st ⦄
       translate_write_lval m_id y (totce (translate_value v))
       ⇓ tt
@@ -4009,7 +4009,7 @@ Lemma translate_write_lvals_cons p l ls v vs :
 Proof. reflexivity. Qed.
 
 Lemma translate_write_lvals_correct m_id s_id s_st st s1 ls vs s2 :
-  write_lvals gd s1 ls vs = ok s2 →
+  @write_lvals syscall_state {| _pd := pd |} mk_spp gd s1 ls vs = ok s2 →
   ⊢ ⦃ rel_estate s1 m_id s_id s_st st ⦄
     translate_write_lvals m_id ls [seq totce (translate_value v) | v <- vs]
     ⇓ tt
@@ -4500,7 +4500,8 @@ Definition handled_program (P : uprog) :=
 Context `{sc_sem : syscall_sem }.
 
 Fact sem_call_get_some {P m1 scs1 gn vargs m2 scs2 vres} :
-  (sem_call P scs1 m1 gn vargs scs2 m2 vres →
+  (@sem_call _ syscall_state {| _pd := pd |} mk_spp {|
+    _asmop := asmop; _sc_sem := sc_sem |} P scs1 m1 gn vargs scs2 m2 vres →
    ∃ f, get_fundef (p_funcs P) gn = Some f ).
 Proof. intros H. inversion H. exists f. easy.
 Qed.
@@ -4588,14 +4589,14 @@ Qed.
 Lemma rel_estate_prec : forall h s m_id s_id1 s_id2 s_st st,
     s_id1 ⪯ s_id2 ->
     rel_estate s m_id s_id1 s_st st h ->
-    rel_estate s m_id s_id2 s_st st h.
+    rel_estate (syscall_state := syscall_state) s m_id s_id2 s_st st h.
 Proof.
   intros h s m_id s_id1 s_id2 s_st st hpre12 [hmem hstack]; split; auto.
   eapply valid_stack_prec; eauto.
 Qed.
 
 Lemma rel_estate_pop_sub s m_id s_id s_id' s_st st :
-  ∀ h, rel_estate s m_id s_id (s_id' :: s_st) st h → rel_estate s m_id s_id' s_st st h.
+  ∀ h, rel_estate s m_id s_id (s_id' :: s_st) st h → rel_estate (syscall_state := syscall_state) s m_id s_id' s_st st h.
 Proof.
   intros h [hmem hstack].
   split.
@@ -4605,7 +4606,7 @@ Qed.
 
 Lemma rel_estate_pop scs m vm vm' m_id m_id' s_id s_id' s_st s_st' st :
   ∀ h, rel_estate {| escs := scs ; emem := m ; evm := vm |} m_id s_id s_st ((vm',m_id',s_id',s_st') :: st) h →
-       rel_estate {| escs := scs ; emem := m ; evm := vm' |} m_id' s_id' s_st' st h.
+       rel_estate (syscall_state := syscall_state) {| escs := scs ; emem := m ; evm := vm' |} m_id' s_id' s_st' st h.
 Proof.
   intros h [hmem hstack].
   split.
@@ -4615,7 +4616,7 @@ Qed.
 
 Lemma rel_estate_push_sub s m_id s_id s_st st :
   ∀ h : heap, rel_estate s m_id s_id s_st st h →
-              rel_estate s m_id s_id~1 (s_id~0 :: s_st) st h.
+              rel_estate (syscall_state := syscall_state) s m_id s_id~1 (s_id~0 :: s_st) st h.
 Proof.
   intros h [hmem hstack]; split.
   - assumption.
@@ -4624,7 +4625,7 @@ Qed.
 
 Lemma rel_estate_push m vm scs m_id s_id s_st st :
   ∀ h : heap, rel_estate {| escs := scs ; emem := m ; evm := vm |} m_id s_id s_st st h →
-              rel_estate {| escs := scs ; emem := m ; evm := vmap0 |} s_id~1 s_id~1 [::] ((vm, m_id, s_id~0, s_st) :: st) h.
+              rel_estate (syscall_state := syscall_state) {| escs := scs ; emem := m ; evm := vmap0 |} s_id~1 s_id~1 [::] ((vm, m_id, s_id~0, s_st) :: st) h.
 Proof.
   intros h [hmem hstack]; split.
   - assumption.
@@ -4735,7 +4736,7 @@ Qed.
 
 Lemma translate_instr_r_pres P SP c s m_id s_id s_st st h :
   let (s_id', _) := translate_instr_r P SP c m_id s_id in
-  rel_estate s m_id s_id s_st st h -> rel_estate s m_id s_id' s_st st h.
+  rel_estate s m_id s_id s_st st h -> rel_estate (syscall_state := syscall_state) s m_id s_id' s_st st h.
 Proof.
   pose proof translate_instr_r_preceq P SP c m_id s_id.
   destruct translate_instr_r as [s_id' ?].
@@ -4744,7 +4745,7 @@ Qed.
 
 Lemma translate_cmd_pres P SP c s m_id s_id s_st st h :
   let (s_id', _) := translate_cmd P SP c m_id s_id in
-  rel_estate s m_id s_id s_st st h -> rel_estate s m_id s_id' s_st st h.
+  rel_estate s m_id s_id s_st st h -> rel_estate (syscall_state := syscall_state) s m_id s_id' s_st st h.
 Proof.
   pose proof translate_cmd_preceq P SP c m_id s_id.
   destruct translate_cmd as [s_id' ?].
@@ -4752,10 +4753,10 @@ Proof.
 Qed.
 
 Definition Pfun (P : uprog) (fn : funname) scs m va scs' m' vr vm m_id s_id s_st st :=
-  ⊢ ⦃ rel_estate {| escs := scs ; emem := m; evm := vm |} m_id s_id s_st st ⦄
+  ⊢ ⦃ rel_estate (syscall_state := syscall_state) {| escs := scs ; emem := m; evm := vm |} m_id s_id s_st st ⦄
       get_translated_fun P fn s_id~1 [seq totce (translate_value v) | v <- va]
       ⇓ [seq totce (translate_value v) | v <- vr]
-      ⦃ rel_estate {| escs := scs' ; emem := m' ; evm := vm |} m_id s_id~0 s_st st ⦄.
+      ⦃ rel_estate (syscall_state := syscall_state) {| escs := scs' ; emem := m' ; evm := vm |} m_id s_id~0 s_st st ⦄.
 
 Lemma hget_lemma (l : seq var_i) vm vres :
   mapM (λ x : var_i, get_var vm x) l = ok vres ->
@@ -4781,7 +4782,7 @@ Lemma hget_lemma2 l scs m vm vres m_id s_id s_st st :
     (λ (c : ∑ a : choice_type, raw_code a) (v : value),
       ⊢ ⦃ rel_estate {| escs := scs ; emem := m; evm := vm |} m_id s_id s_st st ⦄
           c.π2 ⇓ coe_cht c.π1 (translate_value v)
-          ⦃ rel_estate {| escs := scs ; emem := m; evm := vm |} m_id s_id s_st st ⦄)
+          ⦃ rel_estate (syscall_state := syscall_state) {| escs := scs ; emem := m; evm := vm |} m_id s_id s_st st ⦄)
     [seq totc (encode (vtype (v_var x))) (translate_get_var m_id x) | x <- l] vres.
 Proof.
   revert m vm vres m_id s_id s_st st.
@@ -5008,7 +5009,8 @@ Qed.
 
 Theorem translate_prog_correct P scs m vargs scs' m' vres :
   ∀ fn,
-    sem.sem_call (P : @uprog asm_op asmop) scs m fn vargs scs' m' vres →
+    @sem.sem_call _ syscall_state {| _pd := pd |} mk_spp {|
+    _asmop := asmop; _sc_sem := sc_sem |} (P : @uprog asm_op asmop) scs m fn vargs scs' m' vres →
     handled_program P ->
     ∀ vm m_id s_id s_st st,
     Pfun P fn scs m vargs scs' m' vres vm m_id s_id s_st st.
@@ -5023,29 +5025,31 @@ Proof using gd asm_correct.
          ∀ m_id s_id s_st st,
            handled_instr_r i →
            let (s_id', i') := translate_instr_r P SP i m_id s_id in
-           ⊢ ⦃ rel_estate s1 m_id s_id s_st st ⦄
+           ⊢ ⦃ rel_estate (syscall_state := syscall_state) s1 m_id s_id s_st st ⦄
                i' ⇓ tt
-               ⦃ rel_estate s2 m_id s_id' s_st st ⦄).
+               ⦃ rel_estate (syscall_state := syscall_state) s2 m_id s_id' s_st st ⦄).
   set (Pi := λ s1 i s2, Pi_r s1 (instr_d i) s2).
   set (Pc :=
          λ (s1 : estate) (c : cmd) (s2 : estate),
          ∀ m_id s_id s_st st,
            handled_cmd c →
            let (s_id', c') := translate_cmd P SP c m_id s_id in
-           ⊢ ⦃ rel_estate s1 m_id s_id s_st st ⦄
+           ⊢ ⦃ rel_estate (syscall_state := syscall_state) s1 m_id s_id s_st st ⦄
                  c' ⇓ tt
-               ⦃ rel_estate s2 m_id s_id' s_st st ⦄).
+               ⦃ rel_estate (syscall_state := syscall_state) s2 m_id s_id' s_st st ⦄).
   set (Pfor :=
     λ (v : var_i) (ws : seq Z) (s1 : estate) (c : cmd) (s2 : estate),
          ∀ m_id s_id s_id' s_st st,
            handled_cmd c →
            s_id~1 ⪯ s_id' ->
            exists s_id'',
-      ⊢ ⦃ rel_estate s1 m_id s_id' (s_id~0 :: s_st) st ⦄
+      ⊢ ⦃ rel_estate (syscall_state := syscall_state) s1 m_id s_id' (s_id~0 :: s_st) st ⦄
         translate_for v ws m_id (translate_cmd P SP c m_id) s_id' ⇓ tt
-      ⦃ rel_estate s2 m_id s_id'' (s_id~0 :: s_st) st ⦄
-  ).
-  unshelve eapply (@sem_call_Ind asm_op syscall_state mk_spp _ Pc Pi_r Pi Pfor Pfun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H).
+      ⦃ rel_estate (syscall_state := syscall_state) s2 m_id s_id'' (s_id~0 :: s_st) st ⦄
+      ).
+
+  unshelve eapply (@sem_call_Ind asm_op syscall_state {| _pd := pd |} mk_spp {|
+    _asmop := asmop; _sc_sem := sc_sem |} _ Pc Pi_r Pi Pfor Pfun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H).
   - (* nil *)
     intros s m_id s_id s_st st _. simpl.
     eapply u_ret_eq.

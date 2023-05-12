@@ -2,7 +2,8 @@ From Coq Require Import Morphisms.
 From Relational Require Import OrderEnrichedCategory.
 From Mon Require Import SPropBase.
 Set Warnings "-notation-overridden".
-From mathcomp Require Import all_ssreflect boolp.
+From mathcomp Require Import all_ssreflect.
+From mathcomp.classical Require Import boolp.
 Set Warnings "notation-overridden".
 From Crypt Require Import Axioms.
 

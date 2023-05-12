@@ -69,6 +69,7 @@ Proof.
   - exact word0.
   - exact [::].
   - exact (inl IHa1).
+  - exact (fun _ => IHa2).
 Defined.
 
 Definition heap := { h : raw_heap | valid_heap h }.

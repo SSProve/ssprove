@@ -1,6 +1,6 @@
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra zify.
-From mathcomp.word Require Import word ssrZ.
+From mathcomp Require Import word ssrZ.
 Set Warnings "notation-overridden,ambiguous-paths".
 
 From Coq Require Import Utf8 ZArith micromega.Lia List.
@@ -44,7 +44,7 @@ Definition key_expand (wn1 : u128) (rcon : u8) : 'word U128 :=
   wcat [tuple w4; w5; w6; w7].
 
 Definition key_i  (k : u128) i :=
-  iteri i (fun i ki => key_expand ki (rcon (i + 1))) k.
+  iteri i (fun i ki => key_expand ki (rcon ((Z_of_nat i) + 1))) k.
 
 Definition aes (key msg : u128) :=
   let state := wxor msg (key_i key 0) in

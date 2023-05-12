@@ -180,6 +180,7 @@ Section Interpreter.
           | Some (seed'' , y) => Some (seed'', inr y)
           | _ => None
           end
+    | chArrow A B => None (* TODO *)
     end.
   Next Obligation.
     eapply Ordinal.
@@ -203,7 +204,7 @@ Section Interpreter.
     pose (word.modulus_gt0 (word.nat_of_wsize n)).
     apply / word.iswordZP.
     apply a.
-    move : i => / ssrZ.ltzP.
+    move : i => / word_ssrZ.ltzP.
     auto.
   Defined.
 

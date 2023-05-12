@@ -3,7 +3,7 @@ From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadE
 Set Warnings "-notation-overridden".
 From mathcomp Require Import all_ssreflect.
 Set Warnings "notation-overridden".
-From mathcomp Require boolp.
+From mathcomp.classical Require Import boolp.
 
 Import SPropNotations.
 

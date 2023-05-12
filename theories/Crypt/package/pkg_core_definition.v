@@ -89,8 +89,9 @@ Section FreeModule.
   Context (Loc : {fset Location}).
   Context (import : Interface).
 
-  Inductive raw_code (A : choiceType) : Type :=
+  Inductive raw_code (A : choice_type) : Type :=
   | ret (x : A)
+  | funr {B C : choice_type} `{A = chArrow B C} (f : B -> raw_code C)
   | opr (o : opsig) (x : src o) (k : tgt o → raw_code A)
   | getr (l : Location) (k : l → raw_code A)
   | putr (l : Location) (v : l) (k : raw_code A)
@@ -212,15 +213,80 @@ Section FreeModule.
     f_equal. apply proof_irrelevance.
   Qed.
 
-  Fixpoint bind {A B} (c : raw_code A) (k : A → raw_code B) :
+  Definition bind {A B} (c : raw_code A) (k : A → raw_code B) :
+    raw_code B.
+  Proof.
+    assert (bind : forall {A B} (c : raw_code A) (k : A → raw_code B), raw_code B) by admit.
+    refine (match c with
+    | ret a => k a
+    | funr A B _ x f => _
+    | opr o x k'  => opr o x (λ p, bind _ _ (k' p) k)
+    | getr l k' => getr l (λ v, bind _ _ (k' v) k)
+    | putr l v k' => putr l v (bind _ _ k' k)
+    | sampler op k' => sampler op (λ a, bind _ _ (k' a) k)
+            end).
+
+    rewrite e in k, c ; clear e.
+    apply (bind (f x)).
+
+    destruct B0.
+    - apply ret. easy.
+    - apply k.
+      apply f.
+    - apply ret. easy.
+    - apply ret. easy.
+    12:{
+
+    }
+    - eapply (ret _).
+    - 
+    
+      (* (A -> B) -> (B -> C) *)
+      (* (A -> C). *)
+    eapply funr.
+    - 
+    - intros.
+      eapply bind.
+      + apply c.
+      + apply k.
+
+    pose (@funr B0 (chArrow B C) B _ (fun x => _)).
+    Show Proof.
+    - admit.
+    - pose (k x).
+      
+      pose (x _)
+      refine (ret x).
+    
+    
+    
+    epose (@funr _ (chArrow A B) _ _).
+    intros a.
+    
+    
+    refine (k (f).
+    
+  Program Fixpoint bind {A B} (c : raw_code A) (k : A → raw_code B) :
     raw_code B :=
     match c with
     | ret a => k a
+    | funr A B _ f => let m := c in _
     | opr o x k'  => opr o x (λ p, bind (k' p) k)
     | getr l k' => getr l (λ v, bind (k' v) k)
     | putr l v k' => putr l v (bind k' k)
     | sampler op k' => sampler op (λ a, bind (k' a) k)
     end.
+  Next Obligation.
+    pose c.
+
+    
+    
+    pose (fun a => f a).
+    
+    eapply bind.
+    - apply f.
+    apply k.
+    
 
   Lemma valid_bind :
     ∀ A B c k,
