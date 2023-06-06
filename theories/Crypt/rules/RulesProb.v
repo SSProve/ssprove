@@ -150,7 +150,7 @@ End RulesNotation.
 Import RulesNotation.
 Open Scope Rules_scope.
 
-Definition flip (r : R) : SDistr (bool_choiceType).
+Definition flip (r : R) : SDistr (bool).
   rewrite /SDistr_carrier.
   apply mkdistrd. intros b.
   destruct b.
@@ -162,7 +162,7 @@ Definition get_d { A  : choiceType} (c : MFreePr A):=
   (Theta_dens.unary_theta_dens_obligation_1 A c).
 
 Lemma sample_rule :
-  ∀ {A1 A2} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2}
+  ∀ {A1 A2} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2}
     (pre : Prop) (post : A1 -> A2 -> Prop)
     (c1 : MFreePr (Choice.Pack chA1))
     (c2 : MFreePr (Choice.Pack chA2))
@@ -205,7 +205,7 @@ Qed.
 (* GENERIC MONADIC RULES *)
 
 Theorem ret_ule {A1 A2 : Type}
-  {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2}
+  {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2}
   (a1 : A1) (a2 : A2) :
    ⊨ (ord_relmon_unit MFreePr (Choice.Pack chA1) a1) ≈
      (ord_relmon_unit MFreePr (Choice.Pack chA2) a2)
@@ -229,7 +229,7 @@ Proof.
   by apply: ret_rule.
 Qed.
 
-Theorem weaken_rule  {A1 A2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2}
+Theorem weaken_rule  {A1 A2 : Type} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2}
                      {d1 : MFreePr (Choice.Pack chA1)}
                      {d2 : MFreePr (Choice.Pack chA2)} :
   forall w w', (⊨ d1 ≈ d2 [{ w }]) -> w ≤ w' -> (⊨ d1 ≈ d2 [{ w' }] ).
@@ -243,8 +243,8 @@ Proof.
 Qed.
 
 
-Theorem bind_rule {A1 A2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2}
-                  {B1 B2 : Type} {chB1 : Choice.class_of B1} {chB2 : Choice.class_of B2}
+Theorem bind_rule {A1 A2 : Type} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2}
+                  {B1 B2 : Type} {chB1 : Choice(* .class_of *) B1} {chB2 : Choice(* .class_of *) B2}
                   {f1 : A1 -> MFreePr (Choice.Pack chB1)}
                   {f2 : A2 -> MFreePr (Choice.Pack chB2)}
                   (m1 : MFreePr (Choice.Pack chA1))
@@ -278,7 +278,7 @@ Qed.
 
 (* Pre-condition manipulating rules *)
 
-Theorem pre_weaken_rule  {A1 A2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2}
+Theorem pre_weaken_rule  {A1 A2 : Type} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2}
                         {d1 : MFreePr (Choice.Pack chA1)}
                         {d2 : MFreePr (Choice.Pack chA2)} :
   forall (pre pre' : Prop) post, (⊨ ⦃ pre ⦄ d1 ≈ d2 ⦃ post ⦄) -> (pre' -> pre) -> (⊨ ⦃ pre' ⦄ d1 ≈ d2 ⦃ post ⦄).
@@ -291,7 +291,7 @@ Proof.
   simpl; intuition.
 Qed.
 
-Theorem pre_hypothesis_rule  {A1 A2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2}
+Theorem pre_hypothesis_rule  {A1 A2 : Type} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2}
                         {d1 : MFreePr (Choice.Pack chA1)}
                         {d2 : MFreePr (Choice.Pack chA2)} :
   forall (pre : Prop) post, (pre -> ⊨ ⦃ True ⦄ d1 ≈ d2 ⦃ post ⦄) -> (⊨ ⦃ pre ⦄ d1 ≈ d2 ⦃ post ⦄).
@@ -323,7 +323,7 @@ Qed.
 
 (* post-condition manipulating rules *)
 
-Theorem post_weaken_rule  {A1 A2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2}
+Theorem post_weaken_rule  {A1 A2 : Type} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2}
         {d1 : MFreePr (Choice.Pack chA1)}
         {d2 : MFreePr (Choice.Pack chA2)} :
   forall (pre : Prop) (post1 post2 : A1 -> A2 -> Prop),
@@ -438,7 +438,7 @@ Proof. by  apply: (seq_rule_ch m1 m2 P (fun _ _ => True) Q judge1 judge2). Qed.
 
 (* *)
 
-Theorem if_rule  {A1 A2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2}
+Theorem if_rule  {A1 A2 : Type} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2}
         (c1 c2 : MFreePr (Choice.Pack chA1))
         (c1' c2' : MFreePr (Choice.Pack chA2))
         {b1 b2 : bool}
@@ -463,7 +463,7 @@ Proof.
   - intuition.
 Qed.
 
-Theorem if_rule_weak  {A1 A2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2}
+Theorem if_rule_weak  {A1 A2 : Type} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2}
         (c1 c2 : MFreePr (Choice.Pack chA1))
         (c1' c2' : MFreePr (Choice.Pack chA2))
         {b : bool}
@@ -485,7 +485,7 @@ Axiom s_indefinite_description :
 
 
 
-Definition judgement_d {A1 A2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2}
+Definition judgement_d {A1 A2 : Type} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2}
            {c1 : MFreePr (Choice.Pack chA1)}
            {c2 : MFreePr (Choice.Pack chA2)}
            {pre : Prop} {post : A1 -> A2 -> Prop}
@@ -516,8 +516,8 @@ Fixpoint for_loop {A : choiceType} (c : A -> MFreePr A) (n : nat) (a : A) :=
   end.
 
 (* Rem.: this is a bounded version of the iteration operator found in monads with iteration *)
-Fixpoint bounded_iter {A B : choiceType} (n : nat) (c : A -> MFreePr (sum_choiceType A B)) (a : A) :
-  MFreePr (sum_choiceType unit_choiceType B) :=
+Fixpoint bounded_iter {A B : choiceType} (n : nat) (c : A -> MFreePr (A + B)%type) (a : A) :
+  MFreePr (Datatypes_unit__canonical__choice_Choice + B)%type :=
   match n with
   | 0  => ord_relmon_unit MFreePr _ (inl Datatypes.tt)
   | S m => (ord_relmon_bind MFreePr) (fun v => match v with
@@ -526,16 +526,16 @@ Fixpoint bounded_iter {A B : choiceType} (n : nat) (c : A -> MFreePr (sum_choice
                                            end) (c a)
   end.
 
-Definition bounded_loop {A B : choiceType} (n : nat) (b : A -> MFreePr bool_choiceType) (c : A -> MFreePr A) (a : A) :
-  MFreePr (sum_choiceType unit_choiceType A) :=
+Definition bounded_loop {A B : choiceType} (n : nat) (b : A -> MFreePr bool) (c : A -> MFreePr A) (a : A) :
+  MFreePr (Datatypes_unit__canonical__choice_Choice + A)%type :=
   bounded_iter n (fun a' => ord_relmon_bind MFreePr (fun b => match b with
        | true => ord_relmon_bind MFreePr (fun a2 => ord_relmon_unit MFreePr _ (inr a2)) (c a')
        | false => ord_relmon_unit MFreePr _ (inl a')
                                                         end) (b a')) a.
 
 (* Rem.: this a variant following what's in The next 700... *)
-Fixpoint bounded_do_while  (n : nat) (c : MFreePr bool_choiceType) :
-  MFreePr bool_choiceType :=
+Fixpoint bounded_do_while  (n : nat) (c : MFreePr bool) :
+  MFreePr bool :=
   (* false means fuel emptied, true means execution finished *)
   match n with
   | 0 => ord_relmon_unit MFreePr _ false
@@ -548,8 +548,8 @@ Fixpoint bounded_do_while  (n : nat) (c : MFreePr bool_choiceType) :
 
 (* Rem.: maybe something like the rule in the paper can be proven? yes...
        but I do not have intuition of how it could be used... examples needed! *)
-Theorem bounded_do_while_rule  {A1 A2 : Type} {chA1 : Choice.class_of A1} {chA2 : Choice.class_of A2} {n : nat}
-        (c1 c2 : MFreePr bool_choiceType)
+Theorem bounded_do_while_rule  {A1 A2 : Type} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2} {n : nat}
+        (c1 c2 : MFreePr bool)
         {inv : bool -> bool -> Prop}
         {H : ⊨ ⦃ inv true true ⦄ c1 ≈ c2 ⦃ fun b1 b2 => inv b1 b2 /\ b1 = b2 ⦄ } :
     ⊨ ⦃ inv true true ⦄ bounded_do_while n c1 ≈ bounded_do_while n c2 ⦃ fun l r => (l = false /\ r = false) \/ inv false false ⦄.
@@ -614,7 +614,7 @@ Proof.
   rewrite HeqH11.
   assert ((fun x : X => (A x)%:R * psum (fun w : Choice.Pack chY => d (x, w))) = (fun x : X => psum (fun w : Choice.Pack chY => (A x)%:R * d (x, w)))) as H4.
   { extensionality k. rewrite -psumZ. reflexivity.
-    case (A k); intuition. by rewrite ler01. }
+    case (A k); intuition. (* by rewrite ler01. *) }
   rewrite H4.
   assert ((fun x : Y => (B x)%:R * dsnd d x) = (fun y : Y => (B y)%:R * psum (fun w => d (w, y)))) as HeqH12.
   { extensionality K. rewrite dsndE. reflexivity. }
@@ -651,23 +651,23 @@ Proof.
        move: H. move/idP. intuition.
          by rewrite H !GRing.mulr0.
     (* summable B*)
-    assert ((fun x : (prod_choiceType (Choice.Pack chX) (Choice.Pack chY)) =>
+    assert ((fun x : ( (Choice.Pack chX) * (Choice.Pack chY)) =>
                (nat_of_bool (let '(_, y) := x in B y))%:R * d x) =
             (fun '(x, y)  => (B y)%:R * d (x, y))) as Heq1.
     { extensionality k. destruct k as [k1 k2].
       case (B k2). reflexivity. reflexivity. }
     rewrite -Heq1.
-    pose (@summable_pr R (prod_choiceType (Choice.Pack chX) (Choice.Pack chY))
+    pose (@summable_pr R ((Choice.Pack chX) * (Choice.Pack chY))%type
                        (fun '(x, y) => B y) d).
     simpl in *. unfold nat_of_bool in s. rewrite /nat_of_bool. exact s.
     (* summable A *)
-    assert ((fun x : (prod_choiceType (Choice.Pack chX) (Choice.Pack chY)) =>
+    assert ((fun x : ((Choice.Pack chX) * (Choice.Pack chY))%type =>
                (nat_of_bool (let '(x, _) := x in A x))%:R * d x) =
             (fun '(x, y)  => (A x)%:R * d (x, y))) as Heq2.
     { extensionality k. destruct k as [k1 k2].
       case (B k2). reflexivity. reflexivity. }
     rewrite -Heq2.
-    pose (@summable_pr R (prod_choiceType (Choice.Pack chX) (Choice.Pack chY))
+    pose (@summable_pr R ((Choice.Pack chX) * (Choice.Pack chY))%type
                        (fun '(x, y) => A x) d).
     simpl in *. unfold nat_of_bool in s. rewrite /nat_of_bool. exact s.
 Qed.
@@ -722,7 +722,7 @@ Proof.
   rewrite HeqH11.
   assert ((fun x : X => (A x)%:R * psum (fun w : Choice.Pack chY => d (x, w))) = (fun x : X => psum (fun w : Choice.Pack chY => (A x)%:R * d (x, w)))) as H4.
   { extensionality k. rewrite -psumZ. reflexivity.
-    case (A k); intuition. by rewrite ler01. }
+    case (A k); intuition. (* by rewrite ler01. *) }
   rewrite H4.
   assert ((fun x : Y => (B x)%:R * dsnd d x) = (fun y : Y => (B y)%:R * psum (fun w => d (w, y)))) as HeqH12.
   { extensionality K. rewrite dsndE. reflexivity. }
@@ -739,7 +739,7 @@ Proof.
   - move => [x1 x2] /=.
     apply /andP. split.
     -- apply: mulr_ge0.
-       --- case: (A x1); rewrite //=. exact ler01.
+       --- case: (A x1); rewrite //=. (* exact ler01. *)
        --- by inversion d.
     -- have Hd0 : 0 <= d(x1,x2) by inversion d.
        have [Hdor1 | Hdor2]: 0 == d(x1,x2) \/ 0 < d(x1,x2).
@@ -748,42 +748,42 @@ Proof.
        --- move/eqP : Hdor1 => Hdor1.
            by rewrite -Hdor1 !GRing.mulr0.
        --- apply: ler_pmul.
-           + case: (A x1); rewrite //=. exact ler01.
+           + case: (A x1); rewrite //=. (* exact ler01. *)
            + by inversion d.
            + move:  (H2 x1 x2 Hdor2) => HAB.
              destruct (A x1) eqn: Ax1; rewrite //=;
              destruct (B x2) eqn : Bx2; rewrite //=.
              exfalso. by apply: true_false_False.
-             exact ler01.
+             (* exact ler01. *)
              auto.
   (* summable B *)
-    assert ((fun x : (prod_choiceType (Choice.Pack chX) (Choice.Pack chY)) =>
+    assert ((fun x : ((Choice.Pack chX) * (Choice.Pack chY)) =>
                (nat_of_bool (let '(_, y) := x in B y))%:R * d x) =
             (fun '(x, y)  => (B y)%:R * d (x, y))) as Heq1.
     { extensionality k. destruct k as [k1 k2].
       case (B k2). reflexivity. reflexivity. }
     rewrite -Heq1.
-    pose (@summable_pr R (prod_choiceType (Choice.Pack chX) (Choice.Pack chY))
+    pose (@summable_pr R ((Choice.Pack chX) * (Choice.Pack chY))%type
                        (fun '(x, y) => B y) d).
     simpl in *. unfold nat_of_bool in s. rewrite /nat_of_bool. exact s.
   (* summable B *)
-    assert ((fun x : (prod_choiceType (Choice.Pack chX) (Choice.Pack chY)) =>
+    assert ((fun x : ((Choice.Pack chX) * (Choice.Pack chY)) =>
                (nat_of_bool (let '(_, y) := x in B y))%:R * d x) =
             (fun '(x, y)  => (B y)%:R * d (x, y))) as Heq1.
     { extensionality k. destruct k as [k1 k2].
       case (B k2). reflexivity. reflexivity. }
     rewrite -Heq1.
-    pose (@summable_pr R (prod_choiceType (Choice.Pack chX) (Choice.Pack chY))
+    pose (@summable_pr R ((Choice.Pack chX) * (Choice.Pack chY))%type
                        (fun '(x, y) => B y) d).
     simpl in *. unfold nat_of_bool in s. rewrite /nat_of_bool. exact s.
     (* summable A *)
-    assert ((fun x : (prod_choiceType (Choice.Pack chX) (Choice.Pack chY)) =>
+    assert ((fun x : ((Choice.Pack chX) * (Choice.Pack chY)) =>
                (nat_of_bool (let '(x, _) := x in A x))%:R * d x) =
             (fun '(x, y)  => (A x)%:R * d (x, y))) as Heq2.
     { extensionality k. destruct k as [k1 k2].
       case (B k2). reflexivity. reflexivity. }
     rewrite -Heq2.
-    pose (@summable_pr R (prod_choiceType (Choice.Pack chX) (Choice.Pack chY))
+    pose (@summable_pr R ((Choice.Pack chX) * (Choice.Pack chY))%type
                        (fun '(x, y) => A x) d).
     simpl in *. unfold nat_of_bool in s. rewrite /nat_of_bool. exact s.
 Qed.

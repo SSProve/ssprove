@@ -56,37 +56,42 @@ Inductive choice_type :=
 
 Derive NoConfusion NoConfusionHom for choice_type.
 
-Definition word_ordMixin nbits := [ ordMixin of word nbits by <: ].
-Canonical word_ordType nbits := Eval hnf in OrdType (word nbits) (word_ordMixin nbits).
+From HB Require Import structures.
+
+
+#[hnf] HB.instance Definition _ nbits :=
+  [Ord of (word nbits) by <:].
+
+(* Check ComRing_sort__canonical__Ord_Ord nbits. *)
 
 Fixpoint chElement_ordType (U : choice_type) : ordType :=
   match U with
-  | chUnit => unit_ordType
-  | chNat => nat_ordType
-  | chInt => Z_ordType
-  | chBool => bool_ordType
-  | chProd U1 U2 => prod_ordType (chElement_ordType U1) (chElement_ordType U2)
-  | chMap U1 U2 => fmap_ordType (chElement_ordType U1) (chElement_ordType U2)
-  | chOption U => option_ordType (chElement_ordType U)
-  | chFin n => [ordType of ordinal n.(pos) ]
-  | chWord nbits => word_ordType nbits
-  | chList U => seq_ordType (chElement_ordType U)
-  | chSum U1 U2 => sum_ordType (chElement_ordType U1) (chElement_ordType U2)
+  | chUnit => Datatypes_unit__canonical__Ord_Ord
+  | chNat => Datatypes_nat__canonical__Ord_Ord
+  | chInt => BinNums_Z__canonical__Ord_Ord
+  | chBool => Datatypes_bool__canonical__Ord_Ord
+  | chProd U1 U2 => Datatypes_prod__canonical__Ord_Ord (chElement_ordType U1) (chElement_ordType U2)
+  | chMap U1 U2 => FMap_fmap_type__canonical__Ord_Ord (chElement_ordType U1) (chElement_ordType U2)
+  | chOption U => Datatypes_option__canonical__Ord_Ord (chElement_ordType U)
+  | chFin n =>  fintype_ordinal__canonical__Ord_Ord n.(pos)
+  | chWord nbits => ComRing_sort__canonical__Ord_Ord nbits
+  | chList U => Datatypes_list__canonical__Ord_Ord (chElement_ordType U)
+  | chSum U1 U2 => Datatypes_sum__canonical__Ord_Ord (chElement_ordType U1) (chElement_ordType U2)
   end.
 
 Fixpoint chElement (U : choice_type) : choiceType :=
   match U with
-  | chUnit => unit_choiceType
-  | chNat => nat_choiceType
-  | chInt => Z_choiceType
-  | chBool => bool_choiceType
-  | chProd U1 U2 => prod_choiceType (chElement U1) (chElement U2)
-  | chMap U1 U2 => fmap_choiceType (chElement_ordType U1) (chElement U2)
-  | chOption U => option_choiceType (chElement U)
-  | chFin n => [choiceType of ordinal n.(pos) ]
-  | chWord nbits => word_choiceType nbits
-  | chList U => seq_choiceType (chElement U)
-  | chSum U1 U2 => sum_choiceType (chElement U1) (chElement U2)
+  | chUnit => Datatypes_unit__canonical__choice_Choice
+  | chNat => Datatypes_nat__canonical__choice_Choice
+  | chInt => BinNums_Z__canonical__choice_Choice
+  | chBool => Datatypes_bool__canonical__choice_Choice
+  | chProd U1 U2 => Datatypes_prod__canonical__choice_Choice (chElement U1) (chElement U2)
+  | chMap U1 U2 => FMap_fmap_type__canonical__choice_Choice (chElement_ordType U1) (chElement U2)
+  | chOption U => Datatypes_option__canonical__choice_Choice (chElement U)
+  | chFin n => fintype_ordinal__canonical__choice_Choice n.(pos)
+  | chWord nbits => ComRing_sort__canonical__Ord_Ord nbits
+  | chList U => Datatypes_list__canonical__choice_Choice (chElement U)
+  | chSum U1 U2 => Datatypes_sum__canonical__choice_Choice (chElement U1) (chElement U2)
   end.
 
 Coercion chElement : choice_type >-> choiceType.
@@ -126,7 +131,7 @@ Section choice_typeTypes.
   (*   | EqMixin  op => op *)
   (*   end. *)
 
-
+  
   Fixpoint choice_type_test (u v : choice_type) : bool :=
     match u, v with
     | chNat , chNat => true
@@ -174,7 +179,7 @@ Section choice_typeTypes.
       + right. congruence.
     (* chFin *)
     - destruct (x1 == y1) eqn:e.
-      + move: e => /eqP e. subst. left. reflexivity.
+      + move: e => /eqP e. subst. left.  reflexivity.
       + move: e => /eqP e. right. intro h.
         apply e. inversion h. reflexivity.
     (* chWord *)
@@ -203,9 +208,7 @@ Section choice_typeTypes.
     - move: e => /choice_type_eqP []. reflexivity.
   Qed.
 
-  Canonical choice_type_eqMixin := EqMixin choice_type_eqP.
-  Canonical choice_type_eqType :=
-    Eval hnf in EqType choice_type choice_type_eqMixin.
+  HB.instance Definition _ := hasDecEq.Build choice_type choice_type_eqP.
 
   Fixpoint choice_type_lt (t1 t2 : choice_type) :=
   match t1, t2 with
@@ -588,9 +591,9 @@ Section choice_typeTypes.
       intuition auto. move: H0. rewrite H. intuition auto.
   Qed.
 
-  Lemma choice_type_leqP : Ord.axioms choice_type_leq.
+  Lemma choice_type_leqP : hasOrd.axioms_ choice_type.
   Proof.
-    split => //.
+    apply (hasOrd.Axioms_ choice_type_leq).
     - intro x. unfold choice_type_leq.
       apply/orP. left. apply /eqP. reflexivity.
     - intros v u w h1 h2.
@@ -704,12 +707,9 @@ Section choice_typeTypes.
     - rewrite IHt1. rewrite IHt2. reflexivity.
   Qed.
 
-  Definition choice_type_choiceMixin := PcanChoiceMixin codeK.
-  Canonical choice_type_choiceType :=
-    ChoiceType choice_type choice_type_choiceMixin.
+  #[short(type="choice_type_choiceMixin")]
+    HB.instance Definition _ := PCanHasChoice codeK.
 
-  Definition choice_type_ordMixin := OrdMixin choice_type_leqP.
-  Canonical choice_type_ordType :=
-    Eval hnf in OrdType choice_type choice_type_ordMixin.
-
+  HB.instance Definition _ :=
+    (@hasOrd.Build choice_type (hasOrd.leq choice_type_leqP) (hasOrd.leqxx choice_type_leqP) (@hasOrd.leq_trans _ choice_type_leqP) (@hasOrd.anti_leq _ choice_type_leqP) (hasOrd.leq_total choice_type_leqP)).
 End choice_typeTypes.

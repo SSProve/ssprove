@@ -1031,9 +1031,8 @@ Proof.
   all: intro h. all: inversion h. all: contradiction.
 Qed.
 
-Canonical heap_val_eqMixin := EqMixin heap_val_eqP.
-Canonical heap_val_eqType :=
-  Eval hnf in EqType heap_val heap_val_eqMixin.
+From HB Require Import structures.
+HB.instance Definition _ := hasDecEq.Build heap_val heap_val_eqP.
 
 Derive NoConfusion for heap_val.
 

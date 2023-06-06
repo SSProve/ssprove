@@ -180,9 +180,8 @@ Proof.
     intro h. apply e. inversion h. reflexivity.
 Qed.
 
-Canonical positive_eqMixin := EqMixin positive_eqP.
-  Canonical positive_eqType :=
-    Eval hnf in EqType positive positive_eqMixin.
+From HB Require Import structures.
+HB.instance Definition _ := hasDecEq.Build positive positive_eqP.
 
 (** Lt class, for finite types  *)
 

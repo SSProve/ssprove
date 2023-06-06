@@ -3,7 +3,7 @@ From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadE
 Set Warnings "-notation-overridden".
 From mathcomp Require Import all_ssreflect.
 Set Warnings "notation-overridden".
-From mathcomp Require boolp.
+From mathcomp Require classical.boolp.
 
 Import SPropNotations.
 
@@ -42,7 +42,7 @@ Section Prod_of_choiceTypes.
                                Obj ord_choiceType.
   Proof.
     rewrite /prod_cat /=. move => [C1 C2].
-    exact (prod_choiceType C1 C2).
+    exact (C1 * C2)%type.
   Defined.
 
   Definition F_choice_prod_morph : forall T1  T2 : (prod_cat ord_choiceType ord_choiceType),

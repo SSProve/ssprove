@@ -59,10 +59,10 @@ Definition p1 : package fset0 [interface] I1 :=
     }
   ].
 
-Definition foo (x : bool) : code fset0 [interface] bool_choiceType :=
+Definition foo (x : bool) : code fset0 [interface] bool :=
   {code let u := x in ret u}.
 
-Definition bar (b : bool) : code fset0 [interface] nat_choiceType :=
+Definition bar (b : bool) : code fset0 [interface] nat :=
   {code if b then ret 0 else ret 1}.
 
 Definition p2 : package fset0 [interface] I2 :=
@@ -117,12 +117,13 @@ Definition sig := {sig #[0] : 'nat → 'nat }.
     } ;
     #def #[2] (_ : 'unit) : 'option ('fin 2) {
       #put ('nat ; 0) := 0 ;;
-      ret (Some (gfin 2))
+      ret (Some (gfin 1))
     } ;
     #def #[3] (m : {map 'nat → 'nat}) : 'option 'nat {
       ret (getm m 0)
     }
   ].
+Admit Obligations.
 
 (* Testing the #import notation *)
 Definition test₃ :

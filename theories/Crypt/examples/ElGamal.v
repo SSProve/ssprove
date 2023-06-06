@@ -79,12 +79,11 @@ Qed.
 
 Module MyParam <: AsymmetricSchemeParams.
 
-  Definition SecurityParameter : choiceType := nat_choiceType.
-  Definition Plain  : finType := FinGroup.arg_finType gT.
-  Definition Cipher : finType :=
-    prod_finType (FinGroup.arg_finType gT) (FinGroup.arg_finType gT).
-  Definition PubKey : finType := FinGroup.arg_finType gT.
-  Definition SecKey : finType := [finType of 'Z_q].
+  Definition SecurityParameter : choiceType := nat.
+  Definition Plain  : finType := gT.
+  Definition Cipher : finType := prod (gT:finType) (gT:finType).
+  Definition PubKey : finType := gT.
+  Definition SecKey : finType := Finite.clone _ 'Z_q.
 
   Definition plain0 := g.
   Definition cipher0 := (g, g).
@@ -134,13 +133,13 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Definition challenge_id : nat := 8. (*challenge for LR *)
   Definition challenge_id' : nat := 9. (*challenge for real rnd *)
   Definition getpk_id : nat := 42. (* routine to get the public key *)
+  Definition query_id : nat := 10.
 
   Definition i_plain := #|Plain|.
   Definition i_cipher := #|Cipher|.
   Definition i_pk := #|PubKey|.
   Definition i_sk := #|SecKey|.
-  Definition i_bool := 2.
-
+  Definition i_bool : nat := 2.
 
   (** Key Generation algorithm *)
   Definition KeyGen {L : {fset Location}} :
@@ -209,9 +208,9 @@ Definition DH_loc := fset [:: pk_loc ; sk_loc].
 
 Definition DH_real :
   package DH_loc [interface]
-    [interface #val #[10] : 'unit → 'pubkey × 'cipher ] :=
+    [interface #val #[query_id] : 'unit → 'pubkey × 'cipher ] :=
     [package
-      #def #[10] (_ : 'unit) : 'pubkey × 'cipher
+      #def #[query_id] (_ : 'unit) : 'pubkey × 'cipher
       {
         a ← sample uniform i_sk ;;
         let a := otf a in
@@ -225,9 +224,9 @@ Definition DH_real :
 
 Definition DH_rnd :
   package DH_loc [interface]
-    [interface #val #[10] : 'unit → 'pubkey × 'cipher ] :=
+    [interface #val #[query_id] : 'unit → 'pubkey × 'cipher ] :=
     [package
-      #def #[10] (_ : 'unit) : 'pubkey × 'cipher
+      #def #[query_id] (_ : 'unit) : 'pubkey × 'cipher
       {
         a ← sample uniform i_sk ;;
         let a := otf a in
@@ -243,7 +242,7 @@ Definition DH_rnd :
 
 Definition Aux :
   package (fset [:: counter_loc ; pk_loc ])
-    [interface #val #[10] : 'unit → 'pubkey × 'cipher]
+    [interface #val #[query_id] : 'unit → 'pubkey × 'cipher]
     [interface
       #val #[getpk_id] : 'unit → 'pubkey ;
       #val #[challenge_id'] : 'plain → 'cipher
@@ -258,10 +257,10 @@ Definition Aux :
 
     #def #[challenge_id'] (m : 'plain) : 'cipher
     {
-      #import {sig #[10] : 'unit → 'pubkey × 'cipher } as query ;;
+      #import {sig #[query_id] : 'unit → 'pubkey × 'cipher } as query ;;
       count ← get counter_loc ;;
-      #assert (count == 0)%N ;;
       #put counter_loc := (count + 1)%N ;;
+      #assert (count == 0)%N ;;
       '(pk, c) ← query Datatypes.tt ;;
       @ret chCipher (fto ((otf c).1 , (otf m) * ((otf c).2)))
     }
@@ -278,8 +277,8 @@ Proof.
   - eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
     move => [a1 h1] [a2 h2] [Heqa Heqh]. intuition auto.
   - ssprove_sync_eq. intro count.
-    ssprove_sync_eq. move => /eqP e. subst.
     ssprove_sync_eq.
+    ssprove_sync_eq. move => /eqP e. subst.
     ssprove_sync_eq. intro a.
     ssprove_swap_lhs 0%N.
     ssprove_sync_eq.
@@ -390,9 +389,13 @@ Proof.
     cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
   - ssprove_sync_eq. intro count.
     ssprove_sync_eq.
-    intros h.
-    ssprove_sync_eq.
-    ssprove_sync_eq. intros a.
+    destruct count.
+    2:{
+      cbn. eapply rpost_weaken_rule. 1: eapply rreflexivity_rule.
+      cbn. intros [? ?] [? ?] e. inversion e. intuition auto.
+    }
+    simpl.
+    ssprove_sync_eq. intro a.
     ssprove_swap_rhs 1%N.
     ssprove_swap_rhs 0%N.
     ssprove_sync_eq.
@@ -407,10 +410,10 @@ Proof.
     simpl. intros x.
     unfold f'. set (z := ch2prod x). clearbody z. clear x.
     destruct z as [x y]. simpl.
-    rewrite !otf_fto.
-    eapply r_ret.
-    intros s ? e.
-    subst. simpl. easy.
+    eapply r_ret. intros s ? e. subst.
+    intuition auto.
+    rewrite !otf_fto. simpl.
+    reflexivity.
 Qed.
 
 Theorem ElGamal_OT :
@@ -475,7 +478,7 @@ End ElGamal.
 
 Module EGP_Z3 <: ElGamalParam.
 
-  Definition gT : finGroupType := Zp_finGroupType 2.
+  Definition gT : finGroupType := 'Z_2.
   Definition ζ : {set gT} := [set : gT].
   Definition g :  gT := Zp1.
 

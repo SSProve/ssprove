@@ -431,7 +431,7 @@ Section fset_par_facts.
       - cbn. symmetry. apply h. auto.
       - cbn. reflexivity.
     }
-    rewrite h1. reflexivity.
+    rewrite h1. rewrite eqseqE. now rewrite eq_refl.
   Qed.
 
 End fset_par_facts.
@@ -912,7 +912,7 @@ Proof.
 Qed.
 
 Lemma getm_def_in :
-  ∀ {A : eqType} n (x : A) (s : seq (nat_eqType * A)),
+  ∀ {A : eqType} n (x : A) (s : seq (Datatypes_nat__canonical__eqtype_Equality * A)),
     getm_def s n = Some x →
     (n,x) \in s.
 Proof.

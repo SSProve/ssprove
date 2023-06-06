@@ -316,9 +316,7 @@ Section KEMDEM.
         #assert (isSome sk) as skSome ;;
         let sk := getSome sk skSome in
         ek ← get ek_loc ;;
-        #assert (isSome ek) as ekSome ;;
-        let ek := getSome ek ekSome in
-        #assert (ek != ek') ;;
+        #assert (ek != Some ek') ;;
         ret (η.(KEM_decap) sk ek')
       }
     ].
@@ -406,9 +404,7 @@ Section KEMDEM.
       #def #[ DEC ] (c' : 'cipher) : 'plain {
         #import {sig #[ GET ] : 'unit → 'key } as GET ;;
         c ← get c_loc ;;
-        #assert (isSome c) as cSome ;;
-        let c := getSome c cSome in
-        #assert (c != c') ;;
+        #assert (c != Some c') ;;
         k ← GET Datatypes.tt ;;
         ret (θ.(DEM_dec) k c')
       }
@@ -490,12 +486,8 @@ Section KEMDEM.
         #assert (isSome sk) as skSome ;;
         let sk := getSome sk skSome in
         ek ← get ek_loc ;;
-        #assert (isSome ek) as ekSome ;;
-        let ek := getSome ek ekSome in
         c ← get c_loc ;;
-        #assert (isSome c) as cSome ;;
-        let c := getSome c cSome in
-        #assert ((ek, c) != c') ;;
+        #assert ((ek, c) != (Some c'.1, Some c'.2)) ;;
         ret (ζ.(PKE_dec) sk c')
       }
     ].
@@ -550,13 +542,9 @@ Section KEMDEM.
         pk ← get pk_loc ;;
         #assert (isSome pk) ;;
         ek ← get ek_loc ;;
-        #assert (isSome ek) as ekSome ;;
-        let ek := getSome ek ekSome in
         c ← get c_loc ;;
-        #assert (isSome c) as cSome ;;
-        let c := getSome c cSome in
-        #assert ((ek, c) != (ek', c')) ;;
-        if ek == ek'
+        #assert ((ek, c) != (Some ek', Some c')) ;;
+        if ek == Some ek'
         then (
           DEC c'
         )
@@ -616,7 +604,7 @@ Section KEMDEM.
     as ineq.
     eapply le_trans. 1: exact ineq.
     clear ineq.
-    eapply ler_add.
+    eapply lerD.
     (* Idealising the core keying package *)
     - replace (par CK₀ CD₀) with ((par (ID EK) CD₀) ∘ (par CK₀ (ID IGET))).
       2:{
@@ -708,7 +696,7 @@ Section KEMDEM.
     as ineq.
     eapply le_trans. 1: exact ineq.
     clear ineq.
-    eapply ler_add.
+    eapply lerD.
     - eapply single_key_a. all: eauto.
     (* De-idealising the core keying package *)
     - replace (par CK₀ CD₁) with ((par (ID EK) CD₁) ∘ (par CK₀ (ID IGET))).
@@ -944,11 +932,7 @@ Section KEMDEM.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
       ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
       eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intros ek.
-      ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
-      ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
-      ssprove_sync. intro ekSome.
-      destruct ek as [ek|]. 2: discriminate.
-      simpl. destruct (ek == ek') eqn:eek.
+      destruct (ek == Some ek') eqn:eek.
       + rewrite eek.
         ssprove_code_simpl_more. ssprove_code_simpl. ssprove_code_simpl_more.
         eapply r_get_remember_rhs. intro pk.
@@ -962,16 +946,13 @@ Section KEMDEM.
         intro eps.
         eapply sameSomeRel_sameSome in eps as eps'. rewrite eps'.
         ssprove_sync. intro skSome.
-        ssprove_swap_seq_rhs [:: 2 ; 1 ; 0 ]%N.
+        ssprove_swap_seq_rhs [:: 1 ]%N.
         ssprove_contract_get_rhs.
         ssprove_sync. intro c.
-        ssprove_sync. intro cSome.
-        destruct c as [c|]. 2: discriminate.
-        simpl.
-        ssprove_sync. intro ee.
-        move: ee => /eqP ee.
-        move: eek => /eqP eek. subst ek'.
-        destruct (c != c') eqn:e.
+        ssprove_sync. intro neq.
+        move: neq => /eqP neq.
+        move: eek => /eqP eek. subst ek.
+        destruct (c != Some c') eqn:e.
         2:{ move: e => /eqP e. subst. contradiction. }
         rewrite e. simpl.
         eapply r_get_remember_rhs. intro k.
@@ -984,11 +965,10 @@ Section KEMDEM.
         ssprove_forget_all.
         apply r_ret. auto.
       + rewrite eek. ssprove_code_simpl_more.
-        ssprove_swap_seq_rhs [:: 6 ; 5 ; 4 ; 3 ; 2 ; 1 ; 0 ]%N.
+        ssprove_swap_seq_rhs [:: 5 ; 4 ; 3 ; 2 ; 1 ; 0 ]%N.
         eapply r_get_remind_rhs. 1: exact _.
-        simpl.
         ssprove_forget.
-        ssprove_swap_seq_rhs [:: 4 ; 3 ; 2 ; 1 ; 0 ]%N.
+        ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ; 0 ]%N.
         apply r_get_vs_get_remember. 1: ssprove_invariant. intros sk.
         apply r_get_remember_rhs. intro pk.
         eapply (r_rem_couple_lhs pk_loc sk_loc). 1,3: exact _.
@@ -997,19 +977,11 @@ Section KEMDEM.
         ssprove_forget_all.
         ssprove_sync. intro skSome.
         ssprove_sync. intro c.
-        ssprove_sync. intro cSome.
         ssprove_sync. intro ee.
         destruct sk as [sk|]. 2: discriminate.
         simpl.
-        destruct c as [c|]. 2: discriminate.
-        simpl in ee.
         rewrite eek. simpl.
-        eapply @r_reflexivity_alt with (L := fset0).
-        * ssprove_valid.
-        * intros ℓ hℓ. eapply fromEmpty. eauto.
-        * intros ℓ v hℓ. eapply fromEmpty. eauto.
-    (* These remaining opsig are quite odd *)
-    Unshelve. all: exact ({sig #[ 0%N ] : 'unit → 'unit }).
+        apply r_ret. auto.
   Qed.
 
   Corollary PKE_CCA_perf_true :

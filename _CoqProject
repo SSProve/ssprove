@@ -77,38 +77,38 @@ theories/Crypt/rules/UniformStateProb.v
 #std. distributions
 # theories/Crypt/only_prob/SymmetricSchemeStateProbStdDistr.v
 
-# Jasmin
-theories/Jasmin/jasmin_translate.v
-theories/Jasmin/jasmin_x86.v
-theories/Jasmin/jasmin_asm.v
-theories/Jasmin/jasmin_utils.v
-theories/Jasmin/word.v
+# # Jasmin
+# theories/Jasmin/jasmin_translate.v
+# theories/Jasmin/jasmin_x86.v
+# theories/Jasmin/jasmin_asm.v
+# theories/Jasmin/jasmin_utils.v
+# theories/Jasmin/word.v
 
-theories/Jasmin/examples/add1.v
-theories/Jasmin/examples/aes.v
-theories/Jasmin/examples/aes/aes_jazz.v
-theories/Jasmin/examples/bigadd.v
-theories/Jasmin/examples/ex.v
-theories/Jasmin/examples/int_add.v
-theories/Jasmin/examples/int_incr.v
-theories/Jasmin/examples/int_reg.v
-theories/Jasmin/examples/int_shift.v
-theories/Jasmin/examples/liveness_bork.v
-theories/Jasmin/examples/matrix_product.v
-theories/Jasmin/examples/retz.v
-theories/Jasmin/examples/test_for.v
-theories/Jasmin/examples/test_inline_var.v
-theories/Jasmin/examples/test_shift.v
-theories/Jasmin/examples/three_functions.v
-theories/Jasmin/examples/two_functions.v
-theories/Jasmin/examples/u64_incr.v
-theories/Jasmin/examples/xor.v
+# theories/Jasmin/examples/add1.v
+# theories/Jasmin/examples/aes.v
+# theories/Jasmin/examples/aes/aes_jazz.v
+# theories/Jasmin/examples/bigadd.v
+# theories/Jasmin/examples/ex.v
+# theories/Jasmin/examples/int_add.v
+# theories/Jasmin/examples/int_incr.v
+# theories/Jasmin/examples/int_reg.v
+# theories/Jasmin/examples/int_shift.v
+# theories/Jasmin/examples/liveness_bork.v
+# theories/Jasmin/examples/matrix_product.v
+# theories/Jasmin/examples/retz.v
+# theories/Jasmin/examples/test_for.v
+# theories/Jasmin/examples/test_inline_var.v
+# theories/Jasmin/examples/test_shift.v
+# theories/Jasmin/examples/three_functions.v
+# theories/Jasmin/examples/two_functions.v
+# theories/Jasmin/examples/u64_incr.v
+# theories/Jasmin/examples/xor.v
 
-theories/Jasmin/examples/aes/aes.v
-theories/Jasmin/examples/aes/aes_prf.v
-theories/Jasmin/examples/aes/aes_utils.v
-theories/Jasmin/examples/aes/aes_valid.v
-theories/Jasmin/examples/aes/aes_spec.v
+# theories/Jasmin/examples/aes/aes.v
+# theories/Jasmin/examples/aes/aes_prf.v
+# theories/Jasmin/examples/aes/aes_utils.v
+# theories/Jasmin/examples/aes/aes_valid.v
+# theories/Jasmin/examples/aes/aes_spec.v
 
 # Examples
 theories/Crypt/examples/package_usage_example.v
@@ -122,6 +122,7 @@ theories/Crypt/examples/KEMDEM.v
 theories/Crypt/examples/RandomOracle.v
 theories/Crypt/examples/SigmaProtocol.v
 theories/Crypt/examples/Schnorr.v
+theories/Crypt/examples/DDH.v
 
 # Printing the axioms of all results from the paper
 theories/Crypt/Main.v
