@@ -5,12 +5,6 @@ Set Warnings "notation-overridden,ambiguous-paths".
 
 From Coq Require Import Utf8 ZArith micromega.Lia List.
 
-From Jasmin Require Import sem.
-
-Context
-  {pd : PointerData}
-  {fcp : FlagCombinationParams}.
-
 From Jasmin Require Import expr xseq.
 From JasminSSProve Require Import jasmin_translate.
 
@@ -24,8 +18,8 @@ Import JasminNotation.
 Import PackageNotation.
 
 Set Bullet Behavior "Strict Subproofs".
-Set Default Goal Selector "!".
-
+Set Default Goal Selector "!". 
+ 
 (** Notations *)
 
 Module AesNotation.
@@ -298,12 +292,12 @@ Proof.
 Qed.
 
 Lemma in_ziota' i p z :
-  @in_mem (Ord.sort Z_ordType) i (@ssrbool.mem (Equality.sort (Ord.eqType Z_ordType)) (seq_predType (Ord.eqType Z_ordType)) (ziota p z)) = (p <=? i) && (i <? p + z).
+  @in_mem (Ord.sort Z_ordType) i (@mem (Equality.sort (Ord.eqType Z_ordType)) (seq_predType (Ord.eqType Z_ordType)) (ziota p z)) = (p <=? i) && (i <? p + z).
 Proof.
   destruct (Z.le_decidable 0 z).
   2: { rewrite ziota_neg. 2: lia. intros. rewrite in_nil. lia. }
   move: z H p.
-  set (P := fun z => ∀ p : Z, @in_mem (Ord.sort Z_ordType) i (@ssrbool.mem (Equality.sort (Ord.eqType Z_ordType)) (seq_predType (Ord.eqType Z_ordType)) (ziota p z)) = (p <=? i) && (i <? p + z)).
+  set (P := fun z => ∀ p : Z, @in_mem (Ord.sort Z_ordType) i (@mem (Equality.sort (Ord.eqType Z_ordType)) (seq_predType (Ord.eqType Z_ordType)) (ziota p z)) = (p <=? i) && (i <? p + z)).
   assert (forall z : Z, 0 <= z -> P z).
   1: { apply natlike_ind.
        - unfold P. intros. rewrite in_nil. lia.
@@ -349,7 +343,7 @@ Proof.
 Qed.
 
 Lemma getm_to_oarr ws len a (i : 'I_(pos len)) :
-  to_oarr ws len a i = Some (chArray_get ws a i (wsize_size ws)).
+  to_oarr ws len a i = Some (chArray_get ws a (Z.of_nat (nat_of_ord i)) (wsize_size ws)).
 Proof.
   unfold to_oarr.
   rewrite mkfmapfE.
@@ -380,7 +374,7 @@ Proof.
 Qed.
 
 Lemma to_oarr_set_eq ws len a (i : 'I_(pos len)) w :
-  (to_oarr ws len (chArray_set a AAscale i w)) i = Some w.
+  (to_oarr ws len (chArray_set a AAscale (Z.of_nat (nat_of_ord i)) w)) i = Some w.
 Proof.
   rewrite getm_to_oarr.
   rewrite chArray_get_set_eq.

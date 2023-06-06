@@ -1,7 +1,7 @@
 From Relational Require Import OrderEnrichedCategory.
 From Mon Require Import SPropBase.
 Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import all_ssreflect boolp.
+From mathcomp Require Import all_ssreflect classical.boolp.
 Set Warnings "notation-overridden,ambiguous-paths".
 From Crypt Require Import Axioms OrderEnrichedRelativeAdjunctions LaxFunctorsAndTransf.
 

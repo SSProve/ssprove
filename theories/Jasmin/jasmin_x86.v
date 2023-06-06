@@ -128,6 +128,6 @@ Context
   Hypothesis print_sprogP : forall s p, cparams.(print_sprog) s p = p.
   Hypothesis print_linearP : forall s p, cparams.(print_linear) s p = p.
 
-  Definition equiv_to_x86 := @equiv_to_asm syscall_state sc_sem gf _ _ _ _ _ _ _ _ x86_linux_call_conv _ _ _ _ x86_h_params cparams print_uprogP print_sprogP print_linearP x86_correct.
+  (* Definition equiv_to_x86 := @equiv_to_asm syscall_state sc_sem gf _ _ _ _ _ _ _ _ x86_linux_call_conv _ _ _ _ x86_h_params cparams print_uprogP print_sprogP print_linearP x86_correct. *)
 
 End x86_correct.

@@ -651,8 +651,11 @@ Import JasminNotation.
 Section Translation.
 
 Context `{asmop : asmOp}.
+
 Context {pd : PointerData}.
+
 Context (gd : glob_decls).
+
 Context `{sc_sem : syscall_sem }.
 
 Definition mem_index : nat := 0.
@@ -878,7 +881,7 @@ Proof.
   intros x. induction x as [| a s ih].
   - auto.
   - simpl.
-    rewrite -mulP. rewrite -plusE.
+    rewrite -word_ssrZ.mulP. rewrite -plusE.
     micromega.Lia.lia.
 Qed.
 
@@ -892,10 +895,10 @@ Proof.
   all: destruct y as [| b y].
   all: simpl in e.
   - reflexivity.
-  - rewrite -mulP in e. rewrite -plusE in e.
+  - rewrite -word_ssrZ.mulP in e. rewrite -plusE in e.
     pose proof (nat_of_ident_pos y).
     micromega.Lia.lia.
-  - rewrite -mulP in e. rewrite -plusE in e.
+  - rewrite -word_ssrZ.mulP in e. rewrite -plusE in e.
     pose proof (nat_of_ident_pos x).
     micromega.Lia.lia.
   - apply (f_equal (λ a, Nat.modulo a 256)) in e as xy_eq.
@@ -915,8 +918,8 @@ Proof.
     apply OrderedTypeEx.String_as_OT.nat_of_ascii_inverse in xy_eq.
     subst. f_equal.
     apply IHx.
-    rewrite -!addP in e.
-    rewrite -!mulP in e.
+    rewrite -!word_ssrZ.addP in e.
+    rewrite -!word_ssrZ.mulP in e.
     micromega.Lia.lia.
 Qed.
 
@@ -1242,7 +1245,7 @@ Proof.
 Qed.
 
 #[local] Definition unsupported : typed_code :=
-  ('unit ; ret (chCanonical 'unit)).
+  ('unit ; assert false).
 
 Lemma truncate_val_type :
   ∀ ty v v',
@@ -2589,9 +2592,8 @@ Proof.
       easy.
 Qed.
 
-Definition rel_estate (s : estate) (m_id : p_id) (s_id : p_id) (s_st : list p_id) (st : stack) (h : heap) :=
-  rel_mem s.(emem) h /\ valid_stack ((s.(evm), m_id, s_id, s_st) :: st) h.
-
+Definition rel_estate (s : @estate syscall_state {| _pd := pd |}) (m_id : p_id) (s_id : p_id) (s_st : list p_id) (st : stack) (h : heap) :=
+  (rel_mem (s.(emem)) h /\ valid_stack ((s.(evm), m_id, s_id, s_st) :: st) h).
 
 Lemma translate_read_estate :
   ∀ s ptr sz w m_id s_id s_st c_stack m,
@@ -2668,7 +2670,7 @@ Proof.
 Qed.
 
 Lemma get_var_get_heap :
-  ∀ x s v m_id m,
+  ∀ x (s : @estate syscall_state {| _pd := pd |}) v m_id m,
     get_var (evm s) x = ok v →
     rel_vmap (evm s) m_id m →
     get_heap m (translate_var m_id x) =
@@ -2871,7 +2873,7 @@ Proof.
 Qed.
 
 Lemma translate_pexpr_type p s₁ e v :
-  sem_pexpr gd s₁ e = ok v →
+  @sem_pexpr syscall_state {| _pd := pd |} mk_spp gd s₁ e = ok v →
   (translate_pexpr p e).π1 = choice_type_of_val v.
 Proof.
   intros.
@@ -2972,7 +2974,7 @@ Qed.
 
 Lemma chArray_write_correct :
   ∀ ws len (a : WArray.array len) i (w : word ws) t,
-    write a i w = ok t →
+    write (Pointer := WArray.PointerZ) a i w = ok t →
     chArray_write (translate_value (Varr a)) i w = translate_value (Varr t).
 Proof.
   intros.
@@ -3080,7 +3082,7 @@ Qed.
 
 Lemma embed_read8 :
   ∀ len (a : WArray.array len) (z : Z) v,
-    read a z U8 = ok v →
+    read (Pointer := WArray.PointerZ) a z U8 = ok v →
     chArray_get U8 (embed_array a) z 1 = translate_value (Vword v).
 Proof.
   intros len a z v h.
@@ -3124,7 +3126,7 @@ Proof.
 Qed.
 
 Lemma translate_pexprs_types p s1 es vs :
-  mapM (sem_pexpr gd s1) es = ok vs →
+  mapM (@sem_pexpr syscall_state {| _pd := pd |} mk_spp gd s1) es = ok vs →
   [seq (translate_pexpr p e).π1 | e <- es] = [seq choice_type_of_val v | v <- vs].
 Proof.
   revert vs. induction es; intros.
@@ -3468,7 +3470,7 @@ Qed.
 
 Lemma translate_pexpr_correct :
   ∀ (e : pexpr) s₁ v (cond : heap → Prop) m_id s_id s_st st,
-    sem_pexpr gd s₁ e = ok v →
+    @sem_pexpr syscall_state {| _pd := pd |} mk_spp gd s₁ e = ok v →
     (∀ m, cond m → rel_estate s₁ m_id s_id s_st st m) →
     ⊢ ⦃ cond ⦄
       (translate_pexpr m_id e).π2 ⇓
@@ -3700,7 +3702,7 @@ Proof.
 Qed.
 
 Lemma translate_pexprs_correct s m_id s_id s_st st vs es :
-  sem_pexprs gd s es = ok vs →
+  @sem_pexprs syscall_state {| _pd := pd |} mk_spp gd s es = ok vs →
   List.Forall2 (λ c v,
     ⊢ ⦃ rel_estate s m_id s_id s_st st ⦄
       c.π2
@@ -3734,7 +3736,7 @@ Corollary bind_list_pexpr_correct
   (cond : heap → Prop) (es : pexprs) (vs : list value)
   (s1 : estate) m_id s_id s_st st
   (hc : ∀ m : heap, cond m → rel_estate s1 m_id s_id s_st st m)
-  (h : sem_pexprs gd s1 es = ok vs) :
+  (h : @sem_pexprs syscall_state {| _pd := pd |} mk_spp gd s1 es = ok vs) :
   ⊢ ⦃ cond ⦄
     bind_list [seq translate_pexpr m_id e | e <- es] ⇓
     [seq totce (translate_value v) | v <- vs]
@@ -3762,7 +3764,7 @@ Qed.
 
 Corollary translate_pexpr_correct_cast :
   ∀ (e : pexpr) s₁ v m_id s_id s_st st (cond : heap → Prop),
-    sem_pexpr gd s₁ e = ok v →
+    @sem_pexpr syscall_state {| _pd := pd |} mk_spp gd s₁ e = ok v →
     (∀ m, cond m → rel_estate s₁ m_id s_id s_st st m) →
     ⊢ ⦃ cond ⦄
       coerce_typed_code _ (translate_pexpr m_id e) ⇓
@@ -3795,7 +3797,7 @@ Proof.
   eapply translate_write_estate. all: assumption.
 Qed.
 
-Lemma valid_stack_set_var i v vm s m_id s_id s_st st m :
+Lemma valid_stack_set_var i v vm (s : @estate syscall_state {| _pd := pd |}) m_id s_id s_st st m :
   valid_stack ((s.(evm), m_id, s_id, s_st) :: st) m ->
   set_var (evm s) i v = ok vm ->
   valid_stack ((vm, m_id, s_id, s_st) :: st) (set_heap m (translate_var m_id i) (truncate_el (vtype i) (translate_value v))).
@@ -3892,7 +3894,7 @@ Qed.
 
 Lemma translate_write_lval_correct :
   ∀ es₁ es₂ m_id s_id s_st st y v,
-    write_lval gd y v es₁ = ok es₂ →
+    @write_lval syscall_state {| _pd := pd |} mk_spp gd y v es₁ = ok es₂ →
     ⊢ ⦃ rel_estate es₁ m_id s_id s_st st ⦄
       translate_write_lval m_id y (totce (translate_value v))
       ⇓ tt
@@ -4007,7 +4009,7 @@ Lemma translate_write_lvals_cons p l ls v vs :
 Proof. reflexivity. Qed.
 
 Lemma translate_write_lvals_correct m_id s_id s_st st s1 ls vs s2 :
-  write_lvals gd s1 ls vs = ok s2 →
+  @write_lvals syscall_state {| _pd := pd |} mk_spp gd s1 ls vs = ok s2 →
   ⊢ ⦃ rel_estate s1 m_id s_id s_st st ⦄
     translate_write_lvals m_id ls [seq totce (translate_value v) | v <- vs]
     ⇓ tt
@@ -4498,7 +4500,8 @@ Definition handled_program (P : uprog) :=
 Context `{sc_sem : syscall_sem }.
 
 Fact sem_call_get_some {P m1 scs1 gn vargs m2 scs2 vres} :
-  (sem_call P scs1 m1 gn vargs scs2 m2 vres →
+  (@sem_call _ syscall_state {| _pd := pd |} mk_spp {|
+    _asmop := asmop; _sc_sem := sc_sem |} P scs1 m1 gn vargs scs2 m2 vres →
    ∃ f, get_fundef (p_funcs P) gn = Some f ).
 Proof. intros H. inversion H. exists f. easy.
 Qed.
@@ -4586,14 +4589,14 @@ Qed.
 Lemma rel_estate_prec : forall h s m_id s_id1 s_id2 s_st st,
     s_id1 ⪯ s_id2 ->
     rel_estate s m_id s_id1 s_st st h ->
-    rel_estate s m_id s_id2 s_st st h.
+    rel_estate (syscall_state := syscall_state) s m_id s_id2 s_st st h.
 Proof.
   intros h s m_id s_id1 s_id2 s_st st hpre12 [hmem hstack]; split; auto.
   eapply valid_stack_prec; eauto.
 Qed.
 
 Lemma rel_estate_pop_sub s m_id s_id s_id' s_st st :
-  ∀ h, rel_estate s m_id s_id (s_id' :: s_st) st h → rel_estate s m_id s_id' s_st st h.
+  ∀ h, rel_estate s m_id s_id (s_id' :: s_st) st h → rel_estate (syscall_state := syscall_state) s m_id s_id' s_st st h.
 Proof.
   intros h [hmem hstack].
   split.
@@ -4603,7 +4606,7 @@ Qed.
 
 Lemma rel_estate_pop scs m vm vm' m_id m_id' s_id s_id' s_st s_st' st :
   ∀ h, rel_estate {| escs := scs ; emem := m ; evm := vm |} m_id s_id s_st ((vm',m_id',s_id',s_st') :: st) h →
-       rel_estate {| escs := scs ; emem := m ; evm := vm' |} m_id' s_id' s_st' st h.
+       rel_estate (syscall_state := syscall_state) {| escs := scs ; emem := m ; evm := vm' |} m_id' s_id' s_st' st h.
 Proof.
   intros h [hmem hstack].
   split.
@@ -4613,7 +4616,7 @@ Qed.
 
 Lemma rel_estate_push_sub s m_id s_id s_st st :
   ∀ h : heap, rel_estate s m_id s_id s_st st h →
-              rel_estate s m_id s_id~1 (s_id~0 :: s_st) st h.
+              rel_estate (syscall_state := syscall_state) s m_id s_id~1 (s_id~0 :: s_st) st h.
 Proof.
   intros h [hmem hstack]; split.
   - assumption.
@@ -4622,7 +4625,7 @@ Qed.
 
 Lemma rel_estate_push m vm scs m_id s_id s_st st :
   ∀ h : heap, rel_estate {| escs := scs ; emem := m ; evm := vm |} m_id s_id s_st st h →
-              rel_estate {| escs := scs ; emem := m ; evm := vmap0 |} s_id~1 s_id~1 [::] ((vm, m_id, s_id~0, s_st) :: st) h.
+              rel_estate (syscall_state := syscall_state) {| escs := scs ; emem := m ; evm := vmap0 |} s_id~1 s_id~1 [::] ((vm, m_id, s_id~0, s_st) :: st) h.
 Proof.
   intros h [hmem hstack]; split.
   - assumption.
@@ -4733,7 +4736,7 @@ Qed.
 
 Lemma translate_instr_r_pres P SP c s m_id s_id s_st st h :
   let (s_id', _) := translate_instr_r P SP c m_id s_id in
-  rel_estate s m_id s_id s_st st h -> rel_estate s m_id s_id' s_st st h.
+  rel_estate s m_id s_id s_st st h -> rel_estate (syscall_state := syscall_state) s m_id s_id' s_st st h.
 Proof.
   pose proof translate_instr_r_preceq P SP c m_id s_id.
   destruct translate_instr_r as [s_id' ?].
@@ -4742,7 +4745,7 @@ Qed.
 
 Lemma translate_cmd_pres P SP c s m_id s_id s_st st h :
   let (s_id', _) := translate_cmd P SP c m_id s_id in
-  rel_estate s m_id s_id s_st st h -> rel_estate s m_id s_id' s_st st h.
+  rel_estate s m_id s_id s_st st h -> rel_estate (syscall_state := syscall_state) s m_id s_id' s_st st h.
 Proof.
   pose proof translate_cmd_preceq P SP c m_id s_id.
   destruct translate_cmd as [s_id' ?].
@@ -4750,10 +4753,10 @@ Proof.
 Qed.
 
 Definition Pfun (P : uprog) (fn : funname) scs m va scs' m' vr vm m_id s_id s_st st :=
-  ⊢ ⦃ rel_estate {| escs := scs ; emem := m; evm := vm |} m_id s_id s_st st ⦄
+  ⊢ ⦃ rel_estate (syscall_state := syscall_state) {| escs := scs ; emem := m; evm := vm |} m_id s_id s_st st ⦄
       get_translated_fun P fn s_id~1 [seq totce (translate_value v) | v <- va]
       ⇓ [seq totce (translate_value v) | v <- vr]
-      ⦃ rel_estate {| escs := scs' ; emem := m' ; evm := vm |} m_id s_id~0 s_st st ⦄.
+      ⦃ rel_estate (syscall_state := syscall_state) {| escs := scs' ; emem := m' ; evm := vm |} m_id s_id~0 s_st st ⦄.
 
 Lemma hget_lemma (l : seq var_i) vm vres :
   mapM (λ x : var_i, get_var vm x) l = ok vres ->
@@ -4779,7 +4782,7 @@ Lemma hget_lemma2 l scs m vm vres m_id s_id s_st st :
     (λ (c : ∑ a : choice_type, raw_code a) (v : value),
       ⊢ ⦃ rel_estate {| escs := scs ; emem := m; evm := vm |} m_id s_id s_st st ⦄
           c.π2 ⇓ coe_cht c.π1 (translate_value v)
-          ⦃ rel_estate {| escs := scs ; emem := m; evm := vm |} m_id s_id s_st st ⦄)
+          ⦃ rel_estate (syscall_state := syscall_state) {| escs := scs ; emem := m; evm := vm |} m_id s_id s_st st ⦄)
     [seq totc (encode (vtype (v_var x))) (translate_get_var m_id x) | x <- l] vres.
 Proof.
   revert m vm vres m_id s_id s_st st.
@@ -5006,7 +5009,8 @@ Qed.
 
 Theorem translate_prog_correct P scs m vargs scs' m' vres :
   ∀ fn,
-    sem.sem_call (P : @uprog asm_op asmop) scs m fn vargs scs' m' vres →
+    @sem.sem_call _ syscall_state {| _pd := pd |} mk_spp {|
+    _asmop := asmop; _sc_sem := sc_sem |} (P : @uprog asm_op asmop) scs m fn vargs scs' m' vres →
     handled_program P ->
     ∀ vm m_id s_id s_st st,
     Pfun P fn scs m vargs scs' m' vres vm m_id s_id s_st st.
@@ -5021,29 +5025,31 @@ Proof using gd asm_correct.
          ∀ m_id s_id s_st st,
            handled_instr_r i →
            let (s_id', i') := translate_instr_r P SP i m_id s_id in
-           ⊢ ⦃ rel_estate s1 m_id s_id s_st st ⦄
+           ⊢ ⦃ rel_estate (syscall_state := syscall_state) s1 m_id s_id s_st st ⦄
                i' ⇓ tt
-               ⦃ rel_estate s2 m_id s_id' s_st st ⦄).
+               ⦃ rel_estate (syscall_state := syscall_state) s2 m_id s_id' s_st st ⦄).
   set (Pi := λ s1 i s2, Pi_r s1 (instr_d i) s2).
   set (Pc :=
          λ (s1 : estate) (c : cmd) (s2 : estate),
          ∀ m_id s_id s_st st,
            handled_cmd c →
            let (s_id', c') := translate_cmd P SP c m_id s_id in
-           ⊢ ⦃ rel_estate s1 m_id s_id s_st st ⦄
+           ⊢ ⦃ rel_estate (syscall_state := syscall_state) s1 m_id s_id s_st st ⦄
                  c' ⇓ tt
-               ⦃ rel_estate s2 m_id s_id' s_st st ⦄).
+               ⦃ rel_estate (syscall_state := syscall_state) s2 m_id s_id' s_st st ⦄).
   set (Pfor :=
     λ (v : var_i) (ws : seq Z) (s1 : estate) (c : cmd) (s2 : estate),
          ∀ m_id s_id s_id' s_st st,
            handled_cmd c →
            s_id~1 ⪯ s_id' ->
            exists s_id'',
-      ⊢ ⦃ rel_estate s1 m_id s_id' (s_id~0 :: s_st) st ⦄
+      ⊢ ⦃ rel_estate (syscall_state := syscall_state) s1 m_id s_id' (s_id~0 :: s_st) st ⦄
         translate_for v ws m_id (translate_cmd P SP c m_id) s_id' ⇓ tt
-      ⦃ rel_estate s2 m_id s_id'' (s_id~0 :: s_st) st ⦄
-  ).
-  unshelve eapply (@sem_call_Ind asm_op syscall_state mk_spp _ Pc Pi_r Pi Pfor Pfun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H).
+      ⦃ rel_estate (syscall_state := syscall_state) s2 m_id s_id'' (s_id~0 :: s_st) st ⦄
+      ).
+
+  unshelve eapply (@sem_call_Ind asm_op syscall_state {| _pd := pd |} mk_spp {|
+    _asmop := asmop; _sc_sem := sc_sem |} _ Pc Pi_r Pi Pfor Pfun _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ H).
   - (* nil *)
     intros s m_id s_id s_st st _. simpl.
     eapply u_ret_eq.
@@ -5287,356 +5293,77 @@ Proof using gd asm_correct.
   - assumption.
 Qed.
 
-Lemma deterministic_seq {A} (c1 : raw_code A) {B} (c2 : raw_code B) :
-  deterministic c1 ->
-  deterministic c2 ->
-  deterministic (c1 ;; c2).
+End Translation.
+
+From Jasmin Require Import x86_instr_decl x86_extra (* x86_gen *) (* x86_linear_sem *).
+Import arch_decl.
+
+Lemma id_tin_instr_desc :
+  ∀ (a : asm_op_msb_t),
+    id_tin (instr_desc a) = id_tin (x86_instr_desc a.2).
 Proof.
-  intros.
-  revert X0. revert c2. (* generalize (B c1). *)
-  induction c1; eauto; intros.
-  - inversion X.
-  - simpl. constructor. inversion X.
-    noconf H1; subst; simpl in *. intros. eapply X0; eauto.
-  - simpl. constructor. inversion X.
-    noconf H1; subst; simpl in *. intros. eapply IHc1; eauto.
-  - inversion X.
+  intros [[ws|] a].
+  - simpl. destruct (_ == _). all: reflexivity.
+  - reflexivity.
 Qed.
 
-Lemma deterministic_bind {A} (c1 : raw_code A) {B} (c2 : A -> raw_code B) :
-  deterministic c1 ->
-  (forall x, deterministic (c2 x)) ->
-  deterministic (x ← c1 ;; c2 x).
+Definition cast_sem_prod_dom {ts tr} ts' (f : sem_prod ts tr) (e : ts = ts') :
+  sem_prod ts' tr.
 Proof.
-  intros.
-  revert X0. revert c2. (* generalize (B c1). *)
-  induction c1; eauto; intros.
-  - simpl. inversion X.
-  - simpl. constructor. inversion X.
-    noconf H1; subst; simpl in *. intros. eapply X0; eauto.
-  - simpl. constructor. inversion X.
-    noconf H1; subst; simpl in *. intros. eapply IHc1; eauto.
-  - inversion X.
+  subst. exact f.
+Defined.
+
+Lemma cast_sem_prod_dom_K :
+  ∀ ts tr f e,
+    @cast_sem_prod_dom ts tr ts f e = f.
+Proof.
+  intros ts tr f e.
+  assert (e = erefl).
+  { apply eq_irrelevance. }
+  subst. reflexivity.
 Qed.
 
-Lemma translate_write_vars_deterministic i vs ts :
-  deterministic (translate_write_vars i vs ts).
+Lemma sem_correct_rewrite :
+  ∀ R ts ts' f e,
+    sem_correct ts' (cast_sem_prod_dom ts' f e) →
+    @sem_correct R ts f.
 Proof.
-  revert vs ts.
-  induction vs, ts.
-  1,2,3: unfold translate_write_vars; simpl; econstructor.
-  unfold translate_write_vars in *.  eapply deterministic_seq.
-  - unfold translate_write_var. constructor. constructor.
-  - eapply IHvs.
-Qed.
-
-Lemma translate_gvar_deterministic g i v :
-  deterministic (translate_gvar g i v).
-Proof.
-  unfold translate_gvar. destruct is_lvar.
-  * unfold translate_get_var. constructor. intros; constructor.
-  * destruct get_global; constructor.
-Qed.
-
-Lemma translate_pexpr_deterministic g i e :
-  deterministic (translate_pexpr g i e).π2.
-Proof.
-  revert i g.
-  refine (
-      (fix aux (e1 : pexpr) :=
-    match e1 with
-    | _ => _ end) e
-   ).
-  destruct e1; intros; simpl; try constructor.
-  - apply translate_gvar_deterministic.
-  - simpl.
-    eapply deterministic_bind.
-    + eapply translate_gvar_deterministic.
-    + intros. simpl.
-      rewrite bind_assoc.
-      eapply deterministic_bind.
-      * eapply aux.
-      * intros. constructor.
-  - eapply deterministic_bind.
-    + eapply translate_gvar_deterministic.
-    + intros. simpl.
-      rewrite bind_assoc.
-      eapply deterministic_bind.
-      * eapply aux.
-      * intros. constructor.
-  - intros.
-    rewrite bind_assoc.
-    eapply deterministic_bind; try constructor.
-    + eapply aux.
-    + intros. constructor.
-  - rewrite bind_assoc.
-    eapply deterministic_bind; try constructor.
-    eapply aux.
-  - rewrite !bind_assoc.
-    eapply deterministic_bind; try constructor.
-    + eapply aux.
-    + intros.
-      eapply deterministic_bind; try constructor.
-      intros.
-      eapply deterministic_bind; try constructor; auto.
-      eapply deterministic_bind; try constructor; auto.
-  - epose proof deterministic_bind (bind_list [seq translate_pexpr g i e0 | e0 <- l]) (fun vs => ret (tr_app_sopn_single (type_of_opN o).1 (sem_opN_typed o) vs)).
-    eapply X.
-    + clear -aux. induction l.
-      * constructor.
-      * simpl. eapply deterministic_bind.
-        ** eapply aux.
-        ** intros.
-           epose proof deterministic_bind (bind_list [seq translate_pexpr g i e0 | e0 <- l]).
-           eapply X.
-           *** assumption.
-           *** constructor.
-    + constructor.
-  - rewrite bind_assoc.
-    eapply deterministic_bind; try constructor.
-    + apply aux.
-    + intros.
-      eapply deterministic_bind; try constructor.
-      intros.
-      destruct x0.
-      * eapply deterministic_bind; try constructor; auto.
-      * eapply deterministic_bind; try constructor; auto.
-Qed.
-
-Lemma translate_write_var_deterministic i H v :
-  deterministic (translate_write_var i H v).
-Proof.
-  repeat constructor.
-Qed.
-
-Lemma translate_write_lval_deterministic g i l v :
-  deterministic (translate_write_lval g i l v).
-Proof.
-  destruct l; intros; simpl.
-  - constructor.
-  - eapply translate_write_var_deterministic.
-  - constructor; intros.
-    eapply deterministic_bind; try constructor; auto.
-    1: eapply translate_pexpr_deterministic. intros.
-    repeat constructor.
-  - constructor; intros.
-    eapply deterministic_bind; try constructor; auto.
-    + eapply deterministic_bind; try constructor.
-      eapply translate_pexpr_deterministic.
-    + constructor.
-  - constructor; intros.
-    eapply deterministic_bind; try constructor; auto.
-    + eapply deterministic_bind; try constructor.
-      eapply translate_pexpr_deterministic.
-    + constructor.
-Qed.
-
-Lemma translate_write_lvals_deterministic g i l vs :
-  deterministic (translate_write_lvals g i l vs).
-Proof.
-  revert l vs.
-  induction l, vs.
-  1,2,3: constructor.
-  unfold translate_write_lvals.
-  simpl.
-  eapply deterministic_seq.
-  1: eapply translate_write_lval_deterministic.
-  eapply IHl.
-Qed.
-
-Lemma translate_call_body_deterministic P f fd i vs :
-  deterministic (fd i) ->
-  deterministic (translate_call_body P f fd i vs).
-Proof.
-  intros.
-  unfold translate_call_body.
-  induction p_funcs.
-  - constructor.
-  - simpl. destruct a. destruct (f == f0) eqn:E.
-    + eapply deterministic_seq.
-      1: eapply translate_write_vars_deterministic.
-      eapply deterministic_seq.
-      1: eapply X.
-      eapply deterministic_bind with (c2:= (fun vres => ret (trunc_list (f_tyout _f) vres))).
-      * clear -_f. induction f_res.
-       ** constructor.
-       ** simpl. constructor.
-         intros. eapply deterministic_bind with (c2 := (fun vs => ret (totce x :: vs))).
-            1: eapply IHl.
-            constructor.
-      * constructor.
-    + eapply IHl.
-Qed.
-
-Lemma translate_call_deterministic P f (fd : fdefs) i vs :
-  deterministic (match assoc fd f with Some f => f i | _ => ret tt end) ->
-  deterministic (translate_call P f fd i vs).
-Proof.
-  intros.
-  unfold translate_call.
-  destruct assoc.
-  2: constructor.
-  eapply translate_call_body_deterministic.
+  intros R ts ts' f e h.
+  subst. rewrite cast_sem_prod_dom_K in h.
   assumption.
 Qed.
 
-Lemma coe_tyc_deterministic t c :
-  deterministic c.π2 -> deterministic (coe_tyc t c).
+Lemma no_arr_correct {R} ts s :
+  List.Forall (λ t, ∀ len, t != sarr len) ts →
+  @sem_correct R ts s.
 Proof.
-  destruct c.
-  intros.
-  destruct (x == t) eqn:E.
-  + move: E => /eqP. intros; subst.
-    rewrite coerce_typed_code_K; try constructor.
-    assumption.
-  + rewrite coerce_typed_code_neq; try constructor.
-    move: E => /eqP //.
-Qed.
-
-Lemma translate_for_deterministic v l i0 f i1 :
-  (forall i, deterministic (f i).2) ->
- deterministic (translate_for v l i0 f i1).
-Proof.
-  intros.
-  revert i1.
-  induction l; intros.
+  intros h.
+  induction h as [| t ts ht h ih].
   - constructor.
-  - simpl.
-    specialize (X i1).
-    destruct (f i1).
-    simpl in *.
-    constructor.
-    eapply deterministic_seq.
-    1: assumption.
-    eapply IHl.
-Qed.
-
-Fixpoint translate_instr_deterministic p (fd : fdefs) i i1 i2 {struct i} :
-  (forall f i, deterministic (match assoc fd f with Some f => f i | _ => ret tt end)) ->
-  deterministic (translate_instr p fd i i1 i2).2.
-Proof.
-  revert i1 i2.
-  intros.
-  epose proof (translate_cmd_deterministic :=
-            (fix translate_cmd (c : cmd) (s_id : p_id) : deterministic (translate_cmd p fd c i1 s_id).2 :=
-          match c with
-          | [::] => _
-          | i :: c => _
-          end
-            )
-    ).
-  destruct i; destruct i0; simpl in *; intros.
-  - simpl. eapply deterministic_bind.
-    + eapply translate_pexpr_deterministic.
-    + intros.
-      eapply translate_write_lval_deterministic.
-  - eapply deterministic_bind with (c1 := bind_list _).
-    + clear -i1.
-      induction l0.
-      * constructor.
-      * simpl.
-        eapply deterministic_bind.
-        1: eapply translate_pexpr_deterministic.
-        intros.
-        eapply deterministic_bind with (c1 := bind_list _).
-        1: eapply IHl0.
-        constructor.
-    + intros.
-      eapply translate_write_lvals_deterministic.
   - constructor.
-  - rewrite translate_instr_unfold. simpl.
-    rewrite translate_instr_r_if.
-    pose proof (translate_cmd_deterministic l i2).
-    destruct translate_cmd. simpl.
-    pose proof (translate_cmd_deterministic l0 p1).
-    destruct translate_cmd. simpl.
-    eapply deterministic_bind.
-    + eapply coe_tyc_deterministic with (t := 'bool).
-      eapply translate_pexpr_deterministic.
-    + destruct x; assumption.
-  - rewrite translate_instr_unfold.
-    rewrite translate_instr_r_for.
-    destruct r as [[d lo] hi].
-    simpl.
-    eapply deterministic_bind.
-    1: eapply coe_tyc_deterministic with (t:= 'int); eapply translate_pexpr_deterministic.
-    intros; eapply deterministic_bind.
-    1: eapply coe_tyc_deterministic with (t:= 'int); eapply translate_pexpr_deterministic.
-    intros.
-    eapply translate_for_deterministic.
-    intros.
-    eapply translate_cmd_deterministic.
-  - constructor.
-  - eapply deterministic_bind with (c1 := bind_list _).
-    + clear -i1.
-      induction l0.
-      * constructor.
-      * simpl.
-        eapply deterministic_bind.
-        1: eapply translate_pexpr_deterministic.
-        intros.
-        eapply deterministic_bind with (c1 := bind_list _).
-        1: eapply IHl0.
-        constructor.
-      + intros; simpl.
-        eapply deterministic_bind with (c1 := translate_call _ _ _ _ _).
-        1: eapply translate_call_deterministic.
-        1: eapply X.
-        eapply translate_write_lvals_deterministic.
-        Unshelve.
-        1: constructor.
-        simpl.
-        specialize (translate_instr_deterministic p fd i i1 s_id).
-        destruct translate_instr.
-        specialize (translate_cmd c p0).
-        destruct jasmin_translate.translate_cmd.
-        eapply deterministic_seq.
-        1: eapply translate_instr_deterministic.
-        all: try assumption.
+    + intros v.
+      pose proof unembed_embed t v as e.
+      destruct t as [| | len |].
+      1,2,4: rewrite e ; reflexivity.
+      specialize (ht len). move: ht => /eqP. contradiction.
+    + intros v.
+      apply ih.
 Qed.
 
-Lemma translate_cmd_deterministic p fd c i1 i2 :
-  (forall f i, deterministic (match assoc fd f with Some f => f i | _ => ret tt end)) ->
-  deterministic (translate_cmd p fd c i1 i2).2.
+Lemma x86_correct :
+  ∀ (o : asm_op_t),
+    sem_correct (tin (sopn.get_instr_desc (Oasm o))) (sopn_sem (Oasm o)).
 Proof.
-  revert i1 i2.
-  induction c; intros.
-  - constructor.
-  - simpl.
-    pose proof translate_instr_deterministic p fd a i1 i2 X.
-    destruct translate_instr.
-    specialize (IHc i1 p0 X).
-    destruct translate_cmd.
-    simpl in *.
-    eapply deterministic_seq; auto.
+  intros o.
+  simpl. destruct o as [a | e].
+  - Opaque instr_desc. simpl.
+    pose proof (id_tin_instr_desc a) as e.
+    eapply sem_correct_rewrite with (e := e).
+    destruct a as [o x]. simpl in *.
+    eapply no_arr_correct.
+    destruct x ; simpl.
+    all: repeat constructor.
+    Transparent instr_desc.
+  - destruct e ; simpl ; repeat constructor.
+    destruct w ; repeat constructor.
 Qed.
-
-Lemma translate_funs_deterministic P fn :
-  forall f i, deterministic (match assoc (translate_funs P fn).1 f with Some f => f i | _ => ret tt end).
-Proof.
-  induction fn; intros.
-  - constructor.
-  - simpl. destruct a. simpl.
-    destruct (f == f0).
-    + eapply translate_cmd_deterministic.
-      assumption.
-    + eapply IHfn.
-Qed.
-
-Lemma get_translated_fun_deterministic P fn i vs :
-  deterministic (get_translated_fun P fn i vs).
-Proof.
-  (* destruct P. *)
-  unfold get_translated_fun.
-  unfold translate_prog'. simpl.
-  induction p_funcs.
-  - simpl. constructor.
-  - simpl. destruct a. simpl.
-    destruct (fn == f).
-    + eapply translate_call_body_deterministic.
-      eapply translate_cmd_deterministic.
-      eapply translate_funs_deterministic.
-    + assumption.
-Qed.
-
-End Translation.
