@@ -83,7 +83,8 @@ Run `make graph` to build a graph of dependencies between sources.
 | [theories]           | Root of all the Coq files                            |
 | [theories/Mon]        | External development coming from "Dijkstra Monads For All" |
 | [theories/Relational] | External development coming from "The Next 700 Relational Program Logics"|
-| [theories/Crypt]      | This paper                                           |
+| [theories/Crypt]      | The original SSProve paper                                           |
+| [theories/Jasmin]      | This paper                                           |
 
 Unless specified with a full path, all files considered in this README can
 safely be assumed to be in [theories/Crypt].

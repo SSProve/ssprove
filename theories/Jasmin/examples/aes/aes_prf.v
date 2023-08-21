@@ -77,12 +77,12 @@ Section PRF_example.
     (chMap 'nat ('word n) ; 7).
 
   Definition enc (m : pt) (k : key) :
-    code fset0 [interface] ('word n) :=
+    code fset0 [interface] ('fin N × 'word n) :=
       {code
         r ← sample uniform N ;;
         let pad := f (word_of_ord r) k in
         let c := m ⊕ pad in
-        ret c
+        ret (r, c)
       }.
 
   Definition kgen : code (fset [:: key_location]) [interface] 'word n :=
@@ -137,31 +137,31 @@ Section PRF_example.
   Definition MOD_CPA_tt_pkg :
     package MOD_CPA_location 
       [interface #val #[i0] : 'word → 'key ]
-      [interface #val #[i1] : 'word → 'word ] :=
+      [interface #val #[i1] : 'word → ('fin N) × 'word ] :=
     [package
-      #def #[i1] (m : 'word) : 'word
+      #def #[i1] (m : 'word) : ('fin N) × 'word
       {
         #import {sig #[i0] : 'word → 'key } as eval ;;
         r ← sample uniform N ;;
         pad ← eval (word_of_ord r) ;;
         let c := m ⊕ pad in
-        ret c
+        ret (r, c)
       }
     ].
 
   Definition MOD_CPA_ff_pkg :
     package MOD_CPA_location 
       [interface #val #[i0] : 'word → 'key]
-      [interface #val #[i1] : 'word → 'word]:=
+      [interface #val #[i1] : 'word → ('fin N) × 'word ]:=
     [package
-      #def #[i1] (m : 'word) : 'word
+      #def #[i1] (m : 'word) : ('fin N) × 'word
       {
         #import {sig #[i0] : 'word → 'key } as eval ;;
         r ← sample uniform N ;;
         m' ← sample uniform N ;;
         pad ← eval (word_of_ord r) ;;
         let c := (word_of_ord m' ⊕ pad) in
-        ret c
+        ret (r, c)
       }
     ].
 
@@ -170,9 +170,9 @@ Section PRF_example.
   Program Definition IND_CPA_pkg_tt :
     package IND_CPA_location
       [interface]
-      [interface #val #[i1] : 'word → 'word ] :=
+      [interface #val #[i1] : 'word → ('fin N) × 'word ] :=
     [package
-      #def #[i1] (m : 'word) : 'word
+      #def #[i1] (m : 'word) : ('fin N) × 'word
       {
         k_val ← kgen ;;
         enc m k_val
@@ -196,9 +196,9 @@ Section PRF_example.
   Program Definition IND_CPA_pkg_ff :
     package IND_CPA_location
       [interface]
-      [interface #val #[i1] : 'word → 'word ] :=
+      [interface #val #[i1] : 'word → ('fin N) × 'word ] :=
     [package
-      #def #[i1] (m : 'word) : 'word
+      #def #[i1] (m : 'word) : ('fin N) × 'word
       {
         k_val ← kgen ;;
         m' ← sample uniform N ;;
@@ -221,7 +221,7 @@ Section PRF_example.
   Defined.
 
   Program Definition IND_CPA :
-    loc_GamePair [interface #val #[i1] : 'word → 'word ] :=
+    loc_GamePair [interface #val #[i1] : 'word → ('fin N) × 'word ] :=
     λ b,
       if b then {locpackage IND_CPA_pkg_tt } else {locpackage IND_CPA_pkg_ff }.
 
@@ -279,7 +279,7 @@ Section PRF_example.
   (** Security of PRF
 
     The bound is given by using the triangle inequality several times,
-    using the following chain:
+    using the following chain of computational indistinguishabilities:
     IND_CPA false ≈ MOD_CPA_ff_pkg ∘ EVAL true
                   ≈ MOD_CPA_ff_pkg ∘ EVAL false
                   ≈ MOD_CPA_tt_pkg ∘ EVAL false
@@ -290,7 +290,7 @@ Section PRF_example.
   Theorem security_based_on_prf :
     ∀ LA A,
       ValidPackage LA
-        [interface #val #[i1] : 'word → 'word ] A_export A →
+        [interface #val #[i1] : 'word → ('fin N) × 'word ] A_export A →
       fdisjoint LA (IND_CPA false).(locs) →
       fdisjoint LA (IND_CPA true).(locs) →
       Advantage IND_CPA A <=
@@ -346,17 +346,16 @@ Section JasminPRF.
   Notation key_location := (key_location U128).
 
   Definition Cenc (m : pt) (k : key) :
-    code (fset [:: state ; rkeys]) [interface] ('word n). 
+    code (fset [:: state ; rkeys]) [interface] (('fin N) × 'word n).
   Proof.
     refine
       {code
         r ← sample uniform N ;;
         pad ← Caes (word_of_ord r) k ;; 
-        ret (m ⊕ pad)
+        ret (r, (m ⊕ pad))
       }.
     repeat constructor.
     all: auto_in_fset.
-    Unshelve. exact _.
   Defined.
 
   Opaque wrange.
@@ -365,11 +364,11 @@ Section JasminPRF.
   Definition IND_CPA_pkg_Cenc :
     package (fset (key_location :: Cenc_locs))
       [interface]
-      [interface #val #[i1] : 'word → 'word].
+      [interface #val #[i1] : 'word → ('fin N) × 'word].
   Proof.
     refine
       [package
-        #def #[i1] (m : 'word) : 'word
+        #def #[i1] (m : 'word) : ('fin N) × 'word
         {
           k_val ← kgen ;;
           Cenc m k_val
@@ -394,16 +393,16 @@ Section JasminPRF.
   Definition IND_CPA_pkg_JENC (id0 : p_id) :
     package (fset (key_location :: (JENC_valid id0).π1))
       [interface]
-      [interface #val #[i1] : 'word → 'word ].
+      [interface #val #[i1] : 'word → ('fin N) × 'word ].
   Proof.
     refine
       [package
-        #def #[i1] (m : 'word) : 'word
+        #def #[i1] (m : 'word) : ('fin N) × 'word
           {
             k_val ← kgen ;;
             r ← sample uniform N ;;
             res ← JENC id0 (word_of_ord r) k_val m ;;
-            ret (hdtc128 res)
+            ret (r, hdtc128 res)
           }
         ].
     repeat constructor.
@@ -460,12 +459,12 @@ Section JasminPRF.
   Qed.
   
   Definition IND_CPA_Cenc :
-    loc_GamePair [interface #val #[i1] : 'word → 'word ] :=
+    loc_GamePair [interface #val #[i1] : 'word → ('fin N) × 'word ] :=
     λ b,
       if b then {locpackage IND_CPA_pkg_Cenc } else (IND_CPA true).
 
   Definition IND_CPA_JENC id0 :
-    loc_GamePair [interface #val #[i1] : 'word → 'word ] :=
+    loc_GamePair [interface #val #[i1] : 'word → ('fin N) × 'word ] :=
     λ b,
       if b then {locpackage IND_CPA_pkg_JENC id0} else {locpackage IND_CPA_pkg_Cenc}.
 
@@ -701,14 +700,14 @@ Section JasminPRF.
   Qed.
 
   Definition JIND_CPA id0 :
-    loc_GamePair [interface #val #[i1] : 'word → 'word ] :=
+    loc_GamePair [interface #val #[i1] : 'word → ('fin N) × 'word ] :=
     λ b,
       if b then {locpackage IND_CPA_pkg_JENC id0 } else (IND_CPA true).
   
   Theorem jasmin_security_based_on_prf id0 :
     ∀ LA A,
       ValidPackage LA
-        [interface #val #[i1] : 'word → 'word ] A_export A →
+        [interface #val #[i1] : 'word → ('fin N) × 'word ] A_export A →
       pdisjoint LA (λ l : Location, ∃ (s_id : p_id) (v : var), id0 ⪯ s_id ∧ l = translate_var s_id v) ->
       pdisjoint LA (λ l : Location, l \in fset Cenc_locs) ->
       fdisjoint LA (IND_CPA_Cenc false).(locs) →
