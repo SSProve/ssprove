@@ -1,7 +1,7 @@
 From Coq Require Import Utf8 ZArith micromega.Lia.
 
 From mathcomp Require Import all_ssreflect all_algebra.
-From mathcomp.word Require Import word ssrZ.
+From mathcomp Require Import word_ssrZ word.
 
 (* NB: This changes the behaviour of lia, making it work on goals with ssr types *)
 From mathcomp Require Import zify.

@@ -1,6 +1,6 @@
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import all_ssreflect all_algebra.
-From mathcomp.word Require Import ssrZ word.
+From mathcomp Require Import word word_ssrZ.
 From Jasmin Require Import expr compiler_util values sem.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 
@@ -1992,7 +1992,7 @@ Proof.
   apply ziota_ind.
   - auto.
   - intros i l h Ih.
-    rewrite (@in_cons ssrZ.Z_eqType).
+    rewrite (@in_cons word_ssrZ.Z_eqType).
     simpl.
     rewrite <- addE.
     destruct (_ == _) eqn:eb.
@@ -3063,7 +3063,7 @@ Proof.
   apply ziota_ind.
   - simpl. reflexivity.
   - simpl. intros k l h ih.
-    rewrite (@in_cons ssrZ.Z_eqType).
+    rewrite (@in_cons word_ssrZ.Z_eqType).
     destruct (_ == _) eqn:eb.
     + simpl. move: eb => /eqP eb. subst.
       unfold chArray_set8.

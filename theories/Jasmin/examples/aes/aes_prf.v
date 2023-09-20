@@ -15,7 +15,7 @@ From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
-  ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq word word.ssrZ.
+  ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq word word_ssrZ.
 Set Warnings "notation-overridden,ambiguous-paths".
 
 From Mon Require Import SPropBase.
