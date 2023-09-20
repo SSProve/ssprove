@@ -27,6 +27,58 @@ A documentation is available in [DOC.md].
 - [TYPES'21](https://youtu.be/FdMRB1mnyUA): Video focused on semantics and programming logic (speaker: Antoine Van Muylder)
 - [Coq Workshop '21](https://youtu.be/uYhItPhA-Y8): Video illustrating the formalisation (speaker: Théo Winterhalter)
 
+## Jasmin translation and examples
+
+### Translation
+
+This branch contains a formally verified translation from Jasmin
+programs to SSProve programs. The translation is defined and proven
+correct in [theories/Jasmin/jasmin_translate.v]. The main theorem is
+`translate_prog_correct` which states that a translated jasmin
+function has the same input/output behavior as the original function.
+
+In [theories/Jasmin/jasmin_asm.v] we combine `translate_prog_correct`
+and the correctness theorem of the Jasmin compiler to prove
+`equiv_to_asm`, which states that if a Jasmin program compiles
+correctly, then functions from the compiled assembly program have the
+same input/output behavior as the corresponding functions from the
+translated SSProve program. This is the theorem which justifies that
+reasoning about the translated SSProve program gives guarantees about
+the compiled assembly program.
+
+In [theories/Jasmin/jasmin_x86.v] `equiv_to_asm` is specialized to x86 architecture.
+
+### Examples
+
+[theories/Jasmin/examples/] contains a suite of Jasmin programs and
+their translations to SSProve; the Jasmin programs are mainly from the
+Jasmin repository.
+
+[theories/Jasmin/examples/aes/] contains a formal proof of IND-CPA
+security of a symmetric encryption scheme using AES, where AES is
+implemented in Jasmin and translated to SSProve.
+
+[theories/Jasmin/examples/aes/aes_jazz.v] contains the translated
+SSProve program and some notations for handling it.
+
+[theories/Jasmin/examples/aes/aes_spec.v] contains a Coq
+implementation (`aes`) of AES which we use as a spec. It also contains
+a handwritten SSProve implementation (`Caes`) of AES which serves as
+an intermediate implementation to make the proofs easier. Finally, it
+contains the lemma `aes_h`, which relates the two.
+
+[theories/Jasmin/examples/aes/aes.v] relates the Jasmin implementation
+of AES (`JAES`) to the intermediate SSProve implementation. The lemma
+`aes_E` prove that they are equivalent.
+
+[theories/Jasmin/examples/aes/aes_prf.v] contains the proof of IND-CPA
+security of a encryption scheme using a pseudo-random function
+(PRF). This is the lemma `security_based_on_prf`; note that this is
+almost verbatim taken from [examples/PRF.v].  Then we instantiate the
+lemma with our translated Jasmin implementation AES and prove that the
+same security notion holds for the efficient implementation. This is
+`jsecurity_based_on_prf`.
+
 ## Installation
 
 #### Prerequisites
@@ -751,3 +803,13 @@ We do something similar for Schnorr's protocol.
 [rhl_semantics/state_prob/]: theories/Crypt/rhl_semantics/state_prob/
 [Main.v]: theories/Crypt/Main.v
 [DOC.md]: ./DOC.md
+[theories/Jasmin/jasmin_translate.v]: theories/Jasmin/jasmin_translate.v
+[theories/Jasmin/jasmin_asm.v]: theories/Jasmin/jasmin_asm.v
+[theories/Jasmin/jasmin_x86.v]: theories/Jasmin/jasmin_x86.v
+[theories/Jasmin/examples/]: theories/Jasmin/examples/
+[theories/Jasmin/examples/aes/]: theories/Jasmin/examples/aes/
+[theories/Jasmin/examples/aes/aes.v]: theories/Jasmin/examples/aes/aes.v
+[theories/Jasmin/examples/aes/aes_jazz.v]: theories/Jasmin/examples/aes/aes_jazz.v
+[theories/Jasmin/examples/aes/aes_prf.v]: theories/Jasmin/examples/aes/aes_prf.v
+[theories/Jasmin/examples/aes/aes_spec.v]: theories/Jasmin/examples/aes/aes_spec.v
+[theories/Jasmin/examples/aes/aes_valid.v]: theories/Jasmin/examples/aes/aes_valid.v
