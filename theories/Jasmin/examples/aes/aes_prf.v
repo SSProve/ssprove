@@ -435,7 +435,9 @@ Section JasminPRF.
 
   (* Notation KG_pkg := (KG_pkg U128). *)
   Notation IND_CPA_pkg_ff := (IND_CPA_pkg_ff U128 aes).
+  Notation IND_CPA_pkg_tt := (IND_CPA_pkg_tt U128 aes).
   Notation MOD_CPA_ff_pkg := (MOD_CPA_ff_pkg U128).
+  Notation MOD_CPA_tt_pkg := (MOD_CPA_tt_pkg U128).
   Notation IND_CPA := (IND_CPA U128 aes).
   Notation EVAL := (EVAL U128 aes).
 
@@ -678,7 +680,6 @@ Section JasminPRF.
       - eapply r_ret. easy.
       - ssprove_sync. intros.
         ssprove_sync.
-        (* { intros h0 h1 H1 H2 H. rewrite !get_set_heap_neq. 1: eapply H1; eauto. 1-2: admit. } *)
         eapply r_ret. easy. }
     intros. simpl.
     (* TODO: find easier way to do next three lines *)
@@ -703,7 +704,7 @@ Section JasminPRF.
     loc_GamePair [interface #val #[i1] : 'word → ('fin N) × 'word ] :=
     λ b,
       if b then {locpackage IND_CPA_pkg_JENC id0 } else (IND_CPA true).
-  
+
   Theorem jasmin_security_based_on_prf id0 :
     ∀ LA A,
       ValidPackage LA
@@ -714,7 +715,7 @@ Section JasminPRF.
       fdisjoint LA (IND_CPA_Cenc true).(locs) →
       Advantage (JIND_CPA id0) A = 0%R.
   Proof.
-    intros LA A vA hd₀ hd₁ hd2 hd3. unfold prf_epsilon, statistical_gap.
+    intros LA A vA hd₀ hd₁ hd2 hd3.
     rewrite !Advantage_E.
     eapply AdvantageE_le_0.
     ssprove triangle (JIND_CPA id0 false) [::
@@ -735,6 +736,54 @@ Section JasminPRF.
     apply Order.POrderTheory.le_refl.
   Qed.
 
-  Print Assumptions jasmin_security_based_on_prf.
+  Notation prf_epsilon := (prf_epsilon U128 aes).
+  Notation statistical_gap := (statistical_gap U128 aes).
+
+  Local Open Scope ring_scope.
+
+  Program Definition JIND_CPA' id0 :
+    loc_GamePair [interface #val #[i1] : 'word → ('fin N) × 'word ] :=
+    λ b,
+      if b then {locpackage IND_CPA_pkg_JENC id0 } else (IND_CPA false).
+
+  Theorem jsecurity_based_on_prf (id0 : p_id) :
+    ∀ LA A,
+      ValidPackage LA
+        [interface #val #[i1] : 'word → ('fin N) × 'word ] A_export A →
+      pdisjoint LA (λ l : Location, ∃ (s_id : p_id) (v : var), id0 ⪯ s_id ∧ l = translate_var s_id v) ->
+      pdisjoint LA (λ l : Location, l \in fset Cenc_locs) ->
+      fdisjoint LA (IND_CPA_Cenc false).(locs) →
+      fdisjoint LA (IND_CPA_Cenc true).(locs) →
+      Advantage (JIND_CPA' id0) A <=
+      prf_epsilon (A ∘ MOD_CPA_ff_pkg) +
+      statistical_gap A +
+      prf_epsilon (A ∘ MOD_CPA_tt_pkg).
+  Proof.
+    intros LA A vA hd₀ hd₁ hd2 hd3.
+    rewrite !Advantage_E.
+    ssprove triangle (JIND_CPA' id0 true) [::
+      IND_CPA_pkg_Cenc : raw_package ;
+      IND_CPA true : raw_package
+    ] (JIND_CPA' id0 false) A
+    as ineq.
+    rewrite Advantage_sym.
+
+    eapply Order.POrderTheory.le_trans. 1: eapply ineq.
+
+    erewrite IND_CPA_jazz_equiv_false. all: eauto.
+    rewrite IND_CPA_JENC_equiv_false. all: eauto.
+
+    rewrite GRing.add0r.
+    rewrite GRing.add0r.
+
+    unshelve epose proof security_based_on_prf n aes LA A vA hd2 _.
+    1: { simpl. simpl in hd2. eauto. }
+    rewrite Advantage_E in H.
+
+    rewrite Advantage_sym.
+    eapply H.
+  Qed.
+
+  Print Assumptions jsecurity_based_on_prf.
 
 End JasminPRF.
