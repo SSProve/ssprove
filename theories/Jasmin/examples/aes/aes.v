@@ -1,6 +1,6 @@
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra zify.
-From mathcomp.word Require Import word ssrZ.
+From mathcomp Require Import word_ssrZ word.
 Set Warnings "notation-overridden,ambiguous-paths".
 
 From Coq Require Import Utf8 ZArith micromega.Lia List.

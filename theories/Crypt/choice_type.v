@@ -18,7 +18,7 @@ From deriving Require Import deriving.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr realsum seq all_algebra fintype.
-From mathcomp.word Require Import word ssrZ.
+From mathcomp Require Import word_ssrZ word.
 From Jasmin Require Import utils word.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From Crypt Require Import Prelude Axioms.

@@ -1,6 +1,6 @@
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import all_ssreflect all_algebra.
-From mathcomp.word Require Import ssrZ word.
+From mathcomp Require Import word_ssrZ word.
 From Jasmin Require Import expr compiler_util values sem.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 
