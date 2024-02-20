@@ -16,7 +16,7 @@ depends: [
   "coq-extructures" {(>= "0.4.0" & < "dev")}
   "coq-deriving" {(>= "0.2" & < "dev")}
   "coq-mathcomp-zify" {>= "1.5.0+2.0+8.16"}
-  "jasmin" {(>= "2023.06.2")}
+  "jasmin" {= "dev"}
 ]
 build: [
   [make "-j%{jobs}%"]

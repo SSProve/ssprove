@@ -232,7 +232,7 @@ Proof.
               destruct #|F1| eqn:e. 1: contradiction.
               rewrite ltr0n. reflexivity.
     + unfold r. rewrite -[X in X <= _]mulrzr. rewrite GRing.div1r.
-      erewrite <- GRing.mulr1. rewrite -GRing.mulrA.
+      eset (#|F1|%:~R) at 2 ; erewrite <- (GRing.mulr1 s) ; subst s.
       rewrite GRing.Theory.mulKf.
       * auto.
       * unshelve eapply card_non_zero. auto.

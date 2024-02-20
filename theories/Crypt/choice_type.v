@@ -96,7 +96,7 @@ Coercion chElement : choice_type >-> choiceType.
   match T with
   | chUnit => Datatypes.tt
   | chNat => 0
-  | chInt => Z0
+  | chInt => 0%Z
   | chBool => false
   | chProd A B => (chCanonical A, chCanonical B)
   | chMap A B => _
