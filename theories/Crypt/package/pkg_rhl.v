@@ -984,6 +984,30 @@ Proof.
   eapply swap_ruleL. all: eauto.
 Qed.
 
+Lemma rswap_helper :
+  forall {A₀ A₁ B : ord_choiceType}
+    (c₀ : raw_code A₀) (c₁ : raw_code A₁) (r : A₀ → A₁ → raw_code B),
+    ((a1 ∈ choice_incl A₀ <<- repr c₀;;
+      a2 ∈ choice_incl A₁ <<- repr c₁;; (λ (a₀ : A₀) (a₁ : A₁), repr (r a₀ a₁)) a1 a2) =
+       bindrFree (repr c₀) (λ a : A₀, repr (a₁ ← c₁ ;; r a a₁))).
+Proof.
+  intros.
+  unfold RulesStateProb.bindF.
+  simpl.
+  unfold FreeProbProg.rFree_obligation_2.
+
+  assert ((λ a1 : A₀, bindrFree (repr c₁) (λ a2 : A₁, repr (r a1 a2))) = (λ a : A₀, repr (a₁ ← c₁ ;;
+                                                                                          r a a₁))).
+  { extensionality a.
+    rewrite repr_bind.
+    simpl.
+    reflexivity.
+  }
+  rewrite H.
+  reflexivity.
+Qed.
+
+
 Theorem rswap_ruleR :
   ∀ {A₀ A₁ B : ord_choiceType} {post : postcond B B}
     (c₀ : raw_code A₀) (c₁ : raw_code A₁) (r : A₀ → A₁ → raw_code B),
@@ -1001,6 +1025,7 @@ Proof.
   intros A₀ A₁ B post c₀ c₁ r postr hr h.
   eapply from_sem_jdg.
   repeat setoid_rewrite repr_bind. simpl.
+  do 2 rewrite <- rswap_helper.
   eapply (swap_ruleR (λ a₀ a₁, repr (r a₀ a₁)) (repr c₀) (repr c₁)).
   - intros. eapply to_sem_jdg. apply hr.
   - apply postr.
@@ -1008,6 +1033,7 @@ Proof.
     unshelve eapply coupling_eq.
     + exact (λ '(h₀, h₁), h₀ = h₁).
     + eapply to_sem_jdg in h. repeat setoid_rewrite repr_bind in h.
+      do 2 rewrite <- rswap_helper in h.
       apply h.
     + reflexivity.
 Qed.
@@ -1958,6 +1984,29 @@ Proof.
     eapply restore_update_mem. all: eauto.
 Qed.
 
+Lemma rswap_cmd_helper :
+  forall {A₀ A₁ B : ord_choiceType}
+    (c₀ : command A₀) (c₁ : command A₁) (r : A₀ → A₁ → raw_code B),
+    ((a1 ∈ choice_incl A₀ <<- repr_cmd c₀;;
+      a2 ∈ choice_incl A₁ <<- repr_cmd c₁;; (λ (a₀ : A₀) (a₁ : A₁), repr (r a₀ a₁)) a1 a2) =
+       bindrFree (repr_cmd c₀) (λ a : A₀, repr (a₁ ← cmd c₁ ;; r a a₁))).
+Proof.
+  intros.
+  unfold RulesStateProb.bindF.
+  simpl.
+  unfold FreeProbProg.rFree_obligation_2.
+
+  assert ((λ a1 : A₀, bindrFree (repr_cmd c₁) (λ a2 : A₁, repr (r a1 a2))) = (λ a : A₀, repr (a₁ ← cmd c₁ ;;
+                                                                                          r a a₁))).
+  { extensionality a.
+    rewrite repr_cmd_bind.
+    simpl.
+    reflexivity.
+  }
+  rewrite H.
+  reflexivity.
+Qed.
+
 Lemma rswap_cmd :
   ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
     (c₀ : command A₀) (c₁ : command A₁)
@@ -1976,6 +2025,7 @@ Proof.
   intros A₀ A₁ B post c₀ c₁ r hpost hr h.
   eapply from_sem_jdg.
   repeat setoid_rewrite repr_cmd_bind.
+  do 2 rewrite <- rswap_cmd_helper.
   eapply (swap_ruleR (λ a₀ a₁, repr (r a₀ a₁)) (repr_cmd c₀) (repr_cmd c₁)).
   - intros a₀ a₁. eapply to_sem_jdg. eapply hr.
   - intros ? ? []. eauto.
@@ -1983,6 +2033,7 @@ Proof.
     + exact: (λ '(h1, h2), h1 = h2).
     + eapply to_sem_jdg in h.
       repeat (setoid_rewrite repr_cmd_bind in h).
+      do 2 rewrite <- rswap_cmd_helper in h.
       auto.
     + reflexivity.
 Qed.
@@ -2009,21 +2060,69 @@ Proof.
   - auto.
 Qed.
 
+Lemma rswap_helper_cmd :
+  forall {A₀ A₁ B : ord_choiceType}
+    (c₀ : command A₀) (c₁ : raw_code A₁) (r : A₀ → A₁ → raw_code B),
+    ((a1 ∈ choice_incl A₀ <<- repr_cmd c₀;;
+      a2 ∈ choice_incl A₁ <<- repr c₁;; (λ (a₀ : A₀) (a₁ : A₁), repr (r a₀ a₁)) a1 a2) =
+       bindrFree (repr_cmd c₀) (λ a : A₀, repr (a₁ ← c₁ ;; r a a₁))).
+Proof.
+  intros.
+  unfold RulesStateProb.bindF.
+  simpl.
+  unfold FreeProbProg.rFree_obligation_2.
+
+  assert ((λ a1 : A₀, bindrFree (repr c₁) (λ a2 : A₁, repr (r a1 a2))) = (λ a : A₀, repr (a₁ ← c₁ ;;
+                                                                                          r a a₁))).
+  { extensionality a.
+    rewrite repr_bind.
+    simpl.
+    reflexivity.
+  }
+  rewrite H.
+  reflexivity.
+Qed.
+
+Lemma rswap_repr_cmd_helper :
+  forall {A₀ A₁ B : ord_choiceType}
+    (c₀ : raw_code A₀) (c₁ : command A₁) (r : A₀ → A₁ → raw_code B),
+    ((a1 ∈ choice_incl A₀ <<- repr c₀;;
+      a2 ∈ choice_incl A₁ <<- repr_cmd c₁;; (λ (a₀ : A₀) (a₁ : A₁), repr (r a₀ a₁)) a1 a2) =
+       bindrFree (repr c₀) (λ a : A₀, repr (a₁ ← cmd c₁ ;; r a a₁))).
+Proof.
+  intros.
+  unfold RulesStateProb.bindF.
+  simpl.
+  unfold FreeProbProg.rFree_obligation_2.
+
+  assert ((λ a1 : A₀, bindrFree (repr_cmd c₁) (λ a2 : A₁, repr (r a1 a2))) = (λ a : A₀, repr (a₁ ← cmd c₁ ;;
+                                                                                          r a a₁))).
+  { extensionality a.
+    rewrite repr_cmd_bind.
+    simpl.
+    reflexivity.
+  }
+  rewrite H.
+  reflexivity.
+Qed.
+
 Lemma rswap_cmd_bind_eq :
   ∀ {A₀ A₁ B : choiceType} c₀ c₁ (r : A₀ → A₁ → raw_code B),
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       a₀ ← cmd c₀ ;; a₁ ← c₁ ;; ret (a₀, a₁) ≈
-      a₁ ← c₁ ;; a₀ ← cmd c₀ ;; ret (a₀, a₁)
-    ⦃ eq ⦄ →
+                                  a₁ ← c₁ ;; a₀ ← cmd c₀ ;; ret (a₀, a₁)
+                                                              ⦃ eq ⦄ →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       a₀ ← cmd c₀ ;; a₁ ← c₁ ;; r a₀ a₁ ≈
-      a₁ ← c₁ ;; a₀ ← cmd c₀ ;; r a₀ a₁
-    ⦃ eq ⦄.
+                                  a₁ ← c₁ ;; a₀ ← cmd c₀ ;; r a₀ a₁
+                                                              ⦃ eq ⦄.
 Proof.
   intros A₀ A₁ B c₀ c₁ r h.
   eapply from_sem_jdg. simpl.
-  setoid_rewrite repr_cmd_bind. setoid_rewrite repr_bind.
-  simpl. setoid_rewrite repr_cmd_bind.
+  setoid_rewrite repr_cmd_bind. rewrite repr_bind.
+  rewrite <- rswap_helper_cmd.
+  rewrite <- rswap_repr_cmd_helper.
+  simpl.
   eapply (swap_ruleR (λ a₀ a₁, repr (r a₀ a₁)) (repr_cmd c₀) (repr c₁)).
   - intros a₀ a₁. eapply to_sem_jdg.
     apply rsym_pre. 1: auto.
@@ -2033,8 +2132,9 @@ Proof.
     + exact: (λ '(h₀, h₁), h₀ = h₁).
     + eapply to_sem_jdg in h.
       setoid_rewrite repr_cmd_bind in h. simpl in h.
+      rewrite <- rswap_helper_cmd in h.
       setoid_rewrite repr_bind in h. simpl in h.
-      setoid_rewrite repr_cmd_bind in h. simpl in h.
+      rewrite <- rswap_repr_cmd_helper in h. simpl in h.
       auto.
     + reflexivity.
 Qed.
@@ -2064,7 +2164,17 @@ Proof.
     rewrite bind_assoc in h.
     rewrite bind_cmd_bind in h.
     setoid_rewrite bind_cmd_bind in h.
-    setoid_rewrite bind_assoc in h.
+    simpl in h.
+    replace
+      (x ← cmd _ ;;
+     pat ← (a₀ ← c₀ ;;
+            ret (a₀, x)) ;;
+     (let '(x0, y) := pat in ret (y, x0)))
+      with
+      (x ← cmd c₁ ;;
+       a₀ ← c₀ ;;
+       pat ← ret (a₀, x) ;;
+       (let '(x0, y) := pat in ret (y, x0))) in h by (f_equal ; extensionality x ; now rewrite bind_assoc).
     simpl in h.
     apply rsymmetry. apply rsym_pre. 1: auto.
     eapply rpost_weaken_rule. 1: eauto.
@@ -2089,6 +2199,7 @@ Proof.
   intros A₀ A₁ B post c₀ c₁ r postr hr h.
   eapply from_sem_jdg.
   repeat setoid_rewrite repr_cmd_bind. simpl.
+  do 2 rewrite <- rswap_cmd_helper.
   eapply (swap_ruleR (λ a₀ a₁, repr (r a₀ a₁)) (repr_cmd c₀) (repr_cmd c₁)).
   - intros. eapply to_sem_jdg. apply hr.
   - apply postr.
@@ -2096,6 +2207,7 @@ Proof.
     unshelve eapply coupling_eq.
     + exact (λ '(h₀, h₁), h₀ = h₁).
     + eapply to_sem_jdg in h. repeat setoid_rewrite repr_cmd_bind in h.
+      do 2 rewrite <- rswap_cmd_helper in h.
       apply h.
     + reflexivity.
 Qed.
