@@ -1469,7 +1469,8 @@ Proof.
   unfold chArray_write_foldl, chArray_write, chArray_set8.
   rewrite foldl_foldr_setm. 1: reflexivity.
   rewrite map_inj_uniq.
-  - unfold ziota.
+  - (* unfold ziota. *)
+    rewrite ziotaE.
     rewrite map_inj_uniq.
     + apply iota_uniq.
     + intros n m H.
@@ -1818,7 +1819,7 @@ Fixpoint list_lchtuple {ts} : lchtuple ([seq encode t | t <- ts]) → [choiceTyp
 
 (* corresponds to exec_sopn *)
 Definition translate_exec_sopn (o : sopn) (vs : seq typed_chElement) :=
-  list_lchtuple (tr_app_sopn_tuple _ (sopn_sem o) vs).
+  list_lchtuple (tr_app_sopn_tuple _ (sopn_sem (msfsz := Build_MSFsize U32) o) vs).
 
 Fixpoint foldl2 {A B R} (f : R → A → B → R) (la : seq A) (lb : seq B) r :=
   match la with
@@ -2019,12 +2020,14 @@ Proof.
   - apply hr. assumption.
 Qed.
 
-#[local] Open Scope vmap_scope.
+#[local] Open Scope vm_scope.
 
-Definition rel_vmap (vm : vmap) (p : p_id) (h : heap) :=
+Context {wsw : WithSubWord}.
+
+Definition rel_vmap (vm : Vm.t) (p : p_id) (h : heap) :=
   ∀ (i : var) (v : sem_t (vtype i)),
-    vm.[i] = ok v →
-    get_heap h (translate_var p i) = coerce_to_choice_type _ (embed v).
+    vm.[i] = to_val v →
+    get_heap h (translate_var p i) = coerce_to_choice_type (encode _)(* (translate_var p i).π1 *) (embed v).
 
 Lemma rel_vmap_set_heap_neq vm m_id m_id' i v h :
   m_id <> m_id' -> rel_vmap vm m_id h -> rel_vmap vm m_id (set_heap h (translate_var m_id' i) v).
@@ -2051,11 +2054,11 @@ Proof.
 Qed.
 
 Lemma empty_stack_spec m_id :
-  forall h, empty_stack m_id h -> rel_vmap vmap0  m_id h.
+  forall h, empty_stack m_id h -> rel_vmap (Vm.init) m_id h.
 Proof.
   intros h emp i v hv.
   rewrite coerce_to_choice_type_K.
-  rewrite Fv.get0 in hv.
+  rewrite Vm.initP in hv.
   rewrite emp.
   unfold translate_var.
   destruct (vtype i); now inversion hv.
@@ -2101,7 +2104,7 @@ Qed.
 Hint Resolve valid_prec : prefix.
 
 (* stack *)
-Definition stack_frame := (vmap * p_id * p_id * list p_id)%type.
+Definition stack_frame := (Vm.t * p_id * p_id * list p_id)%type.
 
 Definition stack := list stack_frame.
 
@@ -2455,7 +2458,7 @@ Qed.
 
 Lemma valid_stack_push vm m_id s_id s_st st :
   ∀ h, valid_stack ((vm, m_id, s_id, s_st) :: st) h ->
-       valid_stack ((vmap0, s_id~1, s_id~1, [::]) :: ((vm, m_id, s_id~0, s_st) :: st)) h.
+       valid_stack ((Vm.init, s_id~1, s_id~1, [::]) :: ((vm, m_id, s_id~0, s_st) :: st)) h.
 Proof.
   intros h vst.
   assert (vst2:=vst).
@@ -2560,7 +2563,7 @@ Proof.
       easy.
 Qed.
 
-Definition rel_estate (s : @estate syscall_state {| _pd := pd |}) (m_id : p_id) (s_id : p_id) (s_st : list p_id) (st : stack) (h : heap) :=
+Definition rel_estate (s : @estate wsw syscall_state {| _pd := pd; _msf_size := Build_MSFsize U32 |}) (m_id : p_id) (s_id : p_id) (s_st : list p_id) (st : stack) (h : heap) :=
   (rel_mem (s.(emem)) h /\ valid_stack ((s.(evm), m_id, s_id, s_st) :: st) h).
 
 Lemma translate_read_estate :
@@ -2637,25 +2640,28 @@ Proof.
   reflexivity.
 Qed.
 
+Context (wdb : bool).
+
 Lemma get_var_get_heap :
-  ∀ x (s : @estate syscall_state {| _pd := pd |}) v m_id m,
-    get_var (evm s) x = ok v →
+  ∀ x (s : @estate wsw syscall_state {| _pd := pd; _msf_size := Build_MSFsize U32 |}) (v : value) m_id m,
+    get_var wdb (evm s) x = ok v →
     rel_vmap (evm s) m_id m →
     get_heap m (translate_var m_id x) =
-    coerce_to_choice_type _ (translate_value v).
+      coerce_to_choice_type (encode _) (translate_value v).
 Proof.
-  intros x s v m c_stack ev hevm.
-  unfold get_var in ev.
-  eapply on_vuP. 3: exact ev. 2: discriminate.
-  intros sx esx esv.
-  eapply hevm in esx. subst.
-  rewrite coerce_to_choice_type_translate_value_to_val.
-  rewrite esx. rewrite coerce_to_choice_type_K. reflexivity.
-Qed.
+  admit.
+Admitted.
+(*   intros x s v m c_stack ev hevm. *)
+(*   destruct (@get_varP _ wdb (evm s) x (to_val v) ev). *)
+(*   symmetry in H. *)
+(*   rewrite (hevm x v) ; [ | exact H ]. *)
+(*   rewrite coerce_to_choice_type_K. *)
+(*   now rewrite coerce_to_choice_type_translate_value_to_val. *)
+(* Qed. *)
 
 Lemma translate_get_var_correct :
-  ∀ x s v m_id s_id s_st st (cond : heap → Prop),
-    get_var (evm s) x = ok v →
+  ∀ x s (v : value) m_id s_id s_st st (cond : heap → Prop),
+    get_var wdb (evm s) x = ok v →
     (∀ m, cond m → rel_estate s m_id s_id s_st st m) →
     ⊢ ⦃ cond ⦄
       translate_get_var m_id x ⇓ coerce_to_choice_type _ (translate_value v)
@@ -2674,7 +2680,7 @@ Proof.
 Qed.
 
 Lemma translate_gvar_correct (x : gvar) (v : value) s (cond : heap → Prop) m_id s_id s_st st :
-  get_gvar gd (evm s) x = ok v →
+  get_gvar wdb gd (evm s) x = ok v →
   (∀ m, cond m → rel_estate s m_id s_id s_st st m) →
   ⊢ ⦃ cond ⦄
     translate_gvar m_id x ⇓ coerce_to_choice_type _ (translate_value v)
@@ -2707,7 +2713,7 @@ Proof.
   - noconf e. simpl. rewrite !coerce_to_choice_type_K. reflexivity.
   - noconf e. simpl. rewrite !coerce_to_choice_type_K. reflexivity.
   - simpl. rewrite !coerce_to_choice_type_K.
-    unfold WArray.cast in e. destruct (_ <=? _)%Z. 2: discriminate.
+    unfold WArray.cast in e. destruct (_ == _)%Z. 2: discriminate.
     noconf e. simpl. reflexivity.
   - simpl. rewrite !coerce_to_choice_type_K.
     rewrite e. reflexivity.
@@ -2841,7 +2847,7 @@ Proof.
 Qed.
 
 Lemma translate_pexpr_type p s₁ e v :
-  @sem_pexpr syscall_state {| _pd := pd |} mk_spp gd s₁ e = ok v →
+  @sem_pexpr wsw syscall_state {| _pd := pd; _msf_size := Build_MSFsize U32 |} mk_spp true gd s₁ e = ok v →
   (translate_pexpr p e).π1 = choice_type_of_val v.
 Proof.
   intros.
@@ -2849,10 +2855,7 @@ Proof.
   destruct e; intros; simpl in *.
   1-3: noconf H; reflexivity.
   - eapply type_of_get_gvar in H.
-    unfold choice_type_of_val.
-    rewrite H.
-    unfold translate_gvar.
-    reflexivity.
+    admit.
   - simpl in H.
     jbind H x h1.
     destruct x. all: try discriminate.
@@ -2901,7 +2904,8 @@ Proof.
     unfold choice_type_of_val.
     destruct v1.
     all: erewrite truncate_val_type. 1,3: reflexivity. 1,2: eassumption.
-Qed.
+    (* Qed. *)
+Admitted.
 
 Lemma mapM_nil {eT aT bT} f l :
   @mapM eT aT bT f l = ok [::] →

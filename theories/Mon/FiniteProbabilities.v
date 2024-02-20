@@ -12,8 +12,6 @@ From Relational Require Import Commutativity.
 Import GRing.Theory Num.Theory.
 Import Order.POrderTheory.
 
-Local Open Scope ring_scope.
-
 Section FinProb.
 
   Context (R:realType).
