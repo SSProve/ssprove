@@ -9,7 +9,10 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in
        rec {
-          mkDrv = { stdenv, which, coqPackages, coq } :
+         mkDrv = { stdenv, which, coqPackages, coq } :
+           let
+             extructures' = coqPackages.extructures.override { version = "0.4.0"; };
+           in
             stdenv.mkDerivation {
               pname = "ssprove";
               version = "0.0.1";
@@ -19,9 +22,9 @@
                                     equations
                                     mathcomp-analysis
                                     mathcomp-ssreflect
-                                    extructures
                                     deriving
-                                  ]);
+                                  ])
+                                  ++ [extructures'];
               buildInputs = [ coq ];
             };
 

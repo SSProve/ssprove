@@ -8,15 +8,17 @@ From Relational Require Import OrderEnrichedCategory
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
-  finmap.set finmap.finmap xfinmap.
+  finset finmap.finmap xfinmap .
 Set Warnings "notation-overridden,ambiguous-paths".
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings Theta_dens
   Theta_exCP LaxComp FreeProbProg RelativeMonadMorph_prod
-  StateTransformingLaxMorph choice_type.
+  StateTransformingLaxMorph choice_type Canonicals.
 
 Import SPropNotations.
 Import Num.Theory.
+
+From HB Require Import structures.
 
 
 #[local] Open Scope ring_scope.
@@ -126,7 +128,7 @@ End RSemanticNotation.
 Import RSemanticNotation.
 #[local] Open Scope rsemantic_scope.
 
-Import finmap.set finmap.finmap xfinmap.
+Import (* finmap.set *) finset finmap.finmap xfinmap.
 
 Open Scope fset_scope.
 
@@ -784,7 +786,7 @@ Proof.
   clear Hpsum.
   eapply neq0_psum in Hpsum'. destruct Hpsum'.
   apply aux_domain in H.
-  destruct (eqType_lem  bool_eqType ((x,x) == (a1,a2)) true) as [Houi | Hnon].
+  destruct (eqType_lem  _ ((x,x) == (a1,a2)) true) as [Houi | Hnon].
   move: Houi => /eqP Houi. move: Houi => [H1 H2]. rewrite -H1 -H2. reflexivity.
   have Hnon' : (x,x) == (a1,a2) = false.
     destruct ((x,x) == (a1,a2)). contradiction. reflexivity.
@@ -804,6 +806,8 @@ Proof.
   - move => [a1 s1] [a2 s2] H.
     apply: H2. apply: aux_lemma H.
 Qed.
+
+HB.about Choice.
 
 Definition dsym { A B : ord_choiceType } { S1 S2 : choiceType } (d : SDistr_carrier
           (F_choice_prod_obj

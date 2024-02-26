@@ -5,7 +5,7 @@ From Mon Require Import SPropBase.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect (*boolp*).
 Set Warnings "notation-overridden,ambiguous-paths".
-From Crypt Require Import Axioms OrderEnrichedRelativeAdjunctions LaxFunctorsAndTransf LaxMorphismOfRelAdjunctions TransformingLaxMorph OrderEnrichedRelativeAdjunctionsExamples ThetaDex SubDistr Theta_exCP ChoiceAsOrd FreeProbProg UniversalFreeMap RelativeMonadMorph_prod LaxComp choice_type.
+From Crypt Require Import Axioms OrderEnrichedRelativeAdjunctions LaxFunctorsAndTransf LaxMorphismOfRelAdjunctions TransformingLaxMorph OrderEnrichedRelativeAdjunctionsExamples ThetaDex SubDistr Theta_exCP ChoiceAsOrd FreeProbProg UniversalFreeMap RelativeMonadMorph_prod LaxComp choice_type Canonicals.
 (* From Crypt Require Import only_prob.Rules. *)
 
 Import SPropNotations.
