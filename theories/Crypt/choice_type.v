@@ -119,7 +119,7 @@ Defined.
 
 Section choice_typeTypes.
 
-  (*
+
   Fixpoint choice_type_test (u v : choice_type) : bool :=
     match u, v with
     | chNat , chNat => true
@@ -171,12 +171,25 @@ Section choice_typeTypes.
     - constructor.
     - move: e => /choice_type_eqP []. reflexivity.
   Qed.
-   *)
 
   Definition choice_type_indDef := [indDef for choice_type_rect].
   Canonical choice_type_indType := IndType choice_type choice_type_indDef.
-  Definition choice_type_hasDecEq := [derive hasDecEq for choice_type].
+  (* The unfolding became a problem in [pkg_composition]. So I follow the advice on
+     https://github.com/arthuraa/deriving
+   *)
+
+  (*
+    This
+    [Definition choice_type_hasDecEq := [derive hasDecEq for choice_type].]
+    did work well up until [pkg_composition].
+    The unfolding there was too much.
+    The [nored] version then did not provide enough reduction.
+   *)
+  HB.about hasDecEq.Build.
+  Definition choice_type_hasDecEq := hasDecEq.Build choice_type choice_type_eqP.
   HB.instance Definition _ := choice_type_hasDecEq.
+
+ (* Definition choice_type_eqP := @eqP choice_type. *)
 
   HB.about choice_type.
   (* Print choice_type_choice_type__canonical__eqtype_Equality. *)
@@ -311,9 +324,8 @@ Section choice_typeTypes.
     - destruct y. all: try (intuition; reflexivity).
       specialize (ih1 y1). specialize (ih2 y2).
       apply/implyP.
-      move/nandP.
-      rewrite Bool.andb_true_l => H.
-      apply/orP.
+      move/nandP; rewrite -/choice_type_test -/eq_op.
+      move => H; apply/orP.
       destruct (eq_op x1 y1) eqn:Heq.
       + destruct H.
         1: {
@@ -514,7 +526,7 @@ Section choice_typeTypes.
   Qed.
 
   (*
-  Lemma choice_type_leqP : hasOrd choice_type_leq.
+  Lemma choice_type_leqP : hasOrd.Build choice_type .
   Proof.
     split => //.
     - intro x. unfold choice_type_leq.

@@ -807,23 +807,18 @@ Proof.
     apply: H2. apply: aux_lemma H.
 Qed.
 
-HB.about Choice.
-
 Definition dsym { A B : ord_choiceType } { S1 S2 : choiceType } (d : SDistr_carrier
           (F_choice_prod_obj
-             ⟨ Choice.Pack {| Choice.base := prod_eqMixin B S2; Choice.mixin := prod_choiceMixin B S2 |},
-               Choice.Pack {| Choice.base := prod_eqMixin A S1; Choice.mixin := prod_choiceMixin A S1 |} ⟩)) :
+             ⟨ ((B * S2)%type : choiceType), ((A * S1)%type : choiceType) ⟩)) :
 SDistr_carrier
           (F_choice_prod_obj
-             ⟨ Choice.Pack {| Choice.base := prod_eqMixin A S1; Choice.mixin := prod_choiceMixin A S1 |},
-               Choice.Pack {| Choice.base := prod_eqMixin B S2; Choice.mixin := prod_choiceMixin B S2 |} ⟩) :=
+             ⟨ ((A * S1)%type : choiceType), ((B * S2)%type : choiceType) ⟩) :=
 dswap d.
 
 
 Lemma dsym_coupling { A B : ord_choiceType } { S1 S2 : choiceType } { d : SDistr_carrier
           (F_choice_prod_obj
-             ⟨ Choice.Pack {| Choice.base := prod_eqMixin B S2; Choice.mixin := prod_choiceMixin B S2 |},
-               Choice.Pack {| Choice.base := prod_eqMixin A S1; Choice.mixin := prod_choiceMixin A S1 |} ⟩) }
+             ⟨ ((B * S2)%type : choiceType), ((A * S1)%type : choiceType) ⟩) }
       {d1 d2 }
       (Hcoupling : coupling d d1 d2) : coupling (dsym d) d2 d1.
 Proof.
