@@ -10,7 +10,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
   pkg_core_definition choice_type pkg_composition pkg_rhl
-  Package Prelude RandomOracle.
+  Package Prelude RandomOracle Canonicals.
 
 From Coq Require Import Utf8.
 From extructures Require Import ord fset fmap.

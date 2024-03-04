@@ -12,7 +12,7 @@ From Mon Require Import SPropBase.
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
   pkg_core_definition choice_type pkg_composition pkg_rhl Package Prelude
-  SigmaProtocol.
+  SigmaProtocol Canonicals.
 
 From Coq Require Import Utf8.
 From extructures Require Import ord fset fmap.
@@ -54,13 +54,13 @@ Definition q : nat := #[g].
 
 Module MyParam <: SigmaProtocolParams.
 
-  Definition Witness : finType := [finType of 'Z_q].
-  Definition Statement : finType := FinGroup.arg_finType gT.
-  Definition Message : finType := FinGroup.arg_finType gT.
-  Definition Challenge : finType := [finType of 'Z_q].
-  Definition Response : finType :=  [finType of 'Z_q].
-  Definition Transcript :=
-    prod_finType (prod_finType Message Challenge) Response.
+  Definition Witness : finType := Finite.clone _ 'Z_q.
+  Definition Statement : finType := gT.
+  Definition Message : finType := gT.
+  Definition Challenge : finType := Finite.clone _ 'Z_q.
+  Definition Response : finType :=  Finite.clone _ 'Z_q.
+  Definition Transcript : finType :=
+    prod (prod Message Challenge) Response.
 
   Definition w0 : Witness := 0.
   Definition e0 : Challenge := 0.
@@ -83,7 +83,7 @@ Module MyParam <: SigmaProtocolParams.
   Definition Message_pos : Positive #|Message| := _.
   Definition Challenge_pos : Positive #|Challenge| := _.
   Definition Response_pos : Positive #|Response| := _.
-  Definition Bool_pos : Positive #|bool_choiceType|.
+  Definition Bool_pos : Positive #|(bool:choiceType)|.
   Proof.
     rewrite card_bool. done.
   Defined.
@@ -286,7 +286,7 @@ Proof.
 Qed.
 
 Lemma neq_pos :
-  ∀ (q : nat) (a b : Zp_finZmodType q),
+  ∀ (q : nat) (a b : ('Z_q:finZmodType)),
     a != b →
     a - b != 0.
 Proof.
@@ -371,8 +371,11 @@ Proof.
     (modn
        (addn (@nat_of_ord (S (S (Zp_trunc q))) (@otf Challenge s1))
              (@nat_of_ord (S (S (Zp_trunc q)))
-                          (@GRing.opp (FinRing.Zmodule.zmodType (Zp_finZmodType (S (Zp_trunc q))))
-                                      (@otf Challenge s2)))) q) =
+                (GRing.opp
+                   (* (FinRing.Zmodule.zmodType (Zp_finZmodType (S (Zp_trunc q)))) *)
+                   (* ('Z_(S (Zp_trunc q)) : finZmodType) *)
+                   (@otf Challenge s2))))
+       q) =
     (@nat_of_ord (S (S (Zp_trunc q)))
                    (@Zp_add (S (Zp_trunc q)) (@otf Challenge s1) (@Zp_opp (S (Zp_trunc q)) (@otf Challenge s2)))).
   { simpl.
@@ -393,19 +396,25 @@ Proof.
   have -> :
     (modn
        (muln (@nat_of_ord (S (S (Zp_trunc q)))
-                          (@GRing.inv (FinRing.UnitRing.unitRingType (Zp_finUnitRingType (Zp_trunc q)))
-                                      (@GRing.add (FinRing.Zmodule.zmodType (Zp_finZmodType (S (Zp_trunc q))))
-                                                  (@otf Challenge s1)
-                                                  (@GRing.opp (FinRing.Zmodule.zmodType (Zp_finZmodType (S (Zp_trunc q))))
-                                                              (@otf Challenge s2)))))
-             (@nat_of_ord (S (S (Zp_trunc q)))
-                          (@Zp_add (S (Zp_trunc q)) (@otf Challenge s1) (@Zp_opp (S (Zp_trunc q)) (@otf Challenge s2))))) q) =
+                (GRing.inv
+                   (* (FinRing.UnitRing.unitRingType (Zp_finUnitRingType (Zp_trunc q))) *)
+                   (GRing.add
+                      (* (FinRing.Zmodule.zmodType (Zp_finZmodType (S (Zp_trunc q)))) *)
+                      (@otf Challenge s1)
+                      (GRing.opp
+                         (* (FinRing.Zmodule.zmodType (Zp_finZmodType (S (Zp_trunc q)))) *)
+                         (@otf Challenge s2)))))
+          (@nat_of_ord (S (S (Zp_trunc q)))
+             (@Zp_add (S (Zp_trunc q)) (@otf Challenge s1) (@Zp_opp (S (Zp_trunc q)) (@otf Challenge s2))))) q) =
     (Zp_mul
-       (@GRing.inv (FinRing.UnitRing.unitRingType (Zp_finUnitRingType (Zp_trunc q)))
-                   (@GRing.add (FinRing.Zmodule.zmodType (Zp_finZmodType (S (Zp_trunc q))))
-                               (@otf Challenge s1)
-                               (@GRing.opp (FinRing.Zmodule.zmodType (Zp_finZmodType (S (Zp_trunc q))))
-                                           (@otf Challenge s2))))
+       (GRing.inv
+          (* (FinRing.UnitRing.unitRingType (Zp_finUnitRingType (Zp_trunc q))) *)
+          (GRing.add
+             (* (FinRing.Zmodule.zmodType (Zp_finZmodType (S (Zp_trunc q)))) *)
+             (@otf Challenge s1)
+             (GRing.opp
+                (* (FinRing.Zmodule.zmodType (Zp_finZmodType (S (Zp_trunc q)))) *)
+                (@otf Challenge s2))))
        (@Zp_add (S (Zp_trunc q)) (@otf Challenge s1) (@Zp_opp (S (Zp_trunc q)) (@otf Challenge s2)))).
   { simpl.
     rewrite modnDmr.
@@ -665,7 +674,7 @@ End Schnorr.
 
 Module GP_Z3 <: GroupParam.
 
-  Definition gT : finGroupType := Zp_finGroupType 2.
+  Definition gT : finGroupType := 'Z_2.
   Definition ζ : {set gT} := [set : gT].
   Definition g :  gT := Zp1.
 

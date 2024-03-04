@@ -117,7 +117,8 @@ Proof.
     rewrite Heq'. rewrite GRing.mulr1. reflexivity.
   - have Heq' : st == s = false. apply /eqP. move /eqP: Heq. congruence.
     rewrite Heq'. rewrite GRing.mulr0. reflexivity.
-  Unshelve. exact (Real.ringType R).
+    Unshelve.
+    exact: R.
 Qed.
 
 Definition f_dprod { F1 F2: finType } { S1 S2 : choiceType } { w0 : F1 } { w0' : F2 } {s1 : S1 } {s2 : S2}
@@ -232,17 +233,18 @@ Proof.
               destruct #|F1| eqn:e. 1: contradiction.
               rewrite ltr0n. reflexivity.
     + unfold r. rewrite -[X in X <= _]mulrzr. rewrite GRing.div1r.
-      erewrite <- GRing.mulr1. rewrite -GRing.mulrA.
+      rewrite -[X in X <= _]GRing.mulr1 -GRing.mulrA.
       rewrite GRing.Theory.mulKf.
       * auto.
       * unshelve eapply card_non_zero. auto.
 Qed.
 
+
 Definition UniformFsq_f { F1 F2 : finType} { w0 : F1 } { w0' : F2 }
                         { S1 S2 : choiceType } { s1 : S1 } { s2 : S2 }
                         {f : F1 -> F2} (f_bij : bijective f):
-  SDistr (ChoiceAsOrd.F_choice_prod ⟨ ChoiceAsOrd.F_choice_prod ⟨ Finite.choiceType F1 , S1 ⟩ ,
-                                    ChoiceAsOrd.F_choice_prod ⟨ Finite.choiceType F2 , S2 ⟩ ⟩ ).
+  SDistr (ChoiceAsOrd.F_choice_prod ⟨ ChoiceAsOrd.F_choice_prod ⟨ (F1:choiceType) , S1 ⟩ ,
+                                    ChoiceAsOrd.F_choice_prod ⟨ (F2:choiceType) , S2 ⟩ ⟩ ).
 Proof.
   unshelve eapply mkdistr.
   1:{

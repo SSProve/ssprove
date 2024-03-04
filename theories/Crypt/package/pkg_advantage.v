@@ -83,7 +83,7 @@ Definition Pr_op (p : raw_package) (o : opsig) (x : src o) :
 Arguments SDistr_bind {_ _}.
 
 Definition Pr (p : raw_package) :
-  SDistr (bool_choiceType) :=
+  SDistr (bool:choiceType) :=
   SDistr_bind
     (λ '(b, _), SDistr_unit _ b)
     (Pr_op p RUN Datatypes.tt empty_heap).
@@ -152,7 +152,7 @@ Qed. *)
   : package_scope. *)
 
 Definition state_pass_ {A} (p : raw_code A) :
-  heap_choiceType → raw_code (prod_choiceType A heap_choiceType).
+  heap_choiceType → raw_code (prod A heap_choiceType).
 Proof.
   induction p; intros h.
   - constructor.
