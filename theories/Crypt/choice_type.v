@@ -16,7 +16,7 @@ From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From HB Require Import structures.
 
-From Crypt Require Import Prelude Axioms Canonicals.
+From Crypt Require Import Prelude Axioms Casts.
 From deriving Require Import deriving.
 From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
@@ -48,31 +48,6 @@ Inductive choice_type :=
 
 Derive NoConfusion NoConfusionHom for choice_type.
 
-(* Definition void_leq (x y : void) := true. *)
-
-(* Lemma void_leqP : Ord.axioms void_leq. *)
-(* Proof. split; by do ![case]. Qed. *)
-
-(* Definition void_ordMixin := OrdMixin void_leqP. *)
-(* Canonical void_ordType := Eval hnf in OrdType void void_ordMixin. *)
-
-
-(* From extructures/tests/tutorial.v *)
-(*
-Definition choice_type_indDef := [indDef for choice_type_rect].
-Canonical choice_type_indType := IndType choice_type choice_type_indDef.
-Definition choice_type_hasDecEq := [derive hasDecEq for choice_type].
-HB.instance Definition _ := choice_type_hasDecEq.
-Fail Definition choice_type_hasChoice := [derive hasChoice for choice_type].
-(*
-#[hnf] HB.instance Definition _ := choice_type_hasChoice.
-Definition choice_type_hasOrd := [derive hasOrd for choice_type].
-#[hnf] HB.instance Definition _ := formula_hasOrd.
- *)
-
-HB.about ordType.
-HB.about choiceType.
- *)
 
 Fixpoint chElement_ordType (U : choice_type) : ordType :=
   match U with
@@ -185,19 +160,8 @@ Section choice_typeTypes.
     The unfolding there was too much.
     The [nored] version then did not provide enough reduction.
    *)
-  HB.about hasDecEq.Build.
   Definition choice_type_hasDecEq := hasDecEq.Build choice_type choice_type_eqP.
   HB.instance Definition _ := choice_type_hasDecEq.
-
- (* Definition choice_type_eqP := @eqP choice_type. *)
-
-  HB.about choice_type.
-  (* Print choice_type_choice_type__canonical__eqtype_Equality. *)
-  (*
-  Canonical choice_type_eqMixin := EqMixin choice_type_eqP.
-  Canonical choice_type_eqType :=
-    Eval hnf in EqType choice_type choice_type_eqMixin.
-   *)
 
   Fixpoint choice_type_lt (t1 t2 : choice_type) :=
   match t1, t2 with
@@ -525,54 +489,6 @@ Section choice_typeTypes.
     + by [move => i; apply/orP; left; apply/orP; left].
   Qed.
 
-  (*
-  Lemma choice_type_leqP : hasOrd.Build choice_type .
-  Proof.
-    split => //.
-    - intro x. unfold choice_type_leq.
-      apply/orP. left. apply /eqP. reflexivity.
-    - intros v u w h1 h2.
-      move: h1 h2. unfold choice_type_leq.
-      move /orP => h1. move /orP => h2.
-      destruct h1.
-      + move: H. move /eqP => H. destruct H.
-        apply/orP. assumption.
-      + destruct h2.
-        * move: H0. move /eqP => H0. destruct H0.
-          apply/orP. right. assumption.
-        * apply/orP. right. exact (choice_type_lt_transitive _ _ _ H H0).
-    - unfold antisymmetric.
-      move => x y. unfold choice_type_leq. move/andP => [h1 h2].
-      move: h1 h2. unfold choice_type_leq.
-      move /orP => h1. move /orP => h2.
-      destruct h1.
-      1:{ move: H. move /eqP. intuition auto. }
-      destruct h2.
-      1:{ move: H0. move /eqP. intuition auto. }
-      destruct (~~ (choice_type_test x y)) eqn:Heq.
-      + move: Heq. move /idP => Heq.
-        pose (choice_type_lt_total_not_holds x y) as Hp.
-        move: Hp. move /implyP => Hp. specialize (Hp Heq).
-        move: Hp. move /nandP => Hp.
-        destruct Hp.
-        * move: H. move /eqP /eqP => H. rewrite H in H1. simpl in H1.
-          discriminate.
-        * move: H0. move /eqP /eqP => H0. rewrite H0 in H1. simpl in H1.
-          discriminate.
-      + move: Heq. move /eqP. auto.
-    - unfold total.
-      intros x y. unfold choice_type_leq.
-      pose (choice_type_lt_tot x y).
-      move: i. move /orP => H.
-      destruct H.
-      + move: H. move /orP => H.
-        destruct H.
-        * apply/orP. left. apply/orP. right. assumption.
-        * apply/orP. right. apply/orP. right. assumption.
-      + apply/orP. left. apply/orP. left. assumption.
-  Qed.
-*)
-
   Fixpoint encode (t : choice_type) : GenTree.tree nat :=
   match t with
   | chUnit => GenTree.Leaf 1
@@ -624,18 +540,8 @@ Section choice_typeTypes.
         rewrite -subnE subn0. repeat f_equal. apply eq_irrelevance.
   Defined.
 
-  HB.about choiceType.
-  HB.about Choice.
-  HB.about hasChoice.Build.
-
-  HB.about choice_type.
-
   HB.instance Definition _ := Choice.copy choice_type (pcan_type codeK).
 
-  HB.about choice_type. (* Choice is there now *)
-
-  HB.about ordType.
-  HB.about hasOrd.Build.
   HB.instance Definition _ :=
     hasOrd.Build
       choice_type
@@ -643,17 +549,5 @@ Section choice_typeTypes.
       choice_type_leq_trans
       choice_type_leq_asym
       choice_type_leq_total.
-
-  HB.about choice_type. (* Ord is there now *)
-
-(*
-  Definition choice_type_choiceMixin := PcanChoiceMixin codeK.
-  Canonical choice_type_choiceType :=
-    ChoiceType choice_type choice_type_choiceMixin.
-
-  Definition choice_type_ordMixin := OrdMixin choice_type_leqP.
-  Canonical choice_type_ordType :=
-    Eval hnf in OrdType choice_type choice_type_ordMixin.
-   *)
 
 End choice_typeTypes.

@@ -13,7 +13,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings Theta_dens
   Theta_exCP LaxComp FreeProbProg RelativeMonadMorph_prod
-  StateTransformingLaxMorph choice_type Canonicals.
+  StateTransformingLaxMorph choice_type Casts.
 
 Import SPropNotations.
 Import Num.Theory.
@@ -1596,8 +1596,8 @@ Proof.
   apply mulr_ge0.
   destruct q as [qmap q_0 q_sum q_1]. apply q_0.
   easy.
-(* ler_pimulr: forall [R : numDomainType] [x y : R], 0 <= y -> x <= 1 -> y * x <= y *)
-  apply ler_pimulr. destruct q as [qmap q_0 q_sum q_1]. apply q_0.
+(* ler_piMr: forall [R : numDomainType] [x y : R], 0 <= y -> x <= 1 -> y * x <= y *)
+  apply ler_piMr. destruct q as [qmap q_0 q_sum q_1]. apply q_0.
   apply le1_mu1. easy. destruct q as [qmap q_0 q_sum q_1]. apply q_1.
 Qed.
 

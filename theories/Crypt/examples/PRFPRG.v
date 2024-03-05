@@ -394,7 +394,7 @@ Proof.
   move: {ineq H1 H2 H3} (H1, H2, H3) => H.
   rewrite GEN_GEN_HYB_equiv ?fdisjointUr ?H // GRing.addr0.
   rewrite GEN_GEN_HYB_EVAL_equiv ?fdisjointUr ?H // GRing.addr0.
-  rewrite big_ord_recr ler_add //.
+  rewrite big_ord_recr lerD //.
   by rewrite /prf_epsilon Advantage_E Advantage_link Advantage_sym.
 Qed.
 

@@ -83,7 +83,7 @@ Module MyParam <: AsymmetricSchemeParams.
   Definition Plain  : finType := gT.
   Definition Cipher : finType := prod (gT:finType) (gT:finType).
   Definition PubKey : finType := gT.
-  Definition SecKey : finType := [finType of 'Z_q].
+  Definition SecKey : finType := Finite.clone _ 'Z_q.
 
   Definition plain0 := g.
   Definition cipher0 := (g, g).

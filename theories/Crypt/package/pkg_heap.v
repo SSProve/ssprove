@@ -37,7 +37,7 @@ Set Primitive Projections.
 Definition pointed_value := ∑ (t : choice_type), t.
 
 Definition raw_heap := {fmap Location -> pointed_value}.
-Definition raw_heap_choiceType := [choiceType of raw_heap].
+Definition raw_heap_choiceType := Choice.clone _ raw_heap.
 
 Definition check_loc_val (l : Location) (v : pointed_value) :=
   l.π1 == v.π1.
@@ -67,7 +67,7 @@ Defined.
 
 Definition heap := { h : raw_heap | valid_heap h }.
 
-Definition heap_choiceType := [choiceType of heap].
+Definition heap_choiceType := Choice.clone _ heap.
 
 Lemma heap_ext :
   ∀ (h₀ h₁ : heap),

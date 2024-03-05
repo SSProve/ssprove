@@ -8,9 +8,11 @@ From Crypt Require Import Prelude.
 From HB Require Import structures.
 
 
-(*
-  Note for any of these types it would also be okay to write the cast, e.g., [(nat:choiceType)%type]
- , directly in the term.
+(**
+  Note for any of these types it would also be okay to write the cast, e.g., [(nat:choiceType)%type],
+  directly in the term.
+  This (backward-compatibility) file just made porting to mathcomp 2.1.0 easier.
+  Just delete as soon as all references to the below casts are gone from the code base.
  *)
 
 Definition unit_choiceType : choiceType := Datatypes.unit.

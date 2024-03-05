@@ -32,7 +32,7 @@ From Crypt Require Import
      LaxComp
      FreeProbProg
      RelativeMonadMorph_prod
-     Canonicals.
+     Casts.
 
 Import SPropNotations.
 Import Num.Theory.
@@ -748,7 +748,7 @@ Proof.
            by move/orP: Hd0. }
        --- move/eqP : Hdor1 => Hdor1.
            by rewrite -Hdor1 !GRing.mulr0.
-       --- apply: ler_pmul.
+       --- apply: ler_pM.
            + case: (A x1); rewrite //=; exact ler01.
            + by inversion d.
            + move:  (H2 x1 x2 Hdor2) => HAB.

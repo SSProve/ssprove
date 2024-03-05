@@ -32,7 +32,7 @@ From Crypt Require Import
      Theta_exCP
      LaxComp
      FreeProbProg
-     Canonicals.
+     Casts.
 
 Import SPropNotations.
 Import Num.Theory.
@@ -104,7 +104,7 @@ Proof.
   (* Basically a rip-off of xfinmap.big_fset_subset *)
   intros T J hu π hπ.
   rewrite [X in _<=X](bigID [pred j : T | j \in J]) /=.
-  rewrite ler_paddr ?sumr_ge0 // -[X in _<=X]big_filter.
+  rewrite ler_wpDr ?sumr_ge0 // -[X in _<=X]big_filter.
   rewrite Order.POrderTheory.le_eqVlt; apply/orP; left; apply/eqP/perm_big.
   apply/uniq_perm; rewrite ?filter_uniq //; last move=> i.
   rewrite -enum_setT. apply enum_uniq.

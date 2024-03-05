@@ -1,6 +1,6 @@
 From Mon Require Import SPropBase.
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
-From Crypt Require Import Canonicals.
+From Crypt Require Import Casts.
 Set Warnings "-notation-overridden".
 From mathcomp Require Import all_ssreflect.
 Set Warnings "notation-overridden".

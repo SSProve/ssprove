@@ -22,7 +22,7 @@ Local Open Scope ring_scope.
 
 Definition Index : Type := positive.
 
-Definition fin_family (i : Index) : finType := [finType of chFin i].
+Definition fin_family (i : Index) : finType := Finite.clone _ (chFin i).
 
 Lemma F_w0 :
   forall (i : Index), fin_family i.
@@ -219,7 +219,7 @@ Proof.
     rewrite item_addr0_mulr.
     eapply Order.POrderTheory.le_trans with (y := @r _ w0 *~ #|F1|).
     + rewrite -mulrzr. rewrite -[X in _<=X]mulrzr.
-      rewrite ler_pmul2l.
+      rewrite ler_pM2l.
       * rewrite ler_int. auto.
       * unfold r. apply mulr_gt0.
         -- cbn. rewrite ltr01. reflexivity.

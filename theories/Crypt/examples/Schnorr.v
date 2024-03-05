@@ -12,7 +12,7 @@ From Mon Require Import SPropBase.
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
   pkg_core_definition choice_type pkg_composition pkg_rhl Package Prelude
-  SigmaProtocol Canonicals.
+  SigmaProtocol Casts.
 
 From Coq Require Import Utf8.
 From extructures Require Import ord fset fmap.

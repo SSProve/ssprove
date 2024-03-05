@@ -18,7 +18,7 @@ From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
   StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
   pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_lookup pkg_advantage
-  pkg_invariants pkg_distr Canonicals.
+  pkg_invariants pkg_distr Casts.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
@@ -2187,7 +2187,7 @@ Section Uniform_prod.
     eapply rewrite_eqDistrR. 1: apply: reflexivity_rule.
     intro s. cbn.
     pose proof @prod_uniform as h.
-    specialize (h [finType of 'I_i] [finType of 'I_j]). simpl in h.
+    specialize (h (Finite.clone _ 'I_i) (Finite.clone _ 'I_j)). simpl in h.
     unfold Uni_W'. unfold Uni_W.
     specialize (h (F_w0 (mkpos _)) (F_w0 (mkpos _))).
     unfold uniform_F in h.
