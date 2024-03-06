@@ -54,8 +54,8 @@ Section FinProb.
   Next Obligation.
     intros x y. simpl.
     rewrite divr_ge0 ?Bool.andb_true_l ?ler0n ?addr_ge0 //.
-    rewrite ler_pdivr_mulr.
-    rewrite mul1r [2%:~R]/(1+1) ler_add //.
+    rewrite ler_pdivrMr.
+    rewrite mul1r [2%:~R]/(1+1) lerD //.
     rewrite ltr0n //.
   Qed.
 
@@ -64,13 +64,13 @@ Section FinProb.
     intros. simpl.
     rewrite mulr_ge0 //=.
     rewrite -{3}(mul1r 1).
-    rewrite ler_pmul //=.
+    rewrite ler_pM //=.
   Qed.
 
   #[program] Definition negI (x:I) : I := ⦑ 1 - x∙1 ⦒.
   Next Obligation.
     intros. simpl.
-    rewrite subr_ge0 (I_le1 x) /= ler_subl_addr -{1}(addr0 1) ler_add ?lerr //.
+    rewrite subr_ge0 (I_le1 x) /= lerBlDr -{1}(addr0 1) lerD ?lerr //.
   Qed.
 
   Definition ProbS := I.
@@ -86,7 +86,7 @@ Section FinProb.
     rewrite addr_ge0 ?mulr_ge0 //.
     have: (1 = p∙1*1 + (1 - p∙1)*1) by rewrite !mulr1 addrA [_+1]addrC addrK.
     move=> heq; rewrite [X in _ <= X]heq.
-    by rewrite ler_add // ler_pmul // (I_ge0 (negI p)).
+    by rewrite lerD // ler_pM // (I_ge0 (negI p)).
   Qed.
 
   #[program] Definition wopProb (p:ProbS) : WI (ProbAr p) :=
@@ -94,7 +94,7 @@ Section FinProb.
   Next Obligation.
     intros p ? ? H.
     rewrite /Irel /=.
-    rewrite ler_add // ler_pmul //; try by apply H.
+    rewrite lerD // ler_pM //; try by apply H.
     by rewrite (I_ge0 (negI p)).
   Qed.
 
