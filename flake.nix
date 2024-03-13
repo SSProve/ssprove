@@ -25,8 +25,10 @@
                };
              in
                # getting this the flake-style means the code is already there
-               d.overrideAttrs (oldAttrs: { src = "./."; })
-               ;
+               d.overrideAttrs (oldAttrs: {
+                 src = "./.";
+                 unpackPhase = "true";
+                 });
     in { inherit mkDrv; } //
       flake-utils.lib.eachDefaultSystem (system:
         let
