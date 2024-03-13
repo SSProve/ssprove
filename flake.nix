@@ -8,8 +8,7 @@
       mkDrv = { stdenv, which, coqPackages } :
            let
              extructures' = coqPackages.extructures.override { version = "0.4.0"; };
-           in
-            coqPackages.mkCoqDerivation {
+             d = coqPackages.mkCoqDerivation {
               pname = "ssprove";
               owner = "SSProve";
               version = "0.0.1";
@@ -19,11 +18,15 @@
                                     mathcomp-ssreflect
                                     deriving])
                 ++ [extructures'];
-               meta = {
+              meta = {
                  description = "A foundational framework for modular cryptographic proofs in Coq ";
                  license = coqPackages.lib.licenses.mit;
+                 };
                };
-            };
+             in
+               # getting this the flake-style means the code is already there
+               d.overrideAttrs (oldAttrs: { src = "./."; })
+               ;
     in { inherit mkDrv; } //
       flake-utils.lib.eachDefaultSystem (system:
         let
