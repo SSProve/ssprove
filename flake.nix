@@ -5,7 +5,7 @@
   };
   outputs = { self, nixpkgs, flake-utils }:
     let
-      mkDrv = { stdenv, which, coqPackages, coq } :
+      mkDrv = { stdenv, which, coqPackages } :
            let
              extructures' = coqPackages.extructures.override { version = "0.4.0"; };
            in
@@ -13,16 +13,15 @@
               pname = "ssprove";
               owner = "SSProve";
               version = "0.0.1";
-              propagatedBuildInputs = (with coqPackages; [
-                                    equations
+              propagatedBuildInputs =
+                (with coqPackages; [equations
                                     mathcomp-analysis
                                     mathcomp-ssreflect
-                                    deriving
-                                  ])
-                                  ++ [extructures'];
+                                    deriving])
+                ++ [extructures'];
                meta = {
                  description = "A foundational framework for modular cryptographic proofs in Coq ";
-            #     license = licenses.mit; TODO load lib
+                 license = coqPackages.lib.licenses.mit;
                };
             };
     in { inherit mkDrv; } //
@@ -35,7 +34,6 @@
               let
                 args = {
                   inherit (pkgs) stdenv which;
-                  coq = pkgs.coq_8_18;
                   coqPackages = pkgs.coqPackages_8_18.overrideScope
                     (self: super: {
                       mathcomp = super.mathcomp.override { version = "2.1.0"; };
