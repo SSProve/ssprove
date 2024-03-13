@@ -9,19 +9,21 @@
            let
              extructures' = coqPackages.extructures.override { version = "0.4.0"; };
            in
-            stdenv.mkDerivation {
+            coqPackages.mkCoqDerivation {
               pname = "ssprove";
+              owner = "SSProve";
               version = "0.0.1";
-              src = ./.;
-              nativeBuildInputs = [ which coq.ocamlPackages.findlib ] ++
-                                  (with coqPackages; [
+              propagatedBuildInputs = (with coqPackages; [
                                     equations
                                     mathcomp-analysis
                                     mathcomp-ssreflect
                                     deriving
                                   ])
                                   ++ [extructures'];
-              buildInputs = [ coq ];
+               meta = {
+                 description = "A foundational framework for modular cryptographic proofs in Coq ";
+                 license = licenses.mit;
+               };
             };
     in { inherit mkDrv; } //
       flake-utils.lib.eachDefaultSystem (system:
