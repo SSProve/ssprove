@@ -22,7 +22,7 @@
                                   ++ [extructures'];
                meta = {
                  description = "A foundational framework for modular cryptographic proofs in Coq ";
-                 license = licenses.mit;
+            #     license = licenses.mit; TODO load lib
                };
             };
     in { inherit mkDrv; } //
