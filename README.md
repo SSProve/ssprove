@@ -2,15 +2,15 @@
 
 This repository contains the Coq formalisation of the paper:\
 **SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq**
-- Conference version published at CSF 2021 (distinguished paper award).
+- Extended journal version published at TOPLAS ([DOI](https://dl.acm.org/doi/10.1145/3594735)).
+  Philipp G. Haselwarter, Exequiel Rivas, Antoine Van Muylder, Théo Winterhalter,
+  Carmine Abate, Nikolaj Sidorenco, Cătălin Hrițcu, Kenji Maillard, and
+  Bas Spitters. ([eprint](https://eprint.iacr.org/2021/397))
+- Conference version published at CSF 2021 (**distinguished paper award**).
   Carmine Abate, Philipp G. Haselwarter, Exequiel Rivas, Antoine Van Muylder,
   Théo Winterhalter, Cătălin Hrițcu, Kenji Maillard, and Bas Spitters.
   ([ieee](https://www.computer.org/csdl/proceedings-article/csf/2021/760700a608/1uvIdwNa5Ne),
    [eprint](https://eprint.iacr.org/2021/397/20210526:113037))
-- Extended version under journal review.
-  Carmine Abate, Philipp G. Haselwarter, Exequiel Rivas, Antoine Van Muylder,
-  Théo Winterhalter, Nikolaj Sidorenco, Cătălin Hrițcu, Kenji Maillard, and
-  Bas Spitters. ([eprint](https://eprint.iacr.org/2021/397))
 
 This README serves as a guide to running verification and finding the
 correspondence between the claims in the paper and the formal proofs in Coq, as
@@ -27,98 +27,27 @@ A documentation is available in [DOC.md].
 - [TYPES'21](https://youtu.be/FdMRB1mnyUA): Video focused on semantics and programming logic (speaker: Antoine Van Muylder)
 - [Coq Workshop '21](https://youtu.be/uYhItPhA-Y8): Video illustrating the formalisation (speaker: Théo Winterhalter)
 
-## Jasmin translation and examples
-
-### Translation
-
-This branch contains a formally verified translation from Jasmin
-programs to SSProve programs. The translation is defined and proven
-correct in [theories/Jasmin/jasmin_translate.v]. The main theorem is
-`translate_prog_correct` which states that a translated jasmin
-function has the same input/output behavior as the original function.
-
-In [theories/Jasmin/jasmin_asm.v] we combine `translate_prog_correct`
-and the correctness theorem of the Jasmin compiler to prove
-`equiv_to_asm`, which states that if a Jasmin program compiles
-correctly, then functions from the compiled assembly program have the
-same input/output behavior as the corresponding functions from the
-translated SSProve program. This is the theorem which justifies that
-reasoning about the translated SSProve program gives guarantees about
-the compiled assembly program.
-
-In [theories/Jasmin/jasmin_x86.v] `equiv_to_asm` is specialized to x86 architecture.
-
-### Examples
-
-[theories/Jasmin/examples/] contains a suite of Jasmin programs and
-their translations to SSProve; the Jasmin programs are mainly from the
-Jasmin repository.
-
-[theories/Jasmin/examples/aes/] contains a formal proof of IND-CPA
-security of a symmetric encryption scheme using AES, where AES is
-implemented in Jasmin and translated to SSProve.
-
-[theories/Jasmin/examples/aes/aes_jazz.v] contains the translated
-SSProve program and some notations for handling it.
-
-[theories/Jasmin/examples/aes/aes_spec.v] contains a Coq
-implementation (`aes`) of AES which we use as a spec. It also contains
-a handwritten SSProve implementation (`Caes`) of AES which serves as
-an intermediate implementation to make the proofs easier. Finally, it
-contains the lemma `aes_h`, which relates the two.
-
-[theories/Jasmin/examples/aes/aes.v] relates the Jasmin implementation
-of AES (`JAES`) to the intermediate SSProve implementation. The lemma
-`aes_E` prove that they are equivalent.
-
-[theories/Jasmin/examples/aes/aes_prf.v] contains the proof of IND-CPA
-security of a encryption scheme using a pseudo-random function
-(PRF). This is the lemma `security_based_on_prf`; note that this is
-almost verbatim taken from [examples/PRF.v].  Then we instantiate the
-lemma with our translated Jasmin implementation AES and prove that the
-same security notion holds for the efficient implementation. This is
-`jsecurity_based_on_prf`.
-
 ## Installation
 
 #### Prerequisites
 
-- OCaml `>=4.05.0 & <4.13.0`
-- Coq `8.15.2`
-- Equations `1.3+8.15`
-- Mathcomp `1.13.0`
-- Mathcomp analysis `0.3.13`
+- OCaml `>=4.05.0 & <5`
+- Coq `>=8.16.0 & <8.18.0`
+- Equations `1.3`
+- Mathcomp `>=1.15.0`
+- Mathcomp analysis `>=0.5.3`
 - Coq Extructures `0.3.1`
 - Coq Deriving `0.1`
-- mczify 1.2.0+1.12+8.13
 
 You can get them all from the `opam` package manager for OCaml:
 ```sh
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam update
-opam install ./ssprove-opam
+opam install ./ssprove.opam
 ```
 
 To build the dependency graph, you can optionally install `graphviz`.
 On macOS, `gsed` is additionally required for this.
-
-#### Jasmin
-
-In order to build the `jasmin` branch, a recent version of `https://github.com/jasmin-lang/jasmin` should be installed. This can be done via `opam`, by cloning the `jasmin` repo and running
-```sh
-cd jasmin
-opam install .
-```
-The last version of Jasmin that is known to work is `52624d84`, but we try to track `main`.
-For all proofs to work and a pretty printer for Coq AST's, a custom version is currently necessary.
-The pretty printer is available via the `-coq` compiler flag.
-
-To install a local copy of Jasmin, one may use
-```sh
-cd jasmin
-make
-opam install --assume-built --working-dir ./opam
-```
 
 #### Running verification
 
@@ -135,8 +64,7 @@ Run `make graph` to build a graph of dependencies between sources.
 | [theories]           | Root of all the Coq files                            |
 | [theories/Mon]        | External development coming from "Dijkstra Monads For All" |
 | [theories/Relational] | External development coming from "The Next 700 Relational Program Logics"|
-| [theories/Crypt]      | The original SSProve paper                                           |
-| [theories/Jasmin]      | This paper                                           |
+| [theories/Crypt]      | This paper                                           |
 
 Unless specified with a full path, all files considered in this README can
 safely be assumed to be in [theories/Crypt].
@@ -149,10 +77,14 @@ The formalisation of packages can be found in the [package] directory.
 
 The definition of packages can be found in [pkg_core_definition.v].
 Herein, `package L I E` is the type of packages with set of locations `L`,
-import interface `I` and export interface `E`.
+import interface `I` and export interface `E`. It is defined on top of
+`raw_package` which does not contain the information about its interfaces
+and the locations it uses.
 
 Package laws, as introduced in the paper, are all stated and proven in
-[pkg_composition.v] directly on raw packages.
+[pkg_composition.v] directly on raw packages. This technical detail is not
+mentioned in the paper, but we are nonetheless only interested in these
+laws over proper packages whose interfaces match.
 
 #### Sequential composition
 
@@ -267,7 +199,7 @@ more. Packages created through our operations always verify this property
 
 #### Interchange between sequential and parallel composition
 
-Finally we prove a law involving sequential and parallel composition
+Finally, we prove a law involving sequential and parallel composition
 stating how we can interchange them:
 ```coq
 Lemma interchange :
@@ -403,7 +335,7 @@ Theorem commitment_binding :
     ɛ_soundness A Adv.
 ```
 
-Combining the above theorems with the instatiation of Schnorr's protocol we get a commitment scheme given by:
+Combining the above theorems with the instantiation of Schnorr's protocol we get a commitment scheme given by:
 
 ```coq
 Theorem schnorr_com_hiding :
@@ -460,7 +392,7 @@ We separate by a slash (/) rule names that differ in the CSF (left) and journal
 | async-put-lhs     | `r_put_lhs`           |
 | restore-pre-lhs   | `r_restore_lhs`       |
 
-Finally the "bwhile" / "do-while" rule is proven as
+Finally, the "bwhile" / "do-while" rule is proven as
 `bounded_do_while_rule` in [rules/RulesStateProb.v].
 
 ### More Lemmas and Theorems for packages
@@ -561,7 +493,7 @@ This relational effect observation is called
 file [rhl_semantics/only_prob/ThetaDex.v] as a composition:
 FreeProb² ---`unary_theta_dens²`---> SDistr² ---`θ_morph`---> Wrelprop
 
-The first part `unary_theta_dens²` consists in intepreting pairs
+The first part `unary_theta_dens²` consists in interpreting pairs
 of probabilistic programs into pairs of actual subdistributions.
 This unary semantics for probabilistic programs `unary_theta_dens`
 is defined in [rhl_semantics/only_prob/Theta_dens.v].
@@ -584,7 +516,7 @@ It is defined in the file [rhl_semantics/only_prob/Theta_exCP.v].
 up to inequalities.
 The definition of `θ_morph` relies on the notion of couplings,
 defined in this file [rhl_semantics/only_prob/Couplings.v].
-The prove that it constitutes a lax morphism depends on lemmas
+The proof that it constitutes a lax morphism depends on lemmas
 for couplings that can be found in the same file.
 
 
@@ -657,8 +589,8 @@ a lax morphism Kl(θ) between those Kleisli adjunctions.
 Kl(θ) is a lax morphism between left relative adjunctions,
 (see [LaxMorphismOfRelAdjunctions.v]) and we can
 transform such morphisms of adjunctions using
-the theory developped in [TransformingLaxMorph.v].
-Finallly, out of this transformed morphism of adjunctions we can
+the theory developed in [TransformingLaxMorph.v].
+Finally, out of this transformed morphism of adjunctions we can
 extract a lax morphism between monads Tθ : T M1 → T M2, as expected.
 This last step is also performed in [TransformingLaxMorph.v].
 
@@ -803,13 +735,3 @@ We do something similar for Schnorr's protocol.
 [rhl_semantics/state_prob/]: theories/Crypt/rhl_semantics/state_prob/
 [Main.v]: theories/Crypt/Main.v
 [DOC.md]: ./DOC.md
-[theories/Jasmin/jasmin_translate.v]: theories/Jasmin/jasmin_translate.v
-[theories/Jasmin/jasmin_asm.v]: theories/Jasmin/jasmin_asm.v
-[theories/Jasmin/jasmin_x86.v]: theories/Jasmin/jasmin_x86.v
-[theories/Jasmin/examples/]: theories/Jasmin/examples/
-[theories/Jasmin/examples/aes/]: theories/Jasmin/examples/aes/
-[theories/Jasmin/examples/aes/aes.v]: theories/Jasmin/examples/aes/aes.v
-[theories/Jasmin/examples/aes/aes_jazz.v]: theories/Jasmin/examples/aes/aes_jazz.v
-[theories/Jasmin/examples/aes/aes_prf.v]: theories/Jasmin/examples/aes/aes_prf.v
-[theories/Jasmin/examples/aes/aes_spec.v]: theories/Jasmin/examples/aes/aes_spec.v
-[theories/Jasmin/examples/aes/aes_valid.v]: theories/Jasmin/examples/aes/aes_valid.v

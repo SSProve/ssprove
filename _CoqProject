@@ -1,7 +1,7 @@
 -Q theories/Mon Mon
 -Q theories/Relational Relational
 -Q theories/Crypt Crypt
--Q theories/Jasmin JasminSSProve
+# -Q theories/Jasmin JasminSSProve
 
 theories/Mon/Base.v
 theories/Mon/SPropBase.v
@@ -23,6 +23,9 @@ theories/Relational/Commutativity.v
 
 theories/Crypt/Prelude.v
 theories/Crypt/Axioms.v
+theories/Crypt/Casts.v
+theories/Crypt/jasmin_util.v
+theories/Crypt/jasmin_word.v
 theories/Crypt/choice_type.v
 
 # Categorical semantics
@@ -116,13 +119,14 @@ theories/Crypt/examples/interpreter_test.v
 theories/Crypt/examples/concrete_groups.v
 theories/Crypt/examples/PRF.v
 theories/Crypt/examples/AsymScheme.v
+theories/Crypt/examples/DDH.v
 theories/Crypt/examples/ElGamal.v
 theories/Crypt/examples/OTP.v
 theories/Crypt/examples/KEMDEM.v
 theories/Crypt/examples/RandomOracle.v
 theories/Crypt/examples/SigmaProtocol.v
 theories/Crypt/examples/Schnorr.v
-theories/Crypt/examples/DDH.v
+theories/Crypt/examples/OVN.v
 
 # Printing the axioms of all results from the paper
 theories/Crypt/Main.v

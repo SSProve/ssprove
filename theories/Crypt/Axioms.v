@@ -1,5 +1,5 @@
 Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import all_ssreflect all_algebra reals classical.boolp.
+From mathcomp Require Import all_ssreflect all_algebra reals boolp.
 Set Warnings "notation-overridden,ambiguous-paths".
 
 Local Open Scope ring_scope.
