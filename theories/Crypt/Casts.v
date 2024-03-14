@@ -1,5 +1,5 @@
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
-From mathcomp Require Import ssreflect ssrbool ssrnat choice fintype.
+From mathcomp Require Import ssreflect ssrbool ssrnat choice fintype eqtype all_algebra.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 
 From deriving Require Import deriving.
@@ -10,16 +10,31 @@ From Crypt Require Import Prelude.
 
 From HB Require Import structures.
 
+From mathcomp Require Import word_ssrZ word.
+From Crypt Require Import jasmin_word jasmin_util.
+
+Check jasmin_word.word.
+
+Set Equations With UIP.
+
+Set Bullet Behavior "Strict Subproofs".
+Set Default Goal Selector "!".
+Set Primitive Projections.
+
+Open Scope type_scope.
+
+HB.instance Definition _ nbits :=
+  [Ord of (word nbits) by <:].
+
+HB.instance Definition _ nbits :=
+  [Choice of (word nbits) by <:].
+
 (**
   Note for any of these types it would also be okay to write the cast, e.g., [(nat:choiceType)%type],
   directly in the term.
   This (backward-compatibility) file just made porting to mathcomp 2.1.0 easier.
   Just delete as soon as all references to the below casts are gone from the code base.
  *)
-
-(* From mathcomp Require Import *)
-(*   ssreflect ssrfun ssrbool ssrnat eqtype seq choice fintype generic_quotient *)
-(*   tuple. *)
 
 Definition unit_choiceType : choiceType := Datatypes.unit.
 Definition nat_choiceType : choiceType := nat.
@@ -29,6 +44,9 @@ Definition prod_choiceType (A B: choiceType) : choiceType := prod A B.
 Definition fmap_choiceType (A: ordType) (B: choiceType) : choiceType := {fmap A -> B}.
 Definition option_choiceType (A: choiceType) : choiceType := option A.
 Definition fin_choiceType (p: positive) : choiceType := ordinal p.(pos).
+Definition word_choiceType (nbits : wsize) : choiceType := word nbits.
+Definition list_choiceType (A : choiceType) : choiceType := list A.
+
 Definition sum_choiceType (A B: choiceType) : choiceType := (A + B)%type.
 
 Definition unit_ordType: ordType := Datatypes.unit.
@@ -39,6 +57,10 @@ Definition prod_ordType (A B: ordType) : ordType := prod A B.
 Definition fmap_ordType (A B: ordType) : ordType := {fmap A -> B}.
 Definition option_ordType (A: ordType) : ordType := option A.
 Definition fin_ordType (p: positive) : ordType := ordinal p.(pos).
+Definition word_ordType (nbits : wsize) : ordType := word nbits.
+Definition list_ordType (A : ordType) : ordType := list A.
+
+
 Definition sum_ordType (A B: ordType) : ordType := (A + B)%type.
 
 

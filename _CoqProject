@@ -23,10 +23,10 @@ theories/Relational/Commutativity.v
 
 theories/Crypt/Prelude.v
 theories/Crypt/Axioms.v
-theories/Crypt/Casts.v
 theories/Crypt/jasmin_util.v
 theories/Crypt/jasmin_wsize.v
 theories/Crypt/jasmin_word.v
+theories/Crypt/Casts.v
 theories/Crypt/choice_type.v
 
 # Categorical semantics
