@@ -42,7 +42,7 @@ Section Interpreter.
          nat_ch_aux (NSProd a b) (l1 × l2) (Some v1, Some v2) := Some (v1, v2) ;
          nat_ch_aux (NSProd a b) (l1 × l2) _ := None ;
       } ;
-    nat_ch_aux (NSNat n) 'word u := Some _ ;
+    nat_ch_aux (NSNat n) ('word u) := Some _ ;
     nat_ch_aux _ _ := None.
   Proof.
     - eapply @Ordinal.
@@ -75,7 +75,7 @@ Section Interpreter.
         | _ => None
       end ;
     ch_nat 'option l None := Some (NSOption None) ;
-    ch_nat 'word u x := Some (NSNat (BinInt.Z.to_nat (word.wunsigned x))) ;
+    ch_nat 'word u x := Some (NSNat (BinInt.Z.to_nat (wunsigned x))) ;
     ch_nat _ _ := None.
 
   Lemma ch_nat_ch l v:
@@ -201,7 +201,7 @@ Section Interpreter.
     instantiate (1 := ((Z.of_nat seed) mod (word.modulus (nat_of_wsize n) ))%Z).
     pose (Z.mod_bound_pos (Z.of_nat seed) (word.modulus n)
          (Zle_0_nat seed)).
-    pose (word.modulus_gt0 (word.nat_of_wsize n)).
+    pose (word.modulus_gt0 (nat_of_wsize n)).
     apply / word.iswordZP.
     apply a.
     move : i => / word_ssrZ.ltzP.
