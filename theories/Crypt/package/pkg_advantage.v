@@ -83,7 +83,7 @@ Definition Pr_op (p : raw_package) (o : opsig) (x : src o) :
 Arguments SDistr_bind {_ _}.
 
 Definition Pr (p : raw_package) :
-  SDistr (bool_choiceType) :=
+  SDistr (Datatypes_bool__canonical__choice_Choice) :=
   SDistr_bind
     (λ '(b, _), SDistr_unit _ b)
     (Pr_op p RUN Datatypes.tt empty_heap).
@@ -152,7 +152,7 @@ Qed. *)
   : package_scope. *)
 
 Definition state_pass_ {A} (p : raw_code A) :
-  heap_choiceType → raw_code (prod_choiceType A heap_choiceType).
+  heap_choiceType → raw_code (Datatypes_prod__canonical__choice_Choice A heap_choiceType).
 Proof.
   induction p; intros h.
   - constructor.
@@ -272,6 +272,75 @@ Lemma Advantage_link :
 Proof.
   intros G₀ G₁ A P.
   unfold AdvantageE. rewrite !link_assoc. reflexivity.
+Qed.
+
+Lemma Advantage_par_empty :
+  ∀ G₀ G₁ A,
+  AdvantageE (par emptym G₀) (par emptym G₁) A = AdvantageE G₀ G₁ A.
+Proof.
+  intros G₀ G₁ A.
+  unfold AdvantageE.
+  rewrite distrC.
+  reflexivity.
+Qed.
+
+Lemma Advantage_par :
+  ∀ G₀ G₁ G₁' A L₀ L₁ L₁' E₀ E₁,
+    ValidPackage L₀ Game_import E₀ G₀ →
+    ValidPackage L₁ Game_import E₁ G₁ →
+    ValidPackage L₁' Game_import E₁ G₁' →
+    flat E₁ →
+    trimmed E₀ G₀ →
+    trimmed E₁ G₁ →
+    trimmed E₁ G₁' →
+    AdvantageE (par G₀ G₁) (par G₀ G₁') A =
+    AdvantageE G₁ G₁' (A ∘ par G₀ (ID E₁)).
+Proof.
+  intros G₀ G₁ G₁' A L₀ L₁ L₁' E₀ E₁.
+  intros Va0 Va1 Va1' Fe0 Te0 Te1 Te1'.
+  replace (par G₀ G₁) with ((par G₀ (ID E₁)) ∘ (par (ID Game_import) G₁)).
+  2:{
+    erewrite <- interchange.
+    all: ssprove_valid.
+    4:{
+      ssprove_valid.
+      rewrite domm_ID_fset.
+      rewrite -fset0E.
+      apply fdisjoint0s.
+    }
+    2:{ unfold Game_import. rewrite -fset0E. discriminate. }
+    2: apply trimmed_ID.
+    rewrite link_id.
+    2:{ unfold Game_import. rewrite -fset0E. discriminate. }
+    2: assumption.
+    rewrite id_link.
+    2: assumption.
+    reflexivity.
+  }
+  replace (par G₀ G₁') with ((par G₀ (ID E₁)) ∘ (par (ID Game_import) G₁')).
+  2:{
+    erewrite <- interchange.
+    all: ssprove_valid.
+    4:{
+      ssprove_valid.
+      rewrite domm_ID_fset.
+      rewrite -fset0E.
+      apply fdisjoint0s.
+    }
+    2:{ unfold Game_import. rewrite -fset0E. discriminate. }
+    2: apply trimmed_ID.
+    rewrite link_id.
+    2:{ unfold Game_import. rewrite -fset0E. discriminate. }
+    2: assumption.
+    rewrite id_link.
+    2: assumption.
+    reflexivity.
+  }
+  rewrite -Advantage_link.
+  unfold Game_import. rewrite -fset0E.
+  rewrite Advantage_par_empty.
+  reflexivity.
+  Unshelve. all: auto.
 Qed.
 
 Lemma Advantage_sym :

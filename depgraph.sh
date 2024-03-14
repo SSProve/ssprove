@@ -61,6 +61,6 @@ fi
     # fat border around modules without clients
     gvpr -c 'N[indegree == 0]{penwidth=3}' > $fn_out.dot
 
-dot -T pdf $fn_out.dot > ${fn_out}.pdf
+dot -T svg $fn_out.dot > $fn_out.svg
 # dot -T png $fn_out.dot > $fn_out.png
 # dot -T cmap $fn_out.dot | $SED -e 's,>$,/>,' > $fn_out.map

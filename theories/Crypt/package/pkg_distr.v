@@ -87,7 +87,7 @@ Qed.
 
 Lemma card_prod_iprod :
   ∀ i j,
-    #|prod_finType (ordinal_finType i) (ordinal_finType j)| = (i * j)%N.
+    #|Datatypes_prod__canonical__fintype_Finite (fintype_ordinal__canonical__fintype_Finite i) (fintype_ordinal__canonical__fintype_Finite j)| = (i * j)%N.
 Proof.
   intros i j.
   rewrite card_prod. simpl. rewrite !card_ord. reflexivity.
@@ -95,7 +95,7 @@ Qed.
 
 Definition ch2prod {i j} `{Positive i} `{Positive j}
   (x : Arit (uniform (i * j))) :
-  prod_choiceType (Arit (uniform i)) (Arit (uniform j)).
+  Datatypes_prod__canonical__fintype_Finite (Arit (uniform i)) (Arit (uniform j)).
 Proof.
   simpl in *.
   eapply otf. rewrite card_prod_iprod.
@@ -103,7 +103,7 @@ Proof.
 Defined.
 
 Definition prod2ch {i j} `{Positive i} `{Positive j}
-  (x : prod_choiceType (Arit (uniform i)) (Arit (uniform j))) :
+  (x : Datatypes_prod__canonical__fintype_Finite (Arit (uniform i)) (Arit (uniform j))) :
   Arit (uniform (i * j)).
 Proof.
   simpl in *.
@@ -114,7 +114,7 @@ Defined.
 
 Definition ch2prod_prod2ch :
   ∀ {i j} `{Positive i} `{Positive j}
-    (x : prod_choiceType (Arit (uniform i)) (Arit (uniform j))),
+    (x : Datatypes_prod__canonical__fintype_Finite (Arit (uniform i)) (Arit (uniform j))),
     ch2prod (prod2ch x) = x.
 Proof.
   intros i j hi hj x.
@@ -148,7 +148,7 @@ Proof.
 Qed.
 
 Lemma ordinal_finType_inhabited :
-  ∀ i `{Positive i}, ordinal_finType i.
+  ∀ i `{Positive i}, fintype_ordinal__canonical__fintype_Finite i.
 Proof.
   intros i hi.
   exists 0%N. auto.

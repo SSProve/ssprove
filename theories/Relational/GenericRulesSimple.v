@@ -208,7 +208,7 @@ Section GoingPractical.
     move=> H1 H2 ; apply weaken_rule2.
     enough (c2 = skip ;; c2) as ->.
     enough (c1 = bind c1 ret) as ->.
-    apply seq_rule=> // ? ?; eapply weaken_rule2; [apply H2| cbv ;intuition].
+    apply seq_rule=> // ? ?; eapply weaken_rule2.
     rewrite /bind monad_law2 //.
     rewrite /bind monad_law1 //.
   Qed.

@@ -1,5 +1,5 @@
 Set Warnings "-notation-overridden".
-From mathcomp Require Import all_ssreflect boolp.
+From mathcomp Require Import all_ssreflect classical.boolp.
 Set Warnings "notation-overridden".
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 From Crypt Require Import ChoiceAsOrd choice_type.

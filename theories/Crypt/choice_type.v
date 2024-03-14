@@ -19,9 +19,13 @@ Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-forma
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr realsum seq all_algebra fintype.
 From mathcomp Require Import word_ssrZ word.
-From Jasmin Require Import utils word.
+(* From Jasmin Require Import utils word. *)
+From Crypt Require Import jasmin_word jasmin_util.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
-From Crypt Require Import Prelude Axioms.
+From HB Require Import structures.
+From mathcomp Require Import all_ssreflect all_algebra.
+
+From Crypt Require Import Prelude Axioms Casts.
 From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
 Require Equations.Prop.DepElim.
@@ -39,8 +43,6 @@ Open Scope fset.
 Open Scope fset_scope.
 Open Scope type_scope.
 
-(* Basic structure *)
-
 Inductive choice_type :=
 | chUnit
 | chNat
@@ -56,21 +58,18 @@ Inductive choice_type :=
 
 Derive NoConfusion NoConfusionHom for choice_type.
 
-Definition word_ordMixin nbits := [ ordMixin of word nbits by <: ].
-Canonical word_ordType nbits := Eval hnf in OrdType (word nbits) (word_ordMixin nbits).
-
 Fixpoint chElement_ordType (U : choice_type) : ordType :=
   match U with
   | chUnit => unit_ordType
   | chNat => nat_ordType
-  | chInt => Z_ordType
+  | chInt => int_ordType
   | chBool => bool_ordType
   | chProd U1 U2 => prod_ordType (chElement_ordType U1) (chElement_ordType U2)
   | chMap U1 U2 => fmap_ordType (chElement_ordType U1) (chElement_ordType U2)
   | chOption U => option_ordType (chElement_ordType U)
-  | chFin n => [ordType of ordinal n.(pos) ]
+  | chFin n =>  fin_ordType n
   | chWord nbits => word_ordType nbits
-  | chList U => seq_ordType (chElement_ordType U)
+  | chList U => list_ordType (chElement_ordType U)
   | chSum U1 U2 => sum_ordType (chElement_ordType U1) (chElement_ordType U2)
   end.
 
@@ -78,14 +77,14 @@ Fixpoint chElement (U : choice_type) : choiceType :=
   match U with
   | chUnit => unit_choiceType
   | chNat => nat_choiceType
-  | chInt => Z_choiceType
+  | chInt => int_choiceType
   | chBool => bool_choiceType
   | chProd U1 U2 => prod_choiceType (chElement U1) (chElement U2)
   | chMap U1 U2 => fmap_choiceType (chElement_ordType U1) (chElement U2)
   | chOption U => option_choiceType (chElement U)
-  | chFin n => [choiceType of ordinal n.(pos) ]
+  | chFin n => fin_choiceType n
   | chWord nbits => word_choiceType nbits
-  | chList U => seq_choiceType (chElement U)
+  | chList U => list_choiceType (chElement U)
   | chSum U1 U2 => sum_choiceType (chElement U1) (chElement U2)
   end.
 
@@ -116,17 +115,6 @@ Defined.
 
 Section choice_typeTypes.
 
-  (* Definition choice_type_indDef := [indDef for choice_type_rect]. *)
-  (* Canonical choice_type_indType := IndType choice_type choice_type_indDef. *)
-  (* Definition choice_type_eqMixin := [derive eqMixin for choice_type]. *)
-  (* Canonical choice_type_eqType := EqType choice_type choice_type_eqMixin. *)
-
-  (* Definition choice_type_eq := *)
-  (*   match choice_type_eqMixin with *)
-  (*   | EqMixin  op => op *)
-  (*   end. *)
-
-
   Fixpoint choice_type_test (u v : choice_type) : bool :=
     match u, v with
     | chNat , chNat => true
@@ -137,7 +125,8 @@ Section choice_typeTypes.
     | chMap a b , chMap a' b' => choice_type_test a a' && choice_type_test b b'
     | chOption a, chOption a' => choice_type_test a a'
     | chFin n, chFin n' => n == n'
-    | chWord nbits, chWord nbits' => nbits == nbits'
+    | chWord nbits, chWord nbits' =>
+        nbits == nbits'
     | chList a, chList b => choice_type_test a b
     | chSum a b, chSum a' b' =>  choice_type_test a a' && choice_type_test b b'
     | _ , _ => false
@@ -174,7 +163,7 @@ Section choice_typeTypes.
       + right. congruence.
     (* chFin *)
     - destruct (x1 == y1) eqn:e.
-      + move: e => /eqP e. subst. left. reflexivity.
+      + move: e => /eqP e. subst. left.  reflexivity.
       + move: e => /eqP e. right. intro h.
         apply e. inversion h. reflexivity.
     (* chWord *)
@@ -203,9 +192,7 @@ Section choice_typeTypes.
     - move: e => /choice_type_eqP []. reflexivity.
   Qed.
 
-  Canonical choice_type_eqMixin := EqMixin choice_type_eqP.
-  Canonical choice_type_eqType :=
-    Eval hnf in EqType choice_type choice_type_eqMixin.
+  HB.instance Definition _ := hasDecEq.Build choice_type choice_type_eqP.
 
   Fixpoint choice_type_lt (t1 t2 : choice_type) :=
   match t1, t2 with
@@ -229,7 +216,7 @@ Section choice_typeTypes.
   | chProd _ _, chInt => false
   | chProd u1 u2, chProd w1 w2 =>
     (choice_type_lt u1 w1) ||
-    (choice_type_test u1 w1 && choice_type_lt u2 w2)
+    (eq_op u1 w1 && choice_type_lt u2 w2)
   | chProd _ _, _ => true
   | chMap _ _, chUnit => false
   | chMap _ _, chBool => false
@@ -238,7 +225,7 @@ Section choice_typeTypes.
   | chMap _ _, chProd _ _ => false
   | chMap u1 u2, chMap w1 w2 =>
     (choice_type_lt u1 w1) ||
-    (choice_type_test u1 w1 && choice_type_lt u2 w2)
+    (eq_op u1 w1 && choice_type_lt u2 w2)
   | chMap _ _, _ => true
   | chOption _, chUnit => false
   | chOption _, chBool => false
@@ -290,11 +277,11 @@ Section choice_typeTypes.
   | chSum _ _, chList _ => false
   | chSum u1 u2, chSum w1 w2 =>
     (choice_type_lt u1 w1) ||
-    (choice_type_test u1 w1 && choice_type_lt u2 w2)
+    (eq_op u1 w1 && choice_type_lt u2 w2)
   end.
 
   Definition choice_type_leq (t1 t2 : choice_type) :=
-    choice_type_eq t1 t2 || choice_type_lt t1 t2.
+    eq_op t1 t2 || choice_type_lt t1 t2.
 
   Lemma choice_type_lt_transitive : transitive (T:=choice_type) choice_type_lt.
   Proof.
@@ -388,7 +375,7 @@ Section choice_typeTypes.
   Proof.
     intros x.
     induction x as [ | | | | x1 ih1 x2 ih2 | x1 ih1 x2 ih2 | x ih | x | x | x ih | x1 ih1 x2 ih2] in |- *.
-    all: intuition auto; simpl.
+    all: intuition; simpl.
     - simpl.
       apply/norP. split.
       + apply ih1.
@@ -411,31 +398,30 @@ Section choice_typeTypes.
 
   Lemma choice_type_lt_total_holds :
     ∀ x y,
-      ~~ (choice_type_test x y) ==> (choice_type_lt x y || choice_type_lt y x).
+      ~~ (eq_op x y) ==> (choice_type_lt x y || choice_type_lt y x).
   Proof.
-    intros x y.
-    induction x as [ | | | | x1 ih1 x2 ih2| x1 ih1 x2 ih2| x ih| x | x | x ih | x1 ih1 x2 ih2]
-    in y |- *.
-    all: try solve [ destruct y ; intuition eauto ; reflexivity ].
+    intros x.
+    induction x as [ | | | | x1 ih1 x2 ih2| x1 ih1 x2 ih2| x ih| x | x | x ih | x1 ih1 x2 ih2].
+    all: try solve [ destruct y ; auto with solve_subterm ; reflexivity ].
     (* chProd *)
-    - destruct y. all: try (intuition auto; reflexivity).
+    - destruct y. all: try (intuition; reflexivity).
       cbn.
       specialize (ih1 y1). specialize (ih2 y2).
       apply/implyP.
       move /nandP => H.
       apply/orP.
-      destruct (choice_type_test x1 y1) eqn:Heq.
-      + destruct H. 1: discriminate.
+      destruct (eq_op x1 y1) eqn:Heq.
+      + destruct H. 1:  now setoid_rewrite Heq in H.
         move: ih2. move /implyP => ih2.
         specialize (ih2 H).
         move: ih2. move /orP => ih2.
         destruct ih2.
         * left. apply/orP. right. apply/andP. split.
-          all: intuition auto.
-        * right. apply/orP. right. apply/andP. intuition auto.
+          all: intuition.
+        * right. apply/orP. right. apply/andP. intuition.
           move: Heq. move /eqP => Heq. rewrite Heq. apply/eqP. reflexivity.
       + destruct H.
-        * move: ih1. move /implyP => ih1.
+        * move: ih1. rewrite -Heq; move /implyP => ih1.
           specialize (ih1 H).
           move: ih1. move /orP => ih1.
           destruct ih1.
@@ -454,25 +440,25 @@ Section choice_typeTypes.
               +++ left. apply/orP. left. assumption.
               +++ right. apply/orP. left. assumption.
     (* chMap *)
-    - destruct y. all: try (intuition auto; reflexivity).
+    - destruct y. all: try (intuition; reflexivity).
       cbn.
       specialize (ih1 y1). specialize (ih2 y2).
       apply/implyP.
       move /nandP => H.
       apply/orP.
-      destruct (choice_type_test x1 y1) eqn:Heq.
-      + destruct H. 1: discriminate.
+      destruct (eq_op x1 y1) eqn:Heq.
+      + destruct H. 1: now setoid_rewrite Heq in H.
         move: ih2. move /implyP => ih2.
         specialize (ih2 H).
         move: ih2. move /orP => ih2.
         destruct ih2.
         * left. apply/orP. right. apply/andP. split.
-          all: intuition auto.
-        * right. apply/orP. right. apply/andP. intuition auto.
+          all: intuition.
+        * right. apply/orP. right. apply/andP. intuition.
           move: Heq. move /eqP => Heq. rewrite Heq. apply/eqP. reflexivity.
       + destruct H.
         * move: ih1. move /implyP => ih1.
-          specialize (ih1 H).
+          specialize (ih1 isT).
           move: ih1. move /orP => ih1.
           destruct ih1.
           -- left. apply/orP. left. assumption.
@@ -490,15 +476,13 @@ Section choice_typeTypes.
               +++ left. apply/orP. left. assumption.
               +++ right. apply/orP. left. assumption.
     (* chFin *)
-    - destruct y. all: try (intuition auto; reflexivity).
+    - destruct y. all: try (intuition; reflexivity).
       unfold choice_type_lt.
-      unfold choice_type_test.
       rewrite -neq_ltn.
       apply /implyP. auto.
     (* chWord *)
-    - destruct y. all: try (intuition auto; reflexivity).
+    - destruct y. all: try (intuition; reflexivity).
       unfold choice_type_lt.
-      unfold choice_type_test.
       apply /implyP.
       move => H. apply /orP.
       destruct (gcmp x nbits) eqn:E.
@@ -506,25 +490,25 @@ Section choice_typeTypes.
       + left. by apply /eqP.
       + right. unfold cmp_lt. rewrite cmp_sym. by move: E => ->.
     (* chSum *)
-    - destruct y. all: try (intuition auto; reflexivity).
+    - destruct y. all: try (intuition; reflexivity).
       cbn.
       specialize (ih1 y1). specialize (ih2 y2).
       apply/implyP.
       move /nandP => H.
       apply/orP.
-      destruct (choice_type_test x1 y1) eqn:Heq.
-      + destruct H. 1: discriminate.
+      destruct (eq_op x1 y1) eqn:Heq.
+      + destruct H. 1: now setoid_rewrite Heq in H.
         move: ih2. move /implyP => ih2.
         specialize (ih2 H).
         move: ih2. move /orP => ih2.
         destruct ih2.
         * left. apply/orP. right. apply/andP. split.
-          all: intuition auto.
-        * right. apply/orP. right. apply/andP. intuition auto.
+          all: intuition.
+        * right. apply/orP. right. apply/andP. intuition.
           move: Heq. move /eqP => Heq. rewrite Heq. apply/eqP. reflexivity.
       + destruct H.
         * move: ih1. move /implyP => ih1.
-          specialize (ih1 H).
+          specialize (ih1 isT).
           move: ih1. move /orP => ih1.
           destruct ih1.
           -- left. apply/orP. left. assumption.
@@ -550,7 +534,7 @@ Section choice_typeTypes.
     intros x y.
     apply /implyP. move => H.
     destruct (~~ choice_type_lt y x) eqn:Heq.
-    - intuition auto.
+    - intuition.
     - move: Heq. move /negP /negP => Heq.
       pose  (choice_type_lt_areflexive x) as Harefl.
       move: Harefl. apply /implyP. rewrite implyNb.
@@ -560,7 +544,7 @@ Section choice_typeTypes.
 
   Lemma choice_type_lt_total_not_holds :
     ∀ x y,
-      ~~ (choice_type_test x y) ==> (~~ (choice_type_lt x y && choice_type_lt y x)).
+      ~~ (eq_op x y) ==> (~~ (choice_type_lt x y && choice_type_lt y x)).
   Proof.
     intros x y. apply /implyP. intros Hneq.
     pose (choice_type_lt_total_holds x y) as Htot.
@@ -574,66 +558,77 @@ Section choice_typeTypes.
 
   Lemma choice_type_lt_tot :
     ∀ x y,
-      (choice_type_lt x y || choice_type_lt y x || choice_type_eq x y).
+      (choice_type_lt x y || choice_type_lt y x || eq_op x y).
   Proof.
     intros x y.
-    destruct (choice_type_eq x y) eqn:H.
-    - apply/orP. intuition auto. 
+    destruct (eq_op x y) eqn:H.
+    - apply/orP. by right.
     - apply/orP.
       left.
       unfold choice_type_eq in H.
       pose (choice_type_lt_total_holds x y).
       move: i. move /implyP => i.
       apply i. apply/negP.
-      intuition auto. move: H0. rewrite H. intuition auto.
+      intuition. move: H0. rewrite H. intuition.
   Qed.
 
-  Lemma choice_type_leqP : Ord.axioms choice_type_leq.
+  Lemma choice_type_leqxx : reflexive choice_type_leq.
   Proof.
-    split => //.
-    - intro x. unfold choice_type_leq.
-      apply/orP. left. apply /eqP. reflexivity.
-    - intros v u w h1 h2.
-      move: h1 h2. unfold choice_type_leq.
-      move /orP => h1. move /orP => h2.
-      destruct h1.
-      + move: H. move /eqP => H. destruct H.
-        apply/orP. assumption.
-      + destruct h2.
-        * move: H0. move /eqP => H0. destruct H0.
-          apply/orP. right. assumption.
-        * apply/orP. right. exact (choice_type_lt_transitive _ _ _ H H0).
-    - unfold antisymmetric.
-      move => x y. unfold choice_type_leq. move/andP => [h1 h2].
-      move: h1 h2. unfold choice_type_leq.
-      move /orP => h1. move /orP => h2.
-      destruct h1.
-      1:{ move: H. move /eqP. intuition auto. }
-      destruct h2.
-      1:{ move: H0. move /eqP. intuition auto. }
-      destruct (~~ (choice_type_test x y)) eqn:Heq.
-      + move: Heq. move /idP => Heq.
-        pose (choice_type_lt_total_not_holds x y) as Hp.
-        move: Hp. move /implyP => Hp. specialize (Hp Heq).
-        move: Hp. move /nandP => Hp.
-        destruct Hp.
-        * move: H. move /eqP /eqP => H. rewrite H in H1. simpl in H1.
-          discriminate.
-        * move: H0. move /eqP /eqP => H0. rewrite H0 in H1. simpl in H1.
-          discriminate.
-      + move: Heq. move /eqP. auto.
-    - unfold total.
-      intros x y. unfold choice_type_leq.
-      pose (choice_type_lt_tot x y).
-      move: i. move /orP => H.
-      destruct H.
-      + move: H. move /orP => H.
-        destruct H.
-        * apply/orP. left. apply/orP. right. assumption.
-        * apply/orP. right. apply/orP. right. assumption.
-      + apply/orP. left. apply/orP. left. assumption.
+    intro x. unfold choice_type_leq.
+    apply/orP. left. apply /eqP. reflexivity.
   Qed.
 
+  Lemma choice_type_leq_trans : transitive choice_type_leq.
+  Proof.
+    intros v u w h1 h2.
+    move: h1 h2. unfold choice_type_leq.
+    move /orP => h1. move /orP => h2.
+    destruct h1.
+    + move: H. move /eqP => H. destruct H.
+      apply/orP. assumption.
+    + destruct h2.
+      * move: H0. move /eqP => H0. destruct H0.
+        apply/orP. right. assumption.
+      * apply/orP. right. exact (choice_type_lt_transitive _ _ _ H H0).
+  Qed.
+
+  Lemma choice_type_leq_asym : antisymmetric choice_type_leq.
+  Proof.
+
+    unfold antisymmetric.
+    move => x y. unfold choice_type_leq. move/andP => [h1 h2].
+    move: h1 h2. unfold choice_type_leq.
+    move /orP => h1. move /orP => h2.
+    destruct h1.
+    1:{ move: H. move /eqP. intuition. }
+    destruct h2.
+    1:{ move: H0. move /eqP. intuition. }
+    destruct (~~ (eq_op x y)) eqn:Heq.
+    + move: Heq. move /idP => Heq.
+      pose (choice_type_lt_total_not_holds x y) as Hp.
+      move: Hp. move /implyP => Hp. specialize (Hp Heq).
+      move: Hp. move /nandP => Hp.
+      destruct Hp.
+      * move: H. move /eqP /eqP => H. rewrite H in H1. simpl in H1.
+        discriminate.
+      * move: H0. move /eqP /eqP => H0. rewrite H0 in H1. simpl in H1.
+        discriminate.
+    + move: Heq. move /eqP. auto.
+
+  Qed.
+
+  Lemma choice_type_leq_total : total choice_type_leq.
+    unfold total.
+    intros x y. unfold choice_type_leq.
+    pose (choice_type_lt_tot x y).
+    move: i. move /orP => H.
+    destruct H.
+    + move: H. move /orP => H.
+      destruct H.
+      * apply/orP. left. apply/orP. right. assumption.
+      * apply/orP. right. apply/orP. right. assumption.
+    + apply/orP. left. apply/orP. left. assumption.
+  Qed.
 
   Fixpoint encode (t : choice_type) : GenTree.tree nat :=
   match t with
@@ -704,12 +699,13 @@ Section choice_typeTypes.
     - rewrite IHt1. rewrite IHt2. reflexivity.
   Qed.
 
-  Definition choice_type_choiceMixin := PcanChoiceMixin codeK.
-  Canonical choice_type_choiceType :=
-    ChoiceType choice_type choice_type_choiceMixin.
+  #[short(type="choice_type_choiceMixin")]
+    HB.instance Definition _ := PCanHasChoice codeK.
 
-  Definition choice_type_ordMixin := OrdMixin choice_type_leqP.
-  Canonical choice_type_ordType :=
-    Eval hnf in OrdType choice_type choice_type_ordMixin.
-
+  HB.instance Definition _ :=
+    hasOrd.Build choice_type
+      (choice_type_leqxx)
+      (choice_type_leq_trans)
+      (choice_type_leq_asym)
+      (choice_type_leq_total).
 End choice_typeTypes.

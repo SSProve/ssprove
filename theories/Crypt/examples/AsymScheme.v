@@ -121,7 +121,7 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
   Definition i_cipher := #|Cipher|.
   Definition i_pk := #|PubKey|.
   Definition i_sk := #|SecKey|.
-  Definition i_bool := 2.
+  Definition i_bool : nat := 2.
 
   Local Open Scope package_scope.
 
@@ -307,8 +307,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
       #def #[challenge_id] (mL_mR : 'plain × 'plain) : 'cipher
       {
         count ← get counter_loc ;;
-        #assert (count == 0)%N ;;
         #put counter_loc := (count + 1)%N;;
+        #assert (count == 0)%N ;;
         '(pk, sk) ← KeyGen ;;
         #put pk_loc := pk ;;
         #put sk_loc := sk ;;
@@ -334,8 +334,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
       #def #[challenge_id] (mL_mR :  'plain × 'plain) : 'cipher
       {
         count ← get counter_loc ;;
-        #assert (count == 0)%N ;;
         #put counter_loc := (count + 1)%N;;
+        #assert (count == 0)%N ;;
         '(pk, sk) ← KeyGen ;;
         #put pk_loc := pk ;;
         #put sk_loc := sk ;;
@@ -387,8 +387,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
       #def #[challenge_id'] (m : 'plain) : 'cipher
       {
         count ← get counter_loc ;;
-        #assert (count == 0)%N ;;
         #put counter_loc := (count + 1)%N;;
+        #assert (count == 0)%N ;;
         '(pk, sk) ← KeyGen ;;
         #put pk_loc := pk ;;
         #put sk_loc := sk ;;
@@ -415,8 +415,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
       #def #[challenge_id'] (m : 'plain) : 'cipher
       {
         count ← get counter_loc ;;
-        #assert (count == 0)%N ;;
         #put counter_loc := (count + 1)%N;;
+        #assert (count == 0)%N ;;
         '(pk, sk) ← KeyGen ;;
         #put pk_loc := pk ;;
         #put sk_loc := sk ;;

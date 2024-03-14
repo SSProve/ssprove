@@ -54,6 +54,7 @@ Definition loc_type (l : Location) := l.π1.
 Coercion loc_type : Location >-> choice_type.
 
 Definition Value (t : choice_type) := chElement t.
+From HB Require Import structures.
 
 Definition Interface := {fset opsig}.
 
@@ -258,7 +259,7 @@ Section FreeModule.
   Inductive command : choiceType → Type :=
   | cmd_op o (x : src o) : command (tgt o)
   | cmd_get (ℓ : Location) : command (Value ℓ.π1)
-  | cmd_put (ℓ : Location) (v : Value ℓ.π1) : command unit_choiceType
+  | cmd_put (ℓ : Location) (v : Value ℓ.π1) : command Datatypes_unit__canonical__choice_Choice
   | cmd_sample op : command (Arit op).
 
   Definition cmd_bind {A B} (c : command A) (k : A → raw_code B) :=

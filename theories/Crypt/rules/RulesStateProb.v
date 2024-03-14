@@ -8,7 +8,7 @@ From Relational Require Import OrderEnrichedCategory
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
-  finmap.set finmap.finmap xfinmap.
+  (* finmap.set *) finmap.finmap xfinmap.
 Set Warnings "notation-overridden,ambiguous-paths".
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings Theta_dens
@@ -126,7 +126,7 @@ End RSemanticNotation.
 Import RSemanticNotation.
 #[local] Open Scope rsemantic_scope.
 
-Import finmap.set finmap.finmap xfinmap.
+Import finmap(* .set *) finmap.finmap xfinmap.
 
 Open Scope fset_scope.
 
@@ -174,7 +174,7 @@ Proof.
   rewrite /semantic_judgement /θ.
   unfold "≤". simpl.
   rewrite /MonoCont_order //=. move => [ss1 ss2] πa1a2 /=.
-  exists (SDistr_unit (F_choice_prod (npair (prod_choiceType A1 S1) (prod_choiceType A2 S2)))
+  exists (SDistr_unit (F_choice_prod (npair (Datatypes_prod__canonical__choice_Choice A1 S1) (Datatypes_prod__canonical__choice_Choice A2 S2)))
                  ((a1, ss1), (a2, ss2))).
   split.
   - rewrite /SubDistr.SDistr_obligation_1 /=.
@@ -548,8 +548,8 @@ Qed.
 (* TODO: asymmetric variants of if_rule: if_ruleL and if_ruleR *)
 
 
-Fixpoint bounded_do_while {S : choiceType}  (n : nat) (c : FrStP S bool_choiceType) :
-  FrStP S bool_choiceType :=
+Fixpoint bounded_do_while {S : choiceType}  (n : nat) (c : FrStP S bool) :
+  FrStP S bool :=
   (* false means fuel emptied, true means execution finished *)
   match n with
   | 0 => retF false
@@ -562,8 +562,8 @@ Fixpoint bounded_do_while {S : choiceType}  (n : nat) (c : FrStP S bool_choiceTy
 
 Theorem bounded_do_while_rule  {A1 A2 : ord_choiceType} {S1 S2 : choiceType}
                                {n : nat}
-                               (c1 : FrStP S1 bool_choiceType)
-                               (c2 : FrStP S2 bool_choiceType)
+                               (c1 : FrStP S1 bool)
+                               (c2 : FrStP S2 bool)
                                {inv : bool -> bool -> (S1 * S2) -> Prop}
                                {H : ⊨ ⦃ inv true true ⦄ c1 ≈ c2 ⦃ fun bs1 bs2 => (inv bs1.1 bs2.1) (bs1.2,  bs2.2) /\ bs1.1 = bs2.1 ⦄ } :
   ⊨ ⦃ inv true true ⦄
@@ -623,7 +623,7 @@ Proof.
   rewrite HeqH11. simpl in HeqH11.
   assert ((fun x : X * S1 => (A x)%:R * psum (fun w => d (x, w))) = (fun x : X * S1 => psum (fun w => (A x)%:R * d (x, w)))) as H4.
   { extensionality k. rewrite -psumZ. reflexivity.
-    case (A k); intuition. by rewrite ler01. }
+    case (A k); intuition. (* by rewrite ler01. *) }
   rewrite H4.
   assert ((fun x : Y * S2 => (B x)%:R * dsnd d x) = (fun y : Y * S2 => (B y)%:R * psum (fun w => d (w, y)))) as HeqH12.
   { extensionality K. rewrite dsndE. reflexivity. }
@@ -665,8 +665,7 @@ Proof.
     { extensionality k. destruct k as [k1 k2].
       case (B k2). reflexivity. reflexivity. }
     rewrite -Heq1.
-    pose (@summable_pr R (prod_choiceType (prod_choiceType X S1)
-                                          (prod_choiceType Y S2))
+    pose (@summable_pr R (Datatypes_prod__canonical__choice_Choice (Datatypes_prod__canonical__choice_Choice X S1) (Datatypes_prod__canonical__choice_Choice Y S2))
                                           (fun '(x, y) => B y) d).
     simpl in *. unfold nat_of_bool in s. rewrite /nat_of_bool. exact s.
     (* summable A *)
@@ -676,8 +675,7 @@ Proof.
     { extensionality k. destruct k as [k1 k2].
       case (B k2). reflexivity. reflexivity. }
     rewrite -Heq2.
-    pose (@summable_pr R (prod_choiceType (prod_choiceType X S1)
-                                          (prod_choiceType Y S2))
+    pose (@summable_pr R ((X * S1) *(Y * S2))%type
                                           (fun '(x, y) => A x) d).
     simpl in *. unfold nat_of_bool in s. rewrite /nat_of_bool. exact s.
 Qed.
@@ -783,7 +781,7 @@ Proof.
   clear Hpsum.
   eapply neq0_psum in Hpsum'. destruct Hpsum'.
   apply aux_domain in H.
-  destruct (eqType_lem  bool_eqType ((x,x) == (a1,a2)) true) as [Houi | Hnon].
+  destruct (eqType_lem  bool ((x,x) == (a1,a2)) true) as [Houi | Hnon].
   move: Houi => /eqP Houi. move: Houi => [H1 H2]. rewrite -H1 -H2. reflexivity.
   have Hnon' : (x,x) == (a1,a2) = false.
     destruct ((x,x) == (a1,a2)). contradiction. reflexivity.
@@ -806,19 +804,19 @@ Qed.
 
 Definition dsym { A B : ord_choiceType } { S1 S2 : choiceType } (d : SDistr_carrier
           (F_choice_prod_obj
-             ⟨ Choice.Pack {| Choice.base := prod_eqMixin B S2; Choice.mixin := prod_choiceMixin B S2 |},
-               Choice.Pack {| Choice.base := prod_eqMixin A S1; Choice.mixin := prod_choiceMixin A S1 |} ⟩)) :
+             ⟨ Choice.Pack (Choice.class (Datatypes_prod__canonical__choice_Choice B S2)),
+               Choice.Pack (Choice.class (Datatypes_prod__canonical__choice_Choice A S1)) ⟩)) :
 SDistr_carrier
           (F_choice_prod_obj
-             ⟨ Choice.Pack {| Choice.base := prod_eqMixin A S1; Choice.mixin := prod_choiceMixin A S1 |},
-               Choice.Pack {| Choice.base := prod_eqMixin B S2; Choice.mixin := prod_choiceMixin B S2 |} ⟩) :=
+             ⟨ Choice.Pack (Choice.class (Datatypes_prod__canonical__choice_Choice A S1)),
+               Choice.Pack (Choice.class (Datatypes_prod__canonical__choice_Choice B S2)) ⟩) :=
 dswap d.
 
 
 Lemma dsym_coupling { A B : ord_choiceType } { S1 S2 : choiceType } { d : SDistr_carrier
           (F_choice_prod_obj
-             ⟨ Choice.Pack {| Choice.base := prod_eqMixin B S2; Choice.mixin := prod_choiceMixin B S2 |},
-               Choice.Pack {| Choice.base := prod_eqMixin A S1; Choice.mixin := prod_choiceMixin A S1 |} ⟩) }
+             ⟨ Choice.Pack (Choice.class (Datatypes_prod__canonical__choice_Choice B S2)),
+               Choice.Pack (Choice.class (Datatypes_prod__canonical__choice_Choice A S1)) ⟩) }
       {d1 d2 }
       (Hcoupling : coupling d d1 d2) : coupling (dsym d) d2 d1.
 Proof.
@@ -899,7 +897,7 @@ Lemma  smMonEqu1
 (r : A1 -> A2 -> FrStP S B) (c1 : FrStP S A1) (c2 : FrStP S A2) :
 (a2 ∈ choice_incl A2 <<- c2;; a1 ∈ choice_incl A1 <<- c1;; (r a1 a2))
 =
-(a ∈ choice_incl (prod_choiceType A1 A2) <<-
+(a ∈ choice_incl (Datatypes_prod__canonical__choice_Choice A1 A2) <<-
         (a2 ∈ choice_incl A2 <<- c2;; a1 ∈ choice_incl A1 <<- c1;; retF (a1, a2));;
         r a.1 a.2).
 Proof.
@@ -929,7 +927,7 @@ Lemma  smMonEqu2
 (r : A1 -> A2 -> FrStP S B) (c1 : FrStP S A1) (c2 : FrStP S A2) :
 (a1 ∈ choice_incl A1 <<- c1;; a2 ∈ choice_incl A2 <<- c2;; (r a1 a2))
 =
-(a ∈ choice_incl (prod_choiceType A1 A2) <<-
+(a ∈ choice_incl (Datatypes_prod__canonical__choice_Choice A1 A2) <<-
         (a1 ∈ choice_incl A1 <<- c1;; a2 ∈ choice_incl A2 <<- c2;; retF (a1, a2));;
         r a.1 a.2).
 Proof.
@@ -990,12 +988,12 @@ Lemma some_commutativity
   (s : S) :
 θ_dens
   (θ0
-     (a ∈ choice_incl (prod_choiceType A1 A2) <<-
+     (a ∈ choice_incl (Datatypes_prod__canonical__choice_Choice A1 A2) <<-
       (a1 ∈ choice_incl A1 <<- c1;; a2 ∈ choice_incl A2 <<- c2;; retF (a1, a2));;
       r a.1 a.2) s) =
 θ_dens
   (θ0
-     (a ∈ choice_incl (prod_choiceType A1 A2) <<-
+     (a ∈ choice_incl (Datatypes_prod__canonical__choice_Choice A1 A2) <<-
       (a2 ∈ choice_incl A2 <<- c2;; a1 ∈ choice_incl A1 <<- c1;; retF (a1, a2));;
       r a.1 a.2) s).
 Proof.
@@ -1003,7 +1001,7 @@ Proof.
   pose ( p12 :=
 (a1 ∈ choice_incl A1 <<- c1;; a2 ∈ choice_incl A2 <<- c2;; retF (a1, a2)) ).
   assert (θ0_comm :
-(θ0 (a ∈ choice_incl (prod_choiceType A1 A2) <<- p12 ;; r a.1 a.2) s)
+(θ0 (a ∈ choice_incl (Datatypes_prod__canonical__choice_Choice A1 A2) <<- p12 ;; r a.1 a.2) s)
 =
 (ord_relmon_bind Frp_fld)^~(θ0 p12 s)
   (fun xs' => let (x,s'):= xs' in θ0 (r x.1 x.2) s') ).
@@ -1024,7 +1022,7 @@ Proof.
   pose ( p21 :=
 (a2 ∈ choice_incl A2 <<- c2;; a1 ∈ choice_incl A1 <<- c1;; retF (a1, a2)) ).
   assert (θ0_comm :
-(θ0 (a ∈ choice_incl (prod_choiceType A1 A2) <<- p21 ;; r a.1 a.2) s)
+(θ0 (a ∈ choice_incl (Datatypes_prod__canonical__choice_Choice A1 A2) <<- p21 ;; r a.1 a.2) s)
 =
 (ord_relmon_bind Frp_fld)^~(θ0 p21 s)
   (fun xs' => let (x,s'):= xs' in θ0 (r x.1 x.2) s') ).
@@ -1045,7 +1043,7 @@ Proof.
   (*next we apply bind preservation of θ_dens*)
   unshelve etransitivity.
     cbn. unshelve eapply (ord_relmon_bind SDistr).
-    - exact ( prod_choiceType (prod_choiceType A1 A2 ) S ).
+    - exact ( Datatypes_prod__canonical__choice_Choice (Datatypes_prod__canonical__choice_Choice A1 A2 ) S ).
     - move=> [x s'].  exact ( θ_dens (θ0 (r x.1 x.2) s' ) ).
     - exact (θ_dens (θ0 p12 s)).
   unfold θ_dens at 1.
@@ -1131,6 +1129,7 @@ Proof.
        apply Hcomm.
   -  rewrite (@smMonEqu2 A1 A2 B S r c1 c2).
      move=> s.
+     pose some_commutativity.
      unshelve erewrite <- some_commutativity. exact post.
      reflexivity.
        apply HR.
@@ -1428,7 +1427,7 @@ Qed.
 
 Lemma θ_dens_vs_bind' {X Y : choiceType}
 (m : Frp  X )
-(k : X -> Frp (prod_choiceType Y S)) :
+(k : X -> Frp (Datatypes_prod__canonical__choice_Choice Y S)) :
 θ_dens (bindrFree m k) =
 (dnib SDistr) (fun xs => θ_dens (k xs)) (utheta_dens_fld _ m).
 Proof.
@@ -1439,7 +1438,7 @@ Proof.
   pose bla :=
 rmm_law2 _ _ _ _
 (@Theta_dens.unary_theta_dens)
-X (prod_choiceType Y S) k.
+X (Datatypes_prod__canonical__choice_Choice Y S) k.
   rewrite /= in bla.
   unshelve eapply equal_f in bla. exact m.
   rewrite /=. assumption.
@@ -1500,9 +1499,9 @@ unshelve eassert (eq_cont :
                 (OrderEnrichedRelativeAdjunctions.KleisliLeftAdjoint Frp) A),
        utheta_dens_fld
          (F_choice_prod_obj
-            ⟨ ord_functor_id ord_choiceType (prod_choiceType A (Arst (op_iota o))),
+            ⟨ ord_functor_id ord_choiceType (Datatypes_prod__canonical__choice_Choice A (Arst (op_iota o))),
             OrderEnrichedRelativeAdjunctionsExamples.mkConstFunc ord_choiceType ord_choiceType S
-              (prod_choiceType A (Arst (op_iota o))) ⟩)
+              (Datatypes_prod__canonical__choice_Choice A (Arst (op_iota o))) ⟩)
          (let (a, sc) := x in bindrFree sploP (λ r : choice_incl (Ar o), retrFree (a, r, sc))))
 =
 fun x => let (a,sc) := x in
@@ -1534,7 +1533,7 @@ Proof.
   rewrite /mlet /=.
   transitivity
 (psum
-  (fun x0 : X => psum (fun x1 : Y => p x0 * q x1 * dunit (T:=prod_choiceType X Y) (x0, x1) (x, y)))).
+  (fun x0 : X => psum (fun x1 : Y => p x0 * q x1 * dunit (T:=Datatypes_prod__canonical__choice_Choice X Y) (x0, x1) (x, y)))).
 {
   apply eq_psum. move=> x0. rewrite -psumZ /=.
   apply eq_psum. move=> y0 /=.
@@ -1544,7 +1543,7 @@ Proof.
   symmetry.
   transitivity
 (psum
-  (fun x0 : Y => psum (fun x1 : X => p x1 * q x0 * dunit (T:=prod_choiceType X Y) (x1, x0) (x, y)))).
+  (fun x0 : Y => psum (fun x1 : X => p x1 * q x0 * dunit (T:=Datatypes_prod__canonical__choice_Choice X Y) (x1, x0) (x, y)))).
 {
     apply eq_psum. move=> y0. rewrite -psumZ /=.
     apply eq_psum. move=> x0 /=.
@@ -1586,7 +1585,7 @@ Proof.
   destruct p as [pmap p_0 p_sum p_1]. apply p_0.
   apply (
   summable_mu_wgtd (T:=X)
-  (f:=fun x0 => psum (fun y0 : Y => q y0 * dunit (T:=prod_choiceType X Y) (x0, y0) (x, y))) p).
+  (f:=fun x0 => psum (fun y0 : Y => q y0 * dunit (T:=Datatypes_prod__canonical__choice_Choice X Y) (x0, y0) (x, y))) p).
   move=> x0. apply /andP. split.
   apply ge0_psum.
   unshelve eapply Order.POrderTheory.le_trans.

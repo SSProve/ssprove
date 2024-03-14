@@ -6,7 +6,7 @@ Set Warnings "-notation-overridden,-ambiguous-paths,-notation-incompatible-forma
 From mathcomp Require Import all_ssreflect fingroup.fingroup fintype
      eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-format".
-
+From HB Require Import structures.
 From deriving Require Import deriving.
 
 Set Bullet Behavior "Strict Subproofs".
@@ -42,29 +42,45 @@ Module Z2_manual.
     ltac:(move => [|] [|];
             try solve [ right ; discriminate ];
             try solve [ left ; reflexivity ]).
+(*
   Definition Z2_eqMixin := EqMixin Z2_eqP.
   Canonical Z2_eqType : eqType :=
     Eval hnf in EqType Z2 Z2_eqMixin.
+*)
+  Definition Z2_hasDecEq := hasDecEq.Build Z2 Z2_eqP.
+  HB.instance Definition _ := Z2_hasDecEq.
 
   Definition Z2_pickle x : nat := match x with z => 0 | o => 1 end.
   Definition Z2_unpickle (x : nat) := match x with 0 => Some z | 1 => Some o | _ => None end.
   Lemma Z2_p_u_cancel : @pcancel nat Z2 Z2_pickle Z2_unpickle.
   Proof. move => [|] //. Qed.
 
+  (*
   Definition Z2_choiceMixin := PcanChoiceMixin Z2_p_u_cancel.
   Canonical Z2_choiceType := ChoiceType Z2 Z2_choiceMixin.
+   *)
+  HB.instance Definition _ := Choice.copy Z2 (pcan_type Z2_p_u_cancel).
 
+  (*
   Definition Z2_countMixin := @choice.Countable.Mixin Z2 Z2_pickle Z2_unpickle Z2_p_u_cancel.
   Canonical Z2_countType := Eval hnf in CountType Z2 Z2_countMixin.
+   *)
+  Definition Z2_hasCountable := isCountable.Build Z2 Z2_p_u_cancel.
+  HB.instance Definition _ := Z2_hasCountable.
 
   Definition Z2_enum : seq Z2 := [:: z; o].
   Lemma Z2_enum_uniq : uniq Z2_enum.
   Proof. reflexivity. Qed.
   Lemma mem_Z2_enum i : i \in Z2_enum.
   Proof. destruct i; reflexivity. Qed.
+
+  (*
   Definition Z2_finMixin :=
     Eval hnf in UniqFinMixin Z2_enum_uniq mem_Z2_enum.
   Canonical Z2_finType := Eval hnf in FinType Z2 Z2_finMixin.
+   *)
+  Definition Z2_isFinite := isFinite.Build Z2 (Finite.uniq_enumP Z2_enum_uniq mem_Z2_enum).
+  HB.instance Definition _ := Z2_isFinite.
 
   Lemma assoc_add : associative add.
   Proof. move => [|] [|] [|] //. Qed.
@@ -75,16 +91,26 @@ Module Z2_manual.
   Lemma Z2_invgM : {morph inv : a b / add a b >-> add b a}.
   Proof. move => [|] [|] //. Qed.
 
+  (*
   Definition Z2_finGroupBaseMixin :=
     FinGroup.BaseMixin assoc_add lid inv_inv Z2_invgM.
 
   Canonical Z2_BaseFinGroupType :=
     BaseFinGroupType Z2 Z2_finGroupBaseMixin.
+   *)
+
+  Definition Z2_isMulBaseGroup := isMulBaseGroup.Build Z2 assoc_add lid inv_inv Z2_invgM.
+  HB.instance Definition _ := Z2_isMulBaseGroup.
 
   Definition linv : left_inverse z inv add.
   Proof. move => [|] //. Qed.
 
+  (*
   Canonical Z2_finGroup : finGroupType := FinGroupType linv.
+   *)
+
+  Definition Z2_BaseFinGroup_isGroup := BaseFinGroup_isGroup.Build Z2 linv.
+  HB.instance Definition _ := Z2_BaseFinGroup_isGroup.
 
 End Z2_manual.
 
@@ -104,17 +130,30 @@ Module Z2_bool.
   Lemma bool_invgM : {morph invb : a b / addb a b >-> addb b a}.
   Proof. move => [|] [|] //. Qed.
 
+  (*
   Definition bool_finGroupBaseMixin :=
     FinGroup.BaseMixin assoc_addb lidb inv_invb bool_invgM.
 
   Canonical bool_BaseFinGroupType :=
     BaseFinGroupType bool bool_finGroupBaseMixin.
+   *)
+
+  Definition bool_isMulBaseGroup := isMulBaseGroup.Build bool assoc_addb lidb inv_invb bool_invgM.
+  HB.instance Definition _ := bool_isMulBaseGroup.
+
   Definition linvb : left_inverse false invb addb.
   Proof. move => [|] //. Qed.
 
+  (*
   Canonical bool_finGroup : finGroupType := FinGroupType linvb.
+   *)
+
+  Definition bool_BaseFinGroup_isGroup := BaseFinGroup_isGroup.Build bool linvb.
+  HB.instance Definition _ := bool_BaseFinGroup_isGroup.
+
 End Z2_bool.
 
+(* TODO
 Section Z3_deriving.
   (* Construction of Z3 using deriving but not the fingroup mixin. *)
   Inductive Z3 := z | o | t.
@@ -159,7 +198,9 @@ Section Z3_deriving.
 
   Canonical Z3_finGroup : finGroupType := FinGroupType linv.
 End Z3_deriving.
+*)
 
+(* TODO Is this still needed? - Update or delete.
 Module Z2.
   (* Minimal (?) construction of Z2 using the fingroup mixin. *)
   Definition invb x : bool := x.
@@ -172,7 +213,9 @@ Module Z2.
   Canonical bool_finGroup := BaseFinGroupType _ (FinGroup.Mixin assoc_xorb lidb linvb).
   Canonical Z2_finGroup : finGroupType := FinGroupType linvb.
 End Z2.
+*)
 
+(* TODO
 Module Z3.
   (* Z3 using the fingroup mixin and deriving. *)
   Inductive Z3 := z | o | t.
@@ -208,3 +251,4 @@ Module Z3.
   Canonical Z3_BaseFinGroupType := BaseFinGroupType _ (FinGroup.Mixin assoc_add lid linv).
   Canonical Z3_finGroup : finGroupType := FinGroupType linv.
 End Z3.
+*)

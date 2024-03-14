@@ -82,7 +82,7 @@ Section OrdCat.
     apply Hx. apply GX.
   Qed.
   Next Obligation. cbv ; intuition. Qed.
-  Next Obligation. cbv ; intuition. apply H3; apply H2 => //. Qed.
+  Next Obligation. cbv ; intuition. apply H0; apply H => //. Qed.
   Next Obligation.
     cbv ; intuition; etransitivity; first (apply: x∙2; apply: H0).
     apply: H.

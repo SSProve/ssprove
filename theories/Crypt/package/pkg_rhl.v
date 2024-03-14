@@ -165,7 +165,7 @@ Proof.
   match goal with
   | |- realsum.summable ?f => eassert (f = _) as Hf end.
   { extensionality x.
-    apply (destruct_pair_eq (a:= f1 x) (b:=f3 x) (c:= f2 x) (d := f4 x)). }
+    exact (destruct_pair_eq (a:= f1 x) (b:=f3 x) (c:= f2 x) (d := f4 x)). }
   rewrite Hf.
   apply realsum.summableM. all: assumption.
 Qed.
@@ -472,8 +472,8 @@ Proof.
   unfold SDistr_bind. unfold SDistr_unit.
   rewrite !dletE.
   assert (
-    ∀ x : bool_choiceType * heap_choiceType,
-      ((let '(b, _) := x in dunit (R:=R) (T:=bool_choiceType) b) true) ==
+    ∀ x : Datatypes_bool__canonical__choice_Choice * heap_choiceType,
+      ((let '(b, _) := x in dunit (R:=R) (T:=Datatypes_bool__canonical__choice_Choice) b) true) ==
       (x.1 == true)%:R
   ) as h1.
   { intros [b s].
@@ -481,8 +481,8 @@ Proof.
   }
   assert (
     ∀ y,
-      (λ x : prod_choiceType (tgt RUN) heap_choiceType, (y x) * (let '(b, _) := x in dunit (R:=R) (T:=tgt RUN) b) true) =
-      (λ x : prod_choiceType (tgt RUN) heap_choiceType, (x.1 == true)%:R * (y x))
+      (λ x : Datatypes_prod__canonical__choice_Choice (tgt RUN) heap_choiceType, (y x) * (let '(b, _) := x in dunit (R:=R) (T:=tgt RUN) b) true) =
+      (λ x : Datatypes_prod__canonical__choice_Choice (tgt RUN) heap_choiceType, (x.1 == true)%:R * (y x))
   ) as Hrew.
 
   { intros y. extensionality x.
@@ -580,8 +580,8 @@ Proof.
   unfold SDistr_bind. unfold SDistr_unit.
   rewrite !dletE.
   assert (
-    ∀ x : bool_choiceType * heap_choiceType,
-      ((let '(b, _) := x in dunit (R:=R) (T:=bool_choiceType) b) true) ==
+    ∀ x : Datatypes_bool__canonical__choice_Choice * heap_choiceType,
+      ((let '(b, _) := x in dunit (R:=R) (T:=Datatypes_bool__canonical__choice_Choice) b) true) ==
       (x.1 == true)%:R
   ) as h1.
   { intros [b s].
@@ -589,8 +589,8 @@ Proof.
   }
   assert (
     ∀ y,
-      (λ x : prod_choiceType (tgt RUN) heap_choiceType, (y x) * (let '(b, _) := x in dunit (R:=R) (T:=tgt RUN) b) true) =
-      (λ x : prod_choiceType (tgt RUN) heap_choiceType, (x.1 == true)%:R * (y x))
+      (λ x : Datatypes_prod__canonical__choice_Choice (tgt RUN) heap_choiceType, (y x) * (let '(b, _) := x in dunit (R:=R) (T:=tgt RUN) b) true) =
+      (λ x : Datatypes_prod__canonical__choice_Choice (tgt RUN) heap_choiceType, (x.1 == true)%:R * (y x))
   ) as Hrew.
   { intros y. extensionality x.
     destruct x as [x1 x2].
@@ -984,6 +984,29 @@ Proof.
   eapply swap_ruleL. all: eauto.
 Qed.
 
+Lemma rswap_helper :
+  forall {A₀ A₁ B : ord_choiceType}
+    (c₀ : raw_code A₀) (c₁ : raw_code A₁) (r : A₀ → A₁ → raw_code B),
+    ((a1 ∈ choice_incl A₀ <<- repr c₀;;
+      a2 ∈ choice_incl A₁ <<- repr c₁;; (λ (a₀ : A₀) (a₁ : A₁), repr (r a₀ a₁)) a1 a2) =
+       bindrFree (repr c₀) (λ a : A₀, repr (a₁ ← c₁ ;; r a a₁))).
+Proof.
+  intros.
+  unfold RulesStateProb.bindF.
+  simpl.
+  unfold FreeProbProg.rFree_obligation_2.
+
+  assert ((λ a1 : A₀, bindrFree (repr c₁) (λ a2 : A₁, repr (r a1 a2))) = (λ a : A₀, repr (a₁ ← c₁ ;;
+                                                                                          r a a₁))).
+  { extensionality a.
+    rewrite repr_bind.
+    simpl.
+    reflexivity.
+  }
+  rewrite H.
+  reflexivity.
+Qed.
+
 Theorem rswap_ruleR :
   ∀ {A₀ A₁ B : ord_choiceType} {post : postcond B B}
     (c₀ : raw_code A₀) (c₁ : raw_code A₁) (r : A₀ → A₁ → raw_code B),
@@ -1001,13 +1024,18 @@ Proof.
   intros A₀ A₁ B post c₀ c₁ r postr hr h.
   eapply from_sem_jdg.
   repeat setoid_rewrite repr_bind. simpl.
-  eapply (swap_ruleR (λ a₀ a₁, repr (r a₀ a₁)) (repr c₀) (repr c₁)).
+  rewrite <- rswap_helper.
+  rewrite <- rswap_helper.
+  apply (@swap_ruleR A₀ A₁ B _ post (λ a₀ a₁, repr (r a₀ a₁)) (repr c₀) (repr c₁)).
   - intros. eapply to_sem_jdg. apply hr.
   - apply postr.
-  - intro s.
+  - clear -h.
+    intro s.
     unshelve eapply coupling_eq.
     + exact (λ '(h₀, h₁), h₀ = h₁).
     + eapply to_sem_jdg in h. repeat setoid_rewrite repr_bind in h.
+      rewrite <- rswap_helper in h.
+      rewrite <- rswap_helper in h.
       apply h.
     + reflexivity.
 Qed.
@@ -1958,6 +1986,30 @@ Proof.
     eapply restore_update_mem. all: eauto.
 Qed.
 
+Lemma rswap_cmd_helper :
+  forall {A₀ A₁ B : ord_choiceType}
+    (c₀ : command A₀) (c₁ : command A₁) (r : A₀ → A₁ → raw_code B),
+    ((a1 ∈ choice_incl A₀ <<- repr_cmd c₀;;
+      a2 ∈ choice_incl A₁ <<- repr_cmd c₁;; (λ (a₀ : A₀) (a₁ : A₁), repr (r a₀ a₁)) a1 a2) =
+       bindrFree (repr_cmd c₀) (λ a : A₀, repr (a₁ ← cmd c₁ ;; r a a₁))).
+Proof.
+  intros.
+  unfold RulesStateProb.bindF.
+  simpl.
+  unfold FreeProbProg.rFree_obligation_2.
+
+  assert ((λ a1 : A₀, bindrFree (repr_cmd c₁) (λ a2 : A₁, repr (r a1 a2))) = (λ a : A₀, repr (a₁ ← cmd c₁ ;;
+                                                                                          r a a₁))).
+  { extensionality a.
+    rewrite repr_cmd_bind.
+    simpl.
+    reflexivity.
+  }
+  rewrite H.
+  reflexivity.
+Qed.
+
+
 Lemma rswap_cmd :
   ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
     (c₀ : command A₀) (c₁ : command A₁)
@@ -1976,6 +2028,8 @@ Proof.
   intros A₀ A₁ B post c₀ c₁ r hpost hr h.
   eapply from_sem_jdg.
   repeat setoid_rewrite repr_cmd_bind.
+  rewrite <- rswap_cmd_helper.
+  rewrite <- rswap_cmd_helper.
   eapply (swap_ruleR (λ a₀ a₁, repr (r a₀ a₁)) (repr_cmd c₀) (repr_cmd c₁)).
   - intros a₀ a₁. eapply to_sem_jdg. eapply hr.
   - intros ? ? []. eauto.
@@ -1983,7 +2037,9 @@ Proof.
     + exact: (λ '(h1, h2), h1 = h2).
     + eapply to_sem_jdg in h.
       repeat (setoid_rewrite repr_cmd_bind in h).
-      auto.
+      rewrite <- rswap_cmd_helper in h.
+      rewrite <- rswap_cmd_helper in h.
+      apply h.
     + reflexivity.
 Qed.
 
@@ -2009,6 +2065,53 @@ Proof.
   - auto.
 Qed.
 
+
+Lemma rswap_helper_cmd :
+  forall {A₀ A₁ B : ord_choiceType}
+    (c₀ : command A₀) (c₁ : raw_code A₁) (r : A₀ → A₁ → raw_code B),
+    ((a1 ∈ choice_incl A₀ <<- repr_cmd c₀;;
+      a2 ∈ choice_incl A₁ <<- repr c₁;; (λ (a₀ : A₀) (a₁ : A₁), repr (r a₀ a₁)) a1 a2) =
+       bindrFree (repr_cmd c₀) (λ a : A₀, repr (a₁ ← c₁ ;; r a a₁))).
+Proof.
+  intros.
+  unfold RulesStateProb.bindF.
+  simpl.
+  unfold FreeProbProg.rFree_obligation_2.
+
+  assert ((λ a1 : A₀, bindrFree (repr c₁) (λ a2 : A₁, repr (r a1 a2))) = (λ a : A₀, repr (a₁ ← c₁ ;;
+                                                                                          r a a₁))).
+  { extensionality a.
+    rewrite repr_bind.
+    simpl.
+    reflexivity.
+  }
+  rewrite H.
+  reflexivity.
+Qed.
+
+Lemma rswap_repr_cmd_helper :
+  forall {A₀ A₁ B : ord_choiceType}
+    (c₀ : raw_code A₀) (c₁ : command A₁) (r : A₀ → A₁ → raw_code B),
+    ((a1 ∈ choice_incl A₀ <<- repr c₀;;
+      a2 ∈ choice_incl A₁ <<- repr_cmd c₁;; (λ (a₀ : A₀) (a₁ : A₁), repr (r a₀ a₁)) a1 a2) =
+       bindrFree (repr c₀) (λ a : A₀, repr (a₁ ← cmd c₁ ;; r a a₁))).
+Proof.
+  intros.
+  unfold RulesStateProb.bindF.
+  simpl.
+  unfold FreeProbProg.rFree_obligation_2.
+
+  assert ((λ a1 : A₀, bindrFree (repr_cmd c₁) (λ a2 : A₁, repr (r a1 a2))) = (λ a : A₀, repr (a₁ ← cmd c₁ ;;
+                                                                                          r a a₁))).
+  { extensionality a.
+    rewrite repr_cmd_bind.
+    simpl.
+    reflexivity.
+  }
+  rewrite H.
+  reflexivity.
+Qed.
+
 Lemma rswap_cmd_bind_eq :
   ∀ {A₀ A₁ B : choiceType} c₀ c₁ (r : A₀ → A₁ → raw_code B),
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
@@ -2022,8 +2125,10 @@ Lemma rswap_cmd_bind_eq :
 Proof.
   intros A₀ A₁ B c₀ c₁ r h.
   eapply from_sem_jdg. simpl.
-  setoid_rewrite repr_cmd_bind. setoid_rewrite repr_bind.
-  simpl. setoid_rewrite repr_cmd_bind.
+  setoid_rewrite repr_cmd_bind. rewrite repr_bind.
+  rewrite <- rswap_helper_cmd.
+  rewrite <- rswap_repr_cmd_helper.
+  simpl.
   eapply (swap_ruleR (λ a₀ a₁, repr (r a₀ a₁)) (repr_cmd c₀) (repr c₁)).
   - intros a₀ a₁. eapply to_sem_jdg.
     apply rsym_pre. 1: auto.
@@ -2033,8 +2138,10 @@ Proof.
     + exact: (λ '(h₀, h₁), h₀ = h₁).
     + eapply to_sem_jdg in h.
       setoid_rewrite repr_cmd_bind in h. simpl in h.
+      rewrite <- rswap_helper_cmd in h.
       setoid_rewrite repr_bind in h. simpl in h.
-      setoid_rewrite repr_cmd_bind in h. simpl in h.
+      rewrite <- rswap_repr_cmd_helper in h.
+      simpl in h.
       auto.
     + reflexivity.
 Qed.
@@ -2064,7 +2171,18 @@ Proof.
     rewrite bind_assoc in h.
     rewrite bind_cmd_bind in h.
     setoid_rewrite bind_cmd_bind in h.
-    setoid_rewrite bind_assoc in h.
+    simpl in h.
+    replace
+      (x ← cmd _ ;;
+     pat ← (a₀ ← c₀ ;;
+            ret (a₀, x)) ;;
+     (let '(x0, y) := pat in ret (y, x0)))
+      with
+      (x ← cmd c₁ ;;
+       a₀ ← c₀ ;;
+       pat ← ret (a₀, x) ;;
+       (let '(x0, y) := pat in ret (y, x0))) in h by (f_equal ; extensionality x ; now rewrite bind_assoc).
+    (* setoid_rewrite bind_assoc in h. *)
     simpl in h.
     apply rsymmetry. apply rsym_pre. 1: auto.
     eapply rpost_weaken_rule. 1: eauto.
@@ -2089,6 +2207,8 @@ Proof.
   intros A₀ A₁ B post c₀ c₁ r postr hr h.
   eapply from_sem_jdg.
   repeat setoid_rewrite repr_cmd_bind. simpl.
+  rewrite <- rswap_cmd_helper.
+  rewrite <- rswap_cmd_helper.
   eapply (swap_ruleR (λ a₀ a₁, repr (r a₀ a₁)) (repr_cmd c₀) (repr_cmd c₁)).
   - intros. eapply to_sem_jdg. apply hr.
   - apply postr.
@@ -2096,6 +2216,8 @@ Proof.
     unshelve eapply coupling_eq.
     + exact (λ '(h₀, h₁), h₀ = h₁).
     + eapply to_sem_jdg in h. repeat setoid_rewrite repr_cmd_bind in h.
+      rewrite <- rswap_cmd_helper in h.
+      rewrite <- rswap_cmd_helper in h.
       apply h.
     + reflexivity.
 Qed.
@@ -2382,7 +2504,7 @@ Section Uniform_prod.
       destruct (ch2prod u == (a,b)) eqn:e.
       2:{
         exfalso.
-        move: hu => /negP hu. apply hu. apply eqxx.
+        move: hu => /negP hu. apply hu. rewrite e. apply eqxx.
       }
       move: e => /eqP e. rewrite -e.
       rewrite inE. apply /eqP. symmetry. apply prod2ch_ch2prod.

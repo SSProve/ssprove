@@ -25,12 +25,12 @@ Local Open Scope Z.
 
 Ltac neq_loc_auto ::= solve [ eapply injective_translate_var3; auto | eapply injective_translate_var2; auto ].
 
-Lemma rcon_E id0 pre i :
+Lemma rcon_E (id0 : p_id) pre (i : Z) :
   (pdisj pre id0 fset0) ->
   (forall s0 s1, pre (s0, s1) -> (1 <= i < 11)%Z) ->
   ⊢ ⦃ fun '(s0, s1) => pre (s0, s1) ⦄ JRCON id0 i
     ≈ ret tt
-    ⦃ fun '(v0, s0) '(v1, s1) => pre (s0, s1) /\ exists o, v0 = [('int ; o)] /\ o = wunsigned (rcon i) ⦄.
+    ⦃ fun '(v0, s0) '(v1, s1) => pre (s0, s1) /\ exists (o : (λ i0 : Choice.sort choice_type_choiceType, Choice.sort (chElement i0)) 'int), v0 = [('int ; o)] /\ o = wunsigned (rcon i) ⦄.
 Proof.
   unfold JRCON.
   unfold get_translated_static_fun.
@@ -263,7 +263,7 @@ Lemma keyExpansion_E pre id0 rkey :
     JKEYS_EXPAND id0 rkey
     ≈
     keyExpansion rkey
-    ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) /\ exists o, v0 = [( 'array ; o)] /\ to_arr U128 (mkpos 11) o = v1 ⦄.
+    ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) /\ exists o, v0 = [( 'array ; o)] /\ to_arr U128 (Zpos 11) o = v1 ⦄.
 Proof.
   intros disj.
   unfold JKEYS_EXPAND, get_translated_static_fun, translate_prog_static, translate_funs_static, translate_call_body.
@@ -294,7 +294,7 @@ Proof.
         (I := fun i => fun '(h0, h1) => pre (h0, h1)
                                         /\ word.subword 0 U32 (get_heap h0 temp2) = word.word0
                                         /\ (get_heap h0 key = chArray_get U128 (get_heap h0 rkeys) (i - 1) 16)
-                                        /\ (forall j, (0 <= j < i) -> (to_arr U128 (mkpos 11) (get_heap h0 rkeys)) j = (get_heap h1 aes_spec.rkeys) j)
+                                        /\ (forall j, (0 <= j < i) -> (to_arr U128 (Zpos 11) (get_heap h0 rkeys)) j = (get_heap h1 aes_spec.rkeys) j)
                                         /\ (forall j, (j < 0) \/ (11 <= j) -> get_heap h1 aes_spec.rkeys j = None)).
 
       (* the two following bullets are small assumptions of the translate_for rule *)
@@ -485,7 +485,7 @@ Lemma aes_rounds_E pre id0 rkeys msg :
   ⊢ ⦃ fun '(h0, h1) => pre (h0, h1) ⦄
     JAES_ROUNDS id0 rkeys msg
     ≈
-    aes_rounds (to_arr U128 (mkpos 11) rkeys) msg
+    aes_rounds (to_arr U128 (Zpos 11) rkeys) msg
     ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) /\ exists o, v0 = [ ('word U128 ; o) ] /\ o = v1 ⦄.
 Proof.
   unfold JAES_ROUNDS, get_translated_static_fun, translate_prog_static, translate_funs_static, translate_call_body.

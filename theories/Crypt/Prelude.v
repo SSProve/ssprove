@@ -5,6 +5,7 @@ From Coq Require Import Utf8 Lia.
 Set Warnings "-notation-overridden".
 From mathcomp Require Import ssreflect eqtype ssrbool ssrnat.
 Set Warnings "notation-overridden".
+From HB Require Import structures.
 From extructures Require Import ord fset.
 From Equations Require Import Equations.
 From Mon Require SPropBase.
@@ -180,9 +181,7 @@ Proof.
     intro h. apply e. inversion h. reflexivity.
 Qed.
 
-Canonical positive_eqMixin := EqMixin positive_eqP.
-  Canonical positive_eqType :=
-    Eval hnf in EqType positive positive_eqMixin.
+HB.instance Definition _ := hasDecEq.Build _ positive_eqP.
 
 (** Lt class, for finite types  *)
 

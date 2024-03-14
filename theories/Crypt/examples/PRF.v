@@ -184,7 +184,6 @@ Section PRF_example.
   Definition i_key : nat := 2^n.
   Definition i_words : nat := 2^n.
 
-  (* why does this allow an arbitrary set of Locations? Why not fset0? *)
   Definition enc {L : { fset Location }} (m : Words) (k : Key) :
     code L [interface] ('fin (2^n) × 'fin (2^n)) :=
       {code
@@ -200,7 +199,6 @@ Section PRF_example.
       ret k
     }.
 
-  (* why does this not use fset0 for its Locations? *)
   Definition dec (c : Words) (k : Key) :
     code
       (fset [:: key_location; table_location])

@@ -63,9 +63,9 @@ Section OTP_example.
 
   Definition N_pos : Positive N := _.
 
-  Definition Words : finType := [finType of 'Z_N].
+  Definition Words : finType := Finite.clone _ 'Z_N.
 
-  Definition Key : finType := [finType of 'Z_N].
+  Definition Key : finType := Finite.clone _ 'Z_N.
 
   Definition w0 : Words := 0.
 
