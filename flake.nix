@@ -12,13 +12,19 @@
               pname = "ssprove";
               owner = "SSProve";
               version = "0.0.1";
+              nativeBuildInputs =
+                (with coqPackages; [equations
+                                    mathcomp-analysis
+                                    mathcomp-ssreflect
+                                    deriving])
+                ++ [extructures'];
               propagatedBuildInputs =
                 (with coqPackages; [equations
                                     mathcomp-analysis
                                     mathcomp-ssreflect
                                     deriving])
                 ++ [extructures'];
-              meta = {
+                meta = {
                  description = "A foundational framework for modular cryptographic proofs in Coq ";
                  license = coqPackages.lib.licenses.mit;
                  };
