@@ -169,3 +169,36 @@ Definition wsize_log2 sz : nat :=
   | U128 => 4
   | U256 => 5
   end.
+
+Local Open Scope Z_scope.
+
+Definition wunsigned {s} (w: word s) : Z :=
+  urepr w.
+
+Definition wsigned {s} (w: word s) : Z :=
+  srepr w.
+
+Definition wrepr s (z: Z) : word s :=
+  mkword (wsize_size_minus_1 s).+1 z.
+
+Lemma word_ext n x y h h' :
+  x = y ->
+  @mkWord n x h = @mkWord n y h'.
+Proof. by move => e; apply/val_eqP/eqP. Qed.
+
+Lemma wunsigned_inj sz : injective (@wunsigned sz).
+Proof. by move => x y /eqP /val_eqP. Qed.
+
+Lemma wunsigned1 ws :
+  @wunsigned ws 1 = 1%Z.
+Proof. by case: ws. Qed.
+
+Lemma wrepr_unsigned s (w: word s) : wrepr s (wunsigned w) = w.
+Proof. by rewrite /wrepr /wunsigned ureprK. Qed.
+
+Lemma wrepr_signed s (w: word s) : wrepr s (wsigned w) = w.
+Proof. by rewrite /wrepr /wsigned sreprK. Qed.
+
+Lemma wunsigned_repr s z :
+  wunsigned (wrepr s z) = z mod modulus (wsize_size_minus_1 s).+1.
+Proof. done. Qed.

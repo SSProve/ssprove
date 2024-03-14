@@ -128,7 +128,7 @@ Section choice_typeTypes.
   (*   match choice_type_eqMixin with *)
   (*   | EqMixin  op => op *)
   (*   end. *)
-  
+
   Fixpoint choice_type_test (u v : choice_type) : bool :=
     match u, v with
     | chNat , chNat => true
@@ -579,7 +579,7 @@ Section choice_typeTypes.
   Proof.
     intros x y.
     destruct (choice_type_eq x y) eqn:H.
-    - apply/orP. intuition auto. 
+    - apply/orP. intuition auto.
     - apply/orP.
       left.
       unfold choice_type_eq in H.
@@ -608,7 +608,7 @@ Section choice_typeTypes.
         apply/orP. right. assumption.
       * apply/orP. right. exact (choice_type_lt_transitive _ _ _ H H0).
   Qed.
-  
+
   Lemma choice_type_leq_asym : antisymmetric (T:=choice_type) choice_type_leq.
   Proof.
 

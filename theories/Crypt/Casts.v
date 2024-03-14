@@ -2,11 +2,13 @@ Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-forma
 From mathcomp Require Import ssreflect ssrbool ssrnat choice fintype.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 
+From deriving Require Import deriving.
+From Coq Require Import ZArith.
+
 From extructures Require Import ord fmap.
 From Crypt Require Import Prelude.
 
 From HB Require Import structures.
-
 
 (**
   Note for any of these types it would also be okay to write the cast, e.g., [(nat:choiceType)%type],
@@ -15,8 +17,13 @@ From HB Require Import structures.
   Just delete as soon as all references to the below casts are gone from the code base.
  *)
 
+(* From mathcomp Require Import *)
+(*   ssreflect ssrfun ssrbool ssrnat eqtype seq choice fintype generic_quotient *)
+(*   tuple. *)
+
 Definition unit_choiceType : choiceType := Datatypes.unit.
 Definition nat_choiceType : choiceType := nat.
+Definition int_choiceType : choiceType := Z. 
 Definition bool_choiceType : choiceType := bool.
 Definition prod_choiceType (A B: choiceType) : choiceType := prod A B.
 Definition fmap_choiceType (A: ordType) (B: choiceType) : choiceType := {fmap A -> B}.
@@ -26,6 +33,7 @@ Definition sum_choiceType (A B: choiceType) : choiceType := (A + B)%type.
 
 Definition unit_ordType: ordType := Datatypes.unit.
 Definition nat_ordType: ordType := nat.
+Definition int_ordType: ordType := Z.
 Definition bool_ordType: ordType := bool.
 Definition prod_ordType (A B: ordType) : ordType := prod A B.
 Definition fmap_ordType (A B: ordType) : ordType := {fmap A -> B}.
