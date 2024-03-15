@@ -26,7 +26,7 @@
              in
                # getting this the flake-style means the code is already there
                d.overrideAttrs (oldAttrs: {
-#                 src = "./.";
+                 src = "./.";
 #                 unpackPhase = "true";
                  });
     in { inherit mkDrv; } //
