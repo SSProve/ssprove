@@ -5,7 +5,7 @@
   };
   outputs = { self, nixpkgs, flake-utils }:
     let
-      mkDrv = { stdenv, which, coqPackages } :
+      mkDrv = { stdenv, which, coqPackages, coq } :
            let
              extructures' = coqPackages.extructures.override { version = "0.4.0"; };
              d = coqPackages.mkCoqDerivation {
@@ -13,6 +13,8 @@
               owner = "SSProve";
               version = "0.0.1";
               propagatedBuildInputs =
+                [ coq ]
+                ++
                 (with coqPackages; [equations
                                     mathcomp-analysis
                                     mathcomp-ssreflect
@@ -44,12 +46,13 @@
                       mathcomp = super.mathcomp.override { version = "2.1.0"; };
                       mathcomp-analysis = super.mathcomp-analysis.override { version = "1.0.0"; };
                     });
+                  coq = pkgs.coq_8_18;
                 };
                 ssprove' = mkDrv args;
               in
                 pkgs.mkShell {
                   packages =
-                    (with pkgs; [ coq gnumake ])
+                    (with pkgs; [ gnumake ])
                     ++
                     (with ssprove';  propagatedBuildInputs);
                 };
