@@ -94,7 +94,6 @@ Defined.
 
 Section choice_typeTypes.
 
-
   Fixpoint choice_type_test (u v : choice_type) : bool :=
     match u, v with
     | chNat , chNat => true
@@ -291,27 +290,7 @@ Section choice_typeTypes.
       move/nandP; rewrite -/choice_type_test -/eq_op.
       move => H; apply/orP.
       destruct (eq_op x1 y1) eqn:Heq.
-      + destruct H.
-        1: {
-          move: Heq => /eqP Heq.
-          move/negP: H; rewrite Heq /=.
-          move => H; left.
-          apply/orP; right.
-          have eq_true b : b == b = true. 1:{ apply/idP. apply eq_refl. }
-          rewrite (eq_true choice_type y1) //=.
-          clear ih1 ih2 Heq eq_true.
-          move: H; elim: y1 => //=.
-          - move => A ih1 B ih2.
-            move/negP/nandP.
-            case; move/negP.
-            + exact: ih1.
-            + exact: ih2.
-          - move => A ih1 B ih2.
-            move/negP/nandP.
-            case; move/negP.
-            + exact: ih1.
-            + exact: ih2.
-        }
+      + setoid_rewrite -> Heq in H. move/nandP: H; rewrite Bool.andb_true_l => H.
         move: ih2. move /implyP => ih2.
         specialize (ih2 H).
         move: ih2. move /orP => ih2.
@@ -346,15 +325,7 @@ Section choice_typeTypes.
       move /nandP => H.
       apply/orP.
       destruct (eq_op x1 y1) eqn:Heq.
-      + destruct H.
-        1:{
-          move: ih1; rewrite -Heq; move/implyP => ih1.
-          specialize (ih1 H).
-          move: ih1 => /orP ih1.
-          case: ih1 => [ih1|ih1].
-          - by [left; apply/orP; left].
-          - by [right; apply/orP; left].
-        }
+      + setoid_rewrite -> Heq in H; move: H => /nandP H; simpl in H.
         move: ih2. move /implyP => ih2.
         specialize (ih2 H).
         move: ih2. move /orP => ih2.

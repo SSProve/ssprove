@@ -372,8 +372,6 @@ Proof.
        (addn (@nat_of_ord (S (S (Zp_trunc q))) (@otf Challenge s1))
              (@nat_of_ord (S (S (Zp_trunc q)))
                 (GRing.opp
-                   (* (FinRing.Zmodule.zmodType (Zp_finZmodType (S (Zp_trunc q)))) *)
-                   (* ('Z_(S (Zp_trunc q)) : finZmodType) *)
                    (@otf Challenge s2))))
        q) =
     (@nat_of_ord (S (S (Zp_trunc q)))
@@ -397,23 +395,17 @@ Proof.
     (modn
        (muln (@nat_of_ord (S (S (Zp_trunc q)))
                 (GRing.inv
-                   (* (FinRing.UnitRing.unitRingType (Zp_finUnitRingType (Zp_trunc q))) *)
                    (GRing.add
-                      (* (FinRing.Zmodule.zmodType (Zp_finZmodType (S (Zp_trunc q)))) *)
                       (@otf Challenge s1)
                       (GRing.opp
-                         (* (FinRing.Zmodule.zmodType (Zp_finZmodType (S (Zp_trunc q)))) *)
                          (@otf Challenge s2)))))
           (@nat_of_ord (S (S (Zp_trunc q)))
              (@Zp_add (S (Zp_trunc q)) (@otf Challenge s1) (@Zp_opp (S (Zp_trunc q)) (@otf Challenge s2))))) q) =
     (Zp_mul
        (GRing.inv
-          (* (FinRing.UnitRing.unitRingType (Zp_finUnitRingType (Zp_trunc q))) *)
           (GRing.add
-             (* (FinRing.Zmodule.zmodType (Zp_finZmodType (S (Zp_trunc q)))) *)
              (@otf Challenge s1)
              (GRing.opp
-                (* (FinRing.Zmodule.zmodType (Zp_finZmodType (S (Zp_trunc q)))) *)
                 (@otf Challenge s2))))
        (@Zp_add (S (Zp_trunc q)) (@otf Challenge s1) (@Zp_opp (S (Zp_trunc q)) (@otf Challenge s2)))).
   { simpl.
