@@ -28,8 +28,8 @@
              in
                # getting this the flake-style means the code is already there
                d.overrideAttrs (oldAttrs: {
-                 src = "./.";
-                 unpackPhase = ''true'';
+                 src = ./.;
+                 #unpackPhase = ''true'';
                  });
       mkDrvFromStdenv = { stdenv, which, coqPackages, coq } :
            let
