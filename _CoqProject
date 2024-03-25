@@ -50,6 +50,11 @@ theories/Crypt/rhl_semantics/state_prob/StateTransfThetaDens.v
 # Prob rules
 theories/Crypt/rules/RulesProb.v
 
+# Decategorified semantics
+theories/Crypt/semantics/unary.v
+theories/Crypt/semantics/binary.v
+
+
 # Crypto
 theories/Crypt/rules/UniformDistrLemmas.v
 #theories/Crypt/rules/UniformDistr.v
