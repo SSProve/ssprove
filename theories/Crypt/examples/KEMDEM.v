@@ -604,7 +604,7 @@ Section KEMDEM.
     as ineq.
     eapply le_trans. 1: exact ineq.
     clear ineq.
-    eapply ler_add.
+    eapply lerD.
     (* Idealising the core keying package *)
     - replace (par CK₀ CD₀) with ((par (ID EK) CD₀) ∘ (par CK₀ (ID IGET))).
       2:{
@@ -696,7 +696,7 @@ Section KEMDEM.
     as ineq.
     eapply le_trans. 1: exact ineq.
     clear ineq.
-    eapply ler_add.
+    eapply lerD.
     - eapply single_key_a. all: eauto.
     (* De-idealising the core keying package *)
     - replace (par CK₀ CD₁) with ((par (ID EK) CD₁) ∘ (par CK₀ (ID IGET))).

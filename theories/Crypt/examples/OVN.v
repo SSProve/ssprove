@@ -9,7 +9,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_composition Package Prelude SigmaProtocol Schnorr DDH.
+  pkg_composition Package Prelude SigmaProtocol Schnorr DDH Canonicals.
 
 From Coq Require Import Utf8 Lia.
 From extructures Require Import ord fset fmap.
@@ -100,9 +100,9 @@ Proof.
   reflexivity.
 Qed.
 
-Definition Pid : finType := [finType of 'I_n].
-Definition Secret : finType := Zp_finComRingType (Zp_trunc #[g]).
-Definition Public : finType := FinGroup.arg_finType gT.
+Definition Pid : finType := Finite.clone _ 'I_n.
+Definition Secret : finComRingType := 'Z_(Zp_trunc #[g]).
+Definition Public : finType := gT.
 Definition s0 : Secret := 0.
 
 Definition Pid_pos : Positive #|Pid|.
@@ -263,7 +263,22 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     | _ => 1
     end.
 
+  From HB Require Import structures.
+  (*HB.about Monoid.ComLaw.
+  HB.howto Monoid.ComLaw.type.
+  HB.about Monoid.isComLaw.Build.
+  HB.about Monoid.ComLaw.
+  Check group_prodC.
+  Locate group_prodC.
+  Print mulg.
+  Locate "*".
+  Print commutative.
+  HB.about Monoid.isComLaw.
+   *)
+  (*
+  HB.instance Definition _ := Monoid.isComLaw.Build gT [1 gT] mulg group_prodA group_prodC group_1prod.
   Canonical finGroup_com_law := Monoid.ComLaw group_prodC.
+   *)
 
   Definition compute_key
              (m : chMap pid (chProd public choiceTranscript1))
@@ -304,7 +319,6 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     rewrite !big_fsetU1.
     2-3: subst X; apply not_in_domm.
     rewrite setm_rem.
-
     have set_rem_eq : forall P x,
       \big[finGroup_com_law/1]_(k <- X :\ j | P k)
         get_value (setm keys j x) k =
@@ -327,8 +341,8 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
         rewrite eq_refl in contra.
         discriminate.
       - reflexivity.
-    }
 
+    }
     case (j < i)%ord eqn:e.
     - rewrite !e.
       rewrite -2!mulgA.
@@ -2194,3 +2208,4 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
 
 End OVN.
 End OVN.
+

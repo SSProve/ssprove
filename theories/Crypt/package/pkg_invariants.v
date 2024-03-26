@@ -11,6 +11,9 @@ Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-forma
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr seq all_algebra fintype realsum.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
+
+From HB Require Import structures.
+
 From extructures Require Import ord fset fmap.
 From Mon Require Import SPropBase.
 From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
@@ -905,9 +908,12 @@ Proof.
   all: intro h. all: inversion h. all: contradiction.
 Qed.
 
-Canonical heap_val_eqMixin := EqMixin heap_val_eqP.
+(*Canonical heap_val_eqMixin := EqMixin heap_val_eqP.
 Canonical heap_val_eqType :=
-  Eval hnf in EqType heap_val heap_val_eqMixin.
+  Eval hnf in EqType heap_val heap_val_eqMixin. *)
+Definition heap_val_hasDecEq := hasDecEq.Build heap_val heap_val_eqP.
+HB.instance Definition _ := heap_val_hasDecEq.
+
 
 Derive NoConfusion for heap_val.
 

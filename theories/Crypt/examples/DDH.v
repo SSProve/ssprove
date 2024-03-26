@@ -56,7 +56,7 @@ Module DDH (DDHP : DDHParams) (GP : GroupParam).
 
   #[local] Existing Instance Space_pos.
 
-  Definition GroupSpace : finType := FinGroup.arg_finType gT.
+  Definition GroupSpace : finType := gT.
   #[local] Instance GroupSpace_pos : Positive #|GroupSpace|.
   Proof.
     apply /card_gt0P; by exists g.

@@ -481,7 +481,7 @@ Proof.
   rewrite /nilp size_poly_eq0 in Heq.
   move /eqP in Heq.
   rewrite Heq polyseqC.
-  by destruct (a != 0).
+  by case: (a != 0).
 Qed.
 
 Lemma size_tail_poly {R: ringType} (q: {poly R}):
@@ -927,7 +927,7 @@ Proof.
   }
   rewrite addn0 IHt ?cons_head_tail_poly //.
   rewrite size_tail_poly.
-  by destruct (size q).
+  destruct (size q) eqn:P; by rewrite P.
 Qed.
 
 (**

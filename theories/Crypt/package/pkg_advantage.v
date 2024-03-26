@@ -83,7 +83,7 @@ Definition Pr_op (p : raw_package) (o : opsig) (x : src o) :
 Arguments SDistr_bind {_ _}.
 
 Definition Pr (p : raw_package) :
-  SDistr (bool_choiceType) :=
+  SDistr (bool:choiceType) :=
   SDistr_bind
     (λ '(b, _), SDistr_unit _ b)
     (Pr_op p RUN Datatypes.tt empty_heap).
@@ -152,7 +152,7 @@ Qed. *)
   : package_scope. *)
 
 Definition state_pass_ {A} (p : raw_code A) :
-  heap_choiceType → raw_code (prod_choiceType A heap_choiceType).
+  heap_choiceType → raw_code (prod A heap_choiceType).
 Proof.
   induction p; intros h.
   - constructor.
@@ -369,7 +369,7 @@ Lemma Advantage_triangle :
 Proof.
   intros P Q R A.
   unfold AdvantageE.
-  apply ler_dist_add.
+  apply ler_distD.
 Qed.
 
 Fixpoint advantage_sum P l Q A :=
@@ -387,7 +387,7 @@ Proof.
   - simpl. auto.
   - simpl. eapply order.Order.POrderTheory.le_trans.
     + eapply Advantage_triangle.
-    + eapply ler_add.
+    + eapply lerD.
       * auto.
       * eapply ih.
 Qed.
@@ -429,7 +429,7 @@ Proof.
   intros Game_export F G H ε₁ ε₂ ε₃ h1 h2 h3 LA A vA hF hG hH.
   unfold adv_equiv in *.
   erewrite <- h1, <- h2, <- h3 by eassumption.
-  apply ler_dist_add.
+  apply ler_distD.
 Qed.
 
 Lemma Reduction :

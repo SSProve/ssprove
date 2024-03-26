@@ -79,12 +79,11 @@ Qed.
 
 Module MyParam <: AsymmetricSchemeParams.
 
-  Definition SecurityParameter : choiceType := nat_choiceType.
-  Definition Plain  : finType := FinGroup.arg_finType gT.
-  Definition Cipher : finType :=
-    prod_finType (FinGroup.arg_finType gT) (FinGroup.arg_finType gT).
-  Definition PubKey : finType := FinGroup.arg_finType gT.
-  Definition SecKey : finType := [finType of 'Z_q].
+  Definition SecurityParameter : choiceType := nat.
+  Definition Plain  : finType := gT.
+  Definition Cipher : finType := prod (gT:finType) (gT:finType).
+  Definition PubKey : finType := gT.
+  Definition SecKey : finType := Finite.clone _ 'Z_q.
 
   Definition plain0 := g.
   Definition cipher0 := (g, g).
@@ -479,7 +478,7 @@ End ElGamal.
 
 Module EGP_Z3 <: ElGamalParam.
 
-  Definition gT : finGroupType := Zp_finGroupType 2.
+  Definition gT : finGroupType := 'Z_2.
   Definition ζ : {set gT} := [set : gT].
   Definition g :  gT := Zp1.
 

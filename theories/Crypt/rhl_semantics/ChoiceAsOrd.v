@@ -1,5 +1,6 @@
 From Mon Require Import SPropBase.
 From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
+From Crypt Require Import Casts.
 Set Warnings "-notation-overridden".
 From mathcomp Require Import all_ssreflect.
 Set Warnings "notation-overridden".
@@ -32,8 +33,6 @@ Program Definition choice_incl := @mkOrdFunctor ord_choiceType TypeCat
     (fun (A:ord_choiceType) => A)
     (fun (A B : ord_choiceType) f => f)
     _ _ _.
-  Next Obligation. cbv ; intuition. Qed.
-
 
 
 Section Prod_of_choiceTypes.

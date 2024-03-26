@@ -8,15 +8,17 @@ From Relational Require Import OrderEnrichedCategory
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
-  finmap.set finmap.finmap xfinmap.
+  finset finmap.finmap xfinmap .
 Set Warnings "notation-overridden,ambiguous-paths".
 
 From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings Theta_dens
   Theta_exCP LaxComp FreeProbProg RelativeMonadMorph_prod
-  StateTransformingLaxMorph choice_type.
+  StateTransformingLaxMorph choice_type Casts.
 
 Import SPropNotations.
 Import Num.Theory.
+
+From HB Require Import structures.
 
 
 #[local] Open Scope ring_scope.
@@ -126,7 +128,7 @@ End RSemanticNotation.
 Import RSemanticNotation.
 #[local] Open Scope rsemantic_scope.
 
-Import finmap.set finmap.finmap xfinmap.
+Import (* finmap.set *) finset finmap.finmap xfinmap.
 
 Open Scope fset_scope.
 
@@ -784,7 +786,7 @@ Proof.
   clear Hpsum.
   eapply neq0_psum in Hpsum'. destruct Hpsum'.
   apply aux_domain in H.
-  destruct (eqType_lem  bool_eqType ((x,x) == (a1,a2)) true) as [Houi | Hnon].
+  destruct (eqType_lem  _ ((x,x) == (a1,a2)) true) as [Houi | Hnon].
   move: Houi => /eqP Houi. move: Houi => [H1 H2]. rewrite -H1 -H2. reflexivity.
   have Hnon' : (x,x) == (a1,a2) = false.
     destruct ((x,x) == (a1,a2)). contradiction. reflexivity.
@@ -807,19 +809,16 @@ Qed.
 
 Definition dsym { A B : ord_choiceType } { S1 S2 : choiceType } (d : SDistr_carrier
           (F_choice_prod_obj
-             ⟨ Choice.Pack {| Choice.base := prod_eqMixin B S2; Choice.mixin := prod_choiceMixin B S2 |},
-               Choice.Pack {| Choice.base := prod_eqMixin A S1; Choice.mixin := prod_choiceMixin A S1 |} ⟩)) :
+             ⟨ ((B * S2)%type : choiceType), ((A * S1)%type : choiceType) ⟩)) :
 SDistr_carrier
           (F_choice_prod_obj
-             ⟨ Choice.Pack {| Choice.base := prod_eqMixin A S1; Choice.mixin := prod_choiceMixin A S1 |},
-               Choice.Pack {| Choice.base := prod_eqMixin B S2; Choice.mixin := prod_choiceMixin B S2 |} ⟩) :=
+             ⟨ ((A * S1)%type : choiceType), ((B * S2)%type : choiceType) ⟩) :=
 dswap d.
 
 
 Lemma dsym_coupling { A B : ord_choiceType } { S1 S2 : choiceType } { d : SDistr_carrier
           (F_choice_prod_obj
-             ⟨ Choice.Pack {| Choice.base := prod_eqMixin B S2; Choice.mixin := prod_choiceMixin B S2 |},
-               Choice.Pack {| Choice.base := prod_eqMixin A S1; Choice.mixin := prod_choiceMixin A S1 |} ⟩) }
+             ⟨ ((B * S2)%type : choiceType), ((A * S1)%type : choiceType) ⟩) }
       {d1 d2 }
       (Hcoupling : coupling d d1 d2) : coupling (dsym d) d2 d1.
 Proof.
@@ -1597,8 +1596,8 @@ Proof.
   apply mulr_ge0.
   destruct q as [qmap q_0 q_sum q_1]. apply q_0.
   easy.
-(* ler_pimulr: forall [R : numDomainType] [x y : R], 0 <= y -> x <= 1 -> y * x <= y *)
-  apply ler_pimulr. destruct q as [qmap q_0 q_sum q_1]. apply q_0.
+(* ler_piMr: forall [R : numDomainType] [x y : R], 0 <= y -> x <= 1 -> y * x <= y *)
+  apply ler_piMr. destruct q as [qmap q_0 q_sum q_1]. apply q_0.
   apply le1_mu1. easy. destruct q as [qmap q_0 q_sum q_1]. apply q_1.
 Qed.
 

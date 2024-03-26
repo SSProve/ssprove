@@ -18,7 +18,7 @@ From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
   StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
   pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_lookup pkg_advantage
-  pkg_invariants pkg_distr.
+  pkg_invariants pkg_distr Casts.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
@@ -166,7 +166,9 @@ Proof.
   match goal with
   | |- realsum.summable ?f => eassert (f = _) as Hf end.
   { extensionality x.
-    apply (destruct_pair_eq (a:= f1 x) (b:=f3 x) (c:= f2 x) (d := f4 x)). }
+    instantiate (1 := fun x1 => (f1 x1 == f3 x1)%:R * (f2 x1 == f4 x1)%:R).
+    simpl.
+    exact: (destruct_pair_eq (a:= f1 x) (b:=f3 x) (c:= f2 x) (d := f4 x)). }
   rewrite Hf.
   apply realsum.summableM. all: assumption.
 Qed.
@@ -2133,7 +2135,8 @@ Section Uniform_prod.
       destruct (ch2prod u == (a,b)) eqn:e.
       2:{
         exfalso.
-        move: hu => /negP hu. apply hu. apply eqxx.
+        move: hu => /negP hu. apply hu.
+        by [rewrite e].
       }
       move: e => /eqP e. rewrite -e.
       rewrite inE. apply /eqP. symmetry. apply prod2ch_ch2prod.
@@ -2184,7 +2187,7 @@ Section Uniform_prod.
     eapply rewrite_eqDistrR. 1: apply: reflexivity_rule.
     intro s. cbn.
     pose proof @prod_uniform as h.
-    specialize (h [finType of 'I_i] [finType of 'I_j]). simpl in h.
+    specialize (h (Finite.clone _ 'I_i) (Finite.clone _ 'I_j)). simpl in h.
     unfold Uni_W'. unfold Uni_W.
     specialize (h (F_w0 (mkpos _)) (F_w0 (mkpos _))).
     unfold uniform_F in h.

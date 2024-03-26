@@ -31,7 +31,8 @@ From Crypt Require Import
      Theta_dens
      Theta_exCP
      LaxComp
-     FreeProbProg.
+     FreeProbProg
+     Casts.
 
 Import SPropNotations.
 Import Num.Theory.
@@ -61,16 +62,15 @@ Qed.
 
 (* Rem.: TODO: generalize this *)
 Lemma sum_const_seq_finType { T : finType } ( J : seq T) (k : R) (Huniq : uniq J) :
-  \sum_(j <- J) k = \sum_(j in (seq_sub_finType J)) k.
+  \sum_(j <- J) k = \sum_(j in J) k.
 Proof.
-  rewrite /seq_sub_finType. simpl.
   rewrite big_const.
   rewrite big_const_seq.
-  rewrite card_seq_sub.
-  - simpl.
-    rewrite count_predT.
-    reflexivity.
-  - apply Huniq.
+  f_equal.
+  rewrite count_predT.
+  apply esym.
+  apply/card_uniqP.
+  exact: Huniq.
 Qed.
 
 
@@ -81,16 +81,16 @@ Proof.
   rewrite sum_const_seq_finType.
   2: { exact Huniq. }
   rewrite GRing.sumr_const pmulrn /=.
-  have hfoo' :  k *~ #|seq_sub_finType (T:=T) J| =  k * #|seq_sub_finType (T:=T) J|%:~R.
-  { by rewrite mulrzr. }
+  have hfoo' :  k *~ #|J| =  k * #|J|%:~R.
+  1: { by rewrite mulrzr. }
   rewrite hfoo' /=.
-  apply: ler_pmul; auto.
-  - rewrite ler0z. rewrite lez_nat. reflexivity.
-  - rewrite card_seq_sub. 2: eauto.
-    rewrite cardT.
-    rewrite ler_int. rewrite lez_nat.
-    rewrite uniq_leq_size. 1,2: auto.
-    intros x hx.
+  clear hfoo'.
+  apply: ler_pM; auto.
+  rewrite cardT.
+  rewrite ler_int. rewrite lez_nat.
+  rewrite cardE. apply uniq_leq_size.
+  - apply: enum_uniq.
+  - intros x hx.
     rewrite mem_enum. reflexivity.
 Qed.
 
@@ -104,7 +104,7 @@ Proof.
   (* Basically a rip-off of xfinmap.big_fset_subset *)
   intros T J hu π hπ.
   rewrite [X in _<=X](bigID [pred j : T | j \in J]) /=.
-  rewrite ler_paddr ?sumr_ge0 // -[X in _<=X]big_filter.
+  rewrite ler_wpDr ?sumr_ge0 // -[X in _<=X]big_filter.
   rewrite Order.POrderTheory.le_eqVlt; apply/orP; left; apply/eqP/perm_big.
   apply/uniq_perm; rewrite ?filter_uniq //; last move=> i.
   rewrite -enum_setT. apply enum_uniq.
@@ -225,12 +225,9 @@ Proof.
   rewrite GRing.mulrC.
   rewrite GRing.Theory.mulr_natl.
   apply f_equal.
-  rewrite card_seq_sub.
-  + rewrite cardE.
-    rewrite -enumT.
-    reflexivity.
-  + rewrite -enumT.
-    apply enum_uniq.
+  rewrite -enumT. rewrite [RHS]cardE.
+  apply: eq_cardT.
+  apply: mem_enum.
 Qed.
 
 (* the uniform distribution over F *)
