@@ -12,6 +12,10 @@ This repository contains the Coq formalisation of the paper:\
   ([ieee](https://www.computer.org/csdl/proceedings-article/csf/2021/760700a608/1uvIdwNa5Ne),
    [eprint](https://eprint.iacr.org/2021/397/20210526:113037))
 
+Secondary literature:
+* **The Last Yard: Foundational End-to-End Verification of High-Speed Cryptography** at CPP'24. 
+Philipp G. Haselwarter, Benjamin Salling Hvass, Lasse Letager Hansen, Théo Winterhalter, Cătălin Hriţcu, and Bas Spitters. ([DOI](https://doi.org/10.1145/3636501.3636961))
+
 This README serves as a guide to running verification and finding the
 correspondence between the claims in the paper and the formal proofs in Coq, as
 well as listing the small set of axioms on which the formalisation relies
