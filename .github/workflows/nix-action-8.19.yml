@@ -193,3 +193,4 @@ name: Nix CI for bundle 8.19
   push:
     branches:
     - master
+  workflow_dispatch:
