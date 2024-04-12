@@ -1,3 +1,6 @@
+on:
+  workflow_dispatch:
+
 jobs:
   coq:
     needs: []
