@@ -37,11 +37,17 @@
   ## alternative configuration
   ## When generating GitHub Action CI, one workflow file
   ## will be created per bundle
-  bundles."8.17".coqPackages = {
-    coq.override.version = "8.17";
-    mathcomp.override.version = "1.17.0";
-    mathcomp-analysis.override.version = "0.6.0";
-  };
+
+  ## It is not possible as of yet to the coq-nix-toolbox to use a
+  ## certain version. All jobs only run against the latest version.
+  ## To do this check as a CI job you either need to manually edit
+  ## the generated workflow or create branch off of version 0.1.0
+  ## and add it there.
+ # bundles."8.17".coqPackages = {
+ #   coq.override.version = "8.17";
+ #   mathcomp.override.version = "1.17.0";
+ #   mathcomp-analysis.override.version = "0.6.0";
+ # };
   bundles."8.18".coqPackages = {
     coq.override.version = "8.18";
     mathcomp.override.version = "2.1.0";
