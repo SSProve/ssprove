@@ -29,7 +29,7 @@ jobs:
     - name: Cachix install
       uses: cachix/install-nix-action@v20
       with:
-        nix_path: nixpkgs=channel:master
+        nix_path: nixpkgs=channel:nixpkgs-unstable
     - name: Cachix setup coq
       uses: cachix/cachix-action@v12
       with:
@@ -76,7 +76,7 @@ jobs:
     - name: Cachix install
       uses: cachix/install-nix-action@v20
       with:
-        nix_path: nixpkgs=channel:master
+        nix_path: nixpkgs=channel:nixpkgs-unstable
     - name: Cachix setup coq
       uses: cachix/cachix-action@v12
       with:
@@ -155,7 +155,7 @@ jobs:
     - name: Cachix install
       uses: cachix/install-nix-action@v20
       with:
-        nix_path: nixpkgs=channel:master
+        nix_path: nixpkgs=channel:nixpkgs-unstable
     - name: Cachix setup coq
       uses: cachix/cachix-action@v12
       with:
@@ -194,6 +194,7 @@ jobs:
   ssprove:
     needs:
     - coq
+    - mathcomp-analysis
     runs-on: ubuntu-latest
     steps:
     - name: Determine which commit to initially checkout
@@ -222,7 +223,7 @@ jobs:
     - name: Cachix install
       uses: cachix/install-nix-action@v20
       with:
-        nix_path: nixpkgs=channel:master
+        nix_path: nixpkgs=channel:nixpkgs-unstable
     - name: Cachix setup coq
       uses: cachix/cachix-action@v12
       with:
@@ -238,6 +239,26 @@ jobs:
       name: 'Building/fetching previous CI target: coq'
       run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.19" --argstr
         job "coq"
+    - if: steps.stepCheck.outputs.status == 'built'
+      name: 'Building/fetching previous CI target: equations'
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.19" --argstr
+        job "equations"
+    - if: steps.stepCheck.outputs.status == 'built'
+      name: 'Building/fetching previous CI target: mathcomp-ssreflect'
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.19" --argstr
+        job "mathcomp-ssreflect"
+    - if: steps.stepCheck.outputs.status == 'built'
+      name: 'Building/fetching previous CI target: mathcomp-analysis'
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.19" --argstr
+        job "mathcomp-analysis"
+    - if: steps.stepCheck.outputs.status == 'built'
+      name: 'Building/fetching previous CI target: extructures'
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.19" --argstr
+        job "extructures"
+    - if: steps.stepCheck.outputs.status == 'built'
+      name: 'Building/fetching previous CI target: deriving'
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.19" --argstr
+        job "deriving"
     - if: steps.stepCheck.outputs.status == 'built'
       name: Building/fetching current CI target
       run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.19" --argstr
