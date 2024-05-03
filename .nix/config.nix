@@ -50,12 +50,12 @@
  # };
   bundles."8.18".coqPackages = {
     coq.override.version = "8.18";
-    mathcomp.override.version = "2.1.0";
+    mathcomp-ssreflect.override.version = "2.1.0";
     mathcomp-analysis.override.version = "1.0.0";
   };
   bundles."8.19".coqPackages = {
     coq.override.version = "8.19";
-    mathcomp.override.version = "2.2.0";
+    mathcomp-ssreflect.override.version = "2.2.0";
     mathcomp-analysis.override.version = "1.0.0";
   };
 
