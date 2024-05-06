@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url        = github:nixos/nixpkgs/release-23.11;
+    nixpkgs.url        = github:nixos/nixpkgs;
     flake-utils.url    = github:numtide/flake-utils;
   };
   outputs = { self, nixpkgs, flake-utils }:
@@ -28,11 +28,9 @@
         };
     in {
       overlays.default = final: prev: {
-        coqPackages_8_18 = prev.coqPackages_8_18.overrideScope (self: super: {
-          extructures       = super.extructures.override { version = "0.4.0"; };
-          mathcomp          = super.mathcomp.override { version = "2.1.0"; };
-          mathcomp-analysis = super.mathcomp-analysis.override { version = "1.0.0"; };
-          ssprove           = self.callPackage ssprovePkg {};
+        coqPackages_8_19 = prev.coqPackages_8_19.overrideScope (self: super: {
+          mathcomp-ssreflect = super.mathcomp-ssreflect.override { version = "2.2.0"; };
+          ssprove            = self.callPackage ssprovePkg {};
         });
       };
     } // flake-utils.lib.eachDefaultSystem (system:
@@ -42,7 +40,7 @@
           overlays = [ self.overlays.default ];
         };
       in {
-        packages.default = pkgs.coqPackages_8_18.ssprove;
+        packages.default = pkgs.coqPackages_8_19.ssprove;
         devShells.default = self.packages.${system}.default;
       });
 }
