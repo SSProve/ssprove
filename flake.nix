@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url        = github:nixos/nixpkgs;
+    nixpkgs.url        = github:nixos/nixpkgs/1e9759cb3731963f7007cce49dfa6ff1f412ea0c;
     flake-utils.url    = github:numtide/flake-utils;
   };
   outputs = { self, nixpkgs, flake-utils }:
@@ -14,7 +14,6 @@
           version = "0.2.0";
           src = ./.;
           propagatedBuildInputs = [
-            coq
             equations
             mathcomp-analysis
             mathcomp-ssreflect
