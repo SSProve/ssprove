@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url        = github:nixos/nixpkgs/1e9759cb3731963f7007cce49dfa6ff1f412ea0c;
+    nixpkgs.url        = github:nixos/nixpkgs;
     flake-utils.url    = github:numtide/flake-utils;
   };
   outputs = { self, nixpkgs, flake-utils }:
@@ -28,8 +28,12 @@
     in {
       overlays.default = final: prev: {
         coqPackages_8_19 = prev.coqPackages_8_19.overrideScope (self: super: {
-          mathcomp-ssreflect = super.mathcomp-ssreflect.override { version = "2.2.0"; };
-          ssprove            = self.callPackage ssprovePkg {};
+          # mathcomp-ssreflect inherits this version
+          # setting it to mathcomp-ssreflect does not work.
+          # see my question on Zulip:
+          # https://coq.zulipchat.com/#narrow/stream/290990-Nix-toolbox-devs-.26-users/topic/Loading.20inconsistency.20in.20mathcomp.20dependencies
+          mathcomp = super.mathcomp.override { version = "2.2.0"; };
+          ssprove  = self.callPackage ssprovePkg {};
         });
       };
     } // flake-utils.lib.eachDefaultSystem (system:
