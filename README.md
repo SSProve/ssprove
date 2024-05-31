@@ -33,17 +33,25 @@ A documentation is available in [DOC.md].
 
 ## Installation
 
+There are two installation options:
+- via `opam`
+- via `nix`
+
 #### Prerequisites
 
-- OCaml `>=4.05.0 & <5`
-- Coq `>=8.16.0 & <8.18.0`
-- Equations `1.3`
-- Mathcomp `>=1.15.0`
-- Mathcomp analysis `>=0.5.3`
-- Coq Extructures `0.3.1`
-- Coq Deriving `0.1`
+- OCaml
+- Coq
+- Equations
+- Mathcomp
+- Mathcomp analysis
+- Coq Extructures
+- Coq Deriving
 
-You can get them all from the `opam` package manager for OCaml:
+
+### OPAM-based installation
+
+
+You can get all dependencies from the `opam` package manager for OCaml:
 ```sh
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam update
@@ -52,6 +60,18 @@ opam install ./ssprove.opam
 
 To build the dependency graph, you can optionally install `graphviz`.
 On macOS, `gsed` is additionally required for this.
+
+### Nix-based installation
+
+`ssprove` is available on `nixpkgs`, e.g., `coqPackages_8*19.ssprove`.
+The following flake-based templates for your new SSProve project are available:
+- [SSProve latest](.nix/flake.nix.template_latest) -- provides a project setup
+with the latest SSProve development readily installed.
+- [SSProve versioned](.nix/flake.nix.template_versioned) -- provides
+a Nix flake that loads a dedicated version (that you may change).
+
+
+## Build instructions
 
 #### Running verification
 
@@ -63,12 +83,12 @@ Run `make graph` to build a graph of dependencies between sources.
 
 ## Directory organisation
 
-| Directory             | Description                                          |
-|-----------------------|------------------------------------------------------|
-| [theories]           | Root of all the Coq files                            |
-| [theories/Mon]        | External development coming from "Dijkstra Monads For All" |
-| [theories/Relational] | External development coming from "The Next 700 Relational Program Logics"|
-| [theories/Crypt]      | This paper                                           |
+| Directory             | Description                                                               |
+|-----------------------|---------------------------------------------------------------------------|
+| [theories]            | Root of all the Coq files                                                 |
+| [theories/Mon]        | External development coming from "Dijkstra Monads For All"                |
+| [theories/Relational] | External development coming from "The Next 700 Relational Program Logics" |
+| [theories/Crypt]      | This paper                                                                |
 
 Unless specified with a full path, all files considered in this README can
 safely be assumed to be in [theories/Crypt].
