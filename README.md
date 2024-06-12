@@ -63,7 +63,7 @@ On macOS, `gsed` is additionally required for this.
 
 ### Nix-based installation
 
-`ssprove` is available on `nixpkgs`, e.g., `coqPackages_8*19.ssprove`.
+`ssprove` is available on `nixpkgs`, e.g., `coqPackages_8_19.ssprove`.
 The following flake-based templates for your new SSProve project are available:
 - [SSProve latest](.nix/flake.nix.template_latest) -- provides a project setup
 with the latest SSProve development readily installed.
