@@ -1,9 +1,9 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require FunctionalExtensionality.
-From Mon Require Export Base.
+From SSProve.Mon Require Export Base.
 From Coq Require Import Relation_Definitions Morphisms.
-From Mon Require Import SPropBase.
-From Relational Require Import Category RelativeMonads EnrichedSetting.
+From SSProve.Mon Require Import SPropBase.
+From SSProve.Relational Require Import Category RelativeMonads EnrichedSetting.
 
 Set Primitive Projections.
 Set Universe Polymorphism.

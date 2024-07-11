@@ -2,9 +2,9 @@ From Coq Require Import Morphisms.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect.
 Set Warnings "notation-overridden,ambiguous-paths".
-From Mon Require Import SPropBase.
-From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
-From Crypt Require Import OrderEnrichedRelativeAdjunctions OrderEnrichedRelativeAdjunctionsExamples ChoiceAsOrd.
+From SSProve.Mon Require Import SPropBase.
+From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
+From SSProve.Crypt Require Import OrderEnrichedRelativeAdjunctions OrderEnrichedRelativeAdjunctionsExamples ChoiceAsOrd.
 
 
 Import SPropNotations.

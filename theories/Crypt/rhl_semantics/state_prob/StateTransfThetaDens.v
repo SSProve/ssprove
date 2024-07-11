@@ -1,10 +1,10 @@
 From Coq Require Import RelationClasses.
-From Mon Require Import SPropBase.
+From SSProve.Mon Require Import SPropBase.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect.
 Set Warnings "notation-overridden,ambiguous-paths".
-From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
-From Crypt Require Import ChoiceAsOrd OrderEnrichedRelativeAdjunctions OrderEnrichedRelativeAdjunctionsExamples TransformingLaxMorph SubDistr Theta_dens LaxFunctorsAndTransf UniversalFreeMap FreeProbProg StateTransformingLaxMorph LaxComp.
+From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
+From SSProve.Crypt Require Import ChoiceAsOrd OrderEnrichedRelativeAdjunctions OrderEnrichedRelativeAdjunctionsExamples TransformingLaxMorph SubDistr Theta_dens LaxFunctorsAndTransf UniversalFreeMap FreeProbProg StateTransformingLaxMorph LaxComp.
 
 Import SPropNotations.
 

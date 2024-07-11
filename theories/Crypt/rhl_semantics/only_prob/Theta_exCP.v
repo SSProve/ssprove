@@ -1,9 +1,9 @@
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra boolp distr reals realsum.
 Set Warnings "notation-overridden,ambiguous-paths".
-From Mon Require Import SpecificationMonads SPropBase SPropMonadicStructures.
-From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
-From Crypt Require Import ChoiceAsOrd SubDistr Couplings Axioms Casts.
+From SSProve.Mon Require Import SpecificationMonads SPropBase SPropMonadicStructures.
+From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
+From SSProve.Crypt Require Import ChoiceAsOrd SubDistr Couplings Axioms Casts.
 From HB Require Import structures.
 
 Import SPropNotations.

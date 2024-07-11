@@ -8,7 +8,7 @@ Set Warnings "notation-overridden".
 From HB Require Import structures.
 From extructures Require Import ord fset.
 From Equations Require Import Equations.
-From Mon Require SPropBase.
+From SSProve.Mon Require SPropBase.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".

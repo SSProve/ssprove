@@ -1,4 +1,4 @@
-From Relational Require Import OrderEnrichedCategory.
+From SSProve.Relational Require Import OrderEnrichedCategory.
 
 (*In this file we devise a relative monad morphism Id -> M having the unit of M as carrier*)
 

@@ -1,10 +1,10 @@
 From Coq Require Import Morphisms.
-From Relational Require Import OrderEnrichedCategory.
-From Mon Require Import SPropBase.
+From SSProve.Relational Require Import OrderEnrichedCategory.
+From SSProve.Mon Require Import SPropBase.
 Set Warnings "-notation-overridden".
 From mathcomp Require Import all_ssreflect boolp.
 Set Warnings "notation-overridden".
-From Crypt Require Import Axioms.
+From SSProve.Crypt Require Import Axioms.
 
 Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
 

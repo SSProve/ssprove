@@ -3,7 +3,7 @@ From mathcomp Require Import ssreflect ssrbool ssrnat choice fintype.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 
 From extructures Require Import ord fmap.
-From Crypt Require Import Prelude.
+From SSProve.Crypt Require Import Prelude.
 
 From HB Require Import structures.
 
