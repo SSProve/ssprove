@@ -1,4 +1,4 @@
-From Relational Require Import OrderEnrichedCategory.
+From SSProve.Relational Require Import OrderEnrichedCategory.
 Set Warnings "-notation-overridden".
 From mathcomp Require Import all_ssreflect.
 Set Warnings "notation-overridden".

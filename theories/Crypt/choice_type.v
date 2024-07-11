@@ -7,7 +7,7 @@
 
 
 From Coq Require Import Utf8 Lia.
-From Relational Require Import OrderEnrichedCategory
+From SSProve.Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples GenericRulesSimple.
 
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
@@ -16,10 +16,10 @@ From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From HB Require Import structures.
 
-From Crypt Require Import Prelude Axioms Casts.
+From SSProve.Crypt Require Import Prelude Axioms Casts.
 From deriving Require Import deriving.
 From extructures Require Import ord fset fmap.
-From Mon Require Import SPropBase.
+From SSProve.Mon Require Import SPropBase.
 Require Equations.Prop.DepElim.
 From Equations Require Import Equations.
 

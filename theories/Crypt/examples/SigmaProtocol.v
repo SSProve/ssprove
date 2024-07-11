@@ -1,5 +1,5 @@
 
-From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
+From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
@@ -7,7 +7,7 @@ From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
   eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
+From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
   pkg_core_definition choice_type pkg_composition pkg_rhl
   Package Prelude RandomOracle Casts.

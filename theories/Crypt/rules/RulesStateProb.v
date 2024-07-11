@@ -1,9 +1,9 @@
 From Coq Require Import RelationClasses Morphisms Utf8.
 
-From Mon Require Import SPropMonadicStructures SpecificationMonads MonadExamples
+From SSProve.Mon Require Import SPropMonadicStructures SpecificationMonads MonadExamples
   SPropBase FiniteProbabilities.
 
-From Relational Require Import OrderEnrichedCategory
+From SSProve.Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples Commutativity GenericRulesSimple.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
@@ -11,7 +11,7 @@ From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
   finset finmap.finmap xfinmap .
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings Theta_dens
+From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings Theta_dens
   Theta_exCP LaxComp FreeProbProg RelativeMonadMorph_prod
   StateTransformingLaxMorph choice_type Casts.
 

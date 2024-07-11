@@ -1,9 +1,9 @@
-From Relational Require Import OrderEnrichedCategory.
-From Mon Require Import SPropBase.
+From SSProve.Relational Require Import OrderEnrichedCategory.
+From SSProve.Mon Require Import SPropBase.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect boolp.
 Set Warnings "notation-overridden,ambiguous-paths".
-From Crypt Require Import Axioms OrderEnrichedRelativeAdjunctions LaxFunctorsAndTransf.
+From SSProve.Crypt Require Import Axioms OrderEnrichedRelativeAdjunctions LaxFunctorsAndTransf.
 
 Import SPropNotations.
 (*

@@ -1,13 +1,13 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require FunctionalExtensionality List.
 
-From Mon Require Export Base.
+From SSProve.Mon Require Export Base.
 From Coq Require Import Relation_Definitions Morphisms.
-From Mon Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads Monoid DijkstraMonadExamples.
+From SSProve.Mon Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads Monoid DijkstraMonadExamples.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr.
 Set Warnings "notation-overridden,ambiguous-paths".
-From Relational Require Import Commutativity.
+From SSProve.Relational Require Import Commutativity.
 
 Import GRing.Theory Num.Theory.
 Import Order.POrderTheory.

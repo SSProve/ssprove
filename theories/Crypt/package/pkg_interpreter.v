@@ -2,7 +2,7 @@ Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect.
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From Crypt Require Import Prelude choice_type
+From SSProve.Crypt Require Import Prelude choice_type
      pkg_core_definition pkg_tactics pkg_distr pkg_notation.
 
 From Coq Require Import Utf8.

@@ -1,14 +1,14 @@
-From Mon Require Import FiniteProbabilities SPropMonadicStructures
+From SSProve.Mon Require Import FiniteProbabilities SPropMonadicStructures
   SpecificationMonads MonadExamples SPropBase.
 
-From Relational Require Import OrderEnrichedCategory
+From SSProve.Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples Commutativity GenericRulesSimple.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum.
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings Theta_dens
+From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings Theta_dens
   Theta_exCP LaxComp FreeProbProg UniformDistrLemmas
   Prelude choice_type StateTransformingLaxMorph RulesStateProb.
 
