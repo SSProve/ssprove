@@ -437,6 +437,9 @@ but where the set of locations is internalised.
 `package` then, `{package p₀ ∘ p₁ }` is a valid expression, and will be complete
 if the interfaces match.
 
+**Note:** When using `Equations`, please `Set Equations Transparent` such
+that code simplification in proofs via `ssprove_code_simpl` resolves properly.
+
 ## High-level SSP proofs
 
 To reason at the high-level of state-separating proofs, we have two main
