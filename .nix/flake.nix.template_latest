@@ -1,0 +1,22 @@
+{
+  inputs = {
+    nixpkgs.url        = github:nixos/nixpkgs;
+    flake-utils.url    = github:numtide/flake-utils;
+
+    ssprove.url = github:ssprove/ssprove/nix;
+    ssprove.inputs.nixpkgs.follows = "nixpkgs";
+    ssprove.inputs.flake-utils.follows = "flake-utils";
+ };
+  outputs = { self, nixpkgs, flake-utils
+            , ssprove }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = nixpkgs.legacyPackages.${system};
+      in {
+        devShell = pkgs.mkShell {
+          packages = [ssprove];
+          shellHook = '' alias ll="ls -lasi" '';
+        };
+      }
+    );
+}

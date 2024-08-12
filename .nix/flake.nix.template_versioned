@@ -1,0 +1,30 @@
+{
+  inputs = {
+    nixpkgs.url        = github:nixos/nixpkgs;
+    flake-utils.url    = github:numtide/flake-utils;
+
+    ## We have start using Nix flakes only after version 0.2.0.
+    ## Hence, loading versions flake-style works best after
+    ## version 0.2.0.
+    # ssprove.url = github:ssprove/ssprove/nix;
+    # ssprove.inputs.nixpkgs.follows = "nixpkgs";
+    # ssprove.inputs.flake-utils.follows = "flake-utils";
+ };
+  outputs = { self, nixpkgs, flake-utils
+            #, ssprove
+            }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = nixpkgs.legacyPackages.${system};
+        coqPackages = pkgs.coqPackages_8_17.overrideScope
+          (self: super:{
+            ssprove = super.ssprove.override { version = "0.1.0"; };
+          });
+      in {
+        devShell = pkgs.mkShell {
+          packages = (with coqPackages; [ssprove]);
+          shellHook = '' alias ll="ls -lasi" '';
+        };
+      }
+    );
+}
