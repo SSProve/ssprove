@@ -224,6 +224,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       }
     ].
 
+  (* Simulation Sound Extractability *)
   (* Main security statement for 2-special soundness. *)
   Definition ɛ_soundness A :=
     AdvantageE Special_Soundness_t Special_Soundness_f A.
@@ -937,7 +938,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       ].
 
     Definition SHVZK_real_aux :
-      package Sigma_locs
+      package fset0
         [interface #val #[ TRANSCRIPT ] : chInput → chTranscript ]
         [interface #val #[ RUN ] : chRelation → chTranscript ]
       :=
@@ -966,7 +967,9 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       2:{
         rewrite <- fsetUid.
         eapply valid_link.
-        - apply SHVZK_real_aux.
+        - eapply (valid_package_inject_locations).
+          2: apply SHVZK_real_aux.
+          apply fsub0set.
         - apply SHVZK_real.
       }
       1:{
