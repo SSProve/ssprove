@@ -14,6 +14,8 @@ Import Order.POrderTheory.
 
 Local Open Scope ring_scope.
 
+Local Obligation Tactic := idtac.
+
 Section FinProb.
 
   Context (R:realType).
