@@ -1093,7 +1093,7 @@ Lemma lookup_hpv_l_eq :
 Proof.
   intros ℓ v l.
   funelim (lookup_hpv_l ℓ (hpv_l ℓ v :: l)).
-  - rewrite -Heqcall. rewrite cast_loc_val_K. reflexivity.
+  - try rewrite -Heqcall. rewrite cast_loc_val_K. reflexivity.
   - exfalso. pose proof e as e'. symmetry in e'. move: e' => /eqP e'.
     contradiction.
 Qed.
@@ -1106,7 +1106,7 @@ Proof.
   intros ℓ ℓ' v l hn.
   funelim (lookup_hpv_l ℓ' (hpv_l ℓ v :: l)).
   - exfalso. rewrite -e in hn. discriminate.
-  - rewrite -Heqcall. reflexivity.
+  - try rewrite -Heqcall. reflexivity.
 Qed.
 
 Lemma lookup_hpv_r_eq :
@@ -1115,7 +1115,7 @@ Lemma lookup_hpv_r_eq :
 Proof.
   intros ℓ v l.
   funelim (lookup_hpv_r ℓ (hpv_r ℓ v :: l)).
-  - rewrite -Heqcall. rewrite cast_loc_val_K. reflexivity.
+  - try rewrite -Heqcall. rewrite cast_loc_val_K. reflexivity.
   - exfalso. pose proof e as e'. symmetry in e'. move: e' => /eqP e'.
     contradiction.
 Qed.
@@ -1128,7 +1128,7 @@ Proof.
   intros ℓ ℓ' v l hn.
   funelim (lookup_hpv_r ℓ' (hpv_r ℓ v :: l)).
   - exfalso. rewrite -e in hn. discriminate.
-  - rewrite -Heqcall. reflexivity.
+  - try rewrite -Heqcall. reflexivity.
 Qed.
 
 Lemma lookup_hpv_l_spec :
@@ -1143,7 +1143,7 @@ Proof.
   - simpl in *.
     destruct update_heaps eqn:e1. noconf e.
     eauto.
-  - rewrite -Heqcall in hl. noconf hl.
+  - try rewrite -Heqcall in hl. noconf hl.
     simpl in e0.
     destruct update_heaps eqn:e1. noconf e0.
     pose proof e as e'.
@@ -1153,7 +1153,7 @@ Proof.
   - simpl in e0.
     destruct update_heaps eqn:e1. noconf e0.
     rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
-    rewrite -Heqcall in hl. eauto.
+    try rewrite -Heqcall in hl. eauto.
 Qed.
 
 Lemma lookup_hpv_r_spec :
@@ -1168,7 +1168,7 @@ Proof.
   - simpl in *.
     destruct update_heaps eqn:e1. noconf e.
     eauto.
-  - rewrite -Heqcall in hl. noconf hl.
+  - try rewrite -Heqcall in hl. noconf hl.
     simpl in e0.
     destruct update_heaps eqn:e1. noconf e0.
     pose proof e as e'.
@@ -1178,7 +1178,7 @@ Proof.
   - simpl in e0.
     destruct update_heaps eqn:e1. noconf e0.
     rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
-    rewrite -Heqcall in hl. eauto.
+    try rewrite -Heqcall in hl. eauto.
 Qed.
 
 Lemma lookup_hpv_spec :
@@ -1205,11 +1205,11 @@ Proof.
   - simpl in *.
     destruct update_heaps eqn:e1. noconf e.
     eauto.
-  - rewrite -Heqcall in hl. noconf hl.
+  - try rewrite -Heqcall in hl. noconf hl.
   - simpl in e0.
     destruct update_heaps eqn:e1. noconf e0.
     rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
-    rewrite -Heqcall in hl. eauto.
+    try rewrite -Heqcall in hl. eauto.
 Qed.
 
 Lemma lookup_hpv_r_None_spec :
@@ -1224,11 +1224,11 @@ Proof.
   - simpl in *.
     destruct update_heaps eqn:e1. noconf e.
     eauto.
-  - rewrite -Heqcall in hl. noconf hl.
+  - try rewrite -Heqcall in hl. noconf hl.
   - simpl in e0.
     destruct update_heaps eqn:e1. noconf e0.
     rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
-    rewrite -Heqcall in hl. eauto.
+    try rewrite -Heqcall in hl. eauto.
 Qed.
 
 Lemma lookup_hpv_None_spec :

@@ -201,7 +201,7 @@ Proof.
     pose proof e as ep. simpl in ep.
     rewrite setmE in ep. rewrite eqxx in ep. noconf ep.
   }
-  rewrite -Heqcall. clear Heqcall.
+  try rewrite -Heqcall. clear Heqcall.
   pose proof e as ep. simpl in ep.
   rewrite setmE in ep. rewrite eqxx in ep. noconf ep.
   rewrite (cast_pointed_value_K (ℓ0.π1 ; v)).
@@ -215,7 +215,7 @@ Lemma get_set_heap_neq :
 Proof.
   intros h ℓ v ℓ' ne.
   funelim (get_heap (set_heap h ℓ v) ℓ').
-  - rewrite -Heqcall. clear Heqcall.
+  - try rewrite -Heqcall. clear Heqcall.
     pose proof e as ep. simpl in ep.
     rewrite setmE in ep.
     eapply negbTE in ne. rewrite ne in ep.
@@ -223,17 +223,17 @@ Proof.
     2:{
       rewrite -e in ep. noconf ep.
     }
-    rewrite -Heqcall. clear Heqcall.
+    try rewrite -Heqcall. clear Heqcall.
     apply cast_pointed_value_ext.
     rewrite -e in ep. noconf ep. reflexivity.
-  - rewrite -Heqcall. clear Heqcall.
+  - try rewrite -Heqcall. clear Heqcall.
     clear H. simpl in e. rewrite setmE in e.
     eapply negbTE in ne. rewrite ne in e.
     funelim (get_heap h ℓ).
     1:{
       rewrite -e in e0. noconf e0.
     }
-    rewrite -Heqcall. reflexivity.
+    try rewrite -Heqcall. reflexivity.
 Qed.
 
 Lemma set_heap_contract :
