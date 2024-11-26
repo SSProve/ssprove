@@ -31,7 +31,7 @@ From mathcomp Require Import ssreflect ssrbool ssrnat eqtype seq eqtype
   choice.
 Set Warnings "notation-overridden,ambiguous-paths".
 From extructures Require Import ord fset fmap.
-From Crypt Require Import Prelude pkg_core_definition
+From SSProve.Crypt Require Import Prelude pkg_core_definition
   pkg_composition pkg_notation choice_type
   RulesStateProb.
 From Coq Require Import Utf8 FunctionalExtensionality

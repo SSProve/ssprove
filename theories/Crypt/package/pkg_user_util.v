@@ -75,7 +75,7 @@ From mathcomp Require Import all_ssreflect all_algebra reals distr
   seq.
 Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
-From Crypt Require Import Axioms Prelude pkg_core_definition pkg_composition
+From SSProve.Crypt Require Import Axioms Prelude pkg_core_definition pkg_composition
   pkg_notation RulesStateProb pkg_advantage pkg_lookup pkg_semantics
   pkg_heap pkg_invariants pkg_distr pkg_rhl pkg_tactics choice_type.
 From Coq Require Import Utf8 FunctionalExtensionality

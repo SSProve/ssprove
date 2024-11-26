@@ -1,6 +1,6 @@
 From Coq Require Import ssreflect ssrfun.
-From Mon Require Export Base.
-From Mon Require Import SPropBase.
+From SSProve.Mon Require Export Base.
+From SSProve.Mon Require Import SPropBase.
 From Coq Require Import RelationClasses Morphisms Relation_Definitions.
 
 

@@ -1,14 +1,14 @@
 From Coq Require Import
      Relation_Definitions RelationClasses Morphisms Utf8.
 
-From Mon Require Import
+From SSProve.Mon Require Import
      FiniteProbabilities
      SPropMonadicStructures
      SpecificationMonads
      MonadExamples
      SPropBase.
 
-From Relational Require Import
+From SSProve.Relational Require Import
      OrderEnrichedCategory
      OrderEnrichedRelativeMonadExamples
      Commutativity
@@ -23,7 +23,7 @@ From mathcomp Require Import
      realsum.
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From Crypt Require Import
+From SSProve.Crypt Require Import
      Axioms
      ChoiceAsOrd
      SubDistr

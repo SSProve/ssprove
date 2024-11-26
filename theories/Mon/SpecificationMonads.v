@@ -1,7 +1,7 @@
 From Coq Require Import ssreflect.
-From Mon Require Export Base.
+From SSProve.Mon Require Export Base.
 From Coq Require Import Relation_Definitions Morphisms.
-From Mon Require Import SPropBase SPropMonadicStructures Monoid.
+From SSProve.Mon Require Import SPropBase SPropMonadicStructures Monoid.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

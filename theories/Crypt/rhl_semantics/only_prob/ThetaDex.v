@@ -1,5 +1,5 @@
-From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
-From Crypt Require Import Theta_dens Theta_exCP SubDistr LaxComp ChoiceAsOrd RelativeMonadMorph_prod.
+From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
+From SSProve.Crypt Require Import Theta_dens Theta_exCP SubDistr LaxComp ChoiceAsOrd RelativeMonadMorph_prod.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect.
 Set Warnings "notation-overridden,ambiguous-paths".

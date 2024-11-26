@@ -1,6 +1,4 @@
--Q theories/Mon Mon
--Q theories/Relational Relational
--Q theories/Crypt Crypt
+-Q theories SSProve
 
 theories/Mon/Base.v
 theories/Mon/SPropBase.v

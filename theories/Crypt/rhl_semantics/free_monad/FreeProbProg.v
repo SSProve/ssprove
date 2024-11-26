@@ -1,9 +1,9 @@
 Set Warnings "-notation-overridden".
 From mathcomp Require Import all_ssreflect boolp.
 Set Warnings "notation-overridden".
-From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
-From Crypt Require Import ChoiceAsOrd choice_type.
-From Crypt Require Import SubDistr.
+From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
+From SSProve.Crypt Require Import ChoiceAsOrd choice_type.
+From SSProve.Crypt Require Import SubDistr.
 
 
 (*so that Next Obligation doesnt introduce variables by itself:*)

@@ -1,7 +1,7 @@
 From Coq Require Import ssreflect ssrfun.
-From Mon Require Export Base.
+From SSProve.Mon Require Export Base.
 From Coq.Classes Require Import RelationClasses Morphisms.
-From Relational Require Import Category.
+From SSProve.Relational Require Import Category.
 
 Set Primitive Projections.
 Set Universe Polymorphism.

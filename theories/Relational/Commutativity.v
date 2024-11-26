@@ -1,11 +1,11 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require FunctionalExtensionality.
 
-From Mon Require Export Base.
+From SSProve.Mon Require Export Base.
 From Coq Require Import Relation_Definitions Morphisms.
-From Mon Require Import SPropBase SPropMonadicStructures
+From SSProve.Mon Require Import SPropBase SPropMonadicStructures
   MonadExamples SpecificationMonads DijkstraMonadExamples.
-From Relational Require Import OrderEnrichedCategory
+From SSProve.Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples.
 
 Section Commutations.

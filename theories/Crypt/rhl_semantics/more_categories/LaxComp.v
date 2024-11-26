@@ -1,6 +1,6 @@
 From Coq Require Import ssreflect.
-From Mon Require Import SPropBase.
-From Relational Require Import OrderEnrichedCategory.
+From SSProve.Mon Require Import SPropBase.
+From SSProve.Relational Require Import OrderEnrichedCategory.
 
 Import SPropNotations.
 
