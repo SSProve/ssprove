@@ -64,6 +64,10 @@
     mathcomp-analysis.override.version = "1.2.0";
   };
 
+  bundles."8.18".push-branches = ["main"];
+  bundles."8.19".push-branches = ["main"];
+  bundles."8.20".push-branches = ["main"];
+
   ## Cachix caches to use in CI
   ## Below we list some standard ones
   cachix.coq = {};

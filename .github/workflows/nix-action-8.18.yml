@@ -277,4 +277,4 @@ name: Nix CI for bundle 8.18
     - reopened
   push:
     branches:
-    - master
+    - main
