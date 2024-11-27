@@ -52,7 +52,7 @@ Section MonotoneContinuationsMonad.
   Proof.
     constructor ; cbv.
     - auto with crelations.
-    - eauto using PreOrder_Transitive.
+    - pose proof PreOrder_Transitive; eauto.
   Qed.
 
   Program Definition MonoCont : OrderedMonad :=
@@ -835,4 +835,3 @@ Section WpSpRightKanExtension.
    Qed.
 ---------------------------end of forgotten section*)
 End WpSpRightKanExtension.
-

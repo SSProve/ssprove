@@ -91,7 +91,7 @@ Proof.
   intros L I E p hp o ho arg f e.
   funelim (get_raw_package_op p hp o ho arg).
   2:{ rewrite <- e1 in e. discriminate. }
-  rewrite <- Heqcall. cbn. rewrite <- e1 in e.
+  try rewrite <- Heqcall. cbn. rewrite <- e1 in e.
   noconf e. reflexivity.
 Qed.
 
