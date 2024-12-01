@@ -263,7 +263,7 @@ Proof.
     ssprove_restore_mem;
       last by apply: r_ret.
     ssprove_invariant.
-    2: by rewrite -subnE subSnn.
+    2: by rewrite -?subnE subSnn.
     move {Hinv k Heq} => s0 s1 [[[Hinv _] _] _] loc H.
     rewrite (get_set_heap_neq _ k_loc) -?in_fset1 //.
     case: (eq_dec loc count_loc)=> Heq.
@@ -282,10 +282,10 @@ Proof.
     all: move=> s0 s1 [[Hinv _] H] /=.
     all: rewrite /couple_rhs get_set_heap_eq get_set_heap_neq //.
     all: move /eqP in Hlt.
-    + rewrite Hinv // H -subnE eqnE.
+    + rewrite Hinv // H -?subnE eqnE.
       by rewrite subn_eq0 ltnW // -subn_eq0 Hlt.
     + move /eqP /negPf in Hlt.
-      by rewrite -subnE eqnE Hlt.
+      by rewrite -?subnE eqnE Hlt.
 Qed.
 
 (**
@@ -328,7 +328,7 @@ Proof.
     ssprove_restore_mem;
       last by apply: r_ret.
     ssprove_invariant.
-    2: by rewrite -subnE subSnn.
+    2: by rewrite -?subnE subSnn.
     move {Hinv T Heq} => s0 s1 [[[Hinv A] B] C] loc H /=.
     rewrite !(get_set_heap_neq _ T_loc) -?in_fset1 //.
     case: (eq_dec loc count_loc)=> Heq.
@@ -349,10 +349,10 @@ Proof.
     all: move=> s0 s1 [[Hinv H] _] /=.
     all: rewrite /couple_lhs get_set_heap_eq get_set_heap_neq //.
     all: move /eqP in Hlt.
-    + rewrite Hinv // H -subnE eqnE.
+    + rewrite Hinv // H -?subnE eqnE.
       by rewrite subn_eq0 ltnW // -subn_eq0 Hlt.
     + move /eqP /negPf in Hlt.
-      by rewrite -subnE eqnE Hlt.
+      by rewrite -?subnE eqnE Hlt.
 Qed.
 
 Local Open Scope ring_scope.

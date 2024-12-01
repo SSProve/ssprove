@@ -833,7 +833,7 @@ Proof.
 Qed.
 
 Instance p_pow_positive t:
-  Positive (p^t).
+  Positive (p ^ t).
 Proof.
   by rewrite /Positive expn_gt0 prime_gt0.
 Qed.
@@ -851,7 +851,7 @@ Qed.
   Finally we combine all three bijections to create a bijection from [PolyEnc t]
   to [PolyEnc t] that we can use to prove security of the protocol.
 *)
-Definition PolyEnc t := 'fin (p^t).
+Definition PolyEnc t := 'fin (p ^ t).
 
 #[program] Definition mod_p (a: nat): Word :=
   @Ordinal _ (a %% p) _.
@@ -889,7 +889,7 @@ Proof.
 Qed.
 
 Lemma size_poly_to_nat (t: nat) (q: {poly Word}):
-  poly_to_nat t q < p^t.
+  poly_to_nat t q < p ^ t.
 Proof.
   elim: t => [// | t IHt] /= in q*.
   apply: (@leq_trans (poly_to_nat t (tail_poly q) * p + p)).
@@ -899,7 +899,7 @@ Proof.
 Qed.
 
 Lemma nat_poly_nat (t a: nat):
-  a < p^t ->
+  a < p ^ t ->
   poly_to_nat t (nat_to_poly t a) = a.
 Proof.
   elim: t a => [|t IHt] a H.
@@ -991,7 +991,7 @@ Definition SHARE_pkg_tt:
     #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'party): 'seq 'share {
       if size (domm U) >= t then ret emptym
       else
-      q <$ uniform (p^t') ;;
+      q <$ uniform (p ^ t') ;;
       let q := nat_to_poly t' q in
       let sh := make_shares ml q (domm U) in
       ret (fmap_of_seq sh)
@@ -1005,7 +1005,7 @@ Definition SHARE_pkg_ff:
     #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'party): 'seq 'share {
       if size (domm U) >= t then ret emptym
       else
-      q <$ uniform (p^t') ;;
+      q <$ uniform (p ^ t') ;;
       let q := nat_to_poly t' q in
       let sh := make_shares mr q (domm U) in
       ret (fmap_of_seq sh)

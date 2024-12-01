@@ -375,7 +375,7 @@ Proof.
                    (@otf Challenge s2))))
        q) =
     (@nat_of_ord (S (S (Zp_trunc q)))
-                   (@Zp_add (S (Zp_trunc q)) (@otf Challenge s1) (@Zp_opp (S (Zp_trunc q)) (@otf Challenge s2)))).
+                   (@Zp_add _ (@otf Challenge s1) (@Zp_opp _ (@otf Challenge s2)))).
   { simpl.
     rewrite modnDmr.
     destruct (otf s2) as [a Ha].
@@ -400,14 +400,14 @@ Proof.
                       (GRing.opp
                          (@otf Challenge s2)))))
           (@nat_of_ord (S (S (Zp_trunc q)))
-             (@Zp_add (S (Zp_trunc q)) (@otf Challenge s1) (@Zp_opp (S (Zp_trunc q)) (@otf Challenge s2))))) q) =
+             (@Zp_add _ (@otf Challenge s1) (@Zp_opp _ (@otf Challenge s2))))) q) =
     (Zp_mul
        (GRing.inv
           (GRing.add
              (@otf Challenge s1)
              (GRing.opp
                 (@otf Challenge s2))))
-       (@Zp_add (S (Zp_trunc q)) (@otf Challenge s1) (@Zp_opp (S (Zp_trunc q)) (@otf Challenge s2)))).
+       (@Zp_add _ (@otf Challenge s1) (@Zp_opp _ (@otf Challenge s2)))).
   { simpl.
     rewrite modnDmr.
     rewrite <- order_ge1 at 9.
@@ -514,7 +514,7 @@ Proof.
            unfold "\notin".
            rewrite in_fset1.
            done.
-        ++ 
+        ++
            rewrite -!fset1E.
            rewrite fdisjoint1s.
             unfold "\notin".
@@ -554,7 +554,7 @@ Proof.
            unfold "\notin".
            rewrite in_fset1.
            done.
-        ++ 
+        ++
            rewrite -!fset1E.
            rewrite fdisjoint1s.
             unfold "\notin".
