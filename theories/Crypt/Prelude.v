@@ -131,7 +131,7 @@ Proof.
   - rewrite expnS. rewrite mulSnr. rewrite mulSnr.
     change (0 * ?n) with 0.
     set (m := 2^n) in *. clearbody m. cbn.
-    rewrite -addnE. rewrite -plusE.
+    rewrite -?addnE. rewrite -plusE.
     lia.
 Qed.
 

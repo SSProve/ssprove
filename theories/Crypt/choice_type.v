@@ -508,7 +508,8 @@ Section choice_typeTypes.
       destruct n.
       + discriminate.
       + cbn.
-        rewrite -subnE subn0. repeat f_equal. apply eq_irrelevance.
+        rewrite ?subnE /= -subnE subn0.
+        repeat f_equal. apply eq_irrelevance.
   Defined.
 
   HB.instance Definition _ := Choice.copy choice_type (pcan_type codeK).
