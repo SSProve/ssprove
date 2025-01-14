@@ -25,7 +25,7 @@ jobs:
 
       - name: Try to restore opam cache
         id: opam-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: "~/.opam"
           key: opam-${{github.base_ref}}-${{github.ref}}
@@ -39,7 +39,7 @@ jobs:
 
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       # Runs a set of commands using the runners shell
       - name: Build
