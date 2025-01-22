@@ -9,13 +9,16 @@ Set Warnings "notation-overridden,ambiguous-paths".
 
 From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_composition Package Prelude SigmaProtocol Schnorr DDH Canonicals.
+  pkg_composition Package Prelude SigmaProtocol Schnorr DDH.
 
 From Coq Require Import Utf8 Lia.
 From extructures Require Import ord fset fmap.
 
 From Equations Require Import Equations.
 Require Equations.Prop.DepElim.
+
+From HB Require structures.
+From mathcomp Require ssreflect.bigop.
 
 Set Equations With UIP.
 
@@ -101,7 +104,8 @@ Proof.
 Qed.
 
 Definition Pid : finType := Finite.clone _ 'I_n.
-Definition Secret : finType := FinRing_ComRing__to__fintype_Finite (fintype_ordinal__canonical__FinRing_ComRing (Zp_trunc #[g])). (* Zp_finComRingType (Zp_trunc #[g]). *)
+Definition Secret : finType :=
+  FinRing_ComRing__to__fintype_Finite (fintype_ordinal__canonical__FinRing_ComRing (Zp_trunc #[g])). (* Zp_finComRingType (Zp_trunc #[g]). *)
 Definition Public : finType := gT.
 Definition s0 : Secret := 0.
 
@@ -140,10 +144,17 @@ Definition i_secret := #|Secret|.
 Definition i_public := #|Public|.
 
 Module Type CDSParams <: SigmaProtocolParams.
-  Definition Witness : finType := Secret.
+  Definition Witness : finType := prod (prod Secret 'bool) Public.
   Definition Statement : finType := prod (prod Public Public) Public.
 
-  Definition Witness_pos : Positive #|Witness| := Secret_pos.
+  Definition Witness_pos : Positive #|Witness|.
+  Proof.
+    rewrite !card_prod.
+    repeat apply Positive_prod.
+    - apply Secret_pos.
+    - rewrite card_bool. done.
+    - apply Public_pos.
+  Qed.
   Definition Statement_pos : Positive #|Statement|.
   Proof.
     unfold Statement.
@@ -153,28 +164,32 @@ Module Type CDSParams <: SigmaProtocolParams.
   Qed.
 
   Definition R : Statement -> Witness -> bool :=
-    λ (h : Statement) (x : Witness),
-      let '(gx, gy, gyxv) := h in
-      (gy^+x * g^+0 == gyxv) || (gy^+x * g^+1 == gyxv).
+      (λ (xhy : Statement) (mv : Witness),
+        let '(x,h,y) := xhy in
+        let '(m,v,h2) := mv in
+        (x == g ^+ m)%g
+        && (h == h2)%g
+        && ((y == h^+m * g ^+ v))%g
+      ).
 
   Lemma relation_valid_left:
-    ∀ (x : Secret) (gy : Public),
-      R (g^+x, gy, gy^+x * g^+ 0) x.
+    ∀ (x : Secret) (h : Public),
+      R (g^+x, h, h^+x * g)%g (x, 1%R, h)%g.
   Proof.
-    intros x gy.
+    intros x yi.
     unfold R.
-    apply /orP ; left.
-    done.
+    now rewrite !eqxx.
   Qed.
 
   Lemma relation_valid_right:
-    ∀ (x : Secret) (gy : Public),
-      R (g^+x, gy, gy^+x * g^+ 1) x.
+    ∀ (x : Secret) (h : Public),
+      R (g ^+ x, h, h ^+x) (x, 0%R, h).
   Proof.
-    intros x y.
+    intros x yi.
     unfold R.
-    apply /orP ; right.
-    done.
+    rewrite expg0.
+    rewrite mulg1.
+    now rewrite !eqxx.
   Qed.
 
   Parameter Message Challenge Response State : finType.
@@ -194,7 +209,7 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
   Module Sigma1 := Schnorr GP.
   Module Sigma2 := SigmaProtocol π2 Alg2.
 
-  Obligation Tactic := idtac.
+  Local Obligation Tactic := idtac.
   Set Equations Transparent.
 
   Definition skey_loc (i : nat) : Location := (secret; (100+i)%N).
@@ -263,8 +278,8 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     | _ => 1
     end.
 
-  From HB Require Import structures.
-  From mathcomp Require Import ssreflect.bigop.
+  Import structures.
+  Import ssreflect.bigop.
   Import Monoid.
   HB.instance Definition _ := isCommutativeLaw.Build _ _ group_prodC.
 
@@ -979,111 +994,114 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     {code
      x ← sample uniform i_secret ;;
      #put skey_loc i := x ;;
-     #assert Sigma1.MyParam.R (otf (fto (expgn_rec (T:=gT) g (otf x)))) (otf x) ;;
+     #assert Sigma1.MyParam.R (otf (fto (expgn (T:=gT) g (otf x)))) (otf x) ;;
      x1 ← sample uniform Sigma1.MyAlg.i_witness ;;
      #put Sigma1.MyAlg.commit_loc := x1 ;;
+    #put RO1.queries_loc := emptym ;;
      x2 ← get RO1.queries_loc ;;
-     match x2 (Sigma1.Sigma.prod_assoc (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)))) with
+     match x2 (Sigma1.Sigma.prod_assoc (fto (expgn (T:=gT) g (otf x)), fto (expgn (T:=gT) g (otf x1)))) with
      | Some a =>
          v ← get Sigma1.MyAlg.commit_loc ;;
          x3 ← sample uniform i_secret ;;
-         #assert Sigma1.MyParam.R (otf (fto (expgn_rec (T:=gT) g (otf x3)))) (otf x3) ;;
+         #assert Sigma1.MyParam.R (otf (fto (expgn (T:=gT) g (otf x3)))) (otf x3) ;;
          x5 ← sample uniform Sigma1.MyAlg.i_witness ;;
          #put Sigma1.MyAlg.commit_loc := x5 ;;
+         #put RO1.queries_loc := emptym ;;
          v0 ← get RO1.queries_loc ;;
-         match v0 (Sigma1.Sigma.prod_assoc (fto (expgn_rec (T:=gT) g (otf x3)), fto (expgn_rec (T:=gT) g (otf x5)))) with
+         match v0 (Sigma1.Sigma.prod_assoc (fto (expgn (T:=gT) g (otf x3)), fto (expgn (T:=gT) g (otf x5)))) with
          | Some a0 =>
              x6 ← get Sigma1.MyAlg.commit_loc ;;
              let x4 :=
-             (fto (expgn_rec (T:=gT) g (otf x3)), fto (expgn_rec (T:=gT) g (otf x5)), a0, fto (Zp_add (otf x6) (Zp_mul (otf a0) (otf x3))))
+             (fto (expgn (T:=gT) g (otf x3)), fto (expgn (T:=gT) g (otf x5)), a0, fto (Zp_add (otf x6) (Zp_mul (otf a0) (otf x3))))
              in
          #assert eqn
                     (size
                        (domm (T:='I_#|'I_n|) (S:='I_#|gT| * ('I_#|gT| * 'I_#|gT| * 'I_#|'Z_Sigma1.q| * 'I_#|'Z_Sigma1.q|))
-                          (setm (T:='I_#|'I_n|) (setm (T:='I_#|'I_n|) m j (fto (expgn_rec (T:=gT) g (otf x3)), x4)) i
-                             (fto (expgn_rec (T:=gT) g (otf x)),
-                             (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)), a, fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))))) n ;;
+                          (setm (T:='I_#|'I_n|) (setm (T:='I_#|'I_n|) m j (fto (expgn (T:=gT) g (otf x3)), x4)) i
+                             (fto (expgn (T:=gT) g (otf x)),
+                             (fto (expgn (T:=gT) g (otf x)), fto (expgn (T:=gT) g (otf x1)), a, fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))))) n ;;
           #put ckey_loc i := fto
                               (compute_key
-                                 (setm (T:='I_#|'I_n|) (setm (T:='I_#|'I_n|) m j (fto (expgn_rec (T:=gT) g (otf x3)), x4)) i
-                                    (fto (expgn_rec (T:=gT) g (otf x)),
-                                    (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)), a,
+                                 (setm (T:='I_#|'I_n|) (setm (T:='I_#|'I_n|) m j (fto (expgn (T:=gT) g (otf x3)), x4)) i
+                                    (fto (expgn (T:=gT) g (otf x)),
+                                    (fto (expgn (T:=gT) g (otf x)), fto (expgn (T:=gT) g (otf x1)), a,
                                     fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))) i) ;;
          v0 ← get skey_loc i ;;
          v1 ← get ckey_loc i ;;
-         @ret 'public (fto (expgn_rec (T:=gT) (otf v1) v0 * expgn_rec (T:=gT) g vote))
+         @ret 'public (fto (expgn (T:=gT) (otf v1) v0 * expgn (T:=gT) g vote))
          | None =>
              a0 ← sample uniform RO1.i_random ;;
              #put RO1.queries_loc := setm v0
-                                      (Sigma1.Sigma.prod_assoc (fto (expgn_rec (T:=gT) g (otf x3)), fto (expgn_rec (T:=gT) g (otf x5)))) a0 ;;
+                                      (Sigma1.Sigma.prod_assoc (fto (expgn (T:=gT) g (otf x3)), fto (expgn (T:=gT) g (otf x5)))) a0 ;;
              x6 ← get Sigma1.MyAlg.commit_loc ;;
-             let x4 := (fto (expgn_rec (T:=gT) g (otf x3)), fto (expgn_rec (T:=gT) g (otf x5)), a0, fto (Zp_add (otf x6) (Zp_mul (otf a0) (otf x3)))) in
+             let x4 := (fto (expgn (T:=gT) g (otf x3)), fto (expgn (T:=gT) g (otf x5)), a0, fto (Zp_add (otf x6) (Zp_mul (otf a0) (otf x3)))) in
          #assert eqn
                     (size
                        (domm (T:='I_#|'I_n|) (S:='I_#|gT| * ('I_#|gT| * 'I_#|gT| * 'I_#|'Z_Sigma1.q| * 'I_#|'Z_Sigma1.q|))
-                          (setm (T:='I_#|'I_n|) (setm (T:='I_#|'I_n|) m j (fto (expgn_rec (T:=gT) g (otf x3)), x4)) i
-                             (fto (expgn_rec (T:=gT) g (otf x)),
-                             (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)), a, fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))))) n ;;
+                          (setm (T:='I_#|'I_n|) (setm (T:='I_#|'I_n|) m j (fto (expgn (T:=gT) g (otf x3)), x4)) i
+                             (fto (expgn (T:=gT) g (otf x)),
+                             (fto (expgn (T:=gT) g (otf x)), fto (expgn (T:=gT) g (otf x1)), a, fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))))) n ;;
           #put ckey_loc i := fto
                               (compute_key
-                                 (setm (T:='I_#|'I_n|) (setm (T:='I_#|'I_n|) m j (fto (expgn_rec (T:=gT) g (otf x3)), x4)) i
-                                    (fto (expgn_rec (T:=gT) g (otf x)),
-                                    (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)), a,
+                                 (setm (T:='I_#|'I_n|) (setm (T:='I_#|'I_n|) m j (fto (expgn (T:=gT) g (otf x3)), x4)) i
+                                    (fto (expgn (T:=gT) g (otf x)),
+                                    (fto (expgn (T:=gT) g (otf x)), fto (expgn (T:=gT) g (otf x1)), a,
                                     fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))) i) ;;
          v0 ← get skey_loc i ;;
          v1 ← get ckey_loc i ;;
-         @ret 'public (fto (expgn_rec (T:=gT) (otf v1) v0 * expgn_rec (T:=gT) g vote))
+         @ret 'public (fto (expgn (T:=gT) (otf v1) v0 * expgn (T:=gT) g vote))
          end
      | None =>
          a ← sample uniform RO1.i_random ;;
          #put RO1.queries_loc := setm x2
-                                  (Sigma1.Sigma.prod_assoc (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)))) a ;;
+                                  (Sigma1.Sigma.prod_assoc (fto (expgn (T:=gT) g (otf x)), fto (expgn (T:=gT) g (otf x1)))) a ;;
          v ← get Sigma1.MyAlg.commit_loc ;;
          x3 ← sample uniform i_secret ;;
-         #assert Sigma1.MyParam.R (otf (fto (expgn_rec (T:=gT) g (otf x3)))) (otf x3) ;;
+         #assert Sigma1.MyParam.R (otf (fto (expgn (T:=gT) g (otf x3)))) (otf x3) ;;
          x5 ← sample uniform Sigma1.MyAlg.i_witness ;;
          #put Sigma1.MyAlg.commit_loc := x5 ;;
+         #put RO1.queries_loc := emptym ;;
          v0 ← get RO1.queries_loc ;;
-         match v0 (Sigma1.Sigma.prod_assoc (fto (expgn_rec (T:=gT) g (otf x3)), fto (expgn_rec (T:=gT) g (otf x5)))) with
+         match v0 (Sigma1.Sigma.prod_assoc (fto (expgn (T:=gT) g (otf x3)), fto (expgn (T:=gT) g (otf x5)))) with
          | Some a0 =>
              x6 ← get Sigma1.MyAlg.commit_loc ;;
-             let x4 := (fto (expgn_rec (T:=gT) g (otf x3)), fto (expgn_rec (T:=gT) g (otf x5)), a0, fto (Zp_add (otf x6) (Zp_mul (otf a0) (otf x3)))) in
+             let x4 := (fto (expgn (T:=gT) g (otf x3)), fto (expgn (T:=gT) g (otf x5)), a0, fto (Zp_add (otf x6) (Zp_mul (otf a0) (otf x3)))) in
              #assert eqn
                  (size
                  (domm (T:='I_#|'I_n|) (S:='I_#|gT| * ('I_#|gT| * 'I_#|gT| * 'I_#|'Z_Sigma1.q| * 'I_#|'Z_Sigma1.q|))
-                         (setm (T:='I_#|'I_n|) (setm (T:='I_#|'I_n|) m j (fto (expgn_rec (T:=gT) g (otf x3)), x4)) i
-                             (fto (expgn_rec (T:=gT) g (otf x)),
-                                 (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)), a, fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))))) n ;;
+                         (setm (T:='I_#|'I_n|) (setm (T:='I_#|'I_n|) m j (fto (expgn (T:=gT) g (otf x3)), x4)) i
+                             (fto (expgn (T:=gT) g (otf x)),
+                                 (fto (expgn (T:=gT) g (otf x)), fto (expgn (T:=gT) g (otf x1)), a, fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))))) n ;;
              #put ckey_loc i := fto
                                  (compute_key
-                                     (setm (T:='I_#|'I_n|) (setm (T:='I_#|'I_n|) m j (fto (expgn_rec (T:=gT) g (otf x3)), x4)) i
-                                             (fto (expgn_rec (T:=gT) g (otf x)),
-                                             (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)), a,
+                                     (setm (T:='I_#|'I_n|) (setm (T:='I_#|'I_n|) m j (fto (expgn (T:=gT) g (otf x3)), x4)) i
+                                             (fto (expgn (T:=gT) g (otf x)),
+                                             (fto (expgn (T:=gT) g (otf x)), fto (expgn (T:=gT) g (otf x1)), a,
                                                  fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))) i) ;;
             v0 ← get skey_loc i ;;
             v1 ← get ckey_loc i ;;
-            @ret 'public (fto (expgn_rec (T:=gT) (otf v1) v0 * expgn_rec (T:=gT) g vote))
+            @ret 'public (fto (expgn (T:=gT) (otf v1) v0 * expgn (T:=gT) g vote))
         | None =>
                    a0 ← sample uniform RO1.i_random ;;
                    #put RO1.queries_loc := setm v0
-                                            (Sigma1.Sigma.prod_assoc (fto (expgn_rec (T:=gT) g (otf x3)), fto (expgn_rec (T:=gT) g (otf x5)))) a0 ;;
+                                            (Sigma1.Sigma.prod_assoc (fto (expgn (T:=gT) g (otf x3)), fto (expgn (T:=gT) g (otf x5)))) a0 ;;
                    x6 ← get Sigma1.MyAlg.commit_loc ;;
-                   let x4 := (fto (expgn_rec (T:=gT) g (otf x3)), fto (expgn_rec (T:=gT) g (otf x5)), a0, fto (Zp_add (otf x6) (Zp_mul (otf a0) (otf x3)))) in
+                   let x4 := (fto (expgn (T:=gT) g (otf x3)), fto (expgn (T:=gT) g (otf x5)), a0, fto (Zp_add (otf x6) (Zp_mul (otf a0) (otf x3)))) in
          #assert eqn
                     (size
                        (domm (T:='I_#|'I_n|) (S:='I_#|gT| * ('I_#|gT| * 'I_#|gT| * 'I_#|'Z_Sigma1.q| * 'I_#|'Z_Sigma1.q|))
-                          (setm (T:='I_#|'I_n|) (setm (T:='I_#|'I_n|) m j (fto (expgn_rec (T:=gT) g (otf x3)), x4)) i
-                             (fto (expgn_rec (T:=gT) g (otf x)),
-                             (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)), a, fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))))) n ;;
+                          (setm (T:='I_#|'I_n|) (setm (T:='I_#|'I_n|) m j (fto (expgn (T:=gT) g (otf x3)), x4)) i
+                             (fto (expgn (T:=gT) g (otf x)),
+                             (fto (expgn (T:=gT) g (otf x)), fto (expgn (T:=gT) g (otf x1)), a, fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))))) n ;;
           #put ckey_loc i := fto
                               (compute_key
-                                 (setm (T:='I_#|'I_n|) (setm (T:='I_#|'I_n|) m j (fto (expgn_rec (T:=gT) g (otf x3)), x4)) i
-                                    (fto (expgn_rec (T:=gT) g (otf x)),
-                                    (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)), a,
+                                 (setm (T:='I_#|'I_n|) (setm (T:='I_#|'I_n|) m j (fto (expgn (T:=gT) g (otf x3)), x4)) i
+                                    (fto (expgn (T:=gT) g (otf x)),
+                                    (fto (expgn (T:=gT) g (otf x)), fto (expgn (T:=gT) g (otf x1)), a,
                                     fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))) i) ;;
          v0 ← get skey_loc i ;;
          v1 ← get ckey_loc i ;;
-         @ret 'public (fto (expgn_rec (T:=gT) (otf v1) v0 * expgn_rec (T:=gT) g vote))
+         @ret 'public (fto (expgn (T:=gT) (otf v1) v0 * expgn (T:=gT) g vote))
                end
      end
     }.
@@ -1100,39 +1118,39 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     {code
      x ← sample uniform i_secret ;;
      #put skey_loc i := x ;;
-     #assert Sigma1.MyParam.R (otf (fto (expgn_rec (T:=gT) g (otf x)))) (otf x) ;;
+     #assert Sigma1.MyParam.R (otf (fto (expgn (T:=gT) g (otf x)))) (otf x) ;;
      x1 ← sample uniform Sigma1.MyAlg.i_witness ;;
      #put Sigma1.MyAlg.commit_loc := x1 ;;
      x2 ← get RO1.queries_loc ;;
          a ← sample uniform RO1.i_random ;;
          #put RO1.queries_loc := setm x2
-                                  (Sigma1.Sigma.prod_assoc (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)))) a ;;
+                                  (Sigma1.Sigma.prod_assoc (fto (expgn (T:=gT) g (otf x)), fto (expgn (T:=gT) g (otf x1)))) a ;;
          v ← get Sigma1.MyAlg.commit_loc ;;
          x3 ← sample uniform i_secret ;;
-         #assert Sigma1.MyParam.R (otf (fto (expgn_rec (T:=gT) g (otf x3)))) (otf x3) ;;
+         #assert Sigma1.MyParam.R (otf (fto (expgn (T:=gT) g (otf x3)))) (otf x3) ;;
          x5 ← sample uniform Sigma1.MyAlg.i_witness ;;
          #put Sigma1.MyAlg.commit_loc := x5 ;;
          v0 ← get RO1.queries_loc ;;
                    a0 ← sample uniform RO1.i_random ;;
                    #put RO1.queries_loc := setm v0
-                                            (Sigma1.Sigma.prod_assoc (fto (expgn_rec (T:=gT) g (otf x3)), fto (expgn_rec (T:=gT) g (otf x5)))) a0 ;;
+                                            (Sigma1.Sigma.prod_assoc (fto (expgn (T:=gT) g (otf x3)), fto (expgn (T:=gT) g (otf x5)))) a0 ;;
                    x6 ← get Sigma1.MyAlg.commit_loc ;;
-                   let x4 := (fto (expgn_rec (T:=gT) g (otf x3)), fto (expgn_rec (T:=gT) g (otf x5)), a0, fto (Zp_add (otf x6) (Zp_mul (otf a0) (otf x3)))) in
+                   let x4 := (fto (expgn (T:=gT) g (otf x3)), fto (expgn (T:=gT) g (otf x5)), a0, fto (Zp_add (otf x6) (Zp_mul (otf a0) (otf x3)))) in
          #assert eqn
                     (size
                        (domm (T:='I_#|'I_n|) (S:='I_#|gT| * ('I_#|gT| * 'I_#|gT| * 'I_#|'Z_Sigma1.q| * 'I_#|'Z_Sigma1.q|))
-                          (setm (T:='I_#|'I_n|) (setm (T:='I_#|'I_n|) m j (fto (expgn_rec (T:=gT) g (otf x3)), x4)) i
-                             (fto (expgn_rec (T:=gT) g (otf x)),
-                             (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)), a, fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))))) n ;;
+                          (setm (T:='I_#|'I_n|) (setm (T:='I_#|'I_n|) m j (fto (expgn (T:=gT) g (otf x3)), x4)) i
+                             (fto (expgn (T:=gT) g (otf x)),
+                             (fto (expgn (T:=gT) g (otf x)), fto (expgn (T:=gT) g (otf x1)), a, fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))))) n ;;
           #put ckey_loc i := fto
                               (compute_key
-                                 (setm (T:='I_#|'I_n|) (setm (T:='I_#|'I_n|) m j (fto (expgn_rec (T:=gT) g (otf x3)), x4)) i
-                                    (fto (expgn_rec (T:=gT) g (otf x)),
-                                    (fto (expgn_rec (T:=gT) g (otf x)), fto (expgn_rec (T:=gT) g (otf x1)), a,
+                                 (setm (T:='I_#|'I_n|) (setm (T:='I_#|'I_n|) m j (fto (expgn (T:=gT) g (otf x3)), x4)) i
+                                    (fto (expgn (T:=gT) g (otf x)),
+                                    (fto (expgn (T:=gT) g (otf x)), fto (expgn (T:=gT) g (otf x1)), a,
                                     fto (Zp_add (otf v) (Zp_mul (otf a) (otf x)))))) i) ;;
          v0 ← get skey_loc i ;;
          v1 ← get ckey_loc i ;;
-         @ret 'public (fto (expgn_rec (T:=gT) (otf v1) v0 * expgn_rec (T:=gT) g vote))
+         @ret 'public (fto (expgn (T:=gT) (otf v1) v0 * expgn (T:=gT) g vote))
     }.
   Next Obligation.
     intros.
@@ -1171,14 +1189,82 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     ssprove_sync_eq=>rel1.
     ssprove_sync_eq=>r1.
     ssprove_sync_eq.
+    ssprove_code_simpl.
 
-    (* ssprove_sync_eq=>queries.
-    destruct (queries (Sigma1.Sigma.prod_assoc (fto (g ^+ otf x), fto (g ^+ otf r1)))) eqn:e.
-    all: rewrite e.
-    - simpl.
-      ssprove_code_simpl.
-      ssprove_sync_eq=>?. *)
-  Admitted.
+    ssprove_contract_put_get_lhs.
+    ssprove_contract_put_get_rhs.
+
+    ssprove_sync_eq.
+    simpl.
+
+    ssprove_code_simpl.
+    ssprove_sync_eq=>a.
+    ssprove_sync_eq.
+    ssprove_sync_eq=>v.
+
+    apply r_uniform_bij with (f := (fun (x : Arit (@uniform i_secret Sigma1.MyParam.Witness_pos)) => (x : Arit (@uniform i_secret Secret_pos)))).
+    1: exact (inv_bij (fun x => erefl)).
+    intros.
+
+    match goal with
+    | |- context [⊢ ⦃ _ ⦄ bind (assertD ?v ?z) ?y ≈ ?x  ⦃ _ ⦄] =>
+        set (temp1 := x) ; set (temp2 := y) ;
+        set (temp3 := z) ; set (temp4 := v) in *
+    end.
+
+    apply (r_transL  (@assertD _ temp4 (fun z => x ← temp3 z ;; temp2 x))).
+    1:{
+      eapply r_transR.
+      1:{
+        apply r_bind_assertD_sym.
+      }
+      apply rreflexivity_rule.
+    }
+    subst temp1 temp2 temp3 temp4.
+
+    apply (@r_assertD_same (chFin (mkpos #|gT|)) _).
+    intros.
+
+    simpl.
+    ssprove_sync_eq=>a0.
+    ssprove_sync_eq.
+
+    ssprove_contract_put_get_lhs.
+    ssprove_contract_put_get_rhs.
+
+    ssprove_sync_eq.
+    simpl.
+
+    ssprove_sync_eq=>a1.
+    ssprove_sync_eq.
+    ssprove_sync_eq=>a2.
+
+    match goal with
+    | |- context [⊢ ⦃ _ ⦄ bind (assertD ?v ?z) ?y ≈ ?x  ⦃ _ ⦄] =>
+        set (temp1 := x) ; set (temp2 := y) ;
+        set (temp3 := z) ; set (temp4 := v) in *
+    end.
+
+    apply (r_transL  (@assertD _ temp4 (fun z => x ← temp3 z ;; temp2 x))).
+    1:{
+      eapply r_transR.
+      1:{
+        apply r_bind_assertD_sym.
+      }
+      apply rreflexivity_rule.
+    }
+    subst temp1 temp2 temp3 temp4. hnf.
+
+    apply r_assertD_same.
+    intros.
+
+    ssprove_sync_eq.
+    ssprove_sync_eq=>a3.
+    ssprove_sync_eq=>a4.
+    apply r_ret.
+    intros. subst.
+    reflexivity.
+  Qed.
 
   #[tactic=notac] Equations? Aux_realised (b : bool) (i j : pid) m f' :
     package (DDH.DDH_locs :|: P_i_locs i :|: combined_locations) Game_import [interface #val #[ Exec i ] : 'bool → 'public] :=
@@ -1750,7 +1836,7 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     }
     eapply le_trans. 1: exact ineq.
     clear ineq.
-    repeat eapply ler_add.
+    repeat eapply lerD.
     {
       apply eq_ler.
       specialize (Hf true LA A Va).
