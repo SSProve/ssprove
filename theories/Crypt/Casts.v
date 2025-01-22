@@ -2,32 +2,22 @@ Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-forma
 From mathcomp Require Import ssreflect ssrbool ssrnat choice fintype eqtype all_algebra.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 
-From deriving Require Import deriving.
 From Coq Require Import ZArith.
-
 From extructures Require Import ord fmap.
-From Crypt Require Import Prelude.
+From SSProve.Crypt Require Import Prelude.
+From mathcomp Require Import word_ssrZ word.
+From SSProve.Crypt Require Import jasmin_word jasmin_util.
+
 
 From HB Require Import structures.
-
-From mathcomp Require Import word_ssrZ word.
-From Crypt Require Import jasmin_word jasmin_util.
-
-Check jasmin_word.word.
-
-Set Equations With UIP.
-
-Set Bullet Behavior "Strict Subproofs".
-Set Default Goal Selector "!".
-Set Primitive Projections.
-
-Open Scope type_scope.
 
 HB.instance Definition _ nbits :=
   [Ord of (word nbits) by <:].
 
 HB.instance Definition _ nbits :=
   [Choice of (word nbits) by <:].
+
+
 
 (**
   Note for any of these types it would also be okay to write the cast, e.g., [(nat:choiceType)%type],
@@ -38,7 +28,7 @@ HB.instance Definition _ nbits :=
 
 Definition unit_choiceType : choiceType := Datatypes.unit.
 Definition nat_choiceType : choiceType := nat.
-Definition int_choiceType : choiceType := Z. 
+Definition int_choiceType : choiceType := Z.
 Definition bool_choiceType : choiceType := bool.
 Definition prod_choiceType (A B: choiceType) : choiceType := prod A B.
 Definition fmap_choiceType (A: ordType) (B: choiceType) : choiceType := {fmap A -> B}.

@@ -9,8 +9,8 @@ Set Warnings "-notation-overridden".
 From Jasmin Require Import expr sem.
 Set Warnings "notation-overridden".
 From Jasmin Require Import x86_instr_decl x86_extra.
-From JasminSSProve Require Import jasmin_translate jasmin_utils.
-From Crypt Require Import Prelude Package.
+From SSProve.Jasmin Require Import jasmin_translate jasmin_utils.
+From SSProve.Crypt Require Import Prelude Package.
 
 Import ListNotations.
 Import JasminNotation JasminCodeNotation.

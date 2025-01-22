@@ -1,10 +1,10 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require FunctionalExtensionality.
-From Mon Require Export Base.
+From SSProve.Mon Require Export Base.
 From Coq Require Import Relation_Definitions Morphisms.
-From Mon Require Import SPropBase SPropMonadicStructures.
-(* From Relational Require Import Category RelativeMonads RelativeMonadExamples. *)
-From Relational Require Import  OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
+From SSProve.Mon Require Import SPropBase SPropMonadicStructures.
+(* From SSProve.Relational Require Import Category RelativeMonads RelativeMonadExamples. *)
+From SSProve.Relational Require Import  OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
@@ -208,7 +208,8 @@ Section GoingPractical.
     move=> H1 H2 ; apply weaken_rule2.
     enough (c2 = skip ;; c2) as ->.
     enough (c1 = bind c1 ret) as ->.
-    apply seq_rule=> // ? ?; eapply weaken_rule2.
+    apply seq_rule=> // ? ?;
+    now eapply weaken_rule2=> //=.
     rewrite /bind monad_law2 //.
     rewrite /bind monad_law1 //.
   Qed.
@@ -296,4 +297,3 @@ End GoingPractical.
 
 Ltac apply_seq :=
     refine (gp_seq_rule _ _ _ _ (wf:=extend_to_Jprod _ (fun '⟨a1, a2⟩ => _)) _ _ _).
-

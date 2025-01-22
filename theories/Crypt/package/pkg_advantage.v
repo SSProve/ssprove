@@ -2,15 +2,15 @@
 
 
 From Coq Require Import Utf8.
-From Relational Require Import OrderEnrichedCategory
+From SSProve.Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr seq all_algebra fintype realsum.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
-From Mon Require Import SPropBase.
-From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
+From SSProve.Mon Require Import SPropBase.
+From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
   StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
   pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_lookup.
@@ -18,7 +18,7 @@ Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
 (* Must come after importing Equations.Equations, who knows why. *)
-From Crypt Require Import FreeProbProg.
+From SSProve.Crypt Require Import FreeProbProg.
 
 Import Num.Theory.
 
@@ -83,7 +83,7 @@ Definition Pr_op (p : raw_package) (o : opsig) (x : src o) :
 Arguments SDistr_bind {_ _}.
 
 Definition Pr (p : raw_package) :
-  SDistr (Datatypes_bool__canonical__choice_Choice) :=
+  SDistr (bool:choiceType) :=
   SDistr_bind
     (λ '(b, _), SDistr_unit _ b)
     (Pr_op p RUN Datatypes.tt empty_heap).
@@ -152,7 +152,7 @@ Qed. *)
   : package_scope. *)
 
 Definition state_pass_ {A} (p : raw_code A) :
-  heap_choiceType → raw_code (Datatypes_prod__canonical__choice_Choice A heap_choiceType).
+  heap_choiceType → raw_code (prod A heap_choiceType).
 Proof.
   induction p; intros h.
   - constructor.
@@ -369,7 +369,7 @@ Lemma Advantage_triangle :
 Proof.
   intros P Q R A.
   unfold AdvantageE.
-  apply ler_dist_add.
+  apply ler_distD.
 Qed.
 
 Fixpoint advantage_sum P l Q A :=
@@ -387,7 +387,7 @@ Proof.
   - simpl. auto.
   - simpl. eapply order.Order.POrderTheory.le_trans.
     + eapply Advantage_triangle.
-    + eapply ler_add.
+    + eapply lerD.
       * auto.
       * eapply ih.
 Qed.
@@ -429,7 +429,7 @@ Proof.
   intros Game_export F G H ε₁ ε₂ ε₃ h1 h2 h3 LA A vA hF hG hH.
   unfold adv_equiv in *.
   erewrite <- h1, <- h2, <- h3 by eassumption.
-  apply ler_dist_add.
+  apply ler_distD.
 Qed.
 
 Lemma Reduction :

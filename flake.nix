@@ -4,48 +4,46 @@
     flake-utils.url    = github:numtide/flake-utils;
   };
   outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
+    let
+      ssprovePkg = { lib, mkCoqDerivation, coq
+                  , equations, extructures, deriving
+                  , mathcomp-analysis, mathcomp-ssreflect }:
+        mkCoqDerivation {
+          pname = "ssprove";
+          owner = "SSProve";
+          version = "0.2.0";
+          src = ./.;
+          propagatedBuildInputs = [
+            equations
+            mathcomp-analysis
+            mathcomp-ssreflect
+            deriving
+            extructures
+          ];
+          meta = {
+            description = "A foundational framework for modular cryptographic proofs in Coq ";
+            license = lib.licenses.mit;
+          };
+        };
+    in {
+      overlays.default = final: prev: {
+        coqPackages_8_19 = prev.coqPackages_8_19.overrideScope (self: super: {
+          # mathcomp-ssreflect inherits this version
+          # setting it to mathcomp-ssreflect does not work.
+          # see my question on Zulip:
+          # https://coq.zulipchat.com/#narrow/stream/290990-Nix-toolbox-devs-.26-users/topic/Loading.20inconsistency.20in.20mathcomp.20dependencies
+          mathcomp = super.mathcomp.override { version = "2.2.0"; };
+          ssprove  = self.callPackage ssprovePkg {};
+        });
+      };
+    } // flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
-      in
-       rec {
-         mkDrv = { stdenv, which, coqPackages, coq } :
-           let
-             extructures' = coqPackages.extructures.override { version = "0.4.0"; };
-           in
-            stdenv.mkDerivation {
-              pname = "ssprove";
-              version = "0.0.1";
-              src = ./.;
-              nativeBuildInputs = [ which coq.ocamlPackages.findlib ] ++
-                                  (with coqPackages; [
-                                    equations
-                                    mathcomp-analysis
-                                    mathcomp-ssreflect
-                                    deriving
-                                  ])
-                                  ++ [extructures'];
-              buildInputs = [ coq ];
-            };
-
-          devShell =
-            let
-              args = {
-                inherit (pkgs) stdenv which;
-                coq = pkgs.coq_8_18;
-                coqPackages = pkgs.coqPackages_8_18.overrideScope
-                  (self: super: {
-                    mathcomp = super.mathcomp.override { version = "2.1.0"; };
-                    mathcomp-analysis = super.mathcomp-analysis.override { version = "1.0.0"; };
-                  });
-              };
-              ssprove' = mkDrv args;
-            in
-              pkgs.mkShell {
-                packages =
-                  (with pkgs; [ coq gnumake ])
-                  ++
-                  (with ssprove';  nativeBuildInputs);
-              };
-       });
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ self.overlays.default ];
+        };
+      in {
+        packages.default = pkgs.coqPackages_8_19.ssprove;
+        devShells.default = self.packages.${system}.default;
+      });
 }

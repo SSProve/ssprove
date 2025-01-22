@@ -4,7 +4,7 @@
 
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra.
-From Crypt Require Import jasmin_util.
+From SSProve.Crypt Require Import jasmin_util.
 Require Import (* strings *) ZArith (* utils *).
 (* Import Utf8. *)
 (* Import word_ssrZ. *)
@@ -104,4 +104,3 @@ Definition check_size_16_32 sz := assert ((U16 ≤ sz) && (sz ≤ U32))%CMP ErrT
 Definition check_size_16_64 sz := assert ((U16 ≤ sz) && (sz ≤ U64))%CMP ErrType.
 Definition check_size_32_64 sz := assert ((U32 ≤ sz) && (sz ≤ U64))%CMP ErrType.
 Definition check_size_128_256 sz := assert ((U128 ≤ sz) && (sz ≤ U256))%CMP ErrType.
-

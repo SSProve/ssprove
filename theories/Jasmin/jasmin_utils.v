@@ -2,8 +2,8 @@ From Coq Require String Ascii.
 
 From Jasmin Require Import expr.
 
-From Crypt Require Import Prelude Package.
-From JasminSSProve Require Import jasmin_translate.
+From SSProve.Crypt Require Import Prelude Package.
+From SSProve.Jasmin Require Import jasmin_translate.
 
 From Ltac2 Require Ltac2 Printf.
 From Ltac2 Require String Char Fresh Ident.

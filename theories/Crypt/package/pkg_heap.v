@@ -6,15 +6,15 @@
 
 From Coq Require Import Utf8.
 Require Import ZArith.
-From Relational Require Import OrderEnrichedCategory
+From SSProve.Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr seq all_algebra fintype realsum.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
-From Mon Require Import SPropBase.
-From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
+From SSProve.Mon Require Import SPropBase.
+From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
   StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
   pkg_tactics pkg_composition.
@@ -23,7 +23,7 @@ From Equations Require Import Equations.
 From mathcomp Require Import word.
 
 (* Must come after importing Equations.Equations, who knows why. *)
-From Crypt Require Import FreeProbProg.
+From SSProve.Crypt Require Import FreeProbProg.
 
 Set Equations With UIP.
 Set Equations Transparent.
@@ -39,7 +39,7 @@ Set Primitive Projections.
 Definition pointed_value := ∑ (t : choice_type), t.
 
 Definition raw_heap := {fmap Location -> pointed_value}.
-Definition raw_heap_choiceType := [choiceType of raw_heap].
+Definition raw_heap_choiceType := Choice.clone _ raw_heap.
 
 Definition check_loc_val (l : Location) (v : pointed_value) :=
   l.π1 == v.π1.
@@ -73,7 +73,7 @@ Defined.
 
 Definition heap := { h : raw_heap | valid_heap h }.
 
-Definition heap_choiceType := [choiceType of heap].
+Definition heap_choiceType := Choice.clone _ heap.
 
 Lemma heap_ext :
   ∀ (h₀ h₁ : heap),
@@ -207,7 +207,7 @@ Proof.
     pose proof e as ep. simpl in ep.
     rewrite setmE in ep. rewrite eqxx in ep. noconf ep.
   }
-  rewrite -Heqcall. clear Heqcall.
+  try rewrite -Heqcall. clear Heqcall.
   pose proof e as ep. simpl in ep.
   rewrite setmE in ep. rewrite eqxx in ep. noconf ep.
   rewrite (cast_pointed_value_K (ℓ0.π1 ; v)).
@@ -221,7 +221,7 @@ Lemma get_set_heap_neq :
 Proof.
   intros h ℓ v ℓ' ne.
   funelim (get_heap (set_heap h ℓ v) ℓ').
-  - rewrite -Heqcall. clear Heqcall.
+  - try rewrite -Heqcall. clear Heqcall.
     pose proof e as ep. simpl in ep.
     rewrite setmE in ep.
     eapply negbTE in ne. rewrite ne in ep.
@@ -229,17 +229,17 @@ Proof.
     2:{
       rewrite -e in ep. noconf ep.
     }
-    rewrite -Heqcall. clear Heqcall.
+    try rewrite -Heqcall. clear Heqcall.
     apply cast_pointed_value_ext.
     rewrite -e in ep. noconf ep. reflexivity.
-  - rewrite -Heqcall. clear Heqcall.
+  - try rewrite -Heqcall. clear Heqcall.
     clear H. simpl in e. rewrite setmE in e.
     eapply negbTE in ne. rewrite ne in e.
     funelim (get_heap h ℓ).
     1:{
       rewrite -e in e0. noconf e0.
     }
-    rewrite -Heqcall. reflexivity.
+    try rewrite -Heqcall. reflexivity.
 Qed.
 
 Lemma set_heap_contract :

@@ -14,7 +14,7 @@ Set Warnings "ambiguous-paths".
 
 From Coq Require Import Utf8.
 
-From Crypt Require Import Prelude Package.
+From SSProve.Crypt Require Import Prelude Package.
 Import PackageNotation.
 
 From Equations Require Import Equations.
@@ -29,7 +29,7 @@ Set Default Goal Selector "!".
 Set Primitive Projections.
 Set Default Proof Using "Type".
 
-From JasminSSProve Require Import jasmin_translate jasmin_asm.
+From SSProve.Jasmin Require Import jasmin_translate jasmin_asm.
 
 From Jasmin Require Import
   x86_instr_decl
@@ -117,7 +117,7 @@ Section x86_correct.
   (*     destruct w ; repeat constructor. *)
   (* Qed. *)
   Admitted.
-  
+
 Context
   {syscall_state : Type}
     {sc_sem : syscall.syscall_sem syscall_state}

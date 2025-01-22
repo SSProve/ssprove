@@ -6,10 +6,10 @@ Set Warnings "notation-overridden,ambiguous-paths".
 From Coq Require Import Utf8 ZArith micromega.Lia List.
 
 From Jasmin Require Import expr xseq waes word x86_instr_decl x86_extra.
-From JasminSSProve Require Import jasmin_utils jasmin_translate word aes_jazz aes_utils aes_spec.
+From SSProve.Jasmin Require Import jasmin_utils jasmin_translate word aes_jazz aes_utils aes_spec.
 
-From Relational Require Import OrderEnrichedCategory.
-From Crypt Require Import Prelude Package ChoiceAsOrd choice_type.
+From SSProve.Relational Require Import OrderEnrichedCategory.
+From SSProve.Crypt Require Import Prelude Package ChoiceAsOrd choice_type.
 
 From extructures Require Import ord fset fmap.
 
@@ -19,7 +19,7 @@ Import PackageNotation.
 Import AesNotation.
 
 Set Bullet Behavior "Strict Subproofs".
-Set Default Goal Selector "!". 
+Set Default Goal Selector "!".
 
 Local Open Scope Z.
 
@@ -43,7 +43,7 @@ Proof.
          end.
   all: ssprove_code_simpl; rewrite !coerce_to_choice_type_K; eapply r_put_lhs; ssprove_contract_put_get_lhs; eapply r_put_lhs; eapply r_ret.
   all: intros; destruct_pre; split_post; [ pdisj_apply Hpdisj | rewrite coerce_to_choice_type_K; eexists; split; eauto ].
-  destruct (i =? 10)%Z eqn:E. 
+  destruct (i =? 10)%Z eqn:E.
   - rewrite Z.eqb_eq in E. subst. reflexivity.
   - apply H in H13. lia.
 Qed.
@@ -63,7 +63,7 @@ Proof.
   intros.
   subst.
   unfold key_expand.
-  apply (wcat_eq U32 4). 
+  apply (wcat_eq U32 4).
   intros [[ | [ | [ | [ | i]]]] j]; simpl; unfold tnth; simpl.
   - rewrite !subword_xor; auto.
     rewrite mul0n.
@@ -81,7 +81,7 @@ Proof.
     rewrite !subword_make_vec_32_0_32_128.
     simpl.
     unfold wAESKEYGENASSIST.
-    rewrite subword_wshr; auto. 
+    rewrite subword_wshr; auto.
     rewrite subword_make_vec_32_3_32_128.
     simpl.
     rewrite !wxorA.
@@ -253,8 +253,8 @@ Proof.
   destruct_pre; split_post.
   - pdisj_apply disj.
   - eexists _, _. intuition auto.
-    + apply key_expand_aux; eauto. 
-    + apply key_expand_aux2; eauto. 
+    + apply key_expand_aux; eauto.
+    + apply key_expand_aux2; eauto.
 Qed.
 
 Lemma keyExpansion_E pre id0 rkey :
@@ -326,7 +326,7 @@ Proof.
                { sheap. assumption. }
                { sheap. assumption. }
                { assumption. }
-               { rewrite set_heap_commut; auto. 
+               { rewrite set_heap_commut; auto.
                  apply injective_translate_var2. assumption. }
                { simpl. sheap. reflexivity. }
            (* this is an assumption of rcon_correct *)
@@ -476,7 +476,7 @@ Proof.
       (* within bounds, this follows from the precondition *)
       * rewrite !coerce_to_choice_type_K. apply H4. lia.
       * rewrite -> getm_to_arr_None' by lia.
-        rewrite H6; auto. 
+        rewrite H6; auto.
         lia.
 Qed.
 
@@ -600,10 +600,10 @@ Proof.
         apply prec_neq. eapply prec_preceq_trans. 1: eapply prec_I. eassumption.
       }
       destruct_pre. split_post.
-      * eapply disj; eauto. 
+      * eapply disj; eauto.
       * reflexivity.
       * rewrite set_heap_commut. 2: neq_loc_auto. rewrite [set_heap (set_heap H2 _ _) _ _]set_heap_commut. 1: reflexivity.
-        neq_loc_auto. 
+        neq_loc_auto.
     + intros; destruct_pre; split_post.
       * eapply disj.
         ** move: H. rewrite !in_fset !in_cons=>/orP [] ;[|easy] => /eqP ->. simpl. apply/orP; auto.

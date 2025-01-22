@@ -99,7 +99,7 @@ From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
 From extructures Require Import ord fset fmap.
-From Crypt Require Import Prelude Axioms ChoiceAsOrd RulesStateProb
+From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd RulesStateProb
   choice_type pkg_core_definition pkg_composition.
 
 
@@ -334,6 +334,6 @@ Module PackageNotation.
     cbn. exists n. exact h.
   Defined.
 
-  Notation gfin n := (@give_fin n _).
+  Notation gfin n := (give_fin n).
 
 End PackageNotation.

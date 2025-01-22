@@ -8,14 +8,14 @@ homepage: "https://github.com/SSProve/ssprove"
 bug-reports: "https://github.com/SSProve/ssprove/issues"
 license: "MIT"
 depends: [
-  "coq" {>= "8.18"}
-  "coq-equations" {>= "1.3+8.18"}
+  "coq" {(>= "8.18~")}
+  "coq-equations" {(>= "1.3+8.18")}
   "coq-mathcomp-ssreflect" {(>= "2.1.0")}
-  "coq-mathcomp-analysis" {= "1.0.0"}
-  "coq-mathcomp-word" {>= "3.0" & < "3.2"}
+  ("coq-mathcomp-analysis" {>= "1.0.0" & < "1.7.0"} | "coq-mathcomp-analysis" {>= "1.7.0"} & "coq-mathcomp-experimental-reals" {>= "1.7.0"})
+  "coq-mathcomp-word" {>= "3.0" & < "3.3"}
+  "coq-mathcomp-zify" {>= "1.5.0+2.0+8.16"}
   "coq-extructures" {(>= "0.4.0" & < "dev")}
   "coq-deriving" {(>= "0.2.0" & < "dev")}
-  "coq-mathcomp-zify" {>= "1.5.0+2.0+8.16"}
 ]
 build: [
   [make "-j%{jobs}%"]

@@ -5,24 +5,24 @@
 *)
 
 From Coq Require Import Utf8.
-From Relational Require Import OrderEnrichedCategory
+From SSProve.Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr seq all_algebra fintype realsum.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
-From Mon Require Import SPropBase.
-From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
+From SSProve.Mon Require Import SPropBase.
+From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
   StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
   pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_lookup pkg_advantage
-  pkg_invariants pkg_distr.
+  pkg_invariants pkg_distr Casts.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
 (* Must come after importing Equations.Equations, who knows why. *)
-From Crypt Require Import FreeProbProg.
+From SSProve.Crypt Require Import FreeProbProg.
 
 Import Num.Theory.
 
@@ -1024,18 +1024,13 @@ Proof.
   intros A₀ A₁ B post c₀ c₁ r postr hr h.
   eapply from_sem_jdg.
   repeat setoid_rewrite repr_bind. simpl.
-  rewrite <- rswap_helper.
-  rewrite <- rswap_helper.
-  apply (@swap_ruleR A₀ A₁ B _ post (λ a₀ a₁, repr (r a₀ a₁)) (repr c₀) (repr c₁)).
+  eapply (swap_ruleR (λ a₀ a₁, repr (r a₀ a₁)) (repr c₀) (repr c₁)).
   - intros. eapply to_sem_jdg. apply hr.
   - apply postr.
-  - clear -h.
-    intro s.
+  - intro s.
     unshelve eapply coupling_eq.
     + exact (λ '(h₀, h₁), h₀ = h₁).
     + eapply to_sem_jdg in h. repeat setoid_rewrite repr_bind in h.
-      rewrite <- rswap_helper in h.
-      rewrite <- rswap_helper in h.
       apply h.
     + reflexivity.
 Qed.
@@ -2028,8 +2023,6 @@ Proof.
   intros A₀ A₁ B post c₀ c₁ r hpost hr h.
   eapply from_sem_jdg.
   repeat setoid_rewrite repr_cmd_bind.
-  rewrite <- rswap_cmd_helper.
-  rewrite <- rswap_cmd_helper.
   eapply (swap_ruleR (λ a₀ a₁, repr (r a₀ a₁)) (repr_cmd c₀) (repr_cmd c₁)).
   - intros a₀ a₁. eapply to_sem_jdg. eapply hr.
   - intros ? ? []. eauto.
@@ -2037,9 +2030,7 @@ Proof.
     + exact: (λ '(h1, h2), h1 = h2).
     + eapply to_sem_jdg in h.
       repeat (setoid_rewrite repr_cmd_bind in h).
-      rewrite <- rswap_cmd_helper in h.
-      rewrite <- rswap_cmd_helper in h.
-      apply h.
+      auto.
     + reflexivity.
 Qed.
 
@@ -2207,8 +2198,6 @@ Proof.
   intros A₀ A₁ B post c₀ c₁ r postr hr h.
   eapply from_sem_jdg.
   repeat setoid_rewrite repr_cmd_bind. simpl.
-  rewrite <- rswap_cmd_helper.
-  rewrite <- rswap_cmd_helper.
   eapply (swap_ruleR (λ a₀ a₁, repr (r a₀ a₁)) (repr_cmd c₀) (repr_cmd c₁)).
   - intros. eapply to_sem_jdg. apply hr.
   - apply postr.
@@ -2216,8 +2205,6 @@ Proof.
     unshelve eapply coupling_eq.
     + exact (λ '(h₀, h₁), h₀ = h₁).
     + eapply to_sem_jdg in h. repeat setoid_rewrite repr_cmd_bind in h.
-      rewrite <- rswap_cmd_helper in h.
-      rewrite <- rswap_cmd_helper in h.
       apply h.
     + reflexivity.
 Qed.
@@ -2504,7 +2491,8 @@ Section Uniform_prod.
       destruct (ch2prod u == (a,b)) eqn:e.
       2:{
         exfalso.
-        move: hu => /negP hu. apply hu. rewrite e. apply eqxx.
+        move: hu => /negP hu. apply hu.
+        by [rewrite e].
       }
       move: e => /eqP e. rewrite -e.
       rewrite inE. apply /eqP. symmetry. apply prod2ch_ch2prod.
@@ -2555,7 +2543,7 @@ Section Uniform_prod.
     eapply rewrite_eqDistrR. 1: apply: reflexivity_rule.
     intro s. cbn.
     pose proof @prod_uniform as h.
-    specialize (h [finType of 'I_i] [finType of 'I_j]). simpl in h.
+    specialize (h (Finite.clone _ 'I_i) (Finite.clone _ 'I_j)). simpl in h.
     unfold Uni_W'. unfold Uni_W.
     specialize (h (F_w0 (mkpos _)) (F_w0 (mkpos _))).
     unfold uniform_F in h.

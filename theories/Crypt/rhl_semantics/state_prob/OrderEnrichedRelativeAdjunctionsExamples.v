@@ -2,9 +2,9 @@ From Coq Require Import Morphisms.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_algebra all_ssreflect classical.boolp.
 Set Warnings "notation-overridden,ambiguous-paths".
-From Mon Require Import SPropBase Base.
-From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
-From Crypt Require Import OrderEnrichedRelativeAdjunctions FreeProbProg ChoiceAsOrd Couplings Theta_exCP SubDistr.
+From SSProve.Mon Require Import SPropBase Base.
+From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
+From SSProve.Crypt Require Import OrderEnrichedRelativeAdjunctions FreeProbProg ChoiceAsOrd Couplings Theta_exCP SubDistr.
 
 Import SPropNotations.
 
@@ -24,10 +24,10 @@ Section ConstantFunctor.
 
   Program Definition mkConstFunc : ord_functor C D := mkOrdFunctor (fun c => d) _ _ _ _.
   Next Obligation.
-    intuition.
+    auto with solve_subterm.
   Defined.
   Next Obligation.
-    cbv. intuition.
+    cbv. auto with solve_subterm.
   Qed.
   Next Obligation.
     cbv. intuition. rewrite ord_cat_law1. reflexivity.

@@ -1,8 +1,8 @@
 From Coq Require Import ssreflect ssrfun ssrbool List.
 From Coq Require Import FunctionalExtensionality.
-From Mon Require Export Base.
+From SSProve.Mon Require Export Base.
 From Coq Require Import Relation_Definitions Morphisms.
-From Mon Require Import SPropBase SPropMonadicStructures.
+From SSProve.Mon Require Import SPropBase SPropMonadicStructures.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -62,7 +62,7 @@ Section MonoidExamples.
   Next Obligation. extensionality y ; rewrite monoid_law3 //. Qed.
 
   Program Definition listMonoid (X:Type) : monoid :=
-    @mkMonoid (list X) nil (@app _) _ (@List.app_nil_r _) (@List.app_assoc_reverse _).
+    @mkMonoid (list X) nil (@app _) _ (@List.app_nil_r _) (fun l m n => eq_sym (@List.app_assoc _ l m n)).
 
   Program Definition prodMonoid (M1 M2:monoid) : monoid :=
     @mkMonoid (M1 × M2) ⟨e M1, e M2⟩ (fun x y => ⟨nfst x ⋅ nfst y, nsnd x ⋅ nsnd y⟩)

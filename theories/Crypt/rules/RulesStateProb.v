@@ -1,22 +1,24 @@
 From Coq Require Import RelationClasses Morphisms Utf8.
 
-From Mon Require Import SPropMonadicStructures SpecificationMonads MonadExamples
+From SSProve.Mon Require Import SPropMonadicStructures SpecificationMonads MonadExamples
   SPropBase FiniteProbabilities.
 
-From Relational Require Import OrderEnrichedCategory
+From SSProve.Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples Commutativity GenericRulesSimple.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
-  (* finmap.set *) finmap.finmap xfinmap.
+  finset finmap.finmap xfinmap .
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings Theta_dens
+From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings Theta_dens
   Theta_exCP LaxComp FreeProbProg RelativeMonadMorph_prod
-  StateTransformingLaxMorph choice_type.
+  StateTransformingLaxMorph choice_type Casts.
 
 Import SPropNotations.
 Import Num.Theory.
+
+From HB Require Import structures.
 
 
 #[local] Open Scope ring_scope.
@@ -126,7 +128,7 @@ End RSemanticNotation.
 Import RSemanticNotation.
 #[local] Open Scope rsemantic_scope.
 
-Import finmap(* .set *) finmap.finmap xfinmap.
+Import (* finmap.set *) finset finmap.finmap xfinmap.
 
 Open Scope fset_scope.
 
@@ -236,7 +238,8 @@ Proof.
   - apply bind_rule with (wf := (fun '(a1, a2) => fromPrePost (fun '(s1, s2) => middle (a1, s1) (a2, s2)) post)).
     + exact judge_wm.
     + exact judge_wf.
-  - cbv. intuition.
+  - cbv.
+    intuition auto with funelim.
 Qed.
 
 (* Pre-condition manipulating rules *)
@@ -623,7 +626,7 @@ Proof.
   rewrite HeqH11. simpl in HeqH11.
   assert ((fun x : X * S1 => (A x)%:R * psum (fun w => d (x, w))) = (fun x : X * S1 => psum (fun w => (A x)%:R * d (x, w)))) as H4.
   { extensionality k. rewrite -psumZ. reflexivity.
-    case (A k); intuition. (* by rewrite ler01. *) }
+    case (A k); intuition; by rewrite ler01. }
   rewrite H4.
   assert ((fun x : Y * S2 => (B x)%:R * dsnd d x) = (fun y : Y * S2 => (B y)%:R * psum (fun w => d (w, y)))) as HeqH12.
   { extensionality K. rewrite dsndE. reflexivity. }
@@ -689,7 +692,7 @@ Proof.
   move => s1 s2 psi_s1_s2.
   apply distr_ext => /= w.
   assert (\P_[ θ_dens (θ0 K1 s1) ] (pred1 w) = \P_[ θ_dens (θ0 K2 s2) ] (pred1 w)).
-  { apply: (Pr_eq ψ eq); rewrite //= => x y Heq. by subst.  }
+  { apply: (Pr_eq ψ eq); rewrite //= => x y Heq. by subst. }
   by repeat rewrite -pr_pred1 in H0.
 Qed.
 
@@ -781,7 +784,7 @@ Proof.
   clear Hpsum.
   eapply neq0_psum in Hpsum'. destruct Hpsum'.
   apply aux_domain in H.
-  destruct (eqType_lem  bool ((x,x) == (a1,a2)) true) as [Houi | Hnon].
+  destruct (eqType_lem _ ((x,x) == (a1,a2)) true) as [Houi | Hnon].
   move: Houi => /eqP Houi. move: Houi => [H1 H2]. rewrite -H1 -H2. reflexivity.
   have Hnon' : (x,x) == (a1,a2) = false.
     destruct ((x,x) == (a1,a2)). contradiction. reflexivity.
@@ -804,19 +807,16 @@ Qed.
 
 Definition dsym { A B : ord_choiceType } { S1 S2 : choiceType } (d : SDistr_carrier
           (F_choice_prod_obj
-             ⟨ Choice.Pack (Choice.class (Datatypes_prod__canonical__choice_Choice B S2)),
-               Choice.Pack (Choice.class (Datatypes_prod__canonical__choice_Choice A S1)) ⟩)) :
+             ⟨ ((B * S2)%type : choiceType), ((A * S1)%type : choiceType) ⟩)) :
 SDistr_carrier
           (F_choice_prod_obj
-             ⟨ Choice.Pack (Choice.class (Datatypes_prod__canonical__choice_Choice A S1)),
-               Choice.Pack (Choice.class (Datatypes_prod__canonical__choice_Choice B S2)) ⟩) :=
+             ⟨ ((A * S1)%type : choiceType), ((B * S2)%type : choiceType) ⟩) :=
 dswap d.
 
 
 Lemma dsym_coupling { A B : ord_choiceType } { S1 S2 : choiceType } { d : SDistr_carrier
           (F_choice_prod_obj
-             ⟨ Choice.Pack (Choice.class (Datatypes_prod__canonical__choice_Choice B S2)),
-               Choice.Pack (Choice.class (Datatypes_prod__canonical__choice_Choice A S1)) ⟩) }
+             ⟨ ((B * S2)%type : choiceType), ((A * S1)%type : choiceType) ⟩) }
       {d1 d2 }
       (Hcoupling : coupling d d1 d2) : coupling (dsym d) d2 d1.
 Proof.
@@ -1595,8 +1595,8 @@ Proof.
   apply mulr_ge0.
   destruct q as [qmap q_0 q_sum q_1]. apply q_0.
   easy.
-(* ler_pimulr: forall [R : numDomainType] [x y : R], 0 <= y -> x <= 1 -> y * x <= y *)
-  apply ler_pimulr. destruct q as [qmap q_0 q_sum q_1]. apply q_0.
+(* ler_piMr: forall [R : numDomainType] [x y : R], 0 <= y -> x <= 1 -> y * x <= y *)
+  apply ler_piMr. destruct q as [qmap q_0 q_sum q_1]. apply q_0.
   apply le1_mu1. easy. destruct q as [qmap q_0 q_sum q_1]. apply q_1.
 Qed.
 

@@ -1,6 +1,6 @@
 From Coq Require Import ssreflect ssrfun.
-From Mon Require Export Base.
-From Mon Require Import SPropBase.
+From SSProve.Mon Require Export Base.
+From SSProve.Mon Require Import SPropBase.
 From Coq Require Import RelationClasses Morphisms Relation_Definitions.
 
 
@@ -106,7 +106,7 @@ Section ProductCat.
                   (fun _ _ _ f g => ⟨nfst f ∙ nfst g, nsnd f ∙ nsnd g⟩)
                   _ _ _ _.
   Next Obligation.
-    constructor ; cbv ; intuition ; etransitivity ; eassumption.
+    constructor ; cbv ; intuition auto with relations ; etransitivity ; eassumption.
   Qed.
   Next Obligation.
     cbv ; intuition; apply Comp_proper=> //.

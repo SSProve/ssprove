@@ -1,7 +1,7 @@
 From Coq Require Import ssreflect.
-From Mon Require Export Base.
+From SSProve.Mon Require Export Base.
 From Coq Require Import Relation_Definitions Morphisms.
-From Mon Require Import SPropBase SPropMonadicStructures Monoid.
+From SSProve.Mon Require Import SPropBase SPropMonadicStructures Monoid.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -50,8 +50,9 @@ Section MonotoneContinuationsMonad.
     fun m1 m2 => pointwise_relation (A -> R) Rrel (proj1_sig m1) (proj1_sig m2).
   Instance MonoCont_order_preorder A : PreOrder (@MonoCont_order A).
   Proof.
-    constructor ; cbv ; intuition ;
-      eauto using PreOrder_Transitive.
+    constructor ; cbv.
+    - auto with crelations.
+    - pose proof PreOrder_Transitive; eauto.
   Qed.
 
   Program Definition MonoCont : OrderedMonad :=
@@ -834,4 +835,3 @@ Section WpSpRightKanExtension.
    Qed.
 ---------------------------end of forgotten section*)
 End WpSpRightKanExtension.
-

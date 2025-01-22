@@ -6,10 +6,10 @@ Set Warnings "notation-overridden,ambiguous-paths".
 From Coq Require Import Utf8 ZArith micromega.Lia List.
 
 From Jasmin Require Import expr xseq waes word.
-From JasminSSProve Require Import jasmin_translate word aes_utils.
+From SSProve.Jasmin Require Import jasmin_translate word aes_utils.
 
-From Relational Require Import OrderEnrichedCategory.
-From Crypt Require Import Prelude Package ChoiceAsOrd choice_type.
+From SSProve.Relational Require Import OrderEnrichedCategory.
+From SSProve.Crypt Require Import Prelude Package ChoiceAsOrd choice_type.
 
 From extructures Require Import ord fset fmap.
 
@@ -19,7 +19,7 @@ Import PackageNotation.
 Import AesNotation.
 
 Set Bullet Behavior "Strict Subproofs".
-Set Default Goal Selector "!". 
+Set Default Goal Selector "!".
 
 Local Open Scope Z.
 
@@ -188,7 +188,7 @@ Proof.
       + replace (Z.to_nat (Z.succ i) - 1)%nat with ((Z.to_nat i - 1).+1) by lia.
         rewrite iteriS.
         rewrite H4.
-        rewrite H7. 2: lia. repeat f_equal. lia. 
+        rewrite H7. 2: lia. repeat f_equal. lia.
       + assumption. }
   intros a0 a1.
   eapply r_get_remember_lhs with (pre := fun '(_, _) => _). intros x.
@@ -204,7 +204,7 @@ Proof.
   rewrite H4.
   rewrite H6. 2: lia.
   replace ((Z.to_nat 10) - 1)%nat with 9%nat by reflexivity.
-  reflexivity. 
+  reflexivity.
 Qed.
 
 Lemma aes_h k m pre :

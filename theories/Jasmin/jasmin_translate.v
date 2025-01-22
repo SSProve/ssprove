@@ -17,7 +17,7 @@ Set Warnings "ambiguous-paths".
 
 From Coq Require Import Utf8.
 
-From Crypt Require Import Prelude Package.
+From SSProve.Crypt Require Import Prelude Package.
 Import PackageNotation.
 
 From Equations Require Import Equations.
@@ -2740,7 +2740,7 @@ Proof.
   - epose (translate_get_var_correct (x.(gv))).
     unfold to_val in e.
     simpl in e.
-    
+
     eapply translate_get_var_correct. all: eassumption.
   - rewrite ev.
     apply u_ret. intros m hm.

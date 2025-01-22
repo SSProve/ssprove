@@ -1,7 +1,4 @@
--Q theories/Mon Mon
--Q theories/Relational Relational
--Q theories/Crypt Crypt
-# -Q theories/Jasmin JasminSSProve
+-Q theories SSProve
 
 theories/Mon/Base.v
 theories/Mon/SPropBase.v
@@ -127,7 +124,18 @@ theories/Crypt/examples/KEMDEM.v
 theories/Crypt/examples/RandomOracle.v
 theories/Crypt/examples/SigmaProtocol.v
 theories/Crypt/examples/Schnorr.v
-theories/Crypt/examples/OVN.v
+# theories/Crypt/examples/OVN.v
+theories/Crypt/examples/Executor.v
+
+# Examples from https://github.com/Som1Lse/joy-of-ssprove
+theories/Crypt/examples/MACCCA.v
+theories/Crypt/examples/PRFMAC.v
+theories/Crypt/examples/PRFPRG.v
+theories/Crypt/examples/PRPCCA.v
+theories/Crypt/examples/SecretSharing.v
+theories/Crypt/examples/ShamirSecretSharing.v
+theories/Crypt/examples/StretchPRG.v
+theories/Crypt/examples/SymmRatchet.v
 
 # Printing the axioms of all results from the paper
 theories/Crypt/Main.v

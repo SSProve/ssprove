@@ -1,10 +1,10 @@
 From Coq Require Import Relation_Definitions.
-From Relational Require Import OrderEnrichedCategory.
-From Mon Require Import SPropBase.
+From SSProve.Relational Require Import OrderEnrichedCategory.
+From SSProve.Mon Require Import SPropBase.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect classical.boolp.
 Set Warnings "notation-overridden,ambiguous-paths".
-From Crypt Require Import Axioms OrderEnrichedRelativeAdjunctions LaxFunctorsAndTransf LaxMorphismOfRelAdjunctions.
+From SSProve.Crypt Require Import Axioms OrderEnrichedRelativeAdjunctions LaxFunctorsAndTransf LaxMorphismOfRelAdjunctions.
 
 Import SPropNotations.
 

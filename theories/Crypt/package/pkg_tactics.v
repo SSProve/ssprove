@@ -31,7 +31,7 @@ From mathcomp Require Import ssreflect ssrbool ssrnat eqtype seq eqtype
   choice.
 Set Warnings "notation-overridden,ambiguous-paths".
 From extructures Require Import ord fset fmap.
-From Crypt Require Import Prelude pkg_core_definition
+From SSProve.Crypt Require Import Prelude pkg_core_definition
   pkg_composition pkg_notation choice_type
   RulesStateProb.
 From Coq Require Import Utf8 FunctionalExtensionality
@@ -90,6 +90,20 @@ Qed.
 
 #[export] Instance bind_morphism (A B : choiceType) :
   Proper (eq ==> pointwise_relation A eq ==> eq) (@bind A B).
+Proof.
+  simpl_relation.
+  f_equal. apply functional_extensionality. auto.
+Qed.
+
+#[export] Instance cmd_bind_morphism (A B : choiceType) :
+  Proper (eq ==> pointwise_relation A eq ==> eq) (@cmd_bind A B).
+Proof.
+  simpl_relation.
+  f_equal. apply functional_extensionality. auto.
+Qed.
+
+#[export] Instance bindrFree_morphism (A B : choiceType) c k :
+  Proper (eq ==> pointwise_relation A eq ==> eq) (@FreeProbProg.bindrFree c k A B).
 Proof.
   simpl_relation.
   f_equal. apply functional_extensionality. auto.

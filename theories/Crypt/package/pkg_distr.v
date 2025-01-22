@@ -5,15 +5,15 @@
 
 
 From Coq Require Import Utf8.
-From Relational Require Import OrderEnrichedCategory
+From SSProve.Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr seq all_algebra fintype realsum.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
-From Mon Require Import SPropBase.
-From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
+From SSProve.Mon Require Import SPropBase.
+From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
   StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
   pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_lookup pkg_advantage.
@@ -21,7 +21,7 @@ Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
 (* Must come after importing Equations.Equations, who knows why. *)
-From Crypt Require Import FreeProbProg.
+From SSProve.Crypt Require Import FreeProbProg.
 
 Import Num.Theory.
 
@@ -87,7 +87,7 @@ Qed.
 
 Lemma card_prod_iprod :
   ∀ i j,
-    #|Datatypes_prod__canonical__fintype_Finite (fintype_ordinal__canonical__fintype_Finite i) (fintype_ordinal__canonical__fintype_Finite j)| = (i * j)%N.
+    #|(prod (ordinal i:finType) (ordinal j:finType)) :finType| = (i * j)%N.
 Proof.
   intros i j.
   rewrite card_prod. simpl. rewrite !card_ord. reflexivity.
@@ -95,7 +95,7 @@ Qed.
 
 Definition ch2prod {i j} `{Positive i} `{Positive j}
   (x : Arit (uniform (i * j))) :
-  Datatypes_prod__canonical__fintype_Finite (Arit (uniform i)) (Arit (uniform j)).
+  (Arit (uniform i)) * (Arit (uniform j)).
 Proof.
   simpl in *.
   eapply otf. rewrite card_prod_iprod.
@@ -103,7 +103,7 @@ Proof.
 Defined.
 
 Definition prod2ch {i j} `{Positive i} `{Positive j}
-  (x : Datatypes_prod__canonical__fintype_Finite (Arit (uniform i)) (Arit (uniform j))) :
+  (x : (Arit (uniform i)) * (Arit (uniform j))) :
   Arit (uniform (i * j)).
 Proof.
   simpl in *.
@@ -114,7 +114,7 @@ Defined.
 
 Definition ch2prod_prod2ch :
   ∀ {i j} `{Positive i} `{Positive j}
-    (x : Datatypes_prod__canonical__fintype_Finite (Arit (uniform i)) (Arit (uniform j))),
+    (x : (Arit (uniform i)) * (Arit (uniform j))),
     ch2prod (prod2ch x) = x.
 Proof.
   intros i j hi hj x.
@@ -148,7 +148,7 @@ Proof.
 Qed.
 
 Lemma ordinal_finType_inhabited :
-  ∀ i `{Positive i}, fintype_ordinal__canonical__fintype_Finite i.
+  ∀ i `{Positive i}, (ordinal i :finType).
 Proof.
   intros i hi.
   exists 0%N. auto.

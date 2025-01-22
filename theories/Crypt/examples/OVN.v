@@ -1,5 +1,5 @@
 
-From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
+From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
@@ -7,9 +7,9 @@ From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
   eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
+From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_composition Package Prelude SigmaProtocol Schnorr DDH.
+  pkg_composition Package Prelude SigmaProtocol Schnorr DDH Canonicals.
 
 From Coq Require Import Utf8 Lia.
 From extructures Require Import ord fset fmap.
@@ -100,7 +100,7 @@ Proof.
   reflexivity.
 Qed.
 
-Definition Pid : finType := Finite.clone _ 'I_n. 
+Definition Pid : finType := Finite.clone _ 'I_n.
 Definition Secret : finType := FinRing_ComRing__to__fintype_Finite (fintype_ordinal__canonical__FinRing_ComRing (Zp_trunc #[g])). (* Zp_finComRingType (Zp_trunc #[g]). *)
 Definition Public : finType := gT.
 Definition s0 : Secret := 0.
@@ -267,7 +267,7 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
   From mathcomp Require Import ssreflect.bigop.
   Import Monoid.
   HB.instance Definition _ := isCommutativeLaw.Build _ _ group_prodC.
-  
+
   Definition compute_key
              (m : chMap pid (chProd public choiceTranscript1))
              (i : pid)
@@ -1276,7 +1276,7 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
     rewrite !cast_fun_K.
     ssprove_code_simpl.
     ssprove_code_simpl_more.
-    
+
     ssprove_swap_seq_rhs [:: 4 ; 5 ; 6 ; 7]%N.
     ssprove_swap_seq_rhs [:: 2 ; 3 ; 4 ; 5 ; 6]%N.
     ssprove_swap_seq_rhs [:: 0 ; 1 ; 2 ; 3 ; 4 ; 5]%N.

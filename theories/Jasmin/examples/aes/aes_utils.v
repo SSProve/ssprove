@@ -6,10 +6,10 @@ Set Warnings "notation-overridden,ambiguous-paths".
 From Coq Require Import Utf8 ZArith micromega.Lia List.
 
 From Jasmin Require Import expr xseq.
-From JasminSSProve Require Import jasmin_translate.
+From SSProve.Jasmin Require Import jasmin_translate.
 
-From Relational Require Import OrderEnrichedCategory.
-From Crypt Require Import Prelude Package ChoiceAsOrd.
+From SSProve.Relational Require Import OrderEnrichedCategory.
+From SSProve.Crypt Require Import Prelude Package ChoiceAsOrd.
 
 From extructures Require Import ord fset fmap.
 
@@ -18,8 +18,8 @@ Import JasminNotation.
 Import PackageNotation.
 
 Set Bullet Behavior "Strict Subproofs".
-Set Default Goal Selector "!". 
- 
+Set Default Goal Selector "!".
+
 (** Notations *)
 
 Module AesNotation.
@@ -28,7 +28,7 @@ End AesNotation.
 
 (** For loops  *)
 
-Local Open Scope Z. 
+Local Open Scope Z.
 
 Fixpoint for_list (c : Z → raw_code 'unit) (vs : seq Z) : raw_code 'unit :=
   match vs with
@@ -123,7 +123,7 @@ Proof.
     apply r_ret. easy.
   - unfold lfor_loop=>/=.
     rewrite -Heqn. simpl. rewrite Z.add_0_r.
-    eapply r_bind. 
+    eapply r_bind.
     + eapply h. lia.
     + intros a1 a2.
       destruct a1, a2.
@@ -181,7 +181,7 @@ Proof.
       intros i s_id' Hs_id' ile.
       specialize (ih i s_id').
       destruct (body1 s_id'). apply ih.
-      1: etransitivity; eauto. 
+      1: etransitivity; eauto.
       lia.
 Qed.
 
@@ -423,7 +423,7 @@ Proof.
   intros A₀ A₁ p₀ p₁ pre post h.
   eapply rpre_hypothesis_rule.
   intros. eapply rpre_weaken_rule.
-  1: eapply h; eauto. 
+  1: eapply h; eauto.
   intros s0' s1' [H0 H1].
   subst.
   assumption.

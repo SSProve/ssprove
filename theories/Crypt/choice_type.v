@@ -7,7 +7,7 @@
 
 
 From Coq Require Import Utf8 Lia.
-From Relational Require Import OrderEnrichedCategory
+From SSProve.Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples GenericRulesSimple.
 
 (* !!! Import before mathcomp, to avoid overriding instances !!! *)
@@ -20,14 +20,14 @@ From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr realsum seq all_algebra fintype.
 From mathcomp Require Import word_ssrZ word.
 (* From Jasmin Require Import utils word. *)
-From Crypt Require Import jasmin_word jasmin_util.
+From SSProve.Crypt Require Import jasmin_word jasmin_util.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra.
 
-From Crypt Require Import Prelude Axioms Casts.
+From SSProve.Crypt Require Import Prelude Axioms Casts.
 From extructures Require Import ord fset fmap.
-From Mon Require Import SPropBase.
+From SSProve.Mon Require Import SPropBase.
 Require Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
@@ -67,7 +67,7 @@ Fixpoint chElement_ordType (U : choice_type) : ordType :=
   | chProd U1 U2 => prod_ordType (chElement_ordType U1) (chElement_ordType U2)
   | chMap U1 U2 => fmap_ordType (chElement_ordType U1) (chElement_ordType U2)
   | chOption U => option_ordType (chElement_ordType U)
-  | chFin n =>  fin_ordType n
+  | chFin n => fin_ordType n
   | chWord nbits => word_ordType nbits
   | chList U => list_ordType (chElement_ordType U)
   | chSum U1 U2 => sum_ordType (chElement_ordType U1) (chElement_ordType U2)
@@ -192,7 +192,21 @@ Section choice_typeTypes.
     - move: e => /choice_type_eqP []. reflexivity.
   Qed.
 
-  HB.instance Definition _ := hasDecEq.Build choice_type choice_type_eqP.
+  Definition choice_type_indDef := [indDef for choice_type_rect].
+  Canonical choice_type_indType := IndType choice_type choice_type_indDef.
+  (* The unfolding became a problem in [pkg_composition]. So I follow the advice on
+     https://github.com/arthuraa/deriving
+   *)
+
+  (*
+    This
+    [Definition choice_type_hasDecEq := [derive hasDecEq for choice_type].]
+    did work well up until [pkg_composition].
+    The unfolding there was too much.
+    The [nored] version then did not provide enough reduction.
+   *)
+  Definition choice_type_hasDecEq := hasDecEq.Build choice_type choice_type_eqP.
+  HB.instance Definition _ := choice_type_hasDecEq.
 
   Fixpoint choice_type_lt (t1 t2 : choice_type) :=
   match t1, t2 with
@@ -405,7 +419,6 @@ Section choice_typeTypes.
     all: try solve [ destruct y ; auto with solve_subterm ; reflexivity ].
     (* chProd *)
     - destruct y. all: try (intuition; reflexivity).
-      cbn.
       specialize (ih1 y1). specialize (ih2 y2).
       apply/implyP.
       move /nandP => H.
@@ -565,7 +578,6 @@ Section choice_typeTypes.
     - apply/orP. by right.
     - apply/orP.
       left.
-      unfold choice_type_eq in H.
       pose (choice_type_lt_total_holds x y).
       move: i. move /implyP => i.
       apply i. apply/negP.
@@ -594,7 +606,6 @@ Section choice_typeTypes.
 
   Lemma choice_type_leq_asym : antisymmetric choice_type_leq.
   Proof.
-
     unfold antisymmetric.
     move => x y. unfold choice_type_leq. move/andP => [h1 h2].
     move: h1 h2. unfold choice_type_leq.
@@ -614,7 +625,6 @@ Section choice_typeTypes.
       * move: H0. move /eqP /eqP => H0. rewrite H0 in H1. simpl in H1.
         discriminate.
     + move: Heq. move /eqP. auto.
-
   Qed.
 
   Lemma choice_type_leq_total : total choice_type_leq.

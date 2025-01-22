@@ -8,7 +8,7 @@ Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-forma
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
-From Crypt Require Import RulesStateProb Package Prelude.
+From SSProve.Crypt Require Import RulesStateProb Package Prelude.
 Import PackageNotation.
 
 From Equations Require Import Equations.

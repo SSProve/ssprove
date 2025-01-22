@@ -42,11 +42,6 @@ Module Z2_manual.
     ltac:(move => [|] [|];
             try solve [ right ; discriminate ];
             try solve [ left ; reflexivity ]).
-(*
-  Definition Z2_eqMixin := EqMixin Z2_eqP.
-  Canonical Z2_eqType : eqType :=
-    Eval hnf in EqType Z2 Z2_eqMixin.
-*)
   Definition Z2_hasDecEq := hasDecEq.Build Z2 Z2_eqP.
   HB.instance Definition _ := Z2_hasDecEq.
 
@@ -55,16 +50,8 @@ Module Z2_manual.
   Lemma Z2_p_u_cancel : @pcancel nat Z2 Z2_pickle Z2_unpickle.
   Proof. move => [|] //. Qed.
 
-  (*
-  Definition Z2_choiceMixin := PcanChoiceMixin Z2_p_u_cancel.
-  Canonical Z2_choiceType := ChoiceType Z2 Z2_choiceMixin.
-   *)
   HB.instance Definition _ := Choice.copy Z2 (pcan_type Z2_p_u_cancel).
 
-  (*
-  Definition Z2_countMixin := @choice.Countable.Mixin Z2 Z2_pickle Z2_unpickle Z2_p_u_cancel.
-  Canonical Z2_countType := Eval hnf in CountType Z2 Z2_countMixin.
-   *)
   Definition Z2_hasCountable := isCountable.Build Z2 Z2_p_u_cancel.
   HB.instance Definition _ := Z2_hasCountable.
 
@@ -74,11 +61,6 @@ Module Z2_manual.
   Lemma mem_Z2_enum i : i \in Z2_enum.
   Proof. destruct i; reflexivity. Qed.
 
-  (*
-  Definition Z2_finMixin :=
-    Eval hnf in UniqFinMixin Z2_enum_uniq mem_Z2_enum.
-  Canonical Z2_finType := Eval hnf in FinType Z2 Z2_finMixin.
-   *)
   Definition Z2_isFinite := isFinite.Build Z2 (Finite.uniq_enumP Z2_enum_uniq mem_Z2_enum).
   HB.instance Definition _ := Z2_isFinite.
 
@@ -91,23 +73,11 @@ Module Z2_manual.
   Lemma Z2_invgM : {morph inv : a b / add a b >-> add b a}.
   Proof. move => [|] [|] //. Qed.
 
-  (*
-  Definition Z2_finGroupBaseMixin :=
-    FinGroup.BaseMixin assoc_add lid inv_inv Z2_invgM.
-
-  Canonical Z2_BaseFinGroupType :=
-    BaseFinGroupType Z2 Z2_finGroupBaseMixin.
-   *)
-
   Definition Z2_isMulBaseGroup := isMulBaseGroup.Build Z2 assoc_add lid inv_inv Z2_invgM.
   HB.instance Definition _ := Z2_isMulBaseGroup.
 
   Definition linv : left_inverse z inv add.
   Proof. move => [|] //. Qed.
-
-  (*
-  Canonical Z2_finGroup : finGroupType := FinGroupType linv.
-   *)
 
   Definition Z2_BaseFinGroup_isGroup := BaseFinGroup_isGroup.Build Z2 linv.
   HB.instance Definition _ := Z2_BaseFinGroup_isGroup.
@@ -130,23 +100,11 @@ Module Z2_bool.
   Lemma bool_invgM : {morph invb : a b / addb a b >-> addb b a}.
   Proof. move => [|] [|] //. Qed.
 
-  (*
-  Definition bool_finGroupBaseMixin :=
-    FinGroup.BaseMixin assoc_addb lidb inv_invb bool_invgM.
-
-  Canonical bool_BaseFinGroupType :=
-    BaseFinGroupType bool bool_finGroupBaseMixin.
-   *)
-
   Definition bool_isMulBaseGroup := isMulBaseGroup.Build bool assoc_addb lidb inv_invb bool_invgM.
   HB.instance Definition _ := bool_isMulBaseGroup.
 
   Definition linvb : left_inverse false invb addb.
   Proof. move => [|] //. Qed.
-
-  (*
-  Canonical bool_finGroup : finGroupType := FinGroupType linvb.
-   *)
 
   Definition bool_BaseFinGroup_isGroup := BaseFinGroup_isGroup.Build bool linvb.
   HB.instance Definition _ := bool_BaseFinGroup_isGroup.
@@ -160,14 +118,23 @@ Section Z3_deriving.
 
   Definition Z3_indDef := [indDef for Z3_rect].
   Canonical Z3_indType := IndType Z3 Z3_indDef.
-  Definition Z3_eqMixin := [derive eqMixin for Z3].
-  Canonical Z3_eqType := EqType Z3 Z3_eqMixin.
-  Definition Z3_choiceMixin := [derive choiceMixin for Z3].
-  Canonical Z3_choiceType := ChoiceType Z3 Z3_choiceMixin.
-  Definition Z3_countMixin := [derive countMixin for Z3].
-  Canonical Z3_countType := CountType Z3 Z3_countMixin.
-  Definition Z3_finMixin := [derive finMixin for Z3].
-  Canonical Z3_finType := FinType Z3 Z3_finMixin.
+  Definition Z3_eqMixin := [derive hasDecEq for Z3].
+  HB.instance Definition _ := Z3_eqMixin.
+  Definition Z3_choiceMixin := [derive hasChoice for Z3].
+  HB.instance Definition _ := Z3_choiceMixin.
+  Definition Z3_countMixin := [derive isCountable for Z3].
+  HB.instance Definition _ := Z3_countMixin.
+  (* This does not work properly. Please check the output. *)
+  Definition Z3_finMixin := [derive isFinite for Z3].
+
+  (* Manual construction *)
+  Definition Z3_enum : seq Z3 := [:: z; o; t].
+  Lemma Z3_enum_uniq : uniq Z3_enum.
+  Proof. reflexivity. Qed.
+  Lemma mem_Z3_enum i : i \in Z3_enum.
+  Proof. destruct i; reflexivity. Qed.
+  Definition Z3_isFinite := isFinite.Build Z3 (Finite.uniq_enumP Z3_enum_uniq mem_Z3_enum).
+  HB.instance Definition _ := Z3_isFinite.
 
   Definition add (x y : Z3) : Z3 :=
     match x, y with
@@ -189,66 +156,13 @@ Section Z3_deriving.
   Lemma Z3_invgM : {morph inv : a b / add a b >-> add b a}.
   Proof. move => [||] [||] //. Qed.
 
-  Definition Z3_finGroupBaseMixin :=
-    FinGroup.BaseMixin assoc_add lid inv_inv Z3_invgM.
+  Definition Z3_finGroupBaseMixin := isMulBaseGroup.Build Z3 assoc_add lid inv_inv Z3_invgM.
 
-  Canonical Z3_BaseFinGroupType := BaseFinGroupType Z3 Z3_finGroupBaseMixin.
+  HB.instance Definition _ := Z3_finGroupBaseMixin.
   Definition linv : left_inverse z inv add.
   Proof. move => [||] //. Qed.
 
-  Canonical Z3_finGroup : finGroupType := FinGroupType linv.
+  Definition Z3_finGroup := BaseFinGroup_isGroup.Build Z3 linv.
+  HB.instance Definition _ := Z3_finGroup.
 End Z3_deriving.
-*)
-
-(* TODO Is this still needed? - Update or delete.
-Module Z2.
-  (* Minimal (?) construction of Z2 using the fingroup mixin. *)
-  Definition invb x : bool := x.
-  Fact assoc_xorb : associative xorb.
-  Proof. move => [|] [|] [|] //. Qed.
-  Fact lidb : left_id false xorb.
-  Proof. move => [|] //. Qed.
-  Fact linvb : left_inverse false invb xorb.
-  Proof. move => [|] //. Qed.
-  Canonical bool_finGroup := BaseFinGroupType _ (FinGroup.Mixin assoc_xorb lidb linvb).
-  Canonical Z2_finGroup : finGroupType := FinGroupType linvb.
-End Z2.
-*)
-
-(* TODO
-Module Z3.
-  (* Z3 using the fingroup mixin and deriving. *)
-  Inductive Z3 := z | o | t.
-
-  Definition Z3_indDef := [indDef for Z3_rect].
-  Canonical Z3_indType := IndType Z3 Z3_indDef.
-  Definition Z3_eqMixin := [derive eqMixin for Z3].
-  Canonical Z3_eqType := EqType Z3 Z3_eqMixin.
-  Definition Z3_choiceMixin := [derive choiceMixin for Z3].
-  Canonical Z3_choiceType := ChoiceType Z3 Z3_choiceMixin.
-  Definition Z3_countMixin := [derive countMixin for Z3].
-  Canonical Z3_countType := CountType Z3 Z3_countMixin.
-  Definition Z3_finMixin := [derive finMixin for Z3].
-  Canonical Z3_finType := FinType Z3 Z3_finMixin.
-
-  Definition add (x y : Z3) : Z3 :=
-    match x, y with
-    | z, _ => y
-    | _, z => x
-    | o, o => t
-    | o, t
-    | t, o => z
-    | t, t => o
-    end.
-  Definition inv x : Z3 := match x with o => t | t => o | z => z end.
-  Lemma assoc_add : associative add.
-  Proof. move => [||] [||] [||] //. Qed.
-  Lemma lid : left_id z add.
-  Proof. move => [||] //. Qed.
-  Lemma linv : left_inverse z inv add.
-  Proof. move => [||] //. Qed.
-
-  Canonical Z3_BaseFinGroupType := BaseFinGroupType _ (FinGroup.Mixin assoc_add lid linv).
-  Canonical Z3_finGroup : finGroupType := FinGroupType linv.
-End Z3.
 *)

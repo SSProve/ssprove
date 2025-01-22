@@ -2,9 +2,9 @@ Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect seq.
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From JasminSSProve Require Import jasmin_translate aes_utils aes_jazz.
-From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
-From Crypt Require Import Axioms ChoiceAsOrd pkg_core_definition choice_type Prelude.
+From SSProve.Jasmin Require Import jasmin_translate aes_utils aes_jazz.
+From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
+From SSProve.Crypt Require Import Axioms ChoiceAsOrd pkg_core_definition choice_type Prelude.
 
 From extructures Require Import fset ord.
 

@@ -8,14 +8,14 @@
  *)
 
 From Coq Require Import Utf8.
-From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
+From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssreflect eqtype choice seq ssrfun ssrbool.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
-From Mon Require Import SPropBase.
-From Crypt Require Import Prelude Axioms ChoiceAsOrd RulesStateProb StateTransformingLaxMorph
-     choice_type.
+From SSProve.Mon Require Import SPropBase.
+From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd RulesStateProb StateTransformingLaxMorph
+     choice_type Casts.
 
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
@@ -552,7 +552,8 @@ Section FreeLocations.
     move /eqP => Q.
     rewrite -Q.
     rewrite in_fsetU.
-    intuition.
+    apply/orP.
+    by left.
   Defined.
 
   Let codeI locs := code locs import.
@@ -604,7 +605,8 @@ Section FreeMap.
     unfold fsubset in hs.
     move: hs. move /eqP => hs. rewrite -hs.
     rewrite in_fsetU.
-    intuition.
+    apply/orP.
+    auto.
   Defined.
 
   Let codeL I := code Locs I.

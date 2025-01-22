@@ -5,15 +5,18 @@
 
 
 From Coq Require Import Utf8.
-From Relational Require Import OrderEnrichedCategory
+From SSProve.Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr seq all_algebra fintype realsum.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
+
+From HB Require Import structures.
+
 From extructures Require Import ord fset fmap.
-From Mon Require Import SPropBase.
-From Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
+From SSProve.Mon Require Import SPropBase.
+From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
   StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
   pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_lookup pkg_advantage.
@@ -21,7 +24,7 @@ Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
 (* Must come after importing Equations.Equations, who knows why. *)
-From Crypt Require Import FreeProbProg.
+From SSProve.Crypt Require Import FreeProbProg.
 
 Import Num.Theory.
 
@@ -1031,7 +1034,6 @@ Proof.
   all: intro h. all: inversion h. all: contradiction.
 Qed.
 
-From HB Require Import structures.
 HB.instance Definition _ := hasDecEq.Build heap_val heap_val_eqP.
 
 Derive NoConfusion for heap_val.
@@ -1212,7 +1214,7 @@ Lemma lookup_hpv_l_eq :
 Proof.
   intros ℓ v l.
   funelim (lookup_hpv_l ℓ (hpv_l ℓ v :: l)).
-  - rewrite -Heqcall. rewrite cast_loc_val_K. reflexivity.
+  - try rewrite -Heqcall. rewrite cast_loc_val_K. reflexivity.
   - exfalso. pose proof e as e'. symmetry in e'. move: e' => /eqP e'.
     contradiction.
 Qed.
@@ -1225,7 +1227,7 @@ Proof.
   intros ℓ ℓ' v l hn.
   funelim (lookup_hpv_l ℓ' (hpv_l ℓ v :: l)).
   - exfalso. rewrite -e in hn. discriminate.
-  - rewrite -Heqcall. reflexivity.
+  - try rewrite -Heqcall. reflexivity.
 Qed.
 
 Lemma lookup_hpv_r_eq :
@@ -1234,7 +1236,7 @@ Lemma lookup_hpv_r_eq :
 Proof.
   intros ℓ v l.
   funelim (lookup_hpv_r ℓ (hpv_r ℓ v :: l)).
-  - rewrite -Heqcall. rewrite cast_loc_val_K. reflexivity.
+  - try rewrite -Heqcall. rewrite cast_loc_val_K. reflexivity.
   - exfalso. pose proof e as e'. symmetry in e'. move: e' => /eqP e'.
     contradiction.
 Qed.
@@ -1247,7 +1249,7 @@ Proof.
   intros ℓ ℓ' v l hn.
   funelim (lookup_hpv_r ℓ' (hpv_r ℓ v :: l)).
   - exfalso. rewrite -e in hn. discriminate.
-  - rewrite -Heqcall. reflexivity.
+  - try rewrite -Heqcall. reflexivity.
 Qed.
 
 Lemma lookup_hpv_l_spec :
@@ -1262,7 +1264,7 @@ Proof.
   - simpl in *.
     destruct update_heaps eqn:e1. noconf e.
     eauto.
-  - rewrite -Heqcall in hl. noconf hl.
+  - try rewrite -Heqcall in hl. noconf hl.
     simpl in e0.
     destruct update_heaps eqn:e1. noconf e0.
     pose proof e as e'.
@@ -1272,7 +1274,7 @@ Proof.
   - simpl in e0.
     destruct update_heaps eqn:e1. noconf e0.
     rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
-    rewrite -Heqcall in hl. eauto.
+    try rewrite -Heqcall in hl. eauto.
 Qed.
 
 Lemma lookup_hpv_r_spec :
@@ -1287,7 +1289,7 @@ Proof.
   - simpl in *.
     destruct update_heaps eqn:e1. noconf e.
     eauto.
-  - rewrite -Heqcall in hl. noconf hl.
+  - try rewrite -Heqcall in hl. noconf hl.
     simpl in e0.
     destruct update_heaps eqn:e1. noconf e0.
     pose proof e as e'.
@@ -1297,7 +1299,7 @@ Proof.
   - simpl in e0.
     destruct update_heaps eqn:e1. noconf e0.
     rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
-    rewrite -Heqcall in hl. eauto.
+    try rewrite -Heqcall in hl. eauto.
 Qed.
 
 Lemma lookup_hpv_spec :
@@ -1324,11 +1326,11 @@ Proof.
   - simpl in *.
     destruct update_heaps eqn:e1. noconf e.
     eauto.
-  - rewrite -Heqcall in hl. noconf hl.
+  - try rewrite -Heqcall in hl. noconf hl.
   - simpl in e0.
     destruct update_heaps eqn:e1. noconf e0.
     rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
-    rewrite -Heqcall in hl. eauto.
+    try rewrite -Heqcall in hl. eauto.
 Qed.
 
 Lemma lookup_hpv_r_None_spec :
@@ -1343,11 +1345,11 @@ Proof.
   - simpl in *.
     destruct update_heaps eqn:e1. noconf e.
     eauto.
-  - rewrite -Heqcall in hl. noconf hl.
+  - try rewrite -Heqcall in hl. noconf hl.
   - simpl in e0.
     destruct update_heaps eqn:e1. noconf e0.
     rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
-    rewrite -Heqcall in hl. eauto.
+    try rewrite -Heqcall in hl. eauto.
 Qed.
 
 Lemma lookup_hpv_None_spec :

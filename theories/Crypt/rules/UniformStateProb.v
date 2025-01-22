@@ -1,14 +1,14 @@
-From Mon Require Import FiniteProbabilities SPropMonadicStructures
+From SSProve.Mon Require Import FiniteProbabilities SPropMonadicStructures
   SpecificationMonads MonadExamples SPropBase.
 
-From Relational Require Import OrderEnrichedCategory
+From SSProve.Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples Commutativity GenericRulesSimple.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum.
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings Theta_dens
+From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings Theta_dens
   Theta_exCP LaxComp FreeProbProg UniformDistrLemmas
   Prelude choice_type StateTransformingLaxMorph RulesStateProb.
 
@@ -22,7 +22,7 @@ Local Open Scope ring_scope.
 
 Definition Index : Type := positive.
 
-Definition fin_family (i : Index) : finType := [finType of chFin i].
+Definition fin_family (i : Index) : finType := Finite.clone _ (chFin i).
 
 Lemma F_w0 :
   forall (i : Index), fin_family i.
@@ -117,7 +117,8 @@ Proof.
     rewrite Heq'. rewrite GRing.mulr1. reflexivity.
   - have Heq' : st == s = false. apply /eqP. move /eqP: Heq. congruence.
     rewrite Heq'. rewrite GRing.mulr0. reflexivity.
-    Unshelve. exact (reals_Real__to__GRing_SemiRing R).
+    Unshelve.
+    exact: R.
 Qed.
 
 Definition f_dprod { F1 F2: finType } { S1 S2 : choiceType } { w0 : F1 } { w0' : F2 } {s1 : S1 } {s2 : S2}
@@ -218,7 +219,7 @@ Proof.
     rewrite item_addr0_mulr.
     eapply Order.POrderTheory.le_trans with (y := @r _ w0 *~ #|F1|).
     + rewrite -mulrzr. rewrite -[X in _<=X]mulrzr.
-      rewrite ler_pmul2l.
+      rewrite ler_pM2l.
       * rewrite ler_int. auto.
       * unfold r. apply mulr_gt0.
         -- cbn. exact ltr01.
@@ -232,17 +233,18 @@ Proof.
               destruct #|F1| eqn:e. 1: contradiction.
               rewrite ltr0n. reflexivity.
     + unfold r. rewrite -[X in X <= _]mulrzr. rewrite GRing.div1r.
-      set (#|F1|%:~R) at 2 ; erewrite <- (GRing.mulr1 s) ; subst s.
+      rewrite -[X in X <= _]GRing.mulr1 -GRing.mulrA.
       rewrite GRing.Theory.mulKf.
       * auto.
       * unshelve eapply card_non_zero. auto.
 Qed.
 
+
 Definition UniformFsq_f { F1 F2 : finType} { w0 : F1 } { w0' : F2 }
                         { S1 S2 : choiceType } { s1 : S1 } { s2 : S2 }
                         {f : F1 -> F2} (f_bij : bijective f):
-  SDistr (ChoiceAsOrd.F_choice_prod ⟨ ChoiceAsOrd.F_choice_prod ⟨ fintype_Finite__to__choice_Choice F1 , S1 ⟩ ,
-                                    ChoiceAsOrd.F_choice_prod ⟨ fintype_Finite__to__choice_Choice F2 , S2 ⟩ ⟩ ).
+  SDistr (ChoiceAsOrd.F_choice_prod ⟨ ChoiceAsOrd.F_choice_prod ⟨ (F1:choiceType) , S1 ⟩ ,
+                                    ChoiceAsOrd.F_choice_prod ⟨ (F2:choiceType) , S2 ⟩ ⟩ ).
 Proof.
   unshelve eapply mkdistr.
   1:{

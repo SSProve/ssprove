@@ -1,5 +1,5 @@
 
-From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
+From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
@@ -7,12 +7,12 @@ From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
   eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From Mon Require Import SPropBase.
+From SSProve.Mon Require Import SPropBase.
 
-From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
+From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
   pkg_core_definition choice_type pkg_composition pkg_rhl Package Prelude
-  SigmaProtocol.
+  SigmaProtocol Casts.
 
 From Coq Require Import Utf8.
 From extructures Require Import ord fset fmap.
@@ -28,6 +28,10 @@ Set Primitive Projections.
 
 Local Open Scope ring_scope.
 Import GroupScope GRing.Theory.
+
+Import Num.Def.
+Import Num.Theory.
+Import Order.POrderTheory.
 
 Import PackageNotation.
 
@@ -104,9 +108,6 @@ Module MyAlg <: SigmaProtocolAlgorithms MyParam.
   Definition choiceBool := 'fin #|'bool|.
 
   Definition i_witness := #|Witness|.
-
-  Definition HIDING : nat := 0.
-  Definition SOUNDNESS : nat := 1.
 
   Definition commit_loc : Location := (choiceWitness; 2%N).
 
@@ -315,22 +316,22 @@ Proof.
   apply: eq_rel_perf_ind_eq.
   2,3: apply fdisjoints0.
   simplify_eq_rel h.
-  destruct h as [h [s [s0 [s1 [s2 ?]]]]].
-  destruct s0 as [s0 s3].
-  case [&& _ & _] eqn:rel.
+  destruct h as [? [? [? [? [? ?]]]]].
+  destruct s1.
+  case [&& _ & _] eqn:e.
   all: apply r_ret; auto.
   intros h1 h2 ->.
   (* Algebraic proof that the produced witness satisfies the relation. *)
   unfold R.
-  unfold "&&" in rel.
-  inversion rel.
+  unfold "&&" in e.
+  inversion e.
   repeat match goal with
   | |- context [ if ?b then _ else _ ] => case b eqn:?
   end.
   2,3: discriminate.
   rewrite otf_fto in Heqs4.
-  rewrite otf_fto in rel.
-  apply reflection_nonsense in rel.
+  rewrite otf_fto in e.
+  apply reflection_nonsense in e.
   apply reflection_nonsense in Heqs4.
   rewrite H0.
   rewrite otf_fto expg_mod.
@@ -339,7 +340,7 @@ Proof.
   2: rewrite order_ge1 ; apply expg_order.
   rewrite expgD -FinRing.zmodVgE expg_zneg.
   2: apply cycle_id.
-  rewrite Heqs4 rel !expgMn.
+  rewrite Heqs4 e !expgMn.
   2-3: apply group_prodC.
   rewrite invMg !expgMn.
   2: apply group_prodC.
@@ -348,17 +349,17 @@ Proof.
   2: apply group_prodC.
   rewrite mulVg expg1n mul1g -expg_zneg.
   2:{
-    have Hx : exists ix, otf h = g ^+ ix.
+    have Hx : exists ix, otf s = g ^+ ix.
     { apply /cycleP. rewrite -g_gen. apply: in_setT. }
     destruct Hx as [ix ->].
     apply mem_cycle.
   }
   rewrite expgAC.
-  rewrite [otf h ^+ (- otf s1) ^+ _] expgAC.
+  rewrite [otf s ^+ (- otf s2) ^+ _] expgAC.
   rewrite -expgD -expgM.
   have <- := @expg_mod _ q.
   2:{
-    have Hx : exists ix, otf h = g ^+ ix.
+    have Hx : exists ix, otf s = g ^+ ix.
     { apply /cycleP. rewrite -g_gen. apply: in_setT. }
     destruct Hx as [ix ->].
     rewrite expgAC /q.
@@ -368,14 +369,16 @@ Proof.
   rewrite -modnMmr.
   have -> :
     (modn
-       (addn (@nat_of_ord (S (S (Zp_trunc q))) (@otf Challenge s0))
+       (addn (@nat_of_ord (S (S (Zp_trunc q))) (@otf Challenge s1))
              (@nat_of_ord (S (S (Zp_trunc q)))
-                          (GRing.opp (@otf Challenge s1)))) q) =
+                (GRing.opp
+                   (@otf Challenge s2))))
+       q) =
     (@nat_of_ord (S (S (Zp_trunc q)))
-                   (@Zp_add (S (Zp_trunc q)) (@otf Challenge s0) (@Zp_opp (S (Zp_trunc q)) (@otf Challenge s1)))).
+                   (@Zp_add _ (@otf Challenge s1) (@Zp_opp _ (@otf Challenge s2)))).
   { simpl.
     rewrite modnDmr.
-    destruct (otf s1) as [a Ha].
+    destruct (otf s2) as [a Ha].
     destruct a as [| Pa].
     - simpl.
       rewrite subn0 modnn addn0 modnDr.
@@ -391,20 +394,20 @@ Proof.
   have -> :
     (modn
        (muln (@nat_of_ord (S (S (Zp_trunc q)))
-                          (GRing.inv
-                                      (GRing.add
-                                                  (@otf Challenge s0)
-                                                  (GRing.opp
-                                                              (@otf Challenge s1)))))
-             (@nat_of_ord (S (S (Zp_trunc q)))
-                          (@Zp_add (S (Zp_trunc q)) (@otf Challenge s0) (@Zp_opp (S (Zp_trunc q)) (@otf Challenge s1))))) q) =
+                (GRing.inv
+                   (GRing.add
+                      (@otf Challenge s1)
+                      (GRing.opp
+                         (@otf Challenge s2)))))
+          (@nat_of_ord (S (S (Zp_trunc q)))
+             (@Zp_add _ (@otf Challenge s1) (@Zp_opp _ (@otf Challenge s2))))) q) =
     (Zp_mul
        (GRing.inv
-                   (GRing.add
-                               (@otf Challenge s0)
-                               (GRing.opp
-                                           (@otf Challenge s1))))
-       (@Zp_add (S (Zp_trunc q)) (@otf Challenge s0) (@Zp_opp (S (Zp_trunc q)) (@otf Challenge s1)))).
+          (GRing.add
+             (@otf Challenge s1)
+             (GRing.opp
+                (@otf Challenge s2))))
+       (@Zp_add _ (@otf Challenge s1) (@Zp_opp _ (@otf Challenge s2)))).
   { simpl.
     rewrite modnDmr.
     rewrite <- order_ge1 at 9.
@@ -422,81 +425,11 @@ Proof.
   - rewrite lt0n.
     apply neq_pos.
     assumption.
-  - destruct (otf s0 - otf s1) as [k Hk].
+  - destruct (otf s1 - otf s2) as [k Hk].
     simpl.
     rewrite order_ge1 in Hk.
     apply Hk.
 Qed.
-
-Lemma hiding_adv :
-  ∀ LA A,
-    ValidPackage LA Hiding_E A_export (A ∘ par KEY (ID Hiding_E)) →
-    fdisjoint LA Com_locs →
-    (* fdisjoint LA Sigma_locs → *)
-    fdisjoint LA KEY_locs →
-    ɛ_hiding A = 0.
-Proof.
-  intros LA A Va Hdisj0 Hdisj2.
-  unfold ɛ_hiding.
-  apply: eq_rel_perf_ind_eq.
-
-  (* eapply eq_rel_perf_ind_ignore. *)
-  (* 1,2: exact _. *)
-  (* 1:{ *)
-  (*   ssprove_invariant. *)
-  (*   unfold Sigma_locs. *)
-  (*   rewrite !fset0U. *)
-  (*   apply fsubsetU. *)
-  (*   apply /orP. left. *)
-  (*   apply fsubsetU. *)
-  (*   apply /orP. left. *)
-  (*   apply fsubsetU. *)
-  (*   apply /orP. left. *)
-  (*   apply fsubsetxx. *)
-  (* } *)
-  2,3: rewrite ?fset0U ; unfold Sigma_locs
-  ; repeat rewrite fdisjointUr
-  ; repeat (apply /andP ; split)
-  ; (exact Hdisj0 || exact Hdisj2 || apply fdisjoints0).
-  (* 2: apply Va. *)
-  
-  simplify_eq_rel hwe.
-  ssprove_code_simpl.
-  ssprove_code_simpl_more.
-  simplify_linking.
-  destruct hwe as [h w].
-
-  apply r_const_sample_R.
-  1: apply LosslessOp_uniform.
-  intros e_temp.
-
-  apply r_const_sample_L.
-  1: apply LosslessOp_uniform.
-  intros [ [] ? ] ; [ simpl; clear i | discriminate ].
-  
-  simpl.
-  set (r := getm _ _).
-  destruct r ; [ | apply r_ret ; auto].
-  destruct t, s.
-  destruct (choice_type_eqP _ _) ; [ | apply r_ret ; auto].
-  destruct (choice_type_eqP _ _) ; [ | apply r_ret ; auto].
-  subst.
-  
-  rewrite !cast_fun_K.
-  rewrite (@ord_inj #|'Z_q| h e_temp).
-  2:{
-    destruct h, e_temp ; simpl.
-    admit.
-  }
-
-  replace _ with (eq : choiceMessage * heap → choiceMessage * heap → Prop).
-  1:{
-    apply (rreflexivity_rule (x0 ← r e_temp ;; ret x0)).
-  }
-  apply functional_extensionality. intros [].
-  apply functional_extensionality. intros [].
-  admit.
-Admitted.
 
 (* Main theorem proving that the Schnorr protocol has perfect hiding. *)
 Theorem schnorr_com_hiding :
@@ -512,7 +445,7 @@ Theorem schnorr_com_hiding :
     ɛ_hiding A <= 0.
 Proof.
   intros LA A VA Hd1 Hd2 Hd3 Hd4 Hd5.
-  eapply Order.le_trans.
+  eapply le_trans.
   1: eapply commitment_hiding with (LA := LA).
   all: try assumption.
   1: apply fdisjoint0s.
@@ -581,12 +514,11 @@ Proof.
            unfold "\notin".
            rewrite in_fset1.
            done.
-        ++ 
-          rewrite -!fset1E.
-          rewrite fdisjoint1s.
-          unfold "\notin".
-          rewrite in_fset1.
-          done.
+        ++ rewrite -!fset1E.
+           rewrite fdisjoint1s.
+           unfold "\notin".
+           rewrite in_fset1.
+           done.
   }
   rewrite Advantage_sym.
   erewrite schnorr_SHVZK.
@@ -621,12 +553,11 @@ Proof.
            unfold "\notin".
            rewrite in_fset1.
            done.
-        ++ 
-          rewrite -!fset1E.
-          rewrite fdisjoint1s.
-          unfold "\notin".
-          rewrite in_fset1.
-          done.
+        ++ rewrite -!fset1E.
+           rewrite fdisjoint1s.
+           unfold "\notin".
+           rewrite in_fset1.
+           done.
   }
   rewrite addr0 add0r.
   apply eq_ler.
@@ -747,7 +678,8 @@ Proof.
   instantiate (1 := Special_Soundness_t).
   rewrite (commitment_binding LA A VA Hdisj).
   setoid_rewrite (extractor_success LA A VA).
-  now setoid_rewrite GRing.isNmodule.add0r.
+  setoid_rewrite GRing.isNmodule.add0r.
+  apply Order.isDuallyPOrder.le_refl.
 Qed.
 
 End Schnorr.

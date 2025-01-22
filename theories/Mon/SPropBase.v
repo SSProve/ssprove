@@ -1,6 +1,6 @@
 (*From Coq Require Export Logic.StrictProp.*)
 (*This file was originally referring to SProp. Not anymore*)
-From Mon Require Import Base.
+From SSProve.Mon Require Import Base.
 From mathcomp Require Import ssreflect.
 
 

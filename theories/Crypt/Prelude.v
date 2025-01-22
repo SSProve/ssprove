@@ -8,7 +8,7 @@ Set Warnings "notation-overridden".
 From HB Require Import structures.
 From extructures Require Import ord fset.
 From Equations Require Import Equations.
-From Mon Require SPropBase.
+From SSProve.Mon Require SPropBase.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
@@ -131,7 +131,7 @@ Proof.
   - rewrite expnS. rewrite mulSnr. rewrite mulSnr.
     change (0 * ?n) with 0.
     set (m := 2^n) in *. clearbody m. cbn.
-    rewrite -addnE. rewrite -plusE.
+    rewrite -?addnE. rewrite -plusE.
     lia.
 Qed.
 

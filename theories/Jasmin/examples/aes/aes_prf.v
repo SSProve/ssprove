@@ -9,17 +9,17 @@
   scheme that is indistinguishable under chosen plaintext attacks (IND-CPA)."
 
 *)
-From JasminSSProve Require Import jasmin_translate aes_valid aes_spec aes.aes word aes_utils.
+From SSProve.Jasmin Require Import jasmin_translate aes_valid aes_spec aes.aes word aes_utils.
 
-From Relational Require Import OrderEnrichedCategory GenericRulesSimple.
+From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
   ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq word word_ssrZ.
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From Mon Require Import SPropBase.
-From Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
+From SSProve.Mon Require Import SPropBase.
+From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb
   pkg_core_definition choice_type pkg_composition pkg_rhl Package Prelude.
 
@@ -92,7 +92,7 @@ Section PRF_example.
        | None =>
            k_val ← sample uniform N ;;
            #put key_location := Some (word_of_ord k_val) ;;
-           ret (word_of_ord k_val) 
+           ret (word_of_ord k_val)
        | Some k_val =>
          ret k_val
        end
@@ -135,7 +135,7 @@ Section PRF_example.
   Definition MOD_CPA_location : {fset Location} := fset0.
 
   Definition MOD_CPA_tt_pkg :
-    package MOD_CPA_location 
+    package MOD_CPA_location
       [interface #val #[i0] : 'word → 'key ]
       [interface #val #[i1] : 'word → ('fin N) × 'word ] :=
     [package
@@ -150,7 +150,7 @@ Section PRF_example.
     ].
 
   Definition MOD_CPA_ff_pkg :
-    package MOD_CPA_location 
+    package MOD_CPA_location
       [interface #val #[i0] : 'word → 'key]
       [interface #val #[i1] : 'word → ('fin N) × 'word ]:=
     [package
@@ -185,7 +185,7 @@ Section PRF_example.
     rewrite in_fset in_cons. move=>/orP []. 2: easy. move=>/eqP H. noconf H. simpl.
     eexists.
     split.
-    1: reflexivity. 
+    1: reflexivity.
     intros. repeat constructor.
     1: auto_in_fset. destruct v.
     1: intros; repeat constructor.
@@ -212,7 +212,7 @@ Section PRF_example.
     rewrite in_fset in_cons. move=>/orP []. 2: easy. move=>/eqP H. noconf H. simpl.
     eexists.
     split.
-    1: reflexivity. 
+    1: reflexivity.
     intros. repeat constructor.
     1: auto_in_fset. destruct v.
     1: intros; repeat constructor.
@@ -318,7 +318,7 @@ Section PRF_example.
   Qed.
 End PRF_example.
 
-From JasminSSProve Require Import aes.aes aes_jazz jasmin_utils aes_valid.
+From SSProve.Jasmin Require Import aes.aes aes_jazz jasmin_utils aes_valid.
 From Jasmin Require Import expr sem.
 
 Import JasminNotation JasminCodeNotation.
@@ -332,7 +332,7 @@ Section JasminPRF.
   Ltac neq_loc_auto ::= solve [ eapply injective_translate_var3; auto | eapply injective_translate_var2; auto ].
 
   Notation n := U128.
-  
+
   Definition key := 'word n.
   Definition pt := 'word n.
   Definition ct := 'word n.
@@ -351,7 +351,7 @@ Section JasminPRF.
     refine
       {code
         r ← sample uniform N ;;
-        pad ← Caes (word_of_ord r) k ;; 
+        pad ← Caes (word_of_ord r) k ;;
         ret (r, (m ⊕ pad))
       }.
     repeat constructor.
@@ -389,7 +389,7 @@ Section JasminPRF.
   Defined.
 
   Notation hdtc128 l := (coerce_to_choice_type ('word U128) (head ( 'word U128 ; word0 ) l).π2).
-  
+
   Definition IND_CPA_pkg_JENC (id0 : p_id) :
     package (fset (key_location :: (JENC_valid id0).π1))
       [interface]
@@ -410,7 +410,7 @@ Section JasminPRF.
     rewrite in_fset in_cons => /orP []; [|easy]; move=> /eqP H; noconf H.
     cbv zeta match.
     eexists.
-    split. 
+    split.
     1: reflexivity.
     intros x.
     constructor.
@@ -441,7 +441,7 @@ Section JasminPRF.
   Notation IND_CPA := (IND_CPA U128 aes).
   Notation EVAL := (EVAL U128 aes).
 
-  Lemma fsubset_ext2 : ∀ [T : ordType] (s1 s2 : {fset T}), fsubset s1 s2 -> (forall x, x \in s1 -> x \in s2). 
+  Lemma fsubset_ext2 : ∀ [T : ordType] (s1 s2 : {fset T}), fsubset s1 s2 -> (forall x, x \in s1 -> x \in s2).
   Proof.
     intros.
     rewrite -fsub1set.
@@ -449,7 +449,7 @@ Section JasminPRF.
     rewrite fsub1set. assumption.
   Qed.
 
-  Lemma fsubset_cons : ∀ [T : ordType] a (s1 s2 : {fset T}), fsubset s1 s2 -> fsubset s1 (a |: s2). 
+  Lemma fsubset_cons : ∀ [T : ordType] a (s1 s2 : {fset T}), fsubset s1 s2 -> fsubset s1 (a |: s2).
   Proof.
     intros.
     apply fsubset_ext.
@@ -459,7 +459,7 @@ Section JasminPRF.
     1: eassumption.
     assumption.
   Qed.
-  
+
   Definition IND_CPA_Cenc :
     loc_GamePair [interface #val #[i1] : 'word → ('fin N) × 'word ] :=
     λ b,
@@ -476,7 +476,7 @@ Section JasminPRF.
     ⊢ ⦃ fun '(h0, h1) => pre (h0, h1) ⦄
       JXOR id0 x y
       ≈
-      ret (chCanonical chUnit) 
+      ret (chCanonical chUnit)
       ⦃ fun '(v0, h0) '(v1, h1) => pre (h0, h1) /\ (exists o, (v0 = cons ('word U128 ; o ) nil ) /\ (o = x ⊕ y)) ⦄.
   Proof.
     unfold JXOR, get_translated_static_fun, translate_prog_static, translate_funs_static, translate_call_body.
@@ -622,7 +622,7 @@ Section JasminPRF.
         rewrite H in H2. easy.
     - simpl. intros.
       eapply rpre_weak_hypothesis_rule; intros.
-      destruct_pre. 
+      destruct_pre.
       simpl.
       clear_get.
       eapply r_put_lhs with (pre := fun _ => _).
@@ -675,7 +675,7 @@ Section JasminPRF.
     Opaque expn.
     simplify_eq_rel m.
     ssprove_sync. intros.
-    eapply r_bind with (mid := fun '(a0, s0) '(a1, s1) => a0 = a1 /\ heap_ignore (fset Cenc_locs) (s0, s1)). 
+    eapply r_bind with (mid := fun '(a0, s0) '(a1, s1) => a0 = a1 /\ heap_ignore (fset Cenc_locs) (s0, s1)).
     { destruct a.
       - eapply r_ret. easy.
       - ssprove_sync. intros.

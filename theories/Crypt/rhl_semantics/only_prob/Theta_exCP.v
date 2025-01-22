@@ -1,9 +1,10 @@
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra classical.boolp distr reals realsum.
 Set Warnings "notation-overridden,ambiguous-paths".
-From Mon Require Import SpecificationMonads SPropBase SPropMonadicStructures.
-From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
-From Crypt Require Import ChoiceAsOrd SubDistr Couplings Axioms.
+From SSProve.Mon Require Import SpecificationMonads SPropBase SPropMonadicStructures.
+From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
+From SSProve.Crypt Require Import ChoiceAsOrd SubDistr Couplings Axioms Casts.
+From HB Require Import structures.
 
 Import SPropNotations.
 Import Num.Theory.
@@ -90,9 +91,9 @@ Proof.
     apply: sig_eq. rewrite /=.
     apply: boolp.funext. by move => [c1 c2] /=.
 Defined.
-  
-Definition θ0 (A1 A2 : Type) (ch1 :  Choice A1 (* Choice.class_of A1 *)) (ch2 : Choice A2 (* Choice.class_of A2 *)):
-  (SDistr_carrier (Choice.Pack ch1) ) × (SDistr_carrier (Choice.Pack ch2)) ->
+
+Definition θ0 (A1 A2 : Type) (ch1 : Choice A1) (ch2 : Choice A2):
+  (SDistr_carrier (Choice.Pack ch1)) × (SDistr_carrier (Choice.Pack ch2)) ->
   WProp (A1 * A2)%type.
 Proof.
   rewrite /SDistr_carrier. move => [d1 d2].
@@ -114,8 +115,8 @@ Proof.
   inversion leq12. by subst.
 Defined.
 
-Definition kd {A1 A2 B1 B2 : Type} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2}
-                                   {chB1 : Choice(* .class_of *) B1} {chB2 : Choice(* .class_of *) B2}
+Definition kd {A1 A2 B1 B2 : Type} {chA1 : Choice A1} {chA2 : Choice A2}
+                                   {chB1 : Choice B1} {chB2 : Choice B2}
               {f1 : TypeCat ⦅ nfst (prod_functor choice_incl choice_incl ⟨
                                Choice.Pack chA1, Choice.Pack chA2 ⟩);
                               nfst (SDistr_squ ⟨Choice.Pack chB1, Choice.Pack chB2 ⟩) ⦆}
@@ -149,7 +150,7 @@ Proof.
   - exists dnull. intro. inversion H.
 Defined.
 
-Lemma extract_positive : forall {A1 A2 B1 B2 : Type} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2} {chB1 : Choice(* .class_of *) B1} {chB2 : Choice(* .class_of *) B2}  (dA : SDistr_carrier (F_choice_prod_obj ⟨ Choice.Pack chA1, Choice.Pack chA2 ⟩)) (FF1 : _ -> SDistr (F_choice_prod ⟨ Choice.Pack chB1, Choice.Pack chB2 ⟩)) b1 b2, 0 < (\dlet_(i <- dA) (FF1 i)) (b1, b2) -> exists (a1 : Choice.Pack chA1) (a2 : Choice.Pack chA2), 0 < dA (a1, a2) /\ 0 < FF1 (a1, a2) (b1, b2).
+Lemma extract_positive : forall {A1 A2 B1 B2 : Type} {chA1 : Choice A1} {chA2 : Choice A2} {chB1 : Choice B1} {chB2 : Choice B2}  (dA : SDistr_carrier (F_choice_prod_obj ⟨ Choice.Pack chA1, Choice.Pack chA2 ⟩)) (FF1 : _ -> SDistr (F_choice_prod ⟨ Choice.Pack chB1, Choice.Pack chB2 ⟩)) b1 b2, 0 < (\dlet_(i <- dA) (FF1 i)) (b1, b2) -> exists (a1 : Choice.Pack chA1) (a2 : Choice.Pack chA2), 0 < dA (a1, a2) /\ 0 < FF1 (a1, a2) (b1, b2).
 Proof.
   intuition. rewrite /(\dlet_(i <- _) _) in H. unlock in H. simpl in H.
   rewrite /mlet in H.
@@ -172,7 +173,7 @@ Proof.
     apply FF1z.
 Qed.
 
-Lemma distr_get : forall {A : Type} {chA : Choice(* .class_of *) A} x y, 0 < SDistr_unit (Choice.Pack chA) x y -> x = y.
+Lemma distr_get : forall {A : Type} {chA : Choice A} x y, 0 < SDistr_unit (Choice.Pack chA) x y -> x = y.
 Proof.
   intuition. rewrite /SDistr_unit in H. rewrite dunit1E in H.
   case Hxy: (x==y).
@@ -272,7 +273,7 @@ Definition flip (r : R) : SDistr (bool).
   - exact (1 - r).
 Defined.
 
-Lemma sample_rule : forall {A1 A2} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice A2}
+Lemma sample_rule : forall {A1 A2} {chA1 : Choice A1} {chA2 : Choice A2}
                       (pre : Prop) (post : A1 -> A2 -> Prop)
                       (d1 : SDistr (Choice.Pack chA1)) (d2 : SDistr (Choice.Pack chA2)) d
                       (Hd : coupling d d1 d2)
@@ -352,4 +353,3 @@ Qed.
 (*   move => π Hwm. *)
 (*   rewrite /SubDistr.SDistr_obligation_2. *)
 (*   Admitted. *)
-

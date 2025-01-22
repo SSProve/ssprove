@@ -1,9 +1,9 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require Import FunctionalExtensionality.
-From Mon Require Export Base.
+From SSProve.Mon Require Export Base.
 From Coq Require Import Relation_Definitions Morphisms RelationPairs.
-From Mon Require Import SPropBase SPropMonadicStructures.
-From Relational Require Import OrderEnrichedCategory Rel.
+From SSProve.Mon Require Import SPropBase SPropMonadicStructures.
+From SSProve.Relational Require Import OrderEnrichedCategory Rel.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
@@ -76,7 +76,7 @@ Section OrdCat.
       (fun _ _ _ f g => ⦑f∙1 \o g∙1⦒)
       _ _ _ _.
   Next Obligation. constructor.
-    intuition.
+    auto with relations.
     unfold Transitive. intros f g h. intros H G x.
     pose Hx := (H x). pose GX := (G x). etransitivity.
     apply Hx. apply GX.
@@ -101,8 +101,8 @@ Section OrdCat.
     mkOrdFunctor (fun A => dpair _ A ⦑eq⦒)
                  (fun _ _ f => ⦑ f ⦒)
               _ _ _.
-  Next Obligation. intuition. Qed.
-  Next Obligation. intuition. Qed.
+  Next Obligation. typeclasses eauto. Qed.
+  Next Obligation. typeclasses eauto. Qed.
   Next Obligation. cbv ; intuition. Qed.
   Next Obligation. apply sig_eq. reflexivity. Qed.
   Next Obligation. apply sig_eq. compute. reflexivity. Qed.
@@ -118,7 +118,7 @@ Section OrdCat.
 
 
   Program Definition OrdCat_cst {A B} (b:dfst B) : OrdCat⦅A; B⦆ := ⦑fun=> b⦒.
-  Next Obligation. cbv; intuition. Qed.
+  Next Obligation. cbv; auto with relations. Qed.
 
   Lemma ordCat_helper {A B} (f g : OrdCat⦅A;B⦆) :
     f ⪷ g -> forall (x y:dfst A), x ≤ y -> f∙1 x ≤ g∙1 y.
@@ -152,7 +152,7 @@ Section OrdProduct.
                           (RelCompFun relB nsnd).
 
   Global Instance : PreOrder prod_rel.
-  Proof. constructor ; cbv ; intuition ; etransitivity ; eassumption. Qed.
+  Proof. constructor ; cbv ; intuition auto with relations ; etransitivity ; eassumption. Qed.
 End OrdProduct.
 
 

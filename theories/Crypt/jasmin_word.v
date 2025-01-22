@@ -5,7 +5,7 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra.
 From mathcomp Require Import word_ssrZ word.
-From Crypt Require Import jasmin_util jasmin_wsize.
+From SSProve.Crypt Require Import jasmin_util jasmin_wsize.
 Require Import (* strings *) ZArith (* utils *).
 (* Import Utf8. *)
 (* Import word_ssrZ. *)
@@ -188,13 +188,13 @@ Proof.
 Qed.
 
 Lemma wunsigned_add_if ws (a b : word ws) :
-  wunsigned (a + b) = 
+  wunsigned (a + b) =
    if wunsigned a + wunsigned b <? wbase ws then wunsigned a + wunsigned b
    else wunsigned a + wunsigned b - wbase ws.
 Proof.
   move: (wunsigned_range a) (wunsigned_range b).
   rewrite /wunsigned mathcomp.word.word.addwE /GRing.add /= -/(wbase ws) => ha hb.
-  case: ZltP => hlt. 
+  case: ZltP => hlt.
   + by rewrite Zmod_small //;Psatz.lia.
   by rewrite -(Z_mod_plus_full _ (-1)) Zmod_small;Psatz.lia.
 Qed.
@@ -207,20 +207,20 @@ Proof.
   by rewrite -wrepr_sub wunsigned_repr Z.mod_small.
 Qed.
 
-Lemma wunsigned_sub_if ws (a b : word ws) : 
-  wunsigned (a - b) = 
-    if wunsigned b <=? wunsigned a then wunsigned a - wunsigned b 
+Lemma wunsigned_sub_if ws (a b : word ws) :
+  wunsigned (a - b) =
+    if wunsigned b <=? wunsigned a then wunsigned a - wunsigned b
     else  wbase ws + wunsigned a - wunsigned b.
 Proof.
   move: (wunsigned_range a) (wunsigned_range b).
   rewrite /wunsigned mathcomp.word.word.subwE -/(wbase ws) => ha hb.
   have -> : (word.urepr a - word.urepr b)%R = word.urepr a - word.urepr b by done.
-  case: ZleP => hle. 
+  case: ZleP => hle.
   + by rewrite Zmod_small //;Psatz.lia.
   by rewrite -(Z_mod_plus_full _ 1) Zmod_small;Psatz.lia.
 Qed.
 
-Lemma wunsigned_opp_if ws (a : word ws) : 
+Lemma wunsigned_opp_if ws (a : word ws) :
   wunsigned (-a) = if wunsigned a == 0 then 0 else wbase ws - wunsigned a.
 Proof.
   have ha := wunsigned_range a.
@@ -335,6 +335,7 @@ Lemma wshrE sz (x: word sz) c i :
   wbit_n (wshr x c) i = wbit_n x (Z.to_nat c + i).
 Proof.
   move/Z2Nat.id => {1}<-.
+  rewrite /wshr -urepr_lsr ureprK.
   exact: wbit_lsr.
 Qed.
 
@@ -352,6 +353,7 @@ Proof.
   rewrite -(Z.mod_small (wunsigned x / 2 ^ Z.of_nat c) (modulus sz)) //.
   rewrite -wunsigned_repr.
   congr wunsigned.
+  rewrite /wshr -urepr_lsr ureprK.
   apply/eqP/eq_from_wbit_n => i.
   rewrite /wbit_n wbit_lsr wunsigned_repr /wbit.
   rewrite Z.mod_small //.
@@ -673,7 +675,7 @@ Qed.
 
 Lemma zero_extend1 sz sz' :
   @zero_extend sz sz' 1%R = 1%R.
-Proof. 
+Proof.
   apply/eqP/eq_from_wbit => -[i hi].
   have := @wbit_zero_extend sz sz' 1%R i.
   by rewrite /wbit_n => ->; rewrite -ltnS hi.
@@ -1058,21 +1060,12 @@ Qed.
 
 (* -------------------------------------------------------------------*)
 Lemma lsr0 n (w: n.-word) : lsr w 0 = w.
-Proof. by rewrite /lsr Z.shiftr_0_r ureprK. Qed.
+Proof. by apply/word_eqP; rewrite -urepr_word urepr_lsr. Qed.
 
 Lemma subword0 (ws ws' :wsize) (w: word ws') :
    mathcomp.word.word.subword 0 ws w = zero_extend ws w.
 Proof.
-  apply/eqP/eq_from_wbit_n => i.
-  rewrite wbit_zero_extend.
-  have := ltn_ord i.
-  rewrite ltnS => -> /=.
-  rewrite /subword lsr0.
-  rewrite {1}/wbit_n /wunsigned mkwordK.
-  rewrite /mathcomp.word.word.wbit /modulus two_power_nat_equiv.
-  rewrite Z.mod_pow2_bits_low //.
-  have /leP := ltn_ord i.
-  lia.
+  by rewrite /subword -urepr_word urepr_lsr Z.shiftr_0_r.
 Qed.
 
 (* -------------------------------------------------------------------*)
@@ -1159,7 +1152,7 @@ Definition pextr sz (w1 w2: word sz) :=
 Fixpoint bitpdep sz (w:word sz) (i:nat) (mask:bitseq) :=
   match mask with
   | [::] => [::]
-  | b :: mask => 
+  | b :: mask =>
       if b then wbit_n w i :: bitpdep w (i.+1) mask
       else false :: bitpdep w i mask
   end.

@@ -9,13 +9,13 @@
 
 
 From Coq Require Import Utf8.
-From Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
+From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssreflect eqtype choice seq ssrfun ssrbool ssrnat.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
-From Mon Require Import SPropBase.
-From Crypt Require Import Prelude Axioms ChoiceAsOrd
+From SSProve.Mon Require Import SPropBase.
+From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd
   StateTransformingLaxMorph choice_type pkg_core_definition
   RulesStateProb.
 From Equations Require Import Equations.
@@ -431,7 +431,7 @@ Section fset_par_facts.
       - cbn. symmetry. apply h. auto.
       - cbn. reflexivity.
     }
-    rewrite h1. rewrite eqseqE. now rewrite eq_refl.
+    rewrite h1. rewrite eqseqE. by [apply/eqP/eqP].
   Qed.
 
 End fset_par_facts.
@@ -912,7 +912,7 @@ Proof.
 Qed.
 
 Lemma getm_def_in :
-  ∀ {A : eqType} n (x : A) (s : seq (Datatypes_nat__canonical__eqtype_Equality * A)),
+  ∀ {A : eqType} n (x : A) (s : seq ((nat:eqType)%type * A)),
     getm_def s n = Some x →
     (n,x) \in s.
 Proof.

@@ -12,6 +12,10 @@ This repository contains the Coq formalisation of the paper:\
   ([ieee](https://www.computer.org/csdl/proceedings-article/csf/2021/760700a608/1uvIdwNa5Ne),
    [eprint](https://eprint.iacr.org/2021/397/20210526:113037))
 
+Secondary literature:
+* **The Last Yard: Foundational End-to-End Verification of High-Speed Cryptography** at CPP'24.
+Philipp G. Haselwarter, Benjamin Salling Hvass, Lasse Letager Hansen, Théo Winterhalter, Cătălin Hriţcu, and Bas Spitters. ([DOI](https://doi.org/10.1145/3636501.3636961))
+
 This README serves as a guide to running verification and finding the
 correspondence between the claims in the paper and the formal proofs in Coq, as
 well as listing the small set of axioms on which the formalisation relies
@@ -29,17 +33,25 @@ A documentation is available in [DOC.md].
 
 ## Installation
 
+There are two installation options:
+- via `opam`
+- via `nix`
+
 #### Prerequisites
 
-- OCaml `>=4.05.0 & <5`
-- Coq `>=8.16.0 & <8.18.0`
-- Equations `1.3`
-- Mathcomp `>=1.15.0`
-- Mathcomp analysis `>=0.5.3`
-- Coq Extructures `0.3.1`
-- Coq Deriving `0.1`
+- OCaml
+- Coq
+- Equations
+- Mathcomp
+- Mathcomp analysis
+- Coq Extructures
+- Coq Deriving
 
-You can get them all from the `opam` package manager for OCaml:
+
+### OPAM-based installation
+
+
+You can get all dependencies from the `opam` package manager for OCaml:
 ```sh
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam update
@@ -48,6 +60,35 @@ opam install ./ssprove.opam
 
 To build the dependency graph, you can optionally install `graphviz`.
 On macOS, `gsed` is additionally required for this.
+
+### Nix-based installation
+
+`ssprove` is available on `nixpkgs`, e.g., `coqPackages_8_19.ssprove`.
+The following flake-based templates for your new SSProve project are available:
+- [SSProve latest](.nix/flake.nix.template_latest) -- provides a project setup
+with the latest SSProve development readily installed.
+- [SSProve versioned](.nix/flake.nix.template_versioned) -- provides
+a Nix flake that loads a dedicated version (that you may change).
+
+#### Quick start guide
+
+##### Nix installation
+This is performed only once.
+1. [Install Nix](https://nix.dev/install-nix.html) with `curl -L https://nixos.org/nix/install | sh -s -- --daemon`
+2. Enable [flake support](https://nixos.wiki/wiki/Flakes) with `mkdir -p ~/.config/nix && echo -e "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf`
+All set.
+
+##### Project setup
+1. Create a new project folder and `cd` into it.
+2. Copy one of the above templates into it (removing the `.template*` suffix).
+3. And finally run `nix develop` which throws you into a shell where SSProve is already installed. (`From SSProve.Crypt Require Import ...`)
+
+You may need to initialize the project as a Git repository and add the `flake.nix` to it.
+The generated `flake.lock` pins the versions and hence also needs to be added to this new project repo.
+
+In the `flake.nix`, you can add [more Coq packages from the Nix repository](https://github.com/NixOS/nixpkgs/blob/a194f9d0654e368fb900830a19396f9d7792647a/pkgs/top-level/coq-packages.nix#L20).
+
+## Build instructions
 
 #### Running verification
 
@@ -59,12 +100,12 @@ Run `make graph` to build a graph of dependencies between sources.
 
 ## Directory organisation
 
-| Directory             | Description                                          |
-|-----------------------|------------------------------------------------------|
-| [theories]           | Root of all the Coq files                            |
-| [theories/Mon]        | External development coming from "Dijkstra Monads For All" |
-| [theories/Relational] | External development coming from "The Next 700 Relational Program Logics"|
-| [theories/Crypt]      | This paper                                           |
+| Directory             | Description                                                               |
+|-----------------------|---------------------------------------------------------------------------|
+| [theories]            | Root of all the Coq files                                                 |
+| [theories/Mon]        | External development coming from "Dijkstra Monads For All"                |
+| [theories/Relational] | External development coming from "The Next 700 Relational Program Logics" |
+| [theories/Crypt]      | This paper                                                                |
 
 Unless specified with a full path, all files considered in this README can
 safely be assumed to be in [theories/Crypt].

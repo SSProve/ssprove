@@ -1,13 +1,13 @@
 From Coq Require Import RelationClasses Morphisms Utf8.
 
-From Mon Require Import
+From SSProve.Mon Require Import
      FiniteProbabilities
      SPropMonadicStructures
      SpecificationMonads
      MonadExamples
      SPropBase.
 
-From Relational Require Import
+From SSProve.Relational Require Import
      OrderEnrichedCategory
      OrderEnrichedRelativeMonadExamples
      Commutativity
@@ -22,7 +22,7 @@ From mathcomp Require Import
      realsum.
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From Crypt Require Import
+From SSProve.Crypt Require Import
      Axioms
      ChoiceAsOrd
      SubDistr
@@ -31,7 +31,8 @@ From Crypt Require Import
      Theta_exCP
      LaxComp
      FreeProbProg
-     RelativeMonadMorph_prod.
+     RelativeMonadMorph_prod
+     Casts.
 
 Import SPropNotations.
 Import Num.Theory.
@@ -162,7 +163,7 @@ Definition get_d { A  : choiceType} (c : MFreePr A):=
   (Theta_dens.unary_theta_dens_obligation_1 A c).
 
 Lemma sample_rule :
-  ∀ {A1 A2} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2}
+  ∀ {A1 A2} {chA1 : Choice A1} {chA2 : Choice A2}
     (pre : Prop) (post : A1 -> A2 -> Prop)
     (c1 : MFreePr (Choice.Pack chA1))
     (c2 : MFreePr (Choice.Pack chA2))
@@ -205,7 +206,7 @@ Qed.
 (* GENERIC MONADIC RULES *)
 
 Theorem ret_ule {A1 A2 : Type}
-  {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2}
+  {chA1 : Choice A1} {chA2 : Choice A2}
   (a1 : A1) (a2 : A2) :
    ⊨ (ord_relmon_unit MFreePr (Choice.Pack chA1) a1) ≈
      (ord_relmon_unit MFreePr (Choice.Pack chA2) a2)
@@ -229,7 +230,7 @@ Proof.
   by apply: ret_rule.
 Qed.
 
-Theorem weaken_rule  {A1 A2 : Type} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2}
+Theorem weaken_rule  {A1 A2 : Type} {chA1 : Choice A1} {chA2 : Choice A2}
                      {d1 : MFreePr (Choice.Pack chA1)}
                      {d2 : MFreePr (Choice.Pack chA2)} :
   forall w w', (⊨ d1 ≈ d2 [{ w }]) -> w ≤ w' -> (⊨ d1 ≈ d2 [{ w' }] ).
@@ -243,8 +244,8 @@ Proof.
 Qed.
 
 
-Theorem bind_rule {A1 A2 : Type} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2}
-                  {B1 B2 : Type} {chB1 : Choice(* .class_of *) B1} {chB2 : Choice(* .class_of *) B2}
+Theorem bind_rule {A1 A2 : Type} {chA1 : Choice A1} {chA2 : Choice A2}
+                  {B1 B2 : Type} {chB1 : Choice B1} {chB2 : Choice B2}
                   {f1 : A1 -> MFreePr (Choice.Pack chB1)}
                   {f2 : A2 -> MFreePr (Choice.Pack chB2)}
                   (m1 : MFreePr (Choice.Pack chA1))
@@ -278,7 +279,7 @@ Qed.
 
 (* Pre-condition manipulating rules *)
 
-Theorem pre_weaken_rule  {A1 A2 : Type} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2}
+Theorem pre_weaken_rule  {A1 A2 : Type} {chA1 : Choice A1} {chA2 : Choice A2}
                         {d1 : MFreePr (Choice.Pack chA1)}
                         {d2 : MFreePr (Choice.Pack chA2)} :
   forall (pre pre' : Prop) post, (⊨ ⦃ pre ⦄ d1 ≈ d2 ⦃ post ⦄) -> (pre' -> pre) -> (⊨ ⦃ pre' ⦄ d1 ≈ d2 ⦃ post ⦄).
@@ -291,7 +292,7 @@ Proof.
   simpl; intuition.
 Qed.
 
-Theorem pre_hypothesis_rule  {A1 A2 : Type} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2}
+Theorem pre_hypothesis_rule  {A1 A2 : Type} {chA1 : Choice A1} {chA2 : Choice A2}
                         {d1 : MFreePr (Choice.Pack chA1)}
                         {d2 : MFreePr (Choice.Pack chA2)} :
   forall (pre : Prop) post, (pre -> ⊨ ⦃ True ⦄ d1 ≈ d2 ⦃ post ⦄) -> (⊨ ⦃ pre ⦄ d1 ≈ d2 ⦃ post ⦄).
@@ -323,7 +324,7 @@ Qed.
 
 (* post-condition manipulating rules *)
 
-Theorem post_weaken_rule  {A1 A2 : Type} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2}
+Theorem post_weaken_rule  {A1 A2 : Type} {chA1 : Choice A1} {chA2 : Choice A2}
         {d1 : MFreePr (Choice.Pack chA1)}
         {d2 : MFreePr (Choice.Pack chA2)} :
   forall (pre : Prop) (post1 post2 : A1 -> A2 -> Prop),
@@ -438,7 +439,7 @@ Proof. by  apply: (seq_rule_ch m1 m2 P (fun _ _ => True) Q judge1 judge2). Qed.
 
 (* *)
 
-Theorem if_rule  {A1 A2 : Type} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2}
+Theorem if_rule  {A1 A2 : Type} {chA1 : Choice A1} {chA2 : Choice A2}
         (c1 c2 : MFreePr (Choice.Pack chA1))
         (c1' c2' : MFreePr (Choice.Pack chA2))
         {b1 b2 : bool}
@@ -463,7 +464,7 @@ Proof.
   - intuition.
 Qed.
 
-Theorem if_rule_weak  {A1 A2 : Type} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2}
+Theorem if_rule_weak  {A1 A2 : Type} {chA1 : Choice A1} {chA2 : Choice A2}
         (c1 c2 : MFreePr (Choice.Pack chA1))
         (c1' c2' : MFreePr (Choice.Pack chA2))
         {b : bool}
@@ -485,7 +486,7 @@ Axiom s_indefinite_description :
 
 
 
-Definition judgement_d {A1 A2 : Type} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2}
+Definition judgement_d {A1 A2 : Type} {chA1 : Choice A1} {chA2 : Choice A2}
            {c1 : MFreePr (Choice.Pack chA1)}
            {c2 : MFreePr (Choice.Pack chA2)}
            {pre : Prop} {post : A1 -> A2 -> Prop}
@@ -548,8 +549,8 @@ Fixpoint bounded_do_while  (n : nat) (c : MFreePr bool) :
 
 (* Rem.: maybe something like the rule in the paper can be proven? yes...
        but I do not have intuition of how it could be used... examples needed! *)
-Theorem bounded_do_while_rule  {A1 A2 : Type} {chA1 : Choice(* .class_of *) A1} {chA2 : Choice(* .class_of *) A2} {n : nat}
-        (c1 c2 : MFreePr bool)
+Theorem bounded_do_while_rule  {A1 A2 : Type} {chA1 : Choice A1} {chA2 : Choice A2} {n : nat}
+        (c1 c2 : MFreePr bool_choiceType)
         {inv : bool -> bool -> Prop}
         {H : ⊨ ⦃ inv true true ⦄ c1 ≈ c2 ⦃ fun b1 b2 => inv b1 b2 /\ b1 = b2 ⦄ } :
     ⊨ ⦃ inv true true ⦄ bounded_do_while n c1 ≈ bounded_do_while n c2 ⦃ fun l r => (l = false /\ r = false) \/ inv false false ⦄.
@@ -614,7 +615,7 @@ Proof.
   rewrite HeqH11.
   assert ((fun x : X => (A x)%:R * psum (fun w : Choice.Pack chY => d (x, w))) = (fun x : X => psum (fun w : Choice.Pack chY => (A x)%:R * d (x, w)))) as H4.
   { extensionality k. rewrite -psumZ. reflexivity.
-    case (A k); intuition. (* by rewrite ler01. *) }
+    case (A k); intuition; by rewrite ler01. }
   rewrite H4.
   assert ((fun x : Y => (B x)%:R * dsnd d x) = (fun y : Y => (B y)%:R * psum (fun w => d (w, y)))) as HeqH12.
   { extensionality K. rewrite dsndE. reflexivity. }
@@ -722,7 +723,7 @@ Proof.
   rewrite HeqH11.
   assert ((fun x : X => (A x)%:R * psum (fun w : Choice.Pack chY => d (x, w))) = (fun x : X => psum (fun w : Choice.Pack chY => (A x)%:R * d (x, w)))) as H4.
   { extensionality k. rewrite -psumZ. reflexivity.
-    case (A k); intuition. (* by rewrite ler01. *) }
+    case (A k); intuition; by rewrite ler01. }
   rewrite H4.
   assert ((fun x : Y => (B x)%:R * dsnd d x) = (fun y : Y => (B y)%:R * psum (fun w => d (w, y)))) as HeqH12.
   { extensionality K. rewrite dsndE. reflexivity. }
@@ -739,7 +740,7 @@ Proof.
   - move => [x1 x2] /=.
     apply /andP. split.
     -- apply: mulr_ge0.
-       --- case: (A x1); rewrite //=. (* exact ler01. *)
+       --- case: (A x1); rewrite //=; exact ler01.
        --- by inversion d.
     -- have Hd0 : 0 <= d(x1,x2) by inversion d.
        have [Hdor1 | Hdor2]: 0 == d(x1,x2) \/ 0 < d(x1,x2).
@@ -747,14 +748,13 @@ Proof.
            by move/orP: Hd0. }
        --- move/eqP : Hdor1 => Hdor1.
            by rewrite -Hdor1 !GRing.mulr0.
-       --- apply: ler_pmul.
-           + case: (A x1); rewrite //=. (* exact ler01. *)
+       --- apply: ler_pM.
+           + case: (A x1); rewrite //=; exact ler01.
            + by inversion d.
            + move:  (H2 x1 x2 Hdor2) => HAB.
              destruct (A x1) eqn: Ax1; rewrite //=;
-             destruct (B x2) eqn : Bx2; rewrite //=.
+             destruct (B x2) eqn : Bx2; rewrite //=; try exact ler01.
              exfalso. by apply: true_false_False.
-             (* exact ler01. *)
              auto.
   (* summable B *)
     assert ((fun x : ((Choice.Pack chX) * (Choice.Pack chY)) =>
@@ -988,4 +988,3 @@ Qed.
 
 
 End DerivedRules.
-
