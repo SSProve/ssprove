@@ -176,7 +176,7 @@ Proof.
   rewrite /semantic_judgement /θ.
   unfold "≤". simpl.
   rewrite /MonoCont_order //=. move => [ss1 ss2] πa1a2 /=.
-  exists (SDistr_unit (F_choice_prod (npair (Datatypes_prod__canonical__choice_Choice A1 S1) (Datatypes_prod__canonical__choice_Choice A2 S2)))
+  exists (SDistr_unit (F_choice_prod (npair (prod_choiceType A1 S1) (prod_choiceType A2 S2)))
                  ((a1, ss1), (a2, ss2))).
   split.
   - rewrite /SubDistr.SDistr_obligation_1 /=.
@@ -668,7 +668,7 @@ Proof.
     { extensionality k. destruct k as [k1 k2].
       case (B k2). reflexivity. reflexivity. }
     rewrite -Heq1.
-    pose (@summable_pr R (Datatypes_prod__canonical__choice_Choice (Datatypes_prod__canonical__choice_Choice X S1) (Datatypes_prod__canonical__choice_Choice Y S2))
+    pose (@summable_pr R ((X * S1) * (Y * S2))%type
                                           (fun '(x, y) => B y) d).
     simpl in *. unfold nat_of_bool in s. rewrite /nat_of_bool. exact s.
     (* summable A *)
@@ -897,7 +897,7 @@ Lemma  smMonEqu1
 (r : A1 -> A2 -> FrStP S B) (c1 : FrStP S A1) (c2 : FrStP S A2) :
 (a2 ∈ choice_incl A2 <<- c2;; a1 ∈ choice_incl A1 <<- c1;; (r a1 a2))
 =
-(a ∈ choice_incl (Datatypes_prod__canonical__choice_Choice A1 A2) <<-
+(a ∈ choice_incl (prod_choiceType A1 A2) <<-
         (a2 ∈ choice_incl A2 <<- c2;; a1 ∈ choice_incl A1 <<- c1;; retF (a1, a2));;
         r a.1 a.2).
 Proof.
@@ -927,7 +927,7 @@ Lemma  smMonEqu2
 (r : A1 -> A2 -> FrStP S B) (c1 : FrStP S A1) (c2 : FrStP S A2) :
 (a1 ∈ choice_incl A1 <<- c1;; a2 ∈ choice_incl A2 <<- c2;; (r a1 a2))
 =
-(a ∈ choice_incl (Datatypes_prod__canonical__choice_Choice A1 A2) <<-
+(a ∈ choice_incl (prod_choiceType A1 A2) <<-
         (a1 ∈ choice_incl A1 <<- c1;; a2 ∈ choice_incl A2 <<- c2;; retF (a1, a2));;
         r a.1 a.2).
 Proof.
@@ -988,12 +988,12 @@ Lemma some_commutativity
   (s : S) :
 θ_dens
   (θ0
-     (a ∈ choice_incl (Datatypes_prod__canonical__choice_Choice A1 A2) <<-
+     (a ∈ choice_incl (prod_choiceType A1 A2) <<-
       (a1 ∈ choice_incl A1 <<- c1;; a2 ∈ choice_incl A2 <<- c2;; retF (a1, a2));;
       r a.1 a.2) s) =
 θ_dens
   (θ0
-     (a ∈ choice_incl (Datatypes_prod__canonical__choice_Choice A1 A2) <<-
+     (a ∈ choice_incl (prod_choiceType A1 A2) <<-
       (a2 ∈ choice_incl A2 <<- c2;; a1 ∈ choice_incl A1 <<- c1;; retF (a1, a2));;
       r a.1 a.2) s).
 Proof.
@@ -1001,7 +1001,7 @@ Proof.
   pose ( p12 :=
 (a1 ∈ choice_incl A1 <<- c1;; a2 ∈ choice_incl A2 <<- c2;; retF (a1, a2)) ).
   assert (θ0_comm :
-(θ0 (a ∈ choice_incl (Datatypes_prod__canonical__choice_Choice A1 A2) <<- p12 ;; r a.1 a.2) s)
+(θ0 (a ∈ choice_incl (prod_choiceType A1 A2) <<- p12 ;; r a.1 a.2) s)
 =
 (ord_relmon_bind Frp_fld)^~(θ0 p12 s)
   (fun xs' => let (x,s'):= xs' in θ0 (r x.1 x.2) s') ).
@@ -1022,7 +1022,7 @@ Proof.
   pose ( p21 :=
 (a2 ∈ choice_incl A2 <<- c2;; a1 ∈ choice_incl A1 <<- c1;; retF (a1, a2)) ).
   assert (θ0_comm :
-(θ0 (a ∈ choice_incl (Datatypes_prod__canonical__choice_Choice A1 A2) <<- p21 ;; r a.1 a.2) s)
+(θ0 (a ∈ choice_incl (prod_choiceType A1 A2) <<- p21 ;; r a.1 a.2) s)
 =
 (ord_relmon_bind Frp_fld)^~(θ0 p21 s)
   (fun xs' => let (x,s'):= xs' in θ0 (r x.1 x.2) s') ).
@@ -1043,7 +1043,7 @@ Proof.
   (*next we apply bind preservation of θ_dens*)
   unshelve etransitivity.
     cbn. unshelve eapply (ord_relmon_bind SDistr).
-    - exact ( Datatypes_prod__canonical__choice_Choice (Datatypes_prod__canonical__choice_Choice A1 A2 ) S ).
+    - exact ( prod_choiceType (prod_choiceType A1 A2 ) S ).
     - move=> [x s'].  exact ( θ_dens (θ0 (r x.1 x.2) s' ) ).
     - exact (θ_dens (θ0 p12 s)).
   unfold θ_dens at 1.
@@ -1427,7 +1427,7 @@ Qed.
 
 Lemma θ_dens_vs_bind' {X Y : choiceType}
 (m : Frp  X )
-(k : X -> Frp (Datatypes_prod__canonical__choice_Choice Y S)) :
+(k : X -> Frp (prod_choiceType Y S)) :
 θ_dens (bindrFree m k) =
 (dnib SDistr) (fun xs => θ_dens (k xs)) (utheta_dens_fld _ m).
 Proof.
@@ -1438,7 +1438,7 @@ Proof.
   pose bla :=
 rmm_law2 _ _ _ _
 (@Theta_dens.unary_theta_dens)
-X (Datatypes_prod__canonical__choice_Choice Y S) k.
+X (prod_choiceType Y S) k.
   rewrite /= in bla.
   unshelve eapply equal_f in bla. exact m.
   rewrite /=. assumption.
@@ -1499,9 +1499,9 @@ unshelve eassert (eq_cont :
                 (OrderEnrichedRelativeAdjunctions.KleisliLeftAdjoint Frp) A),
        utheta_dens_fld
          (F_choice_prod_obj
-            ⟨ ord_functor_id ord_choiceType (Datatypes_prod__canonical__choice_Choice A (Arst (op_iota o))),
+            ⟨ ord_functor_id ord_choiceType (prod_choiceType A (Arst (op_iota o))),
             OrderEnrichedRelativeAdjunctionsExamples.mkConstFunc ord_choiceType ord_choiceType S
-              (Datatypes_prod__canonical__choice_Choice A (Arst (op_iota o))) ⟩)
+              (prod_choiceType A (Arst (op_iota o))) ⟩)
          (let (a, sc) := x in bindrFree sploP (λ r : choice_incl (Ar o), retrFree (a, r, sc))))
 =
 fun x => let (a,sc) := x in
@@ -1533,7 +1533,7 @@ Proof.
   rewrite /mlet /=.
   transitivity
 (psum
-  (fun x0 : X => psum (fun x1 : Y => p x0 * q x1 * dunit (T:=Datatypes_prod__canonical__choice_Choice X Y) (x0, x1) (x, y)))).
+  (fun x0 : X => psum (fun x1 : Y => p x0 * q x1 * dunit (T:=prod_choiceType X Y) (x0, x1) (x, y)))).
 {
   apply eq_psum. move=> x0. rewrite -psumZ /=.
   apply eq_psum. move=> y0 /=.
@@ -1543,7 +1543,7 @@ Proof.
   symmetry.
   transitivity
 (psum
-  (fun x0 : Y => psum (fun x1 : X => p x1 * q x0 * dunit (T:=Datatypes_prod__canonical__choice_Choice X Y) (x1, x0) (x, y)))).
+  (fun x0 : Y => psum (fun x1 : X => p x1 * q x0 * dunit (T:=prod_choiceType X Y) (x1, x0) (x, y)))).
 {
     apply eq_psum. move=> y0. rewrite -psumZ /=.
     apply eq_psum. move=> x0 /=.
@@ -1585,7 +1585,7 @@ Proof.
   destruct p as [pmap p_0 p_sum p_1]. apply p_0.
   apply (
   summable_mu_wgtd (T:=X)
-  (f:=fun x0 => psum (fun y0 : Y => q y0 * dunit (T:=Datatypes_prod__canonical__choice_Choice X Y) (x0, y0) (x, y))) p).
+  (f:=fun x0 => psum (fun y0 : Y => q y0 * dunit (T:=prod_choiceType X Y) (x0, y0) (x, y))) p).
   move=> x0. apply /andP. split.
   apply ge0_psum.
   unshelve eapply Order.POrderTheory.le_trans.

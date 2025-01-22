@@ -1,5 +1,5 @@
 Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import all_ssreflect all_algebra classical.boolp distr reals realsum.
+From mathcomp Require Import all_ssreflect all_algebra boolp distr reals realsum.
 Set Warnings "notation-overridden,ambiguous-paths".
 From SSProve.Mon Require Import SpecificationMonads SPropBase SPropMonadicStructures.
 From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.

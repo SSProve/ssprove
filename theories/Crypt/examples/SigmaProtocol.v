@@ -810,7 +810,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
   Module OracleParams <: ROParams.
 
-    Definition Query := Datatypes_prod__canonical__fintype_Finite Statement Message.
+    Definition Query := prod_finType Statement Message.
     Definition Random := Challenge.
 
     Definition Query_pos : Positive #|Query|.
@@ -938,7 +938,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       ].
 
     Definition SHVZK_real_aux :
-      package fset0
+      package Sigma_locs
         [interface #val #[ TRANSCRIPT ] : chInput → chTranscript ]
         [interface #val #[ RUN ] : chRelation → chTranscript ]
       :=
@@ -967,9 +967,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       2:{
         rewrite <- fsetUid.
         eapply valid_link.
-        - eapply (valid_package_inject_locations).
-          2: apply SHVZK_real_aux.
-          apply fsub0set.
+        - apply SHVZK_real_aux.
         - apply SHVZK_real.
       }
       1:{

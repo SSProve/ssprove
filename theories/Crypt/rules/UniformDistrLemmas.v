@@ -161,12 +161,12 @@ Qed.
 (* TODO RENAME *)
 Lemma sum_prod_bij
   {T : finType} {f : T -> T}
-  (π : ( Datatypes_prod__canonical__fintype_Finite T T : finType) -> R)
+  (π : ( prod_finType T T : finType) -> R)
   (π_geq0 : forall t, 0 <= π t) :
-  \sum_(jj <- enum (Datatypes_prod__canonical__fintype_Finite T T)) (if f jj.1 == jj.2 then π jj else 0) =
+  \sum_(jj <- enum (prod_finType T T)) (if f jj.1 == jj.2 then π jj else 0) =
   \sum_(j <- enum T) (π (j, f j)).
 Proof.
-  rewrite [X in X=_](bigID [pred jj : Datatypes_prod__canonical__fintype_Finite T T | f jj.1 == jj.2]) /=.
+  rewrite [X in X=_](bigID [pred jj : prod_finType T T | f jj.1 == jj.2]) /=.
   match goal with
   | |- _ + ?x = _ =>
     assert (e : x == 0)
@@ -347,7 +347,7 @@ Section prod_uniform.
   Arguments r _ {_}.
 
   Lemma prod_uniform :
-    @uniform_F (Datatypes_prod__canonical__fintype_Finite X Y) (x0,y0) =
+    @uniform_F (prod_finType X Y) (x0,y0) =
     SD_bind (@uniform_F X x0) (fun x =>
     SD_bind (@uniform_F Y y0) (fun y =>
     SD_ret (x,y))).
@@ -369,7 +369,7 @@ Section prod_uniform.
     { rewrite /SD_ret.
       pose hlp := (
         @psum_pair _ X Y
-          (fun (x12 : Datatypes_prod__canonical__fintype_Finite X Y) =>
+          (fun (x12 : prod_finType X Y) =>
           let (x1,x2) := x12 in
           SDistr_unit (X * Y)%type (x1,x2) (x,y))
       ).

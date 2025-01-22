@@ -518,7 +518,7 @@ Fixpoint for_loop {A : choiceType} (c : A -> MFreePr A) (n : nat) (a : A) :=
 
 (* Rem.: this is a bounded version of the iteration operator found in monads with iteration *)
 Fixpoint bounded_iter {A B : choiceType} (n : nat) (c : A -> MFreePr (A + B)%type) (a : A) :
-  MFreePr (Datatypes_unit__canonical__choice_Choice + B)%type :=
+  MFreePr (unit_choiceType + B)%type :=
   match n with
   | 0  => ord_relmon_unit MFreePr _ (inl Datatypes.tt)
   | S m => (ord_relmon_bind MFreePr) (fun v => match v with
@@ -528,7 +528,7 @@ Fixpoint bounded_iter {A B : choiceType} (n : nat) (c : A -> MFreePr (A + B)%typ
   end.
 
 Definition bounded_loop {A B : choiceType} (n : nat) (b : A -> MFreePr bool) (c : A -> MFreePr A) (a : A) :
-  MFreePr (Datatypes_unit__canonical__choice_Choice + A)%type :=
+  MFreePr (unit_choiceType + A)%type :=
   bounded_iter n (fun a' => ord_relmon_bind MFreePr (fun b => match b with
        | true => ord_relmon_bind MFreePr (fun a2 => ord_relmon_unit MFreePr _ (inr a2)) (c a')
        | false => ord_relmon_unit MFreePr _ (inl a')

@@ -4,7 +4,7 @@ From SSProve.Crypt Require Import Casts.
 Set Warnings "-notation-overridden".
 From mathcomp Require Import all_ssreflect.
 Set Warnings "notation-overridden".
-From mathcomp Require classical.boolp.
+From mathcomp Require boolp.
 
 Import SPropNotations.
 
@@ -76,4 +76,3 @@ Section Prod_of_choiceTypes.
 
 
 End Prod_of_choiceTypes.
-

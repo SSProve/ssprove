@@ -215,8 +215,8 @@ Section UnaryInterpretState.
   Definition getStP : stT_Frp S :=
     fun s : S => retrFree_filled (F_choice_prod_obj ⟨ S, S ⟩) (s, s).
 
-  Definition putStP : S -> stT_Frp Datatypes_unit__canonical__choice_Choice := fun new_s old_s =>
-    retrFree_filled (F_choice_prod ⟨ Datatypes_unit__canonical__choice_Choice, S ⟩) (tt, new_s).
+  Definition putStP : S -> stT_Frp unit_choiceType := fun new_s old_s =>
+    retrFree_filled (F_choice_prod ⟨unit_choiceType, S⟩) (tt, new_s).
 
 
   Definition probopStP {T : choice_type} (sd: SDistr T) : stT_Frp (chElement T).
@@ -330,4 +330,3 @@ Section MakeTheDomainFree.
 *)
 
 End MakeTheDomainFree.
-

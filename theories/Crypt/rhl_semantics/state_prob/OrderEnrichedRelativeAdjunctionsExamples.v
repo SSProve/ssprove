@@ -1,6 +1,6 @@
 From Coq Require Import Morphisms.
 Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import all_algebra all_ssreflect classical.boolp.
+From mathcomp Require Import all_algebra all_ssreflect boolp.
 Set Warnings "notation-overridden,ambiguous-paths".
 From SSProve.Mon Require Import SPropBase Base.
 From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.

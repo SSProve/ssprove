@@ -1,7 +1,7 @@
 From SSProve.Relational Require Import OrderEnrichedCategory.
 From SSProve.Mon Require Import SPropBase.
 Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import all_ssreflect classical.boolp.
+From mathcomp Require Import all_ssreflect boolp.
 Set Warnings "notation-overridden,ambiguous-paths".
 From SSProve.Crypt Require Import Axioms OrderEnrichedRelativeAdjunctions LaxFunctorsAndTransf.
 
@@ -69,5 +69,3 @@ Section LaxMorphismLeftRelativeAdjunctions.
       ((natIso_sym phi2)⟨A,lmlad_KD Y⟩)∙1 (lmlad_beta Y ∙ ofmap lmlad_KC ( (phi1 ⟨A,Y⟩) ∙1 f  ) ∙ lmlad_baseIso A) ∙ lmlad_alpha A }.
 
 End LaxMorphismLeftRelativeAdjunctions.
-
-

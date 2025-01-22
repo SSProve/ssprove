@@ -1,5 +1,7 @@
 From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
+From Coq Require Import ZArith.
+
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
   ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
@@ -12,6 +14,9 @@ From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
 
 From Coq Require Import Utf8.
 From extructures Require Import ord fset fmap.
+
+(* From Jasmin Require Import word. *)
+From SSProve.Crypt Require Import jasmin_word.
 
 From Equations Require Import Equations.
 Require Equations.Prop.DepElim.
@@ -49,12 +54,15 @@ Section Executor.
          nat_ch_aux (NSProd a b) (l1 × l2) (Some v1, Some v2) := Some (v1, v2) ;
          nat_ch_aux (NSProd a b) (l1 × l2) _ := None ;
       } ;
+    nat_ch_aux (NSNat n) ('word u) := Some _ ;
     nat_ch_aux _ _ := None.
   Proof.
     - eapply @Ordinal.
       instantiate (1 := n %% n').
       apply ltn_pmod.
       apply cond_pos0.
+    - apply wrepr.
+      apply (BinInt.Z.of_nat n).
   Defined.
 
   Definition nat_ch (x : option NatState) (l : choice_type) : option (Value l) :=
@@ -79,6 +87,7 @@ Section Executor.
         | _ => None
       end ;
     ch_nat 'option l None := Some (NSOption None) ;
+    ch_nat 'word u x := Some (NSNat (BinInt.Z.to_nat (wunsigned x))) ;
     ch_nat _ _ := None.
 
   Lemma ch_nat_ch l v:
@@ -87,51 +96,14 @@ Section Executor.
       | _ => true
     end.
   Proof.
-    induction l.
-    - rewrite ch_nat_equation_1.
-      simpl.
-      rewrite nat_ch_aux_equation_1.
-      by destruct v.
-    - rewrite ch_nat_equation_2.
-      simpl.
-      rewrite nat_ch_aux_equation_13.
-      reflexivity.
-    - now rewrite ch_nat_equation_3.
-    - rewrite ch_nat_equation_4.
-      simpl.
-      rewrite nat_ch_aux_equation_15.
-      destruct v ; reflexivity.
-    - destruct v.
-      rewrite ch_nat_equation_5.
-      simpl.
-      specialize (IHl1 s).
-      specialize (IHl2 s0).
-      move: IHl1 IHl2.
-      case (ch_nat l1 s) ;
-      case (ch_nat l2 s0).
-      + simpl.
-        intros.
-        rewrite nat_ch_aux_equation_49.
-        by rewrite IHl1 IHl2.
-      + by simpl ; intros ; try inversion IHl1 ; try inversion IHl2.
-      + by simpl ; intros ; try inversion IHl1 ; try inversion IHl2.
-      + by simpl ; intros ; try inversion IHl1 ; try inversion IHl2.
-    - by rewrite ch_nat_equation_6.
-    - destruct v eqn:e ; simpl.
-      + rewrite ch_nat_equation_7.
-        specialize (IHl s).
-        case (ch_nat l s) eqn:e'.
-        ++ simpl.
-           intros.
-           rewrite nat_ch_aux_equation_29.
-           f_equal.
-           done.
-        ++ done.
-      + rewrite ch_nat_equation_8.
-        done.
-    - rewrite ch_nat_equation_9.
-      simpl.
-      rewrite nat_ch_aux_equation_19.
+    funelim (ch_nat l v). all: try easy.
+    - simpl. by destruct v.
+    - simp ch_nat. simpl. simp nat_ch_aux. by destruct v.
+    - simp ch_nat. destruct (ch_nat l1 v1), (ch_nat l2 v2); try easy.
+      cbn. simp nat_ch_aux. simpl in *. now rewrite H H0.
+    - simp ch_nat. destruct ch_nat; try easy.
+      simpl in *. simp nat_ch_aux. now f_equal.
+    - simp ch_nat. simpl. simp nat_ch_aux.
       f_equal.
       unfold nat_ch_aux_obligation_1.
       have lv := ltn_ord v.
@@ -142,9 +114,13 @@ Section Executor.
       rewrite modn_small.
       2: assumption.
       done.
-    - by rewrite ch_nat_equation_10.
-    - by rewrite ch_nat_equation_11.
-    - by rewrite ch_nat_equation_12.
+    - simp ch_nat. simpl. simp nat_ch_aux.
+      f_equal.
+      unfold nat_ch_aux_obligation_2.
+      rewrite @Znat.Z2Nat.id.
+      + rewrite wrepr_unsigned.
+        reflexivity.
+      + apply (@wunsigned_range u).
   Qed.
 
   Definition new_state
@@ -182,10 +158,11 @@ Section Executor.
 
 End Executor.
 
-#[program] Fixpoint sampler (e : choice_type) seed : option (nat * e):=
+#[program] Fixpoint sampler (e : choice_type) (seed : nat) : option (nat * e):=
   match e with
     chUnit => Some (seed, Datatypes.tt)
   | chNat => Some ((seed + 1)%N, seed)
+  | chInt => Some ((seed + 1)%nat, BinInt.Z.of_nat seed) (* FIXME: also generate negative numbers *)
   | chBool => Some ((seed + 1)%N, Nat.even seed)
   | chProd A B =>
       match sampler A seed with
@@ -202,10 +179,25 @@ End Executor.
       | _ => None
       end
   | chFin n => Some ((seed + 1)%N, _)
-  | chInt => None (* TODO *)
-  | chWord nbits => None (* TODO *)
-  | chList A => None (* TODO *)
-  | chSum A B => None (* TODO *)
+  | chWord n => Some ((seed + 1)%N, _)
+  | chList A =>
+      match sampler A seed with
+      | Some (seed', x) => Some (seed', [:: x])
+      | _ => None
+      end
+  | chSum A B =>
+      let '(seed', b) := ((seed + 1)%nat, Nat.even seed) in
+      if b
+      then
+        match sampler A seed' with
+        | Some (seed'' , x) => Some (seed'', inl x)
+        | _ => None
+        end
+      else
+        match sampler B seed' with
+        | Some (seed'' , y) => Some (seed'', inr y)
+        | _ => None
+        end
   end.
 Next Obligation.
   eapply Ordinal.
@@ -213,6 +205,19 @@ Next Obligation.
   rewrite ltn_mod.
   apply n.
 Defined.
+Local Open Scope Z_scope.
+Next Obligation.
+  eapply word.mkWord.
+  instantiate (1 := ((Z.of_nat  seed) mod (word.modulus (nat_of_wsize n) ))%Z).
+  pose (Z.mod_bound_pos (Z.of_nat seed) (word.modulus n)
+        (Zle_0_nat seed)).
+  pose (word.modulus_gt0 (nat_of_wsize n)).
+  apply / word.iswordZP.
+  apply a.
+  move : i => / word_ssrZ.ltzP.
+  auto.
+Defined.
+Close Scope Z_scope.
 
 Section Test.
 

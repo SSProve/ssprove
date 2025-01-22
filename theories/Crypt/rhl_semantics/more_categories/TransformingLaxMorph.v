@@ -2,7 +2,7 @@ From Coq Require Import Relation_Definitions.
 From SSProve.Relational Require Import OrderEnrichedCategory.
 From SSProve.Mon Require Import SPropBase.
 Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import all_ssreflect classical.boolp.
+From mathcomp Require Import all_ssreflect boolp.
 Set Warnings "notation-overridden,ambiguous-paths".
 From SSProve.Crypt Require Import Axioms OrderEnrichedRelativeAdjunctions LaxFunctorsAndTransf LaxMorphismOfRelAdjunctions.
 
@@ -603,6 +603,3 @@ chi A
 
 
 End TransformedLaxMorphAdj.
-
-
-

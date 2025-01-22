@@ -2,7 +2,7 @@ From Coq Require Import Morphisms.
 From SSProve.Relational Require Import OrderEnrichedCategory.
 From SSProve.Mon Require Import SPropBase.
 Set Warnings "-notation-overridden".
-From mathcomp Require Import all_ssreflect classical.boolp.
+From mathcomp Require Import all_ssreflect boolp.
 Set Warnings "notation-overridden".
 From SSProve.Crypt Require Import Axioms.
 
@@ -315,7 +315,3 @@ Section FromStrict2LaxTransf.
   Qed.
 
 End FromStrict2LaxTransf.
-
-
-
-

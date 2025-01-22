@@ -2,7 +2,7 @@ From Coq Require Import Relation_Definitions Morphisms.
 From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 From SSProve.Mon Require Import SPropBase.
 Set Warnings "-notation-overridden".
-From mathcomp Require Import all_ssreflect classical.boolp.
+From mathcomp Require Import all_ssreflect boolp.
 Set Warnings "notation-overridden".
 
 Import SPropNotations.

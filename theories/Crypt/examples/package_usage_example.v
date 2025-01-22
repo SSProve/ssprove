@@ -123,7 +123,6 @@ Definition sig := {sig #[0] : 'nat → 'nat }.
       ret (getm m 0)
     }
   ].
-Admit Obligations.
 
 (* Testing the #import notation *)
 Definition test₃ :

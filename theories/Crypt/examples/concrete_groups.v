@@ -111,7 +111,6 @@ Module Z2_bool.
 
 End Z2_bool.
 
-(* TODO
 Section Z3_deriving.
   (* Construction of Z3 using deriving but not the fingroup mixin. *)
   Inductive Z3 := z | o | t.
@@ -165,4 +164,3 @@ Section Z3_deriving.
   Definition Z3_finGroup := BaseFinGroup_isGroup.Build Z3 linv.
   HB.instance Definition _ := Z3_finGroup.
 End Z3_deriving.
-*)

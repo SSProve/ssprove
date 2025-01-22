@@ -472,8 +472,8 @@ Proof.
   unfold SDistr_bind. unfold SDistr_unit.
   rewrite !dletE.
   assert (
-    ∀ x : Datatypes_bool__canonical__choice_Choice * heap_choiceType,
-      ((let '(b, _) := x in dunit (R:=R) (T:=Datatypes_bool__canonical__choice_Choice) b) true) ==
+    ∀ x : bool_choiceType * heap_choiceType,
+      ((let '(b, _) := x in dunit (R:=R) (T:=bool_choiceType) b) true) ==
       (x.1 == true)%:R
   ) as h1.
   { intros [b s].
@@ -481,8 +481,8 @@ Proof.
   }
   assert (
     ∀ y,
-      (λ x : Datatypes_prod__canonical__choice_Choice (tgt RUN) heap_choiceType, (y x) * (let '(b, _) := x in dunit (R:=R) (T:=tgt RUN) b) true) =
-      (λ x : Datatypes_prod__canonical__choice_Choice (tgt RUN) heap_choiceType, (x.1 == true)%:R * (y x))
+      (λ x : prod_choiceType (tgt RUN) heap_choiceType, (y x) * (let '(b, _) := x in dunit (R:=R) (T:=tgt RUN) b) true) =
+      (λ x : prod_choiceType (tgt RUN) heap_choiceType, (x.1 == true)%:R * (y x))
   ) as Hrew.
 
   { intros y. extensionality x.
@@ -580,8 +580,8 @@ Proof.
   unfold SDistr_bind. unfold SDistr_unit.
   rewrite !dletE.
   assert (
-    ∀ x : Datatypes_bool__canonical__choice_Choice * heap_choiceType,
-      ((let '(b, _) := x in dunit (R:=R) (T:=Datatypes_bool__canonical__choice_Choice) b) true) ==
+    ∀ x : bool_choiceType * heap_choiceType,
+      ((let '(b, _) := x in dunit (R:=R) (T:=bool_choiceType) b) true) ==
       (x.1 == true)%:R
   ) as h1.
   { intros [b s].
@@ -589,8 +589,8 @@ Proof.
   }
   assert (
     ∀ y,
-      (λ x : Datatypes_prod__canonical__choice_Choice (tgt RUN) heap_choiceType, (y x) * (let '(b, _) := x in dunit (R:=R) (T:=tgt RUN) b) true) =
-      (λ x : Datatypes_prod__canonical__choice_Choice (tgt RUN) heap_choiceType, (x.1 == true)%:R * (y x))
+      (λ x : prod_choiceType (tgt RUN) heap_choiceType, (y x) * (let '(b, _) := x in dunit (R:=R) (T:=tgt RUN) b) true) =
+      (λ x : prod_choiceType (tgt RUN) heap_choiceType, (x.1 == true)%:R * (y x))
   ) as Hrew.
   { intros y. extensionality x.
     destruct x as [x1 x2].
