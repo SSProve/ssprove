@@ -7,6 +7,7 @@
 , mathcomp-zify
 , extructures
 , deriving
+, jasmin
 }:
 
 (mkCoqDerivation {
@@ -42,7 +43,8 @@
                            mathcomp-word
                            mathcomp-zify
                            extructures
-                           deriving];
+                           deriving
+                           jasmin];
 
   meta = with lib; {
     description = "SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq";

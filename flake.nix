@@ -7,7 +7,9 @@
     let
       ssprovePkg = { lib, mkCoqDerivation, coq
                   , equations, extructures, deriving
-                  , mathcomp-analysis, mathcomp-ssreflect }:
+                  , mathcomp-analysis, mathcomp-ssreflect
+                  , mathcomp-word, mathcomp-zify
+                  , mathcomp-experimental-reals, jasmin }:
         mkCoqDerivation {
           pname = "ssprove";
           owner = "SSProve";
@@ -19,6 +21,10 @@
             mathcomp-ssreflect
             deriving
             extructures
+            mathcomp-word
+            mathcomp-zify
+            mathcomp-experimental-reals
+            jasmin
           ];
           meta = {
             description = "A foundational framework for modular cryptographic proofs in Coq ";

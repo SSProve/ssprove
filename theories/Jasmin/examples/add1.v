@@ -16,7 +16,17 @@ Import ListNotations.
 Local Open Scope string.
 
 
+Section Test.
+Context `{AsmOp : asmOp}.
 
+From Coq Require Import PrimInt63.
+
+Import FunName.
+Definition f : funname.
+Proof.
+    unfold funname.
+    Transparent t.
+    exact 1%uint63.
 
 Definition ssprove_jasmin_prog : uprog.
 Proof.
