@@ -19,8 +19,7 @@ Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-forma
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr realsum seq all_algebra fintype.
 From mathcomp Require Import word_ssrZ word.
-(* From Jasmin Require Import utils word. *)
-From SSProve.Crypt Require Import jasmin_word jasmin_util.
+From Jasmin Require Import utils word.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra.

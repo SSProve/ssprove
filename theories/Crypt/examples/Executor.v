@@ -15,8 +15,7 @@ From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
 From Coq Require Import Utf8.
 From extructures Require Import ord fset fmap.
 
-(* From Jasmin Require Import word. *)
-From SSProve.Crypt Require Import jasmin_word.
+From Jasmin Require Import word.
 
 From Equations Require Import Equations.
 Require Equations.Prop.DepElim.

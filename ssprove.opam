@@ -16,6 +16,10 @@ depends: [
   "coq-mathcomp-zify" {>= "1.5.0+2.0+8.16"}
   "coq-extructures" {(>= "0.4.0" & < "dev")}
   "coq-deriving" {(>= "0.2.0" & < "dev")}
+  "jasmin" {= "dev"}
+]
+pin-depends: [
+  ["jasmin.dev" "git+https://github.com/jasmin-lang/jasmin.git#main"]
 ]
 build: [
   [make "-j%{jobs}%"]

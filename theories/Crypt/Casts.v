@@ -6,7 +6,7 @@ From Coq Require Import ZArith.
 From extructures Require Import ord fmap.
 From SSProve.Crypt Require Import Prelude.
 From mathcomp Require Import word_ssrZ word.
-From SSProve.Crypt Require Import jasmin_word jasmin_util.
+From Jasmin Require Import utils word.
 
 
 From HB Require Import structures.
