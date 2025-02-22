@@ -315,7 +315,3 @@ Section FromStrict2LaxTransf.
   Qed.
 
 End FromStrict2LaxTransf.
-
-
-
-

@@ -1,0 +1,22 @@
+export fn add_inline(reg u64[4] x y) -> reg u64[4] {
+  inline int i;
+  reg u64[4] res;
+
+  reg u64 xr yr;
+  reg bool cf;
+
+  xr = x[0];
+  yr = y[0];
+  cf, xr += yr;
+
+  res[0] = xr;
+
+  for i = 1 to 4 {
+    xr = x[i];
+    yr = y[i];
+    cf, xr += yr + cf;
+
+    res[i] = xr;
+  }
+  return res;
+}

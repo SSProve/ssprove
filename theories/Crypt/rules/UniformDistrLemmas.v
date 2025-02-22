@@ -161,7 +161,7 @@ Qed.
 (* TODO RENAME *)
 Lemma sum_prod_bij
   {T : finType} {f : T -> T}
-  (π : (prod_finType T T) -> R)
+  (π : ( prod_finType T T : finType) -> R)
   (π_geq0 : forall t, 0 <= π t) :
   \sum_(jj <- enum (prod_finType T T)) (if f jj.1 == jj.2 then π jj else 0) =
   \sum_(j <- enum T) (π (j, f j)).
@@ -297,7 +297,7 @@ Proof.
 Qed.
 
 Lemma support_sub_diag_mgs { A : choiceType }
-                           ( d : SDistr (prod_choiceType A A) )
+                           ( d : SDistr (A * A)%type )
                            (Hsupp : forall a1 a2, 0 < d (a1, a2) -> a1 = a2) :
   forall a : A, lmg d a = d (a, a) /\ rmg d a = d (a, a).
 Proof.
@@ -371,7 +371,7 @@ Section prod_uniform.
         @psum_pair _ X Y
           (fun (x12 : prod_finType X Y) =>
           let (x1,x2) := x12 in
-          SDistr_unit (prod_choiceType X Y) (x1,x2) (x,y))
+          SDistr_unit (X * Y)%type (x1,x2) (x,y))
       ).
       rewrite -hlp.
       - unshelve erewrite eq_psum.
@@ -394,5 +394,3 @@ Section prod_uniform.
 Qed.
 
 End prod_uniform.
-
-

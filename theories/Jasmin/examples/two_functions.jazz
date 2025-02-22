@@ -1,0 +1,11 @@
+fn f (reg u64 x) -> reg u64 {
+  reg u64 res_x;
+  res_x = x+1;
+  return res_x;
+}
+
+fn g (reg u64 y) -> reg u64 {
+  reg u64 res_y;
+  res_y = f(y);
+  return res_y;
+}

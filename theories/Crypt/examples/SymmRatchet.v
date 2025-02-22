@@ -200,7 +200,7 @@ Definition GEN_STRETCH_pkg_tt:
   [package
     #def #[query] (k: 'nat): ('seq 'word) × 'word {
       s0 <$ uniform Word_N ;;
-      @map_loop _ 'word _ (iota 0 k) s0 (fun _ si =>
+      @map_loop _ Word _ (iota 0 k) s0 (fun _ si =>
         ret (PRG si)
       )
     }
@@ -211,7 +211,7 @@ Definition GEN_STRETCH_pkg_ff:
     [interface #val #[query]: 'nat → ('seq 'word) × 'word ] :=
   [package
     #def #[query] (k: 'nat): ('seq 'word) × 'word {
-      t ← @map_loop _ 'word _ (iota 0 k) tt (fun _ _ =>
+      t ← @map_loop _ Word _ (iota 0 k) tt (fun _ _ =>
         ti <$ uniform Word_N ;;
         ret (ti, tt)
       ) ;;
@@ -231,7 +231,7 @@ Definition ATTACK_pkg_tt:
   [package
     #def #[attack] (m: 'seq 'word): ('seq 'word) × 'word {
       s0 <$ uniform Word_N ;;
-      @map_loop _ 'word _ (unzip2 m) s0 (fun mi si =>
+      @map_loop _ Word _ (unzip2 m) s0 (fun mi si =>
         let xy := PRG si in
         ret (enc xy.1 mi, xy.2)
       )
@@ -243,7 +243,7 @@ Definition ATTACK_pkg_ff:
     [interface #val #[attack]: 'seq 'word → ('seq 'word) × 'word ] :=
   [package
     #def #[attack] (m: 'seq 'word): ('seq 'word) × 'word {
-      c ← @map_loop _ 'word _ (unzip2 m) tt (fun _ _ =>
+      c ← @map_loop _ Word _ (unzip2 m) tt (fun _ _ =>
         ci <$ uniform Word_N ;;
         ret (ci, tt)
       ) ;;
@@ -262,7 +262,7 @@ Definition ATTACK_GEN_pkg:
     #def #[attack] (m: 'seq 'word): ('seq 'word) × 'word {
       #import {sig #[query]: 'nat → ('seq 'word) × 'word } as query ;;
       ts ← query (size m) ;;
-      c ← @map_loop _ 'word _ (zip (unzip2 ts.1) (unzip2 m)) tt (fun tm _ =>
+      c ← @map_loop _ Word _ (zip (unzip2 ts.1) (unzip2 m)) tt (fun tm _ =>
         let (ti, mi) := (tm.1, tm.2) in
         ret (enc ti mi, tt)
       ) ;;
@@ -275,7 +275,7 @@ Definition ATTACK_HYB_pkg:
     [interface #val #[attack]: 'seq 'word → ('seq 'word) × 'word ] :=
   [package
     #def #[attack] (m: 'seq 'word): ('seq 'word) × 'word {
-      c ← @map_loop _ 'word _ (unzip2 m) tt (fun mi _ =>
+      c ← @map_loop _ Word _ (unzip2 m) tt (fun mi _ =>
         ti <$ uniform Word_N ;;
         ret (enc ti mi, tt)
       ) ;;
@@ -291,7 +291,7 @@ Definition ATTACK_CTXT_pkg:
   [package
     #def #[attack] (m: 'seq 'word): ('seq 'word) × 'word {
       #import {sig #[ctxt]: 'word → 'word } as ctxt ;;
-      c ← @map_loop _ 'word _ (unzip2 m) tt (fun mi _ =>
+      c ← @map_loop _ Word _ (unzip2 m) tt (fun mi _ =>
         ci ← ctxt mi ;;
         ret (ci, tt)
       ) ;;
@@ -314,7 +314,7 @@ Proof.
   2: by [].
   2: {
     apply: boolp.funext => x.
-    erewrite (@code_link_map_loop _ 'word _ (zip _ _) tt) => /=.
+    erewrite (@code_link_map_loop _ Word _ (zip _ _) tt) => /=.
     erewrite bind_cong.
     1,2: by [].
     apply: boolp.funext => y.
@@ -338,7 +338,7 @@ Proof.
   ssprove_code_simpl.
   case: (PRG s0) => [ti si] /=.
   rewrite -lock.
-  erewrite (bind_cong _ _ (@map_loop _ 'word _ (iota a.+1 (size m)) si _)).
+  erewrite (bind_cong _ _ (@map_loop _ Word _ (iota a.+1 (size m)) si _)).
   2: by [].
   2: {
     apply: boolp.funext => x.
@@ -365,7 +365,7 @@ Proof.
   2: by [].
   2: {
     apply: boolp.funext => x.
-    erewrite (@code_link_map_loop _ 'word _ (zip _ _) tt) => /=.
+    erewrite (@code_link_map_loop _ Word _ (zip _ _) tt) => /=.
     erewrite bind_cong.
     1,2: by [].
     apply: boolp.funext => y.
@@ -386,7 +386,7 @@ Proof.
   ssprove_code_simpl.
   ssprove_sync_eq=> ci.
   rewrite -lock.
-  erewrite (bind_cong _ _ (@map_loop _ 'word _ (iota a.+1 (size m)) tt _)).
+  erewrite (bind_cong _ _ (@map_loop _ Word _ (iota a.+1 (size m)) tt _)).
   2: by [].
   2: {
     apply: boolp.funext => x.
@@ -410,7 +410,7 @@ Proof.
   ssprove_swap_lhs 0.
   ssprove_swap_rhs 0.
   ssprove_sync_eq=> sn.
-  rewrite (@code_link_map_loop _ 'word _ (unzip2 m) tt _) /=.
+  rewrite (@code_link_map_loop _ Word _ (unzip2 m) tt _) /=.
   simplify_linking.
   by apply: rreflexivity_rule.
 Qed.
@@ -427,7 +427,7 @@ Proof.
   ssprove_swap_lhs 0.
   ssprove_swap_rhs 0.
   ssprove_sync_eq=> sn.
-  rewrite (@code_link_map_loop _ 'word _ (unzip2 m) tt _) /=.
+  rewrite (@code_link_map_loop _ Word _ (unzip2 m) tt _) /=.
   simplify_linking.
   by apply: rreflexivity_rule.
 Qed.

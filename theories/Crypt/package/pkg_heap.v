@@ -5,6 +5,7 @@
 
 
 From Coq Require Import Utf8.
+Require Import ZArith.
 From SSProve.Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
@@ -19,6 +20,7 @@ From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   pkg_tactics pkg_composition.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
+From mathcomp Require Import word.
 
 (* Must come after importing Equations.Equations, who knows why. *)
 From SSProve.Crypt Require Import FreeProbProg.
@@ -58,11 +60,15 @@ Proof.
   intros a. induction a.
   - exact tt.
   - exact 0.
+  - exact Z0.
   - exact false.
   - exact (IHa1, IHa2).
   - exact emptym.
   - exact None.
   - exact (fintype.Ordinal n.(cond_pos)).
+  - exact word0.
+  - exact [::].
+  - exact (inl IHa1).
 Defined.
 
 Definition heap := { h : raw_heap | valid_heap h }.
