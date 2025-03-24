@@ -41,6 +41,9 @@ Set Primitive Projections.
 Import Num.Def.
 Import Num.Theory.
 Import Order.POrderTheory.
+Import BinNat.
+Import BinNums.
+Import Nnat.
 
 Section SecretSharing_example.
 
@@ -60,42 +63,42 @@ Definition Word: choice_type := chFin (mkpos Word_N).
   Lemmas for the [plus] obligation.
 *)
 Lemma pow2_inj m:
-  (2 ^ m)%N = BinNat.N.to_nat (BinNat.N.pow (BinNums.Npos (BinNums.xO 1%AC)) (BinNat.N.of_nat m)).
-Proof.
+  (2 ^ m)%nat = (N.to_nat (N.pow (Npos (xO 1%AC)) (N.of_nat m))).
+Proof. 
   elim: m => [// | m IHm].
-  rewrite expnSr Nnat.Nat2N.inj_succ BinNat.N.pow_succ_r' Nnat.N2Nat.inj_mul PeanoNat.Nat.mul_comm.
+  rewrite expnSr Nat2N.inj_succ N.pow_succ_r' N2Nat.inj_mul PeanoNat.Nat.mul_comm.
   by apply: f_equal2.
 Qed.
 
 Lemma log2_lt_pow2 w m:
-  (w.+1 < 2^m)%N ->
-  BinNat.N.lt (BinNat.N.log2 (BinNat.N.of_nat w.+1)) (BinNat.N.of_nat m).
+  (w.+1 < 2^m)%nat ->
+  N.lt (N.log2 (N.of_nat w.+1)) (N.of_nat m).
 Proof.
   move=> H.
-  rewrite -BinNat.N.log2_lt_pow2.
-  - rewrite /BinNat.N.lt Nnat.N2Nat.inj_compare PeanoNat.Nat.compare_lt_iff -pow2_inj Nnat.Nat2N.id.
+  rewrite -N.log2_lt_pow2.
+  - rewrite /N.lt N2Nat.inj_compare PeanoNat.Nat.compare_lt_iff -pow2_inj Nat2N.id.
     by apply /ltP.
-  - rewrite Nnat.Nat2N.inj_succ.
-    by apply: BinNat.N.lt_0_succ.
+  - rewrite Nat2N.inj_succ.
+    by apply: N.lt_0_succ.
 Qed.
 
 #[program] Definition plus (w k: Word): Word :=
-  @Ordinal _ (BinNat.N.to_nat (BinNat.N.lxor
-    (BinNat.N.of_nat (nat_of_ord w))
-    (BinNat.N.of_nat (nat_of_ord k)))) _.
+  @Ordinal _ (N.to_nat (N.lxor
+    (N.of_nat (nat_of_ord w))
+    (N.of_nat (nat_of_ord k)))) _.
 Next Obligation.
   move: w k => [[|w] Hw] [[|k] Hk].
   1-3: by rewrite /= ?Pnat.SuccNat2Pos.id_succ.
   move: (log2_lt_pow2 _ _ Hw) => H1.
   move: (log2_lt_pow2 _ _ Hk) => H2.
-  move: (BinNat.N.max_lub_lt _ _ _ H1 H2) => Hm.
-  case: (BinNat.N.eq_dec (BinNat.N.lxor (BinNat.N.of_nat w.+1) (BinNat.N.of_nat k.+1)) BinNat.N0) => H0.
+  move: (N.max_lub_lt _ _ _ H1 H2) => Hm.
+  case: (N.eq_dec (N.lxor (N.of_nat w.+1) (N.of_nat k.+1)) N0) => H0.
   1: by rewrite H0 expn_gt0.
-  move: (BinNat.N.log2_lxor (BinNat.N.of_nat w.+1) (BinNat.N.of_nat k.+1)) => Hbound.
-  move: (BinNat.N.le_lt_trans _ _ _ Hbound Hm).
-  rewrite -BinNat.N.log2_lt_pow2.
-  2: by apply BinNat.N.neq_0_lt_0.
-  rewrite /BinNat.N.lt Nnat.N2Nat.inj_compare PeanoNat.Nat.compare_lt_iff -pow2_inj.
+  move: (N.log2_lxor (N.of_nat w.+1) (N.of_nat k.+1)) => Hbound.
+  move: (N.le_lt_trans _ _ _ Hbound Hm).
+  rewrite -N.log2_lt_pow2.
+  2: by apply N.neq_0_lt_0.
+  rewrite /N.lt N2Nat.inj_compare PeanoNat.Nat.compare_lt_iff -pow2_inj.
   by move /ltP.
 Qed.
 
@@ -109,7 +112,7 @@ Lemma plus_comm m k:
 Proof.
   apply: ord_inj.
   case: m => m ? /=.
-  by rewrite BinNat.N.lxor_comm.
+  by rewrite N.lxor_comm.
 Qed.
 
 Lemma plus_assoc m l k:
@@ -117,8 +120,8 @@ Lemma plus_assoc m l k:
 Proof.
   apply: ord_inj.
   case: m => m ? /=.
-  rewrite !Nnat.N2Nat.id.
-  by rewrite BinNat.N.lxor_assoc.
+  rewrite !N2Nat.id.
+  by rewrite N.lxor_assoc.
 Qed.
 
 Lemma plus_involutive m k:
@@ -127,10 +130,10 @@ Proof.
   rewrite plus_assoc.
   apply: ord_inj.
   case: m => m ? /=.
-  rewrite Nnat.N2Nat.id.
-  rewrite BinNat.N.lxor_nilpotent.
-  rewrite BinNat.N.lxor_0_r.
-  by rewrite Nnat.Nat2N.id.
+  rewrite N2Nat.id.
+  rewrite N.lxor_nilpotent.
+  rewrite N.lxor_0_r.
+  by rewrite Nat2N.id.
 Qed.
 
 #[local] Open Scope package_scope.
