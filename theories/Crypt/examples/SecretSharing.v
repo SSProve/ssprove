@@ -44,12 +44,15 @@ Import Order.POrderTheory.
 Import BinNat.
 Import BinNums.
 Import Nnat.
+Import BinPosDef.
 
 Section SecretSharing_example.
 
 Variable (n: nat).
 
 Definition Word_N: nat := 2^n.
+
+(*Type that expresses that all the words have to be less or equal of 2^n?*)
 Definition Word: choice_type := chFin (mkpos Word_N).
 
 (**
@@ -63,16 +66,15 @@ Definition Word: choice_type := chFin (mkpos Word_N).
   Lemmas for the [plus] obligation.
 *)
 Lemma pow2_inj m:
-  (2 ^ m)%nat = (N.to_nat (N.pow (Npos (xO 1%AC)) (N.of_nat m))).
-Proof. 
+  (2 ^ m)%nat = N.to_nat (2 ^ (N.of_nat m)).
+Proof.
   elim: m => [// | m IHm].
   rewrite expnSr Nat2N.inj_succ N.pow_succ_r' N2Nat.inj_mul PeanoNat.Nat.mul_comm.
   by apply: f_equal2.
 Qed.
 
 Lemma log2_lt_pow2 w m:
-  (w.+1 < 2^m)%nat ->
-  N.lt (N.log2 (N.of_nat w.+1)) (N.of_nat m).
+  (w.+1 < 2^m)%nat -> ((N.log2 (N.of_nat w.+1)) < (N.of_nat m))%N.
 Proof.
   move=> H.
   rewrite -N.log2_lt_pow2.
