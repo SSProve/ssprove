@@ -221,6 +221,7 @@ Lemma dlet_f_equal :
     \dlet_(x <- m) f x =1 \dlet_(x <- m) g x.
 Proof.
   intros R T U m f g e x.
+  unfold eqfun in e.
   apply functional_extensionality in e. subst.
   reflexivity.
 Qed.
