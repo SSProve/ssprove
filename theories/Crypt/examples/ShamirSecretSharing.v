@@ -620,13 +620,6 @@ Proof.
   by rewrite coefD !coef_Poly !nth_behead coefD.
 Qed.
 
-Lemma tail_poly_opp {R: ringType} (q: {poly R}):
-  tail_poly (-q) = -tail_poly q.
-Proof.
-  apply coef_poly_eq => i.
-  by rewrite coefN !coef_Poly !nth_behead coefN.
-Qed.
-
 Lemma cons_poly_add {R: ringType} (m m': R) (q1 q2: {poly R}):
   (cons_poly m' (q1 + q2) = (cons_poly m q1) + cons_poly (m'-m) q2)%R.
 Proof.
@@ -702,7 +695,6 @@ Notation " 'set t " := (chSet t) (at level 2): package_scope.
   It is always positive.
 *)
 Variable (n: nat).
-Context (n_positive: Positive n).
 
 (**
   We cannot possibly have more than [p-1] shares.
@@ -894,12 +886,6 @@ Proof.
   rewrite lagrange_zero.
   2: by rewrite /= no_zero_share uniq_make_shares.
   by rewrite /tail_poly polyseq0 GRing.addr0.
-Qed.
-
-Instance p_pow_positive t:
-  Positive (p ^ t).
-Proof.
-  by rewrite /Positive expn_gt0 prime_gt0.
 Qed.
 
 (**
