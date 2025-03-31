@@ -123,13 +123,6 @@ Notation "m ⊕ k" := (plus m k) (at level 70).
 (**
   Some lemmas for [plus] itself.
 *)
-Lemma plus_comm m k:
-  (m ⊕ k) = (k ⊕ m).
-Proof.
-  apply: ord_inj.
-  case: m => m ? /=.
-  by rewrite N.lxor_comm.
-Qed.
 
 Lemma plus_assoc m l k:
   ((m ⊕ l) ⊕ k) = (m ⊕ (l ⊕ k)).

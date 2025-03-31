@@ -695,6 +695,7 @@ Notation " 'set t " := (chSet t) (at level 2): package_scope.
   It is always positive.
 *)
 Variable (n: nat).
+Context (n_positive: Positive n).
 
 (**
   We cannot possibly have more than [p-1] shares.
@@ -886,6 +887,13 @@ Proof.
   rewrite lagrange_zero.
   2: by rewrite /= no_zero_share uniq_make_shares.
   by rewrite /tail_poly polyseq0 GRing.addr0.
+Qed.
+
+
+Instance p_pow_positive t:
+  Positive (p ^ t).
+Proof.
+  by rewrite /Positive expn_gt0 prime_gt0.
 Qed.
 
 (**
