@@ -180,21 +180,18 @@ Definition dif_points {A : eqType} { B : Type} (l : seq (A * B)) := (uniq (unzip
 Ltac simpl_dif_point :=
   rewrite /dif_points /unzip1 ?map_cons ?map_cat ?cons_uniq -?/unzip1.
 
-(* Assuming that all the x_i in l m & r are different(uniq (unzip1 (l ++ (m :: r))))*)
-
-(* WARNING possible extra hypothesis: consult *)
-
-(* When x is not a point in the list l, (...)*)
+(*
+   Proof that when we contruct (partially) our polynomial, the evaluation for an x_i in the list is
+   zero.
+*)
 Lemma lagrange_poly_part_0 {R : fieldType} (x: R) (l : seq (R * R)) m r:
-  (*dif_points (l ++ (m :: r)) ->*)
   x \in unzip1 l ->
   (\sum_(j <- subseqs_rec l m r) lagrange_poly_part j).[x] = 0.
 Proof.
-  elim: r l m => [|m' r IHr] l [x0 y0] (*Huniq*) Hin.
+  elim: r l m => [|m' r IHr] l [x0 y0] Hin.
   1: by rewrite big_seq1 hornerZ lagrange_basis_0 ?GRing.mulr0.
   rewrite /= big_cons hornerD hornerZ.
   rewrite lagrange_basis_0 ?IHr ?GRing.mulr0 ?GRing.add0r //.
-  (*1: by rewrite -catA cat_cons.*)
   all: simpl_dif_point; by rewrite mem_cat Hin.
 Qed.
 
