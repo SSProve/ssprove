@@ -232,8 +232,7 @@ Proof.
 
   (* We can weaken the postcondition*)
   apply rpost_weaken_rule with eq.
-  (*???*)
-  2 : by move=> [? ?] [? ?] [].
+  2: by move=> [? ?] [? ?] [].
 
   (* Unpack m as ml, mr and U *)
   case m => [[ml mr] U].
@@ -242,7 +241,6 @@ Proof.
   case: (_ (domm U)) => {U} [|a U] /=.
   (* domm U = ∅ *)
   1: by apply: rreflexivity_rule.
-
   (* domm U != ∅ *)
   (* Case distinction over the set U *)
   case: U => [|b U].

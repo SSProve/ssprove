@@ -583,9 +583,10 @@ Proof.
 Qed.
 
 (**
-  We also prove two polynomials are equal if, and only if, all their
+  Proof that two polynomials are equal if, and only if, all their
   coefficients are equal.
-  This is then used to prove how [tail_poly] and [cons_poly] behaves when added
+
+  Used to prove how [tail_poly] and [cons_poly] behaves when added
   and negated.
 *)
 Lemma coef_poly_eq {R: ringType} (q1 q2: {poly R}):
@@ -599,20 +600,16 @@ Proof.
   case: q1.
   elim=> [|a1 s1 IHs1] Hs1 [|a2 s2 ] //= Hs2 H.
   - move /eqP in Hs2.
-    destruct Hs2.
-    specialize (H (size s2)).
+    destruct Hs2. specialize (H (size s2)).
     rewrite nth_nil nth_last in H.
     by rewrite H.
   - move /eqP in Hs1.
-    destruct Hs1.
-    specialize (H (size s1)).
+    destruct Hs1. specialize (H (size s1)).
     rewrite nth_nil nth_last in H.
     by rewrite -H.
   - move: (fun i => H i.+1) => HS.
-    specialize (H 0%N).
-    simpl in *.
-    rewrite H.
-    f_equal.
+    specialize (H 0%N). simpl in *.
+    rewrite H. f_equal.
     apply: IHs1 => //.
     all: apply: last_neq_0.
     + by apply: Hs1.
@@ -644,6 +641,8 @@ Qed.
 
 Local Open Scope nat_scope.
 
+(*ASK: Shouldn't all this go to a polim_utils file or something like that?*)
+
 (**
   With the work on polynomials out of the way we can start to actually define
   the scheme.
@@ -660,6 +659,7 @@ Context (p_prime: prime p).
   We have to use [(Zp_trunc (pdiv p)).+2] for [Word] to be considered a field.
   This is important for uniqueness of Lagrange polynomials.
 *)
+
 Definition Word_N := (Zp_trunc (pdiv p)).+2.
 Definition Word := 'fin Word_N.
 
@@ -697,6 +697,8 @@ Definition chSet t := chMap t 'unit.
 
 Notation " 'set t " := (chSet t) (in custom pack_type at level 2).
 Notation " 'set t " := (chSet t) (at level 2): package_scope.
+
+(* ASK: Can't we add this to the normal types? *)
 
 (**
   [n] is the number of shares.
@@ -747,21 +749,29 @@ Definition make_shares (m: Word) (q: {poly Word}) (U: seq Party): seq Share :=
   map (make_share (cons_poly m q)) U.
 
 (**
-  In order to prove security in SSProve we need to define a bijection
-  The bijection between polynomials works like this:
-  1. We compute the shares for the parties [U], message [m] and random
-     polynomial [q].
-  2. Then we compute two Lagrange polynomials, [g] and [g'], through those
-     shares and, respectively, (0, m) and (0, m').
-  3. We then compute the tail of [g' - g] and add it to [q] giving us [q'].
+  In order to prove security in SSProve we need to define a bijection for the random polynomials q.
+  To satisfy the security property, the bijection must compute a q_r from any q_l, such that:
+    
+    m_l + i * q_l(i) = m_r + i * q_r(i) for i \in U
+  
+  To do this, we compute the set of shares, S, as the corresponding points of the polynomial
+  f_l(x) = m_l + x * q_l(x), that is: s_i = (i, f_l(i)) for i \in U.
+  
+  Next, we compute the Lagrange interpolations of {(0, ml)} ∪ S and {(0, mr)} ∪ S, respectively called
+  g_l  and g_r. Since g_l(0) = m_l, we know the first coefficeint of g_l is m_l. Similarly, the first 
+  coefficient of g_r is m_r. We can then define:
 
-  It is secure, because [make_shares m' q' U] will yield the same [sh].
+    f_r(x) = f_l(x) + g_r(x) - g_l(x) = m_l + m_r - m_l + x * q_r(x) = m_r + x * q_r(x)
+
+  It is secure, because [make_shares m' q' U] will yield the same result as the original
+  [make shares m q U].
 
   It is a bijection, because we can compute [sh] from [q'], from which we can
-  compute [g] and [g'], from which [q = q' - tail_poly (g' - g)].
+  compute [g] and [g'], from which [q = q' - tail_poly (g' - g)]. Therefore, there is an inverse.
 
   [sec_poly_bij] and [bij_poly_bij] simply formalise the above intuitions.
 *)
+
 Definition poly_bij (U: seq Party) (m m': Word) (q: {poly Word}): {poly Word} :=
   let sh := make_shares m q U in
   let g  := lagrange_poly ((0%R, m ) :: sh) in
@@ -784,8 +794,7 @@ Proof.
   apply: leq_trans.
   1: by apply: size_add.
   rewrite geq_max.
-  apply /andP.
-  split => //.
+  apply /andP. split => //.
   rewrite size_tail_poly leq_pred_S.
   apply: leq_trans.
   1: by apply: size_add.
@@ -837,8 +846,7 @@ Lemma sec_poly_bij_part (x: Party) (U: seq Party) (m m': Word) (q: {poly Word}):
   (cons_poly m                   q ).[party_to_word x].
 Proof.
   move=> Huniq Hin.
-  rewrite (cons_poly_add m).
-  rewrite lagrange_sub_zero_cons.
+  rewrite (cons_poly_add m) lagrange_sub_zero_cons.
   2: by rewrite /= no_zero_share uniq_make_shares.
   rewrite hornerD cons_eq_head_tail_poly.
   2: {
@@ -859,8 +867,7 @@ Lemma sec_poly_bij_rec (l r: seq Party) (m m': Word) (q: {poly Word}):
 Proof.
   elim: r => [// | a r IHr] in l*.
   rewrite -cat_rcons -cats1 /= => H.
-  rewrite IHr //.
-  rewrite /make_share sec_poly_bij_part //.
+  rewrite IHr // /make_share sec_poly_bij_part //.
   by rewrite mem_cat cats1 mem_rcons in_cons eq_refl.
 Qed.
 
@@ -878,9 +885,7 @@ Lemma bij_poly_bij (U: seq Party) (m m': Word) (q: {poly Word}):
   poly_bij U m' m (poly_bij U m m' q) = q.
 Proof.
   move=> Huniq.
-  rewrite {1}/poly_bij.
-  rewrite sec_poly_bij //.
-  rewrite /poly_bij.
+  rewrite /poly_bij sec_poly_bij //.
   rewrite !lagrange_sub_zero_cons.
   2,3: by rewrite /= no_zero_share uniq_make_shares.
   rewrite -GRing.addrA -tail_poly_add.
@@ -978,8 +983,7 @@ Proof.
   elim: t q => [|t IHt] q H.
   1: {
     rewrite size_poly_leq0 in H.
-    move /eqP in H.
-    by subst.
+    move /eqP in H. by subst.
   }
   rewrite /= mod_p_muln_p.
   rewrite divnMDl ?prime_gt0 // divn_small.
@@ -1002,7 +1006,7 @@ Variable (t': nat).
 Definition t := t'.+1.
 
 (**
-  This is the final bijection used to
+  This is the final bijection used to. We prove to analogus lemmas as the ones stated above.
 *)
 #[program]
 Definition share_bij (U: seq Party) (m m': Word) (c: PolyEnc t'): PolyEnc t' :=
@@ -1028,15 +1032,15 @@ Lemma bij_share_bij (U: seq Party) (m m': Word):
   bijective (share_bij U m m').
 Proof.
   move=> Huniq Hleq.
-  exists (share_bij U m' m) => q.
-  all: apply: ord_inj.
-  all: rewrite /= poly_nat_poly ?size_poly_bij ?size_nat_to_poly //.
-  all: by rewrite bij_poly_bij ?nat_poly_nat.
+  exists (share_bij U m' m) => q;
+  apply: ord_inj;
+  rewrite /= poly_nat_poly ?size_poly_bij ?size_nat_to_poly //;
+  by rewrite bij_poly_bij ?nat_poly_nat.
 Qed.
 
 Local Open Scope package_scope.
 
-Definition shares: nat := 0.
+Definition signature : nat := 0.
 
 Definition mkpair {Lt Lf E}
   (t: package Lt [interface] E) (f: package Lf [interface] E):
@@ -1048,9 +1052,9 @@ Definition mkpair {Lt Lf E}
 *)
 Definition SHARE_pkg_tt:
   package fset0 [interface]
-    [interface #val #[shares]: ('word × 'word) × 'set 'party → 'seq 'share ] :=
+    [interface #val #[signature]: ('word × 'word) × 'set 'party → 'seq 'share ] :=
   [package
-    #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'party): 'seq 'share {
+    #def #[signature] ('(ml, mr, U): ('word × 'word) × 'set 'party): 'seq 'share {
       if size (domm U) >= t then ret emptym
       else
       q <$ uniform (p ^ t') ;;
@@ -1062,9 +1066,9 @@ Definition SHARE_pkg_tt:
 
 Definition SHARE_pkg_ff:
   package fset0 [interface]
-    [interface #val #[shares]: ('word × 'word) × 'set 'party → 'seq 'share ] :=
+    [interface #val #[signature]: ('word × 'word) × 'set 'party → 'seq 'share ] :=
   [package
-    #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'party): 'seq 'share {
+    #def #[signature] ('(ml, mr, U): ('word × 'word) × 'set 'party): 'seq 'share {
       if size (domm U) >= t then ret emptym
       else
       q <$ uniform (p ^ t') ;;
@@ -1079,20 +1083,43 @@ Definition SHARE := mkpair SHARE_pkg_tt SHARE_pkg_ff.
 Lemma SHARE_equiv:
   SHARE true ≈₀ SHARE false.
 Proof.
+  (**
+    Since the games have no state, we don’t need to maintain an invariant, and only
+    need to ensure the games have the same output distribution.
+  *)
   apply: eq_rel_perf_ind_eq.
+    
+  (* Create a goal for each procedure, one in this case *)
   simplify_eq_rel m.
+
+  (* We can weaken the postcondition*)
   apply rpost_weaken_rule with eq;
     last by move=> [? ?] [? ?] [].
+  
+  (* Unpack m as ml, mr and U *)
   case: m => [[ml mr] U].
-  destruct (t <= size _) eqn:Heq.
-  1: by apply: rreflexivity_rule.
+
+  (* Perform case analysis over the following inequality *)
+  destruct (t <= size (domm U)) eqn:Heq; rewrite Heq.
+  (* First case is very easy since we return emptym in both cases *)
+  1: apply: rreflexivity_rule. 
+  
+  (* t > size(domm U) *)
   apply negbT in Heq.
   rewrite -ltnNge ltnS in Heq.
+  (**
+     We need to prove it is bijective and that the operations performed after the sampling
+     result in the program returning the same distribution of values. 
+  *)
   apply: r_uniform_bij => [|q].
+  (* Bijection *)
   1: {
     apply: (bij_share_bij (domm U) ml mr) => //.
     by apply: uniq_fset.
   }
+  (* Since there exists a bijection, we finish by proving that the last operations are
+     equivalent
+  *)
   rewrite sec_share_bij ?uniq_fset //.
   by apply: rreflexivity_rule.
 Qed.
@@ -1102,7 +1129,7 @@ Qed.
 *)
 Theorem unconditional_secrecy LA A:
   ValidPackage LA
-    [interface #val #[shares]: ('word × 'word) × 'set 'party → 'seq 'share ]
+    [interface #val #[signature]: ('word × 'word) × 'set 'party → 'seq 'share ]
     A_export A ->
   Advantage SHARE A = 0%R.
 Proof.
