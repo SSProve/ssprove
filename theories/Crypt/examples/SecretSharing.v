@@ -1,15 +1,26 @@
-(**
-  This formalises Theorem 3.6 from "The Joy of Cryptography" (p. 51).
-  It is a simple 2-out-of-2 secret-sharing scheme with perfect security,
-  based on XOR.
-
-  It is fairly simple to understand. The hardest part is probably the definition
-  of [plus] (XOR), which is not really necessary to understand the proof.
-
-  The final statement ([unconditional_secrecy]) is equivalent to that of the
-  books: The scheme achieves perfect secerery with up to two shares
-  (non-inclusive).
-*)
+(*****************************************************************************)
+(*                             Secret Sharing                                *)
+(*                                                                           *)
+(* Formalization of Theorem 3.6 from "The Joy of Cryptography" (p. 51).      *)
+(* It is a simple 2-out-of-2 secret-sharing scheme with perfect security,    *)
+(* based on XOR. Messages are n-bit words, and the scheme works by letting   *)
+(* the first share to be a random word, and the second share be the first    *)
+(* share XOR'ed with the message.                                            *) 
+(*                                                                           *)
+(* At the beginning we prove some properties for the plus operator, such as  *)
+(* associativity or involutive.                                              *)
+(* The final statement ([unconditional_secrecy]) is equivalent to that of    *)
+(* the books: The scheme achieves perfect security with up to two shares     *) 
+(* (non-inclusive).                                                          *)
+(*									                                                         *)
+(* * Section SecretSharing_example					                                 *)
+(*   Word == Definition for the finite type of size 2^n			                 *)
+(*   'word == Notation for Word						                                   *)
+(*   plus == receives two Words and returns the XOR of them		               *)
+(*   m ⊕ k == XOR of words m and k					                                 *)	
+(*   'seq t == Local choice_type for sequences				                       *)
+(*   'set t == Local choice_type for sets 				                           *)
+(*****************************************************************************)
 
 From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
@@ -55,21 +66,16 @@ Definition Word_N: nat := 2^n.
 (* We define words to belong to the finite type of size Word_N *)
 Definition Word: choice_type := chFin (mkpos Word_N).
 
-(**
-  The first bit is a formalisation of [plus] (XOR).
-  It is similar to the definitions in OTP.v and PRF.v, but it has been split
-  into lemmas to hopefully be easier to read.
-  It is still somewhat unwieldy though.
-*)
+(******************************************************************************)
+(*******************Definiton of the [plus] obligation.************************)
+(******************************************************************************)
 
-(**
-  Lemmas for the [plus] obligation.
-*)
 Lemma pow2_inj m:
   (2 ^ m)%nat = N.to_nat (2 ^ (N.of_nat m)).
 Proof.
   elim: m => [// | m IHm].
-  rewrite expnSr Nat2N.inj_succ N.pow_succ_r' N2Nat.inj_mul PeanoNat.Nat.mul_comm.
+  rewrite expnSr Nat2N.inj_succ N.pow_succ_r'.
+  rewrite N2Nat.inj_mul PeanoNat.Nat.mul_comm.
   by apply: f_equal2.
 Qed.
 
@@ -78,7 +84,8 @@ Lemma log2_lt_pow2 w m:
 Proof.
   move=> H.
   rewrite -N.log2_lt_pow2.
-  - rewrite /N.lt N2Nat.inj_compare PeanoNat.Nat.compare_lt_iff -pow2_inj Nat2N.id.
+  - rewrite /N.lt N2Nat.inj_compare PeanoNat.Nat.compare_lt_iff.
+    rewrite -pow2_inj Nat2N.id.
     by apply /ltP.
   - rewrite Nat2N.inj_succ.
     by apply: N.lt_0_succ.
@@ -90,10 +97,10 @@ Qed.
     (N.of_nat (nat_of_ord k)))) _.
 Next Obligation.
   (* Case analysis on w and k *)
-  move: w k => [[|w] Hw] [[|k] Hk].
+  move: w k => [[|w] Hw] [[|k] Hk];
 
   (* Discharge the trivial cases where w or k equals 0 *)
-  1-3: by rewrite /= ?Pnat.SuccNat2Pos.id_succ.
+  try by rewrite /= ?Pnat.SuccNat2Pos.id_succ.
 
   (* max(log2 (w+1), log2 (k+1) < n) *)
   move: (log2_lt_pow2 _ _ Hw) => H1.
@@ -104,13 +111,13 @@ Next Obligation.
   case: (N.eq_dec (N.lxor (N.of_nat w.+1) (N.of_nat k.+1)) N0) => H0.
   
   (* lxor (w+1) (k+1) <> 0 *)
-  1: by rewrite H0 expn_gt0.
+  2: by rewrite H0 expn_gt0.
   (* lxor (w+1) (k+1) <> 0 *)
   move => {H1 H2}.
   move: (N.log2_lxor (N.of_nat w.+1) (N.of_nat k.+1)) => Hbound.
   move: (N.le_lt_trans _ _ _ Hbound Hm) => {Hm Hbound}.
-  
   rewrite -N.log2_lt_pow2.
+  
   (* Process the trivial case 0 < lxor (w+1) (k+1) *)
   2: by apply N.neq_0_lt_0.
   (* Convert from the N type to nat so we can use decidability on < *)
@@ -120,9 +127,9 @@ Qed.
 
 Notation "m ⊕ k" := (plus m k) (at level 70).
 
-(**
-  Some lemmas for [plus] itself.
-*)
+(******************************************************************************)
+(******************Some lemmas for [plus] itself.******************************)
+(******************************************************************************)
 
 Lemma plus_assoc m l k:
   ((m ⊕ l) ⊕ k) = (m ⊕ (l ⊕ k)).
@@ -139,10 +146,8 @@ Proof.
   rewrite plus_assoc.
   apply: ord_inj.
   case: m => m ? /=.
-  rewrite N2Nat.id.
-  rewrite N.lxor_nilpotent.
-  rewrite N.lxor_0_r.
-  by rewrite Nat2N.id.
+  rewrite N2Nat.id N.lxor_nilpotent.
+  by rewrite N.lxor_0_r Nat2N.id.
 Qed.
 
 #[local] Open Scope package_scope.
@@ -170,9 +175,9 @@ Notation " 'set t " := (chSet t) (at level 2): package_scope.
 
 Definition shares: nat := 0.
 
-(**
-  Definition of the games.
-*)
+(******************************************************************************)
+(********************Definition of the games.**********************************)
+(******************************************************************************)
 
 Definition SHARE_pkg_tt:
   package fset0 [interface]
@@ -208,9 +213,10 @@ Definition mkpair {Lt Lf E}
 
 Definition SHARE := mkpair SHARE_pkg_tt SHARE_pkg_ff.
 
-(**
-  Proof that the games are equivalent.
-*)
+(******************************************************************************)
+(************Proof that the games are equivalent.******************************)
+(******************************************************************************)
+
 Lemma SHARE_equiv:
   SHARE true ≈₀ SHARE false.
 Proof.
@@ -261,9 +267,10 @@ Proof.
   by apply: rreflexivity_rule.
 Qed.
 
-(**
-  This corresponds to Theorem 3.6 from "The Joy of Cryptography".
-*)
+(******************************************************************************)
+(********Proof to the Theorem 3.6 from "The Joy of Cryptography".**************)
+(******************************************************************************)
+
 Theorem unconditional_secrecy LA A:
   ValidPackage LA
     [interface #val #[shares]: ('word × 'word) × 'set 'nat → 'seq 'word ]
