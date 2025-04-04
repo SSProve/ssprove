@@ -317,9 +317,9 @@ Lemma y_in_zero_points {R: ringType} {x y: R} {s: seq R}:
   y = 0.
 Proof.
   rewrite /zero_points.
-  elim: s => [// | a s IHs] H.
-  rewrite map_cons in_cons in H.
-  destruct ((x, y) == (a, 0)) eqn:Heq.
+  elim: s => [// | a s IHs].
+  rewrite map_cons in_cons.
+  case Heq: ((x, y) == (a, 0)) => H.
   - move /eqP in Heq.
     by case: Heq.
   - by apply: IHs.
