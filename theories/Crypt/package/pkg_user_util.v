@@ -77,7 +77,7 @@ Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From SSProve.Crypt Require Import Axioms Prelude pkg_core_definition pkg_composition
   pkg_notation RulesStateProb pkg_advantage pkg_lookup pkg_semantics
-  pkg_heap pkg_invariants pkg_distr pkg_rhl pkg_tactics choice_type.
+  pkg_heap pkg_invariants pkg_distr pkg_rhl pkg_tactics choice_type fmap_extra.
 From Coq Require Import Utf8 FunctionalExtensionality
   Setoids.Setoid Classes.Morphisms.
 
@@ -97,14 +97,6 @@ Set Default Goal Selector "!".
 Set Primitive Projections.
 
 (** Preliminary work *)
-
-Lemma opsig_in_unfold :
-  ∀ {o : opsig} {E : Interface},
-    o \in E →
-    (ide o, (chsrc o, chtgt o)) \in E.
-Proof.
-  intros [i [S T]] E h. cbn. auto.
-Defined.
 
 Open Scope pack.
 
@@ -163,9 +155,9 @@ Ltac simplify_eq_rel m :=
   let id := fresh "id" in
   let So := fresh "S" in
   let To := fresh "T" in
-  let hin := fresh "hin" in
-  intros id So To m hin ;
-  invert_interface_in hin ;
+  let has := fresh "has" in
+  intros id So To m has ;
+  fmap_invert has ;
   rewrite ?get_op_default_link ;
   (* First we need to squeeze the codes out of the packages *)
   unfold get_op_default ;
@@ -336,13 +328,19 @@ Ltac notin_fset_auto :=
     else rewrite in_nil in bot ; discriminate
   ).
 
+(*
 #[export] Hint Extern 20 (is_true (_ \notin _)) =>
-  solve [ notin_fset_auto ]
+  solve [ fmap_solve ]
   : ssprove_invariant.
 
 #[export] Hint Extern 20 (is_true (_ \in _)) =>
-  solve [ auto_in_fset ]
+  solve [ fmap_solve ]
   : ssprove_invariant.
+ *)
+#[export] Hint Extern 2 (is_true (?x \notin ?m)) =>
+  solve [ fmap_solve ]
+  : typeclass_instances ssprove_valid_db ssprove_invariant.
+
 
 (* Right-biased same head, but more genenal *)
 Ltac ssprove_sync :=
@@ -560,17 +558,6 @@ Ltac ssprove_swap_seq_lhs l :=
     idtac
   end.
 
-(** Automation of flat proofs *)
-#[export] Hint Extern 3 (flat ?I) =>
-  let n := fresh "n" in
-  let h₀ := fresh "h₀" in
-  let h₁ := fresh "h₁" in
-  intros n ? ? h₀ h₁ ;
-  invert_interface_in h₀ ;
-  invert_interface_in h₁ ;
-  choice_type_eq_prove
-  : typeclass_instances ssprove_valid_db.
-
 Lemma code_link_scheme :
   ∀ L A c p,
     @ValidCode L [interface] A c →
@@ -579,7 +566,7 @@ Proof.
   intros L A c p h.
   induction h.
   - reflexivity.
-  - eapply fromEmpty. rewrite fset0E. eauto.
+  - destruct o; discriminate.
   - simpl. f_equal. apply functional_extensionality.
     intro. eauto.
   - simpl. f_equal. eauto.

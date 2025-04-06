@@ -75,11 +75,11 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
   Definition chPubKey := 'fin #|PubKey|.
   Definition chSecKey := 'fin #|SecKey|.
 
-  Definition counter_loc : Location := ('nat ; 0%N).
-  Definition pk_loc : Location := (chPubKey ; 1%N).
-  Definition sk_loc : Location := (chSecKey ; 2%N).
-  Definition m_loc  : Location := (chPlain ; 3%N).
-  Definition c_loc  : Location := (chCipher ; 4%N).
+  Definition counter_loc : Location := (0, 'nat).
+  Definition pk_loc : Location := (1, chPubKey).
+  Definition sk_loc : Location := (2, chSecKey).
+  Definition m_loc  : Location := (3, chPlain).
+  Definition c_loc  : Location := (4, chCipher).
 
   Definition kg_id : nat := 5.
   Definition enc_id : nat := 6.
@@ -90,17 +90,17 @@ Module Type AsymmetricSchemeAlgorithms (π : AsymmetricSchemeParams).
 
   (* Key Generation *)
   Parameter KeyGen :
-    ∀ {L : {fset Location}},
+    ∀ {L : Locations},
       code L [interface] (chPubKey × chSecKey).
 
   (* Encryption algorithm *)
   Parameter Enc :
-    ∀ {L : {fset Location}} (pk : chPubKey) (m : chPlain),
+    ∀ {L : Locations} (pk : chPubKey) (m : chPlain),
       code L [interface] chCipher.
 
   (* Decryption algorithm *)
   Parameter Dec_open :
-    ∀ {L : {fset Location}} (sk : chSecKey) (c : chCipher),
+    ∀ {L : Locations} (sk : chSecKey) (c : chCipher),
       code L [interface] chPlain.
 
   Notation " 'plain " := chPlain (in custom pack_type at level 2).
@@ -128,7 +128,7 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
    (* Define what it means for an asymmetric encryption scheme to be: *)
    (** SECURE AGAINST CHOSEN-PLAINTEXT ATTACKS **)
 
-  Definition L_locs : { fset Location } := fset [:: pk_loc ; sk_loc ].
+  Definition L_locs : Locations := [fmap pk_loc ; sk_loc ].
 
   (* TODO INVESTIGATE:
     If I put _ instead of L_locs, the following loops.
@@ -205,8 +205,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
         #val #[getpk_id] : 'unit → 'pubkey ;
         #val #[challenge_id] : 'plain × 'plain → 'cipher
       ] A_export A →
-      fdisjoint LA (cpa_L_vs_R true).(locs) →
-      fdisjoint LA (cpa_L_vs_R false).(locs) →
+      domm LA :#: domm (cpa_L_vs_R true).(locs) →
+      domm LA :#: domm (cpa_L_vs_R false).(locs) →
       Advantage cpa_L_vs_R A = 0.
 
   (* Define what it means for an asymmetric encryption scheme to: *)
@@ -281,14 +281,14 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
         #val #[getpk_id] : 'unit → 'pubkey ;
         #val #[challenge_id] : 'plain → 'cipher
       ] A_export A →
-      fdisjoint LA (cpa_real_vs_rand true).(locs) →
-      fdisjoint LA (cpa_real_vs_rand false).(locs) →
+      domm LA :#: domm (cpa_real_vs_rand true).(locs) →
+      domm LA :#: domm (cpa_real_vs_rand false).(locs) →
       Advantage cpa_real_vs_rand A = 0.
 
   (* Define what it means for an asymmetric encryption scheme to have: *)
   (** ONE-TIME SECRECY **)
 
-  Definition L_locs_counter := fset [:: counter_loc ; pk_loc ; sk_loc ].
+  Definition L_locs_counter := [fmap counter_loc ; pk_loc ; sk_loc ].
 
   Definition L_pk_ots_L :
     package L_locs_counter
@@ -363,8 +363,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
         #val #[getpk_id] : 'unit → 'pubkey ;
         #val #[challenge_id] :'plain × 'plain → 'option 'cipher
       ] A_export A →
-      fdisjoint LA (ots_L_vs_R true).(locs) →
-      fdisjoint LA (ots_L_vs_R false).(locs) →
+      domm LA :#: domm (ots_L_vs_R true).(locs) →
+      domm LA :#: domm (ots_L_vs_R false).(locs) →
       Advantage ots_L_vs_R A = 0.
 
   (*  *)

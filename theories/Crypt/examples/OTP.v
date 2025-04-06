@@ -276,23 +276,23 @@ Section OTP_example.
 
   Opaque key2ch ch2key words2ch ch2words.
 
-  Definition Enc {L : {fset Location}} (m : Words) (k : Key) :
+  Definition Enc {L : Locations} (m : Words) (k : Key) :
     code L [interface] Words :=
     {code
        ret (m ⊕ k)
     }.
 
-  Definition KeyGen {L : {fset Location}} :
+  Definition KeyGen {L : Locations} :
     code L [interface] Key :=
     {code
        k ← sample uniform i_key ;;
        ret (ch2key k)
     }.
 
-  Definition dec {L : {fset Location }}(c : Words) (k : Key) :
+  Definition dec {L : Locations}(c : Words) (k : Key) :
     code L [interface] Words := Enc k c.
 
-  Definition IND_CPA_location : {fset Location} := fset0.
+  Definition IND_CPA_location : Locations := emptym.
 
   (* REM: Key is always sampled at the side of the encrypter. *)
   (* This assumption is stronger than usual crypto definitions. *)
@@ -366,7 +366,7 @@ Section OTP_example.
   Proof.
     intros LA A vA.
     rewrite Advantage_E. eapply IND_CPA_ideal_real. 1: eauto.
-    all: eapply fdisjoints0.
+    1,2: rewrite domm0; apply fdisjoints0. (* MK: Should be automatic *)
   Qed.
 
 End OTP_example.

@@ -121,11 +121,11 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Definition chCipher : choice_type := 'fin #|Cipher|.
   Definition chSecKey : choice_type := 'fin #|SecKey|.
 
-  Definition counter_loc : Location := ('nat ; 0%N).
-  Definition pk_loc : Location := (chPubKey ; 1%N).
-  Definition sk_loc : Location := (chSecKey ; 2%N).
-  Definition m_loc  : Location := (chPlain ; 3%N).
-  Definition c_loc  : Location := (chCipher ; 4%N).
+  Definition counter_loc : Location := (0, 'nat).
+  Definition pk_loc : Location := (1%N, chPubKey).
+  Definition sk_loc : Location := (2%N, chSecKey).
+  Definition m_loc  : Location := (3%N, chPlain).
+  Definition c_loc  : Location := (4%N, chCipher).
 
   Definition kg_id : nat := 5.
   Definition enc_id : nat := 6.
@@ -142,7 +142,7 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
   Definition i_bool : nat := 2.
 
   (** Key Generation algorithm *)
-  Definition KeyGen {L : {fset Location}} :
+  Definition KeyGen {L : Locations} :
     code L [interface] (chPubKey × chSecKey) :=
     {code
       x ← sample uniform i_sk ;;
@@ -151,7 +151,7 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
     }.
 
   (** Encryption algorithm *)
-  Definition Enc {L : {fset Location}} (pk : chPubKey) (m : chPlain) :
+  Definition Enc {L : Locations} (pk : chPubKey) (m : chPlain) :
     code L [interface] chCipher :=
     {code
       y ← sample uniform i_sk ;;
@@ -160,7 +160,7 @@ Module MyAlg <: AsymmetricSchemeAlgorithms MyParam.
     }.
 
   (** Decryption algorithm *)
-  Definition Dec_open {L : {fset Location}} (sk : chSecKey) (c : chCipher) :
+  Definition Dec_open {L : Locations} (sk : chSecKey) (c : chCipher) :
     code L [interface] chPlain :=
     {code
       ret (fto ((fst (otf c)) * ((snd (otf c))^-(otf sk))))
@@ -186,25 +186,7 @@ Module ElGamal_Scheme := AsymmetricScheme MyParam MyAlg.
 
 Import MyParam MyAlg ElGamal_Scheme.
 
-Lemma counter_loc_in :
-  counter_loc \in (fset [:: counter_loc; pk_loc; sk_loc ]).
-Proof.
-  auto_in_fset.
-Qed.
-
-Lemma pk_loc_in :
-  pk_loc \in (fset [:: counter_loc; pk_loc; sk_loc ]).
-Proof.
-  auto_in_fset.
-Qed.
-
-Lemma sk_loc_in :
-  sk_loc \in (fset [:: counter_loc; pk_loc; sk_loc ]).
-Proof.
-  auto_in_fset.
-Qed.
-
-Definition DH_loc := fset [:: pk_loc ; sk_loc].
+Definition DH_loc := [fmap pk_loc ; sk_loc].
 
 Definition DH_real :
   package DH_loc [interface]
@@ -241,7 +223,7 @@ Definition DH_rnd :
     ].
 
 Definition Aux :
-  package (fset [:: counter_loc ; pk_loc ])
+  package ([fmap counter_loc ; pk_loc ])
     [interface #val #[query_id] : 'unit → 'pubkey × 'cipher]
     [interface
       #val #[getpk_id] : 'unit → 'pubkey ;
@@ -265,6 +247,17 @@ Definition Aux :
       @ret chCipher (fto ((otf c).1 , (otf m) * ((otf c).2)))
     }
   ].
+
+(*
+Goal ∃ L E, ValidPackage L Game_import E (Aux ∘ DH_real).
+Proof.
+  do 2 eexists.
+  ssprove_valid.
+  do 3 try apply fcompat_cons.
+  all: try apply fcompat0m.
+  unfold DH_loc.
+  fmap_solve.
+ *)
 
 Lemma ots_real_vs_rnd_equiv_true :
   Aux ∘ DH_real ≈₀ ots_real_vs_rnd true.
@@ -422,8 +415,8 @@ Theorem ElGamal_OT :
       #val #[getpk_id] : 'unit → 'pubkey ;
       #val #[challenge_id'] : 'plain → 'cipher
     ] A_export A →
-    fdisjoint LA (ots_real_vs_rnd true).(locs) →
-    fdisjoint LA (ots_real_vs_rnd false).(locs) →
+    domm LA :#: domm (ots_real_vs_rnd true).(locs) →
+    domm LA :#: domm (ots_real_vs_rnd false).(locs) →
     Advantage ots_real_vs_rnd A <= AdvantageE DH_rnd DH_real (A ∘ Aux).
 Proof.
   intros LA A vA hd₀ hd₁.
@@ -436,40 +429,8 @@ Proof.
   as ineq.
   eapply le_trans. 1: exact ineq.
   clear ineq.
-  rewrite ots_real_vs_rnd_equiv_true. 3: auto.
-  2:{
-    rewrite fdisjointUr. apply/andP. split.
-    - unfold L_locs_counter in hd.
-      rewrite fdisjointC.
-      eapply fdisjoint_trans. 2:{ rewrite fdisjointC. exact hd. }
-      rewrite [X in fsubset _ X]fset_cons.
-      rewrite fset_cons. apply fsetUS.
-      rewrite !fset_cons -fset0E.
-      apply fsetUS.
-      apply fsub0set.
-    - unfold DH_loc. unfold L_locs_counter in hd.
-      rewrite fdisjointC.
-      eapply fdisjoint_trans. 2:{ rewrite fdisjointC. exact hd. }
-      rewrite [X in fsubset _ X]fset_cons.
-      apply fsubsetUr.
-  }
-  rewrite ots_real_vs_rnd_equiv_false. 2: auto.
-  2:{
-    rewrite fdisjointUr. apply/andP. split.
-    - unfold L_locs_counter in hd.
-      rewrite fdisjointC.
-      eapply fdisjoint_trans. 2:{ rewrite fdisjointC. exact hd. }
-      rewrite [X in fsubset _ X]fset_cons.
-      rewrite fset_cons. apply fsetUS.
-      rewrite !fset_cons -fset0E.
-      apply fsetUS.
-      apply fsub0set.
-    - unfold DH_loc. unfold L_locs_counter in hd.
-      rewrite fdisjointC.
-      eapply fdisjoint_trans. 2:{ rewrite fdisjointC. exact hd. }
-      rewrite [X in fsubset _ X]fset_cons.
-      apply fsubsetUr.
-  }
+  rewrite ots_real_vs_rnd_equiv_true. 2,3: auto.
+  rewrite ots_real_vs_rnd_equiv_false. 2,3: auto.
   rewrite GRing.addr0. rewrite GRing.add0r.
   rewrite -Advantage_link. auto.
 Qed.
