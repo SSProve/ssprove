@@ -127,7 +127,7 @@ Section Executor.
              (st : Location → option NatState) (l : Location) (v : l) : (Location → option NatState)
     :=
     fun (l' : Location) =>
-      if l.π2 == l'.π2
+      if l.1 == l'.1
       then (ch_nat l v)
       else st l'.
 
@@ -221,11 +221,11 @@ Close Scope Z_scope.
 
 Section Test.
 
-  Definition loc : Location :=  ('nat ; 1)%N.
-  Definition locs : {fset Location} := fset [:: loc].
+  Definition loc : Location :=  (1, 'nat).
+  Definition locs : Locations := [fmap loc].
 
   Definition test_prog_sub (x : nat):
-    code fset0 [interface] 'nat :=
+    code emptym [interface] 'nat :=
     {code
        k ← sample uniform 20 ;;
        let y := (x + k)%N in

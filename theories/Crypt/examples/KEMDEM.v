@@ -129,16 +129,16 @@ Section KEMDEM.
   Definition PKDEC := 5%N.
 
   (** Memory locations *)
-  Definition k_loc : Location := ('option 'key ; 0%N).
-  Definition pk_loc : Location := ('option 'pkey ; 1%N).
-  Definition sk_loc : Location := ('option 'skey ; 2%N).
-  Definition ek_loc : Location := ('option 'ekey ; 3%N).
-  Definition c_loc : Location := ('option 'cipher ; 4%N).
+  Definition k_loc : Location := (0, 'option 'key).
+  Definition pk_loc : Location := (1, 'option 'pkey).
+  Definition sk_loc : Location := (2, 'option 'skey).
+  Definition ek_loc : Location := (3, 'option 'ekey).
+  Definition c_loc : Location := (4, 'option 'cipher).
 
   (** Some shorthands *)
   Definition IGEN := [interface #val #[ GEN ] : 'unit → 'unit ].
   Definition ISET := [interface #val #[ SET ] : 'key → 'unit ].
-  Definition IGET := [interface #val #[GET] : 'unit → 'key ].
+  Definition IGET := [interface #val #[ GET ] : 'unit → 'key ].
 
   (** PKE scheme
 
@@ -150,8 +150,8 @@ Section KEMDEM.
   *)
 
   Record PKE_scheme := {
-    PKE_kgen : code fset0 [interface] (chProd 'pkey 'skey) ;
-    PKE_enc : 'pkey → 'plain → code fset0 [interface] (chProd 'ekey 'cipher) ;
+    PKE_kgen : code emptym [interface] (chProd 'pkey 'skey) ;
+    PKE_enc : 'pkey → 'plain → code emptym [interface] (chProd 'ekey 'cipher) ;
     PKE_dec : 'skey → chProd 'ekey 'cipher → 'plain
   }.
 
@@ -163,8 +163,8 @@ Section KEMDEM.
   *)
 
   Record KEM_scheme := {
-    KEM_kgen : code fset0 [interface] (chProd 'pkey 'skey) ;
-    KEM_encap : 'pkey → code fset0 [interface] (chProd 'key 'ekey) ;
+    KEM_kgen : code emptym [interface] (chProd 'pkey 'skey) ;
+    KEM_encap : 'pkey → code emptym [interface] (chProd 'key 'ekey) ;
     KEM_decap : 'skey → 'ekey → 'key
   }.
 
@@ -210,7 +210,7 @@ Section KEMDEM.
     stored key.
   *)
   Definition KEY_loc :=
-    fset [:: k_loc ].
+    [fmap k_loc ].
 
   (** Similarly, we define the export / output interface of the KEY package.
 
@@ -253,7 +253,7 @@ Section KEMDEM.
   (** The KEM pacakge can refer to locations corresponding to a public and
     private asymetric keys, and to an encrypted symmetric key.
   *)
-  Definition KEM_loc := fset [:: pk_loc ; sk_loc ; ek_loc ].
+  Definition KEM_loc := [fmap pk_loc ; sk_loc ; ek_loc ].
 
   (** The KEM packaee is parametrised by a boolean [b] depedning on which
     its import interface differs. If [b] is [true] it will be able to call
@@ -340,7 +340,7 @@ Section KEMDEM.
     ].
 
   Definition KEM_CCA_loc :=
-    KEM_loc :|: KEY_loc.
+    unionm KEM_loc KEY_loc.
 
   (** Here we use Equations to generate a goal corresponding to the validity of
     the composed package as it is not inferred automatically.
@@ -350,23 +350,11 @@ Section KEMDEM.
     Here and afterwards we use #[tactic=notac] to tell Equations not to
     preprocess the generated goals.
   *)
-  #[tactic=notac] Equations? KEM_CCA_pkg b :
+  #[tactic=ssprove_valid] Equations? KEM_CCA_pkg b :
     package KEM_CCA_loc [interface] KEM_CCA_out :=
     KEM_CCA_pkg b :=
-    {package (par (KEM b) (ID IGET)) ∘ KEY }.
-  Proof.
-    ssprove_valid.
-    - rewrite domm_ID_fset.
-      fdisjoint_auto.
-    - erewrite fsetU0. apply fsubsetxx.
-    - unfold KEM_in. unfold ISET, IGET.
-      destruct b.
-      all: rewrite -fset_cat. all: simpl.
-      all: fsubset_auto.
-    - unfold KEM_CCA_out. rewrite -fset_cat. simpl.
-      apply fsubsetxx.
-    - apply fsubsetUl.
-    - apply fsubsetUr.
+    {package (par (KEM b) (ID IGET)) ∘ KEY }.  Proof.
+    1,2: destruct b; fmap_solve.
   Qed.
 
   (** We finally package the above into a game pair. *)
@@ -376,7 +364,7 @@ Section KEMDEM.
   (** DEM package *)
 
   (** The DEM package only stores a cipher. *)
-  Definition DEM_loc := fset [:: c_loc ].
+  Definition DEM_loc := [fmap c_loc ].
 
   (** The DEM package can refer to the [GET] procedure. *)
   Definition DEM_in := IGET.
@@ -426,29 +414,19 @@ Section KEMDEM.
     ].
 
   Definition DEM_CCA_loc :=
-    DEM_loc :|: KEY_loc.
+    unionm DEM_loc KEY_loc.
 
-  #[tactic=notac] Equations? DEM_CCA_pkg b :
+  #[tactic=ssprove_valid] Equations DEM_CCA_pkg (b : bool) :
     package DEM_CCA_loc [interface] DEM_CCA_out :=
     DEM_CCA_pkg b :=
     {package (par (DEM b) (ID IGEN)) ∘ KEY }.
-  Proof.
-    ssprove_valid.
-    - rewrite domm_ID_fset. fdisjoint_auto.
-    - erewrite fsetU0. apply fsubsetxx.
-    - rewrite -fset_cat. fsubset_auto.
-    - unfold DEM_CCA_out, IGEN.
-      rewrite fsetUC. rewrite -fset_cat. simpl. apply fsubsetxx.
-    - apply fsubsetUl.
-    - apply fsubsetUr.
-  Qed.
 
   Definition DEM_CCA : loc_GamePair DEM_CCA_out :=
     λ b, {locpackage DEM_CCA_pkg b }.
 
   (** PKE-CCA *)
 
-  Definition PKE_CCA_loc := fset [:: pk_loc ; sk_loc ; c_loc ; ek_loc ].
+  Definition PKE_CCA_loc := [fmap pk_loc ; sk_loc ; c_loc ; ek_loc ].
 
   Definition PKE_CCA_out :=
     [interface
@@ -498,7 +476,7 @@ Section KEMDEM.
   (** MOD-CCA *)
 
   Definition MOD_CCA_loc :=
-    fset [:: pk_loc ; c_loc ; ek_loc ].
+    [fmap pk_loc ; c_loc ; ek_loc ].
 
   Definition MOD_CCA_in :=
     [interface
@@ -578,8 +556,6 @@ Section KEMDEM.
       let K₁ := (par CK₁ (ID IGET)) ∘ KEY in
       let D₀ := (par (ID IGEN) CD₀) ∘ KEY in
       let D₁ := (par (ID IGEN) CD₁) ∘ KEY in
-      flat EK →
-      flat ED →
       Parable CK₀ (ID IGET) →
       Parable CK₁ (ID IGET) →
       Parable (ID IGEN) CD₀ →
@@ -597,7 +573,7 @@ Section KEMDEM.
       AdvantageE D₀ D₁ (A ∘ (par CK₁ (ID ED))).
   Proof.
     intros LD₀ LK₀ CK₀ CK₁ CD₀ CD₁ EK ED A K₀ K₁ D₀ D₁.
-    intros fEK fED pCK₀ pCK₁ pCD₀ pCD₁ hCD₀ hCD₁ tCD₀ tCD₁ hCK₀ hCK₁ tCK₀ tCK₁.
+    intros pCK₀ pCK₁ pCD₀ pCD₁ hCD₀ hCD₁ tCD₀ tCD₁ hCK₀ hCK₁ tCK₀ tCK₁.
     ssprove triangle (par CK₀ CD₀ ∘ KEY) [::
       par CK₁ CD₀ ∘ KEY
     ] (par CK₁ CD₁ ∘ KEY) A
@@ -609,24 +585,18 @@ Section KEMDEM.
     - replace (par CK₀ CD₀) with ((par (ID EK) CD₀) ∘ (par CK₀ (ID IGET))).
       2:{
         erewrite <- interchange.
-        all: eauto.
-        2-3: ssprove_valid.
+        all: ssprove_valid.
         2: apply trimmed_ID.
-        erewrite link_id. all: eauto.
-        2: ssprove_valid.
-        erewrite id_link.
-        all: eauto.
+        rewrite link_id. all: eauto.
+        rewrite id_link. all: eauto.
       }
       replace (par CK₁ CD₀) with ((par (ID EK) CD₀) ∘ (par CK₁ (ID IGET))).
       2:{
         erewrite <- interchange.
-        all: eauto.
-        2-3: ssprove_valid.
+        all: ssprove_valid.
         2: apply trimmed_ID.
-        erewrite link_id. all: eauto.
-        2: ssprove_valid.
-        erewrite id_link.
-        all: eauto.
+        rewrite link_id. all: eauto.
+        rewrite id_link. all: eauto.
       }
       rewrite Advantage_link.
       unfold K₀, K₁.
@@ -636,30 +606,23 @@ Section KEMDEM.
     - replace (par CK₁ CD₀) with ((par CK₁ (ID ED)) ∘ (par (ID IGEN) CD₀)).
       2:{
         erewrite <- interchange.
-        all: eauto.
-        2-3: ssprove_valid.
+        all: ssprove_valid.
         2: apply trimmed_ID.
-        erewrite link_id. all: eauto.
-        2: ssprove_valid.
-        erewrite id_link.
-        all: eauto.
+        rewrite link_id. all: eauto.
+        rewrite id_link. all: eauto.
       }
       replace (par CK₁ CD₁) with ((par CK₁ (ID ED)) ∘ (par (ID IGEN) CD₁)).
       2:{
         erewrite <- interchange.
-        all: eauto.
-        2-3: ssprove_valid.
+        all: ssprove_valid.
         2: apply trimmed_ID.
-        erewrite link_id. all: eauto.
-        2: ssprove_valid.
-        erewrite id_link.
-        all: eauto.
+        rewrite link_id. all: eauto.
+        rewrite id_link. all: eauto.
       }
       rewrite Advantage_link.
       unfold D₀, D₁.
       rewrite !link_assoc.
       apply lexx.
-    Unshelve. all: exact fset0.
   Qed.
 
   (** Corresponds to Lemma 19.b in the SSP paper *)
@@ -669,8 +632,6 @@ Section KEMDEM.
       let K₁ := (par CK₁ (ID IGET)) ∘ KEY in
       let D₀ := (par (ID IGEN) CD₀) ∘ KEY in
       let D₁ := (par (ID IGEN) CD₁) ∘ KEY in
-      flat EK →
-      flat ED →
       Parable CK₀ (ID IGET) →
       Parable CK₁ (ID IGET) →
       Parable (ID IGEN) CD₀ →
@@ -689,7 +650,7 @@ Section KEMDEM.
       AdvantageE K₀ K₁ (A ∘ (par (ID EK) CD₁)).
   Proof.
     intros LD₀ LK₀ CK₀ CK₁ CD₀ CD₁ EK ED A K₀ K₁ D₀ D₁.
-    intros fEK fED pCK₀ pCK₁ pCD₀ pCD₁ hCD₀ hCD₁ tCD₀ tCD₁ hCK₀ hCK₁ tCK₀ tCK₁.
+    intros pCK₀ pCK₁ pCD₀ pCD₁ hCD₀ hCD₁ tCD₀ tCD₁ hCK₀ hCK₁ tCK₀ tCK₁.
     ssprove triangle (par CK₀ CD₀ ∘ KEY) [::
       par CK₁ CD₁ ∘ KEY
     ] (par CK₀ CD₁ ∘ KEY) A
@@ -702,31 +663,24 @@ Section KEMDEM.
     - replace (par CK₀ CD₁) with ((par (ID EK) CD₁) ∘ (par CK₀ (ID IGET))).
       2:{
         erewrite <- interchange.
-        all: eauto.
-        2-3: ssprove_valid.
+        all: ssprove_valid.
         2: apply trimmed_ID.
-        erewrite link_id. all: eauto.
-        2: ssprove_valid.
-        erewrite id_link.
-        all: eauto.
+        rewrite link_id. all: eauto.
+        rewrite id_link. all: eauto.
       }
       replace (par CK₁ CD₁) with ((par (ID EK) CD₁) ∘ (par CK₁ (ID IGET))).
       2:{
         erewrite <- interchange.
-        all: eauto.
-        2-3: ssprove_valid.
+        all: ssprove_valid.
         2: apply trimmed_ID.
-        erewrite link_id. all: eauto.
-        2: ssprove_valid.
-        erewrite id_link.
-        all: eauto.
+        rewrite link_id. all: eauto.
+        rewrite id_link. all: eauto.
       }
       rewrite Advantage_link.
       unfold K₀, K₁.
       rewrite !link_assoc.
       rewrite Advantage_sym.
       apply lexx.
-    Unshelve. all: exact fset0.
   Qed.
 
   (** Perfect indistinguishability with PKE-CCA
@@ -739,29 +693,12 @@ Section KEMDEM.
   *)
 
   Definition Aux_loc :=
-    MOD_CCA_loc :|: KEM_loc :|: DEM_loc :|: KEY_loc.
+    unionm MOD_CCA_loc (unionm KEM_loc (unionm DEM_loc KEY_loc)).
 
-  #[tactic=notac] Equations? Aux b : package Aux_loc [interface] PKE_CCA_out :=
+  #[tactic=ssprove_valid] Equations Aux (b : bool)
+    : package Aux_loc [interface] PKE_CCA_out :=
     Aux b :=
     {package (MOD_CCA KEM_DEM ∘ par (KEM true) (DEM b) ∘ KEY) }.
-  Proof.
-    ssprove_valid.
-    - apply fsubsetxx.
-    - unfold KEM_in, DEM_in, KEY_out. unfold ISET, IGET.
-      rewrite -fset_cat. simpl. fsubset_auto.
-    - unfold MOD_CCA_in, KEM_out, DEM_out.
-      rewrite -fset_cat. simpl. apply fsubsetxx.
-    - instantiate (1 := Aux_loc).
-      unfold Aux_loc.
-      eapply fsubset_trans. 1: eapply fsubsetUr.
-      eapply fsubset_trans. 1: eapply fsubsetUl.
-      rewrite !fsetUA. apply fsubsetxx.
-    - unfold Aux_loc.
-      eapply fsubset_trans. 1: eapply fsubsetUr.
-      apply fsubsetxx.
-    - unfold Aux_loc. rewrite -!fsetUA. eapply fsubsetUl.
-    - apply fsubsetxx.
-  Qed.
 
   (** We extend ssprove_code_simpl to use code_link_scheme.
     It says that linking a scheme with anything results in the scheme itself
@@ -831,17 +768,8 @@ Section KEMDEM.
   Instance Invariant_inv : Invariant PKE_CCA_loc Aux_loc inv.
   Proof.
     ssprove_invariant.
-    - eapply fsubset_trans. 2: eapply fsubsetUr.
-      unfold Aux_loc. eapply fsubsetUr.
-    - rewrite in_fsetU. apply /orP. left. auto_in_fset.
-    - rewrite in_fsetU. apply /orP. right.
-      unfold Aux_loc. rewrite in_fsetU. apply /orP. right.
-      auto_in_fset.
-    - rewrite in_fsetU. apply /orP. left. auto_in_fset.
-    - simpl. auto.
-    - rewrite in_fsetU. apply /orP. left. auto_in_fset.
-    - rewrite in_fsetU. apply /orP. left. auto_in_fset.
-    - simpl. auto.
+    all: try fmap_solve.
+    1,2: simpl; auto.
   Qed.
 
   (** We show perfect equivalence in the general case where [b] stay abstract.
@@ -995,8 +923,8 @@ Section KEMDEM.
   Theorem PKE_security :
     ∀ LA A,
       ValidPackage LA PKE_CCA_out A_export A →
-      fdisjoint LA PKE_CCA_loc →
-      fdisjoint LA Aux_loc → (* Do we really need this? *)
+      domm LA :#: domm PKE_CCA_loc →
+      domm LA :#: domm Aux_loc → (* Do we really need this? *)
       Advantage (PKE_CCA KEM_DEM) A <=
       Advantage KEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (ID KEM_out) (DEM true)) +
       Advantage DEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (KEM false) (ID DEM_out)) +
@@ -1019,26 +947,9 @@ Section KEMDEM.
     - rewrite Advantage_sym.
       rewrite -Advantage_link.
       eapply single_key_b with (CK₁ := (KEM false).(pack)).
-      7,8,11,12: ssprove_valid.
-      1-2: ssprove_valid.
-      (* Sadly we have to do this before. *)
-      5-8: unfold KEM, DEM.
-      5-8: cbn - [mkdef mkfmap].
-      5-8: ssprove_valid.
-      all: unfold Parable.
-      all: rewrite domm_ID_fset.
-      3,4: rewrite fdisjointC.
-      all:
-        eapply fdisjoint_trans ; [
-          eapply domm_trimmed ; unfold KEM, DEM ;
-          cbn - [mkdef mkfmap] ; ssprove_valid
-        |].
-      all: simpl.
-      all: unfold idents, KEM_out, DEM_out.
-      all: rewrite imfset_fset.
-      all: simpl.
-      all: rewrite fdisjointC.
-      all: fdisjoint_auto.
+      all: ssprove_valid.
+      1-4: repeat apply trimmed_package_cons.
+      1-4: apply trimmed_empty_package.
     - rewrite !Advantage_E.
       unfold KEM_CCA. unfold KEM_CCA_pkg.
       unfold DEM_CCA. unfold DEM_CCA_pkg.
@@ -1049,20 +960,8 @@ Section KEMDEM.
       f_equal. rewrite Advantage_sym.
       f_equal. all: f_equal.
       all: apply par_commut.
-      all: unfold Parable.
-      all: rewrite domm_ID_fset.
-      all: rewrite fdisjointC.
-      all:
-        eapply fdisjoint_trans ; [
-          eapply domm_trimmed ; unfold KEM, DEM ;
-          cbn - [mkdef mkfmap] ; ssprove_valid
-        |].
-      all: simpl.
-      all: unfold idents, DEM_out.
-      all: rewrite imfset_fset.
-      all: simpl.
-      all: rewrite fdisjointC.
-      all: fdisjoint_auto.
+      all: rewrite /Parable domm_ID.
+      1,2: fmap_solve.
   Qed.
 
 End KEMDEM.

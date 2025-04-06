@@ -13,7 +13,7 @@ From SSProve.Mon Require Import SPropBase.
 From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
   StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
-  pkg_tactics pkg_composition pkg_heap pkg_semantics.
+  pkg_tactics pkg_composition pkg_heap pkg_semantics fmap_extra.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
@@ -44,7 +44,7 @@ Set Primitive Projections.
 Lemma opaque_me :
   ∀ {B L I E}
     (p : raw_package) (hp : valid_package L I E p)
-    (o : opsig) (ho : o \in E) (arg : src o)
+    (o : opsig) (ho : fhas E o) (arg : src o)
     (e : lookup_op p o = None),
     B.
 Proof.
@@ -53,7 +53,7 @@ Proof.
   destruct o as [n [S T]].
   cbn - [lookup_op] in e.
   eapply from_valid_package in hp.
-  specialize (hp _ ho). cbn in hp. destruct hp as [f [ef hf]].
+  specialize (hp (n, (S, T)) ho). cbn in hp. destruct hp as [f [ef hf]].
   cbn in e. destruct (p n) as [[St [Tt g]]|] eqn:e2.
   2: discriminate.
   destruct choice_type_eqP.
@@ -65,14 +65,14 @@ Qed.
 
 Equations? get_raw_package_op {L} {I E : Interface} (p : raw_package)
   (hp : ValidPackage L I E p)
-  (o : opsig) (ho : o \in E) (arg : src o) : code L I (tgt o) :=
+  (o : opsig) (ho : fhas E o) (arg : src o) : code L I (tgt o) :=
   get_raw_package_op p hp o ho arg with inspect (lookup_op p o) := {
   | @exist (Some f) e1 => {code f arg }
   | @exist None e1 => False_rect _ _
   }.
 Proof.
   - destruct o as [n [S T]].
-    cbn - [lookup_op] in *.
+    cbn - [lookup_op] in f, arg.
     eapply lookup_op_valid in hp. 2: eauto.
     cbn - [lookup_op] in hp. destruct hp as [g [eg hg]].
     rewrite <- e1 in eg. noconf eg.
@@ -83,7 +83,7 @@ Defined.
 Lemma get_raw_package_op_lookup :
   ∀ {L} {I E : Interface} (p : raw_package)
     (hp : ValidPackage L I E p)
-    (o : opsig) (ho : o \in E) (arg : src o)
+    (o : opsig) (ho : fhas E o) (arg : src o)
     (f : src o -> raw_code (tgt o))
     (H : lookup_op p o = Some f),
     (get_raw_package_op p hp o ho arg).(prog) = f arg.
@@ -97,7 +97,7 @@ Qed.
 
 (* TODO Needed? MOVE? *)
 Definition code_link_ext {E : Interface}
-  (o : opsig) (ho : o \in E) (arg : src o) (p1 p2 : raw_package)
+  (o : opsig) (ho : fhas E o) (arg : src o) (p1 p2 : raw_package)
   (f : src o → raw_code (tgt o))
   (Hf : lookup_op p1 o = Some f)
   (g : src o → raw_code (tgt o))
@@ -138,8 +138,8 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma get_raw_package_op_link {L} {I M E} {o : opsig}
-  (hin : o \in E) (arg : src o) (p1 p2 : raw_package)
+Lemma get_raw_package_op_link {L} {I M} {E : Interface} {o : opsig}
+  (hin : fhas E o) (arg : src o) (p1 p2 : raw_package)
   (hp1 : ValidPackage L M E p1)
   (hpl : ValidPackage L I E (link p1 p2))
   : (get_raw_package_op (link p1 p2) hpl o hin arg).(prog) =
@@ -178,8 +178,8 @@ Proof.
   apply (code_link_ext o hin arg p1 p2 fl el f e).
 Qed.
 
-Lemma get_raw_package_op_trim {L} {I E} {o : opsig}
-      (hin : o \in E) (arg : src o) (p : raw_package)
+Lemma get_raw_package_op_trim {L} {I E : Interface} {o : opsig}
+      (hin : fhas E o) (arg : src o) (p : raw_package)
       (hp : ValidPackage L I E p)
       (hpt : ValidPackage L I E (trim E p))
   : get_raw_package_op (trim E p) hpt o hin arg =
@@ -203,13 +203,14 @@ Proof.
   rewrite (get_raw_package_op_lookup p _ o hin arg f e).
   assert (lookup_op (trim E p) o = Some f) as H.
   { rewrite (lookup_op_trim E o p).
+    destruct o.
     unfold obind, oapp. rewrite e. rewrite hin. reflexivity. }
   rewrite (get_raw_package_op_lookup (trim E p) _ o hin arg f H).
   reflexivity.
 Qed.
 
-Lemma get_raw_package_op_ext {L1 L2} {I E} {o : opsig}
-      (hin : o \in E) (arg : src o) (p : raw_package)
+Lemma get_raw_package_op_ext {L1 L2} {I E : Interface} {o : opsig}
+      (hin : fhas E o) (arg : src o) (p : raw_package)
       (hp1 : ValidPackage L1 I E p)
       (hp2 : ValidPackage L2 I E p)
   : (get_raw_package_op p hp1 o hin arg).(prog) =
@@ -235,13 +236,13 @@ Proof.
 Qed.
 
 Definition get_opackage_op {L} {I E : Interface} (P : package L I E)
-  (op : opsig) (Hin : op \in E) (arg : src op) : code L I (tgt op).
+  (op : opsig) (Hin : fhas E op) (arg : src op) : code L I (tgt op).
 Proof.
   exact (get_raw_package_op P.(pack) P.(pack_valid) op Hin arg).
 Defined.
 
 Definition get_package_op {I E : Interface} (P : loc_package I E)
-            (op : opsig) (Hin : op \in E) (arg : src op)
+            (op : opsig) (Hin : fhas E op) (arg : src op)
   : code P.(locs) I (tgt op) :=
   let (L, PP) as s return (code s.(locs) I (tgt op)) := P in
   get_opackage_op PP op Hin arg.
@@ -257,7 +258,7 @@ Definition get_op_default (p : raw_package) (o : opsig) :
 Lemma valid_get_op_default :
   ∀ L I E p o x,
     ValidPackage L I E p →
-    o \in E →
+    fhas E o →
     ValidCode L I (get_op_default p o x).
 Proof.
   intros L I E p o x hp ho.
@@ -275,7 +276,7 @@ Qed.
 #[export] Hint Extern 1 (ValidCode ?L ?I (get_op_default ?p ?o ?x)) =>
   eapply valid_get_op_default ; [
     idtac
-  | auto_in_fset
+  | solve [ fmap_solve ]
   ]
   : typeclass_instances ssprove_valid_db.
 
@@ -304,7 +305,7 @@ Qed.
 
 (* TODO Still useful? *)
 Definition get_op {I E : Interface} (p : loc_package I E)
-  (o : opsig) (ho : o \in E) (arg : src o) :
+  (o : opsig) (ho : fhas E o) (arg : src o) :
   code p.(locs) I (tgt o).
 Proof.
   (* TW: I transformed this definition so that it computes directly. *)
@@ -329,7 +330,7 @@ Proof.
   destruct p as [L [p hp]].
   destruct o as [n [S T]].
   cbn - [lookup_op] in *.
-  eapply lookup_op_valid in hp. 2: eauto.
+  eapply (lookup_op_valid _ _ _ _ (n, (S, T))) in hp. 2: apply ho.
   cbn - [lookup_op] in hp. destruct hp as [g [eg hg]].
   rewrite e in eg. noconf eg.
   eapply hg.

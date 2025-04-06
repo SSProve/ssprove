@@ -164,15 +164,15 @@ Section PRF_example.
 
   #[local] Open Scope package_scope.
 
-  Definition key_location : Location := ('option Key ; 0).
-  Definition plain_location : Location := (Words ; 1).
-  Definition cipher_location : Location := (Words ; 2).
+  Definition key_location : Location := (0, 'option Key).
+  Definition plain_location : Location := (1, Words).
+  Definition cipher_location : Location := (2, Words).
   Definition i0 : nat := 3.
   Definition i1 : nat := 4.
   Definition i2 : nat := 5.
-  Definition salt_location : Location := ('nat ; 6).
+  Definition salt_location : Location := (6, 'nat).
   Definition table_location : Location :=
-    (chMap 'nat ('fin (2^n)%N) ; 7).
+    (7, chMap 'nat ('fin (2^n)%N)).
 
   Definition rel_loc : {fset Location} :=
     fset [:: key_location ; table_location ].
@@ -184,7 +184,7 @@ Section PRF_example.
   Definition i_key : nat := 2^n.
   Definition i_words : nat := 2^n.
 
-  Definition enc {L : { fset Location }} (m : Words) (k : Key) :
+  Definition enc {L : Locations} (m : Words) (k : Key) :
     code L [interface] ('fin (2^n) × 'fin (2^n)) :=
       {code
         r ← sample uniform i_words ;;
@@ -193,7 +193,7 @@ Section PRF_example.
         ret (r, c)
       }.
 
-  Definition kgen : code fset0 [interface] 'fin (2^n) :=
+  Definition kgen : code emptym [interface] 'fin (2^n) :=
     {code
       k ← sample uniform i_key ;;
       ret k
@@ -201,13 +201,13 @@ Section PRF_example.
 
   Definition dec (c : Words) (k : Key) :
     code
-      (fset [:: key_location; table_location])
+      ([fmap key_location; table_location])
       [interface]
       ('fin (2^n) × 'fin (2^n)) :=
     enc k c.
 
-  Definition EVAL_location_tt := (fset [:: key_location]).
-  Definition EVAL_location_ff := (fset [:: table_location]).
+  Definition EVAL_location_tt := [fmap key_location].
+  Definition EVAL_location_ff := [fmap table_location].
 
   Definition EVAL_pkg_tt :
     package EVAL_location_tt [interface]
@@ -250,7 +250,7 @@ Section PRF_example.
   Definition EVAL : loc_GamePair [interface #val #[i0] : 'word → 'key ] :=
     λ b, if b then {locpackage EVAL_pkg_tt } else {locpackage EVAL_pkg_ff }.
 
-  Definition MOD_CPA_location : {fset Location} := fset0.
+  Definition MOD_CPA_location : Locations := emptym.
 
   Definition MOD_CPA_tt_pkg :
     package MOD_CPA_location [interface #val #[i0] : 'word → 'key ]
@@ -281,7 +281,7 @@ Section PRF_example.
       }
     ].
 
-  Definition IND_CPA_location : {fset Location} := fset [:: key_location].
+  Definition IND_CPA_location : Locations := [fmap key_location].
 
   Definition IND_CPA_pkg_tt :
     package IND_CPA_location
@@ -394,8 +394,8 @@ Section PRF_example.
     ∀ LA A,
       ValidPackage LA
         [interface #val #[i1] : 'word → 'word × 'word ] A_export A →
-      fdisjoint LA (IND_CPA false).(locs) →
-      fdisjoint LA (IND_CPA true).(locs) →
+      domm LA :#: domm (IND_CPA false).(locs) →
+      domm LA :#: domm (IND_CPA true).(locs) →
       Advantage IND_CPA A <=
       prf_epsilon (A ∘ MOD_CPA_ff_pkg) +
       statistical_gap A +
@@ -413,9 +413,7 @@ Section PRF_example.
     eapply le_trans. 1: exact ineq.
     clear ineq.
     erewrite IND_CPA_equiv_false. all: eauto.
-    2:{ simpl. unfold MOD_CPA_location. rewrite fset0U. auto. }
     erewrite IND_CPA_equiv_true. all: eauto.
-    2:{ simpl. unfold MOD_CPA_location. rewrite fset0U. auto. }
     rewrite GRing.add0r GRing.addr0.
     rewrite !Advantage_link. rewrite Advantage_sym. auto.
   Qed.

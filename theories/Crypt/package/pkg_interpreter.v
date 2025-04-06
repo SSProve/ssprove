@@ -115,7 +115,7 @@ Section Interpreter.
              (st : Location → option NatState) (l : Location) (v : l) : (Location → option NatState)
     :=
     fun (l' : Location) =>
-      if l.π2 == l'.π2
+      if l.1 == l'.1
       then (ch_nat l v)
       else st l'.
 

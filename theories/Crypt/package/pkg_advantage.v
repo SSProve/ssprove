@@ -49,18 +49,18 @@ Definition Game_Type (Game_export : Interface) : Type :=
 
 Definition RUN := (0%N, ('unit, 'bool)).
 
-Definition A_export : Interface := fset1 RUN.
+Definition A_export : Interface := mkfmap [:: RUN ].
 
-Lemma RUN_in_A_export : RUN \in A_export.
+Lemma RUN_in_A_export : A_export RUN.1 = Some RUN.2.
 Proof.
-  apply in_fset1.
+  rewrite setmE //.
 Qed.
 
 Definition Adversary4Game (Game_export : Interface) : Type :=
   loc_package Game_export A_export.
 
 Definition Adversary4Game_weak (Game_export : Interface) : Type :=
-  package fset0 Game_export A_export.
+  package emptym Game_export A_export.
 
 Definition Game_op_import_S : Type := {_ : ident & void}.
 
@@ -171,7 +171,7 @@ Defined.
 
 Definition state_pass__valid {A} {L} {I} (p : raw_code A)
   (h : ValidCode L I p) :
-  ∀ hp, ValidCode fset0 I (state_pass_ p hp).
+  ∀ hp, ValidCode emptym I (state_pass_ p hp).
 Proof.
   intro hp.
   unfold ValidCode in *.
@@ -191,13 +191,14 @@ Definition state_pass {A} (p : raw_code A) : raw_code A :=
 
 Definition state_pass_valid {A} {L} {I} (p : raw_code A)
   (h : ValidCode L I p) :
-  ValidCode fset0 I (state_pass p).
+  ValidCode emptym I (state_pass p).
 Proof.
   apply valid_bind.
   - apply (state_pass__valid p h empty_heap).
   - intros x. destruct x. constructor.
 Qed.
 
+(* MK: Solved by nominals?
 (* TODO Will have to be updated *)
 (* Probably by having first an operation on raw_packages
   and then a validity proof.
@@ -224,13 +225,14 @@ Proof.
     exists raw_run_st.
     assumption.
 Defined.
+*)
 
 Definition adv_equiv {L₀ L₁ E} (G₀ G₁ : raw_package)
   `{ValidPackage L₀ Game_import E G₀} `{ValidPackage L₁ Game_import E G₁} ε :=
   ∀ LA A,
     ValidPackage LA E A_export A →
-    fdisjoint LA L₀ →
-    fdisjoint LA L₁ →
+    domm LA :#: domm L₀ →
+    domm LA :#: domm L₁ →
     AdvantageE G₀ G₁ A = ε A.
 
 Notation " G0 ≈[ R ] G1 " :=
@@ -289,7 +291,6 @@ Lemma Advantage_par :
     ValidPackage L₀ Game_import E₀ G₀ →
     ValidPackage L₁ Game_import E₁ G₁ →
     ValidPackage L₁' Game_import E₁ G₁' →
-    flat E₁ →
     trimmed E₀ G₀ →
     trimmed E₁ G₁ →
     trimmed E₁ G₁' →
@@ -297,49 +298,24 @@ Lemma Advantage_par :
     AdvantageE G₁ G₁' (A ∘ par G₀ (ID E₁)).
 Proof.
   intros G₀ G₁ G₁' A L₀ L₁ L₁' E₀ E₁.
-  intros Va0 Va1 Va1' Fe0 Te0 Te1 Te1'.
+  intros Va0 Va1 Va1' Te0 Te1 Te1'.
   replace (par G₀ G₁) with ((par G₀ (ID E₁)) ∘ (par (ID Game_import) G₁)).
   2:{
     erewrite <- interchange.
     all: ssprove_valid.
-    4:{
-      ssprove_valid.
-      rewrite domm_ID_fset.
-      rewrite -fset0E.
-      apply fdisjoint0s.
-    }
-    2:{ unfold Game_import. rewrite -fset0E. discriminate. }
     2: apply trimmed_ID.
-    rewrite link_id.
-    2:{ unfold Game_import. rewrite -fset0E. discriminate. }
-    2: assumption.
-    rewrite id_link.
-    2: assumption.
-    reflexivity.
+    2: rewrite domm_ID /domm -fset0E /FDisjoint fdisjoint0s //.
+    rewrite link_id // id_link //.
   }
   replace (par G₀ G₁') with ((par G₀ (ID E₁)) ∘ (par (ID Game_import) G₁')).
   2:{
     erewrite <- interchange.
     all: ssprove_valid.
-    4:{
-      ssprove_valid.
-      rewrite domm_ID_fset.
-      rewrite -fset0E.
-      apply fdisjoint0s.
-    }
-    2:{ unfold Game_import. rewrite -fset0E. discriminate. }
     2: apply trimmed_ID.
-    rewrite link_id.
-    2:{ unfold Game_import. rewrite -fset0E. discriminate. }
-    2: assumption.
-    rewrite id_link.
-    2: assumption.
-    reflexivity.
+    2: rewrite domm_ID /domm -fset0E /FDisjoint fdisjoint0s //.
+    rewrite link_id // id_link //.
   }
-  rewrite -Advantage_link.
-  unfold Game_import. rewrite -fset0E.
-  rewrite Advantage_par_empty.
-  reflexivity.
+  rewrite -Advantage_link Advantage_par_empty //.
   Unshelve. all: auto.
 Qed.
 
@@ -421,9 +397,9 @@ Lemma TriangleInequality :
     F ≈[ ϵ3 ] H →
     ∀ LA A,
       ValidPackage LA Game_export A_export A →
-      fdisjoint LA F.(locs) →
-      fdisjoint LA G.(locs) →
-      fdisjoint LA H.(locs) →
+      domm LA :#: domm F.(locs) →
+      domm LA :#: domm G.(locs) →
+      domm LA :#: domm H.(locs) →
       ϵ3 A <= ϵ1 A + ϵ2 A.
 Proof.
   intros Game_export F G H ε₁ ε₂ ε₃ h1 h2 h3 LA A vA hF hG hH.

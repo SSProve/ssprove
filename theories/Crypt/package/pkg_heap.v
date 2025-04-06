@@ -42,7 +42,7 @@ Definition raw_heap := {fmap Location -> pointed_value}.
 Definition raw_heap_choiceType := Choice.clone _ raw_heap.
 
 Definition check_loc_val (l : Location) (v : pointed_value) :=
-  l.π1 == v.π1.
+  l.2 == v.π1.
 
 Definition valid_location (h : raw_heap) (l : Location) :=
   match h l with
@@ -115,7 +115,7 @@ Lemma get_heap_helper :
   ∀ h ℓ p,
     valid_heap h →
     h ℓ = Some p →
-    ℓ.π1 = p.π1.
+    ℓ.2 = p.π1.
 Proof.
   intros h ℓ p vh e.
   assert (hℓ : exists v, h ℓ = Some v).
@@ -132,19 +132,19 @@ Proof.
   move: vℓ => /eqP. auto.
 Qed.
 
-Equations? get_heap (map : heap) (ℓ : Location) : Value ℓ.π1 :=
+Equations? get_heap (map : heap) (ℓ : Location) : Value ℓ :=
   get_heap map ℓ with inspect (map ∙1 ℓ) := {
   | @exist (Some p) e => cast_pointed_value p _
-  | @exist None e => heap_init (ℓ.π1)
+  | @exist None e => heap_init ℓ
   }.
 Proof.
   destruct map as [h vh]. simpl in e.
   eapply get_heap_helper. all: eauto.
 Defined.
 
-Program Definition set_heap (map : heap) (l : Location) (v : Value l.π1)
+Program Definition set_heap (map : heap) (l : Location) (v : Value l)
 : heap :=
-  setm map l (l.π1 ; v).
+  setm map l (l ; v).
 Next Obligation.
   intros map l v.
   unfold valid_heap.
@@ -167,13 +167,13 @@ Next Obligation.
       * move: H. move /eqP => H. contradiction.
       * destruct x, l. rewrite mem_domm in H0.
         unfold isSome in H0.
-        destruct (rh (x; s)) eqn:Hrhx.
+        destruct (rh (s, s0)) eqn:Hrhx.
         ** cbn. unfold valid_heap in valid_rh.
             move: valid_rh. move /eqP /eq_fset => valid_rh.
-            specialize (valid_rh (x; s)).
+            specialize (valid_rh (s, s0)).
             rewrite in_fset_filter in valid_rh.
             rewrite mem_domm in valid_rh.
-            assert (valid_location rh (x;s)) as Hvl.
+            assert (valid_location rh (s, s0)) as Hvl.
             { rewrite Hrhx in valid_rh. cbn in valid_rh.
               rewrite andbC in valid_rh. cbn in valid_rh.
               rewrite -valid_rh. auto. }
@@ -192,7 +192,7 @@ Qed.
 
 Lemma get_empty_heap :
   ∀ ℓ,
-    get_heap empty_heap ℓ = heap_init (ℓ.π1).
+    get_heap empty_heap ℓ = heap_init ℓ.
 Proof.
   intros ℓ. reflexivity.
 Qed.
@@ -210,7 +210,7 @@ Proof.
   try rewrite -Heqcall. clear Heqcall.
   pose proof e as ep. simpl in ep.
   rewrite setmE in ep. rewrite eqxx in ep. noconf ep.
-  rewrite (cast_pointed_value_K (ℓ0.π1 ; v)).
+  rewrite (cast_pointed_value_K (ℓ0.2 ; v)).
   reflexivity.
 Qed.
 

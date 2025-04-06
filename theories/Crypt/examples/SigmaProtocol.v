@@ -71,9 +71,9 @@ Module Type SigmaProtocolAlgorithms (π : SigmaProtocolParams).
     chProd (chProd (chProd choiceStatement choiceMessage) choiceChallenge) choiceResponse.
   Definition choiceBool := 'fin #|'bool|.
 
-  Parameter Sigma_locs : {fset Location}.
+  Parameter Sigma_locs : Locations.
 
-  Parameter Simulator_locs : {fset Location}.
+  Parameter Simulator_locs : Locations.
 
   Parameter Commit :
     ∀ (h : choiceStatement) (w : choiceWitness),
@@ -190,7 +190,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
   Definition ɛ_SHVZK A := AdvantageE SHVZK_real SHVZK_ideal A.
 
   Definition Special_Soundness_f :
-    package fset0
+    package emptym
       [interface]
       [interface #val #[ SOUNDNESS ] : chSoundness → 'bool ]
     :=
@@ -210,7 +210,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     ].
 
   Definition Special_Soundness_t :
-    package fset0
+    package emptym
       [interface]
       [interface #val #[ SOUNDNESS ] : chSoundness → 'bool ]
     :=
@@ -239,34 +239,22 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Definition INIT : nat := 7.
     Definition GET : nat := 8.
 
-    Definition challenge_loc : Location := ('option choiceChallenge; 7%N).
-    Definition response_loc : Location := ('option choiceResponse; 8%N).
+    Definition challenge_loc : Location := (7, 'option choiceChallenge).
+    Definition response_loc : Location := (8, 'option choiceResponse).
 
-    Definition Com_locs : {fset Location} :=
-      fset [:: challenge_loc ; response_loc ].
+    Definition Com_locs : Locations :=
+      [fmap challenge_loc ; response_loc ].
 
+    Context (ComSimSep : fseparate Com_locs Simulator_locs).
 
-    Definition setup_loc : Location := ('bool; 10%N).
-    Definition statement_loc : Location := (choiceStatement; 11%N).
-    Definition witness_loc : Location := (choiceWitness; 12%N).
-    Definition KEY_locs : {fset Location} := fset [:: setup_loc; witness_loc ; statement_loc].
+    Definition setup_loc : Location := (10, 'bool).
+    Definition statement_loc : Location := (11, choiceStatement).
+    Definition witness_loc : Location := (12, choiceWitness).
+    Definition KEY_locs : Locations := [fmap setup_loc; witness_loc ; statement_loc].
 
     Definition choiceOpen := (chProd choiceChallenge choiceResponse).
     Notation " 'chOpen' " := choiceOpen (in custom pack_type at level 2).
     Notation " 'chKeys' " := (chProd choiceStatement choiceWitness) (in custom pack_type at level 2).
-
-    Lemma in_fset_left l (L1 L2 : {fset Location}) :
-      is_true (l \in L1) →
-      is_true (l \in (L1 :|: L2)).
-    Proof.
-      intros H.
-      apply /fsetUP.
-      left. assumption.
-    Qed.
-
-    Hint Extern 20 (is_true (_ \in (_ :|: _))) =>
-      apply in_fset_left; solve [auto_in_fset]
-      : typeclass_instances ssprove_valid_db.
 
     Definition KEY:
       package KEY_locs
@@ -302,9 +290,9 @@ Module SigmaProtocol (π : SigmaProtocolParams)
          }
       ].
 
-    Definition Sigma_to_Com_locs := (Com_locs :|: Simulator_locs).
+    Definition Sigma_to_Com_locs := unionm Com_locs Simulator_locs.
 
-    #[tactic=notac] Equations? Sigma_to_Com:
+    #[tactic=notac] Equations? Sigma_to_Com :
       package Sigma_to_Com_locs
         [interface
           #val #[ INIT ] : 'unit → 'unit ;
@@ -346,18 +334,18 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         }
       ].
     Proof.
-      unfold Sigma_to_Com_locs.
       ssprove_valid.
-      eapply valid_injectLocations.
-      1: apply fsubsetUr.
       eapply valid_injectMap.
-      2: apply (Simulate x1 x).
-      rewrite -fset0E.
-      apply fsub0set.
+      2: eapply valid_injectLocations.
+      3: apply (Simulate x1 x).
+      1: fmap_solve.
+      rewrite /Sigma_to_Com_locs unionmC.
+      2: apply ComSimSep.
+      fmap_solve.
     Qed.
 
-    #[tactic=notac] Equations? Sigma_to_Com_Aux:
-      package (setup_loc |: Sigma_to_Com_locs)
+    #[tactic=notac] Equations Sigma_to_Com_Aux:
+      package (unionm [fmap setup_loc] Sigma_to_Com_locs)
         [interface
           #val #[ TRANSCRIPT ] : chInput → chTranscript
         ]
@@ -399,17 +387,6 @@ Module SigmaProtocol (π : SigmaProtocolParams)
           ret (otf (Verify h a e z))
         }
       ].
-    Proof.
-      unfold Sigma_to_Com_locs, Com_locs.
-      ssprove_valid.
-      all: rewrite in_fsetU ; apply /orP ; right.
-      all: rewrite in_fsetU ; apply /orP ; left.
-      all: rewrite !fset_cons.
-      1,3 : rewrite in_fsetU ; apply /orP ; left ; rewrite in_fset1 ; done.
-      1,2 : rewrite in_fsetU ; apply /orP ; right ;
-            rewrite in_fsetU ; apply /orP ; left ;
-            rewrite in_fset1 ; done.
-    Qed.
 
     Notation " 'chHiding' " := (chProd choiceChallenge choiceChallenge) (in custom pack_type at level 2).
 
@@ -417,7 +394,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
     (* Commitment to input value*)
     Definition Hiding_real:
-      package fset0
+      package emptym
         [interface
           #val #[ COM ] : chChallenge → chMessage ;
           #val #[ OPEN ] : 'unit → chOpen ;
@@ -442,7 +419,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
     (* Commitment to random value *)
     Definition Hiding_ideal :
-      package fset0
+      package emptym
         [interface
           #val #[ COM ] : chChallenge → chMessage ;
           #val #[ OPEN ] : 'unit → chOpen ;
@@ -466,12 +443,13 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         (Hiding_ideal ∘ Sigma_to_Com ∘ KEY) (A ∘ (par KEY (ID Hiding_E))).
 
     Notation inv := (
-      heap_ignore (fset [:: statement_loc ; witness_loc])
+      heap_ignore [fmap statement_loc ; witness_loc]
     ).
 
-    Instance Invariant_inv : Invariant (Sigma_to_Com_locs :|: KEY_locs) (setup_loc |: Sigma_to_Com_locs) inv.
+    Instance Invariant_inv : Invariant (unionm Sigma_to_Com_locs KEY_locs) (unionm [fmap setup_loc] Sigma_to_Com_locs) inv.
     Proof.
       ssprove_invariant.
+      apply fsubmap_set.
       unfold KEY_locs.
       apply fsubsetU ; apply /orP ; left.
       apply fsubsetU ; apply /orP ; right.

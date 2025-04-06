@@ -67,9 +67,9 @@ Notation " 'word " := (Word) (at level 2): package_scope.
 
 #[local] Open Scope package_scope.
 
-Definition k_loc: Location := ('option 'word ; 0).
-Definition T_loc: Location := (chMap 'word 'word ; 1).
-Definition S_loc: Location := ('set ('word × 'word) ; 2).
+Definition k_loc: Location := (0, 'option 'word).
+Definition T_loc: Location := (1, chMap 'word 'word).
+Definition S_loc: Location := (2, 'set ('word × 'word)).
 Definition lookup: nat := 3.
 Definition encrypt: nat := 4.
 Definition gettag: nat := 5.
@@ -82,8 +82,8 @@ Definition mkpair {Lt Lf E}
 
 Context (PRF: Word -> Word -> Word).
 
-Definition EVAL_locs_tt := fset [:: k_loc].
-Definition EVAL_locs_ff := fset [:: T_loc].
+Definition EVAL_locs_tt := [fmap k_loc].
+Definition EVAL_locs_ff := [fmap T_loc].
 
 Definition kgen: raw_code 'word :=
   k_init ← get k_loc ;;
@@ -96,7 +96,7 @@ Definition kgen: raw_code 'word :=
   end.
 
 Lemma kgen_valid {L I}:
-  k_loc \in L ->
+  fhas L k_loc ->
   ValidCode L I kgen.
 Proof.
   move=> H.
@@ -109,7 +109,7 @@ Qed.
 
 Hint Extern 1 (ValidCode ?L ?I kgen) =>
   eapply kgen_valid ;
-  auto_in_fset
+  solve [ fmap_solve ] 
   : typeclass_instances ssprove_valid_db.
 
 Definition EVAL_pkg_tt:
@@ -142,7 +142,7 @@ Definition EVAL_pkg_ff:
 
 Definition EVAL := mkpair EVAL_pkg_tt EVAL_pkg_ff.
 
-Definition GUESS_locs := fset [:: T_loc].
+Definition GUESS_locs := [fmap T_loc].
 
 Definition GUESS_pkg_tt:
   package GUESS_locs
@@ -199,8 +199,8 @@ Definition GUESS_pkg_ff:
 
 Definition GUESS := mkpair GUESS_pkg_tt GUESS_pkg_ff.
 
-Definition TAG_locs_tt := fset [:: k_loc].
-Definition TAG_locs_ff := fset [:: k_loc; S_loc].
+Definition TAG_locs_tt := [fmap k_loc].
+Definition TAG_locs_ff := [fmap k_loc; S_loc].
 
 Definition TAG_pkg_tt:
   package TAG_locs_tt
@@ -241,10 +241,10 @@ Definition TAG_pkg_ff:
 
 Definition TAG := mkpair TAG_pkg_tt TAG_pkg_ff.
 
-Definition TAG_EVAL_locs_ff := fset [:: S_loc].
+Definition TAG_EVAL_locs_ff := [fmap S_loc].
 
 Definition TAG_EVAL_pkg_tt:
-  package fset0
+  package emptym
     [interface #val #[lookup]: 'word → 'word ]
     [interface
       #val #[gettag]: 'word → 'word ;
@@ -282,7 +282,7 @@ Definition TAG_EVAL_pkg_ff:
     }
   ].
 
-Definition TAG_GUESS_locs := fset [:: S_loc ].
+Definition TAG_GUESS_locs := [fmap S_loc ].
 
 Definition TAG_GUESS_pkg:
   package TAG_GUESS_locs
@@ -325,12 +325,8 @@ Qed.
 Lemma TAG_EVAL_equiv_true:
   TAG_EVAL_pkg_tt ∘ EVAL false ≈₀ TAG_GUESS_pkg ∘ GUESS true.
 Proof.
-  apply eq_rel_perf_ind_ignore with (fset [:: S_loc]).
-  1: {
-    apply: fsubset_trans.
-    - by apply fsubsetUl.
-    - by apply fsubsetUr.
-  }
+  apply eq_rel_perf_ind_ignore with ([fmap S_loc]).
+  1: fmap_solve.
   simplify_eq_rel m.
   2: case: m => [m t].
   all: simplify_linking.
@@ -338,10 +334,18 @@ Proof.
   all: ssprove_code_simpl.
   all: ssprove_code_simpl_more.
   2: {
-    apply: (@r_reflexivity_alt _ (fset1 T_loc)).
-    all: by ssprove_invariant.
+    apply: (@r_reflexivity_alt _ [fmap T_loc]).
+    1: intros l H.
+    1: fmap_invert H.
+    1: change (setm emptym 2 'set ('word × 'word)) with [fmap S_loc].
+    1: ssprove_invariant.
+    intros ? ? H.
+    1: fmap_invert H.
+    1: change (setm emptym 2 'set ('word × 'word)) with [fmap S_loc].
+    1: ssprove_invariant.
   }
   1: apply: r_get_remember_rhs => S.
+  change (setm emptym 2 'set ('word × 'word)) with [fmap S_loc].
   ssprove_sync=> T.
   case (getm T _) => [t|].
   2: ssprove_sync=> t.
@@ -368,7 +372,7 @@ Proof.
   ).
   1: {
     ssprove_invariant=> /=.
-    1,2: by rewrite /GUESS_locs /TAG_GUESS_locs !fset_cons !in_fsetU !in_fset1 eq_refl ?Bool.orb_true_r.
+    1,2: done.
     move=> m t.
     by rewrite domm0 in_fset0 get_empty_heap emptymE.
   }
@@ -459,10 +463,10 @@ Theorem security_based_on_prf LA A:
       #val #[gettag]: 'word → 'word ;
       #val #[checktag]: 'word × 'word → 'bool ]
     A_export A ->
-  fdisjoint LA (
-    EVAL_locs_tt :|: EVAL_locs_ff :|: GUESS_locs :|:
-    TAG_locs_tt :|: TAG_locs_ff :|:
-    TAG_EVAL_locs_ff :|: TAG_GUESS_locs
+  domm LA :#: (
+    domm EVAL_locs_tt :|: domm EVAL_locs_ff :|: domm GUESS_locs :|:
+    domm TAG_locs_tt :|: domm TAG_locs_ff :|:
+    domm TAG_EVAL_locs_ff :|: domm TAG_GUESS_locs
   ) ->
   Advantage TAG A <=
   prf_epsilon (A ∘ TAG_EVAL_pkg_tt) +
@@ -485,10 +489,10 @@ Proof.
   rewrite !fdisjointUr in H.
   move: H => /andP [/andP [/andP [/andP [/andP [/andP [H1 H2] H3] H4] H5] H6] H7].
   move: {ineq H1 H2 H3 H4 H5 H6 H7} (H1, H2, H3, H4, H5, H6, H7, fdisjoints0) => H.
-  rewrite TAG_equiv_true ?fdisjointUr ?H // GRing.add0r.
-  rewrite TAG_EVAL_equiv_true ?fdisjointUr ?H // GRing.addr0.
-  rewrite TAG_EVAL_equiv_false ?fdisjointUr ?H // GRing.addr0.
-  rewrite TAG_equiv_false ?fdisjointUr ?H // GRing.addr0.
+  rewrite TAG_equiv_true ?H // GRing.add0r.
+  rewrite TAG_EVAL_equiv_true ?union0m ?domm_union ?fdisjointUr ?H // GRing.addr0.
+  rewrite TAG_EVAL_equiv_false ?domm_union ?fdisjointUr ?H // GRing.addr0.
+  rewrite TAG_equiv_false ?H // GRing.addr0.
   rewrite Advantage_sym.
   by rewrite /prf_epsilon /statistical_gap !Advantage_E !Advantage_link.
 Qed.
