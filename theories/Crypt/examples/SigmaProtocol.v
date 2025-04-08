@@ -245,7 +245,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Definition Com_locs : Locations :=
       [fmap challenge_loc ; response_loc ].
 
-    Context (ComSimSep : fseparate Com_locs Simulator_locs).
+    Context (ComSimSep : fcompat Com_locs Simulator_locs).
 
     Definition setup_loc : Location := (10, 'bool).
     Definition statement_loc : Location := (11, choiceStatement).
@@ -339,9 +339,8 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       2: eapply valid_injectLocations.
       3: apply (Simulate x1 x).
       1: fmap_solve.
-      rewrite /Sigma_to_Com_locs unionmC.
-      2: apply ComSimSep.
-      fmap_solve.
+      apply fsubmapUr.
+      apply ComSimSep. (* MK: automate *)
     Qed.
 
     #[tactic=notac] Equations Sigma_to_Com_Aux:
@@ -446,23 +445,13 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       heap_ignore [fmap statement_loc ; witness_loc]
     ).
 
-    Instance Invariant_inv : Invariant (unionm Sigma_to_Com_locs KEY_locs) (unionm [fmap setup_loc] Sigma_to_Com_locs) inv.
+    Instance Invariant_inv : Invariant
+      (unionm KEY_locs Sigma_to_Com_locs)
+      (unionm Sigma_to_Com_locs [fmap setup_loc]) inv.
     Proof.
       ssprove_invariant.
-      apply fsubmap_set.
-      unfold KEY_locs.
-      apply fsubsetU ; apply /orP ; left.
-      apply fsubsetU ; apply /orP ; right.
-      rewrite !fset_cons.
-      apply fsubsetU ; apply /orP ; right.
-      rewrite fsubUset ; apply /andP ; split.
-      - apply fsubsetU ; apply /orP ; right.
-        apply fsubsetU ; apply /orP ; left.
-        apply fsubsetxx.
-      - apply fsubsetU ; apply /orP ; left.
-        rewrite fsubUset ; apply /andP ; split.
-        + apply fsubsetxx.
-        + rewrite -fset0E. apply fsub0set.
+      rewrite -!setm_union. (* MK: automate *)
+      fmap_solve.
     Qed.
 
     Hint Extern 50 (_ = code_link _ _) =>
@@ -474,13 +463,13 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         ValidPackage LA [interface
           #val #[ HIDING ] : chHiding → chMessage
         ] A_export (A ∘ (par KEY (ID Hiding_E))) →
-        fdisjoint LA KEY_locs ->
-        fdisjoint LA Sigma_to_Com_locs ->
-        fdisjoint LA (fset [:: setup_loc]) ->
-        fdisjoint LA Sigma_locs ->
-        fdisjoint LA Simulator_locs ->
-        fdisjoint Simulator_locs (fset [:: statement_loc ; witness_loc]) ->
-        fdisjoint Sigma_locs (fset [:: statement_loc ; witness_loc]) ->
+        domm LA :#: domm KEY_locs ->
+        domm LA :#: domm Sigma_to_Com_locs ->
+        domm LA :#: domm [fmap setup_loc] ->
+        domm LA :#: domm Sigma_locs ->
+        domm LA :#: domm Simulator_locs ->
+        domm Simulator_locs :#: domm KEY_locs ->
+        domm Sigma_locs :#: domm KEY_locs ->
           (ɛ_hiding A) <= 0 +
            AdvantageE SHVZK_ideal SHVZK_real (((A ∘ par KEY (ID Hiding_E)) ∘ Hiding_real) ∘ Sigma_to_Com_Aux) +
            AdvantageE (Hiding_real ∘ Sigma_to_Com_Aux ∘ SHVZK_real)
@@ -503,26 +492,14 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       - apply eq_ler.
         eapply eq_rel_perf_ind with (inv := inv).
         5: apply VA.
-        1:{
-          ssprove_valid.
-          3: apply fsub0set.
-          3: apply fsubsetxx.
-          1: instantiate (1 := (Sigma_to_Com_locs :|: KEY_locs)).
-          1: apply fsubsetUl.
-          1: apply fsubsetUr.
-        }
-        1:{
-          ssprove_valid.
-          1: apply fsubsetxx.
-          2: apply fsub0set.
-          2: apply fsubsetxx.
-          unfold Sigma_to_Com_locs.
-          apply fsubsetU ; apply /orP ; right.
-          apply fsubsetUr.
-        }
-        3,4: rewrite fdisjointUr ; apply /andP ; split.
-        3-4,6: assumption.
-        3: rewrite fset1E ; assumption.
+        1,2: ssprove_valid.
+        3,4: rewrite union0m.
+        3,4: rewrite domm_union fdisjointUr.
+        3: rewrite Hd1 Hd2 //. 
+        3: rewrite domm_union fdisjointUr Hd3 HdSimulator Hd2 //.
+        1: rewrite 2!union0m.
+        1: rewrite unionmC //.
+        1: apply Invariant_inv.
         1: exact _.
         rewrite Sigma_to_Com_equation_1.
         rewrite Sigma_to_Com_Aux_equation_1.

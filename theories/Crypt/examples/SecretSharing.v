@@ -177,7 +177,7 @@ Definition shares: nat := 0.
 (******************************************************************************)
 
 Definition SHARE_pkg_tt:
-  package fset0 [interface]
+  package emptym [interface]
     [interface #val #[shares]: ('word × 'word) × 'set 'nat → 'seq 'word ] :=
   [package
     #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'nat): 'seq 'word {
@@ -191,7 +191,7 @@ Definition SHARE_pkg_tt:
   ].
 
 Definition SHARE_pkg_ff:
-  package fset0 [interface]
+  package emptym [interface]
     [interface #val #[shares]: ('word × 'word) × 'set 'nat → 'seq 'word ] :=
   [package
     #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'nat): 'seq 'word {
@@ -277,7 +277,7 @@ Proof.
   move=> vA.
   (*Express the Advantage in terms of the games and the adversary *)
   rewrite Advantage_E Advantage_sym.
-  by rewrite SHARE_equiv ?fdisjoints0.
+  rewrite SHARE_equiv //; fmap_solve.
 Qed.
 
 End SecretSharing_example.

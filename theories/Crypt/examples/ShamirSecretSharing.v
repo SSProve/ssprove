@@ -433,7 +433,7 @@ Definition mkpair {Lt Lf E}
   This part is fairly easy now that we have a bijection.
 *)
 Definition SHARE_pkg_tt:
-  package fset0 [interface]
+  package emptym [interface]
     [interface #val #[shares]: ('word × 'word) × 'set 'party → 'seq 'share ] :=
   [package
     #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'party): 'seq 'share {
@@ -447,7 +447,7 @@ Definition SHARE_pkg_tt:
   ].
 
 Definition SHARE_pkg_ff:
-  package fset0 [interface]
+  package emptym [interface]
     [interface #val #[shares]: ('word × 'word) × 'set 'party → 'seq 'share ] :=
   [package
     #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'party): 'seq 'share {
@@ -520,7 +520,7 @@ Theorem unconditional_secrecy LA A:
 Proof.
   move=> vA.
   rewrite Advantage_E Advantage_sym.
-  by rewrite SHARE_equiv ?fdisjoints0.
+  rewrite SHARE_equiv //; fmap_solve.
 Qed.
 
 End ShamirSecretSharing_example.

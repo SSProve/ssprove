@@ -13,7 +13,7 @@ From SSProve.Mon Require Import SPropBase.
 From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
   StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
-  pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_lookup.
+  pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_lookup fmap_extra.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
@@ -304,7 +304,7 @@ Proof.
     erewrite <- interchange.
     all: ssprove_valid.
     2: apply trimmed_ID.
-    2: rewrite domm_ID /domm -fset0E /FDisjoint fdisjoint0s //.
+    2: fmap_solve.
     rewrite link_id // id_link //.
   }
   replace (par G₀ G₁') with ((par G₀ (ID E₁)) ∘ (par (ID Game_import) G₁')).
@@ -312,7 +312,7 @@ Proof.
     erewrite <- interchange.
     all: ssprove_valid.
     2: apply trimmed_ID.
-    2: rewrite domm_ID /domm -fset0E /FDisjoint fdisjoint0s //.
+    2: fmap_solve.
     rewrite link_id // id_link //.
   }
   rewrite -Advantage_link Advantage_par_empty //.

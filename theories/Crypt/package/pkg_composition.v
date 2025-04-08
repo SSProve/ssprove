@@ -147,21 +147,6 @@ Qed.
   : typeclass_instances ssprove_valid_db.
 
 
-(* Solve fmap goals with fmap_solve *)
-
-Hint Extern 1 (fcompat ?m ?m') =>
-  solve [ fmap_solve ]
-  : typeclass_instances ssprove_valid_db.
-
-Hint Extern 1 (fsubmap ?m ?m') =>
-  solve [ fmap_solve ]
-  : typeclass_instances ssprove_valid_db.
-
-Hint Extern 1 (is_true (fdisjoint ?s ?s')) =>
-  solve [ fmap_solve ]
-  : typeclass_instances ssprove_valid_db.
-
-
 (* Linking *)
 Definition link (p1 p2 : raw_package) : raw_package :=
   @mapm _ typed_raw_function _
@@ -411,19 +396,16 @@ Notation "p1 ∘ p2" :=
 Definition par (p1 p2 : raw_package) :=
   unionm p1 p2.
 
-Class Parable (p1 p2 : raw_package) :=
-  parable : domm p1 :#: domm p2.
-
 Lemma valid_par :
   ∀ L1 L2 I1 I2 E1 E2 p1 p2,
-    Parable p1 p2 →
     ValidPackage L1 I1 E1 p1 →
     ValidPackage L2 I2 E2 p2 →
+    fseparate p1 p2 →
     fcompat L1 L2 →
     fcompat I1 I2 →
     ValidPackage (unionm L1 L2) (unionm I1 I2) (unionm E1 E2) (par p1 p2).
 Proof.
-  intros L1 L2 I1 I2 E1 E2 p1 p2 h h1 h2 cL cI.
+  intros L1 L2 I1 I2 E1 E2 p1 p2 h1 h2 h cL cI.
   apply prove_valid_package.
   eapply from_valid_package in h1.
   eapply from_valid_package in h2.
@@ -445,7 +427,7 @@ Proof.
     destruct (p1 n) as [[S1 [T1 f1]]|] eqn:e1.
     1:{
       exfalso.
-      move: h => /fdisjointP h.
+      move: h => [] /fdisjointP h.
       specialize (h n).
       rewrite 2!mem_domm e e1 // in h.
       specialize (h erefl).
@@ -485,10 +467,10 @@ Qed.
 Lemma parable_trim :
   ∀ E1 E2 p1 p2,
     fdisjoint (idents E1) (idents E2) →
-    Parable (trim E1 p1) (trim E2 p2).
+    fseparate (trim E1 p1) (trim E2 p2).
 Proof.
   intros E1 E2 p1 p2 h.
-  unfold Parable.
+  apply fsep.
   eapply fdisjoint_trans.
   { eapply domm_trim. }
   rewrite fdisjointC.
@@ -524,6 +506,7 @@ Qed.
   repeat rewrite [fset]unlock
   : typeclass_instances ssprove_valid_db.
 
+(*
 #[export] Hint Extern 1 (Parable _ _) =>
   eapply fdisjoint_from_class
   : typeclass_instances ssprove_valid_db.
@@ -532,6 +515,7 @@ Qed.
   eapply parable_trim ;
   eapply fdisjoint_from_class
   : typeclass_instances ssprove_valid_db.
+ *)
 
 (* TODO MOVE *)
 (** To circumvent the very annoying lemmata that conclude on equality
@@ -549,11 +533,11 @@ Qed.
 
 Lemma par_commut :
   ∀ p1 p2,
-    Parable p1 p2 →
+    fseparate p1 p2 →
     par p1 p2 = par p2 p1.
 Proof.
   intros p1 p2 h.
-  apply unionmC. auto.
+  apply unionmC. apply h.
 Qed.
 
 Lemma par_assoc :
@@ -598,13 +582,13 @@ Qed.
 
 Lemma code_link_par_right :
   ∀ A I L L' E (v : raw_code A) p1 p2,
-    Parable p1 p2 →
+    fseparate p1 p2 →
     ValidCode L E v →
     ValidPackage L' I E p2 →
     code_link v (par p1 p2) = code_link v p2.
 Proof.
   intros A I L L' E v p1 p2 h hv hp1.
-  rewrite par_commut. eapply code_link_par_left.
+  rewrite par_commut. 1: eapply code_link_par_left.
   all: eauto.
 Qed.
 
@@ -650,7 +634,7 @@ Lemma interchange :
     ValidPackage L4 F E p4 →
     trimmed A p1 →
     trimmed D p2 →
-    Parable p3 p4 →
+    fseparate p3 p4 →
     par (link p1 p3) (link p2 p4) = link (par p1 p2) (par p3 p4).
 Proof.
   intros A B C D E F L1 L2 L3 L4 p1 p2 p3 p4 h1 h2 h3 h4 t1 t2 p34.

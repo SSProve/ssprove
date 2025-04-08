@@ -354,7 +354,7 @@ Section KEMDEM.
     package KEM_CCA_loc [interface] KEM_CCA_out :=
     KEM_CCA_pkg b :=
     {package (par (KEM b) (ID IGET)) ∘ KEY }.  Proof.
-    1,2: destruct b; fmap_solve.
+    all: destruct b; fmap_solve.
   Qed.
 
   (** We finally package the above into a game pair. *)
@@ -556,10 +556,10 @@ Section KEMDEM.
       let K₁ := (par CK₁ (ID IGET)) ∘ KEY in
       let D₀ := (par (ID IGEN) CD₀) ∘ KEY in
       let D₁ := (par (ID IGEN) CD₁) ∘ KEY in
-      Parable CK₀ (ID IGET) →
-      Parable CK₁ (ID IGET) →
-      Parable (ID IGEN) CD₀ →
-      Parable (ID IGEN) CD₁ →
+      fseparate CK₀ (ID IGET) →
+      fseparate CK₁ (ID IGET) →
+      fseparate (ID IGEN) CD₀ →
+      fseparate (ID IGEN) CD₁ →
       ValidPackage LD₀ IGET ED CD₀ →
       ValidPackage LD₀ IGET ED CD₁ →
       trimmed ED CD₀ →
@@ -632,10 +632,10 @@ Section KEMDEM.
       let K₁ := (par CK₁ (ID IGET)) ∘ KEY in
       let D₀ := (par (ID IGEN) CD₀) ∘ KEY in
       let D₁ := (par (ID IGEN) CD₁) ∘ KEY in
-      Parable CK₀ (ID IGET) →
-      Parable CK₁ (ID IGET) →
-      Parable (ID IGEN) CD₀ →
-      Parable (ID IGEN) CD₁ →
+      fseparate CK₀ (ID IGET) →
+      fseparate CK₁ (ID IGET) →
+      fseparate (ID IGEN) CD₀ →
+      fseparate (ID IGEN) CD₁ →
       ValidPackage LD₀ IGET ED CD₀ →
       ValidPackage LD₀ IGET ED CD₁ →
       trimmed ED CD₀ →
@@ -959,9 +959,7 @@ Section KEMDEM.
       all: rewrite Advantage_sym. 2: reflexivity.
       f_equal. rewrite Advantage_sym.
       f_equal. all: f_equal.
-      all: apply par_commut.
-      all: rewrite /Parable domm_ID.
-      1,2: fmap_solve.
+      all: apply par_commut; fmap_solve.
   Qed.
 
 End KEMDEM.

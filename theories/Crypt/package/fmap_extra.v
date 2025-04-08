@@ -160,20 +160,9 @@ Hint Extern 1 (fsubmap ?m ?m') =>
 Ltac fmap_solve :=
   typeclasses eauto with fmap_solve_db.
 
-(*
-Definition h := (4,6).
-Definition g := (6, 3).
-Goal fhas [fmap h; g] g.
-Proof. fmap_solve. Qed.
- *)
 
 Definition fcompat11 {T : ordType} {S} (x x' : T * S)
   := x.1 ≠ x'.1 ∨ x.2 = x'.2.
-
-(*
-Definition fcompat1 {T : ordType} {S} (x : T * S) xs
-  := unionm [fmap x] xs = unionm xs [fmap x].
- *)
 
 Lemma fcompat0m {T : ordType} {S} (m : {fmap T → S})
   : fcompat emptym m.
@@ -258,74 +247,105 @@ Qed.
 Hint Resolve fsub0map fsubUmap fsubmap_set : fmap_solve_db.
 
 
-Inductive fseparate {T : ordType} {S S'}
+
+Inductive fseparate {T : ordType} {S S' : Type}
   (m : {fmap T → S}) (m' : {fmap T → S'}) :=
   | fsep : domm m :#: domm m' → fseparate m m'.
 
-(*
-Lemma fseparate_cons {T : ordType} {S S'} (x x' : T * S) xs (ys : seq (T * S'))
-  : fseparate [fmap x] (mkfmap ys)
-  → fseparate (mkfmap (x' :: xs)) (mkfmap ys)
-  → fseparate (mkfmap (x :: x' :: xs)) (mkfmap ys).
+Lemma fseparateUl {T : ordType} {S S' : Type}
+  (m m' : {fmap T → S}) (m'' : {fmap T → S'})
+  : fseparate m m'' → fseparate m' m'' → fseparate (unionm m m') m''.
 Proof.
-Admitted.
+  intros [H] [H'].
+  apply fsep.
+  rewrite domm_union fdisjointUl H H' //.
+Qed.
 
-Lemma fseparate_cons1 {T : ordType} {S S'} (x : T * S) y (ys : seq (T * S'))
-  : x.1 ≠ y.1
-  → fseparate [fmap x] (mkfmap ys)
-  → fseparate [fmap x] (mkfmap (y :: ys)).
+Lemma fseparateUr {T : ordType} {S S'}
+  (m : {fmap T → S}) (m' m'' : {fmap T → S'})
+  : fseparate m m' → fseparate m m'' → fseparate m (unionm m' m'').
 Proof.
-Admitted.
- *)
+  intros [H] [H'].
+  apply fsep.
+  rewrite domm_union fdisjointUr H H' //.
+Qed.
 
-Lemma fseparate_setm {T : ordType} {S S'} (k k' : T) (v v' : S)
+Lemma fseparate_set {T : ordType} {S S'} (k k' : T) (v v' : S)
   (m : {fmap T → S}) (m' : {fmap T → S'})
   : fseparate (setm emptym k v) m'
   → fseparate (setm m k' v') m'
   → fseparate (setm (setm m k' v') k v) m'.
 Proof.
-Admitted.
+  intros [H] [H'].
+  apply fsep.
+  rewrite domm_set domm0 fsetU0 in H.
+  rewrite domm_set fdisjointUl H' H //.
+Qed.
 
-Lemma fseparate_setm1 {T : ordType} {S S'} (k k' : T)
+Lemma fseparate_set1 {T : ordType} {S S'} (k k' : T)
   (v : S) (v' : S') (m' : {fmap T → S'})
   : k ≠ k'
   → fseparate (setm emptym k v) m'
   → fseparate (setm emptym k v) (setm m' k' v').
 Proof.
-Admitted.
+  intros H [H'].
+  apply fsep.
+  rewrite domm_set domm0 fsetU0 in H'.
+  rewrite 2!domm_set domm0 fsetU0 fdisjointUr H'.
+  apply /andP; split => //.
+  apply /fdisjointP => x /fset1P -> {x}.
+  apply /negP => /fset1P //.
+Qed.
 
 Lemma fseparate0m {T : ordType} {S S'} (m : {fmap T → S'})
   : fseparate (@emptym T S) m.
-Proof.
-Admitted.
+Proof. apply fsep. rewrite domm0 fdisjoint0s //. Qed.
 
 Lemma fseparatem0 {T : ordType} {S S'} (m : {fmap T → S})
   : fseparate m (@emptym T S').
-Proof.
-Admitted.
-
-(*
-Lemma domm_cons11 {T : ordType} {S S'} (k k' : T) (x : S) (y : S')
-  : k ≠ k' → domm [fmap (k, x)] :#: domm [fmap (k', y)].
-Proof.
-Admitted.
- *)
-
-Lemma notin_fseparate {T : ordType} {S} (x : T * S) (m : {fmap T → S})
-  : fseparate [fmap x] m → x.1 \notin domm m.
-Proof.
-Admitted.
+Proof. apply fsep. rewrite domm0 fdisjoints0 //. Qed.
 
 Lemma fseparateE {T : ordType} {S S'} (m : {fmap T → S}) (m' : {fmap T → S'})
   : fseparate m m' → domm m :#: domm m'.
+Proof. by intros [?]. Qed.
+
+Lemma fseparateMl {T : ordType} {S S' S'' : Type}
+  (f : S → S') (m : {fmap T → S}) (m' : {fmap T → S''})
+  : fseparate m m' → fseparate (mapm f m) m'.
+Proof. intros [H]. apply fsep. rewrite domm_map //. Qed.
+
+Lemma fseparateMil {T : ordType} {S S' S'' : Type}
+  (f : T → S → S') (m : {fmap T → S}) (m' : {fmap T → S''})
+  : fseparate m m' → fseparate (mapim f m) m'.
+Proof. intros [H]. apply fsep. rewrite domm_mapi //. Qed.
+
+Lemma fseparateMr {T : ordType} {S S' S'' : Type}
+  (f : S' → S'') (m : {fmap T → S}) (m' : {fmap T → S'})
+  : fseparate m m' → fseparate m (mapm f m').
+Proof. intros [H]. apply fsep. rewrite domm_map //. Qed.
+
+Lemma fseparateMir {T : ordType} {S S' S'' : Type}
+  (f : T → S' → S'') (m : {fmap T → S}) (m' : {fmap T → S'})
+  : fseparate m m' → fseparate m (mapim f m').
+Proof. intros [H]. apply fsep. rewrite domm_mapi //. Qed.
+
+Lemma notin_fseparate {T : ordType} {S S'} (x : T * S) (m : {fmap T → S'})
+  : fseparate [fmap x] m → x.1 \notin domm m.
 Proof.
-Admitted.
+  move=> [] /fdisjointP H.
+  apply H.
+  rewrite domm_set in_fsetU1 eq_refl //.
+Qed.
+
 
 Hint Extern 2 (?x ≠ ?y) =>
   done : fmap_solve_db.
 
 Hint Resolve fseparateE fseparate0m fseparatem0 : fmap_solve_db.
-Hint Resolve notin_fseparate fseparate_setm fseparate_setm1 : fmap_solve_db.
+Hint Resolve fseparateUl fseparateUr : fmap_solve_db.
+Hint Resolve fseparateMl fseparateMr : fmap_solve_db.
+Hint Resolve fseparateMil fseparateMir : fmap_solve_db.
+Hint Resolve notin_fseparate fseparate_set fseparate_set1 : fmap_solve_db.
 
 (*
 Goal ((3, 5).1 \notin domm [fmap (5,6); (6,8)]).
@@ -339,6 +359,5 @@ Qed.
   Lemma fcompat_11 {T : ordType} {S} (x : T * S) y
     : fcompat11 x y → fcompat [fmap x] [fmap y].
   Proof.
-  Admitted.
   Hint Resolve fcompat_11 : fmap_solve_db.
    *)
