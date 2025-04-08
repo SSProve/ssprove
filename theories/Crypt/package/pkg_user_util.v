@@ -337,9 +337,30 @@ Ltac notin_fset_auto :=
   solve [ fmap_solve ]
   : ssprove_invariant.
  *)
+#[export] Hint Extern 2 (fhas ?x ?m) =>
+  solve [ fmap_solve ]
+  : typeclass_instances ssprove_valid_db ssprove_invariant.
+
 #[export] Hint Extern 2 (is_true (?x \notin ?m)) =>
   solve [ fmap_solve ]
   : typeclass_instances ssprove_valid_db ssprove_invariant.
+
+Hint Extern 1 (fcompat ?m ?m') =>
+  solve [ fmap_solve ]
+  : typeclass_instances ssprove_valid_db.
+
+Hint Extern 1 (fsubmap ?m ?m') =>
+  solve [ fmap_solve ]
+  : typeclass_instances ssprove_valid_db.
+
+Hint Extern 1 (is_true (fdisjoint ?s ?s')) =>
+  solve [ fmap_solve ]
+  : typeclass_instances ssprove_valid_db.
+
+Hint Extern 1 (fseparate ?m ?m') =>
+  solve [ fmap_solve ]
+  : typeclass_instances ssprove_valid_db.
+
 
 
 (* Right-biased same head, but more genenal *)

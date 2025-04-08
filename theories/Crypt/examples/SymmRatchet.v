@@ -160,7 +160,7 @@ Hint Extern 50 (_ = code_link (map_loop _ _ _) _) =>
   : ssprove_code_simpl.
 
 Definition CTXT_pkg_tt:
-  package fset0
+  package emptym
     [interface]
     [interface #val #[ctxt]: 'word → 'word ] :=
   [package
@@ -171,7 +171,7 @@ Definition CTXT_pkg_tt:
   ].
 
 Definition CTXT_pkg_ff:
-  package fset0
+  package emptym
     [interface]
     [interface #val #[ctxt]: 'word → 'word ] :=
   [package
@@ -195,7 +195,7 @@ Definition CTXT := mkpair CTXT_pkg_tt CTXT_pkg_ff.
   leave it as an assumption.
 *)
 Definition GEN_STRETCH_pkg_tt:
-  package fset0 [interface]
+  package emptym [interface]
     [interface #val #[query]: 'nat → ('seq 'word) × 'word ] :=
   [package
     #def #[query] (k: 'nat): ('seq 'word) × 'word {
@@ -207,7 +207,7 @@ Definition GEN_STRETCH_pkg_tt:
   ].
 
 Definition GEN_STRETCH_pkg_ff:
-  package fset0 [interface]
+  package emptym [interface]
     [interface #val #[query]: 'nat → ('seq 'word) × 'word ] :=
   [package
     #def #[query] (k: 'nat): ('seq 'word) × 'word {
@@ -226,7 +226,7 @@ Definition GEN_STRETCH := mkpair GEN_STRETCH_pkg_tt GEN_STRETCH_pkg_ff.
   The rest of the games are similar to the ones in the book.
 *)
 Definition ATTACK_pkg_tt:
-  package fset0 [interface]
+  package emptym [interface]
     [interface #val #[attack]: 'seq 'word → ('seq 'word) × 'word ] :=
   [package
     #def #[attack] (m: 'seq 'word): ('seq 'word) × 'word {
@@ -239,7 +239,7 @@ Definition ATTACK_pkg_tt:
   ].
 
 Definition ATTACK_pkg_ff:
-  package fset0 [interface]
+  package emptym [interface]
     [interface #val #[attack]: 'seq 'word → ('seq 'word) × 'word ] :=
   [package
     #def #[attack] (m: 'seq 'word): ('seq 'word) × 'word {
@@ -255,7 +255,7 @@ Definition ATTACK_pkg_ff:
 Definition ATTACK := mkpair ATTACK_pkg_tt ATTACK_pkg_ff.
 
 Definition ATTACK_GEN_pkg:
-  package fset0
+  package emptym
     [interface #val #[query]: 'nat → ('seq 'word) × 'word ]
     [interface #val #[attack]: 'seq 'word → ('seq 'word) × 'word ] :=
   [package
@@ -271,7 +271,7 @@ Definition ATTACK_GEN_pkg:
   ].
 
 Definition ATTACK_HYB_pkg:
-  package fset0 [interface]
+  package emptym [interface]
     [interface #val #[attack]: 'seq 'word → ('seq 'word) × 'word ] :=
   [package
     #def #[attack] (m: 'seq 'word): ('seq 'word) × 'word {
@@ -285,7 +285,7 @@ Definition ATTACK_HYB_pkg:
   ].
 
 Definition ATTACK_CTXT_pkg:
-  package fset0
+  package emptym
   [interface #val #[ctxt]: 'word → 'word ]
     [interface #val #[attack]: 'seq 'word → ('seq 'word) × 'word ] :=
   [package
@@ -469,10 +469,10 @@ Proof.
   as ineq.
   apply: le_trans.
   1: by apply: ineq.
-  rewrite ATTACK_equiv_true ?fdisjointUr ?fdisjoints0 // GRing.add0r.
-  rewrite ATTACK_HYB_equiv_1 ?fdisjointUr ?fdisjoints0 // GRing.addr0.
-  rewrite ATTACK_HYB_equiv_2 ?fdisjointUr ?fdisjoints0 // GRing.addr0.
-  rewrite ATTACK_equiv_false ?fdisjointUr ?fdisjoints0 // GRing.addr0.
+  rewrite -> ATTACK_equiv_true, GRing.add0r by fmap_solve.
+  rewrite -> ATTACK_HYB_equiv_1, GRing.addr0 by fmap_solve.
+  rewrite -> ATTACK_HYB_equiv_2, GRing.addr0 by fmap_solve.
+  rewrite -> ATTACK_equiv_false, GRing.addr0 by fmap_solve.
   rewrite /prg_epsilon /cpa_epsilon !Advantage_E -!Advantage_link.
   by rewrite (Advantage_sym (GEN_STRETCH true)) (Advantage_sym (CTXT true)).
 Qed.

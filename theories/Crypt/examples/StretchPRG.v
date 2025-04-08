@@ -56,7 +56,7 @@ Definition mkpair {Lt Lf E}
   loc_GamePair E := fun b => if b then {locpackage t} else {locpackage f}.
 
 Definition GEN_pkg_tt:
-  package fset0 [interface]
+  package emptym [interface]
     [interface #val #[query]: 'unit → 'word × 'word ] :=
   [package
     #def #[query] (_: 'unit): 'word × 'word {
@@ -66,7 +66,7 @@ Definition GEN_pkg_tt:
   ].
 
 Definition GEN_pkg_ff:
-  package fset0 [interface]
+  package emptym [interface]
     [interface #val #[query]: 'unit → 'word × 'word ] :=
   [package
     #def #[query] (_: 'unit): 'word × 'word {
@@ -79,7 +79,7 @@ Definition GEN_pkg_ff:
 Definition GEN := mkpair GEN_pkg_tt GEN_pkg_ff.
 
 Definition GEN_STRETCH_pkg_tt:
-  package fset0 [interface]
+  package emptym [interface]
     [interface #val #[query]: 'unit → 'word × 'word × 'word ] :=
   [package
     #def #[query] (_: 'unit): 'word × 'word × 'word {
@@ -90,7 +90,7 @@ Definition GEN_STRETCH_pkg_tt:
   ].
 
 Definition GEN_STRETCH_pkg_ff:
-  package fset0 [interface]
+  package emptym [interface]
     [interface #val #[query]: 'unit → 'word × 'word × 'word ] :=
   [package
     #def #[query] (_: 'unit): 'word × 'word × 'word {
@@ -104,7 +104,7 @@ Definition GEN_STRETCH_pkg_ff:
 Definition GEN_STRETCH := mkpair GEN_STRETCH_pkg_tt GEN_STRETCH_pkg_ff.
 
 Definition GEN_STRETCH_HYB_pkg_1:
-  package fset0
+  package emptym
     [interface #val #[query]: 'unit → 'word × 'word ]
     [interface #val #[query]: 'unit → 'word × 'word × 'word ] :=
   [package
@@ -116,7 +116,7 @@ Definition GEN_STRETCH_HYB_pkg_1:
   ].
 
 Definition GEN_STRETCH_HYB_pkg_2:
-  package fset0
+  package emptym
     [interface #val #[query]: 'unit → 'word × 'word ]
     [interface #val #[query]: 'unit → 'word × 'word × 'word ] :=
   [package
@@ -190,9 +190,8 @@ Proof.
   as ineq.
   apply: le_trans.
   1: by apply: ineq.
-  rewrite GEN_equiv_true ?fdisjointUr ?fdisjoints0 // GRing.add0r.
-  rewrite GEN_HYB_equiv ?fdisjointUr ?fdisjoints0 // GRing.addr0.
-  rewrite GEN_equiv_false ?fdisjointUr ?fdisjoints0 // GRing.addr0.
+  rewrite -> GEN_equiv_true, GEN_HYB_equiv, GEN_equiv_false by fmap_solve.
+  rewrite 2!GRing.addr0 GRing.add0r.
   by rewrite /prg_epsilon !Advantage_E -!Advantage_link !(Advantage_sym (GEN true)).
 Qed.
 

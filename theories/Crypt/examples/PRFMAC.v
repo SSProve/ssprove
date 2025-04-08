@@ -372,7 +372,6 @@ Proof.
   ).
   1: {
     ssprove_invariant=> /=.
-    1,2: done.
     move=> m t.
     by rewrite domm0 in_fset0 get_empty_heap emptymE.
   }
