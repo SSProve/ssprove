@@ -262,6 +262,7 @@ Inductive fseparate {T : ordType} {S S'}
   (m : {fmap T → S}) (m' : {fmap T → S'}) :=
   | fsep : domm m :#: domm m' → fseparate m m'.
 
+(*
 Lemma fseparate_cons {T : ordType} {S S'} (x x' : T * S) xs (ys : seq (T * S'))
   : fseparate [fmap x] (mkfmap ys)
   → fseparate (mkfmap (x' :: xs)) (mkfmap ys)
@@ -273,6 +274,23 @@ Lemma fseparate_cons1 {T : ordType} {S S'} (x : T * S) y (ys : seq (T * S'))
   : x.1 ≠ y.1
   → fseparate [fmap x] (mkfmap ys)
   → fseparate [fmap x] (mkfmap (y :: ys)).
+Proof.
+Admitted.
+ *)
+
+Lemma fseparate_setm {T : ordType} {S S'} (k k' : T) (v v' : S)
+  (m : {fmap T → S}) (m' : {fmap T → S'})
+  : fseparate (setm emptym k v) m'
+  → fseparate (setm m k' v') m'
+  → fseparate (setm (setm m k' v') k v) m'.
+Proof.
+Admitted.
+
+Lemma fseparate_setm1 {T : ordType} {S S'} (k k' : T)
+  (v : S) (v' : S') (m' : {fmap T → S'})
+  : k ≠ k'
+  → fseparate (setm emptym k v) m'
+  → fseparate (setm emptym k v) (setm m' k' v').
 Proof.
 Admitted.
 
@@ -307,7 +325,7 @@ Hint Extern 2 (?x ≠ ?y) =>
   done : fmap_solve_db.
 
 Hint Resolve fseparateE fseparate0m fseparatem0 : fmap_solve_db.
-Hint Resolve notin_fseparate fseparate_cons1 fseparate_cons : fmap_solve_db.
+Hint Resolve notin_fseparate fseparate_setm fseparate_setm1 : fmap_solve_db.
 
 (*
 Goal ((3, 5).1 \notin domm [fmap (5,6); (6,8)]).
