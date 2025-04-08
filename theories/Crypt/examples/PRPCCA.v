@@ -203,12 +203,12 @@ Notation " 'key " := (Key) (at level 2): package_scope.
 Notation " 'ciph " := (Ciph) (in custom pack_type at level 2).
 Notation " 'ciph " := (Ciph) (at level 2): package_scope.
 
-Definition k_loc: Location := ('option 'key ; 0).
-Definition T_loc: Location := (chMap 'ciph 'ciph ; 1).
-Definition Tinv_loc: Location := (chMap 'ciph 'ciph ; 2).
-Definition Tinv'_loc: Location := (chMap 'ciph 'ciph ; 3).
-Definition S_loc: Location := ('set 'ciph ; 4).
-Definition R_loc: Location := ('set 'key ; 5).
+Definition k_loc: Location := (0, 'option 'key).
+Definition T_loc: Location := (1, chMap 'ciph 'ciph).
+Definition Tinv_loc: Location := (2, chMap 'ciph 'ciph).
+Definition Tinv'_loc: Location := (3, chMap 'ciph 'ciph).
+Definition S_loc: Location := (4, 'set 'ciph).
+Definition R_loc: Location := (5, 'set 'key).
 Definition samp: nat := 6.
 Definition ctxt: nat := 7.
 Definition decrypt: nat := 8.
@@ -224,7 +224,7 @@ Definition mkpair {Lt Lf E}
   replacement.
 *)
 Definition SAMP_pkg_tt (p: nat) `{Positive p}:
-  package fset0 [interface]
+  package emptym [interface]
     [interface
       #val #[samp]: 'set ('fin p) → ('fin p) ] :=
   [package
@@ -235,7 +235,7 @@ Definition SAMP_pkg_tt (p: nat) `{Positive p}:
   ].
 
 Definition SAMP_pkg_ff (p: nat) `{Positive p}:
-  package fset0 [interface]
+  package emptym [interface]
     [interface
       #val #[samp]: 'set ('fin p) → ('fin p) ] :=
   [package
@@ -259,7 +259,7 @@ Definition kgen: raw_code 'key :=
   end.
 
 Lemma kgen_valid {L I}:
-  k_loc \in L ->
+  fhas L k_loc ->
   ValidCode L I kgen.
 Proof.
   move=> H.
@@ -271,12 +271,11 @@ Proof.
 Qed.
 
 Hint Extern 1 (ValidCode ?L ?I kgen) =>
-  eapply kgen_valid ;
-  auto_in_fset
+  eapply kgen_valid ; solve [ fmap_solve ]
   : typeclass_instances ssprove_valid_db.
 
-Definition EVAL_locs_tt := (fset [:: k_loc]).
-Definition EVAL_locs_ff := (fset [:: T_loc; Tinv_loc]).
+Definition EVAL_locs_tt := [fmap k_loc].
+Definition EVAL_locs_ff := [fmap T_loc; Tinv_loc].
 
 (**
   Next, we define the packages for the SPRP, [EVAL]. They follow the definitions
@@ -372,7 +371,7 @@ Definition EVAL_SAMP_pkg:
 
 Definition EVAL := mkpair EVAL_pkg_tt EVAL_pkg_ff.
 
-Definition CTXT_locs := (fset [:: k_loc; S_loc]).
+Definition CTXT_locs := [fmap k_loc; S_loc].
 
 (**
   We now get to the main definitions of the proof. We are trying to prove the
@@ -424,7 +423,7 @@ Definition CTXT_pkg_ff:
 
 Definition CTXT := mkpair CTXT_pkg_tt CTXT_pkg_ff.
 
-Definition CTXT_EVAL_locs := (fset [:: S_loc]).
+Definition CTXT_EVAL_locs := [fmap S_loc].
 
 Definition CTXT_EVAL_pkg_tt:
   package CTXT_EVAL_locs
@@ -453,7 +452,7 @@ Definition CTXT_EVAL_pkg_tt:
     }
   ].
 
-Definition CTXT_EVAL_SAMP_locs := (fset [:: S_loc; R_loc]).
+Definition CTXT_EVAL_SAMP_locs := [fmap S_loc; R_loc].
 
 Definition CTXT_EVAL_SAMP_pkg:
   package CTXT_EVAL_SAMP_locs
@@ -507,6 +506,14 @@ Definition EVAL_SAMP (b: bool):
       #val #[invlookup]: 'ciph → 'ciph ].
 Proof.
   apply (mkpackage (par (EVAL_SAMP_pkg ∘ SAMP Ciph_N b) (SAMP Key_N (~~ b)))).
+  ssprove_valid.
+  all: unfold FDisjoint; destruct b; try fmap_solve.
+  1,2: apply fseparateE.
+  1: unfold link.
+  1: simpl.
+  1: apply fseparate_setm.
+  2: fmap_solve.
+  1: fmap_solve.
   ssprove_valid => //=.
   all: case: b.
   1-2: by fdisjoint_auto.
