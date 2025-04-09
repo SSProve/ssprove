@@ -221,8 +221,8 @@ Lemma SHARE_equiv:
   SHARE true ≈₀ SHARE false.
 Proof.
   (**
-    Since the games have no state, we don’t need to maintain an invariant, and only
-    need to ensure the games have the same output distribution.
+    Since the games have no state, we don’t need to maintain an invariant, and 
+    only need to ensure the games have the same output distribution.
   *)
   apply: eq_rel_perf_ind_eq.
 
@@ -262,7 +262,7 @@ Proof.
     exists (fun x => x ⊕ (ml ⊕ mr)) => x.
     all: by apply: plus_involutive.
   }
-  (* Since there exists a bijection, they must have the same output distribution *)
+  (* Because of the bijection, they must have the same output distribution *)
   rewrite plus_assoc. rewrite plus_involutive.
   by apply: rreflexivity_rule.
 Qed.
