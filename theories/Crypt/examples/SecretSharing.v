@@ -111,7 +111,7 @@ Next Obligation.
   case: (N.eq_dec (N.lxor (N.of_nat w.+1) (N.of_nat k.+1)) N0) => H0.
   
   (* lxor (w+1) (k+1) <> 0 *)
-  2: by rewrite H0 expn_gt0.
+  1: by rewrite H0 expn_gt0.
   (* lxor (w+1) (k+1) <> 0 *)
   move => {H1 H2}.
   move: (N.log2_lxor (N.of_nat w.+1) (N.of_nat k.+1)) => Hbound.
