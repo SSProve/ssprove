@@ -72,6 +72,19 @@
     mathcomp.override.version = "2.3.0";
     mathcomp-analysis.override.version = "1.8.0";
   };
+  bundles."MC-dev".coqPackages = {
+    coq.override.version = "9.0";
+    mathcomp.job = false;
+    mathcomp.override.version = "master";
+    mathcomp-analysis.job = false;
+    mathcomp-analysis.override.version = "master";
+    mathcomp-finmap.job = false;
+    mathcomp-finmap.override.version = "master";
+    extructures.job = false;
+    extructures.override.version = "master";
+    deriving.job = false;
+    deriving.override.version = "master";
+  };
 
   bundles."8.18".push-branches = ["main"];
   bundles."8.19".push-branches = ["main"];
