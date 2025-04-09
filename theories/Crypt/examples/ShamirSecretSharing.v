@@ -1,27 +1,31 @@
-(**
-  This formalises Theorem 3.13 from "The Joy of Cryptography" (p. 60).
-  It formalises Shamir's Secret Sharing scheme and proves that it has perfect
-  security. It is a t-out-of-n secret sharing scheme over the field ['F_p].
-
-  We also formalise Theorem 3.8 and 3.9 from the book
-  We skip Lemma 3.12, since the bijection technique used in this proof doesn't
-  benefit from the extra steps. (Note, earlier commits did include it, so if you
-  are interested, feel free to check out the commit history.)
-
-  By far most of the proof is spent on proving various properties of polynomials
-  that are used to define and prove security of a bijection. After this the
-  remaining part of the proof is just using that bijection to prove the scheme
-  is secure.
-
-  This differs a bit from the proof in "The Joy of Cryptography" since this is
-  based on a bijection whereas it is based on statistical analysis. This
-  arguably harder to prove, but it is the method that is directly supported by
-  SSProve, and it is also easier verify that you got it right.
-
-  The final statement ([unconditional_secrecy]) is equivalent to that of the
-  books: The scheme achieves perfect secrecy, for any [t], [n] and any prime
-  [p].
-*)
+(*****************************************************************************)
+(*                          Shamir Secret Sharing                            *)
+(*                                                                           *)
+(* This formalises Theorem 3.13 from "The Joy of Cryptography" (p. 60).      *)
+(* It formalises Shamir's Secret Sharing scheme and proves that it has       *) 
+(* perfect security. It is a t-out-of-n secret sharing scheme over the       *) 
+(* field ['F_p].                                                             *) 
+(*                                                                           *)
+(* We also formalise Theorem 3.8 from the book. We skip Lemma 3.12,          *)
+(* since the bijection technique used in this proof doesn't benefit from     *)
+(* the extra steps. (Note, earlier commits did include it, so if you         *)
+(* are interested, feel free to check out the commit history.)               *)
+(*                                                                           *)
+(* After this the remaining part of the proof is just using that bijection    *)
+(* to prove the scheme is secure.                                             *)       
+(*                                                                           *)
+(* This differs a bit from the proof in "The Joy of Cryptography" since      *)
+(* our proof is based on the construction of a bijection, whereas the one    *)
+(* in the book is based on statistical analysis.                             *)
+(*                                                                           *)
+(* This is arguably harder to prove, but it is the method that is directly   *)
+(* supported by SSProve, and it is also easier to verify that you got it     *)
+(* right.                                                                    *)
+(*                                                                           *)
+(* The final statement ([unconditional_secrecy]) is equivalent to that of    *)
+(* the book: The scheme achieves perfect secrecy, for any [t], [n] and any   *)
+(* prime [p].                                                                *)
+(*****************************************************************************)
 
 From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
@@ -34,6 +38,7 @@ From SSProve.Mon Require Import SPropBase.
 From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb
   pkg_core_definition choice_type pkg_composition pkg_rhl Package Prelude.
+
 
 From extructures Require Import ord fset fmap.
 
@@ -57,9 +62,8 @@ Import Order.POrderTheory.
 Local Open Scope ring_scope.
 
 (**
-  First step is to define Lagrange interpolation.
-  This is implemented in the [lagrange_poly] function, which is split up into
-  several helper functions.
+  First step is to define Lagrange interpolation. This is implemented in the 
+  [lagrange_poly] function, which is split up into several helper functions.
 
   The Lagrange interpolation polynomial for a set of d+1 points:
   
@@ -71,9 +75,9 @@ Local Open Scope ring_scope.
 
   where each of the l_i(x) is defined as:
     
-    l_i(x) = (x - x_1) * (x - x_2) * ... * (x - x_i-1) * (x - x_i+1) * ... * (x - x_d+1)
-             ----------------------------------------------------------------------------
-                                (x_i - x_1) * ... * (x_i - x_d+1)
+  l_i(x) = (x-x_1) * (x-x_2) *...* (x-x_i-1) * (x-x_i+1)* ... * (x-x_d+1)
+          ----------------------------------------------------------------
+                        (x_i-x_1) * ... * (x_i-x_d+1)
 *)
 
 (* Returns each of the l_i(x) given x = x_i and s = [x_1; x_2; ... ; x_d+1] *)
@@ -232,7 +236,6 @@ Proof.
   1: {
     case: Heq => -> ->.
     rewrite lagrange_poly_part_0 ?GRing.addr0 //.
-    (*2: by rewrite -catA cat_cons.*)
     2: by rewrite /unzip1 map_cat mem_cat Bool.orb_comm mem_seq1 eq_refl.
     rewrite /dif_points /unzip1 map_cat uniq_catC -map_cat cat_cons -/unzip1 in Huniq.
     apply (uniq_unzip1_in (x0, y0)) in Huniq.
@@ -631,8 +634,6 @@ Qed.
 
 Local Open Scope nat_scope.
 
-(*ASK: Shouldn't all this go to a polim_utils file or something like that?*)
-
 (**
   With the work on polynomials out of the way we can start to actually define
   the scheme.
@@ -687,8 +688,6 @@ Definition chSet t := chMap t 'unit.
 
 Notation " 'set t " := (chSet t) (in custom pack_type at level 2).
 Notation " 'set t " := (chSet t) (at level 2): package_scope.
-
-(* ASK: Can't we add this to the normal types? *)
 
 (**
   [n] is the number of shares.
@@ -1031,7 +1030,7 @@ Qed.
 
 Local Open Scope package_scope.
 
-Definition signature : nat := 0.
+Definition shares : nat := 0.
 
 Definition mkpair {Lt Lf E}
   (t: package Lt [interface] E) (f: package Lf [interface] E):
@@ -1043,9 +1042,9 @@ Definition mkpair {Lt Lf E}
 *)
 Definition SHARE_pkg_tt:
   package fset0 [interface]
-    [interface #val #[signature]: ('word × 'word) × 'set 'party → 'seq 'share ] :=
+    [interface #val #[shares]: ('word × 'word) × 'set 'party → 'seq 'share ] :=
   [package
-    #def #[signature] ('(ml, mr, U): ('word × 'word) × 'set 'party): 'seq 'share {
+    #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'party): 'seq 'share {
       if size (domm U) >= t then ret emptym
       else
       q <$ uniform (p ^ t') ;;
@@ -1057,9 +1056,9 @@ Definition SHARE_pkg_tt:
 
 Definition SHARE_pkg_ff:
   package fset0 [interface]
-    [interface #val #[signature]: ('word × 'word) × 'set 'party → 'seq 'share ] :=
+    [interface #val #[shares]: ('word × 'word) × 'set 'party → 'seq 'share ] :=
   [package
-    #def #[signature] ('(ml, mr, U): ('word × 'word) × 'set 'party): 'seq 'share {
+    #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'party): 'seq 'share {
       if size (domm U) >= t then ret emptym
       else
       q <$ uniform (p ^ t') ;;
@@ -1120,7 +1119,7 @@ Qed.
 *)
 Theorem unconditional_secrecy LA A:
   ValidPackage LA
-    [interface #val #[signature]: ('word × 'word) × 'set 'party → 'seq 'share ]
+    [interface #val #[shares]: ('word × 'word) × 'set 'party → 'seq 'share ]
     A_export A ->
   Advantage SHARE A = 0%R.
 Proof.
