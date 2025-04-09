@@ -302,6 +302,10 @@ Proof.
   by rewrite /Positive expn_gt0 prime_gt0.
 Qed.
 
+(******************************************************************************)
+(**************Definition and lemmas for polynomials in SSProve****************)
+(******************************************************************************)
+
 (* Representation of polynomials for SSProve*)
 Definition PolyEnc t := 'fin (p ^ t).
 
@@ -416,6 +420,10 @@ Proof.
   by rewrite bij_poly_bij ?nat_poly_nat.
 Qed.
 
+(******************************************************************************)
+(********************Definition of the games.**********************************)
+(******************************************************************************)
+
 Local Open Scope package_scope.
 
 (*  Identifier of the signature *)
@@ -458,6 +466,10 @@ Definition SHARE_pkg_ff:
   ].
 
 Definition SHARE := mkpair SHARE_pkg_tt SHARE_pkg_ff.
+
+(******************************************************************************)
+(************Proof that the games are equivalent.******************************)
+(******************************************************************************)
 
 Lemma SHARE_equiv:
   SHARE true ≈₀ SHARE false.
@@ -503,9 +515,10 @@ Proof.
   by apply: rreflexivity_rule.
 Qed.
 
-(**
-  This corresponds to Theorem 3.13 from "The Joy of Cryptography".
-*)
+(******************************************************************************)
+(********Proof to the Theorem 3.13 from "The Joy of Cryptography".*************)
+(******************************************************************************)
+
 Theorem unconditional_secrecy LA A:
   ValidPackage LA
     [interface #val #[shares]: ('word × 'word) × 'set 'party → 'seq 'share ]
