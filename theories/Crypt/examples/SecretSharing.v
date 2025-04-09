@@ -1,26 +1,26 @@
-(*****************************************************************************)
-(*                             Secret Sharing                                *)
-(*                                                                           *)
-(* Formalization of Theorem 3.6 from "The Joy of Cryptography" (p. 51).      *)
-(* It is a simple 2-out-of-2 secret-sharing scheme with perfect security,    *)
-(* based on XOR. Messages are n-bit words, and the scheme works by letting   *)
-(* the first share to be a random word, and the second share be the first    *)
-(* share XOR'ed with the message.                                            *) 
-(*                                                                           *)
-(* At the beginning we prove some properties for the plus operator, such as  *)
-(* associativity or involutive.                                              *)
-(* The final statement ([unconditional_secrecy]) is equivalent to that of    *)
-(* the books: The scheme achieves perfect security with up to two shares     *) 
-(* (non-inclusive).                                                          *)
-(*									                                                         *)
-(* * Section SecretSharing_example					                                 *)
-(*   Word == Definition for the finite type of size 2^n			                 *)
-(*   'word == Notation for Word						                                   *)
-(*   plus == receives two Words and returns the XOR of them		               *)
-(*   m ⊕ k == XOR of words m and k					                                 *)	
-(*   'seq t == Local choice_type for sequences				                       *)
-(*   'set t == Local choice_type for sets 				                           *)
-(*****************************************************************************)
+(******************************************************************************)
+(*                             Secret Sharing                                 *)
+(*                                                                            *)
+(* Formalization of Theorem 3.6 from "The Joy of Cryptography" (p. 51).       *)
+(* It is a simple 2-out-of-2 secret-sharing scheme with perfect security,     *)
+(* based on XOR. Messages are n-bit words, and the scheme works by letting    *)
+(* the first share to be a random word, and the second share be the first     *)
+(* share XOR'ed with the message.                                             *) 
+(*                                                                            *)
+(* At the beginning we prove some properties for the plus operator, such as   *)
+(* associativity or involutive.                                               *)
+(* The final statement ([unconditional_secrecy]) is equivalent to that of     *)
+(* the books: The scheme achieves perfect security with up to two shares      *) 
+(* (non-inclusive).                                                           *)
+(*									                                                          *)
+(* * Section SecretSharing_example					                                  *)
+(*    Word == type for the words in the protocol       			                  *)
+(*   'word == notation for Word						                                    *)
+(*    plus == receives two Words and returns the XOR of them		                *)
+(*   m ⊕ k == XOR of words m and k					                                  *)	
+(*  'seq t == local choice_type for sequences				                        *)
+(*  'set t == local choice_type for sets 				                            *)
+(******************************************************************************)
 
 From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
@@ -63,7 +63,7 @@ Variable (n: nat).
 
 Definition Word_N: nat := 2^n.
 
-(* We define words to belong to the finite type of size Word_N *)
+(* We define words to belong to the finite type of size Word_N                *)
 Definition Word: choice_type := chFin (mkpos Word_N).
 
 (******************************************************************************)
@@ -155,19 +155,16 @@ Qed.
 Notation " 'word " := (Word) (in custom pack_type at level 2).
 Notation " 'word " := (Word) (at level 2): package_scope.
 
-(**
-  We can't use sequences directly in [choice_type] so instead we use a map from
-  natural numbers to the type.
-*)
+(* We can't use sequences directly in [choice_type] so instead we use a       *)
+(* map from natural numbers to the type.                                      *)
 Definition chSeq t := chMap 'nat t.
 
 Notation " 'seq t " := (chSeq t) (in custom pack_type at level 2).
 Notation " 'seq t " := (chSeq t) (at level 2): package_scope.
 
-(**
-  We can't use sets directly in [choice_type] so instead we use a map to units.
-  We can then use [domm] to get the domain, which is a set.
-*)
+(* We can't use sets directly in [choice_type] so instead we use a map to     *)
+(* units. We can then use [domm] to get the domain, which is a set.           *)
+
 Definition chSet t := chMap t 'unit.
 
 Notation " 'set t " := (chSet t) (in custom pack_type at level 2).
