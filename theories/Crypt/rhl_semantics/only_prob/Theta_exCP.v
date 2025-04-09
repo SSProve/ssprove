@@ -265,7 +265,7 @@ End SemanticNotation.
 Import SemanticNotation.
 #[local] Open Scope semantic_scope.
 
-Definition flip (r : R) : SDistr (bool_choiceType).
+Definition flip (r : R) : SDistr (bool).
   rewrite /SDistr_carrier.
   apply mkdistrd. intros b.
   destruct b.
@@ -353,4 +353,3 @@ Qed.
 (*   move => π Hwm. *)
 (*   rewrite /SubDistr.SDistr_obligation_2. *)
 (*   Admitted. *)
-

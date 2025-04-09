@@ -297,4 +297,3 @@ End GoingPractical.
 
 Ltac apply_seq :=
     refine (gp_seq_rule _ _ _ _ (wf:=extend_to_Jprod _ (fun '⟨a1, a2⟩ => _)) _ _ _).
-

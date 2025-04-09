@@ -222,12 +222,12 @@ Proof.
       rewrite ler_pM2l.
       * rewrite ler_int. auto.
       * unfold r. apply mulr_gt0.
-        -- cbn. rewrite ltr01. reflexivity.
+        -- cbn. exact ltr01.
         -- rewrite -(@pmulr_rgt0 _ #|F1|%:~R).
             ++ rewrite -(GRing.mul1r (#|F1|%:~R / #|F1|%:~R)).
               rewrite GRing.mulrA.
               rewrite GRing.Theory.mulfK.
-              ** rewrite ltr01. reflexivity.
+              ** exact ltr01.
               ** unshelve eapply card_non_zero. auto.
             ++ eapply fintype0 in w0 as h.
               destruct #|F1| eqn:e. 1: contradiction.

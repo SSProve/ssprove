@@ -13,7 +13,7 @@ This repository contains the Coq formalisation of the paper:\
    [eprint](https://eprint.iacr.org/2021/397/20210526:113037))
 
 Secondary literature:
-* **The Last Yard: Foundational End-to-End Verification of High-Speed Cryptography** at CPP'24. 
+* **The Last Yard: Foundational End-to-End Verification of High-Speed Cryptography** at CPP'24.
 Philipp G. Haselwarter, Benjamin Salling Hvass, Lasse Letager Hansen, Théo Winterhalter, Cătălin Hriţcu, and Bas Spitters. ([DOI](https://doi.org/10.1145/3636501.3636961))
 
 This README serves as a guide to running verification and finding the
@@ -81,7 +81,7 @@ All set.
 ##### Project setup
 1. Create a new project folder and `cd` into it.
 2. Copy one of the above templates into it (removing the `.template*` suffix).
-3. And finally run `nix develop` which throws you into a shell where SSProve is already installed. (`From Crypt Require Import ...`)
+3. And finally run `nix develop` which throws you into a shell where SSProve is already installed. (`From SSProve.Crypt Require Import ...`)
 
 You may need to initialize the project as a Git repository and add the `flake.nix` to it.
 The generated `flake.lock` pins the versions and hence also needs to be added to this new project repo.

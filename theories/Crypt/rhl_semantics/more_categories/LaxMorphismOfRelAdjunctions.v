@@ -69,5 +69,3 @@ Section LaxMorphismLeftRelativeAdjunctions.
       ((natIso_sym phi2)⟨A,lmlad_KD Y⟩)∙1 (lmlad_beta Y ∙ ofmap lmlad_KC ( (phi1 ⟨A,Y⟩) ∙1 f  ) ∙ lmlad_baseIso A) ∙ lmlad_alpha A }.
 
 End LaxMorphismLeftRelativeAdjunctions.
-
-
