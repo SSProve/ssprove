@@ -39,7 +39,7 @@ jobs:
     - id: stepGetDerivation
       name: Getting derivation for current job (coq)
       run: "NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link \\\n   --argstr bundle
-        \"8.18\" --argstr job \"coq\" \\\n   --dry-run 2> err > out || (touch fail;
+        \"9.0\" --argstr job \"coq\" \\\n   --dry-run 2> err > out || (touch fail;
         true)\n"
     - name: Error reporting
       run: "echo \"out=\"; cat out\necho \"err=\"; cat err\n"
@@ -50,7 +50,7 @@ jobs:
       run: (echo -n status=; cat out err | grep "built:" | sed "s/.*/built/") >> $GITHUB_OUTPUT
     - if: steps.stepCheck.outputs.status == 'built'
       name: Building/fetching current CI target
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.18" --argstr
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "9.0" --argstr
         job "coq"
   mathcomp-analysis:
     needs:
@@ -93,8 +93,8 @@ jobs:
     - id: stepGetDerivation
       name: Getting derivation for current job (mathcomp-analysis)
       run: "NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link \\\n   --argstr bundle
-        \"8.18\" --argstr job \"mathcomp-analysis\" \\\n   --dry-run 2> err > out
-        || (touch fail; true)\n"
+        \"9.0\" --argstr job \"mathcomp-analysis\" \\\n   --dry-run 2> err > out ||
+        (touch fail; true)\n"
     - name: Error reporting
       run: "echo \"out=\"; cat out\necho \"err=\"; cat err\n"
     - name: Failure check
@@ -104,27 +104,27 @@ jobs:
       run: (echo -n status=; cat out err | grep "built:" | sed "s/.*/built/") >> $GITHUB_OUTPUT
     - if: steps.stepCheck.outputs.status == 'built'
       name: 'Building/fetching previous CI target: coq'
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.18" --argstr
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "9.0" --argstr
         job "coq"
     - if: steps.stepCheck.outputs.status == 'built'
       name: 'Building/fetching previous CI target: mathcomp-reals'
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.18" --argstr
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "9.0" --argstr
         job "mathcomp-reals"
     - if: steps.stepCheck.outputs.status == 'built'
       name: 'Building/fetching previous CI target: mathcomp-field'
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.18" --argstr
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "9.0" --argstr
         job "mathcomp-field"
     - if: steps.stepCheck.outputs.status == 'built'
       name: 'Building/fetching previous CI target: mathcomp-bigenough'
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.18" --argstr
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "9.0" --argstr
         job "mathcomp-bigenough"
     - if: steps.stepCheck.outputs.status == 'built'
       name: 'Building/fetching previous CI target: hierarchy-builder'
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.18" --argstr
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "9.0" --argstr
         job "hierarchy-builder"
     - if: steps.stepCheck.outputs.status == 'built'
       name: Building/fetching current CI target
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.18" --argstr
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "9.0" --argstr
         job "mathcomp-analysis"
   ssprove:
     needs:
@@ -168,8 +168,8 @@ jobs:
     - id: stepGetDerivation
       name: Getting derivation for current job (ssprove)
       run: "NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link \\\n   --argstr bundle
-        \"8.18\" --argstr job \"ssprove\" \\\n   --dry-run 2> err > out || (touch
-        fail; true)\n"
+        \"9.0\" --argstr job \"ssprove\" \\\n   --dry-run 2> err > out || (touch fail;
+        true)\n"
     - name: Error reporting
       run: "echo \"out=\"; cat out\necho \"err=\"; cat err\n"
     - name: Failure check
@@ -179,44 +179,44 @@ jobs:
       run: (echo -n status=; cat out err | grep "built:" | sed "s/.*/built/") >> $GITHUB_OUTPUT
     - if: steps.stepCheck.outputs.status == 'built'
       name: 'Building/fetching previous CI target: coq'
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.18" --argstr
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "9.0" --argstr
         job "coq"
     - if: steps.stepCheck.outputs.status == 'built'
       name: 'Building/fetching previous CI target: equations'
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.18" --argstr
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "9.0" --argstr
         job "equations"
     - if: steps.stepCheck.outputs.status == 'built'
       name: 'Building/fetching previous CI target: mathcomp-ssreflect'
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.18" --argstr
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "9.0" --argstr
         job "mathcomp-ssreflect"
     - if: steps.stepCheck.outputs.status == 'built'
       name: 'Building/fetching previous CI target: mathcomp-analysis'
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.18" --argstr
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "9.0" --argstr
         job "mathcomp-analysis"
     - if: steps.stepCheck.outputs.status == 'built'
       name: 'Building/fetching previous CI target: mathcomp-experimental-reals'
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.18" --argstr
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "9.0" --argstr
         job "mathcomp-experimental-reals"
     - if: steps.stepCheck.outputs.status == 'built'
       name: 'Building/fetching previous CI target: extructures'
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.18" --argstr
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "9.0" --argstr
         job "extructures"
     - if: steps.stepCheck.outputs.status == 'built'
       name: 'Building/fetching previous CI target: deriving'
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.18" --argstr
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "9.0" --argstr
         job "deriving"
     - if: steps.stepCheck.outputs.status == 'built'
       name: Building/fetching current CI target
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "8.18" --argstr
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle "9.0" --argstr
         job "ssprove"
-name: Nix CI for bundle 8.18
+name: Nix CI for bundle 9.0
 on:
   pull_request:
     paths:
-    - .github/workflows/nix-action-8.18.yml
+    - .github/workflows/nix-action-9.0.yml
   pull_request_target:
     paths-ignore:
-    - .github/workflows/nix-action-8.18.yml
+    - .github/workflows/nix-action-9.0.yml
     types:
     - opened
     - synchronize
