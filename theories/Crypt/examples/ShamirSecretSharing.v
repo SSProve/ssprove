@@ -228,11 +228,6 @@ Proof.
   by rewrite IHu.
 Qed.
 
-(*Ask why this is not imported*)
-Ltac simpl_dif_point :=
-  rewrite /dif_points /unzip1 ?map_cons ?map_cat ?cons_uniq -?/unzip1.
-
-
 Lemma sec_poly_bij_part (x: Party) (U: seq Party) (m m': Word) (q: {poly Word}):
   uniq U ->
   x \in U ->

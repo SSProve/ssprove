@@ -49,6 +49,11 @@ Set Primitive Projections.
 
 Local Open Scope ring_scope.
 
+Definition dif_points {A : eqType} { B : Type} (l : seq (A * B)) := (uniq (unzip1 l)).
+
+Ltac simpl_dif_point :=
+  rewrite /dif_points /unzip1 ?map_cons ?map_cat ?cons_uniq -?/unzip1.
+
 Section Lagrange_Poly. 
 
 Definition lagrange_basis {R: unitRingType} (s: seq R) (x: R): {poly R} :=
@@ -134,12 +139,6 @@ Proof.
   - by rewrite (@PolyK R 0) // GRing.oner_neq0.
   - by rewrite GRing.invr_neq0 // GRing.subr_eq0.
 Qed.
-
-Definition dif_points {A : eqType} { B : Type} (l : seq (A * B)) := (uniq (unzip1 l)).
-
-
-Ltac simpl_dif_point :=
-  rewrite /dif_points /unzip1 ?map_cons ?map_cat ?cons_uniq -?/unzip1.
 
 (*
    Proof that when we construct (partially) our polynomial, the evaluation for an x_i in the list is
