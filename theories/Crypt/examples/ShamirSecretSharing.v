@@ -206,7 +206,7 @@ Lemma in_make_shares (x: Party) (U: seq Party) (m: Word) (q: {poly Word}):
 Proof.
   elim: U => [// | b U IHu] /=.
   rewrite in_cons.
-  destruct (x == b) eqn:Heq.
+  case Heq: (x == b).
   - move /eqP in Heq.
     by rewrite Heq in_cons !eq_refl.
   - by rewrite in_cons -val_eqE eqSS val_eqE Heq.
@@ -335,7 +335,7 @@ Proof.
   elim: t => [|t IHt] /= in a*.
   1: by rewrite size_poly0.
   rewrite size_cons_poly.
-  destruct (_ && _) => //.
+  case: (_ && _) => //.
   by rewrite ltnS.
 Qed.
 
@@ -354,7 +354,7 @@ Lemma nat_poly_nat (t a: nat):
   poly_to_nat t (nat_to_poly t a) = a.
 Proof.
   elim: t a => [|t IHt] a H.
-  1: by destruct a.
+  1: by move: H; case a.
   rewrite expnS mulnC in H.
   rewrite /= head_cons_poly tail_cons_poly IHt -?divn_eq //.
   by rewrite ltn_divLR // prime_gt0.
@@ -372,12 +372,13 @@ Proof.
   rewrite /= mod_p_muln_p.
   rewrite divnMDl ?prime_gt0 // divn_small.
   2: {
-    destruct (head_poly q) as [c Hc] => /=.
+    case (head_poly q) as [c Hc] => /=.
     by rewrite -words_p_eq.
   }
   rewrite addn0 IHt ?cons_head_tail_poly //.
   rewrite size_tail_poly.
-  destruct (size q) eqn:P; by rewrite P.
+  move: (size q) H => size_q. 
+  case size_q => [| IHsize_q'] H; exact H.
 Qed.
 
 Variable (t': nat).
@@ -486,28 +487,26 @@ Proof.
   case: m => [[ml mr] U].
 
   (* Perform case analysis over the following inequality *)
-  destruct (t <= size (domm U)) eqn:Heq; rewrite Heq.
+  case Hsize: (t <= size (domm U)).
+  (*destruct (t <= size (domm U)) eqn:Heq; rewrite Heq.*)
   (* First case is very easy since we return emptym in both cases *)
-  1: apply: rreflexivity_rule. 
+  - apply: rreflexivity_rule.
   
   (* t > size(domm U) *)
-  apply negbT in Heq.
-  rewrite -ltnNge ltnS in Heq.
+  - move: Hsize => /negbT. rewrite -ltnNge ltnS => Hsize.
   (**
      We need to prove it is bijective and that the operations performed after the sampling
      result in the program returning the same distribution of values. 
   *)
   apply: r_uniform_bij => [|q].
   (* Bijection *)
-  1: {
-    apply: (bij_share_bij (domm U) ml mr) => //.
-    by apply: uniq_fset.
-  }
-  (* Since there exists a bijection, we finish by proving that the last operations are
-     equivalent
-  *)
-  rewrite sec_share_bij ?uniq_fset //.
-  by apply: rreflexivity_rule.
+    + apply: (bij_share_bij (domm U) ml mr) => //.
+      by apply: uniq_fset.
+    (* Since there exists a bijection, we finish by proving that the last operations are
+      equivalent
+    *)
+    + rewrite sec_share_bij ?uniq_fset //.
+      by apply: rreflexivity_rule.
 Qed.
 
 (******************************************************************************)

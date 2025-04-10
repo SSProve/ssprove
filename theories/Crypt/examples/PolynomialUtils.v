@@ -35,6 +35,16 @@
 (*                           ((2,3), [(1,2) ;(3,4)]);                         *)
 (*                           ((3,4), [(1,2); (2,3))])                         *)
 (*                          ]                                                 *)
+(*         zero_points s == given a sequence returns a sequence of pairs      *)
+(*                          where the first element of each pair is the       *)
+(*                          elements of s in the same order as in s and the   *)
+(*                          second element is always zero                     *)
+(*           head_poly p == returns the head of the list resulting from       *)
+(*                          interpreting the polynomial p as a list ending    *)
+(*                          with infinite zeroes                              *)
+(*           tail_poly p == returns the tail of the list resulting from       *)
+(*                          interpreting the polynomial p as a list ending    *)
+(*                          with infinite zeroes                              *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -49,7 +59,8 @@ Set Primitive Projections.
 
 Local Open Scope ring_scope.
 
-Definition dif_points {A : eqType} { B : Type} (l : seq (A * B)) := (uniq (unzip1 l)).
+Definition dif_points {A : eqType} { B : Type} (l : seq (A * B)) := 
+  (uniq (unzip1 l)).
 
 Ltac simpl_dif_point :=
   rewrite /dif_points /unzip1 ?map_cons ?map_cat ?cons_uniq -?/unzip1.
@@ -59,8 +70,9 @@ Section Lagrange_Poly.
 Definition lagrange_basis {R: unitRingType} (s: seq R) (x: R): {poly R} :=
   \prod_(c <- s) ((x-c)^-1 *: Poly [:: -c ; 1]).
 
-Definition lagrange_poly_part {R: unitRingType} (j: R * R * seq (R * R)): {poly R} :=
-  j.1.2 *: lagrange_basis (unzip1 j.2) j.1.1.
+Definition lagrange_poly_part {R: unitRingType} 
+  (j: R * R * seq (R * R)): {poly R} :=
+    j.1.2 *: lagrange_basis (unzip1 j.2) j.1.1.
 
 Fixpoint subseqs_rec {T} l m r: seq (T * seq T) :=
   match r with
@@ -81,9 +93,10 @@ Definition lagrange_poly {R: unitRingType} (pts: seq (R * R)): {poly R} :=
   We prove some fundamental properties of Lagrange Interpolation.
   Specifically:
   - [size_lagrange_poly]: The size of a Lagrange polynomial is [<= size pts].
-  - [lagrange_poly_correct]: Evaluating a Lagrange polynomial at a point gives the corresponding y value.
-  - [lagrange_poly_unique]: There is exactly one polynomial with size [<= size pts], 
-    that satisfies [lagrange_poly_correct].
+  - [lagrange_poly_correct]: Evaluating a Lagrange polynomial at a point gives 
+    the corresponding y value.
+  - [lagrange_poly_unique]: There is exactly one polynomial with size 
+    [<= size pts], that satisfies [lagrange_poly_correct].
 
   These together formalise Theorem 3.8 and 3.9 from the book
 *)
@@ -95,9 +108,10 @@ Lemma lagrange_basis_0 {R: comUnitRingType} (x1 x: R) (s: seq R):
 Proof.
   rewrite /lagrange_basis.
   elim: s => [// | a s IHs].
-  rewrite in_cons big_cons hornerM hornerZ !horner_cons hornerC GRing.mul0r GRing.add0r GRing.mul1r.
-  destruct (x == a) eqn:Heq.
-  - move /eqP in Heq.
+  rewrite in_cons big_cons hornerM hornerZ.
+  rewrite !horner_cons hornerC GRing.mul0r GRing.add0r GRing.mul1r.
+  case Heq: (x == a).
+  - move: Heq => /eqP-Heq.
     by rewrite Heq GRing.subrr GRing.mulr0 GRing.mul0r.
   - move=> H.
     by rewrite IHs // GRing.mulr0.
@@ -109,40 +123,43 @@ Lemma lagrange_basis_1 {R: fieldType} (x: R) (s: seq R):
 Proof.
   rewrite /lagrange_basis.
   elim: s => [|a s IHs].
-  1: by rewrite big_nil hornerC eq_refl.
-  rewrite in_cons big_cons hornerM hornerZ !horner_cons hornerC GRing.mul0r GRing.add0r GRing.mul1r.
-  destruct (x == a) eqn:Heq.
-  - move /eqP in Heq.
-    by rewrite Heq GRing.subrr GRing.mulr0 GRing.mul0r eq_sym GRing.oner_eq0.
-  - apply negbT in Heq.
-    rewrite -GRing.subr_eq0 in Heq.
-    by rewrite GRing.mulVf // GRing.mul1r IHs.
+  - rewrite big_nil hornerC.
+    by rewrite eq_refl.
+  - rewrite in_cons big_cons hornerM hornerZ.
+    rewrite !horner_cons hornerC GRing.mul0r GRing.add0r GRing.mul1r.
+    case Heq: (x == a).
+    + move: Heq => /eqP-Heq.
+      rewrite Heq GRing.subrr GRing.mulr0 GRing.mul0r eq_sym.
+      by rewrite GRing.oner_eq0.
+    + move: Heq => /negbT-Heq.
+      move: Heq; rewrite -GRing.subr_eq0 => Heq.
+      by rewrite GRing.mulVf // GRing.mul1r IHs.
 Qed.
 
 (* The size of l_i(x) polynomial is <= size of the sequence is built uppon. *)
 Lemma size_lagrange_basis {R: fieldType} (x: R) (s: seq R):
-  (size (lagrange_basis s x) <= S (size s))%N.
+  (size (lagrange_basis s x) <= (size s).+1)%N.
 Proof.
   rewrite /lagrange_basis.
   elim: s => [|a s IHs].
   1: by rewrite big_nil size_poly1.
   rewrite big_cons.
-  destruct (x == a) eqn:Heq.
-  1: {
-    move /eqP in Heq.
-    by rewrite Heq GRing.subrr GRing.invr0 -mul_polyC polyC0 !GRing.mul0r size_poly0.
-  }
-  apply negbT in Heq.
-  apply: leq_trans.
-  1: by apply: size_mul_leq.
-  rewrite size_scale.
-  - by rewrite (@PolyK R 0) // GRing.oner_neq0.
-  - by rewrite GRing.invr_neq0 // GRing.subr_eq0.
+  case Heq: (x == a).
+  - move: Heq => /eqP-Heq. rewrite Heq.
+    rewrite GRing.subrr GRing.invr0.
+    rewrite -mul_polyC polyC0 !GRing.mul0r.
+    by rewrite size_poly0.
+  - move: Heq => /negbT-Heq.
+    apply: leq_trans.
+    1: by apply: size_mul_leq.
+    rewrite size_scale.
+    + by rewrite (@PolyK R 0) // GRing.oner_neq0.
+    + by rewrite GRing.invr_neq0 // GRing.subr_eq0.
 Qed.
 
 (*
-   Proof that when we construct (partially) our polynomial, the evaluation for an x_i in the list is
-   zero.
+   Proof that when we construct (partially) our polynomial, the evaluation for 
+   an x_i in the list is zero.
 *)
 Lemma lagrange_poly_part_0 {R : fieldType} (x: R) (l : seq (R * R)) m r:
   x \in unzip1 l ->
@@ -151,15 +168,15 @@ Proof.
   elim: r l m => [|m' r IHr] l [x0 y0] Hin.
   1: by rewrite big_seq1 hornerZ lagrange_basis_0 ?GRing.mulr0.
   rewrite /= big_cons hornerD hornerZ.
-  rewrite lagrange_basis_0 ?IHr ?GRing.mulr0 ?GRing.add0r //.
-  all: simpl_dif_point; by rewrite mem_cat Hin.
+  rewrite lagrange_basis_0 ?IHr ?GRing.mulr0 ?GRing.add0r //;
+  simpl_dif_point; by rewrite mem_cat Hin.
 Qed.
 
 Lemma uniq_unzip1_in {S T: eqType} (a: S * T) (s: seq (S * T)):
   dif_points (a :: s) ->
   a.1 \notin unzip1 s.
 Proof.
-  unfold dif_points. simpl_dif_point.
+  rewrite /dif_points. simpl_dif_point.
   by move => /andP [].
 Qed.
 
@@ -174,37 +191,34 @@ Lemma lagrange_poly_part_correct {R: fieldType} (x y: R) l m r:
   (\sum_(j <- subseqs_rec l m r) lagrange_poly_part j).[x] = y.
 Proof.
   elim: r l m => [|m' r IHr] l [x0 y0] Huniq Hin.
-  1: {
-    rewrite big_seq1 hornerZ.
-    rewrite mem_seq1 in Hin.
-    move /eqP in Hin.
+  - rewrite big_seq1 hornerZ.
+    move: Hin. rewrite mem_seq1 => /eqP-Hin.
     case: Hin => -> ->.
     move: Huniq. simpl_dif_point.
     rewrite uniq_catC -/unzip1 /= => Huniq.
     move: Huniq => /andP [Hnotin Huniq].
-    rewrite lagrange_basis_1 in Hnotin.
-    move /eqP in Hnotin.
+    move: Hnotin. rewrite lagrange_basis_1 => /eqP-Hnotin.
     by rewrite Hnotin GRing.mulr1.
-  }
-  rewrite /= big_cons hornerD hornerZ.
-  rewrite in_cons in Hin.
-  move: Hin => /orP [/eqP Heq|Hin].
-  1: {
-    case: Heq => -> ->.
-    rewrite lagrange_poly_part_0 ?GRing.addr0 //.
-    2: by rewrite /unzip1 map_cat mem_cat Bool.orb_comm mem_seq1 eq_refl.
-    rewrite /dif_points /unzip1 map_cat uniq_catC -map_cat cat_cons -/unzip1 in Huniq.
-    apply (uniq_unzip1_in (x0, y0)) in Huniq.
-    rewrite /unzip1 map_cat mem_cat Bool.orb_comm -mem_cat -map_cat -/unzip1 in Huniq.
-    rewrite lagrange_basis_1 /= in Huniq.
-    move /eqP in Huniq.
-    by rewrite Huniq GRing.mulr1.
-  }
-  rewrite IHr //.
-  2: by rewrite -catA cat_cons.
-  rewrite lagrange_basis_0 ?GRing.mulr0 ?GRing.add0r //.
-  apply (map_f fst) in Hin.
-  by rewrite /unzip1 map_cat mem_cat Bool.orb_comm Hin.
+
+  - rewrite /= big_cons hornerD hornerZ.
+    move: Hin. rewrite in_cons => /orP [/eqP Heq|Hin].
+    + case: Heq => -> ->.
+      rewrite lagrange_poly_part_0 ?GRing.addr0 //.
+      2: by rewrite /unzip1 map_cat mem_cat Bool.orb_comm mem_seq1 eq_refl.
+      move: Huniq. 
+      rewrite /dif_points /unzip1 map_cat uniq_catC -map_cat cat_cons -/unzip1.
+      move => /(uniq_unzip1_in (x0, y0))-Huniq.
+      move: Huniq;
+      rewrite /unzip1 map_cat mem_cat Bool.orb_comm -mem_cat -map_cat -/unzip1;
+      move => Huniq.
+      move: Huniq; rewrite lagrange_basis_1 /= => /eqP-Huniq.
+      by rewrite Huniq GRing.mulr1.
+    + rewrite IHr //.
+      2: by rewrite -catA cat_cons.
+      rewrite lagrange_basis_0 ?GRing.mulr0 ?GRing.add0r //.
+      move: Hin => /(map_f fst)-Hin.
+      rewrite /unzip1 map_cat mem_cat Bool.orb_comm.
+      by rewrite Hin.
 Qed.
 
 (**
@@ -212,34 +226,33 @@ Qed.
    the second recursive case. 
 *)
 Lemma size_lagrange_poly_part {R: fieldType} l (m: R * R) r:
-  (size (\sum_(j <- subseqs_rec l m r) lagrange_poly_part j)%R <= size (l ++ m :: r))%N.
+  (size (\sum_(j <- subseqs_rec l m r) lagrange_poly_part j)%R 
+    <= size (l ++ m :: r))%N.
 Proof.
   generalize dependent m.
   generalize dependent l.
   elim: r => /= [|m' r IHr] l m.
-  1: {
-    rewrite big_seq1 size_cat addn1.
+  - rewrite big_seq1 size_cat addn1.
     apply: leq_trans.
     1: by apply: size_scale_leq.
     apply: leq_trans.
-    - by apply: size_lagrange_basis.
-    - by rewrite /unzip1 size_map ltnSn.
-  }
-  rewrite big_cons.
-  apply: leq_trans.
-  1: by apply: size_add.
-  rewrite geq_max.
-  apply /andP.
-  split.
-  - rewrite /lagrange_poly_part /=.
+    + by apply: size_lagrange_basis.
+    + by rewrite /unzip1 size_map ltnSn.
+  - rewrite big_cons.
     apply: leq_trans.
-    1: by apply: size_scale_leq.
-    replace (size (l ++ [:: m, m' & r])) with (size (unzip1 (l ++ [:: m' & r]))).+1.
-    1: by apply: size_lagrange_basis.
-    by rewrite /unzip1 size_map !size_cat -addnS.
-  - replace (size (l ++ [:: m, m' & r])) with (size ((l ++ [:: m]) ++ m' :: r)).
-    1: by apply: IHr.
-    by rewrite !size_cat addn1 !addnS.
+    1: by apply: size_add.
+    rewrite geq_max.
+      apply /andP; split.
+      + rewrite /lagrange_poly_part /=.
+        apply: leq_trans.
+        1: by apply: size_scale_leq.
+        have: 
+          size (l ++ [:: m, m' & r]) = (size (unzip1 (l ++ [:: m' & r]))).+1.
+        1: by rewrite /unzip1 size_map !size_cat -addnS.
+        by move => Heq; rewrite Heq; apply: size_lagrange_basis.
+      + have : size (l ++ [:: m, m' & r]) = size ((l ++ [:: m]) ++ m' :: r).
+        1: by rewrite !size_cat addn1 !addnS.
+        by move => H; rewrite H; apply: IHr.
 Qed.
 
 (* The size of a Lagrange polynomial is [<= size pts]. *)
@@ -272,29 +285,27 @@ Lemma lagrange_poly_unique {R: fieldType} (pts: seq (R * R)) (q: {poly R}):
   q = lagrange_poly pts.
 Proof.
   move=> Huniq Hsize1 Hpred.
-  assert (size (q - lagrange_poly pts)%R <= size pts)%N as Hsize.
-  1: {
-    move: (size_lagrange_poly pts) => Hsize2.
+  have Hsize : (size (q - lagrange_poly pts)%R <= size pts)%N.
+  - move: (size_lagrange_poly pts) => Hsize2.
     apply: leq_trans.
     1: apply: size_add.
     by rewrite geq_max size_opp Hsize1 Hsize2.
-  }
-  apply /eqP.
-  rewrite -GRing.subr_eq0 -size_poly_eq0.
-  rewrite size_poly_eq0.
-  apply /negPn /negP => Hcontra.
-  rewrite leqNgt in Hsize.
-  move /negP in Hsize.
-  apply: Hsize.
-  replace (size pts) with (size (unzip1 (pts))).
-  2: by rewrite size_map.
-  apply: max_poly_roots => //.
-  apply /allP => x' /mapP [[x y] Hin Heq].
-  subst.
-  rewrite /root hornerD hornerN.
-  rewrite (Hpred x y) //.
-  rewrite (lagrange_poly_correct x y) //.
-  by rewrite GRing.subr_eq0 eq_refl.
+  - apply /eqP.
+    rewrite -GRing.subr_eq0 -size_poly_eq0.
+    rewrite size_poly_eq0.
+    apply /negPn /negP => Hcontra.
+    move : Hsize; rewrite leqNgt => /negP-Hsize.
+    apply: Hsize.
+    have : size pts = size (unzip1 (pts)).
+    1: by rewrite size_map.
+    move => Hsize2; rewrite Hsize2.
+    apply: max_poly_roots => //.
+    apply /allP => x' /mapP [[x y] Hin Heq].
+    subst.
+    rewrite /root hornerD hornerN.
+    rewrite (Hpred x y) //.
+    rewrite (lagrange_poly_correct x y) //.
+    by rewrite GRing.subr_eq0 eq_refl.
 Qed.
 
 (**
@@ -322,11 +333,11 @@ Lemma x_in_zero_points {R: ringType} (x y: R) (s: seq R):
   x \in s.
 Proof.
   rewrite /zero_points.
-  elim: s => [// | a s IHs] H.
+  elim: s => [// | a s IHs] Hin.
   rewrite in_cons.
-  rewrite map_cons in_cons xpair_eqE in H.
-  destruct (x == a) eqn:Heq => //=.
-  by apply: IHs.
+  move: Hin; rewrite map_cons in_cons xpair_eqE => Hin.
+  case Heq : (x == a) => //=.
+  move: Hin; by rewrite Heq /=.
 Qed.
 
 Lemma y_in_zero_points {R: ringType} {x y: R} {s: seq R}:
@@ -336,10 +347,13 @@ Proof.
   rewrite /zero_points.
   elim: s => [// | a s IHs] H.
   rewrite map_cons in_cons in H.
-  destruct ((x, y) == (a, 0)) eqn:Heq.
-  - move /eqP in Heq.
-    by case: Heq.
-  - by apply: IHs.
+  case Heq : ((x, y) == (a, 0)) H.
+  - move : Heq => /eqP-/pair_equal_spec-Heq.
+    case Heq => Heqx Heqy. 
+    by rewrite Heqy /=.
+  - move => /=-Hneq.
+    apply: IHs.
+    by rewrite Hneq. 
 Qed.
 
 Lemma pt_in_zero_points {R: ringType} {x: R} {s: seq R}:
@@ -350,10 +364,13 @@ Proof.
   elim: s => [// | a s IHs] H /=.
   rewrite in_cons in H.
   rewrite in_cons.
-  destruct (x == a) eqn:Heq.
-  - move /eqP in Heq.
+  case Heq : (x == a).
+  - move : Heq => /eqP-Heq.
     by rewrite Heq eq_refl.
-  - by rewrite xpair_eqE Heq IHs.
+  - rewrite xpair_eqE Heq /=. 
+    apply: IHs.
+    move : H.
+    by rewrite Heq /=.
 Qed.
 
 Lemma lagrange_sub_zero {R: fieldType} (x: R) (l1 l2 r: seq (R * R)):
@@ -365,10 +382,10 @@ Proof.
   rewrite hornerD hornerN.
   generalize dependent l2.
   generalize dependent l1.
-  elim: r => [// | a r IHr] l1 l2 Huniq1 Huniq2 Hin.
-  rewrite /= in_cons in Hin.
-  destruct (x == a.1) eqn:Heq.
-  - move /eqP in Heq.
+  elim: r => [// | a r IHr] l1 l2 Huniq1 Huniq2.
+  rewrite in_cons.
+  case Heq : (x == a.1).
+  - move : Heq => /eqP-Heq. 
     rewrite Heq (lagrange_poly_correct a.1 a.2) //.
     1: rewrite (lagrange_poly_correct a.1 a.2) ?GRing.subrr //.
     all: by rewrite -surjective_pairing mem_cat in_cons eq_refl Bool.orb_true_r.
@@ -393,15 +410,16 @@ Proof.
     1,3: by apply: size_lagrange_poly.
     all: by [].
   - move=> x0 y0 Hin.
-    rewrite in_cons in Hin.
-    destruct (_ == _) eqn:Heq.
-    + move /eqP in Heq.
+    move: Hin; rewrite in_cons => Hin.
+    case Heq: ((x0, y0) == (x, y1 - y2)).
+    + move: Heq => /eqP-Heq.
       case: Heq => ? ?.
       subst.
       rewrite hornerD hornerN (lagrange_poly_correct x y1) //.
       1: rewrite (lagrange_poly_correct x y2) //.
       all: by rewrite in_cons eq_refl.
-    + rewrite (y_in_zero_points Hin).
+    + move: Hin; rewrite Heq => Hin.
+      rewrite (y_in_zero_points Hin).
       rewrite -!(cat1s _ pts).
       apply: lagrange_sub_zero => //.
       by apply: (x_in_zero_points x0 y0).
@@ -416,14 +434,15 @@ Proof.
   rewrite hornerD.
   generalize dependent l2.
   generalize dependent l1.
-  elim: r => [// | a r IHr] l1 l2 Huniq1 Huniq2 Hin.
-  rewrite /= in_cons in Hin.
-  destruct (x == a) eqn:Heq.
-  - move /eqP in Heq.
+  elim: r => [// | a r IHr] l1 l2 Huniq1 Huniq2.
+  rewrite /= in_cons => Hin.
+  case Heq: (x == a).
+  - move: Heq => /eqP-Heq.
     rewrite Heq (lagrange_poly_correct a 0) //.
     1: rewrite (lagrange_poly_correct a 0) ?GRing.addr0 //.
     all: by rewrite mem_cat in_cons eq_refl Bool.orb_true_r.
   - rewrite -!cat_rcons -!cats1 in Huniq1 Huniq2 *.
+    move: Hin; rewrite Heq => Hin. 
     by apply: IHr.
 Qed.
 
@@ -440,22 +459,23 @@ Proof.
   - apply: leq_trans.
     1: by apply: size_add.
     rewrite /= !size_map geq_max.
-    apply /andP.
+    apply/andP.
     split.
     all: apply: leq_trans.
     1,3: by apply: size_lagrange_poly.
     all: by rewrite /= size_map.
   - move=> x0 y0 Hin.
-    rewrite in_cons in Hin.
-    destruct (_ == _) eqn:Heq.
-    + move /eqP in Heq.
+    move: Hin; rewrite in_cons => Hin.
+    case Heq: ((x0, y0) == (x, y1 + y2)).
+    + move: Heq => /eqP Heq.
       case: Heq => ? ?.
       subst.
       rewrite hornerD (lagrange_poly_correct x y1) //.
       1: rewrite (lagrange_poly_correct x y2) //.
       2,4: by rewrite in_cons eq_refl.
       all: simpl_dif_point; by rewrite unzip1_zero_points.
-    + rewrite (y_in_zero_points Hin).
+    + move: Hin; rewrite Heq => Hin.
+      rewrite (y_in_zero_points Hin).
       rewrite -!(cat1s _ (zero_points s)).
       apply: lagrange_add_zero.
       3: by apply: (x_in_zero_points x0 y0).
@@ -476,11 +496,6 @@ Proof.
     by rewrite (y_in_zero_points Hin).
 Qed.
 
-(**
-  We also define some functions that lets us treat polynomials like lists ending
-  in infinite zeroes, and prove some useful lemmas that they do indeed behave
-  like lists.
-*)
 Definition head_poly {R: ringType} (q: {poly R}): R := q`_0.
 Definition tail_poly {R: ringType} (q: {poly R}): {poly R} := Poly (behead q).
 
@@ -494,10 +509,9 @@ Lemma tail_cons_poly {R: ringType} (a: R) (q: {poly R}):
   tail_poly (cons_poly a q) = q.
 Proof.
   rewrite /tail_poly polyseq_cons.
-  destruct (nilp q) eqn:Heq => /=.
+  case Heq: (nilp q). 
   2: by rewrite polyseqK.
-  rewrite /nilp size_poly_eq0 in Heq.
-  move /eqP in Heq.
+  move: Heq; rewrite /nilp size_poly_eq0 => /eqP-Heq.
   rewrite Heq polyseqC.
   by case: (a != 0).
 Qed.
@@ -526,7 +540,7 @@ Proof.
   case: q => [[|a s] /= Hs].
   1: by rewrite polyseq0.
   rewrite (PolyK Hs).
-  destruct s => //=.
+  move: Hs; case s => //= Hs.
   by rewrite polyseqC Hs.
 Qed.
 
@@ -555,16 +569,16 @@ Proof.
   case: q2.
   case: q1.
   elim=> [|a1 s1 IHs1] Hs1 [|a2 s2 ] //= Hs2 H.
-  - move /eqP in Hs2.
-    destruct Hs2. specialize (H (size s2)).
-    rewrite nth_nil nth_last in H.
+  - move: Hs2 => /eqP-Hs2.
+    case Hs2. specialize (H (size s2)).
+    move: H; rewrite nth_nil nth_last => H.
     by rewrite H.
-  - move /eqP in Hs1.
-    destruct Hs1. specialize (H (size s1)).
-    rewrite nth_nil nth_last in H.
+  - move: Hs1 => /eqP Hs1.
+    case Hs1. specialize (H (size s1)).
+    move: H; rewrite nth_nil nth_last => H.
     by rewrite -H.
   - move: (fun i => H i.+1) => HS.
-    specialize (H 0%N). simpl in *.
+    specialize (H 0%N). move: IHs1 H => /= IHs1 H.
     rewrite H. f_equal.
     apply: IHs1 => //.
     all: apply: last_neq_0.
@@ -575,14 +589,14 @@ Qed.
 Lemma tail_poly_add {R: ringType} (q1 q2: {poly R}):
   tail_poly (q1 + q2) = tail_poly q1 + tail_poly q2.
 Proof.
-  apply coef_poly_eq => i.
+  apply/coef_poly_eq; move => i.
   by rewrite coefD !coef_Poly !nth_behead coefD.
 Qed.
 
 Lemma cons_poly_add {R: ringType} (m m': R) (q1 q2: {poly R}):
   (cons_poly m' (q1 + q2) = (cons_poly m q1) + cons_poly (m'-m) q2)%R.
 Proof.
-  apply coef_poly_eq => i.
+  apply/coef_poly_eq; move => i.
   rewrite coefD !coef_cons coefD.
   case: i => //=.
   by rewrite GRing.addrC -GRing.addrA GRing.addNr GRing.addr0.
