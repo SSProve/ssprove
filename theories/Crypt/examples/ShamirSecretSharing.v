@@ -80,7 +80,6 @@ Import Num.Theory.
 Import Order.POrderTheory.
 
 Local Open Scope ring_scope.
-
 Local Open Scope nat_scope.
 
 Section ShamirSecretSharing_example.
