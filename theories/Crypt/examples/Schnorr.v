@@ -679,7 +679,7 @@ Proof.
   rewrite (commitment_binding LA A VA Hdisj).
   setoid_rewrite (extractor_success LA A VA).
   setoid_rewrite GRing.isNmodule.add0r.
-  apply Order.isDuallyPOrder.le_refl.
+  apply Order.le_refl.
 Qed.
 
 End Schnorr.
