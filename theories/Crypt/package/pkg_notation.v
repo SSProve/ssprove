@@ -21,6 +21,8 @@
     'bool
     'unit
     'option A
+    'seq t
+    'set t
     'fin n
     A × B
     {map A → B}
@@ -124,6 +126,8 @@ Module PackageNotation.
   Notation " 'bool " := (chBool) (in custom pack_type at level 2).
   Notation " 'unit " := (chUnit) (in custom pack_type at level 2).
   Notation " 'option x " := (chOption x) (in custom pack_type at level 2).
+  Notation " 'seq t " := (chMap chNat t) (at level 2): package_scope.
+  Notation " 'set t " := (chMap t chUnit) (in custom pack_type at level 2).
 
   Notation " 'fin n " :=
     (chFin (mkpos n))
@@ -142,6 +146,8 @@ Module PackageNotation.
   Notation " 'bool " := (chBool) (at level 2) : package_scope.
   Notation " 'unit " := (chUnit) (at level 2) : package_scope.
   Notation " 'option x " := (chOption x) (at level 2) : package_scope.
+  Notation " 'seq t " := (chMap chNat t) (in custom pack_type at level 2).
+  Notation " 'set t " := (chMap t chUnit) (at level 2): package_scope.
 
   Notation " 'fin x " :=
     (chFin (mkpos x))

@@ -16,10 +16,8 @@
 (* * Section SecretSharing_example					                                  *)
 (*    Word == type for the words in the protocol       			                  *)
 (*   'word == notation for Word						                                    *)
-(*    plus == receives two Words and returns the XOR of them		                *)
+(*    plus == receives two Words and returns the XOR of them		              *)
 (*   m ⊕ k == XOR of words m and k					                                  *)	
-(*  'seq t == local choice_type for sequences				                        *)
-(*  'set t == local choice_type for sets 				                            *)
 (******************************************************************************)
 
 From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
@@ -154,21 +152,6 @@ Qed.
 
 Notation " 'word " := (Word) (in custom pack_type at level 2).
 Notation " 'word " := (Word) (at level 2): package_scope.
-
-(* We can't use sequences directly in [choice_type] so instead we use a       *)
-(* map from natural numbers to the type.                                      *)
-Definition chSeq t := chMap 'nat t.
-
-Notation " 'seq t " := (chSeq t) (in custom pack_type at level 2).
-Notation " 'seq t " := (chSeq t) (at level 2): package_scope.
-
-(* We can't use sets directly in [choice_type] so instead we use a map to     *)
-(* units. We can then use [domm] to get the domain, which is a set.           *)
-
-Definition chSet t := chMap t 'unit.
-
-Notation " 'set t " := (chSet t) (in custom pack_type at level 2).
-Notation " 'set t " := (chSet t) (at level 2): package_scope.
 
 Definition shares: nat := 0.
 

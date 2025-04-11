@@ -42,8 +42,6 @@
 (*     t' == the maximum number of shares the scheme is secure against.       *)
 (*      n == number of shares.                                                *)
 (*      p == number of possible messages. It is is a prime.                   *)
-(* 'seq t == local choice_type for sequences				                          *)
-(* 'set t == local choice_type for sets 				                              *)
 (******************************************************************************)
 
 From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
@@ -108,22 +106,6 @@ Notation " 'word " := (Word) (at level 2): package_scope.
 
 Notation " 'share " := (Share) (in custom pack_type at level 2).
 Notation " 'share " := (Share) (at level 2): package_scope.
-
-(* We can't use sequences directly in [choice_type] so instead we use a map   *)
-(* from natural numbers to the type.                                          *)
-
-Definition chSeq t := chMap 'nat t.
-
-Notation " 'seq t " := (chSeq t) (in custom pack_type at level 2).
-Notation " 'seq t " := (chSeq t) (at level 2): package_scope.
-
-(* We can't use sets directly in [choice_type] so instead we use a map to     *)
-(* units. We can then use [domm] to get the domain, which is a set.           *)
-
-Definition chSet t := chMap t 'unit.
-
-Notation " 'set t " := (chSet t) (in custom pack_type at level 2).
-Notation " 'set t " := (chSet t) (at level 2): package_scope.
 
 (* [n] is the number of shares.                                               *)
 Variable (n: nat).

@@ -47,15 +47,6 @@ Import Order.POrderTheory.
 
 Section PRPCCA_example.
 
-(**
-  We can't use sets directly in [choice_type] so instead we use a map to units.
-  We can then use [domm] to get the domain, which is a set.
-*)
-Definition chSet t := chMap t 'unit.
-
-Notation " 'set t " := (chSet t) (in custom pack_type at level 2).
-Notation " 'set t " := (chSet t) (at level 2): package_scope.
-
 Definition tt := Datatypes.tt.
 
 Definition fset_to_chset {T: ordType} (s: {fset T}): {fmap T -> 'unit} :=
