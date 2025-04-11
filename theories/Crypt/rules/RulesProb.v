@@ -151,7 +151,7 @@ End RulesNotation.
 Import RulesNotation.
 Open Scope Rules_scope.
 
-Definition flip (r : R) : SDistr (bool_choiceType).
+Definition flip (r : R) : SDistr (bool).
   rewrite /SDistr_carrier.
   apply mkdistrd. intros b.
   destruct b.
@@ -517,8 +517,8 @@ Fixpoint for_loop {A : choiceType} (c : A -> MFreePr A) (n : nat) (a : A) :=
   end.
 
 (* Rem.: this is a bounded version of the iteration operator found in monads with iteration *)
-Fixpoint bounded_iter {A B : choiceType} (n : nat) (c : A -> MFreePr (sum_choiceType A B)) (a : A) :
-  MFreePr (sum_choiceType unit_choiceType B) :=
+Fixpoint bounded_iter {A B : choiceType} (n : nat) (c : A -> MFreePr (A + B)%type) (a : A) :
+  MFreePr (unit_choiceType + B)%type :=
   match n with
   | 0  => ord_relmon_unit MFreePr _ (inl Datatypes.tt)
   | S m => (ord_relmon_bind MFreePr) (fun v => match v with
@@ -527,16 +527,16 @@ Fixpoint bounded_iter {A B : choiceType} (n : nat) (c : A -> MFreePr (sum_choice
                                            end) (c a)
   end.
 
-Definition bounded_loop {A B : choiceType} (n : nat) (b : A -> MFreePr bool_choiceType) (c : A -> MFreePr A) (a : A) :
-  MFreePr (sum_choiceType unit_choiceType A) :=
+Definition bounded_loop {A B : choiceType} (n : nat) (b : A -> MFreePr bool) (c : A -> MFreePr A) (a : A) :
+  MFreePr (unit_choiceType + A)%type :=
   bounded_iter n (fun a' => ord_relmon_bind MFreePr (fun b => match b with
        | true => ord_relmon_bind MFreePr (fun a2 => ord_relmon_unit MFreePr _ (inr a2)) (c a')
        | false => ord_relmon_unit MFreePr _ (inl a')
                                                         end) (b a')) a.
 
 (* Rem.: this a variant following what's in The next 700... *)
-Fixpoint bounded_do_while  (n : nat) (c : MFreePr bool_choiceType) :
-  MFreePr bool_choiceType :=
+Fixpoint bounded_do_while  (n : nat) (c : MFreePr bool) :
+  MFreePr bool :=
   (* false means fuel emptied, true means execution finished *)
   match n with
   | 0 => ord_relmon_unit MFreePr _ false
@@ -652,23 +652,23 @@ Proof.
        move: H. move/idP. intuition.
          by rewrite H !GRing.mulr0.
     (* summable B*)
-    assert ((fun x : (prod_choiceType (Choice.Pack chX) (Choice.Pack chY)) =>
+    assert ((fun x : ( (Choice.Pack chX) * (Choice.Pack chY)) =>
                (nat_of_bool (let '(_, y) := x in B y))%:R * d x) =
             (fun '(x, y)  => (B y)%:R * d (x, y))) as Heq1.
     { extensionality k. destruct k as [k1 k2].
       case (B k2). reflexivity. reflexivity. }
     rewrite -Heq1.
-    pose (@summable_pr R (prod_choiceType (Choice.Pack chX) (Choice.Pack chY))
+    pose (@summable_pr R ((Choice.Pack chX) * (Choice.Pack chY))%type
                        (fun '(x, y) => B y) d).
     simpl in *. unfold nat_of_bool in s. rewrite /nat_of_bool. exact s.
     (* summable A *)
-    assert ((fun x : (prod_choiceType (Choice.Pack chX) (Choice.Pack chY)) =>
+    assert ((fun x : ((Choice.Pack chX) * (Choice.Pack chY))%type =>
                (nat_of_bool (let '(x, _) := x in A x))%:R * d x) =
             (fun '(x, y)  => (A x)%:R * d (x, y))) as Heq2.
     { extensionality k. destruct k as [k1 k2].
       case (B k2). reflexivity. reflexivity. }
     rewrite -Heq2.
-    pose (@summable_pr R (prod_choiceType (Choice.Pack chX) (Choice.Pack chY))
+    pose (@summable_pr R ((Choice.Pack chX) * (Choice.Pack chY))%type
                        (fun '(x, y) => A x) d).
     simpl in *. unfold nat_of_bool in s. rewrite /nat_of_bool. exact s.
 Qed.
@@ -757,33 +757,33 @@ Proof.
              exfalso. by apply: true_false_False.
              auto.
   (* summable B *)
-    assert ((fun x : (prod_choiceType (Choice.Pack chX) (Choice.Pack chY)) =>
+    assert ((fun x : ((Choice.Pack chX) * (Choice.Pack chY)) =>
                (nat_of_bool (let '(_, y) := x in B y))%:R * d x) =
             (fun '(x, y)  => (B y)%:R * d (x, y))) as Heq1.
     { extensionality k. destruct k as [k1 k2].
       case (B k2). reflexivity. reflexivity. }
     rewrite -Heq1.
-    pose (@summable_pr R (prod_choiceType (Choice.Pack chX) (Choice.Pack chY))
+    pose (@summable_pr R ((Choice.Pack chX) * (Choice.Pack chY))%type
                        (fun '(x, y) => B y) d).
     simpl in *. unfold nat_of_bool in s. rewrite /nat_of_bool. exact s.
   (* summable B *)
-    assert ((fun x : (prod_choiceType (Choice.Pack chX) (Choice.Pack chY)) =>
+    assert ((fun x : ((Choice.Pack chX) * (Choice.Pack chY)) =>
                (nat_of_bool (let '(_, y) := x in B y))%:R * d x) =
             (fun '(x, y)  => (B y)%:R * d (x, y))) as Heq1.
     { extensionality k. destruct k as [k1 k2].
       case (B k2). reflexivity. reflexivity. }
     rewrite -Heq1.
-    pose (@summable_pr R (prod_choiceType (Choice.Pack chX) (Choice.Pack chY))
+    pose (@summable_pr R ((Choice.Pack chX) * (Choice.Pack chY))%type
                        (fun '(x, y) => B y) d).
     simpl in *. unfold nat_of_bool in s. rewrite /nat_of_bool. exact s.
     (* summable A *)
-    assert ((fun x : (prod_choiceType (Choice.Pack chX) (Choice.Pack chY)) =>
+    assert ((fun x : ((Choice.Pack chX) * (Choice.Pack chY)) =>
                (nat_of_bool (let '(x, _) := x in A x))%:R * d x) =
             (fun '(x, y)  => (A x)%:R * d (x, y))) as Heq2.
     { extensionality k. destruct k as [k1 k2].
       case (B k2). reflexivity. reflexivity. }
     rewrite -Heq2.
-    pose (@summable_pr R (prod_choiceType (Choice.Pack chX) (Choice.Pack chY))
+    pose (@summable_pr R ((Choice.Pack chX) * (Choice.Pack chY))%type
                        (fun '(x, y) => A x) d).
     simpl in *. unfold nat_of_bool in s. rewrite /nat_of_bool. exact s.
 Qed.
@@ -988,4 +988,3 @@ Qed.
 
 
 End DerivedRules.
-

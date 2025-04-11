@@ -121,8 +121,10 @@ Module PackageNotation.
   *)
 
   Notation " 'nat " := (chNat) (in custom pack_type at level 2).
+  Notation " 'int " := (chInt) (in custom pack_type at level 2).
   Notation " 'bool " := (chBool) (in custom pack_type at level 2).
   Notation " 'unit " := (chUnit) (in custom pack_type at level 2).
+  Notation " 'word n " := (chWord n) (in custom pack_type at level 2).
   Notation " 'option x " := (chOption x) (in custom pack_type at level 2).
 
   Notation " 'fin n " :=
@@ -134,13 +136,16 @@ Module PackageNotation.
     (in custom pack_type at level 2, format "{map  x  →  y  }").
 
   Notation " x × y " := (chProd x y) (in custom pack_type at level 2).
+  Notation " x ∐ y " := (chSum x y) (in custom pack_type at level 2).
 
   Notation "( x )" := x (in custom pack_type, x at level 2).
 
   (** Repeat the above notations here for package_scope. *)
   Notation " 'nat " := (chNat) (at level 2) : package_scope.
+  Notation " 'int " := (chInt) (at level 2) : package_scope.
   Notation " 'bool " := (chBool) (at level 2) : package_scope.
   Notation " 'unit " := (chUnit) (at level 2) : package_scope.
+  Notation " 'word n " := (chWord n) (at level 2) : package_scope.
   Notation " 'option x " := (chOption x) (at level 2) : package_scope.
 
   Notation " 'fin x " :=
@@ -153,6 +158,7 @@ Module PackageNotation.
     (at level 80, format "{map  x  →  y  }") : package_scope. *)
 
   Notation " x × y " := (chProd x y) (at level 80) : package_scope.
+  Notation " x ∐ y " := (chSum x y) (at level 80) : package_scope.
 
   Notation "[ 'interface' ]" :=
     (fset [::])

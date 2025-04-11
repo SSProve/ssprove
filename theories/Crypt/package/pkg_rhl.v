@@ -4,7 +4,6 @@
   basic crypto-style reasoning notions.
 *)
 
-
 From Coq Require Import Utf8.
 From SSProve.Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples.
@@ -166,9 +165,7 @@ Proof.
   match goal with
   | |- realsum.summable ?f => eassert (f = _) as Hf end.
   { extensionality x.
-    instantiate (1 := fun x1 => (f1 x1 == f3 x1)%:R * (f2 x1 == f4 x1)%:R).
-    simpl.
-    exact: (destruct_pair_eq (a:= f1 x) (b:=f3 x) (c:= f2 x) (d := f4 x)). }
+    exact (destruct_pair_eq (a:= f1 x) (b:=f3 x) (c:= f2 x) (d := f4 x)). }
   rewrite Hf.
   apply realsum.summableM. all: assumption.
 Qed.
@@ -416,6 +413,105 @@ Proof.
       * cbn. intros s₀' s₁' [? ?]. subst. auto.
 Qed.
 
+(* TODO: generalize, this proof is the same as for eq_upto_inv_perf_ind*)
+Lemma eq_upto_pinv_perf_ind :
+  ∀ {P0 P1 L₀ L₁ LA E} (p₀ p₁ : raw_package) (I : precond) (A : raw_package)
+    `{ValidPackage L₀ Game_import E p₀}
+    `{ValidPackage L₁ Game_import E p₁}
+    `{ValidPackage LA E A_export A},
+    pINV' P0 P1 I →
+    I (empty_heap, empty_heap) →
+    pdisjoint LA P0 →
+    pdisjoint LA P1 →
+    eq_up_to_inv E I p₀ p₁ →
+    AdvantageE p₀ p₁ A = 0.
+Proof.
+  intros P0 P1 L₀ L₁ LA E p₀ p₁ I A vp₀ vp₁ vA hI' hIe hd₀ hd₁ hp.
+  unfold AdvantageE, Pr.
+  pose r := get_op_default A RUN tt.
+  assert (hI : INV LA I). 1: eapply pINV'_to_INV; eauto.
+  unshelve epose proof (eq_up_to_inv_adversary_link p₀ p₁ I r hI hp) as h.
+  1:{
+    eapply valid_get_op_default.
+    - eauto.
+    - auto_in_fset.
+  }
+  assert (
+    ∀ x y : tgt RUN * heap_choiceType,
+      (let '(b₀, s₀) := x in λ '(b₁, s₁), b₀ = b₁ ∧ I (s₀, s₁)) y →
+      (fst x == true) ↔ (fst y == true)
+  ) as Ha.
+  { intros [b₀ s₀] [b₁ s₁]. simpl.
+    intros [e ?]. rewrite e. intuition auto.
+  }
+  unfold Pr_op.
+  unshelve epose (rhs := thetaFstd _ (repr (code_link r p₀)) empty_heap).
+  simpl in rhs.
+  epose (lhs := Pr_op (A ∘ p₀) RUN tt empty_heap).
+  assert (lhs = rhs) as he.
+  { subst lhs rhs.
+    unfold Pr_op. unfold Pr_code.
+    unfold thetaFstd. simpl. apply f_equal2. 2: reflexivity.
+    apply f_equal. apply f_equal.
+    rewrite get_op_default_link. reflexivity.
+  }
+  unfold lhs in he. unfold Pr_op in he.
+  rewrite he.
+  unshelve epose (rhs' := thetaFstd _ (repr (code_link r p₁)) empty_heap).
+  simpl in rhs'.
+  epose (lhs' := Pr_op (A ∘ p₁) RUN tt empty_heap).
+  assert (lhs' = rhs') as e'.
+  { subst lhs' rhs'.
+    unfold Pr_op. unfold Pr_code.
+    unfold thetaFstd. simpl. apply f_equal2. 2: reflexivity.
+    apply f_equal. apply f_equal.
+    rewrite get_op_default_link. reflexivity.
+  }
+  unfold lhs' in e'. unfold Pr_op in e'.
+  rewrite e'.
+  unfold rhs', rhs.
+  unfold SDistr_bind. unfold SDistr_unit.
+  rewrite !dletE.
+  assert (
+    ∀ x : bool_choiceType * heap_choiceType,
+      ((let '(b, _) := x in dunit (R:=R) (T:=bool_choiceType) b) true) ==
+      (x.1 == true)%:R
+  ) as h1.
+  { intros [b s].
+    simpl. rewrite dunit1E. apply/eqP. reflexivity.
+  }
+  assert (
+    ∀ y,
+      (λ x : prod_choiceType (tgt RUN) heap_choiceType, (y x) * (let '(b, _) := x in dunit (R:=R) (T:=tgt RUN) b) true) =
+      (λ x : prod_choiceType (tgt RUN) heap_choiceType, (x.1 == true)%:R * (y x))
+  ) as Hrew.
+
+  { intros y. extensionality x.
+    destruct x as [x1 x2].
+    rewrite dunit1E.
+    simpl. rewrite GRing.mulrC. reflexivity.
+  }
+  rewrite !Hrew.
+  unfold TransformingLaxMorph.rlmm_from_lmla_obligation_1. simpl.
+  unfold SubDistr.SDistr_obligation_2. simpl.
+  unfold OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
+  rewrite !SDistr_rightneutral. simpl.
+  pose proof (Pr_eq_empty _ _ _ _ h hIe Ha) as Heq.
+  simpl in Heq.
+  unfold θ_dens in Heq.
+  simpl in Heq. unfold pr in Heq.
+  simpl in Heq.
+  rewrite Heq.
+  rewrite /StateTransfThetaDens.unaryStateBeta'_obligation_1.
+  assert (∀ (x : R), `|x - x| = 0) as Hzero.
+  { intros x.
+    assert (x - x = 0) as H3.
+    { apply /eqP. rewrite GRing.subr_eq0. intuition. }
+    rewrite H3. apply normr0.
+  }
+  apply Hzero.
+Qed.
+
 Lemma eq_upto_inv_perf_ind :
   ∀ {L₀ L₁ LA E} (p₀ p₁ : raw_package) (I : precond) (A : raw_package)
     `{ValidPackage L₀ Game_import E p₀}
@@ -521,6 +617,29 @@ Proof.
     rewrite H3. apply normr0.
   }
   apply Hzero.
+Qed.
+
+(* TODO: move? to pkg_advantage *)
+Definition padv_equiv P₀ P₁ {L₀ L₁ E} (G₀ G₁ : raw_package)
+  `{ValidPackage L₀ Game_import E G₀} `{ValidPackage L₁ Game_import E G₁} ε :=
+  ∀ LA A,
+    ValidPackage LA E A_export A →
+    pdisjoint LA P₀ →
+    pdisjoint LA P₁ →
+    AdvantageE G₀ G₁ A = ε A.
+
+Lemma eq_rel_perf_ind' :
+  ∀ {P0 P1 L₀ L₁ E} (p₀ p₁ : raw_package) (inv : precond)
+    `{ValidPackage L₀ Game_import E p₀}
+    `{ValidPackage L₁ Game_import E p₁},
+    pInvariant P0 P1 inv →
+    eq_up_to_inv E inv p₀ p₁ →
+    padv_equiv P0 P1 p₀ p₁ (λ _ : raw_package, 0%R).
+    (* p₀ ≈₀ p₁. *)
+Proof.
+  intros P0 P1 L₀ L₁ E p₀ p₁ inv v₀ v₁ [? ?] he.
+  intros LA A vA hd₀ hd₁.
+  eapply eq_upto_pinv_perf_ind. all: eauto.
 Qed.
 
 Lemma eq_rel_perf_ind :
@@ -866,6 +985,29 @@ Proof.
   eapply swap_ruleL. all: eauto.
 Qed.
 
+Lemma rswap_helper :
+  forall {A₀ A₁ B : ord_choiceType}
+    (c₀ : raw_code A₀) (c₁ : raw_code A₁) (r : A₀ → A₁ → raw_code B),
+    ((a1 ∈ choice_incl A₀ <<- repr c₀;;
+      a2 ∈ choice_incl A₁ <<- repr c₁;; (λ (a₀ : A₀) (a₁ : A₁), repr (r a₀ a₁)) a1 a2) =
+       bindrFree (repr c₀) (λ a : A₀, repr (a₁ ← c₁ ;; r a a₁))).
+Proof.
+  intros.
+  unfold RulesStateProb.bindF.
+  simpl.
+  unfold FreeProbProg.rFree_obligation_2.
+
+  assert ((λ a1 : A₀, bindrFree (repr c₁) (λ a2 : A₁, repr (r a1 a2))) = (λ a : A₀, repr (a₁ ← c₁ ;;
+                                                                                          r a a₁))).
+  { extensionality a.
+    rewrite repr_bind.
+    simpl.
+    reflexivity.
+  }
+  rewrite H.
+  reflexivity.
+Qed.
+
 Theorem rswap_ruleR :
   ∀ {A₀ A₁ B : ord_choiceType} {post : postcond B B}
     (c₀ : raw_code A₀) (c₁ : raw_code A₁) (r : A₀ → A₁ → raw_code B),
@@ -1057,6 +1199,134 @@ Proof.
   eapply rrewrite_eqDistrR. 1: exact h.
   intro s. eapply rcoupling_eq. 1: exact he.
   cbn. reflexivity.
+Qed.
+
+(* Simpler semantics for deterministic programs *)
+
+Inductive deterministic {A : choiceType} : raw_code A → Type :=
+| deterministic_ret :
+    ∀ x, deterministic (ret x)
+| deterministic_get :
+    ∀ ℓ k, (∀ x, deterministic (k x)) → deterministic (getr ℓ k)
+| deterministic_put :
+    ∀ ℓ v k, deterministic k → deterministic (putr ℓ v k).
+
+Fixpoint det_run {A : choiceType} c [h : @deterministic A c] s : A * heap :=
+  match h with
+  | deterministic_ret x => (x, s)
+  | deterministic_get ℓ k hk => det_run (k (get_heap s ℓ)) (h := hk _) s
+  | deterministic_put ℓ v k hk => det_run k (h := hk) (set_heap s ℓ v)
+  end.
+
+Lemma det_run_sem :
+  ∀ {A : choiceType} (c : raw_code A) (hd : deterministic c) s,
+    θ_dens (θ0 (repr c) s) = dunit (det_run c (h := hd) s).
+Proof.
+  intros A c hd s.
+  induction hd as [x | ℓ k hk ihk | ℓ v k hk ihk] in s |- *.
+  - reflexivity.
+  - simpl. rewrite <- ihk. reflexivity.
+  - simpl. rewrite <- ihk. reflexivity.
+Qed.
+
+Definition det_jdg {A B : choiceType} (pre : precond) (post : postcond A B)
+  (p : raw_code A) (q : raw_code B) hp hq :=
+  ∀ (s₀ s₁ : heap),
+    pre (s₀, s₁) →
+    post (det_run p (h := hp) s₀) (det_run q (h := hq) s₁).
+
+Lemma det_to_sem :
+  ∀ {A₀ A₁ : ord_choiceType} pre post (c₀ : raw_code A₀) (c₁ : raw_code A₁)
+    (hd₀ : deterministic c₀)
+    (hd₁ : deterministic c₁),
+    det_jdg pre post c₀ c₁ hd₀ hd₁ →
+    ⊢ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄.
+Proof.
+  intros A₀ A₁ pre post c₀ c₁ dc₀ dc₁ h.
+  eapply from_sem_jdg. intros [s₀ s₁]. hnf. intro P. hnf.
+  intros [hpre hpost]. simpl.
+  unfold SDistr_carrier. unfold F_choice_prod_obj. simpl.
+
+  unfold det_jdg in h. specialize (h s₀ s₁ hpre).
+  set (u := det_run c₀ _) in *.
+  set (v := det_run c₁ _) in *.
+
+  eexists (dunit (u, v)).
+  split.
+  - unfold coupling. split.
+    + unfold lmg. unfold dfst.
+      apply distr_ext. intro.
+      rewrite dlet_unit. simpl.
+      rewrite - det_run_sem. reflexivity.
+    + unfold rmg. unfold dsnd.
+      apply distr_ext. intro.
+      rewrite dlet_unit. simpl.
+      rewrite - det_run_sem. reflexivity.
+  - intros [] [] hh.
+    eapply hpost.
+    rewrite dunit1E in hh.
+    lazymatch type of hh with
+    | context [ ?x == ?y ] =>
+      destruct (x == y) eqn:e
+    end.
+    2:{
+      rewrite e in hh. simpl in hh.
+      rewrite order.Order.POrderTheory.ltxx in hh. discriminate.
+    }
+    move: e => /eqP e. inversion e.
+    subst. assumption.
+Qed.
+
+Lemma sem_to_det :
+  ∀ {A₀ A₁ : ord_choiceType} pre post (c₀ : raw_code A₀) (c₁ : raw_code A₁)
+    (hd₀ : deterministic c₀)
+    (hd₁ : deterministic c₁),
+    ⊢ ⦃ pre ⦄ c₀ ≈ c₁ ⦃ post ⦄ →
+    det_jdg pre post c₀ c₁ hd₀ hd₁.
+Proof.
+  intros A₀ A₁ pre post c₀ c₁ hd₀ hd₁ h.
+  intros s₀ s₁ hpre.
+  eapply to_sem_jdg in h. specialize (h (s₀, s₁)). hnf in h. simpl in h.
+  specialize (h (λ '(v₀, s₀', (v₁, s₁')), post (v₀, s₀') (v₁, s₁'))).
+  destruct h as [c [hc h]].
+  - split. 1: assumption.
+    intros [] []. tauto.
+  - set (u := det_run c₀ _) in *.
+    set (v := det_run c₁ _) in *.
+    specialize (h u v).
+    assert (hc' : coupling c (dunit u) (dunit v)).
+    { rewrite - !det_run_sem. exact hc. }
+    destruct u, v.
+    apply h.
+    apply coupling_SDistr_unit_F_choice_prod in hc'. subst.
+    unfold SDistr_unit. rewrite dunit1E. rewrite eq_refl. simpl.
+    apply ltr0n.
+Qed.
+
+(* Similar to r_transL but relaxed for deterministic programs and for
+  stateless conditions.
+*)
+Lemma r_transL_val :
+  ∀ {A₀ A₁ : ord_choiceType} {P Q}
+    (c₀ c₀' : raw_code A₀) (c₁ : raw_code A₁),
+    deterministic c₀' →
+    deterministic c₀ →
+    deterministic c₁ →
+    ⊢ ⦃ λ '(_, _), P ⦄ c₀ ≈ c₀' ⦃ λ '(v₀, _) '(v₁, _), v₀ = v₁ ⦄ →
+    ⊢ ⦃ λ '(_, _), P ⦄ c₀ ≈ c₁ ⦃ λ '(v₀, _) '(v₁, _), Q v₀ v₁ ⦄ →
+    ⊢ ⦃ λ '(_, _), P ⦄ c₀' ≈ c₁ ⦃ λ '(v₀, _) '(v₁, _), Q v₀ v₁ ⦄.
+Proof.
+  intros A₀ A₁ P Q c₀ c₀' c₁ hd₀' hd₀ hd₁ he h.
+  unshelve eapply det_to_sem. 1,2: assumption.
+  unshelve eapply sem_to_det in he. 1,2: assumption.
+  unshelve eapply sem_to_det in h. 1,2: assumption.
+  intros s₀ s₁ hP.
+  specialize (h s₀ s₁ hP). specialize (he s₀ s₀ hP).
+  destruct (det_run c₀ _).
+  destruct (det_run c₀' _).
+  destruct (det_run c₁ _).
+  subst.
+  assumption.
 Qed.
 
 (* Rules using commands instead of bind *)
@@ -1712,6 +1982,30 @@ Proof.
     eapply restore_update_mem. all: eauto.
 Qed.
 
+Lemma rswap_cmd_helper :
+  forall {A₀ A₁ B : ord_choiceType}
+    (c₀ : command A₀) (c₁ : command A₁) (r : A₀ → A₁ → raw_code B),
+    ((a1 ∈ choice_incl A₀ <<- repr_cmd c₀;;
+      a2 ∈ choice_incl A₁ <<- repr_cmd c₁;; (λ (a₀ : A₀) (a₁ : A₁), repr (r a₀ a₁)) a1 a2) =
+       bindrFree (repr_cmd c₀) (λ a : A₀, repr (a₁ ← cmd c₁ ;; r a a₁))).
+Proof.
+  intros.
+  unfold RulesStateProb.bindF.
+  simpl.
+  unfold FreeProbProg.rFree_obligation_2.
+
+  assert ((λ a1 : A₀, bindrFree (repr_cmd c₁) (λ a2 : A₁, repr (r a1 a2))) = (λ a : A₀, repr (a₁ ← cmd c₁ ;;
+                                                                                          r a a₁))).
+  { extensionality a.
+    rewrite repr_cmd_bind.
+    simpl.
+    reflexivity.
+  }
+  rewrite H.
+  reflexivity.
+Qed.
+
+
 Lemma rswap_cmd :
   ∀ (A₀ A₁ B : choiceType) (post : postcond B B)
     (c₀ : command A₀) (c₁ : command A₁)
@@ -1763,6 +2057,53 @@ Proof.
   - auto.
 Qed.
 
+
+Lemma rswap_helper_cmd :
+  forall {A₀ A₁ B : ord_choiceType}
+    (c₀ : command A₀) (c₁ : raw_code A₁) (r : A₀ → A₁ → raw_code B),
+    ((a1 ∈ choice_incl A₀ <<- repr_cmd c₀;;
+      a2 ∈ choice_incl A₁ <<- repr c₁;; (λ (a₀ : A₀) (a₁ : A₁), repr (r a₀ a₁)) a1 a2) =
+       bindrFree (repr_cmd c₀) (λ a : A₀, repr (a₁ ← c₁ ;; r a a₁))).
+Proof.
+  intros.
+  unfold RulesStateProb.bindF.
+  simpl.
+  unfold FreeProbProg.rFree_obligation_2.
+
+  assert ((λ a1 : A₀, bindrFree (repr c₁) (λ a2 : A₁, repr (r a1 a2))) = (λ a : A₀, repr (a₁ ← c₁ ;;
+                                                                                          r a a₁))).
+  { extensionality a.
+    rewrite repr_bind.
+    simpl.
+    reflexivity.
+  }
+  rewrite H.
+  reflexivity.
+Qed.
+
+Lemma rswap_repr_cmd_helper :
+  forall {A₀ A₁ B : ord_choiceType}
+    (c₀ : raw_code A₀) (c₁ : command A₁) (r : A₀ → A₁ → raw_code B),
+    ((a1 ∈ choice_incl A₀ <<- repr c₀;;
+      a2 ∈ choice_incl A₁ <<- repr_cmd c₁;; (λ (a₀ : A₀) (a₁ : A₁), repr (r a₀ a₁)) a1 a2) =
+       bindrFree (repr c₀) (λ a : A₀, repr (a₁ ← cmd c₁ ;; r a a₁))).
+Proof.
+  intros.
+  unfold RulesStateProb.bindF.
+  simpl.
+  unfold FreeProbProg.rFree_obligation_2.
+
+  assert ((λ a1 : A₀, bindrFree (repr_cmd c₁) (λ a2 : A₁, repr (r a1 a2))) = (λ a : A₀, repr (a₁ ← cmd c₁ ;;
+                                                                                          r a a₁))).
+  { extensionality a.
+    rewrite repr_cmd_bind.
+    simpl.
+    reflexivity.
+  }
+  rewrite H.
+  reflexivity.
+Qed.
+
 Lemma rswap_cmd_bind_eq :
   ∀ {A₀ A₁ B : choiceType} c₀ c₁ (r : A₀ → A₁ → raw_code B),
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
@@ -1776,8 +2117,10 @@ Lemma rswap_cmd_bind_eq :
 Proof.
   intros A₀ A₁ B c₀ c₁ r h.
   eapply from_sem_jdg. simpl.
-  setoid_rewrite repr_cmd_bind. setoid_rewrite repr_bind.
-  simpl. setoid_rewrite repr_cmd_bind.
+  setoid_rewrite repr_cmd_bind. rewrite repr_bind.
+  rewrite <- rswap_helper_cmd.
+  rewrite <- rswap_repr_cmd_helper.
+  simpl.
   eapply (swap_ruleR (λ a₀ a₁, repr (r a₀ a₁)) (repr_cmd c₀) (repr c₁)).
   - intros a₀ a₁. eapply to_sem_jdg.
     apply rsym_pre. 1: auto.
@@ -1787,8 +2130,10 @@ Proof.
     + exact: (λ '(h₀, h₁), h₀ = h₁).
     + eapply to_sem_jdg in h.
       setoid_rewrite repr_cmd_bind in h. simpl in h.
+      rewrite <- rswap_helper_cmd in h.
       setoid_rewrite repr_bind in h. simpl in h.
-      setoid_rewrite repr_cmd_bind in h. simpl in h.
+      rewrite <- rswap_repr_cmd_helper in h.
+      simpl in h.
       auto.
     + reflexivity.
 Qed.
@@ -1818,7 +2163,18 @@ Proof.
     rewrite bind_assoc in h.
     rewrite bind_cmd_bind in h.
     setoid_rewrite bind_cmd_bind in h.
-    setoid_rewrite bind_assoc in h.
+    simpl in h.
+    replace
+      (x ← cmd _ ;;
+     pat ← (a₀ ← c₀ ;;
+            ret (a₀, x)) ;;
+     (let '(x0, y) := pat in ret (y, x0)))
+      with
+      (x ← cmd c₁ ;;
+       a₀ ← c₀ ;;
+       pat ← ret (a₀, x) ;;
+       (let '(x0, y) := pat in ret (y, x0))) in h by (f_equal ; extensionality x ; now rewrite bind_assoc).
+    (* setoid_rewrite bind_assoc in h. *)
     simpl in h.
     apply rsymmetry. apply rsym_pre. 1: auto.
     eapply rpost_weaken_rule. 1: eauto.

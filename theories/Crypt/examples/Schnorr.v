@@ -83,7 +83,7 @@ Module MyParam <: SigmaProtocolParams.
   Definition Message_pos : Positive #|Message| := _.
   Definition Challenge_pos : Positive #|Challenge| := _.
   Definition Response_pos : Positive #|Response| := _.
-  Definition Bool_pos : Positive #|(bool:choiceType)|.
+  Definition Bool_pos : Positive #|'bool|.
   Proof.
     rewrite card_bool. done.
   Defined.
@@ -105,7 +105,7 @@ Module MyAlg <: SigmaProtocolAlgorithms MyParam.
     chProd
       (chProd (chProd choiceStatement choiceMessage) choiceChallenge)
       choiceResponse.
-  Definition choiceBool := 'fin #|bool_choiceType|.
+  Definition choiceBool := 'fin #|'bool|.
 
   Definition i_witness := #|Witness|.
 
@@ -514,12 +514,11 @@ Proof.
            unfold "\notin".
            rewrite in_fset1.
            done.
-        ++
-           rewrite -!fset1E.
+        ++ rewrite -!fset1E.
            rewrite fdisjoint1s.
-            unfold "\notin".
-            rewrite in_fset1.
-            done.
+           unfold "\notin".
+           rewrite in_fset1.
+           done.
   }
   rewrite Advantage_sym.
   erewrite schnorr_SHVZK.
@@ -554,12 +553,11 @@ Proof.
            unfold "\notin".
            rewrite in_fset1.
            done.
-        ++
-           rewrite -!fset1E.
+        ++ rewrite -!fset1E.
            rewrite fdisjoint1s.
-            unfold "\notin".
-            rewrite in_fset1.
-            done.
+           unfold "\notin".
+           rewrite in_fset1.
+           done.
   }
   rewrite addr0 add0r.
   apply eq_ler.
@@ -661,6 +659,28 @@ Proof.
     apply r_ret. intuition auto.
 Qed.
 
+
+(* Main theorem *)
+(* The commitment scheme instantiated from Schnorr' protocol *)
+(* is binding equal to the hardness of the relation *)
+(* (I.e. how hard is it to produce a valid witness for a fixed public input)*)
+Theorem schnorr_com_binding :
+  ∀ LA A,
+    ValidPackage LA [interface
+      #val #[ SOUNDNESS ] : chSoundness → 'bool
+    ] A_export A →
+    fdisjoint LA (Sigma_to_Com_locs :|: KEY_locs) →
+    AdvantageE (Com_Binding ∘ Sigma_to_Com ∘ KEY) (Special_Soundness_f) A <= 0.
+Proof.
+  intros LA A VA Hdisj.
+  eapply Order.le_trans.
+  1: apply Advantage_triangle.
+  instantiate (1 := Special_Soundness_t).
+  rewrite (commitment_binding LA A VA Hdisj).
+  setoid_rewrite (extractor_success LA A VA).
+  setoid_rewrite GRing.isNmodule.add0r.
+  apply Order.le_refl.
+Qed.
 
 End Schnorr.
 

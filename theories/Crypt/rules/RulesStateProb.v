@@ -551,8 +551,8 @@ Qed.
 (* TODO: asymmetric variants of if_rule: if_ruleL and if_ruleR *)
 
 
-Fixpoint bounded_do_while {S : choiceType}  (n : nat) (c : FrStP S bool_choiceType) :
-  FrStP S bool_choiceType :=
+Fixpoint bounded_do_while {S : choiceType}  (n : nat) (c : FrStP S bool) :
+  FrStP S bool :=
   (* false means fuel emptied, true means execution finished *)
   match n with
   | 0 => retF false
@@ -565,8 +565,8 @@ Fixpoint bounded_do_while {S : choiceType}  (n : nat) (c : FrStP S bool_choiceTy
 
 Theorem bounded_do_while_rule  {A1 A2 : ord_choiceType} {S1 S2 : choiceType}
                                {n : nat}
-                               (c1 : FrStP S1 bool_choiceType)
-                               (c2 : FrStP S2 bool_choiceType)
+                               (c1 : FrStP S1 bool)
+                               (c2 : FrStP S2 bool)
                                {inv : bool -> bool -> (S1 * S2) -> Prop}
                                {H : ⊨ ⦃ inv true true ⦄ c1 ≈ c2 ⦃ fun bs1 bs2 => (inv bs1.1 bs2.1) (bs1.2,  bs2.2) /\ bs1.1 = bs2.1 ⦄ } :
   ⊨ ⦃ inv true true ⦄
@@ -668,8 +668,7 @@ Proof.
     { extensionality k. destruct k as [k1 k2].
       case (B k2). reflexivity. reflexivity. }
     rewrite -Heq1.
-    pose (@summable_pr R (prod_choiceType (prod_choiceType X S1)
-                                          (prod_choiceType Y S2))
+    pose (@summable_pr R ((X * S1) * (Y * S2))%type
                                           (fun '(x, y) => B y) d).
     simpl in *. unfold nat_of_bool in s. rewrite /nat_of_bool. exact s.
     (* summable A *)
@@ -679,8 +678,7 @@ Proof.
     { extensionality k. destruct k as [k1 k2].
       case (B k2). reflexivity. reflexivity. }
     rewrite -Heq2.
-    pose (@summable_pr R (prod_choiceType (prod_choiceType X S1)
-                                          (prod_choiceType Y S2))
+    pose (@summable_pr R ((X * S1) *(Y * S2))%type
                                           (fun '(x, y) => A x) d).
     simpl in *. unfold nat_of_bool in s. rewrite /nat_of_bool. exact s.
 Qed.
@@ -694,7 +692,7 @@ Proof.
   move => s1 s2 psi_s1_s2.
   apply distr_ext => /= w.
   assert (\P_[ θ_dens (θ0 K1 s1) ] (pred1 w) = \P_[ θ_dens (θ0 K2 s2) ] (pred1 w)).
-  { apply: (Pr_eq ψ eq); rewrite //= => x y Heq. by subst.  }
+  { apply: (Pr_eq ψ eq); rewrite //= => x y Heq. by subst. }
   by repeat rewrite -pr_pred1 in H0.
 Qed.
 
@@ -786,7 +784,7 @@ Proof.
   clear Hpsum.
   eapply neq0_psum in Hpsum'. destruct Hpsum'.
   apply aux_domain in H.
-  destruct (eqType_lem  _ ((x,x) == (a1,a2)) true) as [Houi | Hnon].
+  destruct (eqType_lem _ ((x,x) == (a1,a2)) true) as [Houi | Hnon].
   move: Houi => /eqP Houi. move: Houi => [H1 H2]. rewrite -H1 -H2. reflexivity.
   have Hnon' : (x,x) == (a1,a2) = false.
     destruct ((x,x) == (a1,a2)). contradiction. reflexivity.
@@ -1131,6 +1129,7 @@ Proof.
        apply Hcomm.
   -  rewrite (@smMonEqu2 A1 A2 B S r c1 c2).
      move=> s.
+     pose some_commutativity.
      unshelve erewrite <- some_commutativity. exact post.
      reflexivity.
        apply HR.

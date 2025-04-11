@@ -7,7 +7,9 @@
     let
       ssprovePkg = { lib, mkCoqDerivation, coq
                   , equations, extructures, deriving
-                  , mathcomp-analysis, mathcomp-ssreflect }:
+                  , mathcomp-analysis, mathcomp-ssreflect
+                  , mathcomp-experimental-reals
+                  , mathcomp-word, mathcomp-zify }:
         mkCoqDerivation {
           pname = "ssprove";
           owner = "SSProve";
@@ -16,7 +18,10 @@
           propagatedBuildInputs = [
             equations
             mathcomp-analysis
+            mathcomp-experimental-reals
             mathcomp-ssreflect
+            mathcomp-word
+            mathcomp-zify
             deriving
             extructures
           ];

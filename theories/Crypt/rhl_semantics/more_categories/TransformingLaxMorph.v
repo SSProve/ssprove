@@ -603,6 +603,3 @@ chi A
 
 
 End TransformedLaxMorphAdj.
-
-
-

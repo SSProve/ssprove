@@ -45,7 +45,7 @@ Module Type SigmaProtocolParams.
   Parameter Message_pos : Positive #|Message|.
   Parameter Challenge_pos : Positive #|Challenge|.
   Parameter Response_pos : Positive #|Response|.
-  Parameter Bool_pos : Positive #|bool_choiceType|.
+  Parameter Bool_pos : Positive #|'bool|.
 
 End SigmaProtocolParams.
 
@@ -69,7 +69,7 @@ Module Type SigmaProtocolAlgorithms (π : SigmaProtocolParams).
   Definition choiceResponse := 'fin #|Response|.
   Definition choiceTranscript :=
     chProd (chProd (chProd choiceStatement choiceMessage) choiceChallenge) choiceResponse.
-  Definition choiceBool := 'fin #|bool_choiceType|.
+  Definition choiceBool := 'fin #|'bool|.
 
   Parameter Sigma_locs : {fset Location}.
 
@@ -224,6 +224,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       }
     ].
 
+  (* Simulation Sound Extractability *)
   (* Main security statement for 2-special soundness. *)
   Definition ɛ_soundness A :=
     AdvantageE Special_Soundness_t Special_Soundness_f A.
