@@ -678,7 +678,7 @@ Proof.
   instantiate (1 := Special_Soundness_t).
   rewrite (commitment_binding LA A VA Hdisj).
   setoid_rewrite (extractor_success LA A VA).
-  setoid_rewrite GRing.isNmodule.add0r.
+  rewrite GRing.add0r.
   apply Order.le_refl.
 Qed.
 
