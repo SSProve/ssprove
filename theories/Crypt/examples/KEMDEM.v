@@ -342,20 +342,11 @@ Section KEMDEM.
   Definition KEM_CCA_loc :=
     unionm KEM_loc KEY_loc.
 
-  (** Here we use Equations to generate a goal corresponding to the validity of
-    the composed package as it is not inferred automatically.
-    We call [ssprove_valid] which progresses as much as possible and then asks
-    us to prove the remanining bits.
-
-    Here and afterwards we use #[tactic=notac] to tell Equations not to
-    preprocess the generated goals.
+  (** SSProve automatically derives the well-formedness of the KEM_CCA package.
   *)
-  #[tactic=ssprove_valid] Equations? KEM_CCA_pkg b :
+  Definition KEM_CCA_pkg b :
     package KEM_CCA_loc [interface] KEM_CCA_out :=
-    KEM_CCA_pkg b :=
-    {package (par (KEM b) (ID IGET)) ∘ KEY }.  Proof.
-    all: destruct b; fmap_solve.
-  Qed.
+    {package (par (KEM b) (ID IGET)) ∘ KEY }.
 
   (** We finally package the above into a game pair. *)
   Definition KEM_CCA : loc_GamePair KEM_CCA_out :=
@@ -416,9 +407,8 @@ Section KEMDEM.
   Definition DEM_CCA_loc :=
     unionm DEM_loc KEY_loc.
 
-  #[tactic=ssprove_valid] Equations DEM_CCA_pkg (b : bool) :
+  Definition DEM_CCA_pkg (b : bool) :
     package DEM_CCA_loc [interface] DEM_CCA_out :=
-    DEM_CCA_pkg b :=
     {package (par (DEM b) (ID IGEN)) ∘ KEY }.
 
   Definition DEM_CCA : loc_GamePair DEM_CCA_out :=
@@ -695,9 +685,8 @@ Section KEMDEM.
   Definition Aux_loc :=
     unionm MOD_CCA_loc (unionm KEM_loc (unionm DEM_loc KEY_loc)).
 
-  #[tactic=ssprove_valid] Equations Aux (b : bool)
+  Definition Aux (b : bool)
     : package Aux_loc [interface] PKE_CCA_out :=
-    Aux b :=
     {package (MOD_CCA KEM_DEM ∘ par (KEM true) (DEM b) ∘ KEY) }.
 
   (** We extend ssprove_code_simpl to use code_link_scheme.

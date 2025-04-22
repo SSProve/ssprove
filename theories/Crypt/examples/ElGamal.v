@@ -248,17 +248,6 @@ Definition Aux :
     }
   ].
 
-(*
-Goal ∃ L E, ValidPackage L Game_import E (Aux ∘ DH_real).
-Proof.
-  do 2 eexists.
-  ssprove_valid.
-  do 3 try apply fcompat_cons.
-  all: try apply fcompat0m.
-  unfold DH_loc.
-  fmap_solve.
- *)
-
 Lemma ots_real_vs_rnd_equiv_true :
   Aux ∘ DH_real ≈₀ ots_real_vs_rnd true.
 Proof.

@@ -334,18 +334,10 @@ Proof.
   all: ssprove_code_simpl.
   all: ssprove_code_simpl_more.
   2: {
-    apply: (@r_reflexivity_alt _ [fmap T_loc]).
-    1: intros l H.
-    1: fmap_invert H.
-    1: change (setm emptym 2 'set ('word × 'word)) with [fmap S_loc].
-    1: ssprove_invariant.
-    intros ? ? H.
-    1: fmap_invert H.
-    1: change (setm emptym 2 'set ('word × 'word)) with [fmap S_loc].
-    1: ssprove_invariant.
+    apply: (@r_reflexivity_alt _ [fmap T_loc]) => [l H|l H' H].
+    1,2: fmap_invert H; ssprove_invariant.
   }
   1: apply: r_get_remember_rhs => S.
-  change (setm emptym 2 'set ('word × 'word)) with [fmap S_loc].
   ssprove_sync=> T.
   case (getm T _) => [t|].
   2: ssprove_sync=> t.

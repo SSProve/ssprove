@@ -369,17 +369,23 @@ Hint Resolve fseparateMl fseparateMr : fmap_solve_db.
 Hint Resolve fseparateMil fseparateMir : fmap_solve_db.
 Hint Resolve notin_fseparate fseparate_set fseparate_set1 : fmap_solve_db.
 
-(*
-Goal ((3, 5).1 \notin domm [fmap (5,6); (6,8)]).
-Proof.
-  fmap_solve.
-Qed.
- *)
 
-  (*
+(* case over booleans *)
 
-  Lemma fcompat_11 {T : ordType} {S} (x : T * S) y
-    : fcompat11 x y → fcompat [fmap x] [fmap y].
-  Proof.
-  Hint Resolve fcompat_11 : fmap_solve_db.
-   *)
+Lemma fsubmap_case_l {T : ordType} {S : Type} {b : bool} {m m' m'' : {fmap T → S}}
+  : fsubmap m m'' → fsubmap m' m'' → fsubmap (if b then m else m') m''.
+Proof. by move: b => []. Qed.
+
+Lemma fsubmap_case_r {T : ordType} {S : Type} {b : bool} {m m' m'' : {fmap T → S}}
+  : fsubmap m m' → fsubmap m m'' → fsubmap m (if b then m' else m'').
+Proof. by move: b => []. Qed.
+
+Lemma fcompat_case_l {T : ordType} {S : Type} {b : bool} {m m' m'' : {fmap T → S}}
+  : fcompat m m'' → fcompat m' m'' → fcompat (if b then m else m') m''.
+Proof. by move: b => []. Qed.
+
+Lemma fcompat_case_r {T : ordType} {S : Type} {b : bool} {m m' m'' : {fmap T → S}}
+  : fcompat m m' → fcompat m m'' → fcompat m (if b then m' else m'').
+Proof. by move: b => []. Qed.
+
+Hint Resolve fsubmap_case_l fsubmap_case_r fcompat_case_l fcompat_case_r : fmap_solve_db.

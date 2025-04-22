@@ -110,18 +110,6 @@ Proof.
   f_equal. apply functional_extensionality. auto.
 Qed.
 
-(** Some validity lemmata and hints *)
-(* TODO MOVE? *)
-
-(*
-Definition fromEmpty {B} {v : opsig} (H : v \in fset0) : B.
-Proof.
-  rewrite in_fset0 in H.
-  move: H. move /eqP. move /eqP => H.
-  discriminate.
-Defined.
- *)
-
 Lemma valid_empty_package :
   ∀ L I,
     ValidPackage L I [interface] emptym.
@@ -192,51 +180,8 @@ Proof.
   eapply valid_package_cons. all: eauto.
 Qed.
 
-(*
-(* TODO MOVE *)
-Lemma notin_fset :
-  ∀ (T : ordType) (s : seq T) (x : T),
-    (x \notin fset s) = (x \notin s).
-Proof.
-  intros T s x.
-  unfold "\notin". rewrite in_fset. reflexivity.
-Qed.
- *)
-
 #[export] Hint Extern 100 =>
   shelve : ssprove_valid_db.
-
-(*
-#[export] Hint Extern 2 (is_true (?x \in fset ?I)) =>
-  rewrite in_fset
-  : typeclass_instances ssprove_valid_db.
-
-#[export] Hint Extern 3 (is_true (?x \in ?I)) =>
-  reflexivity
-  : typeclass_instances ssprove_valid_db.
-
-#[export] Hint Extern 3 (is_true (?x \in ?I)) =>
-  inseq_try
-  : typeclass_instances ssprove_valid_db.
-
-#[export] Hint Extern 2 (is_true (?x \notin fset ?I)) =>
-  rewrite notin_fset
-  : typeclass_instances ssprove_valid_db.
-
-#[export] Hint Extern 3 (is_true (?x \notin ?I)) =>
-  reflexivity
-  : typeclass_instances ssprove_valid_db.
-
-#[export] Hint Extern 3 (is_true (fsubset [interface] ?L)) =>
-  rewrite <- fset0E ; eapply fsub0set
-  : typeclass_instances ssprove_valid_db.
- *)
-
-(*
-#[export] Hint Extern 2 (fhas ?m ?k) =>
-  fmap_solve
-  : typeclass_instances ssprove_valid_db.
-*)
 
 #[export] Hint Extern 2 (ValidPackage ?L ?I ?E (mkfmap ((?i, mkdef ?A ?B ?f) :: ?p)))
   =>
