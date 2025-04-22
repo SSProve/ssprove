@@ -1,6 +1,6 @@
 From Coq Require Import Utf8.
 From SSProve.Crypt Require pkg_composition pkg_advantage PRF ElGamal pkg_rhl
-  UniformStateProb RulesStateProb KEMDEM SigmaProtocol Schnorr.
+  UniformStateProb RulesStateProb KEMDEM (* SigmaProtocol Schnorr *).
 
 (* Notation to chain lets and end with 0 *)
 Notation "[ 'let' ]" :=
