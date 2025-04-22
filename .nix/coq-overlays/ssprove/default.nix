@@ -4,7 +4,6 @@
 , mathcomp-analysis
 , mathcomp-experimental-reals
 , mathcomp-word
-, mathcomp-zify
 , extructures
 , deriving
 }:
@@ -40,7 +39,6 @@
                            mathcomp-analysis
                            mathcomp-experimental-reals
                            mathcomp-word
-                           mathcomp-zify
                            extructures
                            deriving];
 
