@@ -44,6 +44,7 @@ There are two installation options:
 - Equations
 - Mathcomp
 - Mathcomp analysis
+- Mathcomp word
 - Coq Extructures
 - Coq Deriving
 
