@@ -63,6 +63,28 @@ Proof.
   destruct (m t), (m' t) => //.
 Qed.
 
+Lemma fsubmap_trans {T : ordType} {S} (m m' m'' : {fmap T → S}) :
+  fsubmap m m' → fsubmap m' m'' → fsubmap m m''.
+Proof.
+  intros H H'.
+  apply eq_fmap => t.
+  rewrite -{2}H' -H -unionmA H' //.
+Qed.
+
+Lemma fsubmapUl_trans {T : ordType} {S} (m m' m'' : {fmap T → S}) :
+  fsubmap m m' → fsubmap m (unionm m' m'').
+Proof.
+  intros H. eapply fsubmap_trans;
+  [ apply H | apply fsubmapUl ].
+Qed.
+
+Lemma fsubmapUr_trans {T : ordType} {S} (m m' m'' : {fmap T → S}) :
+  fcompat m' m'' → fsubmap m m'' → fsubmap m (unionm m' m'').
+Proof.
+  intros H H'. eapply fsubmap_trans;
+  [ apply H' | apply fsubmapUr, H ].
+Qed.
+
 Lemma fsubUmap {T : ordType} {S} (m m' m'' : {fmap T → S}) :
   fsubmap m m'' → fsubmap m' m'' → fsubmap (unionm m m') m''.
 Proof.
@@ -145,7 +167,7 @@ Create HintDb fmap_solve_db.
   apply fhas_set_next; [ done |]
   : fmap_solve_db.
 
-#[export] Hint Resolve fsubmapUl fsubmapUr
+#[export] Hint Resolve fsubmapUl_trans fsubmapUr_trans
   : fmap_solve_db.
 
 #[export] Hint Extern 1 (fcompat ?m ?m') =>
