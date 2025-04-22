@@ -23,5 +23,10 @@ jobs:
     - uses: cachix/install-nix-action@v31
       with:
         github_access_token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Cachix setup ssprove
+      uses: cachix/cachix-action@v16
+      with:
+        extraPullNames: coq, coq-community, math-comp
+        name: ssprove
     - run: nix build
     - run: nix flake check
