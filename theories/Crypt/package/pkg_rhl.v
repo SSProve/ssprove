@@ -434,7 +434,7 @@ Proof.
   1:{
     eapply valid_get_op_default.
     - eauto.
-    - auto_in_fset.
+    - fmap_solve.
   }
   assert (
     ∀ x y : tgt RUN * heap_choiceType,

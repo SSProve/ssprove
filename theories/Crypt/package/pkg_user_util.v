@@ -328,15 +328,6 @@ Ltac notin_fset_auto :=
     else rewrite in_nil in bot ; discriminate
   ).
 
-(*
-#[export] Hint Extern 20 (is_true (_ \notin _)) =>
-  solve [ fmap_solve ]
-  : ssprove_invariant.
-
-#[export] Hint Extern 20 (is_true (_ \in _)) =>
-  solve [ fmap_solve ]
-  : ssprove_invariant.
- *)
 #[export] Hint Extern 2 (fhas ?x ?m) =>
   solve [ fmap_solve ]
   : typeclass_instances ssprove_valid_db ssprove_invariant.
@@ -848,27 +839,6 @@ Lemma eq_ler :
 Proof.
   intros x y e. subst. apply lexx.
 Qed.
-
-Ltac fdisjoint_auto :=
-  let h := fresh "h" in
-  apply /fdisjointP ;
-  intros ? h ;
-  rewrite in_fset in h ;
-  rewrite in_fset ;
-  invert_in_seq h ;
-  reflexivity.
-
-#[export] Hint Extern 15 (FDisjoint _ _) =>
-  fdisjoint_auto
-  : typeclass_instances ssprove_valid_db.
-
-Ltac fsubset_auto :=
-  let h := fresh "h" in
-  apply /fsubsetP ;
-  intros ? h ;
-  rewrite in_fset ; rewrite in_fset in h ;
-  invert_in_seq h ;
-  inseq_try.
 
 (* To be able to use with Equations *)
 Ltac notac := idtac.

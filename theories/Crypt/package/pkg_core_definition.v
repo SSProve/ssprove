@@ -48,7 +48,6 @@ tgt : choice_type
 Definition mkopsig id S T : opsig := (id, (S, T)).
 
 Definition Location := nat * choice_type.
-  (* MK: old def better? ∑ (t : choice_type), nat. *)
 
 Definition Locations := {fmap nat → choice_type}.
 
