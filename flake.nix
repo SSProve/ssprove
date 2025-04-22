@@ -9,7 +9,7 @@
                   , equations, extructures, deriving
                   , mathcomp-analysis, mathcomp-ssreflect
                   , mathcomp-experimental-reals
-                  , mathcomp-word, mathcomp-zify }:
+                  , mathcomp-word}:
         mkCoqDerivation {
           pname = "ssprove";
           owner = "SSProve";
@@ -21,7 +21,6 @@
             mathcomp-experimental-reals
             mathcomp-ssreflect
             mathcomp-word
-            mathcomp-zify
             deriving
             extructures
           ];

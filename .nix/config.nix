@@ -82,8 +82,6 @@
     mathcomp-finmap.override.version = "master";
     mathcomp-word.job = false;
     mathcomp-word.override.version = "main";
-    mathcomp-zify.job = false;
-    mathcomp-zify.override.version = "master";
     extructures.job = false;
     extructures.override.version = "master";
     deriving.job = false;
