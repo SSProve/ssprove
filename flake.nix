@@ -32,11 +32,6 @@
     in {
       overlays.default = final: prev: {
         coqPackages_8_19 = prev.coqPackages_8_19.overrideScope (self: super: {
-          # mathcomp-ssreflect inherits this version
-          # setting it to mathcomp-ssreflect does not work.
-          # see my question on Zulip:
-          # https://coq.zulipchat.com/#narrow/stream/290990-Nix-toolbox-devs-.26-users/topic/Loading.20inconsistency.20in.20mathcomp.20dependencies
-          mathcomp = super.mathcomp.override { version = "2.2.0"; };
           ssprove  = self.callPackage ssprovePkg {};
         });
       };
