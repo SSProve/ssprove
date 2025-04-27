@@ -198,7 +198,7 @@ Proof.
   - intros x. destruct x. constructor.
 Qed.
 
-(* MK: Solved by nominals?
+(* MK: To be solved by nominals.
 (* TODO Will have to be updated *)
 (* Probably by having first an operation on raw_packages
   and then a validity proof.

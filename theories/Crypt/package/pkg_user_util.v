@@ -100,25 +100,6 @@ Set Primitive Projections.
 
 Open Scope pack.
 
-Ltac invert_in_seq h :=
-  tryif (rewrite mem_seq1 in h)
-  then (move: h => /eqP h ; subst)
-  else (
-    rewrite in_cons in h ;
-    move: h => /orP [/eqP h | h] ; [
-      subst
-    | invert_in_seq h
-    ]
-  ).
-
-Ltac invert_interface_in h :=
-  let h' := fresh h in
-  pose proof h as h' ;
-  rewrite in_fset in h' ;
-  cbn in h' ;
-  invert_in_seq h' ;
-  [ noconf h' .. ].
-
 Ltac lookup_op_squeeze :=
   let f := fresh "f" in
   let e := fresh "e" in
@@ -317,17 +298,6 @@ Ltac ssprove_sync_eq :=
   | |- _ => fail "The goal should be a syntactic judgment"
   end.
 
-Ltac notin_fset_auto :=
-  let bot := fresh "bot" in
-  rewrite in_fset ; apply /negP ; intro bot ;
-  repeat (
-    tryif (rewrite in_cons in bot)
-    then (
-      move: bot => /orP [/eqP bot | bot] ; [ noconf bot |]
-    )
-    else rewrite in_nil in bot ; discriminate
-  ).
-
 #[export] Hint Extern 2 (fhas ?x ?m) =>
   solve [ fmap_solve ]
   : typeclass_instances ssprove_valid_db ssprove_invariant.
@@ -469,11 +439,9 @@ Ltac ssprove_rswap_cmd_eq_rhs :=
   | |- _ => fail "The goal should be a syntactic judgment"
   end. *)
 
+(* Simple inequality of locations is solved by reflexivity *) 
 Ltac neq_loc_auto :=
-  let e := fresh "e" in
-  apply /negP ;
-  move /eqP => e ;
-  noconf e.
+  done.
 
 #[export] Hint Extern 20 (is_true (_ != _)) =>
   solve [ neq_loc_auto ]

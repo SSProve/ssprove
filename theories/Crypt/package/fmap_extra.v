@@ -380,6 +380,8 @@ Lemma fsubmap_case_r {T : ordType} {S : Type} {b : bool} {m m' m'' : {fmap T →
   : fsubmap m m' → fsubmap m m'' → fsubmap m (if b then m' else m'').
 Proof. by move: b => []. Qed.
 
+Hint Resolve fsubmap_case_l fsubmap_case_r : fmap_solve_db.
+
 Lemma fcompat_case_l {T : ordType} {S : Type} {b : bool} {m m' m'' : {fmap T → S}}
   : fcompat m m'' → fcompat m' m'' → fcompat (if b then m else m') m''.
 Proof. by move: b => []. Qed.
@@ -388,13 +390,23 @@ Lemma fcompat_case_r {T : ordType} {S : Type} {b : bool} {m m' m'' : {fmap T →
   : fcompat m m' → fcompat m m'' → fcompat m (if b then m' else m'').
 Proof. by move: b => []. Qed.
 
-Hint Resolve fsubmap_case_l fsubmap_case_r fcompat_case_l fcompat_case_r
-  : fmap_solve_db.
+Hint Resolve fcompat_case_l fcompat_case_r : fmap_solve_db.
+
+Lemma fseparate_case_l {T : ordType} {S : Type} {b : bool} {m m' m'' : {fmap T → S}}
+  : fseparate m m'' → fseparate m' m'' → fseparate (if b then m else m') m''.
+Proof. by move: b => []. Qed.
+
+Lemma fseparate_case_r {T : ordType} {S : Type} {b : bool} {m m' m'' : {fmap T → S}}
+  : fseparate m m' → fseparate m m'' → fseparate m (if b then m' else m'').
+Proof. by move: b => []. Qed.
+
+Hint Resolve fseparate_case_l fseparate_case_r : fmap_solve_db.
+
 
 Lemma fseparate_compat {T : ordType} {S : Type} (m m' : {fmap T → S})
   : fseparate m m' → fcompat m m'.
 Proof. intros [H]. rewrite /fcompat unionmC //. Qed.
-(* danger of two solution paths? *)
+(* danger of two solution paths? (more expensive search) *)
 Hint Resolve fseparate_compat : fmap_solve_db.
 
 Lemma fcompatC {T : ordType} {S : Type} (m m' : {fmap T → S})

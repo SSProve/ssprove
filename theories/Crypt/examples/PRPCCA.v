@@ -65,7 +65,7 @@ Lemma domm_fset_to_chset {T}:
   cancel (@fset_to_chset T) (@domm T 'unit).
 Proof.
   move=> [m Hm] /=.
-  apply: fsval_eq.
+  eapply (can_inj (@fsvalK _)) => //=.
   have H: (fst \o pair^~ tt =1 id) => //.
   by rewrite /fset_to_chset val_domm mkfmapK /unzip1 -map_comp (eq_map (H T)) map_id.
 Qed.
@@ -506,8 +506,7 @@ Definition EVAL_SAMP (b: bool):
       #val #[invlookup]: 'ciph → 'ciph ].
 Proof.
   apply (mkpackage (par (EVAL_SAMP_pkg ∘ SAMP Ciph_N b) (SAMP Key_N (~~ b)))).
-  ssprove_valid.
-  all: unfold FDisjoint; destruct b; try fmap_solve.
+  ssprove_valid; destruct b; fmap_solve.
 Defined.
 
 Definition CTXT_HYB_locs_1 := [fmap S_loc; R_loc; T_loc; Tinv_loc].
