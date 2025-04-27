@@ -52,8 +52,6 @@ Definition chSet t := chMap t 'unit.
 Notation " 'set t " := (chSet t) (in custom pack_type at level 2).
 Notation " 'set t " := (chSet t) (at level 2): package_scope.
 
-Definition tt := Datatypes.tt.
-
 Variable (n: nat).
 
 Definition Word_N: nat := 2^n.

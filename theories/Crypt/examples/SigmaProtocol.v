@@ -273,7 +273,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
            #put setup_loc := true ;;
            #put statement_loc := h ;;
            #put witness_loc := w ;;
-           @ret 'unit Datatypes.tt
+           @ret 'unit tt
          }
          ;
          #def #[ GET ] (_ : 'unit) : chStatement
@@ -316,8 +316,8 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         {
           #import {sig #[ INIT ] : 'unit → 'unit } as key_gen_init ;;
           #import {sig #[ GET ] : 'unit → chStatement } as key_gen_get ;;
-          _ ← key_gen_init Datatypes.tt ;;
-          h ← key_gen_get Datatypes.tt ;;
+          _ ← key_gen_init tt ;;
+          h ← key_gen_get tt ;;
           '(h,a,e,z) ← Simulate h e ;;
           #put challenge_loc := Some e ;;
           #put response_loc := Some z ;;
@@ -784,7 +784,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
           let '(h,w) := hw in
           #assert (R (otf h) (otf w)) ;;
           a ← Commit h w ;;
-          RO_init Datatypes.tt ;;
+          RO_init tt ;;
           e ← RO_query (prod_assoc (h, a)) ;;
           z ← Response h w a e ;;
           @ret choiceTranscript (h,a,e,z)

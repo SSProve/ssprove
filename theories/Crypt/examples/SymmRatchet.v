@@ -66,7 +66,7 @@ Proof.
   by rewrite /Ord.lt /= ltn_neqAle Bool.andb_comm.
 Qed.
 
-Definition tt: 'unit := Datatypes.tt.
+Definition tt: 'unit := tt.
 
 Variable (n: nat).
 

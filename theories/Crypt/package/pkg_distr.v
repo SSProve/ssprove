@@ -161,7 +161,7 @@ Definition fail {A : choice_type} : raw_code A :=
   x ← sample (A ; dnull) ;; ret x.
 
 Definition assert b : raw_code 'unit :=
-  if b then ret Datatypes.tt else @fail 'unit.
+  if b then ret tt else @fail 'unit.
 
 (* Dependent version of assert *)
 Definition assertD {A : choice_type} b (k : b = true → raw_code A) : raw_code A :=

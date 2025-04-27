@@ -1543,7 +1543,7 @@ Proof.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
       x ← (x ← get ℓ ;; ret x) ;; r₀ x ≈
-      ret Datatypes.tt ;; r₁
+      ret tt ;; r₁
     ⦃ post ⦄
   ).
   eapply r_bind with (mid :=
@@ -1585,7 +1585,7 @@ Proof.
   intros A B ℓ r₀ r₁ pre post h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      ret Datatypes.tt ;; r₀ ≈
+      ret tt ;; r₀ ≈
       x ← (x ← get ℓ ;; ret x) ;; r₁ x
     ⦃ post ⦄
   ).
@@ -1721,7 +1721,7 @@ Proof.
   intros A B ℓ v r₀ r₁ pre post hr h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      x ← (x ← get ℓ ;; ret x) ;; r₀ x ≈ ret Datatypes.tt ;; r₁
+      x ← (x ← get ℓ ;; ret x) ;; r₀ x ≈ ret tt ;; r₁
     ⦃ post ⦄
   ).
   eapply r_bind with (mid :=
@@ -1757,7 +1757,7 @@ Proof.
   intros A B ℓ v r₀ r₁ pre post hr h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      ret Datatypes.tt ;; r₀ ≈ x ← (x ← get ℓ ;; ret x) ;; r₁ x
+      ret tt ;; r₀ ≈ x ← (x ← get ℓ ;; ret x) ;; r₁ x
     ⦃ post ⦄
   ).
   eapply r_bind with (mid :=
@@ -1854,7 +1854,7 @@ Proof.
   intros A B ℓ v r₀ r₁ pre post h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      (#put ℓ := v ;; ret Datatypes.tt) ;; r₀ ≈ ret Datatypes.tt ;; r₁
+      (#put ℓ := v ;; ret tt) ;; r₀ ≈ ret tt ;; r₁
     ⦃ post ⦄
   ).
   eapply r_bind with (mid :=
@@ -1883,7 +1883,7 @@ Proof.
   intros A B ℓ v r₀ r₁ pre post h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      ret Datatypes.tt ;; r₀ ≈ (#put ℓ := v ;; ret Datatypes.tt) ;; r₁
+      ret tt ;; r₀ ≈ (#put ℓ := v ;; ret tt) ;; r₁
     ⦃ post ⦄
   ).
   eapply r_bind with (mid :=
@@ -2343,8 +2343,8 @@ Proof.
   intros A B op c₀ c₁ pre post hop h.
   change (
     ⊢ ⦃ pre ⦄
-      (_ ← sample op ;; ret Datatypes.tt) ;; c₀ ≈
-      ret Datatypes.tt ;; c₁
+      (_ ← sample op ;; ret tt) ;; c₀ ≈
+      ret tt ;; c₁
     ⦃ post ⦄
   ).
   eapply r_bind with (mid := λ '(b₀, s₀) '(b₁, s₁), pre (s₀, s₁)).
@@ -2362,8 +2362,8 @@ Proof.
   intros A B op c₀ c₁ pre post hop h.
   change (
     ⊢ ⦃ pre ⦄
-      ret Datatypes.tt ;; c₀ ≈
-      (_ ← sample op ;; ret Datatypes.tt) ;; c₁
+      ret tt ;; c₀ ≈
+      (_ ← sample op ;; ret tt) ;; c₁
     ⦃ post ⦄
   ).
   eapply r_bind with (mid := λ '(b₀, s₀) '(b₁, s₁), pre (s₀, s₁)).
@@ -2644,7 +2644,7 @@ Qed.
 
 Theorem r_assertL :
   ∀ b,
-    ⊢ ⦃ λ _, b = true ⦄ assert b ≈ ret Datatypes.tt ⦃ λ _ _, b = true ⦄.
+    ⊢ ⦃ λ _, b = true ⦄ assert b ≈ ret tt ⦃ λ _ _, b = true ⦄.
 Proof.
   intros b.
   destruct b.
@@ -2654,7 +2654,7 @@ Qed.
 
 Theorem r_assertR :
   ∀ b,
-    ⊢ ⦃ λ _, b = true ⦄ ret Datatypes.tt ≈ assert b ⦃ λ _ _, b = true ⦄.
+    ⊢ ⦃ λ _, b = true ⦄ ret tt ≈ assert b ⦃ λ _ _, b = true ⦄.
 Proof.
   intros b.
   destruct b.
@@ -3001,13 +3001,13 @@ Lemma r_get_put_swap' :
   ∀ ℓ ℓ' v,
     ℓ' != ℓ →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
-      x ← get ℓ' ;; #put ℓ := v ;; ret (x, Datatypes.tt) ≈
-      #put ℓ := v ;; x ← get ℓ' ;; ret (x, Datatypes.tt)
+      x ← get ℓ' ;; #put ℓ := v ;; ret (x, tt) ≈
+      #put ℓ := v ;; x ← get ℓ' ;; ret (x, tt)
     ⦃ eq ⦄.
 Proof.
   intros ℓ ℓ' v ne.
   eapply r_get_put_swap in ne.
-  eapply r_bind with (f₁ := λ x, ret (x, Datatypes.tt)) in ne .
+  eapply r_bind with (f₁ := λ x, ret (x, tt)) in ne .
   - exact ne.
   - simpl. intros. apply r_ret.
     intros ? ? e. inversion e. reflexivity.
@@ -3017,13 +3017,13 @@ Lemma r_put_get_swap' :
   ∀ ℓ ℓ' v,
     ℓ' != ℓ →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
-      #put ℓ := v ;; x ← get ℓ' ;; ret (Datatypes.tt, x) ≈
-      x ← get ℓ' ;; #put ℓ := v ;; ret (Datatypes.tt, x)
+      #put ℓ := v ;; x ← get ℓ' ;; ret (tt, x) ≈
+      x ← get ℓ' ;; #put ℓ := v ;; ret (tt, x)
     ⦃ eq ⦄.
 Proof.
   intros ℓ ℓ' v ne.
   eapply r_put_get_swap in ne.
-  eapply r_bind with (f₁ := λ x, ret (Datatypes.tt, x)) in ne .
+  eapply r_bind with (f₁ := λ x, ret (tt, x)) in ne .
   - exact ne.
   - simpl. intros. apply r_ret.
     intros ? ? e. inversion e. reflexivity.

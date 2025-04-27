@@ -243,7 +243,7 @@ Definition Aux :
       count ← get counter_loc ;;
       #put counter_loc := (count + 1)%N ;;
       #assert (count == 0)%N ;;
-      '(pk, c) ← query Datatypes.tt ;;
+      '(pk, c) ← query tt ;;
       @ret chCipher (fto ((otf c).1 , (otf m) * ((otf c).2)))
     }
   ].

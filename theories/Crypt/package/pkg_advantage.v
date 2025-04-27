@@ -86,7 +86,7 @@ Definition Pr (p : raw_package) :
   SDistr (bool:choiceType) :=
   SDistr_bind
     (λ '(b, _), SDistr_unit _ b)
-    (Pr_op p RUN Datatypes.tt empty_heap).
+    (Pr_op p RUN tt empty_heap).
 
 Definition loc_GamePair (Game_export : Interface) :=
   bool → Game_Type Game_export.
@@ -207,7 +207,7 @@ Definition turn_adversary_weak  {Game_export : Interface}
   (A : Adversary4Game Game_export) : Adversary4Game_weak Game_export.
 Proof.
   unfold Adversary4Game_weak.
-  pose (get_op A RUN RUN_in_A_export Datatypes.tt) as run.
+  pose (get_op A RUN RUN_in_A_export tt) as run.
   destruct run as [run valid_run].
   cbn in *.
   pose (state_pass run) as raw_run_st.
