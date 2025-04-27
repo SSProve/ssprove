@@ -425,7 +425,7 @@ Proof.
   unfold fsubmap.
   intros H [H'].
   apply fsep.
-  eapply (fdisjointSl _ H').
+  eapply (fdisjoint_trans _ H').
   Unshelve.
   rewrite -H domm_union fsubsetUl //.
 Qed.
@@ -437,7 +437,9 @@ Proof.
   unfold fsubmap.
   intros H [H'].
   apply fsep.
-  eapply (fdisjointSr _ H').
+  rewrite fdisjointC in H'.
+  rewrite fdisjointC.
+  eapply (fdisjoint_trans _ H').
   Unshelve.
   rewrite -H domm_union fsubsetUl //.
 Qed.
