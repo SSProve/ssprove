@@ -56,8 +56,6 @@ Definition chSet t := chMap t 'unit.
 Notation " 'set t " := (chSet t) (in custom pack_type at level 2).
 Notation " 'set t " := (chSet t) (at level 2): package_scope.
 
-Definition tt := Datatypes.tt.
-
 Definition fset_to_chset {T: ordType} (s: {fset T}): {fmap T -> 'unit} :=
   mkfmap [seq (i, tt) | i <- s].
 

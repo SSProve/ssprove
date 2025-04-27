@@ -44,7 +44,7 @@ Section Executor.
   | NSProd (A B : NatState).
 
   Equations? nat_ch_aux (x : NatState) (l : choice_type) : option (Value l) :=
-    nat_ch_aux (NSUnit) 'unit := Some Datatypes.tt ;
+    nat_ch_aux (NSUnit) 'unit := Some tt ;
     nat_ch_aux (NSNat n) 'nat := Some n ;
     nat_ch_aux (NSNat n) 'bool := Some (Nat.odd n) ;
     nat_ch_aux (NSNat n) 'fin n' := Some _ ;
@@ -160,7 +160,7 @@ End Executor.
 
 #[program] Fixpoint sampler (e : choice_type) (seed : nat) : option (nat * e):=
   match e with
-    chUnit => Some (seed, Datatypes.tt)
+    chUnit => Some (seed, tt)
   | chNat => Some ((seed + 1)%N, seed)
   | chInt => Some ((seed + 1)%nat, BinInt.Z.of_nat seed) (* FIXME: also generate negative numbers *)
   | chBool => Some ((seed + 1)%N, Nat.even seed)

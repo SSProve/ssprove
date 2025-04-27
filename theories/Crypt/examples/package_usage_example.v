@@ -52,7 +52,7 @@ Definition p1 : package emptym [interface] I1 :=
       ret z
     } ;
     #def #[1] (y : 'nat) : 'unit {
-      ret Datatypes.tt
+      ret tt
     } ;
     #def #[2] (u : 'unit) : 'bool {
       ret false
@@ -90,7 +90,7 @@ Definition test₁ :
       )
     } ;
     #def #[2] (_ : 'unit) : 'unit {
-      putr (0, 'nat) 0 (ret Datatypes.tt)
+      putr (0, 'nat) 0 (ret tt)
     }
   ].
 

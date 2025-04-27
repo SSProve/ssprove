@@ -269,7 +269,7 @@ Ltac ssprove_code_simpl :=
 Ltac cmd_bind_simpl_once :=
   try change (cmd_bind (cmd_sample ?op) ?k) with (sampler op k) ;
   try change (cmd_bind (cmd_get ?ℓ) ?k) with (getr ℓ k) ;
-  try change (cmd_bind (cmd_put ?ℓ ?v) ?k) with (#put ℓ := v ;; k Datatypes.tt).
+  try change (cmd_bind (cmd_put ?ℓ ?v) ?k) with (#put ℓ := v ;; k tt).
 
 Ltac cmd_bind_simpl :=
   repeat cmd_bind_simpl_once.

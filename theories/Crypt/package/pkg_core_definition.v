@@ -267,7 +267,7 @@ Section FreeModule.
     match c in command A return (A → raw_code B) → raw_code B with
     | cmd_op o x => opr o x
     | cmd_get ℓ => getr ℓ
-    | cmd_put ℓ v => λ k, putr ℓ v (k Datatypes.tt)
+    | cmd_put ℓ v => λ k, putr ℓ v (k tt)
     | cmd_sample op => sampler op
     end k.
 

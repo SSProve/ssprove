@@ -26,7 +26,7 @@ HB.instance Definition _ nbits :=
   Just delete as soon as all references to the below casts are gone from the code base.
  *)
 
-Definition unit_choiceType : choiceType := Datatypes.unit.
+Definition unit_choiceType : choiceType := unit.
 Definition nat_choiceType : choiceType := nat.
 Definition int_choiceType : choiceType := Z.
 Definition bool_choiceType : choiceType := bool.
@@ -39,7 +39,7 @@ Definition list_choiceType (A : choiceType) : choiceType := list A.
 
 Definition sum_choiceType (A B: choiceType) : choiceType := (A + B)%type.
 
-Definition unit_ordType: ordType := Datatypes.unit.
+Definition unit_ordType: ordType := unit.
 Definition nat_ordType: ordType := nat.
 Definition int_ordType: ordType := Z.
 Definition bool_ordType: ordType := bool.

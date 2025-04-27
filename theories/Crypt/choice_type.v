@@ -93,7 +93,7 @@ Coercion chElement : choice_type >-> choiceType.
 (* Canonical element in a type of the choice_type *)
 #[program] Fixpoint chCanonical (T : choice_type) : T :=
   match T with
-  | chUnit => Datatypes.tt
+  | chUnit => tt
   | chNat => 0
   | chInt => 0
   | chBool => false

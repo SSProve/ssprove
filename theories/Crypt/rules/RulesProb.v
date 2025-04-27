@@ -520,7 +520,7 @@ Fixpoint for_loop {A : choiceType} (c : A -> MFreePr A) (n : nat) (a : A) :=
 Fixpoint bounded_iter {A B : choiceType} (n : nat) (c : A -> MFreePr (A + B)%type) (a : A) :
   MFreePr (unit_choiceType + B)%type :=
   match n with
-  | 0  => ord_relmon_unit MFreePr _ (inl Datatypes.tt)
+  | 0  => ord_relmon_unit MFreePr _ (inl tt)
   | S m => (ord_relmon_bind MFreePr) (fun v => match v with
                                            | inl a' => bounded_iter m c a'
                                            | inr b => ord_relmon_unit MFreePr _ (inr b)

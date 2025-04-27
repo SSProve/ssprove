@@ -174,9 +174,9 @@ Section GoingPractical.
     This is probably not the right place for it.
     TODO MOVE
   *)
-  Inductive unit := tt.
+  Inductive rel_unit := rel_tt.
 
-  Definition skip {M:Monad} : M unit := ret tt.
+  Definition skip {M:Monad} : M rel_unit := ret rel_tt.
   Notation "m1 ;; m2" := (bind m1 (fun=> m2)) (at level 65).
 
   Lemma apply_left {A B1 B2} {m1 : M1 A} {c1 : M1 B1} {c2 : M2 B2} {w1 w2 w} :
