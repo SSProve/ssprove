@@ -913,7 +913,7 @@ Section KEMDEM.
     ∀ LA A,
       ValidPackage LA PKE_CCA_out A_export A →
       fseparate LA PKE_CCA_loc →
-      fseparate LA Aux_loc → (* Do we really need this? *)
+      fseparate LA Aux_loc → (* Do we really need this? MK: Not with nominals :) *)
       Advantage (PKE_CCA KEM_DEM) A <=
       Advantage KEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (ID KEM_out) (DEM true)) +
       Advantage DEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (KEM false) (ID DEM_out)) +

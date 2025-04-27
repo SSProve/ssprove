@@ -161,18 +161,18 @@ Module PackageNotation.
   Notation " x ∐ y " := (chSum x y) (at level 80) : package_scope.
 
   Notation "[ 'interface' ]" :=
-    (mkfmap [::] : Interface)
+    (mkfmap [::])
     (at level 0, only parsing)
     : package_scope.
 
   Notation "[ 'interface' x1 ]" :=
-    (mkfmap [:: x1 ] : Interface)
+    (mkfmap [:: x1 ])
     (at level 0, x1 custom interface at level 2,
     format "[ interface  x1  ]")
     : package_scope.
 
   Notation "[ 'interface' x1 ; x2 ; .. ; xn ]" :=
-    (mkfmap (x1 :: x2 :: .. [:: xn] ..) : Interface)
+    (mkfmap (x1 :: x2 :: .. [:: xn] ..))
     (at level 0,
     x1 custom interface at level 2,
     x2 custom interface at level 2,

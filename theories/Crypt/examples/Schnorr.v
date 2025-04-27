@@ -235,13 +235,9 @@ Theorem schnorr_SHVZK :
     ɛ_SHVZK A = 0.
 Proof.
   intros LA A Va Hdisj.
-  unfold ɛ_SHVZK.
-  eapply eq_rel_perf_ind.
-  5: ssprove_valid.
-  1,2,5,6: ssprove_valid.
-  1:{ instantiate (1 := heap_ignore Sigma_locs).
-      ssprove_invariant; fmap_solve.
-    }
+  eapply (eq_rel_perf_ind _ _ (heap_ignore Sigma_locs)).
+  3,4,5: ssprove_valid.
+  1: ssprove_invariant; fmap_solve.
   simplify_eq_rel hwe.
   (* Programming logic part *)
   destruct hwe as [[h w] e].

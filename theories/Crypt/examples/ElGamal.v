@@ -404,7 +404,6 @@ Theorem ElGamal_OT :
       #val #[getpk_id] : 'unit → 'pubkey ;
       #val #[challenge_id'] : 'plain → 'cipher
     ] A_export A →
-    (* MK: automate so that 3 is derived 1 and 2 *)
     fseparate LA DH_loc →
     fseparate LA [fmap counter_loc; pk_loc] →
     fseparate LA [fmap counter_loc; pk_loc; sk_loc] →
