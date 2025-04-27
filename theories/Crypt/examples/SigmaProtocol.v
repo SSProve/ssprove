@@ -245,8 +245,6 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Definition Com_locs : Locations :=
       [fmap challenge_loc ; response_loc ].
 
-    Context (ComSimSep : fcompat Com_locs Simulator_locs).
-
     Definition setup_loc : Location := (10, 'bool).
     Definition statement_loc : Location := (11, choiceStatement).
     Definition witness_loc : Location := (12, choiceWitness).
@@ -292,7 +290,17 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
     Definition Sigma_to_Com_locs := unionm Com_locs Simulator_locs.
 
-    #[tactic=notac] Equations? Sigma_to_Com :
+
+    (* MK: Does this hint induce backtracking? *)
+    Hint Extern 10 (ValidCode ?L ?I (prog _)) =>
+      eapply valid_injectMap;
+        [| eapply valid_injectLocations ];
+        [| | apply prog_valid ] 
+          : typeclass_instances ssprove_valid_db.
+
+    Context (compatComSim : fcompat Com_locs Simulator_locs).
+
+    Definition Sigma_to_Com :
       package Sigma_to_Com_locs
         [interface
           #val #[ INIT ] : 'unit → 'unit ;
@@ -302,8 +310,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
           #val #[ COM ] : chChallenge → chMessage ;
           #val #[ OPEN ] : 'unit → chOpen ;
           #val #[ VER ] : chTranscript → 'bool
-        ]
-      := Sigma_to_Com :=
+        ] :=
       [package
         #def #[ COM ] (e : chChallenge) : chMessage
         {
@@ -333,17 +340,8 @@ Module SigmaProtocol (π : SigmaProtocolParams)
           ret (otf (Verify h a e z))
         }
       ].
-    Proof.
-      ssprove_valid.
-      eapply valid_injectMap.
-      2: eapply valid_injectLocations.
-      3: apply (Simulate x1 x).
-      1: fmap_solve.
-      apply fsubmapUr.
-      apply ComSimSep. (* MK: automate *)
-    Qed.
 
-    #[tactic=notac] Equations Sigma_to_Com_Aux:
+    Definition Sigma_to_Com_Aux:
       package (unionm [fmap setup_loc] Sigma_to_Com_locs)
         [interface
           #val #[ TRANSCRIPT ] : chInput → chTranscript
@@ -352,8 +350,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
           #val #[ COM ] : chChallenge → chMessage ;
           #val #[ OPEN ] : 'unit → chOpen ;
           #val #[ VER ] : chTranscript → 'bool
-        ]
-      := Sigma_to_Com_Aux :=
+        ] :=
       [package
         #def #[ COM ] (e : chChallenge) : chMessage
         {
@@ -447,10 +444,9 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
     Instance Invariant_inv : Invariant
       (unionm KEY_locs Sigma_to_Com_locs)
-      (unionm Sigma_to_Com_locs [fmap setup_loc]) inv.
+      (unionm (unionm [fmap setup_loc] Sigma_to_Com_locs) Simulator_locs) inv.
     Proof.
       ssprove_invariant.
-      rewrite -!setm_union. (* MK: automate *)
       fmap_solve.
     Qed.
 
@@ -458,18 +454,20 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       rewrite code_link_scheme
       : ssprove_code_simpl.
 
+
     Theorem commitment_hiding :
       ∀ LA A,
         ValidPackage LA [interface
           #val #[ HIDING ] : chHiding → chMessage
         ] A_export (A ∘ (par KEY (ID Hiding_E))) →
-        domm LA :#: domm KEY_locs ->
-        domm LA :#: domm Sigma_to_Com_locs ->
-        domm LA :#: domm [fmap setup_loc] ->
-        domm LA :#: domm Sigma_locs ->
-        domm LA :#: domm Simulator_locs ->
-        domm Simulator_locs :#: domm KEY_locs ->
-        domm Sigma_locs :#: domm KEY_locs ->
+        fseparate LA KEY_locs ->
+        fseparate LA Sigma_to_Com_locs ->
+        fseparate LA [fmap setup_loc] ->
+        fseparate LA Sigma_locs ->
+        fseparate LA Simulator_locs ->
+        fseparate Simulator_locs KEY_locs ->
+        fseparate Simulator_locs [fmap setup_loc] ->
+        fseparate Sigma_locs KEY_locs ->
           (ɛ_hiding A) <= 0 +
            AdvantageE SHVZK_ideal SHVZK_real (((A ∘ par KEY (ID Hiding_E)) ∘ Hiding_real) ∘ Sigma_to_Com_Aux) +
            AdvantageE (Hiding_real ∘ Sigma_to_Com_Aux ∘ SHVZK_real)
@@ -478,7 +476,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
            0.
     Proof.
       unfold ɛ_hiding, ɛ_SHVZK.
-      intros LA A VA Hd1 Hd2 Hd3 HdSigma HdSimulator Hd4 Hd5.
+      intros LA A VA Hd1 Hd2 Hd3 HdSigma HdSimulator Hd4 HdS' Hd5.
       ssprove triangle (Hiding_real ∘ Sigma_to_Com ∘ KEY) [::
         (Hiding_real ∘ Sigma_to_Com_Aux ∘ SHVZK_ideal) ;
         (Hiding_real ∘ Sigma_to_Com_Aux ∘ SHVZK_real) ;
@@ -493,16 +491,10 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         eapply eq_rel_perf_ind with (inv := inv).
         5: apply VA.
         1,2: ssprove_valid.
-        3,4: rewrite union0m.
-        3,4: rewrite domm_union fdisjointUr.
-        3: rewrite Hd1 Hd2 //. 
-        3: rewrite domm_union fdisjointUr Hd3 HdSimulator Hd2 //.
+        3,4: fmap_solve.
         1: rewrite 2!union0m.
-        1: rewrite unionmC //.
+        1: rewrite -> unionmC by fmap_solve.
         1: apply Invariant_inv.
-        1: exact _.
-        rewrite Sigma_to_Com_equation_1.
-        rewrite Sigma_to_Com_Aux_equation_1.
         simplify_eq_rel h.
         ssprove_code_simpl.
         destruct h.
@@ -541,9 +533,9 @@ Module SigmaProtocol (π : SigmaProtocolParams)
             unfold inv.
             intros l lin h1 s' h2.
             apply h2.
-            move: Hd4 => /fdisjointP Hd4.
-            apply Hd4.
-            apply lin.
+            eapply notin_temp; [ eassumption | ].
+            apply (fseparate_trans_r _ _ KEY_locs).
+            1,2: fmap_solve.
           }
           {
             unfold inv.
@@ -589,9 +581,9 @@ Module SigmaProtocol (π : SigmaProtocolParams)
             unfold inv.
             intros l lin h1 s' h2.
             apply h2.
-            move: Hd4 => /fdisjointP Hd4.
-            apply Hd4.
-            apply lin.
+            eapply notin_temp; [ eassumption | ].
+            apply (fseparate_trans_r _ _ KEY_locs).
+            1,2: fmap_solve.
           }
           {
             unfold inv.
@@ -614,44 +606,12 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       - apply eq_ler.
         eapply eq_rel_perf_ind with (inv := inv).
         5: apply VA.
-        1:{
-          ssprove_valid.
-          4: apply fsubsetxx.
-          3: apply fsub0set.
-          2: instantiate (1 := (Simulator_locs :|: (setup_loc |: Sigma_to_Com_locs))).
-          - apply fsubsetUr.
-          - apply fsubsetUl.
-        }
-        1:{
-          ssprove_valid.
-          3: apply fsub0set.
-          3: apply fsubsetxx.
-          1: instantiate (1 := (Sigma_to_Com_locs :|: KEY_locs)).
-          - apply fsubsetUl.
-          - apply fsubsetUr.
-        }
-        3,4: rewrite fdisjointUr ; apply /andP ; split.
-        4: rewrite fdisjointUr ; apply /andP ; split.
-        3,5-7: assumption.
-        3: rewrite fset1E ; assumption.
+        1,2: ssprove_valid.
+        3,4: fmap_solve.
         {
           ssprove_invariant.
-          unfold KEY_locs.
-          apply fsubsetU ; apply /orP ; right.
-          apply fsubsetU ; apply /orP ; right.
-          rewrite !fset_cons.
-          apply fsubsetU ; apply /orP ; right.
-          rewrite fsubUset ; apply /andP ; split.
-          - apply fsubsetU ; apply /orP ; right.
-            apply fsubsetU ; apply /orP ; left.
-            apply fsubsetxx.
-          - apply fsubsetU ; apply /orP ; left.
-            rewrite fsubUset ; apply /andP ; split.
-            + apply fsubsetxx.
-            + rewrite -fset0E. apply fsub0set.
+          fmap_solve. (* MK: long exec time *)
         }
-        rewrite Sigma_to_Com_equation_1.
-        rewrite Sigma_to_Com_Aux_equation_1.
         simplify_eq_rel h.
         ssprove_code_simpl.
         destruct h.
@@ -689,9 +649,9 @@ Module SigmaProtocol (π : SigmaProtocolParams)
           unfold inv.
           intros l lin h1 s' h2.
           apply h2.
-          move: Hd4 => /fdisjointP Hd4.
-          apply Hd4.
-          apply lin.
+          eapply notin_temp; [ eassumption | ].
+          apply (fseparate_trans_r _ _ KEY_locs).
+          1,2: fmap_solve.
         }
         {
           unfold inv.
@@ -709,7 +669,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Qed.
 
     Definition Com_Binding:
-      package fset0
+      package emptym
         [interface
           #val #[ COM ] : chChallenge → chMessage ;
           #val #[ OPEN ] : 'unit → chOpen ;
@@ -733,24 +693,15 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         ValidPackage LA [interface
           #val #[ SOUNDNESS ] : chSoundness → 'bool
         ] A_export A →
-        fdisjoint LA (Sigma_to_Com_locs :|: KEY_locs) →
+        fseparate LA Sigma_to_Com_locs →
+        fseparate LA KEY_locs →
+        fcompat Simulator_locs KEY_locs →
         AdvantageE (Com_Binding ∘ Sigma_to_Com ∘ KEY) (Special_Soundness_t) A = 0.
     Proof.
-      intros LA A VA Hdisj.
+      intros LA A VA Hd1 Hd2 Hd3.
       eapply eq_rel_perf_ind_eq.
       4: apply VA.
-      1:{
-        ssprove_valid.
-        3: apply fsub0set.
-        1: instantiate (1 := (Sigma_to_Com_locs :|: KEY_locs)).
-        2: apply fsubsetUr.
-        1: apply fsubsetUl.
-        apply fsubsetxx.
-      }
-      1: ssprove_valid.
-      2: assumption.
-      2: apply fdisjoints0.
-      rewrite Sigma_to_Com_equation_1.
+      1,2,4,5: ssprove_valid.
       simplify_eq_rel h.
       ssprove_code_simpl.
       simpl.
@@ -765,7 +716,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
   Module OracleParams <: ROParams.
 
-    Definition Query := prod_finType Statement Message.
+    Definition Query : finType := prod Statement Message.
     Definition Random := Challenge.
 
     Definition Query_pos : Positive #|Query|.
@@ -790,7 +741,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Definition VERIFY : nat := 8.
     Definition SIM : nat := 9.
 
-    Context (Sim_locs : {fset Location}).
+    Context (Sim_locs : Locations).
     Context (Sim : choiceStatement → code Sim_locs [interface] choiceTranscript).
 
     Definition prod_assoc : chProd choiceStatement choiceMessage → chQuery.
@@ -912,33 +863,21 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         ValidPackage LA [interface
           #val #[ RUN ] : chRelation → chTranscript
         ] A_export A →
-        fdisjoint LA Sigma_locs →
+        fseparate LA Sigma_locs →
         AdvantageE RUN_interactive (SHVZK_real_aux ∘ SHVZK_real) A = 0.
     Proof.
       intros LA A Va Hdisj.
       eapply eq_rel_perf_ind_eq.
-      5,6: apply Hdisj.
-      4: apply Va.
-      2:{
-        rewrite <- fsetUid.
-        eapply valid_link.
-        - eapply (valid_package_inject_locations).
-          2: apply SHVZK_real_aux.
-          apply fsub0set.
-        - apply SHVZK_real.
-      }
-      1:{
-        eapply valid_package_inject_export.
-        2: apply RUN_interactive.
-        apply fsubset_ext. intros ? ?.
-        rewrite fset_cons. apply /fsetUP. right. assumption.
-      }
+      2: ssprove_valid.
+      1,3: ssprove_valid.
+      2,3: fmap_solve.
       simplify_eq_rel hw.
       ssprove_code_simpl.
       rewrite cast_fun_K.
       ssprove_code_simpl.
       destruct hw as [h w].
-      ssprove_code_simpl_more. ssprove_code_simpl.
+      ssprove_code_simpl_more.
+      ssprove_code_simpl.
       ssprove_swap_rhs 0%N.
       ssprove_sync_eq. intro rel.
       ssprove_swap_rhs 0%N.
@@ -957,34 +896,17 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         ValidPackage LA [interface
           #val #[ RUN ] : chRelation → chTranscript
         ] A_export A →
-        fdisjoint LA (Sigma_locs :|: RO_locs) →
-        fdisjoint Sigma_locs RO_locs →
+        fseparate LA Sigma_locs →
+        fseparate LA RO_locs →
+        fseparate Sigma_locs RO_locs →
         AdvantageE (Fiat_Shamir ∘ RO) RUN_interactive A = 0.
     Proof.
-      intros LA A Va Hdisj Hdisj_oracle.
+      intros LA A Va Hd1 Hd2 Hd3.
       eapply eq_rel_perf_ind_ignore.
-      6: apply Hdisj.
-      6:{
-        rewrite fdisjointUr in Hdisj. move: Hdisj => /andP [h _].
-        apply h.
-      }
-      5: apply Va.
-      1:{
-        ssprove_valid.
-        2: apply fsubsetUl.
-        2: apply fsubsetUr.
-        eapply valid_package_inject_export.
-        2: apply Fiat_Shamir.
-        apply fsubset_ext. intros.
-        rewrite fset_cons. apply /fsetUP. right. assumption.
-      }
-      1:{
-        eapply valid_package_inject_export.
-        2: apply RUN_interactive.
-        apply fsubset_ext. intros.
-        rewrite fset_cons. apply /fsetUP. right. assumption.
-      }
-      1:{ apply fsubsetU. erewrite fsubsetUr. auto. }
+      5: ssprove_valid.
+      1,2: ssprove_valid.
+      3,4: fmap_solve.
+      1: apply fsubmapUl_trans, fsubmapUr; fmap_solve.
       simplify_eq_rel hw.
       ssprove_code_simpl.
       destruct hw as [h w].
@@ -994,9 +916,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       1:{
         intros l Il.
         apply get_pre_cond_heap_ignore.
-        revert l Il.
-        apply /fdisjointP.
-        assumption.
+        fmap_solve.
       }
       1:{ intros. apply put_pre_cond_heap_ignore. }
       intros [a st].
@@ -1010,8 +930,6 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       - exact _.
       - intros l Il.
         ssprove_invariant.
-        revert l Il.
-        apply /fdisjointP. assumption.
       - intros. ssprove_invariant.
     Qed.
 

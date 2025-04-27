@@ -1141,17 +1141,19 @@ Theorem security_based_on_prp LA A:
       #val #[ctxt]: 'word → 'ciph ;
       #val #[decrypt]: 'ciph → 'word ]
     A_export A ->
-  domm LA :#: (
-    domm EVAL_locs_tt :|: domm EVAL_locs_ff :|: domm CTXT_locs :|:
-    domm CTXT_EVAL_locs :|: domm CTXT_EVAL_SAMP_locs :|:
-    domm CTXT_HYB_locs_1 :|: domm CTXT_HYB_locs_2
-    ) ->
+  fseparate LA EVAL_locs_tt ->
+  fseparate LA EVAL_locs_ff ->
+  fseparate LA CTXT_locs ->
+  fseparate LA CTXT_EVAL_locs ->
+  fseparate LA CTXT_EVAL_SAMP_locs ->
+  fseparate LA CTXT_HYB_locs_1 ->
+  fseparate LA CTXT_HYB_locs_2 ->
   Advantage CTXT A <=
   prp_epsilon (A ∘ CTXT_EVAL_pkg_tt) +
   statistical_gap A +
   prp_epsilon (A ∘ CTXT_EVAL_pkg_ff).
 Proof.
-  move=> vA H.
+  move=> vA d1 d2 d3 d4 d5 d6 d7.
   rewrite Advantage_E Advantage_sym.
   ssprove triangle (CTXT true) [::
     CTXT_EVAL_pkg_tt ∘ EVAL true ;
@@ -1171,19 +1173,17 @@ Proof.
   ] (CTXT false) A as ineq.
   apply: le_trans.
   1: by apply: ineq.
-  rewrite !fdisjointUr in H.
-  move: H => /andP [/andP [/andP [/andP [/andP [/andP [H1 H2] H3] H4] H5] H6] H7].
-  move: {ineq H1 H2 H3 H4 H5 H6 H7} (H1, H2, H3, H4, H5, H6, H7, fdisjoints0) => H.
-  rewrite CTXT_equiv_true ?H // GRing.add0r.
-  rewrite CTXT_EVAL_equiv_true ?domm_union ?fdisjointUr ?H // GRing.addr0.
-  rewrite CTXT_HYB_equiv_1 ?H // GRing.addr0.
-  rewrite CTXT_HYB_equiv_2 ?H // GRing.addr0.
-  rewrite CTXT_HYB_equiv_3 ?H // GRing.addr0.
-  rewrite CTXT_HYB_equiv_4 ?H // GRing.addr0.
-  rewrite CTXT_HYB_equiv_5 ?H // GRing.addr0.
-  rewrite CTXT_HYB_equiv_6 ?domm_union ?fdisjointUr ?domm_union ?fdisjointUr ?domm0 ?H // GRing.addr0.
-  rewrite CTXT_EVAL_equiv_false ?domm_union ?domm0 ?fdisjointUr ?H // GRing.addr0.
-  rewrite CTXT_equiv_false ?H // GRing.addr0.
+  rewrite -> CTXT_equiv_true by ssprove_valid.
+  rewrite -> CTXT_EVAL_equiv_true by ssprove_valid.
+  rewrite -> CTXT_HYB_equiv_1 by ssprove_valid.
+  rewrite -> CTXT_HYB_equiv_2 by ssprove_valid.
+  rewrite -> CTXT_HYB_equiv_3 by ssprove_valid.
+  rewrite -> CTXT_HYB_equiv_4 by ssprove_valid.
+  rewrite -> CTXT_HYB_equiv_5 by ssprove_valid.
+  rewrite -> CTXT_HYB_equiv_6 by ssprove_valid.
+  rewrite -> CTXT_EVAL_equiv_false by ssprove_valid.
+  rewrite -> CTXT_equiv_false by ssprove_valid.
+  rewrite GRing.add0r 9!GRing.addr0.
   rewrite /prp_epsilon /statistical_gap !Advantage_E !GRing.addrA.
   rewrite -!Advantage_link !link_assoc.
   by rewrite (Advantage_sym (EVAL true)) (Advantage_sym (SAMP Ciph_N true)).

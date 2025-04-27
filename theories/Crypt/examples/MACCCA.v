@@ -454,16 +454,18 @@ Theorem security_based_on_mac LA A:
       #val #[eavesdrop]: 'word × 'word → 'word × 'word ;
       #val #[decrypt]: 'word × 'word → 'option 'word ]
     A_export A ->
-  domm LA :#: (
-    domm TAG_locs_tt :|: domm TAG_locs_ff :|: domm CPA_EVAL_locs :|:
-    domm CCA_EVAL_locs :|: domm CCA_EVAL_TAG_locs :|: domm CCA_EVAL_HYB_locs
-    ) ->
+  fseparate LA TAG_locs_tt ->
+  fseparate LA TAG_locs_ff ->
+  fseparate LA CPA_EVAL_locs ->
+  fseparate LA CCA_EVAL_locs ->
+  fseparate LA CCA_EVAL_TAG_locs ->
+  fseparate LA CCA_EVAL_HYB_locs ->
   Advantage CCA_EVAL A <=
   mac_epsilon (A ∘ CCA_EVAL_TAG_pkg_tt) +
   cpa_epsilon (A ∘ CCA_EVAL_HYB_pkg) +
   mac_epsilon (A ∘ CCA_EVAL_TAG_pkg_ff).
 Proof.
-  move=> vA H.
+  move=> vA d1 d2 d3 d4 d5 d6.
   rewrite Advantage_E Advantage_sym.
   ssprove triangle (CCA_EVAL true) [::
     CCA_EVAL_TAG_pkg_tt ∘ TAG true ;
@@ -475,13 +477,11 @@ Proof.
   ] (CCA_EVAL false) A as ineq.
   apply: le_trans.
   1: by apply: ineq.
-  rewrite !fdisjointUr in H.
-  move: H => /andP [/andP [/andP [/andP [/andP [H1 H2] H3] H4] H5] H6].
-  move: {ineq H1 H2 H3 H4 H5 H6} (H1, H2, H3, H4, H5, H6) => H.
-  rewrite CCA_EVAL_equiv_true ?H // GRing.add0r.
-  rewrite CCA_EVAL_HYB_equiv_true ?domm_union ?fdisjointUr ?H // GRing.addr0.
-  rewrite CCA_EVAL_HYB_equiv_false ?domm_union ?fdisjointUr ?H // GRing.addr0.
-  rewrite CCA_EVAL_equiv_false ?domm_union ?fdisjointUr ?H // GRing.addr0.
+  rewrite -> CCA_EVAL_equiv_true by ssprove_valid.
+  rewrite -> CCA_EVAL_HYB_equiv_true by ssprove_valid.
+  rewrite -> CCA_EVAL_HYB_equiv_false by ssprove_valid.
+  rewrite -> CCA_EVAL_equiv_false by ssprove_valid.
+  rewrite GRing.add0r 3!GRing.addr0.
   rewrite /mac_epsilon /cpa_epsilon !Advantage_E -!Advantage_link.
   by rewrite (Advantage_sym (TAG true)) (Advantage_sym (CPA_EVAL true)).
 Qed.

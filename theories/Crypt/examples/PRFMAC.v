@@ -454,17 +454,19 @@ Theorem security_based_on_prf LA A:
       #val #[gettag]: 'word → 'word ;
       #val #[checktag]: 'word × 'word → 'bool ]
     A_export A ->
-  domm LA :#: (
-    domm EVAL_locs_tt :|: domm EVAL_locs_ff :|: domm GUESS_locs :|:
-    domm TAG_locs_tt :|: domm TAG_locs_ff :|:
-    domm TAG_EVAL_locs_ff :|: domm TAG_GUESS_locs
-  ) ->
+  fseparate LA EVAL_locs_tt ->
+  fseparate LA EVAL_locs_ff ->
+  fseparate LA GUESS_locs ->
+  fseparate LA TAG_locs_tt ->
+  fseparate LA TAG_locs_ff ->
+  fseparate LA TAG_EVAL_locs_ff ->
+  fseparate LA TAG_GUESS_locs ->
   Advantage TAG A <=
   prf_epsilon (A ∘ TAG_EVAL_pkg_tt) +
   statistical_gap A +
   prf_epsilon (A ∘ TAG_EVAL_pkg_ff).
 Proof.
-  move=> vA H.
+  move=> vA d1 d2 d3 d4 d5 d6 d7.
   rewrite Advantage_E Advantage_sym.
   ssprove triangle (TAG true) [::
     TAG_EVAL_pkg_tt ∘ EVAL true   ;
@@ -477,14 +479,11 @@ Proof.
   as ineq.
   apply: le_trans.
   1: by apply: ineq.
-  rewrite !fdisjointUr in H.
-  move: H => /andP [/andP [/andP [/andP [/andP [/andP [H1 H2] H3] H4] H5] H6] H7].
-  move: {ineq H1 H2 H3 H4 H5 H6 H7} (H1, H2, H3, H4, H5, H6, H7, fdisjoints0) => H.
-  rewrite TAG_equiv_true ?H // GRing.add0r.
-  rewrite TAG_EVAL_equiv_true ?union0m ?domm_union ?fdisjointUr ?H // GRing.addr0.
-  rewrite TAG_EVAL_equiv_false ?domm_union ?fdisjointUr ?H // GRing.addr0.
-  rewrite TAG_equiv_false ?H // GRing.addr0.
-  rewrite Advantage_sym.
+  rewrite -> TAG_equiv_true by ssprove_valid.
+  rewrite -> TAG_EVAL_equiv_true by ssprove_valid.
+  rewrite -> TAG_EVAL_equiv_false by ssprove_valid.
+  rewrite -> TAG_equiv_false by ssprove_valid.
+  rewrite GRing.add0r 3!GRing.addr0 Advantage_sym.
   by rewrite /prf_epsilon /statistical_gap !Advantage_E !Advantage_link.
 Qed.
 

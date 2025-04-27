@@ -205,8 +205,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
         #val #[getpk_id] : 'unit → 'pubkey ;
         #val #[challenge_id] : 'plain × 'plain → 'cipher
       ] A_export A →
-      domm LA :#: domm (cpa_L_vs_R true).(locs) →
-      domm LA :#: domm (cpa_L_vs_R false).(locs) →
+      fseparate LA (cpa_L_vs_R true).(locs) →
+      fseparate LA (cpa_L_vs_R false).(locs) →
       Advantage cpa_L_vs_R A = 0.
 
   (* Define what it means for an asymmetric encryption scheme to: *)
@@ -281,8 +281,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
         #val #[getpk_id] : 'unit → 'pubkey ;
         #val #[challenge_id] : 'plain → 'cipher
       ] A_export A →
-      domm LA :#: domm (cpa_real_vs_rand true).(locs) →
-      domm LA :#: domm (cpa_real_vs_rand false).(locs) →
+      fseparate LA (cpa_real_vs_rand true).(locs) →
+      fseparate LA (cpa_real_vs_rand false).(locs) →
       Advantage cpa_real_vs_rand A = 0.
 
   (* Define what it means for an asymmetric encryption scheme to have: *)
@@ -363,8 +363,8 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
         #val #[getpk_id] : 'unit → 'pubkey ;
         #val #[challenge_id] :'plain × 'plain → 'option 'cipher
       ] A_export A →
-      domm LA :#: domm (ots_L_vs_R true).(locs) →
-      domm LA :#: domm (ots_L_vs_R false).(locs) →
+      fseparate LA (ots_L_vs_R true).(locs) →
+      fseparate LA (ots_L_vs_R false).(locs) →
       Advantage ots_L_vs_R A = 0.
 
   (*  *)

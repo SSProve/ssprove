@@ -365,8 +365,8 @@ Section OTP_example.
       Advantage IND_CPA A = 0.
   Proof.
     intros LA A vA.
-    rewrite Advantage_E. eapply IND_CPA_ideal_real. 1: eauto.
-    1,2: rewrite domm0; apply fdisjoints0. (* MK: Should be automatic *)
+    rewrite Advantage_E.
+    by rewrite -> IND_CPA_ideal_real by ssprove_valid.
   Qed.
 
 End OTP_example.

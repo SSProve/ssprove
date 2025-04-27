@@ -351,13 +351,13 @@ Theorem hyb_security_based_on_prf LA A q:
   ValidPackage LA
     [interface #val #[query]: 'unit → 'word × 'word ]
     A_export A ->
-  domm LA :#: domm (
-    unionm (unionm EVAL_locs_tt EVAL_locs_ff) GEN_HYB_locs
-  ) ->
+  fseparate LA EVAL_locs_tt ->
+  fseparate LA EVAL_locs_ff ->
+  fseparate LA GEN_HYB_locs ->
   AdvantageE (GEN_HYB_pkg 0) (GEN_HYB_pkg q) A <=
   \sum_(i < q) prf_epsilon (A ∘ GEN_HYB_EVAL_pkg i).
 Proof.
-  move=> vA H.
+  move=> vA d1 d2 d3.
   elim: q => [|q IHq].
   1: by rewrite big_ord0 /AdvantageE GRing.subrr normr0.
   ssprove triangle (GEN_HYB_pkg 0) [::
@@ -368,12 +368,9 @@ Proof.
   as ineq.
   apply: le_trans.
   1: by apply: ineq.
-  rewrite !domm_union !fdisjointUr in H.
-  move: H => /andP [/andP [H1 H2] H3].
-  move: {ineq H1 H2 H3} (H1, H2, H3) => H.
-  rewrite GEN_GEN_HYB_equiv ?domm_union ?fdisjointUr ?H // GRing.addr0.
-  rewrite GEN_GEN_HYB_EVAL_equiv ?domm_union ?fdisjointUr ?H // GRing.addr0.
-  rewrite big_ord_recr lerD //.
+  rewrite -> GEN_GEN_HYB_equiv by ssprove_valid.
+  rewrite -> GEN_GEN_HYB_EVAL_equiv by ssprove_valid.
+  rewrite 2!GRing.addr0 big_ord_recr lerD //.
   by rewrite /prf_epsilon Advantage_E Advantage_link Advantage_sym.
 Qed.
 
@@ -387,13 +384,13 @@ Theorem security_based_on_prf LA A q:
   ValidPackage LA
     [interface #val #[query]: 'unit → 'word × 'word ]
     A_export A ->
-  domm LA :#: domm (
-    unionm (unionm EVAL_locs_tt EVAL_locs_ff) GEN_HYB_locs
-  ) ->
+  fseparate LA EVAL_locs_tt ->
+  fseparate LA EVAL_locs_ff ->
+  fseparate LA GEN_HYB_locs ->
   AdvantageE (GEN_HYB_pkg q) (GEN false) A = 0 ->
   Advantage GEN A <= \sum_(i < q) prf_epsilon (A ∘ GEN_HYB_EVAL_pkg i).
 Proof.
-  move=> vA H GEN_equiv_false.
+  move=> vA d1 d2 d3 GEN_equiv_false.
   rewrite Advantage_E Advantage_sym.
   ssprove triangle (GEN true) [::
     pack (GEN_HYB_pkg 0) ;
@@ -402,12 +399,9 @@ Proof.
   as ineq.
   apply: le_trans.
   1: by apply: ineq.
-  rewrite !domm_union !fdisjointUr in H.
-  move: H => /andP [/andP [H1 H2] H3].
-  move: {ineq H1 H2 H3} (H1, H2, H3) => H.
-  rewrite GEN_equiv_true ?H // ?GRing.add0r; [| fmap_solve ].
-  rewrite GEN_equiv_false GRing.addr0.
-  rewrite hyb_security_based_on_prf // 2!domm_union 2!fdisjointUr 3!H //.
+  rewrite -> GEN_equiv_true by ssprove_valid.
+  rewrite -> GEN_equiv_false by ssprove_valid.
+  rewrite GRing.add0r GRing.addr0 hyb_security_based_on_prf //.
 Qed.
 
 End PRFGEN_example.

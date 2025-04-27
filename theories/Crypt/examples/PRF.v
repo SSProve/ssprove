@@ -394,8 +394,8 @@ Section PRF_example.
     ∀ LA A,
       ValidPackage LA
         [interface #val #[i1] : 'word → 'word × 'word ] A_export A →
-      domm LA :#: domm (IND_CPA false).(locs) →
-      domm LA :#: domm (IND_CPA true).(locs) →
+      fseparate LA (IND_CPA false).(locs) →
+      fseparate LA (IND_CPA true).(locs) →
       Advantage IND_CPA A <=
       prf_epsilon (A ∘ MOD_CPA_ff_pkg) +
       statistical_gap A +
@@ -412,10 +412,10 @@ Section PRF_example.
     as ineq.
     eapply le_trans. 1: exact ineq.
     clear ineq.
-    erewrite IND_CPA_equiv_false. all: eauto.
-    erewrite IND_CPA_equiv_true. all: eauto.
+    erewrite IND_CPA_equiv_false by ssprove_valid.
+    erewrite IND_CPA_equiv_true by ssprove_valid.
     rewrite GRing.add0r GRing.addr0.
-    rewrite !Advantage_link. rewrite Advantage_sym. auto.
+    rewrite !Advantage_link Advantage_sym //.
   Qed.
 
 End PRF_example.

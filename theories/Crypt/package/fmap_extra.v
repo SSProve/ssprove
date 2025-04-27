@@ -388,4 +388,64 @@ Lemma fcompat_case_r {T : ordType} {S : Type} {b : bool} {m m' m'' : {fmap T →
   : fcompat m m' → fcompat m m'' → fcompat m (if b then m' else m'').
 Proof. by move: b => []. Qed.
 
-Hint Resolve fsubmap_case_l fsubmap_case_r fcompat_case_l fcompat_case_r : fmap_solve_db.
+Hint Resolve fsubmap_case_l fsubmap_case_r fcompat_case_l fcompat_case_r
+  : fmap_solve_db.
+
+Lemma fseparate_compat {T : ordType} {S : Type} (m m' : {fmap T → S})
+  : fseparate m m' → fcompat m m'.
+Proof. intros [H]. rewrite /fcompat unionmC //. Qed.
+(* danger of two solution paths? *)
+Hint Resolve fseparate_compat : fmap_solve_db.
+
+Lemma fcompatC {T : ordType} {S : Type} (m m' : {fmap T → S})
+  : fcompat m m' → fcompat m' m.
+Proof. done. Qed.
+
+Lemma fseparateC {T : ordType} {S S' : Type}
+  (m : {fmap T → S}) (m' : {fmap T → S'})
+  : fseparate m m' → fseparate m' m.
+Proof. intros [H]. apply fsep. rewrite fdisjointC //. Qed.
+
+Lemma fseparate_trans_l {T : ordType} {S S' : Type}
+  (m m'' : {fmap T → S}) (m' : {fmap T → S'})
+  : fsubmap m m'' → fseparate m'' m' → fseparate m m'.
+Proof.
+  unfold fsubmap.
+  intros H [H'].
+  apply fsep.
+  eapply (fdisjointSl _ H').
+  Unshelve.
+  rewrite -H domm_union fsubsetUl //.
+Qed.
+
+Lemma fseparate_trans_r {T : ordType} {S S' : Type}
+  (m : {fmap T → S}) (m' m'' : {fmap T → S'})
+  : fsubmap m' m'' → fseparate m m'' → fseparate m m'.
+Proof.
+  unfold fsubmap.
+  intros H [H'].
+  apply fsep.
+  eapply (fdisjointSr _ H').
+  Unshelve.
+  rewrite -H domm_union fsubsetUl //.
+Qed.
+
+Hint Extern 4 (fcompat _ _) =>
+  apply fcompatC; done : fmap_solve_db.
+
+Hint Extern 4 (fseparate _ _) =>
+  apply fseparateC; done : fmap_solve_db.
+
+(* This hint should not be necessary *)
+(* Hint Resolve fseparateE : fmap_solve_db. *)
+
+Lemma notin_temp {T : ordType} {S : Type} (m m' : {fmap T → S}) (l : T * S)
+  : fhas m l → fseparate m m' → l.1 \notin domm m'.
+Proof.
+  move=> H [H'].
+  apply fhas_in in H.
+  apply /fdisjointP; eassumption.
+Qed.
+
+Hint Extern 4 (is_true (_ \notin _)) =>
+  eapply notin_temp; [ eassumption | ] : fmap_solve_db.
