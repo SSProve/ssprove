@@ -201,7 +201,6 @@ Qed.
 
 Lemma INV'_heap_ignore :
   ∀ L L₀ L₁,
-    (* MK: Condition is too restrictive *)
     fsubmap L (unionm L₀ L₁) →
     INV' L₀ L₁ (heap_ignore L).
 Proof.
