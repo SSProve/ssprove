@@ -332,10 +332,7 @@ Proof.
     couple_lhs S_loc T_loc
       (fun S T => S = T)
   ).
-  1: {
-    ssprove_invariant=> //=.
-    all: by rewrite /CCA_EVAL_TAG_locs /TAG_locs_ff !fset_cons !in_fsetU !in_fset1 eq_refl Bool.orb_true_r.
-  }
+  1: ssprove_invariant=> //=.
   simplify_eq_rel m.
   all: simplify_linking.
   all: ssprove_code_simpl.
@@ -379,10 +376,7 @@ Proof.
     couple_rhs S_loc T_loc
       (fun S T => S = T)
   ).
-  1: {
-    ssprove_invariant=> //=.
-    all: by rewrite /CCA_EVAL_TAG_locs /TAG_locs_ff !fset_cons !in_fsetU !in_fset1 eq_refl !Bool.orb_true_r.
-  }
+  1: ssprove_invariant=> //=.
   simplify_eq_rel m.
   all: simplify_linking.
   all: ssprove_code_simpl.

@@ -182,6 +182,10 @@ Proof.
     + auto.
 Qed.
 
+(* This tactic is used to prove package validity with the following strategy:
+   1. Apply weakening so that locations, imports and exports are evars.
+   2. Derive package validity recursively over e.g. link and par.
+   3. Prove fsubmap equations (that are due to weakening) with fmap_solve. *)
 Ltac package_evar :=
   lazymatch goal with
   | |- (ValidPackage ?L ?I ?E ?P) =>
@@ -446,19 +450,11 @@ Qed.
   package_evar ; [ eapply valid_par | .. ]
   : typeclass_instances ssprove_valid_db.
 
-Class FDisjoint {A : ordType} s1 s2 :=
-  are_disjoint : @fdisjoint A s1 s2.
-
-(** When comparing export interfaces, since we disallow overloading
-    we need to have only the identifier parts disjoint.
-*)
-Definition idents (E : Interface) : {fset ident} := domm E.
-
 Lemma domm_trim :
   ∀ E p,
-    domm (trim E p) :<=: idents E.
+    domm (trim E p) :<=: domm E.
 Proof.
-  intros E p. unfold trim. unfold idents.
+  intros E p. unfold trim.
   apply /fsubsetP => n.
   rewrite 2!mem_domm filtermE.
   destruct (E n), (p n) => //=.
@@ -466,7 +462,7 @@ Qed.
 
 Lemma parable_trim :
   ∀ E1 E2 p1 p2,
-    fdisjoint (idents E1) (idents E2) →
+    fdisjoint (domm E1) (domm E2) →
     fseparate (trim E1 p1) (trim E2 p2).
 Proof.
   intros E1 E2 p1 p2 h.
@@ -477,58 +473,6 @@ Proof.
   eapply fdisjoint_trans.
   { eapply domm_trim. }
   rewrite fdisjointC. auto.
-Qed.
-
-Lemma fdisjoint_from_class :
-  ∀ A s1 s2,
-    @FDisjoint A s1 s2 →
-    fdisjoint s1 s2.
-Proof.
-  intros. auto.
-Qed.
-
-#[export] Instance FDisjointUr {A : ordType} (s1 s2 s3 : {fset A}) :
-  FDisjoint s1 s2 →
-  FDisjoint s1 s3 →
-  FDisjoint s1 (s2 :|: s3).
-Proof.
-  intros h2 h3.
-  unfold FDisjoint in *.
-  rewrite fdisjointUr.
-  rewrite h2 h3. reflexivity.
-Qed.
-
-#[export] Hint Extern 1 (FDisjoint _ _) =>
-  reflexivity
-  : typeclass_instances ssprove_valid_db.
-
-#[export] Hint Extern 1 (FDisjoint (fset ?l1) (fset ?l2)) =>
-  repeat rewrite [fset]unlock
-  : typeclass_instances ssprove_valid_db.
-
-(*
-#[export] Hint Extern 1 (Parable _ _) =>
-  eapply fdisjoint_from_class
-  : typeclass_instances ssprove_valid_db.
-
-#[export] Hint Extern 1 (Parable (trim ?E1 ?p1) (trim ?E2 ?p2)) =>
-  eapply parable_trim ;
-  eapply fdisjoint_from_class
-  : typeclass_instances ssprove_valid_db.
- *)
-
-(* TODO MOVE *)
-(** To circumvent the very annoying lemmata that conclude on equality
-    of coerced arguments when it is the same as concluding global equality!
-*)
-Lemma fsval_eq :
-  ∀ (A : ordType) (u v : {fset A}),
-    FSet.fsval u = FSet.fsval v →
-    u = v.
-Proof.
-  intros A [u hu] [v hv] e.
-  cbn in e. subst. f_equal.
-  apply bool_irrelevance.
 Qed.
 
 Lemma par_commut :
@@ -599,7 +543,7 @@ Definition trimmed E p :=
 Lemma domm_trimmed :
   ∀ E p,
     trimmed E p →
-    fsubset (domm p) (idents E).
+    fsubset (domm p) (domm E).
 Proof.
   intros E p h.
   unfold trimmed in h. rewrite <- h.
@@ -745,32 +689,6 @@ Proof.
       eapply ih. all: eauto.
 Qed.
 
-(* MK: Should this be fixed?
-Definition funmkpack {L I} {E : Interface}
-  (f : ∀ (o : opsig), E o.1 = Some o.2 → src o → code L I (tgt o)) :
-  package L I E.
-Proof.
-  pose foo : seq (nat * typed_function L I) :=
-    [interface (ide o, (chsrc o ; chtgt o ; f o h)) | h # o ∈ E].
-  pose bar := mkfmap foo.
-  exists (@mapm _ (typed_function L I) typed_raw_function
-    (λ '(So ; To ; f), (So ; To ; λ x, (f x).(prog))) bar).
-  apply prove_valid_package.
-  intros [n [So To]] ho.
-  rewrite mapmE. subst bar foo.
-  rewrite mkfmapE.
-  destruct getm_def eqn:e.
-  - apply getm_def_map_interface_Some in e as h.
-    destruct h as [[S T] [h [h1 h2]]]. subst. cbn.
-    specialize (hE _ _ _ h ho). noconf hE.
-    eexists. split. 1: reflexivity.
-    intro x. cbn.
-    exact ((f (n, (So, To)) h x).(prog_valid)).
-  - exfalso. apply getm_def_map_interface_None in e.
-    eapply in_getm_def_None. 2: eauto.
-    exact ho.
-Defined.
- *)
 
 (* Identity package *)
 
@@ -781,63 +699,6 @@ Definition mkdef (A B : choice_type) (f : A → raw_code B)
 
 Definition ID (I : Interface) : raw_package :=
   mapim (λ n '(s, t), mkdef s t (λ x, opr (n, (s, t)) x (λ y, ret y))) I.
-
-(*
-Lemma getm_def_map :
-  ∀ (T : ordType) S1 S2 (l : seq (T * S1)) (f : S1 → S2) x,
-    getm_def [seq let '(i,s) := u in (i, f s) | u <- l ] x =
-    omap f (getm_def l x).
-Proof.
-  intros T S1 S2 l f x.
-  induction l as [| u l ih].
-  - simpl. reflexivity.
-  - simpl. destruct u as [i s]. simpl.
-    destruct (x == i).
-    + reflexivity.
-    + apply ih.
-Qed.
-
-Lemma getm_def_map_dep :
-  ∀ (T : ordType) S1 S2 (l : seq (T * S1)) (f : T → S1 → S2) x,
-    getm_def [seq let '(i,s) := u in (i, f i s) | u <- l ] x =
-    omap (f x) (getm_def l x).
-Proof.
-  intros T S1 S2 l f x.
-  induction l as [| u l ih].
-  - simpl. reflexivity.
-  - simpl. destruct u as [i s]. simpl.
-    destruct (x == i) eqn:e.
-    + cbn. move: e => /eqP e. subst. reflexivity.
-    + apply ih.
-Qed.
-
-Lemma IDE :
-  ∀ I n,
-    ID I n =
-    omap
-      (λ '(So,To), (So ; To ; λ x, opr (n,(So,To)) x (λ y, ret y)))
-      (getm_def I n).
-Proof.
-  intros I n.
-  unfold ID. rewrite mkfmapE.
-  rewrite getm_def_map_dep. reflexivity.
-Qed.
-
-Lemma getm_def_in :
-  ∀ {A : eqType} n (x : A) (s : seq ((nat:eqType)%type * A)),
-    getm_def s n = Some x →
-    (n,x) \in s.
-Proof.
-  simpl. intros A n x s h.
-  induction s as [| [m a] s ih] in n, x, h |- *.
-  - inversion h.
-  - cbn in h. rewrite in_cons. apply/orP.
-    destruct eqn eqn:e.
-    + noconf h. move: e => /eqP e. subst.
-      left. apply/eqP. reflexivity.
-    + right. eapply ih. auto.
-Qed.
- *)
 
 Lemma lookup_op_ID :
   ∀ (I : Interface) o,
@@ -866,7 +727,6 @@ Proof.
   apply valid_ret.
 Qed.
 
-(* Only for pacakages because we don't expect to infer a flat proof *)
 #[export] Hint Extern 2 (ValidPackage ?L ?I ?E (ID ?I')) =>
   eapply valid_ID
   : typeclass_instances ssprove_valid_db.

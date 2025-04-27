@@ -52,9 +52,7 @@ Ltac package_obtac :=
   Tactics.program_simplify ;
   CoreTactics.equations_simpl ;
   try Tactics.program_solve_wf ;
-  try fmap_solve. (*;
-  try in_fset_auto ;
-                     try inset_try.*)
+  try fmap_solve.
 
 (* With the following, one can rewrite under λ with setoid_rewrite *)
 
