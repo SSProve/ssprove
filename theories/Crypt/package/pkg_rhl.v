@@ -519,8 +519,8 @@ Lemma eq_upto_inv_perf_ind :
     `{ValidPackage LA E A_export A},
     INV' L₀ L₁ I →
     I (empty_heap, empty_heap) →
-    domm LA :#: domm L₀ →
-    domm LA :#: domm L₁ →
+    fseparate LA L₀ →
+    fseparate LA L₁ →
     eq_up_to_inv E I p₀ p₁ →
     AdvantageE p₀ p₁ A = 0.
 Proof.
@@ -529,14 +529,8 @@ Proof.
   pose r := get_op_default A RUN tt.
   assert (hI : INV LA I).
   { unfold INV. intros s₀ s₁. split.
-    - intros hi l hin. apply hI'.
-      + assumption.
-      + move: hd₀ => /fdisjointP hd₀. apply hd₀. by apply fhas_in.
-      + move: hd₁ => /fdisjointP hd₁. apply hd₁. by apply fhas_in.
-    - intros hi l v hin. apply hI'.
-      + assumption.
-      + move: hd₀ => /fdisjointP hd₀. apply hd₀. by apply fhas_in.
-      + move: hd₁ => /fdisjointP hd₁. apply hd₁. by apply fhas_in.
+    - intros hi l hin. apply hI'; fmap_solve.
+    - intros hi l v hin. apply hI'; fmap_solve.
   }
   unshelve epose proof (eq_up_to_inv_adversary_link p₀ p₁ I r hI hp) as h.
   1:{

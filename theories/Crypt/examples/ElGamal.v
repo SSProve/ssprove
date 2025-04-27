@@ -404,12 +404,13 @@ Theorem ElGamal_OT :
       #val #[getpk_id] : 'unit → 'pubkey ;
       #val #[challenge_id'] : 'plain → 'cipher
     ] A_export A →
-    domm LA :#: domm (ots_real_vs_rnd true).(locs) →
-    domm LA :#: domm (ots_real_vs_rnd false).(locs) →
+    (* MK: automate so that 3 is derived 1 and 2 *)
+    fseparate LA DH_loc →
+    fseparate LA [fmap counter_loc; pk_loc] →
+    fseparate LA [fmap counter_loc; pk_loc; sk_loc] →
     Advantage ots_real_vs_rnd A <= AdvantageE DH_rnd DH_real (A ∘ Aux).
 Proof.
-  intros LA A vA hd₀ hd₁.
-  simpl in hd₀, hd₁. clear hd₁. rename hd₀ into hd.
+  intros LA A vA hd₀ hd₁ hd₂.
   rewrite Advantage_E.
   ssprove triangle (ots_real_vs_rnd false) [::
     Aux ∘ DH_rnd ;
@@ -418,10 +419,9 @@ Proof.
   as ineq.
   eapply le_trans. 1: exact ineq.
   clear ineq.
-  rewrite ots_real_vs_rnd_equiv_true. 2,3: auto.
-  rewrite ots_real_vs_rnd_equiv_false. 2,3: auto.
-  rewrite GRing.addr0. rewrite GRing.add0r.
-  rewrite -Advantage_link. auto.
+  rewrite -> ots_real_vs_rnd_equiv_true by fmap_solve.
+  rewrite -> ots_real_vs_rnd_equiv_false by fmap_solve.
+  rewrite GRing.addr0 GRing.add0r -Advantage_link //.
 Qed.
 
 End ElGamal.

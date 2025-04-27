@@ -90,8 +90,8 @@ theories/Crypt/examples/ElGamal.v
 theories/Crypt/examples/OTP.v
 theories/Crypt/examples/KEMDEM.v
 theories/Crypt/examples/RandomOracle.v
-# theories/Crypt/examples/SigmaProtocol.v (* MK: Won't fix *)
-# theories/Crypt/examples/Schnorr.v (* MK: Won't fix *)
+theories/Crypt/examples/SigmaProtocol.v
+theories/Crypt/examples/Schnorr.v
 # theories/Crypt/examples/OVN.v
 theories/Crypt/examples/Executor.v
 

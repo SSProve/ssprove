@@ -912,8 +912,8 @@ Section KEMDEM.
   Theorem PKE_security :
     ∀ LA A,
       ValidPackage LA PKE_CCA_out A_export A →
-      domm LA :#: domm PKE_CCA_loc →
-      domm LA :#: domm Aux_loc → (* Do we really need this? *)
+      fseparate LA PKE_CCA_loc →
+      fseparate LA Aux_loc → (* Do we really need this? *)
       Advantage (PKE_CCA KEM_DEM) A <=
       Advantage KEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (ID KEM_out) (DEM true)) +
       Advantage DEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (KEM false) (ID DEM_out)) +
@@ -928,9 +928,9 @@ Section KEMDEM.
     as ineq.
     eapply le_trans. 1: exact ineq.
     clear ineq.
-    rewrite PKE_CCA_perf. 2,3: auto.
-    rewrite PKE_CCA_perf_true. 2,3: auto.
-    rewrite GRing.addr0. rewrite GRing.add0r.
+    rewrite -> PKE_CCA_perf by ssprove_valid.
+    rewrite -> PKE_CCA_perf_true by ssprove_valid.
+    rewrite GRing.addr0 GRing.add0r.
     (* Now we massage the expression to apply the single key lemma *)
     eapply le_trans.
     - rewrite Advantage_sym.

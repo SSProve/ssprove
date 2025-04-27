@@ -231,8 +231,8 @@ Definition adv_equiv {L₀ L₁ E} (G₀ G₁ : raw_package)
   `{ValidPackage L₀ Game_import E G₀} `{ValidPackage L₁ Game_import E G₁} ε :=
   ∀ LA A,
     ValidPackage LA E A_export A →
-    domm LA :#: domm L₀ →
-    domm LA :#: domm L₁ →
+    fseparate LA L₀ →
+    fseparate LA L₁ →
     AdvantageE G₀ G₁ A = ε A.
 
 Notation " G0 ≈[ R ] G1 " :=
@@ -397,9 +397,9 @@ Lemma TriangleInequality :
     F ≈[ ϵ3 ] H →
     ∀ LA A,
       ValidPackage LA Game_export A_export A →
-      domm LA :#: domm F.(locs) →
-      domm LA :#: domm G.(locs) →
-      domm LA :#: domm H.(locs) →
+      fseparate LA F.(locs) →
+      fseparate LA G.(locs) →
+      fseparate LA H.(locs) →
       ϵ3 A <= ϵ1 A + ϵ2 A.
 Proof.
   intros Game_export F G H ε₁ ε₂ ε₃ h1 h2 h3 LA A vA hF hG hH.

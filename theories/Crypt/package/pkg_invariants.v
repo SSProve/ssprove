@@ -105,25 +105,15 @@ Qed.
 Lemma INV'_to_INV (L L1 L2 : Locations)
   (I : heap_choiceType * heap_choiceType → Prop)
   (HINV' : INV' L1 L2 I)
-  (Hdisjoint1 : domm L :#: domm L1) (Hdisjoint2 : domm L :#: domm L2) :
+  (Hdisjoint1 : fseparate L L1) (Hdisjoint2 : fseparate L L2) :
   INV L I.
 Proof.
   unfold INV.
   intros s1 s2. split.
   - intros hi l hin.
-    apply HINV'.
-    + assumption.
-    + apply /(fdisjointP Hdisjoint1).
-      apply /dommP. destruct l. eexists. by rewrite hin.
-    + apply /(fdisjointP Hdisjoint2).
-      apply /dommP. destruct l. eexists. by rewrite hin.
+    apply HINV'; fmap_solve.
   - intros hi l v hin.
-    apply HINV'.
-    + assumption.
-    + apply /(fdisjointP Hdisjoint1).
-      apply /dommP. destruct l. eexists. by rewrite hin.
-    + apply /(fdisjointP Hdisjoint2).
-      apply /dommP. destruct l. eexists. by rewrite hin.
+    apply HINV'; fmap_solve.
 Qed.
 
 (* TODO: add automation? *)
