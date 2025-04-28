@@ -29,99 +29,44 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
-Definition cast_fun {So To St Tt : choice_type}
-  (hS : St = So) (hT : Tt = To) (f : St → raw_code Tt) :
-  So → raw_code To.
-Proof.
-  subst. auto.
-Defined.
+Definition coerce_kleisli {A A' B B' : choice_type} (f : A → raw_code B) : A' → raw_code B'
+  := λ a, bind (f (coerce a)) (λ b, ret (coerce b)).
 
-Definition lookup_op (p: raw_package) (o : opsig) :
-  option (src o → raw_code (tgt o)) :=
-  let '(n, (So, To)) := o in
-  match p n with
-  | Some (St ; Tt ; f) =>
-    match choice_type_eqP St So, choice_type_eqP Tt To with
-    | ReflectT hS, ReflectT hT => Some (cast_fun hS hT f)
-    | _,_ => None
-    end
-  | None => None
+Lemma coerce_kleisliE {A B} f a : @coerce_kleisli A A B B f a = f a.
+Proof.
+  rewrite /coerce_kleisli coerceE.
+  rewrite -{2}(bind_ret _ (f a)).
+  f_equal; apply functional_extensionality => b.
+  rewrite coerceE //.
+Qed.
+
+Definition resolve (p : raw_package) (o : opsig) (x : src o) : (raw_code (tgt o)) :=
+  match p o.1 with
+  | Some (_; _; f) => coerce_kleisli f x
+  | None => ret (chCanonical _)
   end.
 
-Derive NoConfusion NoConfusionHom for sigT.
-Derive NoConfusion NoConfusionHom for option.
-
-Lemma cast_fun_K :
-  ∀ S T f e1 e2,
-    @cast_fun S T S T e1 e2 f = f.
-Proof.
-  intros S T f e1 e2.
-  rewrite (uip e1 erefl).
-  rewrite (uip e2 erefl).
-  reflexivity.
-Qed.
-
-Lemma lookup_op_spec :
-  ∀ p o f,
-    lookup_op p o = Some f →
-    p (ide o) = Some (chsrc o ; chtgt o ; f).
-Proof.
-  intros p o f e.
-  destruct o as [id [S T]]. cbn in *.
-  destruct (p id) as [[S' [T' g]]|] eqn:e1. 2: discriminate.
-  destruct choice_type_eqP. 2: discriminate.
-  destruct choice_type_eqP. 2: discriminate.
-  noconf e. subst.
-  reflexivity.
-Qed.
-
-Lemma lookup_op_valid :
-  ∀ L I E p o,
+Lemma valid_resolve :
+  ∀ L I E p o a,
     ValidPackage L I E p →
     fhas E o →
-    ∃ f,
-      lookup_op p o = Some f ∧
-      ∀ x, ValidCode L I (f x).
+    ValidCode L I (resolve p o a).
 Proof.
-  intros L I E p o hp ho.
-  eapply from_valid_package in hp.
-  specialize (hp o ho).
-  destruct o as [n [So To]].
-  destruct hp as [f [ef hf]].
-  exists f. intuition auto. cbn.
-  destruct (p n) as [[St [Tt ft]]|] eqn:e. 2: discriminate.
-  destruct choice_type_eqP.
-  2:{ inversion ef. congruence. }
-  destruct choice_type_eqP.
-  2:{ inversion ef. congruence. }
-  subst. cbn. noconf ef.
-  reflexivity.
-Qed.
-
-Lemma lookup_op_map :
-  ∀ p o f,
-    lookup_op (@mapm _ typed_raw_function _ (λ '(So ; To ; g), (So ; To ; f So To g)) p) o =
-    omap (f (chsrc o) (chtgt o)) (lookup_op p o).
-Proof.
-  intros p [n [So To]] f. unfold lookup_op.
-  rewrite mapmE. destruct (p n) as [[St [Tt ft]]|] eqn:e.
-  2:{ cbn. reflexivity. }
-  cbn. destruct choice_type_eqP. 2: reflexivity.
-  destruct choice_type_eqP. 2: reflexivity.
-  cbn. subst. cbn. reflexivity.
+  intros L I E p o a [Vp] H.
+  unfold resolve.
+  specialize (Vp o H).
+  destruct o as [n [S T]].
+  destruct Vp as [f [H' H'']].
+  rewrite H' coerce_kleisliE //.
 Qed.
 
 Fixpoint code_link {A} (v : raw_code A) (p : raw_package) :
   raw_code A :=
   match v with
   | ret a => ret a
-  | opr o a k =>
-    (* The None branch doesn't happen when valid *)
+  | opr o a k => bind (resolve p o a) (λ b, code_link (k b) p)
+    (* The None branch of resolve doesn't happen when valid *)
     (* We continue with a default value to preserve associativity. *)
-    match lookup_op p o with
-    | Some f => bind (f a) (λ x, code_link (k x) p)
-    | None => code_link (k (chCanonical (chtgt o))) p
-    end
   | getr l k => getr l (λ x, code_link (k x) p)
   | putr l v k => putr l v (code_link k p)
   | sampler op k => sampler op (λ x, code_link (k x) p)
@@ -136,10 +81,7 @@ Proof.
   intros A L Im Ir v p hv hp.
   induction hv.
   all: try solve [ constructor ; auto ].
-  eapply lookup_op_valid in hp as hf. 2: eauto.
-  destruct hf as [f [ef hf]].
-  cbn. rewrite ef.
-  apply valid_bind. all: auto.
+  apply valid_bind; [ eapply valid_resolve | auto ]; eassumption.
 Qed.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (code_link ?v ?p)) =>
@@ -217,13 +159,19 @@ Proof.
   intros A B v k p.
   induction v.
   - cbn. reflexivity.
-  - cbn. destruct lookup_op.
-    + rewrite bind_assoc. f_equal.
-      apply functional_extensionality. auto.
-    + eauto.
+  - cbn. rewrite bind_assoc. f_equal.
+    apply functional_extensionality => y. auto.
   - cbn. f_equal. apply functional_extensionality. auto.
   - cbn. f_equal. auto.
   - cbn. f_equal. apply functional_extensionality. auto.
+Qed.
+
+Lemma resolve_link f g o x :
+  resolve (link f g) o x = code_link (resolve f o x) g.
+Proof.
+  rewrite /resolve mapmE.
+  destruct (f o.1) as [[S [T h]]|] => //=.
+  rewrite code_link_bind //.
 Qed.
 
 Lemma code_link_assoc :
@@ -234,12 +182,9 @@ Proof.
   intros A v f g.
   induction v in f, g |- *.
   - cbn. reflexivity.
-  - cbn. unfold link in *.
-    rewrite lookup_op_map.
-    destruct lookup_op eqn:e.
-    + cbn. rewrite code_link_bind. f_equal.
-      apply functional_extensionality. auto.
-    + cbn. eauto.
+  - cbn. rewrite code_link_bind.
+    f_equal; [ symmetry; apply resolve_link |].
+    by apply functional_extensionality.
   - cbn. f_equal. apply functional_extensionality. auto.
   - cbn. f_equal. auto.
   - cbn. f_equal. apply functional_extensionality. auto.
@@ -297,17 +242,16 @@ Proof.
   destruct (p n), (E n) => //.
 Qed.
 
-Lemma lookup_op_trim :
-  ∀ E o p,
-    lookup_op (trim E p) o =
-    obind (λ f, if E o.1 then Some f else None) (lookup_op p o).
+Lemma resolve_trim :
+  ∀ E o p a,
+    fhas E o →
+    resolve (trim E p) o a = resolve p o a.
 Proof.
-  intros E [n [So To]] p.
-  unfold lookup_op, trim.
-  rewrite filtermE.
-  destruct (p n) as [[S1 [T1 f1]]|] => //=;
-    destruct (E n) as [[S2 T2]|] => //=.
-  1,2: do 2 destruct choice_type_eqP => //=.
+  intros E o p x H.
+  rewrite /resolve filtermE.
+  destruct (p o.1) eqn:e; rewrite e //=.
+  destruct o as [n [S T]].
+  rewrite H //.
 Qed.
 
 Lemma code_link_trim_right :
@@ -318,12 +262,8 @@ Proof.
   intros A L E v p h.
   induction h in p |- *.
   - cbn. reflexivity.
-  - cbn. rewrite lookup_op_trim.
-    destruct o as [n [S T]].
-    destruct lookup_op eqn:e.
-    + cbn. rewrite H //=. f_equal. apply functional_extensionality.
-      intuition auto.
-    + cbn. eauto.
+  - cbn. rewrite resolve_trim //.
+    f_equal. by apply functional_extensionality.
   - cbn. f_equal. apply functional_extensionality. intuition auto.
   - cbn. f_equal. intuition auto.
   - cbn. f_equal. apply functional_extensionality. intuition auto.
@@ -493,14 +433,15 @@ Proof.
   rewrite unionmA. reflexivity.
 Qed.
 
-Lemma lookup_op_unionm :
-  ∀ p1 p2 o,
-    lookup_op (unionm p1 p2) o =
-    if isSome (p1 (fst o)) then lookup_op p1 o else lookup_op p2 o.
+Lemma resolve_par :
+  ∀ p1 p2 o x,
+    resolve (par p1 p2) o x =
+    if isSome (p1 (fst o)) then resolve p1 o x else resolve p2 o x.
 Proof.
-  intros p1 p2 [n [So To]].
-  cbn. rewrite unionmE.
-  destruct (p1 n) as [[S1 [T1 f1]]|] eqn:e1. all: reflexivity.
+  intros p1 p2 [n [So To]] x.
+  cbn. rewrite /resolve unionmE.
+  destruct (p1 n) as [[S1 [T1 f1]]|] eqn:e1.
+  all: rewrite e1 //=.
 Qed.
 
 Lemma code_link_par_left :
@@ -509,16 +450,17 @@ Lemma code_link_par_left :
     ValidPackage L' I E p1 →
     code_link v (par p1 p2) = code_link v p1.
 Proof.
-  intros A I L L' E v p1 p2 hv hp1.
+  intros A I L L' E v p1 p2 hv [hp1].
   unfold ValidCode in hv.
   induction hv.
   - cbn. reflexivity.
-  - simpl. rewrite lookup_op_unionm.
-    eapply lookup_op_valid in hp1 as hf. 2: eauto.
-    destruct hf as [f [e hf]].
-    rewrite e. eapply lookup_op_spec in e as e'.
-    rewrite e'. cbn. f_equal. extensionality z.
-    eauto.
+  - cbn. rewrite resolve_par.
+    replace (isSome (p1 o.1)) with true.
+    + f_equal. by extensionality y.
+    + specialize (hp1 _ H).
+      destruct o as [S [T h]].
+      destruct hp1 as [g [H' _]].
+      rewrite H' //.
   - simpl. f_equal. extensionality x. eauto.
   - simpl. f_equal. eauto.
   - simpl. f_equal. extensionality x. eauto.
@@ -700,17 +642,14 @@ Definition mkdef (A B : choice_type) (f : A → raw_code B)
 Definition ID (I : Interface) : raw_package :=
   mapim (λ n '(s, t), mkdef s t (λ x, opr (n, (s, t)) x (λ y, ret y))) I.
 
-Lemma lookup_op_ID :
+Lemma resolve_ID :
   ∀ (I : Interface) o,
     fhas I o →
-    lookup_op (ID I) o =
-    Some (λ x, opr o x (λ y, ret y)).
+    resolve (ID I) o = λ x, opr o x (λ y, ret y).
 Proof.
   intros I [n [S T]] E.
-  unfold lookup_op.
-  rewrite mapimE E //=.
-  do 2 destruct choice_type_eqP => //=.
-  rewrite cast_fun_K //.
+  rewrite /resolve mapimE E //=.
+  extensionality y. rewrite coerce_kleisliE //.
 Qed.
 
 Lemma valid_ID :
@@ -748,11 +687,9 @@ Proof.
   intros A v L I hv.
   induction hv.
   - cbn. reflexivity.
-  - simpl.
-    rewrite (lookup_op_ID _ _ H) //=.
-    f_equal.
-    extensionality y.
-    apply H1.
+  - cbn.
+    rewrite resolve_ID //=.
+    f_equal. by extensionality y.
   - simpl. f_equal. apply functional_extensionality. auto.
   - simpl. f_equal. auto.
   - simpl. f_equal. apply functional_extensionality. auto.
@@ -794,11 +731,10 @@ Proof.
   specialize (hp (n, (S, T)) E').
   destruct hp as [f [H H']].
   rewrite H.
-  do 2 destruct choice_type_eqP => //=.
-  rewrite cast_fun_K //=.
+  rewrite /resolve H //=.
   do 3 f_equal.
   extensionality x.
-  apply bind_ret.
+  rewrite bind_ret coerce_kleisliE //=.
 Qed.
 
 Lemma code_link_if :
