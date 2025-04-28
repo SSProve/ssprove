@@ -109,14 +109,6 @@ HB.instance Definition _ (T : countType)
 
  *)
 
-Definition cucumber {U : choice_type} : U → nat.
-Admitted.
-
-Definition uncucumber {U : choice_type} : nat → option U.
-Admitted.
-
-Lemma cucumberK {U : choice_type} : @pcancel nat U cucumber uncucumber.
-Admitted.
 
 (*
 Fixpoint choice_countType (U : choice_type) : countType :=
@@ -150,6 +142,23 @@ Fixpoint choice_countType (U : choice_type) : countType :=
   | chList A => [::]
   | chSum A B => inl (chCanonical A)
   end.
+
+(* Temporary replacement for countType on choice_type *)
+Definition cucumber {U : choice_type} : U → nat.
+Admitted.
+
+Definition uncucumber {U : choice_type} : nat → option U.
+Admitted.
+
+Lemma cucumberK {U : choice_type} : @pcancel nat U cucumber uncucumber.
+Admitted.
+
+Definition coerce {A B : choice_type} : A → B
+  := λ x, odflt (chCanonical B) (uncucumber (cucumber x)).
+
+Lemma coerceE {A : choice_type} (a : A) : coerce a = a.
+Proof. rewrite /coerce cucumberK //. Qed.
+
 
 Section choice_typeTypes.
 
