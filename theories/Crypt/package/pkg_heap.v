@@ -42,8 +42,8 @@ Definition heap := {fmap nat → nat}.
 
 Definition heap_choiceType := Choice.clone _ heap.
 
-Definition get_heap (map : heap) (l : Location) : l :=
-  odflt (heap_init l.2) (obind uncucumber (map l.1)).
+Definition get_heap (map : heap) (l : Location) : l
+  := odflt (heap_init l.2) (obind uncucumber (map l.1)).
 
 Definition set_heap (map : heap) (l : Location) (v : l) : heap
   := setm map l.1 (cucumber v).

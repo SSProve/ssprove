@@ -1171,16 +1171,10 @@ Proof.
     split. all: split. all: auto.
 Qed.
 
-Definition coe {A B : choice_type} : A → B :=
-  λ x, odflt (heap_init B) (uncucumber (cucumber x)).
-
-Lemma coeE {A : choice_type} (a : A) : coe a = a.
-Proof. rewrite /coe cucumberK //. Qed.
-
 (* MK: better to not use Equations here? *)
 Equations lookup_hpv_l (ℓ : Location) (l : seq heap_val) : option ℓ :=
   lookup_hpv_l ℓ (hpv_l ℓ' v' :: l) with inspect (ℓ.1 == ℓ'.1) := {
-  | @exist true e => Some (coe v')
+  | @exist true e => Some (coerce v')
   | @exist false e => lookup_hpv_l ℓ l
   } ;
   lookup_hpv_l ℓ (hpv_r _ _ :: l) := lookup_hpv_l ℓ l ;
@@ -1188,7 +1182,7 @@ Equations lookup_hpv_l (ℓ : Location) (l : seq heap_val) : option ℓ :=
 
 Equations lookup_hpv_r (ℓ : Location) (l : seq heap_val) : option ℓ :=
   lookup_hpv_r ℓ (hpv_r ℓ' v' :: l) with inspect (ℓ.1 == ℓ'.1) := {
-  | @exist true e => Some (coe v')
+  | @exist true e => Some (coerce v')
   | @exist false e => lookup_hpv_r ℓ l
   } ;
   lookup_hpv_r ℓ (hpv_l _ _ :: l) := lookup_hpv_r ℓ l ;
@@ -1206,7 +1200,7 @@ Lemma lookup_hpv_l_eq :
 Proof.
   intros ℓ v l.
   funelim (lookup_hpv_l ℓ (hpv_l ℓ v :: l)).
-  - try rewrite -Heqcall. rewrite coeE. reflexivity.
+  - try rewrite -Heqcall. rewrite coerceE. reflexivity.
   - exfalso. pose proof e as e'. symmetry in e'. move: e' => /eqP e'.
     contradiction.
 Qed.
@@ -1228,7 +1222,7 @@ Lemma lookup_hpv_r_eq :
 Proof.
   intros ℓ v l.
   funelim (lookup_hpv_r ℓ (hpv_r ℓ v :: l)).
-  - try rewrite -Heqcall. rewrite coeE. reflexivity.
+  - try rewrite -Heqcall. rewrite coerceE. reflexivity.
   - exfalso. pose proof e as e'. symmetry in e'. move: e' => /eqP e'.
     contradiction.
 Qed.
