@@ -471,7 +471,6 @@ Proof.
   apply r_const_sample_R.
   1: apply LosslessOp_uniform.
   intros e_rand.
-  rewrite !cast_fun_K.
   ssprove_code_simpl.
   ssprove_code_simpl_more.
   apply r_const_sample_L.

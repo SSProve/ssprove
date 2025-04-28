@@ -17,6 +17,9 @@ From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb
   pkg_core_definition choice_type pkg_composition pkg_rhl Package Prelude.
 
+From Coq Require Import Utf8 FunctionalExtensionality
+  Setoids.Setoid Classes.Morphisms.
+
 From extructures Require Import ord fset fmap.
 
 Import SPropNotations.
@@ -158,6 +161,17 @@ Qed.
 Hint Extern 50 (_ = code_link (map_loop _ _ _) _) =>
   rewrite code_link_map_loop
   : ssprove_code_simpl.
+
+(**
+  Add map_loop as a morphism to allow simplification of resolve
+*)
+#[local] Instance map_loop_morphism T (U A : choice_type) s a :
+  Proper (pointwise_relation T (pointwise_relation A eq) ==> eq)
+    (@map_loop T U A s a).
+Proof.
+  simpl_relation.
+  f_equal. do 2 apply functional_extensionality => ?. apply H.
+Qed.
 
 Definition CTXT_pkg_tt:
   package emptym
@@ -356,7 +370,6 @@ Proof.
   apply rpost_weaken_rule with eq;
     last by move=> [? ?] [? ?] [].
   simplify_linking.
-  rewrite cast_fun_K.
   ssprove_code_simpl.
   ssprove_swap_lhs 0.
   ssprove_swap_rhs 0.

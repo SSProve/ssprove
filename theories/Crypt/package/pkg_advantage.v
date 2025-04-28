@@ -13,7 +13,7 @@ From SSProve.Mon Require Import SPropBase.
 From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
   StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
-  pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_lookup fmap_extra.
+  pkg_tactics pkg_composition pkg_heap pkg_semantics fmap_extra.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
@@ -78,7 +78,7 @@ Definition Pr_raw_func_code {A B} (p : A → raw_code B) :
 
 Definition Pr_op (p : raw_package) (o : opsig) (x : src o) :
   heap_choiceType → SDistr (F_choice_prod_obj ⟨ tgt o , heap_choiceType ⟩) :=
-  Pr_code (get_op_default p o x).
+  Pr_code (resolve p o x).
 
 Arguments SDistr_bind {_ _}.
 

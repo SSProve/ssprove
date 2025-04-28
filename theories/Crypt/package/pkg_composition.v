@@ -30,11 +30,11 @@ Set Default Goal Selector "!".
 Set Primitive Projections.
 
 Definition coerce_kleisli {A A' B B' : choice_type} (f : A → raw_code B) : A' → raw_code B'
-  := λ a, bind (f (coerce a)) (λ b, ret (coerce b)).
+  := locked (λ a, bind (f (coerce a)) (λ b, ret (coerce b))).
 
 Lemma coerce_kleisliE {A B} f a : @coerce_kleisli A A B B f a = f a.
 Proof.
-  rewrite /coerce_kleisli coerceE.
+  rewrite /coerce_kleisli -lock coerceE.
   rewrite -{2}(bind_ret _ (f a)).
   f_equal; apply functional_extensionality => b.
   rewrite coerceE //.
@@ -171,7 +171,7 @@ Lemma resolve_link f g o x :
 Proof.
   rewrite /resolve mapmE.
   destruct (f o.1) as [[S [T h]]|] => //=.
-  rewrite code_link_bind //.
+  rewrite /coerce_kleisli -2!lock code_link_bind //.
 Qed.
 
 Lemma code_link_assoc :
