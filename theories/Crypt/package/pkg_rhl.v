@@ -16,7 +16,7 @@ From SSProve.Mon Require Import SPropBase.
 From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
   StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
-  pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_lookup pkg_advantage
+  pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_advantage
   pkg_invariants pkg_distr Casts fmap_extra.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
@@ -316,7 +316,7 @@ Definition eq_up_to_inv (E : Interface) (I : precond) (p₀ p₁ : raw_package) 
   ∀ (id : ident) (S T : choice_type) (x : S),
     fhas E (id, (S, T)) →
     ⊢ ⦃ λ '(s₀, s₁), I (s₀, s₁) ⦄
-      get_op_default p₀ (id, (S, T)) x ≈ get_op_default p₁ (id, (S, T)) x
+      resolve p₀ (id, (S, T)) x ≈ resolve p₁ (id, (S, T)) x
       ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ I (s₀, s₁) ⦄.
 
 Lemma Pr_eq_empty :
@@ -353,7 +353,7 @@ Proof.
     unfold Basics.flip, SPropMonadicStructures.SProp_order.
     intros [HI Hp].
     apply Hp. intuition auto.
-  - cbn - [semantic_judgement lookup_op].
+  - cbn - [semantic_judgement].
     apply inversion_valid_opr in vA as hA. destruct hA as [hi vk].
     destruct o as [id [S T]].
     eapply from_valid_package in vp₀.
@@ -362,12 +362,9 @@ Proof.
     eapply from_valid_package in vp₁.
     specialize (vp₁ _ hi). simpl in vp₁.
     destruct vp₁ as [f₁ [e₁ h₁]].
-    erewrite lookup_op_spec_inv. 2: eauto.
-    erewrite lookup_op_spec_inv. 2: eauto.
     specialize (hp id S T x hi).
-    erewrite get_op_default_spec in hp. 2: eauto.
-    erewrite get_op_default_spec in hp. 2: eauto.
-    rewrite !repr_bind.
+    rewrite /resolve e₀ e₁ 2!coerce_kleisliE in hp |- *.
+    rewrite 2!repr_bind.
     eapply bind_rule_pp. 1:{ eapply to_sem_jdg in hp. exact hp. }
     cbn - [semantic_judgement].
     intros a₀ a₁.
@@ -428,11 +425,11 @@ Lemma eq_upto_pinv_perf_ind :
 Proof.
   intros P0 P1 L₀ L₁ LA E p₀ p₁ I A vp₀ vp₁ vA hI' hIe hd₀ hd₁ hp.
   unfold AdvantageE, Pr.
-  pose r := get_op_default A RUN tt.
+  pose r := resolve A RUN tt.
   assert (hI : INV LA I). 1: eapply pINV'_to_INV; eauto.
   unshelve epose proof (eq_up_to_inv_adversary_link p₀ p₁ I r hI hp) as h.
   1:{
-    eapply valid_get_op_default.
+    eapply valid_resolve.
     - eauto.
     - fmap_solve.
   }
@@ -453,7 +450,7 @@ Proof.
     unfold Pr_op. unfold Pr_code.
     unfold thetaFstd. simpl. apply f_equal2. 2: reflexivity.
     apply f_equal. apply f_equal.
-    rewrite get_op_default_link. reflexivity.
+    by rewrite resolve_link.
   }
   unfold lhs in he. unfold Pr_op in he.
   rewrite he.
@@ -465,7 +462,7 @@ Proof.
     unfold Pr_op. unfold Pr_code.
     unfold thetaFstd. simpl. apply f_equal2. 2: reflexivity.
     apply f_equal. apply f_equal.
-    rewrite get_op_default_link. reflexivity.
+    by rewrite resolve_link.
   }
   unfold lhs' in e'. unfold Pr_op in e'.
   rewrite e'.
@@ -526,7 +523,7 @@ Lemma eq_upto_inv_perf_ind :
 Proof.
   intros L₀ L₁ LA E p₀ p₁ I A vp₀ vp₁ vA hI' hIe hd₀ hd₁ hp.
   unfold AdvantageE, Pr.
-  pose r := get_op_default A RUN tt.
+  pose r := resolve A RUN tt.
   assert (hI : INV LA I).
   { unfold INV. intros s₀ s₁. split.
     - intros hi l hin. apply hI'; fmap_solve.
@@ -534,7 +531,7 @@ Proof.
   }
   unshelve epose proof (eq_up_to_inv_adversary_link p₀ p₁ I r hI hp) as h.
   1:{
-    eapply valid_get_op_default.
+    eapply valid_resolve.
     - eauto.
     - apply RUN_in_A_export.
   }
@@ -555,7 +552,7 @@ Proof.
     unfold Pr_op. unfold Pr_code.
     unfold thetaFstd. simpl. apply f_equal2. 2: reflexivity.
     apply f_equal. apply f_equal.
-    rewrite get_op_default_link. reflexivity.
+    by rewrite resolve_link.
   }
   unfold lhs in he. unfold Pr_op in he.
   rewrite he.
@@ -567,7 +564,7 @@ Proof.
     unfold Pr_op. unfold Pr_code.
     unfold thetaFstd. simpl. apply f_equal2. 2: reflexivity.
     apply f_equal. apply f_equal.
-    rewrite get_op_default_link. reflexivity.
+    by rewrite resolve_link.
   }
   unfold lhs' in e'. unfold Pr_op in e'.
   rewrite e'.

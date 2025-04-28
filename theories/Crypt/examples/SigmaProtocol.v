@@ -514,7 +514,6 @@ Module SigmaProtocol (π : SigmaProtocolParams)
           intros _ Rel.
           ssprove_swap_seq_lhs [:: 2 ; 1]%N.
           ssprove_contract_put_get_lhs.
-          rewrite !cast_fun_K.
           rewrite Rel.
           ssprove_code_simpl.
           ssprove_code_simpl_more.
@@ -562,7 +561,6 @@ Module SigmaProtocol (π : SigmaProtocolParams)
           intros _ Rel.
           ssprove_swap_seq_lhs [:: 2 ; 1]%N.
           ssprove_contract_put_get_lhs.
-          rewrite !cast_fun_K.
           rewrite Rel.
           ssprove_code_simpl.
           ssprove_code_simpl_more.
@@ -630,7 +628,6 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         intros _ Rel.
         ssprove_swap_seq_rhs [:: 2 ; 1]%N.
         ssprove_contract_put_get_rhs.
-        rewrite !cast_fun_K.
         rewrite Rel.
         ssprove_code_simpl.
         ssprove_code_simpl_more.
@@ -873,7 +870,6 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       2,3: fmap_solve.
       simplify_eq_rel hw.
       ssprove_code_simpl.
-      rewrite cast_fun_K.
       ssprove_code_simpl.
       destruct hw as [h w].
       ssprove_code_simpl_more.

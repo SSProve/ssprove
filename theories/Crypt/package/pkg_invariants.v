@@ -19,7 +19,7 @@ From SSProve.Mon Require Import SPropBase.
 From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
   StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation fmap_extra
-  pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_lookup pkg_advantage.
+  pkg_tactics pkg_composition pkg_heap pkg_semantics.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
