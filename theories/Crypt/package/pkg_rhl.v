@@ -2898,7 +2898,7 @@ Qed.
 
 Lemma r_put_swap :
   ∀ ℓ ℓ' v v' (A : choiceType) (u : A),
-    ℓ != ℓ' →
+    ℓ.1 != ℓ'.1 →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       #put ℓ := v ;; #put ℓ' := v' ;; ret u ≈
       #put ℓ' := v' ;; #put ℓ := v ;; ret u
@@ -2940,7 +2940,7 @@ Qed.
 
 Lemma r_get_put_swap :
   ∀ ℓ ℓ' v,
-    ℓ' != ℓ →
+    ℓ'.1 != ℓ.1 →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       x ← get ℓ' ;; #put ℓ := v ;; ret x ≈
       #put ℓ := v ;; x ← get ℓ' ;; ret x
@@ -2978,13 +2978,12 @@ Proof.
     }
     move: e => /eqP e. noconf e.
     subst. f_equal.
-    apply get_heap_set_heap.
-    auto.
+    rewrite get_set_heap_neq //.
 Qed.
 
 Lemma r_put_get_swap :
   ∀ ℓ ℓ' v,
-    ℓ' != ℓ →
+    ℓ'.1 != ℓ.1 →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       #put ℓ := v ;; x ← get ℓ' ;; ret x ≈
       x ← get ℓ' ;; #put ℓ := v ;; ret x
@@ -2999,7 +2998,7 @@ Qed.
 
 Lemma r_get_put_swap' :
   ∀ ℓ ℓ' v,
-    ℓ' != ℓ →
+    ℓ'.1 != ℓ.1 →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       x ← get ℓ' ;; #put ℓ := v ;; ret (x, tt) ≈
       #put ℓ := v ;; x ← get ℓ' ;; ret (x, tt)
@@ -3015,7 +3014,7 @@ Qed.
 
 Lemma r_put_get_swap' :
   ∀ ℓ ℓ' v,
-    ℓ' != ℓ →
+    ℓ'.1 != ℓ.1 →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       #put ℓ := v ;; x ← get ℓ' ;; ret (tt, x) ≈
       x ← get ℓ' ;; #put ℓ := v ;; ret (tt, x)

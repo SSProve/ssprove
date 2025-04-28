@@ -90,6 +90,51 @@ Fixpoint chElement (U : choice_type) : choiceType :=
 
 Coercion chElement : choice_type >-> choiceType.
 
+(*
+#[short(type="ord_countType")]
+HB.structure Definition OrdCountType :=
+  { A of Countable A & hasOrd A & Choice A }.
+
+HB.instance Definition _ (A : ord_countType) (B : countType) :=
+  [Countable of {fmap A → B} by <:].
+
+Lemma can_unit : cancel (λ tt, true) (λ _, tt).
+Proof. by intros []. Qed.
+
+HB.instance Definition _ := CanIsCountable can_unit.
+
+Check (nat : countType).
+HB.instance Definition _ (T : countType)
+  := PcanHasOrd (@pickleK T).
+
+ *)
+
+Definition cucumber {U : choice_type} : U → nat.
+Admitted.
+
+Definition uncucumber {U : choice_type} : nat → option U.
+Admitted.
+
+Lemma cucumberK {U : choice_type} : @pcancel nat U cucumber uncucumber.
+Admitted.
+
+(*
+Fixpoint choice_countType (U : choice_type) : countType :=
+  match U with
+  | chUnit => unit
+  | chNat => nat
+  | chInt => int
+  | chBool => bool
+  | chProd U1 U2 => choice_countType U1 * choice_countType U2
+  | chMap U1 U2 => {fmap choice_countType U1 → choice_countType U2}
+  | chOption U => option (choice_countType U)
+  | chFin n => fin_choiceType n
+  | chWord nbits => word_choiceType nbits
+  | chList U => list (choice_countType U)
+  | chSum U1 U2 => choice_countType U1 + choice_countType U2
+  end.
+ *)
+
 (* Canonical element in a type of the choice_type *)
 #[program] Fixpoint chCanonical (T : choice_type) : T :=
   match T with
@@ -98,20 +143,13 @@ Coercion chElement : choice_type >-> choiceType.
   | chInt => 0
   | chBool => false
   | chProd A B => (chCanonical A, chCanonical B)
-  | chMap A B => _
+  | chMap A B => emptym
   | chOption A => None
-  | chFin n => _
+  | chFin n => fintype.Ordinal n.(cond_pos)
   | chWord nbits => word0
   | chList A => [::]
   | chSum A B => inl (chCanonical A)
   end.
-Next Obligation.
-  eapply fmap_of_fmap. apply emptym.
-Defined.
-Next Obligation.
-  exists 0. destruct n as [p h]. simpl.
-  unfold Positive in h. auto.
-Defined.
 
 Section choice_typeTypes.
 
