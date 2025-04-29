@@ -1,8 +1,11 @@
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
-From mathcomp Require Import all_ssreflect all_algebra word_ssrZ word.
+From mathcomp Require Import ssreflect ssrbool ssrnat choice fintype eqtype all_algebra.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 
+From Coq Require Import ZArith.
 From extructures Require Import ord fmap.
+From SSProve.Crypt Require Import Prelude.
+From mathcomp Require Import word_ssrZ word.
 From SSProve.Crypt Require Import jasmin_word jasmin_util.
 
 
