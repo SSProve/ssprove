@@ -18,7 +18,7 @@ From extructures Require Import ord fset fmap.
 From SSProve.Mon Require Import SPropBase.
 From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
-  StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
+  StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation fmap_extra
   pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_lookup pkg_advantage.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
@@ -51,18 +51,18 @@ Set Primitive Projections.
 Definition precond := heap * heap → Prop.
 Definition postcond A B := (A * heap) → (B * heap) → Prop.
 
-Definition INV (L : {fset Location})
+Definition INV (L : Locations)
   (I : heap_choiceType * heap_choiceType → Prop) :=
   ∀ s1 s2,
-    (I (s1, s2) → ∀ l, l \in L → get_heap s1 l = get_heap s2 l) ∧
-    (I (s1, s2) → ∀ l v, l \in L → I (set_heap s1 l v, set_heap s2 l v)).
+    (I (s1, s2) → ∀ l, fhas L l → get_heap s1 l = get_heap s2 l) ∧
+    (I (s1, s2) → ∀ l v, fhas L l → I (set_heap s1 l v, set_heap s2 l v)).
 
-Definition INV' (L1 L2 : {fset Location})
+Definition INV' (L1 L2 : Locations)
   (I : heap_choiceType * heap_choiceType → Prop) :=
   ∀ s1 s2,
-    (I (s1, s2) → ∀ l, l \notin L1 → l \notin L2 →
+    (I (s1, s2) → ∀ l, l.1 \notin domm L1 → l.1 \notin domm L2 →
       get_heap s1 l = get_heap s2 l) ∧
-    (I (s1, s2) → ∀ l v, l \notin L1 → l \notin L2 →
+    (I (s1, s2) → ∀ l v, l.1 \notin domm L1 → l.1 \notin domm L2 →
       I (set_heap s1 l v, set_heap s2 l v)).
 
 Definition pINV' (P1 P2 : Location -> Prop)
@@ -75,9 +75,9 @@ Definition pINV' (P1 P2 : Location -> Prop)
       I (set_heap s1 l v, set_heap s2 l v)).
 
 (* TODO: move? *)
-Definition pdisjoint (L : {fset Location}) (P : Location -> Prop) := forall l, ~ (l \in L /\ P l).
+Definition pdisjoint (L : Locations) (P : Location -> Prop) := forall l, ~ (fhas L l /\ P l).
 
-Lemma pINV'_to_INV (L : {fset Location}) P1 P2
+Lemma pINV'_to_INV (L : Locations) P1 P2
   (I : heap_choiceType * heap_choiceType → Prop)
   (HpINV' : pINV' P1 P2 I)
   (Hdisjoint1 : pdisjoint L P1)
@@ -102,28 +102,18 @@ Proof.
       eapply Hdisjoint2. eauto.
 Qed.
 
-Lemma INV'_to_INV (L L1 L2 : {fset Location})
+Lemma INV'_to_INV (L L1 L2 : Locations)
   (I : heap_choiceType * heap_choiceType → Prop)
   (HINV' : INV' L1 L2 I)
-  (Hdisjoint1 : fdisjoint L L1) (Hdisjoint2 : fdisjoint L L2) :
+  (Hdisjoint1 : fseparate L L1) (Hdisjoint2 : fseparate L L2) :
   INV L I.
 Proof.
   unfold INV.
   intros s1 s2. split.
   - intros hi l hin.
-    apply HINV'.
-    + assumption.
-    + move: Hdisjoint1. move /fdisjointP => Hdisjoint1.
-      apply Hdisjoint1. assumption.
-    + move: Hdisjoint2. move /fdisjointP => Hdisjoint2.
-      apply Hdisjoint2. assumption.
+    apply HINV'; fmap_solve.
   - intros hi l v hin.
-    apply HINV'.
-    + assumption.
-    + move: Hdisjoint1. move /fdisjointP => Hdisjoint1.
-      apply Hdisjoint1. assumption.
-    + move: Hdisjoint2. move /fdisjointP => Hdisjoint2.
-      apply Hdisjoint2. assumption.
+    apply HINV'; fmap_solve.
 Qed.
 
 (* TODO: add automation? *)
@@ -161,9 +151,9 @@ Qed.
   eapply Invariant_eq
   : typeclass_instances ssprove_invariant.
 
-Definition heap_ignore (L : {fset Location}) : precond :=
+Definition heap_ignore (L : Locations) : precond :=
   λ '(h₀, h₁),
-    ∀ (ℓ : Location), ℓ \notin L → get_heap h₀ ℓ = get_heap h₁ ℓ.
+    ∀ (ℓ : Location), ℓ.1 \notin domm L → get_heap h₀ ℓ = get_heap h₁ ℓ.
 
 Definition heap_ignore_pred (P : Location -> Prop) : precond :=
   λ '(h₀, h₁),
@@ -187,8 +177,8 @@ Proof.
 Qed.
 
 Lemma INV'_heap_ignore_pred (P : Location -> Prop) :
-  ∀ L0 L1 : {fset Location},
-    (forall ℓ : Location, P ℓ -> ℓ \in L0 :|: L1) ->
+  ∀ L0 L1 : Locations,
+    (forall ℓ : Location, P ℓ -> fhas (unionm L0 L1) ℓ) ->
     INV' L0 L1 (heap_ignore_pred P).
 Proof.
   intros L0 L1 hP h0 h1. split.
@@ -196,7 +186,8 @@ Proof.
     eapply hh.
     intros contra.
     apply hP in contra as h.
-    rewrite in_fsetU in h. move: h => /orP [h | h].
+    apply fhas_in in h.
+    rewrite domm_union in_fsetU in h. move: h => /orP [h | h].
     + rewrite h in nin0. discriminate.
     + rewrite h in nin1. discriminate.
   - intros h ℓ v n₀ n₁ ℓ' n.
@@ -210,17 +201,21 @@ Qed.
 
 Lemma INV'_heap_ignore :
   ∀ L L₀ L₁,
-    fsubset L (L₀ :|: L₁) →
+    fsubmap L (unionm L₀ L₁) →
     INV' L₀ L₁ (heap_ignore L).
 Proof.
   intros L L₀ L₁ hs h₀ h₁. split.
   - intros hh ℓ n₀ n₁.
-    eapply hh.
-    apply /negP. intro h.
-    eapply injectSubset in h. 2: eauto.
-    rewrite in_fsetU in h. move: h => /orP [h | h].
-    + rewrite h in n₀. discriminate.
-    + rewrite h in n₁. discriminate.
+    apply hh.
+    apply /dommPn.
+    move: n₀ => /dommPn.
+    move: n₁ => /dommPn.
+    intros H H'.
+    assert (H'' : unionm L₀ L₁ ℓ.1 = None).
+    { rewrite unionmE H H' //. }
+    rewrite -hs in H''.
+    rewrite unionmE in H''.
+    destruct (L ℓ.1) eqn:E => //.
   - intros h ℓ v n₀ n₁ ℓ' n.
     destruct (ℓ' != ℓ) eqn:e.
     + rewrite get_set_heap_neq. 2: auto.
@@ -232,7 +227,7 @@ Qed.
 
 Lemma Invariant_heap_ignore_pred :
   ∀ L0 L1 (P : Location -> Prop),
-    (forall ℓ : Location, P ℓ -> ℓ \in L0 :|: L1) ->
+    (forall ℓ : Location, P ℓ -> fhas (unionm L0 L1) ℓ) ->
     Invariant L0 L1 (heap_ignore_pred P).
 Proof.
   intros L P h. split.
@@ -242,11 +237,11 @@ Qed.
 
 Lemma Invariant_heap_ignore :
   ∀ L L₀ L₁,
-    fsubset L (L₀ :|: L₁) →
+    fsubmap L (unionm L₀ L₁) →
     Invariant L₀ L₁ (heap_ignore L).
 Proof.
   intros L L₀ L₁ h. split.
-  - apply INV'_heap_ignore. auto.
+  - apply INV'_heap_ignore; auto.
   - apply heap_ignore_empty.
 Qed.
 
@@ -302,11 +297,11 @@ Notation "I ⋊ J" :=
 
 Arguments inv_conj : simpl never.
 
-Class SemiInvariant (L₀ L₁ : {fset Location}) (sinv : precond) := {
+Class SemiInvariant (L₀ L₁ : Locations) (sinv : precond) := {
   sinv_set :
-    ∀ s₀ s₁ ℓ v,
-      ℓ \notin L₀ →
-      ℓ \notin L₁ →
+    ∀ s₀ s₁ (ℓ : Location) v,
+      ℓ.1 \notin domm L₀ →
+      ℓ.1 \notin domm L₁ →
       sinv (s₀, s₁) →
       sinv (set_heap s₀ ℓ v, set_heap s₁ ℓ v) ;
   sinv_empty : sinv (empty_heap, empty_heap)
@@ -333,21 +328,19 @@ Definition couple_lhs ℓ ℓ' (R : _ → _ → Prop) : precond :=
   λ '(s₀, s₁), R (get_heap s₀ ℓ) (get_heap s₀ ℓ').
 
 Lemma SemiInvariant_couple_lhs :
-  ∀ L₀ L₁ ℓ ℓ' (R : _ → _ → Prop),
-    ℓ \in L₀ :|: L₁ →
-    ℓ' \in L₀ :|: L₁ →
+  ∀ (L₀ L₁ : Locations) ℓ ℓ' (R : _ → _ → Prop),
+    fhas L₀ ℓ →
+    fhas L₀ ℓ' →
     R (get_heap empty_heap ℓ) (get_heap empty_heap ℓ') →
     SemiInvariant L₀ L₁ (couple_lhs ℓ ℓ' R).
 Proof.
   intros L₀ L₁ ℓ ℓ' h hℓ hℓ' he. split.
   - intros s₀ s₁ l v hl₀ hl₁ ?.
-    assert (hl : l \notin L₀ :|: L₁).
-    { rewrite in_fsetU. rewrite (negbTE hl₀) (negbTE hl₁). reflexivity. }
-    unfold couple_lhs.
-    rewrite !get_set_heap_neq.
-    + auto.
-    + apply /negP => /eqP e. subst. rewrite hℓ' in hl. discriminate.
-    + apply /negP => /eqP e. subst. rewrite hℓ in hl. discriminate.
+    rewrite /couple_lhs !get_set_heap_neq //.
+    + apply /eqP => ?; subst. move: hl₀ => /dommPn hl₀.
+      destruct l. rewrite /fhas hl₀ // in hℓ'.
+    + apply /eqP => ?; subst. move: hl₀ => /dommPn hl₀.
+      destruct l. rewrite /fhas hl₀ // in hℓ.
   - simpl. auto.
 Qed.
 
@@ -362,20 +355,18 @@ Definition couple_rhs ℓ ℓ' (R : _ → _ → Prop) : precond :=
 
 Lemma SemiInvariant_couple_rhs :
   ∀ L₀ L₁ ℓ ℓ' (R : _ → _ → Prop),
-    ℓ \in L₀ :|: L₁ →
-    ℓ' \in L₀ :|: L₁ →
+    fhas L₁ ℓ →
+    fhas L₁ ℓ' →
     R (get_heap empty_heap ℓ) (get_heap empty_heap ℓ') →
     SemiInvariant L₀ L₁ (couple_rhs ℓ ℓ' R).
 Proof.
   intros L₀ L₁ ℓ ℓ' h hℓ hℓ' he. split.
   - intros s₀ s₁ l v hl₀ hl₁ ?.
-    assert (hl : l \notin L₀ :|: L₁).
-    { rewrite in_fsetU. rewrite (negbTE hl₀) (negbTE hl₁). reflexivity. }
-    unfold couple_rhs.
-    rewrite !get_set_heap_neq.
-    + auto.
-    + apply /negP => /eqP e. subst. rewrite hℓ' in hl. discriminate.
-    + apply /negP => /eqP e. subst. rewrite hℓ in hl. discriminate.
+    rewrite /couple_rhs !get_set_heap_neq //.
+    + apply /eqP => ?; subst. move: hl₁ => /dommPn hl₁.
+      destruct l. rewrite /fhas hl₁ // in hℓ'.
+    + apply /eqP => ?; subst. move: hl₁ => /dommPn hl₁.
+      destruct l. rewrite /fhas hl₁ // in hℓ.
   - simpl. auto.
 Qed.
 
@@ -391,22 +382,21 @@ Definition triple_rhs ℓ₁ ℓ₂ ℓ₃ (R : _ → _ → _ → Prop) : precon
 
 Lemma SemiInvariant_triple_rhs :
   ∀ L₀ L₁ ℓ₁ ℓ₂ ℓ₃ (R : _ → _ → _ → Prop),
-    ℓ₁ \in L₀ :|: L₁ →
-    ℓ₂ \in L₀ :|: L₁ →
-    ℓ₃ \in L₀ :|: L₁ →
+    fhas L₁ ℓ₁ →
+    fhas L₁ ℓ₂ →
+    fhas L₁ ℓ₃ →
     R (get_heap empty_heap ℓ₁) (get_heap empty_heap ℓ₂) (get_heap empty_heap ℓ₃) →
     SemiInvariant L₀ L₁ (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
 Proof.
   intros L₀ L₁ ℓ₁ ℓ₂ ℓ₃ R h₁ h₂ h₃ he. split.
-  - intros s₀ s₁ ℓ v hℓ₀ hℓ₁ ?.
-    assert (hℓ : ℓ \notin L₀ :|: L₁).
-    { rewrite in_fsetU. rewrite (negbTE hℓ₀) (negbTE hℓ₁). reflexivity. }
-    unfold triple_rhs.
-    rewrite !get_set_heap_neq.
-    + auto.
-    + apply /negP => /eqP e. subst. rewrite h₃ in hℓ. discriminate.
-    + apply /negP => /eqP e. subst. rewrite h₂ in hℓ. discriminate.
-    + apply /negP => /eqP e. subst. rewrite h₁ in hℓ. discriminate.
+  - intros s₀ s₁ l v hl₀ hl₁ ?.
+    rewrite /triple_rhs !get_set_heap_neq //.
+    + apply /eqP => ?; subst. move: hl₁ => /dommPn hl₁.
+      destruct l. rewrite /fhas hl₁ // in h₃.
+    + apply /eqP => ?; subst. move: hl₁ => /dommPn hl₁.
+      destruct l. rewrite /fhas hl₁ // in h₂.
+    + apply /eqP => ?; subst. move: hl₁ => /dommPn hl₁.
+      destruct l. rewrite /fhas hl₁ // in h₁.
   - simpl. auto.
 Qed.
 
@@ -432,6 +422,8 @@ Proof.
   destruct si.
   all: reflexivity.
 Qed.
+
+(* MK: unused and undocumented, but cool?
 
 Fixpoint locRel (l : list (Location * side)) :=
   match l with
@@ -478,13 +470,14 @@ Arguments loc_rel : simpl never.
 #[export] Hint Extern 10 (SemiInvariant _ _ (loc_rel _ _)) =>
   eapply SemiInvariant_loc_rel
   : (* typeclass_instances *) ssprove_invariant.
+ *)
 
 Definition get_pre_cond ℓ (pre : precond) :=
   ∀ s₀ s₁, pre (s₀, s₁) → get_heap s₀ ℓ = get_heap s₁ ℓ.
 
 Lemma get_pre_cond_heap_ignore :
-  ∀ (ℓ : Location) (L : {fset Location}),
-    ℓ \notin L →
+  ∀ (ℓ : Location) (L : Locations),
+    ℓ.1 \notin domm L →
     get_pre_cond ℓ (heap_ignore L).
 Proof.
   intros ℓ L hℓ s₀ s₁ h. apply h. auto.
@@ -596,6 +589,7 @@ Proof.
   rewrite Bool.negb_orb. reflexivity.
 Qed.
 
+(* MK: related to loc_rel
 Lemma put_pre_cond_loc_rel :
   ∀ ℓ v l (R : locRel l),
     ℓ \notin (map fst l) →
@@ -620,6 +614,7 @@ Qed.
 #[export] Hint Extern 10 (put_pre_cond _ _ (loc_rel _ _)) =>
   apply put_pre_cond_loc_rel
   : ssprove_invariant.
+ *)
 
 (** Predicates on invariants
 
@@ -638,8 +633,10 @@ Class Couples_rhs ℓ ℓ' R pre :=
 Class Triple_rhs ℓ₁ ℓ₂ ℓ₃ R pre :=
   is_triple_rhs : ∀ s, pre s → triple_rhs ℓ₁ ℓ₂ ℓ₃ R s.
 
+(* MK: loc_rel
 Class LocRel l R pre :=
   has_loc_rel : ∀ s, pre s → loc_rel l R s.
+ *)
 
 Lemma Syncs_eq :
   ∀ ℓ, Syncs ℓ (λ '(s₀, s₁), s₀ = s₁).
@@ -653,7 +650,7 @@ Qed.
 
 Lemma Syncs_heap_ignore :
   ∀ ℓ L,
-    ℓ \notin L →
+    ℓ.1 \notin domm L →
     Syncs ℓ (heap_ignore L).
 Proof.
   intros ℓ L hn s₀ s₁ h.
@@ -710,6 +707,7 @@ Qed.
   eapply Triple_triple_rhs
   : typeclass_instances ssprove_invariant.
 
+(*
 Lemma LocRel_loc_rel :
   ∀ l R,
     LocRel l R (loc_rel l R).
@@ -720,6 +718,7 @@ Qed.
 #[export] Hint Extern 10 (LocRel _ _ (loc_rel _ _)) =>
   eapply LocRel_loc_rel
   : typeclass_instances ssprove_invariant.
+ *)
 
 Lemma Couples_lhs_conj_right :
   ∀ ℓ ℓ' R (pre spre : precond),
@@ -799,6 +798,7 @@ Qed.
   eapply Triple_rhs_conj_left
   : typeclass_instances ssprove_invariant.
 
+(*
 Lemma LocRel_conj_right :
   ∀ l R (pre spre : precond),
     LocRel l R spre →
@@ -824,6 +824,7 @@ Qed.
 #[export] Hint Extern 11 (LocRel _ _ (_ ⋊ _)) =>
   eapply LocRel_conj_left
   : typeclass_instances ssprove_invariant.
+ *)
 
 Definition rem_lhs ℓ v : precond :=
   λ '(s₀, s₁), get_heap s₀ ℓ = v.
@@ -1472,7 +1473,7 @@ Qed.
 
 Lemma preserve_update_l_ignored_heap_ignore :
   ∀ L ℓ v l m,
-    ℓ \in L →
+    fhas L ℓ →
     preserve_update_mem l m (heap_ignore L) →
     preserve_update_mem (hpv_l ℓ v :: l) m (heap_ignore L).
 Proof.
@@ -1485,19 +1486,21 @@ Proof.
     eapply h in hh. rewrite e in hh.
     apply hh. auto.
   - move: e1 => /eqP e1. subst.
-    rewrite hin in hℓ₀. discriminate.
+    destruct ℓ.
+    move: hℓ₀ => /dommPn //= H.
+    rewrite hin // in H.
 Qed.
 
 #[export] Hint Extern 10 (preserve_update_mem _ _ (heap_ignore _)) =>
   eapply preserve_update_l_ignored_heap_ignore ; [
-    solve [ auto_in_fset ]
+    solve [ fmap_solve ]
   | idtac
   ]
   : ssprove_invariant.
 
 Lemma preserve_update_r_ignored_heap_ignore :
   ∀ L ℓ v l m,
-    ℓ \in L →
+    fhas L ℓ →
     preserve_update_mem l m (heap_ignore L) →
     preserve_update_mem (hpv_r ℓ v :: l) m (heap_ignore L).
 Proof.
@@ -1510,12 +1513,14 @@ Proof.
     eapply h in hh. rewrite e in hh.
     apply hh. auto.
   - move: e1 => /eqP e1. subst.
-    rewrite hin in hℓ₀. discriminate.
+    destruct ℓ.
+    move: hℓ₀  => /dommPn //= H.
+    rewrite hin // in H.
 Qed.
 
 #[export] Hint Extern 10 (preserve_update_mem _ _ (heap_ignore _)) =>
   eapply preserve_update_r_ignored_heap_ignore ; [
-    solve [ auto_in_fset ]
+    solve [ fmap_solve ]
   | idtac
   ]
   : ssprove_invariant.
@@ -1625,6 +1630,7 @@ Proof.
 Qed.
 
 (* TODO MOVE? *)
+(*
 Fixpoint hpv_locRel (l : seq heap_val) ll (R : locRel ll) :=
   match ll return locRel ll → Prop with
   | (ℓ, s) :: ll =>
@@ -1656,6 +1662,7 @@ Proof.
     specialize (ih s₀ s₁).
     rewrite e in ih. apply ih.
 Qed.
+ *)
 
 Lemma preserve_update_couple_lhs_lookup_None :
   ∀ ℓ ℓ' (R : _ → _ → Prop) (l : seq heap_val) m,
@@ -1704,6 +1711,7 @@ Proof.
   auto.
 Qed.
 
+(*
 Lemma preserve_update_loc_rel_lookup_None :
   ∀ ll (R : locRel ll) (l : seq heap_val) m,
     List.forallb (λ '(ℓ, s), ~~ isSome (lookup_hpv ℓ s l)) ll →
@@ -1726,3 +1734,4 @@ Proof.
     specialize ih with (1 := hh).
     rewrite e in ih. apply ih.
 Qed.
+ *)

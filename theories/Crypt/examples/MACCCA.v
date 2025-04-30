@@ -66,10 +66,10 @@ Context (dec: Word -> Word -> Word).
 Notation " 'word " := (Word) (in custom pack_type at level 2).
 Notation " 'word " := (Word) (at level 2): package_scope.
 
-Definition km_loc: Location := ('option 'word ; 0).
-Definition T_loc: Location := ('set ('word × 'word) ; 1).
-Definition ek_loc: Location := ('option 'word ; 2).
-Definition S_loc: Location := ('set ('word × 'word) ; 3).
+Definition km_loc: Location := (0, 'option 'word).
+Definition T_loc: Location := (1, 'set ('word × 'word)).
+Definition ek_loc: Location := (2, 'option 'word).
+Definition S_loc: Location := (3, 'set ('word × 'word)).
 Definition gettag: nat := 4.
 Definition checktag: nat := 5.
 Definition eavesdrop: nat := 6.
@@ -79,22 +79,22 @@ Definition mkpair {Lt Lf E}
   (t: package Lt [interface] E) (f: package Lf [interface] E):
   loc_GamePair E := fun b => if b then {locpackage t} else {locpackage f}.
 
-Definition TAG_locs_tt := fset [:: km_loc].
-Definition TAG_locs_ff := fset [:: km_loc; T_loc].
+Definition TAG_locs_tt := [fmap km_loc].
+Definition TAG_locs_ff := [fmap km_loc; T_loc].
 
 Definition kgen (l: Location): raw_code 'word :=
-  k_init ← get ('option 'word ; projT2 l) ;;
+  k_init ← get (l.1, 'option 'word) ;;
   match k_init with
   | None =>
       k <$ uniform Word_N ;;
-      #put ('option 'word ; projT2 l) := Some k ;;
+      #put (l.1, 'option 'word) := Some k ;;
       ret k
   | Some k => ret k
   end.
 
 Lemma kgen_valid {L I} (l: nat):
-  ('option 'word ; l) \in L ->
-  ValidCode L I (kgen ('option 'word ; l)).
+  fhas L (l, 'option 'word) ->
+  ValidCode L I (kgen (l, 'option 'word )).
 Proof.
   move=> H.
   apply: valid_getr => [// | [k|]].
@@ -106,7 +106,7 @@ Qed.
 
 Hint Extern 1 (ValidCode ?L ?I (kgen ?l)) =>
   eapply kgen_valid ;
-  auto_in_fset
+  solve [ fmap_solve ]
   : typeclass_instances ssprove_valid_db.
 
 Definition TAG_pkg_tt:
@@ -148,7 +148,7 @@ Definition TAG_pkg_ff:
 
 Definition TAG := mkpair TAG_pkg_tt TAG_pkg_ff.
 
-Definition CPA_EVAL_locs := fset [:: ek_loc].
+Definition CPA_EVAL_locs := [fmap ek_loc].
 
 Definition CPA_EVAL_pkg_tt:
   package CPA_EVAL_locs [interface]
@@ -172,7 +172,7 @@ Definition CPA_EVAL_pkg_ff:
 
 Definition CPA_EVAL := mkpair CPA_EVAL_pkg_tt CPA_EVAL_pkg_ff.
 
-Definition CCA_EVAL_locs := fset [:: km_loc; ek_loc; S_loc].
+Definition CCA_EVAL_locs := [fmap km_loc; ek_loc; S_loc].
 
 Definition CCA_EVAL_pkg_tt:
   package CCA_EVAL_locs [interface]
@@ -226,7 +226,7 @@ Definition CCA_EVAL_pkg_ff:
 
 Definition CCA_EVAL := mkpair CCA_EVAL_pkg_tt CCA_EVAL_pkg_ff.
 
-Definition CCA_EVAL_TAG_locs := fset [:: ek_loc; S_loc].
+Definition CCA_EVAL_TAG_locs := [fmap ek_loc; S_loc].
 
 Definition CCA_EVAL_TAG_pkg_tt:
   package CCA_EVAL_TAG_locs
@@ -286,7 +286,7 @@ Definition CCA_EVAL_TAG_pkg_ff:
     }
   ].
 
-Definition CCA_EVAL_HYB_locs := fset [:: km_loc; T_loc; S_loc].
+Definition CCA_EVAL_HYB_locs := [fmap km_loc; T_loc; S_loc].
 
 Definition CCA_EVAL_HYB_pkg:
   package CCA_EVAL_HYB_locs
@@ -332,10 +332,7 @@ Proof.
     couple_lhs S_loc T_loc
       (fun S T => S = T)
   ).
-  1: {
-    ssprove_invariant=> //=.
-    all: by rewrite /CCA_EVAL_TAG_locs /TAG_locs_ff !fset_cons !in_fsetU !in_fset1 eq_refl Bool.orb_true_r.
-  }
+  1: ssprove_invariant=> //=.
   simplify_eq_rel m.
   all: simplify_linking.
   all: ssprove_code_simpl.
@@ -379,10 +376,7 @@ Proof.
     couple_rhs S_loc T_loc
       (fun S T => S = T)
   ).
-  1: {
-    ssprove_invariant=> //=.
-    all: by rewrite /CCA_EVAL_TAG_locs /TAG_locs_ff !fset_cons !in_fsetU !in_fset1 eq_refl !Bool.orb_true_r.
-  }
+  1: ssprove_invariant=> //=.
   simplify_eq_rel m.
   all: simplify_linking.
   all: ssprove_code_simpl.
@@ -454,16 +448,18 @@ Theorem security_based_on_mac LA A:
       #val #[eavesdrop]: 'word × 'word → 'word × 'word ;
       #val #[decrypt]: 'word × 'word → 'option 'word ]
     A_export A ->
-  fdisjoint LA (
-    TAG_locs_tt :|: TAG_locs_ff :|: CPA_EVAL_locs :|:
-    CCA_EVAL_locs :|: CCA_EVAL_TAG_locs :|: CCA_EVAL_HYB_locs
-    ) ->
+  fseparate LA TAG_locs_tt ->
+  fseparate LA TAG_locs_ff ->
+  fseparate LA CPA_EVAL_locs ->
+  fseparate LA CCA_EVAL_locs ->
+  fseparate LA CCA_EVAL_TAG_locs ->
+  fseparate LA CCA_EVAL_HYB_locs ->
   Advantage CCA_EVAL A <=
   mac_epsilon (A ∘ CCA_EVAL_TAG_pkg_tt) +
   cpa_epsilon (A ∘ CCA_EVAL_HYB_pkg) +
   mac_epsilon (A ∘ CCA_EVAL_TAG_pkg_ff).
 Proof.
-  move=> vA H.
+  move=> vA d1 d2 d3 d4 d5 d6.
   rewrite Advantage_E Advantage_sym.
   ssprove triangle (CCA_EVAL true) [::
     CCA_EVAL_TAG_pkg_tt ∘ TAG true ;
@@ -475,13 +471,11 @@ Proof.
   ] (CCA_EVAL false) A as ineq.
   apply: le_trans.
   1: by apply: ineq.
-  rewrite !fdisjointUr in H.
-  move: H => /andP [/andP [/andP [/andP [/andP [H1 H2] H3] H4] H5] H6].
-  move: {ineq H1 H2 H3 H4 H5 H6} (H1, H2, H3, H4, H5, H6) => H.
-  rewrite CCA_EVAL_equiv_true ?fdisjointUr ?H // GRing.add0r.
-  rewrite CCA_EVAL_HYB_equiv_true ?fdisjointUr ?H // GRing.addr0.
-  rewrite CCA_EVAL_HYB_equiv_false ?fdisjointUr ?H // GRing.addr0.
-  rewrite CCA_EVAL_equiv_false ?fdisjointUr ?H // GRing.addr0.
+  rewrite -> CCA_EVAL_equiv_true by ssprove_valid.
+  rewrite -> CCA_EVAL_HYB_equiv_true by ssprove_valid.
+  rewrite -> CCA_EVAL_HYB_equiv_false by ssprove_valid.
+  rewrite -> CCA_EVAL_equiv_false by ssprove_valid.
+  rewrite GRing.add0r 3!GRing.addr0.
   rewrite /mac_epsilon /cpa_epsilon !Advantage_E -!Advantage_link.
   by rewrite (Advantage_sym (TAG true)) (Advantage_sym (CPA_EVAL true)).
 Qed.

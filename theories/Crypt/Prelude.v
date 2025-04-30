@@ -280,26 +280,6 @@ Notation "[ 'hints' x ; .. ; z ]" :=
   (at level 0, only parsing)
   : package_scope.
 
-(* Tactics to deal with \in fset *)
-
-Ltac in_fset_auto :=
-  rewrite in_fset ; reflexivity.
-
-(* Succeeds for x \in S if S contains syntactically x, S seq *)
-Ltac inseq_try :=
-  apply/orP ; first [
-    left ; apply/eqP ; reflexivity
-  | right ; inseq_try
-  ].
-
-Ltac inset_try :=
-  rewrite in_fset ; inseq_try.
-
-Ltac auto_in_fset :=
-  eauto ;
-  try in_fset_auto ;
-  try inset_try.
-
 (* TODO Same as finmap.oextract but with a better name? *)
 Definition getSome {A} (o : option A) :
   isSome o → A.

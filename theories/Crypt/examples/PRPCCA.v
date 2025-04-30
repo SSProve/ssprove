@@ -65,7 +65,7 @@ Lemma domm_fset_to_chset {T}:
   cancel (@fset_to_chset T) (@domm T 'unit).
 Proof.
   move=> [m Hm] /=.
-  apply: fsval_eq.
+  eapply (can_inj (@fsvalK _)) => //=.
   have H: (fst \o pair^~ tt =1 id) => //.
   by rewrite /fset_to_chset val_domm mkfmapK /unzip1 -map_comp (eq_map (H T)) map_id.
 Qed.
@@ -203,12 +203,12 @@ Notation " 'key " := (Key) (at level 2): package_scope.
 Notation " 'ciph " := (Ciph) (in custom pack_type at level 2).
 Notation " 'ciph " := (Ciph) (at level 2): package_scope.
 
-Definition k_loc: Location := ('option 'key ; 0).
-Definition T_loc: Location := (chMap 'ciph 'ciph ; 1).
-Definition Tinv_loc: Location := (chMap 'ciph 'ciph ; 2).
-Definition Tinv'_loc: Location := (chMap 'ciph 'ciph ; 3).
-Definition S_loc: Location := ('set 'ciph ; 4).
-Definition R_loc: Location := ('set 'key ; 5).
+Definition k_loc: Location := (0, 'option 'key).
+Definition T_loc: Location := (1, chMap 'ciph 'ciph).
+Definition Tinv_loc: Location := (2, chMap 'ciph 'ciph).
+Definition Tinv'_loc: Location := (3, chMap 'ciph 'ciph).
+Definition S_loc: Location := (4, 'set 'ciph).
+Definition R_loc: Location := (5, 'set 'key).
 Definition samp: nat := 6.
 Definition ctxt: nat := 7.
 Definition decrypt: nat := 8.
@@ -224,7 +224,7 @@ Definition mkpair {Lt Lf E}
   replacement.
 *)
 Definition SAMP_pkg_tt (p: nat) `{Positive p}:
-  package fset0 [interface]
+  package emptym [interface]
     [interface
       #val #[samp]: 'set ('fin p) → ('fin p) ] :=
   [package
@@ -235,7 +235,7 @@ Definition SAMP_pkg_tt (p: nat) `{Positive p}:
   ].
 
 Definition SAMP_pkg_ff (p: nat) `{Positive p}:
-  package fset0 [interface]
+  package emptym [interface]
     [interface
       #val #[samp]: 'set ('fin p) → ('fin p) ] :=
   [package
@@ -259,7 +259,7 @@ Definition kgen: raw_code 'key :=
   end.
 
 Lemma kgen_valid {L I}:
-  k_loc \in L ->
+  fhas L k_loc ->
   ValidCode L I kgen.
 Proof.
   move=> H.
@@ -271,12 +271,11 @@ Proof.
 Qed.
 
 Hint Extern 1 (ValidCode ?L ?I kgen) =>
-  eapply kgen_valid ;
-  auto_in_fset
+  eapply kgen_valid ; solve [ fmap_solve ]
   : typeclass_instances ssprove_valid_db.
 
-Definition EVAL_locs_tt := (fset [:: k_loc]).
-Definition EVAL_locs_ff := (fset [:: T_loc; Tinv_loc]).
+Definition EVAL_locs_tt := [fmap k_loc].
+Definition EVAL_locs_ff := [fmap T_loc; Tinv_loc].
 
 (**
   Next, we define the packages for the SPRP, [EVAL]. They follow the definitions
@@ -372,7 +371,7 @@ Definition EVAL_SAMP_pkg:
 
 Definition EVAL := mkpair EVAL_pkg_tt EVAL_pkg_ff.
 
-Definition CTXT_locs := (fset [:: k_loc; S_loc]).
+Definition CTXT_locs := [fmap k_loc; S_loc].
 
 (**
   We now get to the main definitions of the proof. We are trying to prove the
@@ -424,7 +423,7 @@ Definition CTXT_pkg_ff:
 
 Definition CTXT := mkpair CTXT_pkg_tt CTXT_pkg_ff.
 
-Definition CTXT_EVAL_locs := (fset [:: S_loc]).
+Definition CTXT_EVAL_locs := [fmap S_loc].
 
 Definition CTXT_EVAL_pkg_tt:
   package CTXT_EVAL_locs
@@ -453,7 +452,7 @@ Definition CTXT_EVAL_pkg_tt:
     }
   ].
 
-Definition CTXT_EVAL_SAMP_locs := (fset [:: S_loc; R_loc]).
+Definition CTXT_EVAL_SAMP_locs := [fmap S_loc; R_loc].
 
 Definition CTXT_EVAL_SAMP_pkg:
   package CTXT_EVAL_SAMP_locs
@@ -507,17 +506,10 @@ Definition EVAL_SAMP (b: bool):
       #val #[invlookup]: 'ciph → 'ciph ].
 Proof.
   apply (mkpackage (par (EVAL_SAMP_pkg ∘ SAMP Ciph_N b) (SAMP Key_N (~~ b)))).
-  ssprove_valid => //=.
-  all: case: b.
-  1-2: by fdisjoint_auto.
-  1-2: by apply: fsubsetxx.
-  1-2: by apply: fsub0set.
-  1-2: by rewrite fsetU0 fsubsetxx.
-  1-2: by rewrite /Game_import -fset0E fsetU0 fsubsetxx.
-  1-2: by rewrite fset_cons fsetUC fset1E fsubsetxx.
+  ssprove_valid; destruct b; fmap_solve.
 Defined.
 
-Definition CTXT_HYB_locs_1 := (fset [:: S_loc; R_loc; T_loc; Tinv_loc]).
+Definition CTXT_HYB_locs_1 := [fmap S_loc; R_loc; T_loc; Tinv_loc].
 
 Definition CTXT_HYB_pkg_1:
   package CTXT_HYB_locs_1
@@ -562,7 +554,7 @@ Definition CTXT_HYB_pkg_1:
     }
   ].
 
-Definition CTXT_HYB_locs_2 := (fset [:: S_loc; T_loc; Tinv_loc; Tinv'_loc]).
+Definition CTXT_HYB_locs_2 := [fmap S_loc; T_loc; Tinv_loc; Tinv'_loc].
 
 (**
   This is where the proof diverges from the book. The proof in the book removes
@@ -774,8 +766,8 @@ Qed.
 Lemma CTXT_EVAL_equiv_true:
   CTXT_EVAL_pkg_tt ∘ EVAL false ≈₀ CTXT_EVAL_SAMP_pkg ∘ EVAL_SAMP false.
 Proof.
-  apply eq_rel_perf_ind_ignore with (fset [:: R_loc]).
-  1: by rewrite -fset1E /CTXT_EVAL_SAMP_locs fsub1set !fset_cons !in_fsetU !in_fset1 eq_refl !Bool.orb_true_r.
+  apply eq_rel_perf_ind_ignore with ([fmap R_loc]).
+  1: fmap_solve.
   simplify_eq_rel m.
   all: simplify_linking.
   all: ssprove_code_simpl.
@@ -888,33 +880,27 @@ Qed.
 Lemma CTXT_HYB_equiv_2:
   CTXT_HYB_pkg_1 ∘ SAMP Key_N true ≈₀ CTXT_HYB_pkg_2.
 Proof.
-  apply eq_rel_perf_ind_ignore with (R_loc |: fset1 Tinv'_loc).
-  1: by rewrite fsubU1set /CTXT_HYB_locs_1 /CTXT_HYB_locs_2 fsub1set !fset_cons !in_fsetU !in_fset1 !eq_refl !Bool.orb_true_r.
+  apply eq_rel_perf_ind_ignore with ([fmap R_loc ; Tinv'_loc]).
+  1: fmap_solve.
   simplify_eq_rel m.
   all: ssprove_code_simpl.
   all: ssprove_code_simpl_more.
   all: apply: r_get_remember_lhs => R.
   - ssprove_sync=> r.
-    ssprove_sync=> [|T];
-      first by rewrite in_fsetU !in_fset1; apply /norP; split; apply /eqP.
+    ssprove_sync=> T.
     ssprove_sync=> c.
-    ssprove_sync=> [|Tinv];
-    first by rewrite in_fsetU !in_fset1; apply /norP; split; apply /eqP.
-    ssprove_sync=> [|S];
-      first by rewrite in_fsetU !in_fset1; apply /norP; split; apply /eqP.
+    ssprove_sync=> Tinv.
+    ssprove_sync=> S.
     do 3 ssprove_sync.
     shelve.
-  - ssprove_sync=> [|S];
-      first by rewrite in_fsetU !in_fset1; apply /norP; split; apply /eqP.
+  - ssprove_sync=> S.
     ssprove_sync=> H1.
-    ssprove_sync=> [|Tinv];
-      first by rewrite in_fsetU !in_fset1; apply /norP; split; apply /eqP.
+    ssprove_sync=> Tinv.
     apply: r_get_remember_rhs => Tinv'.
     case: (getm Tinv m) => [c|].
     1: shelve.
     ssprove_sync=> c.
-    ssprove_sync=> [|T];
-      first by rewrite in_fsetU !in_fset1; apply /norP; split; apply /eqP.
+    ssprove_sync=> T.
     do 2 ssprove_sync.
     apply: r_put_rhs.
     shelve.
@@ -996,8 +982,8 @@ Qed.
 Lemma CTXT_HYB_equiv_4:
   CTXT_HYB_pkg_3 ≈₀ CTXT_HYB_pkg_4.
 Proof.
-  apply eq_rel_perf_ind_ignore with (T_loc |: fset1 Tinv_loc).
-  1: by rewrite fsubU1set /CTXT_HYB_locs_2 fsub1set !fset_cons !in_fsetU !in_fset1 !eq_refl !Bool.orb_true_r.
+  apply eq_rel_perf_ind_ignore with [fmap T_loc ; Tinv_loc].
+  1: fmap_solve.
   simplify_eq_rel m.
   all: ssprove_code_simpl.
   all: ssprove_code_simpl_more.
@@ -1005,17 +991,14 @@ Proof.
     apply: r_get_remember_lhs => T.
     ssprove_sync=> c.
     apply: r_get_remember_lhs => Tinv.
-    ssprove_sync=> [|S];
-      first by rewrite in_fsetU !in_fset1; apply /norP; split; apply /eqP.
+    ssprove_sync=> S.
     do 2 apply: r_put_lhs.
     shelve.
-  - ssprove_sync=> [|S];
-      first by rewrite in_fsetU !in_fset1; apply /norP; split; apply /eqP.
+  - ssprove_sync=> S.
     ssprove_sync=> H1.
     apply: r_get_remember_lhs => Tinv_l.
     apply: r_get_remember_rhs => Tinv_r.
-    ssprove_sync=> [|Tinv'];
-      first by rewrite in_fsetU !in_fset1; apply /norP; split; apply /eqP.
+    ssprove_sync=> Tinv'.
     case: (getm Tinv' m) => [c|].
     + ssprove_forget_all.
       by apply: r_ret.
@@ -1045,12 +1028,10 @@ Proof.
     all: by rewrite /CTXT_HYB_locs_2 !fset_cons !in_fsetU !in_fset1 eq_refl !Bool.orb_true_r.
   }
   simplify_eq_rel m.
-  - apply: (@r_reflexivity_alt _ (S_loc |: fset1 R_loc)) => [loc H|loc v H].
+  - apply: (@r_reflexivity_alt _ [fmap S_loc ; R_loc]) => [loc H|loc v H].
     all: ssprove_invariant;
       first by move=> ? ? ->.
-    all: rewrite in_fsetU !in_fset1 in H.
-    all: apply /eqP.
-    all: by move: H => /orP [/eqP|/eqP] ->.
+    all: fmap_invert H; done.
   - ssprove_code_simpl.
     ssprove_code_simpl_more.
     ssprove_sync=> [|S];
@@ -1076,19 +1057,16 @@ Qed.
 Lemma CTXT_HYB_equiv_6:
   CTXT_HYB_pkg_5 ≈₀ CTXT_EVAL_pkg_ff ∘ EVAL_SAMP_pkg ∘ SAMP Ciph_N true.
 Proof.
-  apply eq_rel_perf_ind_ignore with (fset [:: Tinv'_loc]).
-  1: by rewrite -fset1E /CTXT_HYB_locs_2 /EVAL_locs_ff fsub1set !fset_cons !in_fsetU !in_fset1 !eq_refl !Bool.orb_true_r /=.
+  apply eq_rel_perf_ind_ignore with [fmap Tinv'_loc].
+  1: fmap_solve.
   simplify_eq_rel m.
   all: ssprove_code_simpl.
   all: ssprove_code_simpl.
   all: ssprove_code_simpl_more.
   - apply: r_dead_sample_L.
-    apply: (@r_reflexivity_alt _ (fset1 S_loc)) => [loc H|loc v H].
+    apply: (@r_reflexivity_alt _ [fmap S_loc]) => [loc H|loc v H].
     all: ssprove_invariant.
-    rewrite in_fset1 in H.
-    move /eqP in H.
-    rewrite H -fset1E in_fset1.
-    by apply /eqP.
+    all: fmap_invert H; fmap_solve.
   - ssprove_sync=> S.
     ssprove_sync=> H1.
     ssprove_sync=> Tinv.
@@ -1162,17 +1140,19 @@ Theorem security_based_on_prp LA A:
       #val #[ctxt]: 'word → 'ciph ;
       #val #[decrypt]: 'ciph → 'word ]
     A_export A ->
-  fdisjoint LA (
-    EVAL_locs_tt :|: EVAL_locs_ff :|: CTXT_locs :|:
-    CTXT_EVAL_locs :|: CTXT_EVAL_SAMP_locs :|:
-    CTXT_HYB_locs_1 :|: CTXT_HYB_locs_2
-    ) ->
+  fseparate LA EVAL_locs_tt ->
+  fseparate LA EVAL_locs_ff ->
+  fseparate LA CTXT_locs ->
+  fseparate LA CTXT_EVAL_locs ->
+  fseparate LA CTXT_EVAL_SAMP_locs ->
+  fseparate LA CTXT_HYB_locs_1 ->
+  fseparate LA CTXT_HYB_locs_2 ->
   Advantage CTXT A <=
   prp_epsilon (A ∘ CTXT_EVAL_pkg_tt) +
   statistical_gap A +
   prp_epsilon (A ∘ CTXT_EVAL_pkg_ff).
 Proof.
-  move=> vA H.
+  move=> vA d1 d2 d3 d4 d5 d6 d7.
   rewrite Advantage_E Advantage_sym.
   ssprove triangle (CTXT true) [::
     CTXT_EVAL_pkg_tt ∘ EVAL true ;
@@ -1192,19 +1172,17 @@ Proof.
   ] (CTXT false) A as ineq.
   apply: le_trans.
   1: by apply: ineq.
-  rewrite !fdisjointUr in H.
-  move: H => /andP [/andP [/andP [/andP [/andP [/andP [H1 H2] H3] H4] H5] H6] H7].
-  move: {ineq H1 H2 H3 H4 H5 H6 H7} (H1, H2, H3, H4, H5, H6, H7, fdisjoints0) => H.
-  rewrite CTXT_equiv_true ?fdisjointUr ?H // GRing.add0r.
-  rewrite CTXT_EVAL_equiv_true ?fdisjointUr ?H // GRing.addr0.
-  rewrite CTXT_HYB_equiv_1 ?fdisjointUr ?H // GRing.addr0.
-  rewrite CTXT_HYB_equiv_2 ?fdisjointUr ?H // GRing.addr0.
-  rewrite CTXT_HYB_equiv_3 ?fdisjointUr ?H // GRing.addr0.
-  rewrite CTXT_HYB_equiv_4 ?fdisjointUr ?H // GRing.addr0.
-  rewrite CTXT_HYB_equiv_5 ?fdisjointUr ?H // GRing.addr0.
-  rewrite CTXT_HYB_equiv_6 ?fdisjointUr ?H // GRing.addr0.
-  rewrite CTXT_EVAL_equiv_false ?fdisjointUr ?H // GRing.addr0.
-  rewrite CTXT_equiv_false ?fdisjointUr ?H // GRing.addr0.
+  rewrite -> CTXT_equiv_true by ssprove_valid.
+  rewrite -> CTXT_EVAL_equiv_true by ssprove_valid.
+  rewrite -> CTXT_HYB_equiv_1 by ssprove_valid.
+  rewrite -> CTXT_HYB_equiv_2 by ssprove_valid.
+  rewrite -> CTXT_HYB_equiv_3 by ssprove_valid.
+  rewrite -> CTXT_HYB_equiv_4 by ssprove_valid.
+  rewrite -> CTXT_HYB_equiv_5 by ssprove_valid.
+  rewrite -> CTXT_HYB_equiv_6 by ssprove_valid.
+  rewrite -> CTXT_EVAL_equiv_false by ssprove_valid.
+  rewrite -> CTXT_equiv_false by ssprove_valid.
+  rewrite GRing.add0r 9!GRing.addr0.
   rewrite /prp_epsilon /statistical_gap !Advantage_E !GRing.addrA.
   rewrite -!Advantage_link !link_assoc.
   by rewrite (Advantage_sym (EVAL true)) (Advantage_sym (SAMP Ciph_N true)).
