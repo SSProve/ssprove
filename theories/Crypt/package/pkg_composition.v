@@ -534,28 +534,30 @@ Proof.
   rewrite unionmE. unfold link.
   rewrite !mapmE. rewrite unionmE.
   destruct (p1 n) as [[S1 [T1 f1]]|] eqn:e1.
-  - simpl. f_equal. f_equal. f_equal.
-    extensionality x.
+  - rewrite -e1.
     eapply trimmed_valid_Some_in in e1 as hi. 2,3: eauto.
     eapply from_valid_package in h1.
     specialize (h1 (n, (S1, T1)) hi). cbn in h1.
     destruct h1 as [g [eg hg]].
-    rewrite e1 in eg. noconf eg. cbn in hg.
+    rewrite eg //=.
+    f_equal. f_equal. f_equal. extensionality x.
     erewrite code_link_par_left. 2: eapply hg.
     all: eauto.
   - simpl. destruct (p2 n) as [[S2 [T2 f2]]|] eqn:e2.
-    + simpl. f_equal. f_equal. f_equal. extensionality x.
+    + rewrite -e2.
       eapply trimmed_valid_Some_in in e2 as hi. 2,3: eauto.
       eapply from_valid_package in h2.
       specialize (h2 (n, (S2, T2)) hi). cbn in h2.
       destruct h2 as [g [eg hg]].
-      rewrite e2 in eg. noconf eg. cbn in hg.
+      rewrite eg //=.
+      f_equal. f_equal. f_equal. extensionality x.
       erewrite code_link_par_right. all: eauto.
     + simpl. reflexivity.
 Qed.
 
 Local Open Scope type_scope.
 
+(* MK: to fix.
 (** Package builder from a function *)
 (* TODO: Still works, but outdated. *)
 
@@ -635,6 +637,7 @@ Proof.
     + cbn in h1. rewrite e in h1. cbn in h1.
       eapply ih. all: eauto.
 Qed.
+ *)
 
 
 (* Identity package *)
@@ -709,11 +712,13 @@ Proof.
   intros L I E p hp tp.
   apply eq_fmap. intro n. unfold link.
   rewrite mapmE. destruct (p n) as [[S [T f]]|] eqn:e.
-  - cbn. f_equal. f_equal. f_equal. extensionality x.
+  - rewrite -e.
     eapply trimmed_valid_Some_in in e as hi. 2,3: eauto.
     eapply from_valid_package in hp.
     specialize (hp (n, (S, T)) hi) as h'. cbn in h'.
     destruct h' as [g [eg hg]].
+    rewrite eg //=.
+    f_equal. f_equal. f_equal. extensionality x.
     rewrite e in eg. noconf eg. cbn in hg.
     eapply code_link_id. all: eauto.
   - reflexivity.
