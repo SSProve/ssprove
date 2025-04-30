@@ -1005,31 +1005,6 @@ Inductive heap_val :=
 | hpv_l (ℓ : Location) (v : ℓ)
 | hpv_r (ℓ : Location) (v : ℓ).
 
-Definition loc_val_pair (ℓ : Location) (v : ℓ) : ∑ ℓ : Location, ℓ :=
-  (ℓ ; v).
-
-Definition heap_val_eq : rel heap_val :=
-  λ u v,
-    match u, v with
-    | hpv_l ℓ v, hpv_l ℓ' v' => loc_val_pair ℓ v == (ℓ' ; v')
-    | hpv_r ℓ v, hpv_r ℓ' v' => loc_val_pair ℓ v == (ℓ' ; v')
-    | _, _ => false
-    end.
-
-Lemma heap_val_eqP : Equality.axiom heap_val_eq.
-Proof.
-  intros u v.
-  destruct u, v. all: simpl. 2,3: constructor. 2,3: discriminate.
-  all: unfold loc_val_pair.
-  all: destruct eq_op eqn:e.
-  all: move: e => /eqP e. all: noconf e.
-  all: constructor.
-  all: try reflexivity.
-  all: intro h. all: inversion h. all: contradiction.
-Qed.
-
-HB.instance Definition _ := hasDecEq.Build heap_val heap_val_eqP.
-
 Derive NoConfusion for heap_val.
 
 Fixpoint update_pre (l : list heap_val) (pre : precond) :=
