@@ -27,8 +27,9 @@ Set Primitive Projections.
 Definition coerce_kleisli {A A' B B' : choice_type} (f : A → raw_code B) : A' → raw_code B'
   := locked (λ a, bind (f (coerce a)) (λ b, ret (coerce b))).
 
-Lemma coerce_kleisliE {A B} f a : @coerce_kleisli A A B B f a = f a.
+Lemma coerce_kleisliE {A B} f : @coerce_kleisli A A B B f = f.
 Proof.
+  extensionality a.
   rewrite /coerce_kleisli -lock coerceE.
   rewrite -{2}(bind_ret _ (f a)).
   f_equal; apply functional_extensionality => b.
@@ -40,6 +41,15 @@ Definition resolve (p : raw_package) (o : opsig) (x : src o) : (raw_code (tgt o)
   | Some (_; _; f) => coerce_kleisli f x
   | None => ret (chCanonical _)
   end.
+
+Lemma resolve_set p id F o
+  : resolve (setm p id F) o = if o.1 == id then coerce_kleisli F.π2.π2 else resolve p o.
+Proof.
+  rewrite /resolve setmE.
+  extensionality x.
+  destruct (o.1 == id) eqn:e; rewrite e //.
+  destruct F as [S [T f]] => //.
+Qed.
 
 Lemma valid_resolve :
   ∀ L I E p o a,
