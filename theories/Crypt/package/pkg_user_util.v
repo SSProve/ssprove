@@ -100,11 +100,8 @@ Set Primitive Projections.
 
 Open Scope pack.
 
-Ltac simplify_linking := simpl; repeat (
-  (  (rewrite resolve_set)
-  || (rewrite resolve_link)
-  || (rewrite coerce_kleisliE)
-  ); simpl).
+Ltac simplify_linking := simpl; repeat
+  (rewrite (resolve_set, resolve_link, coerce_kleisliE); simpl).
 
 Ltac simplify_eq_rel m :=
   let id := fresh "id" in
