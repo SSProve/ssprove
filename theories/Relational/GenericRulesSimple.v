@@ -170,13 +170,8 @@ Section GoingPractical.
     reflexivity.
   Qed.
 
-  (* The standard unit doesn't behave well so I redefine it.
-    This is probably not the right place for it.
-    TODO MOVE
-  *)
-  Inductive rel_unit := rel_tt.
-
-  Definition skip {M:Monad} : M rel_unit := ret rel_tt.
+  (* Universe constraint is not solved without universe parameters *)
+  Definition skip@{u1 u2 u3 u4 u5} {M:Monad@{u1 u2 u3 u4 u5}} : M unit := ret tt.
   Notation "m1 ;; m2" := (bind m1 (fun=> m2)) (at level 65).
 
   Lemma apply_left {A B1 B2} {m1 : M1 A} {c1 : M1 B1} {c2 : M2 B2} {w1 w2 w} :
