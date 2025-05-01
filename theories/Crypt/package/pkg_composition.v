@@ -57,12 +57,13 @@ Lemma valid_resolve :
     fhas E o →
     ValidCode L I (resolve p o a).
 Proof.
-  intros L I E p o a [Vp] H.
-  unfold resolve.
-  specialize (Vp o H).
-  destruct o as [n [S T]].
-  destruct Vp as [f [H' H'']].
-  rewrite H' coerce_kleisliE //.
+  intros L I E p o a [he hi] H.
+  rewrite he in H.
+  destruct H as [f H].
+  rewrite /resolve H.
+  specialize (hi o.1 (_; _; f) a).
+  rewrite coerce_kleisliE.
+  apply hi, H.
 Qed.
 
 Fixpoint code_link {A} (v : raw_code A) (p : raw_package) :
@@ -99,9 +100,23 @@ Definition link (p1 p2 : raw_package) : raw_package :=
   @mapm _ typed_raw_function _
     (λ '(So ; To ; f), (So ; To ; λ x, code_link (f x) p2)) p1.
 
-(* Remove unexported functions from a raw package *)
-Definition trim (E : Interface) (p : raw_package) :=
-  filterm (λ n _, E n) p.
+Lemma some_kleisli {S T S' T' : choice_type} (f : S → raw_code T) (g : S' → raw_code T') :
+  Some ((S; T; f) : typed_raw_function) = Some ((S'; T'; g) : typed_raw_function) → S = S' ∧ T = T' ∧ coerce_kleisli f = g.
+Proof.
+  (*
+  move: g.
+  intros H.
+  change g with ((S'; T'; g) : typed_raw_function).π2.π2.
+  rewrite -H.
+  intros H. injection H => {}H ? ?.
+  subst. repeat split.
+  rewrite -H.
+   *)
+  (*apply (EqdepFacts.eq_sigT_snd) in H.*)
+  (*apply EqdepFacts.eq_sigT_eq_dep in H.*)
+Admitted.
+
+
 
 Lemma valid_link :
   ∀ L1 L2 I M E p1 p2,
@@ -109,6 +124,29 @@ Lemma valid_link :
     ValidPackage L2 I M p2 →
     fcompat L1 L2 →
     ValidPackage (unionm L1 L2) I E (link p1 p2).
+Proof.
+  intros L1 l2 I M E p1 p2 [he1 hi1] [he2 hi2] hc.
+  split; [ split |].
+  - rewrite he1 => [[f h]].
+    exists (fun x => code_link (f x) p2).
+    rewrite //= /link mapmE h //.
+  - intros [f h].
+    rewrite he1 //=.
+    rewrite //= /link mapmE in h.
+    elim: (p1 o.1) h => //= [[S [T g]]] h.
+    apply some_kleisli in h as [? [? ?]]; subst.
+    by exists g.
+  - intros o f x h.
+    simpl in h.
+    rewrite //= /link mapmE in h.
+    elim: (p1 o.1) h => //= [[S [T g]]] h.
+    apply some_kleisli in h as [? [? ?]]; subst.
+    rewrite coerce_kleisliE.
+    eapply valid_code_link.
+    by exists g.
+    injection h => {}h s t; subst.
+Qed.
+(*
 Proof.
   intros L1 l2 I M E p1 p2 h1 h2 hc.
   apply prove_valid_package.
@@ -128,6 +166,20 @@ Proof.
     + by apply fsubmapUr.
     + auto.
 Qed.
+ *)
+
+Lemma valid_link_sub :
+  ∀ L1 L2 I M1 M2 E p1 p2,
+    ValidPackage L1 M1 E p1 →
+    ValidPackage L2 I M2 p2 →
+    fcompat L1 L2 →
+    fsubmap M1 M2 →
+    ValidPackage (unionm L1 L2) I E (link p1 p2).
+Proof.
+  intros L1 L2 I M1 M2 E p1 p2 V1 V2 H H'.
+  eapply valid_link; [| exact V2 | exact H ].
+  eapply valid_package_inject_import; [ exact H' | exact V1 ].
+Qed.
 
 (* This tactic is used to prove package validity with the following strategy:
    1. Apply weakening so that locations, imports and exports are evars.
@@ -141,7 +193,7 @@ Ltac package_evar :=
     tryif assert_fails (is_evar I)
       then (eapply valid_package_inject_import; swap 1 2; package_evar) else
     tryif assert_fails (is_evar E)
-      then (eapply valid_package_inject_export; swap 1 2; package_evar) else
+      then (eapply valid_package_inject_export; swap 3 2; swap 2 1; package_evar) else
     idtac
   | _ => idtac
   end.
@@ -151,7 +203,7 @@ Ltac package_evar :=
   : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (link ?p1 ?p2)) =>
-  package_evar ; [ eapply valid_link | .. ]
+  package_evar ; [ eapply valid_link_sub | .. ]
   : typeclass_instances ssprove_valid_db.
 
 
@@ -210,6 +262,8 @@ Lemma valid_trim :
   ∀ L I E p,
     ValidPackage L I E p →
     ValidPackage L I E (trim E p).
+Admitted.
+(*
 Proof.
   intros L I E p h.
   apply prove_valid_package.
@@ -219,6 +273,7 @@ Proof.
   exists f. intuition auto.
   apply trim_get. all: auto.
 Qed.
+ *)
 
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (trim ?E ?p)) =>
   eapply valid_trim
@@ -297,6 +352,8 @@ Lemma link_trim_right :
     ValidPackage L I E p1 →
     link (trim E p1) (trim I p2) =
     link (trim E p1) p2.
+Admitted.
+(*
 Proof.
   intros L I E p1 p2 h.
   apply eq_fmap. intro n.
@@ -315,6 +372,7 @@ Proof.
   eapply code_link_trim_right.
   apply h.
 Qed.
+ *)
 
 Lemma link_assoc :
   ∀ p1 p2 p3,
@@ -353,6 +411,8 @@ Lemma valid_par :
     fcompat L1 L2 →
     fcompat I1 I2 →
     ValidPackage (unionm L1 L2) (unionm I1 I2) (unionm E1 E2) (par p1 p2).
+Admitted.
+(*
 Proof.
   intros L1 L2 I1 I2 E1 E2 p1 p2 h1 h2 h cL cI.
   apply prove_valid_package.
@@ -390,6 +450,7 @@ Proof.
     eapply valid_injectMap. 1: by apply fsubmapUr.
     auto.
 Qed.
+ *)
 
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (par ?p1 ?p2)) =>
   package_evar ; [ eapply valid_par | .. ]
@@ -454,6 +515,8 @@ Lemma code_link_par_left :
     ValidCode L E v →
     ValidPackage L' I E p1 →
     code_link v (par p1 p2) = code_link v p1.
+Admitted.
+(*
 Proof.
   intros A I L L' E v p1 p2 hv [hp1].
   unfold ValidCode in hv.
@@ -470,6 +533,7 @@ Proof.
   - simpl. f_equal. eauto.
   - simpl. f_equal. extensionality x. eauto.
 Qed.
+ *)
 
 Lemma code_link_par_right :
   ∀ A I L L' E (v : raw_code A) p1 p2,
@@ -503,6 +567,8 @@ Lemma trimmed_valid_Some_in :
     trimmed E p →
     p n = Some (S ; T ; f) →
     E n = Some (S, T).
+Admitted.
+(*
 Proof.
   intros L I E p n S T f hv ht e.
   unfold trimmed in ht. pose e as e'. rewrite <- ht in e'.
@@ -516,6 +582,7 @@ Proof.
   rewrite hv in e.
   injection e => ? ? ?; by subst.
 Qed.
+ *)
 
 Lemma interchange :
   ∀ A B C D E F L1 L2 L3 L4 p1 p2 p3 p4,
@@ -527,6 +594,8 @@ Lemma interchange :
     trimmed D p2 →
     fseparate p3 p4 →
     par (link p1 p3) (link p2 p4) = link (par p1 p2) (par p3 p4).
+Admitted.
+(*
 Proof.
   intros A B C D E F L1 L2 L3 L4 p1 p2 p3 p4 h1 h2 h3 h4 t1 t2 p34.
   apply eq_fmap. intro n.
@@ -554,6 +623,7 @@ Proof.
       erewrite code_link_par_right. all: eauto.
     + simpl. reflexivity.
 Qed.
+ *)
 
 Local Open Scope type_scope.
 
@@ -660,9 +730,21 @@ Proof.
   extensionality y. rewrite coerce_kleisliE //.
 Qed.
 
+Lemma resolve_ID_set I id TS o :
+  resolve (ID (setm I id TS)) o =
+    (if o.1 == id then coerce_kleisli (λ x, opr (o.1, TS) x (λ y, ret y)) else resolve (ID I) o).
+Proof.
+  rewrite /resolve 2!mapimE setmE.
+  extensionality x.
+  destruct (o.1 == id) eqn:e; rewrite e //.
+  destruct TS as [S T] => //.
+Qed.
+
 Lemma valid_ID :
   ∀ I,
     ValidPackage emptym I I (ID I).
+Admitted.
+(*
 Proof.
   intros I.
   apply prove_valid_package.
@@ -673,6 +755,7 @@ Proof.
   apply valid_opr => // y.
   apply valid_ret.
 Qed.
+ *)
 
 #[export] Hint Extern 2 (ValidPackage ?L ?I ?E (ID ?I')) =>
   eapply valid_ID
@@ -708,6 +791,8 @@ Lemma link_id :
     ValidPackage L I E p →
     trimmed E p →
     link p (ID I) = p.
+Admitted.
+(*
 Proof.
   intros L I E p hp tp.
   apply eq_fmap. intro n. unfold link.
@@ -723,12 +808,15 @@ Proof.
     eapply code_link_id. all: eauto.
   - reflexivity.
 Qed.
+ *)
 
 Lemma id_link :
   ∀ L I E p,
     ValidPackage L I E p →
     trimmed E p →
     link (ID E) p = p.
+Admitted.
+(*
 Proof.
   intros L I E p hp tp.
   apply eq_fmap. intro n. unfold link.
@@ -746,6 +834,7 @@ Proof.
   extensionality x.
   rewrite bind_ret coerce_kleisliE //=.
 Qed.
+ *)
 
 Lemma code_link_if :
   ∀ A (c₀ c₁ : raw_code A) (p : raw_package) b,

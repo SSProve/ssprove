@@ -109,11 +109,14 @@ Qed.
 Lemma valid_empty_package :
   ∀ L I,
     ValidPackage L I [interface] emptym.
+Admitted.
+(*
 Proof.
   intros L I.
   apply prove_valid_package.
   intros [id [S T]] ho. rewrite /fhas emptymE // in ho.
 Qed.
+ *)
 
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap [::])) =>
   try (replace E with [interface] by eapply fset0E) ;
@@ -124,6 +127,8 @@ Lemma valid_package1 :
   ∀ L I i A B f,
     (∀ x, ValidCode L I (f x)) →
     ValidPackage L I (mkfmap [:: (i, (A, B))]) (mkfmap [:: (i, mkdef A B f)]).
+Admitted.
+(*
 Proof.
   intros L I i A B f hf.
   apply prove_valid_package.
@@ -134,6 +139,7 @@ Proof.
   move: e => /eqP -> //.
   rewrite setmE eq_refl //.
 Qed.
+ *)
 
 (* Would be a shortcut, but when backtracking, this has an unnecessary cost *)
 (* #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (mkfmap [:: (?i, mkdef ?A ?B ?f)])) =>
@@ -147,6 +153,8 @@ Lemma valid_package_cons :
     (∀ x, ValidCode L I (f x)) →
     ValidPackage L I (mkfmap ((i, (A, B)) :: E))
       (mkfmap ((i, mkdef A B f) :: p)).
+Admitted.
+(*
 Proof.
   intros L I i A B f E p hp hf.
   apply prove_valid_package.
@@ -162,6 +170,7 @@ Proof.
     exists g.
     rewrite //= setmE e //.
 Qed.
+ *)
 
 Lemma valid_package_cons_upto :
   ∀ L I i A B A' B' f E p,

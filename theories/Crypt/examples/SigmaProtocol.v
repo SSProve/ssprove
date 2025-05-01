@@ -855,18 +855,20 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         }
       ].
 
+    Definition IRUN := [interface #val #[ RUN ] : chRelation → chTranscript].
+
     Lemma run_interactive_shvzk :
       ∀ LA A,
         ValidPackage LA [interface
           #val #[ RUN ] : chRelation → chTranscript
         ] A_export A →
         fseparate LA Sigma_locs →
-        AdvantageE RUN_interactive (SHVZK_real_aux ∘ SHVZK_real) A = 0.
+        AdvantageE (ID IRUN ∘ RUN_interactive) (SHVZK_real_aux ∘ SHVZK_real) A = 0.
     Proof.
       intros LA A Va Hdisj.
       eapply eq_rel_perf_ind_eq.
-      2: ssprove_valid.
-      1,3: ssprove_valid.
+      4: apply Va.
+      1,2: ssprove_valid.
       2,3: fmap_solve.
       simplify_eq_rel hw.
       ssprove_code_simpl.
@@ -887,26 +889,27 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       rewrite code_link_scheme
       : ssprove_code_simpl.
 
+    (* Adequacy: fiat_shamir is not proven equivalent on the VERIFY call *)
     Theorem fiat_shamir_correct :
       ∀ LA A ,
-        ValidPackage LA [interface
-          #val #[ RUN ] : chRelation → chTranscript
-        ] A_export A →
+        ValidPackage LA IRUN A_export A →
         fseparate LA Sigma_locs →
         fseparate LA RO_locs →
         fseparate Sigma_locs RO_locs →
-        AdvantageE (Fiat_Shamir ∘ RO) RUN_interactive A = 0.
+        AdvantageE (ID IRUN ∘ Fiat_Shamir ∘ RO) (ID IRUN ∘ RUN_interactive) A = 0.
     Proof.
       intros LA A Va Hd1 Hd2 Hd3.
       eapply eq_rel_perf_ind_ignore.
       5: ssprove_valid.
       1,2: ssprove_valid.
       3,4: fmap_solve.
-      1: apply fsubmapUl_trans, fsubmapUr; fmap_solve.
+      1: rewrite union0m; apply fsubmapUl_trans, fsubmapUr; fmap_solve.
       simplify_eq_rel hw.
-      ssprove_code_simpl.
       destruct hw as [h w].
+      ssprove_code_simpl.
+      ssprove_code_simpl_more.
       ssprove_sync. intros rel.
+      ssprove_code_simpl.
       eapply rsame_head_alt.
       1: exact _.
       1:{

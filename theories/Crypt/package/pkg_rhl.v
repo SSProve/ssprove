@@ -355,14 +355,16 @@ Proof.
     apply Hp. intuition auto.
   - cbn - [semantic_judgement].
     apply inversion_valid_opr in vA as hA. destruct hA as [hi vk].
-    destruct o as [id [S T]].
-    eapply from_valid_package in vp₀.
-    specialize (vp₀ _ hi). simpl in vp₀.
-    destruct vp₀ as [f₀ [e₀ h₀]].
-    eapply from_valid_package in vp₁.
-    specialize (vp₁ _ hi). simpl in vp₁.
-    destruct vp₁ as [f₁ [e₁ h₁]].
-    specialize (hp id S T x hi).
+
+    destruct vp₀ as [vp0e vp0i].
+    specialize (vp0e o) as [vp0e _].
+    specialize (vp0e hi) as [f₀ e₀].
+    destruct vp₁ as [vp1e vp1i].
+    specialize (vp1e o) as [vp1e _].
+    specialize (vp1e hi) as [f₁ e₁].
+    destruct o as [id [T S]].
+
+    specialize (hp _ _ _ x hi).
     rewrite /resolve e₀ e₁ 2!coerce_kleisliE in hp |- *.
     rewrite 2!repr_bind.
     eapply bind_rule_pp. 1:{ eapply to_sem_jdg in hp. exact hp. }
