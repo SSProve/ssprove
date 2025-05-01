@@ -136,24 +136,50 @@ Qed.
 Lemma fsubmapxx {T : ordType} {S} (m : {fmap T → S}) : fsubmap m m.
 Proof. rewrite /fsubmap unionmI //. Qed.
 
-Lemma fhas_cons {T : ordType} {S} x' x (xs : seq (T * S)) :
-  fhas (mkfmap (x :: xs)) x' → x = x' ∨ fhas (mkfmap xs) x'.
+Lemma fsubmap_eq {T : ordType} {S} (m m' : {fmap T → S}) :
+  fsubmap m m' → fsubmap m' m → m = m'.
 Proof.
-  move: x x' => [t s] [t' s'] H.
+  unfold fsubmap.
+  intros H H'.
+  rewrite -H -{1}H'.
+  eapply fsubmap_fcompat.
+  1: apply H'.
+  apply fsubmapxx.
+Qed.
+
+Lemma fhas_set_case {T : ordType} {S} x y (m : {fmap T → S}) :
+  fhas (setm m x.1 x.2) y → (x = y) ∨ fhas m y.
+Proof.
+  move: x y => [k v] [k' v'] H.
   rewrite /fhas //= setmE in H.
-  destruct (t' == t) eqn:E.
+  destruct (k' == k) eqn:E.
   - left.
-    move: E => /eqP -> {t'}.
+    move: E => /eqP -> {k'}.
     by noconf H.
   - by right.
 Qed.
+
+Lemma fhas_union {S : ordType} {T} m m' (k : S) (v : T)
+  : fhas (unionm m m') (k, v) → fhas m (k, v) ∨ fhas m' (k, v).
+Proof.
+  rewrite /fhas unionmE.
+  destruct (m k) => //=; auto.
+Qed.
+
+Lemma fhas_union_l {S : ordType} {T} m m' (k : S) (v : T)
+  : fhas m (k, v) → fhas (unionm m m') (k, v).
+Proof.
+  rewrite /fhas unionmE.
+  destruct (m k) => //=; auto.
+Qed.
+
 
 (* Tactics *)
 
 Ltac fmap_invert H :=
   (by apply fhas_empty in H) ||
   ( let x := fresh "x" in
-    apply fhas_cons in H ;
+    apply fhas_set_case in H ;
     destruct H as [x|H]; [ noconf x | fmap_invert H ]
   ).
 

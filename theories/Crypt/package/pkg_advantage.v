@@ -284,19 +284,14 @@ Lemma Advantage_par :
     ValidPackage L₀ Game_import E₀ G₀ →
     ValidPackage L₁ Game_import E₁ G₁ →
     ValidPackage L₁' Game_import E₁ G₁' →
-    trimmed E₀ G₀ →
-    trimmed E₁ G₁ →
-    trimmed E₁ G₁' →
     AdvantageE (par G₀ G₁) (par G₀ G₁') A =
     AdvantageE G₁ G₁' (A ∘ par G₀ (ID E₁)).
 Proof.
-  intros G₀ G₁ G₁' A L₀ L₁ L₁' E₀ E₁.
-  intros Va0 Va1 Va1' Te0 Te1 Te1'.
+  intros G₀ G₁ G₁' A L₀ L₁ L₁' E₀ E₁ Va0 Va1 Va1'.
   replace (par G₀ G₁) with ((par G₀ (ID E₁)) ∘ (par (ID Game_import) G₁)).
   2:{
     erewrite <- interchange.
     all: ssprove_valid.
-    2: apply trimmed_ID.
     2: fmap_solve.
     rewrite link_id // id_link //.
   }
@@ -304,12 +299,10 @@ Proof.
   2:{
     erewrite <- interchange.
     all: ssprove_valid.
-    2: apply trimmed_ID.
     2: fmap_solve.
     rewrite link_id // id_link //.
   }
   rewrite -Advantage_link Advantage_par_empty //.
-  Unshelve. all: auto.
 Qed.
 
 Lemma Advantage_sym :
