@@ -552,18 +552,14 @@ Section KEMDEM.
       fseparate (ID IGEN) CD₁ →
       ValidPackage LD₀ IGET ED CD₀ →
       ValidPackage LD₀ IGET ED CD₁ →
-      trimmed ED CD₀ →
-      trimmed ED CD₁ →
       ValidPackage LK₀ ISET EK CK₀ →
       ValidPackage LK₀ IGEN EK CK₁ →
-      trimmed EK CK₀ →
-      trimmed EK CK₁ →
       AdvantageE ((par CK₀ CD₀) ∘ KEY) ((par CK₁ CD₁) ∘ KEY) A <=
       AdvantageE K₀ K₁ (A ∘ (par (ID EK) CD₀)) +
       AdvantageE D₀ D₁ (A ∘ (par CK₁ (ID ED))).
   Proof.
     intros LD₀ LK₀ CK₀ CK₁ CD₀ CD₁ EK ED A K₀ K₁ D₀ D₁.
-    intros pCK₀ pCK₁ pCD₀ pCD₁ hCD₀ hCD₁ tCD₀ tCD₁ hCK₀ hCK₁ tCK₀ tCK₁.
+    intros pCK₀ pCK₁ pCD₀ pCD₁ hCD₀ hCD₁ hCK₀ hCK₁.
     ssprove triangle (par CK₀ CD₀ ∘ KEY) [::
       par CK₁ CD₀ ∘ KEY
     ] (par CK₁ CD₁ ∘ KEY) A
@@ -576,7 +572,6 @@ Section KEMDEM.
       2:{
         erewrite <- interchange.
         all: ssprove_valid.
-        2: apply trimmed_ID.
         rewrite link_id. all: eauto.
         rewrite id_link. all: eauto.
       }
@@ -584,7 +579,6 @@ Section KEMDEM.
       2:{
         erewrite <- interchange.
         all: ssprove_valid.
-        2: apply trimmed_ID.
         rewrite link_id. all: eauto.
         rewrite id_link. all: eauto.
       }
@@ -597,7 +591,6 @@ Section KEMDEM.
       2:{
         erewrite <- interchange.
         all: ssprove_valid.
-        2: apply trimmed_ID.
         rewrite link_id. all: eauto.
         rewrite id_link. all: eauto.
       }
@@ -605,7 +598,6 @@ Section KEMDEM.
       2:{
         erewrite <- interchange.
         all: ssprove_valid.
-        2: apply trimmed_ID.
         rewrite link_id. all: eauto.
         rewrite id_link. all: eauto.
       }
@@ -628,19 +620,15 @@ Section KEMDEM.
       fseparate (ID IGEN) CD₁ →
       ValidPackage LD₀ IGET ED CD₀ →
       ValidPackage LD₀ IGET ED CD₁ →
-      trimmed ED CD₀ →
-      trimmed ED CD₁ →
       ValidPackage LK₀ ISET EK CK₀ →
       ValidPackage LK₀ IGEN EK CK₁ →
-      trimmed EK CK₀ →
-      trimmed EK CK₁ →
       AdvantageE ((par CK₀ CD₀) ∘ KEY) ((par CK₀ CD₁) ∘ KEY) A <=
       AdvantageE K₀ K₁ (A ∘ (par (ID EK) CD₀)) +
       AdvantageE D₀ D₁ (A ∘ (par CK₁ (ID ED))) +
       AdvantageE K₀ K₁ (A ∘ (par (ID EK) CD₁)).
   Proof.
     intros LD₀ LK₀ CK₀ CK₁ CD₀ CD₁ EK ED A K₀ K₁ D₀ D₁.
-    intros pCK₀ pCK₁ pCD₀ pCD₁ hCD₀ hCD₁ tCD₀ tCD₁ hCK₀ hCK₁ tCK₀ tCK₁.
+    intros pCK₀ pCK₁ pCD₀ pCD₁ hCD₀ hCD₁ hCK₀ hCK₁.
     ssprove triangle (par CK₀ CD₀ ∘ KEY) [::
       par CK₁ CD₁ ∘ KEY
     ] (par CK₀ CD₁ ∘ KEY) A
@@ -654,7 +642,6 @@ Section KEMDEM.
       2:{
         erewrite <- interchange.
         all: ssprove_valid.
-        2: apply trimmed_ID.
         rewrite link_id. all: eauto.
         rewrite id_link. all: eauto.
       }
@@ -662,7 +649,6 @@ Section KEMDEM.
       2:{
         erewrite <- interchange.
         all: ssprove_valid.
-        2: apply trimmed_ID.
         rewrite link_id. all: eauto.
         rewrite id_link. all: eauto.
       }
@@ -937,8 +923,6 @@ Section KEMDEM.
       rewrite -Advantage_link.
       eapply single_key_b with (CK₁ := (KEM false).(pack)).
       all: ssprove_valid.
-      1-4: repeat apply trimmed_package_cons.
-      1-4: apply trimmed_empty_package.
     - rewrite !Advantage_E.
       unfold KEM_CCA. unfold KEM_CCA_pkg.
       unfold DEM_CCA. unfold DEM_CCA_pkg.
