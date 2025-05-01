@@ -595,24 +595,10 @@ Definition typed_raw_function :=
 Definition raw_package :=
   {fmap ident -> typed_raw_function }.
 
-(* To avoid unification troubles, we wrap this definition in an inductive. *)
-Definition valid_package_ext L I (E : Interface) (p : raw_package) :=
-  ∀ o,
-    fhas E o →
-    let '(id, (src, tgt)) := o in
-    ∃ (f : src → raw_code tgt),
-      p id = Some (src ; tgt ; f) ∧ ∀ x, ValidCode L I (f x).
-
-Inductive valid_package L I E p :=
-| prove_valid_package : valid_package_ext L I E p → valid_package L I E p.
-
-Lemma from_valid_package :
-  ∀ L I E p,
-    valid_package L I E p →
-    valid_package_ext L I E p.
-Proof.
-  intros L I E p [h]. exact h.
-Qed.
+Record valid_package L I E (p : raw_package) :=
+  { valid_exports : ∀ o, fhas E o <-> (∃ f, fhas p (o.1, (chsrc o ; chtgt o ; f)))
+  ; valid_imports : ∀ n (F : typed_raw_function) (x : F.π1), fhas p (n, F) → ValidCode L I (F.π2.π2 x)
+  }.
 
 Class ValidPackage L I E p :=
   is_valid_package : valid_package L I E p.
@@ -690,23 +676,24 @@ Lemma valid_package_inject_locations :
     ValidPackage L1 I E p →
     ValidPackage L2 I E p.
 Proof.
-  intros I E L1 L2 p hL h.
-  apply prove_valid_package.
-  eapply from_valid_package in h.
-  intros [n [S T]] ho.
-  specialize (h _ ho). cbn in h.
-  destruct h as [f [ef hf]].
-  exists f. intuition auto.
-  eapply valid_injectLocations. all: eauto.
+  intros I E L1 L2 p hL [he hi].
+  split; [ done |] => n F x h.
+  eapply valid_injectLocations; [ eassumption |].
+  eapply hi, h.
 Qed.
 
 Lemma valid_package_inject_export :
   ∀ L I E1 E2 p,
+    fsubmap E2 E1 →
     fsubmap E1 E2 →
     ValidPackage L I E2 p →
     ValidPackage L I E1 p.
 Proof.
-  move=> L I E1 E2 p hE h.
+Admitted.
+(*
+Proof.
+  move=> L I E1 E2 p hE [he hi].
+  split; [| done ].
   apply prove_valid_package.
   eapply from_valid_package in h.
   intros o ho. specialize (h o).
@@ -716,6 +703,7 @@ Proof.
   destruct h as [f [ef hf]].
   exists f. intuition auto.
 Qed.
+ *)
 
 Lemma valid_package_inject_import :
   ∀ L I1 I2 E p,
@@ -723,13 +711,10 @@ Lemma valid_package_inject_import :
     ValidPackage L I1 E p →
     ValidPackage L I2 E p.
 Proof.
-  intros L I1 I2 E p hE h.
-  apply prove_valid_package.
-  eapply from_valid_package in h.
-  intros [n [S T]] ho. specialize (h _ ho). cbn in h.
-  destruct h as [f [ef hf]].
-  exists f. intuition auto.
-  eapply valid_injectMap. all: eauto.
+  intros L I1 I2 E p hE [he hi].
+  split; [ done |] => n F x h.
+  eapply valid_injectMap; [ eassumption |].
+  eapply hi, h.
 Qed.
 
 Lemma package_ext :
