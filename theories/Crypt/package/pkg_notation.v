@@ -140,6 +140,8 @@ Module PackageNotation.
 
   Notation "( x )" := x (in custom pack_type, x at level 2).
 
+  Notation "{ x }" := x (in custom pack_type, x constr).
+
   (** Repeat the above notations here for package_scope. *)
   Notation " 'nat " := (chNat) (at level 2) : package_scope.
   Notation " 'int " := (chInt) (at level 2) : package_scope.
