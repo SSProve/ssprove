@@ -464,10 +464,11 @@ Proof.
   as ineq.
   apply: le_trans.
   1: by apply: ineq.
-  rewrite -> ATTACK_equiv_true, GRing.add0r by fmap_solve.
-  rewrite -> ATTACK_HYB_equiv_1, GRing.addr0 by fmap_solve.
-  rewrite -> ATTACK_HYB_equiv_2, GRing.addr0 by fmap_solve.
-  rewrite -> ATTACK_equiv_false, GRing.addr0 by fmap_solve.
+  rewrite -> ATTACK_equiv_true by fmap_solve.
+  rewrite -> ATTACK_HYB_equiv_1 by fmap_solve.
+  rewrite -> ATTACK_HYB_equiv_2 by fmap_solve.
+  rewrite -> ATTACK_equiv_false by fmap_solve.
+  rewrite GRing.add0r 3!GRing.addr0.
   rewrite /prg_epsilon /cpa_epsilon !Advantage_E -!Advantage_link.
   by rewrite (Advantage_sym (GEN_STRETCH true)) (Advantage_sym (CTXT true)).
 Qed.
