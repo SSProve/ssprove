@@ -37,23 +37,19 @@ Set Primitive Projections.
 
 Definition Game_import : Interface := [interface].
 
-Definition Game_Type (Game_export : Interface) : Type :=
-  loc_package Game_import Game_export.
+Notation game E := (package Game_import E).
 
 Definition RUN := (0%N, ('unit, 'bool)).
 
 Definition A_export : Interface := mkfmap [:: RUN ].
+
+Notation adversary I := (package I A_export).
 
 Lemma RUN_in_A_export : A_export RUN.1 = Some RUN.2.
 Proof.
   rewrite setmE //.
 Qed.
 
-Definition Adversary4Game (Game_export : Interface) : Type :=
-  loc_package Game_export A_export.
-
-Definition Adversary4Game_weak (Game_export : Interface) : Type :=
-  package emptym Game_export A_export.
 
 Definition Game_op_import_S : Type := {_ : ident & void}.
 
@@ -81,14 +77,7 @@ Definition Pr (p : raw_package) :
     (λ '(b, _), SDistr_unit _ b)
     (Pr_op p RUN tt empty_heap).
 
-Definition loc_GamePair (Game_export : Interface) :=
-  bool → Game_Type Game_export.
-
-(* TODO Again, why not an actual pair? *)
-Definition GamePair :=
-  bool → raw_package.
-
-Definition Advantage (G : GamePair) (A : raw_package) : R :=
+Definition Advantage (G : bool → raw_package) (A : raw_package) : R :=
   `| Pr (A ∘ (G false)) true - Pr (A ∘ (G true)) true |.
 
 Definition AdvantageE (G₀ G₁ : raw_package) (A : raw_package) : R :=
@@ -239,21 +228,21 @@ Notation " G0 ≈₀ G1 " :=
   : package_scope.
 
 Lemma Advantage_equiv :
-  ∀ I (G : loc_GamePair I),
+  ∀ I (G : bool → game I),
     (G false) ≈[ Advantage G ] (G true).
 Proof.
   intros I G. intros LA A vA hd₀ hd₁. reflexivity.
 Qed.
 
 Lemma AdvantageE_equiv :
-  ∀ I (G₀ G₁ : Game_Type I),
+  ∀ I (G₀ G₁ : game I),
     G₀ ≈[ AdvantageE G₀ G₁ ] G₁.
 Proof.
   intros I G₀ G₁. intros LA A vA hd₀ hd₁. reflexivity.
 Qed.
 
 Lemma Advantage_E :
-  ∀ (G : GamePair) A,
+  ∀ (G : bool → raw_package) A,
     Advantage G A = AdvantageE (G false) (G true) A.
 Proof.
   intros G A.
@@ -376,7 +365,7 @@ Qed.
 
 Lemma TriangleInequality :
   ∀ {Game_export : Interface}
-    {F G H : Game_Type Game_export}
+    {F G H : game Game_export}
     {ϵ1 ϵ2 ϵ3},
     F ≈[ ϵ1 ] G →
     G ≈[ ϵ2 ] H →
@@ -395,7 +384,7 @@ Proof.
 Qed.
 
 Lemma Reduction :
-  ∀ (M : raw_package) (G : GamePair) A b,
+  ∀ (M : raw_package) (G : bool → raw_package) A b,
     `| Pr (A ∘ (M ∘ (G b))) true | =
     `| Pr ((A ∘ M) ∘ (G b)) true |.
 Proof.
@@ -404,7 +393,7 @@ Proof.
 Qed.
 
 Lemma ReductionLem :
-  ∀ L₀ L₁ E M (G : GamePair)
+  ∀ L₀ L₁ E M (G : bool → raw_package)
     `{ValidPackage L₀ Game_import E (M ∘ G false)}
     `{ValidPackage L₁ Game_import E (M ∘ G true)},
     (M ∘ (G false)) ≈[ λ A, Advantage G (A ∘ M) ] (M ∘ (G true)).

@@ -259,8 +259,8 @@ Section Test.
     ].
 
   Definition test_pack:
-    package locs [interface] E :=
-    [package
+    package [interface] E :=
+    [package locs ;
       #def #[ 0 ] (x : 'nat) : 'nat
       {
         k ← sample uniform 20 ;;

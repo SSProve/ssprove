@@ -57,8 +57,8 @@ Module RO (π : ROParams).
       #val #[ QUERY ] : 'query → 'random
     ].
 
-  Definition RO : package RO_locs [interface] RO_exports :=
-    [package
+  Definition RO : package [interface] RO_exports :=
+    [package RO_locs ;
       #def #[ INIT ] (_ : 'unit) : 'unit
       {
         #put queries_loc := emptym ;;

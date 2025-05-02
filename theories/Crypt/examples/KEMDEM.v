@@ -226,8 +226,8 @@ Section KEMDEM.
     ].
 
   (** Definition of the KEY package *)
-  Definition KEY : package KEY_loc [interface] KEY_out :=
-    [package
+  Definition KEY : package [interface] KEY_out :=
+    [package KEY_loc ;
       #def #[ GEN ] (_ : 'unit) : 'unit {
         k ← get k_loc ;;
         #assert (k == None) ;;
@@ -288,8 +288,8 @@ Section KEMDEM.
     eapply valid_scheme ; eapply c.(prog_valid)
     : typeclass_instances ssprove_valid_db.
 
-  Definition KEM (b : bool) : package KEM_loc (KEM_in b) KEM_out :=
-    [package
+  Definition KEM b : package (KEM_in b) KEM_out :=
+    [package KEM_loc ;
       #def #[ KEMGEN ] (_ : 'unit) : 'pkey {
         sk ← get sk_loc ;;
         #assert (sk == None) ;;
@@ -339,18 +339,11 @@ Section KEMDEM.
       #val #[GET] : 'unit → 'key
     ].
 
-  Definition KEM_CCA_loc :=
-    unionm KEM_loc KEY_loc.
-
   (** SSProve automatically derives the well-formedness of the KEM_CCA package.
   *)
-  Definition KEM_CCA_pkg b :
-    package KEM_CCA_loc [interface] KEM_CCA_out :=
+  Definition KEM_CCA b :
+    game KEM_CCA_out :=
     {package (par (KEM b) (ID IGET)) ∘ KEY }.
-
-  (** We finally package the above into a game pair. *)
-  Definition KEM_CCA : loc_GamePair KEM_CCA_out :=
-    λ b, {locpackage KEM_CCA_pkg b }.
 
   (** DEM package *)
 
@@ -369,8 +362,8 @@ Section KEMDEM.
       #val #[ DEC ] : 'cipher → 'plain
     ].
 
-  Definition DEM (b : bool) : package DEM_loc DEM_in DEM_out :=
-    [package
+  Definition DEM b : package DEM_in DEM_out :=
+    [package DEM_loc ;
       #def #[ ENC ] (m : 'plain) : 'cipher {
         #import {sig #[ GET ] : 'unit → 'key } as GET ;;
         c ← get c_loc ;;
@@ -404,15 +397,8 @@ Section KEMDEM.
       #val #[ DEC ] : 'cipher → 'plain
     ].
 
-  Definition DEM_CCA_loc :=
-    unionm DEM_loc KEY_loc.
-
-  Definition DEM_CCA_pkg (b : bool) :
-    package DEM_CCA_loc [interface] DEM_CCA_out :=
+  Definition DEM_CCA (b : bool) : game DEM_CCA_out :=
     {package (par (DEM b) (ID IGEN)) ∘ KEY }.
-
-  Definition DEM_CCA : loc_GamePair DEM_CCA_out :=
-    λ b, {locpackage DEM_CCA_pkg b }.
 
   (** PKE-CCA *)
 
@@ -426,8 +412,8 @@ Section KEMDEM.
     ].
 
   Definition PKE_CCA_pkg (ζ : PKE_scheme) b :
-    package PKE_CCA_loc [interface] PKE_CCA_out :=
-    [package
+    package [interface] PKE_CCA_out :=
+    [package PKE_CCA_loc ;
       #def #[ PKGEN ] (_ : 'unit) : 'pkey {
         sk ← get sk_loc ;;
         #assert (sk == None) ;;
@@ -460,8 +446,7 @@ Section KEMDEM.
       }
     ].
 
-  Definition PKE_CCA (ζ : PKE_scheme) : loc_GamePair PKE_CCA_out :=
-    λ b, {locpackage PKE_CCA_pkg ζ b }.
+  Definition PKE_CCA (ζ : PKE_scheme) b : game PKE_CCA_out := PKE_CCA_pkg ζ b.
 
   (** MOD-CCA *)
 
@@ -481,8 +466,8 @@ Section KEMDEM.
     PKE_CCA_out.
 
   Definition MOD_CCA (ζ : PKE_scheme) :
-    package MOD_CCA_loc MOD_CCA_in MOD_CCA_out :=
-    [package
+    package MOD_CCA_in MOD_CCA_out :=
+    [package MOD_CCA_loc ;
       #def #[ PKGEN ] (_ : 'unit) : 'pkey {
         #import {sig #[ KEMGEN ] : 'unit → 'pkey } as KEMGEN ;;
         pk ← get pk_loc ;;
@@ -672,7 +657,7 @@ Section KEMDEM.
     unionm MOD_CCA_loc (unionm KEM_loc (unionm DEM_loc KEY_loc)).
 
   Definition Aux (b : bool)
-    : package Aux_loc [interface] PKE_CCA_out :=
+    : package [interface] PKE_CCA_out :=
     {package (MOD_CCA KEM_DEM ∘ par (KEM true) (DEM b) ∘ KEY) }.
 
   (** We extend ssprove_code_simpl to use code_link_scheme.
@@ -924,9 +909,7 @@ Section KEMDEM.
       eapply single_key_b with (CK₁ := (KEM false).(pack)).
       all: ssprove_valid.
     - rewrite !Advantage_E.
-      unfold KEM_CCA. unfold KEM_CCA_pkg.
-      unfold DEM_CCA. unfold DEM_CCA_pkg.
-      change ({locpackage ?p }.(pack)) with p.
+      unfold KEM_CCA. unfold DEM_CCA.
       change ({package ?p }.(pack)) with p.
       apply eq_ler. rewrite !link_assoc. f_equal.
       all: rewrite Advantage_sym. 2: reflexivity.

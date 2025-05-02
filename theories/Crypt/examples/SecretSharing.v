@@ -177,9 +177,9 @@ Definition shares: nat := 0.
 (******************************************************************************)
 
 Definition SHARE_pkg_tt:
-  package emptym [interface]
+  package [interface]
     [interface #val #[shares]: ('word × 'word) × 'set 'nat → 'seq 'word ] :=
-  [package
+  [package emptym ;
     #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'nat): 'seq 'word {
       if size (domm U) >= 2 then ret emptym
       else
@@ -191,9 +191,9 @@ Definition SHARE_pkg_tt:
   ].
 
 Definition SHARE_pkg_ff:
-  package emptym [interface]
+  package [interface]
     [interface #val #[shares]: ('word × 'word) × 'set 'nat → 'seq 'word ] :=
-  [package
+  [package emptym ;
     #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'nat): 'seq 'word {
       if size (domm U) >= 2 then ret emptym
       else
@@ -204,11 +204,7 @@ Definition SHARE_pkg_ff:
     }
   ].
 
-Definition mkpair {Lt Lf E}
-  (t: package Lt [interface] E) (f: package Lf [interface] E):
-  loc_GamePair E := fun b => if b then {locpackage t} else {locpackage f}.
-
-Definition SHARE := mkpair SHARE_pkg_tt SHARE_pkg_ff.
+Definition SHARE b := if b then SHARE_pkg_tt else SHARE_pkg_ff.
 
 (******************************************************************************)
 (************Proof that the games are equivalent.******************************)

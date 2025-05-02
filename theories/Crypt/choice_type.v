@@ -109,7 +109,7 @@ Section Cucumber.
      and unpickle respectively.
    *)
 
-  #[program] Fixpoint cucumber' {U : choice_type} : chElement_ordType U → nat :=
+  Fixpoint cucumber' {U : choice_type} : chElement_ordType U → nat :=
     match U with
     | chUnit => pickle
     | chNat => pickle
@@ -129,7 +129,7 @@ Section Cucumber.
       end
     end.
 
-  #[program] Fixpoint cucumber {U : choice_type} : U → nat :=
+  Fixpoint cucumber {U : choice_type} : U → nat :=
     match U with
     | chUnit => pickle
     | chNat => pickle
@@ -159,7 +159,7 @@ Section Cucumber.
   Qed.
 
 
-  #[program] Fixpoint uncucumber'' {U : choice_type}
+  Fixpoint uncucumber'' {U : choice_type}
     : nat → chElement_ordType U :=
     match U with
     | chUnit => λ x, helper tt x
@@ -182,7 +182,7 @@ Section Cucumber.
         if b then inl (uncucumber'' n) else inr (uncucumber'' n)
     end.
 
-  #[program] Fixpoint uncucumber' {U : choice_type} : nat → U :=
+  Fixpoint uncucumber' {U : choice_type} : nat → U :=
     match U with
     | chUnit => λ x, helper tt x
     | chNat => λ x, helper 0 x

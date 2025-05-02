@@ -156,11 +156,10 @@ Module SigmaProtocol (π : SigmaProtocolParams)
   #[local] Open Scope package_scope.
 
   Definition SHVZK_real:
-    package Sigma_locs
-      [interface]
+    package [interface]
       [interface #val #[ TRANSCRIPT ] : chInput → chTranscript]
     :=
-    [package
+    [package Sigma_locs ;
       #def #[ TRANSCRIPT ] (hwe : chInput) : chTranscript
       {
         let '(h,w,e) := hwe in
@@ -172,11 +171,10 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     ].
 
   Definition SHVZK_ideal:
-    package Simulator_locs
-      [interface]
+    package [interface]
       [interface #val #[ TRANSCRIPT ] : chInput → chTranscript]
     :=
-    [package
+    [package Simulator_locs ;
       #def #[ TRANSCRIPT ] (hwe : chInput) : chTranscript
       {
         let '(h, w, e) := hwe in
@@ -190,11 +188,10 @@ Module SigmaProtocol (π : SigmaProtocolParams)
   Definition ɛ_SHVZK A := AdvantageE SHVZK_real SHVZK_ideal A.
 
   Definition Special_Soundness_f :
-    package emptym
-      [interface]
+    package [interface]
       [interface #val #[ SOUNDNESS ] : chSoundness → 'bool ]
     :=
-    [package
+    [package emptym ;
       #def #[ SOUNDNESS ] (t : chSoundness) : 'bool
       {
         let '(h, (a, ((e, z), (e', z')))) := t in
@@ -210,11 +207,10 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     ].
 
   Definition Special_Soundness_t :
-    package emptym
-      [interface]
+    package [interface]
       [interface #val #[ SOUNDNESS ] : chSoundness → 'bool ]
     :=
-    [package
+    [package emptym ;
       #def #[ SOUNDNESS ] (t : chSoundness) : 'bool
       {
         let '(h, (a, ((e, z), (e', z')))) := t in
@@ -255,14 +251,13 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Notation " 'chKeys' " := (chProd choiceStatement choiceWitness) (in custom pack_type at level 2).
 
     Definition KEY:
-      package KEY_locs
-        [interface]
+      package [interface]
         [interface
            #val #[ INIT ] : 'unit → 'unit ;
            #val #[ GET ] : 'unit → chStatement
         ]
       :=
-      [package
+      [package KEY_locs ;
          #def #[ INIT ] (_ : 'unit) : 'unit
          {
            b ← get setup_loc ;;
@@ -301,7 +296,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Context (compatComSim : fcompat Com_locs Simulator_locs).
 
     Definition Sigma_to_Com :
-      package Sigma_to_Com_locs
+      package
         [interface
           #val #[ INIT ] : 'unit → 'unit ;
           #val #[ GET ] : 'unit → chStatement
@@ -311,7 +306,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
           #val #[ OPEN ] : 'unit → chOpen ;
           #val #[ VER ] : chTranscript → 'bool
         ] :=
-      [package
+      [package Sigma_to_Com_locs ;
         #def #[ COM ] (e : chChallenge) : chMessage
         {
           #import {sig #[ INIT ] : 'unit → 'unit } as key_gen_init ;;
@@ -342,7 +337,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       ].
 
     Definition Sigma_to_Com_Aux:
-      package (unionm [fmap setup_loc] Sigma_to_Com_locs)
+      package
         [interface
           #val #[ TRANSCRIPT ] : chInput → chTranscript
         ]
@@ -351,7 +346,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
           #val #[ OPEN ] : 'unit → chOpen ;
           #val #[ VER ] : chTranscript → 'bool
         ] :=
-      [package
+      [package unionm [fmap setup_loc] Sigma_to_Com_locs ;
         #def #[ COM ] (e : chChallenge) : chMessage
         {
           #import {sig #[ TRANSCRIPT ] : chInput → chTranscript } as RUN ;;
@@ -390,7 +385,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
     (* Commitment to input value*)
     Definition Hiding_real:
-      package emptym
+      package
         [interface
           #val #[ COM ] : chChallenge → chMessage ;
           #val #[ OPEN ] : 'unit → chOpen ;
@@ -398,7 +393,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         ]
         Hiding_E
       :=
-      [package
+      [package emptym ;
         #def #[ HIDING ] (ms : chHiding) : chMessage
         {
           #import {sig #[ COM ] : chChallenge → chMessage } as com ;;
@@ -415,7 +410,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
 
     (* Commitment to random value *)
     Definition Hiding_ideal :
-      package emptym
+      package
         [interface
           #val #[ COM ] : chChallenge → chMessage ;
           #val #[ OPEN ] : 'unit → chOpen ;
@@ -423,7 +418,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         ]
         Hiding_E
       :=
-      [package
+      [package emptym ;
         #def #[ HIDING ] (_ : chHiding) : chMessage
         {
           #import {sig #[ COM ] : chChallenge → chMessage } as com ;;
@@ -666,7 +661,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Qed.
 
     Definition Com_Binding:
-      package emptym
+      package
         [interface
           #val #[ COM ] : chChallenge → chMessage ;
           #val #[ OPEN ] : 'unit → chOpen ;
@@ -674,7 +669,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         ]
         [interface #val #[ SOUNDNESS ] : chSoundness → 'bool ]
       :=
-      [package
+      [package emptym ;
         #def #[ SOUNDNESS ] (t : chSoundness) : 'bool
         {
           #import {sig #[ VER ] : chTranscript → 'bool } as Ver ;;
@@ -756,7 +751,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       : typeclass_instances ssprove_valid_db.
 
     Definition Fiat_Shamir :
-      package Sigma_locs
+      package
         [interface
           #val #[ INIT ] : 'unit → 'unit ;
           #val #[ QUERY ] : 'query → 'random
@@ -766,7 +761,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
           #val #[ RUN ] : chRelation → chTranscript
         ]
       :=
-      [package
+      [package Sigma_locs ;
         #def #[ VERIFY ] (t : chTranscript) : 'bool
         {
           #import {sig #[ QUERY ] : 'query → 'random } as RO_query ;;
@@ -789,7 +784,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       ].
 
     Definition Fiat_Shamir_SIM :
-      package Sim_locs
+      package
         [interface
           #val #[ QUERY ] : 'query → 'random
         ]
@@ -798,7 +793,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
           #val #[ RUN ] : chRelation → chTranscript
         ]
       :=
-      [package
+      [package Sim_locs ;
         #def #[ VERIFY ] (t : chTranscript) : 'bool
         {
           #import {sig #[ QUERY ] : 'query → 'random } as RO_query ;;
@@ -816,14 +811,14 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       ].
 
     Definition RUN_interactive :
-      package Sigma_locs
+      package
         [interface]
         [interface
           #val #[ VERIFY ] : chTranscript → 'bool ;
           #val #[ RUN ] : chRelation → chTranscript
         ]
       :=
-      [package
+      [package Sigma_locs ;
         #def #[ VERIFY ] (t : chTranscript) : 'bool
         {
           let '(h,a,e,z) := t in
@@ -841,11 +836,11 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       ].
 
     Definition SHVZK_real_aux :
-      package fset0
+      package
         [interface #val #[ TRANSCRIPT ] : chInput → chTranscript ]
         [interface #val #[ RUN ] : chRelation → chTranscript ]
       :=
-      [package
+      [package emptym ;
         #def #[ RUN ] (hw : chRelation) : chTranscript
         {
           #import {sig #[ TRANSCRIPT ] : chInput → chTranscript } as SHVZK ;;
