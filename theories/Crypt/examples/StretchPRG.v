@@ -49,14 +49,10 @@ Context (PRG: Word -> Word * Word).
 
 Definition query: nat := 0.
 
-Definition mkpair {Lt Lf E}
-  (t: package Lt [interface] E) (f: package Lf [interface] E):
-  loc_GamePair E := fun b => if b then {locpackage t} else {locpackage f}.
-
 Definition GEN_pkg_tt:
-  package emptym [interface]
+  package [interface]
     [interface #val #[query]: 'unit → 'word × 'word ] :=
-  [package
+  [package emptym ;
     #def #[query] (_: 'unit): 'word × 'word {
       s <$ uniform Word_N ;;
       ret (PRG s)
@@ -64,9 +60,9 @@ Definition GEN_pkg_tt:
   ].
 
 Definition GEN_pkg_ff:
-  package emptym [interface]
+  package [interface]
     [interface #val #[query]: 'unit → 'word × 'word ] :=
-  [package
+  [package emptym ;
     #def #[query] (_: 'unit): 'word × 'word {
       x <$ uniform Word_N ;;
       y <$ uniform Word_N ;;
@@ -74,12 +70,12 @@ Definition GEN_pkg_ff:
     }
   ].
 
-Definition GEN := mkpair GEN_pkg_tt GEN_pkg_ff.
+Definition GEN b := if b then GEN_pkg_tt else GEN_pkg_ff.
 
 Definition GEN_STRETCH_pkg_tt:
-  package emptym [interface]
+  package [interface]
     [interface #val #[query]: 'unit → 'word × 'word × 'word ] :=
-  [package
+  [package emptym ;
     #def #[query] (_: 'unit): 'word × 'word × 'word {
       s <$ uniform Word_N ;;
       let (x, y) := PRG s in
@@ -88,9 +84,9 @@ Definition GEN_STRETCH_pkg_tt:
   ].
 
 Definition GEN_STRETCH_pkg_ff:
-  package emptym [interface]
+  package [interface]
     [interface #val #[query]: 'unit → 'word × 'word × 'word ] :=
-  [package
+  [package emptym ;
     #def #[query] (_: 'unit): 'word × 'word × 'word {
       x <$ uniform Word_N ;;
       u <$ uniform Word_N ;;
@@ -99,13 +95,13 @@ Definition GEN_STRETCH_pkg_ff:
     }
   ].
 
-Definition GEN_STRETCH := mkpair GEN_STRETCH_pkg_tt GEN_STRETCH_pkg_ff.
+Definition GEN_STRETCH b := if b then GEN_STRETCH_pkg_tt else GEN_STRETCH_pkg_ff.
 
 Definition GEN_STRETCH_HYB_pkg_1:
-  package emptym
+  package
     [interface #val #[query]: 'unit → 'word × 'word ]
     [interface #val #[query]: 'unit → 'word × 'word × 'word ] :=
-  [package
+  [package emptym ;
     #def #[query] (_: 'unit): 'word × 'word × 'word {
       #import {sig #[query]: 'unit → 'word × 'word } as query ;;
       '(x, y) ← query tt ;;
@@ -114,10 +110,10 @@ Definition GEN_STRETCH_HYB_pkg_1:
   ].
 
 Definition GEN_STRETCH_HYB_pkg_2:
-  package emptym
+  package
     [interface #val #[query]: 'unit → 'word × 'word ]
     [interface #val #[query]: 'unit → 'word × 'word × 'word ] :=
-  [package
+  [package emptym ;
     #def #[query] (_: 'unit): 'word × 'word × 'word {
       #import {sig #[query]: 'unit → 'word × 'word } as query ;;
       x <$ uniform Word_N ;;

@@ -189,9 +189,9 @@ Import MyParam MyAlg ElGamal_Scheme.
 Definition DH_loc := [fmap pk_loc ; sk_loc].
 
 Definition DH_real :
-  package DH_loc [interface]
+  package [interface]
     [interface #val #[query_id] : 'unit → 'pubkey × 'cipher ] :=
-    [package
+    [package DH_loc ;
       #def #[query_id] (_ : 'unit) : 'pubkey × 'cipher
       {
         a ← sample uniform i_sk ;;
@@ -205,9 +205,9 @@ Definition DH_real :
     ].
 
 Definition DH_rnd :
-  package DH_loc [interface]
+  package [interface]
     [interface #val #[query_id] : 'unit → 'pubkey × 'cipher ] :=
-    [package
+    [package DH_loc ;
       #def #[query_id] (_ : 'unit) : 'pubkey × 'cipher
       {
         a ← sample uniform i_sk ;;
@@ -223,14 +223,14 @@ Definition DH_rnd :
     ].
 
 Definition Aux :
-  package ([fmap counter_loc ; pk_loc ])
+  package
     [interface #val #[query_id] : 'unit → 'pubkey × 'cipher]
     [interface
       #val #[getpk_id] : 'unit → 'pubkey ;
       #val #[challenge_id'] : 'plain → 'cipher
     ]
   :=
-  [package
+  [package [fmap counter_loc ; pk_loc ] ;
     #def #[getpk_id] (_ : 'unit) : 'pubkey
     {
       pk ← get pk_loc ;;

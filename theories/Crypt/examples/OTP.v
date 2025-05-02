@@ -298,10 +298,10 @@ Section OTP_example.
   (* This assumption is stronger than usual crypto definitions. *)
   (* We need control over the key to apply coupling. *)
   Definition IND_CPA_real :
-    package IND_CPA_location
+    package
       [interface]
       [interface #val #[i1] : 'word → 'word ] :=
-    [package
+    [package IND_CPA_location ;
         #def #[i1] (m : 'word) : 'word
         {
           k_val ← sample uniform i_key ;;
@@ -311,10 +311,10 @@ Section OTP_example.
     ].
 
   Definition IND_CPA_ideal :
-    package IND_CPA_location
+    package
       [interface ]
       [interface #val #[i1] : 'word → 'word ] :=
-    [package
+    [package IND_CPA_location ;
       #def #[i1] (m : 'word) : 'word
       {
         m'    ← sample uniform i_words ;;
@@ -324,8 +324,8 @@ Section OTP_example.
       }
     ].
 
-  Definition IND_CPA : loc_GamePair [interface #val #[i1] : 'word → 'word ] :=
-    λ b, if b then {locpackage IND_CPA_real } else {locpackage IND_CPA_ideal }.
+  Definition IND_CPA b : game [interface #val #[i1] : 'word → 'word ] :=
+    if b then IND_CPA_real else IND_CPA_ideal.
 
   #[local] Open Scope ring_scope.
 

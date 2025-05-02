@@ -606,42 +606,19 @@ Class ValidPackage (L : Locations) (I E : Interface) p :=
   is_valid_package : valid_package L I E p.
 
 (* Packages *)
-Record package L I E := mkpackage {
-  pack : raw_package ;
-  pack_valid : ValidPackage L I E pack
-}.
-
-Arguments mkpackage [_ _ _] _ _.
-Arguments pack [_ _ _] _.
-Arguments pack_valid [_ _ _] _.
-
-(* Packages coming with their set of locations *)
-Record loc_package I E := mkloc_package {
+Record package I E := mkpackage {
   locs : Locations ;
-  locs_pack : package locs I E
+  pack : raw_package ;
+  pack_valid : ValidPackage locs I E pack
 }.
 
-Arguments mkloc_package [_ _] _ _.
+Arguments mkpackage [_ _] _ _ _.
 Arguments locs [_ _] _.
-Arguments locs_pack [_ _] _.
-
-Coercion locs_pack : loc_package >-> package.
-
-Lemma loc_package_ext :
-  ∀ {I E} (p1 p2 : loc_package I E),
-    p1.(locs) = p2.(locs) →
-    p1.(locs_pack).(pack) =1 p2.(locs_pack).(pack) →
-    p1 = p2.
-Proof.
-  intros I E p1 p2 e1 e2.
-  destruct p1 as [l1 [p1 h1]], p2 as [l2 [p2 h2]].
-  apply eq_fmap in e2.
-  cbn in *. subst.
-  f_equal. f_equal. apply proof_irrelevance.
-Qed.
+Arguments pack [_ _] _.
+Arguments pack_valid [_ _] _.
 
 Notation "{ 'package' p }" :=
-  (mkpackage p _)
+  (mkpackage _ p _)
   (format "{ package  p  }") : package_scope.
 
 Notation "{ 'package' p '#with' h }" :=
@@ -653,14 +630,6 @@ Coercion pack : package >-> raw_package.
 #[export] Hint Extern 1 (ValidPackage ?L ?I ?E (?p.(pack))) =>
   eapply p.(pack_valid)
   : typeclass_instances ssprove_valid_db.
-
-Notation "{ 'locpackage' p }" :=
-  (mkloc_package _ (mkpackage p _))
-  (format "{ locpackage  p  }") : package_scope.
-
-Notation "{ 'locpackage' p '#with' h }" :=
-  (mkloc_package _ (mkpackage p h))
-  (only parsing) : package_scope.
 
 (* Some validity lemmata *)
 
@@ -721,13 +690,14 @@ Proof.
 Qed.
 
 Lemma package_ext :
-  ∀ {L I E} (p1 p2 : package L I E),
+  ∀ {I E} (p1 p2 : package I E),
+    p1.(locs) =1 p2.(locs) →
     p1.(pack) =1 p2.(pack) →
     p1 = p2.
 Proof.
-  intros L I E p1 p2 e.
+  intros I E p1 p2 e e'.
   destruct p1 as [p1 h1], p2 as [p2 h2].
-  apply eq_fmap in e.
+  apply eq_fmap in e, e'.
   cbn in *. subst.
   f_equal. apply proof_irrelevance.
 Qed.
@@ -736,7 +706,7 @@ Qed.
 
 Lemma mkpackage_rewrite :
   ∀ {L I E T} {x y} (p : T → _) h (e : x = y),
-    @mkpackage L I E (p x) h = mkpackage (p y) (sig_rewrite_aux p h e).
+    @mkpackage I E L (p x) h = mkpackage L (p y) (sig_rewrite_aux p h e).
 Proof.
   intros L I E T x y p h e. subst. reflexivity.
 Qed.

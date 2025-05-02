@@ -74,10 +74,6 @@ Definition gettag: nat := 5.
 Definition checktag: nat := 6.
 Definition guess: nat := 7.
 
-Definition mkpair {Lt Lf E}
-  (t: package Lt [interface] E) (f: package Lf [interface] E):
-  loc_GamePair E := fun b => if b then {locpackage t} else {locpackage f}.
-
 Context (PRF: Word -> Word -> Word).
 
 Definition EVAL_locs_tt := [fmap k_loc].
@@ -111,10 +107,10 @@ Hint Extern 1 (ValidCode ?L ?I kgen) =>
   : typeclass_instances ssprove_valid_db.
 
 Definition EVAL_pkg_tt:
-  package EVAL_locs_tt
+  package
     [interface]
     [interface #val #[lookup]: 'word → 'word ] :=
-  [package
+  [package EVAL_locs_tt ;
     #def #[lookup] (m: 'word): 'word {
       k ← kgen ;;
       ret (PRF k m)
@@ -122,10 +118,10 @@ Definition EVAL_pkg_tt:
   ].
 
 Definition EVAL_pkg_ff:
-  package EVAL_locs_ff
+  package
     [interface]
     [interface #val #[lookup]: 'word → 'word ] :=
-  [package
+  [package EVAL_locs_ff ;
     #def #[lookup] (m: 'word): 'word {
       T ← get T_loc ;;
       match getm T m with
@@ -138,17 +134,17 @@ Definition EVAL_pkg_ff:
     }
   ].
 
-Definition EVAL := mkpair EVAL_pkg_tt EVAL_pkg_ff.
+Definition EVAL b := if b then EVAL_pkg_tt else EVAL_pkg_ff.
 
 Definition GUESS_locs := [fmap T_loc].
 
 Definition GUESS_pkg_tt:
-  package GUESS_locs
+  package
     [interface]
     [interface
       #val #[lookup]: 'word → 'word ;
       #val #[guess]: 'word × 'word → 'bool ] :=
-  [package
+  [package GUESS_locs ;
     #def #[lookup] (m: 'word): 'word {
       T ← get T_loc ;;
       match getm T m with
@@ -173,12 +169,12 @@ Definition GUESS_pkg_tt:
   ].
 
 Definition GUESS_pkg_ff:
-  package GUESS_locs
+  package
     [interface]
     [interface
       #val #[lookup]: 'word → 'word ;
       #val #[guess]: 'word × 'word → 'bool ] :=
-  [package
+  [package GUESS_locs ;
     #def #[lookup] (m: 'word): 'word {
       T ← get T_loc ;;
       match getm T m with
@@ -195,18 +191,18 @@ Definition GUESS_pkg_ff:
     }
   ].
 
-Definition GUESS := mkpair GUESS_pkg_tt GUESS_pkg_ff.
+Definition GUESS b := if b then GUESS_pkg_tt else GUESS_pkg_ff.
 
 Definition TAG_locs_tt := [fmap k_loc].
 Definition TAG_locs_ff := [fmap k_loc; S_loc].
 
 Definition TAG_pkg_tt:
-  package TAG_locs_tt
+  package
     [interface]
     [interface
       #val #[gettag]: 'word → 'word ;
       #val #[checktag]: 'word × 'word → 'bool ] :=
-  [package
+  [package TAG_locs_tt ;
     #def #[gettag] (m: 'word): 'word {
       k ← kgen ;;
       ret (PRF k m)
@@ -218,12 +214,12 @@ Definition TAG_pkg_tt:
   ].
 
 Definition TAG_pkg_ff:
-  package TAG_locs_ff
+  package
     [interface]
     [interface
       #val #[gettag]: 'word → 'word ;
       #val #[checktag]: 'word × 'word → 'bool ] :=
-  [package
+  [package TAG_locs_ff ;
     #def #[gettag] (m: 'word): 'word {
       S ← get S_loc ;;
       k ← kgen ;;
@@ -237,17 +233,17 @@ Definition TAG_pkg_ff:
     }
   ].
 
-Definition TAG := mkpair TAG_pkg_tt TAG_pkg_ff.
+Definition TAG b := if b then TAG_pkg_tt else TAG_pkg_ff.
 
 Definition TAG_EVAL_locs_ff := [fmap S_loc].
 
 Definition TAG_EVAL_pkg_tt:
-  package emptym
+  package
     [interface #val #[lookup]: 'word → 'word ]
     [interface
       #val #[gettag]: 'word → 'word ;
       #val #[checktag]: 'word × 'word → 'bool ] :=
-  [package
+  [package emptym ;
     #def #[gettag] (m: 'word): 'word {
       #import {sig #[lookup]: 'word → 'word } as lookup ;;
       t ← lookup m ;;
@@ -261,12 +257,12 @@ Definition TAG_EVAL_pkg_tt:
   ].
 
 Definition TAG_EVAL_pkg_ff:
-  package TAG_EVAL_locs_ff
+  package
     [interface #val #[lookup]: 'word → 'word]
     [interface
       #val #[gettag]: 'word → 'word ;
       #val #[checktag]: 'word × 'word → 'bool ] :=
-  [package
+  [package TAG_EVAL_locs_ff ;
     #def #[gettag] (m: 'word): 'word {
       #import {sig #[lookup]: 'word → 'word } as lookup ;;
       S ← get S_loc ;;
@@ -283,14 +279,14 @@ Definition TAG_EVAL_pkg_ff:
 Definition TAG_GUESS_locs := [fmap S_loc ].
 
 Definition TAG_GUESS_pkg:
-  package TAG_GUESS_locs
+  package
     [interface
       #val #[lookup]: 'word → 'word ;
       #val #[guess]: 'word × 'word → 'bool ]
     [interface
       #val #[gettag]: 'word → 'word ;
       #val #[checktag]: 'word × 'word → 'bool ] :=
-  [package
+  [package TAG_GUESS_locs ;
     #def #[gettag] (m: 'word): 'word {
       #import {sig #[lookup]: 'word → 'word } as lookup ;;
       S ← get S_loc ;;
