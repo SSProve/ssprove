@@ -15,8 +15,9 @@
 (* ** Imports and settings *)
 
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra.
-From mathcomp Require Import word_ssrZ word.
+Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
+From mathcomp Require Import all_ssreflect all_algebra word_ssrZ word.
+Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From SSProve.Crypt Require Import jasmin_util jasmin_wsize.
 Require Import (* strings *) ZArith (* utils *).
 (* Import Utf8. *)

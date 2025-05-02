@@ -161,18 +161,18 @@ Module PackageNotation.
   Notation " x ∐ y " := (chSum x y) (at level 80) : package_scope.
 
   Notation "[ 'interface' ]" :=
-    (fset [::])
+    (mkfmap [::])
     (at level 0, only parsing)
     : package_scope.
 
   Notation "[ 'interface' x1 ]" :=
-    (fset (x1 :: [::]))
+    (mkfmap [:: x1 ])
     (at level 0, x1 custom interface at level 2,
     format "[ interface  x1  ]")
     : package_scope.
 
   Notation "[ 'interface' x1 ; x2 ; .. ; xn ]" :=
-    (fset (x1 :: x2 :: .. [:: xn] ..))
+    (mkfmap (x1 :: x2 :: .. [:: xn] ..))
     (at level 0,
     x1 custom interface at level 2,
     x2 custom interface at level 2,
@@ -213,7 +213,7 @@ Module PackageNotation.
     : package_scope.
 
   Notation " '#def' #[ f ] ( ' p : A ) : B { e }" :=
-    ((f, mkdef A B (λ x, let p := x in e)))
+    ((f, mkdef A B (λ p, e)))
     (in custom package at level 0,
     f constr, e constr, p pattern, A custom pack_type, B custom pack_type,
     format "#def  #[ f ]  ( ' p : A )  :  B  { '[' '/'  e  '/' ']' }")
