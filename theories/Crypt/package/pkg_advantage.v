@@ -9,25 +9,18 @@ From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr seq all_algebra fintype realsum.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
-From SSProve.Mon Require Import SPropBase.
-From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
-  RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
-  StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
-  pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_lookup fmap_extra.
+From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr
+  StateTransfThetaDens choice_type pkg_core_definition pkg_notation
+  pkg_tactics pkg_composition pkg_heap pkg_semantics fmap_extra.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
-
-(* Must come after importing Equations.Equations, who knows why. *)
-From SSProve.Crypt Require Import FreeProbProg.
 
 Import Num.Theory.
 
 Set Equations With UIP.
 Set Equations Transparent.
 
-Import SPropNotations.
 Import PackageNotation.
-Import RSemanticNotation.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
@@ -78,7 +71,7 @@ Definition Pr_raw_func_code {A B} (p : A → raw_code B) :
 
 Definition Pr_op (p : raw_package) (o : opsig) (x : src o) :
   heap_choiceType → SDistr (F_choice_prod_obj ⟨ tgt o , heap_choiceType ⟩) :=
-  Pr_code (get_op_default p o x).
+  Pr_code (resolve p o x).
 
 Arguments SDistr_bind {_ _}.
 
@@ -86,7 +79,7 @@ Definition Pr (p : raw_package) :
   SDistr (bool:choiceType) :=
   SDistr_bind
     (λ '(b, _), SDistr_unit _ b)
-    (Pr_op p RUN Datatypes.tt empty_heap).
+    (Pr_op p RUN tt empty_heap).
 
 Definition loc_GamePair (Game_export : Interface) :=
   bool → Game_Type Game_export.
@@ -207,7 +200,7 @@ Definition turn_adversary_weak  {Game_export : Interface}
   (A : Adversary4Game Game_export) : Adversary4Game_weak Game_export.
 Proof.
   unfold Adversary4Game_weak.
-  pose (get_op A RUN RUN_in_A_export Datatypes.tt) as run.
+  pose (get_op A RUN RUN_in_A_export tt) as run.
   destruct run as [run valid_run].
   cbn in *.
   pose (state_pass run) as raw_run_st.

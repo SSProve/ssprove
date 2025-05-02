@@ -174,9 +174,6 @@ Section PRF_example.
   Definition table_location : Location :=
     (7, chMap 'nat ('fin (2^n)%N)).
 
-  Definition rel_loc : {fset Location} :=
-    fset [:: key_location ; table_location ].
-
   Context (PRF : Words → Key → Key).
 
   Notation " 'word " := ('fin (2^n)%N) (in custom pack_type at level 2).

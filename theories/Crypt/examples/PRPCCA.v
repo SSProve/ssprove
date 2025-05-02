@@ -56,8 +56,6 @@ Definition chSet t := chMap t 'unit.
 Notation " 'set t " := (chSet t) (in custom pack_type at level 2).
 Notation " 'set t " := (chSet t) (at level 2): package_scope.
 
-Definition tt := Datatypes.tt.
-
 Definition fset_to_chset {T: ordType} (s: {fset T}): {fmap T -> 'unit} :=
   mkfmap [seq (i, tt) | i <- s].
 
@@ -771,7 +769,6 @@ Proof.
   simplify_eq_rel m.
   all: simplify_linking.
   all: ssprove_code_simpl.
-  all: rewrite cast_fun_K.
   all: ssprove_code_simpl.
   all: ssprove_code_simpl_more.
   all: apply: r_get_remember_rhs => R.
@@ -825,7 +822,6 @@ Proof.
   }
   simplify_eq_rel m.
   all: ssprove_code_simpl.
-  1: rewrite cast_fun_K.
   all: ssprove_code_simpl.
   all: apply: r_get_vs_get_remember => R.
   all: ssprove_code_simpl_more.
@@ -1093,7 +1089,6 @@ Proof.
   all: apply rpost_weaken_rule with eq;
     last by move=> [? ?] [? ?] [].
   2: ssprove_code_simpl.
-  2: rewrite cast_fun_K.
   2: ssprove_code_simpl.
   2: ssprove_code_simpl_more.
   2: ssprove_sync_eq=> S.

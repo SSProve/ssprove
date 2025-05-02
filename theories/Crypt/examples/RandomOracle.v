@@ -62,7 +62,7 @@ Module RO (π : ROParams).
       #def #[ INIT ] (_ : 'unit) : 'unit
       {
         #put queries_loc := emptym ;;
-        ret Datatypes.tt
+        ret tt
       } ;
       #def #[ QUERY ] (q : 'query) : 'random
       {

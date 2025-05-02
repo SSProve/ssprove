@@ -8,21 +8,17 @@
  *)
 
 From Coq Require Import Utf8.
-From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssreflect eqtype choice seq ssrfun ssrbool.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
-From SSProve.Mon Require Import SPropBase.
-From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd RulesStateProb StateTransformingLaxMorph
-     choice_type Casts fmap_extra.
+From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd
+  RulesStateProb StateTransformingLaxMorph choice_type Casts fmap_extra.
 
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
 Set Equations With UIP.
-
-Import SPropNotations.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
@@ -267,7 +263,7 @@ Section FreeModule.
     match c in command A return (A → raw_code B) → raw_code B with
     | cmd_op o x => opr o x
     | cmd_get ℓ => getr ℓ
-    | cmd_put ℓ v => λ k, putr ℓ v (k Datatypes.tt)
+    | cmd_put ℓ v => λ k, putr ℓ v (k tt)
     | cmd_sample op => sampler op
     end k.
 
@@ -385,8 +381,6 @@ Section FreeModule.
   Defined.
 
   Open Scope package_scope.
-
-  Import SPropAxioms. Import FunctionalExtensionality.
 
   (* TODO: NEEDED? *)
   (* Program Definition rFree : ord_relativeMonad choice_incl :=

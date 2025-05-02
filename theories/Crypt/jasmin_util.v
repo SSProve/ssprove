@@ -12,11 +12,12 @@
 
 (* ** Imports and settings *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect.
+Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
+From mathcomp Require Import all_ssreflect word_ssrZ.
+Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From Coq.Unicode Require Import Utf8.
 From Coq Require Import ZArith Zwf Setoid Morphisms CMorphisms CRelationClasses Psatz.
 (* Require Import xseq oseq. *)
-From mathcomp Require Import word_ssrZ.
 
 
 Set Implicit Arguments.

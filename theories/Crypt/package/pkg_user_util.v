@@ -76,7 +76,7 @@ From mathcomp Require Import all_ssreflect all_algebra reals distr
 Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From SSProve.Crypt Require Import Axioms Prelude pkg_core_definition pkg_composition
-  pkg_notation RulesStateProb pkg_advantage pkg_lookup pkg_semantics
+  pkg_notation RulesStateProb pkg_advantage pkg_semantics
   pkg_heap pkg_invariants pkg_distr pkg_rhl pkg_tactics choice_type fmap_extra.
 From Coq Require Import Utf8 FunctionalExtensionality
   Setoids.Setoid Classes.Morphisms.
@@ -100,37 +100,8 @@ Set Primitive Projections.
 
 Open Scope pack.
 
-Ltac lookup_op_squeeze :=
-  let f := fresh "f" in
-  let e := fresh "e" in
-  destruct lookup_op as [f|] eqn:e ; [
-  | exfalso ;
-    simpl in e ;
-    repeat (destruct choice_type_eqP ; [| contradiction ]) ;
-    discriminate
-  ] ;
-  eapply lookup_op_spec in e ; simpl in e ;
-  repeat (
-    rewrite setmE in e ;
-    tryif (rewrite eq_refl in e)
-    then idtac
-    else lazymatch type of e with
-    | (if ?b then _ else _) = _ =>
-      change b with false in e ;
-      simpl in e
-    end
-  ) ;
-  noconf e.
-
-Ltac choice_type_eqP_handle :=
-  let e := fresh "e" in
-  destruct choice_type_eqP as [e|] ; [| contradiction ] ;
-  assert (e = erefl) by eapply uip ;
-  subst e.
-
-Ltac simplify_linking :=
-  repeat choice_type_eqP_handle ;
-  simpl.
+Ltac simplify_linking := simpl; repeat
+  (rewrite (resolve_set, resolve_link, coerce_kleisliE); simpl).
 
 Ltac simplify_eq_rel m :=
   let id := fresh "id" in
@@ -139,11 +110,8 @@ Ltac simplify_eq_rel m :=
   let has := fresh "has" in
   intros id So To m has ;
   fmap_invert has ;
-  rewrite ?get_op_default_link ;
-  (* First we need to squeeze the codes out of the packages *)
-  unfold get_op_default ;
-  repeat lookup_op_squeeze ;
-  simpl.
+  simplify_linking.
+
 
 Create HintDb ssprove_code_simpl.
 
@@ -269,7 +237,7 @@ Ltac ssprove_code_simpl :=
 Ltac cmd_bind_simpl_once :=
   try change (cmd_bind (cmd_sample ?op) ?k) with (sampler op k) ;
   try change (cmd_bind (cmd_get ?ℓ) ?k) with (getr ℓ k) ;
-  try change (cmd_bind (cmd_put ?ℓ ?v) ?k) with (#put ℓ := v ;; k Datatypes.tt).
+  try change (cmd_bind (cmd_put ?ℓ ?v) ?k) with (#put ℓ := v ;; k tt).
 
 Ltac cmd_bind_simpl :=
   repeat cmd_bind_simpl_once.

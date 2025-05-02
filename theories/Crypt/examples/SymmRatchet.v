@@ -66,7 +66,7 @@ Proof.
   by rewrite /Ord.lt /= ltn_neqAle Bool.andb_comm.
 Qed.
 
-Definition tt: 'unit := Datatypes.tt.
+Definition tt: 'unit := tt.
 
 Variable (n: nat).
 
@@ -356,7 +356,6 @@ Proof.
   apply rpost_weaken_rule with eq;
     last by move=> [? ?] [? ?] [].
   simplify_linking.
-  rewrite cast_fun_K.
   ssprove_code_simpl.
   ssprove_swap_lhs 0.
   ssprove_swap_rhs 0.

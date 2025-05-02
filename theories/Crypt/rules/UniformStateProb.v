@@ -404,7 +404,7 @@ Definition Assert {S : choiceType} (b : bool) : FrStP S chUnit.
 Proof.
   destruct b.
   - apply retrFree.
-    exact Datatypes.tt.
+    exact tt.
   - exact Fail.
 Defined.
 
@@ -425,7 +425,7 @@ Proof.
   simpl.
   destruct b, b'.
   all: simpl in *.
-  - exists (SDistr_unit _ ((Datatypes.tt, s1), (Datatypes.tt, s2))).
+  - exists (SDistr_unit _ ((tt, s1), (tt, s2))).
     split.
     + unfold coupling.
       split.
@@ -457,7 +457,7 @@ Proof.
 Qed.
 
 Theorem assert_rule_left { S1 S2 : choiceType }  (b : bool) :
-  ⊨ ⦃ fun (_ : S1 * S2) => b = true ⦄ (Assert b) ≈ (retF Datatypes.tt) ⦃ fun _ _ => b = true ⦄.
+  ⊨ ⦃ fun (_ : S1 * S2) => b = true ⦄ (Assert b) ≈ (retF tt) ⦃ fun _ _ => b = true ⦄.
 Proof.
   intros [s1 s2].
   hnf. intros post. hnf in *.
@@ -466,7 +466,7 @@ Proof.
   simpl.
   destruct b.
   all: simpl in *.
-  - exists (SDistr_unit _ ((Datatypes.tt, s1), (Datatypes.tt, s2))).
+  - exists (SDistr_unit _ ((tt, s1), (tt, s2))).
     split.
     + unfold coupling.
       split.
@@ -481,7 +481,7 @@ Proof.
 Qed.
 
 Theorem assert_rule_right { S1 S2 : choiceType }  (b : bool) :
-  ⊨ ⦃ fun (_ : S1 * S2) => b = true ⦄ (retF Datatypes.tt) ≈ (Assert b) ⦃ fun _ _ => b = true ⦄.
+  ⊨ ⦃ fun (_ : S1 * S2) => b = true ⦄ (retF tt) ≈ (Assert b) ⦃ fun _ _ => b = true ⦄.
 Proof.
   intros [s1 s2].
   hnf. intros post. hnf in *.
@@ -490,7 +490,7 @@ Proof.
   simpl.
   destruct b.
   all: simpl in *.
-  - exists (SDistr_unit _ ((Datatypes.tt, s1), (Datatypes.tt, s2))).
+  - exists (SDistr_unit _ ((tt, s1), (tt, s2))).
     split.
     + unfold coupling.
       split.

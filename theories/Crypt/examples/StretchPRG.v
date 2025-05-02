@@ -37,8 +37,6 @@ Import Order.POrderTheory.
 
 Section StretchPRG_example.
 
-Definition tt := Datatypes.tt.
-
 Variable (n: nat).
 
 Definition Word_N: nat := 2^n.

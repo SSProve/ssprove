@@ -233,13 +233,13 @@ Section KEMDEM.
         #assert (k == None) ;;
         k ← sample keyD ;;
         #put k_loc := Some k ;;
-        @ret 'unit Datatypes.tt
+        @ret 'unit tt
       } ;
       #def #[ SET ] (k : 'key) : 'unit {
         k' ← get k_loc ;;
         #assert (k' == None) ;;
         #put k_loc := Some k ;;
-        @ret 'unit Datatypes.tt
+        @ret 'unit tt
       } ;
       #def #[ GET ] (_ : 'unit) : 'key {
         k ← get k_loc ;;
@@ -308,7 +308,7 @@ Section KEMDEM.
         #assert (ek == None) ;;
         '(k, ek) ← η.(KEM_encap) pk ;;
         #put ek_loc := Some ek ;;
-        (if b then SET k else GEN Datatypes.tt) ;;
+        (if b then SET k else GEN tt) ;;
         ret ek
       } ;
       #def #[ DECAP ] (ek' : 'ekey) : 'key {
@@ -375,7 +375,7 @@ Section KEMDEM.
         #import {sig #[ GET ] : 'unit → 'key } as GET ;;
         c ← get c_loc ;;
         #assert (c == None) ;;
-        k ← GET Datatypes.tt ;;
+        k ← GET tt ;;
         let c := θ.(DEM_enc) k (if b then m else nullPlain) in
         #put c_loc := Some c ;;
         ret c
@@ -384,7 +384,7 @@ Section KEMDEM.
         #import {sig #[ GET ] : 'unit → 'key } as GET ;;
         c ← get c_loc ;;
         #assert (c != Some c') ;;
-        k ← GET Datatypes.tt ;;
+        k ← GET tt ;;
         ret (θ.(DEM_dec) k c')
       }
     ].
@@ -487,7 +487,7 @@ Section KEMDEM.
         #import {sig #[ KEMGEN ] : 'unit → 'pkey } as KEMGEN ;;
         pk ← get pk_loc ;;
         #assert (pk == None) ;;
-        KEMGEN Datatypes.tt
+        KEMGEN tt
       } ;
       #def #[ PKENC ] (m : 'plain) : 'ekey × 'cipher {
         #import {sig #[ ENCAP ] : 'unit → 'ekey } as ENCAP ;;
@@ -498,7 +498,7 @@ Section KEMDEM.
         #assert (ek == None) ;;
         c ← get c_loc ;;
         #assert (c ==  None) ;;
-        ek ← ENCAP Datatypes.tt ;;
+        ek ← ENCAP tt ;;
         #put ek_loc := Some ek ;;
         c ← ENC m ;;
         #put c_loc := Some c ;;

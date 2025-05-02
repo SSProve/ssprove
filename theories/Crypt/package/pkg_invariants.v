@@ -5,8 +5,6 @@
 
 
 From Coq Require Import Utf8.
-From SSProve.Relational Require Import OrderEnrichedCategory
-  OrderEnrichedRelativeMonadExamples.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr seq all_algebra fintype realsum.
@@ -15,31 +13,19 @@ Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From HB Require Import structures.
 
 From extructures Require Import ord fset fmap.
-From SSProve.Mon Require Import SPropBase.
-From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
-  RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
-  StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation fmap_extra
-  pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_lookup pkg_advantage.
+From SSProve.Crypt Require Import Prelude Axioms fmap_extra
+  choice_type pkg_core_definition pkg_heap.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
-
-(* Must come after importing Equations.Equations, who knows why. *)
-From SSProve.Crypt Require Import FreeProbProg.
 
 Import Num.Theory.
 
 Set Equations With UIP.
 Set Equations Transparent.
 
-Import SPropNotations.
-Import PackageNotation.
-Import RSemanticNotation.
-
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
-
-#[local] Open Scope rsemantic_scope.
 
 #[local] Open Scope fset.
 #[local] Open Scope fset_scope.
@@ -191,12 +177,12 @@ Proof.
     + rewrite h in nin0. discriminate.
     + rewrite h in nin1. discriminate.
   - intros h ℓ v n₀ n₁ ℓ' n.
-    destruct (ℓ' != ℓ) eqn:e.
+    destruct (ℓ'.1 != ℓ.1) eqn:e.
     + rewrite get_set_heap_neq. 2: auto.
       rewrite get_set_heap_neq. 2: auto.
       apply h. auto.
-    + move: e => /eqP e. subst.
-      rewrite !get_set_heap_eq. reflexivity.
+    + move: e => /eqP e.
+      rewrite /get_heap e 2!setmE eq_refl //=.
 Qed.
 
 Lemma INV'_heap_ignore :
@@ -217,12 +203,12 @@ Proof.
     rewrite unionmE in H''.
     destruct (L ℓ.1) eqn:E => //.
   - intros h ℓ v n₀ n₁ ℓ' n.
-    destruct (ℓ' != ℓ) eqn:e.
+    destruct (ℓ'.1 != ℓ.1) eqn:e.
     + rewrite get_set_heap_neq. 2: auto.
       rewrite get_set_heap_neq. 2: auto.
       apply h. auto.
     + move: e => /eqP e. subst.
-      rewrite !get_set_heap_eq. reflexivity.
+      rewrite /get_heap e 2!setmE eq_refl //=.
 Qed.
 
 Lemma Invariant_heap_ignore_pred :
@@ -270,12 +256,12 @@ Proof.
     apply hP.
     eauto.
   - intros h ℓ v nin0 nin1 ℓ' n.
-    destruct (ℓ' != ℓ) eqn:e.
+    destruct (ℓ'.1 != ℓ.1) eqn:e.
     + rewrite get_set_heap_neq. 2: auto.
       rewrite get_set_heap_neq. 2: auto.
       apply h. auto.
     + move: e => /eqP e. subst.
-      rewrite !get_set_heap_eq. reflexivity.
+      rewrite /get_heap e 2!setmE eq_refl //=.
 Qed.
 
 Lemma pInvariant_pheap_ignore :
@@ -337,10 +323,12 @@ Proof.
   intros L₀ L₁ ℓ ℓ' h hℓ hℓ' he. split.
   - intros s₀ s₁ l v hl₀ hl₁ ?.
     rewrite /couple_lhs !get_set_heap_neq //.
-    + apply /eqP => ?; subst. move: hl₀ => /dommPn hl₀.
-      destruct l. rewrite /fhas hl₀ // in hℓ'.
-    + apply /eqP => ?; subst. move: hl₀ => /dommPn hl₀.
-      destruct l. rewrite /fhas hl₀ // in hℓ.
+    + apply /eqP => e; subst. move: hl₀ => /dommPn hl₀.
+      destruct l, ℓ'; noconf e.
+      rewrite //= hl₀ // in hℓ'.
+    + apply /eqP => e; subst. move: hl₀ => /dommPn hl₀.
+      destruct l, ℓ; noconf e.
+      rewrite //= hl₀ // in hℓ.
   - simpl. auto.
 Qed.
 
@@ -363,10 +351,12 @@ Proof.
   intros L₀ L₁ ℓ ℓ' h hℓ hℓ' he. split.
   - intros s₀ s₁ l v hl₀ hl₁ ?.
     rewrite /couple_rhs !get_set_heap_neq //.
-    + apply /eqP => ?; subst. move: hl₁ => /dommPn hl₁.
-      destruct l. rewrite /fhas hl₁ // in hℓ'.
-    + apply /eqP => ?; subst. move: hl₁ => /dommPn hl₁.
-      destruct l. rewrite /fhas hl₁ // in hℓ.
+    + apply /eqP => e; subst. move: hl₁ => /dommPn hl₁.
+      destruct l, ℓ'; noconf e.
+      rewrite //= hl₁ // in hℓ'.
+    + apply /eqP => e; subst. move: hl₁ => /dommPn hl₁.
+      destruct l, ℓ; noconf e.
+      rewrite //= hl₁ // in hℓ.
   - simpl. auto.
 Qed.
 
@@ -391,12 +381,15 @@ Proof.
   intros L₀ L₁ ℓ₁ ℓ₂ ℓ₃ R h₁ h₂ h₃ he. split.
   - intros s₀ s₁ l v hl₀ hl₁ ?.
     rewrite /triple_rhs !get_set_heap_neq //.
-    + apply /eqP => ?; subst. move: hl₁ => /dommPn hl₁.
-      destruct l. rewrite /fhas hl₁ // in h₃.
-    + apply /eqP => ?; subst. move: hl₁ => /dommPn hl₁.
-      destruct l. rewrite /fhas hl₁ // in h₂.
-    + apply /eqP => ?; subst. move: hl₁ => /dommPn hl₁.
-      destruct l. rewrite /fhas hl₁ // in h₁.
+    + apply /eqP => e; subst. move: hl₁ => /dommPn hl₁.
+      destruct l, ℓ₃; noconf e.
+      rewrite //= hl₁ // in h₃.
+    + apply /eqP => e; subst. move: hl₁ => /dommPn hl₁.
+      destruct l, ℓ₂; noconf e.
+      rewrite //= hl₁ // in h₂.
+    + apply /eqP => e; subst. move: hl₁ => /dommPn hl₁.
+      destruct l, ℓ₁; noconf e.
+      rewrite //= hl₁ // in h₁.
   - simpl. auto.
 Qed.
 
@@ -507,12 +500,12 @@ Lemma put_pre_cond_heap_ignore :
     put_pre_cond ℓ v (heap_ignore L).
 Proof.
   intros ℓ v L s₀ s₁ h ℓ' hn.
-  destruct (ℓ' != ℓ) eqn:e.
+  destruct (ℓ'.1 != ℓ.1) eqn:e.
   - rewrite get_set_heap_neq. 2: auto.
     rewrite get_set_heap_neq. 2: auto.
     apply h. auto.
   - move: e => /eqP e. subst.
-    rewrite !get_set_heap_eq. reflexivity.
+    rewrite /get_heap e 2!setmE eq_refl //=.
 Qed.
 
 #[export] Hint Extern 10 (put_pre_cond _ _ (heap_ignore _)) =>
@@ -535,8 +528,8 @@ Qed.
 
 Lemma put_pre_cond_couple_lhs :
   ∀ ℓ v ℓ₀ ℓ₁ h,
-    ℓ₀ != ℓ →
-    ℓ₁ != ℓ →
+    ℓ₀.1 != ℓ.1 →
+    ℓ₁.1 != ℓ.1 →
     put_pre_cond ℓ v (couple_lhs ℓ₀ ℓ₁ h).
 Proof.
   intros ℓ v ℓ₀ ℓ₁ h n₀ n₁ s₀ s₁ hc.
@@ -550,8 +543,8 @@ Qed.
 
 Lemma put_pre_cond_couple_rhs :
   ∀ ℓ v ℓ₀ ℓ₁ h,
-    ℓ₀ != ℓ →
-    ℓ₁ != ℓ →
+    ℓ₀.1 != ℓ.1 →
+    ℓ₁.1 != ℓ.1 →
     put_pre_cond ℓ v (couple_rhs ℓ₀ ℓ₁ h).
 Proof.
   intros ℓ v ℓ₀ ℓ₁ h n₀ n₁ s₀ s₁ hc.
@@ -565,9 +558,9 @@ Qed.
 
 Lemma put_pre_cond_triple_rhs :
   ∀ ℓ v ℓ₁ ℓ₂ ℓ₃ h,
-    ℓ₁ != ℓ →
-    ℓ₂ != ℓ →
-    ℓ₃ != ℓ →
+    ℓ₁.1 != ℓ.1 →
+    ℓ₂.1 != ℓ.1 →
+    ℓ₃.1 != ℓ.1 →
     put_pre_cond ℓ v (triple_rhs ℓ₁ ℓ₂ ℓ₃ h).
 Proof.
   intros ℓ v ℓ₁ ℓ₂ ℓ₃ h n₁ n₂ n₃ s₀ s₁ hc.
@@ -938,7 +931,7 @@ Qed.
 
 Lemma put_pre_cond_rem_lhs :
   ∀ ℓ v ℓ' v',
-    ℓ' != ℓ →
+    ℓ'.1 != ℓ.1 →
     put_pre_cond ℓ v (rem_lhs ℓ' v').
 Proof.
   intros ℓ v ℓ' v' hn s₀ s₁ hc.
@@ -952,7 +945,7 @@ Qed.
 
 Lemma put_pre_cond_rem_rhs :
   ∀ ℓ v ℓ' v',
-    ℓ' != ℓ →
+    ℓ'.1 != ℓ.1 →
     put_pre_cond ℓ v (rem_rhs ℓ' v').
 Proof.
   intros ℓ v ℓ' v' hn s₀ s₁ hc.
@@ -1011,31 +1004,6 @@ Qed.
 Inductive heap_val :=
 | hpv_l (ℓ : Location) (v : ℓ)
 | hpv_r (ℓ : Location) (v : ℓ).
-
-Definition loc_val_pair (ℓ : Location) (v : ℓ) : ∑ ℓ : Location, ℓ :=
-  (ℓ ; v).
-
-Definition heap_val_eq : rel heap_val :=
-  λ u v,
-    match u, v with
-    | hpv_l ℓ v, hpv_l ℓ' v' => loc_val_pair ℓ v == (ℓ' ; v')
-    | hpv_r ℓ v, hpv_r ℓ' v' => loc_val_pair ℓ v == (ℓ' ; v')
-    | _, _ => false
-    end.
-
-Lemma heap_val_eqP : Equality.axiom heap_val_eq.
-Proof.
-  intros u v.
-  destruct u, v. all: simpl. 2,3: constructor. 2,3: discriminate.
-  all: unfold loc_val_pair.
-  all: destruct eq_op eqn:e.
-  all: move: e => /eqP e. all: noconf e.
-  all: constructor.
-  all: try reflexivity.
-  all: intro h. all: inversion h. all: contradiction.
-Qed.
-
-HB.instance Definition _ := hasDecEq.Build heap_val heap_val_eqP.
 
 Derive NoConfusion for heap_val.
 
@@ -1164,44 +1132,22 @@ Proof.
     split. all: split. all: auto.
 Qed.
 
-Definition cast_loc_val {ℓ ℓ' : Location} (e : ℓ = ℓ') (v : ℓ) : ℓ'.
-Proof.
-  subst. auto.
-Defined.
-
-Lemma cast_loc_val_K :
-  ∀ ℓ e v,
-    @cast_loc_val ℓ ℓ e v = v.
-Proof.
-  intros ℓ e v.
-  assert (e = erefl).
-  { apply eq_irrelevance. }
-  subst. reflexivity.
-Qed.
-
-Equations? lookup_hpv_l (ℓ : Location) (l : seq heap_val) : option ℓ :=
-  lookup_hpv_l ℓ (hpv_l ℓ' v' :: l) with inspect (ℓ == ℓ') := {
-  | @exist true e => Some (cast_loc_val _ v')
+(* MK: better to not use Equations here? *)
+Equations lookup_hpv_l (ℓ : Location) (l : seq heap_val) : option ℓ :=
+  lookup_hpv_l ℓ (hpv_l ℓ' v' :: l) with inspect (ℓ.1 == ℓ'.1) := {
+  | @exist true e => Some (coerce v')
   | @exist false e => lookup_hpv_l ℓ l
   } ;
   lookup_hpv_l ℓ (hpv_r _ _ :: l) := lookup_hpv_l ℓ l ;
   lookup_hpv_l ℓ [::] := None.
-Proof.
-  symmetry in e.
-  move: e => /eqP e. subst. reflexivity.
-Qed.
 
-Equations? lookup_hpv_r (ℓ : Location) (l : seq heap_val) : option ℓ :=
-  lookup_hpv_r ℓ (hpv_r ℓ' v' :: l) with inspect (ℓ == ℓ') := {
-  | @exist true e => Some (cast_loc_val _ v')
+Equations lookup_hpv_r (ℓ : Location) (l : seq heap_val) : option ℓ :=
+  lookup_hpv_r ℓ (hpv_r ℓ' v' :: l) with inspect (ℓ.1 == ℓ'.1) := {
+  | @exist true e => Some (coerce v')
   | @exist false e => lookup_hpv_r ℓ l
   } ;
   lookup_hpv_r ℓ (hpv_l _ _ :: l) := lookup_hpv_r ℓ l ;
   lookup_hpv_r ℓ [::] := None.
-Proof.
-  symmetry in e.
-  move: e => /eqP e. subst. reflexivity.
-Qed.
 
 Definition lookup_hpv (ℓ : Location) (s : side) (l : seq heap_val) : option ℓ :=
   match s with
@@ -1215,14 +1161,14 @@ Lemma lookup_hpv_l_eq :
 Proof.
   intros ℓ v l.
   funelim (lookup_hpv_l ℓ (hpv_l ℓ v :: l)).
-  - try rewrite -Heqcall. rewrite cast_loc_val_K. reflexivity.
+  - try rewrite -Heqcall. rewrite coerceE. reflexivity.
   - exfalso. pose proof e as e'. symmetry in e'. move: e' => /eqP e'.
     contradiction.
 Qed.
 
 Lemma lookup_hpv_l_neq :
   ∀ ℓ ℓ' v l,
-    ℓ' != ℓ →
+    ℓ'.1 != ℓ.1 →
     lookup_hpv_l ℓ' (hpv_l ℓ v :: l) = lookup_hpv_l ℓ' l.
 Proof.
   intros ℓ ℓ' v l hn.
@@ -1237,14 +1183,14 @@ Lemma lookup_hpv_r_eq :
 Proof.
   intros ℓ v l.
   funelim (lookup_hpv_r ℓ (hpv_r ℓ v :: l)).
-  - try rewrite -Heqcall. rewrite cast_loc_val_K. reflexivity.
+  - try rewrite -Heqcall. rewrite coerceE. reflexivity.
   - exfalso. pose proof e as e'. symmetry in e'. move: e' => /eqP e'.
     contradiction.
 Qed.
 
 Lemma lookup_hpv_r_neq :
   ∀ ℓ ℓ' v l,
-    ℓ' != ℓ →
+    ℓ'.1 != ℓ.1 →
     lookup_hpv_r ℓ' (hpv_r ℓ v :: l) = lookup_hpv_r ℓ' l.
 Proof.
   intros ℓ ℓ' v l hn.
@@ -1270,8 +1216,7 @@ Proof.
     destruct update_heaps eqn:e1. noconf e0.
     pose proof e as e'.
     symmetry in e'. move: e' => /eqP ?. subst.
-    rewrite cast_loc_val_K.
-    apply get_set_heap_eq.
+    rewrite /get_heap setmE -e //=.
   - simpl in e0.
     destruct update_heaps eqn:e1. noconf e0.
     rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
@@ -1295,8 +1240,7 @@ Proof.
     destruct update_heaps eqn:e1. noconf e0.
     pose proof e as e'.
     symmetry in e'. move: e' => /eqP ?. subst.
-    rewrite cast_loc_val_K.
-    apply get_set_heap_eq.
+    rewrite /get_heap setmE -e //=.
   - simpl in e0.
     destruct update_heaps eqn:e1. noconf e0.
     rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
@@ -1459,12 +1403,12 @@ Proof.
   intros s₀ s₁ hh.
   simpl. destruct update_heaps eqn:e.
   intros ℓ₀ hℓ₀.
-  destruct (ℓ₀ != ℓ) eqn:e1.
+  destruct (ℓ₀.1 != ℓ.1) eqn:e1.
   - rewrite !get_set_heap_neq. 2,3: auto.
     eapply h in hh. rewrite e in hh.
     apply hh. auto.
-  - move: e1 => /eqP e1. subst.
-    rewrite !get_set_heap_eq. reflexivity.
+  - move: e1 => /eqP /eqP e1. subst.
+    rewrite /get_heap 2!setmE e1 //.
 Qed.
 
 #[export] Hint Extern 10 (preserve_update_mem _ _ (heap_ignore _)) =>
@@ -1481,14 +1425,14 @@ Proof.
   intros s₀ s₁ hh.
   simpl. destruct update_heaps eqn:e.
   intros ℓ₀ hℓ₀.
-  destruct (ℓ₀ != ℓ) eqn:e1.
+  destruct (ℓ₀.1 != ℓ.1) eqn:e1.
   - rewrite get_set_heap_neq. 2: auto.
     eapply h in hh. rewrite e in hh.
     apply hh. auto.
   - move: e1 => /eqP e1. subst.
     destruct ℓ.
     move: hℓ₀ => /dommPn //= H.
-    rewrite hin // in H.
+    rewrite e1 //= hin // in H.
 Qed.
 
 #[export] Hint Extern 10 (preserve_update_mem _ _ (heap_ignore _)) =>
@@ -1508,14 +1452,14 @@ Proof.
   intros s₀ s₁ hh.
   simpl. destruct update_heaps eqn:e.
   intros ℓ₀ hℓ₀.
-  destruct (ℓ₀ != ℓ) eqn:e1.
+  destruct (ℓ₀.1 != ℓ.1) eqn:e1.
   - rewrite get_set_heap_neq. 2: auto.
     eapply h in hh. rewrite e in hh.
     apply hh. auto.
   - move: e1 => /eqP e1. subst.
     destruct ℓ.
     move: hℓ₀  => /dommPn //= H.
-    rewrite hin // in H.
+    rewrite e1 //= hin // in H.
 Qed.
 
 #[export] Hint Extern 10 (preserve_update_mem _ _ (heap_ignore _)) =>

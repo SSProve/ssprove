@@ -41,7 +41,7 @@ Section Test.
     ssprove_valid.
   Defined.
 
-  Goal (nat_ch (ch_nat 'unit Datatypes.tt) 'unit) = Some tt.
+  Goal (nat_ch (ch_nat 'unit tt) 'unit) = Some tt.
     vm_compute.
     reflexivity.
   Qed.
