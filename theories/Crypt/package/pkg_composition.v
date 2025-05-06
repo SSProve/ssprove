@@ -497,6 +497,23 @@ Proof.
   apply domm_trim.
 Qed.
 
+Lemma trimmed_valid_None_in :
+  ∀ L I E p n,
+    ValidPackage L I E p →
+    p n = None →
+    E n = None.
+Proof.
+  intros L I E p n hv e.
+  eapply from_valid_package in hv.
+  destruct (E n) as [[S' T']|] eqn:e2 => //.
+  exfalso.
+  specialize (hv (n, (S', T')) e2).
+  simpl in hv.
+  destruct hv as [f' [hv hv']].
+  rewrite hv in e.
+  discriminate.
+Qed.
+
 Lemma trimmed_valid_Some_in :
   ∀ L I E p n S T f,
     ValidPackage L I E p →
@@ -515,6 +532,69 @@ Proof.
   destruct hv as [f' [hv hv']].
   rewrite hv in e.
   injection e => ? ? ?; by subst.
+Qed.
+
+Lemma path_sorted_tl :
+  forall {T : ordType} {A} {e} {fmval : list A},
+  is_true (path.sorted e fmval) ->
+  is_true (path.sorted e (List.tl fmval)).
+Proof.
+  intros.
+  destruct fmval.
+  - easy.
+  - cbn.
+    cbn in H.
+    destruct (fmval).
+    + reflexivity.
+    + cbn in H.
+      by now move: H => /ssrbool.andP.
+Qed.
+
+Theorem filterm_orb_unionm :
+  forall E1 E2 p1 p2
+    (H_disj : domm E1 :#: domm E2)
+    (H_trim_p1 : trimmed E1 p1) (H_trim_p2 : trimmed E2 p2),
+  filterm
+    (λ n _, E1 n || E2 n) (par p1 p2) =
+    unionm
+      (filterm (λ n _, E1 n) (p1))
+      (filterm (λ n _, E2 n) (p2)).
+Proof.
+  intros.
+  rewrite filterm_union ; [ | rewrite <- H_trim_p1, <- H_trim_p2 ; apply parable_trim, H_disj ].
+  f_equal ; [ rewrite <- H_trim_p1 ; destruct p1 ; rename E1 into E | rewrite <- H_trim_p2 ; destruct p2 ; rename E2 into E ].
+  all: apply/eq_fmap=> x ; rewrite !filtermE ; clear.
+  all: induction fmval ; [ reflexivity
+                         | unfold getm ; simpl ; destruct (x == _) ;
+                           [ destruct a as [? [? []]]
+                           |  rewrite IHfmval ;
+                              [ apply (path_sorted_tl (T:=Datatypes_nat__canonical__Ord_Ord) i)
+                              | intros ; reflexivity ] ] ].
+  all: now destruct (getm_def E) ; try now rewrite Bool.orb_true_r.
+Qed.
+
+Theorem filterm_unionm_orb :
+  forall {E1 E2 : Interface} (p : raw_package),
+    (filterm (λ (n : Datatypes_nat__canonical__Ord_Ord) _, unionm E1 E2 n) p) =
+    (filterm (λ (n : Datatypes_nat__canonical__Ord_Ord) _, E1 n || E2 n) p).
+Proof.
+  intros.
+  apply eq_filterm => ? [? [? ?]].
+  rewrite unionmE.
+  now destruct (isSome (E1 _)) eqn:E1_some.
+Qed.
+
+Theorem trimmed_par :
+  forall {E1 E2 : Interface}
+    (p1 : raw_package) (p2 : raw_package)
+    (H_disj : domm E1 :#: domm E2)
+    (H_trim_p1 : trimmed E1 p1) (H_trim_p2 : trimmed E2 p2),
+    trimmed (unionm E1 E2) (par p1 p2).
+Proof.
+  intros.
+  unfold trimmed, trim.
+  rewrite filterm_unionm_orb filterm_orb_unionm ; [ | assumption.. ].
+  by setoid_rewrite H_trim_p1 ; setoid_rewrite H_trim_p2.
 Qed.
 
 Lemma interchange :
