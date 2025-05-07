@@ -6,6 +6,7 @@ maintainer: "philipp@haselwarter.org"
 authors: ["SSProve team"]
 homepage: "https://github.com/SSProve/ssprove"
 bug-reports: "https://github.com/SSProve/ssprove/issues"
+doc: "https://SSProve.github.io/ssprove/index.html"
 license: "MIT"
 depends: [
   "coq" {(>= "8.18~")}
