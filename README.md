@@ -25,6 +25,8 @@ well as listing the small set of axioms on which the formalisation relies
 
 A documentation is available in [DOC.md].
 
+Code documentation is available [coqdoc documentation](https://SSProve.github.io/ssprove/index.html).
+
 ## Additional material
 
 - [CSF'21](https://youtu.be/MlwQ7CfNH5Q): Video accompanying the publication introducing the general framework (speaker: Philipp Haselwarter)
