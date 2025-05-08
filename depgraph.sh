@@ -32,21 +32,22 @@ fi
           declare -A colmap
           while read src dst; do
               # pick a color number based on the src node name
-              prefix=$(echo "$src" | $SED -e '/^[^\.]*$/s/.*/__/' -e '/\./s/\..*//')
-              color=${colmap[$prefix]}
-              if [ -z "$color" ] ; then
-                  color=$(( ${#colmap[*]} + 1))
-                  color=$(( color < n_colors_max ? color : n_colors_max ))
-                  colmap[$prefix]=$color
-              fi
-              # color=$(echo "$src" | $SED -r \
-              #                            -e 's,Crypt[.]examples.*,2,' \
-              #                            -e 's,Crypt[.]package[.].*,3,' \
-              #                            -e 's,Crypt[.]rhl_semantics[.].*,4,' \
-              #                            -e 's,Crypt[.]rules.*,5,' \
-              #                            -e 's,Mon[.].*,6,' \
-              #                            -e 's,Relational[.].*,7,' \
-              #                            -e 's,.*\..*,1,') # default
+              #prefix=$(echo "$src" | $SED -e 's,SSProve.,,g' -e '/^[^\.]*$/s/.*/__/' -e '/\./s/\..*//')
+              #prefix=$(echo "$src" | $SED -e 's,SSProve.,,g' -e '/^[^\.]*$/s/.*/__/' -e 's/\(.*\)\..*/\1/')
+              #color=${colmap[$prefix]}
+              #if [ -z "$color" ] ; then
+              #    color=$(( ${#colmap[*]} + 1))
+              #    color=$(( color < n_colors_max ? color : n_colors_max ))
+              #    colmap[$prefix]=$color
+              #fi
+              color=$(echo "$src" | $SED -r \
+                                        -e 's,SSProve.Crypt[.]examples.*,2,' \
+                                        -e 's,SSProve.Crypt[.]package[.].*,3,' \
+                                        -e 's,SSProve.Crypt[.]rhl_semantics[.].*,4,' \
+                                        -e 's,SSProve.Crypt[.]rules.*,5,' \
+                                        -e 's,SSProve.Mon[.].*,6,' \
+                                        -e 's,SSProve.Relational[.].*,7,' \
+                                        -e 's,.*\..*,1,') # default
               echo "\"$src\" [fillcolor=$color];"
               for d in $dst; do
                   echo "\"$src\" -> \"${d%.vo*}\" ;"
