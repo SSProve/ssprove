@@ -10,7 +10,7 @@
 (*                                                                            *)
 (* Is the polinomial defined as:                                              *)
 (*                                                                            *)
-(*   f(x) = y_1 * l_1(x) + ... + y_d+1 * l_d+1                                *)
+(*   f(x) = y_1 * l_1(x) + ... + y_d+1 * l_d+1(x)                                *)
 (*                                                                            *)
 (* where each of the l_i(x) is defined as:                                    *)
 (*                                                                            *)
