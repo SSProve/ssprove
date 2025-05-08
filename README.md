@@ -23,7 +23,10 @@ well as listing the small set of axioms on which the formalisation relies
 
 ## Documentation
 
-A documentation is available in [DOC.md].
+* A documentation is available in [DOC.md].
+* Code documentation is available [coqdoc documentation](https://SSProve.github.io/ssprove/index.html).
+* [Dependency graph](https://SSProve.github.io/ssprove/dependencies.svg)
+
 
 ## Additional material
 
@@ -56,7 +59,7 @@ You can get all dependencies from the `opam` package manager for OCaml:
 ```sh
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam update
-opam install ./ssprove.opam
+opam install ./coq-ssprove.opam
 ```
 
 To build the dependency graph, you can optionally install `graphviz`.

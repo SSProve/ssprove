@@ -20,10 +20,10 @@ if ! [ -z $@ ] ; then
 fi
 
 ( echo "digraph interval_deps {" ;
-  echo 'node [shape=box, style="'$base_style'", URL="html/\N.html", colorscheme='$color_scheme'];';
+  echo 'node [shape=box, style="'$base_style'", URL="https://SSProve.github.io/ssprove/\N.html", colorscheme='$color_scheme'];';
   coqdep -vos -dyndep var -f $fn_project |
       # rewrite prefixes
-      $SED -f <(sed -nr 's/^ *-Q +(\S+) +(\S+)/s,\1,\2,g/p' < _CoqProject) |
+      $SED -f <($SED -nr 's/^ *-Q +(\S+) +(\S+)/s,\1,\2,g/p' < _CoqProject) |
       # turn '/' into '.' ,
       $SED -n -e 's,/,.,g' \
           `# keep lines with [src].vo : [x].v [dst]* , drop [x].v` \
@@ -32,21 +32,22 @@ fi
           declare -A colmap
           while read src dst; do
               # pick a color number based on the src node name
-              prefix=$(echo "$src" | $SED -e '/^[^\.]*$/s/.*/__/' -e '/\./s/\..*//')
-              color=${colmap[$prefix]}
-              if [ -z "$color" ] ; then
-                  color=$(( ${#colmap[*]} + 1))
-                  color=$(( color < n_colors_max ? color : n_colors_max ))
-                  colmap[$prefix]=$color
-              fi
-              # color=$(echo "$src" | $SED -r \
-              #                            -e 's,Crypt[.]examples.*,2,' \
-              #                            -e 's,Crypt[.]package[.].*,3,' \
-              #                            -e 's,Crypt[.]rhl_semantics[.].*,4,' \
-              #                            -e 's,Crypt[.]rules.*,5,' \
-              #                            -e 's,Mon[.].*,6,' \
-              #                            -e 's,Relational[.].*,7,' \
-              #                            -e 's,.*\..*,1,') # default
+              #prefix=$(echo "$src" | $SED -e 's,SSProve.,,g' -e '/^[^\.]*$/s/.*/__/' -e '/\./s/\..*//')
+              #prefix=$(echo "$src" | $SED -e 's,SSProve.,,g' -e '/^[^\.]*$/s/.*/__/' -e 's/\(.*\)\..*/\1/')
+              #color=${colmap[$prefix]}
+              #if [ -z "$color" ] ; then
+              #    color=$(( ${#colmap[*]} + 1))
+              #    color=$(( color < n_colors_max ? color : n_colors_max ))
+              #    colmap[$prefix]=$color
+              #fi
+              color=$(echo "$src" | $SED -r \
+                                        -e 's,SSProve.Crypt[.]examples.*,2,' \
+                                        -e 's,SSProve.Crypt[.]package[.].*,3,' \
+                                        -e 's,SSProve.Crypt[.]rhl_semantics[.].*,4,' \
+                                        -e 's,SSProve.Crypt[.]rules.*,5,' \
+                                        -e 's,SSProve.Mon[.].*,6,' \
+                                        -e 's,SSProve.Relational[.].*,7,' \
+                                        -e 's,.*\..*,1,') # default
               echo "\"$src\" [fillcolor=$color];"
               for d in $dst; do
                   echo "\"$src\" -> \"${d%.vo*}\" ;"
