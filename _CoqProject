@@ -93,6 +93,7 @@ theories/Crypt/examples/SigmaProtocol.v
 theories/Crypt/examples/Schnorr.v
 # theories/Crypt/examples/OVN.v
 theories/Crypt/examples/Executor.v
+theories/Crypt/examples/PolynomialUtils.v
 
 # Examples from https://github.com/Som1Lse/joy-of-ssprove
 theories/Crypt/examples/MACCCA.v
