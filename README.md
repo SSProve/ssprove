@@ -23,9 +23,10 @@ well as listing the small set of axioms on which the formalisation relies
 
 ## Documentation
 
-A documentation is available in [DOC.md].
+* A documentation is available in [DOC.md].
+* Code documentation is available [coqdoc documentation](https://SSProve.github.io/ssprove/index.html).
+* [Dependency graph](https://SSProve.github.io/ssprove/dependencies.svg)
 
-Code documentation is available [coqdoc documentation](https://SSProve.github.io/ssprove/index.html).
 
 ## Additional material
 
