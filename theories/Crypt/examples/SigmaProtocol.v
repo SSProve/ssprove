@@ -527,7 +527,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
             unfold inv.
             intros l lin h1 s' h2.
             apply h2.
-            eapply notin_temp; [ eassumption | ].
+            eapply notin_has_separate; [ eassumption | ].
             apply (fseparate_trans_r _ _ KEY_locs).
             1,2: fmap_solve.
           }
@@ -574,7 +574,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
             unfold inv.
             intros l lin h1 s' h2.
             apply h2.
-            eapply notin_temp; [ eassumption | ].
+            eapply notin_has_separate; [ eassumption | ].
             apply (fseparate_trans_r _ _ KEY_locs).
             1,2: fmap_solve.
           }
@@ -641,7 +641,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
           unfold inv.
           intros l lin h1 s' h2.
           apply h2.
-          eapply notin_temp; [ eassumption | ].
+          eapply notin_has_separate; [ eassumption | ].
           apply (fseparate_trans_r _ _ KEY_locs).
           1,2: fmap_solve.
         }
