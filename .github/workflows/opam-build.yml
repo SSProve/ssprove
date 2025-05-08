@@ -71,6 +71,15 @@ jobs:
           opam exec -- make -j${{ env.JOBS }} html
           echo "::endgroup::"
 
+          echo "::group::Install dependencies"
+          sudo apt install -y graphviz
+          echo "::endgroup::"
+
+          echo "::group::Build dependency graphs"
+          opam exec make graph
+          mv dependencies.svg docs/dependencies.svg
+          echo "::endgroup::"
+
       # Upload documentation
       - name: Prepare documentation for deployment
         # Only upload and deploy documentation when pushing on main
