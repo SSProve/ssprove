@@ -16,10 +16,10 @@
 (* * Section SecretSharing_example					                                  *)
 (*    Word == type for the words in the protocol       			                  *)
 (*   'word == notation for Word						                                    *)
-(*    plus == receives two Words and returns the XOR of them		                *)
+(*    plus == receives two Words and returns the XOR of them		              *)
 (*   m ⊕ k == XOR of words m and k					                                  *)	
-(*  'seq t == local choice_type for sequences				                        *)
-(*  'set t == local choice_type for sets 				                            *)
+(*  'seq t == local choice_type for sequences				                          *)
+(*  'set t == local choice_type for sets 				                              *)
 (******************************************************************************)
 
 From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
