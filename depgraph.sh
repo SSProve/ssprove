@@ -23,7 +23,7 @@ fi
   echo 'node [shape=box, style="'$base_style'", URL="html/\N.html", colorscheme='$color_scheme'];';
   coqdep -vos -dyndep var -f $fn_project |
       # rewrite prefixes
-      $SED -f <(sed -nr 's/^ *-Q +(\S+) +(\S+)/s,\1,\2,g/p' < _CoqProject) |
+      $SED -f <($SED -nr 's/^ *-Q +(\S+) +(\S+)/s,\1,\2,g/p' < _CoqProject) |
       # turn '/' into '.' ,
       $SED -n -e 's,/,.,g' \
           `# keep lines with [src].vo : [x].v [dst]* , drop [x].v` \
