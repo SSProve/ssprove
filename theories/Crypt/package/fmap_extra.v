@@ -10,6 +10,21 @@ From extructures Require Import ord fset fmap.
 
 #[local] Open Scope fset.
 
+(******************************************************************************)
+(* Extra definitions and lemmas about fmap from extructures.                  *)
+(* This file also provides fmap_solve, which automates proofs of the defs.    *)
+(* below using auto based on the hint database fmap_solve_db. fmap_solve has  *)
+(* some support for symbolic terms, but generally does not deconstruct        *)
+(* assumptions in the context. More hints may be added to extend the solver.  *)
+(* Definitions:                                                               *)
+(*             fhas m kv == the key-value pair kv is present in m             *)
+(*          fsubmap m m' == m is a submap of m' i.e. when m has value v at    *)
+(*                          key k, then m' has value v at key k.              *)
+(*          fcompat m m' == if both maps define a key it has the same value   *)
+(*        fseparate m m' == maps m and m' define a disjoint set of keys.      *)
+(*                          Separation of maps implies compatability.         *)
+(******************************************************************************)
+
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
@@ -476,10 +491,7 @@ Hint Extern 4 (fcompat _ _) =>
 Hint Extern 4 (fseparate _ _) =>
   apply fseparateC; done : fmap_solve_db.
 
-(* This hint should not be necessary *)
-(* Hint Resolve fseparateE : fmap_solve_db. *)
-
-Lemma notin_temp {T : ordType} {S : Type} (m m' : {fmap T → S}) (l : T * S)
+Lemma notin_has_separate {T : ordType} {S : Type} (m m' : {fmap T → S}) (l : T * S)
   : fhas m l → fseparate m m' → l.1 \notin domm m'.
 Proof.
   move=> H [H'].
@@ -488,4 +500,4 @@ Proof.
 Qed.
 
 Hint Extern 4 (is_true (_ \notin _)) =>
-  eapply notin_temp; [ eassumption | ] : fmap_solve_db.
+  eapply notin_has_separate; [ eassumption | ] : fmap_solve_db.
