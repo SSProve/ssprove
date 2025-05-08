@@ -1,11 +1,12 @@
 opam-version: "2.0"
-name: "ssprove"
+name: "coq-ssprove"
 version: "dev"
 synopsis: "A Foundational Framework for Modular Cryptographic Proofs"
 maintainer: "philipp@haselwarter.org"
 authors: ["SSProve team"]
 homepage: "https://github.com/SSProve/ssprove"
 bug-reports: "https://github.com/SSProve/ssprove/issues"
+dev-repo: "git+https://github.com/SSProve/ssprove.git"
 doc: "https://SSProve.github.io/ssprove/index.html"
 license: "MIT"
 depends: [
@@ -22,4 +23,8 @@ build: [
 ]
 install: [
   [make "install"]
+]
+tags: [
+  "keyword:cryptography"
+  "logpath:SSProve"
 ]

@@ -58,7 +58,7 @@ You can get all dependencies from the `opam` package manager for OCaml:
 ```sh
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam update
-opam install ./ssprove.opam
+opam install ./coq-ssprove.opam
 ```
 
 To build the dependency graph, you can optionally install `graphviz`.
