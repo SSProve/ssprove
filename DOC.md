@@ -407,7 +407,7 @@ of the export interface of `p₁` and when the sets of locations are compatible
 (given by `fcompat`, which is usually derived automatically).
 
 Parallel composition of (raw) packages `p₀` and `p₁` is written `par p₀ p₁`.
-It is valid if we have `fesparate p₀ p₁` and compatible sets of locations both
+It is valid if we have `fseparate p₀ p₁` and compatible sets of locations both
 of which are usually automatic.
 
 Finally, the identity package is defined as `ID I` where `I` is an interface.
@@ -516,7 +516,7 @@ AdvantageE (G₀ G₁ A : raw_package) : R
 The result is a real number, of type `R`.
 
 We also have an alternative version simply style `Advantage` which takes in a
-pair of games as a function `bool → raw_pacakge`: 
+pair of games as a function `bool → raw_package`: 
 
 ```coq
 Advantage (G : bool → raw_package) (A : raw_package) : R
