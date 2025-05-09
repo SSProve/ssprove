@@ -86,6 +86,8 @@
     extructures.override.version = "master";
     deriving.job = false;
     deriving.override.version = "master";
+    mathcomp-bigenough.job = false;
+    mathcomp-bigenough.override.version = "master";
   };
 
   bundles."8.18".push-branches = ["main"];
