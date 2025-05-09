@@ -36,18 +36,18 @@ Definition I2 : Interface :=
     #val #[4] : 'bool × 'bool → 'bool
   ].
 
-Definition pempty : package emptym [interface] [interface] :=
-  [package].
+Definition pempty : package [interface] [interface] :=
+  [package emptym].
 
-Definition p0 : package emptym [interface] I0 :=
-  [package
+Definition p0 : package [interface] I0 :=
+  [package emptym ;
     #def #[3] (x : 'nat) : 'nat {
       ret x
     }
   ].
 
-Definition p1 : package emptym [interface] I1 :=
-  [package
+Definition p1 : package [interface] I1 :=
+  [package emptym ;
     #def #[0] (z : 'bool) : 'bool {
       ret z
     } ;
@@ -65,8 +65,8 @@ Definition foo (x : bool) : code emptym [interface] bool :=
 Definition bar (b : bool) : code emptym [interface] nat :=
   {code if b then ret 0 else ret 1}.
 
-Definition p2 : package emptym [interface] I2 :=
-  [package
+Definition p2 : package [interface] I2 :=
+  [package emptym ;
     #def #[4] (x : 'bool × 'bool) : 'bool {
       let '(u,v) := x in ret v
     }
@@ -74,14 +74,13 @@ Definition p2 : package emptym [interface] I2 :=
 
 Definition test₁ :
   package
-    [fmap (0, 'nat) ]
     [interface #val #[0] : 'nat → 'nat]
     [interface
       #val #[1] : 'nat → 'nat ;
       #val #[2] : 'unit → 'unit
     ]
   :=
-  [package
+  [package [fmap (0, 'nat) ] ;
     #def #[1] (x : 'nat) : 'nat {
       getr (0, 'nat) (λ n : nat,
         opr (0, ('nat, 'nat)) n (λ m,
@@ -98,7 +97,6 @@ Definition sig := {sig #[0] : 'nat → 'nat }.
 
 #[program] Definition test₂ :
   package
-    [fmap (0, 'nat)]
     [interface #val #[0] : 'nat → 'nat ]
     [interface
       #val #[1] : 'nat → 'nat ;
@@ -106,7 +104,7 @@ Definition sig := {sig #[0] : 'nat → 'nat }.
       #val #[3] : {map 'nat → 'nat} → 'option 'nat
     ]
   :=
-  [package
+  [package [fmap (0, 'nat)] ;
     #def #[1] (x : 'nat) : 'nat {
       n ← get (0, 'nat) ;;
       m ← op sig ⋅ n ;;
@@ -127,7 +125,6 @@ Definition sig := {sig #[0] : 'nat → 'nat }.
 (* Testing the #import notation *)
 Definition test₃ :
   package
-    emptym
     [interface
       #val #[0] : 'nat → 'bool ;
       #val #[1] : 'bool → 'unit
@@ -137,7 +134,7 @@ Definition test₃ :
       #val #[3] : 'bool × 'bool → 'bool
     ]
   :=
-  [package
+  [package emptym ;
     #def #[2] (n : 'nat) : 'nat {
       #import {sig #[0] : 'nat → 'bool } as f ;;
       #import {sig #[1] : 'bool → 'unit } as g ;;
@@ -156,8 +153,8 @@ Definition test₃ :
 (** Information is redundant between the export interface and the package
     definition, so it can safely be skipped.
 *)
-Definition test₄ : package emptym [interface] _ :=
-  [package
+Definition test₄ : package [interface] _ :=
+  [package emptym ;
     #def #[ 0 ] (n : 'nat) : 'nat {
       ret (n + n)%N
     } ;

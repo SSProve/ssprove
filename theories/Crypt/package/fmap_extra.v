@@ -10,6 +10,21 @@ From extructures Require Import ord fset fmap.
 
 #[local] Open Scope fset.
 
+(******************************************************************************)
+(* Extra definitions and lemmas about fmap from extructures.                  *)
+(* This file also provides fmap_solve, which automates proofs of the defs.    *)
+(* below using auto based on the hint database fmap_solve_db. fmap_solve has  *)
+(* some support for symbolic terms, but generally does not deconstruct        *)
+(* assumptions in the context. More hints may be added to extend the solver.  *)
+(* Definitions:                                                               *)
+(*             fhas m kv == the key-value pair kv is present in m             *)
+(*          fsubmap m m' == m is a submap of m' i.e. when m has value v at    *)
+(*                          key k, then m' has value v at key k.              *)
+(*          fcompat m m' == if both maps define a key it has the same value   *)
+(*        fseparate m m' == maps m and m' define a disjoint set of keys.      *)
+(*                          Separation of maps implies compatability.         *)
+(******************************************************************************)
+
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
@@ -136,24 +151,50 @@ Qed.
 Lemma fsubmapxx {T : ordType} {S} (m : {fmap T → S}) : fsubmap m m.
 Proof. rewrite /fsubmap unionmI //. Qed.
 
-Lemma fhas_cons {T : ordType} {S} x' x (xs : seq (T * S)) :
-  fhas (mkfmap (x :: xs)) x' → x = x' ∨ fhas (mkfmap xs) x'.
+Lemma fsubmap_eq {T : ordType} {S} (m m' : {fmap T → S}) :
+  fsubmap m m' → fsubmap m' m → m = m'.
 Proof.
-  move: x x' => [t s] [t' s'] H.
+  unfold fsubmap.
+  intros H H'.
+  rewrite -H -{1}H'.
+  eapply fsubmap_fcompat.
+  1: apply H'.
+  apply fsubmapxx.
+Qed.
+
+Lemma fhas_set_case {T : ordType} {S} x y (m : {fmap T → S}) :
+  fhas (setm m x.1 x.2) y → (x = y) ∨ fhas m y.
+Proof.
+  move: x y => [k v] [k' v'] H.
   rewrite /fhas //= setmE in H.
-  destruct (t' == t) eqn:E.
+  destruct (k' == k) eqn:E.
   - left.
-    move: E => /eqP -> {t'}.
+    move: E => /eqP -> {k'}.
     by noconf H.
   - by right.
 Qed.
+
+Lemma fhas_union {S : ordType} {T} m m' (k : S) (v : T)
+  : fhas (unionm m m') (k, v) → fhas m (k, v) ∨ fhas m' (k, v).
+Proof.
+  rewrite /fhas unionmE.
+  destruct (m k) => //=; auto.
+Qed.
+
+Lemma fhas_union_l {S : ordType} {T} m m' (k : S) (v : T)
+  : fhas m (k, v) → fhas (unionm m m') (k, v).
+Proof.
+  rewrite /fhas unionmE.
+  destruct (m k) => //=; auto.
+Qed.
+
 
 (* Tactics *)
 
 Ltac fmap_invert H :=
   (by apply fhas_empty in H) ||
   ( let x := fresh "x" in
-    apply fhas_cons in H ;
+    apply fhas_set_case in H ;
     destruct H as [x|H]; [ noconf x | fmap_invert H ]
   ).
 
@@ -450,10 +491,7 @@ Hint Extern 4 (fcompat _ _) =>
 Hint Extern 4 (fseparate _ _) =>
   apply fseparateC; done : fmap_solve_db.
 
-(* This hint should not be necessary *)
-(* Hint Resolve fseparateE : fmap_solve_db. *)
-
-Lemma notin_temp {T : ordType} {S : Type} (m m' : {fmap T → S}) (l : T * S)
+Lemma notin_has_separate {T : ordType} {S : Type} (m m' : {fmap T → S}) (l : T * S)
   : fhas m l → fseparate m m' → l.1 \notin domm m'.
 Proof.
   move=> H [H'].
@@ -462,4 +500,4 @@ Proof.
 Qed.
 
 Hint Extern 4 (is_true (_ \notin _)) =>
-  eapply notin_temp; [ eassumption | ] : fmap_solve_db.
+  eapply notin_has_separate; [ eassumption | ] : fmap_solve_db.

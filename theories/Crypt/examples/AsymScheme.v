@@ -136,14 +136,13 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
    *)
   Definition L_pk_cpa_L :
     package
-      L_locs
       [interface]
       [interface
         #val #[getpk_id] : 'unit → 'pubkey ;
         #val #[challenge_id] : 'plain × 'plain → 'cipher
       ]
     :=
-    [package
+    [package L_locs ;
       #def  #[getpk_id] (_ : 'unit) : 'pubkey
       {
         pk ← get pk_loc ;;
@@ -162,14 +161,13 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
 
   Definition L_pk_cpa_R :
     package
-      L_locs
       [interface]
       [interface
         #val #[getpk_id] : 'unit → 'pubkey ;
         #val #[challenge_id] : 'plain × 'plain → 'cipher
       ]
     :=
-    [package
+    [package L_locs ;
       #def  #[getpk_id] (_ : 'unit) : 'pubkey
       {
         pk ← get pk_loc ;;
@@ -186,12 +184,11 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
       }
     ].
 
-  Definition cpa_L_vs_R :
-    loc_GamePair [interface
+  Definition cpa_L_vs_R b :
+    game [interface
       #val #[getpk_id] : 'unit → 'pubkey ;
       #val #[challenge_id] : 'plain × 'plain → 'cipher
-    ] :=
-    λ b, if b then {locpackage L_pk_cpa_L} else {locpackage L_pk_cpa_R}.
+    ] := if b then L_pk_cpa_L else L_pk_cpa_R.
 
   (** [The Joy of Cryptography] Definition 15.1
 
@@ -213,14 +210,14 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
   (** HAVE PSEUDORND CIPHERTEXT IN PRESENCE OF CHOSEN PLAINTEXT ATTACKS **)
 
   Definition L_pk_cpa_real :
-    package L_locs
+    package
       [interface]
       [interface
         #val #[getpk_id] : 'unit → 'pubkey ;
         #val #[challenge_id] : 'plain → 'cipher
       ]
     :=
-    [package
+    [package L_locs ;
       #def  #[getpk_id] (_ : 'unit) : 'pubkey
       {
         pk ← get pk_loc ;;
@@ -238,14 +235,14 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
     ].
 
   Definition L_pk_cpa_rand :
-    package L_locs
+    package
       [interface]
       [interface
         #val #[getpk_id] : 'unit → 'pubkey ;
         #val #[challenge_id] : 'plain → 'cipher
       ]
     :=
-    [package
+    [package L_locs ;
       #def  #[getpk_id] (_ : 'unit) : 'pubkey
       {
         pk ← get pk_loc ;;
@@ -262,12 +259,11 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
       }
     ].
 
-  Definition cpa_real_vs_rand :
-    loc_GamePair [interface
+  Definition cpa_real_vs_rand b :
+    game [interface
       #val #[getpk_id] : 'unit → 'pubkey ;
       #val #[challenge_id] : 'plain → 'cipher
-    ] :=
-    λ b, if b then {locpackage L_pk_cpa_real } else {locpackage L_pk_cpa_rand }.
+    ] := if b then L_pk_cpa_real else L_pk_cpa_rand.
 
   (** [The Joy of Cryptography] Definition 15.2
 
@@ -291,14 +287,14 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
   Definition L_locs_counter := [fmap counter_loc ; pk_loc ; sk_loc ].
 
   Definition L_pk_ots_L :
-    package L_locs_counter
+    package
       [interface]
       [interface
         #val #[getpk_id] : 'unit → 'pubkey ;
         #val #[challenge_id] : 'plain × 'plain → 'cipher
       ]
     :=
-    [package
+    [package L_locs_counter ;
       #def #[getpk_id] (_ : 'unit) : 'pubkey
       {
         pk ← get pk_loc ;;
@@ -318,14 +314,14 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
     ].
 
   Definition L_pk_ots_R :
-    package L_locs_counter
+    package
       [interface]
       [interface
         #val #[getpk_id] : 'unit → 'pubkey ;
         #val #[challenge_id] : 'plain × 'plain → 'cipher
       ]
     :=
-    [package
+    [package L_locs_counter ;
       #def #[getpk_id] (_ : 'unit) : 'pubkey
       {
         pk ← get pk_loc ;;
@@ -344,12 +340,11 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
       }
     ].
 
-  Definition ots_L_vs_R :
-    loc_GamePair [interface
+  Definition ots_L_vs_R b :
+    game [interface
       #val #[getpk_id] : 'unit → 'pubkey ;
       #val #[challenge_id] :'plain × 'plain → 'cipher
-    ] :=
-    λ b, if b then {locpackage L_pk_ots_L } else {locpackage L_pk_ots_R }.
+    ] := if b then L_pk_ots_L else L_pk_ots_R.
 
   (** [The Joy of Cryptography] Definition 15.4
 
@@ -370,14 +365,14 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
   (*  *)
 
   Definition L_pk_ots_real :
-    package L_locs_counter
+    package
       [interface]
       [interface
         #val #[getpk_id] : 'unit → 'pubkey ;
         #val #[challenge_id'] : 'plain → 'cipher
       ]
     :=
-    [package
+    [package L_locs_counter ;
       #def  #[getpk_id] (_ : 'unit) : 'pubkey
       {
         pk ← get pk_loc ;;
@@ -398,14 +393,14 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
     ].
 
   Definition L_pk_ots_rnd :
-    package L_locs_counter
+    package
       [interface]
       [interface
         #val #[getpk_id] : 'unit → 'pubkey ;
         #val #[challenge_id'] : 'plain → 'cipher
       ]
     :=
-    [package
+    [package L_locs_counter ;
       #def  #[getpk_id] (_ : 'unit) : 'pubkey
       {
         pk ← get pk_loc ;;
@@ -425,11 +420,10 @@ Module AsymmetricScheme (π : AsymmetricSchemeParams)
       }
     ].
 
-  Definition ots_real_vs_rnd :
-    loc_GamePair [interface
+  Definition ots_real_vs_rnd b :
+    game [interface
       #val #[getpk_id] : 'unit → 'pubkey ;
       #val #[challenge_id'] : 'plain → 'cipher
-    ] :=
-    λ b, if b then {locpackage L_pk_ots_real } else {locpackage L_pk_ots_rnd }.
+    ] := if b then L_pk_ots_real else L_pk_ots_rnd.
 
 End AsymmetricScheme.

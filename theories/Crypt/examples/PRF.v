@@ -207,9 +207,9 @@ Section PRF_example.
   Definition EVAL_location_ff := [fmap table_location].
 
   Definition EVAL_pkg_tt :
-    package EVAL_location_tt [interface]
+    package [interface]
       [interface #val #[i0] : 'word → 'key ] :=
-    [package
+    [package EVAL_location_tt ;
       #def #[i0] (r : 'word) : 'key
       {
         k_init ← get key_location ;;
@@ -225,9 +225,9 @@ Section PRF_example.
     ].
 
   Definition EVAL_pkg_ff :
-    package EVAL_location_ff [interface]
+    package [interface]
       [interface #val #[i0] : 'word → 'key ] :=
-    [package
+    [package EVAL_location_ff ;
       #def #[i0] (r : 'word) : 'key
       {
         T ← get table_location ;;
@@ -241,18 +241,13 @@ Section PRF_example.
       }
     ].
 
-  (* TODO Not the most satisfying, it would be nice to think of something else
-    This might come with more automation to deal with the GamePair type.
-  *)
-  Definition EVAL : loc_GamePair [interface #val #[i0] : 'word → 'key ] :=
-    λ b, if b then {locpackage EVAL_pkg_tt } else {locpackage EVAL_pkg_ff }.
-
-  Definition MOD_CPA_location : Locations := emptym.
+  Definition EVAL b : game [interface #val #[i0] : 'word → 'key ] :=
+    if b then EVAL_pkg_tt else EVAL_pkg_ff.
 
   Definition MOD_CPA_tt_pkg :
-    package MOD_CPA_location [interface #val #[i0] : 'word → 'key ]
+    package [interface #val #[i0] : 'word → 'key ]
       [interface #val #[i1] : 'word → 'word × 'word ] :=
-    [package
+    [package emptym ;
       #def #[i1] (m : 'word) : 'word × 'word
       {
         #import {sig #[i0] : 'word → 'key } as eval ;;
@@ -264,9 +259,9 @@ Section PRF_example.
     ].
 
   Definition MOD_CPA_ff_pkg :
-    package MOD_CPA_location [interface #val #[i0] : 'word → 'key]
+    package [interface #val #[i0] : 'word → 'key]
       [interface #val #[i1] : 'word → 'word × 'word ]:=
-    [package
+    [package emptym ;
       #def #[i1] (m : 'word) : 'word × 'word
       {
         #import {sig #[i0] : 'word → 'key } as eval ;;
@@ -281,10 +276,10 @@ Section PRF_example.
   Definition IND_CPA_location : Locations := [fmap key_location].
 
   Definition IND_CPA_pkg_tt :
-    package IND_CPA_location
+    package
       [interface]
       [interface #val #[i1] : 'word → 'word × 'word ] :=
-    [package
+    [package IND_CPA_location ;
       #def #[i1] (m : 'word) : 'word × 'word
       {
         k ← get key_location ;;
@@ -300,10 +295,10 @@ Section PRF_example.
    ].
 
   Definition IND_CPA_pkg_ff :
-    package IND_CPA_location
+    package
       [interface]
       [interface #val #[i1] : 'word → 'word × 'word ] :=
-    [package
+    [package IND_CPA_location ;
       #def #[i1] (m : 'word) : 'word × 'word
       {
         k ← get key_location ;;
@@ -320,10 +315,8 @@ Section PRF_example.
       }
     ].
 
-  Definition IND_CPA :
-    loc_GamePair [interface #val #[i1] : 'word → 'word × 'word ] :=
-    λ b,
-      if b then {locpackage IND_CPA_pkg_tt } else {locpackage IND_CPA_pkg_ff }.
+  Definition IND_CPA b : game [interface #val #[i1] : 'word → 'word × 'word ] :=
+    if b then IND_CPA_pkg_tt else IND_CPA_pkg_ff.
 
   Local Open Scope ring_scope.
 

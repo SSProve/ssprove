@@ -63,7 +63,7 @@ else (
 ```
 where `ℓ` is defined as
 ```coq
-Definition ℓ : Location := ('option 'nat ; 0).
+Definition ℓ : Location := (0, 'option 'nat).
 ```
 
 It first imports two procedures with respective identifiers `0` and `1` and
@@ -83,8 +83,8 @@ Injects any pure value into `raw_code`.
 
 #### Memory access
 
-A `Location` is a pair of a type in `choice_type` and a natural number
-representing an identifier, for instance `('nat ; 12) : Location`.
+A `Location` is a pair of a natural number representing an identifier
+and a type in `choice_type`, for instance `(12, 'nat) : Location`.
 One can *read* memory as follows:
 ```coq
 x ← get ℓ ;; k x
@@ -223,22 +223,20 @@ locations.
 
 #### Set of locations
 
-The set of locations is expected as an `{fset Location }` using the finite
-sets of the [extructures] library. For our purposes, it is advisable to write
-them directly as list which of locations which is then cast to an `fset` using
-the `fset` operation, as below:
+The set of locations is expected as type `Locations` using the finite maps
+of the [extructures] library. For our purposes, it is advisable to write
+them directly as list of locations using the following syntax:
 ```coq
-fset [:: ℓ₀ ; ℓ₁ ; ℓ₂ ]
+[fmap ℓ₀ ; ℓ₁ ; ℓ₂ ]
 ```
-This is the best way to leverage the automation that we introduced.
-Nevertheless, in some cases it might be more convenient to use the union
-(`:|:`) operator of [extructures].
+An empty location map is written `emptym` and in some cases it might be
+necessary to use the union (`unionm`) operator of [extructures].
 
 #### Interfaces
 
-An interface is a set of signatures (`opsig`) corresponding to the procedures
-that a piece of code *can* import and use.
-Rather than writing them as `fset` directly, we provide special convenient
+An interface is a finite map (`fmap`) of signatures (`opsig`) corresponding
+to the procedures that a piece of code *can* import and use.
+Rather than writing them as `fmap` directly, we provide special convenient
 notations, as well the type `Interface`.
 
 Interfaces are wrapped in the `[interface]` container which behaves like lists.
@@ -294,20 +292,20 @@ fill in the validity proof.
 ```coq
 Obligation Tactic := idtac.
 
-Definition ℓ : Location := ('nat ; 0).
+Definition ℓ : Location := (0, 'nat).
 
-Equations? foo : code fset0 [interface] 'nat :=
+Equations? foo : code emptym [interface] 'nat :=
   foo := {code
     n ← get ℓ ;;
     ret n
   }.
 Proof.
   ssprove_valid.
-  (* We have to prove ℓ \in fset0 which does not hold. *)
+  (* We have to prove (fhas emptym ℓ.1) which does not hold. *)
 Abort.
 ```
-We can then see where the mistake was and change the empty interface to
-something containing `ℓ` like `fset [:: ℓ ]`.
+We can then see where the mistake was and change `emptym` to
+something containing `ℓ` like `[fmap ℓ ]`.
 
 Note that `ssprove_valid` and the inference for `ValidCode` can be extended
 with hints. The former using the `ssprove_valid_db` database, the latter with the
@@ -324,8 +322,8 @@ form `src → raw_code tgt` distinguished by their signatures. This notion of
 `raw_package` will prove the most efficient when proving results about packages,
 such as advantages.
 However, we provide a syntax to define valid packages by construction, *i.e.*
-of type `package L I E` where each procedure must be `ValidCode L I tgt` and
-the lot of them must implement export interface `E`.
+of type `package I E` where each procedure must be `ValidCode L I tgt` for a
+a chosen set of locations `L` and the lot of them must implement export interface `E`.
 
 The syntax for valid packages is similar to that of interfaces. Better explained
 on an example:
@@ -333,7 +331,6 @@ on an example:
 ```coq
 Definition test :
   package
-    fset0
     [interface
       val #[0] : 'nat → 'bool ;
       val #[1] : 'bool → 'unit
@@ -343,7 +340,7 @@ Definition test :
       val #[3] : 'bool × 'bool → 'bool
     ]
   :=
-  [package
+  [package emptym ;
     def #[2] (n : 'nat) : 'nat {
       #import {sig #[0] : 'nat → 'bool } as f ;;
       #import {sig #[1] : 'bool → 'unit } as g ;;
@@ -362,9 +359,10 @@ Definition test :
 Packages are wrapped in the `[package]` container which behaves like lists.
 They are of the form
 ```coq
-[package d₀ ; d₁ ; … ; dₙ ]
+[package L ; d₀ ; d₁ ; … ; dₙ ]
 ```
-where the `dᵢ` are declarations, given using a special syntax:
+where `L` is the locations of the package` and `dᵢ` are declarations, given
+using a special syntax:
 ```coq
 def #[ id ] (x : src) : tgt { e }
 ```
@@ -383,8 +381,8 @@ In the example above we also explicitly gave an export interface while the
 information is already present in the declaration. As such in can be omitted
 as on the simpler example below:
 ```coq
-Definition test' : package fset0 [interface] _ :=
-  [package
+Definition test' : package [interface] _ :=
+  [package emptym ;
     def #[ 0 ] (n : 'nat) : 'nat {
       ret (n + n)%N
     } ;
@@ -400,39 +398,26 @@ they are what the programs *can* use, not what they *exactly* use.
 
 One of the key points of SSP is its package algebra with sequential and parallel
 composition as well as the identity package. All these operations are defined on
-`raw_packages` directly but extend to `package` with the `{package}` and
-`{locpackage}` notations.
+`raw_packages` directly but extend to `package` with the `{package}` notation.
 
 Sequential composition is called `link` in SSProve and can be written
 `p₀ ∘ p₁`. It represents `p₀` where all *imports* are replaced by the inlined
-procedures of `p₁`. It is valid when the export interface of `p₁` matches the
-import interface of `p₀`.
+procedures of `p₁`. It is valid when the import interface of `p₀` is a subset
+of the export interface of `p₁` and when the sets of locations are compatible
+(given by `fcompat`, which is usually derived automatically).
 
 Parallel composition of (raw) packages `p₀` and `p₁` is written `par p₀ p₁`.
-It is valid if we have `Parable p₀ p₁` (which is a class).
-The resulting package must have the union of locations of its components, as
-such automation can be lacking on that front, so it might be a good idea to rely
-on `Equations` again:
-```coq
-Equations? pkg : package L I E :=
-  pkg := {package (par p₀ p₁) ∘ p₂ }.
-Proof.
-  ssprove_valid.
-  (* Now deal with the goals *)
-```
+It is valid if we have `fseparate p₀ p₁` and compatible sets of locations both
+of which are usually automatic.
 
 Finally, the identity package is defined as `ID I` where `I` is an interface.
-It both imports and exports `I` by simply forwarding the calls.
-It is valid as long as `I` does not include two signatures sharing the same
-identifier, as overloading is not possible in our packages. This property is
-written `flat I` and can be inferred automatically by `ssprove_ valid`.
+It both imports and exports `I` by simply forwarding the calls and is valid
+for any interface `I`.
 
 As illustrated above, `{package p }` casts a raw package to some
-`package L I E`, trying to infer the proof. We also have `{locpackage p }`
-which will cast to `loc_package I E` which is essentially the same as `package`
-but where the set of locations is internalised.
+`package I E`, trying to infer the proof.
 
-**Note:** `loc_package` and `package` both have implicit coercions to
+**Note:** `package` has an implicit coercion to
 `raw_package`. This means that, for instance, if `p₀` and `p₁` are both
 `package` then, `{package p₀ ∘ p₁ }` is a valid expression, and will be complete
 if the interfaces match.
@@ -470,7 +455,7 @@ Lemma link_assoc :
 ```coq
 Lemma par_commut :
   ∀ p1 p2,
-    Parable p1 p2 →
+    fseparate p1 p2 →
     par p1 p2 = par p2 p1.
 ```
 
@@ -488,8 +473,6 @@ Lemma par_assoc :
 Lemma link_id :
   ∀ L I E p,
     ValidPackage L I E p →
-    flat I →
-    trimmed E p →
     link p (ID I) = p.
 ```
 
@@ -497,13 +480,8 @@ Lemma link_id :
 Lemma id_link :
   ∀ L I E p,
     ValidPackage L I E p →
-    trimmed E p →
     link (ID E) p = p.
 ```
-
-These laws require the package `p` to be valid but also to be `trimmed` which
-means that it doesn't implement more than it exports. For packages constructed
-as in [[Packages]], this is always the case.
 
 #### Interchange between sequential and parallel composition
 
@@ -514,9 +492,7 @@ Lemma interchange :
     ValidPackage L₂ E D p₂ →
     ValidPackage L₃ C B p₃ →
     ValidPackage L₄ F E p₄ →
-    trimmed A p₁ →
-    trimmed D p₂ →
-    Parable p₃ p₄ →
+    fseparate p₃ p₄ →
     par (p₁ ∘ p₃) (p₂ ∘ p₄) = (par p₁ p₂) ∘ (par p₃ p₄).
 ```
 The last line can be read as
@@ -540,25 +516,21 @@ AdvantageE (G₀ G₁ A : raw_package) : R
 The result is a real number, of type `R`.
 
 We also have an alternative version simply style `Advantage` which takes in a
-`GamePair`:
-```coq
-Definition GamePair :=
-  bool → raw_package.
-```
+pair of games as a function `bool → raw_package`: 
 
 ```coq
-Advantage (G : GamePair) (A : raw_package) : R
+Advantage (G : bool → raw_package) (A : raw_package) : R
 ```
 
 The two definitions are equivalent, as stated by the following. `AdvantageE`
 should be preferred as it is slightly less constrained.
 ```coq
 Lemma Advantage_E :
-  ∀ (G : GamePair) A,
+  ∀ (G : bool → raw_package) A,
     Advantage G A = AdvantageE (G false) (G true) A.
 ```
 
-We have several useful lemmata on advantage. We will list the important ones
+We have several useful lemmas on advantage. We will list the important ones
 below.
 
 ```coq
@@ -613,8 +585,8 @@ It is equivalent to the following:
 ```coq
 ∀ LA A,
   ValidPackage LA E A_export A →
-  fdisjoint LA L₀ →
-  fdisjoint LA L₁ →
+  fseparate LA L₀ →
+  fseparate LA L₁ →
   AdvantageE G₀ G₁ A = 0.
 ```
 So one can use `G₀ ≈₀ G₁` to rewrite an advantage to `0`, typically after using
@@ -714,7 +686,7 @@ The lemma in question is
 ```coq
 Lemma code_link_scheme :
   ∀ A c p,
-    @ValidCode fset0 [interface] A c →
+    @ValidCode emptym [interface] A c →
     code_link c p = c.
 ```
 stating that code which does not import anything (here we add the unnecessary
@@ -811,7 +783,7 @@ stateless, import-less program:
 ```coq
 Lemma r_swap_scheme_cmd :
   ∀ {A B : choiceType} (s : raw_code A) (c : command B),
-    ValidCode fset0 [interface] s →
+    ValidCode emptym [interface] s →
     ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
       x ← s ;; y ← cmd c ;; ret (x,y) ≈
       y ← cmd c ;; x ← s ;; ret (x,y)
@@ -841,8 +813,8 @@ it is more constrained:
 Lemma r_reflexivity_alt :
   ∀ {A : choiceType} {L} pre (c : raw_code A),
     ValidCode L [interface] c →
-    (∀ ℓ, ℓ \in L → get_pre_cond ℓ pre) →
-    (∀ ℓ v, ℓ \in L → put_pre_cond ℓ v pre) →
+    (∀ ℓ, fhas L ℓ → get_pre_cond ℓ pre) →
+    (∀ ℓ v, fhas L ℓ → put_pre_cond ℓ v pre) →
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
       c ≈ c
     ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
@@ -1067,7 +1039,7 @@ Another invariant we propose is called `heap_ignore` and is defined as
 ```coq
 Definition heap_ignore (L : {fset Location}) :=
   λ '(h₀, h₁),
-    ∀ (ℓ : Location), ℓ \notin L → get_heap h₀ ℓ = get_heap h₁ ℓ.
+    ∀ (ℓ : Location), ℓ.1 \notin domm L → get_heap h₀ ℓ = get_heap h₁ ℓ.
 ```
 It only states equality of heaps on locations that are not in `L`, the set of
 *ignored* locations. It is a valid invariant as long as the ignored locations
@@ -1076,7 +1048,7 @@ locations of the adversary).
 ```coq
 Lemma Invariant_heap_ignore :
   ∀ L L₀ L₁,
-    fsubset L (L₀ :|: L₁) →
+    fsubmap L (unionm L₀ L₁) →
     Invariant L₀ L₁ (heap_ignore L).
 ```
 
@@ -1120,8 +1092,8 @@ It is a semi-invariant provided that the locations belong to the programs:
 ```coq
 Lemma SemiInvariant_couple_lhs :
   ∀ L₀ L₁ ℓ ℓ' (R : _ → _ → Prop),
-    ℓ \in L₀ :|: L₁ →
-    ℓ' \in L₀ :|: L₁ →
+    fhas L₀ ℓ  →
+    fhas L₀ ℓ' →
     R (get_heap empty_heap ℓ) (get_heap empty_heap ℓ') →
     SemiInvariant L₀ L₁ (couple_lhs ℓ ℓ' h).
 ```
@@ -1158,9 +1130,9 @@ essentially the same way.
 ```coq
 Lemma SemiInvariant_triple_rhs :
   ∀ L₀ L₁ ℓ₁ ℓ₂ ℓ₃ (R : _ → _ → _ → Prop),
-    ℓ₁ \in L₀ :|: L₁ →
-    ℓ₂ \in L₀ :|: L₁ →
-    ℓ₃ \in L₀ :|: L₁ →
+    fhas L₁ ℓ₁ →
+    fhas L₁ ℓ₂ →
+    fhas L₁ ℓ₃ →
     R (get_heap empty_heap ℓ₁) (get_heap empty_heap ℓ₂) (get_heap empty_heap ℓ₃) →
     SemiInvariant L₀ L₁ (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
 ```

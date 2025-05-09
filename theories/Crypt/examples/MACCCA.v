@@ -73,10 +73,6 @@ Definition checktag: nat := 5.
 Definition eavesdrop: nat := 6.
 Definition decrypt: nat := 7.
 
-Definition mkpair {Lt Lf E}
-  (t: package Lt [interface] E) (f: package Lf [interface] E):
-  loc_GamePair E := fun b => if b then {locpackage t} else {locpackage f}.
-
 Definition TAG_locs_tt := [fmap km_loc].
 Definition TAG_locs_ff := [fmap km_loc; T_loc].
 
@@ -108,12 +104,12 @@ Hint Extern 1 (ValidCode ?L ?I (kgen ?l)) =>
   : typeclass_instances ssprove_valid_db.
 
 Definition TAG_pkg_tt:
-  package TAG_locs_tt
+  package
     [interface]
     [interface
       #val #[gettag]: 'word → 'word ;
       #val #[checktag]: 'word × 'word → 'bool ] :=
-  [package
+  [package TAG_locs_tt ;
     #def #[gettag] (m: 'word): 'word {
       k ← kgen km_loc ;;
       ret (mac k m)
@@ -125,12 +121,12 @@ Definition TAG_pkg_tt:
   ].
 
 Definition TAG_pkg_ff:
-  package TAG_locs_ff
+  package
     [interface]
     [interface
       #val #[gettag]: 'word → 'word ;
       #val #[checktag]: 'word × 'word → 'bool ] :=
-  [package
+  [package TAG_locs_ff ;
     #def #[gettag] (m: 'word): 'word {
       T ← get T_loc ;;
       k ← kgen km_loc ;;
@@ -144,14 +140,14 @@ Definition TAG_pkg_ff:
     }
   ].
 
-Definition TAG := mkpair TAG_pkg_tt TAG_pkg_ff.
+Definition TAG b := if b then TAG_pkg_tt else TAG_pkg_ff.
 
 Definition CPA_EVAL_locs := [fmap ek_loc].
 
 Definition CPA_EVAL_pkg_tt:
-  package CPA_EVAL_locs [interface]
+  package [interface]
     [interface #val #[eavesdrop]: 'word × 'word → 'word ] :=
-  [package
+  [package CPA_EVAL_locs ;
     #def #[eavesdrop] ('(ml, mr): 'word × 'word): 'word {
       k ← kgen ek_loc ;;
       ret (enc k ml)
@@ -159,25 +155,25 @@ Definition CPA_EVAL_pkg_tt:
   ].
 
 Definition CPA_EVAL_pkg_ff:
-  package CPA_EVAL_locs [interface]
+  package [interface]
     [interface #val #[eavesdrop]: 'word × 'word → 'word ] :=
-  [package
+  [package CPA_EVAL_locs ;
     #def #[eavesdrop] ('(ml, mr): 'word × 'word): 'word {
       k ← kgen ek_loc ;;
       ret (enc k mr)
     }
   ].
 
-Definition CPA_EVAL := mkpair CPA_EVAL_pkg_tt CPA_EVAL_pkg_ff.
+Definition CPA_EVAL b := if b then  CPA_EVAL_pkg_tt else CPA_EVAL_pkg_ff.
 
 Definition CCA_EVAL_locs := [fmap km_loc; ek_loc; S_loc].
 
 Definition CCA_EVAL_pkg_tt:
-  package CCA_EVAL_locs [interface]
+  package [interface]
     [interface
       #val #[eavesdrop]: 'word × 'word → 'word × 'word ;
       #val #[decrypt]: 'word × 'word → 'option 'word ] :=
-  [package
+  [package CCA_EVAL_locs ;
     #def #[eavesdrop] ('(ml, mr): 'word × 'word): 'word × 'word {
       S ← get S_loc ;;
       ke ← kgen ek_loc ;;
@@ -198,11 +194,11 @@ Definition CCA_EVAL_pkg_tt:
   ].
 
 Definition CCA_EVAL_pkg_ff:
-  package CCA_EVAL_locs [interface]
+  package [interface]
     [interface
       #val #[eavesdrop]: 'word × 'word → 'word × 'word ;
       #val #[decrypt]: 'word × 'word → 'option 'word ] :=
-  [package
+  [package CCA_EVAL_locs ;
     #def #[eavesdrop] ('(ml, mr): 'word × 'word): 'word × 'word {
       S ← get S_loc ;;
       ke ← kgen ek_loc ;;
@@ -222,19 +218,19 @@ Definition CCA_EVAL_pkg_ff:
     }
   ].
 
-Definition CCA_EVAL := mkpair CCA_EVAL_pkg_tt CCA_EVAL_pkg_ff.
+Definition CCA_EVAL b := if b then CCA_EVAL_pkg_tt else CCA_EVAL_pkg_ff.
 
 Definition CCA_EVAL_TAG_locs := [fmap ek_loc; S_loc].
 
 Definition CCA_EVAL_TAG_pkg_tt:
-  package CCA_EVAL_TAG_locs
+  package
     [interface
       #val #[gettag]: 'word → 'word ;
       #val #[checktag]: 'word × 'word → 'bool ]
     [interface
       #val #[eavesdrop]: 'word × 'word → 'word × 'word ;
       #val #[decrypt]: 'word × 'word → 'option 'word ] :=
-  [package
+  [package CCA_EVAL_TAG_locs ;
     #def #[eavesdrop] ('(ml, mr): 'word × 'word): 'word × 'word {
       #import {sig #[gettag]: 'word → 'word } as gettag ;;
       S ← get S_loc ;;
@@ -256,14 +252,14 @@ Definition CCA_EVAL_TAG_pkg_tt:
   ].
 
 Definition CCA_EVAL_TAG_pkg_ff:
-  package CCA_EVAL_TAG_locs
+  package
     [interface
       #val #[gettag]: 'word → 'word ;
       #val #[checktag]: 'word × 'word → 'bool ]
     [interface
       #val #[eavesdrop]: 'word × 'word → 'word × 'word ;
       #val #[decrypt]: 'word × 'word → 'option 'word ] :=
-  [package
+  [package CCA_EVAL_TAG_locs ;
     #def #[eavesdrop] ('(ml, mr): 'word × 'word): 'word × 'word {
       #import {sig #[gettag]: 'word → 'word } as gettag ;;
       S ← get S_loc ;;
@@ -287,12 +283,12 @@ Definition CCA_EVAL_TAG_pkg_ff:
 Definition CCA_EVAL_HYB_locs := [fmap km_loc; T_loc; S_loc].
 
 Definition CCA_EVAL_HYB_pkg:
-  package CCA_EVAL_HYB_locs
+  package
     [interface #val #[eavesdrop]: 'word × 'word → 'word ]
     [interface
       #val #[eavesdrop]: 'word × 'word → 'word × 'word ;
       #val #[decrypt]: 'word × 'word → 'option 'word ] :=
-  [package
+  [package CCA_EVAL_HYB_locs ;
     #def #[eavesdrop] ('(ml, mr): 'word × 'word): 'word × 'word {
       #import {sig #[eavesdrop]: 'word × 'word → 'word } as eavesdrop ;;
       S ← get S_loc ;;

@@ -213,19 +213,15 @@ Definition decrypt: nat := 8.
 Definition lookup: nat := 9.
 Definition invlookup: nat := 10.
 
-Definition mkpair {Lt Lf E}
-  (t: package Lt [interface] E) (f: package Lf [interface] E):
-  loc_GamePair E := fun b => if b then {locpackage t} else {locpackage f}.
-
 (**
   The [SAMP] packages define sampling with ([true]), and without ([false])
   replacement.
 *)
 Definition SAMP_pkg_tt (p: nat) `{Positive p}:
-  package emptym [interface]
+  package [interface]
     [interface
       #val #[samp]: 'set ('fin p) → ('fin p) ] :=
-  [package
+  [package emptym ;
     #def #[samp] (S: 'set ('fin p)): ('fin p) {
       s <$ uniform p ;;
       ret s
@@ -233,18 +229,18 @@ Definition SAMP_pkg_tt (p: nat) `{Positive p}:
   ].
 
 Definition SAMP_pkg_ff (p: nat) `{Positive p}:
-  package emptym [interface]
+  package [interface]
     [interface
       #val #[samp]: 'set ('fin p) → ('fin p) ] :=
-  [package
+  [package emptym ;
     #def #[samp] (S: 'set ('fin p)): ('fin p) {
       s ← samp_no_repl (domm S) ;;
       ret s
     }
   ].
 
-Definition SAMP (p: nat) `{Positive p} :=
-  mkpair (SAMP_pkg_tt p) (SAMP_pkg_ff p).
+Definition SAMP (p: nat) `{Positive p} b :=
+  if b then (SAMP_pkg_tt p) else (SAMP_pkg_ff p).
 
 Definition kgen: raw_code 'key :=
   k_init ← get k_loc ;;
@@ -282,12 +278,12 @@ Definition EVAL_locs_ff := [fmap T_loc; Tinv_loc].
   They are computationally indistinguishable by assumption.
 *)
 Definition EVAL_pkg_tt:
-  package EVAL_locs_tt
+  package
     [interface]
     [interface
       #val #[lookup]: 'ciph → 'ciph ;
       #val #[invlookup]: 'ciph → 'ciph ] :=
-  [package
+  [package EVAL_locs_tt ;
     #def #[lookup] (x: 'ciph): 'ciph {
       k ← kgen ;;
       ret (PRP k x)
@@ -299,12 +295,12 @@ Definition EVAL_pkg_tt:
   ].
 
 Definition EVAL_pkg_ff:
-  package EVAL_locs_ff
+  package
     [interface]
     [interface
       #val #[lookup]: 'ciph → 'ciph ;
       #val #[invlookup]: 'ciph → 'ciph ] :=
-  [package
+  [package EVAL_locs_ff ;
     #def #[lookup] (x: 'ciph): 'ciph {
       T ← get T_loc ;;
       match getm T x with
@@ -332,13 +328,13 @@ Definition EVAL_pkg_ff:
   ].
 
 Definition EVAL_SAMP_pkg:
-  package EVAL_locs_ff
+  package
     [interface
       #val #[samp]: 'set 'ciph → 'ciph ]
     [interface
       #val #[lookup]: 'ciph → 'ciph ;
       #val #[invlookup]: 'ciph → 'ciph ] :=
-  [package
+  [package EVAL_locs_ff ;
     #def #[lookup] (x: 'ciph): 'ciph {
       T ← get T_loc ;;
       match getm T x with
@@ -367,7 +363,7 @@ Definition EVAL_SAMP_pkg:
     }
   ].
 
-Definition EVAL := mkpair EVAL_pkg_tt EVAL_pkg_ff.
+Definition EVAL b := if b then EVAL_pkg_tt else EVAL_pkg_ff.
 
 Definition CTXT_locs := [fmap k_loc; S_loc].
 
@@ -376,12 +372,12 @@ Definition CTXT_locs := [fmap k_loc; S_loc].
   [CTXT] packages are computationally indistinguishable.
 *)
 Definition CTXT_pkg_tt:
-  package CTXT_locs
+  package
     [interface]
     [interface
       #val #[ctxt]: 'word → 'ciph ;
       #val #[decrypt]: 'ciph → 'word ] :=
-  [package
+  [package CTXT_locs ;
     #def #[ctxt] (m: 'word): 'ciph {
       r <$ uniform Key_N ;;
       k ← kgen ;;
@@ -399,12 +395,12 @@ Definition CTXT_pkg_tt:
   ].
 
 Definition CTXT_pkg_ff:
-  package CTXT_locs
+  package
     [interface]
     [interface
       #val #[ctxt]: 'word → 'ciph ;
       #val #[decrypt]: 'ciph → 'word ] :=
-  [package
+  [package CTXT_locs ;
     #def #[ctxt] (m: 'word): 'ciph {
       c <$ uniform Ciph_N ;;
       S ← get S_loc ;;
@@ -419,19 +415,19 @@ Definition CTXT_pkg_ff:
     }
   ].
 
-Definition CTXT := mkpair CTXT_pkg_tt CTXT_pkg_ff.
+Definition CTXT b := if b then CTXT_pkg_tt else CTXT_pkg_ff.
 
 Definition CTXT_EVAL_locs := [fmap S_loc].
 
 Definition CTXT_EVAL_pkg_tt:
-  package CTXT_EVAL_locs
+  package
     [interface
       #val #[lookup]: 'ciph → 'ciph ;
       #val #[invlookup]: 'ciph → 'ciph ]
     [interface
       #val #[ctxt]: 'word → 'ciph ;
       #val #[decrypt]: 'ciph → 'word ] :=
-  [package
+  [package CTXT_EVAL_locs ;
     #def #[ctxt] (m: 'word): 'ciph {
       #import {sig #[lookup]: 'ciph → 'ciph } as lookup ;;
       r <$ uniform Key_N ;;
@@ -453,7 +449,7 @@ Definition CTXT_EVAL_pkg_tt:
 Definition CTXT_EVAL_SAMP_locs := [fmap S_loc; R_loc].
 
 Definition CTXT_EVAL_SAMP_pkg:
-  package CTXT_EVAL_SAMP_locs
+  package
     [interface
       #val #[samp]: 'set 'key → 'key ;
       #val #[lookup]: 'ciph → 'ciph ;
@@ -461,7 +457,7 @@ Definition CTXT_EVAL_SAMP_pkg:
     [interface
       #val #[ctxt]: 'word → 'ciph ;
       #val #[decrypt]: 'ciph → 'word ] :=
-  [package
+  [package CTXT_EVAL_SAMP_locs ;
     #def #[ctxt] (m: 'word): 'ciph {
       #import {sig #[samp]: 'set 'key → 'key } as samp ;;
       #import {sig #[lookup]: 'ciph → 'ciph } as lookup ;;
@@ -497,26 +493,26 @@ Definition CTXT_EVAL_SAMP_pkg:
   (p. 174).
 *)
 Definition EVAL_SAMP (b: bool):
-  package EVAL_locs_ff [interface]
+  package [interface]
     [interface
       #val #[samp]: 'set 'key → 'key ;
       #val #[lookup]: 'ciph → 'ciph ;
       #val #[invlookup]: 'ciph → 'ciph ].
 Proof.
-  apply (mkpackage (par (EVAL_SAMP_pkg ∘ SAMP Ciph_N b) (SAMP Key_N (~~ b)))).
+  eapply (mkpackage _ (par (EVAL_SAMP_pkg ∘ SAMP Ciph_N b) (SAMP Key_N (~~ b)))).
   ssprove_valid; destruct b; fmap_solve.
 Defined.
 
 Definition CTXT_HYB_locs_1 := [fmap S_loc; R_loc; T_loc; Tinv_loc].
 
 Definition CTXT_HYB_pkg_1:
-  package CTXT_HYB_locs_1
+  package
     [interface
       #val #[samp]: 'set 'key → 'key ]
     [interface
       #val #[ctxt]: 'word → 'ciph ;
       #val #[decrypt]: 'ciph → 'word ] :=
-  [package
+  [package CTXT_HYB_locs_1 ;
     #def #[ctxt] (m: 'word): 'ciph {
       #import {sig #[samp]: 'set 'key → 'key } as samp ;;
       R ← get R_loc ;;
@@ -573,12 +569,12 @@ Definition CTXT_HYB_locs_2 := [fmap S_loc; T_loc; Tinv_loc; Tinv'_loc].
    - Finally, we can get rid of [Tinv'] completely.
 *)
 Definition CTXT_HYB_pkg_2:
-  package CTXT_HYB_locs_2
+  package
     [interface]
     [interface
       #val #[ctxt]: 'word → 'ciph ;
       #val #[decrypt]: 'ciph → 'word ] :=
-  [package
+  [package CTXT_HYB_locs_2 ;
     #def #[ctxt] (m: 'word): 'ciph {
       r <$ uniform Key_N ;;
       let mr := mkciph m r in
@@ -612,12 +608,12 @@ Definition CTXT_HYB_pkg_2:
   ].
 
 Definition CTXT_HYB_pkg_3:
-  package CTXT_HYB_locs_2
+  package
     [interface]
     [interface
       #val #[ctxt]: 'word → 'ciph ;
       #val #[decrypt]: 'ciph → 'word ] :=
-  [package
+  [package CTXT_HYB_locs_2 ;
     #def #[ctxt] (m: 'word): 'ciph {
       r <$ uniform Key_N ;;
       let mr := mkciph m r in
@@ -651,12 +647,12 @@ Definition CTXT_HYB_pkg_3:
   ].
 
 Definition CTXT_HYB_pkg_4:
-  package CTXT_HYB_locs_2
+  package
     [interface]
     [interface
       #val #[ctxt]: 'word → 'ciph ;
       #val #[decrypt]: 'ciph → 'word ] :=
-  [package
+  [package CTXT_HYB_locs_2 ;
     #def #[ctxt] (m: 'word): 'ciph {
       r <$ uniform Key_N ;;
       let mr := mkciph m r in
@@ -686,12 +682,12 @@ Definition CTXT_HYB_pkg_4:
   ].
 
 Definition CTXT_HYB_pkg_5:
-  package CTXT_HYB_locs_2
+  package
     [interface]
     [interface
       #val #[ctxt]: 'word → 'ciph ;
       #val #[decrypt]: 'ciph → 'word ] :=
-  [package
+  [package CTXT_HYB_locs_2 ;
     #def #[ctxt] (m: 'word): 'ciph {
       r <$ uniform Key_N ;;
       let mr := mkciph m r in
@@ -721,14 +717,14 @@ Definition CTXT_HYB_pkg_5:
   ].
 
 Definition CTXT_EVAL_pkg_ff:
-  package CTXT_EVAL_locs
+  package
     [interface
       #val #[lookup]: 'ciph → 'ciph ;
       #val #[invlookup]: 'ciph → 'ciph ]
     [interface
       #val #[ctxt]: 'word → 'ciph ;
       #val #[decrypt]: 'ciph → 'word ] :=
-  [package
+  [package CTXT_EVAL_locs ;
     #def #[ctxt] (m: 'word): 'ciph {
       c <$ uniform Ciph_N ;;
       S ← get S_loc ;;

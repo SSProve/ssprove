@@ -595,65 +595,30 @@ Definition typed_raw_function :=
 Definition raw_package :=
   {fmap ident -> typed_raw_function }.
 
-(* To avoid unification troubles, we wrap this definition in an inductive. *)
-Definition valid_package_ext L I (E : Interface) (p : raw_package) :=
-  ∀ o,
-    fhas E o →
-    let '(id, (src, tgt)) := o in
-    ∃ (f : src → raw_code tgt),
-      p id = Some (src ; tgt ; f) ∧ ∀ x, ValidCode L I (f x).
+Record valid_package L (I E : Interface) (p : raw_package) :=
+  { valid_exports : ∀ o,
+      fhas E o <-> (∃ f, fhas p (o.1, (chsrc o ; chtgt o ; f)))
+  ; valid_imports : ∀ n (F : typed_raw_function) (x : F.π1),
+      fhas p (n, F) → ValidCode L I (F.π2.π2 x)
+  }.
 
-Inductive valid_package L I E p :=
-| prove_valid_package : valid_package_ext L I E p → valid_package L I E p.
-
-Lemma from_valid_package :
-  ∀ L I E p,
-    valid_package L I E p →
-    valid_package_ext L I E p.
-Proof.
-  intros L I E p [h]. exact h.
-Qed.
-
-Class ValidPackage L I E p :=
+Class ValidPackage (L : Locations) (I E : Interface) p :=
   is_valid_package : valid_package L I E p.
 
 (* Packages *)
-Record package L I E := mkpackage {
-  pack : raw_package ;
-  pack_valid : ValidPackage L I E pack
-}.
-
-Arguments mkpackage [_ _ _] _ _.
-Arguments pack [_ _ _] _.
-Arguments pack_valid [_ _ _] _.
-
-(* Packages coming with their set of locations *)
-Record loc_package I E := mkloc_package {
+Record package I E := mkpackage {
   locs : Locations ;
-  locs_pack : package locs I E
+  pack : raw_package ;
+  pack_valid : ValidPackage locs I E pack
 }.
 
-Arguments mkloc_package [_ _] _ _.
+Arguments mkpackage [_ _] _ _ _.
 Arguments locs [_ _] _.
-Arguments locs_pack [_ _] _.
-
-Coercion locs_pack : loc_package >-> package.
-
-Lemma loc_package_ext :
-  ∀ {I E} (p1 p2 : loc_package I E),
-    p1.(locs) = p2.(locs) →
-    p1.(locs_pack).(pack) =1 p2.(locs_pack).(pack) →
-    p1 = p2.
-Proof.
-  intros I E p1 p2 e1 e2.
-  destruct p1 as [l1 [p1 h1]], p2 as [l2 [p2 h2]].
-  apply eq_fmap in e2.
-  cbn in *. subst.
-  f_equal. f_equal. apply proof_irrelevance.
-Qed.
+Arguments pack [_ _] _.
+Arguments pack_valid [_ _] _.
 
 Notation "{ 'package' p }" :=
-  (mkpackage p _)
+  (mkpackage _ p _)
   (format "{ package  p  }") : package_scope.
 
 Notation "{ 'package' p '#with' h }" :=
@@ -666,23 +631,28 @@ Coercion pack : package >-> raw_package.
   eapply p.(pack_valid)
   : typeclass_instances ssprove_valid_db.
 
-Lemma valid_package_from_class :
-  ∀ L I E (p : raw_package),
-    ValidPackage L I E p →
-    valid_package L I E p.
-Proof.
-  intros A p h. auto.
-Defined.
-
-Notation "{ 'locpackage' p }" :=
-  (mkloc_package _ (mkpackage p _))
-  (format "{ locpackage  p  }") : package_scope.
-
-Notation "{ 'locpackage' p '#with' h }" :=
-  (mkloc_package _ (mkpackage p h))
-  (only parsing) : package_scope.
-
 (* Some validity lemmata *)
+
+Lemma valid_exports_eq {L I E p} :
+  ValidPackage L I E p → E = mapm (λ '(So; To; f), (So, To)) p.
+Proof.
+  intros [he _].
+  apply eq_fmap => n.
+  rewrite mapmE.
+  destruct (E n) as [[S T]|] eqn:e.
+  - specialize (he (n, (S, T))).
+    simpl in he.
+    rewrite he in e.
+    destruct e as [f e].
+    rewrite e //.
+  - destruct (p n) eqn:e'; rewrite e' //.
+    destruct t as [S [T f]].
+    assert (∃ f : S → raw_code T, p n = Some (S; T; f)) by by exists f.
+    specialize (he (n, (S, T))).
+    simpl in he.
+    rewrite -he in H.
+    by rewrite H in e.
+Qed.
 
 Lemma valid_package_inject_locations :
   ∀ I E L1 L2 p,
@@ -690,31 +660,21 @@ Lemma valid_package_inject_locations :
     ValidPackage L1 I E p →
     ValidPackage L2 I E p.
 Proof.
-  intros I E L1 L2 p hL h.
-  apply prove_valid_package.
-  eapply from_valid_package in h.
-  intros [n [S T]] ho.
-  specialize (h _ ho). cbn in h.
-  destruct h as [f [ef hf]].
-  exists f. intuition auto.
-  eapply valid_injectLocations. all: eauto.
+  intros I E L1 L2 p hL [he hi].
+  split; [ done |] => n F x h.
+  eapply valid_injectLocations; [ eassumption |].
+  eapply hi, h.
 Qed.
 
 Lemma valid_package_inject_export :
   ∀ L I E1 E2 p,
+    fsubmap E2 E1 →
     fsubmap E1 E2 →
     ValidPackage L I E2 p →
     ValidPackage L I E1 p.
 Proof.
-  move=> L I E1 E2 p hE h.
-  apply prove_valid_package.
-  eapply from_valid_package in h.
-  intros o ho. specialize (h o).
-  destruct o as [o [So To]].
-  forward h.
-  { by apply (fsubmap_fhas E1). }
-  destruct h as [f [ef hf]].
-  exists f. intuition auto.
+  intros L I E1 E2 p h1 h2.
+  by rewrite (fsubmap_eq _ _ h1 h2).
 Qed.
 
 Lemma valid_package_inject_import :
@@ -723,23 +683,21 @@ Lemma valid_package_inject_import :
     ValidPackage L I1 E p →
     ValidPackage L I2 E p.
 Proof.
-  intros L I1 I2 E p hE h.
-  apply prove_valid_package.
-  eapply from_valid_package in h.
-  intros [n [S T]] ho. specialize (h _ ho). cbn in h.
-  destruct h as [f [ef hf]].
-  exists f. intuition auto.
-  eapply valid_injectMap. all: eauto.
+  intros L I1 I2 E p hE [he hi].
+  split; [ done |] => n F x h.
+  eapply valid_injectMap; [ eassumption |].
+  eapply hi, h.
 Qed.
 
 Lemma package_ext :
-  ∀ {L I E} (p1 p2 : package L I E),
+  ∀ {I E} (p1 p2 : package I E),
+    p1.(locs) =1 p2.(locs) →
     p1.(pack) =1 p2.(pack) →
     p1 = p2.
 Proof.
-  intros L I E p1 p2 e.
+  intros I E p1 p2 e e'.
   destruct p1 as [p1 h1], p2 as [p2 h2].
-  apply eq_fmap in e.
+  apply eq_fmap in e, e'.
   cbn in *. subst.
   f_equal. apply proof_irrelevance.
 Qed.
@@ -748,7 +706,7 @@ Qed.
 
 Lemma mkpackage_rewrite :
   ∀ {L I E T} {x y} (p : T → _) h (e : x = y),
-    @mkpackage L I E (p x) h = mkpackage (p y) (sig_rewrite_aux p h e).
+    @mkpackage I E L (p x) h = mkpackage L (p y) (sig_rewrite_aux p h e).
 Proof.
   intros L I E T x y p h e. subst. reflexivity.
 Qed.

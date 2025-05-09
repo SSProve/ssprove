@@ -74,10 +74,6 @@ Definition count_loc: Location := (2, 'nat).
 Definition query: nat := 3.
 Definition lookup: nat := 4.
 
-Definition mkpair {Lt Lf E}
-  (t: package Lt [interface] E) (f: package Lf [interface] E):
-  loc_GamePair E := fun b => if b then {locpackage t} else {locpackage f}.
-
 Definition EVAL_locs_tt := [fmap k_loc].
 Definition EVAL_locs_ff := [fmap T_loc].
 
@@ -108,10 +104,10 @@ Hint Extern 1 (ValidCode ?L ?I kgen) =>
   : typeclass_instances ssprove_valid_db.
 
 Definition EVAL_pkg_tt:
-  package EVAL_locs_tt
+  package
     [interface]
     [interface #val #[lookup]: 'word → 'word ] :=
-  [package
+  [package EVAL_locs_tt ;
     #def #[lookup] (m: 'word): 'word {
       k ← kgen ;;
       ret (PRF k m)
@@ -119,10 +115,10 @@ Definition EVAL_pkg_tt:
   ].
 
 Definition EVAL_pkg_ff:
-  package EVAL_locs_ff
+  package
     [interface]
     [interface #val #[lookup]: 'word → 'word ] :=
-  [package
+  [package EVAL_locs_ff ;
     #def #[lookup] (m: 'word): 'word {
       T ← get T_loc ;;
       match getm T m with
@@ -135,12 +131,12 @@ Definition EVAL_pkg_ff:
     }
   ].
 
-Definition EVAL := mkpair EVAL_pkg_tt EVAL_pkg_ff.
+Definition EVAL b := if b then EVAL_pkg_tt else EVAL_pkg_ff.
 
 Definition GEN_pkg_tt:
-  package emptym [interface]
+  package [interface]
     [interface #val #[query]: 'unit → 'word × 'word ] :=
-  [package
+  [package emptym ;
     #def #[query] (_: 'unit): 'word × 'word {
       s <$ uniform Word_N ;;
       ret (PRF s zero, PRF s one)
@@ -148,9 +144,9 @@ Definition GEN_pkg_tt:
   ].
 
 Definition GEN_pkg_ff:
-  package emptym [interface]
+  package [interface]
     [interface #val #[query]: 'unit → 'word × 'word ] :=
-  [package
+  [package emptym ;
     #def #[query] (_: 'unit): 'word × 'word {
       x <$ uniform Word_N ;;
       y <$ uniform Word_N ;;
@@ -158,7 +154,7 @@ Definition GEN_pkg_ff:
     }
   ].
 
-Definition GEN := mkpair GEN_pkg_tt GEN_pkg_ff.
+Definition GEN b := if b then GEN_pkg_tt else GEN_pkg_ff.
 
 Definition GEN_HYB_locs := [fmap count_loc ].
 
@@ -171,10 +167,10 @@ Definition GEN_HYB_locs := [fmap count_loc ].
   are valid.
 *)
 Definition GEN_HYB_pkg i:
-  package GEN_HYB_locs
+  package
     [interface]
     [interface #val #[query]: 'unit → 'word × 'word ] :=
-  [package
+  [package GEN_HYB_locs ;
     #def #[query] (_: 'unit): 'word × 'word {
       count ← get count_loc ;;
       #put count_loc := count.+1 ;;
@@ -189,10 +185,10 @@ Definition GEN_HYB_pkg i:
   ].
 
 Definition GEN_HYB_EVAL_pkg i:
-  package GEN_HYB_locs
+  package
     [interface #val #[lookup]: 'word → 'word ]
     [interface #val #[query]: 'unit → 'word × 'word ] :=
-  [package
+  [package GEN_HYB_locs ;
     #def #[query] (_: 'unit): 'word × 'word {
       #import {sig #[lookup]: 'word → 'word } as lookup ;;
       count ← get count_loc ;;
