@@ -32,6 +32,7 @@ Makefile.coq.conf
 
 # markdown preview
 *.html
+*.css
 
 # Latex
 *.aux
@@ -55,3 +56,6 @@ Makefile.coq.conf
 .DS_store
 
 .Makefile.coq 2.d
+
+# Dune
+_build/
