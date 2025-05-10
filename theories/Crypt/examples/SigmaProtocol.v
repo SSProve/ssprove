@@ -920,7 +920,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       ssprove_sync. intro e.
       apply r_put_lhs.
       ssprove_restore_pre. 1: ssprove_invariant.
-      eapply r_reflexivity_alt.
+      eapply @r_reflexivity_alt.
       - exact _.
       - intros l Il.
         ssprove_invariant.
