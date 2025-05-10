@@ -53,37 +53,77 @@ Inductive choice_type :=
 Derive NoConfusion NoConfusionHom for choice_type.
 
 
-Fixpoint chElement_ordType (U : choice_type) : ordType :=
+(* Types T that may be represented by the interpretation of
+   a choice_type A are given an instance of hasInterp.  *)
+HB.mixin Record hasInterp (A : choice_type) T := { }.
+
+HB.structure Definition Crypt (A : choice_type)
+  := { T of Countable T & Ord.Ord T & hasInterp A T }.
+
+HB.instance Definition _
+  := hasInterp.Build chUnit unit.
+
+HB.instance Definition _
+  := hasInterp.Build chNat nat.
+
+HB.instance Definition _
+  := hasInterp.Build chInt BinInt.Z.
+
+HB.instance Definition _
+  := hasInterp.Build chBool bool.
+
+HB.instance Definition _ (A B : choice_type)
+  (T : Crypt.type A) (S : Crypt.type B)
+  := hasInterp.Build (chProd A B) (T * S)%type.
+
+HB.instance Definition _ (A B : choice_type)
+  (T : Crypt.type A) (S : Crypt.type B) :=
+  @CanIsCountable _ {fmap T → S} _ _ (@fmvalK T S).
+
+HB.instance Definition _ (A B : choice_type)
+  (T : Crypt.type A) (S : Crypt.type B)
+  := hasInterp.Build (chMap A B) {fmap T → S}.
+
+HB.instance Definition _ (A : choice_type) (T : Crypt.type A)
+  := hasInterp.Build (chOption A) (option T).
+
+HB.instance Definition _ n
+  := hasInterp.Build (chFin n) (ordinal n.(pos)).
+
+#[non_forgetful_inheritance]
+HB.instance Definition _ nbits
+  := hasInterp.Build (chWord nbits) (word nbits).
+
+HB.instance Definition _ (A : choice_type) (T : Crypt.type A)
+  := hasInterp.Build (chList A) (list T).
+
+HB.instance Definition _ (A B : choice_type)
+  (T : Crypt.type A) (S : Crypt.type B)
+  := hasInterp.Build (chSum A B) (T + S)%type.
+
+Fixpoint chInterp (U : choice_type) : Crypt.type U :=
   match U with
-  | chUnit => Datatypes.unit
+  | chUnit => unit
   | chNat => nat
   | chInt => BinInt.Z
   | chBool => bool
-  | chProd U1 U2 => chElement_ordType U1 * chElement_ordType U2
-  | chMap U1 U2 => {fmap chElement_ordType U1 → chElement_ordType U2}
-  | chOption U => option(chElement_ordType U)
+  | chProd u v => (chInterp u * chInterp v)%type
+  | chMap u v => {fmap chInterp u → chInterp v}
+  | chOption u => option (chInterp u)
   | chFin n => ordinal n.(pos)
   | chWord nbits => word nbits
-  | chList U => list (chElement_ordType U)
-  | chSum U1 U2 => chElement_ordType U1 + chElement_ordType U2
+  | chList u => list (chInterp u)
+  | chSum u v => (chInterp u + chInterp v)%type
   end.
 
-Fixpoint chElement (U : choice_type) : choiceType :=
-  match U with
-  | chUnit => Datatypes.unit
-  | chNat => nat
-  | chInt => BinInt.Z
-  | chBool => bool
-  | chProd U1 U2 => chElement U1 * chElement U2
-  | chMap U1 U2 => {fmap chElement_ordType U1 → chElement U2}
-  | chOption U => option (chElement U)
-  | chFin n => ordinal n.(pos)
-  | chWord nbits => word nbits
-  | chList U => list (chElement U)
-  | chSum U1 U2 => chElement U1 + chElement U2
-  end.
+(* When a Crypt.type is found for an arbitrary type, the
+   parameter U remembers how to construct a corresponding
+   choice_type. This allows us to use this coercion in reverse. *)
+#[reversible] Coercion chInterp : choice_type >-> Crypt.type.
 
-Coercion chElement : choice_type >-> choiceType.
+(* Compatability - should be removable *)
+Definition chElement_ordType (U : choice_type) : ordType := U.
+Definition chElement (U : choice_type) : choiceType := U.
 
 (* Canonical element in a type of the choice_type *)
 #[program] Fixpoint chCanonical (T : choice_type) : T :=
@@ -101,158 +141,9 @@ Coercion chElement : choice_type >-> choiceType.
   | chSum A B => inl (chCanonical A)
   end.
 
-Section Cucumber.
-  (* Cucumber is a replacement for pickle until a
-     countType for each choice_type can be given directly
-     or until the inductive choice_type is removed entirely.
-     The functions cucumber and uncucumber correspond to pickle
-     and unpickle respectively.
-   *)
-
-  Fixpoint cucumber' {U : choice_type} : chElement_ordType U → nat :=
-    match U with
-    | chUnit => pickle
-    | chNat => pickle
-    | chInt => pickle
-    | chBool => pickle
-    | chProd _ _ => λ '(x, y), pickle (cucumber' x, cucumber' y)
-    | chMap _ _ =>
-        λ x, pickle (map (λ '(x, y), (cucumber' x, cucumber' y)) (\val x))
-    | chOption _ => λ x, pickle (omap cucumber' x)
-    | chFin _ => pickle
-    | chWord _ => pickle
-    | chList _ => λ x, pickle (map cucumber' x)
-    | chSum _ _ => λ x,
-      match x with
-      | inl y => pickle (true, cucumber' y)
-      | inr y => pickle (false, cucumber' y)
-      end
-    end.
-
-  Fixpoint cucumber {U : choice_type} : U → nat :=
-    match U with
-    | chUnit => pickle
-    | chNat => pickle
-    | chInt => pickle
-    | chBool => pickle
-    | chProd _ _ => λ '(x, y), pickle (cucumber x, cucumber y)
-    | chMap _ _ =>
-        λ x, pickle (map (λ '(x, y), (cucumber' x, cucumber y)) (\val x))
-    | chOption _ => λ x, pickle (omap cucumber x)
-    | chFin _ => pickle
-    | chWord _ => pickle
-    | chList _ => λ x, pickle (map cucumber x)
-    | chSum _ _ => λ x,
-      match x with
-      | inl y => pickle (true, cucumber y)
-      | inr y => pickle (false, cucumber y)
-      end
-    end.
-
-  Definition helper {U : countType} (x : U) : nat → U
-    := λ n, locked (odflt x (unpickle n)).
-
-  Lemma helperK U x : cancel (@pickle U) (helper x).
-  Proof.
-    intros y.
-    rewrite /helper -lock pickleK //=.
-  Qed.
-
-
-  Fixpoint uncucumber'' {U : choice_type}
-    : nat → chElement_ordType U :=
-    match U with
-    | chUnit => λ x, helper tt x
-    | chNat => λ x, helper 0 x
-    | chInt => λ x, helper BinInt.Z0 x
-    | chBool => λ x, helper false x
-    | chProd _ _ => λ x,
-        let (y, z) := helper (0,0) x in (uncucumber'' y, uncucumber'' z)
-    | chMap _ _ =>
-        λ x, mkfmap (map (λ '(x, y), (uncucumber'' x, uncucumber'' y))
-          (helper [::] x))
-    | chOption _ =>
-        λ x, omap uncucumber'' (helper None x)
-    | chFin n => λ x, helper (Ordinal n.(cond_pos)) x
-    | chWord _ => λ x, helper word0 x
-    | chList _ => λ x,
-        map uncucumber'' (helper [::] x)
-    | chSum _ _ => λ x,
-        let (b, n) := helper (true,0) x in
-        if b then inl (uncucumber'' n) else inr (uncucumber'' n)
-    end.
-
-  Fixpoint uncucumber' {U : choice_type} : nat → U :=
-    match U with
-    | chUnit => λ x, helper tt x
-    | chNat => λ x, helper 0 x
-    | chInt => λ x, helper BinInt.Z0 x
-    | chBool => λ x, helper false x
-    | chProd _ _ => λ x,
-        let (y, z) := helper (0,0) x in (uncucumber' y, uncucumber' z)
-    | chMap _ _ =>
-        λ x, mkfmap (map (λ '(x, y), (uncucumber'' x, uncucumber' y))
-          (helper [::] x))
-    | chOption _ =>
-        λ x, omap uncucumber' (helper None x)
-    | chFin n => λ x, helper (Ordinal n.(cond_pos)) x
-    | chWord _ => λ x, helper word0 x
-    | chList _ => λ x,
-        map uncucumber' (helper [::] x)
-    | chSum _ _ => λ x,
-        let (b, n) := helper (true,0) x in
-        if b then inl (uncucumber' n) else inr (uncucumber' n)
-    end.
-
-  Definition uncucumber {U : choice_type} : nat → option U :=
-    λ n, locked (Some (uncucumber' n)).
-
-  Lemma cucumber''K (U : choice_type) : cancel (@cucumber' U) uncucumber''.
-  Proof.
-    induction U => //=.
-    all: intros x.
-    all: try rewrite helperK //.
-    + destruct x => //=.
-      rewrite helperK IHU1 IHU2 //.
-    + rewrite -map_comp //=.
-      rewrite (@map_ext _ _ _ id).
-      2: intros [a b] _; simpl.
-      2: rewrite IHU1 IHU2 //.
-      rewrite map_id.
-      apply fmvalK.
-    + apply omapK, IHU.
-    + rewrite -map_comp.
-      rewrite (@map_ext _ _ _ id).
-      2: intros a _; rewrite //= IHU //.
-      by rewrite map_id.
-    + destruct x; rewrite helperK ?IHU1 ?IHU2 //.
-  Qed.
-
-  Lemma cucumber'K (U : choice_type) : cancel (@cucumber U) uncucumber'.
-  Proof.
-    induction U => //=.
-    all: intros x.
-    all: try rewrite helperK //.
-    + destruct x => //=.
-      rewrite helperK IHU1 IHU2 //.
-    + rewrite -map_comp //=.
-      rewrite (@map_ext _ _ _ id).
-      2: intros [a b] _; simpl.
-      2: rewrite cucumber''K IHU2 //.
-      rewrite map_id.
-      apply fmvalK.
-    + apply omapK, IHU.
-    + rewrite -map_comp.
-      rewrite (@map_ext _ _ _ id).
-      2: intros a _; rewrite //= IHU //.
-      by rewrite map_id.
-    + destruct x; rewrite helperK ?IHU1 ?IHU2 //.
-  Qed.
-
-  Lemma cucumberK U : pcancel (@cucumber U) uncucumber.
-  Proof. intros x. rewrite /uncucumber -lock. f_equal. apply cucumber'K. Qed.
-
-End Cucumber.
+Definition cucumber {U : choice_type} : U → nat := pickle.
+Definition uncucumber {U : choice_type} : nat → option U := unpickle.
+Definition cucumberK U : pcancel (@cucumber U) uncucumber := pickleK.
 
 
 Definition coerce {A B : choice_type} : A → B
