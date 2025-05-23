@@ -8,7 +8,6 @@ Set Warnings "notation-overridden".
 From HB Require Import structures.
 From extructures Require Import ord fset.
 From Equations Require Import Equations.
-From SSProve.Mon Require SPropBase.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
@@ -279,26 +278,6 @@ Notation "[ 'hints' x ; .. ; z ]" :=
   (let hint := x in .. (let hint := z in _) ..)
   (at level 0, only parsing)
   : package_scope.
-
-(* Tactics to deal with \in fset *)
-
-Ltac in_fset_auto :=
-  rewrite in_fset ; reflexivity.
-
-(* Succeeds for x \in S if S contains syntactically x, S seq *)
-Ltac inseq_try :=
-  apply/orP ; first [
-    left ; apply/eqP ; reflexivity
-  | right ; inseq_try
-  ].
-
-Ltac inset_try :=
-  rewrite in_fset ; inseq_try.
-
-Ltac auto_in_fset :=
-  eauto ;
-  try in_fset_auto ;
-  try inset_try.
 
 (* TODO Same as finmap.oextract but with a better name? *)
 Definition getSome {A} (o : option A) :

@@ -121,10 +121,9 @@ safely be assumed to be in [theories/Crypt].
 The formalisation of packages can be found in the [package] directory.
 
 The definition of packages can be found in [pkg_core_definition.v].
-Herein, `package L I E` is the type of packages with set of locations `L`,
-import interface `I` and export interface `E`. It is defined on top of
-`raw_package` which does not contain the information about its interfaces
-and the locations it uses.
+Herein, `package I E` is the type of packages with import interface `I`
+and export interface `E`. It is defined on top of `raw_package` which does
+not contain the information about its interfaces and the locations it uses.
 
 Package laws, as introduced in the paper, are all stated and proven in
 [pkg_composition.v] directly on raw packages. This technical detail is not
@@ -141,13 +140,14 @@ Definition link (p1 p2 : raw_package) : raw_package.
 ```
 
 Linking is valid if the export and import match, and its set of locations
-is the union of those from both packages (`:|:` denotes union of sets):
+is the union of those from both packages (`unionm` denotes union of `fmap`s):
 ```coq
 Lemma valid_link :
   ∀ L1 L2 I M E p1 p2,
     ValidPackage L1 M E p1 →
     ValidPackage L2 I M p2 →
-    ValidPackage (L1 :|: L2) I E (link p1 p2).
+    fcompat L1 L2 →
+    ValidPackage (unionm L1 L2) I E (link p1 p2).
 ```
 
 Associativity is stated as follows:
@@ -173,19 +173,23 @@ The validity of parallel composition can be proven with the following lemma:
 ```coq
 Lemma valid_par :
   ∀ L1 L2 I1 I2 E1 E2 p1 p2,
-    Parable p1 p2 →
     ValidPackage L1 I1 E1 p1 →
     ValidPackage L2 I2 E2 p2 →
+    fseparate p1 p2 →
+    fcompat L1 L2 →
+    fcompat I1 I2 →
     ValidPackage (L1 :|: L2) (I1 :|: I2) (E1 :|: E2) (par p1 p2).
 ```
 
-The `Parable` condition checks that the export interfaces are indeed disjoint.
+The `fseparate` condition checks that the export interfaces are indeed disjoint.
+The `fcompat conditions check that the locations and imports are compatible i.e.
+that if they define the same key it also has the same value.
 
 We have commutativity as follows:
 ```coq
 Lemma par_commut :
   ∀ p1 p2,
-    Parable p1 p2 →
+    fseparate p1 p2 →
     par p1 p2 = par p2 p1.
 ```
 This lemma does not work on arbitrary raw packages, it requires that the
@@ -208,24 +212,14 @@ Definition ID (I : Interface) : raw_package.
 Its validity is stated as
 ```coq
 Lemma valid_ID :
-  ∀ L I,
-    flat I →
-    ValidPackage L I I (ID I).
+  ∀ L I, ValidPackage L I I (ID I).
 ```
-
-The extra `flat I` condition on the interface essentially forbids overloading:
-there cannot be two procedures in `I` that share the same name, but have
-different types. While our type of interface could in theory allow such
-overloading, the way we build packages forbids us from ever implementing them,
-hence the restriction.
 
 The two identity laws are as follows:
 ```coq
 Lemma link_id :
   ∀ L I E p,
     ValidPackage L I E p →
-    flat I →
-    trimmed E p →
     link p (ID I) = p.
 ```
 
@@ -233,14 +227,11 @@ Lemma link_id :
 Lemma id_link :
   ∀ L I E p,
     ValidPackage L I E p →
-    trimmed E p →
     link (ID E) p = p.
 ```
 
-In both cases, we ask that the package we link the identity package with is
-`trimmed`, meaning that it implements *exactly* its export interface and nothing
-more. Packages created through our operations always verify this property
-(as such it can be checked automatically on those).
+In both cases, the package is required to be a valid on specific
+interfaces that match with the interface argument for ID.
 
 #### Interchange between sequential and parallel composition
 
@@ -253,15 +244,13 @@ Lemma interchange :
     ValidPackage L2 E D p2 →
     ValidPackage L3 C B p3 →
     ValidPackage L4 F E p4 →
-    trimmed A p1 →
-    trimmed D p2 →
-    Parable p3 p4 →
+    fseparate p3 p4 →
     par (link p1 p3) (link p2 p4) = link (par p1 p2) (par p3 p4).
 ```
 where the last line can be read as
 `(p1 ∘ p3) || (p2 ∘ p4) = (p1 || p2) ∘ (p3 || p4)`.
 
-It once again requires some validity and trimming properties.
+It once again requires some validity and separation properties.
 
 
 ### Examples
@@ -276,8 +265,8 @@ Theorem security_based_on_prf :
   ∀ LA A,
     ValidPackage LA
       [interface val #[i1] : 'word → 'word × 'word ] A_export A →
-    fdisjoint LA (IND_CPA false).(locs) →
-    fdisjoint LA (IND_CPA true).(locs) →
+    fseparate LA (IND_CPA false).(locs) →
+    fseparate LA (IND_CPA true).(locs) →
     Advantage IND_CPA A <=
     prf_epsilon (A ∘ MOD_CPA_ff_pkg) +
     statistical_gap A +
@@ -300,8 +289,8 @@ The security theorem is the following:
 Theorem ElGamal_OT :
   ∀ LA A,
     ValidPackage LA [interface val #[challenge_id'] : 'plain → 'cipher] A_export A →
-    fdisjoint LA (ots_real_vs_rnd true).(locs) →
-    fdisjoint LA (ots_real_vs_rnd false).(locs) →
+    fseparate LA (ots_real_vs_rnd true).(locs) →
+    fseparate LA (ots_real_vs_rnd false).(locs) →
     Advantage ots_real_vs_rnd A <= AdvantageE DH_rnd DH_real (A ∘ Aux).
 ```
 
@@ -333,8 +322,8 @@ while the final security theorem is the following:
 Theorem PKE_security :
   ∀ LA A,
     ValidPackage LA PKE_CCA_out A_export A →
-    fdisjoint LA PKE_CCA_loc →
-    fdisjoint LA Aux_loc →
+    fseparate LA PKE_CCA_loc →
+    fseparate LA Aux_loc →
     Advantage (PKE_CCA KEM_DEM) A <=
     Advantage KEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (ID KEM_out) (DEM true)) +
     Advantage DEM_CCA (A ∘ (MOD_CCA KEM_DEM) ∘ par (KEM false) (ID DEM_out)) +
@@ -375,7 +364,7 @@ Theorem commitment_binding :
     ValidPackage LAdv [interface] [interface
       val #[ ADV ] : chStatement → chSoundness
     ] Adv →
-    fdisjoint LA (Sigma_locs :|: LAdv) →
+    fseparate LA (Sigma_locs :|: LAdv) →
     AdvantageE (Com_Binding ∘ Adv) (Special_Soundness_f ∘ Adv) A <=
     ɛ_soundness A Adv.
 ```
@@ -388,8 +377,8 @@ Theorem schnorr_com_hiding :
     ValidPackage LA [interface
       val #[ HIDING ] : chInput → chMessage
     ] A_export A →
-    fdisjoint LA Com_locs →
-    fdisjoint LA Sigma_locs →
+    fseparate LA Com_locs →
+    fseparate LA Sigma_locs →
     AdvantageE (Hiding_real ∘ Sigma_to_Com ∘ SHVZK_ideal) (Hiding_ideal ∘ Sigma_to_Com ∘ SHVZK_ideal) A <= 0.
 ```
 
@@ -404,7 +393,7 @@ Theorem schnorr_com_binding :
     ValidPackage LAdv [interface] [interface
       val #[ ADV ] : chStatement → chSoundness
     ] Adv →
-    fdisjoint LA (Sigma_locs :|: LAdv) →
+    fseparate LA (Sigma_locs :|: LAdv) →
     AdvantageE (Com_Binding ∘ Adv) (Special_Soundness_f ∘ Adv) A <= 0.
 ```
 
@@ -471,8 +460,8 @@ Lemma eq_upto_inv_perf_ind :
     `{ValidPackage LA E A_export A},
     INV' L₀ L₁ I →
     I (empty_heap, empty_heap) →
-    fdisjoint LA L₀ →
-    fdisjoint LA L₁ →
+    fseparate LA L₀ →
+    fseparate LA L₁ →
     eq_up_to_inv E I p₀ p₁ →
     AdvantageE p₀ p₁ A = 0.
 ```

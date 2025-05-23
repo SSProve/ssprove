@@ -276,32 +276,32 @@ Section OTP_example.
 
   Opaque key2ch ch2key words2ch ch2words.
 
-  Definition Enc {L : {fset Location}} (m : Words) (k : Key) :
+  Definition Enc {L : Locations} (m : Words) (k : Key) :
     code L [interface] Words :=
     {code
        ret (m ⊕ k)
     }.
 
-  Definition KeyGen {L : {fset Location}} :
+  Definition KeyGen {L : Locations} :
     code L [interface] Key :=
     {code
        k ← sample uniform i_key ;;
        ret (ch2key k)
     }.
 
-  Definition dec {L : {fset Location }}(c : Words) (k : Key) :
+  Definition dec {L : Locations}(c : Words) (k : Key) :
     code L [interface] Words := Enc k c.
 
-  Definition IND_CPA_location : {fset Location} := fset0.
+  Definition IND_CPA_location : Locations := emptym.
 
   (* REM: Key is always sampled at the side of the encrypter. *)
   (* This assumption is stronger than usual crypto definitions. *)
   (* We need control over the key to apply coupling. *)
   Definition IND_CPA_real :
-    package IND_CPA_location
+    package
       [interface]
       [interface #val #[i1] : 'word → 'word ] :=
-    [package
+    [package IND_CPA_location ;
         #def #[i1] (m : 'word) : 'word
         {
           k_val ← sample uniform i_key ;;
@@ -311,10 +311,10 @@ Section OTP_example.
     ].
 
   Definition IND_CPA_ideal :
-    package IND_CPA_location
+    package
       [interface ]
       [interface #val #[i1] : 'word → 'word ] :=
-    [package
+    [package IND_CPA_location ;
       #def #[i1] (m : 'word) : 'word
       {
         m'    ← sample uniform i_words ;;
@@ -324,8 +324,8 @@ Section OTP_example.
       }
     ].
 
-  Definition IND_CPA : loc_GamePair [interface #val #[i1] : 'word → 'word ] :=
-    λ b, if b then {locpackage IND_CPA_real } else {locpackage IND_CPA_ideal }.
+  Definition IND_CPA b : game [interface #val #[i1] : 'word → 'word ] :=
+    if b then IND_CPA_real else IND_CPA_ideal.
 
   #[local] Open Scope ring_scope.
 
@@ -365,8 +365,8 @@ Section OTP_example.
       Advantage IND_CPA A = 0.
   Proof.
     intros LA A vA.
-    rewrite Advantage_E. eapply IND_CPA_ideal_real. 1: eauto.
-    all: eapply fdisjoints0.
+    rewrite Advantage_E.
+    by rewrite -> IND_CPA_ideal_real by ssprove_valid.
   Qed.
 
 End OTP_example.

@@ -1,6 +1,6 @@
 { lib, mkCoqDerivation, coq, version ? null
 , equations
-, mathcomp-ssreflect
+, mathcomp-boot
 , mathcomp-analysis
 , mathcomp-experimental-reals
 , mathcomp-word
@@ -36,7 +36,7 @@
   release."0.1.0".sha256 = "sha256-Yj+k+mBsudi3d6bRVlZLyM4UqQnzAX5tHvxtKoIuNTE=";
 
   propagatedBuildInputs = [equations
-                           mathcomp-ssreflect
+                           mathcomp-boot
                            mathcomp-analysis
                            mathcomp-experimental-reals
                            mathcomp-word

@@ -9,25 +9,18 @@ From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr seq all_algebra fintype realsum.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
-From SSProve.Mon Require Import SPropBase.
-From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
-  RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
-  StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
-  pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_lookup.
+From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr
+  StateTransfThetaDens choice_type pkg_core_definition pkg_notation
+  pkg_tactics pkg_composition pkg_heap pkg_semantics fmap_extra.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
-
-(* Must come after importing Equations.Equations, who knows why. *)
-From SSProve.Crypt Require Import FreeProbProg.
 
 Import Num.Theory.
 
 Set Equations With UIP.
 Set Equations Transparent.
 
-Import SPropNotations.
 Import PackageNotation.
-Import RSemanticNotation.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
@@ -44,23 +37,19 @@ Set Primitive Projections.
 
 Definition Game_import : Interface := [interface].
 
-Definition Game_Type (Game_export : Interface) : Type :=
-  loc_package Game_import Game_export.
+Notation game E := (package Game_import E).
 
 Definition RUN := (0%N, ('unit, 'bool)).
 
-Definition A_export : Interface := fset1 RUN.
+Definition A_export : Interface := mkfmap [:: RUN ].
 
-Lemma RUN_in_A_export : RUN \in A_export.
+Notation adversary I := (package I A_export).
+
+Lemma RUN_in_A_export : A_export RUN.1 = Some RUN.2.
 Proof.
-  apply in_fset1.
+  rewrite setmE //.
 Qed.
 
-Definition Adversary4Game (Game_export : Interface) : Type :=
-  loc_package Game_export A_export.
-
-Definition Adversary4Game_weak (Game_export : Interface) : Type :=
-  package fset0 Game_export A_export.
 
 Definition Game_op_import_S : Type := {_ : ident & void}.
 
@@ -78,7 +67,7 @@ Definition Pr_raw_func_code {A B} (p : A → raw_code B) :
 
 Definition Pr_op (p : raw_package) (o : opsig) (x : src o) :
   heap_choiceType → SDistr (F_choice_prod_obj ⟨ tgt o , heap_choiceType ⟩) :=
-  Pr_code (get_op_default p o x).
+  Pr_code (resolve p o x).
 
 Arguments SDistr_bind {_ _}.
 
@@ -86,16 +75,9 @@ Definition Pr (p : raw_package) :
   SDistr (bool:choiceType) :=
   SDistr_bind
     (λ '(b, _), SDistr_unit _ b)
-    (Pr_op p RUN Datatypes.tt empty_heap).
+    (Pr_op p RUN tt empty_heap).
 
-Definition loc_GamePair (Game_export : Interface) :=
-  bool → Game_Type Game_export.
-
-(* TODO Again, why not an actual pair? *)
-Definition GamePair :=
-  bool → raw_package.
-
-Definition Advantage (G : GamePair) (A : raw_package) : R :=
+Definition Advantage (G : bool → raw_package) (A : raw_package) : R :=
   `| Pr (A ∘ (G false)) true - Pr (A ∘ (G true)) true |.
 
 Definition AdvantageE (G₀ G₁ : raw_package) (A : raw_package) : R :=
@@ -171,7 +153,7 @@ Defined.
 
 Definition state_pass__valid {A} {L} {I} (p : raw_code A)
   (h : ValidCode L I p) :
-  ∀ hp, ValidCode fset0 I (state_pass_ p hp).
+  ∀ hp, ValidCode emptym I (state_pass_ p hp).
 Proof.
   intro hp.
   unfold ValidCode in *.
@@ -191,13 +173,14 @@ Definition state_pass {A} (p : raw_code A) : raw_code A :=
 
 Definition state_pass_valid {A} {L} {I} (p : raw_code A)
   (h : ValidCode L I p) :
-  ValidCode fset0 I (state_pass p).
+  ValidCode emptym I (state_pass p).
 Proof.
   apply valid_bind.
   - apply (state_pass__valid p h empty_heap).
   - intros x. destruct x. constructor.
 Qed.
 
+(* MK: To be solved by nominals.
 (* TODO Will have to be updated *)
 (* Probably by having first an operation on raw_packages
   and then a validity proof.
@@ -206,7 +189,7 @@ Definition turn_adversary_weak  {Game_export : Interface}
   (A : Adversary4Game Game_export) : Adversary4Game_weak Game_export.
 Proof.
   unfold Adversary4Game_weak.
-  pose (get_op A RUN RUN_in_A_export Datatypes.tt) as run.
+  pose (get_op A RUN RUN_in_A_export tt) as run.
   destruct run as [run valid_run].
   cbn in *.
   pose (state_pass run) as raw_run_st.
@@ -224,13 +207,14 @@ Proof.
     exists raw_run_st.
     assumption.
 Defined.
+*)
 
 Definition adv_equiv {L₀ L₁ E} (G₀ G₁ : raw_package)
   `{ValidPackage L₀ Game_import E G₀} `{ValidPackage L₁ Game_import E G₁} ε :=
   ∀ LA A,
     ValidPackage LA E A_export A →
-    fdisjoint LA L₀ →
-    fdisjoint LA L₁ →
+    fseparate LA L₀ →
+    fseparate LA L₁ →
     AdvantageE G₀ G₁ A = ε A.
 
 Notation " G0 ≈[ R ] G1 " :=
@@ -244,21 +228,21 @@ Notation " G0 ≈₀ G1 " :=
   : package_scope.
 
 Lemma Advantage_equiv :
-  ∀ I (G : loc_GamePair I),
+  ∀ I (G : bool → game I),
     (G false) ≈[ Advantage G ] (G true).
 Proof.
   intros I G. intros LA A vA hd₀ hd₁. reflexivity.
 Qed.
 
 Lemma AdvantageE_equiv :
-  ∀ I (G₀ G₁ : Game_Type I),
+  ∀ I (G₀ G₁ : game I),
     G₀ ≈[ AdvantageE G₀ G₁ ] G₁.
 Proof.
   intros I G₀ G₁. intros LA A vA hd₀ hd₁. reflexivity.
 Qed.
 
 Lemma Advantage_E :
-  ∀ (G : GamePair) A,
+  ∀ (G : bool → raw_package) A,
     Advantage G A = AdvantageE (G false) (G true) A.
 Proof.
   intros G A.
@@ -289,58 +273,25 @@ Lemma Advantage_par :
     ValidPackage L₀ Game_import E₀ G₀ →
     ValidPackage L₁ Game_import E₁ G₁ →
     ValidPackage L₁' Game_import E₁ G₁' →
-    flat E₁ →
-    trimmed E₀ G₀ →
-    trimmed E₁ G₁ →
-    trimmed E₁ G₁' →
     AdvantageE (par G₀ G₁) (par G₀ G₁') A =
     AdvantageE G₁ G₁' (A ∘ par G₀ (ID E₁)).
 Proof.
-  intros G₀ G₁ G₁' A L₀ L₁ L₁' E₀ E₁.
-  intros Va0 Va1 Va1' Fe0 Te0 Te1 Te1'.
+  intros G₀ G₁ G₁' A L₀ L₁ L₁' E₀ E₁ Va0 Va1 Va1'.
   replace (par G₀ G₁) with ((par G₀ (ID E₁)) ∘ (par (ID Game_import) G₁)).
   2:{
     erewrite <- interchange.
     all: ssprove_valid.
-    4:{
-      ssprove_valid.
-      rewrite domm_ID_fset.
-      rewrite -fset0E.
-      apply fdisjoint0s.
-    }
-    2:{ unfold Game_import. rewrite -fset0E. discriminate. }
-    2: apply trimmed_ID.
-    rewrite link_id.
-    2:{ unfold Game_import. rewrite -fset0E. discriminate. }
-    2: assumption.
-    rewrite id_link.
-    2: assumption.
-    reflexivity.
+    2: fmap_solve.
+    rewrite link_id // id_link //.
   }
   replace (par G₀ G₁') with ((par G₀ (ID E₁)) ∘ (par (ID Game_import) G₁')).
   2:{
     erewrite <- interchange.
     all: ssprove_valid.
-    4:{
-      ssprove_valid.
-      rewrite domm_ID_fset.
-      rewrite -fset0E.
-      apply fdisjoint0s.
-    }
-    2:{ unfold Game_import. rewrite -fset0E. discriminate. }
-    2: apply trimmed_ID.
-    rewrite link_id.
-    2:{ unfold Game_import. rewrite -fset0E. discriminate. }
-    2: assumption.
-    rewrite id_link.
-    2: assumption.
-    reflexivity.
+    2: fmap_solve.
+    rewrite link_id // id_link //.
   }
-  rewrite -Advantage_link.
-  unfold Game_import. rewrite -fset0E.
-  rewrite Advantage_par_empty.
-  reflexivity.
-  Unshelve. all: auto.
+  rewrite -Advantage_link Advantage_par_empty //.
 Qed.
 
 Lemma Advantage_sym :
@@ -414,16 +365,16 @@ Qed.
 
 Lemma TriangleInequality :
   ∀ {Game_export : Interface}
-    {F G H : Game_Type Game_export}
+    {F G H : game Game_export}
     {ϵ1 ϵ2 ϵ3},
     F ≈[ ϵ1 ] G →
     G ≈[ ϵ2 ] H →
     F ≈[ ϵ3 ] H →
     ∀ LA A,
       ValidPackage LA Game_export A_export A →
-      fdisjoint LA F.(locs) →
-      fdisjoint LA G.(locs) →
-      fdisjoint LA H.(locs) →
+      fseparate LA F.(locs) →
+      fseparate LA G.(locs) →
+      fseparate LA H.(locs) →
       ϵ3 A <= ϵ1 A + ϵ2 A.
 Proof.
   intros Game_export F G H ε₁ ε₂ ε₃ h1 h2 h3 LA A vA hF hG hH.
@@ -433,7 +384,7 @@ Proof.
 Qed.
 
 Lemma Reduction :
-  ∀ (M : raw_package) (G : GamePair) A b,
+  ∀ (M : raw_package) (G : bool → raw_package) A b,
     `| Pr (A ∘ (M ∘ (G b))) true | =
     `| Pr ((A ∘ M) ∘ (G b)) true |.
 Proof.
@@ -442,7 +393,7 @@ Proof.
 Qed.
 
 Lemma ReductionLem :
-  ∀ L₀ L₁ E M (G : GamePair)
+  ∀ L₀ L₁ E M (G : bool → raw_package)
     `{ValidPackage L₀ Game_import E (M ∘ G false)}
     `{ValidPackage L₁ Game_import E (M ∘ G true)},
     (M ∘ (G false)) ≈[ λ A, Advantage G (A ∘ M) ] (M ∘ (G true)).

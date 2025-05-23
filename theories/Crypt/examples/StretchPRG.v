@@ -37,8 +37,6 @@ Import Order.POrderTheory.
 
 Section StretchPRG_example.
 
-Definition tt := Datatypes.tt.
-
 Variable (n: nat).
 
 Definition Word_N: nat := 2^n.
@@ -51,14 +49,10 @@ Context (PRG: Word -> Word * Word).
 
 Definition query: nat := 0.
 
-Definition mkpair {Lt Lf E}
-  (t: package Lt [interface] E) (f: package Lf [interface] E):
-  loc_GamePair E := fun b => if b then {locpackage t} else {locpackage f}.
-
 Definition GEN_pkg_tt:
-  package fset0 [interface]
+  package [interface]
     [interface #val #[query]: 'unit → 'word × 'word ] :=
-  [package
+  [package emptym ;
     #def #[query] (_: 'unit): 'word × 'word {
       s <$ uniform Word_N ;;
       ret (PRG s)
@@ -66,9 +60,9 @@ Definition GEN_pkg_tt:
   ].
 
 Definition GEN_pkg_ff:
-  package fset0 [interface]
+  package [interface]
     [interface #val #[query]: 'unit → 'word × 'word ] :=
-  [package
+  [package emptym ;
     #def #[query] (_: 'unit): 'word × 'word {
       x <$ uniform Word_N ;;
       y <$ uniform Word_N ;;
@@ -76,12 +70,12 @@ Definition GEN_pkg_ff:
     }
   ].
 
-Definition GEN := mkpair GEN_pkg_tt GEN_pkg_ff.
+Definition GEN b := if b then GEN_pkg_tt else GEN_pkg_ff.
 
 Definition GEN_STRETCH_pkg_tt:
-  package fset0 [interface]
+  package [interface]
     [interface #val #[query]: 'unit → 'word × 'word × 'word ] :=
-  [package
+  [package emptym ;
     #def #[query] (_: 'unit): 'word × 'word × 'word {
       s <$ uniform Word_N ;;
       let (x, y) := PRG s in
@@ -90,9 +84,9 @@ Definition GEN_STRETCH_pkg_tt:
   ].
 
 Definition GEN_STRETCH_pkg_ff:
-  package fset0 [interface]
+  package [interface]
     [interface #val #[query]: 'unit → 'word × 'word × 'word ] :=
-  [package
+  [package emptym ;
     #def #[query] (_: 'unit): 'word × 'word × 'word {
       x <$ uniform Word_N ;;
       u <$ uniform Word_N ;;
@@ -101,13 +95,13 @@ Definition GEN_STRETCH_pkg_ff:
     }
   ].
 
-Definition GEN_STRETCH := mkpair GEN_STRETCH_pkg_tt GEN_STRETCH_pkg_ff.
+Definition GEN_STRETCH b := if b then GEN_STRETCH_pkg_tt else GEN_STRETCH_pkg_ff.
 
 Definition GEN_STRETCH_HYB_pkg_1:
-  package fset0
+  package
     [interface #val #[query]: 'unit → 'word × 'word ]
     [interface #val #[query]: 'unit → 'word × 'word × 'word ] :=
-  [package
+  [package emptym ;
     #def #[query] (_: 'unit): 'word × 'word × 'word {
       #import {sig #[query]: 'unit → 'word × 'word } as query ;;
       '(x, y) ← query tt ;;
@@ -116,10 +110,10 @@ Definition GEN_STRETCH_HYB_pkg_1:
   ].
 
 Definition GEN_STRETCH_HYB_pkg_2:
-  package fset0
+  package
     [interface #val #[query]: 'unit → 'word × 'word ]
     [interface #val #[query]: 'unit → 'word × 'word × 'word ] :=
-  [package
+  [package emptym ;
     #def #[query] (_: 'unit): 'word × 'word × 'word {
       #import {sig #[query]: 'unit → 'word × 'word } as query ;;
       x <$ uniform Word_N ;;
@@ -190,9 +184,8 @@ Proof.
   as ineq.
   apply: le_trans.
   1: by apply: ineq.
-  rewrite GEN_equiv_true ?fdisjointUr ?fdisjoints0 // GRing.add0r.
-  rewrite GEN_HYB_equiv ?fdisjointUr ?fdisjoints0 // GRing.addr0.
-  rewrite GEN_equiv_false ?fdisjointUr ?fdisjoints0 // GRing.addr0.
+  rewrite -> GEN_equiv_true, GEN_HYB_equiv, GEN_equiv_false by fmap_solve.
+  rewrite 2!GRing.addr0 GRing.add0r.
   by rewrite /prg_epsilon !Advantage_E -!Advantage_link !(Advantage_sym (GEN true)).
 Qed.
 

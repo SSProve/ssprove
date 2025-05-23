@@ -109,10 +109,10 @@ Module MyAlg <: SigmaProtocolAlgorithms MyParam.
 
   Definition i_witness := #|Witness|.
 
-  Definition commit_loc : Location := (choiceWitness; 2%N).
+  Definition commit_loc : Location := (2%N, choiceWitness).
 
-  Definition Sigma_locs : {fset Location} := fset [:: commit_loc].
-  Definition Simulator_locs : {fset Location} := fset0.
+  Definition Sigma_locs : Locations := [fmap commit_loc].
+  Definition Simulator_locs : Locations := emptym.
 
   Definition Commit (h : choiceStatement) (w : choiceWitness):
     code Sigma_locs [interface] choiceMessage :=
@@ -231,16 +231,13 @@ Theorem schnorr_SHVZK :
     ValidPackage LA [interface
       #val #[ TRANSCRIPT ] : chInput → chTranscript
     ] A_export A →
-    fdisjoint LA Sigma_locs →
+    fseparate LA Sigma_locs →
     ɛ_SHVZK A = 0.
 Proof.
   intros LA A Va Hdisj.
-  apply: eq_rel_perf_ind.
-  all: ssprove_valid.
-  3: apply fdisjoints0.
-  1:{ instantiate (1 := heap_ignore Sigma_locs).
-      ssprove_invariant.
-      apply fsubsetUl. }
+  eapply (eq_rel_perf_ind _ _ (heap_ignore Sigma_locs)).
+  3,4,5: ssprove_valid.
+  1: ssprove_invariant; fmap_solve.
   simplify_eq_rel hwe.
   (* Programming logic part *)
   destruct hwe as [[h w] e].
@@ -314,7 +311,7 @@ Lemma extractor_success:
 Proof.
   intros LA A VA.
   apply: eq_rel_perf_ind_eq.
-  2,3: apply fdisjoints0.
+  2,3: apply fseparatem0.
   simplify_eq_rel h.
   destruct h as [? [? [? [? [? ?]]]]].
   destruct s1.
@@ -431,134 +428,31 @@ Proof.
     apply Hk.
 Qed.
 
+Lemma compat : fcompat Com_locs Simulator_locs.
+Proof. fmap_solve. Qed.
+
 (* Main theorem proving that the Schnorr protocol has perfect hiding. *)
 Theorem schnorr_com_hiding :
   ∀ LA A,
     ValidPackage LA [interface
       #val #[HIDING] : (chChallenge) × (chChallenge) → chMessage
     ] A_export (A ∘ par KEY (ID Hiding_E)) ->
-    fdisjoint LA KEY_locs ->
-    fdisjoint LA Sigma_to_Com_locs ->
-    fdisjoint LA (fset [:: setup_loc]) ->
-    fdisjoint LA Sigma_locs ->
-    fdisjoint LA Simulator_locs ->
-    ɛ_hiding A <= 0.
+    fseparate LA KEY_locs ->
+    fseparate LA Sigma_to_Com_locs ->
+    fseparate LA [fmap setup_loc] ->
+    fseparate LA Sigma_locs ->
+    fseparate LA Simulator_locs ->
+    ɛ_hiding compat A <= 0.
 Proof.
   intros LA A VA Hd1 Hd2 Hd3 Hd4 Hd5.
   eapply le_trans.
   1: eapply commitment_hiding with (LA := LA).
   all: try assumption.
-  1: apply fdisjoint0s.
-  {
-    unfold Sigma_locs.
-    unfold commit_loc.
-    unfold statement_loc.
-    unfold witness_loc.
-    rewrite !fset_cons.
-    rewrite -fset0E.
-    rewrite fdisjointUr ; apply /andP ; split.
-    - rewrite fdisjoints1.
-      rewrite fset1E.
-      rewrite fsetU0.
-      rewrite -fset1E.
-      unfold "\notin".
-      rewrite in_fset1.
-      case (_ == _) eqn:e.
-      2: done.
-      move: e => /eqP.
-      done.
-    - rewrite fdisjointUr ; apply /andP ; split.
-      + rewrite fdisjoints1.
-        rewrite fset1E.
-        rewrite fsetU0.
-        rewrite -fset1E.
-        unfold "\notin".
-        rewrite in_fset1.
-        case (_ == _) eqn:e.
-        2: done.
-        move: e => /eqP.
-        done.
-      + apply fdisjoints0.
-  }
-  rewrite addr0.
-  rewrite add0r.
-  erewrite schnorr_SHVZK.
-  2: {
-    ssprove_valid.
-    1: instantiate (1 := (LA :|: (setup_loc |: Sigma_to_Com_locs))).
-    3: apply fsubsetxx.
-    2: apply fsub0set.
-    - apply fsubsetUl.
-    - apply fsubsetU ; apply /orP ; right.
-      apply fsubsetxx.
-  }
-  2: {
-    (* unfold Sigma_locs. *)
-    unfold Sigma_to_Com_locs.
-    unfold Simulator_locs.
-    rewrite fsetU0.
-    rewrite fdisjointUl ; apply /andP ; split.
-    - assumption.
-    - unfold Sigma_locs.
-      rewrite fdisjointUl ; apply /andP ; split.
-      + rewrite fdisjoint1s.
-        unfold "\notin".
-        rewrite -fset1E.
-        rewrite in_fset1.
-        done.
-      + unfold Com_locs.
-        rewrite fset_cons.
-        rewrite fdisjointUl ; apply /andP ; split.
-        ++ rewrite fdisjoint1s.
-           rewrite -fset1E.
-           unfold "\notin".
-           rewrite in_fset1.
-           done.
-        ++ rewrite -!fset1E.
-           rewrite fdisjoint1s.
-           unfold "\notin".
-           rewrite in_fset1.
-           done.
-  }
+  1-3: fmap_solve.
+  rewrite addr0 add0r.
+  erewrite schnorr_SHVZK by ssprove_valid.
   rewrite Advantage_sym.
-  erewrite schnorr_SHVZK.
-  2: {
-    ssprove_valid.
-    1: instantiate (1 := (LA :|: (setup_loc |: Sigma_to_Com_locs))).
-    3: apply fsubsetxx.
-    2: apply fsub0set.
-    - apply fsubsetUl.
-    - apply fsubsetU ; apply /orP ; right.
-      apply fsubsetxx.
-  }
-  2: {
-    (* unfold Sigma_locs. *)
-    unfold Sigma_to_Com_locs.
-    unfold Simulator_locs.
-    rewrite fsetU0.
-    rewrite fdisjointUl ; apply /andP ; split.
-    - assumption.
-    - unfold Sigma_locs.
-      rewrite fdisjointUl ; apply /andP ; split.
-      + rewrite fdisjoint1s.
-        unfold "\notin".
-        rewrite -fset1E.
-        rewrite in_fset1.
-        done.
-      + unfold Com_locs.
-        rewrite fset_cons.
-        rewrite fdisjointUl ; apply /andP ; split.
-        ++ rewrite fdisjoint1s.
-           rewrite -fset1E.
-           unfold "\notin".
-           rewrite in_fset1.
-           done.
-        ++ rewrite -!fset1E.
-           rewrite fdisjoint1s.
-           unfold "\notin".
-           rewrite in_fset1.
-           done.
-  }
+  erewrite schnorr_SHVZK by ssprove_valid.
   rewrite addr0 add0r.
   apply eq_ler.
   eapply eq_rel_perf_ind.
@@ -566,32 +460,10 @@ Proof.
   1:{
     instantiate (1 := (heap_ignore Com_locs)).
     ssprove_invariant.
-    unfold Sigma_to_Com_locs.
-    rewrite !fset0U.
-    apply fsubsetU; apply /orP; left.
-    apply fsubsetU; apply /orP; left.
-    apply fsubsetU; apply /orP; right.
-    apply fsubsetU; apply /orP; left.
-    apply fsubsetxx.
+    fmap_solve.
   }
   2: apply VA.
-  3: {
-    rewrite fset0U.
-    rewrite fdisjointUr ; apply /andP ; split.
-    2: assumption.
-    rewrite fdisjointUr ; apply /andP ; split.
-    2: assumption.
-    rewrite fset1E. assumption.
-  }
-  2: {
-    rewrite fset0U.
-    rewrite fdisjointUr ; apply /andP ; split.
-    2: assumption.
-    rewrite fdisjointUr ; apply /andP ; split.
-    2: assumption.
-    rewrite fset1E. assumption.
-  }
-  rewrite Sigma_to_Com_Aux_equation_1.
+  2,3: fmap_solve.
   simplify_eq_rel hwe.
   ssprove_code_simpl.
   simplify_linking.
@@ -599,7 +471,6 @@ Proof.
   apply r_const_sample_R.
   1: apply LosslessOp_uniform.
   intros e_rand.
-  rewrite !cast_fun_K.
   ssprove_code_simpl.
   ssprove_code_simpl_more.
   apply r_const_sample_L.
@@ -669,17 +540,18 @@ Theorem schnorr_com_binding :
     ValidPackage LA [interface
       #val #[ SOUNDNESS ] : chSoundness → 'bool
     ] A_export A →
-    fdisjoint LA (Sigma_to_Com_locs :|: KEY_locs) →
-    AdvantageE (Com_Binding ∘ Sigma_to_Com ∘ KEY) (Special_Soundness_f) A <= 0.
+    fseparate LA Sigma_to_Com_locs →
+    fseparate LA KEY_locs →
+    AdvantageE (Com_Binding ∘ Sigma_to_Com compat ∘ KEY) (Special_Soundness_f) A <= 0.
 Proof.
-  intros LA A VA Hdisj.
-  eapply Order.le_trans.
+  intros LA A VA Hd1 Hd2.
+  eapply le_trans.
   1: apply Advantage_triangle.
   instantiate (1 := Special_Soundness_t).
-  rewrite (commitment_binding LA A VA Hdisj).
+  rewrite -> (commitment_binding compat LA A VA) by fmap_solve.
   setoid_rewrite (extractor_success LA A VA).
   rewrite GRing.add0r.
-  apply Order.le_refl.
+  apply le_refl.
 Qed.
 
 End Schnorr.

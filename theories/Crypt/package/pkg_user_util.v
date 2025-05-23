@@ -76,8 +76,8 @@ From mathcomp Require Import all_ssreflect all_algebra reals distr
 Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From SSProve.Crypt Require Import Axioms Prelude pkg_core_definition pkg_composition
-  pkg_notation RulesStateProb pkg_advantage pkg_lookup pkg_semantics
-  pkg_heap pkg_invariants pkg_distr pkg_rhl pkg_tactics choice_type.
+  pkg_notation RulesStateProb pkg_advantage pkg_semantics
+  pkg_heap pkg_invariants pkg_distr pkg_rhl pkg_tactics choice_type fmap_extra.
 From Coq Require Import Utf8 FunctionalExtensionality
   Setoids.Setoid Classes.Morphisms.
 
@@ -98,79 +98,20 @@ Set Primitive Projections.
 
 (** Preliminary work *)
 
-Lemma opsig_in_unfold :
-  ∀ {o : opsig} {E : Interface},
-    o \in E →
-    (ide o, (chsrc o, chtgt o)) \in E.
-Proof.
-  intros [i [S T]] E h. cbn. auto.
-Defined.
-
 Open Scope pack.
 
-Ltac invert_in_seq h :=
-  tryif (rewrite mem_seq1 in h)
-  then (move: h => /eqP h ; subst)
-  else (
-    rewrite in_cons in h ;
-    move: h => /orP [/eqP h | h] ; [
-      subst
-    | invert_in_seq h
-    ]
-  ).
-
-Ltac invert_interface_in h :=
-  let h' := fresh h in
-  pose proof h as h' ;
-  rewrite in_fset in h' ;
-  cbn in h' ;
-  invert_in_seq h' ;
-  [ noconf h' .. ].
-
-Ltac lookup_op_squeeze :=
-  let f := fresh "f" in
-  let e := fresh "e" in
-  destruct lookup_op as [f|] eqn:e ; [
-  | exfalso ;
-    simpl in e ;
-    repeat (destruct choice_type_eqP ; [| contradiction ]) ;
-    discriminate
-  ] ;
-  eapply lookup_op_spec in e ; simpl in e ;
-  repeat (
-    rewrite setmE in e ;
-    tryif (rewrite eq_refl in e)
-    then idtac
-    else lazymatch type of e with
-    | (if ?b then _ else _) = _ =>
-      change b with false in e ;
-      simpl in e
-    end
-  ) ;
-  noconf e.
-
-Ltac choice_type_eqP_handle :=
-  let e := fresh "e" in
-  destruct choice_type_eqP as [e|] ; [| contradiction ] ;
-  assert (e = erefl) by eapply uip ;
-  subst e.
-
-Ltac simplify_linking :=
-  repeat choice_type_eqP_handle ;
-  simpl.
+Ltac simplify_linking := simpl; repeat
+  (rewrite (resolve_set, resolve_link, resolve_ID_set, coerce_kleisliE); simpl).
 
 Ltac simplify_eq_rel m :=
   let id := fresh "id" in
   let So := fresh "S" in
   let To := fresh "T" in
-  let hin := fresh "hin" in
-  intros id So To m hin ;
-  invert_interface_in hin ;
-  rewrite ?get_op_default_link ;
-  (* First we need to squeeze the codes out of the packages *)
-  unfold get_op_default ;
-  repeat lookup_op_squeeze ;
-  simpl.
+  let has := fresh "has" in
+  intros id So To m has ;
+  fmap_invert has ;
+  simplify_linking.
+
 
 Create HintDb ssprove_code_simpl.
 
@@ -296,7 +237,7 @@ Ltac ssprove_code_simpl :=
 Ltac cmd_bind_simpl_once :=
   try change (cmd_bind (cmd_sample ?op) ?k) with (sampler op k) ;
   try change (cmd_bind (cmd_get ?ℓ) ?k) with (getr ℓ k) ;
-  try change (cmd_bind (cmd_put ?ℓ ?v) ?k) with (#put ℓ := v ;; k Datatypes.tt).
+  try change (cmd_bind (cmd_put ?ℓ ?v) ?k) with (#put ℓ := v ;; k tt).
 
 Ltac cmd_bind_simpl :=
   repeat cmd_bind_simpl_once.
@@ -325,24 +266,31 @@ Ltac ssprove_sync_eq :=
   | |- _ => fail "The goal should be a syntactic judgment"
   end.
 
-Ltac notin_fset_auto :=
-  let bot := fresh "bot" in
-  rewrite in_fset ; apply /negP ; intro bot ;
-  repeat (
-    tryif (rewrite in_cons in bot)
-    then (
-      move: bot => /orP [/eqP bot | bot] ; [ noconf bot |]
-    )
-    else rewrite in_nil in bot ; discriminate
-  ).
+#[export] Hint Extern 2 (fhas ?x ?m) =>
+  solve [ fmap_solve ]
+  : typeclass_instances ssprove_valid_db ssprove_invariant.
 
-#[export] Hint Extern 20 (is_true (_ \notin _)) =>
-  solve [ notin_fset_auto ]
-  : ssprove_invariant.
+#[export] Hint Extern 2 (is_true (?x \notin ?m)) =>
+  solve [ fmap_solve ]
+  : typeclass_instances ssprove_valid_db ssprove_invariant.
 
-#[export] Hint Extern 20 (is_true (_ \in _)) =>
-  solve [ auto_in_fset ]
-  : ssprove_invariant.
+Hint Extern 1 (fcompat ?m ?m') =>
+  solve [ fmap_solve ]
+  : typeclass_instances ssprove_valid_db.
+
+Hint Extern 1 (fsubmap ?m ?m') =>
+  solve [ fmap_solve ]
+  : typeclass_instances ssprove_valid_db.
+
+Hint Extern 1 (is_true (fdisjoint ?s ?s')) =>
+  solve [ fmap_solve ]
+  : typeclass_instances ssprove_valid_db.
+
+Hint Extern 1 (fseparate ?m ?m') =>
+  solve [ fmap_solve ]
+  : typeclass_instances ssprove_valid_db.
+
+
 
 (* Right-biased same head, but more genenal *)
 Ltac ssprove_sync :=
@@ -459,11 +407,9 @@ Ltac ssprove_rswap_cmd_eq_rhs :=
   | |- _ => fail "The goal should be a syntactic judgment"
   end. *)
 
+(* Simple inequality of locations is solved by reflexivity *) 
 Ltac neq_loc_auto :=
-  let e := fresh "e" in
-  apply /negP ;
-  move /eqP => e ;
-  noconf e.
+  done.
 
 #[export] Hint Extern 20 (is_true (_ != _)) =>
   solve [ neq_loc_auto ]
@@ -560,17 +506,6 @@ Ltac ssprove_swap_seq_lhs l :=
     idtac
   end.
 
-(** Automation of flat proofs *)
-#[export] Hint Extern 3 (flat ?I) =>
-  let n := fresh "n" in
-  let h₀ := fresh "h₀" in
-  let h₁ := fresh "h₁" in
-  intros n ? ? h₀ h₁ ;
-  invert_interface_in h₀ ;
-  invert_interface_in h₁ ;
-  choice_type_eq_prove
-  : typeclass_instances ssprove_valid_db.
-
 Lemma code_link_scheme :
   ∀ L A c p,
     @ValidCode L [interface] A c →
@@ -579,7 +514,7 @@ Proof.
   intros L A c p h.
   induction h.
   - reflexivity.
-  - eapply fromEmpty. rewrite fset0E. eauto.
+  - destruct o; discriminate.
   - simpl. f_equal. apply functional_extensionality.
     intro. eauto.
   - simpl. f_equal. eauto.
@@ -840,27 +775,6 @@ Lemma eq_ler :
 Proof.
   intros x y e. subst. apply lexx.
 Qed.
-
-Ltac fdisjoint_auto :=
-  let h := fresh "h" in
-  apply /fdisjointP ;
-  intros ? h ;
-  rewrite in_fset in h ;
-  rewrite in_fset ;
-  invert_in_seq h ;
-  reflexivity.
-
-#[export] Hint Extern 15 (FDisjoint _ _) =>
-  fdisjoint_auto
-  : typeclass_instances ssprove_valid_db.
-
-Ltac fsubset_auto :=
-  let h := fresh "h" in
-  apply /fsubsetP ;
-  intros ? h ;
-  rewrite in_fset ; rewrite in_fset in h ;
-  invert_in_seq h ;
-  inseq_try.
 
 (* To be able to use with Equations *)
 Ltac notac := idtac.

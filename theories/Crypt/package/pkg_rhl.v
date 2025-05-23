@@ -16,8 +16,8 @@ From SSProve.Mon Require Import SPropBase.
 From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
   RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
   StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
-  pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_lookup pkg_advantage
-  pkg_invariants pkg_distr Casts.
+  pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_advantage
+  pkg_invariants pkg_distr Casts fmap_extra.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
@@ -67,7 +67,7 @@ Qed.
 Lemma get_case :
   ∀ LA (I : heap_choiceType * heap_choiceType → Prop) ℓ,
     INV LA I →
-    ℓ \in LA →
+    fhas LA ℓ →
     r⊨ ⦃ λ '(s₀, s₃), I (s₀, s₃) ⦄
       x ← get ℓ ;; ret x ≈ x ← get ℓ ;; ret x
       ⦃ λ '(b₁, s₁) '(b₂, s₂), b₁ = b₂ ∧ I (s₁, s₂) ⦄.
@@ -105,7 +105,7 @@ Qed.
 Lemma put_case :
   ∀ {LA} (I : heap_choiceType * heap_choiceType → Prop) l v,
     INV LA I →
-    l \in LA →
+    fhas LA l →
     r⊨ ⦃ λ '(s0, s3), I (s0, s3) ⦄
         putr l v (ret tt) ≈ putr l v (ret tt)
         ⦃ λ '(b1, s1) '(b2, s2), b1 = b2 ∧ I (s1, s2) ⦄.
@@ -314,9 +314,9 @@ Qed.
 
 Definition eq_up_to_inv (E : Interface) (I : precond) (p₀ p₁ : raw_package) :=
   ∀ (id : ident) (S T : choice_type) (x : S),
-    (id, (S, T)) \in E →
+    fhas E (id, (S, T)) →
     ⊢ ⦃ λ '(s₀, s₁), I (s₀, s₁) ⦄
-      get_op_default p₀ (id, (S, T)) x ≈ get_op_default p₁ (id, (S, T)) x
+      resolve p₀ (id, (S, T)) x ≈ resolve p₁ (id, (S, T)) x
       ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ I (s₀, s₁) ⦄.
 
 Lemma Pr_eq_empty :
@@ -353,21 +353,20 @@ Proof.
     unfold Basics.flip, SPropMonadicStructures.SProp_order.
     intros [HI Hp].
     apply Hp. intuition auto.
-  - cbn - [semantic_judgement lookup_op].
+  - cbn - [semantic_judgement].
     apply inversion_valid_opr in vA as hA. destruct hA as [hi vk].
-    destruct o as [id [S T]].
-    eapply from_valid_package in vp₀.
-    specialize (vp₀ _ hi). simpl in vp₀.
-    destruct vp₀ as [f₀ [e₀ h₀]].
-    eapply from_valid_package in vp₁.
-    specialize (vp₁ _ hi). simpl in vp₁.
-    destruct vp₁ as [f₁ [e₁ h₁]].
-    erewrite lookup_op_spec_inv. 2: eauto.
-    erewrite lookup_op_spec_inv. 2: eauto.
-    specialize (hp id S T x hi).
-    erewrite get_op_default_spec in hp. 2: eauto.
-    erewrite get_op_default_spec in hp. 2: eauto.
-    rewrite !repr_bind.
+
+    destruct vp₀ as [vp0e vp0i].
+    specialize (vp0e o) as [vp0e _].
+    specialize (vp0e hi) as [f₀ e₀].
+    destruct vp₁ as [vp1e vp1i].
+    specialize (vp1e o) as [vp1e _].
+    specialize (vp1e hi) as [f₁ e₁].
+    destruct o as [id [T S]].
+
+    specialize (hp _ _ _ x hi).
+    rewrite /resolve e₀ e₁ 2!coerce_kleisliE in hp |- *.
+    rewrite 2!repr_bind.
     eapply bind_rule_pp. 1:{ eapply to_sem_jdg in hp. exact hp. }
     cbn - [semantic_judgement].
     intros a₀ a₁.
@@ -428,13 +427,13 @@ Lemma eq_upto_pinv_perf_ind :
 Proof.
   intros P0 P1 L₀ L₁ LA E p₀ p₁ I A vp₀ vp₁ vA hI' hIe hd₀ hd₁ hp.
   unfold AdvantageE, Pr.
-  pose r := get_op_default A RUN tt.
+  pose r := resolve A RUN tt.
   assert (hI : INV LA I). 1: eapply pINV'_to_INV; eauto.
   unshelve epose proof (eq_up_to_inv_adversary_link p₀ p₁ I r hI hp) as h.
   1:{
-    eapply valid_get_op_default.
+    eapply valid_resolve.
     - eauto.
-    - auto_in_fset.
+    - fmap_solve.
   }
   assert (
     ∀ x y : tgt RUN * heap_choiceType,
@@ -453,7 +452,7 @@ Proof.
     unfold Pr_op. unfold Pr_code.
     unfold thetaFstd. simpl. apply f_equal2. 2: reflexivity.
     apply f_equal. apply f_equal.
-    rewrite get_op_default_link. reflexivity.
+    by rewrite resolve_link.
   }
   unfold lhs in he. unfold Pr_op in he.
   rewrite he.
@@ -465,7 +464,7 @@ Proof.
     unfold Pr_op. unfold Pr_code.
     unfold thetaFstd. simpl. apply f_equal2. 2: reflexivity.
     apply f_equal. apply f_equal.
-    rewrite get_op_default_link. reflexivity.
+    by rewrite resolve_link.
   }
   unfold lhs' in e'. unfold Pr_op in e'.
   rewrite e'.
@@ -519,30 +518,24 @@ Lemma eq_upto_inv_perf_ind :
     `{ValidPackage LA E A_export A},
     INV' L₀ L₁ I →
     I (empty_heap, empty_heap) →
-    fdisjoint LA L₀ →
-    fdisjoint LA L₁ →
+    fseparate LA L₀ →
+    fseparate LA L₁ →
     eq_up_to_inv E I p₀ p₁ →
     AdvantageE p₀ p₁ A = 0.
 Proof.
   intros L₀ L₁ LA E p₀ p₁ I A vp₀ vp₁ vA hI' hIe hd₀ hd₁ hp.
   unfold AdvantageE, Pr.
-  pose r := get_op_default A RUN tt.
+  pose r := resolve A RUN tt.
   assert (hI : INV LA I).
   { unfold INV. intros s₀ s₁. split.
-    - intros hi l hin. apply hI'.
-      + assumption.
-      + move: hd₀ => /fdisjointP hd₀. apply hd₀. assumption.
-      + move: hd₁ => /fdisjointP hd₁. apply hd₁. assumption.
-    - intros hi l v hin. apply hI'.
-      + assumption.
-      + move: hd₀ => /fdisjointP hd₀. apply hd₀. assumption.
-      + move: hd₁ => /fdisjointP hd₁. apply hd₁. assumption.
+    - intros hi l hin. apply hI'; fmap_solve.
+    - intros hi l v hin. apply hI'; fmap_solve.
   }
   unshelve epose proof (eq_up_to_inv_adversary_link p₀ p₁ I r hI hp) as h.
   1:{
-    eapply valid_get_op_default.
+    eapply valid_resolve.
     - eauto.
-    - auto_in_fset.
+    - apply RUN_in_A_export.
   }
   assert (
     ∀ x y : tgt RUN * heap_choiceType,
@@ -561,7 +554,7 @@ Proof.
     unfold Pr_op. unfold Pr_code.
     unfold thetaFstd. simpl. apply f_equal2. 2: reflexivity.
     apply f_equal. apply f_equal.
-    rewrite get_op_default_link. reflexivity.
+    by rewrite resolve_link.
   }
   unfold lhs in he. unfold Pr_op in he.
   rewrite he.
@@ -573,7 +566,7 @@ Proof.
     unfold Pr_op. unfold Pr_code.
     unfold thetaFstd. simpl. apply f_equal2. 2: reflexivity.
     apply f_equal. apply f_equal.
-    rewrite get_op_default_link. reflexivity.
+    by rewrite resolve_link.
   }
   unfold lhs' in e'. unfold Pr_op in e'.
   rewrite e'.
@@ -674,7 +667,7 @@ Corollary eq_rel_perf_ind_ignore :
   ∀ L {L₀ L₁ E} (p₀ p₁ : raw_package)
     `{ValidPackage L₀ Game_import E p₀}
     `{ValidPackage L₁ Game_import E p₁},
-    fsubset L (L₀ :|: L₁) →
+    fsubmap L (unionm L₀ L₁) →
     eq_up_to_inv E (heap_ignore L) p₀ p₁ →
     p₀ ≈₀ p₁.
 Proof.
@@ -1494,8 +1487,8 @@ Qed.
 Lemma r_reflexivity_alt :
   ∀ {A : choiceType} {L} pre (c : raw_code A),
     ValidCode L [interface] c →
-    (∀ ℓ, ℓ \in L → get_pre_cond ℓ pre) →
-    (∀ ℓ v, ℓ \in L → put_pre_cond ℓ v pre) →
+    (∀ ℓ, fhas L ℓ → get_pre_cond ℓ pre) →
+    (∀ ℓ v, fhas L ℓ → put_pre_cond ℓ v pre) →
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
       c ≈ c
     ⦃ λ '(b₀, s₀) '(b₁, s₁), b₀ = b₁ ∧ pre (s₀, s₁) ⦄.
@@ -1503,7 +1496,7 @@ Proof.
   intros A L pre c h hget hput.
   induction h.
   - apply r_ret. auto.
-  - eapply fromEmpty. rewrite fset0E. eauto.
+  - destruct o. discriminate.
   - eapply (rsame_head_cmd_alt (cmd_get _)).
     + eapply cmd_get_preserve_pre.
       apply hget. auto.
@@ -1521,8 +1514,8 @@ Lemma rsame_head_alt :
   ∀ {A B : ord_choiceType} {L}
     (m : raw_code A) (f₀ f₁ : A → raw_code B) pre (post : postcond B B),
     ValidCode L [interface] m →
-    (∀ (ℓ : Location), ℓ \in L → get_pre_cond ℓ pre) →
-    (∀ (ℓ : Location) v, ℓ \in L → put_pre_cond ℓ v pre) →
+    (∀ (ℓ : Location), fhas L ℓ → get_pre_cond ℓ pre) →
+    (∀ (ℓ : Location) v, fhas L ℓ → put_pre_cond ℓ v pre) →
     (∀ a, ⊢ ⦃ pre ⦄ f₀ a ≈ f₁ a ⦃ post ⦄) →
     ⊢ ⦃ pre ⦄ x ← m ;; f₀ x ≈ x ← m ;; f₁ x ⦃ post ⦄.
 Proof.
@@ -1549,7 +1542,7 @@ Proof.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
       x ← (x ← get ℓ ;; ret x) ;; r₀ x ≈
-      ret Datatypes.tt ;; r₁
+      ret tt ;; r₁
     ⦃ post ⦄
   ).
   eapply r_bind with (mid :=
@@ -1591,7 +1584,7 @@ Proof.
   intros A B ℓ r₀ r₁ pre post h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      ret Datatypes.tt ;; r₀ ≈
+      ret tt ;; r₀ ≈
       x ← (x ← get ℓ ;; ret x) ;; r₁ x
     ⦃ post ⦄
   ).
@@ -1727,7 +1720,7 @@ Proof.
   intros A B ℓ v r₀ r₁ pre post hr h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      x ← (x ← get ℓ ;; ret x) ;; r₀ x ≈ ret Datatypes.tt ;; r₁
+      x ← (x ← get ℓ ;; ret x) ;; r₀ x ≈ ret tt ;; r₁
     ⦃ post ⦄
   ).
   eapply r_bind with (mid :=
@@ -1763,7 +1756,7 @@ Proof.
   intros A B ℓ v r₀ r₁ pre post hr h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      ret Datatypes.tt ;; r₀ ≈ x ← (x ← get ℓ ;; ret x) ;; r₁ x
+      ret tt ;; r₀ ≈ x ← (x ← get ℓ ;; ret x) ;; r₁ x
     ⦃ post ⦄
   ).
   eapply r_bind with (mid :=
@@ -1860,7 +1853,7 @@ Proof.
   intros A B ℓ v r₀ r₁ pre post h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      (#put ℓ := v ;; ret Datatypes.tt) ;; r₀ ≈ ret Datatypes.tt ;; r₁
+      (#put ℓ := v ;; ret tt) ;; r₀ ≈ ret tt ;; r₁
     ⦃ post ⦄
   ).
   eapply r_bind with (mid :=
@@ -1889,7 +1882,7 @@ Proof.
   intros A B ℓ v r₀ r₁ pre post h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
-      ret Datatypes.tt ;; r₀ ≈ (#put ℓ := v ;; ret Datatypes.tt) ;; r₁
+      ret tt ;; r₀ ≈ (#put ℓ := v ;; ret tt) ;; r₁
     ⦃ post ⦄
   ).
   eapply r_bind with (mid :=
@@ -2270,7 +2263,7 @@ Qed.
 
 Lemma r_swap_scheme_cmd :
   ∀ {A B : choiceType} (s : raw_code A) (c : command B),
-    ValidCode fset0 [interface] s →
+    ValidCode emptym [interface] s →
     ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
       x ← s ;; y ← cmd c ;; ret (x,y) ≈
       y ← cmd c ;; x ← s ;; ret (x,y)
@@ -2278,8 +2271,8 @@ Lemma r_swap_scheme_cmd :
 Proof.
   intros A B s c h.
   induction h.
-  all: try discriminate.
-  2:{ eapply fromEmpty. rewrite fset0E. eauto. }
+  2: destruct o; discriminate.
+  2,3: destruct l; discriminate.
   - simpl. apply rreflexivity_rule.
   - simpl.
     eapply r_transR.
@@ -2291,7 +2284,7 @@ Qed.
 
 Lemma r_swap_cmd_scheme :
   ∀ {A B : choiceType} (s : raw_code A) (c : command B),
-    ValidCode fset0 [interface] s →
+    ValidCode emptym [interface] s →
     ⊢ ⦃ λ '(s₀, s₁), s₀ = s₁ ⦄
       x ← cmd c ;; y ← s ;; ret (x,y) ≈
       y ← s ;; x ← cmd c ;; ret (x,y)
@@ -2299,8 +2292,8 @@ Lemma r_swap_cmd_scheme :
 Proof.
   intros A B s c h.
   induction h.
-  all: try discriminate.
-  2:{ eapply fromEmpty. rewrite fset0E. eauto. }
+  2: destruct o; discriminate.
+  2,3: destruct l; discriminate.
   - simpl. apply rreflexivity_rule.
   - simpl.
     eapply r_transL.
@@ -2349,8 +2342,8 @@ Proof.
   intros A B op c₀ c₁ pre post hop h.
   change (
     ⊢ ⦃ pre ⦄
-      (_ ← sample op ;; ret Datatypes.tt) ;; c₀ ≈
-      ret Datatypes.tt ;; c₁
+      (_ ← sample op ;; ret tt) ;; c₀ ≈
+      ret tt ;; c₁
     ⦃ post ⦄
   ).
   eapply r_bind with (mid := λ '(b₀, s₀) '(b₁, s₁), pre (s₀, s₁)).
@@ -2368,8 +2361,8 @@ Proof.
   intros A B op c₀ c₁ pre post hop h.
   change (
     ⊢ ⦃ pre ⦄
-      ret Datatypes.tt ;; c₀ ≈
-      (_ ← sample op ;; ret Datatypes.tt) ;; c₁
+      ret tt ;; c₀ ≈
+      (_ ← sample op ;; ret tt) ;; c₁
     ⦃ post ⦄
   ).
   eapply r_bind with (mid := λ '(b₀, s₀) '(b₁, s₁), pre (s₀, s₁)).
@@ -2650,7 +2643,7 @@ Qed.
 
 Theorem r_assertL :
   ∀ b,
-    ⊢ ⦃ λ _, b = true ⦄ assert b ≈ ret Datatypes.tt ⦃ λ _ _, b = true ⦄.
+    ⊢ ⦃ λ _, b = true ⦄ assert b ≈ ret tt ⦃ λ _ _, b = true ⦄.
 Proof.
   intros b.
   destruct b.
@@ -2660,7 +2653,7 @@ Qed.
 
 Theorem r_assertR :
   ∀ b,
-    ⊢ ⦃ λ _, b = true ⦄ ret Datatypes.tt ≈ assert b ⦃ λ _ _, b = true ⦄.
+    ⊢ ⦃ λ _, b = true ⦄ ret tt ≈ assert b ⦃ λ _ _, b = true ⦄.
 Proof.
   intros b.
   destruct b.
@@ -2904,7 +2897,7 @@ Qed.
 
 Lemma r_put_swap :
   ∀ ℓ ℓ' v v' (A : choiceType) (u : A),
-    ℓ != ℓ' →
+    ℓ.1 != ℓ'.1 →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       #put ℓ := v ;; #put ℓ' := v' ;; ret u ≈
       #put ℓ' := v' ;; #put ℓ := v ;; ret u
@@ -2946,7 +2939,7 @@ Qed.
 
 Lemma r_get_put_swap :
   ∀ ℓ ℓ' v,
-    ℓ' != ℓ →
+    ℓ'.1 != ℓ.1 →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       x ← get ℓ' ;; #put ℓ := v ;; ret x ≈
       #put ℓ := v ;; x ← get ℓ' ;; ret x
@@ -2984,13 +2977,12 @@ Proof.
     }
     move: e => /eqP e. noconf e.
     subst. f_equal.
-    apply get_heap_set_heap.
-    auto.
+    rewrite get_set_heap_neq //.
 Qed.
 
 Lemma r_put_get_swap :
   ∀ ℓ ℓ' v,
-    ℓ' != ℓ →
+    ℓ'.1 != ℓ.1 →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
       #put ℓ := v ;; x ← get ℓ' ;; ret x ≈
       x ← get ℓ' ;; #put ℓ := v ;; ret x
@@ -3005,15 +2997,15 @@ Qed.
 
 Lemma r_get_put_swap' :
   ∀ ℓ ℓ' v,
-    ℓ' != ℓ →
+    ℓ'.1 != ℓ.1 →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
-      x ← get ℓ' ;; #put ℓ := v ;; ret (x, Datatypes.tt) ≈
-      #put ℓ := v ;; x ← get ℓ' ;; ret (x, Datatypes.tt)
+      x ← get ℓ' ;; #put ℓ := v ;; ret (x, tt) ≈
+      #put ℓ := v ;; x ← get ℓ' ;; ret (x, tt)
     ⦃ eq ⦄.
 Proof.
   intros ℓ ℓ' v ne.
   eapply r_get_put_swap in ne.
-  eapply r_bind with (f₁ := λ x, ret (x, Datatypes.tt)) in ne .
+  eapply r_bind with (f₁ := λ x, ret (x, tt)) in ne .
   - exact ne.
   - simpl. intros. apply r_ret.
     intros ? ? e. inversion e. reflexivity.
@@ -3021,15 +3013,15 @@ Qed.
 
 Lemma r_put_get_swap' :
   ∀ ℓ ℓ' v,
-    ℓ' != ℓ →
+    ℓ'.1 != ℓ.1 →
     ⊢ ⦃ λ '(h₀, h₁), h₀ = h₁ ⦄
-      #put ℓ := v ;; x ← get ℓ' ;; ret (Datatypes.tt, x) ≈
-      x ← get ℓ' ;; #put ℓ := v ;; ret (Datatypes.tt, x)
+      #put ℓ := v ;; x ← get ℓ' ;; ret (tt, x) ≈
+      x ← get ℓ' ;; #put ℓ := v ;; ret (tt, x)
     ⦃ eq ⦄.
 Proof.
   intros ℓ ℓ' v ne.
   eapply r_put_get_swap in ne.
-  eapply r_bind with (f₁ := λ x, ret (Datatypes.tt, x)) in ne .
+  eapply r_bind with (f₁ := λ x, ret (tt, x)) in ne .
   - exact ne.
   - simpl. intros. apply r_ret.
     intros ? ? e. inversion e. reflexivity.

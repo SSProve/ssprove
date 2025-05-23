@@ -44,7 +44,7 @@ Section Executor.
   | NSProd (A B : NatState).
 
   Equations? nat_ch_aux (x : NatState) (l : choice_type) : option (Value l) :=
-    nat_ch_aux (NSUnit) 'unit := Some Datatypes.tt ;
+    nat_ch_aux (NSUnit) 'unit := Some tt ;
     nat_ch_aux (NSNat n) 'nat := Some n ;
     nat_ch_aux (NSNat n) 'bool := Some (Nat.odd n) ;
     nat_ch_aux (NSNat n) 'fin n' := Some _ ;
@@ -127,7 +127,7 @@ Section Executor.
              (st : Location → option NatState) (l : Location) (v : l) : (Location → option NatState)
     :=
     fun (l' : Location) =>
-      if l.π2 == l'.π2
+      if l.1 == l'.1
       then (ch_nat l v)
       else st l'.
 
@@ -160,7 +160,7 @@ End Executor.
 
 #[program] Fixpoint sampler (e : choice_type) (seed : nat) : option (nat * e):=
   match e with
-    chUnit => Some (seed, Datatypes.tt)
+    chUnit => Some (seed, tt)
   | chNat => Some ((seed + 1)%N, seed)
   | chInt => Some ((seed + 1)%nat, BinInt.Z.of_nat seed) (* FIXME: also generate negative numbers *)
   | chBool => Some ((seed + 1)%N, Nat.even seed)
@@ -221,11 +221,11 @@ Close Scope Z_scope.
 
 Section Test.
 
-  Definition loc : Location :=  ('nat ; 1)%N.
-  Definition locs : {fset Location} := fset [:: loc].
+  Definition loc : Location :=  (1, 'nat).
+  Definition locs : Locations := [fmap loc].
 
   Definition test_prog_sub (x : nat):
-    code fset0 [interface] 'nat :=
+    code emptym [interface] 'nat :=
     {code
        k ← sample uniform 20 ;;
        let y := (x + k)%N in
@@ -259,8 +259,8 @@ Section Test.
     ].
 
   Definition test_pack:
-    package locs [interface] E :=
-    [package
+    package [interface] E :=
+    [package locs ;
       #def #[ 0 ] (x : 'nat) : 'nat
       {
         k ← sample uniform 20 ;;

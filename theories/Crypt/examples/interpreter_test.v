@@ -18,11 +18,11 @@ Section Test.
   Import PackageNotation.
   #[local] Open Scope package_scope.
 
-  #[local] Definition loc : Location :=  ('nat ; 1)%N.
-  #[local] Definition locs : {fset Location} := fset [:: loc].
+  #[local] Definition loc : Location :=  (1, 'nat)%N.
+  #[local] Definition locs : Locations := [fmap loc].
 
   #[local] Definition test_prog_sub (x : nat):
-    code fset0 [interface] 'nat :=
+    code emptym [interface] 'nat :=
     {code
        k ← sample uniform 20 ;;
        let y := (x + k)%N in
@@ -41,7 +41,7 @@ Section Test.
     ssprove_valid.
   Defined.
 
-  Goal (nat_ch (ch_nat 'unit Datatypes.tt) 'unit) = Some tt.
+  Goal (nat_ch (ch_nat 'unit tt) 'unit) = Some tt.
     vm_compute.
     reflexivity.
   Qed.
@@ -63,8 +63,8 @@ Section Test.
     ].
 
   #[local] Definition test_pack:
-    package locs [interface] E :=
-    [package
+    package [interface] E :=
+    [package locs ;
        #def #[ 0 ] (x : 'nat) : 'nat
        {
          k ← sample uniform 20 ;;

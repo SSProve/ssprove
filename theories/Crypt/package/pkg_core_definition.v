@@ -8,21 +8,17 @@
  *)
 
 From Coq Require Import Utf8.
-From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssreflect eqtype choice seq ssrfun ssrbool.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
-From SSProve.Mon Require Import SPropBase.
-From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd RulesStateProb StateTransformingLaxMorph
-     choice_type Casts.
+From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd
+  RulesStateProb StateTransformingLaxMorph choice_type Casts fmap_extra.
 
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
 Set Equations With UIP.
-
-Import SPropNotations.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
@@ -47,15 +43,17 @@ tgt : choice_type
 
 Definition mkopsig id S T : opsig := (id, (S, T)).
 
-Definition Location := ∑ (t : choice_type), nat.
+Definition Location := nat * choice_type.
 
-Definition loc_type (l : Location) := l.π1.
+Definition Locations := {fmap nat → choice_type}.
+
+Definition loc_type (l : Location) := l.2.
 
 Coercion loc_type : Location >-> choice_type.
 
 Definition Value (t : choice_type) := chElement t.
 
-Definition Interface := {fset opsig}.
+Definition Interface := {fmap ident → choice_type * choice_type}.
 
 Definition ide (v : opsig) : ident :=
   let '(n, _) := v in n.
@@ -86,7 +84,7 @@ Definition Arit := Prob_arities.
 
 Section FreeModule.
 
-  Context (Loc : {fset Location}).
+  Context (Loc : Locations).
   Context (import : Interface).
 
   Inductive raw_code (A : choiceType) : Type :=
@@ -108,20 +106,20 @@ Section FreeModule.
         valid_code (ret x)
 
   | valid_opr :
-      ∀ o x k,
-        o \in import →
+      ∀ (o : opsig) x k,
+        fhas import o →
         (∀ v, valid_code (k v)) →
         valid_code (opr o x k)
 
   | valid_getr :
       ∀ l k,
-        l \in Loc →
+        fhas Loc l →
         (∀ v, valid_code (k v)) →
         valid_code (getr l k)
 
   | valid_putr :
       ∀ l v k,
-        l \in Loc →
+        fhas Loc l →
         valid_code k →
         valid_code (putr l v k)
 
@@ -141,7 +139,7 @@ Section FreeModule.
   Lemma inversion_valid_opr :
     ∀ {A o x k},
       @valid_code A (opr o x k) →
-      (o \in import) *
+      (fhas import o) *
       (∀ v, valid_code (k v)).
   Proof.
     intros A o x k h.
@@ -152,7 +150,7 @@ Section FreeModule.
   Lemma inversion_valid_getr :
     ∀ {A l k},
       @valid_code A (getr l k) →
-      (l \in Loc) *
+      (fhas Loc l) *
       (∀ v, valid_code (k v)).
   Proof.
     intros A l k h.
@@ -163,7 +161,7 @@ Section FreeModule.
   Lemma inversion_valid_putr :
     ∀ {A l v k},
       @valid_code A (putr l v k) →
-      (l \in Loc) *
+      (fhas Loc l) *
       (valid_code k).
   Proof.
     intros A l v k h.
@@ -257,33 +255,33 @@ Section FreeModule.
   (* Alternative to bind *)
   Inductive command : choiceType → Type :=
   | cmd_op o (x : src o) : command (tgt o)
-  | cmd_get (ℓ : Location) : command (Value ℓ.π1)
-  | cmd_put (ℓ : Location) (v : Value ℓ.π1) : command unit_choiceType
+  | cmd_get (ℓ : Location) : command (Value ℓ)
+  | cmd_put (ℓ : Location) (v : Value ℓ) : command unit_choiceType
   | cmd_sample op : command (Arit op).
 
   Definition cmd_bind {A B} (c : command A) (k : A → raw_code B) :=
     match c in command A return (A → raw_code B) → raw_code B with
     | cmd_op o x => opr o x
     | cmd_get ℓ => getr ℓ
-    | cmd_put ℓ v => λ k, putr ℓ v (k Datatypes.tt)
+    | cmd_put ℓ v => λ k, putr ℓ v (k tt)
     | cmd_sample op => sampler op
     end k.
 
   Inductive valid_command : ∀ A, command A → Prop :=
   | valid_cmd_op :
       ∀ o x,
-        o \in import →
+        fhas import o →
         valid_command _ (cmd_op o x)
 
   | valid_cmd_get :
-      ∀ ℓ,
-        ℓ \in Loc →
-        valid_command _ (cmd_get ℓ)
+      ∀ l,
+        fhas Loc l →
+        valid_command _ (cmd_get l)
 
   | valid_cmd_put :
-      ∀ ℓ v,
-        ℓ \in Loc →
-        valid_command _ (cmd_put ℓ v)
+      ∀ l v,
+        fhas Loc l →
+        valid_command _ (cmd_put l v)
 
   | valid_cmd_sample :
       ∀ op,
@@ -384,8 +382,6 @@ Section FreeModule.
 
   Open Scope package_scope.
 
-  Import SPropAxioms. Import FunctionalExtensionality.
-
   (* TODO: NEEDED? *)
   (* Program Definition rFree : ord_relativeMonad choice_incl :=
     @mkOrdRelativeMonad ord_choiceType TypeCat choice_incl code _ _ _ _ _ _.
@@ -471,19 +467,19 @@ Create HintDb ssprove_valid_db.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (opr ?o ?x ?k)) =>
   eapply valid_opr ; [
-    auto_in_fset
+    solve [ fmap_solve ]
   | intro ; eapply valid_code_from_class
   ] : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (getr ?o ?k)) =>
   eapply valid_getr ; [
-    auto_in_fset
+    solve [ fmap_solve ]
   | intro ; eapply valid_code_from_class
   ] : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (putr ?o ?x ?k)) =>
   eapply valid_putr ; [
-    auto_in_fset
+    solve [ fmap_solve ]
   | eapply valid_code_from_class
   ] : typeclass_instances ssprove_valid_db.
 
@@ -510,17 +506,17 @@ Arguments valid_command _ _ [_] _.
 
 #[export] Hint Extern 1 (ValidCommand ?L ?I (cmd_op ?o ?x)) =>
   eapply valid_cmd_op ;
-  auto_in_fset
+  solve [ fmap_solve ]
   : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 1 (ValidCommand ?L ?I (cmd_get ?l)) =>
   eapply valid_cmd_get ;
-  auto_in_fset
+  solve [ fmap_solve ]
   : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (cmd_put ?l ?v)) =>
   eapply valid_cmd_put ;
-  auto_in_fset
+  solve [ fmap_solve ]
   : typeclass_instances ssprove_valid_db.
 
 #[export] Hint Extern 1 (ValidCode ?L ?I (cmd_sample ?op)) =>
@@ -538,89 +534,57 @@ Section FreeLocations.
 
   Context {import : Interface}.
 
-  (* TODO Make this lemma more general? *)
-  Lemma injectSubset :
-    ∀ {locs1 locs2 : {fset Location}} {l : Location},
-      fsubset locs1 locs2 →
-      l \in locs1 →
-      l \in locs2.
-  Proof.
-    intros locs1 locs2 l Hfsubset H.
-    unfold fsubset in Hfsubset.
-    move: Hfsubset.
-    move /eqP => Q.
-    rewrite -Q.
-    rewrite in_fsetU.
-    apply/orP.
-    by left.
-  Defined.
-
   Let codeI locs := code locs import.
 
   Lemma valid_injectLocations :
     ∀ A L1 L2 (v : raw_code A),
-      fsubset L1 L2 →
+      fsubmap L1 L2 →
       ValidCode L1 import v →
       ValidCode L2 import v.
   Proof.
-    intros A L1 L2 v h p.
+    move=> A L1 L2 v h p.
     induction p.
     all: try solve [ constructor ; eauto ].
     - constructor. 2: eauto.
-      eapply injectSubset. all: eauto.
+      by apply (fsubmap_fhas L1).
     - constructor. 2: eauto.
-      eapply injectSubset. all: eauto.
+      by apply (fsubmap_fhas L1).
   Qed.
 
   Lemma valid_cmd_injectLocations :
     ∀ A L1 L2 (v : command A),
-      fsubset L1 L2 →
+      fsubmap L1 L2 →
       ValidCommand L1 import v →
       ValidCommand L2 import v.
   Proof.
-    intros A L1 L2 v h p.
+    move=> A L1 L2 v h p.
     destruct p.
     all: try solve [ constructor ; eauto ].
     - constructor.
-      eapply injectSubset. all: eauto.
+      by apply (fsubmap_fhas L1).
     - constructor.
-      eapply injectSubset. all: eauto.
+      by apply (fsubmap_fhas L1).
   Qed.
 
 End FreeLocations.
 
 Section FreeMap.
 
-  Context {Locs : {fset Location}}.
-
-  (* TODO Factorise with lemma above. *)
-  Lemma in_fsubset :
-    ∀ {e} {S1 S2 : Interface},
-      fsubset S1 S2 →
-      e \in S1 →
-      e \in S2.
-  Proof.
-    intros e S1 S2 hs h.
-    unfold fsubset in hs.
-    move: hs. move /eqP => hs. rewrite -hs.
-    rewrite in_fsetU.
-    apply/orP.
-    auto.
-  Defined.
+  Context {Locs : Locations}.
 
   Let codeL I := code Locs I.
 
   Lemma valid_injectMap :
     ∀ {A I1 I2} (v : raw_code A),
-      fsubset I1 I2 →
+      fsubmap I1 I2 →
       ValidCode Locs I1 v →
       ValidCode Locs I2 v.
   Proof.
-    intros A I1 I2 v h p.
+    move=> A I1 I2 v h p.
     induction p.
     all: try solve [ constructor ; auto ].
     constructor. 2: eauto.
-    eapply in_fsubset. all: eauto.
+    by apply (fsubmap_fhas I1).
   Qed.
 
 End FreeMap.
@@ -631,64 +595,30 @@ Definition typed_raw_function :=
 Definition raw_package :=
   {fmap ident -> typed_raw_function }.
 
-(* To avoid unification troubles, we wrap this definition in an inductive. *)
-Definition valid_package_ext L I (E : Interface) (p : raw_package) :=
-  ∀ o, o \in E →
-    let '(id, (src, tgt)) := o in
-    ∃ (f : src → raw_code tgt),
-      p id = Some (src ; tgt ; f) ∧ ∀ x, ValidCode L I (f x).
+Record valid_package L (I E : Interface) (p : raw_package) :=
+  { valid_exports : ∀ o,
+      fhas E o <-> (∃ f, fhas p (o.1, (chsrc o ; chtgt o ; f)))
+  ; valid_imports : ∀ n (F : typed_raw_function) (x : F.π1),
+      fhas p (n, F) → ValidCode L I (F.π2.π2 x)
+  }.
 
-Inductive valid_package L I E p :=
-| prove_valid_package : valid_package_ext L I E p → valid_package L I E p.
-
-Lemma from_valid_package :
-  ∀ L I E p,
-    valid_package L I E p →
-    valid_package_ext L I E p.
-Proof.
-  intros L I E p [h]. exact h.
-Qed.
-
-Class ValidPackage L I E p :=
+Class ValidPackage (L : Locations) (I E : Interface) p :=
   is_valid_package : valid_package L I E p.
 
 (* Packages *)
-Record package L I E := mkpackage {
+Record package I E := mkpackage {
+  locs : Locations ;
   pack : raw_package ;
-  pack_valid : ValidPackage L I E pack
+  pack_valid : ValidPackage locs I E pack
 }.
 
-Arguments mkpackage [_ _ _] _ _.
-Arguments pack [_ _ _] _.
-Arguments pack_valid [_ _ _] _.
-
-(* Packages coming with their set of locations *)
-Record loc_package I E := mkloc_package {
-  locs : {fset Location} ;
-  locs_pack : package locs I E
-}.
-
-Arguments mkloc_package [_ _] _ _.
+Arguments mkpackage [_ _] _ _ _.
 Arguments locs [_ _] _.
-Arguments locs_pack [_ _] _.
-
-Coercion locs_pack : loc_package >-> package.
-
-Lemma loc_package_ext :
-  ∀ {I E} (p1 p2 : loc_package I E),
-    p1.(locs) = p2.(locs) →
-    p1.(locs_pack).(pack) =1 p2.(locs_pack).(pack) →
-    p1 = p2.
-Proof.
-  intros I E p1 p2 e1 e2.
-  destruct p1 as [l1 [p1 h1]], p2 as [l2 [p2 h2]].
-  apply eq_fmap in e2.
-  cbn in *. subst.
-  f_equal. f_equal. apply proof_irrelevance.
-Qed.
+Arguments pack [_ _] _.
+Arguments pack_valid [_ _] _.
 
 Notation "{ 'package' p }" :=
-  (mkpackage p _)
+  (mkpackage _ p _)
   (format "{ package  p  }") : package_scope.
 
 Notation "{ 'package' p '#with' h }" :=
@@ -701,79 +631,73 @@ Coercion pack : package >-> raw_package.
   eapply p.(pack_valid)
   : typeclass_instances ssprove_valid_db.
 
-Lemma valid_package_from_class :
-  ∀ L I E (p : raw_package),
-    ValidPackage L I E p →
-    valid_package L I E p.
-Proof.
-  intros A p h. auto.
-Defined.
-
-Notation "{ 'locpackage' p }" :=
-  (mkloc_package _ (mkpackage p _))
-  (format "{ locpackage  p  }") : package_scope.
-
-Notation "{ 'locpackage' p '#with' h }" :=
-  (mkloc_package _ (mkpackage p h))
-  (only parsing) : package_scope.
-
 (* Some validity lemmata *)
+
+Lemma valid_exports_eq {L I E p} :
+  ValidPackage L I E p → E = mapm (λ '(So; To; f), (So, To)) p.
+Proof.
+  intros [he _].
+  apply eq_fmap => n.
+  rewrite mapmE.
+  destruct (E n) as [[S T]|] eqn:e.
+  - specialize (he (n, (S, T))).
+    simpl in he.
+    rewrite he in e.
+    destruct e as [f e].
+    rewrite e //.
+  - destruct (p n) eqn:e'; rewrite e' //.
+    destruct t as [S [T f]].
+    assert (∃ f : S → raw_code T, p n = Some (S; T; f)) by by exists f.
+    specialize (he (n, (S, T))).
+    simpl in he.
+    rewrite -he in H.
+    by rewrite H in e.
+Qed.
 
 Lemma valid_package_inject_locations :
   ∀ I E L1 L2 p,
-    fsubset L1 L2 →
+    fsubmap L1 L2 →
     ValidPackage L1 I E p →
     ValidPackage L2 I E p.
 Proof.
-  intros I E L1 L2 p hL h.
-  apply prove_valid_package.
-  eapply from_valid_package in h.
-  intros [n [S T]] ho. specialize (h _ ho). cbn in h.
-  destruct h as [f [ef hf]].
-  exists f. intuition auto.
-  eapply valid_injectLocations. all: eauto.
+  intros I E L1 L2 p hL [he hi].
+  split; [ done |] => n F x h.
+  eapply valid_injectLocations; [ eassumption |].
+  eapply hi, h.
 Qed.
 
 Lemma valid_package_inject_export :
   ∀ L I E1 E2 p,
-    fsubset E1 E2 →
+    fsubmap E2 E1 →
+    fsubmap E1 E2 →
     ValidPackage L I E2 p →
     ValidPackage L I E1 p.
 Proof.
-  intros L I E1 E2 p hE h.
-  apply prove_valid_package.
-  eapply from_valid_package in h.
-  intros o ho. specialize (h o).
-  destruct o as [o [So To]].
-  forward h.
-  { eapply in_fsubset. all: eauto. }
-  destruct h as [f [ef hf]].
-  exists f. intuition auto.
+  intros L I E1 E2 p h1 h2.
+  by rewrite (fsubmap_eq _ _ h1 h2).
 Qed.
 
 Lemma valid_package_inject_import :
   ∀ L I1 I2 E p,
-    fsubset I1 I2 →
+    fsubmap I1 I2 →
     ValidPackage L I1 E p →
     ValidPackage L I2 E p.
 Proof.
-  intros L I1 I2 E p hE h.
-  apply prove_valid_package.
-  eapply from_valid_package in h.
-  intros [n [S T]] ho. specialize (h _ ho). cbn in h.
-  destruct h as [f [ef hf]].
-  exists f. intuition auto.
-  eapply valid_injectMap. all: eauto.
+  intros L I1 I2 E p hE [he hi].
+  split; [ done |] => n F x h.
+  eapply valid_injectMap; [ eassumption |].
+  eapply hi, h.
 Qed.
 
 Lemma package_ext :
-  ∀ {L I E} (p1 p2 : package L I E),
+  ∀ {I E} (p1 p2 : package I E),
+    p1.(locs) =1 p2.(locs) →
     p1.(pack) =1 p2.(pack) →
     p1 = p2.
 Proof.
-  intros L I E p1 p2 e.
+  intros I E p1 p2 e e'.
   destruct p1 as [p1 h1], p2 as [p2 h2].
-  apply eq_fmap in e.
+  apply eq_fmap in e, e'.
   cbn in *. subst.
   f_equal. apply proof_irrelevance.
 Qed.
@@ -782,7 +706,7 @@ Qed.
 
 Lemma mkpackage_rewrite :
   ∀ {L I E T} {x y} (p : T → _) h (e : x = y),
-    @mkpackage L I E (p x) h = mkpackage (p y) (sig_rewrite_aux p h e).
+    @mkpackage I E L (p x) h = mkpackage L (p y) (sig_rewrite_aux p h e).
 Proof.
   intros L I E T x y p h e. subst. reflexivity.
 Qed.

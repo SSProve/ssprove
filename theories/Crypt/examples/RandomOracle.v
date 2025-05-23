@@ -48,8 +48,8 @@ Module RO (π : ROParams).
   Definition INIT : nat := 0.
   Definition QUERY : nat := 1.
 
-  Definition queries_loc : Location := (chMap chQuery chRandom ; 2).
-  Definition RO_locs : {fset Location} := fset [:: queries_loc].
+  Definition queries_loc : Location := (2, chMap chQuery chRandom).
+  Definition RO_locs : Locations := [fmap queries_loc].
 
   Definition RO_exports :=
     [interface
@@ -57,12 +57,12 @@ Module RO (π : ROParams).
       #val #[ QUERY ] : 'query → 'random
     ].
 
-  Definition RO : package RO_locs [interface] RO_exports :=
-    [package
+  Definition RO : package [interface] RO_exports :=
+    [package RO_locs ;
       #def #[ INIT ] (_ : 'unit) : 'unit
       {
         #put queries_loc := emptym ;;
-        ret Datatypes.tt
+        ret tt
       } ;
       #def #[ QUERY ] (q : 'query) : 'random
       {

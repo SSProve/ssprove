@@ -66,7 +66,7 @@ Proof.
   by rewrite /Ord.lt /= ltn_neqAle Bool.andb_comm.
 Qed.
 
-Definition tt: 'unit := Datatypes.tt.
+Definition tt: 'unit := tt.
 
 Variable (n: nat).
 
@@ -82,10 +82,6 @@ Context (enc: Word -> Word -> Word).
 Definition ctxt: nat := 0.
 Definition query: nat := 1.
 Definition attack: nat := 2.
-
-Definition mkpair {Lt Lf E}
-  (t: package Lt [interface] E) (f: package Lf [interface] E):
-  loc_GamePair E := fun b => if b then {locpackage t} else {locpackage f}.
 
 (**
   A [map_loop] is like the [map] function, but it can be used directly as [code]
@@ -160,10 +156,10 @@ Hint Extern 50 (_ = code_link (map_loop _ _ _) _) =>
   : ssprove_code_simpl.
 
 Definition CTXT_pkg_tt:
-  package fset0
+  package
     [interface]
     [interface #val #[ctxt]: 'word → 'word ] :=
-  [package
+  [package emptym ;
     #def #[ctxt] (m: 'word): 'word {
       k <$ uniform Word_N ;;
       ret (enc k m)
@@ -171,17 +167,17 @@ Definition CTXT_pkg_tt:
   ].
 
 Definition CTXT_pkg_ff:
-  package fset0
+  package
     [interface]
     [interface #val #[ctxt]: 'word → 'word ] :=
-  [package
+  [package emptym ;
     #def #[ctxt] (m: 'word): 'word {
       c <$ uniform Word_N ;;
       ret c
     }
   ].
 
-Definition CTXT := mkpair CTXT_pkg_tt CTXT_pkg_ff.
+Definition CTXT b := if b then CTXT_pkg_tt else CTXT_pkg_ff.
 
 (**
   We only define security of the stretched PRG. It is not currently possible to
@@ -195,9 +191,9 @@ Definition CTXT := mkpair CTXT_pkg_tt CTXT_pkg_ff.
   leave it as an assumption.
 *)
 Definition GEN_STRETCH_pkg_tt:
-  package fset0 [interface]
+  package [interface]
     [interface #val #[query]: 'nat → ('seq 'word) × 'word ] :=
-  [package
+  [package emptym ;
     #def #[query] (k: 'nat): ('seq 'word) × 'word {
       s0 <$ uniform Word_N ;;
       @map_loop _ Word _ (iota 0 k) s0 (fun _ si =>
@@ -207,9 +203,9 @@ Definition GEN_STRETCH_pkg_tt:
   ].
 
 Definition GEN_STRETCH_pkg_ff:
-  package fset0 [interface]
+  package [interface]
     [interface #val #[query]: 'nat → ('seq 'word) × 'word ] :=
-  [package
+  [package emptym ;
     #def #[query] (k: 'nat): ('seq 'word) × 'word {
       t ← @map_loop _ Word _ (iota 0 k) tt (fun _ _ =>
         ti <$ uniform Word_N ;;
@@ -220,15 +216,15 @@ Definition GEN_STRETCH_pkg_ff:
     }
   ].
 
-Definition GEN_STRETCH := mkpair GEN_STRETCH_pkg_tt GEN_STRETCH_pkg_ff.
+Definition GEN_STRETCH b := if b then GEN_STRETCH_pkg_tt else GEN_STRETCH_pkg_ff.
 
 (**
   The rest of the games are similar to the ones in the book.
 *)
 Definition ATTACK_pkg_tt:
-  package fset0 [interface]
+  package [interface]
     [interface #val #[attack]: 'seq 'word → ('seq 'word) × 'word ] :=
-  [package
+  [package emptym ;
     #def #[attack] (m: 'seq 'word): ('seq 'word) × 'word {
       s0 <$ uniform Word_N ;;
       @map_loop _ Word _ (unzip2 m) s0 (fun mi si =>
@@ -239,9 +235,9 @@ Definition ATTACK_pkg_tt:
   ].
 
 Definition ATTACK_pkg_ff:
-  package fset0 [interface]
+  package [interface]
     [interface #val #[attack]: 'seq 'word → ('seq 'word) × 'word ] :=
-  [package
+  [package emptym ;
     #def #[attack] (m: 'seq 'word): ('seq 'word) × 'word {
       c ← @map_loop _ Word _ (unzip2 m) tt (fun _ _ =>
         ci <$ uniform Word_N ;;
@@ -252,13 +248,13 @@ Definition ATTACK_pkg_ff:
     }
   ].
 
-Definition ATTACK := mkpair ATTACK_pkg_tt ATTACK_pkg_ff.
+Definition ATTACK b := if b then ATTACK_pkg_tt else ATTACK_pkg_ff.
 
 Definition ATTACK_GEN_pkg:
-  package fset0
+  package
     [interface #val #[query]: 'nat → ('seq 'word) × 'word ]
     [interface #val #[attack]: 'seq 'word → ('seq 'word) × 'word ] :=
-  [package
+  [package emptym ;
     #def #[attack] (m: 'seq 'word): ('seq 'word) × 'word {
       #import {sig #[query]: 'nat → ('seq 'word) × 'word } as query ;;
       ts ← query (size m) ;;
@@ -271,9 +267,9 @@ Definition ATTACK_GEN_pkg:
   ].
 
 Definition ATTACK_HYB_pkg:
-  package fset0 [interface]
+  package [interface]
     [interface #val #[attack]: 'seq 'word → ('seq 'word) × 'word ] :=
-  [package
+  [package emptym ;
     #def #[attack] (m: 'seq 'word): ('seq 'word) × 'word {
       c ← @map_loop _ Word _ (unzip2 m) tt (fun mi _ =>
         ti <$ uniform Word_N ;;
@@ -285,10 +281,10 @@ Definition ATTACK_HYB_pkg:
   ].
 
 Definition ATTACK_CTXT_pkg:
-  package fset0
+  package
   [interface #val #[ctxt]: 'word → 'word ]
     [interface #val #[attack]: 'seq 'word → ('seq 'word) × 'word ] :=
-  [package
+  [package emptym ;
     #def #[attack] (m: 'seq 'word): ('seq 'word) × 'word {
       #import {sig #[ctxt]: 'word → 'word } as ctxt ;;
       c ← @map_loop _ Word _ (unzip2 m) tt (fun mi _ =>
@@ -356,7 +352,6 @@ Proof.
   apply rpost_weaken_rule with eq;
     last by move=> [? ?] [? ?] [].
   simplify_linking.
-  rewrite cast_fun_K.
   ssprove_code_simpl.
   ssprove_swap_lhs 0.
   ssprove_swap_rhs 0.
@@ -469,10 +464,11 @@ Proof.
   as ineq.
   apply: le_trans.
   1: by apply: ineq.
-  rewrite ATTACK_equiv_true ?fdisjointUr ?fdisjoints0 // GRing.add0r.
-  rewrite ATTACK_HYB_equiv_1 ?fdisjointUr ?fdisjoints0 // GRing.addr0.
-  rewrite ATTACK_HYB_equiv_2 ?fdisjointUr ?fdisjoints0 // GRing.addr0.
-  rewrite ATTACK_equiv_false ?fdisjointUr ?fdisjoints0 // GRing.addr0.
+  rewrite -> ATTACK_equiv_true by fmap_solve.
+  rewrite -> ATTACK_HYB_equiv_1 by fmap_solve.
+  rewrite -> ATTACK_HYB_equiv_2 by fmap_solve.
+  rewrite -> ATTACK_equiv_false by fmap_solve.
+  rewrite GRing.add0r 3!GRing.addr0.
   rewrite /prg_epsilon /cpa_epsilon !Advantage_E -!Advantage_link.
   by rewrite (Advantage_sym (GEN_STRETCH true)) (Advantage_sym (CTXT true)).
 Qed.

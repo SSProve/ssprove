@@ -424,18 +424,14 @@ Local Open Scope package_scope.
 (*  Identifier of the signature *)
 Definition shares : nat := 0.
 
-Definition mkpair {Lt Lf E}
-  (t: package Lt [interface] E) (f: package Lf [interface] E):
-  loc_GamePair E := fun b => if b then {locpackage t} else {locpackage f}.
-
 (**
   Finally, we can define the packages and prove security of the protocol.
   This part is fairly easy now that we have a bijection.
 *)
 Definition SHARE_pkg_tt:
-  package fset0 [interface]
+  package [interface]
     [interface #val #[shares]: ('word × 'word) × 'set 'party → 'seq 'share ] :=
-  [package
+  [package emptym ;
     #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'party): 'seq 'share {
       if size (domm U) >= t then ret emptym
       else
@@ -447,9 +443,9 @@ Definition SHARE_pkg_tt:
   ].
 
 Definition SHARE_pkg_ff:
-  package fset0 [interface]
+  package [interface]
     [interface #val #[shares]: ('word × 'word) × 'set 'party → 'seq 'share ] :=
-  [package
+  [package emptym ;
     #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'party): 'seq 'share {
       if size (domm U) >= t then ret emptym
       else
@@ -460,7 +456,7 @@ Definition SHARE_pkg_ff:
     }
   ].
 
-Definition SHARE := mkpair SHARE_pkg_tt SHARE_pkg_ff.
+Definition SHARE b := if b then SHARE_pkg_tt else SHARE_pkg_ff.
 
 (******************************************************************************)
 (************Proof that the games are equivalent.******************************)
@@ -520,7 +516,7 @@ Theorem unconditional_secrecy LA A:
 Proof.
   move=> vA.
   rewrite Advantage_E Advantage_sym.
-  by rewrite SHARE_equiv ?fdisjoints0.
+  rewrite SHARE_equiv //; fmap_solve.
 Qed.
 
 End ShamirSecretSharing_example.

@@ -792,7 +792,7 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
           #assert (size (domm m) == n) ;;
           let key := fto (compute_key m i) in
           #put (ckey_loc i) := key ;;
-          @ret 'unit Datatypes.tt
+          @ret 'unit tt
         }
         ;
         #def #[ VOTE ] (v : 'bool) : 'public
@@ -830,7 +830,7 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
           #import {sig #[ CONSTRUCT ] : 'public_keys → 'unit} as Construct ;;
           #import {sig #[ VOTE ] : 'bool → 'public} as Vote ;;
           #import {sig #[ Sigma1.Sigma.RUN ] : chRelation1 → chTranscript1} as ZKP ;;
-          pk ← Init Datatypes.tt ;;
+          pk ← Init tt ;;
           x ← sample uniform i_secret ;;
           let y := (fto (g ^+ (otf x))) : public in
             zkp ← ZKP (y, x) ;;
@@ -860,7 +860,7 @@ Module OVN (π2 : CDSParams) (Alg2 : SigmaProtocolAlgorithms π2).
         {
           #import {sig #[ DDH.SAMPLE ] : 'unit → 'public × 'public × 'public} as DDH ;;
           #import {sig #[ Sigma1.Sigma.RUN ] : chRelation1 → chTranscript1} as ZKP ;;
-          abc ← DDH Datatypes.tt ;;
+          abc ← DDH tt ;;
           x_i ← get DDH.secret_loc1 ;;
           x_j ← get DDH.secret_loc2 ;;
           let '(y_i, (y_j, c)) := abc in

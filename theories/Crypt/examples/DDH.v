@@ -70,17 +70,18 @@ Module DDH (DDHP : DDHParams) (GP : GroupParam).
 
   Notation " 'group " := (chGroup) (in custom pack_type at level 2).
 
-  Definition secret_loc1 : Location := (chElem ; 33%N).
-  Definition secret_loc2 : Location := (chElem ; 34%N).
-  Definition secret_loc3 : Location := (chElem ; 35%N).
+  Definition secret_loc1 : Location := (33, chElem).
+  Definition secret_loc2 : Location := (34, chElem).
+  Definition secret_loc3 : Location := (35, chElem).
 
   Definition DDH_locs :=
-    fset [:: secret_loc1 ; secret_loc2 ; secret_loc3].
+    [fmap secret_loc1 ; secret_loc2 ; secret_loc3].
+
+  Definition DDH_E := [interface #val #[ SAMPLE ] : 'unit → 'group × 'group × 'group ].
 
   Definition DDH_real :
-    package DDH_locs [interface]
-      [interface #val #[ SAMPLE ] : 'unit → 'group × 'group × 'group ] :=
-      [package
+    package [interface] DDH_E :=
+      [package DDH_locs ;
         #def #[ SAMPLE ] (_ : 'unit) : 'group × 'group × 'group
         {
           a ← sample uniform i_space ;;
@@ -91,11 +92,9 @@ Module DDH (DDHP : DDHParams) (GP : GroupParam).
         }
       ].
 
-  Definition DDH_E := [interface #val #[ SAMPLE ] : 'unit → 'group × 'group × 'group ].
-
   Definition DDH_ideal :
-    package DDH_locs [interface] DDH_E :=
-      [package
+    package [interface] DDH_E :=
+      [package DDH_locs ;
         #def #[ SAMPLE ] (_ : 'unit) : 'group × 'group × 'group
         {
           a ← sample uniform i_space ;;
@@ -108,10 +107,7 @@ Module DDH (DDHP : DDHParams) (GP : GroupParam).
         }
       ].
 
-  Definition DDH :
-    loc_GamePair [interface #val #[ SAMPLE ] : 'unit → 'group × 'group × 'group ] :=
-    λ b,
-      if b then {locpackage DDH_real } else {locpackage DDH_ideal }.
+  Definition DDH b : game DDH_E := if b then DDH_real else DDH_ideal.
 
   Definition ϵ_DDH := Advantage DDH.
 

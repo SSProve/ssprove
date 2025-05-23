@@ -164,18 +164,15 @@ Section PRF_example.
 
   #[local] Open Scope package_scope.
 
-  Definition key_location : Location := ('option Key ; 0).
-  Definition plain_location : Location := (Words ; 1).
-  Definition cipher_location : Location := (Words ; 2).
+  Definition key_location : Location := (0, 'option Key).
+  Definition plain_location : Location := (1, Words).
+  Definition cipher_location : Location := (2, Words).
   Definition i0 : nat := 3.
   Definition i1 : nat := 4.
   Definition i2 : nat := 5.
-  Definition salt_location : Location := ('nat ; 6).
+  Definition salt_location : Location := (6, 'nat).
   Definition table_location : Location :=
-    (chMap 'nat ('fin (2^n)%N) ; 7).
-
-  Definition rel_loc : {fset Location} :=
-    fset [:: key_location ; table_location ].
+    (7, chMap 'nat ('fin (2^n)%N)).
 
   Context (PRF : Words → Key → Key).
 
@@ -184,7 +181,7 @@ Section PRF_example.
   Definition i_key : nat := 2^n.
   Definition i_words : nat := 2^n.
 
-  Definition enc {L : { fset Location }} (m : Words) (k : Key) :
+  Definition enc {L : Locations} (m : Words) (k : Key) :
     code L [interface] ('fin (2^n) × 'fin (2^n)) :=
       {code
         r ← sample uniform i_words ;;
@@ -193,7 +190,7 @@ Section PRF_example.
         ret (r, c)
       }.
 
-  Definition kgen : code fset0 [interface] 'fin (2^n) :=
+  Definition kgen : code emptym [interface] 'fin (2^n) :=
     {code
       k ← sample uniform i_key ;;
       ret k
@@ -201,18 +198,18 @@ Section PRF_example.
 
   Definition dec (c : Words) (k : Key) :
     code
-      (fset [:: key_location; table_location])
+      ([fmap key_location; table_location])
       [interface]
       ('fin (2^n) × 'fin (2^n)) :=
     enc k c.
 
-  Definition EVAL_location_tt := (fset [:: key_location]).
-  Definition EVAL_location_ff := (fset [:: table_location]).
+  Definition EVAL_location_tt := [fmap key_location].
+  Definition EVAL_location_ff := [fmap table_location].
 
   Definition EVAL_pkg_tt :
-    package EVAL_location_tt [interface]
+    package [interface]
       [interface #val #[i0] : 'word → 'key ] :=
-    [package
+    [package EVAL_location_tt ;
       #def #[i0] (r : 'word) : 'key
       {
         k_init ← get key_location ;;
@@ -228,9 +225,9 @@ Section PRF_example.
     ].
 
   Definition EVAL_pkg_ff :
-    package EVAL_location_ff [interface]
+    package [interface]
       [interface #val #[i0] : 'word → 'key ] :=
-    [package
+    [package EVAL_location_ff ;
       #def #[i0] (r : 'word) : 'key
       {
         T ← get table_location ;;
@@ -244,18 +241,13 @@ Section PRF_example.
       }
     ].
 
-  (* TODO Not the most satisfying, it would be nice to think of something else
-    This might come with more automation to deal with the GamePair type.
-  *)
-  Definition EVAL : loc_GamePair [interface #val #[i0] : 'word → 'key ] :=
-    λ b, if b then {locpackage EVAL_pkg_tt } else {locpackage EVAL_pkg_ff }.
-
-  Definition MOD_CPA_location : {fset Location} := fset0.
+  Definition EVAL b : game [interface #val #[i0] : 'word → 'key ] :=
+    if b then EVAL_pkg_tt else EVAL_pkg_ff.
 
   Definition MOD_CPA_tt_pkg :
-    package MOD_CPA_location [interface #val #[i0] : 'word → 'key ]
+    package [interface #val #[i0] : 'word → 'key ]
       [interface #val #[i1] : 'word → 'word × 'word ] :=
-    [package
+    [package emptym ;
       #def #[i1] (m : 'word) : 'word × 'word
       {
         #import {sig #[i0] : 'word → 'key } as eval ;;
@@ -267,9 +259,9 @@ Section PRF_example.
     ].
 
   Definition MOD_CPA_ff_pkg :
-    package MOD_CPA_location [interface #val #[i0] : 'word → 'key]
+    package [interface #val #[i0] : 'word → 'key]
       [interface #val #[i1] : 'word → 'word × 'word ]:=
-    [package
+    [package emptym ;
       #def #[i1] (m : 'word) : 'word × 'word
       {
         #import {sig #[i0] : 'word → 'key } as eval ;;
@@ -281,13 +273,13 @@ Section PRF_example.
       }
     ].
 
-  Definition IND_CPA_location : {fset Location} := fset [:: key_location].
+  Definition IND_CPA_location : Locations := [fmap key_location].
 
   Definition IND_CPA_pkg_tt :
-    package IND_CPA_location
+    package
       [interface]
       [interface #val #[i1] : 'word → 'word × 'word ] :=
-    [package
+    [package IND_CPA_location ;
       #def #[i1] (m : 'word) : 'word × 'word
       {
         k ← get key_location ;;
@@ -303,10 +295,10 @@ Section PRF_example.
    ].
 
   Definition IND_CPA_pkg_ff :
-    package IND_CPA_location
+    package
       [interface]
       [interface #val #[i1] : 'word → 'word × 'word ] :=
-    [package
+    [package IND_CPA_location ;
       #def #[i1] (m : 'word) : 'word × 'word
       {
         k ← get key_location ;;
@@ -323,10 +315,8 @@ Section PRF_example.
       }
     ].
 
-  Definition IND_CPA :
-    loc_GamePair [interface #val #[i1] : 'word → 'word × 'word ] :=
-    λ b,
-      if b then {locpackage IND_CPA_pkg_tt } else {locpackage IND_CPA_pkg_ff }.
+  Definition IND_CPA b : game [interface #val #[i1] : 'word → 'word × 'word ] :=
+    if b then IND_CPA_pkg_tt else IND_CPA_pkg_ff.
 
   Local Open Scope ring_scope.
 
@@ -394,8 +384,8 @@ Section PRF_example.
     ∀ LA A,
       ValidPackage LA
         [interface #val #[i1] : 'word → 'word × 'word ] A_export A →
-      fdisjoint LA (IND_CPA false).(locs) →
-      fdisjoint LA (IND_CPA true).(locs) →
+      fseparate LA (IND_CPA false).(locs) →
+      fseparate LA (IND_CPA true).(locs) →
       Advantage IND_CPA A <=
       prf_epsilon (A ∘ MOD_CPA_ff_pkg) +
       statistical_gap A +
@@ -412,12 +402,10 @@ Section PRF_example.
     as ineq.
     eapply le_trans. 1: exact ineq.
     clear ineq.
-    erewrite IND_CPA_equiv_false. all: eauto.
-    2:{ simpl. unfold MOD_CPA_location. rewrite fset0U. auto. }
-    erewrite IND_CPA_equiv_true. all: eauto.
-    2:{ simpl. unfold MOD_CPA_location. rewrite fset0U. auto. }
+    erewrite IND_CPA_equiv_false by ssprove_valid.
+    erewrite IND_CPA_equiv_true by ssprove_valid.
     rewrite GRing.add0r GRing.addr0.
-    rewrite !Advantage_link. rewrite Advantage_sym. auto.
+    rewrite !Advantage_link Advantage_sym //.
   Qed.
 
 End PRF_example.
