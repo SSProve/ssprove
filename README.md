@@ -55,11 +55,11 @@ There are two installation options:
 ### OPAM-based installation
 
 
-You can get all dependencies from the `opam` package manager for OCaml:
+You can get all dependencies and install SSProve from the `opam` package manager for OCaml:
 ```sh
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam update
-opam install ./coq-ssprove.opam
+opam install coq-ssprove
 ```
 
 To build the dependency graph, you can optionally install `graphviz`.
