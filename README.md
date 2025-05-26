@@ -397,6 +397,39 @@ Theorem schnorr_com_binding :
     AdvantageE (Com_Binding ∘ Adv) (Special_Soundness_f ∘ Adv) A <= 0.
 ```
 
+#### Simple secret sharing
+
+This 2-out-of-2 secret-sharing shceme can be found in the file 
+[examples/SecretSharing.v]. It formalizes the protocol presented in the chapter
+3.2 of the book [The joy of cryptography](https://joyofcryptography.com/). 
+
+```coq
+Theorem unconditional_secrecy LA A:
+  ValidPackage LA
+    [interface #val #[shares]: ('word × 'word) × 'set 'nat → 'seq 'word ]
+    A_export A ->
+  Advantage SHARE A = 0%R.
+```
+Which ensures that the scheme has perfect security, as both games defined in the
+book are proved equivalent.
+
+#### Shamir Secret Sharing
+
+This formalises Theorem 3.13 from [The Joy of Cryptography](https://joyofcryptography.com/) (p. 60). It 
+formalises Shamir's Secret Sharing scheme and proves that it has perfect 
+security. It is a t-out-of-n secret sharing scheme over the field ['F_p]. This
+case-study is contained in [examples/ShamirSecretSharing.v].
+
+The main result is the following:
+
+```coq
+Theorem unconditional_secrecy LA A:
+  ValidPackage LA
+    [interface #val #[shares]: ('word × 'word) × 'set 'party → 'seq 'share ]
+    A_export A ->
+  Advantage SHARE A = 0%R.
+```
+
 ### Probabilistic relational program logic
 
 The paper version (CSF: Figure 13, journal: section 4.1) introduces a selection
@@ -726,46 +759,45 @@ We do something similar for Schnorr's protocol.
 
 
 
-[theories]: theories
-[theories/Mon]: theories/Mon
-[theories/Relational]: theories/Relational
-[theories/Crypt]: theories/Crypt
-[package]: theories/Crypt/package
-[pkg_core_definition.v]: theories/Crypt/package/pkg_core_definition.v
-[pkg_composition.v]: theories/Crypt/package/pkg_composition.v
-[examples/PRF.v]: theories/Crypt/examples/PRF.v
+[DOC.md]: ./DOC.md
 [examples/ElGamal.v]: theories/Crypt/examples/ElGamal.v
 [examples/KEMDEM.v]: theories/Crypt/examples/KEMDEM.v
-[examples/RandomOracle.v]: theories/Crypt/examples/RandomOracle.v
-[examples/SigmaProtocol.v]: theories/Crypt/examples/SigmaProtocol.v
+[examples/PRF.v]: theories/Crypt/examples/PRF.v
 [examples/Schnorr.v]: theories/Crypt/examples/Schnorr.v
-[package/pkg_rhl.v]: theories/Crypt/package/pkg_rhl.v
-[rules/RulesStateProb.v]: theories/Crypt/rules/RulesStateProb.v
-[package/pkg_advantage.v]: theories/Crypt/package/pkg_advantage.v
-[theories/Relational/OrderEnrichedCategory.v]: theories/Relational/OrderEnrichedCategory.v
-[theories/Relational/OrderEnrichedRelativeMonadExamples.v]: theories/Relational/OrderEnrichedRelativeMonadExamples.v
-[rhl_semantics/free_monad/]: theories/Crypt/rhl_semantics/free_monad/
-[rhl_semantics/free_monad/FreeProbProg.v]: theories/Crypt/rhl_semantics/free_monad/FreeProbProg.v
-[rhl_semantics/ChoiceAsOrd.v]: theories/Crypt/rhl_semantics/ChoiceAsOrd.v
-[rhl_semantics/more_categories/]: theories/Crypt/rhl_semantics/more_categories/
-[RelativeMonadMorph_prod.v]: theories/Crypt/rhl_semantics/more_categories/RelativeMonadMorph_prod.v
+[examples/SigmaProtocol.v]: theories/Crypt/examples/SigmaProtocol.v
+[InitialRelativeMonad.v]: theories/Crypt/rhl_semantics/more_categories/InitialRelativeMonad.v
 [LaxComp.v]: theories/Crypt/rhl_semantics/more_categories/LaxComp.v
 [LaxFunctorsAndTransf.v]: theories/Crypt/rhl_semantics/more_categories/LaxFunctorsAndTransf.v
-[InitialRelativeMonad.v]: theories/Crypt/rhl_semantics/more_categories/InitialRelativeMonad.v
+[LaxMorphismOfRelAdjunctions.v]: theories/Crypt/rhl_semantics/more_categories/LaxMorphismOfRelAdjunctions.v
+[LiftStateful.v]: theories/Crypt/rhl_semantics/state_prob/LiftStateful.v
+[Main.v]: theories/Crypt/Main.v
+[OrderEnrichedRelativeAdjunctions.v]: theories/Crypt/rhl_semantics/more_categories/OrderEnrichedRelativeAdjunctions.v
+[OrderEnrichedRelativeAdjunctionsExamples.v]: theories/Crypt/rhl_semantics/state_prob/OrderEnrichedRelativeAdjunctionsExamples.v
+[package]: theories/Crypt/package
+[package/pkg_advantage.v]: theories/Crypt/package/pkg_advantage.v
+[package/pkg_rhl.v]: theories/Crypt/package/pkg_rhl.v
+[pkg_composition.v]: theories/Crypt/package/pkg_composition.v
+[pkg_core_definition.v]: theories/Crypt/package/pkg_core_definition.v
+[RelativeMonadMorph_prod.v]: theories/Crypt/rhl_semantics/more_categories/RelativeMonadMorph_prod.v
+[rhl_semantics/ChoiceAsOrd.v]: theories/Crypt/rhl_semantics/ChoiceAsOrd.v
+[rhl_semantics/free_monad/]: theories/Crypt/rhl_semantics/free_monad/
+[rhl_semantics/free_monad/FreeProbProg.v]: theories/Crypt/rhl_semantics/free_monad/FreeProbProg.v
+[rhl_semantics/more_categories/]: theories/Crypt/rhl_semantics/more_categories/
 [rhl_semantics/only_prob/]: theories/Crypt/rhl_semantics/only_prob/
 [rhl_semantics/only_prob/Couplings.v]: theories/Crypt/rhl_semantics/only_prob/Couplings.v
+[rhl_semantics/only_prob/SubDistr.v]: theories/Crypt/rhl_semantics/only_prob/SubDistr.v
 [rhl_semantics/only_prob/Theta_dens.v]: theories/Crypt/rhl_semantics/only_prob/Theta_dens.v
 [rhl_semantics/only_prob/Theta_exCP.v]: theories/Crypt/rhl_semantics/only_prob/Theta_exCP.v
 [rhl_semantics/only_prob/ThetaDex.v]: theories/Crypt/rhl_semantics/only_prob/ThetaDex.v
-[rhl_semantics/only_prob/SubDistr.v]: theories/Crypt/rhl_semantics/only_prob/SubDistr.v
-[OrderEnrichedRelativeAdjunctions.v]: theories/Crypt/rhl_semantics/more_categories/OrderEnrichedRelativeAdjunctions.v
-[LaxMorphismOfRelAdjunctions.v]: theories/Crypt/rhl_semantics/more_categories/LaxMorphismOfRelAdjunctions.v
-[TransformingLaxMorph.v]: theories/Crypt/rhl_semantics/more_categories/TransformingLaxMorph.v
 [rhl_semantics/state_prob/]: theories/Crypt/rhl_semantics/state_prob/
-[OrderEnrichedRelativeAdjunctionsExamples.v]: theories/Crypt/rhl_semantics/state_prob/OrderEnrichedRelativeAdjunctionsExamples.v
+[rhl_semantics/state_prob/]: theories/Crypt/rhl_semantics/state_prob/
+[rules/RulesStateProb.v]: theories/Crypt/rules/RulesStateProb.v
 [StateTransformingLaxMorph.v]: theories/Crypt/rhl_semantics/state_prob/StateTransformingLaxMorph.v
 [StateTransfThetaDens.v]: theories/Crypt/rhl_semantics/state_prob/StateTransfThetaDens.v
-[LiftStateful.v]: theories/Crypt/rhl_semantics/state_prob/LiftStateful.v
-[rhl_semantics/state_prob/]: theories/Crypt/rhl_semantics/state_prob/
-[Main.v]: theories/Crypt/Main.v
-[DOC.md]: ./DOC.md
+[theories]: theories
+[theories/Crypt]: theories/Crypt
+[theories/Mon]: theories/Mon
+[theories/Relational]: theories/Relational
+[theories/Relational/OrderEnrichedCategory.v]: theories/Relational/OrderEnrichedCategory.v
+[theories/Relational/OrderEnrichedRelativeMonadExamples.v]: theories/Relational/OrderEnrichedRelativeMonadExamples.v
+[TransformingLaxMorph.v]: theories/Crypt/rhl_semantics/more_categories/TransformingLaxMorph.v
