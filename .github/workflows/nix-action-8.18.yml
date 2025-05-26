@@ -221,6 +221,10 @@ on:
   pull_request_target:
     paths-ignore:
     - .github/workflows/nix-action-8.18.yml
+    - '**.md'
+    - '**.gitignore'
+    - '**.opam'
+    - 'LICENSE'
     types:
     - opened
     - synchronize
