@@ -516,7 +516,7 @@ AdvantageE (G₀ G₁ A : raw_package) : R
 The result is a real number, of type `R`.
 
 We also have an alternative version simply style `Advantage` which takes in a
-pair of games as a function `bool → raw_package`: 
+pair of games as a function `bool → raw_package`:
 
 ```coq
 Advantage (G : bool → raw_package) (A : raw_package) : R

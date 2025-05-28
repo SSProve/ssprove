@@ -103,7 +103,7 @@ Qed.
 
 Hint Extern 1 (ValidCode ?L ?I kgen) =>
   eapply kgen_valid ;
-  solve [ fmap_solve ] 
+  solve [ fmap_solve ]
   : typeclass_instances ssprove_valid_db.
 
 Definition EVAL_pkg_tt:

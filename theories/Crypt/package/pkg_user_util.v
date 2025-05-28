@@ -407,7 +407,7 @@ Ltac ssprove_rswap_cmd_eq_rhs :=
   | |- _ => fail "The goal should be a syntactic judgment"
   end. *)
 
-(* Simple inequality of locations is solved by reflexivity *) 
+(* Simple inequality of locations is solved by reflexivity *)
 Ltac neq_loc_auto :=
   done.
 

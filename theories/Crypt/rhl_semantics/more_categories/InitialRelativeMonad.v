@@ -28,7 +28,7 @@ Section InitialMonad.
   natIso J (ord_functor_comp J (ord_functor_id C)) :=
     natIso_sym (ord_functor_unit_right J).
 
-  Program Definition etaAsRmm : 
+  Program Definition etaAsRmm :
   relativeMonadMorphism _ trivialPhi initRmon M :=
     mkRelMonMorph (ord_functor_id C) trivialPhi initRmon M _ _ _.
   Next Obligation.

@@ -11,7 +11,7 @@ From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd
-  UniformStateProb UniformDistrLemmas 
+  UniformStateProb UniformDistrLemmas
   choice_type pkg_core_definition pkg_notation pkg_semantics pkg_tactics.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.

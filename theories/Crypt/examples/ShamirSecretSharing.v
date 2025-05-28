@@ -2,14 +2,14 @@
 (*                          Shamir Secret Sharing                             *)
 (*                                                                            *)
 (* This formalises Theorem 3.13 from "The Joy of Cryptography" (p. 60).       *)
-(* It formalises Shamir's Secret Sharing scheme and proves that it has        *) 
-(* perfect security. It is a t-out-of-n secret sharing scheme over the        *) 
+(* It formalises Shamir's Secret Sharing scheme and proves that it has        *)
+(* perfect security. It is a t-out-of-n secret sharing scheme over the        *)
 (* field 'F_p.                                                                *)
-(*                                                                            *) 
+(*                                                                            *)
 (* To prove security in SSProve, we need to define a bijection for the        *)
 (* random polynomials f_r and f_l. The bijection is:                          *)
 (*                                                                            *)
-(*   f_r(x) = f_l(x) + g_r(x) - g_l(x) = m_r + x * q_r(x)                     *)                             
+(*   f_r(x) = f_l(x) + g_r(x) - g_l(x) = m_r + x * q_r(x)                     *)
 (*                                                                            *)
 (* The proof conducted here differs a bit from the one in the book, since     *)
 (* our proof is based on the construction of a bijection, whereas the one     *)
@@ -20,7 +20,7 @@
 (* it, so if you are interested, feel free to check out the commit history.   *)
 (*                                                                            *)
 (* Since SSProve does not support using polynomials directly, we represent    *)
-(* polynomials with an inhabited finite type of size p^t (PolyEnc t) because  *) 
+(* polynomials with an inhabited finite type of size p^t (PolyEnc t) because  *)
 (* there are [p^t] polynomials of size [<= t] over the field ['F_p].          *)
 (*                                                                            *)
 (* We then define a bijection functions between polynomials and [PolyEnc t].  *)
@@ -32,8 +32,8 @@
 (* prime p.                                                                   *)
 (*                                                                            *)
 (* Section ShamirSecretSharing_example                                        *)
-(*   Word == type of the words in the protocol       			                    *)
-(*  'word == notation for Word						                                    *)
+(*   Word == type of the words in the protocol                                *)
+(*  'word == notation for Word                                                *)
 (*  Share == type of the shares in the protocol                               *)
 (* 'share == notation for Share                                               *)
 (*  Party == type of the parties in the protocol                              *)
@@ -42,8 +42,8 @@
 (*     t' == the maximum number of shares the scheme is secure against.       *)
 (*      n == number of shares.                                                *)
 (*      p == number of possible messages. It is is a prime.                   *)
-(* 'seq t == local choice_type for sequences				                          *)
-(* 'set t == local choice_type for sets 				                              *)
+(* 'seq t == local choice_type for sequences                                  *)
+(* 'set t == local choice_type for sets                                       *)
 (******************************************************************************)
 
 From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
@@ -240,12 +240,12 @@ Proof.
   2: {
     rewrite /head_poly -horner_coef0.
     rewrite (lagrange_poly_correct 0 (m' - m)) //.
-    - simpl_dif_point. 
+    - simpl_dif_point.
       by rewrite unzip1_zero_points no_zero_share uniq_make_shares.
     - by rewrite in_cons eq_refl.
   }
   rewrite (lagrange_poly_correct (party_to_word x) 0%R) ?GRing.addr0 //.
-  - simpl_dif_point. 
+  - simpl_dif_point.
     by rewrite unzip1_zero_points no_zero_share uniq_make_shares.
   - by rewrite in_cons pt_in_zero_points ?Bool.orb_true_r // in_make_shares.
 Qed.
@@ -376,7 +376,7 @@ Proof.
   }
   rewrite addn0 IHt ?cons_head_tail_poly //.
   rewrite size_tail_poly.
-  move: (size q) H => size_q. 
+  move: (size q) H => size_q.
   case size_q => [| IHsize_q'] H; exact H.
 Qed.
 
@@ -470,14 +470,14 @@ Proof.
     need to ensure the games have the same output distribution.
   *)
   apply: eq_rel_perf_ind_eq.
-    
+
   (* Create a goal for each procedure, one in this case *)
   simplify_eq_rel m.
 
   (* We can weaken the postcondition*)
   apply rpost_weaken_rule with eq;
     last by move=> [? ?] [? ?] [].
-  
+
   (* Unpack m as ml, mr and U *)
   case: m => [[ml mr] U].
 
@@ -486,12 +486,12 @@ Proof.
   (*destruct (t <= size (domm U)) eqn:Heq; rewrite Heq.*)
   (* First case is very easy since we return emptym in both cases *)
   - apply: rreflexivity_rule.
-  
+
   (* t > size(domm U) *)
   - move: Hsize => /negbT. rewrite -ltnNge ltnS => Hsize.
   (**
      We need to prove it is bijective and that the operations performed after the sampling
-     result in the program returning the same distribution of values. 
+     result in the program returning the same distribution of values.
   *)
   apply: r_uniform_bij => [|q].
   (* Bijection *)

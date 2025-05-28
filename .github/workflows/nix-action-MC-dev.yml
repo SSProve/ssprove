@@ -146,6 +146,10 @@ on:
   pull_request_target:
     paths-ignore:
     - .github/workflows/nix-action-MC-dev.yml
+    - '**.md'
+    - '**.gitignore'
+    - '**.opam'
+    - 'LICENSE'
     types:
     - opened
     - synchronize

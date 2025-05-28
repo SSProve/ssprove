@@ -5,21 +5,21 @@
 (* It is a simple 2-out-of-2 secret-sharing scheme with perfect security,     *)
 (* based on XOR. Messages are n-bit words, and the scheme works by letting    *)
 (* the first share to be a random word, and the second share be the first     *)
-(* share XOR'ed with the message.                                             *) 
+(* share XOR'ed with the message.                                             *)
 (*                                                                            *)
 (* At the beginning we prove some properties for the plus operator, such as   *)
 (* associativity or involutive.                                               *)
 (* The final statement ([unconditional_secrecy]) is equivalent to that of     *)
-(* the books: The scheme achieves perfect security with up to two shares      *) 
+(* the books: The scheme achieves perfect security with up to two shares      *)
 (* (non-inclusive).                                                           *)
-(*									                                                          *)
-(* * Section SecretSharing_example					                                  *)
-(*    Word == type for the words in the protocol       			                  *)
-(*   'word == notation for Word						                                    *)
-(*    plus == receives two Words and returns the XOR of them		              *)
-(*   m ⊕ k == XOR of words m and k					                                  *)	
-(*  'seq t == local choice_type for sequences				                          *)
-(*  'set t == local choice_type for sets 				                              *)
+(*                                                                            *)
+(* * Section SecretSharing_example                                            *)
+(*    Word == type for the words in the protocol                              *)
+(*   'word == notation for Word                                               *)
+(*    plus == receives two Words and returns the XOR of them                  *)
+(*   m ⊕ k == XOR of words m and k                                            *)
+(*  'seq t == local choice_type for sequences                                 *)
+(*  'set t == local choice_type for sets                                      *)
 (******************************************************************************)
 
 From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
@@ -109,7 +109,7 @@ Next Obligation.
 
   (* Case analysis on the decidable equality lxor (w+1) (k+1) = 0 *)
   case: (N.eq_dec (N.lxor (N.of_nat w.+1) (N.of_nat k.+1)) N0) => H0.
-  
+
   (* lxor (w+1) (k+1) <> 0 *)
   1: by rewrite H0 expn_gt0.
   (* lxor (w+1) (k+1) <> 0 *)
@@ -117,7 +117,7 @@ Next Obligation.
   move: (N.log2_lxor (N.of_nat w.+1) (N.of_nat k.+1)) => Hbound.
   move: (N.le_lt_trans _ _ _ Hbound Hm) => {Hm Hbound}.
   rewrite -N.log2_lt_pow2.
-  
+
   (* Process the trivial case 0 < lxor (w+1) (k+1) *)
   2: by apply N.neq_0_lt_0.
   (* Convert from the N type to nat so we can use decidability on < *)
@@ -214,7 +214,7 @@ Lemma SHARE_equiv:
   SHARE true ≈₀ SHARE false.
 Proof.
   (**
-    Since the games have no state, we don’t need to maintain an invariant, and 
+    Since the games have no state, we don’t need to maintain an invariant, and
     only need to ensure the games have the same output distribution.
   *)
   apply: eq_rel_perf_ind_eq.
@@ -242,7 +242,7 @@ Proof.
   (* Here we distinguish the cases when a = 0, 1 or 2*)
   case: a => [|[|a]].
   (*
-    If a = 0 then both games return the same value and 
+    If a = 0 then both games return the same value and
     if a >= 2 we are in an impossible case since we know that a can
     only be 0 or 1.
   *)

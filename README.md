@@ -55,11 +55,11 @@ There are two installation options:
 ### OPAM-based installation
 
 
-You can get all dependencies from the `opam` package manager for OCaml:
+You can get all dependencies and install SSProve from the `opam` package manager for OCaml:
 ```sh
 opam repo add coq-released https://coq.inria.fr/opam/released
 opam update
-opam install ./coq-ssprove.opam
+opam install coq-ssprove
 ```
 
 To build the dependency graph, you can optionally install `graphviz`.
@@ -104,12 +104,13 @@ Run `make graph` to build a graph of dependencies between sources.
 
 ## Directory organisation
 
-| Directory             | Description                                                               |
-|-----------------------|---------------------------------------------------------------------------|
-| [theories]            | Root of all the Coq files                                                 |
-| [theories/Mon]        | External development coming from "Dijkstra Monads For All"                |
-| [theories/Relational] | External development coming from "The Next 700 Relational Program Logics" |
-| [theories/Crypt]      | This paper                                                                |
+| Directory                 | Description                                                               |
+|---------------------------|---------------------------------------------------------------------------|
+| [theories]                | Root of all the Coq files                                                 |
+| [theories/Mon]            | External development coming from "Dijkstra Monads For All"                |
+| [theories/Relational]     | External development coming from "The Next 700 Relational Program Logics" |
+| [theories/Crypt]          | This paper                                                                |
+| [theories/Crypt/examples] | Implementations and proofs of cryptographic protocols                     |
 
 Unless specified with a full path, all files considered in this README can
 safely be assumed to be in [theories/Crypt].
@@ -399,9 +400,9 @@ Theorem schnorr_com_binding :
 
 #### Simple secret sharing
 
-This 2-out-of-2 secret-sharing shceme can be found in the file 
+This 2-out-of-2 secret-sharing shceme can be found in the file
 [examples/SecretSharing.v]. It formalizes the protocol presented in the chapter
-3.2 of the book [The joy of cryptography](https://joyofcryptography.com/). 
+3.2 of the book [The joy of cryptography](https://joyofcryptography.com/).
 
 ```coq
 Theorem unconditional_secrecy LA A:
@@ -415,8 +416,8 @@ book are proved equivalent.
 
 #### Shamir Secret Sharing
 
-This formalises Theorem 3.13 from [The Joy of Cryptography](https://joyofcryptography.com/) (p. 60). It 
-formalises Shamir's Secret Sharing scheme and proves that it has perfect 
+This formalises Theorem 3.13 from [The Joy of Cryptography](https://joyofcryptography.com/) (p. 60). It
+formalises Shamir's Secret Sharing scheme and proves that it has perfect
 security. It is a t-out-of-n secret sharing scheme over the field ['F_p]. This
 case-study is contained in [examples/ShamirSecretSharing.v].
 
@@ -724,29 +725,29 @@ Print Assumptions results_from_the_paper.
 which yields
 ```coq
 Axioms:
-boolp.propositional_extensionality : forall P Q : Prop, P <-> Q -> P = Q
-realsum.interchange_psum
-  : forall (R : reals.Real.type) (T U : choice.Choice.type)
-      (S : choice.Choice.sort T -> choice.Choice.sort U -> reals.Real.sort R),
-    (forall x : choice.Choice.sort T, realsum.summable (T:=U) (R:=R) (S x)) ->
-    realsum.summable (T:=T) (R:=R)
-      (fun x : choice.Choice.sort T =>
-       realsum.psum (fun y : choice.Choice.sort U => S x y)) ->
-    realsum.psum
-      (fun x : choice.Choice.sort T =>
-       realsum.psum (fun y : choice.Choice.sort U => S x y)) =
-    realsum.psum
-      (fun y : choice.Choice.sort U =>
-       realsum.psum (fun x : choice.Choice.sort T => S x y))
-boolp.functional_extensionality_dep
-  : forall (A : Type) (B : A -> Type) (f g : forall x : A, B x),
-    (forall x : A, f x = g x) -> f = g
-FunctionalExtensionality.functional_extensionality_dep
-  : forall (A : Type) (B : A -> Type) (f g : forall x : A, B x),
-    (forall x : A, f x = g x) -> f = g
-boolp.constructive_indefinite_description
-  : forall (A : Type) (P : A -> Prop), (exists x : A, P x) -> {x : A | P x}
+boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
+boolp.functional_extensionality_dep :
+  ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+    (∀ x : A, f x = g x) → f = g
+FunctionalExtensionality.functional_extensionality_dep :
+  ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
+    (∀ x : A, f x = g x) → f = g
+boolp.constructive_indefinite_description :
+  ∀ (A : Type) (P : A → Prop), (∃ x : A, P x) → {x : A | P x}
 SPropBase.ax_proof_irrel : ClassicalFacts.proof_irrelevance
+realsum.__admitted__interchange_psum :
+  ∀ (R : reals.Real.type) (T U : choice.Choice.type)
+    (S : choice.Choice.sort T → choice.Choice.sort U → reals.Real.sort R),
+    (∀ x : choice.Choice.sort T, realsum.summable (T:=U) (R:=R) (S x))
+    → realsum.summable (T:=T) (R:=R)
+        (λ x : choice.Choice.sort T,
+           realsum.psum (λ y : choice.Choice.sort U, S x y))
+      → realsum.psum
+          (λ x : choice.Choice.sort T,
+             realsum.psum (λ y : choice.Choice.sort U, S x y)) =
+        realsum.psum
+          (λ y : choice.Choice.sort U,
+             realsum.psum (λ x : choice.Choice.sort T, S x y))
 Axioms.R : reals.Real.type
 ```
 
@@ -796,6 +797,7 @@ We do something similar for Schnorr's protocol.
 [StateTransfThetaDens.v]: theories/Crypt/rhl_semantics/state_prob/StateTransfThetaDens.v
 [theories]: theories
 [theories/Crypt]: theories/Crypt
+[theories/Crypt/examples]: theories/Crypt/examples
 [theories/Mon]: theories/Mon
 [theories/Relational]: theories/Relational
 [theories/Relational/OrderEnrichedCategory.v]: theories/Relational/OrderEnrichedCategory.v

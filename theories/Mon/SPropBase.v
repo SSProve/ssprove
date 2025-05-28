@@ -73,4 +73,3 @@ Module SPropAxioms.
   Axiom sprop_ext : forall {p q : Prop}, p = q <-> Box (sand (p -> q) (q -> p)).
 
 End SPropAxioms.
-

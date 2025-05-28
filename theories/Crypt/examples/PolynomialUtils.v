@@ -6,11 +6,11 @@
 (*                                                                            *)
 (* The Lagrange interpolation polynomial for a set of d+1 points:             *)
 (*                                                                            *)
-(*   {(x_1, y_1), ..., (x_d+1, y_d+1)} where x_i != x_j                       *)  
+(*   {(x_1, y_1), ..., (x_d+1, y_d+1)} where x_i != x_j                       *)
 (*                                                                            *)
 (* Is the polinomial defined as:                                              *)
 (*                                                                            *)
-(*   f(x) = y_1 * l_1(x) + ... + y_d+1 * l_d+1(x)                                *)
+(*   f(x) = y_1 * l_1(x) + ... + y_d+1 * l_d+1(x)                             *)
 (*                                                                            *)
 (* where each of the l_i(x) is defined as:                                    *)
 (*                                                                            *)
@@ -29,7 +29,7 @@
 (*             subseqs s == returns a list of pairs where each pair           *)
 (*                          represents a point(first) and the list of the     *)
 (*                          rest of the points needed for calculating l_i(x). *)
-(*                          E.g:                                              *)   
+(*                          E.g:                                              *)
 (*                          subseqs [(1,2); (2,3); (3, 4)] =                  *)
 (*                          [((1,2), [(2,3);(3,4)]);                          *)
 (*                           ((2,3), [(1,2) ;(3,4)]);                         *)
@@ -61,18 +61,18 @@ Set Primitive Projections.
 
 Local Open Scope ring_scope.
 
-Definition dif_points {A : eqType} { B : Type} (l : seq (A * B)) := 
+Definition dif_points {A : eqType} { B : Type} (l : seq (A * B)) :=
   (uniq (unzip1 l)).
 
 Ltac simpl_dif_point :=
   rewrite /dif_points /unzip1 ?map_cons ?map_cat ?cons_uniq -?/unzip1.
 
-Section Lagrange_Poly. 
+Section Lagrange_Poly.
 
 Definition lagrange_basis {R: unitRingType} (s: seq R) (x: R): {poly R} :=
   \prod_(c <- s) ((x-c)^-1 *: Poly [:: -c ; 1]).
 
-Definition lagrange_poly_part {R: unitRingType} 
+Definition lagrange_poly_part {R: unitRingType}
   (j: R * R * seq (R * R)): {poly R} :=
     j.1.2 *: lagrange_basis (unzip1 j.2) j.1.1.
 
@@ -95,9 +95,9 @@ Definition lagrange_poly {R: unitRingType} (pts: seq (R * R)): {poly R} :=
   We prove some fundamental properties of Lagrange Interpolation.
   Specifically:
   - [size_lagrange_poly]: The size of a Lagrange polynomial is [<= size pts].
-  - [lagrange_poly_correct]: Evaluating a Lagrange polynomial at a point gives 
+  - [lagrange_poly_correct]: Evaluating a Lagrange polynomial at a point gives
     the corresponding y value.
-  - [lagrange_poly_unique]: There is exactly one polynomial with size 
+  - [lagrange_poly_unique]: There is exactly one polynomial with size
     [<= size pts], that satisfies [lagrange_poly_correct].
 
   These together formalise Theorem 3.8 and 3.9 from the book
@@ -160,7 +160,7 @@ Proof.
 Qed.
 
 (*
-   Proof that when we construct (partially) our polynomial, the evaluation for 
+   Proof that when we construct (partially) our polynomial, the evaluation for
    an x_i in the list is zero.
 *)
 Lemma lagrange_poly_part_0 {R : fieldType} (x: R) (l : seq (R * R)) m r:
@@ -184,8 +184,8 @@ Qed.
 
 (**
    If we have a list of different points (l ++ m :: r) and (x, y) \in m::r
-   we have that the sum over the j <- (subseqs_rec l m r) of the l_j(x) when 
-   evaluated in x is equal to y. 
+   we have that the sum over the j <- (subseqs_rec l m r) of the l_j(x) when
+   evaluated in x is equal to y.
 *)
 Lemma lagrange_poly_part_correct {R: fieldType} (x y: R) l m r:
   dif_points (l ++ (m :: r)) ->
@@ -207,7 +207,7 @@ Proof.
     + case: Heq => -> ->.
       rewrite lagrange_poly_part_0 ?GRing.addr0 //.
       2: by rewrite /unzip1 map_cat mem_cat Bool.orb_comm mem_seq1 eq_refl.
-      move: Huniq. 
+      move: Huniq.
       rewrite /dif_points /unzip1 map_cat uniq_catC -map_cat cat_cons -/unzip1.
       move => /(uniq_unzip1_in (x0, y0))-Huniq.
       move: Huniq;
@@ -225,10 +225,10 @@ Qed.
 
 (**
    Proof that the size of a Lagrange polynomial is [<= size pts] for
-   the second recursive case. 
+   the second recursive case.
 *)
 Lemma size_lagrange_poly_part {R: fieldType} l (m: R * R) r:
-  (size (\sum_(j <- subseqs_rec l m r) lagrange_poly_part j)%R 
+  (size (\sum_(j <- subseqs_rec l m r) lagrange_poly_part j)%R
     <= size (l ++ m :: r))%N.
 Proof.
   generalize dependent m.
@@ -248,7 +248,7 @@ Proof.
       + rewrite /lagrange_poly_part /=.
         apply: leq_trans.
         1: by apply: size_scale_leq.
-        have: 
+        have:
           size (l ++ [:: m, m' & r]) = (size (unzip1 (l ++ [:: m' & r]))).+1.
         1: by rewrite /unzip1 size_map !size_cat -addnS.
         by move => Heq; rewrite Heq; apply: size_lagrange_basis.
@@ -351,11 +351,11 @@ Proof.
   rewrite map_cons in_cons in H.
   case Heq : ((x, y) == (a, 0)) H.
   - move : Heq => /eqP-/pair_equal_spec-Heq.
-    case Heq => Heqx Heqy. 
+    case Heq => Heqx Heqy.
     by rewrite Heqy /=.
   - move => /=-Hneq.
     apply: IHs.
-    by rewrite Hneq. 
+    by rewrite Hneq.
 Qed.
 
 Lemma pt_in_zero_points {R: ringType} {x: R} {s: seq R}:
@@ -369,7 +369,7 @@ Proof.
   case Heq : (x == a).
   - move : Heq => /eqP-Heq.
     by rewrite Heq eq_refl.
-  - rewrite xpair_eqE Heq /=. 
+  - rewrite xpair_eqE Heq /=.
     apply: IHs.
     move : H.
     by rewrite Heq /=.
@@ -387,7 +387,7 @@ Proof.
   elim: r => [// | a r IHr] l1 l2 Huniq1 Huniq2.
   rewrite in_cons.
   case Heq : (x == a.1).
-  - move : Heq => /eqP-Heq. 
+  - move : Heq => /eqP-Heq.
     rewrite Heq (lagrange_poly_correct a.1 a.2) //.
     1: rewrite (lagrange_poly_correct a.1 a.2) ?GRing.subrr //.
     all: by rewrite -surjective_pairing mem_cat in_cons eq_refl Bool.orb_true_r.
@@ -444,7 +444,7 @@ Proof.
     1: rewrite (lagrange_poly_correct a 0) ?GRing.addr0 //.
     all: by rewrite mem_cat in_cons eq_refl Bool.orb_true_r.
   - rewrite -!cat_rcons -!cats1 in Huniq1 Huniq2 *.
-    move: Hin; rewrite Heq => Hin. 
+    move: Hin; rewrite Heq => Hin.
     by apply: IHr.
 Qed.
 
@@ -511,7 +511,7 @@ Lemma tail_cons_poly {R: ringType} (a: R) (q: {poly R}):
   tail_poly (cons_poly a q) = q.
 Proof.
   rewrite /tail_poly polyseq_cons.
-  case Heq: (nilp q). 
+  case Heq: (nilp q).
   2: by rewrite polyseqK.
   move: Heq; rewrite /nilp size_poly_eq0 => /eqP-Heq.
   rewrite Heq polyseqC.
