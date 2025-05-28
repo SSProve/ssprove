@@ -218,7 +218,7 @@ Create HintDb fmap_solve_db.
 Hint Extern 1 (fsubmap ?m ?m') =>
   apply fsubmapxx
   : fmap_solve_db.
-  
+
 
 Ltac fmap_solve :=
   typeclasses eauto with fmap_solve_db.

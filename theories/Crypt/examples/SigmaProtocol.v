@@ -290,7 +290,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
     Hint Extern 10 (ValidCode ?L ?I (prog _)) =>
       eapply valid_injectMap;
         [| eapply valid_injectLocations ];
-        [| | apply prog_valid ] 
+        [| | apply prog_valid ]
           : typeclass_instances ssprove_valid_db.
 
     Context (compatComSim : fcompat Com_locs Simulator_locs).

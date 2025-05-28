@@ -1,4 +1,3 @@
-
 From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".

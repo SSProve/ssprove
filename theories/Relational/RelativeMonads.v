@@ -42,7 +42,7 @@ Section RelativeMonadMorphism.
 
   Cumulative Record relativeMonadMorphism :=
     mkRelMonMorph
-      { rmm_map :> forall {A}, D2⦅J12 (M1 A); M2 A⦆ 
+      { rmm_map :> forall {A}, D2⦅J12 (M1 A); M2 A⦆
       ; rmm_law1 : forall A, rmm_map ∙ fmap J12 (η M1 A) ∼ η M2 A ∙ psi _
       ; rmm_law2 : forall A B (f : D1⦅J1 A; M1 B⦆),
           rmm_map ∙ fmap J12 (rbind M1 f) ∼
@@ -155,8 +155,8 @@ Section RelativeMonadPrecomposition.
   Section OnObjects.
     Context {C : category} {JC : functor I' C} (J' := functor_comp J JC)
             (M : relativeMonad JC).
-    
-    Program Definition relativeMonad_precomposition 
+
+    Program Definition relativeMonad_precomposition
       : relativeMonad J' :=
       mkRelativeMonad (fun A => M (J A))
                       (fun A => relmon_unit M (J A))
@@ -208,7 +208,7 @@ Section FullyFaithfulFunctor.
   Global Existing Instance ff_inv_proper.
 
   Lemma invert_comp (Fff : ff_struct) {X Y Z}
-    (f:D⦅F Y;F Z⦆) (g:D⦅F X;F Y⦆): Fff _ _ (f ∙ g) ∼ Fff _ _ f ∙ Fff _ _ g. 
+    (f:D⦅F Y;F Z⦆) (g:D⦅F X;F Y⦆): Fff _ _ (f ∙ g) ∼ Fff _ _ f ∙ Fff _ _ g.
   Proof.
     rewrite -{1}(ff_section Fff f) -{1}(ff_section Fff g) -functor_law2 ff_retraction ; reflexivity.
   Qed.
@@ -302,7 +302,7 @@ Section RelativeMonadMorphismToRightModule.
   Program Definition rmon_morph_right_module : rightModuleStructure M0 W :=
     mkRightModule (fun _ _ f => relmon_bind W0 (θ _ ∙ fmap J f∙ phi _)) _ _ _ _.
   Next Obligation. cbv ; intuition ; rewrite H; reflexivity. Qed.
-  Next Obligation.  
+  Next Obligation.
     rewrite (rmm_law1 _ _ _ _ θ) ; cbv .
     rewrite -cat_law3 (ni_leftinv _ _ phi) -(functor_law1 _ _ J _).
     move: (functor_law1 _ _ W X) => /= -> ; reflexivity.
@@ -369,7 +369,7 @@ Section RightModulePostcomposition.
           (F : functor C D1) (G : functor D1 D2)
           (rmF : rightModuleStructure M F).
 
-  Let GF := functor_comp F G. 
+  Let GF := functor_comp F G.
   Program Definition rightModule_postcomp : rightModuleStructure M GF :=
     mkRightModule (fun _ _ f => fmap G (rm_bind rmF f)) _ _ _ _.
   Next Obligation. cbv ; intuition ; rewrite H ; reflexivity. Qed.
@@ -400,7 +400,7 @@ Section FreeRightModule.
   Section PointToHomomorphism.
     Context (η : natTrans J F).
 
-    Definition point_to_homomorphism : natTrans JM F := 
+    Definition point_to_homomorphism : natTrans JM F :=
       rmon_to_functor M ▷ (η ⋅ iso_to_natTrans_inv (functor_unit_left _))
                       ⋅ right_module_nattrans rmF
                       ⋅ iso_to_natTrans (functor_unit_left _).
@@ -411,7 +411,7 @@ Section FreeRightModule.
     Global Instance : rightModuleHomomorphism free_right_module rmF point_to_homomorphism.
     Proof.
       move=> ? ? ? /= ; rewrite !cat_law1 -cat_law3 nt_natural !cat_law3 -(rm_law2 rmF).
-     rewrite -(rm_law3 rmF) cat_law1 cat_law2 ; reflexivity. 
+     rewrite -(rm_law3 rmF) cat_law1 cat_law2 ; reflexivity.
    Qed.
   End PointToHomomorphism.
 
@@ -442,4 +442,4 @@ Section FreeRightModule.
   Qed.
 End FreeRightModule.
 
-Arguments free_right_module {_ _} _ _. 
+Arguments free_right_module {_ _} _ _.

@@ -135,5 +135,3 @@ Section Relational_effobs.
     prod_relativeMonadMorphism unary_theta_dens unary_theta_dens.
 
 End Relational_effobs.
-
-

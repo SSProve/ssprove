@@ -10,7 +10,7 @@ From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr seq all_algebra fintype realsum.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
-From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd 
+From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd
   StateTransformingLaxMorph FreeProbProg choice_type pkg_core_definition pkg_heap.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.

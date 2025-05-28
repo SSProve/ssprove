@@ -35,7 +35,7 @@ Qed.
 
 Lemma subtype_eq {A B} (f : A -> B) (HB : UIP_ B) (y0:B) (P := (fun x => f x = y0)):
   forall (mx my : subtype P), wit mx = wit my -> mx = my.
-  intros ? ? h. 
+  intros ? ? h.
   exact (eq_eq_above_eq_subtype _ _ _ _ h (HB _ _ _ _)).
 Qed.
 
