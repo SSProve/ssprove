@@ -78,13 +78,18 @@ theories/Crypt/rules/UniformStateProb.v
 #std. distributions
 # theories/Crypt/only_prob/SymmetricSchemeStateProbStdDistr.v
 
+# Examples of assumptions
+
+theories/Crypt/examples/Assumptions/DDH.v
+theories/Crypt/examples/Assumptions/DL.v
+theories/Crypt/examples/Assumptions/tSDH.v
+
 # Examples
 theories/Crypt/examples/package_usage_example.v
 theories/Crypt/examples/interpreter_test.v
 theories/Crypt/examples/concrete_groups.v
 theories/Crypt/examples/PRF.v
 theories/Crypt/examples/AsymScheme.v
-theories/Crypt/examples/DDH.v
 theories/Crypt/examples/ElGamal.v
 theories/Crypt/examples/OTP.v
 theories/Crypt/examples/KEMDEM.v
