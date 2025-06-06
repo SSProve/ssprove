@@ -78,6 +78,14 @@ theories/Crypt/rules/UniformStateProb.v
 #std. distributions
 # theories/Crypt/only_prob/SymmetricSchemeStateProbStdDistr.v
 
+# Nominal
+theories/Crypt/nominal/Nominal.v
+theories/Crypt/nominal/Fresh.v
+theories/Crypt/nominal/Pr.v
+theories/Crypt/nominal/Share.v
+theories/Crypt/nominal/Sep.v
+theories/Crypt/nominal/NominalPrelude.v
+
 # Examples
 theories/Crypt/examples/package_usage_example.v
 theories/Crypt/examples/interpreter_test.v
