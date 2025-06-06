@@ -418,3 +418,123 @@ Tactic Notation
   "ssprove" "triangle" constr(p₀) constr(l) constr(p₁) constr(A)
   "as" ident(ineq) :=
   ssprove_triangle_as p₀ l p₁ A ineq.
+
+Lemma advantage_helper :
+  forall {LA IA EA},
+  forall {LB IB EB},
+  forall {LK IK EK},
+  forall {A : bool -> raw_package}
+    {B : bool -> raw_package}
+    {K : bool -> raw_package},
+    fsubset IA EK ->
+    fsubset IB EK ->
+    fsubset IK [interface] ->
+    (forall b, ValidPackage LA IA EA (A b)) ->
+    (forall b, ValidPackage LB IB EB (B b)) ->
+    (forall b, ValidPackage LK IK EK (K b)) ->
+    (forall b, trimmed EA (A b)) ->
+    (forall b, trimmed EB (B b)) ->
+    (forall b, trimmed EK (K b)) ->
+    forall ε ν,
+      (forall Adv, (AdvantageE (A false ∘ K false) (A true ∘ K true) Adv <= ε)%R) ->
+      (forall Adv, (AdvantageE (B false ∘ K false) (B true ∘ K true) Adv <= ν)%R) ->
+      (forall Adv, (AdvantageE (par (A false) (B false) ∘ K false) (par (A true) (B true) ∘ K true) Adv <= ν + ε)%R).
+Proof.
+  intros.
+  rewrite (package_split (K false)).
+  rewrite (package_split (K true)).
+  erewrite <- !interchange ; [ | try (easy || apply ignore_Parable) .. ].
+  2-5: eapply valid_package_inject_export ; [ | easy ] ; assumption.
+  eapply Order.le_trans ; [ eapply Advantage_triangle with (R := par (A false ∘ K false) (B true ∘ K true)) | ].
+  apply Num.Theory.lerD.
+  {
+    erewrite Advantage_par ;
+      [ | (eapply valid_link || eapply flat_valid_package || apply trimmed_link) ; try easy.. ].
+    2-4: eapply valid_package_inject_export ; [ | eapply valid_package_inject_import ; easy ] ; assumption.
+    apply H9.
+  }
+  {
+    erewrite Advantage_parR ;
+      [ | (eapply valid_link || eapply flat_valid_package || apply trimmed_link) ; try easy.. ].
+    2-4: eapply valid_package_inject_export ; [ | eapply valid_package_inject_import ; easy ] ; assumption.
+    apply H8.
+  }
+  Unshelve. all: apply false.
+Qed.
+
+Corollary advantage_helper0 :
+  forall {LA IA EA},
+  forall {LB IB EB},
+  forall {LK IK EK},
+  forall {A : bool -> raw_package}
+    {B : bool -> raw_package}
+    {K : bool -> raw_package},
+    fsubset IA EK ->
+    fsubset IB EK ->
+    fsubset IK [interface] ->
+    (forall b, ValidPackage LA IA EA (A b)) ->
+    (forall b, ValidPackage LB IB EB (B b)) ->
+    (forall b, ValidPackage LK IK EK (K b)) ->
+    (forall b, trimmed EA (A b)) ->
+    (forall b, trimmed EB (B b)) ->
+    (forall b, trimmed EK (K b)) ->
+    (forall Adv, (AdvantageE (A false ∘ K false) (A true ∘ K true) Adv <= 0)%R) ->
+    (forall Adv, (AdvantageE (B false ∘ K false) (B true ∘ K true) Adv <= 0)%R) ->
+    (forall Adv, (AdvantageE (par (A false) (B false) ∘ K false) (par (A true) (B true) ∘ K true) Adv <= 0)%R).
+Proof. intros. rewrite <- (add0r 0%R). now rewrite advantage_helper. Qed.
+
+Lemma link_par_right :
+  forall {LA IA EA},
+  forall {LB IB EB},
+  (* forall {LC IC EC}, *)
+  forall {A : raw_package}
+    {B : raw_package}
+    {C : raw_package},
+    fsubset IA EB ->
+    ValidPackage LA IA EA A ->
+    ValidPackage LB IB EB B ->
+    (* ValidPackage LC IC EC C -> *)
+    trimmed EA A ->
+    A ∘ par B C = A ∘ B.
+Proof.
+  intros.
+  apply eq_fmap.
+  unfold link.
+  intro n. repeat rewrite ?mapmE.
+  destruct (A n) as [[S1 [T1 f1]]|] eqn:e. 2: reflexivity.
+  cbn. f_equal. f_equal. f_equal. extensionality x.
+  erewrite (code_link_par_left _ _ _ _ IA) ; [ reflexivity | | eapply valid_package_inject_export ; easy ].
+
+  eapply trimmed_valid_Some_in in e as hi ; [ | eassumption.. ].
+  eapply from_valid_package in H0.
+  specialize (H0 _ hi).
+  destruct H0 as [g [eg hg]].
+  rewrite e in eg.
+  noconf eg.
+  cbn in hg.
+  apply hg.
+Qed.
+
+Lemma advantage_helper2 :
+  forall {LA IA EA},
+  forall {LB IB EB},
+  forall {A : bool -> raw_package}
+    {B : bool -> raw_package}
+    {C : bool -> raw_package}
+    {K : bool -> raw_package},
+    fsubset IA EB ->
+    (forall b, ValidPackage LA IA EA (A b)) ->
+    (forall b, ValidPackage LB IB EB (B b)) ->
+    (forall b, trimmed EA (A b)) ->
+    (forall b, K b = par (B b) (C b)) ->
+    forall ε,
+      (forall Adv, (AdvantageE (A false ∘ B false) (A true ∘ B true) Adv <= ε)%R) ->
+      (forall Adv, (AdvantageE (A false ∘ K false) (A true ∘ K true) Adv <= ε)%R).
+Proof.
+  intros.
+  subst.
+  rewrite !H3.
+  rewrite link_par_right ; [ | easy .. ].
+  rewrite link_par_right ; [ | easy .. ].
+  apply H4.
+Qed.
