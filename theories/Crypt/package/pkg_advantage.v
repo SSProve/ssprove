@@ -294,6 +294,44 @@ Proof.
   rewrite -Advantage_link Advantage_par_empty //.
 Qed.
 
+Lemma Advantage_par_emptyR :
+  ∀ G₀ G₁ A,
+  AdvantageE (par G₀ emptym) (par G₁ emptym) A = AdvantageE G₀ G₁ A.
+Proof.
+  intros G₀ G₁ A.
+  unfold AdvantageE.
+  unfold par.
+  rewrite !unionm0.
+  reflexivity.
+Qed.
+
+Lemma Advantage_parR :
+  ∀ G₀ G₁ G₁' A L₀ L₁ L₁' E₀ E₁,
+    ValidPackage L₀ Game_import E₀ G₀ →
+    ValidPackage L₁ Game_import E₁ G₁ →
+    ValidPackage L₁' Game_import E₁ G₁' →
+    AdvantageE (par G₁ G₀) (par G₁' G₀) A =
+    AdvantageE G₁ G₁' (A ∘ par (ID E₁) G₀).
+Proof.
+  intros G₀ G₁ G₁' A L₀ L₁ L₁' E₀ E₁ Va0 Va1 Va1'.
+  replace (par G₁ G₀) with ((par (ID E₁) G₀) ∘ (par G₁ (ID Game_import))).
+  2:{
+    erewrite <- interchange.
+    all: ssprove_valid.
+    2: fmap_solve.
+    rewrite link_id // id_link //.
+  }
+  replace (par G₁' G₀) with ((par (ID E₁) G₀) ∘ (par G₁' (ID Game_import))).
+  2:{
+    erewrite <- interchange.
+    all: ssprove_valid.
+    2: fmap_solve.
+    rewrite link_id // id_link //.
+  }
+  replace (ID Game_import) with (emptym : raw_package) by now apply eq_fmap.
+  rewrite -Advantage_link !Advantage_par_emptyR //.
+Qed.
+
 Lemma Advantage_sym :
   ∀ P Q A,
     AdvantageE P Q A = AdvantageE Q P A.
@@ -418,3 +456,126 @@ Tactic Notation
   "ssprove" "triangle" constr(p₀) constr(l) constr(p₁) constr(A)
   "as" ident(ineq) :=
   ssprove_triangle_as p₀ l p₁ A ineq.
+
+Lemma valid_package_inject_export_weak :
+  ∀ L I E1 E2 p,
+    fsubmap E1 E2 →
+    ValidPackage L I E2 p →
+    ValidPackage L I E1 p.
+Proof.
+Admitted.
+
+Lemma package_duplicate :
+  forall p, p = par p p.
+Proof.
+  intros.
+  unfold par.
+  now rewrite unionmI.
+Qed.
+
+Lemma Advantage_split_par :
+  forall {LA IA EA},
+  forall {LB IB EB},
+  forall {A : bool -> raw_package}
+    {B : bool -> raw_package}
+    {C : bool -> raw_package}
+    {K : bool -> raw_package},
+    fsubmap IA EB ->
+    (forall b, ValidPackage LA IA EA (A b)) ->
+    (forall b, ValidPackage LB IB EB (B b)) ->
+    (forall b, K b = par (B b) (C b)) ->
+    forall ε,
+      (forall Adv, (AdvantageE (A false ∘ B false) (A true ∘ B true) Adv <= ε)%R) ->
+      (forall Adv, (AdvantageE (A false ∘ K false) (A true ∘ K true) Adv <= ε)%R).
+Proof.
+  intros.
+  subst.
+  rewrite !H2.
+  rewrite link_par_left ; [ | easy .. ].
+  rewrite link_par_left ; [ | easy .. ].
+  apply H3.
+Qed.
+
+Lemma Advantage_split_parR :
+  forall {LA IA EA},
+  forall {LC IC EC},
+  forall {A : bool -> raw_package}
+    {B : bool -> raw_package}
+    {C : bool -> raw_package}
+    {K : bool -> raw_package},
+    fsubmap IA EC ->
+    (forall b, fseparate (B b) (C b)) ->
+    (forall b, ValidPackage LA IA EA (A b)) ->
+    (forall b, ValidPackage LC IC EC (C b)) ->
+    (forall b, K b = par (B b) (C b)) ->
+    forall ε,
+      (forall Adv, (AdvantageE (A false ∘ C false) (A true ∘ C true) Adv <= ε)%R) ->
+      (forall Adv, (AdvantageE (A false ∘ K false) (A true ∘ K true) Adv <= ε)%R).
+Proof.
+  intros.
+  subst.
+  rewrite !H3.
+  rewrite link_par_right ; [ | easy .. ].
+  rewrite link_par_right ; [ | easy .. ].
+  apply H4.
+Qed.
+
+Lemma Advantage_common_par :
+  forall {LA IA EA},
+  forall {LB IB EB},
+  forall {LK IK EK},
+  forall {A : bool -> raw_package}
+    {B : bool -> raw_package}
+    {K : bool -> raw_package},
+    fsubmap IA EK ->
+    fsubmap IB EK ->
+    fsubmap IK [interface] ->
+    (forall b, ValidPackage LA IA EA (A b)) ->
+    (forall b, ValidPackage LB IB EB (B b)) ->
+    (forall b, ValidPackage LK IK EK (K b)) ->
+    fcompat LA LK ->
+    fcompat LB LK ->
+    forall ε ν,
+      (forall Adv, (AdvantageE (A false ∘ K false) (A true ∘ K true) Adv <= ε)%R) ->
+      (forall Adv, (AdvantageE (B false ∘ K false) (B true ∘ K true) Adv <= ν)%R) ->
+      (forall Adv, (AdvantageE (par (A false) (B false) ∘ K false) (par (A true) (B true) ∘ K true) Adv <= ν + ε)%R).
+Proof.
+  intros.
+  rewrite (package_duplicate (K false)).
+  rewrite (package_duplicate (K true)).
+  erewrite <- !interchange_alt ; [ | try (easy || apply fsubmapxx) .. ].
+  2-5: eapply valid_package_inject_export_weak ; [ | easy ] ; assumption.
+  Locate le_trans.
+  eapply order.Order.le_trans ; [ eapply Advantage_triangle with (R := par (A false ∘ K false) (B true ∘ K true)) | ].
+  apply Num.Theory.lerD.
+  {
+    erewrite Advantage_par.
+    2-4: eapply valid_link ; try eapply valid_package_inject_import ; auto ; assumption.
+    apply H8.
+  }
+  {
+    erewrite Advantage_parR.
+    2-4: eapply valid_link ; try eapply valid_package_inject_import ; auto ; assumption.
+    apply H7.
+  }
+Qed.
+
+Corollary Advantage_common_par0 :
+  forall {LA IA EA},
+  forall {LB IB EB},
+  forall {LK IK EK},
+  forall {A : bool -> raw_package}
+    {B : bool -> raw_package}
+    {K : bool -> raw_package},
+    fsubmap IA EK ->
+    fsubmap IB EK ->
+    fsubmap IK [interface] ->
+    (forall b, ValidPackage LA IA EA (A b)) ->
+    (forall b, ValidPackage LB IB EB (B b)) ->
+    (forall b, ValidPackage LK IK EK (K b)) ->
+    fcompat LA LK ->
+    fcompat LB LK ->
+    (forall Adv, (AdvantageE (A false ∘ K false) (A true ∘ K true) Adv <= 0)%R) ->
+    (forall Adv, (AdvantageE (B false ∘ K false) (B true ∘ K true) Adv <= 0)%R) ->
+    (forall Adv, (AdvantageE (par (A false) (B false) ∘ K false) (par (A true) (B true) ∘ K true) Adv <= 0)%R).
+Proof. intros. rewrite <- (GRing.add0r 0%R). now rewrite Advantage_common_par. Qed.

@@ -151,6 +151,17 @@ Qed.
 Lemma fsubmapxx {T : ordType} {S} (m : {fmap T → S}) : fsubmap m m.
 Proof. rewrite /fsubmap unionmI //. Qed.
 
+Lemma fsubmap_implies_fcompat :
+  forall {T : ordType} {S} {E E' : _},
+    fsubmap E' E →
+    fcompat (T := T) (S := S) E' E.
+Proof.
+  intros.
+  eapply fsubmap_fcompat.
+  1: apply H.
+  apply fsubmapxx.
+Qed.
+
 Lemma fsubmap_eq {T : ordType} {S} (m m' : {fmap T → S}) :
   fsubmap m m' → fsubmap m' m → m = m'.
 Proof.
