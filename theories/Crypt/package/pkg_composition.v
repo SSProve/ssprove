@@ -504,32 +504,12 @@ Definition mkdef (A B : choice_type) (f : A → raw_code B)
   : typed_raw_function :=
   (A ; B ; f).
 
-Definition ID (I : Interface) : raw_package :=
+Definition ID_raw (I : Interface) : raw_package :=
   mapim (λ n '(s, t), mkdef s t (λ x, opr (n, (s, t)) x (λ y, ret y))) I.
-
-Lemma resolve_ID :
-  ∀ (I : Interface) o,
-    fhas I o →
-    resolve (ID I) o = λ x, opr o x (λ y, ret y).
-Proof.
-  intros I [n [S T]] E.
-  rewrite /resolve mapimE E //=.
-  extensionality y. rewrite coerce_kleisliE //.
-Qed.
-
-Lemma resolve_ID_set I id TS o :
-  resolve (ID (setm I id TS)) o =
-    (if o.1 == id then coerce_kleisli (λ x, opr (o.1, TS) x (λ y, ret y)) else resolve (ID I) o).
-Proof.
-  rewrite /resolve 2!mapimE setmE.
-  extensionality x.
-  destruct (o.1 == id) eqn:e; rewrite e //.
-  destruct TS as [S T] => //.
-Qed.
 
 Lemma valid_ID :
   ∀ I,
-    ValidPackage emptym I I (ID I).
+    ValidPackage emptym I I (ID_raw I).
 Proof.
   intros I.
   split; [ split |].
@@ -558,6 +538,29 @@ Proof.
     simpl in H.
     destruct p as [S' T'].
     injection H => {}H ? ?. by subst.
+Qed.
+
+Definition ID (I : Interface) : package I I
+  := mkpackage emptym (ID_raw I) (valid_ID I).
+
+Lemma resolve_ID :
+  ∀ (I : Interface) o,
+    fhas I o →
+    resolve (ID I) o = λ x, opr o x (λ y, ret y).
+Proof.
+  intros I [n [S T]] E.
+  rewrite /resolve mapimE E //=.
+  extensionality y. rewrite coerce_kleisliE //.
+Qed.
+
+Lemma resolve_ID_set I id TS o :
+  resolve (ID (setm I id TS)) o =
+    (if o.1 == id then coerce_kleisli (λ x, opr (o.1, TS) x (λ y, ret y)) else resolve (ID I) o).
+Proof.
+  rewrite /resolve 2!mapimE setmE.
+  extensionality x.
+  destruct (o.1 == id) eqn:e; rewrite e //.
+  destruct TS as [S T] => //.
 Qed.
 
 #[export] Hint Extern 2 (ValidPackage ?L ?I ?E (ID ?I')) =>
@@ -624,10 +627,4 @@ Lemma code_link_if :
 Proof.
   intros A c₀ c₁ p b.
   destruct b. all: reflexivity.
-Qed.
-
-Lemma domm_ID :
-  ∀ I, domm (ID I) = domm I.
-Proof.
-  intros I. rewrite domm_mapi //.
 Qed.
