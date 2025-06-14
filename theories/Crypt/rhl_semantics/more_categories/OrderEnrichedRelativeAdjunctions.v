@@ -1,4 +1,4 @@
-From Coq Require Import Relation_Definitions Morphisms.
+From Stdlib Require Import Relation_Definitions Morphisms.
 From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 From SSProve.Mon Require Import SPropBase.
 Set Warnings "-notation-overridden".

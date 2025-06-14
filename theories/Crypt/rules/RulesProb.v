@@ -1,4 +1,4 @@
-From Coq Require Import RelationClasses Morphisms Utf8.
+From Stdlib Require Import RelationClasses Morphisms Utf8.
 
 From SSProve.Mon Require Import
      FiniteProbabilities

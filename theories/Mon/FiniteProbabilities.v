@@ -1,8 +1,8 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-From Coq Require FunctionalExtensionality List.
+From Stdlib Require Import ssreflect ssrfun ssrbool.
+From Stdlib Require FunctionalExtensionality List.
 
 From SSProve.Mon Require Export Base.
-From Coq Require Import Relation_Definitions Morphisms.
+From Stdlib Require Import Relation_Definitions Morphisms.
 From SSProve.Mon Require Import SPropBase SPropMonadicStructures MonadExamples SpecificationMonads Monoid DijkstraMonadExamples.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr.

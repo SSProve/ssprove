@@ -1,7 +1,7 @@
 (* Global utility *)
 (* Partly stolen from MetaCoq *)
 
-From Coq Require Import Utf8 Lia.
+From Stdlib Require Import Utf8 Lia.
 Set Warnings "-notation-overridden".
 From mathcomp Require Import ssreflect eqtype ssrbool ssrnat.
 Set Warnings "notation-overridden".

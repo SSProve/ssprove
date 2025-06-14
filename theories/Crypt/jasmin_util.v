@@ -15,8 +15,8 @@ From HB Require Import structures.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import all_ssreflect word_ssrZ.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
-From Coq.Unicode Require Import Utf8.
-From Coq Require Import ZArith Zwf Setoid Morphisms CMorphisms CRelationClasses Psatz.
+From Stdlib.Unicode Require Import Utf8.
+From Stdlib Require Import ZArith Zwf Setoid Morphisms CMorphisms CRelationClasses Psatz.
 (* Require Import xseq oseq. *)
 
 

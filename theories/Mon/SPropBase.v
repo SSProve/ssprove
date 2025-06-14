@@ -1,10 +1,10 @@
-(*From Coq Require Export Logic.StrictProp.*)
+(*From Stdlib Require Export Logic.StrictProp.*)
 (*This file was originally referring to SProp. Not anymore*)
 From SSProve.Mon Require Import Base.
 From mathcomp Require Import ssreflect.
 
 
-From Coq Require ClassicalFacts.
+From Stdlib Require ClassicalFacts.
 
 Axiom ax_proof_irrel : ClassicalFacts.proof_irrelevance.
 

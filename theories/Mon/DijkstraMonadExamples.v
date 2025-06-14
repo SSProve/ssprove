@@ -1,4 +1,4 @@
-From Coq Require Import ssreflect ssrfun.
+From Stdlib Require Import ssreflect ssrfun.
 From SSProve.Mon Require Export Base.
 From SSProve.Mon Require Import SPropBase SPropMonadicStructures Monoid SpecificationMonads MonadExamples.
 

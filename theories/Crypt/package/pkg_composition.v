@@ -8,7 +8,7 @@
 
 
 
-From Coq Require Import Utf8.
+From Stdlib Require Import Utf8.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssreflect eqtype choice seq ssrfun ssrbool ssrnat.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
