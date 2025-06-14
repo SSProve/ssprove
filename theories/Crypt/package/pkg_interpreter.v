@@ -6,7 +6,7 @@ Require Arith ZArith.
 From SSProve.Crypt Require Import Prelude choice_type
      pkg_core_definition pkg_tactics pkg_distr pkg_notation.
 
-From Coq Require Import Utf8.
+From Stdlib Require Import Utf8.
 From extructures Require Import ord fset fmap.
 
 (* From Jasmin Require Import word. *)

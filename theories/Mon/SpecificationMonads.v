@@ -1,6 +1,6 @@
-From Coq Require Import ssreflect.
+From Stdlib Require Import ssreflect.
 From SSProve.Mon Require Export Base.
-From Coq Require Import Relation_Definitions Morphisms.
+From Stdlib Require Import Relation_Definitions Morphisms.
 From SSProve.Mon Require Import SPropBase SPropMonadicStructures Monoid.
 
 Set Implicit Arguments.

@@ -4,7 +4,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 
 From SSProve.Crypt Require Import Prelude choice_type Package.
 
-From Coq Require Import Utf8.
+From Stdlib Require Import Utf8.
 From extructures Require Import ord fset fmap.
 
 From Equations Require Import Equations.

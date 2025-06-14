@@ -78,7 +78,7 @@ From extructures Require Import ord fset fmap.
 From SSProve.Crypt Require Import Axioms Prelude pkg_core_definition pkg_composition
   pkg_notation RulesStateProb pkg_advantage pkg_semantics
   pkg_heap pkg_invariants pkg_distr pkg_rhl pkg_tactics choice_type fmap_extra.
-From Coq Require Import Utf8 FunctionalExtensionality
+From Stdlib Require Import Utf8 FunctionalExtensionality
   Setoids.Setoid Classes.Morphisms.
 
 From Equations Require Import Equations.

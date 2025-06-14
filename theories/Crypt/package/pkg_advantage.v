@@ -1,7 +1,7 @@
 (** Notion of adversary and advantage *)
 
 
-From Coq Require Import Utf8.
+From Stdlib Require Import Utf8.
 From SSProve.Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".

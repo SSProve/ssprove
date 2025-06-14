@@ -33,7 +33,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 From extructures Require Import ord fset fmap.
 From SSProve.Crypt Require Import Prelude Axioms pkg_core_definition
   pkg_composition pkg_notation choice_type fmap_extra.
-From Coq Require Import Utf8 Setoids.Setoid Classes.Morphisms.
+From Stdlib Require Import Utf8 Setoids.Setoid Classes.Morphisms.
 
 From Equations Require Import Equations.
 Require Equations.Prop.DepElim.
