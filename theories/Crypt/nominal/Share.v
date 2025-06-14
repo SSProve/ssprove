@@ -67,25 +67,78 @@ Qed.
 HB.instance Definition _ : IsNominal Location 
   := Location_IsNominal.
 
+Lemma mapm2E_cancel
+  [T T' : ordType] [S S' : Type] [f : T → T'] [f' : T' → T] (g : S → S') 
+    (m : {fmap T → S}) (x : T') :
+    injective f → cancel f' f →
+    mapm2 (T:=T) (T':=T') f g m x = omap g (m (f' x)).
+Proof.
+  intros H H'.
+  rewrite -{1}(H' x).
+  rewrite mapm2E //.
+Qed.
+
+Lemma rename_emptym_Locations π :
+  π ∙ (emptym : Locations) = emptym.
+Proof. done. Qed.
+
+Lemma rename_setm_Locations π (m : Locations) n A :
+  π ∙ (setm m n A : Locations)
+    = setm (π ∙ m : Locations) (natize (π (atomize n))) A.
+Proof.
+  apply eq_fmap => n'.
+  unfold rename. simpl.
+  erewrite mapm2E_cancel.
+  2: eapply can_inj, (can_comp natizeK), (can_comp (fpermK _)), atomizeK.
+  2: eapply (can_comp (can_comp natizeK (fpermKV _)) atomizeK).
+  rewrite omap_id 2!setmE //=.
+  erewrite mapm2E_cancel.
+  2: eapply can_inj, (can_comp natizeK), (can_comp (fpermK _)), atomizeK.
+  2: eapply (can_comp (can_comp natizeK (fpermKV _)) atomizeK).
+  rewrite omap_id.
+  destruct (n' == natize (π (atomize n)))%B eqn:E.
+  - rewrite E.
+    move: E => /eqP E; subst.
+    rewrite natizeK fpermK atomizeK eq_refl //.
+  - rewrite E.
+    move: E => /eqP E.
+    assert ((natize ((π^-1)%fperm (atomize n')) == n)%B = false).
+    2: rewrite H //=.
+    apply /eqP => H.
+    subst.
+    rewrite natizeK fpermKV atomizeK // in E.
+Qed.
+
 Program Definition Locations_IsNominal
   : IsNominal Locations
   := IsNominal.Build _ (λ L : Locations, atomize @: domm L) _ _.
 Obligation 1.
-  intros π H.
-  apply eq_fmap => a.
-  (*
-  rewrite /rename //=.
-  replace a with (natize (π (atomize (natize (π^-1%fperm (atomize a)))))).
-  2: admit.
-  rewrite mapm2E ?omap_id.
-  2: admit.
-  rewrite H.
-  1: rewrite natizeK //.
-  rewrite mem_imfset //.
-   *)
-Admitted.
+  move: x.
+  refine (fmap_ind _ _); [ done |].
+  move=> m H n A /dommPn H'.
+  rewrite domm_set imfsetU1.
+  intros π H''.
+  rewrite rename_setm_Locations.
+  apply eq_fmap => n'.
+  rewrite 2!setmE.
+  rewrite (H'' (atomize n)) ?atomizeK.
+  2: apply /fsetU1P; by left.
+  rewrite H //.
+  intros a H'''.
+  apply H''.
+  apply /fsetU1P; by right.
+Qed.
 Obligation 2.
-Admitted.
+  apply (@fsubset_equi Locations x F (λ x, atomize @: domm x)).
+  2: done. move=> {H} {x} {F}.
+  intros π.
+  refine (fmap_ind _ _).
+  1: rewrite rename_emptym_Locations domm0 imfset0 /rename //= imfset0 //.
+  intros m H n A H'.
+  rewrite rename_setm_Locations.
+  rewrite 2!domm_set 2!imfsetU 2!imfset1 natizeK -H.
+  rewrite /rename //= imfsetU imfset1 //.
+Qed.
 
 HB.instance Definition _ : IsNominal Locations
   := Locations_IsNominal.
@@ -300,24 +353,6 @@ Qed.
 
 (* ID lemmas *)
 
-Lemma support_ID {I} : support_set (ID I) (supp (emptym : Locations)).
-Proof.
-  intros π H.
-  unfold rename; simpl.
-  apply eq_fmap => n.
-  rewrite mapmE.
-  rewrite mapimE.
-  destruct (I n) => //=.
-  destruct p.
-  f_equal.
-Qed.
-
-Definition ID I
-  := {| loc := emptym
-      ; val := ID I
-      ; has_support := support_ID
-      |}.
-
 Lemma share_link_id {L I E} {p : nom_package} `{ValidPackage L I E p}
   : p ∘ ID I = p.
 Proof.
@@ -464,8 +499,21 @@ HB.instance Definition _ : IsNominal nom_package
 Lemma loc_share_link {P P' : nom_package} {π}
   : loc (π ∙ P ∘ P') = unionm (loc (π ∙ P)) (loc (π ∙ P')).
 Proof.
-  simpl.
-Admitted.
+  apply eq_fmap => n.
+  simpl. unfold rename. simpl.
+  erewrite mapm2E_cancel.
+  2: eapply can_inj, (can_comp natizeK), (can_comp (fpermK _)), atomizeK.
+  2: eapply (can_comp (can_comp natizeK (fpermKV _)) atomizeK).
+  rewrite 2!unionmE.
+  erewrite mapm2E_cancel.
+  2: eapply can_inj, (can_comp natizeK), (can_comp (fpermK _)), atomizeK.
+  2: eapply (can_comp (can_comp natizeK (fpermKV _)) atomizeK).
+  erewrite mapm2E_cancel.
+  2: eapply can_inj, (can_comp natizeK), (can_comp (fpermK _)), atomizeK.
+  2: eapply (can_comp (can_comp natizeK (fpermKV _)) atomizeK).
+  rewrite 3!omap_id.
+  reflexivity.
+Qed.
 
 Lemma s_share_link {P P' : nom_package}
   : supp (P ∘ P') = supp P :|: supp P'.
@@ -498,7 +546,9 @@ Qed.
 
 Lemma s_share_par {P P' : nom_package}
   : supp (P || P') = supp P :|: supp P'.
-Proof. Admitted.
+Proof.
+  rewrite -supp_Locations_unionm //.
+Qed.
 
 Lemma rename_share_par {P P' : nom_package} {π} :
   π ∙ (P || P') = (π ∙ P) || (π ∙ P').
