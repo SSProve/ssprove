@@ -1,3 +1,9 @@
+(******************************************************************************)
+(*                Discrete Logarithm Problem (DL)                             *)
+(*                                                                            *)
+(*  For more details, see the ./README.md.                                    *)
+(******************************************************************************)
+
 From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
 Set Warnings "-notation-overridden,-ambiguous-paths,-notation-incompatible-format".
@@ -10,7 +16,7 @@ From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
   Package Prelude pkg_composition.
 
-From Coq Require Import Utf8 Lia.
+From Stdlib Require Import Utf8 Lia.
 From extructures Require Import ord fset fmap.
 
 From Equations Require Import Equations.
