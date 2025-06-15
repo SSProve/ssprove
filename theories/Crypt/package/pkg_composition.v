@@ -461,15 +461,13 @@ Proof.
 Qed.
 
 Lemma interchange_alt :
-  ∀ A B C D E F L1 L2 L3 L4 p1 p2 p3 p4,
+  ∀ A B C D E L1 L2 L3 p1 p2 p3,
     ValidPackage L1 B A p1 →
     ValidPackage L2 E D p2 →
     ValidPackage L3 C B p3 →
-    ValidPackage L4 F E p4 →
-    (fsubmap p3 p4) ->
-    par (link p1 p3) (link p2 p4) = link (par p1 p2) (par p3 p4).
+    par (link p1 p3) (link p2 p3) = link (par p1 p2) p3.
 Proof.
-  intros A B C D E F L1 L2 L3 L4 p1 p2 p3 p4 h1 h2 h3 h4 s34.
+  intros A B C D E L1 L2 L3 p1 p2 p3 h1 h2 h3.
   apply eq_fmap => n.
   rewrite /par unionmE 3!mapmE unionmE.
   destruct (A n) as [[S T]|] eqn:e.
@@ -479,21 +477,7 @@ Proof.
     rewrite he1 in e.
     destruct e as [f e].
     rewrite e //=.
-    do 3 f_equal. extensionality x.
-    erewrite code_link_par_left => //.
-    2: apply h3.
-    apply (hi1 n (S; T; f) x), e.
   - move: e => /dommPn; rewrite valid_domm; move=> /dommPn -> //=.
-    destruct (D n) as [[S T]|] eqn:e'.
-    2: move: e' => /dommPn; rewrite valid_domm; move=> /dommPn -> //=.
-    destruct h2 as [he2 hi2].
-    specialize (he2 (n, (S, T))).
-    simpl in he2.
-    rewrite he2 in e'.
-    destruct e' as [f e'].
-    rewrite e' //=.
-    do 3 f_equal. extensionality x.
-    now rewrite s34.
 Qed.
 
 Local Open Scope type_scope.
