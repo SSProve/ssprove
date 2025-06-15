@@ -258,14 +258,14 @@ Proof.
   unfold AdvantageE. rewrite !link_assoc. reflexivity.
 Qed.
 
+Lemma par_empty : forall G, par emptym G = G.
+Proof. now setoid_rewrite union0m. Qed.
+
 Lemma Advantage_par_empty :
   ∀ G₀ G₁ A,
   AdvantageE (par emptym G₀) (par emptym G₁) A = AdvantageE G₀ G₁ A.
 Proof.
-  intros G₀ G₁ A.
-  unfold AdvantageE.
-  rewrite distrC.
-  reflexivity.
+  intros G₀ G₁ A. now rewrite !par_empty.
 Qed.
 
 Lemma Advantage_par :
@@ -294,15 +294,14 @@ Proof.
   rewrite -Advantage_link Advantage_par_empty //.
 Qed.
 
+Lemma par_emptyR : forall G, par G emptym = G.
+Proof. now setoid_rewrite unionm0. Qed.
+
 Lemma Advantage_par_emptyR :
   ∀ G₀ G₁ A,
   AdvantageE (par G₀ emptym) (par G₁ emptym) A = AdvantageE G₀ G₁ A.
 Proof.
-  intros G₀ G₁ A.
-  unfold AdvantageE.
-  unfold par.
-  rewrite !unionm0.
-  reflexivity.
+  intros G₀ G₁ A. now rewrite !par_emptyR.
 Qed.
 
 Lemma Advantage_parR :
@@ -457,13 +456,217 @@ Tactic Notation
   "as" ident(ineq) :=
   ssprove_triangle_as p₀ l p₁ A ineq.
 
-Lemma valid_package_inject_export_weak :
-  ∀ L I E1 E2 p,
-    fsubmap E1 E2 →
-    ValidPackage L I E2 p →
-    ValidPackage L I E1 p.
+Lemma unionm_isSome :
+  forall {T : ordType} {S} (m m' : {fmap T -> S}) o,
+    isSome (unionm m m' o) <-> isSome (m o) ∨ isSome (m' o).
 Proof.
-Admitted.
+  intros ? ? ? ? ?.
+  rewrite unionmE.
+  destruct (m o) ; split ; [  left |  |  right | intros [] ] ; easy.
+Qed.
+
+Lemma fhas_unionm_iff : forall {T : ordType} {S} (m m' : {fmap T -> S}) o,
+    fhas (unionm m m') o <-> (fhas m o ∨ (m o.1 = None /\ fhas m' o)).
+Proof.
+  intros ? ? ? ? [k v].
+  unfold fhas.
+  simpl.
+  rewrite unionmE.
+  destruct (m k) ; split ; [ left | intros [ | [] ] | right | intros [] ] ; easy.
+Qed.
+
+Lemma simple_neg :
+  forall (E1 : Interface) (p1 : raw_package),
+  ∀ o,
+    (forall (s t : choice_type), fhas E1 (o, (s, t)) ↔ (∃ f, fhas p1 (o, (s; t; f)))) ->
+    (E1 o = None ↔ p1 o = None).
+Proof.
+  intros E1 p1 o.
+  intros.
+  split ; [
+      destruct (p1 o) as [ [s [t f]] | ] eqn:p1o ; [ intros ; exfalso | reflexivity ]
+    | destruct (E1 o) as [ [ s t ] | ] eqn:E1o ; [ intros ; exfalso | reflexivity ] ] ; specialize (H s t).
+  all: rewrite <- (boolp.iff_not2) in H ; rewrite <- boolp.forallNP in H ;  simpl in H.
+  - assert (E1 o <> Some (s, t)) by now rewrite H0.
+    now specialize (proj1 H H1 f).
+  - assert (forall x, p1 o <> Some (s; t; x)) by now intros ; rewrite H0.
+    now specialize (proj2 H H1).
+Qed.
+
+Lemma simple_neg2 :
+  forall (E1 : Interface) (p1 : raw_package),
+  ∀ o,
+    (E1 o = None ↔ p1 o = None) -> (E1 = mapm (λ '(So; To; _), (So, To)) p1) ->
+    forall (s t : choice_type), fhas E1 (o, (s, t)) ↔ (∃ f, fhas p1 (o, (s; t; f))).
+Proof.
+  intros E1 p1 o.
+  intros ?.
+  intros ?.
+
+  apply eq_fmap in H0.
+  specialize (H0 o).
+  rewrite mapmE in H0.
+  unfold omap, obind, oapp in H0.
+  simpl.
+  rewrite H0 ; clear H0.
+
+  destruct (getm p1 o) as [[s1 [t1 f1]]|] eqn:p1o_eq ; rewrite p1o_eq.
+  2: now split ; [ | intros [] ].
+  intros.
+  split.
+  - intros. inversion H0 ; subst. now exists f1.
+  - now intros [] ; inversion H0 ; subst.
+Qed.
+
+
+Lemma ValidPackage_eq : forall L I E p, ValidPackage L I E p <-> E = mapm (λ '(So; To; _), (So, To)) p /\ ∀ (n : Datatypes_nat__canonical__Ord_Ord) (F : typed_raw_function) (x : F.π1),
+    fhas p (n, F) → ValidCode L I ((F.π2).π2 x).
+Proof.
+  clear ; intros.
+  split.
+  - intros ?.
+    split.
+    + apply (valid_exports_eq _).
+    + apply H.
+  - intros [] ; subst.
+    constructor.
+    + intros [o [s t]].
+      simpl.
+      rewrite mapmE.
+      unfold omap, obind, oapp.
+      destruct (getm p o) as [[s1 [t1 f1]]|] eqn:p1o_eq ; rewrite p1o_eq ; [ clear p1o_eq | split ; [ | intros [] ] ; discriminate ].
+      split.
+      * intros. inversion H ; subst. now exists f1.
+      * intros []. now inversion H ; subst.
+    + apply H0.
+Qed.
+
+(* Lemma valid_link_iff: *)
+(*   ∀ (L1 L2 : Locations) (I M E : Interface) (p1 p2 : raw_package), *)
+(*     (ValidPackage L1 M E p1 *)
+(*      /\ ValidPackage L2 I M p2 *)
+(*      /\ fcompat L1 L2) <-> ValidPackage (unionm L1 L2) I E (p1 ∘ p2). *)
+(* Proof. *)
+(*   split ; [ intros [? []] | intros ]. *)
+(*   - now apply (valid_link L1 L2 I M E). *)
+(*   - split. *)
+(*     + (* epose unionm_isSome. *) *)
+(*       (* fhas_unionm_iff *) *)
+
+
+(* Lemma fcompat_split_unionm : *)
+(*   forall {E1 E2 : Interface}, *)
+(*   fcompat E1 E2 -> *)
+(*   forall o s t, *)
+(*   fhas E1 (o, (s, t)) ∨ E1 o = None ∧ fhas E2 (o, (s, t)) *)
+(*   ↔ fhas E2 (o, (s, t)) ∨ E2 o = None ∧ fhas E1 (o, (s, t)). *)
+(* Proof. *)
+(*   intros. *)
+(*   rewrite <- (fhas_unionm_iff E1 E2 (o, (s, t))). *)
+(*   rewrite <- (fhas_unionm_iff E2 E1 (o, (s, t))). *)
+(*   now rewrite H. *)
+(* Qed. *)
+
+Lemma fcompat_fhas_case :
+  forall {T : ordType} {S} {E1 E2 : {fmap T -> S}},
+  fcompat E1 E2 ->
+  forall o, (fhas E1 o -> (fhas E2 o \/ E2 o.1 = None)).
+Proof.
+  intros ? ? ? ? ? [k v] ?.
+  simpl.
+  epose proof (proj1 (fhas_unionm_iff E2 E1 (k, v))).
+  rewrite <- H in H1.
+  specialize (H1 ((fhas_union_l _ _ _ _ H0))).
+
+  epose proof (proj1 (fhas_unionm_iff E1 E2 (k, v)) (fhas_union_l _ _ _ _ H0)).
+
+  destruct H1 as [| []].
+  + now left.
+  + destruct H2 as [| [] ].
+    * now right.
+    * now left.
+Qed.
+
+Lemma fcompat_split_unionm :
+  forall {T : ordType} {S} {E1 E2 : {fmap T -> S}},
+  fcompat E1 E2 ->
+  forall o,
+    fhas (unionm E1 E2) o ->
+    (E1 o.1 = Some o.2 <-> E2 o.1 = None)
+    \/ (E1 o.1 = None <-> E2 o.1 = Some o.2)
+    \/ (E1 o.1 = Some o.2 <-> E2 o.1 = Some o.2).
+Proof.
+  intros ? ? ? ? ? [k v] ?.
+  
+  simpl.
+  epose proof (proj1 (fhas_unionm_iff E2 E1 (k, v))).
+  rewrite <- H in H1.
+  specialize (H1 H0).
+
+  epose proof (proj1 (fhas_unionm_iff E1 E2 (k, v)) H0).
+
+  destruct H1 as [| []].
+  + destruct H2 as [| [] ].
+    * rewrite H1 H2.
+      now right ; right.
+    * rewrite H1 H2.
+      now right ; left.
+  + rewrite H1 H3.
+    now left.
+Qed.
+
+Lemma fmap_as_list :
+  forall {T : ordType} {S} (p2 : {fmap T -> S}),
+  exists l, mkfmap l = p2.
+Proof.
+  destruct p2.
+  exists fmval.
+  - apply eq_fmap.
+    apply mkfmapE.
+Qed.
+
+Lemma fmapK_list :
+  forall {T : ordType} {S} (p2 : {fmap T -> S}),
+  mkfmap (FMap.fmval p2) = p2.
+Proof.
+  destruct p2.
+  apply eq_fmap.
+  apply mkfmapE.
+Qed.
+
+Lemma valid_package_inject_export_weak :
+  ∀ L I E1 E2 p1 p2,
+    fseparate E1 E2 ->
+    E1 = mapm (λ '(So; To; _), (So, To)) p1 ->
+    E2 = mapm (λ '(So; To; _), (So, To)) p2 ->
+    ValidPackage L I E1 p1 /\ ValidPackage L I E2 p2 <->
+    ValidPackage L I (unionm E1 E2) (unionm p1 p2).
+Proof.
+  intros ? ? ? ? ? ? ?.
+  split ; [ intros [] | intros ].
+  - rewrite <- (unionmI L).
+    rewrite <- (unionmI I).
+    now apply valid_par.
+  - rewrite ValidPackage_eq in H2. destruct H2.
+    rewrite !ValidPackage_eq.
+    split ; split ; [ assumption | | assumption | ].
+    + intros.
+      eapply H3.
+      apply fhas_union_l.
+      apply H4.
+    + intros.
+
+      rewrite unionmC in H3.
+      2:{
+        destruct H.
+        subst.
+        rewrite !domm_map in H.
+        apply H.
+      }
+      eapply H3.
+      apply fhas_union_l.
+      apply H4.
+Qed.
 
 Lemma package_duplicate :
   forall p, p = par p p.
@@ -484,9 +687,10 @@ Lemma Advantage_split_par :
     (forall b, ValidPackage LA IA EA (A b)) ->
     (forall b, ValidPackage LB IB EB (B b)) ->
     (forall b, K b = par (B b) (C b)) ->
+    forall Adv, 
     forall ε,
-      (forall Adv, (AdvantageE (A false ∘ B false) (A true ∘ B true) Adv <= ε)%R) ->
-      (forall Adv, (AdvantageE (A false ∘ K false) (A true ∘ K true) Adv <= ε)%R).
+      ((AdvantageE (A false ∘ B false) (A true ∘ B true) Adv <= ε)%R) ->
+      ((AdvantageE (A false ∘ K false) (A true ∘ K true) Adv <= ε)%R).
 Proof.
   intros.
   subst.
@@ -508,9 +712,10 @@ Lemma Advantage_split_parR :
     (forall b, ValidPackage LA IA EA (A b)) ->
     (forall b, ValidPackage LC IC EC (C b)) ->
     (forall b, K b = par (B b) (C b)) ->
+    forall Adv,
     forall ε,
-      (forall Adv, (AdvantageE (A false ∘ C false) (A true ∘ C true) Adv <= ε)%R) ->
-      (forall Adv, (AdvantageE (A false ∘ K false) (A true ∘ K true) Adv <= ε)%R).
+      ((AdvantageE (A false ∘ C false) (A true ∘ C true) Adv <= ε)%R) ->
+      ((AdvantageE (A false ∘ K false) (A true ∘ K true) Adv <= ε)%R).
 Proof.
   intros.
   subst.
@@ -518,6 +723,89 @@ Proof.
   rewrite link_par_right ; [ | easy .. ].
   rewrite link_par_right ; [ | easy .. ].
   apply H4.
+Qed.
+
+  Lemma in_cat :
+    forall (X : eqType) l1 l2, forall (x : X), (x \in (l1 ++ l2)) = ((x \in l1) || (x \in l2)).
+  Proof.
+    intros.
+    generalize dependent l1.
+    induction l2 ; intros.
+    + setoid_rewrite List.app_nil_r.
+      now rewrite Bool.orb_false_r.
+    + replace (l1 ++ _) with ((l1 ++ [:: a]) ++ l2).
+      2:{
+        rewrite <- List.app_assoc.
+        reflexivity.
+      }
+      rewrite IHl2.
+      rewrite in_cons.
+      induction l1.
+      * simpl.
+        rewrite in_cons.
+        rewrite in_nil.
+        now rewrite Bool.orb_false_r.
+      * simpl.
+        rewrite !in_cons.
+        rewrite <- !orbA.
+        now rewrite IHl1.
+  Qed.
+
+Lemma fdisjoint_weak : (forall {T : ordType}, forall (A B C : {fset T}), A :#: B -> A :#: (B :\: C)).
+Proof.
+  intros.
+  apply /fsetDidPl.
+  rewrite fsetDDr.
+  move /fsetDidPl: H ->.
+  apply eq_fset.
+  intros i.
+  rewrite in_fset.
+  simpl.
+  rewrite in_cat.
+  rewrite in_fsetI.
+  destruct (i \in A) eqn:i_in ; now rewrite i_in.
+Qed.
+
+Lemma fsubmap_split :
+  forall {T : ordType} {S}, forall (A B : {fmap T -> S}), fsubmap A B -> exists C, unionm A C = B /\ fseparate A C.
+Proof.
+  clear ; intros.
+  exists (filterm (fun x y => x \notin domm A) B).
+
+  assert (unionm A (filterm (λ (x : T) (_ : S), x \notin domm A) B) = B).
+  {
+    apply eq_fmap.
+    intros ?.
+    rewrite unionmE.
+    destruct (A x) eqn:Ahas.
+    + simpl.
+      symmetry.
+      apply (fsubmap_fhas _ _ (x, s) H Ahas).
+    + simpl.
+      rewrite filtermE.
+      unfold obind, oapp.
+      move /dommPn: Ahas ->.
+      now destruct (B x).
+  }
+  split.
+  - apply H0.
+  - simpl.
+    rewrite <- (fmapK_list B) in H, H0 |- *.
+    destruct B ; simpl in *.
+    simpl.
+    constructor.
+    clear i H H0.
+    induction fmval.
+    + rewrite filterm0.
+      rewrite domm0.
+      apply fdisjoints0.
+    + simpl.
+      rewrite filterm_set.
+
+      destruct (a.1 \notin domm A) eqn:a_not_in_A.
+      2: rewrite domm_rem ; apply fdisjoint_weak.
+      1: rewrite domm_set ; rewrite fdisjointUr ; rewrite fdisjoints1 ; rewrite a_not_in_A ; simpl.
+      1,2: apply IHfmval.
 Qed.
 
 Lemma Advantage_common_par :
@@ -535,17 +823,19 @@ Lemma Advantage_common_par :
     (forall b, ValidPackage LK IK EK (K b)) ->
     fcompat LA LK ->
     fcompat LB LK ->
+    forall Adv,
     forall ε ν,
-      (forall Adv, (AdvantageE (A false ∘ K false) (A true ∘ K true) Adv <= ε)%R) ->
-      (forall Adv, (AdvantageE (B false ∘ K false) (B true ∘ K true) Adv <= ν)%R) ->
-      (forall Adv, (AdvantageE (par (A false) (B false) ∘ K false) (par (A true) (B true) ∘ K true) Adv <= ν + ε)%R).
+      ((AdvantageE (A false ∘ K false) (A true ∘ K true) (Adv ∘ par (ID EA) (B true ∘ K true)) <= ε)%R) ->
+      ((AdvantageE (B false ∘ K false) (B true ∘ K true) (Adv ∘ par (A false ∘ K false) (ID EB)) <= ν)%R) ->
+      ((AdvantageE (par (A false) (B false) ∘ K false) (par (A true) (B true) ∘ K true) Adv <= ν + ε)%R).
 Proof.
   intros.
   rewrite (package_duplicate (K false)).
   rewrite (package_duplicate (K true)).
-  erewrite <- !interchange_alt ; [ | try (easy || apply fsubmapxx) .. ].
-  2-5: eapply valid_package_inject_export_weak ; [ | easy ] ; assumption.
-  Locate le_trans.
+  erewrite <- !interchange_alt ; [ | try apply fsubmapxx .. ].
+  4,5,8,9: apply H4.
+  2,4: now eapply valid_package_inject_import ; [ | eapply H2 ].
+  2,3: now eapply valid_package_inject_import ; [ | eapply H3 ].
   eapply order.Order.le_trans ; [ eapply Advantage_triangle with (R := par (A false ∘ K false) (B true ∘ K true)) | ].
   apply Num.Theory.lerD.
   {
@@ -575,7 +865,8 @@ Corollary Advantage_common_par0 :
     (forall b, ValidPackage LK IK EK (K b)) ->
     fcompat LA LK ->
     fcompat LB LK ->
-    (forall Adv, (AdvantageE (A false ∘ K false) (A true ∘ K true) Adv <= 0)%R) ->
-    (forall Adv, (AdvantageE (B false ∘ K false) (B true ∘ K true) Adv <= 0)%R) ->
-    (forall Adv, (AdvantageE (par (A false) (B false) ∘ K false) (par (A true) (B true) ∘ K true) Adv <= 0)%R).
+    forall Adv,
+    ((AdvantageE (A false ∘ K false) (A true ∘ K true) (Adv ∘ par (ID EA) (B true ∘ K true)) <= 0)%R) ->
+    ((AdvantageE (B false ∘ K false) (B true ∘ K true) (Adv ∘ par (A false ∘ K false) (ID EB)) <= 0)%R) ->
+    ((AdvantageE (par (A false) (B false) ∘ K false) (par (A true) (B true) ∘ K true) Adv <= 0)%R).
 Proof. intros. rewrite <- (GRing.add0r 0%R). now rewrite Advantage_common_par. Qed.
