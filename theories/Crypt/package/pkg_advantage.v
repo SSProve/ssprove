@@ -613,7 +613,7 @@ Proof.
 
       rewrite unionmC in H3.
       2:{
-        destruct H.
+        destruct H as [H].
         subst.
         rewrite !domm_map in H.
         apply H.
@@ -642,7 +642,7 @@ Lemma Advantage_split_par :
     (forall b, ValidPackage LA IA EA (A b)) ->
     (forall b, ValidPackage LB IB EB (B b)) ->
     (forall b, K b = par (B b) (C b)) ->
-    forall Adv, 
+    forall Adv,
     forall ε,
       ((AdvantageE (A false ∘ B false) (A true ∘ B true) Adv <= ε)%R) ->
       ((AdvantageE (A false ∘ K false) (A true ∘ K true) Adv <= ε)%R).
@@ -706,7 +706,7 @@ Proof.
   4,7: apply H4.
   2,4: now eapply valid_package_inject_import ; [ | eapply H2 ].
   2,3: eapply H3.
-  eapply order.Order.le_trans ; [ eapply Advantage_triangle with (R := par (A false ∘ K false) (B true ∘ K true)) | ].
+  eapply order.Order.POrderTheory.le_trans ; [ eapply Advantage_triangle with (R := par (A false ∘ K false) (B true ∘ K true)) | ].
   apply Num.Theory.lerD.
   {
     erewrite Advantage_par.
