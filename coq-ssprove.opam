@@ -10,9 +10,9 @@ dev-repo: "git+https://github.com/SSProve/ssprove.git"
 doc: "https://SSProve.github.io/ssprove/index.html"
 license: "MIT"
 depends: [
-  "coq" {(>= "8.18~")}
-  "coq-equations" {(>= "1.3+8.18")}
-  "coq-mathcomp-ssreflect" {(>= "2.1.0")}
+  "coq" {(>= "8.19~")}
+  "coq-equations" {(>= "1.3+8.19")}
+  "coq-mathcomp-ssreflect" {(>= "2.2.0")}
   ("coq-mathcomp-analysis" {>= "1.0.0" & < "1.7.0"} | "coq-mathcomp-analysis" {>= "1.7.0"} & "coq-mathcomp-experimental-reals" {>= "1.7.0"})
   "coq-mathcomp-word" {>= "3.2" & < "3.3"}
   "coq-extructures" {(>= "0.4.0" & < "dev")}
