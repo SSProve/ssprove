@@ -26,7 +26,7 @@ Definition results_from_the_paper := [let
   pkg_composition.id_link ;
   pkg_composition.interchange ;
   PRF.security_based_on_prf ;
-  ElGamal.ElGamal_Z3.ElGamal_OT ;
+  ElGamal.OT_CPA_elgamal_Z3 ;
   @pkg_rhl.rreflexivity_rule ;
   @pkg_rhl.rbind_rule ;
   @pkg_rhl.rswap_rule ;

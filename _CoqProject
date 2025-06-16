@@ -91,9 +91,6 @@ theories/Crypt/examples/package_usage_example.v
 theories/Crypt/examples/interpreter_test.v
 theories/Crypt/examples/concrete_groups.v
 theories/Crypt/examples/PRF.v
-theories/Crypt/examples/AsymScheme.v
-theories/Crypt/examples/DDH.v
-theories/Crypt/examples/ElGamal.v
 theories/Crypt/examples/OTP.v
 theories/Crypt/examples/KEMDEM.v
 theories/Crypt/examples/RandomOracle.v
@@ -102,6 +99,12 @@ theories/Crypt/examples/Schnorr.v
 # theories/Crypt/examples/OVN.v
 theories/Crypt/examples/Executor.v
 theories/Crypt/examples/PolynomialUtils.v
+
+# case-study on public-key encryption
+theories/Crypt/examples/PKE/Scheme.v
+theories/Crypt/examples/PKE/CyclicGroup.v
+theories/Crypt/examples/PKE/LDDH.v
+theories/Crypt/examples/PKE/ElGamal.v
 
 # Examples from https://github.com/Som1Lse/joy-of-ssprove
 theories/Crypt/examples/MACCCA.v

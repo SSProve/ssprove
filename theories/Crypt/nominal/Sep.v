@@ -253,17 +253,27 @@ Proof.
   auto with nominal_db nocore.
 Qed.
 
+Lemma fseparate_disj {L1 L2 : Locations}
+  : fseparate L1 L2 <-> disj L1 L2.
+Proof.
+  split.
+  - move=> [] /eqP H.
+    apply /eqP.
+    rewrite -imfsetI ?H ?imfset0 //.
+    intros ? ? ? ?; eapply can_inj, atomizeK.
+  - move=> /eqP H.
+    apply fsep.
+    apply /eqP.
+    apply (imfset_inj (can_inj atomizeK)).
+    rewrite imfsetI ?H ?imfset0 //.
+    intros ? ? ? ?; eapply can_inj, atomizeK.
+Qed.
+
 Lemma disj_loc_fcompat {p1 p2} :
   disj p1 p2 → fcompat (loc p1) (loc p2).
 Proof.
-  intros H.
-  rewrite /fcompat unionmC // /fdisjoint.
-  apply /eqP.
-  apply (imfset_inj (can_inj atomizeK)).
-  rewrite imfset0 imfsetI.
-  2: intros ? ? ? ?; eapply can_inj, atomizeK.
-  apply /eqP.
-  apply H.
+  rewrite -fseparate_disj.
+  apply fseparate_compat.
 Qed.
 
 #[export] Hint Resolve disj_loc_fcompat : nominal_db.
@@ -566,54 +576,6 @@ Proof.
   apply eq.
 Qed.
 
-(*
-#[export]
-Instance share_link_valid {L L' I M E} {P P' : nom_package} :
-  ValidPackage L M E P → ValidPackage L' I M P' →
-  fcompat L L' →
-  ValidPackage (unionm L L') I E (P ∘ P')%share.
-Proof. by apply valid_link. Qed.
- *)
-
-(*
-#[export]
-Instance sep_link_valid {L L' I M E} {P P' : nom_package} :
-  ValidPackage L M E P → ValidPackage L' I M P' →
-  ValidPackage (unionm L (fresh P P' ∙ L' : Locations)) I E (P ∘ P')%sep.
-Proof.
-  intros V1 V2.
-  eapply (valid_link _ _ _ _ _ _ _ V1).
-  1: by apply rename_valid.
-Admitted.
- *)
-
-(*
-#[export]
-Instance share_par_valid {L L' I I' E E'} {P P' : nom_package} :
-  ValidPackage L I E P → ValidPackage L' I' E' P' →
-  fseparate E E' →
-  fcompat L L' →
-  fcompat I I' →
-  ValidPackage (unionm L L') (unionm I I') (unionm E E') (P || P')%share.
-Proof. by apply valid_par. Qed.
- *)
-
-(*
-#[export]
-Instance sep_par_valid {L L' I I' E E'} {P P' : nom_package} :
-  ValidPackage L I E P → ValidPackage L' I' E' P' →
-  fseparate E E' →
-  ValidPackage (unionm L (fresh P P' ∙ L' : Locations)) (unionm I I') (unionm E E') (P || P')%sep.
-Proof.
-  intros V1 V2 H.
-  simpl.
-  apply valid_par.
-  - apply V1.
-  - apply rename_valid, V2.
-  - apply H.
-Admitted.
- *)
-
 Lemma Adv_triangle {G1 G2 G3 : nom_package} A
   : Adv G1 G3 A <= Adv G1 G2 A + Adv G2 G3 A.
 Proof. unfold Adv, Pr'. apply Advantage_triangle. Qed.
@@ -697,75 +659,11 @@ Proof.
   rewrite link_sep_link ?link_sep_link //.
 Qed.
 
-Lemma equi_pair {X Y : actionType} : equivariant (@pair X Y).
-Proof.
-  by apply equi2_prove => π x y.
-Qed.
+Lemma supp_prod {X Y : nomType} (x : X) (y : Y)
+  : supp (x, y) = supp x :|: supp y.
+Proof. done. Qed.
 
-#[export] Hint Resolve equi_pair : nominal_db.
-
-(* simple apply @subs_equi2_l fails when used near {fset Location}, so this
-   is registered as a workaround *)
-
-(*
-#[export] Hint Extern 7 (is_true (subs _ (_ _ _))) =>
-  simple apply subs_supp_fsetUl : alpha_db.
-
-#[export] Hint Extern 7 (is_true (subs _ (_ _ _))) =>
-  simple apply subs_supp_fsetUr : alpha_db.
- *)
-
-(*
-Lemma imfset_fdisjoint {T S : ordType} {A B : {fset T}} (f : T → S) : f @: A :#: f @: B → A :#: B.
-Proof.
-  move => /fdisjointP H.
-  apply /fdisjointP => x H'.
-  specialize (H (f x)).
-  rewrite mem_imfset // in H.
-  specialize (H Logic.eq_refl).
-  move: H => /negP H.
-  apply /negP => H''.
-  apply H.
-  by apply mem_imfset.
-Qed.
- *)
-
-(*
-Lemma supp_imfset_Locations {S} {X : SuppOrd.type S} {A : {fset X}} {f : X → atom}
-  : (∀ x, supp x = fset1 (f x)) → supp @: A = supp A.
-Proof.
- *)
-
-(*
-Lemma supp_fdisjoint {A B : {fset Location}} : disj A B → A :#: B.
-Proof.
-  intros D.
-  rewrite /disj /supp //= in D.
-  move: D => /fdisjointP D.
-  apply /fdisjointP => x H.
-  destruct x as [c n].
-  apply /negP => H'.
-  specialize (D (atomize n)).
-  assert (atomize n \in fsetSupp A).
-  { unfold fsetSupp.
-    apply /bigcupP.
-    eapply BigCupSpec.
-    + apply H.
-    + done.
-    + rewrite in_fset1 //.
-  }
-  specialize (D H0).
-  move: D => /negP D.
-  apply D.
-  unfold fsetSupp.
-  apply /bigcupP.
-  eapply BigCupSpec.
-  + apply H'.
-  + done.
-  + rewrite in_fset1 //.
-Qed.
- *)
-
+#[export] Hint Resolve supp_prod subs_refl : nominal_db.
 
 Lemma Adv_adv_equiv {L L' E} {G G' : nom_package} {ε : raw_package → R}
   {V1 : ValidPackage L Game_import E G} {V2 : ValidPackage L' Game_import E G'} :
@@ -774,32 +672,16 @@ Lemma Adv_adv_equiv {L L' E} {G G' : nom_package} {ε : raw_package → R}
   ∀ {LA} (A : nom_package), ValidPackage LA E A_export A → Adv G G' A = ε A.
 Proof.
   intros equieps adv LA A VA.
-  pose (π := fresh (L, L') LA).
-  (*pose (π := fresh ((L, G), (L', G')) (LA, A)).*)
+  pose (π := fresh ((L, G), (L', G')) (LA, A)).
   setoid_rewrite <- (@rename_alpha _ A π).
   rewrite Adv_AdvantageE.
   1: rewrite -(absorb π (ε A)).
   1: rewrite equieps.
   1: rewrite adv //.
-Admitted.
-(*
-  all: unfold π => {π}.
-  Search fresh.
-  1,2: auto with nominal_db nocore.
-  3,4: apply @subs_fresh_disj.
-  3,5: apply subs_refl.
-  3: apply subs_supp_fsetUl.
-  3: done.
-  3: apply subs_refl.
-  3: apply subs_supp_fsetUr.
-  3: done.
-  3: apply subs_refl.
-  1: apply subs_fresh_disj.
-  Search fseparate.
 
-  3,4: auto with nominal_db nocore.
-Admitted.
- *)
+  1,2: rewrite fseparate_disj.
+  1-4: eauto with nominal_db nocore.
+Qed.
 
 Lemma Adv_perf {L L' E} {G G' : nom_package}
   {V1 : ValidPackage L Game_import E G} {V2 : ValidPackage L' Game_import E G'} :
@@ -932,11 +814,6 @@ Proof.
   reflexivity.
 Qed.
 
-(*
-Lemma Game_import_empty : pkg_composition.ID (Game_import) = emptym.
-Proof. rewrite /pkg_composition.ID /Game_import -fset0E //. Qed.
- *)
-
 Lemma sep_par_empty_l {P} : (ID (Game_import) || P) ≡ P.
 Proof.
   rewrite <- share_par_sep_par.
@@ -1051,14 +928,14 @@ Proof.
 Qed.
 
 
-Definition AdvOf GG A : R := Adv (GG true) (GG false) A.
+Notation AdvOf GG A := (Adv (GG true) (GG false) A).
 
 Lemma AdvOf_perfect {L E} {G G'} {A : nom_package}
   {V : ValidPackage L E A_export A} :
   (∀ b : bool, perfect E (G b) (G' b)) →
-  AdvOf G A = Adv (G' true) (G' false) A.
+  AdvOf G A = AdvOf G' A.
 Proof.
   intros H.
-  rewrite /AdvOf (Adv_perfect_r (H false)).
+  rewrite (Adv_perfect_r (H false)).
   rewrite (Adv_perfect_l (H true)) //.
 Qed.

@@ -32,15 +32,9 @@ Proof. intros []. done. Qed.
 Lemma atomizeK : cancel atomize natize.
 Proof. done. Qed.
 
-HB.instance Definition _ : Equality atom := _.
-HB.instance Definition _ : hasChoice atom := _.
-HB.instance Definition _ : hasOrd atom := _.
-
-(* This ordering does not produce an ordType for atom.
 HB.instance Definition _ : Equality atom := Equality.copy atom (can_type natizeK).
 HB.instance Definition _ : hasChoice atom := CanHasChoice natizeK.
 HB.instance Definition _ : hasOrd atom := CanHasOrd natizeK.
- *)
 
 
 HB.mixin Record HasAction X := {
