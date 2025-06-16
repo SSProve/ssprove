@@ -31,7 +31,7 @@
 
   ## select an entry to build in the following `bundles` set
   ## defaults to "default"
-  default-bundle = "8.19";
+  default-bundle = "8.20";
 
   ## write one `bundles.name` attribute set per
   ## alternative configuration
@@ -43,12 +43,6 @@
   ## To do this check as a CI job you either need to manually edit
   ## the generated workflow or create branch off of version 0.1.0
   ## and add it there.
-  bundles."8.19".coqPackages = {
-    coq.override.version = "8.19";
-    mathcomp.job = false;
-    mathcomp.override.version = "2.2.0";
-    mathcomp-analysis.override.version = "1.0.0";
-  };
   bundles."8.20".coqPackages = {
     coq.override.version = "8.20";
     mathcomp.job = false;
@@ -79,7 +73,6 @@
     mathcomp-bigenough.override.version = "master";
   };
 
-  bundles."8.19".push-branches = ["main"];
   bundles."8.20".push-branches = ["main"];
   bundles."9.0".push-branches = ["main"];
 

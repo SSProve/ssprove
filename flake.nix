@@ -31,7 +31,7 @@
         };
     in {
       overlays.default = final: prev: {
-        coqPackages_8_19 = prev.coqPackages_8_19.overrideScope (self: super: {
+        coqPackages_8_20 = prev.coqPackages_8_20.overrideScope (self: super: {
           ssprove  = self.callPackage ssprovePkg {};
         });
       };
@@ -42,7 +42,7 @@
           overlays = [ self.overlays.default ];
         };
       in {
-        packages.default = pkgs.coqPackages_8_19.ssprove;
+        packages.default = pkgs.coqPackages_8_20.ssprove;
         devShells.default = self.packages.${system}.default;
       });
 }
