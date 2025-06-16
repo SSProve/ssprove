@@ -739,4 +739,7 @@ Corollary Advantage_common_par0 :
     ((AdvantageE (A false ∘ K false) (A true ∘ K true) (Adv ∘ par (ID EA) (B true ∘ K true)) <= 0)%R) ->
     ((AdvantageE (B false ∘ K false) (B true ∘ K true) (Adv ∘ par (A false ∘ K false) (ID EB)) <= 0)%R) ->
     ((AdvantageE (par (A false) (B false) ∘ K false) (par (A true) (B true) ∘ K true) Adv <= 0)%R).
-Proof. intros. rewrite <- (GRing.add0r 0%R). now rewrite Advantage_common_par. Qed.
+Proof. intros.
+  first [rewrite <- (GRing.add0r 0%R) | rewrite <- (GRing.add0r (@GRing.zero R))].
+  now rewrite Advantage_common_par.
+Qed.
