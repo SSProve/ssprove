@@ -181,7 +181,7 @@ Qed.
 
 Lemma OT_CPA_elgamal (A : adversary (I_CPA elgamal)) :
   AdvOf (OT_CPA elgamal) A = AdvOf (LDDH G) (A ∘ RED).
-Proof. rewrite (AdvOf_perfect PK_OTSR_RED_DDH_perfect) Adv_sep_link //. Qed.
+Proof. rewrite (AdvOf_perfect PK_OTSR_RED_DDH_perfect) Adv_reduction //. Qed.
 
 End ElGamal.
 

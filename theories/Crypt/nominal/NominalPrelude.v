@@ -21,7 +21,7 @@ Import GroupScope GRing.Theory.
 From SSProve.Crypt Require Export pkg_composition Prelude Package.
 
 From SSProve.Crypt.nominal Require Export
-  Nominal Fresh Pr Share Sep.
+  Nominal Fresh Pr Share Sep Adv.
 
 Import PackageNotation.
 #[local] Open Scope ring_scope.

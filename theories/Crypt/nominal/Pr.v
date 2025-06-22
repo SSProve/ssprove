@@ -19,7 +19,7 @@ From SSProve.Crypt Require Import FreeProbProg.
 
 From HB Require Import structures.
 
-From SSProve.Crypt Require Import Nominal Fresh.
+From SSProve.Crypt Require Import Nominal.
 
 
 
@@ -381,4 +381,3 @@ Proof.
   rewrite -H0.
   apply Pr_rename.
 Qed.
-
