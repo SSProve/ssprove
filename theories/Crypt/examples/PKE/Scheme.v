@@ -99,13 +99,15 @@ Section Defs.
     package (I_CPA) (I_CPA) :=
     [package [fmap count_loc ] ;
       [ GEN ] : { 'unit ~> P.(Pub) } 'tt {
-        call GEN 'unit P.(Pub) tt
+        pk ← call [ GEN ] : { 'unit ~> P.(Pub) } tt ;;
+        ret pk
       } ;
       [ QUERY ] : { P.(Mes) ~> P.(Cip) } (m) {
         count ← get count_loc ;; 
         #assert (count < n)%N ;;
         #put count_loc := count.+1 ;;
-        call QUERY P.(Mes) P.(Cip) m
+        c ← call [ QUERY ] : { P.(Mes) ~> P.(Cip) } m ;;
+        ret c
       }
     ].
 End Defs.

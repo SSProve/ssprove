@@ -1,17 +1,13 @@
 Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
-  fingroup.fingroup solvable.cyclic prime ssrnat ssreflect ssrfun ssrbool ssrnum
-  eqtype choice seq.
+From mathcomp Require Import all_ssreflect all_algebra
+  reals distr realsum fingroup.fingroup solvable.cyclic.
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From SSProve.Mon Require Import SPropBase.
-
-From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
-  UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_core_definition choice_type pkg_composition pkg_rhl Package Prelude.
-
 From Coq Require Import Utf8.
-From extructures Require Import ord fset fmap.
+From extructures Require Import ord fset fmap ffun fperm.
+
+From SSProve.Crypt Require Import Axioms SubDistr pkg_composition
+  Prelude Package Nominal Fresh Pr Share Sep.
 
 From Equations Require Import Equations.
 Require Equations.Prop.DepElim.
@@ -22,11 +18,15 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
-
+(******************************************************************************)
+(* This file introduces advantage `Adv` based on `sep_link`. It is shown that *)
+(* Adv is alpha-congruent in all arguments, and that perfectly                *)
+(* indistinguishable (`perfect`) packages may replace either argument freely. *)
+(* Various reduction lemmas are also proven about `Adv`.                      *)
+(******************************************************************************)
 
 Local Open Scope ring_scope.
 Import GroupScope GRing.Theory.
-
 
 Import Num.Def.
 Import Num.Theory.
@@ -35,13 +35,6 @@ Require Import Btauto.
 
 Import PackageNotation.
 
-From extructures Require Import ffun fperm.
-
-From SSProve.Crypt Require Import
-  Nominal Fresh Pr Share Sep.
-
-
-(* Adv *)
 
 Definition Pr' : nom_package → R := λ P, Pr P true.
 
@@ -77,30 +70,9 @@ Proof.
   rewrite H H0 H1 //.
 Qed.
 
-Lemma alpha_eq {X : actionType} {P P' : X} : P = P' → P ≡ P'.
-Proof. move=> ->. eexists. by erewrite rename_id. Qed.
-
-Lemma alpha_equi {X Y : actionType} {P P'} {f : X → Y}
-: equivariant f → P ≡ P' → f P ≡ f P'.
-Proof.
-  intros equif [π eq].
-  exists π.
-  rewrite equif.
-  f_equal.
-  apply eq.
-Qed.
-
 Lemma Adv_triangle {G1 G2 G3 : nom_package} A
   : Adv G1 G3 A <= Adv G1 G2 A + Adv G2 G3 A.
 Proof. unfold Adv, Pr'. apply Advantage_triangle. Qed.
-
-Ltac ssprove_ehop :=
-  eapply le_trans;
-    [ eapply Adv_triangle |].
-
-Ltac ssprove_hop M :=
-  eapply le_trans;
-    [ eapply (@Adv_triangle _ M%sep) |].
 
 Lemma Adv_same (G A : nom_package) : Adv G G A = 0.
 Proof. rewrite /Adv addrN. rewrite normr0 //. Qed.
@@ -123,44 +95,6 @@ Proof.
   erewrite sep_link_assoc.
   erewrite sep_link_assoc.
   done.
-Qed.
-
-Lemma share_link_sep_link {P P' : nom_package} :
-  disj P P' →
-  (P ∘ P')%share ≡ (P ∘ P').
-Proof.
-  intros D.
-  unfold sep_link, move.
-  auto with nominal_db nocore.
-Qed.
-
-Lemma link_sep_link {P P' : nom_package} :
-  disj P P' →
-  (P ∘ P')%pack ≡ val (P ∘ P').
-Proof.
-  intros D.
-  change (link P P') with (val (share_link P P')).
-  apply alpha_equi; [ done |].
-  apply share_link_sep_link, D.
-Qed.
-
-Lemma share_par_sep_par {P P' : nom_package} :
-  disj P P' →
-  (P || P')%share ≡ (P || P').
-Proof.
-  intros D.
-  unfold sep_par, move.
-  auto with nominal_db nocore.
-Qed.
-
-Lemma par_sep_par {P P' : nom_package} :
-  disj P P' →
-  (par P P' : raw_package) ≡ val (P || P').
-Proof.
-  intros D.
-  change (par P P') with (val (share_par P P')).
-  apply alpha_equi; [ done |].
-  apply share_par_sep_par, D.
 Qed.
 
 Lemma Adv_AdvantageE (G G' A : nom_package) :
@@ -218,11 +152,11 @@ Proof.
   intros Indish.
   apply le_anti.
   apply /andP; split.
-  - ssprove_ehop.
+  - eapply le_trans; [ eapply Adv_triangle |].
     erewrite (Adv_perf Indish).
     + rewrite GRing.add0r //.
     + eassumption.
-  - ssprove_ehop.
+  - eapply le_trans; [ eapply Adv_triangle |].
     erewrite (Adv_perf (adv_equiv_sym _ _ _ _ _ _ _ _ Indish)).
     + rewrite GRing.add0r //.
     + eassumption.
@@ -268,9 +202,9 @@ Proof.
   intros H.
   apply le_anti.
   apply /andP; split.
-  - ssprove_hop P'.
+  - eapply le_trans; [ eapply (@Adv_triangle _ P') |].
     rewrite H GRing.add0r //.
-  - ssprove_hop P.
+  - eapply le_trans; [ eapply (@Adv_triangle _ P) |].
     rewrite Adv_sym H GRing.add0r //.
 Qed.
 
@@ -289,93 +223,13 @@ Lemma prove_perfect {L L'} {E} {G G' : nom_package} :
     G ≈₀ G' → perfect E G G'.
 Proof. intros V V' H LA A VA. apply (Adv_perf H _ VA). Qed.
 
-Lemma id_sep_par {I I' : Interface}
-  : ID I || ID I' ≡ ID (unionm I I').
-Proof.
-  rewrite <- share_par_sep_par by auto with nominal_db.
-  apply alpha_eq.
-  apply eq_raw_module; [ done |].
-  simpl. unfold par.
-  apply eq_fmap => n.
-  rewrite /ID_raw unionmE 3!mapimE unionmE.
-  destruct (I n); destruct (I' n) => //=.
-Qed.
-
-Lemma swish
-  {L L' : Locations} {I I' E E' : Interface} {P P' : nom_package} :
-  ValidPackage L I E P → ValidPackage L' I' E' P' →
-  fseparate (val (ID I)) (val P') →
-  (P || P') ≡ (P || ID E') ∘ (ID I || P').
-Proof.
-  intros V1 V2 H.
-  erewrite <- sep_interchange.
-  all: try ssprove_valid.
-  rewrite id_sep_link //.
-  rewrite sep_link_id //.
-  setoid_reflexivity.
-Qed.
-
-Lemma swash {L L' I I' E E'} {P P' : nom_package} :
-  ValidPackage L I E P → ValidPackage L' I' E' P' →
-  fseparate (val P) (val (ID I')) →
-  (P || P') ≡ (ID E || P') ∘ (P || ID I').
-Proof.
-  intros V1 V2 H.
-  erewrite <- sep_interchange.
-  all: try ssprove_valid.
-  rewrite id_sep_link //.
-  rewrite sep_link_id //.
-  reflexivity.
-Qed.
-
-Lemma sep_par_empty_l {P} : (ID (Game_import) || P) ≡ P.
-Proof.
-  rewrite <- share_par_sep_par.
-  2: auto with nominal_db.
-  apply alpha_eq.
-  by apply eq_raw_module.
-Qed.
-
-Lemma sep_par_empty_r {P} : (P || ID (Game_import)) ≡ P.
-Proof.
-  rewrite -> sep_par_commut.
-  - apply sep_par_empty_l.
-  - fmap_solve.
-Qed.
-
-Lemma sep_par_game_l {LP LQ LR EP EQ ER IQ} {P Q R : nom_package}
-  {VP : ValidPackage LP EQ EP P}
-  {VQ : ValidPackage LQ IQ EQ Q}
-  {VR : ValidPackage LR Game_import ER R} :
-  ((P ∘ Q) || R) ≡ (P || R) ∘ Q.
-Proof.
-  rewrite -{2}(@sep_par_empty_r Q).
-  erewrite <- sep_interchange.
-  2-6: ssprove_valid.
-  rewrite sep_link_id.
-  reflexivity.
-Qed.
-
-Lemma sep_par_game_r {LP LQ LR EP EQ ER IQ} {P Q R : nom_package}
-  {VP : ValidPackage LP EQ EP P}
-  {VQ : ValidPackage LQ IQ EQ Q}
-  {VR : ValidPackage LR Game_import ER R} :
-  (R || (P ∘ Q)) ≡ (R || P) ∘ Q.
-Proof.
-  rewrite -{2}(@sep_par_empty_l Q).
-  erewrite <- sep_interchange.
-  2-6: ssprove_valid.
-  rewrite sep_link_id.
-  reflexivity.
-Qed.
-
 Lemma Adv_par_link_r (P₀ P₁ P₁' G G' A : nom_package)
   {LP₀ LP₁ LP₁'} {I₀ I₁ E₀ E₁}
   {V1 : ValidPackage LP₀ I₀ E₀ P₀}
   {V2 : ValidPackage LP₁ I₁ E₁ P₁}
   {V3 : ValidPackage LP₁' I₁ E₁ P₁'} :
-  fseparate (val (ID I₀)) (val P₁) →
-  fseparate (val (ID I₀)) (val P₁') →
+  fseparate I₀ (val P₁) →
+  fseparate I₀ (val P₁') →
   Adv ((P₀ || P₁) ∘ G) ((P₀ || P₁') ∘ G') A
     = Adv ((ID I₀ || P₁) ∘ G) ((ID I₀ || P₁') ∘ G') (A ∘ (P₀ || (ID E₁))).
 Proof.
@@ -383,7 +237,7 @@ Proof.
   rewrite <- Adv_reduction.
   erewrite sep_link_assoc.
   erewrite sep_link_assoc.
-  erewrite <- @swish, <- @swish.
+  erewrite <- sep_par_factor_l, <- sep_par_factor_l.
   all: ssprove_valid.
   1: reflexivity.
 Qed.
@@ -396,10 +250,10 @@ Lemma Adv_par_r (G₀ G₁ G₁' A : nom_package)
   Adv (G₀ || G₁) (G₀ || G₁') A = Adv G₁ G₁' (A ∘ (G₀ || ID E₁)).
 Proof.
   rewrite -Adv_reduction.
-  rewrite swish.
+  rewrite sep_par_factor_l.
   2: fmap_solve.
   rewrite sep_par_empty_l.
-  rewrite (@swish _ _ _ _ _ _ _ G₁').
+  rewrite (@sep_par_factor_l _ _ _ _ _ _ _ G₁').
   2: fmap_solve.
   rewrite sep_par_empty_l.
   reflexivity.
@@ -410,15 +264,15 @@ Lemma Adv_par_link_l (P₀ P₀' P₁ G G' A : nom_package)
   {V1 : ValidPackage LP₀ I₀ E₀ P₀}
   {V2 : ValidPackage LP₀' I₀ E₀ P₀'}
   {V3 : ValidPackage LP₁ I₁ E₁ P₁} :
-  fseparate (val P₀) (val (ID I₁)) →
-  fseparate (val P₀') (val (ID I₁)) →
+  fseparate (val P₀) I₁ →
+  fseparate (val P₀') I₁ →
   Adv ((P₀ || P₁) ∘ G) ((P₀' || P₁) ∘ G') A
     = Adv ((P₀ || ID I₁) ∘ G) ((P₀' || ID I₁) ∘ G') (A ∘ (ID E₀ || P₁)).
 Proof.
   intros H H'.
   erewrite <- Adv_reduction.
   erewrite sep_link_assoc, sep_link_assoc.
-  erewrite <- @swash, <- @swash.
+  erewrite <- @sep_par_factor_r, <- @sep_par_factor_r.
   all: ssprove_valid.
   reflexivity.
 Qed.
@@ -427,15 +281,13 @@ Lemma Adv_par_l (G₀ G₀' G₁ A : nom_package) {L₀ L₀'  L₁} {E₀ E₁}
   {V1 : ValidPackage L₀ Game_import E₀ G₀}
   {V2 : ValidPackage L₀' Game_import E₀ G₀'}
   {V3 : ValidPackage L₁ Game_import E₁ G₁} :
-  fseparate (val (ID E₀)) (val G₁) →
   Adv (G₀ || G₁) (G₀' || G₁) A = Adv G₀ G₀' (A ∘ (ID E₀ || G₁)).
 Proof.
-  intros H.
   rewrite -Adv_reduction.
-  rewrite swash.
+  rewrite sep_par_factor_r.
   2: fmap_solve.
   rewrite sep_par_empty_r.
-  rewrite (@swash _ _ _ _ _ _ G₀').
+  rewrite (@sep_par_factor_r _ _ _ _ _ _ G₀').
   2: fmap_solve.
   rewrite sep_par_empty_r.
   reflexivity.

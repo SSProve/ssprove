@@ -18,8 +18,17 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
-
 From SSProve.Crypt Require Import Nominal.
+
+(******************************************************************************)
+(* This file provides the definition for working with fresh atoms.            *)
+(* `neu` chooses a fresh atom in the context of a set of atoms.               *)
+(* Using `neu` we show fset itself to be a nominal set.                       *)
+(* `fresh` given arguments x and y produces a permutation such that when it   *)
+(* is applied to y, its support is disjoint from x.                           *)
+(* `split_pi` combines two permutations and preserves the behaviour on both   *)
+(* when they are sufficiently separated.                                      *)
+(******************************************************************************)
 
 
 (* offset *)
@@ -533,10 +542,13 @@ Proof.
   rewrite supp_atom //.
 Qed.
 
-Lemma fresh_supp_r {X Y : nomType} {x : X} {y : Y} : fresh x (supp y) = fresh x y.
-Proof.
-  rewrite /fresh supp_supp //.
-Qed.
+Lemma fresh_supp_l {X Y : nomType} {x : X} {y : Y} :
+  fresh (supp x) y = fresh x y.
+Proof. rewrite /fresh supp_supp //. Qed.
+
+Lemma fresh_supp_r {X Y : nomType} {x : X} {y : Y} :
+  fresh x (supp y) = fresh x y.
+Proof. rewrite /fresh supp_supp //. Qed.
 
 Lemma offset_move {X Y : nomType} {x : X} {y : Y}
   : maxn (offset (supp x)) (offset (supp (move x y))) = offset (supp x) + offset (supp y).

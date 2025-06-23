@@ -5,32 +5,25 @@ From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr seq all_algebra fintype realsum order.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap ffun fperm.
-From SSProve.Mon Require Import SPropBase.
-From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
-  RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
-  StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
-  pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_advantage
-  pkg_invariants pkg_distr pkg_rhl pkg_composition Package Prelude.
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
-(* Must come after importing Equations.Equations, who knows why. *)
-From SSProve.Crypt Require Import FreeProbProg.
+From SSProve.Crypt Require Import Axioms SubDistr pkg_composition
+  Prelude Package Nominal.
 
 From HB Require Import structures.
 
-From SSProve.Crypt Require Import Nominal.
-
-
+(******************************************************************************)
+(* This file shows that renaming is equivariant in the semantics of SSProve.  *)
+(* This means that code may be freely replaced with alpha-equivalent code.    *)
+(******************************************************************************)
 
 Import Num.Theory.
 
 Set Equations With UIP.
 Set Equations Transparent.
 
-Import SPropNotations.
 Import PackageNotation.
-Import RSemanticNotation.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
@@ -91,13 +84,6 @@ Proof.
     simpl; try setoid_rewrite H;
     try setoid_rewrite IHc; done.
 Qed.
-
-
-(* Bug: swapping the following two lines changes behaviour *)
-(*
-HB.instance Definition _ : Choice Location := _.
-HB.instance Definition _ : hasOrd Location := _.
- *)
 
 
 Program Definition Locations_HasAction : HasAction Locations

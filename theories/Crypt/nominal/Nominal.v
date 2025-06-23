@@ -18,8 +18,20 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
+(******************************************************************************)
+(* This file provides basic definitions for working with nominal sets.        *)
+(* `atom` defines the type of atoms by wrapping natural numbers. We avoid     *)
+(* using `nat` directly, as `nat` sometimes appear in (nominally) discrete    *)
+(* contexts. `HasAction` defines well-behaved renaming for some type X.       *)
+(* `Nominal` defines types that have a well-behaved support funciton.         *)
+(* `Discrete` defines types that have discrete nominal structure.             *)
+(* `equivariant` functions are (nominally) continous functions.               *)
+(* `subs` and `disj` define subset and disjontness with regard to support.    *)
+(* `alpha` defines alpha-equivalence depending on the nominal structure of a  *)
+(* type. Two elements are alpha-equivalent when they differ only by a         *)
+(* permutation                                                                *)
+(******************************************************************************)
 
-(* Should not have dependency on SSProve *)
 
 Inductive atom : Type :=
   | atomize : nat → atom.
@@ -607,3 +619,15 @@ Proof.
   rewrite 2!rename_comp renameK //.
 Qed.
 
+Lemma alpha_eq {X : actionType} {P P' : X} : P = P' → P ≡ P'.
+Proof. intros. subst. reflexivity. Qed.
+
+Lemma alpha_equi {X Y : actionType} {P P'} {f : X → Y}
+: equivariant f → P ≡ P' → f P ≡ f P'.
+Proof.
+  intros equif [π eq].
+  exists π.
+  rewrite equif.
+  f_equal.
+  apply eq.
+Qed.

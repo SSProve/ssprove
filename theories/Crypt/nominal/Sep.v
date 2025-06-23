@@ -1,17 +1,13 @@
 Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
-  fingroup.fingroup solvable.cyclic prime ssrnat ssreflect ssrfun ssrbool ssrnum
-  eqtype choice seq.
+From mathcomp Require Import all_ssreflect all_algebra
+  reals distr realsum fingroup.fingroup solvable.cyclic.
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From SSProve.Mon Require Import SPropBase.
-
-From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
-  UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_core_definition choice_type pkg_composition pkg_rhl Package Prelude.
-
 From Coq Require Import Utf8.
-From extructures Require Import ord fset fmap.
+From extructures Require Import ord fset fmap ffun fperm.
+
+From SSProve.Crypt Require Import Axioms SubDistr pkg_composition
+  Prelude Package Nominal Fresh Pr Share.
 
 From Equations Require Import Equations.
 Require Equations.Prop.DepElim.
@@ -22,11 +18,14 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
-
+(******************************************************************************)
+(* This file defines `sep_link` and `sep_par` using fresh.                    *)
+(* Algebraic equations are re-established and they are shown to be alpha-     *)
+(* congruent. The operators are given ∘ and || notation in %sep scope.        *)
+(******************************************************************************)
 
 Local Open Scope ring_scope.
 Import GroupScope GRing.Theory.
-
 
 Import Num.Def.
 Import Num.Theory.
@@ -35,10 +34,6 @@ Require Import Btauto.
 
 Import PackageNotation.
 
-From extructures Require Import ffun fperm.
-
-From SSProve.Crypt Require Import
-  Nominal Fresh Pr Share.
 
 (* sep_scope Section *)
 
@@ -49,7 +44,7 @@ Bind Scope sep_scope with package.
 Open Scope sep.
 
 
-(* nom_db *)
+(* nominal_db *)
 
 Create HintDb nominal_db.
 
@@ -87,14 +82,6 @@ Proof.
 Qed.
 
 #[export] Hint Resolve disj_rename : nominal_db.
-
-(*
-Lemma fresh_disjoint'
-  : ∀ {X Y : nomType} {x : X} {y : Y}, disj (fresh x y ∙ y) x.
-Proof. intros. rewrite disjC fresh_disjoint //. Qed.
-
-#[export] Hint Resolve fresh_disjoint fresh_disjoint' : nominal_db.
- *)
 
 Lemma supp_empty_Location : supp (emptym : Locations) = fset0.
 Proof. rewrite //= /supp //= domm0 imfset0 //. Qed.
@@ -164,19 +151,6 @@ Proof.
 Qed.
 
 #[export] Hint Resolve disj_equi2 disj_equi2' : nominal_db.
-
-Lemma equi_share_link : equivariant share_link.
-Proof.
-  apply equi2_prove => π x y.
-  apply rename_share_link.
-Qed.
-
-Lemma equi_share_par : equivariant share_par.
-Proof.
-  apply equi2_prove => π x y.
-  apply rename_share_par.
-Qed.
-
 #[export] Hint Resolve equi_share_link equi_share_par : nominal_db.
 
 Lemma subs_supp_fsetUl {X Y Z W : nomType} {x : X} {y z} {f : Y → Z → W}
@@ -198,8 +172,23 @@ Proof.
 Qed.
 
 #[export] Hint Resolve subs_supp_fsetUl subs_supp_fsetUr : nominal_db.
-
 #[export] Hint Resolve s_share_link s_share_par : nominal_db.
+
+Lemma fseparate_disj {L1 L2 : Locations}
+  : fseparate L1 L2 <-> disj L1 L2.
+Proof.
+  split.
+  - move=> [] /eqP H.
+    apply /eqP.
+    rewrite -imfsetI ?H ?imfset0 //.
+    intros ? ? ? ?; eapply can_inj, atomizeK.
+  - move=> /eqP H.
+    apply fsep.
+    apply /eqP.
+    apply (imfset_inj (can_inj atomizeK)).
+    rewrite imfsetI ?H ?imfset0 //.
+    intros ? ? ? ?; eapply can_inj, atomizeK.
+Qed.
 
 
 (* sep_link *)
@@ -214,8 +203,49 @@ Add Parametric Morphism : sep_link with
   signature alpha ==> alpha ==> alpha as sep_link_mor.
 Proof. eauto 6 with nominal_db. Qed.
 
+Lemma valid_sep_link_weak :
+  ∀ I M1 M2 E P1 P2,
+    ValidPackage (loc P1) M1 E P1 →
+    ValidPackage (loc P2) I M2 P2 →
+    fcompat (loc P1) (loc P2) →
+    fsubmap M1 M2 →
+    ValidPackage (loc (P1 ∘ P2)%sep) I E (P1 ∘ P2)%sep.
+Proof. intros.
+  eapply valid_link_weak.
+  1,4: eassumption.
+  1: unfold move; by apply rename_valid.
+  apply fseparate_compat.
+  rewrite fseparate_disj //=.
+  rewrite -fresh_supp_l -fresh_supp_r /supp.
+  rewrite //= fresh_supp_l fresh_supp_r.
+  auto with nominal_db.
+Qed.
+
+#[export] Hint Extern 1 (ValidPackage ?L ?I ?E (val (sep_link ?p1 ?p2))) =>
+  package_evar ; [ eapply valid_sep_link_weak | .. ]
+  : typeclass_instances ssprove_valid_db.
+
+Lemma share_link_sep_link {P P' : nom_package} :
+  disj P P' →
+  (P ∘ P')%share ≡ (P ∘ P').
+Proof.
+  intros D.
+  unfold sep_link, move.
+  auto with nominal_db nocore.
+Qed.
+
+Lemma link_sep_link {P P' : nom_package} :
+  disj P P' →
+  (P ∘ P')%pack ≡ val (P ∘ P').
+Proof.
+  intros D.
+  change (link P P') with (val (share_link P P')).
+  apply alpha_equi; [ done |].
+  apply share_link_sep_link, D.
+Qed.
+
 Lemma sep_link_id {L I E} (P : nom_package) :
-  ValidPackage L I E P → P ∘ (ID I) ≡ P.
+  ValidPackage L I E P → P ∘ ID I ≡ P.
 Proof.
   intros V.
   rewrite /sep_link /move -{3}(@share_link_id _ _ _ _ V).
@@ -232,7 +262,7 @@ Qed.
 Lemma sep_link_assoc (p1 p2 p3 : nom_package)
   : p1 ∘ p2 ∘ p3 ≡ (p1 ∘ p2) ∘ p3.
 Proof.
-  rewrite /sep_link /move rename_share_link share_link_assoc.
+  rewrite /sep_link /move (equi2_use _ equi_share_link) share_link_assoc.
   eauto 20 with nominal_db nocore.
 Qed.
 
@@ -253,20 +283,44 @@ Proof.
   auto with nominal_db nocore.
 Qed.
 
-Lemma fseparate_disj {L1 L2 : Locations}
-  : fseparate L1 L2 <-> disj L1 L2.
+Lemma valid_sep_par {I1 I2 E1 E2} {p1 p2 : nom_package} :
+  ValidPackage (loc p1) I1 E1 p1 →
+  ValidPackage (loc p2) I2 E2 p2 →
+  fseparate E1 E2 →
+  fcompat I1 I2 →
+  ValidPackage (loc (p1 || p2)%sep)
+    (unionm I1 I2) (unionm E1 E2) (p1 || p2)%sep.
 Proof.
-  split.
-  - move=> [] /eqP H.
-    apply /eqP.
-    rewrite -imfsetI ?H ?imfset0 //.
-    intros ? ? ? ?; eapply can_inj, atomizeK.
-  - move=> /eqP H.
-    apply fsep.
-    apply /eqP.
-    apply (imfset_inj (can_inj atomizeK)).
-    rewrite imfsetI ?H ?imfset0 //.
-    intros ? ? ? ?; eapply can_inj, atomizeK.
+  intros. unfold sep_par. apply valid_par; try done.
+  1: unfold move; by apply rename_valid.
+  apply fseparate_compat.
+  rewrite fseparate_disj //=.
+  rewrite -fresh_supp_l -fresh_supp_r /supp.
+  rewrite //= fresh_supp_l fresh_supp_r.
+  auto with nominal_db.
+Qed.
+
+#[export] Hint Extern 1 (ValidPackage ?L ?I ?E (val (sep_par ?p1 ?p2))) =>
+  package_evar ; [ eapply valid_sep_par | .. ]
+  : typeclass_instances ssprove_valid_db.
+
+Lemma share_par_sep_par {P P' : nom_package} :
+  disj P P' →
+  (P || P')%share ≡ (P || P').
+Proof.
+  intros D.
+  unfold sep_par, move.
+  auto with nominal_db nocore.
+Qed.
+
+Lemma par_sep_par {P P' : nom_package} :
+  disj P P' →
+  (par P P' : raw_package) ≡ val (P || P').
+Proof.
+  intros D.
+  change (par P P') with (val (share_par P P')).
+  apply alpha_equi; [ done |].
+  apply share_par_sep_par, D.
 Qed.
 
 Lemma disj_loc_fcompat {p1 p2} :
@@ -297,7 +351,6 @@ Proof.
 Qed.
 
 #[export] Hint Resolve rename_val_fseparate rename_val_fseparate' : nominal_db.
-
 #[export] Hint Resolve fseparate_compat : nominal_db.
 
 Lemma sep_par_commut (p1 p2 : nom_package)
@@ -311,7 +364,7 @@ Qed.
 Lemma sep_par_assoc {P1 P2 P3 : nom_package}
   : (P1 || (P2 || P3)) ≡ ((P1 || P2) || P3).
 Proof.
-  rewrite /sep_par /move rename_share_par share_par_assoc.
+  rewrite /sep_par /move (equi2_use _ equi_share_par) share_par_assoc.
   auto with nominal_db nocore.
 Qed.
 
@@ -319,10 +372,93 @@ Lemma sep_interchange {A B C D E F} {L1 L2 L3 L4} (p1 p2 p3 p4 : nom_package) :
   ValidPackage L1 B A p1 → ValidPackage L2 E D p2 →
   ValidPackage L3 C B p3 → ValidPackage L4 F E p4 →
   fseparate (val p3) (val p4) →
-  (p1 ∘ p3) || (p2 ∘ p4) ≡ (p1 || p2) ∘  (p3 || p4).
+  (p1 ∘ p3) || (p2 ∘ p4) ≡ (p1 || p2) ∘ (p3 || p4).
 Proof.
   intros V1 V2 V3 V4 P34.
   rewrite /sep_par /sep_link /move
-    rename_share_par rename_share_link share_interchange.
+    (equi2_use _ equi_share_par) (equi2_use _ equi_share_link) share_interchange.
   all: auto 10 with nominal_db nocore.
+Qed.
+
+
+(* Extra theorems about sep_link and sep_par *)
+
+Lemma id_sep_par {I I' : Interface}
+  : ID I || ID I' ≡ ID (unionm I I').
+Proof.
+  rewrite <- share_par_sep_par by auto with nominal_db.
+  apply alpha_eq.
+  apply eq_nom_package; [ done |].
+  simpl. unfold par.
+  apply eq_fmap => n.
+  rewrite /ID_raw unionmE 3!mapimE unionmE.
+  destruct (I n); destruct (I' n) => //=.
+Qed.
+
+Lemma sep_par_factor_l
+  {L L' : Locations} {I I' E E' : Interface} {P P' : nom_package} :
+  ValidPackage L I E P → ValidPackage L' I' E' P' →
+  fseparate I (val P') →
+  (P || P') ≡ (P || ID E') ∘ (ID I || P').
+Proof.
+  intros V1 V2 H.
+  erewrite <- sep_interchange.
+  all: try ssprove_valid.
+  rewrite id_sep_link //.
+  rewrite sep_link_id //.
+  setoid_reflexivity.
+Qed.
+
+Lemma sep_par_factor_r {L L' I I' E E'} {P P' : nom_package} :
+  ValidPackage L I E P → ValidPackage L' I' E' P' →
+  fseparate (val P) I' →
+  (P || P') ≡ (ID E || P') ∘ (P || ID I').
+Proof.
+  intros V1 V2 H.
+  erewrite <- sep_interchange.
+  all: try ssprove_valid.
+  rewrite id_sep_link //.
+  rewrite sep_link_id //.
+  reflexivity.
+Qed.
+
+Lemma sep_par_empty_l {P} : (ID (Game_import) || P) ≡ P.
+Proof.
+  rewrite <- share_par_sep_par.
+  2: auto with nominal_db.
+  apply alpha_eq.
+  by apply eq_nom_package.
+Qed.
+
+Lemma sep_par_empty_r {P} : (P || ID (Game_import)) ≡ P.
+Proof.
+  rewrite -> sep_par_commut.
+  - apply sep_par_empty_l.
+  - fmap_solve.
+Qed.
+
+Lemma sep_par_game_l {LP LQ LR EP EQ ER IQ} {P Q R : nom_package}
+  {VP : ValidPackage LP EQ EP P}
+  {VQ : ValidPackage LQ IQ EQ Q}
+  {VR : ValidPackage LR Game_import ER R} :
+  ((P ∘ Q) || R) ≡ (P || R) ∘ Q.
+Proof.
+  rewrite -{2}(@sep_par_empty_r Q).
+  erewrite <- sep_interchange.
+  2-6: ssprove_valid.
+  rewrite sep_link_id.
+  reflexivity.
+Qed.
+
+Lemma sep_par_game_r {LP LQ LR EP EQ ER IQ} {P Q R : nom_package}
+  {VP : ValidPackage LP EQ EP P}
+  {VQ : ValidPackage LQ IQ EQ Q}
+  {VR : ValidPackage LR Game_import ER R} :
+  (R || (P ∘ Q)) ≡ (R || P) ∘ Q.
+Proof.
+  rewrite -{2}(@sep_par_empty_l Q).
+  erewrite <- sep_interchange.
+  2-6: ssprove_valid.
+  rewrite sep_link_id.
+  reflexivity.
 Qed.

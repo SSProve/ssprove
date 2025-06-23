@@ -105,7 +105,7 @@ Definition RED :
   package (I_LDDH G) (I_CPA elgamal) :=
   [package [fmap count_loc ; mpk_loc elgamal ] ;
     [ GEN ] : { 'unit ~> 'el G } 'tt {
-      pk ← (#import [ GETA ] : { 'unit ~> 'el G } tt) ;;
+      pk ← call [ GETA ] : { 'unit ~> 'el G } tt ;;
       #put mpk_loc elgamal := Some pk ;;
       ret pk
     } ;
@@ -114,7 +114,7 @@ Definition RED :
       #assert (c < 1) ;;
       #put count_loc := c.+1;;
       _ ← getSome mpk_loc elgamal ;;
-      '(r, sh) ← (#import [ GETBC ] : { 'unit ~> 'el G × 'el G } tt) ;;
+      '(r, sh) ← call [ GETBC ] : { 'unit ~> 'el G × 'el G } tt ;;
       @ret ('el G × 'el G) (r, m * sh)%pack
     }
   ].
