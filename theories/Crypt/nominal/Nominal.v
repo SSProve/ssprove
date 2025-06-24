@@ -18,6 +18,9 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
+(* Supress warnings due to use of HB *)
+Set Warnings "-redundant-canonical-projection,-projection-no-head-constant".
+
 (******************************************************************************)
 (* This file provides basic definitions for working with nominal sets.        *)
 (* `atom` defines the type of atoms by wrapping natural numbers. We avoid     *)
@@ -114,12 +117,8 @@ HB.instance Definition _ {X : actionOrdType} : HasAction {fset X}
 Program Definition option_HasAction {X}
   : HasAction (option X)
   := HasAction.Build _ (λ π, omap (rename π))  _ _.
-Obligation 1.
-  destruct x; rewrite //= rename_id //.
-Qed.
-Obligation 2.
-  destruct x; rewrite //= rename_comp //.
-Qed.
+Obligation 1. destruct x; rewrite //= rename_id //. Qed.
+Obligation 2. destruct x; rewrite //= rename_comp //. Qed.
 
 HB.instance Definition _ {X} : HasAction (option X)
   := option_HasAction.

@@ -436,7 +436,8 @@ Proof.
 Qed.
   
 
-Definition move {X Y : nomType} (x : X) (y : Y) : Y := nosimpl (fresh x y ∙ y).
+Definition move {X Y : nomType} (x : X) (y : Y) : Y := fresh x y ∙ y.
+Arguments move : simpl never.
 
 Lemma move_equi {X Y Z : nomType} {f : Y → Z} {x : X} {y : Y}
   : equivariant f → move x (f y) = f (move x y).

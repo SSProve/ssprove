@@ -19,6 +19,9 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
+(* Supress warnings due to use of HB *)
+Set Warnings "-redundant-canonical-projection,-projection-no-head-constant".
+
 (******************************************************************************)
 (* This file defines `nom_package`, `share_link` and `share_par` and proves   *)
 (* their properties. `nom_package` is a `raw_package` together with a set of  *)

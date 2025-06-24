@@ -13,6 +13,9 @@ From SSProve.Crypt Require Import Axioms SubDistr pkg_composition
 
 From HB Require Import structures.
 
+(* Supress warnings due to use of HB *)
+Set Warnings "-redundant-canonical-projection,-projection-no-head-constant".
+
 (******************************************************************************)
 (* This file shows that renaming is equivariant in the semantics of SSProve.  *)
 (* This means that code may be freely replaced with alpha-equivalent code.    *)
