@@ -264,47 +264,44 @@ Lemma valid_par :
   ∀ L1 L2 I1 I2 E1 E2 p1 p2,
     ValidPackage L1 I1 E1 p1 →
     ValidPackage L2 I2 E2 p2 →
-    fseparate E1 E2 →
     fcompat L1 L2 →
     fcompat I1 I2 →
     ValidPackage (unionm L1 L2) (unionm I1 I2) (unionm E1 E2) (par p1 p2).
 Proof.
-  intros L1 L2 I1 I2 E1 E2 p1 p2 hv1 hv2 [H1] H2 H3.
-  assert (H4 : domm p1 :#: domm p2).
-  1: rewrite -(valid_domm hv1) -(valid_domm hv2) //.
-  move: hv1 hv2 => [he1 hi1] [he2 hi2].
+  intros L1 L2 I1 I2 E1 E2 p1 p2 hv1 hv2 H1 H2.
   split; [ split |].
   - move: o => [n ST] h.
     apply fhas_union in h.
     destruct h.
-    + rewrite he1 in H.
+    + rewrite hv1.(valid_exports) in H.
       destruct H as [f H].
       exists f.
       by apply fhas_union_l.
-    + rewrite he2 in H.
-      destruct H as [f H].
+    + rewrite hv2.(valid_exports) in H.
+      destruct H as [H' [f H]].
+      rewrite valid_domm in H'.
       exists f.
-      rewrite /par unionmC //.
-      by apply fhas_union_l.
-  - move: o => [n ST] h.
-    destruct h as [f H].
+      by apply fhas_union_r.
+  - move: o => [n ST] [f H].
     apply fhas_union in H.
     destruct H.
     + apply fhas_union_l.
-      rewrite he1.
+      rewrite hv1.(valid_exports).
       by exists f.
-    + rewrite /par unionmC //.
-      apply fhas_union_l.
-      rewrite he2.
+    + destruct H as [H' H].
+      rewrite -valid_domm in H'.
+      apply fhas_union_r => //.
+      rewrite hv2.(valid_exports).
       by exists f.
   - intros n F x h.
     apply fhas_union in h.
     destruct h.
-    + eapply hi1 in H.
+    + eapply hv1.(valid_imports) in H.
       eapply valid_injectLocations. 1: by apply fsubmapUl.
       eapply valid_injectMap. 1: by apply fsubmapUl.
       apply H.
-    + eapply hi2 in H.
+    + destruct H as [H' H].
+      eapply hv2.(valid_imports) in H.
       eapply valid_injectLocations. 1: by apply fsubmapUr.
       eapply valid_injectMap. 1: by apply fsubmapUr.
       apply H.

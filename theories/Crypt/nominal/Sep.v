@@ -286,7 +286,6 @@ Qed.
 Lemma valid_sep_par {I1 I2 E1 E2} {p1 p2 : nom_package} :
   ValidPackage (loc p1) I1 E1 p1 →
   ValidPackage (loc p2) I2 E2 p2 →
-  fseparate E1 E2 →
   fcompat I1 I2 →
   ValidPackage (loc (p1 || p2)%sep)
     (unionm I1 I2) (unionm E1 E2) (p1 || p2)%sep.

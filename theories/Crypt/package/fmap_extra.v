@@ -175,10 +175,13 @@ Proof.
 Qed.
 
 Lemma fhas_union {S : ordType} {T} m m' (k : S) (v : T)
-  : fhas (unionm m m') (k, v) → fhas m (k, v) ∨ fhas m' (k, v).
+  : fhas (unionm m m') (k, v)
+  → fhas m (k, v) ∨ (k \notin domm m ∧ fhas m' (k, v)).
 Proof.
   rewrite /fhas unionmE.
-  destruct (m k) => //=; auto.
+  destruct (m k) eqn:E => //=; auto.
+  intros H; right; split; try done.
+  by apply /dommPn.
 Qed.
 
 Lemma fhas_union_l {S : ordType} {T} m m' (k : S) (v : T)
@@ -186,6 +189,13 @@ Lemma fhas_union_l {S : ordType} {T} m m' (k : S) (v : T)
 Proof.
   rewrite /fhas unionmE.
   destruct (m k) => //=; auto.
+Qed.
+
+Lemma fhas_union_r {S : ordType} {T} m m' (k : S) (v : T)
+  : k \notin domm m → fhas m' (k, v) → fhas (unionm m m') (k, v).
+Proof.
+  move=> /dommPn H1 H2.
+  rewrite /fhas unionmE H1 //.
 Qed.
 
 

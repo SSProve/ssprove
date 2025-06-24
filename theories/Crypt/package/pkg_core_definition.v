@@ -602,6 +602,9 @@ Record valid_package L (I E : Interface) (p : raw_package) :=
       fhas p (n, F) → ValidCode L I (F.π2.π2 x)
   }.
 
+Arguments valid_exports {_ _ _ _}.
+Arguments valid_imports {_ _ _ _}.
+
 Class ValidPackage (L : Locations) (I E : Interface) p :=
   is_valid_package : valid_package L I E p.
 
