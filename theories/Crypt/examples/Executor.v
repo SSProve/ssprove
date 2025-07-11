@@ -1,6 +1,6 @@
 From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
-From Stdlib Require Import ZArith.
+From Coq Require Import ZArith.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
@@ -12,7 +12,7 @@ From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   pkg_core_definition choice_type pkg_composition pkg_rhl
   Package Prelude RandomOracle.
 
-From Stdlib Require Import Utf8.
+From Coq Require Import Utf8.
 From extructures Require Import ord fset fmap.
 
 (* From Jasmin Require Import word. *)

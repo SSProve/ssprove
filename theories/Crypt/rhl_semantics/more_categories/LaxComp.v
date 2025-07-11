@@ -1,4 +1,4 @@
-From Stdlib Require Import ssreflect.
+From Coq Require Import ssreflect.
 From SSProve.Mon Require Import SPropBase.
 From SSProve.Relational Require Import OrderEnrichedCategory.
 

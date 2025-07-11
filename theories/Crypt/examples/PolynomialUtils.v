@@ -52,7 +52,7 @@ Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
   ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
 
-From Stdlib Require Bool.
+From Coq Require Bool.
 Set Warnings "notation-overridden,ambiguous-paths".
 
 Set Bullet Behavior "Strict Subproofs".

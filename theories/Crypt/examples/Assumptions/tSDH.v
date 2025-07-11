@@ -16,7 +16,7 @@ From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
   Package Prelude pkg_composition.
 
-From Stdlib Require Import Utf8 Lia.
+From Coq Require Import Utf8 Lia.
 From extructures Require Import ord fset fmap.
 
 From Equations Require Import Equations.
@@ -45,10 +45,6 @@ Module Type GroupParam.
   Parameter g :  gT.
   Parameter g_gen : ζ = <[g]>.
   Parameter prime_order : prime #[g].
-  Parameter positive_order : Positive #[g].
-  Parameter order_gr_two : (#[g] > 2)%N.
-
-  Parameter t : nat.
 
 End GroupParam.
 
@@ -57,10 +53,14 @@ Module tSDH (GP : GroupParam).
 
   Import GP.
 
+  Parameter t : nat.
+
   Definition set_up := 0%N.
   Definition guess := 1%N.
 
+
   Definition GroupSpace : finType := gT.
+
   #[local] Instance GroupSpace_pos : Positive #|GroupSpace|.
   Proof.
     apply /card_gt0P; by exists g.
@@ -68,7 +68,14 @@ Module tSDH (GP : GroupParam).
 
   #[local] Instance order_pos : Positive #[g].
   Proof.
-    by rewrite /Positive.
+    move : prime_order => /prime_gt1 Hprime.
+    unfold Positive. auto.
+  Qed.
+
+  Definition gt_than_1 : (#[g] > 1)%N.
+  Proof.
+    move : prime_order => /prime_gt1 Hprime.
+    unfold Positive. auto.
   Qed.
 
   Definition chGroup : choice_type := 'fin #|GroupSpace|.
@@ -85,7 +92,7 @@ Module tSDH (GP : GroupParam).
     unfold order_g_ring. unfold Zp_trunc.
     move: prime_order => H.
     apply pdiv_id in H. rewrite H.
-    move: order_gr_two => Hg.
+    move: gt_than_1 => Hg.
     destruct #[g]; try discriminate.
     destruct n; try discriminate.
     simpl. reflexivity.
@@ -104,7 +111,7 @@ Module tSDH (GP : GroupParam).
   @Ordinal _ (a %% #[g]) _.
   Next Obligation.
     rewrite eq_order_g_ring. rewrite ltn_mod. 
-    move : order_gr_two => order_gr_two. auto.
+    move : gt_than_1 => gt_than_1. auto.
     Qed.
 
   Definition inv_sum (c a : chExp) : nat :=

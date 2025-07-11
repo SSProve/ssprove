@@ -1,6 +1,6 @@
-From Stdlib Require Import ssreflect ssrfun.
+From Coq Require Import ssreflect ssrfun.
 From SSProve.Mon Require Export Base.
-From Stdlib.Classes Require Import RelationClasses Morphisms.
+From Coq.Classes Require Import RelationClasses Morphisms.
 From SSProve.Relational Require Import Category.
 
 Set Primitive Projections.

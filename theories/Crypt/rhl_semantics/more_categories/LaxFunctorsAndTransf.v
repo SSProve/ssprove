@@ -1,4 +1,4 @@
-From Stdlib Require Import Morphisms.
+From Coq Require Import Morphisms.
 From SSProve.Relational Require Import OrderEnrichedCategory.
 From SSProve.Mon Require Import SPropBase.
 Set Warnings "-notation-overridden".

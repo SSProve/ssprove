@@ -1,4 +1,4 @@
-From Stdlib Require Import ssreflect List.
+From Coq Require Import ssreflect List.
 From SSProve.Mon Require Export Base.
 From SSProve.Mon Require Import SPropBase SPropMonadicStructures Monoid.
 

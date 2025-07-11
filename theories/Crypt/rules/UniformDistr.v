@@ -1,4 +1,4 @@
-From Stdlib Require Import RelationClasses Morphisms.
+From Coq Require Import RelationClasses Morphisms.
 
 From SSProve.Mon Require Import
      FiniteProbabilities

@@ -1,4 +1,4 @@
-From Stdlib Require Import Utf8.
+From Coq Require Import Utf8.
 
 From mathcomp Require Import ssreflect eqtype choice seq ssrfun ssrbool.
 

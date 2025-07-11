@@ -1,7 +1,7 @@
-From Stdlib Require Import ssreflect ssrfun ssrbool.
-From Stdlib Require FunctionalExtensionality.
+From Coq Require Import ssreflect ssrfun ssrbool.
+From Coq Require FunctionalExtensionality.
 From SSProve.Mon Require Export Base.
-From Stdlib Require Import Relation_Definitions Morphisms.
+From Coq Require Import Relation_Definitions Morphisms.
 From SSProve.Mon Require Import SPropBase.
 From SSProve.Relational Require Import Category RelativeMonads EnrichedSetting.
 

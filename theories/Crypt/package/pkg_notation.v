@@ -93,7 +93,7 @@
 **)
 
 
-From Stdlib Require Import Utf8 Lia.
+From Coq Require Import Utf8 Lia.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice seq.

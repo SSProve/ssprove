@@ -6,7 +6,7 @@
  *)
 
 
-From Stdlib Require Import Utf8.
+From Coq Require Import Utf8.
 
 (* !!! Import before mathcomp, to avoid overriding instances !!! *)
 (* specifically, importing after mathcomp results in conflicting instances for

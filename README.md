@@ -695,7 +695,7 @@ R : realType
 ```
 One could plug in any real number construction: Cauchy, Dedekind, ...
 In `mathcomp`s ` Rstruct.v` an instance is built from any instance of the
-abstract `stdlib` reals.  An instance of the latter is built from the
+abstract `Coq` reals.  An instance of the latter is built from the
 (constructive) Cauchy reals in `Coq.Reals.ClassicalConstructiveReals`.
 
 Finally, by using `mathcomp-analysis` we also inherit an admitted lemma they have:

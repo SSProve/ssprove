@@ -6,17 +6,17 @@
 
 From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
-Set Warnings "-notation-overridden,-ambiguous-paths,-notation-incompatible-format".
 From mathcomp Require Import all_ssreflect all_algebra reals distr
   fingroup.fingroup realsum ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice
   seq.
+
 Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-format".
 
 From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
   Package Prelude pkg_composition.
 
-From Stdlib Require Import Utf8 Lia.
+From Coq Require Import Utf8 Lia.
 From extructures Require Import ord fset fmap.
 
 From Equations Require Import Equations.
@@ -34,8 +34,9 @@ Import Order.POrderTheory.
 
 Import PackageNotation.
 
-#[local] Open Scope ring_scope.
 #[local] Open Scope package_scope.
+#[local] Open Scope group_scope.
+
 Import GroupScope GRing.Theory.
 
 Module Type GroupParam.
@@ -76,8 +77,9 @@ Module DL (DLP : DLParams) (GP : GroupParam).
   Definition chElem : choice_type := 'fin #|Space|.
 
   Notation " 'group " := (chGroup) (in custom pack_type at level 2).
+  Notation " 'elem " := (chElem) (in custom pack_type at level 2).
 
-  Definition secret_loc : Location := (33, chElem).
+  Definition secret_loc : Location := (33, ('option chElem)).
 
   Definition DL_loc : Locations := [ fmap secret_loc ].
 
@@ -93,14 +95,17 @@ Module DL (DLP : DLParams) (GP : GroupParam).
         #def #[ set_up ] (_ : 'unit) : 'group
         {
             a ← sample uniform i_space ;;
-            #put secret_loc := a ;;
-            ret (fto (g^+ a))
+            #put secret_loc := Some a ;;
+            ret (fto (g ^+ a))
         } ;
 
         #def #[ guess ] (y: 'group) : 'bool
         {
-            x ← get secret_loc ;;
-            ret(fto (g^+x) == y)
+            o_x ← get secret_loc ;;
+            match o_x with 
+            | Some x => ret(fto (g^+x) == y)
+            | _ => ret false
+            end
         }
       ].
 
@@ -110,12 +115,12 @@ Module DL (DLP : DLParams) (GP : GroupParam).
         #def #[ set_up ] (_ : 'unit) : 'group
         {
             a ← sample uniform i_space ;;
-            #put secret_loc := a ;;
-            ret (fto (g^+ a))
+            #put secret_loc := Some a ;;
+            ret (fto (g ^+ a))
         } ;
         #def #[ guess ] (y: 'group) : 'bool
         {
-            ret(false)
+            ret false
         }
       ].
 

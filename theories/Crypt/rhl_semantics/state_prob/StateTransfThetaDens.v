@@ -1,4 +1,4 @@
-From Stdlib Require Import RelationClasses.
+From Coq Require Import RelationClasses.
 From SSProve.Mon Require Import SPropBase.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect.
