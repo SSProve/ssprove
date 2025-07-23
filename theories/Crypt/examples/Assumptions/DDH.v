@@ -1,3 +1,10 @@
+(******************************************************************************)
+(*             Decisional Diffie-Hellman Assumption (DDH)                     *)
+(*                                                                            *)
+(*  Used in the formalization of El Gamal (ElGamal.v). For more details, see  *)
+(*  the ./README.md.                                                          *)
+(******************************************************************************)
+
 From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
 Set Warnings "-notation-overridden,-ambiguous-paths,-notation-incompatible-format".

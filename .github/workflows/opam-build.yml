@@ -48,6 +48,7 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      - run: sudo apt-get update
       - name: Try to restore opam cache
         id: opam-cache
         uses: actions/cache@v4
