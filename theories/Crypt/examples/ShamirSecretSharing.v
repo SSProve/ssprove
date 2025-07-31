@@ -112,10 +112,8 @@ Notation " 'share " := (Share) (at level 2): package_scope.
 (* We can't use sequences directly in [choice_type] so instead we use a map   *)
 (* from natural numbers to the type.                                          *)
 
-Definition chSeq t := chMap 'nat t.
-
-Notation " 'seq t " := (chSeq t) (in custom pack_type at level 2).
-Notation " 'seq t " := (chSeq t) (at level 2): package_scope.
+Notation " 'seq A " := (chList A) (in custom pack_type at level 2).
+Notation " 'seq A " := (chList A) (at level 2): package_scope.
 
 (* We can't use sets directly in [choice_type] so instead we use a map to     *)
 (* units. We can then use [domm] to get the domain, which is a set.           *)
@@ -433,12 +431,12 @@ Definition SHARE_pkg_tt:
     [interface #val #[shares]: ('word × 'word) × 'set 'party → 'seq 'share ] :=
   [package emptym ;
     #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'party): 'seq 'share {
-      if size (domm U) >= t then ret emptym
+      if size (domm U) >= t then ret [::]
       else
       q <$ uniform (p ^ t') ;;
       let q := nat_to_poly t' q in
       let sh := make_shares ml q (domm U) in
-      ret (fmap_of_seq sh)
+      ret sh
     }
   ].
 
@@ -447,12 +445,12 @@ Definition SHARE_pkg_ff:
     [interface #val #[shares]: ('word × 'word) × 'set 'party → 'seq 'share ] :=
   [package emptym ;
     #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'party): 'seq 'share {
-      if size (domm U) >= t then ret emptym
+      if size (domm U) >= t then ret [::]
       else
       q <$ uniform (p ^ t') ;;
       let q := nat_to_poly t' q in
       let sh := make_shares mr q (domm U) in
-      ret (fmap_of_seq sh)
+      ret sh
     }
   ].
 
