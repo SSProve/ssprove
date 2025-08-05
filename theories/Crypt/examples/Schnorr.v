@@ -26,7 +26,8 @@ Set Default Goal Selector "!".
 Set Primitive Projections.
 
 Local Open Scope ring_scope.
-Import GroupScope GRing.Theory.
+Local Open Scope group_scope.
+Import GRing.Theory.
 
 Import Num.Def.
 Import Num.Theory.
@@ -142,7 +143,7 @@ Module MyAlg <: SigmaProtocolAlgorithms MyParam.
   Definition Extractor (h : choiceStatement) (a : choiceMessage)
     (e : choiceChallenge) (e' : choiceChallenge)
     (z : choiceResponse)  (z' : choiceResponse) : 'option choiceWitness :=
-    Some (fto ((otf z - otf z') / (otf e - otf e'))).
+    Some (fto ((otf z - otf z') / (otf e - otf e'))%R).
 
   Definition KeyGen (w : choiceWitness) := fto (g ^+ w).
 

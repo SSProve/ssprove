@@ -87,12 +87,16 @@ theories/Crypt/nominal/Sep.v
 theories/Crypt/nominal/Adv.v
 theories/Crypt/nominal/NominalPrelude.v
 
+# Examples of assumptions
+theories/Crypt/examples/Assumptions/DDH.v
+theories/Crypt/examples/Assumptions/DL.v
+theories/Crypt/examples/Assumptions/tSDH.v
+
 # Examples
 theories/Crypt/examples/package_usage_example.v
 theories/Crypt/examples/interpreter_test.v
 theories/Crypt/examples/concrete_groups.v
 theories/Crypt/examples/PRF.v
-theories/Crypt/examples/DDH.v
 theories/Crypt/examples/OTP.v
 theories/Crypt/examples/KEMDEM.v
 theories/Crypt/examples/RandomOracle.v
