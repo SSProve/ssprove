@@ -264,47 +264,44 @@ Lemma valid_par :
   ∀ L1 L2 I1 I2 E1 E2 p1 p2,
     ValidPackage L1 I1 E1 p1 →
     ValidPackage L2 I2 E2 p2 →
-    fseparate E1 E2 →
     fcompat L1 L2 →
     fcompat I1 I2 →
     ValidPackage (unionm L1 L2) (unionm I1 I2) (unionm E1 E2) (par p1 p2).
 Proof.
-  intros L1 L2 I1 I2 E1 E2 p1 p2 hv1 hv2 [H1] H2 H3.
-  assert (H4 : domm p1 :#: domm p2).
-  1: rewrite -(valid_domm hv1) -(valid_domm hv2) //.
-  move: hv1 hv2 => [he1 hi1] [he2 hi2].
+  intros L1 L2 I1 I2 E1 E2 p1 p2 hv1 hv2 H1 H2.
   split; [ split |].
   - move: o => [n ST] h.
     apply fhas_union in h.
     destruct h.
-    + rewrite he1 in H.
+    + rewrite hv1.(valid_exports) in H.
       destruct H as [f H].
       exists f.
       by apply fhas_union_l.
-    + rewrite he2 in H.
-      destruct H as [f H].
+    + rewrite hv2.(valid_exports) in H.
+      destruct H as [H' [f H]].
+      rewrite valid_domm in H'.
       exists f.
-      rewrite /par unionmC //.
-      by apply fhas_union_l.
-  - move: o => [n ST] h.
-    destruct h as [f H].
+      by apply fhas_union_r.
+  - move: o => [n ST] [f H].
     apply fhas_union in H.
     destruct H.
     + apply fhas_union_l.
-      rewrite he1.
+      rewrite hv1.(valid_exports).
       by exists f.
-    + rewrite /par unionmC //.
-      apply fhas_union_l.
-      rewrite he2.
+    + destruct H as [H' H].
+      rewrite -valid_domm in H'.
+      apply fhas_union_r => //.
+      rewrite hv2.(valid_exports).
       by exists f.
   - intros n F x h.
     apply fhas_union in h.
     destruct h.
-    + eapply hi1 in H.
+    + eapply hv1.(valid_imports) in H.
       eapply valid_injectLocations. 1: by apply fsubmapUl.
       eapply valid_injectMap. 1: by apply fsubmapUl.
       apply H.
-    + eapply hi2 in H.
+    + destruct H as [H' H].
+      eapply hv2.(valid_imports) in H.
       eapply valid_injectLocations. 1: by apply fsubmapUr.
       eapply valid_injectMap. 1: by apply fsubmapUr.
       apply H.
@@ -504,32 +501,12 @@ Definition mkdef (A B : choice_type) (f : A → raw_code B)
   : typed_raw_function :=
   (A ; B ; f).
 
-Definition ID (I : Interface) : raw_package :=
+Definition ID_raw (I : Interface) : raw_package :=
   mapim (λ n '(s, t), mkdef s t (λ x, opr (n, (s, t)) x (λ y, ret y))) I.
-
-Lemma resolve_ID :
-  ∀ (I : Interface) o,
-    fhas I o →
-    resolve (ID I) o = λ x, opr o x (λ y, ret y).
-Proof.
-  intros I [n [S T]] E.
-  rewrite /resolve mapimE E //=.
-  extensionality y. rewrite coerce_kleisliE //.
-Qed.
-
-Lemma resolve_ID_set I id TS o :
-  resolve (ID (setm I id TS)) o =
-    (if o.1 == id then coerce_kleisli (λ x, opr (o.1, TS) x (λ y, ret y)) else resolve (ID I) o).
-Proof.
-  rewrite /resolve 2!mapimE setmE.
-  extensionality x.
-  destruct (o.1 == id) eqn:e; rewrite e //.
-  destruct TS as [S T] => //.
-Qed.
 
 Lemma valid_ID :
   ∀ I,
-    ValidPackage emptym I I (ID I).
+    ValidPackage emptym I I (ID_raw I).
 Proof.
   intros I.
   split; [ split |].
@@ -558,6 +535,29 @@ Proof.
     simpl in H.
     destruct p as [S' T'].
     injection H => {}H ? ?. by subst.
+Qed.
+
+Definition ID (I : Interface) : package I I
+  := mkpackage emptym (ID_raw I) (valid_ID I).
+
+Lemma resolve_ID :
+  ∀ (I : Interface) o,
+    fhas I o →
+    resolve (ID I) o = λ x, opr o x (λ y, ret y).
+Proof.
+  intros I [n [S T]] E.
+  rewrite /resolve mapimE E //=.
+  extensionality y. rewrite coerce_kleisliE //.
+Qed.
+
+Lemma resolve_ID_set I id TS o :
+  resolve (ID (setm I id TS)) o =
+    (if o.1 == id then coerce_kleisli (λ x, opr (o.1, TS) x (λ y, ret y)) else resolve (ID I) o).
+Proof.
+  rewrite /resolve 2!mapimE setmE.
+  extensionality x.
+  destruct (o.1 == id) eqn:e; rewrite e //.
+  destruct TS as [S T] => //.
 Qed.
 
 #[export] Hint Extern 2 (ValidPackage ?L ?I ?E (ID ?I')) =>
@@ -624,10 +624,4 @@ Lemma code_link_if :
 Proof.
   intros A c₀ c₁ p b.
   destruct b. all: reflexivity.
-Qed.
-
-Lemma domm_ID :
-  ∀ I, domm (ID I) = domm I.
-Proof.
-  intros I. rewrite domm_mapi //.
 Qed.

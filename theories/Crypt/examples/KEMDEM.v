@@ -531,10 +531,10 @@ Section KEMDEM.
       let K₁ := (par CK₁ (ID IGET)) ∘ KEY in
       let D₀ := (par (ID IGEN) CD₀) ∘ KEY in
       let D₁ := (par (ID IGEN) CD₁) ∘ KEY in
-      fseparate CK₀ (ID IGET) →
-      fseparate CK₁ (ID IGET) →
-      fseparate (ID IGEN) CD₀ →
-      fseparate (ID IGEN) CD₁ →
+      fseparate CK₀ IGET →
+      fseparate CK₁ IGET →
+      fseparate IGEN CD₀ →
+      fseparate IGEN CD₁ →
       ValidPackage LD₀ IGET ED CD₀ →
       ValidPackage LD₀ IGET ED CD₁ →
       ValidPackage LK₀ ISET EK CK₀ →
@@ -599,10 +599,10 @@ Section KEMDEM.
       let K₁ := (par CK₁ (ID IGET)) ∘ KEY in
       let D₀ := (par (ID IGEN) CD₀) ∘ KEY in
       let D₁ := (par (ID IGEN) CD₁) ∘ KEY in
-      fseparate CK₀ (ID IGET) →
-      fseparate CK₁ (ID IGET) →
-      fseparate (ID IGEN) CD₀ →
-      fseparate (ID IGEN) CD₁ →
+      fseparate CK₀ IGET →
+      fseparate CK₁ IGET →
+      fseparate IGEN CD₀ →
+      fseparate IGEN CD₁ →
       ValidPackage LD₀ IGET ED CD₀ →
       ValidPackage LD₀ IGET ED CD₁ →
       ValidPackage LK₀ ISET EK CK₀ →
