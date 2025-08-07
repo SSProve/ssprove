@@ -564,7 +564,7 @@ Ltac ssprove_code_simpl_more_aux :=
     | @assertD ?A ?b (λ x, _) =>
       let x' := fresh x in
       ssprove_sync_eq ; intro x'
-    | _ => eapply rreflexivity_rule
+    | _ => eapply @rreflexivity_rule
     end
   | |- _ => fail "The goal should be a syntactic judgment"
   end.

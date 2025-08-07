@@ -33,10 +33,10 @@ Definition heap := {fmap nat → nat}.
 Definition heap_choiceType := Choice.clone _ heap.
 
 Definition get_heap (map : heap) (l : Location) : l
-  := odflt (heap_init l.2) (obind uncucumber (map l.1)).
+  := odflt (heap_init l.2) (obind unpickle (map l.1)).
 
 Definition set_heap (map : heap) (l : Location) (v : l) : heap
-  := setm map l.1 (cucumber v).
+  := setm map l.1 (pickle v).
 
 Definition empty_heap : heap := emptym.
 
@@ -51,7 +51,7 @@ Lemma get_set_heap_eq :
     get_heap (set_heap h ℓ v) ℓ = v.
 Proof.
   intros h ℓ v.
-  rewrite /get_heap /set_heap setmE eq_refl //= cucumberK //.
+  rewrite /get_heap /set_heap setmE eq_refl //= pickleK //.
 Qed.
 
 Lemma get_set_heap_neq :
