@@ -141,13 +141,8 @@ Definition chElement (U : choice_type) : choiceType := U.
   | chSum A B => inl (chCanonical A)
   end.
 
-Definition cucumber {U : choice_type} : U → nat := pickle.
-Definition uncucumber {U : choice_type} : nat → option U := unpickle.
-Definition cucumberK U : pcancel (@cucumber U) uncucumber := pickleK.
-
-
 Definition coerce {A B : choice_type} : A → B
-  := λ x, odflt (chCanonical B) (uncucumber (cucumber x)).
+  := λ x, odflt (chCanonical B) (unpickle (pickle x)).
 
 Lemma coerceE {A : choice_type} (a : A) : coerce a = a.
-Proof. rewrite /coerce cucumberK //. Qed.
+Proof. rewrite /coerce pickleK //. Qed.
