@@ -117,11 +117,25 @@ Notation "[ f ] : { A ~> B } ( x ) { e }" :=
   format "[ f ]  :  { A  ~>  B }  ( x )  { '[' '/'  e  '/' ']' }")
   : package_scope.
 
+Notation "[ f ] ( x ) { e }" :=
+  ((f, mkdef _ _ (λ x, e)))
+  (in custom package at level 0,
+  f constr, e constr, x name,
+  format "[ f ]  ( x )  { '[' '/'  e  '/' ']' }")
+  : package_scope.
+
 Notation "[ f ] : { A ~> B } ' p { e }" :=
   ((f, mkdef A B (λ p, e)))
   (in custom package at level 0,
   f constr, e constr, p pattern, A constr, B constr,
   format "[ f ]  :  { A  ~>  B }  ' p  { '[' '/'  e  '/' ']' }")
+  : package_scope.
+
+Notation "[ f ] ' p { e }" :=
+  ((f, mkdef _ _ (λ p, e)))
+  (in custom package at level 0,
+  f constr, e constr, p pattern,
+  format "[ f ]  ' p  { '[' '/'  e  '/' ']' }")
   : package_scope.
 
 Notation "y ← 'call' [ f ] : { A ~> B } x ;; c" :=
@@ -130,8 +144,20 @@ Notation "y ← 'call' [ f ] : { A ~> B } x ;; c" :=
   format "y  ←  call  [ f ]  :  { A  ~>  B }  x  ;;  '//' c")
   : package_scope.
 
+Notation "y ← 'call' [ f ] x ;; c" :=
+  (opr (mkopsig f _ _) x (λ y, c))
+  (at level 100, x at next level, right associativity,
+  format "y  ←  call  [ f ]  x  ;;  '//' c")
+  : package_scope.
+
 Notation "' p ← 'call' [ f ] : { A ~> B } x ;; c" :=
   (opr (mkopsig f A B) x (λ p, c))
   (at level 100, p pattern, x at next level, right associativity,
   format "' p  ←  call  [ f ]  :  { A  ~>  B }  x  ;;  '//' c")
+  : package_scope.
+
+Notation "' p ← 'call' [ f ] x ;; c" :=
+  (opr (mkopsig f _ _) x (λ p, c))
+  (at level 100, p pattern, x at next level, right associativity,
+  format "' p  ←  call  [ f ]  x  ;;  '//' c")
   : package_scope.

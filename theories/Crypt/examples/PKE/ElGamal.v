@@ -104,17 +104,17 @@ Qed.
 Definition RED :
   package (I_LDDH G) (I_CPA elgamal) :=
   [package [fmap count_loc ; mpk_loc elgamal ] ;
-    [ GEN ] : { 'unit ~> 'el G } 'tt {
-      pk ← call [ GETA ] : { 'unit ~> 'el G } tt ;;
+    [ GEN ] 'tt {
+      pk ← call [ GETA ] tt ;;
       #put mpk_loc elgamal := Some pk ;;
       ret pk
     } ;
-    [ QUERY ] : { 'el G ~> 'el G × 'el G } (m) {
+    [ QUERY ] '(m : 'el G) {
       c ← get count_loc ;;
       #assert (c < 1) ;;
       #put count_loc := c.+1;;
       _ ← getSome mpk_loc elgamal ;;
-      '(r, sh) ← call [ GETBC ] : { 'unit ~> 'el G × 'el G } tt ;;
+      '(r, sh) ← call [ GETBC ] : { _ ~> 'el G × 'el G } tt ;;
       @ret ('el G × 'el G) (r, m * sh)%pack
     }
   ].
