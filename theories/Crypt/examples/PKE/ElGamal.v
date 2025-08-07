@@ -109,13 +109,13 @@ Definition RED :
       #put mpk_loc elgamal := Some pk ;;
       ret pk
     } ;
-    [ QUERY ] '(m : 'el G) {
+    [ QUERY ] : { 'el G ~> _ } '(m) {
       c ← get count_loc ;;
       #assert (c < 1) ;;
       #put count_loc := c.+1;;
       _ ← getSome mpk_loc elgamal ;;
       '(r, sh) ← call [ GETBC ] : { _ ~> 'el G × 'el G } tt ;;
-      @ret ('el G × 'el G) (r, m * sh)%pack
+      ret (r, m * sh : 'el G)%pack
     }
   ].
 
