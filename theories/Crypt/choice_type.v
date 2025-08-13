@@ -121,10 +121,6 @@ Fixpoint chInterp (U : choice_type) : Crypt.type U :=
    choice_type. This allows us to use this coercion in reverse. *)
 #[reversible] Coercion chInterp : choice_type >-> Crypt.type.
 
-(* Compatability - should be removable *)
-Definition chElement_ordType (U : choice_type) : ordType := U.
-Definition chElement (U : choice_type) : choiceType := U.
-
 (* Canonical element in a type of the choice_type *)
 #[program] Fixpoint chCanonical (T : choice_type) : T :=
   match T with

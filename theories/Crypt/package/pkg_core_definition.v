@@ -51,7 +51,7 @@ Definition loc_type (l : Location) := l.2.
 
 Coercion loc_type : Location >-> choice_type.
 
-Definition Value (t : choice_type) := chElement t.
+Definition Value (t : choice_type) : choiceType := t.
 
 Definition Interface := {fmap ident → choice_type * choice_type}.
 
