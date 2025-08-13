@@ -237,7 +237,7 @@ Proof.
   destruct op as [opA opB].
   pose (d :=
     SDistr_bind (λ x, SDistr_unit _ ((x, s₀), (x, s₁)))
-      (Theta_dens.unary_ThetaDens0 _ (ropr (opA ; opB) (λ x : chElement opA, retrFree x)))
+      (Theta_dens.unary_ThetaDens0 _ (ropr (opA ; opB) (λ x : opA, retrFree x)))
   ).
   exists d. split.
   - unfold coupling. split.
@@ -1395,7 +1395,7 @@ Proof.
   destruct op as [opA opB].
   pose (d :=
     SDistr_bind (λ x, SDistr_unit _ ((x, s₀), (x, s₁)))
-      (Theta_dens.unary_ThetaDens0 _ (ropr (opA ; opB) (λ x : chElement opA, retrFree x)))
+      (Theta_dens.unary_ThetaDens0 _ (ropr (opA ; opB) (λ x : opA, retrFree x)))
   ).
   exists d. split.
   - unfold coupling. split.

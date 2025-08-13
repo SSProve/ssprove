@@ -163,14 +163,26 @@ Notation " 'el G " := 'fin #|el G|
 Notation " 'exp G " := 'fin #|exp G|
   (at level 3) : package_scope.
 
-Notation " 'g " := (fto (g _))
-  (at level 3) : package_scope.
+Declare Scope F_scope.
+Delimit Scope F_scope with F.
+
+Notation " 'g " := (fto (g _) : 'el _)
+  (at level 3) : F_scope.
+
+Definition mulf {G} (x y : 'el G) : 'el G
+  := fto (mulg (otf x) (otf y)).
+
+Definition expfn {G} (x : 'el G) (a : 'exp G) : 'el G
+  := fto (expgn (otf x) (otf a)).
+
+Definition expfni {G} (x : 'el G) (a : 'exp G) : 'el G
+  := fto ((otf x) ^- (otf a)).
 
 Notation " x * y " :=
-   (fto (mulg (otf x) (otf y))) : package_scope.
+  (mulf x y) : F_scope.
 
 Notation " x ^ a " :=
-  (fto (otf x ^+ otf a)) : package_scope.
+  (expfn x a) : F_scope.
 
 Notation " x ^- a " :=
-  (fto (otf x ^- otf a)) : package_scope.
+  (expfni x a) : F_scope.

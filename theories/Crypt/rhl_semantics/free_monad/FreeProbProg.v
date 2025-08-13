@@ -128,7 +128,7 @@ Section Unary_free_prob_monad.
 
   (* the arities for operations in OPP*)
   Definition P_AR : P_OP -> choiceType :=
-    fun op => chElement ( projT1 op ).
+    fun op => projT1 op.
 
   Definition rFreePr := rFree P_OP P_AR.
 

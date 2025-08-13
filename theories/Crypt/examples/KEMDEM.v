@@ -233,18 +233,18 @@ Section KEMDEM.
         #assert (k == None) ;;
         k ← sample keyD ;;
         #put k_loc := Some k ;;
-        @ret 'unit tt
+        ret tt
       } ;
       #def #[ SET ] (k : 'key) : 'unit {
         k' ← get k_loc ;;
         #assert (k' == None) ;;
         #put k_loc := Some k ;;
-        @ret 'unit tt
+        ret tt
       } ;
       #def #[ GET ] (_ : 'unit) : 'key {
         k ← get k_loc ;;
         #assert (isSome k) as kSome ;;
-        @ret 'key (getSome k kSome)
+        ret (getSome k kSome)
       }
     ].
 
@@ -296,7 +296,7 @@ Section KEMDEM.
         '(pk, sk) ← η.(KEM_kgen) ;;
         #put pk_loc := Some pk ;;
         #put sk_loc := Some sk ;;
-        @ret 'pkey pk
+        ret pk
       } ;
       #def #[ ENCAP ] (_ : 'unit) : 'ekey {
         #import {sig #[ SET ] : 'key → 'unit } as SET ;;
@@ -420,7 +420,7 @@ Section KEMDEM.
         '(pk, sk) ← ζ.(PKE_kgen) ;;
         #put pk_loc := Some pk ;;
         #put sk_loc := Some sk ;;
-        @ret 'pkey pk
+        ret pk
       } ;
       #def #[ PKENC ] (m : 'plain) : 'ekey × 'cipher {
         pk ← get pk_loc ;;
@@ -433,7 +433,7 @@ Section KEMDEM.
         '(ek, c) ← ζ.(PKE_enc) pk (if b then m else nullPlain) ;;
         #put ek_loc := Some ek ;;
         #put c_loc := Some c ;;
-        @ret (chProd 'ekey 'cipher) (ek, c)
+        ret (ek, c)
       } ;
       #def #[ PKDEC ] (c' : 'ekey × 'cipher) : 'plain {
         sk ← get sk_loc ;;
@@ -487,7 +487,7 @@ Section KEMDEM.
         #put ek_loc := Some ek ;;
         c ← ENC m ;;
         #put c_loc := Some c ;;
-        @ret (chProd 'ekey 'cipher) (ek, c)
+        ret (ek, c)
       } ;
       #def #[ PKDEC ] ('(ek', c') : 'ekey × 'cipher) : 'plain {
         #import {sig #[ DECAP ] : 'ekey → 'key } as DECAP ;;

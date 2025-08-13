@@ -121,7 +121,7 @@ Section FreeStateProbMonad.
     match stpOp with
     |gett => S
     |putt _ => chUnit
-    |samplee p_op => chElement (projT1 p_op)
+    |samplee p_op => projT1 p_op
     end.
 
   Definition op_iota : P_OP -> SP_OP := samplee.
@@ -219,7 +219,7 @@ Section UnaryInterpretState.
     retrFree_filled (F_choice_prod ⟨unit_choiceType, S⟩) (tt, new_s).
 
 
-  Definition probopStP {T : choice_type} (sd: SDistr T) : stT_Frp (chElement T).
+  Definition probopStP {T : choice_type} (sd: SDistr T) : stT_Frp T.
     move=> s. simpl.
     unshelve eapply ropr.
       unshelve econstructor. exact T. exact sd.
