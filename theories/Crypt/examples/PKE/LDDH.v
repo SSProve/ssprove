@@ -26,6 +26,8 @@ Import GroupScope GRing.Theory.
 
 Import GroupScope.
 
+#[local] Open Scope F_scope.
+
 Section LDDH.
 
   Context (G : CyclicGroup).
@@ -46,20 +48,20 @@ Section LDDH.
   Definition LDDH bit :
     game I_LDDH :=
     [package [fmap mga_loc ] ;
-      [ GETA ] : { 'unit ~> 'el G } 'tt {
+      [ GETA ] 'tt {
         a ← sample uniform #|exp G| ;;
-        #put mga_loc := Some ('g ^ a)%pack ;;
-        ret ('g ^ a)%pack
+        #put mga_loc := Some ('g ^ a) ;;
+        ret ('g ^ a)
       } ;
-      [ GETBC ] : { 'unit ~> 'el G × 'el G } 'tt {
+      [ GETBC ] 'tt {
         ga ← getSome mga_loc ;;
         #put mga_loc := None ;;
         b ← sample uniform #|exp G| ;;
         if bit then
-          @ret ('el G × 'el G) ('g ^ b, ga ^ b)%pack
+          ret ('g ^ b, ga ^ b)
         else
           c ← sample uniform #|exp G| ;;
-          @ret ('el G × 'el G) ('g ^ b, 'g ^ c)%pack
+          ret ('g ^ b, 'g ^ c)
       }
     ].
 
