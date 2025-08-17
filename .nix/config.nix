@@ -43,17 +43,6 @@
   ## To do this check as a CI job you either need to manually edit
   ## the generated workflow or create branch off of version 0.1.0
   ## and add it there.
- # bundles."8.17".coqPackages = {
- #   coq.override.version = "8.17";
- #   mathcomp.override.version = "1.17.0";
- #   mathcomp-analysis.override.version = "0.6.0";
- # };
-  bundles."8.18".coqPackages = {
-    coq.override.version = "8.18";
-    mathcomp.job = false;
-    mathcomp.override.version = "2.1.0";
-    mathcomp-analysis.override.version = "1.0.0";
-  };
   bundles."8.19".coqPackages = {
     coq.override.version = "8.19";
     mathcomp.job = false;
@@ -90,7 +79,6 @@
     mathcomp-bigenough.override.version = "master";
   };
 
-  bundles."8.18".push-branches = ["main"];
   bundles."8.19".push-branches = ["main"];
   bundles."8.20".push-branches = ["main"];
   bundles."9.0".push-branches = ["main"];

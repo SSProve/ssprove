@@ -74,7 +74,7 @@ jobs:
       - name: Build
         run: |
           opam repo add coq-released https://coq.inria.fr/opam/released
-          opam install coq.8.18.0 coq-equations.1.3+8.18 coq-mathcomp-ssreflect.2.1.0 coq-mathcomp-analysis.1.0.0 coq-extructures.0.4.0 coq-deriving.0.2.0 coq-mathcomp-word.3.2 coq-mathcomp-zify.1.5.0+2.0+8.16
+          opam install coq.8.19.1 coq-equations.1.3+8.19 coq-mathcomp-ssreflect.2.2.0 coq-mathcomp-analysis.1.0.0 coq-extructures.0.4.0 coq-deriving.0.2.0 coq-mathcomp-word.3.2
           opam exec -- make -j${{ env.JOBS }}
 
       # Build coqdoc documentation
