@@ -22,6 +22,7 @@ Import PackageNotation.
 From SSProve.Crypt.examples.PKE Require Import Scheme CyclicGroup LDDH.
 
 Import PKE GroupScope.
+#[local] Open Scope F_scope.
 
 Section ElGamal.
 
@@ -41,16 +42,16 @@ Definition elgamal : scheme := {|
   ; keygen :=
     {code
       sk ← sample uniform #|exp G| ;;
-      ret (sk, 'g ^ sk)%pack
+      ret (sk, 'g ^ sk)
     }
   ; enc := λ pk m,
     {code
       r ← sample uniform #|exp G| ;;
-      ret ('g ^ r, m * (pk ^ r))%pack
+      ret ('g ^ r, m * (pk ^ r))
     }
   ; dec := λ sk '(c₁, c₂),
     {code
-      ret (c₂ * (c₁ ^- sk))%pack
+      ret (c₂ * (c₁ ^- sk))
     }
   |}.
 
@@ -68,11 +69,12 @@ Proof.
   intros r.
   apply r_ret => s0 s1.
   split; subst; [| done ].
+  unfold mulf, expfn, expfni.
   rewrite !otf_fto expgAC -mulgA mulgV mulg1 fto_otf //.
 Qed.
 
 
-Lemma bij_op_exp : bijective (λ a : 'exp G, 'g ^ a : 'el G)%pack.
+Lemma bij_op_exp : bijective (λ a : 'exp G, 'g ^ a : 'el G).
 Proof.
   eexists (λ a, fto (log (otf a))).
   + intros x.
@@ -80,20 +82,22 @@ Proof.
     f_equal.
     by apply expg_log.
   + intros x.
+    unfold mulf, expfn, expfni.
     rewrite 2!otf_fto -{2}(fto_otf x).
     f_equal.
     by apply log_expg.
 Qed.
 
-Lemma bij_op_mult_op_exp m : bijective (λ b : 'exp G, m * ('g ^ b) : 'el G)%pack.
+Lemma bij_op_mult_op_exp m : bijective (λ b : 'exp G, m * ('g ^ b) : 'el G).
 Proof.
-  eexists (λ a, fto (log ((otf m)^-1 * otf a))).
+  eexists (λ a, fto (log ((otf m)^-1 * otf a)%g)).
   + intros x.
     rewrite 3!otf_fto -{2}(fto_otf x).
     f_equal.
     rewrite mulKg.
     by apply expg_log.
   + intros x.
+    unfold mulf, expfn, expfni.
     rewrite 3!otf_fto -{2}(fto_otf x).
     f_equal.
     rewrite -{2}(mulKVg (otf m) (otf x)).
@@ -104,18 +108,18 @@ Qed.
 Definition RED :
   package (I_LDDH G) (I_CPA elgamal) :=
   [package [fmap count_loc ; mpk_loc elgamal ] ;
-    [ GEN ] : { 'unit ~> 'el G } 'tt {
-      pk ← call [ GETA ] : { 'unit ~> 'el G } tt ;;
+    [ GEN ] 'tt {
+      pk ← call [ GETA ] tt ;;
       #put mpk_loc elgamal := Some pk ;;
       ret pk
     } ;
-    [ QUERY ] : { 'el G ~> 'el G × 'el G } (m) {
+    [ QUERY ] '(m) {
       c ← get count_loc ;;
       #assert (c < 1) ;;
       #put count_loc := c.+1;;
       _ ← getSome mpk_loc elgamal ;;
-      '(r, sh) ← call [ GETBC ] : { 'unit ~> 'el G × 'el G } tt ;;
-      @ret ('el G × 'el G) (r, m * sh)%pack
+      '(r, sh) ← call [ GETBC ] tt ;;
+      ret (r, m * sh)
     }
   ].
 
