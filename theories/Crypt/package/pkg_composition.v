@@ -370,6 +370,55 @@ Proof.
   all: eauto.
 Qed.
 
+Lemma link_par_left :
+  forall {LA IA EA},
+  forall {LB IB EB},
+  forall {A : raw_package}
+    {B : raw_package}
+    {C : raw_package},
+    fsubmap IA EB ->
+    ValidPackage LA IA EA A ->
+    ValidPackage LB IB EB B ->
+    link A (par B C) = link A B.
+Proof.
+  intros.
+  apply eq_fmap.
+  unfold link.
+  intro n. repeat rewrite ?mapmE.
+  destruct (A n) as [[S1 [T1 f1]]|] eqn:e. 2: reflexivity.
+  cbn. f_equal. f_equal. f_equal. extensionality x.
+  erewrite code_link_par_left ; [ reflexivity |  | apply H1 ].
+  eapply valid_injectMap.
+  1: apply H.
+  apply (valid_imports LA IA EA A H0 n (S1; T1; f1) x).
+  apply e.
+Qed.
+
+Lemma link_par_right :
+  forall {LA IA EA},
+  forall {LC IC EC},
+  forall {A : raw_package}
+    {B : raw_package}
+    {C : raw_package},
+    fsubmap IA EC ->
+    fseparate B C ->
+    ValidPackage LA IA EA A ->
+    ValidPackage LC IC EC C ->
+    link A (par B C) = link A C.
+Proof.
+  intros.
+  apply eq_fmap.
+  unfold link.
+  intro n. repeat rewrite ?mapmE.
+  destruct (A n) as [[S1 [T1 f1]]|] eqn:e. 2: reflexivity.
+  cbn. f_equal. f_equal. f_equal. extensionality x.
+  erewrite code_link_par_right ; [ reflexivity | assumption |  | apply H2 ].
+  eapply valid_injectMap.
+  1: apply H.
+  apply (valid_imports LA IA EA A H1 n (S1; T1; f1) x).
+  apply e.
+Qed.
+
 Lemma interchange :
   ∀ A B C D E F L1 L2 L3 L4 p1 p2 p3 p4,
     ValidPackage L1 B A p1 →
@@ -408,6 +457,25 @@ Proof.
     apply (hi2 n (S; T; f) x), e'.
 Qed.
 
+Lemma interchange_alt :
+  ∀ A B C D E L1 L2 L3 p1 p2 p3,
+    ValidPackage L1 B A p1 →
+    ValidPackage L2 E D p2 →
+    ValidPackage L3 C B p3 →
+    par (link p1 p3) (link p2 p3) = link (par p1 p2) p3.
+Proof.
+  intros A B C D E L1 L2 L3 p1 p2 p3 h1 h2 h3.
+  apply eq_fmap => n.
+  rewrite /par unionmE 3!mapmE unionmE.
+  destruct (A n) as [[S T]|] eqn:e.
+  - destruct h1 as [he1 hi1].
+    specialize (he1 (n, (S, T))).
+    simpl in he1.
+    rewrite he1 in e.
+    destruct e as [f e].
+    rewrite e //=.
+  - move: e => /dommPn; rewrite valid_domm; move=> /dommPn -> //=.
+Qed.
 
 Local Open Scope type_scope.
 
