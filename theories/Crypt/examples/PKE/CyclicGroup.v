@@ -61,15 +61,15 @@ Proof.
   apply expgq.
 Qed.
 
-Lemma expg_frac (x : el G) (a b : exp G) : x ^+ (a / b) = x ^+ a ^+ (b^-1)%R.
+Lemma expg_frac (x : el G) (a b : exp G) : x ^+ (a / b)%R = x ^+ a ^+ (b^-1)%R.
 Proof.
   rewrite expg_modq expgM //.
 Qed.
 
-Lemma expg_fracgg (x : el G) (a : exp G) : (a != 0) → x ^+ (a / a) = x.
+Lemma expg_fracgg (x : el G) (a : exp G) : (a != 0) → x ^+ (a / a)%R = x.
 Proof.
   intros H.
-  replace (nat_of_ord (a / a))
+  replace (nat_of_ord (a / a)%R)
     with (nat_of_ord (Zp_mul a (Zp_inv a)))
     by easy.
   rewrite Zp_mulzV.
