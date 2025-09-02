@@ -50,6 +50,7 @@ Section UnivFreeMap.
   Notation dnib := ord_relmon_bind.
 
   Fixpoint outOfFree0 (A:choiceType) (tree : Free_sigma A) {struct tree} : T A.
+  Proof.
   move: tree=>[|]. exact (η T A).
   move=> op opk.
   unshelve eapply (dnib T _).
@@ -60,10 +61,7 @@ Section UnivFreeMap.
 
 
   Program Definition outOfFree : relativeMonadMorphism (ord_functor_id _) trivialChi Free_sigma T :=
-    mkRelMonMorph (ord_functor_id _) trivialChi Free_sigma T _ _ _.
-  Next Obligation.
-    exact outOfFree0.
-  Defined.
+    mkRelMonMorph (ord_functor_id _) trivialChi Free_sigma T outOfFree0 _ _.
   Next Obligation.
     move=> A B f.
     rewrite /outOfFree_obligation_1. rewrite /FreeProbProg.rFree_obligation_2.

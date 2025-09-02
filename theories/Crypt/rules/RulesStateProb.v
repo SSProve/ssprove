@@ -902,14 +902,14 @@ Lemma  smMonEqu1
         r a.1 a.2).
 Proof.
    symmetry.
-   cbn. unfold FreeProbProg.rFree_obligation_2.
+   cbn.
    unshelve epose (assoc := (@ord_relmon_law3 _ _ _ (FrStP S) _ _ _ _ _)).
      shelve. shelve. shelve.
      exact (fun a : A1 * A2 => r a.1 a.2).
      exact (fun a2 : A2 =>
         bindrFree (@StateTransformingLaxMorph.ops_StP S) (@StateTransformingLaxMorph.ar_StP S) c1
           (fun a1 : A1 => retF (a1, a2))).
-   cbn in assoc. unfold FreeProbProg.rFree_obligation_2 in assoc.
+   cbn in assoc.
    symmetry in assoc. unshelve eapply equal_f in assoc. exact c2. rewrite assoc.
    clear assoc.
    f_equal. apply boolp.funext. move=> a2.
@@ -917,7 +917,7 @@ Proof.
      shelve. shelve. shelve.
      exact (fun a : A1 * A2 => r a.1 a.2).
      exact (fun a1 : A1 => retF (a1, a2)).
-   cbn in assoc. unfold FreeProbProg.rFree_obligation_2 in assoc.
+   cbn in assoc.
    symmetry in assoc. unshelve eapply equal_f in assoc. exact c1. rewrite assoc.
    reflexivity.
 Qed.
@@ -932,14 +932,14 @@ Lemma  smMonEqu2
         r a.1 a.2).
 Proof.
    symmetry.
-   cbn. unfold FreeProbProg.rFree_obligation_2.
+   cbn.
    unshelve epose (assoc := (@ord_relmon_law3 _ _ _ (FrStP S) _ _ _ _ _)).
      shelve. shelve. shelve.
      exact (fun a : A1 * A2 => r a.1 a.2).
      exact (fun a1 : A1 =>
       bindrFree (@StateTransformingLaxMorph.ops_StP S) (@StateTransformingLaxMorph.ar_StP S) c2
         (fun a2 : A2 => retF (a1, a2))).
-   cbn in assoc. unfold FreeProbProg.rFree_obligation_2 in assoc.
+   cbn in assoc.
    symmetry in assoc. unshelve eapply equal_f in assoc. exact c1. rewrite assoc.
    clear assoc.
    f_equal. apply boolp.funext. move=> a1.
@@ -947,7 +947,7 @@ Proof.
      shelve. shelve. shelve.
      exact (fun a : A1 * A2 => r a.1 a.2).
      exact (fun a2 : A2 => retF (a1, a2)).
-   cbn in assoc. unfold FreeProbProg.rFree_obligation_2 in assoc.
+   cbn in assoc.
    symmetry in assoc. unshelve eapply equal_f in assoc. exact c2. rewrite assoc.
    reflexivity.
 Qed.
@@ -970,7 +970,6 @@ Proof.
   cbn. unshelve eapply equal_f in assoc. exact s.
   rewrite [LHS]assoc.
   unfold OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
-  unfold FreeProbProg.rFree_obligation_2.
   reflexivity.
 Qed.
 
@@ -1014,7 +1013,6 @@ Proof.
   cbn. unshelve eapply equal_f in assoc. exact s.
   rewrite [LHS]assoc.
   unfold OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
-  unfold FreeProbProg.rFree_obligation_2.
   reflexivity.
 }
   rewrite θ0_comm. clear θ0_comm.
@@ -1035,7 +1033,6 @@ Proof.
   cbn. unshelve eapply equal_f in assoc. exact s.
   rewrite [LHS]assoc.
   unfold OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
-  unfold FreeProbProg.rFree_obligation_2.
   reflexivity.
 }
   rewrite θ0_comm. clear θ0_comm.
@@ -1057,7 +1054,6 @@ Proof.
   move: θ_dens_bind => /= θ_dens_bind.
   unshelve eapply equal_f in θ_dens_bind. exact (θ0 p12 s).
   rewrite θ_dens_bind.
-  unfold SubDistr.SDistr_obligation_2.
   rewrite  /θ_dens /=.
   assert (contEqu :
 ( fun x : A1 * A2 * S =>
@@ -1473,7 +1469,6 @@ Proof.
   epose (hlp := utheta_dens_vs_bind _ _).
   rewrite /= in hlp.
   unfold Theta_dens.unary_theta_dens_obligation_1 in hlp.
-  unfold SubDistr.SDistr_obligation_2 in hlp.
   erewrite hlp.
   f_equal.
   apply boolp.funext. move=> [aa ss].
@@ -1622,7 +1617,6 @@ g x y)).
   epose (bind_bind := (ord_relmon_law3 SDistr) _ _ _ _ _).
   eapply equal_f in bind_bind.
   rewrite /= in bind_bind.
-  unfold SubDistr.SDistr_obligation_2 in bind_bind.
   rewrite !/SD_bind.
   erewrite <- bind_bind.
   f_equal. apply boolp.funext. move=> x.
@@ -1630,21 +1624,17 @@ g x y)).
   epose (bind_bind := (ord_relmon_law3 SDistr) _ _ _ _ _).
   eapply equal_f in bind_bind.
   rewrite /= in bind_bind.
-  unfold SubDistr.SDistr_obligation_2 in bind_bind.
   erewrite <- bind_bind. f_equal.
   apply boolp.funext ; move=> y.
   clear bind_bind.
   epose (bind_ret := (ord_relmon_law2 SDistr) _ _ _).
   eapply equal_f in bind_ret. rewrite /= in bind_ret.
-  unfold SubDistr.SDistr_obligation_2 in bind_ret.
-  unfold SubDistr.SDistr_obligation_1 in bind_ret.
   rewrite /SD_ret. erewrite bind_ret. reflexivity.
 }
   rewrite SD_commutativity.
   epose (bind_bind := (ord_relmon_law3 SDistr) _ _ _ _ _).
   eapply equal_f in bind_bind.
   rewrite /= in bind_bind.
-  unfold SubDistr.SDistr_obligation_2 in bind_bind.
   rewrite !/SD_bind.
   erewrite <- bind_bind.
   f_equal. apply boolp.funext. move=> y.
@@ -1652,14 +1642,11 @@ g x y)).
   epose (bind_bind := (ord_relmon_law3 SDistr) _ _ _ _ _).
   eapply equal_f in bind_bind.
   rewrite /= in bind_bind.
-  unfold SubDistr.SDistr_obligation_2 in bind_bind.
   erewrite <- bind_bind. f_equal.
   apply boolp.funext ; move=> x.
   clear bind_bind.
   epose (bind_ret := (ord_relmon_law2 SDistr) _ _ _).
   eapply equal_f in bind_ret. rewrite /= in bind_ret.
-  unfold SubDistr.SDistr_obligation_2 in bind_ret.
-  unfold SubDistr.SDistr_obligation_1 in bind_ret.
   rewrite /SD_ret. erewrite bind_ret. reflexivity.
 Qed.
 

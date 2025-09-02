@@ -30,49 +30,43 @@ Section ChoiceAsOrd.
 End ChoiceAsOrd.
 
 Program Definition choice_incl := @mkOrdFunctor ord_choiceType TypeCat
-    (fun (A:ord_choiceType) => A)
+    (fun (A : ord_choiceType) => A)
     (fun (A B : ord_choiceType) f => f)
     _ _ _.
 
 
 Section Prod_of_choiceTypes.
 
-  Definition F_choice_prod_obj : Obj (prod_cat ord_choiceType ord_choiceType) ->
-                               Obj ord_choiceType.
-  Proof.
-    rewrite /prod_cat /=. move => [C1 C2].
-    exact (C1 * C2)%type.
-  Defined.
+  Definition F_choice_prod_obj :
+    Obj (prod_cat ord_choiceType ord_choiceType) -> Obj ord_choiceType
+    := fun '(npair C1 C2) => (C1 * C2)%type.
 
-  Definition F_choice_prod_morph : forall T1  T2 : (prod_cat ord_choiceType ord_choiceType),
-      (prod_cat ord_choiceType ord_choiceType) ⦅ T1; T2 ⦆ ->
-      ord_choiceType ⦅F_choice_prod_obj T1; F_choice_prod_obj T2 ⦆.
-  Proof.
-    move => [C11 C12] [C21 C22] [f1 f2] [c1 c2]. simpl in *.
-    exact (f1 c1, f2 c2).
-  Defined.
+  Definition F_choice_prod_morph
+    (T1 T2 : prod_cat ord_choiceType ord_choiceType) :
+    (prod_cat ord_choiceType ord_choiceType) ⦅ T1; T2 ⦆ ->
+    ord_choiceType ⦅F_choice_prod_obj T1; F_choice_prod_obj T2 ⦆
+    := fun '(npair f1 f2) '(c1, c2) => (f1 c1, f2 c2).
 
-  Definition F_choice_prod: ord_functor (prod_cat ord_choiceType ord_choiceType) ord_choiceType.
-  Proof.
-    exists F_choice_prod_obj F_choice_prod_morph.
-    - move => [C11 C12] [C21 C22] [s11 s12] [s21 s22] [H1 H2] [x1 x2].
-      simpl in *. move: (H1 x1) (H2 x2) => eq1 eq2.
-      destruct eq1, eq2. reflexivity.
-    - move => [C1 C2]. rewrite /F_choice_prod_morph /=.
-      apply: boolp.funext => c. by destruct c.
-    - move =>  [C11 C12] [C21 C22] [C31 C32] [f1 f2] [g1 g2].
-      simpl in *. apply: boolp.funext => x. by destruct x.
-  Defined.
+  Program Definition F_choice_prod :
+    ord_functor (prod_cat ord_choiceType ord_choiceType) ord_choiceType
+    := mkOrdFunctor F_choice_prod_obj F_choice_prod_morph _ _ _.
+  Next Obligation.
+    move: x y H x0 => [s11 s12] [s21 s22] [H1 H2] [x1 x2].
+    move: (H1 x1) (H2 x2) => /= -> -> //.
+  Qed.
+  Next Obligation.
+    apply: boolp.funext => [[? ?]] //.
+  Qed.
+  Next Obligation.
+    apply: boolp.funext => [[? ?]] //.
+  Qed.
 
-  Definition choice_fst_proj : forall {A1 A2 : ord_choiceType},
-  ord_choiceType ⦅ F_choice_prod (npair A1 A2) ; A1 ⦆.
-    intros. intro pairr. destruct pairr as [a1 a2]. simpl in a1. assumption.
-  Defined.
+  Definition choice_fst_proj {A1 A2 : ord_choiceType} :
+    ord_choiceType ⦅ F_choice_prod (npair A1 A2) ; A1 ⦆
+    := fst.
 
-  Definition choice_snd_proj : forall {A1 A2 : ord_choiceType},
-  ord_choiceType ⦅ F_choice_prod (npair A1 A2) ; A2 ⦆.
-    intros. intro pairr. destruct pairr as [a1 a2]. simpl in a2. assumption.
-  Defined.
-
+  Definition choice_snd_proj {A1 A2 : ord_choiceType} :
+    ord_choiceType ⦅ F_choice_prod (npair A1 A2) ; A2 ⦆
+    := snd.
 
 End Prod_of_choiceTypes.

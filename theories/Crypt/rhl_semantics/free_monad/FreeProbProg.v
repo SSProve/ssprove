@@ -96,11 +96,7 @@ Section RelativeFreeMonad.
 
 
   Program Definition rFree : ord_relativeMonad choice_incl :=
-    @mkOrdRelativeMonad ord_choiceType TypeCat choice_incl rFreeF _ _ _ _ _ _.
-  Next Obligation. constructor. assumption. Defined.
-  Next Obligation.
-    intros A B. intros ff mm. exact (bindrFree mm ff).
-  Defined.
+    mkOrdRelativeMonad rFreeF retrFree (fun _ _ f m => bindrFree m f) _ _ _ _.
   Next Obligation.
     cbv ; intuition. f_equal. apply funext. move=> a. eapply H.
   Qed.
