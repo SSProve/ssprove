@@ -492,7 +492,6 @@ Proof.
   }
   rewrite !Hrew.
   unfold TransformingLaxMorph.rlmm_from_lmla_obligation_1. simpl.
-  unfold SubDistr.SDistr_obligation_2. simpl.
   unfold OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
   rewrite !SDistr_rightneutral. simpl.
   pose proof (Pr_eq_empty _ _ _ _ h hIe Ha) as Heq.
@@ -593,7 +592,6 @@ Proof.
   }
   rewrite !Hrew.
   unfold TransformingLaxMorph.rlmm_from_lmla_obligation_1. simpl.
-  unfold SubDistr.SDistr_obligation_2. simpl.
   unfold OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
   rewrite !SDistr_rightneutral. simpl.
   pose proof (Pr_eq_empty _ _ _ _ h hIe Ha) as Heq.
@@ -988,7 +986,6 @@ Proof.
   intros.
   unfold RulesStateProb.bindF.
   simpl.
-  unfold FreeProbProg.rFree_obligation_2.
 
   assert ((λ a1 : A₀, bindrFree (repr c₁) (λ a2 : A₁, repr (r a1 a2))) = (λ a : A₀, repr (a₁ ← c₁ ;;
                                                                                           r a a₁))).
@@ -1946,7 +1943,6 @@ Proof.
   intros.
   unfold RulesStateProb.bindF.
   simpl.
-  unfold FreeProbProg.rFree_obligation_2.
 
   assert ((λ a1 : A₀, bindrFree (repr_cmd c₁) (λ a2 : A₁, repr (r a1 a2))) = (λ a : A₀, repr (a₁ ← cmd c₁ ;;
                                                                                           r a a₁))).
@@ -2022,7 +2018,6 @@ Proof.
   intros.
   unfold RulesStateProb.bindF.
   simpl.
-  unfold FreeProbProg.rFree_obligation_2.
 
   assert ((λ a1 : A₀, bindrFree (repr c₁) (λ a2 : A₁, repr (r a1 a2))) = (λ a : A₀, repr (a₁ ← c₁ ;;
                                                                                           r a a₁))).
@@ -2045,7 +2040,6 @@ Proof.
   intros.
   unfold RulesStateProb.bindF.
   simpl.
-  unfold FreeProbProg.rFree_obligation_2.
 
   assert ((λ a1 : A₀, bindrFree (repr_cmd c₁) (λ a2 : A₁, repr (r a1 a2))) = (λ a : A₀, repr (a₁ ← cmd c₁ ;;
                                                                                           r a a₁))).
@@ -2511,21 +2505,17 @@ Section Uniform_prod.
     epose (bind_bind := ord_relmon_law3 SDistr _ _ _ _ _).
     eapply equal_f in bind_bind.
     cbn in bind_bind.
-    unfold SubDistr.SDistr_obligation_2 in bind_bind.
     erewrite <- bind_bind. clear bind_bind.
     f_equal.
     apply boolp.funext. intro xi.
     epose (bind_bind := ord_relmon_law3 SDistr _ _ _ _ _).
     eapply equal_f in bind_bind.  cbn in bind_bind.
-    unfold SubDistr.SDistr_obligation_2 in bind_bind.
     erewrite <- bind_bind. clear bind_bind.
     f_equal.
     apply boolp.funext. intro xj.
     epose (bind_ret := ord_relmon_law2 SDistr _ _ _).
     eapply equal_f in bind_ret.
     cbn in bind_ret.
-    unfold SubDistr.SDistr_obligation_2 in bind_ret.
-    unfold SubDistr.SDistr_obligation_1 in bind_ret.
     erewrite bind_ret. reflexivity.
   Qed.
 

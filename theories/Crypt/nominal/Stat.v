@@ -73,11 +73,7 @@ Lemma testing {h} :
 
 Lemma Pr_code_ret {A : choiceType} {x : A} {h} :
   Pr_code (ret x) h = dunit (x, h).
-Proof.
-  cbn.
-  unfold SubDistr.SDistr_obligation_1, SubDistr.SDistr_obligation_2.
-  rewrite 2!SDistr_rightneutral //.
-Qed.
+Proof. cbn; rewrite 2!SDistr_rightneutral //. Qed.
 
 Lemma Pr_code_get {B : choiceType} {l : Location} {k : l → raw_code B} {h} :
   Pr_code (x ← get l ;; k x) h
@@ -96,12 +92,7 @@ Proof. done. Qed.
 
 Lemma Pr_code_sample {A : choiceType} {op' : Op} {k : Arit op' → raw_code A} {h} :
   Pr_code (x ← sample op' ;; k x) h = (\dlet_(x <- op'.π2) Pr_code (k x) h). 
-Proof.
-  cbn.
-  unfold SubDistr.SDistr_obligation_1, SubDistr.SDistr_obligation_2.
-  rewrite 2!SDistr_rightneutral.
-  done.
-Qed.
+Proof. cbn. rewrite 2!SDistr_rightneutral //. Qed.
 
 Lemma dlet_commut {T S U : choiceType} {A B} {f : T → S → distr Axioms.R U} {z} :
   (\dlet_(x <- A) \dlet_(y <- B) f x y) z = 
@@ -323,3 +314,29 @@ Proof.
   apply Num.Theory.pmulrnI in H0 => //.
   move: (GRing.oner_eq0 R) => /eqP //.
 Qed.
+
+Lemma testing_uni2_adv {n} {LA} {I} {A R R' : raw_package} `{Positive n} :
+  fseparate LA [fmap cell (uniform n) ] →
+  ValidPackage LA I A_export A →
+  ValidPackage LA (IPICK (uniform n)) I R →
+  ValidPackage LA (IPICK (uniform n)) I R' →
+  (AdvantageE (R ∘ RAND (uniform n)) (R' ∘ RAND (uniform n)) A *+ n
+    <= \sum_i AdvantageE
+      (R ∘ CELL (uniform n) ∘ PICK (uniform n) i)
+      (R' ∘ CELL (uniform n) ∘ PICK (uniform n) i) A)%R.
+Proof.
+  intros H' VA VG VG'.
+  unfold AdvantageE.
+  rewrite -Num.Theory.normrMn.
+  rewrite -GRing.mulr_natr.
+  rewrite GRing.mulrBl.
+  rewrite 2!GRing.mulr_natr.
+  rewrite 2!link_assoc.
+  do 2 (rewrite testing_uni2; [| fmap_solve ]).
+  rewrite -GRing.sumrB.
+  eapply Order.POrderTheory.le_trans.
+  { apply Num.Theory.ler_norm_sum. }
+  apply Num.Theory.ler_sum => i _.
+  rewrite 4!link_assoc //.
+Qed.
+

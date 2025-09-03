@@ -335,7 +335,6 @@ Proof.
   rewrite 2!Hrew.
 
   unfold TransformingLaxMorph.rlmm_from_lmla_obligation_1. simpl.
-  unfold SubDistr.SDistr_obligation_2. simpl.
   unfold OrderEnrichedRelativeAdjunctionsExamples.ToTheS_obligation_1.
   rewrite !SDistr_rightneutral. simpl.
 
