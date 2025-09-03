@@ -278,16 +278,15 @@ Admitted.
  *)
 
 
-  
-
 End Proof.
 
 
-Lemma testing_uni {F : finType} {LA} {A : raw_package} {b} `{Positive #|F|} :
-  fseparate LA [fmap cell (uniform #|F|) ] →
-  ValidPackage LA (IPICK (uniform #|F|)) A_export A →
-  Pr (A ∘ RAND (uniform #|F|)) b
-      = (\sum_f Pr ((A ∘ CELL (uniform #|F|)) ∘ PICK (uniform #|F|) f) b / #|F|%:R)%R.
+
+Lemma testing_uni n {LA} {A : raw_package} {b} `{Positive n} :
+  fseparate LA [fmap cell (uniform n) ] →
+  ValidPackage LA (IPICK (uniform n)) A_export A →
+  Pr (A ∘ RAND (uniform n)) b
+      = (\sum_i Pr ((A ∘ CELL (uniform n)) ∘ PICK (uniform n) i) b / n%:R)%R.
 Proof.
   intros SEP VA.
   rewrite testing //.
@@ -295,7 +294,7 @@ Proof.
   rewrite psum_fin.
   apply eq_bigr => x _.
   rewrite GRing.mulrC.
-  replace ((uniform #|F|).π2 x) with (#|F|%:R^-1 : Axioms.R)%R.
+  replace ((uniform n).π2 x) with (n%:R^-1 : Axioms.R)%R.
   - rewrite link_assoc.
     apply Num.Theory.ger0_norm.
     apply Num.Theory.mulr_ge0.
@@ -307,4 +306,20 @@ Proof.
     rewrite GRing.Theory.div1r card_ord //.
 Qed.
 
-
+Lemma testing_uni2 {n} {LA} {A : raw_package} {b} `{Positive n} :
+  fseparate LA [fmap cell (uniform n) ] →
+  ValidPackage LA (IPICK (uniform n)) A_export A →
+  (Pr (A ∘ RAND (uniform n)) b *+ n
+      = \sum_i Pr ((A ∘ CELL (uniform n)) ∘ PICK (uniform n) i) b)%R.
+Proof.
+  intros H' H''.
+  rewrite testing_uni //.
+  rewrite -(GRing.Theory.mulr_natr (\sum__ _) n).
+  rewrite GRing.mulr_suml.
+  apply eq_big => // i _.
+  rewrite -GRing.mulrA GRing.mulVf ?GRing.mulr1 //.
+  apply /eqP => H0.
+  erewrite <- GRing.mul0rn in H0.
+  apply Num.Theory.pmulrnI in H0 => //.
+  move: (GRing.oner_eq0 R) => /eqP //.
+Qed.
