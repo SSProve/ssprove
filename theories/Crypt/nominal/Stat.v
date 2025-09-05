@@ -129,12 +129,27 @@ Proof.
     by apply r_ret.
 Qed.
 
+Definition dirac {T : choice_type} (x : T) : Op := (T; dunit x).
 
-Section Proof.
+Definition unif (n : nat) : Op := ('nat;
+  match n with
+  | 0 => dunit 0%N
+  | S n' => dmargin (@nat_of_ord _) (uniform (S n')).π2
+      (*\dlet_( x <- (uniform (S n')).π2 ) dunit (nat_of_ord x)*)
+  end ).
 
-Context (op : Op).
+Lemma LosslessOp_dirac {T : choice_type} (x : T) : LosslessOp (dirac x).
+Proof. rewrite /LosslessOp /= Couplings.psum_SDistr_unit //. Qed.
 
-Definition RAND : game (IPICK op.π1) :=
+Lemma LosslessOp_unif (n : nat) : LosslessOp (unif n).
+Proof.
+  unfold LosslessOp.
+  destruct n => /=.
+  - rewrite Couplings.psum_SDistr_unit //.
+  - admit.
+Admitted.
+
+Definition RAND op : game (IPICK op.π1) :=
   [package [fmap cell op.π1] ;
     [ 0%N ] : { 'unit ~> op.π1 } 'tt {
       mr ← get cell op.π1 ;;
@@ -148,12 +163,17 @@ Definition RAND : game (IPICK op.π1) :=
     } ].
 
 
+Section Proof.
+
+Context (op : Op).
+
+
 Lemma testing0 {LA} {T} {A : raw_code T} {f f' : op.π1} {h} :
   fseparate LA [fmap cell op.π1] →
   ValidCode LA (IPICK op.π1) A →
   get_heap h (cell op.π1) = Some f' →
-  Pr_code (code_link A RAND) h
-  = Pr_code (code_link A (CELL op.π1 ∘ PICK f)) h.
+  Pr_code (code_link A (RAND op)) h
+  = Pr_code (code_link A (RAND (dirac f))) h.
 Proof.
   intros SEP VA.
   move: h; induction (VA) => h H'.
@@ -194,8 +214,8 @@ Lemma testing1 {LA} {T} {A : raw_code T} {h} :
   fseparate LA [fmap cell op.π1] →
   LosslessOp op →
   ValidCode LA (IPICK op.π1) A →
-  Pr_code (code_link A RAND) h
-    = \dlet_(f <- op.π2) Pr_code (code_link A (CELL op.π1 ∘ PICK f)) h.
+  Pr_code (code_link A (RAND op)) h
+    = \dlet_(f <- op.π2) Pr_code (code_link A (RAND (dirac f))) h.
 Proof.
   intros SEP LL VA.
   apply distr_ext.
@@ -234,9 +254,9 @@ Proof.
     rewrite Pr_code_put.
     erewrite testing0.
     + rewrite Pr_code_get E.
-      cbn [code_link].
-      repeat (rewrite (resolve_set, resolve_link, resolve_ID_set, coerce_kleisliE, eq_refl); cbn [fst snd mkdef projT2 mkopsig projT1]).
-      cbn [bind].
+      cbn [bind code_link].
+      rewrite Pr_code_sample.
+      rewrite (distr_ext _ _ _ (dlet_unit _ _)).
       rewrite Pr_code_put.
       reflexivity.
     + apply SEP.
@@ -267,7 +287,7 @@ Lemma testing {LA} {A : raw_package} :
   fseparate LA [fmap cell op.π1] →
   LosslessOp op →
   ValidPackage LA (IPICK op.π1) A_export A →
-  Pr (A ∘ RAND) = \dlet_(x <- op.π2) Pr (A ∘ CELL op.π1 ∘ PICK x).
+  Pr (A ∘ RAND op) = \dlet_(x <- op.π2) Pr (A ∘ RAND (dirac x)).
 Proof.
   intros SEP LL VA.
   apply distr_ext => b.
@@ -282,11 +302,47 @@ Proof.
   rewrite resolve_link => //.
 Qed.
 
+Lemma r_dirac :
+  ∀ {T A : choice_type} pre post (y : T)
+    (c : T → raw_code A),
+    ⊢ ⦃ pre ⦄
+      c y ≈ x ← sample dirac y ;; c x
+    ⦃ post ⦄.
+Proof.
+  intros T A pre post y c.
+  eapply from_sem_jdg.
+Admitted.
+
+Lemma PICK_dirac_perf {T : choice_type} (x : T) :
+  RAND (dirac x) ≈₀ PICK x.
+Proof.
+  pose (inv := (heap_ignore [fmap cell T] ⋊ couple_lhs (cell T) (cell T) (λ v _, v = None ∨ v = Some x))).
+  apply (eq_rel_perf_ind _ _ inv);
+    [ unfold inv; ssprove_invariant; [ fmap_solve | by left ] |].
+  unfold inv.
+  simplify_eq_rel m.
+  destruct m => /=.
+  ssprove_code_simpl; simpl.
+  apply r_get_remember_lhs => y.
+  eapply (r_rem_couple_lhs (cell T) (cell T)); try exact _.
+  intros H.
+  destruct H; subst.
+  - eapply rel_jdg_replace_sem.
+    2: apply r_dirac.
+    2: apply rreflexivity_rule.
+    apply r_put_lhs.
+    ssprove_restore_mem.
+    { ssprove_invariant. by right. }
+    by apply r_ret.
+  - apply r_forget_lhs.
+    by apply r_ret.
+Qed.
+
 Lemma testing' {LA} {A : raw_package} :
   fseparate LA [fmap cell op.π1] →
   LosslessOp op →
   ValidPackage LA (IPICK op.π1) A_export A →
-  Pr (A ∘ RAND) true = (\dlet_(x <- op.π2) Pr (A ∘ PICK x)) true.
+  Pr (A ∘ RAND op) true = (\dlet_(x <- op.π2) Pr (A ∘ PICK x)) true.
 Proof.
   intros SEP LL VA.
   rewrite testing //.
@@ -296,11 +352,44 @@ Proof.
   eapply AdvantageE_Pr.
   - fmap_solve.
   - fmap_solve.
-  - apply CELL_PICK_perf.
+  - apply PICK_dirac_perf.
 Qed.
 
 End Proof.
 
+Lemma testing_unif n {LA} {A : raw_package} :
+  fseparate LA [fmap cell nat ] →
+  ValidPackage LA (IPICK nat) A_export A →
+  Pr (A ∘ RAND (unif n)) true
+      = (\sum_(0 <= i < n) Pr (A ∘ @PICK nat i) true / n%:R)%R.
+Proof.
+  intros SEP VA.
+  erewrite testing' => //.
+  2: apply SEP.
+  2: apply LosslessOp_unif.
+  2: apply VA.
+  rewrite dletE.
+Admitted.
+
+Lemma testing_unif2 {n} {LA} {A : raw_package} :
+  fseparate LA [fmap cell nat ] →
+  ValidPackage LA (IPICK nat) A_export A →
+  (Pr (A ∘ RAND (unif n)) true *+ n
+      = \sum_(0 <= i < n) Pr (A ∘ @PICK 'nat i) true)%R.
+Proof.
+  intros H' H''.
+  rewrite testing_unif //.
+  destruct n.
+  { rewrite GRing.mulr0n big_nil //. }
+  rewrite -(GRing.Theory.mulr_natr (\sum_(_ <= _ < _) _) n.+1).
+  rewrite GRing.mulr_suml.
+  apply eq_big => // i _.
+  rewrite -GRing.mulrA GRing.mulVf ?GRing.mulr1 //.
+  apply /eqP => H0.
+  erewrite <- GRing.mul0rn in H0.
+  apply Num.Theory.pmulrnI in H0 => //.
+  move: (GRing.oner_eq0 R) => /eqP //.
+Qed.
 
 Lemma testing_uni n {LA} {A : raw_package} `{Positive n} :
   fseparate LA [fmap cell ('fin n) ] →
@@ -343,39 +432,43 @@ Proof.
   move: (GRing.oner_eq0 R) => /eqP //.
 Qed.
 
-Definition unif n : code emptym emptym nat := {code
-  match n with
-  | 0 => ret 0%N
-  | S m => f ← sample uniform (S m) ;; ret (nat_of_ord f)
-  end }.
-
-Definition RANDN n : game (IPICK nat) :=
-  [package [fmap cell nat ] ;
-    [ 0%N ] : { 'unit ~> 'nat } 'tt {
-      mr ← get cell nat ;;
-      match mr with
-      | Some r => ret r
-      | None =>
-        r ← unif n ;;
-        #put cell nat := Some r ;;
-        ret r
-      end
-    } ].
-
-Lemma testing_pick {n : nat} {A R R' : raw_package} :
-  (∀ A i, Pr (A ∘ R' ∘ PICK i) true = Pr (A ∘ R ∘ PICK i.+1) true)
+Lemma testing_pick {LA LR LR' I} {n : nat} {A R R' : raw_package}
+    `{ValidPackage LA I A_export A}
+    `{ValidPackage LR (IPICK nat) I R}
+    `{ValidPackage LR' (IPICK nat) I R'} :
+    fseparate LA LR →
+    fseparate LA LR' →
+    fseparate LA [fmap cell nat] →
+    fseparate LR [fmap cell nat] →
+    fseparate LR' [fmap cell nat] →
+    (∀ i, R' ∘ PICK i ≈₀ R ∘ PICK i.+1)
   → (AdvantageE (R ∘ PICK 0%N) (R ∘ PICK n) A
-  = AdvantageE (R ∘ RANDN n) (R' ∘ RANDN n) A *+ n)%R.
+  = AdvantageE (R ∘ RAND (unif n)) (R' ∘ RAND (unif n)) A *+ n)%R.
 Proof.
-  intros IH.
-  rewrite Advantage_sym.
+  intros C1 C2 S1 S2 S3 IH.
+  rewrite Advantage_sym (Advantage_sym (R ∘ RAND (unif n))).
   unfold AdvantageE.
   rewrite -(GRing.telescope_sumr (fun i => Pr (A ∘ R ∘ PICK i) true)) //.
   rewrite GRing.sumrB.
   under eq_big.
   1: intros; over.
-  1: intros i _; rewrite -IH link_assoc; over.
-Admitted.
+  1: intros i _; erewrite (AdvantageE_Pr _ _ (IH i)); over.
+  Unshelve. 2,3: fmap_solve.
+  rewrite -Num.Theory.normrMn.
+  rewrite -GRing.mulr_natr.
+  rewrite GRing.mulrBl.
+  rewrite 2!GRing.mulr_natr.
+  rewrite 2!link_assoc.
+  erewrite testing_unif2.
+  3: ssprove_valid.
+  2: fmap_solve.
+  erewrite testing_unif2.
+  3: ssprove_valid.
+  2: fmap_solve.
+  do 2 f_equal.
+  - apply eq_big => // x y; rewrite link_assoc //.
+  - f_equal; apply eq_big => // x y; rewrite link_assoc //.
+Qed.
 
 Lemma testing_uni2_adv {n} {LA} {I} {A R R' : raw_package} `{Positive n} :
   fseparate LA [fmap cell ('fin n) ] →
