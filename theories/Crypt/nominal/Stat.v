@@ -26,7 +26,7 @@ Import PackageNotation.
 (* Preparation lemmas *)
 Lemma Pr_code_ret {A : choiceType} {x : A} {h} :
   Pr_code (ret x) h = dunit (x, h).
-Proof. cbn; rewrite 2!SDistr_rightneutral //. Qed.
+Proof. cbn. rewrite 2!SDistr_rightneutral //. Qed.
 
 Lemma Pr_code_get {B : choiceType} {l : Location} {k : l → raw_code B} {h} :
   Pr_code (x ← get l ;; k x) h
@@ -44,7 +44,7 @@ Lemma Pr_code_call {B : choiceType} {o : opsig} {a : src o} {k : tgt o → raw_c
 Proof. done. Qed.
 
 Lemma Pr_code_sample {A : choiceType} {op' : Op} {k : Arit op' → raw_code A} {h} :
-  Pr_code (x ← sample op' ;; k x) h = (\dlet_(x <- op'.π2) Pr_code (k x) h). 
+  Pr_code (x ← sample op' ;; k x) h = \dlet_(x <- op'.π2) Pr_code (k x) h. 
 Proof. cbn. rewrite 2!SDistr_rightneutral //. Qed.
 
 Lemma dlet_commut {T S U : choiceType} {A B} {f : T → S → distr Axioms.R U} {z} :
@@ -56,6 +56,30 @@ Proof.
   unfold SDistr_bind, SDistr_carrier in H.
   specialize (H T S U A).
   rewrite H //.
+Qed.
+
+Lemma AdvantageE_Pr {LA L L' I} {G G' A}
+  `{ValidPackage LA I A_export A}
+  `{ValidPackage L Game_import I G}
+  `{ValidPackage L' Game_import I G'} :
+  fseparate LA L →
+  fseparate LA L' →
+  G ≈₀ G' → Pr (A ∘ G) true = Pr (A ∘ G') true.
+Proof.
+  intros S1 S2 H'.
+  apply GRing.Theory.subr0_eq.
+  apply Num.Theory.normr0_eq0.
+  eapply (H' LA); done.
+Qed.
+
+Lemma Adv_Pr {L I} {G G' A : nom_package} `{ValidPackage L I A_export A} :
+  perfect I G G' → Pr (A ∘ G)%sep true = Pr (A ∘ G')%sep true.
+Proof.
+  intros H'.
+  apply GRing.Theory.subr0_eq.
+  apply Num.Theory.normr0_eq0.
+  eapply H'.
+  exact H.
 Qed.
 
 (* PICK game *)
@@ -258,49 +282,40 @@ Proof.
   rewrite resolve_link => //.
 Qed.
 
-(*
 Lemma testing' {LA} {A : raw_package} :
-  fseparate LA [fmap cell] →
+  fseparate LA [fmap cell op.π1] →
   LosslessOp op →
-  ValidPackage LA IPICK A_export A →
-  Pr (A ∘ RAND) = \dlet_(x <- op.π2) Pr (A ∘ PICK x).
+  ValidPackage LA (IPICK op.π1) A_export A →
+  Pr (A ∘ RAND) true = (\dlet_(x <- op.π2) Pr (A ∘ PICK x)) true.
 Proof.
-Admitted.
- *)
-
-(*
-Lemma CELL_PICK_perf x :
-  perfect IPICK (CELL ∘ PICK x) (PICK x).
-Proof.
-Admitted.
-
-Lemma testings' {LA} {A : nom_package} :
-  LosslessOp op →
-  ValidPackage LA IPICK A_export A →
-  Pr' (A ∘ RAND)%sep = psum (fun x => op.π2 x * Pr' (A ∘ PICK x)%sep)%R.
-Proof.
-Admitted.
- *)
-
+  intros SEP LL VA.
+  rewrite testing //.
+  rewrite 2!dletE.
+  apply eq_psum => x.
+  f_equal.
+  eapply AdvantageE_Pr.
+  - fmap_solve.
+  - fmap_solve.
+  - apply CELL_PICK_perf.
+Qed.
 
 End Proof.
 
 
-Lemma testing_uni n {LA} {A : raw_package} {b} `{Positive n} :
+Lemma testing_uni n {LA} {A : raw_package} `{Positive n} :
   fseparate LA [fmap cell ('fin n) ] →
   ValidPackage LA (IPICK ('fin n)) A_export A →
-  Pr (A ∘ RAND (uniform n)) b
-      = (\sum_i Pr ((A ∘ CELL ('fin n)) ∘ @PICK ('fin n) i) b / n%:R)%R.
+  Pr (A ∘ RAND (uniform n)) true
+      = (\sum_i Pr (A ∘ @PICK ('fin n) i) true / n%:R)%R.
 Proof.
   intros SEP VA.
-  rewrite testing //.
+  rewrite testing' //.
   rewrite dletE.
   rewrite psum_fin.
   apply eq_bigr => x _.
   rewrite GRing.mulrC.
   replace ((uniform n).π2 x) with (n%:R^-1 : Axioms.R)%R.
-  - rewrite link_assoc.
-    apply Num.Theory.ger0_norm.
+  - apply Num.Theory.ger0_norm.
     apply Num.Theory.mulr_ge0.
     + unfold Pr, SDistr_bind; rewrite dletE; apply ge0_psum.
     + rewrite Num.Theory.invr_ge0.
@@ -310,11 +325,11 @@ Proof.
     rewrite GRing.Theory.div1r card_ord //.
 Qed.
 
-Lemma testing_uni2 {n} {LA} {A : raw_package} {b} `{Positive n} :
+Lemma testing_uni2 {n} {LA} {A : raw_package} `{Positive n} :
   fseparate LA [fmap cell ('fin n) ] →
   ValidPackage LA (IPICK ('fin n)) A_export A →
-  (Pr (A ∘ RAND (uniform n)) b *+ n
-      = \sum_i Pr ((A ∘ CELL ('fin n)) ∘ @PICK ('fin n) i) b)%R.
+  (Pr (A ∘ RAND (uniform n)) true *+ n
+      = \sum_i Pr (A ∘ @PICK ('fin n) i) true)%R.
 Proof.
   intros H' H''.
   rewrite testing_uni //.
@@ -347,21 +362,19 @@ Definition RANDN n : game (IPICK nat) :=
       end
     } ].
 
-Let PICK' i := (CELL nat ∘ PICK (i : nat)).
-
 Lemma testing_pick {n : nat} {A R R' : raw_package} :
-  (∀ A i, Pr (A ∘ R' ∘ PICK' i) true = Pr (A ∘ R ∘ PICK' i.+1) true)
-  → (AdvantageE (R ∘ PICK' 0%N) (R ∘ PICK' n) A
+  (∀ A i, Pr (A ∘ R' ∘ PICK i) true = Pr (A ∘ R ∘ PICK i.+1) true)
+  → (AdvantageE (R ∘ PICK 0%N) (R ∘ PICK n) A
   = AdvantageE (R ∘ RANDN n) (R' ∘ RANDN n) A *+ n)%R.
 Proof.
   intros IH.
   rewrite Advantage_sym.
   unfold AdvantageE.
-  rewrite -(GRing.telescope_sumr (fun i => Pr (A ∘ R ∘ PICK' i) true)) //.
+  rewrite -(GRing.telescope_sumr (fun i => Pr (A ∘ R ∘ PICK i) true)) //.
   rewrite GRing.sumrB.
   under eq_big.
   1: intros; over.
-  1: intros i _; rewrite -IH; over.
+  1: intros i _; rewrite -IH link_assoc; over.
 Admitted.
 
 Lemma testing_uni2_adv {n} {LA} {I} {A R R' : raw_package} `{Positive n} :
@@ -371,8 +384,8 @@ Lemma testing_uni2_adv {n} {LA} {I} {A R R' : raw_package} `{Positive n} :
   ValidPackage LA (IPICK 'fin n) I R' →
   (AdvantageE (R ∘ RAND (uniform n)) (R' ∘ RAND (uniform n)) A *+ n
     <= \sum_i AdvantageE
-      (R ∘ CELL 'fin n ∘ @PICK 'fin n i)
-      (R' ∘ CELL 'fin n ∘ PICK i) A)%R.
+      (R ∘ @PICK 'fin n i)
+      (R' ∘ PICK i) A)%R.
 Proof.
   intros H' VA VG VG'.
   unfold AdvantageE.
@@ -386,6 +399,6 @@ Proof.
   eapply Order.POrderTheory.le_trans.
   { apply Num.Theory.ler_norm_sum. }
   apply Num.Theory.ler_sum => i _.
-  rewrite 4!link_assoc //.
+  rewrite 2!link_assoc //.
 Qed.
 
