@@ -36,10 +36,10 @@ Require Import Btauto.
 Import PackageNotation.
 
 
-Definition Pr' : nom_package → R := λ P, Pr P true.
+Definition Pr' : nom_package → distr R bool := Pr.
 
 Definition Adv (G G' A : nom_package) : R
-  := `| Pr' (A ∘ G) - Pr' (A ∘ G') |.
+  := `| Pr' (A ∘ G) true - Pr' (A ∘ G') true |.
 
 Add Parametric Morphism : val with
   signature alpha ==> alpha as val_mor.
@@ -56,11 +56,9 @@ Proof.
   intros x y [π' H0].
   unfold Pr'.
   rewrite -H0.
+  apply distr_ext => z.
   apply Pr_rename.
 Qed.
-
-Lemma Pr'_def {P} : Pr' P = Pr (val P) true.
-Proof. done. Qed.
 
 Add Parametric Morphism : Adv with
   signature alpha ==> alpha ==> alpha ==> eq as Adv_mor.
