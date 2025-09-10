@@ -129,51 +129,104 @@ Proof.
     by apply r_ret.
 Qed.
 
-Definition dirac {T : choice_type} (x : T) : Op := (T; dunit x).
-
-Definition unif (n : nat) : Op := ('nat;
+Definition unif (n : nat) : code emptym emptym nat := {code
   match n with
-  | 0 => dunit 0%N
-  | S n' => dmargin (@nat_of_ord _) (uniform (S n')).π2
-      (*\dlet_( x <- (uniform (S n')).π2 ) dunit (nat_of_ord x)*)
-  end ).
+  | 0 => ret 0%N
+  | S n' =>
+      x ← sample uniform (S n') ;; ret (nat_of_ord x)
+  end }.
 
-Lemma LosslessOp_dirac {T : choice_type} (x : T) : LosslessOp (dirac x).
-Proof. rewrite /LosslessOp /= Couplings.psum_SDistr_unit //. Qed.
-
-Lemma LosslessOp_unif (n : nat) : LosslessOp (unif n).
-Proof.
-  unfold LosslessOp.
-  destruct n => /=.
-  - rewrite Couplings.psum_SDistr_unit //.
-  - admit.
-Admitted.
-
-Definition RAND op : game (IPICK op.π1) :=
-  [package [fmap cell op.π1] ;
-    [ 0%N ] : { 'unit ~> op.π1 } 'tt {
-      mr ← get cell op.π1 ;;
+Definition RAND {T : choice_type} (c : code emptym emptym T)
+  : game (IPICK T) :=
+  [package [fmap cell T] ;
+    [ 0%N ] : { 'unit ~> T } 'tt {
+      mr ← get cell T ;;
       match mr with
       | Some r => ret r
       | None =>
-        r ← sample op ;;
-        #put cell op.π1 := Some r ;;
+        r ← c ;;
+        #put cell T := Some r ;;
         ret r
       end
     } ].
 
+Inductive NoFail {A} : raw_code A → Prop :=
+  | NoFail_ret : ∀ x,
+      NoFail (ret x)
+  | NoFail_sampler : ∀ op k,
+      LosslessOp op →
+      (∀ v, NoFail (k v)) →
+      NoFail (pkg_core_definition.sampler op k).
+
+Lemma NoFail_unif {n} : NoFail (unif n).
+Proof.
+  case n.
+  - apply NoFail_ret.
+  - intros n'. simpl. apply NoFail_sampler.
+    { apply LosslessOp_uniform. }
+    intros x. apply NoFail_ret.
+Qed.
+
+Definition Pr_rand {T} (c : raw_code T ) : distr R T
+  := dfst (Pr_code c emptym).
+
+Lemma NoFail_psum {T} (c : raw_code T) : NoFail c → psum (Pr_rand c) = 1%R.
+Proof.
+  elim.
+  - intros x.
+    rewrite /Pr_rand Pr_code_ret.
+    rewrite /(dfst _) (distr_ext _ _ _ (dlet_unit _ _)).
+    apply Couplings.psum_SDistr_unit.
+  - intros op k LL NF IH.
+    rewrite /Pr_rand Pr_code_sample.
+    under eq_psum.
+    { intros x.
+      rewrite dlet_dlet.
+      rewrite dletE.
+Admitted.
+
+Lemma Pr_code_rand {T T' : choiceType} {c} {f : T → raw_code T'} {h}
+  : NoFail c
+  → Pr_code (x ← c ;; f x) h
+  = \dlet_(x <- Pr_rand c) Pr_code (f x) h.
+Proof.
+  elim.
+  - intros x => /=.
+    rewrite /Pr_rand Pr_code_ret.
+    by rewrite /(dfst _) 2!(distr_ext _ _ _ (dlet_unit _ _)).
+  - intros op k LL NF IH => /=.
+    rewrite /Pr_rand 2!Pr_code_sample.
+    rewrite (distr_ext _ _ _ (dlet_dlet _ _ _)).
+    rewrite (distr_ext _ _ _ (dlet_dlet _ _ _)).
+    apply distr_ext.
+    apply dlet_f_equal => x.
+    rewrite IH.
+    rewrite -(distr_ext _ _ _ (dlet_dlet _ _ _)).
+    done.
+Qed.
+
+(*
+Lemma Pr_code_indep {T'} {c' : raw_code T'} {h h'}
+  : ValidCode emptym emptym c' 
+  → dfst (Pr_code c emptym) = Pr_rand.
+Proof.
+  elim.
+  - intros. rewrite Pr_ret.
+ *)
+  
 
 Section Proof.
 
-Context (op : Op).
+Context {T : choice_type}.
+Context (c : code emptym emptym T).
 
 
-Lemma testing0 {LA} {T} {A : raw_code T} {f f' : op.π1} {h} :
-  fseparate LA [fmap cell op.π1] →
-  ValidCode LA (IPICK op.π1) A →
-  get_heap h (cell op.π1) = Some f' →
-  Pr_code (code_link A (RAND op)) h
-  = Pr_code (code_link A (RAND (dirac f))) h.
+Lemma testing0 {LA} {T'} {A : raw_code T'} {f f' : T} {h} :
+  fseparate LA [fmap cell T] →
+  ValidCode LA (IPICK T) A →
+  get_heap h (cell T) = Some f' →
+  Pr_code (code_link A (RAND c)) h
+  = Pr_code (code_link A (RAND {code ret f})) h.
 Proof.
   intros SEP VA.
   move: h; induction (VA) => h H'.
@@ -210,12 +263,13 @@ Proof.
     by apply H0.
 Qed.
 
-Lemma testing1 {LA} {T} {A : raw_code T} {h} :
-  fseparate LA [fmap cell op.π1] →
-  LosslessOp op →
-  ValidCode LA (IPICK op.π1) A →
-  Pr_code (code_link A (RAND op)) h
-    = \dlet_(f <- op.π2) Pr_code (code_link A (RAND (dirac f))) h.
+Lemma testing1 {LA} {T'} {A : raw_code T'} {h} :
+  fseparate LA [fmap cell T] →
+  NoFail c →
+  ValidCode LA (IPICK T) A →
+  Pr_code (code_link A (RAND c)) h
+    = \dlet_(f <- Pr_rand c)
+      Pr_code (code_link A (RAND {code ret f})) h.
 Proof.
   intros SEP LL VA.
   apply distr_ext.
@@ -224,7 +278,7 @@ Proof.
     rewrite Pr_code_ret.
     rewrite dletC.
     rewrite pr_predT.
-    rewrite LL.
+    rewrite (NoFail_psum _ LL).
     rewrite GRing.mul1r //.
   - intros h y.
     fmap_invert H.
@@ -246,17 +300,18 @@ Proof.
       cbn [bind].
       rewrite dletC.
       rewrite pr_predT.
-      rewrite LL.
+      rewrite (NoFail_psum _ LL).
       rewrite GRing.mul1r //.
     }
-    rewrite Pr_code_sample.
+    rewrite bind_assoc.
+    rewrite (Pr_code_rand LL).
     apply dlet_f_equal => x.
     rewrite Pr_code_put.
     erewrite testing0.
     + rewrite Pr_code_get E.
       cbn [bind code_link].
-      rewrite Pr_code_sample.
-      rewrite (distr_ext _ _ _ (dlet_unit _ _)).
+      rewrite bind_assoc.
+      cbn [ prog bind ].
       rewrite Pr_code_put.
       reflexivity.
     + apply SEP.
@@ -284,10 +339,10 @@ Proof.
 Qed.
 
 Lemma testing {LA} {A : raw_package} :
-  fseparate LA [fmap cell op.π1] →
-  LosslessOp op →
-  ValidPackage LA (IPICK op.π1) A_export A →
-  Pr (A ∘ RAND op) = \dlet_(x <- op.π2) Pr (A ∘ RAND (dirac x)).
+  fseparate LA [fmap cell T] →
+  NoFail c →
+  ValidPackage LA (IPICK T) A_export A →
+  Pr (A ∘ RAND c) = \dlet_(x <- Pr_rand c) Pr (A ∘ RAND {code ret x}).
 Proof.
   intros SEP LL VA.
   apply distr_ext => b.
@@ -302,19 +357,8 @@ Proof.
   rewrite resolve_link => //.
 Qed.
 
-Lemma r_dirac :
-  ∀ {T A : choice_type} pre post (y : T)
-    (c : T → raw_code A),
-    ⊢ ⦃ pre ⦄
-      c y ≈ x ← sample dirac y ;; c x
-    ⦃ post ⦄.
-Proof.
-  intros T A pre post y c.
-  eapply from_sem_jdg.
-Admitted.
-
-Lemma PICK_dirac_perf {T : choice_type} (x : T) :
-  RAND (dirac x) ≈₀ PICK x.
+Lemma PICK_dirac_perf (x : T) :
+  RAND {code ret x} ≈₀ PICK x.
 Proof.
   pose (inv := (heap_ignore [fmap cell T] ⋊ couple_lhs (cell T) (cell T) (λ v _, v = None ∨ v = Some x))).
   apply (eq_rel_perf_ind _ _ inv);
@@ -327,10 +371,7 @@ Proof.
   eapply (r_rem_couple_lhs (cell T) (cell T)); try exact _.
   intros H.
   destruct H; subst.
-  - eapply rel_jdg_replace_sem.
-    2: apply r_dirac.
-    2: apply rreflexivity_rule.
-    apply r_put_lhs.
+  - apply r_put_lhs.
     ssprove_restore_mem.
     { ssprove_invariant. by right. }
     by apply r_ret.
@@ -339,10 +380,10 @@ Proof.
 Qed.
 
 Lemma testing' {LA} {A : raw_package} :
-  fseparate LA [fmap cell op.π1] →
-  LosslessOp op →
-  ValidPackage LA (IPICK op.π1) A_export A →
-  Pr (A ∘ RAND op) true = (\dlet_(x <- op.π2) Pr (A ∘ PICK x)) true.
+  fseparate LA [fmap cell T] →
+  NoFail c →
+  ValidPackage LA (IPICK T) A_export A →
+  Pr (A ∘ RAND c) true = (\dlet_(x <- Pr_rand c) Pr (A ∘ PICK x)) true.
 Proof.
   intros SEP LL VA.
   rewrite testing //.
@@ -357,20 +398,91 @@ Qed.
 
 End Proof.
 
-Lemma testing_unif n {LA} {A : raw_package} :
-  fseparate LA [fmap cell nat ] →
-  ValidPackage LA (IPICK nat) A_export A →
-  Pr (A ∘ RAND (unif n)) true
-      = (\sum_(0 <= i < n) Pr (A ∘ @PICK nat i) true / n%:R)%R.
+Lemma testing_uni n {LA} {A : raw_package} `{Positive n} :
+  fseparate LA [fmap cell ('fin n) ] →
+  ValidPackage LA (IPICK ('fin n)) A_export A →
+  Pr (A ∘ RAND {code x ← sample uniform n ;; ret x}) true
+      = (\sum_i Pr (A ∘ @PICK ('fin n) i) true / n%:R)%R.
 Proof.
   intros SEP VA.
+  rewrite testing' //.
+  2: apply NoFail_sampler; [ apply LosslessOp_uniform | intros ?; apply NoFail_ret].
+  rewrite /Pr_rand Pr_code_sample. 
+  rewrite /(dfst _) (distr_ext _ _ _ (dlet_dlet _ _ _)).
+  rewrite /(dfst _) (distr_ext _ _ _ (dlet_dlet _ _ _)).
+  under dlet_f_equal.
+  { intros x.
+    rewrite Pr_code_ret.
+    rewrite (distr_ext _ _ _ (dlet_unit _ _)).
+    rewrite (distr_ext _ _ _ (dlet_unit _ _)).
+    cbn [ fst ].
+    over. }
+  rewrite dletE.
+  rewrite psum_fin.
+  apply eq_bigr => x _.
+  rewrite GRing.mulrC.
+  simpl in x.
+  replace ((uniform n).π2 x) with (n%:R^-1 : Axioms.R)%R.
+  - apply Num.Theory.ger0_norm.
+    apply Num.Theory.mulr_ge0.
+    + unfold Pr, SDistr_bind; rewrite dletE; apply ge0_psum.
+    + rewrite Num.Theory.invr_ge0.
+      apply Num.Theory.ler0n.
+  - simpl.
+    unfold UniformDistrLemmas.r.
+    rewrite GRing.Theory.div1r card_ord //.
+Qed.
+
+Lemma testing_uni2 n {LA} {A : raw_package} `{Positive n} :
+  fseparate LA [fmap cell ('fin n) ] →
+  ValidPackage LA (IPICK ('fin n)) A_export A →
+  (Pr (A ∘ RAND {code x ← sample uniform n ;; ret x}) true *+ n
+      = \sum_i Pr (A ∘ @PICK ('fin n) i) true)%R.
+Proof.
+  intros H' H''.
+  rewrite testing_uni //.
+  rewrite -(GRing.Theory.mulr_natr (\sum__ _) n).
+  rewrite GRing.mulr_suml.
+  apply eq_big => // i _.
+  rewrite -GRing.mulrA GRing.mulVf ?GRing.mulr1 //.
+  apply /eqP => H0.
+  erewrite <- GRing.mul0rn in H0.
+  apply Num.Theory.pmulrnI in H0 => //.
+  move: (GRing.oner_eq0 R) => /eqP //.
+Qed.
+
+Lemma testing_unif n {LA} {A : raw_package} :
+  fseparate LA [fmap cell nat] →
+  ValidPackage LA (IPICK nat) A_export A →
+  (Pr (A ∘ RAND (unif n)) true *+ n
+      = \sum_(0 <= i < n) Pr (A ∘ @PICK nat i) true)%R.
+Proof.
+  intros SEP VA.
+  destruct n.
+  1: admit.
+  unfold unif.
+  cbn [ prog ].
+  rewrite testing'.
+  2: apply SEP. 
+  2: apply NoFail_sampler; [ apply LosslessOp_uniform | intros ?; apply NoFail_ret].
+Admitted.
+  (*
+  erewrite (@testing_uni2 n.+1 LA A _ _ VA).
+  etransitivity.
+  1: eapply @testing_uni2.
   erewrite testing' => //.
   2: apply SEP.
-  2: apply LosslessOp_unif.
+  2: apply NoFail_unif.
   2: apply VA.
+  destruct n.
+  1: admit.
+  unfold unif.
+  rewrite testing_uni2.
   rewrite dletE.
 Admitted.
+   *)
 
+(*
 Lemma testing_unif2 {n} {LA} {A : raw_package} :
   fseparate LA [fmap cell nat ] →
   ValidPackage LA (IPICK nat) A_export A →
@@ -390,47 +502,7 @@ Proof.
   apply Num.Theory.pmulrnI in H0 => //.
   move: (GRing.oner_eq0 R) => /eqP //.
 Qed.
-
-Lemma testing_uni n {LA} {A : raw_package} `{Positive n} :
-  fseparate LA [fmap cell ('fin n) ] →
-  ValidPackage LA (IPICK ('fin n)) A_export A →
-  Pr (A ∘ RAND (uniform n)) true
-      = (\sum_i Pr (A ∘ @PICK ('fin n) i) true / n%:R)%R.
-Proof.
-  intros SEP VA.
-  rewrite testing' //.
-  rewrite dletE.
-  rewrite psum_fin.
-  apply eq_bigr => x _.
-  rewrite GRing.mulrC.
-  replace ((uniform n).π2 x) with (n%:R^-1 : Axioms.R)%R.
-  - apply Num.Theory.ger0_norm.
-    apply Num.Theory.mulr_ge0.
-    + unfold Pr, SDistr_bind; rewrite dletE; apply ge0_psum.
-    + rewrite Num.Theory.invr_ge0.
-      apply Num.Theory.ler0n.
-  - simpl.
-    unfold UniformDistrLemmas.r.
-    rewrite GRing.Theory.div1r card_ord //.
-Qed.
-
-Lemma testing_uni2 {n} {LA} {A : raw_package} `{Positive n} :
-  fseparate LA [fmap cell ('fin n) ] →
-  ValidPackage LA (IPICK ('fin n)) A_export A →
-  (Pr (A ∘ RAND (uniform n)) true *+ n
-      = \sum_i Pr (A ∘ @PICK ('fin n) i) true)%R.
-Proof.
-  intros H' H''.
-  rewrite testing_uni //.
-  rewrite -(GRing.Theory.mulr_natr (\sum__ _) n).
-  rewrite GRing.mulr_suml.
-  apply eq_big => // i _.
-  rewrite -GRing.mulrA GRing.mulVf ?GRing.mulr1 //.
-  apply /eqP => H0.
-  erewrite <- GRing.mul0rn in H0.
-  apply Num.Theory.pmulrnI in H0 => //.
-  move: (GRing.oner_eq0 R) => /eqP //.
-Qed.
+ *)
 
 Lemma testing_pick {LA LR LR' I} {n : nat} {A R R' : raw_package}
     `{ValidPackage LA I A_export A}
@@ -459,10 +531,10 @@ Proof.
   rewrite GRing.mulrBl.
   rewrite 2!GRing.mulr_natr.
   rewrite 2!link_assoc.
-  erewrite testing_unif2.
+  erewrite testing_unif.
   3: ssprove_valid.
   2: fmap_solve.
-  erewrite testing_unif2.
+  erewrite testing_unif.
   3: ssprove_valid.
   2: fmap_solve.
   do 2 f_equal.
@@ -470,6 +542,7 @@ Proof.
   - f_equal; apply eq_big => // x y; rewrite link_assoc //.
 Qed.
 
+(*
 Lemma testing_uni2_adv {n} {LA} {I} {A R R' : raw_package} `{Positive n} :
   fseparate LA [fmap cell ('fin n) ] →
   ValidPackage LA I A_export A →
@@ -494,4 +567,4 @@ Proof.
   apply Num.Theory.ler_sum => i _.
   rewrite 2!link_assoc //.
 Qed.
-
+*)
