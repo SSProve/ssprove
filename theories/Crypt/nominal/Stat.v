@@ -170,20 +170,43 @@ Qed.
 Definition Pr_rand {T} (c : raw_code T ) : distr R T
   := dfst (Pr_code c emptym).
 
+Lemma Pr_rand_ret {A : choiceType} {x : A} :
+  Pr_rand (ret x) = dunit x.
+Proof.
+  rewrite /Pr_rand Pr_code_ret.
+  by rewrite /(dfst _) (distr_ext _ _ _ (dlet_unit _ _)).
+Qed.
+
+Lemma Pr_rand_sample {A : choiceType} {op' : Op} {k : Arit op' → raw_code A} :
+  Pr_rand (x ← sample op' ;; k x) = \dlet_(x <- op'.π2) Pr_rand (k x).
+Proof.
+    rewrite /Pr_rand Pr_code_sample.
+    by rewrite /(dfst _) (distr_ext _ _ _ (dlet_dlet _ _ _)).
+Qed.
+
 Lemma NoFail_psum {T} (c : raw_code T) : NoFail c → psum (Pr_rand c) = 1%R.
 Proof.
   elim.
   - intros x.
-    rewrite /Pr_rand Pr_code_ret.
-    rewrite /(dfst _) (distr_ext _ _ _ (dlet_unit _ _)).
+    rewrite Pr_rand_ret.
     apply Couplings.psum_SDistr_unit.
   - intros op k LL NF IH.
-    rewrite /Pr_rand Pr_code_sample.
+    rewrite Pr_rand_sample.
     under eq_psum.
     { intros x.
-      rewrite dlet_dlet.
       rewrite dletE.
-Admitted.
+      over.
+    }
+    rewrite interchange_psum.
+    2: intros x; apply summable_mu_wgtd; intros y.
+    2: apply /andP; split; [ done | apply le1_mu1 ].
+    2: eapply eq_summable.
+    2: intros x; rewrite -dletE; reflexivity.
+    2: apply summable_mu.
+    under eq_psum.
+    1: intros x; rewrite psumZ // IH GRing.mulr1; over.
+    apply LL.
+Qed.
 
 Lemma Pr_code_rand {T T' : choiceType} {c} {f : T → raw_code T'} {h}
   : NoFail c
@@ -459,28 +482,49 @@ Lemma testing_unif n {LA} {A : raw_package} :
 Proof.
   intros SEP VA.
   destruct n.
-  1: admit.
-  unfold unif.
-  cbn [ prog ].
+  1: rewrite GRing.mulr0n big_nil //.
   rewrite testing'.
   2: apply SEP. 
   2: apply NoFail_sampler; [ apply LosslessOp_uniform | intros ?; apply NoFail_ret].
-Admitted.
-  (*
-  erewrite (@testing_uni2 n.+1 LA A _ _ VA).
-  etransitivity.
-  1: eapply @testing_uni2.
-  erewrite testing' => //.
-  2: apply SEP.
-  2: apply NoFail_unif.
-  2: apply VA.
-  destruct n.
-  1: admit.
   unfold unif.
-  rewrite testing_uni2.
+  cbn [ prog ].
+  rewrite Pr_rand_sample.
+  rewrite dlet_dlet.
+  under dlet_f_equal.
+  1: intros x; rewrite Pr_rand_ret; rewrite (distr_ext _ _ _ (dlet_unit _ _)); over.
   rewrite dletE.
-Admitted.
+  rewrite psum_fin.
+  
+  (*
+  Search injective bigop.body.
+  erewrite <- (@reindex_inj _ _ _ _ nat_of_ord).
+  under psum.
+
+  rewrite xfinmap.big_nat_mkfset.
+  erewrite reindex_inj.
+  1: apply eq_bigr.
+  symmetry.
+  2: apply ord_inj.
+  Search nat_of_ord injective.
    *)
+
+
+  (*
+  apply eq_bigr => x _.
+  rewrite GRing.mulrC.
+  simpl in x.
+  replace ((uniform n).π2 x) with (n%:R^-1 : Axioms.R)%R.
+  - apply Num.Theory.ger0_norm.
+    apply Num.Theory.mulr_ge0.
+    + unfold Pr, SDistr_bind; rewrite dletE; apply ge0_psum.
+    + rewrite Num.Theory.invr_ge0.
+      apply Num.Theory.ler0n.
+  - simpl.
+    unfold UniformDistrLemmas.r.
+    rewrite GRing.Theory.div1r card_ord //.
+  rewrite Pr_rand_ret.
+   *)
+Admitted.
 
 (*
 Lemma testing_unif2 {n} {LA} {A : raw_package} :
