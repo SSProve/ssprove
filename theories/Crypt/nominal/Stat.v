@@ -94,41 +94,6 @@ Definition PICK {T : choice_type} (x : T) : game (IPICK T) :=
 
 Definition cell T : Location := (0%N, 'option T).
 
-Definition CELL T : package (IPICK T) (IPICK T) :=
-  [package [fmap cell T ] ;
-    [ 0%N ] : { 'unit ~> T } 'tt {
-      mc ← get cell T ;;
-      match mc with
-      | Some c => ret c
-      | None => 
-        r ← call [ 0%N ] : { 'unit ~> T } tt ;;
-        #put cell T := Some r ;;
-        ret r
-      end
-    } ].
-
-Lemma CELL_PICK_perf {T : choice_type} (x : T) :
-  CELL T ∘ PICK x ≈₀ PICK x.
-Proof.
-  pose (inv := (heap_ignore [fmap cell T] ⋊ couple_lhs (cell T) (cell T) (λ v _, v = None ∨ v = Some x))).
-  apply (eq_rel_perf_ind _ _ inv);
-    [ unfold inv; ssprove_invariant; [ fmap_solve | by left ] |].
-  unfold inv.
-  simplify_eq_rel m.
-  destruct m => /=.
-  ssprove_code_simpl; simpl.
-  apply r_get_remember_lhs => y.
-  eapply (r_rem_couple_lhs (cell T) (cell T)); try exact _.
-  intros H.
-  destruct H; subst.
-  - apply r_put_lhs.
-    ssprove_restore_mem.
-    { ssprove_invariant. by right. }
-    by apply r_ret.
-  - apply r_forget_lhs.
-    by apply r_ret.
-Qed.
-
 Definition unif (n : nat) : code emptym emptym nat := {code
   match n with
   | 0 => ret 0%N
@@ -228,15 +193,6 @@ Proof.
     done.
 Qed.
 
-(*
-Lemma Pr_code_indep {T'} {c' : raw_code T'} {h h'}
-  : ValidCode emptym emptym c' 
-  → dfst (Pr_code c emptym) = Pr_rand.
-Proof.
-  elim.
-  - intros. rewrite Pr_ret.
- *)
-  
 
 Section Proof.
 
@@ -419,6 +375,25 @@ Proof.
   - apply PICK_dirac_perf.
 Qed.
 
+Lemma testing'_sep {A : nom_package} :
+  NoFail c →
+  ValidPackage (loc A) (IPICK T) A_export A →
+  Pr' (A ∘ RAND c)%sep true = (\dlet_(x <- Pr_rand c) Pr' (A ∘ PICK x)%sep) true.
+Proof.
+  intros LL VA.
+  pose (π := fresh (as_nom (RAND c), [fmap cell T] : Locations) (A, loc A)).
+  rewrite -{1}(@rename_alpha _ A π).
+  rewrite {1}/Pr' -link_sep_link.
+  2: eauto with nominal_db.
+  rewrite testing' //.
+  2: rewrite fseparate_disj.
+  2: eauto with nominal_db.
+  apply dlet_f_equal => x.
+  rewrite -{2}(@rename_alpha _ A π).
+  rewrite /Pr' -link_sep_link //.
+  rewrite -fseparate_disj; fmap_solve.
+Qed.
+
 End Proof.
 
 Lemma testing_uni n {LA} {A : raw_package} `{Positive n} :
@@ -430,15 +405,12 @@ Proof.
   intros SEP VA.
   rewrite testing' //.
   2: apply NoFail_sampler; [ apply LosslessOp_uniform | intros ?; apply NoFail_ret].
-  rewrite /Pr_rand Pr_code_sample. 
-  rewrite /(dfst _) (distr_ext _ _ _ (dlet_dlet _ _ _)).
+  rewrite Pr_rand_sample.
   rewrite /(dfst _) (distr_ext _ _ _ (dlet_dlet _ _ _)).
   under dlet_f_equal.
   { intros x.
-    rewrite Pr_code_ret.
+    rewrite Pr_rand_ret.
     rewrite (distr_ext _ _ _ (dlet_unit _ _)).
-    rewrite (distr_ext _ _ _ (dlet_unit _ _)).
-    cbn [ fst ].
     over. }
   rewrite dletE.
   rewrite psum_fin.
@@ -474,6 +446,15 @@ Proof.
   move: (GRing.oner_eq0 R) => /eqP //.
 Qed.
 
+Lemma eq_sum_sum {n} {F : nat → R} :
+  (\sum_i F (@nat_of_ord n i)
+  = \sum_(0 <= i < n) F i)%R.
+Proof.
+  induction n.
+  - rewrite big_nil big_ord0 //.
+  - by rewrite big_ord_recr big_nat_recr //= IHn.
+Qed.
+
 Lemma testing_unif n {LA} {A : raw_package} :
   fseparate LA [fmap cell nat] →
   ValidPackage LA (IPICK nat) A_export A →
@@ -494,59 +475,21 @@ Proof.
   1: intros x; rewrite Pr_rand_ret; rewrite (distr_ext _ _ _ (dlet_unit _ _)); over.
   rewrite dletE.
   rewrite psum_fin.
-  
-  (*
-  Search injective bigop.body.
-  erewrite <- (@reindex_inj _ _ _ _ nat_of_ord).
-  under psum.
-
-  rewrite xfinmap.big_nat_mkfset.
-  erewrite reindex_inj.
-  1: apply eq_bigr.
-  symmetry.
-  2: apply ord_inj.
-  Search nat_of_ord injective.
-   *)
-
-
-  (*
-  apply eq_bigr => x _.
-  rewrite GRing.mulrC.
-  simpl in x.
-  replace ((uniform n).π2 x) with (n%:R^-1 : Axioms.R)%R.
-  - apply Num.Theory.ger0_norm.
-    apply Num.Theory.mulr_ge0.
-    + unfold Pr, SDistr_bind; rewrite dletE; apply ge0_psum.
-    + rewrite Num.Theory.invr_ge0.
-      apply Num.Theory.ler0n.
-  - simpl.
-    unfold UniformDistrLemmas.r.
-    rewrite GRing.Theory.div1r card_ord //.
-  rewrite Pr_rand_ret.
-   *)
-Admitted.
-
-(*
-Lemma testing_unif2 {n} {LA} {A : raw_package} :
-  fseparate LA [fmap cell nat ] →
-  ValidPackage LA (IPICK nat) A_export A →
-  (Pr (A ∘ RAND (unif n)) true *+ n
-      = \sum_(0 <= i < n) Pr (A ∘ @PICK 'nat i) true)%R.
-Proof.
-  intros H' H''.
-  rewrite testing_unif //.
-  destruct n.
-  { rewrite GRing.mulr0n big_nil //. }
-  rewrite -(GRing.Theory.mulr_natr (\sum_(_ <= _ < _) _) n.+1).
+  rewrite -eq_sum_sum.
+  rewrite -(GRing.Theory.mulr_natr (\sum__ _) n.+1).
   rewrite GRing.mulr_suml.
-  apply eq_big => // i _.
-  rewrite -GRing.mulrA GRing.mulVf ?GRing.mulr1 //.
+  apply eq_bigr => x _.
+  rewrite GRing.mulr_natr -Num.normrMn -GRing.mulr_natr.
+  replace ((uniform n.+1).π2 _) with (n.+1%:R^-1 : Axioms.R)%R.
+  2: rewrite /= -GRing.div1r /UniformDistrLemmas.r card_ord //.
+  rewrite GRing.mulrC GRing.mulrA.
+  rewrite GRing.mulfV ?GRing.mul1r.
+  1: by apply Num.Theory.ger0_norm.
   apply /eqP => H0.
   erewrite <- GRing.mul0rn in H0.
   apply Num.Theory.pmulrnI in H0 => //.
   move: (GRing.oner_eq0 R) => /eqP //.
 Qed.
- *)
 
 Lemma testing_pick {LA LR LR' I} {n : nat} {A R R' : raw_package}
     `{ValidPackage LA I A_export A}
@@ -586,29 +529,3 @@ Proof.
   - f_equal; apply eq_big => // x y; rewrite link_assoc //.
 Qed.
 
-(*
-Lemma testing_uni2_adv {n} {LA} {I} {A R R' : raw_package} `{Positive n} :
-  fseparate LA [fmap cell ('fin n) ] →
-  ValidPackage LA I A_export A →
-  ValidPackage LA (IPICK 'fin n) I R →
-  ValidPackage LA (IPICK 'fin n) I R' →
-  (AdvantageE (R ∘ RAND (uniform n)) (R' ∘ RAND (uniform n)) A *+ n
-    <= \sum_i AdvantageE
-      (R ∘ @PICK 'fin n i)
-      (R' ∘ PICK i) A)%R.
-Proof.
-  intros H' VA VG VG'.
-  unfold AdvantageE.
-  rewrite -Num.Theory.normrMn.
-  rewrite -GRing.mulr_natr.
-  rewrite GRing.mulrBl.
-  rewrite 2!GRing.mulr_natr.
-  rewrite 2!link_assoc.
-  do 2 (rewrite testing_uni2; [| fmap_solve ]).
-  rewrite -GRing.sumrB.
-  eapply Order.POrderTheory.le_trans.
-  { apply Num.Theory.ler_norm_sum. }
-  apply Num.Theory.ler_sum => i _.
-  rewrite 2!link_assoc //.
-Qed.
-*)
