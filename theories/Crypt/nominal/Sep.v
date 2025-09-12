@@ -207,7 +207,6 @@ Lemma valid_sep_link_weak :
   ∀ I M1 M2 E P1 P2,
     ValidPackage (loc P1) M1 E P1 →
     ValidPackage (loc P2) I M2 P2 →
-    fcompat (loc P1) (loc P2) →
     fsubmap M1 M2 →
     ValidPackage (loc (P1 ∘ P2)%sep) I E (P1 ∘ P2)%sep.
 Proof. intros.
@@ -244,15 +243,15 @@ Proof.
   apply share_link_sep_link, D.
 Qed.
 
-Lemma sep_link_id {L I E} (P : nom_package) :
-  ValidPackage L I E P → P ∘ ID I ≡ P.
+Lemma sep_link_id {I E} (P : nom_package) :
+  ValidPackage (loc P) I E P → P ∘ ID I ≡ P.
 Proof.
   intros V.
-  rewrite /sep_link /move -{3}(@share_link_id _ _ _ _ V).
+  rewrite /sep_link /move -{3}(@share_link_id _ _ _ V).
   eauto with nominal_db nocore.
 Qed.
 
-Lemma id_sep_link {L I E} (P : nom_package) (V : ValidPackage L I E P)
+Lemma id_sep_link {I E} (P : nom_package) (V : ValidPackage (loc P) I E P)
   : ID E ∘ P ≡ P.
 Proof.
   rewrite /sep_link /move id_share_link.
@@ -367,9 +366,9 @@ Proof.
   auto with nominal_db nocore.
 Qed.
 
-Lemma sep_interchange {A B C D E F} {L1 L2 L3 L4} (p1 p2 p3 p4 : nom_package) :
-  ValidPackage L1 B A p1 → ValidPackage L2 E D p2 →
-  ValidPackage L3 C B p3 → ValidPackage L4 F E p4 →
+Lemma sep_interchange {A B C D E F} (p1 p2 p3 p4 : nom_package) :
+  ValidPackage (loc p1) B A p1 → ValidPackage (loc p2) E D p2 →
+  ValidPackage (loc p3) C B p3 → ValidPackage (loc p4) F E p4 →
   fseparate (val p3) (val p4) →
   (p1 ∘ p3) || (p2 ∘ p4) ≡ (p1 || p2) ∘ (p3 || p4).
 Proof.
@@ -395,8 +394,8 @@ Proof.
 Qed.
 
 Lemma sep_par_factor_l
-  {L L' : Locations} {I I' E E' : Interface} {P P' : nom_package} :
-  ValidPackage L I E P → ValidPackage L' I' E' P' →
+  {I I' E E' : Interface} {P P' : nom_package} :
+  ValidPackage (loc P) I E P → ValidPackage (loc P') I' E' P' →
   fseparate I (val P') →
   (P || P') ≡ (P || ID E') ∘ (ID I || P').
 Proof.
@@ -408,8 +407,8 @@ Proof.
   setoid_reflexivity.
 Qed.
 
-Lemma sep_par_factor_r {L L' I I' E E'} {P P' : nom_package} :
-  ValidPackage L I E P → ValidPackage L' I' E' P' →
+Lemma sep_par_factor_r {I I' E E'} {P P' : nom_package} :
+  ValidPackage (loc P) I E P → ValidPackage (loc P') I' E' P' →
   fseparate (val P) I' →
   (P || P') ≡ (ID E || P') ∘ (P || ID I').
 Proof.
@@ -436,10 +435,30 @@ Proof.
   - fmap_solve.
 Qed.
 
-Lemma sep_par_game_l {LP LQ LR EP EQ ER IQ} {P Q R : nom_package}
-  {VP : ValidPackage LP EQ EP P}
-  {VQ : ValidPackage LQ IQ EQ Q}
-  {VR : ValidPackage LR Game_import ER R} :
+Lemma sep_par_factor_game_l {I' E E' : Interface} {P P' : nom_package}
+  : ValidPackage (loc P) Game_import E P → ValidPackage (loc P') I' E' P'
+  → (P || P') ≡ ((P || ID E') ∘ P')%sep.
+Proof.
+  intros VP VP'.
+  rewrite sep_par_factor_l; [| fmap_solve ].
+  rewrite sep_par_empty_l.
+  reflexivity.
+Qed.
+
+Lemma sep_par_factor_game_r {I E E' : Interface} {P P' : nom_package}
+  : ValidPackage (loc P) I E P → ValidPackage (loc P') Game_import E' P'
+  → (P || P') ≡ ((ID E || P') ∘ P)%sep.
+Proof.
+  intros VP VP'.
+  rewrite sep_par_factor_r; [| fmap_solve ].
+  rewrite sep_par_empty_r.
+  reflexivity.
+Qed.
+
+Lemma sep_par_game_l {EP EQ ER IQ} {P Q R : nom_package}
+  {VP : ValidPackage (loc P) EQ EP P}
+  {VQ : ValidPackage (loc Q) IQ EQ Q}
+  {VR : ValidPackage (loc R) Game_import ER R} :
   ((P ∘ Q) || R) ≡ (P || R) ∘ Q.
 Proof.
   rewrite -{2}(@sep_par_empty_r Q).
@@ -449,10 +468,10 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma sep_par_game_r {LP LQ LR EP EQ ER IQ} {P Q R : nom_package}
-  {VP : ValidPackage LP EQ EP P}
-  {VQ : ValidPackage LQ IQ EQ Q}
-  {VR : ValidPackage LR Game_import ER R} :
+Lemma sep_par_game_r {EP EQ ER IQ} {P Q R : nom_package}
+  {VP : ValidPackage (loc P) EQ EP P}
+  {VQ : ValidPackage (loc Q) IQ EQ Q}
+  {VR : ValidPackage (loc R) Game_import ER R} :
   (R || (P ∘ Q)) ≡ (R || P) ∘ Q.
 Proof.
   rewrite -{2}(@sep_par_empty_l Q).

@@ -362,7 +362,7 @@ Qed.
 
 (* ID lemmas *)
 
-Lemma share_link_id {L I E} {p : nom_package} `{ValidPackage L I E p}
+Lemma share_link_id {I E} {p : nom_package} `{ValidPackage (loc p) I E p}
   : p ∘ ID I = p.
 Proof.
   apply eq_nom_package; rewrite //=.
@@ -370,7 +370,7 @@ Proof.
   - rewrite link_id //.
 Qed.
 
-Lemma id_share_link {L I E} {p : nom_package} `{ValidPackage L I E p}
+Lemma id_share_link {I E} {p : nom_package} `{ValidPackage (loc p) I E p}
   : ID E ∘ p = p.
 Proof.
   apply eq_nom_package; rewrite //= id_link //.
@@ -445,9 +445,9 @@ Proof.
   - rewrite par_assoc //.
 Qed.
 
-Lemma share_interchange {A B C D E F} {L1 L2 L3 L4} (p1 p2 p3 p4 : nom_package)
-  `{ValidPackage L1 B A p1} `{ValidPackage L2 E D p2}
-  `{ValidPackage L3 C B p3} `{ValidPackage L4 F E p4} :
+Lemma share_interchange {A B C D E F} (p1 p2 p3 p4 : nom_package)
+  `{ValidPackage (loc p1) B A p1} `{ValidPackage (loc p2) E D p2}
+  `{ValidPackage (loc p3) C B p3} `{ValidPackage (loc p4) F E p4} :
   fcompat (loc p2) (loc p3) →
   fseparate (val p3) (val p4) →
   (p1 ∘ p3) || (p2 ∘ p4) = (p1 || p2) ∘ (p3 || p4).

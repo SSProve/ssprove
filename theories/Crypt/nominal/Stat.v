@@ -72,8 +72,8 @@ Proof.
   eapply (H' LA); done.
 Qed.
 
-Lemma Adv_Pr {L I} {G G' A : nom_package} `{ValidPackage L I A_export A} :
-  perfect I G G' → Pr (A ∘ G)%sep true = Pr (A ∘ G')%sep true.
+Lemma Adv_Pr {I} {G G' A : nom_package} `{ValidPackage (loc A) I A_export A} :
+  perfect I G G' → Pr' (A ∘ G)%sep true = Pr' (A ∘ G')%sep true.
 Proof.
   intros H'.
   apply GRing.Theory.subr0_eq.
@@ -94,7 +94,7 @@ Definition PICK {T : choice_type} (x : T) : game (IPICK T) :=
 
 Definition cell T : Location := (0%N, 'option T).
 
-Definition unif (n : nat) : code emptym emptym nat := {code
+Definition unif (n : nat) : code emptym emptym nat := locked {code
   match n with
   | 0 => ret 0%N
   | S n' =>
@@ -126,8 +126,8 @@ Inductive NoFail {A} : raw_code A → Prop :=
 Lemma NoFail_unif {n} : NoFail (unif n).
 Proof.
   case n.
-  - apply NoFail_ret.
-  - intros n'. simpl. apply NoFail_sampler.
+  - rewrite /unif -lock. apply NoFail_ret.
+  - intros n'. rewrite /unif -lock. apply NoFail_sampler.
     { apply LosslessOp_uniform. }
     intros x. apply NoFail_ret.
 Qed.
@@ -455,21 +455,20 @@ Proof.
   - by rewrite big_ord_recr big_nat_recr //= IHn.
 Qed.
 
-Lemma testing_unif n {LA} {A : raw_package} :
-  fseparate LA [fmap cell nat] →
-  ValidPackage LA (IPICK nat) A_export A →
-  (Pr (A ∘ RAND (unif n)) true *+ n
-      = \sum_(0 <= i < n) Pr (A ∘ @PICK nat i) true)%R.
+Lemma testing_unif {n} {A : nom_package} :
+  ValidPackage (loc A) (IPICK nat) A_export A →
+  (Pr' (A ∘ RAND (unif n)) true *+ n
+      = \sum_(0 <= i < n) Pr' (A ∘ @PICK nat i) true)%R.
 Proof.
-  intros SEP VA.
+  intros VA.
   destruct n.
   1: rewrite GRing.mulr0n big_nil //.
-  rewrite testing'.
-  2: apply SEP. 
-  2: apply NoFail_sampler; [ apply LosslessOp_uniform | intros ?; apply NoFail_ret].
+  rewrite -> testing'_sep.
+  2: apply NoFail_unif.
+  2: assumption.
   unfold unif.
   cbn [ prog ].
-  rewrite Pr_rand_sample.
+  rewrite -lock Pr_rand_sample.
   rewrite dlet_dlet.
   under dlet_f_equal.
   1: intros x; rewrite Pr_rand_ret; rewrite (distr_ext _ _ _ (dlet_unit _ _)); over.
@@ -491,41 +490,128 @@ Proof.
   move: (GRing.oner_eq0 R) => /eqP //.
 Qed.
 
-Lemma testing_pick {LA LR LR' I} {n : nat} {A R R' : raw_package}
-    `{ValidPackage LA I A_export A}
-    `{ValidPackage LR (IPICK nat) I R}
-    `{ValidPackage LR' (IPICK nat) I R'} :
-    fseparate LA LR →
-    fseparate LA LR' →
-    fseparate LA [fmap cell nat] →
-    fseparate LR [fmap cell nat] →
-    fseparate LR' [fmap cell nat] →
-    (∀ i, R' ∘ PICK i ≈₀ R ∘ PICK i.+1)
-  → (AdvantageE (R ∘ PICK 0%N) (R ∘ PICK n) A
-  = AdvantageE (R ∘ RAND (unif n)) (R' ∘ RAND (unif n)) A *+ n)%R.
+Lemma testing_pick {I} {n : nat} {A R R' : nom_package}
+  : ValidPackage (loc A) I A_export A
+  → ValidPackage (loc R) (IPICK nat) I R
+  → ValidPackage (loc R') (IPICK nat) I R'
+  → (∀ i, perfect I (R' ∘ PICK i) (R ∘ PICK i.+1))
+  → (Adv (R ∘ PICK 0%N) (R ∘ PICK n) A
+  = Adv (R ∘ RAND (unif n)) (R' ∘ RAND (unif n)) A *+ n)%R.
 Proof.
-  intros C1 C2 S1 S2 S3 IH.
-  rewrite Advantage_sym (Advantage_sym (R ∘ RAND (unif n))).
-  unfold AdvantageE.
-  rewrite -(GRing.telescope_sumr (fun i => Pr (A ∘ R ∘ PICK i) true)) //.
+  intros VA VR VR' IH. 
+  rewrite -> Adv_sym.
+  symmetry.
+  rewrite -> Adv_sym.
+  symmetry.
+  unfold Adv.
+  rewrite <- (GRing.telescope_sumr (fun i => Pr' (A ∘ R ∘ PICK i) true)) => //.
   rewrite GRing.sumrB.
-  under eq_big.
-  1: intros; over.
-  1: intros i _; erewrite (AdvantageE_Pr _ _ (IH i)); over.
-  Unshelve. 2,3: fmap_solve.
+  under eq_bigr.
+  { intros i _; erewrite <- (@Adv_Pr _ _ _ _ VA (IH i)), sep_link_assoc; over. }
   rewrite -Num.Theory.normrMn.
-  rewrite -GRing.mulr_natr.
+  rewrite <- testing_unif; [| ssprove_valid ].
+  under eq_bigr.
+  { intros i _; erewrite sep_link_assoc; over. }
+  simpl.
+  rewrite <- testing_unif; [| ssprove_valid ].
+  do 2 rewrite -> sep_link_assoc.
+  simpl.
+  symmetry.
+  rewrite <- (@GRing.mulr_natr Axioms.R).
   rewrite GRing.mulrBl.
-  rewrite 2!GRing.mulr_natr.
-  rewrite 2!link_assoc.
-  erewrite testing_unif.
-  3: ssprove_valid.
-  2: fmap_solve.
-  erewrite testing_unif.
-  3: ssprove_valid.
-  2: fmap_solve.
-  do 2 f_equal.
-  - apply eq_big => // x y; rewrite link_assoc //.
-  - f_equal; apply eq_big => // x y; rewrite link_assoc //.
+  do 2 rewrite -> (@GRing.mulr_natr Axioms.R).
+  done.
 Qed.
 
+Lemma testing_hybrid {IMulti IGame} {n : nat} {Multi Game : bool → nom_package}
+  {H A : nom_package}
+  : ValidPackage (loc A) IMulti A_export A
+  → ValidPackage (loc (Game true)) Game_import IGame (Game true)
+  → ValidPackage (loc (Game false)) Game_import IGame (Game false)
+  → ValidPackage (loc H) (unionm IGame (IPICK 'nat)) IMulti H
+  → perfect IMulti (Multi true) (H ∘ (Game true || PICK 0%N))
+  → perfect IMulti (Multi false) (H ∘ (Game true || PICK n))
+  → (∀ i : 'nat, perfect IMulti (H ∘ (Game false || PICK i )) (H ∘ (Game true || PICK i.+1)))
+  → AdvOf Multi A = (AdvOf Game (A ∘ H ∘ (ID IGame || RAND (unif n))) *+ n)%R.
+Proof.
+  intros VA VG VG' VH p p' p''.
+  rewrite (Adv_perfect_l p) (Adv_perfect_r p').
+  rewrite (sep_par_factor_game_l (P' := PICK 0%N)).
+  rewrite (sep_par_factor_game_l (P' := PICK n)).
+  rewrite 2!sep_link_assoc.
+  erewrite testing_pick.
+  5: {
+    intros i; specialize (p'' i).
+    rewrite (sep_par_factor_game_l (P' := PICK i)) in p''.
+    rewrite (sep_par_factor_game_l (P' := PICK i.+1)) in p''.
+    do 2 rewrite -> sep_link_assoc in p''.
+    exact p''.
+  }
+  2-4: ssprove_valid.
+  do 2 rewrite <- sep_link_assoc.
+  erewrite <- sep_par_factor_game_l.
+  2,3: ssprove_valid.
+  erewrite <- sep_par_factor_game_l.
+  2,3: ssprove_valid.
+  rewrite (sep_par_factor_game_r (P := Game true)).
+  rewrite (sep_par_factor_game_r (P := Game false)).
+  rewrite 2!Adv_reduction sep_link_assoc //.
+Qed.
+
+
+
+Definition done : Location := (4%N, 'bool).
+
+Definition IGUESS n `{Positive n} := [interface [ 0%N ] : { 'fin n ~> 'bool }].
+
+Definition GUESS n `{Positive n}
+  : bool → game (IGUESS n) := λ b,
+  [package [fmap done] ;
+    [ 0%N ] : { 'fin n ~> 'bool } (g) {
+      d ← get done ;;
+      if d then
+        ret false
+      else
+        #put done := true ;;
+        r ← sample uniform n ;;
+        ret (b && (r == g))%B
+    }
+  ].
+
+Lemma guess0 {LA} {T'} {A : raw_code T'} {h} {n} `{Positive n} :
+  fseparate LA [fmap done] →
+  ValidCode LA (IGUESS n) A →
+  get_heap h done = true →
+  Pr_code (code_link A (GUESS n true)) h
+  = Pr_code (code_link A (GUESS n false)) h.
+Proof.
+  intros SEP VA.
+  move: h.
+  induction VA => h HEAP; cbn [code_link].
+  - rewrite Pr_code_ret //.
+  - fmap_invert H0.
+    repeat (rewrite (resolve_set, resolve_link, resolve_ID_set, coerce_kleisliE, eq_refl); cbn [fst snd mkdef projT2 mkopsig projT1]).
+    cbn [bind].
+    rewrite 2!Pr_code_get HEAP.
+    cbn [bind].
+    by apply H2.
+  - rewrite 2!Pr_code_get.
+    by apply H2.
+  - rewrite 2!Pr_code_put.
+    apply IHVA.
+    rewrite get_set_heap_neq //.
+    apply fhas_in in H0.
+    destruct SEP as [SEP].
+    move: SEP => /fdisjointP.
+    intros H''.
+    specialize (H'' _ H0).
+    rewrite domm_set domm0 in H''.
+    apply /negP.
+    move=> /eqP H'''.
+    rewrite H''' in H''.
+    rewrite in_fsetU in_fset1 eq_refl // in H''.
+  - rewrite 2!Pr_code_sample.
+    apply distr_ext.
+    apply dlet_f_equal => x.
+    by apply H1.
+Qed.
