@@ -149,6 +149,13 @@ Proof.
     by rewrite /(dfst _) (distr_ext _ _ _ (dlet_dlet _ _ _)).
 Qed.
 
+Lemma Pr_Pr_rand {G} :
+  Pr G true = Pr_rand (resolve G RUN tt) true.
+Proof.
+  unfold Pr, SDistr_bind, SDistr_unit, Pr_op, Pr_rand, dfst.
+  by apply dlet_f_equal => [[b h]].
+Qed.
+
 Lemma NoFail_psum {T} (c : raw_code T) : NoFail c → psum (Pr_rand c) = 1%R.
 Proof.
   elim.
@@ -455,6 +462,21 @@ Proof.
   - by rewrite big_ord_recr big_nat_recr //= IHn.
 Qed.
 
+Lemma dlet_uniform {Y : choiceType} {n} `{H : Positive n}
+  {f : _ → distr R Y} {y : Y} :
+  (\dlet_(x <- (@uniform n H).π2) f x) y = ((\sum_x f x y) / n%:~R)%R.
+Proof.
+  rewrite dletE psum_fin.
+  rewrite GRing.mulr_suml.
+  apply eq_bigr => /= i _.
+  rewrite /UniformDistrLemmas.r card_ord /=.
+  rewrite GRing.mul1r GRing.mulrC.
+  rewrite Num.Theory.ger0_norm //.
+  apply Num.Theory.mulr_ge0 => //.
+  rewrite Num.Theory.invr_ge0.
+  rewrite ler0z //.
+Qed.
+
 Lemma testing_unif {n} {A : nom_package} :
   ValidPackage (loc A) (IPICK nat) A_export A →
   (Pr' (A ∘ RAND (unif n)) true *+ n
@@ -472,18 +494,11 @@ Proof.
   rewrite dlet_dlet.
   under dlet_f_equal.
   1: intros x; rewrite Pr_rand_ret; rewrite (distr_ext _ _ _ (dlet_unit _ _)); over.
-  rewrite dletE.
-  rewrite psum_fin.
+  rewrite dlet_uniform.
   rewrite -eq_sum_sum.
-  rewrite -(GRing.Theory.mulr_natr (\sum__ _) n.+1).
-  rewrite GRing.mulr_suml.
-  apply eq_bigr => x _.
-  rewrite GRing.mulr_natr -Num.normrMn -GRing.mulr_natr.
-  replace ((uniform n.+1).π2 _) with (n.+1%:R^-1 : Axioms.R)%R.
-  2: rewrite /= -GRing.div1r /UniformDistrLemmas.r card_ord //.
-  rewrite GRing.mulrC GRing.mulrA.
-  rewrite GRing.mulfV ?GRing.mul1r.
-  1: by apply Num.Theory.ger0_norm.
+  rewrite -(GRing.Theory.mulr_natr (_ / _)%R n.+1).
+  rewrite -GRing.mulrA.
+  rewrite GRing.mulVf ?GRing.mulr1 //.
   apply /eqP => H0.
   erewrite <- GRing.mul0rn in H0.
   apply Num.Theory.pmulrnI in H0 => //.
@@ -578,12 +593,12 @@ Definition GUESS n `{Positive n}
     }
   ].
 
-Lemma guess0 {LA} {T'} {A : raw_code T'} {h} {n} `{Positive n} :
+Lemma guess0 {LA} {T'} {A : raw_code T'} {b} {h} {n} `{Positive n} :
   fseparate LA [fmap done] →
   ValidCode LA (IGUESS n) A →
   get_heap h done = true →
-  Pr_code (code_link A (GUESS n true)) h
-  = Pr_code (code_link A (GUESS n false)) h.
+  Pr_code (code_link A (GUESS n b)) h
+  = Pr_code (code_link A (GUESS n (~~ b))) h.
 Proof.
   intros SEP VA.
   move: h.
@@ -615,3 +630,174 @@ Proof.
     apply dlet_f_equal => x.
     by apply H1.
 Qed.
+
+Lemma guess1 {LA} {T'} {A : raw_code T'} {b} {t} {h h'} {n} `{Positive n} :
+  fseparate LA [fmap done] →
+  ValidCode LA (IGUESS n) A →
+  (Pr_code (code_link A (GUESS n b)) h (t, h')
+    <= Pr_code (code_link A (GUESS n (~~ b))) h (t, h') + n%:R^-1)%R.
+Proof.
+  intros SEP VA.
+  move: h.
+  induction VA => h; cbn [code_link].
+  - rewrite Num.Theory.lerDl.
+    rewrite Num.Theory.invr_ge0 //.
+  - fmap_invert H0.
+    repeat (rewrite (resolve_set, resolve_link, resolve_ID_set, coerce_kleisliE, eq_refl); cbn [fst snd mkdef projT2 mkopsig projT1]).
+    cbn [bind].
+    rewrite 2!Pr_code_get.
+    destruct (get_heap h done) eqn:E.
+    { cbn [bind]; erewrite guess0; do 2 try done.
+      rewrite Num.Theory.lerDl.
+      rewrite Num.Theory.invr_ge0 //.
+    }
+    cbn [bind]. 
+    rewrite 2!Pr_code_put.
+    rewrite 2!Pr_code_sample.
+    rewrite 2!dlet_uniform.
+    cbn [ andb ].
+    under eq_bigr => i _.
+    { erewrite guess0; do 2 try done. 2: rewrite get_set_heap_eq //. over. }
+    cbn beta.
+    rewrite -{3}(GRing.mul1r n%:R^-1)%R.
+    rewrite -GRing.mulrDl.
+    apply Num.Theory.ler_pM => //.
+    1: apply Num.Theory.sumr_ge0 => i _ //.
+    1: rewrite Num.Theory.invr_ge0 //.
+    rewrite GRing.addrC (bigD1 x) //.
+    apply Num.Theory.lerD.
+    1: apply le1_mu1.
+    rewrite (bigD1 x erefl) //.
+    rewrite -(GRing.add0r (bigop.body _ _ _)).
+    apply Num.Theory.lerD => //.
+    apply Num.Theory.ler_sum => j /negP H'.
+    destruct (j == x)%B eqn:E' => //.
+    rewrite E' //.
+    rewrite andbC /= andbC //.
+  - rewrite 2!Pr_code_get.
+    by apply H2.
+  - rewrite 2!Pr_code_put.
+    apply IHVA.
+  - rewrite 2!Pr_code_sample.
+    rewrite 2!dletE.
+    eapply Order.le_trans.
+    1: apply le_psum.
+    1: move=> y; apply /andP; split.
+    1: apply Num.Theory.mulr_ge0 => //.
+    1: apply Num.Theory.ler_pM; [ | | | apply H1 ]; done.
+    1: eapply eq_summable.
+    1: intros y; rewrite GRing.mulrDr; reflexivity.
+    1: apply summableD.
+    1: apply summable_mu_wgtd => y.
+    1: apply /andP; split; [ done |].
+    1: apply le1_mu1.
+    1: apply summableZr.
+    1: apply summable_mu.
+    under eq_psum.
+    1: intros y; rewrite GRing.mulrDr; over.
+    rewrite psumD.
+    2,3: intros y; apply Num.Theory.mulr_ge0 => //.
+    2: rewrite Num.Theory.invr_ge0 //.
+    2: apply summable_mu_wgtd.
+    2: intros y; apply /andP; split; [ done |].
+    2: apply le1_mu1.
+    2: apply summable_mu_wgtd.
+    2: intros y; apply /andP; split.
+    2: rewrite Num.Theory.invr_ge0 //.
+    2: rewrite Num.Theory.invf_le1.
+    2: rewrite Num.Theory.ler1n //.
+    2: rewrite Num.Theory.ltr0n //.
+    apply Num.Theory.lerD => //.
+    rewrite psumZr.
+    2: rewrite Num.Theory.invr_ge0 //.
+    apply Num.Theory.ler_piMl.
+    1: rewrite Num.Theory.invr_ge0 //.
+    apply le1_mu.
+Qed.
+
+Lemma psum_le {T : choiceType} {m : distr R T} {r}
+  : (0 <= r)%R → (psum (λ x, m x * r) <= r)%R.
+Proof.
+  intros H.
+  rewrite psumZr //.
+  apply Num.Theory.ler_piMl => //.
+  apply le1_mu.
+Qed.
+
+Lemma guess2 {A} {n} `{Positive n} :
+  ValidPackage (loc A) (IGUESS n) A_export A →
+  (AdvOf (GUESS n) A <= n%:R^-1)%R.
+Proof.
+  intros VA.
+  pose (π := fresh (as_nom (GUESS n true), as_nom (GUESS n false)) (A, loc A)).
+  rewrite -{1}(@rename_alpha _ A π).
+  unfold Adv.
+  rewrite {1}/Pr' -link_sep_link.
+  2: eauto with nominal_db.
+  rewrite {1}/Pr' -link_sep_link.
+  2: eauto with nominal_db.
+  rewrite 2!Pr_Pr_rand 2!resolve_link.
+
+  assert (H' : fhas A_export RUN); [ fmap_solve |].
+  pose proof (valid_resolve _ _ _ _ RUN tt VA H').
+
+  rewrite Num.Theory.ler_distlC.
+  apply /andP; split.
+  - rewrite Num.Theory.lerBlDr.
+    eapply Order.le_trans.
+    2: apply Num.Theory.lerD.
+    3: eapply (@psum_le (heap_choiceType)).
+    3: rewrite Num.Theory.invr_ge0 //.
+    2: apply Order.le_refl.
+    rewrite 2!dfstE.
+    rewrite -psumD.
+    2-5: admit.
+    apply le_psum.
+    2: admit.
+    intros h; apply /andP; split => //.
+    cbn [ GRing.add_fun ].
+    Search (_ + _ * _)%R 1%R.
+
+    2: apply GRing.lerD.
+    rewrite 2!dfstE.
+
+    Check guess1.
+    unfold Pr_rand.
+    Search (dfst _).
+
+    admit.
+  - admit.
+
+    rewrite 2!dletE.
+    unfold Pr_rand.
+    Search Pr_rand.
+    eapply Order.le_trans.
+    1: apply guess1.
+    rewrite dletE.
+    rewrite dletE.
+    Search psum GRing.add.
+
+  Search (_ <= _ <= _)%R (`| _ - _ |)%R.
+
+
+
+
+  rewrite guess1.
+  rewrite (guess1 SEP LL H0).
+  rewrite dlet_dlet.
+  apply dlet_f_equal => y.
+  rewrite resolve_link => //.
+
+
+
+  2: apply guess1.
+
+  apply Num.Theory.ler_distlDr.
+  rewrite testing' //.
+  2: rewrite fseparate_disj.
+  2: eauto with nominal_db.
+  apply dlet_f_equal => x.
+  rewrite -{2}(@rename_alpha _ A π).
+  rewrite /Pr' -link_sep_link //.
+  rewrite -fseparate_disj; fmap_solve.
+  unfold Adv.
