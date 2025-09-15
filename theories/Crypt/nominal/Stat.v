@@ -577,19 +577,20 @@ Qed.
 
 Definition done : Location := (4%N, 'bool).
 
-Definition IGUESS n `{Positive n} := [interface [ 0%N ] : { 'fin n ~> 'bool }].
+Definition IGUESS n `{Positive n} :=
+  [interface [ 0%N ] : { 'fin n ~> 'fin n × 'bool }].
 
 Definition GUESS n `{Positive n}
   : bool → game (IGUESS n) := λ b,
   [package [fmap done] ;
-    [ 0%N ] : { 'fin n ~> 'bool } (g) {
+    [ 0%N ] : { 'fin n ~> 'fin n × 'bool } (g) {
       d ← get done ;;
       if d then
-        ret false
+        ret (chCanonical _, false)
       else
         #put done := true ;;
         r ← sample uniform n ;;
-        ret (b && (r == g))%B
+        ret (r, b && (r == g))%B
     }
   ].
 
@@ -631,11 +632,11 @@ Proof.
     by apply H1.
 Qed.
 
-Lemma guess1 {LA} {T'} {A : raw_code T'} {b} {t} {h h'} {n} `{Positive n} :
+Lemma guess1 {LA} {T'} {A : raw_code T'} {b} {t} {h} {n} `{Positive n} :
   fseparate LA [fmap done] →
   ValidCode LA (IGUESS n) A →
-  (Pr_code (code_link A (GUESS n b)) h (t, h')
-    <= Pr_code (code_link A (GUESS n (~~ b))) h (t, h') + n%:R^-1)%R.
+  (dfst (Pr_code (code_link A (GUESS n b)) h) t
+    <= dfst (Pr_code (code_link A (GUESS n (~~ b))) h) t + n%:R^-1)%R.
 Proof.
   intros SEP VA.
   move: h.
@@ -654,8 +655,7 @@ Proof.
     cbn [bind]. 
     rewrite 2!Pr_code_put.
     rewrite 2!Pr_code_sample.
-    rewrite 2!dlet_uniform.
-    cbn [ andb ].
+    do 2 rewrite dlet_dlet dlet_uniform.
     under eq_bigr => i _.
     { erewrite guess0; do 2 try done. 2: rewrite get_set_heap_eq //. over. }
     cbn beta.
@@ -679,7 +679,7 @@ Proof.
   - rewrite 2!Pr_code_put.
     apply IHVA.
   - rewrite 2!Pr_code_sample.
-    rewrite 2!dletE.
+    do 2 rewrite dlet_dlet dletE.
     eapply Order.le_trans.
     1: apply le_psum.
     1: move=> y; apply /andP; split.
@@ -715,21 +715,12 @@ Proof.
     apply le1_mu.
 Qed.
 
-Lemma psum_le {T : choiceType} {m : distr R T} {r}
-  : (0 <= r)%R → (psum (λ x, m x * r) <= r)%R.
-Proof.
-  intros H.
-  rewrite psumZr //.
-  apply Num.Theory.ler_piMl => //.
-  apply le1_mu.
-Qed.
-
 Lemma guess2 {A} {n} `{Positive n} :
   ValidPackage (loc A) (IGUESS n) A_export A →
   (AdvOf (GUESS n) A <= n%:R^-1)%R.
 Proof.
   intros VA.
-  pose (π := fresh (as_nom (GUESS n true), as_nom (GUESS n false)) (A, loc A)).
+  pose (π := fresh ([fmap done] : Locations, as_nom (GUESS n true), as_nom (GUESS n false)) (A, loc A)).
   rewrite -{1}(@rename_alpha _ A π).
   unfold Adv.
   rewrite {1}/Pr' -link_sep_link.
@@ -738,66 +729,35 @@ Proof.
   2: eauto with nominal_db.
   rewrite 2!Pr_Pr_rand 2!resolve_link.
 
+  apply (rename_valid π) in VA.
   assert (H' : fhas A_export RUN); [ fmap_solve |].
   pose proof (valid_resolve _ _ _ _ RUN tt VA H').
 
   rewrite Num.Theory.ler_distlC.
   apply /andP; split.
   - rewrite Num.Theory.lerBlDr.
-    eapply Order.le_trans.
-    2: apply Num.Theory.lerD.
-    3: eapply (@psum_le (heap_choiceType)).
-    3: rewrite Num.Theory.invr_ge0 //.
-    2: apply Order.le_refl.
-    rewrite 2!dfstE.
-    rewrite -psumD.
-    2-5: admit.
-    apply le_psum.
-    2: admit.
-    intros h; apply /andP; split => //.
-    cbn [ GRing.add_fun ].
-    Search (_ + _ * _)%R 1%R.
-
-    2: apply GRing.lerD.
-    rewrite 2!dfstE.
-
-    Check guess1.
-    unfold Pr_rand.
-    Search (dfst _).
-
-    admit.
-  - admit.
-
-    rewrite 2!dletE.
-    unfold Pr_rand.
-    Search Pr_rand.
-    eapply Order.le_trans.
-    1: apply guess1.
-    rewrite dletE.
-    rewrite dletE.
-    Search psum GRing.add.
-
-  Search (_ <= _ <= _)%R (`| _ - _ |)%R.
+    apply: guess1.
+    rewrite fseparate_disj.
+    eauto with nominal_db.
+  - apply: guess1.
+    rewrite fseparate_disj.
+    eauto with nominal_db.
+Qed.
 
 
+Definition IGUESSL n `{Positive n} :=
+  [interface [ 0%N ] : { list ('fin n) ~> 'fin n × 'bool }].
 
-
-  rewrite guess1.
-  rewrite (guess1 SEP LL H0).
-  rewrite dlet_dlet.
-  apply dlet_f_equal => y.
-  rewrite resolve_link => //.
-
-
-
-  2: apply guess1.
-
-  apply Num.Theory.ler_distlDr.
-  rewrite testing' //.
-  2: rewrite fseparate_disj.
-  2: eauto with nominal_db.
-  apply dlet_f_equal => x.
-  rewrite -{2}(@rename_alpha _ A π).
-  rewrite /Pr' -link_sep_link //.
-  rewrite -fseparate_disj; fmap_solve.
-  unfold Adv.
+Definition GUESSL n `{Positive n}
+  : bool → game (IGUESSL n) := λ b,
+  [package [fmap done] ;
+    [ 0%N ] : { list ('fin n) ~> 'fin n × 'bool } (g) {
+      d ← get done ;;
+      if d then
+        ret (chCanonical _, false)
+      else
+        #put done := true ;;
+        r ← sample uniform n ;;
+        ret (r, b && (r \in g))%B
+    }
+  ].
