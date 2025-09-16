@@ -265,9 +265,10 @@ Proof.
       last by apply: r_ret.
     all: ssprove_invariant.
     all: move=> s0 s1 [[Hinv _] H] /=.
-    all: rewrite /couple_rhs get_set_heap_eq get_set_heap_neq //.
+    all: rewrite /relApp /= get_set_heap_eq get_set_heap_neq //.
     all: move /eqP in Hlt.
-    + rewrite Hinv // H -?subnE eqnE.
+    + rewrite /relApp /= in Hinv.
+      rewrite Hinv // H -?subnE eqnE.
       by rewrite subn_eq0 ltnW // -subn_eq0 Hlt.
     + move /eqP /negPf in Hlt.
       by rewrite -?subnE eqnE Hlt.
@@ -322,9 +323,10 @@ Proof.
       last by apply: r_ret.
     all: ssprove_invariant.
     all: move=> s0 s1 [[Hinv H] _] /=.
-    all: rewrite /couple_lhs get_set_heap_eq get_set_heap_neq //.
+    all: rewrite /relApp /= get_set_heap_eq get_set_heap_neq //.
     all: move /eqP in Hlt.
-    + rewrite Hinv // H -?subnE eqnE.
+    + rewrite /relApp /= in Hinv.
+      rewrite Hinv // H -?subnE eqnE.
       by rewrite subn_eq0 ltnW // -subn_eq0 Hlt.
     + move /eqP /negPf in Hlt.
       by rewrite -?subnE eqnE Hlt.

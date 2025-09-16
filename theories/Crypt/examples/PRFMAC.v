@@ -359,7 +359,7 @@ Proof.
   1: {
     ssprove_invariant=> /=.
     move=> m t.
-    by rewrite domm0 in_fset0 get_empty_heap emptymE.
+    by rewrite domm0 in_fset0 emptymE.
   }
   simplify_eq_rel m.
   2: case: m => [m t].
@@ -373,11 +373,12 @@ Proof.
       ssprove_restore_mem;
         last by apply: r_ret.
       ssprove_invariant=> s0 s1 [[[[Hinv _] H1] _] H2] m' t'.
-      rewrite get_set_heap_eq get_set_heap_neq // domm_set in_fsetU in_fset1.
+      rewrite /= get_set_heap_eq get_set_heap_neq // domm_set in_fsetU in_fset1.
       case: (eq_dec (m', t') (m, t)) => Heq.
       * case: Heq => [-> ->].
         by rewrite H2 Heqt /= !eq_refl.
       * move /eqP /negPf in Heq.
+        rewrite /relApp /= in Hinv.
         by rewrite Heq -H1 Hinv.
     + ssprove_sync=> k.
       apply: (r_rem_couple_rhs T_loc S_loc) => Hinv.

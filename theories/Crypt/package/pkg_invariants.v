@@ -310,94 +310,116 @@ Qed.
   eapply Invariant_inv_conj
   : typeclass_instances ssprove_invariant.
 
-Definition couple_lhs ℓ ℓ' (R : _ → _ → Prop) : precond :=
-  λ '(s₀, s₁), R (get_heap s₀ ℓ) (get_heap s₀ ℓ').
 
-Lemma SemiInvariant_couple_lhs :
-  ∀ (L₀ L₁ : Locations) ℓ ℓ' (R : _ → _ → Prop),
-    fhas L₀ ℓ →
-    fhas L₀ ℓ' →
-    R (get_heap empty_heap ℓ) (get_heap empty_heap ℓ') →
-    SemiInvariant L₀ L₁ (couple_lhs ℓ ℓ' R).
+(* Locations Relation Invariants *)
+
+Inductive Side :=
+| lhs' (l : Location)
+| rhs' (l : Location).
+
+Definition loc s :=
+  match s with
+  | lhs' l => l
+  | rhs' l => l
+  end.
+
+Coercion loc : Side >-> Location.
+
+Fixpoint relType (ls : list Side) :=
+  match ls with
+  | l :: ls => l → relType ls
+  | [::] => Prop
+  end.
+
+Definition get_side : heap * heap → ∀ l : Side, l
+  := λ hh s, match s with
+    | lhs' l => get_heap hh.1 l
+    | rhs' l => get_heap hh.2 l
+    end.
+
+Fixpoint relApp {ls} : relType ls → precond :=
+    match ls with
+    | l :: ls => λ R s, relApp (R (get_side s l)) s
+    | [::] => λ R _, R
+    end.
+Arguments relApp : clear implicits.
+
+Fixpoint relEmpty {ls} : relType ls → Prop :=
+    match ls with
+    | l :: ls => λ R, relEmpty (R (heap_init l))
+    | [::] => λ R, R
+    end.
+Arguments relEmpty : clear implicits.
+
+Fixpoint relIn ls : Locations * Locations → Prop := λ L,
+  match ls with
+  | lhs' l :: ls => fhas L.1 l ∧ relIn ls L
+  | rhs' l :: ls => fhas L.2 l ∧ relIn ls L
+  | [::] => True
+  end.
+
+#[export] Hint Extern 10 (relIn [::] _) => done
+  : ssprove_invariant.
+
+#[export] Hint Extern 10 (relIn (_ :: _) _) =>
+  split; [ solve [ fmap_solve ] |]
+  : ssprove_invariant.
+
+#[export] Hint Extern 10 (fsubmap _ _) =>
+  solve [ fmap_solve ]
+  : ssprove_invariant.
+
+Lemma SemiInvariant_relApp :
+  ∀ (L₀ L₁ : Locations) ls R,
+    relIn ls (L₀, L₁) →
+    relEmpty ls R →
+    SemiInvariant L₀ L₁ (relApp ls R).
 Proof.
-  intros L₀ L₁ ℓ ℓ' h hℓ hℓ' he. split.
-  - intros s₀ s₁ l v hl₀ hl₁ ?.
-    rewrite /couple_lhs !get_set_heap_neq //.
-    + apply /eqP => e; subst. move: hl₀ => /dommPn hl₀.
-      destruct l, ℓ'; noconf e.
-      rewrite //= hl₀ // in hℓ'.
-    + apply /eqP => e; subst. move: hl₀ => /dommPn hl₀.
-      destruct l, ℓ; noconf e.
-      rewrite //= hl₀ // in hℓ.
-  - simpl. auto.
+  intros L₀ L₁ ls R Hin Hempty. split.
+  2: {
+    move=> {Hin}.
+    induction ls.
+    - apply Hempty.
+    - apply IHls.
+      destruct a; apply Hempty.
+  }
+  move=> {Hempty} s0 s1 l v H0 H1 H2.
+  induction ls as [|s ls IHls]=> //.
+  destruct s.
+  - simpl.
+    destruct Hin as [Hin1 Hin2].
+    rewrite get_set_heap_neq.
+    { apply IHls => //. }
+    apply /eqP => H.
+    apply fhas_in in Hin1.
+    move: H0 => /negP.
+    rewrite -H Hin1 //.
+  - simpl.
+    destruct Hin as [Hin1 Hin2].
+    rewrite get_set_heap_neq.
+    { apply IHls => //. }
+    apply /eqP => H.
+    apply fhas_in in Hin1.
+    move: H1 => /negP.
+    rewrite -H Hin1 //.
 Qed.
 
-Arguments couple_lhs : simpl never.
+#[export] Hint Extern 10 (SemiInvariant _ _ (relApp _ _)) =>
+  eapply SemiInvariant_relApp
+  : ssprove_invariant.
 
-#[export] Hint Extern 10 (SemiInvariant _ _ (couple_lhs _ _ _)) =>
-  eapply SemiInvariant_couple_lhs
-  : (* typeclass_instances *) ssprove_invariant.
+Arguments relApp : simpl never.
 
-Definition couple_rhs ℓ ℓ' (R : _ → _ → Prop) : precond :=
-  λ '(s₀, s₁), R (get_heap s₁ ℓ) (get_heap s₁ ℓ').
+Notation couple_lhs ℓ ℓ' R :=
+  (relApp [:: lhs' ℓ; lhs' ℓ'] R).
 
-Lemma SemiInvariant_couple_rhs :
-  ∀ L₀ L₁ ℓ ℓ' (R : _ → _ → Prop),
-    fhas L₁ ℓ →
-    fhas L₁ ℓ' →
-    R (get_heap empty_heap ℓ) (get_heap empty_heap ℓ') →
-    SemiInvariant L₀ L₁ (couple_rhs ℓ ℓ' R).
-Proof.
-  intros L₀ L₁ ℓ ℓ' h hℓ hℓ' he. split.
-  - intros s₀ s₁ l v hl₀ hl₁ ?.
-    rewrite /couple_rhs !get_set_heap_neq //.
-    + apply /eqP => e; subst. move: hl₁ => /dommPn hl₁.
-      destruct l, ℓ'; noconf e.
-      rewrite //= hl₁ // in hℓ'.
-    + apply /eqP => e; subst. move: hl₁ => /dommPn hl₁.
-      destruct l, ℓ; noconf e.
-      rewrite //= hl₁ // in hℓ.
-  - simpl. auto.
-Qed.
+Notation couple_rhs ℓ ℓ' R :=
+  (relApp [:: rhs' ℓ; rhs' ℓ'] R).
 
-Arguments couple_rhs : simpl never.
+Notation triple_rhs ℓ₁ ℓ₂ ℓ₃ R :=
+  (relApp [:: rhs' ℓ₁; rhs' ℓ₂; rhs' ℓ₃] R).
 
-#[export] Hint Extern 10 (SemiInvariant _ _ (couple_rhs _ _ _)) =>
-  eapply SemiInvariant_couple_rhs
-  : (* typeclass_instances *) ssprove_invariant.
-
-(* TODO triple_lhs, or even better, something more generic *)
-Definition triple_rhs ℓ₁ ℓ₂ ℓ₃ (R : _ → _ → _ → Prop) : precond :=
-  λ '(s₀, s₁), R (get_heap s₁ ℓ₁) (get_heap s₁ ℓ₂) (get_heap s₁ ℓ₃).
-
-Lemma SemiInvariant_triple_rhs :
-  ∀ L₀ L₁ ℓ₁ ℓ₂ ℓ₃ (R : _ → _ → _ → Prop),
-    fhas L₁ ℓ₁ →
-    fhas L₁ ℓ₂ →
-    fhas L₁ ℓ₃ →
-    R (get_heap empty_heap ℓ₁) (get_heap empty_heap ℓ₂) (get_heap empty_heap ℓ₃) →
-    SemiInvariant L₀ L₁ (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
-Proof.
-  intros L₀ L₁ ℓ₁ ℓ₂ ℓ₃ R h₁ h₂ h₃ he. split.
-  - intros s₀ s₁ l v hl₀ hl₁ ?.
-    rewrite /triple_rhs !get_set_heap_neq //.
-    + apply /eqP => e; subst. move: hl₁ => /dommPn hl₁.
-      destruct l, ℓ₃; noconf e.
-      rewrite //= hl₁ // in h₃.
-    + apply /eqP => e; subst. move: hl₁ => /dommPn hl₁.
-      destruct l, ℓ₂; noconf e.
-      rewrite //= hl₁ // in h₂.
-    + apply /eqP => e; subst. move: hl₁ => /dommPn hl₁.
-      destruct l, ℓ₁; noconf e.
-      rewrite //= hl₁ // in h₁.
-  - simpl. auto.
-Qed.
-
-Arguments triple_rhs : simpl never.
-
-#[export] Hint Extern 10 (SemiInvariant _ _ (triple_rhs _ _ _ _)) =>
-  eapply SemiInvariant_triple_rhs
-  : (* typeclass_instances *) ssprove_invariant.
+(*** OLD ***)
 
 Inductive side := lhs | rhs.
 
@@ -415,55 +437,6 @@ Proof.
   destruct si.
   all: reflexivity.
 Qed.
-
-(* MK: unused and undocumented, but cool?
-
-Fixpoint locRel (l : list (Location * side)) :=
-  match l with
-  | (ℓ, _) :: l => ℓ → locRel l
-  | [::] => Prop
-  end.
-
-Fixpoint heapLocRel (s₀ s₁ : heap) l (R : locRel l) : Prop :=
-  match l return locRel l → Prop with
-  | (ℓ, s) :: l =>
-    λ R, heapLocRel s₀ s₁ l (R (get_heap (choose_heap s₀ s₁ s) ℓ))
-  | [::] => λ R, R
-  end R.
-
-Definition loc_rel (l : list (Location * side)) (R : locRel l) : precond :=
-  λ '(s₀, s₁), heapLocRel s₀ s₁ l R.
-
-Lemma SemiInvariant_loc_rel :
-  ∀ L₀ L₁ l (R : locRel l),
-    List.forallb (λ '(ℓ,_), ℓ \in L₀ :|: L₁) l →
-    heapLocRel empty_heap empty_heap l R →
-    SemiInvariant L₀ L₁ (loc_rel l R).
-Proof.
-  intros L₀ L₁ l R h he. split.
-  - intros s₀ s₁ ℓ v hℓ₀ hℓ₁ hh.
-    assert (hℓ : ℓ \notin L₀ :|: L₁).
-    { rewrite in_fsetU. rewrite (negbTE hℓ₀) (negbTE hℓ₁). reflexivity. }
-    unfold loc_rel.
-    induction l as [| [ℓ' si] l ih] in s₀, s₁, R, hh, h |- *.
-    + assumption.
-    + simpl. apply ih.
-      * simpl in h. move: h => /andP [_ h]. assumption.
-      * simpl in h. move: h => /andP [h _].
-        destruct si. all: simpl.
-        all: rewrite !get_set_heap_neq.
-        1,3: assumption.
-        -- apply /negP => /eqP e. subst. rewrite h in hℓ. discriminate.
-        -- apply /negP => /eqP e. subst. rewrite h in hℓ. discriminate.
-  - simpl. assumption.
-Qed.
-
-Arguments loc_rel : simpl never.
-
-#[export] Hint Extern 10 (SemiInvariant _ _ (loc_rel _ _)) =>
-  eapply SemiInvariant_loc_rel
-  : (* typeclass_instances *) ssprove_invariant.
- *)
 
 Definition get_pre_cond ℓ (pre : precond) :=
   ∀ s₀ s₁, pre (s₀, s₁) → get_heap s₀ ℓ = get_heap s₁ ℓ.
@@ -533,7 +506,7 @@ Lemma put_pre_cond_couple_lhs :
     put_pre_cond ℓ v (couple_lhs ℓ₀ ℓ₁ h).
 Proof.
   intros ℓ v ℓ₀ ℓ₁ h n₀ n₁ s₀ s₁ hc.
-  unfold couple_lhs in *.
+  unfold couple_lhs, get_side in *.
   rewrite !get_set_heap_neq. all: auto.
 Qed.
 
@@ -548,7 +521,7 @@ Lemma put_pre_cond_couple_rhs :
     put_pre_cond ℓ v (couple_rhs ℓ₀ ℓ₁ h).
 Proof.
   intros ℓ v ℓ₀ ℓ₁ h n₀ n₁ s₀ s₁ hc.
-  unfold couple_rhs in *.
+  unfold couple_rhs, get_side in *.
   rewrite !get_set_heap_neq. all: auto.
 Qed.
 
@@ -564,7 +537,7 @@ Lemma put_pre_cond_triple_rhs :
     put_pre_cond ℓ v (triple_rhs ℓ₁ ℓ₂ ℓ₃ h).
 Proof.
   intros ℓ v ℓ₁ ℓ₂ ℓ₃ h n₁ n₂ n₃ s₀ s₁ hc.
-  unfold triple_rhs in *.
+  unfold triple_rhs, get_side in *.
   rewrite !get_set_heap_neq. all: auto.
 Qed.
 
@@ -1534,7 +1507,7 @@ Lemma preserve_update_couple_lhs_lookup :
     preserve_update_mem l m (couple_lhs ℓ ℓ' R).
 Proof.
   intros ℓ ℓ' R v v' l m hl hr h.
-  intros s₀ s₁ hh. unfold couple_lhs in *.
+  intros s₀ s₁ hh. unfold couple_lhs, get_side in *.
   destruct update_heaps eqn:e.
   erewrite lookup_hpv_l_spec. 2,3: eauto.
   erewrite lookup_hpv_l_spec. 2,3: eauto.
@@ -1549,7 +1522,7 @@ Lemma preserve_update_couple_rhs_lookup :
     preserve_update_mem l m (couple_rhs ℓ ℓ' R).
 Proof.
   intros ℓ ℓ' R v v' l m hl hr h.
-  intros s₀ s₁ hh. unfold couple_rhs in *.
+  intros s₀ s₁ hh. unfold couple_rhs, get_side in *.
   destruct update_heaps eqn:e.
   erewrite lookup_hpv_r_spec. 2,3: eauto.
   erewrite lookup_hpv_r_spec. 2,3: eauto.
@@ -1565,7 +1538,7 @@ Lemma preserve_update_triple_rhs_lookup :
     preserve_update_mem l m (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
 Proof.
   intros ℓ₁ ℓ₂ ℓ₃ R v₁ v₂ v₃ l m h₁ h₂ h₃ h.
-  intros s₀ s₁ hh. unfold triple_rhs in *.
+  intros s₀ s₁ hh. unfold triple_rhs, get_side in *.
   destruct update_heaps eqn:e.
   erewrite lookup_hpv_r_spec. 2,3: eauto.
   erewrite lookup_hpv_r_spec. 2,3: eauto.
@@ -1615,7 +1588,7 @@ Lemma preserve_update_couple_lhs_lookup_None :
     preserve_update_mem l m (couple_lhs ℓ ℓ' R).
 Proof.
   intros ℓ ℓ' R l m h h'.
-  intros s₀ s₁ hh. unfold couple_lhs in *.
+  intros s₀ s₁ hh. unfold couple_lhs, get_side in *.
   destruct update_heaps eqn:e.
   erewrite lookup_hpv_l_None_spec. 2,3: eauto.
   erewrite lookup_hpv_l_None_spec with (ℓ := ℓ'). 2,3: eauto.
@@ -1630,7 +1603,7 @@ Lemma preserve_update_couple_rhs_lookup_None :
     preserve_update_mem l m (couple_rhs ℓ ℓ' R).
 Proof.
   intros ℓ ℓ' R l m h h'.
-  intros s₀ s₁ hh. unfold couple_rhs in *.
+  intros s₀ s₁ hh. unfold couple_rhs, get_side in *.
   destruct update_heaps eqn:e.
   erewrite lookup_hpv_r_None_spec. 2,3: eauto.
   erewrite lookup_hpv_r_None_spec with (ℓ := ℓ'). 2,3: eauto.
@@ -1646,7 +1619,7 @@ Lemma preserve_update_triple_rhs_lookup_None :
     preserve_update_mem l m (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
 Proof.
   intros ℓ₁ ℓ₂ ℓ₃ R l m h₁ h₂ h₃.
-  intros s₀ s₁ hh. unfold triple_rhs in *.
+  intros s₀ s₁ hh. unfold triple_rhs, get_side in *.
   destruct update_heaps eqn:e.
   erewrite lookup_hpv_r_None_spec. 2,3: eauto.
   erewrite lookup_hpv_r_None_spec with (ℓ := ℓ₂). 2,3: eauto.

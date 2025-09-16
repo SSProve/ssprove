@@ -442,7 +442,6 @@ Module SigmaProtocol (π : SigmaProtocolParams)
       (unionm (unionm [fmap setup_loc] Sigma_to_Com_locs) Simulator_locs) inv.
     Proof.
       ssprove_invariant.
-      fmap_solve.
     Qed.
 
     Hint Extern 50 (_ = code_link _ _) =>
@@ -601,10 +600,7 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         5: apply VA.
         1,2: ssprove_valid.
         3,4: fmap_solve.
-        {
-          ssprove_invariant.
-          fmap_solve. (* MK: long exec time *)
-        }
+        { ssprove_invariant. } (* MK: long exec time *)
         simplify_eq_rel h.
         ssprove_code_simpl.
         destruct h.

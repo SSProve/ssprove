@@ -851,10 +851,10 @@ Proof.
       all: ssprove_restore_mem;
         last by apply: r_ret.
       ssprove_invariant=> s0 s1 [[/= Hinv <-] <-] m' r'.
-      rewrite get_set_heap_eq domm_set in_fsetU => /norP [H H'].
+      rewrite /= get_set_heap_eq domm_set in_fsetU => /norP [H H'].
       rewrite get_set_heap_neq.
       2: by apply /eqP.
-      by rewrite Hinv.
+      by apply Hinv.
     + ssprove_sync=> c.
       apply: r_get_vs_get_remember => T.
       apply: (r_rem_couple_rhs T_loc R_loc) => Hinv.
@@ -933,7 +933,7 @@ Proof.
       last by apply: r_ret.
     ssprove_invariant=> s0 s1 [[[[Hinv _] <-] _] <-] c'.
     specialize (Hinv c').
-    rewrite get_set_heap_eq domm_set in_fsetU => /norP [H H'].
+    rewrite /= get_set_heap_eq domm_set in_fsetU => /norP [H H'].
     rewrite get_set_heap_neq.
     2: by apply /eqP.
     rewrite get_set_heap_eq !get_set_heap_neq.
@@ -964,7 +964,7 @@ Proof.
     apply: preserve_update_mem_conj.
     1: by ssprove_invariant.
     move=> s0 s1 [[[[[[/= A B] Heq] C] D] E] F] c'.
-    rewrite 3?get_set_heap_neq.
+    rewrite /= 3?get_set_heap_neq.
     2-4: by apply /eqP.
     rewrite !get_set_heap_eq !setmE Heq.
     case: (c' == m) => //.

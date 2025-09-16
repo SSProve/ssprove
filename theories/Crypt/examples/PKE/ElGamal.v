@@ -134,7 +134,7 @@ Lemma PK_OTSR_RED_DDH_perfect b :
 Proof.
   ssprove_share. eapply prove_perfect.
   eapply (eq_rel_perf_ind _ _ inv0).
-  1: simpl; ssprove_invariant; try auto; fmap_solve.
+  { ssprove_invariant => //. }
   simplify_eq_rel m.
   - destruct m.
     simpl; simplify_linking.
@@ -144,7 +144,8 @@ Proof.
     ssprove_restore_pre.
     2: by apply r_ret.
     ssprove_invariant.
-    intros h0 h1 H f.
+    unfold relApp.
+    intros h0 h1 H f => /=.
     by get_heap_simpl.
 
   - apply r_get_vs_get_remember.  1: ssprove_invariant.  move=> c.
@@ -170,7 +171,7 @@ Proof.
     1: {
       ssprove_invariant.
       intros h0 h1 [[[[[H0 H1] H2] H3] H4] H5].
-      rewrite //= /triple_rhs.
+      rewrite //= /relApp /=.
       by get_heap_simpl.
     }
 

@@ -726,11 +726,7 @@ Section KEMDEM.
     (otherwise type inference would have solved it).
   *)
   Instance Invariant_inv : Invariant PKE_CCA_loc Aux_loc inv.
-  Proof.
-    ssprove_invariant.
-    all: try fmap_solve.
-    1,2: simpl; auto.
-  Qed.
+  Proof. ssprove_invariant => //. Qed.
 
   (** We show perfect equivalence in the general case where [b] stay abstract.
     This spares us the burden of proving roughly the same equivalence twice.
