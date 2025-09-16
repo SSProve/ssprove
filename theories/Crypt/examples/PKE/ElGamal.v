@@ -148,18 +148,16 @@ Proof.
     intros h0 h1 H f => /=.
     by get_heap_simpl.
 
-  - apply r_get_vs_get_remember.  1: ssprove_invariant.  move=> c.
+  - apply @r_get_vs_get_remember. 1: exact _. move=> c.
     ssprove_code_simpl.
     ssprove_sync => H.
     ssprove_swap_lhs 0%N.
     ssprove_swap_rhs 0%N.
-    apply r_get_vs_get_remember. 1: ssprove_invariant. move=> mpk.
+    apply r_get_vs_get_remember. move=> mpk.
     ssprove_code_simpl_more.
     ssprove_swap_seq_rhs [:: 1%N ; 0%N ].
     apply r_get_remember_rhs => mga.
-    eapply (r_rem_triple_rhs count_loc (mpk_loc elgamal) (mga_loc G)).
-    1-4: exact _.
-    move=> //= H'.
+    ssprove_rem_rel 5%N => //= H'.
     apply r_put_vs_put.
     ssprove_sync => H1.
     destruct mpk as [pk|] => //= {H1}.

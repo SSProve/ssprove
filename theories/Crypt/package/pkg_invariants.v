@@ -419,6 +419,9 @@ Notation couple_rhs ℓ ℓ' R :=
 Notation triple_rhs ℓ₁ ℓ₂ ℓ₃ R :=
   (relApp [:: rhs' ℓ₁; rhs' ℓ₂; rhs' ℓ₃] R).
 
+Notation syncs l :=
+  (relApp [:: lhs' l; rhs' l] eq).
+
 (*** OLD ***)
 
 Inductive side := lhs | rhs.
@@ -531,210 +534,38 @@ Qed.
   The idea is to use them as side-conditions for rules.
 *)
 
-Class Syncs ℓ pre :=
-  is_tracking : ∀ s₀ s₁, pre (s₀, s₁) → get_heap s₀ ℓ = get_heap s₁ ℓ.
+(* ProvenBy pre pre' indicates that the invariant pre'
+    shows the fact pre *)
+Class ProvenBy (pre pre' : precond) :=
+  proven_by : ∀ s, pre' s → pre s.
 
-Class Couples_lhs ℓ ℓ' R pre :=
-  is_coupling_lhs : ∀ s, pre s → couple_lhs ℓ ℓ' R s.
+Instance ProvenBy_refl {pre} : ProvenBy pre pre.
+Proof. done. Qed.
 
-Class Couples_rhs ℓ ℓ' R pre :=
-  is_coupling_rhs : ∀ s, pre s → couple_rhs ℓ ℓ' R s.
+Instance ProvenBy_conj_left {tgt pre spre : precond} :
+  ProvenBy tgt pre → ProvenBy tgt (pre ⋊ spre).
+Proof. intros ? ? []. auto. Qed.
 
-Class Triple_rhs ℓ₁ ℓ₂ ℓ₃ R pre :=
-  is_triple_rhs : ∀ s, pre s → triple_rhs ℓ₁ ℓ₂ ℓ₃ R s.
+Instance ProvenBy_conj_right {tgt pre spre : precond} :
+  ProvenBy tgt spre → ProvenBy tgt (pre ⋊ spre).
+Proof. intros ? ? []. auto. Qed.
 
-(* MK: loc_rel
-Class LocRel l R pre :=
-  has_loc_rel : ∀ s, pre s → loc_rel l R s.
- *)
+Lemma syncs_proven_by_eq {l}
+  : ProvenBy (syncs l) (λ '(s₀, s₁), s₀ = s₁).
+Proof. by intros [h0 h1] ->. Qed.
 
-Lemma Syncs_eq :
-  ∀ ℓ, Syncs ℓ (λ '(s₀, s₁), s₀ = s₁).
-Proof.
-  intros ℓ s₀ s₁ e. subst. reflexivity.
-Qed.
+#[export] Hint Extern 10 (ProvenBy (syncs _) _) =>
+  apply syncs_proven_by_eq
+  : typeclass_instances.
 
-#[export] Hint Extern 10 (Syncs _ (λ '(s₀, s₁), s₀ = s₁)) =>
-  apply Syncs_eq
-  : typeclass_instances ssprove_invariant.
+Lemma syncs_proven_by_heap_ignore {l} {L} :
+    l.1 \notin domm L →
+    ProvenBy (syncs l) (heap_ignore L).
+Proof. intros hn [h₀ h₁] h. apply h, hn. Qed.
 
-Lemma Syncs_heap_ignore :
-  ∀ ℓ L,
-    ℓ.1 \notin domm L →
-    Syncs ℓ (heap_ignore L).
-Proof.
-  intros ℓ L hn s₀ s₁ h.
-  apply h. auto.
-Qed.
-
-#[export] Hint Extern 10 (Syncs _ (heap_ignore _)) =>
-  apply Syncs_heap_ignore
-  : typeclass_instances ssprove_invariant.
-
-Lemma Syncs_conj :
-  ∀ ℓ (pre spre : precond),
-    Syncs ℓ pre →
-    Syncs ℓ (pre ⋊ spre).
-Proof.
-  intros ℓ pre spre hpre s₀ s₁ [].
-  apply hpre. auto.
-Qed.
-
-#[export] Hint Extern 10 (Syncs _ (_ ⋊ _)) =>
-  apply Syncs_conj
-  : typeclass_instances ssprove_invariant.
-
-Lemma Couples_couple_lhs :
-  ∀ ℓ ℓ' R,
-    Couples_lhs ℓ ℓ' R (couple_lhs ℓ ℓ' R).
-Proof.
-  intros ℓ ℓ' R s h. auto.
-Qed.
-
-#[export] Hint Extern 10 (Couples_lhs _ _ _ (couple_lhs _ _ _)) =>
-  eapply Couples_couple_lhs
-  : typeclass_instances ssprove_invariant.
-
-Lemma Couples_couple_rhs :
-  ∀ ℓ ℓ' R,
-    Couples_rhs ℓ ℓ' R (couple_rhs ℓ ℓ' R).
-Proof.
-  intros ℓ ℓ' R s h. auto.
-Qed.
-
-#[export] Hint Extern 10 (Couples_rhs _ _ _ (couple_rhs _ _ _)) =>
-  eapply Couples_couple_rhs
-  : typeclass_instances ssprove_invariant.
-
-Lemma Triple_triple_rhs :
-  ∀ ℓ₁ ℓ₂ ℓ₃ R,
-    Triple_rhs ℓ₁ ℓ₂ ℓ₃ R (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
-Proof.
-  intros ℓ₁ ℓ₂ ℓ₃ R s h. auto.
-Qed.
-
-#[export] Hint Extern 10 (Triple_rhs _ _ _ _ (triple_rhs _ _ _ _)) =>
-  eapply Triple_triple_rhs
-  : typeclass_instances ssprove_invariant.
-
-(*
-Lemma LocRel_loc_rel :
-  ∀ l R,
-    LocRel l R (loc_rel l R).
-Proof.
-  intros l R s h. auto.
-Qed.
-
-#[export] Hint Extern 10 (LocRel _ _ (loc_rel _ _)) =>
-  eapply LocRel_loc_rel
-  : typeclass_instances ssprove_invariant.
- *)
-
-Lemma Couples_lhs_conj_right :
-  ∀ ℓ ℓ' R (pre spre : precond),
-    Couples_lhs ℓ ℓ' R spre →
-    Couples_lhs ℓ ℓ' R (pre ⋊ spre).
-Proof.
-  intros ℓ ℓ' R pre spre h s [].
-  apply h. auto.
-Qed.
-
-Lemma Couples_lhs_conj_left :
-  ∀ ℓ ℓ' R (pre spre : precond),
-    Couples_lhs ℓ ℓ' R pre →
-    Couples_lhs ℓ ℓ' R (pre ⋊ spre).
-Proof.
-  intros ℓ ℓ' R pre spre h s [].
-  apply h. auto.
-Qed.
-
-#[export] Hint Extern 9 (Couples_lhs _ _ _ (_ ⋊ _)) =>
-  eapply Couples_lhs_conj_right
-  : typeclass_instances ssprove_invariant.
-
-#[export] Hint Extern 11 (Couples_lhs _ _ _ (_ ⋊ _)) =>
-  eapply Couples_lhs_conj_left
-  : typeclass_instances ssprove_invariant.
-
-Lemma Couples_rhs_conj_right :
-  ∀ ℓ ℓ' R (pre spre : precond),
-    Couples_rhs ℓ ℓ' R spre →
-    Couples_rhs ℓ ℓ' R (pre ⋊ spre).
-Proof.
-  intros ℓ ℓ' R pre spre h s [].
-  apply h. auto.
-Qed.
-
-Lemma Couples_rhs_conj_left :
-  ∀ ℓ ℓ' R (pre spre : precond),
-    Couples_rhs ℓ ℓ' R pre →
-    Couples_rhs ℓ ℓ' R (pre ⋊ spre).
-Proof.
-  intros ℓ ℓ' R pre spre h s [].
-  apply h. auto.
-Qed.
-
-#[export] Hint Extern 9 (Couples_rhs _ _ _ (_ ⋊ _)) =>
-  eapply Couples_rhs_conj_right
-  : typeclass_instances ssprove_invariant.
-
-#[export] Hint Extern 11 (Couples_rhs _ _ _ (_ ⋊ _)) =>
-  eapply Couples_rhs_conj_left
-  : typeclass_instances ssprove_invariant.
-
-Lemma Triple_rhs_conj_right :
-  ∀ ℓ₁ ℓ₂ ℓ₃ R (pre spre : precond),
-    Triple_rhs ℓ₁ ℓ₂ ℓ₃ R spre →
-    Triple_rhs ℓ₁ ℓ₂ ℓ₃ R (pre ⋊ spre).
-Proof.
-  intros ℓ₁ ℓ₂ ℓ₃ R pre spre h s [].
-  apply h. auto.
-Qed.
-
-Lemma Triple_rhs_conj_left :
-  ∀ ℓ₁ ℓ₂ ℓ₃ R (pre spre : precond),
-    Triple_rhs ℓ₁ ℓ₂ ℓ₃ R pre →
-    Triple_rhs ℓ₁ ℓ₂ ℓ₃ R (pre ⋊ spre).
-Proof.
-  intros ℓ₁ ℓ₂ ℓ₃ R pre spre h s [].
-  apply h. auto.
-Qed.
-
-#[export] Hint Extern 9 (Triple_rhs _ _ _ _ (_ ⋊ _)) =>
-  eapply Triple_rhs_conj_right
-  : typeclass_instances ssprove_invariant.
-
-#[export] Hint Extern 11 (Triple_rhs _ _ _ _ (_ ⋊ _)) =>
-  eapply Triple_rhs_conj_left
-  : typeclass_instances ssprove_invariant.
-
-(*
-Lemma LocRel_conj_right :
-  ∀ l R (pre spre : precond),
-    LocRel l R spre →
-    LocRel l R (pre ⋊ spre).
-Proof.
-  intros l R pre spre h s [].
-  apply h. auto.
-Qed.
-
-Lemma LocRel_conj_left :
-  ∀ l R (pre spre : precond),
-    LocRel l R pre →
-    LocRel l R (pre ⋊ spre).
-Proof.
-  intros l R pre spre h s [].
-  apply h. auto.
-Qed.
-
-#[export] Hint Extern 9 (LocRel _ _ (_ ⋊ _)) =>
-  eapply LocRel_conj_right
-  : typeclass_instances ssprove_invariant.
-
-#[export] Hint Extern 11 (LocRel _ _ (_ ⋊ _)) =>
-  eapply LocRel_conj_left
-  : typeclass_instances ssprove_invariant.
- *)
+#[export] Hint Extern 10 (ProvenBy (syncs _) _) =>
+  apply syncs_proven_by_heap_ignore
+  : typeclass_instances.
 
 Definition rem_lhs ℓ v : precond :=
   λ '(s₀, s₁), get_heap s₀ ℓ = v.
@@ -742,109 +573,76 @@ Definition rem_lhs ℓ v : precond :=
 Definition rem_rhs ℓ v : precond :=
   λ '(s₀, s₁), get_heap s₁ ℓ = v.
 
-Class Remembers_lhs ℓ v pre :=
-  is_remembering_lhs : ∀ s₀ s₁, pre (s₀, s₁) → rem_lhs ℓ v (s₀, s₁).
+Inductive Remembers : ∀ ls, relType ls → Prop → precond → Prop :=
+  | Remembers_nil : ∀ {R} pre, Remembers [::] R R pre
+  | Remembers_cons_lhs : ∀ {l ls} {R P} {v} (pre : precond),
+      ProvenBy (rem_lhs l v) pre →
+      Remembers ls (R v) P pre →
+      Remembers (lhs' l :: ls) R P pre
+  | Remembers_cons_rhs : ∀ {l ls} {R P} {v} (pre : precond),
+      ProvenBy (rem_rhs l v) pre →
+      Remembers ls (R v) P pre →
+      Remembers (rhs' l :: ls) R P pre.
 
-Class Remembers_rhs ℓ v pre :=
-  is_remembering_rhs : ∀ s₀ s₁, pre (s₀, s₁) → rem_rhs ℓ v (s₀, s₁).
+Existing Class Remembers.
 
-Lemma Remembers_lhs_rem_lhs :
-  ∀ ℓ v,
-    Remembers_lhs ℓ v (rem_lhs ℓ v).
-Proof.
-  intros ℓ v. intros s₀ s₁ h. auto.
-Qed.
-
-#[export] Hint Extern 10 (Remembers_lhs _ _ (rem_lhs _ _)) =>
-  eapply Remembers_lhs_rem_lhs
-  : typeclass_instances ssprove_invariant.
-
-Lemma Remembers_rhs_rem_rhs :
-  ∀ ℓ v,
-    Remembers_rhs ℓ v (rem_rhs ℓ v).
-Proof.
-  intros ℓ v. intros s₀ s₁ h. auto.
-Qed.
-
-#[export] Hint Extern 10 (Remembers_rhs _ _ (rem_rhs _ _)) =>
-  eapply Remembers_rhs_rem_rhs
-  : typeclass_instances ssprove_invariant.
-
-Lemma Remembers_lhs_conj_right :
-  ∀ ℓ v (pre spre : precond),
-    Remembers_lhs ℓ v spre →
-    Remembers_lhs ℓ v (pre ⋊ spre).
-Proof.
-  intros ℓ v pre spre h.
-  intros s₀ s₁ []. apply h. auto.
-Qed.
-
-Lemma Remembers_lhs_conj_left :
-  ∀ ℓ v (pre spre : precond),
-    Remembers_lhs ℓ v pre →
-    Remembers_lhs ℓ v (pre ⋊ spre).
-Proof.
-  intros ℓ v pre spre h.
-  intros s₀ s₁ []. apply h. auto.
-Qed.
-
-#[export] Hint Extern 9 (Remembers_lhs _ _ (_ ⋊ _)) =>
-  eapply Remembers_lhs_conj_right
-  : typeclass_instances ssprove_invariant.
-
-#[export] Hint Extern 11 (Remembers_lhs _ _ (_ ⋊ _)) =>
-  eapply Remembers_lhs_conj_left
-  : typeclass_instances ssprove_invariant.
-
-Lemma Remembers_rhs_conj_right :
-  ∀ ℓ v (pre spre : precond),
-    Remembers_rhs ℓ v spre →
-    Remembers_rhs ℓ v (pre ⋊ spre).
-Proof.
-  intros ℓ v pre spre h.
-  intros s₀ s₁ []. apply h. auto.
-Qed.
-
-Lemma Remembers_rhs_conj_left :
-  ∀ ℓ v (pre spre : precond),
-    Remembers_rhs ℓ v pre →
-    Remembers_rhs ℓ v (pre ⋊ spre).
-Proof.
-  intros ℓ v pre spre h.
-  intros s₀ s₁ []. apply h. auto.
-Qed.
-
-#[export] Hint Extern 9 (Remembers_rhs _ _ (_ ⋊ _)) =>
-  eapply Remembers_rhs_conj_right
-  : typeclass_instances ssprove_invariant.
-
-#[export] Hint Extern 11 (Remembers_rhs _ _ (_ ⋊ _)) =>
-  eapply Remembers_rhs_conj_left
-  : typeclass_instances ssprove_invariant.
+Hint Resolve Remembers_nil Remembers_cons_lhs Remembers_cons_rhs
+  : typeclass_instances.
 
 Lemma Remembers_lhs_from_tracked_rhs :
   ∀ ℓ v pre,
-    Remembers_rhs ℓ v pre →
-    Syncs ℓ pre →
-    Remembers_lhs ℓ v pre.
+    ProvenBy (rem_rhs ℓ v) pre →
+    ProvenBy (syncs ℓ) pre →
+    ProvenBy (rem_lhs ℓ v) pre.
 Proof.
   intros ℓ v pre hr ht.
-  intros s₀ s₁ hpre. simpl.
-  specialize (hr _ _ hpre). specialize (ht _ _ hpre).
+  intros [s₀ s₁] hpre. simpl.
+  specialize (hr _ hpre). specialize (ht _ hpre).
+  rewrite /(syncs _) /= in ht.
   rewrite ht. apply hr.
 Qed.
 
 Lemma Remembers_rhs_from_tracked_lhs :
   ∀ ℓ v pre,
-    Remembers_lhs ℓ v pre →
-    Syncs ℓ pre →
-    Remembers_rhs ℓ v pre.
+    ProvenBy (rem_lhs ℓ v) pre →
+    ProvenBy (syncs ℓ) pre →
+    ProvenBy (rem_rhs ℓ v) pre.
 Proof.
   intros ℓ v pre hr ht.
-  intros s₀ s₁ hpre. simpl.
-  specialize (hr _ _ hpre). specialize (ht _ _ hpre).
+  intros [s₀ s₁] hpre. simpl.
+  specialize (hr _ hpre). specialize (ht _ hpre).
+  rewrite /(syncs _) /= in ht.
   rewrite -ht. apply hr.
 Qed.
+
+Lemma Remembers_cons_from_rhs {l ls} {R P} {v} (pre : precond) :
+    ProvenBy (rem_rhs l v) pre →
+    ProvenBy (syncs l) pre →
+    Remembers ls (R v) P pre →
+    Remembers (lhs' l :: ls) R P pre.
+Proof.
+  intros hr hs hI.
+  eapply Remembers_cons_lhs.
+  - apply Remembers_lhs_from_tracked_rhs => //.
+    apply hr.
+  - apply hI.
+Qed.
+
+Lemma Remembers_cons_from_lhs {l ls} {R P} {v} (pre : precond) :
+    ProvenBy (rem_lhs l v) pre →
+    ProvenBy (syncs l) pre →
+    Remembers ls (R v) P pre →
+    Remembers (rhs' l :: ls) R P pre.
+Proof.
+  intros hl hs hI.
+  eapply Remembers_cons_rhs.
+  - apply Remembers_rhs_from_tracked_lhs => //.
+    apply hl.
+  - apply hI.
+Qed.
+
+Hint Resolve Remembers_cons_from_rhs Remembers_cons_from_lhs
+  : typeclass_instances.
 
 Lemma put_pre_cond_rem_lhs :
   ∀ ℓ v ℓ' v',

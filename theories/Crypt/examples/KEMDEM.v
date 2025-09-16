@@ -744,11 +744,10 @@ Section KEMDEM.
     - ssprove_code_simpl_more.
       ssprove_code_simpl.
       ssprove_swap_seq_rhs [:: 1 ; 0 ; 2 ; 1 ]%N.
-      eapply r_get_vs_get_remember. 1: ssprove_invariant. intro sk.
+      apply r_get_vs_get_remember. intro sk.
       ssprove_sync. intro skNone.
       eapply r_get_remember_rhs. intro pk.
-      eapply (r_rem_couple_lhs pk_loc sk_loc). 1,3: exact _.
-      1:{ eapply Remembers_lhs_from_tracked_rhs. all: ssprove_invariant. }
+      ssprove_rem_rel 3%N.
       intro eps. destruct sk. 1: discriminate.
       destruct pk. 1: contradiction. simpl.
       eapply r_scheme_bind_spec. 1: eapply KEM_kgen_spec. intros [pk' sk'] pps.
@@ -770,16 +769,16 @@ Section KEMDEM.
       ssprove_code_simpl.
       ssprove_swap_seq_rhs [:: 5 ; 4 ; 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
-      eapply r_get_vs_get_remember. 1: ssprove_invariant. intro pk.
+      eapply r_get_vs_get_remember. intro pk.
       ssprove_sync. intro pkSome.
       destruct pk as [pk|]. 2: discriminate.
       simpl.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
       ssprove_contract_get_rhs.
-      eapply r_get_vs_get_remember. 1: ssprove_invariant. intro ek.
+      eapply @r_get_vs_get_remember. 1: exact _. intro ek.
       ssprove_sync. intro ekNone.
       rewrite ekNone. simpl.
-      eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intro c.
+      eapply @r_get_vs_get_remember_rhs. 1: exact _. intro c.
       ssprove_sync. intro cNone.
       eapply r_scheme_bind_spec. 1: eapply KEM_encap_spec. intros [k' ek'] hkek.
       ssprove_code_simpl_more. ssprove_code_simpl.
@@ -787,11 +786,11 @@ Section KEMDEM.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ]%N.
       ssprove_contract_put_rhs.
       ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ; 0 ]%N.
-      eapply r_get_remind_rhs. 1: exact _.
+      eapply r_get_remind_rhs.
       rewrite cNone. simpl. ssprove_forget.
       ssprove_swap_seq_rhs [:: 0 ]%N.
       eapply r_get_remember_rhs. intros k.
-      eapply (r_rem_triple_rhs pk_loc k_loc ek_loc). 1-4: exact _. intro hpke.
+      ssprove_rem_rel 6%N => hpke.
       destruct ek. 1: discriminate.
       destruct k. 1: contradiction.
       simpl.
@@ -815,19 +814,13 @@ Section KEMDEM.
     - destruct m as [ek' c']. simpl.
       ssprove_swap_seq_rhs [:: 1 ; 0 ]%N.
       ssprove_swap_seq_lhs [:: 1 ; 0 ]%N.
-      eapply r_get_vs_get_remember_rhs. 1: ssprove_invariant. intros ek.
+      eapply r_get_vs_get_remember_rhs. intros ek.
       destruct (ek == Some ek') eqn:eek.
       + rewrite eek.
         ssprove_code_simpl_more. ssprove_code_simpl. ssprove_code_simpl_more.
         eapply r_get_remember_rhs. intro pk.
         eapply r_get_remember_lhs. intro sk.
-        eapply (r_rem_couple_lhs pk_loc sk_loc). 1,3: exact _.
-        1:{
-          eapply Remembers_lhs_from_tracked_rhs.
-          - exact _.
-          - ssprove_invariant.
-        }
-        intro eps.
+        ssprove_rem_rel 3%N => eps.
         eapply sameSomeRel_sameSome in eps as eps'. rewrite eps'.
         ssprove_sync. intro skSome.
         ssprove_swap_seq_rhs [:: 1 ]%N.
@@ -840,7 +833,7 @@ Section KEMDEM.
         2:{ move: e => /eqP e. subst. contradiction. }
         rewrite e. simpl.
         eapply r_get_remember_rhs. intro k.
-        eapply (r_rem_triple_rhs pk_loc k_loc ek_loc). 1-4: exact _. intro hpke.
+        ssprove_rem_rel 5%N => hpke.
         destruct sk as [sk|]. 2: discriminate.
         destruct pk as [pk|]. 2: contradiction.
         destruct k as [k|]. 2: contradiction.
@@ -850,14 +843,13 @@ Section KEMDEM.
         apply r_ret. auto.
       + rewrite eek. ssprove_code_simpl_more.
         ssprove_swap_seq_rhs [:: 5 ; 4 ; 3 ; 2 ; 1 ; 0 ]%N.
-        eapply r_get_remind_rhs. 1: exact _.
+        eapply r_get_remind_rhs.
         ssprove_forget.
         ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ; 0 ]%N.
-        apply r_get_vs_get_remember. 1: ssprove_invariant. intros sk.
+        apply r_get_vs_get_remember. intros sk.
         apply r_get_remember_rhs. intro pk.
-        eapply (r_rem_couple_lhs pk_loc sk_loc). 1,3: exact _.
-        1:{ apply Remembers_lhs_from_tracked_rhs. all: ssprove_invariant. }
-        intro eps. eapply sameSomeRel_sameSome in eps as eps'. rewrite eps'.
+        ssprove_rem_rel 3%N => eps.
+        eapply sameSomeRel_sameSome in eps as eps'. rewrite eps'.
         ssprove_forget_all.
         ssprove_sync. intro skSome.
         ssprove_sync. intro c.

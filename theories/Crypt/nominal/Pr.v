@@ -249,9 +249,9 @@ Proof.
     apply H.
   - apply r_get_remember_lhs => x.
     destruct l as [n T]; simpl.
-    eapply r_get_remind_rhs.
+    eapply @r_get_remind_rhs.
     2: apply r_forget_lhs, H.
-    intros s0 s1 [h1 h2].
+    intros [s0 s1] [h1 h2].
     unfold rem_lhs, rem_rhs in h2 |- *.
     subst; symmetry.
     apply (h1 (n, T)).

@@ -1612,9 +1612,9 @@ Proof.
       simpl. reflexivity.
 Qed.
 
-Lemma r_get_vs_get_remember_lhs :
-  ∀ {A B : choiceType} ℓ r₀ r₁ (pre : precond) (post : postcond A B),
-    Syncs ℓ pre →
+Lemma r_get_vs_get_remember_lhs
+  {A B : choiceType} {ℓ r₀ r₁} {pre : precond} {post : postcond A B}
+    `{ht : ProvenBy (syncs ℓ) pre} :
     (∀ x,
       ⊢ ⦃ λ '(s₀, s₁), (pre ⋊ rem_lhs ℓ x) (s₀, s₁) ⦄
         r₀ x ≈ r₁ x
@@ -1625,21 +1625,22 @@ Lemma r_get_vs_get_remember_lhs :
       x ← get ℓ ;; r₁ x
     ⦃ post ⦄.
 Proof.
-  intros A B ℓ r₀ r₁ pre post ht h.
+  intros h.
   eapply r_get_remember_lhs. intro x.
   eapply r_get_remember_rhs. intro y.
   eapply rpre_hypothesis_rule. intros s₀ s₁ [[hpre e1] e2].
   simpl in e1, e2.
-  eapply ht in hpre as e. rewrite -e in e2. subst.
+  eapply ht in hpre as e. rewrite /(syncs _) /= in e.
+  rewrite -e in e2. subst.
   eapply rpre_weaken_rule.
   - eapply h.
   - simpl. intuition subst. split. 1: auto.
     reflexivity.
 Qed.
 
-Lemma r_get_vs_get_remember_rhs :
-  ∀ {A B : choiceType} ℓ r₀ r₁ (pre : precond) (post : postcond A B),
-    Syncs ℓ pre →
+Lemma r_get_vs_get_remember_rhs
+  {A B : choiceType} {ℓ r₀ r₁} {pre : precond} {post : postcond A B}
+    `{ht : ProvenBy (syncs ℓ) pre} :
     (∀ x,
       ⊢ ⦃ λ '(s₀, s₁), (pre ⋊ rem_rhs ℓ x) (s₀, s₁) ⦄
         r₀ x ≈ r₁ x
@@ -1650,21 +1651,22 @@ Lemma r_get_vs_get_remember_rhs :
       x ← get ℓ ;; r₁ x
     ⦃ post ⦄.
 Proof.
-  intros A B ℓ r₀ r₁ pre post ht h.
+  intros h.
   eapply r_get_remember_lhs. intro x.
   eapply r_get_remember_rhs. intro y.
   eapply rpre_hypothesis_rule. intros s₀ s₁ [[hpre e1] e2].
   simpl in e1, e2.
-  eapply ht in hpre as e. rewrite e in e1. subst.
+  eapply ht in hpre as e. rewrite /(syncs _) /= in e.
+  rewrite e in e1. subst.
   eapply rpre_weaken_rule.
   - eapply h.
   - simpl. intuition subst. split. 1: auto.
     reflexivity.
 Qed.
 
-Lemma r_get_vs_get_remember :
-  ∀ {A B : choiceType} ℓ r₀ r₁ (pre : precond) (post : postcond A B),
-    Syncs ℓ pre →
+Lemma r_get_vs_get_remember
+  {A B : choiceType} {ℓ r₀ r₁} {pre : precond} {post : postcond A B}
+    `{ht : ProvenBy (syncs ℓ) pre} :
     (∀ x,
       ⊢ ⦃ λ '(s₀, s₁), (pre ⋊ rem_lhs ℓ x ⋊ rem_rhs ℓ x) (s₀, s₁) ⦄
         r₀ x ≈ r₁ x
@@ -1675,12 +1677,13 @@ Lemma r_get_vs_get_remember :
       x ← get ℓ ;; r₁ x
     ⦃ post ⦄.
 Proof.
-  intros A B ℓ r₀ r₁ pre post ht h.
+  intros h.
   eapply r_get_remember_lhs. intro x.
   eapply r_get_remember_rhs. intro y.
   eapply rpre_hypothesis_rule. intros s₀ s₁ [[hpre e1] e2].
   simpl in e1, e2.
-  eapply ht in hpre as e. rewrite e in e1. subst.
+  eapply ht in hpre as e. rewrite /(syncs _) /= in e.
+  rewrite e in e1. subst.
   eapply rpre_weaken_rule.
   - eapply h.
   - simpl. intuition subst. split. 1: split.
@@ -1711,13 +1714,13 @@ Proof.
   - simpl. intros ? ? []. auto.
 Qed.
 
-Lemma r_get_remind_lhs :
-  ∀ {A B : choiceType} ℓ v r₀ r₁ (pre : precond) (post : postcond A B),
-    Remembers_lhs ℓ v pre →
+Lemma r_get_remind_lhs
+  {A B : choiceType} {ℓ v r₀ r₁} {pre : precond} {post : postcond A B}
+    `{hr : ProvenBy (rem_lhs ℓ v) pre} :
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ r₀ v ≈ r₁ ⦃ post ⦄ →
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ x ← get ℓ ;; r₀ x ≈ r₁ ⦃ post ⦄.
 Proof.
-  intros A B ℓ v r₀ r₁ pre post hr h.
+  intros h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
       x ← (x ← get ℓ ;; ret x) ;; r₀ x ≈ ret tt ;; r₁
@@ -1747,13 +1750,13 @@ Proof.
     + simpl. intuition subst. auto.
 Qed.
 
-Lemma r_get_remind_rhs :
-  ∀ {A B : choiceType} ℓ v r₀ r₁ (pre : precond) (post : postcond A B),
-    Remembers_rhs ℓ v pre →
+Lemma r_get_remind_rhs
+  {A B : choiceType} {ℓ v r₀ r₁} {pre : precond} {post : postcond A B}
+    `{hr : ProvenBy (rem_rhs ℓ v) pre} :
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ r₀ ≈ r₁ v ⦃ post ⦄ →
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ r₀ ≈ x ← get ℓ ;; r₁ x ⦃ post ⦄.
 Proof.
-  intros A B ℓ v r₀ r₁ pre post hr h.
+  intros h.
   change (
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄
       ret tt ;; r₀ ≈ x ← (x ← get ℓ ;; ret x) ;; r₁ x
@@ -1783,65 +1786,26 @@ Proof.
     + simpl. intuition subst. auto.
 Qed.
 
-Lemma r_rem_couple_lhs :
-  ∀ {A B : choiceType} ℓ ℓ' v v' R (pre : precond) c₀ c₁ (post : postcond A B),
-    Couples_lhs ℓ ℓ' R pre →
-    Remembers_lhs ℓ v pre →
-    Remembers_lhs ℓ' v' pre →
-    (R v v' → ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄) →
+Lemma r_rem_rel
+  {A B : choiceType} {ls R P} {pre : precond} {c₀ c₁} {post : postcond A B}
+    `{hr : ProvenBy (relApp ls R) pre}
+    `{hl : Remembers ls R P pre} :
+    (P → ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄) →
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄.
 Proof.
-  intros A B ℓ ℓ' v v' R pre c₀ c₁ post hc hl hr h.
+  intros h.
   apply rpre_hypothesis_rule.
   intros s₀ s₁ hpre.
   eapply rpre_weaken_rule.
   - eapply h.
-    specialize (hc _ hpre). specialize (hl _ _ hpre). specialize (hr _ _ hpre).
-    simpl in hl, hr. subst.
-    apply hc.
-  - simpl. intuition subst. auto.
-Qed.
-
-Lemma r_rem_couple_rhs :
-  ∀ {A B : choiceType} ℓ ℓ' v v' R (pre : precond) c₀ c₁ (post : postcond A B),
-    Couples_rhs ℓ ℓ' R pre →
-    Remembers_rhs ℓ v pre →
-    Remembers_rhs ℓ' v' pre →
-    (R v v' → ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄) →
-    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄.
-Proof.
-  intros A B ℓ ℓ' v v' R pre c₀ c₁ post hc hl hr h.
-  apply rpre_hypothesis_rule.
-  intros s₀ s₁ hpre.
-  eapply rpre_weaken_rule.
-  - eapply h.
-    specialize (hc _ hpre). specialize (hl _ _ hpre). specialize (hr _ _ hpre).
-    simpl in hl, hr. subst.
-    apply hc.
-  - simpl. intuition subst. auto.
-Qed.
-
-Lemma r_rem_triple_rhs :
-  ∀ {A B : choiceType} ℓ₁ ℓ₂ ℓ₃ v₁ v₂ v₃ R
-    (pre : precond) c₀ c₁ (post : postcond A B),
-    Triple_rhs ℓ₁ ℓ₂ ℓ₃ R pre →
-    Remembers_rhs ℓ₁ v₁ pre →
-    Remembers_rhs ℓ₂ v₂ pre →
-    Remembers_rhs ℓ₃ v₃ pre →
-    (R v₁ v₂ v₃ → ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄) →
-    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄.
-Proof.
-  intros A B ℓ₁ ℓ₂ ℓ₃ v₁ v₂ v₃ R pre c₀ c₁ post hc h₁ h₂ h₃ h.
-  apply rpre_hypothesis_rule.
-  intros s₀ s₁ hpre.
-  eapply rpre_weaken_rule.
-  - eapply h.
-    specialize (hc _ hpre).
-    specialize (h₁ _ _ hpre).
-    specialize (h₂ _ _ hpre).
-    specialize (h₃ _ _ hpre).
-    simpl in h₁, h₂, h₃. subst.
-    apply hc.
+    specialize (hr _ hpre).
+    induction hl => //; apply IHhl => //.
+    + rewrite relApp_cons in hr.
+      specialize (H _ hpre).
+      rewrite /get_side H // in hr.
+    + rewrite relApp_cons in hr.
+      specialize (H _ hpre).
+      rewrite /get_side H // in hr.
   - simpl. intuition subst. auto.
 Qed.
 

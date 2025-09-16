@@ -381,7 +381,7 @@ Proof.
         rewrite /relApp /= in Hinv.
         by rewrite Heq -H1 Hinv.
     + ssprove_sync=> k.
-      apply: (r_rem_couple_rhs T_loc S_loc) => Hinv.
+      ssprove_rem_rel 4%N => Hinv.
       apply: r_put_vs_put.
       apply: r_put_vs_put.
       ssprove_restore_mem;
@@ -405,8 +405,7 @@ Proof.
     ssprove_code_simpl_more.
     apply: r_get_remember_lhs => T.
     apply: r_get_remember_rhs => S.
-    apply: (r_rem_couple_rhs T_loc S_loc) => [|Hinv].
-    1: by apply: (Remembers_rhs_from_tracked_lhs _).
+    ssprove_rem_rel 2%N => Hinv.
     rewrite Hinv.
     ssprove_forget_all.
     by apply: r_ret.

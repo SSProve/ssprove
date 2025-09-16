@@ -779,3 +779,14 @@ Qed.
 
 (* To be able to use with Equations *)
 Ltac notac := idtac.
+
+Ltac proven_by n :=
+  lazymatch eval cbv in n with
+  | S ?n => eapply ProvenBy_conj_left ; proven_by n
+  | 0%N => eapply ProvenBy_conj_right, (@ProvenBy_refl (relApp _ _))
+  | _ => fail "Wrong number: " n
+  end.
+
+Ltac ssprove_rem_rel n :=
+  eapply @r_rem_rel; [ proven_by n | try (exact _) | ].
+
