@@ -499,88 +499,32 @@ Qed.
   apply put_pre_cond_conj
   : ssprove_invariant.
 
-Lemma put_pre_cond_couple_lhs :
-  ∀ ℓ v ℓ₀ ℓ₁ h,
-    ℓ₀.1 != ℓ.1 →
-    ℓ₁.1 != ℓ.1 →
-    put_pre_cond ℓ v (couple_lhs ℓ₀ ℓ₁ h).
+Lemma relApp_nil {R : relType [::]} {s} : relApp [::] R s = R.
+Proof. done. Qed.
+
+Lemma relApp_cons {l ls} {R : relType (l :: ls)} {s}
+  : relApp (l :: ls) R s = relApp ls (R (get_side s l)) s.
+Proof. done. Qed.
+
+Lemma put_pre_cond_rel_app :
+  ∀ ℓ v (ls : list Side) h,
+    ℓ.1 \notin map (fst \o loc) ls →
+    put_pre_cond ℓ v (relApp ls h).
 Proof.
-  intros ℓ v ℓ₀ ℓ₁ h n₀ n₁ s₀ s₁ hc.
-  unfold couple_lhs, get_side in *.
-  rewrite !get_set_heap_neq. all: auto.
+  intros ℓ v ls R h s₀ s₁ hc.
+  induction ls => //.
+  rewrite 2!relApp_cons in hc |- *.
+  rewrite /= in_cons negb_or in h.
+  move: h => /andP [h h'].
+  apply IHls => //.
+  destruct a => /=.
+  1,2: rewrite get_set_heap_neq // eq_sym //.
 Qed.
 
-#[export] Hint Extern 10 (put_pre_cond _ _ (couple_lhs _ _ _)) =>
-  apply put_pre_cond_couple_lhs
+#[export] Hint Extern 10 (put_pre_cond _ _ (relApp _ _)) =>
+  apply put_pre_cond_rel_app; [ done ]
   : ssprove_invariant.
 
-Lemma put_pre_cond_couple_rhs :
-  ∀ ℓ v ℓ₀ ℓ₁ h,
-    ℓ₀.1 != ℓ.1 →
-    ℓ₁.1 != ℓ.1 →
-    put_pre_cond ℓ v (couple_rhs ℓ₀ ℓ₁ h).
-Proof.
-  intros ℓ v ℓ₀ ℓ₁ h n₀ n₁ s₀ s₁ hc.
-  unfold couple_rhs, get_side in *.
-  rewrite !get_set_heap_neq. all: auto.
-Qed.
-
-#[export] Hint Extern 10 (put_pre_cond _ _ (couple_rhs _ _ _)) =>
-  apply put_pre_cond_couple_rhs
-  : ssprove_invariant.
-
-Lemma put_pre_cond_triple_rhs :
-  ∀ ℓ v ℓ₁ ℓ₂ ℓ₃ h,
-    ℓ₁.1 != ℓ.1 →
-    ℓ₂.1 != ℓ.1 →
-    ℓ₃.1 != ℓ.1 →
-    put_pre_cond ℓ v (triple_rhs ℓ₁ ℓ₂ ℓ₃ h).
-Proof.
-  intros ℓ v ℓ₁ ℓ₂ ℓ₃ h n₁ n₂ n₃ s₀ s₁ hc.
-  unfold triple_rhs, get_side in *.
-  rewrite !get_set_heap_neq. all: auto.
-Qed.
-
-#[export] Hint Extern 10 (put_pre_cond _ _ (triple_rhs _ _ _ _)) =>
-  apply put_pre_cond_triple_rhs
-  : ssprove_invariant.
-
-(* TODO MOVE *)
-Lemma notin_cons :
-  ∀ (T : eqType) (y : T) (s : seq T) (x : T),
-    (x \notin y :: s) = (x != y) && (x \notin s).
-Proof.
-  intros T y s x.
-  rewrite in_cons.
-  rewrite Bool.negb_orb. reflexivity.
-Qed.
-
-(* MK: related to loc_rel
-Lemma put_pre_cond_loc_rel :
-  ∀ ℓ v l (R : locRel l),
-    ℓ \notin (map fst l) →
-    put_pre_cond ℓ v (loc_rel l R).
-Proof.
-  intros ℓ v l R h s₀ s₁ hc.
-  unfold loc_rel in *.
-  induction l as [| [ℓ' si] l ih].
-  - assumption.
-  - simpl. simpl in h. simpl in hc.
-    rewrite notin_cons in h.
-    move: h => /andP [hn h].
-    apply ih.
-    + assumption.
-    + destruct si.
-      all: rewrite !get_set_heap_neq.
-      1,3: auto.
-      all: rewrite eq_sym.
-      all: auto.
-Qed.
-
-#[export] Hint Extern 10 (put_pre_cond _ _ (loc_rel _ _)) =>
-  apply put_pre_cond_loc_rel
-  : ssprove_invariant.
- *)
 
 (** Predicates on invariants
 

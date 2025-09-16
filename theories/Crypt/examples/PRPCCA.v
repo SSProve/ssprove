@@ -1023,7 +1023,7 @@ Proof.
   - apply: (@r_reflexivity_alt _ [fmap S_loc ; R_loc]) => [loc H|loc v H].
     all: ssprove_invariant;
       first by move=> ? ? ->.
-    all: fmap_invert H; done.
+    all: fmap_invert H; ssprove_invariant.
   - ssprove_code_simpl.
     ssprove_code_simpl_more.
     ssprove_sync=> [|S];
