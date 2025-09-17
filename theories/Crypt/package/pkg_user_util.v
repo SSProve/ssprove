@@ -699,65 +699,42 @@ Ltac ssprove_restore_mem :=
   | idtac
   ].
 
-Ltac lookup_hpv_l_eq_solve :=
-  repeat (
-    tryif rewrite lookup_hpv_l_eq
-    then reflexivity
-    else rewrite lookup_hpv_l_neq
-  ) ; neq_loc_auto.
-
-Ltac lookup_hpv_r_eq_solve :=
-  repeat (
-    tryif rewrite lookup_hpv_r_eq
-    then reflexivity
-    else rewrite lookup_hpv_r_neq
-  ) ; neq_loc_auto.
-
 #[export] Hint Extern 11 (preserve_update_mem _ _ (couple_lhs _ _ _)) =>
   eapply preserve_update_couple_lhs_lookup ; [
-    lookup_hpv_l_eq_solve ..
-  | idtac
+    reflexivity ..
+  | rewrite !coerceE
   ]
   : ssprove_invariant.
 
 #[export] Hint Extern 11 (preserve_update_mem _ _ (couple_rhs _ _ _)) =>
   eapply preserve_update_couple_rhs_lookup ; [
-    lookup_hpv_r_eq_solve ..
-  | idtac
+    reflexivity ..
+  | rewrite !coerceE
   ]
   : ssprove_invariant.
 
 #[export] Hint Extern 11 (preserve_update_mem _ _ (triple_rhs _ _ _ _)) =>
   eapply preserve_update_triple_rhs_lookup ; [
-    lookup_hpv_r_eq_solve ..
-  | idtac
+    reflexivity ..
+  | rewrite !coerceE
   ]
   : ssprove_invariant.
 
 #[export] Hint Extern 12 (preserve_update_mem _ _ (couple_lhs _ _ _)) =>
   eapply preserve_update_couple_lhs_lookup_None ; [
-    repeat rewrite lookup_hpv_l_neq ; [
-      reflexivity
-    | solve [ neq_loc_auto ] ..
-    ] ..
+    reflexivity ..
   ]
   : ssprove_invariant.
 
 #[export] Hint Extern 12 (preserve_update_mem _ _ (couple_rhs _ _ _)) =>
   eapply preserve_update_couple_rhs_lookup_None ; [
-    repeat rewrite lookup_hpv_r_neq ; [
-      reflexivity
-    | solve [ neq_loc_auto ] ..
-    ] ..
+    reflexivity ..
   ]
   : ssprove_invariant.
 
 #[export] Hint Extern 12 (preserve_update_mem _ _ (triple_rhs _ _ _ _)) =>
   eapply preserve_update_triple_rhs_lookup_None ; [
-    repeat rewrite lookup_hpv_r_neq ; [
-      reflexivity
-    | solve [ neq_loc_auto ] ..
-    ] ..
+    reflexivity ..
   ]
   : ssprove_invariant.
 

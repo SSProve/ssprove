@@ -847,22 +847,21 @@ Proof.
     split. all: split. all: auto.
 Qed.
 
-(* MK: better to not use Equations here? *)
-Equations lookup_hpv_l (ℓ : Location) (l : seq heap_val) : option ℓ :=
-  lookup_hpv_l ℓ (hpv_l ℓ' v' :: l) with inspect (ℓ.1 == ℓ'.1) := {
-  | @exist true e => Some (coerce v')
-  | @exist false e => lookup_hpv_l ℓ l
-  } ;
-  lookup_hpv_l ℓ (hpv_r _ _ :: l) := lookup_hpv_l ℓ l ;
-  lookup_hpv_l ℓ [::] := None.
+Fixpoint lookup_hpv_l (l : Location) (lv : seq heap_val) : option l :=
+  match lv with
+  | [::] => None
+  | (hpv_l l' v :: lv) =>
+      if l.1 == l'.1 then Some (coerce v) else lookup_hpv_l l lv
+  | (hpv_r _ _ :: lv) => lookup_hpv_l l lv
+  end.
 
-Equations lookup_hpv_r (ℓ : Location) (l : seq heap_val) : option ℓ :=
-  lookup_hpv_r ℓ (hpv_r ℓ' v' :: l) with inspect (ℓ.1 == ℓ'.1) := {
-  | @exist true e => Some (coerce v')
-  | @exist false e => lookup_hpv_r ℓ l
-  } ;
-  lookup_hpv_r ℓ (hpv_l _ _ :: l) := lookup_hpv_r ℓ l ;
-  lookup_hpv_r ℓ [::] := None.
+Fixpoint lookup_hpv_r (l : Location) (lv : seq heap_val) : option l :=
+  match lv with
+  | [::] => None
+  | (hpv_l _ _ :: lv) => lookup_hpv_r l lv
+  | (hpv_r l' v :: lv) =>
+      if l.1 == l'.1 then Some (coerce v) else lookup_hpv_r l lv
+  end.
 
 Definition lookup_hpv (ℓ : Location) (s : side) (l : seq heap_val) : option ℓ :=
   match s with
@@ -873,46 +872,24 @@ Definition lookup_hpv (ℓ : Location) (s : side) (l : seq heap_val) : option �
 Lemma lookup_hpv_l_eq :
   ∀ ℓ v l,
     lookup_hpv_l ℓ (hpv_l ℓ v :: l) = Some v.
-Proof.
-  intros ℓ v l.
-  funelim (lookup_hpv_l ℓ (hpv_l ℓ v :: l)).
-  - try rewrite -Heqcall. rewrite coerceE. reflexivity.
-  - exfalso. pose proof e as e'. symmetry in e'. move: e' => /eqP e'.
-    contradiction.
-Qed.
+Proof. intros. rewrite /= eq_refl coerceE //. Qed.
 
 Lemma lookup_hpv_l_neq :
   ∀ ℓ ℓ' v l,
     ℓ'.1 != ℓ.1 →
     lookup_hpv_l ℓ' (hpv_l ℓ v :: l) = lookup_hpv_l ℓ' l.
-Proof.
-  intros ℓ ℓ' v l hn.
-  funelim (lookup_hpv_l ℓ' (hpv_l ℓ v :: l)).
-  - exfalso. rewrite -e in hn. discriminate.
-  - try rewrite -Heqcall. reflexivity.
-Qed.
+Proof. intros. rewrite /= -(negbK (_ == _)) H //. Qed.
 
 Lemma lookup_hpv_r_eq :
   ∀ ℓ v l,
     lookup_hpv_r ℓ (hpv_r ℓ v :: l) = Some v.
-Proof.
-  intros ℓ v l.
-  funelim (lookup_hpv_r ℓ (hpv_r ℓ v :: l)).
-  - try rewrite -Heqcall. rewrite coerceE. reflexivity.
-  - exfalso. pose proof e as e'. symmetry in e'. move: e' => /eqP e'.
-    contradiction.
-Qed.
+Proof. intros. rewrite /= eq_refl coerceE //. Qed.
 
 Lemma lookup_hpv_r_neq :
   ∀ ℓ ℓ' v l,
     ℓ'.1 != ℓ.1 →
     lookup_hpv_r ℓ' (hpv_r ℓ v :: l) = lookup_hpv_r ℓ' l.
-Proof.
-  intros ℓ ℓ' v l hn.
-  funelim (lookup_hpv_r ℓ' (hpv_r ℓ v :: l)).
-  - exfalso. rewrite -e in hn. discriminate.
-  - try rewrite -Heqcall. reflexivity.
-Qed.
+Proof. intros. rewrite /= -(negbK (_ == _)) H //. Qed.
 
 Lemma lookup_hpv_l_spec :
   ∀ ℓ v l s₀ s₁ h₀ h₁,
@@ -920,22 +897,21 @@ Lemma lookup_hpv_l_spec :
     update_heaps l s₀ s₁ = (h₀, h₁) →
     get_heap h₀ ℓ = v.
 Proof.
-  intros ℓ v l s₀ s₁ h₀ h₁ hl e.
-  funelim (lookup_hpv_l ℓ l).
-  - discriminate.
+  intros ℓ v.
+  elim => // l lv ih s0 s1 h0 h1 h e.
+  destruct l as [l v'|l v'].
   - simpl in *.
     destruct update_heaps eqn:e1. noconf e.
-    eauto.
-  - try rewrite -Heqcall in hl. noconf hl.
-    simpl in e0.
-    destruct update_heaps eqn:e1. noconf e0.
-    pose proof e as e'.
-    symmetry in e'. move: e' => /eqP ?. subst.
-    rewrite /get_heap setmE -e //=.
-  - simpl in e0.
-    destruct update_heaps eqn:e1. noconf e0.
-    rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
-    try rewrite -Heqcall in hl. eauto.
+    destruct (_ == _) eqn:e.
+    + rewrite /get_heap setmE e.
+      by noconf h.
+    + rewrite get_set_heap_neq ?e //.
+      eapply ih => //.
+      apply e1.
+  - simpl in *.
+    destruct update_heaps eqn:e1. noconf e.
+    eapply ih => //.
+    apply e1.
 Qed.
 
 Lemma lookup_hpv_r_spec :
@@ -944,22 +920,21 @@ Lemma lookup_hpv_r_spec :
     update_heaps l s₀ s₁ = (h₀, h₁) →
     get_heap h₁ ℓ = v.
 Proof.
-  intros ℓ v l s₀ s₁ h₀ h₁ hl e.
-  funelim (lookup_hpv_r ℓ l).
-  - discriminate.
+  intros ℓ v.
+  elim => // l lv ih s0 s1 h0 h1 h e.
+  destruct l as [l v'|l v'].
   - simpl in *.
     destruct update_heaps eqn:e1. noconf e.
-    eauto.
-  - try rewrite -Heqcall in hl. noconf hl.
-    simpl in e0.
-    destruct update_heaps eqn:e1. noconf e0.
-    pose proof e as e'.
-    symmetry in e'. move: e' => /eqP ?. subst.
-    rewrite /get_heap setmE -e //=.
-  - simpl in e0.
-    destruct update_heaps eqn:e1. noconf e0.
-    rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
-    try rewrite -Heqcall in hl. eauto.
+    eapply ih => //.
+    apply e1.
+  - simpl in *.
+    destruct update_heaps eqn:e1. noconf e.
+    destruct (_ == _) eqn:e.
+    + rewrite /get_heap setmE e.
+      by noconf h.
+    + rewrite get_set_heap_neq ?e //.
+      eapply ih => //.
+      apply e1.
 Qed.
 
 Lemma lookup_hpv_spec :
@@ -980,17 +955,18 @@ Lemma lookup_hpv_l_None_spec :
     update_heaps l s₀ s₁ = (h₀, h₁) →
     get_heap h₀ ℓ = get_heap s₀ ℓ.
 Proof.
-  intros ℓ l s₀ s₁ h₀ h₁ hl e.
-  funelim (lookup_hpv_l ℓ l).
-  - simpl in e. noconf e. reflexivity.
-  - simpl in *.
-    destruct update_heaps eqn:e1. noconf e.
-    eauto.
-  - try rewrite -Heqcall in hl. noconf hl.
-  - simpl in e0.
-    destruct update_heaps eqn:e1. noconf e0.
-    rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
-    try rewrite -Heqcall in hl. eauto.
+  intros ℓ. elim.
+  { intros ? ? ? ? ? H. by noconf H. }
+  intros a l ih s0 s1 h0 h1 h e.
+  destruct a; simpl in *;
+    destruct update_heaps eqn:e1; noconf e.
+  - destruct (_ == _) eqn:e => //.
+    transitivity (get_heap h2 ℓ).
+    1: rewrite /get_heap setmE e //.
+    eapply ih => //.
+    apply e1.
+  - eapply ih => //.
+    apply e1.
 Qed.
 
 Lemma lookup_hpv_r_None_spec :
@@ -999,17 +975,18 @@ Lemma lookup_hpv_r_None_spec :
     update_heaps l s₀ s₁ = (h₀, h₁) →
     get_heap h₁ ℓ = get_heap s₁ ℓ.
 Proof.
-  intros ℓ l s₀ s₁ h₀ h₁ hl e.
-  funelim (lookup_hpv_r ℓ l).
-  - simpl in e. noconf e. reflexivity.
-  - simpl in *.
-    destruct update_heaps eqn:e1. noconf e.
-    eauto.
-  - try rewrite -Heqcall in hl. noconf hl.
-  - simpl in e0.
-    destruct update_heaps eqn:e1. noconf e0.
-    rewrite get_set_heap_neq. 2:{ rewrite -e. auto. }
-    try rewrite -Heqcall in hl. eauto.
+  intros ℓ. elim.
+  { intros ? ? ? ? ? H. by noconf H. }
+  intros a l ih s0 s1 h0 h1 h e.
+  destruct a; simpl in *;
+    destruct update_heaps eqn:e1; noconf e.
+  - eapply ih => //.
+    apply e1.
+  - destruct (_ == _) eqn:e => //.
+    transitivity (get_heap h3 ℓ).
+    1: rewrite /get_heap setmE e //.
+    eapply ih => //.
+    apply e1.
 Qed.
 
 Lemma lookup_hpv_None_spec :
