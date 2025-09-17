@@ -372,21 +372,21 @@ Proof.
     + apply: r_put_vs_put.
       ssprove_restore_mem;
         last by apply: r_ret.
-      ssprove_invariant=> s0 s1 [[[[Hinv _] H1] _] H2] m' t'.
-      rewrite /= get_set_heap_eq get_set_heap_neq // domm_set in_fsetU in_fset1.
+      ssprove_invariant.
+      intros h m' t'.
+      rewrite domm_set in_fsetU in_fset1.
       case: (eq_dec (m', t') (m, t)) => Heq.
-      * case: Heq => [-> ->].
-        by rewrite H2 Heqt /= !eq_refl.
+      * noconf Heq.
+        rewrite h Heqt /= 2!eq_refl //.
       * move /eqP /negPf in Heq.
-        rewrite /relApp /= in Hinv.
-        by rewrite Heq -H1 Hinv.
+        by rewrite Heq -h.
     + ssprove_sync=> k.
       ssprove_rem_rel 4%N => Hinv.
       apply: r_put_vs_put.
       apply: r_put_vs_put.
       ssprove_restore_mem;
         last by apply: r_ret.
-      ssprove_invariant=> m' k'.
+      ssprove_invariant=> h m' k'.
       rewrite domm_set in_fsetU in_fset1 setmE.
       case: (eq_dec (m', k') (m, k)) => Heq.
       1: {

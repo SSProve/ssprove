@@ -835,7 +835,7 @@ Proof.
     do 4 apply: r_put_vs_put.
     all: ssprove_restore_mem;
       last by apply: r_ret.
-    ssprove_invariant=> m' r'.
+    ssprove_invariant=> h m' r'.
     rewrite domm_set in_fsetU => /norP [H H'].
     rewrite setmE mkciph_eq.
     rewrite in_fset1 in H.
@@ -850,18 +850,16 @@ Proof.
     + apply: r_put_vs_put.
       all: ssprove_restore_mem;
         last by apply: r_ret.
-      ssprove_invariant=> s0 s1 [[/= Hinv <-] <-] m' r'.
-      rewrite /= get_set_heap_eq domm_set in_fsetU => /norP [H H'].
-      rewrite get_set_heap_neq.
-      2: by apply /eqP.
-      by apply Hinv.
+      ssprove_invariant => h m' r'.
+      rewrite /= domm_set in_fsetU => /norP [H H'].
+      by apply h.
     + ssprove_sync=> c.
       apply: r_get_vs_get_remember => T.
       ssprove_rem_rel 4%N => Hinv.
       do 3 apply: r_put_vs_put.
       all: ssprove_restore_mem;
         last by apply: r_ret.
-      ssprove_invariant=> m' r'.
+      ssprove_invariant=> h m' r'.
       rewrite domm_set in_fsetU => /norP [H H'].
       rewrite setmE -(mkciph_ciph_to_pair c) mkciph_eq.
       rewrite in_fset1 in H.
@@ -931,13 +929,9 @@ Proof.
     apply: r_put_vs_put.
     ssprove_restore_mem;
       last by apply: r_ret.
-    ssprove_invariant=> s0 s1 [[[[Hinv _] <-] _] <-] c'.
+    ssprove_invariant => Hinv c'.
     specialize (Hinv c').
-    rewrite /= get_set_heap_eq domm_set in_fsetU => /norP [H H'].
-    rewrite get_set_heap_neq.
-    2: by apply /eqP.
-    rewrite get_set_heap_eq !get_set_heap_neq.
-    2,3: by apply /eqP.
+    rewrite /= domm_set in_fsetU => /norP [H H'].
     rewrite in_fset1 in H.
     move /negPf in H.
     by rewrite setmE H Hinv.

@@ -699,45 +699,6 @@ Ltac ssprove_restore_mem :=
   | idtac
   ].
 
-#[export] Hint Extern 11 (preserve_update_mem _ _ (couple_lhs _ _ _)) =>
-  eapply preserve_update_couple_lhs_lookup ; [
-    reflexivity ..
-  | rewrite !coerceE
-  ]
-  : ssprove_invariant.
-
-#[export] Hint Extern 11 (preserve_update_mem _ _ (couple_rhs _ _ _)) =>
-  eapply preserve_update_couple_rhs_lookup ; [
-    reflexivity ..
-  | rewrite !coerceE
-  ]
-  : ssprove_invariant.
-
-#[export] Hint Extern 11 (preserve_update_mem _ _ (triple_rhs _ _ _ _)) =>
-  eapply preserve_update_triple_rhs_lookup ; [
-    reflexivity ..
-  | rewrite !coerceE
-  ]
-  : ssprove_invariant.
-
-#[export] Hint Extern 12 (preserve_update_mem _ _ (couple_lhs _ _ _)) =>
-  eapply preserve_update_couple_lhs_lookup_None ; [
-    reflexivity ..
-  ]
-  : ssprove_invariant.
-
-#[export] Hint Extern 12 (preserve_update_mem _ _ (couple_rhs _ _ _)) =>
-  eapply preserve_update_couple_rhs_lookup_None ; [
-    reflexivity ..
-  ]
-  : ssprove_invariant.
-
-#[export] Hint Extern 12 (preserve_update_mem _ _ (triple_rhs _ _ _ _)) =>
-  eapply preserve_update_triple_rhs_lookup_None ; [
-    reflexivity ..
-  ]
-  : ssprove_invariant.
-
 Ltac get_heap_simpl :=
   repeat
   tryif rewrite get_set_heap_eq

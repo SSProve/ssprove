@@ -422,7 +422,6 @@ Notation triple_rhs ℓ₁ ℓ₂ ℓ₃ R :=
 Notation syncs l :=
   (relApp [:: lhs' l; rhs' l] eq).
 
-(*** OLD ***)
 
 Inductive side := lhs | rhs.
 
@@ -1218,156 +1217,243 @@ Qed.
   progress (eapply preserve_update_filter_triple_rhs ; simpl)
 : ssprove_invariant.
 
-Lemma preserve_update_couple_lhs_lookup :
-  ∀ ℓ ℓ' (R : _ → _ → Prop) v v' (l : seq heap_val) m,
-    lookup_hpv_l ℓ l = Some v →
-    lookup_hpv_l ℓ' l = Some v' →
-    R v v' →
-    preserve_update_mem l m (couple_lhs ℓ ℓ' R).
+
+Definition preserve_update_rel l m ls (R R' : relType ls) :=
+  ∀ s₀ s₁, (remember_pre m (relApp ls R)) (s₀, s₁)
+    → relApp ls R' (update_heaps l s₀ s₁).
+
+Lemma preserve_update_rel_nil {set get P P'} :
+  (P → P') →
+  preserve_update_rel set get [::] P P'.
 Proof.
-  intros ℓ ℓ' R v v' l m hl hr h.
-  intros s₀ s₁ hh. unfold couple_lhs, get_side in *.
+  move=> H s0 s1 /remember_pre_pre.
+  rewrite 2!relApp_nil //.
+Qed.
+
+Lemma preserve_update_mem_rel {set get ls R} :
+  preserve_update_rel set get ls R R →
+  preserve_update_mem set get (relApp ls R).
+Proof. auto. Qed.
+
+Lemma remember_pre_exchange :
+  ∀ get (pre pre' : precond) s0 s1,
+  (pre (s0, s1) → pre' (s0, s1)) →
+  remember_pre get pre (s0, s1) →
+  remember_pre get pre' (s0, s1).
+Proof.
+  intros get pre pre' s0 s1 h.
+  induction get => //.
+  destruct a => /=; move=> [h0 h1]; split; auto.
+Qed.
+
+Lemma preserve_update_rel_lhs_1 :
+  ∀ l ls R R' (set get : seq heap_val) v v',
+  lookup_hpv_l l set = Some v' →
+  ProvenBy (rem_lhs l v) (remember_pre get (relApp (lhs' l :: ls) R)) →
+  preserve_update_rel set get ls (R v) (R' v') →
+  preserve_update_rel set get (lhs' l :: ls) R R'.
+Proof.
+  intros l ls R R' set get v v' hv' hv ih.
+  intros s0 s1 h.
+  specialize (ih s0 s1).
   destruct update_heaps eqn:e.
-  erewrite lookup_hpv_l_spec. 2,3: eauto.
-  erewrite lookup_hpv_l_spec. 2,3: eauto.
-  auto.
+  rewrite relApp_cons.
+  rewrite /get_side /=.
+  erewrite (lookup_hpv_l_spec _ _ _ _ _ _ _ hv' e).
+  apply ih.
+  eapply remember_pre_exchange; [| exact h ].
+  rewrite relApp_cons /=.
+  apply hv in h.
+  by rewrite h.
 Qed.
 
-Lemma preserve_update_couple_rhs_lookup :
-  ∀ ℓ ℓ' (R : _ → _ → Prop) v v' (l : seq heap_val) m,
-    lookup_hpv_r ℓ l = Some v →
-    lookup_hpv_r ℓ' l = Some v' →
-    R v v' →
-    preserve_update_mem l m (couple_rhs ℓ ℓ' R).
+Lemma preserve_update_rel_lhs_2 :
+  ∀ l ls R R' (set get : seq heap_val) v',
+  lookup_hpv_l l set = Some v' →
+  (∀ v, preserve_update_rel set get ls (R v) (R' v')) →
+  preserve_update_rel set get (lhs' l :: ls) R R'.
 Proof.
-  intros ℓ ℓ' R v v' l m hl hr h.
-  intros s₀ s₁ hh. unfold couple_rhs, get_side in *.
+  intros l ls R R' set get v' hv' ih.
+  intros s0 s1 h.
+  specialize (ih (get_heap s0 l) s0 s1).
   destruct update_heaps eqn:e.
-  erewrite lookup_hpv_r_spec. 2,3: eauto.
-  erewrite lookup_hpv_r_spec. 2,3: eauto.
-  auto.
+  rewrite relApp_cons.
+  rewrite /get_side /=.
+  erewrite (lookup_hpv_l_spec _ _ _ _ _ _ _ hv' e).
+  apply ih.
+  eapply remember_pre_exchange; [| exact h ].
+  rewrite relApp_cons //.
 Qed.
 
-Lemma preserve_update_triple_rhs_lookup :
-  ∀ ℓ₁ ℓ₂ ℓ₃ (R : _ → _ → _ → Prop) v₁ v₂ v₃ (l : seq heap_val) m,
-    lookup_hpv_r ℓ₁ l = Some v₁ →
-    lookup_hpv_r ℓ₂ l = Some v₂ →
-    lookup_hpv_r ℓ₃ l = Some v₃ →
-    R v₁ v₂ v₃ →
-    preserve_update_mem l m (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
+Lemma preserve_update_rel_lhs_3 :
+  ∀ l ls R R' (set get : seq heap_val) v,
+  lookup_hpv_l l set = None →
+  ProvenBy (rem_lhs l v) (remember_pre get (relApp (lhs' l :: ls) R)) →
+  preserve_update_rel set get ls (R v) (R' v) →
+  preserve_update_rel set get (lhs' l :: ls) R R'.
 Proof.
-  intros ℓ₁ ℓ₂ ℓ₃ R v₁ v₂ v₃ l m h₁ h₂ h₃ h.
-  intros s₀ s₁ hh. unfold triple_rhs, get_side in *.
+  intros l ls R R' set get v hv' hv ih.
+  intros s0 s1 h.
+  specialize (ih s0 s1).
   destruct update_heaps eqn:e.
-  erewrite lookup_hpv_r_spec. 2,3: eauto.
-  erewrite lookup_hpv_r_spec. 2,3: eauto.
-  erewrite lookup_hpv_r_spec. 2,3: eauto.
-  auto.
+  rewrite relApp_cons.
+  rewrite /get_side /=.
+  erewrite (lookup_hpv_l_None_spec _ _ _ _ _ _ hv' e).
+  apply hv in h as h'.
+  rewrite h'.
+  apply ih.
+  eapply remember_pre_exchange; [| exact h ].
+  rewrite relApp_cons /= h' //.
 Qed.
 
-(* TODO MOVE? *)
-(*
-Fixpoint hpv_locRel (l : seq heap_val) ll (R : locRel ll) :=
-  match ll return locRel ll → Prop with
-  | (ℓ, s) :: ll =>
-    λ R,
-    match lookup_hpv ℓ s l with
-    | Some v => hpv_locRel l ll (R v)
-    | None => False
-    end
-  | [::] => λ R, R
-  end R.
-
-Lemma preserve_update_loc_rel_lookup :
-  ∀ ll (R : locRel ll) (l : seq heap_val) m,
-    hpv_locRel l ll R →
-    preserve_update_mem l m (loc_rel ll R).
+Lemma preserve_update_rel_lhs_4 :
+  ∀ l ls R R' (set get : seq heap_val),
+  lookup_hpv_l l set = None →
+  (∀ v, preserve_update_rel set get ls (R v) (R' v)) →
+  preserve_update_rel set get (lhs' l :: ls) R R'.
 Proof.
-  intros ll R l m h.
-  intros s₀ s₁ hh.
-  unfold loc_rel in *.
-  induction ll as [| [ℓ si] ll ih] in R, l, h, s₀, s₁ |- *.
-  - simpl. simpl in h.
-    destruct update_heaps.
-    assumption.
-  - simpl in *.
-    destruct lookup_hpv eqn:e1. 2: contradiction.
-    destruct update_heaps eqn:e.
-    erewrite lookup_hpv_spec. 2,3: eauto.
-    specialize ih with (1 := h).
-    specialize (ih s₀ s₁).
-    rewrite e in ih. apply ih.
-Qed.
- *)
-
-Lemma preserve_update_couple_lhs_lookup_None :
-  ∀ ℓ ℓ' (R : _ → _ → Prop) (l : seq heap_val) m,
-    lookup_hpv_l ℓ l = None →
-    lookup_hpv_l ℓ' l = None →
-    preserve_update_mem l m (couple_lhs ℓ ℓ' R).
-Proof.
-  intros ℓ ℓ' R l m h h'.
-  intros s₀ s₁ hh. unfold couple_lhs, get_side in *.
+  intros l ls R R' set get hv' ih.
+  intros s0 s1 h.
+  specialize (ih (get_heap s0 l) s0 s1).
   destruct update_heaps eqn:e.
-  erewrite lookup_hpv_l_None_spec. 2,3: eauto.
-  erewrite lookup_hpv_l_None_spec with (ℓ := ℓ'). 2,3: eauto.
-  eapply remember_pre_pre in hh.
-  auto.
+  rewrite relApp_cons /=.
+  erewrite (lookup_hpv_l_None_spec _ _ _ _ _ _ hv' e).
+  apply ih.
+  eapply remember_pre_exchange; [| exact h ].
+  by rewrite relApp_cons.
 Qed.
 
-Lemma preserve_update_couple_rhs_lookup_None :
-  ∀ ℓ ℓ' (R : _ → _ → Prop) (l : seq heap_val) m,
-    lookup_hpv_r ℓ l = None →
-    lookup_hpv_r ℓ' l = None →
-    preserve_update_mem l m (couple_rhs ℓ ℓ' R).
+Lemma preserve_update_rel_rhs_1 :
+  ∀ l ls R R' (set get : seq heap_val) v v',
+  lookup_hpv_r l set = Some v' →
+  ProvenBy (rem_rhs l v) (remember_pre get (relApp (rhs' l :: ls) R)) →
+  preserve_update_rel set get ls (R v) (R' v') →
+  preserve_update_rel set get (rhs' l :: ls) R R'.
 Proof.
-  intros ℓ ℓ' R l m h h'.
-  intros s₀ s₁ hh. unfold couple_rhs, get_side in *.
+  intros l ls R R' set get v v' hv' hv ih.
+  intros s0 s1 h.
+  specialize (ih s0 s1).
   destruct update_heaps eqn:e.
-  erewrite lookup_hpv_r_None_spec. 2,3: eauto.
-  erewrite lookup_hpv_r_None_spec with (ℓ := ℓ'). 2,3: eauto.
-  eapply remember_pre_pre in hh.
-  auto.
+  rewrite relApp_cons.
+  rewrite /get_side /=.
+  erewrite (lookup_hpv_r_spec _ _ _ _ _ _ _ hv' e).
+  apply ih.
+  eapply remember_pre_exchange; [| exact h ].
+  rewrite relApp_cons /=.
+  apply hv in h.
+  by rewrite h.
 Qed.
 
-Lemma preserve_update_triple_rhs_lookup_None :
-  ∀ ℓ₁ ℓ₂ ℓ₃ (R : _ → _ → _ → Prop) (l : seq heap_val) m,
-    lookup_hpv_r ℓ₁ l = None →
-    lookup_hpv_r ℓ₂ l = None →
-    lookup_hpv_r ℓ₃ l = None →
-    preserve_update_mem l m (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
+Lemma preserve_update_rel_rhs_2 :
+  ∀ l ls R R' (set get : seq heap_val) v',
+  lookup_hpv_r l set = Some v' →
+  (∀ v, preserve_update_rel set get ls (R v) (R' v')) →
+  preserve_update_rel set get (rhs' l :: ls) R R'.
 Proof.
-  intros ℓ₁ ℓ₂ ℓ₃ R l m h₁ h₂ h₃.
-  intros s₀ s₁ hh. unfold triple_rhs, get_side in *.
+  intros l ls R R' set get v' hv' ih.
+  intros s0 s1 h.
+  specialize (ih (get_heap s1 l) s0 s1).
   destruct update_heaps eqn:e.
-  erewrite lookup_hpv_r_None_spec. 2,3: eauto.
-  erewrite lookup_hpv_r_None_spec with (ℓ := ℓ₂). 2,3: eauto.
-  erewrite lookup_hpv_r_None_spec with (ℓ := ℓ₃). 2,3: eauto.
-  eapply remember_pre_pre in hh.
-  auto.
+  rewrite relApp_cons.
+  rewrite /get_side /=.
+  erewrite (lookup_hpv_r_spec _ _ _ _ _ _ _ hv' e).
+  apply ih.
+  eapply remember_pre_exchange; [| exact h ].
+  rewrite relApp_cons //.
 Qed.
 
-(*
-Lemma preserve_update_loc_rel_lookup_None :
-  ∀ ll (R : locRel ll) (l : seq heap_val) m,
-    List.forallb (λ '(ℓ, s), ~~ isSome (lookup_hpv ℓ s l)) ll →
-    preserve_update_mem l m (loc_rel ll R).
+Lemma preserve_update_rel_rhs_3 :
+  ∀ l ls R R' (set get : seq heap_val) v,
+  lookup_hpv_r l set = None →
+  ProvenBy (rem_rhs l v) (remember_pre get (relApp (rhs' l :: ls) R)) →
+  preserve_update_rel set get ls (R v) (R' v) →
+  preserve_update_rel set get (rhs' l :: ls) R R'.
 Proof.
-  intros ll R l m h.
-  intros s₀ s₁ hh.
-  unfold loc_rel in *.
-  eapply remember_pre_pre in hh.
-  induction ll as [| [ℓ si] ll ih] in R, l, h, s₀, s₁, hh |- *.
-  - simpl. simpl in hh.
-    destruct update_heaps.
-    assumption.
-  - simpl in *.
-    move: h => /andP [hl h].
-    destruct lookup_hpv eqn:e1. 1: discriminate.
-    destruct update_heaps eqn:e.
-    erewrite lookup_hpv_None_spec. 2,3: eauto.
-    specialize ih with (1 := h).
-    specialize ih with (1 := hh).
-    rewrite e in ih. apply ih.
+  intros l ls R R' set get v hv' hv ih.
+  intros s0 s1 h.
+  specialize (ih s0 s1).
+  destruct update_heaps eqn:e.
+  rewrite relApp_cons.
+  rewrite /get_side /=.
+  erewrite (lookup_hpv_r_None_spec _ _ _ _ _ _ hv' e).
+  apply hv in h as h'.
+  rewrite h'.
+  apply ih.
+  eapply remember_pre_exchange; [| exact h ].
+  rewrite relApp_cons /= h' //.
 Qed.
- *)
+
+Lemma preserve_update_rel_rhs_4 :
+  ∀ l ls R R' (set get : seq heap_val),
+  lookup_hpv_r l set = None →
+  (∀ v, preserve_update_rel set get ls (R v) (R' v)) →
+  preserve_update_rel set get (rhs' l :: ls) R R'.
+Proof.
+  intros l ls R R' set get hv' ih.
+  intros s0 s1 h.
+  specialize (ih (get_heap s1 l) s0 s1).
+  destruct update_heaps eqn:e.
+  rewrite relApp_cons /=.
+  erewrite (lookup_hpv_r_None_spec _ _ _ _ _ _ hv' e).
+  apply ih.
+  eapply remember_pre_exchange; [| exact h ].
+  by rewrite relApp_cons.
+Qed.
+
+#[export] Hint Resolve preserve_update_mem_rel
+  : ssprove_invariant.
+
+#[export] Hint Extern 2 (preserve_update_rel _ _ [::] _ _) =>
+  eapply preserve_update_rel_nil; auto : ssprove_invariant.
+
+#[export] Hint Extern 11 (preserve_update_rel _ _ _ _ _) =>
+  eapply preserve_update_rel_lhs_1 ;
+    [ reflexivity
+    | exact _
+    | rewrite coerceE
+    ] : ssprove_invariant.
+
+#[export] Hint Extern 12 (preserve_update_rel _ _ _ _ _) =>
+  eapply preserve_update_rel_lhs_2 ;
+    [ reflexivity
+    | rewrite coerceE; intros ?
+    ] : ssprove_invariant.
+
+#[export] Hint Extern 13 (preserve_update_rel _ _ _ _ _) =>
+  eapply preserve_update_rel_lhs_3 ;
+    [ reflexivity
+    | exact _
+    | idtac
+    ] : ssprove_invariant.
+
+#[export] Hint Extern 14 (preserve_update_rel _ _ _ _ _) =>
+  eapply preserve_update_rel_lhs_4 ;
+    [ reflexivity
+    | intros ?
+    ] : ssprove_invariant.
+
+#[export] Hint Extern 11 (preserve_update_rel _ _ _ _ _) =>
+  eapply preserve_update_rel_rhs_1 ;
+    [ reflexivity
+    | exact _
+    | rewrite coerceE
+    ] : ssprove_invariant.
+
+#[export] Hint Extern 12 (preserve_update_rel _ _ _ _ _) =>
+  eapply preserve_update_rel_rhs_2 ;
+    [ reflexivity
+    | rewrite coerceE; intros ?
+    ] : ssprove_invariant.
+
+#[export] Hint Extern 13 (preserve_update_rel _ _ _ _ _) =>
+  eapply preserve_update_rel_rhs_3 ;
+    [ reflexivity
+    | exact _
+    | idtac
+    ] : ssprove_invariant.
+
+#[export] Hint Extern 14 (preserve_update_rel _ _ _ _ _) =>
+  eapply preserve_update_rel_rhs_4 ;
+    [ reflexivity
+    | intros ?
+    ] : ssprove_invariant.

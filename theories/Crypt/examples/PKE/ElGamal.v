@@ -144,9 +144,6 @@ Proof.
     ssprove_restore_pre.
     2: by apply r_ret.
     ssprove_invariant.
-    unfold relApp.
-    intros h0 h1 H f => /=.
-    by get_heap_simpl.
 
   - apply @r_get_vs_get_remember. 1: exact _. move=> c.
     ssprove_code_simpl.
@@ -164,15 +161,8 @@ Proof.
     destruct c as [|c] => //= {H}.
     specialize (H' erefl); subst.
     apply r_put_rhs.
-
     ssprove_restore_mem.
-    1: {
-      ssprove_invariant.
-      intros h0 h1 [[[[[H0 H1] H2] H3] H4] H5].
-      rewrite //= /relApp /=.
-      by get_heap_simpl.
-    }
-
+    { ssprove_invariant. move=> _ /eqP //. }
     destruct b; simpl.
     + ssprove_sync => b.
       by apply r_ret.

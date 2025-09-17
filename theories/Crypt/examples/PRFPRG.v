@@ -260,14 +260,8 @@ Proof.
     all: ssprove_restore_mem;
       last by apply: r_ret.
     all: ssprove_invariant.
-    all: move=> s0 s1 [[Hinv _] H] /=.
-    all: rewrite /relApp /= get_set_heap_eq get_set_heap_neq //.
-    all: move /eqP in Hlt.
-    + rewrite /relApp /= in Hinv.
-      rewrite Hinv // H -?subnE eqnE.
-      by rewrite subn_eq0 ltnW // -subn_eq0 Hlt.
-    + move /eqP /negPf in Hlt.
-      by rewrite -?subnE eqnE Hlt.
+    + rewrite eqnE subnE 2!subn_eq0 ltnW //. auto.
+    + rewrite eqnE subnE 2!subn_eq0 Hlt //.
 Qed.
 
 (**
@@ -314,14 +308,8 @@ Proof.
     all: ssprove_restore_mem;
       last by apply: r_ret.
     all: ssprove_invariant.
-    all: move=> s0 s1 [[Hinv H] _] /=.
-    all: rewrite /relApp /= get_set_heap_eq get_set_heap_neq //.
-    all: move /eqP in Hlt.
-    + rewrite /relApp /= in Hinv.
-      rewrite Hinv // H -?subnE eqnE.
-      by rewrite subn_eq0 ltnW // -subn_eq0 Hlt.
-    + move /eqP /negPf in Hlt.
-      by rewrite -?subnE eqnE Hlt.
+    + rewrite eqnE subnE 2!subn_eq0 ltnW //. auto.
+    + rewrite eqnE subnE 2!subn_eq0 Hlt //.
 Qed.
 
 Local Open Scope ring_scope.
