@@ -760,54 +760,6 @@ Proof.
     rewrite -e. reflexivity.
 Qed.
 
-Definition is_hpv_l u :=
-  match u with
-  | hpv_l _ _ => true
-  | _ => false
-  end.
-
-Definition is_hpv_r u :=
-  match u with
-  | hpv_r _ _ => true
-  | _ => false
-  end.
-
-Lemma update_heaps_filter_l :
-  ∀ l s₀ s₁,
-    (update_heaps (filter is_hpv_l l) s₀ s₁).1 =
-    (update_heaps l s₀ s₁).1.
-Proof.
-  intros l s₀ s₁.
-  induction l as [| [] l ih] in s₀, s₁ |- *.
-  - reflexivity.
-  - simpl. destruct update_heaps eqn:e1.
-    destruct (update_heaps l s₀ s₁) eqn:e2.
-    simpl. specialize (ih s₀ s₁).
-    rewrite e2 e1 in ih. simpl in ih. subst. reflexivity.
-  - simpl. destruct update_heaps eqn:e1.
-    destruct (update_heaps l s₀ s₁) eqn:e2.
-    simpl. specialize (ih s₀ s₁).
-    rewrite e2 e1 in ih. simpl in ih. auto.
-Qed.
-
-Lemma update_heaps_filter_r :
-  ∀ l s₀ s₁,
-    (update_heaps (filter is_hpv_r l) s₀ s₁).2 =
-    (update_heaps l s₀ s₁).2.
-Proof.
-  intros l s₀ s₁.
-  induction l as [| [] l ih] in s₀, s₁ |- *.
-  - reflexivity.
-  - simpl. destruct update_heaps eqn:e1.
-    destruct (update_heaps l s₀ s₁) eqn:e2.
-    simpl. specialize (ih s₀ s₁).
-    rewrite e2 e1 in ih. simpl in ih. auto.
-  - simpl. destruct update_heaps eqn:e1.
-    destruct (update_heaps l s₀ s₁) eqn:e2.
-    simpl. specialize (ih s₀ s₁).
-    rewrite e2 e1 in ih. simpl in ih. subst. reflexivity.
-Qed.
-
 Fixpoint remember_pre (l : list heap_val) (pre : precond) :=
   match l with
   | hpv_l ℓ v :: l => remember_pre l pre ⋊ rem_lhs ℓ v
@@ -1159,63 +1111,6 @@ Qed.
   | idtac
   ]
   : ssprove_invariant.
-
-Lemma preserve_update_filter_couple_lhs :
-  ∀ ℓ ℓ' R l m,
-    preserve_update_mem (filter is_hpv_l l) m (couple_lhs ℓ ℓ' R) →
-    preserve_update_mem l m (couple_lhs ℓ ℓ' R).
-Proof.
-  intros ℓ ℓ' R l m h.
-  intros s₀ s₁ hh.
-  eapply h in hh.
-  destruct update_heaps eqn:e1.
-  destruct (update_heaps l s₀ s₁) eqn:e2.
-  apply (f_equal (λ x, x.1)) in e1.
-  rewrite update_heaps_filter_l in e1. rewrite e2 in e1.
-  simpl in e1. subst. auto.
-Qed.
-
-#[export] Hint Extern 10 (preserve_update_mem _ _ (couple_lhs _ _ _)) =>
-  progress (eapply preserve_update_filter_couple_lhs ; simpl)
-: ssprove_invariant.
-
-Lemma preserve_update_filter_couple_rhs :
-  ∀ ℓ ℓ' R l m,
-    preserve_update_mem (filter is_hpv_r l) m (couple_rhs ℓ ℓ' R) →
-    preserve_update_mem l m (couple_rhs ℓ ℓ' R).
-Proof.
-  intros ℓ ℓ' R l m h.
-  intros s₀ s₁ hh.
-  eapply h in hh.
-  destruct update_heaps eqn:e1.
-  destruct (update_heaps l s₀ s₁) eqn:e2.
-  apply (f_equal (λ x, x.2)) in e1.
-  rewrite update_heaps_filter_r in e1. rewrite e2 in e1.
-  simpl in e1. subst. auto.
-Qed.
-
-#[export] Hint Extern 10 (preserve_update_mem _ _ (couple_rhs _ _ _)) =>
-  progress (eapply preserve_update_filter_couple_rhs ; simpl)
-: ssprove_invariant.
-
-Lemma preserve_update_filter_triple_rhs :
-  ∀ ℓ₁ ℓ₂ ℓ₃ R l m,
-    preserve_update_mem (filter is_hpv_r l) m (triple_rhs ℓ₁ ℓ₂ ℓ₃ R) →
-    preserve_update_mem l m (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
-Proof.
-  intros ℓ₁ ℓ₂ ℓ₃ R l m h.
-  intros s₀ s₁ hh.
-  eapply h in hh.
-  destruct update_heaps eqn:e1.
-  destruct (update_heaps l s₀ s₁) eqn:e2.
-  apply (f_equal (λ x, x.2)) in e1.
-  rewrite update_heaps_filter_r in e1. rewrite e2 in e1.
-  simpl in e1. subst. auto.
-Qed.
-
-#[export] Hint Extern 10 (preserve_update_mem _ _ (triple_rhs _ _ _ _)) =>
-  progress (eapply preserve_update_filter_triple_rhs ; simpl)
-: ssprove_invariant.
 
 
 Definition preserve_update_rel l m ls (R R' : relType ls) :=
