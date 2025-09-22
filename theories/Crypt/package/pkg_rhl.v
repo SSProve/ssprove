@@ -1631,7 +1631,7 @@ Proof.
   eapply rpre_hypothesis_rule. intros s₀ s₁ [[hpre e1] e2].
   simpl in e1, e2.
   eapply ht in hpre as e. rewrite /(syncs _) /= in e.
-  rewrite -e in e2. subst.
+  rewrite /rem_inv /= -e in e2, e1. subst.
   eapply rpre_weaken_rule.
   - eapply h.
   - simpl. intuition subst. split. 1: auto.
@@ -1657,7 +1657,7 @@ Proof.
   eapply rpre_hypothesis_rule. intros s₀ s₁ [[hpre e1] e2].
   simpl in e1, e2.
   eapply ht in hpre as e. rewrite /(syncs _) /= in e.
-  rewrite e in e1. subst.
+  rewrite /rem_inv /= e in e1, e2. subst.
   eapply rpre_weaken_rule.
   - eapply h.
   - simpl. intuition subst. split. 1: auto.
@@ -1683,7 +1683,7 @@ Proof.
   eapply rpre_hypothesis_rule. intros s₀ s₁ [[hpre e1] e2].
   simpl in e1, e2.
   eapply ht in hpre as e. rewrite /(syncs _) /= in e.
-  rewrite e in e1. subst.
+  rewrite /rem_inv /= e in e1, e2. subst.
   eapply rpre_weaken_rule.
   - eapply h.
   - simpl. intuition subst. split. 1: split.
@@ -1744,7 +1744,7 @@ Proof.
       eapply hpost. intuition auto.
   - intros x _.
     eapply rpre_hypothesis_rule. intros s₀ s₁ [? hpre]. subst.
-    eapply hr in hpre as e. simpl in e. rewrite e.
+    eapply hr in hpre as e. rewrite /rem_inv /= in e. rewrite e.
     eapply rpre_weaken_rule.
     + eapply h.
     + simpl. intuition subst. auto.
@@ -1780,7 +1780,7 @@ Proof.
       eapply hpost. intuition auto.
   - intros _ x.
     eapply rpre_hypothesis_rule. intros s₀ s₁ [? hpre]. subst.
-    eapply hr in hpre as e. simpl in e. rewrite e.
+    eapply hr in hpre as e. rewrite /rem_inv /= in e. rewrite e.
     eapply rpre_weaken_rule.
     + eapply h.
     + simpl. intuition subst. auto.
@@ -1788,7 +1788,7 @@ Qed.
 
 Lemma r_rem_rel
   {A B : choiceType} {ls R P} {pre : precond} {c₀ c₁} {post : postcond A B}
-    `{hr : ProvenBy (relApp ls R) pre}
+    `{hr : ProvenBy (rel_app ls R) pre}
     `{hl : Remembers ls R P pre} :
     (P → ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄) →
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄.
@@ -1800,12 +1800,9 @@ Proof.
   - eapply h.
     specialize (hr _ hpre).
     induction hl => //; apply IHhl => //.
-    + rewrite relApp_cons in hr.
-      specialize (H _ hpre).
-      rewrite /get_side H // in hr.
-    + rewrite relApp_cons in hr.
-      specialize (H _ hpre).
-      rewrite /get_side H // in hr.
+    rewrite rel_app_cons in hr.
+    specialize (H _ hpre).
+    rewrite -H //.
   - simpl. intuition subst. auto.
 Qed.
 

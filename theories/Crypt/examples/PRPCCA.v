@@ -955,14 +955,9 @@ Proof.
     apply: r_put_vs_put.
     ssprove_restore_mem;
       last by apply: r_ret.
-    apply: preserve_update_mem_conj.
-    1: by ssprove_invariant.
-    move=> s0 s1 [[[[[[/= A B] Heq] C] D] E] F] c'.
-    rewrite /= 3?get_set_heap_neq.
-    2-4: by apply /eqP.
-    rewrite !get_set_heap_eq !setmE Heq.
-    case: (c' == m) => //.
-    by apply: Hinv.
+    ssprove_invariant.
+    intros Heq c' ?.
+    rewrite 2!setmE Heq //.
 Qed.
 
 Lemma CTXT_HYB_equiv_4:

@@ -721,7 +721,7 @@ Ltac notac := idtac.
 Ltac proven_by n :=
   lazymatch eval cbv in n with
   | S ?n => eapply ProvenBy_conj_left ; proven_by n
-  | 0%N => eapply ProvenBy_conj_right, (@ProvenBy_refl (relApp _ _))
+  | 0%N => eapply ProvenBy_conj_right, (@ProvenBy_refl (rel_app _ _))
   | _ => fail "Wrong number: " n
   end.
 
