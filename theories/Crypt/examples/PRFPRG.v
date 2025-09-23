@@ -241,7 +241,7 @@ Proof.
   - rewrite Heq eq_refl ltnn /=.
     ssprove_swap_rhs 0.
     apply: r_get_remember_rhs => k.
-    ssprove_rem_rel 3%N => Hinv.
+    ssprove_rem_rel 0%N => Hinv.
     rewrite Hinv //.
     apply: r_put_vs_put.
     ssprove_sync=> s.
@@ -284,7 +284,7 @@ Proof.
   - rewrite Heq eq_refl ltnn ltnSn /=.
     ssprove_swap_lhs 0.
     apply: r_get_remember_lhs => T.
-    ssprove_rem_rel 3%N => Hinv.
+    ssprove_rem_rel 0%N => Hinv.
     rewrite Hinv //=.
     apply: r_put_vs_put.
     ssprove_sync=> x.

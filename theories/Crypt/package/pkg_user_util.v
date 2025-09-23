@@ -67,6 +67,13 @@
   - [ssprove_forget_all]
     Remove all reminders from precondition.
 
+  - [ssprove_rem_rel n]
+    Derive the fact that some relation holds between values read from
+    the heap due to the invariant. The argument [n] counts the position
+    of the relation in the invariant from the back/right. The count does
+    not include rem_lhs and rem_rhs. The relation could for example be
+    [couple_lhs] or [triple_rhs].
+
 **)
 
 Set Warnings "-notation-overridden,-ambiguous-paths,-notation-incompatible-format".
@@ -719,10 +726,15 @@ Qed.
 Ltac notac := idtac.
 
 Ltac proven_by n :=
-  lazymatch eval cbv in n with
-  | S ?n => eapply ProvenBy_conj_left ; proven_by n
-  | 0%N => eapply ProvenBy_conj_right, (@ProvenBy_refl (rel_app _ _))
-  | _ => fail "Wrong number: " n
+  lazymatch goal with
+  | |- (ProvenBy _ (_ ⋊ rem_inv _ _ _)) =>
+      eapply ProvenBy_conj_left ; proven_by n
+  | _ =>
+    lazymatch eval cbv in n with
+    | S ?n => eapply ProvenBy_conj_left ; proven_by n
+    | 0%N => eapply ProvenBy_conj_right, (@ProvenBy_refl (rel_app _ _))
+    | _ => fail "Wrong number: " n
+    end
   end.
 
 Ltac ssprove_rem_rel n :=

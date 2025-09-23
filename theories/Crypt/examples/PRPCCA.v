@@ -824,7 +824,7 @@ Proof.
   - ssprove_sync=> H1.
     ssprove_sync=> r.
     apply: r_get_vs_get_remember => T.
-    ssprove_rem_rel 4%N => Hinv.
+    ssprove_rem_rel 0%N => Hinv.
     rewrite Hinv -?in_compl ?sample_subset_in //.
     ssprove_sync=> c.
     ssprove_sync=> [|Tinv];
@@ -855,7 +855,7 @@ Proof.
       by apply h.
     + ssprove_sync=> c.
       apply: r_get_vs_get_remember => T.
-      ssprove_rem_rel 4%N => Hinv.
+      ssprove_rem_rel 0%N => Hinv.
       do 3 apply: r_put_vs_put.
       all: ssprove_restore_mem;
         last by apply: r_ret.
@@ -939,7 +939,7 @@ Proof.
     ssprove_sync=> H1.
     apply: r_get_vs_get_remember => Tinv.
     apply: r_get_vs_get_remember => Tinv'.
-    ssprove_rem_rel 6%N => Hinv.
+    ssprove_rem_rel 0%N => Hinv.
     rewrite Hinv //.
     case: (Tinv' m) => [c|].
     1: {
@@ -1020,7 +1020,7 @@ Proof.
     ssprove_sync=> H1.
     apply: r_get_vs_get_remember => Tinv.
     apply: r_get_vs_get_remember => Tinv'.
-    ssprove_rem_rel 4%N => ->.
+    ssprove_rem_rel 0%N => ->.
     case: (getm Tinv' m) => [c|].
     + ssprove_forget_all.
       by apply: r_ret.

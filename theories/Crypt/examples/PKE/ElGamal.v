@@ -154,7 +154,7 @@ Proof.
     ssprove_code_simpl_more.
     ssprove_swap_seq_rhs [:: 1%N ; 0%N ].
     apply r_get_remember_rhs => mga.
-    ssprove_rem_rel 5%N => //= H'.
+    ssprove_rem_rel 0%N => //= H'.
     apply r_put_vs_put.
     ssprove_sync => H1.
     destruct mpk as [pk|] => //= {H1}.

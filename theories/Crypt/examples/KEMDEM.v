@@ -747,7 +747,7 @@ Section KEMDEM.
       apply r_get_vs_get_remember. intro sk.
       ssprove_sync. intro skNone.
       eapply r_get_remember_rhs. intro pk.
-      ssprove_rem_rel 3%N.
+      ssprove_rem_rel 0%N.
       intro eps. destruct sk. 1: discriminate.
       destruct pk. 1: contradiction. simpl.
       eapply r_scheme_bind_spec. 1: eapply KEM_kgen_spec. intros [pk' sk'] pps.
@@ -782,7 +782,7 @@ Section KEMDEM.
       rewrite cNone. simpl. ssprove_forget.
       ssprove_swap_seq_rhs [:: 0 ]%N.
       eapply r_get_remember_rhs. intros k.
-      ssprove_rem_rel 6%N => hpke.
+      ssprove_rem_rel 1%N => hpke.
       destruct ek. 1: discriminate.
       destruct k. 1: contradiction.
       simpl.
@@ -805,7 +805,7 @@ Section KEMDEM.
         ssprove_code_simpl_more. ssprove_code_simpl. ssprove_code_simpl_more.
         eapply r_get_remember_rhs. intro pk.
         eapply r_get_remember_lhs. intro sk.
-        ssprove_rem_rel 3%N => eps.
+        ssprove_rem_rel 0%N => eps.
         eapply sameSomeRel_sameSome in eps as eps'. rewrite eps'.
         ssprove_sync. intro skSome.
         ssprove_swap_seq_rhs [:: 1 ]%N.
@@ -818,7 +818,7 @@ Section KEMDEM.
         2:{ move: e => /eqP e. subst. contradiction. }
         rewrite e. simpl.
         eapply r_get_remember_rhs. intro k.
-        ssprove_rem_rel 5%N => hpke.
+        ssprove_rem_rel 1%N => hpke.
         destruct sk as [sk|]. 2: discriminate.
         destruct pk as [pk|]. 2: contradiction.
         destruct k as [k|]. 2: contradiction.
@@ -833,7 +833,7 @@ Section KEMDEM.
         ssprove_swap_seq_rhs [:: 3 ; 2 ; 1 ; 0 ]%N.
         apply r_get_vs_get_remember. intros sk.
         apply r_get_remember_rhs. intro pk.
-        ssprove_rem_rel 3%N => eps.
+        ssprove_rem_rel 0%N => eps.
         eapply sameSomeRel_sameSome in eps as eps'. rewrite eps'.
         ssprove_forget_all.
         ssprove_sync. intro skSome.

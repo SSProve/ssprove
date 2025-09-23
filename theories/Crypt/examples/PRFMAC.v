@@ -381,7 +381,7 @@ Proof.
       * move /eqP /negPf in Heq.
         by rewrite Heq -h.
     + ssprove_sync=> k.
-      ssprove_rem_rel 4%N => Hinv.
+      ssprove_rem_rel 0%N => Hinv.
       apply: r_put_vs_put.
       apply: r_put_vs_put.
       ssprove_restore_mem;
@@ -405,7 +405,7 @@ Proof.
     ssprove_code_simpl_more.
     apply: r_get_remember_lhs => T.
     apply: r_get_remember_rhs => S.
-    ssprove_rem_rel 2%N => Hinv.
+    ssprove_rem_rel 0%N => Hinv.
     rewrite Hinv.
     ssprove_forget_all.
     by apply: r_ret.
