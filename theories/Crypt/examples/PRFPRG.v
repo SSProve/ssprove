@@ -250,7 +250,7 @@ Proof.
     ssprove_restore_mem;
       last by apply: r_ret.
     ssprove_invariant.
-    by rewrite subSnn.
+    by rewrite /= subSnn.
   - move /eqP /negPf in Heq.
     rewrite Heq /=.
     destruct (count < i) eqn:Hlt.
@@ -296,7 +296,7 @@ Proof.
     ssprove_restore_mem;
       last by apply: r_ret.
     ssprove_invariant.
-    by rewrite subSnn.
+    by rewrite /= subSnn.
   - move /eqP /negPf in Heq.
     rewrite Heq /=.
     destruct (count < i) eqn:Hlt.
