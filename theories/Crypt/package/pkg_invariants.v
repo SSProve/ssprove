@@ -402,11 +402,23 @@ Qed.
 
 Arguments rel_app : simpl never.
 
+Notation single_lhs ℓ R :=
+  (rel_app [:: (lhs, ℓ) ] R).
+
+Notation single_rhs ℓ R :=
+  (rel_app [:: (rhs, ℓ) ] R).
+
 Notation couple_lhs ℓ ℓ' R :=
   (rel_app [:: (lhs, ℓ); (lhs, ℓ')] R).
 
 Notation couple_rhs ℓ ℓ' R :=
   (rel_app [:: (rhs, ℓ); (rhs, ℓ')] R).
+
+Notation couple_cross ℓ ℓ' R :=
+  (rel_app [:: (lhs, ℓ); (rhs, ℓ')] R).
+
+Notation triple_lhs ℓ₁ ℓ₂ ℓ₃ R :=
+  (rel_app [:: (lhs, ℓ₁); (lhs, ℓ₂); (lhs, ℓ₃)] R).
 
 Notation triple_rhs ℓ₁ ℓ₂ ℓ₃ R :=
   (rel_app [:: (rhs, ℓ₁); (rhs, ℓ₂); (rhs, ℓ₃)] R).

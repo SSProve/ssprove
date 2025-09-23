@@ -893,9 +893,9 @@ contained value `x` on the left-hand side.
 In this fashion we have `r_get_remember_rhs` which will add `rem_rhs ℓ x`
 instead, but also synchronous rules that will also remember, for instance
 ```coq
-Lemma r_get_vs_get_remember_lhs :
-  ∀ {A B : choiceType} ℓ r₀ r₁ (pre : precond) (post : postcond A B),
-    Syncs ℓ pre →
+Lemma r_get_vs_get_remember_lhs
+  {A B : choiceType} {ℓ r₀ r₁} {pre : precond} {post : postcond A B}
+    `{ht : ProvenBy (syncs ℓ) pre} :
     (∀ x,
       ⊢ ⦃ λ '(s₀, s₁), (pre ⋊ rem_lhs ℓ x) (s₀, s₁) ⦄
         r₀ x ≈ r₁ x
@@ -907,10 +907,10 @@ Lemma r_get_vs_get_remember_lhs :
     ⦃ post ⦄.
 ```
 
-Here we have an additional `Syncs ℓ pre` condition which states that `ℓ` should
-point to the same value on both sides (or more precisely that this should be
-ensured by the precondition `pre`). `exact _` (type-class inference) or
-`ssprove_invariant` should deal with it.
+Here we have an additional `ProvenBy (syncs ℓ) pre` condition which states that
+`ℓ` should point to the same value on both sides (or more precisely that this
+should be ensured by the precondition `pre`). `exact _` (type-class inference)
+should deal with it.
 
 We also have the right-hand side variant `r_get_vs_get_remember_rhs`
 and the do-all rule `r_get_vs_get_remember` which remembers on both sides.
@@ -924,25 +924,27 @@ the most recent *remember*, and `ssprove_forget_all` will discard all of them.
 More importantly, one can make use of remembered values with, for instance,
 the following rule
 ```coq
-Lemma r_get_remind_lhs :
-  ∀ {A B : choiceType} ℓ v r₀ r₁ (pre : precond) (post : postcond A B),
-    Remembers_lhs ℓ v pre →
+Lemma r_get_remind_lhs
+  {A B : choiceType} {ℓ v r₀ r₁} {pre : precond} {post : postcond A B}
+    `{hr : ProvenBy (rem_lhs ℓ v) pre} :
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ r₀ v ≈ r₁ ⦃ post ⦄ →
     ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ x ← get ℓ ;; r₀ x ≈ r₁ ⦃ post ⦄.
 ```
-Here `Remembers_lhs` is also a class that can be inferred using
-`ssprove_invariant`. It basically checks that `pre` contains some `rem_lhs ℓ v`.
+Here `ProvenBy` is also a class that can be inferred using `exact _`.
+It checks that `pre` contains `rem_lhs ℓ v` in any place.
 The right-hand side counterpart is `r_get_remind_rhs`.
 In some cases, one has remembered the value of something on the left, and needs
 it on the right, in which case the following lemma is useful:
 ```coq
-Lemma Remembers_rhs_from_tracked_lhs :
-  ∀ ℓ v pre,
-    Remembers_lhs ℓ v pre →
-    Syncs ℓ pre →
-    Remembers_rhs ℓ v pre.
+Lemma Remembers_syncs :
+  ∀ s ℓ v pre,
+    ProvenBy (rem_inv (other s) ℓ v) pre →
+    ProvenBy (syncs ℓ) pre →
+    ProvenBy (rem_inv s ℓ v) pre.
 ```
-and similarly `Remembers_lhs_from_tracked_rhs`.
+The lemma can switch between `rem_lhs` and `rem_rhs` given that the invariant
+`pre` also guarantees that the specific location is `synced` i.e. that its
+heap value is the same on both sides.
 
 We will see later, in [[Crafting invariants]], how we can also leverage these
 *remembered* values with invariants.
@@ -986,7 +988,7 @@ Lemma r_restore_pre :
 So it will restore `pre` as a precondition, assuming that the predicate
 `preserve_update_pre` holds. Automation in this case is also performed with
 `ssprove_invariant`. It might not solve all goals, but should generally give
-you to prove the specific invariants that you used.
+you goals about the specific invariants that you used.
 
 **Note** that if your precondition contains some `rem_lhs`/`rem_rhs`, you will
 have to prove that those are preserved too. This will not be the case if you
@@ -1037,7 +1039,7 @@ equality as an invariant), it is not always sufficient.
 
 Another invariant we propose is called `heap_ignore` and is defined as
 ```coq
-Definition heap_ignore (L : {fset Location}) :=
+Definition heap_ignore (L : Locations) :=
   λ '(h₀, h₁),
     ∀ (ℓ : Location), ℓ.1 \notin domm L → get_heap h₀ ℓ = get_heap h₁ ℓ.
 ```
@@ -1098,60 +1100,29 @@ Lemma SemiInvariant_couple_lhs :
     SemiInvariant L₀ L₁ (couple_lhs ℓ ℓ' h).
 ```
 
-Now, to make use of this invariant, one can call the following rule:
+Now, to make use of this invariant, one can use the following tactic:
 ```coq
-Lemma r_rem_couple_lhs :
-  ∀ {A B : choiceType} ℓ ℓ' v v' R (pre : precond) c₀ c₁ (post : postcond A B),
-    Couples_lhs ℓ ℓ' R pre →
-    Remembers_lhs ℓ v pre →
-    Remembers_lhs ℓ' v' pre →
-    (R v v' → ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄) →
-    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄.
+ssprove_rem_rel n
 ```
-It basically gives you the same goal you add, with the extra hypothesis that
-the relation holds for the values.
-When you typically do `eapply (r_rem_couple_lhs ℓ ℓ')`, you can try `exact _`
-or `ssprove_invariant` to infer `Couples_lhs` and `Remembers_lhs` that will
-check in the precondition that the two locations are indeed coupled on the left
-and that we have read them.
+where `n` is the position of the coupling counted from the right/back of
+the whole invariant. The tactic will utilize remembered and sycronized values
+that are also part of the invariant. It gives you the same goal you add,
+with the extra hypothesis that the relation holds for the remembered values.
 
-Alternatively, one can use `r_rem_couple_rhs`.
+`couple_lhs` is just one of the semi-invariant provided. Others include:
+* `single_lhs l`. A predicate about the value of `l` on the LHS.
+* `single_rhs l`. A predicate about the value of `l` on the RHS.
+* `couple_lhs l l'`. As explained.
+* `couple_rhs l l'`. A relation about the values of `l` and `l'` on the RHS.
+* `couple_cross l l'`. A relation about the values of `l` on the LHS and `l'`
+    on the RHS.
+* `triple_lhs l l' l''`. A relation about the values of `l`, `l'` and `l''`
+    on the LHS.
+* `triple_rhs l l' l''`. A relation about the values of `l`, `l'` and `l''`
+    on the RHS.
 
-We also provide useful relations like
-```coq
-Definition sameSome {A B} (x : option A) (y : option B) :=
-  isSome x = isSome y.
-```
-
-#### Relating three locations
-
-Similarly to `couple_rhs` we also provide `triple_rhs` which works in
-essentially the same way.
-```coq
-Lemma SemiInvariant_triple_rhs :
-  ∀ L₀ L₁ ℓ₁ ℓ₂ ℓ₃ (R : _ → _ → _ → Prop),
-    fhas L₁ ℓ₁ →
-    fhas L₁ ℓ₂ →
-    fhas L₁ ℓ₃ →
-    R (get_heap empty_heap ℓ₁) (get_heap empty_heap ℓ₂) (get_heap empty_heap ℓ₃) →
-    SemiInvariant L₀ L₁ (triple_rhs ℓ₁ ℓ₂ ℓ₃ R).
-```
-
-```coq
-Lemma r_rem_triple_rhs :
-  ∀ {A B : choiceType} ℓ₁ ℓ₂ ℓ₃ v₁ v₂ v₃ R
-    (pre : precond) c₀ c₁ (post : postcond A B),
-    Triple_rhs ℓ₁ ℓ₂ ℓ₃ R pre →
-    Remembers_rhs ℓ₁ v₁ pre →
-    Remembers_rhs ℓ₂ v₂ pre →
-    Remembers_rhs ℓ₃ v₃ pre →
-    (R v₁ v₂ v₃ → ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄) →
-    ⊢ ⦃ λ '(s₀, s₁), pre (s₀, s₁) ⦄ c₀ ≈ c₁ ⦃ post ⦄.
-```
-
-🚧 For the moment we only deal with the right-hand side, as we might want to
-develop something more general. 🚧
-
+It is also possible to define additional location couplings using any finite
+combination of locations from either side with `rel_app`.
 
 
 [Writing packages]: #writing-packages
