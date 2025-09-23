@@ -29,6 +29,8 @@
   ## If not specified, it defaults to "_CoqProject"
   # coqproject = "_CoqProject";
 
+  no-rocq-yet = true;
+
   ## select an entry to build in the following `bundles` set
   ## defaults to "default"
   default-bundle = "8.19";
@@ -61,6 +63,15 @@
     mathcomp.override.version = "2.3.0";
     mathcomp-analysis.override.version = "1.8.0";
   };
+  bundles."9.1" = { coqPackages = {
+      coq.override.version = "9.1";
+      mathcomp.job = false;
+      mathcomp.override.version = "2.4.0";
+      mathcomp-analysis.override.version = "1.12.0";
+    }; rocqPackages = {
+      rocq-core.override.version = "9.1";
+    };
+  };
   bundles."MC-dev".coqPackages = {
     coq.override.version = "9.0";
     mathcomp.job = false;
@@ -82,6 +93,7 @@
   bundles."8.19".push-branches = ["main"];
   bundles."8.20".push-branches = ["main"];
   bundles."9.0".push-branches = ["main"];
+  bundles."9.1".push-branches = ["main"];
 
   ## Cachix caches to use in CI
   ## Below we list some standard ones
