@@ -824,7 +824,7 @@ Proof.
   - ssprove_sync=> H1.
     ssprove_sync=> r.
     apply: r_get_vs_get_remember => T.
-    apply: (r_rem_couple_rhs T_loc R_loc) => Hinv.
+    ssprove_rem_rel 0%N => Hinv.
     rewrite Hinv -?in_compl ?sample_subset_in //.
     ssprove_sync=> c.
     ssprove_sync=> [|Tinv];
@@ -835,7 +835,7 @@ Proof.
     do 4 apply: r_put_vs_put.
     all: ssprove_restore_mem;
       last by apply: r_ret.
-    ssprove_invariant=> m' r'.
+    ssprove_invariant=> h m' r'.
     rewrite domm_set in_fsetU => /norP [H H'].
     rewrite setmE mkciph_eq.
     rewrite in_fset1 in H.
@@ -850,18 +850,16 @@ Proof.
     + apply: r_put_vs_put.
       all: ssprove_restore_mem;
         last by apply: r_ret.
-      ssprove_invariant=> s0 s1 [[/= Hinv <-] <-] m' r'.
-      rewrite get_set_heap_eq domm_set in_fsetU => /norP [H H'].
-      rewrite get_set_heap_neq.
-      2: by apply /eqP.
-      by rewrite Hinv.
+      ssprove_invariant => h m' r'.
+      rewrite /= domm_set in_fsetU => /norP [H H'].
+      by apply h.
     + ssprove_sync=> c.
       apply: r_get_vs_get_remember => T.
-      apply: (r_rem_couple_rhs T_loc R_loc) => Hinv.
+      ssprove_rem_rel 0%N => Hinv.
       do 3 apply: r_put_vs_put.
       all: ssprove_restore_mem;
         last by apply: r_ret.
-      ssprove_invariant=> m' r'.
+      ssprove_invariant=> h m' r'.
       rewrite domm_set in_fsetU => /norP [H H'].
       rewrite setmE -(mkciph_ciph_to_pair c) mkciph_eq.
       rewrite in_fset1 in H.
@@ -931,13 +929,9 @@ Proof.
     apply: r_put_vs_put.
     ssprove_restore_mem;
       last by apply: r_ret.
-    ssprove_invariant=> s0 s1 [[[[Hinv _] <-] _] <-] c'.
+    ssprove_invariant => Hinv c'.
     specialize (Hinv c').
-    rewrite get_set_heap_eq domm_set in_fsetU => /norP [H H'].
-    rewrite get_set_heap_neq.
-    2: by apply /eqP.
-    rewrite get_set_heap_eq !get_set_heap_neq.
-    2,3: by apply /eqP.
+    rewrite /= domm_set in_fsetU => /norP [H H'].
     rewrite in_fset1 in H.
     move /negPf in H.
     by rewrite setmE H Hinv.
@@ -945,7 +939,7 @@ Proof.
     ssprove_sync=> H1.
     apply: r_get_vs_get_remember => Tinv.
     apply: r_get_vs_get_remember => Tinv'.
-    apply: (r_rem_triple_rhs S_loc Tinv_loc Tinv'_loc) => Hinv.
+    ssprove_rem_rel 0%N => Hinv.
     rewrite Hinv //.
     case: (Tinv' m) => [c|].
     1: {
@@ -961,14 +955,9 @@ Proof.
     apply: r_put_vs_put.
     ssprove_restore_mem;
       last by apply: r_ret.
-    apply: preserve_update_mem_conj.
-    1: by ssprove_invariant.
-    move=> s0 s1 [[[[[[/= A B] Heq] C] D] E] F] c'.
-    rewrite 3?get_set_heap_neq.
-    2-4: by apply /eqP.
-    rewrite !get_set_heap_eq !setmE Heq.
-    case: (c' == m) => //.
-    by apply: Hinv.
+    ssprove_invariant.
+    intros Heq c' ?.
+    rewrite 2!setmE Heq //.
 Qed.
 
 Lemma CTXT_HYB_equiv_4:
@@ -1023,7 +1012,7 @@ Proof.
   - apply: (@r_reflexivity_alt _ [fmap S_loc ; R_loc]) => [loc H|loc v H].
     all: ssprove_invariant;
       first by move=> ? ? ->.
-    all: fmap_invert H; done.
+    all: fmap_invert H; ssprove_invariant.
   - ssprove_code_simpl.
     ssprove_code_simpl_more.
     ssprove_sync=> [|S];
@@ -1031,7 +1020,7 @@ Proof.
     ssprove_sync=> H1.
     apply: r_get_vs_get_remember => Tinv.
     apply: r_get_vs_get_remember => Tinv'.
-    apply: (r_rem_couple_rhs Tinv_loc Tinv'_loc) => ->.
+    ssprove_rem_rel 0%N => ->.
     case: (getm Tinv' m) => [c|].
     + ssprove_forget_all.
       by apply: r_ret.

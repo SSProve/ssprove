@@ -233,7 +233,7 @@ Proof.
     couple_rhs count_loc k_loc
       (fun count k => count <= i -> k = None)
     ).
-  1: ssprove_invariant=> //=; fmap_solve.
+  1: ssprove_invariant => //.
   simplify_eq_rel m.
   ssprove_code_simpl.
   apply: r_get_vs_get_remember => count.
@@ -241,16 +241,12 @@ Proof.
   - rewrite Heq eq_refl ltnn /=.
     ssprove_swap_rhs 0.
     apply: r_get_remember_rhs => k.
-    apply: (r_rem_couple_rhs count_loc k_loc) => Hinv.
+    ssprove_rem_rel 0%N => Hinv.
     rewrite Hinv //.
     apply: r_put_vs_put.
     ssprove_sync=> s.
+    eapply r_transR; [ apply: r_put_get |].
     apply: r_put_rhs.
-    apply: r_get_remind_rhs.
-    1: {
-      apply: is_remembering_rhs => s0 s1 [h [_ ->]] /=.
-      by rewrite get_set_heap_eq.
-    }
     ssprove_restore_mem;
       last by apply: r_ret.
     ssprove_invariant.
@@ -264,13 +260,8 @@ Proof.
     all: ssprove_restore_mem;
       last by apply: r_ret.
     all: ssprove_invariant.
-    all: move=> s0 s1 [[Hinv _] H] /=.
-    all: rewrite /couple_rhs get_set_heap_eq get_set_heap_neq //.
-    all: move /eqP in Hlt.
-    + rewrite Hinv // H -?subnE eqnE.
-      by rewrite subn_eq0 ltnW // -subn_eq0 Hlt.
-    + move /eqP /negPf in Hlt.
-      by rewrite -?subnE eqnE Hlt.
+    + rewrite eqnE 2!subn_eq0 ltnW //. auto.
+    + rewrite eqnE 2!subn_eq0 Hlt //.
 Qed.
 
 (**
@@ -293,16 +284,12 @@ Proof.
   - rewrite Heq eq_refl ltnn ltnSn /=.
     ssprove_swap_lhs 0.
     apply: r_get_remember_lhs => T.
-    apply: (r_rem_couple_lhs count_loc T_loc) => Hinv.
+    ssprove_rem_rel 0%N => Hinv.
     rewrite Hinv //=.
     apply: r_put_vs_put.
     ssprove_sync=> x.
+    eapply r_transL; [ apply: r_put_get |].
     apply: r_put_lhs.
-    apply: r_get_remind_lhs.
-    1: {
-      apply: is_remembering_lhs => s0 s1 [h [_ ->]] /=.
-      by rewrite get_set_heap_eq.
-    }
     rewrite setmE /=.
     ssprove_sync=> y.
     apply: r_put_lhs.
@@ -321,13 +308,8 @@ Proof.
     all: ssprove_restore_mem;
       last by apply: r_ret.
     all: ssprove_invariant.
-    all: move=> s0 s1 [[Hinv H] _] /=.
-    all: rewrite /couple_lhs get_set_heap_eq get_set_heap_neq //.
-    all: move /eqP in Hlt.
-    + rewrite Hinv // H -?subnE eqnE.
-      by rewrite subn_eq0 ltnW // -subn_eq0 Hlt.
-    + move /eqP /negPf in Hlt.
-      by rewrite -?subnE eqnE Hlt.
+    + rewrite eqnE 2!subn_eq0 ltnW //. auto.
+    + rewrite eqnE 2!subn_eq0 Hlt //.
 Qed.
 
 Local Open Scope ring_scope.

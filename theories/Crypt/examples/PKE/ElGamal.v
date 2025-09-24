@@ -134,7 +134,7 @@ Lemma PK_OTSR_RED_DDH_perfect b :
 Proof.
   ssprove_share. eapply prove_perfect.
   eapply (eq_rel_perf_ind _ _ inv0).
-  1: simpl; ssprove_invariant; try auto; fmap_solve.
+  { ssprove_invariant => //. }
   simplify_eq_rel m.
   - destruct m.
     simpl; simplify_linking.
@@ -144,36 +144,25 @@ Proof.
     ssprove_restore_pre.
     2: by apply r_ret.
     ssprove_invariant.
-    intros h0 h1 H f.
-    by get_heap_simpl.
 
-  - apply r_get_vs_get_remember.  1: ssprove_invariant.  move=> c.
+  - apply @r_get_vs_get_remember. 1: exact _. move=> c.
     ssprove_code_simpl.
     ssprove_sync => H.
     ssprove_swap_lhs 0%N.
     ssprove_swap_rhs 0%N.
-    apply r_get_vs_get_remember. 1: ssprove_invariant. move=> mpk.
+    apply r_get_vs_get_remember. move=> mpk.
     ssprove_code_simpl_more.
     ssprove_swap_seq_rhs [:: 1%N ; 0%N ].
     apply r_get_remember_rhs => mga.
-    eapply (r_rem_triple_rhs count_loc (mpk_loc elgamal) (mga_loc G)).
-    1-4: exact _.
-    move=> //= H'.
+    ssprove_rem_rel 0%N => //= H'.
     apply r_put_vs_put.
     ssprove_sync => H1.
     destruct mpk as [pk|] => //= {H1}.
     destruct c as [|c] => //= {H}.
     specialize (H' erefl); subst.
     apply r_put_rhs.
-
     ssprove_restore_mem.
-    1: {
-      ssprove_invariant.
-      intros h0 h1 [[[[[H0 H1] H2] H3] H4] H5].
-      rewrite //= /triple_rhs.
-      by get_heap_simpl.
-    }
-
+    { ssprove_invariant. move=> _ /eqP //. }
     destruct b; simpl.
     + ssprove_sync => b.
       by apply r_ret.

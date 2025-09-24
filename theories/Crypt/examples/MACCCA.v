@@ -344,7 +344,7 @@ Proof.
     2,4: ssprove_sync=> km;
       ssprove_sync;
       first by move=> ? ? ->.
-    all: apply: (r_rem_couple_lhs S_loc T_loc) => Hinv.
+    all: ssprove_rem_rel 0%N => Hinv.
     all: apply: r_put_vs_put.
     all: apply: r_put_vs_put.
     all: ssprove_restore_mem;
@@ -357,7 +357,7 @@ Proof.
     all: rewrite Heq.
     1: by apply: r_ret => ? ? [].
     apply: r_get_remember_lhs => T.
-    apply: (r_rem_couple_lhs S_loc T_loc) => Hinv.
+    ssprove_rem_rel 0%N => Hinv.
     rewrite -Hinv Heq /=.
     by apply: r_ret => ? ? [] [].
 Qed.
@@ -388,7 +388,7 @@ Proof.
     2,4: ssprove_sync=> km;
       ssprove_sync;
       first by move=> ? ? ->.
-    all: apply: (r_rem_couple_rhs S_loc T_loc) => Hinv.
+    all: ssprove_rem_rel 0%N => Hinv.
     all: apply: r_put_vs_put.
     all: apply: r_put_vs_put.
     all: ssprove_restore_mem;
@@ -401,7 +401,7 @@ Proof.
     all: rewrite Heq.
     1: by apply: r_ret => ? ? [].
     apply: r_get_remember_rhs => T.
-    apply: (r_rem_couple_rhs S_loc T_loc) => Hinv.
+    ssprove_rem_rel 0%N => Hinv.
     rewrite -Hinv Heq /=.
     by apply: r_ret => ? ? [] [].
 Qed.

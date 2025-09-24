@@ -237,7 +237,7 @@ Proof.
   intros LA A Va Hdisj.
   eapply (eq_rel_perf_ind _ _ (heap_ignore Sigma_locs)).
   3,4,5: ssprove_valid.
-  1: ssprove_invariant; fmap_solve.
+  1: ssprove_invariant.
   simplify_eq_rel hwe.
   (* Programming logic part *)
   destruct hwe as [[h w] e].
@@ -460,7 +460,6 @@ Proof.
   1:{
     instantiate (1 := (heap_ignore Com_locs)).
     ssprove_invariant.
-    fmap_solve.
   }
   2: apply VA.
   2,3: fmap_solve.

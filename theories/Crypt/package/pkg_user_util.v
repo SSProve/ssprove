@@ -67,6 +67,13 @@
   - [ssprove_forget_all]
     Remove all reminders from precondition.
 
+  - [ssprove_rem_rel n]
+    Derive the fact that some relation holds between values read from
+    the heap due to the invariant. The argument [n] counts the position
+    of the relation in the invariant from the back/right. The count does
+    not include rem_lhs and rem_rhs. The relation could for example be
+    [couple_lhs] or [triple_rhs].
+
 **)
 
 Set Warnings "-notation-overridden,-ambiguous-paths,-notation-incompatible-format".
@@ -699,68 +706,6 @@ Ltac ssprove_restore_mem :=
   | idtac
   ].
 
-Ltac lookup_hpv_l_eq_solve :=
-  repeat (
-    tryif rewrite lookup_hpv_l_eq
-    then reflexivity
-    else rewrite lookup_hpv_l_neq
-  ) ; neq_loc_auto.
-
-Ltac lookup_hpv_r_eq_solve :=
-  repeat (
-    tryif rewrite lookup_hpv_r_eq
-    then reflexivity
-    else rewrite lookup_hpv_r_neq
-  ) ; neq_loc_auto.
-
-#[export] Hint Extern 11 (preserve_update_mem _ _ (couple_lhs _ _ _)) =>
-  eapply preserve_update_couple_lhs_lookup ; [
-    lookup_hpv_l_eq_solve ..
-  | idtac
-  ]
-  : ssprove_invariant.
-
-#[export] Hint Extern 11 (preserve_update_mem _ _ (couple_rhs _ _ _)) =>
-  eapply preserve_update_couple_rhs_lookup ; [
-    lookup_hpv_r_eq_solve ..
-  | idtac
-  ]
-  : ssprove_invariant.
-
-#[export] Hint Extern 11 (preserve_update_mem _ _ (triple_rhs _ _ _ _)) =>
-  eapply preserve_update_triple_rhs_lookup ; [
-    lookup_hpv_r_eq_solve ..
-  | idtac
-  ]
-  : ssprove_invariant.
-
-#[export] Hint Extern 12 (preserve_update_mem _ _ (couple_lhs _ _ _)) =>
-  eapply preserve_update_couple_lhs_lookup_None ; [
-    repeat rewrite lookup_hpv_l_neq ; [
-      reflexivity
-    | solve [ neq_loc_auto ] ..
-    ] ..
-  ]
-  : ssprove_invariant.
-
-#[export] Hint Extern 12 (preserve_update_mem _ _ (couple_rhs _ _ _)) =>
-  eapply preserve_update_couple_rhs_lookup_None ; [
-    repeat rewrite lookup_hpv_r_neq ; [
-      reflexivity
-    | solve [ neq_loc_auto ] ..
-    ] ..
-  ]
-  : ssprove_invariant.
-
-#[export] Hint Extern 12 (preserve_update_mem _ _ (triple_rhs _ _ _ _)) =>
-  eapply preserve_update_triple_rhs_lookup_None ; [
-    repeat rewrite lookup_hpv_r_neq ; [
-      reflexivity
-    | solve [ neq_loc_auto ] ..
-    ] ..
-  ]
-  : ssprove_invariant.
-
 Ltac get_heap_simpl :=
   repeat
   tryif rewrite get_set_heap_eq
@@ -779,3 +724,19 @@ Qed.
 
 (* To be able to use with Equations *)
 Ltac notac := idtac.
+
+Ltac proven_by n :=
+  lazymatch goal with
+  | |- (ProvenBy _ (_ ⋊ rem_inv _ _ _)) =>
+      eapply ProvenBy_conj_left ; proven_by n
+  | _ =>
+    lazymatch eval cbv in n with
+    | S ?n => eapply ProvenBy_conj_left ; proven_by n
+    | 0%N => eapply ProvenBy_conj_right, (@ProvenBy_refl (rel_app _ _))
+    | _ => fail "Wrong number: " n
+    end
+  end.
+
+Ltac ssprove_rem_rel n :=
+  eapply @r_rem_rel; [ proven_by n | try (exact _) | ].
+
