@@ -180,6 +180,30 @@ Proof.
     apply LL.
 Qed.
 
+Lemma Pr_code_bind {T T' : choiceType} {c} {f : T → raw_code T'} {h}
+  : Pr_code (x ← c ;; f x) h
+  = \dlet_(y <- Pr_code c h) Pr_code (f y.1) y.2.
+Proof.
+  move: h.
+  induction c; cbn [bind]; intros h.
+  - rewrite Pr_code_ret.
+    rewrite (distr_ext _ _ _ (dlet_unit _ _)) //.
+  - rewrite 2!Pr_code_call //.
+  - rewrite 2!Pr_code_get //.
+  - rewrite 2!Pr_code_put //.
+  - rewrite 2!Pr_code_sample.
+    rewrite (distr_ext _ _ _ (dlet_dlet _ _ _)).
+    apply distr_ext.
+    by apply dlet_f_equal.
+Qed.
+
+Lemma Pr_code_fail {T} {h}
+  : Pr_code (@fail T) h = dnull.
+Proof.
+  rewrite Pr_code_sample /=.
+  apply distr_ext. apply dlet_null.
+Qed.
+
 Lemma Pr_code_rand {T T' : choiceType} {c} {f : T → raw_code T'} {h}
   : NoFail c
   → Pr_code (x ← c ;; f x) h
@@ -578,15 +602,15 @@ Qed.
 Definition done : Location := (4%N, 'bool).
 
 Definition IGUESS n `{Positive n} :=
-  [interface [ 0%N ] : { 'fin n ~> 'fin n × 'bool }].
+  [interface [ 2%N ] : { 'fin n ~> 'fin n × 'bool }].
 
 Definition GUESS n `{Positive n}
   : bool → game (IGUESS n) := λ b,
   [package [fmap done] ;
-    [ 0%N ] : { 'fin n ~> 'fin n × 'bool } (g) {
+    [ 2%N ] : { 'fin n ~> 'fin n × 'bool } (g) {
       d ← get done ;;
       if d then
-        ret (chCanonical _, false)
+        fail
       else
         #put done := true ;;
         r ← sample uniform n ;;
@@ -609,8 +633,9 @@ Proof.
     repeat (rewrite (resolve_set, resolve_link, resolve_ID_set, coerce_kleisliE, eq_refl); cbn [fst snd mkdef projT2 mkopsig projT1]).
     cbn [bind].
     rewrite 2!Pr_code_get HEAP.
-    cbn [bind].
-    by apply H2.
+    rewrite 2!Pr_code_bind.
+    rewrite Pr_code_fail.
+    by rewrite 2!(distr_ext _ _ _ (dlet_null _)).
   - rewrite 2!Pr_code_get.
     by apply H2.
   - rewrite 2!Pr_code_put.
@@ -648,8 +673,10 @@ Proof.
     cbn [bind].
     rewrite 2!Pr_code_get.
     destruct (get_heap h done) eqn:E.
-    { cbn [bind]; erewrite guess0; do 2 try done.
-      rewrite Num.Theory.lerDl.
+    { rewrite 2!Pr_code_bind Pr_code_fail.
+      rewrite 2!(distr_ext _ _ _ (dlet_null _)).
+      rewrite /(dfst _) (distr_ext _ _ _ (dlet_null _)).
+      rewrite dnullE Num.Theory.lerDl.
       rewrite Num.Theory.invr_ge0 //.
     }
     cbn [bind]. 
@@ -744,20 +771,91 @@ Proof.
     eauto with nominal_db.
 Qed.
 
+Definition doneh : Location := (5%N, 'bool).
 
 Definition IGUESSL n `{Positive n} :=
-  [interface [ 0%N ] : { list ('fin n) ~> 'fin n × 'bool }].
+  [interface [ 3%N ] : { list ('fin n) ~> 'fin n × 'bool }].
 
-Definition GUESSL n `{Positive n}
+Definition GUESSL n `{Positive n} l
   : bool → game (IGUESSL n) := λ b,
   [package [fmap done] ;
-    [ 0%N ] : { list ('fin n) ~> 'fin n × 'bool } (g) {
+    [ 3%N ] : { list ('fin n) ~> 'fin n × 'bool } (g) {
+      #assert length g <= l ;;
       d ← get done ;;
-      if d then
-        ret (chCanonical _, false)
-      else
-        #put done := true ;;
-        r ← sample uniform n ;;
-        ret (r, b && (r \in g))%B
+      #assert ~~ d ;;
+      #put done := true ;;
+      r ← sample uniform n ;;
+      ret (r, b && (r \in g))%B
     }
   ].
+
+Definition GUESSH n `{Positive n} l
+  : package (unionm (IPICK nat) (IGUESS n)) (IGUESSL n) :=
+  [package [fmap doneh] ;
+    [ 3%N ] : { list ('fin n) ~> 'fin n × 'bool } (g) {
+      #assert length g <= l ;;
+      d ← get doneh ;;
+      #assert ~~ d ;;
+      #put doneh := true ;;
+      i ← call [ 0%N ] tt ;;
+      let g := drop i g in
+      '(r, b) ← call [ 2%N ] head (chCanonical _) g ;;
+      ret (r, b || (r \in behead g))%B
+    }
+  ].
+
+Lemma Multi_pf b l n `{Positive n} :
+  perfect (IGUESSL n) (GUESSL n l b)
+    (GUESSH n l ∘ (GUESS n true || PICK (if b then 0 else l))).
+Proof.
+  ssprove_share. eapply prove_perfect.
+  eapply (eq_rel_perf_ind _ _ (heap_ignore [fmap doneh] ⋊ couple_rhs done doneh eq)).
+  1: ssprove_invariant.
+  1: fmap_solve.
+  1: done.
+  simplify_eq_rel m.
+  - ssprove_code_simpl.
+    ssprove_sync => Hlen.
+Admitted.
+  
+Lemma guess_hyb l n `{Positive n} A : 
+  ValidPackage (loc A) (IGUESSL n) A_export A →
+  AdvOf (GUESSL n l) A = (AdvOf (GUESS n) (A ∘ (GUESSH n l) ∘ (ID (IGUESS n) || RAND (unif l))) *+ l)%R.
+Proof.
+  intros VA.
+  eapply (testing_hybrid (Multi := λ b, GUESSL n l b) (Game := λ b, GUESS n b)).
+  1-4: ssprove_valid.
+  1,2: apply Multi_pf.
+  intros i.
+  ssprove_share. eapply prove_perfect.
+  eapply (eq_rel_perf_ind _ _ (heap_ignore emptym ⋊ couple_rhs done doneh eq)).
+  1: ssprove_invariant.
+  1: fmap_solve.
+  1: done.
+  simplify_eq_rel m.
+  - ssprove_code_simpl.
+    ssprove_sync => Hlen.
+    apply r_get_vs_get_remember.
+    1: ssprove_invariant.
+    intros b.
+    ssprove_sync => h'.
+    ssprove_swap_lhs 0%N.
+    ssprove_swap_rhs 0%N.
+    apply r_get_vs_get_remember.
+    1: ssprove_invariant.
+    intros b'.
+    apply r_put_vs_put.
+    destruct b'.
+    1: admit.
+    apply r_put_vs_put.
+    ssprove_restore_mem.
+    1: ssprove_invariant => //.
+    ssprove_sync => r.
+    apply r_ret => s0 s1 h.
+    split => //.
+    f_equal.
+    rewrite -in_cons.
+    rewrite -drop1.
+    rewrite drop_drop.
+    admit.
+Admitted.
