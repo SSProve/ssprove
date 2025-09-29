@@ -597,6 +597,21 @@ Proof.
   rewrite 2!Adv_reduction sep_link_assoc //.
 Qed.
 
+Lemma testing_hybrid2 {IMulti IGame} {n : nat} {Multi Game : bool → nom_package}
+  {H A : nom_package}
+  : ValidPackage (loc A) IMulti A_export A
+  → ValidPackage (loc (Game true)) Game_import IGame (Game true)
+  → ValidPackage (loc (Game false)) Game_import IGame (Game false)
+  → ValidPackage (loc H) (unionm IGame (IPICK ('nat × 'nat))) IMulti H
+  → perfect IMulti (Multi true) (H ∘ (Game true || PICK (0%N, 0%N)))
+  → perfect IMulti (Multi false) (H ∘ (Game true || PICK (n, n)))
+  → (∀ i : 'nat, perfect IMulti (H ∘ (Game false || PICK i )) (H ∘ (Game true || PICK i.+1)))
+  → (∀ i : 'nat, perfect IMulti (H ∘ (Game false || PICK i )) (H ∘ (Game true || PICK i.+1)))
+  → AdvOf Multi A = (AdvOf Game (A ∘ H ∘ (ID IGame || RAND (unif n))) *+ 'C(n, 2))%R.
+Proof.
+
+Admitted.
+
 
 
 Definition done : Location := (4%N, 'bool).
@@ -799,8 +814,10 @@ Definition GUESSH n `{Positive n} l
       #put doneh := true ;;
       i ← call [ 0%N ] tt ;;
       let g := drop i g in
-      '(r, b) ← call [ 2%N ] head (chCanonical _) g ;;
-      ret (r, b || (r \in behead g))%B
+      let h := head (chCanonical _) g in
+      let t := behead g in 
+      '(r, b) ← call [ 2%N ] h ;;
+      ret (r, ((g != nil) && b) || (r \in t))%B
     }
   ].
 
@@ -816,6 +833,26 @@ Proof.
   simplify_eq_rel m.
   - ssprove_code_simpl.
     ssprove_sync => Hlen.
+    apply r_get_remember_rhs => d'.
+    ssprove_swap_rhs 1%N.
+    ssprove_swap_rhs 0%N.
+    apply r_get_vs_get_remember => d.
+    1: admit.
+    replace d' with d.
+    2: admit.
+    ssprove_sync => H'.
+    rewrite -(negbK d) {}H' {d d'} /=.
+    ssprove_swap_rhs 0%N.
+    apply r_put_vs_put.
+    apply r_put_rhs.
+    ssprove_sync => r.
+    ssprove_restore_mem.
+    1: admit.
+    apply r_ret => s0 s1 H'; split => //.
+    f_equal. destruct b => /=.
+    + rewrite drop0.
+      by destruct m.
+    + rewrite drop_oversize //.
 Admitted.
   
 Lemma guess_hyb l n `{Positive n} A : 
@@ -828,7 +865,7 @@ Proof.
   1,2: apply Multi_pf.
   intros i.
   ssprove_share. eapply prove_perfect.
-  eapply (eq_rel_perf_ind _ _ (heap_ignore emptym ⋊ couple_rhs done doneh eq)).
+  eapply (eq_rel_perf_ind _ _ (heap_ignore emptym ⋊ couple_rhs done doneh implb)).
   1: ssprove_invariant.
   1: fmap_solve.
   1: done.
@@ -837,25 +874,146 @@ Proof.
     ssprove_sync => Hlen.
     apply r_get_vs_get_remember.
     1: ssprove_invariant.
-    intros b.
-    ssprove_sync => h'.
+    intros d.
+    ssprove_sync => H'.
+    rewrite -(negbK d) {d}H' /=.
     ssprove_swap_lhs 0%N.
     ssprove_swap_rhs 0%N.
-    apply r_get_vs_get_remember.
-    1: ssprove_invariant.
-    intros b'.
-    apply r_put_vs_put.
-    destruct b'.
-    1: admit.
-    apply r_put_vs_put.
-    ssprove_restore_mem.
-    1: ssprove_invariant => //.
+    apply r_get_vs_get_remember => d'; [ admit |].
+    replace d' with false; [| admit ].
+    do 2 apply r_put_vs_put.
     ssprove_sync => r.
-    apply r_ret => s0 s1 h.
-    split => //.
+    ssprove_restore_mem; [ admit |].
+    apply r_ret => s0 s1 H'; split => //.
     f_equal.
-    rewrite -in_cons.
-    rewrite -drop1.
-    rewrite drop_drop.
-    admit.
+    change (i.+1) with (1 + i)%N.
+    rewrite andbC -drop_drop /= .
+    destruct (drop i m) eqn:E; rewrite E //= drop0.
+    by destruct l0.
+Admitted.
+
+Definition IReplacement n `{Positive n} :=
+  [interface [ 3 ] : { 'unit ~> 'fin n }].
+
+Definition WReplacement n `{Positive n}
+  : game (IReplacement n) :=
+  [package emptym ;
+    [ 3 ] : { 'unit ~> 'fin n } (g) {
+      r ← sample uniform n ;;
+      ret r
+    }
+  ].
+
+Definition prev_loc n `{Positive n} : Location := (5%N, chList 'fin n).
+
+Definition WOReplacement n `{Positive n}
+  : game (IReplacement n) :=
+  [package [fmap prev_loc n ] ;
+    [ 3 ] : { 'unit ~> 'fin n } 'tt {
+      r ← sample uniform n ;;
+      prev ← get prev_loc n ;;
+      #assert r \notin prev ;;
+      #put prev_loc n := r :: prev ;;
+      ret r
+    }
+  ].
+
+Definition Replacement n `{Positive n} b :=
+  if b then WReplacement n else WOReplacement n.
+
+Definition count_loc : Location := (6, 'nat).
+
+Definition Counter n `{Positive n} k
+  : package (IReplacement n) (IReplacement n) :=
+  [package [fmap count_loc ] ;
+    [ 3 ] : { 'unit ~> 'fin n } 'tt {
+      c ← get count_loc ;;
+      #assert c < k ;;
+      #put count_loc := c.+1 ;;
+      r ← call [ 3%N ] tt ;;
+      ret r
+    }
+  ].
+
+Definition HReplacement n `{Positive n} k
+  : package (unionm (IGUESSL n) (IPICK nat)) (IReplacement n) :=
+  [package [fmap count_loc ; prev_loc n ] ;
+    [ 3 ] : { 'unit ~> 'fin n } 'tt {
+      c ← get count_loc ;;
+      #assert c < k ;;
+      #put count_loc := c.+1 ;;
+      i ← call [0] tt ;;
+      if (c < i)%N then
+        r ← sample uniform n ;;
+        prev ← get prev_loc n ;;
+        #assert r \notin prev ;;
+        #put prev_loc n := r :: prev ;;
+        ret r
+      else if (c > i)%N then
+        r ← sample uniform n ;;
+        ret r
+      else
+        prev ← get prev_loc n ;;
+        '(r, b) ← call [ 3%N ] prev ;;
+        #assert ~~ b ;;
+        ret r
+    }
+  ].
+
+Definition CReplacement n `{Positive n} k b : nom_package :=
+  Counter n k ∘ (if b then WReplacement n else WOReplacement n).
+
+Lemma replace_hyb q n `{Positive n} A : 
+  ValidPackage (loc A) (IReplacement n) A_export A →
+  AdvOf (CReplacement n q) A = ((n + n) %:R^-1 *+ (q - 1) *+ q)%R.
+Proof.
+  intros VA.
+  etransitivity.
+  2: shelve.
+  eapply (testing_hybrid (Multi := _) (Game := GUESSL n q) (H := HReplacement n q)).
+  1-4: ssprove_valid.
+  - unfold CReplacement.
+    ssprove_share.
+    eapply prove_perfect.
+    eapply (eq_rel_perf_ind _ _ (heap_ignore emptym)).
+    1: ssprove_invariant.
+    1: fmap_solve.
+    simplify_eq_rel m.
+    destruct m => /=.
+    ssprove_code_simpl.
+    apply r_get_vs_get_remember; [ admit |].
+    intros c.
+    ssprove_sync => Hk.
+    destruct c.
+    + simpl.
+      ssprove_code_simpl_more.
+      ssprove_swap_rhs 0%N.
+      ssprove_swap_rhs 2%N.
+      ssprove_swap_rhs 1%N.
+      admit.
+    + simpl.
+      apply r_put_vs_put.
+      ssprove_sync => r.
+      ssprove_restore_mem.
+      1: admit.
+      by apply r_ret.
+  - admit.
+  - intros i.
+    ssprove_share.
+    eapply prove_perfect.
+    eapply (eq_rel_perf_ind _ _ (heap_ignore emptym)).
+    1: ssprove_invariant.
+    1: fmap_solve.
+    simplify_eq_rel m.
+    destruct m => /=.
+    ssprove_code_simpl.
+    apply r_get_vs_get_remember; [ admit |].
+    intros c.
+    ssprove_sync => Hk.
+    destruct c.
+    1,2: admit.
+  Unshelve.
+  2: exact q.
+  f_equal.
+  Search GUESSL.
 Admitted.
