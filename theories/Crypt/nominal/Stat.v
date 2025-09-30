@@ -371,16 +371,15 @@ Lemma PICK_dirac_perf (x : T) :
   RAND {code ret x} ≈₀ PICK x.
 Proof.
   pose (inv := (heap_ignore [fmap cell T] ⋊ couple_lhs (cell T) (cell T) (λ v _, v = None ∨ v = Some x))).
-  apply (eq_rel_perf_ind _ _ inv);
-    [ unfold inv; ssprove_invariant; [ fmap_solve | by left ] |].
+  apply (eq_rel_perf_ind _ _ inv).
+  { unfold inv. ssprove_invariant. by left. }
   unfold inv.
   simplify_eq_rel m.
   destruct m => /=.
   ssprove_code_simpl; simpl.
   apply r_get_remember_lhs => y.
-  eapply (r_rem_couple_lhs (cell T) (cell T)); try exact _.
-  intros H.
-  destruct H; subst.
+  ssprove_rem_rel 0%N.
+  elim => ?; subst.
   - apply r_put_lhs.
     ssprove_restore_mem.
     { ssprove_invariant. by right. }
@@ -827,9 +826,7 @@ Lemma Multi_pf b l n `{Positive n} :
 Proof.
   ssprove_share. eapply prove_perfect.
   eapply (eq_rel_perf_ind _ _ (heap_ignore [fmap doneh] ⋊ couple_rhs done doneh eq)).
-  1: ssprove_invariant.
-  1: fmap_solve.
-  1: done.
+  { by ssprove_invariant. }
   simplify_eq_rel m.
   - ssprove_code_simpl.
     ssprove_sync => Hlen.
@@ -837,23 +834,21 @@ Proof.
     ssprove_swap_rhs 1%N.
     ssprove_swap_rhs 0%N.
     apply r_get_vs_get_remember => d.
-    1: admit.
-    replace d' with d.
-    2: admit.
+    ssprove_rem_rel 0%N => {d'}<-.
     ssprove_sync => H'.
-    rewrite -(negbK d) {}H' {d d'} /=.
+    rewrite -(negbK d) {}H' {d} /=.
     ssprove_swap_rhs 0%N.
     apply r_put_vs_put.
     apply r_put_rhs.
     ssprove_sync => r.
     ssprove_restore_mem.
-    1: admit.
+    { ssprove_invariant. }
     apply r_ret => s0 s1 H'; split => //.
     f_equal. destruct b => /=.
     + rewrite drop0.
       by destruct m.
     + rewrite drop_oversize //.
-Admitted.
+Qed.
   
 Lemma guess_hyb l n `{Positive n} A : 
   ValidPackage (loc A) (IGUESSL n) A_export A →
@@ -866,9 +861,7 @@ Proof.
   intros i.
   ssprove_share. eapply prove_perfect.
   eapply (eq_rel_perf_ind _ _ (heap_ignore emptym ⋊ couple_rhs done doneh implb)).
-  1: ssprove_invariant.
-  1: fmap_solve.
-  1: done.
+  { by ssprove_invariant. }
   simplify_eq_rel m.
   - ssprove_code_simpl.
     ssprove_sync => Hlen.
@@ -879,18 +872,20 @@ Proof.
     rewrite -(negbK d) {d}H' /=.
     ssprove_swap_lhs 0%N.
     ssprove_swap_rhs 0%N.
-    apply r_get_vs_get_remember => d'; [ admit |].
-    replace d' with false; [| admit ].
+    apply r_get_vs_get_remember => d'.
+    ssprove_rem_rel 0%N.
+    Search (_ ==> false).
+    rewrite implybF; destruct d' => _ //.
     do 2 apply r_put_vs_put.
     ssprove_sync => r.
-    ssprove_restore_mem; [ admit |].
+    ssprove_restore_mem. { ssprove_invariant. }
     apply r_ret => s0 s1 H'; split => //.
     f_equal.
     change (i.+1) with (1 + i)%N.
     rewrite andbC -drop_drop /= .
     destruct (drop i m) eqn:E; rewrite E //= drop0.
     by destruct l0.
-Admitted.
+Qed.
 
 Definition IReplacement n `{Positive n} :=
   [interface [ 3 ] : { 'unit ~> 'fin n }].
@@ -965,24 +960,23 @@ Definition CReplacement n `{Positive n} k b : nom_package :=
 
 Lemma replace_hyb q n `{Positive n} A : 
   ValidPackage (loc A) (IReplacement n) A_export A →
-  AdvOf (CReplacement n q) A = ((n + n) %:R^-1 *+ (q - 1) *+ q)%R.
+  (AdvOf (CReplacement n q) A <= n %:R^-1 *+ q *+ q)%R.
 Proof.
   intros VA.
-  etransitivity.
+  eapply Order.le_trans.
   2: shelve.
+  apply eq_ler.
   eapply (testing_hybrid (Multi := _) (Game := GUESSL n q) (H := HReplacement n q)).
   1-4: ssprove_valid.
   - unfold CReplacement.
     ssprove_share.
     eapply prove_perfect.
     eapply (eq_rel_perf_ind _ _ (heap_ignore emptym)).
-    1: ssprove_invariant.
-    1: fmap_solve.
+    { ssprove_invariant. }
     simplify_eq_rel m.
     destruct m => /=.
     ssprove_code_simpl.
-    apply r_get_vs_get_remember; [ admit |].
-    intros c.
+    apply r_get_vs_get_remember => c.
     ssprove_sync => Hk.
     destruct c.
     + simpl.
@@ -1002,18 +996,23 @@ Proof.
     ssprove_share.
     eapply prove_perfect.
     eapply (eq_rel_perf_ind _ _ (heap_ignore emptym)).
-    1: ssprove_invariant.
-    1: fmap_solve.
+    { ssprove_invariant. }
     simplify_eq_rel m.
     destruct m => /=.
     ssprove_code_simpl.
-    apply r_get_vs_get_remember; [ admit |].
+    apply r_get_vs_get_remember.
     intros c.
     ssprove_sync => Hk.
     destruct c.
     1,2: admit.
   Unshelve.
   2: exact q.
-  f_equal.
-  Search GUESSL.
+  rewrite Num.Theory.lerMn2r.
+  apply /orP; right.
+  eapply Order.le_trans.
+  { apply eq_ler. apply guess_hyb. ssprove_valid. }
+  rewrite Num.Theory.lerMn2r.
+  apply /orP; right.
+  apply guess2.
+  ssprove_valid.
 Admitted.
