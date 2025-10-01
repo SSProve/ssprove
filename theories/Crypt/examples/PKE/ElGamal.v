@@ -191,3 +191,5 @@ Proof.
 Qed.
 
 End ElGamal.
+
+Definition OT_CPA_elgamal_Z3 := OT_CPA_elgamal Z3.

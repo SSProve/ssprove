@@ -56,7 +56,7 @@ Definition SLIDE n :
   ].
 
 Definition R (i : 'nat) (c : 'nat) (c' : 'nat)
-  := (if (c' > i)%N then (c == 1%N)%B else (c == 0%N)%B).
+  := c = (c' > i)%N.
 
 Notation inv i := (
   heap_ignore ([fmap mpk_loc' ; count_loc ; count_loc' ])
@@ -114,7 +114,7 @@ Proof.
       ssprove_swap_rhs 0%N.
       apply r_get_remember_rhs => cr.
       ssprove_rem_rel 0%N.
-      unfold R; simpl; move=> /eqP -> {cr} //=.
+      unfold R; simpl; move=> -> {cr} //=.
 
       ssprove_swap_seq_rhs [:: 1%N ; 0%N ].
       eapply @r_get_remind_rhs.
@@ -151,10 +151,10 @@ Notation inv' i := (
 ).
 
 Ltac replace_true e :=
-  replace e with true in * by (symmetry; apply /ltP; lia).
+  progress ( replace e with true in * by (symmetry; apply /ltP; lia) ).
 
 Ltac replace_false e :=
-  replace e with false in * by (symmetry; apply /ltP; lia).
+  progress ( replace e with false in * by (symmetry; apply /ltP; lia) ).
 
 Lemma hybrid_cases (c i : nat) (T : Type) :
   ((c < i)%coq_nat → T) →
@@ -223,7 +223,7 @@ Proof.
       ssprove_rem_rel 1%N.
       rewrite //= /R.
       replace_false (i < i).
-      move=> /eqP -> {c'}.
+      move=> -> {c'}.
       ssprove_code_simpl_more.
       ssprove_code_simpl.
       ssprove_code_simpl_more.
@@ -250,7 +250,7 @@ Proof.
       ssprove_rem_rel 0%N.
       rewrite //= /R.
       replace_false (i.+1 < i.+1).
-      move=> /eqP -> {c'}.
+      move=> -> {c'}.
       ssprove_code_simpl_more.
       ssprove_code_simpl.
       ssprove_code_simpl_more.
