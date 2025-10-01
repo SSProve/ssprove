@@ -31,8 +31,8 @@ Context (P : scheme).
 Definition mpk_loc' : Location := (45%N, 'option P.(Pub)).
 Definition count_loc' : Location := (46%N, 'nat).
 
-Definition SLIDE n i :
-  package (I_CPA P) (I_CPA P) :=
+Definition SLIDE n :
+  package (unionm (I_CPA P) (IPICK nat)) (I_CPA P) :=
   [package [fmap count_loc' ; mpk_loc' ] ;
     [ GEN ] : { 'unit ~> P.(Pub) } 'tt {
       pk ← call [GEN] tt ;;
@@ -43,6 +43,7 @@ Definition SLIDE n i :
       count ← get count_loc' ;;
       #assert (count < n)%N ;;
       #put count_loc' := count.+1 ;;
+      i ← call [pick] tt ;;
       pk ← getSome mpk_loc' ;;
       if (count < i)%N then
         c ← P.(sample_Cip) ;; ret c
@@ -76,7 +77,7 @@ Proof.
 Qed.
 
 Lemma PK_CPA_SLIDE_perfect {n} b : perfect (I_CPA P)
-  (MT_CPA P n b) (SLIDE n (if b then 0 else n) ∘ OT_CPA P true).
+  (MT_CPA P n b) (SLIDE n ∘ (OT_CPA P true || PICK (if b then 0 else n))).
 Proof.
   ssprove_share.
   eapply prove_perfect.
@@ -155,8 +156,24 @@ Ltac replace_true e :=
 Ltac replace_false e :=
   replace e with false in * by (symmetry; apply /ltP; lia).
 
+Lemma hybrid_cases (c i : nat) (T : Type) :
+  ((c < i)%coq_nat → T) →
+  ((c = i) → T) →
+  ((c = i.+1) → T) →
+  ((c > i.+1)%coq_nat → T) →
+  T.
+Proof.
+  intros H1 H2 H3 H4.
+  destruct (c < i)%N eqn:E1; move: E1 => /ltP // E1.
+  destruct (c == i)%B eqn:E2; move: E2 => /eqP // E2.
+  destruct (c == i.+1)%B eqn:E3; move: E3 => /eqP // E3.
+  destruct (c > i.+1)%N eqn:E4; move: E4 => /ltP // E4. lia.
+Qed.
+
+
 Lemma SLIDE_succ_perfect {n} {i} : perfect (I_CPA P)
-  (SLIDE n i ∘ OT_CPA P false) (SLIDE n i.+1 ∘ OT_CPA P true).
+  (SLIDE n ∘ (OT_CPA P false || PICK i   ))
+  (SLIDE n ∘ (OT_CPA P true  || PICK i.+1)).
 Proof.
   ssprove_share.
   eapply prove_perfect.
@@ -187,21 +204,19 @@ Proof.
     intros mpk.
     ssprove_swap_lhs 0%N; ssprove_swap_rhs 0%N.
     ssprove_sync => H'.
-
-    destruct (c < i)%N eqn:E1; move: E1 => /ltP E1.
-    { replace_true (c < i.+1).
+    apply (hybrid_cases c i) => E.
+    + replace_true (c < i).
+      replace_true (c < i.+1).
       apply r_put_vs_put.
       apply rsame_head_scheme => x.
       ssprove_restore_mem.
       2: by apply r_ret.
       ssprove_invariant; unfold R.
-      + replace_false (i < c).
+      * replace_false (i < c).
         by replace_false (i < c.+1).
-      + replace_false (i.+1 < c).
+      * replace_false (i.+1 < c).
         by replace_false (i.+1 < c.+1).
-    }
-    destruct (c == i)%B eqn:E2; move: E2 => /eqP E2.
-    { subst; replace_false (i < i).
+    + subst; replace_false (i < i).
       ssprove_code_simpl.
       ssprove_swap_lhs 0%N.
       apply r_get_remember_lhs => c'.
@@ -223,13 +238,12 @@ Proof.
       ssprove_restore_mem.
       2: by apply r_ret.
       ssprove_invariant.
-      + by replace_true (eqn (i.+1 - i.+1)%Nrec 0).
-      + replace_false (eqn (i.+2 - i.+1)%Nrec 0).
+      * by replace_true (eqn (i.+1 - i.+1)%Nrec 0).
+      * replace_false (eqn (i.+2 - i.+1)%Nrec 0).
         by replace_false (eqn (i.+2 - i)%Nrec 0).
-    }
-    destruct (c == i.+1)%B eqn:E3; move: E3 => /eqP E3.
-    { subst; replace_true (i < i.+1).
+    + subst; replace_true (i < i.+1).
       replace_false (i.+1 < i.+1).
+      replace_false (i.+1 < i).
       ssprove_code_simpl.
       ssprove_swap_rhs 0%N.
       apply r_get_remember_rhs => c'.
@@ -251,35 +265,38 @@ Proof.
       ssprove_restore_mem.
       2: by apply r_ret.
       ssprove_invariant.
-      + replace_true (eqn (i.+1 - i.+2)%Nrec 0).
+      * replace_true (eqn (i.+1 - i.+2)%Nrec 0).
         by replace_true (eqn (i.+1 - i.+1)%Nrec 0).
-      + by replace_true (eqn (i.+2 - i.+2)%Nrec 0).
-    }
-    destruct (c > i.+1)%N eqn:E4; move: E4 => /ltP E4; [| lia ].
-    { replace_true (i < c).
+      * by replace_true (eqn (i.+2 - i.+2)%Nrec 0).
+    + replace_false (c < i).
+      replace_true (i < c).
       replace_false (c < i.+1).
+      replace_true (i.+1 < c).
       apply r_put_vs_put.
       rewrite 2!code_link_scheme.
       apply rsame_head_scheme => c'.
       ssprove_restore_mem.
       2: by apply r_ret.
       ssprove_invariant; unfold R.
-      + replace_true (i < c.+1).
+      * replace_true (i < c.+1).
         by replace_true (i < c).
-      + replace_true (i.+1 < c).
+      * replace_true (i.+1 < c).
         by replace_true (i.+1 < c.+1).
-    }
 Qed.
 
 #[local] Open Scope ring_scope.
 
-Theorem Adv_CPA_OT {n} (A : adversary (I_CPA P)) :
-  AdvOf (MT_CPA P n) A <= \sum_(i < n) AdvOf (OT_CPA P) (A ∘ SLIDE n i).
+(* One-to-Many hybrid reduction package *)
+Notation OTM n := (SLIDE n%N ∘ (ID (I_CPA P) || RAND (unif n%N)))%sep.
+
+Theorem Adv_MT_CPA_OT n (A : nom_package)
+  `{ValidPackage (loc A) (I_CPA P) A_export A} :
+  AdvOf (MT_CPA P n) A = AdvOf (OT_CPA P) (A ∘ OTM n) *+ n.
 Proof.
-  apply testing_hybrid.
-  apply: (@hybrid_reduction _ A (λ n b, {game _ ; MT_CPA P n b }) (SLIDE n)).
-  2,3: apply: PK_CPA_SLIDE_perfect.
-  apply: @SLIDE_succ_perfect.
+  eapply testing_hybrid.
+  1-4: ssprove_valid.
+  1-2: apply: PK_CPA_SLIDE_perfect.
+  intros i; apply: SLIDE_succ_perfect.
 Qed.
 
 End OneToMany.

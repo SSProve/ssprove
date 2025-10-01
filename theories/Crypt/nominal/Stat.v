@@ -84,11 +84,13 @@ Qed.
 
 (* PICK game *)
 
-Definition IPICK T := [interface [ 0%N ] : { 'unit ~> T }].
+Definition pick := 57.
+
+Definition IPICK T := [interface [ pick ] : { 'unit ~> T }].
 
 Definition PICK {T : choice_type} (x : T) : game (IPICK T) :=
   [package emptym ;
-    [ 0%N ] : { 'unit ~> T } 'tt {
+    [ pick ] : { 'unit ~> T } 'tt {
       ret x
     } ].
 
@@ -96,7 +98,7 @@ Definition cell T : Location := (0%N, 'option T).
 
 Definition unif (n : nat) : code emptym emptym nat := locked {code
   match n with
-  | 0 => ret 0%N
+  | 0 => ret 0
   | S n' =>
       x ← sample uniform (S n') ;; ret (nat_of_ord x)
   end }.
@@ -104,7 +106,7 @@ Definition unif (n : nat) : code emptym emptym nat := locked {code
 Definition RAND {T : choice_type} (c : code emptym emptym T)
   : game (IPICK T) :=
   [package [fmap cell T] ;
-    [ 0%N ] : { 'unit ~> T } 'tt {
+    [ pick ] : { 'unit ~> T } 'tt {
       mr ← get cell T ;;
       match mr with
       | Some r => ret r
@@ -378,7 +380,7 @@ Proof.
   destruct m => /=.
   ssprove_code_simpl; simpl.
   apply r_get_remember_lhs => y.
-  ssprove_rem_rel 0%N.
+  ssprove_rem_rel 0.
   elim => ?; subst.
   - apply r_put_lhs.
     ssprove_restore_mem.
@@ -567,14 +569,14 @@ Lemma testing_hybrid {IMulti IGame} {n : nat} {Multi Game : bool → nom_package
   → ValidPackage (loc (Game true)) Game_import IGame (Game true)
   → ValidPackage (loc (Game false)) Game_import IGame (Game false)
   → ValidPackage (loc H) (unionm IGame (IPICK 'nat)) IMulti H
-  → perfect IMulti (Multi true) (H ∘ (Game true || PICK 0%N))
+  → perfect IMulti (Multi true) (H ∘ (Game true || PICK 0))
   → perfect IMulti (Multi false) (H ∘ (Game true || PICK n))
   → (∀ i : 'nat, perfect IMulti (H ∘ (Game false || PICK i )) (H ∘ (Game true || PICK i.+1)))
   → AdvOf Multi A = (AdvOf Game (A ∘ H ∘ (ID IGame || RAND (unif n))) *+ n)%R.
 Proof.
   intros VA VG VG' VH p p' p''.
   rewrite (Adv_perfect_l p) (Adv_perfect_r p').
-  rewrite (sep_par_factor_game_l (P' := PICK 0%N)).
+  rewrite (sep_par_factor_game_l (P' := PICK 0)).
   rewrite (sep_par_factor_game_l (P' := PICK n)).
   rewrite 2!sep_link_assoc.
   erewrite testing_pick.
@@ -595,22 +597,6 @@ Proof.
   rewrite (sep_par_factor_game_r (P := Game false)).
   rewrite 2!Adv_reduction sep_link_assoc //.
 Qed.
-
-Lemma testing_hybrid2 {IMulti IGame} {n : nat} {Multi Game : bool → nom_package}
-  {H A : nom_package}
-  : ValidPackage (loc A) IMulti A_export A
-  → ValidPackage (loc (Game true)) Game_import IGame (Game true)
-  → ValidPackage (loc (Game false)) Game_import IGame (Game false)
-  → ValidPackage (loc H) (unionm IGame (IPICK ('nat × 'nat))) IMulti H
-  → perfect IMulti (Multi true) (H ∘ (Game true || PICK (0%N, 0%N)))
-  → perfect IMulti (Multi false) (H ∘ (Game true || PICK (n, n)))
-  → (∀ i : 'nat, perfect IMulti (H ∘ (Game false || PICK i )) (H ∘ (Game true || PICK i.+1)))
-  → (∀ i : 'nat, perfect IMulti (H ∘ (Game false || PICK i )) (H ∘ (Game true || PICK i.+1)))
-  → AdvOf Multi A = (AdvOf Game (A ∘ H ∘ (ID IGame || RAND (unif n))) *+ 'C(n, 2))%R.
-Proof.
-
-Admitted.
-
 
 
 Definition done : Location := (4%N, 'bool).
@@ -811,7 +797,7 @@ Definition GUESSH n `{Positive n} l
       d ← get doneh ;;
       #assert ~~ d ;;
       #put doneh := true ;;
-      i ← call [ 0%N ] tt ;;
+      i ← call [ pick ] tt ;;
       let g := drop i g in
       let h := head (chCanonical _) g in
       let t := behead g in 
@@ -831,10 +817,10 @@ Proof.
   - ssprove_code_simpl.
     ssprove_sync => Hlen.
     apply r_get_remember_rhs => d'.
-    ssprove_swap_rhs 1%N.
-    ssprove_swap_rhs 0%N.
+    ssprove_swap_rhs 1.
+    ssprove_swap_rhs 0.
     apply r_get_vs_get_remember => d.
-    ssprove_rem_rel 0%N => {d'}<-.
+    ssprove_rem_rel 0 => {d'}<-.
     ssprove_sync => H'.
     rewrite -(negbK d) {}H' {d} /=.
     ssprove_swap_rhs 0%N.
@@ -874,7 +860,6 @@ Proof.
     ssprove_swap_rhs 0%N.
     apply r_get_vs_get_remember => d'.
     ssprove_rem_rel 0%N.
-    Search (_ ==> false).
     rewrite implybF; destruct d' => _ //.
     do 2 apply r_put_vs_put.
     ssprove_sync => r.
@@ -937,7 +922,7 @@ Definition HReplacement n `{Positive n} k
       c ← get count_loc ;;
       #assert c < k ;;
       #put count_loc := c.+1 ;;
-      i ← call [0] tt ;;
+      i ← call [pick] tt ;;
       if (c < i)%N then
         r ← sample uniform n ;;
         prev ← get prev_loc n ;;
