@@ -42,7 +42,6 @@
 (*     t' == the maximum number of shares the scheme is secure against.       *)
 (*      n == number of shares.                                                *)
 (*      p == number of possible messages. It is is a prime.                   *)
-(* 'seq t == local choice_type for sequences                                  *)
 (* 'set t == local choice_type for sets                                       *)
 (******************************************************************************)
 
@@ -108,12 +107,6 @@ Notation " 'word " := (Word) (at level 2): package_scope.
 
 Notation " 'share " := (Share) (in custom pack_type at level 2).
 Notation " 'share " := (Share) (at level 2): package_scope.
-
-(* We can't use sequences directly in [choice_type] so instead we use a map   *)
-(* from natural numbers to the type.                                          *)
-
-Notation " 'seq A " := (chList A) (in custom pack_type at level 2).
-Notation " 'seq A " := (chList A) (at level 2): package_scope.
 
 (* We can't use sets directly in [choice_type] so instead we use a map to     *)
 (* units. We can then use [domm] to get the domain, which is a set.           *)
@@ -265,7 +258,7 @@ Lemma sec_poly_bij (U: seq Party) (m m': Word) (q: {poly Word}):
   make_shares m                   q  U.
 Proof.
   move=> H.
-  by rewrite (sec_poly_bij_rec [::]).
+  by rewrite (sec_poly_bij_rec nil).
 Qed.
 
 Lemma bij_poly_bij (U: seq Party) (m m': Word) (q: {poly Word}):
@@ -428,9 +421,9 @@ Definition shares : nat := 0.
 *)
 Definition SHARE_pkg_tt:
   package [interface]
-    [interface #val #[shares]: ('word × 'word) × 'set 'party → 'seq 'share ] :=
+    [interface #val #[shares]: ('word × 'word) × 'set 'party → 'list 'share ] :=
   [package emptym ;
-    #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'party): 'seq 'share {
+    #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'party): 'list 'share {
       if size (domm U) >= t then ret [::]
       else
       q <$ uniform (p ^ t') ;;
@@ -442,9 +435,9 @@ Definition SHARE_pkg_tt:
 
 Definition SHARE_pkg_ff:
   package [interface]
-    [interface #val #[shares]: ('word × 'word) × 'set 'party → 'seq 'share ] :=
+    [interface #val #[shares]: ('word × 'word) × 'set 'party → 'list 'share ] :=
   [package emptym ;
-    #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'party): 'seq 'share {
+    #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'party): 'list 'share {
       if size (domm U) >= t then ret [::]
       else
       q <$ uniform (p ^ t') ;;
@@ -508,7 +501,7 @@ Qed.
 
 Theorem unconditional_secrecy LA A:
   ValidPackage LA
-    [interface #val #[shares]: ('word × 'word) × 'set 'party → 'seq 'share ]
+    [interface #val #[shares]: ('word × 'word) × 'set 'party → 'list 'share ]
     A_export A ->
   Advantage SHARE A = 0%R.
 Proof.

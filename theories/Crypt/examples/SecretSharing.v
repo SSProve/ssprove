@@ -18,7 +18,6 @@
 (*   'word == notation for Word                                               *)
 (*    plus == receives two Words and returns the XOR of them                  *)
 (*   m ⊕ k == XOR of words m and k                                            *)
-(*  'seq t == local choice_type for sequences                                 *)
 (*  'set t == local choice_type for sets                                      *)
 (******************************************************************************)
 
@@ -155,13 +154,6 @@ Qed.
 Notation " 'word " := (Word) (in custom pack_type at level 2).
 Notation " 'word " := (Word) (at level 2): package_scope.
 
-(* We can't use sequences directly in [choice_type] so instead we use a       *)
-(* map from natural numbers to the type.                                      *)
-Definition chSeq t := chMap 'nat t.
-
-Notation " 'seq t " := (chSeq t) (in custom pack_type at level 2).
-Notation " 'seq t " := (chSeq t) (at level 2): package_scope.
-
 (* We can't use sets directly in [choice_type] so instead we use a map to     *)
 (* units. We can then use [domm] to get the domain, which is a set.           *)
 
@@ -178,29 +170,29 @@ Definition shares: nat := 0.
 
 Definition SHARE_pkg_tt:
   package [interface]
-    [interface #val #[shares]: ('word × 'word) × 'set 'nat → 'seq 'word ] :=
+    [interface #val #[shares]: ('word × 'word) × 'set 'nat → 'list 'word ] :=
   [package emptym ;
-    #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'nat): 'seq 'word {
-      if size (domm U) >= 2 then ret emptym
+    #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'nat): 'list 'word {
+      if size (domm U) >= 2 then ret [::]
       else
       s0 <$ uniform (2^n) ;;
       let s1 := s0 ⊕ ml in
       let sh := [fmap (0, s0) ; (1, s1)] in
-      ret (fmap_of_seq (pmap sh (domm U)))
+      ret (pmap sh (domm U))
     }
   ].
 
 Definition SHARE_pkg_ff:
   package [interface]
-    [interface #val #[shares]: ('word × 'word) × 'set 'nat → 'seq 'word ] :=
+    [interface #val #[shares]: ('word × 'word) × 'set 'nat → 'list 'word ] :=
   [package emptym ;
-    #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'nat): 'seq 'word {
-      if size (domm U) >= 2 then ret emptym
+    #def #[shares] ('(ml, mr, U): ('word × 'word) × 'set 'nat): 'list 'word {
+      if size (domm U) >= 2 then ret [::]
       else
       s0 <$ uniform (2^n) ;;
       let s1 := s0 ⊕ mr in
       let sh := [fmap (0, s0) ; (1, s1)] in
-      ret (fmap_of_seq (pmap sh (domm U)))
+      ret (pmap sh (domm U))
     }
   ].
 
@@ -266,7 +258,7 @@ Qed.
 
 Theorem unconditional_secrecy LA A:
   ValidPackage LA
-    [interface #val #[shares]: ('word × 'word) × 'set 'nat → 'seq 'word ]
+    [interface #val #[shares]: ('word × 'word) × 'set 'nat → 'list 'word ]
     A_export A ->
   Advantage SHARE A = 0%R.
 Proof.
