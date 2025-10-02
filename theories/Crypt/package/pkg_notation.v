@@ -22,6 +22,8 @@
     'unit
     'option A
     'fin n
+    'list A
+    A + B
     A × B
     {map A → B}
     where A and B follow again the same syntax and n is a natural number
@@ -126,6 +128,8 @@ Module PackageNotation.
   Notation " 'unit " := (chUnit) (in custom pack_type at level 2).
   Notation " 'word n " := (chWord n) (in custom pack_type at level 2).
   Notation " 'option x " := (chOption x) (in custom pack_type at level 2).
+  Notation " 'list x " := (chList x) (in custom pack_type at level 2).
+
 
   Notation " 'fin n " :=
     (chFin (mkpos n))
@@ -147,6 +151,7 @@ Module PackageNotation.
   Notation " 'unit " := (chUnit) (at level 2) : package_scope.
   Notation " 'word n " := (chWord n) (at level 2) : package_scope.
   Notation " 'option x " := (chOption x) (at level 2) : package_scope.
+  Notation " 'list x " := (chList x) (at level 2) : package_scope.
 
   Notation " 'fin x " :=
     (chFin (mkpos x))

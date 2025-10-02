@@ -39,15 +39,6 @@ Import Order.POrderTheory.
 Section SymmRatchet_example.
 
 (**
-  We can't use sequences directly in [choice_type] so instead we use a map from
-  natural numbers to the type.
-*)
-Definition chSeq t := chMap 'nat t.
-
-Notation " 'seq t " := (chSeq t) (in custom pack_type at level 2).
-Notation " 'seq t " := (chSeq t) (at level 2): package_scope.
-
-(**
   This function is equivalent to [fmap_of_seq], but its definition is simpler,
   which makes it possible to prove that [unzip2] cancels it.
   This is useful since each iteration of a loop has to convert between the
@@ -99,13 +90,13 @@ Definition attack: nat := 2.
   work directly with [seq]), and the final state [a].
 *)
 Fixpoint map_loop {T} {U A: choice_type} (s: seq T) (a: A) (c: T -> A -> raw_code (U × A)):
-  raw_code (('seq U) × A) :=
+  raw_code (('list U) × A) :=
   match s with
-  | [::]    => ret (emptym, a)
+  | [::]    => ret ([::], a)
   | t :: s' =>
     ua1 ← c t a ;;
     ua2 ← map_loop s' ua1.2 c ;;
-    ret (seq_to_chseq (ua1.1 :: unzip2 ua2.1), ua2.2)
+    ret ((ua1.1 :: ua2.1), ua2.2)
   end.
 
 (**
@@ -192,9 +183,9 @@ Definition CTXT b := if b then CTXT_pkg_tt else CTXT_pkg_ff.
 *)
 Definition GEN_STRETCH_pkg_tt:
   package [interface]
-    [interface #val #[query]: 'nat → ('seq 'word) × 'word ] :=
+    [interface #val #[query]: 'nat → ('list 'word) × 'word ] :=
   [package emptym ;
-    #def #[query] (k: 'nat): ('seq 'word) × 'word {
+    #def #[query] (k: 'nat): ('list 'word) × 'word {
       s0 <$ uniform Word_N ;;
       map_loop (iota 0 k) s0 (fun _ si =>
         ret (PRG si)
@@ -204,9 +195,9 @@ Definition GEN_STRETCH_pkg_tt:
 
 Definition GEN_STRETCH_pkg_ff:
   package [interface]
-    [interface #val #[query]: 'nat → ('seq 'word) × 'word ] :=
+    [interface #val #[query]: 'nat → ('list 'word) × 'word ] :=
   [package emptym ;
-    #def #[query] (k: 'nat): ('seq 'word) × 'word {
+    #def #[query] (k: 'nat): ('list 'word) × 'word {
       t ← map_loop (iota 0 k) tt (fun _ _ =>
         ti <$ uniform Word_N ;;
         ret (ti, tt)
@@ -223,11 +214,11 @@ Definition GEN_STRETCH b := if b then GEN_STRETCH_pkg_tt else GEN_STRETCH_pkg_ff
 *)
 Definition ATTACK_pkg_tt:
   package [interface]
-    [interface #val #[attack]: 'seq 'word → ('seq 'word) × 'word ] :=
+    [interface #val #[attack]: 'list 'word → ('list 'word) × 'word ] :=
   [package emptym ;
-    #def #[attack] (m: 'seq 'word): ('seq 'word) × 'word {
+    #def #[attack] (m: 'list 'word): ('list 'word) × 'word {
       s0 <$ uniform Word_N ;;
-      map_loop (unzip2 m) s0 (fun mi si =>
+      map_loop m s0 (fun mi si =>
         let xy := PRG si in
         ret (enc xy.1 mi, xy.2)
       )
@@ -236,10 +227,10 @@ Definition ATTACK_pkg_tt:
 
 Definition ATTACK_pkg_ff:
   package [interface]
-    [interface #val #[attack]: 'seq 'word → ('seq 'word) × 'word ] :=
+    [interface #val #[attack]: 'list 'word → ('list 'word) × 'word ] :=
   [package emptym ;
-    #def #[attack] (m: 'seq 'word): ('seq 'word) × 'word {
-      c ← @map_loop _ Word _ (unzip2 m) tt (fun _ _ =>
+    #def #[attack] (m: 'list 'word): ('list 'word) × 'word {
+      c ← @map_loop _ Word _ m tt (fun _ _ =>
         ci <$ uniform Word_N ;;
         ret (ci, tt)
       ) ;;
@@ -252,13 +243,13 @@ Definition ATTACK b := if b then ATTACK_pkg_tt else ATTACK_pkg_ff.
 
 Definition ATTACK_GEN_pkg:
   package
-    [interface #val #[query]: 'nat → ('seq 'word) × 'word ]
-    [interface #val #[attack]: 'seq 'word → ('seq 'word) × 'word ] :=
+    [interface #val #[query]: 'nat → ('list 'word) × 'word ]
+    [interface #val #[attack]: 'list 'word → ('list 'word) × 'word ] :=
   [package emptym ;
-    #def #[attack] (m: 'seq 'word): ('seq 'word) × 'word {
-      #import {sig #[query]: 'nat → ('seq 'word) × 'word } as query ;;
+    #def #[attack] (m: 'list 'word): ('list 'word) × 'word {
+      #import {sig #[query]: 'nat → ('list 'word) × 'word } as query ;;
       ts ← query (size m) ;;
-      c ← map_loop (zip (unzip2 ts.1) (unzip2 m)) tt (fun tm _ =>
+      c ← map_loop (zip ts.1 m) tt (fun tm _ =>
         let (ti, mi) := (tm.1, tm.2) in
         ret (enc ti mi, tt)
       ) ;;
@@ -268,10 +259,10 @@ Definition ATTACK_GEN_pkg:
 
 Definition ATTACK_HYB_pkg:
   package [interface]
-    [interface #val #[attack]: 'seq 'word → ('seq 'word) × 'word ] :=
+    [interface #val #[attack]: 'list 'word → ('list 'word) × 'word ] :=
   [package emptym ;
-    #def #[attack] (m: 'seq 'word): ('seq 'word) × 'word {
-      c ← map_loop (unzip2 m) tt (fun mi _ =>
+    #def #[attack] (m: 'list 'word): ('list 'word) × 'word {
+      c ← map_loop m tt (fun mi _ =>
         ti <$ uniform Word_N ;;
         ret (enc ti mi, tt)
       ) ;;
@@ -283,11 +274,11 @@ Definition ATTACK_HYB_pkg:
 Definition ATTACK_CTXT_pkg:
   package
   [interface #val #[ctxt]: 'word → 'word ]
-    [interface #val #[attack]: 'seq 'word → ('seq 'word) × 'word ] :=
+    [interface #val #[attack]: 'list 'word → ('list 'word) × 'word ] :=
   [package emptym ;
-    #def #[attack] (m: 'seq 'word): ('seq 'word) × 'word {
+    #def #[attack] (m: 'list 'word): ('list 'word) × 'word {
       #import {sig #[ctxt]: 'word → 'word } as ctxt ;;
-      c ← map_loop (unzip2 m) tt (fun mi _ =>
+      c ← map_loop m tt (fun mi _ =>
         ci ← ctxt mi ;;
         ret (ci, tt)
       ) ;;
@@ -316,7 +307,7 @@ Proof.
     apply: boolp.funext => y.
     by rewrite {1}(lock (y.1)).
   }
-  rewrite -(bind_ret _ (map_loop (unzip2 m) s0 _)).
+  rewrite -(bind_ret _ (map_loop m s0 _)).
   erewrite bind_cong.
   2: by [].
   2: {
@@ -326,22 +317,22 @@ Proof.
   }
   move: (@locked _) => /= X.
   ssprove_code_simpl.
-  rewrite -(size_map snd) -/unzip2.
-  move: 0 (unzip2 m) => {m} a m.
+  (*rewrite -(size_map snd). -/unzip2.*)
+  move: 0 ( m) => {m} a m.
   elim: m => [|mi m IHm] /= in X a s0*.
   1: by apply: rreflexivity_rule.
-  rewrite (lock seq_to_chseq).
+  (*rewrite (lock seq_to_chseq).*)
   ssprove_code_simpl.
   case: (PRG s0) => [ti si] /=.
-  rewrite -lock.
+  (*rewrite -lock.*)
   erewrite (bind_cong _ _ (@map_loop _ Word _ (iota a.+1 (size m)) si _)).
   2: by [].
   2: {
     apply: boolp.funext => x.
-    by rewrite unzip2_seq_to_chseq.
+    by []. (* rewrite unzip2_seq_to_chseq.*)
   }
   ssprove_code_simpl.
-  by specialize (IHm (fun x => X (seq_to_chseq (enc ti mi :: unzip2 x)))).
+  by specialize (IHm (fun x => X (enc ti mi :: x))).
 Qed.
 
 Lemma ATTACK_HYB_equiv_1:
@@ -366,30 +357,27 @@ Proof.
     apply: boolp.funext => y.
     by rewrite {1}(lock (y.1)).
   }
-  erewrite (bind_cong _ _ (map_loop (unzip2 m) tt _)).
+  erewrite (bind_cong _ _ (map_loop m tt _)).
   2: by [].
   2: {
     apply: boolp.funext => x.
     rewrite {1}(surjective_pairing x).
     by rewrite {1}(lock x.1).
   }
-  rewrite -(size_map snd) -/unzip2.
-  move: 0 (unzip2 m) (@locked _) => {m} a m X.
+  (*rewrite -(size_map snd) -/unzip2.*)
+  move: 0 (m) (@locked _) => {m} a m X.
   elim: m => [|mi m IHm] /= in X a*.
   1: by apply: rreflexivity_rule.
-  rewrite (lock seq_to_chseq).
   ssprove_code_simpl.
   ssprove_sync_eq=> ci.
-  rewrite -lock.
-  erewrite (bind_cong _ _ (@map_loop _ Word _ (iota a.+1 (size m)) tt _)).
+  erewrite (bind_cong ).
   2: by [].
   2: {
     apply: boolp.funext => x.
-    rewrite unzip2_seq_to_chseq.
     by [].
   }
   ssprove_code_simpl.
-  specialize (IHm (fun s => X (seq_to_chseq (enc ci mi :: unzip2 s)))).
+  specialize (IHm (fun s => X (enc ci mi :: s))).
   by simpl in IHm.
 Qed.
 
@@ -446,7 +434,7 @@ Definition cpa_epsilon := Advantage CTXT.
 
 Lemma forward_secrecy_based_on_prg LA A:
   ValidPackage LA
-    [interface #val #[attack]: 'seq 'word → ('seq 'word) × 'word ]
+    [interface #val #[attack]: 'list 'word → ('list 'word) × 'word ]
     A_export A ->
   Advantage ATTACK A <=
   prg_epsilon (A ∘ ATTACK_GEN_pkg) +
@@ -454,7 +442,8 @@ Lemma forward_secrecy_based_on_prg LA A:
 Proof.
   move=> vA.
   rewrite Advantage_E Advantage_sym.
-  ssprove triangle (ATTACK true) [::
+  ssprove triangle (ATTACK true) 
+  [::
     ATTACK_GEN_pkg ∘ GEN_STRETCH true ;
     ATTACK_GEN_pkg ∘ GEN_STRETCH false ;
     pack ATTACK_HYB_pkg ;
