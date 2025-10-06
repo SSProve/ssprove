@@ -277,7 +277,7 @@ Raw code `c` can be cast to `code` by using the notation
 For instance, in the following, we declare a simple `code` by just giving
 the `raw_code` and using the `{code}` notation:
 ```coq
-Definition foo : code fset0 [interface] bool :=
+Definition foo : code emptym [interface] bool :=
   {code ret true }.
 ```
 
@@ -1088,17 +1088,8 @@ Definition couple_lhs ℓ ℓ' R : precond :=
   λ '(s₀, s₁), R (get_heap s₀ ℓ) (get_heap s₀ ℓ').
 ```
 `couple_lhs ℓ ℓ' R` states that the values stored in locations `ℓ` and `ℓ'`
-of the lhs are related by relation `R`. Alternatively, we also provide
-`couple_rhs`.
-It is a semi-invariant provided that the locations belong to the programs:
-```coq
-Lemma SemiInvariant_couple_lhs :
-  ∀ L₀ L₁ ℓ ℓ' (R : _ → _ → Prop),
-    fhas L₀ ℓ  →
-    fhas L₀ ℓ' →
-    R (get_heap empty_heap ℓ) (get_heap empty_heap ℓ') →
-    SemiInvariant L₀ L₁ (couple_lhs ℓ ℓ' h).
-```
+of the lhs are related by relation `R`. It is a semi-invariant when the
+locations belong to the left-hand side package.
 
 Now, to make use of this invariant, one can use the following tactic:
 ```coq
@@ -1106,8 +1097,9 @@ ssprove_rem_rel n
 ```
 where `n` is the position of the coupling counted from the right/back of
 the whole invariant. The tactic will utilize remembered and sycronized values
-that are also part of the invariant. It gives you the same goal you add,
-with the extra hypothesis that the relation holds for the remembered values.
+that are also part of the invariant. It gives you the same goal you had
+with an additional hypothesis, which states that the relation holds for
+the remembered values.
 
 `couple_lhs` is just one of the semi-invariant provided. Others include:
 * `single_lhs l`. A predicate about the value of `l` on the LHS.

@@ -12,6 +12,10 @@ This repository contains the Coq formalisation of the paper:\
   ([ieee](https://www.computer.org/csdl/proceedings-article/csf/2021/760700a608/1uvIdwNa5Ne),
    [eprint](https://eprint.iacr.org/2021/397/20210526:113037))
 
+The included extension by nominals is available by importing `NominalPrelude` and is based on the paper:
+- **Nominal State-Separating Proofs** at CSF 2025 (**distinguished paper award**).
+  Markus Krabbe Larsen and Carsten Schürmann. ([eprint](https://eprint.iacr.org/2025/598))
+
 Secondary literature:
 * **The Last Yard: Foundational End-to-End Verification of High-Speed Cryptography** at CPP'24.
 Philipp G. Haselwarter, Benjamin Salling Hvass, Lasse Letager Hansen, Théo Winterhalter, Cătălin Hriţcu, and Bas Spitters. ([DOI](https://doi.org/10.1145/3636501.3636961))
@@ -283,16 +287,13 @@ of state is not required by our package definitions and laws.
 
 #### ElGamal
 
-The ElGamal example is developed in [examples/ElGamal.v].
+The ElGamal example is developed in [examples/PKE/ElGamal.v] and is based on
+the nominal extension.
 The security theorem is the following:
 
 ```coq
-Theorem ElGamal_OT :
-  ∀ LA A,
-    ValidPackage LA [interface val #[challenge_id'] : 'plain → 'cipher] A_export A →
-    fseparate LA (ots_real_vs_rnd true).(locs) →
-    fseparate LA (ots_real_vs_rnd false).(locs) →
-    Advantage ots_real_vs_rnd A <= AdvantageE DH_rnd DH_real (A ∘ Aux).
+Theorem OT_CPA_elgamal (A : adversary (I_CPA elgamal)) :
+  AdvOf (OT_CPA elgamal) A = AdvOf (LDDH G) (A ∘ RED).
 ```
 
 #### KEM-DEM
@@ -761,7 +762,7 @@ We do something similar for Schnorr's protocol.
 
 
 [DOC.md]: ./DOC.md
-[examples/ElGamal.v]: theories/Crypt/examples/ElGamal.v
+[examples/PKE/ElGamal.v]: theories/Crypt/examples/PKE/ElGamal.v
 [examples/KEMDEM.v]: theories/Crypt/examples/KEMDEM.v
 [examples/PRF.v]: theories/Crypt/examples/PRF.v
 [examples/Schnorr.v]: theories/Crypt/examples/Schnorr.v

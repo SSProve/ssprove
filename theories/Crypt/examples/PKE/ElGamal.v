@@ -172,7 +172,7 @@ Proof.
       by eapply r_ret.
 Qed.
 
-Lemma OT_CPA_elgamal (A : adversary (I_CPA elgamal)) :
+Theorem OT_CPA_elgamal (A : adversary (I_CPA elgamal)) :
   AdvOf (OT_CPA elgamal) A = AdvOf (LDDH G) (A ∘ RED).
 Proof. rewrite (AdvOf_perfect PK_OTSR_RED_DDH_perfect) Adv_reduction //. Qed.
 
