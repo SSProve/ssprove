@@ -317,19 +317,16 @@ Proof.
   }
   move: (@locked _) => /= X.
   ssprove_code_simpl.
-  (*rewrite -(size_map snd). -/unzip2.*)
   move: 0 ( m) => {m} a m.
   elim: m => [|mi m IHm] /= in X a s0*.
   1: by apply: rreflexivity_rule.
-  (*rewrite (lock seq_to_chseq).*)
   ssprove_code_simpl.
   case: (PRG s0) => [ti si] /=.
-  (*rewrite -lock.*)
   erewrite (bind_cong _ _ (@map_loop _ Word _ (iota a.+1 (size m)) si _)).
   2: by [].
   2: {
     apply: boolp.funext => x.
-    by []. (* rewrite unzip2_seq_to_chseq.*)
+    by [].
   }
   ssprove_code_simpl.
   by specialize (IHm (fun x => X (enc ti mi :: x))).
@@ -364,7 +361,6 @@ Proof.
     rewrite {1}(surjective_pairing x).
     by rewrite {1}(lock x.1).
   }
-  (*rewrite -(size_map snd) -/unzip2.*)
   move: 0 (m) (@locked _) => {m} a m X.
   elim: m => [|mi m IHm] /= in X a*.
   1: by apply: rreflexivity_rule.
