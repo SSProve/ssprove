@@ -16,7 +16,9 @@ Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-forma
 From mathcomp Require Import all_ssreflect word_ssrZ.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From Coq.Unicode Require Import Utf8.
+Set Warnings "-notation-overridden".
 From Coq Require Import ZArith Zwf Setoid Morphisms CMorphisms CRelationClasses Psatz.
+Set Warnings "notation-overridden".
 (* Require Import xseq oseq. *)
 
 
@@ -441,7 +443,7 @@ Lemma mapM_Forall2 {eT aT bT} (f: aT → result eT bT) (s: seq aT) (s': seq bT) 
 Proof.
   elim: s s'.
   - by move => _ [] <-; constructor.
-  move => a s ih s'' /=; t_xrbindP => b ok_b s' /ih{ih}ih <-{s''}.
+  move => a s ih s'' /=; t_xrbindP => b ok_b s' /ih{}ih <-{s''}.
   by constructor.
 Qed.
 
@@ -600,7 +602,7 @@ Section MAP2.
     elim: ma mb mr.
     + by move=> [|//] _ [<-].
     move=> a ma ih [//|b mb] /=.
-    t_xrbindP=> _ r hf lr /ih{ih}ih <- /=.
+    t_xrbindP=> _ r hf lr /ih{}ih <- /=.
     by Lia.lia.
   Qed.
 
@@ -624,7 +626,7 @@ Section MAP2.
     elim: ma mb mr.
     + by move=> [|//] [|//] _; constructor.
     move=> a ma ih [//|b mb] /=.
-    t_xrbindP=> _ r h mr /ih{ih}ih <-.
+    t_xrbindP=> _ r h mr /ih{}ih <-.
     by constructor.
   Qed.
 
@@ -633,7 +635,7 @@ Section MAP2.
     mapM2 (ha ++ ta) (hb ++ tb) = ok (hl ++ tl).
   Proof.
     elim: ha hb hl => [[]//?[<-]|> hrec []] //=.
-    by t_xrbindP=> > -> ? /hrec{hrec}hrec <- /hrec{hrec} ->.
+    by t_xrbindP=> > -> ? /hrec{}hrec <- /hrec{hrec} ->.
   Qed.
 
 End MAP2.
@@ -682,7 +684,7 @@ Proof.
   elim: lb lc a a2 ld.
   + by move=> [|//] _ _ _ [_ <-].
   move=> b lb ih [//|c lc] a /=.
-  t_xrbindP=> _ _ _ _ [_ ld] /ih{ih}ih _ <- /=.
+  t_xrbindP=> _ _ _ _ [_ ld] /ih{}ih _ <- /=.
   by Lia.lia.
 Qed.
 
@@ -1609,7 +1611,7 @@ Qed.
 Lemma in_ziota (p z i:Z) : (i \in ziota p z) = ((p <=? i) && (i <? p + z)).
 Proof.
   case: (ZleP 0 z) => hz.
-  + move: p; pattern z; apply natlike_ind => [ p | {z hz} z hz hrec p| //].
+  + move: p; pattern z; apply natlike_ind => [ p | {hz} z hz hrec p| //].
     + by rewrite ziota0 in_nil; case: andP => // -[/ZleP ? /ZltP ?]; Lia.lia.
     rewrite ziotaS_cons // in_cons; case: eqP => [-> | ?] /=.
     + by rewrite Z.leb_refl /=; symmetry; apply /ZltP; Lia.lia.

@@ -19,9 +19,9 @@ Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-forma
 From mathcomp Require Import all_ssreflect all_algebra word_ssrZ word.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From SSProve.Crypt Require Import jasmin_util.
-Require Import (* strings *) ZArith (* utils *).
-(* Import Utf8. *)
-(* Import word_ssrZ. *)
+Set Warnings "-notation-overridden".
+From Coq Require Import ZArith.
+Set Warnings "notation-overridden".
 
 Set Implicit Arguments.
 Unset Strict Implicit.

@@ -270,7 +270,7 @@ Proof.
     move => x.
     destruct (f w == x) eqn: Hfw; auto.
     exact r_nonneg.
-  - rewrite /rmg dsndE /mkdistr psum_sum /=.
+  - rewrite /rmg __deprecated__dsndE /mkdistr psum_sum /=.
     rewrite (sum_seq1 (f_inv w)).
     have Heq: (f (f_inv w) == w) by apply /eqP; apply: (K2 w).
     by rewrite Heq.
@@ -302,7 +302,7 @@ Lemma support_sub_diag_mgs { A : choiceType }
   forall a : A, lmg d a = d (a, a) /\ rmg d a = d (a, a).
 Proof.
   move => a.
-  rewrite /lmg /rmg dfstE dsndE.
+  rewrite /lmg /rmg dfstE __deprecated__dsndE.
   split.
   - rewrite psum_sum.
     rewrite (sum_seq1 a).

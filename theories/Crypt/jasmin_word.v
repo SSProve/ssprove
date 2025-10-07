@@ -19,9 +19,9 @@ Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-forma
 From mathcomp Require Import all_ssreflect all_algebra word_ssrZ word.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From SSProve.Crypt Require Import jasmin_util jasmin_wsize.
-Require Import (* strings *) ZArith (* utils *).
-(* Import Utf8. *)
-(* Import word_ssrZ. *)
+Set Warnings "-notation-overridden".
+From Coq Require Import ZArith.
+Set Warnings "notation-overridden".
 Export jasmin_wsize.
 
 Set Implicit Arguments.
@@ -1533,7 +1533,7 @@ Proof.
   apply/eqP/eq_from_wbit_n => i.
   rewrite wandE wshrE // wshlE // wbit_n_pow2m1.
   have := ltn_ord i.
-  move: (nat_of_ord i) => {i} i i_bounded.
+  move: (nat_of_ord i) => {} i i_bounded.
   replace (i < _)%nat with (i < n)%nat; last first.
   - apply Nat.min_case_strong => //  n_large.
     rewrite i_bounded.

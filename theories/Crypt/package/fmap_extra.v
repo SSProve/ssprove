@@ -1,6 +1,8 @@
 From Coq Require Import Utf8.
 
+Set Warnings "-notation-overridden".
 From mathcomp Require Import ssreflect eqtype choice seq ssrfun ssrbool.
+Set Warnings "notation-overridden".
 
 From Equations Require Import Equations.
 Require Equations.Prop.DepElim.
@@ -476,7 +478,7 @@ Proof.
   unfold fsubmap.
   intros H [H'].
   apply fsep.
-  eapply (fdisjoint_trans _ H').
+  eapply (fdisjointSl _ H').
   Unshelve.
   rewrite -H domm_union fsubsetUl //.
 Qed.
@@ -490,7 +492,7 @@ Proof.
   apply fsep.
   rewrite fdisjointC in H'.
   rewrite fdisjointC.
-  eapply (fdisjoint_trans _ H').
+  eapply (fdisjointSl _ H').
   Unshelve.
   rewrite -H domm_union fsubsetUl //.
 Qed.

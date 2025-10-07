@@ -13,7 +13,7 @@
   owner = "SSProve";
 
   inherit version;
-  defaultVersion = with lib.versions; lib.switch [coq.coq-version mathcomp-ssreflect.version] [
+  defaultVersion = with lib.versions; lib.switch [coq.coq-version mathcomp-boot.version] [
     { cases = [(range "8.18" "9.0") (range "2.1.0" "2.4.0")]; out = "0.2.4"; }
     { cases = [(range "8.18" "8.20") (range "2.1.0" "2.2.0")]; out = "0.2.2"; }
     # This is the original dependency:

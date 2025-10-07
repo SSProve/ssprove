@@ -31,7 +31,7 @@ Import GroupScope GRing.Theory.
 Import Num.Def.
 Import Num.Theory.
 Import Order.POrderTheory.
-Require Import Btauto.
+From Coq Require Import Btauto.
 
 Import PackageNotation.
 
@@ -121,7 +121,7 @@ Lemma Adv_adv_equiv {L L' E} {G G' : nom_package} {ε : raw_package → R}
 Proof.
   intros equieps adv LA A VA.
   pose (π := fresh ((L, G), (L', G')) (LA, A)).
-  setoid_rewrite <- (@rename_alpha _ A π).
+  setoid_rewrite <- (@rename_alpha _ A π) at 1.
   rewrite Adv_AdvantageE.
   1: rewrite -(absorb π (ε A)).
   1: rewrite equieps.

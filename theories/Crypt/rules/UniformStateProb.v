@@ -299,7 +299,7 @@ Proof.
     destruct ((st1 == s1) && (st2 == s2) && (f w1 == w2)); auto.
     exact: r_nonneg.
   - move => [w2 st2].
-    rewrite /rmg dsndE /mkdistr psum_sum /=.
+    rewrite /rmg __deprecated__dsndE /mkdistr psum_sum /=.
     rewrite (sum_seq1 ((f_inv w2), s1)).
     have Hf: (f (f_inv w2) = w2) by apply: (Kf2 w2).
     have Hs: s1 == s1 by apply /eqP.

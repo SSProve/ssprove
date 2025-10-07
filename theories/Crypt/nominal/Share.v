@@ -38,7 +38,7 @@ Import GroupScope GRing.Theory.
 Import Num.Def.
 Import Num.Theory.
 Import Order.POrderTheory.
-Require Import Btauto.
+From Coq Require Import Btauto.
 
 Import PackageNotation.
 
@@ -66,7 +66,7 @@ Obligation 2.
   rewrite -(natizeK (π _)) H //.
 Qed.
 
-HB.instance Definition _ : IsNominal Location 
+HB.instance Definition _ : IsNominal Location
   := Location_IsNominal.
 
 Lemma mapm2E_cancel
@@ -84,7 +84,7 @@ Lemma rename_locE {L : Locations} {π} {n} : (π ∙ L : Locations) n = L (natiz
 Proof.
   unfold rename. simpl.
   rewrite (mapm2E_cancel (λ n, natize (π^-1%fperm (atomize n)))).
-  - by rewrite omap_id. 
+  - by rewrite omap_id.
   - eapply can_inj, (can_comp natizeK), (can_comp (fpermK _)), atomizeK.
   - simpl. eapply (can_comp (can_comp natizeK (fpermKV _)) atomizeK).
 Qed.
@@ -548,15 +548,15 @@ Proof.
   apply equi2_prove => π x y.
   apply eq_nom_package.
   - rewrite loc_share_link //.
-  - rewrite /rename //= rename_par //. 
+  - rewrite /rename //= rename_par //.
 Qed.
 
 
 Open Scope nominal_scope.
 
 Lemma share_link_congr {P P' Q Q' : nom_package} :
-  disj P Q → 
-  disj P' Q' → 
+  disj P Q →
+  disj P' Q' →
   P ≡ P' →
   Q ≡ Q' →
   P ∘ Q ≡ P' ∘ Q'.

@@ -12,7 +12,7 @@ Import Num.Theory.
 Local Open Scope ring_scope.
 
 (*so that Next Obligation doesnt introduce variables by itself:*)
-Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
+Global Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
 
 (*
 In this file we develop a simple theory of couplings: their interaction
@@ -79,7 +79,7 @@ Section Weight_preservation.
   f_equal.
   destruct hCoupl as [lH rH]. rewrite -rH. unfold rmg.
   apply boolp.funext. intro x2.
-  rewrite dsndE. reflexivity.
+  rewrite __deprecated__dsndE. reflexivity.
     destruct d as [dd d2 d3 d4]. simpl. assumption.
   Qed.
 
@@ -155,7 +155,7 @@ Section Couplings_vs_ret.
     unfold rmg in rHcoupl. unfold SDistr_unit in rHcoupl.
     assert (rHcoupl1 : dsnd d x2 = dunit (T:=A2) a2 x2).
       rewrite rHcoupl. reflexivity.
-    rewrite (dsndE d x2) (dunit1E a2 x2) in rHcoupl1.
+    rewrite (__deprecated__dsndE d x2) (dunit1E a2 x2) in rHcoupl1.
     assert ((a2==x2 = false)).
       apply /eqP. assumption.
     rewrite H /= in rHcoupl1.
@@ -277,8 +277,8 @@ Section Couplings_vs_bind.
             rewrite <- H1.
             unfold dfst.
             apply distr_ext. intro b.
-            rewrite (dlet_dlet kd (fun x => dunit x.1) dA).
-            rewrite (dlet_dlet _ _ dA).
+            rewrite (__deprecated__dlet_dlet kd (fun x => dunit x.1) dA).
+            rewrite (__deprecated__dlet_dlet _ _ dA).
             apply (@eq_in_dlet _ _ _).
             move => x12 Hsupp b2.
             destruct x12.
@@ -299,8 +299,8 @@ Section Couplings_vs_bind.
             rewrite <- H2.
             unfold dfst.
             apply distr_ext. intro b.
-            rewrite (dlet_dlet kd (fun x => dunit x.2) dA).
-            rewrite (dlet_dlet _ _ dA).
+            rewrite (__deprecated__dlet_dlet kd (fun x => dunit x.2) dA).
+            rewrite (__deprecated__dlet_dlet _ _ dA).
             apply (@eq_in_dlet _ _ _).
             move => x12 Hsupp b2.
             destruct x12.

@@ -5,7 +5,7 @@
 
 
 From Coq Require Import Utf8.
-Require Import ZArith.
+From Coq Require Import ZArith.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr seq all_algebra fintype realsum word.

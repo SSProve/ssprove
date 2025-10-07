@@ -61,7 +61,7 @@ HB.mixin Record HasAction X := {
 #[short(type="actionType")]
 HB.structure Definition Action := { X of HasAction X }.
 
-Arguments rename {_} _%fperm & _.
+Arguments rename {_} _%_fperm & _.
 Implicit Types X Y Z W : actionType.
 Implicit Types π τ : {fperm atom}.
 
@@ -171,7 +171,7 @@ HB.instance Definition _ {X Y} : HasAction (X → Y)
 Definition support_set {X} (x : X) (L : {fset atom})
   := ∀ (π : {fperm atom}), (∀ a, a \in L → π a = a) → π ∙ x = x.
 
-Arguments support_set {_} _ _%fset.
+Arguments support_set {_} _ _%_fset.
 
 (* Does not work with X - probably because of implicit type *)
 HB.mixin Record IsNominal A of HasAction A := {
@@ -273,7 +273,7 @@ Proof.
 Qed.
 
 Lemma adjoin_disc_l {X Y} {D : discType} {f : X → Y → D} :
-  equivariant f → 
+  equivariant f →
   ∀ π x y, f (π ∙ x) y = f x (π^-1 ∙ y).
 Proof.
   intros equi π x y.
@@ -282,7 +282,7 @@ Proof.
 Qed.
 
 Lemma adjoin_disc_r {X Y} {D : discType} {f : X → Y → D} :
-  equivariant f → 
+  equivariant f →
   ∀ π x y, f x (π ∙ y) = f (π^-1 ∙ x) y.
 Proof.
   intros equi π x y.

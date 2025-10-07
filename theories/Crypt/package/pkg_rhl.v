@@ -243,19 +243,19 @@ Proof.
   - unfold coupling. split.
     + unfold lmg. unfold dfst.
       apply distr_ext. intro. simpl.
-      rewrite dlet_dlet.
+      rewrite __deprecated__dlet_dlet.
       simpl.
       unfold SDistr_bind, SDistr_unit.
-      rewrite dlet_dlet.
+      rewrite __deprecated__dlet_dlet.
       apply dlet_f_equal. intro.
       apply distr_ext. intro.
       rewrite dlet_unit. rewrite dlet_unit. simpl. reflexivity.
     + unfold rmg. unfold dsnd.
       apply distr_ext. intro. simpl.
-      rewrite dlet_dlet.
+      rewrite __deprecated__dlet_dlet.
       simpl.
       unfold SDistr_bind, SDistr_unit.
-      rewrite dlet_dlet.
+      rewrite __deprecated__dlet_dlet.
       apply dlet_f_equal. intro.
       apply distr_ext. intro.
       rewrite dlet_unit. rewrite dlet_unit. simpl. reflexivity.
@@ -1401,19 +1401,19 @@ Proof.
   - unfold coupling. split.
     + unfold lmg. unfold dfst.
       apply distr_ext. intro. simpl.
-      rewrite dlet_dlet.
+      rewrite __deprecated__dlet_dlet.
       simpl.
       unfold SDistr_bind, SDistr_unit.
-      rewrite dlet_dlet.
+      rewrite __deprecated__dlet_dlet.
       apply dlet_f_equal. intro.
       apply distr_ext. intro.
       rewrite dlet_unit. rewrite dlet_unit. simpl. reflexivity.
     + unfold rmg. unfold dsnd.
       apply distr_ext. intro. simpl.
-      rewrite dlet_dlet.
+      rewrite __deprecated__dlet_dlet.
       simpl.
       unfold SDistr_bind, SDistr_unit.
-      rewrite dlet_dlet.
+      rewrite __deprecated__dlet_dlet.
       apply dlet_f_equal. intro.
       apply distr_ext. intro.
       rewrite dlet_unit. rewrite dlet_unit. simpl. reflexivity.
@@ -2466,7 +2466,7 @@ Section Uniform_prod.
     intros A B C f g u.
     apply distr_ext. simpl. intro z.
     unfold SDistr_bind. unfold SDistr_unit.
-    rewrite dlet_dlet.
+    rewrite __deprecated__dlet_dlet.
     eapply eq_in_dlet. 2:{ intro. reflexivity. }
     intros x hx y.
     rewrite dlet_unit. reflexivity.
