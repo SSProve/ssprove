@@ -30,7 +30,7 @@ Import GroupScope GRing.Theory.
 Import Num.Def.
 Import Num.Theory.
 Import Order.POrderTheory.
-Require Import Btauto.
+From Coq Require Import Btauto.
 
 Import PackageNotation.
 
@@ -50,7 +50,7 @@ Create HintDb nominal_db.
 
 #[export] Hint Extern 10 (alpha _ _) =>
   reflexivity : nominal_db.
-  
+
 Lemma rename_alpha {X : actionType} (O : X) π : π ∙ O ≡ O.
 Proof.
   exists (π^-1)%fperm.
@@ -113,10 +113,10 @@ Proof.
   erewrite <- absorb in subsx.
   rewrite -> equi2_use in subsx.
   2: apply subsE.
-  eapply fdisjoint_trans.
+  eapply fdisjointSl.
   1: apply subsx.
   rewrite fdisjointC.
-  eapply fdisjoint_trans.
+  eapply fdisjointSl.
   1: apply subsy.
   apply fresh_disjoint.
 Qed.
@@ -133,7 +133,7 @@ Proof.
   intros E D1 D2.
   rewrite disjC.
   change (f y z) with (uncurry f (y, z)).
-  eapply fdisjoint_trans.
+  eapply fdisjointSl.
   + eapply supp_fsubset.
     intros π [x' y'].
     rewrite //= (equi2_use _ E) //.

@@ -7,7 +7,7 @@ From SSProve.Crypt Require Import SubDistr.
 
 
 (*so that Next Obligation doesnt introduce variables by itself:*)
-Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
+Local Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
 
 (*
 In this file we pack pairs of free probabilistic computations into a

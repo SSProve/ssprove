@@ -1,3 +1,11 @@
+# TODO: remove once 8.20 support is removed.
+-arg -w -arg -deprecated-from-Coq
+-arg -w -arg -deprecated-dirpath-Coq
+# TODO: remove once 2.2.0 support is removed.
+-arg -w -arg -deprecated-since-mathcomp-2.3.0
+# TODO: remove once 2.3.0 support is removed.
+-arg -w -arg -deprecated-since-mathcomp-2.4.0
+
 -Q theories SSProve
 
 theories/Mon/Base.v

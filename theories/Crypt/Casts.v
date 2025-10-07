@@ -2,7 +2,9 @@ Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-forma
 From mathcomp Require Import ssreflect ssrbool ssrnat choice fintype eqtype all_algebra.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 
+Set Warnings "-notation-overridden,-hiding-delimiting-key".
 From Coq Require Import ZArith.
+Set Warnings "notation-overridden,hiding-delimiting-key".
 From extructures Require Import ord fmap.
 From SSProve.Crypt Require Import Prelude.
 From mathcomp Require Import word_ssrZ word.

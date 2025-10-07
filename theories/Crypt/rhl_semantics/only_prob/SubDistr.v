@@ -8,7 +8,7 @@ From SSProve.Crypt Require Import ChoiceAsOrd Axioms.
 Import Num.Theory.
 Import Order.POrderTheory.
 
-Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
+Global Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
 
 (*
 In this file we define/prove the (relative) monad of subdistributions.
@@ -126,7 +126,7 @@ Section Relmon_equations.
     intros A B C f g.
     simpl in f. simpl in g. simpl.
     apply boolp.funext. intro de. symmetry.
-    apply distr_ext. intro c. simpl. apply dlet_dlet.
+    apply distr_ext. intro c. simpl. apply __deprecated__dlet_dlet.
   Qed.
 
 End Relmon_equations.

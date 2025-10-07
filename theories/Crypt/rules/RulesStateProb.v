@@ -6,10 +6,10 @@ From SSProve.Mon Require Import SPropMonadicStructures SpecificationMonads Monad
 From SSProve.Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples Commutativity GenericRulesSimple.
 
-Set Warnings "-notation-overridden,-ambiguous-paths".
+Set Warnings "-notation-overridden,-ambiguous-paths,-notation-incompatible-prefix".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
   finset finmap.finmap xfinmap .
-Set Warnings "notation-overridden,ambiguous-paths".
+Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-prefix".
 
 From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings Theta_dens
   Theta_exCP LaxComp FreeProbProg RelativeMonadMorph_prod
@@ -142,10 +142,10 @@ Lemma d_inv_coupling {A1 A2} {c1 : SDistr A1} {c2 : SDistr A2}
 Proof.
   unfold coupling. split.
   - unfold lmg. unfold d_inv.
-    apply distr_ext. move=> x. erewrite (dfst_dswap d).
+    apply distr_ext. move=> x. erewrite (__deprecated__dfst_dswap d).
     destruct d_coupling as [lH rH]. rewrite -rH. unfold rmg. reflexivity.
   - unfold rmg. unfold d_inv.
-    apply distr_ext. move=> x. erewrite (dsnd_dswap d).
+    apply distr_ext. move=> x. erewrite (__deprecated__dsnd_dswap d).
     destruct d_coupling as [lH rH]. rewrite -lH. unfold lmg. reflexivity.
 Qed.
 
@@ -629,7 +629,7 @@ Proof.
     case (A k); intuition; by rewrite ler01. }
   rewrite H4.
   assert ((fun x : Y * S2 => (B x)%:R * dsnd d x) = (fun y : Y * S2 => (B y)%:R * psum (fun w => d (w, y)))) as HeqH12.
-  { extensionality K. rewrite dsndE. reflexivity. }
+  { extensionality K. rewrite __deprecated__dsndE. reflexivity. }
   rewrite HeqH12.
   unfold F_choice_prod_obj in d.
   assert ((fun y : Y * S2 => (B y)%:R * psum (fun w => d (w, y))) = (fun y : Y * S2 => psum (fun w => (B y)%:R * d (w, y)))) as H5.
@@ -740,14 +740,14 @@ Proof.
   unfold coupling. unfold coupling_self_SDistr. split.
   - unfold lmg. unfold dmargin.
     apply distr_ext. move=> a.
-    rewrite dlet_dlet.
+    rewrite __deprecated__dlet_dlet.
     have coucou:  d a = (\dlet_(y <- d) dunit y) a . rewrite dlet_dunit_id. reflexivity.
     rewrite coucou. f_equal. f_equal.
     apply boolp.funext. move=> y. apply distr_ext. move=> b. rewrite dlet_unit.
     reflexivity.
   - unfold rmg. unfold dmargin.
     apply distr_ext. move=> a.
-    rewrite dlet_dlet.
+    rewrite __deprecated__dlet_dlet.
     have coucou:  d a = (\dlet_(y <- d) dunit y) a . rewrite dlet_dunit_id. reflexivity.
     rewrite coucou. f_equal. f_equal.
     apply boolp.funext. move=> y. apply distr_ext. move=> b. rewrite dlet_unit.
@@ -822,8 +822,8 @@ Lemma dsym_coupling { A B : ord_choiceType } { S1 S2 : choiceType } { d : SDistr
 Proof.
   rewrite /dsym. destruct Hcoupling as [dfst_d dsnd_d]. unfold coupling, lmg, rmg in *.
   subst. split.
-  - apply: distr_ext. exact: dfst_dswap d.
-  - apply: distr_ext. exact: dsnd_dswap d.
+  - apply: distr_ext. exact: __deprecated__dfst_dswap d.
+  - apply: distr_ext. exact: __deprecated__dsnd_dswap d.
 Qed.
 
 Lemma symmetry_rule { A B : ord_choiceType } { S1 S2 : choiceType } { pre post }
@@ -1558,7 +1558,7 @@ Proof.
 (*   rewrite -hlp. *)
 (*   rewrite psum_pair. reflexivity. *)
 (*   Unshelve<. *)
-  apply interchange_psum.
+  apply __admitted__interchange_psum.
 {
   move=> x0.
   unshelve eapply eq_summable.

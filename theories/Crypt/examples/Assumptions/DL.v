@@ -6,10 +6,10 @@
 
 From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
 
+Set Warnings "-notation-overridden,-ambiguous-paths,-notation-incompatible-format".
 From mathcomp Require Import all_ssreflect all_algebra reals distr
   fingroup.fingroup realsum ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice
   seq.
-
 Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-format".
 
 From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
@@ -84,7 +84,7 @@ Module DL (DLP : DLParams) (GP : GroupParam).
   Definition DL_loc : Locations := [ fmap secret_loc ].
 
   Definition DL_E := [
-        interface 
+        interface
             #val #[ set_up ] : 'unit → 'group ;
             #val #[ guess ] : 'group → 'bool
   ].
@@ -102,7 +102,7 @@ Module DL (DLP : DLParams) (GP : GroupParam).
         #def #[ guess ] (y: 'group) : 'bool
         {
             o_x ← get secret_loc ;;
-            match o_x with 
+            match o_x with
             | Some x => ret(fto (g^+x) == y)
             | _ => ret false
             end

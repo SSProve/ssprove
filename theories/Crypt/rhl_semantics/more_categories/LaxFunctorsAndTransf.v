@@ -6,7 +6,7 @@ From mathcomp Require Import all_ssreflect boolp.
 Set Warnings "notation-overridden".
 From SSProve.Crypt Require Import Axioms.
 
-Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
+Global Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
 
 (*
 This file defines lax functors and lax natural transformations which are

@@ -11,7 +11,7 @@ Set Universe Polymorphism.
 
 Section CartesianCategory.
   Reserved Notation "A ⨰ B" (at level 65).
-  Reserved Notation "⟪ f | g ⟫" (at level 50).
+  Reserved Notation "⟪ f | g ⟫" (at level 0).
 
   Program Definition functor_const {C D : category} (X : D) : functor C D :=
     mkFunctor (fun=> X) (fun _ _ f => Id X) _ _ _.

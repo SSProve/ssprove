@@ -14,7 +14,7 @@ Local Open Scope ring_scope.
 
 
 (*so that Next Obligation doesnt introduce variables by itself:*)
-Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
+Global Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
 
 
 (*

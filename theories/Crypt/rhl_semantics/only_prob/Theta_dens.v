@@ -12,7 +12,7 @@ Import Num.Theory.
 Local Open Scope ring_scope.
 
 (*so that Next Obligation doesnt introduce variables by itself:*)
-Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
+Global Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
 
 (*In this file we define a relative monad morphism between
 - Pairs of probabilistic computations written in a free way
@@ -119,7 +119,7 @@ Section Unary_effobs.
     rewrite dlet_unit. reflexivity.
     (*bind is mapped to bind ?*)
     apply distr_ext. intro b.
-    unfold SDistr_bind. rewrite dlet_dlet. f_equal. f_equal.
+    unfold SDistr_bind. rewrite __deprecated__dlet_dlet. f_equal. f_equal.
     apply boolp.funext. intro x.  pose (fromIH := IH x).
     apply fromIH.
   Qed.

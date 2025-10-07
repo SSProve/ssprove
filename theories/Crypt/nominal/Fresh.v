@@ -115,7 +115,7 @@ Proof.
   move => x y.
   unfold disj.
   intros H.
-  eapply fdisjoint_trans.
+  eapply fdisjointSl.
   + by apply supp_fsubset.
   + apply H.
 Qed.
@@ -186,7 +186,7 @@ Proof.
   rewrite /neu atomizeK ltnn // in H''.
 Qed.
 
-  
+
 Lemma neuE {A B} : (B :<=: A)%fset → neu A \notin B.
 Proof.
   move => /fsubsetP H.
@@ -233,7 +233,7 @@ Proof.
   rewrite 2!fsetSuppU 2!fsetSupp1.
   rewrite (equi2_use _ fsetU_equi) supp_equi IH //.
 Qed.
-  
+
 Lemma offset_mono {A B : {fset atom}}
   : (A :<=: B)%fset → offset A <= offset B.
 Proof.
@@ -321,7 +321,7 @@ Open Scope fset.
 Definition split_fun (f g : {fperm atom}) (F : {fset atom})
   := λ x, if x \in F then f x else g x.
 
-Definition split_pi (f g : {fperm atom}) (F G : {fset atom}) := 
+Definition split_pi (f g : {fperm atom}) (F G : {fset atom}) :=
   fperm (split_fun f g F) (F :|: G).
 
 Lemma split_fun_inj {f g : {fperm atom}} {F G} :
@@ -434,7 +434,7 @@ Proof.
     eapply (can_inj (addKn _)) in H1.
     by subst.
 Qed.
-  
+
 
 Definition move {X Y : nomType} (x : X) (y : Y) : Y := fresh x y ∙ y.
 Arguments move : simpl never.
@@ -466,7 +466,7 @@ Proof.
   rewrite adjoin_disc_r in H; try apply eq_equi.
   by rewrite renameK in H.
 Qed.
-  
+
 Lemma move_disj {X Y : nomType} (x : X) (y : Y) : disj x (move x y).
 Proof. apply fresh_disjoint. Qed.
 
@@ -556,7 +556,7 @@ Lemma offset_move {X Y : nomType} {x : X} {y : Y}
 Proof.
   rewrite -(move_equi supp_equi).
   move: (supp y).
-  refine (fset_ind _ _). { 
+  refine (fset_ind _ _). {
     rewrite offset_fset0 addn0.
     rewrite -{2}(maxn0 (offset (supp x))).
     f_equal.

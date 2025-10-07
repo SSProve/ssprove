@@ -31,7 +31,7 @@ Import GroupScope GRing.Theory.
 Import Num.Def.
 Import Num.Theory.
 Import Order.POrderTheory.
-Require Import Btauto.
+From Coq Require Import Btauto.
 
 Import PackageNotation.
 

@@ -618,7 +618,7 @@ Proof.
     case (A k); intuition; by rewrite ler01. }
   rewrite H4.
   assert ((fun x : Y => (B x)%:R * dsnd d x) = (fun y : Y => (B y)%:R * psum (fun w => d (w, y)))) as HeqH12.
-  { extensionality K. rewrite dsndE. reflexivity. }
+  { extensionality K. rewrite __deprecated__dsndE. reflexivity. }
   rewrite HeqH12.
   unfold F_choice_prod_obj in d.
   assert ((fun y : Y => (B y)%:R * psum (fun w : Choice.Pack chX => d (w, y))) = (fun y : Y => psum (fun w : Choice.Pack chX => (B y)%:R * d (w, y)))) as H5.
@@ -726,7 +726,7 @@ Proof.
     case (A k); intuition; by rewrite ler01. }
   rewrite H4.
   assert ((fun x : Y => (B x)%:R * dsnd d x) = (fun y : Y => (B y)%:R * psum (fun w => d (w, y)))) as HeqH12.
-  { extensionality K. rewrite dsndE. reflexivity. }
+  { extensionality K. rewrite __deprecated__dsndE. reflexivity. }
   rewrite HeqH12.
   unfold F_choice_prod_obj in d.
   assert ((fun y : Y => (B y)%:R * psum (fun w : Choice.Pack chX => d (w, y))) = (fun y : Y => psum (fun w : Choice.Pack chX => (B y)%:R * d (w, y)))) as H5.
