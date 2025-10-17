@@ -15,7 +15,8 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
-From SSProve.Crypt Require Import NominalPrelude.
+From SSProve.Crypt Require Import NominalPrelude
+  TotalProbability HybridArgument.
 Import PackageNotation.
 #[local] Open Scope package_scope.
 
@@ -173,16 +174,14 @@ Proof.
       by eapply r_ret.
 Qed.
 
-Lemma OT_CPA_elgamal (A : nom_package)
-  `{ValidPackage (loc A) (I_CPA elgamal) A_export A} :
+Lemma OT_CPA_elgamal {A} `{IsAdversary (I_CPA elgamal) A} :
   AdvOf (OT_CPA elgamal) A = AdvOf (LDDH G) (A ∘ RED).
 Proof. rewrite (AdvOf_perfect PK_OTSR_RED_DDH_perfect) Adv_reduction //. Qed.
 
 (* One-to-Many hybrid reduction package *)
-Notation OTM n := (SLIDE elgamal n%N ∘ (ID (I_CPA elgamal) || Stat.RAND (Stat.unif n%N)))%sep.
+Notation OTM n := (SLIDE elgamal n%N ∘ (ID (I_CPA elgamal) || RAND (unif n%N)))%sep.
 
-Lemma MT_CPA_elgamal n (A : nom_package)
-  `{ValidPackage (loc A) (I_CPA elgamal) A_export A} :
+Lemma MT_CPA_elgamal n {A} `{IsAdversary (I_CPA elgamal) A} :
   AdvOf (MT_CPA elgamal n) A = (AdvOf (LDDH G) (A ∘ OTM n ∘ RED) *+ n)%R.
 Proof.
   rewrite Adv_MT_CPA_OT.
@@ -192,4 +191,4 @@ Qed.
 
 End ElGamal.
 
-Definition OT_CPA_elgamal_Z3 := OT_CPA_elgamal Z3.
+Definition OT_CPA_elgamal_Z3 := @OT_CPA_elgamal Z3.

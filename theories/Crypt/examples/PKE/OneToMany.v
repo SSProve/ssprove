@@ -15,7 +15,8 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
-From SSProve.Crypt Require Import NominalPrelude Stat.
+From SSProve.Crypt Require Import NominalPrelude
+  TotalProbability HybridArgument.
 Import PackageNotation.
 #[local] Open Scope package_scope.
 
@@ -289,14 +290,13 @@ Qed.
 (* One-to-Many hybrid reduction package *)
 Notation OTM n := (SLIDE n%N ∘ (ID (I_CPA P) || RAND (unif n%N)))%sep.
 
-Theorem Adv_MT_CPA_OT n (A : nom_package)
-  `{ValidPackage (loc A) (I_CPA P) A_export A} :
+Theorem Adv_MT_CPA_OT n A `{IsAdversary (I_CPA P) A} :
   AdvOf (MT_CPA P n) A = AdvOf (OT_CPA P) (A ∘ OTM n) *+ n.
 Proof.
-  eapply testing_hybrid.
-  1-4: ssprove_valid.
+  eapply @Adv_hybrid.
+  1-4: intros; ssprove_valid.
   1-2: apply: PK_CPA_SLIDE_perfect.
-  intros i; apply: SLIDE_succ_perfect.
+  intros i _; apply: SLIDE_succ_perfect.
 Qed.
 
 End OneToMany.

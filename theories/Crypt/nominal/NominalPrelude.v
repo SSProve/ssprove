@@ -98,6 +98,15 @@ Notation "x ← 'getSome' n ;; c" :=
   format "x  ←  getSome  n  ;;  '//' c")
   : package_scope.
 
+Notation IsAdversary I A :=
+  (ValidPackage (loc A) I A_export A%sep) (only parsing).
+
+Notation IsGame E G :=
+  (ValidPackage (loc G) Game_import E G%sep) (only parsing).
+
+Notation IsPackage I E P :=
+  (ValidPackage (loc P) I E P%sep) (only parsing).
+
 
 (* Light and uniform notation for interface, packages and calls. *)
 (* The basic shape of a signature is `[ f ] : { A ~> B }`, where
