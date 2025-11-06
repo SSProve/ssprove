@@ -297,6 +297,13 @@ Qed.
 Lemma par_emptyR : forall G, par G emptym = G.
 Proof. now setoid_rewrite unionm0. Qed.
 
+Lemma par_emptyR' : forall G, par G (ID emptym) = G.
+Proof.
+  cbn.
+  replace ((ID_raw emptym)) with (emptym : raw_package) by now apply eq_fmap.
+  now setoid_rewrite unionm0.
+Qed.
+
 Lemma Advantage_par_emptyR :
   ∀ G₀ G₁ A,
   AdvantageE (par G₀ emptym) (par G₁ emptym) A = AdvantageE G₀ G₁ A.
@@ -327,8 +334,8 @@ Proof.
     2: fmap_solve.
     rewrite link_id // id_link //.
   }
-  replace (ID Game_import) with (emptym : raw_package) by now apply eq_fmap.
-  rewrite -Advantage_link !Advantage_par_emptyR //.
+  rewrite -Advantage_link.
+  rewrite !par_emptyR' //.
 Qed.
 
 Lemma Advantage_sym :

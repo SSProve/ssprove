@@ -390,7 +390,7 @@ Proof.
   erewrite code_link_par_left ; [ reflexivity |  | apply H1 ].
   eapply valid_injectMap.
   1: apply H.
-  apply (valid_imports LA IA EA A H0 n (S1; T1; f1) x).
+  apply (@valid_imports LA IA EA A H0 n (S1; T1; f1) x).
   apply e.
 Qed.
 
@@ -415,7 +415,7 @@ Proof.
   erewrite code_link_par_right ; [ reflexivity | assumption |  | apply H2 ].
   eapply valid_injectMap.
   1: apply H.
-  apply (valid_imports LA IA EA A H1 n (S1; T1; f1) x).
+  apply (@valid_imports LA IA EA A H1 n (S1; T1; f1) x).
   apply e.
 Qed.
 
