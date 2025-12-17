@@ -24,7 +24,7 @@ Import PackageNotation.
 #[local] Open Scope package_scope.
 
 
-Definition unif (n : nat) : rand nat :=
+Definition unif (n : nat) : dist nat :=
   {code x ← sample uniform n ;; ret (nat_of_ord x) }.
 
 #[export] Instance Lossless_unif n `{Lt 0 n} : LosslessCode (unif n).
@@ -64,9 +64,9 @@ Proof.
   destruct n.
   1: rewrite GRing.mulr0n big_nil //.
   rewrite -> TotalProbability; try exact _.
-  rewrite Pr_rand_sample dlet_dlet.
+  rewrite Pr_fst_sample dlet_dlet.
   under dlet_f_equal.
-  1: intros x; rewrite Pr_rand_ret; rewrite dlet_unit_ext; over.
+  1: intros x; rewrite Pr_fst_ret; rewrite dlet_unit_ext; over.
   rewrite dlet_uniform.
   rewrite -eq_sum_sum.
   rewrite -(GRing.Theory.mulr_natr (_ / _)%R n.+1).
@@ -100,7 +100,7 @@ Proof.
   - rewrite 2!big_nat.
     apply eq_bigr => i /andP [_ H].
     rewrite <- sep_link_assoc.
-    by apply Adv_Pr, IH.
+    by apply perfect_Pr, IH.
   - f_equal. apply eq_bigr => i _.
     by rewrite <- sep_link_assoc.
 Qed.

@@ -22,88 +22,6 @@ Import PackageNotation.
 #[local] Open Scope package_scope.
 
 
-Section PrRandLemmas.
-  (* Pr_rand *)
-  Definition Pr_rand {T} (c : raw_code T ) : distr R T
-    := dfst (Pr_code c emptym).
-
-  Lemma Pr_rand_ret {A : choiceType} {x : A} :
-    Pr_rand (ret x) = dunit x.
-  Proof. rewrite /Pr_rand Pr_code_ret /(dfst _) dlet_unit_ext //. Qed.
-
-  Lemma Pr_rand_sample {A : choiceType} {op' : Op} {k : Arit op' → raw_code A} :
-    Pr_rand (x ← sample op' ;; k x) = \dlet_(x <- op'.π2) Pr_rand (k x).
-  Proof.  rewrite /Pr_rand Pr_code_sample /(dfst _) dlet_dlet_ext //. Qed.
-
-  Lemma Pr_Pr_rand {G} :
-    Pr G true = Pr_rand (resolve G RUN tt) true.
-  Proof.
-    unfold Pr, SDistr_bind, SDistr_unit, Pr_op, Pr_rand, dfst.
-    by apply dlet_f_equal => [[b h]].
-  Qed.
-
-  Lemma Pr_code_rand {T T' : choiceType} {c} {f : T → raw_code T'} {h}
-    : ValidCode emptym [interface] c
-    → Pr_code (x ← c ;; f x) h
-    = \dlet_(x <- Pr_rand c) Pr_code (f x) h.
-  Proof.
-    elim.
-    2-4: intros; exfalso; eapply fhas_empty; eassumption.
-    - intros x => /=.
-      rewrite /Pr_rand Pr_code_ret /(dfst _) 2!dlet_unit_ext //.
-    - intros op k VA IH => /=.
-      rewrite /Pr_rand 2!Pr_code_sample.
-      rewrite 2!dlet_dlet_ext.
-      f_equal; extensionality x.
-      rewrite IH dlet_dlet_ext //.
-  Qed.
-End PrRandLemmas.
-
-Section LosslessCodeLemmas.
-
-  Class LosslessCode {A} (c : raw_code A) :=
-    lossless : psum (Pr_rand c) = 1%R.
-
-  #[export] Instance Lossless_ret {A : choiceType} (a : A)
-    : LosslessCode (ret a).
-  Proof.
-    rewrite /LosslessCode Pr_rand_ret.
-    apply Couplings.psum_SDistr_unit.
-  Qed.
-
-  #[export] Instance Lossless_sample {A} D (k : _ → raw_code A)
-    : LosslessOp D
-    → (∀ x, LosslessCode (k x))
-    → LosslessCode (x ← sample D ;; k x).
-  Proof.
-    intros H IH. unfold LosslessCode.
-    rewrite Pr_rand_sample.
-    under eq_psum.
-    { intros x. rewrite dletE. over. }
-    rewrite interchange_psum.
-    2: intros x; apply summable_mu_wgtd; intros y.
-    2: apply /andP; split; [ done | apply le1_mu1 ].
-    2: eapply eq_summable.
-    2: intros x; rewrite -dletE; reflexivity.
-    2: apply summable_mu.
-    rewrite -H.
-    apply eq_psum => x.
-    rewrite psumZ // IH GRing.mulr1 //.
-  Qed.
-End LosslessCodeLemmas.
-
-
-Lemma Adv_Pr {I} {G G' A : nom_package} `{ValidPackage (loc A) I A_export A} :
-  perfect I G G' → Pr' (A ∘ G)%sep true = Pr' (A ∘ G')%sep true.
-Proof.
-  intros H'.
-  apply GRing.Theory.subr0_eq.
-  apply Num.Theory.normr0_eq0.
-  eapply (H' _ H).
-Qed.
-
-Notation rand c := (code emptym [interface] c).
-
 (* PICK game *)
 
 Definition pick := 57.
@@ -118,7 +36,7 @@ Definition PICK {T : choice_type} (x : T) : game (IPICK T) :=
 
 Definition cell T : Location := mkloc 58 (None : 'option T).
 
-Definition RAND {T : choice_type} (c : rand T)
+Definition RAND {T : choice_type} (c : dist T)
   : game (IPICK T) :=
   [package [fmap cell T] ;
     [ pick ] : { 'unit ~> T } 'tt {
@@ -136,7 +54,7 @@ Definition RAND {T : choice_type} (c : rand T)
 Section TotalProbability.
 
 Context {T : choice_type}.
-Context (c : rand T).
+Context (c : dist T).
 
 
 Lemma Pr_code_RAND_Some {LA} {T'} {A : raw_code T'} {f f' : T} {h} :
@@ -185,7 +103,7 @@ Lemma Pr_code_RAND {LA} {T'} {A : raw_code T'} {h} :
   ValidCode LA (IPICK T) A →
   get_heap h (cell T) = None →
   Pr_code (code_link A (RAND c)) h
-    = \dlet_(f <- Pr_rand c) Pr_code (code_link A (RAND {code ret f})) h.
+    = \dlet_(f <- Pr_fst c) Pr_code (code_link A (RAND {code ret f})) h.
 Proof.
   intros SEP LL VA H'.
   apply distr_ext.
@@ -241,7 +159,7 @@ Lemma Pr_RAND {LA} {A : raw_package} :
   fseparate LA [fmap cell T] →
   LosslessCode c →
   ValidPackage LA (IPICK T) A_export A →
-  Pr (A ∘ RAND c) = \dlet_(x <- Pr_rand c) Pr (A ∘ RAND {code ret x}).
+  Pr (A ∘ RAND c) = \dlet_(x <- Pr_fst c) Pr (A ∘ RAND {code ret x}).
 Proof.
   intros SEP LL VA. apply distr_ext => b.
   rewrite /Pr /SDistr_bind /SDistr_unit /Pr_op resolve_link.
@@ -277,7 +195,7 @@ Qed.
 Lemma TotalProbability {A : nom_package} :
   LosslessCode c →
   ValidPackage (loc A) (IPICK T) A_export A →
-  Pr' (A ∘ RAND c)%sep true = (\dlet_(x <- Pr_rand c) Pr' (A ∘ PICK x)%sep) true.
+  Pr' (A ∘ RAND c)%sep true = (\dlet_(x <- Pr_fst c) Pr' (A ∘ PICK x)%sep) true.
 Proof.
   intros LC VA.
   pose (π := fresh (as_nom (RAND c), [fmap cell T] : Locations) (A, loc A)).
@@ -289,7 +207,7 @@ Proof.
   rewrite 2!dletE.
   apply eq_psum => x.
   f_equal.
-  rewrite -(Adv_Pr (PICK_dirac_perfect _)).
+  rewrite -(perfect_Pr (PICK_dirac_perfect _)).
   rewrite -{2}(@rename_alpha _ A π).
   rewrite {1}/Pr' -link_sep_link // /disj.
   change (supp (as_nom (RAND {code ret x})))

@@ -200,6 +200,10 @@ Lemma perfect_trans {I G G' G''}
   : perfect I G G' → perfect I G' G'' → perfect I G G''.
 Proof. intros H1 H2 A VA. rewrite (Adv_perfect_l H1) H2 //. Qed.
 
+Lemma perfect_Pr {I} {G G' A : nom_package} `{ValidPackage (loc A) I A_export A} :
+  perfect I G G' → Pr' (A ∘ G)%sep true = Pr' (A ∘ G')%sep true.
+Proof. intros Hperf. apply subr0_eq, normr0_eq0. by apply Hperf. Qed.
+
 Lemma prove_perfect {E} {G G' : nom_package}
   `{V  : ValidPackage (loc G) Game_import E G}
   `{V' : ValidPackage (loc G') Game_import E G'}

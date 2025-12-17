@@ -26,14 +26,10 @@ Record scheme :=
   ; Pub : choice_type
   ; Mes : choice_type
   ; Cip : choice_type
-  ; sample_Cip :
-      code emptym [interface] Cip
-  ; keygen :
-      code emptym [interface] (Sec × Pub)
-  ; enc : ∀ (k : Pub) (m : Mes),
-      code emptym [interface] Cip
-  ; dec : ∀ (k : Sec) (c : Cip),
-      code emptym [interface] Mes
+  ; sample_Cip : dist Cip
+  ; keygen : dist (Sec × Pub)
+  ; enc : Pub → Mes → dist Cip
+  ; dec : Sec → Cip → dist Mes
   }.
 
 Section Defs.

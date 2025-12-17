@@ -62,6 +62,10 @@ Section DistrLemmas.
     \dlet_(y <- dunit v) f y = f v.
   Proof. apply distr_ext, dlet_unit. Qed.
 
+  Lemma dfst_dlet_commut (t : distr R T) (f : T → distr R (U * V)%type) :
+    dfst (\dlet_(x <- t) f x) = \dlet_(x <- t) dfst (f x).
+  Proof. apply distr_ext => ?. by rewrite dmarginE dlet_dlet. Qed.
+
   Lemma dlet_dlet_ext {t : distr R T}
     {f1 : T → distr R U} {f2 : U → distr R V} :
     \dlet_(x <- \dlet_(y <- t) f1 y) f2 x
@@ -76,6 +80,7 @@ Section DistrLemmas.
     → \dlet_(x <- m) f x = \dlet_(x <- m) g x.
   Proof. intros H. by apply distr_ext, dlet_f_equal. Qed.
 End DistrLemmas.
+
 
 Section PrCodeLemmas.
   Lemma Pr_Pr_code {G} :
@@ -128,6 +133,99 @@ Section PrCodeLemmas.
   Lemma Pr_code_fail {T} {h} : Pr_code (@fail T) h = dnull.
   Proof. rewrite Pr_code_sample dlet_null_ext //. Qed.
 End PrCodeLemmas.
+
+Notation dist c := (code emptym [interface] c).
+
+Section PrFstLemmas.
+  Definition Pr_fst {T} (c : raw_code T) : distr R T
+    := dfst (Pr_code c emptym).
+
+  Lemma Pr_fst_ret {A : choiceType} {x : A} :
+    Pr_fst (ret x) = dunit x.
+  Proof. rewrite /Pr_fst Pr_code_ret /(dfst _) dlet_unit_ext //. Qed.
+
+  Lemma Pr_fst_sample {A : choiceType} {op' : Op} {k : Arit op' → raw_code A} :
+    Pr_fst (x ← sample op' ;; k x) = \dlet_(x <- op'.π2) Pr_fst (k x).
+  Proof.  rewrite /Pr_fst Pr_code_sample /(dfst _) dlet_dlet_ext //. Qed.
+
+  Lemma Pr_Pr_fst {G} :
+    Pr G true = Pr_fst (resolve G RUN tt) true.
+  Proof.
+    unfold Pr, SDistr_bind, SDistr_unit, Pr_op, Pr_fst, dfst.
+    by apply dlet_f_equal => [[b h]].
+  Qed.
+
+  Lemma Pr_code_rand {T T' : choiceType} {c} {f : T → raw_code T'} {h}
+    : ValidCode emptym [interface] c
+    → Pr_code (x ← c ;; f x) h
+    = \dlet_(x <- Pr_fst c) Pr_code (f x) h.
+  Proof.
+    elim.
+    2-4: intros; exfalso; eapply fhas_empty; eassumption.
+    - intros x => /=.
+      rewrite /Pr_fst Pr_code_ret /(dfst _) 2!dlet_unit_ext //.
+    - intros op k VA IH => /=.
+      rewrite /Pr_fst 2!Pr_code_sample 2!dlet_dlet_ext.
+      f_equal; extensionality x.
+      rewrite IH dlet_dlet_ext //.
+  Qed.
+
+  Lemma Pr_fst_bind {T T' : choiceType} {c} {f : T → raw_code T'}
+    : ValidCode emptym [interface] c
+    → Pr_fst (x ← c ;; f x)
+    = \dlet_(x <- Pr_fst c) Pr_fst (f x).
+  Proof.
+    intros VA.
+    rewrite /Pr_fst Pr_code_rand 2!dmarginE 2!dlet_dlet_ext.
+    by rewrite /Pr_fst dmarginE dlet_dlet_ext.
+  Qed.
+End PrFstLemmas.
+
+Section LosslessCodeLemmas.
+  Context {A : choiceType}.
+
+  Class LosslessCode (c : raw_code A) :=
+    lossless : psum (Pr_fst c) = 1%R.
+
+  #[export] Instance Lossless_ret (a : A)
+    : LosslessCode (ret a).
+  Proof.
+    rewrite /LosslessCode Pr_fst_ret.
+    apply Couplings.psum_SDistr_unit.
+  Qed.
+
+  #[export] Instance Lossless_sample D (k : _ → raw_code A)
+    : LosslessOp D
+    → (∀ x, LosslessCode (k x))
+    → LosslessCode (x ← sample D ;; k x).
+  Proof.
+    intros H IH. unfold LosslessCode.
+    rewrite Pr_fst_sample.
+    under eq_psum.
+    { intros x. rewrite dletE. over. }
+    rewrite interchange_psum.
+    2: intros x; apply summable_mu_wgtd; intros y.
+    2: apply /andP; split; [ done | apply le1_mu1 ].
+    2: eapply eq_summable.
+    2: intros x; rewrite -dletE; reflexivity.
+    2: apply summable_mu.
+    rewrite -H.
+    apply eq_psum => x.
+    rewrite psumZ // IH GRing.mulr1 //.
+  Qed.
+
+  #[export] Instance Lossless_if b (c1 c2 : raw_code A) :
+    LosslessCode c1 → LosslessCode c2 → LosslessCode (if b then c1 else c2).
+  Proof. by destruct b. Qed.
+
+  Lemma Pr_fstC {T : choiceType} {c : raw_code A} {mu : distr R T}
+    : LosslessCode c → \dlet_(_ <- Pr_fst c) mu = mu.
+  Proof.
+    intros Hpsum. apply distr_ext => ?.
+    by rewrite dletC pr_predT Hpsum GRing.mul1r.
+  Qed.
+End LosslessCodeLemmas.
+
 
 (* Code as nominal *)
 
