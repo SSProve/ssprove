@@ -24,16 +24,30 @@ From SSProve.Crypt.examples.PKE Require Import Scheme.
 Import PKE.
 
 
+Notation "x ← 'get' n [ i ] ;; c" :=
+    ( y ← get n ;;
+      #assert isSome (y i) as Hi ;;
+      let x := getSome (y i) Hi in c )
+    (at level 100, n at next level, right associativity,
+    format "x  ←  get  n  [  i  ]  ;;  '//' c")
+    : package_scope.
+
+Notation "'#put' n [ i ] ':=' u ;; c" :=
+    ( y ← get n ;; #put n := setm y i u ;; c )
+    (at level 100, u at next level, right associativity,
+    format "#put  n  [  i  ]  :=  u  ;;  '//' c")
+    : package_scope.
+
+
 Section MultiInstanceDef.
 
 Context (P : scheme) (n : nat).
-Let idx := 'fin n.
 
 (* Multi-CPA *)
 Definition I_MCPA :=
   [interface
-    [ GEN ] : { idx ~> P.(Pub) } ;
-    [ QUERY ] : { idx × P.(Mes) ~> P.(Cip) }
+    [ GEN ] : { 'fin n ~> P.(Pub) } ;
+    [ QUERY ] : { 'fin n × P.(Mes) ~> P.(Cip) }
   ].
 
 Definition pks_loc := mkloc 51 (emptym : chMap nat P.(Pub)).
@@ -41,16 +55,13 @@ Definition pks_loc := mkloc 51 (emptym : chMap nat P.(Pub)).
 Definition MCPA b :
   game I_MCPA :=
   [package [fmap pks_loc ] ;
-    [ GEN ] : { idx ~> P.(Pub) } (i) {
+    [ GEN ] : { 'fin n ~> P.(Pub) } (j) {
       '(_, pk) ← P.(keygen) ;;
-      pks ← get pks_loc ;;
-      #put pks_loc := setm pks i pk ;;
+      #put pks_loc [ j ] := pk ;;
       ret pk
     } ;
-    [ QUERY ] : { idx × P.(Mes) ~> P.(Cip) } '(i, m) {
-      pks ← get pks_loc ;;
-      #assert isSome (pks i) as Hi ;;
-      let pk := getSome (pks i) Hi in
+    [ QUERY ] : { 'fin n × P.(Mes) ~> P.(Cip) } '(j, m) {
+      pk ← get pks_loc [ j ] ;;
       if b then
         P.(enc) pk m
       else
@@ -63,15 +74,15 @@ Definition counts_loc := mkloc 52 (emptym : chMap nat nat).
 Definition MCOUNT q :
   package I_MCPA I_MCPA :=
   [package [fmap counts_loc ] ;
-    [ GEN ] : { idx ~> P.(Pub) } (j) {
-      pk ← call [ GEN ] : { idx ~> P.(Pub) } j ;;
+    [ GEN ] : { 'fin n ~> P.(Pub) } (j) {
+      pk ← call [ GEN ] : { 'fin n ~> P.(Pub) } j ;;
       ret pk
     } ;
-    [ QUERY ] : { idx × P.(Mes) ~> P.(Cip) } '(j, m) {
+    [ QUERY ] : { 'fin n × P.(Mes) ~> P.(Cip) } '(j, m) {
       counts ← get counts_loc ;;
       let countj := odflt 0 (counts j) in
       #assert (countj < q)%N ;;
-      c ← call [ QUERY ] : { idx × P.(Mes) ~> P.(Cip) } (j, m) ;;
+      c ← call [ QUERY ] : { 'fin n × P.(Mes) ~> P.(Cip) } (j, m) ;;
       #put counts_loc := setm counts j countj.+1 ;;
       ret c
     }
@@ -97,17 +108,14 @@ Definition HMCPA q :
           '(_, pk) ← P.(keygen) ;;
           ret pk
       ) ;;
-      pks ← get pks_loc P ;;
-      #put pks_loc P := setm pks j pk ;;
+      #put pks_loc P [ j ] := pk ;;
       ret pk
     } ;
     [ QUERY ] : { 'fin n × P.(Mes) ~> P.(Cip) } '(j, m) {
       counts ← get counts_loc ;;
       let countj := odflt 0 (counts j) in
       #assert (countj < q)%N ;;
-      pks ← get pks_loc P ;;
-      #assert isSome (pks j) as Hi ;;
-      let pk := getSome (pks j) Hi in
+      pk ← get pks_loc P [ j ] ;;
       i ← call [pick] : { unit ~> nat } tt ;;
       c ← (
         if (j < i)%N then
