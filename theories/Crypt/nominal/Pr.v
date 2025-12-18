@@ -155,7 +155,7 @@ Section PrFstLemmas.
     by apply dlet_f_equal => [[b h]].
   Qed.
 
-  Lemma Pr_code_rand {T T' : choiceType} {c} {f : T → raw_code T'} {h}
+  Lemma Pr_code_fst {T T' : choiceType} {c} {f : T → raw_code T'} {h}
     : ValidCode emptym [interface] c
     → Pr_code (x ← c ;; f x) h
     = \dlet_(x <- Pr_fst c) Pr_code (f x) h.
@@ -176,7 +176,7 @@ Section PrFstLemmas.
     = \dlet_(x <- Pr_fst c) Pr_fst (f x).
   Proof.
     intros VA.
-    rewrite /Pr_fst Pr_code_rand 2!dmarginE 2!dlet_dlet_ext.
+    rewrite /Pr_fst Pr_code_fst 2!dmarginE 2!dlet_dlet_ext.
     by rewrite /Pr_fst dmarginE dlet_dlet_ext.
   Qed.
 End PrFstLemmas.

@@ -27,12 +27,6 @@ Import PackageNotation.
 Definition unif (n : nat) : dist nat :=
   {code x ← sample uniform n ;; ret (nat_of_ord x) }.
 
-#[export] Instance Lossless_unif n `{Lt 0 n} : LosslessCode (unif n).
-Proof.
-  apply Lossless_sample; [| exact _ ].
-  by apply LosslessOp_uniform.
-Qed.
-
 Lemma eq_sum_sum {n} {F : nat → R} :
   (\sum_i F (@nat_of_ord n i)
   = \sum_(0 <= i < n) F i)%R.

@@ -118,7 +118,7 @@ Proof.
     simplify_linking.
     rewrite Pr_code_get H'.
     rewrite bind_assoc.
-    rewrite Pr_code_rand.
+    rewrite Pr_code_fst.
     apply dlet_f_equal => x.
     rewrite Pr_code_put.
     simplify_linking.
