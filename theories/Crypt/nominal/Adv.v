@@ -38,7 +38,11 @@ Import PackageNotation.
 Definition Pr' (P : nom_package) := Pr (val P).
 
 Definition Adv (G G' A : nom_package) : R
-  := `| Pr' (A ∘ G)%sep true - Pr' (A ∘ G')%sep true |.
+  := locked `| Pr' (A ∘ G)%sep true - Pr' (A ∘ G')%sep true |.
+
+Lemma AdvE G G' A
+  : Adv G G' A = `| Pr' (A ∘ G)%sep true - Pr' (A ∘ G')%sep true |.
+Proof. by rewrite /Adv -lock. Qed.
 
 Add Parametric Morphism : val with
   signature alpha ==> alpha as val_mor.
@@ -54,13 +58,13 @@ Proof. intros ? ? E1 ? ? E2 ? ? E3. by rewrite /Adv E1 E2 E3. Qed.
 
 Lemma Adv_triangle {G1 G2 G3 : nom_package} A
   : Adv G1 G3 A <= Adv G1 G2 A + Adv G2 G3 A.
-Proof. apply Advantage_triangle. Qed.
+Proof. rewrite /Adv 3!sep_linkE -3!lock. apply Advantage_triangle. Qed.
 
 Lemma Adv_same (G A : nom_package) : Adv G G A = 0.
-Proof. rewrite /Adv addrN. rewrite normr0 //. Qed.
+Proof. rewrite AdvE addrN. rewrite normr0 //. Qed.
 
 Lemma Adv_sym (G G' A : nom_package) : Adv G G' A = Adv G' G A.
-Proof. apply: distrC. Qed.
+Proof. rewrite 2!AdvE. apply: distrC. Qed.
 
 Lemma Adv_alpha (G G' A : nom_package)
   : G ≡ G' → Adv G G' A = 0.
@@ -85,8 +89,8 @@ Lemma Adv_AdvantageE (G G' A : nom_package) :
   Adv G G' A = AdvantageE G G' A.
 Proof.
   intros D1 D2.
-  unfold Adv, AdvantageE.
-  rewrite link_sep_link ?link_sep_link //.
+  rewrite AdvE /AdvantageE.
+  by rewrite link_sep_link ?link_sep_link.
 Qed.
 
 Lemma supp_prod {X Y : nomType} (x : X) (y : Y)
@@ -202,7 +206,7 @@ Proof. intros H1 H2 A VA. rewrite (Adv_perfect_l H1) H2 //. Qed.
 
 Lemma perfect_Pr {I} {G G' A : nom_package} `{ValidPackage (loc A) I A_export A} :
   perfect I G G' → Pr' (A ∘ G)%sep true = Pr' (A ∘ G')%sep true.
-Proof. intros Hperf. apply subr0_eq, normr0_eq0. by apply Hperf. Qed.
+Proof. intros Hperf. apply subr0_eq, normr0_eq0. by rewrite -Hperf /Adv -lock. Qed.
 
 Lemma prove_perfect {E} {G G' : nom_package}
   `{V  : ValidPackage (loc G) Game_import E G}

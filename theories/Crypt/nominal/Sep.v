@@ -194,14 +194,17 @@ Qed.
 (* sep_link *)
 
 Definition sep_link (P P' : nom_package)
-  := share_link P (move P P').
+  := locked (share_link P (move P P')).
 
 Notation "p1 ∘ p2" :=
   (sep_link p1 p2) (right associativity, at level 20) : sep_scope.
 
+Lemma sep_linkE P P' : sep_link P P' = share_link P (move P P').
+Proof. by rewrite /sep_link -lock. Qed.
+
 Add Parametric Morphism : sep_link with
   signature alpha ==> alpha ==> alpha as sep_link_mor.
-Proof. eauto 6 with nominal_db. Qed.
+Proof. intros. rewrite 2!sep_linkE. eauto 6 with nominal_db. Qed.
 
 Lemma valid_sep_link_weak :
   ∀ I M1 M2 E P1 P2,
@@ -209,7 +212,7 @@ Lemma valid_sep_link_weak :
     ValidPackage (loc P2) I M2 P2 →
     fsubmap M1 M2 →
     ValidPackage (loc (P1 ∘ P2)%sep) I E (P1 ∘ P2)%sep.
-Proof. intros.
+Proof. intros. rewrite sep_linkE.
   eapply valid_link_weak.
   1,4: eassumption.
   1: unfold move; by apply rename_valid.
@@ -228,8 +231,7 @@ Lemma share_link_sep_link {P P' : nom_package} :
   disj P P' →
   (P ∘ P')%share ≡ (P ∘ P').
 Proof.
-  intros D.
-  unfold sep_link, move.
+  intros D. rewrite sep_linkE /move.
   auto with nominal_db nocore.
 Qed.
 
@@ -246,21 +248,21 @@ Qed.
 Lemma sep_link_id {I E} P `{ValidPackage (loc P) I E P}
   : P ∘ ID I ≡ P.
 Proof.
-  rewrite /sep_link /move -{3}(share_link_id P).
+  rewrite sep_linkE /move -{3}(share_link_id P).
   eauto with nominal_db nocore.
 Qed.
 
 Lemma id_sep_link {I E} P `{V : ValidPackage (loc P) I E P}
   : ID E ∘ P ≡ P.
 Proof.
-  rewrite /sep_link /move id_share_link.
+  rewrite sep_linkE /move id_share_link.
   eauto with nominal_db nocore.
 Qed.
 
 Lemma sep_link_assoc (p1 p2 p3 : nom_package)
   : p1 ∘ p2 ∘ p3 ≡ (p1 ∘ p2) ∘ p3.
 Proof.
-  rewrite /sep_link /move (equi2_use _ equi_share_link) share_link_assoc.
+  rewrite 4!sep_linkE /move (equi2_use _ equi_share_link) share_link_assoc.
   eauto 20 with nominal_db nocore.
 Qed.
 
@@ -268,16 +270,18 @@ Qed.
 (* sep_par *)
 
 Definition sep_par (P P' : nom_package)
-  := share_par P (move P P').
+  := locked (share_par P (move P P')).
 
 Notation "p1 || p2" :=
   (sep_par p1 p2) : sep_scope.
 
+Lemma sep_parE P P' : sep_par P P' = share_par P (move P P').
+Proof. by rewrite /sep_par -lock. Qed.
+
 Add Parametric Morphism : sep_par with
   signature alpha ==> alpha ==> alpha as sep_par_mor.
 Proof.
-  intros P P' EP Q Q' EQ.
-  unfold sep_par, move.
+  intros. rewrite 2!sep_parE /move.
   auto with nominal_db nocore.
 Qed.
 
@@ -288,7 +292,7 @@ Lemma valid_sep_par {I1 I2 E1 E2} {p1 p2 : nom_package} :
   ValidPackage (loc (p1 || p2)%sep)
     (unionm I1 I2) (unionm E1 E2) (p1 || p2)%sep.
 Proof.
-  intros. unfold sep_par. apply valid_par; try done.
+  intros. rewrite sep_parE. apply valid_par; try done.
   1: unfold move; by apply rename_valid.
   apply fseparate_compat.
   rewrite fseparate_disj //=.
@@ -305,8 +309,7 @@ Lemma share_par_sep_par {P P' : nom_package} :
   disj P P' →
   (P || P')%share ≡ (P || P').
 Proof.
-  intros D.
-  unfold sep_par, move.
+  intros D. rewrite sep_parE /move.
   auto with nominal_db nocore.
 Qed.
 
@@ -353,7 +356,7 @@ Qed.
 Lemma sep_par_commut (p1 p2 : nom_package)
   : fseparate (val p1) (val p2) → (p1 || p2) ≡ (p2 || p1).
 Proof.
-  intros H. unfold sep_par, move.
+  intros H. rewrite 2!sep_parE /move.
   rewrite share_par_commut.
   all: auto with nominal_db nocore.
 Qed.
@@ -361,7 +364,7 @@ Qed.
 Lemma sep_par_assoc {P1 P2 P3 : nom_package}
   : (P1 || (P2 || P3)) ≡ ((P1 || P2) || P3).
 Proof.
-  rewrite /sep_par /move (equi2_use _ equi_share_par) share_par_assoc.
+  rewrite 4!sep_parE /move (equi2_use _ equi_share_par) share_par_assoc.
   auto with nominal_db nocore.
 Qed.
 
@@ -372,7 +375,7 @@ Lemma sep_interchange {A B C D E F} (p1 p2 p3 p4 : nom_package)
   (p1 ∘ p3) || (p2 ∘ p4) ≡ (p1 || p2) ∘ (p3 || p4).
 Proof.
   intros  P34.
-  rewrite /sep_par /sep_link /move
+  rewrite 3!sep_parE 3!sep_linkE /move
     (equi2_use _ equi_share_par) (equi2_use _ equi_share_link) share_interchange.
   all: auto 10 with nominal_db nocore.
 Qed.

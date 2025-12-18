@@ -82,7 +82,7 @@ Lemma Adv_PICK_hybrid {I} {n} {A R R'}
 Proof.
   intros IH.
   do 2 (rewrite -> Adv_sym; symmetry).
-  rewrite /Adv -Num.Theory.normrMn.
+  rewrite 2!AdvE -Num.Theory.normrMn.
   rewrite <- (@GRing.mulr_natr Axioms.R).
   rewrite GRing.mulrBl.
   do 2 rewrite -> (@GRing.mulr_natr Axioms.R).
