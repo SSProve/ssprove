@@ -15,11 +15,11 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
-From SSProve.Crypt Require Import NominalPrelude.
+From SSProve.Crypt Require Import NominalPrelude TotalProbability HybridArgument.
 Import PackageNotation.
 #[local] Open Scope package_scope.
 
-From SSProve.Crypt.examples.PKE Require Import Scheme CyclicGroup LDDH.
+From SSProve.Crypt.examples.PKE Require Import Scheme CyclicGroup LDDH OneToMany MultiInstance.
 
 Import PKE GroupScope.
 #[local] Open Scope F_scope.
@@ -170,10 +170,27 @@ Proof.
       by eapply r_ret.
 Qed.
 
-Theorem OT_CPA_elgamal (A : adversary (I_CPA elgamal)) :
+Theorem OT_CPA_elgamal {A} `{VA : ValidPackage (loc A) (I_CPA elgamal) A_export A} :
   AdvOf (OT_CPA elgamal) A = AdvOf (LDDH G) (A ∘ RED).
 Proof. rewrite (AdvOf_perfect PK_OTSR_RED_DDH_perfect) Adv_reduction //. Qed.
 
+
+(* One-to-Many hybrid reduction package *)
+Notation OTM q := (SLIDE elgamal q%N ∘ (ID (I_CPA elgamal) || RAND (unif q%N)))%sep.
+
+Lemma MT_CPA_elgamal q {A} `{ValidPackage (loc A) (I_CPA elgamal) A_export A} :
+  AdvOf (MT_CPA elgamal q) A = (AdvOf (LDDH G) (A ∘ OTM q ∘ RED) *+ q)%R.
+Proof. by rewrite Adv_MT_CPA_OT 3!sep_link_assoc OT_CPA_elgamal. Qed.
+
+
+(* Single-to-Multi hybrid reduction package *)
+Notation STM n q := (HMCPA elgamal n q ∘ (ID (I_CPA elgamal) || RAND (unif n)))%sep.
+
+Lemma MI_MT_CPA_elgamal n q {A} `{ValidPackage (loc A) (I_MCPA elgamal n) A_export A} :
+  AdvOf (λ b, MCOUNT elgamal n q ∘ MCPA elgamal n b)%sep A
+    = (AdvOf (LDDH G) (A ∘ STM n q ∘ OTM q ∘ RED) *+ q *+ n)%R.
+Proof. by rewrite Adv_MI_CPA_SI MT_CPA_elgamal -sep_link_assoc. Qed.
+
 End ElGamal.
 
-Definition OT_CPA_elgamal_Z3 := OT_CPA_elgamal Z3.
+Definition OT_CPA_elgamal_Z3 := @OT_CPA_elgamal Z3.
