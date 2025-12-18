@@ -693,18 +693,12 @@ Ltac remember_pre_fold :=
 
 Ltac ssprove_restore_pre :=
   update_pre_fold ;
-  eapply r_restore_pre ; [
-    cbn
-  | idtac
-  ].
+  eapply r_restore_pre.
 
 Ltac ssprove_restore_mem :=
   update_pre_fold ;
   remember_pre_fold ;
-  eapply r_restore_mem ; [
-    cbn
-  | idtac
-  ].
+  eapply r_restore_mem.
 
 Ltac get_heap_simpl :=
   repeat

@@ -250,7 +250,7 @@ Proof.
     ssprove_restore_mem;
       last by apply: r_ret.
     ssprove_invariant.
-    by rewrite -?subnE subSnn.
+    by rewrite ltnn.
   - move /eqP /negPf in Heq.
     rewrite Heq /=.
     destruct (count < i) eqn:Hlt.
@@ -260,8 +260,6 @@ Proof.
     all: ssprove_restore_mem;
       last by apply: r_ret.
     all: ssprove_invariant.
-    + rewrite eqnE 2!subn_eq0 ltnW //. auto.
-    + rewrite eqnE 2!subn_eq0 Hlt //.
 Qed.
 
 (**
@@ -296,7 +294,7 @@ Proof.
     ssprove_restore_mem;
       last by apply: r_ret.
     ssprove_invariant.
-    by rewrite -?subnE subSnn.
+    by rewrite ltnn.
   - move /eqP /negPf in Heq.
     rewrite Heq /=.
     destruct (count < i) eqn:Hlt.
@@ -308,8 +306,6 @@ Proof.
     all: ssprove_restore_mem;
       last by apply: r_ret.
     all: ssprove_invariant.
-    + rewrite eqnE 2!subn_eq0 ltnW //. auto.
-    + rewrite eqnE 2!subn_eq0 Hlt //.
 Qed.
 
 Local Open Scope ring_scope.
