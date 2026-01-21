@@ -33,30 +33,23 @@ Definition elgamal : scheme := {|
   ; Pub := 'el G
   ; Mes := 'el G
   ; Cip := 'el G × 'el G
-  ; sample_Cip :=
-    {code
+  ; sample_Cip := {code
       c₁ ← sample uniform #|el G| ;;
       c₂ ← sample uniform #|el G| ;;
-      ret (c₁, c₂)
-    }
-  ; keygen :=
-    {code
+      ret (c₁, c₂) }
+  ; keygen := {code
       sk ← sample uniform #|exp G| ;;
-      ret (sk, 'g ^ sk)
-    }
-  ; enc := λ pk m,
-    {code
+      ret (sk, 'g ^ sk) }
+  ; enc := λ pk m, {code
       r ← sample uniform #|exp G| ;;
-      ret ('g ^ r, m * (pk ^ r))
-    }
+      ret ('g ^ r, m * (pk ^ r)) }
   ; dec := λ sk '(c₁, c₂),
-    {code
-      ret (c₂ * (c₁ ^- sk))
-    }
+      Some (c₂ * (c₁ ^- sk))
   |}.
 
-Theorem correct_elgamal
-  : perfect (I_CORR elgamal) (CORR0 elgamal) (CORR1 elgamal).
+Theorem correct_elgamal :
+  perfect (ICORR elgamal)
+    (CORR0 elgamal) (CORR1 elgamal).
 Proof.
   eapply prove_perfect.
   apply eq_rel_perf_ind_eq.
@@ -104,7 +97,7 @@ Proof.
 Qed.
 
 Definition RED :
-  package (I_LDDH G) (I_CPA elgamal) :=
+  package (I_LDDH G) (ICPA elgamal) :=
   [package [fmap count_loc ; mpk_loc elgamal ] ;
     [ GEN ] 'tt {
       pk ← call [ GETA ] tt ;;
@@ -128,7 +121,7 @@ Notation inv0 := (
 ).
 
 Lemma PK_OTSR_RED_DDH_perfect b :
-  perfect (I_CPA elgamal) (OT_CPA elgamal b) (RED ∘ LDDH G b).
+  perfect (ICPA elgamal) (OT_CPA elgamal b) (RED ∘ LDDH G b).
 Proof.
   ssprove_share. eapply prove_perfect.
   eapply (eq_rel_perf_ind _ _ inv0).
@@ -170,26 +163,45 @@ Proof.
       by eapply r_ret.
 Qed.
 
-Theorem OT_CPA_elgamal {A} `{VA : ValidPackage (loc A) (I_CPA elgamal) A_export A} :
+#[local] Open Scope sep_scope.
+#[local] Open Scope ring_scope.
+
+Lemma OT_CPA_elgamal_LDDH {A} `{Adversary (ICPA elgamal) A} :
   AdvOf (OT_CPA elgamal) A = AdvOf (LDDH G) (A ∘ RED).
 Proof. rewrite (AdvOf_perfect PK_OTSR_RED_DDH_perfect) Adv_reduction //. Qed.
 
+Notation EG_RED := (RED ∘ RDDH G).
+
+
+Lemma OT_CPA_elgamal {A}
+  `{Adversary (ICPA elgamal) A} :
+  AdvOf (OT_CPA elgamal) A =
+    AdvOf (DDH G) (A ∘ EG_RED).
+Proof. by rewrite OT_CPA_elgamal_LDDH LDDH_DDH -sep_link_assoc. Qed.
+
 
 (* One-to-Many hybrid reduction package *)
-Notation OTM q := (SLIDE elgamal q%N ∘ (ID (I_CPA elgamal) || RAND (unif q%N)))%sep.
+Notation OTM P q := (SLIDE P q
+  ∘ (ID (ICPA P) || RAND (unif q))).
 
-Lemma MT_CPA_elgamal q {A} `{ValidPackage (loc A) (I_CPA elgamal) A_export A} :
-  AdvOf (MT_CPA elgamal q) A = (AdvOf (LDDH G) (A ∘ OTM q ∘ RED) *+ q)%R.
-Proof. by rewrite Adv_MT_CPA_OT 3!sep_link_assoc OT_CPA_elgamal. Qed.
+Lemma MT_CPA_elgamal q {A}
+  `{Adversary (ICPA elgamal) A} :
+  AdvOf (MT_CPA elgamal q) A =
+    AdvOf (DDH G)
+      ((A ∘ OTM elgamal q) ∘ EG_RED) *+ q.
+Proof. by rewrite Adv_MT_CPA_OT OT_CPA_elgamal. Qed.
 
 
 (* Single-to-Multi hybrid reduction package *)
-Notation STM n q := (HMCPA elgamal n q ∘ (ID (I_CPA elgamal) || RAND (unif n)))%sep.
+Notation STM P n q := (HYB_MI_CPA P n q
+  ∘ (ID (ICPA P) || RAND (unif n))).
 
-Lemma MI_MT_CPA_elgamal n q {A} `{ValidPackage (loc A) (I_MCPA elgamal n) A_export A} :
-  AdvOf (λ b, MCOUNT elgamal n q ∘ MCPA elgamal n b)%sep A
-    = (AdvOf (LDDH G) (A ∘ STM n q ∘ OTM q ∘ RED) *+ q *+ n)%R.
-Proof. by rewrite Adv_MI_CPA_SI MT_CPA_elgamal -sep_link_assoc. Qed.
+Theorem MI_MT_CPA_elgamal n q {A}
+  `{Adversary (IMI_CPA elgamal n) A} :
+  AdvOf (MI_MT_CPA elgamal n q) A =
+    AdvOf (DDH G) (((A ∘ STM elgamal n q)
+      ∘ OTM elgamal q) ∘ EG_RED) *+ q *+ n.
+Proof. by rewrite Adv_MI_CPA_SI MT_CPA_elgamal. Qed.
 
 End ElGamal.
 

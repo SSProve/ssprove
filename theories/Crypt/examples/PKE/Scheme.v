@@ -15,8 +15,10 @@ Set Primitive Projections.
 
 From SSProve Require Import NominalPrelude.
 
+#[local] Open Scope nat.
 Import PackageNotation.
 #[local] Open Scope package_scope.
+#[local] Open Scope sep_scope.
 
 
 Module PKE.
@@ -29,59 +31,56 @@ Record scheme :=
   ; sample_Cip : dist Cip
   ; keygen : dist (Sec × Pub)
   ; enc : Pub → Mes → dist Cip
-  ; dec : Sec → Cip → dist Mes
+  ; dec : Sec → Cip → option Mes
   }.
 
 Section Defs.
-  Context (P : scheme).
+  Definition ENCDEC := 0.
 
-  Definition ENCDEC := 0%N.
+  Definition ICORR P :=
+    [interface [ ENCDEC ] : { P.(Mes) ~> option P.(Mes) } ].
 
-  Definition I_CORR :=
-    [interface [ ENCDEC ] : { P.(Mes) ~> P.(Mes) } ].
-
-  Definition CORR0 :
-    game I_CORR :=
+  Definition CORR0 P :
+    game (ICORR P) :=
     [package emptym ;
-      [ ENCDEC ] : { P.(Mes) ~> P.(Mes) } (m) {
+      [ ENCDEC ] : { P.(Mes) ~> option P.(Mes) } (m) {
         '(sk, pk) ← P.(keygen) ;;
         c ← P.(enc) pk m ;;
-        m' ← P.(dec) sk c ;;
-        ret m'
+        ret (P.(dec) sk c)
       }
     ].
 
-  Definition CORR1 :
-    game I_CORR :=
+  Definition CORR1 P :
+    game (ICORR P) :=
     [package emptym ;
-      [ ENCDEC ] : { P.(Mes) ~> P.(Mes) } (m) {
-        ret m
+      [ ENCDEC ] : { P.(Mes) ~> option P.(Mes) } (m) {
+        ret (Some m)
       }
     ].
 
   Definition CORR b := if b then CORR0 else CORR1.
 
 
-  Definition mpk_loc := mkloc 1 (None : option P.(Pub)).
-  Definition GEN := 0%N.
-  Definition QUERY := 1%N.
+  Definition mpk_loc P := mkloc 1 (None : option P.(Pub)).
+  Definition GEN := 0.
+  Definition QUERY := 1.
 
-  Definition I_CPA :=
+  Definition ICPA P :=
     [interface
       [ GEN ] : { 'unit ~> P.(Pub) } ;
       [ QUERY ] : { P.(Mes) ~> P.(Cip) }
     ].
 
-  Definition CPA b :
-    game I_CPA :=
-    [package [fmap mpk_loc ] ;
+  Definition CPA P b :
+    game (ICPA P) :=
+    [package [fmap mpk_loc P ] ;
       [ GEN ] : { 'unit ~> P.(Pub) } 'tt {
         '(_, pk) ← P.(keygen) ;;
-        #put mpk_loc := Some pk ;;
+        #put mpk_loc P := Some pk ;;
         ret pk
       } ;
       [ QUERY ] : { P.(Mes) ~> P.(Cip) } (m) {
-        pk ← getSome mpk_loc ;;
+        pk ← getSome mpk_loc P ;;
         if b then
           P.(enc) pk m
         else
@@ -91,24 +90,22 @@ Section Defs.
 
   Definition count_loc := mkloc 142 (0 : 'nat).
 
-  Definition COUNT n :
-    package (I_CPA) (I_CPA) :=
+  Definition COUNT P n :
+    package (ICPA P) (ICPA P) :=
     [package [fmap count_loc ] ;
-      [ GEN ] : { 'unit ~> P.(Pub) } 'tt {
-        pk ← call [ GEN ] : { 'unit ~> P.(Pub) } tt ;;
-        ret pk
+      [ GEN ] : { 'unit ~> P.(Pub) } (_) {
+        call [ GEN ] : { 'unit ~> P.(Pub) } tt
       } ;
       [ QUERY ] : { P.(Mes) ~> P.(Cip) } (m) {
         count ← get count_loc ;; 
-        #assert (count < n)%N ;;
+        #assert (count < n) ;;
         #put count_loc := count.+1 ;;
-        c ← call [ QUERY ] : { P.(Mes) ~> P.(Cip) } m ;;
-        ret c
+        call [ QUERY ] : { P.(Mes) ~> P.(Cip) } m
       }
     ].
 End Defs.
 
-Notation MT_CPA P n := (λ b, COUNT P n ∘ CPA P b)%sep.
-Notation OT_CPA P := (λ b, COUNT P 1 ∘ CPA P b)%sep.
+Notation MT_CPA P n := (λ b, COUNT P n ∘ CPA P b).
+Notation OT_CPA P := (λ b, COUNT P 1 ∘ CPA P b).
 
 End PKE.

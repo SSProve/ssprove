@@ -24,13 +24,15 @@ Import PackageNotation.
 
 (* PICK game *)
 
-Definition pick := 57.
+Definition PICK := 57.
 
-Definition IPICK T := [interface [ pick ] : { 'unit ~> T }].
+Definition IPICK T :=
+  [interface [ PICK ] : { unit ~> T }].
 
-Definition PICK {T : choice_type} (x : T) : game (IPICK T) :=
+Definition CONST {T : choice_type} (x : T)
+  : game (IPICK T) :=
   [package emptym ;
-    [ pick ] : { 'unit ~> T } 'tt {
+    [ PICK ] (_) {
       ret x
     } ].
 
@@ -39,15 +41,14 @@ Definition cell T : Location := mkloc 58 (None : 'option T).
 Definition RAND {T : choice_type} (c : dist T)
   : game (IPICK T) :=
   [package [fmap cell T] ;
-    [ pick ] : { 'unit ~> T } 'tt {
+    [ PICK ] (_) {
       mr ← get cell T ;;
-      match mr with
-      | Some r => ret r
-      | None =>
+      if mr is Some(r) then
+        ret r
+      else
         r ← c ;;
         #put cell T := Some r ;;
         ret r
-      end
     } ].
 
 
@@ -172,8 +173,8 @@ Proof.
   rewrite resolve_link => //.
 Qed.
 
-Lemma PICK_dirac_perfect (x : T) :
-  perfect (IPICK T) (RAND {code ret x}) (PICK x).
+Lemma CONST_dirac_perfect (x : T) :
+  perfect (IPICK T) (RAND {code ret x}) (CONST x).
 Proof.
   eapply prove_perfect.
   apply (eq_rel_perf_ind _ _ (heap_ignore [fmap cell T]
@@ -192,12 +193,17 @@ Proof.
     by apply r_ret.
 Qed.
 
-Lemma TotalProbability {A : nom_package} :
-  LosslessCode c →
-  ValidPackage (loc A) (IPICK T) A_export A →
-  Pr' (A ∘ RAND c)%sep true = (\dlet_(x <- Pr_fst c) Pr' (A ∘ PICK x)%sep) true.
+End TotalProbability.
+
+#[local] Open Scope sep_scope.
+
+Theorem TotalProbability {T : choice_type}
+  (c : dist T) `{LosslessCode T c}
+  {A} `{Adversary (IPICK T) A} :
+  Pr' (A ∘ RAND c) true =
+    (\dlet_(x <- Pr_fst c)
+      Pr' (A ∘ CONST x)) true.
 Proof.
-  intros LC VA.
   pose (π := fresh (as_nom (RAND c), [fmap cell T] : Locations) (A, loc A)).
   rewrite -{1}(@rename_alpha _ A π).
   rewrite {1}/Pr' -link_sep_link.
@@ -207,12 +213,10 @@ Proof.
   rewrite 2!dletE.
   apply eq_psum => x.
   f_equal.
-  rewrite -(perfect_Pr (PICK_dirac_perfect _)).
+  rewrite -(perfect_Pr (CONST_dirac_perfect _)).
   rewrite -{2}(@rename_alpha _ A π).
   rewrite {1}/Pr' -link_sep_link // /disj.
   change (supp (as_nom (RAND {code ret x})))
     with (supp ([fmap cell T] : Locations)).
   eauto with nominal_db.
 Qed.
-
-End TotalProbability.

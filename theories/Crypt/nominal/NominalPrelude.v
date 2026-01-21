@@ -138,26 +138,18 @@ Notation "[ f ] ' p { e }" :=
   format "[ f ]  ' p  { '[' '/'  e  '/' ']' }")
   : package_scope.
 
-Notation "y ← 'call' [ f ] : { A ~> B } x ;; c" :=
-  (opr (mkopsig f A B) x (λ y, c))
-  (at level 100, x at next level, right associativity,
-  format "y  ←  call  [ f ]  :  { A  ~>  B }  x  ;;  '//' c")
+Notation "'call' [ f ] : { A ~> B } x" :=
+  (opr (mkopsig f A B) x (λ y, ret y))
+  (at level 99, x at next level, right associativity,
+  format "call  [ f ]  :  { A  ~>  B }  x")
   : package_scope.
 
-Notation "y ← 'call' [ f ] x ;; c" :=
-  (opr (mkopsig f _ _) x (λ y, c))
-  (at level 100, x at next level, right associativity,
-  format "y  ←  call  [ f ]  x  ;;  '//' c")
+Notation "'call' [ f ] x" :=
+  (opr (mkopsig f _ _) x (λ y, ret y))
+  (at level 99, x at next level, right associativity,
+  format "call  [ f ]  x")
   : package_scope.
 
-Notation "' p ← 'call' [ f ] : { A ~> B } x ;; c" :=
-  (opr (mkopsig f A B) x (λ p, c))
-  (at level 100, p pattern, x at next level, right associativity,
-  format "' p  ←  call  [ f ]  :  { A  ~>  B }  x  ;;  '//' c")
-  : package_scope.
-
-Notation "' p ← 'call' [ f ] x ;; c" :=
-  (opr (mkopsig f _ _) x (λ p, c))
-  (at level 100, p pattern, x at next level, right associativity,
-  format "' p  ←  call  [ f ]  x  ;;  '//' c")
-  : package_scope.
+Notation Package I E P := (ValidPackage (loc P) I E P%sep).
+Notation Adversary I P := (ValidPackage (loc P) I A_export P %sep).
+Notation Game E P := (ValidPackage (loc P) Game_import E P%sep).

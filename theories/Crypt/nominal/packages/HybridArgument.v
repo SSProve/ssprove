@@ -24,8 +24,8 @@ Import PackageNotation.
 #[local] Open Scope package_scope.
 
 
-Definition unif (n : nat) : dist nat :=
-  {code x ← sample uniform n ;; ret (nat_of_ord x) }.
+Definition unif (n : nat) : dist nat := {code
+  x ← sample uniform n ;; ret (x : nat) }.
 
 Lemma eq_sum_sum {n} {F : nat → R} :
   (\sum_i F (@nat_of_ord n i)
@@ -53,7 +53,7 @@ Qed.
 
 Lemma Pr_RAND_unif {n} {A} `{ValidPackage (loc A) (IPICK nat) A_export A} :
   (Pr' (A ∘ RAND (unif n)) true *+ n
-      = \sum_(0 <= i < n) Pr' (A ∘ @PICK nat i) true)%R.
+      = \sum_(0 <= i < n) Pr' (A ∘ @CONST nat i) true)%R.
 Proof.
   destruct n.
   1: rewrite GRing.mulr0n big_nil //.
@@ -72,12 +72,12 @@ Proof.
   move: (GRing.oner_eq0 R) => /eqP //.
 Qed.
 
-Lemma Adv_PICK_hybrid {I} {n} {A R R'}
+Lemma Adv_CONST_hybrid {I} {n} {A R R'}
   `{VA  : ValidPackage (loc A) I A_export A}
   `{VR  : ValidPackage (loc R) (IPICK nat) I R}
   `{VR' : ValidPackage (loc R') (IPICK nat) I R'}
-  : (∀ i, i < n → perfect I (R' ∘ PICK i) (R ∘ PICK i.+1))
-  → (Adv (R ∘ PICK 0%N) (R ∘ PICK n) A
+  : (∀ i, i < n → perfect I (R' ∘ CONST i) (R ∘ CONST i.+1))
+  → (Adv (R ∘ CONST 0%N) (R ∘ CONST n) A
   = Adv (R ∘ RAND (unif n)) (R' ∘ RAND (unif n)) A *+ n)%R.
 Proof.
   intros IH.
@@ -88,7 +88,7 @@ Proof.
   do 2 rewrite -> (@GRing.mulr_natr Axioms.R).
   symmetry.
   do 2 (rewrite -> sep_link_assoc, Pr_RAND_unif).
-  rewrite <- (GRing.telescope_sumr (fun i => Pr' (A ∘ R ∘ PICK i) true)) => //.
+  rewrite <- (GRing.telescope_sumr (fun i => Pr' (A ∘ R ∘ CONST i) true)) => //.
   rewrite GRing.sumrB.
   do 2 f_equal.
   - rewrite 2!big_nat.
@@ -99,26 +99,48 @@ Proof.
     by rewrite <- sep_link_assoc.
 Qed.
 
-Lemma Adv_hybrid {IMulti IGame} {n : nat} {Multi Game : bool → nom_package}
-  {H A : nom_package} `{VA : ValidPackage (loc A) IMulti A_export A}
-  `{VG : ∀ b, ValidPackage (loc (Game b)) [interface] IGame (Game b)}
-  `{VH : ValidPackage (loc H) (unionm IGame (IPICK 'nat)) IMulti H}
-  : perfect IMulti (Multi true) (H ∘ (Game true || PICK 0))
-  → perfect IMulti (Multi false) (H ∘ (Game true || PICK n))
-  → (∀ i : 'nat, i < n →
-    perfect IMulti (H ∘ (Game false || PICK i )) (H ∘ (Game true || PICK i.+1)))
-  → AdvOf Multi A = (AdvOf Game (A ∘ H ∘ (ID IGame || RAND (unif n))) *+ n)%R.
+#[local] Open Scope ring_scope.
+#[local] Open Scope nat_scope.
+
+(*
+Lemma Adv_hybrid {IMULTI IGAME} {n : nat}
+  {MULTI GAME : bool → nom_package} {H A}
+  `{VA : Adversary IMULTI A}
+  `{VG : ∀ b, Game IGAME (GAME b)}
+  `{VH : Package
+    (unionm IGAME (IPICK nat)) IMULTI H}
+  : perfect IMULTI (MULTI true)
+      (H ∘ (GAME true || CONST 0))
+  → perfect IMULTI (MULTI false)
+      (H ∘ (GAME true || CONST n))
+  → (∀ i : nat, i < n →
+      perfect IMULTI
+        (H ∘ (GAME false || CONST i ))
+        (H ∘ (GAME true  || CONST i.+1)))
+  → AdvOf MULTI A =
+      AdvOf GAME (A ∘ H ∘
+        (ID IGAME || RAND (unif n))) *+ n.
+ *)
+
+Lemma Adv_hybrid {IMULTI IGAME} {n : nat}
+  {MULTI GAME : bool → nom_package} {H A} `{VA : Adversary IMULTI A}
+  `{VG : ∀ b, Game IGAME (GAME b)} `{VH : Package (unionm IGAME (IPICK nat)) IMULTI H}
+  : perfect IMULTI (MULTI true) (H ∘ (GAME true || CONST 0))
+  → perfect IMULTI (MULTI false) (H ∘ (GAME true || CONST n))
+  → (∀ i : nat, i < n →
+      perfect IMULTI (H ∘ (GAME false || CONST i )) (H ∘ (GAME true  || CONST i.+1)))
+  → AdvOf MULTI A = AdvOf GAME (A ∘ H ∘ (ID IGAME || RAND (unif n))) *+ n.
 Proof.
   intros p p' p''.
   rewrite (Adv_perfect_l p) (Adv_perfect_r p').
-  rewrite (sep_par_factor_game_l _ (PICK 0)).
-  rewrite (sep_par_factor_game_l _ (PICK n)).
+  rewrite (sep_par_factor_game_l _ (CONST 0)).
+  rewrite (sep_par_factor_game_l _ (CONST n)).
   rewrite 2!sep_link_assoc.
-  erewrite @Adv_PICK_hybrid.
+  erewrite @Adv_CONST_hybrid.
   5: {
     intros i; specialize (p'' i).
-    rewrite (sep_par_factor_game_l _ (PICK i)) in p''.
-    rewrite (sep_par_factor_game_l _ (PICK i.+1)) in p''.
+    rewrite (sep_par_factor_game_l _ (CONST i)) in p''.
+    rewrite (sep_par_factor_game_l _ (CONST i.+1)) in p''.
     do 2 rewrite -> sep_link_assoc in p''.
     exact p''.
   }
@@ -128,8 +150,8 @@ Proof.
   2,3: ssprove_valid.
   erewrite <- sep_par_factor_game_l.
   2,3: ssprove_valid.
-  rewrite (sep_par_factor_game_r (Game true)).
-  rewrite (sep_par_factor_game_r (Game false)).
+  rewrite (sep_par_factor_game_r (GAME true)).
+  rewrite (sep_par_factor_game_r (GAME false)).
   rewrite 2!Adv_reduction sep_link_assoc //.
 Qed.
 

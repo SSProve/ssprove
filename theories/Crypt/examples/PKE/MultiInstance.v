@@ -41,27 +41,24 @@ Notation "'#put' n [ i ] ':=' u ;; c" :=
 
 Section MultiInstanceDef.
 
-Context (P : scheme) (n : nat).
-
 (* Multi-CPA *)
-Definition I_MCPA :=
-  [interface
-    [ GEN ] : { 'fin n ~> P.(Pub) } ;
-    [ QUERY ] : { 'fin n × P.(Mes) ~> P.(Cip) }
-  ].
+Definition IMI_CPA P n := [interface
+  [ GEN ] : { 'fin n ~> P.(Pub) } ;
+  [ QUERY ] : { 'fin n × P.(Mes) ~> P.(Cip) }
+].
 
-Definition pks_loc := mkloc 51 (emptym : chMap nat P.(Pub)).
+Definition pks_loc P := mkloc 51 (emptym : chMap nat P.(Pub)).
 
-Definition MCPA b :
-  game I_MCPA :=
-  [package [fmap pks_loc ] ;
+Definition MI_CPA P n b :
+  game (IMI_CPA P n) :=
+  [package [fmap pks_loc P ] ;
     [ GEN ] : { 'fin n ~> P.(Pub) } (j) {
       '(_, pk) ← P.(keygen) ;;
-      #put pks_loc [ j ] := pk ;;
+      #put pks_loc P [ j ] := pk ;;
       ret pk
     } ;
     [ QUERY ] : { 'fin n × P.(Mes) ~> P.(Cip) } '(j, m) {
-      pk ← get pks_loc [ j ] ;;
+      pk ← get pks_loc P [ j ] ;;
       if b then
         P.(enc) pk m
       else
@@ -71,39 +68,41 @@ Definition MCPA b :
 
 Definition counts_loc := mkloc 52 (emptym : chMap nat nat).
 
-Definition MCOUNT q :
-  package I_MCPA I_MCPA :=
+Definition MI_COUNT P n q :
+  package (IMI_CPA P n) (IMI_CPA P n) :=
   [package [fmap counts_loc ] ;
     [ GEN ] : { 'fin n ~> P.(Pub) } (j) {
-      pk ← call [ GEN ] : { 'fin n ~> P.(Pub) } j ;;
-      ret pk
+      call [ GEN ] : { 'fin n ~> P.(Pub) } j
     } ;
     [ QUERY ] : { 'fin n × P.(Mes) ~> P.(Cip) } '(j, m) {
       counts ← get counts_loc ;;
       let countj := odflt 0 (counts j) in
-      #assert (countj < q)%N ;;
+      #assert countj < q ;;
       c ← call [ QUERY ] : { 'fin n × P.(Mes) ~> P.(Cip) } (j, m) ;;
-      #put counts_loc := setm counts j countj.+1 ;;
+      #put counts_loc :=
+        setm counts j countj.+1 ;;
       ret c
     }
   ].
 
 End MultiInstanceDef.
 
+#[local] Open Scope sep_scope.
+
+Notation MI_MT_CPA P n q :=
+  (λ b, MI_COUNT P n q ∘ MI_CPA P n b).
 
 Section MultiInstance.
 
-Context (P : scheme) (n : nat).
-
-Definition HMCPA q :
-  package (unionm (I_CPA P) (IPICK nat)) (I_MCPA P n) :=
+Definition HYB_MI_CPA P n q :
+  package (unionm (ICPA P) (IPICK nat))
+    (IMI_CPA P n) :=
   [package [fmap pks_loc P ; counts_loc ] ;
     [ GEN ] : { 'fin n ~> P.(Pub) } (j) {
-      i ← call [pick] : { unit ~> nat } tt ;;
+      i ← call [ PICK ] : { unit ~> nat } tt ;;
       pk ← (
         if (i == j)%N then
-          pk ← call [GEN] tt ;;
-          ret pk
+          call [GEN] tt
         else
           '(_, pk) ← P.(keygen) ;;
           ret pk
@@ -116,16 +115,17 @@ Definition HMCPA q :
       let countj := odflt 0 (counts j) in
       #assert (countj < q)%N ;;
       pk ← get pks_loc P [ j ] ;;
-      i ← call [pick] : { unit ~> nat } tt ;;
+      i ← call [ PICK ] : { unit ~> nat } tt ;;
       c ← (
         if (j < i)%N then
           c ← P.(sample_Cip) ;; ret c
         else if (i < j)%N then
           c ← P.(enc) pk m ;; ret c
         else
-          c ← call [QUERY] m ;; ret c
+          call [QUERY] m
       ) ;;
-      #put counts_loc := setm counts j countj.+1 ;;
+      #put counts_loc :=
+        setm counts j countj.+1 ;;
       ret c
     }
   ].
@@ -141,7 +141,7 @@ Proof.
   1,2: intros; exfalso; eapply fhas_empty; eassumption.
 Qed.
 
-Notation inv q := (
+Notation inv P q := (
   heap_ignore ([fmap mpk_loc P ; count_loc ])
   ⋊ couple_rhs (pks_loc P) (mpk_loc P) (λ pks mpk, pks q = mpk)
   ⋊ couple_rhs counts_loc count_loc (λ cs c, odflt 0 (cs q) = c)
@@ -153,12 +153,13 @@ Ltac ssprove_ret :=
 Hint Extern 50 (_ = code_link _ _) =>
   rewrite code_link_scheme : ssprove_code_simpl.
 
-Lemma MCPA_0_n q b : perfect (I_MCPA P n)
-  (MCOUNT P n q ∘ MCPA P n b)
-  (HMCPA q ∘ (MT_CPA P q true || PICK (if b then 0 else n))).
+Lemma MI_CPA_0_n P n q b :
+  perfect (IMI_CPA P n) (MI_MT_CPA P n q b)
+    (HYB_MI_CPA P n q ∘ (MT_CPA P q true ||
+       CONST (if b then 0 else n))).
 Proof.
   ssprove_share. eapply prove_perfect.
-  apply (eq_rel_perf_ind _ _ (inv (if b then 0 else n))).
+  apply (eq_rel_perf_ind _ _ (inv P (if b then 0 else n))).
   { by ssprove_invariant. }
   simplify_eq_rel arg.
   - ssprove_code_simpl.
@@ -227,7 +228,7 @@ Proof.
       by rewrite setmE -(negbK (n == j)%B) neq_ltn ltn_ord orbC.
 Qed.
 
-Notation inv' i := (
+Notation inv' P i := (
   heap_ignore ([fmap mpk_loc P ; count_loc ])
   ⋊ couple_lhs (pks_loc P) (mpk_loc P) (λ pks mpk, pks i%N = mpk)
   ⋊ couple_lhs counts_loc count_loc (λ cs c, odflt 0 (cs i%N) = c)
@@ -238,12 +239,15 @@ Notation inv' i := (
 Lemma eq_succ (k : nat) : (k.+1 == k)%B = false.
 Proof. rewrite gtn_eqF //. Qed.
 
-Lemma MCPA_i q i : perfect (I_MCPA P n)
-  (HMCPA q ∘ (MT_CPA P q false || PICK i   ))
-  (HMCPA q ∘ (MT_CPA P q true  || PICK i.+1)).
+Lemma MI_CPA_i P n q i :
+  perfect (IMI_CPA P n)
+    (HYB_MI_CPA P n q ∘
+      (MT_CPA P q false || CONST i   ))
+    (HYB_MI_CPA P n q ∘
+      (MT_CPA P q true  || CONST i.+1)).
 Proof.
   ssprove_share. eapply prove_perfect.
-  apply (eq_rel_perf_ind _ _ (inv' i)).
+  apply (eq_rel_perf_ind _ _ (inv' P i)).
   { by ssprove_invariant. }
   simplify_eq_rel arg.
   - ssprove_code_simpl.
@@ -340,18 +344,21 @@ Proof.
 Qed.
 
 #[local] Open Scope ring_scope.
+#[local] Open Scope sep_scope.
 
 (* Single-to-Multiple hybrid reduction package *)
-Notation STM q := (HMCPA q%N ∘ (ID (I_CPA P) || RAND (unif n)))%sep.
+Notation STM P n q := (HYB_MI_CPA P n q ∘
+  (ID (ICPA P) || RAND (unif n))).
 
-Theorem Adv_MI_CPA_SI q A `{ValidPackage (loc A) (I_MCPA P n) A_export A} :
-  AdvOf (λ b, MCOUNT P n q ∘ MCPA P n b)%sep A
-    = AdvOf (MT_CPA P q) (A ∘ STM q) *+ n.
+Theorem Adv_MI_CPA_SI P n q A
+  `{Adversary (IMI_CPA P n) A} :
+  AdvOf (MI_MT_CPA P n q) A =
+    AdvOf (MT_CPA P q) (A ∘ STM P n q) *+ n.
 Proof.
   eapply @Adv_hybrid.
   1-4: intros; ssprove_valid.
-  1-2: apply MCPA_0_n.
-  intros i _; apply MCPA_i.
+  1-2: apply MI_CPA_0_n.
+  intros i _; apply MI_CPA_i.
 Qed.
 
 End MultiInstance.

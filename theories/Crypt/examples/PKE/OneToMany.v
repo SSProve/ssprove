@@ -23,45 +23,43 @@ Import PackageNotation.
 From SSProve.Crypt.examples.PKE Require Import Scheme CyclicGroup LDDH.
 
 Import PKE GroupScope.
+#[local] Open Scope nat_scope.
 #[local] Open Scope F_scope.
 
 Section OneToMany.
 
-Context (P : scheme).
-
-Definition mpk_loc' := mkloc 45 (None : option P.(Pub)).
+Definition mpk_loc' P := mkloc 45 (None : option P.(Pub)).
 Definition count_loc' := mkloc 46 (0 : nat).
 
-Definition SLIDE n :
-  package (unionm (I_CPA P) (IPICK nat)) (I_CPA P) :=
-  [package [fmap count_loc' ; mpk_loc' ] ;
+Definition SLIDE P q : package
+    (unionm (ICPA P) (IPICK nat)) (ICPA P) :=
+  [package [fmap count_loc' ; mpk_loc' P ] ;
     [ GEN ] : { 'unit ~> P.(Pub) } 'tt {
-      pk ← call [GEN] tt ;;
-      #put mpk_loc' := Some pk ;;
+      pk ← call [ GEN ] tt ;;
+      #put mpk_loc' P := Some pk ;;
       ret pk
     } ;
     [ QUERY ] : { P.(Mes) ~> P.(Cip) } (m) {
       count ← get count_loc' ;;
-      #assert (count < n)%N ;;
+      #assert (count < q) ;;
       #put count_loc' := count.+1 ;;
-      i ← call [pick] tt ;;
-      pk ← getSome mpk_loc' ;;
-      if (count < i)%N then
+      i ← call [ PICK ] tt ;;
+      pk ← getSome mpk_loc' P ;;
+      if (count < i) then
         c ← P.(sample_Cip) ;; ret c
-      else if (i < count)%N then
+      else if (i < count) then
         c ← P.(enc) pk m ;; ret c
       else
-        c ← call [QUERY] m ;;
-        ret c
+        call [ QUERY ] m
     }
   ].
 
 Definition R (i : 'nat) (c : 'nat) (c' : 'nat)
   := c = (c' > i)%N.
 
-Notation inv i := (
-  heap_ignore ([fmap mpk_loc' ; count_loc ; count_loc' ])
-  ⋊ couple_cross (mpk_loc P) mpk_loc' eq
+Notation inv P i := (
+  heap_ignore ([fmap mpk_loc' P ; count_loc ; count_loc' ])
+  ⋊ couple_cross (mpk_loc P) (mpk_loc' P) eq
   ⋊ couple_cross count_loc count_loc' eq
   ⋊ couple_rhs count_loc count_loc' (R i)
 ).
@@ -77,12 +75,14 @@ Proof.
   1,2: intros; exfalso; eapply fhas_empty; eassumption.
 Qed.
 
-Lemma PK_CPA_SLIDE_perfect {n} b : perfect (I_CPA P)
-  (MT_CPA P n b) (SLIDE n ∘ (OT_CPA P true || PICK (if b then 0 else n))).
+Lemma PK_CPA_SLIDE_perfect {P q} b :
+  perfect (ICPA P) (MT_CPA P q b) (SLIDE P q
+    ∘ (OT_CPA P true ||
+       CONST (if b then 0 else q))).
 Proof.
   ssprove_share.
   eapply prove_perfect.
-  apply (eq_rel_perf_ind _ _ (inv (if b then 0 else n))).
+  apply (eq_rel_perf_ind _ _ (inv P (if b then 0 else q))).
   { by ssprove_invariant. }
   simplify_eq_rel m.
   - destruct m; simpl.
@@ -143,21 +143,24 @@ Proof.
       rewrite /R 2!ltnNge H (ltnW H) //.
 Qed.
 
-Notation inv' i := (
+Notation inv' P i := (
   heap_ignore [fmap count_loc ]
-  ⋊ couple_lhs (mpk_loc P) mpk_loc' eq
-  ⋊ couple_rhs (mpk_loc P) mpk_loc' eq
+  ⋊ couple_lhs (mpk_loc P) (mpk_loc' P) eq
+  ⋊ couple_rhs (mpk_loc P) (mpk_loc' P) eq
   ⋊ couple_lhs count_loc count_loc' (R i%N)
   ⋊ couple_rhs count_loc count_loc' (R i.+1)
 ).
 
-Lemma SLIDE_succ_perfect {n} {i} : perfect (I_CPA P)
-  (SLIDE n ∘ (OT_CPA P false || PICK i   ))
-  (SLIDE n ∘ (OT_CPA P true  || PICK i.+1)).
+Lemma SLIDE_succ_perfect {P q i} :
+  perfect (ICPA P)
+    (SLIDE P q ∘
+      (OT_CPA P false || CONST i   ))
+    (SLIDE P q ∘
+      (OT_CPA P true  || CONST i.+1)).
 Proof.
   ssprove_share.
   eapply prove_perfect.
-  apply (eq_rel_perf_ind _ _ (inv' i)).
+  apply (eq_rel_perf_ind _ _ (inv' P i)).
   { by ssprove_invariant. }
   simplify_eq_rel m.
   - destruct m; simpl.
@@ -236,12 +239,16 @@ Proof.
 Qed.
 
 #[local] Open Scope ring_scope.
+#[local] Open Scope sep_scope.
 
 (* One-to-Many hybrid reduction package *)
-Notation OTM n := (SLIDE n%N ∘ (ID (I_CPA P) || RAND (unif n%N)))%sep.
+Notation OTM P q := (SLIDE P q ∘
+  (ID (ICPA P) || RAND (unif q))).
 
-Theorem Adv_MT_CPA_OT n A `{ValidPackage (loc A) (I_CPA P) A_export A} :
-  AdvOf (MT_CPA P n) A = AdvOf (OT_CPA P) (A ∘ OTM n) *+ n.
+Theorem Adv_MT_CPA_OT P q A
+  `{Adversary (ICPA P) A} :
+  AdvOf (MT_CPA P q) A =
+    AdvOf (OT_CPA P) (A ∘ OTM P q) *+ q.
 Proof.
   eapply @Adv_hybrid.
   1-4: intros; ssprove_valid.
