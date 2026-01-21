@@ -112,7 +112,7 @@ Section Async.
         destruct (get_heap h lazy_loc) => /=.
         * rewrite bind_assoc.
           under eq_dlet. {
-            intros ?. rewrite Pr_code_rand.
+            intros ?. rewrite Pr_code_fst.
             under eq_dlet. {
               intros ?. rewrite Pr_code_put set_heap_contract. over. }
             over. }
@@ -122,7 +122,7 @@ Section Async.
           rewrite -H1 get_set_heap_eq /=.
           f_equal. symmetry.
           apply eq_dlet => ?. by rewrite set_set.
-        * rewrite bind_assoc Pr_code_rand.
+        * rewrite bind_assoc Pr_code_fst.
           under eq_dlet. {
             intros ?. rewrite Pr_code_put set_heap_contract.
             over. }
@@ -137,7 +137,7 @@ Section Async.
         * under eq_dlet. { intros ?.
             rewrite Pr_code_get get_set_heap_eq /=.
             rewrite Pr_code_put set_heap_contract. over. }
-          rewrite Pr_code_put Pr_code_rand. symmetry.
+          rewrite Pr_code_put Pr_code_fst. symmetry.
           rewrite dlet_dlet_ext.
           under eq_dlet. { intros ?.
             rewrite Pr_code_ret dlet_unit_ext /=. over. }
@@ -203,8 +203,8 @@ Section Async.
     - rewrite Pr_code_bind.
       fmap_invert H0.
       + simplify_linking.
-        rewrite Pr_code_rand dlet_dlet_ext. symmetry.
-        rewrite bind_assoc Pr_code_rand.
+        rewrite Pr_code_fst dlet_dlet_ext. symmetry.
+        rewrite bind_assoc Pr_code_fst.
         rewrite 2!dfst_dlet_commut. apply eq_dlet => x'.
         rewrite Pr_code_put. symmetry. rewrite Pr_code_put Pr_code_ret.
         by rewrite dlet_unit_ext set_heap_contract.
@@ -240,7 +240,7 @@ Section Async.
     pose (π := fresh ((G, loc G), (G', loc G')) (loc A, A)).
     replace (Adv G G' A) with (AdvantageE G G' (π ∙ A : nom_package)).
     2: rewrite -{2}(@rename_alpha _ A π) //.
-    2: rewrite /Adv {1}/Pr' -link_sep_link.
+    2: rewrite AdvE {1}/Pr' -link_sep_link.
     3: eauto with nominal_db.
     2: rewrite {1}/Pr' -link_sep_link //.
     2: eauto with nominal_db.
