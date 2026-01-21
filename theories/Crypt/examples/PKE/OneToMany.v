@@ -75,7 +75,7 @@ Proof.
   1,2: intros; exfalso; eapply fhas_empty; eassumption.
 Qed.
 
-Lemma PK_CPA_SLIDE_perfect {P q} b :
+Lemma MT_CPA_SLIDE_perfect {P q} b :
   perfect (ICPA P) (MT_CPA P q b) (SLIDE P q
     ∘ (OT_CPA P true ||
        CONST (if b then 0 else q))).
@@ -252,7 +252,7 @@ Theorem Adv_MT_CPA_OT P q A
 Proof.
   eapply @Adv_hybrid.
   1-4: intros; ssprove_valid.
-  1-2: apply: PK_CPA_SLIDE_perfect.
+  1-2: apply: MT_CPA_SLIDE_perfect.
   intros i _; apply: SLIDE_succ_perfect.
 Qed.
 

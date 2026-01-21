@@ -43,7 +43,7 @@ Definition RAND {T : choice_type} (c : dist T)
   [package [fmap cell T] ;
     [ PICK ] (_) {
       mr ← get cell T ;;
-      if mr is Some(r) then
+      if mr is Some r then
         ret r
       else
         r ← c ;;

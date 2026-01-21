@@ -122,7 +122,7 @@ Lemma Adv_hybrid {IMULTI IGAME} {n : nat}
         (ID IGAME || RAND (unif n))) *+ n.
  *)
 
-Lemma Adv_hybrid {IMULTI IGAME} {n : nat}
+Theorem Adv_hybrid {IMULTI IGAME} {n : nat}
   {MULTI GAME : bool → nom_package} {H A} `{VA : Adversary IMULTI A}
   `{VG : ∀ b, Game IGAME (GAME b)} `{VH : Package (unionm IGAME (IPICK nat)) IMULTI H}
   : perfect IMULTI (MULTI true) (H ∘ (GAME true || CONST 0))

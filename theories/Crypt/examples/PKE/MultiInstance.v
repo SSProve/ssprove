@@ -101,8 +101,8 @@ Definition HYB_MI_CPA P n q :
     [ GEN ] : { 'fin n ~> P.(Pub) } (j) {
       i ← call [ PICK ] : { unit ~> nat } tt ;;
       pk ← (
-        if (i == j)%N then
-          call [GEN] tt
+        if i == j then
+          call [ GEN ] tt
         else
           '(_, pk) ← P.(keygen) ;;
           ret pk
@@ -113,16 +113,16 @@ Definition HYB_MI_CPA P n q :
     [ QUERY ] : { 'fin n × P.(Mes) ~> P.(Cip) } '(j, m) {
       counts ← get counts_loc ;;
       let countj := odflt 0 (counts j) in
-      #assert (countj < q)%N ;;
+      #assert countj < q ;;
       pk ← get pks_loc P [ j ] ;;
       i ← call [ PICK ] : { unit ~> nat } tt ;;
       c ← (
-        if (j < i)%N then
+        if j < i then
           c ← P.(sample_Cip) ;; ret c
-        else if (i < j)%N then
+        else if i < j then
           c ← P.(enc) pk m ;; ret c
         else
-          call [QUERY] m
+          call [ QUERY ] m
       ) ;;
       #put counts_loc :=
         setm counts j countj.+1 ;;

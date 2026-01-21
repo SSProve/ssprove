@@ -67,14 +67,14 @@ Section Defs.
 
   Definition ICPA P :=
     [interface
-      [ GEN ] : { 'unit ~> P.(Pub) } ;
+      [ GEN ] : { unit ~> P.(Pub) } ;
       [ QUERY ] : { P.(Mes) ~> P.(Cip) }
     ].
 
   Definition CPA P b :
     game (ICPA P) :=
     [package [fmap mpk_loc P ] ;
-      [ GEN ] : { 'unit ~> P.(Pub) } 'tt {
+      [ GEN ] : { unit ~> P.(Pub) } 'tt {
         '(_, pk) ← P.(keygen) ;;
         #put mpk_loc P := Some pk ;;
         ret pk
@@ -90,22 +90,24 @@ Section Defs.
 
   Definition count_loc := mkloc 142 (0 : 'nat).
 
-  Definition COUNT P n :
+  Definition COUNT P q :
     package (ICPA P) (ICPA P) :=
     [package [fmap count_loc ] ;
-      [ GEN ] : { 'unit ~> P.(Pub) } (_) {
-        call [ GEN ] : { 'unit ~> P.(Pub) } tt
+      [ GEN ] : { unit ~> P.(Pub) } (_) {
+        call [ GEN ] : { unit ~> P.(Pub) } tt
       } ;
       [ QUERY ] : { P.(Mes) ~> P.(Cip) } (m) {
         count ← get count_loc ;; 
-        #assert (count < n) ;;
+        #assert count < q ;;
         #put count_loc := count.+1 ;;
         call [ QUERY ] : { P.(Mes) ~> P.(Cip) } m
       }
     ].
 End Defs.
 
-Notation MT_CPA P n := (λ b, COUNT P n ∘ CPA P b).
-Notation OT_CPA P := (λ b, COUNT P 1 ∘ CPA P b).
+Notation MT_CPA P q :=
+  (λ b, COUNT P q ∘ CPA P b).
+Notation OT_CPA P := 
+  (λ b, COUNT P 1 ∘ CPA P b).
 
 End PKE.
