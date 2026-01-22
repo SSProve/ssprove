@@ -74,6 +74,12 @@ Proof.
   apply enum_rankK.
 Qed.
 
+Lemma otf_injective :
+  ∀ {F}, injective (@otf F).
+Proof.
+  rewrite /injective /otf => x1 x2 H_eq. apply enum_val_inj. 
+Qed.
+
 Lemma card_prod_iprod :
   ∀ i j,
     #|(prod (ordinal i:finType) (ordinal j:finType)) :finType| = (i * j)%N.

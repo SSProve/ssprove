@@ -168,6 +168,11 @@ Section Interpreter.
         | Some (seed', x) => Some (seed', [:: x])
         | _ => None
         end
+    | chTuple A n =>
+        match sampler A seed with
+        | Some (seed', x) => Some (seed', [tuple x | i < n])
+        | _ => None
+        end
     | chSum A B =>
         let '(seed', b) := ((seed + 1)%nat, Nat.even seed) in
         if b

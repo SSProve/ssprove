@@ -158,67 +158,6 @@ Section Executor.
 
 End Executor.
 
-#[program] Fixpoint sampler (e : choice_type) (seed : nat) : option (nat * e):=
-  match e with
-    chUnit => Some (seed, tt)
-  | chNat => Some ((seed + 1)%N, seed)
-  | chInt => Some ((seed + 1)%nat, BinInt.Z.of_nat seed) (* FIXME: also generate negative numbers *)
-  | chBool => Some ((seed + 1)%N, Nat.even seed)
-  | chProd A B =>
-      match sampler A seed with
-      | Some (seed' , x) => match sampler B seed' with
-                           | Some (seed'', y) => Some (seed'', (x, y))
-                           | _ => None
-                           end
-      | _ => None
-      end
-  | chMap A B => None
-  | chOption A =>
-      match sampler A seed with
-      | Some (seed', x) => Some (seed', Some x)
-      | _ => None
-      end
-  | chFin n => Some ((seed + 1)%N, _)
-  | chWord n => Some ((seed + 1)%N, _)
-  | chList A =>
-      match sampler A seed with
-      | Some (seed', x) => Some (seed', [:: x])
-      | _ => None
-      end
-  | chSum A B =>
-      let '(seed', b) := ((seed + 1)%nat, Nat.even seed) in
-      if b
-      then
-        match sampler A seed' with
-        | Some (seed'' , x) => Some (seed'', inl x)
-        | _ => None
-        end
-      else
-        match sampler B seed' with
-        | Some (seed'' , y) => Some (seed'', inr y)
-        | _ => None
-        end
-  end.
-Next Obligation.
-  eapply Ordinal.
-  instantiate (1 := (seed %% n)%N).
-  rewrite ltn_mod.
-  apply n.
-Defined.
-Local Open Scope Z_scope.
-Next Obligation.
-  eapply word.mkWord.
-  instantiate (1 := ((Z.of_nat  seed) mod (word.modulus (nat_of_wsize n) ))%Z).
-  pose (Z.mod_bound_pos (Z.of_nat seed) (word.modulus n)
-        (Zle_0_nat seed)).
-  pose (word.modulus_gt0 (nat_of_wsize n)).
-  apply / word.iswordZP.
-  apply a.
-  move : i => / word_ssrZ.ltzP.
-  auto.
-Defined.
-Close Scope Z_scope.
-
 Section Test.
 
   Definition loc : Location :=  (1, 'nat).

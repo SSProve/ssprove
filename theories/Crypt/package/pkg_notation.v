@@ -129,6 +129,7 @@ Module PackageNotation.
   Notation " 'word n " := (chWord n) (in custom pack_type at level 2).
   Notation " 'option x " := (chOption x) (in custom pack_type at level 2).
   Notation " 'list x " := (chList x) (in custom pack_type at level 2).
+  Notation " 'tuple x n" := (chTuple x n) (in custom pack_type at level 2).
 
 
   Notation " 'fin n " :=
@@ -152,6 +153,8 @@ Module PackageNotation.
   Notation " 'word n " := (chWord n) (at level 2) : package_scope.
   Notation " 'option x " := (chOption x) (at level 2) : package_scope.
   Notation " 'list x " := (chList x) (at level 2) : package_scope.
+  Notation " 'tuple x n " := (chTuple x n) (at level 2) : package_scope.
+
 
   Notation " 'fin x " :=
     (chFin (mkpos x))
