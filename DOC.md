@@ -948,7 +948,7 @@ We will see later, in [[Crafting invariants]], how we can also leverage these
 #### Invariant debts after writing
 
 Dually to how we *remember* read values, we propose a way to write to a memory
-location, even when it might temporarily break the invariant. As we will se in
+location, even when it might temporarily break the invariant. As we will see in
 [[Crafting invariants]], a lot of invariants will involve several locations at
 once, meaning the most of the time, writing a value will break them.
 Thus, our machinery to write to the memory freely and then, at the user's
