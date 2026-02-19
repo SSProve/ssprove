@@ -77,7 +77,7 @@ Module DL (DLP : DLParams) (GP : GroupParam).
   Definition DL_E := [
         interface
             #val #[ set_up ] : 'unit → 'group ;
-            #val #[ guess ] : 'group → 'bool
+            #val #[ guess ] : 'elem → 'bool
   ].
 
   Definition DL_real :
@@ -90,11 +90,11 @@ Module DL (DLP : DLParams) (GP : GroupParam).
             ret (fto (g ^+ a))
         } ;
 
-        #def #[ guess ] (y: 'group) : 'bool
+        #def #[ guess ] (y: 'elem) : 'bool
         {
             o_x ← get secret_loc ;;
             match o_x with
-            | Some x => ret(fto (g^+x) == y)
+            | Some x => ret (x == y)
             | _ => ret false
             end
         }
@@ -109,7 +109,7 @@ Module DL (DLP : DLParams) (GP : GroupParam).
             #put secret_loc := Some a ;;
             ret (fto (g ^+ a))
         } ;
-        #def #[ guess ] (y: 'group) : 'bool
+        #def #[ guess ] (y: 'elem) : 'bool
         {
             ret false
         }
