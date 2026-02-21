@@ -63,7 +63,6 @@ theories/Crypt/rules/RulesProb.v
 # Crypto
 theories/Crypt/rules/UniformDistrLemmas.v
 #theories/Crypt/rules/UniformDistr.v
-# theories/Crypt/examples/deprecated/otp.v
 theories/Crypt/package/fmap_extra.v
 theories/Crypt/package/pkg_core_definition.v
 theories/Crypt/package/pkg_composition.v
@@ -82,9 +81,6 @@ theories/Crypt/Package.v
 # State + Prob
 theories/Crypt/rules/RulesStateProb.v
 theories/Crypt/rules/UniformStateProb.v
-
-#std. distributions
-# theories/Crypt/only_prob/SymmetricSchemeStateProbStdDistr.v
 
 # Nominal
 theories/Crypt/nominal/Nominal.v
