@@ -69,27 +69,55 @@
       rocq-core.override.version = "9.1";
     };
   };
-  bundles."MC-dev".coqPackages = {
-    coq.override.version = "9.0";
-    mathcomp.job = false;
-    mathcomp.override.version = "master";
-    mathcomp-analysis.job = false;
-    mathcomp-analysis.override.version = "master";
-    mathcomp-finmap.job = false;
-    mathcomp-finmap.override.version = "master";
-    mathcomp-word.job = false;
-    mathcomp-word.override.version = "main";
-    extructures.job = false;
-    extructures.override.version = "master";
-    deriving.job = false;
-    deriving.override.version = "master";
-    mathcomp-bigenough.job = false;
-    mathcomp-bigenough.override.version = "master";
+  bundles."9.2" = { coqPackages = {
+      coq.override.version = "9.2";
+
+      ## Test against master for all dependencies until we get 9.2 compatible releases
+      mathcomp.job = false;
+      mathcomp.override.version = "master";
+      mathcomp-analysis.job = false;
+      mathcomp-analysis.override.version = "master";
+      mathcomp-finmap.job = false;
+      mathcomp-finmap.override.version = "master";
+      mathcomp-word.job = false;
+      mathcomp-word.override.version = "main";
+      extructures.job = false;
+      extructures.override.version = "master";
+      deriving.job = false;
+      deriving.override.version = "master";
+      mathcomp-bigenough.job = false;
+      mathcomp-bigenough.override.version = "master";
+      equations.job = false;
+      equations.override.version = "757662b9c875d7169a07b861d48e82157520ab1a";
+    }; rocqPackages = {
+      rocq-core.override.version = "9.2";
+    };
+  };
+  bundles."MC-dev" = { coqPackages = {
+      coq.override.version = "9.1";
+      mathcomp.job = false;
+      mathcomp.override.version = "master";
+      mathcomp-analysis.job = false;
+      mathcomp-analysis.override.version = "master";
+      mathcomp-finmap.job = false;
+      mathcomp-finmap.override.version = "master";
+      mathcomp-word.job = false;
+      mathcomp-word.override.version = "main";
+      extructures.job = false;
+      extructures.override.version = "master";
+      deriving.job = false;
+      deriving.override.version = "master";
+      mathcomp-bigenough.job = false;
+      mathcomp-bigenough.override.version = "master";
+    }; rocqPackages = {
+      rocq-core.override.version = "9.1";
+    };
   };
 
   bundles."8.20".push-branches = ["main"];
   bundles."9.0".push-branches = ["main"];
   bundles."9.1".push-branches = ["main"];
+  bundles."9.2".push-branches = ["main"];
 
   ## Cachix caches to use in CI
   ## Below we list some standard ones
