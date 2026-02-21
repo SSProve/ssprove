@@ -1,6 +1,6 @@
-(lang dune 3.11)
-(using coq 0.2)
-(name coq-ssprove)
+(lang dune 3.21)
+(using coq 0.11)
+(name rocq-ssprove)
 (version dev)
 
 (generate_opam_files false)
@@ -11,10 +11,11 @@
 (maintainers "philipp@haselwarter.org")
 
 (package
- (name coq-ssprove)
+ (name rocq-ssprove)
  (synopsis "A Foundational Framework for Modular Cryptographic Proofs")
- (depends (coq (>= 8.20~))
-   (coq-equations (>= 1.3.1~))
+ (depends (rocq-core (>= 8.20~))
+   (rocq-stdlib (>= 9.0~))
+   (rocq-equations (>= 1.3.1~))
    (coq-mathcomp-ssreflect (>= 2.2.0))
    (coq-mathcomp-analysis (>= 1.8.0))
    (coq-mathcomp-experimental-reals (>= 1.8.0))

@@ -1,6 +1,6 @@
 (coq.theory
   (name SSProve)
-  (package coq-ssprove)
+  (package rocq-ssprove)
   (synopsis "A Foundational Framework for Modular Cryptographic Proofs")
   (modules :standard \
     Crypt.examples.OVN
@@ -8,13 +8,22 @@
     Crypt.rhl_semantics.state_prob.LiftStateful
     )
   (flags
-    -w -deprecated-from-Coq
-    -w -deprecated-dirpath-Coq
     -w -deprecated-since-mathcomp-2.3.0
     -w -deprecated-since-mathcomp-2.4.0
     -w -redundant-canonical-projection
     -w -projection-no-head-constant
     -w -HB.no-new-instance
-    ))
+    )
+    (theories
+      Stdlib
+      Equations
+      mathcomp
+      HB
+      elpi
+      elpi_elpi
+      extructures
+      deriving
+      )
+  )
 
 (include_subdirs qualified)
