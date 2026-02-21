@@ -16,7 +16,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        coqPackages = pkgs.coqPackages_8_17.overrideScope
+        coqPackages = pkgs.coqPackages_9_0.overrideScope
           (self: super:{
             ssprove = super.ssprove.override { version = "0.1.0"; };
           });

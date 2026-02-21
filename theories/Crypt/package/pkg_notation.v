@@ -15,7 +15,7 @@
     This module provides a specific notation for inhabiting the choice
     universe, but only in certain positions that will be described in the
     following notations.
-    These types can be described using a syntax closer to the usual Coq
+    These types can be described using a syntax closer to the usual Rocq
     syntax:
     'nat
     'bool
@@ -27,7 +27,7 @@
     A × B
     {map A → B}
     where A and B follow again the same syntax and n is a natural number
-    given using the regular Coq syntax.
+    given using the regular Rocq syntax.
 
   - Notation to provide an inhabitant of 'fin n
     gfin m will try to inhabit 'fin n
@@ -52,7 +52,7 @@
       e
     }
     where n is a natural number used as an identifier, A and B are types
-    following the syntax above and e is a regular Coq expression which has
+    following the syntax above and e is a regular Rocq expression which has
     x of type (chElement A) in scope.
 
   - Notation for the code monad

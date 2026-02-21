@@ -1,5 +1,5 @@
 (* Global utility *)
-(* Partly stolen from MetaCoq *)
+(* Partly stolen from MetaRocq *)
 
 From Stdlib Require Import Utf8 Lia.
 Set Warnings "-notation-overridden".
@@ -20,7 +20,7 @@ Set Primitive Projections.
 
 (* Dependent sums *)
 
-(* Use \sum to input ∑ in Company Coq (it is not a sigma Σ). *)
+(* Use \sum to input ∑ in Company Rocq (it is not a sigma Σ). *)
 Notation "'∑' x .. y , p" := (sigT (fun x => .. (sigT (fun y => p%type)) ..))
   (at level 200, x binder, right associativity,
    format "'[' '∑'  '/  ' x  ..  y ,  '/  ' p ']'")

@@ -2,8 +2,8 @@
 
 This document shall serve as a non-exhaustive guide to **SSProve**.
 
-*This document assumes that you have Coq and SSProve installed and have already
-some knowledge of Coq.*
+*This document assumes that you have Rocq and SSProve installed and have already
+some knowledge of Rocq.*
 
 🚧 This document tries to be as exhaustive as possible, but can still be
 improved. If you find something missing or not clear enough, feel free to
@@ -30,7 +30,7 @@ improved. If you find something missing or not clear enough, feel free to
 
 SSProve defines a language of *code* which can feature probabilistic sampling,
 assertions, memory storing and accesses, but also external procedure import.
-It is a *shallow embedding* meaning that one can inject any Coq/Gallina
+It is a *shallow embedding* meaning that one can inject any Rocq/Gallina
 expression into it by using the `ret` (standing for `return`) operation which we
 will expose below.
 
@@ -173,7 +173,7 @@ are self-explanatory.
 
 We also provide `'fin n` which is the finite type of size `n`.
 
-We also have the product type `chProd x y` which is interpreted to Coq's
+We also have the product type `chProd x y` which is interpreted to Rocq's
 product `prod`. For instance `chProd 'nat 'bool` corresponds to `nat * bool`.
 
 Finally we have the type of finite maps `chMap x y` where `x` is the type of
@@ -278,7 +278,7 @@ Definition foo : code emptym [interface] bool :=
 ```
 
 The fact that this is a class means that in practice, the validity proof
-should automatically be inferred by Coq.
+should automatically be inferred by Rocq.
 In case where automation doesn't work, it is still possible to leverage it to
 find which sub-goal it did not solve for you by using the `ssprove_valid`
 tactic.
@@ -364,7 +364,7 @@ def #[ id ] (x : src) : tgt { e }
 ```
 where `id` is a natural number / identifier, and `src` and `tgt` are codes of
 types in `choice_type` given using the special syntax (see [Specialised types]),
-while `e` is a regular Coq expression corresponding to the body of the function,
+while `e` is a regular Rocq expression corresponding to the body of the function,
 with `x` bound inside it.
 As seen in the example, `x` can be matched against in the declaration by using
 the `'p` notation where `p` is a pattern.
@@ -435,7 +435,7 @@ some extra conditions which might be validity of some bits.
 
 ### Package algebra
 
-The algebraic laws on packages are expressed as equalities (using Coq's equality
+The algebraic laws on packages are expressed as equalities (using Rocq's equality
 type `=`) on `raw_package`.
 
 #### Associativity of sequential composition / linking

@@ -553,7 +553,7 @@ Section ToNaiveDefinitions.
 
   Import SPropNotations.
 
-  (* We show that we can define the sur-approximation of this coq-development from that data *)
+  (* We show that we can define the sur-approximation of this rocq-development from that data *)
   Local Ltac feq_npair := repeat (congr npair).
 
   Program Definition W' : preRelationalSpecMonad :=
