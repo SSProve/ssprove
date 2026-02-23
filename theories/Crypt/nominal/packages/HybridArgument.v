@@ -102,26 +102,6 @@ Qed.
 #[local] Open Scope ring_scope.
 #[local] Open Scope nat_scope.
 
-(*
-Lemma Adv_hybrid {IMULTI IGAME} {n : nat}
-  {MULTI GAME : bool → nom_package} {H A}
-  `{VA : Adversary IMULTI A}
-  `{VG : ∀ b, Game IGAME (GAME b)}
-  `{VH : Package
-    (unionm IGAME (IPICK nat)) IMULTI H}
-  : perfect IMULTI (MULTI true)
-      (H ∘ (GAME true || CONST 0))
-  → perfect IMULTI (MULTI false)
-      (H ∘ (GAME true || CONST n))
-  → (∀ i : nat, i < n →
-      perfect IMULTI
-        (H ∘ (GAME false || CONST i ))
-        (H ∘ (GAME true  || CONST i.+1)))
-  → AdvOf MULTI A =
-      AdvOf GAME (A ∘ H ∘
-        (ID IGAME || RAND (unif n))) *+ n.
- *)
-
 Theorem Adv_hybrid {IMULTI IGAME} {n : nat}
   {MULTI GAME : bool → nom_package} {H A} `{VA : Adversary IMULTI A}
   `{VG : ∀ b, Game IGAME (GAME b)} `{VH : Package (unionm IGAME (IPICK nat)) IMULTI H}

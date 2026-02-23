@@ -125,7 +125,7 @@ Section Reduction.
     eapply (eq_rel_perf_ind _ _ I);
       [ ssprove_invariant; try done |].
 
-  Lemma LDDH_ADDH b : perfect (I_LDDH G) (LDDH G b) (ADDH ∘ LAZY _ _ (sample_bc b)).
+  Lemma LDDH_ADDH b : perfect (I_LDDH G) (LDDH G b) (ADDH ∘ LAZY (sample_bc b)).
   Proof.
     ssprove_perfect (heap_ignore [fmap mga_loc G ; lazy_loc ('exp G)]
       ⋊ couple_cross (mga_loc G) (lazy_loc ('exp G)) (λ mga ma, mga = omap (λ a, 'g ^ a) ma)).
@@ -170,7 +170,7 @@ Section Reduction.
       }
     ].
 
-  Lemma ADDH_RDDH b : perfect (I_LDDH G) (ADDH ∘ EAGER _ _ (sample_bc b)) (RDDH ∘ DDH G b).
+  Lemma ADDH_RDDH b : perfect (I_LDDH G) (ADDH ∘ EAGER (sample_bc b)) (RDDH ∘ DDH G b).
   Proof.
     ssprove_perfect (heap_ignore [fmap mgbc_loc ; eager_loc ('el G × 'el G) ]
       ⋊ couple_cross (eager_loc ('el G × 'el G)) mgbc_loc eq).
@@ -204,8 +204,8 @@ Section Reduction.
     AdvOf (LDDH G) A = AdvOf (DDH G) (A ∘ RDDH).
   Proof.
     rewrite (AdvOf_perfect LDDH_ADDH).
-    rewrite Adv_reduction -(Adv_perfect_l (ASYNC_perfect _ _ _ _)).
-    rewrite -(Adv_perfect_r (ASYNC_perfect _ _ _ _)).
+    rewrite Adv_reduction -(Adv_perfect_l (ASYNC_perfect _)).
+    rewrite -(Adv_perfect_r (ASYNC_perfect _)).
     by rewrite -Adv_reduction (AdvOf_perfect ADDH_RDDH) Adv_reduction.
   Qed.
 End Reduction.

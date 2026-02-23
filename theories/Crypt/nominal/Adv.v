@@ -99,6 +99,21 @@ Proof. done. Qed.
 
 #[export] Hint Resolve supp_prod subs_refl : nominal_db.
 
+Lemma Adv_nom_ind (G G' A : nom_package) I (P : R → Type) :
+  (∀ (A' : raw_package) LA,
+    ValidPackage LA I A_export A' → val A ≡ A' →
+    fseparate LA (loc G) → fseparate LA (loc G') →
+    P (AdvantageE G G' A') ) →
+  ValidPackage (loc A) I A_export A → P (Adv G G' A).
+Proof.
+  intros HP VA.
+  pose (π := fresh ((G, loc G), (G', loc G')) (loc A, A)).
+  replace (Adv G G' A) with (AdvantageE G G' (π ∙ A : nom_package)).
+  2: rewrite -{2}(@rename_alpha _ A π) // AdvE /Pr' -!link_sep_link //.
+  1: eapply HP; [ exact _ | symmetry; apply rename_alpha | | ].
+  1-4: rewrite ?fseparate_disj ; eauto with nominal_db nocore.
+Qed.
+
 Lemma Adv_adv_equiv {E} {G G' : nom_package} {ε : raw_package → R}
   `{V1 : ValidPackage (loc G) Game_import E G}
   `{V2 : ValidPackage (loc G') Game_import E G'} :
@@ -107,29 +122,15 @@ Lemma Adv_adv_equiv {E} {G G' : nom_package} {ε : raw_package → R}
   ∀ A, ValidPackage (loc A) E A_export A → Adv G G' A = ε A.
 Proof.
   intros equieps adv A VA.
-  pose (π := fresh ((loc G, G), (loc G', G')) (loc A, A)).
-  setoid_rewrite <- (@rename_alpha _ A π) at 1.
-  rewrite Adv_AdvantageE.
-  1: rewrite -(absorb π (ε A)).
-  1: rewrite equieps.
-  1: rewrite adv //.
-
-  1,2: rewrite fseparate_disj.
-  1-4: eauto with nominal_db nocore.
+  apply (Adv_nom_ind G G' A E) => // {VA} A' LA VA [π E'] s1 s2.
+  by rewrite adv // -E' -equieps absorb.
 Qed.
 
 Lemma Adv_perf {E} {G G' : nom_package}
   `{V1 : ValidPackage (loc G) Game_import E G}
   `{V2 : ValidPackage (loc G') Game_import E G'} :
-  G ≈₀ G' →
-  ∀ (A : nom_package), ValidPackage (loc A) E A_export A → Adv G G' A = 0.
-Proof.
-  intros adv A VA.
-  eapply (Adv_adv_equiv (ε := λ _, 0)).
-  1: done.
-  1: apply adv.
-  apply VA.
-Qed.
+  G ≈₀ G' → ∀ A, ValidPackage (loc A) E A_export A → Adv G G' A = 0.
+Proof. intros adv A VA. eapply (Adv_adv_equiv (ε := λ _, 0)) => //. Qed.
 
 Lemma Adv_perf_l {E} {P P' Q A : nom_package}
   `{V1 : ValidPackage (loc P) Game_import E P}
