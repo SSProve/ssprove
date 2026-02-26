@@ -67,7 +67,7 @@ Proof.
   rewrite -GRing.mulrA.
   rewrite GRing.mulVf ?GRing.mulr1 //.
   apply /eqP => H0.
-  erewrite <- GRing.mul0rn in H0.
+  rewrite -(GRing.mul0rn Axioms.R n.+1) in H0.
   apply Num.Theory.pmulrnI in H0 => //.
   move: (GRing.oner_eq0 R) => /eqP //.
 Qed.
