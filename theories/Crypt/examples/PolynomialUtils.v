@@ -54,6 +54,7 @@ From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
 
 From Coq Require Bool.
 Set Warnings "notation-overridden,ambiguous-paths".
+Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".

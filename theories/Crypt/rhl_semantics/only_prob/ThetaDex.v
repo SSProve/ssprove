@@ -3,6 +3,7 @@ From SSProve.Crypt Require Import Theta_dens Theta_exCP SubDistr LaxComp ChoiceA
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect.
 Set Warnings "notation-overridden,ambiguous-paths".
+Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 
 (*
 we have at our disposal θex : SDistr² → Wrelprop . We turn this lax morphism

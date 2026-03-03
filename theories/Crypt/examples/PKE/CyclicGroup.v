@@ -4,6 +4,7 @@ Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-forma
 From mathcomp Require Import all_ssreflect all_algebra 
   fingroup.fingroup solvable.cyclic prime.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
+Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 
 Local Open Scope ring_scope.
 Import GroupScope GRing.Theory.

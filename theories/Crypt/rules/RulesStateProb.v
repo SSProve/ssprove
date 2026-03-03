@@ -20,6 +20,7 @@ Import Num.Theory.
 
 From HB Require Import structures.
 
+Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 
 #[local] Open Scope ring_scope.
 

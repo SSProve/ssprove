@@ -100,6 +100,7 @@ Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
+Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 From extructures Require Import ord fset fmap.
 From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd RulesStateProb
   choice_type pkg_core_definition pkg_composition.

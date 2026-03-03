@@ -30,6 +30,7 @@ Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import ssreflect ssrbool ssrnat eqtype seq eqtype
   choice.
 Set Warnings "notation-overridden,ambiguous-paths".
+Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 From extructures Require Import ord fset fmap.
 From SSProve.Crypt Require Import Prelude Axioms pkg_core_definition
   pkg_composition pkg_notation choice_type fmap_extra.

@@ -23,6 +23,7 @@ Import Num.Theory.
 Set Equations With UIP.
 Set Equations Transparent.
 
+Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
