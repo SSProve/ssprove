@@ -39,7 +39,11 @@ Import PackageNotation.
 Definition Pr' (P : nom_package) := Pr (val P).
 
 Definition Adv (G G' A : nom_package) : R
-  := `| Pr' (A ∘ G)%sep true - Pr' (A ∘ G')%sep true |.
+  := locked `| Pr' (A ∘ G)%sep true - Pr' (A ∘ G')%sep true |.
+
+Lemma AdvE G G' A
+  : Adv G G' A = `| Pr' (A ∘ G)%sep true - Pr' (A ∘ G')%sep true |.
+Proof. by rewrite /Adv -lock. Qed.
 
 Add Parametric Morphism : val with
   signature alpha ==> alpha as val_mor.
@@ -55,13 +59,13 @@ Proof. intros ? ? E1 ? ? E2 ? ? E3. by rewrite /Adv E1 E2 E3. Qed.
 
 Lemma Adv_triangle {G1 G2 G3 : nom_package} A
   : Adv G1 G3 A <= Adv G1 G2 A + Adv G2 G3 A.
-Proof. apply Advantage_triangle. Qed.
+Proof. rewrite /Adv 3!sep_linkE -3!lock. apply Advantage_triangle. Qed.
 
 Lemma Adv_same (G A : nom_package) : Adv G G A = 0.
-Proof. rewrite /Adv addrN. rewrite normr0 //. Qed.
+Proof. rewrite AdvE addrN. rewrite normr0 //. Qed.
 
 Lemma Adv_sym (G G' A : nom_package) : Adv G G' A = Adv G' G A.
-Proof. apply: distrC. Qed.
+Proof. rewrite 2!AdvE. apply: distrC. Qed.
 
 Lemma Adv_alpha (G G' A : nom_package)
   : G ≡ G' → Adv G G' A = 0.
@@ -86,8 +90,8 @@ Lemma Adv_AdvantageE (G G' A : nom_package) :
   Adv G G' A = AdvantageE G G' A.
 Proof.
   intros D1 D2.
-  unfold Adv, AdvantageE.
-  rewrite link_sep_link ?link_sep_link //.
+  rewrite AdvE /AdvantageE.
+  by rewrite link_sep_link ?link_sep_link.
 Qed.
 
 Lemma supp_prod {X Y : nomType} (x : X) (y : Y)
@@ -95,6 +99,21 @@ Lemma supp_prod {X Y : nomType} (x : X) (y : Y)
 Proof. done. Qed.
 
 #[export] Hint Resolve supp_prod subs_refl : nominal_db.
+
+Lemma Adv_nom_ind (G G' A : nom_package) I (P : R → Type) :
+  (∀ (A' : raw_package) LA,
+    ValidPackage LA I A_export A' → val A ≡ A' →
+    fseparate LA (loc G) → fseparate LA (loc G') →
+    P (AdvantageE G G' A') ) →
+  ValidPackage (loc A) I A_export A → P (Adv G G' A).
+Proof.
+  intros HP VA.
+  pose (π := fresh ((G, loc G), (G', loc G')) (loc A, A)).
+  replace (Adv G G' A) with (AdvantageE G G' (π ∙ A : nom_package)).
+  2: rewrite -{2}(@rename_alpha _ A π) // AdvE /Pr' -!link_sep_link //.
+  1: eapply HP; [ exact _ | symmetry; apply rename_alpha | | ].
+  1-4: rewrite ?fseparate_disj ; eauto with nominal_db nocore.
+Qed.
 
 Lemma Adv_adv_equiv {E} {G G' : nom_package} {ε : raw_package → R}
   `{V1 : ValidPackage (loc G) Game_import E G}
@@ -104,29 +123,15 @@ Lemma Adv_adv_equiv {E} {G G' : nom_package} {ε : raw_package → R}
   ∀ A, ValidPackage (loc A) E A_export A → Adv G G' A = ε A.
 Proof.
   intros equieps adv A VA.
-  pose (π := fresh ((loc G, G), (loc G', G')) (loc A, A)).
-  setoid_rewrite <- (@rename_alpha _ A π) at 1.
-  rewrite Adv_AdvantageE.
-  1: rewrite -(absorb π (ε A)).
-  1: rewrite equieps.
-  1: rewrite adv //.
-
-  1,2: rewrite fseparate_disj.
-  1-4: eauto with nominal_db nocore.
+  apply (Adv_nom_ind G G' A E) => // {VA} A' LA VA [π E'] s1 s2.
+  by rewrite adv // -E' -equieps absorb.
 Qed.
 
 Lemma Adv_perf {E} {G G' : nom_package}
   `{V1 : ValidPackage (loc G) Game_import E G}
   `{V2 : ValidPackage (loc G') Game_import E G'} :
-  G ≈₀ G' →
-  ∀ (A : nom_package), ValidPackage (loc A) E A_export A → Adv G G' A = 0.
-Proof.
-  intros adv A VA.
-  eapply (Adv_adv_equiv (ε := λ _, 0)).
-  1: done.
-  1: apply adv.
-  apply VA.
-Qed.
+  G ≈₀ G' → ∀ A, ValidPackage (loc A) E A_export A → Adv G G' A = 0.
+Proof. intros adv A VA. eapply (Adv_adv_equiv (ε := λ _, 0)) => //. Qed.
 
 Lemma Adv_perf_l {E} {P P' Q A : nom_package}
   `{V1 : ValidPackage (loc P) Game_import E P}
@@ -200,6 +205,10 @@ Proof. intros H. rewrite Adv_sym (Adv_perfect_l H) Adv_sym //. Qed.
 Lemma perfect_trans {I G G' G''}
   : perfect I G G' → perfect I G' G'' → perfect I G G''.
 Proof. intros H1 H2 A VA. rewrite (Adv_perfect_l H1) H2 //. Qed.
+
+Lemma perfect_Pr {I} {G G' A : nom_package} `{ValidPackage (loc A) I A_export A} :
+  perfect I G G' → Pr' (A ∘ G)%sep true = Pr' (A ∘ G')%sep true.
+Proof. intros Hperf. apply subr0_eq, normr0_eq0. by rewrite -Hperf /Adv -lock. Qed.
 
 Lemma prove_perfect {E} {G G' : nom_package}
   `{V  : ValidPackage (loc G) Game_import E G}

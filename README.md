@@ -12,9 +12,11 @@ This repository contains the Coq formalisation of the paper:\
   ([ieee](https://www.computer.org/csdl/proceedings-article/csf/2021/760700a608/1uvIdwNa5Ne),
    [eprint](https://eprint.iacr.org/2021/397/20210526:113037))
 
-The included extension by nominals is available by importing `NominalPrelude` and is based on the paper:
+The included extension by nominals is available by importing `NominalPrelude` and is based on the papers:
 - **Nominal State-Separating Proofs** at CSF 2025 (**distinguished paper award**).
   Markus Krabbe Larsen and Carsten Schürmann. ([eprint](https://eprint.iacr.org/2025/598))
+- **Mechanizing Nested Hybrid Arguments** (preprint).
+  Markus Krabbe Larsen and Carsten Schürmann. ([eprint](https://eprint.iacr.org/2025/1122))
 
 Secondary literature:
 * **The Last Yard: Foundational End-to-End Verification of High-Speed Cryptography** at CPP'24.

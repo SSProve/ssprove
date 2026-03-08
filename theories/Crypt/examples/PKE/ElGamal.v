@@ -16,11 +16,11 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
-From SSProve.Crypt Require Import NominalPrelude.
+From SSProve.Crypt Require Import NominalPrelude TotalProbability HybridArgument.
 Import PackageNotation.
 #[local] Open Scope package_scope.
 
-From SSProve.Crypt.examples.PKE Require Import Scheme CyclicGroup LDDH.
+From SSProve.Crypt.examples.PKE Require Import Scheme CyclicGroup LDDH OneToMany MultiInstance.
 
 Import PKE GroupScope.
 #[local] Open Scope F_scope.
@@ -34,30 +34,23 @@ Definition elgamal : scheme := {|
   ; Pub := 'el G
   ; Mes := 'el G
   ; Cip := 'el G × 'el G
-  ; sample_Cip :=
-    {code
+  ; sample_Cip := {code
       c₁ ← sample uniform #|el G| ;;
       c₂ ← sample uniform #|el G| ;;
-      ret (c₁, c₂)
-    }
-  ; keygen :=
-    {code
+      ret (c₁, c₂) }
+  ; keygen := {code
       sk ← sample uniform #|exp G| ;;
-      ret (sk, 'g ^ sk)
-    }
-  ; enc := λ pk m,
-    {code
+      ret (sk, 'g ^ sk) }
+  ; enc := λ pk m, {code
       r ← sample uniform #|exp G| ;;
-      ret ('g ^ r, m * (pk ^ r))
-    }
+      ret ('g ^ r, m * (pk ^ r)) }
   ; dec := λ sk '(c₁, c₂),
-    {code
-      ret (c₂ * (c₁ ^- sk))
-    }
+      Some (c₂ * (c₁ ^- sk))
   |}.
 
-Theorem correct_elgamal
-  : perfect (I_CORR elgamal) (CORR0 elgamal) (CORR1 elgamal).
+Theorem correct_elgamal :
+  perfect (ICORR elgamal)
+    (CORR0 elgamal) (CORR1 elgamal).
 Proof.
   eapply prove_perfect.
   apply eq_rel_perf_ind_eq.
@@ -105,7 +98,7 @@ Proof.
 Qed.
 
 Definition RED :
-  package (I_LDDH G) (I_CPA elgamal) :=
+  package (I_LDDH G) (ICPA elgamal) :=
   [package [fmap count_loc ; mpk_loc elgamal ] ;
     [ GEN ] 'tt {
       pk ← call [ GETA ] tt ;;
@@ -129,7 +122,7 @@ Notation inv0 := (
 ).
 
 Lemma PK_OTSR_RED_DDH_perfect b :
-  perfect (I_CPA elgamal) (OT_CPA elgamal b) (RED ∘ LDDH G b).
+  perfect (ICPA elgamal) (OT_CPA elgamal b) (RED ∘ LDDH G b).
 Proof.
   ssprove_share. eapply prove_perfect.
   eapply (eq_rel_perf_ind _ _ inv0).
@@ -171,10 +164,46 @@ Proof.
       by eapply r_ret.
 Qed.
 
-Theorem OT_CPA_elgamal (A : adversary (I_CPA elgamal)) :
+#[local] Open Scope sep_scope.
+#[local] Open Scope ring_scope.
+
+Lemma OT_CPA_elgamal_LDDH {A} `{Adversary (ICPA elgamal) A} :
   AdvOf (OT_CPA elgamal) A = AdvOf (LDDH G) (A ∘ RED).
 Proof. rewrite (AdvOf_perfect PK_OTSR_RED_DDH_perfect) Adv_reduction //. Qed.
 
+Notation EG_RED := (RED ∘ RDDH G).
+
+
+Lemma OT_CPA_elgamal {A}
+  `{Adversary (ICPA elgamal) A} :
+  AdvOf (OT_CPA elgamal) A =
+    AdvOf (DDH G) (A ∘ EG_RED).
+Proof. by rewrite OT_CPA_elgamal_LDDH LDDH_DDH -sep_link_assoc. Qed.
+
+
+(* One-to-Many hybrid reduction package *)
+Notation OTM P q := (SLIDE P q
+  ∘ (ID (ICPA P) || RAND (unif q))).
+
+Lemma MT_CPA_elgamal q {A}
+  `{Adversary (ICPA elgamal) A} :
+  AdvOf (MT_CPA elgamal q) A =
+    AdvOf (DDH G)
+      ((A ∘ OTM elgamal q) ∘ EG_RED) *+ q.
+Proof. by rewrite Adv_MT_CPA_OT OT_CPA_elgamal. Qed.
+
+
+(* Single-to-Multi hybrid reduction package *)
+Notation STM P n q := (HYB_MI_CPA P n q
+  ∘ (ID (ICPA P) || RAND (unif n))).
+
+Theorem MI_MT_CPA_elgamal n q {A}
+  `{Adversary (IMI_CPA elgamal n) A} :
+  AdvOf (MI_MT_CPA elgamal n q) A =
+    AdvOf (DDH G) (((A ∘ STM elgamal n q)
+      ∘ OTM elgamal q) ∘ EG_RED) *+ q *+ n.
+Proof. by rewrite Adv_MI_CPA_SI MT_CPA_elgamal. Qed.
+
 End ElGamal.
 
-Definition OT_CPA_elgamal_Z3 := OT_CPA_elgamal Z3.
+Definition OT_CPA_elgamal_Z3 := @OT_CPA_elgamal Z3.
