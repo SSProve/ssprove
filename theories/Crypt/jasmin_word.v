@@ -1862,7 +1862,7 @@ Lemma wsigned_wnot ws (x : word ws) :
 Proof.
   rewrite 2!wsignedE.
   rewrite msb_wnot.
-  case: msb => /=;
+  case: msb; cbn [negb];
     rewrite wunsigned_wnot;
     lia.
 Qed.
