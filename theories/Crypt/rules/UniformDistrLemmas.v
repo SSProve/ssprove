@@ -1,4 +1,4 @@
-From Coq Require Import
+From Stdlib Require Import
      Relation_Definitions RelationClasses Morphisms Utf8.
 
 From SSProve.Mon Require Import

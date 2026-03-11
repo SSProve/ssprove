@@ -3,7 +3,7 @@
 # Adapt to macOS (brew install gsed)
 SED=`which gsed 2>/dev/null || which sed`
 
-fn_project=_CoqProject
+fn_project=_RocqProject
 fn_out="dependencies"
 base_style="rounded,filled"
 # Some categorical color schemes recognised by dot: pastel19, set312
@@ -12,8 +12,8 @@ color_scheme=pastel19
 n_colors_max=9
 
 function help_msg() {
-    echo "`basename $0`: Print dependency graph for \"$fn_project\" according to coqdep."
-    echo "Requires graphviz, coqdep, bash, and sed."
+    echo "`basename $0`: Print dependency graph for \"$fn_project\" according to rocqdep."
+    echo "Requires graphviz, rocqdep, bash, and sed."
 }
 if ! [ -z $@ ] ; then
     help_msg ; exit 1
@@ -21,9 +21,9 @@ fi
 
 ( echo "digraph interval_deps {" ;
   echo 'node [shape=box, style="'$base_style'", URL="https://SSProve.github.io/ssprove/\N.html", colorscheme='$color_scheme'];';
-  coqdep -vos -dyndep var -f $fn_project |
+  rocq dep -vos -dyndep var -f $fn_project |
       # rewrite prefixes
-      $SED -f <($SED -nr 's/^ *-Q +(\S+) +(\S+)/s,\1,\2,g/p' < _CoqProject) |
+      $SED -f <($SED -nr 's/^ *-Q +(\S+) +(\S+)/s,\1,\2,g/p' < _RocqProject) |
       # turn '/' into '.' ,
       $SED -n -e 's,/,.,g' \
           `# keep lines with [src].vo : [x].v [dst]* , drop [x].v` \

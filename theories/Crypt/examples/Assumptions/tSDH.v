@@ -16,7 +16,7 @@ From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
   Package Prelude pkg_composition.
 
-From Coq Require Import Utf8 Lia.
+From Stdlib Require Import Utf8 Lia.
 From extructures Require Import ord fset fmap.
 
 From Equations Require Import Equations.
@@ -98,7 +98,7 @@ Module tSDH (GP : GroupParam).
   #[program] Definition mod_p (a: nat): chExp :=
   @Ordinal _ (a %% #[g]) _.
   Next Obligation.
-    rewrite eq_order_g_ring. rewrite ltn_mod. 
+    rewrite eq_order_g_ring. rewrite ltn_mod.
     move : gt_than_1 => gt_than_1. auto.
     Qed.
 
@@ -110,7 +110,7 @@ Module tSDH (GP : GroupParam).
   Definition tSDH_loc := [fmap secret_loc ].
 
   Definition tSDH_E := [
-        interface 
+        interface
             #val #[ set_up ] : 'unit → 'list ;
             #val #[ guess ] : 'exp × 'group → 'bool
   ].
@@ -137,7 +137,7 @@ Module tSDH (GP : GroupParam).
           end
         }
       ].
-  
+
   Definition tSDH_ff :
   package [interface] tSDH_E :=
     [package emptym;
@@ -156,7 +156,7 @@ Module tSDH (GP : GroupParam).
 
     Definition tSDH b : game tSDH_E :=
       if b then tSDH_tt else tSDH_ff.
-    
+
     Definition ϵ_tSDH := Advantage tSDH.
 
 End tSDH.

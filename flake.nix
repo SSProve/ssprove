@@ -25,13 +25,13 @@
             extructures
           ];
           meta = {
-            description = "A foundational framework for modular cryptographic proofs in Coq ";
+            description = "A foundational framework for modular cryptographic proofs in Rocq ";
             license = lib.licenses.mit;
           };
         };
     in {
       overlays.default = final: prev: {
-        coqPackages_8_20 = prev.coqPackages_8_20.overrideScope (self: super: {
+        coqPackages_9_0 = prev.coqPackages_9_0.overrideScope (self: super: {
           ssprove  = self.callPackage ssprovePkg {};
         });
       };
@@ -42,7 +42,7 @@
           overlays = [ self.overlays.default ];
         };
       in {
-        packages.default = pkgs.coqPackages_8_20.ssprove;
+        packages.default = pkgs.coqPackages_9_0.ssprove;
         devShells.default = self.packages.${system}.default;
       });
 }

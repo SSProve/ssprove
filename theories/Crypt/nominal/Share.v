@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect all_algebra
 Set Warnings "notation-overridden,ambiguous-paths".
 Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 
-From Coq Require Import Utf8.
+From Stdlib Require Import Utf8.
 From extructures Require Import ord fset fmap ffun fperm.
 From HB Require Import structures.
 
@@ -39,7 +39,7 @@ Import GroupScope GRing.Theory.
 Import Num.Def.
 Import Num.Theory.
 Import Order.POrderTheory.
-From Coq Require Import Btauto.
+From Stdlib Require Import Btauto.
 
 Import PackageNotation.
 

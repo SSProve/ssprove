@@ -1,24 +1,24 @@
-all: Makefile.coq
-	$(MAKE) -f Makefile.coq
+all: Makefile.rocq
+	$(MAKE) -f Makefile.rocq
 
-clean: Makefile.coq
-	$(MAKE) -f Makefile.coq clean
+clean: Makefile.rocq
+	$(MAKE) -f Makefile.rocq clean
 
-Makefile.coq:
-	coq_makefile -f _CoqProject -o Makefile.coq
+Makefile.rocq:
+	rocq makefile -f _RocqProject -o Makefile.rocq
 
 graph:
 	./depgraph.sh
 
 install:
-	$(MAKE) -f Makefile.coq install
+	$(MAKE) -f Makefile.rocq install
 
 html: all
 	rm -rf docs
 	mkdir docs
-	coqdoc --html --interpolate --parse-comments --utf8 \
+	rocq doc --html --interpolate --parse-comments --utf8 \
 		--toc \
-		--external https://math-comp.github.io/htmldoc_2_1_0/ mathcomp \
+		--external https://math-comp.github.io/htmldoc_2_3_0/ mathcomp \
 		-R theories SSProve \
 		-d docs --multi-index `find . -name "*.v" ! -wholename "./_opam/*"`
 .PHONY: html

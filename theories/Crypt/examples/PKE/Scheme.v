@@ -3,7 +3,7 @@ From mathcomp Require Import all_ssreflect all_algebra.
 Set Warnings "notation-overridden,ambiguous-paths".
 Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 
-From Coq Require Import Utf8.
+From Stdlib Require Import Utf8.
 From extructures Require Import ord fset fmap.
 
 From Equations Require Import Equations.
@@ -98,7 +98,7 @@ Section Defs.
         call [ GEN ] : { unit ~> P.(Pub) } tt
       } ;
       [ QUERY ] : { P.(Mes) ~> P.(Cip) } (m) {
-        count ← get count_loc ;; 
+        count ← get count_loc ;;
         #assert count < q ;;
         #put count_loc := count.+1 ;;
         call [ QUERY ] : { P.(Mes) ~> P.(Cip) } m
@@ -108,7 +108,7 @@ End Defs.
 
 Notation MT_CPA P q :=
   (λ b, COUNT P q ∘ CPA P b).
-Notation OT_CPA P := 
+Notation OT_CPA P :=
   (λ b, COUNT P 1 ∘ CPA P b).
 
 End PKE.

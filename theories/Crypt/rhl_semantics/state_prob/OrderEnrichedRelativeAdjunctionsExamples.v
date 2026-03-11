@@ -1,4 +1,4 @@
-From Coq Require Import Morphisms.
+From Stdlib Require Import Morphisms.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra boolp.
 Set Warnings "notation-overridden,ambiguous-paths".

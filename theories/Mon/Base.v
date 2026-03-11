@@ -1,5 +1,5 @@
 (* For reasoning with UIP *)
-From Coq.Logic Require Import EqdepFacts.
+From Stdlib.Logic Require Import EqdepFacts.
 
 Set Primitive Projections.
 

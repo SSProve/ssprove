@@ -1,7 +1,7 @@
-From Coq Require Import Utf8.
+From Stdlib Require Import Utf8.
 
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
-From mathcomp Require Import all_ssreflect all_algebra 
+From mathcomp Require Import all_ssreflect all_algebra
   fingroup.fingroup solvable.cyclic prime.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
@@ -21,7 +21,7 @@ Record CyclicGroup := {
 Program Definition Z3 : CyclicGroup :=
  {| gT := 'Z_3 ;
     g := Zp1
- |}. 
+ |}.
 Obligation 1. unfold g. unfold generator. apply /eqP. apply Zp_cycle. Qed.
 Obligation 2. unfold g. rewrite order_Zp1. reflexivity. Qed.
 
@@ -33,7 +33,7 @@ Definition exp G : finType := Finite.clone _ 'Z_(q G).
 
 Section Theorems.
 
-Context {G : CyclicGroup}. 
+Context {G : CyclicGroup}.
 
 Lemma el_in_g {x : el G} : x \in <[G.(g)]>.
 Proof. move: (g_gen G) => /eqP <-. apply in_setT. Qed.

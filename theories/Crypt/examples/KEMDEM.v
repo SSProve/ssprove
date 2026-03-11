@@ -20,7 +20,7 @@ From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
   Package Prelude pkg_composition.
 
-From Coq Require Import Utf8 Lia.
+From Stdlib Require Import Utf8 Lia.
 From extructures Require Import ord fset fmap.
 
 From Equations Require Import Equations.
@@ -106,7 +106,7 @@ Section KEMDEM.
   (** Procedure names
 
     Under the hood, procedures are identified by natural numbers so we abstract
-    them away by using distrinct coq-level identifiers.
+    them away by using distrinct rocq-level identifiers.
   *)
 
   (* KEY *)
@@ -280,7 +280,7 @@ Section KEMDEM.
     databases. The former database corresponds to what is used by the
     [ssprove_valid] tactic, while the latter corresponds to the built-in
     database used by type-class inference.
-    This means that when Coq will have to prove the validity of a scheme, it
+    This means that when Rocq will have to prove the validity of a scheme, it
     will try to make use of the [valid_scheme] lemma that is a special case
     when the code does not import anything or use any state.
   *)

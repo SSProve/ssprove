@@ -1,7 +1,7 @@
 ![SSProve](https://user-images.githubusercontent.com/5850655/111436014-c6811f00-8701-11eb-9363-3f2a1b9e9da1.png)
 
-This repository contains the Coq formalisation of the paper:\
-**SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq**
+This repository contains the Rocq formalisation of the paper:\
+**SSProve: A Foundational Framework for Modular Cryptographic Proofs in Rocq**
 - Extended journal version published at TOPLAS ([DOI](https://dl.acm.org/doi/10.1145/3594735)).
   Philipp G. Haselwarter, Exequiel Rivas, Antoine Van Muylder, Théo Winterhalter,
   Carmine Abate, Nikolaj Sidorenco, Cătălin Hrițcu, Kenji Maillard, and
@@ -23,14 +23,14 @@ Secondary literature:
 Philipp G. Haselwarter, Benjamin Salling Hvass, Lasse Letager Hansen, Théo Winterhalter, Cătălin Hriţcu, and Bas Spitters. ([DOI](https://doi.org/10.1145/3636501.3636961))
 
 This README serves as a guide to running verification and finding the
-correspondence between the claims in the paper and the formal proofs in Coq, as
+correspondence between the claims in the paper and the formal proofs in Rocq, as
 well as listing the small set of axioms on which the formalisation relies
 (either entirely standard ones or transitive ones from `mathcomp-analysis`).
 
 ## Documentation
 
 * A documentation is available in [DOC.md].
-* Code documentation is available [coqdoc documentation](https://SSProve.github.io/ssprove/index.html).
+* Code documentation is available [rocqdoc documentation](https://SSProve.github.io/ssprove/index.html).
 * [Dependency graph](https://SSProve.github.io/ssprove/dependencies.svg)
 
 
@@ -38,7 +38,7 @@ well as listing the small set of axioms on which the formalisation relies
 
 - [CSF'21](https://youtu.be/MlwQ7CfNH5Q): Video accompanying the publication introducing the general framework (speaker: Philipp Haselwarter)
 - [TYPES'21](https://youtu.be/FdMRB1mnyUA): Video focused on semantics and programming logic (speaker: Antoine Van Muylder)
-- [Coq Workshop '21](https://youtu.be/uYhItPhA-Y8): Video illustrating the formalisation (speaker: Théo Winterhalter)
+- [Rocq Workshop '21](https://youtu.be/uYhItPhA-Y8): Video illustrating the formalisation (speaker: Théo Winterhalter)
 
 ## Installation
 
@@ -49,13 +49,13 @@ There are two installation options:
 #### Prerequisites
 
 - OCaml
-- Coq
+- Rocq
 - Equations
 - Mathcomp
 - Mathcomp analysis
 - Mathcomp word
-- Coq Extructures
-- Coq Deriving
+- Rocq Extructures
+- Rocq Deriving
 
 
 ### OPAM-based installation
@@ -63,9 +63,9 @@ There are two installation options:
 
 You can get all dependencies and install SSProve from the `opam` package manager for OCaml:
 ```sh
-opam repo add coq-released https://coq.inria.fr/opam/released
+opam repo add rocq-released https://rocq-prover.org/opam/released
 opam update
-opam install coq-ssprove
+opam install rocq-ssprove
 ```
 
 To build the dependency graph, you can optionally install `graphviz`.
@@ -73,7 +73,7 @@ On macOS, `gsed` is additionally required for this.
 
 ### Nix-based installation
 
-`ssprove` is available on `nixpkgs`, e.g., `coqPackages_8_20.ssprove`.
+`ssprove` is available on `nixpkgs`, e.g., `coqPackages_9_0.ssprove`.
 The following flake-based templates for your new SSProve project are available:
 - [SSProve latest](.nix/flake.nix.template_latest) -- provides a project setup
 with the latest SSProve development readily installed.
@@ -96,13 +96,13 @@ All set.
 You may need to initialize the project as a Git repository and add the `flake.nix` to it.
 The generated `flake.lock` pins the versions and hence also needs to be added to this new project repo.
 
-In the `flake.nix`, you can add [more Coq packages from the Nix repository](https://github.com/NixOS/nixpkgs/blob/a194f9d0654e368fb900830a19396f9d7792647a/pkgs/top-level/coq-packages.nix#L20).
+In the `flake.nix`, you can add [more Rocq packages from the Nix repository](https://github.com/NixOS/nixpkgs/blob/a194f9d0654e368fb900830a19396f9d7792647a/pkgs/top-level/coq-packages.nix#L20).
 
 ## Build instructions
 
 #### Running verification
 
-Run `make` from this directory to verify all the Coq files.
+Run `make` from this directory to verify all the Rocq files.
 This should succeed displaying only the list of axioms used for our listed
 results.
 
@@ -112,7 +112,7 @@ Run `make graph` to build a graph of dependencies between sources.
 
 | Directory                 | Description                                                               |
 |---------------------------|---------------------------------------------------------------------------|
-| [theories]                | Root of all the Coq files                                                 |
+| [theories]                | Root of all the Rocq files                                                 |
 | [theories/Mon]            | External development coming from "Dijkstra Monads For All"                |
 | [theories/Relational]     | External development coming from "The Next 700 Relational Program Logics" |
 | [theories/Crypt]          | This paper                                                                |
@@ -139,8 +139,8 @@ laws over proper packages whose interfaces match.
 
 #### Sequential composition
 
-In Coq, we call `link p1 p2` the sequential composition of `p1` and `p2`
-(written `p1 ∘ p2` in the paper, but also in Coq thanks to notations).
+In Rocq, we call `link p1 p2` the sequential composition of `p1` and `p2`
+(written `p1 ∘ p2` in the paper, but also in Rocq thanks to notations).
 
 ```coq
 Definition link (p1 p2 : raw_package) : raw_package.
@@ -169,7 +169,7 @@ It holds directly on raw packages, even if they are ill-formed.
 
 #### Parallel composition
 
-In Coq, we write `par p1 p2` for the parallel composition of `p1` and `p2`
+In Rocq, we write `par p1 p2` for the parallel composition of `p1` and `p2`
 (written `p1 || p2` in the paper).
 
 ```coq
@@ -211,7 +211,7 @@ Lemma par_assoc :
 
 #### Identity package
 
-The identity package is called `ID` in Coq and has the following type:
+The identity package is called `ID` in Rocq and has the following type:
 ```coq
 Definition ID (I : Interface) : raw_package.
 ```
@@ -443,7 +443,7 @@ using these rules directly with `code`.
 We separate by a slash (/) rule names that differ in the CSF (left) and journal
 (right) version.
 
-| Rule in paper     | Rule in Coq           |
+| Rule in paper     | Rule in Rocq           |
 |-------------------|-----------------------|
 | reflexivity       | `rreflexivity_rule`   |
 | seq               | `rbind_rule`          |
@@ -698,8 +698,8 @@ R : realType
 ```
 One could plug in any real number construction: Cauchy, Dedekind, ...
 In `mathcomp`s ` Rstruct.v` an instance is built from any instance of the
-abstract `Coq` reals.  An instance of the latter is built from the
-(constructive) Cauchy reals in `Coq.Reals.ClassicalConstructiveReals`.
+abstract `Rocq` reals.  An instance of the latter is built from the
+(constructive) Cauchy reals in `Stdlib.Reals.ClassicalConstructiveReals`.
 
 Finally, by using `mathcomp-analysis` we also inherit an admitted lemma they have:
 
@@ -719,7 +719,7 @@ admitted, but none of them is used to show the results from the paper above.
 
 ### How to find axioms/admits
 
-We use the `Print Assumptions`command of Coq to list the axioms/admits on which
+We use the `Print Assumptions`command of Rocq to list the axioms/admits on which
 a definition, lemma, or theorem depends. In [Main.v] we run this
 command on all the results above at once:
 ```coq
@@ -754,7 +754,7 @@ realsum.__admitted__interchange_psum :
 Axioms.R : reals.Real.type
 ```
 
-The ElGamal example is parametrized by a cyclic group using a Coq functor.
+The ElGamal example is parametrized by a cyclic group using a Rocq functor.
 To print its axioms we have to provide an instance of this functor, and for
 simplicity we chose to use ℤ₃ as an instance even if it is not realistic.
 The axioms we use do not depend on the instance itself.

@@ -1,7 +1,7 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-From Coq Require Import FunctionalExtensionality.
+From Stdlib Require Import ssreflect ssrfun ssrbool.
+From Stdlib Require Import FunctionalExtensionality.
 From SSProve.Mon Require Export Base.
-From Coq Require Import Relation_Definitions Morphisms RelationPairs.
+From Stdlib Require Import Relation_Definitions Morphisms RelationPairs.
 From SSProve.Mon Require Import SPropBase SPropMonadicStructures.
 From SSProve.Relational Require Import OrderEnrichedCategory Rel.
 
@@ -553,7 +553,7 @@ Section ToNaiveDefinitions.
 
   Import SPropNotations.
 
-  (* We show that we can define the sur-approximation of this coq-development from that data *)
+  (* We show that we can define the sur-approximation of this rocq-development from that data *)
   Local Ltac feq_npair := repeat (congr npair).
 
   Program Definition W' : preRelationalSpecMonad :=

@@ -23,7 +23,7 @@ From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb
   pkg_core_definition choice_type pkg_composition pkg_rhl Package Prelude.
 
-From Coq Require Import Utf8.
+From Stdlib Require Import Utf8.
 From extructures Require Import ord fset fmap.
 
 Import SPropNotations.
@@ -52,7 +52,7 @@ Section PRF_example.
   Definition Key_N : nat := 2^n.
   Definition Key : choice_type := chFin Key_N.
 
-  Definition Words0 : Words := cast_ord (word.prednK_modulus _) ord0. 
+  Definition Words0 : Words := cast_ord (word.prednK_modulus _) ord0.
 
   (* TW: Is this normal that this definition is so big? *)
   #[program] Definition plus : Words → Key → Words :=

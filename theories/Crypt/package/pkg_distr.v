@@ -4,7 +4,7 @@
 *)
 
 
-From Coq Require Import Utf8.
+From Stdlib Require Import Utf8.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr seq all_algebra fintype realsum.
@@ -78,7 +78,7 @@ Qed.
 Lemma otf_injective :
   ∀ {F}, injective (@otf F).
 Proof.
-  rewrite /injective /otf => x1 x2 H_eq. apply enum_val_inj. 
+  rewrite /injective /otf => x1 x2 H_eq. apply enum_val_inj.
 Qed.
 
 Lemma card_prod_iprod :

@@ -1,0 +1,130 @@
+# TODO: remove once 2.3.0 support is removed.
+-arg -w -arg -deprecated-since-mathcomp-2.4.0
+
+-Q theories SSProve
+
+theories/Mon/Base.v
+theories/Mon/SPropBase.v
+theories/Mon/SPropMonadicStructures.v
+theories/Mon/Monoid.v
+theories/Mon/MonadExamples.v
+theories/Mon/SpecificationMonads.v
+theories/Mon/DijkstraMonadExamples.v
+theories/Mon/FiniteProbabilities.v
+
+theories/Relational/Category.v
+theories/Relational/RelativeMonads.v
+theories/Relational/EnrichedSetting.v
+theories/Relational/Rel.v
+theories/Relational/OrderEnrichedCategory.v
+theories/Relational/OrderEnrichedRelativeMonadExamples.v
+theories/Relational/GenericRulesSimple.v
+theories/Relational/Commutativity.v
+
+theories/Crypt/Prelude.v
+theories/Crypt/Axioms.v
+theories/Crypt/jasmin_util.v
+theories/Crypt/jasmin_wsize.v
+theories/Crypt/jasmin_word.v
+theories/Crypt/Casts.v
+theories/Crypt/choice_type.v
+
+# Categorical semantics
+
+theories/Crypt/rhl_semantics/ChoiceAsOrd.v
+
+theories/Crypt/rhl_semantics/more_categories/RelativeMonadMorph_prod.v
+theories/Crypt/rhl_semantics/more_categories/LaxComp.v
+theories/Crypt/rhl_semantics/more_categories/OrderEnrichedRelativeAdjunctions.v
+theories/Crypt/rhl_semantics/more_categories/LaxFunctorsAndTransf.v
+theories/Crypt/rhl_semantics/more_categories/LaxMorphismOfRelAdjunctions.v
+theories/Crypt/rhl_semantics/more_categories/TransformingLaxMorph.v
+theories/Crypt/rhl_semantics/more_categories/InitialRelativeMonad.v
+theories/Crypt/rhl_semantics/free_monad/FreeProbProg.v
+theories/Crypt/rhl_semantics/free_monad/UniversalFreeMap.v
+theories/Crypt/rhl_semantics/only_prob/SubDistr.v
+theories/Crypt/rhl_semantics/only_prob/Couplings.v
+theories/Crypt/rhl_semantics/only_prob/Theta_dens.v
+theories/Crypt/rhl_semantics/only_prob/Theta_exCP.v
+theories/Crypt/rhl_semantics/only_prob/ThetaDex.v
+theories/Crypt/rhl_semantics/state_prob/OrderEnrichedRelativeAdjunctionsExamples.v
+theories/Crypt/rhl_semantics/state_prob/StateTransformingLaxMorph.v
+theories/Crypt/rhl_semantics/state_prob/StateTransfThetaDens.v
+#theories/Crypt/rhl_semantics/state_prob/LiftStateful.v
+
+# Prob rules
+theories/Crypt/rules/RulesProb.v
+
+# Crypto
+theories/Crypt/rules/UniformDistrLemmas.v
+#theories/Crypt/rules/UniformDistr.v
+theories/Crypt/package/fmap_extra.v
+theories/Crypt/package/pkg_core_definition.v
+theories/Crypt/package/pkg_composition.v
+theories/Crypt/package/pkg_notation.v
+theories/Crypt/package/pkg_tactics.v
+theories/Crypt/package/pkg_heap.v
+theories/Crypt/package/pkg_semantics.v
+theories/Crypt/package/pkg_advantage.v
+theories/Crypt/package/pkg_invariants.v
+theories/Crypt/package/pkg_distr.v
+theories/Crypt/package/pkg_rhl.v
+theories/Crypt/package/pkg_user_util.v
+theories/Crypt/package/pkg_interpreter.v
+theories/Crypt/Package.v
+
+# State + Prob
+theories/Crypt/rules/RulesStateProb.v
+theories/Crypt/rules/UniformStateProb.v
+
+# Nominal
+theories/Crypt/nominal/Nominal.v
+theories/Crypt/nominal/Fresh.v
+theories/Crypt/nominal/Pr.v
+theories/Crypt/nominal/Share.v
+theories/Crypt/nominal/Sep.v
+theories/Crypt/nominal/Adv.v
+theories/Crypt/nominal/NominalPrelude.v
+theories/Crypt/nominal/packages/Async.v
+theories/Crypt/nominal/packages/TotalProbability.v
+theories/Crypt/nominal/packages/HybridArgument.v
+
+# Examples of assumptions
+theories/Crypt/examples/Assumptions/DDH.v
+theories/Crypt/examples/Assumptions/DL.v
+theories/Crypt/examples/Assumptions/tSDH.v
+
+# Examples
+theories/Crypt/examples/package_usage_example.v
+theories/Crypt/examples/interpreter_test.v
+theories/Crypt/examples/concrete_groups.v
+theories/Crypt/examples/PRF.v
+theories/Crypt/examples/OTP.v
+theories/Crypt/examples/KEMDEM.v
+theories/Crypt/examples/RandomOracle.v
+theories/Crypt/examples/SigmaProtocol.v
+theories/Crypt/examples/Schnorr.v
+# theories/Crypt/examples/OVN.v
+theories/Crypt/examples/Executor.v
+theories/Crypt/examples/PolynomialUtils.v
+
+# case-study on public-key encryption
+theories/Crypt/examples/PKE/Scheme.v
+theories/Crypt/examples/PKE/CyclicGroup.v
+theories/Crypt/examples/PKE/LDDH.v
+theories/Crypt/examples/PKE/OneToMany.v
+theories/Crypt/examples/PKE/MultiInstance.v
+theories/Crypt/examples/PKE/ElGamal.v
+
+# Examples from https://github.com/Som1Lse/joy-of-ssprove
+theories/Crypt/examples/MACCCA.v
+theories/Crypt/examples/PRFMAC.v
+theories/Crypt/examples/PRFPRG.v
+theories/Crypt/examples/PRPCCA.v
+theories/Crypt/examples/SecretSharing.v
+theories/Crypt/examples/ShamirSecretSharing.v
+theories/Crypt/examples/StretchPRG.v
+theories/Crypt/examples/SymmRatchet.v
+
+# Printing the axioms of all results from the paper
+theories/Crypt/Main.v

@@ -4,20 +4,24 @@ ssprove_csf2021/
 _testbuild_ssprove_csf2021/
 _namecheck_ssprove_csf2021/
 
-# Coq
+# Rocq
 *.v.d
 *.vo
 *.vok
 *.vos
 *.glob
 .coqdeps.d
+.rocqdeps.d
 
-# coq_makefile
+# Rocq makefile
 .Makefile.d
 Makefile.coq
+Makefile.rocq
 .Makefile.coq.d
+.Makefile.rocq.d
 Makefile.conf
 Makefile.coq.conf
+Makefile.rocq.conf
 *.cache
 
 # dependency graph
@@ -57,7 +61,7 @@ Makefile.coq.conf
 
 .Makefile.coq 2.d
 
-# coqdoc
+# rocq doc
 docs/
 # Dune
 _build/

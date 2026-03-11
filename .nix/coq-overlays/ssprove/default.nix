@@ -14,7 +14,9 @@
 
   inherit version;
   defaultVersion = with lib.versions; lib.switch [coq.coq-version mathcomp-boot.version] [
-    { cases = [(range "8.18" "9.0") (range "2.1.0" "2.4.0")]; out = "0.2.4"; }
+    { cases = [(range "8.20" "9.1") (range "2.3.0" "2.5.0")]; out = "0.3.0"; }
+    { cases = [(range "8.18" "9.1") (range "2.3.0" "2.4.0")]; out = "0.2.4"; }
+    { cases = [(range "8.18" "8.20") (range "2.3.0" "2.3.0")]; out = "0.2.3"; }
     { cases = [(range "8.18" "8.20") (range "2.1.0" "2.2.0")]; out = "0.2.2"; }
     # This is the original dependency:
     # { cases = ["8.17" "1.18.0"]; out = "0.1.0"; }
@@ -28,6 +30,7 @@
 
   releaseRev = v: "v${v}";
 
+  release."0.3.0".sha256 = "sha256-ioPqavLOc8ZEzroalLR4dpqDbnOyzzOmWSF9+J1yPdQ=";
   release."0.2.4".sha256 = "sha256-uglr47aDgSkKi2JyVyN+2BrokZISZUAE8OUylGjy7ds=";
   release."0.2.3".sha256 = "sha256-Y3dmNIF36IuIgrVILteofOv8e5awKfq93S4YN7enswI=";
   release."0.2.2".sha256 = "sha256-tBF8equJd6hKZojpe+v9h6Tg9xEnMTVFgOYK7ZnMfxk=";
@@ -44,7 +47,7 @@
                            deriving];
 
   meta = with lib; {
-    description = "SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq";
+    description = "SSProve: A Foundational Framework for Modular Cryptographic Proofs in Rocq";
     license = licenses.mit;
     maintainers = [ {
       name = "Sebastian Ertel";

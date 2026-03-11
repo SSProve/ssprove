@@ -1,4 +1,4 @@
-From Coq Require Import Utf8.
+From Stdlib Require Import Utf8.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
@@ -71,7 +71,7 @@ Section DistrLemmas.
     {f1 : T → distr R U} {f2 : U → distr R V} :
     \dlet_(x <- \dlet_(y <- t) f1 y) f2 x
     = \dlet_(y <- t) \dlet_(x <- f1 y) f2 x.
-  Proof. apply distr_ext, dlet_dlet. Qed.
+  Proof. apply distr_ext, __deprecated__dlet_dlet. Qed.
 
   Lemma dlet_null_ext {f : T → distr R U} :
     \dlet_(i <- dnull) f i = dnull.
@@ -242,7 +242,7 @@ Obligation 2. rewrite fpermM natizeK //. Qed.
 HB.instance Definition _ : HasAction Location := Location_HasAction.
 
 
-Fixpoint rename_code_def {A} π (c : raw_code A) := 
+Fixpoint rename_code_def {A} π (c : raw_code A) :=
   match c with
   | ret x => ret x
   | opr o x k => opr o x (fun y => rename_code_def π (k y))

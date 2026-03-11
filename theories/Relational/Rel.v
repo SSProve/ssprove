@@ -1,14 +1,14 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-From Coq Require FunctionalExtensionality.
+From Stdlib Require Import ssreflect ssrfun ssrbool.
+From Stdlib Require FunctionalExtensionality.
 From SSProve.Mon Require Export Base.
-From Coq Require Import Relation_Definitions Morphisms.
+From Stdlib Require Import Relation_Definitions Morphisms.
 From SSProve.Mon Require Import SPropBase.
 From SSProve.Relational Require Import Category RelativeMonads EnrichedSetting.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
 
-(* This file defines most components of the relational dependent type theory as embedded in coq *)
+(* This file defines most components of the relational dependent type theory as embedded in Rocq *)
 
 Section Rel.
   Notation πl := (fun x => nfst (dfst x)).

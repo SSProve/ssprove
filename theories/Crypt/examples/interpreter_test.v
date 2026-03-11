@@ -5,7 +5,7 @@ Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then
 
 From SSProve.Crypt Require Import Prelude choice_type Package pkg_interpreter.
 
-From Coq Require Import Utf8.
+From Stdlib Require Import Utf8.
 From extructures Require Import ord fset fmap.
 
 From Equations Require Import Equations.
