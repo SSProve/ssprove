@@ -20,7 +20,7 @@ From mathcomp Require Import all_ssreflect all_algebra word_ssrZ word.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From SSProve.Crypt Require Import jasmin_util.
 Set Warnings "-notation-overridden".
-From Coq Require Import ZArith.
+From Stdlib Require Import ZArith.
 Set Warnings "notation-overridden".
 
 Set Implicit Arguments.

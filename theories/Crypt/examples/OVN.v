@@ -11,7 +11,7 @@ From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
   pkg_composition Package Prelude SigmaProtocol Schnorr DDH.
 
-From Coq Require Import Utf8 Lia.
+From Stdlib Require Import Utf8 Lia.
 From extructures Require Import ord fset fmap.
 
 From Equations Require Import Equations.

@@ -1,4 +1,4 @@
-From Coq Require Import Relation_Definitions.
+From Stdlib Require Import Relation_Definitions.
 From SSProve.Relational Require Import OrderEnrichedCategory.
 From SSProve.Mon Require Import SPropBase.
 Set Warnings "-notation-overridden,-ambiguous-paths".

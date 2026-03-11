@@ -2,12 +2,12 @@ Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect.
 Set Warnings "notation-overridden,ambiguous-paths".
 Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
-From Coq Require Arith ZArith.
+From Stdlib Require Arith ZArith.
 
 From SSProve.Crypt Require Import Prelude choice_type
      pkg_core_definition pkg_tactics pkg_distr pkg_notation.
 
-From Coq Require Import Utf8.
+From Stdlib Require Import Utf8.
 From extructures Require Import ord fset fmap.
 
 (* From Jasmin Require Import word. *)

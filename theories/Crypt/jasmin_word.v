@@ -20,7 +20,7 @@ From mathcomp Require Import all_ssreflect all_algebra word_ssrZ word.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From SSProve.Crypt Require Import jasmin_util jasmin_wsize.
 Set Warnings "-notation-overridden".
-From Coq Require Import ZArith.
+From Stdlib Require Import ZArith.
 Set Warnings "notation-overridden".
 Export jasmin_wsize.
 
@@ -389,13 +389,13 @@ Proof.
   case: leP => hic /=;
     last (rewrite wbit_lsl_lo //; apply/leP; Lia.lia).
   have eqi : (Z.to_nat c + (i - Z.to_nat c))%nat = i.
-   * by rewrite /addn /addn_rec; zify; rewrite Nat2Z.inj_sub; Lia.lia.
+   * by rewrite /addn /addn; zify; rewrite Nat2Z.inj_sub; Lia.lia.
   have := wbit_lsl w (Z.to_nat c) (i - Z.to_nat c).
   by rewrite eqi => ->.
 Qed.
 
 Local Ltac lia :=
-  rewrite /addn /addn_rec /subn /subn_rec; Psatz.lia.
+  rewrite /addn /addn /subn /subn; Psatz.lia.
 
 Lemma wunsigned_wshl sz (x: word sz) c :
   wunsigned (wshl x (Z.of_nat c)) = (wunsigned x * 2 ^ Z.of_nat c) mod wbase sz.
