@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
   eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
 
-From Coq Require Import Utf8 Lia.
+From Stdlib Require Import Utf8 Lia.
 From extructures Require Import ord fset fmap.
 
 From Equations Require Import Equations.

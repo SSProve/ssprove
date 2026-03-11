@@ -1,4 +1,4 @@
-From Coq Require Import Utf8.
+From Stdlib Require Import Utf8.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
@@ -117,7 +117,7 @@ Section Async.
             under eq_dlet. {
               intros ?. rewrite Pr_code_put set_heap_contract. over. }
             over. }
-          rewrite /= Pr_fstC. 
+          rewrite /= Pr_fstC.
           rewrite Pr_code_put Pr_code_ret dlet_unit_ext /=.
           specialize (H1 tt (set_heap h (lazy_loc S) (Some x))).
           rewrite -H1 get_set_heap_eq /=.

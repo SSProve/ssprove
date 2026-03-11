@@ -1,4 +1,4 @@
-From Coq Require Import Utf8.
+From Stdlib Require Import Utf8.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".

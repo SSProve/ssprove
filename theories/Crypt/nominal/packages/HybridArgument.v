@@ -1,4 +1,4 @@
-From Coq Require Import Utf8 Lia.
+From Stdlib Require Import Utf8 Lia.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import all_ssreflect all_algebra.
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
