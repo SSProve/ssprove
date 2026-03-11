@@ -18,7 +18,7 @@
    (coq-mathcomp-ssreflect (>= 2.2.0))
    (coq-mathcomp-analysis (>= 1.8.0))
    (coq-mathcomp-experimental-reals (>= 1.8.0))
-   (coq-mathcomp-word (>= 3.2))
+   (coq-mathcomp-word (>= 3.3))
    (coq-extructures (>= 0.5.0))
    (coq-deriving (>= 0.2.0)))
 )

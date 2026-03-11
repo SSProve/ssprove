@@ -132,11 +132,6 @@ Definition wsigned {s} (w: word s) : Z :=
 Definition wrepr s (z: Z) : word s :=
   mkword (wsize_size_minus_1 s).+1 z.
 
-Lemma word_ext n x y h h' :
-  x = y ->
-  @mkWord n x h = @mkWord n y h'.
-Proof. by move => e; apply/val_eqP/eqP. Qed.
-
 Lemma wunsigned_inj sz : injective (@wunsigned sz).
 Proof. by move => x y /eqP /val_eqP. Qed.
 
@@ -152,7 +147,7 @@ Proof. by rewrite /wrepr /wsigned sreprK. Qed.
 
 Lemma wunsigned_repr s z :
   wunsigned (wrepr s z) = z mod modulus (wsize_size_minus_1 s).+1.
-Proof. done. Qed.
+Proof. by rewrite /wunsigned /wrepr mkwordK. Qed.
 
 Lemma wrepr0 sz : wrepr sz 0 = 0%R.
 Proof. by apply/eqP. Qed.
@@ -175,15 +170,24 @@ Proof. move=> h; rewrite wunsigned_repr; apply: Zmod_small h. Qed.
 
 Lemma wrepr_add sz (x y: Z) :
   wrepr sz (x + y) = (wrepr sz x + wrepr sz y)%R.
-Proof. by apply: word_ext; rewrite /wrepr !mkwordK Zplus_mod. Qed.
+Proof.
+  apply: wunsigned_inj.
+  by rewrite wunsigned_repr Zplus_mod /wunsigned addwE !mkwordK.
+Qed.
 
 Lemma wrepr_sub sz (x y: Z) :
   wrepr sz (x - y) = (wrepr sz x - wrepr sz y)%R.
-Proof. by apply: word_ext; rewrite /wrepr !mkwordK -Zminus_mod_idemp_r -Z.add_opp_r Zplus_mod. Qed.
+Proof.
+  apply: wunsigned_inj.
+  by rewrite wunsigned_repr Zminus_mod /wunsigned subwE !mkwordK.
+Qed.
 
 Lemma wrepr_mul sz (x y: Z) :
   wrepr sz (x * y) = (wrepr sz x * wrepr sz y)%R.
-Proof. by apply: word_ext; rewrite /wrepr !mkwordK Zmult_mod. Qed.
+Proof.
+  apply: wunsigned_inj.
+  by rewrite wunsigned_repr Zmult_mod /wunsigned mulwE !mkwordK.
+Qed.
 
 Lemma wrepr_m1 sz :
   wrepr sz (-1) = (-1)%R.
@@ -831,7 +835,7 @@ Lemma wxor_xx sz (x: word sz) : wxor x x = 0%R.
 Proof. by apply/eqP/eq_from_wbit; rewrite /= Z.lxor_nilpotent. Qed.
 
 Lemma wmulE sz (x y: word sz) : (x * y)%R = wrepr sz (wunsigned x * wunsigned y).
-Proof. by rewrite /wunsigned /wrepr; apply: word_ext. Qed.
+Proof. by rewrite wrepr_mul !wrepr_unsigned. Qed.
 
 (* Lemma wror0 sz (w : word sz) : wror w 0 = w. *)
 (* Proof. *)
@@ -1130,8 +1134,9 @@ Lemma mkwordI n x y :
   (0 <= y < modulus n)%R ->
   mkword n x = mkword n y -> x = y.
 Proof.
-by case/andP => /ZleP ? /ZltP ? /andP[] /ZleP ? /ZltP ? [];
-  rewrite !Z.mod_small.
+case/andP => /ZleP ? /ZltP ? /andP[] /ZleP ? /ZltP ? h.
+have : urepr (mkword n x) = urepr (mkword n y) by rewrite h.
+by clear h; rewrite !mkwordK !Z.mod_small.
 Qed.
 
 (* -------------------------------------------------------------------*)
@@ -1801,8 +1806,8 @@ Qed.
 Lemma wrepr_xor ws (x y : Z) :
   wxor (wrepr ws x) (wrepr ws y) = wrepr ws (Z.lxor x y).
 Proof.
-  apply: word_ext.
-  rewrite /wrepr /=.
+  apply: wunsigned_inj.
+  rewrite wunsigned_repr /wunsigned urepr_wxor !mkwordK.
   set wsz := (wsize_size_minus_1 ws).+1.
   change (word.modulus wsz) with (two_power_nat wsz).
   rewrite two_power_nat_equiv.
@@ -1857,7 +1862,7 @@ Lemma wsigned_wnot ws (x : word ws) :
 Proof.
   rewrite 2!wsignedE.
   rewrite msb_wnot.
-  case: msb => /=;
+  case: msb; cbn [negb];
     rewrite wunsigned_wnot;
     lia.
 Qed.
@@ -1902,12 +1907,12 @@ Qed.
 (* Notation pointer := (word Uptr) (only parsing). *)
 
 Lemma subword_make_vec_bits_low (n m : nat) x y :
-  (n < m)%Z ->
+  (Z.of_nat n < Z.of_nat m)%Z ->
   word.subword 0 n (word.mkword m (wcat_r [:: x; y ])) = x.
 Proof.
   move=> h.
   apply/eqP/word.eq_from_wbit => i.
-  rewrite subwordE wbit_t2wE /word.word.wbit /=.
+  rewrite subwordE wbit_t2wE /word.word.wbit mkword_valK /=.
   rewrite (nth_map i); last by rewrite size_enum_ord.
   rewrite addn0 nth_ord_enum modulusZE.
   rewrite Z.shiftl_0_l Z.lor_0_r.
