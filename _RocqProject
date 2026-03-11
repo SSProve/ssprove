@@ -58,7 +58,6 @@ theories/Crypt/rules/RulesProb.v
 # Crypto
 theories/Crypt/rules/UniformDistrLemmas.v
 #theories/Crypt/rules/UniformDistr.v
-# theories/Crypt/examples/deprecated/otp.v
 theories/Crypt/package/fmap_extra.v
 theories/Crypt/package/pkg_core_definition.v
 theories/Crypt/package/pkg_composition.v
@@ -78,9 +77,6 @@ theories/Crypt/Package.v
 theories/Crypt/rules/RulesStateProb.v
 theories/Crypt/rules/UniformStateProb.v
 
-#std. distributions
-# theories/Crypt/only_prob/SymmetricSchemeStateProbStdDistr.v
-
 # Nominal
 theories/Crypt/nominal/Nominal.v
 theories/Crypt/nominal/Fresh.v
@@ -89,6 +85,9 @@ theories/Crypt/nominal/Share.v
 theories/Crypt/nominal/Sep.v
 theories/Crypt/nominal/Adv.v
 theories/Crypt/nominal/NominalPrelude.v
+theories/Crypt/nominal/packages/Async.v
+theories/Crypt/nominal/packages/TotalProbability.v
+theories/Crypt/nominal/packages/HybridArgument.v
 
 # Examples of assumptions
 theories/Crypt/examples/Assumptions/DDH.v
@@ -113,6 +112,8 @@ theories/Crypt/examples/PolynomialUtils.v
 theories/Crypt/examples/PKE/Scheme.v
 theories/Crypt/examples/PKE/CyclicGroup.v
 theories/Crypt/examples/PKE/LDDH.v
+theories/Crypt/examples/PKE/OneToMany.v
+theories/Crypt/examples/PKE/MultiInstance.v
 theories/Crypt/examples/PKE/ElGamal.v
 
 # Examples from https://github.com/Som1Lse/joy-of-ssprove
