@@ -14,6 +14,7 @@ From HB Require Import structures.
 (* Supress warnings due to use of HB *)
 Set Warnings "-redundant-canonical-projection,-projection-no-head-constant".
 
+Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
