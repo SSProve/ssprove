@@ -34,7 +34,7 @@ jobs:
       with:
         github_access_token: ${{ secrets.GITHUB_TOKEN }}
     - name: Cachix setup ssprove
-      uses: cachix/cachix-action@v16
+      uses: cachix/cachix-action@v17
       with:
         extraPullNames: coq, coq-community, math-comp
         name: ssprove

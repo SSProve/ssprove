@@ -31,7 +31,7 @@ jobs:
       with:
         nix_path: nixpkgs=channel:nixpkgs-unstable
     - name: Cachix setup ssprove
-      uses: cachix/cachix-action@v16
+      uses: cachix/cachix-action@v17
       with:
         authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
         extraPullNames: coq, coq-community, math-comp
@@ -90,7 +90,7 @@ jobs:
       with:
         nix_path: nixpkgs=channel:nixpkgs-unstable
     - name: Cachix setup ssprove
-      uses: cachix/cachix-action@v16
+      uses: cachix/cachix-action@v17
       with:
         authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
         extraPullNames: coq, coq-community, math-comp
