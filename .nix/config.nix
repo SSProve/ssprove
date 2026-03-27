@@ -7,7 +7,8 @@
   no-rocq-yet = true;
   default-bundle = "9.0";
 
-  bundles."9.0" = { coqPackages = {
+  bundles."9.0" = {
+    coqPackages = {
       coq.override.version = "9.0";
       mathcomp.job = false;
       mathcomp.override.version = "2.3.0";
@@ -15,8 +16,10 @@
     }; rocqPackages = {
       rocq-core.override.version = "9.0";
     };
+    push-branches = ["main" "rocq-9.0"];
   };
-  bundles."9.1" = { coqPackages = {
+  bundles."9.1" = {
+    coqPackages = {
       coq.override.version = "9.1";
       mathcomp.job = false;
       mathcomp.override.version = "2.4.0";
@@ -24,8 +27,10 @@
     }; rocqPackages = {
       rocq-core.override.version = "9.1";
     };
+    push-branches = ["main" "rocq-9.1"];
   };
-  bundles."MC-dev" = { coqPackages = {
+  bundles."MC-dev" = {
+    coqPackages = {
       coq.override.version = "9.1";
       mathcomp.job = false;
       mathcomp.override.version = "master";
@@ -45,9 +50,6 @@
       rocq-core.override.version = "9.1";
     };
   };
-
-  bundles."9.0".push-branches = ["main"];
-  bundles."9.1".push-branches = ["main"];
 
   cachix.coq = {};
   cachix.math-comp = {};
