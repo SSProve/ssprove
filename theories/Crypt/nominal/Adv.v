@@ -2,7 +2,7 @@ Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra
   reals distr realsum fingroup.fingroup solvable.cyclic.
 Set Warnings "notation-overridden,ambiguous-paths".
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
 From Stdlib Require Import Utf8.
 From extructures Require Import ord fset fmap ffun fperm.
@@ -242,10 +242,10 @@ Lemma Adv_par_r (G₀ G₁ G₁' A : nom_package) {E₀ E₁}
 Proof.
   rewrite -Adv_reduction.
   rewrite sep_par_factor_l.
-  2: fmap_solve.
+  1: fmap_solve.
   rewrite sep_par_empty_l.
   rewrite (sep_par_factor_l _ G₁').
-  2: fmap_solve.
+  1: fmap_solve.
   rewrite sep_par_empty_l.
   reflexivity.
 Qed.
@@ -275,10 +275,10 @@ Lemma Adv_par_l (G₀ G₀' G₁ A : nom_package) {E₀ E₁}
 Proof.
   rewrite -Adv_reduction.
   rewrite sep_par_factor_r.
-  2: fmap_solve.
+  1: fmap_solve.
   rewrite sep_par_empty_r.
   rewrite (sep_par_factor_r G₀').
-  2: fmap_solve.
+  1: fmap_solve.
   rewrite sep_par_empty_r.
   reflexivity.
 Qed.

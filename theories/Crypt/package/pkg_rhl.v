@@ -33,7 +33,7 @@ Import SPropNotations.
 Import PackageNotation.
 Import RSemanticNotation.
 
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
@@ -2283,7 +2283,7 @@ Proof.
       erewrite eq_psum.
       2:{ intro. rewrite GRing.mulrC. reflexivity. }
       rewrite psumZ.
-      2:{ rewrite dunit1E. apply ler0n. }
+      { rewrite dunit1E. apply ler0n. }
       rewrite hop. rewrite GRing.mulr1.
       reflexivity.
     + unfold rmg, dsnd. apply distr_ext. intro.
@@ -2426,7 +2426,7 @@ Section Uniform_prod.
     apply distr_ext. simpl. intros [a b].
     unfold SDistr_bind. rewrite dletE. simpl.
     rewrite psumZ.
-    2:{ apply r_nonneg. }
+    { apply r_nonneg. }
     unfold r. rewrite card_prod. simpl.
     rewrite !card_ord.
     unfold SDistr_unit. unfold dunit. unlock. unfold drat. unlock. simpl.
@@ -2889,7 +2889,7 @@ Proof.
     }
     move: e => /eqP e. inversion e.
     subst.
-    rewrite set_heap_commut. 2: auto.
+    rewrite set_heap_commut. 1: auto.
     reflexivity.
 Qed.
 

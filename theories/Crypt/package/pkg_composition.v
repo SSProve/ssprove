@@ -20,7 +20,7 @@ Require Equations.Prop.DepElim.
 
 Set Equations With UIP.
 
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
@@ -379,7 +379,7 @@ Lemma code_link_par_right :
     code_link v (par p1 p2) = code_link v p2.
 Proof.
   intros A I L L' E v p1 p2 h hv hp1.
-  rewrite par_commut. 1: eapply code_link_par_left.
+  rewrite par_commut. 2: eapply code_link_par_left.
   all: eauto.
 Qed.
 

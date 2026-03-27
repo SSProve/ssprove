@@ -54,7 +54,7 @@ From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
 
 From Stdlib Require Bool.
 Set Warnings "notation-overridden,ambiguous-paths".
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
@@ -156,8 +156,8 @@ Proof.
     apply: leq_trans.
     1: by apply: size_mul_leq.
     rewrite size_scale.
-    + by rewrite (@PolyK R 0) // GRing.oner_neq0.
     + by rewrite GRing.invr_neq0 // GRing.subr_eq0.
+    + by rewrite (@PolyK R 0) // GRing.oner_neq0.
 Qed.
 
 (*
@@ -207,7 +207,7 @@ Proof.
     move: Hin. rewrite in_cons => /orP [/eqP Heq|Hin].
     + case: Heq => -> ->.
       rewrite lagrange_poly_part_0 ?GRing.addr0 //.
-      2: by rewrite /unzip1 map_cat mem_cat Bool.orb_comm mem_seq1 eq_refl.
+      1: by rewrite /unzip1 map_cat mem_cat Bool.orb_comm mem_seq1 eq_refl.
       move: Huniq.
       rewrite /dif_points /unzip1 map_cat uniq_catC -map_cat cat_cons -/unzip1.
       move => /(uniq_unzip1_in (x0, y0))-Huniq.
@@ -217,7 +217,7 @@ Proof.
       move: Huniq; rewrite lagrange_basis_1 /= => /eqP-Huniq.
       by rewrite Huniq GRing.mulr1.
     + rewrite IHr //.
-      2: by rewrite -catA cat_cons.
+      1: by rewrite -catA cat_cons.
       rewrite lagrange_basis_0 ?GRing.mulr0 ?GRing.add0r //.
       move: Hin => /(map_f fst)-Hin.
       rewrite /unzip1 map_cat mem_cat Bool.orb_comm.
@@ -390,7 +390,7 @@ Proof.
   case Heq : (x == a.1).
   - move : Heq => /eqP-Heq.
     rewrite Heq (lagrange_poly_correct a.1 a.2) //.
-    1: rewrite (lagrange_poly_correct a.1 a.2) ?GRing.subrr //.
+    2: rewrite (lagrange_poly_correct a.1 a.2) ?GRing.subrr //.
     all: by rewrite -surjective_pairing mem_cat in_cons eq_refl Bool.orb_true_r.
   - rewrite -!cat_rcons -!cats1 in Huniq1 Huniq2*.
     by apply: IHr.
@@ -419,7 +419,7 @@ Proof.
       case: Heq => ? ?.
       subst.
       rewrite hornerD hornerN (lagrange_poly_correct x y1) //.
-      1: rewrite (lagrange_poly_correct x y2) //.
+      2: rewrite (lagrange_poly_correct x y2) //.
       all: by rewrite in_cons eq_refl.
     + move: Hin; rewrite Heq => Hin.
       rewrite (y_in_zero_points Hin).
@@ -442,7 +442,7 @@ Proof.
   case Heq: (x == a).
   - move: Heq => /eqP-Heq.
     rewrite Heq (lagrange_poly_correct a 0) //.
-    1: rewrite (lagrange_poly_correct a 0) ?GRing.addr0 //.
+    2: rewrite (lagrange_poly_correct a 0) ?GRing.addr0 //.
     all: by rewrite mem_cat in_cons eq_refl Bool.orb_true_r.
   - rewrite -!cat_rcons -!cats1 in Huniq1 Huniq2 *.
     move: Hin; rewrite Heq => Hin.
@@ -474,7 +474,7 @@ Proof.
       case: Heq => ? ?.
       subst.
       rewrite hornerD (lagrange_poly_correct x y1) //.
-      1: rewrite (lagrange_poly_correct x y2) //.
+      3: rewrite (lagrange_poly_correct x y2) //.
       2,4: by rewrite in_cons eq_refl.
       all: simpl_dif_point; by rewrite unzip1_zero_points.
     + move: Hin; rewrite Heq => Hin.

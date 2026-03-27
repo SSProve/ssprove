@@ -11,7 +11,7 @@ Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
   ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
 From SSProve.Mon Require Import SPropBase.
 From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
@@ -53,7 +53,7 @@ Lemma unzip2_seq_to_chseq {T} (s: seq T):
 Proof.
   rewrite mkfmapK ?unzip2_zip ?unzip1_zip ?size_iota //.
   rewrite (@eq_sorted _ _ ltn).
-  1: by apply: iota_ltn_sorted.
+  2: by apply: iota_ltn_sorted.
   move=> a b.
   by rewrite /Ord.lt /= ltn_neqAle Bool.andb_comm.
 Qed.
@@ -439,7 +439,7 @@ Lemma forward_secrecy_based_on_prg LA A:
 Proof.
   move=> vA.
   rewrite Advantage_E Advantage_sym.
-  ssprove triangle (ATTACK true) 
+  ssprove triangle (ATTACK true)
   [::
     ATTACK_GEN_pkg ∘ GEN_STRETCH true ;
     ATTACK_GEN_pkg ∘ GEN_STRETCH false ;

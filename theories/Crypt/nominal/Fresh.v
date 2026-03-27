@@ -3,7 +3,7 @@ From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
   fingroup.fingroup solvable.cyclic prime ssrnat ssreflect ssrfun ssrbool ssrnum
   eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
 From Stdlib Require Import Utf8.
 From extructures Require Import ord fset fmap ffun fperm.
@@ -79,21 +79,21 @@ Lemma fresh_disjoint {X Y : nomType} {x : X} {y : Y}
   : disj x (fresh x y ∙ y).
 Proof.
   rewrite /disj -supp_equi.
-  rewrite adjoin_disc_r; [| apply: fdisjoint_equi ].
+  rewrite adjoin_disc_r; [apply: fdisjoint_equi |].
   apply /fdisjointP => a H.
   rewrite -(adjoin_disc_l in_mem_equi) in H.
   apply ltn_offset in H.
   apply /negP => H'.
   rewrite /rename //= in H.
   rewrite fpermE //= in H.
-  + rewrite -{2}(addn0 (offset (supp x))) in H.
-    rewrite ltn_add2l in H.
-    rewrite ltn0 // in H.
   + apply in2W.
     eapply can_inj.
     eapply (can_comp atomizeK).
     eapply (can_comp (addKn _)).
     eapply natizeK.
+  + rewrite -{2}(addn0 (offset (supp x))) in H.
+    rewrite ltn_add2l in H.
+    rewrite ltn0 // in H.
 Qed.
 
 Lemma supp_fsubset {X Y : nomType} : ∀{f : X → Y}, equivariant f → ∀ x, fsubset (supp (f x)) (supp x).
@@ -259,7 +259,7 @@ Proof.
   apply (equi_support_set H) in H'.
   specialize (H' (fperm2 a (neu (a |: F :|: f x)%fset))).
   rewrite -H'.
-  2: {
+  {
     intros a' H'''.
     rewrite fperm2D //.
     + apply /negP => /eqP E.
@@ -368,12 +368,12 @@ Proof.
   eapply eq_in_F. { apply s. }
   intros x' xmemF.
   rewrite fpermE.
-  + rewrite /split_fun xmemF //.
   + apply split_fun_inj.
     - apply D.
     - intros y y' _ _. apply fperm_inj.
     - intros y y' _ _. apply fperm_inj.
   + apply /fsetUP; by left.
+  + rewrite /split_fun xmemF //.
 Qed.
 
 Lemma split_supp_left {X Y Z : nomType} :
@@ -384,9 +384,9 @@ Lemma split_supp_left {X Y Z : nomType} :
 Proof.
   intros x y π τ f E D.
   rewrite split_pi_left.
-  + apply E.
   + apply equi_support_set; [ done | apply is_support ].
   + rewrite 2!supp_equi //.
+  + apply E.
 Qed.
 
 Lemma split_pi_right {X : nomType} {f g : {fperm atom}} {F G} {O : X} :
@@ -400,16 +400,16 @@ Proof.
   eapply eq_in_F. { apply s. }
   intros x xmemF.
   rewrite fpermE.
-  + rewrite fdisjointC in D1.
-    move: D1 => /fdisjointP D1.
-    specialize (D1 _ xmemF).
-    move: D1 => /negPf D1.
-    rewrite /split_fun D1 //.
   + apply split_fun_inj.
     - apply D2.
     - intros y y' _ _. apply fperm_inj.
     - intros y y' _ _. apply fperm_inj.
   + apply /fsetUP; by right.
+  + rewrite fdisjointC in D1.
+    move: D1 => /fdisjointP D1.
+    specialize (D1 _ xmemF).
+    move: D1 => /negPf D1.
+    rewrite /split_fun D1 //.
 Qed.
 
 Lemma fresh_equi {X Y Z : nomType} {f : Y → Z} {x : X} {y : Y}
@@ -425,15 +425,15 @@ Proof.
     inversion Eq.
     eapply (can_inj (addKn _)) in H1.
     by subst.
-  + eapply (supp_fsubset) in E.
-    move: E => /fsubsetP E.
-    apply E, H.
   + intros [n] [m] _ _.
     rewrite 2!atomizeK.
     intros Eq.
     inversion Eq.
     eapply (can_inj (addKn _)) in H1.
     by subst.
+  + eapply (supp_fsubset) in E.
+    move: E => /fsubsetP E.
+    apply E, H.
 Qed.
 
 
@@ -460,10 +460,10 @@ Proof.
   change y with (y, y').1 in H.
   change y' with (y, y').2 in H.
   rewrite move_equi in H.
-  2: by intros ? [? ?].
+  1: by intros ? [? ?].
   symmetry in H.
   rewrite move_equi //= in H.
-  2: by intros ? [? ?].
+  1: by intros ? [? ?].
   rewrite adjoin_disc_r in H; try apply eq_equi.
   by rewrite renameK in H.
 Qed.
@@ -477,7 +477,7 @@ Proof.
   rewrite {1}/move /rename //=.
   change y with (y, z).1.
   rewrite -fresh_equi //=.
-  2: move => π [? ?] //=.
+  1: move => π [? ?] //=.
   f_equal.
   change z with (y, z).2.
   rewrite -(fresh_equi (f:=snd)) //=.
@@ -490,7 +490,7 @@ Proof.
   move => H.
   change (f y z) with (uncurry f (y, z)).
   rewrite move_equi.
-  2: intros π [y' z']; rewrite //= equi2_use //=.
+  1: intros π [y' z']; rewrite //= equi2_use //=.
   rewrite move_pair //.
 Qed.
 
@@ -573,7 +573,7 @@ Proof.
   rewrite offset_fsetU1.
   f_equal.
   rewrite /move /rename //= freshE.
-  2: { rewrite /supp in_fset1 //. }
+  { rewrite /supp in_fset1 //. }
   rewrite atomizeK addnS //.
 Qed.
 
@@ -587,7 +587,7 @@ Proof.
   apply eq_in_supp => a H.
   rewrite freshE //= fpermM //=.
   rewrite freshE //=.
-  2: {
+  {
     rewrite -supp_equi (adjoin_disc_r in_mem_equi).
     rewrite renameK //.
   }

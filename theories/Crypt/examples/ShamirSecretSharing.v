@@ -51,7 +51,7 @@ Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
   ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
 From SSProve.Mon Require Import SPropBase.
 From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
@@ -226,9 +226,9 @@ Lemma sec_poly_bij_part (x: Party) (U: seq Party) (m m': Word) (q: {poly Word}):
 Proof.
   move=> Huniq Hin.
   rewrite (cons_poly_add m) lagrange_sub_zero_cons.
-  2: by rewrite /= no_zero_share uniq_make_shares.
+  1: by rewrite /= no_zero_share uniq_make_shares.
   rewrite hornerD cons_eq_head_tail_poly.
-  2: {
+  {
     rewrite /head_poly -horner_coef0.
     rewrite (lagrange_poly_correct 0 (m' - m)) //.
     - simpl_dif_point.
@@ -268,15 +268,15 @@ Proof.
   move=> Huniq.
   rewrite /poly_bij sec_poly_bij //.
   rewrite !lagrange_sub_zero_cons.
-  2,3: by rewrite /= no_zero_share uniq_make_shares.
+  1,2: by rewrite /= no_zero_share uniq_make_shares.
   rewrite -GRing.addrA -tail_poly_add.
   rewrite (make_shares_same_x m' m).
   rewrite lagrange_add_zero_cons.
-  2: by rewrite /= no_zero_share uniq_make_shares.
+  1: by rewrite /= no_zero_share uniq_make_shares.
   rewrite -GRing.opprB GRing.addNr.
   rewrite /zero_points -map_cons -/(zero_points _).
   rewrite lagrange_zero.
-  2: by rewrite /= no_zero_share uniq_make_shares.
+  1: by rewrite /= no_zero_share uniq_make_shares.
   by rewrite /tail_poly polyseq0 GRing.addr0.
 Qed.
 
@@ -349,13 +349,13 @@ Lemma poly_nat_poly (t: nat) (q: {poly Word}):
   nat_to_poly t (poly_to_nat t q) = q.
 Proof.
   elim: t q => [|t IHt] q H.
-  1: {
+  {
     rewrite size_poly_leq0 in H.
     move /eqP in H. by subst.
   }
   rewrite /= mod_p_muln_p.
   rewrite divnMDl ?prime_gt0 // divn_small.
-  2: {
+  {
     case (head_poly q) as [c Hc] => /=.
     by rewrite -words_p_eq.
   }

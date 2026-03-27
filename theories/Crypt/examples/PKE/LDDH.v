@@ -2,7 +2,7 @@ Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra
   fingroup reals distr realsum.
 Set Warnings "notation-overridden,ambiguous-paths".
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
 From Stdlib Require Import Utf8.
 From extructures Require Import ord fset fmap.
@@ -121,7 +121,7 @@ Section Reduction.
       }
     ].
 
-  Ltac ssprove_perfect I := 
+  Ltac ssprove_perfect I :=
     ssprove_share; apply prove_perfect;
     eapply (eq_rel_perf_ind _ _ I);
       [ ssprove_invariant; try done |].
@@ -166,7 +166,7 @@ Section Reduction.
       } ;
       [ GETBC ] 'tt {
         gbc ← getSome mgbc_loc ;;
-        #put mgbc_loc := None ;; 
+        #put mgbc_loc := None ;;
         ret gbc
       }
     ].

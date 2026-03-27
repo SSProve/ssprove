@@ -3,7 +3,7 @@ From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
   fingroup.fingroup solvable.cyclic prime ssrnat ssreflect ssrfun ssrbool ssrnum
   eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
 From Stdlib Require Import Utf8.
 From extructures Require Import ord fset fmap ffun fperm.
@@ -325,13 +325,13 @@ Proof.
   simpl => π [x F] //= H.
   intros τ H'.
   rewrite adjoin_disc_r.
-  2: apply eq_equi.
+  1: apply eq_equi.
   rewrite -2!rename_comp.
   rewrite H //.
   intros a H''.
   rewrite fpermM /comp fpermM /comp.
   rewrite H'.
-  1: rewrite fpermK //.
+  2: rewrite fpermK //.
   unfold rename; simpl.
   apply mem_imfset, H''.
 Qed.
@@ -406,8 +406,8 @@ Proof.
   apply equi_fun.
   apply equi_bool => //= π [F G] //= H.
   unfold fdisjoint.
-  rewrite -equi2_use; [| apply fsetI_equi ].
-  rewrite adjoin_disc_l; [| apply: eq_op_equi ].
+  rewrite -equi2_use; [apply fsetI_equi |].
+  rewrite adjoin_disc_l; [apply: eq_op_equi |].
   replace (_ ∙ fset0) with (@fset0 X); [| rewrite /rename //= imfset0 // ].
   apply H.
 Qed.
@@ -416,9 +416,9 @@ Lemma supp_equi {X : nomType} : equivariant (@supp X).
 Proof.
   apply equi_fset.
   intros π x.
-  rewrite adjoin_disc_l; [| apply fsubset_equi ].
+  rewrite adjoin_disc_l; [apply fsubset_equi |].
   apply support_sub.
-  rewrite -adjoin_disc_l; [| apply support_set_equi ].
+  rewrite -adjoin_disc_l; [apply support_set_equi |].
   apply is_support.
 Qed.
 
@@ -561,7 +561,7 @@ Lemma disj_equi {X Y : nomType} : equivariant (@disj X Y).
 Proof.
   apply equi_fun => π //= [x y] //=.
   unfold disj.
-  rewrite equi2_use; [| apply: fdisjoint_equi ].
+  rewrite equi2_use; [apply: fdisjoint_equi |].
   rewrite 2!supp_equi //.
 Qed.
 
@@ -571,7 +571,7 @@ Lemma subsE {X Y : nomType} : equivariant (@subs X Y).
 Proof.
   apply equi_fun => π //= [x y] //=.
   unfold subs.
-  rewrite equi2_use; [| apply: fsubset_equi ].
+  rewrite equi2_use; [apply: fsubset_equi |].
   rewrite 2!supp_equi //.
 Qed.
 

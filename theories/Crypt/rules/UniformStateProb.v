@@ -7,7 +7,7 @@ From SSProve.Relational Require Import OrderEnrichedCategory
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum.
 Set Warnings "notation-overridden,ambiguous-paths".
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
 From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings Theta_dens
   Theta_exCP LaxComp FreeProbProg UniformDistrLemmas
@@ -98,7 +98,7 @@ Proof.
   }
   rewrite H. clear H.
   rewrite psumZr.
-  2:{
+  {
     destruct (s == st). all: cbn.
     - apply (@ler01 R).
     - apply Order.POrderTheory.lexx.
@@ -148,13 +148,6 @@ Proof.
       assert (e : x == 0)
     end.
     { rewrite psumr_eq0.
-      - apply/allP. intros [[w1 st1] [w2 st2]] h. cbn.
-        match goal with
-        | |- context [ if ?b then _ else _ ] =>
-          destruct b
-        end.
-        + cbn. reflexivity.
-        + cbn. apply/eqP. reflexivity.
       - intros [[w1 st1] [w2 st2]]. cbn. intros h.
         match goal with
         | |- context [ if ?b then _ else _ ] =>
@@ -162,6 +155,13 @@ Proof.
         end.
         1: discriminate.
         auto.
+      - apply/allP. intros [[w1 st1] [w2 st2]] h. cbn.
+        match goal with
+        | |- context [ if ?b then _ else _ ] =>
+          destruct b
+        end.
+        + cbn. reflexivity.
+        + cbn. apply/eqP. reflexivity.
     }
     move: e => /eqP e. rewrite e. clear e.
     rewrite GRing.Theory.addr0.
@@ -222,8 +222,8 @@ Proof.
       rewrite -E.
       rewrite -[X in X <= _]GRing.mulr1 -GRing.mulrA.
       rewrite GRing.Theory.mulKf.
-      * auto.
       * by rewrite E intr_eq0.
+      * auto.
 Qed.
 
 
@@ -272,28 +272,24 @@ Proof.
   split; apply: distr_ext; rewrite /=.
   - move => [w1 st1].
     rewrite /lmg dfstE /mkdistr psum_sum /=.
-    rewrite (sum_seq1 ((f w1), s2)).
-    by rewrite !refl_true !Bool.andb_true_r Uniform_eval.
+    move => [w2 st2] /=.
+    destruct ((st1 == s1) && (st2 == s2) && (f w1 == w2)); auto.
+    exact: r_nonneg.
+    rewrite (sum_seq1 ((f w1), s2)); last by
+      rewrite !refl_true !Bool.andb_true_r Uniform_eval.
     move => [w2 st2] /= H.
     have Hs : (st2 = s2).
     { destruct (st2 == s2) eqn:Heq;  apply /eqP; rewrite Heq; auto.
-      exfalso. rewrite Bool.andb_false_r Bool.andb_false_l in H. by move /eqP : H.  }
+      exfalso. rewrite Bool.andb_false_r Bool.andb_false_l in H. by move /eqP : H. }
     have Hf : (f w1 = w2).
     { destruct (f w1 == w2) eqn:Heq; apply /eqP; rewrite Heq; auto.
       rewrite Bool.andb_false_r in H. by move /eqP: H. }
       by rewrite Hs Hf.
-    move => [w2 st2] /=.
-    destruct ((st1 == s1) && (st2 == s2) && (f w1 == w2)); auto.
-    exact: r_nonneg.
   - move => [w2 st2].
     rewrite /rmg __deprecated__dsndE /mkdistr psum_sum /=.
+    move => [w1 st1] /=. destruct ((st1 == s1) && (st2 == s2) && (f w1 == w2)); auto.
+    exact: r_nonneg.
     rewrite (sum_seq1 ((f_inv w2), s1)).
-    have Hf: (f (f_inv w2) = w2) by apply: (Kf2 w2).
-    have Hs: s1 == s1 by apply /eqP.
-    rewrite Hf Hs /= refl_true Bool.andb_true_r Uniform_eval.
-    rewrite (@bij_same_r (fin_family i) (fin_family j) f).
-    reflexivity.
-    by exists f_inv.
     move => [w1 st1] /= Hneq.
     have [Hfoo1 Hfoo2] : s1 = st1 /\ f w1 = w2.
     { destruct ((st1 == s1) && (f w1 == w2)) eqn: Heq.
@@ -303,8 +299,11 @@ Proof.
       by rewrite Bool.andb_comm Bool.andb_assoc Heq Bool.andb_false_l. }
     subst.
     by rewrite Kf1 refl_true.
-    move => [w1 st1] /=. destruct ((st1 == s1) && (st2 == s2) && (f w1 == w2)); auto.
-    exact: r_nonneg.
+    have Hf: (f (f_inv w2) = w2) by apply: (Kf2 w2).
+    have Hs: s1 == s1 by apply /eqP.
+    rewrite Hf Hs /= refl_true Bool.andb_true_r Uniform_eval.
+    rewrite (@bij_same_r (fin_family i) (fin_family j) f); last by reflexivity.
+    by exists f_inv.
 Qed.
 
 Import RSemanticNotation.

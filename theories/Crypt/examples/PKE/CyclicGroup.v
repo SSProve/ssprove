@@ -4,7 +4,7 @@ Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-forma
 From mathcomp Require Import all_ssreflect all_algebra
   fingroup.fingroup solvable.cyclic prime.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
 Local Open Scope ring_scope.
 Import GroupScope GRing.Theory.
@@ -74,15 +74,15 @@ Proof.
     with (nat_of_ord (Zp_mul a (Zp_inv a)))
     by easy.
   rewrite Zp_mulzV.
-  2: {
+  {
     rewrite prime_coprime.
-    2: rewrite trunc_q; apply prime_order.
+    1: rewrite trunc_q; apply prime_order.
     rewrite gtnNdvd.
-    - done.
     - by rewrite lt0n.
     - simpl.
       rewrite -modZp.
       apply ltn_mod.
+    - done.
   }
   rewrite expg_modq expg1 //.
 Qed.
@@ -132,7 +132,7 @@ Proof.
   rewrite (modn_small i) => e.
   rewrite -e.
   rewrite modn_small.
-  1: apply inord_val.
+  2: apply inord_val.
   rewrite -modZp.
   rewrite {2}trunc_q.
   rewrite ltn_mod.

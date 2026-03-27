@@ -2,7 +2,7 @@ Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra
   reals distr realsum fingroup.fingroup solvable.cyclic.
 Set Warnings "notation-overridden,ambiguous-paths".
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
 From Stdlib Require Import Utf8.
 From extructures Require Import ord fset fmap ffun fperm.
@@ -51,7 +51,7 @@ Program Definition Location_IsNominal
   := IsNominal.Build _ (λ (l : Location), fset1 (atomize l.1)) _ _.
 Obligation 1.
   unfold rename; simpl.
-  rewrite H ?atomizeK; [ by destruct x |].
+  rewrite H ?atomizeK; [| by destruct x].
   rewrite in_fset1 //.
 Qed.
 Obligation 2.
@@ -81,9 +81,9 @@ Lemma rename_locE {L : Locations} {π} {n} : (π ∙ L : Locations) n = L (natiz
 Proof.
   unfold rename. simpl.
   rewrite (mapm2E_cancel (λ n, natize (π^-1%fperm (atomize n)))).
-  - by rewrite omap_id.
   - eapply can_inj, (can_comp natizeK), (can_comp (fpermK π)), atomizeK.
   - simpl. eapply (can_comp (can_comp natizeK (fpermKV π)) atomizeK).
+  - by rewrite omap_id.
 Qed.
 
 Lemma rename_setm_Locations π (m : Locations) n A :
@@ -115,8 +115,8 @@ Obligation 1.
   rewrite rename_setm_Locations.
   apply eq_fmap => n'.
   rewrite 2!setmE.
-  rewrite (H'' (atomize n)) ?atomizeK.
-  2: apply /fsetU1P; by left.
+  rewrite (H'' (atomize n)) ?atomizeK; first by
+    apply /fsetU1P; by left.
   rewrite H //.
   intros a H'''.
   apply H''.
@@ -559,9 +559,9 @@ Proof.
   exists (split_pi π π' (supp P) (supp Q)).
   rewrite (equi2_use _ equi_share_link).
   rewrite split_pi_left.
-  1: rewrite split_pi_right; [ done | | done |].
-  1: apply (is_support Q).
-  2: apply (is_support P).
+  3: rewrite split_pi_right; [| done | | done].
+  1: apply (is_support P).
+  2: apply (is_support Q).
   1,2: rewrite 2!supp_equi.
   1,2: apply D2.
 Qed.
@@ -578,9 +578,9 @@ Proof.
   exists (split_pi π π' (supp P) (supp Q)).
   rewrite (equi2_use _ equi_share_par).
   rewrite split_pi_left.
-  1: rewrite split_pi_right; [ done | | done |].
-  1: apply (is_support Q).
-  2: apply (is_support P).
+  3: rewrite split_pi_right; [| done | | done].
+  1: apply (is_support P).
+  2: apply (is_support Q).
   1,2: rewrite 2!supp_equi.
   1,2: apply D2.
 Qed.

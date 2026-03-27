@@ -2,7 +2,7 @@ Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra
   reals distr realsum fingroup.fingroup solvable.cyclic.
 Set Warnings "notation-overridden,ambiguous-paths".
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
 From Stdlib Require Import Utf8.
 From extructures Require Import ord fset fmap ffun fperm.
@@ -442,7 +442,7 @@ Lemma sep_par_factor_game_l {I' E E' : Interface} P P'
   `{ValidPackage (loc P) Game_import E P} `{ValidPackage (loc P') I' E' P'}
   : (P || P') ≡ ((P || ID E') ∘ P')%sep.
 Proof.
-  rewrite sep_par_factor_l; [| fmap_solve ].
+  rewrite sep_par_factor_l; [fmap_solve |].
   rewrite sep_par_empty_l.
   reflexivity.
 Qed.
@@ -451,7 +451,7 @@ Lemma sep_par_factor_game_r {I E E' : Interface} P P'
   `{ValidPackage (loc P) I E P} `{ValidPackage (loc P') Game_import E' P'}
   : (P || P') ≡ ((ID E || P') ∘ P)%sep.
 Proof.
-  rewrite sep_par_factor_r; [| fmap_solve ].
+  rewrite sep_par_factor_r; [fmap_solve |].
   rewrite sep_par_empty_r.
   reflexivity.
 Qed.
