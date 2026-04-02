@@ -23,7 +23,7 @@ Import Num.Theory.
 Set Equations With UIP.
 Set Equations Transparent.
 
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
@@ -179,8 +179,8 @@ Proof.
     + rewrite h in nin1. discriminate.
   - intros h ℓ v n₀ n₁ ℓ' n.
     destruct (ℓ'.1 != ℓ.1) eqn:e.
-    + rewrite get_set_heap_neq. 2: auto.
-      rewrite get_set_heap_neq. 2: auto.
+    + rewrite get_set_heap_neq. 1: auto.
+      rewrite get_set_heap_neq. 1: auto.
       apply h. auto.
     + move: e => /eqP e.
       rewrite /get_heap e 2!setmE eq_refl //=.
@@ -205,8 +205,8 @@ Proof.
     destruct (L ℓ.1) eqn:E => //.
   - intros h ℓ v n₀ n₁ ℓ' n.
     destruct (ℓ'.1 != ℓ.1) eqn:e.
-    + rewrite get_set_heap_neq. 2: auto.
-      rewrite get_set_heap_neq. 2: auto.
+    + rewrite get_set_heap_neq. 1: auto.
+      rewrite get_set_heap_neq. 1: auto.
       apply h. auto.
     + move: e => /eqP e. subst.
       rewrite /get_heap e 2!setmE eq_refl //=.
@@ -258,8 +258,8 @@ Proof.
     eauto.
   - intros h ℓ v nin0 nin1 ℓ' n.
     destruct (ℓ'.1 != ℓ.1) eqn:e.
-    + rewrite get_set_heap_neq. 2: auto.
-      rewrite get_set_heap_neq. 2: auto.
+    + rewrite get_set_heap_neq. 1: auto.
+      rewrite get_set_heap_neq. 1: auto.
       apply h. auto.
     + move: e => /eqP e. subst.
       rewrite /get_heap e 2!setmE eq_refl //=.
@@ -382,7 +382,7 @@ Proof.
   - simpl.
     destruct Hin as [Hin1 Hin2].
     rewrite get_set_heap_neq.
-    { apply IHls => //. }
+    2: { apply IHls => //. }
     apply /eqP => H.
     apply fhas_in in Hin1.
     move: H0 => /negP.
@@ -390,7 +390,7 @@ Proof.
   - simpl.
     destruct Hin as [Hin1 Hin2].
     rewrite get_set_heap_neq.
-    { apply IHls => //. }
+    2: { apply IHls => //. }
     apply /eqP => H.
     apply fhas_in in Hin1.
     move: H1 => /negP.
@@ -464,8 +464,8 @@ Lemma put_pre_cond_heap_ignore :
 Proof.
   intros ℓ v L s₀ s₁ h ℓ' hn.
   destruct (ℓ'.1 != ℓ.1) eqn:e.
-  - rewrite get_set_heap_neq. 2: auto.
-    rewrite get_set_heap_neq. 2: auto.
+  - rewrite get_set_heap_neq. 1: auto.
+    rewrite get_set_heap_neq. 1: auto.
     apply h. auto.
   - move: e => /eqP e. subst.
     rewrite /get_heap e 2!setmE eq_refl //=.
@@ -1000,7 +1000,7 @@ Proof.
   simpl. destruct update_heaps eqn:e.
   intros ℓ₀ hℓ₀.
   destruct (ℓ₀.1 != ℓ.1) eqn:e1.
-  - rewrite !get_set_heap_neq. 2,3: auto.
+  - rewrite !get_set_heap_neq; auto.
     eapply h in hh. rewrite e in hh.
     apply hh. auto.
   - move: e1 => /eqP /eqP e1. subst.
@@ -1022,7 +1022,7 @@ Proof.
   simpl. destruct update_heaps eqn:e.
   intros ℓ₀ hℓ₀.
   destruct (ℓ₀.1 != ℓ.1) eqn:e1.
-  - rewrite get_set_heap_neq. 2: auto.
+  - rewrite get_set_heap_neq. 1: auto.
     eapply h in hh. rewrite e in hh.
     apply hh. auto.
   - move: e1 => /eqP e1. subst.
@@ -1049,7 +1049,7 @@ Proof.
   simpl. destruct update_heaps eqn:e.
   intros ℓ₀ hℓ₀.
   destruct (ℓ₀.1 != ℓ.1) eqn:e1.
-  - rewrite get_set_heap_neq. 2: auto.
+  - rewrite get_set_heap_neq. 1: auto.
     eapply h in hh. rewrite e in hh.
     apply hh. auto.
   - move: e1 => /eqP e1. subst.

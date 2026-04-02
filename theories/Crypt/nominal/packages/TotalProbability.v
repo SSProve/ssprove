@@ -14,7 +14,7 @@ From HB Require Import structures.
 (* Supress warnings due to use of HB *)
 Set Warnings "-redundant-canonical-projection,-projection-no-head-constant".
 
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
@@ -168,8 +168,8 @@ Proof.
   assert (H : fhas A_export RUN); [ fmap_solve |].
   pose proof (valid_resolve _ _ _ _ RUN tt VA H).
   rewrite (Pr_code_RAND SEP LL H0).
-  2: rewrite get_empty_heap //.
-  rewrite dlet_dlet.
+  1: rewrite get_empty_heap //.
+  rewrite __deprecated__dlet_dlet.
   apply dlet_f_equal => y.
   rewrite resolve_link => //.
 Qed.
@@ -208,9 +208,9 @@ Proof.
   pose (π := fresh (as_nom (RAND c), [fmap cell T] : Locations) (A, loc A)).
   rewrite -{1}(@rename_alpha _ A π).
   rewrite {1}/Pr' -link_sep_link.
-  2: eauto with nominal_db.
+  1: eauto with nominal_db.
   rewrite Pr_RAND.
-  2: rewrite fseparate_disj; eauto with nominal_db.
+  1: rewrite fseparate_disj; eauto with nominal_db.
   rewrite 2!dletE.
   apply eq_psum => x.
   f_equal.

@@ -24,7 +24,7 @@ From Stdlib Require Import ZArith.
 Set Warnings "notation-overridden".
 Export jasmin_wsize.
 
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -302,17 +302,17 @@ Lemma wbit_nE ws (w : word ws) i :
 Proof.
   have [hlo _] := wunsigned_range w.
   rewrite /wbit_n.
-  rewrite word.wbitE; last by rewrite !zify.
+  rewrite word.wbitE; first by rewrite !zify.
 
   rewrite -(Nat2Z.id (_ %/ _)).
 
-  rewrite -oddZE; last first.
+  rewrite -oddZE.
   - rewrite !zify. exact: Zle_0_nat.
 
-  rewrite divnZE; first last.
+  rewrite divnZE.
   - apply: lt0n_neq0. by rewrite expn_gt0.
 
-  rewrite Z2Nat.id; last done.
+  rewrite Z2Nat.id; first done.
   by rewrite Nat2Z.n2zX expZE.
 Qed.
 
@@ -376,7 +376,7 @@ Proof.
   rewrite /wbit_n wbit_lsr wunsigned_repr /wbit.
   rewrite Z.mod_small //.
   rewrite Z.div_pow2_bits.
-  2-3: Lia.lia.
+  1-2: Lia.lia.
   by rewrite Nat2Z.n2zD Z.add_comm.
 Qed.
 
@@ -404,17 +404,17 @@ Proof.
   congr wunsigned.
   apply/eqP/eq_from_wbit_n => i.
   rewrite /wbit_n wunsigned_repr /modulus two_power_nat_equiv.
-  rewrite {2}/wbit Z.mod_pow2_bits_low; last first.
+  rewrite {2}/wbit Z.mod_pow2_bits_low.
   - move/ltP: (ltn_ord i); Lia.lia.
   case: (@ltP i c); last first.
   - move => c_le_i.
     have i_eq : nat_of_ord i = (c + (i - c))%nat by lia.
     rewrite i_eq wbit_lsl -i_eq ltn_ord /wbit.
-    rewrite Z.mul_pow2_bits; last by lia.
+    rewrite Z.mul_pow2_bits; first by lia.
     congr Z.testbit.
     lia.
   move => l_lt_c.
-  rewrite wbit_lsl_lo; last by apply/ltP.
+  rewrite wbit_lsl_lo; first by apply/ltP.
   rewrite Z.mul_pow2_bits_low //; lia.
 Qed.
 
@@ -609,7 +609,7 @@ Proof.
   rewrite /wsize_bits /=.
   rewrite SuccNat2Pos.id_succ.
   rewrite /wbit_n.
-  rewrite wbit_word_ovf; first done.
+  rewrite wbit_word_ovf; last done.
   apply: ltn_addr.
   exact: ltnSn.
 Qed.
@@ -1520,10 +1520,10 @@ Lemma wbit_n_pow2m1 sz (n i: nat) :
 Proof.
   rewrite /wbit_n /mathcomp.word.word.wbit wunsigned_repr /modulus two_power_nat_equiv.
   case: (le_lt_dec (wsize_size_minus_1 sz).+1 i) => hi.
-  - rewrite Z.mod_pow2_bits_high; last lia.
+  - rewrite Z.mod_pow2_bits_high; first lia.
     symmetry; apply/negbTE/negP => /ltP.
     lia.
-  rewrite Z.mod_pow2_bits_low; last lia.
+  rewrite Z.mod_pow2_bits_low; first lia.
   rewrite /Z.sub -/(Z.pred (2 ^ Z.of_nat n)) -Z.ones_equiv.
   case: ltP => i_n.
   - apply: Z.ones_spec_low; lia.
@@ -1643,15 +1643,15 @@ Proof.
     have [ x_pos x_bounded ] := wunsigned_range x.
     rewrite Z.mul_1_r Z.div_1_r !Z.mod_small //; split.
     1, 3: lia.
-    + apply: Z.lt_trans; first exact: x_bounded.
+    + by rewrite -two_power_nat_equiv.
+      apply: Z.lt_trans. exact: x_bounded.
       rewrite /wbase /modulus two_power_nat_equiv.
       apply: Z.pow_lt_mono_r; lia.
-      by rewrite -two_power_nat_equiv.
   set k := _.+1.
   move => n_le_k.
   have := an_mod_bn_divn (wunsigned x) (2 ^ Z.of_nat n) (@pow2nz (k - n)%nat).
   rewrite -Z.pow_add_r.
-  2-3: lia.
+  1-2: lia.
   replace (Z.of_nat n + Z.of_nat (k - n)) with (Z.of_nat k) by lia.
   done.
 Qed.
@@ -1851,8 +1851,8 @@ Proof.
   rewrite wnotP wunsigned_repr.
   change (word.modulus (wsize_size_minus_1 ws).+1) with (wbase ws).
   rewrite ZlnotE.
-  rewrite -(Z.mod_add _ 1 _); last exact: wbase_n0.
-  rewrite Zmod_small; first lia.
+  rewrite -(Z.mod_add _ 1 _); first exact: wbase_n0.
+  rewrite Zmod_small; last lia.
   have := wunsigned_range x.
   lia.
 Qed.
@@ -1913,13 +1913,13 @@ Proof.
   move=> h.
   apply/eqP/word.eq_from_wbit => i.
   rewrite subwordE wbit_t2wE /word.word.wbit mkword_valK /=.
-  rewrite (nth_map i); last by rewrite size_enum_ord.
+  rewrite (nth_map i); first by rewrite size_enum_ord.
   rewrite addn0 nth_ord_enum modulusZE.
   rewrite Z.shiftl_0_l Z.lor_0_r.
   rewrite Z.mod_pow2_bits_low.
-  - rewrite Z.lor_spec Z.shiftl_spec_low; first by rewrite orbF.
+  - apply: (Z.lt_trans _ _ _ _ h).
     by apply/ZNltP.
-  apply: (Z.lt_trans _ _ _ _ h).
+  rewrite Z.lor_spec Z.shiftl_spec_low; last by rewrite orbF.
   by apply/ZNltP.
 Qed.
 

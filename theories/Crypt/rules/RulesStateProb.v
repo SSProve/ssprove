@@ -20,7 +20,7 @@ Import Num.Theory.
 
 From HB Require Import structures.
 
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
 #[local] Open Scope ring_scope.
 
@@ -626,7 +626,7 @@ Proof.
   { extensionality k. rewrite dfstE. reflexivity. }
   rewrite HeqH11. simpl in HeqH11.
   assert ((fun x : X * S1 => (A x)%:R * psum (fun w => d (x, w))) = (fun x : X * S1 => psum (fun w => (A x)%:R * d (x, w)))) as H4.
-  { extensionality k. rewrite -psumZ. reflexivity.
+  { extensionality k. rewrite -psumZ; last by reflexivity.
     case (A k); intuition; by rewrite ler01. }
   rewrite H4.
   assert ((fun x : Y * S2 => (B x)%:R * dsnd d x) = (fun y : Y * S2 => (B y)%:R * psum (fun w => d (w, y)))) as HeqH12.
@@ -634,12 +634,12 @@ Proof.
   rewrite HeqH12.
   unfold F_choice_prod_obj in d.
   assert ((fun y : Y * S2 => (B y)%:R * psum (fun w => d (w, y))) = (fun y : Y * S2 => psum (fun w => (B y)%:R * d (w, y)))) as H5.
-  { extensionality k. rewrite -psumZ. reflexivity.
+  { extensionality k. rewrite -psumZ; last by reflexivity.
     case (B k); intuition; by rewrite ler01. }
   rewrite H5.
   clear H5 H4 HeqH12 HeqH11.
-  rewrite -(@psum_pair _ _ _ (fun '(x, y) => (A x)%:R * d (x, y))).
-  rewrite -(@psum_pair_swap _ _ _ (fun '(x, y) => (B y)%:R * d (x, y))).
+  rewrite -(@psum_pair _ _ _ (fun '(x, y) => (A x)%:R * d (x, y))); last first.
+  rewrite -(@psum_pair_swap _ _ _ (fun '(x, y) => (B y)%:R * d (x, y))); last first.
   f_equal.
   extensionality k.
   destruct k as [x y].
@@ -1537,9 +1537,9 @@ Proof.
   (fun x0 : X => psum (fun x1 : Y => p x0 * q x1 * dunit (T:=prod_choiceType X Y) (x0, x1) (x, y)))).
 {
   apply eq_psum. move=> x0. rewrite -psumZ /=.
+  destruct p as [pmap p0 p_sum p1]. apply p0.
   apply eq_psum. move=> y0 /=.
   rewrite GRing.mulrA. reflexivity.
-  destruct p as [pmap p0 p_sum p1]. apply p0.
 }
   symmetry.
   transitivity
@@ -1547,10 +1547,10 @@ Proof.
   (fun x0 : Y => psum (fun x1 : X => p x1 * q x0 * dunit (T:=prod_choiceType X Y) (x1, x0) (x, y)))).
 {
     apply eq_psum. move=> y0. rewrite -psumZ /=.
+    destruct q as [qmap q0 q_sum q1]. apply q0.
     apply eq_psum. move=> x0 /=.
     rewrite GRing.mulrA. rewrite[q y0 * _] GRing.mulrC.
     reflexivity.
-    destruct q as [qmap q0 q_sum q1]. apply q0.
 }
   symmetry.
 (*   epose (hlp := psum_pair_swap *)
@@ -1582,8 +1582,8 @@ Proof.
 }
   unshelve eapply eq_summable.
     move=> x0. exact ( p x0 * psum (fun y0 => q y0 * dunit (T:=_) (x0,y0)(x,y))).
-  move=> x0. rewrite -psumZ. apply eq_psum. move=> y0 /=. rewrite GRing.mulrA. reflexivity.
-  destruct p as [pmap p_0 p_sum p_1]. apply p_0.
+  move=> x0. rewrite -psumZ. destruct p as [pmap p_0 p_sum p_1]. apply p_0.
+  apply eq_psum. move=> y0 /=. rewrite GRing.mulrA. reflexivity.
   apply (
   summable_mu_wgtd (T:=X)
   (f:=fun x0 => psum (fun y0 : Y => q y0 * dunit (T:=prod_choiceType X Y) (x0, y0) (x, y))) p).

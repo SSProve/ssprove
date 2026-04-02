@@ -21,7 +21,7 @@ From mathcomp Require Import
      distr
      realsum.
 Set Warnings "notation-overridden,ambiguous-paths".
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
 From SSProve.Crypt Require Import
      Axioms
@@ -615,7 +615,7 @@ Proof.
   { extensionality k. rewrite dfstE. reflexivity. }
   rewrite HeqH11.
   assert ((fun x : X => (A x)%:R * psum (fun w : Choice.Pack chY => d (x, w))) = (fun x : X => psum (fun w : Choice.Pack chY => (A x)%:R * d (x, w)))) as H4.
-  { extensionality k. rewrite -psumZ. reflexivity.
+  { extensionality k. rewrite -psumZ; last by reflexivity.
     case (A k); intuition; by rewrite ler01. }
   rewrite H4.
   assert ((fun x : Y => (B x)%:R * dsnd d x) = (fun y : Y => (B y)%:R * psum (fun w => d (w, y)))) as HeqH12.
@@ -623,12 +623,12 @@ Proof.
   rewrite HeqH12.
   unfold F_choice_prod_obj in d.
   assert ((fun y : Y => (B y)%:R * psum (fun w : Choice.Pack chX => d (w, y))) = (fun y : Y => psum (fun w : Choice.Pack chX => (B y)%:R * d (w, y)))) as H5.
-  { extensionality k. rewrite -psumZ. reflexivity.
+  { extensionality k. rewrite -psumZ; last by reflexivity.
     case (B k); intuition; by rewrite ler01. }
   rewrite H5.
   clear H5 H4 HeqH12 HeqH11.
-  rewrite -(@psum_pair _ _ _ (fun '(x, y) => (A x)%:R * d (x, y))).
-  rewrite -(@psum_pair_swap _ _ _ (fun '(x, y) => (B y)%:R * d (x, y))).
+  rewrite -(@psum_pair _ _ _ (fun '(x, y) => (A x)%:R * d (x, y))); last first.
+  rewrite -(@psum_pair_swap _ _ _ (fun '(x, y) => (B y)%:R * d (x, y))); last first.
   f_equal.
   extensionality k.
   destruct k as [x y].
@@ -723,7 +723,7 @@ Proof.
   { extensionality k. rewrite dfstE. reflexivity. }
   rewrite HeqH11.
   assert ((fun x : X => (A x)%:R * psum (fun w : Choice.Pack chY => d (x, w))) = (fun x : X => psum (fun w : Choice.Pack chY => (A x)%:R * d (x, w)))) as H4.
-  { extensionality k. rewrite -psumZ. reflexivity.
+  { extensionality k. rewrite -psumZ; last by reflexivity.
     case (A k); intuition; by rewrite ler01. }
   rewrite H4.
   assert ((fun x : Y => (B x)%:R * dsnd d x) = (fun y : Y => (B y)%:R * psum (fun w => d (w, y)))) as HeqH12.
@@ -731,12 +731,12 @@ Proof.
   rewrite HeqH12.
   unfold F_choice_prod_obj in d.
   assert ((fun y : Y => (B y)%:R * psum (fun w : Choice.Pack chX => d (w, y))) = (fun y : Y => psum (fun w : Choice.Pack chX => (B y)%:R * d (w, y)))) as H5.
-  { extensionality k. rewrite -psumZ. reflexivity.
+  { extensionality k. rewrite -psumZ; last by reflexivity.
     case (B k); intuition; by rewrite ler01. }
   rewrite H5.
   clear H5 H4 HeqH12 HeqH11.
-  rewrite -(@psum_pair _ _ _ (fun '(x, y) => (A x)%:R * d (x, y))).
-  rewrite -(@psum_pair_swap _ _ _ (fun '(x, y) => (B y)%:R * d (x, y))).
+  rewrite -(@psum_pair _ _ _ (fun '(x, y) => (A x)%:R * d (x, y))); last first.
+  rewrite -(@psum_pair_swap _ _ _ (fun '(x, y) => (B y)%:R * d (x, y))); last first.
   apply: le_psum.
   - move => [x1 x2] /=.
     apply /andP. split.

@@ -28,7 +28,7 @@ Set Equations Transparent.
 
 Import PackageNotation.
 
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
@@ -204,12 +204,12 @@ Section LosslessCodeLemmas.
     rewrite Pr_fst_sample.
     under eq_psum.
     { intros x. rewrite dletE. over. }
-    rewrite interchange_psum.
-    2: intros x; apply summable_mu_wgtd; intros y.
-    2: apply /andP; split; [ done | apply le1_mu1 ].
-    2: eapply eq_summable.
-    2: intros x; rewrite -dletE; reflexivity.
-    2: apply summable_mu.
+    rewrite __admitted__interchange_psum.
+    1: intros x; apply summable_mu_wgtd; intros y.
+    1: apply /andP; split; [ done | apply le1_mu1 ].
+    1: eapply eq_summable.
+    1: intros x; rewrite -dletE; reflexivity.
+    1: apply summable_mu.
     rewrite -H.
     apply eq_psum => x.
     rewrite psumZ // IH GRing.mulr1 //.
@@ -284,14 +284,13 @@ Obligation 2.
   replace y with (na f (na g (na g^-1%fperm (na f^-1%fperm y)))).
   2: rewrite /na 2!natizeK fpermKV natizeK fpermKV atomizeK //.
   rewrite mapm2E ?mapm2E ?omap_id ?omap_id.
-  2: eapply can_inj, (can_comp natizeK), (can_comp (fpermK _)), atomizeK.
-  2: eapply can_inj, (can_comp natizeK), (can_comp (fpermK _)), atomizeK.
+  1,2: eapply can_inj, (can_comp natizeK), (can_comp (fpermK _)), atomizeK.
   replace (na f (na g (na g^-1%fperm (na f^-1%fperm y))))
     with (na (f * g)%fperm (na (f * g)^-1%fperm y)).
   2: rewrite /na 2!natizeK fpermKV natizeK fpermKV atomizeK //.
   2: rewrite natizeK fpermKV atomizeK //.
   rewrite mapm2E ?omap_id.
-  2: eapply can_inj, (can_comp natizeK), (can_comp (fpermK _)), atomizeK.
+  1: eapply can_inj, (can_comp natizeK), (can_comp (fpermK _)), atomizeK.
   rewrite Nominal.fperm_mul_inv /na natizeK fpermM //.
 Qed.
 
@@ -303,7 +302,7 @@ Lemma fhas_Location_equi :
 Proof.
   apply equi2_prove => π L l.
   rewrite //= mapm2E.
-  2: eapply can_inj, (can_comp natizeK), (can_comp (fpermK _)), atomizeK.
+  1: eapply can_inj, (can_comp natizeK), (can_comp (fpermK _)), atomizeK.
   rewrite omap_id.
   by destruct l.
 Qed.
@@ -435,7 +434,7 @@ Proof.
   replace n with (@rename Location π (π^-1 ∙ mkloc n tt)).1.
   2: rewrite renameKV //.
   rewrite setmE mapm2E ?mapm2E ?setmE.
-  2,3: eapply can_inj, (can_comp natizeK), (can_comp (fpermK _)), atomizeK.
+  1,2: eapply can_inj, (can_comp natizeK), (can_comp (fpermK _)), atomizeK.
   rewrite renameKV 2!omap_id.
   destruct (_ == _)%B eqn:E;
     move: E => /eqP E;
@@ -493,11 +492,11 @@ Lemma Pr_rename {π} {P : raw_package} {t} :
 Proof.
   rewrite 2!Pr_Pr_code 2!dfstE.
   rewrite (reindex_psum (P := predT) (h := @rename heap π^-1)) //=.
-  - apply eq_psum => x.
-    by rewrite (Pr_code_rename π) renameKV -resolve_rename.
   - exists (@rename heap π).
     + intros h _. by rewrite renameKV.
     + intros h _. by rewrite renameK.
+  - apply eq_psum => x.
+    by rewrite (Pr_code_rename π) renameKV -resolve_rename.
 Qed.
 
 Add Parametric Morphism : Pr with

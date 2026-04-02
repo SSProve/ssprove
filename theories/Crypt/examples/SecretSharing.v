@@ -27,7 +27,7 @@ Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
   ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
 From SSProve.Mon Require Import SPropBase.
 From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
@@ -84,11 +84,11 @@ Lemma log2_lt_pow2 w m:
 Proof.
   move=> H.
   rewrite -N.log2_lt_pow2.
+  - rewrite Nat2N.inj_succ.
+    by apply: N.lt_0_succ.
   - rewrite /N.lt N2Nat.inj_compare PeanoNat.Nat.compare_lt_iff.
     rewrite -pow2_inj Nat2N.id.
     by apply /ltP.
-  - rewrite Nat2N.inj_succ.
-    by apply: N.lt_0_succ.
 Qed.
 
 #[program] Definition plus (w k: Word): Word :=
@@ -119,7 +119,7 @@ Next Obligation.
   rewrite -N.log2_lt_pow2.
 
   (* Process the trivial case 0 < lxor (w+1) (k+1) *)
-  2: by apply N.neq_0_lt_0.
+  1: by apply N.neq_0_lt_0.
   (* Convert from the N type to nat so we can use decidability on < *)
   rewrite /N.lt N2Nat.inj_compare PeanoNat.Nat.compare_lt_iff -pow2_inj.
   by move /ltP.

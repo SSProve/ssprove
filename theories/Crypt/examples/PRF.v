@@ -16,7 +16,7 @@ Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
   ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
 From SSProve.Mon Require Import SPropBase.
 From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
@@ -95,7 +95,7 @@ Section PRF_example.
       BinNat.N.lt (BinNat.N.log2 (BinNat.N.of_nat w)) (BinNat.N.of_nat n)
     ) as H1.
     { rewrite -BinNat.N.log2_lt_pow2.
-      2:{
+      {
         rewrite Heqw. rewrite Nnat.Nat2N.inj_succ.
         apply BinNat.N.lt_0_succ.
       }
@@ -111,7 +111,7 @@ Section PRF_example.
       BinNat.N.lt (BinNat.N.log2 (BinNat.N.of_nat k)) (BinNat.N.of_nat n)
     ) as H2.
     { rewrite -BinNat.N.log2_lt_pow2.
-      2:{
+      {
         rewrite Heqk. rewrite Nnat.Nat2N.inj_succ.
         apply BinNat.N.lt_0_succ.
       }
@@ -131,7 +131,7 @@ Section PRF_example.
     }
     move: (BinNat.N.le_lt_trans _ _ _ Hbound Hm).
     rewrite -BinNat.N.log2_lt_pow2.
-    2:{
+    {
       apply BinNat.N.neq_0_lt_0.
       move: H0. move /eqP. auto.
     }

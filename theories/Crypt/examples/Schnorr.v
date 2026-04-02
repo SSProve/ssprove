@@ -5,7 +5,7 @@ From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
   fingroup.fingroup solvable.cyclic prime ssrnat ssreflect ssrfun ssrbool ssrnum
   eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
 From SSProve.Mon Require Import SPropBase.
 
@@ -236,13 +236,13 @@ Proof.
   2: apply Hs.
   simpl.
   rewrite otf_fto expg_mod.
-  2: rewrite order_ge1 ; apply expg_order.
+  1: rewrite order_ge1 ; apply expg_order.
   rewrite expgD - !expgVn.
   rewrite group_prodC group_prodA group_prodC group_prodA /=.
   rewrite expg_mod.
-  2: rewrite order_ge1 ; apply expg_order.
+  1: rewrite order_ge1 ; apply expg_order.
   rewrite -expgM -expgMn.
-  2: apply group_prodC.
+  1: apply group_prodC.
   rewrite mulgV expg1n mul1g.
   cbn. rewrite Zp_mulC.
   reflexivity.
@@ -255,8 +255,8 @@ Proof.
   intros a b.
   apply: contra => H.
   rewrite bij_eq in H.
-  - assumption.
   - apply enum_val_bij.
+  - assumption.
 Qed.
 
 Lemma neq_pos :
@@ -309,20 +309,20 @@ Proof.
   apply reflection_nonsense in Heqs4.
   rewrite H0.
   rewrite otf_fto expg_mod.
-  2: rewrite order_ge1 ; apply expg_order.
+  1: rewrite order_ge1 ; apply expg_order.
   rewrite expgM expg_mod.
-  2: rewrite order_ge1 ; apply expg_order.
+  1: rewrite order_ge1 ; apply expg_order.
   rewrite expgD -FinRing.zmodVgE expg_zneg.
-  2: apply cycle_id.
+  1: apply cycle_id.
   rewrite Heqs4 e !expgMn.
-  2-3: apply group_prodC.
+  1-2: apply group_prodC.
   rewrite invMg !expgMn.
-  2: apply group_prodC.
+  1: apply group_prodC.
   rewrite !group_prodA.
   rewrite group_prodC 2!group_prodA -expgMn.
-  2: apply group_prodC.
+  1: apply group_prodC.
   rewrite mulVg expg1n mul1g -expg_zneg.
-  2:{
+  {
     have Hx : exists ix, otf s = g ^+ ix.
     { apply /cycleP. rewrite -g_gen. apply: in_setT. }
     destruct Hx as [ix ->].
@@ -332,7 +332,7 @@ Proof.
   rewrite [otf s ^+ (- otf s2) ^+ _] expgAC.
   rewrite -expgD -expgM.
   have <- := @expg_mod _ q.
-  2:{
+  {
     have Hx : exists ix, otf s = g ^+ ix.
     { apply /cycleP. rewrite -g_gen. apply: in_setT. }
     destruct Hx as [ix ->].
@@ -358,8 +358,8 @@ Proof.
       rewrite subn0 modnn addn0 modnDr.
       rewrite -> order_ge1 at 3.
       rewrite modn_small.
-      + reflexivity.
       + rewrite <- order_ge1 at 2. apply ltn_ord.
+      + reflexivity.
     - simpl.
       rewrite <- order_ge1 at 4.
       rewrite modnDmr.
@@ -389,13 +389,12 @@ Proof.
     reflexivity.
   }
   rewrite Zp_mulVz.
-  1: cbn ; by rewrite eq_refl.
+  2: cbn ; by rewrite eq_refl.
   rewrite -> order_ge1 at 1.
   apply otf_neq in Heqb.
   rewrite prime_coprime.
-  2: apply prime_order.
+  1: apply prime_order.
   rewrite gtnNdvd.
-  - done.
   - rewrite lt0n.
     apply neq_pos.
     assumption.
@@ -403,6 +402,7 @@ Proof.
     simpl.
     rewrite order_ge1 in Hk.
     apply Hk.
+  - done.
 Qed.
 
 Lemma compat : fcompat Com_locs Simulator_locs.

@@ -6,7 +6,7 @@ Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
   ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
 From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
   UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
@@ -116,9 +116,9 @@ Section Executor.
       f_equal.
       unfold nat_ch_aux_obligation_1.
       rewrite @Znat.Z2Nat.id.
+      + apply (@wunsigned_range u).
       + rewrite wrepr_unsigned.
         reflexivity.
-      + apply (@wunsigned_range u).
   Qed.
 
   Definition new_state

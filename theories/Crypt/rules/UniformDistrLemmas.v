@@ -22,7 +22,7 @@ From mathcomp Require Import
      distr
      realsum.
 Set Warnings "notation-overridden,ambiguous-paths".
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
 From SSProve.Crypt Require Import
      Axioms
@@ -72,10 +72,10 @@ Lemma cardinality_bound {T : finType} (J : seq T) (Huniq: uniq J) (k : R) (k_geq
 Proof.
   rewrite GRing.mulrC.
   rewrite sum_const_seq_finType.
-  2: { exact Huniq. }
+  { exact Huniq. }
   rewrite GRing.sumr_const pmulrn /=.
   have hfoo' :  k *~ #|J| =  k * #|J|%:~R.
-  1: { by rewrite mulrzr. }
+  { by rewrite mulrzr. }
   rewrite hfoo' /=.
   clear hfoo'.
   apply: ler_pM; auto.
@@ -132,7 +132,7 @@ Proof.
   - rewrite !big_nil. reflexivity.
   - rewrite !big_cons.
     case: ifP=> pa /=.
-    + rewrite eFG. 2: auto.
+    + rewrite eFG. auto.
       rewrite ihr. reflexivity.
     + apply ihr.
 Qed.
@@ -166,13 +166,13 @@ Proof.
     assert (e : x == 0)
   end.
   { rewrite psumr_eq0.
+    - intros [i j]. cbn. intros h.
+      destruct (f i == j). 1: discriminate.
+      auto.
     - apply/allP. intros [i j] h. cbn.
       destruct (f i == j).
       + cbn. reflexivity.
       + cbn. apply/eqP. reflexivity.
-    - intros [i j]. cbn. intros h.
-      destruct (f i == j). 1: discriminate.
-      auto.
   }
   move: e => /eqP e. rewrite e. clear e.
   rewrite GRing.Theory.addr0.
@@ -211,7 +211,7 @@ Qed.
 Lemma sumr_const (T : finType) (x : R): \sum_(i <- enum T) x = x * (#|T|%:~R).
 Proof.
   rewrite sum_const_seq_finType.
-  2: { apply enum_uniq. }
+  { apply enum_uniq. }
   rewrite GRing.sumr_const pmulrn /=.
   (* Rem.: need to show #|seq_sub (T:=T) (enum T)| = #|T| *)
   rewrite !enumT.
@@ -241,10 +241,10 @@ Proof.
     -- move => [t1 t2] /=.
        destruct (f t1 == t2) eqn:Heq; auto. exact r_nonneg.
     -- rewrite sum_prod_bij.
-       2: by move => w; exact r_nonneg.
+       by move => w; exact r_nonneg.
        destruct (#|F|) eqn:E.
        1: rewrite sumr_const E GRing.mulr0 //.
-       rewrite sumr_const /r -GRing.invf_div GRing.divr1 GRing.mulVf. auto.
+       rewrite sumr_const /r -GRing.invf_div GRing.divr1 GRing.mulVf; auto.
        by rewrite E intr_eq0.
 Qed.
 
@@ -257,17 +257,20 @@ Proof.
   destruct f_bij as [f_inv K1 K2].
   rewrite /sampleFsq_f /f_dprod; split; apply: distr_ext => w /=.
   - rewrite /lmg dfstE /mkdistr psum_sum /=.
+    -- move => x.
+       destruct (f w == x) eqn: Hfw; auto.
+       exact r_nonneg.
     rewrite (sum_seq1 (f w)).
-    destruct (f w == f w) eqn: Hfw; auto.
-    -- exfalso. by move/idP: Hfw.
     move => y Hy.
     destruct (f w == y) eqn: Hfw; auto.
     -- exfalso. move/eqP: Hy; auto.
-    move => x.
-    destruct (f w == x) eqn: Hfw; auto.
-    exact r_nonneg.
+    destruct (f w == f w) eqn: Hfw; auto.
+    -- exfalso. by move/idP: Hfw.
   - rewrite /rmg __deprecated__dsndE /mkdistr psum_sum /=.
-    rewrite (sum_seq1 (f_inv w)).
+    -- move => x.
+       destruct (f x == w) eqn: Hfw; auto.
+       exact r_nonneg.
+    rewrite (sum_seq1 (f_inv w)); last first.
     have Heq: (f (f_inv w) == w) by apply /eqP; apply: (K2 w).
     by rewrite Heq.
     move => y Hy.
@@ -277,9 +280,6 @@ Proof.
        rewrite -Hfy.
        exact (K1 y).
     -- exfalso. move/eqP: Hy; auto.
-       move => x.
-       destruct (f x == w) eqn: Hfw; auto.
-       exact r_nonneg.
 Qed.
 
 Lemma sampleFsq_support { F : finType}
@@ -300,28 +300,24 @@ Proof.
   move => a.
   rewrite /lmg /rmg dfstE __deprecated__dsndE.
   split.
-  - rewrite psum_sum.
-    rewrite (sum_seq1 a).
-    + reflexivity.
-    + move => y Hdd. specialize (Hsupp a y).
-      assert (0 < d (a, y)) as Hd.
-      { rewrite lt_def. apply /andP.
-        split.
-        - assumption.
-        - apply (ge0_mu d). }
-      specialize (Hsupp Hd). rewrite Hsupp. auto.
-    + move => x. apply (ge0_mu d).
-  - rewrite psum_sum.
-    rewrite (sum_seq1 a).
-    + reflexivity.
-    + move => y Hdd. specialize (Hsupp y a).
-      assert (0 < d (y, a)) as Hd.
-      { rewrite lt_def. apply /andP.
-        split.
-        - assumption.
-        - apply (ge0_mu d).  }
-      specialize (Hsupp Hd). rewrite Hsupp. auto.
-    + move => x. apply (ge0_mu d).
+  - rewrite psum_sum; first by move => x; apply (ge0_mu d).
+    rewrite (sum_seq1 a); last by reflexivity.
+    move => y Hdd. specialize (Hsupp a y).
+    assert (0 < d (a, y)) as Hd.
+    { rewrite lt_def. apply /andP.
+      split.
+      - assumption.
+      - apply (ge0_mu d). }
+    specialize (Hsupp Hd). rewrite Hsupp. auto.
+  - rewrite psum_sum; first by move => x; apply (ge0_mu d).
+    rewrite (sum_seq1 a); last by reflexivity.
+    move => y Hdd. specialize (Hsupp y a).
+    assert (0 < d (y, a)) as Hd.
+    { rewrite lt_def. apply /andP.
+      split.
+      - assumption.
+      - apply (ge0_mu d). }
+    specialize (Hsupp Hd). rewrite Hsupp. auto.
 Qed.
 
 
@@ -350,13 +346,13 @@ Section prod_uniform.
     apply distr_ext. move=> [x y].
     rewrite !/SD_bind !/SDistr_bind /dlet /=. unlock.
     rewrite /mlet /=.
-    rewrite psumZ. 2: apply r_nonneg.
+    rewrite psumZ. apply r_nonneg.
     erewrite eq_psum.
     2:{
-      move=> x1. rewrite psumZ. 2: apply r_nonneg.
+      move=> x1. rewrite psumZ. apply r_nonneg.
       reflexivity.
     }
-    rewrite psumZ. 2: apply r_nonneg.
+    rewrite psumZ. apply r_nonneg.
     rewrite GRing.Theory.mulrA.
     assert (psum_ret :
       psum (λ x1 : X, psum (λ x2 : Y, SD_ret (x1, x2) (x, y))) = 1
@@ -369,17 +365,17 @@ Section prod_uniform.
           SDistr_unit (X * Y)%type (x1,x2) (x,y))
       ).
       rewrite -hlp.
+      - unshelve eapply eq_summable.
+        + exact (SDistr_unit _ (x,y)).
+        + move=> [x1 x2] /=. rewrite /SDistr_unit.
+          rewrite !dunit1E. rewrite eq_sym. reflexivity.
+        + apply summable_mu.
       - unshelve erewrite eq_psum.
         + exact (SDistr_unit _ (x,y)).
         + apply psum_SDistr_unit.
         + move=> [x1 x2] /=. rewrite /SDistr_unit.
           rewrite !dunit1E.
           rewrite eq_sym. reflexivity.
-        + unshelve eapply eq_summable.
-          * exact (SDistr_unit _ (x,y)).
-          * move=> [x1 x2] /=. rewrite /SDistr_unit.
-            rewrite !dunit1E. rewrite eq_sym. reflexivity.
-          * apply summable_mu.
     }
     rewrite psum_ret. rewrite GRing.mulr1.
     rewrite !/r. rewrite card_prod.

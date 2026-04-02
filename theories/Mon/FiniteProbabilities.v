@@ -7,7 +7,7 @@ From SSProve.Mon Require Import SPropBase SPropMonadicStructures MonadExamples S
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr.
 Set Warnings "notation-overridden,ambiguous-paths".
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 From SSProve.Relational Require Import Commutativity.
 
 Import GRing.Theory Num.Theory.
@@ -58,8 +58,8 @@ Section FinProb.
     intros x y. simpl.
     rewrite divr_ge0 ?Bool.andb_true_l ?ler0n ?addr_ge0 //.
     rewrite ler_pdivrMr.
-    rewrite mul1r [2%:~R]/(1+1) lerD //.
     rewrite ltr0n //.
+    rewrite mul1r [2%:~R]/(1+1) lerD //.
   Qed.
 
   #[program] Definition mulI (x y:I) : I := ⦑ x∙1 * y∙1 ⦒.

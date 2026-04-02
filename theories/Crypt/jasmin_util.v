@@ -19,9 +19,8 @@ From Stdlib.Unicode Require Import Utf8.
 Set Warnings "-notation-overridden".
 From Stdlib Require Import ZArith Zwf Setoid Morphisms CMorphisms CRelationClasses Psatz.
 Set Warnings "notation-overridden".
-(* Require Import xseq oseq. *)
 
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
@@ -295,8 +294,8 @@ Lemma map_ext aT bT f g m :
   (forall a, List.In a m -> f a = g a) ->
   @map aT bT f m = map g m.
 Proof.
-elim: m => //= a m ih ext.
-rewrite ext; [ f_equal | ]; eauto.
+  elim: m => //= a m ih ext.
+  rewrite ext; [ | f_equal ]; eauto.
 Qed.
 
 Lemma mapM_ext eT aT bT (f1 f2: aT → result eT bT) (m: seq aT) :
@@ -304,7 +303,7 @@ Lemma mapM_ext eT aT bT (f1 f2: aT → result eT bT) (m: seq aT) :
   mapM f1 m = mapM f2 m.
 Proof.
   elim: m => // a m ih ext /=.
-  rewrite (ext a); last by left.
+  rewrite (ext a); first by left.
   case: (f2 _) => //= b; rewrite ih //.
   by move => ? h; apply: ext; right.
 Qed.
@@ -314,18 +313,18 @@ Lemma eq_mapM eT (aT: eqType) bT (f1 f2: aT -> result eT bT) (l:list aT) :
   mapM f1 l = mapM f2 l.
 Proof.
   elim: l => //= a l hrec hf; rewrite hf ? hrec //.
-  + by move=> ? h; apply/hf; rewrite in_cons h orbT.
-  by apply mem_head.
+  - by apply mem_head.
+  by move=> ? h; apply/hf; rewrite in_cons h orbT.
 Qed.
 
 Lemma size_mapM eT aT bT f xs ys :
   @mapM eT aT bT f xs = ok ys ->
   size xs = size ys.
 Proof.
-elim: xs ys.
-- by move => ys [<-].
-move => x xs ih ys /=; case: (f _) => //= y.
-by case: (mapM f xs) ih => //= ys' ih [] ?; subst; rewrite (ih _ erefl).
+  elim: xs ys.
+  - by move => ys [<-].
+  move => x xs ih ys /=; case: (f _) => //= y.
+  by case: (mapM f xs) ih => //= ys' ih [] ?; subst; rewrite (ih _ erefl).
 Qed.
 
 Local Close Scope Z_scope.
@@ -1279,12 +1278,12 @@ Section LEX.
     forall  c, ctrans (lex x y) (lex y z) = Some c -> lex x z = c.
   Proof.
     rewrite /lex=> Hr1 Hr2 c;case: cmp1 Hr1.
-    + move=> H;rewrite (H (cmp1 y.1 z.1));last by rewrite ctrans_Eq.
+    + move=> H;rewrite (H (cmp1 y.1 z.1)); first by rewrite ctrans_Eq.
       (case: cmp1;first by apply Hr2);
         rewrite ctransC; [apply ctrans_Lt | apply ctrans_Gt].
-    + move=> H1 H2;rewrite (H1 Lt);move:H2;first by apply: ctrans_Lt.
+    + move=> H1 H2;rewrite (H1 Lt);move:H2; last by apply: ctrans_Lt.
       by case: cmp1.
-    move=> H1 H2;rewrite (H1 Gt);move:H2;first by apply: ctrans_Gt.
+    move=> H1 H2;rewrite (H1 Gt);move:H2; last by apply: ctrans_Gt.
     by case: cmp1.
   Qed.
 
@@ -1605,8 +1604,8 @@ Proof.
   + by rewrite Z.add_0_r /= cats0.
   move=> ? hrw; rewrite Nat2Z.inj_succ Z.add_succ_r !ziotaS_cat; last 2 first.
   + exact: (Z.add_nonneg_nonneg _ _ _ (Zle_0_nat _)).
+    by rewrite catA hrw Z.add_assoc.
   + exact: Zle_0_nat.
-  by rewrite catA hrw Z.add_assoc.
 Qed.
 
 Lemma in_ziota (p z i:Z) : (i \in ziota p z) = ((p <=? i) && (i <? p + z)).
@@ -1618,7 +1617,7 @@ Proof.
     + by rewrite Z.leb_refl /=; symmetry; apply /ZltP; Lia.lia.
     by rewrite hrec; apply Bool.eq_iff_eq_true;split=> /andP [/ZleP ? /ZltP ?];
       (apply /andP;split;[apply /ZleP| apply /ZltP]); Lia.lia.
-  rewrite ziota_neg;last Lia.lia.
+  rewrite ziota_neg; first Lia.lia.
   rewrite in_nil;symmetry;apply /negP => /andP [/ZleP ? /ZltP ?]; Lia.lia.
 Qed.
 
@@ -1712,7 +1711,7 @@ Qed.
 Lemma znth_index (T : eqType) (x0 x : T) (s : seq T):
   x \in s → znth x0 s (zindex x s) = x.
 Proof.
-  move=> hin; rewrite /zindex znthE; last by apply Zle_0_nat.
+  move=> hin; rewrite /zindex znthE; first by apply Zle_0_nat.
   by rewrite Nat2Z.id nth_index.
 Qed.
 

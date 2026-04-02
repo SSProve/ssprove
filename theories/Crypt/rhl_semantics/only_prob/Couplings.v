@@ -4,7 +4,7 @@ From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelati
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum.
 Set Warnings "notation-overridden,ambiguous-paths".
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 From SSProve.Crypt Require Import Axioms ChoiceAsOrd only_prob.SubDistr.
 
 Import SPropNotations.
@@ -67,21 +67,23 @@ Section Weight_preservation.
   Context (hCoupl : coupling d c1 c2).
 
   Lemma psum_coupling_left : psum d = psum c1.
-  Proof. rewrite (@psum_pair R A1 A2 d).
+  Proof.
+  rewrite (@psum_pair R A1 A2 d).
+  - destruct d as [dd d2 d3 d4]. simpl. assumption.
   f_equal.
   destruct hCoupl as [lH rH]. rewrite -lH. unfold lmg.
   apply boolp.funext. intro x1.
   rewrite dfstE. reflexivity.
-    destruct d as [dd d2 d3 d4]. simpl. assumption.
   Qed.
 
   Lemma psum_coupling_right : psum d = psum c2.
-  Proof. rewrite (@psum_pair_swap R A1 A2 d).
+  Proof.
+  rewrite (@psum_pair_swap R A1 A2 d).
+  - destruct d as [dd d2 d3 d4]. simpl. assumption.
   f_equal.
   destruct hCoupl as [lH rH]. rewrite -rH. unfold rmg.
   apply boolp.funext. intro x2.
   rewrite __deprecated__dsndE. reflexivity.
-    destruct d as [dd d2 d3 d4]. simpl. assumption.
   Qed.
 
 End Weight_preservation.
@@ -92,20 +94,20 @@ Section Weight_of_SDistr_unit.
   Lemma psum_SDistr_unit : psum (SDistr_unit A a) = 1.
   Proof.
   rewrite (@psum_finseq R A (SDistr_unit A a) [::a]).
+  - rewrite cons_uniq. apply /andP. split. trivial.
+    trivial.
+  unfold sub_mem. intro x. unfold in_mem. simpl. rewrite dunit1E.
+  intro Hx. apply /orP. left. move: Hx => /eqP. destruct (eqType_lem A a x).
+  intro Hx. apply /eqP. symmetry ; assumption.
+  assert (a == x = false).
+    apply Bool.not_true_is_false.
+    intro Hax. unshelve eapply elimT in Hax. exact (a = x).
+    contradiction. apply eqP. rewrite H0. simpl. intro H1. epose (H2 := H1 _).
+    contradiction.
+    Unshelve. 2: reflexivity.
   rewrite big_cons big_nil.
   rewrite GRing.addr0. unfold SDistr_unit. rewrite dunit1E.
   rewrite refl_true. simpl. rewrite normr1. reflexivity.
-    rewrite cons_uniq. apply /andP. split. trivial.
-      trivial.
-    unfold sub_mem. intro x. unfold in_mem. simpl. rewrite dunit1E.
-    intro Hx. apply /orP. left. move: Hx => /eqP. destruct (eqType_lem A a x).
-    intro Hx. apply /eqP. symmetry ; assumption.
-    assert (a == x = false).
-      apply Bool.not_true_is_false.
-      intro Hax. unshelve eapply elimT in Hax. exact (a = x).
-      contradiction. apply eqP. rewrite H0. simpl. intro H1. epose (H2 := H1 _).
-      contradiction.
-      Unshelve. reflexivity.
   Qed.
 
 End Weight_of_SDistr_unit.
@@ -205,11 +207,11 @@ Section Couplings_vs_ret.
       apply /eqP. unshelve eapply lmg_rmg_SDistr_unit. assumption.
       move: Hxadiff => /negP Hxadiff. intro bla. rewrite bla in Hxadiff.
       apply Hxadiff. apply eq_refl.
-      move: e. rewrite big_seq1. move=> e. rewrite weight_from_mgs in e.
+      move: e. rewrite big_seq1. move=> e. rewrite weight_from_mgs in e; first by assumption.
       rewrite e. symmetry. assert (Hbnorm: `|d (a1, a2)| == d (a1, a2) -> `|d (a1, a2)| = d (a1, a2)).
       move=> /eqP. trivial.
       apply Hbnorm. rewrite -(ger0_def). destruct d as [d1 d2 d3 d4]. simpl in *.
-      apply (d2 (a1,a2)). assumption.
+      apply (d2 (a1,a2)).
   Qed.
 
   Lemma coupling_SDistr_unit_F_choice_prod :
@@ -339,7 +341,7 @@ Section Forall_exists.
   forall a1 a2, q a1 a2 (kd (a1,a2)).
   Proof.
   unshelve esplit.
-  -  move=> [a1 a2]. move: (all_ex a1 a2). Fail move=> [dB dBcoup].
+  -  move=> [a1 a2]. move: (all_ex a1 a2). (* Fail move=> [dB dBcoup]. *)
      move=> dBex.
      apply boolp.constructive_indefinite_description in dBex.
      move: dBex => [dB [dBcoup dBq]]. exact dB.

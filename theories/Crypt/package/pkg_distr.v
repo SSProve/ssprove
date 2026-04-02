@@ -23,7 +23,7 @@ Set Equations Transparent.
 
 Import PackageNotation.
 
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
+Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
@@ -207,14 +207,14 @@ Class LosslessOp (op : Op) :=
 Proof.
   unfold LosslessOp.
   simpl.
-  unfold r. rewrite psumZ. 2: apply ler0n.
+  unfold r. rewrite psumZ. 1: apply ler0n.
   simpl. rewrite GRing.mul1r.
   rewrite psum_fin. rewrite cardE. rewrite size_enum_ord. simpl.
   rewrite GRing.sumr_const. rewrite cardE. rewrite size_enum_ord.
   rewrite -normrMn.
   rewrite -GRing.Theory.mulr_natr.
   rewrite GRing.mulVf.
-  2:{
+  {
     apply /negP => e.
     rewrite intr_eq0 in e.
     move: e => /eqP e.
