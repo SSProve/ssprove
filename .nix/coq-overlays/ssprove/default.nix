@@ -57,6 +57,8 @@ mkCoqDerivation {
   release."0.2.0".sha256 = "sha256-GDkWH0LUsW165vAUoYC5of9ndr0MbfBtmrPhsJVXi3o=";
   release."0.1.0".sha256 = "sha256-Yj+k+mBsudi3d6bRVlZLyM4UqQnzAX5tHvxtKoIuNTE=";
 
+  useDune = true;
+
   propagatedBuildInputs = [
     equations
     mathcomp-boot

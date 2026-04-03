@@ -15,6 +15,7 @@
           owner = "SSProve";
           version = "0.2.0";
           src = ./.;
+          useDune = true;
           propagatedBuildInputs = [
             equations
             mathcomp-analysis
