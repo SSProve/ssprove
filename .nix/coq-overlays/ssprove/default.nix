@@ -15,6 +15,7 @@
 mkCoqDerivation {
   pname = "ssprove";
   owner = "SSProve";
+  opam-name = "rocq-ssprove";
 
   inherit version;
   defaultVersion =
