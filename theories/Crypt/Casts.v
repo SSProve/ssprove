@@ -1,5 +1,5 @@
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
-From mathcomp Require Import ssreflect ssrbool ssrnat choice fintype eqtype all_algebra.
+From mathcomp Require Import ssreflect ssrfun ssrbool ssrnat choice fintype eqtype all_algebra.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 
 Set Warnings "-notation-overridden,-hiding-delimiting-key".
