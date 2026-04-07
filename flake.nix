@@ -7,22 +7,24 @@
     let
       ssprovePkg = { lib, mkCoqDerivation, coq
                   , equations, extructures, deriving
-                  , mathcomp-analysis, mathcomp-ssreflect
+                  , mathcomp-analysis, mathcomp-boot
                   , mathcomp-experimental-reals
                   , mathcomp-word}:
         mkCoqDerivation {
           pname = "ssprove";
           owner = "SSProve";
-          version = "0.2.0";
+          opam-name = "rocq-ssprove";
+          version = "0.3.1";
           src = ./.;
+          useDune = true;
           propagatedBuildInputs = [
             equations
+            mathcomp-boot
             mathcomp-analysis
             mathcomp-experimental-reals
-            mathcomp-ssreflect
-            mathcomp-word
-            deriving
             extructures
+            deriving
+            mathcomp-word
           ];
           meta = {
             description = "A foundational framework for modular cryptographic proofs in Rocq ";
