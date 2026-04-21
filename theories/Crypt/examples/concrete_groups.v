@@ -3,7 +3,7 @@
 *)
 
 Set Warnings "-notation-overridden,-ambiguous-paths,-notation-incompatible-format".
-From mathcomp Require Import all_ssreflect fingroup.fingroup fintype
+From mathcomp Require Import all_ssreflect fingroup fintype
      eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-format".
 From HB Require Import structures.
