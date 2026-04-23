@@ -1,0 +1,65 @@
+fullname: SSProve framework
+shortname: ssprove
+organization: ssprove
+opam_name: coq-ssprove
+community: false
+action: true
+coqdoc: false
+branch: main
+
+synopsis: >-
+  A framework for modular crypto proofs
+description: |-
+  This repository contains a library for doing both state separating proofs
+  (SSP) and for showing low-level equivalences of probabilistic stateful
+  programs.
+authors:
+- name: Carmine Abate
+  initial: true
+- name: Philipp G. Haselwarter
+  initial: true
+- name: Exequiel Rivas
+  initial: true
+- name: Antoine Van Muylder
+  initial: true
+- name: Théo Winterhalter
+  initial: true
+- name: Nikolaj Sidorenco
+  initial: false
+- name: Cătălin Hrițcu
+  initial: true
+- name: Kenji Maillard
+  initial: true
+- name: Bas Spitters
+  initial: true
+
+opam-file-maintainer: philipp@haselwarter.org
+
+opam-file-version: dev
+
+license:
+  fullname: MIT
+  identifier: MIT
+  file: LICENSE
+
+supported_coq_versions:
+  text: Coq 8.14
+  opam: '{>= "8.14"}'
+
+tested_coq_opam_versions:
+- version: '1.13.0-coq-8.14'
+  repo: 'mathcomp/mathcomp'
+
+dependencies:
+- opam:
+    name: coq-mathcomp-ssreflect
+    version: '{(>= "1.13.0" & < "1.14~")}'
+- opam:
+    name: coq-mathcomp-analysis
+    version: '{= "0.3.13"}'
+- opam:
+    name: coq-equations
+    version: '{>= "1.3"}'
+- opam:
+    name: coq-extructures
+    version: '{(>= "0.3.1" & < "dev")}'
