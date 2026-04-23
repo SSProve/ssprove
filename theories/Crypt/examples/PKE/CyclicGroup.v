@@ -2,7 +2,7 @@ From Stdlib Require Import Utf8.
 
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import all_ssreflect all_algebra
-  fingroup.fingroup solvable.cyclic prime.
+  fingroup solvable.cyclic prime.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 

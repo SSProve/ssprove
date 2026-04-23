@@ -78,7 +78,7 @@
 
 Set Warnings "-notation-overridden,-ambiguous-paths,-notation-incompatible-format".
 From mathcomp Require Import all_ssreflect all_algebra reals distr
-  fingroup.fingroup realsum ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice
+  fingroup realsum ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice
   seq.
 Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-format".
 From extructures Require Import ord fset fmap.

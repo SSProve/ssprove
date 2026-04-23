@@ -1,6 +1,6 @@
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
-  fingroup.fingroup solvable.cyclic prime ssrnat ssreflect ssrfun ssrbool ssrnum
+  fingroup solvable.cyclic prime ssrnat ssreflect ssrfun ssrbool ssrnum
   eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
 
