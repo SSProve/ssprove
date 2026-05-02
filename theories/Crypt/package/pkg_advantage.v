@@ -6,7 +6,7 @@ From SSProve.Relational Require Import OrderEnrichedCategory
   OrderEnrichedRelativeMonadExamples.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
-  choice reals distr seq all_algebra fintype realsum.
+  choice order reals distr seq all_algebra fintype realsum.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr
@@ -207,7 +207,7 @@ Proof.
   intros P l Q A.
   induction l as [| R l ih] in P, Q |- *.
   - simpl. auto.
-  - simpl. eapply order.Order.POrderTheory.le_trans.
+  - simpl. eapply Order.POrderTheory.le_trans.
     + eapply Advantage_triangle.
     + eapply lerD.
       * auto.
