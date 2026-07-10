@@ -12,7 +12,7 @@
       coq.override.version = "9.0";
       mathcomp.job = false;
       mathcomp.override.version = "2.3.0";
-      mathcomp-analysis.override.version = "1.8.0";
+      mathcomp-analysis.override.version = "1.12.0";
     }; rocqPackages = {
       rocq-core.override.version = "9.0";
     };
@@ -36,6 +36,8 @@
       mathcomp.override.version = "master";
       mathcomp-analysis.job = false;
       mathcomp-analysis.override.version = "master";
+      mathcomp-real-closed.job = false;
+      mathcomp-real-closed.override.version = "master";
       mathcomp-finmap.job = false;
       mathcomp-finmap.override.version = "master";
       mathcomp-word.job = false;
@@ -48,6 +50,16 @@
       mathcomp-bigenough.override.version = "master";
     }; rocqPackages = {
       rocq-core.override.version = "9.1";
+      mathcomp.job = false;
+      mathcomp.override.version = "master";
+      mathcomp-real-closed.job = false;
+      mathcomp-real-closed.override.version = "master";
+      mathcomp-finmap.job = false;
+      mathcomp-finmap.override.version = "master";
+      mathcomp-bigenough.job = false;
+      mathcomp-bigenough.override.version = "master";
+      mathcomp-analysis.job = false;
+      mathcomp-analysis.override.version = "master";
     };
   };
 
