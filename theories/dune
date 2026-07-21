@@ -18,6 +18,17 @@
       Stdlib
       Equations
       mathcomp
+      mathcomp.algebra
+      mathcomp.word
+      mathcomp.classical
+      mathcomp.reals
+      mathcomp.experimental_reals
+      mathcomp.fingroup
+      mathcomp.finmap
+      mathcomp.solvable
+      mathcomp.bigenough
+      mathcomp.ssreflect
+      mathcomp.order
       HB
       elpi
       elpi_elpi

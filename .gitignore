@@ -65,3 +65,6 @@ Makefile.rocq.conf
 docs/
 # Dune
 _build/
+
+# Nix
+result
