@@ -89,7 +89,7 @@ Coercion nat_of_pelem (pe: pelem) : nat :=
   | PE128 => nat_of_wsize U128
   end.
 
-Definition word sz : comRingType := (wsize_size_minus_1 sz).+1.-word.
+Definition word sz : comNzRingType := (wsize_size_minus_1 sz).+1.-word.
 
 Global Opaque word.
 

@@ -1,6 +1,3 @@
-# TODO: remove once 2.3.0 support is removed.
--arg -w -arg -deprecated-since-mathcomp-2.4.0
-
 -Q theories SSProve
 
 theories/Mon/Base.v

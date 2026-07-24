@@ -139,7 +139,7 @@ Qed.
 
 (* TODO MOVE? *)
 
-Lemma destruct_pair_eq {R : ringType} {A B : eqType} {a b : A} {c d : B} :
+Lemma destruct_pair_eq {R : nzRingType} {A B : eqType} {a b : A} {c d : B} :
   ((a, c) == (b, d))%:R = (a == b)%:R * (c == d)%:R :> R.
 Proof.
   destruct (a == b) eqn:ab, (c == d) eqn:cd.
@@ -204,7 +204,7 @@ Proof.
   - by rewrite Order.POrderTheory.ltxx in H.
 Qed.
 
-Lemma ne0_eq {R : ringType} {A : eqType} {x y : A} (H : ((x == y)%:R) ≠ (0 : R)) :
+Lemma ne0_eq {R : nzRingType} {A : eqType} {x y : A} (H : ((x == y)%:R) ≠ (0 : R)) :
   x = y.
 Proof.
   destruct (x == y) eqn:Heq.

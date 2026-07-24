@@ -154,7 +154,7 @@ Proof.
     by rewrite size_poly0.
   - move: Heq => /negbT-Heq.
     apply: leq_trans.
-    1: by apply: size_mul_leq.
+    1: by apply: size_polyMleq.
     rewrite size_scale.
     + by rewrite GRing.invr_neq0 // GRing.subr_eq0.
     + by rewrite (@PolyK R 0) // GRing.oner_neq0.
@@ -243,7 +243,7 @@ Proof.
     + by rewrite /unzip1 size_map ltnSn.
   - rewrite big_cons.
     apply: leq_trans.
-    1: by apply: size_add.
+    1: by apply: size_polyD.
     rewrite geq_max.
       apply /andP; split.
       + rewrite /lagrange_poly_part /=.
@@ -291,8 +291,8 @@ Proof.
   have Hsize : (size (q - lagrange_poly pts)%R <= size pts)%N.
   - move: (size_lagrange_poly pts) => Hsize2.
     apply: leq_trans.
-    1: apply: size_add.
-    by rewrite geq_max size_opp Hsize1 Hsize2.
+    1: apply: size_polyD.
+    by rewrite geq_max size_polyN Hsize1 Hsize2.
   - apply /eqP.
     rewrite -GRing.subr_eq0 -size_poly_eq0.
     rewrite size_poly_eq0.
@@ -320,10 +320,10 @@ Qed.
   - [lagrange_add_zero_cons]: Adding Langrange polynomials where all but one points have [y = 0].
   - [lagrange_zero]: Evaluating Lagrange polynomials where all points have [y = 0].
 *)
-Definition zero_points {R: ringType} (s: seq R): seq (R * R) :=
+Definition zero_points {R: nzRingType} (s: seq R): seq (R * R) :=
   [seq (x, 0) | x <- s ].
 
-Lemma unzip1_zero_points {R: ringType} (s: seq R):
+Lemma unzip1_zero_points {R: nzRingType} (s: seq R):
   unzip1 (zero_points s) = s.
 Proof.
   rewrite /unzip1 /zero_points.
@@ -331,7 +331,7 @@ Proof.
   by rewrite !map_cons IHs.
 Qed.
 
-Lemma x_in_zero_points {R: ringType} (x y: R) (s: seq R):
+Lemma x_in_zero_points {R: nzRingType} (x y: R) (s: seq R):
   (x, y) \in zero_points s ->
   x \in s.
 Proof.
@@ -343,7 +343,7 @@ Proof.
   move: Hin; by rewrite Heq /=.
 Qed.
 
-Lemma y_in_zero_points {R: ringType} {x y: R} {s: seq R}:
+Lemma y_in_zero_points {R: nzRingType} {x y: R} {s: seq R}:
   (x, y) \in zero_points s ->
   y = 0.
 Proof.
@@ -359,7 +359,7 @@ Proof.
     by rewrite Hneq.
 Qed.
 
-Lemma pt_in_zero_points {R: ringType} {x: R} {s: seq R}:
+Lemma pt_in_zero_points {R: nzRingType} {x: R} {s: seq R}:
   x \in s ->
   (x, 0) \in zero_points s.
 Proof.
@@ -405,8 +405,8 @@ Proof.
   apply: lagrange_poly_unique.
   - simpl_dif_point. by rewrite unzip1_zero_points.
   - apply: leq_trans.
-    1: by apply: size_add.
-    rewrite size_opp /= !size_map geq_max.
+    1: by apply: size_polyD.
+    rewrite size_polyN /= !size_map geq_max.
     apply /andP.
     split.
     all: apply: leq_trans.
@@ -460,7 +460,7 @@ Proof.
   apply: lagrange_poly_unique.
   - simpl_dif_point. by rewrite unzip1_zero_points.
   - apply: leq_trans.
-    1: by apply: size_add.
+    1: by apply: size_polyD.
     rewrite /= !size_map geq_max.
     apply/andP.
     split.

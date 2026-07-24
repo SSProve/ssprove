@@ -394,7 +394,7 @@ Proof.
   - exact Fail.
 Defined.
 
-Lemma destruct_pair_eq {R : ringType} {A B : eqType} {a b : A} {c d : B}
+Lemma destruct_pair_eq {R : nzRingType} {A B : eqType} {a b : A} {c d : B}
   : ((a, c) == (b, d))%:R = (a == b)%:R * (c == d)%:R :> R.
 Proof.
   destruct (a == b) eqn:ab, (c == d) eqn:cd.
