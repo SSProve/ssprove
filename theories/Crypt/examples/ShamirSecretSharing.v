@@ -171,16 +171,16 @@ Lemma size_poly_bij {t: nat} (U: seq Party) (m m': Word) (q: {poly Word}):
 Proof.
   move=> Hu Hq.
   apply: leq_trans.
-  1: by apply: size_add.
+  1: by apply: size_polyD.
   rewrite geq_max.
   apply /andP. split => //.
   rewrite size_tail_poly leq_pred_S.
   apply: leq_trans.
-  1: by apply: size_add.
+  1: by apply: size_polyD.
   rewrite geq_max.
   apply /andP.
   split.
-  2: rewrite size_opp.
+  2: rewrite size_polyN.
   all: apply: (leq_trans (size_lagrange_poly _)).
   all: by rewrite /= size_map.
 Qed.
