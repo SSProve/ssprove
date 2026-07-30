@@ -499,16 +499,16 @@ Proof.
     by rewrite (y_in_zero_points Hin).
 Qed.
 
-Definition head_poly {R: ringType} (q: {poly R}): R := q`_0.
-Definition tail_poly {R: ringType} (q: {poly R}): {poly R} := Poly (behead q).
+Definition head_poly {R: nzRingType} (q: {poly R}): R := q`_0.
+Definition tail_poly {R: nzRingType} (q: {poly R}): {poly R} := Poly (behead q).
 
-Lemma head_cons_poly {R: ringType} (a: R) (q: {poly R}):
+Lemma head_cons_poly {R: nzRingType} (a: R) (q: {poly R}):
   head_poly (cons_poly a q) = a.
 Proof.
   by rewrite /head_poly coef_cons.
 Qed.
 
-Lemma tail_cons_poly {R: ringType} (a: R) (q: {poly R}):
+Lemma tail_cons_poly {R: nzRingType} (a: R) (q: {poly R}):
   tail_poly (cons_poly a q) = q.
 Proof.
   rewrite /tail_poly polyseq_cons.
@@ -519,7 +519,7 @@ Proof.
   by case: (a != 0).
 Qed.
 
-Lemma size_tail_poly {R: ringType} (q: {poly R}):
+Lemma size_tail_poly {R: nzRingType} (q: {poly R}):
   size (tail_poly q) = (size q).-1.
 Proof.
   rewrite /tail_poly.
@@ -528,14 +528,14 @@ Proof.
   - by rewrite (PolyK Hs).
 Qed.
 
-Lemma last_neq_0 {R: ringType} (a: R) (s: seq R):
+Lemma last_neq_0 {R: nzRingType} (a: R) (s: seq R):
   (last a s != 0 -> last 1 s != 0).
 Proof.
   case: s => H //=.
   by apply: GRing.oner_neq0.
 Qed.
 
-Lemma cons_head_tail_poly {R: ringType} (q: {poly R}):
+Lemma cons_head_tail_poly {R: nzRingType} (q: {poly R}):
   cons_poly (head_poly q) (tail_poly q) = q.
 Proof.
   apply: poly_inj.
@@ -547,7 +547,7 @@ Proof.
   by rewrite polyseqC Hs.
 Qed.
 
-Lemma cons_eq_head_tail_poly {R: ringType} (a: R) (q: {poly R}):
+Lemma cons_eq_head_tail_poly {R: nzRingType} (a: R) (q: {poly R}):
   a = head_poly q ->
   cons_poly a (tail_poly q) = q.
 Proof.
@@ -562,7 +562,7 @@ Qed.
   Used to prove how [tail_poly] and [cons_poly] behaves when added
   and negated.
 *)
-Lemma coef_poly_eq {R: ringType} (q1 q2: {poly R}):
+Lemma coef_poly_eq {R: nzRingType} (q1 q2: {poly R}):
   (forall i, q1`_i = q2`_i) <-> q1 = q2.
 Proof.
   split=> H.
@@ -589,14 +589,14 @@ Proof.
     + by apply: Hs2.
 Qed.
 
-Lemma tail_poly_add {R: ringType} (q1 q2: {poly R}):
+Lemma tail_poly_add {R: nzRingType} (q1 q2: {poly R}):
   tail_poly (q1 + q2) = tail_poly q1 + tail_poly q2.
 Proof.
   apply/coef_poly_eq; move => i.
   by rewrite coefD !coef_Poly !nth_behead coefD.
 Qed.
 
-Lemma cons_poly_add {R: ringType} (m m': R) (q1 q2: {poly R}):
+Lemma cons_poly_add {R: nzRingType} (m m': R) (q1 q2: {poly R}):
   (cons_poly m' (q1 + q2) = (cons_poly m q1) + cons_poly (m'-m) q2)%R.
 Proof.
   apply/coef_poly_eq; move => i.

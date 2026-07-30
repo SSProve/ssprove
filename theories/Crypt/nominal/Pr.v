@@ -208,7 +208,7 @@ Section LosslessCodeLemmas.
     1: intros x; apply summable_mu_wgtd; intros y.
     1: apply /andP; split; [ done | apply le1_mu1 ].
     1: eapply eq_summable.
-    1: intros x; rewrite -dletE; reflexivity.
+    1: intros x; simpl; rewrite -dletE; reflexivity.
     1: apply summable_mu.
     rewrite -H.
     apply eq_psum => x.
