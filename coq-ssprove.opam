@@ -1,0 +1,42 @@
+# This file was generated from `meta.yml`, please do not edit manually.
+# Follow the instructions on https://github.com/coq-community/templates to regenerate.
+
+opam-version: "2.0"
+maintainer: "philipp@haselwarter.org"
+version: "dev"
+
+homepage: "https://github.com/ssprove/ssprove"
+dev-repo: "git+https://github.com/ssprove/ssprove.git"
+bug-reports: "https://github.com/ssprove/ssprove/issues"
+license: "MIT"
+
+synopsis: "A framework for modular crypto proofs"
+description: """
+This repository contains a library for doing both state separating proofs
+(SSP) and for showing low-level equivalences of probabilistic stateful
+programs."""
+
+build: [make "-j%{jobs}%"]
+install: [make "install"]
+depends: [
+  "coq" {>= "8.14"}
+  "coq-mathcomp-ssreflect" {(>= "1.13.0" & < "1.14~")}
+  "coq-mathcomp-analysis" {= "0.3.13"}
+  "coq-equations" {>= "1.3"}
+  "coq-extructures" {(>= "0.3.1" & < "dev")}
+]
+
+tags: [
+  "logpath:"
+]
+authors: [
+  "Carmine Abate"
+  "Philipp G. Haselwarter"
+  "Exequiel Rivas"
+  "Antoine Van Muylder"
+  "Théo Winterhalter"
+  "Nikolaj Sidorenco"
+  "Cătălin Hrițcu"
+  "Kenji Maillard"
+  "Bas Spitters"
+]
