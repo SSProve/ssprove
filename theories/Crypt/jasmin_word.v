@@ -337,8 +337,8 @@ Lemma wN1E sz i :
 Proof. exact: wN1E. Qed.
 
 Lemma w0E sz i :
-  @wbit_n sz 0%R i  = false.
-Proof. exact: Z.testbit_0_l. Qed.
+  @wbit_n sz 0%R i = false.
+Proof. exact: wbit0. Qed.
 
 Lemma wnotE sz (w: word sz) (i: 'I_(wsize_size_minus_1 sz).+1) :
   wbit_n (wnot w) i = ~~ wbit_n w i.
@@ -373,7 +373,7 @@ Proof.
   congr wunsigned.
   rewrite /wshr -urepr_lsr ureprK.
   apply/eqP/eq_from_wbit_n => i.
-  rewrite /wbit_n wbit_lsr wunsigned_repr /wbit.
+  rewrite /wbit_n wbit_lsr wunsigned_repr 2!wbit_spec.
   rewrite Z.mod_small //.
   rewrite Z.div_pow2_bits.
   1-2: Lia.lia.
@@ -404,12 +404,12 @@ Proof.
   congr wunsigned.
   apply/eqP/eq_from_wbit_n => i.
   rewrite /wbit_n wunsigned_repr /modulus two_power_nat_equiv.
-  rewrite {2}/wbit Z.mod_pow2_bits_low.
+  rewrite (wbit_spec (_ mod _)) Z.mod_pow2_bits_low.
   - move/ltP: (ltn_ord i); Lia.lia.
   case: (@ltP i c); last first.
   - move => c_le_i.
     have i_eq : nat_of_ord i = (c + (i - c))%nat by lia.
-    rewrite i_eq wbit_lsl -i_eq ltn_ord /wbit.
+    rewrite i_eq wbit_lsl -i_eq ltn_ord wbit_spec.
     rewrite Z.mul_pow2_bits; first by lia.
     congr Z.testbit.
     lia.
@@ -684,7 +684,7 @@ rewrite /zero_extend /wbit_n /wunsigned /wrepr.
 move: (urepr w) => {w} z.
 rewrite mkwordK.
 set m := wsize_size_minus_1 _.
-rewrite /mathcomp.word.word.wbit /=.
+rewrite 2!wbit_spec /=.
 rewrite /modulus two_power_nat_equiv.
 case: leP => hi.
 + rewrite Z.mod_pow2_bits_low //; lia.
@@ -1518,7 +1518,7 @@ Proof. have := pow2pos q; lia. Qed.
 Lemma wbit_n_pow2m1 sz (n i: nat) :
   wbit_n (wrepr sz (2 ^ Z.of_nat n - 1)) i = (i < Nat.min n (wsize_size_minus_1 sz).+1)%nat.
 Proof.
-  rewrite /wbit_n /mathcomp.word.word.wbit wunsigned_repr /modulus two_power_nat_equiv.
+  rewrite /wbit_n wbit_spec wunsigned_repr /modulus two_power_nat_equiv.
   case: (le_lt_dec (wsize_size_minus_1 sz).+1 i) => hi.
   - rewrite Z.mod_pow2_bits_high; first lia.
     symmetry; apply/negbTE/negP => /ltP.
@@ -1912,11 +1912,11 @@ Lemma subword_make_vec_bits_low (n m : nat) x y :
 Proof.
   move=> h.
   apply/eqP/word.eq_from_wbit => i.
-  rewrite subwordE wbit_t2wE /word.word.wbit mkword_valK /=.
+  rewrite subwordE wbit_t2wE wbit_spec mkword_valK /=.
   rewrite (nth_map i); first by rewrite size_enum_ord.
   rewrite addn0 nth_ord_enum modulusZE.
   rewrite Z.shiftl_0_l Z.lor_0_r.
-  rewrite Z.mod_pow2_bits_low.
+  rewrite wbit_spec Z.mod_pow2_bits_low.
   - apply: (Z.lt_trans _ _ _ _ h).
     by apply/ZNltP.
   rewrite Z.lor_spec Z.shiftl_spec_low; last by rewrite orbF.
