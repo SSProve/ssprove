@@ -68,7 +68,7 @@ jobs:
 
       - name: Build dependencies
         run: |
-          opam install . --deps-ony
+          opam install . --deps-only
           opam clean -a -c -s --logs
 
       # Build SSProve
