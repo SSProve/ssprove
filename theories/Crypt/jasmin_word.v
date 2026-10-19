@@ -29,6 +29,15 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
+(* mathcomp-word < 3.5 compatability *)
+Transparent wbit.
+Lemma wbit_spec z i :
+  wbit z i = Z.testbit z (Z.of_nat i).
+Proof. reflexivity || (by rewrite -testbitE). Qed.
+Opaque wbit.
+(* end compatability *)
+
+
 (* -------------------------------------------------------------- *)
 Definition nat7   : nat := 7.
 Definition nat15  : nat := nat7.+4.+4.
