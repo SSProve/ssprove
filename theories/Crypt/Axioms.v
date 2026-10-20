@@ -22,6 +22,7 @@ From Stdlib Require Export FunctionalExtensionality.
 (* The following are not axioms per se, but come from boolp using axioms *)
 Local Definition func (A B : Type) (R : A -> B -> Prop) :
   (forall a : A, exists b : B, R a b) -> forall a : A, { b : B | R a b }.
+Proof.
   intros H a.
   specialize (H a).
   apply constructive_indefinite_description in H.
@@ -31,6 +32,7 @@ Qed.
 
 Local Definition ext_func (A B : Type) (R : A -> B -> Prop) (H : forall a : A, { b : B | R a b }) :
   A -> B.
+Proof.
   intros a.
   specialize (H a).
   destruct H as [b H].

@@ -167,7 +167,7 @@ Section PrFstLemmas.
       rewrite /Pr_fst Pr_code_ret /(dfst _) 2!dlet_unit_ext //.
     - intros op k VA IH => /=.
       rewrite /Pr_fst 2!Pr_code_sample 2!dlet_dlet_ext.
-      f_equal; extensionality x.
+      f_equal; apply boolp.funext => x.
       rewrite IH dlet_dlet_ext //.
   Qed.
 
@@ -414,7 +414,7 @@ Obligation 2.
   etransitivity.
   2: apply (mapm2_comp unit).
   2,3: eapply can_inj, (can_comp natizeK), (can_comp (fpermK _)), atomizeK.
-  simpl. f_equal. extensionality n => /=.
+  simpl. f_equal. apply boolp.funext => n => /=.
   by rewrite natizeK fpermM.
 Qed.
 
@@ -474,9 +474,9 @@ Lemma coerce_kleisli_rename {A A' B B'} π g x
 Proof.
   rewrite /coerce_kleisli -2!lock /coerce_code mcode_bind.
   destruct (coerce x) => /=.
-  2: f_equal; extensionality a.
+  2: f_equal; apply boolp.funext => a.
   1,2: rewrite mcode_bind.
-  1,2: f_equal; extensionality b; move: (coerce b) => [] //.
+  1,2: f_equal; apply boolp.funext => b; move: (coerce b) => [] //.
 Qed.
 
 Lemma resolve_rename π P F x

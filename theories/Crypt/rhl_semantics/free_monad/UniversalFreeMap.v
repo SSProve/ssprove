@@ -1,3 +1,4 @@
+From Stdlib Require Import FunctionalExtensionality.
 From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 From SSProve.Mon Require Import SPropBase.
 Set Warnings "-notation-overridden".
@@ -72,13 +73,13 @@ Section UnivFreeMap.
     (*ret case*)
     simpl. move=> a. pose (bind_vs_ret := ord_relmon_law2 T A B  (fun x : A => outOfFree0 B (f x))).
     simpl in bind_vs_ret.
-    unshelve eapply FunctionalExtensionality.equal_f in bind_vs_ret. exact a.
+    unshelve eapply equal_f in bind_vs_ret. exact a.
     rewrite -bind_vs_ret. reflexivity.
     (*bind case*)
     move=> op opk Hind.
     simpl.
     epose (bind_bind := ord_relmon_law3 T _ _ _ _ _).
-    eapply FunctionalExtensionality.equal_f in bind_bind.
+    eapply equal_f in bind_bind.
       cbn in bind_bind.
       erewrite <- bind_bind. clear bind_bind.
     f_equal.
@@ -98,7 +99,7 @@ Section ufmap_vs_callrFree.
   Proof.
     move=> op.
     cbn. epose (T_bindRet := ord_relmon_law1 T _).
-    eapply FunctionalExtensionality.equal_f in T_bindRet.
+    eapply equal_f in T_bindRet.
     cbn in T_bindRet. erewrite T_bindRet.
     reflexivity.
   Qed.

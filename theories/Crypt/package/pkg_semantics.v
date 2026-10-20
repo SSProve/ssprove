@@ -66,10 +66,10 @@ Proof.
   intros A B p f.
   induction p in f |- *.
   - cbn. reflexivity.
-  - simpl. f_equal. extensionality y. auto.
-  - simpl. f_equal. extensionality x. auto.
-  - simpl. f_equal. extensionality x. f_equal. extensionality y. auto.
-  - simpl. f_equal. extensionality x. auto.
+  - simpl. f_equal. apply boolp.funext => y. auto.
+  - simpl. f_equal. apply boolp.funext => x. auto.
+  - simpl. f_equal. apply boolp.funext => x. f_equal. apply boolp.funext => y. auto.
+  - simpl. f_equal. apply boolp.funext => x. auto.
 Qed.
 
 Definition repr_cmd {A} (c : command A) :

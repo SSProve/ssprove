@@ -1,7 +1,6 @@
 From Stdlib Require Import ssreflect ssrfun ssrbool.
-From Stdlib Require Import FunctionalExtensionality.
-From SSProve.Mon Require Export Base.
 From Stdlib Require Import Relation_Definitions Morphisms RelationPairs.
+From SSProve.Mon Require Export Base.
 From SSProve.Mon Require Import SPropBase SPropMonadicStructures.
 From SSProve.Relational Require Import OrderEnrichedCategory Rel.
 
@@ -87,15 +86,9 @@ Section OrdCat.
     cbv ; intuition; etransitivity; first (apply: x∙2; apply: H0).
     apply: H.
   Qed.
-  Next Obligation. apply sig_eq ; compute.
-    rewrite -FunctionalExtensionality.eta_expansion. reflexivity.
-  Qed.
-  Next Obligation. apply sig_eq ; compute.
-    rewrite -FunctionalExtensionality.eta_expansion. reflexivity.
-  Qed.
-  Next Obligation.
-    apply sig_eq ; compute. reflexivity.
-  Qed.
+  Next Obligation. by apply sig_eq. Qed.
+  Next Obligation. by apply sig_eq. Qed.
+  Next Obligation. by apply sig_eq. Qed.
 
   Program Definition discr : ord_functor TypeCat OrdCat :=
     mkOrdFunctor (fun A => dpair _ A ⦑eq⦒)
@@ -175,22 +168,20 @@ End UnarySpecMonadOps.
 
 Section MonadAsRMonad.
   Context (M:Monad).
-  Import FunctionalExtensionality.
 
   (* Transforming a standard monad to a relative monad on the identity functor *)
   Program Definition monad_to_relmon : rMonad :=
     mkOrdRelativeMonad M (fun A => @ret M A) (fun A B f => bind^~ f) _ _ _ _.
-  Next Obligation. cbv ; intuition. induction (@functional_extensionality_dep _ _ _ _ H)=> //. Qed.
-  Next Obligation. extensionality c ; rewrite /bind monad_law2 //. Qed.
-  Next Obligation. extensionality c ; rewrite /bind monad_law1 //. Qed.
-  Next Obligation. extensionality c ; rewrite /bind monad_law3 //. Qed.
+  Next Obligation. cbv ; intuition. by induction (boolp.functional_extensionality_dep H). Qed.
+  Next Obligation. apply boolp.funext => c ; rewrite /bind monad_law2 //. Qed.
+  Next Obligation. apply boolp.funext => c ; rewrite /bind monad_law1 //. Qed.
+  Next Obligation. apply boolp.funext => c ; rewrite /bind monad_law3 //. Qed.
 End MonadAsRMonad.
 
 Section OrderedMonadAsRMonad.
   Context (M:OrderedMonad).
 
   Import SPropNotations.
-  Import FunctionalExtensionality.
   (* Any unary specification monad in the sense of [Dijkstra monads for All] give raise to a relative monad *)
   Program Definition ordmonad_to_relmon : unarySpecMonad :=
     mkOrdRelativeMonad (fun A => dpair _ (M A) ⦑@omon_rel M A⦒)
@@ -202,9 +193,9 @@ Section OrderedMonadAsRMonad.
     cbv ; intuition. apply omon_bind=> //= ?. apply H; reflexivity.
   Qed.
   Next Obligation. cbv ; intuition. apply omon_bind=> //. reflexivity. Qed.
-  Next Obligation. apply sig_eq; extensionality x ; rewrite /= /bind monad_law2 //. Qed.
-  Next Obligation. apply sig_eq; extensionality x ; rewrite /= /bind monad_law1 //. Qed.
-  Next Obligation. apply sig_eq; extensionality x ; rewrite /= /bind monad_law3 //. Qed.
+  Next Obligation. apply sig_eq; apply boolp.funext => x ; rewrite /= /bind monad_law2 //. Qed.
+  Next Obligation. apply sig_eq; apply boolp.funext => x ; rewrite /= /bind monad_law1 //. Qed.
+  Next Obligation. apply sig_eq; apply boolp.funext => x ; rewrite /= /bind monad_law3 //. Qed.
 
 End OrderedMonadAsRMonad.
 
@@ -215,17 +206,16 @@ Section MonadMorphismAsRMonMorphism.
   Let θ := from_discrete_monad_monotonic θ0.
 
   Import SPropNotations.
-  Import FunctionalExtensionality.
   (* morphisms of monads also transfer to relativeMonad morphisms *)
 
   Program Definition mmorph_to_rmmorph : unaryEffectObs M W :=
     mkRelMonMorph discr _ M W (fun (A:TypeCat) => ⦑θ A⦒) _ _.
   Next Obligation. cbv ; intros ; induction H ; reflexivity. Qed.
   Next Obligation.
-    apply sig_eq=> /=; extensionality a=> /=; rewrite mon_morph_ret //.
+    apply sig_eq=> /=; apply boolp.funext => a=> /=; rewrite mon_morph_ret //.
   Qed.
   Next Obligation.
-    apply sig_eq ; extensionality a ; rewrite /= mon_morph_bind //.
+    apply sig_eq ; apply boolp.funext => a ; rewrite /= mon_morph_bind //.
   Qed.
 
 End MonadMorphismAsRMonMorphism.
@@ -390,7 +380,6 @@ Section NaiveDefinition.
   (*   : x = y -> exist P x Hx = exist P y Hy. *)
   (* Proof. move=> ? ; apply sig_eq=> //. Qed. *)
 
-  (* Import FunctionalExtensionality. *)
   (* (* Any simple relational specification monad yield a full relational specification monad *) *)
   (* Program Definition RSM_from_RSM0 (W : RelationalSpecMonad0) : preRelationalSpecMonad := *)
   (*   mkOrdRelativeMonad *)
@@ -415,29 +404,29 @@ Section NaiveDefinition.
   (*   f_equal;[f_equal|]; apply: sig_eq=> /=. *)
   (*   1,2: set f := ⦑_⦒; have -> : f = ord_relmon_unit W ⟨_,_⟩. *)
   (*   all: try by rewrite ord_relmon_law1. *)
-  (*   apply sig_eq; extensionality x; move: x=> [? []] //. *)
-  (*   apply sig_eq; extensionality x; move: x=> [[] ?] //. *)
+  (*   apply sig_eq; apply boolp.funext => x; move: x=> [? []] //. *)
+  (*   apply sig_eq; apply boolp.funext => x; move: x=> [[] ?] //. *)
   (* Qed. *)
   (* Next Obligation. *)
   (*   intuition. *)
   (*   f_equal;[f_equal|]; apply: sig_eq=> /=. *)
-  (*   - extensionality x; set f := ⦑_⦒. *)
+  (*   - apply boolp.funext => x; set f := ⦑_⦒. *)
   (*     move: (ord_relmon_law2 W ⟨_,unit⟩ _ f)=> /(f_equal proj1_sig) /(equal_f ^~ ⟨_, _⟩)//=. *)
-  (*   - extensionality x; set f := ⦑_⦒. *)
+  (*   - apply boolp.funext => x; set f := ⦑_⦒. *)
   (*     move: (ord_relmon_law2 W ⟨unit,_⟩ _ f)=> /(f_equal proj1_sig) /(equal_f ^~ ⟨_, _⟩)//=. *)
   (*   - move: (ord_relmon_law2 W _ _ nsnd) => /(f_equal proj1_sig) //. *)
   (* Qed. *)
   (* Next Obligation. *)
   (*   intuition ; cbv. *)
-  (*   f_equal;[f_equal|]; apply: sig_eq=> /=. (* ; extensionality x. *) *)
+  (*   f_equal;[f_equal|]; apply: sig_eq=> /=. (* ; apply boolp.funext => x. *) *)
   (*   - epose (ord_relmon_law3 W ⟨ _, unit⟩ ⟨_, unit⟩ _ *)
   (*                      ⦑fun x1 => proj1_sig nfst1 (Base.nfst x1) ⦒ *)
   (*                      ⦑fun x0 => proj1_sig nfst (Base.nfst x0)⦒) as s. *)
-  (*     extensionality x; move: s => /(f_equal proj1_sig) /(equal_f ^~ x) s; apply s. *)
+  (*     apply boolp.funext => x; move: s => /(f_equal proj1_sig) /(equal_f ^~ x) s; apply s. *)
   (*   - epose (ord_relmon_law3 W ⟨unit, _⟩ ⟨unit, _⟩ _ *)
   (*                      ⦑fun x1 => proj1_sig nsnd1 (Base.nsnd x1) ⦒ *)
   (*                      ⦑fun x0 => proj1_sig nsnd2 (Base.nsnd x0)⦒) as s. *)
-  (*     extensionality x; move: s => /(f_equal proj1_sig) /(equal_f ^~ x) s; apply s. *)
+  (*     apply boolp.funext => x; move: s => /(f_equal proj1_sig) /(equal_f ^~ x) s; apply s. *)
   (*   - rewrite ord_relmon_law3=> //. *)
   (* Qed. *)
 

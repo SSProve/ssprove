@@ -1,7 +1,6 @@
 From Stdlib Require Import ssreflect ssrfun ssrbool List.
-From Stdlib Require Import FunctionalExtensionality.
-From SSProve.Mon Require Export Base.
 From Stdlib Require Import Relation_Definitions Morphisms.
+From SSProve.Mon Require Export Base.
 From SSProve.Mon Require Import SPropBase SPropMonadicStructures.
 
 Set Implicit Arguments.
@@ -54,12 +53,11 @@ Section MonoidExamples.
 
   Program Definition oneMonoid : monoid := endMonoid False.
 
-  Import FunctionalExtensionality.
   Program Definition pointwiseMonoid (X:Type) (M:monoid) : monoid :=
     @mkMonoid (X -> M) (fun _ => e M) (fun f g x => f x ⋅ g x) _ _ _.
-  Next Obligation. extensionality y ; rewrite monoid_law1 //. Qed.
-  Next Obligation. extensionality y ; rewrite monoid_law2 //. Qed.
-  Next Obligation. extensionality y ; rewrite monoid_law3 //. Qed.
+  Next Obligation. apply boolp.funext => y ; rewrite monoid_law1 //. Qed.
+  Next Obligation. apply boolp.funext => y ; rewrite monoid_law2 //. Qed.
+  Next Obligation. apply boolp.funext => y ; rewrite monoid_law3 //. Qed.
 
   Program Definition listMonoid (X:Type) : monoid :=
     @mkMonoid (list X) nil (@app _) _ (@List.app_nil_r _) (fun l m n => eq_sym (@List.app_assoc _ l m n)).
@@ -126,10 +124,9 @@ Section ActionExamples.
     Definition pointwiseActionFromLaws pf1 pf2 :=
       @mkAction A_M (A -> X) pointwise_action pf1 pf2.
 
-    Import FunctionalExtensionality.
     Program Definition pointwiseAction := pointwiseActionFromLaws _ _.
-    Next Obligation. cbv ; extensionality a ; rewrite monact_unit //. Qed.
-    Next Obligation. cbv ; extensionality a ; rewrite monact_mult //. Qed.
+    Next Obligation. cbv ; apply boolp.funext => a ; rewrite monact_unit //. Qed.
+    Next Obligation. cbv ; apply boolp.funext => a ; rewrite monact_mult //. Qed.
 
   End PointwiseAction.
 
@@ -195,7 +192,7 @@ Section MonoidStrictification.
   Import SPropAxioms.
   Lemma project_embed_id : forall sm, embed (project sm) = sm.
   Proof.
-    intro sm. apply sig_eq ; extensionality m0.
+    intro sm. apply sig_eq ; apply boolp.funext => m0.
     cbv. move: (proj2_sig sm) => [m Hm].
     pose (H0 := Hm m0).
     apply eq_sym in H0.

@@ -345,10 +345,10 @@ Section FreeModule.
     intros A B C v k1 k2.
     induction v in k1, k2 |- *.
     - cbn. reflexivity.
-    - cbn. f_equal. apply functional_extensionality. auto.
-    - cbn. f_equal. extensionality z. auto.
+    - cbn. f_equal. apply boolp.funext => z. auto.
+    - cbn. f_equal. apply boolp.funext => z. auto.
     - cbn. f_equal. auto.
-    - cbn. f_equal. extensionality z. auto.
+    - cbn. f_equal. apply boolp.funext => z. auto.
   Qed.
 
   Lemma bind_ret :
@@ -358,7 +358,7 @@ Section FreeModule.
     intros A v.
     induction v.
     all: cbn. 1: reflexivity.
-    all: try solve [ f_equal ; apply functional_extensionality ; eauto ].
+    all: try solve [ f_equal ; apply boolp.funext ; eauto ].
     f_equal. auto.
   Qed.
 
@@ -394,29 +394,29 @@ Section FreeModule.
   Next Obligation.
     eapply bind. all: eauto. Defined.
   Next Obligation.
-    f_equal. apply functional_extensionality. auto.
+    f_equal. apply boolp.funext. auto.
   Qed.
   Next Obligation.
-    apply functional_extensionality.
+    apply boolp.funext.
     intro c. apply code_ext.
     destruct c as [c h]. cbn.
     induction c.
     all: solve [
       simpl in * ; try reflexivity ;
-      f_equal ; try apply functional_extensionality ; intuition auto
+      f_equal ; try apply boolp.funext ; intuition auto
     ].
   Qed.
   Next Obligation.
-    extensionality x. apply code_ext.
+    apply boolp.funext => x. apply code_ext.
     cbn. reflexivity.
   Qed.
   Next Obligation.
-    apply functional_extensionality. intros [c h].
+    apply boolp.funext. intros [c h].
     apply code_ext. cbn.
     induction c in h |- *.
     all: solve [
       simpl in * ; try reflexivity ;
-      f_equal ; try apply functional_extensionality ; intuition auto
+      f_equal ; try apply boolp.funext ; intuition auto
     ].
   Qed. *)
 

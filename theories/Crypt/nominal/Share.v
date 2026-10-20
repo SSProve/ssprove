@@ -158,7 +158,7 @@ Proof.
   - done.
   - unfold rename; simpl.
     f_equal.
-    apply functional_extensionality.
+    apply boolp.funext.
     intros t.
     apply H1, H'.
   - unfold rename; simpl.
@@ -173,7 +173,7 @@ Proof.
       apply supp_Locations in H.
       rewrite fsub1set in H.
       apply H.
-    + apply functional_extensionality => t.
+    + apply boolp.funext => t.
       apply H1, H'.
   - unfold rename; simpl.
     destruct l.
@@ -190,7 +190,7 @@ Proof.
     + apply IHV, H'.
   - unfold rename; simpl.
     f_equal.
-    apply functional_extensionality => t.
+    apply boolp.funext => t.
     apply H0, H'.
 Qed.
 
@@ -207,7 +207,7 @@ Proof.
   simpl; f_equal.
   unfold rename; simpl.
   simpl; do 2 f_equal.
-  apply functional_extensionality.
+  apply boolp.funext.
   destruct V as [Ve Vi].
   specialize (Ve (k, (T, S))).
   intros x.
@@ -271,7 +271,7 @@ Proof.
   destruct t as [T [P k]].
   unfold rename; simpl.
   do 2 f_equal.
-  apply functional_extensionality => t.
+  apply boolp.funext => t.
   generalize (k t); elim.
   - done.
   - intros.

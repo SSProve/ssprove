@@ -1,5 +1,4 @@
 From Stdlib Require Import ssreflect ssrfun ssrbool.
-From Stdlib Require FunctionalExtensionality List.
 
 From SSProve.Mon Require Export Base.
 From Stdlib Require Import Relation_Definitions Morphisms.
@@ -131,11 +130,10 @@ Section FinProb.
   Lemma mulIA : associative mulI.
   Proof. move=> ? ? ? ; apply sig_eq => /= ; by rewrite mulrA. Qed.
 
-  Import FunctionalExtensionality.
   Lemma self_commute (p1 p2 : ProbS) : commute (wopProb p1) (wopProb p2).
   Proof.
     rewrite /commute /wopProb; apply sig_eq=> /=.
-    extensionality k; apply sig_eq=> /=.
+    apply boolp.funext => k; apply sig_eq=> /=.
     rewrite !mulrDr !mulrA.
     do 2 rewrite [((1 - _)* _)as t in t * _]mulrC.
     rewrite 2![(p1∙1 * _)as t in t * _]mulrC.

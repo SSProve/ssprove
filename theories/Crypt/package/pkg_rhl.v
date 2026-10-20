@@ -151,7 +151,7 @@ Lemma summable_eq {A : choiceType} {s : A} :
 Proof.
   match goal with
   | |- realsum.summable ?f => eassert (f = _) as Hf end.
-  { extensionality x. rewrite eq_sym.
+  { apply boolp.funext => x. rewrite eq_sym.
     rewrite -dunit1E. reflexivity. }
   rewrite Hf. clear Hf.
   apply summable_mu.
@@ -165,7 +165,7 @@ Lemma summable_pair_eq {A : choiceType} {B C : eqType} (f1 f3 : A -> B) (f2 f4 :
 Proof.
   match goal with
   | |- realsum.summable ?f => eassert (f = _) as Hf end.
-  { extensionality x.
+  { apply boolp.funext => x.
     exact (destruct_pair_eq (a:= f1 x) (b:=f3 x) (c:= f2 x) (d := f4 x)). }
   rewrite Hf.
   apply realsum.summableM. all: assumption.
@@ -220,7 +220,7 @@ Lemma dlet_f_equal :
 Proof.
   intros R T U m f g e x.
   unfold eqfun in e.
-  apply functional_extensionality in e. subst.
+  apply boolp.funext in e. subst.
   reflexivity.
 Qed.
 
@@ -486,7 +486,7 @@ Proof.
       (λ x : prod_choiceType (tgt RUN) heap, (x.1 == true)%:R * (y x))
   ) as Hrew.
 
-  { intros y. extensionality x.
+  { intros y. apply boolp.funext => x.
     destruct x as [x1 x2].
     rewrite dunit1E.
     simpl. rewrite GRing.mulrC. reflexivity.
@@ -587,7 +587,7 @@ Proof.
       (λ x : prod_choiceType (tgt RUN) heap, (y x) * (let '(b, _) := x in dunit (R:=R) (T:=tgt RUN) b) true) =
       (λ x : prod_choiceType (tgt RUN) heap, (x.1 == true)%:R * (y x))
   ) as Hrew.
-  { intros y. extensionality x.
+  { intros y. apply boolp.funext => x.
     destruct x as [x1 x2].
     rewrite dunit1E.
     simpl. rewrite GRing.mulrC. reflexivity.
@@ -772,7 +772,7 @@ Proof.
   intros S P A m.
   induction m.
   - reflexivity.
-  - cbn. f_equal. extensionality x. auto.
+  - cbn. f_equal. apply boolp.funext => x. auto.
 Qed.
 
 Theorem rpost_conclusion_rule :
@@ -993,7 +993,7 @@ Proof.
 
   assert ((λ a1 : A₀, bindrFree (repr c₁) (λ a2 : A₁, repr (r a1 a2))) = (λ a : A₀, repr (a₁ ← c₁ ;;
                                                                                           r a a₁))).
-  { extensionality a.
+  { apply boolp.funext => a.
     rewrite repr_bind.
     simpl.
     reflexivity.
@@ -1073,7 +1073,7 @@ Proof.
         repr (r ← (r ← sample o ;; ret r) ;; a ← c ;; ret (a, r)) =
         bindrFree (spl o) (λ r, bindrFree (repr c) (λ a, retrFree (a,r)))
     ).
-    { rewrite !repr_bind. f_equal. extensionality r.
+    { rewrite !repr_bind. f_equal. apply boolp.funext => r.
       rewrite !repr_bind. reflexivity.
     }
     assert (
@@ -1951,7 +1951,7 @@ Proof.
 
   assert ((λ a1 : A₀, bindrFree (repr_cmd c₁) (λ a2 : A₁, repr (r a1 a2))) = (λ a : A₀, repr (a₁ ← cmd c₁ ;;
                                                                                           r a a₁))).
-  { extensionality a.
+  { apply boolp.funext => a.
     rewrite repr_cmd_bind.
     simpl.
     reflexivity.
@@ -2027,7 +2027,7 @@ Proof.
 
   assert ((λ a1 : A₀, bindrFree (repr c₁) (λ a2 : A₁, repr (r a1 a2))) = (λ a : A₀, repr (a₁ ← c₁ ;;
                                                                                           r a a₁))).
-  { extensionality a.
+  { apply boolp.funext => a.
     rewrite repr_bind.
     simpl.
     reflexivity.
@@ -2050,7 +2050,7 @@ Proof.
 
   assert ((λ a1 : A₀, bindrFree (repr_cmd c₁) (λ a2 : A₁, repr (r a1 a2))) = (λ a : A₀, repr (a₁ ← cmd c₁ ;;
                                                                                           r a a₁))).
-  { extensionality a.
+  { apply boolp.funext => a.
     rewrite repr_cmd_bind.
     simpl.
     reflexivity.
@@ -2128,7 +2128,7 @@ Proof.
       (x ← cmd c₁ ;;
        a₀ ← c₀ ;;
        pat ← ret (a₀, x) ;;
-       (let '(x0, y) := pat in ret (y, x0))) in h by (f_equal ; extensionality x ; now rewrite bind_assoc).
+       (let '(x0, y) := pat in ret (y, x0))) in h by (f_equal ; apply boolp.funext => x ; now rewrite bind_assoc).
     (* setoid_rewrite bind_assoc in h. *)
     simpl in h.
     apply rsymmetry. apply rsym_pre. 1: auto.
@@ -2181,7 +2181,7 @@ Proof.
         repr (r ← sample o ;; a ← cmd c ;; ret (a, r)) =
         bindrFree (spl o) (λ r, bindrFree (repr_cmd c) (λ a, retrFree (a,r)))
     ).
-    { simpl. f_equal. extensionality r. rewrite repr_cmd_bind. reflexivity. }
+    { simpl. f_equal. apply boolp.funext => r. rewrite repr_cmd_bind. reflexivity. }
     assert (
       repr_c_sample :
         repr (a ← cmd c ;; r ← sample o ;; ret (a, r)) =

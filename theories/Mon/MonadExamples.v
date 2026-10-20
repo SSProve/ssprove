@@ -43,17 +43,16 @@ Section Update.
              (fun A B m f x => let mx := m x in
                             let fx := f (nfst mx) (nsnd mx ⧕ x) in
                             ⟨nfst fx, nsnd fx ⋅ nsnd mx⟩) pf1 pf2 pf3.
-  Import FunctionalExtensionality.
   Program Definition Upd : Monad :=
     UpdFromLaws _ _ _.
   Next Obligation.
-    extensionality x ; rewrite monact_unit monoid_law2 //.
+    apply boolp.funext => x ; rewrite monact_unit monoid_law2 //.
   Qed.
   Next Obligation.
-    extensionality x; rewrite monoid_law1 //.
+    apply boolp.funext => x; rewrite monoid_law1 //.
   Qed.
   Next Obligation.
-    extensionality x. rewrite - !monact_mult !monoid_law3 //.
+    apply boolp.funext => x. rewrite - !monact_mult !monoid_law3 //.
   Qed.
 End Update.
 
@@ -76,14 +75,13 @@ Section FreeMonad.
     | opr s k   => opr s (fun p => bindFree (k p) f)
     end.
 
-  Import FunctionalExtensionality.
   Program Definition Free : Monad :=
     @mkMonad FreeF retFree bindFree _ _ _.
   Next Obligation.
-    elim c => //= ? ? IH ; f_equal ; extensionality p ; apply IH.
+    elim c => //= ? ? IH ; f_equal ; apply boolp.funext => p ; apply IH.
   Qed.
   Next Obligation.
-    elim c => //= ? ? IH ; f_equal ; extensionality p ; apply IH.
+    elim c => //= ? ? IH ; f_equal ; apply boolp.funext => p ; apply IH.
   Qed.
 
   Definition op (s : S) : Free (P s) :=
@@ -104,7 +102,7 @@ Section FreeMonad.
     induction m=> //=.
     rewrite /bind monad_law1 //.
     rewrite /bind monad_law3.
-    f_equal. extensionality a. apply H.
+    f_equal. apply boolp.funext => a. apply H.
   Qed.
 End FreeMonad.
 
@@ -133,24 +131,24 @@ Section Exceptions.
 End Exceptions.
 
 Section NonDeterminismSet.
-  Import SPropNotations FunctionalExtensionality SPropAxioms.
+  Import SPropNotations SPropAxioms.
 
   Program Definition NDSet : Monad :=
     @mkMonad (fun X => X -> Prop)
              (fun X x => fun x' => x = x')
              (fun X Y c f => fun y => exists x, c x /\ f x y) _ _ _.
   Next Obligation.
-    extensionality y; apply sprop_ext; do 2 split.
+    apply boolp.funext => y; apply sprop_ext; do 2 split.
     + intros [x [eq H]]; induction eq=> //.
     + intro; exists a; intuition.
   Qed.
   Next Obligation.
-    extensionality y; apply sprop_ext; do 2 split.
+    apply boolp.funext => y; apply sprop_ext; do 2 split.
     + intros [x [H eq]]. induction eq=> //.
     + intro. exists y. intuition.
   Qed.
   Next Obligation.
-    extensionality y; apply sprop_ext; do 2 split.
+    apply boolp.funext => y; apply sprop_ext; do 2 split.
     + intros [b [[a [H1 H2]] H3]].
       eexists ; split ; [|eexists;split]; eassumption.
     + intros [a [H1 [b [H2 H3]]]].

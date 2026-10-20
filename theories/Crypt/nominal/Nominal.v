@@ -154,12 +154,12 @@ Program Definition fun_HasAction {X Y}
   := HasAction.Build _ (λ π f x, π ∙ f (π^-1%fperm ∙ x)) _ _.
 Obligation 1.
   move: x => f.
-  apply functional_extensionality => x.
+  apply boolp.funext => x.
   rewrite fperm_1_inv 2!rename_id //.
 Qed.
 Obligation 2.
   move: f g x => π π' f.
-  apply functional_extensionality => x.
+  apply boolp.funext => x.
   rewrite fperm_mul_inv 2!rename_comp //.
 Qed.
 
@@ -260,7 +260,7 @@ Lemma equi2_prove {X Y Z} (f : X → Y → Z)
   : (∀ π x y, π ∙ (f x y) = f (π ∙ x) (π ∙ y)) → equivariant f.
 Proof.
   intros P π x.
-  apply functional_extensionality => y.
+  apply boolp.funext => y.
   specialize (P π x (π^-1 ∙ y)).
   rewrite renameKV in P.
   rewrite -P //.

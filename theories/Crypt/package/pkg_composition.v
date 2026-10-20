@@ -34,10 +34,10 @@ Definition coerce_kleisli {A A' B B' : choice_type} (f : A → raw_code B)
 
 Lemma coerce_kleisliE {A B} f : @coerce_kleisli A A B B f = f.
 Proof.
-  extensionality a.
+  apply boolp.funext => a.
   rewrite /coerce_kleisli -lock /coerce_code coerceE /=.
   rewrite -{2}(bind_ret _ (f a)).
-  f_equal; apply functional_extensionality => b.
+  f_equal; apply boolp.funext => b.
   rewrite coerceE //.
 Qed.
 
@@ -53,7 +53,7 @@ Lemma resolve_set p id F o
   = if o.1 == id then coerce_kleisli F.π2.π2 else resolve p o.
 Proof.
   rewrite /resolve setmE.
-  extensionality x.
+  apply boolp.funext => x.
   destruct (o.1 == id) eqn:e; rewrite e //.
   destruct F as [S [T f]] => //.
 Qed.
@@ -187,10 +187,10 @@ Proof.
   induction v.
   - cbn. reflexivity.
   - cbn. rewrite bind_assoc. f_equal.
-    apply functional_extensionality => y. auto.
-  - cbn. f_equal. apply functional_extensionality. auto.
+    apply boolp.funext => y. auto.
+  - cbn. f_equal. apply boolp.funext. auto.
   - cbn. f_equal. auto.
-  - cbn. f_equal. apply functional_extensionality. auto.
+  - cbn. f_equal. apply boolp.funext. auto.
 Qed.
 
 Lemma resolve_link f g o x :
@@ -201,11 +201,11 @@ Proof.
   rewrite /coerce_kleisli -2!lock /coerce_code code_link_bind //.
   destruct (coerce x) eqn:E => //=.
   - rewrite code_link_bind.
-    f_equal. extensionality b.
+    f_equal. apply boolp.funext => b.
     destruct (coerce b) eqn:E' => //=.
-  - f_equal. extensionality a.
+  - f_equal. apply boolp.funext => a.
     rewrite code_link_bind.
-    f_equal. extensionality b.
+    f_equal. apply boolp.funext => b.
     destruct (coerce b) eqn:E' => //=.
 Qed.
 
@@ -219,10 +219,10 @@ Proof.
   - cbn. reflexivity.
   - cbn. rewrite code_link_bind.
     f_equal; [ symmetry; apply resolve_link |].
-    by apply functional_extensionality.
-  - cbn. f_equal. apply functional_extensionality. auto.
+    by apply boolp.funext.
+  - cbn. f_equal. apply boolp.funext => x. auto.
   - cbn. f_equal. auto.
-  - cbn. f_equal. apply functional_extensionality. auto.
+  - cbn. f_equal. apply boolp.funext => x. auto.
 Qed.
 
 Lemma link_assoc :
@@ -235,7 +235,7 @@ Proof.
   unfold link.
   intro n. repeat rewrite ?mapmE.
   destruct (p1 n) as [[S1 [T1 f1]]|] eqn:e. 2: reflexivity.
-  cbn. f_equal. f_equal. f_equal. extensionality x.
+  cbn. f_equal. f_equal. f_equal. apply boolp.funext => x.
   rewrite code_link_assoc.
   reflexivity.
 Qed.
@@ -365,10 +365,10 @@ Proof.
     rewrite he in H.
     destruct H as [f H].
     rewrite H //=.
-    f_equal. by extensionality y.
-  - f_equal. by extensionality y.
+    f_equal. by apply boolp.funext => y.
+  - f_equal. by apply boolp.funext => y.
   - by f_equal.
-  - f_equal. by extensionality y.
+  - f_equal. by apply boolp.funext => y.
 Qed.
 
 Lemma code_link_par_right :
@@ -402,7 +402,7 @@ Proof.
     rewrite he1 in e.
     destruct e as [f e].
     rewrite e //=.
-    do 3 f_equal. extensionality x.
+    do 3 f_equal. apply boolp.funext => x.
     erewrite code_link_par_left => //.
     2: apply h3.
     apply (hi1 n (S; T; f) x), e.
@@ -415,7 +415,7 @@ Proof.
     rewrite he2 in e'.
     destruct e' as [f e'].
     rewrite e' //=.
-    do 3 f_equal. extensionality x.
+    do 3 f_equal. apply boolp.funext => x.
     erewrite code_link_par_right => //.
     2: apply h4.
     apply (hi2 n (S; T; f) x), e'.
@@ -560,7 +560,7 @@ Lemma resolve_ID :
 Proof.
   intros I [n [S T]] E.
   rewrite /resolve mapimE E //=.
-  extensionality y. rewrite coerce_kleisliE //.
+  apply boolp.funext => y. rewrite coerce_kleisliE //.
 Qed.
 
 Lemma resolve_ID_set I id TS o :
@@ -568,7 +568,7 @@ Lemma resolve_ID_set I id TS o :
     (if o.1 == id then coerce_kleisli (λ x, opr (o.1, TS) x (λ y, ret y)) else resolve (ID I) o).
 Proof.
   rewrite /resolve 2!mapimE setmE.
-  extensionality x.
+  apply boolp.funext => x.
   destruct (o.1 == id) eqn:e; rewrite e //.
   destruct TS as [S T] => //.
 Qed.
@@ -587,10 +587,10 @@ Proof.
   - cbn. reflexivity.
   - cbn.
     rewrite resolve_ID //=.
-    f_equal. by extensionality y.
-  - simpl. f_equal. apply functional_extensionality. auto.
+    f_equal. by apply boolp.funext => y.
+  - simpl. f_equal. apply boolp.funext. auto.
   - simpl. f_equal. auto.
-  - simpl. f_equal. apply functional_extensionality. auto.
+  - simpl. f_equal. apply boolp.funext. auto.
 Qed.
 
 Lemma link_id :
@@ -603,7 +603,7 @@ Proof.
   rewrite /link mapmE.
   destruct (p n) eqn:e => //.
   destruct t as [S [T f]].
-  simpl. do 3 f_equal. extensionality x.
+  simpl. do 3 f_equal. apply boolp.funext => x.
   specialize (hi n (S; T; f)).
   eapply code_link_id.
   apply hi, e.
@@ -625,7 +625,7 @@ Proof.
     destruct e as [f e].
     destruct p0 as [S T].
     rewrite e //=.
-    do 3 f_equal. extensionality x.
+    do 3 f_equal. apply boolp.funext => x.
     rewrite /resolve e coerce_kleisliE bind_ret //.
   - move: e => /dommPn; rewrite valid_domm; move=> /dommPn -> //=.
 Qed.
