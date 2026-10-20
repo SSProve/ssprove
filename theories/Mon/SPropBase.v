@@ -1,12 +1,10 @@
 (*From Stdlib Require Export Logic.StrictProp.*)
 (*This file was originally referring to SProp. Not anymore*)
+From mathcomp Require Import ssreflect boolp.
 From SSProve.Mon Require Import Base.
-From mathcomp Require Import ssreflect.
 
 
-From Stdlib Require ClassicalFacts.
-
-Axiom ax_proof_irrel : ClassicalFacts.proof_irrelevance.
+Notation ax_proof_irrel := Prop_irrelevance.
 
 Set Primitive Projections.
 
