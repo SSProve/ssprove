@@ -4,7 +4,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 From SSProve.Mon Require Import SpecificationMonads SPropBase SPropMonadicStructures.
 From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
-From SSProve.Crypt Require Import ChoiceAsOrd SubDistr Couplings Axioms Casts.
+From SSProve.Crypt Require Import ChoiceAsOrd SubDistr Couplings Axioms.
 From HB Require Import structures.
 
 Import SPropNotations.

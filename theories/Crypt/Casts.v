@@ -6,7 +6,6 @@ Set Warnings "-notation-overridden,-hiding-delimiting-key".
 From Stdlib Require Import ZArith.
 Set Warnings "notation-overridden,hiding-delimiting-key".
 From extructures Require Import ord fmap.
-From SSProve.Crypt Require Import Prelude.
 From mathcomp Require Import word_ssrZ word.
 From SSProve.Crypt Require Import jasmin_word jasmin_util.
 
