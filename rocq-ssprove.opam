@@ -16,7 +16,7 @@ depends: [
   "coq-mathcomp-ssreflect" {(>= "2.4.0")}
   "coq-mathcomp-analysis" {>= "1.8.0"}
   "coq-mathcomp-experimental-reals" {>= "1.8.0"}
-  "coq-mathcomp-word" {>= "3.3" & < "3.5"}
+  "coq-mathcomp-word" {>= "3.4"}
   "coq-extructures" {(>= "0.5.0" & < "dev")}
   "coq-deriving" {(>= "0.2.1" & < "dev")}
 ]
