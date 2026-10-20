@@ -53,7 +53,7 @@ Section UpdateMonadEffectObservation.
     move=> ? ? H ? ; apply H.
   Qed.
   Next Obligation.
-    compute. f_equal. apply ax_proof_irrel.
+    compute. f_equal. apply boolp.Prop_irrelevance.
   Qed.
   Next Obligation.
     apply sig_eq ; simpl. reflexivity.

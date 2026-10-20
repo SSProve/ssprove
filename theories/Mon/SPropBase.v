@@ -3,9 +3,6 @@
 From mathcomp Require Import ssreflect boolp.
 From SSProve.Mon Require Import Base.
 
-
-Notation ax_proof_irrel := Prop_irrelevance.
-
 Set Primitive Projections.
 
 Module Redefined_sprop_constructs.
@@ -36,7 +33,7 @@ Section sigLemmas.
     intros [cx ex] [cy ey]. simpl.
     induction 1.
     have hintUnif : ex = ey.
-      by apply ax_proof_irrel.
+      by apply boolp.Prop_irrelevance.
     rewrite hintUnif. reflexivity.
   Defined.
 

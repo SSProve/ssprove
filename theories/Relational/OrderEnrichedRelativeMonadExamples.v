@@ -310,11 +310,11 @@ Section NaiveDefinition.
   Qed.
   Next Obligation.
     apply nprod_eq ; simpl. apply nprod_eq ; simpl.
-    all : compute ; f_equal ; apply ax_proof_irrel.
+    all : compute ; f_equal ; apply boolp.Prop_irrelevance.
   Qed.
   Next Obligation.
     apply nprod_eq ; simpl. apply nprod_eq ; simpl.
-    all: compute ; f_equal ; apply ax_proof_irrel.
+    all: compute ; f_equal ; apply boolp.Prop_irrelevance.
   Qed.
 
   Definition ordcatTr2Sq : ord_functor OrdCatTr OrdCatSq :=
@@ -324,14 +324,14 @@ Section NaiveDefinition.
     : natIso discr2 (ord_functor_comp J ordcatTr2Sq) :=
     mkNatIso _ _ (fun A => Id (discr2 A)) (fun A => Id (discr2 A)) _ _ _.
   Next Obligation.
-    apply nprod_eq ; simpl. f_equal. apply ax_proof_irrel.
-    apply f_equal. apply ax_proof_irrel.
+    apply nprod_eq ; simpl. f_equal. apply boolp.Prop_irrelevance.
+    apply f_equal. apply boolp.Prop_irrelevance.
   Qed.
   Next Obligation.
-    apply nprod_eq ; simpl ; f_equal. all: apply ax_proof_irrel.
+    apply nprod_eq ; simpl ; f_equal. all: apply boolp.Prop_irrelevance.
   Qed.
   Next Obligation.
-    apply nprod_eq ; simpl ; f_equal. all: apply ax_proof_irrel.
+    apply nprod_eq ; simpl ; f_equal. all: apply boolp.Prop_irrelevance.
   Qed.
 
   Definition preRelationalSpecMonad : Type := ord_relativeMonad J.

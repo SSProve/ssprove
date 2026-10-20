@@ -247,7 +247,7 @@ Proof.
   destruct P, P'.
   simpl in *.
   subst.
-  rewrite (proof_irrelevance _ has_support0 has_support1) //.
+  rewrite (boolp.Prop_irrelevance has_support0 has_support1) //.
 Qed.
 
 

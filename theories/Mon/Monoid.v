@@ -89,12 +89,12 @@ Section MonoidExamples.
     all: eapply (eq_trans (Hf _)); apply Hg.
   Qed.
   Next Obligation.  compute. f_equal.
-    apply ax_proof_irrel.
+    apply boolp.Prop_irrelevance.
   Qed.
   Next Obligation. compute. f_equal.
-    apply ax_proof_irrel.
+    apply boolp.Prop_irrelevance.
   Qed.
-  Next Obligation. compute. f_equal. apply ax_proof_irrel. Qed.
+  Next Obligation. compute. f_equal. apply boolp.Prop_irrelevance. Qed.
 
 End MonoidExamples.
 
@@ -186,7 +186,7 @@ Section MonoidStrictification.
        proj1_sig mx = proj1_sig my -> mx = my.
   Proof.
     intros A P [mx ?] [my ?] H. simpl in H.
-    induction H. compute. f_equal. apply ax_proof_irrel.
+    induction H. compute. f_equal. apply boolp.Prop_irrelevance.
   Qed.
 
   Import SPropAxioms.
@@ -201,9 +201,9 @@ Section MonoidStrictification.
     apply (eq_trans He).
     rewrite monoid_law2 //.
    Qed.
-  Next Obligation. compute. destruct m. f_equal. apply ax_proof_irrel. Qed.
-  Next Obligation. compute. destruct m. f_equal. apply ax_proof_irrel. Qed.
-  Next Obligation. compute. f_equal. apply ax_proof_irrel. Qed.
+  Next Obligation. compute. destruct m. f_equal. apply boolp.Prop_irrelevance. Qed.
+  Next Obligation. compute. destruct m. f_equal. apply boolp.Prop_irrelevance. Qed.
+  Next Obligation. compute. f_equal. apply boolp.Prop_irrelevance. Qed.
 
 End MonoidStrictification.
 

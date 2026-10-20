@@ -66,7 +66,7 @@ Goal forall (a b : Sample), SA a = SA b -> SB a = SB b -> a = b.
   move=> [x1 y1 p1] [x2 y2 p2]. simpl. move=> Hx Hy.
   revert p1 p2.
   rewrite Hx Hy. move=> p1 p2.
-  rewrite (proof_irrelevance _ p1 p2).
+  rewrite (boolp.Prop_irrelevance p1 p2).
   f_equal.
   Qed.
 

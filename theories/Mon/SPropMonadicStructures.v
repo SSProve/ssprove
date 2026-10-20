@@ -473,7 +473,7 @@ Section OfMorphism.
   Next Obligation. apply eq_above_sig ; cbv ; by rewrite monad_law1. Qed.
   Next Obligation. apply eq_above_sig ; cbv ; by rewrite monad_law2. Qed.
   Next Obligation. apply eq_above_sig ; cbv ; by rewrite monad_law3. Qed.
-(*in the remaining obligations one use proof_irrelevance, which implies
+(*in the remaining obligations one use boolp.Prop_irrelevance, which implies
 that equality of sigma types is equivalent to equality of carriers members*)
   Next Obligation.
     destruct m as (m,e).
@@ -482,7 +482,7 @@ that equality of sigma types is equivalent to equality of carriers members*)
 (Dθ_wkn_obligation_1
        (exist (fun m0 : M A => θ A m0 ≤ w) m e)
        ((let (PreOrder_Reflexive, _) := omon_order W A in
-         PreOrder_Reflexive) w)) = e. apply ax_proof_irrel.
+         PreOrder_Reflexive) w)) = e. apply boolp.Prop_irrelevance.
     rewrite hintUnif. reflexivity.
 Qed.
   Next Obligation. compute.
@@ -494,7 +494,7 @@ Qed.
 (Dθ_wkn_obligation_1
        (exist (fun m0 : M A => θ A m0 ≤ w2)
           (let (w, _) := m in w) (Dθ_wkn_obligation_1 m H12))
-       H23). apply ax_proof_irrel. rewrite hintUnif. reflexivity.
+       H23). apply boolp.Prop_irrelevance. rewrite hintUnif. reflexivity.
 Qed.
   Next Obligation. compute.
 have hintUnif :
@@ -511,7 +511,7 @@ have hintUnif :
         exist (fun m0 : M B => θ B m0 ≤ wf' a)
           (let (w, _) := f a in w)
           (Dθ_wkn_obligation_1 (f a) (Hf a)))).
-apply ax_proof_irrel. rewrite hintUnif. reflexivity.
+apply boolp.Prop_irrelevance. rewrite hintUnif. reflexivity.
 Qed.
 
   Program Definition lift {A} (m : M A) : Dθ A (θ A m) := exist _ m _.
@@ -553,8 +553,8 @@ Section OfRelation.
   Next Obligation. apply eq_above_sig ; cbv ; rewrite !monad_law2 //. Qed.
   Next Obligation. apply eq_above_sig ; cbv ; rewrite !monad_law3 //. Qed.
   Next Obligation. compute. destruct m as (m,bla). f_equal.
-    apply ax_proof_irrel.
+    apply boolp.Prop_irrelevance.
   Qed.
-  Next Obligation. compute. f_equal. apply ax_proof_irrel. Qed.
-  Next Obligation. compute. f_equal. apply ax_proof_irrel. Qed.
+  Next Obligation. compute. f_equal. apply boolp.Prop_irrelevance. Qed.
+  Next Obligation. compute. f_equal. apply boolp.Prop_irrelevance. Qed.
 End OfRelation.

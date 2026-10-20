@@ -209,7 +209,7 @@ Section FreeModule.
     intros A u v h.
     destruct u as [u hu], v as [v hv].
     cbn in h. subst.
-    f_equal. apply proof_irrelevance.
+    f_equal. apply boolp.Prop_irrelevance.
   Qed.
 
   Fixpoint bind {A B} (c : raw_code A) (k : A → raw_code B) :
@@ -704,7 +704,7 @@ Proof.
   destruct p1 as [p1 h1], p2 as [p2 h2].
   apply eq_fmap in e, e'.
   cbn in *. subst.
-  f_equal. apply proof_irrelevance.
+  f_equal. apply boolp.Prop_irrelevance.
 Qed.
 
 (* Rewriting in packages *)
