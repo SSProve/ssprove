@@ -1,6 +1,4 @@
-
-From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
-
+From Stdlib Require Import Utf8.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
   fingroup solvable.cyclic prime ssrnat ssreflect ssrfun ssrbool ssrnum
@@ -8,18 +6,8 @@ From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
 Set Warnings "notation-overridden,ambiguous-paths".
 Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
-From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
-  UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_core_definition choice_type pkg_composition pkg_rhl
-  Package Prelude RandomOracle Casts.
-
-From Stdlib Require Import Utf8.
 From extructures Require Import ord fset fmap.
-
-From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
-
-Set Equations With UIP.
+From SSProve.Crypt Require Import Package RandomOracle.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".

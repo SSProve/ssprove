@@ -2,25 +2,15 @@
   OTP example
 *)
 
-From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
-
+From Stdlib Require Import Utf8 Lia.
 Set Warnings "-notation-overridden,-ambiguous-paths,-notation-incompatible-format".
 From mathcomp Require Import all_ssreflect all_algebra reals distr
   fingroup realsum ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice
   seq.
 Set Warnings "notation-overridden,ambiguous-paths,notation-incompatible-format".
 
-From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
-  UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_composition pkg_rhl Package Prelude.
-
-From Stdlib Require Import Utf8 Lia.
 From extructures Require Import ord fset fmap.
-
-From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
-
-Set Equations With UIP.
+From SSProve.Crypt Require Import Package.
 
 Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 Set Bullet Behavior "Strict Subproofs".

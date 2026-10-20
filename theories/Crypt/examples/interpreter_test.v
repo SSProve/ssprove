@@ -1,16 +1,11 @@
+From Stdlib Require Import Utf8.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect.
 Set Warnings "notation-overridden,ambiguous-paths".
 Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
-From SSProve.Crypt Require Import Prelude choice_type Package pkg_interpreter.
-
-From Stdlib Require Import Utf8.
 From extructures Require Import ord fset fmap.
-
-From Equations Require Import Equations.
-
-Set Equations With UIP.
+From SSProve.Crypt Require Import Package pkg_interpreter.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
@@ -39,7 +34,7 @@ Section Test.
        ret k'
     }.
   Next Obligation.
-    ssprove_valid.
+    intros. ssprove_valid.
   Defined.
 
   Goal (nat_ch (ch_nat 'unit tt) 'unit) = Some tt.

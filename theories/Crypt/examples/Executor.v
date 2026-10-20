@@ -1,20 +1,12 @@
-From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
-
-From Stdlib Require Import ZArith.
-
+From Stdlib Require Import Utf8 ZArith.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
   ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
 Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
-From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
-  UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_core_definition choice_type pkg_composition pkg_rhl
-  Package Prelude RandomOracle.
-
-From Stdlib Require Import Utf8.
 From extructures Require Import ord fset fmap.
+From SSProve.Crypt Require Import Package RandomOracle.
 
 (* From Jasmin Require Import word. *)
 From SSProve.Crypt Require Import jasmin_word.

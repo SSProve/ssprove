@@ -1,5 +1,4 @@
-From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
-
+From Stdlib Require Import Utf8.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
   fingroup solvable.cyclic prime ssrnat ssreflect ssrfun ssrbool ssrnum
@@ -7,20 +6,8 @@ From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
 Set Warnings "notation-overridden,ambiguous-paths".
 Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
-From SSProve.Mon Require Import SPropBase.
-
-From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
-  UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb UniformStateProb
-  pkg_core_definition choice_type pkg_composition pkg_rhl Package Prelude
-  SigmaProtocol Casts.
-
-From Stdlib Require Import Utf8.
 From extructures Require Import ord fset fmap.
-
-From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
-
-Set Equations With UIP.
+From SSProve.Crypt Require Import Package SigmaProtocol.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
@@ -221,7 +208,7 @@ Proof.
   (* We can only simulate if the relation is valid *)
   ssprove_sync_eq. intros rel.
   (* When relation holds we can reconstruct the first message from the response *)
-  unfold R in rel. apply reflection_nonsense in rel.
+  move=> /eqP in rel.
   eapply r_uniform_bij with (1 := bij_f (otf w) (otf e)). intros z_val.
   ssprove_contract_put_get_lhs.
   apply r_put_lhs.
@@ -269,7 +256,7 @@ Proof.
   assert (H : (a - b == 0)).
   { by rewrite H_eq. }
   rewrite subr_eq0 in H.
-  apply reflection_nonsense in H.
+  move=> /eqP in H.
   rewrite H.
   unfold not => contra.
   rewrite eq_refl in contra.
@@ -305,8 +292,8 @@ Proof.
   2,3: discriminate.
   rewrite otf_fto in Heqs4.
   rewrite otf_fto in e.
-  apply reflection_nonsense in e.
-  apply reflection_nonsense in Heqs4.
+  move=> /eqP in e.
+  move=> /eqP in Heqs4.
   rewrite H0.
   rewrite otf_fto expg_mod.
   1: rewrite order_ge1 ; apply expg_order.

@@ -8,29 +8,18 @@
   make it a hypothesis of the final statement [security_based_on_prf].
 *)
 
-From SSProve.Relational Require Import OrderEnrichedCategory GenericRulesSimple.
-
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum
   ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
 Set Warnings "notation-overridden,ambiguous-paths".
 Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
-From SSProve.Mon Require Import SPropBase.
-From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings
-  UniformDistrLemmas FreeProbProg Theta_dens RulesStateProb
-  pkg_core_definition choice_type pkg_composition pkg_rhl Package Prelude.
-
 From extructures Require Import ord fset fmap.
-
-Import SPropNotations.
-
-Import PackageNotation.
+From SSProve.Crypt Require Import Package.
 
 From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
 
-Set Equations With UIP.
+Import PackageNotation.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".

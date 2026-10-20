@@ -1,10 +1,9 @@
 From Stdlib Require Import RelationClasses Morphisms Utf8.
 
-From SSProve.Mon Require Import SPropMonadicStructures SpecificationMonads MonadExamples
-  SPropBase FiniteProbabilities.
+From SSProve.Mon Require Import SPropMonadicStructures SpecificationMonads SPropBase.
 
 From SSProve.Relational Require Import OrderEnrichedCategory
-  OrderEnrichedRelativeMonadExamples Commutativity GenericRulesSimple.
+  OrderEnrichedRelativeMonadExamples.
 
 Set Warnings "-notation-overridden,-ambiguous-paths,-notation-incompatible-prefix".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum

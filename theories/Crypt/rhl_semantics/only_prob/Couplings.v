@@ -1,13 +1,11 @@
-From SSProve.Mon Require Import FiniteProbabilities SPropMonadicStructures SpecificationMonads MonadExamples SPropBase FiniteProbabilities.
 From Stdlib Require Import RelationClasses Morphisms.
-From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples Commutativity.
+From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum.
 Set Warnings "notation-overridden,ambiguous-paths".
 Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 From SSProve.Crypt Require Import Axioms ChoiceAsOrd only_prob.SubDistr.
 
-Import SPropNotations.
 Import Num.Theory.
 
 Local Open Scope ring_scope.

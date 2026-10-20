@@ -1,8 +1,7 @@
 From Stdlib Require Import ssreflect ssrfun.
-From SSProve.Mon Require Export Base.
 From Stdlib.Relations Require Import Relation_Definitions.
 From Stdlib.Classes Require Import RelationClasses Morphisms.
-From SSProve.Mon Require Import SPropBase.
+From SSProve.Mon Require Export Base.
 
 Set Primitive Projections.
 Set Universe Polymorphism.
