@@ -1,10 +1,10 @@
 From Stdlib Require Import Morphisms.
-From SSProve.Relational Require Import OrderEnrichedCategory.
-From SSProve.Mon Require Import SPropBase.
 Set Warnings "-notation-overridden".
-From mathcomp Require Import all_ssreflect boolp.
+From mathcomp Require Import all_ssreflect.
 Set Warnings "notation-overridden".
-From SSProve.Crypt Require Import Axioms.
+
+From SSProve.Mon Require Import SPropBase.
+From SSProve.Relational Require Import OrderEnrichedCategory.
 
 Global Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
 
