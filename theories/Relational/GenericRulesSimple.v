@@ -1,10 +1,8 @@
 From Stdlib Require Import ssreflect ssrfun ssrbool.
-From Stdlib Require FunctionalExtensionality.
-From SSProve.Mon Require Export Base.
 From Stdlib Require Import Relation_Definitions Morphisms.
+From SSProve.Mon Require Export Base.
 From SSProve.Mon Require Import SPropBase SPropMonadicStructures.
-(* From SSProve.Relational Require Import Category RelativeMonads RelativeMonadExamples. *)
-From SSProve.Relational Require Import  OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
+From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 
 Set Primitive Projections.
 Set Universe Polymorphism.

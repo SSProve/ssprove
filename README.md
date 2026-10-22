@@ -671,37 +671,30 @@ This last step is also performed in [TransformingLaxMorph.v].
 ### List of axioms
 
 In our development we rely on the following standard axioms: functional
-extensionality, proof irrelevance, and propositional extensionality, as listed
+extensionality (dependent), propositional extensionality, and constructive indefinite description, as listed
 below.
 
 ```coq
-ax_proof_irrel : ClassicalFacts.proof_irrelevance
-propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
-functional_extensionality_dep :
+boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
+boolp.functional_extensionality_dep :
   ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
-      (∀ x : A, f x = g x) → f = g
-```
-
-We also rely on the constructive indefinite description axiom, whose use
-we inherit transitively from the `mathcomp-analysis` library.
-
-```coq
+    (∀ x : A, f x = g x) → f = g
 boolp.constructive_indefinite_description :
   ∀ (A : Type) (P : A → Prop), (∃ x : A, P x) → {x : A | P x}
 ```
 
-The `mathcomp-analysis` library also uses an axiom to abstract away from any
+We use an axiom to abstract away from any
 specific construction of the reals:
 
 ```coq
-R : realType
+Axioms.R : realType
 ```
 One could plug in any real number construction: Cauchy, Dedekind, ...
 In `mathcomp`s ` Rstruct.v` an instance is built from any instance of the
 abstract `Rocq` reals.  An instance of the latter is built from the
 (constructive) Cauchy reals in `Stdlib.Reals.ClassicalConstructiveReals`.
 
-Finally, by using `mathcomp-analysis` we also inherit an admitted lemma they have:
+Finally, by using `mathcomp-analysis` before v1.18.0 we also inherit an admitted lemma they have:
 
 ```coq
 interchange_psum :
@@ -725,32 +718,15 @@ command on all the results above at once:
 ```coq
 Print Assumptions results_from_the_paper.
 ```
-which yields
+which yields (using `mathcomp-analysis >= v1.18.0`)
 ```coq
 Axioms:
 boolp.propositional_extensionality : ∀ P Q : Prop, P ↔ Q → P = Q
 boolp.functional_extensionality_dep :
   ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
     (∀ x : A, f x = g x) → f = g
-FunctionalExtensionality.functional_extensionality_dep :
-  ∀ (A : Type) (B : A → Type) (f g : ∀ x : A, B x),
-    (∀ x : A, f x = g x) → f = g
 boolp.constructive_indefinite_description :
   ∀ (A : Type) (P : A → Prop), (∃ x : A, P x) → {x : A | P x}
-SPropBase.ax_proof_irrel : ClassicalFacts.proof_irrelevance
-realsum.__admitted__interchange_psum :
-  ∀ (R : reals.Real.type) (T U : choice.Choice.type)
-    (S : choice.Choice.sort T → choice.Choice.sort U → reals.Real.sort R),
-    (∀ x : choice.Choice.sort T, realsum.summable (T:=U) (R:=R) (S x))
-    → realsum.summable (T:=T) (R:=R)
-        (λ x : choice.Choice.sort T,
-           realsum.psum (λ y : choice.Choice.sort U, S x y))
-      → realsum.psum
-          (λ x : choice.Choice.sort T,
-             realsum.psum (λ y : choice.Choice.sort U, S x y)) =
-        realsum.psum
-          (λ y : choice.Choice.sort U,
-             realsum.psum (λ x : choice.Choice.sort T, S x y))
 Axioms.R : reals.Real.type
 ```
 

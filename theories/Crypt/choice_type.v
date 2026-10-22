@@ -21,7 +21,7 @@ From SSProve.Crypt Require Import jasmin_word jasmin_util.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From HB Require Import structures.
 
-From SSProve.Crypt Require Import Prelude Axioms Casts.
+From SSProve.Crypt Require Import Prelude Casts.
 From extructures Require Import ord fset fmap.
 Require Equations.Prop.DepElim.
 From Equations Require Import Equations.

@@ -1,11 +1,13 @@
 From Stdlib Require Import Relation_Definitions.
-From SSProve.Relational Require Import OrderEnrichedCategory.
-From SSProve.Mon Require Import SPropBase.
 Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import all_ssreflect boolp.
+From mathcomp Require Import all_ssreflect.
 Set Warnings "notation-overridden,ambiguous-paths".
 Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
-From SSProve.Crypt Require Import Axioms OrderEnrichedRelativeAdjunctions LaxFunctorsAndTransf LaxMorphismOfRelAdjunctions.
+
+From SSProve.Mon Require Import SPropBase.
+From SSProve.Relational Require Import OrderEnrichedCategory.
+From SSProve.Crypt Require Import OrderEnrichedRelativeAdjunctions
+  LaxFunctorsAndTransf LaxMorphismOfRelAdjunctions.
 
 Import SPropNotations.
 

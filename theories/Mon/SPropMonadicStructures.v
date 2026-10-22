@@ -1,4 +1,4 @@
-From Stdlib Require Import ssreflect ssrfun FunctionalExtensionality.
+From Stdlib Require Import ssreflect ssrfun.
 From SSProve.Mon Require Export Base.
 From SSProve.Mon Require Import SPropBase.
 From Stdlib Require Import Relation_Definitions Morphisms.
@@ -68,14 +68,13 @@ End StrongBind.
 
 Section MapLemmas.
   Context (M : Monad).
-  Import FunctionalExtensionality.
   Lemma map_id : forall A (m : M A), id <$> m = m.
   Proof. intros ; rewrite /map /id /= /bind monad_law2 //. Qed.
 
   Lemma map_functorial : forall A B C (f : A -> B) (g : B -> C) (m : M A),
       g <$> (f <$> m) = (fun x => g (f x)) <$> m.
   Proof.
-    intros ; cbv. rewrite monad_law3. f_equal. extensionality a.
+    intros ; cbv. rewrite monad_law3. f_equal. apply boolp.funext => a.
     rewrite monad_law1. reflexivity.
   Qed.
 
@@ -88,7 +87,7 @@ Section MapLemmas.
       bind (f <$> m) g = bind m (fun x => g (f x)).
   Proof.
     intros ; cbv. rewrite monad_law3.
-    f_equal ; extensionality a. rewrite monad_law1.
+    f_equal ; apply boolp.funext => a. rewrite monad_law1.
     reflexivity.
   Qed.
 End MapLemmas.
@@ -132,7 +131,7 @@ Section DiscreteMonad.
     @mkOrderedMonad M (fun A x y => x = y) _ _.
   Next Obligation.
     compute. move=> x y Exy x0 y0 pe_x0y0.
-    rewrite Exy. apply functional_extensionality in pe_x0y0.
+    rewrite Exy. apply boolp.funext in pe_x0y0.
     rewrite pe_x0y0. reflexivity.
   Qed.
 End DiscreteMonad.
@@ -285,11 +284,10 @@ Qed.
 
 Section MonadMorphismNatural.
   Context {M1 M2 : Monad} (θ : MonadMorphism M1 M2).
-  Import FunctionalExtensionality.
   Lemma monad_morphism_natural : forall A B f m, f <$> (θ A m) = θ B (f <$> m).
   Proof.
     intros. cbv. rewrite mon_morph_bind. cbv ; f_equal.
-    extensionality a. rewrite mon_morph_ret ; reflexivity.
+    apply boolp.funext => a. rewrite mon_morph_ret ; reflexivity.
   Qed.
 End MonadMorphismNatural.
 
@@ -475,7 +473,7 @@ Section OfMorphism.
   Next Obligation. apply eq_above_sig ; cbv ; by rewrite monad_law1. Qed.
   Next Obligation. apply eq_above_sig ; cbv ; by rewrite monad_law2. Qed.
   Next Obligation. apply eq_above_sig ; cbv ; by rewrite monad_law3. Qed.
-(*in the remaining obligations one use proof_irrelevance, which implies
+(*in the remaining obligations one use boolp.Prop_irrelevance, which implies
 that equality of sigma types is equivalent to equality of carriers members*)
   Next Obligation.
     destruct m as (m,e).
@@ -484,7 +482,7 @@ that equality of sigma types is equivalent to equality of carriers members*)
 (Dθ_wkn_obligation_1
        (exist (fun m0 : M A => θ A m0 ≤ w) m e)
        ((let (PreOrder_Reflexive, _) := omon_order W A in
-         PreOrder_Reflexive) w)) = e. apply ax_proof_irrel.
+         PreOrder_Reflexive) w)) = e. apply boolp.Prop_irrelevance.
     rewrite hintUnif. reflexivity.
 Qed.
   Next Obligation. compute.
@@ -496,7 +494,7 @@ Qed.
 (Dθ_wkn_obligation_1
        (exist (fun m0 : M A => θ A m0 ≤ w2)
           (let (w, _) := m in w) (Dθ_wkn_obligation_1 m H12))
-       H23). apply ax_proof_irrel. rewrite hintUnif. reflexivity.
+       H23). apply boolp.Prop_irrelevance. rewrite hintUnif. reflexivity.
 Qed.
   Next Obligation. compute.
 have hintUnif :
@@ -513,7 +511,7 @@ have hintUnif :
         exist (fun m0 : M B => θ B m0 ≤ wf' a)
           (let (w, _) := f a in w)
           (Dθ_wkn_obligation_1 (f a) (Hf a)))).
-apply ax_proof_irrel. rewrite hintUnif. reflexivity.
+apply boolp.Prop_irrelevance. rewrite hintUnif. reflexivity.
 Qed.
 
   Program Definition lift {A} (m : M A) : Dθ A (θ A m) := exist _ m _.
@@ -555,8 +553,8 @@ Section OfRelation.
   Next Obligation. apply eq_above_sig ; cbv ; rewrite !monad_law2 //. Qed.
   Next Obligation. apply eq_above_sig ; cbv ; rewrite !monad_law3 //. Qed.
   Next Obligation. compute. destruct m as (m,bla). f_equal.
-    apply ax_proof_irrel.
+    apply boolp.Prop_irrelevance.
   Qed.
-  Next Obligation. compute. f_equal. apply ax_proof_irrel. Qed.
-  Next Obligation. compute. f_equal. apply ax_proof_irrel. Qed.
+  Next Obligation. compute. f_equal. apply boolp.Prop_irrelevance. Qed.
+  Next Obligation. compute. f_equal. apply boolp.Prop_irrelevance. Qed.
 End OfRelation.

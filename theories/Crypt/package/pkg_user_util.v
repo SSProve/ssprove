@@ -85,8 +85,7 @@ From extructures Require Import ord fset fmap.
 From SSProve.Crypt Require Import Axioms Prelude pkg_core_definition pkg_composition
   pkg_notation RulesStateProb pkg_advantage pkg_semantics
   pkg_heap pkg_invariants pkg_distr pkg_rhl pkg_tactics choice_type fmap_extra.
-From Stdlib Require Import Utf8 FunctionalExtensionality
-  Setoids.Setoid Classes.Morphisms.
+From Stdlib Require Import Utf8 Setoids.Setoid Classes.Morphisms.
 
 From Equations Require Import Equations.
 Require Equations.Prop.DepElim.
@@ -173,21 +172,21 @@ Ltac ssprove_match_commut_gen1 :=
     | x ← sample ?op ;; _ =>
       let x' := fresh x in
       eapply (f_equal (sampler _)) ;
-      eapply functional_extensionality with (f := λ x', _) ; intro x'
+      eapply boolp.funext with (f := λ x', _) ; intro x'
     | x ← get ?ℓ ;; _ =>
       let x' := fresh x in
       eapply (f_equal (getr _)) ;
-      eapply functional_extensionality with (f := λ x', _) ; intro x'
+      eapply boolp.funext with (f := λ x', _) ; intro x'
     | #put ?ℓ := ?v ;; _ =>
       eapply (f_equal (putr _ _))
     | @assertD ?A ?b (λ x, _) =>
       let x' := fresh x in
       eapply (f_equal (@assertD A b)) ;
-      eapply functional_extensionality with (f := λ x', _) ; intro x'
+      eapply boolp.funext with (f := λ x', _) ; intro x'
     | x ← cmd ?c ;; _ =>
       let x' := fresh x in
       eapply (f_equal (cmd_bind _)) ;
-      eapply functional_extensionality with (f := λ x', _) ; intro x'
+      eapply boolp.funext with (f := λ x', _) ; intro x'
     | x ← (y ← _ ;; _) ;; _ =>
       rewrite bind_assoc
     | x ← (match ?u with _ => _ end) ;; _ =>
@@ -199,7 +198,7 @@ Ltac ssprove_match_commut_gen1 :=
     | x ← ?c ;; _ =>
       let x' := fresh x in
       eapply bind_cong ; [
-      | eapply functional_extensionality with (f := λ x', _) ; intro x'
+      | eapply boolp.funext with (f := λ x', _) ; intro x'
       ]
     | code_link (@assertD ?A ?b _) _ =>
       rewrite (code_link_assertD A) ; simpl
@@ -522,10 +521,10 @@ Proof.
   induction h.
   - reflexivity.
   - destruct o; discriminate.
-  - simpl. f_equal. apply functional_extensionality.
+  - simpl. f_equal. apply boolp.funext.
     intro. eauto.
   - simpl. f_equal. eauto.
-  - simpl. f_equal. apply functional_extensionality.
+  - simpl. f_equal. apply boolp.funext.
     intro. eauto.
 Qed.
 

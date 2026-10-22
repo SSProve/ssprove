@@ -1,17 +1,13 @@
 From Stdlib Require Import RelationClasses Morphisms Utf8.
 
 From SSProve.Mon Require Import
-     FiniteProbabilities
      SPropMonadicStructures
      SpecificationMonads
-     MonadExamples
      SPropBase.
 
 From SSProve.Relational Require Import
      OrderEnrichedCategory
-     OrderEnrichedRelativeMonadExamples
-     Commutativity
-     GenericRulesSimple.
+     OrderEnrichedRelativeMonadExamples.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import
@@ -80,7 +76,7 @@ Proof.
   rewrite Hc.
   rewrite /θ0 /unary_theta_dens /= in Hf.
   f_equal.
-  extensionality x.
+  apply boolp.funext => x.
   apply Hf.
 Qed.
 
@@ -612,25 +608,25 @@ Proof.
   rewrite -H11 -H12.
   rewrite /lmg /rmg.
   assert ((fun x : X => (A x)%:R * dfst d x) = (fun x : X => (A x)%:R * psum (fun w => d (x, w)))) as HeqH11.
-  { extensionality k. rewrite dfstE. reflexivity. }
+  { apply boolp.funext => k. rewrite dfstE. reflexivity. }
   rewrite HeqH11.
   assert ((fun x : X => (A x)%:R * psum (fun w : Choice.Pack chY => d (x, w))) = (fun x : X => psum (fun w : Choice.Pack chY => (A x)%:R * d (x, w)))) as H4.
-  { extensionality k. rewrite -psumZ; last by reflexivity.
+  { apply boolp.funext => k. rewrite -psumZ; last by reflexivity.
     case (A k); intuition; by rewrite ler01. }
   rewrite H4.
   assert ((fun x : Y => (B x)%:R * dsnd d x) = (fun y : Y => (B y)%:R * psum (fun w => d (w, y)))) as HeqH12.
-  { extensionality K. rewrite __deprecated__dsndE. reflexivity. }
+  { apply boolp.funext => K. rewrite __deprecated__dsndE. reflexivity. }
   rewrite HeqH12.
   unfold F_choice_prod_obj in d.
   assert ((fun y : Y => (B y)%:R * psum (fun w : Choice.Pack chX => d (w, y))) = (fun y : Y => psum (fun w : Choice.Pack chX => (B y)%:R * d (w, y)))) as H5.
-  { extensionality k. rewrite -psumZ; last by reflexivity.
+  { apply boolp.funext => k. rewrite -psumZ; last by reflexivity.
     case (B k); intuition; by rewrite ler01. }
   rewrite H5.
   clear H5 H4 HeqH12 HeqH11.
   rewrite -(@psum_pair _ _ _ (fun '(x, y) => (A x)%:R * d (x, y))); last first.
   rewrite -(@psum_pair_swap _ _ _ (fun '(x, y) => (B y)%:R * d (x, y))); last first.
   f_equal.
-  extensionality k.
+  apply boolp.funext => k.
   destruct k as [x y].
   case (0 < d (x, y)) eqn:Hd.
   move: Hd. move/idP => Hd.
@@ -656,7 +652,7 @@ Proof.
     assert ((fun x : ( (Choice.Pack chX) * (Choice.Pack chY)) =>
                (nat_of_bool (let '(_, y) := x in B y))%:R * d x) =
             (fun '(x, y)  => (B y)%:R * d (x, y))) as Heq1.
-    { extensionality k. destruct k as [k1 k2].
+    { apply boolp.funext => k. destruct k as [k1 k2].
       case (B k2). reflexivity. reflexivity. }
     rewrite -Heq1.
     pose (@summable_pr R ((Choice.Pack chX) * (Choice.Pack chY))%type
@@ -666,7 +662,7 @@ Proof.
     assert ((fun x : ((Choice.Pack chX) * (Choice.Pack chY))%type =>
                (nat_of_bool (let '(x, _) := x in A x))%:R * d x) =
             (fun '(x, y)  => (A x)%:R * d (x, y))) as Heq2.
-    { extensionality k. destruct k as [k1 k2].
+    { apply boolp.funext => k. destruct k as [k1 k2].
       case (B k2). reflexivity. reflexivity. }
     rewrite -Heq2.
     pose (@summable_pr R ((Choice.Pack chX) * (Choice.Pack chY))%type
@@ -720,18 +716,18 @@ Proof.
   rewrite -H11 -H12.
   rewrite /lmg /rmg.
   assert ((fun x : X => (A x)%:R * dfst d x) = (fun x : X => (A x)%:R * psum (fun w => d (x, w)))) as HeqH11.
-  { extensionality k. rewrite dfstE. reflexivity. }
+  { apply boolp.funext => k. rewrite dfstE. reflexivity. }
   rewrite HeqH11.
   assert ((fun x : X => (A x)%:R * psum (fun w : Choice.Pack chY => d (x, w))) = (fun x : X => psum (fun w : Choice.Pack chY => (A x)%:R * d (x, w)))) as H4.
-  { extensionality k. rewrite -psumZ; last by reflexivity.
+  { apply boolp.funext => k. rewrite -psumZ; last by reflexivity.
     case (A k); intuition; by rewrite ler01. }
   rewrite H4.
   assert ((fun x : Y => (B x)%:R * dsnd d x) = (fun y : Y => (B y)%:R * psum (fun w => d (w, y)))) as HeqH12.
-  { extensionality K. rewrite __deprecated__dsndE. reflexivity. }
+  { apply boolp.funext => K. rewrite __deprecated__dsndE. reflexivity. }
   rewrite HeqH12.
   unfold F_choice_prod_obj in d.
   assert ((fun y : Y => (B y)%:R * psum (fun w : Choice.Pack chX => d (w, y))) = (fun y : Y => psum (fun w : Choice.Pack chX => (B y)%:R * d (w, y)))) as H5.
-  { extensionality k. rewrite -psumZ; last by reflexivity.
+  { apply boolp.funext => k. rewrite -psumZ; last by reflexivity.
     case (B k); intuition; by rewrite ler01. }
   rewrite H5.
   clear H5 H4 HeqH12 HeqH11.
@@ -761,7 +757,7 @@ Proof.
     assert ((fun x : ((Choice.Pack chX) * (Choice.Pack chY)) =>
                (nat_of_bool (let '(_, y) := x in B y))%:R * d x) =
             (fun '(x, y)  => (B y)%:R * d (x, y))) as Heq1.
-    { extensionality k. destruct k as [k1 k2].
+    { apply boolp.funext => k. destruct k as [k1 k2].
       case (B k2). reflexivity. reflexivity. }
     rewrite -Heq1.
     pose (@summable_pr R ((Choice.Pack chX) * (Choice.Pack chY))%type
@@ -771,7 +767,7 @@ Proof.
     assert ((fun x : ((Choice.Pack chX) * (Choice.Pack chY)) =>
                (nat_of_bool (let '(_, y) := x in B y))%:R * d x) =
             (fun '(x, y)  => (B y)%:R * d (x, y))) as Heq1.
-    { extensionality k. destruct k as [k1 k2].
+    { apply boolp.funext => k. destruct k as [k1 k2].
       case (B k2). reflexivity. reflexivity. }
     rewrite -Heq1.
     pose (@summable_pr R ((Choice.Pack chX) * (Choice.Pack chY))%type
@@ -781,7 +777,7 @@ Proof.
     assert ((fun x : ((Choice.Pack chX) * (Choice.Pack chY)) =>
                (nat_of_bool (let '(x, _) := x in A x))%:R * d x) =
             (fun '(x, y)  => (A x)%:R * d (x, y))) as Heq2.
-    { extensionality k. destruct k as [k1 k2].
+    { apply boolp.funext => k. destruct k as [k1 k2].
       case (B k2). reflexivity. reflexivity. }
     rewrite -Heq2.
     pose (@summable_pr R ((Choice.Pack chX) * (Choice.Pack chY))%type

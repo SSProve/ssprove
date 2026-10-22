@@ -1,11 +1,7 @@
-From SSProve.Mon Require Import FiniteProbabilities SPropMonadicStructures
-  SpecificationMonads MonadExamples SPropBase.
-
-From SSProve.Relational Require Import OrderEnrichedCategory
-  OrderEnrichedRelativeMonadExamples Commutativity GenericRulesSimple.
+From SSProve.Relational Require Import OrderEnrichedCategory.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
-From mathcomp Require Import all_ssreflect all_algebra reals distr realsum.
+From mathcomp Require Import all_ssreflect all_algebra reals distr realsum boolp.
 Set Warnings "notation-overridden,ambiguous-paths".
 Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
@@ -13,7 +9,6 @@ From SSProve.Crypt Require Import Axioms ChoiceAsOrd SubDistr Couplings Theta_de
   Theta_exCP LaxComp FreeProbProg UniformDistrLemmas
   Prelude choice_type StateTransformingLaxMorph RulesStateProb.
 
-Import SPropNotations.
 Import Num.Theory.
 
 Local Open Scope ring_scope.
@@ -80,7 +75,7 @@ Proof.
   | |- psum ?k = _ =>
     eassert (k = _) as H
   end.
-  { extensionality x.
+  { apply funext => x.
     rewrite dunit1E.
     eassert (((x, s) == (w, st))%:R = (x == w)%:R * (s == st)%:R).
     { destruct (x == w) eqn:e1, (s == st) eqn:e2.

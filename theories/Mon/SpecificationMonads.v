@@ -38,11 +38,9 @@ Section MonotoneContinuationsMonad.
 
   Program Definition MonoContU : Monad :=
     @mkMonad MonoContCarrier MonoCont_ret MonoCont_bind _ _ _.
-  Next Obligation. apply sig_eq. compute.
-    rewrite -FunctionalExtensionality.eta_expansion. reflexivity.
-  Qed.
-  Next Obligation. apply sig_eq. compute. reflexivity. Qed.
-  Next Obligation. apply sig_eq. simpl. reflexivity. Qed.
+  Next Obligation. by apply sig_eq. Qed.
+  Next Obligation. by apply sig_eq. Qed.
+  Next Obligation. by apply sig_eq. Qed.
 
 
 
@@ -143,16 +141,9 @@ Section ExceptionSpec.
 
   Program Definition ExnSpecU : Monad :=
     @mkMonad ExnSpecCarrier ExnSpec_ret ExnSpec_bind _ _ _.
-  Next Obligation. compute.
-    apply sig_eq. compute.
-    rewrite -FunctionalExtensionality.eta_expansion.
-    reflexivity.
-  Qed.
-  Next Obligation. compute. apply sig_eq ; compute.
-    rewrite -FunctionalExtensionality.eta_expansion.
-    reflexivity.
-  Qed.
-  Next Obligation. compute. apply sig_eq ; compute. reflexivity. Qed.
+  Next Obligation. by apply sig_eq. Qed.
+  Next Obligation. by apply sig_eq. Qed.
+  Next Obligation. by apply sig_eq. Qed.
 
 
   Definition ExnSpec_rel A : relation (ExnSpecU A) :=
@@ -226,29 +217,27 @@ Section UpdateSpecMonad.
     apply (proj2_sig x) => ? ? ; apply Hf.
   Qed.
 
-  Import FunctionalExtensionality.
-
   Program Definition UpdSpec := UpdSpecFromLaws _ _ _.
   Next Obligation.
-    apply sig_eq. extensionality p0 ; extensionality x.
+    apply sig_eq. apply boolp.funext => p0 ; apply boolp.funext => x.
     cbv. f_equal.
-    extensionality a0 ; extensionality m' ; rewrite !monoid_law2 //.
+    apply boolp.funext => a0 ; apply boolp.funext => m' ; rewrite !monoid_law2 //.
     rewrite !monact_unit //.
   Qed.
 
   Next Obligation.
-    apply sig_eq. extensionality p.
-    cbv. extensionality a ; f_equal. extensionality a0 ; extensionality m'.
+    apply sig_eq. apply boolp.funext => p.
+    cbv. apply boolp.funext => a ; f_equal. apply boolp.funext => a0 ; apply boolp.funext => m'.
     rewrite !monoid_law1 //.
   Qed.
 
   Next Obligation.
-    apply sig_eq; extensionality p ; extensionality x.
+    apply sig_eq; apply boolp.funext => p ; apply boolp.funext => x.
     cbv.
     let t :=
         f_equal ; [let Hab := fresh "ab" in
         let Hmm := fresh "mm" in
-        extensionality Hab ; extensionality Hmm |..] in
+        apply boolp.funext => Hab ; apply boolp.funext => Hmm |..] in
     do 3 t.
     rewrite !monoid_law3 //.
     rewrite !monact_mult //.
@@ -326,18 +315,16 @@ Section MonotonicRelations.
     cbv ; move=> a. apply (proj2_sig (f a)). assumption. auto.
   Qed.
 
-  Import FunctionalExtensionality.
-
   Program Definition MR_monad : Monad :=
     @mkMonad MR retMR bindMR _ _ _.
   Next Obligation.
-    apply sig_eq ; extensionality pre ; extensionality post ; apply sig_eq.
+    apply sig_eq ; apply boolp.funext => pre ; apply boolp.funext => post ; apply sig_eq.
     simpl. destruct ((f a) ∙1 pre post) as [q eq]. compute.
     compute in eq. destruct eq as [eq1 eq2]. apply sprop_ext. apply box.
     split ; assumption.
   Qed.
   Next Obligation.
-    apply sig_eq ; extensionality pre ; extensionality post ; apply sig_eq ; apply sprop_ext.
+    apply sig_eq ; apply boolp.funext => pre ; apply boolp.funext => post ; apply sig_eq ; apply sprop_ext.
     do 2 split ; cbv.
     apply (proj2_sig c) => //=.
     move=> ? ? ; apply (proj2_sig (post _)) ; assumption.
@@ -371,7 +358,6 @@ Section Pred.
 (*-----------------------a forgotten section
   Import SPropNotations.
   Import SPropAxioms.
-  Import FunctionalExtensionality.
 
   Definition Pred X := X -> Prop.
   Definition Pred_ret : forall A, A -> Pred A := fun _ x y => y = x.
@@ -382,17 +368,17 @@ Section Pred.
   Program Definition PredM : Monad :=
     @mkMonad Pred Pred_ret Pred_bind _ _ _.
   Next Obligation.
-    cbv ; extensionality y ; apply sprop_ext ; do 2 constructor.
+    cbv ; apply boolp.funext => y ; apply sprop_ext ; do 2 constructor.
     move=> [? [H ?]] ; induction H=> //.
     move=> ? ; eexists ; split=> //.
   Qed.
   Next Obligation.
-    cbv ; extensionality y ; apply sprop_ext ; do 2 constructor.
+    cbv ; apply boolp.funext => y ; apply sprop_ext ; do 2 constructor.
     move=> [? [? H]] ; induction H=> //.
     move=> ? ; eexists ; split=> // ; by [].
   Qed.
   Next Obligation.
-    cbv ; extensionality y ; apply sprop_ext ; do 2 constructor.
+    cbv ; apply boolp.funext => y ; apply sprop_ext ; do 2 constructor.
     move=> [? [[? [? ?]] ?]] ; eexists ; split ; [|eexists; split] ; eassumption.
     move=> [? [? [? [? ?]]]] ; eexists ; split ; [eexists; split|] ; eassumption.
   Qed.
@@ -408,7 +394,6 @@ End Pred.
 Module PrePost.
   Import SPropNotations.
   Import SPropAxioms.
-  Import FunctionalExtensionality.
 
   Definition PP X := Prop  × (X -> Prop).
 
@@ -424,14 +409,14 @@ Module PrePost.
     @mkMonad PP PP_ret PP_bind _ _ _.
 
   Next Obligation.
-    apply nprod_eq =>//= ; [|extensionality y] ; apply sprop_ext => //=.
+    apply nprod_eq =>//= ; [|apply boolp.funext => y] ; apply sprop_ext => //=.
     dintuition ; subst. compute. intuition. rewrite H0. assumption.
     do 2 split.
     intros [? []]. subst. assumption.
     eexists ; split ; [| eassumption] ; reflexivity.
   Qed.
   Next Obligation.
-    apply nprod_eq =>//= ; [|extensionality y] ;
+    apply nprod_eq =>//= ; [|apply boolp.funext => y] ;
       apply sprop_ext => //= ; try by dintuition.
     compute. apply box. intuition.
     do 2 split.
@@ -439,7 +424,7 @@ Module PrePost.
     move=> ? ; eexists ; split. eassumption. reflexivity.
   Qed.
   Next Obligation.
-    apply nprod_eq =>//= ; [|extensionality y] ; apply sprop_ext => //=.
+    apply nprod_eq =>//= ; [|apply boolp.funext => y] ; apply sprop_ext => //=.
     compute. apply box. intuition. apply H1. exists x. intuition.
     apply H1. assumption.
     destruct H as [x0 [pf_nsnd_f pf_nsnd_c]].
@@ -517,7 +502,6 @@ Module  StrongestPostcondition.
 (*---------------------------------- a forgotten module
   Import SPropNotations.
   Import SPropAxioms.
-  Import FunctionalExtensionality.
 
   Record SPropOver (p:Prop) := mkOver { base :> Prop ; over : base -> p }.
 
@@ -557,7 +541,7 @@ Module  StrongestPostcondition.
   Program Definition SP_monad : Monad := @mkMonad SP SP_ret SP_bind _ _ _.
 
   Next Obligation.
-    apply sig_eq ; extensionality p ; extensionality y ; apply SPropOver_eq ;
+    apply sig_eq ; apply boolp.funext => p ; apply boolp.funext => y ; apply SPropOver_eq ;
       simpl ; split.
     intros [x H] ; move: (over H) => [_?] ; subst ;
       move: H ; apply (proj2_sig (f a)) ; intuition.
@@ -565,13 +549,13 @@ Module  StrongestPostcondition.
   Qed.
 
   Next Obligation.
-    apply sig_eq ; extensionality p ; extensionality y ; apply SPropOver_eq ;  simpl ; split.
+    apply sig_eq ; apply boolp.funext => p ; apply boolp.funext => y ; apply SPropOver_eq ;  simpl ; split.
     intros [? []] ; subst ; assumption.
     intros H ; eexists ; intuition ; eassumption.
   Qed.
 
   Next Obligation.
-    apply sig_eq ; extensionality p ; extensionality y ; apply SPropOver_eq ;  simpl ; split.
+    apply sig_eq ; apply boolp.funext => p ; apply boolp.funext => y ; apply SPropOver_eq ;  simpl ; split.
 
     intros [x0 H].
     move: (over H) => [x1 H1]; exists x1 ; exists x0; move: H.
@@ -676,11 +660,10 @@ Section Adjunctions.
    Next Obligation. destruct H ; assumption. Qed.
    Next Obligation. destruct H0; split ; auto. Qed.
 
-   Import FunctionalExtensionality.
    Lemma sp2pred2sp_id : forall A (sp : ForwardPredTransformer A),
        pred2sp (sp2pred sp) = sp.
    Proof.
-     move=> A sp. apply sig_eq. extensionality p. extensionality r.
+     move=> A sp. apply sig_eq. apply boolp.funext => p. apply boolp.funext => r.
      apply SPropOver_eq. split; cbv.
      move=> [Hp]. apply (sp∙2). trivial.
      move=> H; split. exact (over H). move:H ;apply (sp∙2)=> //.
@@ -688,7 +671,7 @@ Section Adjunctions.
 
    Lemma pred2sp2pred_id : forall A (p : PredOM A), sp2pred (pred2sp p) = p.
    Proof.
-     move=> A p; rewrite /sp2pred /pred2sp /= ; extensionality r.
+     move=> A p; rewrite /sp2pred /pred2sp /= ; apply boolp.funext => r.
      apply SPropAxioms.sprop_ext; do 2 split; move=> // [_ ?] //.
    Qed.
 

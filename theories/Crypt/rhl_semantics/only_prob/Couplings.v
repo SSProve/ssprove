@@ -1,13 +1,11 @@
-From SSProve.Mon Require Import FiniteProbabilities SPropMonadicStructures SpecificationMonads MonadExamples SPropBase FiniteProbabilities.
 From Stdlib Require Import RelationClasses Morphisms.
-From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples Commutativity.
+From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum.
 Set Warnings "notation-overridden,ambiguous-paths".
 Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 From SSProve.Crypt Require Import Axioms ChoiceAsOrd only_prob.SubDistr.
 
-Import SPropNotations.
 Import Num.Theory.
 
 Local Open Scope ring_scope.
@@ -369,17 +367,17 @@ End Forall_exists.
 (*     unfold SDistr_bind, SDistr_unit. *)
 (*     rewrite dletE. *)
 (*     assert ((fun x0 : A1 => c1 x0 * (\dlet_(y0 <- c2) dunit (T:=prod_choiceType A1 A2) (x0, y0)) (x, y)) = (fun x0 : A1 => c1 x0 * psum (fun y0 : A2 => c2 y0 * dunit (T:=prod_choiceType A1 A2) (x0, y0)  (x, y)))) as H. *)
-(*     { extensionality x0. rewrite dletE. reflexivity. } *)
+(*     { apply boolp.funext => x0. rewrite dletE. reflexivity. } *)
 (*     rewrite H. clear H. *)
 (*     assert ((fun x0 : A1 => *)
 (*                c1 x0 * psum (fun y0 : A2 => c2 y0 * dunit (T:=prod_choiceType A1 A2) (x0, y0) (x, y))) = *)
 (*             (fun x0 : A1 => *)
 (*                psum (fun y0 : A2 => c1 x0 * c2 y0 * (dunit (x0, y0) (x, y))))). *)
-(*     { extensionality x0. *)
+(*     { apply boolp.funext => x0. *)
 (*       rewrite -psumZ. *)
 (*       2: { admit. } *)
 (*       apply f_equal. *)
-(*       extensionality y0. *)
+(*       apply boolp.funext => y0. *)
 (*       simpl. rewrite dunit1E. *)
 (*       apply GRing.mulrA. } *)
 (*     rewrite H. clear H. *)

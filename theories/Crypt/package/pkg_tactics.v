@@ -59,7 +59,7 @@ Ltac package_obtac :=
   subrelation (pointwise_relation A RB) eq.
 Proof.
   intros f g Hfg.
-  apply functional_extensionality.
+  apply boolp.funext.
   intro x. apply sb. apply Hfg.
 Qed.
 
@@ -69,42 +69,42 @@ Qed.
   Proper (eq ==> pointwise_relation (tgt o) eq ==> eq) (@opr A o).
 Proof.
   simpl_relation.
-  f_equal. apply functional_extensionality. auto.
+  f_equal. apply boolp.funext. auto.
 Qed.
 
 #[export] Instance getr_morphism (A : choiceType) (l : Location) :
   Proper (pointwise_relation (Value l) eq ==> eq) (@getr A l).
 Proof.
   simpl_relation.
-  f_equal. apply functional_extensionality. auto.
+  f_equal. apply boolp.funext. auto.
 Qed.
 
 #[export] Instance sampler_morphism (A : choiceType) o :
   Proper (pointwise_relation (Arit o) eq ==> eq) (@sampler A o).
 Proof.
   simpl_relation.
-  f_equal. apply functional_extensionality. auto.
+  f_equal. apply boolp.funext. auto.
 Qed.
 
 #[export] Instance bind_morphism (A B : choiceType) :
   Proper (eq ==> pointwise_relation A eq ==> eq) (@bind A B).
 Proof.
   simpl_relation.
-  f_equal. apply functional_extensionality. auto.
+  f_equal. apply boolp.funext. auto.
 Qed.
 
 #[export] Instance cmd_bind_morphism (A B : choiceType) :
   Proper (eq ==> pointwise_relation A eq ==> eq) (@cmd_bind A B).
 Proof.
   simpl_relation.
-  f_equal. apply functional_extensionality. auto.
+  f_equal. apply boolp.funext. auto.
 Qed.
 
 #[export] Instance bindrFree_morphism (A B : choiceType) c k :
   Proper (eq ==> pointwise_relation A eq ==> eq) (@FreeProbProg.bindrFree c k A B).
 Proof.
   simpl_relation.
-  f_equal. apply functional_extensionality. auto.
+  f_equal. apply boolp.funext. auto.
 Qed.
 
 Lemma valid_empty_package :

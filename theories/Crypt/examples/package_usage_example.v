@@ -8,12 +8,8 @@ Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-forma
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype choice seq.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
-From SSProve.Crypt Require Import RulesStateProb Package Prelude fmap_extra.
+From SSProve.Crypt Require Import Package.
 Import PackageNotation.
-
-From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
-
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".

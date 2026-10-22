@@ -1,5 +1,5 @@
-From Stdlib Require Import ssreflect ssrfun ssrbool.
-From Stdlib Require FunctionalExtensionality.
+From Stdlib Require Import ssreflect ssrfun ssrbool
+  FunctionalExtensionality.
 
 From SSProve.Mon Require Export Base.
 From Stdlib Require Import Relation_Definitions Morphisms.
@@ -17,10 +17,9 @@ Section Commutations.
 
   Definition swap {A B} (ab : A × B) : B × A := ⟨nsnd ab, nfst ab⟩.
 
-  Import FunctionalExtensionality.
   Lemma eq_bind {A B} (m : M A) :
     forall (f1 f2 : A -> M B), (forall a, f1 a = f2 a) -> bind m f1 = bind m f2.
-  Proof. move=> ? ? /functional_extensionality -> //. Qed.
+  Proof. move=> ? ? /boolp.funext -> //. Qed.
 
   Lemma map_ret {A B} (f : A -> B) (a : A) : f <$> ret a = @ret M _ (f a).
   Proof. rewrite /map /bind monad_law1 //. Qed.
@@ -42,11 +41,10 @@ Section Commutations.
     move=> /(commute_elim (fun p => ret (swap p))) //=.
   Qed.
 
-  Import FunctionalExtensionality.
   Lemma commute_ret {A B} (a : A) (mb : M B) : commute (ret a) mb.
   Proof.
     rewrite /commute /bind monad_law1 ; f_equal.
-    extensionality a2; rewrite monad_law1 //.
+    apply boolp.funext => a2; rewrite monad_law1 //.
   Qed.
 
   Ltac apply_commute_elim H :=
@@ -82,7 +80,6 @@ Section FromFreeCommute.
   Let θ1 := OpSpecEffObs wop1.
   Let θ2 := OpSpecEffObs wop2.
 
-  Import FunctionalExtensionality.
   Lemma fromFreeCommute A1 A2 : forall c1 c2, commute (θ1 A1 c1) (θ2 A2 c2).
   Proof.
     move=> c1.
@@ -104,7 +101,6 @@ Section CommuteEffectObs.
     relativeMonad_precomposition typeCat_prod (ordmonad_to_relmon W).
 
   Import SPropNotations.
-  Import FunctionalExtensionality.
   Program Definition commute_effObs : RelationalEffectObservation0 M1 M2 Wrel
     :=
       mkREO0 M1 M2 Wrel
@@ -112,11 +108,11 @@ Section CommuteEffectObs.
                                                (fun a2=> ret ⟨a1,a2⟩))⦒) _ _.
   Next Obligation. move=> ? ? H ; induction H; reflexivity. Qed.
   Next Obligation.
-    apply sig_eq=> /= ; extensionality a=> /=.
+    apply sig_eq=> /= ; apply boolp.funext => a=> /=.
     now do 2 rewrite mon_morph_ret /bind monad_law1.
   Qed.
   Next Obligation.
-    apply sig_eq=> /= ; extensionality x=> /=.
+    apply sig_eq=> /= ; apply boolp.funext => x=> /=.
     rewrite mon_morph_bind {1 2}/bind monad_law3; repeat rewrite -/bind.
     under eq_bind => a.
       under eq_bind => b.
@@ -125,9 +121,9 @@ Section CommuteEffectObs.
       apply_commute_elim (Hcom _ _ (nfst f a) (nsnd x)).
       over.
     rewrite /bind monad_law3; repeat rewrite -/bind.
-    f_equal ; extensionality a1.
+    f_equal ; apply boolp.funext => a1.
     rewrite /bind monad_law3; repeat rewrite -/bind.
-    f_equal ; extensionality a2.
+    f_equal ; apply boolp.funext => a2.
     rewrite /bind monad_law1 //.
   Qed.
 
@@ -144,8 +140,6 @@ Section ConverseCommute.
 
   Definition unitt : Type := unit.
 
-  Import FunctionalExtensionality.
-
   Lemma θret (A B : Type) (a : A) (b : B) : θapp A B ⟨ ret a, ret b ⟩ = ret ⟨ a, b ⟩.
 
     move: (rmm_law1 _ _ _ _ θ ⟨A,B⟩) => /(f_equal sval) e.
@@ -160,7 +154,7 @@ Section ConverseCommute.
   Lemma bind_comm : forall (M : Monad) A1 A2 A3 (f : A1 -> A2) (m : M A1) (k : A2 -> M A3), bind (f <$> m) k = bind m (fun a => k (f a)).
     move=> M A1 A2 A3 f m k //=.
     rewrite /bind (monad_law3 m).
-    f_equal; extensionality a; rewrite (monad_law1); reflexivity.
+    f_equal; apply boolp.funext => a; rewrite (monad_law1); reflexivity.
   Qed.
 
   Program Definition effobs_from_releffobs1 : MonadMorphism M1 W := @mkMorphism _ _ (fun A v => nfst <$> θapp A unitt ⟨ v, ret tt ⟩) _ _.
@@ -172,7 +166,7 @@ Section ConverseCommute.
     rewrite bind_comm.
     rewrite <- (monad_law2 (ret tt)) at 1.
     rewrite θbind //.
-    rewrite /map /bind monad_law3. f_equal; extensionality a; destruct a as [a []].
+    rewrite /map /bind monad_law3. f_equal; apply boolp.funext => a; destruct a as [a []].
     reflexivity.
   Qed.
 
@@ -187,7 +181,7 @@ Section ConverseCommute.
     rewrite bind_comm.
     rewrite <- (monad_law2 (ret tt)) at 1.
     rewrite θbind //.
-    rewrite /map /bind monad_law3. f_equal; extensionality a; destruct a as [[] a]. reflexivity.
+    rewrite /map /bind monad_law3. f_equal; apply boolp.funext => a; destruct a as [[] a]. reflexivity.
   Qed.
 
   Let θ2 := effobs_from_releffobs2.
@@ -202,13 +196,13 @@ Section ConverseCommute.
     rewrite <- (monad_law1 tt (fun _ => c2)) at 1.
     rewrite θbind /=. rewrite bind_comm.
     apply (f_equal (bind (θapp A1 unit ⟨ c1, monad_ret M2 tt ⟩))).
-    extensionality a. destruct a as [a1 []].
+    apply boolp.funext => a. destruct a as [a1 []].
     rewrite bind_comm //=.
     rewrite <- (monad_law2 c2) at 1.
-    rewrite <- (monad_law1 tt (fun _ => monad_ret M1 a1)).
+    rewrite -(monad_law1 tt (fun _ => monad_ret M1 a1)).
     rewrite θbind.
     apply (f_equal (bind (θapp unit A ⟨ monad_ret M1 tt, c2 ⟩))).
-    extensionality b. destruct b as [[] a2].
+    apply boolp.funext => b. destruct b as [[] a2].
     apply θret.
   Qed.
 
@@ -218,11 +212,11 @@ Section ConverseCommute.
     rewrite <- (monad_law1 tt (fun _ => c1)) at 1.
     rewrite θbind /=. rewrite bind_comm.
     congr bind.
-    extensionality a. destruct a as [[] a2].
+    apply boolp.funext => a. destruct a as [[] a2].
     rewrite bind_comm //=.
     rewrite <- (monad_law2 c1) at 1. rewrite <- (monad_law1 tt (fun _ => monad_ret M2 a2)).
     rewrite θbind.
-    congr bind. extensionality b. destruct b as [a1 []].
+    congr bind. apply boolp.funext => b. destruct b as [a1 []].
     apply θret.
   Qed.
 

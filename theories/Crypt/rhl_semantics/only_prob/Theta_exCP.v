@@ -4,7 +4,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 From SSProve.Mon Require Import SpecificationMonads SPropBase SPropMonadicStructures.
 From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
-From SSProve.Crypt Require Import ChoiceAsOrd SubDistr Couplings Axioms Casts.
+From SSProve.Crypt Require Import ChoiceAsOrd SubDistr Couplings Axioms.
 From HB Require Import structures.
 
 Import SPropNotations.
@@ -136,9 +136,10 @@ Definition kd {A1 A2 B1 B2 : Type} {chA1 : Choice A1} {chA2 : Choice A2}
   { kd : A1 * A2 -> SDistr (F_choice_prod ⟨ Choice.Pack chB1, Choice.Pack chB2 ⟩) |
     (forall (x1 : A1 * A2), (dA x1 > 0) = true -> coupling (kd x1) (f1 (fst x1)) (f2 (snd x1)) /\ forall (a3 : B1) (a4 : B2), 0 < kd x1 (a3, a4) -> (π (a3, a4))) }.
 Proof.
-  apply (@schoice (A1 * A2) (SDistr (F_choice_prod ⟨ Choice.Pack chB1, Choice.Pack chB2 ⟩))
+  apply (@all_sig (A1 * A2) (fun _ => SDistr (F_choice_prod ⟨ Choice.Pack chB1, Choice.Pack chB2 ⟩))
                   (fun a b => (0 < dA _) = true -> (coupling b _ _) /\ (forall (a3 : B1) (a4 : B2), 0 < b (a3, a4) -> π (a3, a4)))).
   move => [a1 a2].
+  apply cid.
   destruct (0 < dA (a1, a2)) eqn: K.
   - move: (integral a1 a2 K) => H.
     (* apply Prop2SProp_truthMorphism_rightLeft. *)

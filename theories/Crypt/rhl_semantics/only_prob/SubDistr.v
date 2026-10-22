@@ -38,7 +38,7 @@ Section Extensionality_for_distr.
   distr.mu mu =1 distr.mu nu -> mu = nu. Proof.
     move=> A [mu muz mu_smbl mu_psum] [nu nuz nu_smbl nu_psum].  simpl. intro H.
     move: muz mu_smbl mu_psum nuz nu_smbl nu_psum. apply boolp.funext in H.
-    rewrite H. intuition. f_equal. all: apply proof_irrelevance.
+    rewrite H. intuition. f_equal. all: apply boolp.Prop_irrelevance.
   Qed.
 
 End Extensionality_for_distr.

@@ -1,18 +1,7 @@
 From Stdlib Require Import
      Relation_Definitions RelationClasses Morphisms Utf8.
 
-From SSProve.Mon Require Import
-     FiniteProbabilities
-     SPropMonadicStructures
-     SpecificationMonads
-     MonadExamples
-     SPropBase.
-
-From SSProve.Relational Require Import
-     OrderEnrichedCategory
-     OrderEnrichedRelativeMonadExamples
-     Commutativity
-     GenericRulesSimple.
+From SSProve.Relational Require Import OrderEnrichedCategory.
 
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import
@@ -35,7 +24,6 @@ From SSProve.Crypt Require Import
      FreeProbProg
      Casts.
 
-Import SPropNotations.
 Import Num.Theory.
 Import Order.POrderTheory.
 

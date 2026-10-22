@@ -26,14 +26,13 @@ Section Algebra.
     move=> ? ? H. apply oalg_mono ; assumption.
   Qed.
 
-  Import FunctionalExtensionality.
   Program Definition mor : MonadMorphism M WPSpecMonad :=
     @mkMorphism _ _ mor_underlying _ _.
   Next Obligation.
-    apply sig_eq; extensionality post; cbv ; rewrite monad_law1 malg_ret //.
+    apply sig_eq; apply boolp.funext => post; cbv ; rewrite monad_law1 malg_ret //.
   Qed.
   Next Obligation.
-    apply sig_eq ; extensionality post; cbv; rewrite monad_law3 malg_bind //.
+    apply sig_eq ; apply boolp.funext => post; cbv; rewrite monad_law3 malg_bind //.
   Defined.
 
   Definition D_wp := @Dθ _ _ mor.
@@ -54,7 +53,7 @@ Section UpdateMonadEffectObservation.
     move=> ? ? H ? ; apply H.
   Qed.
   Next Obligation.
-    compute. f_equal. apply ax_proof_irrel.
+    compute. f_equal. apply boolp.Prop_irrelevance.
   Qed.
   Next Obligation.
     apply sig_eq ; simpl. reflexivity.
@@ -100,7 +99,6 @@ Section Option.
   Let SP := ForwardPredTransformer.
 
 
-  Import FunctionalExtensionality.
   Import SPropNotations.
 
   Section TotalSPNotExactlyMorphism.
@@ -142,7 +140,7 @@ Section Option.
     erewrite monad_law1.
     move:(f a) => [?|] //=.
     apply sig_eq=> //=.
-    extensionality pre ; extensionality y.
+    apply boolp.funext => pre ; apply boolp.funext => y.
     apply SPropOver_eq.
     split.
     move=> H ; destruct H.
@@ -181,13 +179,12 @@ Section FreeMonadEffectObservation.
     | @opr _ _ _ s k => bind (OpContSpecs s) (fun ps => OpSpec_mor (k ps))
     end.
 
-  Import FunctionalExtensionality.
   Program Definition OpSpecEffObs : MonadMorphism Free W :=
     @mkMorphism _ _ OpSpec_mor _ _.
   Next Obligation.
     elim m=> [?|? ? IH] //=.
     rewrite /bind /ret monad_law1 //.
-    rewrite /bind monad_law3 ; f_equal. extensionality ps ; apply IH.
+    rewrite /bind monad_law3 ; f_equal. apply boolp.funext => ps ; apply IH.
   Qed.
 
   Definition OpSpecWP : Dijkstra W := Dθ OpSpecEffObs.
@@ -292,13 +289,12 @@ Section FreeDijkstraMonads.
   (* Assuming that the preorder on W is actually an order should
      be enough to go forward but that looks quite annoying to prove... *)
 
-  (* Import FunctionalExtensionality. *)
   (* Import SPropNotations. *)
   (* Notation "w1 ≃ w2" := (w1 ≤ w2 /\ w2 ≤ w1) (at level 65). *)
   (* Context (Wantisym : forall A (w1 w2 : W A), w1 ≃ w2 -> w1 = w2). *)
   (* Lemma kleisli_antisym A B (w1 w2 : A -> W B) : (forall a, w1 a ≃ w2 a) -> w1 = w2.  *)
   (* Proof. *)
-  (*   move=> H ; extensionality a ; apply Wantisym ; apply H. *)
+  (*   move=> H ; apply boolp.funext => a ; apply Wantisym ; apply H. *)
   (* Qed. *)
 
   (* Lemma fd_weaken_refl A w1 (m:@FreeD A w1) (H : w1 ≤ w1) : *)
@@ -398,8 +394,6 @@ End SumOfTheories.
 
 (*   End GenRecTelescopes. *)
 
-
-(*   Import FunctionalExtensionality. *)
 
 (*   Context (f : forall (d:Dom), GenRecExt d (Cod d) (inv d)). *)
 (*   Equations(noind) eval {C w d} (c : GenRecExt d C w) : DBase C w *)
@@ -526,7 +520,6 @@ End SumOfTheories.
 (* Section Pure. *)
 (*   Let W := MonoContProp. *)
 (*   Import SPropNotations. *)
-(*   Import FunctionalExtensionality. *)
 
 (*   Definition Pure_car A (w:W A) : Type := *)
 (*     { f : forall p, proj1_sig w p -> { a : A | p a } *)

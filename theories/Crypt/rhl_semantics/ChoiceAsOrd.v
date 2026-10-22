@@ -1,10 +1,12 @@
-From SSProve.Mon Require Import SPropBase.
-From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
-From SSProve.Crypt Require Import Casts.
 Set Warnings "-notation-overridden".
-From mathcomp Require Import all_ssreflect.
+From mathcomp Require Import all_ssreflect boolp.
 Set Warnings "notation-overridden".
-From mathcomp Require boolp.
+
+From SSProve.Mon Require Import SPropBase.
+From SSProve.Relational Require Import
+  OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
+
+From Equations Require Import Equations.
 
 Import SPropNotations.
 
@@ -59,9 +61,9 @@ Section Prod_of_choiceTypes.
       simpl in *. move: (H1 x1) (H2 x2) => eq1 eq2.
       destruct eq1, eq2. reflexivity.
     - move => [C1 C2]. rewrite /F_choice_prod_morph /=.
-      apply: boolp.funext => c. by destruct c.
+      apply: funext => c. by destruct c.
     - move =>  [C11 C12] [C21 C22] [C31 C32] [f1 f2] [g1 g2].
-      simpl in *. apply: boolp.funext => x. by destruct x.
+      simpl in *. apply: funext => x. by destruct x.
   Defined.
 
   Definition choice_fst_proj : forall {A1 A2 : ord_choiceType},
