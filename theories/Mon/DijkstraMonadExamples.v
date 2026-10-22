@@ -264,9 +264,8 @@ Section FreeDijkstraMonads.
     : FreeD (bind wm wf).
   Proof.
     revert wf f; induction m => wf0 f0.
-    apply (fd_weaken (f0 a)). rewrite -monad_law1 /bind.
-    Check omon_bind.
-                               apply (@omon_bind W). [assumption| reflexivity].
+    apply (fd_weaken (f0 a)). rewrite -monad_law1;
+                               apply omon_bind; [assumption| reflexivity].
     simple refine (@FDop _ s  _ _ (fun x => _)).
     apply (OpPartialRan (w0:=fun x => bind (proj1_sig w' x) wf0)).
     rewrite /bind -monad_law3.

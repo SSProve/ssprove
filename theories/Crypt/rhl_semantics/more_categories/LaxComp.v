@@ -63,6 +63,7 @@ Section Comp.
   Let J13 := ord_functor_comp J12 J23.
   Let phi13 := phi13 J12 J23 phi12 phi23.
 
+  Set SsrOldRewriteGoalsOrder.
 
   Program Definition rlmm_comp
   (θ12 : relativeLaxMonadMorphism J12 phi12 M1 M2)
@@ -80,6 +81,7 @@ Section Comp.
     etransitivity. eapply (Comp_proper D3). reflexivity.
     eapply (ofmap_proper D2 D3 J23). apply θ12_rlmm_law1.
     rewrite {1}ord_functor_law2. rewrite {1}ord_cat_law3.
+    rewrite [ θ23_rlmm_map A ∙ ( _ ∙ _)]ord_cat_law3 || (* required for v <= Rocq 9.1 *)
     rewrite ord_cat_law3.
     eapply compVsOrder.
       rewrite ord_cat_law2. reflexivity.
