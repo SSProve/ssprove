@@ -162,7 +162,7 @@ Proof.
     2: fmap_solve.
     rewrite link_id // id_link //.
   }
-  rewrite -Advantage_link Advantage_par_empty //.
+  rewrite -Advantage_link ?Advantage_par_empty //.
 Qed.
 
 Lemma Advantage_sym :

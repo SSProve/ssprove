@@ -259,12 +259,14 @@ Section FreeDijkstraMonads.
     apply ran_mono. assumption. reflexivity.
   Defined.
 
+(*
   Definition fd_bind A B wm wf (m:@FreeD A wm) (f:forall a, @FreeD B (wf a))
     : FreeD (bind wm wf).
   Proof.
     revert wf f; induction m => wf0 f0.
-    apply (fd_weaken (f0 a)). rewrite -monad_law1;
-                               apply omon_bind; [assumption| reflexivity].
+    apply (fd_weaken (f0 a)). rewrite -monad_law1 /bind.
+    Check omon_bind.
+                               apply (@omon_bind W). [assumption| reflexivity].
     simple refine (@FDop _ s  _ _ (fun x => _)).
     apply (OpPartialRan (w0:=fun x => bind (proj1_sig w' x) wf0)).
     rewrite /bind -monad_law3.
@@ -281,6 +283,7 @@ Section FreeDijkstraMonads.
     rewrite /bind -monad_law3. apply omon_bind ; [|reflexivity].
     destruct w' as [? [? ?]] ; assumption.
   Defined.
+*)
 
   (* So far, so good, we have a carrier type with return,
      bind and weaken operations defined *)
