@@ -5,7 +5,7 @@
   attribute = "ssprove";
 
   no-rocq-yet = true;
-  default-bundle = "9.0";
+  default-bundle = "9.1";
 
   bundles."9.0" = {
     coqPackages = {
@@ -24,6 +24,15 @@
       rocq-core.override.version = "9.1";
     };
     push-branches = ["main" "rocq-9.1"];
+  };
+  bundles."9.2" = {
+    coqPackages = {
+      coq.override.version = "9.2";
+      mathcomp.job = false;
+    }; rocqPackages = {
+      rocq-core.override.version = "9.2";
+    };
+    push-branches = ["main" "rocq-9.2"];
   };
   bundles."MC-dev" = {
     coqPackages = {
