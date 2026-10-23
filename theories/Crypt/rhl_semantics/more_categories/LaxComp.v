@@ -63,7 +63,6 @@ Section Comp.
   Let J13 := ord_functor_comp J12 J23.
   Let phi13 := phi13 J12 J23 phi12 phi23.
 
-  Set SsrOldRewriteGoalsOrder.
 
   Program Definition rlmm_comp
   (θ12 : relativeLaxMonadMorphism J12 phi12 M1 M2)

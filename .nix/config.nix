@@ -10,29 +10,26 @@
   bundles."9.0" = {
     coqPackages = {
       coq.override.version = "9.0";
-      mathcomp.job = false;
     }; rocqPackages = {
       rocq-core.override.version = "9.0";
     };
-    push-branches = ["main" "rocq-9.0"];
+    push-branches = [ "main" ];
   };
   bundles."9.1" = {
     coqPackages = {
       coq.override.version = "9.1";
-      mathcomp.job = false;
     }; rocqPackages = {
       rocq-core.override.version = "9.1";
     };
-    push-branches = ["main" "rocq-9.1"];
+    push-branches = [ "main" ];
   };
   bundles."9.2" = {
     coqPackages = {
       coq.override.version = "9.2";
-      mathcomp.job = false;
     }; rocqPackages = {
       rocq-core.override.version = "9.2";
     };
-    push-branches = ["main" "rocq-9.2"];
+    push-branches = [ "main" ];
   };
   bundles."MC-dev" = {
     coqPackages = {
@@ -66,6 +63,7 @@
       mathcomp-analysis.job = false;
       mathcomp-analysis.override.version = "master";
     };
+    push-branches = [ "main" ];
   };
 
   cachix.coq = {};
