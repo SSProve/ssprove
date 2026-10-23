@@ -1,3 +1,6 @@
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref }}
 jobs:
   coq:
     needs:
@@ -11,6 +14,7 @@ jobs:
     - name: Git checkout
       uses: actions/checkout@v7
       with:
+        allow-unsafe-pr-checkout: true
         fetch-depth: 0
         ref: ${{ env.target_commit }}
     - name: Determine which commit to test
@@ -25,6 +29,7 @@ jobs:
     - name: Git checkout
       uses: actions/checkout@v7
       with:
+        allow-unsafe-pr-checkout: true
         fetch-depth: 0
         ref: ${{ env.tested_commit }}
     - name: Cachix install
@@ -32,7 +37,7 @@ jobs:
       with:
         nix_path: nixpkgs=channel:nixpkgs-unstable
     - name: Cachix setup ssprove
-      uses: cachix/cachix-action@v17
+      uses: cachix/cachix-action@v16
       with:
         authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
         extraPullNames: coq, coq-community, math-comp
@@ -52,11 +57,11 @@ jobs:
         status=fetched\" >> $GITHUB_OUTPUT\nfi\n"
     - if: steps.stepCheck.outputs.status != 'fetched'
       name: 'Building/fetching previous CI target: rocq-core'
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle 
         "MC-dev" --argstr job "rocq-core"
     - if: steps.stepCheck.outputs.status != 'fetched'
       name: Building/fetching current CI target
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle 
         "MC-dev" --argstr job "coq"
   rocq-core:
     needs: []
@@ -69,6 +74,7 @@ jobs:
     - name: Git checkout
       uses: actions/checkout@v7
       with:
+        allow-unsafe-pr-checkout: true
         fetch-depth: 0
         ref: ${{ env.target_commit }}
     - name: Determine which commit to test
@@ -83,6 +89,7 @@ jobs:
     - name: Git checkout
       uses: actions/checkout@v7
       with:
+        allow-unsafe-pr-checkout: true
         fetch-depth: 0
         ref: ${{ env.tested_commit }}
     - name: Cachix install
@@ -90,7 +97,7 @@ jobs:
       with:
         nix_path: nixpkgs=channel:nixpkgs-unstable
     - name: Cachix setup ssprove
-      uses: cachix/cachix-action@v17
+      uses: cachix/cachix-action@v16
       with:
         authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
         extraPullNames: coq, coq-community, math-comp
@@ -110,7 +117,7 @@ jobs:
         status=fetched\" >> $GITHUB_OUTPUT\nfi\n"
     - if: steps.stepCheck.outputs.status != 'fetched'
       name: Building/fetching current CI target
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle 
         "MC-dev" --argstr job "rocq-core"
   ssprove:
     needs:
@@ -124,6 +131,7 @@ jobs:
     - name: Git checkout
       uses: actions/checkout@v7
       with:
+        allow-unsafe-pr-checkout: true
         fetch-depth: 0
         ref: ${{ env.target_commit }}
     - name: Determine which commit to test
@@ -138,6 +146,7 @@ jobs:
     - name: Git checkout
       uses: actions/checkout@v7
       with:
+        allow-unsafe-pr-checkout: true
         fetch-depth: 0
         ref: ${{ env.tested_commit }}
     - name: Cachix install
@@ -145,7 +154,7 @@ jobs:
       with:
         nix_path: nixpkgs=channel:nixpkgs-unstable
     - name: Cachix setup ssprove
-      uses: cachix/cachix-action@v17
+      uses: cachix/cachix-action@v16
       with:
         authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
         extraPullNames: coq, coq-community, math-comp
@@ -165,27 +174,39 @@ jobs:
         status=fetched\" >> $GITHUB_OUTPUT\nfi\n"
     - if: steps.stepCheck.outputs.status != 'fetched'
       name: 'Building/fetching previous CI target: coq'
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle 
         "MC-dev" --argstr job "coq"
     - if: steps.stepCheck.outputs.status != 'fetched'
       name: 'Building/fetching previous CI target: equations'
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle 
         "MC-dev" --argstr job "equations"
     - if: steps.stepCheck.outputs.status != 'fetched'
+      name: 'Building/fetching previous CI target: mathcomp-boot'
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle 
+        "MC-dev" --argstr job "mathcomp-boot"
+    - if: steps.stepCheck.outputs.status != 'fetched'
+      name: 'Building/fetching previous CI target: mathcomp-analysis'
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle 
+        "MC-dev" --argstr job "mathcomp-analysis"
+    - if: steps.stepCheck.outputs.status != 'fetched'
+      name: 'Building/fetching previous CI target: mathcomp-experimental-reals'
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle 
+        "MC-dev" --argstr job "mathcomp-experimental-reals"
+    - if: steps.stepCheck.outputs.status != 'fetched'
       name: 'Building/fetching previous CI target: extructures'
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle 
         "MC-dev" --argstr job "extructures"
     - if: steps.stepCheck.outputs.status != 'fetched'
       name: 'Building/fetching previous CI target: deriving'
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle 
         "MC-dev" --argstr job "deriving"
     - if: steps.stepCheck.outputs.status != 'fetched'
       name: 'Building/fetching previous CI target: mathcomp-word'
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle 
         "MC-dev" --argstr job "mathcomp-word"
     - if: steps.stepCheck.outputs.status != 'fetched'
       name: Building/fetching current CI target
-      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle
+      run: NIXPKGS_ALLOW_UNFREE=1 nix-build --no-out-link --argstr bundle 
         "MC-dev" --argstr job "ssprove"
 name: Nix CI for bundle MC-dev
 on:
@@ -195,15 +216,12 @@ on:
   pull_request_target:
     paths-ignore:
     - .github/workflows/nix-action-MC-dev.yml
-    - '**.md'
-    - '**.gitignore'
-    - '**.opam'
-    - 'LICENSE'
     types:
     - opened
     - synchronize
     - reopened
   push:
     branches:
-    - master
-  workflow_dispatch:
+    - main
+permissions:
+  contents: read

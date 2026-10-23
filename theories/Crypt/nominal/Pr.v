@@ -178,7 +178,7 @@ Section PrFstLemmas.
   Proof.
     intros VA.
     rewrite /Pr_fst Pr_code_fst 2!dmarginE 2!dlet_dlet_ext.
-    by rewrite /Pr_fst dmarginE dlet_dlet_ext.
+    by rewrite /Pr_fst ?dmarginE dlet_dlet_ext.
   Qed.
 End PrFstLemmas.
 
