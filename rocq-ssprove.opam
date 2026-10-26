@@ -18,7 +18,6 @@ depends: [
   "coq-mathcomp-experimental-reals" {>= "1.8.0"}
   "coq-mathcomp-word" {>= "3.4"}
   "coq-extructures" {(>= "0.5.0" & < "dev")}
-  "coq-deriving" {(>= "0.2.1" & < "dev")}
 ]
 build: [
   [make "-j%{jobs}%"]

@@ -8,11 +8,6 @@
 
 From Stdlib Require Import Utf8.
 
-(* !!! Import before mathcomp, to avoid overriding instances !!! *)
-(* specifically, importing after mathcomp results in conflicting instances for
-   Z_choiceType. *)
-From deriving Require Import deriving.
-
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import all_ssreflect all_algebra word_ssrZ word.
 (*From mathcomp Require Import word_ssrZ word.*)
