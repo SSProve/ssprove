@@ -6,7 +6,7 @@
   outputs = { self, nixpkgs, flake-utils }:
     let
       ssprovePkg = { lib, mkCoqDerivation, coq
-                  , equations, extructures, deriving
+                  , equations, extructures
                   , mathcomp-analysis, mathcomp-ssreflect
                   , mathcomp-experimental-reals
                   , mathcomp-word}:
@@ -21,7 +21,6 @@
             mathcomp-experimental-reals
             mathcomp-ssreflect
             mathcomp-word
-            deriving
             extructures
           ];
           meta = {

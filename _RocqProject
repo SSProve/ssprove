@@ -94,7 +94,6 @@ theories/Crypt/examples/Assumptions/tSDH.v
 # Examples
 theories/Crypt/examples/package_usage_example.v
 theories/Crypt/examples/interpreter_test.v
-theories/Crypt/examples/concrete_groups.v
 theories/Crypt/examples/PRF.v
 theories/Crypt/examples/OTP.v
 theories/Crypt/examples/KEMDEM.v
