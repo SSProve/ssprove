@@ -2,17 +2,14 @@ From Stdlib Require Import Utf8.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
-From extructures Require Import ord fset fmap ffun fperm.
-Require Import Equations.Prop.DepElim.
-From Equations Require Import Equations.
-
-From SSProve.Crypt Require Import Axioms SubDistr pkg_composition
-  Prelude Package Nominal NominalPrelude.
 
 From HB Require Import structures.
-
 (* Supress warnings due to use of HB *)
 Set Warnings "-redundant-canonical-projection,-projection-no-head-constant".
+
+From extructures Require Import ord fset fmap ffun fperm.
+From SSProve.Crypt Require Import Axioms SubDistr pkg_composition
+  Prelude Package Nominal NominalPrelude.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".

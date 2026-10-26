@@ -15,10 +15,6 @@ Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd
   choice_type pkg_core_definition fmap_extra.
-From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
-
-Set Equations With UIP.
 
 Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 Set Bullet Behavior "Strict Subproofs".

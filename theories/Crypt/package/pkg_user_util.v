@@ -87,14 +87,9 @@ From SSProve.Crypt Require Import Axioms Prelude pkg_core_definition pkg_composi
   pkg_heap pkg_invariants pkg_distr pkg_rhl pkg_tactics choice_type fmap_extra.
 From Stdlib Require Import Utf8 Setoids.Setoid Classes.Morphisms.
 
-From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
-
 Import Num.Def.
 Import Num.Theory.
 Import Order.POrderTheory.
-
-Set Equations With UIP.
 
 Import PackageNotation.
 

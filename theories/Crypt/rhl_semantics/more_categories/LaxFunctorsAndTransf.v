@@ -6,7 +6,7 @@ Set Warnings "notation-overridden".
 From SSProve.Mon Require Import SPropBase.
 From SSProve.Relational Require Import OrderEnrichedCategory.
 
-Global Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
+Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
 
 (*
 This file defines lax functors and lax natural transformations which are

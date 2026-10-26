@@ -15,13 +15,8 @@ From HB Require Import structures.
 From extructures Require Import ord fset fmap.
 From SSProve.Crypt Require Import Prelude Axioms fmap_extra
   choice_type pkg_core_definition pkg_heap.
-Require Import Equations.Prop.DepElim.
-From Equations Require Import Equations.
 
 Import Num.Theory.
-
-Set Equations With UIP.
-Set Equations Transparent.
 
 Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 Set Bullet Behavior "Strict Subproofs".
@@ -666,8 +661,6 @@ Inductive heap_val :=
 | hpv_l (ℓ : Location) (v : ℓ)
 | hpv_r (ℓ : Location) (v : ℓ).
 
-Derive NoConfusion for heap_val.
-
 Fixpoint update_pre (l : list heap_val) (pre : precond) :=
   match l with
   | hpv_l ℓ v :: l => set_lhs ℓ v (update_pre l pre)
@@ -805,15 +798,16 @@ Proof.
   elim => // l lv ih s0 s1 h0 h1 h e.
   destruct l as [l v'|l v'].
   - simpl in *.
-    destruct update_heaps eqn:e1. noconf e.
+    destruct update_heaps eqn:e1. injection e => {e} ? ?; subst.
     destruct (_ == _) eqn:e.
     + rewrite /get_heap setmE e /=.
-      by noconf h.
+      injection h => {h} ?. by subst.
     + rewrite get_set_heap_neq ?e //.
       eapply ih => //.
       apply e1.
   - simpl in *.
-    destruct update_heaps eqn:e1. noconf e.
+    destruct update_heaps eqn:e1.
+    injection e => {e} ? ?. subst.
     eapply ih => //.
     apply e1.
 Qed.
@@ -828,14 +822,16 @@ Proof.
   elim => // l lv ih s0 s1 h0 h1 h e.
   destruct l as [l v'|l v'].
   - simpl in *.
-    destruct update_heaps eqn:e1. noconf e.
+    destruct update_heaps eqn:e1.
+    injection e => {e} ? ?. subst.
     eapply ih => //.
     apply e1.
   - simpl in *.
-    destruct update_heaps eqn:e1. noconf e.
+    destruct update_heaps eqn:e1.
+    injection e => {e} ? ?. subst.
     destruct (_ == _) eqn:e.
     + rewrite /get_heap setmE e.
-      by noconf h.
+      injection h => {h} ?. by subst.
     + rewrite get_set_heap_neq ?e //.
       eapply ih => //.
       apply e1.
@@ -860,10 +856,11 @@ Lemma lookup_hpv_l_None_spec :
     get_heap h₀ ℓ = get_heap s₀ ℓ.
 Proof.
   intros ℓ. elim.
-  { intros ? ? ? ? ? H. by noconf H. }
+  { intros ? ? ? ? ? H. injection H => ? ?. by subst. }
   intros a l ih s0 s1 h0 h1 h e.
   destruct a; simpl in *;
-    destruct update_heaps eqn:e1; noconf e.
+    destruct update_heaps eqn:e1;
+      injection e => {e} ? ?; subst.
   - destruct (_ == _) eqn:e => //.
     transitivity (get_heap h2 ℓ).
     1: rewrite /get_heap setmE e //.
@@ -880,10 +877,11 @@ Lemma lookup_hpv_r_None_spec :
     get_heap h₁ ℓ = get_heap s₁ ℓ.
 Proof.
   intros ℓ. elim.
-  { intros ? ? ? ? ? H. by noconf H. }
+  { intros ? ? ? ? ? H. injection H => ? ?. by subst. }
   intros a l ih s0 s1 h0 h1 h e.
   destruct a; simpl in *;
-    destruct update_heaps eqn:e1; noconf e.
+    destruct update_heaps eqn:e1;
+      injection e => {e} ? ?; subst.
   - eapply ih => //.
     apply e1.
   - destruct (_ == _) eqn:e => //.

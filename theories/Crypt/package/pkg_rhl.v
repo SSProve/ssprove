@@ -14,20 +14,12 @@ Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From SSProve.Mon Require Import SPropBase.
 From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
-  RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
+  RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens FreeProbProg
   StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
   pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_advantage
   pkg_invariants pkg_distr Casts fmap_extra.
-Require Import Equations.Prop.DepElim.
-From Equations Require Import Equations.
-
-(* Must come after importing Equations.Equations, who knows why. *)
-From SSProve.Crypt Require Import FreeProbProg.
 
 Import Num.Theory.
-
-Set Equations With UIP.
-Set Equations Transparent.
 
 Import SPropNotations.
 Import PackageNotation.
@@ -46,6 +38,8 @@ Set Primitive Projections.
 #[local] Open Scope package_scope.
 #[local] Open Scope ring_scope.
 #[local] Open Scope real_scope.
+
+Ltac noconf H := injection H; intros; subst.
 
 Notation " r⊨ ⦃ pre ⦄ c1 ≈ c2 ⦃ post ⦄ " :=
   (semantic_judgement _ _ (repr c1) (repr c2) (fromPrePost pre post))

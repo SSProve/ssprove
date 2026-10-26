@@ -7,7 +7,7 @@ Set Warnings "notation-overridden".
 
 Import SPropNotations.
 
-Global Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
+Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
 
 (*
 In this file we define left relative adjunctions, the relative equivalent of adjunctions.

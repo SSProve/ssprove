@@ -13,10 +13,6 @@ From extructures Require Import ord fset fmap.
 (* From Jasmin Require Import word. *)
 From SSProve.Crypt Require Import jasmin_word.
 
-From Equations Require Import Equations.
-
-Set Equations With UIP.
-
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 

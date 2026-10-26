@@ -14,11 +14,6 @@ From extructures Require Import ord fset fmap.
 From SSProve.Mon Require Import SPropBase.
 From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd
   choice_type pkg_core_definition.
-Require Import Equations.Prop.DepElim.
-From Equations Require Import Equations.
-
-Set Equations With UIP.
-Set Equations Transparent.
 
 Import SPropNotations.
 

@@ -11,7 +11,7 @@ Import Num.Theory.
 Local Open Scope ring_scope.
 
 (*so that Next Obligation doesnt introduce variables by itself:*)
-Global Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
+Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
 
 (*
 In this file we develop a simple theory of couplings: their interaction
@@ -97,12 +97,7 @@ Section Weight_of_SDistr_unit.
   unfold sub_mem. intro x. unfold in_mem. simpl. rewrite dunit1E.
   intro Hx. apply /orP. left. move: Hx => /eqP. destruct (eqType_lem A a x).
   intro Hx. apply /eqP. symmetry ; assumption.
-  assert (a == x = false).
-    apply Bool.not_true_is_false.
-    intro Hax. unshelve eapply elimT in Hax. exact (a = x).
-    contradiction. apply eqP. rewrite H0. simpl. intro H1. epose (H2 := H1 _).
-    contradiction.
-    Unshelve. 2: reflexivity.
+  by move: H => /eqP /negPf ->.
   rewrite big_cons big_nil.
   rewrite GRing.addr0. unfold SDistr_unit. rewrite dunit1E.
   rewrite refl_true. simpl. rewrite normr1. reflexivity.
@@ -173,13 +168,10 @@ Section Couplings_vs_ret.
     case HXA : (x1 != a1).
       - eapply lmg_SDistr_unit. assumption. unshelve eapply elimT in HXA.
         exact (~(x1 = a1)). intro. symmetry in H0. apply HXA. assumption.
-        eapply Bool.iff_reflect. split.
-          intro. assumption.
-          intros. intro. rewrite H1 in HXA. move: HXA => /negP HXA.
-          apply HXA. apply /eqP. reflexivity.
+        apply negPP, eqP.
       -  unshelve eapply introN in H. exact ((x1,x2)==(a1,a2)). all: revgoals. apply eqP.
          simpl in H.
-         unfold "==" in H. simpl in H. rewrite Bool.negb_andb in H.
+         unfold "==" in H. simpl in H. rewrite negb_and in H.
          rewrite HXA in H. simpl in H.
         eapply rmg_SDistr_unit. assumption. move: H => /negP H.
         intro Ha2x2. rewrite Ha2x2 in H. apply H. apply /eqP. reflexivity.
@@ -201,7 +193,7 @@ Section Couplings_vs_ret.
       move=> [x1 x2]. unfold in_mem. simpl.
       intro Hsupp. apply /orP. left.
       move: Hsupp. apply contraLR. intro Hxadiff. unfold "==". simpl.
-      rewrite Bool.negb_involutive. rewrite -/(_ == _).
+      rewrite negbK. rewrite -/(_ == _).
       apply /eqP. unshelve eapply lmg_rmg_SDistr_unit. assumption.
       move: Hxadiff => /negP Hxadiff. intro bla. rewrite bla in Hxadiff.
       apply Hxadiff. apply eq_refl.
@@ -225,7 +217,7 @@ Section Couplings_vs_ret.
       rewrite dunit1E. rewrite xa_lem_left. rewrite refl_true. simpl.
       unshelve eapply d_is_one. assumption.
     rewrite dunit1E. assert ((a1, a2) == (x1, x2) = false).
-    apply Bool.negb_true_iff. apply /negP. move=> /eqP hxa. symmetry in hxa.
+    apply /negP. move=> /eqP hxa. symmetry in hxa.
     apply xa_lem_right. assumption.
     rewrite H. simpl. unshelve eapply lmg_rmg_SDistr_unit. assumption.
     assumption.
