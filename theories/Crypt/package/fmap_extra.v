@@ -4,10 +4,6 @@ Set Warnings "-notation-overridden".
 From mathcomp Require Import ssreflect eqtype choice seq ssrfun ssrbool.
 Set Warnings "notation-overridden".
 
-From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
-Set Equations With UIP.
-
 From extructures Require Import ord fset fmap.
 
 #[local] Open Scope fset.
@@ -172,7 +168,8 @@ Proof.
   destruct (k' == k) eqn:E.
   - left.
     move: E => /eqP -> {k'}.
-    by noconf H.
+    injection H => ?.
+    by subst.
   - by right.
 Qed.
 
@@ -207,7 +204,7 @@ Ltac fmap_invert H :=
   (by apply fhas_empty in H) ||
   ( let x := fresh "x" in
     apply fhas_set_case in H ;
-    destruct H as [x|H]; [ noconf x | fmap_invert H ]
+    destruct H as [x|H]; [ subst x | fmap_invert H ]
   ).
 
 Create HintDb fmap_solve_db.

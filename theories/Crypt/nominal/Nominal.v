@@ -10,11 +10,6 @@ From extructures Require Import ord fset fmap ffun fperm.
 
 From HB Require Import structures.
 
-From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
-
-Set Equations With UIP.
-
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
@@ -94,18 +89,21 @@ Proof. move => π x. rewrite -rename_comp fperm_mulsV rename_id //. Qed.
 (* Instances of actionType *)
 
 Program Definition atom_Action := HasAction.Build atom appf _ _.
-Obligation 2. rewrite fpermM //. Qed.
+Obligation 1. done. Qed.
+Obligation 2. move=> f g x /=. rewrite fpermM //. Qed.
 HB.instance Definition _ : HasAction atom := atom_Action.
 
 
 Program Definition fset_HasAction {X : actionOrdType} : HasAction {fset X}
   := HasAction.Build {fset X} (λ π xs, imfset (rename π) xs) _ _.
 Obligation 1.
+  move=> X x /=.
   rewrite -{2}(imfset_id x).
   apply eq_imfset => l.
   rewrite rename_id //.
 Qed.
 Obligation 2.
+  move=> X f g x /=.
   rewrite -imfset_comp.
   apply eq_imfset => l.
   rewrite rename_comp //.
@@ -127,8 +125,14 @@ HB.instance Definition _ {X} : HasAction (option X)
 Program Definition prod_HasAction {X Y}
   : HasAction (prod X Y)
   := HasAction.Build _ (λ π '(x, y), (π ∙ x, π ∙ y)) _ _.
-Obligation 1. rewrite 2!rename_id //. Qed.
-Obligation 2. rewrite 2!rename_comp //. Qed.
+Obligation 1.
+  move=> X Y [x y] /=.
+  rewrite 2!rename_id //.
+Qed.
+Obligation 2.
+  move=> X Y f g [x y] /=.
+  rewrite 2!rename_comp //.
+Qed.
 
 HB.instance Definition _ {X Y} : HasAction (prod X Y)
   := prod_HasAction.
@@ -153,12 +157,12 @@ Program Definition fun_HasAction {X Y}
   : HasAction (X → Y)
   := HasAction.Build _ (λ π f x, π ∙ f (π^-1%fperm ∙ x)) _ _.
 Obligation 1.
-  move: x => f.
+  move=> X Y f.
   apply boolp.funext => x.
   rewrite fperm_1_inv 2!rename_id //.
 Qed.
 Obligation 2.
-  move: f g x => π π' f.
+  move=> X Y π π' f.
   apply boolp.funext => x.
   rewrite fperm_mul_inv 2!rename_comp //.
 Qed.
@@ -205,13 +209,17 @@ HB.builders Context (X : Type) (_ : DeclareDiscrete X).
 
   Program Definition to_Action := HasAction.Build X
     (λ _, id) _ _.
+  Obligation 1. done. Qed.
+  Obligation 2. done. Qed.
   HB.instance Definition _ : HasAction X := to_Action.
 
   Program Definition to_Nominal := IsNominal.Build X (λ _, fset0) _ _.
-  Obligation 2. apply fsub0set. Qed.
+  Obligation 1. done. Qed.
+  Obligation 2. move=> /= x F H. apply fsub0set. Qed.
   HB.instance Definition _ : IsNominal X := to_Nominal.
 
   Program Definition to_Discrete := IsDiscrete.Build X _.
+  Obligation 1. done. Qed.
   HB.instance Definition _ : IsDiscrete X := to_Discrete.
 HB.end.
 
@@ -432,13 +440,14 @@ Program Definition prod_IsNominal {X Y : nomType}
   : IsNominal (prod X Y)
   := IsNominal.Build _ (λ '(x, y), fsetU (supp x) (supp y)) _ _.
 Obligation 1.
-  unfold rename; simpl.
-  rewrite is_support ?is_support // => a H'.
+  move=> X Y [x y] /= π H.
+  rewrite /rename /= is_support ?is_support // => a H'.
   1,2: apply H.
   1,2: rewrite in_fsetU H' //=.
   rewrite orbT //.
 Qed.
 Obligation 2.
+  move=> /= X Y [x y] F H.
   rewrite fsubUset.
   apply /andP; split; apply support_sub => π H'.
   all: specialize (H π H').
@@ -475,11 +484,13 @@ Qed.
 Program Definition seq_HasAction {X} : HasAction (seq X)
   := HasAction.Build _ (λ π xs, map (rename π) xs) _ _.
 Obligation 1.
+  move=> X x /=.
   rewrite -{2}(map_id x).
   induction x => //=.
   rewrite IHx rename_id //.
 Qed.
 Obligation 2.
+  move=> X f g x /=.
   rewrite -map_comp.
   induction x => //=.
   rewrite IHx rename_comp //.
@@ -492,6 +503,7 @@ Program Definition seq_IsNominal {X : nomType}
   : IsNominal (seq X)
   := IsNominal.Build _ (foldr fsetU fset0 \o map supp) _ _.
 Obligation 1.
+  move=> /= X x π H.
   induction x => //=.
   change (π ∙ (a :: x)) with (π ∙ a :: π ∙ x).
   f_equal.
@@ -503,6 +515,7 @@ Obligation 1.
     rewrite in_fsetU H' orbT //.
 Qed.
 Obligation 2.
+  move=> /= X x F H.
   induction x => //=; [ apply fsub0set |].
   rewrite fsubUset.
   apply /andP; split.

@@ -233,13 +233,16 @@ Theorem bind_rule_pp {A1 A2 B1 B2 : ord_choiceType}  {S1 S2 : choiceType}
         ⦃ post ⦄ ) :
   ⊨ ⦃ pre ⦄ (bindrFree _ _ m1 f1 ) ≈ (bindrFree _ _ m2 f2) ⦃ post ⦄.
 Proof.
-  destruct S1, S2, A1, A2, B1, B2.
   eapply weaken_rule.
   - apply bind_rule with (wf := (fun '(a1, a2) => fromPrePost (fun '(s1, s2) => middle (a1, s1) (a2, s2)) post)).
     + exact judge_wm.
     + exact judge_wf.
-  - cbv.
-    intuition auto with funelim.
+  - simpl => [[h1 h2] P] d /=.
+    intuition.
+    { apply d. }
+    destruct as2 as [a2 s2].
+    split. 1: apply H.
+    apply d.
 Qed.
 
 (* Pre-condition manipulating rules *)

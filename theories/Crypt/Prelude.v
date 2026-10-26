@@ -7,15 +7,10 @@ From mathcomp Require Import all_ssreflect word.
 Set Warnings "notation-overridden".
 From HB Require Import structures.
 From extructures Require Import ord fset.
-From Equations Require Import Equations.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
-
-(* Simple products *)
-
-(* Notation "x × y" := (prod x y) (at level 80, right associativity). *)
 
 
 (* Dependent sums *)
@@ -90,22 +85,6 @@ Ltac falso :=
   end.
 
 
-(** mathcomp: derive EqDec for any ordType *)
-#[export] Instance ordType_EqDec {A : ordType} : EqDec A.
-Proof.
-  intros x y. destruct (x == y) eqn:e.
-  - move: e => /eqP. auto.
-  - move: e => /eqP. auto.
-Defined.
-
-Ltac nat_reify :=
-  repeat match goal with
-  | h : is_true (_ < _) |- _ => move: h => /ltP h
-  | h : is_true (_ <= _) |- _ => move: h => /leqP h
-  | h : is_true (_ == _) |- _ => move: h => /eqP h
-  end.
-
-
 (** Lt class, for finite types  *)
 
 Class Lt n m :=
@@ -116,6 +95,13 @@ Class Lt n m :=
 
 #[export] Hint Extern 2 (Lt ?n ?m) =>
   unfold Lt ; apply/ltP ; lia : typeclass_instances.
+
+Ltac nat_reify :=
+  repeat match goal with
+  | h : is_true (_ < _) |- _ => move: h => /ltP h
+  | h : is_true (_ <= _) |- _ => move: h => /leqP h
+  | h : is_true (_ == _) |- _ => move: h => /eqP h
+  end.
 
 #[export] Hint Extern 4 (Lt ?n) =>
   unfold Lt ; apply/ltP ; nat_reify ; lia : typeclass_instances.

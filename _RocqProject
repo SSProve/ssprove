@@ -67,7 +67,7 @@ theories/Crypt/package/pkg_invariants.v
 theories/Crypt/package/pkg_distr.v
 theories/Crypt/package/pkg_rhl.v
 theories/Crypt/package/pkg_user_util.v
-theories/Crypt/package/pkg_interpreter.v
+# theories/Crypt/package/pkg_interpreter.v
 theories/Crypt/Package.v
 
 # State + Prob
@@ -101,7 +101,7 @@ theories/Crypt/examples/RandomOracle.v
 theories/Crypt/examples/SigmaProtocol.v
 theories/Crypt/examples/Schnorr.v
 # theories/Crypt/examples/OVN.v
-theories/Crypt/examples/Executor.v
+# theories/Crypt/examples/Executor.v
 theories/Crypt/examples/PolynomialUtils.v
 
 # case-study on public-key encryption

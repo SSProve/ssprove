@@ -1,20 +1,15 @@
+From Stdlib Require Import Utf8.
 Set Warnings "-notation-overridden,-ambiguous-paths".
 From mathcomp Require Import all_ssreflect all_algebra
   reals distr realsum fingroup solvable.cyclic.
 Set Warnings "notation-overridden,ambiguous-paths".
 Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
-From Stdlib Require Import Utf8.
-From extructures Require Import ord fset fmap ffun fperm.
 From HB Require Import structures.
 
+From extructures Require Import ord fset fmap ffun fperm.
 From SSProve.Crypt Require Import Axioms SubDistr pkg_composition
   Prelude Package Nominal Fresh Pr.
-
-From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
-
-Set Equations With UIP.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
@@ -50,8 +45,8 @@ Program Definition Location_IsNominal
   : IsNominal Location
   := IsNominal.Build _ (λ (l : Location), fset1 (atomize l.1)) _ _.
 Obligation 1.
-  unfold rename; simpl.
-  rewrite H ?atomizeK; [| by destruct x].
+  move=> /= π H.
+  rewrite /rename /= H ?atomizeK; [| by destruct x].
   rewrite in_fset1 //.
 Qed.
 Obligation 2.
@@ -64,7 +59,7 @@ Obligation 2.
   rewrite /rename //= in H |- *.
   destruct x => //=.
   noconf H.
-  rewrite -(natizeK (π _)) H //.
+  rewrite -(natizeK (π _)) H0 //.
 Qed.
 
 HB.instance Definition _ : IsNominal Location
@@ -107,6 +102,7 @@ Program Definition Locations_IsNominal
   : IsNominal Locations
   := IsNominal.Build _ (λ L : Locations, atomize @: domm L) _ _.
 Obligation 1.
+  move=> π H.
   move: x H.
   refine (fmap_ind _ _); [ done |].
   move=> m H n A /dommPn H'.
@@ -492,6 +488,7 @@ Program Definition nom_package_IsNominal
   : IsNominal nom_package
   := IsNominal.Build _ (λ p, supp (loc p)) _ _.
 Obligation 1.
+  intros π H.
   apply eq_nom_package; rewrite /rename //=.
   + rewrite is_support //= supp_atoms //.
   + apply has_support, H.
