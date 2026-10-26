@@ -4,7 +4,6 @@
 
   attribute = "ssprove";
 
-  no-rocq-yet = true;
   default-bundle = "9.1";
 
   bundles."9.0" = {
