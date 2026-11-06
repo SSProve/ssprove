@@ -25,6 +25,7 @@ improved. If you find something missing or not clear enough, feel free to
    1. [Massaging relational judgments]
    1. [Proving relational judgments]
    1. [Crafting invariants]
+1. [Set-valued word carriers]
 
 ## Writing packages
 
@@ -1113,6 +1114,13 @@ It is also possible to define additional location couplings using any finite
 combination of locations from either side with `rel_app`.
 
 
+## Set-valued word carriers
+
+`jasmin_word.word sz` is a packed ring. Use `jasmin_word.wcarrier sz : Set`
+when a dependent telescope requires a small carrier. `wcarrierE` relates it
+to the packed word type, and the existing word operations accept its values.
+
+[Set-valued word carriers]: #set-valued-word-carriers
 [Writing packages]: #writing-packages
 [Raw code]: #raw-code
 [Specialised types]: #specialised-types
