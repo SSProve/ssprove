@@ -25,6 +25,7 @@ improved. If you find something missing or not clear enough, feel free to
    1. [Massaging relational judgments]
    1. [Proving relational judgments]
    1. [Crafting invariants]
+1. [Nominal equality imports]
 
 ## Writing packages
 
@@ -1113,6 +1114,16 @@ It is also possible to define additional location couplings using any finite
 combination of locations from either side with `rel_app`.
 
 
+## Nominal equality imports
+
+Nominal imports register alpha-equivalence and its renaming morphism
+without exporting the Prop-valued equality notation from `SetoidClass`.
+The private dependency preserves the Program setup used by nominal code.
+Import `Stdlib.Setoids.Setoid` and `Stdlib.Classes.Morphisms` explicitly
+when declaring parametric morphisms. Import `Stdlib.Classes.SetoidClass`
+explicitly when its `Setoid` interface is needed.
+
+[Nominal equality imports]: #nominal-equality-imports
 [Writing packages]: #writing-packages
 [Raw code]: #raw-code
 [Specialised types]: #specialised-types

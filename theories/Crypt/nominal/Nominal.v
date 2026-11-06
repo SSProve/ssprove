@@ -578,7 +578,8 @@ Qed.
 
 (* alpha-equivalence *)
 
-Require Export Stdlib.Classes.SetoidClass.
+(* Keep SetoidClass's Prop-valued [==] notation private. *)
+From Stdlib Require Import Classes.SetoidClass.
 
 Definition alpha {X} (x₀ x₁ : X) :=
   ∃ π, π ∙ x₀ = x₁.

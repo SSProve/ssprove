@@ -1,4 +1,4 @@
-From Stdlib Require Import Utf8.
+From Stdlib Require Import Utf8 Setoids.Setoid Classes.Morphisms.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
@@ -11,7 +11,11 @@ From Equations Require Import Equations.
 From SSProve.Crypt Require Import Axioms SubDistr pkg_composition
   Prelude Package Nominal.
 
+From Stdlib Require Import Program.Tactics.
+
 From HB Require Import structures.
+
+Local Obligation Tactic := program_simpl.
 
 (* Supress warnings due to use of HB *)
 Set Warnings "-redundant-canonical-projection,-projection-no-head-constant".
