@@ -140,7 +140,7 @@ Section Reduction.
       ssprove_code_simpl_more.
       ssprove_rem_rel 0%N.
       destruct mga, ma => //= Heq; [| apply r_fail ].
-      noconf Heq.
+      case: Heq; intros; subst.
       apply r_put_vs_put.
       ssprove_sync => b'.
       ssprove_restore_mem. { ssprove_invariant. }

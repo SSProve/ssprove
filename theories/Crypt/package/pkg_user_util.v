@@ -109,8 +109,9 @@ Ltac simplify_eq_rel m :=
   let So := fresh "S" in
   let To := fresh "T" in
   let has := fresh "has" in
-  intros id So To m has ;
-  fmap_invert has ;
+  intros id So To m has;
+  fmap_invert has;
+  case; intros; subst;
   simplify_linking.
 
 

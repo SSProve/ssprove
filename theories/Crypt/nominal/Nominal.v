@@ -449,7 +449,7 @@ Obligation 2.
   apply /andP; split; apply support_sub => π H'.
   all: specialize (H π H').
   all: unfold rename in H; simpl in H.
-  all: injection H => ? ?; by subst.
+  all: case: H; by subst.
 Qed.
 
 HB.instance Definition _ {X Y : nomType} : IsNominal (prod X Y)

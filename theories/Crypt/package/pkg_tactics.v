@@ -21,7 +21,7 @@
   - package_obtac
     This tactic can be used as an obligation tactic for Program mode.
     It can be set with
-    Obligation Tactic := package_obtac.
+    Local Obligation Tactic := package_obtac.
 
 **)
 
@@ -131,7 +131,7 @@ Proof.
     rewrite //= 2!setmE.
     destruct (m == n) eqn:e.
     + move: e => /eqP e o.
-      injection o => ? ?. subst.
+      case: o => ? ?. subst.
       by exists f.
     + destruct h as [he _].
       specialize (he (m, (S, T))).
@@ -141,7 +141,7 @@ Proof.
     rewrite //= 2!setmE.
     destruct (m == n) eqn:e.
     + intros [g H].
-      injection H => H' ? ?; by subst.
+      case: H => H' ? ?; by subst.
     + intros [g H].
       destruct h as [he _].
       specialize (he (m, (S, T))).
@@ -152,7 +152,7 @@ Proof.
     rewrite //= setmE.
     destruct (m == n) eqn:e.
     + move: e => /eqP e o.
-      injection o => ?. subst.
+      case: o => ?. subst.
       apply c.
     + destruct h as [_ hi].
       apply hi.

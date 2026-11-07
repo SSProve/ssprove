@@ -58,8 +58,8 @@ Obligation 2.
   specialize (H π H').
   rewrite /rename //= in H |- *.
   destruct x => //=.
-  noconf H.
-  rewrite -(natizeK (π _)) H0 //.
+  case: H; intros; subst.
+  rewrite -(natizeK (π _)) H //.
 Qed.
 
 HB.instance Definition _ : IsNominal Location
@@ -162,7 +162,7 @@ Proof.
     unfold rename; simpl.
     f_equal.
     + intros _ eq eq'.
-      noconf eq.
+      case: eq; intros; subst.
       rewrite H2 eq'.
       f_equal.
     + rewrite H' //.
@@ -176,7 +176,7 @@ Proof.
     unfold rename; simpl.
     f_equal.
     + intros _ eq _ eq'.
-      noconf eq.
+      case: eq; intros; subst.
       rewrite H0 eq'.
       f_equal.
     + rewrite H' //.

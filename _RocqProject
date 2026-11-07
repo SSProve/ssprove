@@ -99,7 +99,7 @@ theories/Crypt/examples/RandomOracle.v
 theories/Crypt/examples/SigmaProtocol.v
 theories/Crypt/examples/Schnorr.v
 # theories/Crypt/examples/OVN.v
-# theories/Crypt/examples/Executor.v
+theories/Crypt/examples/Executor.v
 theories/Crypt/examples/PolynomialUtils.v
 
 # case-study on public-key encryption

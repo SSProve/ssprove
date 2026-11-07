@@ -317,7 +317,7 @@ Proof.
   all: ssprove_code_simpl_more.
   2: {
     apply: (@r_reflexivity_alt _ [fmap T_loc]) => [l H|l H' H].
-    1,2: fmap_invert H; ssprove_invariant.
+    1,2: fmap_invert H; intros; subst; ssprove_invariant.
   }
   1: apply: r_get_remember_rhs => S.
   ssprove_sync=> T.

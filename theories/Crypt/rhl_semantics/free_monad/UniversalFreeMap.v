@@ -6,6 +6,8 @@ From mathcomp Require Import all_ssreflect.
 Set Warnings "notation-overridden".
 From SSProve.Crypt Require Import FreeProbProg ChoiceAsOrd.
 
+Local Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
+
 Import SPropNotations.
 
 

@@ -11,7 +11,7 @@ Import Num.Theory.
 Local Open Scope ring_scope.
 
 (*so that Next Obligation doesnt introduce variables by itself:*)
-Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
+Local Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
 
 (*
 In this file we develop a simple theory of couplings: their interaction

@@ -67,7 +67,7 @@ Proof.
   intros SEP VA.
   move: h; induction (VA) => h H'.
   - done.
-  - fmap_invert H.
+  - fmap_invert H; intros; subst.
     destruct x.
     cbn [code_link].
     simplify_linking.
@@ -112,7 +112,7 @@ Proof.
     rewrite Pr_code_ret.
     rewrite dletC pr_predT LL GRing.mul1r //.
   - intros h H' y.
-    fmap_invert H.
+    fmap_invert H; intros; subst.
     destruct x.
     cbn [bind code_link].
     simplify_linking.

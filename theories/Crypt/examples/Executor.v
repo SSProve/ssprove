@@ -42,7 +42,7 @@ Section Executor.
         | Some v1, Some v2 => Some (v1, v2)
         | _, _ => None
         end
-    | (NSNat n), ('word u) => Some (wrepr _ (BinInt.Z.of_nat n))
+    | (NSNat n), ('word u) => Some (wrepr u (BinInt.Z.of_nat n))
     | _, _ => None
     end.
 
@@ -79,27 +79,23 @@ Section Executor.
       | _ => true
     end.
   Proof.
-    destruct l => //; destruct v => //.
-    - destruct (ch_nat l1 v1), (ch_nat l2 v2); try easy.
-      cbn. simp nat_ch_aux. simpl in *. now rewrite H H0.
-    - simp ch_nat. destruct ch_nat; try easy.
-      simpl in *. simp nat_ch_aux. now f_equal.
-    - destruct n.
-      { exfalso. eapply (fintype0 v). by rewrite card_ord. }
-      simp ch_nat. simpl. simp nat_ch_aux.
+    induction l => //. 1-5: destruct v => //.
+    - specialize (IHl1 s). specialize (IHl2 s0). simpl in *.
+      destruct (ch_nat l1 s), (ch_nat l2 s0); try easy.
+      cbn. simpl in *. now rewrite IHl1 IHl2.
+    - specialize (IHl s). simpl in *.
+      destruct ch_nat; try easy.
+      simpl in *. now f_equal.
+    - destruct n => //=.
       f_equal.
-      unfold nat_ch_aux_obligation_1.
-      have lv := ltn_ord v.
       apply /eqP.
       erewrite <- inj_eq.
       2: apply ord_inj.
-      simpl.
       by rewrite inordK.
-    - simp ch_nat. simpl. simp nat_ch_aux.
+    - simpl.
       f_equal.
-      unfold nat_ch_aux_obligation_1.
       rewrite @Znat.Z2Nat.id.
-      + apply (@wunsigned_range u).
+      + apply (@wunsigned_range nbits).
       + rewrite wrepr_unsigned.
         reflexivity.
   Qed.
@@ -230,7 +226,7 @@ Section Test.
        ret k'
     }.
   Next Obligation.
-    ssprove_valid.
+    intros. ssprove_valid.
   Defined.
 
   (* Compute (Run sampler (test_prog 2) 54). *)

@@ -126,11 +126,9 @@ Definition Ciph: choice_type := 'fin Ciph_N.
 Definition ciph_to_pair (c: Ciph): Word * Key :=
   (@Ordinal _ (c %% Word_N) _, @Ordinal _ (c %/ Word_N) _).
 Next Obligation.
-  intros c.
   by rewrite ltn_mod /Word_N -word.prednK_modulus.
 Qed.
 Next Obligation.
-  intros c.
   rewrite ltn_divLR.
   - by rewrite /Word_N -word.prednK_modulus.
   - by rewrite -expnD addnC.
@@ -140,7 +138,6 @@ Qed.
 Definition mkciph (m: Word) (r: Key): Ciph :=
   @Ordinal _ (r * Word_N + m) _.
 Next Obligation.
-  intros m r.
   apply: (@leq_trans (r * Word_N + Word_N)).
   - by rewrite ltn_add2l.
   - by rewrite /Ciph_N expnD addnC -mulSn mulnC leq_pmul2l // /Word_N -word.prednK_modulus.
@@ -1002,7 +999,7 @@ Proof.
   - apply: (@r_reflexivity_alt _ [fmap S_loc ; R_loc]) => [loc H|loc v H].
     all: ssprove_invariant;
       first by move=> ? ? ->.
-    all: fmap_invert H; ssprove_invariant.
+    all: fmap_invert H; intros; subst; ssprove_invariant.
   - ssprove_code_simpl.
     ssprove_code_simpl_more.
     ssprove_sync=> [|S];
@@ -1037,7 +1034,7 @@ Proof.
   - apply: r_dead_sample_L.
     apply: (@r_reflexivity_alt _ [fmap S_loc]) => [loc H|loc v H].
     all: ssprove_invariant.
-    all: fmap_invert H; fmap_solve.
+    all: fmap_invert H; intros; subst; fmap_solve.
   - ssprove_sync=> S.
     ssprove_sync=> H1.
     ssprove_sync=> Tinv.

@@ -168,8 +168,7 @@ Proof.
   destruct (k' == k) eqn:E.
   - left.
     move: E => /eqP -> {k'}.
-    injection H => ?.
-    by subst.
+    by case: H => ->.
   - by right.
 Qed.
 
@@ -204,7 +203,7 @@ Ltac fmap_invert H :=
   (by apply fhas_empty in H) ||
   ( let x := fresh "x" in
     apply fhas_set_case in H ;
-    destruct H as [x|H]; [ case: x; intros; subst | fmap_invert H ]
+    destruct H as [x|H]; [ move: x | fmap_invert H ]
   ).
 
 Create HintDb fmap_solve_db.

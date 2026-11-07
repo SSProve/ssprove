@@ -125,8 +125,7 @@ Proof. move: n m => [|n] [|m] //. Qed.
   [hints h1 ; .. ; hn ] will try to solve the goal by having h1 to hn in the
   context. This can be useful to provide lemmata that are not usually picked
   up by the instance mechanism.
-  This could also be used in combination with Programs or Equations'
-  automation.
+  This could also be used in combination with Program's automation.
 
   [hints] is also provided for completeness, but is merely long for _.
 

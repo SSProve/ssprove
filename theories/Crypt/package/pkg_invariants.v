@@ -798,16 +798,17 @@ Proof.
   elim => // l lv ih s0 s1 h0 h1 h e.
   destruct l as [l v'|l v'].
   - simpl in *.
-    destruct update_heaps eqn:e1. injection e => {e} ? ?; subst.
+    destruct update_heaps eqn:e1.
+    case: e => ? ?; subst.
     destruct (_ == _) eqn:e.
     + rewrite /get_heap setmE e /=.
-      injection h => {h} ?. by subst.
+      case: h => ?. by subst.
     + rewrite get_set_heap_neq ?e //.
       eapply ih => //.
       apply e1.
   - simpl in *.
     destruct update_heaps eqn:e1.
-    injection e => {e} ? ?. subst.
+    case: e => ? ?. subst.
     eapply ih => //.
     apply e1.
 Qed.
@@ -823,15 +824,15 @@ Proof.
   destruct l as [l v'|l v'].
   - simpl in *.
     destruct update_heaps eqn:e1.
-    injection e => {e} ? ?. subst.
+    case: e => ? ?. subst.
     eapply ih => //.
     apply e1.
   - simpl in *.
     destruct update_heaps eqn:e1.
-    injection e => {e} ? ?. subst.
+    case: e => ? ?. subst.
     destruct (_ == _) eqn:e.
     + rewrite /get_heap setmE e.
-      injection h => {h} ?. by subst.
+      case: h => ?. by subst.
     + rewrite get_set_heap_neq ?e //.
       eapply ih => //.
       apply e1.
@@ -856,11 +857,11 @@ Lemma lookup_hpv_l_None_spec :
     get_heap h₀ ℓ = get_heap s₀ ℓ.
 Proof.
   intros ℓ. elim.
-  { intros ? ? ? ? ? H. injection H => ? ?. by subst. }
+  { intros ? ? ? ? ? H. case: H => ? ?. by subst. }
   intros a l ih s0 s1 h0 h1 h e.
   destruct a; simpl in *;
     destruct update_heaps eqn:e1;
-      injection e => {e} ? ?; subst.
+      case: e => ? ?; subst.
   - destruct (_ == _) eqn:e => //.
     transitivity (get_heap h2 ℓ).
     1: rewrite /get_heap setmE e //.
@@ -877,11 +878,11 @@ Lemma lookup_hpv_r_None_spec :
     get_heap h₁ ℓ = get_heap s₁ ℓ.
 Proof.
   intros ℓ. elim.
-  { intros ? ? ? ? ? H. injection H => ? ?. by subst. }
+  { intros ? ? ? ? ? H. case: H => ? ?. by subst. }
   intros a l ih s0 s1 h0 h1 h e.
   destruct a; simpl in *;
     destruct update_heaps eqn:e1;
-      injection e => {e} ? ?; subst.
+      case: e => ? ?; subst.
   - eapply ih => //.
     apply e1.
   - destruct (_ == _) eqn:e => //.

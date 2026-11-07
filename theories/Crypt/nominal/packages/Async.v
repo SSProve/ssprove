@@ -105,7 +105,7 @@ Section Async.
         by rewrite Pr_fstC.
       + by rewrite 2!Pr_code_ret 2!dmarginE 2!dlet_unit_ext.
     - rewrite Pr_code_bind.
-      fmap_invert H.
+      fmap_invert H; intros; subst.
       + simplify_linking.
         destruct (get_heap h (lazy_loc S)) => /=.
         * rewrite bind_assoc.
@@ -199,7 +199,7 @@ Section Async.
     induction H0 => h HNone; cbn [code_link].
     - by rewrite 2!Pr_code_ret 2!dmarginE 2!dlet_unit_ext.
     - rewrite Pr_code_bind.
-      fmap_invert H0.
+      fmap_invert H0; intros; subst.
       + simplify_linking.
         rewrite Pr_code_fst dlet_dlet_ext. symmetry.
         rewrite bind_assoc Pr_code_fst.

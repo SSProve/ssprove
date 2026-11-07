@@ -88,10 +88,9 @@ Module tSDH (GP : GroupParam).
   #[program] Definition mod_p (a: nat): chExp :=
   @Ordinal _ (a %% #[g]) _.
   Next Obligation.
-    intros a.
     rewrite eq_order_g_ring. rewrite ltn_mod.
     move : gt_than_1 => gt_than_1. auto.
-    Qed.
+  Qed.
 
   Definition inv_sum (c a : chExp) : nat :=
     1 / (mod_p (c + a)).
