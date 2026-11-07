@@ -22,8 +22,6 @@ Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6
 From extructures Require Import ord fset fmap.
 From SSProve.Crypt Require Import Package.
 
-From Equations Require Import Equations.
-
 Import PackageNotation.
 
 Set Bullet Behavior "Strict Subproofs".
@@ -365,11 +363,10 @@ Proof.
       ssprove_invariant.
       intros h m' t'.
       rewrite domm_set in_fsetU in_fset1.
-      case: (eq_dec (m', t') (m, t)) => Heq.
-      * noconf Heq.
-        rewrite h Heqt /= 2!eq_refl //.
-      * move /eqP /negPf in Heq.
-        by rewrite Heq -h.
+      case: ((m', t') == (m, t)) / eqP => Heq.
+      * case: Heq => -> ->.
+        by rewrite h Heqt /= eq_refl.
+      * by rewrite -h.
     + ssprove_sync=> k.
       ssprove_rem_rel 0%N => Hinv.
       apply: r_put_vs_put.
@@ -378,16 +375,14 @@ Proof.
         last by apply: r_ret.
       ssprove_invariant=> h m' k'.
       rewrite domm_set in_fsetU in_fset1 setmE.
-      case: (eq_dec (m', k') (m, k)) => Heq.
-      { noconf Heq. by rewrite !eq_refl. }
+      case: ((m', k') == (m, k)) /eqP => Heq /=.
+      { case: Heq => -> ->. by rewrite 2!eq_refl. }
       move /eqP /negPf in Heq.
-      rewrite Heq /=.
       rewrite xpair_eqE in Heq.
-      case: (eq_dec m' m) => Heqm.
+      case: (m' == m) /eqP => Heqm.
       * rewrite Heqm eq_refl /= in Heq*.
         by rewrite Hinv Heqt.
-      * move /eqP /negPf in Heqm.
-        by rewrite Heqm Hinv.
+      * by rewrite Hinv.
   - ssprove_code_simpl.
     ssprove_code_simpl_more.
     apply: r_get_remember_lhs => T.

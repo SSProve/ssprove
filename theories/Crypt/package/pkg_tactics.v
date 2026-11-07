@@ -19,8 +19,7 @@
     the mem predicate doesn't compute in itself.
 
   - package_obtac
-    This tactic can be used as an obligation tactic for Program or Equations
-    mode.
+    This tactic can be used as an obligation tactic for Program mode.
     It can be set with
     Obligation Tactic := package_obtac.
 

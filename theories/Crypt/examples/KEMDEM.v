@@ -36,7 +36,6 @@ Section KEMDEM.
   (** We open a section in order to make local changes to global settings
       in the unlikely event that this module is imported somewhere else.
   *)
-  Set Equations Transparent.
 
   (** In the SSP paper, bitstrings are used for the different data types.
       Instead we go for a more abstract types.

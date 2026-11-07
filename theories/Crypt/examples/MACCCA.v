@@ -21,11 +21,6 @@ From SSProve.Crypt Require Import Package.
 
 Import PackageNotation.
 
-From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
-
-Set Equations With UIP.
-
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.

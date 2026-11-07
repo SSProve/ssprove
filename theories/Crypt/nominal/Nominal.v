@@ -17,6 +17,8 @@ Set Primitive Projections.
 (* Supress warnings due to use of HB *)
 Set Warnings "-redundant-canonical-projection,-projection-no-head-constant".
 
+Local Obligation Tactic := try done.
+
 (******************************************************************************)
 (* This file provides basic definitions for working with nominal sets.        *)
 (* `atom` defines the type of atoms by wrapping natural numbers. We avoid     *)
@@ -89,7 +91,6 @@ Proof. move => π x. rewrite -rename_comp fperm_mulsV rename_id //. Qed.
 (* Instances of actionType *)
 
 Program Definition atom_Action := HasAction.Build atom appf _ _.
-Obligation 1. done. Qed.
 Obligation 2. move=> f g x /=. rewrite fpermM //. Qed.
 HB.instance Definition _ : HasAction atom := atom_Action.
 
@@ -209,17 +210,13 @@ HB.builders Context (X : Type) (_ : DeclareDiscrete X).
 
   Program Definition to_Action := HasAction.Build X
     (λ _, id) _ _.
-  Obligation 1. done. Qed.
-  Obligation 2. done. Qed.
   HB.instance Definition _ : HasAction X := to_Action.
 
   Program Definition to_Nominal := IsNominal.Build X (λ _, fset0) _ _.
-  Obligation 1. done. Qed.
   Obligation 2. move=> /= x F H. apply fsub0set. Qed.
   HB.instance Definition _ : IsNominal X := to_Nominal.
 
   Program Definition to_Discrete := IsDiscrete.Build X _.
-  Obligation 1. done. Qed.
   HB.instance Definition _ : IsDiscrete X := to_Discrete.
 HB.end.
 

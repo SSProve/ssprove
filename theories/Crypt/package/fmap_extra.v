@@ -204,7 +204,7 @@ Ltac fmap_invert H :=
   (by apply fhas_empty in H) ||
   ( let x := fresh "x" in
     apply fhas_set_case in H ;
-    destruct H as [x|H]; [ subst x | fmap_invert H ]
+    destruct H as [x|H]; [ case: x; intros; subst | fmap_invert H ]
   ).
 
 Create HintDb fmap_solve_db.

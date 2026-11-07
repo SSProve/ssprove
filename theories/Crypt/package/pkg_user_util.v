@@ -710,9 +710,6 @@ Proof.
   intros x y e. subst. apply lexx.
 Qed.
 
-(* To be able to use with Equations *)
-Ltac notac := idtac.
-
 Ltac proven_by n :=
   lazymatch goal with
   | |- (ProvenBy _ (_ ⋊ rem_inv _ _ _)) =>

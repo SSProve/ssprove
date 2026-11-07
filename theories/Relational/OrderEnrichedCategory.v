@@ -611,8 +611,6 @@ Section RelativeMonadPostcomposition.
   Qed.
 End RelativeMonadPostcomposition.
 
-(* From Equations Require Import Equations. *)
-
 (* Section IdNatIso. *)
 (*   Import EqNotations. *)
 

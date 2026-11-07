@@ -6,15 +6,7 @@ Set Warnings "notation-overridden,ambiguous-paths".
 Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
 From extructures Require Import ord fset fmap.
-From SSProve.Crypt Require Import Package RandomOracle.
-
-(* From Jasmin Require Import word. *)
-From SSProve.Crypt Require Import jasmin_word.
-
-From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
-
-Set Equations With UIP.
+From SSProve.Crypt Require Import Package jasmin_word.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
@@ -36,24 +28,23 @@ Section Executor.
   | NSOption (A : option NatState)
   | NSProd (A B : NatState).
 
-  Equations? nat_ch_aux (x : NatState) (l : choice_type) : option (Value l) :=
-    nat_ch_aux (NSUnit) 'unit := Some tt ;
-    nat_ch_aux (NSNat n) 'nat := Some n ;
-    nat_ch_aux (NSNat n) 'bool := Some (Nat.odd n) ;
-    nat_ch_aux (NSNat n) 'fin 0 := None ;
-    nat_ch_aux (NSNat n) 'fin (n'.+1) := Some (inord n) ;
-    nat_ch_aux (NSOption (Some a)) ('option l) := Some (nat_ch_aux a l) ;
-    nat_ch_aux (NSOption None) ('option l) := Some None ;
-    nat_ch_aux (NSProd a b) (l1 × l2) with (nat_ch_aux a l1, nat_ch_aux b l2) := {
-         nat_ch_aux (NSProd a b) (l1 × l2) (Some v1, Some v2) := Some (v1, v2) ;
-         nat_ch_aux (NSProd a b) (l1 × l2) _ := None ;
-      } ;
-    nat_ch_aux (NSNat n) ('word u) := Some _ ;
-    nat_ch_aux _ _ := None.
-  Proof.
-    apply wrepr.
-    apply (BinInt.Z.of_nat n).
-  Defined.
+  Fixpoint nat_ch_aux (x : NatState) (l : choice_type) : option (Value l) :=
+    match x, l with
+    | (NSUnit), 'unit => Some tt
+    | (NSNat n), 'nat => Some n
+    | (NSNat n), 'bool => Some (Nat.odd n)
+    | (NSNat n), 'fin 0 => None
+    | (NSNat n), 'fin (n'.+1) => Some (inord n)
+    | (NSOption (Some a)), ('option l) => Some (nat_ch_aux a l)
+    | (NSOption None), ('option l) => Some None
+    | (NSProd a b), (l1 × l2) =>
+        match nat_ch_aux a l1, nat_ch_aux b l2 with
+        | Some v1, Some v2 => Some (v1, v2)
+        | _, _ => None
+        end
+    | (NSNat n), ('word u) => Some (wrepr _ (BinInt.Z.of_nat n))
+    | _, _ => None
+    end.
 
   Definition nat_ch (x : option NatState) (l : choice_type) : option (Value l) :=
     match x with
@@ -61,24 +52,26 @@ Section Executor.
     | None => None
     end.
 
-  Equations ch_nat (l : choice_type) (v : l) : option NatState :=
-    ch_nat 'unit v := Some NSUnit ;
-    ch_nat 'nat v := Some (NSNat v) ;
-    ch_nat 'bool v := Some (NSNat v) ;
-    ch_nat 'fin n v := Some (NSNat v) ;
-    ch_nat (l1 × l2) (pair v1 v2) :=
+  Fixpoint ch_nat (l : choice_type) (v : l) : option NatState :=
+    match l, v with
+    | 'unit, v => Some NSUnit
+    | 'nat, v => Some (NSNat v)
+    | 'bool, v => Some (NSNat v)
+    | 'fin n, v => Some (NSNat v)
+    | (l1 × l2), (pair v1 v2) =>
       match (ch_nat l1 v1, ch_nat l2 v2) with
         | (Some v, Some v') => Some (NSProd v v')
         | _ => None
-      end ;
-    ch_nat 'option l (Some v) :=
+      end
+    | 'option l, (Some v) =>
       match (ch_nat l v) with
         | Some v' => Some (NSOption (Some v'))
         | _ => None
-      end ;
-    ch_nat 'option l None := Some (NSOption None) ;
-    ch_nat 'word u x := Some (NSNat (BinInt.Z.to_nat (wunsigned x))) ;
-    ch_nat _ _ := None.
+      end
+    | 'option l, None => Some (NSOption None)
+    | 'word u, x => Some (NSNat (BinInt.Z.to_nat (wunsigned x)))
+    | _, _ => None
+    end.
 
   Lemma ch_nat_ch l v:
     match (ch_nat l v) with
@@ -86,10 +79,8 @@ Section Executor.
       | _ => true
     end.
   Proof.
-    funelim (ch_nat l v). all: try easy.
-    - simpl. by destruct v.
-    - simp ch_nat. simpl. simp nat_ch_aux. by destruct v.
-    - simp ch_nat. destruct (ch_nat l1 v1), (ch_nat l2 v2); try easy.
+    destruct l => //; destruct v => //.
+    - destruct (ch_nat l1 v1), (ch_nat l2 v2); try easy.
       cbn. simp nat_ch_aux. simpl in *. now rewrite H H0.
     - simp ch_nat. destruct ch_nat; try easy.
       simpl in *. simp nat_ch_aux. now f_equal.

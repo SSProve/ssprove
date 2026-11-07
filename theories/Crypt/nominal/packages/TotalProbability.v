@@ -3,8 +3,6 @@ Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-forma
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap ffun fperm.
-Require Import Equations.Prop.DepElim.
-From Equations Require Import Equations.
 
 From SSProve.Crypt Require Import Axioms SubDistr pkg_composition
   Prelude Package Nominal NominalPrelude.
@@ -177,6 +175,7 @@ Qed.
 Lemma CONST_dirac_perfect (x : T) :
   perfect (IPICK T) (RAND {code ret x}) (CONST x).
 Proof.
+  clear c.
   eapply prove_perfect.
   apply (eq_rel_perf_ind _ _ (heap_ignore [fmap cell T]
     ⋊ single_lhs (cell T) (λ v, v = None ∨ v = Some x)) ).

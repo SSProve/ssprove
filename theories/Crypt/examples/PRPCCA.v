@@ -23,8 +23,6 @@ Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6
 From extructures Require Import ord fset fmap.
 From SSProve.Crypt Require Import Package.
 
-From Equations Require Import Equations.
-
 Import PackageNotation.
 
 Set Bullet Behavior "Strict Subproofs".
@@ -128,9 +126,11 @@ Definition Ciph: choice_type := 'fin Ciph_N.
 Definition ciph_to_pair (c: Ciph): Word * Key :=
   (@Ordinal _ (c %% Word_N) _, @Ordinal _ (c %/ Word_N) _).
 Next Obligation.
+  intros c.
   by rewrite ltn_mod /Word_N -word.prednK_modulus.
 Qed.
 Next Obligation.
+  intros c.
   rewrite ltn_divLR.
   - by rewrite /Word_N -word.prednK_modulus.
   - by rewrite -expnD addnC.
@@ -140,6 +140,7 @@ Qed.
 Definition mkciph (m: Word) (r: Key): Ciph :=
   @Ordinal _ (r * Word_N + m) _.
 Next Obligation.
+  intros m r.
   apply: (@leq_trans (r * Word_N + Word_N)).
   - by rewrite ltn_add2l.
   - by rewrite /Ciph_N expnD addnC -mulSn mulnC leq_pmul2l // /Word_N -word.prednK_modulus.
@@ -166,15 +167,12 @@ Qed.
 Lemma mkciph_eq (m m': Word) (r r': Key):
   (mkciph m r == mkciph m' r') = (m == m') && (r == r').
 Proof.
-  case: (eq_dec ((m == m') && (r == r')) true).
+  case: ((m == m') && (r == r')) / andP.
   1: {
-    move=> /andP [/eqP -> /eqP ->].
+    move=> [/eqP -> /eqP ->].
     by rewrite !eq_refl.
   }
-  move /eqP.
-  rewrite eqb_id => /nandP [/negPf Hneq|/negPf Hneq].
-  all: rewrite Hneq ?Bool.andb_false_r /=.
-  all: move /eqP in Hneq.
+  rewrite boolp.not_andP. case => /negPn /eqP H.
   all: apply /eqP => contra.
   all: apply (f_equal ciph_to_pair) in contra.
   all: rewrite !ciph_to_pair_mkciph in contra.
