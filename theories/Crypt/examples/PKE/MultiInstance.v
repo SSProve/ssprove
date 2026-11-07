@@ -7,10 +7,6 @@ Set Warnings "notation-overridden,ambiguous-paths".
 From Stdlib Require Import Utf8 Lia.
 From extructures Require Import ord fset fmap.
 
-From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
-Set Equations With UIP.
-
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.

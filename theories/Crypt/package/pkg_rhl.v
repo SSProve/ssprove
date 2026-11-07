@@ -14,20 +14,12 @@ Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From SSProve.Mon Require Import SPropBase.
 From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd SubDistr Couplings
-  RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens
+  RulesStateProb UniformStateProb UniformDistrLemmas StateTransfThetaDens FreeProbProg
   StateTransformingLaxMorph choice_type pkg_core_definition pkg_notation
   pkg_tactics pkg_composition pkg_heap pkg_semantics pkg_advantage
   pkg_invariants pkg_distr Casts fmap_extra.
-Require Import Equations.Prop.DepElim.
-From Equations Require Import Equations.
-
-(* Must come after importing Equations.Equations, who knows why. *)
-From SSProve.Crypt Require Import FreeProbProg.
 
 Import Num.Theory.
-
-Set Equations With UIP.
-Set Equations Transparent.
 
 Import SPropNotations.
 Import PackageNotation.
@@ -276,7 +268,7 @@ Proof.
     }
     destruct e as [? e].
     apply pmulr_me in e. 2: auto.
-    apply ge0_eq in e. noconf e.
+    apply ge0_eq in e. case: e; intros; subst.
     eapply hpost. intuition auto.
 Qed.
 
@@ -1148,7 +1140,7 @@ Proof.
   - eapply rreflexivity_rule.
   - intros a₀ a₁.
     eapply rpre_hypothesis_rule. intros s₀ s₁ e.
-    noconf e.
+    case: e; intros; subst.
     eapply rpre_weaken_rule. 1: eapply h.
     cbn. intros ? ? [? ?]. subst. reflexivity.
 Qed.
@@ -1163,7 +1155,7 @@ Proof.
   eapply r_bind.
   - rewrite !bind_ret in h. exact h.
   - intros a₀ a₁.
-    apply rpre_hypothesis_rule. intros s₀ s₁ e. noconf e.
+    apply rpre_hypothesis_rule. intros s₀ s₁ e. case: e; intros; subst.
     eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
     cbn. intros ? ? [? ?]. subst. reflexivity.
 Qed.
@@ -1342,7 +1334,7 @@ Proof.
       eapply rpre_hypothesis_rule. simpl. intros s₀ s₁ [ea es]. subst.
       eapply rpre_weaken_rule. 1: exact h.
       simpl. intros h₀ h₁ [? ?]. subst. reflexivity.
-    + simpl. intros s₀ s₁ e. noconf e. intuition auto.
+    + simpl. intros s₀ s₁ e. case: e; intros; subst. intuition auto.
 Qed.
 
 (* A slightly more general version where we don't fix the precondition *)
@@ -1434,7 +1426,7 @@ Proof.
     }
     destruct e as [? e].
     apply pmulr_me in e. 2: auto.
-    apply ge0_eq in e. noconf e.
+    apply ge0_eq in e. case: e; intros; subst.
     eapply hpost. intuition auto.
 Qed.
 
@@ -1460,7 +1452,7 @@ Proof.
   - intros [] [] e.
     unfold SDistr_unit in e.
     rewrite dunit1E in e.
-    apply ge0_eq in e. noconf e.
+    apply ge0_eq in e. case: e; intros; subst.
     eapply hpost. intuition auto.
 Qed.
 
@@ -1481,7 +1473,7 @@ Proof.
     reflexivity.
   - intros [] [] e.
     unfold SDistr_unit in e. rewrite dunit1E in e.
-    apply ge0_eq in e. noconf e.
+    apply ge0_eq in e. case: e; intros; subst.
     eapply hpost. intuition auto.
 Qed.
 
@@ -1560,7 +1552,7 @@ Proof.
         rewrite dlet_unit. reflexivity.
     + intros [] [] e.
       rewrite dunit1E in e.
-      apply ge0_eq in e. noconf e.
+      apply ge0_eq in e. case: e; intros; subst.
       eapply hpost. intuition auto.
   - intros x _.
     apply rpre_hypothesis_rule. intros s₀ s₁ [? hpre]. subst.
@@ -1603,7 +1595,7 @@ Proof.
         rewrite dlet_unit. reflexivity.
     + intros [] [] e.
       rewrite dunit1E in e.
-      apply ge0_eq in e. noconf e.
+      apply ge0_eq in e. case: e; intros; subst.
       eapply hpost. intuition auto.
   - intros _ x.
     apply rpre_hypothesis_rule. intros s₀ s₁ [? hpre]. subst.
@@ -1741,7 +1733,7 @@ Proof.
         rewrite dlet_unit. reflexivity.
     + intros [] [] e.
       rewrite dunit1E in e.
-      apply ge0_eq in e. noconf e.
+      apply ge0_eq in e. case: e; intros; subst.
       eapply hpost. intuition auto.
   - intros x _.
     eapply rpre_hypothesis_rule. intros s₀ s₁ [? hpre]. subst.
@@ -1777,7 +1769,7 @@ Proof.
         rewrite dlet_unit. reflexivity.
     + intros [] [] e.
       rewrite dunit1E in e.
-      apply ge0_eq in e. noconf e.
+      apply ge0_eq in e. case: e; intros; subst.
       eapply hpost. intuition auto.
   - intros _ x.
     eapply rpre_hypothesis_rule. intros s₀ s₁ [? hpre]. subst.
@@ -1831,7 +1823,7 @@ Proof.
         rewrite dlet_unit. reflexivity.
     + intros [] [] e.
       rewrite dunit1E in e.
-      apply ge0_eq in e. noconf e.
+      apply ge0_eq in e. case: e; intros; subst.
       eapply hpost. eexists. intuition eauto.
   - intros _ _. auto.
 Qed.
@@ -1860,7 +1852,7 @@ Proof.
         rewrite dlet_unit. reflexivity.
     + intros [] [] e.
       rewrite dunit1E in e.
-      apply ge0_eq in e. noconf e.
+      apply ge0_eq in e. case: e; intros; subst.
       eapply hpost. eexists. intuition eauto.
   - intros _ _. auto.
 Qed.
@@ -2111,7 +2103,7 @@ Proof.
     (f₀ := λ '(x, y), ret (y,x)) (f₁ := λ '(x, y), ret (y,x)) in h.
     2:{
       simpl. intros [] [].
-      eapply rpre_hypothesis_rule. intros ? ? e. noconf e.
+      eapply rpre_hypothesis_rule. intros ? ? e. case: e; intros; subst.
       eapply rpre_weaken_rule. 1: eapply rreflexivity_rule.
       simpl. intuition subst. reflexivity.
     }
@@ -2291,7 +2283,7 @@ Proof.
       unfold SDistr_bind, SDistr_unit.
       reflexivity.
   - intros [] [] e. rewrite dunit1E in e. apply ge0_eq in e.
-    noconf e. apply hpost. apply hpp. auto.
+    case: e; intros; subst. apply hpost. apply hpp. auto.
 Qed.
 
 Theorem r_dead_sample_L :
@@ -2545,7 +2537,7 @@ Proof.
   eapply r_bind.
   - eapply UniformIprod_UniformUniform.
   - intros [? ?] [? ?].
-    eapply rpre_hypothesis_rule. intros ? ? e. noconf e.
+    eapply rpre_hypothesis_rule. intros ? ? e. case: e; intros; subst.
     eapply rpre_weaken_rule.
     1: eapply h.
     simpl. intros ? ? [? ?]. subst. reflexivity.
@@ -2931,7 +2923,7 @@ Proof.
       rewrite e in hh. simpl in hh.
       rewrite Order.POrderTheory.ltxx in hh. discriminate.
     }
-    move: e => /eqP e. noconf e.
+    move: e => /eqP e. case: e; intros; subst.
     subst. f_equal.
     rewrite get_set_heap_neq //.
 Qed.

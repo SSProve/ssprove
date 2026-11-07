@@ -6,8 +6,6 @@ From SSProve.Mon Require Import SPropBase.
 From SSProve.Relational Require Import
   OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 
-From Equations Require Import Equations.
-
 Import SPropNotations.
 
 (*
@@ -35,6 +33,7 @@ Program Definition choice_incl := @mkOrdFunctor ord_choiceType TypeCat
     (fun (A:ord_choiceType) => A)
     (fun (A B : ord_choiceType) f => f)
     _ _ _.
+Next Obligation. done. Qed.
 
 
 Section Prod_of_choiceTypes.
@@ -68,11 +67,13 @@ Section Prod_of_choiceTypes.
 
   Definition choice_fst_proj : forall {A1 A2 : ord_choiceType},
   ord_choiceType ⦅ F_choice_prod (npair A1 A2) ; A1 ⦆.
+  Proof.
     intros. intro pairr. destruct pairr as [a1 a2]. simpl in a1. assumption.
   Defined.
 
   Definition choice_snd_proj : forall {A1 A2 : ord_choiceType},
   ord_choiceType ⦅ F_choice_prod (npair A1 A2) ; A2 ⦆.
+  Proof.
     intros. intro pairr. destruct pairr as [a1 a2]. simpl in a2. assumption.
   Defined.
 

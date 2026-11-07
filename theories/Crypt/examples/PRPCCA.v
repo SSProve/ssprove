@@ -23,8 +23,6 @@ Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6
 From extructures Require Import ord fset fmap.
 From SSProve.Crypt Require Import Package.
 
-From Equations Require Import Equations.
-
 Import PackageNotation.
 
 Set Bullet Behavior "Strict Subproofs".
@@ -166,15 +164,12 @@ Qed.
 Lemma mkciph_eq (m m': Word) (r r': Key):
   (mkciph m r == mkciph m' r') = (m == m') && (r == r').
 Proof.
-  case: (eq_dec ((m == m') && (r == r')) true).
+  case: ((m == m') && (r == r')) / andP.
   1: {
-    move=> /andP [/eqP -> /eqP ->].
+    move=> [/eqP -> /eqP ->].
     by rewrite !eq_refl.
   }
-  move /eqP.
-  rewrite eqb_id => /nandP [/negPf Hneq|/negPf Hneq].
-  all: rewrite Hneq ?Bool.andb_false_r /=.
-  all: move /eqP in Hneq.
+  rewrite boolp.not_andP. case => /negPn /eqP H.
   all: apply /eqP => contra.
   all: apply (f_equal ciph_to_pair) in contra.
   all: rewrite !ciph_to_pair_mkciph in contra.
@@ -1004,7 +999,7 @@ Proof.
   - apply: (@r_reflexivity_alt _ [fmap S_loc ; R_loc]) => [loc H|loc v H].
     all: ssprove_invariant;
       first by move=> ? ? ->.
-    all: fmap_invert H; ssprove_invariant.
+    all: fmap_invert H; intros; subst; ssprove_invariant.
   - ssprove_code_simpl.
     ssprove_code_simpl_more.
     ssprove_sync=> [|S];
@@ -1039,7 +1034,7 @@ Proof.
   - apply: r_dead_sample_L.
     apply: (@r_reflexivity_alt _ [fmap S_loc]) => [loc H|loc v H].
     all: ssprove_invariant.
-    all: fmap_invert H; fmap_solve.
+    all: fmap_invert H; intros; subst; fmap_solve.
   - ssprove_sync=> S.
     ssprove_sync=> H1.
     ssprove_sync=> Tinv.

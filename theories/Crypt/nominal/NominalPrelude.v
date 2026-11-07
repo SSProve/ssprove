@@ -10,11 +10,6 @@ From extructures Require Import ord fset fmap ffun fperm.
 From SSProve.Crypt Require Export Axioms SubDistr pkg_composition
   Prelude Package Nominal Fresh Pr Share Sep Adv.
 
-From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
-
-Set Equations With UIP.
-
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.

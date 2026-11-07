@@ -19,10 +19,9 @@
     the mem predicate doesn't compute in itself.
 
   - package_obtac
-    This tactic can be used as an obligation tactic for Program or Equations
-    mode.
+    This tactic can be used as an obligation tactic for Program mode.
     It can be set with
-    Obligation Tactic := package_obtac.
+    Local Obligation Tactic := package_obtac.
 
 **)
 
@@ -36,9 +35,6 @@ From SSProve.Crypt Require Import Prelude Axioms pkg_core_definition
   pkg_composition pkg_notation choice_type fmap_extra.
 From Stdlib Require Import Utf8 Setoids.Setoid Classes.Morphisms.
 
-From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
-
 Import PackageNotation.
 #[local] Open Scope package_scope.
 
@@ -49,7 +45,6 @@ Set Primitive Projections.
 Ltac package_obtac :=
   (* Or try (Tactics.program_simpl; fail); simpl ? *)
   Tactics.program_simplify ;
-  CoreTactics.equations_simpl ;
   try Tactics.program_solve_wf ;
   try fmap_solve.
 
@@ -136,7 +131,8 @@ Proof.
     rewrite //= 2!setmE.
     destruct (m == n) eqn:e.
     + move: e => /eqP e o.
-      noconf e. noconf o. by exists f.
+      case: o => ? ?. subst.
+      by exists f.
     + destruct h as [he _].
       specialize (he (m, (S, T))).
       simpl in he.
@@ -145,7 +141,7 @@ Proof.
     rewrite //= 2!setmE.
     destruct (m == n) eqn:e.
     + intros [g H].
-      by noconf H.
+      case: H => H' ? ?; by subst.
     + intros [g H].
       destruct h as [he _].
       specialize (he (m, (S, T))).
@@ -156,7 +152,8 @@ Proof.
     rewrite //= setmE.
     destruct (m == n) eqn:e.
     + move: e => /eqP e o.
-      noconf e. noconf o. apply c.
+      case: o => ?. subst.
+      apply c.
     + destruct h as [_ hi].
       apply hi.
 Qed.

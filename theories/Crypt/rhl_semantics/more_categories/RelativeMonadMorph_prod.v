@@ -3,7 +3,7 @@ Set Warnings "-notation-overridden".
 From mathcomp Require Import all_ssreflect.
 Set Warnings "notation-overridden".
 
-Global Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
+Local Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
 
 
 (*

@@ -18,11 +18,6 @@ From HB Require Import structures.
 
 From SSProve.Crypt Require Import Prelude Casts.
 From extructures Require Import ord fset fmap.
-Require Equations.Prop.DepElim.
-From Equations Require Import Equations.
-
-Set Equations With UIP.
-
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
@@ -45,9 +40,6 @@ Inductive choice_type :=
 | chList (A : choice_type)
 | chSum (A B : choice_type)
 | chTuple (A: choice_type) (n : nat).
-
-
-Derive NoConfusion NoConfusionHom for choice_type.
 
 
 (* Types T that may be represented by the interpretation of

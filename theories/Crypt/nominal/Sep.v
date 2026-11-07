@@ -10,11 +10,6 @@ From extructures Require Import ord fset fmap ffun fperm.
 From SSProve.Crypt Require Import Axioms SubDistr pkg_composition
   Prelude Package Nominal Fresh Pr Share.
 
-From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
-
-Set Equations With UIP.
-
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
@@ -31,7 +26,6 @@ Import GroupScope GRing.Theory.
 Import Num.Def.
 Import Num.Theory.
 Import Order.POrderTheory.
-From Stdlib Require Import Btauto.
 
 Import PackageNotation.
 

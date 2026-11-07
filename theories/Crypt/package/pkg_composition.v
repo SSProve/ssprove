@@ -15,10 +15,6 @@ Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd
   choice_type pkg_core_definition fmap_extra.
-From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
-
-Set Equations With UIP.
 
 Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 Set Bullet Behavior "Strict Subproofs".
@@ -121,14 +117,14 @@ Proof.
     rewrite he1 //=.
     rewrite //= /link mapmE in h.
     elim: (p1 o.1) h => //= [[S [T g]]] h.
-    injection h => {}h ? ?; subst; simpl.
+    case: h => ? ?; subst; simpl.
     by exists g.
   - intros n F x h.
     simpl in h.
     rewrite //= /link mapmE in h.
     destruct (p1 n) eqn:e => //=.
     destruct t as [S [T g]].
-    injection h => {}h; subst; simpl.
+    case: h => ?; subst; simpl.
     eapply valid_code_link.
     + eapply valid_injectLocations.
       * apply fsubmapUl.
@@ -456,7 +452,7 @@ Proof.
   - simp map_interface in e. discriminate.
   - simp map_interface in e. cbn in e.
     destruct eqn eqn:e1.
-    + noconf e. cbn.
+    + case: e; intros; subst. cbn.
       rewrite e1. move: e1 => /eqP e1. subst.
       exists a.2. unshelve eexists.
       { destruct a. cbn. rewrite in_cons.
@@ -532,12 +528,12 @@ Proof.
     simpl in H.
     destruct p as [T' S'].
     f_equal.
-    injection H => {}H ? ?. by subst.
+    case: H => ? ?. by subst.
   - move=> n F x h.
     pose proof (h).
     rewrite /fhas mapimE in h.
     destruct (I n) => //.
-    injection h => {}h.
+    case: h => ?; subst.
     destruct p as [T S].
     subst.
     apply valid_opr => //.
@@ -547,7 +543,7 @@ Proof.
     destruct (I n) => //.
     simpl in H.
     destruct p as [S' T'].
-    injection H => {}H ? ?. by subst.
+    case: H => {}H ? ?. by subst.
 Qed.
 
 Definition ID (I : Interface) : package I I

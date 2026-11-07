@@ -4,14 +4,12 @@ Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-forma
 From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr seq all_algebra fintype realsum order.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
-From extructures Require Import ord fset fmap ffun fperm.
-Require Import Equations.Prop.DepElim.
-From Equations Require Import Equations.
-
-From SSProve.Crypt Require Import Axioms SubDistr pkg_composition
-  Prelude Package Nominal.
 
 From HB Require Import structures.
+
+From extructures Require Import ord fset fmap ffun fperm.
+From SSProve.Crypt Require Import Axioms SubDistr pkg_composition
+  Prelude Package Nominal.
 
 (* Supress warnings due to use of HB *)
 Set Warnings "-redundant-canonical-projection,-projection-no-head-constant".
@@ -22,10 +20,6 @@ Set Warnings "-redundant-canonical-projection,-projection-no-head-constant".
 (******************************************************************************)
 
 Import Num.Theory.
-
-Set Equations With UIP.
-Set Equations Transparent.
-
 Import PackageNotation.
 
 Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)

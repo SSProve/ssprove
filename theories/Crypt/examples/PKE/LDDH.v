@@ -7,10 +7,6 @@ Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6
 From Stdlib Require Import Utf8.
 From extructures Require Import ord fset fmap.
 
-From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
-Set Equations With UIP.
-
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
@@ -144,7 +140,7 @@ Section Reduction.
       ssprove_code_simpl_more.
       ssprove_rem_rel 0%N.
       destruct mga, ma => //= Heq; [| apply r_fail ].
-      noconf Heq.
+      case: Heq; intros; subst.
       apply r_put_vs_put.
       ssprove_sync => b'.
       ssprove_restore_mem. { ssprove_invariant. }

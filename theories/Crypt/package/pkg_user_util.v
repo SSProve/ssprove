@@ -87,14 +87,9 @@ From SSProve.Crypt Require Import Axioms Prelude pkg_core_definition pkg_composi
   pkg_heap pkg_invariants pkg_distr pkg_rhl pkg_tactics choice_type fmap_extra.
 From Stdlib Require Import Utf8 Setoids.Setoid Classes.Morphisms.
 
-From Equations Require Import Equations.
-Require Equations.Prop.DepElim.
-
 Import Num.Def.
 Import Num.Theory.
 Import Order.POrderTheory.
-
-Set Equations With UIP.
 
 Import PackageNotation.
 
@@ -114,8 +109,9 @@ Ltac simplify_eq_rel m :=
   let So := fresh "S" in
   let To := fresh "T" in
   let has := fresh "has" in
-  intros id So To m has ;
-  fmap_invert has ;
+  intros id So To m has;
+  fmap_invert has;
+  case; intros; subst;
   simplify_linking.
 
 
@@ -714,9 +710,6 @@ Lemma eq_ler :
 Proof.
   intros x y e. subst. apply lexx.
 Qed.
-
-(* To be able to use with Equations *)
-Ltac notac := idtac.
 
 Ltac proven_by n :=
   lazymatch goal with

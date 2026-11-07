@@ -7,6 +7,8 @@ Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6
 From SSProve.Relational Require Import OrderEnrichedCategory OrderEnrichedRelativeMonadExamples.
 From SSProve.Crypt Require Import ChoiceAsOrd OrderEnrichedRelativeAdjunctions OrderEnrichedRelativeAdjunctionsExamples TransformingLaxMorph SubDistr Theta_dens LaxFunctorsAndTransf UniversalFreeMap FreeProbProg StateTransformingLaxMorph LaxComp.
 
+Local Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
+
 Import SPropNotations.
 
 (*
