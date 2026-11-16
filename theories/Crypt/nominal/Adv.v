@@ -4,7 +4,7 @@ From mathcomp Require Import all_ssreflect all_algebra
 Set Warnings "notation-overridden,ambiguous-paths".
 Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6 *)
 
-From Stdlib Require Import Utf8.
+From Stdlib Require Import Utf8 Setoids.Setoid Classes.Morphisms.
 From extructures Require Import ord fset fmap ffun fperm.
 
 From SSProve.Crypt Require Import Axioms SubDistr pkg_composition
