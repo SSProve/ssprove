@@ -100,6 +100,13 @@ Coercion nat_of_pelem (pe: pelem) : nat :=
 
 Definition word sz : comNzRingType := (wsize_size_minus_1 sz).+1.-word.
 
+(* Dependent telescopes constrained to Set need the record carrier without
+   the packed ring universe. Keep it accessible when [word] is opaque. *)
+Definition wcarrier (sz : wsize) : Set := (wsize_size_minus_1 sz).+1.-word.
+
+Lemma wcarrierE sz : wcarrier sz = word sz :> Type.
+Proof. reflexivity. Qed.
+
 Global Opaque word.
 
 Local Open Scope Z_scope.
