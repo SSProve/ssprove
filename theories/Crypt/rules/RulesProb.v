@@ -35,6 +35,8 @@ Import SPropNotations.
 Import Num.Theory.
 Import Order.POrderTheory.
 
+Local Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
+
 Local Open Scope ring_scope.
 
 

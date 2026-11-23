@@ -17,8 +17,6 @@ Unset SsrOldRewriteGoalsOrder. (* remove the line when requiring MathComp >= 2.6
 From extructures Require Import ord fset fmap.
 From SSProve.Crypt Require Import Package.
 
-From Equations Require Import Equations.
-
 Import PackageNotation.
 
 Set Bullet Behavior "Strict Subproofs".
@@ -227,8 +225,8 @@ Proof.
   simplify_eq_rel m.
   ssprove_code_simpl.
   apply: r_get_vs_get_remember => count.
-  case: (eq_dec count i) => Heq.
-  - rewrite Heq eq_refl ltnn /=.
+  case: (count == i) /eqP => Heq.
+  - subst. rewrite ltnn /=.
     ssprove_swap_rhs 0.
     apply: r_get_remember_rhs => k.
     ssprove_rem_rel 0%N => Hinv.
@@ -242,10 +240,9 @@ Proof.
     ssprove_invariant.
     by rewrite ltnn.
   - move /eqP /negPf in Heq.
-    rewrite Heq /=.
     destruct (count < i) eqn:Hlt.
     all: apply: r_put_vs_put.
-    all: ssprove_sync=> x.
+    all: simpl; ssprove_sync=> x.
     1: ssprove_sync=> y.
     all: ssprove_restore_mem;
       last by apply: r_ret.
@@ -268,8 +265,8 @@ Proof.
   simplify_eq_rel m.
   ssprove_code_simpl.
   apply: r_get_vs_get_remember => count.
-  case: (eq_dec count i) => Heq.
-  - rewrite Heq eq_refl ltnn ltnSn /=.
+  case: (count == i) / eqP => Heq.
+  - subst. rewrite ltnn ltnSn /=.
     ssprove_swap_lhs 0.
     apply: r_get_remember_lhs => T.
     ssprove_rem_rel 0%N => Hinv.
@@ -286,12 +283,11 @@ Proof.
     ssprove_invariant.
     by rewrite ltnn.
   - move /eqP /negPf in Heq.
-    rewrite Heq /=.
     destruct (count < i) eqn:Hlt.
     all: apply: r_put_vs_put.
     1: rewrite ltnW //.
     2: rewrite ltnS leq_eqVlt Heq Hlt /=.
-    all: ssprove_sync => x.
+    all: simpl; ssprove_sync => x.
     1: ssprove_sync => y.
     all: ssprove_restore_mem;
       last by apply: r_ret.

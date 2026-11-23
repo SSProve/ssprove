@@ -67,7 +67,6 @@ theories/Crypt/package/pkg_invariants.v
 theories/Crypt/package/pkg_distr.v
 theories/Crypt/package/pkg_rhl.v
 theories/Crypt/package/pkg_user_util.v
-theories/Crypt/package/pkg_interpreter.v
 theories/Crypt/Package.v
 
 # State + Prob
@@ -93,7 +92,6 @@ theories/Crypt/examples/Assumptions/tSDH.v
 
 # Examples
 theories/Crypt/examples/package_usage_example.v
-theories/Crypt/examples/interpreter_test.v
 theories/Crypt/examples/PRF.v
 theories/Crypt/examples/OTP.v
 theories/Crypt/examples/KEMDEM.v

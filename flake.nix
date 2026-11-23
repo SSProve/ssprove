@@ -6,7 +6,7 @@
   outputs = { self, nixpkgs, flake-utils }:
     let
       ssprovePkg = { lib, mkCoqDerivation, coq
-                  , equations, extructures
+                  , extructures
                   , mathcomp-analysis, mathcomp-ssreflect
                   , mathcomp-experimental-reals
                   , mathcomp-word}:
@@ -16,7 +16,6 @@
           version = "0.2.0";
           src = ./.;
           propagatedBuildInputs = [
-            equations
             mathcomp-analysis
             mathcomp-experimental-reals
             mathcomp-ssreflect

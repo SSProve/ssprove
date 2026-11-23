@@ -7,18 +7,13 @@
 
  *)
 
-From Stdlib Require Import Utf8.
+From Stdlib Require Import Utf8 Equality.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import ssreflect eqtype choice seq ssrfun ssrbool.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd
   RulesStateProb StateTransformingLaxMorph choice_type Casts fmap_extra.
-
-Require Import Equations.Prop.DepElim.
-From Equations Require Import Equations.
-
-Set Equations With UIP.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
@@ -130,11 +125,6 @@ Section FreeModule.
         (∀ v, valid_code (k v)) →
         valid_code (sampler op k)
   .
-
-  Derive NoConfusion NoConfusionHom for choice_type.
-  Derive NoConfusion NoConfusionHom EqDec for nat.
-  Derive NoConfusion NoConfusionHom for raw_code.
-  Derive Signature for valid_code.
 
   (* Inversion lemmata *)
 

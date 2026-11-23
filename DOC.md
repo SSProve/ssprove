@@ -283,14 +283,14 @@ In case where automation doesn't work, it is still possible to leverage it to
 find which sub-goal it did not solve for you by using the `ssprove_valid`
 tactic.
 
-Here is an example using `Equations` that allows us to use the proof mode to
+Here is an example using `Program` that allows us to use the proof mode to
 fill in the validity proof.
 ```coq
 Obligation Tactic := idtac.
 
 Definition ℓ : Location := mkloc 0 (0 : nat).
 
-Equations? foo : code emptym [interface] 'nat :=
+Program Definition foo : code emptym [interface] 'nat :=
   foo := {code
     n ← get ℓ ;;
     ret n
@@ -371,7 +371,7 @@ the `'p` notation where `p` is a pattern.
 
 Similarly to `ValidCode`, there is an underlying `ValidPackage` class and we can
 call its best effort version with `ssprove_valid`, for instance using
-`Equations` (see [Valid code]).
+`Program` (see [Valid code]).
 
 In the example above we also explicitly gave an export interface while the
 information is already present in the declaration. As such in can be omitted
@@ -417,9 +417,6 @@ As illustrated above, `{package p }` casts a raw package to some
 `raw_package`. This means that, for instance, if `p₀` and `p₁` are both
 `package` then, `{package p₀ ∘ p₁ }` is a valid expression, and will be complete
 if the interfaces match.
-
-**Note:** When using `Equations`, please `Set Equations Transparent` such
-that code simplification in proofs via `ssprove_code_simpl` resolves properly.
 
 ## High-level SSP proofs
 

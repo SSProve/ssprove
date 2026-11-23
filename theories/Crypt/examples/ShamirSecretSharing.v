@@ -119,7 +119,6 @@ Notation " 'party " := (Party) (at level 2): package_scope.
 #[program]
 Definition party_to_word (x: Party): Word := @Ordinal _ x.+1 _.
 Next Obligation.
-  intros x.
   case: x => [x Hx] /=.
   rewrite words_p_eq.
   apply: leq_trans.
@@ -277,7 +276,6 @@ Definition PolyEnc t := 'fin (p ^ t).
 #[program] Definition mod_p (a: nat): Word :=
   @Ordinal _ (a %% p) _.
 Next Obligation.
-  intros a.
   by rewrite words_p_eq ltn_mod prime_gt0.
 Qed.
 
@@ -361,7 +359,6 @@ Definition t := t'.+1.
 Definition share_bij (U: seq Party) (m m': Word) (c: PolyEnc t'): PolyEnc t' :=
   @Ordinal _ (poly_to_nat t' (poly_bij U m m' (nat_to_poly t' c))) _.
 Next Obligation.
-  intros U m m' c.
   by apply: size_poly_to_nat.
 Qed.
 

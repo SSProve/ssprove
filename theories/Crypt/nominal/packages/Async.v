@@ -2,17 +2,14 @@ From Stdlib Require Import Utf8.
 Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-format".
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
-From extructures Require Import ord fset fmap ffun fperm.
-Require Import Equations.Prop.DepElim.
-From Equations Require Import Equations.
-
-From SSProve.Crypt Require Import Axioms SubDistr pkg_composition
-  Prelude Package Nominal NominalPrelude.
 
 From HB Require Import structures.
-
 (* Supress warnings due to use of HB *)
 Set Warnings "-redundant-canonical-projection,-projection-no-head-constant".
+
+From extructures Require Import ord fset fmap ffun fperm.
+From SSProve.Crypt Require Import Axioms SubDistr pkg_composition
+  Prelude Package Nominal NominalPrelude.
 
 Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
@@ -108,7 +105,7 @@ Section Async.
         by rewrite Pr_fstC.
       + by rewrite 2!Pr_code_ret 2!dmarginE 2!dlet_unit_ext.
     - rewrite Pr_code_bind.
-      fmap_invert H.
+      fmap_invert H; intros; subst.
       + simplify_linking.
         destruct (get_heap h (lazy_loc S)) => /=.
         * rewrite bind_assoc.
@@ -202,7 +199,7 @@ Section Async.
     induction H0 => h HNone; cbn [code_link].
     - by rewrite 2!Pr_code_ret 2!dmarginE 2!dlet_unit_ext.
     - rewrite Pr_code_bind.
-      fmap_invert H0.
+      fmap_invert H0; intros; subst.
       + simplify_linking.
         rewrite Pr_code_fst dlet_dlet_ext. symmetry.
         rewrite bind_assoc Pr_code_fst.

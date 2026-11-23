@@ -83,7 +83,6 @@ Qed.
     (N.of_nat (nat_of_ord w))
     (N.of_nat (nat_of_ord k)))) _.
 Next Obligation.
-  intros w k.
   (* Case analysis on w and k *)
   move: w k => [[|w] Hw] [[|k] Hk];
 

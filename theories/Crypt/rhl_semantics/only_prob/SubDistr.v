@@ -9,7 +9,7 @@ From SSProve.Crypt Require Import ChoiceAsOrd Axioms.
 Import Num.Theory.
 Import Order.POrderTheory.
 
-Global Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
+Local Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
 
 (*
 In this file we define/prove the (relative) monad of subdistributions.

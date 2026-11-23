@@ -161,11 +161,8 @@ Definition test₄ : package [interface] _ :=
     }
   ].
 
-#[tactic=notac] Equations? foo : code emptym [interface] 'nat :=
-  foo := {code
+Fail Definition foo' : code emptym [interface] 'nat :=
+  {code
     n ← get l ;;
     ret n
   }.
-Proof.
-  ssprove_valid.
-Abort.

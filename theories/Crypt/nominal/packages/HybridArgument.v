@@ -5,8 +5,6 @@ From mathcomp Require Import ssrnat ssreflect ssrfun ssrbool ssrnum eqtype
   choice reals distr seq all_algebra fintype realsum order.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap ffun fperm.
-Require Import Equations.Prop.DepElim.
-From Equations Require Import Equations.
 
 From SSProve.Crypt Require Import Axioms SubDistr pkg_composition
   Prelude Package Nominal NominalPrelude TotalProbability.

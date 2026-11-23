@@ -3,8 +3,6 @@ Set Warnings "-ambiguous-paths,-notation-overridden,-notation-incompatible-forma
 From mathcomp Require Import all_ssreflect all_algebra reals distr realsum.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap ffun fperm.
-Require Import Equations.Prop.DepElim.
-From Equations Require Import Equations.
 
 From SSProve.Crypt Require Import Axioms SubDistr pkg_composition
   Prelude Package Nominal NominalPrelude.
@@ -69,7 +67,7 @@ Proof.
   intros SEP VA.
   move: h; induction (VA) => h H'.
   - done.
-  - fmap_invert H.
+  - fmap_invert H; intros; subst.
     destruct x.
     cbn [code_link].
     simplify_linking.
@@ -114,7 +112,7 @@ Proof.
     rewrite Pr_code_ret.
     rewrite dletC pr_predT LL GRing.mul1r //.
   - intros h H' y.
-    fmap_invert H.
+    fmap_invert H; intros; subst.
     destruct x.
     cbn [bind code_link].
     simplify_linking.
@@ -177,6 +175,7 @@ Qed.
 Lemma CONST_dirac_perfect (x : T) :
   perfect (IPICK T) (RAND {code ret x}) (CONST x).
 Proof.
+  clear c.
   eapply prove_perfect.
   apply (eq_rel_perf_ind _ _ (heap_ignore [fmap cell T]
     ⋊ single_lhs (cell T) (λ v, v = None ∨ v = Some x)) ).

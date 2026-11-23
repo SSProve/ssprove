@@ -11,6 +11,8 @@ From SSProve.Crypt Require Import OrderEnrichedRelativeAdjunctions
 
 Import SPropNotations.
 
+Local Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
+
 
 (*
 In this file we implement the following transformations:

@@ -9,6 +9,7 @@ From SSProve.Crypt Require Import OrderEnrichedRelativeAdjunctions FreeProbProg 
 
 Import SPropNotations.
 
+Local Obligation Tactic := try (Tactics.program_simpl ; fail) ; simpl.
 
 (*
 Let M: I → C be a J-relative monad.
@@ -19,16 +20,15 @@ And there is a "transformed" left relative adjunction  L^M ∘ L♭ ⊣ R ∘ R^
 as well as the associated monad of this new adjunction (see AdjTransform in OrderEnrichedRelativeAdjunctions.)
 *)
 
-
 Section ConstantFunctor.
   Context (C D : ord_category) (d : D).
 
   Program Definition mkConstFunc : ord_functor C D := mkOrdFunctor (fun c => d) _ _ _ _.
   Next Obligation.
-    auto with solve_subterm.
+    intros. apply Id.
   Defined.
   Next Obligation.
-    cbv. auto with solve_subterm.
+    cbv. auto with *.
   Qed.
   Next Obligation.
     cbv. intuition. rewrite ord_cat_law1. reflexivity.
@@ -82,6 +82,7 @@ Section DomainStateAdj.
 
   Let Chi_DomainStateAdj0 :   forall A : prod_cat (oppo (prod_cat ord_choiceType ord_choiceType)) (prod_cat TypeCat TypeCat),
   OrdCat ⦅ leftHom (ord_functor_comp Lflat J) A; rightHom J R A ⦆.
+  Proof.
     move=> [[C1 C2][X1 X2]]. simpl. unshelve econstructor.
     move=> [p q]. split. move=> c1 s1. apply p. exact (c1 , s1).
     move=> c2 s2. apply q. exact (c2,s2).
@@ -151,6 +152,7 @@ Section CodomainStateAdj.
   Definition Chi_CodomainStateAdj0 :
   forall A : prod_cat (oppo (prod_cat ord_choiceType ord_choiceType)) OrdCat,
   OrdCat ⦅ leftHom (ord_functor_comp Lflat J) A; rightHom J R A ⦆.
+  Proof.
     move=> [[C1 C2] O]. unshelve econstructor.
     simpl. move=> [p pp]. unshelve econstructor.
     move=> [c1 c2]. unshelve econstructor.
@@ -170,6 +172,7 @@ Section CodomainStateAdj.
   Definition invChi_CodomainStateAdj0 :
   forall A : prod_cat (oppo (prod_cat ord_choiceType ord_choiceType)) OrdCat,
                   OrdCat ⦅ rightHom J R A; leftHom (ord_functor_comp Lflat J) A ⦆.
+  Proof.
     move=> [[C1 C2] O]. unshelve econstructor. simpl.
     move=> [gg gproof]. unshelve econstructor. move=> [[c1 s1] [c2 s2]].
     unshelve eapply ((gg _)∙1). exact (c1,c2). exact (s1,s2).

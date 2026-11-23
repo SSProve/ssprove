@@ -50,12 +50,10 @@ There are two installation options:
 
 - OCaml
 - Rocq
-- Equations
 - Mathcomp
 - Mathcomp analysis
 - Mathcomp word
 - Rocq Extructures
-- Rocq Deriving
 
 
 ### OPAM-based installation

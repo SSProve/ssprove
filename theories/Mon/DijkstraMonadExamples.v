@@ -338,7 +338,6 @@ End SumOfTheories.
 
 (** Deactivated temporarily *)
 
-(* From Equations Require Import Equations. *)
 (* From SSProve.Mon Require Import WellFounded. *)
 
 (* Derive NoConfusion for FreeF. *)
