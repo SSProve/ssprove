@@ -556,7 +556,12 @@ Module SigmaProtocol (π : SigmaProtocolParams)
         5: apply VA.
         1,2: ssprove_valid.
         3,4: fmap_solve.
-        { ssprove_invariant. } (* MK: long exec time *)
+        (* ssprove_invariant also solves this goal after a slow proof search. *)
+        { apply Invariant_heap_ignore.
+          rewrite !union0m.
+          apply fsubmapUr_trans; first fmap_solve.
+          apply fsubmapUr_trans; fmap_solve.
+        }
         simplify_eq_rel h.
         ssprove_code_simpl.
         destruct h.
