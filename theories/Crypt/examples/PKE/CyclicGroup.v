@@ -148,7 +148,7 @@ Qed.
 
 End Theorems.
 
-From SSProve.Crypt Require Import NominalPrelude.
+From SSProve.Crypt Require Import choice_type pkg_distr pkg_notation.
 Import PackageNotation.
 #[local] Open Scope package_scope.
 

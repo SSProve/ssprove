@@ -13,7 +13,7 @@ From mathcomp Require Import ssreflect eqtype choice seq ssrfun ssrbool.
 Set Warnings "ambiguous-paths,notation-overridden,notation-incompatible-format".
 From extructures Require Import ord fset fmap.
 From SSProve.Crypt Require Import Prelude Axioms ChoiceAsOrd
-  RulesStateProb StateTransformingLaxMorph choice_type Casts fmap_extra.
+  FreeProbProg choice_type Casts fmap_extra.
 
 Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.

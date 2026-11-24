@@ -30,7 +30,12 @@ Proof. constructor ; cbv ; intuition auto with crelations ; transitivity (y a) ;
 Definition Pred_op_order A : relation (A -> Prop) :=
   pointwise_relation A SProp_op_order.
 #[export] Instance Pred_op_order_prorder A : PreOrder (@Pred_op_order A).
-Proof. unfold Pred_op_order ; typeclasses eauto. Qed.
+Proof.
+  constructor.
+  - intros predicate element holds. exact holds.
+  - intros first second third first_second second_third element holds.
+    exact (first_second element (second_third element holds)).
+Qed.
 
 (***************************************************************)
 (* Monads, in Kleisli triple form                              *)

@@ -263,8 +263,9 @@ Qed.
 Lemma sep_link_assoc (p1 p2 p3 : nom_package)
   : p1 ∘ p2 ∘ p3 ≡ (p1 ∘ p2) ∘ p3.
 Proof.
-  rewrite 4!sep_linkE /move (equi2_use _ equi_share_link) share_link_assoc.
-  eauto 20 with nominal_db nocore.
+  rewrite 4!sep_linkE (move_equi2 equi_share_link) share_link_assoc.
+  rewrite (move_dpairU (f := share_link) s_share_link) move_dpair dpair_move.
+  reflexivity.
 Qed.
 
 
@@ -365,8 +366,9 @@ Qed.
 Lemma sep_par_assoc {P1 P2 P3 : nom_package}
   : (P1 || (P2 || P3)) ≡ ((P1 || P2) || P3).
 Proof.
-  rewrite 4!sep_parE /move (equi2_use _ equi_share_par) share_par_assoc.
-  auto with nominal_db nocore.
+  rewrite 4!sep_parE (move_equi2 equi_share_par) share_par_assoc.
+  rewrite (move_dpairU (f := share_par) s_share_par) move_dpair dpair_move.
+  reflexivity.
 Qed.
 
 Lemma sep_interchange {A B C D E F} (p1 p2 p3 p4 : nom_package)

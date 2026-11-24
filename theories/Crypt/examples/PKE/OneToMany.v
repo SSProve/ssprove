@@ -20,11 +20,10 @@ From SSProve.Crypt Require Import NominalPrelude
 Import PackageNotation.
 #[local] Open Scope package_scope.
 
-From SSProve.Crypt.examples.PKE Require Import Scheme CyclicGroup LDDH.
+From SSProve.Crypt.examples.PKE Require Import Scheme.
 
 Import PKE GroupScope.
 #[local] Open Scope nat_scope.
-#[local] Open Scope F_scope.
 
 Section OneToMany.
 

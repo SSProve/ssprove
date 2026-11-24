@@ -9,7 +9,8 @@ Require Import Equations.Prop.DepElim.
 From Equations Require Import Equations.
 
 From SSProve.Crypt Require Import Axioms SubDistr pkg_composition
-  Prelude Package Nominal.
+  Prelude choice_type pkg_core_definition pkg_tactics pkg_advantage pkg_heap
+  pkg_distr pkg_rhl pkg_notation fmap_extra RulesStateProb Couplings Nominal.
 
 From Stdlib Require Import Program.Tactics.
 

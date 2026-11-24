@@ -238,8 +238,14 @@ Proof.
   - apply bind_rule with (wf := (fun '(a1, a2) => fromPrePost (fun '(s1, s2) => middle (a1, s1) (a2, s2)) post)).
     + exact judge_wm.
     + exact judge_wf.
-  - cbv.
-    intuition auto with funelim.
+  - cbn.
+    move=> [s1 s2] continuation [Hpre Hpost].
+    split.
+    + exact Hpre.
+    + move=> [a1 s1'] [a2 s2'] Hmiddle.
+      split.
+      * exact Hmiddle.
+      * exact Hpost.
 Qed.
 
 (* Pre-condition manipulating rules *)
@@ -286,9 +292,7 @@ Proof.
   by apply (pre_weaken_rule (fun st => True) _).
 Qed.
 
-(* Rem.: took around 40s to Qed. *)
 (* post-condition manipulating rules *)
-(* Rem.: simplified the proof resorting to weaken_rule, should be quickier *)
 Theorem post_weaken_rule  {A1 A2 : ord_choiceType} {S1 S2 : choiceType}
                           {d1 : FrStP S1 A1}
                           {d2 : FrStP S2 A2} :
@@ -299,7 +303,12 @@ Proof.
   move => pre post1 post2 Hjudg Hleq.
   eapply weaken_rule.
   - exact Hjudg.
-  - cbv. intuition.
+  - cbn.
+    move=> [s1 s2] continuation [Hpre Hpost].
+    split.
+    + exact Hpre.
+    + move=> left right Hleft.
+      exact (Hpost left right (Hleq left right Hleft)).
 Qed.
 
 Declare Scope RulesStateProb_scope.

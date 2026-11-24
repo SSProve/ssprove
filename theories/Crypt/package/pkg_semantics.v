@@ -22,8 +22,6 @@ Set Bullet Behavior "Strict Subproofs".
 Set Default Goal Selector "!".
 Set Primitive Projections.
 
-#[local] Open Scope rsemantic_scope.
-
 #[local] Open Scope fset.
 #[local] Open Scope fset_scope.
 #[local] Open Scope type_scope.
